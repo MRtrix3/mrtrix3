@@ -1,0 +1,73 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html;charset=iso-8859-1">
+<title>MRtrix documentation</title>
+<link rel="stylesheet" href="../stylesheet.css" type="text/css" media=screen>
+</head>
+<body>
+
+<table class=nav>
+<tr>
+<td><a href="estimate_response.html"><img src="../left.png"></a></td>
+<td><a href="index.html"><img src="../up.png"></a></td>
+<td><a href="../index.html"><img src="../home.png"></a></td>
+<th>find_SH_peaks</th>
+<td><a href="gen_WM_mask.html"><img src="../right.png"></a></td>
+</tr>
+</table>
+<h2>Description</h2>
+<p>
+identify the orientations of the N largest peaks of a SH profile
+</p>
+<p class=indented><strong>syntax:</strong> &nbsp; &nbsp; find_SH_peaks [ options ] SH directions ouput </p>
+<h2>Arguments</h2>
+<table class=args>
+<tr><td><b>SH</b></td>
+<td>the input image of SH coefficients.</td></tr>
+<tr><td><b>directions</b></td>
+<td>the set of directions to use as seeds for the peak finding</td></tr>
+<tr><td><b>ouput</b></td>
+<td>the output image. Each volume corresponds to the x, y & z component of each peak direction vector in turn.</td></tr>
+</table>
+<h2>Options</h2>
+<table class=args>
+<tr><td><b>-num</b>&nbsp;<i>peaks</i></td>
+<td>the number of peaks to extract (default is 3).
+<table class=opts>
+<tr><td><i>peaks</i></td>
+<td>the number of peaks</td></tr>
+</table></td></tr>
+<tr><td><b>-direction</b>&nbsp;<i>phi</i>&nbsp;<i>theta</i></td>
+<td>the direction of a peak to estimate. The algorithm will attempt to find the same number of peaks as have been specified using this option.
+<table class=opts>
+<tr><td><i>phi</i></td>
+<td>the azimuthal angle of the direction (in degrees).</td></tr>
+<tr><td><i>theta</i></td>
+<td>the elevation angle of the direction (in degrees, from the vertical z-axis).</td></tr>
+</table></td></tr>
+<tr><td><b>-peaks</b>&nbsp;<i>image</i></td>
+<td>the program will try to find the peaks that most closely match those in the image provided.
+<table class=opts>
+<tr><td><i>image</i></td>
+<td>an image containing the true peaks to be estimated.</td></tr>
+</table></td></tr>
+<tr><td><b>-threshold</b>&nbsp;<i>value</i></td>
+<td>only peak amplitudes greater than the threshold will be considered.
+<table class=opts>
+<tr><td><i>value</i></td>
+<td>the threshold value</td></tr>
+</table></td></tr>
+<tr><td><b>-info</b></td>
+<td>display information messages.</td></tr>
+<tr><td><b>-quiet</b></td>
+<td>do not display information messages or progress status.</td></tr>
+<tr><td><b>-debug</b></td>
+<td>display debugging messages.</td></tr>
+<tr><td><b>-help</b></td>
+<td>display this information page and exit.</td></tr>
+<tr><td><b>-version</b></td>
+<td>display version information and exit.</td></tr>
+</table>
+</body>
+</html>

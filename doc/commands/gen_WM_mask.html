@@ -1,0 +1,59 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html;charset=iso-8859-1">
+<title>MRtrix documentation</title>
+<link rel="stylesheet" href="../stylesheet.css" type="text/css" media=screen>
+</head>
+<body>
+
+<table class=nav>
+<tr>
+<td><a href="find_SH_peaks.html"><img src="../left.png"></a></td>
+<td><a href="index.html"><img src="../up.png"></a></td>
+<td><a href="../index.html"><img src="../home.png"></a></td>
+<th>gen_WM_mask</th>
+<td><a href="gendir.html"><img src="../right.png"></a></td>
+</tr>
+</table>
+<h2>Description</h2>
+<p>
+generate a white matter probability mask from the DW images.
+</p>
+<p class=indented><strong>syntax:</strong> &nbsp; &nbsp; gen_WM_mask [ options ] dwi mask prob </p>
+<h2>Arguments</h2>
+<table class=args>
+<tr><td><b>dwi</b></td>
+<td>the input diffusion-weighted image.</td></tr>
+<tr><td><b>mask</b></td>
+<td>a binary mask of the brain.</td></tr>
+<tr><td><b>prob</b></td>
+<td>the output white matter 'probability' image.</td></tr>
+</table>
+<h2>Options</h2>
+<table class=args>
+<tr><td><b>-grad</b>&nbsp;<i>encoding</i></td>
+<td>specify the diffusion-weighted gradient scheme used in the acquisition. The program will normally attempt to use the encoding stored in image header.
+<table class=opts>
+<tr><td><i>encoding</i></td>
+<td>the gradient encoding, supplied as a 4xN text file with each line is in the format [ X Y Z b ], where [ X Y Z ] describe the direction of the applied gradient, and b gives the b-value in units (1000 s/mm^2).</td></tr>
+</table></td></tr>
+<tr><td><b>-margin</b>&nbsp;<i>width</i></td>
+<td>specify the width of the margin on either side of the image to be used to estimate the noise level (default = 10).
+<table class=opts>
+<tr><td><i>width</i></td>
+<td>the width to use.</td></tr>
+</table></td></tr>
+<tr><td><b>-info</b></td>
+<td>display information messages.</td></tr>
+<tr><td><b>-quiet</b></td>
+<td>do not display information messages or progress status.</td></tr>
+<tr><td><b>-debug</b></td>
+<td>display debugging messages.</td></tr>
+<tr><td><b>-help</b></td>
+<td>display this information page and exit.</td></tr>
+<tr><td><b>-version</b></td>
+<td>display version information and exit.</td></tr>
+</table>
+</body>
+</html>

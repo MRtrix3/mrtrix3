@@ -1,0 +1,149 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html;charset=iso-8859-1">
+<title>MRtrix documentation</title>
+<link rel="stylesheet" href="stylesheet.css" type="text/css" media=screen>
+</head>
+
+<body>
+
+<table class=nav>
+  <tr>
+    <td><a href="index.html"><img src="left.png"></a></td>
+    <td><a href="index.html"><img src="up.png"></a></td>
+    <td><a href="index.html"><img src="home.png"></a></td>
+    <th>Introduction</th>
+    <td><a href="install/index.html"><img src="right.png"></a></td>
+  </tr>
+</table>
+
+
+
+<p>
+MRtrix provides a set of tools to perform diffusion-weighted MRI white matter tractography in the presence of crossing fibres,
+using Constrained Spherical Deconvolution (<a href='appendix/refs.html#tournier1'>Tournier <i>et al.</i>. 2004</a>; 
+<a href='appendix/refs.html#tournier2'>Tournier <i>et al.</i> 2007</a>), 
+and a probabilisitic streamlines algorithm (e.g. <a href='appendix/refs.html#behrens'>Behrens <i>et al.</i>, 2003</a>; 
+<a href='appendix/refs.html#parker'>Parker <i>et al.</i>, 2003</a>).
+These applications have been written from scratch in C++, using the functionality provided
+by the <a href="http://www.gnu.org/software/gsl/">GNU Scientific Library</a>,
+and <a href="http://www.gtkmm.org/">gtkmm</a>.
+The software is currently capable of handling <a href="http://medical.nema.org/">DICOM</a> and 
+<a href="http://www.mayo.edu/bir/Software/Analyze/AnalyzeTechInfo.html">AnalyseAVW</a> image formats, amongst others.
+The source code is distributed under the <a href=appendix/gpl-3.0.html>GNU General Public License</a>.
+</p>
+
+
+<h2><a name='citing'>Acknowledging this work</a></h2>
+<p>
+If you wish to include results generated using the MRtrix package in a publication, 
+please include a line such as the following to acknowlegde this work:
+</p>
+<blockquote> 
+Fibre-tracking was performed using the MRtrix package
+(J-D Tournier, Brain Research Institute, Melbourne, Australia, 
+<a href=http://www.brain.org.au/software/>http://www.brain.org.au/software/</a>)
+(<a href='appendix/refs.html#tournier2'>Tournier <i>et al.</i> 2007</a>)
+</blockquote>
+
+
+<p class=sep><a href="#top">top</a></p>
+<h2><a name='warranty'>Warranty</a></h2>
+<p>
+The software described in this manual has no warranty, it is provided "as is". 
+It is your responsibility to validate the behavior of the routines and their accuracy using the source code provided, 
+or to purchase support and warranties from commercial redistributors. 
+Consult the <a href=appendix/gpl-3.0.html>GNU General Public License</a> for further details.
+</p>
+
+<p class=sep><a href="#top">top</a></p>
+<h2><a name='license'>License</a></h2>
+<p>
+MRtrix is free software: you can redistribute it and/or modify
+it under the terms of the <a href=appendix/gpl-3.0.html>GNU General Public License</a> as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+<p>
+</p>
+MRtrix is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+<p>
+</p>
+You should have received a copy of the <a href=appendix/gpl-3.0.html>GNU General Public License</a>
+along with MRtrix.  If not, see <a href="http://www.gnu.org/licenses/">&lt;http://www.gnu.org/licenses/&gt;</a>.
+</p>
+
+<p class=sep><a href="#top">top</a></p>
+<h2><a name='support'>Support</a></h2>
+<p>
+For support, please subscribe to the <a href='http://www.nitrc.org/mailman/listinfo/mrtrix-discussion'>MRtrix mailing list</a> and post your questions there.
+You can also browse through the <a href='http://www.nitrc.org/pipermail/mrtrix-discussion/'>archives</a> to see if your question has already been addressed.
+Notifications of new releases will also be publicised on that list.
+</p>
+<p>
+You may also find that your questions have already been answered in the <a href='faq.html'>Frequently Asked Questions</a>.
+</p>
+
+
+<p class=sep><a href="#top">top</a></p>
+<h2><a name='platforms'>Supported platforms</a></h2>
+<p>
+MRtrix should compile and run on any Unix-like system, provided 
+the <a href="http://www.gnu.org/software/gsl/">GNU Scientific Library</a>,
+<a href="http://www.gtkmm.org/">gtkmm</a> and a working implementation of OpenGL (version &gt; 1.2) are available on that system.
+</p>
+<table class=args>
+  <tr><th>Platform</th><th>Notes</th></tr>
+  <tr><td>Linux (x86)</td><td>should install on any recent distribution.<br>Tested under Ubuntu 7.10 (Gutsy) and 8.04 (Hardy).<br>Can also be <a href='install/unix.html#x86-64'>compiled in 64-bit mode (x86-64)</a>.</td></tr>
+  <tr><td>Windows XP</td><td>known to compile and run (using <a href="http://www.mingw.org/">MinGW</a>).<br>Pre-compiled binaries to be released soon.</td></tr>
+  <tr><td>MacOS X</td><td>no support at this time.</td></tr>
+</table>
+
+
+
+
+<p class=sep><a href="#top">top</a></p>
+<h2><a name='conventions'>Conventions used in this manual</a></h2>
+<p>
+This manual contains many examples which can be typed at the keyboard. A command entered at the terminal is shown like this:
+</p>
+<pre>
+&gt; <b>command</b>
+</pre>
+<p>
+The first character on the line is the terminal prompt, and should not be typed. 
+The greater-than sign '&gt;' is used as the standard prompt in this manual, although some systems may use a different character.
+</p>
+<p>
+The text that is actually typed at the keyboard is shown in <code><b>bold</b></code>.
+Any output produced by the program will be displayed in a <code>standard font</code>.
+<p>
+In certain cases (e.g. at installation), the number sign '#' is shown as the terminal prompt. 
+In such cases, the command is expected to be executed with administrative (root) privileges.
+</p>
+<p>
+These examples are for demonstation purposes only: depending on your specific aims and applications,
+you may want to omit some of the steps shown, or you may need to perform additional steps.
+</p>
+<p>
+This manual assumes a GNU/Unix environment. There may be minor differences in the input or output on other systems,
+and you may need to edit the commands to suit your working environment. 
+For example, in Microsoft Windows, you will need to use the backslash <kbd>'\'</kbd> as the directory separator.
+</p>
+
+<table class=nav>
+  <tr>
+    <td><a href="index.html"><img src="left.png"></a></td>
+    <td><a href="index.html"><img src="up.png"></a></td>
+    <td><a href="index.html"><img src="home.png"></a></td>
+    <th><a href='#top'>top</a></th>
+    <td><a href="install/index.html"><img src="right.png"></a></td>
+  </tr>
+</table>
+
+</body>
+</html>
+

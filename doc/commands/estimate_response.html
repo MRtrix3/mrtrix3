@@ -1,0 +1,61 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html;charset=iso-8859-1">
+<title>MRtrix documentation</title>
+<link rel="stylesheet" href="../stylesheet.css" type="text/css" media=screen>
+</head>
+<body>
+
+<table class=nav>
+<tr>
+<td><a href="erode.html"><img src="../left.png"></a></td>
+<td><a href="index.html"><img src="../up.png"></a></td>
+<td><a href="../index.html"><img src="../home.png"></a></td>
+<th>estimate_response</th>
+<td><a href="find_SH_peaks.html"><img src="../right.png"></a></td>
+</tr>
+</table>
+<h2>Description</h2>
+<p>
+estimate the fibre response function for use in spherical deconvolution.
+</p>
+<p class=indented><strong>syntax:</strong> &nbsp; &nbsp; estimate_response [ options ] dwi mask response </p>
+<h2>Arguments</h2>
+<table class=args>
+<tr><td><b>dwi</b></td>
+<td>the input diffusion-weighted images.</td></tr>
+<tr><td><b>mask</b></td>
+<td>the mask image of the voxels assumed to contain a single fibre population.</td></tr>
+<tr><td><b>response</b></td>
+<td>the output text file where the even l, m=0 SH coefficients of the response function will be stored.</td></tr>
+</table>
+<h2>Options</h2>
+<table class=args>
+<tr><td><b>-grad</b>&nbsp;<i>encoding</i></td>
+<td>specify the diffusion-weighted gradient scheme used in the acquisition. The program will normally attempt to use the encoding stored in image header.
+<table class=opts>
+<tr><td><i>encoding</i></td>
+<td>the gradient encoding, supplied as a 4xN text file with each line is in the format [ X Y Z b ], where [ X Y Z ] describe the direction of the applied gradient, and b gives the b-value in units (1000 s/mm^2).</td></tr>
+</table></td></tr>
+<tr><td><b>-lmax</b>&nbsp;<i>order</i></td>
+<td>set the maximum harmonic order to be estimated. By default, the program will use the highest possible lmax given the number of diffusion-weighted images.
+<table class=opts>
+<tr><td><i>order</i></td>
+<td>the maximum harmonic order to use.</td></tr>
+</table></td></tr>
+<tr><td><b>-normalise</b></td>
+<td>normalise the DW signal to the b=0 image</td></tr>
+<tr><td><b>-info</b></td>
+<td>display information messages.</td></tr>
+<tr><td><b>-quiet</b></td>
+<td>do not display information messages or progress status.</td></tr>
+<tr><td><b>-debug</b></td>
+<td>display debugging messages.</td></tr>
+<tr><td><b>-help</b></td>
+<td>display this information page and exit.</td></tr>
+<tr><td><b>-version</b></td>
+<td>display version information and exit.</td></tr>
+</table>
+</body>
+</html>

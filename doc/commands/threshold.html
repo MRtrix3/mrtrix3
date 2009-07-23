@@ -1,0 +1,64 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html;charset=iso-8859-1">
+<title>MRtrix documentation</title>
+<link rel="stylesheet" href="../stylesheet.css" type="text/css" media=screen>
+</head>
+<body>
+
+<table class=nav>
+<tr>
+<td><a href="tensor_metric.html"><img src="../left.png"></a></td>
+<td><a href="index.html"><img src="../up.png"></a></td>
+<td><a href="../index.html"><img src="../home.png"></a></td>
+<th>threshold</th>
+<td><a href="track_info.html"><img src="../right.png"></a></td>
+</tr>
+</table>
+<h2>Description</h2>
+<p>
+create bitwise image by thresholding image intensity.
+</p>
+<p>
+By default, the threshold level is determined using a histogram analysis to cut out the background. Otherwise, the threshold intensity can be specified using command line options. Note that only the first study is used for thresholding.
+</p>
+<p class=indented><strong>syntax:</strong> &nbsp; &nbsp; threshold [ options ] input output </p>
+<h2>Arguments</h2>
+<table class=args>
+<tr><td><b>input</b></td>
+<td>the input image to be thresholded.</td></tr>
+<tr><td><b>output</b></td>
+<td>the output binary image mask.</td></tr>
+</table>
+<h2>Options</h2>
+<table class=args>
+<tr><td><b>-abs</b>&nbsp;<i>value</i></td>
+<td>specify threshold value as absolute intensity.
+<table class=opts>
+<tr><td><i>value</i></td>
+<td>the absolute threshold to use.</td></tr>
+</table></td></tr>
+<tr><td><b>-percent</b>&nbsp;<i>value</i></td>
+<td>specify threshold value as a percentage of the peak intensity in the input image.
+<table class=opts>
+<tr><td><i>value</i></td>
+<td>the percentage threshold to use.</td></tr>
+</table></td></tr>
+<tr><td><b>-invert</b></td>
+<td>invert output binary mask.</td></tr>
+<tr><td><b>-nan</b></td>
+<td>replace all zero values with NaN.</td></tr>
+<tr><td><b>-info</b></td>
+<td>display information messages.</td></tr>
+<tr><td><b>-quiet</b></td>
+<td>do not display information messages or progress status.</td></tr>
+<tr><td><b>-debug</b></td>
+<td>display debugging messages.</td></tr>
+<tr><td><b>-help</b></td>
+<td>display this information page and exit.</td></tr>
+<tr><td><b>-version</b></td>
+<td>display version information and exit.</td></tr>
+</table>
+</body>
+</html>

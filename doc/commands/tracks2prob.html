@@ -1,0 +1,55 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html;charset=iso-8859-1">
+<title>MRtrix documentation</title>
+<link rel="stylesheet" href="../stylesheet.css" type="text/css" media=screen>
+</head>
+<body>
+
+<table class=nav>
+<tr>
+<td><a href="track_info.html"><img src="../left.png"></a></td>
+<td><a href="index.html"><img src="../up.png"></a></td>
+<td><a href="../index.html"><img src="../home.png"></a></td>
+<th>tracks2prob</th>
+<td><a href="index.html"><img src="../right.png"></a></td>
+</tr>
+</table>
+<h2>Description</h2>
+<p>
+convert a tracks file into a map of the fraction of tracks to enter each voxel.
+</p>
+<p class=indented><strong>syntax:</strong> &nbsp; &nbsp; tracks2prob [ options ] tracks template output </p>
+<h2>Arguments</h2>
+<table class=args>
+<tr><td><b>tracks</b></td>
+<td>the input track file.</td></tr>
+<tr><td><b>template</b></td>
+<td>an image file to be used as a template for the output (the output image wil have the same voxel size and dimensions).</td></tr>
+<tr><td><b>output</b></td>
+<td>the output fraction image</td></tr>
+</table>
+<h2>Options</h2>
+<table class=args>
+<tr><td><b>-count</b></td>
+<td>produce an image of the fibre count through each voxel, rather than the fraction.</td></tr>
+<tr><td><b>-datatype</b>&nbsp;<i>spec</i></td>
+<td>specify output image data type.
+<table class=opts>
+<tr><td><i>spec</i></td>
+<td>the data type specifier.</td></tr>
+</table></td></tr>
+<tr><td><b>-info</b></td>
+<td>display information messages.</td></tr>
+<tr><td><b>-quiet</b></td>
+<td>do not display information messages or progress status.</td></tr>
+<tr><td><b>-debug</b></td>
+<td>display debugging messages.</td></tr>
+<tr><td><b>-help</b></td>
+<td>display this information page and exit.</td></tr>
+<tr><td><b>-version</b></td>
+<td>display version information and exit.</td></tr>
+</table>
+</body>
+</html>
