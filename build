@@ -667,7 +667,7 @@ if verbose:
   print 'compiling TODO list...'
 
 try: [ Entry(item) for item in targets ]
-except Exception as e: 
+except Exception, e: 
   print 'ERROR:', e.args[0]
   sys.exit (1)
 
