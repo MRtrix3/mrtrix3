@@ -32,25 +32,22 @@ namespace MR {
 
     class MMap {
       public:
-        MMap (const std::string& fname, off64_t desired_size_if_inexistant = 0, off64_t data_offset = 0, const char* suffix = NULL);
+        MMap (const std::string& fname, bool readonly = true, off64_t from = 0, off64_t to = off64_t(-1));
         ~MMap ();
 
         std::string  name () const  { return (filename); }
-        off64_t      size () const  { return (msize); }
+        off64_t      filesize () const  { return (fsize); }
+        off64_t      size () const  { return (end-start); }
         template <class T> T* address () const { return (static_cast<T*> (addr)); }
-        template <class T> T* data () const { return (static_cast<T*> (addr + byte_offset)); }
-        off64_t      offset () const { return (byte_offset); }
 
-        bool is_ready () const                  { return (msize); }
+        bool is_ready () const                  { return (fsize); }
         bool is_mapped () const                 { return (addr); }
         bool is_read_only () const              { return (read_only); }
-        bool is_marked_for_deletion () const    { return (delete_after); }
 
         void map ();
+        void map (off64_t from, off64_t to) { set_range (from, to);  map(); }
         void unmap ();
-        void resize (off64_t new_size);
 
-        void set_offset (off64_t new_offset) { byte_offset = new_offset; }
         void set_read_only (bool is_read_only) {
           if (read_only == is_read_only) return; 
           bool was_mapped = ( addr != NULL );
@@ -58,24 +55,33 @@ namespace MR {
           read_only = is_read_only; 
           if (was_mapped) map();
         }
-        void mark_for_deletion () { delete_after = true; }
 
         bool changed () const;
 
         friend std::ostream& operator<< (std::ostream& stream, const MMap& m) {
-          stream << "MMap { " << m.filename << " [" << m.fd << "] mapped at " << m.addr << ", size " << m.msize << " }";
+          stream << "MMap { " << m.filename << " [" << m.fd << "], size " << m.fsize << ", mapped at " << m.addr << " }";
           return (stream);
         }
+
+        static const off64_t  pagesize;
 
       protected:
         int               fd;
         std::string       filename;     /**< The name of the file. */
-        uint8_t*          addr;         /**< The address in memory where the file has been mapped. */
-        off64_t           msize;        /**< The size of the memory-mapping, should correspond to the size of the file. */
-        off64_t           byte_offset;  /**< The byte offset to the start of the data, where relevant. */
+        uint8_t*          mapping_addr; /**< The address in memory where the file has been mapped. */
+        uint8_t*          addr;         /**< The address in memory where the data starts. */
+        off64_t           fsize;        /**< The size of the file. */
+        off64_t           start;        /**< The byte offset to the start of the desired range. */
+        off64_t           end;          /**< The byte offset to the end of the desired range. */
         bool              read_only;    /**< A flag to indicate whether the file is mapped as read-only. */
-        bool              delete_after;
-        time_t            mtime;
+        time_t            mtime;        /**< The modification time of the file at the last check. */
+
+
+        void set_range (off64_t from, off64_t to) {
+          assert (from < to); 
+          start = from; 
+          end = to;
+        }
 
       private:
         MMap (const MMap& mmap) { assert (0); }
