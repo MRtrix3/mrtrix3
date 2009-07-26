@@ -18,14 +18,11 @@
     You should have received a copy of the GNU General Public License
     along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
  
-
-    11-07-2008 J-Donald Tournier <d.tournier@brain.org.au>
-    * fixed TMPFILE_ROOT_LEN - now set to 7
-    
 */
 
 #include <fcntl.h>
 #include <unistd.h>
+#include <zlib.h>
 
 #ifdef WINDOWS
 #include <windows.h>
@@ -37,92 +34,86 @@
 #include "file/mmap.h"
 #include "file/config.h"
 
+    
+#define DBG std::cerr << __FILE__":" <<  __LINE__ << "\n";
+#define P(variable) std::cerr << #variable << " = " << (variable) \
+  << " in " << __func__ << "() from file " << __FILE__ << "\n"
 
 
 namespace MR {
   namespace File {
 
-    const off64_t MMap::pagesize = sysconf (_SC_PAGESIZE);
-
-    MMap::MMap (const std::string& fname, bool readonly, off64_t from, off64_t to) :
-      fd (-1), 
-      filename (fname),
-      addr (NULL), 
-      fsize (0), 
-      start (from),
-      end (to),
-      read_only (readonly),
-      mtime (0)
-    {
-      assert (fname.size());
-      assert (from < to);
-
-      debug ("preparing memory-mapping for file \"" + fname + "\"");
-
-      struct stat64 sbuf;
-      if (stat64 (filename.c_str(), &sbuf)) 
-        throw Exception ("cannot stat file \"" + filename + "\": " + strerror(errno));
-
-      mtime = sbuf.st_mtime;
-      fsize = sbuf.st_size;
-
-      set_range (from, to); 
-    }
-
-
-
-
-    MMap::~MMap ()
-    {
-      unmap(); 
-
-      // need to update:
-      if (read_only && Path::is_temporary (filename)) {
-        debug ("deleting file \"" + filename + "\"...");
-        if (unlink (filename.c_str())) 
-          error ("WARNING: error deleting file \"" + filename + "\": " + strerror(errno));
+    namespace {
+      inline const char* zlib_error (gzFile zf) {
+        int errnum;
+        const char* msg = gzerror (zf, &errnum);
+        return (errnum == Z_ERRNO ? strerror (errno) : msg);
       }
     }
 
+
+    const off64_t MMap::pagesize = sysconf (_SC_PAGESIZE);
 
     void MMap::map()
     {
-      if (addr) return;
-      if (!is_ready()) throw Exception ("attempt to map file \"" + filename + "\" using invalid mmap!");
+      debug ("memory-mapping file \"" + Entry::name + "\"...");
 
-      if (Path::has_suffix (filename, ".gz")) {
+      bool is_compressed = Path::has_suffix (Entry::name, ".gz");
+
+      struct stat64 sbuf;
+      if (stat64 (Entry::name.c_str(), &sbuf)) 
+        throw Exception ("cannot stat file \"" + Entry::name + "\": " + strerror(errno));
+
+      mtime = sbuf.st_mtime;
+
+      if (is_compressed) {
+        assert (fsize > 0);
+        addr = new uint8_t [fsize];
+        fd = -1;
+
+        if (sbuf.st_size > 0) {
+          debug ("uncompressing file \"" + Entry::name + "\"...");
+
+          gzFile zf = gzopen64 (Entry::name.c_str(), "rb");
+          if (!zf) throw Exception ("error uncompressing file \"" + Entry::name + "\": " + zlib_error (zf));
+
+          off64_t nread = gzread (zf, addr, fsize);
+          if (nread != fsize) throw Exception ("error uncompressing file \"" + Entry::name + "\": " + zlib_error (zf));
+
+          gzclose (zf);
+        }
+        else memset (addr, 0, fsize);
       }
       else {
-        if (end > fsize) throw Exception ("file \"" + filename + "\" is smaller than expected");
+        if (fsize > sbuf.st_size) throw Exception ("file \"" + Entry::name + "\" is smaller than expected");
+        if (fsize < 0) fsize = sbuf.st_size;
 
-        off64_t mstart = pagesize * off64_t (start / pagesize);
-        if ((fd = open64 (filename.c_str(), (read_only ? O_RDONLY : O_RDWR), 0755)) < 0) 
-          throw Exception ("error opening file \"" + filename + "\": " + strerror(errno));
+        if ((fd = open64 (Entry::name.c_str(), (readwrite ? O_RDWR : O_RDONLY), 0755)) < 0) 
+          throw Exception ("error opening file \"" + Entry::name + "\": " + strerror(errno));
 
         try {
 #ifdef WINDOWS
-          // TODO: fix this for windows
           HANDLE handle = CreateFileMapping ((HANDLE) _get_osfhandle(fd), NULL, 
-              (read_only ? PAGE_READONLY : PAGE_READWRITE), 0, end-mstart, NULL);
+              (readwrite ? PAGE_READWRITE : PAGE_READONLY), 0, fsize, NULL);
           if (!handle) throw 0;
-          mapping_addr = static_cast<uint8_t*> (MapViewOfFile (handle, (read_only ? FILE_MAP_READ : FILE_MAP_ALL_ACCESS), 0, 0, end-mstart));
-          if (!mapping_addr) throw 0;
+          addr = static_cast<uint8_t*> (MapViewOfFile (handle, (readwrite ? FILE_MAP_ALL_ACCESS : FILE_MAP_READ), 0, 0, fsize));
+          if (!addr) throw 0;
           CloseHandle (handle);
 #else 
-          mapping_addr = static_cast<uint8_t*> (mmap64((char*)0, end-mstart, (read_only ? PROT_READ : PROT_READ | PROT_WRITE), MAP_SHARED, fd, mstart));
-          if (mapping_addr == MAP_FAILED) throw 0;
+          addr = static_cast<uint8_t*> (mmap64((char*)0, fsize, 
+                (readwrite ? PROT_READ | PROT_WRITE : PROT_READ), MAP_SHARED, fd, 0));
+          if (addr == MAP_FAILED) throw 0;
 #endif
-          addr = mapping_addr + start - mstart;
-          debug ("file \"" + filename + "\" mapped at " + str (addr) 
-              + ", size " + str (size()) 
-              + " (read-" + ( read_only ? "only" : "write" ) + ")"); 
         }
         catch (...) {
           close (fd);
           addr = NULL;
-          throw Exception ("memmory-mapping failed for file \"" + filename + "\": " + strerror(errno));
+          throw Exception ("memmory-mapping failed for file \"" + Entry::name + "\": " + strerror(errno));
         }
       }
+
+      debug ("file \"" + Entry::name + "\" mapped at " + str ((void*) addr) + ", size " + str (fsize) 
+          + " (read-" + ( readwrite ? "write" : "only" ) + ")"); 
     }
 
 
@@ -132,24 +123,33 @@ namespace MR {
     void MMap::unmap()
     {
       if (!addr) return;
+      if (fd < 0) {
+        if (readwrite) {
+          debug ("compressing file \"" + Entry::name + "\"...");
 
-      debug ("unmapping file \"" + filename + "\"");
-      off64_t mstart = pagesize * off64_t (start / pagesize);
+          gzFile zf = gzopen64 (Entry::name.c_str(), "wb");
+          if (!zf) throw Exception ("error compressing file \"" + Entry::name + "\": " + zlib_error (zf));
+
+          off64_t nwritten = gzwrite (zf, addr, fsize);
+          if (nwritten != fsize) throw Exception ("error compressing file \"" + Entry::name + "\": " + zlib_error (zf));
+
+          gzclose (zf);
+        }
+      }
+      else {
+        debug ("unmapping file \"" + Entry::name + "\"");
 
 #ifdef WINDOWS
-      if (!UnmapViewOfFile ((LPVOID) mapping_addr))
+        if (!UnmapViewOfFile ((LPVOID) addr))
 #else 
-        if (munmap (mapping_addr, end-mstart))
+          if (munmap (addr, fsize))
 #endif
-          error ("error unmapping file \"" + filename + "\": " + strerror(errno));
-
-      close (fd);
+            error ("error unmapping file \"" + Entry::name + "\": " + strerror(errno));
+        close (fd);
+      }
       fd = -1;
-      addr = mapping_addr = NULL;
+      addr = NULL;
     }
-
-
-
 
 
 
