@@ -38,144 +38,92 @@
 
 namespace MR {
   namespace File {
-    namespace GZ {
 
-      class Reader {
-        public:
-          Reader () : gz (NULL), file (NULL) { }
-          Reader (const std::string& fname) : gz (NULL), file (NULL) { open (fname); }
-          ~Reader () { close(); }
+    class GZ {
+      public:
+        GZ () : gz (NULL) { }
+        GZ (const std::string& fname) : gz (NULL) { open (fname); }
+        ~GZ () { close(); }
 
-          std::string  name () const  { return (filename); }
+        const std::string&  name () const  { return (filename); }
 
-          void open (const std::string& fname) { 
-            close();
-            filename.clear();
-            int fd = open64 (fname.c_str(), O_RDONLY);
-            if (fd < 0) throw Exception ("error opening file \"" + fname + "\": " + strerror (errno));
-            if (Path::has_suffix (fname, ".gz")) {
-              gz = gzdopen (fd, "rb");
-              if (!gz) throw Exception ("error opening file \"" + fname + "\": insufficient memory");
+        void open (const std::string& fname) { 
+          close();
+          filename = fname;
+          gz = gzopen64 (filename.c_str(), "rb");
+          if (!gz) throw Exception ("error opening file \"" + filename + "\": insufficient memory");
+        }
+
+        void close () {
+          filename.clear(); 
+          if (gz) if (gzclose (gz)) throw Exception ("error closing file \"" + filename + "\": " + error()); 
+          gz = NULL;
+        }
+
+        bool is_open () const { return (gz); }
+        bool eof () const { assert (gz); return (gzeof (gz)); }
+        off64_t tell () const { assert (gz); return (gztell64 (gz)); }
+
+        void seek (off64_t offset) { 
+          assert (gz);
+          z_off_t pos = gzseek64 (gz, offset, SEEK_SET); 
+          if (pos < 0) throw Exception ("error seeking in file \"" + filename + "\": " + error()); 
+        }
+
+        int read (char* s, size_t n) {
+          assert (gz);
+          int n_read = gzread (gz, s, n); 
+          if (n_read < 0) throw Exception ("error reading from file \"" + filename + "\": " + error());
+          return (n_read);
+        }
+
+        std::string getline () {
+          assert (gz);
+          std::string string;
+          char buf[64];
+          do {
+            char* status = gzgets (gz, buf, 64);
+            if (!status) {
+              if (eof()) break;
+              throw Exception ("error reading from file \"" + filename + "\": " + error());
             }
-            else {
-              file = fdopen (fd, "rb");
-              if (!file) throw Exception ("error opening file \"" + fname + "\": " + strerror (errno));
-            }
-            filename = fname;
-          }
+            string += buf;
+          } while (strlen(buf) >= 63);
 
-          void close () {
-            filename.clear(); 
-            try {
-              if (gz) if (gzclose (gz)) throw;
-              if (file) if (fclose (file)) throw;
-              gz = NULL;
-              file = NULL;
-            }
-            catch (...) { throw Exception ("error closing file \"" + filename + "\": " + error()); }
-          }
+          if (string.size() > 0) if (string[string.size()-1] == 015) string.resize (string.size()-1);
+          return (string);
+        }
 
-          bool is_open () const { return (gz || file); }
-          bool eof () const { assert (gz || file); return (gz ? gzeof (gz) : feof (file)); }
-          off64_t tell () const { assert (gz || file); return (gz ? gztell (gz) : ftell (file)); }
+        template <typename T> T get () { 
+          T val;
+          if (read (&val, sizeof(T)) != sizeof(T)) 
+            throw Exception ("error reading from file \"" + filename + "\": " + error());
+          return (val);
+        }
 
-          void seek (off64_t offset) { 
-            assert (gz || file);
-            if (gz) {
-              z_off_t pos = gzseek (gz, offset, SEEK_SET); 
-              if (pos >= 0) return;
-            }
-            else {
-              off64_t pos = fseek64 (file, offset, SEEK_SET); 
-              if (pos >= 0) return;
-            }
-            throw Exception ("error seeking in file \"" + filename + "\": " + error()); 
-          }
+        template <typename T> T get (off64_t offset) { seek (offset); return (get<T>()); }
 
-          std::string getline () {
-            assert (gz || file);
-            std::string string;
-            char buf[64];
-            do {
-              char* status = ( gz ? gzgets (gz, buf, 64) : fgets (file, buf, 64) );
-              if (!status) {
-                if (eof()) break;
-                throw Exception ("error reading from file \"" + filename + "\": " + error());
-              }
-              string += buf;
-            } while (strlen(buf) >= 63);
+        template <typename T> T* get (T* buf, size_t n) { 
+          if (read (buf, n*sizeof(T)) != n*sizeof(T)) 
+            throw Exception ("error reading from file \"" + filename + "\": " + error());
+          return (buf);
+        }
 
-            if (string.size() > 0) if (string[string.size()-1] == 015) string.resize (string.size()-1);
-            return (string);
-          }
+        template <typename T> T* get (off64_t offset, T* buf, size_t n) { seek (offset); return (get<T>(buf, n)); }
 
-          int read (char* s, size_t n) {
-            assert (gz || file);
-            int n_read = gzread (gz, s, n); 
-            if (n_read < 0) throw Exception ("error reading from file \"" + filename + "\": " + error());
-            return (n_read);
-          }
+      protected:
+        gzFile       gz;
+        std::string  filename; 
 
-        protected:
-          gzFile       gz;
-          FILE*        file;
-          std::string  filename; 
-
-          const char*  error () {
-            int error_number;
-            const char* s = gzerror (gz, &error_number);
-            if (error_number == Z_ERRNO) s = strerror (errno);
-            return (s);
-          }
-      };
+        const char*  error () {
+          int error_number;
+          const char* s = gzerror (gz, &error_number);
+          if (error_number == Z_ERRNO) s = strerror (errno);
+          return (s);
+        }
+    };
 
 
-
-
-
-
-
-
-
-
-      class Writer : public Reader {
-        public:
-          Writer () { }
-          Writer (const std::string& fname) { open (fname); }
-
-          void open (const std::string& fname) {
-            close();
-            filename.clear();
-            int fd = open64 (fname.c_str(), O_WRONLY | O_CREAT | O_EXCL, 0755);
-            if (fd < 0) {
-              if (errno == EEXIST) {
-                if (confirm ("File \"" + fname + "\" exists. Overwrite?")) {
-                  fd = open64 (fname.c_str(), O_WRONLY | O_TRUNC, 0755);
-                  if (fd < 0) throw Exception ("error opening file \"" + fname + "\": " + strerror(errno));
-                }
-                else throw Exception ("operation aborted by user");
-              }
-              else throw Exception ("error opening file \"" + fname + "\": " + strerror(errno));
-            }
-            gz = gzdopen (fd, "wb");
-            if (!gz) throw Exception ("error opening file \"" + fname + "\": " + error());
-            filename = fname;
-          }
-
-          void write (const std::string& string) {
-            int n_written = gzputs (gz, string.c_str());
-            if (n_written < 0) throw Exception ("error writing to file \"" + filename + "\": " + error());
-          }
-
-          void write (const char* p, size_t n) {
-            int n_written = gzwrite (gz, p, n);
-            if (n_written <= 0) throw Exception ("error writing to file \"" + filename + "\": " + error());
-          }
-
-      };
-
-
-    }
   }
 }
 

@@ -1,4 +1,5 @@
 #include "file/mmap.h"
+#include "file/gz.h"
 #include "exception.h"
 
 using namespace MR;
