@@ -25,6 +25,7 @@
 
 #include <map>
 
+#include "dataset.h"
 #include "ptr.h"
 #include "data_type.h"
 #include "image/axis.h"
