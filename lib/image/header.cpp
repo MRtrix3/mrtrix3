@@ -116,7 +116,7 @@ namespace MR {
         }
       }
 
-      num_voxel_per_file = voxel_count (*this) * ( data_type.is_complex() ? 2 : 1 ) / files.size();
+      num_voxel_per_file = voxel_count (*this) * ( dtype.is_complex() ? 2 : 1 ) / files.size();
 
       debug ("setting up data increments for \"" + name + "\"...");
 
@@ -142,7 +142,7 @@ namespace MR {
         mult *= ssize_t(dim(axis));
       }
 
-      if (data_type.is_complex()) {
+      if (dtype.is_complex()) {
         first_voxel_offset *= 2;
         for (size_t i = 0; i < ndim(); i++) axes.stride(i) *= 2;
       }
@@ -200,7 +200,7 @@ namespace MR {
 
 
 
-      desc += std::string ("  Data type:         ") + ( data_type.description() ? data_type.description() : "invalid" ) + "\n"
+      desc += std::string ("  Data type:         ") + ( dtype.description() ? dtype.description() : "invalid" ) + "\n"
             "  Data layout:       [ ";
 
 

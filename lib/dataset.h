@@ -20,11 +20,29 @@
 
 */
 
-#error the header file "dataset.h" is for documentation purposes only, and should not be included
+#error - "dataset.h" is for documentation purposes only!
+#error - It should NOT be included in other code files.
 
+#ifdef DOXYGEN_SHOULD_SKIP_THIS /* Doxygen should NOT skip this! */
 namespace MR {
 
-  //! This abstract generic DataSet interface
+  /*! \mainpage MRtrix development documentation 
+   * 
+   * \section frontpage_section Basic principles
+   * MRtrix was developed with simplicity and performance in mind, which has led
+   * to a number of fundamental design decisions. The main concepts are explained
+   * in the following pages:
+   * 
+   * \li %Image data are accessed via objects that implement at least a subset of
+   * the interface defined for the DataSet abstract class.
+   * \li Access to data stored in image files is done via the classes and
+   * functions defined in the Image namespace. The corresponding headers are
+   * stored in the \c lib/image/ directory.
+   * 
+   */
+
+
+  //! The abstract generic DataSet interface
   /*! This class is an abstract prototype describing the interface that a
    * number of MRtrix algorithms expect to operate on. It does not correspond
    * to a real class, and only serves to document the expected behaviour for
@@ -37,17 +55,95 @@ namespace MR {
    * exactly, as long as the class can be used with the same syntax in
    * practice. Algorithms designed to operate on DataSets are defined using the
    * C++ template framework, and hence any function calls are interpreted at
-   * compile-time, rather than being issued at run-time.
-   * \note This class and its corresponding header should not be used or 
+   * compile-time, rather than being issued at run-time. This is perhaps better
+   * illustrated using the example below.
+   *
+   * The following defines a simple class to store a 3D image:
+   * \code
+   * class Image {
+   *   public:
+   *     Image (int xdim, int ydim, int zdim) { 
+   *       nvox[0] = xdim; nvox[1] = ydim; nvox[2] = zdim;
+   *       pos[0] = pos[1] = pos[2] = 0;
+   *       data = new float [nvox[0]*nvox[1]*nvox[2]);
+   *     }
+   *    ~Image () { delete [] data; }
+   *
+   *     int     ndim () const         { return (3); }
+   *     int     dim (int axis) const  { return (nvox[axis]); }
+   *     int&    operator[] (int axis) { return (pos[axis]); }
+   *     float&  value()               { return (data[pos[0]+nvox[0]*(pos[1]+nvox[1]*pos[2])]); }
+   *
+   *   private:
+   *     float*   data
+   *     int      nvox[3];
+   *     int      pos[3];
+   * };
+   * \endcode
+   * This class does not implement all the functions listed for the generic
+   * DataSet class, and some of the functions it does implement do not match
+   * the DataSet equivalent definitions. However, in practice this
+   * class can be used with identical syntax. For example, this template
+   * function scales the data by a user-defined factor:
+   * \code
+   * template <class DataSet> void scale (DataSet& data, float factor)
+   * {
+   *   for (data[2] = 0; data[2] < data.dim(2); data[2]++)
+   *     for (data[1] = 0; data[1] < data.dim(1); data[1]++)
+   *       for (data[0] = 0; data[0] < data.dim(0); data[0]++)
+   *         data.value() *= factor;
+   * }
+   * \endcode
+   * This template function might be used like this:
+   * \code
+   * Image my_image (128, 128, 32); // create an instance of a 128 x 128 x 32 image
+   * ...
+   * ... // populate my_image with data
+   * ...
+   * scale (my_image, 10.0); // scale my_image by a factor of 10
+   * \endcode
+   * As you can see, the \a %Image class implements all the functionality
+   * required for the \a scale() function to compile and run. This does not
+   * mean that this class can be used with any of the other template functions,
+   * some of which might rely on some of the other member functions having been
+   * defined.
+   *
+   * \par Why define this abstract class?
+   * Different image classes may not be suited to all uses. For example, the
+   * Image::Voxel class provides access to the data for an image file, but
+   * incurs an overhead for each read/write access. A simpler class such as the
+   * \a %Image class above can provide much more efficient access to the data.
+   * There will therefore be cases where it might be beneficial to copy the
+   * data from an Image::Voxel class into a more efficient data structure.
+   * In order to write algorithms that can operate on all of these different
+   * classes, MRtrix uses the C++ template framework, leaving it up to the
+   * compiler to ensure that the classes defined are compatible with the
+   * particular template function they are used with, and that the algorithm
+   * implemented in the function is fully optimised for that particular class. 
+   *
+   * \par Why not use an abstract base class and inheritance?
+   * Defining an abstract class implies that all functions are declared
+   * virtual. This means that every operation on derived class will incur a
+   * function call overhead, which will in many cases have a siginficant
+   * adverse impact on performance. This also restrict the amount of optimisation that the
+   * compiler might otherwise be able to perform. Using inheritance would have
+   * the benefit of allowing run-time polumorphism (i.e. the same function can
+   * be used with any derived class at runtime); however, in practice run-time
+   * polymorphism is rarely needed in MRtrix applications. Finally, if such an
+   * interface were required, it is trivial to define such an abstract class and
+   * use it with the template functions provided by MRtrix.
+   *
+   * \note The DataSet class and its corresponding header should \b not be used or 
    * included in MRtrix programs. Inclusion will result in compile-time errors. */
   class DataSet {
     public:
       size_t  ndim () const; //!< the number of dimensions of the image
       int     dim (size_t axis) const; //!< the number of voxels along the specified dimension
+
       //! the size of the voxel along the specified dimension
       /*! The first 3 dimensions are always assumed to correspond to the \e x,
        * \e y & \e z spatial dimensions, for which the voxel size has an
-       * unambiguous meaning, and should be specified in millimeters.
+       * unambiguous meaning, and should be specified in units of millimeters.
        * For the higher dimensions, the interpretation of the voxel size is
        * undefined, and may assume different meaning for different
        * applications. It may for example correspond to time in a fMRI series,
@@ -61,19 +157,22 @@ namespace MR {
       const ssize_t operator[] (const size_t axis) const; //!< return the current position along dimension \a axis
       ssize_t&      operator[] (const size_t axis);       //!< manipulate the current position along dimension \a axis
 
-      const float   value () const; //<! return the value of the voxel at the current position
-      float&        value ();       //<! manipulate the value of the voxel at the current position
+      const float   value () const; //!< return the value of the voxel at the current position
+      float&        value ();       //!< manipulate the value of the voxel at the current position
 
-      bool  is_complex () const; //<! return whether the underlying data are complex
+      bool  is_complex () const; //!< return whether the underlying data are complex
 
-      const float   real () const; //<! return the real value of the voxel at the current position (for complex data)
-      float&        real ();       //<! manipulate the real value of the voxel at the current position (for complex data)
+      const float   real () const; //!< return the real value of the voxel at the current position (for complex data)
+      float&        real ();       //!< manipulate the real value of the voxel at the current position (for complex data)
 
-      const float   imag () const; //<! return the imaginary value of the voxel at the current position (for complex data)
-      float&        imag ();       //<! manipulate the imaginary value of the voxel at the current position (for complex data)
+      const float   imag () const; //!< return the imaginary value of the voxel at the current position (for complex data)
+      float&        imag ();       //!< manipulate the imaginary value of the voxel at the current position (for complex data)
 
-      const cfloat  Z () const; //<! return the complex value of the voxel at the current position (for complex data)
-      cfloat&       Z ();       //<! manipulate the complex value of the voxel at the current position (for complex data)
+      const cfloat  Z () const; //!< return the complex value of the voxel at the current position (for complex data)
+      cfloat&       Z ();       //!< manipulate the complex value of the voxel at the current position (for complex data)
   };
 
 }
+
+#endif
+

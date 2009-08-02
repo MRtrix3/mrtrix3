@@ -25,7 +25,6 @@
 
 #include <map>
 
-#include "dataset.h"
 #include "ptr.h"
 #include "data_type.h"
 #include "image/axis.h"
@@ -40,9 +39,10 @@ namespace MR {
         Header () : format (NULL), offset (0.0), scale (1.0), read_only (true), num_voxel_per_file (0), first_voxel_offset (0) { }
         Header (const Header& H) :
           std::map<std::string, std::string> (H),
-          format (NULL), axes (H.axes), data_type (H.data_type), offset (0.0), scale (1.0), 
+          format (NULL), axes (H.axes), offset (0.0), scale (1.0), 
           read_only (true), DW_scheme (H.DW_scheme), comments (H.comments),
-          num_voxel_per_file (0), first_voxel_offset (0), transform_matrix (H.transform_matrix) { } 
+          num_voxel_per_file (0), first_voxel_offset (0), 
+          dtype (H.dtype), transform_matrix (H.transform_matrix) { } 
 
         template <class DataSet> Header (const DataSet& ds) :
           format (NULL), offset (0.0), scale (1.0), read_only (true),
@@ -54,10 +54,20 @@ namespace MR {
             }
           } 
 
+        template <class DataSet> Header& operator= (const DataSet& ds) {
+          format = NULL; offset = 0.0; scale = 1.0; read_only = true;
+          num_voxel_per_file = 0; first_voxel_offset = 0; transform_matrix = ds.transform(); 
+          axes.resize (ds.ndim());
+          for (size_t i = 0; i < ds.ndim(); i++) {
+            axes.dim(i) = ds.dim(i);
+            axes.vox(i) = ds.vox(i);
+          }
+          return (*this);
+        } 
+
         std::string                name;
         const char*                format;
         Axes                       axes;
-        DataType                   data_type;
         float                      offset, scale;
         bool                       read_only;
         Math::Matrix<float>        DW_scheme;
@@ -72,12 +82,16 @@ namespace MR {
         int     dim (size_t index) const { return (axes.dim (index)); } 
         size_t  ndim () const            { return (axes.ndim()); }
         float   vox (size_t index) const { return (axes.vox (index)); }
-        const Math::Matrix<float>& transform () const { return (transform_matrix); }
 
-        void set_transform (const Math::Matrix<float>& M) { assert (M.rows() == 4 && M.columns() == 4); transform_matrix = M; }
+        const DataType& datatype () const { return (dtype); }
+        DataType&       datatype ()       { return (dtype); }
+
+        const Math::Matrix<float>& transform () const { return (transform_matrix); }
+        Math::Matrix<float>&       transform ()       { return (transform_matrix); }
+
         void clear () {
           std::map<std::string, std::string>::clear(); 
-          name.clear(); axes.clear(); comments.clear(); data_type = DataType();
+          name.clear(); axes.clear(); comments.clear(); dtype = DataType();
           offset = 0.0; scale = 1.0; read_only = true; format = NULL;
           transform_matrix.clear(); DW_scheme.clear();
         }
@@ -88,6 +102,7 @@ namespace MR {
         friend std::ostream& operator<< (std::ostream& stream, const Header& H);
 
       protected:
+        DataType             dtype;
         Math::Matrix<float>  transform_matrix;
     };
 
