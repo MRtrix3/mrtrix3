@@ -42,7 +42,7 @@ namespace MR {
 
       if (axes.ndim() < 3) {
         info ("image contains fewer than 3 dimensions - adding extra dimensions");
-        axes.resize (3);
+        axes.ndim() = 3;
       }
 
       if (!finite (axes.vox(0)) || !finite (axes.vox(1)) || !finite (axes.vox(2))) {

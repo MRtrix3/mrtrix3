@@ -47,7 +47,8 @@ namespace MR {
         template <class DataSet> Header (const DataSet& ds) :
           format (NULL), offset (0.0), scale (1.0), read_only (true),
           num_voxel_per_file (0), first_voxel_offset (0), transform_matrix (ds.transform()) { 
-            axes.resize (ds.ndim());
+            axes.ndim() = ds.ndim();
+            //axes.resize (ds.ndim());
             for (size_t i = 0; i < ds.ndim(); i++) {
               axes.dim(i) = ds.dim(i);
               axes.vox(i) = ds.vox(i);
@@ -57,7 +58,8 @@ namespace MR {
         template <class DataSet> Header& operator= (const DataSet& ds) {
           format = NULL; offset = 0.0; scale = 1.0; read_only = true;
           num_voxel_per_file = 0; first_voxel_offset = 0; transform_matrix = ds.transform(); 
-          axes.resize (ds.ndim());
+          axes.ndim() = ds.ndim();
+          //axes.resize (ds.ndim());
           for (size_t i = 0; i < ds.ndim(); i++) {
             axes.dim(i) = ds.dim(i);
             axes.vox(i) = ds.vox(i);

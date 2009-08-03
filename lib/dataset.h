@@ -59,7 +59,7 @@ namespace MR {
    * compile-time, rather than being issued at run-time. This is perhaps better
    * illustrated using the example below.
    *
-   * The following defines a simple class to store a 3D image:
+   * The following example defines a simple class to store a 3D image:
    * \code
    * class Image {
    *   public:

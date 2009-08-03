@@ -23,7 +23,7 @@
 #ifndef __image_voxel_h__
 #define __image_voxel_h__
 
-#include "image/object.h"
+#include "image/header.h"
 #include "math/complex.h"
 
 namespace MR {
@@ -35,71 +35,70 @@ namespace MR {
     // @{
 
     //! This class provides access to the voxel intensities of an image.
+    /*! This class keeps a reference to an existing Image::Header, and provides
+     * access to the corresponding image intensities. It implements all the
+     * features of the DataSet abstract class. */
     class Voxel {
       public:
-        //! construct a Voxel object to point to the data contained in the MR::Image::Object \p parent
-        /*! All coordinates will be initialised to zero.
-         \note the parent Image::Object must be mapped manually before attempting to access any data. */
-        explicit Voxel (Object& parent) : 
-          image (parent), 
-          offset (image.start),
-          stride (image.stride) { 
-          memset (x, 0, image.ndim()*sizeof(int)); 
+        //! construct a Voxel object to access the data in the Image::Header \p parent
+        /*! All coordinates will be initialised to zero. */
+        Voxel (Header& parent) : H (parent), offset (image.start) {
+          x = new ssize_t [ndim()];
+          memset (x, 0, ndim()*sizeof(int)); 
+          map();
         }
+        //! construct a Voxel object to access the same data as \a V
+        /*! Useful for multi-threading. All coordinates will be initialised to
+         * the same value as \a V. */
+        Voxel (const Voxel& V) : H (V.parent), offset (V.offset), files (V.files) {
+          x = new ssize_t [ndim()];
+          for (size_t i = 0; i < ndim(); i++) x[i] = V.x[i];
+          if (!files) map();
+        }
+        ~Voxel () { delete [] x; }
 
-        Object&     image; //!< The MR::Image::Object containing the image data.
-        const Math::Matrix<float>& transform () const { return (image.transform()); }
+        const Header& header (); 
+        DataType datatype () const { return (H.datatype()); }
+        const Math::Matrix<float>& transform () const { return (H.transform()); }
 
-        //! test whether current position is within bounds.
+        //! test whether the current position is within bounds.
         /*! \return true if the current position is out of bounds, false otherwise */
-        bool     operator! () const { 
-          for (size_t n = 0; n < image.ndim(); n++)
-            if (x[n] < 0 || x[n] >= ssize_t(image.dim(n))) return (true);
+        bool operator! () const { 
+          for (size_t n = 0; n < ndim(); n++)
+            if (x[n] < 0 || x[n] >= ssize_t(dim(n))) return (true);
           return (false);
         }
 
-        size_t  ndim () const { return (image.ndim()); }
-        int     dim (size_t axis) const { return (image.dim(axis)); }
-        float   vox (size_t axis) const { return (image.vox(axis)); }
-        const std::string& name () const { return (image.name()); }
+        size_t  ndim () const { return (H.ndim()); }
+        ssize_t dim (size_t axis) const { return (H.dim(axis)); }
+        float   vox (size_t axis) const { return (H.vox(axis)); }
+        const std::string& name () const { return (H.name()); }
 
         template <class T> const Voxel& operator= (const T& V) {
           ssize_t shift = 0;
-          for (size_t n = 0; n < image.ndim(); n++) {
+          for (size_t n = 0; n < ndim(); n++) {
             x[n] = V[n];
-            shift += image.stride[n] * ssize_t(x[n]);
+            shift += H.stride[n] * ssize_t(x[n]);
           }
-          offset = image.start + shift;
+          offset = H.start + shift;
           return (*this);
         }
 
-        //! used to loop over all image coordinates.
-        /*! This operator increments the current position to the next voxel, incrementing to the next axis as required.
-         * It is used to process all voxels in turn. For example:
-         * \code
-         * MR::Image::Voxel position (image_object);
-         * do {
-         *   process (position.value());
-         * } while (position++);
-         * \endcode
-         * \return true once the last voxel has been reached (i.e. the next increment would bring the current position out of bounds), false otherwise. */
-        bool        operator++ (int notused);
-
         //! reset all coordinates to zero. 
-        void        reset () { offset = image.start; memset (x, 0, image.ndim()*sizeof(int)); }
+        void reset () { offset = H.start; memset (x, 0, ndim()*sizeof(ssize_t)); }
 
 
         class Coordinate {
           public:
-            operator int () const          { return (V.get (axis)); }
-            int operator++ (int notused)   { return (V.inc (axis)); }
-            int operator-- (int notused)   { return (V.dec (axis)); }
-            int operator+= (int increment) { return (V.move (axis, increment)); }
-            int operator-= (int increment) { return (V.move (axis, -increment)); }
-            int operator= (int position)   { return (V.set (axis, position)); }
-            int operator= (const Coordinate& C) { return (V.set (axis, C.V.get(axis))); }
+            operator ssize_t () const          { return (V.get (axis)); }
+            ssize_t operator++ (int notused)   { return (V.inc (axis)); }
+            ssize_t operator-- (int notused)   { return (V.dec (axis)); }
+            ssize_t operator+= (ssize_t increment) { return (V.move (axis, increment)); }
+            ssize_t operator-= (ssize_t increment) { return (V.move (axis, -increment)); }
+            ssize_t operator= (ssize_t position)   { return (V.set (axis, position)); }
+            ssize_t operator= (const Coordinate& C) { return (V.set (axis, C.V.get(axis))); }
           private:
-            Coordinate (Voxel& parent, uint corresponding_axis) : V (parent), axis (corresponding_axis) { }
+            Coordinate (Voxel& parent, size_t corresponding_axis) : V (parent), axis (corresponding_axis) { }
             Voxel& V;
             size_t axis;
             friend class Voxel;
@@ -108,7 +107,7 @@ namespace MR {
         //! return the coordinate along the specified axis.
         const ssize_t   operator[] (const size_t axis) const     { return (x[axis]); }
         //! returns a reference to the coordinate along the specified axis.
-        Coordinate operator[] (const uint axis) { return (Coordinate (*this, axis)); }
+        Coordinate operator[] (const size_t axis) { return (Coordinate (*this, axis)); }
 
         class RealValue {
           public:
@@ -155,13 +154,9 @@ namespace MR {
             friend class Voxel;
         };
 
-        //! %get the voxel size along the axis specified.
-        /*! \return the voxel size of the parent image along the axis specified */
-        float size (uint index) const { return (image.vox (index)); }
-
         //! %get whether the image data is complex
         /*! \return true if the image data are complex */
-        bool  is_complex () const      { return (image.is_complex()); }
+        bool  is_complex () const      { return (header.is_complex()); }
 
         //! returns the value of the voxel at the current position
         float            value () const { return (get_real()); }
@@ -188,24 +183,28 @@ namespace MR {
         friend std::ostream& operator<< (std::ostream& stream, const Voxel& V);
 
       protected:
-        ssize_t         x[MRTRIX_MAX_NDIMS]; //!< the current image coordinates
-        size_t          offset; //!< the offset in memory to the current voxel
-        const ssize_t*  stride; //!< the offset in memory between adjacent image voxels along each axis
+        Header& H; //!< reference to the corresponding Image::Header
+        ssize_t* x; //!< the current image coordinates
+        size_t   offset; //!< the offset in memory to the current voxel
+        RefPtr<std::vector<File::MMap> > files;
 
-        int set (uint axis, int position)    { offset += stride[axis] * ssize_t(position - x[axis]); x[axis] = position; return (x[axis]); }
-        int get (uint axis) const            { return (x[axis]); }
-        int inc (uint axis)                  { offset += stride[axis]; x[axis]++; return (x[axis]); }
-        int dec (uint axis)                  { offset -= stride[axis]; x[axis]--; return (x[axis]); }
-        int move (uint axis, int increment)  { offset += stride[axis] * ssize_t(increment); x[axis] += increment; return (x[axis]); } 
+        void map ();
+        bool is_mapped () const { return (files); }
 
-        float   get_real () const { assert (image.is_mapped()); return (image.real (offset)); }
-        float   get_imag () const { assert (image.is_mapped()); return (image.imag (offset)); }
-        cfloat  get_complex () const { assert (image.is_mapped()); return (cfloat (get_real(), get_imag())); }
+        ssize_t set (size_t axis, ssize_t position)   { offset += stride[axis] * ssize_t(position - x[axis]); x[axis] = position; return (x[axis]); }
+        ssize_t get (size_t axis) const               { return (x[axis]); }
+        ssize_t inc (size_t axis)                     { offset += stride[axis]; x[axis]++; return (x[axis]); }
+        ssize_t dec (size_t axis)                     { offset -= stride[axis]; x[axis]--; return (x[axis]); }
+        ssize_t move (size_t axis, ssize_t increment) { offset += stride[axis] * ssize_t(increment); x[axis] += increment; return (x[axis]); } 
 
-        float   set_real (const float value)   { assert (image.is_mapped()); image.real (offset, value); return (value); }
-        float   set_imag (const float value)   { assert (image.is_mapped()); image.imag (offset, value); return (value); }
+        float   get_real () const { assert (is_mapped()); return (image.real (offset)); }
+        float   get_imag () const { assert (is_mapped()); return (image.imag (offset)); }
+        cfloat  get_complex () const { assert (is_mapped()); return (cfloat (get_real(), get_imag())); }
+
+        float   set_real (const float value)   { assert (is_mapped()); image.real (offset, value); return (value); }
+        float   set_imag (const float value)   { assert (is_mapped()); image.imag (offset, value); return (value); }
         cfloat  set_complex (const cfloat value) { 
-          assert (image.is_mapped());
+          assert (is_mapped());
           image.real (offset, value.real());
           image.imag (offset, value.imag());
           return (value);
@@ -227,29 +226,16 @@ namespace MR {
 
 
 
-    inline bool Voxel::operator++ (int notused)
-    {
-      size_t axis = 0;
-      do {
-        inc (axis);
-        if (x[axis] < ssize_t(image.dim(axis))) return (true);
-        set (axis, 0);
-        axis++;
-      } while (axis < image.ndim());
-      return (false);
-    }
-
 
 
 
     inline std::ostream& operator<< (std::ostream& stream, const Voxel& V)
     {
-      stream << "position for image \"" << V.image.name() << "\" = [ ";
-      for (size_t n = 0; n < V.image.ndim(); n++) stream << V.x[n] << " ";
+      stream << "position for image \"" << V.name() << "\" = [ ";
+      for (size_t n = 0; n < V.ndim(); n++) stream << V.x[n] << " ";
       stream << "]\n  current offset = " << V.offset;
       return (stream);
     }
-
 
   }
 }

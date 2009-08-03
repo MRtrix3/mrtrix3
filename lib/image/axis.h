@@ -63,17 +63,32 @@ namespace MR {
             std::string units;
         };
 
+        class Dim {
+          public:
+            operator size_t () const { return (A.axes.size()); }
+            size_t operator= (const Dim& C) { return (operator= (size_t(C))); }
+            size_t operator= (size_t value) { A.set_ndim (value); return (value); }
+            size_t operator+= (size_t value) { value += A.axes.size(); A.set_ndim (value); return (value); }
+            size_t operator-= (size_t value) { value = A.axes.size() - value; A.set_ndim (value); return (value); }
+            size_t operator*= (size_t value) { value *= A.axes.size(); A.set_ndim (value); return (value); }
+            size_t operator/= (size_t value) { value = A.axes.size() / value; A.set_ndim (value); return (value); }
+          private:
+            Dim (Axes& parent) : A (parent) { }
+            Axes& A;
+            friend class Axes;
+        };
+
         Axes () { }
         Axes (size_t ndim) : axes (ndim) { set_default_axes (0); }
 
         void clear () { axes.clear(); }
-        void set_ndim (size_t number_of_dims) { size_t from = ndim(); axes.resize (number_of_dims); set_default_axes (from); }
         void sanitise ();
 
         const Axis& operator[] (size_t index) const { return (axes[index]); }
 
         // DataSet interface:
         size_t       ndim () const { return (axes.size()); }
+        Dim          ndim ()       { return (Dim (*this)); }
 
         int  dim (size_t index) const { return (axes[index].dim); }
         int& dim (size_t index)       { return (axes[index].dim); }
@@ -100,6 +115,8 @@ namespace MR {
 
       protected:
         std::vector<Axis> axes;
+
+        void set_ndim (size_t number_of_dims) { size_t from = ndim(); axes.resize (number_of_dims); set_default_axes (from); }
 
         void set_default_axes (size_t from) { 
           for (size_t n = from; n < ndim(); n++) {

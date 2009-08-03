@@ -54,6 +54,29 @@ namespace MR {
 
 
 
+    //! used to loop over all image coordinates.
+    /*! This function increments the current position to the next voxel, incrementing to the next axis as required.
+     * It is used to process all voxels in turn. For example:
+     * \code
+     * Image::Voxel position (image_object);
+     * do {
+     *   process (position.value());
+     * } while (next (position));
+     * \endcode
+     * \return true once the last voxel has been reached (i.e. the next increment would bring the current position out of bounds), false otherwise. */
+    template <class DataSet> inline bool next (DataSet& D)
+    {
+      size_t axis = 0;
+      do {
+        D[axis]++;
+        if (D[axis] < ssize_t(D.dim(axis))) return (true);
+        D[axis] = 0;
+        axis++;
+      } while (axis < D.ndim());
+      return (false);
+    }
+
+
     //! returns the number of voxel in the data set, or a relevant subvolume
     template <class DataSet> inline off64_t voxel_count (const DataSet& ds, size_t up_to_dim = SIZE_MAX) 
     { 
