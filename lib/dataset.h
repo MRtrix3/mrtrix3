@@ -24,6 +24,7 @@
 #error - It should NOT be included in other code files.
 
 #ifdef DOXYGEN_SHOULD_SKIP_THIS /* Doxygen should NOT skip this! */
+
 namespace MR {
 
   /*! \mainpage MRtrix development documentation 
@@ -151,6 +152,41 @@ namespace MR {
        * such as DWI may interpret the fourth dimension as the diffusion 
        * volume direction, and leave the voxel size undefined. */
       float   vox (size_t axis) const;
+
+      //! provides access to the ordering of the data in memory
+      /*! This function should return the \a n th axis whose data points are most
+       * contiguous in memory. This is helpful to optimise algorithms that
+       * operate on image voxels independently, with no dependence on the order
+       * of processing, since the algorithm can then perform the processing in
+       * the order that makes best use of the memory subsystem's bandwidth.
+       *
+       * For example, if a 3D image is stored with all anterior-posterior
+       * voxels stored contiguously in memory, and all such lines along the
+       * inferior-superior axis are stored contiguously, and finally all such
+       * slices along the left-right axis are stored contiguously (corresponding
+       * to a stack of sagittal slices), then this function should return 1 for
+       * \a n = 0, 2 for \a n = 1, and 0 for \a n = 2. The innermost loop of
+       * an algorithm can then be made to loop over the anterior-posterior
+       * direction, which is optimal in terms of memory bandwidth.
+       *
+       * An algorithm might make use of this feature in the following way:
+       * \code
+       * template <class DataSet> void add (DataSet& data, float offset) 
+       * {
+       *   size_t I = data.contiguous(0);
+       *   size_t J = data.contiguous(1);
+       *   size_t K = data.contiguous(2);
+       *   for (data[K] = 0; data[K] < data.dim(K); data[K]++)
+       *     for (data[J] = 0; data[J] < data.dim(J); data[J]++)
+       *       for (data[I] = 0; data[I] < data.dim(I); data[I]++)
+       *         data.value() += offset;
+       * }
+       * \endcode
+       *
+       * \note this is NOT the order as specified in the MRtrix file format,
+       * but its exact inverse. */
+      size_t  contiguous (size_t n) const;
+
       DataType datatype () const; //!< the type of the underlying image data.
       const Math::Matrix<float>& transform () const; //!< the 4x4 transformation matrix of the image.
 

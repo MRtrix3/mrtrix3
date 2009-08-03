@@ -30,7 +30,6 @@
 #include <sys/mman.h>
 #endif
 
-#include "dataset.h"
 #include "file/path.h"
 #include "file/mmap.h"
 #include "file/config.h"

@@ -18,10 +18,6 @@
     You should have received a copy of the GNU General Public License
     along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
 
-
-    01-10-2008 J-Donald Tournier <d.tournier@brain.org.au>
-    * added sanitise() method to correct inconsistent axes ordering
-
 */
 
 #ifndef __image_axis_h__
@@ -71,7 +67,7 @@ namespace MR {
         Axes (size_t ndim) : axes (ndim) { set_default_axes (0); }
 
         void clear () { axes.clear(); }
-        void resize (size_t number_of_dims) { size_t from = ndim(); axes.resize (number_of_dims); set_default_axes (from); }
+        void set_ndim (size_t number_of_dims) { size_t from = ndim(); axes.resize (number_of_dims); set_default_axes (from); }
         void sanitise ();
 
         const Axis& operator[] (size_t index) const { return (axes[index]); }
@@ -130,8 +126,6 @@ namespace MR {
     std::ostream& operator<< (std::ostream& stream, const Axes& axes);
     std::vector<Axes::Order> parse_axes_specifier (const Axes& original, const std::string& specifier);
     void check_axes_specifier (const std::vector<Axes::Order>& parsed, size_t ndim);
-
-
 
   }
 }
