@@ -30,9 +30,9 @@
     public:  \
       format () : Base (#format) { } \
     protected: \
-      virtual bool   read (Mapper& dmap, Header& H) const; \
+      virtual bool   read (Header& H) const; \
       virtual bool   check (Header& H, int num_axes = 0) const; \
-      virtual void   create (Mapper& dmap, const Header& H) const; \
+      virtual void   create (const Header& H) const; \
   }
 
 

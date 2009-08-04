@@ -42,7 +42,7 @@ namespace MR {
       public:
         //! construct a Voxel object to access the data in the Image::Header \p parent
         /*! All coordinates will be initialised to zero. */
-        Voxel (Header& parent) : H (parent), offset (image.start) {
+        Voxel (Header& parent) : H (parent), offset (H.start) {
           x = new ssize_t [ndim()];
           memset (x, 0, ndim()*sizeof(int)); 
           map();
@@ -186,7 +186,7 @@ namespace MR {
         Header& H; //!< reference to the corresponding Image::Header
         ssize_t* x; //!< the current image coordinates
         size_t   offset; //!< the offset in memory to the current voxel
-        RefPtr<std::vector<File::MMap> > files;
+        RefPtr<std::vector<RefPtr<File::MMap> > > files;
 
         void map ();
         bool is_mapped () const { return (files); }

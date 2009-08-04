@@ -73,9 +73,9 @@ namespace MR {
         float                      offset, scale;
         bool                       read_only;
         Math::Matrix<float>        DW_scheme;
+        std::vector<File::Entry>   files;
 
         std::vector<std::string>   comments;
-        std::vector<RefPtr<File::MMap> > files;
 
         size_t num_voxel_per_file;
         size_t first_voxel_offset;
@@ -100,6 +100,9 @@ namespace MR {
 
         std::string  description () const;
         void         sanitise ();
+
+        float scale_from_storage (float val) const { return (offset + scale * val); }
+        float scale_to_storage (float val) const   { return ((val - offset) / scale); }
 
         friend std::ostream& operator<< (std::ostream& stream, const Header& H);
 

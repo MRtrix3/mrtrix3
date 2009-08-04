@@ -41,11 +41,11 @@ namespace MR {
           Base (const char* desc) : description (desc) { }
           virtual ~Base() { }
 
-          const char*        description;
+          const char*  description;
 
-          virtual bool        read (Mapper& dmap, Header& H) const = 0;
-          virtual bool        check (Header& H, int num_axes = 0) const = 0;
-          virtual void        create (Mapper& dmap, const Header& H) const = 0;
+          virtual bool read (Header& H) const = 0;
+          virtual bool check (Header& H, int num_axes = 0) const = 0;
+          virtual void create (const Header& H) const = 0;
 
       };
 
