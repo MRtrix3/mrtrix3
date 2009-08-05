@@ -18,26 +18,8 @@
     You should have received a copy of the GNU General Public License
     along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
 
-
-    22-07-2008 J-Donald Tournier <d.tournier@brain.org.au>
-    * fix va_list handing in printf()
-
-    09-07-2008 J-Donald Tournier <d.tournier@brain.org.au>
-    * added getline() method to handle Unix/DOS end-of-line
-
-    02-09-2008 J-Donald Tournier <d.tournier@brain.org.au>
-    * added is_temporary() method to identify temporary files
-
-    02-10-2008 J-Donald Tournier <d.tournier@brain.org.au>
-    * change Exception silencing to a priority level changing approach
-
-    15-10-2008 J-Donald Tournier <d.tournier@brain.org.au>
-    * remove MR::DICOM_DW_gradients_PRS flag
-
-    31-10-2008 J-Donald Tournier <d.tournier@brain.org.au>
-    * include <cstring> & <cstdlib> to allow compilation on Fedora 9
-
 */
+
 
 #ifndef __mrtrix_h__
 #define __mrtrix_h__
@@ -115,6 +97,21 @@ namespace std {
 
 
 namespace MR {
+
+  /*! \mainpage MRtrix development documentation 
+   * 
+   * \section frontpage_section Basic principles
+   * MRtrix was developed with simplicity and performance in mind, which has led
+   * to a number of fundamental design decisions. The main concepts are explained
+   * in the following pages:
+   * 
+   * \li %Image data are accessed via objects that implement at least a subset of
+   * the interface defined for the DataSet abstract class.
+   * \li Access to data stored in image files is done via the classes and
+   * functions defined in the Image namespace. The corresponding headers are
+   * stored in the \c lib/image/ directory.
+   * 
+   */
 
   const std::string& get_application_name ();
 

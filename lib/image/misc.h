@@ -104,6 +104,17 @@ namespace MR {
       return (dt.bytes() * num_voxel);
     }
   
+    //! returns the memory footprint of a DataSet
+    template <class DataSet> inline off64_t memory_footprint (const DataSet& ds, size_t up_to_dim = SIZE_MAX) 
+    {
+      return (memory_footprint (ds.datatype(), voxel_count (ds, up_to_dim))); 
+    }
+  
+    //! returns the memory footprint of a DataSet
+    template <class DataSet> inline off64_t memory_footprint (const DataSet& ds, const char* specifier)
+    {
+      return (memory_footprint (ds.datatype(), voxel_count (ds, specifier))); 
+    }
 
 
     //! @}

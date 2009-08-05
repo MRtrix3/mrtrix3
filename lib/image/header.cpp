@@ -118,7 +118,7 @@ namespace MR {
 
       num_voxel_per_file = voxel_count (*this) * ( dtype.is_complex() ? 2 : 1 ) / files.size();
 
-      debug ("setting up data increments for \"" + name + "\"...");
+      debug ("setting up data increments for \"" + name() + "\"...");
 
       first_voxel_offset = 0;
 
@@ -129,30 +129,6 @@ namespace MR {
         else order[last--] = i;
       }
 
-      size_t axis;
-      ssize_t mult = 1;
-
-      for (size_t i = 0; i < ndim(); i++) {
-        axis = order[i];
-        assert (axis < ndim());
-        if (axes.stride(axis)) throw Exception ("invalid data order specifier for image \"" + name + "\": same dimension specified twice");
-
-        axes.stride(axis) = mult * ssize_t(axes.direction (axis));
-        if (axes.stride(axis) < 0) first_voxel_offset += size_t(-axes.stride(axis)) * size_t(dim(axis)-1);
-        mult *= ssize_t(dim(axis));
-      }
-
-      if (dtype.is_complex()) {
-        first_voxel_offset *= 2;
-        for (size_t i = 0; i < ndim(); i++) axes.stride(i) *= 2;
-      }
-
-
-      if (App::log_level > 2) {
-        std::string string ("data increments initialised with start = " + str (first_voxel_offset) + ", stride = [ ");
-        for (size_t i = 0; i < ndim(); i++) string += str (axes.stride(i)) + " "; 
-        debug (string + "]");
-      }
     }
 
 
@@ -168,7 +144,7 @@ namespace MR {
     {
       std::string desc ( 
             "************************************************\n"
-            "Image:               \"" + name + "\"\n"
+            "Image:               \"" + name() + "\"\n"
             "************************************************\n"
             "  Format:            " + ( format ? format : "undefined" ) + "\n"
             "  Dimensions:        ");

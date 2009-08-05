@@ -24,11 +24,9 @@
 #define __args_h__
 
 #include "ptr.h"
+#include "image/header.h"
 
 namespace MR {
-  namespace Image { 
-    class Header;
-  }
 
   namespace Dialog {
     class Window;

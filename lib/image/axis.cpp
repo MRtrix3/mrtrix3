@@ -20,11 +20,13 @@
 
 */
 
+#include "app.h"
 #include "image/axis.h"
 
 namespace MR {
   namespace Image {
 
+    const std::string Axes::axes_name ("anonymous axes");
     const char* Axes::left_to_right = "left->right";
     const char* Axes::posterior_to_anterior = "posterior->anterior";
     const char* Axes::inferior_to_superior = "inferior->superior";
@@ -56,6 +58,28 @@ namespace MR {
 
 
 
+
+    void Axes::get_strides (size_t& start, ssize_t* stride) const
+    {
+      start = 0;
+      memset (stride, 0, ndim()*sizeof(ssize_t));
+
+      ssize_t mult = 1;
+      for (size_t i = 0; i < ndim(); i++) {
+        size_t axis = order(i);
+        assert (axis < ndim());
+        assert (!stride[axis]);
+        stride[axis] = mult * ssize_t(direction(axis));
+        if (stride[axis] < 0) start += size_t(-stride[axis]) * size_t(dim(axis)-1);
+        mult *= ssize_t(dim(axis));
+      }
+
+      if (App::log_level > 2) {
+        std::string string ("data strides initialised with start = " + str (start) + ", stride = [ ");
+        for (size_t i = 0; i < ndim(); i++) string += str (stride[i]) + " "; 
+        debug (string + "]");
+      }
+    }
 
 
 
@@ -114,6 +138,7 @@ namespace MR {
             throw Exception ("duplicate axis ordering (" + str (parsed[n].order) + ")");
       }
     }
+
 
 
 

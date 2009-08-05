@@ -42,18 +42,15 @@ namespace MR {
       public:
         //! construct a Voxel object to access the data in the Image::Header \p parent
         /*! All coordinates will be initialised to zero. */
-        Voxel (Header& parent) : H (parent), offset (H.start) {
-          x = new ssize_t [ndim()];
-          memset (x, 0, ndim()*sizeof(int)); 
-          map();
-        }
+        Voxel (Header& parent);
+        
         //! construct a Voxel object to access the same data as \a V
-        /*! Useful for multi-threading. All coordinates will be initialised to
+        /*! Useful for multi-threading applications. All coordinates will be initialised to
          * the same value as \a V. */
-        Voxel (const Voxel& V) : H (V.parent), offset (V.offset), files (V.files) {
+        Voxel (const Voxel& V) : H (V.header), offset (V.offset), files (V.files) {
+          assert (files);
           x = new ssize_t [ndim()];
-          for (size_t i = 0; i < ndim(); i++) x[i] = V.x[i];
-          if (!files) map();
+          memcpy (x, V.x, sizeof(ssize_t) * ndim());
         }
         ~Voxel () { delete [] x; }
 

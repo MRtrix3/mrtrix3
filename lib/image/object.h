@@ -33,9 +33,6 @@ namespace MR {
   namespace Dialog { class File; }
   namespace Image {
 
-    /*! \defgroup Image Image access
-     * \brief Classes and functions providing access to image data. */
-
     //! \addtogroup Image 
     // @{
     

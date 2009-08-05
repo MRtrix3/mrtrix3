@@ -29,6 +29,9 @@
 namespace MR {
   namespace Image {
 
+    //! \addtogroup Image 
+    // @{
+    
     class Axes {
       public:
 
@@ -54,11 +57,10 @@ namespace MR {
 
         class Axis : public Order {
           public:
-            Axis () : dim (1), vox (NAN), stride (0) { }
+            Axis () : dim (1), vox (NAN) { }
 
             int    dim;
             float  vox;
-            ssize_t stride;
             std::string desc;
             std::string units;
         };
@@ -81,8 +83,11 @@ namespace MR {
         Axes () { }
         Axes (size_t ndim) : axes (ndim) { set_default_axes (0); }
 
+        const std::string& name () const { return (axes_name); }
+
         void clear () { axes.clear(); }
         void sanitise ();
+        void get_strides (size_t& start, ssize_t* offset) const;
 
         const Axis& operator[] (size_t index) const { return (axes[index]); }
 
@@ -95,9 +100,6 @@ namespace MR {
 
         float  vox (size_t index) const { return (axes[index].vox); }
         float& vox (size_t index)       { return (axes[index].vox); }
-
-        ssize_t  stride (size_t index) const { return (axes[index].stride); }
-        ssize_t& stride (size_t index)       { return (axes[index].stride); }
 
         const std::string& description (size_t index) const { return (axes[index].desc); }
         std::string&       description (size_t index)       { return (axes[index].desc); }
@@ -115,6 +117,7 @@ namespace MR {
 
       protected:
         std::vector<Axis> axes;
+        static const std::string axes_name;
 
         void set_ndim (size_t number_of_dims) { size_t from = ndim(); axes.resize (number_of_dims); set_default_axes (from); }
 
@@ -139,6 +142,8 @@ namespace MR {
           return (undefined);
         }
     };
+    
+    //! @}
 
     std::ostream& operator<< (std::ostream& stream, const Axes& axes);
     std::vector<Axes::Order> parse_axes_specifier (const Axes& original, const std::string& specifier);

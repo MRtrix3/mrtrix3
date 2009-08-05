@@ -23,17 +23,13 @@
 #ifndef __image_format_base_h__
 #define __image_format_base_h__
 
-#include "mrtrix.h"
-
 namespace MR {
   namespace Image {
 
-    class Mapper;
     class Header;
 
     namespace Format {
 
-      extern bool print_all;
       extern const char* known_extensions[];
 
       class Base {
@@ -45,14 +41,12 @@ namespace MR {
 
           virtual bool read (Header& H) const = 0;
           virtual bool check (Header& H, int num_axes = 0) const = 0;
-          virtual void create (const Header& H) const = 0;
-
+          virtual void create (Header& H) const = 0;
       };
 
     }
   }
 }
-
 
 #endif
 

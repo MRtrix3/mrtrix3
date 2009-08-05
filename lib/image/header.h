@@ -34,6 +34,9 @@
 namespace MR {
   namespace Image {
 
+    //! \addtogroup Image 
+    // @{
+    
     class Header : public std::map<std::string, std::string> {
       public:
         Header () : format (NULL), offset (0.0), scale (1.0), read_only (true), num_voxel_per_file (0), first_voxel_offset (0) { }
@@ -67,7 +70,8 @@ namespace MR {
           return (*this);
         } 
 
-        std::string                name;
+        const std::string&         name () const { return (identifer); }
+        std::string&               name ()       { return (identifer); }
         const char*                format;
         Axes                       axes;
         float                      offset, scale;
@@ -93,7 +97,7 @@ namespace MR {
 
         void clear () {
           std::map<std::string, std::string>::clear(); 
-          name.clear(); axes.clear(); comments.clear(); dtype = DataType();
+          identifer.clear(); axes.clear(); comments.clear(); dtype = DataType();
           offset = 0.0; scale = 1.0; read_only = true; format = NULL;
           transform_matrix.clear(); DW_scheme.clear();
         }
@@ -107,9 +111,12 @@ namespace MR {
         friend std::ostream& operator<< (std::ostream& stream, const Header& H);
 
       protected:
+        std::string          identifer;
         DataType             dtype;
         Math::Matrix<float>  transform_matrix;
     };
+
+    //! @}
 
   }
 }
