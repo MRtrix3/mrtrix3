@@ -115,6 +115,8 @@ namespace MR {
 
         ssize_t direction (size_t index) const { return (axes[index].direction()); }
 
+        void get_contiguous (size_t* cont) const { for (size_t i = 0; i < ndim(); i++) cont[order(i)] = i; }
+
       protected:
         std::vector<Axis> axes;
         static const std::string axes_name;
