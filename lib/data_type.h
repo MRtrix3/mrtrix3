@@ -28,47 +28,53 @@
 namespace MR {
 
   class DataType {
-    protected:
-      uint8_t dt;
-
     public:
-      DataType ();
-      DataType (uint8_t type);
-      DataType (const DataType& DT);
+      DataType () : dt (DataType::Native) { }
+      DataType (uint8_t type) : dt (type) { }
+      DataType (const DataType& DT) : dt (DT.dt) { }
+      uint8_t&       operator() () { return (dt); }
+      const uint8_t& operator() () const { return (dt); }
+      bool operator== (uint8_t type) const { return (dt == type); }
+      bool operator!= (uint8_t type) const { return (dt != type); }
+      bool operator== (const DataType DT) const { return (dt == DT.dt); }
+      bool operator!= (const DataType DT) const { return (dt != DT.dt); }
+      const DataType& operator= (const DataType DT) { dt = DT.dt; return (*this); }
 
-      uint8_t&                operator() ();
-      const uint8_t&          operator() () const;
-      bool                   operator== (uint8_t type) const;
-      bool                   operator!= (uint8_t type) const;
-      bool                   operator== (const DataType DT) const;
-      bool                   operator!= (const DataType DT) const;
-      const DataType&        operator= (const DataType DT);
+      bool is (uint8_t type) const { return (dt == type); }
+      bool is_complex () const { return (dt & Complex); }
+      bool is_signed () const { return (dt & Signed); }
+      bool is_little_endian () const { return (dt & LittleEndian); }
+      bool is_big_endian () const { return (dt & BigEndian); }
+      void set_byte_order_native () {
+        if ( dt != Bit && dt != Int8 && dt != UInt8 ) {
+          if ( !is_little_endian() && !is_big_endian() ) {
+#ifdef BYTE_ORDER_BIG_ENDIAN
+            dt |= BigEndian;
+#else
+            dt |= LittleEndian;
+#endif
+          }
+        }
+      }
 
-      bool                   is (uint8_t type) const;
-      bool                   is_complex () const;
-      bool                   is_signed () const;
-      bool                   is_little_endian () const;
-      bool                   is_big_endian () const;
-      void                   set_byte_order_native ();
+      void         parse (const std::string& spec);
+      size_t       bits () const;
+      size_t       bytes () const { return ((bits()+7)/8); }
+      const char*  description () const;
+      const char*  specifier () const;
 
-      void                   parse (const std::string& spec);
-      uint                  bits () const;
-      uint                  bytes () const;
-      const char*           description () const;
-      const char*           specifier () const;
-
-      void                   set_flag (uint8_t flag);
-      void                   unset_flag (uint8_t flag);
+      void set_flag (uint8_t flag) { dt |= flag; }
+      void unset_flag (uint8_t flag) { dt &= ~flag; }
 
 
 
-      static const uint8_t     ComplexNumber = 0x10U;
+      static const uint8_t     Attributes    = 0xF0U;
+      static const uint8_t     Type          = 0x0FU;
+
+      static const uint8_t     Complex       = 0x10U;
       static const uint8_t     Signed        = 0x20U;
       static const uint8_t     LittleEndian  = 0x40U;
       static const uint8_t     BigEndian     = 0x80U;
-      static const uint8_t     Text          = 0xFFU;
-      static const uint8_t     GroupStart    = 0xFEU;
-      static const uint8_t     GroupEnd      = 0xFDU;
 
       static const uint8_t     Undefined     = 0x00U;
       static const uint8_t     Bit           = 0x01U;
@@ -93,12 +99,12 @@ namespace MR {
       static const uint8_t     Float32BE     = Float32 | BigEndian;
       static const uint8_t     Float64LE     = Float64 | LittleEndian;
       static const uint8_t     Float64BE     = Float64 | BigEndian;
-      static const uint8_t     CFloat32      = ComplexNumber | Float32;
-      static const uint8_t     CFloat32LE    = ComplexNumber | Float32 | LittleEndian;
-      static const uint8_t     CFloat32BE    = ComplexNumber | Float32 | BigEndian;
-      static const uint8_t     CFloat64      = ComplexNumber | Float64;
-      static const uint8_t     CFloat64LE    = ComplexNumber | Float64 | LittleEndian;
-      static const uint8_t     CFloat64BE    = ComplexNumber | Float64 | BigEndian;
+      static const uint8_t     CFloat32      = Complex | Float32;
+      static const uint8_t     CFloat32LE    = Complex | Float32 | LittleEndian;
+      static const uint8_t     CFloat32BE    = Complex | Float32 | BigEndian;
+      static const uint8_t     CFloat64      = Complex | Float64;
+      static const uint8_t     CFloat64LE    = Complex | Float64 | LittleEndian;
+      static const uint8_t     CFloat64BE    = Complex | Float64 | BigEndian;
 
       static const uint8_t     Native        = Float32 | 
 #ifdef BYTE_ORDER_BIG_ENDIAN
@@ -106,52 +112,11 @@ namespace MR {
 #else
         LittleEndian;
 #endif
+
+    protected:
+      uint8_t dt;
+
   };
-
-
-
-
-
-
-
-
-  inline DataType::DataType () :
-#ifdef BYTE_ORDER_BIG_ENDIAN
-      dt (DataType::Float32BE)
-#else
-      dt (DataType::Float32LE)
-#endif
-  { }
-
-  inline DataType::DataType (uint8_t type) : dt (type)               { }
-  inline DataType::DataType (const DataType& DT) : dt (DT.dt)       { }
-  inline uint8_t& DataType::operator() ()                            { return (dt); }
-  inline const uint8_t& DataType::operator() () const                { return (dt); }
-  inline bool DataType::operator== (uint8_t type) const              { return (dt == type); }
-  inline bool DataType::operator!= (uint8_t type) const              { return (dt != type); }
-  inline bool DataType::operator== (const DataType DT) const        { return (dt == DT.dt); }
-  inline bool DataType::operator!= (const DataType DT) const        { return (dt != DT.dt); }
-  inline const DataType& DataType::operator= (const DataType DT)    { dt = DT.dt; return (*this); }
-  inline uint DataType::bytes () const                             { return ((bits()+7)/8); }
-  inline bool DataType::is (uint8_t type) const                      { return (dt == type); }
-  inline bool DataType::is_complex () const                         { return (dt & ComplexNumber); }
-  inline bool DataType::is_signed () const                          { return (dt & Signed); }
-  inline bool DataType::is_little_endian () const                   { return (dt & LittleEndian); }
-  inline bool DataType::is_big_endian() const                       { return (dt & BigEndian); }
-  inline void DataType::set_flag (uint8_t flag)                      { dt |= flag; }
-  inline void DataType::unset_flag (uint8_t flag)                    { dt &= ~flag; }
-  inline void DataType::set_byte_order_native ()
-  {
-    if ( dt != Bit && dt != Int8 && dt != UInt8 ) {
-      if ( !is_little_endian() && !is_big_endian() ) {
-#ifdef BYTE_ORDER_BIG_ENDIAN
-        dt |= BigEndian;
-#else
-        dt |= LittleEndian;
-#endif
-      }
-    }
-  }
 
 }
 

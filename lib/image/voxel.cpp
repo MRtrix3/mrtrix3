@@ -20,38 +20,77 @@
 
 */
 
+#include <limits>
+
 #include "app.h"
 #include "get_set.h"
 #include "image/voxel.h"
 #include "image/misc.h"
 
-#define DATAMAPPER_MAX_FILES 128U
+#define MAX_FILES_PER_IMAGE 256U
 
 namespace MR {
   namespace Image {
 
-
-    Voxel::Voxel (Header& parent) : 
-      H (parent) 
+    Voxel::SharedInfo::SharedInfo (Header& parent) : 
+      H (parent),
+      mem (NULL),
+      segment (NULL)
     {
-      x = new ssize_t [ndim()];
-      memset (x, 0, ndim()*sizeof(int)); 
+      if (H.files.empty()) throw Exception ("no files specified in header for image \"" + H.name() + "\"");
 
-      if (!H.files) throw Exception ("no files specified in header for image \"" + H.name() + "\"");
+      segsize = H.datatype().is_complex() ? 2 : 1;
+      for (size_t i = 0; i < H.ndim(); i++) segsize *= H.dim(i); 
+      segsize /= H.files.size();
+      assert (segsize * H.files.size() == voxel_count (H));
 
-      assert (files);
-    }
+      off64_t bps = (H.datatype().bits() * segsize + 7) / 8;
+      if (H.files.size() * bps > std::numeric_limits<size_t>::max())
+        throw Exception ("failed to allocate memory for image \"" + H.name() + "\"");
 
-    namespace {
+      debug ("mapping image \"" + H.name() + "\"...");
 
-      inline size_t calc_segsize (const Header& H, size_t nfiles) 
-      {
-        size_t segsize = H.data_type.is_complex() ? 2 : 1;
-        for (size_t i = 0; i < H.axes.size(); i++) segsize *= H.axes[i].dim; 
-        segsize /= nfiles;
-        return (segsize);
+      if (H.files.size() > MAX_FILES_PER_IMAGE) {
+        mem = new uint8_t [H.files.size() * bps];
+        if (!mem) throw Exception ("failed to allocate memory for image \"" + H.name() + "\"");
+
+        for (size_t n = 0; n < H.files.size(); n++) {
+          File::MMap file (H.files[n]);
+          memcpy (mem + n*bps, file.address(), bps);
+        }
+
+        if (H.datatype().bits() == 1 && H.files.size() > 1) {
+          segment = new uint8_t* [H.files.size()];
+          for (size_t n = 0; n < H.files.size(); n++) 
+            segment[n] = mem + n*bps;
+        }
+      }
+      else {
+        files.resize (H.files.size());
+        for (size_t n = 0; n < H.files.size(); n++) {
+          if (H.files[n].fsize - H.files[n].offset < bps)
+            throw Exception ("file \"" + H.files[n].name + "\" is too small to contain data for image \"" + name() + "\"");
+          (*files)[n] = new File::MMap (H.files[n]); 
+        }
+        if (files->size() > 1) {
+          segment = new uint8_t* [H.files.size()];
+          for (size_t n = 0; n < H.files.size(); n++) 
+            segment[n] = (*files)[n].address();
+        }
+        else mem = files->front().address();
       }
 
+      stride = new ssize_t [ndim()];
+      H.axes.get_strides (start, stride);
+
+      assert (files || mem);
+    }
+
+
+
+
+
+    Voxel::SharedInfo::~SharedInfo () {
     }
 
 
@@ -61,9 +100,10 @@ namespace MR {
 
 
 
+
+/*
     void Mapper::map (const Header& H)
     {
-      debug ("mapping image \"" + H.name + "\"...");
       assert (list.size() || mem);
       assert (segment == NULL);
 
@@ -161,7 +201,7 @@ namespace MR {
 
     void Mapper::set_data_type (DataType dt)
     {
-      switch (dt() & ~DataType::ComplexNumber) {
+      switch (dt() & ~DataType::Complex) {
         case DataType::Bit:        get_func = getBit;        put_func = putBit;        return;
         case DataType::Int8:       get_func = getInt8;       put_func = putInt8;       return;
         case DataType::UInt8:      get_func = getUInt8;      put_func = putUInt8;      return;
@@ -240,7 +280,7 @@ namespace MR {
     void Mapper::putFloat32BE (float32 val, void* data, size_t i) { putBE<float32> (float32(val), data, i); }
     void Mapper::putFloat64LE (float32 val, void* data, size_t i) { putLE<float64> (float64(val), data, i); }
     void Mapper::putFloat64BE (float32 val, void* data, size_t i) { putBE<float64> (float64(val), data, i); }
-
+*/
   }
 }
 

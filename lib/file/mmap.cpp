@@ -30,7 +30,6 @@
 #include <sys/mman.h>
 #endif
 
-#include "dataset.h"
 #include "file/path.h"
 #include "file/mmap.h"
 #include "file/config.h"
@@ -132,6 +131,7 @@ namespace MR {
           if (!zf) throw Exception ("error compressing file \"" + Entry::name + "\": " + zlib_error (zf));
 
           off64_t nwritten = gzwrite (zf, addr, fsize);
+          delete [] addr;
           if (nwritten != fsize) throw Exception ("error compressing file \"" + Entry::name + "\": " + zlib_error (zf));
 
           gzclose (zf);

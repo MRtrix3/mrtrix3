@@ -48,6 +48,10 @@ namespace MR {
           DataType     type () const                { return (id & 0x000000FFU); }
           void         set_BO (bool BE);
           void         unset_BO ();
+
+          static const uint8_t     Text          = 0xFFU;
+          static const uint8_t     GroupStart    = 0xFEU;
+          static const uint8_t     GroupEnd      = 0xFDU;
       };
 
       std::ostream& operator<< (std::ostream& stream, const Tag& t);

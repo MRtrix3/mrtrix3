@@ -41,25 +41,25 @@ namespace MR {
 
         std::string     name () const        { return (Entry::name); }
         off64_t         size () const        { return (fsize); }
-        uint8_t*        operator() ()        { return (addr + start); }
-        const uint8_t*  operator() () const  { return (addr + start); }
+        uint8_t*        address()            { return (addr + start); }
+        const uint8_t*  address() const      { return (addr + start); }
 
         bool is_read_write () const           { return (readwrite); }
         bool changed () const;
 
         friend std::ostream& operator<< (std::ostream& stream, const MMap& m) {
           stream << "File::MMap { " << m.name() << " [" << m.fd << "], file size: "
-            << m.size() << ", mapped at " << (void*) m() << " }";
+            << m.size() << ", mapped at " << (void*) m.address() << " }";
           return (stream);
         }
 
         static const off64_t  pagesize;
 
       protected:
-        int               fd;
-        uint8_t*          addr;        /**< The address in memory where the file has been mapped. */
-        off64_t           fsize;        /**< The size of the file. */
-        time_t            mtime;        /**< The modification time of the file at the last check. */
+        int       fd;
+        uint8_t*  addr;        /**< The address in memory where the file has been mapped. */
+        off64_t   fsize;       /**< The size of the file. */
+        time_t    mtime;       /**< The modification time of the file at the last check. */
 
         void map ();
         void unmap ();

@@ -28,13 +28,13 @@
 
 namespace MR {
 
-  const uint8_t DataType::ComplexNumber;
+  const uint8_t DataType::Attributes;
+  const uint8_t DataType::Type;
+
+  const uint8_t DataType::Complex;
   const uint8_t DataType::Signed;
   const uint8_t DataType::LittleEndian;
   const uint8_t DataType::BigEndian;
-  const uint8_t DataType::Text;
-  const uint8_t DataType::GroupStart;
-  const uint8_t DataType::GroupEnd;
   const uint8_t DataType::Undefined;
 
   const uint8_t DataType::Bit;
@@ -115,49 +115,23 @@ namespace MR {
 
 
 
-  uint DataType::bits () const
+  size_t DataType::bits () const
   {
-    switch (dt) {
-      case Bit:
-        return (1);
-      case Int8:
-      case UInt8:
-        return (8*sizeof (int8_t));
-      case Int16:
-      case UInt16:
-      case Int16LE:
-      case UInt16LE:
-      case Int16BE:
-      case UInt16BE:
-        return (8*sizeof (int16_t));
-      case Int32:
-      case UInt32:
-      case Int32LE:
-      case UInt32LE:
-      case Int32BE:
-      case UInt32BE:
-        return (8*sizeof (int32_t));
-      case Float32:
-      case Float32LE:
-      case Float32BE:
-        return (8*sizeof (float32));
-      case Float64:
-      case Float64LE:
-      case Float64BE:
-        return (8*sizeof (float64));
-      case CFloat32:
-      case CFloat32LE:
-      case CFloat32BE:
-        return (16*sizeof (float32));
-      case CFloat64:
-      case CFloat64LE:
-      case CFloat64BE:
-        return (16*sizeof (float64));
+    switch (dt & Type) {
+      case Bit: return (1);
+      case UInt8: return (8);
+      case UInt16: return (16);
+      case UInt32: return (32);
+      case Float32: return (is_complex() ? 64 : 32);
+      case Float64: return (is_complex() ? 128 : 64);
+      default: throw Exception ("invalid datatype specifier");
     }
-    
-    error ("invalid datatype specifier");
-    return(0);
+    return (0);
   }
+
+
+
+
 
 
   const char* DataType::description() const
@@ -191,15 +165,16 @@ namespace MR {
       case CFloat64BE: return ("Complex 64 bit float (big endian)");
 
       case Undefined:  return ("undefined");
-      case Text:       return ("string");
-      case GroupStart: return ("start of group");
-      case GroupEnd:   return ("end of group");
 
-      default:      return (NULL);
+      default:         return ("invalid data type");
     }
 
     return (NULL);
   }
+
+
+
+
 
 
 
@@ -243,9 +218,6 @@ namespace MR {
       case CFloat64:   return ("CFloat64");
 
       case Undefined:  return ("Undefined");
-      case Text:       return ("std::string");
-      case GroupStart: return ("GroupStart");
-      case GroupEnd:   return ("GroupEnd");
 
       default:         return ("invalid");
     }
