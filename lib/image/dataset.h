@@ -198,12 +198,6 @@ namespace MR {
 
       bool  is_complex () const; //!< return whether the underlying data are complex
 
-      const float   real () const; //!< return the real value of the voxel at the current position (for complex data)
-      float&        real ();       //!< manipulate the real value of the voxel at the current position (for complex data)
-
-      const float   imag () const; //!< return the imaginary value of the voxel at the current position (for complex data)
-      float&        imag ();       //!< manipulate the imaginary value of the voxel at the current position (for complex data)
-
       const cfloat  Z () const; //!< return the complex value of the voxel at the current position (for complex data)
       cfloat&       Z ();       //!< manipulate the complex value of the voxel at the current position (for complex data)
   };

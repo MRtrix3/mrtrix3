@@ -110,45 +110,30 @@ namespace MR {
         //! returns a reference to the coordinate along the specified axis.
         Coordinate operator[] (const size_t axis) { return (Coordinate (*this, axis)); }
 
-        class RealValue {
+        class Value {
           public:
-            operator float () const { return (V.get_real()); }
-            float operator= (const RealValue& C) { return (operator= (float(C))); }
-            float operator= (float value) { V.set_real (value); return (value); }
-            float operator+= (float value) { value += V.get_real(); V.set_real (value); return (value); }
-            float operator-= (float value) { value = V.get_real() - value; V.set_real (value); return (value); }
-            float operator*= (float value) { value *= V.get_real(); V.set_real (value); return (value); }
-            float operator/= (float value) { value = V.get_real() / value; V.set_real (value); return (value); }
+            operator float () const { return (V.S->get (V.offset)); }
+            float operator= (const Value& C) { return (operator= (float(C))); }
+            float operator= (float value) { V.S->set (V.offset, value); return (value); }
+            float operator+= (float value) { value += V.S->get (V.offset); V.S->set (V.offset, value); return (value); }
+            float operator-= (float value) { value = V.S->get (V.offset) - value; V.S->set (V.offset, value); return (value); }
+            float operator*= (float value) { value *= V.S->get (V.offset); V.S->set (V.offset, value); return (value); }
+            float operator/= (float value) { value = V.S->get (V.offset) / value; V.S->set (V.offset, value); return (value); }
           private:
-            RealValue (Voxel& parent) : V (parent) { }
-            Voxel& V;
-            friend class Voxel;
-        };
-
-        class ImagValue {
-          public:
-            operator float () const { return (V.get_imag()); }
-            float operator= (const ImagValue& C) { return (operator= (float(C))); }
-            float operator= (float value) { V.set_imag (value); return (value); }
-            float operator+= (float value) { value += V.get_imag(); V.set_imag (value); return (value); }
-            float operator-= (float value) { value = V.get_imag() - value; V.set_imag (value); return (value); }
-            float operator*= (float value) { value *= V.get_imag(); V.set_imag (value); return (value); }
-            float operator/= (float value) { value = V.get_imag() / value; V.set_imag (value); return (value); }
-          private:
-            ImagValue (Voxel& parent) : V (parent) { }
+            Value (Voxel& parent) : V (parent) { }
             Voxel& V;
             friend class Voxel;
         };
 
         class ComplexValue {
           public:
-            operator cfloat () const { return (V.get_complex()); }
+            operator cfloat () const { return (V.S->getZ(V.offset)); }
             cfloat operator= (const ComplexValue& C) { return (operator= (cfloat(C))); }
-            cfloat operator= (cfloat value) { V.set_complex (value); return (value); }
-            cfloat operator+= (cfloat value) { value += V.get_complex(); V.set_complex (value); return (value); }
-            cfloat operator-= (cfloat value) { value = V.get_complex() - value; V.set_complex (value); return (value); }
-            cfloat operator*= (cfloat value) { value *= V.get_complex(); V.set_complex (value); return (value); }
-            cfloat operator/= (cfloat value) { value = V.get_complex() / value; V.set_complex (value); return (value); }
+            cfloat operator= (cfloat value) { V.S->setZ (V.offset, value); return (value); }
+            cfloat operator+= (cfloat value) { value += V.S->getZ (V.offset); V.S->setZ (V.offset, value); return (value); }
+            cfloat operator-= (cfloat value) { value = V.S->getZ (V.offset) - value; V.S->setZ (V.offset, value); return (value); }
+            cfloat operator*= (cfloat value) { value *= V.S->getZ (V.offset); V.S->setZ (V.offset, value); return (value); }
+            cfloat operator/= (cfloat value) { value = V.S->getZ (V.offset) / value; V.S->setZ (V.offset, value); return (value); }
           private:
             ComplexValue (Voxel& parent) : V (parent) { }
             Voxel& V;
@@ -160,26 +145,16 @@ namespace MR {
         bool  is_complex () const      { return (S->H.datatype().is_complex()); }
 
         //! returns the value of the voxel at the current position
-        float            value () const { return (get_real()); }
+        float value () const { return (S->get (offset)); }
         //! returns a reference to the value of the voxel at the current position
-        RealValue        value ()       { return (RealValue (*this)); }
-
-        //! returns the real value of the voxel at the current position
-        float            real () const { return (get_real()); }
-        //! returns a reference to the real value of the voxel at the current position
-        RealValue        real ()       { return (RealValue (*this)); }
-
-        //! returns the imaginary value of the voxel at the current position
-        float            imag () const { return (get_imag()); }
-        //! returns a reference to the imaginary value of the voxel at the current position
-        ImagValue        imag ()       { return (ImagValue (*this)); }
+        Value value ()       { return (Value (*this)); }
 
         //! returns the complex value stored at the current position
         /*! \note No check is performed to ensure the image is actually complex. Calling this function on real-valued data will produce undefined results */
-        cfloat           Z () const    { return (get_complex()); }
+        cfloat        Z () const { return (S->getZ (offset)); }
         //! returns the complex value stored at the current position
         /*! \note No check is performed to ensure the image is actually complex. Calling this function on real-valued data will produce undefined results */
-        ComplexValue     Z ()          { return (ComplexValue (*this)); }
+        ComplexValue  Z ()       { return (ComplexValue (*this)); }
 
         friend std::ostream& operator<< (std::ostream& stream, const Voxel& V);
 
@@ -197,6 +172,12 @@ namespace MR {
             size_t    segsize; //!< the number of voxels in each file entry
             std::vector<RefPtr<File::MMap> > files;
 
+            float get (off64_t at) const; // TODO
+            void  set (off64_t at, float val);
+
+            cfloat getZ (off64_t at) const;
+            void   setZ (off64_t at, cfloat val);
+
           private:
 
             void init ();
@@ -204,37 +185,8 @@ namespace MR {
             float  (*get_func) (const void* data, size_t i);
             void   (*put_func) (float val, void* data, size_t i);
 
-            static float getBit       (const void* data, size_t i);
-            static float getInt8      (const void* data, size_t i);
-            static float getUInt8     (const void* data, size_t i);
-            static float getInt16LE   (const void* data, size_t i);
-            static float getUInt16LE  (const void* data, size_t i);
-            static float getInt16BE   (const void* data, size_t i);
-            static float getUInt16BE  (const void* data, size_t i);
-            static float getInt32LE   (const void* data, size_t i);
-            static float getUInt32LE  (const void* data, size_t i);
-            static float getInt32BE   (const void* data, size_t i);
-            static float getUInt32BE  (const void* data, size_t i);
-            static float getFloat32LE (const void* data, size_t i);
-            static float getFloat32BE (const void* data, size_t i);
-            static float getFloat64LE (const void* data, size_t i);
-            static float getFloat64BE (const void* data, size_t i);
-
-            static void  putBit       (float val, void* data, size_t i);
-            static void  putInt8      (float val, void* data, size_t i);
-            static void  putUInt8     (float val, void* data, size_t i);
-            static void  putInt16LE   (float val, void* data, size_t i);
-            static void  putUInt16LE  (float val, void* data, size_t i);
-            static void  putInt16BE   (float val, void* data, size_t i);
-            static void  putUInt16BE  (float val, void* data, size_t i);
-            static void  putInt32LE   (float val, void* data, size_t i);
-            static void  putUInt32LE  (float val, void* data, size_t i);
-            static void  putInt32BE   (float val, void* data, size_t i);
-            static void  putUInt32BE  (float val, void* data, size_t i);
-            static void  putFloat32LE (float val, void* data, size_t i);
-            static void  putFloat32BE (float val, void* data, size_t i);
-            static void  putFloat64LE (float val, void* data, size_t i);
-            static void  putFloat64BE (float val, void* data, size_t i);
+            cfloat  (*getZ_func) (const void* data, size_t i);
+            void    (*putZ_func) (cfloat val, void* data, size_t i);
         };
 
         RefPtr<SharedInfo> S;
@@ -250,19 +202,8 @@ namespace MR {
         ssize_t dec (size_t axis)                     { offset -= S->stride[axis]; x[axis]--; return (x[axis]); }
         ssize_t move (size_t axis, ssize_t increment) { offset += S->stride[axis] * ssize_t(increment); x[axis] += increment; return (x[axis]); } 
 
-        float   get_real () const;// { assert (is_mapped()); return (image.real (offset)); }
-        float   get_imag () const;// { assert (is_mapped()); return (image.imag (offset)); }
-        cfloat  get_complex () const;// { assert (is_mapped()); return (cfloat (get_real(), get_imag())); }
-
-        float   set_real (const float value);//   { assert (is_mapped()); image.real (offset, value); return (value); }
-        float   set_imag (const float value);//   { assert (is_mapped()); image.imag (offset, value); return (value); }
-        cfloat  set_complex (const cfloat value);// { assert (is_mapped()); image.real (offset, value.real()); image.imag (offset, value.imag()); return (value); }
-
-
-        friend class Entry;
         friend class Coordinate;
-        friend class RealValue;
-        friend class ImagValue;
+        friend class Value;
         friend class ComplexValue;
     };
 
