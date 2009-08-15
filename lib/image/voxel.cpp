@@ -35,7 +35,8 @@ namespace MR {
     Voxel::SharedInfo::SharedInfo (Header& parent) : 
       H (parent),
       mem (NULL),
-      segment (NULL)
+      segment (NULL),
+      stride (NULL)
     {
       if (H.files.empty()) throw Exception ("no files specified in header for image \"" + H.name() + "\"");
 
@@ -54,10 +55,13 @@ namespace MR {
         mem = new uint8_t [H.files.size() * bps];
         if (!mem) throw Exception ("failed to allocate memory for image \"" + H.name() + "\"");
 
-        for (size_t n = 0; n < H.files.size(); n++) {
-          File::MMap file (H.files[n]);
-          memcpy (mem + n*bps, file.address(), bps);
+        if (H.files_initialised) {
+          for (size_t n = 0; n < H.files.size(); n++) {
+            File::MMap file (H.files[n], false, bps);
+            memcpy (mem + n*bps, file.address(), bps);
+          }
         }
+        else memset (mem, 0, H.files.size() * bps);
 
         if (H.datatype().bits() == 1 && H.files.size() > 1) {
           segment = new uint8_t* [H.files.size()];
@@ -68,33 +72,68 @@ namespace MR {
       else {
         files.resize (H.files.size());
         for (size_t n = 0; n < H.files.size(); n++) {
-          if (H.files[n].fsize - H.files[n].offset < bps)
-            throw Exception ("file \"" + H.files[n].name + "\" is too small to contain data for image \"" + name() + "\"");
-          (*files)[n] = new File::MMap (H.files[n]); 
+          files[n] = new File::MMap (H.files[n], H.readwrite, bps); 
         }
-        if (files->size() > 1) {
+        if (files.size() > 1) {
           segment = new uint8_t* [H.files.size()];
           for (size_t n = 0; n < H.files.size(); n++) 
-            segment[n] = (*files)[n].address();
+            segment[n] = files[n]->address();
         }
-        else mem = files->front().address();
+        else mem = files.front()->address();
       }
 
-      stride = new ssize_t [ndim()];
+      stride = new ssize_t [H.ndim()];
       H.axes.get_strides (start, stride);
 
-      assert (files || mem);
+      assert (files.size() || mem);
+      assert (mem || segment);
     }
 
 
 
 
 
-    Voxel::SharedInfo::~SharedInfo () {
+    Voxel::SharedInfo::~SharedInfo ()
+    {
+      if (H.readwrite && !files.size()) {
+        assert (mem);
+        off64_t bps = (H.datatype().bits() * segsize + 7) / 8;
+
+        for (size_t n = 0; n < H.files.size(); n++) {
+          File::MMap file (H.files[n], true, bps);
+          memcpy (segment ? segment[n] : mem + n*bps, file.address(), bps);
+        }
+      }
+
+      if (mem) delete [] mem;
+      if (segment) delete [] segment;
+      if (stride) delete [] stride;
     }
 
 
 
+    void Voxel::SharedInfo::init ()
+    {
+      // TODO: proper complex data support
+      switch (H.datatype()()) {
+        case DataType::Bit:        get_func = getBit;        put_func = putBit;        return;
+        case DataType::Int8:       get_func = getInt8;       put_func = putInt8;       return;
+        case DataType::UInt8:      get_func = getUInt8;      put_func = putUInt8;      return;
+        case DataType::Int16LE:    get_func = getInt16LE;    put_func = putInt16LE;    return;
+        case DataType::UInt16LE:   get_func = getUInt16LE;   put_func = putUInt16LE;   return;
+        case DataType::Int16BE:    get_func = getInt16BE;    put_func = putInt16BE;    return;
+        case DataType::UInt16BE:   get_func = getUInt16BE;   put_func = putUInt16BE;   return;
+        case DataType::Int32LE:    get_func = getInt32LE;    put_func = putInt32LE;    return;
+        case DataType::UInt32LE:   get_func = getUInt32LE;   put_func = putUInt32LE;   return;
+        case DataType::Int32BE:    get_func = getInt32BE;    put_func = putInt32BE;    return;
+        case DataType::UInt32BE:   get_func = getUInt32BE;   put_func = putUInt32BE;   return;
+        case DataType::Float32LE:  get_func = getFloat32LE;  put_func = putFloat32LE;  return;
+        case DataType::Float32BE:  get_func = getFloat32BE;  put_func = putFloat32BE;  return;
+        case DataType::Float64LE:  get_func = getFloat64LE;  put_func = putFloat64LE;  return;
+        case DataType::Float64BE:  get_func = getFloat64BE;  put_func = putFloat64BE;  return;
+        default: throw Exception ("invalid data type in image header");
+      }
+    }
 
 
 
@@ -199,88 +238,49 @@ namespace MR {
 
 
 
-    void Mapper::set_data_type (DataType dt)
-    {
-      switch (dt() & ~DataType::Complex) {
-        case DataType::Bit:        get_func = getBit;        put_func = putBit;        return;
-        case DataType::Int8:       get_func = getInt8;       put_func = putInt8;       return;
-        case DataType::UInt8:      get_func = getUInt8;      put_func = putUInt8;      return;
-        case DataType::Int16LE:    get_func = getInt16LE;    put_func = putInt16LE;    return;
-        case DataType::UInt16LE:   get_func = getUInt16LE;   put_func = putUInt16LE;   return;
-        case DataType::Int16BE:    get_func = getInt16BE;    put_func = putInt16BE;    return;
-        case DataType::UInt16BE:   get_func = getUInt16BE;   put_func = putUInt16BE;   return;
-        case DataType::Int32LE:    get_func = getInt32LE;    put_func = putInt32LE;    return;
-        case DataType::UInt32LE:   get_func = getUInt32LE;   put_func = putUInt32LE;   return;
-        case DataType::Int32BE:    get_func = getInt32BE;    put_func = putInt32BE;    return;
-        case DataType::UInt32BE:   get_func = getUInt32BE;   put_func = putUInt32BE;   return;
-        case DataType::Float32LE:  get_func = getFloat32LE;  put_func = putFloat32LE;  return;
-        case DataType::Float32BE:  get_func = getFloat32BE;  put_func = putFloat32BE;  return;
-        case DataType::Float64LE:  get_func = getFloat64LE;  put_func = putFloat64LE;  return;
-        case DataType::Float64BE:  get_func = getFloat64BE;  put_func = putFloat64BE;  return;
-        default: throw Exception ("invalid data type in image header");
-      }
-    }
-
-
-
-
-
-
-
-
-
-
-    std::ostream& operator<< (std::ostream& stream, const Mapper& dmap)
-    {
-      stream << "mapper ";
-      if (dmap.optimised) stream << " (optimised)";
-      stream << ":\n  segment size = " << dmap.segsize << "\n  ";
-      if (!dmap.segment) stream << "(unmapped)\n";
-      else if (dmap.mem) stream << "in memory at " << (void*) dmap.mem << "\n";
-      stream << "files:\n";
-      for (uint i = 0; i < dmap.list.size(); i++) {
-        stream << "    " << dmap.list[i].fmap.name() << ", offset " << dmap.list[i].offset << " (";
-        if (dmap.list[i].fmap.is_mapped()) stream << "mapped at " << dmap.list[i].fmap.address();
-        else stream << "unmapped";
-        stream << ( dmap.list[i].fmap.is_read_only() ? ", read-only)\n" : ", read-write)\n" );
-      }
-      return (stream);
-    }
-
-
-
-    float32 Mapper::getBit       (const void* data, size_t i)  { return (MR::get<bool>       (data, i)); }
-    float32 Mapper::getInt8      (const void* data, size_t i)  { return (MR::get<int8_t>     (data, i)); }
-    float32 Mapper::getUInt8     (const void* data, size_t i)  { return (MR::get<uint8_t>    (data, i)); }
-    float32 Mapper::getInt16LE   (const void* data, size_t i)  { return (getLE<int16_t>  (data, i)); }
-    float32 Mapper::getUInt16LE  (const void* data, size_t i)  { return (getLE<uint16_t> (data, i)); }
-    float32 Mapper::getInt16BE   (const void* data, size_t i)  { return (getBE<int16_t>  (data, i)); }
-    float32 Mapper::getUInt16BE  (const void* data, size_t i)  { return (getBE<uint16_t> (data, i)); }
-    float32 Mapper::getInt32LE   (const void* data, size_t i)  { return (getLE<int32_t>  (data, i)); }
-    float32 Mapper::getUInt32LE  (const void* data, size_t i)  { return (getLE<uint32_t> (data, i)); }
-    float32 Mapper::getInt32BE   (const void* data, size_t i)  { return (getBE<int32_t>  (data, i)); }
-    float32 Mapper::getUInt32BE  (const void* data, size_t i)  { return (getBE<uint32_t> (data, i)); }
-    float32 Mapper::getFloat32LE (const void* data, size_t i)  { return (getLE<float32> (data, i)); }
-    float32 Mapper::getFloat32BE (const void* data, size_t i)  { return (getBE<float32> (data, i)); }
-    float32 Mapper::getFloat64LE (const void* data, size_t i)  { return (getLE<float64> (data, i)); }
-    float32 Mapper::getFloat64BE (const void* data, size_t i)  { return (getBE<float64> (data, i)); }
-
-    void Mapper::putBit       (float32 val, void* data, size_t i) { put<bool>      (bool(val), data, i); }
-    void Mapper::putInt8      (float32 val, void* data, size_t i) { put<int8_t>     (int8_t(val), data, i); }
-    void Mapper::putUInt8     (float32 val, void* data, size_t i) { put<uint8_t>    (uint8_t(val), data, i); }
-    void Mapper::putInt16LE   (float32 val, void* data, size_t i) { putLE<int16_t>  (int16_t(val), data, i); }
-    void Mapper::putUInt16LE  (float32 val, void* data, size_t i) { putLE<uint16_t> (uint16_t(val), data, i); }
-    void Mapper::putInt16BE   (float32 val, void* data, size_t i) { putBE<int16_t>  (int16_t(val), data, i); }
-    void Mapper::putUInt16BE  (float32 val, void* data, size_t i) { putBE<uint16_t> (uint16_t(val), data, i); }
-    void Mapper::putInt32LE   (float32 val, void* data, size_t i) { putLE<int32_t>  (int32_t(val), data, i); }
-    void Mapper::putUInt32LE  (float32 val, void* data, size_t i) { putLE<uint32_t> (uint32_t(val), data, i); }
-    void Mapper::putInt32BE   (float32 val, void* data, size_t i) { putBE<int32_t>  (int32_t(val), data, i); }
-    void Mapper::putUInt32BE  (float32 val, void* data, size_t i) { putBE<uint32_t> (uint32_t(val), data, i); }
-    void Mapper::putFloat32LE (float32 val, void* data, size_t i) { putLE<float32> (float32(val), data, i); }
-    void Mapper::putFloat32BE (float32 val, void* data, size_t i) { putBE<float32> (float32(val), data, i); }
-    void Mapper::putFloat64LE (float32 val, void* data, size_t i) { putLE<float64> (float64(val), data, i); }
-    void Mapper::putFloat64BE (float32 val, void* data, size_t i) { putBE<float64> (float64(val), data, i); }
 */
+
+
+
+
+
+
+
+
+
+
+    float Voxel::SharedInfo::getBit       (const void* data, size_t i)  { return (MR::get<bool>       (data, i)); }
+    float Voxel::SharedInfo::getInt8      (const void* data, size_t i)  { return (MR::get<int8_t>     (data, i)); }
+    float Voxel::SharedInfo::getUInt8     (const void* data, size_t i)  { return (MR::get<uint8_t>    (data, i)); }
+    float Voxel::SharedInfo::getInt16LE   (const void* data, size_t i)  { return (getLE<int16_t>  (data, i)); }
+    float Voxel::SharedInfo::getUInt16LE  (const void* data, size_t i)  { return (getLE<uint16_t> (data, i)); }
+    float Voxel::SharedInfo::getInt16BE   (const void* data, size_t i)  { return (getBE<int16_t>  (data, i)); }
+    float Voxel::SharedInfo::getUInt16BE  (const void* data, size_t i)  { return (getBE<uint16_t> (data, i)); }
+    float Voxel::SharedInfo::getInt32LE   (const void* data, size_t i)  { return (getLE<int32_t>  (data, i)); }
+    float Voxel::SharedInfo::getUInt32LE  (const void* data, size_t i)  { return (getLE<uint32_t> (data, i)); }
+    float Voxel::SharedInfo::getInt32BE   (const void* data, size_t i)  { return (getBE<int32_t>  (data, i)); }
+    float Voxel::SharedInfo::getUInt32BE  (const void* data, size_t i)  { return (getBE<uint32_t> (data, i)); }
+    float Voxel::SharedInfo::getFloat32LE (const void* data, size_t i)  { return (getLE<float> (data, i)); }
+    float Voxel::SharedInfo::getFloat32BE (const void* data, size_t i)  { return (getBE<float> (data, i)); }
+    float Voxel::SharedInfo::getFloat64LE (const void* data, size_t i)  { return (getLE<float64> (data, i)); }
+    float Voxel::SharedInfo::getFloat64BE (const void* data, size_t i)  { return (getBE<float64> (data, i)); }
+
+    void Voxel::SharedInfo::putBit       (float val, void* data, size_t i) { put<bool>      (bool(val), data, i); }
+    void Voxel::SharedInfo::putInt8      (float val, void* data, size_t i) { put<int8_t>     (int8_t(val), data, i); }
+    void Voxel::SharedInfo::putUInt8     (float val, void* data, size_t i) { put<uint8_t>    (uint8_t(val), data, i); }
+    void Voxel::SharedInfo::putInt16LE   (float val, void* data, size_t i) { putLE<int16_t>  (int16_t(val), data, i); }
+    void Voxel::SharedInfo::putUInt16LE  (float val, void* data, size_t i) { putLE<uint16_t> (uint16_t(val), data, i); }
+    void Voxel::SharedInfo::putInt16BE   (float val, void* data, size_t i) { putBE<int16_t>  (int16_t(val), data, i); }
+    void Voxel::SharedInfo::putUInt16BE  (float val, void* data, size_t i) { putBE<uint16_t> (uint16_t(val), data, i); }
+    void Voxel::SharedInfo::putInt32LE   (float val, void* data, size_t i) { putLE<int32_t>  (int32_t(val), data, i); }
+    void Voxel::SharedInfo::putUInt32LE  (float val, void* data, size_t i) { putLE<uint32_t> (uint32_t(val), data, i); }
+    void Voxel::SharedInfo::putInt32BE   (float val, void* data, size_t i) { putBE<int32_t>  (int32_t(val), data, i); }
+    void Voxel::SharedInfo::putUInt32BE  (float val, void* data, size_t i) { putBE<uint32_t> (uint32_t(val), data, i); }
+    void Voxel::SharedInfo::putFloat32LE (float val, void* data, size_t i) { putLE<float> (float(val), data, i); }
+    void Voxel::SharedInfo::putFloat32BE (float val, void* data, size_t i) { putBE<float> (float(val), data, i); }
+    void Voxel::SharedInfo::putFloat64LE (float val, void* data, size_t i) { putLE<float64> (float64(val), data, i); }
+    void Voxel::SharedInfo::putFloat64BE (float val, void* data, size_t i) { putBE<float64> (float64(val), data, i); }
+
   }
 }
 

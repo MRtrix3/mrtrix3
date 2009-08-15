@@ -30,18 +30,16 @@ namespace MR {
 
     class Entry {
       public:
-        Entry (const std::string& fname, bool read_write = false, off64_t from = 0) :
-          name (fname), start (from), readwrite (read_write) { }
+        Entry (const std::string& fname, off64_t offset = 0) :
+          name (fname), start (offset) { }
 
         std::string name;
         off64_t start;
-        bool readwrite;
     };
 
 
     inline std::ostream& operator<< (std::ostream& stream, const Entry& e) {
-      stream << "File::Entry { \"" << e.name << "\" "
-        << ( e.readwrite ? "RW" : "RO" ) << " from offset " << e.start << " }";
+      stream << "File::Entry { \"" << e.name << "\", offset " << e.start << " }";
       return (stream);
     }
   }

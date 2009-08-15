@@ -34,13 +34,14 @@ namespace MR {
 
     class MMap : protected Entry {
       public:
-        MMap (const Entry& entry, off64_t filesize = -1) : Entry (entry), fsize (filesize) { map(); }
-        MMap (const std::string& fname, bool read_write = false, off64_t from = 0, off64_t filesize = -1) :
-          Entry (fname, read_write, from), fsize (filesize) { map(); }
+        MMap (const Entry& entry, bool read_write = false, off64_t mapped_size = -1) : 
+          Entry (entry), msize (mapped_size), readwrite (read_write) { map(); }
+        MMap (const std::string& fname, bool read_write = false, off64_t from = 0, off64_t mapped_size = -1) :
+          Entry (fname, from), msize (mapped_size), readwrite (read_write) { map(); }
         ~MMap () { unmap(); }
 
         std::string     name () const        { return (Entry::name); }
-        off64_t         size () const        { return (fsize); }
+        off64_t         size () const        { return (msize); }
         uint8_t*        address()            { return (addr + start); }
         const uint8_t*  address() const      { return (addr + start); }
 
@@ -48,8 +49,9 @@ namespace MR {
         bool changed () const;
 
         friend std::ostream& operator<< (std::ostream& stream, const MMap& m) {
-          stream << "File::MMap { " << m.name() << " [" << m.fd << "], file size: "
-            << m.size() << ", mapped at " << (void*) m.address() << " }";
+          stream << "File::MMap { " << m.name() << " [" << m.fd << "], size: "
+            << m.size() << ", mapped " << ( m.readwrite ? "RW" : "RO" ) 
+            << " at " << (void*) m.address() << ", offset " << m.start << " }";
           return (stream);
         }
 
@@ -58,8 +60,9 @@ namespace MR {
       protected:
         int       fd;
         uint8_t*  addr;        /**< The address in memory where the file has been mapped. */
-        off64_t   fsize;       /**< The size of the file. */
+        off64_t   msize;       /**< The size of the file. */
         time_t    mtime;       /**< The modification time of the file at the last check. */
+        bool      readwrite;
 
         void map ();
         void unmap ();

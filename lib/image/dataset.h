@@ -27,6 +27,14 @@
 
 namespace MR {
 
+  /*! \page dataset_page The DataSet abstract class
+    * Most of the algorithms in MRtrix are designed to operate on objects that
+    * implement the DataSet interface. These algorithms are implemented using
+    * the C++ template framework, and are thus optimised at compile-time for
+    * the particular object that the algorithm is to operate on. More details
+    * on this interface are found in the DataSet definition. 
+    */
+
   /*! \defgroup Image Image access
    * \brief Classes and functions providing access to image data. */
 

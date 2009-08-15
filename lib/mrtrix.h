@@ -110,8 +110,30 @@ namespace MR {
    * \li Access to data stored in image files is done via the classes and
    * functions defined in the Image namespace. The corresponding headers are
    * stored in the \c lib/image/ directory.
+   * \li The build process is based on a Python script rather than Makefiles,
+   * and all dependencies are resolved at build-time. This is explained in
+   * \ref build_page.
    * 
    */
+
+  /*! \page build_page The build process
+    * The procedure used to compile the source code is substantially different
+    * from that used in most other open-source software. The most common
+    * way to compile a software project relies on the \c make utility, and the
+    * presence of one or several \c Makefiles describing which files are to
+    * compiled and linked, and in what order. The process of generating the \c
+    * Makefiles is often facilitated by other utilities such as \c autoconf &
+    * \c automake. One disadvantage of this approach is that these \c Makefiles
+    * must be updated every time changes are made to the source code that
+    * affect the dependencies and the order of compilation. 
+    *
+    * In MRtrix, building the software relies on a two-stage process
+    * implemented in Python. First,
+    * the \c configure script should be executed to set the relevant
+    * architecture-specific variables. Next, the \c build script is executed,
+    * and is responsible for resolving all inter-dependencies, then compiling and
+    * linking all the relevant files that need to be updated.
+    */
 
   const std::string& get_application_name ();
 

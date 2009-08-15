@@ -40,17 +40,17 @@ namespace MR {
     class Header : public std::map<std::string, std::string> {
       public:
         Header () : 
-          format (NULL), offset (0.0), scale (1.0), use_existing_files (false), 
-          read_only (true), num_voxel_per_file (0), first_voxel_offset (0) { }
+          format (NULL), offset (0.0), scale (1.0), readwrite (false), 
+          files_initialised (false), num_voxel_per_file (0), first_voxel_offset (0) { }
         Header (const Header& H) :
           std::map<std::string, std::string> (H),
           format (NULL), axes (H.axes), offset (0.0), scale (1.0), 
-          use_existing_files (false), read_only (true), DW_scheme (H.DW_scheme), comments (H.comments),
+          readwrite (false), files_initialised (false), DW_scheme (H.DW_scheme), comments (H.comments),
           num_voxel_per_file (0), first_voxel_offset (0), 
           dtype (H.dtype), transform_matrix (H.transform_matrix) { } 
 
         template <class DataSet> Header (const DataSet& ds) :
-          format (NULL), offset (0.0), scale (1.0), use_existing_files (false), read_only (true),
+          format (NULL), offset (0.0), scale (1.0), readwrite (false), files_initialised (false),
           num_voxel_per_file (0), first_voxel_offset (0), transform_matrix (ds.transform()) { 
             axes.ndim() = ds.ndim();
             //axes.resize (ds.ndim());
@@ -61,7 +61,7 @@ namespace MR {
           } 
 
         template <class DataSet> Header& operator= (const DataSet& ds) {
-          format = NULL; offset = 0.0; scale = 1.0; use_existing_files = false; read_only = true;
+          format = NULL; offset = 0.0; scale = 1.0; files_initialised = false; readwrite = false;
           num_voxel_per_file = 0; first_voxel_offset = 0; transform_matrix = ds.transform(); 
           axes.ndim() = ds.ndim();
           //axes.resize (ds.ndim());
@@ -77,8 +77,7 @@ namespace MR {
         const char*                format;
         Axes                       axes;
         float                      offset, scale;
-        bool                       use_existing_files;
-        bool                       read_only;
+        bool                       readwrite, files_initialised;
         Math::Matrix<float>        DW_scheme;
         std::vector<File::Entry>   files;
 
@@ -101,7 +100,7 @@ namespace MR {
         void clear () {
           std::map<std::string, std::string>::clear(); 
           identifer.clear(); axes.clear(); comments.clear(); dtype = DataType();
-          offset = 0.0; scale = 1.0; use_existing_files = false; read_only = true; format = NULL;
+          offset = 0.0; scale = 1.0; files_initialised = false; readwrite = false; format = NULL;
           transform_matrix.clear(); DW_scheme.clear();
         }
 

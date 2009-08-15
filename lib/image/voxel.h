@@ -196,6 +196,45 @@ namespace MR {
             size_t    start; //!< the offset to the first (logical) voxel in the dataset
             size_t    segsize; //!< the number of voxels in each file entry
             std::vector<RefPtr<File::MMap> > files;
+
+          private:
+
+            void init ();
+
+            float  (*get_func) (const void* data, size_t i);
+            void   (*put_func) (float val, void* data, size_t i);
+
+            static float getBit       (const void* data, size_t i);
+            static float getInt8      (const void* data, size_t i);
+            static float getUInt8     (const void* data, size_t i);
+            static float getInt16LE   (const void* data, size_t i);
+            static float getUInt16LE  (const void* data, size_t i);
+            static float getInt16BE   (const void* data, size_t i);
+            static float getUInt16BE  (const void* data, size_t i);
+            static float getInt32LE   (const void* data, size_t i);
+            static float getUInt32LE  (const void* data, size_t i);
+            static float getInt32BE   (const void* data, size_t i);
+            static float getUInt32BE  (const void* data, size_t i);
+            static float getFloat32LE (const void* data, size_t i);
+            static float getFloat32BE (const void* data, size_t i);
+            static float getFloat64LE (const void* data, size_t i);
+            static float getFloat64BE (const void* data, size_t i);
+
+            static void  putBit       (float val, void* data, size_t i);
+            static void  putInt8      (float val, void* data, size_t i);
+            static void  putUInt8     (float val, void* data, size_t i);
+            static void  putInt16LE   (float val, void* data, size_t i);
+            static void  putUInt16LE  (float val, void* data, size_t i);
+            static void  putInt16BE   (float val, void* data, size_t i);
+            static void  putUInt16BE  (float val, void* data, size_t i);
+            static void  putInt32LE   (float val, void* data, size_t i);
+            static void  putUInt32LE  (float val, void* data, size_t i);
+            static void  putInt32BE   (float val, void* data, size_t i);
+            static void  putUInt32BE  (float val, void* data, size_t i);
+            static void  putFloat32LE (float val, void* data, size_t i);
+            static void  putFloat32BE (float val, void* data, size_t i);
+            static void  putFloat64LE (float val, void* data, size_t i);
+            static void  putFloat64BE (float val, void* data, size_t i);
         };
 
         RefPtr<SharedInfo> S;
@@ -218,6 +257,7 @@ namespace MR {
         float   set_real (const float value);//   { assert (is_mapped()); image.real (offset, value); return (value); }
         float   set_imag (const float value);//   { assert (is_mapped()); image.imag (offset, value); return (value); }
         cfloat  set_complex (const cfloat value);// { assert (is_mapped()); image.real (offset, value.real()); image.imag (offset, value.imag()); return (value); }
+
 
         friend class Entry;
         friend class Coordinate;
