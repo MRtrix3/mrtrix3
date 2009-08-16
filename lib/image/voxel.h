@@ -140,7 +140,7 @@ namespace MR {
             friend class Voxel;
         };
 
-        //! %get whether the image data is complex
+        //! %get whether the image data are complex
         /*! \return true if the image data are complex */
         bool  is_complex () const      { return (S->H.datatype().is_complex()); }
 
