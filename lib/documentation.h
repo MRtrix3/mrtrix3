@@ -34,18 +34,21 @@ namespace MR {
    * to a number of fundamental design decisions. The main concepts are explained
    * in the following pages:
    * 
+   * - The build process is based on a Python script rather than Makefiles,
+   * and all dependencies are resolved at build-time. This is explained in
+   * \ref build_page.
+   * - The basic steps for writing applications based on MRtrix are explained
+   * in the section \ref command_howto.
    * - %Image data are accessed via objects that implement at least a subset of
    * the interface defined for the DataSet abstract class.
    * - Access to data stored in image files is done via the classes and
    * functions defined in the Image namespace. The corresponding headers are
    * stored in the \c lib/image/ directory.
-   * - The build process is based on a Python script rather than Makefiles,
-   * and all dependencies are resolved at build-time. This is explained in
-   * \ref build_page.
    * 
    */
 
   /*! \page build_page The build process
+   *
    * The procedure used to compile the source code is substantially different
    * from that used in most other open-source software. The most common
    * way to compile a software project relies on the \c make utility, and the
@@ -69,17 +72,18 @@ namespace MR {
    * software on modern multi-core systems.
    *
    * \section build_process_usage Using the MRtrix build process
+   *
    * The build scripts used to build MRtrix applications are designed to be
    * easy to use, with no input required from the user. This does mean that
    * developers must follow a few rules of thumb when writing software for use
    * with MRtrix.
-   * - to create a new executable, place the correspondingly named source file
+   * - To create a new executable, place the correspondingly named source file
    * in the \c cmd/ folder. For example, if a new application called \c myapp
    * is to be written, write the corresponding code in the \c cmd/myapp.cpp
    * source file, and the build script will attempt to generate the executable
    * \c bin/myapp from it. You may want to consult the sections \ref
-   * command_howto and \ref command_line_parsing.
-   * - the \c lib/ folder should contain only code destined to be included into
+   * command_howto.
+   * - The \c lib/ folder should contain only code destined to be included into
    * the MRtrix shared library. This library is intended to provide more
    * generic image access and manipulation routines. Developers should avoid
    * placing more application-specific routines in this folder.
@@ -87,7 +91,7 @@ namespace MR {
    * folder. The corresponding code will then be linked directly into the
    * executables that make use of these routines, rather than being included
    * into the more general purpose MRtrix shared library.
-   * - non-inlined function and variable definitions should be placed in
+   * - Non-inlined function and variable definitions should be placed in
    * appropriately named source files (\c *.cpp), and the corresponding
    * declarations should be placed in a header file with the same name and the
    * appropriate suffix (\c *.h). This is essential if the build script is to
@@ -95,6 +99,7 @@ namespace MR {
    * together.
    * 
    * \section configure_section The configure script
+   *
    * The first step required for building the software is to run the \c
    * configure script, which tailors various parameters to the specific system
    * that it is run on. This includes checking that a compiler is available and
@@ -114,6 +119,7 @@ namespace MR {
    * MRtrix command-line applications, leaving out any GUI applications.
    *
    * \section build_section The build script
+   *
    * This script is responsible for identifying the targets to be built,
    * resolving all their dependencies, compiling all the necessary object files
    * (if they are out of date), and linking them together in the correct order.
@@ -129,6 +135,7 @@ namespace MR {
    * The following rules are used for each of these steps:
    *
    * \par Identifying targets to be built
+   *
    * Specific targets can be specified on the command-line, in which case only
    * their minimum required dependencies will be compiled and/or linked. This
    * is useful to check that changes made to a particular file compile without
@@ -144,6 +151,7 @@ $ ./build lib/mrtrix.o lib/app.o \endverbatim
    * target list.
    * 
    * \par Resolving dependencies for executables
+   *
    * A target is assumed to correspond to an executable if it resides in the \c
    * bin/ folder (the default target list consists of all executables). The
    * dependencies for an example executable \c bin/myapp are resolved in the following way:
@@ -172,6 +180,7 @@ $ ./build lib/mrtrix.o lib/app.o \endverbatim
    * is added to the list.
    *
    * \par Resolving dependencies for object files
+   *
    * A target is considered to be an object file if its suffix corresponds to
    * the expected suffix for an object file (usually \c *.o). The dependencies
    * for an example object file \c lib/mycode.o are resolved as follows:
@@ -184,6 +193,7 @@ $ ./build lib/mrtrix.o lib/app.o \endverbatim
    * -# these headers are all added to the list of dependencies.
    *
    * \par Resolving dependencies for the MRtrix library
+   *
    * The list of dependencies for the MRtrix library is generated by adding the
    * corresponding object file for each source file found in the \c lib/
    * folder. For example, if the file \c lib/image/header.cpp is found in the
@@ -191,6 +201,7 @@ $ ./build lib/mrtrix.o lib/app.o \endverbatim
    * of dependencies.
    *
    * \par Build rules for each target type
+   *
    * - \b executables: dependencies consist of all relevant object files along
    * with the MRtrix library. These are all linked together to form the
    * executable.
@@ -206,19 +217,112 @@ $ ./build lib/mrtrix.o lib/app.o \endverbatim
 
 
    /*! \page command_howto How to create a new MRtrix command
-
-     */
-
-   /*! \page command_line_parsing The MRtrix command-line parsing interface
-
-     */
+    *
+    * \section command_layout The anatomy of a command
+    * 
+    * In MRtrix, each command corresponds to a source file (\c *.cpp), placed
+    * in the \c cmd/ folder, named identically to the desired application name
+    * (with the .cpp suffix). The file should contain the following sections:
+    * -# Information about the application, provided via the following macros:
+    * \code 
+    * SET_VERSION(0, 4, 3);
+    * SET_AUTHOR("Joe Bloggs");
+    * SET_COPYRIGHT("Copyright 1967 The Institute of Bogus Science");
+    * \endcode
+    * Alternatively, the \c SET_VERSION_DEFAULT macro will set all three of
+    * these to the default values for MRtrix.
+    * -# A description of what the application does, provided via the \c
+    * DESCRIPTION macro:
+    * \code 
+    * DESCRIPTION = {
+    *   "This is  brief description of the command",
+    *   "A more detailed description can be provided in separate lines, each of which will generate a new paragraph.",
+    *   "One more paragraph for illustration.",
+    *   NULL
+    * };
+    * \endcode
+    * This information should be provided as a NULL-terminated array of
+    * strings, as illustrated above.
+    * -# A list of the required command-line arguments:
+    * \code
+    * ARGUMENTS = {
+    *   Argument ("input", "input image", "the input image.").type_image_in (),
+    *   Argument ("ouput", "output image", "the output image.").type_image_out (),
+    *   Argument::End
+    * };
+    * \endcode
+    * More information about the command-line parsing interface is provided in
+    * the section \ref command_line_parsing.
+    * -# A list of any command-line options that the application may accept:
+    * \code
+    * OPTIONS = {
+    *   Option ("scale", "scaling factor", "apply scaling to the intensity values.")
+    *     .append (Argument ("factor", "factor", "the factor by which to multiply the intensities.").type_float (NAN, NAN, 1.0)),
+    * 
+    *   Option ("offset", "offset", "apply offset to the intensity values.")
+    *     .append (Argument ("bias", "bias", "the value of the offset.").type_float (NAN, NAN, 0.0)),
+    *
+    *   Option::End
+    * };
+    * \endcode
+    * More information about the command-line parsing interface is provided in
+    * the section \ref command_line_parsing.
+    * -# The main function to execute, provided via the \c EXECUTE macro:
+    * \code
+    * EXECUTE {
+    *   ...
+    *   // perform processing
+    *   ...
+    * }
+    * \endcode
+    *
+    * \section error_handling Error handling
+    *
+    * All error handling in MRtrix is done using C++ exception. MRtrix provides
+    * its own Exception class, which allow an error message to be displayed to
+    * the user. Developers are strongly encouraged to provide helpful error
+    * messages, so that users can work out what has gone wrong more easily. 
+    *
+    * The following is an example of an exception in use:
+    * \code
+    * void myfunc (float param) 
+    * {
+    *   if (isnan (param)) throw Exception ("NaN is not a valid parameter");
+    *   ...
+    *   // do something useful
+    *   ...
+    * }
+    * \endcode
+    * The strings helper functions can be used to provide more useful
+    * information:
+    * \code
+    * void read_file (const std::string& filename, off64_t offset) 
+    * {
+    *   std::ifstream in (filename.c_str());
+    *   if (!in)
+    *     throw Exception ("error opening file \"" + filename + "\": " + strerror (errno));
+    *   
+    *   in.seekg (offset);
+    *   if (!in.good()) 
+    *     throw Exception ("error seeking to offset " + str(offset) 
+    *        + " in file \"" + filename + "\": " + strerror (errno));
+    *   ...
+    *   // do something useful
+    *   ...
+    * }
+    * \endcode
+    *
+    * \section command_line_parsing The command-line parsing interface
+    *
+    */
 
   /*! \page dataset_page The DataSet abstract class
-   * Most of the algorithms in MRtrix are designed to operate on objects that
-   * implement the DataSet interface. These algorithms are implemented using
-   * the C++ template framework, and are thus optimised at compile-time for
-   * the particular object that the algorithm is to operate on. More details
-   * on this interface are found in the DataSet definition. 
+    *
+    * Most of the algorithms in MRtrix are designed to operate on objects that
+    * implement the DataSet interface. These algorithms are implemented using
+    * the C++ template framework, and are thus optimised at compile-time for
+    * the particular object that the algorithm is to operate on. More details
+    * on this interface are found in the DataSet definition. 
    */
 
   /*! \defgroup Image Image access
@@ -228,8 +332,9 @@ $ ./build lib/mrtrix.o lib/app.o \endverbatim
   // @{
 
 
-  //! The abstract generic DataSet interface
-  /*! This class is an abstract prototype describing the interface that a
+  /*! \brief The abstract generic DataSet interface
+   *
+   * This class is an abstract prototype describing the interface that a
    * number of MRtrix algorithms expect to operate on. It does not correspond
    * to a real class, and only serves to document the expected behaviour for
    * classes that represent image datasets.
@@ -297,34 +402,36 @@ $ ./build lib/mrtrix.o lib/app.o \endverbatim
    * defined.
    *
    * \par Why define this abstract class?
+   *
    * Different image classes may not be suited to all uses. For example, the
    * Image::Voxel class provides access to the data for an image file, but
    * incurs an overhead for each read/write access. A simpler class such as the
    * \a %Image class above can provide much more efficient access to the data.
    * There will therefore be cases where it might be beneficial to copy the
-  * data from an Image::Voxel class into a more efficient data structure.
-    * In order to write algorithms that can operate on all of these different
-    * classes, MRtrix uses the C++ template framework, leaving it up to the
-    * compiler to ensure that the classes defined are compatible with the
-    * particular template function they are used with, and that the algorithm
-    * implemented in the function is fully optimised for that particular class. 
-    *
-    * \par Why not use an abstract base class and inheritance?
-    * Defining an abstract class implies that all functions are declared
-    * virtual. This means that every operation on a derived class will incur a
-    * function call overhead, which will in many cases have a significant
-    * adverse impact on performance. This also restricts the amount of optimisation that the
-    * compiler might otherwise be able to perform. Using inheritance would have
-    * the benefit of allowing run-time polymorphism (i.e. the same function can
-    * be used with any derived class at runtime); however, in practice run-time
-    * polymorphism is rarely needed in MRtrix applications. Finally, if such an
-    * interface were required, it would be trivial to define such an abstract class and
-    * use it with the template functions provided by MRtrix.
-    *
-    * \note The DataSet class itself should \b not be used or 
-    * included in MRtrix programs. Any attempt at including the relevant header
-    * will result in compile-time errors.
-    */
+   * data from an Image::Voxel class into a more efficient data structure.
+   * In order to write algorithms that can operate on all of these different
+   * classes, MRtrix uses the C++ template framework, leaving it up to the
+   * compiler to ensure that the classes defined are compatible with the
+   * particular template function they are used with, and that the algorithm
+   * implemented in the function is fully optimised for that particular class. 
+   *
+   * \par Why not use an abstract base class and inheritance?
+   *
+   * Defining an abstract class implies that all functions are declared
+   * virtual. This means that every operation on a derived class will incur a
+   * function call overhead, which will in many cases have a significant
+   * adverse impact on performance. This also restricts the amount of optimisation that the
+   * compiler might otherwise be able to perform. Using inheritance would have
+   * the benefit of allowing run-time polymorphism (i.e. the same function can
+   * be used with any derived class at runtime); however, in practice run-time
+   * polymorphism is rarely needed in MRtrix applications. Finally, if such an
+   * interface were required, it would be trivial to define such an abstract class and
+   * use it with the template functions provided by MRtrix.
+   *
+   * \note The DataSet class itself should \b not be used or included in MRtrix
+   * programs. Any attempt at including the relevant header will result in
+   * compile-time errors.
+   */
     class DataSet {
       public:
         const std::string& name () const; //!< a human-readable identifier, useful for error reporting
