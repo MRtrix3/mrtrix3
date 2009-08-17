@@ -116,7 +116,7 @@ namespace MR {
 
     //! @}
 
-    inline Header::Header (const Object& H) { *this = H.H; }
+    //inline Header::Header (const Object& H) { *this = H.H; }
 
   }
 }

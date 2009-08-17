@@ -29,7 +29,6 @@ namespace MR {
 
   /*! \mainpage Overview
    * 
-   * \section frontpage_section Basic principles
    * MRtrix was developed with simplicity and performance in mind, which has led
    * to a number of fundamental design decisions. The main concepts are explained
    * in the following pages:
@@ -81,7 +80,7 @@ namespace MR {
    * in the \c cmd/ folder. For example, if a new application called \c myapp
    * is to be written, write the corresponding code in the \c cmd/myapp.cpp
    * source file, and the build script will attempt to generate the executable
-   * \c bin/myapp from it. You may want to consult the sections \ref
+   * \c bin/myapp from it. You may want to consult the section \ref
    * command_howto.
    * - The \c lib/ folder should contain only code destined to be included into
    * the MRtrix shared library. This library is intended to provide more
@@ -125,7 +124,7 @@ namespace MR {
    * (if they are out of date), and linking them together in the correct order.
    * This is done by first identifying the desired targets, then building a
    * list of their dependencies, and treating these dependencies themselves as
-   * targets, and building them first. A target can only be built once all its
+   * targets to be built first. A target can only be built once all its
    * dependencies are satisfied (i.e. all its required dependencies have been
    * built). At this point, the target is built only if one or more of its dependencies
    * is more recent than it is itself (or if it doesn't yet exist). This is
@@ -150,6 +149,17 @@ $ ./build lib/mrtrix.o lib/app.o \endverbatim
    * corresponding target \c bin/my_application will be included in the default
    * target list.
    * 
+   * \par Special targets
+   *
+   * There are two targets that can be passed to the \c build script that have
+   * special meaning. These are:
+   * - \b clean: remove all system-generated files, including all object files (\c
+   *   *.o), all executables (i.e. all files in the \c bin/ folder), and the
+   *   MRtrix shared library.
+   * - \b reset: remove all system-generated files as above, and additionally
+   *   remove the configuration file produced by the \c configure script. This
+   *   should effectively reset the package to its initial state.
+   *
    * \par Resolving dependencies for executables
    *
    * A target is assumed to correspond to an executable if it resides in the \c
@@ -174,9 +184,9 @@ $ ./build lib/mrtrix.o lib/app.o \endverbatim
    * in the MRtrix library (see below).
    * -# all headers included in any of the local headers or their corresponding
    * source files are also considered in the same way, recursively until no new
-   * dependencies are found. For example, the file \c lib/mrtrix.cpp might also
-   * include the header \c lib/data_type.h. Since the source file \c
-   * lib/data_type.cpp exists, the corresponding object file \c lib/data_type.o
+   * dependencies are found. For example, the file \c src/histogram.cpp might also
+   * include the header \c src/min_max.h. Since the source file \c
+   * src/min_max.cpp exists, the corresponding object file \c src/min_max.o
    * is added to the list.
    *
    * \par Resolving dependencies for object files
@@ -275,15 +285,21 @@ $ ./build lib/mrtrix.o lib/app.o \endverbatim
     *   ...
     * }
     * \endcode
+    * This function is declated \c void, and should not return any value. Any
+    * errors should be handled using C++ exceptions as described below. Note
+    * that any unhandled exception will cause the program to terminate with a
+    * non-zero return value.
     *
     * \section error_handling Error handling
     *
     * All error handling in MRtrix is done using C++ exception. MRtrix provides
-    * its own Exception class, which allow an error message to be displayed to
-    * the user. Developers are strongly encouraged to provide helpful error
-    * messages, so that users can work out what has gone wrong more easily. 
+    * its own Exception class, which additionally allows an error message to be
+    * displayed to the user. Developers are strongly encouraged to provide
+    * helpful error messages, so that users can work out what has gone wrong
+    * more easily. 
     *
     * The following is an example of an exception in use:
+    *
     * \code
     * void myfunc (float param) 
     * {
@@ -293,8 +309,10 @@ $ ./build lib/mrtrix.o lib/app.o \endverbatim
     *   ...
     * }
     * \endcode
+    *
     * The strings helper functions can be used to provide more useful
     * information:
+    *
     * \code
     * void read_file (const std::string& filename, off64_t offset) 
     * {
@@ -312,18 +330,131 @@ $ ./build lib/mrtrix.o lib/app.o \endverbatim
     * }
     * \endcode
     *
-    * \section command_line_parsing The command-line parsing interface
+    * It is obviously possible to catch and handle these exceptions, as with
+    * any C++ exception:
     *
+    * \code
+    * try {
+    *   read_file ("some_file.txt", 128);
+    *   // no errors, return OK:
+    *   return (0);
+    * }
+    * catch (Exception E) {
+    *   error ("error in processing - message was: " + E.description);
+    *   return (1);
+    * }
+    * \endcode
     */
+
+  /*! \page command_line_parsing Command-line parsing
+   *
+   *
+   */
 
   /*! \page dataset_page The DataSet abstract class
     *
-    * Most of the algorithms in MRtrix are designed to operate on objects that
-    * implement the DataSet interface. These algorithms are implemented using
-    * the C++ template framework, and are thus optimised at compile-time for
-    * the particular object that the algorithm is to operate on. More details
-    * on this interface are found in the DataSet definition. 
-   */
+    * The DataSet class is an abstract prototype describing the interface that
+    * a number of MRtrix algorithms expect to operate on. It does not
+    * correspond to a real class, and only serves to document the expected
+    * behaviour for classes that represent image datasets.
+    *
+    * Classes that are designed to represent a data set should implement at
+    * least a subset of the member functions documented for the DataSet class.
+    * Such classes should NOT derive from this class, but rather provide their
+    * own implementations. There is also no requirement to reproduce the
+    * function definitions exactly, as long as the class can be used with the
+    * same syntax in practice. Algorithms designed to operate on a DataSet are
+    * defined using the C++ template framework, and hence any function call is
+    * interpreted at compile-time (and potentially optimised away), rather than
+    * being issued at run-time. This is perhaps better illustrated using the
+    * example below.
+    *
+    * The following example defines a simple class to store a 3D image:
+    *
+    * \code
+    * class Image {
+    *   public:
+    *     Image (int xdim, int ydim, int zdim) { 
+    *       nvox[0] = xdim; nvox[1] = ydim; nvox[2] = zdim;
+    *       pos[0] = pos[1] = pos[2] = 0;
+    *       data = new float [nvox[0]*nvox[1]*nvox[2]);
+    *     }
+    *    ~Image () { delete [] data; }
+    *
+    *     int     ndim () const         { return (3); }
+    *     int     dim (int axis) const  { return (nvox[axis]); }
+    *     int&    operator[] (int axis) { return (pos[axis]); }
+    *     float&  value()               { return (data[pos[0]+nvox[0]*(pos[1]+nvox[1]*pos[2])]); }
+    *
+    *   private:
+    *     float*   data
+    *     int      nvox[3];
+    *     int      pos[3];
+    * };
+    * \endcode
+    *
+    * This class does not implement all the functions listed for the generic
+    * DataSet class, and some of the functions it does implement do not match
+    * the DataSet equivalent definitions. However, in practice this
+    * class can be used with identical syntax. For example, this template
+    * function scales the data by a user-defined factor:
+    *
+    * \code
+    * template <class DataSet> void scale (DataSet& data, float factor)
+    * {
+    *   for (data[2] = 0; data[2] < data.dim(2); data[2]++)
+    *     for (data[1] = 0; data[1] < data.dim(1); data[1]++)
+    *       for (data[0] = 0; data[0] < data.dim(0); data[0]++)
+    *         data.value() *= factor;
+    * }
+    * \endcode
+    *
+    * This template function might be used like this:
+    *
+    * \code
+    * Image my_image (128, 128, 32); // create an instance of a 128 x 128 x 32 image
+    * ...
+    * ... // populate my_image with data
+    * ...
+    * scale (my_image, 10.0); // scale my_image by a factor of 10
+    * \endcode
+    *
+    * As you can see, the \a %Image class implements all the functionality
+    * required for the \a scale() function to compile and run. There is also
+    * plenty of scope for the compiler to optimise this particular function,
+    * since all member functions of \c my_image are declared inline. Note that
+    * this does not mean that this class can be used with any of the other
+    * template functions, some of which might rely on some of the other member
+    * functions having been defined.
+    *
+    * \par Why define this abstract class?
+    *
+    * Different image classes may not be suited to all uses. For example, the
+    * Image::Voxel class provides access to the data for an image file, but
+    * incurs an overhead for each read/write access. A simpler class such as the
+    * \a %Image class above can provide much more efficient access to the data.
+    * There will therefore be cases where it might be beneficial to copy the
+    * data from an Image::Voxel class into a more efficient data structure.
+    * In order to write algorithms that can operate on all of these different
+    * classes, MRtrix uses the C++ template framework, leaving it up to the
+    * compiler to ensure that the classes defined are compatible with the
+    * particular template function they are used with, and that the algorithm
+    * implemented in the function is fully optimised for that particular class. 
+    *
+    * \par Why not use an abstract base class and inheritance?
+    *
+    * Defining an abstract class implies that all functions are declared
+    * virtual. This means that every operation on a derived class will incur a
+    * function call overhead, which will in many cases have a significant
+    * adverse impact on performance. This also restricts the amount of optimisation that the
+    * compiler might otherwise be able to perform. Using inheritance would have
+    * the benefit of allowing run-time polymorphism (i.e. the same function can
+        * be used with any derived class at runtime); however, in practice run-time
+    * polymorphism is rarely needed in MRtrix applications. Finally, if such an
+    * interface were required, it would be trivial to define such an abstract class and
+    * use it with the template functions provided by MRtrix.
+    *
+    */
 
   /*! \defgroup Image Image access
    * \brief Classes and functions providing access to image data. */
@@ -335,98 +466,8 @@ $ ./build lib/mrtrix.o lib/app.o \endverbatim
   /*! \brief The abstract generic DataSet interface
    *
    * This class is an abstract prototype describing the interface that a
-   * number of MRtrix algorithms expect to operate on. It does not correspond
-   * to a real class, and only serves to document the expected behaviour for
-   * classes that represent image datasets.
-   *
-   * Classes that are designed to represent a data set should implement at
-   * least a subset of the member functions described here. Such classes should
-   * NOT derive from this class, but rather provide their own implementations. 
-   * There is also no requirement to reproduce the function definitions
-   * exactly, as long as the class can be used with the same syntax in
-   * practice. Algorithms designed to operate on a DataSet are defined using the
-   * C++ template framework, and hence any function call is interpreted at
-   * compile-time (and potentially optimised away), rather than being issued at
-   * run-time. This is perhaps better illustrated using the example below.
-   *
-   * The following example defines a simple class to store a 3D image:
-   * \code
-   * class Image {
-   *   public:
-   *     Image (int xdim, int ydim, int zdim) { 
-   *       nvox[0] = xdim; nvox[1] = ydim; nvox[2] = zdim;
-   *       pos[0] = pos[1] = pos[2] = 0;
-   *       data = new float [nvox[0]*nvox[1]*nvox[2]);
-   *     }
-   *    ~Image () { delete [] data; }
-   *
-   *     int     ndim () const         { return (3); }
-   *     int     dim (int axis) const  { return (nvox[axis]); }
-   *     int&    operator[] (int axis) { return (pos[axis]); }
-   *     float&  value()               { return (data[pos[0]+nvox[0]*(pos[1]+nvox[1]*pos[2])]); }
-   *
-   *   private:
-   *     float*   data
-   *     int      nvox[3];
-   *     int      pos[3];
-   * };
-   * \endcode
-   * This class does not implement all the functions listed for the generic
-   * DataSet class, and some of the functions it does implement do not match
-   * the DataSet equivalent definitions. However, in practice this
-   * class can be used with identical syntax. For example, this template
-   * function scales the data by a user-defined factor:
-   * \code
-   * template <class DataSet> void scale (DataSet& data, float factor)
-   * {
-   *   for (data[2] = 0; data[2] < data.dim(2); data[2]++)
-   *     for (data[1] = 0; data[1] < data.dim(1); data[1]++)
-   *       for (data[0] = 0; data[0] < data.dim(0); data[0]++)
-   *         data.value() *= factor;
-   * }
-   * \endcode
-   * This template function might be used like this:
-   * \code
-   * Image my_image (128, 128, 32); // create an instance of a 128 x 128 x 32 image
-   * ...
-   * ... // populate my_image with data
-   * ...
-   * scale (my_image, 10.0); // scale my_image by a factor of 10
-   * \endcode
-   * As you can see, the \a %Image class implements all the functionality
-   * required for the \a scale() function to compile and run. There is also
-   * plenty of scope for the compiler to optimise this particular function,
-   * since all member functions of \c my_image are declared inlined. Note that this does not
-   * mean that this class can be used with any of the other template functions,
-   * some of which might rely on some of the other member functions having been
-   * defined.
-   *
-   * \par Why define this abstract class?
-   *
-   * Different image classes may not be suited to all uses. For example, the
-   * Image::Voxel class provides access to the data for an image file, but
-   * incurs an overhead for each read/write access. A simpler class such as the
-   * \a %Image class above can provide much more efficient access to the data.
-   * There will therefore be cases where it might be beneficial to copy the
-   * data from an Image::Voxel class into a more efficient data structure.
-   * In order to write algorithms that can operate on all of these different
-   * classes, MRtrix uses the C++ template framework, leaving it up to the
-   * compiler to ensure that the classes defined are compatible with the
-   * particular template function they are used with, and that the algorithm
-   * implemented in the function is fully optimised for that particular class. 
-   *
-   * \par Why not use an abstract base class and inheritance?
-   *
-   * Defining an abstract class implies that all functions are declared
-   * virtual. This means that every operation on a derived class will incur a
-   * function call overhead, which will in many cases have a significant
-   * adverse impact on performance. This also restricts the amount of optimisation that the
-   * compiler might otherwise be able to perform. Using inheritance would have
-   * the benefit of allowing run-time polymorphism (i.e. the same function can
-   * be used with any derived class at runtime); however, in practice run-time
-   * polymorphism is rarely needed in MRtrix applications. Finally, if such an
-   * interface were required, it would be trivial to define such an abstract class and
-   * use it with the template functions provided by MRtrix.
+   * number of MRtrix algorithms expect to operate on. For more details, see
+   * \ref dataset_page.
    *
    * \note The DataSet class itself should \b not be used or included in MRtrix
    * programs. Any attempt at including the relevant header will result in
