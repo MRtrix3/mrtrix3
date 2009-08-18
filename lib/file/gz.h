@@ -42,15 +42,15 @@ namespace MR {
     class GZ {
       public:
         GZ () : gz (NULL) { }
-        GZ (const std::string& fname) : gz (NULL) { open (fname); }
+        GZ (const std::string& fname, const char* mode) : gz (NULL) { open (fname, mode); }
         ~GZ () { close(); }
 
         const std::string&  name () const  { return (filename); }
 
-        void open (const std::string& fname) { 
+        void open (const std::string& fname, const char* mode) { 
           close();
           filename = fname;
-          gz = gzopen64 (filename.c_str(), "rb");
+          gz = gzopen64 (filename.c_str(), mode);
           if (!gz) throw Exception ("error opening file \"" + filename + "\": insufficient memory");
         }
 
@@ -75,6 +75,18 @@ namespace MR {
           int n_read = gzread (gz, s, n); 
           if (n_read < 0) throw Exception ("error reading from file \"" + filename + "\": " + error());
           return (n_read);
+        }
+
+        void write (const char* s, size_t n) {
+          assert (gz);
+          if (gzwrite (gz, s, n) <= 0)
+            throw Exception ("error writing to file \"" + filename + "\": " + error());
+        }
+
+        void write (const std::string& s) {
+          assert (gz);
+          if (gzputs (gz, s.c_str()) < 0)
+            throw Exception ("error writing to file \"" + filename + "\": " + error());
         }
 
         std::string getline () {
@@ -122,7 +134,6 @@ namespace MR {
           return (s);
         }
     };
-
 
   }
 }

@@ -38,7 +38,7 @@ namespace MR {
           Entry (entry), msize (mapped_size), readwrite (read_write) { map(); }
         MMap (const std::string& fname, bool read_write = false, off64_t from = 0, off64_t mapped_size = -1) :
           Entry (fname, from), msize (mapped_size), readwrite (read_write) { map(); }
-        ~MMap () { unmap(); }
+        ~MMap ();
 
         std::string     name () const        { return (Entry::name); }
         off64_t         size () const        { return (msize); }
@@ -55,8 +55,6 @@ namespace MR {
           return (stream);
         }
 
-        static const off64_t  pagesize;
-
       protected:
         int       fd;
         uint8_t*  addr;        /**< The address in memory where the file has been mapped. */
@@ -65,7 +63,6 @@ namespace MR {
         bool      readwrite;
 
         void map ();
-        void unmap ();
 
       private:
         MMap (const MMap& mmap) : Entry (mmap) { assert (0); }
