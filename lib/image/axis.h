@@ -87,7 +87,7 @@ namespace MR {
 
         void clear () { axes.clear(); }
         void sanitise ();
-        void get_strides (size_t& start, ssize_t* stride) const;
+        void get_strides (size_t& start, std::vector<ssize_t>& stride) const;
 
         const Axis& operator[] (size_t index) const { return (axes[index]); }
 

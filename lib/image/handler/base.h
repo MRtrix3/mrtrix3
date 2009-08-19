@@ -23,11 +23,13 @@
 #ifndef __image_handler_h__
 #define __image_handler_h__
 
-#include "file/mmap.h"
-#include "image/header.h"
+#include <map>
+#include <stdint.h>
 
 namespace MR {
   namespace Image {
+
+    class Header;
 
     //! \addtogroup Image 
     // @{
@@ -35,6 +37,12 @@ namespace MR {
     namespace Handler {
 
       class Base {
+        public:
+          Base (Header& header) : H (header) { }
+          virtual ~Base () { }
+          virtual void map (std::vector<uint8_t>& addresses) = 0; 
+        protected:
+          Header& H;
       };
 
     }

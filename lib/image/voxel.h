@@ -58,7 +58,7 @@ namespace MR {
 
         ~Voxel () { delete [] x; }
 
-        const Header& header (); 
+        const Header& header () const { return (S->H); }
         DataType datatype () const { return (S->H.datatype()); }
         const Math::Matrix<float>& transform () const { return (S->H.transform()); }
 
@@ -162,15 +162,12 @@ namespace MR {
         class SharedInfo {
           public:
             SharedInfo (Header& header);
-            ~SharedInfo ();
             
             Header&   H; //!< reference to the corresponding Image::Header
-            uint8_t*  mem;
-            uint8_t** segment;
-            ssize_t*  stride; //!< the offsets between adjacent voxels along each respective axis
+            std::vector<uint8_t*> segment;
+            std::vector<ssize_t>  stride; //!< the offsets between adjacent voxels along each respective axis
             size_t    start; //!< the offset to the first (logical) voxel in the dataset
             size_t    segsize; //!< the number of voxels in each file entry
-            std::vector<RefPtr<File::MMap> > files;
 
             float get (off64_t at) const; // TODO
             void  set (off64_t at, float val);
@@ -192,9 +189,6 @@ namespace MR {
         RefPtr<SharedInfo> S;
         size_t    offset; //!< the offset in memory to the current voxel
         ssize_t*  x; //!< the current image coordinates
-
-        void map ();
-        bool is_mapped () const { assert (S); return (S->files.size() || S->mem); }
 
         ssize_t set (size_t axis, ssize_t position)   { offset += S->stride[axis] * ssize_t(position - x[axis]); x[axis] = position; return (x[axis]); }
         ssize_t get (size_t axis) const               { return (x[axis]); }

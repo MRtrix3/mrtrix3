@@ -28,6 +28,7 @@
 #include "ptr.h"
 #include "data_type.h"
 #include "image/axis.h"
+#include "image/handler/base.h"
 #include "file/mmap.h"
 #include "math/matrix.h"
 
@@ -39,19 +40,16 @@ namespace MR {
     
     class Header : public std::map<std::string, std::string> {
       public:
-        Header () : 
-          format (NULL), offset (0.0), scale (1.0), readwrite (false), 
-          files_initialised (false), num_voxel_per_file (0), first_voxel_offset (0) { }
+        Header () : format (NULL), offset (0.0), scale (1.0), readwrite (false) { }
         Header (const Header& H) :
           std::map<std::string, std::string> (H),
           format (NULL), axes (H.axes), offset (0.0), scale (1.0), 
-          readwrite (false), files_initialised (false), DW_scheme (H.DW_scheme), comments (H.comments),
-          num_voxel_per_file (0), first_voxel_offset (0), 
+          readwrite (false), DW_scheme (H.DW_scheme), comments (H.comments),
           dtype (H.dtype), transform_matrix (H.transform_matrix) { } 
 
         template <class DataSet> Header (const DataSet& ds) :
-          format (NULL), offset (0.0), scale (1.0), readwrite (false), files_initialised (false),
-          num_voxel_per_file (0), first_voxel_offset (0), transform_matrix (ds.transform()) { 
+          format (NULL), offset (0.0), scale (1.0), readwrite (false), 
+          transform_matrix (ds.transform()) { 
             axes.ndim() = ds.ndim();
             //axes.resize (ds.ndim());
             for (size_t i = 0; i < ds.ndim(); i++) {
@@ -61,8 +59,8 @@ namespace MR {
           } 
 
         template <class DataSet> Header& operator= (const DataSet& ds) {
-          format = NULL; offset = 0.0; scale = 1.0; files_initialised = false; readwrite = false;
-          num_voxel_per_file = 0; first_voxel_offset = 0; transform_matrix = ds.transform(); 
+          format = NULL; offset = 0.0; scale = 1.0; readwrite = false;
+          transform_matrix = ds.transform(); 
           axes.ndim() = ds.ndim();
           //axes.resize (ds.ndim());
           for (size_t i = 0; i < ds.ndim(); i++) {
@@ -77,14 +75,13 @@ namespace MR {
         const char*                format;
         Axes                       axes;
         float                      offset, scale;
-        bool                       readwrite, files_initialised;
+        bool                       readwrite;
         Math::Matrix<float>        DW_scheme;
         std::vector<File::Entry>   files;
 
         std::vector<std::string>   comments;
 
-        size_t num_voxel_per_file;
-        size_t first_voxel_offset;
+        Ptr<Handler::Base>         handler;
 
         // DataSet interface:
         int     dim (size_t index) const { return (axes.dim (index)); } 
@@ -100,7 +97,7 @@ namespace MR {
         void clear () {
           std::map<std::string, std::string>::clear(); 
           identifer.clear(); axes.clear(); comments.clear(); dtype = DataType();
-          offset = 0.0; scale = 1.0; files_initialised = false; readwrite = false; format = NULL;
+          offset = 0.0; scale = 1.0; readwrite = false; format = NULL;
           transform_matrix.clear(); DW_scheme.clear();
         }
 

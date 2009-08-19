@@ -59,10 +59,10 @@ namespace MR {
 
 
 
-    void Axes::get_strides (size_t& start, ssize_t* stride) const
+    void Axes::get_strides (size_t& start, std::vector<ssize_t>& stride) const
     {
       start = 0;
-      memset (stride, 0, ndim()*sizeof(ssize_t));
+      stride.resize (ndim(), 0);
 
       ssize_t mult = 1;
       for (size_t i = 0; i < ndim(); i++) {

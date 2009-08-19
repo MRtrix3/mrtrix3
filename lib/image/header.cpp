@@ -116,11 +116,7 @@ namespace MR {
         }
       }
 
-      num_voxel_per_file = voxel_count (*this) * ( dtype.is_complex() ? 2 : 1 ) / files.size();
-
       debug ("setting up data increments for \"" + name() + "\"...");
-
-      first_voxel_offset = 0;
 
       size_t order[ndim()];
       size_t last = ndim()-1;
