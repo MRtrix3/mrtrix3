@@ -20,8 +20,8 @@
 
  */
 
-#ifndef __image_handler_h__
-#define __image_handler_h__
+#ifndef __image_handler_base_h__
+#define __image_handler_base_h__
 
 #include <map>
 #include <stdint.h>
@@ -40,9 +40,15 @@ namespace MR {
         public:
           Base (Header& header) : H (header) { }
           virtual ~Base () { }
-          virtual void map (std::vector<uint8_t>& addresses) = 0; 
+          virtual void execute () = 0; 
+
+          size_t   nsegments () const { return (addresses.size()); }
+          size_t   voxels_per_segment () const { return (segsize); }
+          uint8_t* segment (size_t n) const { return (addresses[n]); }
         protected:
           Header& H;
+          std::vector<uint8_t*> addresses; 
+          size_t segsize;
       };
 
     }

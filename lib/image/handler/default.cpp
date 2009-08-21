@@ -34,70 +34,77 @@ namespace MR {
 
       Default::~Default () 
       {
-        if (H.readwrite && !files.size()) {
-          assert (mem);
-          off64_t bps = (H.datatype().bits() * segsize + 7) / 8;
+        if (files.empty() && addresses.size()) {
+          assert (addresses[0]);
 
-          for (size_t n = 0; n < H.files.size(); n++) {
-            File::MMap file (H.files[n], true, bps);
-            memcpy (segment ? segment[n] : mem + n*bps, file.address(), bps);
+          if (H.readwrite) {
+            for (size_t n = 0; n < H.files.size(); n++) {
+              File::MMap file (H.files[n], true, bytes_per_segment);
+              memcpy (file.address(), addresses[0] + n*bytes_per_segment, bytes_per_segment);
+            }
           }
+
+          delete [] addresses[0];
         }
-        for (size_t n = 0; n < mem.size(); n++)
-          delete [] mem[n];
       }
 
 
-      void Default::map (std::vector<uint8_t>& addresses) 
+
+
+      void Default::execute ()
       {
-        /* TODO
         if (H.files.empty()) throw Exception ("no files specified in header for image \"" + H.name() + "\"");
-        assert (H.handler);
-        H.handler->get_addresses (segment);
 
         segsize = H.datatype().is_complex() ? 2 : 1;
         for (size_t i = 0; i < H.ndim(); i++) segsize *= H.dim(i); 
-        segsize /= segment.size();
-        assert (segsize * segment.size() == voxel_count (H));
+        segsize /= H.files.size();
+        assert (segsize * H.files.size() == voxel_count (H));
 
-        off64_t bps = (H.datatype().bits() * segsize + 7) / 8;
-        if (H.files.size() * bps > std::numeric_limits<size_t>::max())
-          throw Exception ("failed to allocate memory for image \"" + H.name() + "\"");
+        bytes_per_segment = (H.datatype().bits() * segsize + 7) / 8;
+        if (H.files.size() * bytes_per_segment > std::numeric_limits<size_t>::max())
+          throw Exception ("image \"" + H.name() + "\" is larger than maximum accessible memory");
 
+        if (H.files.size() > MAX_FILES_PER_IMAGE) copy_to_mem ();
+        else map_files ();
+      }
+
+
+
+
+
+      void Default::map_files () 
+      {
         debug ("mapping image \"" + H.name() + "\"...");
-
-        if (H.files.size() > MAX_FILES_PER_IMAGE) {
-          mem = new uint8_t [H.files.size() * bps];
-          if (!mem) throw Exception ("failed to allocate memory for image \"" + H.name() + "\"");
-
-          if (H.files_initialised) {
-            for (size_t n = 0; n < H.files.size(); n++) {
-              File::MMap file (H.files[n], false, bps);
-              memcpy (mem + n*bps, file.address(), bps);
-            }
-          }
-          else memset (mem, 0, H.files.size() * bps);
-
-          if (H.datatype().bits() == 1 && H.files.size() > 1) {
-            segment = new uint8_t* [H.files.size()];
-            for (size_t n = 0; n < H.files.size(); n++) 
-              segment[n] = mem + n*bps;
-          }
+        files.resize (H.files.size());
+        addresses.resize (files.size());
+        for (size_t n = 0; n < H.files.size(); n++) {
+          files[n] = new File::MMap (H.files[n], H.readwrite, bytes_per_segment); 
+          addresses[n] = files[n]->address();
         }
-        else {
-          files.resize (H.files.size());
+      }
+
+
+
+
+
+      void Default::copy_to_mem () 
+      {
+        debug ("loading image \"" + H.name() + "\"...");
+        addresses.resize ( H.datatype().bits() == 1 && H.files.size() > 1 ? H.files.size() : 1 );
+        addresses[0] = new uint8_t [H.files.size() * bytes_per_segment];
+        if (!addresses[0]) throw Exception ("failed to allocate memory for image \"" + H.name() + "\"");
+
+        if (!H.readwrite) {
           for (size_t n = 0; n < H.files.size(); n++) {
-            files[n] = new File::MMap (H.files[n], H.readwrite, bps); 
+            File::MMap file (H.files[n], false, bytes_per_segment);
+            memcpy (addresses[0] + n*bytes_per_segment, file.address(), bytes_per_segment);
           }
-          if (files.size() > 1) {
-            segment = new uint8_t* [H.files.size()];
-            for (size_t n = 0; n < H.files.size(); n++) 
-              segment[n] = files[n]->address();
-          }
-          else mem = files.front()->address();
         }
-        */
-
+        
+        if (addresses.size() > 1) 
+          for (size_t n = 1; n < addresses.size(); n++)
+            addresses[n] = addresses[0] + n*bytes_per_segment;
+        else segsize = std::numeric_limits<size_t>::max();
       }
 
     }

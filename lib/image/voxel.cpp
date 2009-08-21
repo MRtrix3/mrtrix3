@@ -36,13 +36,8 @@ namespace MR {
     {
       if (H.files.empty()) throw Exception ("no files specified in header for image \"" + H.name() + "\"");
       assert (H.handler);
-      H.handler->get_addresses (segment);
+      H.handler->execute();
       H.axes.get_strides (start, stride);
-
-      segsize = H.datatype().is_complex() ? 2 : 1;
-      for (size_t i = 0; i < H.ndim(); i++) segsize *= H.dim(i); 
-      segsize /= segment.size();
-      assert (segsize * segment.size() == voxel_count (H));
     }
 
 

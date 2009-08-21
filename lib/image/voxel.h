@@ -51,7 +51,6 @@ namespace MR {
         /*! Useful for multi-threading applications. All coordinates will be initialised to
          * the same value as \a V. */
         Voxel (const Voxel& V) : S (V.S), offset (V.offset) {
-          assert (is_mapped());
           x = new ssize_t [ndim()];
           memcpy (x, V.x, sizeof(ssize_t) * ndim());
         }
@@ -164,13 +163,17 @@ namespace MR {
             SharedInfo (Header& header);
             
             Header&   H; //!< reference to the corresponding Image::Header
-            std::vector<uint8_t*> segment;
             std::vector<ssize_t>  stride; //!< the offsets between adjacent voxels along each respective axis
             size_t    start; //!< the offset to the first (logical) voxel in the dataset
-            size_t    segsize; //!< the number of voxels in each file entry
 
-            float get (off64_t at) const; // TODO
-            void  set (off64_t at, float val);
+            float get (off64_t at) const {
+              ssize_t nseg (at / H.handler->voxels_per_segment());
+              return (H.scale_from_storage (get_func (H.handler->segment(nseg), at - nseg*H.handler->voxels_per_segment()))); 
+            }
+            void  set (off64_t at, float val) {
+              ssize_t nseg (at / H.handler->voxels_per_segment());
+              put_func (H.scale_to_storage (val), H.handler->segment(nseg), at - nseg*H.handler->voxels_per_segment()); 
+            }
 
             cfloat getZ (off64_t at) const;
             void   setZ (off64_t at, cfloat val);

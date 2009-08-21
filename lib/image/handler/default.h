@@ -20,8 +20,8 @@
 
  */
 
-#ifndef __image_handler_h__
-#define __image_handler_h__
+#ifndef __image_handler_default_h__
+#define __image_handler_default_h__
 
 #include "image/handler/base.h"
 #include "file/mmap.h"
@@ -38,11 +38,15 @@ namespace MR {
         public:
           Default (Header& header) : Base (header) { }
           virtual ~Default ();
-          virtual void map (std::vector<uint8_t>& addresses); 
+          virtual void execute ();
 
         protected:
           std::vector<RefPtr<File::MMap> > files;
-          std::vector<uint8_t*>  mem;
+          off64_t bytes_per_segment;
+
+          void map_files ();
+          void copy_to_mem ();
+          void copy_to_files ();
       };
 
     }
