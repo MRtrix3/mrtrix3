@@ -34,9 +34,8 @@ namespace MR {
 
     Voxel::SharedInfo::SharedInfo (Header& parent) : H (parent)
     {
-      if (H.files.empty()) throw Exception ("no files specified in header for image \"" + H.name() + "\"");
       assert (H.handler);
-      H.handler->execute();
+      H.handler->prepare();
       H.axes.get_strides (start, stride);
     }
 

@@ -38,6 +38,14 @@ namespace MR {
     //! \addtogroup Image 
     // @{
     
+    /*! A container for all the information related to an image
+     * This class contains all the information available about an image as it
+     * is (or will be) stored on disk. It does not provide access to the voxel
+     * data themselves. For this, please use the Image::Voxel class. 
+     *
+     * The Header class provides a limited implementation of the DataSet
+     * interface. As such, it can already be used with a number of the relevant
+     * algorithms. */
     class Header : public std::map<std::string, std::string> {
       public:
         Header () : format (NULL), offset (0.0), scale (1.0), readwrite (false) { }
@@ -62,7 +70,6 @@ namespace MR {
           format = NULL; offset = 0.0; scale = 1.0; readwrite = false;
           transform_matrix = ds.transform(); 
           axes.ndim() = ds.ndim();
-          //axes.resize (ds.ndim());
           for (size_t i = 0; i < ds.ndim(); i++) {
             axes.dim(i) = ds.dim(i);
             axes.vox(i) = ds.vox(i);
@@ -70,8 +77,8 @@ namespace MR {
           return (*this);
         } 
 
-        const std::string&         name () const { return (identifer); }
-        std::string&               name ()       { return (identifer); }
+        const std::string&         name () const { return (identifier); }
+        std::string&               name ()       { return (identifier); }
         const char*                format;
         Axes                       axes;
         float                      offset, scale;
@@ -96,7 +103,7 @@ namespace MR {
 
         void clear () {
           std::map<std::string, std::string>::clear(); 
-          identifer.clear(); axes.clear(); comments.clear(); dtype = DataType();
+          identifier.clear(); axes.clear(); comments.clear(); dtype = DataType();
           offset = 0.0; scale = 1.0; readwrite = false; format = NULL;
           transform_matrix.clear(); DW_scheme.clear();
         }
@@ -104,16 +111,26 @@ namespace MR {
         std::string  description () const;
         void         sanitise ();
 
+        void  apply_scaling (float scaling, float bias = 0.0) { scale *= scaling; offset = scaling * offset + bias; }
         float scale_from_storage (float val) const { return (offset + scale * val); }
         float scale_to_storage (float val) const   { return ((val - offset) / scale); }
+
+
+        void open (const std::string& image_name, bool read_write = false);
+        void create (const std::string& image_name);
 
         friend std::ostream& operator<< (std::ostream& stream, const Header& H);
 
       protected:
-        std::string          identifer;
+        std::string          identifier;
         DataType             dtype;
         Math::Matrix<float>  transform_matrix;
+
+        void merge (const Header& H);
     };
+
+
+
 
     //! @}
 

@@ -45,17 +45,21 @@ namespace MR {
         public:
           Base (Header& header, bool image_is_new) : H (header), is_new (image_is_new) { }
           virtual ~Base () { }
-          virtual void execute () = 0; 
 
-          size_t   nsegments () const { return (addresses.size()); }
-          size_t   voxels_per_segment () const { return (segsize); }
-          uint8_t* segment (size_t n) const { return (addresses[n]); }
+          void prepare () { if (addresses.empty()) execute(); }
+
+          size_t   nsegments () const { check(); return (addresses.size()); }
+          size_t   voxels_per_segment () const { check(); return (segsize); }
+          uint8_t* segment (size_t n) const { check(); return (addresses[n]); }
 
         protected:
           Header& H;
           std::vector<uint8_t*> addresses; 
           size_t segsize;
           bool is_new;
+
+          void check () const { assert (addresses.size()); }
+          virtual void execute () = 0; 
       };
 
     }

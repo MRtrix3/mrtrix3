@@ -40,6 +40,8 @@ namespace MR {
   namespace Image {
     namespace Format {
 
+      extern const Base* handlers[]; 
+
       DECLARE_IMAGEFORMAT (Analyse);
       DECLARE_IMAGEFORMAT (NIfTI);
       DECLARE_IMAGEFORMAT (MRI);

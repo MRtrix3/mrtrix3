@@ -32,6 +32,10 @@
 #include "image/misc.h"
 #include "math/matrix.h"
 #include "math/permutation.h"
+#include "image/axis.h"
+#include "image/name_parser.h"
+#include "image/format/list.h"
+#include "image/handler/default.h"
 
 namespace MR {
   namespace Image {
@@ -125,6 +129,179 @@ namespace MR {
         else order[last--] = i;
       }
 
+    }
+
+
+
+
+    void Header::merge (const Header& H)
+    {
+
+      if (dtype != H.dtype) 
+        throw Exception ("data types differ between image files for \"" + name() + "\"");
+
+      if (offset != H.offset || scale != H.scale) 
+        throw Exception ("scaling coefficients differ between image files for \"" + name() + "\"");
+
+      if (ndim() != H.ndim()) 
+        throw Exception ("dimension mismatch between image files for \"" + name() + "\"");
+
+      for (size_t n = 0; n < ndim(); n++) {
+        if (dim(n) != H.dim(n)) 
+          throw Exception ("dimension mismatch between image files for \"" + name() + "\"");
+
+        if (axes.order(n) != H.axes.order(n) || axes.forward(n) != H.axes.forward(n))
+          throw Exception ("data layout differs image files for \"" + name() + "\"");
+
+        if (axes.vox(n) != H.axes.vox(n))
+          error ("WARNING: voxel dimensions differ between image files for \"" + name() + "\"");
+      }
+
+      for (std::vector<File::Entry>::const_iterator item = H.files.begin(); item != H.files.end(); item++)
+        files.push_back (*item);
+
+      for (std::map<std::string, std::string>::const_iterator item = H.begin(); item != H.end(); item++)
+        if (std::find (begin(), end(), *item) == end())
+          insert (*item);
+
+      for (std::vector<std::string>::const_iterator item = H.comments.begin(); item != H.comments.end(); item++)
+        if (std::find (comments.begin(), comments.end(), *item) == comments.end())
+          comments.push_back (*item);
+
+      if (!transform_matrix.is_set() && H.transform_matrix.is_set()) transform_matrix = H.transform_matrix;
+      if (!DW_scheme.is_set() && H.DW_scheme.is_set()) DW_scheme = H.DW_scheme; 
+    }
+
+
+
+
+
+
+
+    void Header::open (const std::string& image_name, bool read_write)
+    {
+      if (image_name.empty()) throw Exception ("no name supplied to open image!");
+      readwrite = read_write;
+
+      try {
+        if (image_name == "-") {
+          getline (std::cin, identifier);
+          info ("opening image \"" + identifier + "\" (from pipe)...");
+
+          // TODO: implement pipe support
+          assert (0);
+
+          return;
+        }
+        
+
+        info ("opening image \"" + image_name + "\"...");
+
+        ParsedNameList list;
+        std::vector<int> num = list.parse_scan_check (image_name);
+
+        const Format::Base** format_handler = Format::handlers;
+        std::vector< RefPtr<ParsedName> >::iterator item = list.begin();
+        identifier = (*item)->name();
+
+        for (; *format_handler; format_handler++) if ((*format_handler)->read (*this)) break;
+        if (!*format_handler) throw Exception ("unknown format for image \"" + name() + "\"");
+
+        Header header (*this);
+        while (++item != list.end()) {
+          header.name() = (*item)->name();
+          if (!(*format_handler)->read (header)) throw Exception ("image specifier contains mixed format files");
+          merge (header);
+        }
+
+        if (num.size()) {
+          int a = 0, n = 0;
+          for (size_t i = 0; i < axes.ndim(); i++) if (axes.order(i) != Axes::undefined) n++;
+          axes.ndim() = n + num.size();
+
+          for (std::vector<int>::const_iterator item = num.begin(); item != num.end(); item++) {
+            while (axes[a].order != Axes::undefined) a++;
+            axes.dim(a) = *item;
+            axes.order(a) = n++;
+          }
+        }
+
+        sanitise();
+        if (!handler) handler = new Handler::Default (*this, false);
+
+        identifier = image_name;
+      }
+      catch (...) { throw Exception ("error opening image \"" + image_name + "\""); }
+    }
+
+
+
+
+
+    void Header::create (const std::string& image_name)
+    {
+      if (image_name.empty()) throw Exception ("no name supplied to open image!");
+      readwrite = true;
+
+      try {
+        sanitise();
+
+        if (image_name == "-") {
+          // TODO: implement pipe support
+          assert (0);
+
+          return;
+        }
+
+        info ("creating image \"" + image_name + "\"...");
+
+        NameParser parser;
+        parser.parse (image_name);
+        std::vector<int> Pdim (parser.ndim());
+
+        int Hdim [ndim()];
+        for (size_t i = 0; i < ndim(); i++) Hdim[i] = dim(i);
+
+        const Format::Base** format_handler = Format::handlers;
+        for (; *format_handler; format_handler++) {
+          if ((*format_handler)->check (*this, ndim() - Pdim.size())) break;
+          if (!*format_handler) throw Exception ("unknown format for image \"" + image_name + "\"");
+        }
+
+        dtype.set_byte_order_native();
+        int a = 0;
+        for (size_t n = 0; n < Pdim.size(); n++) {
+          while (axes.order(a) != Axes::undefined) a++;
+          Pdim[n] = Hdim[a];
+        }
+        parser.calculate_padding (Pdim);
+
+        Header header (*this);
+        std::vector<int> num (Pdim.size());
+        do {
+          header.name() = parser.name (num);
+          (*format_handler)->create (header);
+          merge (header);
+        } while (get_next (num, Pdim));
+
+        if (Pdim.size()) {
+          int a = 0, n = 0;
+          for (size_t i = 0; i < ndim(); i++) if (axes.order(i) != Axes::undefined) n++;
+          axes.ndim() = n + Pdim.size();
+
+          for (std::vector<int>::const_iterator item = Pdim.begin(); item != Pdim.end(); item++) {
+            while (axes.order(a) != Axes::undefined) a++;
+            axes.dim(a) = *item;
+            axes.order(a) = n++;
+          }
+        }
+
+        sanitise();
+        if (!handler) handler = new Handler::Default (*this, false);
+
+        identifier = image_name;
+      }
+      catch (...) { throw Exception ("error creating image \"" + image_name + "\""); }
     }
 
 

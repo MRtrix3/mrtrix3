@@ -55,10 +55,7 @@ namespace MR {
       {
         if (H.files.empty()) throw Exception ("no files specified in header for image \"" + H.name() + "\"");
 
-        segsize = H.datatype().is_complex() ? 2 : 1;
-        for (size_t i = 0; i < H.ndim(); i++) segsize *= H.dim(i); 
-        segsize /= H.files.size();
-        assert (segsize * H.files.size() == voxel_count (H));
+        segsize = voxel_count (H) / H.files.size();
 
         bytes_per_segment = (H.datatype().bits() * segsize + 7) / 8;
         if (H.files.size() * bytes_per_segment > std::numeric_limits<size_t>::max())
