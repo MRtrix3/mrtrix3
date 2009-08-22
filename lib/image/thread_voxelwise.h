@@ -20,8 +20,8 @@
 
 */
 
-#ifndef __mrtrix_image_thread_voxelwise_h__
-#define __mrtrix_image_thread_voxelwise_h__
+#ifndef __mrtrix_image_threadvoxelwise_h__
+#define __mrtrix_image_threadvoxelwise_h__
 
 #include "thread.h"
 #include "ptr.h"

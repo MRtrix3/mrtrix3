@@ -1,7 +1,7 @@
 /*
    Copyright 2009 Brain Research Institute, Melbourne, Australia
 
-   Written by J-Donald Tournier, 19/08/09.
+   Written by J-Donald Tournier, 21/08/09.
 
    This file is part of MRtrix.
 
@@ -20,8 +20,8 @@
 
  */
 
-#ifndef __image_handler_default_h__
-#define __image_handler_default_h__
+#ifndef __image_handler_gz_h__
+#define __image_handler_gz_h__
 
 #include "image/handler/base.h"
 #include "file/mmap.h"
@@ -31,19 +31,14 @@ namespace MR {
 
     namespace Handler {
 
-      class Default : public Base {
+      class GZ : public Base {
         public:
-          Default (Header& header, bool image_is_new) : Base (header, image_is_new) { }
-          virtual ~Default ();
+          GZ (Header& header, bool image_is_new) : Base (header, image_is_new) { }
+          virtual ~GZ ();
           virtual void execute ();
 
         protected:
-          std::vector<RefPtr<File::MMap> > files;
           off64_t bytes_per_segment;
-
-          void map_files ();
-          void copy_to_mem ();
-          void copy_to_files ();
       };
 
     }

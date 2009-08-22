@@ -1,7 +1,7 @@
 /*
    Copyright 2009 Brain Research Institute, Melbourne, Australia
 
-   Written by J-Donald Tournier, 19/08/09.
+   Written by J-Donald Tournier, 21/08/09.
 
    This file is part of MRtrix.
 
@@ -20,8 +20,8 @@
 
  */
 
-#ifndef __image_handler_default_h__
-#define __image_handler_default_h__
+#ifndef __image_handler_mosaic_h__
+#define __image_handler_mosaic_h__
 
 #include "image/handler/base.h"
 #include "file/mmap.h"
@@ -31,19 +31,16 @@ namespace MR {
 
     namespace Handler {
 
-      class Default : public Base {
+      class Mosaic : public Base {
         public:
-          Default (Header& header, bool image_is_new) : Base (header, image_is_new) { }
-          virtual ~Default ();
+          Mosaic (Header& header, size_t mosaic_xdim, size_t mosaic_ydim, size_t slice_xdim, size_t slice_ydim, size_t nslices) :
+            Base (header, false), m_xdim (mosaic_xdim), m_ydim (mosaic_ydim), 
+            xdim (slice_xdim), ydim (slice_ydim), slices (nslices) { }
+          virtual ~Mosaic ();
           virtual void execute ();
 
         protected:
-          std::vector<RefPtr<File::MMap> > files;
-          off64_t bytes_per_segment;
-
-          void map_files ();
-          void copy_to_mem ();
-          void copy_to_files ();
+          size_t m_xdim, m_ydim, xdim, ydim, slices;
       };
 
     }

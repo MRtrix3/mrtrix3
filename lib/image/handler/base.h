@@ -34,21 +34,28 @@ namespace MR {
     //! \addtogroup Image 
     // @{
     
+    /*! Classes responsible for actual image loading & writing
+     * These classes are designed to provide a consistent interface for image
+     * loading & writing, so that various non-trivial types of image storage
+     * can be accommodated. These include compressed files, and images stored
+     * as mosaic (e.g. Siemens DICOM mosaics). */
     namespace Handler {
 
       class Base {
         public:
-          Base (Header& header) : H (header) { }
+          Base (Header& header, bool image_is_new) : H (header), is_new (image_is_new) { }
           virtual ~Base () { }
           virtual void execute () = 0; 
 
           size_t   nsegments () const { return (addresses.size()); }
           size_t   voxels_per_segment () const { return (segsize); }
           uint8_t* segment (size_t n) const { return (addresses[n]); }
+
         protected:
           Header& H;
           std::vector<uint8_t*> addresses; 
           size_t segsize;
+          bool is_new;
       };
 
     }
