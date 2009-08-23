@@ -24,6 +24,10 @@
 #define __file_ops_h__
 
 #include <stdint.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+
 #include "mrtrix.h"
 
 namespace MR {
@@ -42,13 +46,13 @@ namespace MR {
 
 
 
-    inline void create (const std::string& filename, off64_t size) {
+    inline void create (const std::string& filename, off64_t size = 0) {
       int fid = open64 (filename.c_str(), O_CREAT | O_RDWR | O_EXCL, 0755);
       if (fid < 0) throw Exception ("error creating file \"" + filename + "\": " + strerror(errno));
 
-      int status = ftruncate64 (fid, size);
+      if (size) size = ftruncate64 (fid, size);
       close (fid);
-      if (status) throw Exception ("WARNING: cannot resize file \"" + filename + "\": " + strerror(errno));
+      if (size) throw Exception ("WARNING: cannot resize file \"" + filename + "\": " + strerror(errno));
     }
 
 
