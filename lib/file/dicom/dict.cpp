@@ -20,6 +20,7 @@
 
 */
 
+#include "exception.h"
 #include "file/dicom/element.h"
 
 namespace MR {

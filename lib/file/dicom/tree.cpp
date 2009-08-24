@@ -18,13 +18,6 @@
     You should have received a copy of the GNU General Public License
     along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
 
-
-    15-09-2008 J-Donald Tournier <d.tournier@brain.org.au>
-    * handle files even when any of the study, series or patient description fields are blank
-
-    19-12-2008 J-Donald Tournier <d.tournier@brain.org.au>
-    * various sanity checks to ignore non-image DICOM files
-
 */
 
 #include "file/path.h"
@@ -44,7 +37,7 @@ namespace MR {
       {
         bool match;
 
-        for (uint n = 0; n < size(); n++) {
+        for (size_t n = 0; n < size(); n++) {
           match = true;
           if (patient_name == (*this)[n]->name) {
             if (patient_ID.size() && (*this)[n]->ID.size()) 
@@ -135,7 +128,7 @@ namespace MR {
       std::ostream& operator<< (std::ostream& stream, const Tree& item)
       { 
         stream << "FileSet " << item.description << ":\n";
-        for (uint n = 0; n < item.size(); n++) stream << (*item[n]); 
+        for (size_t n = 0; n < item.size(); n++) stream << (*item[n]); 
         return (stream);
       }
 

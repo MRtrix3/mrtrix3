@@ -18,10 +18,6 @@
     You should have received a copy of the GNU General Public License
     along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
 
-
-    08-09-2008 J-Donald Tournier <d.tournier@brain.org.au>
-    * fix handling of mosaic slice ordering (using SliceNormalVector entry in CSA header)
-
 */
 
 #ifndef __file_dicom_image_h__
@@ -44,27 +40,27 @@ namespace MR {
         public:
           Image (Series* parent = NULL);
 
-          std::string            filename;
-          std::string            sequence_name;
-          Series*           series;
+          std::string  filename;
+          std::string  sequence_name;
+          Series*      series;
 
-          uint             acq_dim[2], dim[2], instance, acq, sequence;
-          float            position_vector[3], orientation_x[3], orientation_y[3], orientation_z[3], distance;
-          float            pixel_size[2], slice_thickness, scale_slope, scale_intercept;
-          float            bvalue, G[3];
-          uint             data, bits_alloc, images_in_mosaic, data_size;
-          DataType          data_type;
-          bool              is_BE;
+          size_t   acq_dim[2], dim[2], instance, acq, sequence;
+          float    position_vector[3], orientation_x[3], orientation_y[3], orientation_z[3], distance;
+          float    pixel_size[2], slice_thickness, scale_slope, scale_intercept;
+          float    bvalue, G[3];
+          size_t   data, bits_alloc, images_in_mosaic, data_size;
+          DataType data_type;
+          bool     is_BE;
 
-          void              read ();
-          void              parse_item (Element& item, const std::string& dirname = "");
-          void              decode_csa (const uint8_t* start, const uint8_t* end);
+          void read ();
+          void parse_item (Element& item, const std::string& dirname = "");
+          void decode_csa (const uint8_t* start, const uint8_t* end);
 
-          void              calc_distance ();
+          void calc_distance ();
 
-          bool              operator< (const Image& ima) const;
+          bool operator< (const Image& ima) const;
 
-          void              print_fields (bool dcm, bool csa) const;
+          void print_fields (bool dcm, bool csa) const;
       };
 
       std::ostream& operator<< (std::ostream& stream, const Image& item);
@@ -110,7 +106,7 @@ namespace MR {
         if (images_in_mosaic) {
           float xinc = pixel_size[0] * (dim[0] - acq_dim[0]) / 2.0;
           float yinc = pixel_size[1] * (dim[1] - acq_dim[1]) / 2.0;
-          for (uint i = 0; i < 3; i++) 
+          for (size_t i = 0; i < 3; i++) 
             position_vector[i] += xinc * orientation_x[i] + yinc * orientation_y[i];
 
           float normal[3];

@@ -40,17 +40,18 @@ namespace MR {
               const std::string& study_name, 
               const std::string& study_ID = "", 
               const std::string& study_date = "",
-              const std::string& study_time = "");
+              const std::string& study_time = ""):
+            patient (parent), name (study_name), ID (study_ID), date (study_date), time (study_time) { }
 
           Patient*     patient;
-          std::string       name;
-          std::string       ID;
-          std::string       date;
-          std::string       time;
+          std::string  name;
+          std::string  ID;
+          std::string  date;
+          std::string  time;
 
           RefPtr<Series>   find (
               const std::string& series_name, 
-              uint         series_number,
+              size_t series_number,
               const std::string& series_modality = "", 
               const std::string& series_date = "",
               const std::string& series_time = "");
@@ -63,21 +64,6 @@ namespace MR {
 
 
 
-
-
-      inline Study::Study(
-          Patient* parent, 
-          const std::string& study_name, 
-          const std::string& study_ID, 
-          const std::string& study_date,
-          const std::string& study_time) :
-        patient (parent),
-        name (study_name),
-        ID (study_ID),
-        date (study_date),
-        time (study_time)
-      {
-      }
 
 
 

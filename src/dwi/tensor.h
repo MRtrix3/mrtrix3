@@ -18,10 +18,6 @@
     You should have received a copy of the GNU General Public License
     along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
 
-
-    17-12-2008 J-Donald Tournier <d.tournier@brain.org.au>
-    * minor changes to tidy up the code
-
 */
 
 #ifndef __dwi_tensor_h__
@@ -41,7 +37,7 @@ namespace MR {
       float trace = tensor2ADC (t);
       float a[] = { t[0]-trace, t[1]-trace, t[2]-trace };
       trace = t[0]*t[0] + t[1]*t[1] + t[2]*t[2] + 2.0*( t[3]*t[3] + t[4]*t[4] + t[5]*t[5] );
-      return (trace ? sqrt((3/2)*(a[0]*a[0]+a[1]*a[1]+a[2]*a[2] + 2.0*(t[3]*t[3]+t[4]*t[4]+t[5]*t[5])) / trace) : 0.0);
+      return (trace ? sqrt(1.5*(a[0]*a[0]+a[1]*a[1]+a[2]*a[2] + 2.0*(t[3]*t[3]+t[4]*t[4]+t[5]*t[5])) / trace) : 0.0);
     }
 
 

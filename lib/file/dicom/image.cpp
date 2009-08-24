@@ -18,10 +18,6 @@
     You should have received a copy of the GNU General Public License
     along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
 
-
-    08-09-2008 J-Donald Tournier <d.tournier@brain.org.au>
-    * fix handling of mosaic slice ordering (using SliceNormalVector entry in CSA header)
-
 */
 
 #include "file/path.h"
@@ -43,7 +39,7 @@ namespace MR {
               assert (dirname.size());
               filename = dirname;
               std::vector<std::string> V (item.get_string());
-              for (uint n = 0; n < V.size(); n++) 
+              for (size_t n = 0; n < V.size(); n++) 
                 filename = Path::join (filename, V[n]);
             }
             break;
@@ -58,7 +54,7 @@ namespace MR {
                             int c = sequence_name.size()-1;
                             while (c >= 0 && isdigit (sequence_name[c])) c--;
                             c++;
-                            sequence = to<uint> (sequence_name.substr (c));
+                            sequence = to<size_t> (sequence_name.substr (c));
                             return;
             }
             return;

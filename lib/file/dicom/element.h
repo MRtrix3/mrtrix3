@@ -18,15 +18,14 @@
     You should have received a copy of the GNU General Public License
     along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
 
-
-    17-03-2009 J-Donald Tournier <d.tournier@brain.org.au>
-    * modify to allow use of either TR1 unordered map or SGI hash_map for the DICOM dictionary
-    
 */
 
 #ifndef __file_dicom_element_h__
 #define __file_dicom_element_h__
 
+#include <vector>
+
+#include "ptr.h"
 #include "hash_map.h"
 #include "file/mmap.h"
 #include "file/dicom/definitions.h"
@@ -35,131 +34,80 @@ namespace MR {
   namespace File {
     namespace Dicom {
 
-      typedef enum _ElementType {
-        INVALID,
-        INT,
-        UINT,
-        FLOAT,
-        STRING,
-        SEQ,
-        OTHER
-      } ElementType;
-
-
-
-
-
       class Element {
+        public:
+          typedef enum _Type {
+            INVALID,
+            INT,
+            UINT,
+            FLOAT,
+            STRING,
+            SEQ,
+            OTHER
+          } Type;
+
+          uint16_t group, element, VR;
+          uint32_t size;
+          uint8_t* data;
+
+          std::vector<size_t>  item_number;
+
+          void set (const std::string& filename);
+          bool read ();
+
+          bool is (uint16_t Group, uint16_t Element) const {
+            if (group != Group) return (false);
+            return (element == Element);
+          }
+
+          std::string  tag_name () const {
+            if (dict.empty()) init_dict();
+            const char* s = dict[tag()];
+            return (s ? s : "");
+          }
+
+          uint32_t     tag () const {
+            union __DICOM_group_element_pair__ { uint16_t s[2]; uint32_t i; } val = { {
+#ifdef BYTE_ORDER_BIG_ENDIAN
+              group, element
+#else
+                element, group
+#endif 
+            } };
+            return (val.i);
+          }
+
+          Type   type () const;
+          size_t offset (uint8_t* address) const { assert (fmap); return (address - (uint8_t*) fmap->address()); }
+          bool   is_big_endian () const { return (is_BE); }
+
+          std::vector<int32_t>      get_int () const;
+          std::vector<uint32_t>     get_uint () const;
+          std::vector<double>       get_float () const;
+          std::vector<std::string>  get_string () const;
+
+          void print () const;
+
+          friend std::ostream& operator<< (std::ostream& stream, const Element& item);
+
         protected:
-          static UnorderedMap<uint32_t, const char*>::Type dict;
-          static void           init_dict();
+          Ptr<File::MMap> fmap;
 
-          File::MMap            fmap;
-          void                  set_explicit_encoding();
-          bool                  read_GR_EL();
+          void set_explicit_encoding();
+          bool read_GR_EL();
 
-          uint8_t*               next;
-          uint8_t*               start;
-          bool                  is_explicit;
-          bool                  is_BE;
-          bool                  previous_BO_was_BE;
+          uint8_t* next;
+          uint8_t* start;
+          bool     is_explicit;
+          bool     is_BE;
+          bool     previous_BO_was_BE;
 
           std::vector<uint8_t*>  end_seq;
 
-        public:
+          static UnorderedMap<uint32_t, const char*>::Type dict;
+          static void init_dict();
 
-          uint16_t               group, element, VR;
-          uint32_t               size;
-          uint8_t*               data;
-
-          std::vector<uint>    item_number;
-
-          void                  set (const std::string& filename);
-          bool                  read ();
-
-          bool                  is (uint16_t group, uint16_t element) const;
-
-          std::string                tag_name () const;
-          uint32_t               tag () const;
-          ElementType           type () const;
-          bool                  is_big_endian () const;
-          std::vector<int32_t>   get_int () const;
-          std::vector<uint32_t>  get_uint () const;
-          std::vector<double>   get_float () const;
-          std::vector<std::string>   get_string () const;
-          uint                 offset (uint8_t* address) const;
-
-          void                  print () const;
-
-          friend std::ostream& operator<< (std::ostream& stream, const Element& item);
       };
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-      inline bool Element::is (uint16_t Group, uint16_t Element) const
-      {
-        if (group != Group) return (false);
-        return (element == Element);
-      }
-
-
-
-
-
-      inline bool Element::is_big_endian () const { return (is_BE); }
-
-
-
-
-      inline uint32_t Element::tag () const
-      {
-        union __DICOM_group_element_pair__ { uint16_t s[2]; uint32_t i; } val = { {
-#ifdef BYTE_ORDER_BIG_ENDIAN
-          group, element
-#else
-            element, group
-#endif 
-        } };
-        return (val.i);
-      }
-
-
-
-
-
-      inline std::string Element::tag_name() const
-      {
-        if (dict.empty()) init_dict();
-        const char* s = dict[tag()];
-        return (s ? s : "");
-      }
-
-
-
-
-
-      inline uint Element::offset (uint8_t* address) const { return (address - (uint8_t*) fmap.address()); }
-
-
-
-
-
 
     }
   }

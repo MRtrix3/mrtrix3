@@ -40,7 +40,7 @@ namespace MR {
       {
         bool match;
 
-        for (uint n = 0; n < size(); n++) {
+        for (size_t n = 0; n < size(); n++) {
           match = true;
           if (study_name == (*this)[n]->name) {
             if (study_ID.size() && (*this)[n]->ID.size()) 
@@ -73,7 +73,7 @@ namespace MR {
             format_ID (item.ID).c_str(), 
             format_date (item.DOB).c_str());
 
-        for (uint n = 0; n < item.size(); n++) stream << (*item[n]);
+        for (size_t n = 0; n < item.size(); n++) stream << (*item[n]);
         return (stream);
       }
 

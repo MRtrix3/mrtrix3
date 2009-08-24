@@ -45,7 +45,7 @@ namespace MR {
         const Image* first[] = { (*this)[0].get(), (*this)[0].get() };
 
 
-        for (uint current_entry = 1; current_entry < size(); current_entry++) {
+        for (size_t current_entry = 1; current_entry < size(); current_entry++) {
 
           if ((*this)[current_entry]->acq != first[1]->acq) {
             if (dim[1] && dim[1] != current_dim[1]) 
@@ -100,7 +100,7 @@ namespace MR {
               format_time(item.time).c_str(),
               item.name.c_str() );
 
-        for (uint n = 0; n < item.size(); n++) stream << (*item[n]);
+        for (size_t n = 0; n < item.size(); n++) stream << (*item[n]);
         return (stream);
       }
 

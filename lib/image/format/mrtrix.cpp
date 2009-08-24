@@ -18,17 +18,13 @@
     You should have received a copy of the GNU General Public License
     along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
 
-
-    02-09-2008 J-Donald Tournier <d.tournier@brain.org.au>
-    * add capacity to create temporary files for use through pipes
-
 */
 
 #include <unistd.h>
 #include <fcntl.h>
 #include <fstream>
 
-#include "file/ops.h"
+#include "file/misc.h"
 #include "file/entry.h"
 #include "file/path.h"
 #include "file/key_value.h"

@@ -18,19 +18,6 @@
     You should have received a copy of the GNU General Public License
     along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
 
-
-    02-10-2008 J-Donald Tournier <d.tournier@brain.org.au>
-    * extra sanity check to make sure that each element fits within the file.
-
-    31-10-2008 J-Donald Tournier <d.tournier@brain.org.au>
-    * only attempt to read a "truncated format" DICOM file if the extension is ".dcm"
-
-    18-12-2008 J-Donald Tournier <d.tournier@brain.org.au>
-    * printout of DICOM group & element is now in hexadecimal
-
-    17-03-2009 J-Donald Tournier <d.tournier@brain.org.au>
-    * modify to allow use of either TR1 unordered map or SGI hash_map for the DICOM dictionary
-    
 */
 
 #include "file/path.h"
@@ -50,24 +37,23 @@ namespace MR {
         end_seq.clear();
         item_number.clear();
 
-        fmap.init (filename);
-        if (fmap.size() < 256) throw Exception ("\"" + fmap.name() + "\" is too small to be a valid DICOM file", 3);
-        fmap.map();
+        fmap = new File::MMap (filename);
+        if (fmap->size() < 256) throw Exception ("\"" + fmap->name() + "\" is too small to be a valid DICOM file", 3);
 
-        next = (uint8_t*) fmap.address();
+        next = (uint8_t*) fmap->address();
 
         if (memcmp (next + 128, "DICM", 4)) {
           is_explicit = false;
-          debug ("DICOM magic number not found in file \"" + fmap.name() + "\" - trying truncated format");
-          if (!Path::has_suffix (fmap.name(), ".dcm")) 
-            throw Exception ("file \"" + fmap.name() + "\" does not have the DICOM magic number or the .dcm extension - assuming not DICOM");
+          debug ("DICOM magic number not found in file \"" + fmap->name() + "\" - trying truncated format");
+          if (!Path::has_suffix (fmap->name(), ".dcm")) 
+            throw Exception ("file \"" + fmap->name() + "\" does not have the DICOM magic number or the .dcm extension - assuming not DICOM");
         }
         else next += 132;
 
         try { set_explicit_encoding(); }
         catch (Exception) {
-          fmap.unmap();
-          throw Exception ("\"" + fmap.name() + "\" is not a valid DICOM file", 3);
+          throw Exception ("\"" + fmap->name() + "\" is not a valid DICOM file", 3);
+          fmap = NULL;
         }
       }
 
@@ -78,7 +64,8 @@ namespace MR {
 
       void Element::set_explicit_encoding ()
       {
-        if (read_GR_EL()) throw Exception ("\"" + fmap.name() + "\" is too small to be DICOM", 3);
+        assert (fmap);
+        if (read_GR_EL()) throw Exception ("\"" + fmap->name() + "\" is too small to be DICOM", 3);
 
         is_explicit = true;
         next = start;
@@ -108,8 +95,8 @@ namespace MR {
         start = next;
         data = next = NULL;
 
-        if (start < (uint8_t*) fmap.address()) throw Exception ("invalid DICOM element", 3);
-        if (start + 8 > (uint8_t*) fmap.address() + fmap.size()) return (true);
+        if (start < (uint8_t*) fmap->address()) throw Exception ("invalid DICOM element", 3);
+        if (start + 8 > (uint8_t*) fmap->address() + fmap->size()) return (true);
 
         is_BE = previous_BO_was_BE;
 
@@ -117,7 +104,7 @@ namespace MR {
 
         if (group == GROUP_BYTE_ORDER_SWAPPED) {
           if (!is_BE) 
-            throw Exception ("invalid DICOM group ID " + str (group) + " in file \"" + fmap.name() + "\"", 3);
+            throw Exception ("invalid DICOM group ID " + str (group) + " in file \"" + fmap->name() + "\"", 3);
 
           is_BE = false;
           group = GROUP_BYTE_ORDER;
@@ -152,7 +139,7 @@ namespace MR {
           if (!name.size()) {
             if (group%2 == 0) 
               debug ("WARNING: unknown DICOM tag (" + str (group) + ", " + str (element) 
-                  + ") with implicit encoding in file \"" + fmap.name() + "\"");
+                  + ") with implicit encoding in file \"" + fmap->name() + "\"");
             VR = VR_UN;
           }
           else {
@@ -168,11 +155,11 @@ namespace MR {
           if (VR != VR_SQ && !(group == GROUP_SEQUENCE && element == ELEMENT_SEQUENCE_ITEM)) 
             throw Exception ("undefined length used for DICOM tag " + ( tag_name().size() ? tag_name().substr (2) : "" ) 
                 + " (" + str (group) + ", " + str (element) 
-                + ") in file \"" + fmap.name() + "\"", 3);
+                + ") in file \"" + fmap->name() + "\"", 3);
         }
-        else if (next+size > (uint8_t*) fmap.address() + fmap.size()) throw Exception ("file \"" + fmap.name() + "\" is too small to contain DICOM elements specified", 3);
+        else if (next+size > (uint8_t*) fmap->address() + fmap->size()) throw Exception ("file \"" + fmap->name() + "\" is too small to contain DICOM elements specified", 3);
         else if (size%2) throw Exception ("odd length (" + str (size) + ") used for DICOM tag " + ( tag_name().size() ? tag_name().substr (2) : "" ) 
-              + " (" + str (group) + ", " + str (element) + ") in file \"" + fmap.name() + "", 3);
+              + " (" + str (group) + ", " + str (element) + ") in file \"" + fmap->name() + "", 3);
         else if (VR != VR_SQ && ( group != GROUP_SEQUENCE || element != ELEMENT_SEQUENCE_ITEM ) ) next += size;
 
 
@@ -214,7 +201,7 @@ namespace MR {
                   throw Exception ("DICOM deflated explicit VR little endian transfer syntax not supported");
                 }
                 else error ("unknown DICOM transfer syntax: \"" + std::string ((const char*) data, size) 
-                    + "\" in file \"" + fmap.name() + "\" - ignored");
+                    + "\" in file \"" + fmap->name() + "\" - ignored");
                 break;
             }
 
@@ -235,7 +222,7 @@ namespace MR {
 
 
 
-      ElementType Element::type () const
+      Element::Type Element::type () const
       {
         if (!VR) return (INVALID);
         if (VR == VR_FD || VR == VR_FL) return (FLOAT);
@@ -263,7 +250,7 @@ namespace MR {
         else if (VR == VR_IS) {
           std::vector<std::string> strings (get_string ());
           V.resize (strings.size());
-          for (uint n = 0; n < V.size(); n++) V[n] = to<int32_t> (strings[n]);
+          for (size_t n = 0; n < V.size(); n++) V[n] = to<int32_t> (strings[n]);
         }
         return (V);
       }
@@ -283,7 +270,7 @@ namespace MR {
         else if (VR == VR_IS) {
           std::vector<std::string> strings (split (std::string ((const char*) data, size), "\\", false));
           V.resize (strings.size());
-          for (uint n = 0; n < V.size(); n++) V[n] = to<uint32_t> (strings[n]);
+          for (size_t n = 0; n < V.size(); n++) V[n] = to<uint32_t> (strings[n]);
         }
         return (V);
       }
@@ -302,7 +289,7 @@ namespace MR {
         else if (VR == VR_DS) {
           std::vector<std::string> strings (split (std::string ((const char*) data, size), "\\", false));
           V.resize (strings.size());
-          for (uint n = 0; n < V.size(); n++) V[n] = to<double> (strings[n]);
+          for (size_t n = 0; n < V.size(); n++) V[n] = to<double> (strings[n]);
         }
         return (V);
       }
@@ -325,7 +312,7 @@ namespace MR {
 
       namespace {
         template <class T> inline void print_vec (const std::vector<T>& V)
-        { for (uint n = 0; n < V.size(); n++) fprintf (stdout, "%s ", str (V[n]).c_str()); }
+        { for (size_t n = 0; n < V.size(); n++) fprintf (stdout, "%s ", str (V[n]).c_str()); }
       }
 
 
@@ -363,7 +350,7 @@ namespace MR {
         const std::string& name (item.tag_name());
 
         stream << "[DCM] ";
-        for (uint i = 0; i < item.end_seq.size(); i++) stream << "  ";
+        for (size_t i = 0; i < item.end_seq.size(); i++) stream << "  ";
         stream << printf ("%02X %02X ", item.group, item.element)  
             + ((const char*) &item.VR)[1] + ((const char*) &item.VR)[0] + " " 
             + str ( item.size == LENGTH_UNDEFINED ? 0 : item.size ) + " " 
@@ -371,14 +358,14 @@ namespace MR {
 
 
         switch (item.type()) {
-          case INT: stream << item.get_int(); break;
-          case UINT: stream << item.get_uint(); break;
-          case FLOAT: stream << item.get_float(); break;
-          case STRING:
+          case Element::INT: stream << item.get_int(); break;
+          case Element::UINT: stream << item.get_uint(); break;
+          case Element::FLOAT: stream << item.get_float(); break;
+          case Element::STRING:
             if (item.group == GROUP_DATA && item.element == ELEMENT_DATA) stream << "(data)";
             else stream << item.get_string(); 
             break;
-          case SEQ:
+          case Element::SEQ:
             stream << "(sequence)";
             break;
           default:
@@ -388,7 +375,7 @@ namespace MR {
 
         if (item.item_number.size()) {
           stream << " [ ";
-          for (uint n = 0; n < item.item_number.size(); n++) stream << item.item_number[n] << " ";
+          for (size_t n = 0; n < item.item_number.size(); n++) stream << item.item_number[n] << " ";
           stream << "] ";
         }
 

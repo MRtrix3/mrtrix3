@@ -22,7 +22,7 @@
 
 #include <fstream>
 
-#include "file/ops.h"
+#include "file/misc.h"
 #include "file/path.h"
 #include "file/entry.h"
 #include "image/misc.h"

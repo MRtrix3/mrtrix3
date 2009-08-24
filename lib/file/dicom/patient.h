@@ -37,7 +37,9 @@ namespace MR {
           Patient (
               const std::string& patient_name, 
               const std::string& patient_ID = "", 
-              const std::string& patient_DOB = "");
+              const std::string& patient_DOB = "") :
+            name (patient_name), ID (patient_ID), DOB (patient_DOB) { }
+
           std::string   name;
           std::string   ID;
           std::string   DOB;
@@ -52,24 +54,6 @@ namespace MR {
 
 
       std::ostream& operator<< (std::ostream& stream, const Patient& item);
-
-
-
-
-
-
-
-
-      inline Patient::Patient (
-          const std::string& patient_name, 
-          const std::string& patient_ID, 
-          const std::string& patient_DOB) :
-        name (patient_name),
-        ID (patient_ID),
-        DOB (patient_DOB)
-      {
-      }
-
 
     }
   }

@@ -33,20 +33,25 @@ namespace MR {
       class Series; 
       class Patient;
 
-      class Tree : public std::vector< RefPtr<Patient> > { 
-        protected:
-          void    read_dir (const std::string& filename);
-          void    read_file (const std::string& filename);
-         
+      class Tree : public std::vector< RefPtr<Patient> > 
+      { 
         public:
-          std::string    description;
-          void      read (const std::string& filename);
-          RefPtr<Patient>   find (
-              const std::string& patient_name, 
-              const std::string& patient_ID = "", 
-              const std::string& patient_DOB = "");
+          std::string description;
 
-          void       sort();
+          void read (const std::string& filename);
+          RefPtr<Patient> find (const std::string& patient_name, const std::string& patient_ID = "", const std::string& patient_DOB = ""); 
+
+          void sort() {
+            for (size_t patient = 0; patient < size(); patient++) {
+              Patient& pat (*((*this)[patient]));
+              for (size_t study = 0; study < pat.size(); study++) 
+                std::sort (pat[study]->begin(), pat[study]->end());
+            }
+          }
+
+        protected:
+          void read_dir (const std::string& filename);
+          void read_file (const std::string& filename);
       }; 
 
       std::ostream& operator<< (std::ostream& stream, const Tree& item);
@@ -61,14 +66,6 @@ namespace MR {
 
 
 
-
-      inline void Tree::sort() {
-        for (uint patient = 0; patient < size(); patient++) {
-          Patient& pat (*((*this)[patient]));
-          for (uint study = 0; study < pat.size(); study++) 
-            std::sort (pat[study]->begin(), pat[study]->end());
-        }
-      }
 
 
     }
