@@ -31,14 +31,8 @@ namespace MR {
   namespace Math {
 
     class FFT {
-      protected:
-        gsl_fft_complex_wavetable*  wavetable;
-        gsl_fft_complex_workspace*  workspace;
-
-        uint length;
-
       public:
-        FFT () { wavetable = NULL; workspace = NULL; length = 0; }
+        FFT () : wavetable (NULL), workspace (NULL), length (0) { }
         ~FFT () { 
           if (wavetable) gsl_fft_complex_wavetable_free (wavetable); 
           if (workspace) gsl_fft_complex_workspace_free (workspace);
@@ -63,6 +57,11 @@ namespace MR {
               gsl_fft_complex_inverse (&array.front().real(), 1, array.size(), wavetable, workspace)
              ) throw Exception ("error computing FFT");
         }
+
+      protected:
+        gsl_fft_complex_wavetable*  wavetable;
+        gsl_fft_complex_workspace*  workspace;
+        size_t length;
     };
 
   }

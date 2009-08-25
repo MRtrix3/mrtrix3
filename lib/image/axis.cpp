@@ -108,7 +108,7 @@ namespace MR {
           else {
             while (isdigit (specifier[lim])) lim++;
             if (specifier[lim] != ',' && specifier[lim] != '\0') throw 0;
-            parsed[current].order = to<uint> (specifier.substr (str, lim-str));
+            parsed[current].order = to<size_t> (specifier.substr (str, lim-str));
           }
 
           str = lim+1;

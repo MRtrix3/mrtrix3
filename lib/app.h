@@ -33,7 +33,7 @@
 #define DESCRIPTION const char* __command_description[]
 #define ARGUMENTS   const MR::Argument __command_arguments[]
 #define OPTIONS const MR::Option __command_options[]
-#define SET_VERSION(a, b, c) const uint __command_version[3] = { (a), (b), (c) }
+#define SET_VERSION(a, b, c) const size_t __command_version[3] = { (a), (b), (c) }
 #define SET_AUTHOR(a) const char* __command_author = (a)
 #define SET_COPYRIGHT(a) const char* __command_copyright = (a)
 
@@ -45,7 +45,7 @@
 #define EXECUTE class MyApp : public MR::App { \
   public: \
   MyApp (int argc, char** argv, const char** cmd_desc, const MR::Argument* cmd_args, const MR::Option* cmd_opts, \
-      const uint* cmd_version, const char* cmd_author, const char* cmd_copyright) : \
+      const size_t* cmd_version, const char* cmd_author, const char* cmd_copyright) : \
   App (argc, argv, cmd_desc, cmd_args, cmd_opts, cmd_version, cmd_author, cmd_copyright) { } \
   void execute (); \
 }; \
@@ -68,7 +68,7 @@ namespace MR {
 
   class ParsedOption {
     public:
-      uint index;
+      size_t index;
       std::vector<const char*> args;
   };
 
@@ -77,14 +77,14 @@ namespace MR {
   {
     public:
       App (int argc, char** argv, const char** cmd_desc, const MR::Argument* cmd_args, const MR::Option* cmd_opts,
-          const uint* cmd_version, const char* cmd_author, const char* cmd_copyright);
+          const size_t* cmd_version, const char* cmd_author, const char* cmd_copyright);
       virtual ~App ();
 
       void   run (int argc, char** argv);
 
       static int    log_level;
 
-      static const uint*            version;
+      static const size_t*            version;
       static const char*            copyright;
       static const char*            author;
       static const std::string&          name () { return (application_name); }
@@ -93,34 +93,34 @@ namespace MR {
       friend std::ostream& operator<< (std::ostream& stream, const OptBase& opt);
 
     protected:
-      void                          parse_arguments ();
+      void parse_arguments ();
 
-      void                          print_help () const;
-      void                          print_full_usage () const;
-      void                          print_full_argument_usage (const Argument& arg) const;
-      void                          print_full_option_usage (const Option& opt) const;
-      uint                          match_option (const char* stub) const;
-      void                          sort_arguments (int argc, char** argv);
+      void   print_help () const;
+      void   print_full_usage () const;
+      void   print_full_argument_usage (const Argument& arg) const;
+      void   print_full_option_usage (const Option& opt) const;
+      size_t match_option (const char* stub) const;
+      void   sort_arguments (int argc, char** argv);
 
-      static std::string                 application_name;
-      static const char**           command_description;
-      static const Argument*        command_arguments;
-      static const Option*          command_options;
+      static std::string     application_name;
+      static const char**    command_description;
+      static const Argument* command_arguments;
+      static const Option*   command_options;
 
-      static const Option           default_options[];
-      std::vector<const char*>      parsed_arguments;
-      std::vector<ParsedOption>     parsed_options;
+      static const Option       default_options[];
+      std::vector<const char*>  parsed_arguments;
+      std::vector<ParsedOption> parsed_options;
 
-      const char*                   option_name (uint num) const { 
+      std::vector<ArgBase> argument;
+      std::vector<OptBase> option;
+
+      virtual void execute () = 0;
+
+      const char* option_name (size_t num) const { 
         return (num < DEFAULT_OPTIONS_OFFSET ? command_options[num].sname : default_options[num - DEFAULT_OPTIONS_OFFSET].sname ); 
       }
 
-      virtual void                  execute () = 0;
-
-      std::vector<ArgBase>          argument;
-      std::vector<OptBase>          option;
-
-      std::vector<OptBase>          get_options (uint index);
+      std::vector<OptBase> get_options (size_t index);
   };
 
 
@@ -132,10 +132,10 @@ namespace MR {
 
 
 
-  inline std::vector<OptBase> App::get_options (uint index)
+  inline std::vector<OptBase> App::get_options (size_t index)
   {
     std::vector<OptBase> a;
-    for (uint n = 0; n < option.size(); n++) 
+    for (size_t n = 0; n < option.size(); n++) 
       if (option[n].index == index)
         a.push_back (option[n]);
     return (a);

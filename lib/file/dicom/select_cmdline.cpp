@@ -45,7 +45,7 @@ namespace MR {
         if (tree.size() > 1) {
           while (patient_p == NULL) {
             fprintf(stderr, "Select patient (q to abort):\n");
-            for (uint i = 0; i < tree.size(); i++) {
+            for (size_t i = 0; i < tree.size(); i++) {
               fprintf (stderr, "  %2u - %s %s %s\n", 
                   i+1, 
                   tree[i]->name.c_str(),  
@@ -78,7 +78,7 @@ namespace MR {
         if (patient.size() > 1) {
           while (study_p == NULL) {
             fprintf (stderr, "Select study (q to abort):\n");
-            for (uint i = 0; i < patient.size(); i++) {
+            for (size_t i = 0; i < patient.size(); i++) {
               fprintf (stderr, "  %4u - %s %s %s %s\n", 
                   i+1, 
                   ( patient[i]->name.size() ? patient[i]->name.c_str() : "unnamed" ),
@@ -113,7 +113,7 @@ namespace MR {
         if (study.size() > 1) {
           while (series.size() == 0) {
             fprintf (stderr, "Select series ('q' to abort):\n");
-            for (uint i = 0; i < study.size(); i++) {
+            for (size_t i = 0; i < study.size(); i++) {
               fprintf (stderr, "  %2u - %4zu %s images %8s %s (%s) [%u]\n", 
                   i,
                   study[i]->size(), 
@@ -130,7 +130,7 @@ namespace MR {
             try { seq = parse_ints (buf); }
             catch (Exception) { fprintf (stderr, "Invalid number sequence - please try again\n"); seq.clear(); }
             if (seq.size()) {
-              for (uint i = 0; i < seq.size(); i++) {
+              for (size_t i = 0; i < seq.size(); i++) {
                 if (seq[i] < 0 || seq[i] >= (int) study.size()) {
                   fprintf (stderr, "invalid selection - try again\n");
                   series.clear();

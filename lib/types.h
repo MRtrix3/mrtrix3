@@ -25,7 +25,6 @@
 
 #include <stdint.h>
 
-typedef unsigned int uint;
 #ifndef HAVE_LARGE_FILE_SUPPORT
   typedef off_t off64_t;
 #endif

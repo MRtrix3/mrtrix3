@@ -18,13 +18,6 @@
     You should have received a copy of the GNU General Public License
     along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
 
-
-    15-09-2008 J-Donald Tournier <d.tournier@brain.org.au>
-    * handle files even when any of the study, series or patient description fields are blank
-
-    19-12-2008 J-Donald Tournier <d.tournier@brain.org.au>
-    * various sanity checks to ignore non-image DICOM files
-
 */
 
 #include "file/dicom/quick_scan.h"
@@ -80,7 +73,7 @@ namespace MR {
               // exclude Siemens MPR info image:
               // TODO: could handle this by splitting on basis on this entry
               std::vector<std::string> V (item.get_string());
-              for (uint n = 0; n < V.size(); n++) {
+              for (size_t n = 0; n < V.size(); n++) {
                 if (uppercase (V[n]) == "CSAPARALLEL") return (true);
               }
             }

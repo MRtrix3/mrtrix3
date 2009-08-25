@@ -22,7 +22,6 @@
 
 #include "args.h"
 #include "app.h"
-#include "image/object.h"
 
 namespace MR {
 
@@ -48,52 +47,38 @@ namespace MR {
 
   ArgBase::ArgBase (const Argument& arg, const char* string)
   {
-    data = new ArgData;
-    data->type = arg.type;
-    try {
-      switch (data->type) {
-        case Integer: 
-          data->data.i = to<int> (string);
-          if (data->data.i < arg.extra_info.i.min || data->data.i > arg.extra_info.i.max) 
-            throw Exception ("value supplied for integer argument \"" + std::string (arg.sname) + "\" is out of bounds");
-          break;
-        case Float:
-          data->data.f = to<float> (string);
-          if (data->data.f < arg.extra_info.f.min || data->data.f > arg.extra_info.f.max) 
-            throw Exception ("value supplied for floating-point argument \"" + std::string (arg.sname) + "\" is out of bounds");
-          break;
-        case Text:
-        case ArgFile:
-        case IntSeq:
-        case FloatSeq:
-          data->data.string = string;
-          break;
-        case ImageOut:
-          data->data.string = string;
-          data->image = new Image::Object;
-          break;
-        case ImageIn:
-          data->data.string = string;
-          data->image = new Image::Object;
-          data->image->open (string);
-          break;
-        case Choice:
-          data->data.i = -1;
-          for (uint n = 0; arg.extra_info.choice[n]; n++) {
-            if (uppercase (string) == arg.extra_info.choice[n]) {
-              data->data.i = n;
-              break;
-            }
+    argtype = arg.type;
+    switch (argtype) {
+      case Integer: 
+        data.i = to<int> (string);
+        if (data.i < arg.extra_info.i.min || data.i > arg.extra_info.i.max) 
+          throw Exception ("value supplied for integer argument \"" + std::string (arg.sname) + "\" is out of bounds");
+        break;
+      case Float:
+        data.f = to<float> (string);
+        if (data.f < arg.extra_info.f.min || data.f > arg.extra_info.f.max) 
+          throw Exception ("value supplied for floating-point argument \"" + std::string (arg.sname) + "\" is out of bounds");
+        break;
+      case Text:
+      case ArgFile:
+      case IntSeq:
+      case FloatSeq:
+      case ImageIn:
+      case ImageOut:
+        data.string = string;
+        break;
+      case Choice:
+        data.i = -1;
+        for (size_t n = 0; arg.extra_info.choice[n]; n++) {
+          if (uppercase (string) == arg.extra_info.choice[n]) {
+            data.i = n;
+            break;
           }
-          if (data->data.i < 0) 
-            throw Exception ("invalid selection supplied \"" + std::string (string) + "\" for argument \"" + arg.sname + "\"");
-          break;
-        default: throw Exception ("unkown argument type for argument \"" + std::string (arg.sname) + "\"");
-      }
-    }
-    catch (Exception) {
-      data = NULL;
-      throw;
+        }
+        if (data.i < 0) 
+          throw Exception ("invalid selection supplied \"" + std::string (string) + "\" for argument \"" + arg.sname + "\"");
+        break;
+      default: throw Exception ("unkown argument type for argument \"" + std::string (arg.sname) + "\"");
     }
   }
 
@@ -102,20 +87,17 @@ namespace MR {
 
   std::ostream& operator<< (std::ostream& stream, const ArgBase& arg)
   {
-    if (!arg.data) stream << "undefined"; 
-    else {
-      switch (arg.data->type) {
-        case Integer:  stream << "integer: " << arg.get_int(); break;
-        case Float:    stream << "float: " << arg.get_float(); break;
-        case Text:     stream << "string: \"" << arg.get_string() << "\""; break;
-        case ArgFile:  stream << "file: \"" << arg.get_string() << "\""; break;
-        case ImageIn:  stream << "image in: \"" << arg.data->image->name() << "\""; break;
-        case ImageOut: stream << "image out: \"" << arg.get_string() << "\""; break;
-        case Choice:   stream << "choice: " << arg.get_int(); break;
-        case IntSeq:   stream << "int seq: " << arg.get_string(); break;
-        case FloatSeq: stream << "float seq: " << arg.get_string(); break;
-        default:       stream << "undefined"; break;
-      }
+    switch (arg.type()) {
+      case Integer:  stream << "integer: " << arg.get_int(); break;
+      case Float:    stream << "float: " << arg.get_float(); break;
+      case Text:     stream << "string: \"" << arg.get_string() << "\""; break;
+      case ArgFile:  stream << "file: \"" << arg.get_string() << "\""; break;
+      case ImageIn:  stream << "image in: \"" << arg.get_string() << "\""; break;
+      case ImageOut: stream << "image out: \"" << arg.get_string() << "\""; break;
+      case Choice:   stream << "choice: " << arg.get_int(); break;
+      case IntSeq:   stream << "int seq: " << arg.get_string(); break;
+      case FloatSeq: stream << "float seq: " << arg.get_string(); break;
+      default:       stream << "undefined"; break;
     }
     return (stream);
   }
@@ -176,7 +158,7 @@ namespace MR {
       << ( opt.mandatory ? "mandatory" : "optional" ) << ","
       << ( opt.allow_multiple ? "multiple" : "single" ) << "]\n  "
       << opt.desc << "\n\n";
-    for (uint n = 0; n < opt.size(); n++) 
+    for (size_t n = 0; n < opt.size(); n++) 
       stream << "[" << n << "] " << opt[n] << "\n\n";
     return (stream);
   }

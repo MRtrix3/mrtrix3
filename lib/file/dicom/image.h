@@ -81,7 +81,7 @@ namespace MR {
       inline Image::Image (Series* parent) :
         series (parent)
       { 
-        acq_dim[0] = acq_dim[1] = dim[0] = dim[1] = instance = acq = sequence = UINT_MAX;
+        acq_dim[0] = acq_dim[1] = dim[0] = dim[1] = instance = acq = sequence = SIZE_MAX;
         position_vector[0] = position_vector[1] = position_vector[2] = NAN;
         orientation_x[0] = orientation_x[1] = orientation_x[2] = NAN;
         orientation_y[0] = orientation_y[1] = orientation_y[2] = NAN;

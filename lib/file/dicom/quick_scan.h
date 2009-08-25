@@ -18,10 +18,6 @@
     You should have received a copy of the GNU General Public License
     along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
 
-
-    19-12-2008 J-Donald Tournier <d.tournier@brain.org.au>
-    * various sanity checks to ignore non-image DICOM files
-
 */
 
 #ifndef __file_dicom_quick_scan_h__
@@ -43,7 +39,7 @@ namespace MR {
           std::string      study, study_ID, study_date, study_time;
           std::string      series, series_date, series_time;
           std::string      sequence;
-          uint       series_number, bits_alloc, dim[2], data;
+          size_t           series_number, bits_alloc, dim[2], data;
       };
 
       std::ostream& operator<< (std::ostream& stream, const QuickScan& file);

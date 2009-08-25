@@ -18,16 +18,11 @@
     You should have received a copy of the GNU General Public License
     along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
 
-
-    02-09-2008 J-Donald Tournier <d.tournier@brain.org.au>
-    * remove temporary file creation capacity
-
 */
 
 
 #include "file/config.h"
 #include "file/path.h"
-#include "image/mapper.h"
 #include "image/misc.h"
 #include "file/mmap.h"
 #include "image/format/list.h"

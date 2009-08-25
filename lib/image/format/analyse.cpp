@@ -18,18 +18,11 @@
     You should have received a copy of the GNU General Public License
     along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
 
-
-    08-07-2008 J-Donald Tournier <d.tournier@brain.org.au>
-    * issue info statement about left-right encoding
-
-    02-09-2008 J-Donald Tournier <d.tournier@brain.org.au>
-    * add support for reading NIfTI-1.1 hdr/img pairs
-
-
 */
 
+#include "file/misc.h"
+#include "file/entry.h"
 #include "file/config.h"
-#include "image/mapper.h"
 #include "image/misc.h"
 #include "get_set.h"
 #include "image/format/list.h"

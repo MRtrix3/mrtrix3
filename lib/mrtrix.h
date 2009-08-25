@@ -100,9 +100,9 @@ namespace MR {
 
   const std::string& get_application_name ();
 
-  extern const uint mrtrix_major_version;
-  extern const uint mrtrix_minor_version;
-  extern const uint mrtrix_micro_version;
+  extern const size_t mrtrix_major_version;
+  extern const size_t mrtrix_minor_version;
+  extern const size_t mrtrix_micro_version;
 
   namespace Image {
     typedef enum {

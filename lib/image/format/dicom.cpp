@@ -18,18 +18,10 @@
     You should have received a copy of the GNU General Public License
     along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
 
-
-    15-10-2008 J-Donald Tournier <d.tournier@brain.org.au>
-    * remove MR::DICOM_DW_gradients_PRS flag
-
-    18-12-2008 J-Donald Tournier <d.tournier@brain.org.au>
-    * handle cases where no series have been selected
-
 */
 
 #include "file/path.h"
 #include "file/config.h"
-#include "image/mapper.h"
 #include "get_set.h"
 #include "file/dicom/mapper.h"
 #include "file/dicom/image.h"
@@ -38,47 +30,32 @@
 #include "file/dicom/patient.h"
 #include "file/dicom/tree.h"
 #include "image/format/list.h"
+#include "image/header.h"
 
 namespace MR {
   namespace Image {
     namespace Format {
 
-      bool print_DICOM_fields = false;
-      bool print_CSA_fields = false;
-
-
-
-
-
-
-      bool DICOM::read (Mapper& dmap, Header& H) const
+      bool DICOM::read (Header& H) const
       {
-        if (!Path::is_dir (H.name)) return (false);
+        if (!Path::is_dir (H.name())) return (false);
 
         File::Dicom::Tree dicom;
         
-        dicom.read (H.name);
+        dicom.read (H.name());
         dicom.sort();
 
         std::vector< RefPtr<File::Dicom::Series> > series = File::Dicom::select_func (dicom);
         if (series.empty()) throw Exception ("no DICOM series selected");
 
-        dicom_to_mapper (dmap, H, series);
-
-        if (print_DICOM_fields || print_CSA_fields) {
-          for (uint s = 0; s < series.size(); s++) 
-            series[s]->print_fields (print_DICOM_fields, print_CSA_fields);
-        }
+        dicom_to_mapper (H, series);
 
         return (true);
       }
 
 
-
-
-
       bool DICOM::check (Header& H, int num_axes) const { return (false); }
-      void DICOM::create (Mapper& dmap, const Header& H) const { assert (0); }
+      void DICOM::create (Header& H) const { assert (0); }
 
 
     }

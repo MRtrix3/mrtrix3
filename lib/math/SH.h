@@ -70,7 +70,7 @@ namespace MR {
           void set_filter (const Math::Vector<T>& filter)
           { 
             int l = 0;
-            uint nl = 1;
+            size_t nl = 1;
             for (size_t n = 0; n < iSHT.rows(); n++) {
               if (n >= nl) { l++; nl = NforL(2*l); }
               for (size_t i = 0; i < iSHT.columns(); i++) {

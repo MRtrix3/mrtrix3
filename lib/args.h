@@ -55,63 +55,39 @@ namespace MR {
   const char* argument_type_description (ArgType type);
 
 
-  class ArgData {
-    public:
-      ArgData () : type (Undefined) { data.string = NULL; }
-      ArgType   type;
-      union {
-        int         i;
-        float       f;
-        const char* string;
-      } data;
-
-      RefPtr<Image::Header>  image;
-      friend std::ostream& operator<< (std::ostream& stream, const ArgData& a)
-      {
-        stream << "{ arg type: " << a.type << " }";
-        return (stream);
-      }
-  };
-
-
-
-
-
   class Argument;
 
   class ArgBase {
-    protected:
-      RefPtr<ArgData> data;
-
     public:
-      ArgBase () { }
+      ArgBase () : argtype (Undefined) { data.string = NULL; }
       ArgBase (const Argument& arg, const char* string);
 
-      int                 get_int () const     { return (data->data.i); }
-      float               get_float () const   { return (data->data.f); }
-      const char*         get_string () const  { return (data->data.string); }
-      RefPtr<Image::Header>  get_image () const   { assert (type() == ImageIn); return (data->image); }
-      RefPtr<Image::Header>  get_image (Image::Header& header) const {
-        assert (type() == ImageOut);
-        //data->image->create (get_string(), header);
-        return (data->image); 
+      int         get_int () const     { return (data.i); }
+      float       get_float () const   { return (data.f); }
+      const char* get_string () const  { return (data.string); }
+      void        get_image (Image::Header& header, bool readwrite = false) const { 
+        if (type() == ImageIn) header.open (data.string, readwrite);
+        else { assert (type() == ImageOut); header.create (data.string); }
       }
 
-      ArgType              type () const { return (!data ? Undefined : data->type ); }
+      ArgType type () const { return (argtype); }
 
-      friend std::ostream& operator<< (std::ostream& stream, const ArgBase& arg);
       friend class Dialog::Window;
       friend class Dialog::Argument;
-      friend class Image::Header;
+
+    protected:
+      ArgType argtype;
+      union { int i; float f; const char* string; } data;
   };
 
+  std::ostream& operator<< (std::ostream& stream, const ArgBase& arg);
 
 
 
 
   class OptBase : public std::vector<ArgBase> {
     public:
-      uint index;
+      size_t index;
 
       friend std::ostream& operator<< (std::ostream& stream, const OptBase& opt);
       friend class Dialog::Window;
@@ -122,15 +98,8 @@ namespace MR {
   class Argument {
     public:
       Argument () : type (Undefined) { sname = lname = desc = NULL; } 
-      Argument (const char* Short_Name, 
-          const char* Long_Name, 
-          const char* Description, 
-          ArgFlags flags = None) :
-        sname (Short_Name),
-        lname (Long_Name),
-        desc (Description),
-        mandatory (!(flags & Optional)),
-        allow_multiple (flags & AllowMultiple) { }
+      Argument (const char* Short_Name, const char* Long_Name, const char* Description, ArgFlags flags = None) :
+        sname (Short_Name), lname (Long_Name), desc (Description), mandatory (!(flags & Optional)), allow_multiple (flags & AllowMultiple) { }
 
       const char* sname;
       const char* lname;
@@ -155,7 +124,7 @@ namespace MR {
       const Argument& type_sequence_int ();
       const Argument& type_sequence_float ();
 
-      bool    is_valid () const { return (sname); }
+      bool is_valid () const { return (sname); }
 
       static const Argument End;
       friend std::ostream& operator<< (std::ostream& stream, const Argument& arg);
@@ -169,15 +138,8 @@ namespace MR {
   class Option : public std::vector<Argument> {
     public:
       Option () { sname = lname = desc = NULL; } 
-      Option (const char* Short_Name, 
-          const char* Long_Name,
-          const char* Description,
-          ArgFlags flags = Optional) :
-        sname (Short_Name),
-        lname (Long_Name),
-        desc (Description),
-        mandatory (!(flags & Optional)),
-        allow_multiple (flags & AllowMultiple) { }
+      Option (const char* Short_Name, const char* Long_Name, const char* Description, ArgFlags flags = Optional) :
+        sname (Short_Name), lname (Long_Name), desc (Description), mandatory (!(flags & Optional)), allow_multiple (flags & AllowMultiple) { }
 
       const char* sname;
       const char* lname;

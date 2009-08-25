@@ -97,7 +97,7 @@ namespace MR {
 
         for (int32_t m = 0; m < nitems; m++) {
           int32_t length = getLE<int32_t> (next);
-          uint size = 16 + 4*((length+3)/4);
+          size_t size = 16 + 4*((length+3)/4);
           if (next + size > end) return (false);
           if (print) fprintf(stdout, "%.*s ", length, (const char*) next+16);
           next += size;
@@ -167,7 +167,7 @@ namespace MR {
 
         for (int32_t m = 0; m < item.nitems; m++) {
           int32_t length = getLE<int32_t> (next);
-          uint size = 16 + 4*((length+3)/4);
+          size_t size = 16 + 4*((length+3)/4);
           while (length > 0 && !next[16+length-1]) length--;
           stream << " ";
           stream.write ((const char*) next+16, length);

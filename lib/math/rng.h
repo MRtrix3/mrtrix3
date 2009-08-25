@@ -36,20 +36,20 @@ namespace MR {
         gsl_rng* generator;
 
       public:
-        RNG ()               { generator = gsl_rng_alloc (gsl_rng_mt19937); gsl_rng_set (generator, time (NULL)); }
-        RNG (uint seed)      { generator = gsl_rng_alloc (gsl_rng_mt19937); gsl_rng_set (generator, seed); }
-        ~RNG ()              { gsl_rng_free (generator); }
+        RNG ()            { generator = gsl_rng_alloc (gsl_rng_mt19937); gsl_rng_set (generator, time (NULL)); }
+        RNG (size_t seed) { generator = gsl_rng_alloc (gsl_rng_mt19937); gsl_rng_set (generator, seed); }
+        ~RNG ()           { gsl_rng_free (generator); }
 
 
 
-        void      set_seed (uint seed)            { gsl_rng_set (generator, seed); }
+        void set_seed (size_t seed) { gsl_rng_set (generator, seed); }
 
 
         gsl_rng*  operator() ()                    { return (generator); }
 
-        float     uniform ()                       { return (gsl_rng_uniform (generator)); }
-        float     normal (float SD = 1.0)          { return (gsl_ran_gaussian (generator, SD)); }
-        float     rician (float amplitude, float SD)
+        float uniform ()              { return (gsl_rng_uniform (generator)); }
+        float normal (float SD = 1.0) { return (gsl_ran_gaussian (generator, SD)); }
+        float rician (float amplitude, float SD)
         {
           amplitude += gsl_ran_gaussian_ratio_method (generator, SD);
           float imag = gsl_ran_gaussian_ratio_method (generator, SD);

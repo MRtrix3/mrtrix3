@@ -21,6 +21,7 @@
 */
 
 #include "image/header.h"
+#include "image/handler/mosaic.h"
 #include "file/dicom/mapper.h"
 #include "file/dicom/image.h"
 #include "file/dicom/series.h"
@@ -120,7 +121,6 @@ namespace MR {
           H.comments.push_back (sbuf);
         }
 
-        MR::Image::Axes& axes (H.axes);
         const Image& image (*(*series[0])[0]);
 
         series_count = 3;
@@ -132,57 +132,57 @@ namespace MR {
         if (dim[0] > 1) series_count++;
         if (dim[2] > 1) series_count++;
         if (series.size() > 1) series_count++;
-        axes.ndim() = series_count;
+        H.axes.ndim() = series_count;
 
         int current_axis = 0;
         if (image.data_size > expected_data_size) {
-          axes.order(3) = 0;
-          axes.dim(3) = image.data_size / expected_data_size;
-          axes.vox(3) = NAN;
-          axes.description(3).clear();
-          axes.units(3).clear();
+          H.axes.order(3) = 0;
+          H.axes.dim(3) = image.data_size / expected_data_size;
+          H.axes.vox(3) = NAN;
+          H.axes.description(3).clear();
+          H.axes.units(3).clear();
           current_axis = 1;
         }
 
-        axes.order(0) = current_axis;
-        axes.dim(0) = image.dim[0];
-        axes.vox(0) = image.pixel_size[0];
-        axes.description(0) = MR::Image::Axes::left_to_right;
-        axes.units(0) = MR::Image::Axes::millimeters;
+        H.axes.order(0) = current_axis;
+        H.axes.dim(0) = image.dim[0];
+        H.axes.vox(0) = image.pixel_size[0];
+        H.axes.description(0) = MR::Image::Axes::left_to_right;
+        H.axes.units(0) = MR::Image::Axes::millimeters;
         current_axis++;
 
-        axes.order(1) = current_axis;
-        axes.dim(1) = image.dim[1];
-        axes.vox(1) = image.pixel_size[1];
-        axes.description(1) = MR::Image::Axes::posterior_to_anterior;
-        axes.units(1) = MR::Image::Axes::millimeters;
+        H.axes.order(1) = current_axis;
+        H.axes.dim(1) = image.dim[1];
+        H.axes.vox(1) = image.pixel_size[1];
+        H.axes.description(1) = MR::Image::Axes::posterior_to_anterior;
+        H.axes.units(1) = MR::Image::Axes::millimeters;
         current_axis++;
 
-        axes.order(2) = current_axis;
-        axes.dim(2) = dim[1];
-        axes.vox(2) = slice_separation;
-        axes.description(2) = MR::Image::Axes::inferior_to_superior;
-        axes.units(2) = MR::Image::Axes::millimeters;
+        H.axes.order(2) = current_axis;
+        H.axes.dim(2) = dim[1];
+        H.axes.vox(2) = slice_separation;
+        H.axes.description(2) = MR::Image::Axes::inferior_to_superior;
+        H.axes.units(2) = MR::Image::Axes::millimeters;
         current_axis++;
 
         if (dim[0] > 1) {
-          axes.order(current_axis) = current_axis;
-          axes.dim(current_axis) = dim[0];
-          axes.description(current_axis) = "sequence";
+          H.axes.order(current_axis) = current_axis;
+          H.axes.dim(current_axis) = dim[0];
+          H.axes.description(current_axis) = "sequence";
           current_axis++;
         }
 
         if (dim[2] > 1) {
-          axes.order(current_axis) = current_axis;
-          axes.dim(current_axis) = dim[2];
-          axes.description(current_axis) = "acquisition";
+          H.axes.order(current_axis) = current_axis;
+          H.axes.dim(current_axis) = dim[2];
+          H.axes.description(current_axis) = "acquisition";
           current_axis++;
         }
 
         if (series.size() > 1) {
-          axes.order(current_axis) = current_axis;
-          axes.dim(current_axis) = series.size();
-          axes.description(current_axis) = "series";
+          H.axes.order(current_axis) = current_axis;
+          H.axes.dim(current_axis) = series.size();
+          H.axes.description(current_axis) = "series";
         }
 
         if (image.bits_alloc == 8) H.datatype() = DataType::UInt8;
@@ -197,33 +197,30 @@ namespace MR {
         H.offset = image.scale_intercept;
         H.scale = image.scale_slope;
 
-        Math::Matrix<float> M(4,4);
+        H.transform().allocate (4,4);
 
-        M(0,0) = -image.orientation_x[0];
-        M(1,0) = -image.orientation_x[1];
-        M(2,0) = image.orientation_x[2];
-        M(3,0) = 0.0;
+        H.transform()(0,0) = -image.orientation_x[0];
+        H.transform()(1,0) = -image.orientation_x[1];
+        H.transform()(2,0) = image.orientation_x[2];
+        H.transform()(3,0) = 0.0;
 
-        M(0,1) = -image.orientation_y[0];
-        M(1,1) = -image.orientation_y[1];
-        M(2,1) = image.orientation_y[2];
-        M(3,1) = 0.0;
+        H.transform()(0,1) = -image.orientation_y[0];
+        H.transform()(1,1) = -image.orientation_y[1];
+        H.transform()(2,1) = image.orientation_y[2];
+        H.transform()(3,1) = 0.0;
 
-        M(0,2) = -image.orientation_z[0];
-        M(1,2) = -image.orientation_z[1];
-        M(2,2) = image.orientation_z[2];
-        M(3,2) = 0.0;
+        H.transform()(0,2) = -image.orientation_z[0];
+        H.transform()(1,2) = -image.orientation_z[1];
+        H.transform()(2,2) = image.orientation_z[2];
+        H.transform()(3,2) = 0.0;
 
-        M(0,3) = -image.position_vector[0];
-        M(1,3) = -image.position_vector[1];
-        M(2,3) = image.position_vector[2];
-        M(3,3) = 1.0;
-
-        uint8_t* mem = NULL;
-        uint8_t* data = NULL;
+        H.transform()(0,3) = -image.position_vector[0];
+        H.transform()(1,3) = -image.position_vector[1];
+        H.transform()(2,3) = image.position_vector[2];
+        H.transform()(3,3) = 1.0;
 
         if (image.images_in_mosaic) {
-          if (axes.dim(2) != 1) 
+          if (H.axes.dim(2) != 1) 
             throw Exception ("DICOM mosaic contains multiple slices in image \"" + H.name() + "\"");
 
           if (image.dim[0] % image.acq_dim[0] || image.dim[1] % image.acq_dim[1]) 
@@ -231,19 +228,11 @@ namespace MR {
                 + " ] does not fit into DICOM mosaic [ " + str (image.dim[0]) + " " + str (image.dim[1]) 
                 + " ] in image \"" + H.name() + "\"");
 
-          ProgressBar::init (dim[0]*dim[2]*series.size(), "DICOM image contains mosaic files - reformating..."); 
+          H.axes.dim(0) = image.acq_dim[0];
+          H.axes.dim(1) = image.acq_dim[1];
+          H.axes.dim(2) = image.images_in_mosaic;
 
-          axes.dim(0) = image.acq_dim[0];
-          axes.dim(1) = image.acq_dim[1];
-          axes.dim(2) = image.images_in_mosaic;
-          off64_t msize = H.datatype().bytes();
-          for (size_t i = 0; i < axes.ndim(); i++) 
-            msize *= axes.dim(i);
-
-          try { mem = new uint8_t [msize]; }
-          catch (...) { throw Exception ("failed to allocate memory for image data!"); }
-
-          data = mem;
+          H.handler = new MR::Image::Handler::Mosaic (H, image.dim[0], image.dim[1], H.dim(0), H.dim(1), H.dim(2));
         }
 
         std::vector<const Image*> DW_scheme;
@@ -256,36 +245,11 @@ namespace MR {
               if (!isnan((*series[s])[n]->bvalue)) DW_scheme.push_back ((*series[s])[n].get());
               for (index[1] = 0; index[1] < dim[1]; index[1]++) {
                 n = index[0] + dim[0]*(index[1] + dim[1]*index[2]);
-
-                if (image.images_in_mosaic) {
-                  File::MMap fmap;
-                  fmap.init ((*series[s])[n]->filename);
-                  fmap.map();
-                  size_t nbytes = H.data_type.bytes();
-                  size_t nbytes_row = nbytes * image.acq_dim[0];
-                  uint8_t* mosaic_data = (uint8_t*) fmap.address() + (*series[s])[n]->data;
-                  size_t nx = 0, ny = 0;
-                  for (size_t z = 0; z < image.images_in_mosaic; z++) {
-                    size_t ox = nx*image.acq_dim[0];
-                    size_t oy = ny*image.acq_dim[1];
-                    for (size_t y = 0; y < image.acq_dim[1]; y++) {
-                      memcpy (data, mosaic_data + nbytes*(ox+image.dim[0]*(y+oy)), nbytes_row);
-                      data += nbytes_row;
-                    }
-
-                    nx++;
-                    if (nx >= image.dim[0]/image.acq_dim[0]) { nx = 0; ny++; }
-                  }
-
-                  ProgressBar::inc();
-                }
-                else dmap.add ((*series[s])[n]->filename, (*series[s])[n]->data);
+                H.files.push_back (File::Entry ((*series[s])[n]->filename, (*series[s])[n]->data));
               }
             }
           }
         }
-
-        H.transform_matrix = M;
 
 
         if (DW_scheme.size()) {
@@ -301,17 +265,7 @@ namespace MR {
             else H.DW_scheme(s, 0) = H.DW_scheme(s, 1) = H.DW_scheme(s, 2) = 0.0;
           }
         }
-
-        if (image.images_in_mosaic) {
-          dmap.add (mem);
-          ProgressBar::done();
-        }
-
       }
-
-
-
-
 
 
     }
