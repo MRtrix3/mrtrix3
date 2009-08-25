@@ -76,28 +76,34 @@ namespace MR {
     inline float32 BE (float32 v)     { return (TO_BE (v)); }
     inline float64 LE (float64 v)     { return (TO_LE (v)); }
     inline float64 BE (float64 v)     { return (TO_BE (v)); }
+
+    template <typename T> inline T swap (const T value, bool is_big_endian) { return (is_big_endian ? BE (value) : LE (value)); }
   }
 
 
   template <typename T> inline T getLE (const void* address) { return (ByteOrder::LE (*((T*) address))); }
   template <typename T> inline T getBE (const void* address) { return (ByteOrder::BE (*((T*) address))); }
-  template <typename T> inline T get (const void* address, bool is_big_endian = MRTRIX_IS_BIG_ENDIAN)
-  { return (is_big_endian ? getBE<T> (address) : getLE<T> (address) ); } 
+  template <typename T> inline T get (const void* address, bool is_big_endian = MRTRIX_IS_BIG_ENDIAN) 
+  { return (ByteOrder::swap (*((T*) address), is_big_endian)); }
+  //{ return (is_big_endian ? getBE<T> (address) : getLE<T> (address) ); } 
 
   template <typename T> inline void putLE (const T value, void* address) { *((T*) address) = ByteOrder::LE (value); }
   template <typename T> inline void putBE (const T value, void* address) { *((T*) address) = ByteOrder::BE (value); }
-  template <typename T> inline void put (const T value, void* address, bool is_big_endian = MRTRIX_IS_BIG_ENDIAN)
-  { is_big_endian ? putBE<T> (value, address) : putLE<T> (value, address); } 
+  template <typename T> inline void put (const T value, void* address, bool is_big_endian = MRTRIX_IS_BIG_ENDIAN) 
+  { *((T*) address) = ByteOrder::swap (value, is_big_endian); }
+  //{ is_big_endian ? putBE<T> (value, address) : putLE<T> (value, address); } 
 
   template <typename T> inline T getLE (const void* data, size_t i) { return (ByteOrder::LE (((T*) data)[i])); }
   template <typename T> inline T getBE (const void* data, size_t i) { return (ByteOrder::BE (((T*) data)[i])); }
   template <typename T> inline T get (const void* data, size_t i, bool is_big_endian = MRTRIX_IS_BIG_ENDIAN)
-  { return (is_big_endian ? getBE<T> (data, i) : getLE<T> (data, i) ); } 
+  { return (ByteOrder::swap (*((T*) data)[i], is_big_endian)); }
+  //{ return (is_big_endian ? getBE<T> (data, i) : getLE<T> (data, i) ); } 
 
   template <typename T> inline void putLE (const T value, void* data, size_t i) { ((T*) data)[i] = ByteOrder::LE (value); }
   template <typename T> inline void putBE (const T value, void* data, size_t i) { ((T*) data)[i] = ByteOrder::BE (value); }
   template <typename T> inline void put (const T value, void* data, size_t i, bool is_big_endian = MRTRIX_IS_BIG_ENDIAN)
-  { is_big_endian ? putBE<T> (value, data, i) : putLE<T> (value, data, i); } 
+  { *((T*) data)[i] = ByteOrder::swap (value, is_big_endian); }
+  //{ is_big_endian ? putBE<T> (value, data, i) : putLE<T> (value, data, i); } 
 
 
   template <> inline int8_t get<int8_t> (const void* address, bool is_big_endian) { return (*((int8_t*) address)); }

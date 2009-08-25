@@ -24,6 +24,7 @@
 #include "file/entry.h"
 #include "file/config.h"
 #include "image/misc.h"
+#include "image/header.h"
 #include "get_set.h"
 #include "image/format/list.h"
 #include "image/name_parser.h"
@@ -46,12 +47,11 @@ namespace MR {
 
 
 
-      bool Analyse::read (Mapper& dmap, Header& H) const
+      bool Analyse::read (Header& H) const
       {
-        if (!Path::has_suffix (H.name, ".img")) return (false);
+        if (!Path::has_suffix (H.name(), ".img")) return (false);
 
-        File::MMap fmap (H.name.substr (0, H.name.size()-4) + ".hdr");
-        fmap.map();
+        File::MMap fmap (H.name().substr (0, H.name().size()-4) + ".hdr");
 
         const nifti_1_header* NH = (const nifti_1_header*) fmap.address();
 
@@ -59,7 +59,7 @@ namespace MR {
         if (get<int32_t> (&NH->sizeof_hdr, is_BE) != 348) {
           is_BE = true;
           if (get<int32_t> (&NH->sizeof_hdr, is_BE) != 348) 
-            throw Exception ("image \"" + H.name + "\" is not in Analyse format (sizeof_hdr != 348)");
+            throw Exception ("image \"" + H.name() + "\" is not in Analyse format (sizeof_hdr != 348)");
         }
 
         H.format = ( memcmp (NH->magic, "ni1\0", 4) ? FormatAVW : FormatNIfTI );
@@ -74,61 +74,61 @@ namespace MR {
         // data set dimensions:
         int ndim = get<int16_t> (&NH->dim, is_BE);
         if (ndim < 1) 
-          throw Exception ("too few dimensions specified in Analyse image \"" + H.name + "\"");
+          throw Exception ("too few dimensions specified in Analyse image \"" + H.name() + "\"");
         if (ndim > 7) 
-          throw Exception ("too many dimensions specified in Analyse image \"" + H.name + "\"");
-        H.axes.resize (ndim);
+          throw Exception ("too many dimensions specified in Analyse image \"" + H.name() + "\"");
+        H.axes.ndim() = ndim;
 
 
         for (int i = 0; i < ndim; i++) {
-          H.axes[i].dim = get<int16_t> (&NH->dim[i+1], is_BE);
-          if (H.axes[i].dim < 0) {
-            info ("dimension along axis " + str(i) + " specified as negative in Analyse image \"" + H.name + "\" - taking absolute value");
-            H.axes[i].dim = abs (H.axes[i].dim);
+          H.axes.dim(i) = get<int16_t> (&NH->dim[i+1], is_BE);
+          if (H.axes.dim(i) < 0) {
+            info ("dimension along axis " + str(i) + " specified as negative in Analyse image \"" + H.name() + "\" - taking absolute value");
+            H.axes.dim(i) = abs (H.axes.dim(i));
           }
-          if (!H.axes[i].dim) H.axes[i].dim = 1;
-          H.axes[i].order = i;
-          H.axes[i].forward = true;
+          if (!H.axes.dim(i)) H.axes.dim(i) = 1;
+          H.axes.order(i) = i;
+          H.axes.forward(i) = true;
         }
 
         // data type:
         switch (get<int16_t> (&NH->datatype, is_BE)) {
-          case DT_BINARY:     H.data_type = DataType::Bit;        break;
-          case DT_INT8:       H.data_type = DataType::Int8;       break;
-          case DT_UINT8:      H.data_type = DataType::UInt8;      break;
-          case DT_INT16:      H.data_type = DataType::Int16;      break;
-          case DT_UINT16:     H.data_type = DataType::UInt16;     break;
-          case DT_INT32:      H.data_type = DataType::Int32;      break;
-          case DT_UINT32:     H.data_type = DataType::UInt32;     break;
-          case DT_FLOAT32:    H.data_type = DataType::Float32;    break;
-          case DT_FLOAT64:    H.data_type = DataType::Float64;    break;
-          case DT_COMPLEX64:  H.data_type = DataType::CFloat32;   break;
-          case DT_COMPLEX128: H.data_type = DataType::CFloat64;   break;
-          default: throw Exception ("unknown data type for Analyse image \"" + H.name + "\"");
+          case DT_BINARY:     H.datatype() = DataType::Bit;        break;
+          case DT_INT8:       H.datatype() = DataType::Int8;       break;
+          case DT_UINT8:      H.datatype() = DataType::UInt8;      break;
+          case DT_INT16:      H.datatype() = DataType::Int16;      break;
+          case DT_UINT16:     H.datatype() = DataType::UInt16;     break;
+          case DT_INT32:      H.datatype() = DataType::Int32;      break;
+          case DT_UINT32:     H.datatype() = DataType::UInt32;     break;
+          case DT_FLOAT32:    H.datatype() = DataType::Float32;    break;
+          case DT_FLOAT64:    H.datatype() = DataType::Float64;    break;
+          case DT_COMPLEX64:  H.datatype() = DataType::CFloat32;   break;
+          case DT_COMPLEX128: H.datatype() = DataType::CFloat64;   break;
+          default: throw Exception ("unknown data type for Analyse image \"" + H.name() + "\"");
         }
 
-        if ( !( H.data_type.is (DataType::UInt8) || H.data_type.is (DataType::Int8) ) ) {
-          if (is_BE) H.data_type.set_flag (DataType::BigEndian);
-          else H.data_type.set_flag (DataType::LittleEndian);
+        if ( !( H.datatype().is (DataType::UInt8) || H.datatype().is (DataType::Int8) ) ) {
+          if (is_BE) H.datatype().set_flag (DataType::BigEndian);
+          else H.datatype().set_flag (DataType::LittleEndian);
         }
 
-        if (get<int16_t> (&NH->bitpix, is_BE) != (int16_t) H.data_type.bits())
-          error ("WARNING: bitpix field does not match data type in Analyse image \"" + H.name + "\" - ignored");
+        if (get<int16_t> (&NH->bitpix, is_BE) != (int16_t) H.datatype().bits())
+          error ("WARNING: bitpix field does not match data type in Analyse image \"" + H.name() + "\" - ignored");
 
         // voxel sizes:
         for (int i = 0; i < ndim; i++) {
-          H.axes[i].vox = get<float32> (&NH->pixdim[i+1], is_BE);
-          if (H.axes[i].vox < 0.0) {
-            info ("voxel size along axis " + str(i) + " specified as negative in Analyse image \"" + H.name + "\" - taking absolute value");
-            H.axes[i].vox = Math::abs (H.axes[i].vox);
+          H.axes.vox(i) = get<float> (&NH->pixdim[i+1], is_BE);
+          if (H.axes.vox(i) < 0.0) {
+            info ("voxel size along axis " + str(i) + " specified as negative in Analyse image \"" + H.name() + "\" - taking absolute value");
+            H.axes.vox(i) = Math::abs (H.axes.vox(i));
           }
         }
 
 
         // offset and scale:
-        H.scale = get<float32> (&NH->scl_slope, is_BE);
+        H.scale = get<float> (&NH->scl_slope, is_BE);
         if (finite(H.scale) && H.scale != 0.0) {
-          H.offset = get<float32> (&NH->scl_inter, is_BE);
+          H.offset = get<float> (&NH->scl_inter, is_BE);
           H.offset = finite (H.offset) ? H.offset : 0.0;
         }
         else {
@@ -136,7 +136,7 @@ namespace MR {
           H.offset = 0.0;
         }
 
-        size_t data_offset = ( H.format == FormatAVW ? (size_t) get<float32> (&NH->vox_offset, is_BE) : 0 );
+        size_t data_offset = ( H.format == FormatAVW ? (size_t) get<float> (&NH->vox_offset, is_BE) : 0 );
 
         char descrip[81];
         strncpy (descrip, NH->descrip, 80);
@@ -147,50 +147,50 @@ namespace MR {
 
         if (H.format == FormatNIfTI) {
           if (get<int16_t> (&NH->sform_code, is_BE)) {
-            Math::Matrix<float> M (4,4);
-            M(0,0) = get<float32> (&NH->srow_x[0], is_BE);
-            M(0,1) = get<float32> (&NH->srow_x[1], is_BE);
-            M(0,2) = get<float32> (&NH->srow_x[2], is_BE);
-            M(0,3) = get<float32> (&NH->srow_x[3], is_BE);
+            Math::Matrix<float>& M (H.transform());
+            M.allocate (4,4);
+            M(0,0) = get<float> (&NH->srow_x[0], is_BE);
+            M(0,1) = get<float> (&NH->srow_x[1], is_BE);
+            M(0,2) = get<float> (&NH->srow_x[2], is_BE);
+            M(0,3) = get<float> (&NH->srow_x[3], is_BE);
 
-            M(1,0) = get<float32> (&NH->srow_y[0], is_BE);
-            M(1,1) = get<float32> (&NH->srow_y[1], is_BE);
-            M(1,2) = get<float32> (&NH->srow_y[2], is_BE);
-            M(1,3) = get<float32> (&NH->srow_y[3], is_BE);
+            M(1,0) = get<float> (&NH->srow_y[0], is_BE);
+            M(1,1) = get<float> (&NH->srow_y[1], is_BE);
+            M(1,2) = get<float> (&NH->srow_y[2], is_BE);
+            M(1,3) = get<float> (&NH->srow_y[3], is_BE);
 
-            M(2,0) = get<float32> (&NH->srow_z[0], is_BE);
-            M(2,1) = get<float32> (&NH->srow_z[1], is_BE);
-            M(2,2) = get<float32> (&NH->srow_z[2], is_BE);
-            M(2,3) = get<float32> (&NH->srow_z[3], is_BE);
+            M(2,0) = get<float> (&NH->srow_z[0], is_BE);
+            M(2,1) = get<float> (&NH->srow_z[1], is_BE);
+            M(2,2) = get<float> (&NH->srow_z[2], is_BE);
+            M(2,3) = get<float> (&NH->srow_z[3], is_BE);
 
             M(3,0) = M(3,1) = M(3,2) = 0.0;
             M(3,3) = 1.0;
 
             // get voxel sizes:
-            H.axes[0].vox = Math::sqrt (Math::pow2 (M(0,0)) + Math::pow2 (M(1,0)) + Math::pow2 (M(2,0)));
-            H.axes[1].vox = Math::sqrt (Math::pow2 (M(0,1)) + Math::pow2 (M(1,1)) + Math::pow2 (M(2,1)));
-            H.axes[2].vox = Math::sqrt (Math::pow2 (M(0,2)) + Math::pow2 (M(1,2)) + Math::pow2 (M(2,2)));
+            H.axes.vox(0) = Math::sqrt (Math::pow2 (M(0,0)) + Math::pow2 (M(1,0)) + Math::pow2 (M(2,0)));
+            H.axes.vox(1) = Math::sqrt (Math::pow2 (M(0,1)) + Math::pow2 (M(1,1)) + Math::pow2 (M(2,1)));
+            H.axes.vox(2) = Math::sqrt (Math::pow2 (M(0,2)) + Math::pow2 (M(1,2)) + Math::pow2 (M(2,2)));
 
             // normalize each transform axis:
-            M(0,0) /= H.axes[0].vox;
-            M(1,0) /= H.axes[0].vox;
-            M(2,0) /= H.axes[0].vox;
+            M(0,0) /= H.axes.vox(0);
+            M(1,0) /= H.axes.vox(0);
+            M(2,0) /= H.axes.vox(0);
 
-            M(0,1) /= H.axes[1].vox;
-            M(1,1) /= H.axes[1].vox;
-            M(2,1) /= H.axes[1].vox;
+            M(0,1) /= H.axes.vox(1);
+            M(1,1) /= H.axes.vox(1);
+            M(2,1) /= H.axes.vox(1);
 
-            M(0,2) /= H.axes[2].vox;
-            M(1,2) /= H.axes[2].vox;
-            M(2,2) /= H.axes[2].vox;
-
-            H.transform_matrix = M;
+            M(0,2) /= H.axes.vox(2);
+            M(1,2) /= H.axes.vox(2);
+            M(2,2) /= H.axes.vox(2);
           }
           else if (get<int16_t> (&NH->qform_code, is_BE)) {
-            Math::Quaternion Q (get<float32> (&NH->quatern_b, is_BE), get<float32> (&NH->quatern_c, is_BE), get<float32> (&NH->quatern_d, is_BE));
+            Math::Quaternion Q (get<float> (&NH->quatern_b, is_BE), get<float> (&NH->quatern_c, is_BE), get<float> (&NH->quatern_d, is_BE));
             float transform[9];
             Q.to_matrix (transform);
-            Math::Matrix<float> M (4,4);
+            Math::Matrix<float>& M (H.transform());
+            M.allocate (4,4);
 
             M(0,0) = transform[0];
             M(0,1) = transform[1];
@@ -204,47 +204,45 @@ namespace MR {
             M(2,1) = transform[7];
             M(2,2) = transform[8];
 
-            M(0,3) = get<float32> (&NH->qoffset_x, is_BE);
-            M(1,3) = get<float32> (&NH->qoffset_y, is_BE);
-            M(2,3) = get<float32> (&NH->qoffset_z, is_BE);
+            M(0,3) = get<float> (&NH->qoffset_x, is_BE);
+            M(1,3) = get<float> (&NH->qoffset_y, is_BE);
+            M(2,3) = get<float> (&NH->qoffset_z, is_BE);
 
             M(3,0) = M(3,1) = M(3,2) = 0.0;
             M(3,3) = 1.0;
 
             // qfac:
-            float qfac = get<float32> (&NH->pixdim[0], is_BE);
+            float qfac = get<float> (&NH->pixdim[0], is_BE);
             if (qfac != 0.0) {
               M(0,2) *= qfac;
               M(1,2) *= qfac;
               M(2,2) *= qfac;
             }
-
-            H.transform_matrix = M;
           }
         }
 
 
 
         if (H.format == FormatAVW) {
-          H.axes[0].forward = File::Config::get_bool ("Analyse.LeftToRight", true); 
+          H.axes.forward(0) = File::Config::get_bool ("Analyse.LeftToRight", true); 
           if (!right_left_warning_issued) {
-            info ("assuming Analyse images are encoded " + std::string (H.axes[0].forward ? "left to right" : "right to left"));
+            info ("assuming Analyse images are encoded " + std::string (H.axes.forward(0) ? "left to right" : "right to left"));
             right_left_warning_issued = true;
           }
         }
 
-        if (!H.axes[0].desc.size()) H.axes[0].desc = Axis::left_to_right;
-        if (!H.axes[0].units.size()) H.axes[0].units = Axis::millimeters;
-        if (H.axes.size() > 1) {
-          if (!H.axes[1].desc.size()) H.axes[1].desc = Axis::posterior_to_anterior;
-          if (!H.axes[1].units.size()) H.axes[1].units = Axis::millimeters;
-          if (H.axes.size() > 2) {
-            if (!H.axes[2].desc.size()) H.axes[2].desc = Axis::inferior_to_superior;
-            if (!H.axes[2].units.size()) H.axes[2].units = Axis::millimeters;
+        if (!H.axes.description(0).size()) H.axes.description(0) = Axes::left_to_right;
+        if (!H.axes.units(0).size()) H.axes.units(0) = Axes::millimeters;
+        if (H.ndim() > 1) {
+          if (!H.axes.description(1).size()) H.axes.description(1) = Axes::posterior_to_anterior;
+          if (!H.axes.units(1).size()) H.axes.units(1) = Axes::millimeters;
+          if (H.ndim() > 2) {
+            if (!H.axes.description(2).size()) H.axes.description(2) = Axes::inferior_to_superior;
+            if (!H.axes.units(2).size()) H.axes.units(2) = Axes::millimeters;
           }
         }
 
-        dmap.add (H.name, data_offset);
+        H.files.push_back (File::Entry (H.name(), data_offset));
 
         return (true);
       }
@@ -255,38 +253,38 @@ namespace MR {
 
       bool Analyse::check (Header& H, int num_axes) const
       {
-        if (!Path::has_suffix (H.name, ".img")) return (false);
+        if (!Path::has_suffix (H.name(), ".img")) return (false);
         if (num_axes < 3) throw Exception ("cannot create Analyse image with less than 3 dimensions");
         if (num_axes > 8) throw Exception ("cannot create Analyse image with more than 8 dimensions");
 
         H.format = FormatAVW;
 
-        H.axes.resize (num_axes);
-        for (size_t i = 0; i < H.axes.size(); i++) {
-          if (H.axes[i].dim < 1) H.axes[i].dim = 1;
-          H.axes[i].order = i;
-          H.axes[i].forward = true;
+        H.axes.ndim() = num_axes;
+        for (size_t i = 0; i < H.ndim(); i++) {
+          if (H.axes.dim(i) < 1) H.axes.dim(i) = 1;
+          H.axes.order(i) = i;
+          H.axes.forward(i) = true;
         }
 
-        H.axes[0].forward = File::Config::get_bool ("Analyse.LeftToRight", true);
+        H.axes.forward(0) = File::Config::get_bool ("Analyse.LeftToRight", true);
         if (!right_left_warning_issued) {
           info ("assuming Analyse images are encoded " + std::string (H.axes[0].forward ? "left to right" : "right to left"));
           right_left_warning_issued = true;
         }
 
-        H.axes[0].desc = Axis::left_to_right;
-        H.axes[0].units = Axis::millimeters;
+        H.axes.description(0) = Axes::left_to_right;
+        H.axes.units(0) = Axes::millimeters;
 
-        H.axes[1].desc = Axis::posterior_to_anterior;
-        H.axes[1].units = Axis::millimeters;
+        H.axes.description(1) = Axes::posterior_to_anterior;
+        H.axes.units(1) = Axes::millimeters;
 
-        H.axes[2].desc = Axis::inferior_to_superior;
-        H.axes[2].units = Axis::millimeters;
+        H.axes.description(2) = Axes::inferior_to_superior;
+        H.axes.units(2) = Axes::millimeters;
 
-        switch (H.data_type()) {
+        switch (H.datatype()()) {
           case DataType::Int8: 
-            H.data_type = DataType::Int16; 
-            info ("WARNING: changing data type to Int16 for image \"" + H.name + "\" to ensure compatibility with Analyse");
+            H.datatype() = DataType::Int16; 
+            info ("WARNING: changing data type to Int16 for image \"" + H.name() + "\" to ensure compatibility with Analyse");
             break;
           case DataType::UInt16:
           case DataType::UInt16LE:
@@ -294,14 +292,14 @@ namespace MR {
           case DataType::UInt32LE:
           case DataType::UInt32BE:
           case DataType::UInt32: 
-            H.data_type = DataType::Int32;
-            info ("WARNING: changing data type to Int32 for image \"" + H.name + "\" to ensure compatibility with Analyse");
+            H.datatype() = DataType::Int32;
+            info ("WARNING: changing data type to Int32 for image \"" + H.name() + "\" to ensure compatibility with Analyse");
             break;
           case DataType::CFloat64:
           case DataType::CFloat64LE:
           case DataType::CFloat64BE: 
-            H.data_type = DataType::CFloat32; 
-            info ("WARNING: changing data type to CFloat32 for image \"" + H.name + "\" to ensure compatibility with Analyse");
+            H.datatype() = DataType::CFloat32; 
+            info ("WARNING: changing data type to CFloat32 for image \"" + H.name() + "\" to ensure compatibility with Analyse");
             break;
         }
 
@@ -312,17 +310,20 @@ namespace MR {
 
 
 
-      void Analyse::create (Mapper& dmap, const Header& H) const
+      void Analyse::create (Header& H) const
       {
-        if (H.axes.size() > 7) 
-          throw Exception ("Analyse format cannot support more than 7 dimensions for image \"" + H.name + "\"");
+        if (H.ndim() > 7) 
+          throw Exception ("Analyse format cannot support more than 7 dimensions for image \"" + H.name() + "\"");
 
-        File::MMap fmap (H.name.substr (0, H.name.size()-4) + ".hdr", 348);
+        assert (0);
+        // TODO: fix up Analyse writing
+        /*
+        File::MMap fmap (H.name().substr (0, H.name().size()-4) + ".hdr", 348);
         fmap.map();
 
         nifti_1_header* NH = (nifti_1_header*) fmap.address();
 
-        bool is_BE = H.data_type.is_big_endian();
+        bool is_BE = H.datatype().is_big_endian();
 
         put<int32_t> (348, &NH->sizeof_hdr, is_BE);
         strncpy ((char*) &NH->data_type, "dsr      \0", 10);
@@ -337,7 +338,7 @@ namespace MR {
 
         // data type:
         int16_t dt = 0;
-        switch (H.data_type()) {
+        switch (H.datatype()()) {
           case DataType::Bit:       dt = DT_BINARY; break;
           case DataType::UInt8:     dt = DT_UINT8;  break;
           case DataType::Int16LE:   
@@ -350,20 +351,20 @@ namespace MR {
           case DataType::Float64BE: dt = DT_FLOAT64; break;
           case DataType::CFloat32LE:
           case DataType::CFloat32BE: dt = DT_COMPLEX64; break;
-          default: throw Exception ("unknown data type for Analyse image \"" + H.name + "\"");
+          default: throw Exception ("unknown data type for Analyse image \"" + H.name() + "\"");
         }
 
         put<int16_t> (dt, &NH->datatype, is_BE);  
-        put<int16_t> (H.data_type.bits(), &NH->bitpix, is_BE);
+        put<int16_t> (H.datatype().bits(), &NH->bitpix, is_BE);
 
         // voxel sizes:
         for (size_t i = 0; i < H.axes.size(); i++) 
-          put<float32> (H.axes[i].vox, &NH->pixdim[i+1], is_BE);
+          put<float> (H.axes[i].vox, &NH->pixdim[i+1], is_BE);
 
 
         // offset and scale:
-        put<float32> (H.scale, &NH->scl_slope, is_BE);
-        put<float32> (H.offset, &NH->scl_inter, is_BE);
+        put<float> (H.scale, &NH->scl_slope, is_BE);
+        put<float> (H.offset, &NH->scl_inter, is_BE);
 
         int pos = 0;
         char descrip[81];
@@ -381,7 +382,8 @@ namespace MR {
         strncpy ((char*) &NH->aux_file, "none", 24);
 
         fmap.unmap();
-        dmap.add (H.name, 0, memory_footprint (H.data_type, voxel_count (H.axes)));
+        dmap.add (H.name(), 0, memory_footprint (H.datatype(), voxel_count (H.axes)));
+        */
       }
 
     }
