@@ -33,12 +33,19 @@ namespace MR {
 
       class GZ : public Base {
         public:
-          GZ (Header& header, bool image_is_new) : Base (header, image_is_new) { }
+          GZ (Header& header, size_t file_header_size, bool image_is_new) :
+            Base (header, image_is_new), lead_in_size (file_header_size) 
+        { lead_in = file_header_size ? new uint8_t [file_header_size] : NULL ; }
+
           virtual ~GZ ();
           virtual void execute ();
 
+          uint8_t* header () { return (lead_in); }
+
         protected:
-          off64_t bytes_per_segment;
+          off64_t  bytes_per_segment;
+          uint8_t* lead_in;
+          size_t   lead_in_size;
       };
 
     }

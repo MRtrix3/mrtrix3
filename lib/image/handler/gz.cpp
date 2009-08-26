@@ -38,14 +38,16 @@ namespace MR {
 
           if (H.readwrite) {
             for (size_t n = 0; n < H.files.size(); n++) {
+              assert (H.files[n].start == lead_in_size);
               File::GZ zf (H.files[n].name, "wb");
-              zf.seek (H.files[n].start);
+              if (lead_in) zf.write (reinterpret_cast<const char*> (lead_in), lead_in_size);
               zf.write (reinterpret_cast<const char*> (addresses[0] + n*bytes_per_segment), bytes_per_segment);
             }
           }
 
           delete [] addresses[0];
         }
+        if (lead_in) delete [] lead_in;
       }
 
 

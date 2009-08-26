@@ -1,7 +1,7 @@
 /*
-    Copyright 2008 Brain Research Institute, Melbourne, Australia
+    Copyright 2009 Brain Research Institute, Melbourne, Australia
 
-    Written by J-Donald Tournier, 27/06/08.
+    Written by J-Donald Tournier, 26/08/09.
 
     This file is part of MRtrix.
 
@@ -20,10 +20,12 @@
 
 */
 
-#include "file/path.h"
 #include "file/misc.h"
+#include "file/path.h"
+#include "file/gz.h"
 #include "image/misc.h"
 #include "image/header.h"
+#include "image/handler/gz.h"
 #include "image/format/list.h"
 #include "image/format/nifti1_utils.h"
 
@@ -31,13 +33,22 @@ namespace MR {
   namespace Image {
     namespace Format {
 
+      const char* FormatNIfTI_GZ = "NIfTI-1.1 (GZip compressed)";
+
+      
       bool NIfTI::read (Header& H) const
       {
-        if (!Path::has_suffix (H.name(), ".nii")) return (false);
+        if (!Path::has_suffix (H.name(), ".nii.gz")) return (false);
 
-        File::MMap fmap (H.name());
-        size_t data_offset = File::NIfTI::read (H, *((const nifti_1_header*) fmap.address()));
+        nifti_1_header NH;
+        File::GZ zf (H.name(), "rb");
+        zf.read (reinterpret_cast<char*> (&NH), 352);
+        zf.close();
+       
+        size_t data_offset = File::NIfTI::read (H, NH);
+        H.format = FormatNIfTI_GZ;
 
+        H.handler = new Handler::GZ (H, 0, false);
         H.files.push_back (File::Entry (H.name(), data_offset));
 
         return (true);
@@ -49,11 +60,11 @@ namespace MR {
 
       bool NIfTI::check (Header& H, int num_axes) const
       {
-        if (!Path::has_suffix (H.name(), ".nii")) return (false);
+        if (!Path::has_suffix (H.name(), ".nii.gz")) return (false);
         if (num_axes < 3) throw Exception ("cannot create NIfTI-1.1 image with less than 3 dimensions");
         if (num_axes > 8) throw Exception ("cannot create NIfTI-1.1 image with more than 8 dimensions");
 
-        H.format = File::NIfTI::FormatString;
+        H.format = FormatNIfTI_GZ;
 
         H.axes.ndim() = num_axes;
         for (size_t i = 0; i < H.ndim(); i++) {
@@ -83,16 +94,13 @@ namespace MR {
         if (H.ndim() > 7) 
           throw Exception ("NIfTI-1.1 format cannot support more than 7 dimensions for image \"" + H.name() + "\"");
 
-        nifti_1_header NH;
-        File::NIfTI::write (NH, H);
+        Handler::GZ* handler = new Handler::GZ (H, 352, true);
+      
+        File::NIfTI::write (*reinterpret_cast<nifti_1_header*> (handler->header()), H);
 
-        File::create (H.name(), 352 + memory_footprint (H));
+        H.handler = handler;
 
-        std::ofstream out (H.name().c_str());
-        if (!out) throw Exception ("error opening file \"" + H.name() + "\" for writing: " + strerror (errno));
-        out.write ((char*) &NH, 352);
-        out.close();
-
+        File::create (H.name());
         H.files.push_back (File::Entry (H.name(), 352));
       }
 
