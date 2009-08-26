@@ -112,15 +112,15 @@ First, obtain a mask of high anisotropy voxels.
 These are assumed to contain single fibre-voxels, and will be used to estimate the response function:
 </p>
 <pre>
-&gt; <b><a href='../commands/erode.html'>erode</a> mask.mif - | <a href='../commands/erode.html'>erode</a> - - | <a href='../commands/mrmult.html'>mrmult</a> fa.mif - - | <a href='../commands/threshold.html'>threshold</a> - -abs 0.6 sf.mif</b>
+&gt; <b><a href='../commands/erode.html'>erode</a> mask.mif - | <a href='../commands/erode.html'>erode</a> - - | <a href='../commands/mrmult.html'>mrmult</a> fa.mif - - | <a href='../commands/threshold.html'>threshold</a> - -abs 0.7 sf.mif</b>
 <a href='../commands/erode.html'>erode</a>: eroding ... 100%
 <a href='../commands/erode.html'>erode</a>: eroding ... 100%
 <a href='../commands/mrmult.html'>mrmult</a>: multiplying... 100%
-<a href='../commands/threshold.html'>threshold</a>: thresholding at intensity 0.6... 100%
+<a href='../commands/threshold.html'>threshold</a>: thresholding at intensity 0.7... 100%
 </pre>
 <p>
 The two initial erosion steps ensure that no edge voxels with artefactually high FA are included in the single-fibre mask.
-This mask is then applied to the FA map, and the resulting image is thresholded at FA = 0.6. 
+This mask is then applied to the FA map, and the resulting image is thresholded at FA = 0.7. 
 Note that this value is a guide only - feel free to use a different value if this does not produce satisfactory results. 
 Ideally, you should now have a mask containing a few hundred voxels, all located within high FA white matter regions.
 If needed, you can edit this mask image to remove unwanted voxels 
