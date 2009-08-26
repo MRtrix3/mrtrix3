@@ -32,6 +32,7 @@ namespace MR {
         Format::MRtrix     mrtrix_handler;
         Format::MRI        mri_handler;
         Format::NIfTI      nifti_handler;
+        Format::NIfTI_GZ   nifti_gz_handler;
         Format::Analyse    analyse_handler;
         Format::XDS        xds_handler;
         Format::DICOM      dicom_handler;
@@ -41,6 +42,7 @@ namespace MR {
         &mrtrix_handler,
         &mri_handler,
         &nifti_handler,
+        &nifti_gz_handler,
         &analyse_handler,
         &xds_handler,
         &dicom_handler,
@@ -54,6 +56,7 @@ namespace MR {
         ".mif",
         ".img",
         ".nii",
+        ".nii.gz",
         ".bfloat",
         ".bshort",
         ".mri",

@@ -36,7 +36,7 @@ namespace MR {
       const char* FormatNIfTI_GZ = "NIfTI-1.1 (GZip compressed)";
 
       
-      bool NIfTI::read (Header& H) const
+      bool NIfTI_GZ::read (Header& H) const
       {
         if (!Path::has_suffix (H.name(), ".nii.gz")) return (false);
 
@@ -58,7 +58,7 @@ namespace MR {
 
 
 
-      bool NIfTI::check (Header& H, int num_axes) const
+      bool NIfTI_GZ::check (Header& H, int num_axes) const
       {
         if (!Path::has_suffix (H.name(), ".nii.gz")) return (false);
         if (num_axes < 3) throw Exception ("cannot create NIfTI-1.1 image with less than 3 dimensions");
@@ -89,7 +89,7 @@ namespace MR {
 
 
 
-      void NIfTI::create (Header& H) const
+      void NIfTI_GZ::create (Header& H) const
       {
         if (H.ndim() > 7) 
           throw Exception ("NIfTI-1.1 format cannot support more than 7 dimensions for image \"" + H.name() + "\"");
