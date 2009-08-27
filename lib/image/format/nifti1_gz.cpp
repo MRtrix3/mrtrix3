@@ -33,8 +33,6 @@ namespace MR {
   namespace Image {
     namespace Format {
 
-      const char* FormatNIfTI_GZ = "NIfTI-1.1 (GZip compressed)";
-
       
       bool NIfTI_GZ::read (Header& H) const
       {
@@ -46,7 +44,6 @@ namespace MR {
         zf.close();
        
         size_t data_offset = File::NIfTI::read (H, NH);
-        H.format = FormatNIfTI_GZ;
 
         H.handler = new Handler::GZ (H, 0, false);
         H.files.push_back (File::Entry (H.name(), data_offset));
@@ -63,8 +60,6 @@ namespace MR {
         if (!Path::has_suffix (H.name(), ".nii.gz")) return (false);
         if (num_axes < 3) throw Exception ("cannot create NIfTI-1.1 image with less than 3 dimensions");
         if (num_axes > 8) throw Exception ("cannot create NIfTI-1.1 image with more than 8 dimensions");
-
-        H.format = FormatNIfTI_GZ;
 
         H.axes.ndim() = num_axes;
         for (size_t i = 0; i < H.ndim(); i++) {

@@ -227,12 +227,6 @@ namespace MR {
 
   App::~App () { }
 
-  void App::run (int argc, char** argv)
-  {
-    parse_arguments ();
-    execute ();
-  }
-
 
 
 

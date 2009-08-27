@@ -30,8 +30,6 @@ namespace MR {
   namespace File {
     namespace NIfTI {
 
-      extern const char* FormatString;
-
       size_t read (Image::Header& H, const nifti_1_header& NH);
       void write (nifti_1_header& NH, const Image::Header& H);
 

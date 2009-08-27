@@ -57,8 +57,6 @@ namespace MR {
 
       namespace {
 
-        const char* FormatMRI = "MRTools (legacy format)";
-
         inline size_t char2order (char item, bool& forward)
         {
           switch (item) {
@@ -131,8 +129,6 @@ namespace MR {
       bool MRI::read (Header& H) const
       {
         if (!Path::has_suffix (H.name(), ".mri")) return (false);
-
-        H.format = FormatMRI;
 
         File::MMap fmap (H.name());
 
@@ -230,8 +226,6 @@ namespace MR {
       {
         if (!Path::has_suffix (H.name(), ".mri")) return (false);
         if ((int) H.ndim() > num_axes && num_axes != 4) throw Exception ("MRTools format can only support 4 dimensions");
-
-        H.format = FormatMRI;
 
         H.axes.ndim() = num_axes;
 

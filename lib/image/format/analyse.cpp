@@ -36,10 +36,8 @@ namespace MR {
   namespace Image {
     namespace Format {
 
-      extern const char* FormatNIfTI;
       namespace {
         bool  right_left_warning_issued = false;
-        const char* FormatAVW = "AnalyseAVW";
       }
 
 
@@ -47,6 +45,8 @@ namespace MR {
 
 
 
+      // TODO: need to update Analyse Format handler to new NIfTI utils framework
+     
       bool Analyse::read (Header& H) const
       {
         if (!Path::has_suffix (H.name(), ".img")) return (false);
@@ -62,7 +62,7 @@ namespace MR {
             throw Exception ("image \"" + H.name() + "\" is not in Analyse format (sizeof_hdr != 348)");
         }
 
-        H.format = ( memcmp (NH->magic, "ni1\0", 4) ? FormatAVW : FormatNIfTI );
+        bool is_nifti = memcmp (NH->magic, "ni1\0", 4) == 0;
 
         char db_name[19];
         strncpy (db_name, NH->db_name, 18);
@@ -136,7 +136,7 @@ namespace MR {
           H.offset = 0.0;
         }
 
-        size_t data_offset = ( H.format == FormatAVW ? (size_t) get<float> (&NH->vox_offset, is_BE) : 0 );
+        size_t data_offset = ( is_nifti ? 0 : (size_t) get<float> (&NH->vox_offset, is_BE) );
 
         char descrip[81];
         strncpy (descrip, NH->descrip, 80);
@@ -145,7 +145,7 @@ namespace MR {
           H.comments.push_back (descrip);
         }
 
-        if (H.format == FormatNIfTI) {
+        if (is_nifti) {
           if (get<int16_t> (&NH->sform_code, is_BE)) {
             Math::Matrix<float>& M (H.transform());
             M.allocate (4,4);
@@ -223,7 +223,7 @@ namespace MR {
 
 
 
-        if (H.format == FormatAVW) {
+        if (!is_nifti) {
           H.axes.forward(0) = File::Config::get_bool ("Analyse.LeftToRight", true); 
           if (!right_left_warning_issued) {
             info ("assuming Analyse images are encoded " + std::string (H.axes.forward(0) ? "left to right" : "right to left"));
@@ -256,8 +256,6 @@ namespace MR {
         if (!Path::has_suffix (H.name(), ".img")) return (false);
         if (num_axes < 3) throw Exception ("cannot create Analyse image with less than 3 dimensions");
         if (num_axes > 8) throw Exception ("cannot create Analyse image with more than 8 dimensions");
-
-        H.format = FormatAVW;
 
         H.axes.ndim() = num_axes;
         for (size_t i = 0; i < H.ndim(); i++) {

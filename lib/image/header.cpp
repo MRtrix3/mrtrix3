@@ -206,6 +206,7 @@ namespace MR {
 
         for (; *format_handler; format_handler++) if ((*format_handler)->read (*this)) break;
         if (!*format_handler) throw Exception ("unknown format for image \"" + name() + "\"");
+        format = (*format_handler)->description;
 
         Header header (*this);
         while (++item != list.end()) {
@@ -267,6 +268,7 @@ namespace MR {
           if ((*format_handler)->check (*this, ndim() - Pdim.size())) break;
           if (!*format_handler) throw Exception ("unknown format for image \"" + image_name + "\"");
         }
+        format = (*format_handler)->description;
 
         dtype.set_byte_order_native();
         int a = 0;

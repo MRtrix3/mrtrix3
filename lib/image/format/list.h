@@ -23,21 +23,20 @@
 #ifndef __image_format_list_h__
 #define __image_format_list_h__
 
-#define DECLARE_IMAGEFORMAT(format) \
+#include "image/header.h"
+
+#define DECLARE_IMAGEFORMAT(format, desc) \
   class format : public Base { \
     public:  \
-      format () : Base (#format) { } \
+      format () : Base (desc) { } \
     protected: \
-      virtual bool   read (Header& H) const; \
-      virtual bool   check (Header& H, int num_axes = 0) const; \
-      virtual void   create (Header& H) const; \
+      virtual bool read (Header& H) const; \
+      virtual bool check (Header& H, int num_axes) const; \
+      virtual void create (Header& H) const; \
   }
-
 
 namespace MR {
   namespace Image {
-
-    class Header;
 
     //! \addtogroup Image 
     // @{
@@ -65,7 +64,9 @@ namespace MR {
            * the relevant information. 
            * 
            * \return true if this Format handler can read this type of file,
-           * false otherwise. 
+           * false otherwise.  If true, this function should fill the Header \c
+           * H with all the relevant information as read from the images before
+           * returning.
            * \note this function should throw an Exception in case of error. */
           virtual bool read (Header& H) const = 0;
 
@@ -81,27 +82,25 @@ namespace MR {
            * false otherwise. 
            * \note this function should throw an Exception in case of error, or
            * if this image format cannot support the header information. */
-          virtual bool check (Header& H, int num_axes = 0) const = 0;
+          virtual bool check (Header& H, int num_axes) const = 0;
 
           /*! \brief create the image corresponding to the Image::Header \c H.
            *
-           * This function will check whether this handler can create images in
-           * the format suggested by the filename. It will then check whether
-           * the format can handle the number of dimensions requested, and
-           * modify the header appropriately if needed.
+           * This function will create images in the corresponding format,
+           * assuming the header has been validated using the check() function
+           * beforehand. 
            *
            * \note this function should throw an Exception in case of error. */
           virtual void create (Header& H) const = 0;
       };
 
-      DECLARE_IMAGEFORMAT (Analyse);
-      DECLARE_IMAGEFORMAT (NIfTI);
-      DECLARE_IMAGEFORMAT (NIfTI_GZ);
-      DECLARE_IMAGEFORMAT (MRI);
-      DECLARE_IMAGEFORMAT (DICOM);
-      DECLARE_IMAGEFORMAT (XDS);
-      DECLARE_IMAGEFORMAT (MRtrix);
-
+      DECLARE_IMAGEFORMAT (DICOM, "DICOM");
+      DECLARE_IMAGEFORMAT (MRtrix, "MRtrix");
+      DECLARE_IMAGEFORMAT (NIfTI, "NIfTI-1.1");
+      DECLARE_IMAGEFORMAT (NIfTI_GZ, "NIfTI-1.1 (GZip compressed)");
+      DECLARE_IMAGEFORMAT (Analyse, "AnalyseAVW");
+      DECLARE_IMAGEFORMAT (MRI, "MRTools (legacy format)");
+      DECLARE_IMAGEFORMAT (XDS, "XDS");
 
       /*! a list of all extensions for image formats that %MRtrix can handle. */
       extern const char* known_extensions[];

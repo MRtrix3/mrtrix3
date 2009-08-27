@@ -37,14 +37,6 @@ namespace MR {
   namespace Image {
     namespace Format {
 
-      namespace {
-
-        const char* FormatMRtrix = "MRtrix";
-
-      }
-
-
-
       // extensions are: 
       // mih: MRtrix Image Header
       // mif: MRtrix Image File
@@ -54,8 +46,6 @@ namespace MR {
         if (!Path::has_suffix (H.name(), ".mih") && !Path::has_suffix (H.name(), ".mif")) return (false);
 
         File::KeyValue kv (H.name(), "mrtrix image");
-
-        H.format = FormatMRtrix;
 
         std::string dtype, layout, file;
         std::vector<int> dim;
@@ -178,8 +168,6 @@ namespace MR {
       bool MRtrix::check (Header& H, int num_axes) const
       {
         if (H.name().size() && !Path::has_suffix (H.name(), ".mih") && !Path::has_suffix (H.name(), ".mif")) return (false);
-
-        H.format = FormatMRtrix;
 
         H.axes.ndim() = num_axes;
         for (size_t i = 0; i < H.axes.ndim(); i++) 

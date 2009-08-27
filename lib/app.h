@@ -73,6 +73,9 @@ namespace MR {
   };
 
 
+  //! \addtogroup CmdParse 
+  // @{
+
   class App
   {
     public:
@@ -80,19 +83,26 @@ namespace MR {
           const size_t* cmd_version, const char* cmd_author, const char* cmd_copyright);
       virtual ~App ();
 
-      void   run (int argc, char** argv);
+      void   run (int argc, char** argv) { parse_arguments (); execute (); }
 
-      static int    log_level;
+      static int log_level;
 
-      static const size_t*            version;
-      static const char*            copyright;
-      static const char*            author;
-      static const std::string&          name () { return (application_name); }
+      static const size_t*      version;
+      static const char*        copyright;
+      static const char*        author;
+      static const std::string& name () { return (application_name); }
 
       friend std::ostream& operator<< (std::ostream& stream, const App& app);
       friend std::ostream& operator<< (std::ostream& stream, const OptBase& opt);
 
     protected:
+      std::vector<ArgBase> argument;
+      std::vector<OptBase> option;
+
+      virtual void execute () = 0;
+      std::vector<OptBase> get_options (size_t index);
+
+    private:
       void parse_arguments ();
 
       void   print_help () const;
@@ -111,17 +121,13 @@ namespace MR {
       std::vector<const char*>  parsed_arguments;
       std::vector<ParsedOption> parsed_options;
 
-      std::vector<ArgBase> argument;
-      std::vector<OptBase> option;
-
-      virtual void execute () = 0;
-
       const char* option_name (size_t num) const { 
         return (num < DEFAULT_OPTIONS_OFFSET ? command_options[num].sname : default_options[num - DEFAULT_OPTIONS_OFFSET].sname ); 
       }
 
-      std::vector<OptBase> get_options (size_t index);
   };
+
+  //! @}
 
 
   void cmdline_print (const std::string& msg);

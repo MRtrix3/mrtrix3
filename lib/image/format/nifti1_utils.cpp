@@ -30,14 +30,8 @@ namespace MR {
   namespace File {
     namespace NIfTI {
 
-      const char* FormatString = "NIfTI-1.1";
-
-
-
       size_t read (Image::Header& H, const nifti_1_header& NH)
       {
-        H.format = FormatString;
-
         bool is_BE = false;
         if (get<int32_t> (&NH.sizeof_hdr, is_BE) != 348) {
           is_BE = true;

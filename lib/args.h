@@ -33,6 +33,13 @@ namespace MR {
     class Argument;
   }
 
+  /*! \defgroup CmdParse Command-Line Parsing
+   * \brief Classes and functions to parse command-line arguments and options.
+   * */
+
+  //! \addtogroup CmdParse 
+  // @{
+
   typedef enum {
     Undefined,
     Integer,
@@ -231,6 +238,7 @@ namespace MR {
     return (*this);
   }
 
+  //! @}
 
 }
 

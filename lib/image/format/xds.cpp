@@ -34,19 +34,6 @@ namespace MR {
   namespace Image {
     namespace Format {
 
-      namespace {
-
-        const char* FormatBFloat = "XDS (floating point)";
-        const char* FormatBShort = "XDS (integer)";
-
-      }
-
-
-
-
-      
-
-
       bool XDS::read (Header& H) const
       {
         if (!Path::has_suffix (H.name(), ".bfloat") && !Path::has_suffix (H.name(), ".bshort")) return (false);
@@ -62,14 +49,7 @@ namespace MR {
         in >> H.axes.dim(1) >> H.axes.dim(0) >> H.axes.dim(3) >> BE;
         in.close();
 
-        if (Path::has_suffix (H.name(), ".bfloat")) {
-          H.datatype() = DataType::Float32;
-          H.format = FormatBFloat;
-        }
-        else {
-          H.datatype() = DataType::UInt16;
-          H.format = FormatBShort;
-        }
+        H.datatype() = ( Path::has_suffix (H.name(), ".bfloat") ? DataType::Float32 : DataType::UInt16 );
 
         if (BE) H.datatype().set_flag (DataType::LittleEndian);
         else H.datatype().set_flag (DataType::BigEndian);
@@ -140,14 +120,7 @@ namespace MR {
 
         bool is_BE = H.datatype().is_big_endian();
 
-        if (Path::has_suffix (H.name(), ".bfloat")) {
-          H.datatype() = DataType::Float32;
-          H.format = FormatBFloat;
-        }
-        else {
-          H.datatype() = DataType::UInt16;
-          H.format = FormatBShort;
-        }
+        H.datatype() = ( Path::has_suffix (H.name(), ".bfloat") ? DataType::Float32 : DataType::UInt16 );
 
         if (is_BE) H.datatype().set_flag (DataType::BigEndian);
         else H.datatype().set_flag (DataType::LittleEndian);

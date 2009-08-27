@@ -39,13 +39,13 @@ namespace MR {
       }
 
       const Base* handlers[] = {
+        &dicom_handler,
         &mrtrix_handler,
-        &mri_handler,
         &nifti_handler,
         &nifti_gz_handler,
         &analyse_handler,
+        &mri_handler,
         &xds_handler,
-        &dicom_handler,
         NULL
       };
 

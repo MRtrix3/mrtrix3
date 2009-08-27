@@ -53,8 +53,6 @@ namespace MR {
         if (num_axes < 3) throw Exception ("cannot create NIfTI-1.1 image with less than 3 dimensions");
         if (num_axes > 8) throw Exception ("cannot create NIfTI-1.1 image with more than 8 dimensions");
 
-        H.format = File::NIfTI::FormatString;
-
         H.axes.ndim() = num_axes;
         for (size_t i = 0; i < H.ndim(); i++) {
           if (H.axes.dim(i) < 1) H.axes.dim(i) = 1;

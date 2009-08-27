@@ -33,15 +33,9 @@ namespace MR {
   namespace File {
     namespace Dicom {
 
-      namespace {
-        const char* FormatDICOM = "DICOM";
-      }
-
-
       void dicom_to_mapper (MR::Image::Header& H, std::vector< RefPtr<Series> >& series)
       {
         assert (series.size() > 0);
-        H.format = FormatDICOM;
 
         Patient* patient (series[0]->study->patient);
         std::string sbuf = ( patient->name.size() ? patient->name : "unnamed" );
