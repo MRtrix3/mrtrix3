@@ -22,10 +22,10 @@
 
 #include "file/path.h"
 #include "file/misc.h"
+#include "file/nifti1_utils.h"
 #include "image/misc.h"
 #include "image/header.h"
 #include "image/format/list.h"
-#include "image/format/nifti1_utils.h"
 
 namespace MR {
   namespace Image {

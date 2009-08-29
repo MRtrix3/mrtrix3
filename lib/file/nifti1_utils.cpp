@@ -21,10 +21,10 @@
 */
 
 #include "get_set.h"
+#include "file/nifti1_utils.h"
 #include "math/math.h"
 #include "math/quaternion.h"
 #include "image/header.h"
-#include "image/format/nifti1_utils.h"
 
 namespace MR {
   namespace File {

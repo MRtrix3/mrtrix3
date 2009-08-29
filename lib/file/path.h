@@ -41,9 +41,6 @@
 #define PATH_SEPARATOR "/"
 #endif
 
-#define TMPFILE_ROOT "mrtrix-"
-#define TMPFILE_ROOT_LEN 7
-
 
 namespace MR {
   namespace Path {
@@ -95,8 +92,6 @@ namespace MR {
     inline bool has_suffix (const std::string& name, const std::string& suffix) 
     { return (name.size() < suffix.size() ? false : name.substr (name.size()-suffix.size()) == suffix); }
 
-
-    inline bool is_temporary (const std::string& file) { return (basename(file).compare (0, TMPFILE_ROOT_LEN, TMPFILE_ROOT) == 0); }
 
     inline std::string cwd (size_t buf_size = 32) 
     { 

@@ -18,7 +18,7 @@
    You should have received a copy of the GNU General Public License
    along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
 
- */
+*/
 
 #ifndef __image_header_h__
 #define __image_header_h__

@@ -29,6 +29,11 @@
 #include <fcntl.h>
 
 #include "mrtrix.h"
+#include "file/path.h"
+
+#define TMPFILE_ROOT "mrtrix-tmp-"
+#define TMPFILE_ROOT_LEN 11
+
 
 namespace MR {
   namespace File {
@@ -72,14 +77,22 @@ namespace MR {
 
 
 
-
-    inline std::string scratch (off64_t size, const char* suffix = NULL) 
+    inline bool is_tempfile (const std::string& name, const char* suffix = NULL)
     {
-      assert (size);
-      debug ("creating scratch file of size " + str(size));
+      if (Path::basename(name).compare (0, TMPFILE_ROOT_LEN, TMPFILE_ROOT)) return (false);
+      if (suffix) if (!Path::has_suffix (name, suffix)) return (false);
+      return (true);
+    }
+
+
+
+
+    inline std::string create_tempfile (off64_t size = 0, const char* suffix = NULL) 
+    {
+      debug ("creating temporary file of size " + str(size));
 
       std::string filename (TMPFILE_ROOT"XXXXXX.");
-      filename += suffix ? suffix : "tmp"; 
+      if (suffix) filename += suffix;
 
       int fid;
       do {
@@ -87,7 +100,7 @@ namespace MR {
           filename[TMPFILE_ROOT_LEN+n] = random_char();
       } while ((fid = open64 (filename.c_str(), O_CREAT | O_RDWR | O_EXCL, 0755)) < 0);
 
-      int status = ftruncate64 (fid, size);
+      int status = size ? ftruncate64 (fid, size) : 0;
       close (fid);
       if (status) throw Exception ("cannot resize file \"" + filename + "\": " + strerror(errno));
       return (filename);

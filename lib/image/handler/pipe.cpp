@@ -35,6 +35,7 @@ namespace MR {
       {
         if (file && !is_new) {
           file = NULL;
+          debug ("deleting files for piped image \"" + H.name() + "\"...");
           unlink (H.files[0].name.c_str());
         }
       }
@@ -45,7 +46,7 @@ namespace MR {
       void Pipe::execute ()
       {
         assert (H.files.size() == 1);
-        debug ("mapping image \"" + H.name() + "\"...");
+        debug ("mapping piped image \"" + H.name() + "\"...");
 
         segsize = voxel_count (H) / H.files.size();
         off64_t bytes_per_segment = (H.datatype().bits() * segsize + 7) / 8;

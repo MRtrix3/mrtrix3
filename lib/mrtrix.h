@@ -79,9 +79,6 @@
 #  define MAX(a,b) ((a)>(b)?(a):(b))
 #endif 
 
-#define TMPFILE_ROOT "mrtrix-"
-#define TMPFILE_ROOT_LEN 7
-
 
 namespace std {
 

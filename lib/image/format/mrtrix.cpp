@@ -167,7 +167,7 @@ namespace MR {
 
       bool MRtrix::check (Header& H, int num_axes) const
       {
-        if (H.name().size() && !Path::has_suffix (H.name(), ".mih") && !Path::has_suffix (H.name(), ".mif")) return (false);
+        if (!Path::has_suffix (H.name(), ".mih") && !Path::has_suffix (H.name(), ".mif")) return (false);
 
         H.axes.ndim() = num_axes;
         for (size_t i = 0; i < H.axes.ndim(); i++) 
@@ -181,7 +181,8 @@ namespace MR {
 
       void MRtrix::create (Header& H) const
       {
-        File::create (H.name());
+        if (!File::is_tempfile (H.name())) File::create (H.name());
+
         std::ofstream out (H.name().c_str(), std::ios::out | std::ios::binary);
         if (!out) throw Exception ("error creating file \"" + H.name() + "\":" + strerror(errno));
 

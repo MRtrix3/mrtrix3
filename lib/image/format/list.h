@@ -29,7 +29,6 @@
   class format : public Base { \
     public:  \
       format () : Base (desc) { } \
-    protected: \
       virtual bool read (Header& H) const; \
       virtual bool check (Header& H, int num_axes) const; \
       virtual void create (Header& H) const; \
@@ -94,6 +93,7 @@ namespace MR {
           virtual void create (Header& H) const = 0;
       };
 
+      DECLARE_IMAGEFORMAT (Pipe, "Internal pipe");
       DECLARE_IMAGEFORMAT (DICOM, "DICOM");
       DECLARE_IMAGEFORMAT (MRtrix, "MRtrix");
       DECLARE_IMAGEFORMAT (NIfTI, "NIfTI-1.1");
@@ -108,6 +108,7 @@ namespace MR {
       /*! a list of all handlers for supported image formats. */
       extern const Base* handlers[]; 
 
+      extern Format::MRtrix mrtrix_handler;
     }
     //! @}
   }
