@@ -95,8 +95,9 @@ namespace MR {
         size_t  ndim () const            { return (axes.ndim()); }
         float   vox (size_t index) const { return (axes.vox (index)); }
 
-        const DataType& datatype () const { return (dtype); }
-        DataType&       datatype ()       { return (dtype); }
+        const DataType& datatype () const   { return (dtype); }
+        DataType&       datatype ()         { return (dtype); }
+        bool            is_complex () const { return (dtype.is_complex()); }
 
         const Math::Matrix<float>& transform () const { return (transform_matrix); }
         Math::Matrix<float>&       transform ()       { return (transform_matrix); }
@@ -116,8 +117,8 @@ namespace MR {
         float scale_to_storage (float val) const   { return ((val - offset) / scale); }
 
 
-        void open (const std::string& image_name, bool read_write = false);
-        void create (const std::string& image_name);
+        static const Header open (const std::string& image_name, bool read_write = false);
+        static const Header create (const std::string& image_name, const Header& template_header);
 
         friend std::ostream& operator<< (std::ostream& stream, const Header& H);
 

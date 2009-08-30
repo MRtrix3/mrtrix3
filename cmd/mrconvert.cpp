@@ -54,11 +54,6 @@ ARGUMENTS = {
 
 
 const char* type_choices[] = { "REAL", "IMAG", "MAG", "PHASE", "COMPLEX", NULL };
-const char* data_type_choices[] = { "FLOAT32", "FLOAT32LE", "FLOAT32BE", "FLOAT64", "FLOAT64LE", "FLOAT64BE", 
-    "INT32", "UINT32", "INT32LE", "UINT32LE", "INT32BE", "UINT32BE", 
-    "INT16", "UINT16", "INT16LE", "UINT16LE", "INT16BE", "UINT16BE", 
-    "CFLOAT32", "CFLOAT32LE", "CFLOAT32BE", "CFLOAT64", "CFLOAT64LE", "CFLOAT64BE", 
-    "INT8", "UINT8", "BIT", NULL };
 
 OPTIONS = {
   Option ("coord", "select coordinates", "extract data only at the coordinates specified.", Optional | AllowMultiple)
@@ -70,7 +65,7 @@ OPTIONS = {
         .type_sequence_float ()),
 
   Option ("datatype", "data type", "specify output image data type.")
-    .append (Argument ("spec", "specifier", "the data type specifier.").type_choice (data_type_choices)),
+    .append (Argument ("spec", "specifier", "the data type specifier.").type_choice (DataType::identifiers)),
 
   Option ("scale", "scaling factor", "apply scaling to the intensity values.")
     .append (Argument ("factor", "factor", "the factor by which to multiply the intensities.").type_float (NAN, NAN, 1.0)),
@@ -146,35 +141,34 @@ EXECUTE {
 
 
 
-  Image::Object &in_obj (*argument[0].get_image());
-
-  Image::Header header (in_obj);
+  const Image::Header header_in = argument[0].get_image ();
+  Image::Header header (header_in);
 
   if (output_type == 0) {
-    if (in_obj.is_complex()) output_type = Image::RealImag;
+    if (header_in.is_complex()) output_type = Image::RealImag;
     else output_type = Image::Default;
   }
 
-  if (output_type == Image::RealImag) header.data_type = DataType::CFloat32;
-  else if (output_type == Image::Phase) header.data_type = DataType::Float32;
-  else header.data_type.unset_flag (DataType::ComplexNumber);
+  if (output_type == Image::RealImag) header.datatype() = DataType::CFloat32;
+  else if (output_type == Image::Phase) header.datatype() = DataType::Float32;
+  else header.datatype().unset_flag (DataType::Complex);
 
   
   opt = get_options (2); // datatype
-  if (opt.size()) header.data_type.parse (data_type_choices[opt[0][0].get_int()]);
+  if (opt.size()) header.datatype().parse (DataType::identifiers[opt[0][0].get_int()]);
 
   for (size_t n = 0; n < vox.size(); n++) 
-    if (isfinite (vox[n])) header.axes[n].vox = vox[n];
+    if (isfinite (vox[n])) header.axes.vox(n) = vox[n];
 
   opt = get_options (7); // layout
   if (opt.size()) {
-    std::vector<Image::Order> ax = parse_axes_specifier (header.axes, opt[0][0].get_string());
-    if (ax.size() != header.axes.size()) 
+    std::vector<Image::Axes::Order> ax = parse_axes_specifier (header.axes, opt[0][0].get_string());
+    if (ax.size() != header.axes.ndim()) 
       throw Exception (std::string("specified layout \"") + opt[0][0].get_string() + "\" does not match image dimensions");
 
     for (size_t i = 0; i < ax.size(); i++) {
-      header.axes[i].order = ax[i].order;
-      header.axes[i].forward = ax[i].forward;
+      header.axes.order(i) = ax[i].order;
+      header.axes.forward(i) = ax[i].forward;
     }
   }
 
@@ -189,52 +183,52 @@ EXECUTE {
     }
   }
 
-  std::vector<int> pos[in_obj.ndim()];
+  std::vector<int> pos[header_in.ndim()];
 
   opt = get_options (0); // coord
   for (size_t n = 0; n < opt.size(); n++) {
     int axis = opt[n][0].get_int();
     if (pos[axis].size()) throw Exception ("\"coord\" option specified twice for axis " + str (axis));
     pos[axis] = parse_ints (opt[n][1].get_string());
-    header.axes[axis].dim = pos[axis].size();
+    header.axes.dim(axis) = pos[axis].size();
   }
 
-  for (size_t n = 0; n < in_obj.ndim(); n++) {
+  for (size_t n = 0; n < header_in.ndim(); n++) {
     if (pos[n].empty()) { 
-      pos[n].resize (in_obj.dim(n));
+      pos[n].resize (header_in.dim(n));
       for (size_t i = 0; i < pos[n].size(); i++) pos[n][i] = i;
     }
   }
 
 
-  in_obj.apply_scaling (scale, offset);
+  header.apply_scaling (scale, offset);
 
 
 
 
 
 
-  Image::Voxel in (in_obj);
-  Image::Voxel out (*argument[1].get_image (header));
+  Image::Voxel in (header_in);
 
-  in.image.map();
-  out.image.map();
+  const Image::Header header_out = argument[1].get_image (header);
+  Image::Voxel out (header_out);
 
   for (size_t n = 0; n < in.ndim(); n++) in[n] = pos[n][0];
 
   ProgressBar::init (voxel_count (out), "copying data...");
 
   do { 
+    cfloat val;
+    /*if (in.is_complex()) val = in.Z();
+    else*/ val.real() = in.value();
 
-    float re, im = 0.0;
-    value (in, output_type, re, im);
-    if (replace_NaN) if (isnan (re)) re = 0.0;
-    out.real() = re;
+    if (replace_NaN) if (isnan (val.real())) val.real() = 0.0;
 
-    if (output_type == Image::RealImag) {
-      if (replace_NaN) if (isnan (im)) im = 0.0;
-      out.imag() = im;
+    /*if (output_type == Image::RealImag) {
+      if (replace_NaN) if (isnan (val.imag())) val.imag() = 0.0;
+      out.Z() = val;
     }
+    else*/ out.value() = val.real();
 
     ProgressBar::inc();
   } while (next (out, in, pos));

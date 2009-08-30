@@ -100,7 +100,7 @@ namespace MR {
         }
 
         for (size_t i = 0; i < 3; i++) {
-          Math::VectorView<float> translation = transform_matrix.column(4).view(0,3);
+          Math::VectorView<float> translation = transform_matrix.column(3).view(0,3);
           if (flip[i]) {
             a[i].forward = !a[i].forward;
             float length = (a[i].dim-1) * a[i].vox;
@@ -112,8 +112,6 @@ namespace MR {
           }
         }
       }
-
-      debug ("setting up data increments for \"" + name() + "\"...");
 
       size_t order[ndim()];
       size_t last = ndim()-1;
@@ -171,10 +169,11 @@ namespace MR {
 
 
 
-    void Header::open (const std::string& image_name, bool read_write)
+    const Header Header::open (const std::string& image_name, bool read_write)
     {
       if (image_name.empty()) throw Exception ("no name supplied to open image!");
-      readwrite = read_write;
+      Header H;
+      H.readwrite = read_write;
 
       try {
         info ("opening image \"" + image_name + "\"...");
@@ -184,101 +183,106 @@ namespace MR {
 
         const Format::Base** format_handler = Format::handlers;
         std::vector< RefPtr<ParsedName> >::iterator item = list.begin();
-        identifier = (*item)->name();
+        H.identifier = (*item)->name();
 
-        for (; *format_handler; format_handler++) if ((*format_handler)->read (*this)) break;
-        if (!*format_handler) throw Exception ("unknown format for image \"" + name() + "\"");
-        format = (*format_handler)->description;
+        for (; *format_handler; format_handler++) if ((*format_handler)->read (H)) break;
+        if (!*format_handler) throw Exception ("unknown format for image \"" + H.name() + "\"");
+        H.format = (*format_handler)->description;
 
-        Header header (*this);
+        Header header (H);
         while (++item != list.end()) {
           header.name() = (*item)->name();
           if (!(*format_handler)->read (header)) throw Exception ("image specifier contains mixed format files");
-          merge (header);
+          H.merge (header);
         }
 
         if (num.size()) {
           int a = 0, n = 0;
-          for (size_t i = 0; i < axes.ndim(); i++) if (axes.order(i) != Axes::undefined) n++;
-          axes.ndim() = n + num.size();
+          for (size_t i = 0; i < H.axes.ndim(); i++) if (H.axes.order(i) != Axes::undefined) n++;
+          H.axes.ndim() = n + num.size();
 
           for (std::vector<int>::const_iterator item = num.begin(); item != num.end(); item++) {
-            while (axes[a].order != Axes::undefined) a++;
-            axes.dim(a) = *item;
-            axes.order(a) = n++;
+            while (H.axes[a].order != Axes::undefined) a++;
+            H.axes.dim(a) = *item;
+            H.axes.order(a) = n++;
           }
         }
 
-        sanitise();
-        if (!handler) handler = new Handler::Default (*this, false);
+        H.sanitise();
+        if (!H.handler) H.handler = new Handler::Default (H, false);
 
-        identifier = image_name;
+        H.identifier = image_name;
       }
       catch (...) { throw Exception ("error opening image \"" + image_name + "\""); }
+
+      return (H);
     }
 
 
 
 
 
-    void Header::create (const std::string& image_name)
+    const Header Header::create (const std::string& image_name, const Header& template_header)
     {
       if (image_name.empty()) throw Exception ("no name supplied to open image!");
-      readwrite = true;
+      Header H (template_header);
+      H.readwrite = true;
 
       try {
         info ("creating image \"" + image_name + "\"...");
 
-        sanitise();
+        H.sanitise();
 
         NameParser parser;
         parser.parse (image_name);
         std::vector<int> Pdim (parser.ndim());
 
-        int Hdim [ndim()];
-        for (size_t i = 0; i < ndim(); i++) Hdim[i] = dim(i);
+        int Hdim [H.ndim()];
+        for (size_t i = 0; i < H.ndim(); i++) Hdim[i] = H.dim(i);
 
         const Format::Base** format_handler = Format::handlers;
         for (; *format_handler; format_handler++) {
-          if ((*format_handler)->check (*this, ndim() - Pdim.size())) break;
-          if (!*format_handler) throw Exception ("unknown format for image \"" + image_name + "\"");
+          if ((*format_handler)->check (H, H.ndim() - Pdim.size())) break;
         }
-        format = (*format_handler)->description;
+        if (!*format_handler) throw Exception ("unknown format for image \"" + image_name + "\"");
+        H.format = (*format_handler)->description;
 
-        dtype.set_byte_order_native();
+        H.dtype.set_byte_order_native();
         int a = 0;
         for (size_t n = 0; n < Pdim.size(); n++) {
-          while (axes.order(a) != Axes::undefined) a++;
+          while (H.axes.order(a) != Axes::undefined) a++;
           Pdim[n] = Hdim[a];
         }
         parser.calculate_padding (Pdim);
 
-        Header header (*this);
+        Header header (H);
         std::vector<int> num (Pdim.size());
         do {
           header.name() = parser.name (num);
           (*format_handler)->create (header);
-          merge (header);
+          H.merge (header);
         } while (get_next (num, Pdim));
 
         if (Pdim.size()) {
           int a = 0, n = 0;
-          for (size_t i = 0; i < ndim(); i++) if (axes.order(i) != Axes::undefined) n++;
-          axes.ndim() = n + Pdim.size();
+          for (size_t i = 0; i < H.ndim(); i++) if (H.axes.order(i) != Axes::undefined) n++;
+          H.axes.ndim() = n + Pdim.size();
 
           for (std::vector<int>::const_iterator item = Pdim.begin(); item != Pdim.end(); item++) {
-            while (axes.order(a) != Axes::undefined) a++;
-            axes.dim(a) = *item;
-            axes.order(a) = n++;
+            while (H.axes.order(a) != Axes::undefined) a++;
+            H.axes.dim(a) = *item;
+            H.axes.order(a) = n++;
           }
         }
 
-        sanitise();
-        if (!handler) handler = new Handler::Default (*this, false);
+        H.sanitise();
+        if (!H.handler) H.handler = new Handler::Default (H, false);
 
-        identifier = image_name;
+        H.identifier = image_name;
       }
       catch (...) { throw Exception ("error creating image \"" + image_name + "\""); }
+
+      return (H);
     }
 
 

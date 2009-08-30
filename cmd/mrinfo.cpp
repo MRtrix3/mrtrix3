@@ -58,8 +58,7 @@ EXECUTE {
     if (argument.size() != 1)
       throw Exception ("Please specify a single image when using the \"-grad\" option");
 
-    Image::Header header;
-    argument[0].get_image (header); 
+    const Image::Header header = argument[0].get_image (); 
 
     if (!header.DW_scheme.is_set()) 
       error ("no gradient file found for image \"" + header.name() + "\"");
@@ -69,8 +68,7 @@ EXECUTE {
   }
   else {
     for (size_t i = 0; i < argument.size(); i++) {
-      Image::Header header;
-      argument[i].get_image (header); 
+      const Image::Header header = argument[i].get_image (); 
       cout << header.description();
     }
   }

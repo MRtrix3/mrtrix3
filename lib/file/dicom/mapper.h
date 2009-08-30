@@ -36,6 +36,8 @@ namespace MR {
 
       class Series;
 
+      /*! \todo add other DICOM header information to header as generic
+       * key/value entries. */
       void dicom_to_mapper (MR::Image::Header& H, std::vector< RefPtr<Series> >& series);
       
     }

@@ -72,9 +72,13 @@ namespace MR {
       int         get_int () const     { return (data.i); }
       float       get_float () const   { return (data.f); }
       const char* get_string () const  { return (data.string); }
-      void        get_image (Image::Header& header, bool readwrite = false) const { 
-        if (type() == ImageIn) header.open (data.string, readwrite);
-        else { assert (type() == ImageOut); header.create (data.string); }
+      const Image::Header get_image (bool readwrite = false) const { 
+        assert (type() == ImageIn);
+        return (Image::Header::open (data.string, readwrite));
+      }
+      const Image::Header get_image (Image::Header& template_header) const { 
+        assert (type() == ImageOut); 
+        return (Image::Header::create (data.string, template_header)); 
       }
 
       ArgType type () const { return (argtype); }

@@ -43,7 +43,7 @@ namespace MR {
       public:
         //! construct a Voxel object to access the data in the Image::Header \p parent
         /*! All coordinates will be initialised to zero. */
-        Voxel (Header& parent) : S (new SharedInfo (parent)), offset (S->start) { 
+        Voxel (const Header& parent) : S (new SharedInfo (parent)), offset (S->start) { 
           x = new ssize_t [ndim()]; 
           memset (x, 0, sizeof(ssize_t) * ndim()); 
         }
@@ -142,7 +142,7 @@ namespace MR {
 
         //! %get whether the image data are complex
         /*! \return true if the image data are complex */
-        bool  is_complex () const      { return (S->H.datatype().is_complex()); }
+        bool  is_complex () const      { return (S->H.is_complex()); }
 
         //! returns the value of the voxel at the current position
         float value () const { return (S->get (offset)); }
@@ -161,9 +161,9 @@ namespace MR {
       protected:
         class SharedInfo {
           public:
-            SharedInfo (Header& header);
+            SharedInfo (const Header& header);
             
-            Header&   H; //!< reference to the corresponding Image::Header
+            const Header&   H; //!< reference to the corresponding Image::Header
             std::vector<ssize_t>  stride; //!< the offsets between adjacent voxels along each respective axis
             size_t    start; //!< the offset to the first (logical) voxel in the dataset
 

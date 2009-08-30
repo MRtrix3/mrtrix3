@@ -32,7 +32,7 @@
 namespace MR {
   namespace Image {
 
-    Voxel::SharedInfo::SharedInfo (Header& parent) : H (parent)
+    Voxel::SharedInfo::SharedInfo (const Header& parent) : H (parent)
     {
       assert (H.handler);
       H.handler->prepare();

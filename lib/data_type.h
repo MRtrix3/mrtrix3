@@ -113,6 +113,8 @@ namespace MR {
         LittleEndian;
 #endif
 
+        static const char* identifiers[];
+
     protected:
       uint8_t dt;
 

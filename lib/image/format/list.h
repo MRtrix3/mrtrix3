@@ -40,6 +40,9 @@ namespace MR {
     //! \addtogroup Image 
     // @{
 
+    /*! \todo add Image::Format::Folder class to handle both DICOM, GE I-dot
+     * and potentially Siemens Numaris 3 images. */
+
     namespace Format {
 
       /*! the interface for classes that support the various image formats.
@@ -107,7 +110,6 @@ namespace MR {
 
       /*! a list of all handlers for supported image formats. */
       extern const Base* handlers[]; 
-
 
 
 
