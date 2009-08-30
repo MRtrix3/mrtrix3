@@ -71,7 +71,6 @@ namespace MR {
             else if (item.is (0x7FE0U, 0x0010U)) data = item.offset (item.data);
             else if (item.is (0x0008U, 0x0008U)) {
               // exclude Siemens MPR info image:
-              // TODO: could handle this by splitting on basis on this entry
               std::vector<std::string> V (item.get_string());
               for (size_t n = 0; n < V.size(); n++) {
                 if (uppercase (V[n]) == "CSAPARALLEL") return (true);

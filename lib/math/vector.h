@@ -35,7 +35,7 @@
 namespace MR {
   namespace Math {
     
-#ifndef DOXYGEN_SHOULD_SKIP_THIS
+    //! \cond skip
 
     template <typename T> class GSLVector;
     template <> class GSLVector <float> : public gsl_vector_float { public: void set (float* p) { data = p; } };
@@ -53,7 +53,7 @@ namespace MR {
 	static void free (gsl_block* p) { gsl_block_free (p); }
     };
 
-#endif /* DOXYGEN_SHOULD_SKIP_THIS */
+    //! \endcond
 
 
 

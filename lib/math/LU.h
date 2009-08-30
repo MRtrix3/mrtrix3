@@ -31,7 +31,8 @@ namespace MR {
   namespace Math {
     namespace LU {
 
-#ifndef DOXYGEN_SHOULD_SKIP_THIS
+      //! \cond skip
+
       // float definitions of GSL functions:
       int gsl_linalg_LU_decomp (gsl_matrix_float * A, gsl_permutation * p, int *signum);
       int gsl_linalg_LU_solve (const gsl_matrix_float * LU, const gsl_permutation * p, const gsl_vector_float * b, gsl_vector_float * x); 
@@ -42,7 +43,8 @@ namespace MR {
       double gsl_linalg_LU_det (gsl_matrix_float * LU, int signum);
       double gsl_linalg_LU_lndet (gsl_matrix_float * LU);
       int gsl_linalg_LU_sgndet (gsl_matrix_float * lu, int signum);
-#endif /* DOXYGEN_SHOULD_SKIP_THIS */
+
+      //! \endcond
 
       /** @addtogroup linalg 
         @{ */

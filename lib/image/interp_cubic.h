@@ -31,8 +31,10 @@ namespace MR {
     //! \addtogroup Image
     // @{
 
-    //! This class provides access to the voxel intensities of an image, using tri-cubic interpolation.
-    /*! Usage is identical to MR::Image::Interp.  */
+    /*! \brief This class provides access to the voxel intensities of an image, using tri-cubic interpolation.
+     *
+     * Usage is identical to MR::Image::Interp.
+     * \todo these need to be properly implemented and tested.  */
     class InterpCubic : public Interp {
       public:
         //! construct an InterpCubic object to point to the data contained in the MR::Image::Object \p parent
@@ -87,8 +89,6 @@ namespace MR {
       set_coefs (f[0], fx);
       set_coefs (f[1], fy);
       set_coefs (f[2], fz);
-
-      // TODO: these are still tri-linear!!!
 
       faaa = (1.0-f[0]) * (1.0-f[1]) * (1.0-f[2]); if (faaa < 1e-6) faaa = 0.0;
       faab = (1.0-f[0]) * (1.0-f[1]) *      f[2];  if (faab < 1e-6) faab = 0.0;

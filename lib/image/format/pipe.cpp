@@ -35,13 +35,16 @@ namespace MR {
         if (H.name() != "-") return (false);
         getline (std::cin, H.name());
         if (!Path::has_suffix (H.name(), ".mif")) 
-          throw Exception ("MRtrix only supports the .mif format for piping");
+          throw Exception ("MRtrix only supports the .mif format for command-line piping");
 
-        if (mrtrix_handler.read (H)) {
-          H.handler = new Handler::Pipe (H, false);
-          return (true);
+        try {
+          if (mrtrix_handler.read (H)) {
+            H.handler = new Handler::Pipe (H, false);
+            return (true);
+          }
         }
-        else return (false);
+        catch (...) { throw Exception ("error reading image data from command-line pipe"); }
+        return (false);
       }
 
 

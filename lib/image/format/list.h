@@ -108,7 +108,20 @@ namespace MR {
       /*! a list of all handlers for supported image formats. */
       extern const Base* handlers[]; 
 
+
+
+
+      /*! \fn bool Analyse::read (Header& H) const
+        \todo need to update Analyse Format handler to new NIfTI utils
+       * framework. */
+
+      /*! \fn void Analyse::create (Header& H) const
+        \todo need to implement writing in Analyse Format (using the new
+       * NIfTI utils framework. */
+
+      //! \cond skip
       extern Format::MRtrix mrtrix_handler;
+      //! \endcond
     }
     //! @}
   }

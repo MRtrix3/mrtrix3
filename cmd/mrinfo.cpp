@@ -24,11 +24,7 @@
    
 */
 
-#include "image/object.h"
-#include "file/dicom/image.h"
-#include "file/dicom/series.h"
-#include "file/dicom/study.h"
-#include "file/dicom/patient.h"
+#include "image/header.h"
 #include "app.h"
 
 using namespace std; 
@@ -57,16 +53,26 @@ OPTIONS = {
 
 EXECUTE {
 
-  std::string grad_file;
   std::vector<OptBase> opt = get_options (0);
-  if (opt.size()) grad_file = opt[0][0].get_string();
+  if (opt.size()) {
+    if (argument.size() != 1)
+      throw Exception ("Please specify a single image when using the \"-grad\" option");
 
-  for (size_t i = 0; i < argument.size(); i++) {
-    Image::Object& in (*argument[i].get_image()); 
-    cout << in.header().description();
+    Image::Header header;
+    argument[0].get_image (header); 
 
-    if (grad_file.size() && in.header().DW_scheme.is_set()) 
-        in.header().DW_scheme.save (grad_file);
+    if (!header.DW_scheme.is_set()) 
+      error ("no gradient file found for image \"" + header.name() + "\"");
+
+    header.DW_scheme.save (opt[0][0].get_string());
+  
+  }
+  else {
+    for (size_t i = 0; i < argument.size(); i++) {
+      Image::Header header;
+      argument[i].get_image (header); 
+      cout << header.description();
+    }
   }
 }
 

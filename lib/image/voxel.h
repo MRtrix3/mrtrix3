@@ -37,7 +37,8 @@ namespace MR {
     //! This class provides access to the voxel intensities of an image.
     /*! This class keeps a reference to an existing Image::Header, and provides
      * access to the corresponding image intensities. It implements all the
-     * features of the DataSet abstract class. */
+     * features of the DataSet abstract class. 
+     * \todo implement full complex data support. */
     class Voxel {
       public:
         //! construct a Voxel object to access the data in the Image::Header \p parent

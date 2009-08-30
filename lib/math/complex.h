@@ -36,7 +36,7 @@ namespace MR {
 
   namespace Math {
     
-#ifndef DOXYGEN_SHOULD_SKIP_THIS
+    //! \cond skip
 
     template <typename T> class GSLVector;
     template <> class GSLVector <cfloat> : public gsl_vector_complex_float { public: void set (cfloat* p) { data = (float*) p; } };
@@ -58,7 +58,7 @@ namespace MR {
         static void free (gsl_block_complex* p) { gsl_block_complex_free (p); }
     };
 
-#endif /* DOXYGEN_SHOULD_SKIP_THIS */
+    //! \endcond
 
   }
 }

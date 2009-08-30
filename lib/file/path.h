@@ -53,11 +53,12 @@ namespace MR {
 
     inline std::string dirname (const std::string& name) {
       size_t i = name.find_last_of (PATH_SEPARATOR);
-      return (i == std::string::npos ? std::string(".") : ( i ? name.substr (0,i) : std::string(PATH_SEPARATOR) ));
+      return (i == std::string::npos ? std::string("") : ( i ? name.substr (0,i) : std::string(PATH_SEPARATOR) ));
     }
 
 
-    inline std::string join (const std::string& first, const std::string& second) { return (first.empty() ? second : first + std::string(PATH_SEPARATOR)[0] + second); }
+    inline std::string join (const std::string& first, const std::string& second) 
+    { return (first.empty() ? second : first + std::string(PATH_SEPARATOR)[0] + second); }
 
 
     inline bool exists (const std::string& path) 

@@ -59,7 +59,6 @@ namespace MR {
 
     void Voxel::SharedInfo::init ()
     {
-      // TODO: proper complex data support
       switch (H.datatype()()) {
         case DataType::Bit:        get_func = &__get<bool>;       put_func = &__put<bool>;       return;
         case DataType::Int8:       get_func = &__get<int8_t>;     put_func = &__put<int8_t>;     return;

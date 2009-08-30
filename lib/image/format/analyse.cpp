@@ -45,8 +45,6 @@ namespace MR {
 
 
 
-      // TODO: need to update Analyse Format handler to new NIfTI utils framework
-     
       bool Analyse::read (Header& H) const
       {
         if (!Path::has_suffix (H.name(), ".img")) return (false);

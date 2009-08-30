@@ -30,13 +30,15 @@ namespace MR {
   namespace Math {
     namespace Cholesky {
 
-#ifndef DOXYGEN_SHOULD_SKIP_THIS
+      //! \cond skip
+
       // float definitions of GSL functions:
       int gsl_linalg_cholesky_decomp (gsl_matrix_float * A);
       int gsl_linalg_cholesky_solve (const gsl_matrix_float * cholesky, const gsl_vector_float * b, gsl_vector_float * x);
       int gsl_linalg_cholesky_svx (const gsl_matrix_float * cholesky, gsl_vector_float * x);
       int gsl_linalg_cholesky_invert (gsl_matrix_float * cholesky);
-#endif /* DOXYGEN_SHOULD_SKIP_THIS */
+
+      //! \endcond
 
       /** @addtogroup linalg 
         @{ */

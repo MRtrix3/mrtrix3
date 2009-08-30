@@ -37,7 +37,7 @@
 
 namespace MR {
   namespace File {
-#ifndef DOXYGEN_SHOULD_SKIP_THIS
+
     namespace {
       inline char random_char ()
       {
@@ -47,7 +47,6 @@ namespace MR {
         return (c+61);
       }
     }
-#endif /* DOXYGEN_SHOULD_SKIP_THIS */
 
 
 

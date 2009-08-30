@@ -177,17 +177,6 @@ namespace MR {
       readwrite = read_write;
 
       try {
-        if (image_name == "-") {
-          getline (std::cin, identifier);
-          info ("opening image \"" + identifier + "\" (from pipe)...");
-
-          // TODO: implement pipe support
-          assert (0);
-
-          return;
-        }
-        
-
         info ("opening image \"" + image_name + "\"...");
 
         ParsedNameList list;
@@ -238,16 +227,9 @@ namespace MR {
       readwrite = true;
 
       try {
-        sanitise();
-
-        if (image_name == "-") {
-          // TODO: implement pipe support
-          assert (0);
-
-          return;
-        }
-
         info ("creating image \"" + image_name + "\"...");
+
+        sanitise();
 
         NameParser parser;
         parser.parse (image_name);

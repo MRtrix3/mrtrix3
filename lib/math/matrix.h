@@ -31,23 +31,23 @@
 #include "math/math.h"
 #include "math/vector.h"
 
-#ifndef DOXYGEN_SHOULD_SKIP_THIS
+//! \cond skip
 
 #define LOOP(op) for (size_t i = 0; i < GSLMatrix<T>::size1; i++) { for (size_t j = 0; j < GSLMatrix<T>::size2; j++) { op; } }
 
-#endif /* DOXYGEN_SHOULD_SKIP_THIS */
+//! \endcond
 
 
 namespace MR {
   namespace Math {
 
-#ifndef DOXYGEN_SHOULD_SKIP_THIS
+    //! \cond skip
 
     template <typename T> class GSLMatrix;
     template <> class GSLMatrix <float> : public gsl_matrix_float { public: void set (float* p) { data = p; } };
     template <> class GSLMatrix <double> : public gsl_matrix { public: void set (double* p) { data = p; } };
 
-#endif /* DOXYGEN_SHOULD_SKIP_THIS */
+    //! \endcond
 
 
 
@@ -741,7 +741,8 @@ namespace MR {
 
 
 
-#ifndef DOXYGEN_SHOULD_SKIP_THIS
+    //! \cond skip
+
     namespace {
       // double definitions:
 
@@ -792,7 +793,7 @@ namespace MR {
 
     }
 
-#endif /* DOXYGEN_SHOULD_SKIP_THIS */
+    //! \endcond
 
   }
 }

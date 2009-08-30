@@ -90,20 +90,11 @@ namespace MR {
         inline uint8_t* data (uint8_t* pos)                 { return (pos + 2*sizeof (uint32_t)); }
         inline const uint8_t* data (const uint8_t* pos)     { return (pos + 2*sizeof (uint32_t)); }
 
-        /*inline uint8_t* next (uint8_t* current_pos, bool is_BE) 
-        {
-          return (current_pos + 2*sizeof (uint32_t) + size (current_pos, is_BE));
-        }*/
         inline const uint8_t* next (const uint8_t* current_pos, bool is_BE) 
         {
           return (current_pos + 2*sizeof (uint32_t) + size (current_pos, is_BE));
         }
-        // TODO: delete this:
-        inline void write (uint8_t* pos, uint32_t Type, uint32_t Size, bool is_BE)
-        {
-          put<uint32_t> (Type, pos, is_BE);
-          put<uint32_t> (Size, pos + sizeof (uint32_t), is_BE);
-        }
+
         inline void write_tag (std::ostream& out, uint32_t Type, uint32_t Size, bool is_BE)
         {
           Type = ByteOrder::swap<uint32_t> (Type, is_BE);
@@ -111,6 +102,7 @@ namespace MR {
           Size = ByteOrder::swap<uint32_t> (Size, is_BE);
           out.write ((const char*) &Size, sizeof(uint32_t));
         }
+
         template <typename T> inline void write (std::ostream& out, T val, bool is_BE)
         {
           val = ByteOrder::swap<T> (val, is_BE);
