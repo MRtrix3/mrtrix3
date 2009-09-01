@@ -240,6 +240,8 @@ namespace MR {
         int Hdim [H.ndim()];
         for (size_t i = 0; i < H.ndim(); i++) Hdim[i] = H.dim(i);
 
+        H.identifier = image_name;
+
         const Format::Base** format_handler = Format::handlers;
         for (; *format_handler; format_handler++) {
           if ((*format_handler)->check (H, H.ndim() - Pdim.size())) break;
@@ -257,11 +259,15 @@ namespace MR {
 
         Header header (H);
         std::vector<int> num (Pdim.size());
-        do {
+
+        H.name() = parser.name (num);
+        (*format_handler)->create (H);
+
+        while (get_next (num, Pdim)) {
           header.name() = parser.name (num);
           (*format_handler)->create (header);
           H.merge (header);
-        } while (get_next (num, Pdim));
+        }
 
         if (Pdim.size()) {
           int a = 0, n = 0;
