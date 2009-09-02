@@ -26,6 +26,8 @@
 #include <map>
 #include <stdint.h>
 
+#define MAX_FILES_PER_IMAGE 256U
+
 namespace MR {
   namespace Image {
 

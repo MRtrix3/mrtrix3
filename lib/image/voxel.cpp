@@ -27,27 +27,30 @@
 #include "image/voxel.h"
 #include "image/misc.h"
 
-#define MAX_FILES_PER_IMAGE 256U
-
 namespace MR {
   namespace Image {
 
-    namespace {
-      template <typename T> float __get   (const void* data, size_t i) { return (MR::get<T> (data, i)); }
-      template <typename T> float __getLE (const void* data, size_t i) { return (MR::getLE<T> (data, i)); }
-      template <typename T> float __getBE (const void* data, size_t i) { return (MR::getBE<T> (data, i)); }
-
-      template <typename T> void __put   (float val, void* data, size_t i) { return (MR::put<T> (val, data, i)); }
-      template <typename T> void __putLE (float val, void* data, size_t i) { return (MR::putLE<T> (val, data, i)); }
-      template <typename T> void __putBE (float val, void* data, size_t i) { return (MR::putBE<T> (val, data, i)); }
-    }
-
-
-    Voxel::SharedInfo::SharedInfo (const Header& parent) : H (parent)
+    Voxel::Voxel (const Header& parent) : H (parent)
     {
       assert (H.handler);
+      assert (H.ndim() < MAX_NDIM);
+      assert (H.handler->nsegments() < MAX_FILES_PER_IMAGE);
+
+      num_dim = H.ndim();
       H.handler->prepare();
-      H.axes.get_strides (start, stride);
+      segsize = H.handler->voxels_per_segment();
+      std::vector<ssize_t> stride_t;
+      H.axes.get_strides (start, stride_t);
+
+      for (size_t i = 0; i < H.ndim(); i++) {
+        dims[i] = H.dim(i);
+        stride[i] = stride_t[i];
+      }
+      memset (x, 0, sizeof(ssize_t)*ndim());
+      for (size_t i = 0; i < H.handler->nsegments(); i++)
+        segment[i] = H.handler->segment(i);
+
+      offset = start;
 
       switch (H.datatype()()) {
         case DataType::Bit:        get_func = &__get<bool>;       put_func = &__put<bool>;       return;
@@ -68,6 +71,25 @@ namespace MR {
         default: throw Exception ("invalid data type in image header");
       }
     }
+
+
+    Voxel::Voxel (const Voxel& V) :
+      H (V.H),
+      start (V.start),
+      offset (V.offset),
+      segsize (V.segsize),
+      num_dim (V.num_dim),
+      get_func (V.get_func),
+      put_func (V.put_func),
+      getZ_func (V.getZ_func),
+      putZ_func (V.putZ_func)
+    {
+      memcpy (stride, V.stride, sizeof(ssize_t)*ndim());
+      memcpy (x, V.x, sizeof(ssize_t)*ndim());
+      memcpy (segment, V.segment, sizeof(uint8_t*)*H.handler->nsegments());
+      memcpy (dims, V.dims, sizeof(size_t)*ndim());
+    }
+
 
 
   }

@@ -18,15 +18,6 @@
     You should have received a copy of the GNU General Public License
     along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
 
-
-    15-10-2008 J-Donald Tournier <d.tournier@brain.org.au>
-    * fix -prs option handling
-    * remove MR::DICOM_DW_gradients_PRS flag
-
-    15-10-2008 J-Donald Tournier <d.tournier@brain.org.au>
-    * add -layout option to manipulate data ordering within the image file
-
-
 */
 
 #include "app.h"
@@ -93,13 +84,13 @@ inline bool next (Image::Voxel& ref, Image::Voxel& other, const std::vector<int>
 {
   size_t axis = 0;
   do {
-    ref[axis]++;
-    if (ref[axis] < ref.dim(axis)) {
-      other[axis] = pos[axis][ref[axis]];
+    ref.inc(axis);
+    if (ref.pos(axis) < ref.dim(axis)) {
+      other.pos (axis, pos[axis][ref.pos(axis)]);
       return (true);
     }
-    ref[axis] = 0;
-    other[axis] = pos[axis][0];
+    ref.pos(axis, 0);
+    other.pos (axis, pos[axis][0]);
     axis++;
   } while (axis < ref.ndim());
   return (false);
@@ -213,14 +204,14 @@ EXECUTE {
   const Image::Header header_out = argument[1].get_image (header);
   Image::Voxel out (header_out);
 
-  for (size_t n = 0; n < in.ndim(); n++) in[n] = pos[n][0];
+  for (size_t n = 0; n < in.ndim(); n++) in.pos (n, pos[n][0]);
 
   ProgressBar::init (voxel_count (out), "copying data...");
 
   do { 
     cfloat val;
     /*if (in.is_complex()) val = in.Z();
-    else*/ val.real() = in.value();
+    else*/ val.real() = in.get();
 
     if (replace_NaN) if (isnan (val.real())) val.real() = 0.0;
 
@@ -228,7 +219,7 @@ EXECUTE {
       if (replace_NaN) if (isnan (val.imag())) val.imag() = 0.0;
       out.Z() = val;
     }
-    else*/ out.value() = val.real();
+    else*/ out.set (val.real());
 
     ProgressBar::inc();
   } while (next (out, in, pos));

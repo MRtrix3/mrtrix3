@@ -26,8 +26,6 @@
 #include "image/handler/default.h"
 #include "image/misc.h"
 
-#define MAX_FILES_PER_IMAGE 256U
-
 namespace MR {
   namespace Image {
     namespace Handler {
