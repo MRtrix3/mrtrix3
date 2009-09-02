@@ -55,7 +55,6 @@
 #define VAR(variable) std::cerr << MR::get_application_name() << ": " << #variable << " = " << (variable) \
   << " (in " << __func__ << "() from " << __FILE__  << ": " << __LINE__ << ")\n"
 
-#define MRTRIX_MAX_NDIMS 16
 #define GUI_SPACING 5
 
 #define MODIFIERS ( \
