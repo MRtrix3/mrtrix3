@@ -34,10 +34,11 @@ namespace MR {
     {
       assert (H.handler);
       assert (H.ndim() < MAX_NDIM);
+
+      H.handler->prepare();
       assert (H.handler->nsegments() < MAX_FILES_PER_IMAGE);
 
       num_dim = H.ndim();
-      H.handler->prepare();
       segsize = H.handler->voxels_per_segment();
       std::vector<ssize_t> stride_t;
       H.axes.get_strides (start, stride_t);
