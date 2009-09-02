@@ -167,7 +167,6 @@ namespace MR {
 
       bool MRtrix::check (Header& H, int num_axes) const
       {
-        VAR (H.name());
         if (!Path::has_suffix (H.name(), ".mih") && !Path::has_suffix (H.name(), ".mif")) return (false);
 
         H.axes.ndim() = num_axes;

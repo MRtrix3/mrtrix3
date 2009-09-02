@@ -181,8 +181,6 @@ namespace MR {
 
           private:
 
-            void init ();
-
             float  (*get_func) (const void* data, size_t i);
             void   (*put_func) (float val, void* data, size_t i);
 

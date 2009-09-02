@@ -32,19 +32,6 @@
 namespace MR {
   namespace Image {
 
-    Voxel::SharedInfo::SharedInfo (const Header& parent) : H (parent)
-    {
-      assert (H.handler);
-      H.handler->prepare();
-      H.axes.get_strides (start, stride);
-    }
-
-
-
-
-
-
-
     namespace {
       template <typename T> float __get   (const void* data, size_t i) { return (MR::get<T> (data, i)); }
       template <typename T> float __getLE (const void* data, size_t i) { return (MR::getLE<T> (data, i)); }
@@ -56,9 +43,12 @@ namespace MR {
     }
 
 
-
-    void Voxel::SharedInfo::init ()
+    Voxel::SharedInfo::SharedInfo (const Header& parent) : H (parent)
     {
+      assert (H.handler);
+      H.handler->prepare();
+      H.axes.get_strides (start, stride);
+
       switch (H.datatype()()) {
         case DataType::Bit:        get_func = &__get<bool>;       put_func = &__put<bool>;       return;
         case DataType::Int8:       get_func = &__get<int8_t>;     put_func = &__put<int8_t>;     return;
@@ -78,6 +68,7 @@ namespace MR {
         default: throw Exception ("invalid data type in image header");
       }
     }
+
 
   }
 }
