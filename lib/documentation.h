@@ -23,6 +23,8 @@
 #error - "documentation.h" is for documentation purposes only!
 #error - It should NOT be included in other code files.
 
+namespace MR {
+
 /*! \mainpage Overview
  * 
  * MRtrix was developed with simplicity and performance in mind, which has led
@@ -506,7 +508,6 @@ $ ./build lib/mrtrix.o lib/app.o \endverbatim
  *
  */
 
-namespace MR {
 
   /*! \defgroup Image Image access
    * \brief Classes and functions providing access to image data. */
