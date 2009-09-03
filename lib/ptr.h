@@ -31,12 +31,12 @@ namespace MR {
   {
     public:
       explicit Ptr (T* p = NULL) throw () : ptr (p) { }
-      ~Ptr () { if (ptr) delete ptr; }
+      ~Ptr () { delete ptr; }
 
       operator bool() const throw ()       { return (ptr); }
       bool     operator! () const throw () { return (!ptr); }
 
-      Ptr&   operator= (T* p)   { if (ptr) delete ptr; ptr = p; return (*this); }
+      Ptr&   operator= (T* p)   { delete ptr; ptr = p; return (*this); }
       bool    operator== (const Ptr& R) const throw () { return (ptr == R.ptr); }
       bool    operator!= (const Ptr& R) const throw () { return (ptr != R.ptr); }
       T&      operator*() const throw ()   { return (*ptr); }

@@ -232,7 +232,7 @@ namespace MR {
 	//! construct a vector by reading from the text file \a filename
         Vector (const std::string& file) { load (file); } 
 	//! destructor
-        ~Vector () { if (GSLVector<T>::block) delete [] GSLVector<T>::block; } 
+        ~Vector () { delete [] GSLVector<T>::block; } 
 
 	//! assignment operator: allocate vector to have the same size as \a V, and copy contents from \a V
         Vector&   operator= (const Vector<T>& V) { return (operator= (V.view())); }
@@ -279,7 +279,7 @@ namespace MR {
 
 	//! deallocate the vector data
         Vector<T>& clear () {
-          if (GSLVector<T>::block) delete [] GSLVector<T>::block;
+          delete [] GSLVector<T>::block;
 	  GSLVector<T>::size = GSLVector<T>::stride = 0; GSLVector<T>::data = NULL; GSLVector<T>::block = NULL; GSLVector<T>::owner = 0; return (*this); 
         }
 

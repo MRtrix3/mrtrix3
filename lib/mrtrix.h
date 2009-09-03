@@ -92,8 +92,6 @@ namespace std {
 }
 
 
-/*! \todo remove all redundant if() tests in statements like "if (p) delete
- * p;", since delete is garanteed to do nothing for NULL pointers. */
 namespace MR {
 
   const std::string& get_application_name ();

@@ -47,7 +47,7 @@ namespace MR {
 
           delete [] addresses[0];
         }
-        if (lead_in) delete [] lead_in;
+        delete [] lead_in;
       }
 
 

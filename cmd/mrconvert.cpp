@@ -85,10 +85,8 @@ inline bool next (Image::Voxel& ref, Image::Voxel& other, const std::vector<int>
   size_t axis = 0;
   do {
     ref.inc(axis);
-    if (ref.pos(axis) < ref.dim(axis)) {
-      other.pos (axis, pos[axis][ref.pos(axis)]);
-      return (true);
-    }
+    other.pos (axis, pos[axis][ref.pos(axis)]);
+    if (ref.pos(axis) < ref.dim(axis)) return (true);
     ref.pos(axis, 0);
     other.pos (axis, pos[axis][0]);
     axis++;
