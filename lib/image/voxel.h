@@ -57,41 +57,41 @@ namespace MR {
         /*! \return true if the current position is out of bounds, false otherwise */
         bool operator! () const { 
           for (size_t n = 0; n < ndim(); n++)
-            if (ax[n].x < 0 || ax[n].x >= ssize_t(dim(n))) return (true);
+            if (x[n] < 0 || x[n] >= ssize_t(dim(n))) return (true);
           return (false);
         }
 
         //size_t  ndim () const { return (S->H.ndim()); }
         //ssize_t dim (size_t axis) const { return (S->H.dim(axis)); }
-        size_t  ndim () const { return (num_dim); }
-        ssize_t dim (size_t axis) const { return (ax[axis].dim); }
-        float   vox (size_t axis) const { return (ax[axis].vox); }
+        size_t  ndim () const { return (H.ndim()); }
+        ssize_t dim (size_t axis) const { return (H.dim(axis)); }
+        float   vox (size_t axis) const { return (H.vox(axis)); }
         const std::string& name () const { return (H.name()); }
 
         template <class T> const Voxel& operator= (const T& V) {
           ssize_t shift = 0;
           for (size_t n = 0; n < ndim(); n++) {
-            ax[n].x = V.pos(n);
-            shift += ax[n].stride * ssize_t(ax[n].x);
+            x[n] = V.pos(n);
+            shift += (*stride)[n] * x[n];
           }
           offset = start + shift;
           return (*this);
         }
 
         //! reset all coordinates to zero. 
-        void reset () { offset = start; for (size_t i = 0; i < ndim(); i++) ax[i].x = 0; }
+        void reset () { offset = start; for (size_t i = 0; i < ndim(); i++) x[i] = 0; }
 
-        ssize_t pos (size_t axis) const { return (ax[axis].x); }
-        void    pos (size_t axis, ssize_t newpos) { offset += ax[axis].stride*(newpos-ax[axis].x); ax[axis].x = newpos; }
-        void    inc (size_t axis) { offset += ax[axis].stride; ax[axis].x++; }
+        ssize_t pos (size_t axis) const { return (x[axis]); }
+        void    pos (size_t axis, ssize_t newpos) { offset += (*stride)[axis]*(newpos-x[axis]); x[axis] = newpos; }
+        void    inc (size_t axis) { offset += (*stride)[axis]; x[axis]++; }
 
         float get () const { 
-          ssize_t nseg (offset / segsize);
-          return (H.scale_from_storage (get_func (segment[nseg], offset - nseg*segsize))); 
+          ssize_t nseg (offset / H.handler->voxels_per_segment());
+          return (H.scale_from_storage (get_func (segment[nseg], offset - nseg*H.handler->voxels_per_segment()))); 
         }
         void set (float val) const {
-          ssize_t nseg (offset / segsize);
-          put_func (H.scale_to_storage (val), segment[nseg], offset - nseg*segsize); 
+          ssize_t nseg (offset / H.handler->voxels_per_segment());
+          put_func (H.scale_to_storage (val), segment[nseg], offset - nseg*H.handler->voxels_per_segment()); 
         }
 
         //! %get whether the image data are complex
@@ -109,24 +109,14 @@ namespace MR {
         const Header&   H; //!< reference to the corresponding Image::Header
 
         size_t   offset; //!< the offset in memory to the current voxel
-        float    scale, bias;
-        size_t   segsize;
         size_t   start; //!< the offset to the first (logical) voxel in the dataset
-        size_t   num_dim;
 
         float  (*get_func) (const void* data, size_t i);
         void   (*put_func) (float val, void* data, size_t i);
 
-        class Ax {
-          public:
-            ssize_t x, stride;
-            size_t  dim;
-            float   vox;
-        };
-
-        Ax ax[MAX_NDIM];
-
-        uint8_t* segment[MAX_FILES_PER_IMAGE];
+        std::vector<ssize_t> x;
+        RefPtr<std::vector<ssize_t> > stride;
+        const std::vector<uint8_t*>& segment;
 
         template <typename T> static float __get   (const void* data, size_t i) { return (MR::get<T> (data, i)); }
         template <typename T> static float __getLE (const void* data, size_t i) { return (MR::getLE<T> (data, i)); }

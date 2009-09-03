@@ -50,9 +50,8 @@ namespace MR {
 
           void prepare () { if (addresses.empty()) execute(); }
 
-          size_t   nsegments () const { check(); return (addresses.size()); }
-          size_t   voxels_per_segment () const { check(); return (segsize); }
-          uint8_t* segment (size_t n) const { check(); return (addresses[n]); }
+          const std::vector<uint8_t*>& segments () const { return (addresses); }
+          size_t voxels_per_segment () const { check(); return (segsize); }
 
         protected:
           Header& H;

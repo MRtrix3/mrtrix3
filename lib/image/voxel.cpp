@@ -29,28 +29,16 @@
 namespace MR {
   namespace Image {
 
-    Voxel::Voxel (const Header& parent) : H (parent)
+    Voxel::Voxel (const Header& parent) :
+      H (parent), 
+      x (ndim(), 0),
+      segment (H.handler->segments())
     {
       assert (H.handler);
-      assert (H.ndim() < MAX_NDIM);
-
       H.handler->prepare();
-      assert (H.handler->nsegments() < MAX_FILES_PER_IMAGE);
 
-      num_dim = H.ndim();
-      std::vector<ssize_t> stride_t;
-      H.axes.get_strides (start, stride_t);
-
-      for (size_t i = 0; i < ndim(); i++) {
-        ax[i].x = 0;
-        ax[i].stride = stride_t[i];
-        ax[i].dim = H.dim(i);
-        ax[i].vox = H.vox(i);
-      }
-
-      segsize = H.handler->voxels_per_segment();
-      for (size_t i = 0; i < H.handler->nsegments(); i++)
-        segment[i] = H.handler->segment(i);
+      stride = new std::vector<ssize_t>;
+      H.axes.get_strides (start, *stride);
 
       offset = start;
 
