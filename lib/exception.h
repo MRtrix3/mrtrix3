@@ -34,6 +34,7 @@ namespace MR {
   extern void (*info)  (const std::string& msg);
   extern void (*debug) (const std::string& msg);
 
+  /*! \todo derive from std::Exception */
   class Exception {
     public:
       Exception (const std::string& msg, int log_level = 1) : 

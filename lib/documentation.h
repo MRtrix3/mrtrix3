@@ -348,7 +348,7 @@ $ ./build lib/mrtrix.o lib/app.o \endverbatim
  *   // no errors, return OK:
  *   return (0);
  * }
- * catch (Exception E) {
+ * catch (Exception& E) {
  *   error ("error in processing - message was: " + E.description);
  *   return (1);
  * }

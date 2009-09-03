@@ -47,7 +47,7 @@ namespace MR {
 
         for (size_t s = 0; s < series.size(); s++) {
           try { series[s]->read(); }
-          catch (Exception) { 
+          catch (Exception&) { 
             throw Exception ("error reading series " + str (series[s]->number) + " of DICOM image \"" + H.name() + "\""); 
           }
         }

@@ -128,7 +128,7 @@ namespace MR {
             if (!isdigit (buf[0])) { series.clear(); return (series); }
             std::vector<int> seq;
             try { seq = parse_ints (buf); }
-            catch (Exception) { fprintf (stderr, "Invalid number sequence - please try again\n"); seq.clear(); }
+            catch (Exception&) { fprintf (stderr, "Invalid number sequence - please try again\n"); seq.clear(); }
             if (seq.size()) {
               for (size_t i = 0; i < seq.size(); i++) {
                 if (seq[i] < 0 || seq[i] >= (int) study.size()) {

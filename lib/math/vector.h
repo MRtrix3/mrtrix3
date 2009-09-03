@@ -300,7 +300,7 @@ namespace MR {
           try { 
             in >> *this; 
           }
-          catch (Exception E) { 
+          catch (Exception& E) { 
             throw Exception ("error loading matrix file \"" + filename + "\":" + E.description); 
           }
           return (*this);

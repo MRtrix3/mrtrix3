@@ -23,7 +23,6 @@
 #include <limits>
 
 #include "app.h"
-#include "get_set.h"
 #include "image/voxel.h"
 #include "image/misc.h"
 
@@ -39,15 +38,17 @@ namespace MR {
       assert (H.handler->nsegments() < MAX_FILES_PER_IMAGE);
 
       num_dim = H.ndim();
-      segsize = H.handler->voxels_per_segment();
       std::vector<ssize_t> stride_t;
       H.axes.get_strides (start, stride_t);
 
-      for (size_t i = 0; i < H.ndim(); i++) {
-        dims[i] = H.dim(i);
-        stride[i] = stride_t[i];
+      for (size_t i = 0; i < ndim(); i++) {
+        ax[i].x = 0;
+        ax[i].stride = stride_t[i];
+        ax[i].dim = H.dim(i);
+        ax[i].vox = H.vox(i);
       }
-      memset (x, 0, sizeof(ssize_t)*ndim());
+
+      segsize = H.handler->voxels_per_segment();
       for (size_t i = 0; i < H.handler->nsegments(); i++)
         segment[i] = H.handler->segment(i);
 
@@ -72,26 +73,6 @@ namespace MR {
         default: throw Exception ("invalid data type in image header");
       }
     }
-
-
-    Voxel::Voxel (const Voxel& V) :
-      H (V.H),
-      start (V.start),
-      offset (V.offset),
-      segsize (V.segsize),
-      num_dim (V.num_dim),
-      get_func (V.get_func),
-      put_func (V.put_func),
-      getZ_func (V.getZ_func),
-      putZ_func (V.putZ_func)
-    {
-      memcpy (stride, V.stride, sizeof(ssize_t)*ndim());
-      memcpy (x, V.x, sizeof(ssize_t)*ndim());
-      memcpy (segment, V.segment, sizeof(uint8_t*)*H.handler->nsegments());
-      memcpy (dims, V.dims, sizeof(size_t)*ndim());
-    }
-
-
 
   }
 }

@@ -69,7 +69,7 @@ namespace MR {
             if (Path::is_dir (name)) read_dir (name);
             else {
               try { read_file (name); }
-              catch (Exception) { }
+              catch (Exception&) { }
             }
             ProgressBar::inc();
           }

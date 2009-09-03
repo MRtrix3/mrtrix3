@@ -200,6 +200,7 @@ EXECUTE {
 
 
   Image::Voxel in (header_in);
+  assert (!header_in.datatype().is_complex());
 
   const Image::Header header_out = argument[1].get_image (header);
   Image::Voxel out (header_out);
@@ -209,18 +210,9 @@ EXECUTE {
   ProgressBar::init (voxel_count (out), "copying data...");
 
   do { 
-    cfloat val;
-    /*if (in.is_complex()) val = in.Z();
-    else*/ val.real() = in.get();
-
-    if (replace_NaN) if (isnan (val.real())) val.real() = 0.0;
-
-    /*if (output_type == Image::RealImag) {
-      if (replace_NaN) if (isnan (val.imag())) val.imag() = 0.0;
-      out.Z() = val;
-    }
-    else*/ out.set (val.real());
-
+    float val = in.get();
+    if (replace_NaN) if (isnan (val)) val = 0.0;
+    out.set (val);
     ProgressBar::inc();
   } while (next (out, in, pos));
 

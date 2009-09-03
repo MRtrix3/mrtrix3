@@ -113,8 +113,12 @@ namespace MR {
         void         sanitise ();
 
         void  apply_scaling (float scaling, float bias = 0.0) { scale *= scaling; offset = scaling * offset + bias; }
-        float scale_from_storage (float val) const { return (offset + scale * val); }
-        float scale_to_storage (float val) const   { return ((val - offset) / scale); }
+
+        static inline float scale_from_storage (float val, float scale_f, float offset_f) { return (offset_f + scale_f * val); }
+        static inline float scale_to_storage (float val, float scale_f, float offset_f) { return ((val - offset_f) / scale_f); }
+
+        float scale_from_storage (float val) const { return (scale_from_storage (val, scale, offset)); }
+        float scale_to_storage (float val) const   { return (scale_to_storage (val, scale, offset)); }
 
 
         static const Header open (const std::string& image_name, bool read_write = false);

@@ -54,7 +54,7 @@ int main (int argc, char* argv[]) { \
     MyApp app (argc, argv, __command_description, __command_arguments, __command_options, __command_version, __command_author, __command_copyright); \
     app.run (argc, argv); \
   } \
-  catch (Exception) { return (1); } \
+  catch (Exception&) { return (1); } \
   catch (int ret) { return (ret); } \
   return (0); } \
 void MyApp::execute ()

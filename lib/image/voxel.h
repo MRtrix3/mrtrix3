@@ -49,11 +49,6 @@ namespace MR {
         /*! All coordinates will be initialised to zero. */
         Voxel (const Header& parent);
         
-        //! construct a Voxel object to access the same data as \a V
-        /*! Useful for multi-threading applications. All coordinates will be initialised to
-         * the same value as \a V. */
-        Voxel (const Voxel& V);
-
         const Header& header () const { return (H); }
         DataType datatype () const { return (H.datatype()); }
         const Math::Matrix<float>& transform () const { return (H.transform()); }
@@ -62,70 +57,76 @@ namespace MR {
         /*! \return true if the current position is out of bounds, false otherwise */
         bool operator! () const { 
           for (size_t n = 0; n < ndim(); n++)
-            if (x[n] < 0 || x[n] >= ssize_t(dim(n))) return (true);
+            if (ax[n].x < 0 || ax[n].x >= ssize_t(dim(n))) return (true);
           return (false);
         }
 
         //size_t  ndim () const { return (S->H.ndim()); }
         //ssize_t dim (size_t axis) const { return (S->H.dim(axis)); }
         size_t  ndim () const { return (num_dim); }
-        ssize_t dim (size_t axis) const { return (dims[axis]); }
-        float   vox (size_t axis) const { return (H.vox(axis)); }
+        ssize_t dim (size_t axis) const { return (ax[axis].dim); }
+        float   vox (size_t axis) const { return (ax[axis].vox); }
         const std::string& name () const { return (H.name()); }
 
         template <class T> const Voxel& operator= (const T& V) {
           ssize_t shift = 0;
           for (size_t n = 0; n < ndim(); n++) {
-            x[n] = V[n];
-            shift += stride[n] * ssize_t(x[n]);
+            ax[n].x = V.pos(n);
+            shift += ax[n].stride * ssize_t(ax[n].x);
           }
           offset = start + shift;
           return (*this);
         }
 
         //! reset all coordinates to zero. 
-        void reset () { offset = start; memset (x, 0, ndim()*sizeof(ssize_t)); }
+        void reset () { offset = start; for (size_t i = 0; i < ndim(); i++) ax[i].x = 0; }
 
-        ssize_t pos (size_t axis) const { return (x[axis]); }
-        void    pos (size_t axis, ssize_t newpos) { offset += stride[axis]*(newpos-x[axis]); x[axis] = newpos; }
-        void    inc (size_t axis) { offset += stride[axis]; x[axis]++; }
+        ssize_t pos (size_t axis) const { return (ax[axis].x); }
+        void    pos (size_t axis, ssize_t newpos) { offset += ax[axis].stride*(newpos-ax[axis].x); ax[axis].x = newpos; }
+        void    inc (size_t axis) { offset += ax[axis].stride; ax[axis].x++; }
 
-        float   get () const { 
+        float get () const { 
           ssize_t nseg (offset / segsize);
           return (H.scale_from_storage (get_func (segment[nseg], offset - nseg*segsize))); 
         }
-        void    set (float val) const {
+        void set (float val) const {
           ssize_t nseg (offset / segsize);
           put_func (H.scale_to_storage (val), segment[nseg], offset - nseg*segsize); 
         }
 
         //! %get whether the image data are complex
-        /*! \return true if the image data are complex */
-        bool  is_complex () const      { return (H.is_complex()); }
+        /*! \return always true, since this class can only handle real data */
+        bool  is_complex () const      { return (false); }
 
         friend std::ostream& operator<< (std::ostream& stream, const Voxel& V) {
           stream << "position for image \"" << V.name() << "\" = [ ";
-          for (size_t n = 0; n < V.ndim(); n++) stream << V.x[n] << " ";
+          for (size_t n = 0; n < V.ndim(); n++) stream << V.pos(n) << " ";
           stream << "]\n  current offset = " << V.offset;
           return (stream);
         }
 
       protected:
         const Header&   H; //!< reference to the corresponding Image::Header
-        size_t   start; //!< the offset to the first (logical) voxel in the dataset
+
         size_t   offset; //!< the offset in memory to the current voxel
+        float    scale, bias;
         size_t   segsize;
-        ssize_t  stride[MAX_NDIM]; //!< the offsets between adjacent voxels along each respective axis
-        ssize_t  x[MAX_NDIM]; //!< the current image coordinates
+        size_t   start; //!< the offset to the first (logical) voxel in the dataset
         size_t   num_dim;
-        size_t   dims[MAX_NDIM];
-        uint8_t* segment[MAX_FILES_PER_IMAGE];
 
         float  (*get_func) (const void* data, size_t i);
         void   (*put_func) (float val, void* data, size_t i);
 
-        cfloat  (*getZ_func) (const void* data, size_t i);
-        void    (*putZ_func) (cfloat val, void* data, size_t i);
+        class Ax {
+          public:
+            ssize_t x, stride;
+            size_t  dim;
+            float   vox;
+        };
+
+        Ax ax[MAX_NDIM];
+
+        uint8_t* segment[MAX_FILES_PER_IMAGE];
 
         template <typename T> static float __get   (const void* data, size_t i) { return (MR::get<T> (data, i)); }
         template <typename T> static float __getLE (const void* data, size_t i) { return (MR::getLE<T> (data, i)); }

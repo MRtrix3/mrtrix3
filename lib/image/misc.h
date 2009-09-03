@@ -33,27 +33,6 @@ namespace MR {
     // @{
 
 
-    //! %get the voxel data stored at the current position
-    /*! This sets the parameters \p val and \p val_im using the voxel data at the current image position, according the \p format speficier.
-     * \note If \p format refers to a complex data type, no check is performed to ensure the image is complex. 
-     * In this case, calling this function on real-valued data will produce undefined results */
-    template <class DataSet> inline void value (const DataSet& ds, OutputType format, float& val, float& val_im)
-    {
-      switch (format) {
-        case Default:   val = ds.value(); return;
-        case Real:      val = ds.real(); return;
-        case Imaginary: val = ds.imag(); return;
-        case Magnitude: val = abs(ds.Z()); return;
-        case Phase:     val = arg(ds.Z()); return;
-        case RealImag:  val = ds.real(); val_im = ds.imag(); return;
-      }
-      val = val_im = NAN;
-      assert (false);
-    }
-
-
-
-
     //! used to loop over all image coordinates.
     /*! This function increments the current position to the next voxel, incrementing to the next axis as required.
      * It is used to process all voxels in turn. For example:
@@ -68,9 +47,9 @@ namespace MR {
     {
       size_t axis = 0;
       do {
-        D[axis]++;
-        if (D[axis] < ssize_t(D.dim(axis))) return (true);
-        D[axis] = 0;
+        D.inc(axis);
+        if (D.pos(axis) < ssize_t(D.dim(axis))) return (true);
+        D.pos(axis, 0);
         axis++;
       } while (axis < D.ndim());
       return (false);

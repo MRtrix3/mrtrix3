@@ -96,7 +96,7 @@ namespace MR {
           }
 
         }
-        catch (Exception) { return (true); }
+        catch (Exception&) { return (true); }
 
         return (false);
       }
