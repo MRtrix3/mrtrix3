@@ -23,7 +23,6 @@
 #ifndef __image_voxel_h__
 #define __image_voxel_h__
 
-#include "get_set.h"
 #include "image/header.h"
 #include "math/complex.h"
 
@@ -46,8 +45,23 @@ namespace MR {
     class Voxel {
       public:
         //! construct a Voxel object to access the data in the Image::Header \p parent
-        /*! All coordinates will be initialised to zero. */
-        Voxel (const Header& parent);
+        /*! All coordinates will be initialised to zero.
+         * \note only one Image::Voxel object per Image::Header can be
+         * constructed using this consructor. If more Image::Voxel objects are
+         * required to access the same image (e.g. for multithreading), use the
+         * copy constructor to create direct copies of the first Image::Voxel.
+         * For example:
+         * \code
+         * Image::Header header = argument[0].get_image();
+         * Image::Voxel vox1 (header);
+         * Image::Voxel vox2 (vox1);
+         * \endcode
+       */
+        Voxel (const Header& parent) : H (parent), handler (*H.handler), x (ndim(), 0) {
+          assert (H.handler);
+          H.handler->prepare();
+          offset = handler.start();
+        }
         
         const Header& header () const { return (H); }
         DataType datatype () const { return (H.datatype()); }
@@ -61,8 +75,6 @@ namespace MR {
           return (false);
         }
 
-        //size_t  ndim () const { return (S->H.ndim()); }
-        //ssize_t dim (size_t axis) const { return (S->H.dim(axis)); }
         size_t  ndim () const { return (H.ndim()); }
         ssize_t dim (size_t axis) const { return (H.dim(axis)); }
         float   vox (size_t axis) const { return (H.vox(axis)); }
@@ -72,26 +84,26 @@ namespace MR {
           ssize_t shift = 0;
           for (size_t n = 0; n < ndim(); n++) {
             x[n] = V.pos(n);
-            shift += (*stride)[n] * x[n];
+            shift += handler.stride(n) * x[n];
           }
-          offset = start + shift;
+          offset = handler.start() + shift;
           return (*this);
         }
 
         //! reset all coordinates to zero. 
-        void reset () { offset = start; for (size_t i = 0; i < ndim(); i++) x[i] = 0; }
+        void reset () { offset = handler.start(); for (size_t i = 0; i < ndim(); i++) x[i] = 0; }
 
         ssize_t pos (size_t axis) const { return (x[axis]); }
-        void    pos (size_t axis, ssize_t newpos) { offset += (*stride)[axis]*(newpos-x[axis]); x[axis] = newpos; }
-        void    inc (size_t axis) { offset += (*stride)[axis]; x[axis]++; }
+        void    pos (size_t axis, ssize_t newpos) { offset += handler.stride(axis)*(newpos-x[axis]); x[axis] = newpos; }
+        void    inc (size_t axis) { offset += handler.stride(axis); x[axis]++; }
 
         float get () const { 
-          ssize_t nseg (offset / H.handler->voxels_per_segment());
-          return (H.scale_from_storage (get_func (segment[nseg], offset - nseg*H.handler->voxels_per_segment()))); 
+          ssize_t nseg (offset / handler.segment_size());
+          return (H.scale_from_storage (handler.get (handler.segment(nseg), offset - nseg*handler.segment_size()))); 
         }
         void set (float val) const {
-          ssize_t nseg (offset / H.handler->voxels_per_segment());
-          put_func (H.scale_to_storage (val), segment[nseg], offset - nseg*H.handler->voxels_per_segment()); 
+          ssize_t nseg (offset / handler.segment_size());
+          handler.put (H.scale_to_storage (val), handler.segment(nseg), offset - nseg*handler.segment_size()); 
         }
 
         //! %get whether the image data are complex
@@ -107,28 +119,12 @@ namespace MR {
 
       protected:
         const Header&   H; //!< reference to the corresponding Image::Header
-
+        const Handler::Base& handler;
         size_t   offset; //!< the offset in memory to the current voxel
-        size_t   start; //!< the offset to the first (logical) voxel in the dataset
-
-        float  (*get_func) (const void* data, size_t i);
-        void   (*put_func) (float val, void* data, size_t i);
-
         std::vector<ssize_t> x;
-        RefPtr<std::vector<ssize_t> > stride;
-        const std::vector<uint8_t*>& segment;
-
-        template <typename T> static float __get   (const void* data, size_t i) { return (MR::get<T> (data, i)); }
-        template <typename T> static float __getLE (const void* data, size_t i) { return (MR::getLE<T> (data, i)); }
-        template <typename T> static float __getBE (const void* data, size_t i) { return (MR::getBE<T> (data, i)); }
-
-        template <typename T> static void __put   (float val, void* data, size_t i) { return (MR::put<T> (val, data, i)); }
-        template <typename T> static void __putLE (float val, void* data, size_t i) { return (MR::putLE<T> (val, data, i)); }
-        template <typename T> static void __putBE (float val, void* data, size_t i) { return (MR::putBE<T> (val, data, i)); }
     };
 
     //! @}
-
 
   }
 }

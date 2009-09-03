@@ -433,15 +433,16 @@ $ ./build lib/mrtrix.o lib/app.o \endverbatim
  *     }
  *    ~Image () { delete [] data; }
  *
- *     int     ndim () const         { return (3); }
- *     int     dim (int axis) const  { return (nvox[axis]); }
- *     int&    operator[] (int axis) { return (pos[axis]); }
- *     float&  value()               { return (data[pos[0]+nvox[0]*(pos[1]+nvox[1]*pos[2])]); }
+ *     int   ndim () const         { return (3); }
+ *     int   dim (int axis) const  { return (nvox[axis]); }
+ *     int   pos (int axis)        { return (p[axis]); }
+ *     float get () const          { return (data[p[0]+nvox[0]*(p[1]+nvox[1]*p[2])]); }
+ *     void  set (float value)     { data[p[0]+nvox[0]*(p[1]+nvox[1]*p[2])] = value; }
  *
  *   private:
- *     float*   data
- *     int      nvox[3];
- *     int      pos[3];
+ *     float* data
+ *     int    nvox[3];
+ *     int    p[3];
  * };
  * \endcode
  *
@@ -454,10 +455,10 @@ $ ./build lib/mrtrix.o lib/app.o \endverbatim
  * \code
  * template <class DataSet> void scale (DataSet& data, float factor)
  * {
- *   for (data[2] = 0; data[2] < data.dim(2); data[2]++)
- *     for (data[1] = 0; data[1] < data.dim(1); data[1]++)
- *       for (data[0] = 0; data[0] < data.dim(0); data[0]++)
- *         data.value() *= factor;
+ *   for (data.pos(2,0); data.pos(2) < data.dim(2); data.inc(2))
+ *     for (data.pos(1,0); data.pos(1) < data.dim(1); data.inc(1))
+ *       for (data.pos(0,0); data.pos(0) < data.dim(0); data.inc(0))
+ *         data.set (data.get() * factor);
  * }
  * \endcode
  *
@@ -566,10 +567,10 @@ $ ./build lib/mrtrix.o lib/app.o \endverbatim
        * {
        *   size_t C[data.ndim()];
        *   data.get_contiguous (C);
-       *   for (data[C[2]] = 0; data[C[2]] < data.dim(C[2]); data[C[2]]++)
-       *     for (data[C[1]] = 0; data[C[1]] < data.dim(C[1]); data[C[1]]++)
-       *       for (data[C[0]] = 0; data[C[0]] < data.dim(C[0]); data[C[0]]++)
-       *         data.value() += offset;
+       *   for (data.pos(C[2],0); data.pos(C[2]) < data.dim(C[2]); data.inc(C[2]))
+       *     for (data.pos(C[1],0); data.pos(C[1]) < data.dim(C[1]); data.inc(C[1]))
+       *       for (data.pos(C[0],0); data.pos(C[0]) < data.dim(C[0]); data.inc(C[0]))
+       *         data.set (data.get() + offset);
        * }
        * \endcode
        *
@@ -577,20 +578,18 @@ $ ./build lib/mrtrix.o lib/app.o \endverbatim
        * but its exact inverse. */
       void get_contiguous (size_t* cont) const;
 
-
       DataType datatype () const; //!< the type of the underlying image data.
       const Math::Matrix<float>& transform () const; //!< the 4x4 transformation matrix of the image.
 
-      const ssize_t operator[] (const size_t axis) const; //!< return the current position along dimension \a axis
-      ssize_t&      operator[] (const size_t axis);       //!< manipulate the current position along dimension \a axis
+      void    reset ()                            //!< reset the current position to zero
+      ssize_t pos (size_t axis) const;            //!< return the current position along dimension \a axis
+      void    pos (size_t axis, ssize_t newpos);  //!< set the current position along dimension \a axis
+      void    inc (size_t axis);                  //!< increment the current position along dimension \a axis
 
-      const float   value () const; //!< return the value of the voxel at the current position
-      float&        value ();       //!< manipulate the value of the voxel at the current position
+      float get () const;       //!< get the value of the voxel at the current position
+      void  set (float value);  //!< set the value of the voxel at the current position
 
       bool  is_complex () const; //!< return whether the underlying data are complex
-
-      const cfloat  Z () const; //!< return the complex value of the voxel at the current position (for complex data)
-      cfloat&       Z ();       //!< manipulate the complex value of the voxel at the current position (for complex data)
   };
 
 }
