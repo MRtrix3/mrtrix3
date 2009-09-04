@@ -39,8 +39,9 @@ namespace MR {
         if (!Path::has_suffix (H.name(), ".nii.gz")) return (false);
 
         nifti_1_header NH;
+
         File::GZ zf (H.name(), "rb");
-        zf.read (reinterpret_cast<char*> (&NH), 352);
+        zf.read (reinterpret_cast<char*> (&NH), sizeof(nifti_1_header));
         zf.close();
        
         size_t data_offset = File::NIfTI::read (H, NH);

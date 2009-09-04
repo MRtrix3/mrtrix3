@@ -89,10 +89,10 @@ namespace MR {
 
       if (permutation[0] != 0 || permutation[1] != 1 || permutation[2] != 2 || flip[0] || flip[1] || flip[2]) {
 
-        std::vector<Axes::Axis> a;
-        a.push_back (axes[permutation[0]]);
-        a.push_back (axes[permutation[1]]);
-        a.push_back (axes[permutation[2]]);
+        Axes::Axis a[] = { axes[permutation[0]], axes[permutation[1]], axes[permutation[2]] };
+        axes[0] = a[0];
+        axes[1] = a[1];
+        axes[2] = a[2];
 
         for (size_t i = 0; i < 3; i++) {
           Math::VectorView<float> row = transform_matrix.row(i).view(0,3);
@@ -102,12 +102,12 @@ namespace MR {
         for (size_t i = 0; i < 3; i++) {
           Math::VectorView<float> translation = transform_matrix.column(3).view(0,3);
           if (flip[i]) {
-            a[i].forward = !a[i].forward;
-            float length = (a[i].dim-1) * a[i].vox;
+            axes[i].forward = !axes[i].forward;
+            float length = float(axes[i].dim-1) * axes[i].vox;
             Math::VectorView<float> axis = transform_matrix.column(i).view(0,3);
             for (size_t n = 0; n < 3; n++) {
               axis[n] = -axis[n];
-              translation[n] += length*axis[n];
+              translation[n] -= length*axis[n];
             }
           }
         }

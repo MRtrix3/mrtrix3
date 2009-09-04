@@ -55,9 +55,11 @@ namespace MR {
         }
 
         void close () {
-          filename.clear(); 
-          if (gz) if (gzclose (gz)) throw Exception ("error closing file \"" + filename + "\": " + error()); 
-          gz = NULL;
+          if (gz) {
+            if (gzclose (gz)) throw Exception ("error closing file \"" + filename + "\": " + error()); 
+            filename.clear(); 
+            gz = NULL;
+          }
         }
 
         bool is_open () const { return (gz); }

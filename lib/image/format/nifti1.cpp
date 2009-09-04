@@ -84,12 +84,14 @@ namespace MR {
         nifti_1_header NH;
         File::NIfTI::write (NH, H);
 
-        File::create (H.name(), 352 + memory_footprint (H));
+        File::create (H.name());
 
         std::ofstream out (H.name().c_str());
         if (!out) throw Exception ("error opening file \"" + H.name() + "\" for writing: " + strerror (errno));
         out.write ((char*) &NH, 352);
         out.close();
+
+        File::resize (H.name(), 352 + memory_footprint (H));
 
         H.files.push_back (File::Entry (H.name(), 352));
       }

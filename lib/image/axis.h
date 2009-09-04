@@ -89,6 +89,7 @@ namespace MR {
         void sanitise ();
         void get_strides (size_t& start, std::vector<ssize_t>& stride) const;
 
+        Axis&       operator[] (size_t index)       { return (axes[index]); }
         const Axis& operator[] (size_t index) const { return (axes[index]); }
 
         // DataSet interface:

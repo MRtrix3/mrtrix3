@@ -214,6 +214,7 @@ namespace MR {
         H.transform()(3,3) = 1.0;
 
         if (image.images_in_mosaic) {
+          info ("DICOM image \"" + H.name() + "\" is in mosaic format");
           if (H.axes.dim(2) != 1) 
             throw Exception ("DICOM mosaic contains multiple slices in image \"" + H.name() + "\"");
 

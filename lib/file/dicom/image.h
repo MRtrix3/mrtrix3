@@ -104,8 +104,8 @@ namespace MR {
       inline void Image::calc_distance ()
       {
         if (images_in_mosaic) {
-          float xinc = pixel_size[0] * (dim[0] - acq_dim[0]) / 2.0;
-          float yinc = pixel_size[1] * (dim[1] - acq_dim[1]) / 2.0;
+          float xinc = pixel_size[0] * float (dim[0] - acq_dim[0]) / 2.0;
+          float yinc = pixel_size[1] * float (dim[1] - acq_dim[1]) / 2.0;
           for (size_t i = 0; i < 3; i++) 
             position_vector[i] += xinc * orientation_x[i] + yinc * orientation_y[i];
 

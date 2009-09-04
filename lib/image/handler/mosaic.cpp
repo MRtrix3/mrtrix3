@@ -56,7 +56,7 @@ namespace MR {
         addresses[0] = new uint8_t [H.files.size() * bytes_per_segment];
         if (!addresses[0]) throw Exception ("failed to allocate memory for image \"" + H.name() + "\"");
 
-        ProgressBar::init (ydim*slices*H.files.size(), "reformatting DICOM mosaic images..."); 
+        ProgressBar::init (slices*H.files.size(), "reformatting DICOM mosaic images..."); 
         uint8_t* data = addresses[0];
         for (size_t n = 0; n < H.files.size(); n++) {
           File::MMap file (H.files[n], false, m_xdim * m_ydim * H.datatype().bytes());
