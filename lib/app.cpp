@@ -296,6 +296,7 @@ namespace MR {
     for (const Argument* arg = App::command_arguments; arg->is_valid(); arg++) {
       num_command_arguments++;
       if (arg->mandatory) num_args_required++; 
+      else has_optional_arguments = true;
       if (arg->allow_multiple) has_optional_arguments = true;
     }
 
