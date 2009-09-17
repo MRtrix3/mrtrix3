@@ -82,6 +82,15 @@ for arg in sys.argv[1:]:
   
 
 
+print ''
+print 'MRtrix build type requested:',
+if profile: print 'profiling',
+elif debug: print 'debug',
+else: print 'release',
+if nogui: print '[command-line only]'
+else: print ''
+print ''
+
 
 
 
@@ -208,7 +217,6 @@ if 'CFLAGS' in os.environ.keys(): cpp_flags = os.environ['CFLAGS'].split()
 if 'LDFLAGS' in os.environ.keys(): ld_flags = os.environ['LDFLAGS'].split()
 if 'LDLIB_FLAGS' in os.environ.keys(): ld_lib_flags = os.environ['LDLIB_FLAGS'].split()
 
-cpp_flags += [ '-D__STDC_LIMIT_MACROS' ]
 
 # OS-dependent variables:
 
@@ -256,7 +264,7 @@ print 'Detecting pointer size:',
 sys.stdout.flush()
 try:
   pointer_size = int (compile ('#include <iostream>\nint main() { std::cout << sizeof(void*); return (0); }'))
-  print pointer_size, 'bytes'
+  print 8*pointer_size, 'bit'
   if pointer_size == 8: cpp_flags += [ '-DWORD64' ]
   elif pointer_size != 4: 
     print 'unexpected pointer size!'
@@ -416,7 +424,7 @@ except LinkError:
 print 'Checking whether GSL compiles with -DHAVE_INLINE:', 
 sys.stdout.flush()
 try:
-  gsl_version = compile ('#include <iostream>\n#include <gsl/gsl_version.h>\n#include <gsl/gsl_matrix.h>\nint main() { std::cout << gsl_version; gsl_matrix* M = gsl_matrix_alloc (3,3); return (M->size1 != 3); }', gsl_cflags + [ '-DHAVE_INLINE' ], gsl_ldflags)
+  gsl_version = compile ('#include <gsl/gsl_matrix.h>\nint main() { gsl_matrix* M = gsl_matrix_alloc (3,3); gsl_matrix_set(M,0,0,3.14); return (gsl_matrix_get(M,0,0) != 3.14); }', gsl_cflags + [ '-DHAVE_INLINE' ], gsl_ldflags)
   gsl_cflags += [ '-DHAVE_INLINE' ]
   print 'yes'
 except:
@@ -573,25 +581,18 @@ if not nogui:
 
 # add debugging or profiling flags if requested:
 
-print ''
-print 'Build type requested:',
+cpp_flags += [ '-D__STDC_LIMIT_MACROS' ]
+
 if profile:
-  print 'profiling',
   cpp_flags += [ '-g', '-pg' ]
   ld_flags += [ '-g', '-pg' ]
   ld_lib_flags += [ '-g', '-pg' ]
 elif debug:
-  print 'debug',
   cpp_flags += [ '-O0', '-g', '-D_GLIBCXX_DEBUG=1', '-D_GLIBCXX_DEBUG_PEDANTIC=1' ]
   ld_flags += [ '-g' ]
   ld_lib_flags += [ '-g' ]
 else:
-  print 'release',
   cpp_flags += [ '-O2', '-DNDEBUG' ]
-
-if nogui: print '[command-line only]'
-else: print ''
-
 
 
 
@@ -625,4 +626,5 @@ commit ('gtk_ldflags', gtk_ldflags)
 
 cache.close()
 print 'ok'
+print ''
 
