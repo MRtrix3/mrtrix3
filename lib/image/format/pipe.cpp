@@ -51,7 +51,7 @@ namespace MR {
 
 
 
-      bool Pipe::check (Header& H, int num_axes) const
+      bool Pipe::check (Header& H, size_t num_axes) const
       {
         if (H.name() != "-") return (false);
         H.name() = File::create_tempfile (0, "mif");

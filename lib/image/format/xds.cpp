@@ -86,7 +86,7 @@ namespace MR {
 
 
 
-      bool XDS::check (Header& H, int num_axes) const
+      bool XDS::check (Header& H, size_t num_axes) const
       {
         if (!Path::has_suffix (H.name(), ".bfloat") && !Path::has_suffix (H.name(), ".bshort")) return (false);
         if (num_axes > 4) throw Exception ("cannot create XDS image with more than 4 dimensions");

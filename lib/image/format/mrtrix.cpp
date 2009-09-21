@@ -165,7 +165,7 @@ namespace MR {
 
 
 
-      bool MRtrix::check (Header& H, int num_axes) const
+      bool MRtrix::check (Header& H, size_t num_axes) const
       {
         if (!Path::has_suffix (H.name(), ".mih") && !Path::has_suffix (H.name(), ".mif")) return (false);
 

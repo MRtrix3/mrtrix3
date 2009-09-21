@@ -54,7 +54,7 @@ namespace MR {
       }
 
 
-      bool DICOM::check (Header& H, int num_axes) const { return (false); }
+      bool DICOM::check (Header& H, size_t num_axes) const { return (false); }
       void DICOM::create (Header& H) const { assert (0); }
 
 

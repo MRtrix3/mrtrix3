@@ -47,27 +47,14 @@ namespace MR {
 
 
 
-      bool NIfTI::check (Header& H, int num_axes) const
+      bool NIfTI::check (Header& H, size_t num_axes) const
       {
         if (!Path::has_suffix (H.name(), ".nii")) return (false);
         if (num_axes < 3) throw Exception ("cannot create NIfTI-1.1 image with less than 3 dimensions");
         if (num_axes > 8) throw Exception ("cannot create NIfTI-1.1 image with more than 8 dimensions");
 
         H.axes.ndim() = num_axes;
-        for (size_t i = 0; i < H.ndim(); i++) {
-          if (H.axes.dim(i) < 1) H.axes.dim(i) = 1;
-          H.axes.order(i) = i;
-          H.axes.forward(i) = true;
-        }
-
-        H.axes.description(0) = Axes::left_to_right;
-        H.axes.units(0) = Axes::millimeters;
-
-        H.axes.description(1) = Axes::posterior_to_anterior;
-        H.axes.units(1) = Axes::millimeters;
-
-        H.axes.description(1) = Axes::inferior_to_superior;
-        H.axes.units(1) = Axes::millimeters;
+        File::NIfTI::check (H, true);
 
         return (true);
       }
@@ -82,7 +69,7 @@ namespace MR {
           throw Exception ("NIfTI-1.1 format cannot support more than 7 dimensions for image \"" + H.name() + "\"");
 
         nifti_1_header NH;
-        File::NIfTI::write (NH, H);
+        File::NIfTI::write (NH, H, true);
 
         File::create (H.name());
 

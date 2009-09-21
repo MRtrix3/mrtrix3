@@ -30,8 +30,12 @@ namespace MR {
   namespace File {
     namespace NIfTI {
 
+      void check (Image::Header& H, bool single_file);
+      //! \todo add straight Analyse support
       size_t read (Image::Header& H, const nifti_1_header& NH);
-      void write (nifti_1_header& NH, const Image::Header& H);
+      void check (Image::Header& H, bool single_file);
+      //! \todo need to double-check new transform handling code
+      void write (nifti_1_header& NH, const Image::Header& H, bool single_file);
 
     }
   }

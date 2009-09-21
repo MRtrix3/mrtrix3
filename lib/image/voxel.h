@@ -41,7 +41,7 @@ namespace MR {
     /*! This class keeps a reference to an existing Image::Header, and provides
      * access to the corresponding image intensities. It implements all the
      * features of the DataSet abstract class. 
-     * \todo implement full complex data support. */
+     * \todo add class ComplexVoxel to implement full complex data support. */
     class Voxel {
       public:
         //! construct a Voxel object to access the data in the Image::Header \p parent
@@ -93,26 +93,55 @@ namespace MR {
         //! reset all coordinates to zero. 
         void reset () { offset = handler.start(); for (size_t i = 0; i < ndim(); i++) x[i] = 0; }
 
-        ssize_t pos (size_t axis) const { return (x[axis]); }
-        void    pos (size_t axis, ssize_t newpos) { offset += handler.stride(axis)*(newpos-x[axis]); x[axis] = newpos; }
-        void    inc (size_t axis) { offset += handler.stride(axis); x[axis]++; }
-
-        float get () const { 
-          ssize_t nseg (offset / handler.segment_size());
-          return (H.scale_from_storage (handler.get (handler.segment(nseg), offset - nseg*handler.segment_size()))); 
-        }
-        void set (float val) const {
-          ssize_t nseg (offset / handler.segment_size());
-          handler.put (H.scale_to_storage (val), handler.segment(nseg), offset - nseg*handler.segment_size()); 
-        }
-
         //! %get whether the image data are complex
         /*! \return always true, since this class can only handle real data */
         bool  is_complex () const      { return (false); }
 
+        class Coordinate {
+          public:
+            operator ssize_t () const { return (V.x[a]); }
+
+            ssize_t operator= (ssize_t pos)  { V.offset += V.handler.stride(a)*(pos-V.x[a]); V.x[a] = pos; return (pos); }
+            ssize_t operator+= (ssize_t inc) { V.offset += V.handler.stride(a)*inc; V.x[a] += inc; return (V.x[a]); }
+            ssize_t operator-= (ssize_t inc) { V.offset -= V.handler.stride(a)*inc; V.x[a] -= inc; return (V.x[a]); }
+            ssize_t operator++ ()            { V.offset += V.handler.stride(a); return (++V.x[a]); }
+            ssize_t operator-- ()            { V.offset -= V.handler.stride(a); return (--V.x[a]); }
+            ssize_t operator++ (int unused)  { V.offset += V.handler.stride(a); return (V.x[a]++); }
+            ssize_t operator-- (int unused)  { V.offset -= V.handler.stride(a); return (V.x[a]--); }
+
+          private:
+            Coordinate (Voxel& parent, size_t axis) : V (parent), a (axis) { }
+            Voxel& V;
+            size_t a;
+
+            friend class Voxel;
+        };
+
+        ssize_t          operator[] (size_t axis) const { return (x[axis]); }
+        Coordinate       operator[] (size_t axis)       { return (Coordinate (*this, axis)); }
+
+
+        class Value {
+          public:
+            operator float () const { return (V.get()); }
+            float operator= (float val) { V.set (val); return (val); }
+            float operator+= (float val) { val += V.get(); V.set (val); return (val); }
+            float operator-= (float val) { val = V.get() - val; V.set (val); return (val); }
+            float operator*= (float val) { val *= V.get(); V.set (val); return (val); }
+            float operator/= (float val) { val = V.get() / val; V.set (val); return (val); }
+          private:
+            Value (Voxel& parent) : V (parent) { }
+            Voxel& V;
+            friend class Voxel;
+        };
+
+        float value () const { return (get()); }
+        Value value () { return (Value (*this)); }
+
+
         friend std::ostream& operator<< (std::ostream& stream, const Voxel& V) {
           stream << "position for image \"" << V.name() << "\" = [ ";
-          for (size_t n = 0; n < V.ndim(); n++) stream << V.pos(n) << " ";
+          for (size_t n = 0; n < V.ndim(); n++) stream << V[n] << " ";
           stream << "]\n  current offset = " << V.offset;
           return (stream);
         }
@@ -122,6 +151,17 @@ namespace MR {
         const Handler::Base& handler;
         size_t   offset; //!< the offset in memory to the current voxel
         std::vector<ssize_t> x;
+
+        float get () const { 
+          ssize_t nseg (offset / handler.segment_size());
+          return (H.scale_from_storage (handler.get (handler.segment(nseg), offset - nseg*handler.segment_size()))); 
+        }
+        void set (float val) {
+          ssize_t nseg (offset / handler.segment_size());
+          handler.put (H.scale_to_storage (val), handler.segment(nseg), offset - nseg*handler.segment_size()); 
+        }
+
+        friend class Coordinate;
     };
 
     //! @}

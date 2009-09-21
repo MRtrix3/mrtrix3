@@ -235,7 +235,7 @@ namespace MR {
   {
     for (int n = 1; n < argc; n++) {
       const char* arg = argv[n];
-      if (arg[0] == '-' && arg[1]) {
+      if (arg[0] == '-' && arg[1] && !isdigit(arg[1]) && arg[1] != '.') {
 
         while (*arg == '-') arg++;
         size_t opt = match_option (arg);

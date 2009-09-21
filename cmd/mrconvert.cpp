@@ -84,14 +84,14 @@ inline bool next (Image::Voxel& ref, Image::Voxel& other, const std::vector<int>
 {
   size_t axis = 0;
   do {
-    ref.inc(axis);
-    if (ref.pos(axis) < ref.dim(axis)) {
-      other.pos (axis, pos[axis][ref.pos(axis)]);
+    ++ref[axis];
+    if (ref[axis] < ref.dim(axis)) {
+      other[axis] = pos[axis][ref[axis]];
       return (true);
     }
-    ref.pos(axis, 0);
-    other.pos (axis, pos[axis][0]);
-    axis++;
+    ref[axis] = 0;
+    other[axis] = pos[axis][0];
+    ++axis;
   } while (axis < ref.ndim());
   return (false);
 }
@@ -205,14 +205,14 @@ EXECUTE {
   const Image::Header header_out = argument[1].get_image (header);
   Image::Voxel out (header_out);
 
-  for (size_t n = 0; n < in.ndim(); n++) in.pos (n, pos[n][0]);
+  for (size_t n = 0; n < in.ndim(); n++) in[n] = pos[n][0];
 
   ProgressBar::init (voxel_count (out), "copying data...");
 
   do { 
-    float val = in.get();
+    float val = in.value();
     if (replace_NaN) if (isnan (val)) val = 0.0;
-    out.set (val);
+    out.value() = val;
     ProgressBar::inc();
   } while (next (out, in, pos));
 

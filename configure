@@ -1,6 +1,6 @@
 #!/usr/bin/python
 
-import subprocess, sys, tempfile, os, platform
+import subprocess, sys, tempfile, os, platform, tempfile, shutil
 
 debug = False
 profile = False
@@ -116,6 +116,8 @@ gsl_ldflags = [ '-lgsl', '-lgslcblas' ]
 
 
 
+class QMakeError: pass
+class QMOCError: pass
 class CompileError: pass
 class LinkError: pass
 class RuntimeError: pass
@@ -511,71 +513,117 @@ print 'yes'
 
 
 
+qt_cflags = []
+qt_ldflags = []
 
-
-# GTK flags:
-
-def pkg (package, target):
-  cmd = [ 'pkg-config', '--' + target, package ]
-  process = subprocess.Popen (cmd, stdout=subprocess.PIPE)
-  if process.wait() != 0:
-    print 'WARNING: unable to find', package, 'configuration'
-    sys.stdout.flush()
-    sys.exit (1)
-  return process.stdout.read().split()
-
-gtk_cflags = []
-gtk_ldflags = []
 
 if not nogui:
 
-  print 'Checking for gtkmm:',
+  print 'Checking for Qt:',
   sys.stdout.flush()
 
   try:
-    gtk_cflags = pkg ('gtkmm-2.4,gtkglext-1.0', 'cflags')
-    gtk_ldflags = pkg ('gtkmm-2.4,gtkglext-1.0', 'libs')
-  except OSError:
-    print 'pkg-config not found!'
-    print 'use the PATH environment variable to add the path to pkg-config.'
-    print 'For example:'
-    print '    PATH=/usr/local/bin:$PATH ./configure'
+    qt_dir = tempfile.mkdtemp ();
+
+    f=open (os.path.join (qt_dir, 'qt.h'), 'w')
+    f.write ('#include <QObject>\nclass Foo: public QObject {\nQ_OBJECT;\npublic:\nFoo();\n~Foo();\npublic slots:\nvoid setValue(int value);\nsignals:\nvoid valueChanged(int newValue);\nprivate:\nint value_;\n};\n')
+    f.close();
+
+    f=open (os.path.join (qt_dir, 'qt.cpp'), 'w')
+    f.write ('#include <iostream>\n#include "qt.h"\nFoo::Foo() : value_ (42) { connect(this, SIGNAL(valueChanged(int)), this, SLOT(setValue(int))); }\nFoo::~Foo() { std::cout << qVersion() << "\\n"; }\nvoid Foo::setValue(int value) { value_ = value; }\nint main() { Foo f; }\n'); 
+    f.close();
+
+    f=open (os.path.join (qt_dir, 'qt.pro'), 'w')
+    f.write ('CONFIG += qt')
+    if debug: f.write (' debug')
+    f.write ('\nQT += opengl\nHEADERS += qt.h\nSOURCES += qt.cpp\n')
+    f.close();
+
+    try: process = subprocess.Popen ([ 'qmake' ], cwd=qt_dir, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    except OSError: raise QMakeError
+    if process.wait() != 0: raise QMakeError
+
+    for line in open (os.path.join (qt_dir, 'Makefile')):
+      line = line.strip()
+      if line.startswith ('DEFINES'):
+        qt_defines = line[line.find('=')+1:].strip().split()
+      elif line.startswith ('CXXFLAGS'):
+        qt_cflags = line[line.find('=')+1:].strip().split()
+      elif line.startswith ('INCPATH'):
+        qt_includes = line[line.find('=')+1:].strip().split()
+      elif line.startswith ('LIBS'):
+        qt_libs = line[line.find('=')+1:].strip().split()
+      elif line.startswith ('LFLAGS'):
+        qt_ldflags = line[line.find('=')+1:].strip().split()
+
+    qt = qt_cflags + qt_defines + qt_includes
+    qt_cflags = []
+    for entry in qt:
+      if entry[0] != '$' and not entry == '-I.': qt_cflags += [ entry ]
+
+    qt = qt_ldflags + qt_libs
+    qt_ldflags = []
+    for entry in qt:
+      if entry[0] != '$': qt_ldflags += [ entry ]
+
+    try: process = subprocess.Popen ([ 'moc-qt4', 'qt.h', '-o', 'qt_moc.cpp' ], cwd=qt_dir, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    except OSError: raise QMOCError
+    if process.wait() != 0: raise QMOCError
+
+    try: process = subprocess.Popen ([ 'g++', '-c' ] + qt_cflags + [ 'qt.cpp', '-o', 'qt.o' ], cwd=qt_dir, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    except OSError: raise CompileError
+    if process.wait() != 0: raise CompileError
+
+    try: process = subprocess.Popen ([ 'g++', '-c' ] + qt_cflags + [ 'qt_moc.cpp', '-o', 'qt_moc.o' ] , cwd=qt_dir, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    except OSError: raise CompileError
+    if process.wait() != 0: raise CompileError
+
+    try: process = subprocess.Popen ([ 'g++' ] + qt_ldflags + [ 'qt_moc.o', 'qt.o', '-o', 'qt' ] , cwd=qt_dir, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    except OSError: raise LinkError
+    if process.wait() != 0: raise LinkError
+
+    process = subprocess.Popen (os.path.join(qt_dir, 'qt'), stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    if process.wait() != 0: raise LinkError
+    print process.stdout.read().strip()
+
+    
+  except QMakeError:
+    print 'error invoking Qt qmake!'
     sys.exit (1)
 
-  gtk_cflags += [ '-DGL_GLEXT_PROTOTYPES' ]
+  except QMOCError:
+    print 'error invoking Qt moc!'
+    sys.exit (1)
 
-
-
-  try:
-    gtkmm_version = compile ('#include <iostream>\n#include <gtkmm.h>\nint main () { std::cout << GTKMM_MAJOR_VERSION << "." << GTKMM_MINOR_VERSION << "." << GTKMM_MICRO_VERSION; return (0); }', gtk_cflags, gtk_ldflags)
-    print gtkmm_version
   except CompileError:
-    print 'compiler error!'
-    print ''
-    print 'Use the GSL_CFLAGS environment variable to set the path to the GSL include files'
-    print 'For example:'
-    print '     GSL_CFLAGS=-I/usr/local/include ./configure.py'
-    sys.exit (1)
-  except LinkError:
-    print 'linker error!'
-    print ''
-    print 'Use the GSL_LDFLAGS environment variable to set the path to the GSL libraries'
-    print 'and include any required libraries'
-    print 'For example:'
-    print '     GSL_LDFLAGS="-L/usr/local/lib -lgsl -lgslcblas" ./configure.py'
+    print 'error compiling Qt application!'
     sys.exit (1)
 
+  except OSError:
+    print 'Unexpected error! Unable to configure Qt environment'
+    sys.exit (1)
 
+  finally:
+    for entry in os.listdir (qt_dir):
+      shutil.copyfile (os.path.join(qt_dir, entry), os.path.join('qt', entry))
+      os.remove (os.path.join(qt_dir, entry))
+    os.rmdir (qt_dir)
+
+  qt_cflags += [ '-DGL_GLEXT_PROTOTYPES' ]
 
 
 
   print 'Checking for OpenGL:',
   sys.stdout.flush()
   try:
-    gl_version = compile ('#include <iostream>\n#include <gtk/gtk.h>\n#include <gtk/gtkgl.h>\n#include <GL/gl.h>\nint main(int argc, char* argv[]) { int major, minor; gtk_init (&argc, &argv); gtk_gl_init (&argc, &argv); gdk_gl_query_version (&major, &minor); std::cout << major << "." << minor; return (0); }', gtk_cflags, gtk_ldflags)
-    print gl_version
+    gl_version = compile ('#include <QtGui>\n #include <QtOpenGL>\n #include <QApplication>\n #include <QGLWidget>\n #include <iostream>\n class GLWidget : public QGLWidget {\n public:\n GLWidget(QWidget *parent = 0) : QGLWidget (parent) { } \n ~GLWidget() { }\n protected:\n void initializeGL() { std::cout << glGetString (GL_VERSION) << "\\n"; exit (0); }\n void paintGL() { }\n void resizeGL(int width, int height) { }\n };\n int main(int argc, char *argv[]) {\n QApplication app(argc, argv);\n GLWidget window;\n window.show();\n return app.exec();\n }\n', qt_cflags, qt_ldflags)
+    print gl_version.strip()
   except:
     print 'not found!'
+
+
+
+
 
 
 
@@ -621,8 +669,8 @@ commit ('thread_cflags', thread_cflags)
 commit ('thread_ldflags', thread_ldflags)
 commit ('gsl_cflags', gsl_cflags)
 commit ('gsl_ldflags', gsl_ldflags)
-commit ('gtk_cflags', gtk_cflags)
-commit ('gtk_ldflags', gtk_ldflags)
+commit ('qt_cflags', qt_cflags)
+commit ('qt_ldflags', qt_ldflags)
 
 cache.close()
 print 'ok'

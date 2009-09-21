@@ -21,14 +21,23 @@
 */
 
 #include "get_set.h"
+#include "file/config.h"
 #include "file/nifti1_utils.h"
 #include "math/math.h"
+#include "math/permutation.h"
 #include "math/quaternion.h"
 #include "image/header.h"
 
 namespace MR {
   namespace File {
     namespace NIfTI {
+
+      namespace {
+        bool  right_left_warning_issued = false;
+      }
+
+
+
 
       size_t read (Image::Header& H, const nifti_1_header& NH)
       {
@@ -38,8 +47,12 @@ namespace MR {
           if (get<int32_t> (&NH.sizeof_hdr, is_BE) != 348) 
             throw Exception ("image \"" + H.name() + "\" is not in NIfTI format (sizeof_hdr != 348)");
         }
-        if (memcmp (NH.magic, "n+1\0", 4)) 
-          throw Exception ("image \"" + H.name() + "\" is not in NIfTI format (magic != \"n+1\\0\")");
+
+        bool is_nifti = true;
+        if (memcmp (NH.magic, "n+1\0", 4) && memcmp (NH.magic, "ni1\0", 4)) {
+          is_nifti = false;
+          debug ("assuming image \"" + H.name() + "\" is in AnalyseAVW format.");
+        }
 
         char db_name[19];
         strncpy (db_name, NH.db_name, 18);
@@ -122,78 +135,88 @@ namespace MR {
           H.comments.push_back (descrip);
         }
 
-        if (get<int16_t> (&NH.sform_code, is_BE)) {
-          Math::Matrix<float>& M (H.transform());
-          M.allocate (4,4);
+        if (is_nifti) {
+          if (get<int16_t> (&NH.sform_code, is_BE)) {
+            Math::Matrix<float>& M (H.transform());
+            M.allocate (4,4);
 
-          M(0,0) = get<float32> (&NH.srow_x[0], is_BE);
-          M(0,1) = get<float32> (&NH.srow_x[1], is_BE);
-          M(0,2) = get<float32> (&NH.srow_x[2], is_BE);
-          M(0,3) = get<float32> (&NH.srow_x[3], is_BE);
+            M(0,0) = get<float32> (&NH.srow_x[0], is_BE);
+            M(0,1) = get<float32> (&NH.srow_x[1], is_BE);
+            M(0,2) = get<float32> (&NH.srow_x[2], is_BE);
+            M(0,3) = get<float32> (&NH.srow_x[3], is_BE);
 
-          M(1,0) = get<float32> (&NH.srow_y[0], is_BE);
-          M(1,1) = get<float32> (&NH.srow_y[1], is_BE);
-          M(1,2) = get<float32> (&NH.srow_y[2], is_BE);
-          M(1,3) = get<float32> (&NH.srow_y[3], is_BE);
+            M(1,0) = get<float32> (&NH.srow_y[0], is_BE);
+            M(1,1) = get<float32> (&NH.srow_y[1], is_BE);
+            M(1,2) = get<float32> (&NH.srow_y[2], is_BE);
+            M(1,3) = get<float32> (&NH.srow_y[3], is_BE);
 
-          M(2,0) = get<float32> (&NH.srow_z[0], is_BE);
-          M(2,1) = get<float32> (&NH.srow_z[1], is_BE);
-          M(2,2) = get<float32> (&NH.srow_z[2], is_BE);
-          M(2,3) = get<float32> (&NH.srow_z[3], is_BE);
+            M(2,0) = get<float32> (&NH.srow_z[0], is_BE);
+            M(2,1) = get<float32> (&NH.srow_z[1], is_BE);
+            M(2,2) = get<float32> (&NH.srow_z[2], is_BE);
+            M(2,3) = get<float32> (&NH.srow_z[3], is_BE);
 
-          M(3,0) = M(3,1) = M(3,2) = 0.0;
-          M(3,3) = 1.0;
+            M(3,0) = M(3,1) = M(3,2) = 0.0;
+            M(3,3) = 1.0;
 
-          // get voxel sizes:
-          H.axes.vox(0) = Math::sqrt (Math::pow2 (M(0,0)) + Math::pow2 (M(1,0)) + Math::pow2 (M(2,0)));
-          H.axes.vox(1) = Math::sqrt (Math::pow2 (M(0,1)) + Math::pow2 (M(1,1)) + Math::pow2 (M(2,1)));
-          H.axes.vox(2) = Math::sqrt (Math::pow2 (M(0,2)) + Math::pow2 (M(1,2)) + Math::pow2 (M(2,2)));
+            // get voxel sizes:
+            H.axes.vox(0) = Math::sqrt (Math::pow2 (M(0,0)) + Math::pow2 (M(1,0)) + Math::pow2 (M(2,0)));
+            H.axes.vox(1) = Math::sqrt (Math::pow2 (M(0,1)) + Math::pow2 (M(1,1)) + Math::pow2 (M(2,1)));
+            H.axes.vox(2) = Math::sqrt (Math::pow2 (M(0,2)) + Math::pow2 (M(1,2)) + Math::pow2 (M(2,2)));
 
-          // normalize each transform axis:
-          M(0,0) /= H.axes.vox(0);
-          M(1,0) /= H.axes.vox(0);
-          M(2,0) /= H.axes.vox(0);
+            // normalize each transform axis:
+            M(0,0) /= H.axes.vox(0);
+            M(1,0) /= H.axes.vox(0);
+            M(2,0) /= H.axes.vox(0);
 
-          M(0,1) /= H.axes.vox(1);
-          M(1,1) /= H.axes.vox(1);
-          M(2,1) /= H.axes.vox(1);
-          
-          M(0,2) /= H.axes.vox(2);
-          M(1,2) /= H.axes.vox(2);
-          M(2,2) /= H.axes.vox(2);
+            M(0,1) /= H.axes.vox(1);
+            M(1,1) /= H.axes.vox(1);
+            M(2,1) /= H.axes.vox(1);
+
+            M(0,2) /= H.axes.vox(2);
+            M(1,2) /= H.axes.vox(2);
+            M(2,2) /= H.axes.vox(2);
+          }
+          else if (get<int16_t> (&NH.qform_code, is_BE)) {
+            Math::Quaternion Q (get<float32> (&NH.quatern_b, is_BE), get<float32> (&NH.quatern_c, is_BE), get<float32> (&NH.quatern_d, is_BE));
+            float transform[9];
+            Q.to_matrix (transform);
+            Math::Matrix<float>& M (H.transform());
+            M.allocate (4,4);
+
+            M(0,0) = transform[0];
+            M(0,1) = transform[1];
+            M(0,2) = transform[2];
+
+            M(1,0) = transform[3];
+            M(1,1) = transform[4];
+            M(1,2) = transform[5];
+
+            M(2,0) = transform[6];
+            M(2,1) = transform[7];
+            M(2,2) = transform[8];
+
+            M(0,3) = get<float32> (&NH.qoffset_x, is_BE);
+            M(1,3) = get<float32> (&NH.qoffset_y, is_BE);
+            M(2,3) = get<float32> (&NH.qoffset_z, is_BE);
+
+            M(3,0) = M(3,1) = M(3,2) = 0.0;
+            M(3,3) = 1.0;
+
+            // qfac:
+            float qfac = get<float32> (&NH.pixdim[0], is_BE);
+            if (qfac != 0.0) {
+              M(0,2) *= qfac;
+              M(1,2) *= qfac;
+              M(2,2) *= qfac;
+            }
+          }
         }
-        else if (get<int16_t> (&NH.qform_code, is_BE)) {
-          Math::Quaternion Q (get<float32> (&NH.quatern_b, is_BE), get<float32> (&NH.quatern_c, is_BE), get<float32> (&NH.quatern_d, is_BE));
-          float transform[9];
-          Q.to_matrix (transform);
-          Math::Matrix<float>& M (H.transform());
-          M.allocate (4,4);
-
-          M(0,0) = transform[0];
-          M(0,1) = transform[1];
-          M(0,2) = transform[2];
-
-          M(1,0) = transform[3];
-          M(1,1) = transform[4];
-          M(1,2) = transform[5];
-          
-          M(2,0) = transform[6];
-          M(2,1) = transform[7];
-          M(2,2) = transform[8];
-          
-          M(0,3) = get<float32> (&NH.qoffset_x, is_BE);
-          M(1,3) = get<float32> (&NH.qoffset_y, is_BE);
-          M(2,3) = get<float32> (&NH.qoffset_z, is_BE);
-          
-          M(3,0) = M(3,1) = M(3,2) = 0.0;
-          M(3,3) = 1.0;
-
-          // qfac:
-          float qfac = get<float32> (&NH.pixdim[0], is_BE);
-          if (qfac != 0.0) {
-            M(0,2) *= qfac;
-            M(1,2) *= qfac;
-            M(2,2) *= qfac;
+        else {
+          H.transform().clear();
+          H.axes.forward(0) = File::Config::get_bool ("Analyse.LeftToRight", true); 
+          if (!right_left_warning_issued) {
+            info ("assuming Analyse images are encoded " + std::string (H.axes.forward(0) ? "left to right" : "right to left"));
+            right_left_warning_issued = true;
           }
         }
 
@@ -218,12 +241,101 @@ namespace MR {
 
 
 
-      void write (nifti_1_header& NH, const Image::Header& H)
+      void check (Image::Header& H, bool single_file)
+      {
+        for (size_t i = 0; i < H.ndim(); ++i) 
+          if (H.axes.dim(i) < 1) H.axes.dim(i) = 1;
+
+        if (single_file) { 
+          Image::Axes::Order order[H.ndim()];
+          size_t i, axis = 0;
+          for (i = 0; i < H.ndim() && axis < 3; ++i) 
+            if (H.axes.order(i) < 3) order[axis++] = H.axes[i];
+
+          assert (axis == 3);
+
+          for (i = 0; i < H.ndim(); ++i)
+            if (H.axes.order(i) >= 3) order[axis++] = H.axes[i];
+
+          assert (axis == H.ndim());
+
+          for (i = 0; i < 3; ++i) {
+            H.axes.order(i) = order[i].order;
+            H.axes.forward(i) = order[i].forward;
+          }
+
+          for (; i < H.ndim(); ++i) {
+            H.axes.order(i) = order[i].order;
+            H.axes.forward(i) = true;
+          }
+        }
+        else {
+          for (size_t i = 0; i < H.ndim(); ++i) {
+            H.axes.order(i) = i;
+            H.axes.forward(i) = true;
+          }
+          H.axes.forward(0) = File::Config::get_bool ("Analyse.LeftToRight", true); 
+
+          if (!right_left_warning_issued) {
+            info ("assuming Analyse images are encoded " + std::string (H.axes.forward(0) ? "left to right" : "right to left"));
+            right_left_warning_issued = true;
+          }
+        }
+
+        H.axes.description(0) = Image::Axes::left_to_right;
+        H.axes.units(0) = Image::Axes::millimeters;
+
+        H.axes.description(1) = Image::Axes::posterior_to_anterior;
+        H.axes.units(1) = Image::Axes::millimeters;
+
+        H.axes.description(1) = Image::Axes::inferior_to_superior;
+        H.axes.units(1) = Image::Axes::millimeters;
+
+      }
+
+
+
+
+
+      void write (nifti_1_header& NH, const Image::Header& H, bool single_file)
       {
         if (H.ndim() > 7) 
           throw Exception ("NIfTI-1.1 format cannot support more than 7 dimensions for image \"" + H.name() + "\"");
 
         bool is_BE = H.datatype().is_big_endian();
+
+        // new transform handling code starts here
+        Math::Permutation permutation (3);
+        for (size_t i = 0; i < 3; ++i) {
+          assert (H.axes.order(i) < 3);
+          permutation[i] = H.axes.order(i);
+        }
+
+        Math::Matrix<float> M (H.transform());
+
+        if (permutation[0] != 0 || permutation[1] != 1 || permutation[2] != 2 || 
+            !H.axes.forward(0)  || !H.axes.forward(1)  || !H.axes.forward(2)) {
+
+          Math::VectorView<float> translation = M.column(3).view(0,3);
+          for (size_t i = 0; i < 3; i++) {
+            if (!H.axes.forward(i)) {
+              float length = float(H.axes.dim(i)-1) * H.axes.vox(i);
+              Math::VectorView<float> axis = M.column(i).view(0,3);
+              for (size_t n = 0; n < 3; n++) {
+                axis[n] = -axis[n];
+                translation[n] -= length*axis[n];
+              }
+            }
+          }
+
+          for (size_t i = 0; i < 3; i++) {
+            Math::VectorView<float> row = M.row(i).view(0,3);
+            permutation.apply (row); 
+          }
+        }
+
+        // new transform handling code ends here
+
 
         // magic number:
         put<int32_t> (348, &NH.sizeof_hdr, is_BE);
@@ -235,7 +347,9 @@ namespace MR {
 
         // data set dimensions:
         put<int16_t> (H.ndim(), &NH.dim[0], is_BE);
-        for (size_t i = 0; i < H.ndim(); i++) 
+        for (size_t i = 0; i < 3; i++) 
+          put<int16_t> (H.axes.dim(permutation[i]), &NH.dim[i+1], is_BE);
+        for (size_t i = 3; i < H.ndim(); i++) 
           put<int16_t> (H.axes.dim(i), &NH.dim[i+1], is_BE);
 
         // data type:
@@ -267,7 +381,9 @@ namespace MR {
         put<int16_t> (H.datatype().bits(), &NH.bitpix, is_BE);
 
         // voxel sizes:
-        for (size_t i = 0; i < H.ndim(); i++) 
+        for (size_t i = 0; i < 3; i++) 
+          put<float32> (H.axes.vox(permutation[i]), &NH.pixdim[i+1], is_BE);
+        for (size_t i = 3; i < H.ndim(); i++) 
           put<float32> (H.axes.vox(i), &NH.pixdim[i+1], is_BE);
 
         put<float32> (352.0, &NH.vox_offset, is_BE);
@@ -295,42 +411,22 @@ namespace MR {
         put<int16_t> (NIFTI_XFORM_UNKNOWN, &NH.qform_code, is_BE);
         put<int16_t> (NIFTI_XFORM_SCANNER_ANAT, &NH.sform_code, is_BE);
 
-        const Math::Matrix<float>& M (H.transform());
-
-        put<float32> (H.axes.vox(0)*M(0,0), &NH.srow_x[0], is_BE);
-        put<float32> (H.axes.vox(1)*M(0,1), &NH.srow_x[1], is_BE);
-        put<float32> (H.axes.vox(2)*M(0,2), &NH.srow_x[2], is_BE);
+        put<float32> (H.axes.vox(permutation[0])*M(0,0), &NH.srow_x[0], is_BE);
+        put<float32> (H.axes.vox(permutation[1])*M(0,1), &NH.srow_x[1], is_BE);
+        put<float32> (H.axes.vox(permutation[2])*M(0,2), &NH.srow_x[2], is_BE);
         put<float32> (M(0,3), &NH.srow_x[3], is_BE);
 
-        put<float32> (H.axes.vox(0)*M(1,0), &NH.srow_y[0], is_BE);
-        put<float32> (H.axes.vox(1)*M(1,1), &NH.srow_y[1], is_BE);
-        put<float32> (H.axes.vox(2)*M(1,2), &NH.srow_y[2], is_BE);
+        put<float32> (H.axes.vox(permutation[0])*M(1,0), &NH.srow_y[0], is_BE);
+        put<float32> (H.axes.vox(permutation[1])*M(1,1), &NH.srow_y[1], is_BE);
+        put<float32> (H.axes.vox(permutation[2])*M(1,2), &NH.srow_y[2], is_BE);
         put<float32> (M(1,3), &NH.srow_y[3], is_BE);
 
-        put<float32> (H.axes.vox(0)*M(2,0), &NH.srow_z[0], is_BE);
-        put<float32> (H.axes.vox(1)*M(2,1), &NH.srow_z[1], is_BE);
-        put<float32> (H.axes.vox(2)*M(2,2), &NH.srow_z[2], is_BE);
+        put<float32> (H.axes.vox(permutation[0])*M(2,0), &NH.srow_z[0], is_BE);
+        put<float32> (H.axes.vox(permutation[1])*M(2,1), &NH.srow_z[1], is_BE);
+        put<float32> (H.axes.vox(permutation[2])*M(2,2), &NH.srow_z[2], is_BE);
         put<float32> (M(2,3), &NH.srow_z[3], is_BE);
 
-
-        /*
-        const float transform[] = { 
-          M(0,0), M(0,1), M(0,2), 
-          M(1,0), M(1,1), M(1,2), 
-          M(2,0), M(2,1), M(2,2)
-        };
-        Math::Quaternion Q (transform);
-
-        put<float32> (Q[1], &NH.quatern_b, is_BE);
-        put<float32> (Q[2], &NH.quatern_c, is_BE);
-        put<float32> (Q[3], &NH.quatern_d, is_BE);
-
-        put<float32> (H.transform()(0,3), &NH.qoffset_x, is_BE);
-        put<float32> (H.transform()(1,3), &NH.qoffset_y, is_BE);
-        put<float32> (H.transform()(2,3), &NH.qoffset_z, is_BE);
-        */
-
-        strncpy ((char*) &NH.magic, "n+1\0", 4);
+        strncpy ((char*) &NH.magic, single_file ? "n+1\0" : "ni1\0", 4);
       }
 
     }

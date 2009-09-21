@@ -26,6 +26,8 @@
 #include <gsl/gsl_permutation.h>
 #include <gsl/gsl_permute_vector.h>
 
+#include "math/vector.h"
+
 namespace MR {
   namespace Math {
     namespace {

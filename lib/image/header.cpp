@@ -81,6 +81,8 @@ namespace MR {
       Math::absmax (transform_matrix.row(1).view(0,3), permutation[1]);
       Math::absmax (transform_matrix.row(2).view(0,3), permutation[2]);
 
+      assert (permutation[0] != permutation[1] && permutation[1] != permutation[2] && permutation[2] != permutation[0]);
+
       bool flip[3] = {
         ( transform_matrix(0, permutation[0]) < 0.0 ),
         ( transform_matrix(1, permutation[1]) < 0.0 ),
@@ -99,8 +101,8 @@ namespace MR {
           permutation.apply (row); 
         }
 
+        Math::VectorView<float> translation = transform_matrix.column(3).view(0,3);
         for (size_t i = 0; i < 3; i++) {
-          Math::VectorView<float> translation = transform_matrix.column(3).view(0,3);
           if (flip[i]) {
             axes[i].forward = !axes[i].forward;
             float length = float(axes[i].dim-1) * axes[i].vox;

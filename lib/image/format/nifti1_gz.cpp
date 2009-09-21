@@ -56,27 +56,14 @@ namespace MR {
 
 
 
-      bool NIfTI_GZ::check (Header& H, int num_axes) const
+      bool NIfTI_GZ::check (Header& H, size_t num_axes) const
       {
         if (!Path::has_suffix (H.name(), ".nii.gz")) return (false);
         if (num_axes < 3) throw Exception ("cannot create NIfTI-1.1 image with less than 3 dimensions");
         if (num_axes > 8) throw Exception ("cannot create NIfTI-1.1 image with more than 8 dimensions");
 
         H.axes.ndim() = num_axes;
-        for (size_t i = 0; i < H.ndim(); i++) {
-          if (H.axes.dim(i) < 1) H.axes.dim(i) = 1;
-          H.axes.order(i) = i;
-          H.axes.forward(i) = true;
-        }
-
-        H.axes.description(0) = Axes::left_to_right;
-        H.axes.units(0) = Axes::millimeters;
-
-        H.axes.description(1) = Axes::posterior_to_anterior;
-        H.axes.units(1) = Axes::millimeters;
-
-        H.axes.description(1) = Axes::inferior_to_superior;
-        H.axes.units(1) = Axes::millimeters;
+        File::NIfTI::check (H, true);
 
         return (true);
       }
@@ -92,7 +79,7 @@ namespace MR {
 
         Handler::GZ* handler = new Handler::GZ (H, 352, true);
       
-        File::NIfTI::write (*reinterpret_cast<nifti_1_header*> (handler->header()), H);
+        File::NIfTI::write (*reinterpret_cast<nifti_1_header*> (handler->header()), H, true);
 
         H.handler = handler;
 

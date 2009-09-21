@@ -30,7 +30,7 @@
     public:  \
       format () : Base (desc) { } \
       virtual bool read (Header& H) const; \
-      virtual bool check (Header& H, int num_axes) const; \
+      virtual bool check (Header& H, size_t num_axes) const; \
       virtual void create (Header& H) const; \
   }
 
@@ -84,7 +84,7 @@ namespace MR {
            * false otherwise. 
            * \note this function should throw an Exception in case of error, or
            * if this image format cannot support the header information. */
-          virtual bool check (Header& H, int num_axes) const = 0;
+          virtual bool check (Header& H, size_t num_axes) const = 0;
 
           /*! \brief create the image corresponding to the Image::Header \c H.
            *
@@ -101,7 +101,7 @@ namespace MR {
       DECLARE_IMAGEFORMAT (MRtrix, "MRtrix");
       DECLARE_IMAGEFORMAT (NIfTI, "NIfTI-1.1");
       DECLARE_IMAGEFORMAT (NIfTI_GZ, "NIfTI-1.1 (GZip compressed)");
-      DECLARE_IMAGEFORMAT (Analyse, "AnalyseAVW");
+      DECLARE_IMAGEFORMAT (Analyse, "AnalyseAVW / NIfTI-1.1");
       DECLARE_IMAGEFORMAT (MRI, "MRTools (legacy format)");
       DECLARE_IMAGEFORMAT (XDS, "XDS");
 

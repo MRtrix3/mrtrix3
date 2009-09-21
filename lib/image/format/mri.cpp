@@ -214,10 +214,10 @@ namespace MR {
 
 
 
-      bool MRI::check (Header& H, int num_axes) const
+      bool MRI::check (Header& H, size_t num_axes) const
       {
         if (!Path::has_suffix (H.name(), ".mri")) return (false);
-        if ((int) H.ndim() > num_axes && num_axes != 4) throw Exception ("MRTools format can only support 4 dimensions");
+        if (H.ndim() > num_axes && num_axes != 4) throw Exception ("MRTools format can only support 4 dimensions");
 
         H.axes.ndim() = num_axes;
 
