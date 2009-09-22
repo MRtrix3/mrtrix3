@@ -24,13 +24,20 @@
 #define __mrtrix_thread_h__
 
 #include <pthread.h>
-#include <map>
+#include <vector>
+#include <queue>
 
 #include "exception.h"
 #include "file/config.h"
 
+/** \defgroup Thread Multi-threading
+ * \brief functions to provide support for multi-threading */
+
 namespace MR {
   namespace Thread {
+
+    /** \addtogroup Thread 
+     * @{ */
 
     //! Launch & manage new threads
     /*! This class facilitates launching new threads, and waiting for them to
@@ -44,27 +51,26 @@ namespace MR {
       private:
         class Instance {
           public:
-            Instance (int new_ID, const std::string& identifier, const pthread_attr_t* attr, void *(*start_routine)(void*), void* data) : 
+            Instance (int new_ID, const std::string& identifier, const pthread_attr_t* attr, 
+                void *(*start_routine)(void*), void* data) : 
               name (identifier), ID (new_ID) { 
                 debug ("launching thread \"" + name + "\" [ID " + str(ID) + "]..."); 
-                pthread_t* tmp_thread = new pthread_t;
-                if (pthread_create (tmp_thread, attr, start_routine, data)) {
-                  delete tmp_thread;
+                if (pthread_create (&thread, attr, start_routine, data)) {
+                  ID = -1;
                   throw Exception (std::string("error starting thread: ") + strerror (errno));
                 }
-                thread = tmp_thread;
               }
             ~Instance () { 
-              if (thread) {
+              if (ID >= 0) {
                 debug ("waiting for completion of thread \"" + name + "\" [ID " + str(ID) + "]...");
                 void* status;
-                if (pthread_join (*thread, &status)) 
+                if (pthread_join (thread, &status)) 
                   throw Exception (std::string("error joining thread: ") + strerror (errno));
               }
             }
 
-            RefPtr<pthread_t> thread;
-            const std::string name;
+            pthread_t thread;
+            std::string name;
             int ID;
         };
 
@@ -100,29 +106,34 @@ namespace MR {
          * passed to the wait() method.  */
         template <class F> int start (F& func, const std::string& identifier) {
           ++last_ID;
-          threads[last_ID] = Instance (last_ID, identifier, &attr, static_exec<F>, static_cast<void*> (&func));
+          threads.push_back (new Instance (last_ID, identifier, &attr, static_exec<F>, static_cast<void*> (&func)));
           return (last_ID);
         }
 
         //! wait for the thread with the specified ID to complete
         void wait (int ID) {
-          std::map<int,Instance>::iterator it = threads.find (ID);
-          if (it == threads.end()) 
-            throw Exception ("unknown thread ID (" + str(ID) + ")");
-          threads.erase (it);
+          for (std::vector<Instance*>::iterator it = threads.begin(); it != threads.end(); ++it) {
+            if ((*it)->ID == ID) { 
+              delete *it;
+              threads.erase (it); 
+              return; 
+            }
+          }
+          throw Exception ("unknown thread ID (" + str(ID) + ")");
         }
 
         //! wait for all currently running threads to complete
         void finish () { 
           if (threads.size()) {
             debug ("waiting for completion of all remaining threads...");
+            for (std::vector<Instance*>::iterator it = threads.begin(); it != threads.end(); ++it) delete *it;
             threads.clear(); 
           }
         }
 
       private:
         pthread_attr_t attr;
-        std::map<int, Instance> threads;
+        std::vector<Instance*> threads;
         int last_ID;
 
         template <class F> static void* static_exec (void* data) {
@@ -214,7 +225,7 @@ namespace MR {
      *   }
      * }
      * \endcode
-     * While the other thread may be executing:
+     * While the thread producing the data may be executing:
      * \code
      * void produce_data () {
      *   while (true) {
@@ -249,16 +260,60 @@ namespace MR {
 
 
 
+    //! A queue of items to be processed serially in a separate thread
     template <class F, class T> class Serial {
       public:
-        Serial (Launcher& launcher, F& func) : launch (launcher), functor (func) { }
-        void start () { }
-        void add (T& item) { }
+        Serial (Launcher& launcher, F& func) : 
+          launch (launcher),
+          functor (func), 
+          more_data (mutex),
+          more_space (mutex),
+          capacity (100),
+          more (true) { }
+
+        void set_size (size_t max_size) { capacity = max_size; }
+        void start () { launch.start (functor); }
+        bool push (T& item) { 
+          Mutex::Lock lock (mutex); 
+          if (!more) return (true);
+          while (fifo.size() >= capacity) more_space.wait();
+          fifo.push (item); 
+          more_data.signal();
+          return (false);
+        }
+        void finish () { Mutex::Lock lock (mutex); more = false; }
       private:
         Launcher& launch;
+
+        class Exec {
+          public:
+            Exec (F& func) : functor (func) { }
+            F& functor;
+            void execute () {
+              T item;
+              while (true) {
+                {
+                  Mutex::Lock lock (mutex);
+                  while (fifo.empty() && more) more_data.wait();
+                  if (!more) return;
+                  item = fifo.front();
+                  fifo.pop();
+                  more_space.signal();
+                }
+                functor.process (item);
+              }
+            }
+        };
+
         F& functor;
+        Mutex mutex;
+        Cond more_data, more_space;
+        std::queue<T> fifo;
+        size_t capacity;
+        bool more;
     };
 
+    //! A queue of items to be processed in parallel in separate threads
     template <class F, class T> class Parallel {
       public:
         Parallel (Launcher& launcher, F& func) : launch (launcher), functor (func), num_threads (launcher.num_cores) { }
@@ -272,6 +327,7 @@ namespace MR {
         int num_threads;
     };
 
+    /** @} */
   }
 }
 
