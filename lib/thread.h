@@ -32,22 +32,38 @@
 namespace MR {
   namespace Thread {
 
+    //! Launch & manage new threads
+    /*! This class facilitates launching new threads, and waiting for them to
+     * complete. A new thread will be started by executing the execute() method
+     * of the object supplied to the start() member function. It is possible to
+     * wait until a specific thread has finished executing by calling the
+     * wait() method. The finish() method can be used to wait until all
+     * currently running threads have completed.
+     */
     class Launcher {
       private:
         class Instance {
           public:
-            Instance (int new_ID, const std::string& identifier) : functor (NULL), name (identifier), ID (new_ID) { 
-              debug ("launching thread \"" + name + "\" [ID " + str(ID) + "]..."); }
-            ~Instance () { if (functor) join (); }
-            void join () {
-              debug ("waiting for completion of thread \"" + name + "\" [ID " + str(ID) + "]...");
-              void* status;
-              if (pthread_join (thread, &status)) 
-                throw Exception (std::string("error joining thread: ") + strerror (errno));
+            Instance (int new_ID, const std::string& identifier, const pthread_attr_t* attr, void *(*start_routine)(void*), void* data) : 
+              name (identifier), ID (new_ID) { 
+                debug ("launching thread \"" + name + "\" [ID " + str(ID) + "]..."); 
+                pthread_t* tmp_thread = new pthread_t;
+                if (pthread_create (tmp_thread, attr, start_routine, data)) {
+                  delete tmp_thread;
+                  throw Exception (std::string("error starting thread: ") + strerror (errno));
+                }
+                thread = tmp_thread;
+              }
+            ~Instance () { 
+              if (thread) {
+                debug ("waiting for completion of thread \"" + name + "\" [ID " + str(ID) + "]...");
+                void* status;
+                if (pthread_join (*thread, &status)) 
+                  throw Exception (std::string("error joining thread: ") + strerror (errno));
+              }
             }
 
-            pthread_t thread;
-            void* functor;
+            RefPtr<pthread_t> thread;
             const std::string name;
             int ID;
         };
@@ -69,18 +85,22 @@ namespace MR {
 
         //! launch a new thread, by invoking the execute() method of \a func
         /*! a new thread will be started by executing the execute() member
-         * function of the object \a func. A human-readable identifier should
-         * also be provided for debugging and reporting purposes. 
+         * function of the object \a func of type \a F, which should have
+         * an execute() member function with the following prototype:
+         * \code
+         * class MyFunc {
+         *   public:
+         *     void execute ();
+         * };
+         * \endcode
+         *
+         * A human-readable \a identifier should also be provided for debugging
+         * and reporting purposes. 
          * \return a unique handle to the newly launched thread, which can be
          * passed to the wait() method.  */
         template <class F> int start (F& func, const std::string& identifier) {
           ++last_ID;
-          std::pair<const int,Instance>* p = &(*threads.insert (
-                std::pair<int,Instance> (last_ID, Instance(last_ID, identifier))).first);
-          assert(p->second.functor == NULL);
-          p->second.functor = static_cast<void*> (&func);
-          if (pthread_create (&p->second.thread, &attr, static_exec<F>, static_cast<void*> (p))) 
-            throw Exception (std::string("error starting thread: ") + strerror (errno));
+          threads[last_ID] = Instance (last_ID, identifier, &attr, static_exec<F>, static_cast<void*> (&func));
           return (last_ID);
         }
 
@@ -106,9 +126,8 @@ namespace MR {
         int last_ID;
 
         template <class F> static void* static_exec (void* data) {
-          std::pair<int,Instance>* p = static_cast<std::pair<int,Instance>*> (data);
-          F* func = static_cast<F*> (p->second.functor);
-          func->execute (p->first);
+          F* func = static_cast<F*> (data);
+          func->execute ();
           return (NULL);
         }
     };
@@ -116,6 +135,41 @@ namespace MR {
 
     class Cond;
 
+    //! Mutual exclusion lock
+    /*! Used to protect critical sections of code from concurrent read & write
+     * operations. The mutex should be locked using the lock() method prior to
+     * modifying or reading the critical data, and unlocked using the unlock()
+     * method as soon as the operation is complete.
+     *
+     * It is probably safer to use the member class Mutex::Lock, which helps to
+     * ensure that the mutex is always released. The mutex will be locked as
+     * soon as the Lock object is created, and released as soon as it goes out
+     * of scope. This is especially useful in cases when there are several
+     * exit points for the mutually exclusive code, since the compiler will
+     * then always ensure the mutex is released. For example:
+     * \code
+     * Mutex mutex;
+     * ...
+     * void update () {
+     *   Mutex::Lock lock (mutex);
+     *   ...
+     *   if (check_something()) {
+     *     // lock goes out of scope when function returns,
+     *     // The Lock destructor will then ensure the mutex is released.
+     *     return;
+     *   }
+     *   ...
+     *   // perform the update
+     *   ...
+     *   if (something_bad_happened) {
+     *     // lock also goes out of scope when an exception is thrown,
+     *     // ensuring the mutex is also released in these cases.
+     *     throw Exception ("oops");
+     *   }
+     *   ...
+     * } // mutex is released as lock goes out of scope
+     * \endcode
+     */
     class Mutex {
       public:
         Mutex () { pthread_mutex_init (&_mutex, NULL); }
@@ -137,17 +191,60 @@ namespace MR {
     };
 
 
+    //! Synchronise threads by waiting on a condition
+    /*! This class allows threads to wait until a specific condition is
+     * fulfilled, at which point the thread responsible for reaching that
+     * condition will signal that the other waiting threads can be woken up.
+     * These are used in conjunction with a Thread::Mutex object to protect the
+     * relevant data. For example, the waiting thread may be executing:
+     * \code
+     * Mutex mutex;
+     * Cond cond (mutex);
+     * ...
+     * void process_data () {
+     *   while (true) {
+     *     { // Mutex must be locked prior to waiting on condition
+     *       Mutex::Lock lock (mutex);
+     *       while (no_data()) cond.wait();
+     *       get_data();
+     *     } // Mutex is released as soon as possible
+     *     ...
+     *     // process data
+     *     ...
+     *   }
+     * }
+     * \endcode
+     * While the other thread may be executing:
+     * \code
+     * void produce_data () {
+     *   while (true) {
+     *     ...
+     *     // generate next batch of data
+     *     ...
+     *     { // Mutex must be locked prior to sending signal
+     *       Mutex::Lock lock (mutex);
+     *       submit_data();
+     *       cond.signal();
+     *     } // Mutex must be released for other threads to run
+     *   }
+     * }
+     * \endcode 
+     */
     class Cond {
       public:
-        Cond () { pthread_cond_init (&_cond, NULL); }
+        Cond (Mutex& mutex) : _mutex (mutex) { pthread_cond_init (&_cond, NULL); }
         ~Cond () { pthread_cond_destroy (&_cond); }
 
-        void wait (Mutex& mutex) { pthread_cond_wait (&_cond, &mutex._mutex); }
+        //! wait until condition is reached
+        void wait () { pthread_cond_wait (&_cond, &_mutex._mutex); }
+        //! condition is reached: wake up at least one waiting thread
         void signal () { pthread_cond_signal (&_cond); }
+        //! condition is reached: wake up all waiting threads
         void broadcast () { pthread_cond_broadcast (&_cond); }
 
       private:
         pthread_cond_t _cond;
+        Mutex& _mutex;
     };
 
 
