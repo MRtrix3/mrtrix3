@@ -46,138 +46,7 @@ namespace MR {
     //! the number of cores to use for multi-threading, as specified in the MRtrix configuration file
     size_t num_cores (); 
 
-    //! the thread unique identifier
-    class Identifier {
-      public:
-        Identifier () { }
-        Identifier (const Identifier& ID) : pthread_ID (ID.pthread_ID) { }
-        Identifier (const pthread_t ID) : pthread_ID (ID) { }
-        Identifier operator= (const Identifier& ID) { pthread_ID = ID.pthread_ID; return (*this); }
-        Identifier operator= (const pthread_t ID) { pthread_ID = ID; return (*this); }
 
-        bool operator== (Identifier ID) { return (pthread_equal (pthread_ID, ID.pthread_ID)); }
-        bool operator!= (Identifier ID) { return (!pthread_equal (pthread_ID, ID.pthread_ID)); }
-
-        pthread_t pthread_ID;
-    };
-    std::ostream& operator<< (std::ostream& stream, const Identifier ID) { stream << ID.pthread_ID; return (stream); }
-
-    //! returns the currently running thread's unique identifier
-    Identifier ID () { return (pthread_self()); }
-
-
-    //! represents an instance of a running thread
-    /*! Lauch a thread by running the execute method of the object \a functor,
-     * which should have the following prototype:
-     * \code
-     * class MyFunc {
-     *   public:
-     *     void execute ();
-     * };
-     * \endcode
-     *
-     * Supplying a sensible identifier in \a name is useful for debugging and
-     * reporting purposes.
-     * 
-     * The thread is launched in the constructor, and the destructor will wait
-     * for the thread to finish. The lifetime of a thread launched via this
-     * method is therefore restricted to the scope of the Instance object. For
-     * example:
-     * \code
-     * class MyFunctor {
-     *   public:
-     *     void execute () { 
-     *       ...
-     *       // do something useful
-     *       ...
-     *     }
-     * };
-     *
-     * void some_function () {
-     *   MyFunctor func; // parameters can be passed to func in its constructor
-     *
-     *   // thread is launched as soon as my_thread is instantiated:
-     *   Thread::Instance my_thread (func, "my function");
-     *   ...
-     *   // do something else while my_thread is running
-     *   ...
-     * } // my_thread goes out of scope: current thread will halt until my_thread has completed
-     * \endcode
-     */
-    class Instance {
-      public:
-        template <class F> Instance (F& functor, const std::string& name = "unnamed", const pthread_attr_t* attr= NULL) {
-          if (pthread_create (&TID.pthread_ID, ( attr ? attr : default_attributes() ), static_exec<F>, static_cast<void*> (&functor))) 
-            throw Exception (std::string("error launching thread \"" + name + "\": ") + strerror (errno));
-          debug ("launched thread \"" + name + "\", ID " + str(TID) + "..."); 
-        }
-        ~Instance () { 
-          debug ("waiting for completion of thread ID " + str(TID) + "...");
-          void* status;
-          if (pthread_join (TID.pthread_ID, &status)) 
-            throw Exception (std::string("error joining thread: ") + strerror (errno));
-          debug ("thread ID " + str(TID) + " completed OK");
-        }
-        Identifier ID () const { return (TID); }
-
-      private:
-        Identifier TID;
-
-        template <class F> static void* static_exec (void* data) {
-          F* func = static_cast<F*> (data);
-          func->execute ();
-          return (NULL);
-        }
-    };
-
-
-
-
-    //! launch & manage a number of threads
-    /*! This class facilitates launching new threads, and waiting for them to
-     * complete. 
-     * \note When an instance of Thread::Manager goes out of scope, the
-     * currently running thread will wait until all the managed threads have completed.
-     */
-    class Manager {
-      public:
-        Manager () { }
-        ~Manager () { finish(); }
-
-        //! launch a new thread
-        /*! launch a new thread by invoking the execute() method of \a func
-         * (see Instance for details). 
-         * \return a unique handle to the newly launched thread, which can be
-         * passed to the wait() method.  */
-        template <class F> Identifier launch (F& functor, const std::string& name = "unnamed", const pthread_attr_t* attr= NULL) {
-          Instance* H = new Instance (functor, name, attr);
-          list.push_back (H);
-          return (H->ID());
-        }
-
-        //! wait for the thread with the specified ID to complete
-        void wait (Identifier ID) {
-          for (std::vector<Instance*>::iterator it = list.begin(); it != list.end(); ++it) {
-            if ((*it)->ID() == ID) { delete *it; list.erase (it); return; }
-          }
-          throw Exception ("unkown thread ID " + str(ID));
-        }
-
-        //! wait for all currently running threads to complete
-        void finish () {
-          if (list.size()) {
-            debug ("waiting for completion of all remaining threads...");
-            for (std::vector<Instance*>::iterator it = list.begin(); it != list.end(); ++it) 
-              delete *it; 
-          }
-        }
-
-      private:
-        std::vector<Instance*> list;
-    };
-
-
-    class Cond;
 
     //! Mutual exclusion lock
     /*! Used to protect critical sections of code from concurrent read & write
@@ -293,71 +162,263 @@ namespace MR {
 
 
 
-    //! A queue of items to be processed serially in a separate thread
-    template <class F, class T> class Serial {
-      public:
-        Serial (Launcher& launcher, F& func) : 
-          launch (launcher),
-          functor (func), 
-          more_data (mutex),
-          more_space (mutex),
-          capacity (100),
-          more (true) { }
 
-        void set_size (size_t max_size) { capacity = max_size; }
-        void start () { launch.start (functor); }
+
+    //! the thread unique identifier
+    class Identifier {
+      public:
+        Identifier () { }
+        Identifier (const Identifier& ID) : pthread_ID (ID.pthread_ID) { }
+        Identifier (const pthread_t ID) : pthread_ID (ID) { }
+        Identifier operator= (const Identifier& ID) { pthread_ID = ID.pthread_ID; return (*this); }
+        Identifier operator= (const pthread_t ID) { pthread_ID = ID; return (*this); }
+
+        bool operator== (Identifier ID) { return (pthread_equal (pthread_ID, ID.pthread_ID)); }
+        bool operator!= (Identifier ID) { return (!pthread_equal (pthread_ID, ID.pthread_ID)); }
+
+        pthread_t pthread_ID;
+    };
+    std::ostream& operator<< (std::ostream& stream, const Identifier ID) { stream << ID.pthread_ID; return (stream); }
+
+    //! returns the currently running thread's unique identifier
+    Identifier ID () { return (pthread_self()); }
+
+
+    //! represents an instance of a running thread
+    /*! Lauch a thread by running the execute method of the object \a functor,
+     * which should have the following prototype:
+     * \code
+     * class MyFunc {
+     *   public:
+     *     void execute ();
+     * };
+     * \endcode
+     *
+     * Supplying a sensible identifier in \a name is useful for debugging and
+     * reporting purposes.
+     * 
+     * The thread is launched in the constructor, and the destructor will wait
+     * for the thread to finish. The lifetime of a thread launched via this
+     * method is therefore restricted to the scope of the Instance object. For
+     * example:
+     * \code
+     * class MyFunctor {
+     *   public:
+     *     void execute () { 
+     *       ...
+     *       // do something useful
+     *       ...
+     *     }
+     * };
+     *
+     * void some_function () {
+     *   MyFunctor func; // parameters can be passed to func in its constructor
+     *
+     *   // thread is launched as soon as my_thread is instantiated:
+     *   Thread::Instance my_thread (func, "my function");
+     *   ...
+     *   // do something else while my_thread is running
+     *   ...
+     * } // my_thread goes out of scope: current thread will halt until my_thread has completed
+     * \endcode
+     */
+    class Instance {
+      public:
+        template <class F> Instance (F& functor, const std::string& name = "unnamed", const pthread_attr_t* attr = NULL) {
+          if (pthread_create (&TID.pthread_ID, ( attr ? attr : default_attributes() ), static_exec<F>, static_cast<void*> (&functor))) 
+            throw Exception (std::string("error launching thread \"" + name + "\": ") + strerror (errno));
+          debug ("launched thread \"" + name + "\", ID " + str(TID) + "..."); 
+        }
+        ~Instance () { 
+          debug ("waiting for completion of thread ID " + str(TID) + "...");
+          void* status;
+          if (pthread_join (TID.pthread_ID, &status)) 
+            throw Exception (std::string("error joining thread: ") + strerror (errno));
+          debug ("thread ID " + str(TID) + " completed OK");
+        }
+        Identifier ID () const { return (TID); }
+
+      private:
+        Identifier TID;
+
+        template <class F> static void* static_exec (void* data) {
+          F* func = static_cast<F*> (data);
+          func->execute ();
+          return (NULL);
+        }
+    };
+
+
+
+
+    //! launch & manage a number of threads
+    /*! This class facilitates launching new threads, and waiting for them to
+     * complete. 
+     * \note When an instance of Thread::Manager goes out of scope, the
+     * currently running thread will wait until all the managed threads have completed.
+     */
+    class Manager {
+      public:
+        Manager () { }
+        ~Manager () { finish(); }
+
+        //! launch a new thread
+        /*! launch a new thread by invoking the execute() method of \a func
+         * (see Instance for details). 
+         * \return a unique handle to the newly launched thread, which can be
+         * passed to the wait() method.  */
+        template <class F> Identifier launch (F& functor, const std::string& name = "unnamed", const pthread_attr_t* attr = NULL) {
+          Instance* H = new Instance (functor, name, attr);
+          list.push_back (H);
+          return (H->ID());
+        }
+
+        //! wait for the thread with the specified ID to complete
+        void wait (Identifier ID) {
+          for (std::vector<Instance*>::iterator it = list.begin(); it != list.end(); ++it) {
+            if ((*it)->ID() == ID) { delete *it; list.erase (it); return; }
+          }
+          throw Exception ("unkown thread ID " + str(ID));
+        }
+
+        //! wait for all currently running threads to complete
+        void finish () {
+          if (list.size()) {
+            debug ("waiting for completion of all remaining threads...");
+            for (std::vector<Instance*>::iterator it = list.begin(); it != list.end(); ++it) 
+              delete *it; 
+          }
+        }
+
+      private:
+        std::vector<Instance*> list;
+    };
+
+
+
+    //! Base class for Serial & Parallel queues
+    /*! This class implements a means of pushing data items into a queue, so
+     * that they can each be processed in one or more separate threads. This
+     * class defines the interface used by both the Thread::Serial and
+     * Thread::Parallel queues. Items of type \a T are pushed onto the queue
+     * using the push() method, and will be processed on a first-in, first-out
+     * basis. The push() method will return \c false unless the queue has been
+     * closed, either following a call to end(), or because the processing thread
+     * has completed.
+     *
+     * The processing itself is done in one or more separate threads by
+     * invoking the process() method of the \a func object (of type \a F),
+     * which should have the following prototype:
+     * \code
+     * class MyFunctor {
+     *   public:
+     *     bool process (T item);
+     * };
+     * \endcode
+     * The process() method should return \c false while data items still need
+     * to be processed. Returning \c true will cause the processing thread(s)
+     * to terminate, and all subsequent calls to push() to return \c true
+     * without pushing any data onto the queue.
+     *
+     * Processing can also be halted by invoking the end() method, which will
+     * prevent any further items from being pushed onto the queue. The
+     * processing thread will continue until all items on the queue have been
+     * flushed out (or it decides to terminate by returning \c true). 
+     *
+     * The set_buffer_size() method can be used to set the maximum number of
+     * items that can be pushed onto the queue before blocking. If a thread
+     * attempts to push more data onto the queue when the queue already
+     * contains this number of items, the thread will block until at least one
+     * item has been processed.
+     */
+    template <class F, class T> class Queue {
+      public:
+        Queue () : more_data (mutex), more_space (mutex), capacity (100), queue_open (true) { }
+
+        void set_buffer_size (size_t max_size) { Mutex::Lock lock (mutex); capacity = max_size; }
         bool push (T& item) { 
           Mutex::Lock lock (mutex); 
-          if (!more) return (true);
+          if (!queue_open) return (true);
           while (fifo.size() >= capacity) more_space.wait();
-          fifo.push (item); 
+          fifo.push (item);
           more_data.signal();
           return (false);
         }
-        void finish () { Mutex::Lock lock (mutex); more = false; }
-      private:
-        Launcher& launch;
+        void end () { Mutex::Lock lock (mutex); queue_open = false; }
 
-        class Exec {
-          public:
-            Exec (F& func) : functor (func) { }
-            F& functor;
-            void execute () {
-              T item;
-              while (true) {
-                {
-                  Mutex::Lock lock (mutex);
-                  while (fifo.empty() && more) more_data.wait();
-                  if (!more) return;
-                  item = fifo.front();
-                  fifo.pop();
-                  more_space.signal();
-                }
-                functor.process (item);
-              }
+      protected:
+        void execute (F& func) {
+          T item;
+          while (true) {
+            {
+              Mutex::Lock lock (mutex);
+              while (fifo.empty() && queue_open) more_data.wait();
+              if (fifo.empty()) return;
+              item = fifo.front();
+              fifo.pop();
+              more_space.signal();
             }
-        };
+            if (func.process (item)) { end (); return; }
+          }
+        }
 
-        F& functor;
+      private:
         Mutex mutex;
         Cond more_data, more_space;
         std::queue<T> fifo;
         size_t capacity;
-        bool more;
+        bool queue_open;
     };
 
-    //! A queue of items to be processed in parallel in separate threads
-    template <class F, class T> class Parallel {
-      public:
-        Parallel (Launcher& launcher, F& func) : launch (launcher), functor (func), num_threads (launcher.num_cores) { }
 
-        void set_number_of_threads (int number_of_threads) { num_threads = number_of_threads; }
-        void start () { }
-        void add (T& item) { }
+
+    //! A queue of items to be processed serially in a separate thread
+    template <class F, class T> class Serial : public Queue<F,T> {
+      public:
+        Serial (F& functor, const std::string& name = "unnamed", const pthread_attr_t* attr = NULL) : 
+          func (functor), 
+          thread (*this, name, attr) { }
+        void execute () { execute (func); }
       private:
-        Launcher& launch;
-        F& functor;
-        int num_threads;
+        F& func;
+        Instance thread;
+    };
+
+
+
+    //! A queue of items to be processed in parallel in separate threads
+    template <class F, class T> class Parallel : public Queue<F,T> {
+      public:
+        Parallel (F& func, size_t num_threads = 0, const std::string& name = "unnamed", const pthread_attr_t* attr = NULL) {
+            if (!num_threads) num_threads = num_cores();
+            threads.resize (num_threads);
+            for (size_t i = 0; i < num_threads; ++i) {
+              threads[i].set (this, func, i);
+              manager.launch (threads[i], name, attr);
+            }
+          }
+
+        ~Parallel () { }
+
+      private:
+        Manager manager;
+
+        class Exec {
+          public:
+            Exec () : fifo (NULL), func (NULL), delete_after (false) { }
+            void set (Queue<F,T>* queue, F& functor, bool duplicate) {
+              fifo = queue; 
+              func  = duplicate ? new F (functor) : &func;
+              delete_after = duplicate;
+            }
+            ~Exec () { if (delete_after) delete func; }
+            void execute () { fifo->execute (*func); }
+            Queue<F,T>* fifo;
+            F* func;
+            bool delete_after;
+        };
+
+        std::vector<Exec> threads;
     };
 
     /** @} */
