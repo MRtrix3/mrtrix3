@@ -233,7 +233,7 @@ namespace MR {
           debug ("waiting for completion of thread ID " + str(TID) + "...");
           void* status;
           if (pthread_join (TID.pthread_ID, &status)) 
-            throw Exception (std::string("error joining thread: ") + strerror (errno));
+            throw Exception (std::string("error joining thread ID " + str(TID) + ": ") + strerror (errno));
           debug ("thread ID " + str(TID) + " completed OK");
         }
         Identifier ID () const { return (TID); }
@@ -336,7 +336,7 @@ namespace MR {
         Queue () : more_data (mutex), more_space (mutex), capacity (100), queue_open (true) { }
 
         void set_buffer_size (size_t max_size) { Mutex::Lock lock (mutex); capacity = max_size; }
-        bool push (T& item) { 
+        bool push (T item) { 
           Mutex::Lock lock (mutex); 
           if (!queue_open) return (true);
           while (fifo.size() >= capacity) more_space.wait();
@@ -344,9 +344,8 @@ namespace MR {
           more_data.signal();
           return (false);
         }
-        void end () { Mutex::Lock lock (mutex); queue_open = false; }
+        void end () { Mutex::Lock lock (mutex); queue_open = false; more_data.signal(); }
 
-      protected:
         void execute (F& func) {
           T item;
           while (true) {
@@ -378,7 +377,7 @@ namespace MR {
         Serial (F& functor, const std::string& name = "unnamed", const pthread_attr_t* attr = NULL) : 
           func (functor), 
           thread (*this, name, attr) { }
-        void execute () { execute (func); }
+        void execute () { Queue<F,T>::execute (func); }
       private:
         F& func;
         Instance thread;
@@ -389,7 +388,7 @@ namespace MR {
     //! A queue of items to be processed in parallel in separate threads
     template <class F, class T> class Parallel : public Queue<F,T> {
       public:
-        Parallel (F& func, size_t num_threads = 0, const std::string& name = "unnamed", const pthread_attr_t* attr = NULL) {
+        Parallel (F& func, const std::string& name = "unnamed", size_t num_threads = 0, const pthread_attr_t* attr = NULL) {
             if (!num_threads) num_threads = num_cores();
             threads.resize (num_threads);
             for (size_t i = 0; i < num_threads; ++i) {
@@ -408,7 +407,7 @@ namespace MR {
             Exec () : fifo (NULL), func (NULL), delete_after (false) { }
             void set (Queue<F,T>* queue, F& functor, bool duplicate) {
               fifo = queue; 
-              func  = duplicate ? new F (functor) : &func;
+              func  = duplicate ? new F (functor) : &functor;
               delete_after = duplicate;
             }
             ~Exec () { if (delete_after) delete func; }

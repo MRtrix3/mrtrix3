@@ -22,6 +22,7 @@
 
 #include "app.h"
 #include "thread.h"
+#include "math/rng.h"
 
 using namespace MR; 
 
@@ -36,22 +37,50 @@ DESCRIPTION = {
 ARGUMENTS = { Argument::End }; 
 OPTIONS = { Option::End };
 
+class ProcessedItem {
+  public:
+    float orig, processed;
+};
+
+class Output {
+  public:
+    bool process (ProcessedItem item) {
+      std::cout << item.orig << " => " << item.processed << "\n"; 
+      return (false);
+    }
+};
+
 class Functor {
   public:
-    Functor (size_t delay) : d (delay) { }
-    void execute () { sleep(d); VAR (Thread::ID()); sleep(d); }
+    Functor (Thread::Serial<Output,ProcessedItem>& queue) : Q (queue) { }
+    bool process (float value) { 
+      ProcessedItem item;
+      item.orig = value;
+      item.processed = Math::pow2(value);
+      if (Q.push (item)) return (true);
+      return (false); 
+    }
   private:
-    size_t d;
+    Thread::Serial<Output,ProcessedItem>& Q;
 };
 
 EXECUTE {
   VAR (Thread::num_cores());
 
-  Functor func (2);
-  Thread::Instance H (func, "my functor");
+  Output output_func;
+  Thread::Serial<Output,ProcessedItem> output_queue (output_func, "output thread");
 
-  Functor f2 (1);
-  Thread::Instance H2 (f2);
+  {
+    Functor process_func (output_queue);
+    Thread::Parallel<Functor,float> process_queue (process_func, "process thread", 2);
 
+    Math::RNG rng;
+    for (size_t i = 0; i < 200; ++i)
+      process_queue.push (rng.uniform());
+    process_queue.end();
+  }
+  TEST;
+
+  output_queue.end();
 }
 
