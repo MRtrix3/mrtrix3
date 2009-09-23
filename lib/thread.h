@@ -36,111 +36,144 @@
 namespace MR {
   namespace Thread {
 
+    //! \cond skip
+    const pthread_attr_t* default_attributes ();
+    //! \endcond
+    
     /** \addtogroup Thread 
      * @{ */
 
-    //! Launch & manage new threads
-    /*! This class facilitates launching new threads, and waiting for them to
-     * complete. A new thread will be started by executing the execute() method
-     * of the object supplied to the start() member function. It is possible to
-     * wait until a specific thread has finished executing by calling the
-     * wait() method. The finish() method can be used to wait until all
-     * currently running threads have completed.
-     */
-    class Launcher {
-      private:
-        class Instance {
-          public:
-            Instance (int new_ID, const std::string& identifier, const pthread_attr_t* attr, 
-                void *(*start_routine)(void*), void* data) : 
-              name (identifier), ID (new_ID) { 
-                debug ("launching thread \"" + name + "\" [ID " + str(ID) + "]..."); 
-                if (pthread_create (&thread, attr, start_routine, data)) {
-                  ID = -1;
-                  throw Exception (std::string("error starting thread: ") + strerror (errno));
-                }
-              }
-            ~Instance () { 
-              if (ID >= 0) {
-                debug ("waiting for completion of thread \"" + name + "\" [ID " + str(ID) + "]...");
-                void* status;
-                if (pthread_join (thread, &status)) 
-                  throw Exception (std::string("error joining thread: ") + strerror (errno));
-              }
-            }
+    //! the number of cores to use for multi-threading, as specified in the MRtrix configuration file
+    size_t num_cores (); 
 
-            pthread_t thread;
-            std::string name;
-            int ID;
-        };
-
-
+    //! the thread unique identifier
+    class Identifier {
       public:
+        Identifier () { }
+        Identifier (const Identifier& ID) : pthread_ID (ID.pthread_ID) { }
+        Identifier (const pthread_t ID) : pthread_ID (ID) { }
+        Identifier operator= (const Identifier& ID) { pthread_ID = ID.pthread_ID; return (*this); }
+        Identifier operator= (const pthread_t ID) { pthread_ID = ID; return (*this); }
 
-        Launcher () : num_cores (File::Config::get_int ("NumberOfThreads", 1)), last_ID (0) { 
-          pthread_attr_init (&attr);
-          pthread_attr_setdetachstate (&attr, PTHREAD_CREATE_JOINABLE);
-        }
-        ~Launcher () {
-          finish();
-          pthread_attr_destroy (&attr);
-        }
+        bool operator== (Identifier ID) { return (pthread_equal (pthread_ID, ID.pthread_ID)); }
+        bool operator!= (Identifier ID) { return (!pthread_equal (pthread_ID, ID.pthread_ID)); }
 
-        //! the number of cores to use for multi-threading, as specified in the MRtrix configuration file
-        const int num_cores;
+        pthread_t pthread_ID;
+    };
+    std::ostream& operator<< (std::ostream& stream, const Identifier ID) { stream << ID.pthread_ID; return (stream); }
 
-        //! launch a new thread, by invoking the execute() method of \a func
-        /*! a new thread will be started by executing the execute() member
-         * function of the object \a func of type \a F, which should have
-         * an execute() member function with the following prototype:
-         * \code
-         * class MyFunc {
-         *   public:
-         *     void execute ();
-         * };
-         * \endcode
-         *
-         * A human-readable \a identifier should also be provided for debugging
-         * and reporting purposes. 
-         * \return a unique handle to the newly launched thread, which can be
-         * passed to the wait() method.  */
-        template <class F> int start (F& func, const std::string& identifier) {
-          ++last_ID;
-          threads.push_back (new Instance (last_ID, identifier, &attr, static_exec<F>, static_cast<void*> (&func)));
-          return (last_ID);
-        }
+    //! returns the currently running thread's unique identifier
+    Identifier ID () { return (pthread_self()); }
 
-        //! wait for the thread with the specified ID to complete
-        void wait (int ID) {
-          for (std::vector<Instance*>::iterator it = threads.begin(); it != threads.end(); ++it) {
-            if ((*it)->ID == ID) { 
-              delete *it;
-              threads.erase (it); 
-              return; 
-            }
-          }
-          throw Exception ("unknown thread ID (" + str(ID) + ")");
-        }
 
-        //! wait for all currently running threads to complete
-        void finish () { 
-          if (threads.size()) {
-            debug ("waiting for completion of all remaining threads...");
-            for (std::vector<Instance*>::iterator it = threads.begin(); it != threads.end(); ++it) delete *it;
-            threads.clear(); 
-          }
+    //! represents an instance of a running thread
+    /*! Lauch a thread by running the execute method of the object \a functor,
+     * which should have the following prototype:
+     * \code
+     * class MyFunc {
+     *   public:
+     *     void execute ();
+     * };
+     * \endcode
+     *
+     * Supplying a sensible identifier in \a name is useful for debugging and
+     * reporting purposes.
+     * 
+     * The thread is launched in the constructor, and the destructor will wait
+     * for the thread to finish. The lifetime of a thread launched via this
+     * method is therefore restricted to the scope of the Instance object. For
+     * example:
+     * \code
+     * class MyFunctor {
+     *   public:
+     *     void execute () { 
+     *       ...
+     *       // do something useful
+     *       ...
+     *     }
+     * };
+     *
+     * void some_function () {
+     *   MyFunctor func; // parameters can be passed to func in its constructor
+     *
+     *   // thread is launched as soon as my_thread is instantiated:
+     *   Thread::Instance my_thread (func, "my function");
+     *   ...
+     *   // do something else while my_thread is running
+     *   ...
+     * } // my_thread goes out of scope: current thread will halt until my_thread has completed
+     * \endcode
+     */
+    class Instance {
+      public:
+        template <class F> Instance (F& functor, const std::string& name = "unnamed", const pthread_attr_t* attr= NULL) {
+          if (pthread_create (&TID.pthread_ID, ( attr ? attr : default_attributes() ), static_exec<F>, static_cast<void*> (&functor))) 
+            throw Exception (std::string("error launching thread \"" + name + "\": ") + strerror (errno));
+          debug ("launched thread \"" + name + "\", ID " + str(TID) + "..."); 
         }
+        ~Instance () { 
+          debug ("waiting for completion of thread ID " + str(TID) + "...");
+          void* status;
+          if (pthread_join (TID.pthread_ID, &status)) 
+            throw Exception (std::string("error joining thread: ") + strerror (errno));
+          debug ("thread ID " + str(TID) + " completed OK");
+        }
+        Identifier ID () const { return (TID); }
 
       private:
-        pthread_attr_t attr;
-        std::vector<Instance*> threads;
-        int last_ID;
+        Identifier TID;
 
         template <class F> static void* static_exec (void* data) {
           F* func = static_cast<F*> (data);
           func->execute ();
           return (NULL);
         }
+    };
+
+
+
+
+    //! launch & manage a number of threads
+    /*! This class facilitates launching new threads, and waiting for them to
+     * complete. 
+     * \note When an instance of Thread::Manager goes out of scope, the
+     * currently running thread will wait until all the managed threads have completed.
+     */
+    class Manager {
+      public:
+        Manager () { }
+        ~Manager () { finish(); }
+
+        //! launch a new thread
+        /*! launch a new thread by invoking the execute() method of \a func
+         * (see Instance for details). 
+         * \return a unique handle to the newly launched thread, which can be
+         * passed to the wait() method.  */
+        template <class F> Identifier launch (F& functor, const std::string& name = "unnamed", const pthread_attr_t* attr= NULL) {
+          Instance* H = new Instance (functor, name, attr);
+          list.push_back (H);
+          return (H->ID());
+        }
+
+        //! wait for the thread with the specified ID to complete
+        void wait (Identifier ID) {
+          for (std::vector<Instance*>::iterator it = list.begin(); it != list.end(); ++it) {
+            if ((*it)->ID() == ID) { delete *it; list.erase (it); return; }
+          }
+          throw Exception ("unkown thread ID " + str(ID));
+        }
+
+        //! wait for all currently running threads to complete
+        void finish () {
+          if (list.size()) {
+            debug ("waiting for completion of all remaining threads...");
+            for (std::vector<Instance*>::iterator it = list.begin(); it != list.end(); ++it) 
+              delete *it; 
+          }
+        }
+
+      private:
+        std::vector<Instance*> list;
     };
 
 
