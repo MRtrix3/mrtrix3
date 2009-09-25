@@ -37,7 +37,7 @@ namespace MR {
   namespace Thread {
 
     //! \cond skip
-    const pthread_attr_t* default_attributes ();
+    pthread_attr_t* const default_attributes ();
     //! \endcond
     
     /** \addtogroup Thread 
@@ -199,7 +199,7 @@ namespace MR {
      * 
      * The thread is launched in the constructor, and the destructor will wait
      * for the thread to finish. The lifetime of a thread launched via this
-     * method is therefore restricted to the scope of the Instance object. For
+     * method is therefore restricted to the scope of the Exec object. For
      * example:
      * \code
      * class MyFunctor {
@@ -215,96 +215,64 @@ namespace MR {
      *   MyFunctor func; // parameters can be passed to func in its constructor
      *
      *   // thread is launched as soon as my_thread is instantiated:
-     *   Thread::Instance my_thread (func, "my function");
+     *   Thread::Exec my_thread (func, "my function");
      *   ...
      *   // do something else while my_thread is running
      *   ...
      * } // my_thread goes out of scope: current thread will halt until my_thread has completed
      * \endcode
      */
-    class Instance {
+    class Exec {
       public:
-        template <class F> Instance (F& functor, const std::string& name = "unnamed", const pthread_attr_t* attr = NULL) {
-          if (pthread_create (&TID.pthread_ID, ( attr ? attr : default_attributes() ), static_exec<F>, static_cast<void*> (&functor))) 
+        Exec (const std::string& description = "unnamed") : attr (default_attributes()), name (description), running (false) { }
+        virtual ~Exec () { finish(); }
+
+        void start () {
+          if (pthread_create (&TID.pthread_ID, attr, static_exec, static_cast<void*> (this))) 
             throw Exception (std::string("error launching thread \"" + name + "\": ") + strerror (errno));
-          debug ("launched thread \"" + name + "\", ID " + str(TID) + "..."); 
+          running = true;
+          debug ("launched thread \"" + name + "\" [ID " + str(TID) + "]..."); 
         }
-        ~Instance () { 
-          debug ("waiting for completion of thread ID " + str(TID) + "...");
-          void* status;
-          if (pthread_join (TID.pthread_ID, &status)) 
-            throw Exception (std::string("error joining thread ID " + str(TID) + ": ") + strerror (errno));
-          debug ("thread ID " + str(TID) + " completed OK");
+
+        void finish () { 
+          if (running) {
+            debug ("waiting for completion of thread \"" + name + "\" [ID " + str(TID) + "]...");
+            void* status;
+            if (pthread_join (TID.pthread_ID, &status)) 
+              throw Exception (std::string("error joining thread \"" + name + "\" [ID " + str(TID) + "]: ") + strerror (errno));
+            running = false;
+            debug ("thread \"" + name + "\" [ID " + str(TID) + "] completed OK");
+          }
         }
+
         Identifier ID () const { return (TID); }
+
+        //! this function must be defined in derived classes
+        virtual void execute () = 0;
+
+      protected:
+        //! the thread attributes can be overriden in derived classes if needed
+        pthread_attr_t* attr;
 
       private:
         Identifier TID;
+        std::string name;
+        bool running;
 
-        template <class F> static void* static_exec (void* data) {
-          F* func = static_cast<F*> (data);
-          func->execute ();
-          return (NULL);
-        }
+        static void* static_exec (void* data);
     };
 
 
 
 
-    //! launch & manage a number of threads
-    /*! This class facilitates launching new threads, and waiting for them to
-     * complete. 
-     * \note When an instance of Thread::Manager goes out of scope, the
-     * currently running thread will wait until all the managed threads have completed.
-     */
-    class Manager {
-      public:
-        Manager () { }
-        ~Manager () { finish(); }
 
-        //! launch a new thread
-        /*! launch a new thread by invoking the execute() method of \a func
-         * (see Instance for details). 
-         * \return a unique handle to the newly launched thread, which can be
-         * passed to the wait() method.  */
-        template <class F> Identifier launch (F& functor, const std::string& name = "unnamed", const pthread_attr_t* attr = NULL) {
-          Instance* H = new Instance (functor, name, attr);
-          list.push_back (H);
-          return (H->ID());
-        }
-
-        //! wait for the thread with the specified ID to complete
-        void wait (Identifier ID) {
-          for (std::vector<Instance*>::iterator it = list.begin(); it != list.end(); ++it) {
-            if ((*it)->ID() == ID) { delete *it; list.erase (it); return; }
-          }
-          throw Exception ("unkown thread ID " + str(ID));
-        }
-
-        //! wait for all currently running threads to complete
-        void finish () {
-          if (list.size()) {
-            debug ("waiting for completion of all remaining threads...");
-            for (std::vector<Instance*>::iterator it = list.begin(); it != list.end(); ++it) 
-              delete *it; 
-          }
-        }
-
-      private:
-        std::vector<Instance*> list;
-    };
-
-
-
-    //! Base class for Serial & Parallel queues
+    //! a first-in first-out thread-safe item queue
     /*! This class implements a means of pushing data items into a queue, so
-     * that they can each be processed in one or more separate threads. This
-     * class defines the interface used by both the Thread::Serial and
-     * Thread::Parallel queues. Items of type \a T are pushed onto the queue
-     * using the push() method, and will be processed on a first-in, first-out
-     * basis. The push() method will return \c false unless the queue has been
-     * closed, either following a call to end(), or because the processing thread
-     * has completed.
+     * that they can each be processed in one or more separate threads.
+     * Items of type \a T are pushed onto the queue using the push() method,
+     * and will be processed on a first-in, first-out basis. The push() method
+     * will return \c false unless the queue has been closed, either following
+     * a call to end(), or because the processing thread has completed.
      *
      * The processing itself is done in one or more separate threads by
      * invoking the process() method of the \a func object (of type \a F),
@@ -331,94 +299,97 @@ namespace MR {
      * contains this number of items, the thread will block until at least one
      * item has been processed.
      */
-    template <class F, class T> class Queue {
+    template <class T> class Queue {
       public:
-        Queue () : more_data (mutex), more_space (mutex), capacity (100), queue_open (true) { }
+        Queue (const std::string& description = "unnamed") : 
+          more_data (mutex),
+          more_space (mutex),
+          capacity (100),
+          pusher_count (0),
+          popper_count (0),
+          name (description) { }
+        ~Queue () { while (fifo.size()) fifo.pop(); }
 
         void set_buffer_size (size_t max_size) { Mutex::Lock lock (mutex); capacity = max_size; }
-        bool push (T item) { 
-          Mutex::Lock lock (mutex); 
-          if (!queue_open) return (true);
-          while (fifo.size() >= capacity) more_space.wait();
-          fifo.push (item);
-          more_data.signal();
-          return (false);
-        }
-        void end () { Mutex::Lock lock (mutex); queue_open = false; more_data.signal(); }
 
-        void execute (F& func) {
-          T item;
-          while (true) {
-            {
-              Mutex::Lock lock (mutex);
-              while (fifo.empty() && queue_open) more_data.wait();
-              if (fifo.empty()) return;
-              item = fifo.front();
-              fifo.pop();
-              more_space.signal();
-            }
-            if (func.process (item)) { end (); return; }
-          }
+        class Push {
+          public: 
+            Push (Queue<T>& queue) : Q (queue) { }
+            void open () { Q.register_pusher(); }
+            void close () { Q.unregister_pusher(); }
+            bool push (T* item) { return (Q.push (item)); }
+          private:
+            Queue<T>& Q;
+        };
+
+        class Pop {
+          public: 
+            Pop (Queue<T>& queue) : Q (queue) { }
+            void open () { Q.register_popper(); }
+            void close () { Q.unregister_popper(); }
+            T* pop () { return (Q.pop()); }
+          private:
+            Queue<T>& Q;
+        };
+
+        void status () { 
+          Mutex::Lock lock (mutex);
+          std::cerr << "Thread::Queue " + name + ":\n  producers: " << pusher_count << "\n  consumers: " << popper_count << "\n  items waiting: " << fifo.size() << "\n";
         }
+
 
       private:
         Mutex mutex;
         Cond more_data, more_space;
-        std::queue<T> fifo;
+        std::queue<T*> fifo;
         size_t capacity;
-        bool queue_open;
-    };
+        size_t pusher_count, popper_count;
+        std::string name;
 
-
-
-    //! A queue of items to be processed serially in a separate thread
-    template <class F, class T> class Serial : public Queue<F,T> {
-      public:
-        Serial (F& functor, const std::string& name = "unnamed", const pthread_attr_t* attr = NULL) : 
-          func (functor), 
-          thread (*this, name, attr) { }
-        void execute () { Queue<F,T>::execute (func); }
-      private:
-        F& func;
-        Instance thread;
-    };
-
-
-
-    //! A queue of items to be processed in parallel in separate threads
-    template <class F, class T> class Parallel : public Queue<F,T> {
-      public:
-        Parallel (F& func, const std::string& name = "unnamed", size_t num_threads = 0, const pthread_attr_t* attr = NULL) {
-            if (!num_threads) num_threads = num_cores();
-            threads.resize (num_threads);
-            for (size_t i = 0; i < num_threads; ++i) {
-              threads[i].set (this, func, i);
-              manager.launch (threads[i], name, attr);
-            }
+        void register_pusher ()   { Mutex::Lock lock (mutex); ++pusher_count; }
+        void unregister_pusher () { 
+          Mutex::Lock lock (mutex);
+          assert (pusher_count); 
+          --pusher_count; 
+          if (!pusher_count) {
+            debug ("no producers left on queue \"" + name + "\"");
+            more_data.broadcast(); 
           }
+        }
+        void register_popper ()   { Mutex::Lock lock (mutex); ++popper_count; }
+        void unregister_popper () { 
+          Mutex::Lock lock (mutex); 
+          assert (popper_count);
+          --popper_count; 
+          if (!popper_count) {
+            debug ("no consumers left on queue \"" + name + "\"");
+            more_space.broadcast(); 
+          }
+        }
 
-        ~Parallel () { }
+        bool push (T* item) { 
+          Mutex::Lock lock (mutex); 
+          while (fifo.size() >= capacity && popper_count) more_space.wait();
+          if (!popper_count) return (false);
+          fifo.push (item);
+          more_data.signal();
+          return (true);
+        }
 
-      private:
-        Manager manager;
+        T* pop () {
+          Mutex::Lock lock (mutex);
+          while (fifo.empty() && pusher_count) more_data.wait();
+          if (fifo.empty() && !pusher_count) return (NULL);
+          T* item = fifo.front();
+          fifo.pop();
+          more_space.signal();
+          return (item);
+        }
 
-        class Exec {
-          public:
-            Exec () : fifo (NULL), func (NULL), delete_after (false) { }
-            void set (Queue<F,T>* queue, F& functor, bool duplicate) {
-              fifo = queue; 
-              func  = duplicate ? new F (functor) : &functor;
-              delete_after = duplicate;
-            }
-            ~Exec () { if (delete_after) delete func; }
-            void execute () { fifo->execute (*func); }
-            Queue<F,T>* fifo;
-            F* func;
-            bool delete_after;
-        };
-
-        std::vector<Exec> threads;
+        friend class Push;
+        friend class Pop;
     };
+
 
     /** @} */
   }

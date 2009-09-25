@@ -37,50 +37,96 @@ DESCRIPTION = {
 ARGUMENTS = { Argument::End }; 
 OPTIONS = { Option::End };
 
-class ProcessedItem {
+class Item {
   public:
     float orig, processed;
 };
 
-class Output {
+class Consumer : public Thread::Exec {
   public:
-    bool process (ProcessedItem item) {
-      std::cout << item.orig << " => " << item.processed << "\n"; 
-      return (false);
-    }
-};
-
-class Functor {
-  public:
-    Functor (Thread::Serial<Output,ProcessedItem>& queue) : Q (queue) { }
-    bool process (float value) { 
-      ProcessedItem item;
-      item.orig = value;
-      item.processed = Math::pow2(value);
-      if (Q.push (item)) return (true);
-      return (false); 
+    Consumer (Thread::Queue<Item>& queue) : Thread::Exec ("consumer"), in (queue) { in.open(); }
+    void execute () {
+      Item* item = NULL;
+      size_t count = 0;
+      while ((item = in.pop())) {
+        //std::cout << item->orig << " => " << item->processed << "\n"; 
+        delete item;
+        ++count;
+      }
+      in.close();
+      VAR (count);
     }
   private:
-    Thread::Serial<Output,ProcessedItem>& Q;
+    Thread::Queue<Item>::Pop in;
+};
+
+class Transformer : public Thread::Exec {
+  public:
+    Transformer (Thread::Queue<float>& queue_in, Thread::Queue<Item>& queue_out) : 
+      Thread::Exec ("transformer"), in (queue_in), out (queue_out) { 
+      in.open(); 
+      out.open(); 
+    }
+    void execute () {
+      Item* item;
+      float* value;
+      size_t count = 0;
+      do {
+        if (!(value = in.pop())) break;
+        item = new Item;
+        item->orig = *value;
+        item->processed = Math::pow2(item->orig);
+        delete value;
+        ++count;
+      } while (out.push (item)); 
+      in.close();
+      out.close();
+      VAR (count);
+    }
+  private:
+    Thread::Queue<float>::Pop in;
+    Thread::Queue<Item>::Push out;
 };
 
 EXECUTE {
   VAR (Thread::num_cores());
 
-  Output output_func;
-  Thread::Serial<Output,ProcessedItem> output_queue (output_func, "output thread");
+  Thread::Queue<float> queue1 ("first queue");
+  Thread::Queue<Item> queue2 ("second queue");
 
-  {
-    Functor process_func (output_queue);
-    Thread::Parallel<Functor,float> process_queue (process_func, "process thread", 2);
+  Consumer consumer (queue2);
+  Transformer func1 (queue1, queue2);
+  Transformer func2 (queue1, queue2);
+  Transformer func3 (queue1, queue2);
+  Transformer func4 (queue1, queue2);
 
-    Math::RNG rng;
-    for (size_t i = 0; i < 200; ++i)
-      process_queue.push (rng.uniform());
-    process_queue.end();
-  }
-  TEST;
+  Math::RNG rng;
+  Thread::Queue<float>::Push out (queue1);
+  out.open();
 
-  output_queue.end();
+  queue1.status();
+  queue2.status();
+
+  consumer.start();
+  func1.start();
+  func2.start();
+  func3.start();
+  func4.start();
+
+  float* value;
+  size_t count = 0;
+  do {
+    value = new float;
+    *value = rng.uniform();
+    ++count;
+  } while (out.push (value) && count < 1000000);
+  out.close();
+  VAR (count);
+
+  consumer.finish();
+  func1.finish();
+  func2.finish();
+  func3.finish();
+  func4.finish();
 }
 

@@ -26,7 +26,7 @@
 namespace MR {
   namespace Thread {
 
-    const pthread_attr_t* default_attributes () {
+    pthread_attr_t* const default_attributes () {
       static pthread_attr_t* attr = NULL;
       if (!attr) {
         attr = new pthread_attr_t;
@@ -41,6 +41,7 @@ namespace MR {
       return (N);
     }
 
+    void* Exec::static_exec (void* data) { static_cast<Exec*>(data)->execute (); return (NULL); }
   }
 }
 
