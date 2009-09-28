@@ -23,13 +23,20 @@ dependencies = False
 verbose = False
 targets = []
 
-global todo, headers, object_deps, file_flags, thread_cflags, thread_ldflags, lock, stop
+global todo, headers, object_deps, file_flags, thread_cflags, thread_ldflags, lock, print_lock, stop
 global include_paths
 todo, headers, object_deps, file_flags = {}, {}, {}, {}
 include_paths = []
 lock = threading.Lock()
+print_lock = threading.Lock()
 stop = False
 
+def disp (msg):
+  print_lock.acquire()
+  print msg
+  sys.stdout.flush()
+  print_lock.release()
+  
 
 
 # parse command-line:
@@ -311,39 +318,24 @@ def fillin (template, keyvalue):
 
 
 def execute (message, cmd):
-  print message
-  sys.stdout.flush()
+  disp (message)
   if verbose: 
-    print ' '.join(cmd)
-    sys.stdout.flush()
+    disp (' '.join(cmd))
 
   try: 
     process = subprocess.Popen (cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     if process.wait() != 0:
-      print ''
-      print 'ERROR:', message
-      print ''
-      print ' '.join(cmd)
-      print ''
-      print 'failed with output:'
-      print ''
-      print process.stderr.read()
-      sys.stdout.flush()
+      disp ('\nERROR: ' + message + '\n\n' + ' '.join(cmd) + '\n\nfailed with output\n\n' + process.stderr.read())
       return 1
     out = process.stdout.read()
     if len(out):
-      print 'STDOUT:', message
-      print out
-      sys.stdout.flush()
+      disp ('STDOUT: ' + message + '\n' + out)
     out = process.stderr.read()
     if len(out):
-      print 'STDERR:', message
-      print out
-      sys.stdout.flush()
+      disp ('STDERR: ' + message + '\n' + out)
 
   except OSError:
-    print cmd[0] + ': command not found'
-    sys.stdout.flush()
+    disp (cmd[0] + ': command not found')
     return 1
 
 
