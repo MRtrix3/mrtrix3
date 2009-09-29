@@ -21,6 +21,7 @@
 */
 
 #include "app.h"
+#include "progressbar.h"
 #include "thread.h"
 #include "math/rng.h"
 
@@ -42,9 +43,10 @@ class Item {
     float orig, processed;
 };
 
-class Consumer : public Thread::Exec {
+class Consumer {
   public:
-    Consumer (Thread::Queue<Item>& queue) : Thread::Exec ("consumer"), in (queue) { in.open(); }
+    Consumer (Thread::Queue<Item>& queue, const std::string& description = "unnamed") : in (queue), desc (description) { }
+    const std::string& name () { return (desc); }
     void execute () {
       Item* item = NULL;
       size_t count = 0;
@@ -54,19 +56,18 @@ class Consumer : public Thread::Exec {
         ++count;
       }
       in.close();
-      VAR (count);
+      print ("consumer count = " + str(count) + "\n");
     }
   private:
     Thread::Queue<Item>::Pop in;
+    std::string desc;
 };
 
-class Transformer : public Thread::Exec {
+class Transformer {
   public:
-    Transformer (Thread::Queue<float>& queue_in, Thread::Queue<Item>& queue_out) : 
-      Thread::Exec ("transformer"), in (queue_in), out (queue_out) { 
-      in.open(); 
-      out.open(); 
-    }
+    Transformer (Thread::Queue<float>& queue_in, Thread::Queue<Item>& queue_out, const std::string& description = "unnamed") : 
+      in (queue_in), out (queue_out), desc (description) { }
+    const std::string& name () { return (desc); }
     void execute () {
       Item* item;
       float* value;
@@ -78,55 +79,56 @@ class Transformer : public Thread::Exec {
         item->processed = Math::pow2(item->orig);
         delete value;
         ++count;
+        //print ("[" + name() + "] " + str(item->orig) + " -> " + str(item->processed) + "\n");
       } while (out.push (item)); 
       in.close();
       out.close();
-      VAR (count);
+      print (name() + " count = " + str(count) + "\n");
     }
   private:
     Thread::Queue<float>::Pop in;
     Thread::Queue<Item>::Push out;
+    std::string desc;
 };
 
 EXECUTE {
+  Thread::init();
   VAR (Thread::num_cores());
 
   Thread::Queue<float> queue1 ("first queue");
   Thread::Queue<Item> queue2 ("second queue");
 
-  Consumer consumer (queue2);
-  Transformer func1 (queue1, queue2);
-  Transformer func2 (queue1, queue2);
-  Transformer func3 (queue1, queue2);
-  Transformer func4 (queue1, queue2);
+  Consumer consumer (queue2, "consumer");
+  Transformer func1 (queue1, queue2, "func1");
+  Transformer func2 (queue1, queue2, "func2");
+  Transformer func3 (queue1, queue2, "func3");
+  Transformer func4 (queue1, queue2, "func4");
 
   Math::RNG rng;
   Thread::Queue<float>::Push out (queue1);
-  out.open();
 
   queue1.status();
   queue2.status();
 
-  consumer.start();
-  func1.start();
-  func2.start();
-  func3.start();
-  func4.start();
+  Thread::Exec consumer_thread (consumer, consumer.name());
+  Thread::Exec func1_thread (func1, func1.name());
+  Thread::Exec func2_thread (func2, func2.name());
+  Thread::Exec func3_thread (func3, func3.name());
+  Thread::Exec func4_thread (func4, func4.name());
 
   float* value;
   size_t count = 0;
+  const size_t N = 100000;
+  ProgressBar::init (N, "testing threads...");
   do {
     value = new float;
     *value = rng.uniform();
     ++count;
-  } while (out.push (value) && count < 1000000);
+    ProgressBar::inc();
+  } while (out.push (value) && count < N);
+  ProgressBar::done();
   out.close();
-  VAR (count);
+  print ("producer count = " + str(count) + "\n");
 
-  consumer.finish();
-  func1.finish();
-  func2.finish();
-  func3.finish();
-  func4.finish();
 }
 

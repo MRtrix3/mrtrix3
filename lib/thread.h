@@ -36,15 +36,19 @@
 namespace MR {
   namespace Thread {
 
-    //! \cond skip
-    pthread_attr_t* const default_attributes ();
-    //! \endcond
-    
     /** \addtogroup Thread 
      * @{ */
 
+    bool initialised ();
+    //! Initialise the thread system
+    /*! This function must be called before using any of the functionality in
+     * the multi-threading system. */
+    void init ();
+
     //! the number of cores to use for multi-threading, as specified in the MRtrix configuration file
-    size_t num_cores (); 
+    size_t num_cores ();
+    const pthread_attr_t* default_attributes();
+
 
 
 
@@ -164,27 +168,7 @@ namespace MR {
 
 
 
-    //! the thread unique identifier
-    class Identifier {
-      public:
-        Identifier () { }
-        Identifier (const Identifier& ID) : pthread_ID (ID.pthread_ID) { }
-        Identifier (const pthread_t ID) : pthread_ID (ID) { }
-        Identifier operator= (const Identifier& ID) { pthread_ID = ID.pthread_ID; return (*this); }
-        Identifier operator= (const pthread_t ID) { pthread_ID = ID; return (*this); }
-
-        bool operator== (Identifier ID) { return (pthread_equal (pthread_ID, ID.pthread_ID)); }
-        bool operator!= (Identifier ID) { return (!pthread_equal (pthread_ID, ID.pthread_ID)); }
-
-        pthread_t pthread_ID;
-    };
-    std::ostream& operator<< (std::ostream& stream, const Identifier ID) { stream << ID.pthread_ID; return (stream); }
-
-    //! returns the currently running thread's unique identifier
-    Identifier ID () { return (pthread_self()); }
-
-
-    //! represents an instance of a running thread
+    //! Execute the functor's execute method in a separate thread
     /*! Lauch a thread by running the execute method of the object \a functor,
      * which should have the following prototype:
      * \code
@@ -197,10 +181,12 @@ namespace MR {
      * Supplying a sensible identifier in \a name is useful for debugging and
      * reporting purposes.
      * 
-     * The thread is launched in the constructor, and the destructor will wait
-     * for the thread to finish. The lifetime of a thread launched via this
-     * method is therefore restricted to the scope of the Exec object. For
-     * example:
+     * The thread is launched using the start() method, or using the
+     * non-default constructor. The destructor will wait for the thread to
+     * finish, although the application can explicitly wait for the thread to
+     * complete by calling its finish() method. The lifetime of a thread
+     * launched via this method is therefore restricted to the scope of the
+     * Exec object. For example:
      * \code
      * class MyFunctor {
      *   public:
@@ -224,80 +210,108 @@ namespace MR {
      */
     class Exec {
       public:
-        Exec (const std::string& description = "unnamed") : attr (default_attributes()), name (description), running (false) { }
-        virtual ~Exec () { finish(); }
+        Exec () : running (false) { }
+        template <class Functor> Exec (Functor& functor, const std::string& description = "unnamed") :
+          running (false) { start (functor, description); }
+        ~Exec () { finish(); }
 
-        void start () {
-          if (pthread_create (&TID.pthread_ID, attr, static_exec, static_cast<void*> (this))) 
+        template <class Functor> void start (Functor& functor, const std::string& description = "unnamed") {
+          finish();
+          name = description;
+          if (pthread_create (&ID, default_attributes(), static_exec<Functor>, static_cast<void*> (&functor))) 
             throw Exception (std::string("error launching thread \"" + name + "\": ") + strerror (errno));
           running = true;
-          debug ("launched thread \"" + name + "\" [ID " + str(TID) + "]..."); 
+          debug ("launched thread \"" + name + "\" [ID " + str(ID) + "]..."); 
         }
 
         void finish () { 
           if (running) {
-            debug ("waiting for completion of thread \"" + name + "\" [ID " + str(TID) + "]...");
+            debug ("waiting for completion of thread \"" + name + "\" [ID " + str(ID) + "]...");
             void* status;
-            if (pthread_join (TID.pthread_ID, &status)) 
-              throw Exception (std::string("error joining thread \"" + name + "\" [ID " + str(TID) + "]: ") + strerror (errno));
+            if (pthread_join (ID, &status)) 
+              throw Exception (std::string("error joining thread \"" + name + "\" [ID " + str(ID) + "]: ") + strerror (errno));
             running = false;
-            debug ("thread \"" + name + "\" [ID " + str(TID) + "] completed OK");
+            debug ("thread \"" + name + "\" [ID " + str(ID) + "] completed OK");
           }
         }
 
-        Identifier ID () const { return (TID); }
-
-        //! this function must be defined in derived classes
-        virtual void execute () = 0;
-
-      protected:
-        //! the thread attributes can be overriden in derived classes if needed
-        pthread_attr_t* attr;
-
       private:
-        Identifier TID;
+        pthread_t ID;
         std::string name;
         bool running;
 
-        static void* static_exec (void* data);
+        template <class Functor> static void* static_exec (void* data) { static_cast<Functor*>(data)->execute (); return (NULL); }
     };
 
 
 
 
 
-    //! a first-in first-out thread-safe item queue
-    /*! This class implements a means of pushing data items into a queue, so
-     * that they can each be processed in one or more separate threads.
-     * Items of type \a T are pushed onto the queue using the push() method,
-     * and will be processed on a first-in, first-out basis. The push() method
-     * will return \c false unless the queue has been closed, either following
-     * a call to end(), or because the processing thread has completed.
-     *
-     * The processing itself is done in one or more separate threads by
-     * invoking the process() method of the \a func object (of type \a F),
-     * which should have the following prototype:
+    //! A first-in first-out thread-safe item queue
+    /*! This class implements a thread-safe means of pushing data items into a
+     * queue, so that they can each be processed in one or more separate
+     * threads. Pointers to items of type \a T are pushed onto the queue using
+     * the push() method of the membar class Thread::Queue<T>::Push, and will
+     * be processed on a first-in, first-out basis. Pointers to these items are
+     * then retrieved using the pop() method of the member class
+     * Thread::Queue<T>::Pop. For example:
      * \code
-     * class MyFunctor {
+     * class Item {
      *   public:
-     *     bool process (T item);
+     *     ...
+     *     // data members
+     *     ...
      * };
+     *
+     * class Sender {
+     *   public:
+     *     Sender (Thread::Queue<Item>& queue) : out (queue) { } 
+     *     void execute () {
+     *       while (need_more_items()) {
+     *         Item* item = new Item;
+     *         ...
+     *         // prepare item
+     *         ...
+     *         if (!out.push (item)) break; // break if push() returns false
+     *       }
+     *       out.close(); // this MUST be called before execute() returns
+     *     }
+     *   private:
+     *     Thread::Queue<Item>::Push out;
+     * };
+     * 
+     * class Receiver {
+     *   public:
+     *     Receiver (Thread::Queue<Item>& queue) : in (queue) { } 
+     *     void execute () {
+     *       Item* item;
+     *       while ((item = in.pop())) { // break when pop() returns NULL
+     *         ...
+     *         // process item
+     *         ...
+     *         delete item;
+     *       }
+     *       in.close(); // this MUST be called before execute() returns
+     *     }
+     *   private:
+     *     Thread::Queue<Item>::Pop out;
+     * };
+     * 
+     * void my_function () {
+     *   Thread::Queue<Item> queue;
+     *   Sender sender (queue);
+     *   Receiver receiver (queue);
+     *   
+     *   Thread::Exec sender_thread (sender);
+     *   Thread::Exec receiver_thread (receiver);
+     * }
      * \endcode
-     * The process() method should return \c false while data items still need
-     * to be processed. Returning \c true will cause the processing thread(s)
-     * to terminate, and all subsequent calls to push() to return \c true
-     * without pushing any data onto the queue.
      *
-     * Processing can also be halted by invoking the end() method, which will
-     * prevent any further items from being pushed onto the queue. The
-     * processing thread will continue until all items on the queue have been
-     * flushed out (or it decides to terminate by returning \c true). 
-     *
-     * The set_buffer_size() method can be used to set the maximum number of
-     * items that can be pushed onto the queue before blocking. If a thread
-     * attempts to push more data onto the queue when the queue already
-     * contains this number of items, the thread will block until at least one
-     * item has been processed.
+     * \note the Thread::Queue<T>::Push or Thread::Queue<T>::Pop close() method
+     * \e must be called as soon as possible after completion of processing to
+     * ensure that no deadlocks occur at exit. In particular, it should be
+     * called before each thread's execute() method returns, \e not in each
+     * functor object's destructor. 
      */
     template <class T> class Queue {
       public:
@@ -305,18 +319,30 @@ namespace MR {
           more_data (mutex),
           more_space (mutex),
           capacity (100),
-          pusher_count (0),
-          popper_count (0),
+          writer_count (0),
+          reader_count (0),
           name (description) { }
         ~Queue () { while (fifo.size()) fifo.pop(); }
 
+        //! set the maximum number of items that can be queued before blocking
+        /*! This method can be used to set the maximum number of items that can
+         * be pushed onto the queue before blocking. If a thread attempts to
+         * push more data onto the queue when the queue already contains this
+         * number of items, the thread will block until at least one item has
+         * been popped.
+         *
+         * By default, the buffer size is 100 items. */
         void set_buffer_size (size_t max_size) { Mutex::Lock lock (mutex); capacity = max_size; }
 
+        //! This class is used to push items onto the queue
+        /*! Items cannot be pushed directly onto a Thread::Queue<T> queue. An
+         * object of this class must be instanciated and used to write to the
+         * queue. This is done to ensure the number of writers to the queue can
+         * be tracked. */
         class Push {
           public: 
-            Push (Queue<T>& queue) : Q (queue) { }
-            void open () { Q.register_pusher(); }
-            void close () { Q.unregister_pusher(); }
+            Push (Queue<T>& queue) : Q (queue) { Q.register_writer(); }
+            void close () { Q.unregister_writer(); }
             bool push (T* item) { return (Q.push (item)); }
           private:
             Queue<T>& Q;
@@ -324,9 +350,8 @@ namespace MR {
 
         class Pop {
           public: 
-            Pop (Queue<T>& queue) : Q (queue) { }
-            void open () { Q.register_popper(); }
-            void close () { Q.unregister_popper(); }
+            Pop (Queue<T>& queue) : Q (queue) { Q.register_reader(); }
+            void close () { Q.unregister_reader(); }
             T* pop () { return (Q.pop()); }
           private:
             Queue<T>& Q;
@@ -334,7 +359,7 @@ namespace MR {
 
         void status () { 
           Mutex::Lock lock (mutex);
-          std::cerr << "Thread::Queue " + name + ":\n  producers: " << pusher_count << "\n  consumers: " << popper_count << "\n  items waiting: " << fifo.size() << "\n";
+          std::cerr << "Thread::Queue " + name + ":\n  writers: " << writer_count << "\n  readers: " << reader_count << "\n  items waiting: " << fifo.size() << "\n";
         }
 
 
@@ -343,34 +368,34 @@ namespace MR {
         Cond more_data, more_space;
         std::queue<T*> fifo;
         size_t capacity;
-        size_t pusher_count, popper_count;
+        size_t writer_count, reader_count;
         std::string name;
 
-        void register_pusher ()   { Mutex::Lock lock (mutex); ++pusher_count; }
-        void unregister_pusher () { 
+        void register_writer ()   { Mutex::Lock lock (mutex); ++writer_count; }
+        void unregister_writer () { 
           Mutex::Lock lock (mutex);
-          assert (pusher_count); 
-          --pusher_count; 
-          if (!pusher_count) {
-            debug ("no producers left on queue \"" + name + "\"");
+          assert (writer_count); 
+          --writer_count; 
+          if (!writer_count) {
+            debug ("no writers left on queue \"" + name + "\"");
             more_data.broadcast(); 
           }
         }
-        void register_popper ()   { Mutex::Lock lock (mutex); ++popper_count; }
-        void unregister_popper () { 
+        void register_reader ()   { Mutex::Lock lock (mutex); ++reader_count; }
+        void unregister_reader () { 
           Mutex::Lock lock (mutex); 
-          assert (popper_count);
-          --popper_count; 
-          if (!popper_count) {
-            debug ("no consumers left on queue \"" + name + "\"");
+          assert (reader_count);
+          --reader_count; 
+          if (!reader_count) {
+            debug ("no readers left on queue \"" + name + "\"");
             more_space.broadcast(); 
           }
         }
 
         bool push (T* item) { 
           Mutex::Lock lock (mutex); 
-          while (fifo.size() >= capacity && popper_count) more_space.wait();
-          if (!popper_count) return (false);
+          while (fifo.size() >= capacity && reader_count) more_space.wait();
+          if (!reader_count) return (false);
           fifo.push (item);
           more_data.signal();
           return (true);
@@ -378,8 +403,8 @@ namespace MR {
 
         T* pop () {
           Mutex::Lock lock (mutex);
-          while (fifo.empty() && pusher_count) more_data.wait();
-          if (fifo.empty() && !pusher_count) return (NULL);
+          while (fifo.empty() && writer_count) more_data.wait();
+          if (fifo.empty() && !writer_count) return (NULL);
           T* item = fifo.front();
           fifo.pop();
           more_space.signal();

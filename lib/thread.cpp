@@ -20,28 +20,59 @@
 
  */
 
+#include "app.h"
 #include "thread.h"
 #include "file/config.h"
 
 namespace MR {
   namespace Thread {
 
-    pthread_attr_t* const default_attributes () {
-      static pthread_attr_t* attr = NULL;
-      if (!attr) {
-        attr = new pthread_attr_t;
-        pthread_attr_init (attr);
-        pthread_attr_setdetachstate (attr, PTHREAD_CREATE_JOINABLE);
+    pthread_attr_t default_attr;
+    size_t number_of_threads = 0;
+
+    bool initialised () { return (number_of_threads); }
+
+
+    namespace {
+      Mutex print_mutex;
+
+      void cmdline_thread_print (const std::string& msg) { Mutex::Lock lock (print_mutex); std::cout << msg; }
+
+      void cmdline_thread_error (const std::string& msg) 
+      {
+        Mutex::Lock lock (print_mutex);
+        if (App::log_level) std::cerr << App::name() << ": " << msg << "\n"; 
       }
-      return (attr);
+
+      void cmdline_thread_info  (const std::string& msg) 
+      { 
+        Mutex::Lock lock (print_mutex);
+        if (App::log_level > 1) std::cerr << App::name() << " [INFO]: " <<  msg << "\n"; 
+      }
+
+      void cmdline_thread_debug (const std::string& msg)
+      { 
+        Mutex::Lock lock (print_mutex);
+        if (App::log_level > 2) std::cerr << App::name() << " [DEBUG]: " <<  msg << "\n"; 
+      }
     }
 
-    size_t num_cores () {
-      static size_t N = File::Config::get_int ("NumberOfThreads", 1);
-      return (N);
+
+    void init () {
+      assert (!initialised());
+      pthread_attr_init (&default_attr);
+      pthread_attr_setdetachstate (&default_attr, PTHREAD_CREATE_JOINABLE);
+      number_of_threads = File::Config::get_int ("NumberOfProcessors", 1);
+      print = cmdline_thread_print;
+      error = cmdline_thread_error;
+      info = cmdline_thread_info;
+      debug = cmdline_thread_debug;
+      debug ("multi-threading initialised, assuming " + str(number_of_threads) + " processor" + (number_of_threads > 1 ? "s" : ""));
     }
 
-    void* Exec::static_exec (void* data) { static_cast<Exec*>(data)->execute (); return (NULL); }
+    size_t num_cores () { assert (initialised()); return (number_of_threads); }
+    const pthread_attr_t* default_attributes() { assert (initialised()); return (&default_attr); }
+
   }
 }
 
