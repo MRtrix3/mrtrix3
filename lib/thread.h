@@ -254,7 +254,16 @@ namespace MR {
      * the push() method of the membar class Thread::Queue<T>::Push, and will
      * be processed on a first-in, first-out basis. Pointers to these items are
      * then retrieved using the pop() method of the member class
-     * Thread::Queue<T>::Pop. For example:
+     * Thread::Queue<T>::Pop. 
+     *
+     * \param description a string identifying the queue for degugging purposes
+     * \param buffer_size the maximum number of items that can be pushed onto the queue before
+     * blocking. If a thread attempts to push more data onto the queue when the
+     * queue already contains this number of items, the thread will block until
+     * at least one item has been popped.  By default, the buffer size is 100
+     * items.
+     *
+     * For example:
      * \code
      * class Item {
      *   public:
@@ -315,24 +324,14 @@ namespace MR {
      */
     template <class T> class Queue {
       public:
-        Queue (const std::string& description = "unnamed") : 
+        Queue (const std::string& description = "unnamed", size_t buffer_size = 100) : 
           more_data (mutex),
           more_space (mutex),
-          capacity (100),
+          capacity (buffer_size),
           writer_count (0),
           reader_count (0),
           name (description) { }
         ~Queue () { while (fifo.size()) fifo.pop(); }
-
-        //! set the maximum number of items that can be queued before blocking
-        /*! This method can be used to set the maximum number of items that can
-         * be pushed onto the queue before blocking. If a thread attempts to
-         * push more data onto the queue when the queue already contains this
-         * number of items, the thread will block until at least one item has
-         * been popped.
-         *
-         * By default, the buffer size is 100 items. */
-        void set_buffer_size (size_t max_size) { Mutex::Lock lock (mutex); capacity = max_size; }
 
         //! This class is used to push items onto the queue
         /*! Items cannot be pushed directly onto a Thread::Queue<T> queue. An
@@ -348,6 +347,11 @@ namespace MR {
             Queue<T>& Q;
         };
 
+        //! This class is used to pop items from the queue
+        /*! Items cannot be popped directly from a Thread::Queue<T> queue. An
+         * object of this class must be instanciated and used to read from the
+         * queue. This is done to ensure the number of readers from the queue can
+         * be tracked. */
         class Pop {
           public: 
             Pop (Queue<T>& queue) : Q (queue) { Q.register_reader(); }
