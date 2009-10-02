@@ -251,17 +251,9 @@ namespace MR {
     /*! This class implements a thread-safe means of pushing data items into a
      * queue, so that they can each be processed in one or more separate
      * threads. Pointers to items of type \a T are pushed onto the queue using
-     * the push() method of the membar class Thread::Queue<T>::Push, and will
-     * be processed on a first-in, first-out basis. Pointers to these items are
-     * then retrieved using the pop() method of the member class
-     * Thread::Queue<T>::Pop. 
-     *
-     * \param description a string identifying the queue for degugging purposes
-     * \param buffer_size the maximum number of items that can be pushed onto the queue before
-     * blocking. If a thread attempts to push more data onto the queue when the
-     * queue already contains this number of items, the thread will block until
-     * at least one item has been popped.  By default, the buffer size is 100
-     * items.
+     * the membar class Thread::Queue<T>::Push, and will be processed on a
+     * first-in, first-out basis. Pointers to these items are then retrieved
+     * using the member class Thread::Queue<T>::Pop. 
      *
      * For example:
      * \code
@@ -274,36 +266,36 @@ namespace MR {
      *
      * class Sender {
      *   public:
-     *     Sender (Thread::Queue<Item>& queue) : out (queue) { } 
+     *     Sender (Thread::Queue<Item>& queue) : push (queue) { } 
      *     void execute () {
      *       while (need_more_items()) {
      *         Item* item = new Item;
      *         ...
      *         // prepare item
      *         ...
-     *         if (!out.push (item)) break; // break if push() returns false
+     *         if (!push (item)) break; // break if push() returns false
      *       }
-     *       out.close(); // this MUST be called before execute() returns
+     *       push.close(); // this MUST be called before execute() returns
      *     }
      *   private:
-     *     Thread::Queue<Item>::Push out;
+     *     Thread::Queue<Item>::Push push;
      * };
      * 
      * class Receiver {
      *   public:
-     *     Receiver (Thread::Queue<Item>& queue) : in (queue) { } 
+     *     Receiver (Thread::Queue<Item>& queue) : pop (queue) { } 
      *     void execute () {
      *       Item* item;
-     *       while ((item = in.pop())) { // break when pop() returns NULL
+     *       while ((item = pop())) { // break when pop() returns NULL
      *         ...
      *         // process item
      *         ...
      *         delete item;
      *       }
-     *       in.close(); // this MUST be called before execute() returns
+     *       pop.close(); // this MUST be called before execute() returns
      *     }
      *   private:
-     *     Thread::Queue<Item>::Pop out;
+     *     Thread::Queue<Item>::Pop pop;
      * };
      * 
      * void my_function () {
@@ -316,7 +308,13 @@ namespace MR {
      * }
      * \endcode
      *
-     * \note the Thread::Queue<T>::Push or Thread::Queue<T>::Pop close() method
+     * \note The Thread::Queue<T>::Push and/or Thread::Queue<T>::Pop object \e
+     * must be instanciated \e before any of the threads accessing the queue
+     * are launched. This is most conveniently done by defining them as members
+     * of the functor class, and having them intialised in the constructor, as
+    * in the example above.
+     *
+     * \note The Thread::Queue<T>::Push and/or Thread::Queue<T>::Pop close() method
      * \e must be called as soon as possible after completion of processing to
      * ensure that no deadlocks occur at exit. In particular, it should be
      * called before each thread's execute() method returns, \e not in each
@@ -324,6 +322,14 @@ namespace MR {
      */
     template <class T> class Queue {
       public:
+        //! Construct a Queue of items of type \c T
+        /*! \param description a string identifying the queue for degugging purposes
+         * \param buffer_size the maximum number of items that can be pushed onto the queue before
+         * blocking. If a thread attempts to push more data onto the queue when the
+         * queue already contains this number of items, the thread will block until
+         * at least one item has been popped.  By default, the buffer size is 100
+         * items.
+         */
         Queue (const std::string& description = "unnamed", size_t buffer_size = 100) : 
           more_data (mutex),
           more_space (mutex),
@@ -342,7 +348,7 @@ namespace MR {
           public: 
             Push (Queue<T>& queue) : Q (queue) { Q.register_writer(); }
             void close () { Q.unregister_writer(); }
-            bool push (T* item) { return (Q.push (item)); }
+            bool operator() (T* item) { return (Q.push (item)); }
           private:
             Queue<T>& Q;
         };
@@ -356,7 +362,7 @@ namespace MR {
           public: 
             Pop (Queue<T>& queue) : Q (queue) { Q.register_reader(); }
             void close () { Q.unregister_reader(); }
-            T* pop () { return (Q.pop()); }
+            T* operator() () { return (Q.pop()); }
           private:
             Queue<T>& Q;
         };

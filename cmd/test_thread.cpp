@@ -45,49 +45,49 @@ class Item {
 
 class Consumer {
   public:
-    Consumer (Thread::Queue<Item>& queue, const std::string& description = "unnamed") : in (queue), desc (description) { }
+    Consumer (Thread::Queue<Item>& queue, const std::string& description = "unnamed") : pop (queue), desc (description) { }
     const std::string& name () { return (desc); }
     void execute () {
       Item* item = NULL;
       size_t count = 0;
-      while ((item = in.pop())) {
+      while ((item = pop())) {
         //std::cout << item->orig << " => " << item->processed << "\n"; 
         delete item;
         ++count;
       }
-      in.close();
+      pop.close();
       print ("consumer count = " + str(count) + "\n");
     }
   private:
-    Thread::Queue<Item>::Pop in;
+    Thread::Queue<Item>::Pop pop;
     std::string desc;
 };
 
 class Transformer {
   public:
     Transformer (Thread::Queue<float>& queue_in, Thread::Queue<Item>& queue_out, const std::string& description = "unnamed") : 
-      in (queue_in), out (queue_out), desc (description) { }
+      pop (queue_in), push (queue_out), desc (description) { }
     const std::string& name () { return (desc); }
     void execute () {
       Item* item;
       float* value;
       size_t count = 0;
       do {
-        if (!(value = in.pop())) break;
+        if (!(value = pop())) break;
         item = new Item;
         item->orig = *value;
         item->processed = Math::pow2(item->orig);
         delete value;
         ++count;
         //print ("[" + name() + "] " + str(item->orig) + " -> " + str(item->processed) + "\n");
-      } while (out.push (item)); 
-      in.close();
-      out.close();
+      } while (push (item)); 
+      pop.close();
+      push.close();
       print (name() + " count = " + str(count) + "\n");
     }
   private:
-    Thread::Queue<float>::Pop in;
-    Thread::Queue<Item>::Push out;
+    Thread::Queue<float>::Pop pop;
+    Thread::Queue<Item>::Push push;
     std::string desc;
 };
 
@@ -105,7 +105,7 @@ EXECUTE {
   Transformer func4 (queue1, queue2, "func4");
 
   Math::RNG rng;
-  Thread::Queue<float>::Push out (queue1);
+  Thread::Queue<float>::Push push (queue1);
 
   queue1.status();
   queue2.status();
@@ -125,9 +125,9 @@ EXECUTE {
     *value = rng.uniform();
     ++count;
     ProgressBar::inc();
-  } while (out.push (value) && count < N);
+  } while (push (value) && count < N);
   ProgressBar::done();
-  out.close();
+  push.close();
   print ("producer count = " + str(count) + "\n");
 
 }

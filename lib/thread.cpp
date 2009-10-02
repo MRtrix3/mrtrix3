@@ -62,7 +62,7 @@ namespace MR {
       assert (!initialised());
       pthread_attr_init (&default_attr);
       pthread_attr_setdetachstate (&default_attr, PTHREAD_CREATE_JOINABLE);
-      number_of_threads = File::Config::get_int ("NumberOfProcessors", 1);
+      number_of_threads = File::Config::get_int ("NumberOfThreads", 1);
       print = cmdline_thread_print;
       error = cmdline_thread_error;
       info = cmdline_thread_info;
