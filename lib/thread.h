@@ -178,9 +178,6 @@ namespace MR {
      * };
      * \endcode
      *
-     * Supplying a sensible identifier in \a name is useful for debugging and
-     * reporting purposes.
-     * 
      * The thread is launched using the start() method, or using the
      * non-default constructor. The destructor will wait for the thread to
      * finish, although the application can explicitly wait for the thread to
@@ -211,10 +208,15 @@ namespace MR {
     class Exec {
       public:
         Exec () : running (false) { }
+        //! Start a new thread by invoking start() directly
         template <class Functor> Exec (Functor& functor, const std::string& description = "unnamed") :
           running (false) { start (functor, description); }
+        //! Wait for the thread to terminate (see finish())
         ~Exec () { finish(); }
 
+        //! Start a new thread that will execute the execute() method of \a functor
+        /*! A human-readable identifier can be supplied via the \a description
+         * parameter. This is helping for debugging and error reporting. */
         template <class Functor> void start (Functor& functor, const std::string& description = "unnamed") {
           finish();
           name = description;
@@ -224,6 +226,9 @@ namespace MR {
           debug ("launched thread \"" + name + "\" [ID " + str(ID) + "]..."); 
         }
 
+        //! Wait for the thread to terminate
+        /*! The thread will terminate when the execute() method of the \a
+         * functor object returns. */
         void finish () { 
           if (running) {
             debug ("waiting for completion of thread \"" + name + "\" [ID " + str(ID) + "]...");
@@ -251,7 +256,7 @@ namespace MR {
     /*! This class implements a thread-safe means of pushing data items into a
      * queue, so that they can each be processed in one or more separate
      * threads. Pointers to items of type \a T are pushed onto the queue using
-     * the membar class Thread::Queue<T>::Push, and will be processed on a
+     * the member class Thread::Queue<T>::Push, and will be processed on a
      * first-in, first-out basis. Pointers to these items are then retrieved
      * using the member class Thread::Queue<T>::Pop. 
      *
@@ -291,6 +296,7 @@ namespace MR {
      *         // process item
      *         ...
      *         delete item;
+     *         if (enough_items()) break; 
      *       }
      *       pop.close(); // this MUST be called before execute() returns
      *     }
@@ -343,11 +349,31 @@ namespace MR {
         /*! Items cannot be pushed directly onto a Thread::Queue<T> queue. An
          * object of this class must be instanciated and used to write to the
          * queue. This is done to ensure the number of writers to the queue can
-         * be tracked. */
+         * be tracked so that the queue can be closed once all writers have
+         * finished writing to the queue.
+         * 
+         * See Thread::Queue for more information and an example. */
         class Push {
           public: 
+            //! Construct a Push object 
+            /*! The new Push object will register itself with the queue as a
+             * writer. It must be unregistered using close(). 
+             * \note All Push and Pop objects should be constructed before any
+             * attempts are made to write to or from the queue. Failure to do
+             * so may lead to the queue being closed prematurely. The safest
+             * way to ensure this condition is met is to create all instances
+             * of Push & Pop objects before any threads are launched. */
             Push (Queue<T>& queue) : Q (queue) { Q.register_writer(); }
+            //! Close the queue
+            /*! This method must be called if no further items are to be pushed
+             * onto the queue using this instance of Push. Once called, any
+             * further attempts to write to the queue may lead to unexpected
+             * behaviour (most likely unexpected crashes).
+             * \note This function must be called before the corresponding
+             * thread finishes (i.e. before the functor's execute() method
+             * returns). Failure to do so may lead to deadlocks. */
             void close () { Q.unregister_writer(); }
+            //! Push \a item onto the queue
             bool operator() (T* item) { return (Q.push (item)); }
           private:
             Queue<T>& Q;
@@ -357,16 +383,37 @@ namespace MR {
         /*! Items cannot be popped directly from a Thread::Queue<T> queue. An
          * object of this class must be instanciated and used to read from the
          * queue. This is done to ensure the number of readers from the queue can
-         * be tracked. */
+         * be tracked so that the queue can be closed once all readers have
+         * finished reading from the queue. 
+         * 
+         * See Thread::Queue for more information and an example. */
         class Pop {
           public: 
+            //! Construct a Pop object 
+            /*! The new Pop object will register itself with the queue as a
+             * reader. It must be unregistered using close(). 
+             * \note All Push and Pop objects should be constructed before any
+             * attempts are made to write to or from the queue. Failure to do
+             * so may lead to the queue being closed prematurely. The safest
+             * way to ensure this condition is met is to create all instances
+             * of Push & Pop objects before any threads are launched. */
             Pop (Queue<T>& queue) : Q (queue) { Q.register_reader(); }
+            //! Close the queue
+            /*! This method must be called if no further items are to be popped
+             * from the queue using this instance of Pop. Once called, any
+             * further attempts to read from the queue may lead to unexpected
+             * behaviour (most likely unexpected crashes).
+             * \note This function must be called before the corresponding
+             * thread finishes (i.e. before the functor's execute() method
+             * returns). Failure to do so may lead to deadlocks. */
             void close () { Q.unregister_reader(); }
+            //! Pop an item from the queue.
             T* operator() () { return (Q.pop()); }
           private:
             Queue<T>& Q;
         };
 
+        //! Print out a status report for debugging purposes
         void status () { 
           Mutex::Lock lock (mutex);
           std::cerr << "Thread::Queue " + name + ":\n  writers: " << writer_count << "\n  readers: " << reader_count << "\n  items waiting: " << fifo.size() << "\n";
