@@ -45,49 +45,50 @@ class Item {
 
 class Consumer {
   public:
-    Consumer (Thread::Queue<Item>& queue, const std::string& description = "unnamed") : pop (queue), desc (description) { }
+    Consumer (Thread::Queue<Item>& queue, const std::string& description = "unnamed") : reader (queue), desc (description) { }
     const std::string& name () { return (desc); }
     void execute () {
       Item* item = NULL;
       size_t count = 0;
-      while ((item = pop())) {
+      Thread::Queue<Item>::Read read (reader);
+      while ((item = read())) {
         //std::cout << item->orig << " => " << item->processed << "\n"; 
         delete item;
         ++count;
       }
-      pop.close();
       print ("consumer count = " + str(count) + "\n");
     }
   private:
-    Thread::Queue<Item>::Pop pop;
+    Thread::Queue<Item>::Reader reader;
     std::string desc;
 };
 
 class Transformer {
   public:
     Transformer (Thread::Queue<float>& queue_in, Thread::Queue<Item>& queue_out, const std::string& description = "unnamed") : 
-      pop (queue_in), push (queue_out), desc (description) { }
+      reader (queue_in), writer (queue_out), desc (description) { }
+    //Transformer (const Transformer& T) : reader (T.reader), writer (T.writer), desc (T.desc) { }
     const std::string& name () { return (desc); }
     void execute () {
       Item* item;
       float* value;
       size_t count = 0;
+      Thread::Queue<float>::Read read (reader);
+      Thread::Queue<Item>::Write write (writer);
       do {
-        if (!(value = pop())) break;
+        if (!(value = read())) break;
         item = new Item;
         item->orig = *value;
         item->processed = Math::pow2(item->orig);
         delete value;
         ++count;
         //print ("[" + name() + "] " + str(item->orig) + " -> " + str(item->processed) + "\n");
-      } while (push (item)); 
-      pop.close();
-      push.close();
+      } while (write (item)); 
       print (name() + " count = " + str(count) + "\n");
     }
   private:
-    Thread::Queue<float>::Pop pop;
-    Thread::Queue<Item>::Push push;
+    Thread::Queue<float>::Reader reader;
+    Thread::Queue<Item>::Writer writer;
     std::string desc;
 };
 
@@ -99,35 +100,29 @@ EXECUTE {
   Thread::Queue<Item> queue2 ("second queue");
 
   Consumer consumer (queue2, "consumer");
-  Transformer func1 (queue1, queue2, "func1");
-  Transformer func2 (queue1, queue2, "func2");
-  Transformer func3 (queue1, queue2, "func3");
-  Transformer func4 (queue1, queue2, "func4");
+  Transformer transformer (queue1, queue2, "func");
 
   Math::RNG rng;
-  Thread::Queue<float>::Push push (queue1);
+  Thread::Queue<float>::Writer writer (queue1);
 
   queue1.status();
   queue2.status();
 
   Thread::Exec consumer_thread (consumer, consumer.name());
-  Thread::Exec func1_thread (func1, func1.name());
-  Thread::Exec func2_thread (func2, func2.name());
-  Thread::Exec func3_thread (func3, func3.name());
-  Thread::Exec func4_thread (func4, func4.name());
+  Thread::ParallelExec<Transformer> func_threads (transformer, transformer.name());
 
   float* value;
   size_t count = 0;
   const size_t N = 100000;
   ProgressBar::init (N, "testing threads...");
+  Thread::Queue<float>::Write write (writer);
   do {
     value = new float;
     *value = rng.uniform();
     ++count;
     ProgressBar::inc();
-  } while (push (value) && count < N);
+  } while (write (value) && count < N);
   ProgressBar::done();
-  push.close();
   print ("producer count = " + str(count) + "\n");
 
 }

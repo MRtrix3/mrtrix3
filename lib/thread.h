@@ -26,6 +26,7 @@
 #include <pthread.h>
 #include <vector>
 #include <queue>
+#include <memory>
 
 #include "exception.h"
 #include "file/config.h"
@@ -250,6 +251,25 @@ namespace MR {
 
 
 
+    template <class Functor> class ParallelExec {
+      public:
+        ParallelExec () { }
+        ParallelExec (Functor& functor, const std::string& description = "unnamed", size_t num_threads = num_cores()) {
+          start (functor, description, num_threads);
+        }
+        void start (Functor& functor, const std::string& description = "unnamed", size_t num_threads = num_cores()) {
+          assert (num_threads);
+          functors.resize (num_threads-1, functor);
+          exec.resize (num_threads);
+          exec[0].start (functor, description + " [0]");
+          for (size_t i = 1; i < num_threads; ++i)
+            exec[i].start (functors[i-1], description + " [" + str(i) + "]");
+        }
+
+       private:
+        std::vector<Functor> functors;
+        std::vector<Exec> exec;
+    };
 
 
     //! A first-in first-out thread-safe item queue
@@ -345,68 +365,86 @@ namespace MR {
           name (description) { }
         ~Queue () { while (fifo.size()) fifo.pop(); }
 
-        //! This class is used to push items onto the queue
-        /*! Items cannot be pushed directly onto a Thread::Queue<T> queue. An
-         * object of this class must be instanciated and used to write to the
-         * queue. This is done to ensure the number of writers to the queue can
-         * be tracked so that the queue can be closed once all writers have
-         * finished writing to the queue.
+        //! This class is used to register a writer with the queue
+        /*! Items cannot be written directly onto a Thread::Queue<T> queue. An
+         * object of this class must first be instanciated to notify the queue
+         * that a section of code will be writing to the queue. The actual
+         * process of writing items to the queue is done via the Write class.
          * 
          * See Thread::Queue for more information and an example. */
-        class Push {
+        class Writer {
           public: 
-            //! Construct a Push object 
-            /*! The new Push object will register itself with the queue as a
-             * writer. It must be unregistered using close(). 
-             * \note All Push and Pop objects should be constructed before any
-             * attempts are made to write to or from the queue. Failure to do
-             * so may lead to the queue being closed prematurely. The safest
-             * way to ensure this condition is met is to create all instances
-             * of Push & Pop objects before any threads are launched. */
-            Push (Queue<T>& queue) : Q (queue) { Q.register_writer(); }
-            //! Close the queue
-            /*! This method must be called if no further items are to be pushed
-             * onto the queue using this instance of Push. Once called, any
-             * further attempts to write to the queue may lead to unexpected
-             * behaviour (most likely unexpected crashes).
-             * \note This function must be called before the corresponding
-             * thread finishes (i.e. before the functor's execute() method
-             * returns). Failure to do so may lead to deadlocks. */
-            void close () { Q.unregister_writer(); }
+            //! Register a Writer object with the queue
+            /*! The Writer object will register itself with the queue as a
+             * writer. */
+            Writer (Queue<T>& queue) : Q (queue) { Q.register_writer(); }
+            Writer (const Writer& W) : Q (W.Q) { Q.register_writer(); }
+            friend class Queue<T>::Write;
+          private:
+            Queue<T>& Q;
+        };
+
+        //! This class is used to write items to the queue
+        /*! Items cannot be written directly onto a Thread::Queue<T> queue. An
+         * object of this class must be instanciated and used to write to the
+         * queue. 
+         * 
+         * See Thread::Queue for more information and an example. */
+        class Write {
+          public: 
+            //! Construct a Write object 
+            /*! The Write object can only be instantiated from a Writer object,
+             * ensuring that the corresponding section of code has already
+             * registered as a writer with the queue. The destructor for this
+             * object will unregister from the queue. 
+             *
+             * \note There should only be one Write object per Writer. */
+            Write (const Writer& writer) : Q (writer.Q) { }
+            //! Unregister the Writer from the queue
+            ~Write () { Q.unregister_writer(); }
             //! Push \a item onto the queue
             bool operator() (T* item) { return (Q.push (item)); }
           private:
             Queue<T>& Q;
         };
 
-        //! This class is used to pop items from the queue
-        /*! Items cannot be popped directly from a Thread::Queue<T> queue. An
-         * object of this class must be instanciated and used to read from the
-         * queue. This is done to ensure the number of readers from the queue can
-         * be tracked so that the queue can be closed once all readers have
-         * finished reading from the queue. 
+        //! This class is used to register a reader with the queue
+        /*! Items cannot be read directly from a Thread::Queue<T> queue. An
+         * object of this class must be instanciated to notify the queue
+         * that a section of code will be reading from the queue. The actual
+         * process of reading items from the queue is done via the Read class.
          * 
          * See Thread::Queue for more information and an example. */
-        class Pop {
+        class Reader {
           public: 
-            //! Construct a Pop object 
-            /*! The new Pop object will register itself with the queue as a
-             * reader. It must be unregistered using close(). 
-             * \note All Push and Pop objects should be constructed before any
-             * attempts are made to write to or from the queue. Failure to do
-             * so may lead to the queue being closed prematurely. The safest
-             * way to ensure this condition is met is to create all instances
-             * of Push & Pop objects before any threads are launched. */
-            Pop (Queue<T>& queue) : Q (queue) { Q.register_reader(); }
-            //! Close the queue
-            /*! This method must be called if no further items are to be popped
-             * from the queue using this instance of Pop. Once called, any
-             * further attempts to read from the queue may lead to unexpected
-             * behaviour (most likely unexpected crashes).
-             * \note This function must be called before the corresponding
-             * thread finishes (i.e. before the functor's execute() method
-             * returns). Failure to do so may lead to deadlocks. */
-            void close () { Q.unregister_reader(); }
+            //! Register a Reader object with the queue.
+            /*! The Reader object will register itself with the queue as a
+             * reader. */
+            Reader (Queue<T>& queue) : Q (queue) { Q.register_reader(); }
+            Reader (const Reader& reader) : Q (reader.Q) { Q.register_reader(); }
+          private:
+            Queue<T>& Q;
+            friend class Queue<T>::Read;
+        };
+
+        //! This class is used to read items from the queue
+        /*! Items cannot be read directly from a Thread::Queue<T> queue. An
+         * object of this class must be instanciated and used to read from the
+         * queue.
+         * 
+         * See Thread::Queue for more information and an example. */
+        class Read {
+          public: 
+            //! Construct a Read object 
+            /*! The Read object can only be instantiated from a Writer object,
+             * ensuring that the corresponding section of code has already
+             * registered as a reader with the queue. The destructor for this
+             * object will unregister from the queue. 
+             *
+             * \note There should only be one Read object per Reader. */
+            Read (const Reader& reader) : Q (reader.Q) { }
+            //! Unregister a reader from the queue
+            ~Read () { Q.unregister_reader(); }
             //! Pop an item from the queue.
             T* operator() () { return (Q.pop()); }
           private:
