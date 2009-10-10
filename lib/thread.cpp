@@ -70,7 +70,7 @@ namespace MR {
       debug ("multi-threading initialised, assuming " + str(number_of_threads) + " processor" + (number_of_threads > 1 ? "s" : ""));
     }
 
-    size_t num_cores () { assert (initialised()); return (number_of_threads); }
+    size_t number () { assert (initialised()); return (number_of_threads); }
     const pthread_attr_t* default_attributes() { assert (initialised()); return (&default_attr); }
 
   }

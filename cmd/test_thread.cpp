@@ -94,13 +94,14 @@ class Transformer {
 
 EXECUTE {
   Thread::init();
-  VAR (Thread::num_cores());
+  VAR (Thread::number());
 
   Thread::Queue<float> queue1 ("first queue");
   Thread::Queue<Item> queue2 ("second queue");
 
   Consumer consumer (queue2, "consumer");
   Transformer transformer (queue1, queue2, "func");
+  Thread::Array<Transformer> transformer_list (transformer);
 
   Math::RNG rng;
   Thread::Queue<float>::Writer writer (queue1);
@@ -109,7 +110,7 @@ EXECUTE {
   queue2.status();
 
   Thread::Exec consumer_thread (consumer, consumer.name());
-  Thread::ParallelExec<Transformer> func_threads (transformer, transformer.name());
+  Thread::Exec func_threads (transformer_list, transformer.name());
 
   float* value;
   size_t count = 0;

@@ -26,13 +26,20 @@
 #include <pthread.h>
 #include <vector>
 #include <queue>
-#include <memory>
 
 #include "exception.h"
 #include "file/config.h"
 
 /** \defgroup Thread Multi-threading
- * \brief functions to provide support for multi-threading */
+ * \brief functions to provide support for multi-threading 
+ *
+ * These functions and class provide a simple interface for multi-threading in
+ * MRtrix applications. Most applications will probably find that the
+ * Thread::Queue and Thread::Exec classes are sufficient for their needs. 
+ *
+ * \note The Thread::init() functin must be called \e before using any of the
+ * multi-threading functionality described here.
+ */
 
 namespace MR {
   namespace Thread {
@@ -46,8 +53,9 @@ namespace MR {
      * the multi-threading system. */
     void init ();
 
-    //! the number of cores to use for multi-threading, as specified in the MRtrix configuration file
-    size_t num_cores ();
+    /*! the number of cores to use for multi-threading, as specified in the
+     * variable NumberOfThreads in the MRtrix configuration file */
+    size_t number ();
     const pthread_attr_t* default_attributes();
 
 
@@ -168,6 +176,47 @@ namespace MR {
 
 
 
+    //! Create an array of duplicate functors to execute in parallel
+    /*! Use this class to hold an array of duplicates of the supplied functor,
+     * so that they can be executed in parallel using the Thread::Exec class.
+     * Note that the original functor will be used, and as many copies will be
+     * created as needed to make up a total of \a num_threads. By default, \a
+     * num_threads is given by Thread::number(). 
+     *
+     * \note Each Functor copy will be created using its copy constructor using
+     * the original \a functor as the original. It is essential therefore that
+     * the copy consructor behave as expected. 
+     *
+     * For example:
+     * \code
+     * void my_function () {
+     *   // Create master copy of functor:
+     *   MyThread my_thread (param);
+     *
+     *   // Duplicate as needed up to a maximum of Thread::number() threads.
+     *   // Each copy is created using the copy constructor:
+     *   Thread::Array<MyThread> list (my_thread); 
+     *
+     *   // Lauch all copies in parallel:
+     *   Thread::Exec threads (list, "my threads");
+     * } // all copies in the array are deleted when the array goes out of scope.
+     * \endcode
+     */
+    template <class Functor> class Array {
+      public: 
+        Array (Functor& functor, size_t num_threads = number()) :
+          first_functor (functor), functors (num_threads-1) {
+            assert (num_threads);
+            for (size_t i = 0; i < num_threads-1; i++) 
+              functors[i] = new Functor (functor);
+          }
+      private:
+        Functor& first_functor;
+        VecPtr<Functor> functors;
+        friend class Exec;
+    };
+
+
 
     //! Execute the functor's execute method in a separate thread
     /*! Lauch a thread by running the execute method of the object \a functor,
@@ -179,12 +228,13 @@ namespace MR {
      * };
      * \endcode
      *
-     * The thread is launched using the start() method, or using the
-     * non-default constructor. The destructor will wait for the thread to
-     * finish, although the application can explicitly wait for the thread to
-     * complete by calling its finish() method. The lifetime of a thread
-     * launched via this method is therefore restricted to the scope of the
-     * Exec object. For example:
+     * It is also possible to launch an array of threads in parallel. See
+     * Thread::Array for details
+     *
+     * The thread is launched by the constructor, and the destructor will wait
+     * for the thread to finish.  The lifetime of a thread launched via this
+     * method is therefore restricted to the scope of the Exec object. For
+     * example:
      * \code
      * class MyFunctor {
      *   public:
@@ -208,79 +258,56 @@ namespace MR {
      */
     class Exec {
       public:
-        Exec () : running (false) { }
-        //! Start a new thread by invoking start() directly
-        template <class Functor> Exec (Functor& functor, const std::string& description = "unnamed") :
-          running (false) { start (functor, description); }
-        //! Wait for the thread to terminate (see finish())
-        ~Exec () { finish(); }
-
         //! Start a new thread that will execute the execute() method of \a functor
         /*! A human-readable identifier can be supplied via the \a description
          * parameter. This is helping for debugging and error reporting. */
-        template <class Functor> void start (Functor& functor, const std::string& description = "unnamed") {
-          finish();
-          name = description;
-          if (pthread_create (&ID, default_attributes(), static_exec<Functor>, static_cast<void*> (&functor))) 
-            throw Exception (std::string("error launching thread \"" + name + "\": ") + strerror (errno));
-          running = true;
-          debug ("launched thread \"" + name + "\" [ID " + str(ID) + "]..."); 
-        }
+        template <class Functor> Exec (Functor& functor, const std::string& description = "unnamed") : 
+          ID (1), name (description) { start (ID[0], functor); }
+
+        //! Start an array of new threads each runnning the execute() method of its \a functor
+        /*! A human-readable identifier can be supplied via the \a description
+         * parameter. This is helping for debugging and error reporting. */
+        template <class Functor> Exec (Array<Functor>& functor, const std::string& description = "unnamed") : 
+          ID (functor.functors.size()+1), name (description) {
+            start (ID[0], functor.first_functor);
+            for (size_t i = 1; i < ID.size(); ++i) 
+              start (ID[i], *functor.functors[i-1]);
+          }
 
         //! Wait for the thread to terminate
         /*! The thread will terminate when the execute() method of the \a
          * functor object returns. */
-        void finish () { 
-          if (running) {
-            debug ("waiting for completion of thread \"" + name + "\" [ID " + str(ID) + "]...");
+        ~Exec () { 
+          for (size_t i = 0; i < ID.size(); ++i) {
+            debug ("waiting for completion of thread \"" + name + "\" [ID " + str(ID[i]) + "]...");
             void* status;
-            if (pthread_join (ID, &status)) 
-              throw Exception (std::string("error joining thread \"" + name + "\" [ID " + str(ID) + "]: ") + strerror (errno));
-            running = false;
-            debug ("thread \"" + name + "\" [ID " + str(ID) + "] completed OK");
+            if (pthread_join (ID[i], &status)) 
+              throw Exception (std::string("error joining thread \"" + name + "\" [ID " + str(ID[i]) + "]: ") + strerror (errno));
+            debug ("thread \"" + name + "\" [ID " + str(ID[i]) + "] completed OK");
           }
         }
 
       private:
-        pthread_t ID;
+        std::vector<pthread_t> ID;
         std::string name;
-        bool running;
 
+        template <class Functor> void start (pthread_t& id, Functor& functor) { 
+          if (pthread_create (&id, default_attributes(), static_exec<Functor>, static_cast<void*> (&functor))) 
+            throw Exception (std::string("error launching thread \"" + name + "\": ") + strerror (errno));
+          debug ("launched thread \"" + name + "\" [ID " + str(id) + "]..."); 
+        }
         template <class Functor> static void* static_exec (void* data) { static_cast<Functor*>(data)->execute (); return (NULL); }
     };
 
 
-
-    template <class Functor> class ParallelExec {
-      public:
-        ParallelExec () { }
-        ParallelExec (Functor& functor, const std::string& description = "unnamed", size_t num_threads = num_cores()) {
-          start (functor, description, num_threads);
-        }
-        void start (Functor& functor, const std::string& description = "unnamed", size_t num_threads = num_cores()) {
-          assert (num_threads);
-          functors.resize (num_threads-1, functor);
-          exec.resize (num_threads);
-          exec[0].start (functor, description + " [0]");
-          for (size_t i = 1; i < num_threads; ++i)
-            exec[i].start (functors[i-1], description + " [" + str(i) + "]");
-        }
-
-       private:
-        std::vector<Functor> functors;
-        std::vector<Exec> exec;
-    };
+    
 
 
     //! A first-in first-out thread-safe item queue
     /*! This class implements a thread-safe means of pushing data items into a
      * queue, so that they can each be processed in one or more separate
-     * threads. Pointers to items of type \a T are pushed onto the queue using
-     * the member class Thread::Queue<T>::Push, and will be processed on a
-     * first-in, first-out basis. Pointers to these items are then retrieved
-     * using the member class Thread::Queue<T>::Pop. 
+     * threads. Its use is best illustrated with an example:
      *
-     * For example:
      * \code
      * class Item {
      *   public:
@@ -291,37 +318,37 @@ namespace MR {
      *
      * class Sender {
      *   public:
-     *     Sender (Thread::Queue<Item>& queue) : push (queue) { } 
+     *     Sender (Thread::Queue<Item>& queue) : writer (queue) { } 
      *     void execute () {
+     *       Thread::Queue<Item>::Write write (writer);
      *       while (need_more_items()) {
      *         Item* item = new Item;
      *         ...
      *         // prepare item
      *         ...
-     *         if (!push (item)) break; // break if push() returns false
+     *         if (!write (item)) break; // break if write() returns false
      *       }
-     *       push.close(); // this MUST be called before execute() returns
      *     }
      *   private:
-     *     Thread::Queue<Item>::Push push;
+     *     Thread::Queue<Item>::Writer writer;
      * };
      * 
      * class Receiver {
      *   public:
-     *     Receiver (Thread::Queue<Item>& queue) : pop (queue) { } 
+     *     Receiver (Thread::Queue<Item>& queue) : reader (queue) { } 
      *     void execute () {
      *       Item* item;
-     *       while ((item = pop())) { // break when pop() returns NULL
+     *       Thread::Queue<Item>::Read read (reader);
+     *       while ((item = read())) { // break when read() returns NULL
      *         ...
      *         // process item
      *         ...
      *         delete item;
-     *         if (enough_items()) break; 
+     *         if (enough_items()) return; 
      *       }
-     *       pop.close(); // this MUST be called before execute() returns
      *     }
      *   private:
-     *     Thread::Queue<Item>::Pop pop;
+     *     Thread::Queue<Item>::Reader reader;
      * };
      * 
      * void my_function () {
@@ -334,17 +361,27 @@ namespace MR {
      * }
      * \endcode
      *
-     * \note The Thread::Queue<T>::Push and/or Thread::Queue<T>::Pop object \e
-     * must be instanciated \e before any of the threads accessing the queue
-     * are launched. This is most conveniently done by defining them as members
-     * of the functor class, and having them intialised in the constructor, as
-    * in the example above.
+     * \par Rationale for the Reader/Writer and Read/Reader member classes
      *
-     * \note The Thread::Queue<T>::Push and/or Thread::Queue<T>::Pop close() method
-     * \e must be called as soon as possible after completion of processing to
-     * ensure that no deadlocks occur at exit. In particular, it should be
-     * called before each thread's execute() method returns, \e not in each
-     * functor object's destructor. 
+     * The motivation for the use of additional member classes to perform the
+     * actual process of writing and reading to and from the queue is related
+     * to the need to keep track of the number of processes currently using the
+     * queue. This is essential to ensure that threads are notified when the
+     * queue is closed. This happens when all readers have finished reading, or
+     * when all writers have finished writing and no items are left in the
+     * queue. This is complicated by the need to ensure that the various
+     * operations are called in the right order to avoid deadlocks.
+     *
+     * There are essentially 4 operations that need to take place:
+     * - registering an intention to read/write from/to the queue
+     * - launching the corresponding thread
+     * - unregistering from the queue
+     * - terminating the thread
+     *
+     * For proper multi-threaded operations, these operations must take place
+     * in the order above. Moreover, each operation must be completed for
+     * all users of the queue before any of them can perform the next
+     * operation.
      */
     template <class T> class Queue {
       public:

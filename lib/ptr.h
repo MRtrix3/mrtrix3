@@ -241,9 +241,11 @@ namespace MR {
 
 
 
-  //! A typedef to a Ptr<T> where T is assumed to refer to an array
+  //! Equivalent classes for pointers to arrays
   /*! Use this construct when using the Ptr or RefPtr classes to refer to
-   * array pointers. 
+   * array pointers. The difference between these and the regular Ptr anf
+   * RefPtr classes is that the array versions use the delete [] operator.
+   *
    * \code
    * Array<Item>::Ptr pointer (new Item [128]);
    * Array<Item>::RefPtr refpointer (new Item [12]);
