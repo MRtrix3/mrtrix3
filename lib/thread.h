@@ -306,8 +306,67 @@ namespace MR {
     //! A first-in first-out thread-safe item queue
     /*! This class implements a thread-safe means of pushing data items into a
      * queue, so that they can each be processed in one or more separate
-     * threads. Its use is best illustrated with an example:
+     * threads. It has somewhat unusual usage, which consists of the following
+     * steps:
+     * - Create an instance of a Thread::Queue<T>
+     * - Create one or more instances of the corresponding
+     * Thread::Queue<T>::Writer class, each constructed with a reference to the
+     * queue. Each of these instances will notify the queue that its
+     * corresponding thread will be writing to the queue.
+     * - Create one or more instances of the corresponding
+     * Thread::Queue<T>::Reader class, each constructed with a reference to the
+     * queue. Each of these instances will notify the queue that its
+     * corresponding thread will be reading from the queue.
+     * - Launch all threads, one per instance of Thread::Queue<T>::Writer or
+     * Thread::Queue<T>::Reader (one of these threads can be the current thread).
+     * - Within the execute() method of each thread with a
+     * Thread::Queue<T>::Writer:
+     *   - create an instance of Thread::Queue<T>::Write, constructed from
+     *   the corresponding Thread::Queue<T>::Writer;
+     *   - use the operator() method of this class to write to the queue;
+     *   - when the execute() method returns, the destructor of the
+     *   Thread::Queue<T>::Write class will notify the queue that its thread
+     *   has finished writing to the queue.
+     * - Within the execute() method of each thread with a
+     * Thread::Queue<T>::Reader:
+     *   - create an instance of Thread::Queue<T>::Read, constructed from
+     *   the corresponding Thread::Queue<T>::Reader;
+     *   - use the operator() method of this class to read from the queue;
+     *   - when the execute() method returns, the destructor of the
+     *   Thread::Queue<T>::Read class will notify the queue that its thread
+     *   has finished reading from the queue.
+     * - If all reader threads have returned, the queue will notify all writer
+     * threads that processing should stop, by returning \c false from the nest
+     * write attempt.
+     * - If all writer threads have returned and no items remain in the queue,
+     * the queue will notify all reader threads that processing should stop, by
+     * returning \c NULL from the nest read attempt.
      *
+     * The additional member classes are designed to be used in conjunction
+     * with the MRtrix multi-threading interface. In this system, each thread
+     * corresponds to an instance of a functor class, and its execute() method
+     * is the function that will be run within the thread. For this reason:
+     * - The Thread::Queue<T> instance is designed to be created before any of
+     * the threads.
+     * - The Thread::Queue<T>::Writer and Thread::Queue<T>::Reader classes are
+     * designed to be used as members of each functor, so that each functor
+     * must construct these classes from a reference to the queue within their
+     * own constructor. This ensures each thread registers their intention to
+     * read or write with the queue \e before their thread is launched.
+     * - The Thread::Queue<T>::Write and Thread::Queue<T>::Read classes are
+     * designed to be instanciated within each functor's execute() method.
+     * They must be constructed from a reference to a Thread::Queue<T>::Writer
+     * or Thread::Queue<T>::Reader respectively, ensuring no reads or write can
+     * take place without having registered with the queue. Their destructors
+     * will also unregister from the queue, ensuring that each thread
+     * unregisters as soon as the execute() method returns, and hence \e before
+     * the thread exits.
+     *
+     * \note It is important that all instances of Thread::Queue<T>::Writer and
+     * Thread::Queue<T>::Reader are created \e before any of the threads are
+     * launched, to avoid any race conditions at startup.
+     * 
+     * Its use is best illustrated with an example:
      * \code
      * class Item {
      *   public:
@@ -318,8 +377,11 @@ namespace MR {
      *
      * class Sender {
      *   public:
+     *     // construct the 'writer' member in the constructor:
      *     Sender (Thread::Queue<Item>& queue) : writer (queue) { } 
+     *
      *     void execute () {
+     *       // use a local instance of Thread::Queue<Item>::Write to write to the queue:
      *       Thread::Queue<Item>::Write write (writer);
      *       while (need_more_items()) {
      *         Item* item = new Item;
@@ -329,15 +391,20 @@ namespace MR {
      *         if (!write (item)) break; // break if write() returns false
      *       }
      *     }
+     *
      *   private:
      *     Thread::Queue<Item>::Writer writer;
      * };
+     *
      * 
      * class Receiver {
      *   public:
+     *     // construct the 'reader' member in the constructor:
      *     Receiver (Thread::Queue<Item>& queue) : reader (queue) { } 
+     *
      *     void execute () {
      *       Item* item;
+     *       // use a local instance of Thread::Queue<Item>::Read to read from the queue:
      *       Thread::Queue<Item>::Read read (reader);
      *       while ((item = read())) { // break when read() returns NULL
      *         ...
@@ -347,15 +414,21 @@ namespace MR {
      *         if (enough_items()) return; 
      *       }
      *     }
+     *
      *   private:
      *     Thread::Queue<Item>::Reader reader;
      * };
+     *
      * 
      * void my_function () {
+     *   // create an instance of the queue:
      *   Thread::Queue<Item> queue;
+     *  
+     *   // create all functors from a reference to the queue:
      *   Sender sender (queue);
      *   Receiver receiver (queue);
      *   
+     *   // once all functors are created, launch their corresponding threads:
      *   Thread::Exec sender_thread (sender);
      *   Thread::Exec receiver_thread (receiver);
      * }
@@ -367,9 +440,9 @@ namespace MR {
      * actual process of writing and reading to and from the queue is related
      * to the need to keep track of the number of processes currently using the
      * queue. This is essential to ensure that threads are notified when the
-     * queue is closed. This happens when all readers have finished reading, or
-     * when all writers have finished writing and no items are left in the
-     * queue. This is complicated by the need to ensure that the various
+     * queue is closed. This happens either when all readers have finished
+     * reading; or when all writers have finished writing and no items are left
+     * in the queue. This is complicated by the need to ensure that the various
      * operations are called in the right order to avoid deadlocks.
      *
      * There are essentially 4 operations that need to take place:
@@ -381,7 +454,9 @@ namespace MR {
      * For proper multi-threaded operations, these operations must take place
      * in the order above. Moreover, each operation must be completed for
      * all users of the queue before any of them can perform the next
-     * operation.
+     * operation. The use of additional member classes ensures that threads
+     * have to register their intention to read or write from the queue, and
+     * that they unregister from the queue once their processing is done. 
      */
     template <class T> class Queue {
       public:
@@ -396,11 +471,14 @@ namespace MR {
         Queue (const std::string& description = "unnamed", size_t buffer_size = 100) : 
           more_data (mutex),
           more_space (mutex),
+          buffer (new T* [buffer_size]), 
+          first (buffer),
+          last (buffer),
           capacity (buffer_size),
           writer_count (0),
           reader_count (0),
           name (description) { }
-        ~Queue () { while (fifo.size()) fifo.pop(); }
+        ~Queue () { while (!empty()) { delete *first; first = next(first); } }
 
         //! This class is used to register a writer with the queue
         /*! Items cannot be written directly onto a Thread::Queue<T> queue. An
@@ -488,17 +566,23 @@ namespace MR {
             Queue<T>& Q;
         };
 
+        bool empty () const { return (first == last); }
+        bool full () const { return (next(last) == first); }
+        size_t size () const { return ((first >= last ? first : next(first)) - last); }
+
         //! Print out a status report for debugging purposes
         void status () { 
           Mutex::Lock lock (mutex);
-          std::cerr << "Thread::Queue " + name + ":\n  writers: " << writer_count << "\n  readers: " << reader_count << "\n  items waiting: " << fifo.size() << "\n";
+          std::cerr << "Thread::Queue " + name + ":\n  writers: " << writer_count << "\n  readers: " << reader_count << "\n  items waiting: " << size() << "\n";
         }
 
 
       private:
         Mutex mutex;
         Cond more_data, more_space;
-        std::queue<T*> fifo;
+        T** buffer;
+        T** first;
+        T** last;
         size_t capacity;
         size_t writer_count, reader_count;
         std::string name;
@@ -526,22 +610,25 @@ namespace MR {
 
         bool push (T* item) { 
           Mutex::Lock lock (mutex); 
-          while (fifo.size() >= capacity && reader_count) more_space.wait();
+          while (full() && reader_count) more_space.wait();
           if (!reader_count) return (false);
-          fifo.push (item);
+          *last = item;
+          last = next (last);
           more_data.signal();
           return (true);
         }
 
         T* pop () {
           Mutex::Lock lock (mutex);
-          while (fifo.empty() && writer_count) more_data.wait();
-          if (fifo.empty() && !writer_count) return (NULL);
-          T* item = fifo.front();
-          fifo.pop();
+          while (empty() && writer_count) more_data.wait();
+          if (empty() && !writer_count) return (NULL);
+          T* item = *first;
+          first = next (first);
           more_space.signal();
           return (item);
         }
+
+        T** next (T** from) const { ++from; if (from >= buffer + capacity) from = buffer; return (from); }
 
         friend class Push;
         friend class Pop;
