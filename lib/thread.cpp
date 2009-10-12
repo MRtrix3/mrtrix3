@@ -27,8 +27,10 @@
 namespace MR {
   namespace Thread {
 
-    pthread_attr_t default_attr;
-    size_t number_of_threads = 0;
+    namespace {
+      pthread_attr_t default_attr;
+      size_t number_of_threads = 0;
+    }
 
     bool initialised () { return (number_of_threads); }
 

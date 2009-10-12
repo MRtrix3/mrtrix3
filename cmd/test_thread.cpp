@@ -20,8 +20,6 @@
 
 */
 
-#include <unistd.h>
-
 #include "app.h"
 #include "progressbar.h"
 #include "thread.h"
@@ -84,7 +82,6 @@ class Transformer {
         item->processed = Math::pow2(item->orig);
         delete value;
         ++count;
-        usleep (100);
         //print ("[" + name() + "] " + str(item->orig) + " -> " + str(item->processed) + "\n");
       } while (write (item)); 
       print (name() + " count = " + str(count) + "\n");
@@ -97,7 +94,6 @@ class Transformer {
 
 EXECUTE {
   Thread::init();
-  VAR (Thread::number());
 
   Thread::Queue<float> queue1 ("first queue");
   Thread::Queue<Item> queue2 ("second queue");
