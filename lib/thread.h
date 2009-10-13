@@ -25,7 +25,7 @@
 
 #include <pthread.h>
 #include <vector>
-#include <queue>
+#include <stack>
 
 #include "exception.h"
 #include "file/config.h"
@@ -300,7 +300,78 @@ namespace MR {
     };
 
 
+
+    //! The default allocator used in the Thread::Queue
+    /*! This is the default allocator used to allocate, deallocate and reset
+     * items for use in a Thread::Queue. To use non-default constructors,
+     * destructors, or to ensure items are reset to a default state before
+     * being re-used, a custom allocator class should be used. This is
+     * illustrated in the example below:
+     * \code
+     * // An item class that has a non-default constructor, 
+     * // and a method to reset the item to a standard state:
+     * class Item {
+     *   public:
+     *     Item (size_t number_of_elements);
+     *     ~Item ();
+     *     void clear ();
+     *     ...
+     * };
+     *
+     *
+     *
+     * // An allocator class designed to operate with the Item:
+     * class ItemAllocator {
+     *   public:
+     *     ItemAllocator (size_t number_of_elements) : N (number_of_elements) { }
+     *     Item* alloc () { return (new Item (N)); }
+     *     void reset (Item* p) { p->clear(); }
+     *     void dealloc (Item* p) { delete p; }
+     *   private:
+     *     size_t N;
+     * };
+     *
+     *
+     * void my_function () {
+     *   // Supply this allocator to the Queue at construction:
+     *   Thread::Queue<Item,ItemAllocator> queue ("my queue", 100, ItemAllocator (number_required());
+     *   
+     *   ...
+     *   // Set up Functors, threads, etc, and use as normal
+     *   ...
+     * }
+     * \endcode
+     *
+     * \note The allocator will be passed to the Queue by copy, using the copy
+     * constructor. If using a non-standard allocator, you need to ensure that
+     * the copy constructor is valid and will produce a functional allocator.
+     */
+    template <class T> class DefaultAllocator {
+      public:
+        //! Allocate a new item
+        /*! Return a pointer to a newly allocated item of type \c T. 
+         *
+         * By default, this simply returns a pointer to a new item constructed
+         * using the new() operator and the default constructor. */
+
+        T* alloc () { return (new T); }
+        //! reset the item for re-use
+        /*! This should ensure the item is returned to the expected state for
+         * re-use. 
+         *
+         * By default, it does nothing. */
+        void reset (T* p) { }
+
+        //! Deallocate the item
+        /*! This should free all memory associated with the item.
+         *
+         * By default, it simply calls the delete() operator. */
+        void dealloc (T* p) { delete p; }
+    };
     
+
+
+
 
 
     //! A first-in first-out thread-safe item queue
@@ -323,47 +394,66 @@ namespace MR {
      *   method directly once all other threads have been launched.
      * - Within the execute() method of each thread with a
      * Thread::Queue::Writer:
-     *   - create an instance of Thread::Queue::Write, constructed from
+     *   - create an instance of Thread::Queue::Writer::Item, constructed from
      *   the corresponding Thread::Queue::Writer;
-     *   - use the operator() method of this class to write to the queue;
+     *   - perform processing in a loop:
+     *     - prepare the item using pointer semantics (i.e. *item or
+     *     item->method());
+     *     - use the write() method of this class to write to the queue;
+     *     - break out of loop if write() returns \c false.
      *   - when the execute() method returns, the destructor of the
-     *   Thread::Queue::Write class will notify the queue that its thread
-     *   has finished writing to the queue.
+     *   Thread::Queue::Writer::Item class will notify the queue that its
+     *   thread has finished writing to the queue.
      * - Within the execute() method of each thread with a
      * Thread::Queue::Reader:
-     *   - create an instance of Thread::Queue::Read, constructed from
+     *   - create an instance of Thread::Queue::Reader::Item, constructed from
      *   the corresponding Thread::Queue::Reader;
-     *   - use the operator() method of this class to read from the queue;
+     *   - perform processing in a loop:
+     *     - use the read() method of this class to read the next item from the
+     *     queue; 
+     *     - break out of the loop if read() returns \c false;
+     *     - process the item using pointer semantics (i.e. *item or
+     *     item->method()).
      *   - when the execute() method returns, the destructor of the
-     *   Thread::Queue::Read class will notify the queue that its thread
-     *   has finished reading from the queue.
+     *   Thread::Queue::Reader::Item class will notify the queue that its
+     *   thread has finished reading from the queue.
      * - If all reader threads have returned, the queue will notify all writer
-     * threads that processing should stop, by returning \c false from the nest
+     * threads that processing should stop, by returning \c false from the next
      * write attempt.
      * - If all writer threads have returned and no items remain in the queue,
      * the queue will notify all reader threads that processing should stop, by
-     * returning \c NULL from the next read attempt.
+     * returning \c false from the next read attempt.
      *
      * The additional member classes are designed to be used in conjunction
      * with the MRtrix multi-threading interface. In this system, each thread
      * corresponds to an instance of a functor class, and its execute() method
      * is the function that will be run within the thread (see Thread::Exec for
      * details). For this reason:
-     * - The Thread::Queue instance is designed to be created before any of
-     * the threads.
+     * - The Thread::Queue instance is designed to be created before any of the
+     *   threads.
      * - The Thread::Queue::Writer and Thread::Queue::Reader classes are
-     * designed to be used as members of each functor, so that each functor
-     * must construct these classes from a reference to the queue within their
-     * own constructor. This ensures each thread registers their intention to
-     * read or write with the queue \e before their thread is launched.
-     * - The Thread::Queue::Write and Thread::Queue::Read classes are
-     * designed to be instanciated within each functor's execute() method.
-     * They must be constructed from a reference to a Thread::Queue::Writer
-     * or Thread::Queue::Reader respectively, ensuring no reads or write can
-     * take place without having registered with the queue. Their destructors
-     * will also unregister from the queue, ensuring that each thread
-     * unregisters as soon as the execute() method returns, and hence \e before
-     * the thread exits.
+     *   designed to be used as members of each functor, so that each functor
+     *   must construct these classes from a reference to the queue within
+     *   their own constructor. This ensures each thread registers their
+     *   intention to read or write with the queue \e before their thread is
+     *   launched.
+     * - The Thread::Queue::Writer::Item and Thread::Queue::Reader::Item
+     *   classes are designed to be instanciated within each functor's
+     *   execute() method. They must be constructed from a reference to a
+     *   Thread::Queue::Writer or Thread::Queue::Reader respectively, ensuring
+     *   no reads or write can take place without having registered with the
+     *   queue. Their destructors will also unregister from the queue, ensuring
+     *   that each thread unregisters as soon as the execute() method returns,
+     *   and hence \e before the thread exits.
+     *
+     * The Queue class performs all memory management for the items in the
+     * queue. For this reason, the items are accessed via the Writer::Item &
+     * Reader::Item classes, and constructed using the Allocator class passed
+     * as a template parameter for the queue. This allows items to be recycled
+     * once they have been processed, reducing overheads associated with memory
+     * allocation/deallocation. If you need the items to be constructed using a
+     * non-default constructor, then you will need to create your own
+     * allocator. See Thread::DefaultAllocator for details.
      *
      * \note It is important that all instances of Thread::Queue::Writer and
      * Thread::Queue::Reader are created \e before any of the threads are
@@ -379,27 +469,32 @@ namespace MR {
      *     ...
      * };
      *
+     *  
+     * // The use a typedef is recommended to help with readability (and typing!):
+     * typedef Thread::Queue<Item> MyQueue;
+     *
      *
      * // this class will write to the queue:
      * class Sender {
      *   public:
      *     // construct the 'writer' member in the constructor:
-     *     Sender (Thread::Queue<Item>& queue) : writer (queue) { } 
+     *     Sender (MyQueue& queue) : writer (queue) { } 
      *
      *     void execute () {
-     *       // use a local instance of Thread::Queue<Item>::Write to write to the queue:
-     *       Thread::Queue<Item>::Write write (writer);
+     *       // use a local instance of Thread::Queue<Item>::Writer::Item to write to the queue:
+     *       MyQueue::Writer::Item item (writer);
      *       while (need_more_items()) {
-     *         Item* item = new Item;
      *         ...
      *         // prepare item
+     *         *item = something();
+     *         item->set (something_else);
      *         ...
-     *         if (!write (item)) break; // break if write() returns false
+     *         if (!item.write()) break; // break if write() returns false
      *       }
      *     }
      *
      *   private:
-     *     Thread::Queue<Item>::Writer writer;
+     *     MyQueue::Writer writer;
      * };
      *
      * 
@@ -407,30 +502,30 @@ namespace MR {
      * class Receiver {
      *   public:
      *     // construct the 'reader' member in the constructor:
-     *     Receiver (Thread::Queue<Item>& queue) : reader (queue) { } 
+     *     Receiver (MyQueue& queue) : reader (queue) { } 
      *
      *     void execute () {
-     *       Item* item;
-     *       // use a local instance of Thread::Queue<Item>::Read to read from the queue:
-     *       Thread::Queue<Item>::Read read (reader);
-     *       while ((item = read())) { // break when read() returns NULL
+     *       // use a local instance of Thread::Queue<Item>::Reader::Item to read from the queue:
+     *       MyQueue::Reader::Item item (reader);
+     *       while ((item.read())) { // break when read() returns false
      *         ...
      *         // process item
+     *         do_something (*item);
+     *         if (item->status()) report_error();
      *         ...
-     *         delete item;
      *         if (enough_items()) return; 
      *       }
      *     }
      *
      *   private:
-     *     Thread::Queue<Item>::Reader reader;
+     *     MyQueue::Reader reader;
      * };
      *
      * 
      * // this is where the queue and threads are created:
      * void my_function () {
      *   // create an instance of the queue:
-     *   Thread::Queue<Item> queue;
+     *   MyQueue queue;
      *  
      *   // create all functors from a reference to the queue:
      *   Sender sender (queue);
@@ -442,7 +537,7 @@ namespace MR {
      * }
      * \endcode
      *
-     * \par Rationale for the Reader/Writer and Read/Reader member classes
+     * \par Rationale for the Writer, Reader, and Item member classes
      *
      * The motivation for the use of additional member classes to perform the
      * actual process of writing and reading to and from the queue is related
@@ -465,8 +560,20 @@ namespace MR {
      * operation. The use of additional member classes ensures that threads
      * have to register their intention to read or write from the queue, and
      * that they unregister from the queue once their processing is done. 
+     *
+     * While this could have been achieved simply with the appropriate member
+     * functions (i.e. register(), unregister(), %read() & %write() methods in
+     * the main Queue class), this places a huge burden on the developer to get
+     * it right. Using these member functions reduces the chance of coding
+     * errors, and in fact reduces the total amount of code that needs to be
+     * written to use the Queue in a safe manner.
+     *
+     * The Item classes additionally simplify the memory management of the
+     * items in the queue, by preventing direct access to the underlying
+     * pointers, and ensuring the Queue itself is responsible for all
+     * allocation and deallocation of items as needed.
      */
-    template <class T> class Queue {
+    template <class T, class Allocator = DefaultAllocator<T> > class Queue {
       public:
         //! Construct a Queue of items of type \c T
         /*! \param description a string identifying the queue for degugging purposes
@@ -475,8 +582,12 @@ namespace MR {
          * queue already contains this number of items, the thread will block until
          * at least one item has been popped.  By default, the buffer size is 100
          * items.
+         * \param alloc an allocator object, which can be supplied to handle
+         * non-standard item construction, destruction, or reset operation. See
+         * Thread::DefaultAllocator for details.
          */
-        Queue (const std::string& description = "unnamed", size_t buffer_size = 100) : 
+        Queue (const std::string& description = "unnamed", size_t buffer_size = 100, const Allocator& alloc = Allocator()) : 
+          allocator (alloc),
           more_data (mutex),
           more_space (mutex),
           buffer (new T* [buffer_size]), 
@@ -492,7 +603,8 @@ namespace MR {
         /*! Items cannot be written directly onto a Thread::Queue queue. An
          * object of this class must first be instanciated to notify the queue
          * that a section of code will be writing to the queue. The actual
-         * process of writing items to the queue is done via the Write class.
+         * process of writing items to the queue is done via the Writer::Item
+         * class.
          * 
          * See Thread::Queue for more information and an example. */
         class Writer {
@@ -500,42 +612,48 @@ namespace MR {
             //! Register a Writer object with the queue
             /*! The Writer object will register itself with the queue as a
              * writer. */
-            Writer (Queue<T>& queue) : Q (queue) { Q.register_writer(); }
+            Writer (Queue<T,Allocator>& queue) : Q (queue) { Q.register_writer(); }
             Writer (const Writer& W) : Q (W.Q) { Q.register_writer(); }
-            friend class Queue<T>::Write;
+
+            //! This class is used to write items to the queue
+            /*! Items cannot be written directly onto a Thread::Queue queue. An
+             * object of this class must be instanciated and used to write to the
+             * queue. 
+             * 
+             * See Thread::Queue for more information and an example. */
+            class Item {
+              public:
+                //! Construct a Writer::Item object 
+                /*! The Writer::Item object can only be instantiated from a
+                 * Writer object, ensuring that the corresponding section of code
+                 * has already registered as a writer with the queue. The
+                 * destructor for this object will unregister from the queue. 
+                 *
+                 * \note There should only be one Writer::Item object per Writer.
+                 * */
+                Item (const Writer& writer) : Q (writer.Q), p (Q.get_item()) { } 
+                //! Unregister the parent Writer from the queue
+                ~Item () { Q.unregister_writer(); }
+                //! Push the item onto the queue
+                bool write () { return (Q.push (p)); }
+                T& operator*() const throw ()   { return (*p); }
+                T* operator->() const throw ()  { return (p); }
+              private:
+                Queue<T,Allocator>& Q;
+                T* p;
+            };
+
           private:
-            Queue<T>& Q;
+            Queue<T,Allocator>& Q;
         };
 
-        //! This class is used to write items to the queue
-        /*! Items cannot be written directly onto a Thread::Queue queue. An
-         * object of this class must be instanciated and used to write to the
-         * queue. 
-         * 
-         * See Thread::Queue for more information and an example. */
-        class Write {
-          public: 
-            //! Construct a Write object 
-            /*! The Write object can only be instantiated from a Writer object,
-             * ensuring that the corresponding section of code has already
-             * registered as a writer with the queue. The destructor for this
-             * object will unregister from the queue. 
-             *
-             * \note There should only be one Write object per Writer. */
-            Write (const Writer& writer) : Q (writer.Q) { }
-            //! Unregister the Writer from the queue
-            ~Write () { Q.unregister_writer(); }
-            //! Push \a item onto the queue
-            bool operator() (T* item) { return (Q.push (item)); }
-          private:
-            Queue<T>& Q;
-        };
 
         //! This class is used to register a reader with the queue
         /*! Items cannot be read directly from a Thread::Queue queue. An
          * object of this class must be instanciated to notify the queue
          * that a section of code will be reading from the queue. The actual
-         * process of reading items from the queue is done via the Read class.
+         * process of reading items from the queue is done via the Reader::Item
+         * class.
          * 
          * See Thread::Queue for more information and an example. */
         class Reader {
@@ -543,35 +661,38 @@ namespace MR {
             //! Register a Reader object with the queue.
             /*! The Reader object will register itself with the queue as a
              * reader. */
-            Reader (Queue<T>& queue) : Q (queue) { Q.register_reader(); }
+            Reader (Queue<T,Allocator>& queue) : Q (queue) { Q.register_reader(); }
             Reader (const Reader& reader) : Q (reader.Q) { Q.register_reader(); }
-          private:
-            Queue<T>& Q;
-            friend class Queue<T>::Read;
-        };
 
-        //! This class is used to read items from the queue
-        /*! Items cannot be read directly from a Thread::Queue queue. An
-         * object of this class must be instanciated and used to read from the
-         * queue.
-         * 
-         * See Thread::Queue for more information and an example. */
-        class Read {
-          public: 
-            //! Construct a Read object 
-            /*! The Read object can only be instantiated from a Writer object,
-             * ensuring that the corresponding section of code has already
-             * registered as a reader with the queue. The destructor for this
-             * object will unregister from the queue. 
-             *
-             * \note There should only be one Read object per Reader. */
-            Read (const Reader& reader) : Q (reader.Q) { }
-            //! Unregister a reader from the queue
-            ~Read () { Q.unregister_reader(); }
-            //! Pop an item from the queue.
-            T* operator() () { return (Q.pop()); }
+            //! This class is used to read items from the queue
+            /*! Items cannot be read directly from a Thread::Queue queue. An
+             * object of this class must be instanciated and used to read from the
+             * queue.
+             * 
+             * See Thread::Queue for more information and an example. */
+            class Item {
+              public:
+                //! Construct a Reader::Item object 
+                /*! The Reader::Item object can only be instantiated from a
+                 * Reader object, ensuring that the corresponding section of code
+                 * has already registered as a reader with the queue. The
+                 * destructor for this object will unregister from the queue. 
+                 *
+                 * \note There should only be one Reader::Item object per
+                 * Reader. */
+                Item (const Reader& reader) : Q (reader.Q), p (NULL) { } 
+                //! Unregister the parent Reader from the queue
+                ~Item () { Q.unregister_reader(); }
+                //! Get next item from the queue
+                bool read () { return (Q.pop (p)); }
+                T& operator*() const throw ()   { return (*p); }
+                T* operator->() const throw ()  { return (p); }
+              private:
+                Queue<T,Allocator>& Q;
+                T* p;
+            };
           private:
-            Queue<T>& Q;
+            Queue<T,Allocator>& Q;
         };
 
         //! Print out a status report for debugging purposes
@@ -584,6 +705,7 @@ namespace MR {
 
 
       private:
+        Allocator allocator;
         Mutex mutex;
         Cond more_data, more_space;
         T** buffer;
@@ -591,7 +713,12 @@ namespace MR {
         T** back;
         size_t capacity;
         size_t writer_count, reader_count;
+        std::stack<T*,std::vector<T*> > item_stack;
+        VecPtr<T> items;
         std::string name;
+
+        Queue (const Queue& queue) { assert (0); }
+        Queue& operator= (const Queue& queue) { assert (0); return (*this); }
 
         void register_writer ()   { Mutex::Lock lock (mutex); ++writer_count; }
         void unregister_writer () { 
@@ -618,30 +745,38 @@ namespace MR {
         bool full () const { return (inc(back) == front); }
         size_t size () const { return ((back < front ? back+capacity : back) - front); }
 
-        bool push (T* item) { 
+        T* get_item () { 
+          Mutex::Lock lock (mutex); 
+          T* item = allocator.alloc();
+          items.push_back(item);
+          return (item);
+        }
+
+        bool push (T*& item) { 
           Mutex::Lock lock (mutex); 
           while (full() && reader_count) more_space.wait();
           if (!reader_count) return (false);
           *back = item;
           back = inc (back);
           more_data.signal();
+          if (item_stack.empty()) { item = allocator.alloc(); items.push_back(item); } 
+          else { item = item_stack.top(); item_stack.pop(); }
           return (true);
         }
 
-        T* pop () {
+        bool pop (T*& item) {
           Mutex::Lock lock (mutex);
+          if (item) { allocator.reset (item); item_stack.push (item); }
+          item = NULL;
           while (empty() && writer_count) more_data.wait();
-          if (empty() && !writer_count) return (NULL);
-          T* item = *front;
+          if (empty() && !writer_count) return (false);
+          item = *front;
           front = inc (front);
           more_space.signal();
-          return (item);
+          return (true);
         }
 
         T** inc (T** p) const { ++p; if (p >= buffer + capacity) p = buffer; return (p); }
-
-        friend class Push;
-        friend class Pop;
     };
 
 

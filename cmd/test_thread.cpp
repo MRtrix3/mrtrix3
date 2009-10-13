@@ -43,85 +43,90 @@ class Item {
     float orig, processed;
 };
 
+class ItemAllocator {
+  public:
+    Item* alloc () { Item* p = new Item; p->orig = p->processed = NAN; return (p); }
+    void reset (Item* p) { p->orig = p->processed = NAN; }
+    void dealloc (Item* p) { delete p; }
+};
+
+typedef Thread::Queue<Item,ItemAllocator> ItemQueue;
+typedef Thread::Queue<float> FloatQueue;
+
+
+
 class Consumer {
   public:
-    Consumer (Thread::Queue<Item>& queue, const std::string& description = "unnamed") : reader (queue), desc (description) { }
+    Consumer (ItemQueue& queue, const std::string& description = "unnamed") : reader (queue), desc (description) { }
     const std::string& name () { return (desc); }
     void execute () {
-      Item* item = NULL;
       size_t count = 0;
-      Thread::Queue<Item>::Read read (reader);
-      while ((item = read())) {
+      ItemQueue::Reader::Item item (reader);
+      while (item.read()) {
         //std::cout << item->orig << " => " << item->processed << "\n"; 
-        delete item;
         ++count;
       }
       print ("consumer count = " + str(count) + "\n");
     }
   private:
-    Thread::Queue<Item>::Reader reader;
+    ItemQueue::Reader reader;
     std::string desc;
 };
 
-class Transformer {
+
+
+class Processor {
   public:
-    Transformer (Thread::Queue<float>& queue_in, Thread::Queue<Item>& queue_out, const std::string& description = "unnamed") : 
+    Processor (FloatQueue& queue_in, ItemQueue& queue_out, const std::string& description = "unnamed") : 
       reader (queue_in), writer (queue_out), desc (description) { }
-    //Transformer (const Transformer& T) : reader (T.reader), writer (T.writer), desc (T.desc) { }
     const std::string& name () { return (desc); }
     void execute () {
-      Item* item;
-      float* value;
       size_t count = 0;
-      Thread::Queue<float>::Read read (reader);
-      Thread::Queue<Item>::Write write (writer);
+      FloatQueue::Reader::Item in (reader);
+      ItemQueue::Writer::Item out (writer);
       do {
-        if (!(value = read())) break;
-        item = new Item;
-        item->orig = *value;
-        item->processed = Math::pow2(item->orig);
-        delete value;
+        if (!in.read()) break;
+        out->orig = *in;
+        out->processed = Math::pow2(out->orig);
         ++count;
-        //print ("[" + name() + "] " + str(item->orig) + " -> " + str(item->processed) + "\n");
-      } while (write (item)); 
+        //print ("[" + name() + "] " + str(out->orig) + " -> " + str(out->processed) + "\n");
+      } while (out.write()); 
       print (name() + " count = " + str(count) + "\n");
     }
   private:
-    Thread::Queue<float>::Reader reader;
-    Thread::Queue<Item>::Writer writer;
+    FloatQueue::Reader reader;
+    ItemQueue::Writer writer;
     std::string desc;
 };
 
 EXECUTE {
   Thread::init();
 
-  Thread::Queue<float> queue1 ("first queue");
-  Thread::Queue<Item> queue2 ("second queue");
+  FloatQueue queue1 ("first queue");
+  ItemQueue queue2 ("second queue");
 
   Consumer consumer (queue2, "consumer");
-  Transformer transformer (queue1, queue2, "func");
-  Thread::Array<Transformer> transformer_list (transformer);
+  Processor processor (queue1, queue2, "processor");
+  Thread::Array<Processor> transformer_list (processor);
 
   Math::RNG rng;
-  Thread::Queue<float>::Writer writer (queue1);
+  FloatQueue::Writer writer (queue1);
 
   queue1.status();
   queue2.status();
 
   Thread::Exec consumer_thread (consumer, consumer.name());
-  Thread::Exec func_threads (transformer_list, transformer.name());
+  Thread::Exec func_threads (transformer_list, processor.name());
 
-  float* value;
   size_t count = 0;
   const size_t N = 100000;
   ProgressBar::init (N, "testing threads...");
-  Thread::Queue<float>::Write write (writer);
+  FloatQueue::Writer::Item value (writer);
   do {
-    value = new float;
     *value = rng.uniform();
     ++count;
     ProgressBar::inc();
-  } while (write (value) && count < N);
+  } while (value.write() && count < N);
   ProgressBar::done();
   print ("producer count = " + str(count) + "\n");
 
