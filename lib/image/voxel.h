@@ -23,6 +23,7 @@
 #ifndef __image_voxel_h__
 #define __image_voxel_h__
 
+#include "get_set.h"
 #include "image/header.h"
 #include "math/complex.h"
 
@@ -34,6 +35,19 @@ namespace MR {
 
     class Object;
 
+    //! \cond skip
+
+    template <typename value_type, typename S> static value_type __get   (const void* data, size_t i) { return (MR::get<S> (data, i)); }
+    template <typename value_type, typename S> static value_type __getLE (const void* data, size_t i) { return (MR::getLE<S> (data, i)); }
+    template <typename value_type, typename S> static value_type __getBE (const void* data, size_t i) { return (MR::getBE<S> (data, i)); }
+
+    template <typename value_type, typename S> static void __put   (value_type val, void* data, size_t i) { return (MR::put<S> (val, data, i)); }
+    template <typename value_type, typename S> static void __putLE (value_type val, void* data, size_t i) { return (MR::putLE<S> (val, data, i)); }
+    template <typename value_type, typename S> static void __putBE (value_type val, void* data, size_t i) { return (MR::putBE<S> (val, data, i)); }
+
+    // \endcond
+
+
     //! \addtogroup Image
     // @{
 
@@ -41,8 +55,9 @@ namespace MR {
     /*! This class keeps a reference to an existing Image::Header, and provides
      * access to the corresponding image intensities. It implements all the
      * features of the DataSet abstract class. 
-     * \todo add class ComplexVoxel to implement full complex data support. */
-    class Voxel {
+     * \todo Provide specialisations of get/set methods to handle conversions
+     * between floating-point and integer types */
+    template <typename T> class Voxel {
       public:
         //! construct a Voxel object to access the data in the Image::Header \p parent
         /*! All coordinates will be initialised to zero.
@@ -53,19 +68,40 @@ namespace MR {
          * For example:
          * \code
          * Image::Header header = argument[0].get_image();
-         * Image::Voxel vox1 (header);
-         * Image::Voxel vox2 (vox1);
+         * Image::Voxel<float> vox1 (header);
+         * Image::Voxel<float> vox2 (vox1);
          * \endcode
        */
         Voxel (const Header& parent) : H (parent), handler (*H.handler), x (ndim(), 0) {
           assert (H.handler);
           H.handler->prepare();
           offset = handler.start();
+
+          switch (H.datatype()()) {
+            case DataType::Bit:        get_func = &__get<value_type,bool>;       put_func = &__put<value_type,bool>;       return;
+            case DataType::Int8:       get_func = &__get<value_type,int8_t>;     put_func = &__put<value_type,int8_t>;     return;
+            case DataType::UInt8:      get_func = &__get<value_type,uint8_t>;    put_func = &__put<value_type,uint8_t>;    return;
+            case DataType::Int16LE:    get_func = &__getLE<value_type,int16_t>;  put_func = &__putLE<value_type,int16_t>;  return;
+            case DataType::UInt16LE:   get_func = &__getLE<value_type,uint16_t>; put_func = &__putLE<value_type,uint16_t>; return;
+            case DataType::Int16BE:    get_func = &__getBE<value_type,int16_t>;  put_func = &__putBE<value_type,int16_t>;  return;
+            case DataType::UInt16BE:   get_func = &__getBE<value_type,uint16_t>; put_func = &__putBE<value_type,uint16_t>; return;
+            case DataType::Int32LE:    get_func = &__getLE<value_type,int32_t>;  put_func = &__putLE<value_type,int32_t>;  return;
+            case DataType::UInt32LE:   get_func = &__getLE<value_type,uint32_t>; put_func = &__putLE<value_type,uint32_t>; return;
+            case DataType::Int32BE:    get_func = &__getBE<value_type,int32_t>;  put_func = &__putBE<value_type,int32_t>;  return;
+            case DataType::UInt32BE:   get_func = &__getBE<value_type,uint32_t>; put_func = &__putBE<value_type,uint32_t>; return;
+            case DataType::Float32LE:  get_func = &__getLE<value_type,float>;    put_func = &__putLE<value_type,float>;    return;
+            case DataType::Float32BE:  get_func = &__getBE<value_type,float>;    put_func = &__putBE<value_type,float>;    return;
+            case DataType::Float64LE:  get_func = &__getLE<value_type,double>;   put_func = &__putLE<value_type,double>;   return;
+            case DataType::Float64BE:  get_func = &__getBE<value_type,double>;   put_func = &__putBE<value_type,double>;   return;
+            default: throw Exception ("invalid data type in image header");
+          }
         }
         
         const Header& header () const { return (H); }
         DataType datatype () const { return (H.datatype()); }
         const Math::Matrix<float>& transform () const { return (H.transform()); }
+
+        typedef T value_type;
 
         //! test whether the current position is within bounds.
         /*! \return true if the current position is out of bounds, false otherwise */
@@ -80,7 +116,7 @@ namespace MR {
         float   vox (size_t axis) const { return (H.vox(axis)); }
         const std::string& name () const { return (H.name()); }
 
-        template <class T> const Voxel& operator= (const T& V) {
+        template <class U> const Voxel& operator= (const U& V) {
           ssize_t shift = 0;
           for (size_t n = 0; n < ndim(); n++) {
             x[n] = V.pos(n);
@@ -92,10 +128,6 @@ namespace MR {
 
         //! reset all coordinates to zero. 
         void reset () { offset = handler.start(); for (size_t i = 0; i < ndim(); i++) x[i] = 0; }
-
-        //! %get whether the image data are complex
-        /*! \return always true, since this class can only handle real data */
-        bool  is_complex () const      { return (false); }
 
         class Coordinate {
           public:
@@ -123,20 +155,20 @@ namespace MR {
 
         class Value {
           public:
-            operator float () const { return (V.get()); }
-            float operator= (float val) { V.set (val); return (val); }
-            float operator+= (float val) { val += V.get(); V.set (val); return (val); }
-            float operator-= (float val) { val = V.get() - val; V.set (val); return (val); }
-            float operator*= (float val) { val *= V.get(); V.set (val); return (val); }
-            float operator/= (float val) { val = V.get() / val; V.set (val); return (val); }
+            operator value_type () const { return (V.get()); }
+            float operator= (value_type val) { V.set (val); return (val); }
+            float operator+= (value_type val) { val += V.get(); V.set (val); return (val); }
+            float operator-= (value_type val) { val = V.get() - val; V.set (val); return (val); }
+            float operator*= (value_type val) { val *= V.get(); V.set (val); return (val); }
+            float operator/= (value_type val) { val = V.get() / val; V.set (val); return (val); }
           private:
             Value (Voxel& parent) : V (parent) { }
             Voxel& V;
             friend class Voxel;
         };
 
-        float value () const { return (get()); }
-        Value value () { return (Value (*this)); }
+        value_type value () const { return (get()); }
+        Value      value () { return (Value (*this)); }
 
 
         friend std::ostream& operator<< (std::ostream& stream, const Voxel& V) {
@@ -152,20 +184,22 @@ namespace MR {
         size_t   offset; //!< the offset in memory to the current voxel
         std::vector<ssize_t> x;
 
-        float get () const { 
+        value_type get () const { 
           ssize_t nseg (offset / handler.segment_size());
-          return (H.scale_from_storage (handler.get (handler.segment(nseg), offset - nseg*handler.segment_size()))); 
+          return (H.scale_from_storage (get_func (handler.segment(nseg), offset - nseg*handler.segment_size()))); 
         }
-        void set (float val) {
+        void set (value_type val) {
           ssize_t nseg (offset / handler.segment_size());
-          handler.put (H.scale_to_storage (val), handler.segment(nseg), offset - nseg*handler.segment_size()); 
+          put_func (H.scale_to_storage (val), handler.segment(nseg), offset - nseg*handler.segment_size()); 
         }
 
-        friend class Coordinate;
+        value_type (*get_func) (const void* data, size_t i);
+        void       (*put_func) (value_type val, void* data, size_t i);
     };
 
-    //! @}
 
+    //! @}
+    
   }
 }
 

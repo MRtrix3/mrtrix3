@@ -34,6 +34,9 @@ namespace MR {
   extern void (*info)  (const std::string& msg);
   extern void (*debug) (const std::string& msg);
 
+  /*! \todo change default behaviour to NOT print any error message, and
+   * delegate error reporting to the main enclosing try {} block. Also remove
+   * the (now deprecated) Execption::Lower interface. */
   class Exception {
     public:
       Exception (const std::string& msg, int log_level = 1) : 

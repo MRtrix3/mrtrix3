@@ -28,8 +28,6 @@
 #include <unistd.h>
 #include <cassert>
 
-#include "get_set.h"
-
 #define MAX_FILES_PER_IMAGE 256U
 
 namespace MR {
@@ -54,9 +52,6 @@ namespace MR {
 
           void prepare ();
 
-          float  get (const void* data, size_t i) const { return (get_func (data, i)); }
-          void   put (float val, void* data, size_t i) const { put_func (val, data, i); }
-
           const size_t&  start () const { return (start_); }
           const ssize_t& stride (size_t axis) const { return (stride_[axis]); }
 
@@ -74,17 +69,6 @@ namespace MR {
 
           void check () const { assert (addresses.size()); }
           virtual void execute () = 0; 
-
-          float  (*get_func) (const void* data, size_t i);
-          void   (*put_func) (float val, void* data, size_t i);
-
-          template <typename T> static float __get   (const void* data, size_t i) { return (MR::get<T> (data, i)); }
-          template <typename T> static float __getLE (const void* data, size_t i) { return (MR::getLE<T> (data, i)); }
-          template <typename T> static float __getBE (const void* data, size_t i) { return (MR::getBE<T> (data, i)); }
-
-          template <typename T> static void __put   (float val, void* data, size_t i) { return (MR::put<T> (val, data, i)); }
-          template <typename T> static void __putLE (float val, void* data, size_t i) { return (MR::putLE<T> (val, data, i)); }
-          template <typename T> static void __putBE (float val, void* data, size_t i) { return (MR::putBE<T> (val, data, i)); }
       };
 
     }

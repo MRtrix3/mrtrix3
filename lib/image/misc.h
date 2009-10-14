@@ -95,6 +95,20 @@ namespace MR {
       return (memory_footprint (ds.datatype(), voxel_count (ds, specifier))); 
     }
 
+    //! \cond skip
+    namespace {
+      template <typename T> inline bool is_complex__ () { return (false); }
+      template <> inline bool is_complex__<cfloat> () { return (true); }
+      template <> inline bool is_complex__<cdouble> () { return (true); }
+    }
+    //! \endcond
+
+    //! return whether the DataSet contains complex data
+    template <class DataSet> inline bool is_complex (const DataSet& ds) { 
+      typedef typename DataSet::value_type T;
+      return (is_complex__<T> ()); 
+    }
+
 
     //! @}
   }

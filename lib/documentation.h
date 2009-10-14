@@ -433,6 +433,8 @@ $ ./build lib/mrtrix.o lib/app.o \endverbatim
  *     }
  *    ~Image () { delete [] data; }
  *
+ *    typedef float value_type;
+ *
  *     int     ndim () const         { return (3); }
  *     int     dim (int axis) const  { return (nvox[axis]); }
  *     int&    operator[] (int axis) { return (pos[axis]); }
@@ -536,6 +538,19 @@ $ ./build lib/mrtrix.o lib/app.o \endverbatim
       size_t  ndim () const; //!< the number of dimensions of the image
       int     dim (size_t axis) const; //!< the number of voxels along the specified dimension
 
+      //! the type of data returned by the value() functions
+      /*! DataSets can use a different data type to store the voxel intensities
+       * than what is provided by the value() interface. For instances, it is
+       * not possible to know at compile-time what type of data may be
+       * contained in an input data set supplied on the command-line. The
+       * Image::Voxel class (a realisation of a DataSet) provides a uniform
+       * interface to the data, by translating between the datatype stored on
+       * disc and the datatype requested by the application on the fly at
+       * runtime. Most instances of a DataSet will probably use a \c float as
+       * their \a value_type, but other types could be used in special
+       * circumstances. */
+      typedef float value_type;
+
       //! the size of the voxel along the specified dimension
       /*! The first 3 dimensions are always assumed to correspond to the \e x,
        * \e y & \e z spatial dimensions, for which the voxel size has an
@@ -585,16 +600,12 @@ $ ./build lib/mrtrix.o lib/app.o \endverbatim
       const Math::Matrix<float>& transform () const; //!< the 4x4 transformation matrix of the image.
 
       void    reset ()                            //!< reset the current position to zero
-      bool    is_complex () const; //!< return whether the underlying data are complex
 
       const ssize_t operator[] (const size_t axis) const; //!< return the current position along dimension \a axis
       ssize_t&      operator[] (const size_t axis);       //!< manipulate the current position along dimension \a axis
 
-      const float   value () const; //!< return the value of the voxel at the current position
-      float&        value ();       //!< manipulate the value of the voxel at the current position
-
-      const cfloat  Z () const; //!< return the complex value of the voxel at the current position (for complex data)
-      cfloat&       Z ();       //!< manipulate the complex value of the voxel at the current position (for complex data)
+      const value_type   value () const; //!< return the value of the voxel at the current position
+      value_type&        value ();       //!< manipulate the value of the voxel at the current position
   };
 
   // @}

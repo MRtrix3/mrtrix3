@@ -80,7 +80,7 @@ OPTIONS = {
 
 
 
-inline bool next (Image::Voxel& ref, Image::Voxel& other, const std::vector<int>* pos)
+template <typename T> inline bool next (Image::Voxel<T>& ref, Image::Voxel<T>& other, const std::vector<int>* pos)
 {
   size_t axis = 0;
   do {
@@ -198,12 +198,13 @@ EXECUTE {
 
 
 
+  assert (!header_in.is_complex());
 
-  Image::Voxel in (header_in);
-  assert (!header_in.datatype().is_complex());
+  Image::Voxel<float> in (header_in);
+  VAR (is_complex (in));
 
   const Image::Header header_out = argument[1].get_image (header);
-  Image::Voxel out (header_out);
+  Image::Voxel<float> out (header_out);
 
   for (size_t n = 0; n < in.ndim(); n++) in[n] = pos[n][0];
 

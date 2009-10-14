@@ -72,6 +72,31 @@ namespace MR {
         /*! \return true if the current position is out of bounds, false otherwise */
         bool  operator! () const { return (out_of_bounds); }
 
+        //! Set the current position to <b>pixel space</b> position \a pos
+        /*! This will set the position from which the image intensity values will
+         * be interpolated, assuming that \a pos provides the position as a
+         * (floating-point) pixel coordinate within the dataset. */
+        bool P (const Point& pos);
+        //! Set the current position to <b>image space</b> position \a pos
+        /*! This will set the position from which the image intensity values will
+         * be interpolated, assuming that \a pos provides the position as a
+         * coordinate relative to the axes of the dataset, in units of
+         * millimeters. The origin is taken to be the centre of the voxel at [
+         * 0 0 0 ]. */
+        bool I (const Point& pos) { return (P (I2P (pos))); }
+        //! Set the current position to the <b>real space</b> position \a pos
+        /*! This will set the position from which the image intensity values will
+         * be interpolated, assuming that \a pos provides the position as a
+         * real space coordinate, in units of millimeters. */
+        bool R (const Point& pos) { return (P (R2P (pos))); }
+
+        float value () const { return (Interp::real()); }
+        float real () const;
+        float imag () const;
+
+        float real_abs () const;
+        float imag_abs () const;
+
         //! Transform the position \p r from real-space to pixel-space
         Point R2P (const Point& r) const { return (transform (RP, r)); }
         //! Transform the position \p r from pixel-space to real-space
@@ -89,17 +114,6 @@ namespace MR {
         Point vec_R2P (const Point& r) const { return (transform_vector (RP, r)); }
         //! Transform the orientation \p r from pixel-space to real-space
         Point vec_P2R (const Point& r) const { return (transform_vector (PR, r)); }
-
-        bool P (const Point& pos);
-        bool I (const Point& pos) { return (P (I2P (pos))); }
-        bool R (const Point& pos) { return (P (R2P (pos))); }
-
-        float value () const { return (Interp::real()); }
-        float real () const;
-        float imag () const;
-
-        float real_abs () const;
-        float imag_abs () const;
 
       protected:
         DataSet& data;

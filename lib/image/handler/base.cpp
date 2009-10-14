@@ -27,31 +27,10 @@ namespace MR {
   namespace Image {
     namespace Handler {
 
-      void Base::prepare ()
-      {
+      void Base::prepare () {
         assert (addresses.empty());
-
         execute(); 
         H.axes.get_strides (start_, stride_);
-
-        switch (H.datatype()()) {
-          case DataType::Bit:        get_func = &__get<bool>;       put_func = &__put<bool>;       return;
-          case DataType::Int8:       get_func = &__get<int8_t>;     put_func = &__put<int8_t>;     return;
-          case DataType::UInt8:      get_func = &__get<uint8_t>;    put_func = &__put<uint8_t>;    return;
-          case DataType::Int16LE:    get_func = &__getLE<int16_t>;  put_func = &__putLE<int16_t>;  return;
-          case DataType::UInt16LE:   get_func = &__getLE<uint16_t>; put_func = &__putLE<uint16_t>; return;
-          case DataType::Int16BE:    get_func = &__getBE<int16_t>;  put_func = &__putBE<int16_t>;  return;
-          case DataType::UInt16BE:   get_func = &__getBE<uint16_t>; put_func = &__putBE<uint16_t>; return;
-          case DataType::Int32LE:    get_func = &__getLE<int32_t>;  put_func = &__putLE<int32_t>;  return;
-          case DataType::UInt32LE:   get_func = &__getLE<uint32_t>; put_func = &__putLE<uint32_t>; return;
-          case DataType::Int32BE:    get_func = &__getBE<int32_t>;  put_func = &__putBE<int32_t>;  return;
-          case DataType::UInt32BE:   get_func = &__getBE<uint32_t>; put_func = &__putBE<uint32_t>; return;
-          case DataType::Float32LE:  get_func = &__getLE<float>;    put_func = &__putLE<float>;    return;
-          case DataType::Float32BE:  get_func = &__getBE<float>;    put_func = &__putBE<float>;    return;
-          case DataType::Float64LE:  get_func = &__getLE<double>;   put_func = &__putLE<double>;   return;
-          case DataType::Float64BE:  get_func = &__getBE<double>;   put_func = &__putBE<double>;   return;
-          default: throw Exception ("invalid data type in image header");
-        }
       }
 
     }
