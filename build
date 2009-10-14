@@ -364,7 +364,7 @@ def list_headers (file):
         line = line[8:].strip()
         if line[0] == '"':
           line = line[1:].rstrip('"')
-          if line == 'thread.h':
+          if line == 'thread/init.h':
             if 'T' not in file_flags[file]: 
               file_flags[file] += 'T'
           for path in include_paths:

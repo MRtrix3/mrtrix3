@@ -21,7 +21,8 @@
  */
 
 #include "app.h"
-#include "thread.h"
+#include "thread/init.h"
+#include "thread/mutex.h"
 #include "file/config.h"
 
 namespace MR {

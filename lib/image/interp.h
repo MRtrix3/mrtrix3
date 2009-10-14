@@ -115,7 +115,7 @@ namespace MR {
         //! Transform the orientation \p r from pixel-space to real-space
         Point vec_P2R (const Point& r) const { return (transform_vector (PR, r)); }
 
-      protected:
+      private:
         DataSet& data;
         float  RP[3][4], PR[3][4], IR[3][4], RI[3][4];
         float  bounds[3];

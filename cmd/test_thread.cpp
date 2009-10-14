@@ -22,7 +22,8 @@
 
 #include "app.h"
 #include "progressbar.h"
-#include "thread.h"
+#include "thread/exec.h"
+#include "thread/queue.h"
 #include "math/rng.h"
 
 using namespace MR; 

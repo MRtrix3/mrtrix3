@@ -178,7 +178,7 @@ namespace MR {
           return (stream);
         }
 
-      protected:
+      private:
         const Header&   H; //!< reference to the corresponding Image::Header
         const Handler::Base& handler;
         size_t   offset; //!< the offset in memory to the current voxel
