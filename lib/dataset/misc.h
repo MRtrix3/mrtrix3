@@ -20,41 +20,24 @@
 
 */
 
-#ifndef __image_misc_h__
-#define __image_misc_h__
+#ifndef __dataset_misc_h__
+#define __dataset_misc_h__
 
 #include "data_type.h"
 #include "math/complex.h"
 
+/** \defgroup DataSet DataSet functions
+ * \brief template functions to operate of DataSet objects
+ *
+ * These functions provide templates for algorithms that operate on Objects
+ * that implement the DataSet interface.
+ */
+
 namespace MR {
-  namespace Image {
+  namespace DataSet {
 
-    //! \addtogroup Image
+    //! \addtogroup DataSet
     // @{
-
-
-    //! used to loop over all image coordinates.
-    /*! This function increments the current position to the next voxel, incrementing to the next axis as required.
-     * It is used to process all voxels in turn. For example:
-     * \code
-     * Image::Voxel position (image_object);
-     * do {
-     *   process (position.value());
-     * } while (next (position));
-     * \endcode
-     * \return true once the last voxel has been reached (i.e. the next increment would bring the current position out of bounds), false otherwise. */
-    template <class DataSet> inline bool next (DataSet& D)
-    {
-      size_t axis = 0;
-      do {
-        D.inc(axis);
-        if (D.pos(axis) < ssize_t(D.dim(axis))) return (true);
-        D.pos(axis, 0);
-        axis++;
-      } while (axis < D.ndim());
-      return (false);
-    }
-
 
     //! returns the number of voxel in the data set, or a relevant subvolume
     template <class DataSet> inline off64_t voxel_count (const DataSet& ds, size_t up_to_dim = SIZE_MAX) 
@@ -75,25 +58,6 @@ namespace MR {
       return (fp); 
     }
 
-
-    //! returns the memory footprint of a data set consisting of \a num_voxel voxels stored as objects of type \a dt
-    inline off64_t memory_footprint (const DataType& dt, off64_t num_voxel)
-    {
-      if (dt.bits() < 8) return ((num_voxel+7)/8);
-      return (dt.bytes() * num_voxel);
-    }
-  
-    //! returns the memory footprint of a DataSet
-    template <class DataSet> inline off64_t memory_footprint (const DataSet& ds, size_t up_to_dim = SIZE_MAX) 
-    {
-      return (memory_footprint (ds.datatype(), voxel_count (ds, up_to_dim))); 
-    }
-  
-    //! returns the memory footprint of a DataSet
-    template <class DataSet> inline off64_t memory_footprint (const DataSet& ds, const char* specifier)
-    {
-      return (memory_footprint (ds.datatype(), voxel_count (ds, specifier))); 
-    }
 
     //! \cond skip
     namespace {

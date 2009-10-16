@@ -25,7 +25,7 @@
 
 #include "app.h"
 #include "image/handler/pipe.h"
-#include "image/misc.h"
+#include "dataset/misc.h"
 
 namespace MR {
   namespace Image {
@@ -48,7 +48,7 @@ namespace MR {
         assert (H.files.size() == 1);
         debug ("mapping piped image \"" + H.name() + "\"...");
 
-        segsize = voxel_count (H) / H.files.size();
+        segsize = DataSet::voxel_count (H) / H.files.size();
         off64_t bytes_per_segment = (H.datatype().bits() * segsize + 7) / 8;
 
         if (bytes_per_segment > std::numeric_limits<size_t>::max())

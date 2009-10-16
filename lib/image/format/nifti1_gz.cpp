@@ -24,7 +24,7 @@
 #include "file/path.h"
 #include "file/gz.h"
 #include "file/nifti1_utils.h"
-#include "image/misc.h"
+#include "dataset/misc.h"
 #include "image/header.h"
 #include "image/handler/gz.h"
 #include "image/format/list.h"

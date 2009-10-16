@@ -24,7 +24,6 @@
 #include "progressbar.h"
 #include "image/voxel.h"
 #include "image/axis.h"
-#include "image/misc.h"
 
 using namespace std; 
 using namespace MR; 
@@ -201,14 +200,14 @@ EXECUTE {
   assert (!header_in.is_complex());
 
   Image::Voxel<float> in (header_in);
-  VAR (is_complex (in));
+  VAR (DataSet::is_complex (in));
 
   const Image::Header header_out = argument[1].get_image (header);
   Image::Voxel<float> out (header_out);
 
   for (size_t n = 0; n < in.ndim(); n++) in[n] = pos[n][0];
 
-  ProgressBar::init (voxel_count (out), "copying data...");
+  ProgressBar::init (DataSet::voxel_count (out), "copying data...");
 
   do { 
     float val = in.value();

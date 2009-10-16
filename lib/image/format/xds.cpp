@@ -25,7 +25,7 @@
 #include "file/misc.h"
 #include "file/path.h"
 #include "file/entry.h"
-#include "image/misc.h"
+#include "dataset/misc.h"
 #include "image/header.h"
 #include "image/format/list.h"
 #include "get_set.h"
@@ -143,7 +143,7 @@ namespace MR {
             << " " << ( H.datatype().is_little_endian() ? 1 : 0 ) << "\n";
         out.close();
 
-        File::create (H.name(), memory_footprint (H, "11 1"));
+        File::create (H.name(), H.footprint ("11 1"));
         H.files.push_back (File::Entry (H.name()));
       }
 

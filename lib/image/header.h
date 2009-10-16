@@ -28,6 +28,7 @@
 #include "ptr.h"
 #include "data_type.h"
 #include "image/axis.h"
+#include "dataset/misc.h"
 #include "image/handler/base.h"
 #include "file/mmap.h"
 #include "math/matrix.h"
@@ -122,6 +123,11 @@ namespace MR {
         template <typename T> float scale_from_storage (T val) const { return (scale_from_storage (val, scale, offset)); }
         template <typename T> float scale_to_storage (T val) const   { return (scale_to_storage (val, scale, offset)); }
 
+        //! returns the memory footprint of the Image
+        off64_t footprint (size_t up_to_dim = SIZE_MAX) { return (footprint_for_count (DataSet::voxel_count (*this, up_to_dim))); }
+
+        //! returns the memory footprint of a DataSet
+        off64_t footprint (const char* specifier) { return (footprint_for_count (DataSet::voxel_count (*this, specifier))); }
 
         static const Header open (const std::string& image_name, bool read_write = false);
         static const Header create (const std::string& image_name, const Header& template_header);
@@ -134,6 +140,8 @@ namespace MR {
         Math::Matrix<float>  transform_matrix;
 
         void merge (const Header& H);
+
+        off64_t footprint_for_count (off64_t count) { return (dtype == DataType::Bit ? (count+7)/8 : count * dtype.bytes()); }
     };
 
 

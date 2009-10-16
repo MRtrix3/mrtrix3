@@ -28,7 +28,7 @@
 #include "file/entry.h"
 #include "file/path.h"
 #include "file/key_value.h"
-#include "image/misc.h"
+#include "dataset/misc.h"
 #include "image/header.h"
 #include "image/name_parser.h"
 #include "image/format/list.h"
@@ -236,12 +236,12 @@ namespace MR {
         out.close();
 
         if (single_file) {
-          File::resize (H.name(), offset + memory_footprint (H));
+          File::resize (H.name(), offset + H.footprint());
           H.files.push_back (File::Entry (H.name(), offset));
         }
         else {
           std::string data_file (H.name().substr (0, H.name().size()-4) + ".dat");
-          File::create (data_file, memory_footprint (H));
+          File::create (data_file, H.footprint());
           H.files.push_back (File::Entry (data_file));
         }
       }

@@ -25,7 +25,7 @@
 #include "app.h"
 #include "progressbar.h"
 #include "image/handler/mosaic.h"
-#include "image/misc.h"
+#include "dataset/misc.h"
 
 namespace MR {
   namespace Image {
@@ -45,7 +45,7 @@ namespace MR {
         assert (H.datatype().bits() > 1);
 
         segsize = H.dim(0) * H.dim(1) * H.dim(2);
-        assert (segsize * H.files.size() == voxel_count (H));
+        assert (segsize * H.files.size() == DataSet::voxel_count (H));
 
         size_t bytes_per_segment = H.datatype().bytes() * segsize;
         if (H.files.size() * bytes_per_segment > std::numeric_limits<size_t>::max())

@@ -22,7 +22,7 @@
 
 #include "app.h"
 #include "image/header.h"
-#include "image/misc.h"
+#include "dataset/misc.h"
 #include "math/matrix.h"
 #include "math/permutation.h"
 #include "image/axis.h"

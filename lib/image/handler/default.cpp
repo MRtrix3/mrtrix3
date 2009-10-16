@@ -24,7 +24,7 @@
 
 #include "app.h"
 #include "image/handler/default.h"
-#include "image/misc.h"
+#include "dataset/misc.h"
 
 namespace MR {
   namespace Image {
@@ -53,7 +53,7 @@ namespace MR {
       {
         if (H.files.empty()) throw Exception ("no files specified in header for image \"" + H.name() + "\"");
 
-        segsize = voxel_count (H) / H.files.size();
+        segsize = DataSet::voxel_count (H) / H.files.size();
 
         bytes_per_segment = (H.datatype().bits() * segsize + 7) / 8;
         if (H.files.size() * bytes_per_segment > std::numeric_limits<size_t>::max())
