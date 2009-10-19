@@ -24,6 +24,7 @@
 #include "progressbar.h"
 #include "image/voxel.h"
 #include "image/axis.h"
+#include "image/layout.h"
 
 using namespace std; 
 using namespace MR; 
@@ -78,18 +79,44 @@ OPTIONS = {
 };
 
 
+template <class DataSet> class Extractor {
+  public:
+    typedef typename DataSet::value_type value_type;
+
+    Extractor (DataSet& original, const std::vector<int>* positions) : ds (original), P (positions) { }
+    const std::string& name () const { return (ds.name()); }
+    size_t  ndim () const { return (ds.ndim()); }
+    int     dim (size_t axis) const { return (P[axis].size()); }
+    float   vox (size_t axis) const { return (ds.vox (axis)); }
+    const Image::Layout* layout () const { return (ds.layout()); }
+    const Math::Matrix<float>& transform () const { return (ds.transform()); }
+
+    void reset () { for (size_t a = 0; a < ndim(); ++a) ds.pos (a, P[a][0]); }
+
+    ssize_t pos (size_t axis) const { assert (0); } // this should not be used
+    void    pos (size_t axis, ssize_t position) const { ds.pos (axis, P[axis][position]); }
+    void    move (size_t axis, ssize_t increment) const { assert (0); } // this should not be used
+
+    value_type   value () const { return (ds.value()); }
+    void         value (value_type val) { ds.value (val); }
+
+  private:
+    DataSet& ds;
+    const std::vector<int>* P;
+};
+
 
 template <typename T> inline bool next (Image::Voxel<T>& ref, Image::Voxel<T>& other, const std::vector<int>* pos)
 {
   size_t axis = 0;
   do {
-    ++ref[axis];
-    if (ref[axis] < ref.dim(axis)) {
-      other[axis] = pos[axis][ref[axis]];
+    ref.move (axis, 1);
+    if (ref.pos (axis) < ref.dim(axis)) {
+      other.pos (axis, pos[axis][ref.pos(axis)]);
       return (true);
     }
-    ref[axis] = 0;
-    other[axis] = pos[axis][0];
+    ref.pos (axis, 0);
+    other.pos (axis, pos[axis][0]);
     ++axis;
   } while (axis < ref.ndim());
   return (false);
@@ -205,14 +232,14 @@ EXECUTE {
   const Image::Header header_out = argument[1].get_image (header);
   Image::Voxel<float> out (header_out);
 
-  for (size_t n = 0; n < in.ndim(); n++) in[n] = pos[n][0];
+  for (size_t n = 0; n < in.ndim(); n++) in.pos (n, pos[n][0]);
 
   ProgressBar::init (DataSet::voxel_count (out), "copying data...");
 
   do { 
     float val = in.value();
     if (replace_NaN) if (isnan (val)) val = 0.0;
-    out.value() = val;
+    out.value (val);
     ProgressBar::inc();
   } while (next (out, in, pos));
 

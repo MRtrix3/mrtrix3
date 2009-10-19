@@ -607,16 +607,16 @@ $ ./build lib/mrtrix.o lib/app.o \endverbatim
        * but its exact inverse. */
       const Image::Layout* layout () const;
 
-      DataType datatype () const; //!< the type of the underlying image data.
       const Math::Matrix<float>& transform () const; //!< the 4x4 transformation matrix of the image.
 
-      void    reset ()                            //!< reset the current position to zero
+      void    reset () //!< reset the current position to zero
 
-      const ssize_t operator[] (const size_t axis) const; //!< return the current position along dimension \a axis
-      ssize_t&      operator[] (const size_t axis);       //!< manipulate the current position along dimension \a axis
+      ssize_t pos (size_t axis) const; //!< return the current position along dimension \a axis
+      void    pos (size_t axis, ssize_t position) const; //!< set the current position along dimension \a axis to \a position
+      void    move (size_t axis, ssize_t increment) const; //!< move the current position along dimension \a axis by \a increment voxels
 
-      const value_type   value () const; //!< return the value of the voxel at the current position
-      value_type&        value ();       //!< manipulate the value of the voxel at the current position
+      value_type   value () const;          //!< return the value of the voxel at the current position
+      void         value (value_type val);  //!< set the value of the voxel at the current position to \a val
   };
 
   // @}

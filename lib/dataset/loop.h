@@ -45,9 +45,9 @@ namespace MR {
       {
         size_t axis = 0;
         do {
-          D.inc(axis);
-          if (D.pos(axis) < ssize_t(D.dim(axis))) return (true);
-          D.pos(axis, 0);
+          D.move (axis, 1);
+          if (D.pos (axis) < ssize_t(D.dim (axis))) return (true);
+          D.pos (axis, 0);
           axis++;
         } while (axis < D.ndim());
         return (false);
