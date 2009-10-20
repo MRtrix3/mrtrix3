@@ -66,18 +66,17 @@ namespace MR {
       return (is_complex__<T> ()); 
     }
 
-    template <class Set1, class Set2> inline bool dimensions_match (Set1& ds1, Set2& ds2) {
-      if (ds1.ndim() != ds2.ndim()) return (false);
-      for (size_t n = 0; n < ds1.ndim(); ++n)
-        if (ds1.dim(n) != ds2.dim(n)) return (false);
+    template <class Set1, class Set2> inline bool dimensions_match (Set1& D1, Set2& D2) {
+      if (D1.ndim() != D2.ndim()) return (false);
+      for (size_t n = 0; n < D1.ndim(); ++n)
+        if (D1.dim(n) != D2.dim(n)) return (false);
       return (true);
     }
 
-    template <class Set1, class Set2> inline bool dimensions_match (Set1& ds1, Set2& ds2, size_t up_to_dim) {
-      if (ds1.ndim() != ds2.ndim()) return (false);
-      assert (up_to_dim <= ds1.ndim());
+    template <class Set1, class Set2> inline bool dimensions_match (Set1& D1, Set2& D2, size_t up_to_dim) {
+      if (up_to_dim <= D1.ndim() || up_to_dim <= D2.ndim()) return (false);
       for (size_t n = 0; n < up_to_dim; ++n)
-        if (ds1.dim(n) != ds2.dim(n)) return (false);
+        if (D1.dim(n) != D2.dim(n)) return (false);
       return (true);
     }
 

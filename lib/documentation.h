@@ -561,50 +561,6 @@ $ ./build lib/mrtrix.o lib/app.o \endverbatim
        * volume direction, and leave the voxel size undefined. */
       float   vox (size_t axis) const;
 
-      //! provides access to the ordering of the data in memory
-      /*! This function should return an array of DataSet::Layout items,
-       * indicating how voxel intensities are laid out in memory. This is
-       * helpful to optimise algorithms that operate on image voxels
-       * independently, with no dependence on the order of processing, since
-       * the algorithm can then perform the processing in the order that makes
-       * best use of the memory subsystem's bandwidth.
-       *
-       * For example, if a 3D image is stored with the following layout:
-       * -# voxels are stored contiguously in memory from posterior to anterior
-       *  (i.e. axis 1: +y);
-       * -# these rows are stored contiguously in memory from inferior to
-       *  posterior (i.e. axis 2: +z);
-       * -# these slices are stored contiguously in memory from right to
-       *  left (i.e. axis 0: -x). Note this is the opposite direction from that
-       *  assumed in the MRtrix coordinate system.
-       * 
-       * then this function should return the array:
-       * \code 
-       * using namespace DataSet::Layout;
-       * const Layout* layout = { Layout(1,1), Layout(2,1), Layout(0,-1) };
-       * \endcode
-       * The innermost loop of an algorithm can then be made to loop along the
-       * positive posterior to anterior direction (i.e. axis 1: +y), which is
-       * optimal in terms of memory bandwidth.
-       *
-       * An algorithm might make use of this feature in the following way:
-       * \code
-       * template <class DataSet> void add (DataSet& data, float offset) 
-       * {
-       *   const DataSet::layout* layout (data.layout());
-       *   for (data[layout[2].axis] = 0; data[layout[2].axis] < data.dim(layout[2].axis); data[layout[2].axis]++)
-       *     for (data[layout[1].axis] = 0; data[layout[1].axis] < data.dim(layout[1].axis); data[layout[1].axis]++)
-       *       for (data[layout[0].axis] = 0; data[layout[0].axis] < data.dim(layout[0].axis); data[layout[0].axis]++)
-       *         data.value() += offset;
-       * }
-       * \endcode
-       * Note that there are better ways to use this information, in particular
-       * as implemented in the Loop functions.
-       *
-       * \note this is NOT the order as specified in the MRtrix file format,
-       * but its exact inverse. */
-      const DataSet::Layout* layout () const;
-
       const Math::Matrix<float>& transform () const; //!< the 4x4 transformation matrix of the image.
 
       void    reset () //!< reset the current position to zero

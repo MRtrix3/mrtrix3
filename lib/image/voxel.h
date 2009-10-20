@@ -26,7 +26,6 @@
 #include "get_set.h"
 #include "image/header.h"
 #include "math/complex.h"
-#include "dataset/layout.h"
 
 #define MAX_FILES_PER_IMAGE 256U
 #define MAX_NDIM 16
@@ -78,9 +77,6 @@ namespace MR {
           H.handler->prepare();
           offset = handler.start();
 
-          layout_array = new DataSet::Layout [ndim()];
-          DataSet::get_layout (layout_array.get(), H.axes);
-
           switch (H.datatype()()) {
             case DataType::Bit:        get_func = &__get<value_type,bool>;       put_func = &__put<value_type,bool>;       return;
             case DataType::Int8:       get_func = &__get<value_type,int8_t>;     put_func = &__put<value_type,int8_t>;     return;
@@ -130,8 +126,6 @@ namespace MR {
           return (*this);
         }
 
-        const DataSet::Layout* layout () const { return (layout_array.get()); }
-
         //! reset all coordinates to zero. 
         void reset () { offset = handler.start(); for (size_t i = 0; i < ndim(); i++) x[i] = 0; }
 
@@ -160,7 +154,6 @@ namespace MR {
         const Handler::Base& handler;
         size_t   offset; //!< the offset in memory to the current voxel
         std::vector<ssize_t> x;
-        Array<DataSet::Layout>::Ptr layout_array;
 
         value_type (*get_func) (const void* data, size_t i);
         void       (*put_func) (value_type val, void* data, size_t i);

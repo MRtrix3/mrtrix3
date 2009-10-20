@@ -24,7 +24,6 @@
 #include "progressbar.h"
 #include "image/voxel.h"
 #include "image/axis.h"
-#include "dataset/layout.h"
 #include "dataset/copy.h"
 
 using namespace MR; 
@@ -89,7 +88,6 @@ template <class Set> class Extractor {
     size_t  ndim () const { return (ds.ndim()); }
     int     dim (size_t axis) const { return (P[axis].size()); }
     float   vox (size_t axis) const { return (ds.vox (axis)); }
-    const DataSet::Layout* layout () const { return (ds.layout()); }
     const Math::Matrix<float>& transform () const { return (ds.transform()); }
 
     void reset () { memset (x, 0, sizeof(size_t)*ndim()); for (size_t a = 0; a < ndim(); ++a) ds.pos (a, P[a][0]); }
@@ -118,8 +116,8 @@ template <class Set1, class Set2> void copy_replace_NaN_kernel (Set1& destinatio
 
 template <class Set1, class Set2> void copy (Set1& destination, Set2& source, bool replace_NaN) { 
   std::string progress_message ("copying from \"" + source.name() + "\" to \"" + destination.name() + "\"...");
-  if (replace_NaN) DataSet::Loop::all_contiguous (progress_message, DataSet::copy_kernel<Set1,Set2>, destination, source);
-  else DataSet::Loop::all_contiguous (progress_message, copy_replace_NaN_kernel<Set1,Set2>, destination, source);
+  if (replace_NaN) DataSet::Loop::all (progress_message, DataSet::copy_kernel<Set1,Set2>, destination, source);
+  else DataSet::Loop::all (progress_message, copy_replace_NaN_kernel<Set1,Set2>, destination, source);
 }
 
 
