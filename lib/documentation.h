@@ -403,136 +403,134 @@ $ ./build lib/mrtrix.o lib/app.o \endverbatim
  *
  */
 
-/*! \page dataset_page The DataSet abstract class
- *
- * The DataSet class is an abstract prototype describing the interface that
- * a number of MRtrix algorithms expect to operate on. It does not
- * correspond to a real class, and only serves to document the expected
- * behaviour for classes that represent image datasets.
- *
- * Classes that are designed to represent a data set should implement at
- * least a subset of the member functions documented for the DataSet class.
- * Such classes should NOT derive from this class, but rather provide their
- * own implementations. There is also no requirement to reproduce the
- * function definitions exactly, as long as the class can be used with the
- * same syntax in practice. Algorithms designed to operate on a DataSet are
- * defined using the C++ template framework, and hence any function call is
- * interpreted at compile-time (and potentially optimised away), rather than
- * being issued at run-time. This is perhaps better illustrated using the
- * example below.
- *
- * The following example defines a simple class to store a 3D image:
- *
- * \code
- * class Image {
- *   public:
- *     Image (int xdim, int ydim, int zdim) { 
- *       nvox[0] = xdim; nvox[1] = ydim; nvox[2] = zdim;
- *       pos[0] = pos[1] = pos[2] = 0;
- *       data = new float [nvox[0]*nvox[1]*nvox[2]);
- *     }
- *    ~Image () { delete [] data; }
- *
- *    typedef float value_type;
- *
- *     int     ndim () const         { return (3); }
- *     int     dim (int axis) const  { return (nvox[axis]); }
- *     int&    operator[] (int axis) { return (pos[axis]); }
- *     float&  value()               { return (data[pos[0]+nvox[0]*(pos[1]+nvox[1]*pos[2])]); }
- *
- *   private:
- *     float* data
- *     int    nvox[3];
- *     int    p[3];
- * };
- * \endcode
- *
- * This class does not implement all the functions listed for the generic
- * DataSet class, and some of the functions it does implement do not match
- * the DataSet equivalent definitions. However, in practice this
- * class can be used with identical syntax. For example, this template
- * function scales the data by a user-defined factor:
- *
- * \code
- * template <class DataSet> void scale (DataSet& data, float factor)
- * {
- *   for (data[2] = 0; data[2] < data.dim(2); data[2]++)
- *     for (data[1] = 0; data[1] < data.dim(1); data[1]++)
- *       for (data[0] = 0; data[0] < data.dim(0); data[0]++)
- *         data.value() *= factor;
- * }
- * \endcode
- *
- * This template function might be used like this:
- *
- * \code
- * Image my_image (128, 128, 32); // create an instance of a 128 x 128 x 32 image
- * ...
- * ... // populate my_image with data
- * ...
- * scale (my_image, 10.0); // scale my_image by a factor of 10
- * \endcode
- *
- * As you can see, the \a %Image class implements all the functionality
- * required for the \a scale() function to compile and run. There is also
- * plenty of scope for the compiler to optimise this particular function,
- * since all member functions of \c my_image are declared inline. Note that
- * this does not mean that this class can be used with any of the other
- * template functions, some of which might rely on some of the other member
- * functions having been defined.
- *
- * Some functions might expect to operate on complex data. In such cases, the
- * get() & set() functions should operate on the appropriate data type (i.e.
- * float or cfloat). 
- *
- * \par Why define this abstract class?
- *
- * Different image classes may not be suited to all uses. For example, the
- * Image::Voxel class provides access to the data for an image file, but
- * incurs an overhead for each read/write access. A simpler class such as the
- * \a %Image class above can provide much more efficient access to the data.
- * There will therefore be cases where it might be beneficial to copy the
- * data from an Image::Voxel class into a more efficient data structure.
- * In order to write algorithms that can operate on all of these different
- * classes, MRtrix uses the C++ template framework, leaving it up to the
- * compiler to ensure that the classes defined are compatible with the
- * particular template function they are used with, and that the algorithm
- * implemented in the function is fully optimised for that particular class. 
- *
- * \par Why not use an abstract base class and inheritance?
- *
- * Defining an abstract class implies that all functions are declared
- * virtual. This means that every operation on a derived class will incur a
- * function call overhead, which will in many cases have a significant
- * adverse impact on performance. This also restricts the amount of optimisation that the
- * compiler might otherwise be able to perform. Using inheritance would have
- * the benefit of allowing run-time polymorphism (i.e. the same function can
- * be used with any derived class at runtime); however, in practice run-time
- * polymorphism is rarely needed in MRtrix applications. Finally, if such an
- * interface were required, it would be trivial to define such an abstract class and
- * use it with the template functions provided by MRtrix.
- *
- */
+
+ /** \defgroup DataSet The DataSet abstract class
+  * \brief A collection of template functions to operate on GenericDataSet objects
+  *
+  * MRtrix defines an abstract GenericDataSet class, describing the interface
+  * that a number of MRtrix algorithms expect to operate on. It does not
+  * correspond to a real class, and only serves to document the expected
+  * behaviour for classes that represent image datasets.
+  *
+  * Classes that are designed to represent a data set should implement at
+  * least a subset of the member functions documented for the GenericDataSet
+  * class. Such classes should NOT derive from this class, but rather provide
+  * their own implementations. There is also no requirement to reproduce the
+  * function definitions exactly, as long as the class can be used with the
+  * same syntax in practice. DataSet algorithms are defined using the C++
+  * template framework, and hence any function call is interpreted at
+  * compile-time (and potentially optimised away), rather than being issued at
+  * run-time. This is perhaps better illustrated using the example below.
+  *
+  * The following example defines a simple class to store a 3D image:
+  *
+  * \code
+  * class Image {
+  *   public:
+  *     Image (int xdim, int ydim, int zdim) { 
+  *       N[0] = xdim; N[1] = ydim; N[2] = zdim;
+  *       X[0] = X[1] = X[2] = 0;
+  *       data = new float [N[0]*N[1]*N[2]);
+  *     }
+  *     ~Image () { delete [] data; }
+  *
+  *     typedef float value_type;
+  *
+  *     int     ndim () const           { return (3); }
+  *     int     dim (int axis) const    { return (N[axis]); }
+  *     int     pos (int axis)          { return (X[axis]); }
+  *     void    pos (int axis, int i)   { X[axis] = i; }
+  *     void    move (int axis, int i)  { X[axis] += i; }
+  *     float   value ()                { return (data[offset()]); }
+  *     void    value (float val)       { data[offset()] = val; }
+  *
+  *   private:
+  *     float*  data
+  *     int     N[3];
+  *     int     X[3];
+  *
+  *     int     offset () const         { return (X[0]+N[0]*(X[1]+N[1]*X[2])); }
+  * };
+  * \endcode
+  *
+  * This class does not implement all the functions listed for the
+  * GenericDataSet class, and some of the functions it does implement do not
+  * match the equivalent GenericDataSet definitions. However, in practice this
+  * class can be used with identical syntax. For example, this template
+  * function scales the data by a user-defined factor:
+  *
+  * \code
+  * template <class Set> void scale (Set& data, float factor)
+  * {
+  *   for (data.pos(2,0); data.pos(2) < data.dim(2); data.move(2,1))
+  *     for (data.pos(1,0); data.pos(1) < data.dim(1); data.move(1,1))
+  *       for (data.pos(0,0); data.pos(0) < data.dim(0); data.move(0,1))
+  *         data.value (factor * data.value());
+  * }
+  * \endcode
+  *
+  * This template function might be used like this:
+  *
+  * \code
+  * Image my_image (128, 128, 32); // create an instance of a 128 x 128 x 32 image
+  * ...
+  * ... // populate my_image with data
+  * ...
+  * scale (my_image, 10.0); // scale my_image by a factor of 10
+  * \endcode
+  *
+  * As you can see, the \a %Image class implements all the functionality
+  * required for the \a scale() function to compile and run. There is also
+  * plenty of scope for the compiler to optimise this particular function,
+  * since all member functions of \c my_image are declared inline. Note that
+  * this does not mean that this class can be used with any of the other
+  * template functions, some of which might rely on some of the other member
+  * functions having been defined.
+  *
+  * \par Why define this abstract class?
+  *
+  * Different image classes may not be suited to all uses. For example, the
+  * Image::Voxel class provides access to the data for an image file, but
+  * incurs an overhead for each read/write access. A simpler class such as the
+  * \a %Image class above can provide much more efficient access to the data.
+  * There will therefore be cases where it might be beneficial to copy the
+  * data from an Image::Voxel class into a more efficient data structure.
+  * In order to write algorithms that can operate on all of these different
+  * classes, MRtrix uses the C++ template framework, leaving it up to the
+  * compiler to ensure that the classes defined are compatible with the
+  * particular template function they are used with, and that the algorithm
+  * implemented in the function is fully optimised for that particular class. 
+  *
+  * \par Why not use an abstract base class and inheritance?
+  *
+  * Defining an abstract class implies that all functions are declared
+  * virtual. This means that every operation on a derived class will incur a
+  * function call overhead, which will in many cases have a significant
+  * adverse impact on performance. This also restricts the amount of optimisation that the
+  * compiler might otherwise be able to perform. Using inheritance would have
+  * the benefit of allowing run-time polymorphism (i.e. the same function can
+  * be used with any derived class at runtime); however, in practice run-time
+  * polymorphism is rarely needed in MRtrix applications. Finally, if such an
+  * interface were required, it would be trivial to define such an abstract class and
+  * use it with the template functions provided by MRtrix.
+  *
+  */
 
 
-  /*! \defgroup Image Image access
-   * \brief Classes and functions providing access to image data. */
-
-  //! \addtogroup Image 
+  //! \addtogroup DataSet 
   // @{
-
 
   /*! \brief The abstract generic DataSet interface
    *
    * This class is an abstract prototype describing the interface that a
    * number of MRtrix algorithms expect to operate on. For more details, see
-   * \ref dataset_page.
+   * \ref DataSet.
    *
    * \note The DataSet class itself should \b not be used or included in MRtrix
    * programs. Any attempt at including the relevant header will result in
    * compile-time errors.
    */
-  class DataSet {
+  class GenericDataSet {
     public:
       const std::string& name () const; //!< a human-readable identifier, useful for error reporting
       size_t  ndim () const; //!< the number of dimensions of the image

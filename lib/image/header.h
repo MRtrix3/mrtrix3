@@ -33,6 +33,9 @@
 #include "file/mmap.h"
 #include "math/matrix.h"
 
+ /*! \defgroup Image Image access
+  * \brief Classes and functions providing access to image data. */
+
 namespace MR {
   namespace Image {
 

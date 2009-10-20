@@ -26,13 +26,6 @@
 #include "data_type.h"
 #include "math/complex.h"
 
-/** \defgroup DataSet DataSet functions
- * \brief template functions to operate of DataSet objects
- *
- * These functions provide templates for algorithms that operate on Objects
- * that implement the DataSet interface.
- */
-
 namespace MR {
   namespace DataSet {
 
@@ -40,7 +33,7 @@ namespace MR {
     // @{
 
     //! returns the number of voxel in the data set, or a relevant subvolume
-    template <class DataSet> inline off64_t voxel_count (const DataSet& ds, size_t up_to_dim = SIZE_MAX) 
+    template <class Set> inline off64_t voxel_count (const Set& ds, size_t up_to_dim = SIZE_MAX) 
     { 
       if (up_to_dim > ds.ndim()) up_to_dim = ds.ndim();
       off64_t fp = 1;
@@ -50,7 +43,7 @@ namespace MR {
     }
 
     //! returns the number of voxel in the relevant subvolume of the data set 
-    template <class DataSet> inline off64_t voxel_count (const DataSet& ds, const char* specifier) 
+    template <class Set> inline off64_t voxel_count (const Set& ds, const char* specifier) 
     { 
       off64_t fp = 1;
       for (size_t n = 0; n < ds.ndim(); n++) 
@@ -67,10 +60,17 @@ namespace MR {
     }
     //! \endcond
 
-    //! return whether the DataSet contains complex data
-    template <class DataSet> inline bool is_complex (const DataSet& ds) { 
-      typedef typename DataSet::value_type T;
+    //! return whether the Set contains complex data
+    template <class Set> inline bool is_complex (const Set& ds) { 
+      typedef typename Set::value_type T;
       return (is_complex__<T> ()); 
+    }
+
+    template <class Set1, class Set2> inline bool dimensions_match (Set1& ds1, Set2& ds2) {
+      if (ds1.ndim() != ds2.ndim()) return (false);
+      for (size_t n = 0; n < ds1.ndim(); ++n)
+        if (ds1.dim(n) != ds2.dim(n)) return (false);
+      return (true);
     }
 
 

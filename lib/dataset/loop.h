@@ -41,12 +41,11 @@ namespace MR {
        * } while (next (position));
        * \endcode
        * \return true once the last voxel has been reached (i.e. the next increment would bring the current position out of bounds), false otherwise. */
-      template <class DataSet> inline bool next (DataSet& D)
+      template <class Set> inline bool next (Set& D)
       {
         size_t axis = 0;
         do {
-          D.move (axis, 1);
-          if (D.pos (axis) < ssize_t(D.dim (axis))) return (true);
+          if (D.pos (axis)+1 < ssize_t (D.dim(axis))) { D.move (axis,1); return (true); }
           D.pos (axis, 0);
           axis++;
         } while (axis < D.ndim());
@@ -55,14 +54,26 @@ namespace MR {
 
 
 
-      template <class Functor, class DataSet> inline void all (Functor& func, DataSet& ds) {
+      template <class Functor, class Set> inline void all (Functor& func, Set& ds) {
         assert (voxel_count (ds));
         do func (ds); while (next (ds)); 
       }
 
-      template <class Functor, class DataSet1, class DataSet2> inline void all (Functor& func, DataSet1& ds1, DataSet2& ds2) {
+      template <class Functor, class DataSet1, class DataSet2> 
+        inline void all (Functor& func, DataSet1& ds1, DataSet2& ds2) {
         assert (voxel_count (ds1));
         do func (ds1, ds2); while (next (ds1)); 
+      }
+
+      template <class Functor, class DataSet1, class DataSet2> 
+        inline void all (Functor& func, DataSet1& ds1, DataSet2& ds2, const std::string& progress_message) {
+        assert (voxel_count (ds1));
+        if (!dimensions_match (ds1, ds2)) throw Exception ("dimensions mismatch between \"" + ds1.name() + "\" and \"" + ds2.name() + "\"");
+        ds1.reset();
+        ds2.reset();
+        ProgressBar::init (voxel_count (ds1), progress_message);
+        do { func (ds1, ds2); ProgressBar::inc(); next (ds2); } while (next (ds1)); 
+        ProgressBar::done();
       }
 
     }
