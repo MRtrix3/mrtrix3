@@ -73,6 +73,14 @@ namespace MR {
       return (true);
     }
 
+    template <class Set1, class Set2> inline bool dimensions_match (Set1& ds1, Set2& ds2, size_t up_to_dim) {
+      if (ds1.ndim() != ds2.ndim()) return (false);
+      assert (up_to_dim <= ds1.ndim());
+      for (size_t n = 0; n < up_to_dim; ++n)
+        if (ds1.dim(n) != ds2.dim(n)) return (false);
+      return (true);
+    }
+
 
     //! @}
   }

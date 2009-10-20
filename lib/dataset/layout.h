@@ -20,16 +20,16 @@
 
 */
 
-#ifndef __image_layout_h__
-#define __image_layout_h__
+#ifndef __dataset_layout_h__
+#define __dataset_layout_h__
 
 #include "types.h"
-#include "mrtrix.h"
+#include "image/axis.h"
 
 namespace MR {
-  namespace Image {
+  namespace DataSet {
 
-    //! \addtogroup Image 
+    //! \addtogroup DataSet 
     // @{
     
     //! \todo document layout class
@@ -41,7 +41,7 @@ namespace MR {
         ssize_t dir;
     };
 
-    inline void get_layout (Layout* layout, const Axes& axes) {
+    inline void get_layout (Layout* layout, const Image::Axes& axes) {
       for (size_t i = 0; i < axes.ndim(); ++i) {
         layout[axes[i].order].axis = i;
         layout[axes[i].order].dir = axes[i].forward ? 1 : -1;

@@ -31,6 +31,16 @@ namespace MR {
 
     namespace Loop {
 
+      class ContiguousAxis {
+        public:
+          ContiguousAxis (size_t axis_idx, size_t dim, ssize_t dir) : 
+            axis (axis_idx), from (dir > 0 ? 0 : dim-1), to (dir > 0 ? dim-1 : 0), inc (dir) { }
+          size_t axis;
+          ssize_t from, to, inc;
+      };
+
+
+
       //! used to loop over all image coordinates.
       /*! This function increments the current position to the next voxel, incrementing to the next axis as required.
        * It is used to process all voxels in turn. For example:
@@ -52,28 +62,129 @@ namespace MR {
         return (false);
       }
 
-
-
-      template <class Functor, class Set> inline void all (Functor& func, Set& ds) {
-        assert (voxel_count (ds));
-        do func (ds); while (next (ds)); 
+      template <class Functor, class Set> inline void all (Functor& func, Set& D) {
+        assert (voxel_count (D));
+        D.reset();
+        do func (D); while (next (D)); 
       }
 
-      template <class Functor, class DataSet1, class DataSet2> 
-        inline void all (Functor& func, DataSet1& ds1, DataSet2& ds2) {
-        assert (voxel_count (ds1));
-        do func (ds1, ds2); while (next (ds1)); 
+      template <class Functor, class Set1, class Set2> 
+        inline void all (Functor& func, Set1& D1, Set2& D2) {
+        assert (voxel_count (D1));
+        D1.reset(); D2.reset();
+        do func (D1, D2); while (next (D1)); 
       }
 
-      template <class Functor, class DataSet1, class DataSet2> 
-        inline void all (Functor& func, DataSet1& ds1, DataSet2& ds2, const std::string& progress_message) {
-        assert (voxel_count (ds1));
-        if (!dimensions_match (ds1, ds2)) throw Exception ("dimensions mismatch between \"" + ds1.name() + "\" and \"" + ds2.name() + "\"");
-        ds1.reset();
-        ds2.reset();
-        ProgressBar::init (voxel_count (ds1), progress_message);
-        do { func (ds1, ds2); ProgressBar::inc(); next (ds2); } while (next (ds1)); 
+      template <class Functor, class Set1, class Set2> 
+        inline void all (const std::string& progress_message, Functor& func, Set1& D1, Set2& D2) {
+        assert (voxel_count (D1));
+        if (!dimensions_match (D1, D2)) 
+          throw Exception ("dimensions mismatch between \"" + D1.name() + "\" and \"" + D2.name() + "\"");
+        D1.reset(); D2.reset();
+        ProgressBar::init (voxel_count (D1), progress_message);
+        do { func (D1, D2); ProgressBar::inc(); next (D2); } while (next (D1)); 
         ProgressBar::done();
+      }
+
+
+
+      class next_contiguous {
+        public:
+          template <class Set> next_contiguous (Set& D) { 
+            assert (voxel_count (D));
+            const Layout* layout = D.layout();
+            for (size_t n = 0; n < D.ndim(); ++n) 
+              A.push_back (ContiguousAxis (layout[n].axis, D.dim(layout[n].axis), layout[n].dir));
+          }
+          template <class Set> bool operator() (Set& D) {
+            assert (voxel_count (D1));
+            size_t n = 0;
+            do {
+              if (D.pos (A[n].axis) != A[n].to) { D.move (A[n].axis, A[n].inc); return (true); }
+              D.pos (A[n].axis, A[n].from);
+              ++n;
+            } while (n < A.size());
+            return (false);
+          }
+          template <class Set> void reset (Set& D) { for (size_t n = 0; n < A.size(); ++n) D.pos (A[n].axis, A[n].from); }
+        private:
+          std::vector<ContiguousAxis> A;
+      };
+
+
+
+
+      template <class Functor, class Set> 
+        inline void all_contiguous (Functor& func, Set& D) {
+        next_contiguous next (D);
+        next.reset (D);
+        do func (D); while (next (D)); 
+      }
+
+
+      template <class Functor, class Set1, class Set2> 
+        inline void all_contiguous (Functor& func, Set1& D1, Set2& D2) {
+        if (!dimensions_match (D1, D2)) 
+          throw Exception ("dimensions mismatch between \"" + D1.name() + "\" and \"" + D2.name() + "\"");
+        next_contiguous next (D1);
+        next.reset (D1);
+        next.reset (D2);
+        do { func (D1, D2); next (D2); } while (next (D1)); 
+      }
+
+
+      template <class Functor, class Set1, class Set2> 
+        inline void all_contiguous (const std::string& progress_message, Functor& func, Set1& D1, Set2& D2) {
+        if (!dimensions_match (D1, D2)) 
+          throw Exception ("dimensions mismatch between \"" + D1.name() + "\" and \"" + D2.name() + "\"");
+        next_contiguous next (D1);
+        next.reset (D1);
+        next.reset (D2);
+        ProgressBar::init (voxel_count (D1), progress_message);
+        do { func (D1, D2); ProgressBar::inc(); next (D2); } while (next (D1)); 
+        ProgressBar::done();
+      }
+
+
+
+      template <class Functor, class Set> inline void spatial (Functor& func, Set& D) {
+        assert (voxel_count (D));
+        D.reset();
+        for (D.pos(2,0); D.pos(2) < D.dim(2); D.move(2,1)) 
+          for (D.pos(1,0); D.pos(1) < D.dim(1); D.move(1,1)) 
+            for (D.pos(0,0); D.pos(0) < D.dim(0); D.move(0,1)) 
+              func (D); 
+      }
+
+      template <class Functor, class Set1, class Set2> inline void spatial (Functor& func, Set1& D1, Set2& D2) {
+        assert (voxel_count (D1));
+        if (!dimensions_match (D1, D2, 3)) 
+          throw Exception ("dimensions mismatch between \"" + D1.name() + "\" and \"" + D2.name() + "\"");
+        D1.reset(); D2.reset();
+        for (D1.pos(2,0), D2.pos(2,0); D1.pos(2) < D1.dim(2); D1.move(2,1), D2.move(2,1)) 
+          for (D1.pos(1,0), D2.pos(1,0); D1.pos(1) < D1.dim(1); D1.move(1,1), D2.move(1,1)) 
+            for (D1.pos(0,0), D2.pos(0,0); D1.pos(0) < D1.dim(0); D1.move(0,1), D2.move(0,1)) 
+              func (D1, D2); 
+      }
+
+
+      template <class Functor, class Set> inline void spatial_contiguous (Functor& func, Set& D) {
+        assert (voxel_count (D));
+        const Layout* layout = D.layout();
+        ContiguousAxis A[3];
+        size_t a = 0;
+        for (size_t n = 0; a < 3 && n < D.ndim(); ++n) {
+          if (layout[n].axis < 3) {
+            A[a] = ContiguousAxis (layout[n].axis, D.dim(layout[n].axis), layout[n].dir);
+            ++a;
+          }
+        }
+        assert (a == 3);
+        D.reset();
+        for (D.pos(A[2].axis,A[2].from); D.pos(A[2].axis) != A[2].to; D.move(A[2].axis,A[2].inc)) 
+          for (D.pos(A[1].axis,A[1].from); D.pos(A[1].axis) != A[1].to; D.move(A[1].axis,A[1].inc)) 
+            for (D.pos(A[0].axis,A[0].from); D.pos(A[0].axis) != A[0].to; D.move(A[0].axis,A[0].inc)) 
+              func (D); 
       }
 
     }

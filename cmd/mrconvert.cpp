@@ -24,10 +24,9 @@
 #include "progressbar.h"
 #include "image/voxel.h"
 #include "image/axis.h"
-#include "image/layout.h"
+#include "dataset/layout.h"
 #include "dataset/copy.h"
 
-using namespace std; 
 using namespace MR; 
 
 SET_VERSION_DEFAULT;
@@ -79,42 +78,49 @@ OPTIONS = {
   Option::End
 };
 
-namespace MR {
-  namespace DataSet {
 
-    template <class Set> class Extractor {
-      public:
-        typedef typename Set::value_type value_type;
+template <class Set> class Extractor {
+  public:
+    typedef typename Set::value_type value_type;
 
-        Extractor (Set& original, const std::vector<std::vector<int> >& positions) : ds (original), x (new size_t [ndim()]), P (positions) { }
-        ~Extractor () { delete [] x; }
-        const std::string& name () const { return (ds.name()); }
-        size_t  ndim () const { return (ds.ndim()); }
-        int     dim (size_t axis) const { return (P[axis].size()); }
-        float   vox (size_t axis) const { return (ds.vox (axis)); }
-        const Image::Layout* layout () const { return (ds.layout()); }
-        const Math::Matrix<float>& transform () const { return (ds.transform()); }
+    Extractor (Set& original, const std::vector<std::vector<int> >& positions) : ds (original), x (new size_t [ndim()]), P (positions) { }
+    ~Extractor () { delete [] x; }
+    const std::string& name () const { return (ds.name()); }
+    size_t  ndim () const { return (ds.ndim()); }
+    int     dim (size_t axis) const { return (P[axis].size()); }
+    float   vox (size_t axis) const { return (ds.vox (axis)); }
+    const DataSet::Layout* layout () const { return (ds.layout()); }
+    const Math::Matrix<float>& transform () const { return (ds.transform()); }
 
-        void reset () { memset (x, 0, sizeof(size_t)*ndim()); for (size_t a = 0; a < ndim(); ++a) ds.pos (a, P[a][0]); }
+    void reset () { memset (x, 0, sizeof(size_t)*ndim()); for (size_t a = 0; a < ndim(); ++a) ds.pos (a, P[a][0]); }
 
-        ssize_t pos (size_t axis) const { return (x[axis]); } 
-        void    pos (size_t axis, ssize_t position) const { x[axis] = position; ds.pos (axis, P[axis][position]); }
-        void    move (size_t axis, ssize_t increment) const { x[axis] += increment; ds.pos (axis, P[axis][x[axis]]); }
+    ssize_t pos (size_t axis) const { return (x[axis]); } 
+    void    pos (size_t axis, ssize_t position) const { x[axis] = position; ds.pos (axis, P[axis][position]); }
+    void    move (size_t axis, ssize_t increment) const { x[axis] += increment; ds.pos (axis, P[axis][x[axis]]); }
 
-        value_type   value () const { return (ds.value()); }
-        void         value (value_type val) { ds.value (val); }
+    value_type   value () const { return (ds.value()); }
+    void         value (value_type val) { ds.value (val); }
 
-      private:
-        Set& ds;
-        size_t* x;
-        const std::vector<std::vector<int> > P;
-    };
+  private:
+    Set& ds;
+    size_t* x;
+    const std::vector<std::vector<int> > P;
+};
 
-  }
+
+
+
+template <class Set1, class Set2> void copy_replace_NaN_kernel (Set1& destination, Set2& source) { 
+  typedef typename Set1::value_type T;
+  T val = source.value();
+  destination.value (isnan(val) ? 0.0 : val);
 }
 
-
-
+template <class Set1, class Set2> void copy (Set1& destination, Set2& source, bool replace_NaN) { 
+  std::string progress_message ("copying from \"" + source.name() + "\" to \"" + destination.name() + "\"...");
+  if (replace_NaN) DataSet::Loop::all_contiguous (progress_message, DataSet::copy_kernel<Set1,Set2>, destination, source);
+  else DataSet::Loop::all_contiguous (progress_message, copy_replace_NaN_kernel<Set1,Set2>, destination, source);
+}
 
 
 
@@ -167,7 +173,7 @@ EXECUTE {
   if (opt.size()) header.datatype().parse (DataType::identifiers[opt[0][0].get_int()]);
 
   for (size_t n = 0; n < vox.size(); n++) 
-    if (isfinite (vox[n])) header.axes.vox(n) = vox[n];
+    if (std::isfinite (vox[n])) header.axes.vox(n) = vox[n];
 
   opt = get_options (7); // layout
   if (opt.size()) {
@@ -216,18 +222,18 @@ EXECUTE {
         for (size_t i = 0; i < pos[n].size(); i++) pos[n][i] = i;
       }
     }
-    DataSet::Extractor<Image::Voxel<float> > extract (in, pos);
+    Extractor<Image::Voxel<float> > extract (in, pos);
     for (size_t n = 0; n < extract.ndim(); ++n)
       header.axes.dim(n) = extract.dim(n);
     const Image::Header header_out = argument[1].get_image (header);
     Image::Voxel<float> out (header_out);
-    DataSet::copy (out, extract);
+    copy (out, extract, replace_NaN);
   }
   else { 
     // straight copy:
     const Image::Header header_out = argument[1].get_image (header);
     Image::Voxel<float> out (header_out);
-    DataSet::copy (out, in);
+    copy (out, in, replace_NaN);
   }
 }
 
