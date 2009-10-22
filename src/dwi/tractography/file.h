@@ -28,7 +28,6 @@
 #include "point.h"
 #include "file/key_value.h"
 #include "dwi/tractography/properties.h"
-#include "dwi/tractography/mds.h"
 
 namespace MR {
   namespace DWI {
@@ -38,13 +37,12 @@ namespace MR {
         public:
           void open (const std::string& file, Properties& properties);
           bool next (std::vector<Point>& tck);
-          void close ();
+          void close () { in.close(); }
 
         protected:
-          Ptr<MDS> mds;
           std::ifstream  in;
-          DataType       dtype;
-          uint          count;
+          DataType  dtype;
+          size_t  count;
 
           Point get_next_point ()
           { 
@@ -67,23 +65,26 @@ namespace MR {
           void create (const std::string& file, const Properties& properties);
           void append (const std::vector<Point>& tck)
           {
-            off64_t current (out.tellp());
-            current -= 3*sizeof(float);
             if (tck.size()) {
-              for (std::vector<Point>::const_iterator i = tck.begin()+1; i != tck.end(); ++i) write_next_point (*i);
-              write_next_point (Point (NAN, NAN, NAN));
+              off64_t current (out.tellp());
+              current -= 3*sizeof(float);
+              if (tck.size()) {
+                for (std::vector<Point>::const_iterator i = tck.begin()+1; i != tck.end(); ++i) write_next_point (*i);
+                write_next_point (Point (NAN, NAN, NAN));
+              }
+              write_next_point (Point (INFINITY, INFINITY, INFINITY));
+              off64_t end (out.tellp());
+              out.seekp (current);
+              write_next_point (tck.size() ? tck[0] : Point (NAN, NAN, NAN));
+              out.seekp (end);
+
+              count++;
             }
-            write_next_point (Point (INFINITY, INFINITY, INFINITY));
-            off64_t end (out.tellp());
-            out.seekp (current);
-            write_next_point (tck.size() ? tck[0] : Point (NAN, NAN, NAN));
-            out.seekp (end);
-            
-            count++;
+            total_count++;
           }
           void close ();
 
-          uint count, total_count;
+          size_t count, total_count;
 
         protected:
           std::ofstream  out;

@@ -32,8 +32,8 @@ namespace MR {
 
       class Properties : public std::map<std::string, std::string> {
         public:
-          std::vector<RefPtr<ROI> >  roi;
-          std::vector<std::string>          comments;
+          std::vector<RefPtr<ROI> > roi;
+          std::vector<std::string>  comments;
 
           void  clear () { std::map<std::string, std::string>::clear(); roi.clear(); comments.clear(); }
       };

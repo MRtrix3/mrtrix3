@@ -45,9 +45,9 @@ namespace MR {
           void        reset ();
 
           Method      method;
-          std::string      cmd, source, mask;
+          std::string cmd, source, mask;
           float       step_size, max_dist, threshold, init_threshold, min_curv, mask_threshold;
-          uint32_t     max_num_tracks, max_num_tracks_generated, num_tracks_generated;
+          size_t      max_num_tracks, max_num_tracks_generated, num_tracks_generated;
 
           bool        unidirectional;
           Point       init_dir;

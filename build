@@ -7,15 +7,8 @@ import time
 import threading
 import subprocess 
 
+
 cache_filename = 'configuration.py'
-
-if not os.path.isfile (cache_filename):
-  print 'no configuration file found!'
-  print 'please run ./configure prior to invoking this script'
-  print ''
-  sys.exit (1)
-
-
 
 
 system = None
@@ -77,11 +70,6 @@ h_suffix = '.h'
 libname = 'mrtrix'
 
 
-
-# load configuration file:
-exec 'from ' + cache_filename[:-3] + ' import *'
-
-
 # check if we are compiling a separate project:
 
 mrtrix_dir = os.path.dirname (os.path.realpath(sys.argv[0]))
@@ -90,6 +78,20 @@ else:
   if verbose: 
     print 'compiling separate project against "' + mrtrix_dir + '"'
     print ''
+
+# load configuration file:
+try:
+  exec 'from ' + cache_filename[:-3] + ' import *'
+except ImportError:
+  print 'no configuration file found!'
+  print 'please run ./configure prior to invoking this script'
+  print ''
+  sys.exit (1)
+
+
+# if compiling a separate project, modify include paths:
+
+if mrtrix_dir:
   include_paths = [ misc_dir ]
   lib_dir = os.path.join (mrtrix_dir, lib_dir)
   misc_dir = os.path.join (mrtrix_dir, misc_dir)
@@ -647,7 +649,6 @@ if dev_dir in targets:
 if len(targets) == 0: targets = default_targets()
 
 if verbose:
-  print ''
   print 'building targets:',
   for entry in targets:
     print entry,

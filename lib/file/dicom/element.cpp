@@ -38,7 +38,7 @@ namespace MR {
         item_number.clear();
 
         fmap = new File::MMap (filename);
-        if (fmap->size() < 256) throw Exception ("\"" + fmap->name() + "\" is too small to be a valid DICOM file", 3);
+        if (fmap->size() < 256) throw Exception ("\"" + fmap->name() + "\" is too small to be a valid DICOM file");
 
         next = (uint8_t*) fmap->address();
 
@@ -52,7 +52,7 @@ namespace MR {
 
         try { set_explicit_encoding(); }
         catch (Exception) {
-          throw Exception ("\"" + fmap->name() + "\" is not a valid DICOM file", 3);
+          throw Exception ("\"" + fmap->name() + "\" is not a valid DICOM file");
           fmap = NULL;
         }
       }
@@ -65,7 +65,7 @@ namespace MR {
       void Element::set_explicit_encoding ()
       {
         assert (fmap);
-        if (read_GR_EL()) throw Exception ("\"" + fmap->name() + "\" is too small to be DICOM", 3);
+        if (read_GR_EL()) throw Exception ("\"" + fmap->name() + "\" is too small to be DICOM");
 
         is_explicit = true;
         next = start;
@@ -95,7 +95,7 @@ namespace MR {
         start = next;
         data = next = NULL;
 
-        if (start < (uint8_t*) fmap->address()) throw Exception ("invalid DICOM element", 3);
+        if (start < (uint8_t*) fmap->address()) throw Exception ("invalid DICOM element");
         if (start + 8 > (uint8_t*) fmap->address() + fmap->size()) return (true);
 
         is_BE = previous_BO_was_BE;
@@ -104,7 +104,7 @@ namespace MR {
 
         if (group == GROUP_BYTE_ORDER_SWAPPED) {
           if (!is_BE) 
-            throw Exception ("invalid DICOM group ID " + str (group) + " in file \"" + fmap->name() + "\"", 3);
+            throw Exception ("invalid DICOM group ID " + str (group) + " in file \"" + fmap->name() + "\"");
 
           is_BE = false;
           group = GROUP_BYTE_ORDER;
@@ -155,12 +155,15 @@ namespace MR {
           if (VR != VR_SQ && !(group == GROUP_SEQUENCE && element == ELEMENT_SEQUENCE_ITEM)) 
             throw Exception ("undefined length used for DICOM tag " + ( tag_name().size() ? tag_name().substr (2) : "" ) 
                 + " (" + str (group) + ", " + str (element) 
-                + ") in file \"" + fmap->name() + "\"", 3);
+                + ") in file \"" + fmap->name() + "\"");
         }
-        else if (next+size > (uint8_t*) fmap->address() + fmap->size()) throw Exception ("file \"" + fmap->name() + "\" is too small to contain DICOM elements specified", 3);
-        else if (size%2) throw Exception ("odd length (" + str (size) + ") used for DICOM tag " + ( tag_name().size() ? tag_name().substr (2) : "" ) 
-              + " (" + str (group) + ", " + str (element) + ") in file \"" + fmap->name() + "", 3);
-        else if (VR != VR_SQ && ( group != GROUP_SEQUENCE || element != ELEMENT_SEQUENCE_ITEM ) ) next += size;
+        else if (next+size > (uint8_t*) fmap->address() + fmap->size()) 
+          throw Exception ("file \"" + fmap->name() + "\" is too small to contain DICOM elements specified");
+        else if (size%2) 
+          throw Exception ("odd length (" + str (size) + ") used for DICOM tag " + ( tag_name().size() ? tag_name().substr (2) : "" ) 
+              + " (" + str (group) + ", " + str (element) + ") in file \"" + fmap->name() + "");
+        else if (VR != VR_SQ && ( group != GROUP_SEQUENCE || element != ELEMENT_SEQUENCE_ITEM ) ) 
+          next += size;
 
 
 

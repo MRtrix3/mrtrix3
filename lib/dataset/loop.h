@@ -23,6 +23,8 @@
 #ifndef __dataset_loop_h__
 #define __dataset_loop_h__
 
+#include "progressbar.h"
+
 namespace MR {
   namespace DataSet {
 

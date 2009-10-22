@@ -25,6 +25,7 @@
 
 #include <stack>
 
+#include "ptr.h"
 #include "thread/condition.h"
 
 namespace MR {
@@ -329,7 +330,7 @@ namespace MR {
           writer_count (0),
           reader_count (0),
           name (description) { assert (capacity > 0); }
-        ~Queue () { while (!empty()) { delete *front; front = inc(front); } delete [] buffer; }
+        ~Queue () { delete [] buffer; }
 
         //! This class is used to register a writer with the queue
         /*! Items cannot be written directly onto a Thread::Queue queue. An

@@ -25,8 +25,9 @@
 
 #include "point.h"
 #include "ptr.h"
-#include "image/object.h"
-#include "image/interp.h"
+#include "image/voxel.h"
+#include "dataset/interp.h"
+#include "dataset/buffer.h"
 #include "math/rng.h"
 
 
@@ -46,10 +47,9 @@ namespace MR {
           } Type;
 
           ROI (Type type_id, const Point& sphere_pos, float sphere_radius) : type (type_id), position (sphere_pos), radius (sphere_radius) { }
-          ROI (Type type_id, RefPtr<Image::Object> mask_image) : type (type_id), radius (NAN), mask (mask_image->name()), mask_object (mask_image) { }
+          ROI (Type type_id, const Image::Header& mask_header) : type (type_id), radius (NAN) { get_mask (mask_header); }
           ROI (Type type_id, const std::string& spec) : type (type_id), radius (NAN) {
             try {
-              Exception::Lower s (1);
               std::vector<float> F (parse_floats (spec));
               if (F.size() != 4) throw 1;
               position.set (F[0], F[1], F[2]);
@@ -57,15 +57,15 @@ namespace MR {
             }
             catch (...) { 
               info ("error parsing spherical ROI specification \"" + spec + "\" - assuming mask image");
-              mask = spec; 
+              Image::Header mask_header = Image::Header::open (spec);
+              get_mask (mask_header);
             }
           }
 
           Type   type;
           Point  position;
           float  radius;
-          std::string mask;
-          RefPtr<Image::Object> mask_object;
+          RefPtr<DataSet::Buffer<bool,3> > mask;
 
           std::string  type_description () const {
             switch (type) { 
@@ -77,9 +77,13 @@ namespace MR {
             }
           }
 
-          std::string shape () const { return (mask.size() ? "image" : "sphere"); }
-          std::string parameters () const { return (mask.size() ? mask : str(position[0]) + "," + str(position[1]) + "," + str(position[2]) + "," + str(radius)); }
+          std::string shape () const { return (mask ? "image" : "sphere"); }
+          std::string parameters () const { return (mask ? mask->name() : 
+                str(position[0]) + "," + str(position[1]) + "," + str(position[2]) + "," + str(radius)); }
           std::string specification () const { return (type_description() + " " + parameters()); }
+
+        private:
+          void get_mask (const Image::Header& mask_header);
       };
 
 

@@ -69,12 +69,12 @@ namespace MR {
             if (Path::is_dir (name)) read_dir (name);
             else {
               try { read_file (name); }
-              catch (Exception&) { }
+              catch (Exception& E) { E.display (3); }
             }
             ProgressBar::inc();
           }
         }
-        catch (...) { throw Exception ("error opening DICOM folder \"" + filename + "\": " + strerror (errno)); }
+        catch (Exception& E) { throw Exception (E, "error opening DICOM folder \"" + filename + "\": " + strerror (errno)); }
       }
 
 

@@ -46,7 +46,6 @@ namespace MR {
         sequence.clear();
         series_number = bits_alloc = dim[0] = dim[1] = data = 0;
 
-        Exception::Lower l(2);
         Element item;
         try {
           item.set (filename); 
@@ -96,7 +95,10 @@ namespace MR {
           }
 
         }
-        catch (Exception&) { return (true); }
+        catch (Exception& E) { 
+          E.display (3);
+          return (true); 
+        }
 
         return (false);
       }

@@ -18,10 +18,6 @@
     You should have received a copy of the GNU General Public License
     along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
 
-
-    01-05-2009 J-Donald Tournier <d.tournier@brain.org.au>
-    * fix minor bug that caused first point of first track to be omitted.
-
 */
 
 #include "file/path.h"
@@ -37,67 +33,57 @@ namespace MR {
         properties.clear();
         dtype = DataType::Undefined;
 
-        try {
-          Exception::Lower s (1);
-          File::KeyValue kv (file, "mrtrix tracks");
-          std::string data_file;
+        File::KeyValue kv (file, "mrtrix tracks");
+        std::string data_file;
 
-          while (kv.next()) {
-            std::string key = lowercase (kv.key());
-            if (key == "roi") {
-              try {
-                std::vector<std::string> V (split (kv.value()));
-                if (V.size() != 2) throw 1;
-                ROI::Type type;
+        while (kv.next()) {
+          std::string key = lowercase (kv.key());
+          if (key == "roi") {
+            try {
+              std::vector<std::string> V (split (kv.value()));
+              if (V.size() != 2) throw 1;
+              ROI::Type type;
 
-                V[0] = lowercase (V[0]);
-                if (V[0] == "seed") type = ROI::Seed;
-                else if (V[0] == "include") type = ROI::Include;
-                else if (V[0] == "exclude") type = ROI::Exclude;
-                else if (V[0] == "mask") type = ROI::Mask;
-                else throw 1;
+              V[0] = lowercase (V[0]);
+              if (V[0] == "seed") type = ROI::Seed;
+              else if (V[0] == "include") type = ROI::Include;
+              else if (V[0] == "exclude") type = ROI::Exclude;
+              else if (V[0] == "mask") type = ROI::Mask;
+              else throw 1;
 
-                properties.roi.push_back (RefPtr<ROI> (new ROI (type, V[1])));
-              }
-              catch (...) {
-                error ("WARNING: invalid ROI specification in tracks file \"" + file + "\" - ignored");
-              }
+              properties.roi.push_back (RefPtr<ROI> (new ROI (type, V[1])));
             }
-            else if (key == "comment") properties.comments.push_back (kv.value());
-            else if (key == "file") data_file = kv.value();
-            else if (key == "datatype") dtype.parse (kv.value()); 
-            else properties[key] = kv.value();
+            catch (...) {
+              error ("WARNING: invalid ROI specification in tracks file \"" + file + "\" - ignored");
+            }
           }
-
-          if (dtype == DataType::Undefined) throw Exception ("no datatype specified for tracks file \"" + file + "\"");
-          if (dtype != DataType::Float32LE && dtype != DataType::Float32BE)
-            throw Exception ("only supported datatype for tracks file are Float32LE or Float32BE (in tracks file \"" + file + "\")");
-
-          if (data_file.empty()) throw Exception ("missing \"files\" specification for tracks file \"" + file + "\"");
-
-          std::istringstream files_stream (data_file);
-          std::string fname;
-          files_stream >> fname;
-          off64_t offset = 0;
-          if (files_stream.good()) {
-            try { files_stream >> offset; }
-            catch (...) { throw Exception ("invalid offset specified for file \"" + fname + "\" in tracks file \"" + file + "\""); }
-          }
-
-          if (fname != ".") fname = Path::join (Path::dirname (file), fname);
-          else fname = file;
-
-          in.open (fname.c_str(), std::ios::in | std::ios::binary);
-          if (!in) throw Exception ("error opening tracks data file \"" + fname + "\": " + strerror(errno));
-          in.seekg (offset);
+          else if (key == "comment") properties.comments.push_back (kv.value());
+          else if (key == "file") data_file = kv.value();
+          else if (key == "datatype") dtype.parse (kv.value()); 
+          else properties[key] = kv.value();
         }
-        catch (Exception e) {
-          if (e.description.compare (0, 37, "invalid first line for key/value file")) { e.display(); throw; }
 
-          mds = new MDS;
-          mds->read (file, properties);
-          count = 0;
+        if (dtype == DataType::Undefined) throw Exception ("no datatype specified for tracks file \"" + file + "\"");
+        if (dtype != DataType::Float32LE && dtype != DataType::Float32BE)
+          throw Exception ("only supported datatype for tracks file are Float32LE or Float32BE (in tracks file \"" + file + "\")");
+
+        if (data_file.empty()) throw Exception ("missing \"files\" specification for tracks file \"" + file + "\"");
+
+        std::istringstream files_stream (data_file);
+        std::string fname;
+        files_stream >> fname;
+        off64_t offset = 0;
+        if (files_stream.good()) {
+          try { files_stream >> offset; }
+          catch (...) { throw Exception ("invalid offset specified for file \"" + fname + "\" in tracks file \"" + file + "\""); }
         }
+
+        if (fname != ".") fname = Path::join (Path::dirname (file), fname);
+        else fname = file;
+
+        in.open (fname.c_str(), std::ios::in | std::ios::binary);
+        if (!in) throw Exception ("error opening tracks data file \"" + fname + "\": " + strerror(errno));
+        in.seekg (offset);
       }
 
 
@@ -107,13 +93,6 @@ namespace MR {
       bool Reader::next (std::vector<Point>& tck)
       {
         tck.clear();
-
-        if (mds) {
-          if (count >= mds->tracks.size()) return (false);
-          tck = mds->tracks[count].next();
-          count++;
-          return (true);
-        }
 
         if (!in.is_open()) return (false);
         do {
@@ -139,12 +118,6 @@ namespace MR {
 
 
 
-      void Reader::close ()
-      {
-        if (mds) mds = NULL;
-        else in.close();
-      }
-
 
 
 
@@ -163,7 +136,7 @@ namespace MR {
 
         for (std::vector<std::string>::const_iterator i = properties.comments.begin(); i != properties.comments.end(); ++i)
           out << "comment: " << *i << "\n";
-   
+
         for (std::vector<RefPtr<ROI> >::const_iterator i = properties.roi.begin(); i != properties.roi.end(); ++i)
           out << "roi: " << (*i)->specification() << "\n";
 

@@ -43,7 +43,7 @@ namespace MR {
             return (true);
           }
         }
-        catch (...) { throw Exception ("error reading image data from command-line pipe"); }
+        catch (Exception& E) { throw Exception (E, "error reading image data from command-line pipe"); }
         return (false);
       }
 

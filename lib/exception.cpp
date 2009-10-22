@@ -29,7 +29,5 @@ namespace MR {
   void (*info) (const std::string& msg) = NULL;
   void (*debug) (const std::string& msg) = NULL;
 
-  int Exception::level_offset = 0;
-
 }
 

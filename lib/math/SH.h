@@ -185,7 +185,7 @@ namespace MR {
       template <typename T> class PrecomputedAL 
       {
         public:
-          PrecomputedAL (int up_to_lmax, int num_dir) :
+          PrecomputedAL (int up_to_lmax, int num_dir = 512) :
             lmax (up_to_lmax), 
             ndir (num_dir),
             nAL (NforL_mpos(lmax)),

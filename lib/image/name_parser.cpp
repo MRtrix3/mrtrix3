@@ -233,13 +233,7 @@ namespace MR {
 
     std::string NameParser::get_next_match (std::vector<int>& indices, bool return_seq_index)
     {
-      if (!folder) {
-        try { folder = new Path::Dir (folder_name); }
-        catch (...) {
-          folder = NULL;
-          throw Exception ("failed to open folder \"" + folder_name + "\": " + strerror(errno));
-        }
-      }
+      if (!folder) folder = new Path::Dir (folder_name); 
 
       std::string fname;
       while ((fname = folder->read_name()).size()) {

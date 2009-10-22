@@ -215,7 +215,7 @@ namespace MR {
 
         H.identifier = image_name;
       }
-      catch (...) { throw Exception ("error opening image \"" + image_name + "\""); }
+      catch (Exception& E) { throw Exception (E, "error opening image \"" + image_name + "\""); }
 
       return (H);
     }
@@ -288,7 +288,7 @@ namespace MR {
 
         H.identifier = image_name;
       }
-      catch (...) { throw Exception ("error creating image \"" + image_name + "\""); }
+      catch (Exception& E) { throw Exception (E, "error creating image \"" + image_name + "\""); }
 
       return (H);
     }

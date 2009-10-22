@@ -73,7 +73,7 @@ namespace MR {
         T x2 = pow2(x);
         if (m && x2 >= 1.0) return (0.0);
         T v0 = 0.282094791773878;
-        if (m) v0 *= sqrt (T(2*m+1) * Plm_sph_helper (1.0-x2, 2.0*m));
+        if (m) v0 *= sqrt (T(2*m+1) * Plm_sph_helper<T> (1.0-x2, 2.0*m));
         if (m & 1) v0 = -v0;
         if (l == m) return (v0);
 

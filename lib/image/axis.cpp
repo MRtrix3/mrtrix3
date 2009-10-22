@@ -116,7 +116,6 @@ namespace MR {
         }
       }
       catch (int) { throw Exception ("malformed axes specification \"" + specifier + "\""); }
-      catch (...) { throw; }
 
       if (current != original.ndim()) 
         throw Exception ("incorrect number of axes in axes specification \"" + specifier + "\"");

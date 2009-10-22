@@ -37,13 +37,19 @@ namespace MR {
 
     //! \cond skip
 
-    template <typename value_type, typename S> static value_type __get   (const void* data, size_t i) { return (MR::get<S> (data, i)); }
-    template <typename value_type, typename S> static value_type __getLE (const void* data, size_t i) { return (MR::getLE<S> (data, i)); }
-    template <typename value_type, typename S> static value_type __getBE (const void* data, size_t i) { return (MR::getBE<S> (data, i)); }
+    namespace {
+      template <typename value_type, typename S> value_type __get   (const void* data, size_t i) { return (MR::get<S> (data, i)); }
+      template <typename value_type, typename S> value_type __getLE (const void* data, size_t i) { return (MR::getLE<S> (data, i)); }
+      template <typename value_type, typename S> value_type __getBE (const void* data, size_t i) { return (MR::getBE<S> (data, i)); }
 
-    template <typename value_type, typename S> static void __put   (value_type val, void* data, size_t i) { return (MR::put<S> (val, data, i)); }
-    template <typename value_type, typename S> static void __putLE (value_type val, void* data, size_t i) { return (MR::putLE<S> (val, data, i)); }
-    template <typename value_type, typename S> static void __putBE (value_type val, void* data, size_t i) { return (MR::putBE<S> (val, data, i)); }
+      template <typename value_type, typename S> void __put   (value_type val, void* data, size_t i) { return (MR::put<S> (val, data, i)); }
+      template <typename value_type, typename S> void __putLE (value_type val, void* data, size_t i) { return (MR::putLE<S> (val, data, i)); }
+      template <typename value_type, typename S> void __putBE (value_type val, void* data, size_t i) { return (MR::putBE<S> (val, data, i)); }
+
+      // specialisation for conversion to bool
+      template <> bool __getLE<bool,double> (const void* data, size_t i) { return (Math::round(MR::getLE<double> (data, i))); }
+      template <> bool __getBE<bool,double> (const void* data, size_t i) { return (Math::round(MR::getBE<double> (data, i))); }
+    }
 
     // \endcond
 

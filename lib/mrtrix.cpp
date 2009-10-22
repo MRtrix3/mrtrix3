@@ -42,9 +42,10 @@ namespace MR {
   std::vector<float> parse_floats (const std::string& spec)
   {
     std::vector<float> V;
+
+    if (!spec.size()) throw Exception ("floating-point sequence specifier is empty"); 
+    std::string::size_type start = 0, end;
     try {
-      if (!spec.size()) throw (0);
-      std::string::size_type start = 0, end;
       do {
         end = spec.find_first_of (',', start);
         std::string sub (spec.substr (start, end-start));
@@ -53,7 +54,10 @@ namespace MR {
         start = end+1;
       } while (end < spec.size());
     }
-    catch (...) { throw Exception ("can't parse floating-point sequence specifier \"" + spec + "\""); }
+    catch (Exception& E) { 
+      throw Exception (E, "can't parse floating-point sequence specifier \"" + spec + "\"");
+    }
+
     return (V);
   }
 
@@ -63,11 +67,11 @@ namespace MR {
   std::vector<int> parse_ints (const std::string& spec, int last)
   {
     std::vector<int> V;
+    if (!spec.size()) throw Exception ("integer sequence specifier is empty"); 
+    std::string::size_type start = 0, end;
+    int num[3];
+    int i = 0;
     try {
-      if (!spec.size()) throw (0);
-      std::string::size_type start = 0, end;
-      int num[3];
-      int i = 0;
       do {
         end = spec.find_first_of (",:", start);
         std::string str (strip (spec.substr (start, end-start)));
@@ -95,7 +99,10 @@ namespace MR {
         start = end+1;
       } while (end < spec.size());
     }
-    catch (...) { throw Exception ("can't parse integer sequence specifier \"" + spec + "\""); }
+    catch (Exception& E) {
+      throw Exception (E, "can't parse integer sequence specifier \"" + spec + "\"");
+    }
+
     return (V);
   }
 

@@ -25,6 +25,8 @@
 
 #include <cerrno>
 #include <string>
+#include <vector>
+
 #include "types.h"
 
 namespace MR {
@@ -34,33 +36,24 @@ namespace MR {
   extern void (*info)  (const std::string& msg);
   extern void (*debug) (const std::string& msg);
 
-  /*! \todo change default behaviour to NOT print any error message, and
-   * delegate error reporting to the main enclosing try {} block. Also remove
-   * the (now deprecated) Execption::Lower interface. */
   class Exception {
     public:
-      Exception (const std::string& msg, int log_level = 1) : 
-        description (msg),
-        level (log_level) { display(); }
+      Exception (const std::string& msg) { description.push_back (msg); }
+      Exception (const Exception& previous_exception, const std::string& msg) : 
+        description (previous_exception.description) { description.push_back (msg); }
 
-      const std::string description;
-      const int level;
-
-      void  display () const {
-        if (level + level_offset < 2) error (description);
-        else if (level + level_offset == 2) info (description);
-        else debug (description);
+      void  display (int log_level = 1) const { 
+        for (size_t n = 0; n < description.size(); ++n) {
+          switch (log_level) {
+            case 1: error (description[n]); break; 
+            case 2: info (description[n]); break; 
+            case 3: debug (description[n]); break; 
+          }
+        }
       }
 
-      class Lower {
-        public:
-          Lower (int amount = 1)  { level_offset = amount; }
-          ~Lower () { level_offset = 0; }
-          friend class Exception;
-      };
-
     private:
-      static int level_offset;
+      std::vector<std::string> description;
   };
 
 }

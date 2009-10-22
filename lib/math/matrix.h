@@ -393,7 +393,7 @@ namespace MR {
           std::ifstream in (filename.c_str());
           if (!in) throw Exception ("cannot open matrix file \"" + filename + "\": " + strerror (errno));
           try { in >> *this; }
-          catch (Exception& E) { throw Exception ("error loading matrix file \"" + filename + "\":" + E.description); }
+          catch (Exception& E) { throw Exception (E, "error loading matrix file \"" + filename + "\""); }
           return (*this);
         }
 
