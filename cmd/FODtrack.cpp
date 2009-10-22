@@ -46,7 +46,7 @@ DESCRIPTION = {
 const char* type_choices[] = { "DT_STREAM", "DT_PROB", "SD_STREAM", "SD_PROB", NULL };
 
 ARGUMENTS = {
-  Argument ("FOD", "FOD image", "the image containing the FOD data, represented in spherical harmonics.").type_image_in(),
+  Argument ("FOD", "FOD image", "the image containing the FOD data, expressed in spherical harmonics.").type_image_in(),
   Argument ("tracks", "output tracks file", "the output file containing the tracks generated.").type_file(),
   Argument::End
 };
@@ -122,7 +122,6 @@ class TrackShared {
   public:
     TrackShared (const Image::Header& FOD, DWI::Tractography::Properties& properties, Point init_direction) :
       FOD_object (FOD),
-      precomputer (lmax),
       init_dir (init_direction), 
       max_num_tracks (1000),
       lmax (Math::SH::LforN (FOD.dim(3))),
@@ -131,9 +130,10 @@ class TrackShared {
       total_seed_volume (0.0),
       step_size (0.1),
       threshold (0.1), 
+      precomputer (lmax),
       precomputed (true) {
 
-        properties["method"] = "SD_PROB";
+        properties["method"] = "FOD_PROB";
         properties["source"] = FOD_object.name();
 
         if (properties["step_size"].empty()) properties["step_size"] = str (step_size); 
@@ -166,17 +166,20 @@ class TrackShared {
 
         max_num_attempts = properties["max_num_attempts"].empty() ? 100 * max_num_tracks : to<int> (properties["max_num_attempts"]);
         unidirectional = to<int> (properties["unidirectional"]);
-        min_size = round (to<float> (properties["min_dist"]) / to<float> (properties["step_size"]));
+        min_num_points = round (to<float> (properties["min_dist"]) / to<float> (properties["step_size"]));
+
+        VAR (max_num_points);
+        VAR (min_num_points);
       }
 
     size_t max_track_size () const { return (max_num_points); }
 
   private:
     const Image::Header& FOD_object;
-    Math::SH::PrecomputedAL<float> precomputer;
     const Point init_dir;
-    size_t max_num_tracks, max_num_attempts, min_size, lmax, max_trials, num_points, max_num_points;
+    size_t max_num_tracks, max_num_attempts, min_num_points, lmax, max_trials, num_points, max_num_points;
     float min_curv, min_dpi, dist_spread, total_seed_volume, step_size, threshold, init_threshold;
+    Math::SH::PrecomputedAL<float> precomputer;
     bool unidirectional, precomputed;
 
     static float curv2angle (float step_size_, float curv)     { return (2.0 * asin (step_size_ / (2.0 * curv))); }
@@ -206,7 +209,7 @@ class Tracker {
       TrackQueue::Writer::Item item (writer);
       do {
         gen_track (*item);
-        if (item->size() > S.min_size || track_excluded || !track_included()) item->clear();
+        if (item->size() < S.min_num_points || track_excluded || !track_included()) item->clear();
       } while (item.write());
     }
 
@@ -217,7 +220,7 @@ class Tracker {
     Math::RNG rng;
     Point pos, dir;
     bool track_excluded;
-    bool track_included () const;
+    bool track_included () const { return (true); }
 
     static size_t rng_seed;
 
@@ -225,17 +228,19 @@ class Tracker {
     bool included (const Point& p) const;
 
     void gen_track (Track& tck) {
+      track_excluded = false;
+
       S.new_seed (pos, dir);
       Point seed_dir (dir);
 
-      while (iterate()) tck.push_back (pos);
+      while (iterate() && tck.size() < S.max_num_points) tck.push_back (pos);
       if (!track_excluded && !S.unidirectional) {
         reverse (tck.begin(), tck.end());
         dir[0] = -seed_dir[0];
         dir[1] = -seed_dir[1];
         dir[2] = -seed_dir[2];
         pos = tck.back();
-        while (iterate()) tck.push_back (pos);
+        while (iterate() && tck.size() < S.max_num_points) tck.push_back (pos);
       }
     }
 
@@ -306,7 +311,7 @@ class TrackWriter {
 
 
 
-inline void properties_add (DWI::Tractography::Properties& properties, DWI::Tractography::ROI::Type type, const std::string& spec) {
+inline void add_property (DWI::Tractography::Properties& properties, DWI::Tractography::ROI::Type type, const std::string& spec) {
   using DWI::Tractography::ROI;
   properties.roi.push_back (RefPtr<ROI> (new ROI (type, spec)));
 }
@@ -325,19 +330,19 @@ EXECUTE {
 
   std::vector<OptBase> opt = get_options (0); // seed
   for (std::vector<OptBase>::iterator i = opt.begin(); i != opt.end(); ++i)
-    properties_add (properties, ROI::Seed, (*i)[0].get_string());
+    add_property (properties, ROI::Seed, (*i)[0].get_string());
 
   opt = get_options (1); // include
   for (std::vector<OptBase>::iterator i = opt.begin(); i != opt.end(); ++i)
-    properties_add (properties, ROI::Include, (*i)[0].get_string());
+    add_property (properties, ROI::Include, (*i)[0].get_string());
 
   opt = get_options (2); // exclude
   for (std::vector<OptBase>::iterator i = opt.begin(); i != opt.end(); ++i)
-    properties_add (properties, ROI::Exclude, (*i)[0].get_string());
+    add_property (properties, ROI::Exclude, (*i)[0].get_string());
 
   opt = get_options (3); // mask
   for (std::vector<OptBase>::iterator i = opt.begin(); i != opt.end(); ++i)
-    properties_add (properties, ROI::Mask, (*i)[0].get_string());
+    add_property (properties, ROI::Mask, (*i)[0].get_string());
 
   opt = get_options (4); // step
   if (opt.size()) properties["step_size"] = str (opt[0][0].get_float());
