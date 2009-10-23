@@ -126,10 +126,6 @@ namespace Track {
       SharedBase (const Image::Header& source_header, DWI::Tractography::Properties& property_set) :
         source (source_header),
         properties (property_set), 
-        seed (properties.seed),
-        include (properties.include),
-        exclude (properties.exclude),
-        mask (properties.mask),
         max_num_tracks (1000),
         min_curv (1.0),
         step_size (0.1),
@@ -169,20 +165,12 @@ namespace Track {
 
       const Image::Header& source;
       DWI::Tractography::Properties& properties;
-      DWI::Tractography::ROISet& seed;
-      DWI::Tractography::ROISet& include;
-      DWI::Tractography::ROISet& exclude;
-      DWI::Tractography::ROISet& mask;
       Point init_dir;
       size_t max_num_tracks, max_num_attempts, min_num_points, max_num_points;
       float min_curv, step_size, threshold, init_threshold;
       bool unidirectional;
 
-
       static float curv2angle (float step_size_, float curv)     { return (2.0 * asin (step_size_ / (2.0 * curv))); }
-
-      void new_seed (Point& pos, Point& dir) const { 
-      }
   };
 
 
@@ -190,19 +178,26 @@ namespace Track {
 
   class MethodBase {
     public:
-      MethodBase (const Image::Header& source_header) : source (source_header), interp (source), rng (rng_seed++) { }
-      MethodBase (const MethodBase& base) : source (base.source), interp (source), rng (rng_seed++) { }
+      MethodBase (const Image::Header& source_header) : 
+        source (source_header), interp (source), rng (rng_seed++), values (new float [source.dim(3)]) { }
+
+      MethodBase (const MethodBase& base) : 
+        source (base.source), interp (source), rng (rng_seed++), values (new float [source.dim(3)]) { }
+
+      ~MethodBase () { delete values; }
 
       Image::Voxel<float> source;
       DataSet::Interp<Image::Voxel<float> > interp;
       Math::RNG rng;
       Point pos, dir;
+      float* values;
 
-      int get_data (float* values) {
+      bool get_data () {
         interp.R (pos); 
-        for (source.pos(3,0); source.pos(3) < source.dim(3); source.move(3,1))
+        if (!interp) return (false);
+        for (source.pos(3,0); source.pos(3) < source.dim(3); source.move(3,1)) 
           values[source.pos(3)] = interp.value();
-        return (isnan (values[0]));
+        return (!isnan (values[0]));
       }
 
     private:
@@ -217,7 +212,7 @@ namespace Track {
   template <class Method> class Exec {
     public:
       Exec (const typename Method::Shared& shared, Queue& queue) : 
-        S (shared), method (shared), writer (queue), track_included (S.include.size()) { } 
+        S (shared), method (shared), writer (queue), track_included (S.properties.include.size()) { } 
 
       void execute () { 
         Queue::Writer::Item item (writer);
@@ -246,7 +241,12 @@ namespace Track {
         track_excluded = false;
         track_included.assign (track_included.size(), false);
 
-        S.new_seed (method.pos, method.dir);
+        size_t num_attempts = 0;
+        do { 
+          method.pos = S.properties.seed.sample (method.rng);
+          num_attempts++;
+          if (num_attempts++ > 10000) throw Exception ("failed to find suitable seed point after 10,000 attempts - aborting");
+        } while (!method.init ());
         Point seed_dir (method.dir);
 
         tck.push_back (method.pos);
@@ -263,9 +263,9 @@ namespace Track {
 
       bool iterate () {
         if (!method.next()) return (false);
-        if (S.mask.size() && S.mask.contains (method.pos) == SIZE_MAX) return (false);
-        if (S.exclude.contains (method.pos) < SIZE_MAX) { track_excluded = true; return (false); }
-        size_t n = S.include.contains (method.pos);
+        if (S.properties.mask.size() && S.properties.mask.contains (method.pos) == SIZE_MAX) return (false);
+        if (S.properties.exclude.contains (method.pos) < SIZE_MAX) { track_excluded = true; return (false); }
+        size_t n = S.properties.include.contains (method.pos);
         if (n < SIZE_MAX) track_included[n] = true;
         return (true);
       };
@@ -350,12 +350,63 @@ namespace Track {
 
       MethodFOD (const Shared& shared) : MethodBase (shared.source), S (shared) { } 
 
-      bool next () { return (true); }
+      bool init () { 
+        if (!get_data ()) return (false);
+
+        if (!S.init_dir) {
+          for (size_t n = 0; n < S.max_trials; n++) {
+            dir.set (rng.normal(), rng.normal(), rng.normal());
+            dir.normalise();
+            float val = FOD (dir);
+            if (!isnan (val)) if (val > S.init_threshold) return (true);
+          }   
+        }   
+        else {
+          dir = S.init_dir;
+          float val = FOD (dir);
+          if (finite (val)) if (val > S.init_threshold) return (true);
+        }   
+
+        return (false);
+      }   
+
+      bool next () {
+        if (!get_data ()) return (false);
+
+        float max_val = 0.0;
+        for (int n = 0; n < 12; n++) {
+          Point new_dir = rand_dir();
+          float val = FOD (new_dir);
+          if (val > max_val) max_val = val;
+        }
+
+        if (isnan (max_val)) return (false);
+        if (max_val < S.threshold) return (false);
+        max_val *= 1.5;
+
+        for (size_t n = 0; n < S.max_trials; n++) {
+          Point new_dir = rand_dir();
+          float val = FOD (new_dir);
+          if (val > S.threshold) {
+            if (val > max_val) info ("max_val exceeded!!! (val = " + str(val) + ", max_val = " + str (max_val) + ")");
+            if (rng.uniform() < val/max_val) {
+              dir = new_dir;
+              pos += S.step_size * dir;
+              return (true);
+            }
+          }
+        }
+
+        return (false);
+      }
 
     private:
       const Shared& S;
 
-      Point rand_dir (Math::RNG& rng, const Point& dir) {
+      float FOD (const Point& d) const {
+        return (S.precomputer ?  S.precomputer.value (values, d) : Math::SH::value (values, d, S.lmax)); }
+
+      Point rand_dir () {
         float v[3];
         do { 
           v[0] = 2.0*rng.uniform() - 1.0; 
