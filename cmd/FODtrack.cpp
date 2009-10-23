@@ -103,218 +103,291 @@ OPTIONS = {
 };
 
 
+namespace Track {
 
-typedef std::vector<Point>   Track;
+  typedef std::vector<Point> Line;
 
-class TrackAllocator {
-  public:
-    TrackAllocator (size_t number_of_elements) : N (number_of_elements) { }
-    Track* alloc () { Track* tck = new Track (); tck->reserve (N); return (tck); }
-    void reset (Track* tck) { tck->clear(); }
-    void dealloc (Track* tck) { delete tck; }
-  private:
-    size_t N;
-};
+  class Allocator {
+    public:
+      Allocator (size_t number_of_elements) : N (number_of_elements) { }
+      Line* alloc () { Line* tck = new Line (); tck->reserve (N); return (tck); }
+      void reset (Line* tck) { tck->clear(); }
+      void dealloc (Line* tck) { delete tck; }
+    private:
+      size_t N;
+  };
 
-typedef Thread::Queue<Track,TrackAllocator> TrackQueue;
+  typedef Thread::Queue<Line,Allocator> Queue;
 
-class TrackShared {
-  public:
-    TrackShared (const Image::Header& FOD, DWI::Tractography::Properties& properties, Point init_direction) :
-      FOD_object (FOD),
-      init_dir (init_direction), 
-      max_num_tracks (1000),
-      lmax (Math::SH::LforN (FOD.dim(3))),
-      max_trials (50),
-      min_curv (1.0),
-      total_seed_volume (0.0),
-      step_size (0.1),
-      threshold (0.1), 
-      precomputer (lmax),
-      precomputed (true) {
 
-        properties["method"] = "FOD_PROB";
-        properties["source"] = FOD_object.name();
 
-        if (properties["step_size"].empty()) properties["step_size"] = str (step_size); 
-        else step_size = to<float> (properties["step_size"]); 
+  class SharedBase {
+    public:
+      SharedBase (const Image::Header& source_header, DWI::Tractography::Properties& property_set) :
+        source (source_header),
+        properties (property_set), 
+        seed (properties.seed),
+        include (properties.include),
+        exclude (properties.exclude),
+        mask (properties.mask),
+        max_num_tracks (1000),
+        min_curv (1.0),
+        step_size (0.1),
+        threshold (0.1), 
+        unidirectional (false) {
+          float max_dist = 200.0;
+          float min_dist = 10.0;
 
-        if (properties["threshold"].empty()) properties["threshold"] = str (threshold);
-        else threshold = to<float> (properties["threshold"]); 
+          properties["source"] = source.name();
 
-        if (properties["init_threshold"].empty()) { init_threshold = 2.0*threshold; properties["init_threshold"] = str (init_threshold); }
-        else init_threshold = to<float> (properties["init_threshold"]); 
+          properties.set (step_size, "step_size");
+          properties.set (threshold, "threshold");
+          properties.set (min_curv, "min_curv");
+          properties.set (unidirectional, "unidirectional");
+          properties.set (max_num_tracks, "max_num_tracks");
+          properties.set (max_dist, "max_dist");
+          properties.set (min_dist, "min_dist");
 
-        if (properties["min_curv"].empty()) properties["min_curv"] = str (min_curv); 
-        else min_curv = to<float> (properties["min_curv"]);
+          init_threshold = 2.0*threshold;
+          properties.set (init_threshold, "init_threshold");
 
-        if (properties["max_num_tracks"].empty()) properties["max_num_tracks"] = "1000";
+          max_num_attempts = 100 * max_num_tracks;
+          properties.set (max_num_attempts, "max_num_attempts");
 
-        if (properties["max_dist"].empty()) properties["max_dist"] = "200.0";
-        max_num_points = round (to<float> (properties["max_dist"])/step_size);
+          if (properties["initdirection"].size()) {
+            std::vector<float> V = parse_floats (properties["initdirection"]);
+            if (V.size() != 3) throw Exception (std::string ("invalid initial direction \"") + properties["initdirection"] + "\"");
+            init_dir[0] = V[0];
+            init_dir[1] = V[1];
+            init_dir[2] = V[2];
+            init_dir.normalise();
+          }
 
-        if (properties["lmax"].empty()) properties["lmax"] = str (lmax); 
-        else lmax = to<int> (properties["lmax"]);
+          max_num_points = round (max_dist/step_size);
+          min_num_points = round (min_dist/step_size);
+        }
 
-        if (properties["max_trials"].empty()) properties["max_trials"] = str (max_trials); 
-        else max_trials = to<int> (properties["max_trials"]);
+      const Image::Header& source;
+      DWI::Tractography::Properties& properties;
+      DWI::Tractography::ROISet& seed;
+      DWI::Tractography::ROISet& include;
+      DWI::Tractography::ROISet& exclude;
+      DWI::Tractography::ROISet& mask;
+      Point init_dir;
+      size_t max_num_tracks, max_num_attempts, min_num_points, max_num_points;
+      float min_curv, step_size, threshold, init_threshold;
+      bool unidirectional;
 
-        if (properties["sh_precomputed"].empty()) properties["sh_precomputed"] = ( precomputed ? "1" : "0" ); 
-        else precomputed = to<int> (properties["sh_precomputed"]);
 
-        dist_spread = curv2angle (step_size, min_curv);
+      static float curv2angle (float step_size_, float curv)     { return (2.0 * asin (step_size_ / (2.0 * curv))); }
 
-        max_num_attempts = properties["max_num_attempts"].empty() ? 100 * max_num_tracks : to<int> (properties["max_num_attempts"]);
-        unidirectional = to<int> (properties["unidirectional"]);
-        min_num_points = round (to<float> (properties["min_dist"]) / to<float> (properties["step_size"]));
+      void new_seed (Point& pos, Point& dir) const { 
+      }
+  };
 
-        VAR (max_num_points);
-        VAR (min_num_points);
+
+
+
+  class MethodBase {
+    public:
+      MethodBase (const Image::Header& source_header) : source (source_header), interp (source), rng (rng_seed++) { }
+      MethodBase (const MethodBase& base) : source (base.source), interp (source), rng (rng_seed++) { }
+
+      Image::Voxel<float> source;
+      DataSet::Interp<Image::Voxel<float> > interp;
+      Math::RNG rng;
+      Point pos, dir;
+
+      int get_data (float* values) {
+        interp.R (pos); 
+        for (source.pos(3,0); source.pos(3) < source.dim(3); source.move(3,1))
+          values[source.pos(3)] = interp.value();
+        return (isnan (values[0]));
       }
 
-    size_t max_track_size () const { return (max_num_points); }
+    private:
+      static size_t rng_seed;
+  };
 
-  private:
-    const Image::Header& FOD_object;
-    const Point init_dir;
-    size_t max_num_tracks, max_num_attempts, min_num_points, lmax, max_trials, num_points, max_num_points;
-    float min_curv, min_dpi, dist_spread, total_seed_volume, step_size, threshold, init_threshold;
-    Math::SH::PrecomputedAL<float> precomputer;
-    bool unidirectional, precomputed;
-
-    static float curv2angle (float step_size_, float curv)     { return (2.0 * asin (step_size_ / (2.0 * curv))); }
-
-    void new_seed (Point& pos, Point& dir) const { }
-
-    friend class Tracker;
-    friend class TrackWriter;
-};
+  size_t MethodBase::rng_seed;
 
 
 
 
+  template <class Method> class Exec {
+    public:
+      Exec (const typename Method::Shared& shared, Queue& queue) : 
+        S (shared), method (shared), writer (queue), track_included (S.include.size()) { } 
 
-
-
-class Tracker {
-  public:
-    Tracker (TrackQueue& queue, const TrackShared& shared) :
-      writer (queue),
-      S (shared),
-      rng (rng_seed++) { }
-
-    Tracker (const Tracker& T) : writer (T.writer), S (T.S), rng (rng_seed++) { }
-
-    void execute () { 
-      TrackQueue::Writer::Item item (writer);
-      do {
-        gen_track (*item);
-        if (item->size() < S.min_num_points || track_excluded || !track_included()) item->clear();
-      } while (item.write());
-    }
-
-
-  private:
-    TrackQueue::Writer writer;
-    const TrackShared& S;
-    Math::RNG rng;
-    Point pos, dir;
-    bool track_excluded;
-    bool track_included () const { return (true); }
-
-    static size_t rng_seed;
-
-    bool excluded (const Point& p) const;
-    bool included (const Point& p) const;
-
-    void gen_track (Track& tck) {
-      track_excluded = false;
-
-      S.new_seed (pos, dir);
-      Point seed_dir (dir);
-
-      while (iterate() && tck.size() < S.max_num_points) tck.push_back (pos);
-      if (!track_excluded && !S.unidirectional) {
-        reverse (tck.begin(), tck.end());
-        dir[0] = -seed_dir[0];
-        dir[1] = -seed_dir[1];
-        dir[2] = -seed_dir[2];
-        pos = tck.back();
-        while (iterate() && tck.size() < S.max_num_points) tck.push_back (pos);
+      void execute () { 
+        Queue::Writer::Item item (writer);
+        do {
+          gen_track (*item);
+          if (item->size() < S.min_num_points || track_excluded || track_is_not_included()) item->clear();
+        } while (item.write());
       }
-    }
-
-    bool iterate () {
-      return (true);
-    }
-
-    Point new_rand_dir () {
-      float v[3];
-      do { 
-        v[0] = 2.0*rng.uniform() - 1.0; 
-        v[1] = 2.0*rng.uniform() - 1.0; 
-      } while (v[0]*v[0] + v[1]*v[1] > 1.0); 
-
-      v[0] *= S.dist_spread;
-      v[1] *= S.dist_spread;
-      v[2] = 1.0 - (v[0]*v[0] + v[1]*v[1]);
-      v[2] = v[2] < 0.0 ? 0.0 : sqrt (v[2]);
-
-      if (dir[0]*dir[0] + dir[1]*dir[1] < 1e-4) 
-        return (Point (v[0], v[1], dir[2] > 0.0 ? v[2] : -v[2]));
-
-      float y[] = { dir[0], dir[1], 0.0 };
-      Math::normalise (y);
-      float x[] =  { -y[1], y[0], 0.0 };
-      float y2[] = { -x[1]*dir[2], x[0]*dir[2], x[1]*dir[0] - x[0]*dir[1] };
-      Math::normalise (y2);
-
-      float cx = v[0]*x[0] + v[1]*x[1];
-      float cy = v[0]*y[0] + v[1]*y[1];
-
-      return (Point (
-            cx*x[0] + cy*y2[0] + v[2]*dir[0], 
-            cx*x[1] + cy*y2[1] + v[2]*dir[1],
-            cy*y2[2] + v[2]*dir[2]) );
-    }
-};
 
 
-size_t Tracker::rng_seed;
+    private:
+      const typename Method::Shared& S;
+      Method method;
+      Queue::Writer writer;
+      bool track_excluded;
+      std::vector<bool> track_included;
 
-
-class TrackWriter {
-  public:
-    TrackWriter (TrackQueue& queue, const TrackShared& shared, const std::string& output_file, DWI::Tractography::Properties& properties) :
-      tracks (queue), S (shared) { writer.create (output_file, properties); }
-
-    ~TrackWriter () { 
-      fprintf (stderr, "\r%8u generated, %8u selected    [100%%]\n", writer.total_count, writer.count);
-      writer.close(); 
-    }
-
-    void execute () { 
-      TrackQueue::Reader::Item tck (tracks);
-      while (tck.read() && writer.count < S.max_num_tracks && writer.total_count < S.max_num_attempts) {
-        writer.append (*tck);
-        fprintf (stderr, "\r%8u generated, %8u selected    [%3d%%]", 
-            writer.total_count, writer.count, int((100.0*writer.count)/float(S.max_num_tracks)));
+      bool track_is_not_included () const { 
+        for (size_t n = 0; n < track_included.size(); ++n) 
+          if (!track_included[n]) return (true); 
+        return (false); 
       }
-    }
-
-  private:
-    TrackQueue::Reader tracks;
-    const TrackShared& S;
-    DWI::Tractography::Writer writer;
-};
 
 
+      void gen_track (Line& tck) {
+        track_excluded = false;
+        track_included.assign (track_included.size(), false);
+
+        S.new_seed (method.pos, method.dir);
+        Point seed_dir (method.dir);
+
+        tck.push_back (method.pos);
+        while (iterate() && tck.size() < S.max_num_points) tck.push_back (method.pos);
+        if (!track_excluded && !S.unidirectional) {
+          reverse (tck.begin(), tck.end());
+          method.dir[0] = -seed_dir[0];
+          method.dir[1] = -seed_dir[1];
+          method.dir[2] = -seed_dir[2];
+          method.pos = tck.back();
+          while (iterate() && tck.size() < S.max_num_points) tck.push_back (method.pos);
+        }
+      }
+
+      bool iterate () {
+        if (!method.next()) return (false);
+        if (S.mask.size() && S.mask.contains (method.pos) == SIZE_MAX) return (false);
+        if (S.exclude.contains (method.pos) < SIZE_MAX) { track_excluded = true; return (false); }
+        size_t n = S.include.contains (method.pos);
+        if (n < SIZE_MAX) track_included[n] = true;
+        return (true);
+      };
+  };
 
 
-inline void add_property (DWI::Tractography::Properties& properties, DWI::Tractography::ROI::Type type, const std::string& spec) {
-  using DWI::Tractography::ROI;
-  properties.roi.push_back (RefPtr<ROI> (new ROI (type, spec)));
-}
+
+
+
+
+
+
+  class Writer {
+    public:
+      Writer (Queue& queue, const SharedBase& shared, const std::string& output_file, DWI::Tractography::Properties& properties) :
+        tracks (queue), S (shared) { writer.create (output_file, properties); }
+
+      ~Writer () { 
+        fprintf (stderr, "\r%8u generated, %8u selected    [100%%]\n", writer.total_count, writer.count);
+        writer.close(); 
+      }
+
+      void execute () { 
+        Queue::Reader::Item tck (tracks);
+        while (tck.read() && writer.count < S.max_num_tracks && writer.total_count < S.max_num_attempts) {
+          writer.append (*tck);
+          fprintf (stderr, "\r%8u generated, %8u selected    [%3d%%]", 
+              writer.total_count, writer.count, int((100.0*writer.count)/float(S.max_num_tracks)));
+        }
+      }
+
+    private:
+      Queue::Reader tracks;
+      const SharedBase& S;
+      DWI::Tractography::Writer writer;
+  };
+
+
+
+
+
+  template <class Method> void run (const Image::Header& source, const std::string& destination, DWI::Tractography::Properties& properties) 
+  {
+    typename Method::Shared shared (source, properties);
+
+    Thread::init();
+    Queue queue ("track serialiser", 100, Allocator (shared.max_num_points));
+
+    Writer writer (queue, shared, destination, properties);
+
+    Exec<Method> tracker (shared, queue);
+    Thread::Array<Exec<Method> > tracker_list (tracker);
+
+    Thread::Exec threads (tracker_list, "tracker");
+    writer.execute();
+  }
+
+
+
+
+  class MethodFOD : public MethodBase {
+    public:
+      class Shared : public SharedBase {
+        public:
+          Shared (const Image::Header& source, DWI::Tractography::Properties& property_set) :
+            SharedBase (source, property_set),
+            lmax (Math::SH::LforN (source.dim(3))), 
+            max_trials (50),
+            dist_spread (curv2angle (step_size, min_curv)) {
+              properties["method"] = "FOD_PROB";
+              properties.set (lmax, "lmax");
+              properties.set (max_trials, "max_trials");
+              bool precomputed = true;
+              properties.set (precomputed, "sh_precomputed");
+              if (precomputed) precomputer.init (lmax);
+          }
+
+          size_t lmax, max_trials;
+          float dist_spread;
+          Math::SH::PrecomputedAL<float> precomputer;
+      };
+
+      MethodFOD (const Shared& shared) : MethodBase (shared.source), S (shared) { } 
+
+      bool next () { return (true); }
+
+    private:
+      const Shared& S;
+
+      Point rand_dir (Math::RNG& rng, const Point& dir) {
+        float v[3];
+        do { 
+          v[0] = 2.0*rng.uniform() - 1.0; 
+          v[1] = 2.0*rng.uniform() - 1.0; 
+        } while (v[0]*v[0] + v[1]*v[1] > 1.0); 
+
+        v[0] *= S.dist_spread;
+        v[1] *= S.dist_spread;
+        v[2] = 1.0 - (v[0]*v[0] + v[1]*v[1]);
+        v[2] = v[2] < 0.0 ? 0.0 : sqrt (v[2]);
+
+        if (dir[0]*dir[0] + dir[1]*dir[1] < 1e-4) 
+          return (Point (v[0], v[1], dir[2] > 0.0 ? v[2] : -v[2]));
+
+        float y[] = { dir[0], dir[1], 0.0 };
+        Math::normalise (y);
+        float x[] =  { -y[1], y[0], 0.0 };
+        float y2[] = { -x[1]*dir[2], x[0]*dir[2], x[1]*dir[0] - x[0]*dir[1] };
+        Math::normalise (y2);
+
+        float cx = v[0]*x[0] + v[1]*x[1];
+        float cy = v[0]*y[0] + v[1]*y[1];
+
+        return (Point (
+              cx*x[0] + cy*y2[0] + v[2]*dir[0], 
+              cx*x[1] + cy*y2[1] + v[2]*dir[1],
+              cy*y2[2] + v[2]*dir[2]) );
+      }
+  };
+
+} // namespace Track
+
 
 
 EXECUTE {
@@ -330,19 +403,19 @@ EXECUTE {
 
   std::vector<OptBase> opt = get_options (0); // seed
   for (std::vector<OptBase>::iterator i = opt.begin(); i != opt.end(); ++i)
-    add_property (properties, ROI::Seed, (*i)[0].get_string());
+    properties.seed.add (ROI (std::string ((*i)[0].get_string())));
 
   opt = get_options (1); // include
   for (std::vector<OptBase>::iterator i = opt.begin(); i != opt.end(); ++i)
-    add_property (properties, ROI::Include, (*i)[0].get_string());
+    properties.include.add (ROI (std::string ((*i)[0].get_string())));
 
   opt = get_options (2); // exclude
   for (std::vector<OptBase>::iterator i = opt.begin(); i != opt.end(); ++i)
-    add_property (properties, ROI::Exclude, (*i)[0].get_string());
+    properties.exclude.add (ROI (std::string ((*i)[0].get_string())));
 
   opt = get_options (3); // mask
   for (std::vector<OptBase>::iterator i = opt.begin(); i != opt.end(); ++i)
-    add_property (properties, ROI::Mask, (*i)[0].get_string());
+    properties.mask.add (ROI (std::string ((*i)[0].get_string())));
 
   opt = get_options (4); // step
   if (opt.size()) properties["step_size"] = str (opt[0][0].get_float());
@@ -374,31 +447,13 @@ EXECUTE {
   opt = get_options (13); // unidirectional
   if (opt.size()) properties["unidirectional"] = "1";
 
-  Point init_dir;
   opt = get_options (14); // initdirection
   if (opt.size()) {
-    std::vector<float> V = parse_floats (opt[0][0].get_string());
-    if (V.size() != 3) throw Exception (std::string ("invalid initial direction \"") + opt[0][0].get_string() + "\"");
-    init_dir[0] = V[0];
-    init_dir[1] = V[1];
-    init_dir[2] = V[2];
-    init_dir.normalise();
     properties["init_direction"] = opt[0][0].get_string();
   }
 
   opt = get_options (15); // noprecomputed
   if (opt.size()) properties["sh_precomputed"] = "0";
 
-
-  TrackShared shared (argument[0].get_image(), properties, init_dir);
-
-  Thread::init();
-  TrackQueue queue ("track serialiser", 100, TrackAllocator (shared.max_track_size()));
-
-  TrackWriter writer (queue, shared, argument[1].get_string(), properties);
-  Tracker tracker (queue, shared);
-  Thread::Array<Tracker> tracker_list (tracker);
-
-  Thread::Exec threads (tracker_list, "tracker thread");
-  writer.execute();
+  Track::run<Track::MethodFOD> (argument[0].get_image(), argument[1].get_string(), properties);
 }
