@@ -48,6 +48,7 @@ namespace MR {
         gsl_rng*  operator() ()                    { return (generator); }
 
         float uniform ()              { return (gsl_rng_uniform (generator)); }
+        size_t uniform_int (size_t max) { return (gsl_rng_uniform_int (generator, max)); }
         float normal (float SD = 1.0) { return (gsl_ran_gaussian (generator, SD)); }
         float rician (float amplitude, float SD)
         {

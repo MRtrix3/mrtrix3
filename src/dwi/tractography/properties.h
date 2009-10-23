@@ -32,10 +32,22 @@ namespace MR {
 
       class Properties : public std::map<std::string, std::string> {
         public:
-          std::vector<RefPtr<ROI> > roi;
+          ROISet seed, include, exclude, mask;
           std::vector<std::string>  comments;
 
-          void  clear () { std::map<std::string, std::string>::clear(); roi.clear(); comments.clear(); }
+          void  clear () { 
+            std::map<std::string, std::string>::clear(); 
+            seed.clear();
+            include.clear();
+            exclude.clear();
+            mask.clear();
+            comments.clear(); 
+          }
+
+          template <typename T> void set (T& variable, const std::string& name) {
+            if ((*this)[name].empty()) (*this)[name] = str (variable);
+            else variable = to<T> ((*this)[name]);
+          }
       };
 
 
@@ -44,9 +56,7 @@ namespace MR {
 
       inline std::ostream& operator<< (std::ostream& stream, const Properties& P)
       {
-        stream << "ROI: ";
-        for (std::vector<RefPtr<ROI> >::const_iterator i = P.roi.begin(); i != P.roi.end(); ++i) stream << *(*i) << ", ";
-        stream << "dict: ";
+        stream << "seed: " << P.seed << ", include: " << P.include << ", exclude: " << P.exclude << ", mask: " << P.mask << ", dict: ";
         for (std::map<std::string, std::string>::const_iterator i = P.begin(); i != P.end(); ++i) stream << "[ " << i->first << ": " << i->second << " ], ";
         stream << "comments: ";
         for (std::vector<std::string>::const_iterator i = P.comments.begin(); i != P.comments.end(); ++i) stream << "\"" << *i << "\", ";

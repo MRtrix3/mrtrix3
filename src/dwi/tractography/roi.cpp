@@ -34,11 +34,13 @@ namespace MR {
         Image::Voxel<bool> vox (mask_image);
         size_t bottom[] = { SIZE_MAX, SIZE_MAX, SIZE_MAX };
         size_t top[] = { 0, 0, 0 };
+        size_t count = 0;
 
         for (vox.pos(2,0); vox.pos(2) < vox.dim(2); vox.move(2,1)) {
           for (vox.pos(1,0); vox.pos(1) < vox.dim(1); vox.move(1,1)) {
             for (vox.pos(0,0); vox.pos(0) < vox.dim(0); vox.move(0,1)) {
               if (vox.value()) {
+                ++count;
                 if (size_t(vox.pos(0)) < bottom[0]) bottom[0] = vox.pos(0);
                 if (size_t(vox.pos(0)) > top[0]) top[0] = vox.pos(0);
                 if (size_t(vox.pos(1)) < bottom[1]) bottom[1] = vox.pos(1);
@@ -58,6 +60,8 @@ namespace MR {
 
         mask = new DataSet::Buffer<bool,3> (sub, sub.name() + " [copy]");
         DataSet::copy (*mask, sub, false);
+
+        vol = mask->vox(0) * mask->vox(1) * mask->vox(2) * count;
       }
 
     }

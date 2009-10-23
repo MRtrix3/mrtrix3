@@ -185,28 +185,34 @@ namespace MR {
       template <typename T> class PrecomputedAL 
       {
         public:
-          PrecomputedAL (int up_to_lmax, int num_dir = 512) :
-            lmax (up_to_lmax), 
-            ndir (num_dir),
-            nAL (NforL_mpos(lmax)),
-            inc (M_PI/(ndir-1)),
-            AL (new T [ndir*nAL]) {
-              T buf [lmax+1];
-              for (int n = 0; n < ndir; n++) {
-                T* p = AL + n*nAL;
-                T cos_el = Math::cos (n*inc);
-                for (int m = 0; m <= lmax; m++) {
-                  Legendre::Plm_sph (buf, lmax, m, cos_el);
-                  for (int l = ((m&1)?m+1:m); l <= lmax; l+=2) 
-                    p[index_mpos(l,m)] = buf[l];
-                }
-              }
-            }
+          typedef T value_type;
 
+          PrecomputedAL () : lmax (0), ndir (0), nAL (0), inc (0.0), AL (NULL) { }
+          PrecomputedAL (int up_to_lmax, int num_dir = 512) : AL (NULL) { init (up_to_lmax, num_dir); }
           ~PrecomputedAL () { delete [] AL; }
 
           bool operator! () const { return (!AL); }
           bool ready () const { return (AL); }
+
+          void init (int up_to_lmax, int num_dir = 512) {
+            delete [] AL;
+            lmax = up_to_lmax;
+            ndir = num_dir;
+            nAL = NforL_mpos(lmax);
+            inc = M_PI/(ndir-1);
+            AL = new value_type [ndir*nAL];
+            value_type buf [lmax+1];
+
+            for (int n = 0; n < ndir; n++) {
+              value_type* p = AL + n*nAL;
+              value_type cos_el = Math::cos (n*inc);
+              for (int m = 0; m <= lmax; m++) {
+                Legendre::Plm_sph (buf, lmax, m, cos_el);
+                for (int l = ((m&1)?m+1:m); l <= lmax; l+=2) 
+                  p[index_mpos(l,m)] = buf[l];
+              }
+            }
+          }
 
           void set (PrecomputedFraction<T>& f, const T elevation) const {
             f.f2 = elevation / inc;

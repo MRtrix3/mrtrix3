@@ -20,17 +20,21 @@
 
 */
 
-#ifndef __image_transform_h__
-#define __image_transform_h__
+#ifndef __dataset_transform_h__
+#define __dataset_transform_h__
 
 #include "math/matrix.h"
 #include "math/LU.h"
 
 namespace MR {
-  namespace Image {
+  namespace DataSet {
+    
+    //! \addtogroup DataSet
+    // @{
+
     namespace Transform {
 
-      template <class DataSet, typename T> inline Math::MatrixView<T>& P2I (Math::MatrixView<T>& M, const DataSet& ds) 
+      template <class Set, typename T> inline Math::MatrixView<T>& P2I (Math::MatrixView<T>& M, const Set& ds) 
       {
         assert (M.rows() == 4 && M.columns() == 4);
         M.zero();
@@ -40,11 +44,11 @@ namespace MR {
         M(3,3) = 1.0;
         return (M);
       }
-      template <class DataSet, typename T> inline Math::Matrix<T>& P2I (Math::Matrix<T>& M, const DataSet& ds) 
+      template <class Set, typename T> inline Math::Matrix<T>& P2I (Math::Matrix<T>& M, const Set& ds) 
       { M.allocate(4,4); P2I(M.view(), ds); return (M); }
 
 
-      template <class DataSet, typename T> inline Math::MatrixView<T>& I2P (Math::MatrixView<T>& M, const DataSet& ds) {
+      template <class Set, typename T> inline Math::MatrixView<T>& I2P (Math::MatrixView<T>& M, const Set& ds) {
         assert (M.rows() == 4 && M.columns() == 4);
         M.zero();
         M(0,0) = 1.0/ds.vox(0);
@@ -53,21 +57,21 @@ namespace MR {
         M(3,3) = 1.0;
         return (M);
       }
-      template <class DataSet, typename T> inline Math::Matrix<T>& I2P (Math::Matrix<T>& M, const DataSet& ds) 
+      template <class Set, typename T> inline Math::Matrix<T>& I2P (Math::Matrix<T>& M, const Set& ds) 
       { M.allocate(4,4); I2P(M.view(), ds); return (M); }
 
 
-      template <class DataSet, typename T> inline Math::MatrixView<T>& R2I (Math::MatrixView<T>& M, const DataSet& ds) {
+      template <class Set, typename T> inline Math::MatrixView<T>& R2I (Math::MatrixView<T>& M, const Set& ds) {
         assert (M.rows() == 4 && M.columns() == 4);
         assert (ds.transform().rows() == 4 && ds.transform().columns() == 4);
         M = ds.transform();
         return (M);
       }
-      template <class DataSet, typename T> inline Math::Matrix<T>& R2I (Math::Matrix<T>& M, const DataSet& ds) 
+      template <class Set, typename T> inline Math::Matrix<T>& R2I (Math::Matrix<T>& M, const Set& ds) 
       { M.allocate(4,4); R2I(M.view(), ds); return (M); }
 
 
-      template <class DataSet, typename T> inline Math::MatrixView<T>& I2R (Math::MatrixView<T>& M, const DataSet& ds) {
+      template <class Set, typename T> inline Math::MatrixView<T>& I2R (Math::MatrixView<T>& M, const Set& ds) {
         assert (M.rows() == 4 && M.columns() == 4);
         assert (ds.transform().rows() == 4 && ds.transform().columns() == 4);
         int signum;
@@ -78,11 +82,11 @@ namespace MR {
         M(3,0) = M(3,1) = M(3,2) = 0.0; M(3,3) = 1.0;
         return (M);
       }
-      template <class DataSet, typename T> inline Math::Matrix<T>& I2R (Math::Matrix<T>& M, const DataSet& ds) 
+      template <class Set, typename T> inline Math::Matrix<T>& I2R (Math::Matrix<T>& M, const Set& ds) 
       { M.allocate(4,4); I2R(M.view(), ds); return (M); }
 
 
-      template <class DataSet, typename T> inline Math::MatrixView<T>& P2R (Math::MatrixView<T>& M, const DataSet& ds) {
+      template <class Set, typename T> inline Math::MatrixView<T>& P2R (Math::MatrixView<T>& M, const Set& ds) {
         assert (M.rows() == 4 && M.columns() == 4);
         assert (ds.transform().rows() == 4 && ds.transform().columns() == 4);
         M = ds.transform();
@@ -91,11 +95,11 @@ namespace MR {
             M(i,j) *= ds.vox(i);
         return (M);
       }
-      template <class DataSet, typename T> inline Math::Matrix<T>& P2R (Math::Matrix<T>& M, const DataSet& ds) 
+      template <class Set, typename T> inline Math::Matrix<T>& P2R (Math::Matrix<T>& M, const Set& ds) 
       { M.allocate(4,4); P2R(M.view(), ds); return (M); }
 
 
-      template <class DataSet, typename T> inline Math::MatrixView<T>& R2P (Math::MatrixView<T>& M, const DataSet& ds) {
+      template <class Set, typename T> inline Math::MatrixView<T>& R2P (Math::MatrixView<T>& M, const Set& ds) {
         assert (M.rows() == 4 && M.columns() == 4);
         assert (ds.transform().rows() == 4 && ds.transform().columns() == 4);
         int signum;
@@ -109,10 +113,11 @@ namespace MR {
         M(3,0) = M(3,1) = M(3,2) = 0.0; M(3,3) = 1.0;
         return (M);
       }
-      template <class DataSet, typename T> inline Math::Matrix<T>& R2P (Math::Matrix<T>& M, const DataSet& ds) 
+      template <class Set, typename T> inline Math::Matrix<T>& R2P (Math::Matrix<T>& M, const Set& ds) 
       { M.allocate(4,4); R2P(M.view(), ds); return (M); }
 
     }
+    //! @}
   }
 }
 

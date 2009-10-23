@@ -38,22 +38,18 @@ namespace MR {
       class ROI 
       {
         public:
-          typedef enum {
-            Seed = 0,
-            Include = 1,
-            Exclude = 2,
-            Mask = 3,
-            Undefined = INT_MAX
-          } Type;
+          ROI (const Point& sphere_pos, float sphere_radius) : 
+            pos (sphere_pos), rad (sphere_radius), rad2 (Math::pow2(rad)), vol (4.0*M_PI*Math::pow3(rad)/3.0) { }
 
-          ROI (Type type_id, const Point& sphere_pos, float sphere_radius) : type (type_id), position (sphere_pos), radius (sphere_radius) { }
-          ROI (Type type_id, const Image::Header& mask_header) : type (type_id), radius (NAN) { get_mask (mask_header); }
-          ROI (Type type_id, const std::string& spec) : type (type_id), radius (NAN) {
+          ROI (const Image::Header& mask_header) : rad (NAN), rad2(NAN), vol (0.0) { get_mask (mask_header); }
+
+          ROI (const std::string& spec) : rad (NAN), rad2 (NAN), vol (0.0) {
             try {
               std::vector<float> F (parse_floats (spec));
               if (F.size() != 4) throw 1;
-              position.set (F[0], F[1], F[2]);
-              radius = F[3];
+              pos.set (F[0], F[1], F[2]);
+              rad = F[3];
+              vol = 4.0*M_PI*Math::pow3(rad)/3.0;
             }
             catch (...) { 
               info ("error parsing spherical ROI specification \"" + spec + "\" - assuming mask image");
@@ -62,36 +58,94 @@ namespace MR {
             }
           }
 
-          Type   type;
-          Point  position;
-          float  radius;
-          RefPtr<DataSet::Buffer<bool,3> > mask;
+          std::string shape () const { return (mask ? "image" : "sphere"); }
+          std::string parameters () const { return (mask ? mask->name() : str(pos[0]) + "," + str(pos[1]) + "," + str(pos[2]) + "," + str(rad)); }
+          float volume () const { return (vol); }
 
-          std::string  type_description () const {
-            switch (type) { 
-              case Seed: return ("seed"); 
-              case Include: return ("include"); 
-              case Exclude: return ("exclude");
-              case Mask: return ("mask");
-              default: return ("undefined");
+          bool contains (const Point& p) const {
+            if (mask) {
+              mask->pos(0, Math::round (p[0]));
+              mask->pos(1, Math::round (p[1]));
+              mask->pos(2, Math::round (p[2]));
+              return (mask->value());
             }
+            else return ((pos-p).norm2() <= rad2);
           }
 
-          std::string shape () const { return (mask ? "image" : "sphere"); }
-          std::string parameters () const { return (mask ? mask->name() : 
-                str(position[0]) + "," + str(position[1]) + "," + str(position[2]) + "," + str(radius)); }
-          std::string specification () const { return (type_description() + " " + parameters()); }
+          Point sample (Math::RNG& rng) const {
+            Point p;
+            if (mask) {
+              do {
+                mask->pos(0, rng.uniform_int (mask->dim(0)));
+                mask->pos(1, rng.uniform_int (mask->dim(1)));
+                mask->pos(2, rng.uniform_int (mask->dim(2)));
+              } while (!mask->value());
+              return (Point (mask->pos(0)+rng.uniform()-0.5, mask->pos(1)+rng.uniform()-0.5, mask->pos(2)+rng.uniform()-0.5)); 
+            }
+
+            do {
+              p.set (2.0*rng.uniform()-1.0, 2.0*rng.uniform()-1.0, 2.0*rng.uniform()-1.0);
+            } while (p.norm2() > 1.0);
+            return (pos + rad*p);
+          }
+
+
+          friend inline std::ostream& operator<< (std::ostream& stream, const ROI& roi) {
+            stream << roi.shape() << " (" << roi.parameters() << ")";
+            return (stream);
+          }
 
         private:
+          Point  pos;
+          float  rad, rad2, vol;
+          RefPtr<DataSet::Buffer<bool,3> > mask;
+
           void get_mask (const Image::Header& mask_header);
       };
 
 
-      inline std::ostream& operator<< (std::ostream& stream, const ROI& roi)
-      {
-        stream << roi.type_description() << " (" << roi.parameters() << ")";
-        return (stream);
-      }
+
+
+
+      class ROISet {
+        public:
+          ROISet () : total_volume (0.0) { }
+
+          void clear () { R.clear(); }
+          size_t size () const { return (R.size()); }
+          const ROI& operator[] (size_t i) const { return (R[i]); }
+          void add (const ROI& roi) { R.push_back (roi); total_volume += roi.volume(); }
+
+          float volume () const { return (total_volume); }
+
+          size_t contains (const Point& p) {
+            for (size_t n = 0; n < R.size(); ++n)
+              if (R[n].contains (p)) return (n);
+            return (SIZE_MAX);
+          }
+
+          Point sample (Math::RNG& rng, const std::vector<ROI>& rois) {
+            float seed_selection = 0.0;
+            float seed_selector = total_volume * rng.uniform();
+            for (std::vector<ROI>::const_iterator i = R.begin(); i != R.end(); ++i) { 
+              seed_selection += i->volume(); 
+              if (seed_selector < seed_selection) return (i->sample (rng));
+            }
+            return (sample (rng, rois));
+          }
+
+          friend inline std::ostream& operator<< (std::ostream& stream, const ROISet& R) {
+            std::vector<ROI>::const_iterator i = R.R.begin();
+            stream << *i;
+            ++i;
+            for (; i != R.R.end(); ++i) stream << ", " << *i;
+            return (stream); 
+          }
+
+        private:
+          std::vector<ROI> R;
+          float total_volume;
+      };
 
 
 

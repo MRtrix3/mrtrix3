@@ -42,16 +42,13 @@ namespace MR {
             try {
               std::vector<std::string> V (split (kv.value()));
               if (V.size() != 2) throw 1;
-              ROI::Type type;
 
               V[0] = lowercase (V[0]);
-              if (V[0] == "seed") type = ROI::Seed;
-              else if (V[0] == "include") type = ROI::Include;
-              else if (V[0] == "exclude") type = ROI::Exclude;
-              else if (V[0] == "mask") type = ROI::Mask;
+              if (V[0] == "seed") properties.seed.add (V[1]);
+              else if (V[0] == "include") properties.include.add (V[1]);
+              else if (V[0] == "exclude") properties.exclude.add (V[1]);
+              else if (V[0] == "mask") properties.mask.add (V[1]);
               else throw 1;
-
-              properties.roi.push_back (RefPtr<ROI> (new ROI (type, V[1])));
             }
             catch (...) {
               error ("WARNING: invalid ROI specification in tracks file \"" + file + "\" - ignored");
@@ -137,8 +134,10 @@ namespace MR {
         for (std::vector<std::string>::const_iterator i = properties.comments.begin(); i != properties.comments.end(); ++i)
           out << "comment: " << *i << "\n";
 
-        for (std::vector<RefPtr<ROI> >::const_iterator i = properties.roi.begin(); i != properties.roi.end(); ++i)
-          out << "roi: " << (*i)->specification() << "\n";
+        for (size_t n = 0; n < properties.seed.size(); ++n) out << "roi: seed " << properties.seed[n].parameters() << "\n";
+        for (size_t n = 0; n < properties.include.size(); ++n) out << "roi: include " << properties.include[n].parameters() << "\n";
+        for (size_t n = 0; n < properties.exclude.size(); ++n) out << "roi: exclude " << properties.exclude[n].parameters() << "\n";
+        for (size_t n = 0; n < properties.mask.size(); ++n) out << "roi: mask " << properties.mask[n].parameters() << "\n";
 
         out << "datatype: " << dtype.specifier() << "\n";
         off64_t data_offset = off64_t(out.tellp()) + 65;

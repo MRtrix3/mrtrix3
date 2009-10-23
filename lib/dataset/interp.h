@@ -20,16 +20,16 @@
 
 */
 
-#ifndef __image_interp_h__
-#define __image_interp_h__
+#ifndef __dataset_interp_h__
+#define __dataset_interp_h__
 
 #include "point.h"
-#include "image/transform.h"
+#include "dataset/transform.h"
 
 namespace MR {
-  namespace Image {
+  namespace DataSet {
 
-    //! \addtogroup Image
+    //! \addtogroup DataSet
     // @{
 
     //! This class provides access to the voxel intensities of a data set, using tri-linear interpolation.
@@ -61,11 +61,14 @@ namespace MR {
      * \endcode
      */
 
-    template <class DataSet> class Interp {
+    template <class Set> class Interp {
       public:
+
+        typedef typename Set::value_type value_type;
+
         //! construct an Interp object to obtain interpolated values using the
         // parent DataSet class 
-        Interp (DataSet& parent);
+        Interp (Set& parent);
         ~Interp() { }
 
         //! test whether current position is within bounds.
@@ -90,12 +93,19 @@ namespace MR {
          * real space coordinate, in units of millimeters. */
         bool R (const Point& pos) { return (P (R2P (pos))); }
 
-        float value () const { return (Interp::real()); }
-        float real () const;
-        float imag () const;
-
-        float real_abs () const;
-        float imag_abs () const;
+        value_type value () const {
+          if (out_of_bounds) return (NAN);
+          value_type val = 0.0;
+          if (faaa) val  = faaa * data.value (); data.move(2,1);
+          if (faab) val += faab * data.value (); data.move(1,1);
+          if (fabb) val += fabb * data.value (); data.move(2,-1);
+          if (faba) val += faba * data.value (); data.move(0,1);
+          if (fbba) val += fbba * data.value (); data.move(1,-1);
+          if (fbaa) val += fbaa * data.value (); data.move(2,1);
+          if (fbab) val += fbab * data.value (); data.move(1,1);
+          if (fbbb) val += fbbb * data.value (); data.move(0,-1); data.move(1,-1); data.move(2,-1);
+          return (val);
+        }
 
         //! Transform the position \p r from real-space to pixel-space
         Point R2P (const Point& r) const { return (transform (RP, r)); }
@@ -116,7 +126,7 @@ namespace MR {
         Point vec_P2R (const Point& r) const { return (transform_vector (PR, r)); }
 
       private:
-        DataSet& data;
+        Set&   data;
         float  RP[3][4], PR[3][4], IR[3][4], RI[3][4];
         float  bounds[3];
         bool   out_of_bounds;
@@ -152,7 +162,7 @@ namespace MR {
 
 
 
-    template <class DataSet> Interp<DataSet>::Interp (DataSet& parent) : data (parent), out_of_bounds (true)
+    template <class Set> Interp<Set>::Interp (Set& parent) : data (parent), out_of_bounds (true)
     { 
       bounds[0] = data.dim(0) - 0.5;
       bounds[1] = data.dim(1) - 0.5;
@@ -167,7 +177,7 @@ namespace MR {
 
 
 
-    template <class DataSet> inline Point Interp<DataSet>::set_fractions (const Point& pos)
+    template <class Set> inline Point Interp<Set>::set_fractions (const Point& pos)
     {
       if (pos[0] < -0.5 || pos[0] > bounds[0] || 
           pos[1] < -0.5 || pos[1] > bounds[1] || 
@@ -177,11 +187,11 @@ namespace MR {
       }
 
       out_of_bounds = false;
-      data[0] = int (pos[0]);
-      data[1] = int (pos[1]);
-      data[2] = int (pos[2]);
+      data.pos(0,pos[0]);
+      data.pos(1,pos[1]);
+      data.pos(2,pos[2]);
 
-      return (Point (pos[0]-data[0], pos[1]-data[1], pos[2]-data[2]));
+      return (Point (pos[0]-data.pos(0), pos[1]-data.pos(1), pos[2]-data.pos(2)));
     }
 
 
@@ -189,18 +199,18 @@ namespace MR {
 
 
 
-    template <class DataSet> inline bool Interp<DataSet>::P (const Point& pos)
+    template <class Set> inline bool Interp<Set>::P (const Point& pos)
     {
       Point f = set_fractions (pos);
       if (out_of_bounds) return (true);
 
-      if (pos[0] < 0.0) { f[0] = 0.0; data[0] = 0; }
+      if (pos[0] < 0.0) { f[0] = 0.0; data.pos(0,0); }
       else if (pos[0] > bounds[0]-0.5) f[0] = 0.0;
 
-      if (pos[1] < 0.0) { f[1] = 0.0; data[1] = 0; }
+      if (pos[1] < 0.0) { f[1] = 0.0; data.pos(1,0); }
       else if (pos[1] > bounds[1]-0.5) f[1] = 0.0;
 
-      if (pos[2] < 0.0) { f[2] = 0.0; data[2] = 0; }
+      if (pos[2] < 0.0) { f[2] = 0.0; data.pos(2,0); }
       else if (pos[2] > bounds[2]-0.5) f[2] = 0.0;
 
       faaa = (1.0-f[0]) * (1.0-f[1]) * (1.0-f[2]); if (faaa < 1e-6) faaa = 0.0;
@@ -222,77 +232,6 @@ namespace MR {
 
 
 
-
-    template <class DataSet> inline float Interp<DataSet>::real () const
-    {
-      if (out_of_bounds) return (NAN);
-      float val = 0.0;
-      if (faaa) val  = faaa * data.real (); data[2]++;
-      if (faab) val += faab * data.real (); data[1]++;
-      if (fabb) val += fabb * data.real (); data[2]--;
-      if (faba) val += faba * data.real (); data[0]++;
-      if (fbba) val += fbba * data.real (); data[1]--;
-      if (fbaa) val += fbaa * data.real (); data[2]++;
-      if (fbab) val += fbab * data.real (); data[1]++;
-      if (fbbb) val += fbbb * data.real (); data[0]--; data[1]--; data[2]--;
-      return (val);
-    }
-
-
-
-
-
-    template <class DataSet> inline float Interp<DataSet>::imag () const
-    {
-      if (out_of_bounds) return (NAN);
-      float val = 0.0;
-      if (faaa) val  = faaa * data.imag (); data[2]++;
-      if (faab) val += faab * data.imag (); data[1]++;
-      if (fabb) val += fabb * data.imag (); data[2]--;
-      if (faba) val += faba * data.imag (); data[0]++;
-      if (fbba) val += fbba * data.imag (); data[1]--;
-      if (fbaa) val += fbaa * data.imag (); data[2]++;
-      if (fbab) val += fbab * data.imag (); data[1]++;
-      if (fbbb) val += fbbb * data.imag (); data[0]--; data[1]--; data[2]--;
-      return (val);
-    }
-
-
-
-
-    template <class DataSet> inline float Interp<DataSet>::real_abs () const
-    {
-      if (out_of_bounds) return (NAN);
-      float val = 0.0;
-      if (faaa) val  = faaa * Math::abs (data.real()); data[2]++;
-      if (faab) val += faab * Math::abs (data.real()); data[1]++;
-      if (fabb) val += fabb * Math::abs (data.real()); data[2]--;
-      if (faba) val += faba * Math::abs (data.real()); data[0]++;
-      if (fbba) val += fbba * Math::abs (data.real()); data[1]--;
-      if (fbaa) val += fbaa * Math::abs (data.real()); data[2]++;
-      if (fbab) val += fbab * Math::abs (data.real()); data[1]++;
-      if (fbbb) val += fbbb * Math::abs (data.real()); data[0]--; data[1]--; data[2]--;
-      return (val);
-    }
-
-
-
-
-
-    template <class DataSet> inline float Interp<DataSet>::imag_abs () const
-    {
-      if (out_of_bounds) return (NAN);
-      float val = 0.0;
-      if (faaa) val  = faaa * Math::abs (data.imag()); data[2]++;
-      if (faab) val += faab * Math::abs (data.imag()); data[1]++;
-      if (fabb) val += fabb * Math::abs (data.imag()); data[2]--;
-      if (faba) val += faba * Math::abs (data.imag()); data[0]++;
-      if (fbba) val += fbba * Math::abs (data.imag()); data[1]--;
-      if (fbaa) val += fbaa * Math::abs (data.imag()); data[2]++;
-      if (fbab) val += fbab * Math::abs (data.imag()); data[1]++;
-      if (fbbb) val += fbbb * Math::abs (data.imag()); data[0]--; data[1]--; data[2]--;
-      return (val);
-    }
 
 
   }

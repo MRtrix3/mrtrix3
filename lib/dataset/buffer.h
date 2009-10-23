@@ -33,10 +33,10 @@ namespace MR {
       template <typename X> inline void __allocate (X*& data, size_t count) { data = new X [count]; }
       template <> inline void __allocate<bool> (bool*& data, size_t count) { data = (bool*) (new uint8_t [(count+7)/8]); }
 
-      template <typename X> inline X __get (const X*& data, ssize_t offset) { return (data[offset]); }
+      template <typename X> inline X __get (const X* const& data, ssize_t offset) { return (data[offset]); }
       template <typename X> inline void __set (X*& data, ssize_t offset, X val) { data[offset] = val; }
 
-      template <> inline bool __get<bool> (const bool*& data, ssize_t offset) 
+      template <> inline bool __get<bool> (const bool* const& data, ssize_t offset) 
       { return (((((uint8_t*) data)[offset/8] << offset%8) & BITMASK) ? true : false); } 
       template <> inline void __set<bool> (bool*& data, ssize_t offset, bool val) { 
         if (val) ((uint8_t*) data)[offset/8] |= (BITMASK >> offset%8); 
