@@ -28,6 +28,7 @@
 #include "image/voxel.h"
 #include "dataset/interp.h"
 #include "dataset/buffer.h"
+#include "dataset/copy.h"
 #include "math/rng.h"
 
 
@@ -35,8 +36,7 @@ namespace MR {
   namespace DWI {
     namespace Tractography {
 
-      class ROI 
-      {
+      class ROI {
         public:
           ROI (const Point& sphere_pos, float sphere_radius) : 
             pos (sphere_pos), rad (sphere_radius), rad2 (Math::pow2(rad)), vol (4.0*M_PI*Math::pow3(rad)/3.0) { }
@@ -64,9 +64,10 @@ namespace MR {
 
           bool contains (const Point& p) const {
             if (mask) {
-              mask->pos(0, Math::round (p[0]));
-              mask->pos(1, Math::round (p[1]));
-              mask->pos(2, Math::round (p[2]));
+              Point pix = mask->interp.R2P (p);
+              mask->pos(0, Math::round (pix[0]));
+              mask->pos(1, Math::round (pix[1]));
+              mask->pos(2, Math::round (pix[2]));
               return (mask->value());
             }
             else return ((pos-p).norm2() <= rad2);
@@ -80,7 +81,8 @@ namespace MR {
                 mask->pos(1, rng.uniform_int (mask->dim(1)));
                 mask->pos(2, rng.uniform_int (mask->dim(2)));
               } while (!mask->value());
-              return (Point (mask->pos(0)+rng.uniform()-0.5, mask->pos(1)+rng.uniform()-0.5, mask->pos(2)+rng.uniform()-0.5)); 
+              p.set (mask->pos(0)+rng.uniform()-0.5, mask->pos(1)+rng.uniform()-0.5, mask->pos(2)+rng.uniform()-0.5);
+              return (mask->interp.P2R (p));
             }
 
             do {
@@ -96,9 +98,17 @@ namespace MR {
           }
 
         private:
+          class Mask : public DataSet::Buffer<bool,3> {
+            public:
+              template <class Set> Mask (Set& D) : 
+                DataSet::Buffer<bool,3> (D, D.name() + " [copy]"), interp (*this) { 
+                  DataSet::copy (*this, D, false); }
+              DataSet::Interp<DataSet::Buffer<bool,3> > interp;
+          };
+
           Point  pos;
           float  rad, rad2, vol;
-          RefPtr<DataSet::Buffer<bool,3> > mask;
+          RefPtr<Mask> mask;
 
           void get_mask (const Image::Header& mask_header);
       };
@@ -124,14 +134,14 @@ namespace MR {
             return (SIZE_MAX);
           }
 
-          Point sample (Math::RNG& rng, const std::vector<ROI>& rois) {
+          Point sample (Math::RNG& rng) {
             float seed_selection = 0.0;
             float seed_selector = total_volume * rng.uniform();
             for (std::vector<ROI>::const_iterator i = R.begin(); i != R.end(); ++i) { 
               seed_selection += i->volume(); 
               if (seed_selector < seed_selection) return (i->sample (rng));
             }
-            return (sample (rng, rois));
+            return (sample (rng));
           }
 
           friend inline std::ostream& operator<< (std::ostream& stream, const ROISet& R) {

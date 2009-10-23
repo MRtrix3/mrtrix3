@@ -58,10 +58,9 @@ namespace MR {
 
         DataSet::Subset<Image::Voxel<bool>, 3> sub (vox, bottom, top);
 
-        mask = new DataSet::Buffer<bool,3> (sub, sub.name() + " [copy]");
-        DataSet::copy (*mask, sub, false);
+        mask = new Mask (sub);
 
-        vol = mask->vox(0) * mask->vox(1) * mask->vox(2) * count;
+        vol = vox.vox(0) * vox.vox(1) * vox.vox(2) * count;
       }
 
     }

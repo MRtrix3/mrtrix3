@@ -153,7 +153,11 @@ namespace MR {
             throw Exception (std::string("error launching thread \"" + name + "\": ") + strerror (errno));
           debug ("launched thread \"" + name + "\" [ID " + str(id) + "]..."); 
         }
-        template <class Functor> static void* static_exec (void* data) { static_cast<Functor*>(data)->execute (); return (NULL); }
+        template <class Functor> static void* static_exec (void* data) { 
+          try { static_cast<Functor*>(data)->execute (); }
+          catch (Exception& E) { E.display(); }
+          return (NULL); 
+        }
     };
 
     /** @} */

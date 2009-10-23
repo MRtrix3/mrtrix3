@@ -192,7 +192,7 @@ namespace MR {
           ~PrecomputedAL () { delete [] AL; }
 
           bool operator! () const { return (!AL); }
-          bool ready () const { return (AL); }
+          operator bool () const { return (AL); }
 
           void init (int up_to_lmax, int num_dir = 512) {
             delete [] AL;
@@ -238,7 +238,7 @@ namespace MR {
             }
           }
 
-          T value (const T* val, const Point& unit_dir)
+          T value (const T* val, const Point& unit_dir) const
           {
             PrecomputedFraction<T> f;
             set (f, Math::acos (unit_dir[2]));

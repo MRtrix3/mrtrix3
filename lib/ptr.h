@@ -99,6 +99,7 @@ namespace MR {
       bool    operator== (const Ptr& R) const throw () { return (ptr == R.ptr); }
       bool    operator!= (const Ptr& R) const throw () { return (ptr != R.ptr); }
       T&      operator*() const throw ()   { return (*ptr); }
+      T&      operator[] (size_t n) const throw ()   { return (ptr[n]); }
       T*      operator->() const throw ()  { return (ptr); }
       //! Return address of actual object
       T*      get () const throw ()        { return (ptr); }

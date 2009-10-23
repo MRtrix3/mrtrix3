@@ -104,12 +104,10 @@ namespace MR {
         assert (ds.transform().rows() == 4 && ds.transform().columns() == 4);
         int signum;
         Math::Permutation p (4);
-        Math::Matrix<T> D (ds.transform());
+        Math::Matrix<T> D (4,4);
+        P2R (D, ds);
         Math::LU::decomp (D.view(), p, signum);
         Math::LU::inv (M, D, p);
-        for (size_t i = 0; i < 3; i++) 
-          for (size_t j = 0; j < 3; j++) 
-            M(i,j) /= ds.vox(j);
         M(3,0) = M(3,1) = M(3,2) = 0.0; M(3,3) = 1.0;
         return (M);
       }
