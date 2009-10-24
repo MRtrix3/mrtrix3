@@ -311,7 +311,6 @@ namespace Track {
   {
     typename Method::Shared shared (source, properties);
 
-    Thread::init();
     Queue queue ("track serialiser", 100, Allocator (shared.max_num_points));
 
     Writer writer (queue, shared, destination, properties);
