@@ -23,9 +23,20 @@
 #ifndef __mrtrix_thread_exec_h__
 #define __mrtrix_thread_exec_h__
 
-#include "thread/init.h"
 #include "exception.h"
 #include "file/config.h"
+#include "thread/mutex.h"
+
+/** \defgroup Thread Multi-threading
+ * \brief functions to provide support for multi-threading 
+ *
+ * These functions and class provide a simple interface for multi-threading in
+ * MRtrix applications. Most applications will probably find that the
+ * Thread::Queue and Thread::Exec classes are sufficient for their needs. 
+ *
+ * \note The Thread::init() functin must be called \e before using any of the
+ * multi-threading functionality described here.
+ */
 
 namespace MR {
   namespace Thread {
@@ -33,12 +44,16 @@ namespace MR {
     /** \addtogroup Thread 
      * @{ */
 
+    /*! the number of cores to use for multi-threading, as specified in the
+     * variable NumberOfThreads in the MRtrix configuration file */
+    size_t available_cores ();
+
     //! Create an array of duplicate functors to execute in parallel
     /*! Use this class to hold an array of duplicates of the supplied functor,
      * so that they can be executed in parallel using the Thread::Exec class.
      * Note that the original functor will be used, and as many copies will be
      * created as needed to make up a total of \a num_threads. By default, \a
-     * num_threads is given by Thread::number(). 
+     * num_threads is given by Thread::available_cores(). 
      *
      * \note Each Functor copy will be created using its copy constructor using
      * the original \a functor as the original. It is essential therefore that
@@ -50,7 +65,7 @@ namespace MR {
      *   // Create master copy of functor:
      *   MyThread my_thread (param);
      *
-     *   // Duplicate as needed up to a maximum of Thread::number() threads.
+     *   // Duplicate as needed up to a maximum of Thread::available_cores() threads.
      *   // Each copy is created using the copy constructor:
      *   Thread::Array<MyThread> list (my_thread); 
      *
@@ -61,7 +76,7 @@ namespace MR {
      */
     template <class Functor> class Array {
       public: 
-        Array (Functor& functor, size_t num_threads = number()) :
+        Array (Functor& functor, size_t num_threads = available_cores()) :
           first_functor (functor), functors (num_threads-1) {
             assert (num_threads);
             for (size_t i = 0; i < num_threads-1; i++) 
@@ -119,13 +134,19 @@ namespace MR {
         /*! A human-readable identifier can be supplied via the \a description
          * parameter. This is helping for debugging and error reporting. */
         template <class Functor> Exec (Functor& functor, const std::string& description = "unnamed") : 
-          ID (1), name (description) { start (ID[0], functor); }
+          ID (1), name (description), responsible (false) { 
+            if (!default_attributes) init();
+            info ("launching thread \"" + name + "\"");
+            start (ID[0], functor); 
+          }
 
         //! Start an array of new threads each runnning the execute() method of its \a functor
         /*! A human-readable identifier can be supplied via the \a description
          * parameter. This is helping for debugging and error reporting. */
         template <class Functor> Exec (Array<Functor>& functor, const std::string& description = "unnamed") : 
-          ID (functor.functors.size()+1), name (description) {
+          ID (functor.functors.size()+1), name (description), responsible (false) {
+            if (!default_attributes) init();
+            info ("launching " + str(ID.size()) + " thread" + (ID.size() > 1 ? "s" : "") +  "\"" + name + "\"");
             start (ID[0], functor.first_functor);
             for (size_t i = 1; i < ID.size(); ++i) 
               start (ID[i], *functor.functors[i-1]);
@@ -142,22 +163,43 @@ namespace MR {
               throw Exception (std::string("error joining thread \"" + name + "\" [ID " + str(ID[i]) + "]: ") + strerror (errno));
             debug ("thread \"" + name + "\" [ID " + str(ID[i]) + "] completed OK");
           }
-        }
 
+          if (responsible) revert();
+        }
+        
       private:
         std::vector<pthread_t> ID;
         std::string name;
+        bool responsible;
 
         template <class Functor> void start (pthread_t& id, Functor& functor) { 
-          if (pthread_create (&id, default_attributes(), static_exec<Functor>, static_cast<void*> (&functor))) 
+          if (pthread_create (&id, default_attributes, static_exec<Functor>, static_cast<void*> (&functor))) 
             throw Exception (std::string("error launching thread \"" + name + "\": ") + strerror (errno));
           debug ("launched thread \"" + name + "\" [ID " + str(id) + "]..."); 
         }
+
         template <class Functor> static void* static_exec (void* data) { 
           try { static_cast<Functor*>(data)->execute (); }
           catch (Exception& E) { E.display(); }
           return (NULL); 
         }
+
+        void init ();
+        void revert ();
+
+        static pthread_attr_t* default_attributes;
+        static pthread_t main_thread;
+
+        static Mutex mutex;
+        static void thread_print (const std::string& msg);
+        static void thread_error (const std::string& msg);
+        static void thread_info  (const std::string& msg);
+        static void thread_debug (const std::string& msg);
+
+        static void (*previous_print) (const std::string& msg);
+        static void (*previous_error) (const std::string& msg);
+        static void (*previous_info)  (const std::string& msg);
+        static void (*previous_debug) (const std::string& msg);
     };
 
     /** @} */

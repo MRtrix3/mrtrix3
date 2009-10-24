@@ -101,8 +101,6 @@ class Processor {
 };
 
 EXECUTE {
-  Thread::init();
-
   FloatQueue queue1 ("first queue");
   ItemQueue queue2 ("second queue");
 

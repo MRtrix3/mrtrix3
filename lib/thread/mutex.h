@@ -23,7 +23,7 @@
 #ifndef __mrtrix_thread_mutex_h__
 #define __mrtrix_thread_mutex_h__
 
-#include "thread/init.h"
+#include <pthread.h>
 
 namespace MR {
   namespace Thread {
