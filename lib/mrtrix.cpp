@@ -112,7 +112,7 @@ namespace MR {
 
 
 
-  std::vector<std::string> split (const std::string& string, const char* delimiters, bool ignore_empty_fields)
+  std::vector<std::string> split (const std::string& string, const char* delimiters, bool ignore_empty_fields, size_t num)
   {
     std::vector<std::string> V;
     std::string::size_type start = 0, end;
@@ -121,7 +121,7 @@ namespace MR {
         end = string.find_first_of (delimiters, start);
         V.push_back (string.substr (start, end-start));
         start = ignore_empty_fields ? string.find_first_not_of (delimiters, end+1) : end+1;
-      } while (end < std::string::npos);
+      } while (end < std::string::npos && V.size() < num);
     }
     catch (...)  { throw Exception ("can't split string \"" + string + "\""); }
     return (V);

@@ -25,6 +25,8 @@
 
 #include "ptr.h"
 
+#define BITMASK 0x01U << 7
+
 namespace MR {
   namespace DataSet {
 
@@ -37,7 +39,7 @@ namespace MR {
       template <typename X> inline void __set (X*& data, ssize_t offset, X val) { data[offset] = val; }
 
       template <> inline bool __get<bool> (const bool* const& data, ssize_t offset) 
-      { return (((((uint8_t*) data)[offset/8] << offset%8) & BITMASK) ? true : false); } 
+      { return ((((uint8_t*) data)[offset/8]) & (BITMASK >> offset%8)); } 
       template <> inline void __set<bool> (bool*& data, ssize_t offset, bool val) { 
         if (val) ((uint8_t*) data)[offset/8] |= (BITMASK >> offset%8); 
         else ((uint8_t*) data)[offset/8] &= ~(BITMASK >> offset%8); 
@@ -116,7 +118,7 @@ namespace MR {
         }
 
         ssize_t offset () const { return (x[0] + N[0] * offset (1)); }
-        ssize_t offset (size_t a) const { return (a < NDIM-1 ? x[a] : x[a] + N[a] * offset(a+1)); }
+        ssize_t offset (size_t a) const { return (a < NDIM-1 ? x[a] + N[a] * offset(a+1) : x[a]); }
     };
 
     //! @}

@@ -118,7 +118,7 @@ namespace MR {
 
 
   template <> inline bool get<bool> (const void* data, size_t i, bool is_big_endian)
-  { return (((((uint8_t*) data)[i/8] << i%8) & BITMASK) ? true : false); } 
+  { return ((((uint8_t*) data)[i/8]) & (BITMASK >> i%8)); } 
 
   template <> inline void put<bool> (const bool value, void* data, size_t i, bool is_big_endian)
   { 

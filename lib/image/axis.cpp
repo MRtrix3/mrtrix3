@@ -64,9 +64,16 @@ namespace MR {
       start = 0;
       stride.resize (ndim(), 0);
 
+      size_t ord[ndim()];
+      size_t last = ndim()-1;
+      for (size_t i = 0; i < ndim(); i++) {
+        if (order(i) != undefined) ord[order(i)] = i;  
+        else ord[last--] = i;
+      }
+
       ssize_t mult = 1;
       for (size_t i = 0; i < ndim(); i++) {
-        size_t axis = order(i);
+        size_t axis = ord[i];
         assert (axis < ndim());
         assert (!stride[axis]);
         stride[axis] = mult * ssize_t(direction(axis));

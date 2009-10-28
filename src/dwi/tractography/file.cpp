@@ -40,8 +40,7 @@ namespace MR {
           std::string key = lowercase (kv.key());
           if (key == "roi") {
             try {
-              std::vector<std::string> V (split (kv.value()));
-              if (V.size() != 2) throw 1;
+              std::vector<std::string> V (split (kv.value(), " \t", true, 2));
 
               V[0] = lowercase (V[0]);
               if (V[0] == "seed") properties.seed.add (V[1]);

@@ -201,7 +201,7 @@ namespace MR {
     return (ret);
   }
 
-  std::vector<std::string> split (const std::string& string, const char* delimiters = " \t\n", bool ignore_empty_fields = false); 
+  std::vector<std::string> split (const std::string& string, const char* delimiters = " \t\n", bool ignore_empty_fields = false, size_t num = SIZE_MAX); 
 
   inline std::string join (std::vector<std::string>& V, const std::string& delimiter)
   {

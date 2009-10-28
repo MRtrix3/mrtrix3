@@ -31,15 +31,16 @@ namespace MR {
     //! \addtogroup DataSet
     // @{
 
-    template <class Set1, class Set2> void copy_kernel (Set1& destination, Set2& source) { destination.value (source.value()); }
+    template <class Set, class Set2> 
+      void copy_kernel (Set& destination, Set2& source) { destination.value (source.value()); }
 
-    template <class Set1, class Set2> void copy (Set1& destination, Set2& source, bool show_progress = true) { 
-      if (show_progress)
-        Loop::all ("copying from \"" + source.name() + "\" to \"" + destination.name() + "\"...",
-            copy_kernel<Set1,Set2>, destination, source);
-      else 
-        Loop::all (copy_kernel<Set1,Set2>, destination, source);
-    }
+    template <class Set, class Set2> 
+      void copy (Set& destination, Set2& source, bool show_progress = true) 
+      { 
+        if (show_progress) loop ("copying from \"" + source.name() + "\" to \"" + destination.name() + "\"...",
+              copy_kernel<Set,Set2>, destination, source);
+        else loop (copy_kernel<Set,Set2>, destination, source);
+      }
 
     //! @}
   }

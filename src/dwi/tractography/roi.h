@@ -100,8 +100,8 @@ namespace MR {
         private:
           class Mask : public DataSet::Buffer<bool,3> {
             public:
-              template <class Set> Mask (Set& D) : 
-                DataSet::Buffer<bool,3> (D, D.name() + " [copy]"), interp (*this) { 
+              template <class Set> Mask (Set& D, const std::string& description) : 
+                DataSet::Buffer<bool,3> (D, description), interp (*this) { 
                   DataSet::copy (*this, D, false); }
               DataSet::Interp<DataSet::Buffer<bool,3> > interp;
           };
