@@ -1,7 +1,7 @@
 /*
-    Copyright 2008 Brain Research Institute, Melbourne, Australia
+    Copyright 2009 Brain Research Institute, Melbourne, Australia
 
-    Written by J-Donald Tournier, 27/06/08.
+    Written by J-Donald Tournier, 25/10/09.
 
     This file is part of MRtrix.
 
@@ -42,8 +42,6 @@ DESCRIPTION = {
   "perform streamlines tracking.",
   NULL
 };
-
-const char* type_choices[] = { "DT_STREAM", "DT_PROB", "SD_STREAM", "SD_PROB", NULL };
 
 ARGUMENTS = {
   Argument ("FOD", "FOD image", "the image containing the FOD data, expressed in spherical harmonics.").type_image_in(),
@@ -200,6 +198,8 @@ namespace Track {
         return (!isnan (values[0]));
       }
 
+      static void init () { rng_seed = time (NULL); }
+
     private:
       static size_t rng_seed;
   };
@@ -310,6 +310,7 @@ namespace Track {
   template <class Method> void run (const Image::Header& source, const std::string& destination, DWI::Tractography::Properties& properties) 
   {
     typename Method::Shared shared (source, properties);
+    MethodBase::init(); 
 
     Queue queue ("track serialiser", 100, Allocator (shared.max_num_points));
 
