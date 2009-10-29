@@ -312,7 +312,7 @@ namespace Track {
     typename Method::Shared shared (source, properties);
     MethodBase::init(); 
 
-    Queue queue ("track serialiser", 100, Allocator (shared.max_num_points));
+    Queue queue ("writer", 100, Allocator (shared.max_num_points));
 
     Writer writer (queue, shared, destination, properties);
 
@@ -333,7 +333,7 @@ namespace Track {
           Shared (const Image::Header& source, DWI::Tractography::Properties& property_set) :
             SharedBase (source, property_set),
             lmax (Math::SH::LforN (source.dim(3))), 
-            max_trials (50),
+            max_trials (100),
             dist_spread (curv2angle (step_size, min_curv)) {
               properties["method"] = "FOD_PROB";
               properties.set (lmax, "lmax");
@@ -373,18 +373,22 @@ namespace Track {
       bool next () {
         if (!get_data ()) return (false);
 
-        float max_val = 0.0;
-        for (int n = 0; n < 12; n++) {
+        float max_val = prev_FOD_val;
+        float max_val_actual = 0.0;
+        for (int n = 0; n < 50; n++) {
           Point new_dir = rand_dir();
           float val = FOD (new_dir);
+          if (val > max_val_actual) max_val_actual = val;
           if (val > max_val) max_val = val;
         }
+        prev_FOD_val = max_val;
 
         if (isnan (max_val)) return (false);
         if (max_val < S.threshold) return (false);
         max_val *= 1.5;
 
-        for (size_t n = 0; n < S.max_trials; n++) {
+        size_t nmax = max_val_actual > S.threshold ? 10000 : S.max_trials;
+        for (size_t n = 0; n < nmax; n++) {
           Point new_dir = rand_dir();
           float val = FOD (new_dir);
           if (val > S.threshold) {
@@ -402,6 +406,7 @@ namespace Track {
 
     private:
       const Shared& S;
+      float prev_FOD_val;
 
       float FOD (const Point& d) const {
         return (S.precomputer ?  S.precomputer.value (values, d) : Math::SH::value (values, d, S.lmax)); }
