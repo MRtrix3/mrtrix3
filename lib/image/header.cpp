@@ -69,9 +69,9 @@ namespace MR {
       if (!transform_matrix.is_set()) {
         transform_matrix.allocate (4,4);
         transform_matrix.identity();
-        transform_matrix(0,3) = -0.5 * axes.dim(0) * axes.vox(0);
-        transform_matrix(1,3) = -0.5 * axes.dim(1) * axes.vox(1);
-        transform_matrix(2,3) = -0.5 * axes.dim(2) * axes.vox(2);
+        transform_matrix(0,3) = -0.5 * (axes.dim(0)-1) * axes.vox(0);
+        transform_matrix(1,3) = -0.5 * (axes.dim(1)-1) * axes.vox(1);
+        transform_matrix(2,3) = -0.5 * (axes.dim(2)-1) * axes.vox(2);
       }
 
       transform_matrix(3,0) = transform_matrix(3,1) = transform_matrix(3,2) = 0.0; transform_matrix(3,3) = 1.0;
@@ -115,13 +115,7 @@ namespace MR {
         }
       }
 
-      size_t order[ndim()];
-      size_t last = ndim()-1;
-      for (size_t i = 0; i < ndim(); i++) {
-        if (axes.order(i) != Axes::undefined) order[axes.order(i)] = i; 
-        else order[last--] = i;
-      }
-
+      axes.sanitise();
     }
 
 

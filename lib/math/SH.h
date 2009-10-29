@@ -139,7 +139,7 @@ namespace MR {
       }
 
 
-      template <typename T> inline Math::Vector<T>& SH2RH (Math::Vector<T>& RH, const Math::Vector<T>& SH)
+      template <typename T> inline Math::Vector<T>& SH2RH (Math::Vector<T>& RH, const Math::VectorView<T>& SH)
       {
         RH.allocate (SH.size());
         int lmax = 2*SH.size()+1;
@@ -147,6 +147,27 @@ namespace MR {
         Legendre::Plm_sph (AL, lmax, 0, T(1.0));
         for (size_t l = 0; l < SH.size(); l++) RH[l] = SH[l]/ AL[2*l]; 
         return (RH);
+      }
+
+
+
+      template <typename T> inline Math::VectorView<T>& sconv (Math::VectorView<T>& C, const Math::VectorView<T>& RH, const Math::VectorView<T>& SH)
+      {
+        assert (SH.size() >= NforL (2*(RH.size()-1)));
+        assert (C.size() >= NforL (2*(RH.size()-1)));
+        for (int i = 0; i < int (RH.size()); ++i) {
+          int l = 2*i;
+          for (int m = -l; m <= l; ++m) 
+            C[index(l,m)] = RH[i] * SH[index(l,m)];
+        }
+        return (C);
+      }
+
+      template <typename T> inline Math::Vector<T>& sconv (Math::Vector<T>& C, const Math::VectorView<T>& RH, const Math::VectorView<T>& SH)
+      {
+        C.allocate (NforL (2*(RH.size()-1)));
+        sconv (C.view(), RH, SH);
+        return (C);
       }
 
 

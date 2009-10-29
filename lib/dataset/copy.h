@@ -37,9 +37,9 @@ namespace MR {
     template <class Set, class Set2> 
       void copy (Set& destination, Set2& source, bool show_progress = true) 
       { 
-        if (show_progress) loop ("copying from \"" + source.name() + "\" to \"" + destination.name() + "\"...",
+        if (show_progress) loop2 ("copying from \"" + source.name() + "\" to \"" + destination.name() + "\"...",
               copy_kernel<Set,Set2>, destination, source);
-        else loop (copy_kernel<Set,Set2>, destination, source);
+        else loop2 (copy_kernel<Set,Set2>, destination, source);
       }
 
     //! @}

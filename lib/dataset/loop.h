@@ -115,21 +115,14 @@ namespace MR {
 
 
     template <class Functor, class Set> 
-      void loop (Functor& func, Set& D, size_t from_axis = 0, size_t to_axis = SIZE_MAX) 
+      void loop1 (Functor& func, Set& D, size_t from_axis = 0, size_t to_axis = SIZE_MAX) 
       {
         Kernel1<Functor, Set> kernel (func, D);
         loop (kernel, from_axis, to_axis);
       }
 
-    template <class Functor, class Set, class Set2> 
-      void loop (Functor& func, Set& D, Set2& D2, size_t from_axis = 0, size_t to_axis = SIZE_MAX) 
-      {
-        Kernel2<Functor, Set, Set2> kernel (func, D, D2);
-        loop (kernel, from_axis, to_axis);
-      }
-
     template <class Functor, class Set> 
-      void loop (const std::string& message, Functor& func, Set& D, size_t from_axis = 0, size_t to_axis = SIZE_MAX) 
+      void loop1 (const std::string& message, Functor& func, Set& D, size_t from_axis = 0, size_t to_axis = SIZE_MAX) 
       {
         Kernel1<Functor, Set> kernel (func, D);
         ProgressKernel<Kernel1<Functor, Set> > progress (kernel, message);
@@ -137,7 +130,14 @@ namespace MR {
       }
 
     template <class Functor, class Set, class Set2> 
-      void loop (const std::string& message, Functor& func, Set& D, Set2& D2, size_t from_axis = 0, size_t to_axis = SIZE_MAX) 
+      void loop2 (Functor& func, Set& D, Set2& D2, size_t from_axis = 0, size_t to_axis = SIZE_MAX) 
+      {
+        Kernel2<Functor, Set, Set2> kernel (func, D, D2);
+        loop (kernel, from_axis, to_axis);
+      }
+
+    template <class Functor, class Set, class Set2> 
+      void loop2 (const std::string& message, Functor& func, Set& D, Set2& D2, size_t from_axis = 0, size_t to_axis = SIZE_MAX) 
       {
         Kernel2<Functor, Set, Set2> kernel (func, D, D2);
         ProgressKernel<Kernel2<Functor, Set, Set2> > progress (kernel, message);

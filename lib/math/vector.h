@@ -73,7 +73,7 @@ namespace MR {
         template <typename U> friend class VectorView;
 
 	//! construct from existing data array
-        VectorView (T* vector_data, size_t nelements, size_t skip = 1)
+        explicit VectorView (T* vector_data, size_t nelements, size_t skip = 1)
         { 
 	  GSLVector<T>::size = nelements;
 	  GSLVector<T>::stride = skip;
@@ -202,16 +202,16 @@ namespace MR {
         template <typename U> friend class Vector; 
 
 	//! construct empty vector
-        Vector () throw () { } 
+        explicit Vector () throw () { } 
 	//! construct vector of size \a nelements
 	/** \note the elements of the vector are left uninitialised. */
-        Vector (size_t nelements) {   
+        explicit Vector (size_t nelements) {   
 	  GSLVector<T>::block = GSLBlock<T>::alloc (nelements);
           if (!GSLVector<T>::block) throw Exception ("Failed to allocate memory for Vector data");  
 	  GSLVector<T>::size = nelements; GSLVector<T>::stride = 1; GSLVector<T>::data = GSLVector<T>::block->data; GSLVector<T>::owner = 1;
         }
 	//! construct a vector by copying the elements of \a V
-        Vector (const Vector& V) {   
+        explicit Vector (const Vector& V) {   
           if (V.size()) {
 	    GSLVector<T>::block = GSLBlock<T>::alloc (V.size());
             if (!GSLVector<T>::block) throw Exception ("Failed to allocate memory for Vector data");  
@@ -230,7 +230,7 @@ namespace MR {
         }
 
 	//! construct a vector by reading from the text file \a filename
-        Vector (const std::string& file) { load (file); } 
+        explicit Vector (const std::string& file) { load (file); } 
 	//! destructor
         ~Vector () { delete [] GSLVector<T>::block; } 
 
@@ -273,7 +273,7 @@ namespace MR {
           size_t n = MIN(GSLVector<T>::size, nelements);
           V.VectorView<T>::view(0,n) = VectorView<T>::view(0,n);
           clear();
-          swap (V);
+          VectorView<T>::swap (V);
           return (*this);
         }
 

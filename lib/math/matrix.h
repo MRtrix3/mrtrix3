@@ -64,12 +64,12 @@ namespace MR {
         template <typename U> friend class MatrixView;
 
 	//! construct from existing data array
-        MatrixView (T* data, size_t nrows, size_t ncolumns) throw () { 
+        explicit MatrixView (T* data, size_t nrows, size_t ncolumns) throw () { 
 	  GSLMatrix<T>::size1 = nrows; GSLMatrix<T>::size2 = GSLMatrix<T>::tda = ncolumns;
 	  GSLMatrix<T>::set(data); GSLMatrix<T>::block = NULL; GSLMatrix<T>::owner = 0; 
         }
 	//! construct from existing data array with non-standard row stride
-        MatrixView (T* data, size_t nrows, size_t ncolumns, size_t row_skip) throw () {  
+        explicit MatrixView (T* data, size_t nrows, size_t ncolumns, size_t row_skip) throw () {  
 	  GSLMatrix<T>::size1 = nrows; GSLMatrix<T>::size2 = ncolumns; GSLMatrix<T>::tda = row_skip;
 	  GSLMatrix<T>::set (data); GSLMatrix<T>::block = NULL; GSLMatrix<T>::owner = 0; 
         }
@@ -292,20 +292,20 @@ namespace MR {
         template <typename U> friend class Matrix;
 
 	//! construct empty matrix
-        Matrix () throw () { }
+        explicit Matrix () throw () { }
 	//! construct matrix of size \a nrows by \a ncolumns
 	/** \note the elements of the matrix are left uninitialised. */
-        Matrix (size_t nrows, size_t ncolumns) { allocate (nrows, ncolumns); }
+        explicit Matrix (size_t nrows, size_t ncolumns) { allocate (nrows, ncolumns); }
 	//! construct a matrix by copying the elements of \a M
-        Matrix (const MatrixView<T>& M) { allocate (M); view() = M; }
+        explicit Matrix (const MatrixView<T>& M) { allocate (M); view() = M; }
 	//! construct a matrix by copying the elements of \a M
         template <typename U> Matrix (const MatrixView<U>& M) { allocate (M); view() = M; }
-        Matrix (const Matrix<T>& M) { allocate (M); view() = M.view(); }
+        explicit Matrix (const Matrix<T>& M) { allocate (M); view() = M.view(); }
         template <typename U> Matrix (const Matrix<U>& M) { allocate (M); view() = M.view(); }
 
 
 	//! construct a matrix by reading from the text file \a filename
-        Matrix (const std::string& filename) { load (filename); } 
+        explicit Matrix (const std::string& filename) { load (filename); } 
 	//! destructor
         ~Matrix () { if (GSLMatrix<T>::block) { assert (GSLMatrix<T>::owner); GSLBlock<T>::free (GSLMatrix<T>::block); } }
 
