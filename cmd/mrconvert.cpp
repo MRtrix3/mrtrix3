@@ -116,8 +116,8 @@ template <class Set1, class Set2> void copy_replace_NaN_kernel (Set1& destinatio
 
 template <class Set1, class Set2> void copy (Set1& destination, Set2& source, bool replace_NaN) { 
   std::string progress_message ("copying from \"" + source.name() + "\" to \"" + destination.name() + "\"...");
-  if (replace_NaN) DataSet::loop (progress_message, DataSet::copy_kernel<Set1,Set2>, destination, source);
-  else DataSet::loop (progress_message, copy_replace_NaN_kernel<Set1,Set2>, destination, source);
+  if (replace_NaN) DataSet::loop2 (progress_message, DataSet::copy_kernel<Set1,Set2>, destination, source);
+  else DataSet::loop2 (progress_message, copy_replace_NaN_kernel<Set1,Set2>, destination, source);
 }
 
 

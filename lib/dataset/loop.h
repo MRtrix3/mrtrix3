@@ -74,6 +74,32 @@ namespace MR {
       };
 
 
+      template <class Functor, class Mask, class Set> class KernelMask1 {
+        public:
+          KernelMask1 (Functor& func, Mask& mask, Set& set) : F (func), M (mask), D (set) { assert (voxel_count (M)); }
+          size_t ndim () const { return (M.ndim()); }
+          ssize_t dim (size_t axis) const { return (M.dim (axis)); }
+          ssize_t pos (size_t axis) const { return (M.pos (axis)); }
+          void pos (size_t axis, ssize_t position) { M.pos (axis, position); }
+          void move (size_t axis, ssize_t inc) { M.move (axis, inc); }
+          void check (size_t from_axis, size_t to_axis) const { 
+            for (size_t i = from_axis; i < to_axis; ++i) 
+              if (M.dim (i) != D.dim(i))
+                throw Exception ("dimensions mismatch between \"" + M.name() + "\" and \"" + D.name() + "\"");
+          }
+          void operator() () { 
+            if (M.value()) { 
+              for (size_t i = 0; i < M.ndim(); ++i) D.pos (i, M.pos(i));
+              F (D);
+            }
+          }
+        private:
+          Functor& F;
+          Mask& M;
+          Set& D;
+      };
+
+
       template <class Functor> class ProgressKernel {
         public:
           ProgressKernel (Functor& func, const std::string& message) : F (func), m (message) { }
@@ -141,6 +167,23 @@ namespace MR {
       {
         Kernel2<Functor, Set, Set2> kernel (func, D, D2);
         ProgressKernel<Kernel2<Functor, Set, Set2> > progress (kernel, message);
+        loop (progress, from_axis, to_axis);
+      }
+
+
+    template <class Functor, class Mask, class Set> 
+      void loop1_mask (Functor& func, Mask& mask, Set& D, size_t from_axis = 0, size_t to_axis = 3) 
+      {
+        KernelMask1<Functor, Mask, Set> kernel (func, mask, D);
+        loop (kernel, from_axis, to_axis);
+      }
+
+
+    template <class Functor, class Mask, class Set> 
+      void loop1_mask (const std::string& message, Functor& func, Mask& mask, Set& D, size_t from_axis = 0, size_t to_axis = 3) 
+      {
+        KernelMask1<Functor, Mask, Set> kernel (func, mask, D);
+        ProgressKernel<KernelMask1<Functor, Mask, Set> > progress (kernel, message);
         loop (progress, from_axis, to_axis);
       }
 

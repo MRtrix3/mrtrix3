@@ -21,15 +21,14 @@
 */
 
 #include "app.h"
-#include "image/thread_voxelwise.h"
-#include "progressbar.h"
 #include "ptr.h"
-#include "file/config.h"
+#include "progressbar.h"
+#include "thread/queue.h"
+#include "dataset/loop.h"
 #include "image/voxel.h"
 #include "dwi/gradient.h"
 #include "dwi/sdeconv/constrained.h"
 
-using namespace std; 
 using namespace MR; 
 
 SET_VERSION_DEFAULT;
@@ -41,13 +40,17 @@ DESCRIPTION = {
 
   "Note that the spherical harmonics equations used here differ slightly from those conventionally used, in that the (-1)^m factor has been omitted. This should be taken into account in all subsequent calculations.",
 
-  "Each study in the output image corresponds to a different spherical harmonic component. Each study will correspond to the following:\n"
-    "study 0: l = 0, m = 0\n"
-    "study 1: l = 2, m = 0\n"
-    "study 2: l = 2, m = 1, real part\n"
-    "study 3: l = 2, m = 1, imaginary part\n"
-    "study 4: l = 2, m = 2, real part\n"
-    "study 5: l = 2, m = 2, imaginary part\n"
+  "Each volume in the output image corresponds to a different spherical harmonic component, according to the following convention:\n"
+    "[0]     Y(0,0)\n"
+    "\n"
+    "[1] Im {Y(2,2)}\n"
+    "[2] Im {Y(2,1)}\n"
+    "[3]     Y(2,0)\n"
+    "[4] Re {Y(2,1)}\n"
+    "[5] Re {Y(2,2)}\n"
+    "\n"
+    "[6] Im {Y(4,4)}\n"
+    "[7] Im {Y(4,3)}\n"
     "etc...\n",
 
   NULL
@@ -95,8 +98,59 @@ OPTIONS = {
 };
 
 
+typedef float value_type;
+
+class Item {
+  public:
+    Math::Vector<value_type> data;
+    ssize_t pos[3];
+};
+
+class Allocator {
+  public:
+    Allocator (size_t data_size) : N (data_size) { }
+    Item* alloc () { Item* item; item->data.resize (N); return (item); }
+    void reset (Item* item) { }
+    void dealloc (Item* item) { delete item; }
+  private:
+    size_t N;
+};
 
 
+typedef Thread::Queue<Item,Allocator> Queue;
+
+class DataLoader {
+  public:
+    DataLoader (Queue& queue, 
+        const Image::Header& dwi_header, 
+        const Image::Header* mask_header,
+        const std::vector<int>& vec_bzeros,
+        const std::vector<int>& vec_dwis,
+        bool normalise_to_b0) : 
+      writer (queue), 
+      dwi (dwi_header), 
+      mask (mask_header),
+      bzeros (vec_bzeros),
+      dwis (vec_dwis),
+      normalise (normalise_to_b0) { }
+    void execute () {
+      if (mask) {
+        Image::Voxel<value_type> mask_vox (*mask);
+        DataSet::loop1_mask ("performing constrained spherical deconvolution...", *this, mask_vox, dwi);
+      }
+      else DataSet::loop1 ("performing constrained spherical deconvolution...", *this, dwi);
+    }
+    void operator() (Image::Voxel<value_type>& D) { }
+  private:
+    Queue::Writer writer;
+    Image::Voxel<value_type>  dwi;
+    const Image::Header* mask;
+    const std::vector<int>&  bzeros;
+    const std::vector<int>&  dwis;
+    bool  normalise;
+};
+
+/*
 template <typename T> class ThreadedCSD : public Image::ThreadVoxelWise
 {
   public:
@@ -178,18 +232,17 @@ template <typename T> class ThreadedCSD : public Image::ThreadVoxelWise
 
 
 
+*/
 
 
 
 
-
-extern float default_directions [];
+extern value_type default_directions [];
 
 EXECUTE {
-  Image::Object &dwi_obj (*argument[0].get_image());
-  Image::Header header (dwi_obj);
+  Image::Header header = argument[0].get_image();
 
-  if (header.axes.size() != 4) 
+  if (header.ndim() != 4) 
     throw Exception ("dwi image should contain 4 dimensions");
 
   Math::Matrix<float> grad;
@@ -198,7 +251,7 @@ EXECUTE {
   if (opt.size()) grad.load (opt[0][0].get_string());
   else {
     if (!header.DW_scheme.is_set()) 
-      throw Exception ("no diffusion encoding found in image \"" + header.name + "\"");
+      throw Exception ("no diffusion encoding found in image \"" + header.name() + "\"");
     grad = header.DW_scheme;
   }
 
@@ -207,7 +260,7 @@ EXECUTE {
 
   info ("found " + str(grad.rows()) + "x" + str(grad.columns()) + " diffusion-weighted encoding");
 
-  if (header.axes[3].dim != (int) grad.rows()) 
+  if (header.dim(3) != (int) grad.rows()) 
     throw Exception ("number of studies in base image does not match that in encoding file");
 
   DWI::normalise_grad (grad);
@@ -252,18 +305,16 @@ EXECUTE {
     HR_dirs.view() = Math::MatrixView<float> (default_directions, 300, 2);
   }
 
-  header.axes[3].dim = Math::SH::NforL (lmax);
-  header.data_type = DataType::Float32;
-  header.axes[0].order = 1; header.axes[0].forward = true;
-  header.axes[1].order = 2; header.axes[1].forward = true;
-  header.axes[2].order = 3; header.axes[2].forward = true;
-  header.axes[3].order = 0; header.axes[3].forward = true;
+  header.axes.dim(3) = Math::SH::NforL (lmax);
+  header.datatype() = DataType::Float32;
+  header.axes.order(0) = 1; header.axes.forward(0) = true;
+  header.axes.order(1) = 2; header.axes.forward(1) = true;
+  header.axes.order(2) = 3; header.axes.forward(2) = true;
+  header.axes.order(3) = 0; header.axes.forward(3) = true;
 
-  opt = get_options (2);
-  RefPtr<Image::Voxel> mask;
-  if (opt.size()) 
-    mask = new Image::Voxel (*opt[0][0].get_image());
-
+  opt = get_options (2); // mask
+  const Image::Header mask_header = opt.size() ? opt[0][0].get_image() : Image::Header();
+  RefPtr<Image::Voxel<float> > mask (!mask_header ? NULL : new Image::Voxel<float> (mask_header));
 
   bool normalise = get_options(5).size();
 
@@ -284,20 +335,20 @@ EXECUTE {
   if (opt.size()) niter = opt[0][0].get_int();
 
 
-  DWI::CSDeconvCommon<float> sdeconv_common (response, filter, DW_dirs, HR_dirs, lmax);
-  sdeconv_common.neg_lambda = neg_lambda;
-  sdeconv_common.norm_lambda = norm_lambda;
+  //DWI::CSDeconvCommon<float> sdeconv_common (response, filter, DW_dirs, HR_dirs, lmax);
+  //sdeconv_common.neg_lambda = neg_lambda;
+  //sdeconv_common.norm_lambda = norm_lambda;
 
-  ThreadedCSD<float> threader (sdeconv_common, dwi_obj, mask, *argument[2].get_image (header), bzeros, dwis, normalise);
-  threader.niter = niter;
+  //ThreadedCSD<float> threader (sdeconv_common, dwi_obj, mask, *argument[2].get_image (header), bzeros, dwis, normalise);
+  //threader.niter = niter;
 
-  threader.run ("performing constrained spherical deconvolution...");
+  //threader.run ("performing constrained spherical deconvolution...");
 }
 
 
 
 
-float default_directions [] = {
+value_type default_directions [] = {
   0, 0,
   -3.14159, 1.58657,
   2.36695, 1.25853,

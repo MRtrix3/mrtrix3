@@ -81,6 +81,8 @@ namespace MR {
           return (*this);
         } 
 
+        bool operator! () const { return (handler); }
+
         const std::string&         name () const { return (identifier); }
         std::string&               name ()       { return (identifier); }
         const char*                format;
