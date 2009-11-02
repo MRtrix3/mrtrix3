@@ -326,6 +326,7 @@ namespace Track {
 
 
 
+  // OLD STYLE:
   class MethodFOD : public MethodBase {
     public:
       class Shared : public SharedBase {
@@ -349,6 +350,131 @@ namespace Track {
       };
 
       MethodFOD (const Shared& shared) : MethodBase (shared.source), S (shared) { } 
+
+      bool init () { 
+        if (!get_data ()) return (false);
+
+        if (!S.init_dir) {
+          for (size_t n = 0; n < S.max_trials; n++) {
+            dir.set (rng.normal(), rng.normal(), rng.normal());
+            dir.normalise();
+            float val = FOD (dir);
+            if (!isnan (val)) if (val > S.init_threshold) return (true);
+          }   
+        }   
+        else {
+          dir = S.init_dir;
+          float val = FOD (dir);
+          if (finite (val)) if (val > S.init_threshold) return (true);
+        }   
+
+        return (false);
+      }   
+
+      bool next () {
+        if (!get_data ()) return (false);
+
+        float max_val = prev_FOD_val;
+        float max_val_actual = 0.0;
+        for (int n = 0; n < 50; n++) {
+          Point new_dir = rand_dir();
+          float val = FOD (new_dir);
+          if (val > max_val_actual) max_val_actual = val;
+          if (val > max_val) max_val = val;
+        }
+        prev_FOD_val = max_val;
+
+        if (isnan (max_val)) return (false);
+        if (max_val < S.threshold) return (false);
+        max_val *= 1.5;
+
+        size_t nmax = max_val_actual > S.threshold ? 10000 : S.max_trials;
+        for (size_t n = 0; n < nmax; n++) {
+          Point new_dir = rand_dir();
+          float val = FOD (new_dir);
+          if (val > S.threshold) {
+            if (val > max_val) info ("max_val exceeded!!! (val = " + str(val) + ", max_val = " + str (max_val) + ")");
+            if (rng.uniform() < val/max_val) {
+              dir = new_dir;
+              pos += S.step_size * dir;
+              return (true);
+            }
+          }
+        }
+
+        return (false);
+      }
+
+    private:
+      const Shared& S;
+      float prev_FOD_val;
+
+      float FOD (const Point& d) const {
+        return (S.precomputer ?  S.precomputer.value (values, d) : Math::SH::value (values, d, S.lmax)); }
+
+      Point rand_dir () {
+        float v[3];
+        do { 
+          v[0] = 2.0*rng.uniform() - 1.0; 
+          v[1] = 2.0*rng.uniform() - 1.0; 
+        } while (v[0]*v[0] + v[1]*v[1] > 1.0); 
+
+        v[0] *= S.dist_spread;
+        v[1] *= S.dist_spread;
+        v[2] = 1.0 - (v[0]*v[0] + v[1]*v[1]);
+        v[2] = v[2] < 0.0 ? 0.0 : sqrt (v[2]);
+
+        if (dir[0]*dir[0] + dir[1]*dir[1] < 1e-4) 
+          return (Point (v[0], v[1], dir[2] > 0.0 ? v[2] : -v[2]));
+
+        float y[] = { dir[0], dir[1], 0.0 };
+        Math::normalise (y);
+        float x[] =  { -y[1], y[0], 0.0 };
+        float y2[] = { -x[1]*dir[2], x[0]*dir[2], x[1]*dir[0] - x[0]*dir[1] };
+        Math::normalise (y2);
+
+        float cx = v[0]*x[0] + v[1]*x[1];
+        float cy = v[0]*y[0] + v[1]*y[1];
+
+        return (Point (
+              cx*x[0] + cy*y2[0] + v[2]*dir[0], 
+              cx*x[1] + cy*y2[1] + v[2]*dir[1],
+              cy*y2[2] + v[2]*dir[2]) );
+      }
+  };
+
+
+
+
+
+
+
+
+
+  // NEW STYLE:
+  class MethodFOD2 : public MethodBase {
+    public:
+      class Shared : public SharedBase {
+        public:
+          Shared (const Image::Header& source, DWI::Tractography::Properties& property_set) :
+            SharedBase (source, property_set),
+            lmax (Math::SH::LforN (source.dim(3))), 
+            max_trials (100),
+            dist_spread (curv2angle (step_size, min_curv)) {
+              properties["method"] = "FOD_PROB";
+              properties.set (lmax, "lmax");
+              properties.set (max_trials, "max_trials");
+              bool precomputed = true;
+              properties.set (precomputed, "sh_precomputed");
+              if (precomputed) precomputer.init (lmax);
+          }
+
+          size_t lmax, max_trials;
+          float dist_spread;
+          Math::SH::PrecomputedAL<float> precomputer;
+      };
+
+      MethodFOD2 (const Shared& shared) : MethodBase (shared.source), S (shared) { } 
 
       bool init () { 
         if (!get_data ()) return (false);
@@ -504,12 +630,10 @@ EXECUTE {
   if (opt.size()) properties["unidirectional"] = "1";
 
   opt = get_options (14); // initdirection
-  if (opt.size()) {
-    properties["init_direction"] = opt[0][0].get_string();
-  }
+  if (opt.size()) properties["init_direction"] = opt[0][0].get_string();
 
   opt = get_options (15); // noprecomputed
   if (opt.size()) properties["sh_precomputed"] = "0";
 
-  Track::run<Track::MethodFOD> (argument[0].get_image(), argument[1].get_string(), properties);
+  Track::run<Track::MethodFOD2> (argument[0].get_image(), argument[1].get_string(), properties);
 }
