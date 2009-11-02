@@ -104,7 +104,7 @@ namespace MR {
         Math::VectorView<float> translation = transform_matrix.column(3).view(0,3);
         for (size_t i = 0; i < 3; i++) {
           if (flip[i]) {
-            axes[i].forward = !axes[i].forward;
+            axes.forward(i) = !axes.forward(i);
             float length = float(axes[i].dim-1) * axes[i].vox;
             Math::VectorView<float> axis = transform_matrix.column(i).view(0,3);
             for (size_t n = 0; n < 3; n++) {
@@ -289,6 +289,17 @@ namespace MR {
 
 
 
+
+
+
+
+    const size_t* Header::layout () const 
+    {
+      axes_layout = new size_t [ndim()];
+      for (size_t i = 0; i < ndim(); ++i)
+        axes_layout[axes.order(i)] = i;
+      return (axes_layout.get());
+    }
 
 
 

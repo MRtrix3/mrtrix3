@@ -35,9 +35,9 @@ namespace MR {
       public:
         typedef typename Set::value_type value_type;
 
-        Subset (Set& original, const size_t* from, const size_t* dimensions) : 
+        Subset (Set& original, const size_t* from, const size_t* dimensions, const std::string& description = "") : 
           D (original),
-          descriptor (D.name() + " [subset]"),
+          descriptor (description.empty() ? D.name() + " [reordered]" : description),
           transform_matrix (D.transform()) {
           assert (D.ndim() >= NDIM);
           for (size_t n = 0; n < NDIM; ++n) assert (ssize_t(from[n] + dimensions[n]) <= D.dim(n));
@@ -52,6 +52,7 @@ namespace MR {
         const std::string& name () const { return (descriptor); }
         size_t  ndim () const { return (NDIM); }
         int     dim (size_t axis) const { return (N[axis]); }
+        const size_t* layout () const { return (D.layout()); }
 
         float   vox (size_t axis) const { return (D.vox(axis)); }
 

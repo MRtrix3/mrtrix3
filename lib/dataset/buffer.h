@@ -63,17 +63,19 @@ namespace MR {
             for (size_t n = 0; n < NDIM; ++n) {
               N[n] = dimensions[n];
               V[n] = voxel_sizes ? voxel_sizes[n] : 1.0;
+              axes_layout[n] = n;
             }
             setup();
           }
 
         template <class Template> Buffer (const Template& D, const std::string& id = "unnamed") :
           descriptor (id),
-          transform_matrix (D.transform()) { 
+          transform_matrix (D.transform()) {
             assert (D.ndim() >= NDIM);
             for (size_t n = 0; n < NDIM; ++n) {
               N[n] = D.dim(n);
               V[n] = D.vox(n);
+              axes_layout[n] = n;
             }
             setup();
           }
@@ -83,6 +85,7 @@ namespace MR {
         const std::string& name () const { return (descriptor); }
         size_t  ndim () const { return (NDIM); }
         int     dim (size_t axis) const { return (N[axis]); }
+        const size_t* layout () const { return (axes_layout); }
 
         float   vox (size_t axis) const { return (V[axis]); }
 
@@ -102,6 +105,7 @@ namespace MR {
         size_t N [NDIM];
         ssize_t x [NDIM];
         float  V [NDIM];
+        size_t axes_layout[NDIM];
         std::string descriptor;
 
         Math::Matrix<float> transform_matrix;

@@ -102,7 +102,7 @@ namespace MR {
             public:
               template <class Set> Mask (Set& D, const std::string& description) : 
                 DataSet::Buffer<bool,3> (D, description), interp (*this) { 
-                  DataSet::copy (*this, D, false); }
+                  DataSet::copy (*this, D); }
               DataSet::Interp<DataSet::Buffer<bool,3> > interp;
           };
 

@@ -35,11 +35,14 @@ namespace MR {
       void copy_kernel (Set& destination, Set2& source) { destination.value (source.value()); }
 
     template <class Set, class Set2> 
-      void copy (Set& destination, Set2& source, bool show_progress = true) 
-      { 
-        if (show_progress) loop2 ("copying from \"" + source.name() + "\" to \"" + destination.name() + "\"...",
-              copy_kernel<Set,Set2>, destination, source);
-        else loop2 (copy_kernel<Set,Set2>, destination, source);
+      void copy (Set& destination, Set2& source, size_t from_axis = 0, size_t to_axis = SIZE_MAX) { 
+        loop2 (copy_kernel<Set,Set2>, destination, source, from_axis, to_axis);
+      }
+
+    template <class Set, class Set2> 
+      void copy_with_progress (Set& destination, Set2& source, size_t from_axis = 0, size_t to_axis = SIZE_MAX) { 
+        loop2 ("copying from \"" + source.name() + "\" to \"" + destination.name() + "\"...",
+            copy_kernel<Set,Set2>, destination, source, from_axis, to_axis);
       }
 
     //! @}

@@ -41,6 +41,7 @@ namespace MR {
       template <class Functor, class Set> class Kernel1 {
         public:
           Kernel1 (Functor& func, Set& set) : F (func), D (set) { assert (voxel_count (D)); }
+          const std::string& name () { return (D.name()); }
           size_t ndim () const { return (D.ndim()); }
           ssize_t dim (size_t axis) const { return (D.dim (axis)); }
           ssize_t pos (size_t axis) const { return (D.pos (axis)); }
@@ -56,15 +57,15 @@ namespace MR {
       template <class Functor, class Set, class Set2> class Kernel2 {
         public:
           Kernel2 (Functor& func, Set& set, Set2& set2) : F (func), D (set), D2 (set2) { assert (voxel_count (D)); }
+          const std::string& name () { return (D.name()); }
           size_t ndim () const { return (D.ndim()); }
           ssize_t dim (size_t axis) const { return (D.dim (axis)); }
           ssize_t pos (size_t axis) const { return (D.pos (axis)); }
           void pos (size_t axis, ssize_t position) { D.pos (axis, position); D2.pos (axis, position); }
           void move (size_t axis, ssize_t inc) { D.move (axis, inc); D2.move (axis, inc); }
           void check (size_t from_axis, size_t to_axis) const { 
-            for (size_t i = from_axis; i < to_axis; ++i) 
-              if (D.dim (i) != D2.dim(i))
-                throw Exception ("dimensions mismatch between \"" + D.name() + "\" and \"" + D2.name() + "\"");
+            if (!dimensions_match (D, D2, from_axis, to_axis))
+              throw Exception ("dimensions mismatch between \"" + D.name() + "\" and \"" + D2.name() + "\"");
           }
           void operator() () { F (D, D2); }
         private:
@@ -74,29 +75,28 @@ namespace MR {
       };
 
 
-      template <class Functor, class Mask, class Set> class KernelMask1 {
+      template <class FunctorKernel, class Mask> class KernelMask {
         public:
-          KernelMask1 (Functor& func, Mask& mask, Set& set) : F (func), M (mask), D (set) { assert (voxel_count (M)); }
+          KernelMask (FunctorKernel& func, Mask& mask) : F (func), M (mask) { assert (voxel_count (M)); }
+          const std::string& name () { return (M.name()); }
           size_t ndim () const { return (M.ndim()); }
           ssize_t dim (size_t axis) const { return (M.dim (axis)); }
           ssize_t pos (size_t axis) const { return (M.pos (axis)); }
           void pos (size_t axis, ssize_t position) { M.pos (axis, position); }
           void move (size_t axis, ssize_t inc) { M.move (axis, inc); }
           void check (size_t from_axis, size_t to_axis) const { 
-            for (size_t i = from_axis; i < to_axis; ++i) 
-              if (M.dim (i) != D.dim(i))
-                throw Exception ("dimensions mismatch between \"" + M.name() + "\" and \"" + D.name() + "\"");
+            if (!dimensions_match (M, F, from_axis, to_axis))
+              throw Exception ("dimensions mismatch between \"" + M.name() + "\" and \"" + F.name() + "\"");
           }
           void operator() () { 
             if (M.value()) { 
-              for (size_t i = 0; i < M.ndim(); ++i) D.pos (i, M.pos(i));
-              F (D);
+              for (size_t i = 0; i < M.ndim(); ++i) F.pos (i, M.pos(i));
+              F ();
             }
           }
         private:
-          Functor& F;
+          FunctorKernel& F;
           Mask& M;
-          Set& D;
       };
 
 
@@ -104,6 +104,7 @@ namespace MR {
         public:
           ProgressKernel (Functor& func, const std::string& message) : F (func), m (message) { }
           ~ProgressKernel () { ProgressBar::done(); }
+          const std::string& name () { return (F.name()); }
           size_t ndim () const { return (F.ndim()); }
           ssize_t dim (size_t axis) const { return (F.dim (axis)); }
           ssize_t pos (size_t axis) const { return (F.pos (axis)); }
@@ -143,48 +144,56 @@ namespace MR {
     template <class Functor, class Set> 
       void loop1 (Functor& func, Set& D, size_t from_axis = 0, size_t to_axis = SIZE_MAX) 
       {
-        Kernel1<Functor, Set> kernel (func, D);
+        Kernel1<Functor,Set> kernel (func, D);
         loop (kernel, from_axis, to_axis);
       }
 
     template <class Functor, class Set> 
       void loop1 (const std::string& message, Functor& func, Set& D, size_t from_axis = 0, size_t to_axis = SIZE_MAX) 
       {
-        Kernel1<Functor, Set> kernel (func, D);
-        ProgressKernel<Kernel1<Functor, Set> > progress (kernel, message);
-        loop (progress, from_axis, to_axis);
+        typedef Kernel1<Functor,Set> MainKernel;
+        MainKernel kernel (func, D);
+        ProgressKernel<MainKernel> progress_kernel (kernel, message);
+        loop (progress_kernel, from_axis, to_axis);
       }
 
     template <class Functor, class Set, class Set2> 
       void loop2 (Functor& func, Set& D, Set2& D2, size_t from_axis = 0, size_t to_axis = SIZE_MAX) 
       {
-        Kernel2<Functor, Set, Set2> kernel (func, D, D2);
+        Kernel2<Functor,Set,Set2> kernel (func, D, D2);
         loop (kernel, from_axis, to_axis);
       }
 
     template <class Functor, class Set, class Set2> 
       void loop2 (const std::string& message, Functor& func, Set& D, Set2& D2, size_t from_axis = 0, size_t to_axis = SIZE_MAX) 
       {
-        Kernel2<Functor, Set, Set2> kernel (func, D, D2);
-        ProgressKernel<Kernel2<Functor, Set, Set2> > progress (kernel, message);
-        loop (progress, from_axis, to_axis);
+        typedef Kernel2<Functor,Set,Set2> MainKernel;
+        MainKernel kernel (func, D, D2);
+        ProgressKernel<MainKernel> progress_kernel (kernel, message);
+        loop (progress_kernel, from_axis, to_axis);
       }
 
 
     template <class Functor, class Mask, class Set> 
       void loop1_mask (Functor& func, Mask& mask, Set& D, size_t from_axis = 0, size_t to_axis = 3) 
       {
-        KernelMask1<Functor, Mask, Set> kernel (func, mask, D);
-        loop (kernel, from_axis, to_axis);
+        typedef Kernel1<Functor,Set> MainKernel;
+        typedef KernelMask<MainKernel,Mask> MaskKernel;
+        MainKernel main_kernel (func, D);
+        MaskKernel mask_kernel (main_kernel, mask);
+        loop (mask_kernel, from_axis, to_axis);
       }
 
 
     template <class Functor, class Mask, class Set> 
       void loop1_mask (const std::string& message, Functor& func, Mask& mask, Set& D, size_t from_axis = 0, size_t to_axis = 3) 
       {
-        KernelMask1<Functor, Mask, Set> kernel (func, mask, D);
-        ProgressKernel<KernelMask1<Functor, Mask, Set> > progress (kernel, message);
-        loop (progress, from_axis, to_axis);
+        typedef Kernel1<Functor,Set> MainKernel;
+        typedef KernelMask<MainKernel,Mask> MaskKernel;
+        MainKernel main_kernel (func, D);
+        MaskKernel mask_kernel (main_kernel, mask);
+        ProgressKernel<MaskKernel> progress_kernel (mask_kernel, message);
+        loop (progress_kernel, from_axis, to_axis);
       }
 
     //! @}

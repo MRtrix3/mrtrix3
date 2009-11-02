@@ -117,6 +117,7 @@ namespace MR {
           return (false);
         }
 
+        const size_t* layout () const { return (H.layout()); }
         size_t  ndim () const { return (H.ndim()); }
         ssize_t dim (size_t axis) const { return (H.dim(axis)); }
         float   vox (size_t axis) const { return (H.vox(axis)); }

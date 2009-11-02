@@ -25,6 +25,8 @@
 #include "image/voxel.h"
 #include "image/axis.h"
 #include "dataset/copy.h"
+#include "dataset/extract.h"
+#include "dataset/reorder.h"
 
 using namespace MR; 
 
@@ -78,46 +80,27 @@ OPTIONS = {
 };
 
 
-template <class Set> class Extractor {
-  public:
-    typedef typename Set::value_type value_type;
-
-    Extractor (Set& original, const std::vector<std::vector<int> >& positions) : ds (original), x (new size_t [ndim()]), P (positions) { }
-    ~Extractor () { delete [] x; }
-    const std::string& name () const { return (ds.name()); }
-    size_t  ndim () const { return (ds.ndim()); }
-    int     dim (size_t axis) const { return (P[axis].size()); }
-    float   vox (size_t axis) const { return (ds.vox (axis)); }
-    const Math::Matrix<float>& transform () const { return (ds.transform()); }
-
-    void reset () { memset (x, 0, sizeof(size_t)*ndim()); for (size_t a = 0; a < ndim(); ++a) ds.pos (a, P[a][0]); }
-
-    ssize_t pos (size_t axis) const { return (x[axis]); } 
-    void    pos (size_t axis, ssize_t position) const { x[axis] = position; ds.pos (axis, P[axis][position]); }
-    void    move (size_t axis, ssize_t increment) const { x[axis] += increment; ds.pos (axis, P[axis][x[axis]]); }
-
-    value_type   value () const { return (ds.value()); }
-    void         value (value_type val) { ds.value (val); }
-
-  private:
-    Set& ds;
-    size_t* x;
-    const std::vector<std::vector<int> > P;
-};
 
 
-
-
-template <class Set1, class Set2> void copy_replace_NaN_kernel (Set1& destination, Set2& source) { 
-  typedef typename Set1::value_type T;
+template <class Set, class Set2> void copy_replace_NaN_kernel (Set& destination, Set2& source) { 
+  typedef typename Set::value_type T;
   T val = source.value();
   destination.value (isnan(val) ? 0.0 : val);
 }
 
-template <class Set1, class Set2> void copy (Set1& destination, Set2& source, bool replace_NaN) { 
+
+template <class Set, class Set2> void copy (Set& destination, Set2& source, bool replace_NaN) 
+{ 
   std::string progress_message ("copying from \"" + source.name() + "\" to \"" + destination.name() + "\"...");
-  if (replace_NaN) DataSet::loop2 (progress_message, DataSet::copy_kernel<Set1,Set2>, destination, source);
-  else DataSet::loop2 (progress_message, copy_replace_NaN_kernel<Set1,Set2>, destination, source);
+
+  typedef DataSet::Reorder<Set> S1;
+  typedef DataSet::Reorder<Set2> S2;
+
+  S1 dest (destination, NULL, destination.name());
+  S2 src (source, dest.layout(), source.name());
+
+  if (replace_NaN) DataSet::loop2 (progress_message, DataSet::copy_kernel<S1,S2>, dest, src);
+  else DataSet::loop2 (progress_message, copy_replace_NaN_kernel<S1,S2>, dest, src);
 }
 
 
@@ -220,7 +203,7 @@ EXECUTE {
         for (size_t i = 0; i < pos[n].size(); i++) pos[n][i] = i;
       }
     }
-    Extractor<Image::Voxel<float> > extract (in, pos);
+    DataSet::Extract<Image::Voxel<float> > extract (in, pos);
     for (size_t n = 0; n < extract.ndim(); ++n)
       header.axes.dim(n) = extract.dim(n);
     const Image::Header header_out = argument[1].get_image (header);

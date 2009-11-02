@@ -63,7 +63,6 @@ namespace MR {
           format (NULL), offset (0.0), scale (1.0), readwrite (false), 
           transform_matrix (ds.transform()) { 
             axes.ndim() = ds.ndim();
-            //axes.resize (ds.ndim());
             for (size_t i = 0; i < ds.ndim(); i++) {
               axes.dim(i) = ds.dim(i);
               axes.vox(i) = ds.vox(i);
@@ -97,6 +96,7 @@ namespace MR {
         Ptr<Handler::Base>         handler;
 
         // DataSet interface:
+        const size_t* layout () const;
         int     dim (size_t index) const { return (axes.dim (index)); } 
         size_t  ndim () const            { return (axes.ndim()); }
         float   vox (size_t index) const { return (axes.vox (index)); }
@@ -139,10 +139,11 @@ namespace MR {
 
         friend std::ostream& operator<< (std::ostream& stream, const Header& H);
 
-      protected:
+      private:
         std::string          identifier;
         DataType             dtype;
         Math::Matrix<float>  transform_matrix;
+        mutable Array<size_t>::Ptr axes_layout; 
 
         void merge (const Header& H);
 
