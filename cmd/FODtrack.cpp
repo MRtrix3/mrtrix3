@@ -460,7 +460,8 @@ namespace Track {
             SharedBase (source, property_set),
             lmax (Math::SH::LforN (source.dim(3))), 
             max_trials (100),
-            dist_spread (curv2angle (step_size, min_curv)) {
+            dist_spread (curv2angle (step_size, min_curv)),
+            max_sin_theta (sin (dist_spread)) {
               properties["method"] = "FOD_PROB";
               properties.set (lmax, "lmax");
               properties.set (max_trials, "max_trials");
@@ -470,7 +471,7 @@ namespace Track {
           }
 
           size_t lmax, max_trials;
-          float dist_spread;
+          float dist_spread, max_sin_theta;
           Math::SH::PrecomputedAL<float> precomputer;
       };
 
@@ -502,7 +503,7 @@ namespace Track {
         float max_val = prev_FOD_val;
         float max_val_actual = 0.0;
         for (int n = 0; n < 50; n++) {
-          Point new_dir = rand_dir();
+          Point new_dir = rand_dir (dir);
           float val = FOD (new_dir);
           if (val > max_val_actual) max_val_actual = val;
           if (val > max_val) max_val = val;
@@ -515,7 +516,7 @@ namespace Track {
 
         size_t nmax = max_val_actual > S.threshold ? 10000 : S.max_trials;
         for (size_t n = 0; n < nmax; n++) {
-          Point new_dir = rand_dir();
+          Point new_dir = rand_dir (dir);
           float val = FOD (new_dir);
           if (val > S.threshold) {
             if (val > max_val) info ("max_val exceeded!!! (val = " + str(val) + ", max_val = " + str (max_val) + ")");
@@ -537,34 +538,30 @@ namespace Track {
       float FOD (const Point& d) const {
         return (S.precomputer ?  S.precomputer.value (values, d) : Math::SH::value (values, d, S.lmax)); }
 
-      Point rand_dir () {
-        float v[3];
+      Point rand_dir (const Point& d) {
+        using namespace Math;
+
+        float phi = 2.0 * M_PI * rng.uniform();
+        float theta;
         do { 
-          v[0] = 2.0*rng.uniform() - 1.0; 
-          v[1] = 2.0*rng.uniform() - 1.0; 
-        } while (v[0]*v[0] + v[1]*v[1] > 1.0); 
+          theta = S.dist_spread * rng.uniform();
+        } while (S.max_sin_theta * rng.uniform() > sin (theta)); 
+        Point a (sin(theta)*cos(phi), sin(theta)*sin(phi), cos(theta));
 
-        v[0] *= S.dist_spread;
-        v[1] *= S.dist_spread;
-        v[2] = 1.0 - (v[0]*v[0] + v[1]*v[1]);
-        v[2] = v[2] < 0.0 ? 0.0 : sqrt (v[2]);
+        float n = sqrt (pow2(d[0]) + pow2(d[1]));
+        if (n == 0.0) return (d[2] < 0.0 ? -a : a);
+          
+        Point m (d[0]/n, d[1]/n, 0.0);
+        Point mp (d[2]*m[0], d[2]*m[1], -n);
 
-        if (dir[0]*dir[0] + dir[1]*dir[1] < 1e-4) 
-          return (Point (v[0], v[1], dir[2] > 0.0 ? v[2] : -v[2]));
+        float alpha = a[2];
+        float beta = a[0]*m[0] + a[1]*m[1];
 
-        float y[] = { dir[0], dir[1], 0.0 };
-        Math::normalise (y);
-        float x[] =  { -y[1], y[0], 0.0 };
-        float y2[] = { -x[1]*dir[2], x[0]*dir[2], x[1]*dir[0] - x[0]*dir[1] };
-        Math::normalise (y2);
+        a[0] += alpha * d[0] + beta * (mp[0] - m[0]);
+        a[1] += alpha * d[1] + beta * (mp[1] - m[1]);
+        a[2] += alpha * (d[2]-1.0) + beta * (mp[2] - m[2]);
 
-        float cx = v[0]*x[0] + v[1]*x[1];
-        float cy = v[0]*y[0] + v[1]*y[1];
-
-        return (Point (
-              cx*x[0] + cy*y2[0] + v[2]*dir[0], 
-              cx*x[1] + cy*y2[1] + v[2]*dir[1],
-              cy*y2[2] + v[2]*dir[2]) );
+        return (a);
       }
   };
 
