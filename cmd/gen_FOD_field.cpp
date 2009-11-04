@@ -107,6 +107,11 @@ EXECUTE {
   header.axes.dim(2) = D[2];
   header.axes.dim(3) = kernel.size();
   header.axes.vox(0) = header.axes.vox(1) = header.axes.vox(2) = 2.0;
+  header.axes.order(0) = 1; header.axes.forward(0) = true;
+  header.axes.order(1) = 2; header.axes.forward(1) = true;
+  header.axes.order(2) = 3; header.axes.forward(2) = true;
+  header.axes.order(3) = 0; header.axes.forward(3) = true;
+
 
   const Image::Header FOD_header = argument[2].get_image (header);
   Image::Voxel<float> vox (FOD_header);

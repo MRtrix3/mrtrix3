@@ -97,6 +97,9 @@ OPTIONS = {
 
   Option ("noprecomputed", "no precomputation", "do NOT pre-compute legendre polynomial values. Warning: this will slow down the algorithm by a factor of approximately 4."),
 
+  Option ("samples", "samples per step", "set the number of FOD samples to take per step for the 2nd order method (iFOD2).")
+    .append (Argument ("number", "number", "the number of samples.").type_integer(1, 20, 3)),
+
   Option::End
 };
 
@@ -118,6 +121,9 @@ namespace Track {
   typedef Thread::Queue<Line,Allocator> Queue;
 
 
+  inline void spit (const Point& p) {
+    std::cout << p[0] << " " << p[1] << " " << p[2] << "\n";
+  }
 
   class SharedBase {
     public:
@@ -148,14 +154,17 @@ namespace Track {
           max_num_attempts = 100 * max_num_tracks;
           properties.set (max_num_attempts, "max_num_attempts");
 
-          if (properties["initdirection"].size()) {
-            std::vector<float> V = parse_floats (properties["initdirection"]);
-            if (V.size() != 3) throw Exception (std::string ("invalid initial direction \"") + properties["initdirection"] + "\"");
+          if (properties["init_direction"].size()) {
+            TEST;
+            std::vector<float> V = parse_floats (properties["init_direction"]);
+            if (V.size() != 3) throw Exception (std::string ("invalid initial direction \"") + properties["init_direction"] + "\"");
             init_dir[0] = V[0];
             init_dir[1] = V[1];
             init_dir[2] = V[2];
             init_dir.normalise();
           }
+          VAR (init_dir);
+          VAR (!init_dir);
 
           max_num_points = round (max_dist/step_size);
           min_num_points = round (min_dist/step_size);
@@ -190,13 +199,15 @@ namespace Track {
       Point pos, dir;
       float* values;
 
-      bool get_data () {
-        interp.R (pos); 
+      bool get_data (const Point& position) {
+        interp.R (position); 
         if (!interp) return (false);
         for (source.pos(3,0); source.pos(3) < source.dim(3); source.move(3,1)) 
           values[source.pos(3)] = interp.value();
         return (!isnan (values[0]));
       }
+
+      bool get_data () { return (get_data (pos)); }
 
       static void init () { rng_seed = time (NULL); }
 
@@ -327,7 +338,7 @@ namespace Track {
 
 
   // OLD STYLE:
-  class MethodFOD : public MethodBase {
+  class iFOD1 : public MethodBase {
     public:
       class Shared : public SharedBase {
         public:
@@ -335,7 +346,8 @@ namespace Track {
             SharedBase (source, property_set),
             lmax (Math::SH::LforN (source.dim(3))), 
             max_trials (100),
-            dist_spread (curv2angle (step_size, min_curv)) {
+            max_theta (curv2angle (step_size, min_curv)),
+            max_sin_theta (sin (max_theta)) {
               properties["method"] = "FOD_PROB";
               properties.set (lmax, "lmax");
               properties.set (max_trials, "max_trials");
@@ -345,11 +357,11 @@ namespace Track {
           }
 
           size_t lmax, max_trials;
-          float dist_spread;
+          float max_theta, max_sin_theta;
           Math::SH::PrecomputedAL<float> precomputer;
       };
 
-      MethodFOD (const Shared& shared) : MethodBase (shared.source), S (shared) { } 
+      iFOD1 (const Shared& shared) : MethodBase (shared.source), S (shared) { } 
 
       bool init () { 
         if (!get_data ()) return (false);
@@ -359,139 +371,23 @@ namespace Track {
             dir.set (rng.normal(), rng.normal(), rng.normal());
             dir.normalise();
             float val = FOD (dir);
-            if (!isnan (val)) if (val > S.init_threshold) return (true);
+            if (!isnan (val)) {
+              if (val > S.init_threshold) {
+                prev_FOD_val = val;
+                return (true);
+              }
+            }
           }   
         }   
         else {
           dir = S.init_dir;
           float val = FOD (dir);
-          if (finite (val)) if (val > S.init_threshold) return (true);
-        }   
-
-        return (false);
-      }   
-
-      bool next () {
-        if (!get_data ()) return (false);
-
-        float max_val = prev_FOD_val;
-        float max_val_actual = 0.0;
-        for (int n = 0; n < 50; n++) {
-          Point new_dir = rand_dir();
-          float val = FOD (new_dir);
-          if (val > max_val_actual) max_val_actual = val;
-          if (val > max_val) max_val = val;
-        }
-        prev_FOD_val = max_val;
-
-        if (isnan (max_val)) return (false);
-        if (max_val < S.threshold) return (false);
-        max_val *= 1.5;
-
-        size_t nmax = max_val_actual > S.threshold ? 10000 : S.max_trials;
-        for (size_t n = 0; n < nmax; n++) {
-          Point new_dir = rand_dir();
-          float val = FOD (new_dir);
-          if (val > S.threshold) {
-            if (val > max_val) info ("max_val exceeded!!! (val = " + str(val) + ", max_val = " + str (max_val) + ")");
-            if (rng.uniform() < val/max_val) {
-              dir = new_dir;
-              pos += S.step_size * dir;
+          if (finite (val)) { 
+            if (val > S.init_threshold) {
+              prev_FOD_val = val;
               return (true);
             }
           }
-        }
-
-        return (false);
-      }
-
-    private:
-      const Shared& S;
-      float prev_FOD_val;
-
-      float FOD (const Point& d) const {
-        return (S.precomputer ?  S.precomputer.value (values, d) : Math::SH::value (values, d, S.lmax)); }
-
-      Point rand_dir () {
-        float v[3];
-        do { 
-          v[0] = 2.0*rng.uniform() - 1.0; 
-          v[1] = 2.0*rng.uniform() - 1.0; 
-        } while (v[0]*v[0] + v[1]*v[1] > 1.0); 
-
-        v[0] *= S.dist_spread;
-        v[1] *= S.dist_spread;
-        v[2] = 1.0 - (v[0]*v[0] + v[1]*v[1]);
-        v[2] = v[2] < 0.0 ? 0.0 : sqrt (v[2]);
-
-        if (dir[0]*dir[0] + dir[1]*dir[1] < 1e-4) 
-          return (Point (v[0], v[1], dir[2] > 0.0 ? v[2] : -v[2]));
-
-        float y[] = { dir[0], dir[1], 0.0 };
-        Math::normalise (y);
-        float x[] =  { -y[1], y[0], 0.0 };
-        float y2[] = { -x[1]*dir[2], x[0]*dir[2], x[1]*dir[0] - x[0]*dir[1] };
-        Math::normalise (y2);
-
-        float cx = v[0]*x[0] + v[1]*x[1];
-        float cy = v[0]*y[0] + v[1]*y[1];
-
-        return (Point (
-              cx*x[0] + cy*y2[0] + v[2]*dir[0], 
-              cx*x[1] + cy*y2[1] + v[2]*dir[1],
-              cy*y2[2] + v[2]*dir[2]) );
-      }
-  };
-
-
-
-
-
-
-
-
-
-  // NEW STYLE:
-  class MethodFOD2 : public MethodBase {
-    public:
-      class Shared : public SharedBase {
-        public:
-          Shared (const Image::Header& source, DWI::Tractography::Properties& property_set) :
-            SharedBase (source, property_set),
-            lmax (Math::SH::LforN (source.dim(3))), 
-            max_trials (100),
-            dist_spread (curv2angle (step_size, min_curv)),
-            max_sin_theta (sin (dist_spread)) {
-              properties["method"] = "FOD_PROB";
-              properties.set (lmax, "lmax");
-              properties.set (max_trials, "max_trials");
-              bool precomputed = true;
-              properties.set (precomputed, "sh_precomputed");
-              if (precomputed) precomputer.init (lmax);
-          }
-
-          size_t lmax, max_trials;
-          float dist_spread, max_sin_theta;
-          Math::SH::PrecomputedAL<float> precomputer;
-      };
-
-      MethodFOD2 (const Shared& shared) : MethodBase (shared.source), S (shared) { } 
-
-      bool init () { 
-        if (!get_data ()) return (false);
-
-        if (!S.init_dir) {
-          for (size_t n = 0; n < S.max_trials; n++) {
-            dir.set (rng.normal(), rng.normal(), rng.normal());
-            dir.normalise();
-            float val = FOD (dir);
-            if (!isnan (val)) if (val > S.init_threshold) return (true);
-          }   
-        }   
-        else {
-          dir = S.init_dir;
-          float val = FOD (dir);
-          if (finite (val)) if (val > S.init_threshold) return (true);
         }   
 
         return (false);
@@ -500,18 +396,16 @@ namespace Track {
       bool next () {
         if (!get_data ()) return (false);
 
-        float max_val = prev_FOD_val;
         float max_val_actual = 0.0;
         for (int n = 0; n < 50; n++) {
           Point new_dir = rand_dir (dir);
           float val = FOD (new_dir);
           if (val > max_val_actual) max_val_actual = val;
-          if (val > max_val) max_val = val;
         }
-        prev_FOD_val = max_val;
+        float max_val = MAX (prev_FOD_val, max_val_actual);
+        prev_FOD_val = max_val_actual;
 
-        if (isnan (max_val)) return (false);
-        if (max_val < S.threshold) return (false);
+        if (isnan (max_val) || max_val < S.threshold) return (false);
         max_val *= 1.5;
 
         size_t nmax = max_val_actual > S.threshold ? 10000 : S.max_trials;
@@ -522,6 +416,7 @@ namespace Track {
             if (val > max_val) info ("max_val exceeded!!! (val = " + str(val) + ", max_val = " + str (max_val) + ")");
             if (rng.uniform() < val/max_val) {
               dir = new_dir;
+              dir.normalise();
               pos += S.step_size * dir;
               return (true);
             }
@@ -544,7 +439,178 @@ namespace Track {
         float phi = 2.0 * M_PI * rng.uniform();
         float theta;
         do { 
-          theta = S.dist_spread * rng.uniform();
+          theta = S.max_theta * rng.uniform();
+        } while (S.max_sin_theta * rng.uniform() > sin (theta)); 
+        Point a (sin(theta)*cos(phi), sin(theta)*sin(phi), cos(theta));
+
+        float n = sqrt (pow2(d[0]) + pow2(d[1]));
+        if (n == 0.0) return (d[2] < 0.0 ? -a : a);
+          
+        Point m (d[0]/n, d[1]/n, 0.0);
+        Point mp (d[2]*m[0], d[2]*m[1], -n);
+
+        float alpha = a[2];
+        float beta = a[0]*m[0] + a[1]*m[1];
+
+        a[0] += alpha * d[0] + beta * (mp[0] - m[0]);
+        a[1] += alpha * d[1] + beta * (mp[1] - m[1]);
+        a[2] += alpha * (d[2]-1.0) + beta * (mp[2] - m[2]);
+
+        return (a);
+      }
+  };
+
+
+
+
+
+
+
+
+
+  // NEW STYLE:
+  class iFOD2 : public MethodBase {
+    public:
+      class Shared : public SharedBase {
+        public:
+          Shared (const Image::Header& source, DWI::Tractography::Properties& property_set) :
+            SharedBase (source, property_set),
+            lmax (Math::SH::LforN (source.dim(3))), 
+            num_samples (1),
+            max_trials (100),
+            max_theta (step_size / min_curv),
+            max_sin_theta (sin (max_theta)) {
+              properties["method"] = "FOD_PROB";
+              properties.set (lmax, "lmax");
+              properties.set (num_samples, "samples_per_step");
+              properties.set (max_trials, "max_trials");
+              bool precomputed = true;
+              properties.set (precomputed, "sh_precomputed");
+              if (precomputed) precomputer.init (lmax);
+              prob_threshold = Math::pow (threshold, num_samples);
+              VAR (max_theta*180.0/M_PI);
+          }
+
+          size_t lmax, num_samples, max_trials;
+          float max_theta, max_sin_theta, prob_threshold;
+          Math::SH::PrecomputedAL<float> precomputer;
+      };
+
+      iFOD2 (const Shared& shared) : MethodBase (shared.source), S (shared), mean_sample_num (0), num_sample_runs (0) { } 
+      ~iFOD2 () { info ("mean number of samples per step = " + str (float(mean_sample_num)/float(num_sample_runs))); }
+
+      bool init () { 
+        if (!get_data ()) return (false);
+
+        if (!S.init_dir) {
+          for (size_t n = 0; n < S.max_trials; n++) {
+            dir.set (rng.normal(), rng.normal(), rng.normal());
+            dir.normalise();
+            float val = FOD (dir);
+            if (!isnan (val)) {
+              if (val > S.init_threshold) {
+              prev_prob_val = Math::pow (val, S.num_samples);
+                return (true);
+              }
+            }
+          }   
+        }   
+        else {
+          TEST;
+          dir = S.init_dir;
+          float val = FOD (dir);
+          if (finite (val)) { 
+            if (val > S.init_threshold) {
+              prev_prob_val = Math::pow (val, S.num_samples);
+              return (true);
+            }
+          }
+        }   
+
+        return (false);
+      }   
+
+      bool next () {
+        Point next_pos, next_dir;
+
+        float max_val_actual = 0.0;
+        for (int n = 0; n < 100; n++) {
+          float val = rand_path (next_pos, next_dir);
+          if (val > max_val_actual) max_val_actual = val;
+        }
+        float max_val = MAX (prev_prob_val, max_val_actual);
+        prev_prob_val = max_val_actual;
+
+        if (isnan (max_val) || max_val < S.prob_threshold) return (false);
+        max_val *= 1.5;
+
+        size_t nmax = max_val_actual > S.prob_threshold ? 10000 : S.max_trials;
+        for (size_t n = 0; n < nmax; n++) {
+          float val = rand_path (next_pos, next_dir);
+          if (val > S.prob_threshold) {
+            if (val > max_val) info ("max_val exceeded!!! (val = " + str(val) + ", max_val = " + str (max_val) + ")");
+            if (rng.uniform() < val/max_val) {
+              dir = next_dir;
+              dir.normalise();
+              pos = next_pos;
+              mean_sample_num += n;
+              num_sample_runs++;
+              return (true);
+            }
+          }
+        }
+
+        return (false);
+      }
+
+    private:
+      const Shared& S;
+      float prev_prob_val;
+      size_t mean_sample_num, num_sample_runs;
+
+      float FOD (const Point& direction) const {
+        return (S.precomputer ?  S.precomputer.value (values, direction) : Math::SH::value (values, direction, S.lmax)); }
+
+      float FOD (const Point& position, const Point& direction) {
+        if (!get_data (position)) return (NAN);
+        return (FOD (direction));
+      }
+
+      float rand_path (Point& next_pos, Point& next_dir) {
+        next_dir = rand_dir (dir);
+        float cos_theta = next_dir.dot (dir), theta = Math::acos (cos_theta);
+        VAR (cos_theta);
+        VAR (theta*180.0/M_PI);
+        Point curv = next_dir - cos_theta * dir; curv.normalise();
+        VAR (curv);
+        float R = S.step_size / theta;
+        next_pos = pos + R * (sin (theta) * dir + (1.0-cos_theta) * curv);
+        float val = FOD (next_pos, next_dir);
+        //if (isnan (val) || val < S.threshold) return (NAN);
+        spit (next_pos); spit (next_dir); VAR (val); 
+
+        for (size_t i = S.num_samples-1; i > 0; --i) {
+          float a = (theta * i) / S.num_samples, cos_a = cos (a), sin_a = sin (a);
+          Point x = pos + R * (sin_a * dir + (1.0 - cos_a) * curv);
+          Point t = cos_a * dir + sin_a * curv;
+          float amp = FOD (x, t);
+          //if (isnan (val) || amp < S.threshold) return (NAN);
+          val *= amp;
+          spit (x); spit (t); VAR (amp);
+        }
+        spit (pos); spit (dir);
+        exit (1);
+        return (val);
+      }
+
+
+      Point rand_dir (const Point& d) {
+        using namespace Math;
+
+        float phi = 2.0 * M_PI * rng.uniform();
+        float theta;
+        do { 
+          theta = S.max_theta * rng.uniform();
         } while (S.max_sin_theta * rng.uniform() > sin (theta)); 
         Point a (sin(theta)*cos(phi), sin(theta)*sin(phi), cos(theta));
 
@@ -632,5 +698,8 @@ EXECUTE {
   opt = get_options (15); // noprecomputed
   if (opt.size()) properties["sh_precomputed"] = "0";
 
-  Track::run<Track::MethodFOD2> (argument[0].get_image(), argument[1].get_string(), properties);
+  opt = get_options (16); // samples
+  if (opt.size()) properties["samples_per_step"] = str (opt[0][0].get_int());
+
+  Track::run<Track::iFOD2> (argument[0].get_image(), argument[1].get_string(), properties);
 }
