@@ -32,15 +32,15 @@ namespace MR {
 
     //! \cond skip
     namespace {
-      template <typename X> inline void __allocate (X*& data, size_t count) { data = new X [count]; }
-      template <> inline void __allocate<bool> (bool*& data, size_t count) { data = (bool*) (new uint8_t [(count+7)/8]); }
+      template <typename X> inline X* __allocate (size_t count) { return (new X [count]); }
+      template <> inline bool* __allocate<bool> (size_t count) { return ((bool*) (new uint8_t [(count+7)/8])); }
 
-      template <typename X> inline X __get (const X* const& data, ssize_t offset) { return (data[offset]); }
-      template <typename X> inline void __set (X*& data, ssize_t offset, X val) { data[offset] = val; }
+      template <typename X> inline X __get (const X* const data, ssize_t offset) { return (data[offset]); }
+      template <typename X> inline void __set (X* data, ssize_t offset, X val) { data[offset] = val; }
 
-      template <> inline bool __get<bool> (const bool* const& data, ssize_t offset) 
+      template <> inline bool __get<bool> (const bool* const data, ssize_t offset) 
       { return ((((uint8_t*) data)[offset/8]) & (BITMASK >> offset%8)); } 
-      template <> inline void __set<bool> (bool*& data, ssize_t offset, bool val) { 
+      template <> inline void __set<bool> (bool* data, ssize_t offset, bool val) { 
         if (val) ((uint8_t*) data)[offset/8] |= (BITMASK >> offset%8); 
         else ((uint8_t*) data)[offset/8] &= ~(BITMASK >> offset%8); 
       }
@@ -80,7 +80,7 @@ namespace MR {
             setup();
           }
 
-        ~Buffer () { delete [] data; }
+        ~Buffer () { }
 
         const std::string& name () const { return (descriptor); }
         size_t  ndim () const { return (NDIM); }
@@ -97,11 +97,11 @@ namespace MR {
         void    pos (size_t axis, ssize_t position) { x[axis] = position; }
         void    move (size_t axis, ssize_t increment) { x[axis] += increment; }
 
-        value_type   value () const { return (__get<value_type>(data, offset())); }
-        void         value (value_type val) { __set<value_type>(data, offset(), val); }
+        value_type   value () const { return (__get<value_type>(data.get(), offset())); }
+        void         value (value_type val) { __set<value_type>(data.get(), offset(), val); }
 
       private:
-        value_type* data;
+        typename Array<value_type>::RefPtr data;
         size_t N [NDIM];
         ssize_t x [NDIM];
         float  V [NDIM];
@@ -111,7 +111,7 @@ namespace MR {
         Math::Matrix<float> transform_matrix;
 
         void setup () {
-          __allocate<value_type> (data, voxel_count (*this));
+          data = __allocate<value_type> (voxel_count (*this));
           reset();
           if (transform_matrix.rows() == 4 && transform_matrix.columns() == 4) return;
           transform_matrix.allocate(4,4);
