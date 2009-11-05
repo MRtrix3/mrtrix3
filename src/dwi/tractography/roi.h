@@ -128,10 +128,15 @@ namespace MR {
 
           float volume () const { return (total_volume); }
 
-          size_t contains (const Point& p) {
+          bool contains (const Point& p) {
             for (size_t n = 0; n < R.size(); ++n)
-              if (R[n].contains (p)) return (n);
-            return (SIZE_MAX);
+              if (R[n].contains (p)) return (true);
+            return (false);
+          }
+
+          void contains (const Point& p, std::vector<bool>& retval) {
+            for (size_t n = 0; n < R.size(); ++n)
+              if (R[n].contains (p)) retval[n] = true;
           }
 
           Point sample (Math::RNG& rng) {

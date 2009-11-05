@@ -95,6 +95,7 @@ if mrtrix_dir:
   include_paths = [ misc_dir ]
   lib_dir = os.path.join (mrtrix_dir, lib_dir)
   misc_dir = os.path.join (mrtrix_dir, misc_dir)
+  cache_filename = os.path.join (mrtrix_dir, cache_filename)
 
 
 # get version info:
@@ -211,6 +212,7 @@ class Entry:
       list_headers (src_header)
       file_flags[cc_file] = file_flags[src_header]
     else: self.deps = self.deps.union (list_headers (cc_file))
+    self.deps.add (cache_filename)
 
     skip = False
     if 'T' in file_flags[cc_file]: flags += thread_cflags
