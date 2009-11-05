@@ -155,7 +155,6 @@ namespace Track {
           properties.set (max_num_attempts, "max_num_attempts");
 
           if (properties["init_direction"].size()) {
-            TEST;
             std::vector<float> V = parse_floats (properties["init_direction"]);
             if (V.size() != 3) throw Exception (std::string ("invalid initial direction \"") + properties["init_direction"] + "\"");
             init_dir[0] = V[0];
@@ -163,8 +162,6 @@ namespace Track {
             init_dir[2] = V[2];
             init_dir.normalise();
           }
-          VAR (init_dir);
-          VAR (!init_dir);
 
           max_num_points = round (max_dist/step_size);
           min_num_points = round (min_dist/step_size);
@@ -274,10 +271,9 @@ namespace Track {
 
       bool iterate () {
         if (!method.next()) return (false);
-        if (S.properties.mask.size() && S.properties.mask.contains (method.pos) == SIZE_MAX) return (false);
-        if (S.properties.exclude.contains (method.pos) < SIZE_MAX) { track_excluded = true; return (false); }
-        size_t n = S.properties.include.contains (method.pos);
-        if (n < SIZE_MAX) track_included[n] = true;
+        if (S.properties.mask.size() && !S.properties.mask.contains (method.pos)) return (false);
+        if (S.properties.exclude.contains (method.pos)) { track_excluded = true; return (false); }
+        S.properties.include.contains (method.pos, track_included);
         return (true);
       };
   };
@@ -336,6 +332,37 @@ namespace Track {
 
 
 
+  // Common functions:
+  
+  inline Point random_direction (Math::RNG& rng, const Point& d, float max_theta, float max_sin_theta) {
+    using namespace Math;
+
+    float phi = 2.0 * M_PI * rng.uniform();
+    float theta;
+    do { 
+      theta = max_theta * rng.uniform();
+    } while (max_sin_theta * rng.uniform() > sin (theta)); 
+    Point a (sin(theta)*cos(phi), sin(theta)*sin(phi), cos(theta));
+
+    float n = sqrt (pow2(d[0]) + pow2(d[1]));
+    if (n == 0.0) return (d[2] < 0.0 ? -a : a);
+
+    Point m (d[0]/n, d[1]/n, 0.0);
+    Point mp (d[2]*m[0], d[2]*m[1], -n);
+
+    float alpha = a[2];
+    float beta = a[0]*m[0] + a[1]*m[1];
+
+    a[0] += alpha * d[0] + beta * (mp[0] - m[0]);
+    a[1] += alpha * d[1] + beta * (mp[1] - m[1]);
+    a[2] += alpha * (d[2]-1.0) + beta * (mp[2] - m[2]);
+
+    return (a);
+  }
+
+
+
+
 
   // OLD STYLE:
   class iFOD1 : public MethodBase {
@@ -354,6 +381,7 @@ namespace Track {
               bool precomputed = true;
               properties.set (precomputed, "sh_precomputed");
               if (precomputed) precomputer.init (lmax);
+              info ("max_theta = " + str(max_theta*180.0/M_PI));
           }
 
           size_t lmax, max_trials;
@@ -433,31 +461,7 @@ namespace Track {
       float FOD (const Point& d) const {
         return (S.precomputer ?  S.precomputer.value (values, d) : Math::SH::value (values, d, S.lmax)); }
 
-      Point rand_dir (const Point& d) {
-        using namespace Math;
-
-        float phi = 2.0 * M_PI * rng.uniform();
-        float theta;
-        do { 
-          theta = S.max_theta * rng.uniform();
-        } while (S.max_sin_theta * rng.uniform() > sin (theta)); 
-        Point a (sin(theta)*cos(phi), sin(theta)*sin(phi), cos(theta));
-
-        float n = sqrt (pow2(d[0]) + pow2(d[1]));
-        if (n == 0.0) return (d[2] < 0.0 ? -a : a);
-          
-        Point m (d[0]/n, d[1]/n, 0.0);
-        Point mp (d[2]*m[0], d[2]*m[1], -n);
-
-        float alpha = a[2];
-        float beta = a[0]*m[0] + a[1]*m[1];
-
-        a[0] += alpha * d[0] + beta * (mp[0] - m[0]);
-        a[1] += alpha * d[1] + beta * (mp[1] - m[1]);
-        a[2] += alpha * (d[2]-1.0) + beta * (mp[2] - m[2]);
-
-        return (a);
-      }
+      Point rand_dir (const Point& d) { return (random_direction (rng, d, S.max_theta, S.max_sin_theta)); }
   };
 
 
@@ -488,7 +492,7 @@ namespace Track {
               properties.set (precomputed, "sh_precomputed");
               if (precomputed) precomputer.init (lmax);
               prob_threshold = Math::pow (threshold, num_samples);
-              VAR (max_theta*180.0/M_PI);
+              info ("max_theta = " + str(max_theta*180.0/M_PI));
           }
 
           size_t lmax, num_samples, max_trials;
@@ -516,7 +520,6 @@ namespace Track {
           }   
         }   
         else {
-          TEST;
           dir = S.init_dir;
           float val = FOD (dir);
           if (finite (val)) { 
@@ -578,57 +581,44 @@ namespace Track {
 
       float rand_path (Point& next_pos, Point& next_dir) {
         next_dir = rand_dir (dir);
-        float cos_theta = next_dir.dot (dir), theta = Math::acos (cos_theta);
-        VAR (cos_theta);
-        VAR (theta*180.0/M_PI);
-        Point curv = next_dir - cos_theta * dir; curv.normalise();
-        VAR (curv);
-        float R = S.step_size / theta;
-        next_pos = pos + R * (sin (theta) * dir + (1.0-cos_theta) * curv);
-        float val = FOD (next_pos, next_dir);
-        //if (isnan (val) || val < S.threshold) return (NAN);
-        spit (next_pos); spit (next_dir); VAR (val); 
+        float cos_theta = next_dir.dot (dir);
+        if (cos_theta > 1.0) cos_theta = 1.0;
+        float theta = Math::acos (cos_theta);
 
-        for (size_t i = S.num_samples-1; i > 0; --i) {
-          float a = (theta * i) / S.num_samples, cos_a = cos (a), sin_a = sin (a);
-          Point x = pos + R * (sin_a * dir + (1.0 - cos_a) * curv);
-          Point t = cos_a * dir + sin_a * curv;
-          float amp = FOD (x, t);
-          //if (isnan (val) || amp < S.threshold) return (NAN);
-          val *= amp;
-          spit (x); spit (t); VAR (amp);
+        if (theta) {
+          Point curv = next_dir - cos_theta * dir; curv.normalise();
+          float R = S.step_size / theta;
+          next_pos = pos + R * (sin (theta) * dir + (1.0-cos_theta) * curv);
+          float val = FOD (next_pos, next_dir);
+          if (isnan (val) || val < S.threshold) return (NAN);
+
+          for (size_t i = S.num_samples-1; i > 0; --i) {
+            float a = (theta * i) / S.num_samples, cos_a = cos (a), sin_a = sin (a);
+            Point x = pos + R * (sin_a * dir + (1.0 - cos_a) * curv);
+            Point t = cos_a * dir + sin_a * curv;
+            float amp = FOD (x, t);
+            if (isnan (val) || amp < S.threshold) return (NAN);
+            val *= amp;
+          }
+          return (val);
         }
-        spit (pos); spit (dir);
-        exit (1);
-        return (val);
+        else { // straight on:
+          next_pos = pos + S.step_size * dir;
+          float val = FOD (next_pos, dir);
+          if (isnan (val) || val < S.threshold) return (NAN);
+
+          for (size_t i = S.num_samples-1; i > 0; --i) {
+            float f = (S.step_size * i) / S.num_samples;
+            Point x = pos + f * dir;
+            float amp = FOD (x, dir);
+            if (isnan (val) || amp < S.threshold) return (NAN);
+            val *= amp;
+          }
+          return (val);
+        }
       }
 
-
-      Point rand_dir (const Point& d) {
-        using namespace Math;
-
-        float phi = 2.0 * M_PI * rng.uniform();
-        float theta;
-        do { 
-          theta = S.max_theta * rng.uniform();
-        } while (S.max_sin_theta * rng.uniform() > sin (theta)); 
-        Point a (sin(theta)*cos(phi), sin(theta)*sin(phi), cos(theta));
-
-        float n = sqrt (pow2(d[0]) + pow2(d[1]));
-        if (n == 0.0) return (d[2] < 0.0 ? -a : a);
-          
-        Point m (d[0]/n, d[1]/n, 0.0);
-        Point mp (d[2]*m[0], d[2]*m[1], -n);
-
-        float alpha = a[2];
-        float beta = a[0]*m[0] + a[1]*m[1];
-
-        a[0] += alpha * d[0] + beta * (mp[0] - m[0]);
-        a[1] += alpha * d[1] + beta * (mp[1] - m[1]);
-        a[2] += alpha * (d[2]-1.0) + beta * (mp[2] - m[2]);
-
-        return (a);
-      }
+      Point rand_dir (const Point& d) { return (random_direction (rng, d, S.max_theta, S.max_sin_theta)); }
   };
 
 } // namespace Track
