@@ -146,7 +146,7 @@ namespace MR {
         template <class Functor> Exec (Array<Functor>& functor, const std::string& description = "unnamed") : 
           ID (functor.functors.size()+1), name (description), responsible (false) {
             if (!default_attributes) init();
-            info ("launching " + str(ID.size()) + " thread" + (ID.size() > 1 ? "s" : "") +  "\"" + name + "\"");
+            info ("launching " + str(ID.size()) + " thread" + (ID.size() > 1 ? "s" : "") +  " \"" + name + "\"");
             start (ID[0], functor.first_functor);
             for (size_t i = 1; i < ID.size(); ++i) 
               start (ID[i], *functor.functors[i-1]);
