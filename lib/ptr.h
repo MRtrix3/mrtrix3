@@ -38,7 +38,7 @@ namespace MR {
   template <class T> class SingleDealloc {
     public:
       SingleDealloc () throw() { }
-      SingleDealloc (const SingleDealloc& a) throw() { }
+      SingleDealloc (const SingleDealloc&) throw() { }
       template <class U> SingleDealloc (const SingleDealloc<U>& a) throw() { }
       ~SingleDealloc () throw() { }
       void operator() (T* p) { delete p; }

@@ -179,7 +179,7 @@ class Entry:
     skip = False
     flags = []
     if 'T' in file_flags[cc_file]: flags += thread_ldflags
-    #if 'Q' in file_flags[cc_file]: flags += qt4_lib_flags
+    if 'Q' in file_flags[cc_file]: flags += qt_ldflags
     if 'G' in file_flags[cc_file]: flags += gsl_ldflags
     if 'K' in file_flags[cc_file]: 
       if len(gtk_cflags) == 0 or len(gtk_ldflags) == 0: skip = True
@@ -216,7 +216,7 @@ class Entry:
 
     skip = False
     if 'T' in file_flags[cc_file]: flags += thread_cflags
-    #if 'Q' in file_flags[cc_file]: flags += qt4_cflags
+    if 'Q' in file_flags[cc_file]: flags += qt_cflags
     if 'G' in file_flags[cc_file]: flags += gsl_cflags
     if 'K' in file_flags[cc_file]:
       if len(gtk_cflags) == 0 or len(gtk_ldflags) == 0: skip = True
@@ -234,7 +234,7 @@ class Entry:
     src_file = self.name[:-len('_moc'+cpp_suffix)] + h_suffix
     self.deps = set([ src_file ])
     self.deps = self.deps.union (list_headers (src_file))
-    #self.cmd = [ moc ]
+    self.cmd = [ 'moc-qt4' ]
     self.cmd += [ src_file, '-o', self.name ]
 
     

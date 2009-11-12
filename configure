@@ -605,11 +605,8 @@ if not nogui:
 
   finally:
     for entry in os.listdir (qt_dir):
-      shutil.copyfile (os.path.join(qt_dir, entry), os.path.join('qt', entry))
       os.remove (os.path.join(qt_dir, entry))
     os.rmdir (qt_dir)
-
-  qt_cflags += [ '-DGL_GLEXT_PROTOTYPES' ]
 
 
 

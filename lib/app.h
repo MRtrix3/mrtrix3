@@ -52,7 +52,7 @@
 int main (int argc, char* argv[]) { \
   try { \
     MyApp app (argc, argv, __command_description, __command_arguments, __command_options, __command_version, __command_author, __command_copyright); \
-    app.run (argc, argv); \
+    app.run (); \
   } \
   catch (Exception& E) { E.display(); return (1); } \
   catch (int ret) { return (ret); } \
@@ -83,7 +83,7 @@ namespace MR {
           const size_t* cmd_version, const char* cmd_author, const char* cmd_copyright);
       virtual ~App ();
 
-      void   run (int argc, char** argv) { parse_arguments (); execute (); }
+      void   run () { parse_arguments (); execute (); }
 
       static int log_level;
 
@@ -102,8 +102,9 @@ namespace MR {
       virtual void execute () = 0;
       std::vector<OptBase> get_options (size_t index);
 
-    private:
       void parse_arguments ();
+
+    private:
 
       void   print_help () const;
       void   print_full_usage () const;

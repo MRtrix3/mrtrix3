@@ -75,7 +75,7 @@ namespace MR {
         }
 
 	//! write to text file \a filename
-        void          save (const std::string& filename) const {
+        void save (const std::string& filename) const {
           std::ofstream out (filename.c_str());
           if (!out) throw Exception ("cannot open matrix file \"" + filename + "\": " + strerror (errno));
           out << *this;
@@ -300,8 +300,8 @@ namespace MR {
         explicit Matrix (const MatrixView<T>& M) { allocate (M); view() = M; }
 	//! construct a matrix by copying the elements of \a M
         template <typename U> Matrix (const MatrixView<U>& M) { allocate (M); view() = M; }
-        explicit Matrix (const Matrix<T>& M) { allocate (M); view() = M.view(); }
-        template <typename U> Matrix (const Matrix<U>& M) { allocate (M); view() = M.view(); }
+        explicit Matrix (const Matrix<T>& M) : MatrixView<T>() { allocate (M); view() = M.view(); }
+        template <typename U> Matrix (const Matrix<U>& M) : MatrixView<T>() { allocate (M); view() = M.view(); }
 
 
 	//! construct a matrix by reading from the text file \a filename
@@ -389,7 +389,7 @@ namespace MR {
        	}
 
 	//! read matrix data from the text file \a filename
-        Matrix<T>&        load (const std::string& filename) {
+        Matrix<T>& load (const std::string& filename) {
           std::ifstream in (filename.c_str());
           if (!in) throw Exception ("cannot open matrix file \"" + filename + "\": " + strerror (errno));
           try { in >> *this; }

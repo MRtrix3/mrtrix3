@@ -65,7 +65,7 @@ namespace MR {
 
 
       namespace {
-        template <typename T> inline T Plm_sph_helper (const T x, const T m) { return (m < 1.0 ? 1.0 : x*(m-1.0)/m * Plm_sph_helper (x, m-2.0)); }
+        template <typename T> inline T Plm_sph_helper (const T x, const T m) { return (m < 1.0 ? 1.0 : x*(m-1.0)/m * Plm_sph_helper (x, m-T(2.0))); }
       }
 
       template <typename T> inline T Plm_sph (const int l, const int m, const T x) 
@@ -73,7 +73,7 @@ namespace MR {
         T x2 = pow2(x);
         if (m && x2 >= 1.0) return (0.0);
         T v0 = 0.282094791773878;
-        if (m) v0 *= sqrt (T(2*m+1) * Plm_sph_helper<T> (1.0-x2, 2.0*m));
+        if (m) v0 *= sqrt (T(2*m+1) * Plm_sph_helper<T> (T(1.0)-x2, T(2.0)*m));
         if (m & 1) v0 = -v0;
         if (l == m) return (v0);
 

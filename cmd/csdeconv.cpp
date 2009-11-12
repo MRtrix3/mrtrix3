@@ -109,7 +109,7 @@ class Item {
 class Allocator {
   public:
     Allocator (size_t data_size) : N (data_size) { }
-    Item* alloc () { Item* item; item->data.resize (N); return (item); }
+    Item* alloc () { Item* item = new Item; item->data.resize (N); return (item); }
     void reset (Item* item) { }
     void dealloc (Item* item) { delete item; }
   private:
