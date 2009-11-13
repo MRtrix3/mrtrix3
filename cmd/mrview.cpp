@@ -20,6 +20,8 @@
 
 */
 
+#include <QApplication>
+
 #include "app.h"
 #include "mrview/window.h"
 
@@ -33,7 +35,7 @@ DESCRIPTION = {
 };
 
 ARGUMENTS = {
-  Argument ("image", "an image specifier", "an image to be loaded.", AllowMultiple).type_image_in (),
+  Argument ("image", "an image specifier", "an image to be loaded.", Optional | AllowMultiple).type_image_in (),
   Argument::End
 };
 
@@ -48,7 +50,7 @@ class MyApp : public MR::App {
         __command_version, __command_author, __command_copyright), qapp (argc, argv) { parse_arguments(); }
 
     void execute () { 
-      MRView::Window window;
+      Viewer::Window window;
       window.show();
       if (qapp.exec()) throw Exception ("error running Qt application");
     }
