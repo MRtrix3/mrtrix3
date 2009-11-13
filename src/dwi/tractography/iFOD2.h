@@ -43,7 +43,7 @@ namespace MR {
                 num_samples (1),
                 max_trials (100),
                 sin_max_angle (sin (max_angle)) {
-                  properties["method"] = "FOD_PROB";
+                  properties["method"] = "iFOD2";
                   properties.set (lmax, "lmax");
                   properties.set (num_samples, "samples_per_step");
                   properties.set (max_trials, "max_trials");

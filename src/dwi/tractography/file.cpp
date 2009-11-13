@@ -41,13 +41,7 @@ namespace MR {
           if (key == "roi") {
             try {
               std::vector<std::string> V (split (kv.value(), " \t", true, 2));
-
-              V[0] = lowercase (V[0]);
-              if (V[0] == "seed") properties.seed.add (V[1]);
-              else if (V[0] == "include") properties.include.add (V[1]);
-              else if (V[0] == "exclude") properties.exclude.add (V[1]);
-              else if (V[0] == "mask") properties.mask.add (V[1]);
-              else throw 1;
+              properties.roi.insert (std::pair<std::string,std::string> (V[0], V[1]));
             }
             catch (...) {
               error ("WARNING: invalid ROI specification in tracks file \"" + file + "\" - ignored");
@@ -121,6 +115,7 @@ namespace MR {
 
 
 
+
       void Writer::create (const std::string& file, const Properties& properties)
       {
         out.open (file.c_str(), std::ios::out | std::ios::binary);
@@ -137,6 +132,9 @@ namespace MR {
         for (size_t n = 0; n < properties.include.size(); ++n) out << "roi: include " << properties.include[n].parameters() << "\n";
         for (size_t n = 0; n < properties.exclude.size(); ++n) out << "roi: exclude " << properties.exclude[n].parameters() << "\n";
         for (size_t n = 0; n < properties.mask.size(); ++n) out << "roi: mask " << properties.mask[n].parameters() << "\n";
+
+        for (std::multimap<std::string,std::string>::const_iterator it = properties.roi.begin(); it != properties.roi.end(); ++it) 
+          out << "roi: " << it->first << " " << it->second << "\n";
 
         out << "datatype: " << dtype.specifier() << "\n";
         off64_t data_offset = off64_t(out.tellp()) + 65;

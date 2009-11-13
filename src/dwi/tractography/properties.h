@@ -34,6 +34,7 @@ namespace MR {
         public:
           ROISet seed, include, exclude, mask;
           std::vector<std::string>  comments;
+          std::multimap<std::string, std::string> roi;
 
           void  clear () { 
             std::map<std::string, std::string>::clear(); 
@@ -42,12 +43,15 @@ namespace MR {
             exclude.clear();
             mask.clear();
             comments.clear(); 
+            roi.clear();
           }
 
           template <typename T> void set (T& variable, const std::string& name) {
             if ((*this)[name].empty()) (*this)[name] = str (variable);
             else variable = to<T> ((*this)[name]);
           }
+
+          void load_ROIs ();
       };
 
 

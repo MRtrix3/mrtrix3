@@ -24,6 +24,7 @@
 #define __dwi_tractography_file_h__
 
 #include <fstream>
+#include <map>
 
 #include "point.h"
 #include "file/key_value.h"

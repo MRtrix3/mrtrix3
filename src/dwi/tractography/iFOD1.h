@@ -41,7 +41,7 @@ namespace MR {
                 lmax (Math::SH::LforN (source.dim(3))), 
                 max_trials (100),
                 sin_max_angle (sin (max_angle)) {
-                  properties["method"] = "FOD_PROB";
+                  properties["method"] = "iFOD1";
                   properties.set (lmax, "lmax");
                   properties.set (max_trials, "max_trials");
                   bool precomputed = true;

@@ -78,8 +78,8 @@ EXECUTE {
         std::cout << ( i == properties.comments.begin() ? "" : "                       " ) << *i << "\n";
     }
 
-    for (std::vector<RefPtr<Tractography::ROI> >::iterator i = properties.roi.begin(); i != properties.roi.end(); ++i)
-      std::cout << "    ROI:                  " << (*i)->specification() << "\n";
+    for (std::multimap<std::string,std::string>::const_iterator i = properties.roi.begin(); i != properties.roi.end(); ++i)
+      std::cout << "    ROI:                  " << i->first << " " << i->second << "\n";
 
 
     if (opt.size()) {

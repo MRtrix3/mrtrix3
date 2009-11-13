@@ -18,10 +18,6 @@
     You should have received a copy of the GNU General Public License
     along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
 
-
-    31-10-2008 J-Donald Tournier <d.tournier@brain.org.au>
-    * various optimisations to improve performance
-
 */
 
 #include <fstream>
@@ -29,9 +25,9 @@
 #include "app.h"
 #include "progressbar.h"
 #include "get_set.h"
-#include "image/misc.h"
 #include "image/voxel.h"
-#include "image/interp.h"
+#include "dataset/misc.h"
+#include "dataset/interp.h"
 #include "dwi/tractography/file.h"
 #include "dwi/tractography/properties.h"
 
@@ -71,28 +67,37 @@ OPTIONS = {
 
 
 
+class MapFunc {
+  public:
+    MapFunc (size_t* buffer, float multiplier, size_t yskip, size_t zskip) : buf (buffer), mult (multiplier), Y (yskip), Z (zskip) { }
+    void operator() (Image::Voxel<float>& vox) { vox.value (mult * buf[vox.pos(0) + Y*vox.pos(1) + Z*vox.pos(2)]); }
+  private:
+    size_t* buf;
+    float mult;
+    size_t Y, Z;
+};
 
 
 EXECUTE {
 
-  Image::Header header (argument[1].get_image()->header());
+  Image::Header header (argument[1].get_image());
 
   bool fibre_count = get_options(0).size(); // count
 
   std::vector<OptBase> opt = get_options (2); // datatype
-  if (opt.size()) header.data_type.parse (data_type_choices[opt[0][0].get_int()]);
-  else header.data_type = fibre_count ? DataType::UInt32 : DataType::Float32;
+  if (opt.size()) header.datatype().parse (data_type_choices[opt[0][0].get_int()]);
+  else header.datatype() = fibre_count ? DataType::UInt32 : DataType::Float32;
 
   Tractography::Properties properties;
   Tractography::Reader file;
   file.open (argument[0].get_string(), properties);
 
-  header.axes.resize (3);
+  header.axes.ndim() = 3;
   header.comments.push_back (std::string ("track ") + (fibre_count ? "count" : "fraction") + " map");
   for (Tractography::Properties::iterator i = properties.begin(); i != properties.end(); ++i) 
     header.comments.push_back (i->first + ": " + i->second);
-  for (std::vector<RefPtr<Tractography::ROI> >::iterator i = properties.roi.begin(); i != properties.roi.end(); ++i)
-    header.comments.push_back ("ROI: " + (*i)->specification());
+  for (std::multimap<std::string,std::string>::const_iterator i = properties.roi.begin(); i != properties.roi.end(); ++i)
+    header.comments.push_back ("ROI: " + i->first + " " + i->second);
   for (std::vector<std::string>::iterator i = properties.comments.begin(); i != properties.comments.end(); ++i)
     header.comments.push_back ("comment: " + *i);
 
@@ -100,7 +105,7 @@ EXECUTE {
   size_t num_tracks = properties["count"].empty() ? 0 : to<size_t> (properties["count"]);
   size_t count = 0;
 
-  off64_t voxel_count = Image::voxel_count (header, 3);
+  off64_t voxel_count = DataSet::voxel_count (header, 3);
   int xmax = header.dim(0);
   int ymax = header.dim(1);
   int zmax = header.dim(2);
@@ -115,7 +120,7 @@ EXECUTE {
   uint8_t* visited = new uint8_t [voxel_count];
   std::vector<Point> tck;
 
-  Image::Interp<Image::Header> interp (header);
+  DataSet::Interp<Image::Header> interp (header);
   ProgressBar::init (num_tracks, "generating track count image...");
 
   while (file.next (tck)) {
@@ -141,21 +146,13 @@ EXECUTE {
   delete [] visited;
 
 
-  Image::Voxel pos (*argument[2].get_image (header));
   if (total_count > 0) count = total_count;
-  float multiplier = 1.0;
-  if (!fibre_count) multiplier /= float(count);
 
-  ProgressBar::init (xmax*ymax*zmax, "writing track count image...");
-  for (pos[2] = 0; pos[2] < zmax; pos[2]++) {
-    for (pos[1] = 0; pos[1] < ymax; pos[1]++) {
-      for (pos[0] = 0; pos[0] < xmax; pos[0]++) {
-        pos.value() = multiplier * countbuf[pos[0] + yskip*pos[1] + zskip*pos[2]];
-        ProgressBar::inc();
-      }
-    }
-  }
-  ProgressBar::done();
+  Image::Header map_header = argument[2].get_image (header);
+  Image::Voxel<float> vox (map_header);
+
+  MapFunc mapfunc (countbuf, fibre_count ? 1.0 : 1.0/float(count), yskip, zskip);
+  DataSet::loop1 ("writing track count image...", mapfunc, vox, 0, 3);
 
   delete [] countbuf;
 }

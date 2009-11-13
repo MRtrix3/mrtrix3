@@ -62,23 +62,23 @@ EXECUTE {
   Tractography::Reader file;
   file.open (argument[0].get_string(), properties);
 
-  Image::Object& tranform_image (*argument[1].get_image());
-  Image::Header header (tranform_image.header());
+  Image::Header header = argument[1].get_image();
+  Image::Voxel<float> vox (header);
 
   Tractography::Writer writer;
   writer.create (argument[2].get_string(), properties);
 
   std::vector<Point> tck;
 
-  Image::Interp interp (tranform_image);
+  DataSet::Interp<Image::Voxel<float> > interp (vox);
   ProgressBar::init (0, "normalising tracks...");
 
   while (file.next (tck)) {
     for (std::vector<Point>::iterator i = tck.begin(); i != tck.end(); ++i) {
       interp.R (*i);
-      interp.set(3,0); (*i)[0] = interp.value();
-      interp.set(3,1); (*i)[1] = interp.value();
-      interp.set(3,2); (*i)[2] = interp.value();
+      vox.pos(3,0); (*i)[0] = interp.value();
+      vox.pos(3,1); (*i)[1] = interp.value();
+      vox.pos(3,2); (*i)[2] = interp.value();
     }
     writer.append (tck);
     writer.total_count++;
