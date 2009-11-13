@@ -35,17 +35,14 @@ def disp (msg):
 # parse command-line:
 
 for arg in sys.argv[1:]:
-  if   arg == '-verbose': verbose = True
-  elif arg == '-deps': dependencies = True
+  if   '-verbose'.startswith(arg): verbose = True
+  elif '-dependencies'.startswith(arg): dependencies = True
   elif arg[0] == '-':
     print 'unknown command-line option "' + arg + '"'
     sys.stdout.flush()
     sys.exit (1)
   elif arg == 'clean':
     targets = [ 'clean' ]
-    break
-  elif arg == 'reset':
-    targets = [ 'reset' ]
     break
   else: targets.append(arg)
 
@@ -263,11 +260,10 @@ class Entry:
 
 
   def display (self):
-    print '[' + self.action + '] ' + self.name + ' (' + str(self.timestamp) + ' - ' + str(self.dep_timestamp) + ')',
+    print '[' + self.action + '] ' + self.name,
     if not self.timestamp or self.timestamp < self.dep_timestamp: print '[REBUILD]',
     print ':'
     print '  deps: ', ' '.join(self.deps)
-    #print '  MOC: ', ' '.join(self.moc)
     print '  command: ', ' '.join(self.cmd)
     sys.stdout.flush()
 
@@ -343,6 +339,14 @@ def execute (message, cmd):
     return 1
 
 
+def print_deps (file, indent=''):
+  print indent + file,
+  if file in file_flags: 
+    if len(file_flags[file]): print '[' + file_flags[file] + ']',
+  print ''
+  if len(todo[file].deps):
+    for entry in todo[file].deps:
+      print_deps (entry, indent + '    ')
 
 
 
@@ -632,12 +636,6 @@ def clean_cmd ():
 
 
 
-if 'reset' in targets:
-  clean_cmd()
-  if os.path.exists (cache_filename): os.remove (cache_filename)
-  if os.path.exists (cache_filename + 'c'): os.remove (cache_filename + 'c')
-  sys.exit (0)
-
 if 'clean' in targets:
   clean_cmd()
   sys.exit (0)
@@ -666,6 +664,14 @@ except Exception, e:
   print 'ERROR:', e.args[0]
   sys.exit (1)
 
+if dependencies:
+  print ''
+  print 'Printing dependencies:'
+  print ''
+  for entry in targets:
+    print_deps (entry)
+  sys.exit (0)
+
 for item in todo.keys():
   if todo[item].action == 'NA' or (todo[item].timestamp and todo[item].timestamp >= todo[item].dep_timestamp):
     del todo[item]
@@ -673,24 +679,10 @@ if verbose:
   print 'TODO list contains ' + str(len(todo)) + ' items'
   print ''
 
+
 #for entry in todo.values(): entry.display()
 
-if dependencies:
-  print '======================================='
-  print '  Objects'
-  print '======================================='
-  for entry in object_deps.keys():
-    print entry + ' [' + file_flags[entry] + ']:'
-    for item in object_deps[entry]: print '  ' + item 
-
-  print '======================================='
-  print '  Headers'
-  print '======================================='
-  for entry in headers.keys():
-    print entry + ' [' + file_flags[entry] + ']:'
-    for item in headers[entry]: print '  ' + item + ' [' + file_flags[item] + ']'
-
-
+if not len(todo): sys.exit(0)
 
 
 
