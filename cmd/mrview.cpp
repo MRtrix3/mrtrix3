@@ -1,7 +1,7 @@
 /*
     Copyright 2008 Brain Research Institute, Melbourne, Australia
 
-    Written by J-Donald Tournier, 27/06/08.
+    Written by J-Donald Tournier, 22/01/09.
 
     This file is part of MRtrix.
 
@@ -20,13 +20,9 @@
 
 */
 
-#include <gtkmm/main.h>
-#include <gtk/gtkgl.h>
-
 #include "app.h"
 #include "mrview/window.h"
 
-using namespace std; 
 using namespace MR; 
 
 SET_VERSION_DEFAULT;
@@ -37,42 +33,41 @@ DESCRIPTION = {
 };
 
 ARGUMENTS = {
-  Argument ("image", "an image specifier", "an image to be loaded.", false, true).type_image_in (),
+  Argument ("image", "an image specifier", "an image to be loaded.", AllowMultiple).type_image_in (),
   Argument::End
 };
 
-OPTIONS = {
-  Option::End
-};
+OPTIONS = { Option::End };
+
+
+
 
 class MyApp : public MR::App { 
   public: 
-    MyApp (int argc, char** argv) : 
-      App (argc, argv, __command_description, __command_arguments, __command_options, __command_version, __command_author, __command_copyright) { } 
-    void execute () { }
-    void init () { parse_arguments(); }
-    std::vector<ArgBase>& get_args ()  { return (argument); }
+    MyApp (int argc, char** argv) : App (argc, argv, __command_description, __command_arguments, __command_options, 
+        __command_version, __command_author, __command_copyright), qapp (argc, argv) { parse_arguments(); }
+
+    void execute () { 
+      MRView::Window window;
+      window.show();
+      if (qapp.exec()) throw Exception ("error running Qt application");
+    }
+
+  protected:
+    QApplication qapp;
 }; 
+
+
 
 
 int main (int argc, char* argv[]) 
 { 
   try { 
     MyApp app (argc, argv);  
-
-    Gtk::Main kit (&argc, &argv);
-    gtk_gl_init (&argc, &argv);
-    app.init();
-
-    Viewer::Window window (app.get_args());
-    Gtk::Main::run (window);
+    app.execute();
   }
-  catch (Exception) { return (1); } 
+  catch (Exception& E) { E.display(); return (1); }
   catch (int ret) { return (ret); } 
   return (0); 
 }
-
-
-
-
 
