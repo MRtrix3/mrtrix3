@@ -23,23 +23,15 @@
 #ifndef __open_gl_h__
 #define __open_gl_h__
 
-#ifdef WINDOWS
-#else 
-#  ifdef MACOSX
-#  else
-#    define GL_GLEXT_PROTOTYPES
-#  endif
-#endif
-
-#include <GL/gl.h>
+#include <GL/glew.h>
 #include <GL/glu.h>
+#include <QtOpenGL>
 #include "mrtrix.h"
 
 namespace MR {
   namespace GL {
 
     void init ();
-    bool check_extension (const std::string& extension_name);
 
   }
 }

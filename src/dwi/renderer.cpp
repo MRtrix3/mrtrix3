@@ -138,11 +138,13 @@ namespace MR {
 
     Renderer::~Renderer () 
     { 
-      glDetachObjectARB (shader_program, vertex_shader);
-      glDetachObjectARB (shader_program, fragment_shader);
-      glDeleteObjectARB (vertex_shader);
-      glDeleteObjectARB (fragment_shader);
-      glDeleteObjectARB (shader_program); 
+      if (shader_program) {
+        glDetachObjectARB (shader_program, vertex_shader);
+        glDetachObjectARB (shader_program, fragment_shader);
+        glDeleteObjectARB (vertex_shader);
+        glDeleteObjectARB (fragment_shader);
+        glDeleteObjectARB (shader_program); 
+      }
       clear();
     }
 

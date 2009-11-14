@@ -31,7 +31,7 @@ namespace MR {
     namespace Shader {
 
       void check () {
-        if (!check_extension ("GL_ARB_vertex_shader") || !check_extension ("GL_ARB_fragment_shader"))
+        if (!GLEW_ARB_vertex_shader || !GLEW_ARB_fragment_shader)
           throw Exception ("Vertex shading not supported!");
         info ("Vertex Shading ARB extension is supported");
       }

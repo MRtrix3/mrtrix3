@@ -21,7 +21,7 @@
 */
 
 
-#include <opengl/gl.h>
+#include "opengl/gl.h"
 
 namespace MR {
   namespace GL {
@@ -30,28 +30,16 @@ namespace MR {
     {
       static bool initialised = false;
       if (initialised) return;
+      GLenum err = glewInit();
+      if (GLEW_OK != err) throw Exception ("GLEW failed to initialise: " + std::string ((const char*) glewGetErrorString (err)));
       info ("GL renderer:  " + std::string ((const char*) glGetString (GL_RENDERER)));
       info ("GL version:   " + std::string ((const char*) glGetString (GL_VERSION)));
       info ("GL vendor:    " + std::string ((const char*) glGetString (GL_VENDOR)));
+      info ("GLEW version: " + std::string ((const char*) glewGetString(GLEW_VERSION)));
       info ("GL extensions:\n" + std::string ((const char*) glGetString (GL_EXTENSIONS)));
       initialised = true;
     }
 
-
-
-
-    bool check_extension (const std::string& extension_name) {
-      const char* ext = (const char*) glGetString (GL_EXTENSIONS);
-      while (*ext) {
-        while (isspace (*ext)) ++ext;
-        const char* end = ext;
-        while (*end && !isspace(*end)) ++end;
-        if (size_t(end-ext) == extension_name.size()) 
-          if (extension_name.compare (0, end-ext, ext, end-ext) == 0) return (true);
-        ext = end;
-      }
-      return (false);
-    }
 
   }
 }

@@ -20,8 +20,6 @@
 
 */
 
-#include <QtOpenGL>
-
 #include "opengl/gl.h"
 #include "mrview/glarea.h"
 
@@ -37,6 +35,7 @@ namespace MR {
     QSize GLArea::sizeHint() const { return QSize (256, 256); }
 
     void GLArea::initializeGL () {
+      GL::init();
       glClearColor (0.0, 0.0, 0.0, 0.0);
       glEnable (GL_DEPTH_TEST);
     }
