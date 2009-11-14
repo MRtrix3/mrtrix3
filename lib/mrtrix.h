@@ -24,10 +24,11 @@
 #ifndef __mrtrix_h__
 #define __mrtrix_h__
 
-#include <limits.h>
-#include <stdarg.h>
-#include <errno.h>
-#include <assert.h>
+#include <climits>
+#include <cstdio>
+#include <cstdarg>
+#include <cerrno>
+#include <cassert>
 #include <sstream>
 #include <algorithm>
 #include <cctype>
