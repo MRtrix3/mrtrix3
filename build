@@ -57,7 +57,6 @@ lib_dir = 'lib'
 misc_dir = 'src'
 doc_dir = 'doc'
 dev_dir = 'dev'
-gl = os.path.join ('src', 'use_gl.h')
 
 icon = 'icons/icon.o'
 icon_dep = 'icons/icon.rc'
@@ -357,9 +356,6 @@ def list_headers (file):
     headers[file] = set()
 
     if file not in file_flags: file_flags[file] = ''
-    if file == gl: 
-      if 'G' not in file_flags[file]: 
-        file_flags[file] += 'G'
 
     if not os.path.exists (file):
       print 'ERROR: cannot find file "' + file + '"'

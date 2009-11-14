@@ -5,12 +5,14 @@ import subprocess, sys, tempfile, os, platform, tempfile, shutil
 debug = False
 profile = False
 nogui = False
+verbose = False
 
 
 for arg in sys.argv[1:]:
   if arg == '-debug': debug = True
   elif arg == '-profile': profile = True
   elif arg == '-nogui': nogui = True
+  elif arg == '-verbose': verbose = True
   else: 
     print 'usage: [ENV] ./configure [-debug] [-profile] [-nogui]'
     print ''
@@ -28,6 +30,8 @@ for arg in sys.argv[1:]:
     print '      note: this will also enable the -debug option.'
     print ''
     print 'The \'-nogui\' option will produce a configuration without any GUI components.'
+    print ''
+    print 'The \'-verbose\' option will cause configure to output more information.'
     print ''
     print ''
     print 'The following environment variables can be set:'
@@ -144,6 +148,12 @@ def fillin (template, keyvalue):
 
 def compile (source, compiler_flags = [], linker_flags = []):
   global cpp, ld
+  if verbose: 
+    print 'source file:'
+    print '---'
+    print source
+    print '---'
+    print ''
   fid = tempfile.NamedTemporaryFile ('w', suffix='.cpp')
   fid.write (source)
   fid.flush()
@@ -152,7 +162,9 @@ def compile (source, compiler_flags = [], linker_flags = []):
     'CFLAGS': compiler_flags,
     'SRC': fid.name,
     'OBJECT': obj_name })
-  #print ' '.join(cmd)
+  if verbose:
+    print 'executing "' + ' '.join(cmd) + '"...'
+    print ''
   try: process = subprocess.Popen (cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
   except OSError: raise CompileError
   if process.wait() != 0: raise CompileError
@@ -161,13 +173,18 @@ def compile (source, compiler_flags = [], linker_flags = []):
     'LDFLAGS': linker_flags,
     'OBJECTS': obj_name,
     'EXECUTABLE': 'a.out' })
-  #print ' '.join(cmd)
+  if verbose:
+    print 'executing "' + ' '.join(cmd) + '"...'
+    print ''
   try: process = subprocess.Popen (cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
   except OSError: raise LinkError
   status = process.wait()
   os.unlink (obj_name)
   if status != 0: raise LinkError
 
+  if verbose:
+    print 'executing command...'
+    print ''
   process = subprocess.Popen ([ './a.out' ], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
   status = process.wait()
   os.unlink ('a.out')
@@ -620,6 +637,15 @@ if not nogui:
 
 
 
+
+  print 'Checking for GLEW:',
+  qt_ldflags += [ '-lGLEW' ]
+  sys.stdout.flush()
+  try:
+    glew_version = compile ('#include <GL/glew.h>\n#include <QtGui>\n #include <QtOpenGL>\n #include <QApplication>\n #include <QGLWidget>\n #include <iostream>\n class GLWidget : public QGLWidget {\n public:\n GLWidget(QWidget *parent = 0) : QGLWidget (parent) { } \n ~GLWidget() { }\n protected:\n void initializeGL() { if (glewInit() != GLEW_OK) exit(1); std::cout << glewGetString(GLEW_VERSION) << "\\n"; exit (0); }\n void paintGL() { }\n void resizeGL(int width, int height) { }\n };\n int main(int argc, char *argv[]) {\n QApplication app(argc, argv);\n GLWidget window;\n window.show();\n return app.exec();\n }\n', qt_cflags, qt_ldflags)
+    print glew_version.strip()
+  except:
+    print 'not found!'
 
 
 
