@@ -37,23 +37,33 @@ namespace MR {
     class Renderer 
     {
       public:
-        Renderer () : lmax_computed (0), lod_computed (0), nsh (0), row_size (0), shader_program (0) { }
+        Renderer () : 
+          lmax_computed (0), lod_computed (0), hide_neg_lobes (true), recalculate (true),
+          recompute (true), nsh (0), row_size (0), shader_program (0) { }
         ~Renderer ();
 
         bool ready () const { return (shader_program); }
         void init ();
-        void calculate (const std::vector<float>& values, int lmax = INT_MAX);
-        void precompute (int lmax, int lod);
-        void draw (bool use_normals, bool hide_neg_lobes, const float* colour = NULL) const;
+        void set_values (const std::vector<float>& values) { SH = values; recalculate = true; }
+        void set_hide_neg_lobes (bool hide) { if (hide_neg_lobes != hide) recalculate = true; hide_neg_lobes = hide; }
+        void set_lmax (int lmax) { if (lmax != lmax_computed) recompute = true; lmax_computed = lmax; }
+        void set_LOD (int lod) { if (lod != lod_computed) recompute = true; lod_computed = lod; }
+        void draw (bool use_normals, const float* colour = NULL);
+
+        int get_LOD () const { return (lod_computed); }
+        int get_lmax () const { return (lmax_computed); }
+        bool get_hide_neg_lobes () const { return (hide_neg_lobes); }
 
         size_t size () const { return (rows.size()); }
         bool empty () const { return (rows.empty()); }
+        bool use_shading () const { return (shader_program); }
 
       protected:
         class Vertex {
           public:
             GLfloat P[3];
             GLfloat N[3];
+            GLubyte C[3];
         };
 
         class Triangle {
@@ -76,6 +86,8 @@ namespace MR {
             size_t i2;
         };
 
+        void calculate ();
+        void precompute ();
         void clear () { for (std::vector<GLfloat*>::iterator i = rows.begin(); i != rows.end(); ++i) delete [] *i; rows.clear(); }
 
         GLfloat* get_r (GLfloat* row) { return (row+3); }
@@ -106,7 +118,9 @@ namespace MR {
         std::vector<Triangle> indices;
         std::vector<GLfloat*> rows;
 
-        int    lmax_computed, lod_computed;
+        std::vector<float> SH;
+        int lmax_computed, lod_computed;
+        bool hide_neg_lobes, recalculate, recompute;
         size_t  nsh, row_size;
         void   precompute_row (GLfloat* row); 
         GLhandleARB vertex_shader, fragment_shader, shader_program;

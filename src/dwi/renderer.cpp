@@ -115,22 +115,22 @@ namespace MR {
 
     void Renderer::init () 
     { 
-      GL::Shader::check();
+      if (GL::Shader::supported()) {
+        vertex_shader = glCreateShaderObjectARB (GL_VERTEX_SHADER_ARB);
+        fragment_shader = glCreateShaderObjectARB (GL_FRAGMENT_SHADER_ARB);
+        glShaderSourceARB (vertex_shader, 1, &vertex_shader_source, NULL);
+        glShaderSourceARB (fragment_shader, 1, &fragment_shader_source, NULL);
+        glCompileShaderARB (vertex_shader);
+        glCompileShaderARB (fragment_shader);
+        shader_program = glCreateProgramObjectARB();
+        GL::Shader::print_log ("orientation plot vertex shader", vertex_shader);
+        GL::Shader::print_log ("orientation plot fragment shader", fragment_shader);
 
-      vertex_shader = glCreateShaderObjectARB (GL_VERTEX_SHADER_ARB);
-      fragment_shader = glCreateShaderObjectARB (GL_FRAGMENT_SHADER_ARB);
-      glShaderSourceARB (vertex_shader, 1, &vertex_shader_source, NULL);
-      glShaderSourceARB (fragment_shader, 1, &fragment_shader_source, NULL);
-      glCompileShaderARB (vertex_shader);
-      glCompileShaderARB (fragment_shader);
-      shader_program = glCreateProgramObjectARB();
-      GL::Shader::print_log ("orientation plot vertex shader", vertex_shader);
-      GL::Shader::print_log ("orientation plot fragment shader", fragment_shader);
-
-      glAttachObjectARB (shader_program, vertex_shader);
-      glAttachObjectARB (shader_program, fragment_shader);
-      glLinkProgramARB (shader_program);
-      GL::Shader::print_log ("orientation plot shader program", shader_program);
+        glAttachObjectARB (shader_program, vertex_shader);
+        glAttachObjectARB (shader_program, fragment_shader);
+        glLinkProgramARB (shader_program);
+        GL::Shader::print_log ("orientation plot shader program", shader_program);
+      }
     }
 
 
@@ -138,7 +138,7 @@ namespace MR {
 
     Renderer::~Renderer () 
     { 
-      if (shader_program) {
+      if (use_shading()) {
         glDetachObjectARB (shader_program, vertex_shader);
         glDetachObjectARB (shader_program, fragment_shader);
         glDeleteObjectARB (vertex_shader);
@@ -152,46 +152,73 @@ namespace MR {
 
 
 
-    void Renderer::draw (bool use_normals, bool hide_neg_lobes, const float* colour) const
+    void Renderer::draw (bool use_normals, const float* colour)
     { 
-      glUseProgramObjectARB (shader_program);
-      glUniform1i (glGetUniformLocation (shader_program, "color_by_direction"), colour ? 0 : 1);
-      glUniform1i (glGetUniformLocation (shader_program, "use_normals"), use_normals ? 1 : 0);
-      glUniform1i (glGetUniformLocation (shader_program, "hide_neg_lobes"), hide_neg_lobes ? 1 : 0);
-      glUniform1i (glGetUniformLocation (shader_program, "reverse"), 0);
-
-      if (colour) glColor3fv (colour);
+      if (recompute) { precompute(); }
+      if (recalculate) { calculate(); }
 
       glPushClientAttrib (GL_CLIENT_VERTEX_ARRAY_BIT);
       glEnableClientState (GL_VERTEX_ARRAY);
-      glEnableClientState (GL_NORMAL_ARRAY);
       glVertexPointer (3, GL_FLOAT, sizeof(Vertex), &vertices[0].P);
-      glNormalPointer (GL_FLOAT, sizeof(Vertex), &vertices[0].N);
+      if (colour) glColor3fv (colour);
 
-      glDrawElements (GL_TRIANGLES, 3*indices.size(), GL_UNSIGNED_INT, &indices[0]);
-      glUniform1i (glGetUniformLocation (shader_program, "reverse"), 1);
-      glDrawElements (GL_TRIANGLES, 3*indices.size(), GL_UNSIGNED_INT, &indices[0]);
+      if (use_shading()) {
+        glUseProgramObjectARB (shader_program);
+        glUniform1i (glGetUniformLocation (shader_program, "color_by_direction"), colour ? 0 : 1);
+        glUniform1i (glGetUniformLocation (shader_program, "use_normals"), use_normals ? 1 : 0);
+        glUniform1i (glGetUniformLocation (shader_program, "hide_neg_lobes"), hide_neg_lobes ? 1 : 0);
+        glUniform1i (glGetUniformLocation (shader_program, "reverse"), 0);
+
+        glEnableClientState (GL_NORMAL_ARRAY);
+        glNormalPointer (GL_FLOAT, sizeof(Vertex), &vertices[0].N);
+
+        glDrawElements (GL_TRIANGLES, 3*indices.size(), GL_UNSIGNED_INT, &indices[0]);
+        glUniform1i (glGetUniformLocation (shader_program, "reverse"), 1);
+        glDrawElements (GL_TRIANGLES, 3*indices.size(), GL_UNSIGNED_INT, &indices[0]);
+
+        glUseProgramObjectARB (0);
+      }
+      else {
+        if (use_normals) {
+          glEnableClientState (GL_NORMAL_ARRAY);
+          glNormalPointer (GL_FLOAT, sizeof(Vertex), &vertices[0].N);
+        }   
+        if (colour) {
+          glDisable (GL_COLOR_MATERIAL);
+          GLfloat v[]  = { colour[0], colour[1], colour[2], 1.0 };
+          glMaterialfv (GL_FRONT, GL_AMBIENT_AND_DIFFUSE, v); 
+        }   
+        else {
+          glEnable (GL_COLOR_MATERIAL);
+          glColorMaterial (GL_FRONT, GL_AMBIENT_AND_DIFFUSE);
+          glEnableClientState (GL_COLOR_ARRAY);
+          glColorPointer (3, GL_UNSIGNED_BYTE, sizeof(Vertex), &vertices[0].C);
+        }   
+
+        glFrontFace (GL_CCW);
+        glDrawElements (GL_TRIANGLES, 3*indices.size(), GL_UNSIGNED_INT, &indices[0]);
+        glScalef (-1.0, -1.0, -1.0); 
+        glFrontFace (GL_CW); 
+        glDrawElements (GL_TRIANGLES, 3*indices.size(), GL_UNSIGNED_INT, &indices[0]);
+        glFrontFace (GL_CCW);
+      }
 
       glPopClientAttrib();
-      glUseProgramObjectARB (0);
     }
 
 
 
 
 
-    void Renderer::precompute (int lmax, int lod)
+    void Renderer::precompute ()
     {
-      if (lmax <= lmax_computed && lod == lod_computed) return;
-
+      recompute = false;
+      recalculate = true;
       info ("updating SH renderer transform...");
       QApplication::setOverrideCursor (Qt::BusyCursor);
 
-      if (lmax > lmax_computed) {
-        nsh = Math::SH::NforL (lmax); 
-        row_size = 3 + 3*nsh; 
-        lmax_computed = lmax;
-      }
+      nsh = Math::SH::NforL (lmax_computed); 
+      row_size = 3 + 3*nsh; 
 
       clear();
 
@@ -207,7 +234,7 @@ namespace MR {
 
       std::map<Edge,size_t> edges;
 
-      for (lod_computed = 0; lod_computed < lod; lod_computed++) {
+      for (int lod = 0; lod < lod_computed; lod++) {
         size_t num = indices.size();
         for (GLuint n = 0; n < num; n++) {
           size_t index1, index2, index3;
@@ -253,13 +280,13 @@ namespace MR {
 
 
 
-    void Renderer::calculate (const std::vector<float>& values, int lmax)
+    void Renderer::calculate ()
     {
+      recalculate = false;
       info ("updating values...");
 
-      int actual_lmax = Math::SH::LforN (values.size());
-      if (lmax > lmax_computed) lmax = lmax_computed;
-      if (actual_lmax > lmax) actual_lmax = lmax;
+      int actual_lmax = Math::SH::LforN (SH.size());
+      if (actual_lmax > lmax_computed) actual_lmax = lmax_computed;
       size_t nsh = Math::SH::NforL (actual_lmax);
 
       for (size_t n = 0; n < vertices.size(); n++) {
@@ -272,14 +299,23 @@ namespace MR {
         float r (0.0), daz (0.0), del (0.0);
 
         for (size_t i = 0; i < nsh; i++) {
-          r += row_r[i] * values[i]; 
-          daz += row_daz[i] * values[i]; 
-          del += row_del[i] * values[i]; 
+          r += row_r[i] * SH[i]; 
+          daz += row_daz[i] * SH[i]; 
+          del += row_del[i] * SH[i]; 
         }
 
         V.P[0] = r*row[0];
         V.P[1] = r*row[1];
         V.P[2] = r*row[2];
+
+        if (!use_shading()) {
+          if (r < 0.0) { V.C[0] = V.C[1] = V.C[2] = 230; }
+          else {
+            V.C[0] = GLubyte (255.0 * Math::abs(row[0]));
+            V.C[1] = GLubyte (255.0 * Math::abs(row[1]));
+            V.C[2] = GLubyte (255.0 * Math::abs(row[2]));
+          }
+        }
 
         bool atpole (row[0] == 0.0 && row[1] == 0.0);
         float az = atpole ? 0.0 : atan2 (row[1], row[0]);
@@ -289,9 +325,15 @@ namespace MR {
         float cel = row[2];
         float sel = sqrt (1.0 - Math::pow2 (cel));
 
-        V.P[0] = r*caz*sel;
-        V.P[1] = r*saz*sel;
-        V.P[2] = r*cel;
+
+        if (!use_shading() && hide_neg_lobes && r < 0.0) {
+          V.P[0] = V.P[1] = V.P[2] = 0.0;
+        }
+        else {
+          V.P[0] = r*caz*sel;
+          V.P[1] = r*saz*sel;
+          V.P[2] = r*cel;
+        }
 
         float d1[3], d2[3];
 
@@ -379,7 +421,7 @@ namespace MR {
           r[idx-2*m] *= saz;
         }
       }
-      
+
     }
 
 

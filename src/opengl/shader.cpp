@@ -30,10 +30,15 @@ namespace MR {
   namespace GL {
     namespace Shader {
 
-      void check () {
-        if (!GLEW_ARB_vertex_shader || !GLEW_ARB_fragment_shader)
-          throw Exception ("Vertex shading not supported!");
-        info ("Vertex Shading ARB extension is supported");
+      bool supported () {
+        static bool retval = GLEW_ARB_vertex_shader && GLEW_ARB_fragment_shader;
+        static bool warning_isued = false;
+        if (!warning_isued) {
+          warning_isued = true;
+          if (!retval) error ("WARNING: vertex shading ARB extension is NOT supported - advanced features will be disabled");
+          else info ("vertex shading ARB extension is supported");
+        }
+        return (retval);
       }
 
       void print_log (const std::string& type, GLhandleARB obj)

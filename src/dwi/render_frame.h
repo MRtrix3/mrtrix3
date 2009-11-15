@@ -49,23 +49,27 @@ namespace MR {
 
         GL::Lighting* lighting;
 
-        void set (const std::vector<float>& new_values);
+        void set (const std::vector<float>& new_values) {
+          l0_term = new_values[0];
+          if (!isnan (l0_term)) { renderer.set_values (new_values); }
+          updateGL(); 
+        }
 
         void set_rotation (const GLdouble* rotation = NULL);
 
         void set_show_axes (bool yesno = true)         { show_axes = yesno; updateGL(); }
-        void set_hide_neg_lobes (bool yesno = true)    { hide_neg_lobes = yesno; values_changed = true; updateGL(); }
+        void set_hide_neg_lobes (bool yesno = true)    { renderer.set_hide_neg_lobes (yesno); updateGL(); }
         void set_color_by_dir (bool yesno = true)      { color_by_dir = yesno; updateGL(); }
         void set_use_lighting (bool yesno = true)      { use_lighting = yesno; updateGL(); }
         void set_normalise (bool yesno = true)         { normalise = yesno; updateGL(); }
-        void set_LOD (int num)                         { if (lod == num) return; lod = num; lmax_or_lod_changed = true; updateGL(); } 
-        void set_lmax (int num)                        { if (lmax == num) return; lmax = num; lmax_or_lod_changed = true; updateGL(); } 
+        void set_LOD (int num)                         { renderer.set_LOD (num); updateGL(); } 
+        void set_lmax (int num)                        { renderer.set_lmax (num); updateGL(); } 
 
-        int  get_LOD () const                          { return (lod); }
-        int  get_lmax () const                         { return (lmax); }
+        int  get_LOD () const                          { return (renderer.get_LOD()); }
+        int  get_lmax () const                         { return (renderer.get_lmax()); }
         float get_scale () const                       { return (scale); }
         bool get_show_axes () const                    { return (show_axes); }
-        bool get_hide_neg_lobes () const               { return (hide_neg_lobes); }
+        bool get_hide_neg_lobes () const               { return (renderer.get_hide_neg_lobes()); }
         bool get_color_by_dir () const                 { return (color_by_dir); }
         bool get_use_lighting () const                 { return (use_lighting); }
         bool get_normalise () const                    { return (normalise); }
@@ -73,9 +77,8 @@ namespace MR {
         void screenshot (int oversampling, const std::string& image_name);
 
       protected:
-        float view_angle, distance, line_width, scale;
-        int   lod, lmax;
-        bool  show_axes, hide_neg_lobes, color_by_dir, use_lighting, lmax_or_lod_changed, values_changed, normalise;
+        float view_angle, distance, line_width, scale, l0_term;
+        bool  show_axes, hide_neg_lobes, color_by_dir, use_lighting, normalise;
 
         QPoint last_pos;
         GLdouble modelview[16], projection[16];
