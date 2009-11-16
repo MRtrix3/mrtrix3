@@ -669,7 +669,7 @@ else:
 
 # write out configuration:
 
-cache_filename = 'configuration.py'
+cache_filename = os.path.join (os.path.dirname(sys.argv[0]), 'configuration.py')
 
 print ''
 print 'writing configuration to file \'' + cache_filename + '\':',
