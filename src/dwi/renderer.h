@@ -45,7 +45,7 @@ namespace MR {
         bool ready () const { return (shader_program); }
         void init ();
         void set_values (const std::vector<float>& values) { SH = values; recalculate = true; }
-        void set_hide_neg_lobes (bool hide) { if (hide_neg_lobes != hide) recalculate = true; hide_neg_lobes = hide; }
+        void set_hide_neg_lobes (bool hide) { if (hide_neg_lobes != hide && !use_shading()) recalculate = true; hide_neg_lobes = hide; }
         void set_lmax (int lmax) { if (lmax != lmax_computed) recompute = true; lmax_computed = lmax; }
         void set_LOD (int lod) { if (lod != lod_computed) recompute = true; lod_computed = lod; }
         void draw (bool use_normals, const float* colour = NULL);
