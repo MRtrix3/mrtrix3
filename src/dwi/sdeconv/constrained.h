@@ -36,62 +36,66 @@
 namespace MR {
   namespace DWI {
 
-    template <typename T> class CSDeconvCommon
-    {
-      public:
-        CSDeconvCommon (const Math::Vector<T>& response, const Math::Vector<T>& init_filter, const Math::Matrix<T>& DW_dirs, const Math::Matrix<T>& HR_dirs, int lmax = 8) 
-          : neg_lambda (1.0), norm_lambda (1.0), threshold (0.1)
-        {
-          int lmax_data = (response.size()-1)*2;
-          int n = Math::SH::LforN (DW_dirs.rows());
-          if (lmax_data > n) lmax_data = n;
-          if (lmax_data > lmax) lmax_data = lmax;
-          info ("calculating even spherical harmonic components up to order " + str(lmax_data) + " for initialisation");
-
-          if (init_filter.size() < size_t(lmax_data/2)+1) 
-            throw Exception ("not enough initial filter coefficients supplied for lmax = " + str (lmax_data));
-
-          Math::Vector<T> RH;
-          Math::SH::SH2RH (RH, response);
-
-          Math::Matrix<float> fconv;
-          Math::SH::init_transform (fconv, DW_dirs, lmax_data);
-          rconv.allocate (fconv.columns(), fconv.rows());
-          Math::pinv (rconv, fconv);
-
-          size_t l = 0, nl = 1;
-          for (size_t row = 0; row < rconv.rows(); row++) {
-            if (row >= nl) { l++; nl = Math::SH::NforL (2*l); }
-            for (size_t col = 0; col < rconv.columns(); col++) {
-              rconv(row, col) *= init_filter[l] / RH[l];
-              fconv(col,row) *= RH[l];
-            }
-          }
-
-          Math::SH::init_transform (HR_trans, HR_dirs, lmax);
-          HR_trans *= neg_lambda * T(fconv.rows()) * response[0] / T(HR_trans.rows());
-
-          M.allocate (DW_dirs.rows(), HR_trans.columns());
-          M.view (0,M.rows(),0,fconv.columns()) = fconv.view();
-          M.view (0,M.rows(),fconv.columns(),M.columns()) = 0.0;
-          Mt_M.allocate (M.columns(), M.columns());
-          rankN_update (Mt_M, M, CblasTrans);
-
-          info ("constrained spherical deconvolution initiated successfully");
-        }
-
-        Math::Matrix<T>   rconv, HR_trans, M, Mt_M;
-        T                 neg_lambda, norm_lambda, threshold;
-    };
-
-
-
 
     template <typename T> class CSDeconv
     {
       public:
-        CSDeconv (const CSDeconvCommon<T>& common) :
-          P (common), 
+
+        class Shared {
+          public:
+            Shared (const Math::Vector<T>& response, 
+                const Math::Vector<T>& init_filter, 
+                const Math::Matrix<T>& DW_dirs, 
+                const Math::Matrix<T>& HR_dirs,
+                int lmax = 8) : 
+              neg_lambda (1.0), 
+              norm_lambda (1.0), 
+              threshold (0.1) {
+                int lmax_data = (response.size()-1)*2;
+                int n = Math::SH::LforN (DW_dirs.rows());
+                if (lmax_data > n) lmax_data = n;
+                if (lmax_data > lmax) lmax_data = lmax;
+                info ("calculating even spherical harmonic components up to order " + str(lmax_data) + " for initialisation");
+
+                if (init_filter.size() < size_t(lmax_data/2)+1) 
+                  throw Exception ("not enough initial filter coefficients supplied for lmax = " + str (lmax_data));
+
+                Math::Vector<T> RH;
+                Math::SH::SH2RH (RH, response);
+
+                Math::Matrix<float> fconv;
+                Math::SH::init_transform (fconv, DW_dirs, lmax_data);
+                rconv.allocate (fconv.columns(), fconv.rows());
+                Math::pinv (rconv, fconv);
+
+                size_t l = 0, nl = 1;
+                for (size_t row = 0; row < rconv.rows(); row++) {
+                  if (row >= nl) { l++; nl = Math::SH::NforL (2*l); }
+                  for (size_t col = 0; col < rconv.columns(); col++) {
+                    rconv(row, col) *= init_filter[l] / RH[l];
+                    fconv(col,row) *= RH[l];
+                  }
+                }
+
+                Math::SH::init_transform (HR_trans, HR_dirs, lmax);
+                HR_trans *= neg_lambda * T(fconv.rows()) * response[0] / T(HR_trans.rows());
+
+                M.allocate (DW_dirs.rows(), HR_trans.columns());
+                M.view (0,M.rows(),0,fconv.columns()) = fconv.view();
+                M.view (0,M.rows(),fconv.columns(),M.columns()) = 0.0;
+                Mt_M.allocate (M.columns(), M.columns());
+                rankN_update (Mt_M, M, CblasTrans);
+
+                info ("constrained spherical deconvolution initiated successfully");
+              }
+
+            Math::Matrix<T> rconv, HR_trans, M, Mt_M;
+            T neg_lambda, norm_lambda, threshold;
+        };
+
+
+        CSDeconv (const Shared& shared) :
+          P (shared), 
           work (P.Mt_M.rows(), P.Mt_M.columns()),
           HR_T (P.HR_trans.rows(), P.HR_trans.columns()), 
           F (P.HR_trans.columns()),
@@ -127,13 +131,6 @@ namespace MR {
           if (computed_once && old_neg.size() == neg.size()) 
             if (old_neg == neg) return (true);
 
-          /*
-             if (P.M.rows() + neg.size() < P.HR_trans.columns()) {
-             error ("not enough negative directions! failed to converge.");
-             F.view() = GSL_NAN;
-             return (true);
-             }
-             */
           for (size_t i = 0; i < work.rows(); i++) {
             for (size_t j = 0; j < i; j++) 
               work(i,j) = P.Mt_M(i,j);
@@ -161,12 +158,12 @@ namespace MR {
 
 
       protected:
-        const CSDeconvCommon<T>&  P;
-        T                  threshold, norm_lambda;
-        Math::Matrix<T>    work, HR_T;
-        Math::Vector<T>    F, init_F, HR_amps, Mt_b;
-        std::vector<int>   neg, old_neg;
-        bool               computed_once;
+        const Shared&     P;
+        T                 threshold, norm_lambda;
+        Math::Matrix<T>   work, HR_T;
+        Math::Vector<T>   F, init_F, HR_amps, Mt_b;
+        std::vector<int>  neg, old_neg;
+        bool              computed_once;
     };
 
 

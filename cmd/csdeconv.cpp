@@ -23,6 +23,7 @@
 #include "app.h"
 #include "ptr.h"
 #include "progressbar.h"
+#include "thread/exec.h"
 #include "thread/queue.h"
 #include "dataset/loop.h"
 #include "image/voxel.h"
@@ -119,6 +120,10 @@ class Allocator {
 
 typedef Thread::Queue<Item,Allocator> Queue;
 
+
+
+
+
 class DataLoader {
   public:
     DataLoader (Queue& queue, 
@@ -133,14 +138,16 @@ class DataLoader {
       bzeros (vec_bzeros),
       dwis (vec_dwis),
       normalise (normalise_to_b0) { }
+
     void execute () {
+      Exec exec (*this);
       if (mask) {
         Image::Voxel<value_type> mask_vox (*mask);
-        DataSet::loop1_mask ("performing constrained spherical deconvolution...", *this, mask_vox, dwi);
+        DataSet::loop1_mask ("performing constrained spherical deconvolution...", exec, mask_vox, dwi);
       }
-      else DataSet::loop1 ("performing constrained spherical deconvolution...", *this, dwi);
+      else DataSet::loop1 ("performing constrained spherical deconvolution...", exec, dwi);
     }
-    void operator() (Image::Voxel<value_type>& D) { }
+
   private:
     Queue::Writer writer;
     Image::Voxel<value_type>  dwi;
@@ -148,91 +155,82 @@ class DataLoader {
     const std::vector<int>&  bzeros;
     const std::vector<int>&  dwis;
     bool  normalise;
+
+    class Exec {
+      public:
+        Exec (DataLoader& parent) : P (parent), item (P.writer) { }
+        void operator() (Image::Voxel<value_type>& D) { 
+          value_type norm = 0.0;
+          if (P.normalise) {
+            for (size_t n = 0; n < P.bzeros.size(); n++) {
+              D.pos(3, P.bzeros[n]);
+              norm += D.value ();
+            }
+            norm /= P.bzeros.size();
+          }
+
+          for (size_t n = 0; n < P.dwis.size(); n++) {
+            D.pos(3, P.dwis[n]);
+            item->data[n] = D.value(); 
+            if (!finite (item->data[n])) return;
+            if (item->data[n] < 0.0) item->data[n] = 0.0;
+            if (P.normalise) item->data[n] /= norm;
+          }
+
+          item->pos[0] = D.pos(0);
+          item->pos[1] = D.pos(1);
+          item->pos[2] = D.pos(2);
+
+          if (!item.write()) throw Exception ("error writing to work queue");
+        }
+      private:
+        DataLoader& P;
+        Queue::Writer::Item item;
+    };
+    friend class Exec;
 };
 
-/*
-template <typename T> class ThreadedCSD : public Image::ThreadVoxelWise
-{
+
+
+
+
+class Processor {
   public:
-    ThreadedCSD (const DWI::CSDeconvCommon<T>& sdeconv_common, Image::Object& dwi_object, RefPtr<Image::Voxel> mask_voxel, Image::Object& SH_object, 
-        const std::vector<int>& vec_bzeros, const std::vector<int>& vec_dwis, bool normalise_to_b0) : 
-      Image::ThreadVoxelWise (dwi_object, mask_voxel),
-      common (sdeconv_common),
-      SH_obj (SH_object), 
-      bzeros (vec_bzeros),
-      dwis (vec_dwis),
-      normalise (normalise_to_b0) { 
-        SH_obj.map();
-      }
-    ~ThreadedCSD () { }
+    Processor (Queue& queue, 
+        const Image::Header& header, 
+        const DWI::CSDeconv<value_type>::Shared& shared, 
+        int max_num_iterations) :
+      reader (queue), SH (header), sdeconv (shared), niter (max_num_iterations) { }
 
-    void execute (int thread_ID)
-    {
-      Math::Vector<T> sigs (dwis.size());
-      DWI::CSDeconv<T> sdeconv (common);
-      Image::Voxel dwi (source);
-      Image::Voxel SH (SH_obj);
-
-      do {
-        if (get_next (dwi)) return;
-        if (get_data (sigs, dwi)) continue;
-
-        sdeconv.set (sigs);
+    void execute () {
+      Queue::Reader::Item item (reader);
+      while (item.read()) {
+        sdeconv.set (item->data);
 
         int n;
         for (n = 0; n < niter; n++) if (sdeconv.iterate()) break;
-        if (n == niter) error ("failed to converge"); 
+        if (n == niter) error ("voxel [ " + 
+            str(item->pos[0]) + " " + str(item->pos[1]) + " " + str(item->pos[2]) +
+            " ] failed to converge"); 
 
-        SH[0] = dwi[0];
-        SH[1] = dwi[1];
-        SH[2] = dwi[2];
+        SH.pos(0, item->pos[0]);
+        SH.pos(1, item->pos[1]);
+        SH.pos(2, item->pos[2]);
 
-        for (SH[3] = 0; SH[3] < SH.dim(3); SH[3]++)
-          SH.value() = sdeconv.FOD()[SH[3]];
-
-      } while (true);
+        for (SH.pos(3,0); SH.pos(3) < SH.dim(3); SH.move(3,1))
+          SH.value (sdeconv.FOD()[SH.pos(3)]);
+      }
     }
 
+  private:
+    Queue::Reader reader;
+    Image::Voxel<value_type> SH;
+    DWI::CSDeconv<value_type> sdeconv;
     int niter;
-
-  protected:
-    const DWI::CSDeconvCommon<T>& common;
-    Image::Object&  SH_obj;
-    const std::vector<int>&  bzeros;
-    const std::vector<int>&  dwis;
-    bool  normalise;
-
-
-    bool get_data (Math::Vector<T>& sigs, Image::Voxel& dwi)
-    {
-      T norm = 0.0;
-      if (normalise) {
-        for (size_t n = 0; n < bzeros.size(); n++) {
-          dwi[3] = bzeros[n];
-          norm += dwi.value ();
-        }
-        norm /= bzeros.size();
-      }
-
-      for (size_t n = 0; n < dwis.size(); n++) {
-        dwi[3] = dwis[n];
-        sigs[n] = dwi.value(); 
-        if (!finite (sigs[n])) return (true);
-        if (sigs[n] < 0.0) sigs[n] = 0.0;
-        if (normalise) sigs[n] /= norm;
-      }
-
-      return (false);
-    }
-
 };
 
 
 
-
-
-
-*/
 
 
 
@@ -240,7 +238,8 @@ template <typename T> class ThreadedCSD : public Image::ThreadVoxelWise
 extern value_type default_directions [];
 
 EXECUTE {
-  Image::Header header = argument[0].get_image();
+  const Image::Header dwi_header = argument[0].get_image();
+  Image::Header header (dwi_header);
 
   if (header.ndim() != 4) 
     throw Exception ("dwi image should contain 4 dimensions");
@@ -312,9 +311,10 @@ EXECUTE {
   header.axes.order(2) = 3; header.axes.forward(2) = true;
   header.axes.order(3) = 0; header.axes.forward(3) = true;
 
+  const Image::Header* mask_header = NULL;
   opt = get_options (2); // mask
-  const Image::Header mask_header = opt.size() ? opt[0][0].get_image() : Image::Header();
-  RefPtr<Image::Voxel<float> > mask (!mask_header ? NULL : new Image::Voxel<float> (mask_header));
+  if (opt.size())
+    mask_header = new Image::Header (opt[0][0].get_image());
 
   bool normalise = get_options(5).size();
 
@@ -335,14 +335,20 @@ EXECUTE {
   if (opt.size()) niter = opt[0][0].get_int();
 
 
-  //DWI::CSDeconvCommon<float> sdeconv_common (response, filter, DW_dirs, HR_dirs, lmax);
-  //sdeconv_common.neg_lambda = neg_lambda;
-  //sdeconv_common.norm_lambda = norm_lambda;
+  const Image::Header SH_header (argument[2].get_image (header));
 
-  //ThreadedCSD<float> threader (sdeconv_common, dwi_obj, mask, *argument[2].get_image (header), bzeros, dwis, normalise);
-  //threader.niter = niter;
+  Queue queue ("work queue", 100, Allocator (dwis.size()));
+  DataLoader loader (queue, dwi_header, mask_header, bzeros, dwis, normalise);
 
-  //threader.run ("performing constrained spherical deconvolution...");
+  DWI::CSDeconv<value_type>::Shared shared (response, filter, DW_dirs, HR_dirs, lmax);
+  shared.neg_lambda = neg_lambda;
+  shared.norm_lambda = norm_lambda;
+
+  Processor processor (queue, SH_header, shared, niter);
+
+  Thread::Exec loader_thread (loader, "loader");
+  Thread::Array<Processor> processor_list (processor);
+  Thread::Exec processor_threads (processor_list, "processor");
 }
 
 

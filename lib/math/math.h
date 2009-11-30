@@ -106,9 +106,6 @@ namespace MR {
     inline double atan2 (const double y, const double x) throw () { return (::atan2 (y, x)); } 
     inline long double atan2 (const long double y, const long double x) throw () { return (::atan2l (y, x)); } 
 
-    //! swap values of variables \a a & \a b
-    template <typename T> inline void swap (T& a, T& b) throw () { T c (a); a = b; b = c; }
-    
     //! swap values in arrays
     /** \param a the first array containing the values to be swapped
      * \param b the second array containing the values to be swapped
@@ -118,7 +115,7 @@ namespace MR {
     template <typename T> inline void swap (T* a, T* b, const int size, const int stride_a = 1, const int stride_b = 1) throw ()
     {
       T* const end (a + size*stride_a);
-      for (; a < end; a += stride_a, b += stride_b) Math::swap (*a, *b); 
+      for (; a < end; a += stride_a, b += stride_b) std::swap (*a, *b); 
     }
 
     //! find maximum value in array

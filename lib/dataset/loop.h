@@ -121,6 +121,19 @@ namespace MR {
           Functor& F;
           const std::string& m;
       };
+
+
+      template <class Kernel>
+        inline void loop_exec (Kernel& K, size_t from_axis, size_t to_axis) {
+          --to_axis;
+          assert (K.dim(to_axis));
+          K.pos (to_axis,0);
+loop_start:
+          if (to_axis == from_axis) K();
+          else loop_exec (K, from_axis, to_axis);
+          if (K.pos(to_axis) < K.dim(to_axis)-1) { K.move (to_axis,1); goto loop_start; }
+        }
+
     }
     //! \endcond 
 
@@ -130,14 +143,10 @@ namespace MR {
     template <class Kernel> 
       void loop (Kernel& K, size_t from_axis = 0, size_t to_axis = SIZE_MAX) 
       {
-        if (to_axis == SIZE_MAX) to_axis = K.ndim();
+        if (to_axis > K.ndim()) to_axis = K.ndim();
         assert (from_axis < to_axis);
-        assert (to_axis <= K.ndim());
         K.check (from_axis, to_axis);
-        for (size_t i = from_axis+1; i < to_axis; ++i) K.pos(i,0); 
-        do {
-          for (K.pos (from_axis,0); K.pos(from_axis) < K.dim(from_axis); K.move(from_axis,1)) K();
-        } while (increment (K, from_axis+1, to_axis));
+        loop_exec (K, from_axis, to_axis);
       }
 
 

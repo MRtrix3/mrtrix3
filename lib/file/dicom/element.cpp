@@ -143,8 +143,8 @@ namespace MR {
             VR = VR_UN;
           }
           else {
-            char t[] = { name[0], name[1] };
-            VR = ByteOrder::BE (*((uint16_t*) t));
+            union { char t[2]; uint16_t i; } d = { { name[0], name[1] } };
+            VR = ByteOrder::BE (d.i);
           }
           size = get<uint32_t> (start+4, is_BE);
         }

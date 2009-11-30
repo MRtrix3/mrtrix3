@@ -105,6 +105,8 @@ namespace MR {
   };
 
 
+  typedef std::vector<OptBase> OptionList;
+
 
   class Argument {
     public:

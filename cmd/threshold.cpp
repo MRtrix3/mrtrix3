@@ -1,7 +1,7 @@
 /*
     Copyright 2008 Brain Research Institute, Melbourne, Australia
 
-    Written by J-Donald Tournier, 27/06/08.
+    Written by J-Donald Tournier, 27/11/09.
 
     This file is part of MRtrix.
 
@@ -20,12 +20,14 @@
 
 */
 
+#include <list>
+
 #include "app.h"
 #include "progressbar.h"
 #include "image/voxel.h"
-#include "image/misc.h"
-#include "histogram.h"
-#include "min_max.h"
+#include "dataset/loop.h"
+#include "dataset/min_max.h"
+#include "dataset/histogram.h"
 
 using namespace std; 
 using namespace MR; 
@@ -49,8 +51,14 @@ OPTIONS = {
   Option ("abs", "absolute threshold", "specify threshold value as absolute intensity.")
     .append (Argument ("value", "value", "the absolute threshold to use.").type_float (NAN, NAN, 0.0)),
 
-  Option ("percent", "percentage threshold", "specify threshold value as a percentage of the peak intensity in the input image.")
-    .append (Argument ("value", "value", "the percentage threshold to use.").type_float (NAN, NAN, 0.0)),
+  Option ("percentile", "threshold ith percentile", "threshold the image at the ith percentile.")
+    .append (Argument ("value", "value", "the percentile at which to threshold.").type_float (0.0, 100.0, 95.0)),
+
+  Option ("top", "top N voxels", "provide a mask of the N top-valued voxels")
+    .append (Argument ("N", "N", "the number of voxels.").type_integer (0, INT_MAX, 100)),
+
+  Option ("bottom", "bottom N voxels", "provide a mask of the N bottom-valued voxels")
+    .append (Argument ("N", "N", "the number of voxels.").type_integer (0, INT_MAX, 100)),
 
   Option ("invert", "invert mask.", "invert output binary mask."),
 
@@ -60,69 +68,171 @@ OPTIONS = {
 };
 
 
-EXECUTE {
 
-  bool use_percentage = false, invert = false, use_NaN = false, optimise = true;
-  float val = NAN;
 
-  std::vector<OptBase> opt = get_options (0);
-  if (opt.size()) {
-    use_percentage = false;
-    optimise = false;
-    val = opt[0][0].get_float();
-  }
 
-  opt = get_options (1);
-  if (opt.size()) {
-    use_percentage = true;
-    optimise = false;
-    val = opt[0][0].get_float();
-  }
+class ByValue {
+  public:
+    ByValue (float threshold, float value_if_less, float value_if_more) :
+      val (threshold), lt (value_if_less), gt (value_if_more) { }
+    void operator() (Image::Voxel<float>& dest, Image::Voxel<float>& src) {
+      dest.value (src.value() < val ? lt : gt);
+    }
+  private:
+    float val, lt, gt;
+};
 
-  if (get_options(2).size()) invert = true;
-  if (get_options(3).size()) use_NaN = true;
 
-  Image::Voxel in (*argument[0].get_image());
-  Image::Header header (in.image.header());
 
-  if (in.is_complex()) header.data_type = DataType::CFloat32;
-  else {
-    if (use_NaN) header.data_type = DataType::Float32;
-    else header.data_type = DataType::Bit;
-  }
 
-  Image::Voxel out (*argument[1].get_image (header));
-
-  if (use_percentage) {
-    float min, max;
-    get_min_max (in, min, max);
-    val = min + 0.01*val*(max-min);
-  }
-
-  in.image.map();
-  if (optimise) {
-    Histogram hist (in);
-    val = hist.first_min();
-  }
-
-  float zero = use_NaN ? NAN : 0.0;
-  float one  = invert ? zero : 1.0;
-  zero = invert ? 1.0 : zero;
-
-  out.image.map();
-  ProgressBar::init (voxel_count(out), "thresholding at intensity " + str(val) + "...");
-
-  do {
-    float v = in.real();
-    out.real() = v > val ? one : zero;
-    if (out.is_complex()) {
-      v = in.imag();
-      out.imag() = v > val ? one : zero;
+class ByGreatestN {
+  public:
+    ByGreatestN (size_t num) : N (num) { }
+    void operator() (const Image::Voxel<float>& D) {
+      assert (list.size() <= N);
+      float val = D.value();
+      if (list.size() == N) {
+        if (val < list.begin()->first) return;
+        list.erase (list.begin());
+      }
+      std::vector<ssize_t> pos (D.ndim());
+      for (size_t n = 0; n < D.ndim(); ++n) pos[n] = D.pos(n);
+      list.insert (std::pair<float,std::vector<ssize_t> > (val, pos));
     }
 
-    ProgressBar::inc();
-    in++;
-  } while (out++);
+    void write_back (Image::Voxel<float>& dest, float val_if_excluded, float val_if_included) {
+      ZeroKernel zero (val_if_excluded);
+      DataSet::loop1 (zero, dest);
 
-  ProgressBar::done();
+      for (std::multimap<float,std::vector<ssize_t> >::const_iterator i = list.begin(); i != list.end(); ++i) {
+        for (size_t n = 0; n < dest.ndim(); ++n)
+          dest.pos(n, i->second[n]);
+        dest.value (val_if_included);
+      }
+    }
+
+  protected:
+    class ZeroKernel {
+      public:
+        ZeroKernel (float value) : val (value) { }
+        void operator() (Image::Voxel<float>& D) { D.value (val); }
+      private:
+        float val;
+    };
+
+    std::multimap<float,std::vector<ssize_t> > list;
+    size_t N;
+};
+
+
+class BySmallestN : public ByGreatestN {
+  public:
+    BySmallestN (size_t num) : ByGreatestN (num) { }
+    void operator() (const Image::Voxel<float>& D) {
+      assert (list.size() <= N);
+      float val = D.value();
+      if (list.size() == N) {
+        std::multimap<float,std::vector<ssize_t> >::iterator i = list.end();
+        --i;
+        if (val > i->first) return;
+        list.erase (i);
+      }
+      std::vector<ssize_t> pos (D.ndim());
+      for (size_t n = 0; n < D.ndim(); ++n) pos[n] = D.pos(n);
+      list.insert (std::pair<float,std::vector<ssize_t> > (val, pos));
+    }
+};
+
+
+
+
+EXECUTE {
+  float val (NAN), percentile (NAN);
+  size_t topN (0), bottomN (0), nopt (0);
+
+  OptionList opt = get_options (0); // abs
+  if (opt.size()) {
+    val = opt[0][0].get_float();
+    ++nopt;
+  }
+
+  opt = get_options (1); // percentile
+  if (opt.size()) {
+    percentile = opt[0][0].get_float();
+    ++nopt;
+  }
+
+  opt = get_options (2); // top
+  if (opt.size()) {
+    topN = opt[0][0].get_int();
+    ++nopt;
+  }
+
+  opt = get_options (3); // bottom
+  if (opt.size()) {
+    bottomN = opt[0][0].get_int();
+    ++nopt;
+  }
+
+  if (nopt > 1) throw Exception ("too many conflicting options");
+
+
+  bool invert = get_options(4).size(); // invert
+  bool use_NaN = get_options(5).size(); // nan
+
+  const Image::Header header_in (argument[0].get_image());
+  assert (!header_in.is_complex());
+
+  if (DataSet::voxel_count (header_in) < topN || DataSet::voxel_count (header_in) < bottomN)
+    throw Exception ("number of voxels at which to threshold exceeds number of voxels in image");
+
+  if (finite (percentile)) {
+    percentile /= 100.0;
+    if (percentile < 0.5) {
+      bottomN = round (DataSet::voxel_count (header_in) * percentile);
+      invert = !invert;
+    }
+    else topN = round (DataSet::voxel_count (header_in) * (1.0 - percentile));
+  }
+
+  Image::Header header (header_in);
+  if (use_NaN) header.datatype() = DataType::Float32;
+  else header.datatype() = DataType::Bit;
+
+  const Image::Header header_out (argument[1].get_image (header));
+
+  Image::Voxel<float> in (header_in);
+  Image::Voxel<float> out (header_out);
+
+  float zero = use_NaN ? NAN : 0.0;
+  float one  = 1.0;
+  if (invert) std::swap (zero, one);
+
+  if (topN) {
+    ByGreatestN kernel (topN);
+    DataSet::loop1 ("thresholding \"" + in.name() + "\" at " + (
+          isnan (percentile) ? 
+          ( str (topN) + "th top voxel" ) : 
+          (str (percentile*100.0) + "\% percentile") 
+          ) + "...", kernel, in);
+    kernel.write_back (out, zero, one);
+  }
+  else if (bottomN) {
+    BySmallestN kernel (bottomN);
+    DataSet::loop1 ("thresholding \"" + in.name() + "\" at " + (
+          isnan (percentile) ? 
+          ( str (topN) + "th bottom voxel" ) : 
+          (str (percentile*100.0) + "\% percentile") 
+          ) + "...", kernel, in);
+    kernel.write_back (out, zero, one);
+  }
+  else {
+    if (isnan (val)) {
+      DataSet::Histogram<Image::Voxel<float> > hist (in);
+      val = hist.first_min();
+    }
+
+    ByValue kernel (val, zero, one);
+    DataSet::loop2 ("thresholding \"" + in.name() + "\" at intensity " + str(val) + "...", kernel, out, in);
+  }
 }

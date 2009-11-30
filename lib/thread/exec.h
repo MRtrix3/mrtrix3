@@ -33,9 +33,6 @@
  * These functions and class provide a simple interface for multi-threading in
  * MRtrix applications. Most applications will probably find that the
  * Thread::Queue and Thread::Exec classes are sufficient for their needs. 
- *
- * \note The Thread::init() functin must be called \e before using any of the
- * multi-threading functionality described here.
  */
 
 namespace MR {
