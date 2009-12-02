@@ -91,11 +91,14 @@ namespace MR {
             nfeval = 0;
             f = evaluate_func (x, g);
             normg = norm (g, func.size());
+            assert (finite (f));
+            assert (finite (normg));
           } 
 
 
           bool iterate () 
           { 
+            assert (normg != 0.0);
             T step = dt / normg;
             T f2;
 
@@ -112,8 +115,8 @@ namespace MR {
               if (f2 < f) {
                 dt *= step_up;
                 f = f2;
-                swap (x, x2);
-                swap (g, g2);
+                std::swap (x, x2);
+                std::swap (g, g2);
                 normg = norm (g, func.size());
                 return (true);
               }

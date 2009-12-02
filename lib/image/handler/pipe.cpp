@@ -33,10 +33,13 @@ namespace MR {
 
       Pipe::~Pipe () 
       {
-        if (file && !is_new) {
-          file = NULL;
-          debug ("deleting files for piped image \"" + H.name() + "\"...");
-          unlink (H.files[0].name.c_str());
+        if (file) {
+          if (is_new) std::cout << H.files[0].name << "\n";
+          else {
+            file = NULL;
+            debug ("deleting piped image file \"" + H.files[0].name + "\"...");
+            unlink (H.files[0].name.c_str());
+          }
         }
       }
 

@@ -103,7 +103,7 @@ namespace MR {
         dP_dN = -T(measured.size()) / one_over_noise_squared;
 
         for (size_t i = 0; i < measured.size(); i++) {
-          assert (measured[i] >= 0.0);
+          assert (measured[i] > 0.0);
 
           T actual_pos = abs (actual[i]); 
           T nm = one_over_noise_squared * measured[i];
@@ -116,6 +116,8 @@ namespace MR {
           if (actual[i] < 0.0) dP_dactual[i] = -dP_dactual[i];
           dP_dN += 0.5 * pow2 (m_a) - measured[i] * actual_pos * F1_F0;
           lnP += 0.5 * nm_a * m_a - log (nm * F0); 
+          assert (finite (dP_dN));
+          assert (finite (lnP));
         }
 
         return (lnP); 

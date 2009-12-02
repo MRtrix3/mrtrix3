@@ -32,19 +32,23 @@ namespace MR {
 
     class XImg {
       public:
-        void           read (const std::string& filename);
-        std::string    name () const;
+        XImg (const std::string& filename) : mmap (filename) { }
+        std::string    name () const { return (mmap.name()); }
 
-        const uint8_t* pixel_data () const;
-        int            width () const;
-        int            height () const;
-        int            depth () const;
+        const uint8_t* pixel_data () const { return (bof() + getBE<int32_t> (bof() + 0x4)); }
+        int            width () const      { return (getBE<int32_t> (bof() + 0x8)); }
+        int            height () const     { return (getBE<int32_t> (bof() + 0xc)); }
+        int            depth () const      { return (getBE<int32_t> (bof() + 0x10)); }
 
-        friend std::ostream& operator<< (std::ostream& stream, const XImg& X);
+        friend std::ostream& operator<< (std::ostream& stream, const XImg& X) {
+          stream << "name: \"" << X.name() << ", pixel_data at " 
+            << size_t (X.pixel_data() - X.bof()) << ", dim: [ " << X.width() << " " << X.height() << " ]\n";
+          return (stream);
+        }
 
       private:
         MMap           mmap;
-        const uint8_t* bof () const;
+        const uint8_t* bof () const { return ((uint8_t*) mmap.address()); }
     };
 
 
@@ -58,26 +62,6 @@ namespace MR {
 
 
 
-    inline const uint8_t*  XImg::bof () const { return ((uint8_t*) mmap.address()); }
-
-    inline void XImg::read (const std::string& filename) 
-    {
-      mmap.init (filename);
-      mmap.map();
-    }
-
-    inline std::string XImg::name () const { return (mmap.name()); }
-
-    inline const uint8_t* XImg::pixel_data () const { return (bof() + getBE<int32_t> (bof() + 0x4)); }
-    inline int XImg::width () const      { return (getBE<int32_t> (bof() + 0x8)); }
-    inline int XImg::height () const     { return (getBE<int32_t> (bof() + 0xc)); }
-    inline int XImg::depth () const      { return (getBE<int32_t> (bof() + 0x10)); }
-
-    inline std::ostream& operator<< (std::ostream& stream, const XImg& X) 
-    {
-      stream << "name: \"" << X.name() << ", pixel_data at " << size_t (X.pixel_data() - X.bof()) << ", dim: [ " << X.width() << " " << X.height() << " ]\n";
-      return (stream);
-    }
 
   }
 }

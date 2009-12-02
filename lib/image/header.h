@@ -54,10 +54,10 @@ namespace MR {
       public:
         Header () : format (NULL), offset (0.0), scale (1.0), readwrite (false) { }
         Header (const Header& H) :
-          std::map<std::string, std::string> (H),
-          format (NULL), axes (H.axes), offset (0.0), scale (1.0), 
-          readwrite (false), DW_scheme (H.DW_scheme), comments (H.comments),
-          dtype (H.dtype), transform_matrix (H.transform_matrix) { } 
+          std::map<std::string, std::string> (H), dtype (H.dtype), 
+          transform_matrix (H.transform_matrix), format (NULL),
+          axes (H.axes), offset (0.0), scale (1.0), readwrite (false), 
+          DW_scheme (H.DW_scheme), comments (H.comments) { } 
 
         template <class DataSet> Header (const DataSet& ds) :
           format (NULL), offset (0.0), scale (1.0), readwrite (false), 
@@ -84,16 +84,6 @@ namespace MR {
 
         const std::string&         name () const { return (identifier); }
         std::string&               name ()       { return (identifier); }
-        const char*                format;
-        Axes                       axes;
-        float                      offset, scale;
-        bool                       readwrite;
-        Math::Matrix<float>        DW_scheme;
-        std::vector<File::Entry>   files;
-
-        std::vector<std::string>   comments;
-
-        Ptr<Handler::Base>         handler;
 
         // DataSet interface:
         const size_t* layout () const;
@@ -148,6 +138,18 @@ namespace MR {
         void merge (const Header& H);
 
         off64_t footprint_for_count (off64_t count) { return (dtype == DataType::Bit ? (count+7)/8 : count * dtype.bytes()); }
+
+      public:
+        const char*                format;
+        Axes                       axes;
+        float                      offset, scale;
+        bool                       readwrite;
+        Math::Matrix<float>        DW_scheme;
+        std::vector<File::Entry>   files;
+
+        std::vector<std::string>   comments;
+
+        Ptr<Handler::Base>         handler;
     };
 
 

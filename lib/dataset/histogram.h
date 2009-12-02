@@ -56,36 +56,21 @@ namespace MR {
         value_type  value (size_t index) const        { return (list[index].value); }
         size_t      num () const                      { return (list.size()); }
         value_type  first_min () const {
-          size_t first_peak (0), first_peak_index (0), second_peak (0), second_peak_index (0),
-                 first_minimum (0), first_min_index (0), range_step (list.size()/20), range (range_step), index;
-
-          for (index = 0; index < range; index++) {
-            if (list[index].frequency > first_peak) {
-              first_peak = list[index].frequency;
-              first_minimum = first_peak;
-              first_min_index = first_peak_index = index;
-            }
+          size_t p1 = 0;
+          while (list[p1].frequency <= list[p1+1].frequency && p1+2 < list.size()) ++p1;
+          for (size_t p = p1; p < list.size(); ++p) {
+            if (2*list[p].frequency < list[p1].frequency) break;
+            if (list[p].frequency >= list[p1].frequency) p1 = p;
           }
 
-          range = first_peak_index + range_step;
-
-          for (index = first_peak_index; index < range; index++) {
-            if (list[index].frequency < first_minimum) {
-              first_minimum = list[index].frequency;
-              first_min_index = second_peak_index = index;
-            }
+          size_t m1 (p1+1);
+          while (list[m1].frequency >= list[m1+1].frequency && m1+2 < list.size()) ++m1;
+          for (size_t m = m1; m < list.size(); ++m) {
+            if (list[m].frequency > 2*list[m1].frequency) break;
+            if (list[m].frequency <= list[m1].frequency) m1 = m;
           }
 
-          range = first_min_index + range_step;
-
-          for (index = first_min_index; index < range; index++) {
-            if (list[index].frequency > second_peak) {
-              second_peak = list[index].frequency;
-              second_peak_index = index;
-            }
-          }
-
-          return (list[first_min_index].value);
+          return (list[m1].value);
         }
 
       protected:
@@ -101,7 +86,7 @@ namespace MR {
             Kernel (std::vector<Entry>& hist, value_type min, value_type step) : list (hist), M (min), S (step) { }
             void operator() (Set& D) { 
               value_type val = D.value();
-              if (finite (val)) { 
+              if (finite (val) && val != 0.0) { 
                 size_t pos = size_t ((val-M)/S);
                 if (pos >= list.size()) pos = list.size()-1;
                 list[pos].frequency++;

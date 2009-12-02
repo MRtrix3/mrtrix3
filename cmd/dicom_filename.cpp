@@ -20,7 +20,6 @@
 
 */
 
-#include "image/object.h"
 #include "file/dicom/element.h"
 #include "app.h"
 
@@ -29,7 +28,22 @@ using namespace MR;
 using namespace File::Dicom; 
 
 SET_VERSION_DEFAULT;
+
+DESCRIPTION = {
+  "read a DICOM file and output a suitable filename for its storage.",
+  NULL
+};
+
+ARGUMENTS = {
+  Argument ("file", "DICOM file", "the DICOM file to be scanned.").type_file (),
+  Argument::End
+};
+
+OPTIONS = { Option::End };
+
   
+
+
 void make_valid (std::string& str, const std::string& alternate) {
   if (str.empty()) { str = alternate; return; }
   str = strip (str);
@@ -40,26 +54,12 @@ void make_valid (std::string& str, const std::string& alternate) {
 
 
 
-DESCRIPTION = {
-  "read a DICOM file and output a suitable filename for its storage.",
-  NULL
-};
-
-
-ARGUMENTS = {
-  Argument ("file", "DICOM file", "the DICOM file to be scanned.").type_file (),
-  Argument::End
-};
-
-
-OPTIONS = { Option::End };
-
 EXECUTE {
-
   Element item;
   item.set (argument[0].get_string());
 
-  std::string patient_name, patient_id, study_date, study_name, study_time, series_name, series_number, instance_number, SOP_instance_number;
+  std::string patient_name, patient_id, study_date, study_name, 
+    study_time, series_name, series_number, instance_number, SOP_instance_number;
 
   while (item.read()) {
     if      (item.is (0x0008U, 0x0020U)) study_date = item.get_string()[0];

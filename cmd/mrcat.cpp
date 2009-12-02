@@ -23,7 +23,7 @@
 #include "app.h"
 #include "progressbar.h"
 #include "image/voxel.h"
-#include "image/misc.h"
+#include "dataset/copy.h"
 
 using namespace std; 
 using namespace MR; 
@@ -46,130 +46,144 @@ OPTIONS = {
   Option ("axis", "concatenation axis", "specify axis along which concatenation should be performed. By default, the program will use the axis after the last non-singleton axis of any of the input images")
     .append (Argument ("axis", "axis", "the concatenation axis").type_integer (0, INT_MAX, 0)),
 
+  Option ("datatype", "data type", "specify output image data type.")
+    .append (Argument ("spec", "specifier", "the data type specifier.").type_choice (DataType::identifiers)),
+
   Option::End 
 };
 
 
 
+class Wrapper {
+  public:
+    Wrapper (const VecPtr<Image::Header>& in, size_t axis = SIZE_MAX) : 
+      V (in.size()),
+      offset (in.size()),
+      current (0) { 
+        N = SIZE_MAX;
+        size_t ndim_max (0);
+        for (size_t n = 0; n < in.size(); ++n) {
+          V[n] = new Voxel (*in[n]);
+          if (in[n]->ndim() < N) N = in[n]->ndim();
+          if (in[n]->ndim() > ndim_max) ndim_max = in[n]->ndim();
+        }
+
+        if (axis == SIZE_MAX) {
+          for (size_t a = N; a < ndim_max && axis == SIZE_MAX; ++a) {
+            for (size_t n = 1; n < V.size(); ++n) {
+              if (V[n]->dim(a) != V[0]->dim(a)) {
+                axis = a; 
+                break;
+              }
+            }
+          }
+          if (axis == SIZE_MAX) axis = N;
+        }
+
+        for (size_t a = 0; a < ndim_max; ++a) {
+          if (a == axis) continue;
+          for (size_t n = 1; n < in.size(); ++n) {
+            if (V[0]->dim(a) != V[n]->dim(a)) throw Exception ("dimensions do not match between non-concatenated axes");
+          }
+        }
+
+        A = axis;
+        if (A >= N) N = A+1;
+        NA = 0;
+
+        for (size_t n = 0; n < in.size(); ++n) {
+          offset[n] = NA;
+          NA += V[n]->dim(A);
+        }
+      }
+
+    std::string name () const { return ("concatenated set"); }
+    size_t ndim () const { return (N); }
+    ssize_t dim (size_t axis) const { return (axis == A ? NA : V[0]->dim(axis)); }
+    float   vox (size_t axis) const { return (V[0]->vox(axis)); }
+    float   value () const { return (V[current]->value()); }
+    ssize_t pos (size_t axis) const {
+      ssize_t p = V[current]->pos(axis);
+      if (axis == A) p += offset[current];
+      return (p);
+    }
+    void pos (size_t axis, ssize_t position) {
+      if (axis == A) {
+        size_t n = 0;
+        while (n < offset.size()-1) {
+          if (position < offset[n+1]) break;
+          ++n;
+        }
+        if (n != current) {
+          for (size_t a = 0; a < V[n]->ndim(); ++a) 
+            if (a != A) 
+              V[n]->pos(a, V[current]->pos(a));
+          current = n;
+        }
+        position -= offset[current];
+      }
+      V[current]->pos (axis, position);
+    }
+    void move (size_t axis, ssize_t increment) {
+      if (axis == A) {
+        ssize_t p = V[current]->pos(A);
+        if (p+increment < 0 || p+increment >= V[current]->dim(A)) {
+          pos (A, pos(A)+increment);
+          return;
+        }
+      }
+      V[current]->move (axis, increment);
+    }
+
+    const Math::Matrix<float>& transform () const { return (V[0]->transform()); }
+
+  private:
+    class Voxel : public Image::Voxel<float> {
+      public:
+        typedef Image::Voxel<float>::value_type value_type;
+
+        Voxel (const Image::Header& header) : Image::Voxel<float> (header) { }
+        ssize_t dim (size_t axis) const { return (axis < ndim() ? Image::Voxel<float>::dim (axis) : 1); }
+        ssize_t pos (size_t axis) const { return (axis < ndim() ? Image::Voxel<float>::pos (axis) : 0); }
+        void pos (size_t axis, ssize_t position) { 
+          if (axis < ndim()) Image::Voxel<float>::pos (axis, position); 
+          else assert (position == 0); 
+        }
+        void move (size_t axis, ssize_t increment) { 
+          if (axis < ndim()) Image::Voxel<float>::move (axis, increment); 
+          else assert (0); 
+        }
+    };
+
+    VecPtr<Voxel> V;
+    std::vector<ssize_t> offset;
+    size_t N, NA, A, current;
+};
 
 EXECUTE {
-  int axis = -1;
+  size_t axis = SIZE_MAX;
 
   std::vector<OptBase> opt = get_options (0); // axis
   if (opt.size()) axis = opt[0][0].get_int();
 
-  int num_images = argument.size()-1;
-  RefPtr<Image::Object> in[num_images];
-  in[0] = argument[0].get_image();
-  Image::Header header (in[0]->header());
+  VecPtr<Image::Header> in (argument.size()-1);
+  for (size_t n = 0; n < in.size(); ++n)
+    in[n] = new Image::Header (argument[n].get_image());
 
-  int ndims = 0;
-  int last_dim;
+  Wrapper wrapper (in, axis);
 
-  for (int i = 0; i < num_images; i++) {
-    in[i] = argument[i].get_image();
-    for (last_dim = in[i]->ndim()-1; in[i]->dim (last_dim) <= 1 && last_dim >= 0; last_dim--);
-    if (last_dim > ndims) ndims = last_dim;
-  }
-  ndims++;
+  Image::Header header (*in[0]);
+  header = wrapper;
 
-  if (axis < 0) axis = ndims-1;
-  
+  header.datatype() = DataType::Float32;
+  opt = get_options (1); // datatype
+  if (opt.size()) header.datatype().parse (DataType::identifiers[opt[0][0].get_int()]);
 
+  assert (!header.is_complex());
 
-  for (int i = 0; i < ndims; i++) 
-    if (i != axis) 
-      for (int n = 0; n < num_images; n++) 
-        if (in[0]->dim(i) != in[n]->dim(i)) 
-          throw Exception ("dimensions of input images do not match");
+  const Image::Header header_out (argument.back().get_image (header));
+  Image::Voxel<float> out (header_out);
 
-
-  if (axis >= ndims) ndims = axis+1;
-  if (ndims > MRTRIX_MAX_NDIMS) 
-    throw Exception ("maximum number of dimensions (" + str (MRTRIX_MAX_NDIMS) + ") exceeded");
-
-  
-  header.axes.resize (ndims);
-
-  for (size_t i = 0; i < header.axes.size(); i++) {
-    if (!header.axes[i].dim) {
-      for (int n = 0; n < num_images; n++) {
-        if (in[n]->ndim() > i) {
-          header.axes[i] = in[n]->header().axes[i];
-          break;
-        }
-      }
-    }
-  }
-
-
-  header.axes[axis].dim = 0;
-  header.data_type = DataType::Float32;
-  for (int n = 0; n < num_images; n++) {
-    if (int (in[n]->ndim()) > axis) 
-      header.axes[axis].dim += in[n]->dim(axis) > 1 ? in[n]->dim(axis) : 1;
-    else header.axes[axis].dim++;
-
-    if (in[n]->is_complex()) 
-      header.data_type = DataType::CFloat32;
-  }
-
-  Image::Voxel out (*argument[num_images].get_image (header));
-  out.image.map();
-
-  ProgressBar::init (voxel_count(out), "concatenating...");
-
-  for (int i = 0; i < num_images; i++) {
-    Image::Voxel pos (*in[i]);
-    pos.image.map();
-
-    do {
-      float val = pos.real();
-      out.real() = val;
-
-      if (out.is_complex()) {
-        val = pos.is_complex() ? pos.imag() : 0.0 ;
-        out.imag() = val;
-      }
-
-      ProgressBar::inc();
-      out++;
-    } while (pos++);
-  }
-
-  ProgressBar::done();
-
-    /*
-    int lim = n[i].ndims() > axis ? in[i].dim(axis) : 1 ;
-    for (uint a = 0; a < lim; a++) {
-
-      Coord x(out);
-      do {
-        x[axis] = a;
-        in[i].pos(x);
-
-        x[axis] = count;
-        out.pos(x);
-
-        float val = in[i].re();
-        out.re(val);
-
-        if (out.is_complex()) {
-          val = in[i].is_complex() ? in[i].im() : 0.0 ;
-          out.im(val);
-        }
-
-        x[axis] = 0;
-        ProgressBar::inc();
-
-      } while (x.next(limits));
-
-      count++;
-    }
-
-    in[i].unmap();
-  }
-
-*/
+  DataSet::loop2 ("concatenating...", DataSet::copy_kernel<Image::Voxel<float>, Wrapper>, out, wrapper);
 }
 

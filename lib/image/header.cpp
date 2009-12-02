@@ -256,7 +256,7 @@ namespace MR {
         Header header (H);
         std::vector<int> num (Pdim.size());
 
-        H.name() = parser.name (num);
+        if (image_name != "-") H.name() = parser.name (num);
         (*format_handler)->create (H);
 
         while (get_next (num, Pdim)) {

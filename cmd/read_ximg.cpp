@@ -46,35 +46,15 @@ OPTIONS = {
 
 
 EXECUTE {
-  File::XImg reader;
 
   for (size_t n = 0; n < argument.size();  n++) {
-/*
-    if (Glib::file_test (argument[n].get_string(), Glib::FILE_TEST_IS_DIR)) {
-      Glib::Dir* dir;
-      try { dir = new Glib::Dir (argument[n].get_string()); }
-      catch (...) { throw Exception (std::string ("error opening folder \"") + argument[n].get_string() 
-          + "\": " + Glib::strerror (errno)); }
-      
-      std::string entry;
-      while ((entry = dir->read_name()).size()) {
-        if (reader.read (Glib::build_filename (argument[n].get_string(), entry), print_DICOM_fields, print_CSA_fields))
-          error ("error reading file \"" + reader.filename + "\"");
-        else cout << reader << "\n";
-      }
-    }
-    else if (reader.read (argument[n].get_string(), print_DICOM_fields, print_CSA_fields))
-      error ("error reading file \"" + reader.filename + "\"");
-*/
     try {
-      reader.read (argument[n].get_string());
+      File::XImg reader (argument[n].get_string());
       cout << reader << "\n";
     }
     catch (...) { 
       error (std::string ("error reading file \"") + argument[n].get_string() + "\"");
     }
-
   }
-
 }
   

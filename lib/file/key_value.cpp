@@ -32,7 +32,7 @@ namespace MR {
       filename.clear();
       debug ("reading key/value file \"" + file + "\"...");
 
-      in.open (file.c_str(), std::ios::out | std::ios::binary);
+      in.open (file.c_str(), std::ios::in | std::ios::binary);
       if (!in) throw Exception ("failed to open key/value file \"" + file + "\": " + strerror(errno));
       if (first_line) {
         std::string sbuf;
