@@ -37,7 +37,7 @@ namespace MR {
 
         Subset (Set& original, const size_t* from, const size_t* dimensions, const std::string& description = "") : 
           D (original),
-          descriptor (description.empty() ? D.name() + " [reordered]" : description),
+          descriptor (description.empty() ? D.name() + " [subset]" : description),
           transform_matrix (D.transform()) {
           assert (D.ndim() >= NDIM);
           for (size_t n = 0; n < NDIM; ++n) assert (ssize_t(from[n] + dimensions[n]) <= D.dim(n));
