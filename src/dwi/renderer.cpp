@@ -116,6 +116,7 @@ namespace MR {
     void Renderer::init () 
     { 
       if (GL::Shader::supported()) {
+        GL::Shader::init();
         vertex_shader = glCreateShaderObjectARB (GL_VERTEX_SHADER_ARB);
         fragment_shader = glCreateShaderObjectARB (GL_FRAGMENT_SHADER_ARB);
         glShaderSourceARB (vertex_shader, 1, &vertex_shader_source, NULL);
@@ -164,16 +165,16 @@ namespace MR {
 
       if (use_shading()) {
         glUseProgramObjectARB (shader_program);
-        glUniform1i (glGetUniformLocation (shader_program, "color_by_direction"), colour ? 0 : 1);
-        glUniform1i (glGetUniformLocation (shader_program, "use_normals"), use_normals ? 1 : 0);
-        glUniform1i (glGetUniformLocation (shader_program, "hide_neg_lobes"), hide_neg_lobes ? 1 : 0);
-        glUniform1i (glGetUniformLocation (shader_program, "reverse"), 0);
+        glUniform1iARB (glGetUniformLocationARB (shader_program, "color_by_direction"), colour ? 0 : 1);
+        glUniform1iARB (glGetUniformLocationARB (shader_program, "use_normals"), use_normals ? 1 : 0);
+        glUniform1iARB (glGetUniformLocationARB (shader_program, "hide_neg_lobes"), hide_neg_lobes ? 1 : 0);
+        glUniform1iARB (glGetUniformLocationARB (shader_program, "reverse"), 0);
 
         glEnableClientState (GL_NORMAL_ARRAY);
         glNormalPointer (GL_FLOAT, sizeof(Vertex), &vertices[0].N);
 
         glDrawElements (GL_TRIANGLES, 3*indices.size(), GL_UNSIGNED_INT, &indices[0]);
-        glUniform1i (glGetUniformLocation (shader_program, "reverse"), 1);
+        glUniform1iARB (glGetUniformLocationARB (shader_program, "reverse"), 1);
         glDrawElements (GL_TRIANGLES, 3*indices.size(), GL_UNSIGNED_INT, &indices[0]);
 
         glUseProgramObjectARB (0);

@@ -23,8 +23,9 @@
 #ifndef __open_gl_h__
 #define __open_gl_h__
 
-#include <GL/glew.h>
+#include <GL/gl.h>
 #include <GL/glu.h>
+#include <GL/glext.h>
 #include <QtOpenGL>
 #include "mrtrix.h"
 
@@ -37,7 +38,9 @@ namespace MR {
 }
 
 #define DEBUG_OPENGL { GLenum error_code = glGetError(); \
-  if (error_code != GL_NO_ERROR) error (MR::std::string ("OpenGL Error: ") + (const char*) gluErrorString (error_code) + " ["__FILE__":" + MR::str(__LINE__) + "]"); }
+  if (error_code != GL_NO_ERROR) \
+    error (MR::std::string ("OpenGL Error: ") + (const char*) gluErrorString (error_code) + " ["__FILE__":" + MR::str(__LINE__) + "]");\
+}
 
 #endif
 

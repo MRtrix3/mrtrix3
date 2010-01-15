@@ -1,7 +1,7 @@
 /*
-    Copyright 2008 Brain Research Institute, Melbourne, Australia
+    Copyright 2010 Brain Research Institute, Melbourne, Australia
 
-    Written by J-Donald Tournier, 27/06/08.
+    Written by J-Donald Tournier, 15/01/10.
 
     This file is part of MRtrix.
 
@@ -20,24 +20,25 @@
 
 */
 
+#ifdef EXT
+# undef EXT
+#endif 
 
-#include "opengl/gl.h"
+#ifdef GL_GLEXT_PROTOTYPES
+# define EXT(type, name)
+#else 
 
-namespace MR {
-  namespace GL {
+# ifdef __DECLARE__
+#  define EXT(type, name) extern PFNGL##type##PROC gl##name
+# endif
 
-    void init () 
-    {
-      static bool initialised = false;
-      if (initialised) return;
-      info ("GL renderer:  " + std::string ((const char*) glGetString (GL_RENDERER)));
-      info ("GL version:   " + std::string ((const char*) glGetString (GL_VERSION)));
-      info ("GL vendor:    " + std::string ((const char*) glGetString (GL_VENDOR)));
-      info ("GL extensions:\n" + std::string ((const char*) glGetString (GL_EXTENSIONS)));
-      initialised = true;
-    }
+# ifdef __DEFINE__
+#  define EXT(type, name) PFNGL##type##PROC gl##name = NULL
+# endif
 
+# ifdef __LINK__
+#  define EXT(type, name) gl##name = (PFNGL##type##PROC) glXGetProcAddress ((const GLubyte*) ("gl"#name))
+# endif
 
-  }
-}
+#endif
 
