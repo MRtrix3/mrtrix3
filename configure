@@ -9,79 +9,80 @@ verbose = False
 
 
 for arg in sys.argv[1:]:
-  if arg == '-debug': debug = True
-  elif arg == '-profile': profile = True
-  elif arg == '-nogui': nogui = True
-  elif arg == '-verbose': verbose = True
+  if '-debug'.startswith (arg): debug = True
+  elif '-profile'.startswith (arg): profile = True
+  elif '-nogui'.startswith (arg): nogui = True
+  elif '-verbose'.startswith (arg): verbose = True
   else: 
-    print 'usage: [ENV] ./configure [-debug] [-profile] [-nogui]'
-    print ''
-    print 'In most cases, a simple invocation should work:'
-    print '   $ ./configure'
-    print ''
-    print 'For non-standard setups, you may need to supply additional'
-    print 'information using environment variables. For example, to set'
-    print 'the compiler, use:'
-    print '   $ CXX=/usr/local/bin/g++-4.1 ./configure'
-    print ''
-    print 'The \'-debug\' option will produce a configuration with debug symbols enabled.'
-    print ''
-    print 'The \'-profile\' option will produce a configuration with profiling enabled.'
-    print '      note: this will also enable the -debug option.'
-    print ''
-    print 'The \'-nogui\' option will produce a configuration without any GUI components.'
-    print ''
-    print 'The \'-verbose\' option will cause configure to output more information.'
-    print ''
-    print ''
-    print 'The following environment variables can be set:'
-    print ''
-    print 'CXX             The compiler command-line to use. The default is:'
-    print '                "g++ -c CFLAGS SRC -o OBJECT"'
-    print ''
-    print 'LD              The linker command-line to use. The default is:'
-    print '                "g++ LDFLAGS OBJECTS -o EXECUTABLE"'
-    print ''
-    print 'LDLIB           The linker command-line to use for generating a shared library.'
-    print '                The default is:'
-    print '                "g++ -shared LDLIB_FLAGS OBJECTS -o LIB"'
-    print ''
-    print 'CFLAGS          Any additional flags to the compiler.'
-    print ''
-    print 'LDFLAGS         Any additional flags to the linker.'
-    print ''
-    print 'LDLIB_FLAGS     Any additional flags to the linker to generate a shared library.'
-    print ''
-    print 'PTHREAD_CFLAGS  Any flags required to compile with POSIX threads.'
-    print ''
-    print 'PTHREAD_LDFLAGS Any flags required to link with POSIX threads.'
-    print ''
-    print 'GSL_CFLAGS      Any flags required to compile with the GSL.'
-    print '                This may include in particular the path to the'
-    print '                include files, if not in a standard location'
-    print '                For example:'
-    print '                $ GSL_CFLAGS="-I/usr/local/include" ./configure'
-    print ''
-    print 'GSL_LDFLAGS     Any flags required to link with the GSL.'
-    print '                This may include in particular the path to the'
-    print '                libraries, if not in a standard location'
-    print '                For example:'
-    print '                $ GSL_LDFLAGS="-L/usr/local/lib -lgsl -lgslcblas" ./configure'
-    print ''
-    print 'ZLIB_CFLAGS     Any flags required to compile with the zlib compression library.'
-    print ''
-    print 'ZLIB_LDFLAGS    Any flags required to link with the zlib compression library.'
-    print ''
-    print 'CBLAS_LDFLAGS   Any flags required to link with an alternate cblas library.'
-    print ''
-    print 'PATH            Set the path to use during the configure process.'
-    print '                This may be useful to set the path to GTK pkg-config.'
-    print '                For example:'
-    print '                $ PATH=/usr/local/bin:$PATH ./configure'
-    print ''
-    print '                Note that this path will NOT be used during the build'
-    print '                process itself.'
-    print ''
+    print """\
+usage: [ENV] ./configure [-debug] [-profile] [-nogui]'
+
+In most cases, a simple invocation should work:
+   $ ./configure
+
+For non-standard setups, you may need to supply additional
+information using environment variables. For example, to set
+the compiler, use:
+   $ CXX=/usr/local/bin/g++-4.1 ./configure
+
+The '-debug' option will produce a configuration with debug symbols enabled.
+
+The '-profile' option will produce a configuration with profiling enabled.
+      note: this will also enable the -debug option.
+
+The '-nogui' option will produce a configuration without any GUI components.
+
+The '-verbose' option will cause configure to output more information.
+
+
+The following environment variables can be set:
+
+CXX             The compiler command-line to use. The default is:
+                "g++ -c CFLAGS SRC -o OBJECT"
+
+LD              The linker command-line to use. The default is:
+                "g++ LDFLAGS OBJECTS -o EXECUTABLE"
+
+LDLIB           The linker command-line to use for generating a shared library.
+                The default is:
+                "g++ -shared LDLIB_FLAGS OBJECTS -o LIB"
+
+CFLAGS          Any additional flags to the compiler.
+
+LDFLAGS         Any additional flags to the linker.
+
+LDLIB_FLAGS     Any additional flags to the linker to generate a shared library.
+
+PTHREAD_CFLAGS  Any flags required to compile with POSIX threads.
+
+PTHREAD_LDFLAGS Any flags required to link with POSIX threads.
+
+GSL_CFLAGS      Any flags required to compile with the GSL.
+                This may include in particular the path to the
+                include files, if not in a standard location
+                For example:
+                $ GSL_CFLAGS="-I/usr/local/include" ./configure
+
+GSL_LDFLAGS     Any flags required to link with the GSL.
+                This may include in particular the path to the
+                libraries, if not in a standard location
+                For example:
+                $ GSL_LDFLAGS="-L/usr/local/lib -lgsl -lgslcblas" ./configure
+
+ZLIB_CFLAGS     Any flags required to compile with the zlib compression library.
+
+ZLIB_LDFLAGS    Any flags required to link with the zlib compression library.
+
+CBLAS_LDFLAGS   Any flags required to link with an alternate cblas library.
+
+PATH            Set the path to use during the configure process.
+                This may be useful to set the path to GTK pkg-config.
+                For example:
+                $ PATH=/usr/local/bin:$PATH ./configure
+
+                Note that this path will NOT be used during the build
+                process itself.
+"""
     sys.exit (0)
   
 
@@ -218,13 +219,15 @@ try:
   compile ('int main() { return (0); }')
   print '- tested ok'
 except CompileError:
-  print 'compiler error!'
-  print 'Use CXX environment variable to set path to compiler, as follows:'
-  print '     CXX=/usr/bin/g++-4.2 ./configure.py'
+  print '''compiler error!
+
+Use CXX environment variable to set path to compiler, as follows:
+     CXX=/usr/bin/g++-4.2 ./configure.py'''
 except (LinkError, RuntimeError):
-  print 'linking error!'
-  print 'Use LD environment variable to set path to compiler, as follows:'
-  print '     LD=/usr/bin/g++-4.2 ./configure.py'
+  print '''linking error!
+
+Use LD environment variable to set path to compiler, as follows:
+     LD=/usr/bin/g++-4.2 ./configure.py'''
   sys.exit (1)
 
 
@@ -243,12 +246,15 @@ obj_suffix = '.o'
 exe_suffix = ''
 lib_prefix = 'lib'
 lib_suffix = '.so'
+gl_cflags = []
 
 print 'Detecting OS:',
 sys.stdout.flush()
 system = platform.system().lower()
 print system
-if system == 'windows':
+if system == 'linux':
+  gl_cflags = [ '-DGL_GLEXT_PROTOTYPES' ]
+elif system == 'windows':
   cpp_flags += [ '-DWINDOWS', '-mno-cygwin', '-mms-bitfields' ]
   exe_suffix = '.exe'
   lib_prefix = ''
@@ -282,7 +288,13 @@ else:
 print 'Detecting pointer size:',
 sys.stdout.flush()
 try:
-  pointer_size = int (compile ('#include <iostream>\nint main() { std::cout << sizeof(void*); return (0); }'))
+  pointer_size = int (compile ('''
+#include <iostream>
+int main() { 
+  std::cout << sizeof(void*); 
+  return (0);
+}
+'''))
   print 8*pointer_size, 'bit'
   if pointer_size == 8: cpp_flags += [ '-DWORD64' ]
   elif pointer_size != 4: 
@@ -310,7 +322,14 @@ else:
 print 'Checking for C++ TR1 implementation:',
 sys.stdout.flush()
 try:
-  compile ('#include <tr1/unordered_map>\nint main() { std::tr1::unordered_map<int,int> map; return (map.size()); }')
+  compile ('''
+#include <tr1/unordered_map>
+
+int main() { 
+  std::tr1::unordered_map<int,int> map; 
+  return (map.size());
+}
+''')
   print 'present'
   cpp_flags += [ '-DUSE_TR1' ]
 except:
@@ -322,7 +341,16 @@ except:
 print 'Checking for large file support:',
 sys.stdout.flush()
 try:
-  compile ('#include <sys/types.h>\n#include <sys/stat.h>\n#include <unistd.h>\nint main() { off64_t t = 0; return (t); }')
+  compile ('''
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <unistd.h>
+
+int main() { 
+  off64_t t = 0; 
+  return (t); 
+}
+''')
   cpp_flags += [ '-DHAVE_LARGE_FILE_SUPPORT' ]
   print 'yes'
 except:
@@ -340,28 +368,36 @@ if 'ZLIB_CFLAGS' in os.environ.keys(): zlib_cflags = os.environ['ZLIB_CFLAGS'].s
 if 'ZLIB_LDFLAGS' in os.environ.keys(): zlib_ldflags = os.environ['ZLIB_LDFLAGS'].split()
 
 try:
-  zlib_version = compile ('#include <iostream>\n#include <zlib.h>\nint main() { std::cout << zlibVersion(); return(0); }', zlib_cflags, zlib_ldflags)
+  zlib_version = compile ('''
+#include <iostream>
+#include <zlib.h>
+
+int main() { 
+  std::cout << zlibVersion(); 
+  return (0);
+}
+''', zlib_cflags, zlib_ldflags)
   print zlib_version
 except CompileError:
-  print 'compiler error!'
-  print ''
-  print 'Use the ZLIB_CFLAGS environment variable to set the path to'
-  print 'the zlib include files and to set any required flags'
-  print 'For example:'
-  print '     ZLIB_CFLAGS="-I/usr/local/include" ./configure.py'
+  print '''compiler error!
+
+Use the ZLIB_CFLAGS environment variable to set the path to
+the zlib include files and to set any required flags
+For example:
+     ZLIB_CFLAGS="-I/usr/local/include" ./configure.py'''
   sys.exit (1)
 except LinkError:
-  print 'linker error!'
-  print ''
-  print 'Use the ZLIB_LDFLAGS environment variable to set the path to'
-  print 'the zlib libraries and to set the library to use'
-  print 'For example:'
-  print '     ZLIB_LDFLAGS="-L/usr/local/lib -lz" ./configure.py'
+  print '''linker error!
+
+Use the ZLIB_LDFLAGS environment variable to set the path to
+the zlib libraries and to set the library to use
+For example:
+     ZLIB_LDFLAGS="-L/usr/local/lib -lz" ./configure.py'''
   sys.exit (1)
 except RuntimeError:
-  print 'runtime error!'
-  print ''
-  print 'There is something wrong with your zlib implementation!'
+  print '''runtime error!
+
+There is something wrong with your zlib implementation!'''
   sys.exit (1)
 except:
   print 'not found!'
@@ -383,28 +419,39 @@ if 'PTHREAD_CFLAGS' in os.environ.keys(): pthread_cflags = os.environ['PTHREAD_C
 if 'PTHREAD_LDFLAGS' in os.environ.keys(): pthread_ldflags = os.environ['PTHREAD_LDFLAGS'].split()
 
 try:
-  compile ('#include <pthread.h>\nvoid* func (void*) { return (NULL); } int main() { pthread_t t; if (pthread_create(&t, NULL, func, NULL)) return (1); pthread_exit(NULL); return (0); }', thread_cflags, thread_ldflags)
+  compile ('''
+#include <pthread.h>
+
+void* func (void*) { return (NULL); } 
+
+int main() { 
+  pthread_t t; 
+  if (pthread_create(&t, NULL, func, NULL)) return (1);
+  pthread_exit (NULL); 
+  return (0); 
+}
+''', thread_cflags, thread_ldflags)
   print 'yes'
 except CompileError:
-  print 'compiler error!'
-  print ''
-  print 'Use the PTHREAD_CFLAGS environment variable to set the path to'
-  print 'the pthread include files and to set any required flags'
-  print 'For example:'
-  print '     PTHREAD_CFLAGS="-I/usr/local/include" ./configure.py'
+  print '''compiler error!
+
+Use the PTHREAD_CFLAGS environment variable to set the path to
+the pthread include files and to set any required flags
+For example:
+     PTHREAD_CFLAGS="-I/usr/local/include" ./configure.py'''
   sys.exit (1)
 except LinkError:
-  print 'linker error!'
-  print ''
-  print 'Use the PTHREAD_LDFLAGS environment variable to set the path to'
-  print 'the pthread libraries and to set the library to use'
-  print 'For example:'
-  print '     PTHREAD_LDFLAGS="-L/usr/local/lib -lpthread" ./configure.py'
+  print '''linker error!
+
+Use the PTHREAD_LDFLAGS environment variable to set the path to
+the pthread libraries and to set the library to use
+For example:
+     PTHREAD_LDFLAGS="-L/usr/local/lib -lpthread" ./configure.py'''
   sys.exit (1)
 except RuntimeError:
-  print 'runtime error!'
-  print ''
-  print 'There is something wrong with your POSIX threads implementation!'
+  print '''runtime error!
+
+There is something wrong with your POSIX threads implementation!'''
   sys.exit (1)
 except:
   print 'not found!'
@@ -420,22 +467,32 @@ if 'GSL_CFLAGS' in os.environ.keys(): gsl_cflags = os.environ['GSL_CFLAGS'].spli
 if 'GSL_LDFLAGS' in os.environ.keys(): gsl_ldflags = os.environ['GSL_LDFLAGS'].split()
 
 try:
-  gsl_version = compile ('#include <iostream>\n#include <gsl/gsl_version.h>\n#include <gsl/gsl_matrix.h>\nint main() { std::cout << gsl_version; gsl_matrix* M = gsl_matrix_alloc (3,3); return (M->size1 != 3); }', gsl_cflags, gsl_ldflags)
+  gsl_version = compile ('''
+#include <iostream>
+#include <gsl/gsl_version.h>
+#include <gsl/gsl_matrix.h>
+
+int main() { 
+  std::cout << gsl_version; 
+  gsl_matrix* M = gsl_matrix_alloc (3,3); 
+  return (M->size1 != 3);
+}
+''', gsl_cflags, gsl_ldflags)
   print gsl_version
 except CompileError:
-  print 'compiler error!'
-  print ''
-  print 'Use the GSL_CFLAGS environment variable to set the path to the GSL include files'
-  print 'For example:'
-  print '     GSL_CFLAGS=-I/usr/local/include ./configure.py'
+  print '''compiler error!
+
+Use the GSL_CFLAGS environment variable to set the path to the GSL include files'
+For example:'
+     GSL_CFLAGS=-I/usr/local/include ./configure.py'''
   sys.exit (1)
 except LinkError:
-  print 'linker error!'
-  print ''
-  print 'Use the GSL_LDFLAGS environment variable to set the path to the GSL libraries'
-  print 'and include any required libraries'
-  print 'For example:'
-  print '     GSL_LDFLAGS="-L/usr/local/lib -lgsl -lgslcblas" ./configure.py'
+  print '''linker error!'
+
+Use the GSL_LDFLAGS environment variable to set the path to the GSL libraries'
+and include any required libraries'
+For example:'
+     GSL_LDFLAGS="-L/usr/local/lib -lgsl -lgslcblas" ./configure.py'''
   sys.exit (1)
 
 
@@ -461,15 +518,25 @@ if 'CBLAS_LDFLAGS' in os.environ.keys():
   flags += cblas_ldflags;
   print 'Checking whether GSL compiles with alternate C BLAS libraries ("' + ' '.join(cblas_ldflags) + '"):',
   try:
-    compile ('#include <iostream>\n#include <gsl/gsl_version.h>\n#include <gsl/gsl_matrix.h>\nint main() { std::cout << gsl_version; gsl_matrix* M = gsl_matrix_alloc (3,3); return (M->size1 != 3); }', gsl_cflags, flags)
+    compile ('''
+#include <iostream>
+#include <gsl/gsl_version.h>
+#include <gsl/gsl_matrix.h>
+
+int main() { 
+  std::cout << gsl_version; 
+  gsl_matrix* M = gsl_matrix_alloc (3,3); 
+  return (M->size1 != 3);
+}
+''', gsl_cflags, flags)
     print 'yes'
     gsl_ldflags = flags
   except:
-    print 'no'
-    print ''
-    print 'Error compiling and/or linking with alternative C BLAS libraries provided!'
-    print 'Check whether the information provided by the CBLAS_LDFLAGS environment'
-    print 'variable is correct.'
+    print '''no
+
+Error compiling and/or linking with alternative C BLAS libraries provided!
+Check whether the information provided by the CBLAS_LDFLAGS environment
+variable is correct.'''
     sys.exit (1)
 
 
@@ -494,14 +561,14 @@ cmd = fillin (cpp, {
 #print ' '.join(cmd)
 try: process = subprocess.Popen (cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 except OSError:
-  print 'compiler not found!'
-  print ''
-  print 'an unexpected error occurred'
+  print '''compiler not found!
+
+an unexpected error occurred'''
   sys.exit (1)
 if process.wait() != 0: 
-  print 'compiler error!'
-  print ''
-  print 'an unexpected error occurred'
+  print '''compiler error!
+
+an unexpected error occurred'''
 
 libname = lib_prefix + 'test' + lib_suffix
 cmd = fillin (ld_lib, {
@@ -511,18 +578,18 @@ cmd = fillin (ld_lib, {
 #print ' '.join(cmd)
 try: process = subprocess.Popen (cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 except OSError: 
-  print 'linker not found!'
-  print ''
-  print 'Use the LDLIB environment variable to set the command-line'
-  print 'for shared library generation'
+  print '''linker not found!
+
+Use the LDLIB environment variable to set the command-line
+for shared library generation'''
   sys.exit (1)
 status = process.wait()
 os.unlink (obj_name)
 if status != 0:
-  print 'linker error!'
-  print ''
-  print 'Use the LDLIB_FLAGS environment variable to set the flags required'
-  print 'for shared library generation'
+  print '''linker error!
+
+Use the LDLIB_FLAGS environment variable to set the flags required
+for shared library generation'''
   sys.exit (1)
 
 os.unlink (libname)
@@ -543,11 +610,37 @@ if not nogui:
     qt_dir = tempfile.mkdtemp ();
 
     f=open (os.path.join (qt_dir, 'qt.h'), 'w')
-    f.write ('#include <QObject>\nclass Foo: public QObject {\nQ_OBJECT;\npublic:\nFoo();\n~Foo();\npublic slots:\nvoid setValue(int value);\nsignals:\nvoid valueChanged(int newValue);\nprivate:\nint value_;\n};\n')
+    f.write ('''
+#include <QObject>
+
+class Foo: public QObject {
+  Q_OBJECT;
+  public:
+    Foo();
+    ~Foo();
+  public slots:
+    void setValue(int value);
+  signals:
+    void valueChanged (int newValue);
+  private:
+    int value_;
+};
+''')
     f.close();
 
     f=open (os.path.join (qt_dir, 'qt.cpp'), 'w')
-    f.write ('#include <iostream>\n#include "qt.h"\nFoo::Foo() : value_ (42) { connect(this, SIGNAL(valueChanged(int)), this, SLOT(setValue(int))); }\nFoo::~Foo() { std::cout << qVersion() << "\\n"; }\nvoid Foo::setValue(int value) { value_ = value; }\nint main() { Foo f; }\n'); 
+    f.write ('''
+#include <iostream>
+#include "qt.h"
+
+Foo::Foo() : value_ (42) { connect (this, SIGNAL(valueChanged(int)), this, SLOT(setValue(int))); }
+
+Foo::~Foo() { std::cout << qVersion() << "\\n"; }
+
+void Foo::setValue (int value) { value_ = value; }
+
+int main() { Foo f; }
+'''); 
     f.close();
 
     f=open (os.path.join (qt_dir, 'qt.pro'), 'w')
@@ -629,23 +722,38 @@ if not nogui:
 
   print 'Checking for OpenGL:',
   sys.stdout.flush()
+  qt_cflags += gl_cflags
   try:
-    gl_version = compile ('#include <QtGui>\n #include <QtOpenGL>\n #include <QApplication>\n #include <QGLWidget>\n #include <iostream>\n class GLWidget : public QGLWidget {\n public:\n GLWidget(QWidget *parent = 0) : QGLWidget (parent) { } \n ~GLWidget() { }\n protected:\n void initializeGL() { std::cout << glGetString (GL_VERSION) << "\\n"; exit (0); }\n void paintGL() { }\n void resizeGL(int width, int height) { }\n };\n int main(int argc, char *argv[]) {\n QApplication app(argc, argv);\n GLWidget window;\n window.show();\n return app.exec();\n }\n', qt_cflags, qt_ldflags)
+    gl_version = compile ('''
+#include <QtGui>
+#include <QtOpenGL>
+#include <QApplication>
+#include <QGLWidget>
+#include <iostream>
+
+class GLWidget : public QGLWidget {
+  public:
+    GLWidget (QWidget *parent = 0) : QGLWidget (parent) { }
+    ~GLWidget() { }
+  protected:
+    void initializeGL () { std::cout << glGetString (GL_VERSION) << "\\n"; exit (0); }
+    void paintGL () { }
+    void resizeGL (int width, int height) { }
+};
+
+int main (int argc, char *argv[]) {
+  QApplication app (argc, argv);
+  GLWidget window;
+  window.show();
+  return app.exec();
+}
+''', qt_cflags, qt_ldflags)
     print gl_version.strip()
   except:
     print 'not found!'
 
 
 
-
-  print 'Checking for GLEW:',
-  qt_ldflags += [ '-lGLEW' ]
-  sys.stdout.flush()
-  try:
-    glew_version = compile ('#include <GL/glew.h>\n#include <QtGui>\n #include <QtOpenGL>\n #include <QApplication>\n #include <QGLWidget>\n #include <iostream>\n class GLWidget : public QGLWidget {\n public:\n GLWidget(QWidget *parent = 0) : QGLWidget (parent) { } \n ~GLWidget() { }\n protected:\n void initializeGL() { if (glewInit() != GLEW_OK) exit(1); std::cout << glewGetString(GLEW_VERSION) << "\\n"; exit (0); }\n void paintGL() { }\n void resizeGL(int width, int height) { }\n };\n int main(int argc, char *argv[]) {\n QApplication app(argc, argv);\n GLWidget window;\n window.show();\n return app.exec();\n }\n', qt_cflags, qt_ldflags)
-    print glew_version.strip()
-  except:
-    print 'not found!'
 
 
 
