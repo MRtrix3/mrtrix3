@@ -85,16 +85,39 @@ PATH            Set the path to use during the configure process.
 """
     sys.exit (0)
   
+global logfile, config_report
+logfile = open (os.path.join (os.path.dirname(sys.argv[0]), 'configure.log'), 'w')
+config_report = ''
 
 
-print ''
-print 'MRtrix build type requested:',
-if profile: print 'profiling',
-elif debug: print 'debug',
-else: print 'release',
-if nogui: print '[command-line only]'
-else: print ''
-print ''
+def log (message):
+  global logfile
+  logfile.write (message)
+  if (verbose): 
+    sys.stdout.write (message)
+    sys.stdout.flush()
+
+def report (message):
+  global config_report, logfile
+  config_report += message
+  sys.stdout.write (message)
+  sys.stdout.flush()
+  logfile.write (message)
+
+def error (message):
+  global logfile
+  logfile.write ('\nERROR: ' + message + '\n\n')
+  sys.stderr.write ('\nERROR: ' + message + '\n\n')
+  sys.exit (1)
+
+
+report ("""
+MRtrix build type requested: """)
+if profile: report ('profiling')
+elif debug: report ('debug')
+else: report ('release')
+if nogui: report (' [command-line only]')
+report ('\n\n')
 
 
 
@@ -149,12 +172,7 @@ def fillin (template, keyvalue):
 
 def compile (source, compiler_flags = [], linker_flags = []):
   global cpp, ld
-  if verbose: 
-    print 'source file:'
-    print '---'
-    print source
-    print '---'
-    print ''
+  log ('\n** COMPILE **\n\nsource file:\n---\n' + source + '\n---\n\n')
   fid = tempfile.NamedTemporaryFile ('w', suffix='.cpp')
   fid.write (source)
   fid.flush()
@@ -163,9 +181,7 @@ def compile (source, compiler_flags = [], linker_flags = []):
     'CFLAGS': compiler_flags,
     'SRC': fid.name,
     'OBJECT': obj_name })
-  if verbose:
-    print 'executing "' + ' '.join(cmd) + '"...'
-    print ''
+  log ('executing "' + ' '.join(cmd) + '"...\n\n')
   try: process = subprocess.Popen (cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
   except OSError: raise CompileError
   if process.wait() != 0: raise CompileError
@@ -174,18 +190,15 @@ def compile (source, compiler_flags = [], linker_flags = []):
     'LDFLAGS': linker_flags,
     'OBJECTS': obj_name,
     'EXECUTABLE': 'a.out' })
-  if verbose:
-    print 'executing "' + ' '.join(cmd) + '"...'
-    print ''
+  log ('executing "' + ' '.join(cmd) + '"...\n\n')
   try: process = subprocess.Popen (cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
   except OSError: raise LinkError
   status = process.wait()
-  os.unlink (obj_name)
+  try: os.unlink (obj_name)
+  except: pass
   if status != 0: raise LinkError
 
-  if verbose:
-    print 'executing command...'
-    print ''
+  log ('executing command...\n\n')
   process = subprocess.Popen ([ './a.out' ], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
   status = process.wait()
   os.unlink ('a.out')
@@ -207,28 +220,32 @@ if 'CXX' in os.environ.keys(): cpp = os.environ['CXX'].split()
 if 'LD' in os.environ.keys(): ld = os.environ['LD'].split()
 if 'LDLIB' in os.environ.keys(): ld_lib = os.environ['LDLIB'].split()
 
-print 'Checking C++ compiler [' + cpp[0] + ']:',
-sys.stdout.flush()
+report ('Checking C++ compiler [' + cpp[0] + ']: ')
 try: 
   process = subprocess.Popen ([ cpp[0], '-dumpversion' ], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
   process.wait()
   compiler_version = process.stdout.read().strip()
-  if len(compiler_version) == 0: print '(no version information)',
-  else: print compiler_version,
-  sys.stdout.flush()
-  compile ('int main() { return (0); }')
-  print '- tested ok'
-except CompileError:
-  print '''compiler error!
+  if len(compiler_version) == 0: report ('(no version information)')
+  else: report (compiler_version)
+except:
+  error ('''compiler not found!
 
 Use CXX environment variable to set path to compiler, as follows:
-     CXX=/usr/bin/g++-4.2 ./configure.py'''
+     CXX=/usr/bin/g++-4.2 ./configure.py''')
+
+try:
+  compile ('int main() { return (0); }')
+  report (' - tested ok\n')
+except CompileError:
+  error ('''compiler error!
+
+Use CXX environment variable to set path to compiler, as follows:
+     CXX=/usr/bin/g++-4.2 ./configure.py''')
 except (LinkError, RuntimeError):
-  print '''linking error!
+  error ('''linking error!
 
 Use LD environment variable to set path to compiler, as follows:
-     LD=/usr/bin/g++-4.2 ./configure.py'''
-  sys.exit (1)
+     LD=/usr/bin/g++-4.2 ./configure.py''')
 
 
 
@@ -248,10 +265,8 @@ lib_prefix = 'lib'
 lib_suffix = '.so'
 gl_cflags = []
 
-print 'Detecting OS:',
-sys.stdout.flush()
 system = platform.system().lower()
-print system
+report ('Detecting OS: ' + system + '\n')
 if system == 'linux':
   gl_cflags = [ '-DGL_GLEXT_PROTOTYPES' ]
 elif system == 'windows':
@@ -267,8 +282,7 @@ elif system == 'darwin':
 
 
 
-print 'Detecting machine architecture:',
-sys.stdout.flush()
+report ('Detecting machine architecture: ')
 march = platform.machine()
 if march == 'x86_64': march = 'x86-64'
 elif march == 'i686': pass
@@ -276,17 +290,16 @@ elif march == 'i586': pass
 else: march = None
 
 if march: 
-  print march
+  report (march + '\n')
   cpp_flags += [ '-march='+march ]
 else:
-  print 'unknown'
+  report ('unknown\n')
 
 
 
 
 
-print 'Detecting pointer size:',
-sys.stdout.flush()
+report ('Detecting pointer size: ')
 try:
   pointer_size = int (compile ('''
 #include <iostream>
@@ -295,32 +308,26 @@ int main() {
   return (0);
 }
 '''))
-  print 8*pointer_size, 'bit'
+  report (str(8*pointer_size) + ' bit\n')
   if pointer_size == 8: cpp_flags += [ '-DWORD64' ]
   elif pointer_size != 4: 
-    print 'unexpected pointer size!'
-    print ''
-    sys.exit(1)
+    error ('unexpected pointer size!')
 except:
-  print 'unable to determine pointer size!'
-  print ''
-  sys.exit(1)
+  error ('unable to determine pointer size!')
 
 
 
 
-print 'Detecting byte order:',
-sys.stdout.flush()
+report ('Detecting byte order: ')
 if sys.byteorder == 'big':
-  print 'big-endian'
+  report ('big-endian\n')
   cpp_flags += [ '-DBYTE_ORDER_IS_BIG_ENDIAN' ]
 else:
-  print 'little-endian'
+  report ('little-endian\n')
 
 
 
-print 'Checking for C++ TR1 implementation:',
-sys.stdout.flush()
+report ('Checking for C++ TR1 implementation: ')
 try:
   compile ('''
 #include <tr1/unordered_map>
@@ -330,16 +337,15 @@ int main() {
   return (map.size());
 }
 ''')
-  print 'present'
+  report ('present\n')
   cpp_flags += [ '-DUSE_TR1' ]
 except:
-  print 'not present - using SGI hash_map instead'
+  report ('not present - using SGI hash_map instead\n')
 
 
 
 
-print 'Checking for large file support:',
-sys.stdout.flush()
+report ('Checking for large file support: ')
 try:
   compile ('''
 #include <sys/types.h>
@@ -352,17 +358,16 @@ int main() {
 }
 ''')
   cpp_flags += [ '-DHAVE_LARGE_FILE_SUPPORT' ]
-  print 'yes'
+  report ('yes\n')
 except:
-  print 'no'
+  report ('no\n')
 
 
 
 
 # zlib:
 
-print 'Checking for zlib compression library:',
-sys.stdout.flush()
+report ('Checking for zlib compression library: ')
 
 if 'ZLIB_CFLAGS' in os.environ.keys(): zlib_cflags = os.environ['ZLIB_CFLAGS'].split()
 if 'ZLIB_LDFLAGS' in os.environ.keys(): zlib_ldflags = os.environ['ZLIB_LDFLAGS'].split()
@@ -377,30 +382,27 @@ int main() {
   return (0);
 }
 ''', zlib_cflags, zlib_ldflags)
-  print zlib_version
+  report (zlib_version + '\n')
 except CompileError:
-  print '''compiler error!
+  error ('''compiler error!
 
 Use the ZLIB_CFLAGS environment variable to set the path to
 the zlib include files and to set any required flags
 For example:
-     ZLIB_CFLAGS="-I/usr/local/include" ./configure.py'''
-  sys.exit (1)
+     ZLIB_CFLAGS="-I/usr/local/include" ./configure.py''')
 except LinkError:
-  print '''linker error!
+  error ('''linker error!
 
 Use the ZLIB_LDFLAGS environment variable to set the path to
 the zlib libraries and to set the library to use
 For example:
-     ZLIB_LDFLAGS="-L/usr/local/lib -lz" ./configure.py'''
-  sys.exit (1)
+     ZLIB_LDFLAGS="-L/usr/local/lib -lz" ./configure.py''')
 except RuntimeError:
-  print '''runtime error!
+  error ('''runtime error!
 
-There is something wrong with your zlib implementation!'''
-  sys.exit (1)
+There is something wrong with your zlib implementation!''')
 except:
-  print 'not found!'
+  error ('zlib implementation not found!')
 
 cpp_flags += zlib_cflags
 ld_flags += zlib_ldflags
@@ -412,8 +414,7 @@ ld_lib_flags += zlib_ldflags
 
 # POSIX threads:
 
-print 'Checking for POSIX threads:',
-sys.stdout.flush()
+report ('Checking for POSIX threads: ')
 
 if 'PTHREAD_CFLAGS' in os.environ.keys(): pthread_cflags = os.environ['PTHREAD_CFLAGS'].split()
 if 'PTHREAD_LDFLAGS' in os.environ.keys(): pthread_ldflags = os.environ['PTHREAD_LDFLAGS'].split()
@@ -431,38 +432,34 @@ int main() {
   return (0); 
 }
 ''', thread_cflags, thread_ldflags)
-  print 'yes'
+  report ('yes\n')
 except CompileError:
-  print '''compiler error!
+  error ('''compiler error!
 
 Use the PTHREAD_CFLAGS environment variable to set the path to
 the pthread include files and to set any required flags
 For example:
-     PTHREAD_CFLAGS="-I/usr/local/include" ./configure.py'''
-  sys.exit (1)
+     PTHREAD_CFLAGS="-I/usr/local/include" ./configure.py''')
 except LinkError:
-  print '''linker error!
+  error ('''linker error!
 
 Use the PTHREAD_LDFLAGS environment variable to set the path to
 the pthread libraries and to set the library to use
 For example:
-     PTHREAD_LDFLAGS="-L/usr/local/lib -lpthread" ./configure.py'''
-  sys.exit (1)
+     PTHREAD_LDFLAGS="-L/usr/local/lib -lpthread" ./configure.py''')
 except RuntimeError:
-  print '''runtime error!
+  error ('''runtime error!
 
-There is something wrong with your POSIX threads implementation!'''
-  sys.exit (1)
+There is something wrong with your POSIX threads implementation!''')
 except:
-  print 'not found!'
+  error (' POSIX threads implementation not found!')
 
 
 
 
 # GSL flags:
 
-print 'Checking for GNU Scientific Library:', 
-sys.stdout.flush()
+report ('Checking for GNU Scientific Library: ')
 if 'GSL_CFLAGS' in os.environ.keys(): gsl_cflags = os.environ['GSL_CFLAGS'].split()
 if 'GSL_LDFLAGS' in os.environ.keys(): gsl_ldflags = os.environ['GSL_LDFLAGS'].split()
 
@@ -478,33 +475,30 @@ int main() {
   return (M->size1 != 3);
 }
 ''', gsl_cflags, gsl_ldflags)
-  print gsl_version
+  report (gsl_version + '\n')
 except CompileError:
-  print '''compiler error!
+  error ('''compiler error!
 
 Use the GSL_CFLAGS environment variable to set the path to the GSL include files'
 For example:'
-     GSL_CFLAGS=-I/usr/local/include ./configure.py'''
-  sys.exit (1)
+     GSL_CFLAGS=-I/usr/local/include ./configure.py''')
 except LinkError:
-  print '''linker error!'
+  error ('''linker error!'
 
 Use the GSL_LDFLAGS environment variable to set the path to the GSL libraries'
 and include any required libraries'
 For example:'
-     GSL_LDFLAGS="-L/usr/local/lib -lgsl -lgslcblas" ./configure.py'''
-  sys.exit (1)
+     GSL_LDFLAGS="-L/usr/local/lib -lgsl -lgslcblas" ./configure.py''')
 
 
 
-print 'Checking whether GSL compiles with -DHAVE_INLINE:', 
-sys.stdout.flush()
+report ('Checking whether GSL compiles with -DHAVE_INLINE: ')
 try:
   gsl_version = compile ('#include <gsl/gsl_matrix.h>\nint main() { gsl_matrix* M = gsl_matrix_alloc (3,3); gsl_matrix_set(M,0,0,3.14); return (gsl_matrix_get(M,0,0) != 3.14); }', gsl_cflags + [ '-DHAVE_INLINE' ], gsl_ldflags)
   gsl_cflags += [ '-DHAVE_INLINE' ]
-  print 'yes'
+  report ('yes\n')
 except:
-  print 'no'
+  report ('no\n')
 
 
 
@@ -516,7 +510,7 @@ if 'CBLAS_LDFLAGS' in os.environ.keys():
   flags = gsl_ldflags[:]
   flags.remove ('-lgslcblas')
   flags += cblas_ldflags;
-  print 'Checking whether GSL compiles with alternate C BLAS libraries ("' + ' '.join(cblas_ldflags) + '"):',
+  report ('Checking whether GSL compiles with alternate C BLAS libraries ("' + ' '.join(cblas_ldflags) + '"): ')
   try:
     compile ('''
 #include <iostream>
@@ -529,15 +523,12 @@ int main() {
   return (M->size1 != 3);
 }
 ''', gsl_cflags, flags)
-    print 'yes'
+    report ('yes\n')
     gsl_ldflags = flags
   except:
-    print '''no
-
-Error compiling and/or linking with alternative C BLAS libraries provided!
+    error ('''Error compiling and/or linking with alternative C BLAS libraries provided!
 Check whether the information provided by the CBLAS_LDFLAGS environment
-variable is correct.'''
-    sys.exit (1)
+variable is correct.''')
 
 
 
@@ -547,8 +538,7 @@ variable is correct.'''
 
 # shared library generation:
 
-print 'Checking shared library generation:',
-sys.stdout.flush()
+report ('Checking shared library generation: ')
 
 fid = tempfile.NamedTemporaryFile ('w', suffix='.cpp')
 fid.write ('int bogus() { return (1); }')
@@ -558,42 +548,41 @@ cmd = fillin (cpp, {
   'CFLAGS': cpp_flags,
   'SRC': fid.name,
   'OBJECT': obj_name })
-#print ' '.join(cmd)
 try: process = subprocess.Popen (cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 except OSError:
-  print '''compiler not found!
+  error ('''compiler not found!
 
-an unexpected error occurred'''
-  sys.exit (1)
+an unexpected error occurred''')
 if process.wait() != 0: 
-  print '''compiler error!
+  error ('''compiler error!
 
-an unexpected error occurred'''
+an unexpected error occurred''')
 
 libname = lib_prefix + 'test' + lib_suffix
 cmd = fillin (ld_lib, {
   'LDLIB_FLAGS': ld_lib_flags,
   'OBJECTS': obj_name,
   'LIB': libname })
-#print ' '.join(cmd)
 try: process = subprocess.Popen (cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 except OSError: 
-  print '''linker not found!
+  error ('''linker not found!
 
 Use the LDLIB environment variable to set the command-line
-for shared library generation'''
-  sys.exit (1)
+for shared library generation''')
 status = process.wait()
-os.unlink (obj_name)
+try: os.unlink (obj_name)
+except: pass
+
 if status != 0:
-  print '''linker error!
+  error ('''linker error!
 
 Use the LDLIB_FLAGS environment variable to set the flags required
-for shared library generation'''
-  sys.exit (1)
+for shared library generation''')
 
-os.unlink (libname)
-print 'yes'
+try: os.unlink (libname)
+except: pass
+
+report ('yes\n')
 
 
 
@@ -603,15 +592,11 @@ qt_ldflags = []
 
 if not nogui:
 
-  print 'Checking for Qt:',
-  sys.stdout.flush()
+  report ('Checking for Qt: ')
 
   try:
     qt_dir = tempfile.mkdtemp ();
-
-    f=open (os.path.join (qt_dir, 'qt.h'), 'w')
-    f.write ('''
-#include <QObject>
+    file = '''#include <QObject>
 
 class Foo: public QObject {
   Q_OBJECT;
@@ -625,12 +610,14 @@ class Foo: public QObject {
   private:
     int value_;
 };
-''')
+'''
+    log ('\nsource file "qt.h":\n---\n' + file + '---\n')
+
+    f=open (os.path.join (qt_dir, 'qt.h'), 'w')
+    f.write (file)
     f.close();
 
-    f=open (os.path.join (qt_dir, 'qt.cpp'), 'w')
-    f.write ('''
-#include <iostream>
+    file = '''#include <iostream>
 #include "qt.h"
 
 Foo::Foo() : value_ (42) { connect (this, SIGNAL(valueChanged(int)), this, SLOT(setValue(int))); }
@@ -640,15 +627,23 @@ Foo::~Foo() { std::cout << qVersion() << "\\n"; }
 void Foo::setValue (int value) { value_ = value; }
 
 int main() { Foo f; }
-'''); 
+'''
+
+    log ('\nsource file "qt.cpp":\n---\n' + file + '---\n')
+    f=open (os.path.join (qt_dir, 'qt.cpp'), 'w')
+    f.write (file)
     f.close();
 
+    file = 'CONFIG += qt'
+    if debug: file += ' debug'
+    file += '\nQT += opengl\nHEADERS += qt.h\nSOURCES += qt.cpp\n'
+
+    log ('\nproject file "qt.pro":\n---\n' + file + '---\n')
     f=open (os.path.join (qt_dir, 'qt.pro'), 'w')
-    f.write ('CONFIG += qt')
-    if debug: f.write (' debug')
-    f.write ('\nQT += opengl\nHEADERS += qt.h\nSOURCES += qt.cpp\n')
+    f.write (file)
     f.close();
 
+    log ('\nexecuting "qmake"...\n')
     try: process = subprocess.Popen ([ 'qmake' ], cwd=qt_dir, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     except OSError: raise QMakeError
     if process.wait() != 0: raise QMakeError
@@ -676,43 +671,45 @@ int main() { Foo f; }
     for entry in qt:
       if entry[0] != '$': qt_ldflags += [ entry ]
 
-    try: process = subprocess.Popen ([ 'moc-qt4', 'qt.h', '-o', 'qt_moc.cpp' ], cwd=qt_dir, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    cmd = [ 'moc-qt4', 'qt.h', '-o', 'qt_moc.cpp' ]
+    log ('\nexecuting "' + ' ' .join(cmd) + '"...\n')
+    try: process = subprocess.Popen (cmd, cwd=qt_dir, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     except OSError: raise QMOCError
     if process.wait() != 0: raise QMOCError
 
-    try: process = subprocess.Popen ([ 'g++', '-c' ] + qt_cflags + [ 'qt.cpp', '-o', 'qt.o' ], cwd=qt_dir, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    cmd = [ 'g++', '-c' ] + qt_cflags + [ 'qt.cpp', '-o', 'qt.o' ]
+    log ('\nexecuting "' + ' ' .join(cmd) + '"...\n')
+    try: process = subprocess.Popen (cmd, cwd=qt_dir, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     except OSError: raise CompileError
     if process.wait() != 0: raise CompileError
 
-    try: process = subprocess.Popen ([ 'g++', '-c' ] + qt_cflags + [ 'qt_moc.cpp', '-o', 'qt_moc.o' ] , cwd=qt_dir, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    cmd = [ 'g++', '-c' ] + qt_cflags + [ 'qt_moc.cpp', '-o', 'qt_moc.o' ]
+    log ('\nexecuting "' + ' ' .join(cmd) + '"...\n')
+    try: process = subprocess.Popen (cmd , cwd=qt_dir, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     except OSError: raise CompileError
     if process.wait() != 0: raise CompileError
 
-    try: process = subprocess.Popen ([ 'g++' ] + qt_ldflags + [ 'qt_moc.o', 'qt.o', '-o', 'qt' ] , cwd=qt_dir, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    cmd = [ 'g++' ] + qt_ldflags + [ 'qt_moc.o', 'qt.o', '-o', 'qt' ]
+    log ('\nexecuting "' + ' ' .join(cmd) + '"...\n')
+    try: process = subprocess.Popen (cmd , cwd=qt_dir, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     except OSError: raise LinkError
     if process.wait() != 0: raise LinkError
 
-    process = subprocess.Popen (os.path.join(qt_dir, 'qt'), stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    cmd = os.path.join(qt_dir, 'qt')
+    log ('\nexecuting "' + cmd + '"...\n')
+    process = subprocess.Popen (cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     if process.wait() != 0: raise LinkError
-    print process.stdout.read().strip()
+    report (process.stdout.read().strip() + '\n')
 
     
   except QMakeError:
-    print 'error invoking Qt qmake!'
-    sys.exit (1)
-
+    error ('error invoking Qt qmake!')
   except QMOCError:
-    print 'error invoking Qt moc!'
-    sys.exit (1)
-
+    error ('error invoking Qt moc!')
   except CompileError:
-    print 'error compiling Qt application!'
-    sys.exit (1)
-
+    error ('error compiling Qt application!')
   except OSError:
-    print 'Unexpected error! Unable to configure Qt environment'
-    sys.exit (1)
-
+    error ('Unexpected error! Unable to configure Qt environment')
   finally:
     for entry in os.listdir (qt_dir):
       os.remove (os.path.join(qt_dir, entry))
@@ -720,8 +717,7 @@ int main() { Foo f; }
 
 
 
-  print 'Checking for OpenGL:',
-  sys.stdout.flush()
+  report ('Checking for OpenGL: ')
   qt_cflags += gl_cflags
   try:
     gl_version = compile ('''
@@ -748,9 +744,9 @@ int main (int argc, char *argv[]) {
   return app.exec();
 }
 ''', qt_cflags, qt_ldflags)
-    print gl_version.strip()
+    report (gl_version.strip() + '\n')
   except:
-    print 'not found!'
+    error ('OpenGL implementation not found!')
 
 
 
@@ -779,12 +775,18 @@ else:
 
 cache_filename = os.path.join (os.path.dirname(sys.argv[0]), 'configuration.py')
 
-print ''
-print 'writing configuration to file \'' + cache_filename + '\':',
+sys.stdout.write ('\nwriting configuration to file \'' + cache_filename + '\': ')
 
 cache = open (cache_filename, 'w')
-cache.write ('#!/usr/bin/python\n')
-cache.write ('# autogenerated by MRtrix configure script\n\n')
+
+cache.write ("""#!/usr/bin/python
+# autogenerated by MRtrix configure script
+#
+# configure output:
+""")
+for line in config_report.splitlines():
+  cache.write ('# ' + line + '\n')
+cache.write ('\n\n')
 
 commit ('obj_suffix', obj_suffix)
 commit ('exe_suffix', exe_suffix)
@@ -804,6 +806,5 @@ commit ('qt_cflags', qt_cflags)
 commit ('qt_ldflags', qt_ldflags)
 
 cache.close()
-print 'ok'
-print ''
+sys.stdout.write ('ok\n\n')
 

@@ -110,7 +110,7 @@ namespace MR {
         typename Array<value_type>::RefPtr data;
         size_t offset, start;
         size_t N [NDIM];
-        ssize_t x [NDIM], stride[N];
+        ssize_t x [NDIM], stride[NDIM];
         float  V [NDIM];
         size_t axes_layout[NDIM];
         std::string descriptor;
