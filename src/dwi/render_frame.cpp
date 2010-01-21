@@ -52,6 +52,14 @@
 namespace MR {
   namespace DWI {
 
+    namespace {
+      const char* extensions[] = { 
+        "GL_ARB_vertex_shader",
+        "GL_ARB_fragment_shader",
+        NULL
+      };
+    }
+
     RenderFrame::RenderFrame (QWidget* parent) :
       QGLWidget (QGLFormat (QGL::FormatOptions (QGL::DoubleBuffer | QGL::DepthBuffer | QGL::Rgba)), parent),
       view_angle (40.0), distance (0.3), line_width (1.0), scale (1.0), l0_term (NAN),
@@ -87,7 +95,7 @@ namespace MR {
 
     void RenderFrame::initializeGL ()
     {
-      GL::init();
+      GL::init (extensions);
       renderer.init();
       glEnable (GL_DEPTH_TEST);
       lighting->set();

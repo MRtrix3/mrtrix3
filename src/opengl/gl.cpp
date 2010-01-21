@@ -26,7 +26,7 @@
 namespace MR {
   namespace GL {
 
-    void init () 
+    void init (const char** extensions) 
     {
       static bool initialised = false;
       if (initialised) return;
@@ -34,6 +34,26 @@ namespace MR {
       info ("GL version:   " + std::string ((const char*) glGetString (GL_VERSION)));
       info ("GL vendor:    " + std::string ((const char*) glGetString (GL_VENDOR)));
       info ("GL extensions:\n" + std::string ((const char*) glGetString (GL_EXTENSIONS)));
+
+      size_t num = 0;
+      while (extensions[num]) ++num;
+      bool found[num];
+      for (size_t n = 0; n < num; ++n) found[n] = false;
+
+      std::vector<std::string> ext (split ((const char*) glGetString (GL_EXTENSIONS)));
+      for (std::vector<std::string>::const_iterator i = ext.begin(); i != ext.end(); ++i) 
+        for (size_t n = 0; n < num; ++n) 
+          if (*i == extensions[n]) found[n] = true;
+
+      for (size_t n = 0; n < num; ++n) {
+        if (!found[n]) error (std::string ("no support for required OpenGL extension \"") + extensions[n] + "\"");
+        else info (std::string ("required OpenGL extension \"") + extensions[n] + "\" is supported");
+      }
+
+      for (size_t n = 0; n < num; ++n) 
+        if (!found[n]) 
+          throw Exception ("OpenGL environment is inadequate - aborting");
+
       initialised = true;
     }
 

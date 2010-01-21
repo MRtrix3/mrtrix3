@@ -31,30 +31,11 @@ namespace MR {
   namespace GL {
     namespace Shader {
 
-      bool supported () {
-        bool ARB_vertex_shader (false), ARB_fragment_shader (false);
-        std::vector<std::string> extensions (split ((const char*) glGetString (GL_EXTENSIONS)));
-        for (std::vector<std::string>::const_iterator i = extensions.begin(); i != extensions.end(); ++i) {
-          if (*i == "GL_ARB_vertex_shader") ARB_vertex_shader = true;
-          else if (*i == "GL_ARB_fragment_shader") ARB_fragment_shader = true;
-        }
-
-        static bool retval = ARB_vertex_shader && ARB_fragment_shader;
-        static bool warning_isued = false;
-        if (!warning_isued) {
-          warning_isued = true;
-          if (!retval) error ("WARNING: vertex shading ARB extension is NOT supported - advanced features will be disabled");
-          else info ("vertex shading ARB extension is supported");
-        }
-        return (retval);
-      }
-
       void init () 
       {
 #define __LINK__
 #include "opengl/extensions/shader.h"
-#undef __DEFINE__
-        
+#undef __LINK__
       }
 
       void print_log (const std::string& type, GLhandleARB obj)

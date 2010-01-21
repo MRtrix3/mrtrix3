@@ -32,7 +32,7 @@
 namespace MR {
   namespace GL {
 
-    void init ();
+    void init (const char** extensions);
 
   }
 }

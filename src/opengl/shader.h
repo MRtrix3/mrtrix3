@@ -29,7 +29,6 @@ namespace MR {
   namespace GL {
     namespace Shader {
 
-      bool supported ();
       void init (); 
       void print_log (const std::string& type, GLhandleARB obj);
 

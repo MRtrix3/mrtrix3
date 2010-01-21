@@ -115,23 +115,21 @@ namespace MR {
 
     void Renderer::init () 
     { 
-      if (GL::Shader::supported()) {
-        GL::Shader::init();
-        vertex_shader = glCreateShaderObjectARB (GL_VERTEX_SHADER_ARB);
-        fragment_shader = glCreateShaderObjectARB (GL_FRAGMENT_SHADER_ARB);
-        glShaderSourceARB (vertex_shader, 1, &vertex_shader_source, NULL);
-        glShaderSourceARB (fragment_shader, 1, &fragment_shader_source, NULL);
-        glCompileShaderARB (vertex_shader);
-        glCompileShaderARB (fragment_shader);
-        shader_program = glCreateProgramObjectARB();
-        GL::Shader::print_log ("orientation plot vertex shader", vertex_shader);
-        GL::Shader::print_log ("orientation plot fragment shader", fragment_shader);
+      GL::Shader::init();
+      vertex_shader = glCreateShaderObjectARB (GL_VERTEX_SHADER_ARB);
+      fragment_shader = glCreateShaderObjectARB (GL_FRAGMENT_SHADER_ARB);
+      glShaderSourceARB (vertex_shader, 1, &vertex_shader_source, NULL);
+      glShaderSourceARB (fragment_shader, 1, &fragment_shader_source, NULL);
+      glCompileShaderARB (vertex_shader);
+      glCompileShaderARB (fragment_shader);
+      shader_program = glCreateProgramObjectARB();
+      GL::Shader::print_log ("orientation plot vertex shader", vertex_shader);
+      GL::Shader::print_log ("orientation plot fragment shader", fragment_shader);
 
-        glAttachObjectARB (shader_program, vertex_shader);
-        glAttachObjectARB (shader_program, fragment_shader);
-        glLinkProgramARB (shader_program);
-        GL::Shader::print_log ("orientation plot shader program", shader_program);
-      }
+      glAttachObjectARB (shader_program, vertex_shader);
+      glAttachObjectARB (shader_program, fragment_shader);
+      glLinkProgramARB (shader_program);
+      GL::Shader::print_log ("orientation plot shader program", shader_program);
     }
 
 
@@ -139,13 +137,11 @@ namespace MR {
 
     Renderer::~Renderer () 
     { 
-      if (use_shading()) {
-        glDetachObjectARB (shader_program, vertex_shader);
-        glDetachObjectARB (shader_program, fragment_shader);
-        glDeleteObjectARB (vertex_shader);
-        glDeleteObjectARB (fragment_shader);
-        glDeleteObjectARB (shader_program); 
-      }
+      glDetachObjectARB (shader_program, vertex_shader);
+      glDetachObjectARB (shader_program, fragment_shader);
+      glDeleteObjectARB (vertex_shader);
+      glDeleteObjectARB (fragment_shader);
+      glDeleteObjectARB (shader_program); 
       clear();
     }
 
@@ -163,47 +159,20 @@ namespace MR {
       glVertexPointer (3, GL_FLOAT, sizeof(Vertex), &vertices[0].P);
       if (colour) glColor3fv (colour);
 
-      if (use_shading()) {
-        glUseProgramObjectARB (shader_program);
-        glUniform1iARB (glGetUniformLocationARB (shader_program, "color_by_direction"), colour ? 0 : 1);
-        glUniform1iARB (glGetUniformLocationARB (shader_program, "use_normals"), use_normals ? 1 : 0);
-        glUniform1iARB (glGetUniformLocationARB (shader_program, "hide_neg_lobes"), hide_neg_lobes ? 1 : 0);
-        glUniform1iARB (glGetUniformLocationARB (shader_program, "reverse"), 0);
+      glUseProgramObjectARB (shader_program);
+      glUniform1iARB (glGetUniformLocationARB (shader_program, "color_by_direction"), colour ? 0 : 1);
+      glUniform1iARB (glGetUniformLocationARB (shader_program, "use_normals"), use_normals ? 1 : 0);
+      glUniform1iARB (glGetUniformLocationARB (shader_program, "hide_neg_lobes"), hide_neg_lobes ? 1 : 0);
+      glUniform1iARB (glGetUniformLocationARB (shader_program, "reverse"), 0);
 
-        glEnableClientState (GL_NORMAL_ARRAY);
-        glNormalPointer (GL_FLOAT, sizeof(Vertex), &vertices[0].N);
+      glEnableClientState (GL_NORMAL_ARRAY);
+      glNormalPointer (GL_FLOAT, sizeof(Vertex), &vertices[0].N);
 
-        glDrawElements (GL_TRIANGLES, 3*indices.size(), GL_UNSIGNED_INT, &indices[0]);
-        glUniform1iARB (glGetUniformLocationARB (shader_program, "reverse"), 1);
-        glDrawElements (GL_TRIANGLES, 3*indices.size(), GL_UNSIGNED_INT, &indices[0]);
+      glDrawElements (GL_TRIANGLES, 3*indices.size(), GL_UNSIGNED_INT, &indices[0]);
+      glUniform1iARB (glGetUniformLocationARB (shader_program, "reverse"), 1);
+      glDrawElements (GL_TRIANGLES, 3*indices.size(), GL_UNSIGNED_INT, &indices[0]);
 
-        glUseProgramObjectARB (0);
-      }
-      else {
-        if (use_normals) {
-          glEnableClientState (GL_NORMAL_ARRAY);
-          glNormalPointer (GL_FLOAT, sizeof(Vertex), &vertices[0].N);
-        }   
-        if (colour) {
-          glDisable (GL_COLOR_MATERIAL);
-          GLfloat v[]  = { colour[0], colour[1], colour[2], 1.0 };
-          glMaterialfv (GL_FRONT, GL_AMBIENT_AND_DIFFUSE, v); 
-        }   
-        else {
-          glEnable (GL_COLOR_MATERIAL);
-          glColorMaterial (GL_FRONT, GL_AMBIENT_AND_DIFFUSE);
-          glEnableClientState (GL_COLOR_ARRAY);
-          glColorPointer (3, GL_UNSIGNED_BYTE, sizeof(Vertex), &vertices[0].C);
-        }   
-
-        glFrontFace (GL_CCW);
-        glDrawElements (GL_TRIANGLES, 3*indices.size(), GL_UNSIGNED_INT, &indices[0]);
-        glScalef (-1.0, -1.0, -1.0); 
-        glFrontFace (GL_CW); 
-        glDrawElements (GL_TRIANGLES, 3*indices.size(), GL_UNSIGNED_INT, &indices[0]);
-        glFrontFace (GL_CCW);
-      }
-
+      glUseProgramObjectARB (0);
       glPopClientAttrib();
     }
 
@@ -309,15 +278,6 @@ namespace MR {
         V.P[1] = r*row[1];
         V.P[2] = r*row[2];
 
-        if (!use_shading()) {
-          if (r < 0.0) { V.C[0] = V.C[1] = V.C[2] = 230; }
-          else {
-            V.C[0] = GLubyte (255.0 * Math::abs(row[0]));
-            V.C[1] = GLubyte (255.0 * Math::abs(row[1]));
-            V.C[2] = GLubyte (255.0 * Math::abs(row[2]));
-          }
-        }
-
         bool atpole (row[0] == 0.0 && row[1] == 0.0);
         float az = atpole ? 0.0 : atan2 (row[1], row[0]);
 
@@ -326,15 +286,9 @@ namespace MR {
         float cel = row[2];
         float sel = sqrt (1.0 - Math::pow2 (cel));
 
-
-        if (!use_shading() && hide_neg_lobes && r < 0.0) {
-          V.P[0] = V.P[1] = V.P[2] = 0.0;
-        }
-        else {
-          V.P[0] = r*caz*sel;
-          V.P[1] = r*saz*sel;
-          V.P[2] = r*cel;
-        }
+        V.P[0] = r*caz*sel;
+        V.P[1] = r*saz*sel;
+        V.P[2] = r*cel;
 
         float d1[3], d2[3];
 
