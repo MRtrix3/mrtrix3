@@ -85,7 +85,7 @@ namespace MR {
       void Default::copy_to_mem () 
       {
         debug ("loading image \"" + H.name() + "\"...");
-        addresses.resize (H.files.size() > 1 && H.datatype().bits()*segsize != 8*bytes_per_segment ? H.files.size() : 1 );
+        addresses.resize (H.files.size() > 1 && H.datatype().bits()*segsize != 8*size_t(bytes_per_segment) ? H.files.size() : 1 );
         addresses[0] = new uint8_t [H.files.size() * bytes_per_segment];
         if (!addresses[0]) throw Exception ("failed to allocate memory for image \"" + H.name() + "\"");
 

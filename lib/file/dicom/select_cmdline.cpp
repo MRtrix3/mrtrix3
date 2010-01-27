@@ -46,7 +46,7 @@ namespace MR {
           while (patient_p == NULL) {
             fprintf(stderr, "Select patient (q to abort):\n");
             for (size_t i = 0; i < tree.size(); i++) {
-              fprintf (stderr, "  %2u - %s %s %s\n", 
+              fprintf (stderr, "  %2zu - %s %s %s\n", 
                   i+1, 
                   tree[i]->name.c_str(),  
                   format_ID(tree[i]->ID).c_str(),
@@ -79,7 +79,7 @@ namespace MR {
           while (study_p == NULL) {
             fprintf (stderr, "Select study (q to abort):\n");
             for (size_t i = 0; i < patient.size(); i++) {
-              fprintf (stderr, "  %4u - %s %s %s %s\n", 
+              fprintf (stderr, "  %4zu - %s %s %s %s\n", 
                   i+1, 
                   ( patient[i]->name.size() ? patient[i]->name.c_str() : "unnamed" ),
                   format_ID (patient[i]->ID).c_str(), 
@@ -114,7 +114,7 @@ namespace MR {
           while (series.size() == 0) {
             fprintf (stderr, "Select series ('q' to abort):\n");
             for (size_t i = 0; i < study.size(); i++) {
-              fprintf (stderr, "  %2u - %4zu %s images %8s %s (%s) [%u]\n", 
+              fprintf (stderr, "  %2zu - %4zu %s images %8s %s (%s) [%zu]\n", 
                   i,
                   study[i]->size(), 
                   ( study[i]->modality.size() ? study[i]->modality.c_str() : "" ), 

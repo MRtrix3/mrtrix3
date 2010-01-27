@@ -63,7 +63,7 @@ namespace MR {
       {
         if (isnan (multiplier)) 
           fprintf (stderr, "\r%s: %s %s", App::name().c_str(), message.c_str(), busy[percent%8]);
-        else fprintf (stderr, "\r%s: %s %3u%%", App::name().c_str(), message.c_str(), size_t(percent));
+        else fprintf (stderr, "\r%s: %s %3zu%%", App::name().c_str(), message.c_str(), size_t(percent));
       }
 
 
@@ -258,9 +258,9 @@ namespace MR {
           throw 0;
         }
         else if (opt == DEFAULT_OPTIONS_OFFSET+4) {
-          std::printf ("%s: part of MRtrix %d.%d.%d\n%d bit %s version, built " __DATE__ ", using GSL %s\nAuthor: %s\n%s\n",
+          std::printf ("%s: part of MRtrix %zu.%zu.%zu\n%d bit %s version, built " __DATE__ ", using GSL %s\nAuthor: %s\n%s\n",
               App::name().c_str(), mrtrix_major_version, mrtrix_minor_version, mrtrix_micro_version,
-              size_t(8*sizeof(size_t)), 
+              int(8*sizeof(size_t)), 
 #ifdef NDEBUG
               "release"
 #else
