@@ -93,14 +93,8 @@ namespace MR {
 
 
         if (layout.empty()) throw Exception ("missing \"layout\" specification for MRtrix image \"" + H.name() + "\"");
-        std::vector<Axes::Order> ax = parse_axes_specifier (H.axes, layout);
-        if (ax.size() != H.axes.ndim()) 
-          throw Exception ("specified layout does not match image dimensions for MRtrix image \"" + H.name() + "\"");
-
-        for (size_t i = 0; i < ax.size(); i++) {
-          H.axes.order(i) = ax[i].order;
-          H.axes.forward(i) = ax[i].forward;
-        }
+        std::vector<ssize_t> ax = parse_axes_specifier (H.ndim(), layout);
+        for (size_t i = 0; i < ax.size(); i++) H.axes.stride(i) = ax[i];
 
         for (size_t n = 0; n < MIN (H.axes.ndim(), labels.size()); n++) H.axes.description(n) = labels[n];
         for (size_t n = 0; n < MIN (H.axes.ndim(), units.size()); n++) H.axes.units(n) = units[n];
@@ -193,8 +187,8 @@ namespace MR {
         out << "\nvox: " << H.axes.vox(0);
         for (size_t n = 1; n < H.axes.ndim(); n++) out << "," << H.axes.vox(n);
 
-        out << "\nlayout: " << ( H.axes.forward(0) ? "+" : "-" ) << H.axes.order(0);
-        for (size_t n = 1; n < H.axes.ndim(); n++) out << "," << ( H.axes.forward(n) ? "+" : "-" ) << H.axes.order(n);
+        out << "\nlayout: " << ( H.axes.forward(0) ? "+" : "-" ) << abs(H.axes.stride(0))-1;
+        for (size_t n = 1; n < H.axes.ndim(); n++) out << "," << ( H.axes.forward(n) ? "+" : "-" ) << abs(H.axes.stride(n))-1;
 
         out << "\ndatatype: " << H.datatype().specifier();
 

@@ -104,7 +104,7 @@ namespace MR {
         Math::VectorView<float> translation = transform_matrix.column(3).view(0,3);
         for (size_t i = 0; i < 3; i++) {
           if (flip[i]) {
-            axes.forward(i) = !axes.forward(i);
+            axes.stride(i) = -axes.stride(i);
             float length = float(axes[i].dim-1) * axes[i].vox;
             Math::VectorView<float> axis = transform_matrix.column(i).view(0,3);
             for (size_t n = 0; n < 3; n++) {
@@ -137,7 +137,7 @@ namespace MR {
         if (dim(n) != H.dim(n)) 
           throw Exception ("dimension mismatch between image files for \"" + name() + "\"");
 
-        if (axes.order(n) != H.axes.order(n) || axes.forward(n) != H.axes.forward(n))
+        if (axes.stride(n) != H.axes.stride(n))
           throw Exception ("data layout differs image files for \"" + name() + "\"");
 
         if (axes.vox(n) != H.axes.vox(n))
@@ -194,13 +194,13 @@ namespace MR {
 
         if (num.size()) {
           int a = 0, n = 0;
-          for (size_t i = 0; i < H.axes.ndim(); i++) if (H.axes.order(i) != Axes::undefined) n++;
+          for (size_t i = 0; i < H.axes.ndim(); i++) if (H.axes.stride(i)) n++;
           H.axes.ndim() = n + num.size();
 
           for (std::vector<int>::const_iterator item = num.begin(); item != num.end(); item++) {
-            while (H.axes[a].order != Axes::undefined) a++;
+            while (H.axes[a].stride) a++;
             H.axes.dim(a) = *item;
-            H.axes.order(a) = n++;
+            H.axes.stride(a) = ++n;
           }
         }
 
@@ -248,7 +248,7 @@ namespace MR {
         H.dtype.set_byte_order_native();
         int a = 0;
         for (size_t n = 0; n < Pdim.size(); n++) {
-          while (H.axes.order(a) != Axes::undefined) a++;
+          while (H.axes.stride(a)) a++;
           Pdim[n] = Hdim[a];
         }
         parser.calculate_padding (Pdim);
@@ -267,13 +267,13 @@ namespace MR {
 
         if (Pdim.size()) {
           int a = 0, n = 0;
-          for (size_t i = 0; i < H.ndim(); i++) if (H.axes.order(i) != Axes::undefined) n++;
+          for (size_t i = 0; i < H.ndim(); i++) if (H.axes.stride(i)) n++;
           H.axes.ndim() = n + Pdim.size();
 
           for (std::vector<int>::const_iterator item = Pdim.begin(); item != Pdim.end(); item++) {
-            while (H.axes.order(a) != Axes::undefined) a++;
+            while (H.axes.stride(a)) a++;
             H.axes.dim(a) = *item;
-            H.axes.order(a) = n++;
+            H.axes.stride(a) = ++n;
           }
         }
 
@@ -292,14 +292,6 @@ namespace MR {
 
 
 
-
-    const size_t* Header::layout () const 
-    {
-      axes_layout = new size_t [ndim()];
-      for (size_t i = 0; i < ndim(); ++i)
-        axes_layout[axes.order(i)] = i;
-      return (axes_layout.get());
-    }
 
 
 
@@ -348,7 +340,7 @@ namespace MR {
 
 
       for (i = 0; i < axes.ndim(); i++) 
-        desc += axes.order(i) == Axes::undefined ? "? " : ( axes.forward(i) ? '+' : '-' ) + str (axes.order(i)) + " ";
+        desc += axes.stride(i) ? ( axes.forward(i) ? '+' : '-' ) + str (abs(axes.stride(i))-1) + " " : "? ";
 
 
 

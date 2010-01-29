@@ -69,7 +69,7 @@ namespace MR {
             case 'B': forward = true;  return (3);
             case 'E': forward = false; return (3);
           }
-          return (Axes::undefined);
+          return (SIZE_MAX);
         }
 
 
@@ -156,8 +156,9 @@ namespace MR {
               for (size_t n = 0; n < 4; n++) {
                 bool forward = true;
                 size_t ax = char2order (c[n], forward);
-                H.axes.order(ax) = n;
-                H.axes.forward(ax) = forward;
+                if (ax == SIZE_MAX) throw Exception ("invalid order specifier in MRI image \"" + H.name() + "\"");
+                H.axes.stride(ax) = n+1;
+                if (!forward) H.axes.stride(ax) = -H.axes.stride(ax);
               }
               break;
             case MRI_VOXELSIZE:
@@ -267,7 +268,7 @@ namespace MR {
         write_tag (out, MRI_ORDER, 4*sizeof (uint8_t), is_BE);
         size_t n;
         char order[4];
-        for (n = 0; n < H.ndim(); n++) order[H.axes.order(n)] = order2char (n, H.axes.forward(n));
+        for (n = 0; n < H.ndim(); n++) order[abs(H.axes.stride(n))-1] = order2char (n, H.axes.forward(n));
         for (; n < 4; n++) order[n] = order2char (n, true);
         out.write (order, 4);
 

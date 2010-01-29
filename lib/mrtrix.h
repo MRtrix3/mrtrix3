@@ -38,6 +38,8 @@
 #include <cstring>
 #include <cstdlib>
 #include <cmath>
+#include <limits>
+
 
 #include "types.h"
 #include "exception.h"
@@ -215,7 +217,7 @@ namespace MR {
   }
 
   std::vector<float> parse_floats (const std::string& spec);
-  std::vector<int>   parse_ints (const std::string& spec, int last = INT_MAX);
+  std::vector<ssize_t>   parse_ints (const std::string& spec, ssize_t last = std::numeric_limits<ssize_t>::max());
 
   inline int round (float x) { return (int (x + (x > 0.0 ? 0.5 : -0.5))); }
 

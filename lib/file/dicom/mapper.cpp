@@ -128,53 +128,53 @@ namespace MR {
         if (series.size() > 1) series_count++;
         H.axes.ndim() = series_count;
 
-        int current_axis = 0;
+        ssize_t current_axis = 0;
         if (image.data_size > expected_data_size) {
-          H.axes.order(3) = 0;
+          H.axes.stride(3) = 1;
           H.axes.dim(3) = image.data_size / expected_data_size;
           H.axes.vox(3) = NAN;
           H.axes.description(3).clear();
           H.axes.units(3).clear();
-          current_axis = 1;
+          ++current_axis;
         }
 
-        H.axes.order(0) = current_axis;
+        H.axes.stride(0) = current_axis+1;
         H.axes.dim(0) = image.dim[0];
         H.axes.vox(0) = image.pixel_size[0];
         H.axes.description(0) = MR::Image::Axes::left_to_right;
         H.axes.units(0) = MR::Image::Axes::millimeters;
-        current_axis++;
+        ++current_axis;
 
-        H.axes.order(1) = current_axis;
+        H.axes.stride(1) = current_axis+1;
         H.axes.dim(1) = image.dim[1];
         H.axes.vox(1) = image.pixel_size[1];
         H.axes.description(1) = MR::Image::Axes::posterior_to_anterior;
         H.axes.units(1) = MR::Image::Axes::millimeters;
-        current_axis++;
+        ++current_axis;
 
-        H.axes.order(2) = current_axis;
+        H.axes.stride(2) = current_axis+1;
         H.axes.dim(2) = dim[1];
         H.axes.vox(2) = slice_separation;
         H.axes.description(2) = MR::Image::Axes::inferior_to_superior;
         H.axes.units(2) = MR::Image::Axes::millimeters;
-        current_axis++;
+        ++current_axis;
 
         if (dim[0] > 1) {
-          H.axes.order(current_axis) = current_axis;
+          H.axes.stride(current_axis) = current_axis+1;
           H.axes.dim(current_axis) = dim[0];
           H.axes.description(current_axis) = "sequence";
           current_axis++;
         }
 
         if (dim[2] > 1) {
-          H.axes.order(current_axis) = current_axis;
+          H.axes.stride(current_axis) = current_axis+1;
           H.axes.dim(current_axis) = dim[2];
           H.axes.description(current_axis) = "acquisition";
           current_axis++;
         }
 
         if (series.size() > 1) {
-          H.axes.order(current_axis) = current_axis;
+          H.axes.stride(current_axis) = current_axis+1;
           H.axes.dim(current_axis) = series.size();
           H.axes.description(current_axis) = "series";
         }

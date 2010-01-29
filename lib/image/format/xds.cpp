@@ -60,10 +60,10 @@ namespace MR {
         H.axes.vox(2) = 10.0;
         H.axes.vox(3) = 1.0;
 
-        H.axes.order(0) = 0;                H.axes.forward(0) = false;
-        H.axes.order(1) = 1;                H.axes.forward(1) = false;
-        H.axes.order(2) = Axes::undefined;  H.axes.forward(2) = true;
-        H.axes.order(3) = 2;                H.axes.forward(3) = true;
+        H.axes.stride(0) = -1;
+        H.axes.stride(1) = -2;
+        H.axes.stride(2) = 0;
+        H.axes.stride(3) = 3;
 
         H.axes.description(0) = Axes::left_to_right;
         H.axes.description(1) = Axes::posterior_to_anterior;
@@ -103,10 +103,10 @@ namespace MR {
         H.axes.vox(2) = 10.0;
         H.axes.vox(3) = 1.0;
 
-        H.axes.order(0) = 0;                H.axes.forward(0) = false;
-        H.axes.order(1) = 1;                H.axes.forward(1) = false;
-        H.axes.order(2) = Axes::undefined;  H.axes.forward(2) = true;
-        H.axes.order(3) = 2;                H.axes.forward(3) = true;
+        H.axes.stride(0) = -1;
+        H.axes.stride(1) = -2;
+        H.axes.stride(2) = 0;
+        H.axes.stride(3) = 3;
 
         H.axes.description(0) = Axes::left_to_right;
         H.axes.description(1) = Axes::posterior_to_anterior;

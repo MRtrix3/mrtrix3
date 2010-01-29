@@ -64,29 +64,30 @@ namespace MR {
 
 
 
-  std::vector<int> parse_ints (const std::string& spec, int last)
+  std::vector<ssize_t> parse_ints (const std::string& spec, ssize_t last)
   {
-    std::vector<int> V;
+    std::vector<ssize_t> V;
     if (!spec.size()) throw Exception ("integer sequence specifier is empty"); 
     std::string::size_type start = 0, end;
-    int num[3];
-    int i = 0;
+    ssize_t num[3];
+    ssize_t i = 0;
     try {
       do {
         end = spec.find_first_of (",:", start);
         std::string str (strip (spec.substr (start, end-start)));
         lowercase (str);
         if (str == "end") {
-          if (last == INT_MAX) throw Exception ("value of \"end\" is not known in number sequence \"" + spec + "\"");
+          if (last == std::numeric_limits<ssize_t>::max()) 
+            throw Exception ("value of \"end\" is not known in number sequence \"" + spec + "\"");
           num[i] = last;
         }
-        else num[i] = to<int> (spec.substr (start, end-start));
+        else num[i] = to<ssize_t> (spec.substr (start, end-start));
 
         char last_char = end < spec.size() ? spec[end] : '\0';
         if (last_char == ':') { i++; if (i > 2) throw Exception ("invalid number range in number sequence \"" + spec + "\""); }
         else {
           if (i) {
-            int inc, last;
+            ssize_t inc, last;
             if (i == 2) { inc = num[1]; last = num[2]; }
             else { inc = 1; last = num[1]; }
             if (inc * (last - num[0]) < 0) inc = -inc;
@@ -122,6 +123,8 @@ namespace MR {
         V.push_back (string.substr (start, end-start));
         start = ignore_empty_fields ? string.find_first_not_of (delimiters, end+1) : end+1;
       } while (end < std::string::npos && V.size() < num);
+      // should this change to:
+      //} while (start < std::string::npos && V.size() < num);
     }
     catch (...)  { throw Exception ("can't split string \"" + string + "\""); }
     return (V);

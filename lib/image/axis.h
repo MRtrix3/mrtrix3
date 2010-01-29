@@ -29,13 +29,21 @@
 namespace MR {
   namespace Image {
 
+    /*
+        class CompareStride {
+          public:
+            CompareStride (const Axes& parent) : A (parent) { }
+            bool operator() (const size_t a, const size_t b) const { return (abs(A.stride(a)) < abs (A.stride(b))); }
+          private:
+            const Axes& A;
+        };
+*/
+
     //! \addtogroup Image 
     // @{
     
     class Axes {
       public:
-
-        static const size_t  undefined = SIZE_MAX;
 
         static const char*  left_to_right;
         static const char*  posterior_to_anterior;
@@ -45,22 +53,13 @@ namespace MR {
         static const char*  millimeters;
         static const char*  milliseconds;
 
-        class Order {
+        class Axis {
           public:
-            Order () : order (undefined), forward (true) { }
-            size_t order;
-            bool   forward;
+            Axis () : dim (1), vox (NAN), stride (0) { }
 
-            ssize_t direction () const { return (forward ? 1 : -1); }
-
-        };
-
-        class Axis : public Order {
-          public:
-            Axis () : dim (1), vox (NAN) { }
-
-            int    dim;
-            float  vox;
+            int     dim;
+            float   vox;
+            ssize_t stride;
             std::string desc;
             std::string units;
         };
@@ -108,15 +107,11 @@ namespace MR {
         const std::string& units (size_t index) const { return (axes[index].units); }
         std::string&       units (size_t index)       { return (axes[index].units); }
 
-        size_t  order (size_t index) const { return (axes[index].order); }
-        size_t& order (size_t index)       { return (axes[index].order); }
+        ssize_t  stride (size_t index) const { return (axes[index].stride); }
+        ssize_t& stride (size_t index)       { return (axes[index].stride); }
 
-        bool  forward (size_t index) const { return (axes[index].forward); }
-        bool& forward (size_t index)       { return (axes[index].forward); }
-
-        ssize_t direction (size_t index) const { return (axes[index].direction()); }
-
-        void get_contiguous (size_t* cont) const { for (size_t i = 0; i < ndim(); i++) cont[order(i)] = i; }
+        bool  forward (size_t index) const { return (axes[index].stride > 0); }
+        ssize_t direction (size_t index) const { return (axes[index].stride > 0 ? 1 : -1); }
 
       protected:
         std::vector<Axis> axes;
@@ -136,21 +131,21 @@ namespace MR {
           }
         }
 
-        size_t find_free_axis () const {
-          for (size_t a = 0; a < ndim(); a++) {
+        ssize_t find_free_axis () const {
+          for (size_t a = 1; a <= ndim(); a++) {
             size_t m = 0;
-            for (; m < ndim(); m++) if (axes[m].order == a) break; 
+            for (; m < ndim(); m++) if (abs(axes[m].stride) == a) break; 
             if (m >= ndim()) return (a);
           }
-          return (undefined);
+          return (0);
         }
     };
     
     //! @}
 
     std::ostream& operator<< (std::ostream& stream, const Axes& axes);
-    std::vector<Axes::Order> parse_axes_specifier (const Axes& original, const std::string& specifier);
-    void check_axes_specifier (const std::vector<Axes::Order>& parsed, size_t ndim);
+    std::vector<ssize_t> parse_axes_specifier (size_t ndim, const std::string& specifier);
+    void check_axes_specifier (const std::vector<ssize_t>& parsed, size_t ndim);
 
   }
 }

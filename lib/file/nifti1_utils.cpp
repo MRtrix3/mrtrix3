@@ -77,8 +77,7 @@ namespace MR {
             H.axes.dim(i) = abs (H.axes.dim(i));
           }
           if (!H.axes.dim(i)) H.axes.dim(i) = 1;
-          H.axes.order(i) = i;
-          H.axes.forward(i) = true;
+          H.axes.stride(i) = i+1;
         }
 
         // data type:
@@ -213,7 +212,7 @@ namespace MR {
         }
         else {
           H.transform().clear();
-          H.axes.forward(0) = File::Config::get_bool ("Analyse.LeftToRight", true); 
+          if (!File::Config::get_bool ("Analyse.LeftToRight", true)) H.axes.stride(0) = -H.axes.stride(0);
           if (!right_left_warning_issued) {
             info ("assuming Analyse images are encoded " + std::string (H.axes.forward(0) ? "left to right" : "right to left"));
             right_left_warning_issued = true;
@@ -247,34 +246,24 @@ namespace MR {
           if (H.axes.dim(i) < 1) H.axes.dim(i) = 1;
 
         if (single_file) { 
-          Image::Axes::Order order[H.ndim()];
+          ssize_t order[H.ndim()];
           size_t i, axis = 0;
           for (i = 0; i < H.ndim() && axis < 3; ++i) 
-            if (H.axes.order(i) < 3) order[axis++] = H.axes[i];
+            if (abs(H.axes.stride(i)) <= 3) order[axis++] = H.axes.stride(i);
 
           assert (axis == 3);
 
           for (i = 0; i < H.ndim(); ++i)
-            if (H.axes.order(i) >= 3) order[axis++] = H.axes[i];
+            if (abs(H.axes.stride(i)) > 3) order[axis++] = H.axes.stride(i);
 
           assert (axis == H.ndim());
 
-          for (i = 0; i < 3; ++i) {
-            H.axes.order(i) = order[i].order;
-            H.axes.forward(i) = order[i].forward;
-          }
-
-          for (; i < H.ndim(); ++i) {
-            H.axes.order(i) = order[i].order;
-            H.axes.forward(i) = true;
-          }
+          for (i = 0; i < 3; ++i) H.axes.stride(i) = order[i];
+          for (; i < H.ndim(); ++i) H.axes.stride(i) = abs(order[i]);
         }
         else {
-          for (size_t i = 0; i < H.ndim(); ++i) {
-            H.axes.order(i) = i;
-            H.axes.forward(i) = true;
-          }
-          H.axes.forward(0) = File::Config::get_bool ("Analyse.LeftToRight", true); 
+          for (size_t i = 0; i < H.ndim(); ++i) H.axes.stride(i) = i+1;
+          if (File::Config::get_bool ("Analyse.LeftToRight", true)) H.axes.stride(0) = -H.axes.stride(0);
 
           if (!right_left_warning_issued) {
             info ("assuming Analyse images are encoded " + std::string (H.axes.forward(0) ? "left to right" : "right to left"));
@@ -308,7 +297,7 @@ namespace MR {
         Math::Permutation permutation (3);
         for (size_t i = 0; i < 3; ++i) {
           assert (H.axes.order(i) < 3);
-          permutation[i] = H.axes.order(i);
+          permutation[i] = abs(H.axes.stride(i))-1;
         }
 
         Math::Matrix<float> M (H.transform());

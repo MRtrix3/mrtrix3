@@ -86,7 +86,6 @@ namespace MR {
         std::string&               name ()       { return (identifier); }
 
         // DataSet interface:
-        const size_t* layout () const;
         int     dim (size_t index) const { return (axes.dim (index)); } 
         size_t  ndim () const            { return (axes.ndim()); }
         float   vox (size_t index) const { return (axes.vox (index)); }
