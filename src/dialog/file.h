@@ -59,10 +59,11 @@ namespace MR {
       public:
         void add_entries (const QStringList& more);
         void clear ();
+        std::string name (int num) const { return (list[num].toAscii().data()); }
+
         int rowCount (const QModelIndex &parent = QModelIndex()) const;
         QVariant data (const QModelIndex &index, int role) const;
         QVariant headerData (int section, Qt::Orientation orientation, int role = Qt::DisplayRole) const;
-        std::string name (int num) const { return (list[num].toAscii().data()); }
       private:
         QStringList list;
     };
@@ -73,14 +74,22 @@ namespace MR {
       Q_OBJECT
 
       public:
-        void add_entries (const QStringList& more);
+        FileModel () : num_dicom_series (0) { }
+        void add_entries (const std::vector<std::string>& more);
         void clear ();
+        std::string name (int num) const { return (list[num]); }
+        bool check_image (const std::string& path);
+        void check_dicom (const std::string& path);
+
         int rowCount (const QModelIndex &parent = QModelIndex()) const;
         QVariant data (const QModelIndex &index, int role) const;
         QVariant headerData (int section, Qt::Orientation orientation, int role = Qt::DisplayRole) const;
-        std::string name (int num) const { return (list[num].toAscii().data()); }
       private:
-        QStringList list;
+        std::vector<std::string> list;
+        MR::File::Dicom::Tree dicom_tree;
+        size_t num_dicom_series;
+
+        const MR::File::Dicom::Series& get_dicom_series (size_t index) const;
     };
 
 
@@ -94,8 +103,8 @@ namespace MR {
         File (QWidget* parent, const std::string& message, bool multiselection, bool images_only);
         ~File ();
 
-        std::vector<std::string>                get_selection ();
-        std::vector<RefPtr<Image::Header> >  get_images ();
+        std::vector<std::string> get_selection ();
+        std::vector<RefPtr<Image::Header> > get_images ();
 
       protected slots:
         void idle_slot ();
@@ -117,19 +126,23 @@ namespace MR {
         QTimer*      idle_timer;
         Timer        elapsed_timer;
 
-        std::string                 next_file;
-        bool                   filter_images, folders_read, updating_selection;
-        size_t                 current_index;
-        Ptr<Path::Dir>         dir;
+        bool filter_images, updating_selection;
+        size_t current_index;
+        Ptr<Path::Dir> dir;
 
-        void                   check_image (const std::string& path, const std::string& base);
-        void                   check_dicom (const std::string& path, const std::string& base);
-        void                   update_dicom ();
-        MR::File::Dicom::Tree  dicom_tree;
+        std::string get_next_file () {
+          while (true) {
+            std::string entry = dir->read_name();
+            if (entry.empty()) return (entry);
+            if (entry[0] == '.') continue;
+            if (Path::is_dir (Path::join (cwd, entry))) continue;
+            return (entry);
+          } 
+        }
 
-        static std::string          cwd;
-        static QPoint          window_position;
-        static QSize           window_size;
+        static std::string cwd;
+        static QPoint window_position;
+        static QSize window_size;
     };
 
   }

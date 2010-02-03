@@ -217,7 +217,7 @@ namespace MR {
 
     void Window::open_slot () 
     { 
-      Dialog::File dialog (this, "Select SH coefficients file", false, false); 
+      Dialog::File dialog (this, "Select SH coefficients file", false, true); 
       VAR (dialog.exec());
     }
 

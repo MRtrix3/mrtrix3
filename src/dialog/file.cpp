@@ -46,7 +46,7 @@
 #include "file/dicom/mapper.h"
 #include "app.h"
 
-#define FILE_DIALOG_BUSY_INTERVAL 0.3
+#define FILE_DIALOG_BUSY_INTERVAL 0.1
 
 // TODO: volumes under Windows
 
@@ -106,32 +106,63 @@ namespace MR {
      *************************************************/
 
 
-    void FileModel::add_entries (const QStringList& more)
+    void FileModel::add_entries (const std::vector<std::string>& more)
     {
-      if (more.empty()) return;
-      beginInsertRows (QModelIndex(), list.size(), list.size() + more.size() - 1);
-      list += more;
+      size_t prev_num_dicom_series = num_dicom_series;
+      num_dicom_series = 0;
+      for (size_t pat = 0; pat < dicom_tree.size(); ++pat) 
+        for (size_t study = 0; study < dicom_tree[pat]->size(); ++study) 
+          num_dicom_series += (*dicom_tree[pat])[study]->size(); 
+
+      if (more.empty() && prev_num_dicom_series == num_dicom_series) return;
+      beginInsertRows (QModelIndex(), list.size() + prev_num_dicom_series, list.size() + more.size() + num_dicom_series - 1);
+      list.insert (list.end(), more.begin(), more.end());
+      std::sort (list.begin(), list.end());
       endInsertRows();
       emit layoutChanged();
     }
 
     void FileModel::clear ()
     {
-      if (list.size()) {
+      if (list.size() + num_dicom_series) {
         beginRemoveRows (QModelIndex(), 0, list.size()-1);
+        dicom_tree.clear();
         list.clear();
+        num_dicom_series = 0;
         endRemoveRows();
       }
       emit layoutChanged();
     }
 
-    int FileModel::rowCount (const QModelIndex &parent) const { return (list.size()); }
+    int FileModel::rowCount (const QModelIndex &parent) const { return (list.size() + num_dicom_series); }
 
     QVariant FileModel::data (const QModelIndex &index, int role) const 
     { 
-      if (index.isValid()) 
-        if (index.row() < list.size() && role == Qt::DisplayRole) 
-          return (list.at (index.row()));
+      if (index.isValid()) {
+        if (role == Qt::DisplayRole) {
+          if (index.row() < int (num_dicom_series)) {
+            const MR::File::Dicom::Series& series (get_dicom_series (index.row()));
+            return (QVariant (std::string (
+                    "[" + str (series.number) + "] " + series.name + ": " + str (series.size()) + " images (" + series.study->patient->name 
+            + " - " + MR::File::Dicom::format_date (series.date) + ")").c_str()));
+          }
+          else if (index.row() < int (num_dicom_series + list.size())) 
+            return (QVariant (list[index.row()-num_dicom_series].c_str()));
+        }
+        else if (role == Qt::ToolTipRole) {
+          if (index.row() < int (num_dicom_series)) {
+            const MR::File::Dicom::Series& series (get_dicom_series (index.row()));
+            return (QVariant (std::string (
+                    "patient: " + series.study->patient->name 
+                    + "\n\tDOB: " + MR::File::Dicom::format_date (series.study->patient->DOB) + "\n\tID: " + series.study->patient->ID
+                    + "\nstudy: " + series.study->name + "\n\tdate: " + MR::File::Dicom::format_date (series.study->date) + " at "
+                    + MR::File::Dicom::format_time (series.study->time) +"\n\tID: " + series.study->ID
+                    + "\nseries " + str (series.number) + ": " + series.name + "\n\t" + str (series.size()) + " images\n\tdate: " 
+                    + MR::File::Dicom::format_date (series.date) + " at " + MR::File::Dicom::format_time (series.time)).c_str()));
+          }
+        }
+        
+      }
       return (QVariant());
     }
 
@@ -140,6 +171,48 @@ namespace MR {
       if (role != Qt::DisplayRole) return QVariant();
       return (QString ("Files")); 
     }
+
+
+    inline bool FileModel::check_image (const std::string& path)
+    {
+      for (const char** ext = Image::Format::known_extensions; *ext; ext++) 
+        if (Path::has_suffix (path, *ext)) return (true);
+      check_dicom (path);
+      return (false);
+    }
+
+
+    void FileModel::check_dicom (const std::string& path)
+    {
+      MR::File::Dicom::QuickScan reader;
+      if (reader.read (path)) return;
+
+      RefPtr<MR::File::Dicom::Patient> patient = dicom_tree.find (reader.patient, reader.patient_ID, reader.patient_DOB);
+      RefPtr<MR::File::Dicom::Study> study = patient->find (reader.study, reader.study_ID, reader.study_date, reader.study_time);
+      RefPtr<MR::File::Dicom::Series> series = study->find (reader.series, reader.series_number, reader.modality, reader.series_date, reader.series_time);
+
+      RefPtr<MR::File::Dicom::Image> image (new MR::File::Dicom::Image);
+      image->filename = path;
+      image->series = series.get();
+      image->sequence_name = reader.sequence;
+      series->push_back (image);
+      emit layoutChanged(); 
+    }
+
+
+    const MR::File::Dicom::Series& FileModel::get_dicom_series (size_t index) const
+    {
+      assert (index < num_dicom_series);
+      size_t i = 0;
+      for (size_t pat = 0; pat < dicom_tree.size(); ++pat) 
+        for (size_t study = 0; study < dicom_tree[pat]->size(); ++study) 
+          for (size_t series = 0; series < (*dicom_tree[pat])[study]->size(); ++series) 
+            if (i++ == index) return (*(*(*dicom_tree[pat])[study])[series]);
+      return (*(*(*dicom_tree[0])[0])[0]);
+    }
+
+
+
 
 
     /*************************************************
@@ -199,7 +272,6 @@ namespace MR {
       folder_view->sortByColumn (0, Qt::AscendingOrder);
       folder_view->setWordWrap (false);
       folder_view->setItemsExpandable (false);
-      folder_view->setAlternatingRowColors (true);
       folder_view->setSelectionMode (QAbstractItemView::SingleSelection);
 
       files = new FileModel;
@@ -213,7 +285,6 @@ namespace MR {
       files_view->sortByColumn (0, Qt::AscendingOrder);
       files_view->setWordWrap (false);
       files_view->setItemsExpandable (false);
-      files_view->setAlternatingRowColors (true);
       files_view->setSelectionMode (QAbstractItemView::SingleSelection);
 
       QSplitter *splitter = new QSplitter;
@@ -267,15 +338,23 @@ namespace MR {
 
     void File::update () 
     {
+      setCursor (Qt::WaitCursor);
       folders->clear();
       files->clear();
       selection_entry->clear();
       path_entry->setText (cwd.c_str());
       dir = new Path::Dir (cwd);
-      //dicom_tree.clear();
-      folders_read = false;
 
-      setCursor (Qt::WaitCursor);
+      QStringList folder_list;
+      std::string entry;
+      while (!(entry = dir->read_name()).empty()) {
+        if (entry[0] == '.') continue;
+        if (Path::is_dir (Path::join (cwd, entry))) 
+          folder_list += entry.c_str();
+      }
+      folders->add_entries (folder_list);
+
+      dir->rewind();
       idle_timer->start();
       elapsed_timer.start();
     }
@@ -406,23 +485,26 @@ namespace MR {
   void File::idle_slot ()
   {
     assert (dir);
-    QStringList folder_list, file_list;
-    do {
-      std::string entry = dir->read_name();
+    std::vector<std::string> file_list;
+    std::string entry;
+    while (elapsed_timer.elapsed() < FILE_DIALOG_BUSY_INTERVAL) {
+      entry = get_next_file();
       if (entry.empty()) {
         idle_timer->stop();
+        files->add_entries (file_list);
         unsetCursor ();
         dir = NULL;
-        break;
+        return;
       }
-      if (entry[0] == '.') continue;
-      if (Path::is_dir (Path::join (cwd, entry))) 
-        folder_list += entry.c_str();
-      else file_list += entry.c_str();
+      
+      if (filter_images) {
+        if (files->check_image (Path::join (cwd, entry)))
+          file_list.push_back (entry);
+      }
+      else file_list.push_back (entry);
+    }
 
-    } while (elapsed_timer.elapsed() < FILE_DIALOG_BUSY_INTERVAL);
-
-    folders->add_entries (folder_list);
+    elapsed_timer.start();
     files->add_entries (file_list);
   }
 
@@ -499,61 +581,13 @@ namespace MR {
 */
 
 
-    inline void File::check_image (const std::string& path, const std::string& base)
-    {
-      for (const char** ext = Image::Format::known_extensions; *ext; ext++) {
-        if (Path::has_suffix (base, *ext)) {
-          /*
-          Gtk::TreeModel::Row row = *(file_list->append());
-          row[file_columns.name] = base;*/
-          return;
-        }
-      }
-      check_dicom (path, base);
-    }
 
 
 
-
-
-
-
-    void File::check_dicom (const std::string& path, const std::string& base)
-    {
-      MR::File::Dicom::QuickScan reader;
-      if (reader.read (path)) return;
-
-      RefPtr<MR::File::Dicom::Patient> patient = dicom_tree.find (reader.patient, reader.patient_ID, reader.patient_DOB);
-      RefPtr<MR::File::Dicom::Study> study = patient->find (reader.study, reader.study_ID, reader.study_date, reader.study_time);
-      RefPtr<MR::File::Dicom::Series> series = study->find (reader.series, reader.series_number, reader.modality, reader.series_date, reader.series_time);
-
-      RefPtr<MR::File::Dicom::Image> image (new MR::File::Dicom::Image);
-      image->filename = path;
-      image->series = series.get();
-      image->sequence_name = reader.sequence;
-      series->push_back (image);
 
       /*
-      Gtk::TreeModel::Row row;
-      Gtk::TreeModel::Children children = file_list->children();
-      for (Gtk::TreeModel::Children::iterator iter = children.begin(); iter != children.end(); ++iter) {
-        row = *iter;
-        RefPtr<MR::File::Dicom::Series> series_in_list = row[file_columns.series];
-        if (series_in_list == series) return;
-      }
-      row = *(file_list->append());
-      row[file_columns.series] = series;
-*/
-    }
-
-
-
-
-
-
     void File::update_dicom ()
     {
-      /*
       Gtk::TreeModel::Children children = file_list->children();
       for (Gtk::TreeModel::Children::iterator iter = children.begin(); iter != children.end(); ++iter) {
         Gtk::TreeModel::Row row = *iter;
@@ -563,8 +597,8 @@ namespace MR {
             + " - " + MR::File::Dicom::format_date (series->date) + ")";
         }
       }
-      */
     }
+      */
 
 
 
