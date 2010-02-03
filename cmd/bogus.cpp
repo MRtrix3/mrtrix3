@@ -44,31 +44,31 @@ typedef float T;
 
 EXECUTE {
   Image::Header header;
-  header.axes.resize (3);
-  header.axes[0].dim = 1024;
-  header.axes[1].dim = 1024;
-  header.axes[2].dim = 1024;
+  header.axes.ndim() = 3;
+  header.axes.dim(0) = 1024;
+  header.axes.dim(1) = 1024;
+  header.axes.dim(2) = 1024;
 
-  header.axes[0].vox = 1.0;
-  header.axes[1].vox = 1.0;
-  header.axes[2].vox = 1.0;
+  header.axes.vox(0) = 1.0;
+  header.axes.vox(1) = 1.0;
+  header.axes.vox(2) = 1.0;
 
-  header.axes[0].order = 0;
-  header.axes[1].order = 1;
-  header.axes[2].order = 2;
+  header.axes.order(0) = 0;
+  header.axes.order(1) = 1;
+  header.axes.order(2) = 2;
 
-  VAR (header.data_type.description());
+  VAR (header.datatype().description());
   //header.data_type = DataType::UInt8;
 
-  Image::Object obj;
+  const Image::Header obj;
   obj.create ("poo.mif", header);
   
-  Image::Voxel vox (obj);
-  vox[0] = 1023;
-  vox[1] = 1023;
-  vox[2] = 1023;
+  Image::Voxel<float> vox (obj);
+  vox.pos(0, 1023);
+  vox.pos(1, 1023);
+  vox.pos(2, 1023);
 
-  vox.value() = 0.0;
+  vox.value (0.0);
 
 
   /*

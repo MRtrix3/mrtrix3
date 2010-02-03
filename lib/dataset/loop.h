@@ -24,6 +24,7 @@
 #define __dataset_loop_h__
 
 #include "progressbar.h"
+#include "dataset/position.h"
 
 namespace MR {
   namespace DataSet {
@@ -31,24 +32,20 @@ namespace MR {
     //! \cond skip
     namespace {
 
-      template <class Set> bool increment (Set& D, size_t axis, size_t last_axis) { 
-        if (axis >= last_axis) return (false);
-        if (D.pos(axis)+1 < ssize_t(D.dim(axis))) { D.move(axis,1); return (true); }
-        D.pos (axis,0); 
-        return (increment (D, axis+1, last_axis));
-      }
-
       template <class Functor, class Set> class Kernel1 {
         public:
           Kernel1 (Functor& func, Set& set) : F (func), D (set) { assert (voxel_count (D)); }
           const std::string& name () { return (D.name()); }
           size_t ndim () const { return (D.ndim()); }
           ssize_t dim (size_t axis) const { return (D.dim (axis)); }
-          ssize_t pos (size_t axis) const { return (D.pos (axis)); }
-          void pos (size_t axis, ssize_t position) { D.pos (axis, position); }
-          void move (size_t axis, ssize_t inc) { D.move (axis, inc); }
+          Position<Kernel1<Functor,Set> > operator[] (size_t axis) {
+            return (Position<Kernel1<Functor,Set> > (*this, axis)); }
           void check (size_t from_axis, size_t to_axis) { }
           void operator() () { F (D); }
+
+          ssize_t get_pos (size_t axis) const { return (D[axis]); }
+          void set_pos (size_t axis, ssize_t position) { D[axis] = position; }
+          void move_pos (size_t axis, ssize_t inc) { D[axis] += inc; }
         private:
           Functor& F;
           Set& D;
@@ -60,14 +57,17 @@ namespace MR {
           const std::string& name () { return (D.name()); }
           size_t ndim () const { return (D.ndim()); }
           ssize_t dim (size_t axis) const { return (D.dim (axis)); }
-          ssize_t pos (size_t axis) const { return (D.pos (axis)); }
-          void pos (size_t axis, ssize_t position) { D.pos (axis, position); D2.pos (axis, position); }
-          void move (size_t axis, ssize_t inc) { D.move (axis, inc); D2.move (axis, inc); }
+          Position<Kernel2<Functor,Set,Set2> > operator[] (size_t axis) {
+            return (Position<Kernel2<Functor,Set,Set2> > (*this, axis)); }
           void check (size_t from_axis, size_t to_axis) const { 
             if (!dimensions_match (D, D2, from_axis, to_axis))
               throw Exception ("dimensions mismatch between \"" + D.name() + "\" and \"" + D2.name() + "\"");
           }
           void operator() () { F (D, D2); }
+
+          ssize_t get_pos (size_t axis) const { return (D[axis]); }
+          void set_pos (size_t axis, ssize_t position) { D[axis] = position; D2[axis] = position; }
+          void move_pos (size_t axis, ssize_t inc) { D[axis] += inc; D2[axis] += inc; }
         private:
           Functor& F;
           Set& D;
@@ -81,19 +81,22 @@ namespace MR {
           const std::string& name () { return (M.name()); }
           size_t ndim () const { return (M.ndim()); }
           ssize_t dim (size_t axis) const { return (M.dim (axis)); }
-          ssize_t pos (size_t axis) const { return (M.pos (axis)); }
-          void pos (size_t axis, ssize_t position) { M.pos (axis, position); }
-          void move (size_t axis, ssize_t inc) { M.move (axis, inc); }
+          Position<KernelMask<FunctorKernel,Mask> > operator[] (size_t axis) {
+            return (Position<KernelMask<FunctorKernel,Mask> > (*this, axis)); }
           void check (size_t from_axis, size_t to_axis) const { 
             if (!dimensions_match (M, F, from_axis, to_axis))
               throw Exception ("dimensions mismatch between \"" + M.name() + "\" and \"" + F.name() + "\"");
           }
           void operator() () { 
             if (M.value()) { 
-              for (size_t i = 0; i < M.ndim(); ++i) F.pos (i, M.pos(i));
+              for (size_t i = 0; i < M.ndim(); ++i) F[i] = M[i];
               F ();
             }
           }
+
+          ssize_t get_pos (size_t axis) const { return (M[axis]); }
+          void set_pos (size_t axis, ssize_t position) { M[axis] = position; }
+          void move_pos (size_t axis, ssize_t inc) { M[axis] += inc; }
         private:
           FunctorKernel& F;
           Mask& M;
@@ -107,9 +110,8 @@ namespace MR {
           const std::string& name () { return (F.name()); }
           size_t ndim () const { return (F.ndim()); }
           ssize_t dim (size_t axis) const { return (F.dim (axis)); }
-          ssize_t pos (size_t axis) const { return (F.pos (axis)); }
-          void pos (size_t axis, ssize_t position) { F.pos (axis, position); }
-          void move (size_t axis, ssize_t inc) { F.move (axis, inc); }
+          Position<ProgressKernel<Functor> > operator[] (size_t axis) {
+            return (Position<ProgressKernel<Functor> > (*this, axis)); }
           void check (size_t from_axis, size_t to_axis) const { 
             F.check (from_axis, to_axis);
             size_t count = 1;
@@ -117,6 +119,10 @@ namespace MR {
             ProgressBar::init (count, m);
           }
           void operator() () { F(); ProgressBar::inc(); }
+
+          ssize_t get_pos (size_t axis) const { return (F[axis]); }
+          void set_pos (size_t axis, ssize_t position) { F[axis] = position; }
+          void move_pos (size_t axis, ssize_t inc) { F[axis] += inc; }
         private:
           Functor& F;
           const std::string& m;
@@ -127,11 +133,11 @@ namespace MR {
         inline void loop_exec (Kernel& K, size_t from_axis, size_t to_axis) {
           --to_axis;
           assert (K.dim(to_axis));
-          K.pos (to_axis,0);
+          K[to_axis] = 0;
 loop_start:
           if (to_axis == from_axis) K();
           else loop_exec (K, from_axis, to_axis);
-          if (K.pos(to_axis) < K.dim(to_axis)-1) { K.move (to_axis,1); goto loop_start; }
+          if (K[to_axis] < K.dim(to_axis)-1) { ++K[to_axis]; goto loop_start; }
         }
 
     }
@@ -139,6 +145,17 @@ loop_start:
 
     //! \addtogroup DataSet
     // @{
+
+
+    template <class Set> bool increment_position (Set& D, size_t from_axis, size_t to_axis) { 
+      if (from_axis >= to_axis) return (false);
+      if (D[from_axis]+1 < D.dim(from_axis)) { ++D[from_axis]; return (true); }
+      D[from_axis] = 0; 
+      return (increment_position (D, from_axis+1, to_axis));
+    }
+
+    template <class Set> inline bool increment_position (Set& D) { return (increment_position (D, 0, D.ndim())); }
+
 
     template <class Kernel> 
       void loop (Kernel& K, size_t from_axis = 0, size_t to_axis = SIZE_MAX) 

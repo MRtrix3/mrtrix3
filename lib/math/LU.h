@@ -55,45 +55,35 @@ namespace MR {
 
       //! %LU decomposition of A
       /** \note the contents of \a A will be overwritten with its %LU decomposition */
-      template <typename T> inline MatrixView<T>& decomp (MatrixView<T>& A, Permutation& p, int& signum) { 
+      template <typename T> inline Matrix<T>& decomp (Matrix<T>& A, Permutation& p, int& signum) { 
         gsl_linalg_LU_decomp (&A, &p, &signum);
         return (A); 
       }
 
       //! inverse of A given its %LU decomposition D,p
-      template <typename T> inline MatrixView<T>& inv (MatrixView<T>& I, const MatrixView<T>D, const Permutation& p) { 
+      template <typename T> inline Matrix<T>& inv (Matrix<T>& I, const Matrix<T>D, const Permutation& p) { 
+	I.allocate (D); 
         gsl_linalg_LU_invert (&D, &p, &I);
         return (I); 
       }
 
       //! solve A*x = b given %LU decomposition D,p of A
-      template <typename T> inline VectorView<T>& solve (VectorView<T>& x, const MatrixView<T>& D, const Permutation& p, const VectorView<T>& b) {
+      template <typename T> inline Vector<T>& solve (Vector<T>& x, const Matrix<T>& D, const Permutation& p, const Vector<T>& b) {
+        x.allocate (D.rows());
         gsl_linalg_LU_solve (&D, &p, &b, &x);
         return (x);
       }
 
       //! solve A*x = b given %LU decomposition D,p of A, in place (b passed in as x).
-      template <typename T> inline VectorView<T>& solve (VectorView<T>& x, const MatrixView<T>& D, const Permutation& p)
+      template <typename T> inline Vector<T>& solve (Vector<T>& x, const Matrix<T>& D, const Permutation& p)
       {
         gsl_linalg_LU_svx (&D, &p, &x);
         return (x);
       }
 
-      //! solve A*x = b given %LU decomposition D,p of A
-      template <typename T> inline Vector<T>& solve (Vector<T>& x, const MatrixView<T>& D, const Permutation& p, const VectorView<T>& b) {
-        x.allocate (D.rows());
-        solve (x.view(), D, p, b);
-        return (x);
-      }
-
-      //! inverse of A given its %LU decomposition D,p
-      template <typename T> inline MatrixView<T>& inv (Matrix<T>& I, const MatrixView<T>D, const Permutation& p) {
-	I.allocate (D); 
-	return (inv (I.view(), D, p)); 
-      }
-
       //! inverse of A by %LU decomposition
-      template <typename T> inline MatrixView<T>& inv (MatrixView<T>& I, const MatrixView<T>& A) { 
+      template <typename T> inline Matrix<T>& inv (Matrix<T>& I, const Matrix<T>& A) { 
+        I.allocate (A);
 	Permutation p (A.rows());
         int signum;
         Matrix<T> D (A);
@@ -101,12 +91,6 @@ namespace MR {
         return (inv (I, D, p));
       }
 
-      //! inverse of A by %LU decomposition
-      template <typename T> inline Matrix<T>& inv (Matrix<T>& I, const MatrixView<T>& A) { 
-        I.allocate (A);
-        inv (I.view(), A);
-        return (I); 
-      }
 
       /** @} */
       /** @} */

@@ -49,32 +49,32 @@ namespace MR {
 
       //! %Cholesky decomposition of \a A into lower triangular matrix
       /** \note the contents of \a A will be overwritten with its %Cholesky decomposition */
-      template <typename T> inline MatrixView<T>& decomp (MatrixView<T>& A) {
-       	gsl_linalg_cholesky_decomp (&A); 
+      template <typename T> inline Matrix<T>& decomp (Matrix<T>& A) {
+       	gsl_linalg_cholesky_decomp (A.gsl()); 
 	return (A);
       }
 
       //! solve A*x = b given its %Cholesky decomposition \a D 
-      template <typename T> inline VectorView<T>& solve (VectorView<T>& x, const MatrixView<T>& D, const VectorView<T>& b) {
-        gsl_linalg_cholesky_solve (&D, &b, &x);
+      template <typename T> inline Vector<T>& solve (Vector<T>& x, const Matrix<T>& D, const Vector<T>& b) {
+        gsl_linalg_cholesky_solve (D.gsl(), b.gsl(), x.gsl());
         return (x);
       }
 
       //! solve A*x = b given its %Cholesky decomposition \a D, in place
       /** \note b is passed in as \a x */
-      template <typename T> inline VectorView<T>& solve (VectorView<T>& x, const MatrixView<T>& D) {
-        gsl_linalg_cholesky_svx (&D, &x);
+      template <typename T> inline Vector<T>& solve (Vector<T>& x, const Matrix<T>& D) {
+        gsl_linalg_cholesky_svx (D.gsl(), x.gsl());
         return (x);
       }
 
       //! invert A given its %Cholesky decomposition \a D, in place.
-      template <typename T> inline MatrixView<T>& inv_from_decomp (MatrixView<T>& D) {
-	gsl_linalg_cholesky_invert (&D);
+      template <typename T> inline Matrix<T>& inv_from_decomp (Matrix<T>& D) {
+	gsl_linalg_cholesky_invert (D.gsl());
 	return (D);
       }
 
       //! invert \a A using %Cholesky decomposition, in place.
-      template <typename T> inline MatrixView<T>& inv (MatrixView<T>& A) { return (inv_from_decomp (decomp (A))); }
+      template <typename T> inline Matrix<T>& inv (Matrix<T>& A) { return (inv_from_decomp (decomp (A))); }
 
       /** @} */
       /** @} */

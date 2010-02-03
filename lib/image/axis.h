@@ -29,16 +29,6 @@
 namespace MR {
   namespace Image {
 
-    /*
-        class CompareStride {
-          public:
-            CompareStride (const Axes& parent) : A (parent) { }
-            bool operator() (const size_t a, const size_t b) const { return (abs(A.stride(a)) < abs (A.stride(b))); }
-          private:
-            const Axes& A;
-        };
-*/
-
     //! \addtogroup Image 
     // @{
     
@@ -113,6 +103,10 @@ namespace MR {
         bool  forward (size_t index) const { return (axes[index].stride > 0); }
         ssize_t direction (size_t index) const { return (axes[index].stride > 0 ? 1 : -1); }
 
+        friend std::ostream& operator<< (std::ostream& stream, const Axes& axes);
+        static std::vector<ssize_t> parse (size_t ndim, const std::string& specifier);
+        static void check (const std::vector<ssize_t>& parsed, size_t ndim);
+
       protected:
         std::vector<Axis> axes;
         static const std::string axes_name;
@@ -142,10 +136,6 @@ namespace MR {
     };
     
     //! @}
-
-    std::ostream& operator<< (std::ostream& stream, const Axes& axes);
-    std::vector<ssize_t> parse_axes_specifier (size_t ndim, const std::string& specifier);
-    void check_axes_specifier (const std::vector<ssize_t>& parsed, size_t ndim);
 
   }
 }

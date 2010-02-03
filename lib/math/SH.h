@@ -112,8 +112,9 @@ namespace MR {
       }
 
 
-      template <typename T> inline Math::VectorView<T>& delta (Math::VectorView<T>& D, const Point& unit_dir, int lmax)
+      template <typename T> inline Math::Vector<T>& delta (Math::Vector<T>& D, const Point& unit_dir, int lmax)
       {
+        D.allocate (NforL (lmax));
         T az = Math::atan2 (unit_dir[1], unit_dir[0]);
         T AL [lmax+1];
         Legendre::Plm_sph (AL, lmax, 0, T(unit_dir[2]));
@@ -131,15 +132,8 @@ namespace MR {
       }
 
 
-      template <typename T> inline Math::Vector<T>& delta (Math::Vector<T>& D, const Point& unit_dir, int lmax)
-      {
-        D.allocate (NforL (lmax));
-        delta (D.view(), unit_dir, lmax);
-        return (D);
-      }
 
-
-      template <typename T> inline Math::Vector<T>& SH2RH (Math::Vector<T>& RH, const Math::VectorView<T>& SH)
+      template <typename T> inline Math::Vector<T>& SH2RH (Math::Vector<T>& RH, const Math::Vector<T>& SH)
       {
         RH.allocate (SH.size());
         int lmax = 2*SH.size()+1;
@@ -151,10 +145,10 @@ namespace MR {
 
 
 
-      template <typename T> inline Math::VectorView<T>& sconv (Math::VectorView<T>& C, const Math::VectorView<T>& RH, const Math::VectorView<T>& SH)
+      template <typename T> inline Math::Vector<T>& sconv (Math::Vector<T>& C, const Math::Vector<T>& RH, const Math::Vector<T>& SH)
       {
         assert (SH.size() >= NforL (2*(RH.size()-1)));
-        assert (C.size() >= NforL (2*(RH.size()-1)));
+        C.allocate (NforL (2*(RH.size()-1)));
         for (int i = 0; i < int (RH.size()); ++i) {
           int l = 2*i;
           for (int m = -l; m <= l; ++m) 
@@ -163,12 +157,6 @@ namespace MR {
         return (C);
       }
 
-      template <typename T> inline Math::Vector<T>& sconv (Math::Vector<T>& C, const Math::VectorView<T>& RH, const Math::VectorView<T>& SH)
-      {
-        C.allocate (NforL (2*(RH.size()-1)));
-        sconv (C.view(), RH, SH);
-        return (C);
-      }
 
 
 

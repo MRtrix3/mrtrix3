@@ -64,30 +64,30 @@ namespace MR {
 
 
 
-  std::vector<ssize_t> parse_ints (const std::string& spec, ssize_t last)
+  std::vector<int> parse_ints (const std::string& spec, int last)
   {
-    std::vector<ssize_t> V;
+    std::vector<int> V;
     if (!spec.size()) throw Exception ("integer sequence specifier is empty"); 
     std::string::size_type start = 0, end;
-    ssize_t num[3];
-    ssize_t i = 0;
+    int num[3];
+    int i = 0;
     try {
       do {
         end = spec.find_first_of (",:", start);
         std::string str (strip (spec.substr (start, end-start)));
         lowercase (str);
         if (str == "end") {
-          if (last == std::numeric_limits<ssize_t>::max()) 
+          if (last == std::numeric_limits<int>::max()) 
             throw Exception ("value of \"end\" is not known in number sequence \"" + spec + "\"");
           num[i] = last;
         }
-        else num[i] = to<ssize_t> (spec.substr (start, end-start));
+        else num[i] = to<int> (spec.substr (start, end-start));
 
         char last_char = end < spec.size() ? spec[end] : '\0';
         if (last_char == ':') { i++; if (i > 2) throw Exception ("invalid number range in number sequence \"" + spec + "\""); }
         else {
           if (i) {
-            ssize_t inc, last;
+            int inc, last;
             if (i == 2) { inc = num[1]; last = num[2]; }
             else { inc = 1; last = num[1]; }
             if (inc * (last - num[0]) < 0) inc = -inc;

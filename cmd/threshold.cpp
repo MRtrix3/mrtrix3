@@ -76,7 +76,7 @@ class ByValue {
     ByValue (float threshold, float value_if_less, float value_if_more) :
       val (threshold), lt (value_if_less), gt (value_if_more) { }
     void operator() (Image::Voxel<float>& dest, Image::Voxel<float>& src) {
-      dest.value (src.value() < val ? lt : gt);
+      dest.value() = src.value() < val ? lt : gt;
     }
   private:
     float val, lt, gt;
@@ -88,7 +88,8 @@ class ByValue {
 class ByGreatestN {
   public:
     ByGreatestN (size_t num) : N (num) { }
-    void operator() (const Image::Voxel<float>& D) {
+
+    void operator() (Image::Voxel<float>& D) {
       assert (list.size() <= N);
       float val = D.value();
       if (list.size() == N) {
@@ -96,7 +97,7 @@ class ByGreatestN {
         list.erase (list.begin());
       }
       std::vector<ssize_t> pos (D.ndim());
-      for (size_t n = 0; n < D.ndim(); ++n) pos[n] = D.pos(n);
+      for (size_t n = 0; n < D.ndim(); ++n) pos[n] = D[n];
       list.insert (std::pair<float,std::vector<ssize_t> > (val, pos));
     }
 
@@ -106,8 +107,8 @@ class ByGreatestN {
 
       for (std::multimap<float,std::vector<ssize_t> >::const_iterator i = list.begin(); i != list.end(); ++i) {
         for (size_t n = 0; n < dest.ndim(); ++n)
-          dest.pos(n, i->second[n]);
-        dest.value (val_if_included);
+          dest[n] = i->second[n];
+        dest.value() = val_if_included;
       }
     }
 
@@ -115,7 +116,7 @@ class ByGreatestN {
     class ZeroKernel {
       public:
         ZeroKernel (float value) : val (value) { }
-        void operator() (Image::Voxel<float>& D) { D.value (val); }
+        void operator() (Image::Voxel<float>& D) { D.value() = val; }
       private:
         float val;
     };
@@ -128,7 +129,7 @@ class ByGreatestN {
 class BySmallestN : public ByGreatestN {
   public:
     BySmallestN (size_t num) : ByGreatestN (num) { }
-    void operator() (const Image::Voxel<float>& D) {
+    void operator() (Image::Voxel<float>& D) {
       assert (list.size() <= N);
       float val = D.value();
       if (list.size() == N) {
@@ -138,7 +139,7 @@ class BySmallestN : public ByGreatestN {
         list.erase (i);
       }
       std::vector<ssize_t> pos (D.ndim());
-      for (size_t n = 0; n < D.ndim(); ++n) pos[n] = D.pos(n);
+      for (size_t n = 0; n < D.ndim(); ++n) pos[n] = D[n];
       list.insert (std::pair<float,std::vector<ssize_t> > (val, pos));
     }
 };
@@ -148,7 +149,7 @@ class BySmallestN : public ByGreatestN {
 
 EXECUTE {
   float val (NAN), percentile (NAN);
-  size_t topN (0), bottomN (0), nopt (0);
+  off64_t topN (0), bottomN (0), nopt (0);
 
   OptionList opt = get_options (0); // abs
   if (opt.size()) {

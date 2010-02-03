@@ -131,7 +131,7 @@ EXECUTE {
   ProgressBar::init (0, "Optimising directions");
   for (power = -1.0; power >= -target_power/2.0; power *= 2.0) {
     info ("setting power = " + str (-power*2.0));
-    gsl_multimin_fdfminimizer_set (minimizer, &fdf, &v, 0.01, 1e-4);
+    gsl_multimin_fdfminimizer_set (minimizer, &fdf, v.gsl(), 0.01, 1e-4);
 
     for (uint iter = 0; iter < niter; iter++) {
 
@@ -147,7 +147,7 @@ EXECUTE {
 
       ProgressBar::inc();
     }
-    gsl_vector_memcpy (&v, minimizer->x);
+    gsl_vector_memcpy (v.gsl(), minimizer->x);
   }
   ProgressBar::done();
 

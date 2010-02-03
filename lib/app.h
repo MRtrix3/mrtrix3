@@ -100,7 +100,7 @@ namespace MR {
       std::vector<OptBase> option;
 
       virtual void execute () = 0;
-      std::vector<OptBase> get_options (size_t index);
+      OptionList get_options (size_t index);
 
       void parse_arguments ();
 
@@ -139,9 +139,9 @@ namespace MR {
 
 
 
-  inline std::vector<OptBase> App::get_options (size_t index)
+  inline OptionList App::get_options (size_t index)
   {
-    std::vector<OptBase> a;
+    OptionList a;
     for (size_t n = 0; n < option.size(); n++) 
       if (option[n].index == index)
         a.push_back (option[n]);

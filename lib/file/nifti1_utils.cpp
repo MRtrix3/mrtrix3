@@ -305,11 +305,11 @@ namespace MR {
         if (permutation[0] != 0 || permutation[1] != 1 || permutation[2] != 2 || 
             !H.axes.forward(0)  || !H.axes.forward(1)  || !H.axes.forward(2)) {
 
-          Math::VectorView<float> translation = M.column(3).view(0,3);
+          Math::Vector<float> translation = M.column(3).sub(0,3);
           for (size_t i = 0; i < 3; i++) {
             if (!H.axes.forward(i)) {
               float length = float(H.axes.dim(i)-1) * H.axes.vox(i);
-              Math::VectorView<float> axis = M.column(i).view(0,3);
+              Math::Vector<float> axis = M.column(i).sub(0,3);
               for (size_t n = 0; n < 3; n++) {
                 axis[n] = -axis[n];
                 translation[n] -= length*axis[n];
@@ -318,7 +318,7 @@ namespace MR {
           }
 
           for (size_t i = 0; i < 3; i++) {
-            Math::VectorView<float> row = M.row(i).view(0,3);
+            Math::Vector<float> row = M.row(i).sub(0,3);
             permutation.apply (row); 
           }
         }

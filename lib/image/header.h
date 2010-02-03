@@ -118,7 +118,8 @@ namespace MR {
         template <typename T> float scale_to_storage (T val) const   { return (scale_to_storage (val, scale, offset)); }
 
         //! returns the memory footprint of the Image
-        off64_t footprint (size_t up_to_dim = SIZE_MAX) { return (footprint_for_count (DataSet::voxel_count (*this, up_to_dim))); }
+        off64_t footprint (size_t from_dim = 0, size_t up_to_dim = SIZE_MAX) { 
+          return (footprint_for_count (DataSet::voxel_count (*this, from_dim, up_to_dim))); }
 
         //! returns the memory footprint of a DataSet
         off64_t footprint (const char* specifier) { return (footprint_for_count (DataSet::voxel_count (*this, specifier))); }
@@ -132,7 +133,6 @@ namespace MR {
         std::string          identifier;
         DataType             dtype;
         Math::Matrix<float>  transform_matrix;
-        mutable Array<size_t>::Ptr axes_layout; 
 
         void merge (const Header& H);
 

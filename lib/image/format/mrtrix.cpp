@@ -93,7 +93,7 @@ namespace MR {
 
 
         if (layout.empty()) throw Exception ("missing \"layout\" specification for MRtrix image \"" + H.name() + "\"");
-        std::vector<ssize_t> ax = parse_axes_specifier (H.ndim(), layout);
+        std::vector<ssize_t> ax = Axes::parse (H.ndim(), layout);
         for (size_t i = 0; i < ax.size(); i++) H.axes.stride(i) = ax[i];
 
         for (size_t n = 0; n < MIN (H.axes.ndim(), labels.size()); n++) H.axes.description(n) = labels[n];
@@ -107,7 +107,7 @@ namespace MR {
             for (int col = 0; col < 4; col++) 
               T(row,col) = transform[count++];
           T(3,0) = T(3,1) = T(3,2) = 0.0; T(3,3) = 1.0;
-          H.transform() = T;
+          H.transform().copy (T);
         }
 
 
@@ -119,7 +119,7 @@ namespace MR {
             for (size_t row = 0; row < M.rows(); row++) 
               for (size_t col = 0; col < 4; col++) 
                 M(row,col) = dw_scheme[count++];
-            H.DW_scheme = M;
+            H.DW_scheme.copy (M);
           }
         }
 

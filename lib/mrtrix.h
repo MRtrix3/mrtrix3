@@ -46,7 +46,7 @@
 
 #define MRTRIX_MAJOR_VERSION 0
 #define MRTRIX_MINOR_VERSION 3
-#define MRTRIX_MICRO_VERSION 2
+#define MRTRIX_MICRO_VERSION 3
 
 
 /** Prints the file and line number. Useful for debugging purposes. */
@@ -217,7 +217,7 @@ namespace MR {
   }
 
   std::vector<float> parse_floats (const std::string& spec);
-  std::vector<ssize_t>   parse_ints (const std::string& spec, ssize_t last = std::numeric_limits<ssize_t>::max());
+  std::vector<int>   parse_ints (const std::string& spec, int last = std::numeric_limits<int>::max());
 
   inline int round (float x) { return (int (x + (x > 0.0 ? 0.5 : -0.5))); }
 

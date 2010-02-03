@@ -85,7 +85,7 @@ OPTIONS = {
 template <class Set, class Set2> void copy_replace_NaN_kernel (Set& destination, Set2& source) { 
   typedef typename Set::value_type T;
   T val = source.value();
-  destination.value (isnan(val) ? 0.0 : val);
+  destination.value() = ( isnan(val) ? 0.0 : val );
 }
 
 
@@ -93,20 +93,18 @@ template <class Set, class Set2> void copy (Set& destination, Set2& source, bool
 { 
   std::string progress_message ("copying from \"" + source.name() + "\" to \"" + destination.name() + "\"...");
 
-  typedef DataSet::Reorder<Set> S1;
-  typedef DataSet::Reorder<Set2> S2;
+  typedef DataSet::Reorder<Set2> SetR;
 
-  S1 dest (destination, NULL, destination.name());
-  S2 src (source, dest.layout(), source.name());
+  SetR src (source, destination, source.name());
 
-  if (replace_NaN) DataSet::loop2 (progress_message, DataSet::copy_kernel<S1,S2>, dest, src);
-  else DataSet::loop2 (progress_message, copy_replace_NaN_kernel<S1,S2>, dest, src);
+  if (replace_NaN) DataSet::loop2 (progress_message, DataSet::copy_kernel<Set,SetR>, destination, src);
+  else DataSet::loop2 (progress_message, copy_replace_NaN_kernel<Set,SetR>, destination, src);
 }
 
 
 
 EXECUTE {
-  std::vector<OptBase> opt = get_options (1); // vox
+  OptionList opt = get_options (1); // vox
   std::vector<float> vox;
   if (opt.size()) 
     vox = parse_floats (opt[0][0].get_string());
@@ -158,14 +156,12 @@ EXECUTE {
 
   opt = get_options (7); // layout
   if (opt.size()) {
-    std::vector<Image::Axes::Order> ax = parse_axes_specifier (header.axes, opt[0][0].get_string());
+    std::vector<ssize_t> ax = Image::Axes::parse (header.ndim(), opt[0][0].get_string());
     if (ax.size() != header.axes.ndim()) 
       throw Exception (std::string("specified layout \"") + opt[0][0].get_string() + "\" does not match image dimensions");
 
-    for (size_t i = 0; i < ax.size(); i++) {
-      header.axes.order(i) = ax[i].order;
-      header.axes.forward(i) = ax[i].forward;
-    }
+    for (size_t i = 0; i < ax.size(); i++)
+      header.axes.stride(i) = ax[i];
   }
 
 
@@ -217,8 +213,5 @@ EXECUTE {
     copy (out, in, replace_NaN);
   }
 }
-
-
-
 
 

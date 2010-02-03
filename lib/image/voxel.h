@@ -26,6 +26,8 @@
 #include "get_set.h"
 #include "image/header.h"
 #include "math/complex.h"
+#include "dataset/value.h"
+#include "dataset/position.h"
 
 #define MAX_FILES_PER_IMAGE 256U
 #define MAX_NDIM 16
@@ -47,6 +49,8 @@ namespace MR {
       template <typename value_type, typename S> void __putBE (value_type val, void* data, size_t i) { return (MR::putBE<S> (val, data, i)); }
 
       // specialisation for conversion to bool
+      template <> bool __getLE<bool,float> (const void* data, size_t i) { return (Math::round(MR::getLE<float> (data, i))); }
+      template <> bool __getBE<bool,float> (const void* data, size_t i) { return (Math::round(MR::getBE<float> (data, i))); }
       template <> bool __getLE<bool,double> (const void* data, size_t i) { return (Math::round(MR::getLE<double> (data, i))); }
       template <> bool __getBE<bool,double> (const void* data, size_t i) { return (Math::round(MR::getBE<double> (data, i))); }
     }
@@ -84,21 +88,66 @@ namespace MR {
           offset = handler.start();
 
           switch (H.datatype()()) {
-            case DataType::Bit:        get_func = &__get<value_type,bool>;       put_func = &__put<value_type,bool>;       return;
-            case DataType::Int8:       get_func = &__get<value_type,int8_t>;     put_func = &__put<value_type,int8_t>;     return;
-            case DataType::UInt8:      get_func = &__get<value_type,uint8_t>;    put_func = &__put<value_type,uint8_t>;    return;
-            case DataType::Int16LE:    get_func = &__getLE<value_type,int16_t>;  put_func = &__putLE<value_type,int16_t>;  return;
-            case DataType::UInt16LE:   get_func = &__getLE<value_type,uint16_t>; put_func = &__putLE<value_type,uint16_t>; return;
-            case DataType::Int16BE:    get_func = &__getBE<value_type,int16_t>;  put_func = &__putBE<value_type,int16_t>;  return;
-            case DataType::UInt16BE:   get_func = &__getBE<value_type,uint16_t>; put_func = &__putBE<value_type,uint16_t>; return;
-            case DataType::Int32LE:    get_func = &__getLE<value_type,int32_t>;  put_func = &__putLE<value_type,int32_t>;  return;
-            case DataType::UInt32LE:   get_func = &__getLE<value_type,uint32_t>; put_func = &__putLE<value_type,uint32_t>; return;
-            case DataType::Int32BE:    get_func = &__getBE<value_type,int32_t>;  put_func = &__putBE<value_type,int32_t>;  return;
-            case DataType::UInt32BE:   get_func = &__getBE<value_type,uint32_t>; put_func = &__putBE<value_type,uint32_t>; return;
-            case DataType::Float32LE:  get_func = &__getLE<value_type,float>;    put_func = &__putLE<value_type,float>;    return;
-            case DataType::Float32BE:  get_func = &__getBE<value_type,float>;    put_func = &__putBE<value_type,float>;    return;
-            case DataType::Float64LE:  get_func = &__getLE<value_type,double>;   put_func = &__putLE<value_type,double>;   return;
-            case DataType::Float64BE:  get_func = &__getBE<value_type,double>;   put_func = &__putBE<value_type,double>;   return;
+            case DataType::Bit:
+              get_func = &__get<value_type,bool>;   
+              put_func = &__put<value_type,bool>;
+              return;
+            case DataType::Int8:
+              get_func = &__get<value_type,int8_t>;
+              put_func = &__put<value_type,int8_t>;
+              return;
+            case DataType::UInt8:
+              get_func = &__get<value_type,uint8_t>;
+              put_func = &__put<value_type,uint8_t>;
+              return;
+            case DataType::Int16LE:
+              get_func = &__getLE<value_type,int16_t>;
+              put_func = &__putLE<value_type,int16_t>;
+              return;
+            case DataType::UInt16LE:
+              get_func = &__getLE<value_type,uint16_t>;
+              put_func = &__putLE<value_type,uint16_t>;
+              return;
+            case DataType::Int16BE:
+              get_func = &__getBE<value_type,int16_t>;
+              put_func = &__putBE<value_type,int16_t>;
+              return;
+            case DataType::UInt16BE:
+              get_func = &__getBE<value_type,uint16_t>;
+              put_func = &__putBE<value_type,uint16_t>;
+              return;
+            case DataType::Int32LE:
+              get_func = &__getLE<value_type,int32_t>;
+              put_func = &__putLE<value_type,int32_t>;
+              return;
+            case DataType::UInt32LE:
+              get_func = &__getLE<value_type,uint32_t>;
+              put_func = &__putLE<value_type,uint32_t>;
+              return;
+            case DataType::Int32BE:
+              get_func = &__getBE<value_type,int32_t>;
+              put_func = &__putBE<value_type,int32_t>;
+              return;
+            case DataType::UInt32BE:
+              get_func = &__getBE<value_type,uint32_t>;
+              put_func = &__putBE<value_type,uint32_t>;
+              return;
+            case DataType::Float32LE:
+              get_func = &__getLE<value_type,float>;
+              put_func = &__putLE<value_type,float>;
+              return;
+            case DataType::Float32BE:
+              get_func = &__getBE<value_type,float>;
+              put_func = &__putBE<value_type,float>;
+              return;
+            case DataType::Float64LE:
+              get_func = &__getLE<value_type,double>;
+              put_func = &__putLE<value_type,double>;
+              return;
+            case DataType::Float64BE:
+              get_func = &__getBE<value_type,double>;
+              put_func = &__putBE<value_type,double>;
+              return;
             default: throw Exception ("invalid data type in image header");
           }
         }
@@ -117,7 +166,7 @@ namespace MR {
           return (false);
         }
 
-        const size_t* layout () const { return (H.layout()); }
+        ssize_t stride (size_t axis) const { return (handler.stride (axis)); }
         size_t  ndim () const { return (H.ndim()); }
         ssize_t dim (size_t axis) const { return (H.dim(axis)); }
         float   vox (size_t axis) const { return (H.vox(axis)); }
@@ -127,7 +176,7 @@ namespace MR {
           ssize_t shift = 0;
           for (size_t n = 0; n < ndim(); n++) {
             x[n] = V.pos(n);
-            shift += handler.stride(n) * x[n];
+            shift += stride(n) * x[n];
           }
           offset = handler.start() + shift;
           return (*this);
@@ -135,23 +184,13 @@ namespace MR {
 
         //! reset all coordinates to zero. 
         void reset () { offset = handler.start(); for (size_t i = 0; i < ndim(); i++) x[i] = 0; }
-
-        ssize_t pos (size_t axis) const { return (x[axis]); }
-        void    pos (size_t axis, ssize_t position) { offset += handler.stride(axis) * (position - x[axis]); x[axis] = position; }
-        void    move (size_t axis, ssize_t increment) { offset += handler.stride(axis) * increment; x[axis] += increment; }
-
-        value_type value () const { 
-          ssize_t nseg (offset / handler.segment_size());
-          return (H.scale_from_storage (get_func (handler.segment(nseg), offset - nseg*handler.segment_size()))); 
-        }
-        void value (value_type val) {
-          ssize_t nseg (offset / handler.segment_size());
-          put_func (H.scale_to_storage (val), handler.segment(nseg), offset - nseg*handler.segment_size()); 
-        }
+       
+        DataSet::Position<Voxel<T> > operator[] (size_t axis) { return (DataSet::Position<Voxel<T> > (*this, axis)); }
+        DataSet::Value<Voxel<T> > value () { return (DataSet::Value<Voxel<T> > (*this)); }
 
         friend std::ostream& operator<< (std::ostream& stream, const Voxel& V) {
           stream << "position for image \"" << V.name() << "\" = [ ";
-          for (size_t n = 0; n < V.ndim(); n++) stream << V[n] << " ";
+          for (size_t n = 0; n < V.ndim(); ++n) stream << const_cast<Voxel&>(V)[n] << " ";
           stream << "]\n  current offset = " << V.offset;
           return (stream);
         }
@@ -164,6 +203,27 @@ namespace MR {
 
         value_type (*get_func) (const void* data, size_t i);
         void       (*put_func) (value_type val, void* data, size_t i);
+
+        value_type get_value () const { 
+          ssize_t nseg (offset / handler.segment_size());
+          return (H.scale_from_storage (get_func (handler.segment(nseg), offset - nseg*handler.segment_size()))); 
+        }
+        void set_value (value_type val) {
+          ssize_t nseg (offset / handler.segment_size());
+          put_func (H.scale_to_storage (val), handler.segment(nseg), offset - nseg*handler.segment_size()); 
+        }
+        ssize_t get_pos (size_t axis) const { return (x[axis]); }
+        void set_pos (size_t axis, ssize_t position) { 
+          offset += stride(axis) * (position - x[axis]); 
+          x[axis] = position;
+        }
+        void move_pos (size_t axis, ssize_t increment) {
+          offset += stride(axis) * increment;
+          x[axis] += increment;
+        }
+        
+        friend class DataSet::Position<Voxel<T> >;
+        friend class DataSet::Value<Voxel<T> >;
     };
 
 

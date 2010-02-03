@@ -96,14 +96,14 @@ namespace MR {
         value_type value () const {
           if (out_of_bounds) return (NAN);
           value_type val = 0.0;
-          if (faaa) val  = faaa * data.value (); data.move(2,1);
-          if (faab) val += faab * data.value (); data.move(1,1);
-          if (fabb) val += fabb * data.value (); data.move(2,-1);
-          if (faba) val += faba * data.value (); data.move(0,1);
-          if (fbba) val += fbba * data.value (); data.move(1,-1);
-          if (fbaa) val += fbaa * data.value (); data.move(2,1);
-          if (fbab) val += fbab * data.value (); data.move(1,1);
-          if (fbbb) val += fbbb * data.value (); data.move(0,-1); data.move(1,-1); data.move(2,-1);
+          if (faaa) val  = faaa * data.value(); data[2]++;
+          if (faab) val += faab * data.value(); data[1]++;
+          if (fabb) val += fabb * data.value(); data[2]--;
+          if (faba) val += faba * data.value(); data[0]++;
+          if (fbba) val += fbba * data.value(); data[1]--;
+          if (fbaa) val += fbaa * data.value(); data[2]++;
+          if (fbab) val += fbab * data.value(); data[1]++;
+          if (fbbb) val += fbbb * data.value(); data[0]--;-1 data[1]--; data[2]--;
           return (val);
         }
 

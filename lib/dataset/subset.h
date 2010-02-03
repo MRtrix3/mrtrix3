@@ -24,6 +24,8 @@
 #define __dataset_subset_h__
 
 #include "math/matrix.h"
+#include "dataset/value.h"
+#include "dataset/position.h"
 
 namespace MR {
   namespace DataSet {
@@ -60,12 +62,8 @@ namespace MR {
 
         void    reset () { for (size_t n = 0; n < NDIM; ++n) pos(n,0); }
 
-        ssize_t pos (size_t axis) const { return (D.pos(axis)-C[axis]); }
-        void    pos (size_t axis, ssize_t position) const { D.pos(axis, position + C[axis]); }
-        void    move (size_t axis, ssize_t increment) const { D.move (axis, increment); }
-
-        value_type   value () const { return (D.value()); }
-        void         value (value_type val) { D.value (val); }
+        Value<Subset<Set> > value () { return (Value<Subset<Set> > (*this)); }
+        Position<Subset<Set> > operator[] (size_t axis) { return (Position<Subset<Set> > (*this, axis)); }
 
       private:
         Set& D;
@@ -73,6 +71,15 @@ namespace MR {
         size_t N [NDIM];
         std::string descriptor;
         Math::Matrix<float> transform_matrix;
+
+        value_type get_value () const { return (D.value()); }
+        void set_value (value_type val) { D.value() = val; }
+        ssize_t get_pos (size_t axis) const { return (D[axis]-C[axis]); }
+        void set_pos (size_t axis, ssize_t position) const { D[axis] = position + C[axis]; }
+        void move_pos (size_t axis, ssize_t increment) const { D[axis] += increment; }
+
+        friend class Value<Subset<Set> >;
+        friend class Position<Subset<Set> >;
     };
 
     //! @}

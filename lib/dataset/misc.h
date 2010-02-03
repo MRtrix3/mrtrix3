@@ -33,11 +33,12 @@ namespace MR {
     // @{
 
     //! returns the number of voxel in the data set, or a relevant subvolume
-    template <class Set> inline off64_t voxel_count (const Set& ds, size_t up_to_dim = SIZE_MAX) 
+    template <class Set> inline off64_t voxel_count (const Set& ds, size_t from_axis = 0, size_t to_axis = SIZE_MAX) 
     { 
-      if (up_to_dim > ds.ndim()) up_to_dim = ds.ndim();
+      if (to_axis > ds.ndim()) to_axis = ds.ndim();
+      assert (from_axis < to_axis);
       off64_t fp = 1;
-      for (size_t n = 0; n < up_to_dim; n++) 
+      for (size_t n = from_axis; n < to_axis; n++) 
         fp *= ds.dim(n);
       return (fp); 
     }
@@ -57,8 +58,28 @@ namespace MR {
       template <typename T> inline bool is_complex__ () { return (false); }
       template <> inline bool is_complex__<cfloat> () { return (true); }
       template <> inline bool is_complex__<cdouble> () { return (true); }
+      template <class Set> class CompareStride {
+        public:
+          CompareStride (const Set& set) : S (set) { }
+          bool operator() (const size_t a, const size_t b) const { return (abs(S.stride(a)) < abs(S.stride(b))); }
+        private:
+          const Set& S;
+      };
     }
     //! \endcond
+
+
+
+    //! sort strides in increasing absolute order and return vector of indices
+    template <class Set> std::vector<size_t> stride_order (const Set& set) {
+      std::vector<size_t> ret (set.ndim());
+      for (size_t i = 0; i < ret.size(); ++i) ret[i] = i;
+      CompareStride<Set> compare (set);
+      std::sort (ret.begin(), ret.end(), compare);
+      return (ret);
+    }
+
+
 
     //! return whether the Set contains complex data
     template <class Set> inline bool is_complex (const Set& ds) { 

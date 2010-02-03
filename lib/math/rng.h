@@ -57,7 +57,7 @@ namespace MR {
           return (sqrt (amplitude*amplitude + imag*imag));
         }
 
-        template <typename T> void shuffle (VectorView<T>& V) { gsl_ran_shuffle (generator, (&V)->data, V.size(), sizeof (T)); }
+        template <typename T> void shuffle (Vector<T>& V) { gsl_ran_shuffle (generator, V->ptr(), V.size(), sizeof (T)); }
         template <class T> void shuffle (std::vector<T>& V) { gsl_ran_shuffle (generator, &V[0], V.size(), sizeof (T)); }
     };
 

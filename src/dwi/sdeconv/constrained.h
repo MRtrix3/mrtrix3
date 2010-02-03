@@ -81,8 +81,8 @@ namespace MR {
                 HR_trans *= neg_lambda * T(fconv.rows()) * response[0] / T(HR_trans.rows());
 
                 M.allocate (DW_dirs.rows(), HR_trans.columns());
-                M.view (0,M.rows(),0,fconv.columns()) = fconv.view();
-                M.view (0,M.rows(),fconv.columns(),M.columns()) = 0.0;
+                M.sub (0,M.rows(),0,fconv.columns()) = fconv;
+                M.sub (0,M.rows(),fconv.columns(),M.columns()) = 0.0;
                 Mt_M.allocate (M.columns(), M.columns());
                 rankN_update (Mt_M, M, CblasTrans);
 
@@ -106,13 +106,25 @@ namespace MR {
             norm_lambda = NORM_LAMBDA_MULTIPLIER * P.norm_lambda * P.Mt_M(0,0);
           }
 
+        CSDeconv (const CSDeconv& c) :
+          P (c.P), 
+          work (P.Mt_M.rows(), P.Mt_M.columns()),
+          HR_T (P.HR_trans.rows(), P.HR_trans.columns()), 
+          F (P.HR_trans.columns()),
+          init_F (P.rconv.rows()),
+          HR_amps (P.HR_trans.rows()),
+          Mt_b (P.HR_trans.columns()),
+          old_neg (P.HR_trans.rows()) { 
+            norm_lambda = NORM_LAMBDA_MULTIPLIER * P.norm_lambda * P.Mt_M(0,0);
+          }
+
         ~CSDeconv() { }
 
         void set (const Math::Vector<T>& DW_signals)
         {
           Math::mult (init_F, P.rconv, DW_signals);
-          F.view (0, init_F.size()) = init_F.view();
-          F.view (init_F.size(), F.size()) = 0.0;
+          F.sub (0, init_F.size()) = init_F;
+          F.sub (init_F.size(), F.size()) = 0.0;
           old_neg.assign (P.HR_trans.rows(), -1);
           threshold = P.threshold * init_F[0] * P.HR_trans(0,0);
           computed_once = false;
@@ -144,7 +156,7 @@ namespace MR {
             rankN_update (work, HR_T, CblasTrans, CblasLower, T(1.0), T(1.0));
           }
 
-          F.view() = Mt_b.view();
+          F = Mt_b;
 
           Math::Cholesky::decomp (work); 
           Math::Cholesky::solve (F, work); 

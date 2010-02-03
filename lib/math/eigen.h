@@ -46,11 +46,11 @@ namespace MR {
           Symm (size_t n) : work (gsl_eigen_symm_alloc(n)) { }
           ~Symm () { gsl_eigen_symm_free (work); }
 
-          VectorView<T>& operator () (VectorView<T>& eval, MatrixView<T>& A) {
+          Vector<T>& operator () (Vector<T>& eval, Matrix<T>& A) {
             assert (A.rows() == A.columns());
             assert (A.rows() == eval.size());
             assert (A.rows() == work->size);
-            int status = gsl_eigen_symm (&A, &eval, work);
+            int status = gsl_eigen_symm (A.gsl(), eval.gsl(), work);
             if (status) throw Exception (std::string ("eigenvalue decomposition failed: ") + gsl_strerror (status)); 
             return (eval);
           }
@@ -68,13 +68,13 @@ namespace MR {
           SymmV (size_t n) : work (gsl_eigen_symmv_alloc(n)) { }
           ~SymmV () { gsl_eigen_symmv_free (work); }
 
-          VectorView<T>& operator () (VectorView<T>& eval, MatrixView<T>& A, MatrixView<T>& evec) {
+          Vector<T>& operator () (Vector<T>& eval, Matrix<T>& A, Matrix<T>& evec) {
             assert (A.rows() == A.columns());
             assert (A.rows() == evec.rows());
             assert (evec.rows() == evec.columns());
             assert (A.rows() == eval.size());
             assert (A.rows() == work->size);
-            int status = gsl_eigen_symmv (&A, &eval, &evec, work);
+            int status = gsl_eigen_symmv (A.gsl(), eval.gsl(), evec.gsl(), work);
             if (status) throw Exception (std::string ("eigenvalue decomposition failed: ") + gsl_strerror (status)); 
             return (eval);
           }
@@ -84,10 +84,10 @@ namespace MR {
 
 
       //! Eigenvalue sorting
-      inline VectorView<double>& sort (VectorView<double>& eval) { gsl_sort_vector (&eval); return (eval); } 
+      inline Vector<double>& sort (Vector<double>& eval) { gsl_sort_vector (eval.gsl()); return (eval); } 
       //! Eigenvalue sorting
-      template <typename T> inline VectorView<T>& sort (VectorView<T>& eval, MatrixView<T>& evec) { 
-        gsl_eigen_symmv_sort (&eval, &evec, GSL_EIGEN_SORT_VAL_ASC);
+      template <typename T> inline Vector<T>& sort (Vector<T>& eval, Matrix<T>& evec) { 
+        gsl_eigen_symmv_sort (eval.gsl(), evec.gsl(), GSL_EIGEN_SORT_VAL_ASC);
         return (eval);
       }
 

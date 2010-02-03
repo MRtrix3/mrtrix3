@@ -32,7 +32,7 @@ namespace MR {
     // @{
 
     template <class Set, class Set2> 
-      void copy_kernel (Set& destination, Set2& source) { destination.value (source.value()); }
+      void copy_kernel (Set& destination, Set2& source) { destination.value() = source.value(); }
 
     template <class Set, class Set2> 
       void copy (Set& destination, Set2& source, size_t from_axis = 0, size_t to_axis = SIZE_MAX) { 

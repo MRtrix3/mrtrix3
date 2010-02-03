@@ -24,6 +24,9 @@
 #define __dataset_reorder_h__
 
 #include "math/matrix.h"
+#include "dataset/misc.h"
+#include "dataset/value.h"
+#include "dataset/position.h"
 
 namespace MR {
   namespace DataSet {
@@ -35,35 +38,49 @@ namespace MR {
       public:
         typedef typename Set::value_type value_type;
 
-        Reorder (Set& original, const size_t* ordering = NULL, const std::string& description = "") : 
+        Reorder (Set& original, const std::string& description = "") : 
           D (original),
-          order (new size_t [ndim()]),
-          descriptor (description.empty() ? D.name() + " [reordered]" : description) {
-            memcpy (order, ordering ? ordering : D.layout(), ndim()*sizeof(size_t));
-        }
+          S (stride_order (original)),
+          descriptor (description.empty() ? D.name() + " [reordered]" : description) { }
+
+        template <class Set2> Reorder (Set& original, const Set2& reference, const std::string& description = "") : 
+          D (original),
+          S (stride_order (reference)),
+          descriptor (description.empty() ? D.name() + " [reordered]" : description) { }
+
+        Reorder (Set& original, const std::vector<size_t>& ordering, const std::string& description = "") : 
+          D (original),
+          S (ordering),
+          descriptor (description.empty() ? D.name() + " [reordered]" : description) { }
 
         const std::string& name () const { return (descriptor); }
         size_t  ndim () const { return (D.ndim()); }
-        int     dim (size_t axis) const { return (D.dim(order[axis])); }
-        const size_t* layout () const { return (order); }
+        int     dim (size_t axis) const { return (D.dim(S[axis])); }
+        ssize_t stride (size_t axis) const { return (D.stride (S[axis])); }
+        const std::vector<size_t>& order () const { return (S); }
 
-        float   vox (size_t axis) const { return (D.vox(order[axis])); }
+        float   vox (size_t axis) const { return (D.vox(S[axis])); }
 
         const Math::Matrix<float>& transform () const { return (D.transform()); }
 
         void    reset () { D.reset(); }
 
-        ssize_t pos (size_t axis) const { return (D.pos(order[axis])); }
-        void    pos (size_t axis, ssize_t position) const { D.pos(order[axis], position); }
-        void    move (size_t axis, ssize_t increment) const { D.move (order[axis], increment); }
-
-        value_type   value () const { return (D.value()); }
-        void         value (value_type val) { D.value (val); }
+        Position<Reorder<Set> > operator[] (size_t axis) { return (Position<Reorder<Set> > (*this, axis)); }
+        Value<Reorder<Set> > value () { return (Value<Reorder<Set> > (*this)); }
 
       private:
         Set& D;
-        size_t* order;
+        std::vector<size_t> S;
         std::string descriptor;
+
+        ssize_t get_pos (size_t axis) const { return (D[S[axis]]); }
+        void    set_pos (size_t axis, ssize_t position) const { D[S[axis]] = position; }
+        void    move_pos (size_t axis, ssize_t increment) const { D[S[axis]] += increment; }
+        value_type get_value () const { return (D.value()); }
+        void set_value (value_type val) { D.value() = val; }
+
+        friend class Position<Reorder<Set> >;
+        friend class Value<Reorder<Set> >;
     };
 
     //! @}

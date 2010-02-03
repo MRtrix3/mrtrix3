@@ -110,7 +110,7 @@ class Item {
 class Allocator {
   public:
     Allocator (size_t data_size) : N (data_size) { }
-    Item* alloc () { Item* item = new Item; item->data.resize (N); return (item); }
+    Item* alloc () { Item* item = new Item; item->data.allocate (N); return (item); }
     void reset (Item* item) { }
     void dealloc (Item* item) { delete item; }
   private:
@@ -163,23 +163,23 @@ class DataLoader {
           value_type norm = 0.0;
           if (P.normalise) {
             for (size_t n = 0; n < P.bzeros.size(); n++) {
-              D.pos(3, P.bzeros[n]);
+              D[3] = P.bzeros[n];
               norm += D.value ();
             }
             norm /= P.bzeros.size();
           }
 
           for (size_t n = 0; n < P.dwis.size(); n++) {
-            D.pos(3, P.dwis[n]);
+            D[3] = P.dwis[n];
             item->data[n] = D.value(); 
             if (!finite (item->data[n])) return;
             if (item->data[n] < 0.0) item->data[n] = 0.0;
             if (P.normalise) item->data[n] /= norm;
           }
 
-          item->pos[0] = D.pos(0);
-          item->pos[1] = D.pos(1);
-          item->pos[2] = D.pos(2);
+          item->pos[0] = D[0];
+          item->pos[1] = D[1];
+          item->pos[2] = D[2];
 
           if (!item.write()) throw Exception ("error writing to work queue");
         }
@@ -213,12 +213,12 @@ class Processor {
             str(item->pos[0]) + " " + str(item->pos[1]) + " " + str(item->pos[2]) +
             " ] failed to converge"); 
 
-        SH.pos(0, item->pos[0]);
-        SH.pos(1, item->pos[1]);
-        SH.pos(2, item->pos[2]);
+        SH[0] = item->pos[0];
+        SH[1] = item->pos[1];
+        SH[2] = item->pos[2];
 
-        for (SH.pos(3,0); SH.pos(3) < SH.dim(3); SH.move(3,1))
-          SH.value (sdeconv.FOD()[SH.pos(3)]);
+        for (SH[3] = 0; SH[3] < SH.dim(3); ++SH[3])
+          SH.value() = sdeconv.FOD()[SH[3]];
       }
     }
 
@@ -251,7 +251,7 @@ EXECUTE {
   else {
     if (!header.DW_scheme.is_set()) 
       throw Exception ("no diffusion encoding found in image \"" + header.name() + "\"");
-    grad = header.DW_scheme;
+    grad.copy (header.DW_scheme);
   }
 
   if (grad.rows() < 7 || grad.columns() != 4) 
@@ -301,15 +301,15 @@ EXECUTE {
   if (opt.size()) HR_dirs.load (opt[0][0].get_string());
   else {
     HR_dirs.allocate (300,2);
-    HR_dirs.view() = Math::MatrixView<float> (default_directions, 300, 2);
+    HR_dirs = Math::Matrix<float> (default_directions, 300, 2);
   }
 
   header.axes.dim(3) = Math::SH::NforL (lmax);
   header.datatype() = DataType::Float32;
-  header.axes.order(0) = 1; header.axes.forward(0) = true;
-  header.axes.order(1) = 2; header.axes.forward(1) = true;
-  header.axes.order(2) = 3; header.axes.forward(2) = true;
-  header.axes.order(3) = 0; header.axes.forward(3) = true;
+  header.axes.stride(0) = 2;
+  header.axes.stride(1) = 3;
+  header.axes.stride(2) = 4;
+  header.axes.stride(3) = 1;
 
   const Image::Header* mask_header = NULL;
   opt = get_options (2); // mask

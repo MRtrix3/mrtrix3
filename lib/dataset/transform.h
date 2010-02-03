@@ -34,9 +34,9 @@ namespace MR {
 
     namespace Transform {
 
-      template <class Set, typename T> inline Math::MatrixView<T>& P2I (Math::MatrixView<T>& M, const Set& ds) 
+      template <class Set, typename T> inline Math::Matrix<T>& P2I (Math::Matrix<T>& M, const Set& ds) 
       {
-        assert (M.rows() == 4 && M.columns() == 4);
+        M.allocate(4,4);
         M.zero();
         M(0,0) = ds.vox(0);
         M(1,1) = ds.vox(1);
@@ -44,12 +44,10 @@ namespace MR {
         M(3,3) = 1.0;
         return (M);
       }
-      template <class Set, typename T> inline Math::Matrix<T>& P2I (Math::Matrix<T>& M, const Set& ds) 
-      { M.allocate(4,4); P2I(M.view(), ds); return (M); }
 
 
-      template <class Set, typename T> inline Math::MatrixView<T>& I2P (Math::MatrixView<T>& M, const Set& ds) {
-        assert (M.rows() == 4 && M.columns() == 4);
+      template <class Set, typename T> inline Math::Matrix<T>& I2P (Math::Matrix<T>& M, const Set& ds) {
+        M.allocate(4,4);
         M.zero();
         M(0,0) = 1.0/ds.vox(0);
         M(1,1) = 1.0/ds.vox(1);
@@ -57,23 +55,17 @@ namespace MR {
         M(3,3) = 1.0;
         return (M);
       }
-      template <class Set, typename T> inline Math::Matrix<T>& I2P (Math::Matrix<T>& M, const Set& ds) 
-      { M.allocate(4,4); I2P(M.view(), ds); return (M); }
 
 
-      template <class Set, typename T> inline Math::MatrixView<T>& R2I (Math::MatrixView<T>& M, const Set& ds) {
-        assert (M.rows() == 4 && M.columns() == 4);
-        assert (ds.transform().rows() == 4 && ds.transform().columns() == 4);
+      template <class Set, typename T> inline Math::Matrix<T>& R2I (Math::Matrix<T>& M, const Set& ds) {
+        M.allocate(4,4);
         M = ds.transform();
         return (M);
       }
-      template <class Set, typename T> inline Math::Matrix<T>& R2I (Math::Matrix<T>& M, const Set& ds) 
-      { M.allocate(4,4); R2I(M.view(), ds); return (M); }
 
 
-      template <class Set, typename T> inline Math::MatrixView<T>& I2R (Math::MatrixView<T>& M, const Set& ds) {
-        assert (M.rows() == 4 && M.columns() == 4);
-        assert (ds.transform().rows() == 4 && ds.transform().columns() == 4);
+      template <class Set, typename T> inline Math::Matrix<T>& I2R (Math::Matrix<T>& M, const Set& ds) {
+        M.allocate(4,4);
         int signum;
         Math::Permutation p (4);
         Math::Matrix<T> D (ds.transform());
@@ -82,26 +74,20 @@ namespace MR {
         M(3,0) = M(3,1) = M(3,2) = 0.0; M(3,3) = 1.0;
         return (M);
       }
-      template <class Set, typename T> inline Math::Matrix<T>& I2R (Math::Matrix<T>& M, const Set& ds) 
-      { M.allocate(4,4); I2R(M.view(), ds); return (M); }
 
 
-      template <class Set, typename T> inline Math::MatrixView<T>& P2R (Math::MatrixView<T>& M, const Set& ds) {
-        assert (M.rows() == 4 && M.columns() == 4);
-        assert (ds.transform().rows() == 4 && ds.transform().columns() == 4);
+      template <class Set, typename T> inline Math::Matrix<T>& P2R (Math::Matrix<T>& M, const Set& ds) {
+        M.allocate(4,4);
         M = ds.transform();
         for (size_t i = 0; i < 3; i++) 
           for (size_t j = 0; j < 3; j++) 
             M(i,j) *= ds.vox(i);
         return (M);
       }
-      template <class Set, typename T> inline Math::Matrix<T>& P2R (Math::Matrix<T>& M, const Set& ds) 
-      { M.allocate(4,4); P2R(M.view(), ds); return (M); }
 
 
-      template <class Set, typename T> inline Math::MatrixView<T>& R2P (Math::MatrixView<T>& M, const Set& ds) {
-        assert (M.rows() == 4 && M.columns() == 4);
-        assert (ds.transform().rows() == 4 && ds.transform().columns() == 4);
+      template <class Set, typename T> inline Math::Matrix<T>& R2P (Math::Matrix<T>& M, const Set& ds) {
+        M.allocate(4,4);
         int signum;
         Math::Permutation p (4);
         Math::Matrix<T> D (4,4);
@@ -111,8 +97,6 @@ namespace MR {
         M(3,0) = M(3,1) = M(3,2) = 0.0; M(3,3) = 1.0;
         return (M);
       }
-      template <class Set, typename T> inline Math::Matrix<T>& R2P (Math::Matrix<T>& M, const Set& ds) 
-      { M.allocate(4,4); R2P(M.view(), ds); return (M); }
 
     }
     //! @}

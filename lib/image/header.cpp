@@ -77,9 +77,9 @@ namespace MR {
       transform_matrix(3,0) = transform_matrix(3,1) = transform_matrix(3,2) = 0.0; transform_matrix(3,3) = 1.0;
 
       Math::Permutation permutation (3);
-      Math::absmax (transform_matrix.row(0).view(0,3), permutation[0]);
-      Math::absmax (transform_matrix.row(1).view(0,3), permutation[1]);
-      Math::absmax (transform_matrix.row(2).view(0,3), permutation[2]);
+      Math::absmax (transform_matrix.row(0).sub(0,3), permutation[0]);
+      Math::absmax (transform_matrix.row(1).sub(0,3), permutation[1]);
+      Math::absmax (transform_matrix.row(2).sub(0,3), permutation[2]);
 
       assert (permutation[0] != permutation[1] && permutation[1] != permutation[2] && permutation[2] != permutation[0]);
 
@@ -97,16 +97,16 @@ namespace MR {
         axes[2] = a[2];
 
         for (size_t i = 0; i < 3; i++) {
-          Math::VectorView<float> row = transform_matrix.row(i).view(0,3);
+          Math::Vector<float> row = transform_matrix.row(i).sub(0,3);
           permutation.apply (row); 
         }
 
-        Math::VectorView<float> translation = transform_matrix.column(3).view(0,3);
+        Math::Vector<float> translation = transform_matrix.column(3).sub(0,3);
         for (size_t i = 0; i < 3; i++) {
           if (flip[i]) {
             axes.stride(i) = -axes.stride(i);
             float length = float(axes[i].dim-1) * axes[i].vox;
-            Math::VectorView<float> axis = transform_matrix.column(i).view(0,3);
+            Math::Vector<float> axis = transform_matrix.column(i).sub(0,3);
             for (size_t n = 0; n < 3; n++) {
               axis[n] = -axis[n];
               translation[n] -= length*axis[n];

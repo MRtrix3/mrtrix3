@@ -93,7 +93,7 @@ namespace MR {
 
 
 
-      template <typename T> inline T lnP (const VectorView<T>& measured, const VectorView<T>& actual, const T one_over_noise_squared, VectorView<T>& dP_dactual, T& dP_dN) 
+      template <typename T> inline T lnP (const Vector<T>& measured, const Vector<T>& actual, const T one_over_noise_squared, Vector<T>& dP_dactual, T& dP_dN) 
       {
         assert (one_over_noise_squared > 0.0);
         assert (measured.size() == actual.size());

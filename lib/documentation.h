@@ -438,18 +438,13 @@ $ ./build lib/mrtrix.o lib/app.o \endverbatim
   *
   *     int     ndim () const           { return (3); }
   *     int     dim (int axis) const    { return (N[axis]); }
-  *     int     pos (int axis)          { return (X[axis]); }
-  *     void    pos (int axis, int i)   { X[axis] = i; }
-  *     void    move (int axis, int i)  { X[axis] += i; }
-  *     float   value ()                { return (data[offset()]); }
-  *     void    value (float val)       { data[offset()] = val; }
+  *     int&    operator[] (int axis)   { return (X[axis]); }
+  *     float&  value ()                { return (data[X[0]+N[0]*(X[1]+N[1]*X[2])]); }
   *
   *   private:
   *     float*  data
   *     int     N[3];
   *     int     X[3];
-  *
-  *     int     offset () const         { return (X[0]+N[0]*(X[1]+N[1]*X[2])); }
   * };
   * \endcode
   *
@@ -462,10 +457,10 @@ $ ./build lib/mrtrix.o lib/app.o \endverbatim
   * \code
   * template <class Set> void scale (Set& data, float factor)
   * {
-  *   for (data.pos(2,0); data.pos(2) < data.dim(2); data.move(2,1))
-  *     for (data.pos(1,0); data.pos(1) < data.dim(1); data.move(1,1))
-  *       for (data.pos(0,0); data.pos(0) < data.dim(0); data.move(0,1))
-  *         data.value (factor * data.value());
+  *   for (data[2] = 0; data[2] < data.dim(2); ++data[2])
+  *     for (data[1] = 0; data[1] < data.dim(1); ++data[1])
+  *       for (data[0] = 0; data[0] < data.dim(0); ++data[0])
+  *         data.value() *= factor;
   * }
   * \endcode
   *
@@ -483,7 +478,7 @@ $ ./build lib/mrtrix.o lib/app.o \endverbatim
   * required for the \a scale() function to compile and run. There is also
   * plenty of scope for the compiler to optimise this particular function,
   * since all member functions of \c my_image are declared inline. Note that
-  * this does not mean that this class can be used with any of the other
+  * this does not mean that this class can be used with all of the other
   * template functions, some of which might rely on some of the other member
   * functions having been defined.
   *
@@ -514,6 +509,9 @@ $ ./build lib/mrtrix.o lib/app.o \endverbatim
   * interface were required, it would be trivial to define such an abstract class and
   * use it with the template functions provided by MRtrix.
   *
+  * \sa the DataSet::Position and DataSet::Value template classes are designed
+  * to simplify the process of returning a modifiable object for non-trivial
+  * DataSet classes.
   */
 
 

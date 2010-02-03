@@ -93,7 +93,7 @@ namespace MR {
 
 
 
-    std::vector<ssize_t> parse_axes_specifier (size_t ndim, const std::string& specifier)
+    std::vector<ssize_t> Axes::parse (size_t ndim, const std::string& specifier)
     {
       std::vector<ssize_t> parsed (ndim);
 
@@ -125,7 +125,7 @@ namespace MR {
       if (current != ndim) 
         throw Exception ("incorrect number of axes in axes specification \"" + specifier + "\"");
 
-      check_axes_specifier (parsed, ndim);
+      check (parsed, ndim);
 
       return (parsed);
     }
@@ -136,7 +136,7 @@ namespace MR {
 
 
 
-    void check_axes_specifier (const std::vector<ssize_t>& parsed, size_t ndim)
+    void Axes::check (const std::vector<ssize_t>& parsed, size_t ndim)
     {
       if (parsed.size() != ndim) 
         throw Exception ("incorrect number of dimensions for axes specifier");
@@ -149,6 +149,7 @@ namespace MR {
             throw Exception ("duplicate axis ordering (" + str (abs(parsed[n])) + ")");
       }
     }
+
 
 
 

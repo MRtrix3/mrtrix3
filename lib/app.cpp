@@ -168,6 +168,9 @@ namespace MR {
     if (candidates.size() == 0) return (SIZE_MAX);
     if (candidates.size() == 1) return (candidates[0]);
 
+    for (size_t n = 0; n < candidates.size(); ++n) 
+      if (option_name (candidates[n]) == s) return (candidates[n]);
+
     s = "several matches possible for option \"-" + s + "\": \"-" + option_name (candidates[0]) + "\", \"-" + option_name (candidates[1]) + "\"";
     for (size_t n = 2; n < candidates.size(); n++) { s += ", \"-"; s += option_name (candidates[n]); s += "\""; }
     throw Exception (s);
