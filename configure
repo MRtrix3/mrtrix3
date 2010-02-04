@@ -794,7 +794,7 @@ WARNING: not all required OpenGL extensions are supported (see above).
 
 
 
-  report ('Checking whether OpenGL extensions compile with GL_GLEXT_PROTOTYPES: ')
+  report ('Checking whether OpenGL extensions compile with -DGL_GLEXT_PROTOTYPES: ')
   try:
     gl_test = compile ('''
 #include <QtGui>

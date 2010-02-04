@@ -112,7 +112,11 @@ namespace MR {
         }
 
 	//! construct a matrix by reading from the text file \a filename
-        Matrix (const std::string& filename) { load (filename); } 
+        Matrix (const std::string& filename) { 
+	  GSLMatrix<T>::size1 = GSLMatrix<T>::size2 = GSLMatrix<T>::tda = 0;
+	  GSLMatrix<T>::data = NULL; GSLMatrix<T>::block = NULL; GSLMatrix<T>::owner = 1; 
+          load (filename); 
+        } 
 
 	//! destructor
         ~Matrix () { if (GSLMatrix<T>::block) { assert (GSLMatrix<T>::owner); GSLBlock<T>::free (GSLMatrix<T>::block); } }

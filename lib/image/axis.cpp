@@ -41,7 +41,7 @@ namespace MR {
     {
       // remove unset/invalid axis orderings:
       for (size_t a = 0; a < ndim(); a++) 
-        if (!stride(a) || abs(stride(a)) > ndim()) 
+        if (!stride(a) || size_t(abs(stride(a))) > ndim()) 
           stride(a) = find_free_axis();
 
       // remove duplicates:
@@ -141,7 +141,7 @@ namespace MR {
       if (parsed.size() != ndim) 
         throw Exception ("incorrect number of dimensions for axes specifier");
       for (size_t n = 0; n < parsed.size(); n++) {
-        if (!parsed[n] || abs(parsed[n]) > ndim) 
+        if (!parsed[n] || size_t(abs(parsed[n])) > ndim) 
           throw Exception ("axis ordering " + str (parsed[n]) + " out of range");
 
         for (size_t i = 0; i < n; i++) 

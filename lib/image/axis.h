@@ -128,7 +128,7 @@ namespace MR {
         ssize_t find_free_axis () const {
           for (size_t a = 1; a <= ndim(); a++) {
             size_t m = 0;
-            for (; m < ndim(); m++) if (abs(axes[m].stride) == a) break; 
+            for (; m < ndim(); m++) if (size_t (abs(axes[m].stride)) == a) break; 
             if (m >= ndim()) return (a);
           }
           return (0);

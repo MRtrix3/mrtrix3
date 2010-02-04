@@ -296,7 +296,7 @@ namespace MR {
         // new transform handling code starts here
         Math::Permutation permutation (3);
         for (size_t i = 0; i < 3; ++i) {
-          assert (H.axes.order(i) < 3);
+          assert (abs(H.axes.stride(i)) <= 3 && abs(H.axes.stride(i)) > 0);
           permutation[i] = abs(H.axes.stride(i))-1;
         }
 
