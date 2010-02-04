@@ -208,6 +208,7 @@ namespace MR {
       set_values (current);
       
       render_frame->set_lmax (Math::SH::LforN(values.columns()));
+      render_frame->set_normalise (true);
       render_frame->set_LOD (5);
 
       lmax_group->actions()[(render_frame->get_lmax()/2)-1]->setChecked (true);

@@ -57,16 +57,15 @@ class MyApp : public MR::App {
     void execute () { 
       Math::Matrix<float> values (argument[0].get_string());
       if (values.columns() == 1) {
-        Math::Matrix<float> tmp (values.columns(), values.rows());
-        for (size_t r = 0; r < values.rows(); r++)
-          for (size_t c = 0; c < values.columns(); c++)
-            tmp(c,r) = values(r,c);
-        values = tmp;
+        Math::Matrix<float> tmp;
+        Math::transpose (tmp, values);
+        values.swap (tmp);
       }
 
       std::vector<OptBase> opt = get_options (0); // response
       if (opt.size()) {
-        Math::Matrix<float> R (values);
+        Math::Matrix<float> R;
+        R.copy (values);
         values.allocate (R.rows(), Math::SH::NforL (2*(R.columns()-1)));
         values.zero();
         for (size_t n = 0; n < R.rows(); n++) 
