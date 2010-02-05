@@ -24,6 +24,9 @@
 #define __dataset_buffer_h__
 
 #include "ptr.h"
+#include "dataset/value.h"
+#include "dataset/position.h"
+#include "dataset/stride.h"
 
 #define BITMASK 0x01U << 7
 
@@ -34,6 +37,9 @@ namespace MR {
     namespace {
       template <typename X> inline X* __allocate (size_t count) { return (new X [count]); }
       template <> inline bool* __allocate<bool> (size_t count) { return ((bool*) (new uint8_t [(count+7)/8])); }
+
+      template <typename X> inline size_t __footprint (size_t count) { return (count*sizeof(X)); }
+      template <> inline size_t __footprint<bool> (size_t count) { return ((count+7)/8); }
 
       template <typename X> inline X __get (const X* const data, ssize_t offset) { return (data[offset]); }
       template <typename X> inline void __set (X* data, ssize_t offset, X val) { data[offset] = val; }
@@ -54,33 +60,16 @@ namespace MR {
       public:
         typedef T value_type;
 
-        Buffer (const size_t* dimensions, 
-            const std::string& id = "unnamed",
-            const float* voxel_sizes = NULL, 
-            const Math::MatrixView<float> transform_mat = Math::MatrixView<float>()) :
-          descriptor (id),
-          transform_matrix (transform_mat),
+        template <class Set> Buffer (const Set& D, const std::string& id = "unnamed") :
           offset (0),
-          start (0) {
-            for (size_t n = 0; n < NDIM; ++n) {
-              N[n] = dimensions[n];
-              V[n] = voxel_sizes ? voxel_sizes[n] : 1.0;
-              stride[n] = n ? N[n-1] * stride[n-1] : 1;
-              axes_layout[n] = n;
-            }
-            setup();
-          }
-
-        template <class Template> Buffer (const Template& D, const std::string& id = "unnamed") :
+          start (0),
           descriptor (id),
           transform_matrix (D.transform()) {
             assert (D.ndim() >= NDIM);
-            offset = start = 0;
             for (size_t n = 0; n < NDIM; ++n) {
               N[n] = D.dim(n);
               V[n] = D.vox(n);
-              stride[n] = n ? N[n-1] * stride[n-1] : 1;
-              axes_layout[n] = n;
+              skip[n] = D.stride(n);
             }
             setup();
           }
@@ -90,35 +79,35 @@ namespace MR {
         const std::string& name () const { return (descriptor); }
         size_t  ndim () const { return (NDIM); }
         int     dim (size_t axis) const { return (N[axis]); }
-        const size_t* layout () const { return (axes_layout); }
-
         float   vox (size_t axis) const { return (V[axis]); }
+        ssize_t stride (size_t axis) const { return (skip[axis]); }
 
         const Math::Matrix<float>& transform () const { return (transform_matrix); }
 
+        Position<Buffer<T,NDIM> > operator[] (size_t axis) { return (Position<Buffer<T,NDIM> > (*this, axis)); }
+        Value<Buffer<T,NDIM> > value () { return (Value<Buffer<T,NDIM> > (*this)); }
+
         void    reset () { memset (x, 0, NDIM*sizeof(ssize_t)); offset = start; }
-
-        ssize_t pos (size_t axis) const { return (x[axis]); }
-        void    pos (size_t axis, ssize_t position) { 
-          offset += stride[axis] * (position - x[axis]); x[axis] = position; }
-        void    move (size_t axis, ssize_t increment) { offset += stride[axis] * increment; x[axis] += increment; }
-
-        value_type   value () const { return (__get<value_type>(data.get(), offset)); }
-        void         value (value_type val) { __set<value_type>(data.get(), offset, val); }
+        void    clear () { memset (data, 0, __footprint<value_type> (voxel_count (*this))); }
 
       private:
         typename Array<value_type>::RefPtr data;
         size_t offset, start;
         size_t N [NDIM];
-        ssize_t x [NDIM], stride[NDIM];
+        ssize_t x [NDIM], skip[NDIM];
         float  V [NDIM];
         size_t axes_layout[NDIM];
         std::string descriptor;
 
         Math::Matrix<float> transform_matrix;
 
-        void setup () {
+        ssize_t& stride (size_t axis) { return (skip[axis]); }
+
+        void setup () 
+        {
           data = __allocate<value_type> (voxel_count (*this));
+          Stride::actualise (*this);
+          start = Stride::offset (*this);
           reset();
           if (transform_matrix.rows() == 4 && transform_matrix.columns() == 4) return;
           transform_matrix.allocate(4,4);
@@ -127,6 +116,18 @@ namespace MR {
           transform_matrix(1,3) = N[1]/2.0;
           transform_matrix(2,3) = N[2]/2.0;
         }
+
+        ssize_t get_pos (size_t axis) const { return (x[axis]); }
+        void    set_pos (size_t axis, ssize_t position) { 
+          offset += skip[axis] * (position - x[axis]); x[axis] = position; }
+        void    move_pos (size_t axis, ssize_t increment) { offset += skip[axis] * increment; x[axis] += increment; }
+
+        value_type   get_value () const { return (__get<value_type>(data.get(), offset)); }
+        void         set_value (value_type val) { __set<value_type>(data.get(), offset, val); }
+
+        friend void Stride::actualise<Buffer<T,NDIM> > (Buffer<T,NDIM>& set);
+        friend class Position<Buffer<T,NDIM> >;
+        friend class Value<Buffer<T,NDIM> >;
     };
 
     //! @}

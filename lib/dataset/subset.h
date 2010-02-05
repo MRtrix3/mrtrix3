@@ -54,13 +54,13 @@ namespace MR {
         const std::string& name () const { return (descriptor); }
         size_t  ndim () const { return (NDIM); }
         int     dim (size_t axis) const { return (N[axis]); }
-        const size_t* layout () const { return (D.layout()); }
+        ssize_t stride (size_t axis) const { return (D.stride (axis)); }
 
         float   vox (size_t axis) const { return (D.vox(axis)); }
 
         const Math::Matrix<float>& transform () const { return (transform_matrix); }
 
-        void    reset () { for (size_t n = 0; n < NDIM; ++n) pos(n,0); }
+        void    reset () { for (size_t n = 0; n < NDIM; ++n) set_pos(n, 0); }
 
         Value<Subset<Set> > value () { return (Value<Subset<Set> > (*this)); }
         Position<Subset<Set> > operator[] (size_t axis) { return (Position<Subset<Set> > (*this, axis)); }

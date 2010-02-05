@@ -47,8 +47,8 @@ namespace MR {
         template <typename T> Vector<T>& apply (Vector<T>& V) const { permute (p, V); return (V); }
         bool   valid () const { return (gsl_permutation_valid (p)); }
 
-	gsl_permutation* operator& () { return (p); }
-	const gsl_permutation* operator& () const { return (p); }
+	gsl_permutation* gsl () { return (p); }
+	const gsl_permutation* gsl () const { return (p); }
       private:
 	gsl_permutation* p;
     };

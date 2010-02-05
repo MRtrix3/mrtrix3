@@ -36,12 +36,13 @@ namespace MR {
     /*! Interpolation is only performed along the first 3 (spatial) axes. 
      * The (integer) position along the remaining axes should be set using the
      * template DataSet class.
-     * The spatial coordinates can be set using the functions P(), I(), and R(). 
+     * The spatial coordinates can be set using the functions voxel(), image(),
+     * and scanner(). 
      * For example:
      * \code
      * Image::Voxel voxel (image);
      * Image::Interp<Image::Voxel> interp (voxel);  // create an Interp object using voxel as the parent data set
-     * interp.R (10.2, 3.59, 54.1);   // set the real-space position to [ 10.2 3.59 54.1 ]
+     * interp.scanner (10.2, 3.59, 54.1);   // set the scanner-space position to [ 10.2 3.59 54.1 ]
      * float value = interp.value();  // get the value at this position
      * \endcode
      *
@@ -55,8 +56,6 @@ namespace MR {
      * voxel[1]--;                 // set the current position
      * voxel[2]++;                 // within the data set
      * float f = voxel.value();
-     * float re = voxel.real();    // for complex data
-     * float im = voxel.imag();    // for complex data
      * Math::Transform<float> M = voxel.transform; // a valid 4x4 transformation matrix
      * \endcode
      */
@@ -75,23 +74,23 @@ namespace MR {
         /*! \return true if the current position is out of bounds, false otherwise */
         bool  operator! () const { return (out_of_bounds); }
 
-        //! Set the current position to <b>pixel space</b> position \a pos
+        //! Set the current position to <b>voxel space</b> position \a pos
         /*! This will set the position from which the image intensity values will
          * be interpolated, assuming that \a pos provides the position as a
-         * (floating-point) pixel coordinate within the dataset. */
-        bool P (const Point& pos);
+         * (floating-point) voxel coordinate within the dataset. */
+        bool voxel (const Point& pos);
         //! Set the current position to <b>image space</b> position \a pos
         /*! This will set the position from which the image intensity values will
          * be interpolated, assuming that \a pos provides the position as a
          * coordinate relative to the axes of the dataset, in units of
          * millimeters. The origin is taken to be the centre of the voxel at [
          * 0 0 0 ]. */
-        bool I (const Point& pos) { return (P (I2P (pos))); }
-        //! Set the current position to the <b>real space</b> position \a pos
+        bool image (const Point& pos) { return (voxel (image2voxel (pos))); }
+        //! Set the current position to the <b>scanner space</b> position \a pos
         /*! This will set the position from which the image intensity values will
          * be interpolated, assuming that \a pos provides the position as a
-         * real space coordinate, in units of millimeters. */
-        bool R (const Point& pos) { return (P (R2P (pos))); }
+         * scanner space coordinate, in units of millimeters. */
+        bool scanner (const Point& pos) { return (voxel (scanner2voxel (pos))); }
 
         value_type value () const {
           if (out_of_bounds) return (NAN);
@@ -103,31 +102,31 @@ namespace MR {
           if (fbba) val += fbba * data.value(); data[1]--;
           if (fbaa) val += fbaa * data.value(); data[2]++;
           if (fbab) val += fbab * data.value(); data[1]++;
-          if (fbbb) val += fbbb * data.value(); data[0]--;-1 data[1]--; data[2]--;
+          if (fbbb) val += fbbb * data.value(); data[0]--; data[1]--; data[2]--;
           return (val);
         }
 
-        //! Transform the position \p r from real-space to pixel-space
-        Point R2P (const Point& r) const { return (transform (RP, r)); }
-        //! Transform the position \p r from pixel-space to real-space
-        Point P2R (const Point& r) const { return (transform (PR, r)); }
-        //! Transform the position \p r from image-space to pixel-space
-        Point I2P (const Point& r) const { return (Point (r[0]/data.vox(0), r[1]/data.vox(1), r[2]/data.vox(2))); }
-        //! Transform the position \p r from pixel-space to image-space
-        Point P2I (const Point& r) const { return (Point (r[0]*data.vox(0), r[1]*data.vox(1), r[2]*data.vox(2))); }
-        //! Transform the position \p r from image-space to real-space
-        Point I2R (const Point& r) const { return (transform (IR, r)); }
-        //! Transform the position \p r from real-space to image-space
-        Point R2I (const Point& r) const { return (transform (RI, r)); }
+        //! Transform the position \p r from scanner-space to voxel-space
+        Point scanner2voxel (const Point& r) const { return (transform (S2V, r)); }
+        //! Transform the position \p r from voxel-space to scanner-space
+        Point voxel2scanner (const Point& r) const { return (transform (V2S, r)); }
+        //! Transform the position \p r from image-space to voxel-space
+        Point image2voxel (const Point& r) const { return (Point (r[0]/data.vox(0), r[1]/data.vox(1), r[2]/data.vox(2))); }
+        //! Transform the position \p r from voxel-space to image-space
+        Point voxel2image (const Point& r) const { return (Point (r[0]*data.vox(0), r[1]*data.vox(1), r[2]*data.vox(2))); }
+        //! Transform the position \p r from image-space to scanner-space
+        Point image2scanner (const Point& r) const { return (transform (I2S, r)); }
+        //! Transform the position \p r from scanner-space to image-space
+        Point scanner2image (const Point& r) const { return (transform (S2I, r)); }
 
-        //! Transform the orientation \p r from real-space to pixel-space
-        Point vec_R2P (const Point& r) const { return (transform_vector (RP, r)); }
-        //! Transform the orientation \p r from pixel-space to real-space
-        Point vec_P2R (const Point& r) const { return (transform_vector (PR, r)); }
+        //! Transform the orientation \p r from scanner-space to voxel-space
+        Point vec_R2P (const Point& r) const { return (transform_vector (S2V, r)); }
+        //! Transform the orientation \p r from voxel-space to scanner-space
+        Point vec_P2R (const Point& r) const { return (transform_vector (V2S, r)); }
 
       private:
         Set&   data;
-        float  RP[3][4], PR[3][4], IR[3][4], RI[3][4];
+        float  S2V[3][4], V2S[3][4], I2S[3][4], S2I[3][4];
         float  bounds[3];
         bool   out_of_bounds;
         float  faaa, faab, faba, fabb, fbaa, fbab, fbba, fbbb;
@@ -146,7 +145,7 @@ namespace MR {
                 M[2][0]*p[0] + M[2][1]*p[1] + M[2][2]*p[2] ));
         }
 
-        template <class U> void set (float M[3][4], const Math::MatrixView<U>& MV) {
+        template <class U> void set (float M[3][4], const Math::Matrix<U>& MV) {
           M[0][0] = MV(0,0); M[0][1] = MV(0,1); M[0][2] = MV(0,2); M[0][3] = MV(0,3);
           M[1][0] = MV(1,0); M[1][1] = MV(1,1); M[1][2] = MV(1,2); M[1][3] = MV(1,3);
           M[2][0] = MV(2,0); M[2][1] = MV(2,1); M[2][2] = MV(2,2); M[2][3] = MV(2,3);
@@ -169,10 +168,10 @@ namespace MR {
       bounds[2] = data.dim(2) - 0.5;
 
       Math::Matrix<float> M (4,4);
-      set (RP, Transform::R2P (M, data));
-      set (PR, Transform::P2R (M, data));
-      set (IR, Transform::I2R (M, data));
-      set (RI, Transform::R2I (M, data));
+      set (S2V, Transform::scanner2voxel (M, data));
+      set (V2S, Transform::voxel2scanner (M, data));
+      set (I2S, Transform::image2scanner (M, data));
+      set (S2I, Transform::scanner2image (M, data));
     }
 
 
@@ -187,11 +186,11 @@ namespace MR {
       }
 
       out_of_bounds = false;
-      data.pos(0,pos[0]);
-      data.pos(1,pos[1]);
-      data.pos(2,pos[2]);
+      data[0] = pos[0];
+      data[1] = pos[1];
+      data[2] = pos[2];
 
-      return (Point (pos[0]-data.pos(0), pos[1]-data.pos(1), pos[2]-data.pos(2)));
+      return (Point (pos[0]-data[0], pos[1]-data[1], pos[2]-data[2]));
     }
 
 
@@ -199,18 +198,18 @@ namespace MR {
 
 
 
-    template <class Set> inline bool Interp<Set>::P (const Point& pos)
+    template <class Set> inline bool Interp<Set>::voxel (const Point& pos)
     {
       Point f = set_fractions (pos);
       if (out_of_bounds) return (true);
 
-      if (pos[0] < 0.0) { f[0] = 0.0; data.pos(0,0); }
+      if (pos[0] < 0.0) { f[0] = 0.0; data[0] = 0; }
       else if (pos[0] > bounds[0]-0.5) f[0] = 0.0;
 
-      if (pos[1] < 0.0) { f[1] = 0.0; data.pos(1,0); }
+      if (pos[1] < 0.0) { f[1] = 0.0; data[1] = 0; }
       else if (pos[1] > bounds[1]-0.5) f[1] = 0.0;
 
-      if (pos[2] < 0.0) { f[2] = 0.0; data.pos(2,0); }
+      if (pos[2] < 0.0) { f[2] = 0.0; data[2] = 0; }
       else if (pos[2] > bounds[2]-0.5) f[2] = 0.0;
 
       faaa = (1.0-f[0]) * (1.0-f[1]) * (1.0-f[2]); if (faaa < 1e-6) faaa = 0.0;

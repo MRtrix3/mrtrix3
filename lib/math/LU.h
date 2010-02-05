@@ -56,28 +56,28 @@ namespace MR {
       //! %LU decomposition of A
       /** \note the contents of \a A will be overwritten with its %LU decomposition */
       template <typename T> inline Matrix<T>& decomp (Matrix<T>& A, Permutation& p, int& signum) { 
-        gsl_linalg_LU_decomp (&A, &p, &signum);
+        gsl_linalg_LU_decomp (A.gsl(), p.gsl(), &signum);
         return (A); 
       }
 
       //! inverse of A given its %LU decomposition D,p
       template <typename T> inline Matrix<T>& inv (Matrix<T>& I, const Matrix<T>D, const Permutation& p) { 
 	I.allocate (D); 
-        gsl_linalg_LU_invert (&D, &p, &I);
+        gsl_linalg_LU_invert (D.gsl(), p.gsl(), I.gsl());
         return (I); 
       }
 
       //! solve A*x = b given %LU decomposition D,p of A
       template <typename T> inline Vector<T>& solve (Vector<T>& x, const Matrix<T>& D, const Permutation& p, const Vector<T>& b) {
         x.allocate (D.rows());
-        gsl_linalg_LU_solve (&D, &p, &b, &x);
+        gsl_linalg_LU_solve (D.gsl(), p.gsl(), b.gsl(), x.gsl());
         return (x);
       }
 
       //! solve A*x = b given %LU decomposition D,p of A, in place (b passed in as x).
       template <typename T> inline Vector<T>& solve (Vector<T>& x, const Matrix<T>& D, const Permutation& p)
       {
-        gsl_linalg_LU_svx (&D, &p, &x);
+        gsl_linalg_LU_svx (D.gsl(), p.gsl(), x.gsl());
         return (x);
       }
 
