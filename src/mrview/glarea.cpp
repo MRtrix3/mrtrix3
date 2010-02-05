@@ -63,6 +63,9 @@ namespace MR {
       int dx = event->x() - lastPos.x();
       int dy = event->y() - lastPos.y();
 
+      //QCursor::setPos (mapToGlobal (lastPos));
+      //std::cerr << dx << " " << dy << "\n";
+
       lastPos = event->pos();
     }
 
