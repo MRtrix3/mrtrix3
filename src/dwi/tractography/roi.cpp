@@ -36,17 +36,17 @@ namespace MR {
         size_t top[] = { 0, 0, 0 };
         size_t count = 0;
 
-        for (vox.pos(2,0); vox.pos(2) < vox.dim(2); vox.move(2,1)) {
-          for (vox.pos(1,0); vox.pos(1) < vox.dim(1); vox.move(1,1)) {
-            for (vox.pos(0,0); vox.pos(0) < vox.dim(0); vox.move(0,1)) {
+        for (vox[2] = 0; vox[2] < vox.dim(2); vox[2]) {
+          for (vox[1] = 0; vox[1] < vox.dim(1); vox[1]) {
+            for (vox[0] = 0; vox[0] < vox.dim(0); vox[0]) {
               if (vox.value()) {
                 ++count;
-                if (size_t(vox.pos(0)) < bottom[0]) bottom[0] = vox.pos(0);
-                if (size_t(vox.pos(0)) > top[0]) top[0] = vox.pos(0);
-                if (size_t(vox.pos(1)) < bottom[1]) bottom[1] = vox.pos(1);
-                if (size_t(vox.pos(1)) > top[1]) top[1] = vox.pos(1);
-                if (size_t(vox.pos(2)) < bottom[2]) bottom[2] = vox.pos(2);
-                if (size_t(vox.pos(2)) > top[2]) top[2] = vox.pos(2);
+                if (size_t(vox[0]) < bottom[0]) bottom[0] = vox[0];
+                if (size_t(vox[0]) > top[0]) top[0] = vox[0];
+                if (size_t(vox[1]) < bottom[1]) bottom[1] = vox[1];
+                if (size_t(vox[1]) > top[1]) top[1] = vox[1];
+                if (size_t(vox[2]) < bottom[2]) bottom[2] = vox[2];
+                if (size_t(vox[2]) > top[2]) top[2] = vox[2];
               }
             }
           }

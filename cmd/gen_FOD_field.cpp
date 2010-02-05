@@ -81,32 +81,32 @@ class Kernel {
     size_t size () const { return (nSH); }
 
     void operator () (Image::Voxel<float>& D) { 
-      SH.view() = 0.0;
-      float xp = N*(D.dim(0)/2.0 - D.pos(0) - 1) + 0.5;
-      float yp = N*(D.pos(1)-0.5) + 0.5;
+      SH = 0.0;
+      float xp = N*(D.dim(0)/2.0 - D[0]-1) + 0.5;
+      float yp = N*(D[1]-0.5) + 0.5;
       float yc = yp - N*(D.dim(1)-1)/2.0;
       for (int y = 0; y < N; ++y) {
         for (int x = 0; x < N; ++x) {
           if (isnan (angle)) {
             Point dir (y+yp, x+xp, 0.0);
             dir.normalise();
-            Math::SH::delta (V.view(), dir, lmax);
+            Math::SH::delta (V, dir, lmax);
           }
           else {
             Point dir (1.0, 0.0, 0.0);
-            Math::SH::delta (V.view(), dir, lmax);
+            Math::SH::delta (V, dir, lmax);
             if (Math::abs ((x+xp)*sin_angle + (y+yc)*cos_angle) <= N*width) {
               dir.set (cos_angle, sin_angle, 0.0);
-              Math::SH::delta (V2.view(), dir, lmax);
-              V.view() += V2;
+              Math::SH::delta (V2, dir, lmax);
+              V += V2;
             }
-            V.view() /= 2.0;
+            V /= 2.0;
           }
-          Math::SH::sconv (V.view(), RH, V);
-          SH.view() += V;
+          Math::SH::sconv (V, RH, V);
+          SH += V;
         }
       }
-      for (D.pos(3,0); D.pos(3) < D.dim(3); D.move(3,1)) D.value (SH[D.pos(3)]/float(Math::pow2(N)));
+      for (D[3] = 0; D[3] < D.dim(3); ++D[3]) D.value() = SH[D[3]]/float(Math::pow2(N));
     }
 
   private:
@@ -146,10 +146,10 @@ EXECUTE {
   header.axes.dim(2) = D[2];
   header.axes.dim(3) = kernel.size();
   header.axes.vox(0) = header.axes.vox(1) = header.axes.vox(2) = 2.0;
-  header.axes.order(0) = 1; header.axes.forward(0) = true;
-  header.axes.order(1) = 2; header.axes.forward(1) = true;
-  header.axes.order(2) = 3; header.axes.forward(2) = true;
-  header.axes.order(3) = 0; header.axes.forward(3) = true;
+  header.axes.stride(0) = 2;
+  header.axes.stride(1) = 3;
+  header.axes.stride(2) = 4;
+  header.axes.stride(3) = 1;
 
 
   const Image::Header FOD_header = argument[2].get_image (header);

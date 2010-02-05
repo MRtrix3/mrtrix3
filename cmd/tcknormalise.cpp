@@ -18,10 +18,6 @@
     You should have received a copy of the GNU General Public License
     along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
 
-
-    31-10-2008 J-Donald Tournier <d.tournier@brain.org.au>
-    * various optimisations to improve performance
-
 */
 
 #include <fstream>
@@ -75,10 +71,10 @@ EXECUTE {
 
   while (file.next (tck)) {
     for (std::vector<Point>::iterator i = tck.begin(); i != tck.end(); ++i) {
-      interp.R (*i);
-      vox.pos(3,0); (*i)[0] = interp.value();
-      vox.pos(3,1); (*i)[1] = interp.value();
-      vox.pos(3,2); (*i)[2] = interp.value();
+      interp.scanner (*i);
+      vox[3] = 0; (*i)[0] = interp.value();
+      vox[3] = 1; (*i)[1] = interp.value();
+      vox[3] = 2; (*i)[2] = interp.value();
     }
     writer.append (tck);
     writer.total_count++;

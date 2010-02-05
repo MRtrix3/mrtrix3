@@ -70,7 +70,7 @@ OPTIONS = {
 class MapFunc {
   public:
     MapFunc (size_t* buffer, float multiplier, size_t yskip, size_t zskip) : buf (buffer), mult (multiplier), Y (yskip), Z (zskip) { }
-    void operator() (Image::Voxel<float>& vox) { vox.value (mult * buf[vox.pos(0) + Y*vox.pos(1) + Z*vox.pos(2)]); }
+    void operator() (Image::Voxel<float>& vox) { vox.value() = mult * buf[vox[0] + Y*vox[1] + Z*vox[2]]; }
   private:
     size_t* buf;
     float mult;
@@ -126,7 +126,7 @@ EXECUTE {
   while (file.next (tck)) {
     memset (visited, 0, voxel_count*sizeof(uint8_t));
     for (std::vector<Point>::iterator i = tck.begin(); i != tck.end(); ++i) {
-      Point p (interp.R2P (*i));
+      Point p (interp.scanner2voxel (*i));
       int x = round (p[0]);
       int y = round (p[1]);
       int z = round (p[2]);

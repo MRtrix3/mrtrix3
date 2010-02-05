@@ -64,10 +64,10 @@ namespace MR {
 
           bool contains (const Point& p) const {
             if (mask) {
-              Point pix = mask->interp.R2P (p);
-              mask->pos(0, Math::round (pix[0]));
-              mask->pos(1, Math::round (pix[1]));
-              mask->pos(2, Math::round (pix[2]));
+              Point pix = mask->interp.scanner2voxel (p);
+              (*mask)[0] = Math::round (pix[0]);
+              (*mask)[1] = Math::round (pix[1]);
+              (*mask)[2] = Math::round (pix[2]);
               return (mask->value());
             }
             else return ((pos-p).norm2() <= rad2);
@@ -77,12 +77,12 @@ namespace MR {
             Point p;
             if (mask) {
               do {
-                mask->pos(0, rng.uniform_int (mask->dim(0)));
-                mask->pos(1, rng.uniform_int (mask->dim(1)));
-                mask->pos(2, rng.uniform_int (mask->dim(2)));
+                (*mask)[0] = rng.uniform_int (mask->dim(0));
+                (*mask)[1] = rng.uniform_int (mask->dim(1));
+                (*mask)[2] = rng.uniform_int (mask->dim(2));
               } while (!mask->value());
-              p.set (mask->pos(0)+rng.uniform()-0.5, mask->pos(1)+rng.uniform()-0.5, mask->pos(2)+rng.uniform()-0.5);
-              return (mask->interp.P2R (p));
+              p.set ((*mask)[0]+rng.uniform()-0.5, (*mask)[1]+rng.uniform()-0.5, (*mask)[2]+rng.uniform()-0.5);
+              return (mask->interp.voxel2scanner (p));
             }
 
             do {

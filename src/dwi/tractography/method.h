@@ -49,10 +49,10 @@ namespace MR {
           float* values;
 
           bool get_data (const Point& position) {
-            interp.R (position); 
+            interp.scanner (position); 
             if (!interp) return (false);
-            for (source.pos(3,0); source.pos(3) < source.dim(3); source.move(3,1)) 
-              values[source.pos(3)] = interp.value();
+            for (source[3] = 0; source[3] < source.dim(3); ++source[3]) 
+              values[source[3]] = interp.value();
             return (!isnan (values[0]));
           }
 
