@@ -75,8 +75,6 @@ namespace MR {
         const std::string& name () const { return (axes_name); }
 
         void clear () { axes.clear(); }
-        void sanitise ();
-        void get_strides (size_t& start, std::vector<ssize_t>& stride) const;
 
         Axis&       operator[] (size_t index)       { return (axes[index]); }
         const Axis& operator[] (size_t index) const { return (axes[index]); }
@@ -123,15 +121,6 @@ namespace MR {
               default: a.desc.clear(); a.units.clear();
             }
           }
-        }
-
-        ssize_t find_free_axis () const {
-          for (size_t a = 1; a <= ndim(); a++) {
-            size_t m = 0;
-            for (; m < ndim(); m++) if (size_t (abs(axes[m].stride)) == a) break; 
-            if (m >= ndim()) return (a);
-          }
-          return (0);
         }
     };
     

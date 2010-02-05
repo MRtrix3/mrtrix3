@@ -93,12 +93,14 @@ template <class Set, class Set2> void copy (Set& destination, Set2& source, bool
 { 
   std::string progress_message ("copying from \"" + source.name() + "\" to \"" + destination.name() + "\"...");
 
-  typedef DataSet::Reorder<Set2> SetR;
+  typedef DataSet::Reorder<Set> R;
+  typedef DataSet::Reorder<Set2> R2;
 
-  SetR src (source, destination, source.name());
+  R dest (destination);
+  R2 src (source, destination);
 
-  if (replace_NaN) DataSet::loop2 (progress_message, DataSet::copy_kernel<Set,SetR>, destination, src);
-  else DataSet::loop2 (progress_message, copy_replace_NaN_kernel<Set,SetR>, destination, src);
+  if (replace_NaN) DataSet::loop2 (progress_message, DataSet::copy_kernel<R,R2>, dest, src);
+  else DataSet::loop2 (progress_message, copy_replace_NaN_kernel<R,R2>, dest, src);
 }
 
 

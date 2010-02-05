@@ -22,7 +22,7 @@
 
 #include "app.h"
 #include "image/header.h"
-#include "dataset/misc.h"
+#include "dataset/stride.h"
 #include "math/matrix.h"
 #include "math/permutation.h"
 #include "image/axis.h"
@@ -115,7 +115,8 @@ namespace MR {
         }
       }
 
-      axes.sanitise();
+      DataSet::Stride::sanitise (axes);
+      DataSet::Stride::symbolise (axes);
     }
 
 
@@ -223,6 +224,7 @@ namespace MR {
       if (image_name.empty()) throw Exception ("no name supplied to open image!");
       Header H (template_header);
       H.readwrite = true;
+      DataSet::Stride::symbolise (H.axes);
 
       try {
         info ("creating image \"" + image_name + "\"...");

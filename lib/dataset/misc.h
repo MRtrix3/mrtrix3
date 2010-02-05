@@ -58,26 +58,9 @@ namespace MR {
       template <typename T> inline bool is_complex__ () { return (false); }
       template <> inline bool is_complex__<cfloat> () { return (true); }
       template <> inline bool is_complex__<cdouble> () { return (true); }
-      template <class Set> class CompareStride {
-        public:
-          CompareStride (const Set& set) : S (set) { }
-          bool operator() (const size_t a, const size_t b) const { return (abs(S.stride(a)) < abs(S.stride(b))); }
-        private:
-          const Set& S;
-      };
     }
     //! \endcond
 
-
-
-    //! sort strides in increasing absolute order and return vector of indices
-    template <class Set> std::vector<size_t> stride_order (const Set& set) {
-      std::vector<size_t> ret (set.ndim());
-      for (size_t i = 0; i < ret.size(); ++i) ret[i] = i;
-      CompareStride<Set> compare (set);
-      std::sort (ret.begin(), ret.end(), compare);
-      return (ret);
-    }
 
 
 

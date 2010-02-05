@@ -89,6 +89,7 @@ namespace MR {
         int     dim (size_t index) const { return (axes.dim (index)); } 
         size_t  ndim () const            { return (axes.ndim()); }
         float   vox (size_t index) const { return (axes.vox (index)); }
+        ssize_t stride (size_t axis) const { return (axes.stride (axis)); }
 
         const DataType& datatype () const   { return (dtype); }
         DataType&       datatype ()         { return (dtype); }

@@ -24,7 +24,7 @@
 #define __dataset_reorder_h__
 
 #include "math/matrix.h"
-#include "dataset/misc.h"
+#include "dataset/stride.h"
 #include "dataset/value.h"
 #include "dataset/position.h"
 
@@ -38,22 +38,24 @@ namespace MR {
       public:
         typedef typename Set::value_type value_type;
 
-        Reorder (Set& original, const std::string& description = "") : 
+        Reorder (Set& original) : 
           D (original),
-          S (stride_order (original)),
-          descriptor (description.empty() ? D.name() + " [reordered]" : description) { }
+          S (Stride::order (original)),
+          descriptor (D.name()) { }
 
-        template <class Set2> Reorder (Set& original, const Set2& reference, const std::string& description = "") : 
+        template <class Set2> Reorder (Set& original, const Set2& reference) : 
           D (original),
-          S (stride_order (reference)),
-          descriptor (description.empty() ? D.name() + " [reordered]" : description) { }
+          S (Stride::order (reference)),
+          descriptor (D.name()) { }
 
-        Reorder (Set& original, const std::vector<size_t>& ordering, const std::string& description = "") : 
+        Reorder (Set& original, const std::vector<size_t>& ordering) : 
           D (original),
           S (ordering),
-          descriptor (description.empty() ? D.name() + " [reordered]" : description) { }
+          descriptor (D.name()) { }
 
         const std::string& name () const { return (descriptor); }
+        std::string& name () { return (descriptor); }
+
         size_t  ndim () const { return (D.ndim()); }
         int     dim (size_t axis) const { return (D.dim(S[axis])); }
         ssize_t stride (size_t axis) const { return (D.stride (S[axis])); }

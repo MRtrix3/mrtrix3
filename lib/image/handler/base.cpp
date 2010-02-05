@@ -22,15 +22,23 @@
 
 #include "image/handler/base.h"
 #include "image/header.h"
+#include "dataset/stride.h"
 
 namespace MR {
   namespace Image {
     namespace Handler {
 
-      void Base::prepare () {
+      void Base::prepare () 
+      {
+        using namespace DataSet::Stride;
+      
         assert (addresses.empty());
         execute(); 
-        H.axes.get_strides (start_, stride_);
+        stride_ = get (H);
+        actualise (stride_, H);
+        start_ = offset (stride_, H);
+
+        info ("image \"" + H.name() + "\" initialised with start = " + str(start_) + ", strides = " + str(stride_));
       }
 
     }

@@ -37,60 +37,6 @@ namespace MR {
 
 
 
-    void Axes::sanitise ()
-    {
-      // remove unset/invalid axis orderings:
-      for (size_t a = 0; a < ndim(); a++) 
-        if (!stride(a) || size_t(abs(stride(a))) > ndim()) 
-          stride(a) = find_free_axis();
-
-      // remove duplicates:
-      for (size_t a = 1; a < ndim(); a++) {
-        for (size_t n = 0; n < a; n++) {
-          if (abs(stride(a)) == abs(stride(n))) { 
-            stride(a) = find_free_axis();
-            break; 
-          }
-        }
-      }
-    }
-
-
-
-
-
-    void Axes::get_strides (size_t& start, std::vector<ssize_t>& strides) const
-    {
-      start = 0;
-      strides.resize (ndim(), 0);
-
-      size_t ord[ndim()];
-      size_t last = ndim()-1;
-      for (size_t i = 0; i < ndim(); i++) {
-        if (stride(i)) ord[abs(stride(i))-1] = i;  
-        else ord[last--] = i;
-      }
-
-      ssize_t mult = 1;
-      for (size_t i = 0; i < ndim(); i++) {
-        size_t axis = ord[i];
-        assert (axis < ndim());
-        assert (!strides[axis]);
-        strides[axis] = mult * direction(axis);
-        if (strides[axis] < 0) start += abs(strides[axis]) * size_t(dim(axis)-1);
-        mult *= ssize_t(dim(axis));
-      }
-
-      if (App::log_level > 2) {
-        std::string string ("data strides initialised with start = " + str (start) + ", stride = [ ");
-        for (size_t i = 0; i < ndim(); i++) string += str (strides[i]) + " "; 
-        debug (string + "]");
-      }
-    }
-
-
-
-
 
 
     std::vector<ssize_t> Axes::parse (size_t ndim, const std::string& specifier)
