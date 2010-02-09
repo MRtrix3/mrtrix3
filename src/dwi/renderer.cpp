@@ -115,7 +115,6 @@ namespace MR {
 
     void Renderer::init () 
     { 
-      GL::Shader::init();
       vertex_shader = glCreateShaderObjectARB (GL_VERTEX_SHADER_ARB);
       fragment_shader = glCreateShaderObjectARB (GL_FRAGMENT_SHADER_ARB);
       glShaderSourceARB (vertex_shader, 1, &vertex_shader_source, NULL);

@@ -29,7 +29,6 @@
 #include <QWheelEvent>
 
 #include <fstream>
-//#include <GL/glu.h>
 
 #include "app.h"
 #include "dwi/render_frame.h"
@@ -51,14 +50,6 @@
 
 namespace MR {
   namespace DWI {
-
-    namespace {
-      const char* extensions[] = { 
-        "GL_ARB_vertex_shader",
-        "GL_ARB_fragment_shader",
-        NULL
-      };
-    }
 
     RenderFrame::RenderFrame (QWidget* parent) :
       QGLWidget (QGLFormat (QGL::FormatOptions (QGL::DoubleBuffer | QGL::DepthBuffer | QGL::Rgba)), parent),
@@ -95,7 +86,9 @@ namespace MR {
 
     void RenderFrame::initializeGL ()
     {
-      GL::init (extensions);
+      GL::init();
+      CHECK_GL_EXTENSION (ARB_vertex_shader);
+      CHECK_GL_EXTENSION (ARB_fragment_shader);
       renderer.init();
       glEnable (GL_DEPTH_TEST);
       lighting->set();

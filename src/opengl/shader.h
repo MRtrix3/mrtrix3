@@ -29,16 +29,11 @@ namespace MR {
   namespace GL {
     namespace Shader {
 
-      void init (); 
       void print_log (const std::string& type, GLhandleARB obj);
 
     }
   }
 }
-
-#define __DECLARE__
-#include "opengl/extensions/shader.h"
-#undef __DECLARE__
 
 #endif
 

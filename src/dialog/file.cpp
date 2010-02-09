@@ -53,8 +53,6 @@
 namespace MR {
   namespace Dialog {
 
-
-    //std::string File::cwd;
     std::string File::cwd (Path::cwd());
     QPoint File::window_position (-1, -1);
     QSize File::window_size (500, 500);
@@ -291,6 +289,8 @@ namespace MR {
       splitter->setChildrenCollapsible (false);
       splitter->addWidget (folder_view);
       splitter->addWidget (files_view);
+      splitter->setStretchFactor (0, 1);
+      splitter->setStretchFactor (1, 3);
       main_layout->addWidget (splitter);
 
       main_layout->addSpacing (12);

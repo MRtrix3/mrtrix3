@@ -18,25 +18,13 @@
     You should have received a copy of the GNU General Public License
     along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
 
-
-    24-07-2008 J-Donald Tournier <d.tournier@brain.org.au>
-    * added support of overlay of orientation plot on main window
-
 */
 
 #include "opengl/shader.h"
-#include <GL/glx.h>
 
 namespace MR {
   namespace GL {
     namespace Shader {
-
-      void init () 
-      {
-#define __LINK__
-#include "opengl/extensions/shader.h"
-#undef __LINK__
-      }
 
       void print_log (const std::string& type, GLhandleARB obj)
       {
@@ -56,8 +44,4 @@ namespace MR {
     }
   }
 }
-
-#define __DEFINE__
-//#include "opengl/extensions/shader.h"
-#undef __DEFINE__
 

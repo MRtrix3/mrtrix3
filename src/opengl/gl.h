@@ -23,19 +23,22 @@
 #ifndef __open_gl_h__
 #define __open_gl_h__
 
-#include <GL/gl.h>
-#include <GL/glu.h>
-#include <GL/glext.h>
+#include <QtGui>
+#include "opengl/glee.h"
 #include <QtOpenGL>
 #include "mrtrix.h"
 
 namespace MR {
   namespace GL {
 
-    void init (const char** extensions);
+    void init ();
 
   }
 }
+
+#define CHECK_GL_EXTENSION(name) \
+  if (GLEE_##name) info ("OpenGL extension GL_" #name " is supported"); \
+  else throw Exception ("OpenGL extension GL_" #name " is not supported!")
 
 #define DEBUG_OPENGL { GLenum error_code = glGetError(); \
   if (error_code != GL_NO_ERROR) \

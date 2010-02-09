@@ -26,14 +26,6 @@
 namespace MR {
   namespace Viewer {
 
-    namespace {
-      const char* extensions[] = { 
-        "GL_ARB_vertex_shader",
-        "GL_ARB_fragment_shader",
-        NULL
-      };
-    }
-
     GLArea::GLArea (QWidget *parent) : 
       QGLWidget (QGLFormat (QGL::DoubleBuffer | QGL::DepthBuffer | QGL::Rgba), parent) { 
 
@@ -43,7 +35,9 @@ namespace MR {
     QSize GLArea::sizeHint() const { return QSize (256, 256); }
 
     void GLArea::initializeGL () {
-      GL::init (extensions);
+      GL::init ();
+      CHECK_GL_EXTENSION (ARB_vertex_shader);
+      CHECK_GL_EXTENSION (ARB_fragment_shader);
       glClearColor (0.0, 0.0, 0.0, 0.0);
       glEnable (GL_DEPTH_TEST);
     }
