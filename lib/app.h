@@ -18,10 +18,6 @@
     You should have received a copy of the GNU General Public License
     along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
 
-
-    17-10-2008 J-Donald Tournier <d.tournier@brain.org.au>
-    * add SET_VERSION_DEFAULT, SET_VERSION, SET_AUTHOR and SET_COPYRIGHT macros
-
 */
 
 #ifndef __app_h__

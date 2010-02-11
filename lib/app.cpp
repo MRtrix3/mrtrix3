@@ -18,11 +18,6 @@
     You should have received a copy of the GNU General Public License
     along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
 
-
-    17-10-2008 J-Donald Tournier <d.tournier@brain.org.au>
-    * modify version information printed out by "-version" option
-      to take account of new command version, copyright and author variables
-
 */
 
 #include <gsl/gsl_version.h>
