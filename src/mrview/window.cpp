@@ -27,6 +27,7 @@
 #include <QDockWidget>
 
 #include "icon.h"
+#include "dialog/file.h"
 #include "mrview/glarea.h"
 #include "mrview/window.h"
 
@@ -159,7 +160,15 @@ namespace MR {
       tool_menu->addAction (tool->toggleViewAction());
     }
 
-    void Window::open () { TEST; }
+    void Window::open () { 
+      Dialog::File dialog (this, "Select images to open", true, true); 
+      if (dialog.exec()) {
+        VecPtr<Image::Header> list;
+        dialog.get_images (list);
+        for (size_t i = 0; i < list.size(); ++i)
+          VAR (*list[i]);
+      }
+    }
     void Window::save () { TEST; }
     void Window::properties () { TEST; }
 

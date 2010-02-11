@@ -30,11 +30,10 @@
 namespace MR {
   namespace DWI {
 
-    Window::Window (const std::string& title, const Math::Matrix<float>& coefs) : 
+    Window::Window (bool is_response_coefs) :
       lighting_dialog (NULL),
-      name (title), 
       current (0), 
-      values (coefs)
+      is_response (is_response_coefs)
     {
       setWindowIcon (get_icon());
       setMinimumSize (300, 300);
@@ -129,6 +128,13 @@ namespace MR {
       normalise_action->setStatusTip (tr("Normalise surface intensity"));
       connect (normalise_action, SIGNAL (triggered(bool)), this, SLOT (normalise_slot(bool)));
 
+      QAction* response_action = new QAction ("Treat as &response", this);
+      response_action->setCheckable (true);
+      response_action->setChecked (is_response_coefs);
+      response_action->setShortcut (tr("R"));
+      response_action->setStatusTip (tr("Assume each row of values consists only of\nthe m=0 (axially symmetric) even SH coefficients"));
+      connect (response_action, SIGNAL (triggered(bool)), this, SLOT (response_slot(bool)));
+
       QAction* advanced_lighting_action = new QAction ("A&dvanced Lighting", this);
       advanced_lighting_action->setShortcut (tr("D"));
       advanced_lighting_action->setStatusTip (tr("Modify advanced lighting settings"));
@@ -141,6 +147,7 @@ namespace MR {
       settings_menu->addAction (hide_negative_lobes_action);
       settings_menu->addAction (colour_by_direction_action);
       settings_menu->addAction (normalise_action);
+      settings_menu->addAction (response_action);
       settings_menu->addSeparator();
       QMenu* lmax_menu = settings_menu->addMenu (tr("&Harmonic order"));
       QMenu* lod_menu = settings_menu->addMenu (tr("Level of &detail"));
@@ -205,9 +212,7 @@ namespace MR {
       render_frame = new RenderFrame (this);
       setCentralWidget (render_frame);
 
-      set_values (current);
-      
-      render_frame->set_lmax (Math::SH::LforN(values.columns()));
+      render_frame->set_lmax (8);
       render_frame->set_normalise (true);
       render_frame->set_LOD (5);
 
@@ -218,8 +223,13 @@ namespace MR {
 
     void Window::open_slot () 
     { 
-      Dialog::File dialog (this, "Select SH coefficients file", false, true); 
-      VAR (dialog.exec());
+      Dialog::File dialog (this, "Select SH coefficients file", false, false); 
+      if (dialog.exec()) {
+        std::vector<std::string> list;
+        dialog.get_selection (list);
+        assert (list.size() == 1);
+        set_values (list[0]);
+      }
     }
 
     void Window::close_slot () { TEST; }
@@ -228,6 +238,7 @@ namespace MR {
     void Window::hide_negative_lobes_slot (bool is_checked) { render_frame->set_hide_neg_lobes (is_checked); }
     void Window::colour_by_direction_slot (bool is_checked) { render_frame->set_color_by_dir (is_checked); }
     void Window::normalise_slot (bool is_checked) { render_frame->set_normalise (is_checked); }
+    void Window::response_slot (bool is_checked) { is_response = is_checked; set_values (current); }
     void Window::lmax_slot () { render_frame->set_lmax (lmax_group->checkedAction()->data().toInt()); }
     void Window::lod_slot () { render_frame->set_LOD (lod_group->checkedAction()->data().toInt()); }
 
@@ -259,17 +270,52 @@ namespace MR {
     void Window::next_10_slot () { set_values (current+10); }
 
 
+    void Window::set_values (const std::string& filename)
+    {
+      try {
+        values.load (filename);
+        if (values.columns() == 0 || values.rows() == 0) 
+          throw Exception ("invalid matrix of SH coefficients");
+
+        if (values.columns() == 1) {
+          Math::Matrix<float> tmp;
+          Math::transpose (tmp, values);
+          values.swap (tmp);
+        }
+
+        name = Path::basename (filename);
+        set_values (0);
+      }
+      catch (Exception& E) {
+        E.display();
+      }
+    }
+
+
+
     void Window::set_values (int row)
     {
       current = row;
       if (current < 0) current = 0;
       else if (current >= int (values.rows())) current = int (values.rows())-1;
 
-      std::vector<float> val (values.columns());
-      for (size_t n = 0; n < values.columns(); n++)
-        val[n] = values (current,n);
+      std::vector<float> val;
+      if (is_response) {
+        val.resize (Math::SH::NforL (2*(values.columns()-1)), 0);
+        for (size_t n = 0; n < values.columns(); n++) 
+            val[Math::SH::index(2*n,0)] = values (current,n);
+      }
+      else {
+        val.resize (values.columns());
+        for (size_t n = 0; n < values.columns(); n++)
+          val[n] = values (current,n);
+      }
+
       render_frame->set (val);
-      setWindowTitle (QString (std::string (name + " [ " + str(current) + " ]").c_str()));
+      std::string title (name);
+      if (is_response) title += " (response)";
+      title += " [ " + str(current) + " ]";
+      setWindowTitle (QString (title.c_str()));
     }
 
     void Window::screenshot_slot () { render_frame->screenshot (screenshot_OS_group->checkedAction()->data().toInt(), "screenshot.png"); }

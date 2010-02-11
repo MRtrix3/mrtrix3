@@ -36,7 +36,7 @@ DESCRIPTION = {
 };
 
 ARGUMENTS = {
-  Argument ("coefs", "SH coefficients", "a text file containing the even spherical harmonics coefficients to display.").type_file (),
+  Argument ("coefs", "SH coefficients", "a text file containing the even spherical harmonics coefficients to display.", Optional).type_file (),
   Argument::End
 };
 
@@ -55,26 +55,8 @@ class MyApp : public MR::App {
         __command_version, __command_author, __command_copyright), qapp (argc, argv) { parse_arguments(); }
 
     void execute () { 
-      Math::Matrix<float> values (argument[0].get_string());
-      if (values.columns() == 1) {
-        Math::Matrix<float> tmp;
-        Math::transpose (tmp, values);
-        values.swap (tmp);
-      }
-
-      std::vector<OptBase> opt = get_options (0); // response
-      if (opt.size()) {
-        Math::Matrix<float> R;
-        R.copy (values);
-        values.allocate (R.rows(), Math::SH::NforL (2*(R.columns()-1)));
-        values.zero();
-        for (size_t n = 0; n < R.rows(); n++) 
-          for (size_t i = 0; i < R.columns(); i++) 
-            values(n, Math::SH::index(2*i,0)) = R(n,i);
-      }
-
-
-      DWI::Window window (Path::basename (argument[0].get_string()), values);
+      DWI::Window window (get_options(0).size());
+      if (argument.size()) window.set_values (argument[0].get_string());
       window.show();
       if (qapp.exec()) throw Exception ("error running Qt application");
     }

@@ -18,10 +18,6 @@
     You should have received a copy of the GNU General Public License
     along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
 
-
-    15-10-2008 J-Donald Tournier <d.tournier@brain.org.au>
-    * remove MR::DICOM_DW_gradients_PRS flag
-
 */
 
 #include <QLayout>
@@ -36,7 +32,6 @@
 
 #include "dialog/file.h"
 #include "image/format/list.h"
-#include "image/header.h"
 #include "file/path.h"
 #include "file/dicom/quick_scan.h"
 #include "file/dicom/image.h"
@@ -139,7 +134,7 @@ namespace MR {
       if (index.isValid()) {
         if (role == Qt::DisplayRole) {
           if (index.row() < int (num_dicom_series)) {
-            const MR::File::Dicom::Series& series (get_dicom_series (index.row()));
+            const MR::File::Dicom::Series& series (*get_dicom_series (index.row()));
             return (QVariant (std::string (
                     "[" + str (series.number) + "] " + series.name + ": " + str (series.size()) + " images (" + series.study->patient->name 
             + " - " + MR::File::Dicom::format_date (series.date) + ")").c_str()));
@@ -149,7 +144,7 @@ namespace MR {
         }
         else if (role == Qt::ToolTipRole) {
           if (index.row() < int (num_dicom_series)) {
-            const MR::File::Dicom::Series& series (get_dicom_series (index.row()));
+            const MR::File::Dicom::Series& series (*get_dicom_series (index.row()));
             return (QVariant (std::string (
                     "patient: " + series.study->patient->name 
                     + "\n\tDOB: " + MR::File::Dicom::format_date (series.study->patient->DOB) + "\n\tID: " + series.study->patient->ID
@@ -198,15 +193,15 @@ namespace MR {
     }
 
 
-    const MR::File::Dicom::Series& FileModel::get_dicom_series (size_t index) const
+    RefPtr<MR::File::Dicom::Series> FileModel::get_dicom_series (size_t index) const
     {
       assert (index < num_dicom_series);
       size_t i = 0;
       for (size_t pat = 0; pat < dicom_tree.size(); ++pat) 
         for (size_t study = 0; study < dicom_tree[pat]->size(); ++study) 
           for (size_t series = 0; series < (*dicom_tree[pat])[study]->size(); ++series) 
-            if (i++ == index) return (*(*(*dicom_tree[pat])[study])[series]);
-      return (*(*(*dicom_tree[0])[0])[0]);
+            if (i++ == index) return ((*(*dicom_tree[pat])[study])[series]);
+      return ((*(*dicom_tree[0])[0])[0]);
     }
 
 
@@ -283,7 +278,7 @@ namespace MR {
       files_view->sortByColumn (0, Qt::AscendingOrder);
       files_view->setWordWrap (false);
       files_view->setItemsExpandable (false);
-      files_view->setSelectionMode (QAbstractItemView::SingleSelection);
+      files_view->setSelectionMode (multiselection ? QAbstractItemView::ExtendedSelection : QAbstractItemView::SingleSelection);
 
       QSplitter *splitter = new QSplitter;
       splitter->setChildrenCollapsible (false);
@@ -310,12 +305,13 @@ namespace MR {
       connect (button, SIGNAL(clicked()), this, SLOT(reject()));
       buttons_layout->addWidget (button);
 
-      button = new QPushButton (tr("OK"));
-      button->setDefault (true);
-      connect (button, SIGNAL(clicked()), this, SLOT(accept()));
-      buttons_layout->addWidget (button);
+      ok_button = new QPushButton (tr("OK"));
+      ok_button->setDefault (true);
+      connect (ok_button, SIGNAL(clicked()), this, SLOT(accept()));
+      buttons_layout->addWidget (ok_button);
 
       connect (folder_view, SIGNAL (activated(const QModelIndex&)), this, SLOT (folder_selected_slot(const QModelIndex&)));
+      connect (files_view, SIGNAL (activated(const QModelIndex&)), this, SLOT (file_selected_slot(const QModelIndex&)));
 
       main_layout->addLayout (buttons_layout);
       setLayout (main_layout);
@@ -338,6 +334,7 @@ namespace MR {
 
     void File::update () 
     {
+      ok_button->setEnabled (false);
       setCursor (Qt::WaitCursor);
       folders->clear();
       files->clear();
@@ -378,291 +375,75 @@ namespace MR {
       update();
     }
 
+    void File::file_selected_slot (const QModelIndex& index) { accept(); }
 
 
-    /*
 
-    void File::on_up ()
+
+    void File::idle_slot ()
     {
-      cwd = Glib::path_get_dirname (cwd);
-      update();
-    }
+      assert (dir);
+      std::vector<std::string> file_list;
+      std::string entry;
+      while (elapsed_timer.elapsed() < FILE_DIALOG_BUSY_INTERVAL) {
+        entry = get_next_file();
+        if (entry.empty()) {
+          idle_timer->stop();
+          files->add_entries (file_list);
+          unsetCursor ();
+          ok_button->setEnabled (true);
+          dir = NULL;
+          return;
+        }
 
-
-
-    void File::on_home ()
-    {
-      cwd = Glib::get_home_dir();
-      update();
-    }
-
-
-
-    void File::on_refresh ()
-    {
-      update();
-    }
-
-
-
-    void File::on_path ()
-    {
-      if (Glib::file_test (path_entry.get_text(), Glib::FILE_TEST_IS_DIR))
-        cwd = path_entry.get_text();
-      update();
-    }
-
-
-
-
-
-    void File::on_folder_selected (const Gtk::TreeModel::Path& path, Gtk::TreeViewColumn* column)
-    {
-      Gtk::TreeModel::iterator iter = folder_list->get_iter (path);
-      if (iter) {
-        cwd = Glib::build_filename (cwd, (*iter)[folder_columns.name]);
-        update();
+        if (filter_images) {
+          if (files->check_image (Path::join (cwd, entry)))
+            file_list.push_back (entry);
+        }
+        else file_list.push_back (entry);
       }
+
+      elapsed_timer.start();
+      files->add_entries (file_list);
     }
 
 
 
 
-    void File::on_file_selected (const Gtk::TreeModel::Path& path, Gtk::TreeViewColumn* column)
+
+
+
+
+    void File::get_selection (std::vector<std::string>& filenames)
     {
-      response (Gtk::RESPONSE_OK);
+      assert (!filter_images);
+      QModelIndexList indexes = files_view->selectionModel()->selectedIndexes();
+      QModelIndex index;
+      foreach (index, indexes) 
+        filenames.push_back (Path::join (cwd, files->name (index.row())));
     }
 
 
-    void File::on_selection_activated ()
+
+
+
+    void File::get_images (VecPtr<Image::Header>& images)
     {
-      response (Gtk::RESPONSE_OK);
-    }
-
-
-
-    void File::on_file_highlighted ()
-    {
-      if (updating_selection) updating_selection = false;
-      else {
-        if (files.get_selection()->get_mode() == Gtk::SELECTION_MULTIPLE) {
-          std::vector<Gtk::TreePath> rows (files.get_selection()->get_selected_rows());
-          if (rows.size()) {
-            updating_selection = true;
-            if (rows.size() == 1) {
-            std::string name ((*file_list->get_iter (rows[0]))[file_columns.name]);
-              selection_entry.set_text (name);
-            }
-            else selection_entry.set_text ("");
-          }
+      assert (filter_images);
+      QModelIndexList indexes = files_view->selectionModel()->selectedIndexes();
+      QModelIndex index;
+      foreach (index, indexes) {
+        if (files->is_file (index.row())) {
+          images.push_back (new Image::Header (Image::Header::open (Path::join (cwd, files->name (index.row())))));
         }
         else {
-          Gtk::TreeModel::iterator iter = files.get_selection()->get_selected();
-          if (file_list->iter_is_valid (iter)) { 
-            updating_selection = true;
-            std::string name ((*iter)[file_columns.name]);
-            selection_entry.set_text (name);
-          }
+          std::vector< RefPtr<MR::File::Dicom::Series> > series;
+          series.push_back (RefPtr<MR::File::Dicom::Series> (files->get_dicom_series (index.row())));
+          Image::Header* H = new Image::Header;
+          dicom_to_mapper (*H, series);
+          images.push_back (H);
         }
       }
-    }
-
-
-
-
-
-    void File::on_selection_entry ()
-    {
-      if (updating_selection) updating_selection = false;
-      else {
-        updating_selection = true;
-        files.get_selection()->unselect_all();
-      }
-    }
-
-*/
-
-  void File::idle_slot ()
-  {
-    assert (dir);
-    std::vector<std::string> file_list;
-    std::string entry;
-    while (elapsed_timer.elapsed() < FILE_DIALOG_BUSY_INTERVAL) {
-      entry = get_next_file();
-      if (entry.empty()) {
-        idle_timer->stop();
-        files->add_entries (file_list);
-        unsetCursor ();
-        dir = NULL;
-        return;
-      }
-      
-      if (filter_images) {
-        if (files->check_image (Path::join (cwd, entry)))
-          file_list.push_back (entry);
-      }
-      else file_list.push_back (entry);
-    }
-
-    elapsed_timer.start();
-    files->add_entries (file_list);
-  }
-
-/*
-
-    bool File::on_idle ()
-    {
-    std::string entry;
-      for (guint n = 0; n < 10; n++) {
-        entry = dir->read_name();
-
-        if (!entry.size()) {
-          if (folders_read) {
-            get_window()->set_cursor();
-            update_dicom ();
-            return (false);
-          }
-          else {
-            folders_read = true;
-            dir->rewind();
-            return (true);
-          }
-        }
-
-        if (entry[0] != '.') {
-        std::string path (Glib::build_filename (cwd, entry));
-          if (folders_read) {
-            if (Glib::file_test (path, Glib::FILE_TEST_IS_REGULAR)) {
-              if (filter_images) check_image (path, entry);
-              else {
-                Gtk::TreeModel::Row row = *(file_list->append());
-                row[file_columns.name] = entry;
-              }
-            }
-          }
-          else if (Glib::file_test (Glib::build_filename (cwd, entry), Glib::FILE_TEST_IS_DIR)) {
-            Gtk::TreeModel::Row row = *(folder_list->append());
-            row[folder_columns.name] = entry;
-          }
-        }
-      }
-
-
-      update_dicom ();
-
-      return (true);
-    }
-
-
-
-
-
-    bool File::on_file_tooltip (int x, int y, bool keyboard_tooltip, const Glib::RefPtr<Gtk::Tooltip>& tooltip)
-    {
-      Gtk::TreeModel::iterator iter;
-      if (!files.get_tooltip_context_iter (x, y, keyboard_tooltip, iter)) return (false);
-
-      RefPtr<MR::File::Dicom::Series> series ((*iter)[file_columns.series]);
-      if (!series) return (false);
-
-
-      std::string text = "patient: " + series->study->patient->name 
-        + "\n\tDOB: " + MR::File::Dicom::format_date (series->study->patient->DOB) + "\n\tID: " + series->study->patient->ID
-        + "\nstudy: " + series->study->name + "\n\tdate: " + MR::File::Dicom::format_date (series->study->date) + " at "
-        + MR::File::Dicom::format_time (series->study->time) +"\n\tID: " + series->study->ID
-        + "\nseries " + str (series->number) + ": " + series->name + "\n\t" + str (series->size()) + " images\n\tdate: " 
-        + MR::File::Dicom::format_date (series->date) + " at " + MR::File::Dicom::format_time (series->time);
-      
-      tooltip->set_text (text);
-      return (true);
-    }
-
-
-*/
-
-
-
-
-
-
-      /*
-    void File::update_dicom ()
-    {
-      Gtk::TreeModel::Children children = file_list->children();
-      for (Gtk::TreeModel::Children::iterator iter = children.begin(); iter != children.end(); ++iter) {
-        Gtk::TreeModel::Row row = *iter;
-        RefPtr<MR::File::Dicom::Series> series (row[file_columns.series]);
-        if (series.get()) {
-          row[file_columns.name] = "[" + str (series->number) + "] " + series->name + ": " + str (series->size()) + " images (" + series->study->patient->name 
-            + " - " + MR::File::Dicom::format_date (series->date) + ")";
-        }
-      }
-    }
-      */
-
-
-
-
-
-
-    std::vector<std::string> File::get_selection ()
-    {
-      std::vector<std::string> sel;
-      /*
-      std::vector<Gtk::TreePath> rows (files.get_selection()->get_selected_rows());
-      if (rows.size()) {
-        for (std::vector<Gtk::TreePath>::iterator it = rows.begin(); it != rows.end(); ++it) {
-        std::string name ((*file_list->get_iter (*it))[file_columns.name]);
-          sel.push_back (Glib::build_filename (cwd, name));
-        }
-      }
-      else {
-      std::string name (strip (selection_entry.get_text()));
-        if (name.size()) sel.push_back (Glib::build_filename (cwd, name));
-      }
-*/
-      return (sel);
-    }
-
-
-
-
-
-    std::vector<RefPtr<Image::Header> > File::get_images ()
-    {
-      std::vector<RefPtr<Image::Header> > V;
-      /*
-      std::vector<Gtk::TreePath> rows (files.get_selection()->get_selected_rows());
-      if (rows.size()) {
-        for (std::vector<Gtk::TreePath>::iterator it = rows.begin(); it != rows.end(); ++it) {
-          Gtk::TreeModel::Row row = *file_list->get_iter (*it);
-          RefPtr<MR::File::Dicom::Series> series (row[file_columns.series]);
-          try {
-            RefPtr<Image::Header> ima (new Image::Header);
-
-            if (series.get()) {
-              std::vector< RefPtr<MR::File::Dicom::Series> > series_v;
-              series_v.push_back (series);
-              MR::File::Dicom::dicom_to_mapper (ima->M, ima->H, series_v);
-              ima->setup();
-            }
-            else ima->open (Glib::build_filename (cwd, row[file_columns.name]));
-
-            V.push_back (ima);
-          }
-          catch (...) { }
-        }
-      }
-      else {
-        try {
-          RefPtr<Image::Header> ima (new Image::Header);
-          ima->open (Glib::build_filename (cwd, strip (selection_entry.get_text())));
-          V.push_back (ima);
-        }
-        catch (...) { }
-      }
-*/
-      return (V);
     }
 
 

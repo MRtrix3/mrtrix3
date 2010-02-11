@@ -28,19 +28,18 @@
 
 #include "ptr.h"
 #include "timer.h"
+#include "image/header.h"
 #include "file/path.h"
 #include "file/dicom/tree.h"
 
 class QWidget;
 class QTreeView;
 class QLineEdit;
+class QPushButton;
 class QTimer;
 class QSortFilterProxyModel;
 
 namespace MR {
-  namespace Image {
-    class Header;
-  }
 
   namespace File {
     namespace Dicom {
@@ -77,7 +76,9 @@ namespace MR {
         FileModel () : num_dicom_series (0) { }
         void add_entries (const std::vector<std::string>& more);
         void clear ();
-        std::string name (int num) const { return (list[num]); }
+        bool is_file (int num) const { return (num >= int (num_dicom_series)); }
+        std::string name (int num) const { assert (is_file (num)); return (list[num-num_dicom_series]); }
+        RefPtr<MR::File::Dicom::Series> get_dicom_series (size_t index) const;
         bool check_image (const std::string& path);
         void check_dicom (const std::string& path);
 
@@ -88,8 +89,6 @@ namespace MR {
         std::vector<std::string> list;
         MR::File::Dicom::Tree dicom_tree;
         size_t num_dicom_series;
-
-        const MR::File::Dicom::Series& get_dicom_series (size_t index) const;
     };
 
 
@@ -103,14 +102,15 @@ namespace MR {
         File (QWidget* parent, const std::string& message, bool multiselection, bool images_only);
         ~File ();
 
-        std::vector<std::string> get_selection ();
-        std::vector<RefPtr<Image::Header> > get_images ();
+        void get_selection (std::vector<std::string>& filenames);
+        void get_images (VecPtr<Image::Header>& images);
 
       protected slots:
         void idle_slot ();
         void up_slot ();
         void home_slot ();
         void folder_selected_slot (const QModelIndex& index);
+        void file_selected_slot (const QModelIndex& index);
         void update ();
 
       protected:
@@ -123,6 +123,7 @@ namespace MR {
         QTreeView*   files_view;
         QLineEdit*   path_entry;
         QLineEdit*   selection_entry;
+        QPushButton* ok_button;
         QTimer*      idle_timer;
         Timer        elapsed_timer;
 

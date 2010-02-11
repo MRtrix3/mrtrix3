@@ -44,7 +44,8 @@ namespace MR {
       Q_OBJECT
 
       public:
-        Window (const std::string& title, const Math::Matrix<float>& coefs);
+        Window (bool is_response_coefs);
+        void set_values (const std::string& filename);
 
       protected slots:
         void open_slot ();
@@ -54,6 +55,7 @@ namespace MR {
         void hide_negative_lobes_slot (bool is_checked);
         void colour_by_direction_slot (bool is_checked);
         void normalise_slot (bool is_checked);
+        void response_slot (bool is_checked);
         void previous_slot ();
         void next_slot ();
         void previous_10_slot ();
@@ -72,7 +74,8 @@ namespace MR {
 
         std::string name;
         int current;
-        const Math::Matrix<float>& values;
+        Math::Matrix<float> values;
+        bool  is_response;
 
         void set_values (int row);
     };
