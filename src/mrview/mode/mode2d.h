@@ -20,47 +20,35 @@
 
 */
 
-#ifndef __viewer_glarea_h__
-#define __viewer_glarea_h__
+#ifndef __viewer_mode_mode2d_h__
+#define __viewer_mode_mode2d_h__
 
-#include <QGLWidget>
+#include "mrview/mode/base.h"
 
 namespace MR {
   namespace Viewer {
+    namespace Mode {
 
-    namespace Mode { class Base; }
+      class Mode2D : public Base 
+      {
+        public:
+          Mode2D (GLArea& parent);
+          virtual ~Mode2D ();
 
-    class GLArea : public QGLWidget
-    {
-      Q_OBJECT
+          virtual void paint ();
 
-      public:
-        GLArea (QWidget *parent);
-        ~GLArea ();
-        QSize minimumSizeHint () const;
-        QSize sizeHint () const;
+          virtual void mousePressEvent (QMouseEvent* event);
+          virtual void mouseMoveEvent (QMouseEvent* event);
+          virtual void mouseDoubleClickEvent (QMouseEvent* event);
+          virtual void mouseReleaseEvent (QMouseEvent* event);
+          virtual void wheelEvent (QWheelEvent* event);
+      };
 
-        void set_mode (int index);
-
-      protected:
-        void initializeGL ();
-        void paintGL ();
-        void resizeGL (int width, int height);
-
-        void mousePressEvent (QMouseEvent* event);
-        void mouseMoveEvent (QMouseEvent* event);
-        void mouseDoubleClickEvent (QMouseEvent* event);
-        void mouseReleaseEvent (QMouseEvent* event);
-        void wheelEvent (QWheelEvent* event);
-
-      private slots:
-
-      private:
-        Mode::Base* mode;
-    };
-
+    }
   }
 }
 
 #endif
+
+
 

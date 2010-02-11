@@ -22,47 +22,55 @@
 
 #include "opengl/gl.h"
 #include "mrview/glarea.h"
+#include "mrview/mode/base.h"
+
 
 namespace MR {
   namespace Viewer {
 
     GLArea::GLArea (QWidget *parent) : 
-      QGLWidget (QGLFormat (QGL::DoubleBuffer | QGL::DepthBuffer | QGL::Rgba), parent) { 
+      QGLWidget (QGLFormat (QGL::DoubleBuffer | QGL::DepthBuffer | QGL::Rgba), parent),
+      mode (Mode::create (*this, 0))
+    { }
 
-    }
+    GLArea::~GLArea () { delete mode; }
 
     QSize GLArea::minimumSizeHint() const { return QSize (256, 256); }
     QSize GLArea::sizeHint() const { return QSize (256, 256); }
 
-    void GLArea::initializeGL () {
+    void GLArea::initializeGL () 
+    {
       GL::init ();
-      CHECK_GL_EXTENSION (ARB_vertex_shader);
+
       CHECK_GL_EXTENSION (ARB_fragment_shader);
+      CHECK_GL_EXTENSION (ARB_vertex_shader);
+      CHECK_GL_EXTENSION (ARB_geometry_shader4);
+      CHECK_GL_EXTENSION (EXT_texture3D);
+      CHECK_GL_EXTENSION (ARB_texture_non_power_of_two);
+
       glClearColor (0.0, 0.0, 0.0, 0.0);
       glEnable (GL_DEPTH_TEST);
     }
 
-    void GLArea::paintGL () {
+    void GLArea::paintGL () 
+    {
       glClear (GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
       glLoadIdentity();
+      mode->paint();
     }
 
-    void GLArea::resizeGL (int width, int height) {
+    void GLArea::resizeGL (int width, int height) 
+    {
       glViewport (0, 0, width, height);
     }
 
-    void GLArea::mousePressEvent (QMouseEvent *event) { lastPos = event->pos(); }
+    void GLArea::mousePressEvent (QMouseEvent *event) { mode->mousePressEvent (event); }
 
-    void GLArea::mouseMoveEvent (QMouseEvent *event) {
-      int dx = event->x() - lastPos.x();
-      int dy = event->y() - lastPos.y();
+    void GLArea::mouseMoveEvent (QMouseEvent *event) { mode->mouseMoveEvent (event); }
 
-      //QCursor::setPos (mapToGlobal (lastPos));
-      //std::cerr << dx << " " << dy << "\n";
-
-      lastPos = event->pos();
-    }
-
+    void GLArea::mouseDoubleClickEvent (QMouseEvent* event) { mode->mouseDoubleClickEvent (event); }
+    void GLArea::mouseReleaseEvent (QMouseEvent* event) { mode->mouseReleaseEvent (event); }
+    void GLArea::wheelEvent (QWheelEvent* event) { mode->wheelEvent (event); }
 
   }
 }
