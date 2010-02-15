@@ -796,45 +796,6 @@ WARNING: not all required OpenGL extensions are supported (see above).
 
 
 
-  report ('Checking whether OpenGL extensions compile with -DGL_GLEXT_PROTOTYPES: ')
-  try:
-    gl_test = compile ('''
-#include <QtGui>
-#include <QtOpenGL>
-#include <QApplication>
-#include <QGLWidget>
-#include <iostream>
-#include <GL/glext.h>
-
-class GLWidget : public QGLWidget {
-  public:
-    GLWidget (QWidget *parent = 0) : QGLWidget (parent) { }
-    ~GLWidget() { }
-  protected:
-    void initializeGL () { exit (0); }
-    void paintGL () { 
-      char* log;
-      int chars;
-      GLhandleARB obj;
-      glGetInfoLogARB (obj, 1, &chars, log); 
-    }
-    void resizeGL (int width, int height) { }
-};
-
-int main (int argc, char *argv[]) {
-  QApplication app (argc, argv);
-  GLWidget window;
-  window.show();
-  return app.exec();
-}
-''', qt_cflags + [ '-DGL_GLEXT_PROTOTYPES' ], qt_ldflags)
-    qt_cflags += [ '-DGL_GLEXT_PROTOTYPES' ]
-    report ('yes\n')
-  except:
-    report ('no\n')
-
-
-
 
 
 
