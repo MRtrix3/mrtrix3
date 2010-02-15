@@ -738,6 +738,7 @@ const char *extensions[] = {
   "GL_EXT_texture3D",
   "GL_ARB_texture_float",
   "GL_ARB_texture_non_power_of_two",
+  "GL_ARB_framebuffer_object",
   NULL
 };
 
