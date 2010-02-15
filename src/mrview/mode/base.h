@@ -27,7 +27,6 @@
 #include <QMouseEvent>
 #include <QMenu>
 
-#include "mrview/glarea.h"
 #include "mrview/window.h"
 
 namespace MR {
@@ -39,7 +38,7 @@ namespace MR {
         Q_OBJECT
 
         public:
-          Base (GLArea& parent);
+          Base (Window& parent);
           virtual ~Base ();
 
           virtual void paint ();
@@ -52,7 +51,7 @@ namespace MR {
 
 
         protected:
-          GLArea& glarea;
+          Window& window;
           QPoint lastPos;
 
           QPoint distance_moved (QMouseEvent* event) { 
@@ -63,18 +62,17 @@ namespace MR {
 
           QPoint distance_moved_motionless (QMouseEvent* event) {
             QPoint d = event->pos() - lastPos; 
-            QCursor::setPos (glarea.mapToGlobal (lastPos));
+            QCursor::setPos (window.global_position (lastPos));
             return (d);
           }
 
           void add_action (QAction* action)
           {
-            Window* window = static_cast <Window*> (glarea.window());
-            window->view_menu->insertAction (window->view_menu_mode_area, action);
+            window.view_menu->insertAction (window.view_menu_mode_area, action);
           }
       };
 
-      Base* create (GLArea& parent, size_t index);
+      Base* create (Window& parent, size_t index);
       const char* name (size_t index);
 
     }

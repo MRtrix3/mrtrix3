@@ -20,15 +20,18 @@
 
 */
 
+#include "data_type.h"
+#include "opengl/gl.h"
+
 #include <QMessageBox>
 #include <QAction>
 #include <QMenuBar>
 #include <QStatusBar>
 #include <QDockWidget>
+#include <QGLWidget>
 
 #include "icon.h"
 #include "dialog/file.h"
-#include "mrview/glarea.h"
 #include "mrview/window.h"
 #include "mrview/mode/base.h"
 
@@ -37,12 +40,36 @@
 namespace MR {
   namespace Viewer {
 
-    Window::Window() { 
+    class Window::GLArea : public QGLWidget {
+      public:
+        GLArea (Window& parent);
+        ~GLArea ();
+        QSize minimumSizeHint () const;
+        QSize sizeHint () const;
+
+      private:
+        Window& main;
+
+        void initializeGL ();
+        void paintGL ();
+        void resizeGL (int width, int height);
+
+        void mousePressEvent (QMouseEvent* event);
+        void mouseMoveEvent (QMouseEvent* event);
+        void mouseDoubleClickEvent (QMouseEvent* event);
+        void mouseReleaseEvent (QMouseEvent* event);
+        void wheelEvent (QWheelEvent* event);
+    };
+
+
+
+    Window::Window() : 
+      glarea (new GLArea (*this)),
+      mode (NULL) 
+    { 
       setWindowTitle (tr("MRView"));
       setWindowIcon (get_icon());
       setMinimumSize (256, 256);
-
-      glarea = new GLArea (this);
       setCentralWidget (glarea);
 
 
@@ -184,6 +211,22 @@ namespace MR {
       select_mode (mode_actions[0]);
     }
 
+
+
+
+    Window::~Window () 
+    {
+      delete glarea;
+    }
+
+
+
+
+
+    QPoint Window::global_position (const QPoint& position) const { return (glarea->mapToGlobal (position)); }
+
+
+
     void Window::add_tool (Tool::Base* tool) {
       addDockWidget (Qt::RightDockWidgetArea, tool);
       tool_menu->addAction (tool->toggleViewAction());
@@ -203,13 +246,13 @@ namespace MR {
 
     void Window::select_mode (QAction* action) 
     {
-      if (glarea->mode) delete glarea->mode;
+      delete mode;
       size_t n = 0;
       while (action != mode_actions[n]) {
         assert (Mode::name (n) != NULL);
         ++n;
       }
-      glarea->mode = Mode::create (*glarea, n);
+      mode = Mode::create (*this, n);
     }
 
     void Window::reset_windowing () { TEST; }
@@ -223,7 +266,61 @@ namespace MR {
     }
     void Window::aboutQt () { QMessageBox::aboutQt (this, tr("About MRView")); }
 
+    inline void Window::paintGL () { mode->paint(); }
+    inline void Window::initGL () { };
+    inline void Window::mousePressEventGL (QMouseEvent* event) { mode->mousePressEvent (event); }
+    inline void Window::mouseMoveEventGL (QMouseEvent* event) { mode->mouseMoveEvent (event); }
+    inline void Window::mouseDoubleClickEventGL (QMouseEvent* event) { mode->mouseDoubleClickEvent (event); }
+    inline void Window::mouseReleaseEventGL (QMouseEvent* event) { mode->mouseReleaseEvent (event); }
+    inline void Window::wheelEventGL (QWheelEvent* event) { mode->wheelEvent (event); }
+
+
+
+
+    Window::GLArea::GLArea (Window& parent) : 
+      QGLWidget (QGLFormat (QGL::DoubleBuffer | QGL::DepthBuffer | QGL::Rgba), &parent),
+      main (parent)
+    { }
+
+    Window::GLArea::~GLArea () { }
+
+
+    QSize Window::GLArea::minimumSizeHint() const { return QSize (256, 256); }
+    QSize Window::GLArea::sizeHint() const { return QSize (256, 256); }
+
+    void Window::GLArea::initializeGL () 
+    {
+      GL::init ();
+
+      CHECK_GL_EXTENSION (ARB_fragment_shader);
+      CHECK_GL_EXTENSION (ARB_vertex_shader);
+      CHECK_GL_EXTENSION (ARB_geometry_shader4);
+      CHECK_GL_EXTENSION (EXT_texture3D);
+      CHECK_GL_EXTENSION (ARB_texture_non_power_of_two);
+      CHECK_GL_EXTENSION (ARB_framebuffer_object);
+
+      glClearColor (0.0, 0.0, 0.0, 0.0);
+      glEnable (GL_DEPTH_TEST);
+
+      main.initGL();
+    }
+
+    void Window::GLArea::paintGL () 
+    {
+      glClear (GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+      glLoadIdentity();
+      main.paintGL();
+    }
+
+    void Window::GLArea::resizeGL (int width, int height) { glViewport (0, 0, width, height); }
+    void Window::GLArea::mousePressEvent (QMouseEvent *event) { main.mousePressEventGL (event); }
+    void Window::GLArea::mouseMoveEvent (QMouseEvent *event) { main.mouseMoveEventGL (event); }
+    void Window::GLArea::mouseDoubleClickEvent (QMouseEvent* event) { main.mouseDoubleClickEventGL (event); }
+    void Window::GLArea::mouseReleaseEvent (QMouseEvent* event) { main.mouseReleaseEventGL (event); }
+    void Window::GLArea::wheelEvent (QWheelEvent* event) { main.wheelEventGL (event); }
+
   }
 }
+
 
 

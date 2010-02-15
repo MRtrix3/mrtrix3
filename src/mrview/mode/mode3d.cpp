@@ -26,7 +26,7 @@ namespace MR {
   namespace Viewer {
     namespace Mode {
 
-      Mode3D::Mode3D (GLArea& parent) : Base (parent) { }
+      Mode3D::Mode3D (Window& parent) : Base (parent) { }
       Mode3D::~Mode3D () { }
 
       void Mode3D::paint () { }

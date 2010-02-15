@@ -32,7 +32,6 @@ class QActionGroup;
 namespace MR {
   namespace Viewer {
 
-    class GLArea;
     namespace Mode { class Base; }
     namespace Tool { class Base; }
 
@@ -42,6 +41,7 @@ namespace MR {
 
       public:
         Window();
+        ~Window();
 
       private slots:
         void open ();
@@ -56,18 +56,33 @@ namespace MR {
         void about ();
         void aboutQt ();
 
+        QPoint global_position (const QPoint& position) const;
+
       private:
+        class GLArea;
+
+        GLArea *glarea;
+        Mode::Base* mode;
+
         QMenu *file_menu, *view_menu, *tool_menu, *image_menu, *help_menu;
         QAction *open_action, *save_action, *properties_action, *quit_action;
         QAction *view_menu_mode_area, *reset_windowing_action, *full_screen_action;
         QAction **mode_actions;
         QAction *OpenGL_action, *about_action, *aboutQt_action;
         QActionGroup *mode_group;
-        GLArea *glarea;
 
         void add_tool (Tool::Base* tool);
 
+        void paintGL ();
+        void initGL ();
+        void mousePressEventGL (QMouseEvent* event);
+        void mouseMoveEventGL (QMouseEvent* event);
+        void mouseDoubleClickEventGL (QMouseEvent* event);
+        void mouseReleaseEventGL (QMouseEvent* event);
+        void wheelEventGL (QWheelEvent* event);
+
         friend class Mode::Base;
+        friend class Window::GLArea;
     };
 
   }

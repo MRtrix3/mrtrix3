@@ -29,7 +29,7 @@ namespace MR {
   namespace Viewer {
     namespace Mode {
 
-      Base::Base (GLArea& parent) : glarea (parent) { }
+      Base::Base (Window& parent) : window (parent) { }
       Base::~Base () { }
 
       void Base::paint () { }
@@ -40,7 +40,7 @@ namespace MR {
       void Base::mouseReleaseEvent (QMouseEvent* event) { }
       void Base::wheelEvent (QWheelEvent* event) { }
 
-      Base* create (GLArea& parent, size_t index) 
+      Base* create (Window& parent, size_t index) 
       {
         switch (index) {
 #include "mrview/mode/list.h"

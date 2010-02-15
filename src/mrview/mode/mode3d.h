@@ -32,7 +32,7 @@ namespace MR {
       class Mode3D : public Base 
       {
         public:
-          Mode3D (GLArea& parent);
+          Mode3D (Window& parent);
           virtual ~Mode3D ();
 
           virtual void paint ();

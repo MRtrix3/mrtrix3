@@ -34,7 +34,7 @@ namespace MR {
         Q_OBJECT
 
         public:
-          Mode2D (GLArea& parent);
+          Mode2D (Window& parent);
           virtual ~Mode2D ();
 
           virtual void paint ();

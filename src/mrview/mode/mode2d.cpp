@@ -29,7 +29,7 @@ namespace MR {
   namespace Viewer {
     namespace Mode {
 
-      Mode2D::Mode2D (GLArea& parent) : Base (parent) 
+      Mode2D::Mode2D (Window& parent) : Base (parent) 
       { 
         QAction* test_action = new QAction(tr("&Test"), this);
         test_action->setShortcut (tr("T"));
