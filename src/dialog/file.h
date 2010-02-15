@@ -20,8 +20,8 @@
 
 */
 
-#ifndef __dialog_file_decl_h__
-#define __dialog_file_decl_h__
+#ifndef __dialog_file_h__
+#define __dialog_file_h__
 
 #include <QDialog>
 #include <QAbstractListModel>

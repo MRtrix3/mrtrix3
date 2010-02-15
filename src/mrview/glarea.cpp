@@ -47,6 +47,7 @@ namespace MR {
       CHECK_GL_EXTENSION (ARB_geometry_shader4);
       CHECK_GL_EXTENSION (EXT_texture3D);
       CHECK_GL_EXTENSION (ARB_texture_non_power_of_two);
+      CHECK_GL_EXTENSION (ARB_framebuffer_object);
 
       glClearColor (0.0, 0.0, 0.0, 0.0);
       glEnable (GL_DEPTH_TEST);
