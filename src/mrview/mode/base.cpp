@@ -29,7 +29,9 @@ namespace MR {
   namespace Viewer {
     namespace Mode {
 
+      Base::Base (GLArea& parent) : glarea (parent) { }
       Base::~Base () { }
+
       void Base::paint () { }
 
       void Base::mousePressEvent (QMouseEvent *event) { }

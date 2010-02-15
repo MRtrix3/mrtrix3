@@ -20,8 +20,8 @@
 
 */
 
-#ifndef __viewer_mode_mode2d_h__
-#define __viewer_mode_mode2d_h__
+#ifndef __viewer_mode_mode3d_h__
+#define __viewer_mode_mode3d_h__
 
 #include "mrview/mode/base.h"
 
@@ -29,13 +29,11 @@ namespace MR {
   namespace Viewer {
     namespace Mode {
 
-      class Mode2D : public Base 
+      class Mode3D : public Base 
       {
-        Q_OBJECT
-
         public:
-          Mode2D (GLArea& parent);
-          virtual ~Mode2D ();
+          Mode3D (GLArea& parent);
+          virtual ~Mode3D ();
 
           virtual void paint ();
 
@@ -44,9 +42,6 @@ namespace MR {
           virtual void mouseDoubleClickEvent (QMouseEvent* event);
           virtual void mouseReleaseEvent (QMouseEvent* event);
           virtual void wheelEvent (QWheelEvent* event);
-
-        public slots:
-          void test_stuff ();
       };
 
     }
@@ -54,6 +49,7 @@ namespace MR {
 }
 
 #endif
+
 
 
 

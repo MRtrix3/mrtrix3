@@ -30,6 +30,7 @@
 #include "dialog/file.h"
 #include "mrview/glarea.h"
 #include "mrview/window.h"
+#include "mrview/mode/base.h"
 
 #include "mrview/tool/roi_analysis.h"
 
@@ -45,7 +46,7 @@ namespace MR {
       setCentralWidget (glarea);
 
 
-      // Actions:
+      // File actions:
       open_action = new QAction (tr("&Open"), this);
       open_action->setShortcut (tr("Ctrl+O"));
       open_action->setStatusTip (tr("Open an existing image"));
@@ -65,7 +66,21 @@ namespace MR {
       quit_action->setStatusTip (tr("Exit MRView"));
       connect (quit_action, SIGNAL (triggered()), this, SLOT (close()));
 
+      // File menus:
+      file_menu = menuBar()->addMenu (tr("&File"));
+      file_menu->addAction (open_action);
+      file_menu->addAction (save_action);
+      file_menu->addSeparator();
+      file_menu->addAction (properties_action);
+      file_menu->addSeparator();
+      file_menu->addAction (quit_action);
 
+      // View actions:
+      reset_windowing_action = new QAction(tr("Reset &Windowing"), this);
+      reset_windowing_action->setShortcut (tr("R"));
+      reset_windowing_action->setStatusTip (tr("Reset image brightness & contrast"));
+      connect (reset_windowing_action, SIGNAL (triggered()), this, SLOT (reset_windowing()));
+/*
       axial_action = new QAction(tr("&Axial"), this);
       axial_action->setShortcut (tr("A"));
       axial_action->setStatusTip (tr("Switch to axial projection"));
@@ -82,20 +97,15 @@ namespace MR {
       connect (coronal_action, SIGNAL (triggered()), this, SLOT (coronal()));
 
       show_focus_action = new QAction(tr("Show &Focus"), this);
-      show_focus_action->setShortcut (tr("Ctrl+F"));
+      show_focus_action->setShortcut (tr("F"));
       show_focus_action->setStatusTip (tr("Show focus with the crosshairs"));
       connect (show_focus_action, SIGNAL (triggered()), this, SLOT (show_focus()));
-
-      reset_windowing_action = new QAction(tr("Reset &Windowing"), this);
-      reset_windowing_action->setShortcut (tr("R"));
-      reset_windowing_action->setStatusTip (tr("Reset image brightness & contrast"));
-      connect (reset_windowing_action, SIGNAL (triggered()), this, SLOT (reset_windowing()));
 
       reset_view_action = new QAction(tr("Reset &View"), this);
       reset_view_action->setShortcut (tr("Crtl+R"));
       reset_view_action->setStatusTip (tr("Reset image projection & zoom"));
       connect (reset_view_action, SIGNAL (triggered()), this, SLOT (reset_view()));
-
+*/
       full_screen_action = new QAction(tr("F&ull Screen"), this);
       full_screen_action->setCheckable (true);
       full_screen_action->setChecked (false);
@@ -103,6 +113,48 @@ namespace MR {
       full_screen_action->setStatusTip (tr("Toggle full screen mode"));
       connect (full_screen_action, SIGNAL (triggered()), this, SLOT (full_screen()));
 
+      // View menu:
+      view_menu = menuBar()->addMenu (tr("&View"));
+      size_t num_modes;
+      for (num_modes = 0; Mode::name (num_modes); ++num_modes);
+      assert (num_modes > 1);
+      mode_actions = new QAction* [num_modes];
+      mode_group = new QActionGroup (this);
+      mode_group->setExclusive (true);
+
+      for (size_t n = 0; n < num_modes; ++n) {
+        mode_actions[n] = new QAction (tr(Mode::name (n)), this);
+        mode_actions[n]->setCheckable (num_modes > 1);
+        mode_actions[n]->setShortcut (tr(std::string ("F"+str(n+1)).c_str()));
+        mode_group->addAction (mode_actions[n]);
+        view_menu->addAction (mode_actions[n]);
+      }
+      mode_actions[0]->setChecked (true);
+      connect (mode_group, SIGNAL (triggered(QAction*)), this, SLOT (select_mode(QAction*)));
+      view_menu->addSeparator();
+
+      view_menu_mode_area = view_menu->addSeparator();
+      view_menu->addAction (reset_windowing_action);
+      view_menu->addSeparator();
+
+      //view_menu->addAction (axial_action);
+      //view_menu->addAction (sagittal_action);
+      //view_menu->addAction (coronal_action);
+      //view_menu->addAction (show_focus_action);
+      //view_menu->addAction (reset_view_action);
+      view_menu->addSeparator();
+      view_menu->addAction (full_screen_action);
+
+
+      // Tool & Image menus:
+      tool_menu = menuBar()->addMenu (tr("&Tools"));
+
+      image_menu = menuBar()->addMenu (tr("&Image"));
+
+      menuBar()->addSeparator();
+
+
+      // Help actions:
       OpenGL_action = new QAction(tr("&OpenGL Info"), this);
       OpenGL_action->setStatusTip (tr("Display OpenGL information"));
       connect (OpenGL_action, SIGNAL (triggered()), this, SLOT (OpenGL()));
@@ -115,44 +167,21 @@ namespace MR {
       aboutQt_action->setStatusTip (tr("Display information about Qt"));
       connect (aboutQt_action, SIGNAL (triggered()), this, SLOT (aboutQt()));
 
-
-      // Menus:
-      file_menu = menuBar()->addMenu (tr("&File"));
-      file_menu->addAction (open_action);
-      file_menu->addAction (save_action);
-      file_menu->addSeparator();
-      file_menu->addAction (properties_action);
-      file_menu->addSeparator();
-      file_menu->addAction (quit_action);
-
-      view_menu = menuBar()->addMenu (tr("&View"));
-      view_menu->addAction (axial_action);
-      view_menu->addAction (sagittal_action);
-      view_menu->addAction (coronal_action);
-      view_menu->addSeparator();
-      view_menu->addAction (show_focus_action);
-      view_menu->addAction (reset_windowing_action);
-      view_menu->addAction (reset_view_action);
-      view_menu->addAction (full_screen_action);
-
-      tool_menu = menuBar()->addMenu (tr("&Tools"));
-
-      image_menu = menuBar()->addMenu (tr("&Image"));
-
-      menuBar()->addSeparator();
-
+      // Help menu:
       help_menu = menuBar()->addMenu (tr("&Help"));
       help_menu->addAction (OpenGL_action);
       help_menu->addAction (about_action);
       help_menu->addAction (aboutQt_action);
 
+
       // Dock:
       add_tool (new Tool::ROI (this));
       
 
-
       // StatusBar:
       statusBar()->showMessage(tr("Ready"));
+
+      select_mode (mode_actions[0]);
     }
 
     void Window::add_tool (Tool::Base* tool) {
@@ -172,13 +201,18 @@ namespace MR {
     void Window::save () { TEST; }
     void Window::properties () { TEST; }
 
+    void Window::select_mode (QAction* action) 
+    {
+      if (glarea->mode) delete glarea->mode;
+      size_t n = 0;
+      while (action != mode_actions[n]) {
+        assert (Mode::name (n) != NULL);
+        ++n;
+      }
+      glarea->mode = Mode::create (*glarea, n);
+    }
 
-    void Window::axial () { TEST; }
-    void Window::sagittal () { TEST; }
-    void Window::coronal () { TEST; }
-    void Window::show_focus () { TEST; }
     void Window::reset_windowing () { TEST; }
-    void Window::reset_view () { TEST; }
     void Window::full_screen () { if (full_screen_action->isChecked()) showFullScreen(); else showNormal(); }
 
 

@@ -28,6 +28,7 @@
 namespace MR {
   namespace Viewer {
 
+    class Window;
     namespace Mode { class Base; }
 
     class GLArea : public QGLWidget
@@ -57,6 +58,8 @@ namespace MR {
 
       private:
         Mode::Base* mode;
+
+        friend class Window;
     };
 
   }

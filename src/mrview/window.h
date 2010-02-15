@@ -27,11 +27,13 @@
 
 class QMenu;
 class QAction;
+class QActionGroup;
 
 namespace MR {
   namespace Viewer {
 
     class GLArea;
+    namespace Mode { class Base; }
     namespace Tool { class Base; }
 
     class Window : public QMainWindow
@@ -46,12 +48,8 @@ namespace MR {
         void save ();
         void properties ();
 
-        void axial ();
-        void sagittal ();
-        void coronal ();
-        void show_focus ();
+        void select_mode (QAction* action);
         void reset_windowing ();
-        void reset_view ();
         void full_screen ();
 
         void OpenGL ();
@@ -61,11 +59,15 @@ namespace MR {
       private:
         QMenu *file_menu, *view_menu, *tool_menu, *image_menu, *help_menu;
         QAction *open_action, *save_action, *properties_action, *quit_action;
-        QAction *axial_action, *sagittal_action, *coronal_action, *show_focus_action, *reset_windowing_action, *reset_view_action, *full_screen_action;
+        QAction *view_menu_mode_area, *reset_windowing_action, *full_screen_action;
+        QAction **mode_actions;
         QAction *OpenGL_action, *about_action, *aboutQt_action;
+        QActionGroup *mode_group;
         GLArea *glarea;
 
         void add_tool (Tool::Base* tool);
+
+        friend class Mode::Base;
     };
 
   }

@@ -30,7 +30,7 @@ namespace MR {
 
     GLArea::GLArea (QWidget *parent) : 
       QGLWidget (QGLFormat (QGL::DoubleBuffer | QGL::DepthBuffer | QGL::Rgba), parent),
-      mode (Mode::create (*this, 0))
+      mode (NULL)
     { }
 
     GLArea::~GLArea () { delete mode; }
@@ -56,7 +56,7 @@ namespace MR {
     {
       glClear (GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
       glLoadIdentity();
-      mode->paint();
+      if (mode) mode->paint();
     }
 
     void GLArea::resizeGL (int width, int height) 
@@ -64,13 +64,13 @@ namespace MR {
       glViewport (0, 0, width, height);
     }
 
-    void GLArea::mousePressEvent (QMouseEvent *event) { mode->mousePressEvent (event); }
+    void GLArea::mousePressEvent (QMouseEvent *event) { if (mode) mode->mousePressEvent (event); }
 
-    void GLArea::mouseMoveEvent (QMouseEvent *event) { mode->mouseMoveEvent (event); }
+    void GLArea::mouseMoveEvent (QMouseEvent *event) { if (mode) mode->mouseMoveEvent (event); }
 
-    void GLArea::mouseDoubleClickEvent (QMouseEvent* event) { mode->mouseDoubleClickEvent (event); }
-    void GLArea::mouseReleaseEvent (QMouseEvent* event) { mode->mouseReleaseEvent (event); }
-    void GLArea::wheelEvent (QWheelEvent* event) { mode->wheelEvent (event); }
+    void GLArea::mouseDoubleClickEvent (QMouseEvent* event) { if (mode) mode->mouseDoubleClickEvent (event); }
+    void GLArea::mouseReleaseEvent (QMouseEvent* event) { if (mode) mode->mouseReleaseEvent (event); }
+    void GLArea::wheelEvent (QWheelEvent* event) { if (mode) mode->wheelEvent (event); }
 
   }
 }

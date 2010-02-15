@@ -20,13 +20,25 @@
 
 */
 
+#include <QAction>
+
+#include "mrtrix.h"
 #include "mrview/mode/mode2d.h"
 
 namespace MR {
   namespace Viewer {
     namespace Mode {
 
-      Mode2D::Mode2D (GLArea& parent) : Base (parent) { }
+      Mode2D::Mode2D (GLArea& parent) : Base (parent) 
+      { 
+        QAction* test_action = new QAction(tr("&Test"), this);
+        test_action->setShortcut (tr("T"));
+        test_action->setStatusTip (tr("test stuff"));
+        connect (test_action, SIGNAL (triggered()), this, SLOT (test_stuff()));
+        add_action (test_action);
+      }
+
+
       Mode2D::~Mode2D () { }
 
       void Mode2D::paint () { }
@@ -37,6 +49,7 @@ namespace MR {
       void Mode2D::mouseReleaseEvent (QMouseEvent* event) { }
       void Mode2D::wheelEvent (QWheelEvent* event) { }
 
+      void Mode2D::test_stuff () { TEST; }
     }
   }
 }

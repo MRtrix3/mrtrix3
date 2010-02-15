@@ -25,8 +25,10 @@
 
 #include <QCursor>
 #include <QMouseEvent>
+#include <QMenu>
 
 #include "mrview/glarea.h"
+#include "mrview/window.h"
 
 namespace MR {
   namespace Viewer {
@@ -37,7 +39,7 @@ namespace MR {
         Q_OBJECT
 
         public:
-          Base (GLArea& parent) : glarea (parent) { }
+          Base (GLArea& parent);
           virtual ~Base ();
 
           virtual void paint ();
@@ -63,6 +65,12 @@ namespace MR {
             QPoint d = event->pos() - lastPos; 
             QCursor::setPos (glarea.mapToGlobal (lastPos));
             return (d);
+          }
+
+          void add_action (QAction* action)
+          {
+            Window* window = static_cast <Window*> (glarea.window());
+            window->view_menu->insertAction (window->view_menu_mode_area, action);
           }
       };
 

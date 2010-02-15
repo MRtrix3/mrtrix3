@@ -20,40 +20,25 @@
 
 */
 
-#ifndef __viewer_mode_mode2d_h__
-#define __viewer_mode_mode2d_h__
-
-#include "mrview/mode/base.h"
+#include "mrview/mode/mode3d.h"
 
 namespace MR {
   namespace Viewer {
     namespace Mode {
 
-      class Mode2D : public Base 
-      {
-        Q_OBJECT
+      Mode3D::Mode3D (GLArea& parent) : Base (parent) { }
+      Mode3D::~Mode3D () { }
 
-        public:
-          Mode2D (GLArea& parent);
-          virtual ~Mode2D ();
+      void Mode3D::paint () { }
 
-          virtual void paint ();
-
-          virtual void mousePressEvent (QMouseEvent* event);
-          virtual void mouseMoveEvent (QMouseEvent* event);
-          virtual void mouseDoubleClickEvent (QMouseEvent* event);
-          virtual void mouseReleaseEvent (QMouseEvent* event);
-          virtual void wheelEvent (QWheelEvent* event);
-
-        public slots:
-          void test_stuff ();
-      };
+      void Mode3D::mousePressEvent (QMouseEvent* event) { }
+      void Mode3D::mouseMoveEvent (QMouseEvent* event) { }
+      void Mode3D::mouseDoubleClickEvent (QMouseEvent* event) { }
+      void Mode3D::mouseReleaseEvent (QMouseEvent* event) { }
+      void Mode3D::wheelEvent (QWheelEvent* event) { }
 
     }
   }
 }
-
-#endif
-
 
 

@@ -23,8 +23,13 @@
 #ifndef __viewer_mode_list_h__
 #define __viewer_mode_list_h__
 
+#ifdef MODE
+# error MODE is already defined!
+#endif
+
 // place #include files in here:
 #include "mrview/mode/mode2d.h"
+#include "mrview/mode/mode3d.h"
 
 #else
 
@@ -41,7 +46,9 @@ The second argument is the name of the mode as displayed to the user.
 The third argument is the name of the corresponding Mode class. */
 
 MODE (0, 2D, Mode2D);
+MODE (1, 3D, Mode3D);
 
+#undef MODE
 #endif
 
 
