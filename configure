@@ -125,7 +125,7 @@ report ('\n\n')
 global cpp, cpp_cmd, ld, ld_cmd
 
 cpp = 'g++ -c CFLAGS SRC -o OBJECT'.split()
-cpp_flags = [ '-fPIC' ]
+cpp_flags = [ '-fPIC', '-Wno-unused-parameter' ]
 
 ld = 'g++ LDFLAGS OBJECTS -o EXECUTABLE'.split()
 ld_flags = []

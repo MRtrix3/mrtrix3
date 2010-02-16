@@ -35,7 +35,7 @@
 
 #define SET_VERSION_DEFAULT \
   SET_VERSION (MRTRIX_MAJOR_VERSION, MRTRIX_MINOR_VERSION, MRTRIX_MICRO_VERSION); \
-  SET_COPYRIGHT ("Copyright (C) 2008 Brain Research Institute, Melbourne, Australia\nThis is free software; see the source for copying conditions.\nThere is NO warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE."); \
+  SET_COPYRIGHT ("Copyright (C) 2008 Brain Research Institute, Melbourne, Australia.\nThis is free software; see the source for copying conditions.\nThere is NO warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE."); \
   SET_AUTHOR ("J-Donald Tournier (d.tournier@brain.org.au)")
 
 #define EXECUTE class MyApp : public MR::App { \

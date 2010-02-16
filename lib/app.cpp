@@ -256,15 +256,15 @@ namespace MR {
           throw 0;
         }
         else if (opt == DEFAULT_OPTIONS_OFFSET+4) {
-          std::printf ("%s: part of MRtrix %zu.%zu.%zu\n%d bit %s version, built " __DATE__ ", using GSL %s\nAuthor: %s\n%s\n",
-              App::name().c_str(), mrtrix_major_version, mrtrix_minor_version, mrtrix_micro_version,
+          std::printf ("== %s %zu.%zu.%zu ==\n%d bit %s version, built " __DATE__ " against MRtrix %zu.%zu.%zu, using GSL %s\nAuthor: %s\n%s\n",
+              App::name().c_str(), version[0], version[1], version[2], 
               int(8*sizeof(size_t)), 
 #ifdef NDEBUG
               "release"
 #else
               "debug"
 #endif
-              , gsl_version, author, copyright);
+              , mrtrix_major_version, mrtrix_minor_version, mrtrix_micro_version, gsl_version, author, copyright);
           throw 0;
         }
         else {

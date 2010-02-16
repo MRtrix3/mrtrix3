@@ -228,6 +228,7 @@ namespace MR {
       iterator insert (iterator position, T* item = NULL) { V.insert (position, NULL); *position = item; }
       void insert (iterator position, size_t n) { V.insert (position, n, NULL); }
 
+      T* release (size_t i) { T* ret = V[i]; V[i] = NULL; return (ret); }
 
       iterator erase (iterator position) { dealloc (*position); return (V.erase (position)); }
       iterator erase (iterator first, iterator last) { for (iterator it = first; it != last; ++it) dealloc (*it); return (V.erase (first, last)); }
