@@ -21,19 +21,23 @@
 */
 
 #include <QAction>
+#include <cassert>
 
+#include "mrview/window.h"
 #include "mrview/tool/base.h"
+#include "mrview/tool/list.h"
 
 namespace MR {
   namespace Viewer {
     namespace Tool {
 
-      Base::Base (const QString& name, const QString& description, QWidget *parent) : 
-        QDockWidget (name, parent), widget (NULL) { 
-          toggleViewAction()->setStatusTip (description);
-          setAllowedAreas (Qt::LeftDockWidgetArea | Qt::RightDockWidgetArea);
-          setVisible (false);
-        }
+      Base::Base (const QString& name, const QString& description, Window& parent) : 
+        QDockWidget (name, &parent), window (parent), widget (NULL) 
+      { 
+        toggleViewAction()->setStatusTip (description);
+        setAllowedAreas (Qt::LeftDockWidgetArea | Qt::RightDockWidgetArea);
+        setVisible (false);
+      }
 
       void Base::showEvent (QShowEvent* event) { 
         if (!widget) {
@@ -44,7 +48,30 @@ namespace MR {
         QDockWidget::showEvent (event);
       }
 
+      Base* create (Window& parent, size_t index) 
+      {
+        switch (index) {
+#include "mrview/tool/list.h"
+          default: assert (0);
+        };
+        return (NULL);
+      }
 
+      namespace {
+        bool present (size_t index) {
+          switch (index) {
+#include "mrview/tool/list.h"
+            default: return (false);
+          };
+          return (false);
+        }
+      }
+
+      size_t count () { 
+        size_t n = 0; 
+        while (present (n)) ++n; 
+        return (n);
+      }
     }
   }
 }

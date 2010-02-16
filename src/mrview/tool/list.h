@@ -20,40 +20,34 @@
 
 */
 
-#ifndef __viewer_mode_list_h__
-# define __viewer_mode_list_h__
+#ifndef __viewer_tool_list_h__
+# define __viewer_tool_list_h__
 
-# ifdef MODE
-#  error MODE is already defined!
+# ifdef TOOL
+#  error TOOL is already defined!
 # endif
 
 // place #include files in here:
-#include "mrview/mode/mode2d.h"
-#include "mrview/mode/mode3d.h"
+#include "mrview/tool/roi_analysis.h"
 
 #else
-
 # ifndef __viewer_mode_list_read_once_h__
 #  define __viewer_mode_list_read_once_h__
-#  define MODE(index, classname, guiname, tooltip_text) case index: return (new classname (parent))
+#  define TOOL(index, classname) case index: return (new classname (parent))
 # else
-#  ifndef __viewer_mode_list_read_twice_h__
-#   define __viewer_mode_list_read_twice_h__
-#   define MODE(index, classname, guiname, tooltip_text) case index: return (#guiname)
-#  else
-#   define MODE(index, classname, guiname, tooltip_text) case index: return (#tooltip_text)
-#  endif
+#  define TOOL(index, classname) case index: return (true)
 # endif
 
 /* Provide a corresponding line for each mode here:
 The first argument is the index of the mode, which should increment from zero.
-The second argument is the name of the mode as displayed to the user. 
-The third argument is the name of the corresponding Mode class. */
+The second argument is the name of the corresponding Mode class. 
+The third argument is the name of the mode as displayed to the user. 
+The fourth argument is the text to be shown in the menu tooltip. */
 
-MODE (0, Mode2D, 2D, display slices aligned with image axes);
-MODE (1, Mode3D, 3D reslice, display slices at an arbitrary angle);
+TOOL (0, ROI);
 
-# undef MODE
+# undef TOOL
 #endif
+
 
 

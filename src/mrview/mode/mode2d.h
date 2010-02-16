@@ -46,7 +46,14 @@ namespace MR {
           virtual void wheelEvent (QWheelEvent* event);
 
         public slots:
-          void test_stuff ();
+          void axial ();
+          void sagittal ();
+          void coronal ();
+          void reset ();
+          void show_focus ();
+
+        protected:
+          QAction *axial_action, *sagittal_action, *coronal_action, *reset_action, *show_focus_action;
       };
 
     }

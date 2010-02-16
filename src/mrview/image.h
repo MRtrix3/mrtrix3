@@ -20,42 +20,37 @@
 
 */
 
-#ifndef __viewer_tool_base_h__
-#define __viewer_tool_base_h__
+#ifndef __viewer_image_h__
+#define __viewer_image_h__
 
-#include <QDockWidget>
+#include <QAction>
+
+#include "image/voxel.h"
+
+class QAction;
 
 namespace MR {
   namespace Viewer {
+
     class Window;
 
-    namespace Tool {
+    class Image : public QAction
+    {
+      public:
+        Image (Window& parent, MR::Image::Header* header);
+        ~Image ();
 
-      class Base : public QDockWidget
-      {
-        Q_OBJECT
+        void reset_windowing ();
 
-        public:
-          Base (const QString& name, const QString& description, Window& parent);
-          int minimumWidth () const;
+      private:
+        Window& window;
+        Ptr<MR::Image::Header> H;
 
-        protected:
-          void showEvent (QShowEvent* event);
+        friend class Window;
+    };
 
-        private:
-          Window& window;
-          QWidget* widget;
-
-          virtual QWidget* create () = 0;
-      };
-
-      Base* create (Window& parent, size_t index);
-      size_t count ();
-
-    }
   }
 }
 
 #endif
-
 

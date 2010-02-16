@@ -31,11 +31,39 @@ namespace MR {
 
       Mode2D::Mode2D (Window& parent) : Base (parent) 
       { 
-        QAction* test_action = new QAction(tr("&Test"), this);
-        test_action->setShortcut (tr("T"));
-        test_action->setStatusTip (tr("test stuff"));
-        connect (test_action, SIGNAL (triggered()), this, SLOT (test_stuff()));
-        add_action (test_action);
+        axial_action = new QAction(tr("&Axial"), this);
+        axial_action->setShortcut (tr("A"));
+        axial_action->setStatusTip (tr("Switch to axial projection"));
+        connect (axial_action, SIGNAL (triggered()), this, SLOT (axial()));
+        add_action (axial_action);
+
+        sagittal_action = new QAction(tr("&Sagittal"), this);
+        sagittal_action->setShortcut (tr("S"));
+        sagittal_action->setStatusTip (tr("Switch to sagittal projection"));
+        connect (sagittal_action, SIGNAL (triggered()), this, SLOT (sagittal()));
+        add_action (sagittal_action);
+
+        coronal_action = new QAction(tr("&Coronal"), this);
+        coronal_action->setShortcut (tr("C"));
+        coronal_action->setStatusTip (tr("Switch to coronal projection"));
+        connect (coronal_action, SIGNAL (triggered()), this, SLOT (coronal()));
+        add_action (coronal_action);
+
+        QAction* separator = new QAction (this);
+        separator->setSeparator (true);
+        add_action (separator);
+
+        show_focus_action = new QAction(tr("Show &Focus"), this);
+        show_focus_action->setShortcut (tr("F"));
+        show_focus_action->setStatusTip (tr("Show focus with the crosshairs"));
+        connect (show_focus_action, SIGNAL (triggered()), this, SLOT (show_focus()));
+        add_action (show_focus_action);
+
+        reset_action = new QAction(tr("Reset &View"), this);
+        reset_action->setShortcut (tr("Crtl+R"));
+        reset_action->setStatusTip (tr("Reset image projection & zoom"));
+        connect (reset_action, SIGNAL (triggered()), this, SLOT (reset()));
+        add_action (reset_action);
       }
 
 
@@ -49,7 +77,11 @@ namespace MR {
       void Mode2D::mouseReleaseEvent (QMouseEvent* event) { }
       void Mode2D::wheelEvent (QWheelEvent* event) { }
 
-      void Mode2D::test_stuff () { TEST; }
+      void Mode2D::axial () { TEST; }
+      void Mode2D::sagittal () { TEST; }
+      void Mode2D::coronal () { TEST; }
+      void Mode2D::show_focus () { TEST; }
+      void Mode2D::reset () { TEST; }
     }
   }
 }

@@ -62,7 +62,7 @@ namespace MR {
 
           QPoint distance_moved_motionless (QMouseEvent* event) {
             QPoint d = event->pos() - lastPos; 
-            QCursor::setPos (window.global_position (lastPos));
+            QCursor::setPos (reinterpret_cast<QWidget*> (window.glarea)->mapToGlobal (lastPos));
             return (d);
           }
 
@@ -74,6 +74,7 @@ namespace MR {
 
       Base* create (Window& parent, size_t index);
       const char* name (size_t index);
+      const char* tooltip (size_t index);
 
     }
   }

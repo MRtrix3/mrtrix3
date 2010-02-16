@@ -25,6 +25,13 @@
 
 #include <QMainWindow>
 
+#ifdef Complex
+# undef Complex
+#endif
+
+#include "ptr.h"
+#include "mrview/image.h"
+
 class QMenu;
 class QAction;
 class QActionGroup;
@@ -43,6 +50,9 @@ namespace MR {
         Window();
         ~Window();
 
+        void add_images (VecPtr<MR::Image::Header>& list);
+        Image* current_image () { return (static_cast<Image*> (image_group->checkedAction())); }
+
       private slots:
         void open ();
         void save ();
@@ -52,11 +62,13 @@ namespace MR {
         void reset_windowing ();
         void full_screen ();
 
+        void next_image ();
+        void previous_image ();
+        void select_image (QAction* action);
+
         void OpenGL ();
         void about ();
         void aboutQt ();
-
-        QPoint global_position (const QPoint& position) const;
 
       private:
         class GLArea;
@@ -68,19 +80,20 @@ namespace MR {
         QAction *open_action, *save_action, *properties_action, *quit_action;
         QAction *view_menu_mode_area, *reset_windowing_action, *full_screen_action;
         QAction **mode_actions;
+        QAction *next_image_action, *prev_image_action;
         QAction *OpenGL_action, *about_action, *aboutQt_action;
-        QActionGroup *mode_group;
-
-        void add_tool (Tool::Base* tool);
+        QActionGroup *mode_group, *image_group;
 
         void paintGL ();
         void initGL ();
+        void resizeGL (int width, int height);
         void mousePressEventGL (QMouseEvent* event);
         void mouseMoveEventGL (QMouseEvent* event);
         void mouseDoubleClickEventGL (QMouseEvent* event);
         void mouseReleaseEventGL (QMouseEvent* event);
         void wheelEventGL (QWheelEvent* event);
 
+        friend class Image;
         friend class Mode::Base;
         friend class Window::GLArea;
     };

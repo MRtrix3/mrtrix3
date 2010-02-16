@@ -34,13 +34,12 @@ namespace MR {
         Q_OBJECT
 
         public:
-          ROI (QWidget *parent);
-
-        protected:
+          ROI (Window& parent) : Base (tr("ROI analysis"), tr("Draw & analyse regions of interest"), parent) { }
 
         private slots:
+          void slot ();
 
-        private:
+        protected:
           virtual QWidget* create ();
       };
 

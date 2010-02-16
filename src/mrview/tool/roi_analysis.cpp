@@ -22,19 +22,19 @@
 
 #include <QLabel>
 
+#include "mrtrix.h"
+#include "mrview/window.h"
 #include "mrview/tool/roi_analysis.h"
 
 namespace MR {
   namespace Viewer {
     namespace Tool {
 
-      ROI::ROI (QWidget *parent) : 
-        Base (tr("ROI analysis"), tr("Draw & analyse regions of interest"), parent) { 
-        }
-
       QWidget* ROI::create () {
         return (new QLabel ("ROI analysis", this));
       }
+
+      void ROI::slot () { TEST; }
 
 
     }

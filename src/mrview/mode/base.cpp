@@ -24,7 +24,6 @@
 #include "mrview/mode/base.h"
 #include "mrview/mode/list.h"
 
-
 namespace MR {
   namespace Viewer {
     namespace Mode {
@@ -34,11 +33,11 @@ namespace MR {
 
       void Base::paint () { }
 
-      void Base::mousePressEvent (QMouseEvent *event) { }
-      void Base::mouseMoveEvent (QMouseEvent *event) { }
-      void Base::mouseDoubleClickEvent (QMouseEvent* event) { }
-      void Base::mouseReleaseEvent (QMouseEvent* event) { }
-      void Base::wheelEvent (QWheelEvent* event) { }
+      void Base::mousePressEvent (QMouseEvent *event) { if (event->x() == event->y()) return; }
+      void Base::mouseMoveEvent (QMouseEvent *event) { if (event->x() == event->y()) return; }
+      void Base::mouseDoubleClickEvent (QMouseEvent* event) { if (event->x() == event->y()) return; }
+      void Base::mouseReleaseEvent (QMouseEvent* event) { if (event->x() == event->y()) return; }
+      void Base::wheelEvent (QWheelEvent* event) { if (event->x() == event->y()) return; }
 
       Base* create (Window& parent, size_t index) 
       {
@@ -50,6 +49,15 @@ namespace MR {
       }
 
       const char* name (size_t index)
+      {
+        switch (index) {
+#include "mrview/mode/list.h"
+          default: return (NULL);
+        };
+        return (NULL);
+      }
+
+      const char* tooltip (size_t index)
       {
         switch (index) {
 #include "mrview/mode/list.h"
