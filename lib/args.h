@@ -26,6 +26,10 @@
 #include "ptr.h"
 #include "image/header.h"
 
+#ifdef None
+# undef None
+#endif
+
 namespace MR {
 
   namespace Dialog {
