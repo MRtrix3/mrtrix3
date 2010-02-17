@@ -175,7 +175,7 @@ namespace MR {
         template <class U> const Voxel& operator= (const U& V) {
           ssize_t shift = 0;
           for (size_t n = 0; n < ndim(); n++) {
-            x[n] = V.pos(n);
+            x[n] = V[n];
             shift += stride(n) * x[n];
           }
           offset = handler.start() + shift;

@@ -124,6 +124,11 @@ namespace MR {
         //! Transform the orientation \p r from voxel-space to scanner-space
         Point vec_P2R (const Point& r) const { return (transform_vector (V2S, r)); }
 
+        const float* image2scanner_matrix () const { return (*I2S); }
+        const float* scanner2image_matrix () const { return (*S2I); }
+        const float* voxel2scanner_matrix () const { return (*V2S); }
+        const float* scanner2voxel_matrix () const { return (*S2V); }
+
       private:
         Set&   data;
         float  S2V[3][4], V2S[3][4], I2S[3][4], S2I[3][4];

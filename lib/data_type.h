@@ -25,6 +25,10 @@
 
 #include "mrtrix.h"
 
+#ifdef Complex
+# undef Complex
+#endif
+
 namespace MR {
 
   class DataType {
