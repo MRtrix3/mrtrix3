@@ -1,7 +1,7 @@
 /*
-    Copyright 2008 Brain Research Institute, Melbourne, Australia
+    Copyright 2010 Brain Research Institute, Melbourne, Australia
 
-    Written by J-Donald Tournier, 27/06/08.
+    Written by J-Donald Tournier, 17/02/10.
 
     This file is part of MRtrix.
 
@@ -20,30 +20,36 @@
 
 */
 
-#ifndef __open_gl_h__
-#define __open_gl_h__
+#ifndef __mrview_camera_h__
+#define __mrview_camera_h__
 
-#include <QtGui>
-#include "opengl/glee.h"
-#include <QtOpenGL>
-#include "mrtrix.h"
+#include "point.h"
+#include "math/quaternion.h"
 
 namespace MR {
-  namespace GL {
+  namespace Viewer {
 
-    void init ();
+    class Camera {
+      public:
+        Camera () : 
+          orientation (NAN, NAN, NAN, NAN), 
+          focus (0.0, 0.0, 0.0),
+          projection (2),
+          interpolate (true),
+          FOV (100.0) { }
+
+        Math::Quaternion orientation;
+        Point focus;
+        int projection;
+        bool interpolate;
+        float FOV;
+    };
 
   }
 }
 
-#define CHECK_GL_EXTENSION(name) \
-  if (GLEE_##name) info ("OpenGL extension GL_" #name " is supported"); \
-  else throw Exception ("OpenGL extension GL_" #name " is not supported!")
-
-#define DEBUG_OPENGL { GLenum error_code = glGetError(); \
-  if (error_code != GL_NO_ERROR) \
-    error (std::string ("OpenGL Error: ") + (const char*) gluErrorString (error_code) + " ["__FILE__":" + MR::str(__LINE__) + "]");\
-}
-
 #endif
+
+
+
 

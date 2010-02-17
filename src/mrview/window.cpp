@@ -33,10 +33,6 @@
 # undef None
 #endif
 
-#ifdef Complex
-# undef Complex
-#endif
-
 #include "app.h"
 #include "icon.h"
 #include "dialog/file.h"
@@ -318,6 +314,7 @@ namespace MR {
       glClear (GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
       glLoadIdentity();
       mode->paint(); 
+      DEBUG_OPENGL;
     }
 
     inline void Window::initGL () 
@@ -332,11 +329,13 @@ namespace MR {
       CHECK_GL_EXTENSION (ARB_framebuffer_object);
 
       GLint max_num;
-      glGetIntegerv (GL_GEOMETRY_VERTICES_OUT_ARB, &max_num);
+      glGetIntegerv (GL_MAX_GEOMETRY_OUTPUT_VERTICES_ARB, &max_num);
       info ("maximum number of vertices for geometry shader: " + str(max_num));
 
       glClearColor (0.0, 0.0, 0.0, 0.0);
       glEnable (GL_DEPTH_TEST);
+
+      DEBUG_OPENGL;
     }
 
 

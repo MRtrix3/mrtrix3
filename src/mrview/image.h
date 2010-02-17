@@ -25,7 +25,9 @@
 
 #include <QAction>
 
+#include "opengl/gl.h"
 #include "image/voxel.h"
+#include "dataset/interp.h"
 
 class QAction;
 
@@ -42,9 +44,27 @@ namespace MR {
 
         void reset_windowing ();
 
+        void render2D (int projection, int slice);
+        void get_axes (int projection, int& x, int& y) { 
+          if (projection) {
+            if (projection == 1) { x = 0; y = 2; }
+            else { x = 0; y = 1; }
+          }
+          else { x = 1; y = 2; }
+        }
+
+        MR::Image::Header& H;
+        MR::Image::Voxel<float> vox;
+        MR::DataSet::Interp<MR::Image::Header> interp;
+
       private:
         Window& window;
-        Ptr<MR::Image::Header> H;
+        GLuint texture2D[3];
+        int slice_position[3];
+        float value_min, value_max;
+        float display_min, display_max;
+
+        void update_texture2D (int projection, int slice);
 
         friend class Window;
     };

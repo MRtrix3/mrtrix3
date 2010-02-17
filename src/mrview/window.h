@@ -31,6 +31,7 @@
 
 #include "ptr.h"
 #include "mrview/image.h"
+#include "mrview/camera.h"
 
 class QMenu;
 class QAction;
@@ -52,6 +53,11 @@ namespace MR {
 
         void add_images (VecPtr<MR::Image::Header>& list);
         Image* current_image () { return (static_cast<Image*> (image_group->checkedAction())); }
+
+        Camera camera;
+
+        int width () { return (reinterpret_cast <QWidget*>(glarea)->width()); }
+        int height () { return (reinterpret_cast <QWidget*>(glarea)->height()); }
 
       private slots:
         void open ();
