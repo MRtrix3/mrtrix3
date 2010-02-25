@@ -87,7 +87,7 @@ namespace MR {
 	Permutation p (A.rows());
         int signum;
         Matrix<T> D (A);
-        decomp (D.view(), p, signum);
+        decomp (D, p, signum);
         return (inv (I, D, p));
       }
 

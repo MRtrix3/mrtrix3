@@ -20,57 +20,88 @@
 
 */
 
-#ifndef __image_interp_cubic_h__
-#define __image_interp_cubic_h__
+#ifndef __dataset_interp_cubic_h__
+#define __dataset_interp_cubic_h__
 
-#include "image/interp.h"
+#include "dataset/interp_base.h"
+#include "math/hermite.h"
 
 namespace MR {
-  namespace Image {
+  namespace DataSet {
 
-    //! \addtogroup Image
+    //! \addtogroup DataSet
     // @{
 
-    /*! \brief This class provides access to the voxel intensities of an image, using tri-cubic interpolation.
+    //! This class provides access to the voxel intensities of a data set, using cubic spline interpolation.
+    /*! Interpolation is only performed along the first 3 (spatial) axes. 
+     * The (integer) position along the remaining axes should be set using the
+     * template DataSet class.
+     * The spatial coordinates can be set using the functions voxel(), image(),
+     * and scanner(). 
+     * For example:
+     * \code
+     * Image::Voxel voxel (image);
+     * Image::Interp<Image::Voxel> interp (voxel);  // create an Interp object using voxel as the parent data set
+     * interp.scanner (10.2, 3.59, 54.1);   // set the scanner-space position to [ 10.2 3.59 54.1 ]
+     * float value = interp.value();  // get the value at this position
+     * \endcode
      *
-     * Usage is identical to MR::Image::Interp.
-     * \todo these need to be properly implemented and tested.  */
-    class InterpCubic : public Interp {
+     * The template \a voxel class must be usable with this type of syntax:
+     * \code
+     * int xdim = voxel.dim(0);    // return the dimension 
+     * int ydim = voxel.dim(1);    // along the x, y & z dimensions
+     * int zdim = voxel.dim(2);
+     * float v[] = { voxel.vox(0), voxel.vox(1), voxel.vox(2) };  // return voxel dimensions
+     * voxel[0] = 0;               // these lines are used to
+     * voxel[1]--;                 // set the current position
+     * voxel[2]++;                 // within the data set
+     * float f = voxel.value();
+     * Math::Transform<float> M = voxel.transform; // a valid 4x4 transformation matrix
+     * \endcode
+     */
+
+    template <class Set> class InterpCubic : public InterpBase<Set> 
+    {
+      private:
+        typedef class InterpBase<Set> Base;
+
       public:
-        //! construct an InterpCubic object to point to the data contained in the MR::Image::Object \p parent
-        /*! All non-spatial coordinates (i.e. axes > 3) will be initialised to zero. 
-         * The spatial coordinates are left undefined. */
-        InterpCubic (Object& parent) : Interp (parent) { }
-        ~InterpCubic() { }
+        typedef typename Set::value_type value_type;
 
-        bool P (const Point& pos);
-        bool I (const Point& pos) { return (P (I2P (pos))); }
-        bool R (const Point& pos) { return (P (R2P (pos))); }
+        //! construct an Interp object to obtain interpolated values using the
+        // parent DataSet class 
+        InterpCubic (Set& parent) : InterpBase<Set> (parent) { }
 
-        float value () const { return (re()); }
-        float re () const;
-        float im () const;
+        //! Set the current position to <b>voxel space</b> position \a pos
+        /*! This will set the position from which the image intensity values will
+         * be interpolated, assuming that \a pos provides the position as a
+         * (floating-point) voxel coordinate within the dataset. */
+        bool voxel (const Point& pos);
+        //! Set the current position to <b>image space</b> position \a pos
+        /*! This will set the position from which the image intensity values will
+         * be interpolated, assuming that \a pos provides the position as a
+         * coordinate relative to the axes of the dataset, in units of
+         * millimeters. The origin is taken to be the centre of the voxel at [
+         * 0 0 0 ]. */
+        bool image (const Point& pos) { return (voxel (Base::image2voxel (pos))); }
+        //! Set the current position to the <b>scanner space</b> position \a pos
+        /*! This will set the position from which the image intensity values will
+         * be interpolated, assuming that \a pos provides the position as a
+         * scanner space coordinate, in units of millimeters. */
+        bool scanner (const Point& pos) { return (voxel (Base::scanner2voxel (pos))); }
 
-        float re_abs () const;
-        float im_abs () const;
-
-        void  get (OutputType format, float& val, float& val_im);
-        void  abs (OutputType format, float& val, float& val_im);
+        value_type value () const;
 
       protected:
-        float fx[4], fy[4], fz[4];
+        Math::Hermite<value_type> Hx, Hy, Hz;
+        Point P;
 
-        void  set_coefs (float x, float* coefs) 
-        {
-          coefs[0] = -x*(x-1.0)*(x-2.0)/6.0; 
-          coefs[1] = 0.5*(x+1.0)*(x-1.0)*(x-2.0); 
-          coefs[2] = -0.5*(x+1.0)*x*(x-2.0);
-          coefs[3] = (x+1.0)*x*(x-1.0)/6.0;
+        ssize_t check (ssize_t x, ssize_t dim) const { 
+          if (x < 0) return (0);
+          if (x > dim) return (dim);
+          return (x);
         }
-        float cubic_interp (const float* coefs, const float* values) const 
-        {
-          return (coefs[0]*values[0] + coefs[1]*values[1] + coefs[2]*values[2] + coefs[3]*values[3]); 
-        }
+
     };
 
     //! @}
@@ -81,58 +112,41 @@ namespace MR {
 
 
 
-    inline bool InterpCubic::P (const Point& pos)
+
+    template <class Set> inline bool InterpCubic<Set>::voxel (const Point& pos)
     {
-      Point f = set_fractions (pos);
-      if (out_of_bounds) return (true);
-
-      set_coefs (f[0], fx);
-      set_coefs (f[1], fy);
-      set_coefs (f[2], fz);
-
-      faaa = (1.0-f[0]) * (1.0-f[1]) * (1.0-f[2]); if (faaa < 1e-6) faaa = 0.0;
-      faab = (1.0-f[0]) * (1.0-f[1]) *      f[2];  if (faab < 1e-6) faab = 0.0;
-      faba = (1.0-f[0]) *      f[1]  * (1.0-f[2]); if (faba < 1e-6) faba = 0.0;
-      fabb = (1.0-f[0]) *      f[1]  *      f[2];  if (fabb < 1e-6) fabb = 0.0;
-      fbaa =      f[0]  * (1.0-f[1]) * (1.0-f[2]); if (fbaa < 1e-6) fbaa = 0.0;
-      fbab =      f[0]  * (1.0-f[1])      * f[2];  if (fbab < 1e-6) fbab = 0.0;
-      fbba =      f[0]  *      f[1]  * (1.0-f[2]); if (fbba < 1e-6) fbba = 0.0;
-      fbbb =      f[0]  *      f[1]  *      f[2];  if (fbbb < 1e-6) fbbb = 0.0;
-
+      Point f = Base::set (pos);
+      if (Base::out_of_bounds) return (true);
+      P = pos;
+      Hx.set (f[0]);
+      Hy.set (f[1]);
+      Hz.set (f[2]);
       return (false);
     }
 
 
-    inline void InterpCubic::get (OutputType format, float& val, float& val_im)
+
+    template <class Set> inline typename InterpCubic<Set>::value_type InterpCubic<Set>::value () const
     {
-      if (out_of_bounds) { val = val_im = NAN; return; }
-      switch (format) {
-        case Default:   val = re(); return;
-        case Real:      val = re(); return;
-        case Imaginary: val = im(); return;
-        case Magnitude: val = re(); val_im = im(); val = sqrt (val*val + val_im*val_im); return;
-        case Phase:     val = re(); val_im = im(); val = atan2 (val_im, val); return;
-        case RealImag:  val = re(); val_im = im(); return;
+      if (Base::out_of_bounds) return (NAN);
+
+      ssize_t c[] = { Math::floor(P[0])-1, Math::floor(P[1])-1, Math::floor(P[2])-1 };
+      value_type r[4];
+      for (ssize_t z = 0; z < 4; ++z) {
+        Base::data[2] = check (c[2] + z, Base::data.dim(2)-1);
+        value_type q[4];
+        for (ssize_t y = 0; y < 4; ++y) {
+          Base::data[1] = check (c[1] + y, Base::data.dim(1)-1);
+          value_type p[4];
+          for (ssize_t x = 0; x < 4; ++x) {
+            Base::data[0] = check (c[0] + x, Base::data.dim(0)-1);
+            p[x] = Base::data.value();
+          }
+          q[y] = Hx.value (p);
+        }
+        r[z] = Hy.value (q);
       }
-      assert (false);
-    }
-
-
-
-
-
-    inline void InterpCubic::abs (OutputType format, float& val, float& val_im)
-    {
-      if (out_of_bounds) { val = val_im = NAN; return; }
-      switch (format) {
-        case Default:   val = re_abs(); return;
-        case Real:      val = re_abs(); return;
-        case Imaginary: val = im_abs(); return;
-        case Magnitude: val = re_abs(); val_im = im_abs(); val = sqrt (val*val + val_im*val_im); return;
-        case Phase:     val = re_abs(); val_im = im_abs(); val = atan2 (val_im, val); return;
-        case RealImag:  val = re_abs(); val_im = im_abs(); return;
-      }
-      assert (false);
+      return (Hz.value (r));
     }
 
   }

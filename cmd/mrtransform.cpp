@@ -23,9 +23,11 @@
 #include "app.h"
 #include "progressbar.h"
 #include "image/voxel.h"
-#include "image/interp.h"
-#include "image/misc.h"
-#include "math/LU.h"
+#include "dataset/interp.h"
+#include "dataset/misc.h"
+#include "dataset/loop.h"
+#include "dataset/copy.h"
+
 
 using namespace std; 
 using namespace MR; 
@@ -64,6 +66,27 @@ OPTIONS = {
   Option::End 
 };
 
+class ResliceKernel {
+  public:
+    ResliceKernel (Image::Voxel<float>& source_image, const float* transform) : vox (source_image), src (vox), R (transform) { }
+    void operator() (Image::Voxel<float>& dest) { 
+      Point pos (
+          R[0]*dest[0] + R[1]*dest[1] + R[2]*dest[2] + R[3],
+          R[4]*dest[0] + R[5]*dest[1] + R[6]*dest[2] + R[7],
+          R[8]*dest[0] + R[9]*dest[1] + R[10]*dest[2] + R[11]);
+      src.voxel (pos);
+      if (!src) dest.value() = 0.0;
+      else {
+        for (size_t i = 3; i < vox.ndim(); ++i)
+          vox[i] = dest[i];
+        dest.value() = src.value();
+      }
+    }
+  private:
+      Image::Voxel<float>& vox;
+      DataSet::Interp<Image::Voxel<float> > src;
+      const float* R;
+};
 
 
 EXECUTE {
@@ -82,8 +105,8 @@ EXECUTE {
   bool replace = get_options(1).size(); // replace
   bool inverse = get_options(2).size(); // inverse
 
-  Image::Object& in_obj (*argument[0].get_image());
-  Image::Header header (in_obj);
+  Image::Header header_in (argument[0].get_image());
+  Image::Header header (header_in);
 
   if (transform_supplied) {
 
@@ -96,7 +119,7 @@ EXECUTE {
     opt = get_options(4); // reference 
     if (opt.size() && transform_supplied) {
       replace = true;
-      const Image::Header& ref_header (opt[0][0].get_image()->header());
+      Image::Header ref_header (opt[0][0].get_image());
 
       if (get_options(5).size()) { // flipx 
         Math::Matrix<float> R(4,4);
@@ -119,11 +142,11 @@ EXECUTE {
 
 
 
-    if (replace) header.transform_matrix = T;
+    if (replace) header.transform() = T;
     else {
       Math::Matrix<float> M;
       Math::mult (M, T, header.transform());
-      header.transform_matrix.swap (M);
+      header.transform() = M;
     }
 
     header.comments.push_back ("transform modified");
@@ -133,66 +156,40 @@ EXECUTE {
   opt = get_options(3); // template : need to reslice
   if (opt.size()) {
     Math::Matrix<float> Mi(4,4);
-    Image::Transform::R2P (Mi, in_obj);
+    DataSet::Transform::scanner2voxel (Mi, header_in);
 
-    Image::Header template_header (opt[0][0].get_image()->header());
+    Image::Header template_header (opt[0][0].get_image());
     header.axes[0].dim = template_header.axes[0].dim;
     header.axes[1].dim = template_header.axes[1].dim;
     header.axes[2].dim = template_header.axes[2].dim;
     header.axes[0].vox = template_header.axes[0].vox;
     header.axes[1].vox = template_header.axes[1].vox;
     header.axes[2].vox = template_header.axes[2].vox;
-    header.transform_matrix = template_header.transform();
-    header.comments.push_back ("resliced to reference image \"" + template_header.name + "\"");
+    header.transform() = template_header.transform();
+    header.comments.push_back ("resliced to reference image \"" + template_header.name() + "\"");
 
     Math::Matrix<float> M, M2(4,4);
-    Image::Transform::P2R (M2, in_obj);
+    DataSet::Transform::voxel2scanner (M2, template_header);
     Math::mult (M, Mi, M2);
 
-    float R[] = { 
+    const float R[] = { 
       M(0,0), M(0,1), M(0,2), M(0,3), 
       M(1,0), M(1,1), M(1,2), M(1,3), 
       M(2,0), M(2,1), M(2,2), M(2,3)
     };
 
-    Image::Voxel in_vox (in_obj);
-    Image::Interp<Image::Voxel> in (in_vox);
-    Image::Voxel out (*argument[1].get_image (header));
-    Point pos;
+    Image::Voxel<float> in (header_in);
+    const Image::Header header_out = argument[1].get_image (header);
+    Image::Voxel<float> out (header_out);
 
-    in_obj.map();
-    out.image.map();
-
-    ProgressBar::init (voxel_count(out), "reslicing image...");
-    do { 
-      for (out[2] = 0; out[2] < out.dim(2); out[2]++) {
-        for (out[1] = 0; out[1] < out.dim(1); out[1]++) {
-          pos[0] = R[1]*out[1] + R[2]*out[2] + R[3];
-          pos[1] = R[5]*out[1] + R[6]*out[2] + R[7];
-          pos[2] = R[9]*out[1] + R[10]*out[2] + R[11];
-          for (out[0] = 0; out[0] < out.dim(0); out[0]++) {
-            in.P (pos);
-            out.value() = !in ? 0.0 : in.value();
-            pos[0] += R[0];
-            pos[1] += R[4];
-            pos[2] += R[8];
-            ProgressBar::inc();
-          }
-        }
-      }
-    } while (out++);
-    ProgressBar::done();
+    ResliceKernel kernel (in, R);
+    DataSet::loop1 ("reslicing image...", kernel, out);
   }
   else {
-    Image::Voxel in (in_obj);
-    Image::Voxel out (*argument[1].get_image (header));
-    ProgressBar::init (voxel_count(out), "copying image data...");
-    do { 
-      out.value() = in.value();
-      in++;
-      ProgressBar::inc();
-    } while (out++);
-    ProgressBar::done();
+    Image::Voxel<float> in (header_in);
+    const Image::Header header_out = argument[1].get_image (header);
+    Image::Voxel<float> out (header_out);
+    DataSet::copy_with_progress (out, in);
   }
 }
 

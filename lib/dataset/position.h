@@ -41,6 +41,7 @@ namespace MR {
         ssize_t operator+= (ssize_t increment) { S.move_pos (axis, increment); return (S.get_pos(axis)); }
         ssize_t operator-= (ssize_t increment) { S.move_pos (axis, -increment); return (S.get_pos(axis)); }
         ssize_t operator= (ssize_t position)   { S.set_pos (axis, position); return (position); }
+        ssize_t operator= (const Position& position)   { S.set_pos (axis, size_t(position)); return (size_t(position)); }
       private:
         Set& S;
         size_t axis;
