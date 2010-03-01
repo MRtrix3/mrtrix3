@@ -143,8 +143,11 @@ loop_start:
     }
     //! \endcond 
 
-    //! \addtogroup DataSet
-    // @{
+    /** \addtogroup DataSet
+     @{ */
+
+    /** \defgroup loop Looping functions
+     @{ */
 
 
     template <class Set> bool increment_position (Set& D, size_t from_axis, size_t to_axis) { 
@@ -222,6 +225,7 @@ loop_start:
         loop (progress_kernel, from_axis, to_axis);
       }
 
+    //! @}
     //! @}
   }
 }

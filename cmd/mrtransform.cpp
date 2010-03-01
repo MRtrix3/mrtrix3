@@ -23,7 +23,9 @@
 #include "app.h"
 #include "progressbar.h"
 #include "image/voxel.h"
-#include "dataset/interp.h"
+#include "dataset/interp/nearest.h"
+#include "dataset/interp/linear.h"
+#include "dataset/interp/cubic.h"
 #include "dataset/misc.h"
 #include "dataset/loop.h"
 #include "dataset/copy.h"
@@ -46,6 +48,8 @@ ARGUMENTS = {
 };
 
 
+const char* interp_choices[] = { "NEAREST", "LINEAR", "CUBIC" };
+
 OPTIONS = {
 
   Option ("transform", "the transform to use", "specified the 4x4 transform to apply.")
@@ -63,13 +67,24 @@ OPTIONS = {
 
   Option ("flipx", "assume x-flipped transform", "assume the transform is supplied assuming a coordinate system with the x-axis reversed relative to the MRtrix convention (i.e. x increases from right to left). This is required to handle transform matrices produced by FSL's FLIRT command. This is only used in conjunction with the -reference option."),
 
+  Option ("interp", "interpolation method", "set the interpolation method. Valid choices are nearest, linear and cubic (default is linear).")
+    .append (Argument ("method", "method", "the interpolation method").type_choice (interp_choices)),
+
   Option::End 
 };
 
-class ResliceKernel {
+
+
+
+
+
+
+template <template <class T> class Interp, class Set> class ResliceKernel 
+{
   public:
-    ResliceKernel (Image::Voxel<float>& source_image, const float* transform) : vox (source_image), src (vox), R (transform) { }
-    void operator() (Image::Voxel<float>& dest) { 
+    ResliceKernel (Set& source_image, const float* transform) : vox (source_image), src (vox), R (transform) { }
+
+    void operator() (Set& dest) { 
       Point pos (
           R[0]*dest[0] + R[1]*dest[1] + R[2]*dest[2] + R[3],
           R[4]*dest[0] + R[5]*dest[1] + R[6]*dest[2] + R[7],
@@ -82,11 +97,19 @@ class ResliceKernel {
         dest.value() = src.value();
       }
     }
+
+    static void reslice (Set& dest_image, Set& source_image, const float* transform) {
+      ResliceKernel<Interp,Set> kernel (source_image, transform);
+      DataSet::loop1 ("reslicing image...", kernel, dest_image);
+    }
+
   private:
-      Image::Voxel<float>& vox;
-      DataSet::Interp<Image::Voxel<float> > src;
+      Set& vox;
+      Interp<Set> src;
       const float* R;
 };
+
+
 
 
 EXECUTE {
@@ -182,8 +205,16 @@ EXECUTE {
     const Image::Header header_out = argument[1].get_image (header);
     Image::Voxel<float> out (header_out);
 
-    ResliceKernel kernel (in, R);
-    DataSet::loop1 ("reslicing image...", kernel, out);
+    int interp = 1;
+    opt = get_options (6); // interp
+    if (opt.size()) interp = opt[0][0].get_int();
+
+    switch (interp) {
+      case 0: ResliceKernel<DataSet::Interp::Nearest, Image::Voxel<float> >::reslice (out, in, R); break;
+      case 1: ResliceKernel<DataSet::Interp::Linear, Image::Voxel<float> >::reslice (out, in, R); break;
+      case 2: ResliceKernel<DataSet::Interp::Cubic, Image::Voxel<float> >::reslice (out, in, R); break;
+      default: assert (0);
+    }
   }
   else {
     Image::Voxel<float> in (header_in);
