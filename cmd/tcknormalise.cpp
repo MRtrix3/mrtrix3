@@ -66,7 +66,7 @@ EXECUTE {
 
   std::vector<Point> tck;
 
-  DataSet::Interp<Image::Voxel<float> > interp (vox);
+  DataSet::Interp::Linear<Image::Voxel<float> > interp (vox);
   ProgressBar::init (0, "normalising tracks...");
 
   while (file.next (tck)) {

@@ -23,7 +23,7 @@
 
 #include "app.h"
 #include "image/voxel.h"
-#include "dataset/interp.h"
+#include "dataset/interp/linear.h"
 #include "dwi/tractography/exec.h"
 #include "dwi/tractography/iFOD1.h"
 #include "dwi/tractography/iFOD2.h"
@@ -44,8 +44,12 @@ ARGUMENTS = {
   Argument::End
 };
 
+const char* algorithms[] = { "IFOD1", "IFOD2" };
 
 OPTIONS = {
+  Option ("algorithm", "algorithm", "specify the tractography algorithm to use (default: iFOD2).")
+    .append (Argument ("name", "algorithm name", "the name of the algorithm to use. Valid choices are: iFOD1, iFOD2.").type_choice (algorithms)),
+
   Option ("seed", "seed region", "specify the seed region of interest.", AllowMultiple)
     .append (Argument ("spec", "ROI specification", "specifies the parameters necessary to define the ROI. This should be either the path to a binary mask image, or a comma-separated list of 4 floating-point values, specifying the [x,y,z] coordinates of the centre and radius of a spherical ROI.").type_string()),
 
@@ -111,60 +115,68 @@ EXECUTE {
   properties["unidirectional"] = "0";
   properties["sh_precomputed"] = "1";
 
-  std::vector<OptBase> opt = get_options (0); // seed
+  int algorithm = 1;
+  std::vector<OptBase> opt = get_options (0); // algorithm
+  if (opt.size()) algorithm = opt[0][0].get_int();
+
+  opt = get_options (1); // seed
   for (std::vector<OptBase>::iterator i = opt.begin(); i != opt.end(); ++i)
     properties.seed.add (ROI (std::string ((*i)[0].get_string())));
 
-  opt = get_options (1); // include
+  opt = get_options (2); // include
   for (std::vector<OptBase>::iterator i = opt.begin(); i != opt.end(); ++i)
     properties.include.add (ROI (std::string ((*i)[0].get_string())));
 
-  opt = get_options (2); // exclude
+  opt = get_options (3); // exclude
   for (std::vector<OptBase>::iterator i = opt.begin(); i != opt.end(); ++i)
     properties.exclude.add (ROI (std::string ((*i)[0].get_string())));
 
-  opt = get_options (3); // mask
+  opt = get_options (4); // mask
   for (std::vector<OptBase>::iterator i = opt.begin(); i != opt.end(); ++i)
     properties.mask.add (ROI (std::string ((*i)[0].get_string())));
 
-  opt = get_options (4); // step
+  opt = get_options (5); // step
   if (opt.size()) properties["step_size"] = str (opt[0][0].get_float());
 
-  opt = get_options (5); // angle
+  opt = get_options (6); // angle
   if (opt.size()) properties["max_angle"] = str (opt[0][0].get_float());
 
-  opt = get_options (6); // number
+  opt = get_options (7); // number
   if (opt.size()) properties["max_num_tracks"] = str (opt[0][0].get_int());
 
-  opt = get_options (7); // maxnum
+  opt = get_options (8); // maxnum
   if (opt.size()) properties["max_num_attempts"] = str (opt[0][0].get_int());
 
-  opt = get_options (8); // length
+  opt = get_options (9); // length
   if (opt.size()) properties["max_dist"] = str (opt[0][0].get_float());
 
-  opt = get_options (9); // min_length
+  opt = get_options (10); // min_length
   if (opt.size()) properties["min_dist"] = str (opt[0][0].get_float());
 
-  opt = get_options (10); // cutoff
+  opt = get_options (11); // cutoff
   if (opt.size()) properties["threshold"] = str (opt[0][0].get_float());
 
-  opt = get_options (11); // initcutoff
+  opt = get_options (12); // initcutoff
   if (opt.size()) properties["init_threshold"] = str (opt[0][0].get_float());
 
-  opt = get_options (12); // trials
+  opt = get_options (13); // trials
   if (opt.size()) properties["max_trials"] = str (opt[0][0].get_int());
 
-  opt = get_options (13); // unidirectional
+  opt = get_options (14); // unidirectional
   if (opt.size()) properties["unidirectional"] = "1";
 
-  opt = get_options (14); // initdirection
+  opt = get_options (15); // initdirection
   if (opt.size()) properties["init_direction"] = opt[0][0].get_string();
 
-  opt = get_options (15); // noprecomputed
+  opt = get_options (16); // noprecomputed
   if (opt.size()) properties["sh_precomputed"] = "0";
 
-  opt = get_options (16); // samples
+  opt = get_options (17); // samples
   if (opt.size()) properties["samples_per_step"] = str (opt[0][0].get_int());
 
-  Exec<iFOD2>::run (argument[0].get_image(), argument[1].get_string(), properties);
+  switch (algorithm) {
+    case 0: Exec<iFOD1>::run (argument[0].get_image(), argument[1].get_string(), properties); break;
+    case 1: Exec<iFOD2>::run (argument[0].get_image(), argument[1].get_string(), properties); break;
+    default: assert (0);
+  }
 }

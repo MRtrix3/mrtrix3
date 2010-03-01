@@ -26,7 +26,7 @@
 #include "point.h"
 #include "ptr.h"
 #include "image/voxel.h"
-#include "dataset/interp.h"
+#include "dataset/interp/linear.h"
 #include "dataset/buffer.h"
 #include "dataset/copy.h"
 #include "math/rng.h"
@@ -103,7 +103,7 @@ namespace MR {
               template <class Set> Mask (Set& D, const std::string& description) : 
                 DataSet::Buffer<bool,3> (D, description), interp (*this) { 
                   DataSet::copy (*this, D); }
-              DataSet::Interp<DataSet::Buffer<bool,3> > interp;
+              DataSet::Interp::Linear<DataSet::Buffer<bool,3> > interp;
           };
 
           Point  pos;

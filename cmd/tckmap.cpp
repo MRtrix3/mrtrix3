@@ -27,7 +27,7 @@
 #include "get_set.h"
 #include "image/voxel.h"
 #include "dataset/misc.h"
-#include "dataset/interp.h"
+#include "dataset/interp/linear.h"
 #include "dwi/tractography/file.h"
 #include "dwi/tractography/properties.h"
 
@@ -120,7 +120,7 @@ EXECUTE {
   uint8_t* visited = new uint8_t [voxel_count];
   std::vector<Point> tck;
 
-  DataSet::Interp<Image::Header> interp (header);
+  DataSet::Interp::Linear<Image::Header> interp (header);
   ProgressBar::init (num_tracks, "generating track count image...");
 
   while (file.next (tck)) {

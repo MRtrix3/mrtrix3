@@ -26,7 +26,7 @@
 #include "point.h"
 #include "math/rng.h"
 #include "image/voxel.h"
-#include "dataset/interp.h"
+#include "dataset/interp/linear.h"
 
 namespace MR {
   namespace DWI {
@@ -43,7 +43,7 @@ namespace MR {
           ~MethodBase () { delete values; }
 
           Image::Voxel<float> source;
-          DataSet::Interp<Image::Voxel<float> > interp;
+          DataSet::Interp::Linear<Image::Voxel<float> > interp;
           Math::RNG rng;
           Point pos, dir;
           float* values;
