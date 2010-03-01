@@ -40,10 +40,10 @@ namespace MR {
        * and scanner(). 
        * For example:
        * \code
-       * Image::Voxel voxel (image);
+       * Image::Voxel<float> voxel (image);
        *
        * // create an Interp::Linear object using voxel as the parent data set:
-       * Image::Interp::Linear<Image::Voxel> interp (voxel);
+       * DataSet::Interp::Linear<Image::Voxel<float> > interp (voxel);
        *
        * // set the scanner-space position to [ 10.2 3.59 54.1 ]:
        * interp.scanner (10.2, 3.59, 54.1);
@@ -62,7 +62,7 @@ namespace MR {
        * voxel[1]--;                 // set the current position
        * voxel[2]++;                 // within the data set
        * float f = voxel.value();
-       * Math::Transform<float> M = voxel.transform; // a valid 4x4 transformation matrix
+       * Math::Transform<float> M = voxel.transform(); // a valid 4x4 transformation matrix
        * \endcode
        */
 
