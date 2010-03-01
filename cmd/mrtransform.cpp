@@ -70,6 +70,9 @@ OPTIONS = {
   Option ("interp", "interpolation method", "set the interpolation method. Valid choices are nearest, linear and cubic (default is linear).")
     .append (Argument ("method", "method", "the interpolation method").type_choice (interp_choices)),
 
+  Option ("oversample", "oversample", "set the oversampling factor, as a vector of 3 integers.")
+    .append (Argument ("factors", "factors", "the oversampling factors.").type_sequence_int()),
+
   Option::End 
 };
 
@@ -84,7 +87,8 @@ template <template <class T> class Interp, class Set> class ResliceKernel
   public:
     ResliceKernel (Set& source_image, const float* transform) : vox (source_image), src (vox), R (transform) { }
 
-    void operator() (Set& dest) { 
+    void operator() (Set& dest) 
+    { 
       Point pos (
           R[0]*dest[0] + R[1]*dest[1] + R[2]*dest[2] + R[3],
           R[4]*dest[0] + R[5]*dest[1] + R[6]*dest[2] + R[7],
@@ -98,7 +102,8 @@ template <template <class T> class Interp, class Set> class ResliceKernel
       }
     }
 
-    static void reslice (Set& dest_image, Set& source_image, const float* transform) {
+    static void reslice (Set& dest_image, Set& source_image, const float* transform) 
+    {
       ResliceKernel<Interp,Set> kernel (source_image, transform);
       DataSet::loop1 ("reslicing image...", kernel, dest_image);
     }
@@ -108,6 +113,68 @@ template <template <class T> class Interp, class Set> class ResliceKernel
       Interp<Set> src;
       const float* R;
 };
+
+
+
+
+template <template <class T> class Interp, class Set> class ResliceKernelOverSample 
+{
+  public:
+    ResliceKernelOverSample (Set& source_image, const float* transform, const std::vector<int>& oversample) : 
+      vox (source_image), src (vox), R (transform), OS (oversample) { 
+        norm = 1.0;
+        for (size_t i = 0; i < 3; ++i) {
+          inc[i] = 1.0/float(OS[i]);
+          from[i] = 0.5*(inc[i]-1.0);
+          norm *= OS[i];
+          VAR (inc[i]);
+          VAR (from[i]);
+        }
+        norm = 1.0 / norm;
+      }
+
+    void operator() (Set& dest) 
+    { 
+      Point d (dest[0]+from[0], dest[1]+from[1], dest[2]+from[2]);
+      Point s;
+      typename Set::value_type ret = 0.0;
+
+      for (size_t i = 3; i < vox.ndim(); ++i) vox[i] = dest[i];
+
+      for (int z = 0; z < OS[2]; ++z) {
+        s[2] = d[2] + z*inc[2];
+        for (int y = 0; y < OS[1]; ++y) {
+          s[1] = d[1] + y*inc[1];
+          for (int x = 0; x < OS[0]; ++x) {
+            s[0] = d[0] + x*inc[0];
+            Point pos (
+                R[0]*s[0] + R[1]*s[1] + R[2]*s[2] + R[3],
+                R[4]*s[0] + R[5]*s[1] + R[6]*s[2] + R[7],
+                R[8]*s[0] + R[9]*s[1] + R[10]*s[2] + R[11]);
+            src.voxel (pos);
+            if (!src) continue;
+            else ret += src.value();
+          }
+        }
+      }
+      dest.value() = ret * norm;
+    }
+
+    static void reslice (Set& dest_image, Set& source_image, const float* transform, const std::vector<int>& oversample) {
+      ResliceKernelOverSample<Interp,Set> kernel (source_image, transform, oversample);
+      DataSet::loop1 ("reslicing image...", kernel, dest_image);
+    }
+
+  private:
+      Set& vox;
+      Interp<Set> src;
+      const float* R;
+      const std::vector<int>& OS;
+      float from[3], inc[3];
+      float norm;
+};
+
+
 
 
 
@@ -209,11 +276,26 @@ EXECUTE {
     opt = get_options (6); // interp
     if (opt.size()) interp = opt[0][0].get_int();
 
-    switch (interp) {
-      case 0: ResliceKernel<DataSet::Interp::Nearest, Image::Voxel<float> >::reslice (out, in, R); break;
-      case 1: ResliceKernel<DataSet::Interp::Linear, Image::Voxel<float> >::reslice (out, in, R); break;
-      case 2: ResliceKernel<DataSet::Interp::Cubic, Image::Voxel<float> >::reslice (out, in, R); break;
-      default: assert (0);
+
+    opt = get_options (7); // oversample
+    if (opt.size()) {
+      std::vector<int> oversample = parse_ints (opt[0][0].get_string());
+      if (oversample.size() != 3) throw Exception ("option \"oversample\" expects a vector of 3 values");
+
+      switch (interp) {
+        case 0: ResliceKernelOverSample<DataSet::Interp::Nearest, Image::Voxel<float> >::reslice (out, in, R, oversample); break;
+        case 1: ResliceKernelOverSample<DataSet::Interp::Linear, Image::Voxel<float> >::reslice (out, in, R, oversample); break;
+        case 2: ResliceKernelOverSample<DataSet::Interp::Cubic, Image::Voxel<float> >::reslice (out, in, R, oversample); break;
+        default: assert (0);
+      }
+    }
+    else {
+      switch (interp) {
+        case 0: ResliceKernel<DataSet::Interp::Nearest, Image::Voxel<float> >::reslice (out, in, R); break;
+        case 1: ResliceKernel<DataSet::Interp::Linear, Image::Voxel<float> >::reslice (out, in, R); break;
+        case 2: ResliceKernel<DataSet::Interp::Cubic, Image::Voxel<float> >::reslice (out, in, R); break;
+        default: assert (0);
+      }
     }
   }
   else {
