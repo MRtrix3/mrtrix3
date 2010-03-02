@@ -33,34 +33,36 @@ namespace MR {
     //! \addtogroup DataSet
     // @{
 
-    template <class Set, size_t NDIM = 3> class Subset {
-      public:
-        typedef typename Set::value_type value_type;
+    template <class Set, size_t NDIM = 3>
+      class Subset 
+      {
+        public:
+          typedef typename Set::value_type value_type;
 
-        Subset (Set& original, const size_t* from, const size_t* dimensions, const std::string& description = "") : 
-          D (original),
-          descriptor (description.empty() ? D.name() + " [subset]" : description),
-          transform_matrix (D.transform()) {
-          assert (D.ndim() >= NDIM);
-          for (size_t n = 0; n < NDIM; ++n) assert (ssize_t(from[n] + dimensions[n]) <= D.dim(n));
-          memcpy (C, from, NDIM*sizeof(size_t));
-          memcpy (N, dimensions, NDIM*sizeof(size_t));
+          Subset (Set& original, const size_t* from, const size_t* dimensions, const std::string& description = "") : 
+            D (original),
+            descriptor (description.empty() ? D.name() + " [subset]" : description),
+            transform_matrix (D.transform()) {
+              assert (D.ndim() >= NDIM);
+              for (size_t n = 0; n < NDIM; ++n) assert (ssize_t(from[n] + dimensions[n]) <= D.dim(n));
+              memcpy (C, from, NDIM*sizeof(size_t));
+              memcpy (N, dimensions, NDIM*sizeof(size_t));
 
-          for (size_t j = 0; j < 3; ++j) 
-            for (size_t i = 0; i < 3; ++i) 
-              transform_matrix(i,3) += C[j] * vox(j) * transform_matrix(i,j);
-        }
+              for (size_t j = 0; j < 3; ++j) 
+                for (size_t i = 0; i < 3; ++i) 
+                  transform_matrix(i,3) += C[j] * vox(j) * transform_matrix(i,j);
+            }
 
-        const std::string& name () const { return (descriptor); }
-        size_t  ndim () const { return (NDIM); }
-        int     dim (size_t axis) const { return (N[axis]); }
-        ssize_t stride (size_t axis) const { return (D.stride (axis)); }
+          const std::string& name () const { return (descriptor); }
+          size_t  ndim () const { return (NDIM); }
+          int     dim (size_t axis) const { return (N[axis]); }
+          ssize_t stride (size_t axis) const { return (D.stride (axis)); }
 
-        float   vox (size_t axis) const { return (D.vox(axis)); }
+          float   vox (size_t axis) const { return (D.vox(axis)); }
 
-        const Math::Matrix<float>& transform () const { return (transform_matrix); }
+          const Math::Matrix<float>& transform () const { return (transform_matrix); }
 
-        void    reset () { for (size_t n = 0; n < NDIM; ++n) set_pos(n, 0); }
+          void    reset () { for (size_t n = 0; n < NDIM; ++n) set_pos(n, 0); }
 
         Value<Subset<Set> > value () { return (Value<Subset<Set> > (*this)); }
         Position<Subset<Set> > operator[] (size_t axis) { return (Position<Subset<Set> > (*this, axis)); }

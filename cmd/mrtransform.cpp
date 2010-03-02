@@ -26,6 +26,7 @@
 #include "dataset/interp/nearest.h"
 #include "dataset/interp/linear.h"
 #include "dataset/interp/cubic.h"
+#include "dataset/interp/reslice.h"
 #include "dataset/misc.h"
 #include "dataset/loop.h"
 #include "dataset/copy.h"
@@ -82,53 +83,18 @@ OPTIONS = {
 
 
 
-template <template <class T> class Interp, class Set> class ResliceKernel 
-{
-  public:
-    ResliceKernel (Set& source_image, const float* transform) : vox (source_image), src (vox), R (transform) { }
-
-    void operator() (Set& dest) 
-    { 
-      Point pos (
-          R[0]*dest[0] + R[1]*dest[1] + R[2]*dest[2] + R[3],
-          R[4]*dest[0] + R[5]*dest[1] + R[6]*dest[2] + R[7],
-          R[8]*dest[0] + R[9]*dest[1] + R[10]*dest[2] + R[11]);
-      src.voxel (pos);
-      if (!src) dest.value() = 0.0;
-      else {
-        for (size_t i = 3; i < vox.ndim(); ++i)
-          vox[i] = dest[i];
-        dest.value() = src.value();
-      }
-    }
-
-    static void reslice (Set& dest_image, Set& source_image, const float* transform) 
-    {
-      ResliceKernel<Interp,Set> kernel (source_image, transform);
-      DataSet::loop1 ("reslicing image...", kernel, dest_image);
-    }
-
-  private:
-      Set& vox;
-      Interp<Set> src;
-      const float* R;
-};
-
-
 
 
 template <template <class T> class Interp, class Set> class ResliceKernelOverSample 
 {
   public:
-    ResliceKernelOverSample (Set& source_image, const float* transform, const std::vector<int>& oversample) : 
-      vox (source_image), src (vox), R (transform), OS (oversample) { 
+    ResliceKernelOverSample (Set& source_image, const Math::Matrix<float>& transform, const std::vector<int>& oversample) : 
+      vox (source_image), src (vox), M (transform), OS (oversample) { 
         norm = 1.0;
         for (size_t i = 0; i < 3; ++i) {
           inc[i] = 1.0/float(OS[i]);
           from[i] = 0.5*(inc[i]-1.0);
           norm *= OS[i];
-          VAR (inc[i]);
-          VAR (from[i]);
         }
         norm = 1.0 / norm;
       }
@@ -147,10 +113,8 @@ template <template <class T> class Interp, class Set> class ResliceKernelOverSam
           s[1] = d[1] + y*inc[1];
           for (int x = 0; x < OS[0]; ++x) {
             s[0] = d[0] + x*inc[0];
-            Point pos (
-                R[0]*s[0] + R[1]*s[1] + R[2]*s[2] + R[3],
-                R[4]*s[0] + R[5]*s[1] + R[6]*s[2] + R[7],
-                R[8]*s[0] + R[9]*s[1] + R[10]*s[2] + R[11]);
+            Point pos;
+            DataSet::Transform::apply (pos, M, s);
             src.voxel (pos);
             if (!src) continue;
             else ret += src.value();
@@ -160,7 +124,7 @@ template <template <class T> class Interp, class Set> class ResliceKernelOverSam
       dest.value() = ret * norm;
     }
 
-    static void reslice (Set& dest_image, Set& source_image, const float* transform, const std::vector<int>& oversample) {
+    static void reslice (Set& dest_image, Set& source_image, const Math::Matrix<float>& transform, const std::vector<int>& oversample) {
       ResliceKernelOverSample<Interp,Set> kernel (source_image, transform, oversample);
       DataSet::loop1 ("reslicing image...", kernel, dest_image);
     }
@@ -168,7 +132,7 @@ template <template <class T> class Interp, class Set> class ResliceKernelOverSam
   private:
       Set& vox;
       Interp<Set> src;
-      const float* R;
+      const Math::Matrix<float>& M;
       const std::vector<int>& OS;
       float from[3], inc[3];
       float norm;
@@ -180,34 +144,30 @@ template <template <class T> class Interp, class Set> class ResliceKernelOverSam
 
 
 EXECUTE {
-  Math::Matrix<float> T(4,4);
-  T.identity();
-  bool transform_supplied = false;
+  Math::Matrix<float> T;
 
   std::vector<OptBase> opt = get_options (0); // transform
   if (opt.size()) {
-    transform_supplied = true;
     T.load (opt[0][0].get_string());
     if (T.rows() != 4 || T.columns() != 4) 
       throw Exception (std::string("transform matrix supplied in file \"") + opt[0][0].get_string() + "\" is not 4x4");
   }
 
   bool replace = get_options(1).size(); // replace
-  bool inverse = get_options(2).size(); // inverse
 
-  Image::Header header_in (argument[0].get_image());
+  const Image::Header header_in (argument[0].get_image());
   Image::Header header (header_in);
 
-  if (transform_supplied) {
+  if (T.is_set()) {
 
-    if (inverse) {
+    if (get_options(2).size()) { // inverse
       Math::Matrix<float> I;
       Math::LU::inv (I, T);
       T.swap (I);
     }
 
     opt = get_options(4); // reference 
-    if (opt.size() && transform_supplied) {
+    if (opt.size()) {
       replace = true;
       Image::Header ref_header (opt[0][0].get_image());
 
@@ -230,24 +190,12 @@ EXECUTE {
       T.swap (M);
     }
 
-
-
-    if (replace) header.transform() = T;
-    else {
-      Math::Matrix<float> M;
-      Math::mult (M, T, header.transform());
-      header.transform() = M;
-    }
-
     header.comments.push_back ("transform modified");
   }
 
 
   opt = get_options(3); // template : need to reslice
   if (opt.size()) {
-    Math::Matrix<float> Mi(4,4);
-    DataSet::Transform::scanner2voxel (Mi, header_in);
-
     Image::Header template_header (opt[0][0].get_image());
     header.axes[0].dim = template_header.axes[0].dim;
     header.axes[1].dim = template_header.axes[1].dim;
@@ -258,49 +206,54 @@ EXECUTE {
     header.transform() = template_header.transform();
     header.comments.push_back ("resliced to reference image \"" + template_header.name() + "\"");
 
+    Math::Matrix<float> Mi(4,4);
+    DataSet::Transform::scanner2voxel (Mi, header_in);
+
     Math::Matrix<float> M, M2(4,4);
     DataSet::Transform::voxel2scanner (M2, template_header);
     Math::mult (M, Mi, M2);
-
-    const float R[] = { 
-      M(0,0), M(0,1), M(0,2), M(0,3), 
-      M(1,0), M(1,1), M(1,2), M(1,3), 
-      M(2,0), M(2,1), M(2,2), M(2,3)
-    };
-
-    Image::Voxel<float> in (header_in);
-    const Image::Header header_out = argument[1].get_image (header);
-    Image::Voxel<float> out (header_out);
 
     int interp = 1;
     opt = get_options (6); // interp
     if (opt.size()) interp = opt[0][0].get_int();
 
 
+    std::vector<int> oversample;
     opt = get_options (7); // oversample
     if (opt.size()) {
-      std::vector<int> oversample = parse_ints (opt[0][0].get_string());
+      oversample = parse_ints (opt[0][0].get_string());
       if (oversample.size() != 3) throw Exception ("option \"oversample\" expects a vector of 3 values");
+      if (oversample[0] < 1 || oversample[1] < 1 || oversample[2] < 1) 
+        throw Exception ("oversample factors must be greater than zero");
+    }
 
-      switch (interp) {
-        case 0: ResliceKernelOverSample<DataSet::Interp::Nearest, Image::Voxel<float> >::reslice (out, in, R, oversample); break;
-        case 1: ResliceKernelOverSample<DataSet::Interp::Linear, Image::Voxel<float> >::reslice (out, in, R, oversample); break;
-        case 2: ResliceKernelOverSample<DataSet::Interp::Cubic, Image::Voxel<float> >::reslice (out, in, R, oversample); break;
-        default: assert (0);
-      }
+    const Image::Header header_out = argument[1].get_image (header);
+
+    Image::Voxel<float> in (header_in);
+    Image::Voxel<float> out (header_out);
+
+    switch (interp) {
+      case 0: DataSet::Interp::reslice<DataSet::Interp::Nearest> (out, in, T, oversample); break;
+      case 1: DataSet::Interp::reslice<DataSet::Interp::Linear> (out, in, T, oversample); break;
+      case 2: DataSet::Interp::reslice<DataSet::Interp::Cubic> (out, in, T, oversample); break;
+      default: assert (0);
     }
-    else {
-      switch (interp) {
-        case 0: ResliceKernel<DataSet::Interp::Nearest, Image::Voxel<float> >::reslice (out, in, R); break;
-        case 1: ResliceKernel<DataSet::Interp::Linear, Image::Voxel<float> >::reslice (out, in, R); break;
-        case 2: ResliceKernel<DataSet::Interp::Cubic, Image::Voxel<float> >::reslice (out, in, R); break;
-        default: assert (0);
-      }
-    }
+
   }
   else {
-    Image::Voxel<float> in (header_in);
+    // straight copy:
+
+    if (T.is_set()) {
+      if (replace) header.transform() = T;
+      else {
+        Math::Matrix<float> M;
+        Math::mult (M, T, header.transform());
+        header.transform() = M;
+      }
+    }
+
     const Image::Header header_out = argument[1].get_image (header);
+    Image::Voxel<float> in (header_in);
     Image::Voxel<float> out (header_out);
     DataSet::copy_with_progress (out, in);
   }

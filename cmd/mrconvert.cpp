@@ -26,7 +26,6 @@
 #include "image/axis.h"
 #include "dataset/copy.h"
 #include "dataset/extract.h"
-#include "dataset/reorder.h"
 
 using namespace MR; 
 
@@ -65,8 +64,6 @@ OPTIONS = {
   Option ("offset", "offset", "apply offset to the intensity values.")
     .append (Argument ("bias", "bias", "the value of the offset.").type_float (NAN, NAN, 0.0)),
 
-  Option ("zero", "replace NaN by zero", "replace all NaN values with zero."),
-
   Option ("output", "output type", "specify type of output")
     .append (Argument ("type", "type", "type of output.")
         .type_choice (type_choices)),
@@ -80,28 +77,6 @@ OPTIONS = {
 };
 
 
-
-
-template <class Set, class Set2> void copy_replace_NaN_kernel (Set& destination, Set2& source) { 
-  typedef typename Set::value_type T;
-  T val = source.value();
-  destination.value() = ( isnan(val) ? 0.0 : val );
-}
-
-
-template <class Set, class Set2> void copy (Set& destination, Set2& source, bool replace_NaN) 
-{ 
-  std::string progress_message ("copying from \"" + source.name() + "\" to \"" + destination.name() + "\"...");
-
-  typedef DataSet::Reorder<Set> R;
-  typedef DataSet::Reorder<Set2> R2;
-
-  R dest (destination);
-  R2 src (source, destination);
-
-  if (replace_NaN) DataSet::loop2 (progress_message, DataSet::copy_kernel<R,R2>, dest, src);
-  else DataSet::loop2 (progress_message, copy_replace_NaN_kernel<R,R2>, dest, src);
-}
 
 
 
@@ -119,10 +94,7 @@ EXECUTE {
   float offset = 0.0;
   if (opt.size()) offset = opt[0][0].get_float();
 
-  opt = get_options (5); // zero
-  bool replace_NaN = opt.size();
-
-  opt = get_options (6); // output
+  opt = get_options (5); // output
   Image::OutputType output_type = Image::Default;
   if (opt.size()) {
     switch (opt[0][0].get_int()) {
@@ -156,7 +128,7 @@ EXECUTE {
   for (size_t n = 0; n < vox.size(); n++) 
     if (std::isfinite (vox[n])) header.axes.vox(n) = vox[n];
 
-  opt = get_options (7); // layout
+  opt = get_options (6); // layout
   if (opt.size()) {
     std::vector<ssize_t> ax = Image::Axes::parse (header.ndim(), opt[0][0].get_string());
     if (ax.size() != header.axes.ndim()) 
@@ -167,7 +139,7 @@ EXECUTE {
   }
 
 
-  opt = get_options (8); // prs
+  opt = get_options (7); // prs
   if (opt.size() && header.DW_scheme.rows() && header.DW_scheme.columns()) {
     for (size_t row = 0; row < header.DW_scheme.rows(); row++) {
       double tmp = header.DW_scheme(row, 0);
@@ -206,13 +178,13 @@ EXECUTE {
       header.axes.dim(n) = extract.dim(n);
     const Image::Header header_out = argument[1].get_image (header);
     Image::Voxel<float> out (header_out);
-    copy (out, extract, replace_NaN);
+    DataSet::copy_with_progress (out, extract);
   }
   else { 
     // straight copy:
     const Image::Header header_out = argument[1].get_image (header);
     Image::Voxel<float> out (header_out);
-    copy (out, in, replace_NaN);
+    DataSet::copy_with_progress (out, in);
   }
 }
 
