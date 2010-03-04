@@ -301,7 +301,7 @@ $ ./build lib/mrtrix.o lib/app.o \endverbatim
  *
  * \section error_handling Error handling
  *
- * All error handling in MRtrix is done using C++ exception. MRtrix provides
+ * All error handling in MRtrix is done using C++ exceptions. MRtrix provides
  * its own Exception class, which additionally allows an error message to be
  * displayed to the user. Developers are strongly encouraged to provide
  * helpful error messages, so that users can work out what has gone wrong

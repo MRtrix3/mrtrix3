@@ -80,7 +80,7 @@ namespace MR {
         assert (type() == ImageIn);
         return (Image::Header::open (data.string, readwrite));
       }
-      const Image::Header get_image (Image::Header& template_header) const { 
+      const Image::Header get_image (const Image::Header& template_header) const { 
         assert (type() == ImageOut); 
         return (Image::Header::create (data.string, template_header)); 
       }

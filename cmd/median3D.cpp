@@ -22,8 +22,11 @@
 
 #include "app.h"
 #include "progressbar.h"
+#include "thread/exec.h"
+#include "thread/queue.h"
+#include "dataset/misc.h"
+#include "dataset/loop.h"
 #include "image/voxel.h"
-#include "image/misc.h"
 
 using namespace std; 
 using namespace MR; 
@@ -41,67 +44,172 @@ ARGUMENTS = {
   Argument::End
 };
 
-
 OPTIONS = { Option::End };
 
-EXECUTE {
-  Image::Object& in_obj (*argument[0].get_image());
 
-  Image::Voxel in (in_obj);
-  Image::Header header (in.image.header());
+typedef float value_type;
 
-  Image::Voxel out (*argument[1].get_image (header));
+class Item {
+  public:
+    Item (size_t ndim) : pos (ndim) { }
+    Array<value_type>::RefPtr data[3][3];
+    std::vector<ssize_t> pos;
+};
 
-  int from[3], to[3], n, n1, n2, nc, i;
-  float val, v[14], cm, t;
-  bool avg;
+class Allocator {
+  public:
+    Allocator (size_t ndim) : N (ndim) { }
+    Item* alloc () { Item* item = new Item (N); return (item); }
+    void reset (Item* item) { }
+    void dealloc (Item* item) { delete item; }
+  private:
+    size_t N;
+};
 
-  in.image.map();
-  out.image.map();
 
-  ProgressBar::init (voxel_count(out), "median filtering...");
+typedef Thread::Queue<Item,Allocator> Queue;
 
-  do { 
-    for (out[2] = 0; out[2] < out.dim(2); out[2]++) {
-      from[2] = out[2] > 0 ? out[2]-1 : 0;
-      to[2] = out[2] < out.dim(2)-1 ? out[2]+2 : out.dim(2);
-      n2 = to[2]-from[2];
-      for (out[1] = 0; out[1] < out.dim(1); out[1]++) {
-        from[1] = out[1] > 0 ? out[1]-1 : 0;
-        to[1] = out[1] < out.dim(1)-1 ? out[1]+2 : out.dim(1);
-        n1 = n2*(to[1]-from[1]);
-        for (out[0] = 0; out[0] < out.dim(0); out[0]++) {
-          from[0] = out[0] > 0 ? out[0]-1 : 0;
-          to[0] = out[0] < out.dim(0)-1 ? out[0]+2 : out.dim(0);
-          n = n1*(to[0]-from[0]);
-          avg = (n+1)%2;
-          n = (n/2)+1;
-          nc = 0;
-          cm = -INFINITY;
 
-          for (in[2] = from[2]; in[2] < to[2]; in[2]++) {
-            for (in[1] = from[1]; in[1] < to[1]; in[1]++) {
-              for (in[0] = from[0]; in[0] < to[0]; in[0]++) {
-                val = in.value();
-                if (nc < n) {
+
+
+
+class DataLoader {
+  public:
+    DataLoader (Queue& queue, const Image::Header& src_header) : writer (queue), src (src_header) { } 
+
+    void execute () {
+      Exec exec (*this);
+      DataSet::loop1 ("median filtering...", exec, src, 1, SIZE_MAX);
+    }
+
+  private:
+    Queue::Writer writer;
+    Image::Voxel<value_type>  src;
+
+    class Exec {
+      public:
+        Exec (DataLoader& parent) : P (parent), item (P.writer) { }
+        void operator() (Image::Voxel<value_type>& D) 
+        { 
+          // get data:
+          if (D[1] == 0) get_plane (D,0);
+          if (D[1] < D.dim(1)-1) get_plane (D,1);
+
+          // set item data:
+          for (size_t j = 0; j < 3; ++j) 
+            for (size_t i = 0; i < 3; ++i) 
+              item->data[j][i] = data[j][i];
+
+          // set item position:
+          for (size_t n = 1; n < D.ndim(); ++n) 
+            item->pos[n] = D[n];
+
+          // dispatch:
+          if (!item.write()) throw Exception ("error writing to work queue");
+
+          // shuffle along:
+          data[0][0] = data[1][0];
+          data[0][1] = data[1][1];
+          data[0][2] = data[1][2];
+          data[1][0] = data[2][0];
+          data[1][1] = data[2][1];
+          data[1][2] = data[2][2];
+          data[2][0] = data[2][1] = data[2][2] = NULL; 
+        }
+
+      private:
+        DataLoader& P;
+        Queue::Writer::Item item;
+        Array<value_type>::RefPtr data[3][3];
+
+        void get_plane (Image::Voxel<value_type>& D, ssize_t plane) 
+        {
+          D[1] += plane;
+          assert (D[1] < D.dim(1));
+          value_type* row;
+
+          if (D[2] > 0) {
+            --D[2];
+            row = new value_type [D.dim(0)];
+            for (D[0] = 0; D[0] < D.dim(0); ++D[0]) row[D[0]] = D.value();
+            data[plane+1][0] = row;
+            D[2]++;
+          }
+          else data[plane+1][0] = NULL;
+
+          row = new value_type [D.dim(0)];
+          for (D[0] = 0; D[0] < D.dim(0); ++D[0]) row[D[0]] = D.value();
+          data[plane+1][1] = row;
+
+          if (D[2] < D.dim(2)-1) {
+            ++D[2];
+            row = new value_type [D.dim(0)];
+            for (D[0] = 0; D[0] < D.dim(0); ++D[0]) row[D[0]] = D.value();
+            data[plane+1][2] = row;
+            D[2]--;
+          }
+          else data[plane+1][2] = NULL;
+
+          D[1] -= plane;
+        }
+    };
+    friend class Exec;
+};
+
+
+
+
+
+class Processor {
+  public:
+    Processor (Queue& queue, const Image::Header& dest_header) : reader (queue), dest (dest_header) { }
+
+    void execute () {
+      Queue::Reader::Item item (reader);
+      value_type v[14];
+
+      while (item.read()) {
+        size_t nrows = 0;
+        for (size_t j = 0; j < 3; ++j)
+          for (size_t i = 0; i < 3; ++i)
+            if (item->data[j][i]) ++nrows;
+
+        for (size_t i = 1; i < dest.ndim(); ++i)
+          dest[i] = item->pos[i];
+
+        for (dest[0] = 0; dest[0] < dest.dim(0); ++dest[0]) {
+          size_t from = dest[0] > 0 ? dest[0]-1 : 0;
+          size_t to = dest[0] < dest.dim(0)-1 ? dest[0]+2 : dest.dim(0);
+          size_t nc = 0;
+          value_type cm = -INFINITY;
+          size_t n = (to-from) * nrows;
+          size_t m = n/2 + 1;
+
+          for (size_t x = from; x < to; ++x) {
+            for (size_t z = 0; z < 3; ++z) {
+              for (size_t y = 0; y < 3; ++y) {
+                if (!item->data[z][y]) continue;
+                value_type val = item->data[z][y].get()[x];
+                if (nc < m) {
                   v[nc] = val;
-                  if (v[nc] > cm) cm = v[nc];
-                  nc++;
+                  if (v[nc] > cm) cm = val;
+                  ++nc;
                 }
                 else if (val < cm) {
-                  for (i = 0; v[i] != cm; i++);
+                  size_t i;
+                  for (i = 0; v[i] != cm; ++i);
                   v[i] = val;
                   cm = -INFINITY;
-                  for (i = 0; i < n; i++)
+                  for (i = 0; i < m; i++)
                     if (v[i] > cm) cm = v[i];
                 }
               }
             }
           }
 
-          if (avg) {
-            t = cm = -INFINITY;
-            for (i = 0; i < n; i++) {
+          if ((n+1) & 1) {
+            value_type t = cm = -INFINITY;
+            for (size_t i = 0; i < m; ++i) {
               if (v[i] > cm) {
                 t = cm;
                 cm = v[i];
@@ -111,13 +219,28 @@ EXECUTE {
             cm = (cm+t)/2.0;
           }
 
-          out.value() =  cm;
-          ProgressBar::inc();
+          dest.value() = cm;
         }
       }
     }
-  } while (out++);
 
-  ProgressBar::done();
+  private:
+    Queue::Reader reader;
+    Image::Voxel<value_type> dest;
+};
+
+
+
+EXECUTE {
+  const Image::Header source = argument[0].get_image();
+  const Image::Header destination (argument[1].get_image (source));
+
+  Queue queue ("work queue", 100, Allocator (source.ndim()));
+  DataLoader loader (queue, source);
+  Processor processor (queue, destination);
+
+  Thread::Exec loader_thread (loader, "loader");
+  Thread::Array<Processor> processor_list (processor);
+  Thread::Exec processor_threads (processor_list, "processor");
 }
 
