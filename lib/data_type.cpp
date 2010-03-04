@@ -67,11 +67,11 @@ namespace MR {
   const uint8_t DataType::Native;
 
   const char* DataType::identifiers[] = {
-    "float32", "float32le", "float32be", "float64", "float64le", "float64be", 
-    "int32", "uint32", "int32le", "uint32le", "int32be", "uint32be", 
-    "int16", "uint16", "int16le", "uint16le", "int16be", "uint16be", 
-    "cfloat32", "cfloat32le", "cfloat32be", "cfloat64", "cfloat64le", "cfloat64be", 
-    "int8", "uint8", "bit", NULL 
+    "FLOAT32", "FLOAT32LE", "FLOAT32BE", "FLOAT64", "FLOAT64LE", "FLOAT64BE", 
+    "INT32", "UINT32", "INT32LE", "UINT32LE", "INT32BE", "UINT32BE", 
+    "INT16", "UINT16", "INT16LE", "UINT16LE", "INT16BE", "UINT16BE", 
+    "CFLOAT32", "CFLOAT32LE", "CFLOAT32BE", "CFLOAT64", "CFLOAT64LE", "CFLOAT64BE", 
+    "INT8", "UINT8", "BIT", NULL 
   };
 
 

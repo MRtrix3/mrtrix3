@@ -36,7 +36,7 @@ DESCRIPTION = {
 
 
 ARGUMENTS = { 
-  Argument ("image", "input image", "the input image.").type_image_in (),
+  Argument ("image", "input image", "the input image.").type_string (),
   Argument ("output", "output image", "the output image.").type_image_out (),
   Argument::End 
 }; 
@@ -63,24 +63,22 @@ OPTIONS = {
   Option ("asinh", "asinh", "take inverse hyperbolic sine of current voxel value"), // 16
   Option ("atanh", "atanh", "take inverse hyperbolic tangent of current voxel value"), // 17
 
+  Option ("add", "add", "add to current voxel value the corresponding voxel value of 'source'") // 18
+    .append (Argument ("source", "source", "the source image or value").type_string()),
+
+  Option ("subtract", "subtract", "subtract from current voxel value the corresponding voxel value of 'source'") // 19
+    .append (Argument ("source", "source", "the source image or value").type_string()),
+
+  Option ("multiply", "multiply", "multiply current voxel value by corresponding voxel value of 'source'") // 20
+    .append (Argument ("source", "source", "the source image or value").type_string()),
+
+  Option ("divide", "divide", "divide current voxel value by corresponding voxel value of 'source'") // 21
+    .append (Argument ("source", "source", "the source image or value").type_string()),
+
   Option::End 
 };
 
 typedef double value_type;
-
-std::vector<ssize_t> dimension;
-
-void check_dim (const Image::Header& header) {
-  try {
-    if (header.ndim() != dimension.size()) throw 0;
-    for (size_t n = 0; n < dimension.size(); ++n) 
-      if (header.dim(n) != dimension[n]) throw 0;
-    return;
-  }
-  catch (...) {
-    throw Exception ("mismatch between dimensions of input images");
-  }
-}
 
 class Functor {
   public:
@@ -89,6 +87,7 @@ class Functor {
     virtual void get (const std::vector<ssize_t>& pos, std::vector<value_type>& values) { }
     virtual size_t ndim () const { return (0); }
     virtual ssize_t dim (size_t axis) const { return (0); }
+    virtual const Image::Header* header () const { return (NULL); }
   protected:
     Ptr<Functor> in;
 };
@@ -96,40 +95,37 @@ class Functor {
 
 class Source : public Functor {
   public:
-    Source (const Image::Header& header) :
-      Functor (NULL),
-      V (header) { }
-    void get (const std::vector<ssize_t>& pos, std::vector<value_type>& values) {
-      ssize_t axis = -1;
-      for (size_t n = 0; n < V.ndim(); ++n) {
-        if (pos[n] < 0) axis = n;
-        else V.pos(n,pos[n]);
+    Source (const std::string& text) : Functor (NULL) {
+      try {
+        H = new Image::Header (Image::Header::open (text));
+        V = new Image::Voxel<value_type> (*H);
       }
-      assert (axis >= 0);
-      assert (size_t (V.dim(axis)) == values.size());
-      for (V.pos(axis,0); V.pos(axis) < V.dim(axis); V.move(axis,1)) 
-        values[V.pos(axis)] = V.value();
+      catch (Exception) {
+        val = to<value_type> (text);
+        H = NULL;
+      }
     }
-    virtual size_t ndim () const { return (V.ndim()); }
-    virtual ssize_t dim (size_t axis) const { return (V.dim (axis)); }
-  private:
-    Image::Voxel<value_type> V;
-};
-
-
-class Constant : public Functor {
-  public:
-    Constant (value_type value) :
-      Functor (NULL),
-      val (value) { }
-    virtual void get (const std::vector<ssize_t>& pos, std::vector<value_type>& values) {
-      for (size_t n = 0; n < values.size(); ++n) values[n] = val;
+    void get (const std::vector<ssize_t>& pos, std::vector<value_type>& values) {
+      if (V) {
+        assert (size_t (V->dim(0)) == values.size());
+        for (size_t i = 1; i < V->ndim(); ++i) 
+          if (V->dim(i) > 1) (*V)[i] = pos[i]; 
+        for ((*V)[0] = 0; (*V)[0] < V->dim(0); ++(*V)[0]) 
+          values[(*V)[0]] = V->value();
+      }
+      else 
+        for (size_t i = 0; i < values.size(); ++i)
+          values[i] = val;
     }
-    virtual size_t ndim () const { return (0); }
-    virtual ssize_t dim (size_t axis) const { return (0); }
+    virtual size_t ndim () const { return (V ? V->ndim() : 0); }
+    virtual ssize_t dim (size_t axis) const { return (V ? V->dim (axis) : 0); }
+    virtual const Image::Header* header () const { return (H.get()); }
   private:
     value_type val;
+    Ptr<Image::Header> H;
+    Ptr<Image::Voxel<value_type> > V;
 };
+
 
 
 class Unary : public Functor {
@@ -137,13 +133,28 @@ class Unary : public Functor {
     Unary (Functor* input) : Functor (input) { }
     virtual size_t ndim () const { return (in->ndim()); }
     virtual ssize_t dim (size_t axis) const { return (in->dim (axis)); }
+    virtual const Image::Header* header () const { return (in->header()); }
 };
 
 class Binary : public Functor {
   public:
-    Binary (Functor* input1, Functor* input2) : Functor (input1), in2 (input2) { }
-    virtual size_t ndim () const { assert (in->ndim() == in2->ndim()); return (in->ndim()); }
-    virtual ssize_t dim (size_t axis) const { return (in->dim (axis) > 1 ? in->dim(axis) : in2->dim(axis)); }
+    Binary (Functor* input1, Functor* input2) : Functor (input1), in2 (input2) { 
+      size_t max_dim = MAX (in->ndim(), in2->ndim());
+      for (size_t i = 0; i < max_dim; ++i) {
+        size_t d1 = i < in->ndim() ? in->dim(i) : 1;
+        size_t d2 = i < in2->ndim() ? in2->dim(i) : 1;
+        if (d1 != d2) 
+          if (d1 != 1 && d2 != 1) 
+            throw Exception ("dimension mismatch between inputs");
+      }
+    }
+    virtual size_t ndim () const { return (MAX (in->ndim(), in2->ndim())); }
+    virtual ssize_t dim (size_t axis) const { 
+      ssize_t d1 = axis < in->ndim() ? in->dim(axis) : 1;
+      size_t d2 = axis < in2->ndim() ? in2->dim(axis) : 1;
+      return (MAX (d1, d2));
+    }
+    virtual const Image::Header* header () const { return (in->header() ? in->header() : in2->header()); }
   protected:
     Ptr<Functor> in2;
     std::vector<value_type> values2;
@@ -165,9 +176,7 @@ class Kernel {
     std::string name () { return ("math kernel"); }
     size_t ndim () const { return (N.size()); }
     ssize_t dim (size_t axis) const { return (N[axis]); }
-    ssize_t pos (size_t axis) const { return (x[axis]); }
-    void pos (size_t axis, ssize_t position) { x[axis] = position; out.pos (axis, position); }
-    void move (size_t axis, ssize_t inc) { x[axis] += inc; out.move (axis, inc); }
+    DataSet::Position<Kernel> operator[] (size_t axis) { return (DataSet::Position<Kernel> (*this, axis)); }
     void check (size_t from_axis, size_t to_axis) const { 
       if (!DataSet::dimensions_match (out, *this))
         throw Exception ("dimensions mismatch in math kernel");
@@ -175,10 +184,16 @@ class Kernel {
     }
     void operator() () { 
       in->get (x, values);
-      for (out.pos(0,0); out.pos(0) < N[0]; out.move(0,1)) 
-        out.value (values[out.pos(0)]);
+      for (out[0] = 0; out[0] < N[0]; ++out[0]) 
+        out.value() = values[out[0]];
       ProgressBar::inc();
     }
+
+    ssize_t get_pos (size_t axis) const { return (x[axis]); }
+    void    set_pos (size_t axis, ssize_t position) { out[axis] = x[axis] = position; }
+    void    move_pos (size_t axis, ssize_t increment) { out[axis] += increment; x[axis] += increment; }
+
+
   protected:
     Image::Voxel<value_type>& out;
     Functor* in;
@@ -191,7 +206,7 @@ class Kernel {
     name (Functor* input) : Unary (input) { } \
     virtual void get (const std::vector<ssize_t>& pos, std::vector<value_type>& values) { \
       in->get (pos, values); \
-      for (ssize_t n = 0; n < dimension[0]; ++n) { \
+      for (size_t n = 0; n < values.size(); ++n) { \
         value_type& val = values[n]; \
         values[n] = operation; \
       } \
@@ -205,7 +220,7 @@ class Kernel {
       values2.resize (values.size()); \
       in->get (pos, values); \
       in2->get (pos, values2); \
-      for (ssize_t n = 0; n < dimension[0]; ++n) { \
+      for (size_t n = 0; n < values.size(); ++n) { \
         value_type& val1 = values[n]; \
         value_type& val2 = values2[n]; \
         values[n] = operation; \
@@ -231,22 +246,13 @@ DEF_UNARY (Acosh, Math::acosh (val));
 DEF_UNARY (Asinh, Math::asinh (val));
 DEF_UNARY (Atanh, Math::atanh (val));
 
+DEF_BINARY (Add, val1+val2);
+DEF_BINARY (Subtract, val1-val2);
 DEF_BINARY (Mult, val1*val2);
+DEF_BINARY (Divide, val1/val2);
 
 EXECUTE {
-  const Image::Header header_in (argument[0].get_image());
-  Image::Header header (header_in);
-
-  header.datatype() = DataType::Float32;
-  OptionList opt = get_options (0); // datatype
-  if (opt.size()) header.datatype().parse (DataType::identifiers[opt[0][0].get_int()]);
-
-  Image::Header header_out (argument[1].get_image (header));
-  dimension.resize (header.ndim());
-  for (size_t n = 0; n < header.ndim(); ++n) 
-    dimension[n] = header.dim(n);
-
-  Functor* last = new Source (header_in);
+  Functor* last = new Source (argument[0].get_string());
 
   for (size_t n = 0; n < option.size(); ++n) {
     switch (option[n].index) {
@@ -268,11 +274,30 @@ EXECUTE {
       case 15: last = new Acosh (last); break;
       case 16: last = new Asinh (last); break;
       case 17: last = new Atanh (last); break;
+      case 18: last = new Add (last, new Source (option[n][0].get_string())); break;
+      case 19: last = new Subtract (last, new Source (option[n][0].get_string())); break;
+      case 20: last = new Mult (last, new Source (option[n][0].get_string())); break;
+      case 21: last = new Divide (last, new Source (option[n][0].get_string())); break;
       default: assert (0);
     }
   }
 
-  Image::Voxel<value_type> vox (header_out);
+  const Image::Header* source_header = last->header();
+  if (!source_header) throw Exception ("no source images found - aborting");
+  Image::Header header = *source_header;
+
+  header.axes.ndim() = last->ndim();
+  for (size_t i = 0; i < last->ndim(); ++i)
+    header.axes.dim(i) = last->dim(i);
+
+  header.datatype() = DataType::Float32;
+  OptionList opt = get_options (0); // datatype
+  if (opt.size()) header.datatype().parse (DataType::identifiers[opt[0][0].get_int()]);
+
+
+  Image::Header destination_header (argument[1].get_image (header));
+
+  Image::Voxel<value_type> vox (destination_header);
   Kernel kernel (vox, last);
   DataSet::loop (kernel,1);
 
