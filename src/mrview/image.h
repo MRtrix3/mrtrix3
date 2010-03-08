@@ -27,7 +27,7 @@
 
 #include "opengl/gl.h"
 #include "image/voxel.h"
-#include "dataset/interp.h"
+#include "dataset/interp/linear.h"
 
 class QAction;
 
@@ -55,7 +55,7 @@ namespace MR {
 
         MR::Image::Header& H;
         MR::Image::Voxel<float> vox;
-        MR::DataSet::Interp<MR::Image::Header> interp;
+        MR::DataSet::Interp::Linear<MR::Image::Header> interp;
 
       private:
         Window& window;

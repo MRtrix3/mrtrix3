@@ -29,10 +29,6 @@
 #include <QDockWidget>
 #include <QGLWidget>
 
-#ifdef None
-# undef None
-#endif
-
 #include "app.h"
 #include "icon.h"
 #include "dialog/file.h"
