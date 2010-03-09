@@ -341,9 +341,10 @@ namespace MR {
             "  Data layout:       [ ";
 
 
-      std::vector<size_t> order (DataSet::Stride::order (axes));
+      std::vector<ssize_t> strides (DataSet::Stride::get (axes));
+      DataSet::Stride::symbolise (strides);
       for (i = 0; i < axes.ndim(); i++) 
-        desc += axes.stride(i) ? ( axes.forward(i) ? '+' : '-' ) + str (order[i]) + " " : "? ";
+        desc += axes.stride(i) ? ( strides[i] > 0 ? '+' : '-' ) + str (Math::abs(strides[i])-1) + " " : "? ";
 
 
 

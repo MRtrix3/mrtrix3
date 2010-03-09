@@ -85,6 +85,16 @@ namespace MR {
       return (true);
     }
 
+    template <class Set1, class Set2> inline void check_dimensions (Set1& D1, Set2& D2) {
+      if (!dimensions_match (D1, D2)) 
+        throw Exception ("dimension mismatch between \"" + D1.name() + "\" and \"" + D2.name() + "\"");
+    }
+
+    template <class Set1, class Set2> inline void check_dimensions (Set1& D1, Set2& D2, size_t from_axis, size_t to_axis) {
+      if (!dimensions_match (D1, D2, from_axis, to_axis)) 
+        throw Exception ("dimension mismatch between \"" + D1.name() + "\" and \"" + D2.name() + "\"");
+    }
+
 
     //! @}
   }

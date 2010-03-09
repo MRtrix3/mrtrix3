@@ -32,9 +32,6 @@ namespace MR {
     //! \addtogroup DataSet
     // @{
 
-    template <class Set, class Set2> 
-      void copy_kernel (Set& destination, Set2& source) { destination.value() = source.value(); }
-
 
 
     template <class Set, class Set2> 
@@ -46,7 +43,9 @@ namespace MR {
         R dest (destination);
         R2 src (source, destination);
 
-        loop2 (copy_kernel<R,R2>, dest, src, from_axis, to_axis);
+        Loop loop (from_axis, to_axis);
+        for (loop.start (dest, src); loop.ok(); loop.next (dest, src)) 
+          dest.value() = src.value();
       }
 
 
@@ -60,8 +59,10 @@ namespace MR {
         R dest (destination);
         R2 src (source, destination);
 
-        loop2 ("copying from \"" + source.name() + "\" to \"" + destination.name() + "\"...",
-            copy_kernel<R,R2>, dest, src, from_axis, to_axis);
+        Loop loop ("copying from \"" + source.name() + "\" to \"" + destination.name() + "\"...", from_axis, to_axis);
+
+        for (loop.start (dest, src); loop.ok(); loop.next (dest, src)) 
+          dest.value() = src.value();
       }
 
     //! @}

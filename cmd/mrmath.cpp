@@ -24,6 +24,7 @@
 #include "image/voxel.h"
 #include "math/rng.h"
 #include "dataset/loop.h"
+#include "dataset/stride.h"
 
 using namespace MR; 
 
@@ -62,17 +63,38 @@ OPTIONS = {
   Option ("acosh", "acosh", "take inverse hyperbolic cosine of current voxel value"), // 15
   Option ("asinh", "asinh", "take inverse hyperbolic sine of current voxel value"), // 16
   Option ("atanh", "atanh", "take inverse hyperbolic tangent of current voxel value"), // 17
+  Option ("round", "round", "round current voxel value to nearest integer"), // 18
+  Option ("ceil", "ceil", "round current voxel value up to smallest integer not less than current value"), // 19
+  Option ("floor", "floor", "round current voxel value down to largest integer not greater than current value"), // 20
 
-  Option ("add", "add", "add to current voxel value the corresponding voxel value of 'source'") // 18
+  Option ("add", "add", "add to current voxel value the corresponding voxel value of 'source'") // 21
     .append (Argument ("source", "source", "the source image or value").type_string()),
 
-  Option ("subtract", "subtract", "subtract from current voxel value the corresponding voxel value of 'source'") // 19
+  Option ("subtract", "subtract", "subtract from current voxel value the corresponding voxel value of 'source'") // 22
     .append (Argument ("source", "source", "the source image or value").type_string()),
 
-  Option ("multiply", "multiply", "multiply current voxel value by corresponding voxel value of 'source'") // 20
+  Option ("multiply", "multiply", "multiply current voxel value by corresponding voxel value of 'source'") // 23
     .append (Argument ("source", "source", "the source image or value").type_string()),
 
-  Option ("divide", "divide", "divide current voxel value by corresponding voxel value of 'source'") // 21
+  Option ("divide", "divide", "divide current voxel value by corresponding voxel value of 'source'") // 24
+    .append (Argument ("source", "source", "the source image or value").type_string()),
+
+  Option ("min", "min", "return smallest of current voxel value and corresponding voxel value of 'source'") // 25
+    .append (Argument ("source", "source", "the source image or value").type_string()),
+
+  Option ("max", "max", "return greatest of current voxel value and corresponding voxel value of 'source'") // 26
+    .append (Argument ("source", "source", "the source image or value").type_string()),
+
+  Option ("lt", "less than", "return 1 if current voxel value is less than corresponding voxel value of 'source', 0 otherwise") // 27
+    .append (Argument ("source", "source", "the source image or value").type_string()),
+
+  Option ("gt", "greater than", "return 1 if current voxel value is greater than corresponding voxel value of 'source', 0 otherwise") // 28
+    .append (Argument ("source", "source", "the source image or value").type_string()),
+
+  Option ("le", "less than or equal to", "return 1 if current voxel value is less than or equal to corresponding voxel value of 'source', 0 otherwise") // 29
+    .append (Argument ("source", "source", "the source image or value").type_string()),
+
+  Option ("ge", "greater than or equal to", "return 1 if current voxel value is greater than or equal to corresponding voxel value of 'source', 0 otherwise") // 30
     .append (Argument ("source", "source", "the source image or value").type_string()),
 
   Option::End 
@@ -88,9 +110,15 @@ class Functor {
     virtual size_t ndim () const { return (0); }
     virtual ssize_t dim (size_t axis) const { return (0); }
     virtual const Image::Header* header () const { return (NULL); }
+
+    static size_t inner_axis;
   protected:
     Ptr<Functor> in;
 };
+size_t Functor::inner_axis = 0;
+
+
+
 
 
 class Source : public Functor {
@@ -107,11 +135,11 @@ class Source : public Functor {
     }
     void get (const std::vector<ssize_t>& pos, std::vector<value_type>& values) {
       if (V) {
-        assert (size_t (V->dim(0)) == values.size());
-        for (size_t i = 1; i < V->ndim(); ++i) 
-          if (V->dim(i) > 1) (*V)[i] = pos[i]; 
-        for ((*V)[0] = 0; (*V)[0] < V->dim(0); ++(*V)[0]) 
-          values[(*V)[0]] = V->value();
+        assert (size_t (V->dim(inner_axis)) == values.size());
+        for (size_t i = 0; i < V->ndim(); ++i) 
+          if (i != inner_axis && V->dim(i) > 1) (*V)[i] = pos[i]; 
+        for ((*V)[inner_axis] = 0; (*V)[inner_axis] < V->dim(inner_axis); ++(*V)[inner_axis]) 
+          values[(*V)[inner_axis]] = V->value();
       }
       else 
         for (size_t i = 0; i < values.size(); ++i)
@@ -128,6 +156,9 @@ class Source : public Functor {
 
 
 
+
+
+
 class Unary : public Functor {
   public:
     Unary (Functor* input) : Functor (input) { }
@@ -136,10 +167,13 @@ class Unary : public Functor {
     virtual const Image::Header* header () const { return (in->header()); }
 };
 
+
+
+
 class Binary : public Functor {
   public:
     Binary (Functor* input1, Functor* input2) : Functor (input1), in2 (input2) { 
-      size_t max_dim = MAX (in->ndim(), in2->ndim());
+      size_t max_dim = std::max (in->ndim(), in2->ndim());
       for (size_t i = 0; i < max_dim; ++i) {
         size_t d1 = i < in->ndim() ? in->dim(i) : 1;
         size_t d2 = i < in2->ndim() ? in2->dim(i) : 1;
@@ -148,11 +182,11 @@ class Binary : public Functor {
             throw Exception ("dimension mismatch between inputs");
       }
     }
-    virtual size_t ndim () const { return (MAX (in->ndim(), in2->ndim())); }
+    virtual size_t ndim () const { return (std::max (in->ndim(), in2->ndim())); }
     virtual ssize_t dim (size_t axis) const { 
       ssize_t d1 = axis < in->ndim() ? in->dim(axis) : 1;
-      size_t d2 = axis < in2->ndim() ? in2->dim(axis) : 1;
-      return (MAX (d1, d2));
+      ssize_t d2 = axis < in2->ndim() ? in2->dim(axis) : 1;
+      return (std::max (d1, d2));
     }
     virtual const Image::Header* header () const { return (in->header() ? in->header() : in2->header()); }
   protected:
@@ -161,45 +195,35 @@ class Binary : public Functor {
 };
 
 
-class Kernel {
+
+
+class Counter {
   public:
-    Kernel (Image::Voxel<value_type>& output, Functor* input) :
-      out (output), in (input), N (in->ndim()), x (in->ndim()) { 
-        for (size_t n = 0; n < N.size(); ++n) {
-          x[n] = 0;
-          N[n] = in->dim(n);
+    template <class Set> 
+      Counter (Functor& input, Set& output) : in (input), N_ (output.ndim()), x_ (output.ndim()) { 
+        for (size_t n = 0; n < N_.size(); ++n) {
+          x_[n] = 0;
+          N_[n] = output.dim(n);
         }
-        x[0] = -1;
-        values.resize (N[0]);
+        values.resize (N_[Functor::inner_axis]);
       }
-    ~Kernel () { ProgressBar::done(); }
-    std::string name () { return ("math kernel"); }
-    size_t ndim () const { return (N.size()); }
-    ssize_t dim (size_t axis) const { return (N[axis]); }
-    DataSet::Position<Kernel> operator[] (size_t axis) { return (DataSet::Position<Kernel> (*this, axis)); }
-    void check (size_t from_axis, size_t to_axis) const { 
-      if (!DataSet::dimensions_match (out, *this))
-        throw Exception ("dimensions mismatch in math kernel");
-      ProgressBar::init (DataSet::voxel_count (*this, 1, SIZE_MAX), "performing mathematical operations...");
-    }
-    void operator() () { 
-      in->get (x, values);
-      for (out[0] = 0; out[0] < N[0]; ++out[0]) 
-        out.value() = values[out[0]];
-      ProgressBar::inc();
-    }
-
-    ssize_t get_pos (size_t axis) const { return (x[axis]); }
-    void    set_pos (size_t axis, ssize_t position) { out[axis] = x[axis] = position; }
-    void    move_pos (size_t axis, ssize_t increment) { out[axis] += increment; x[axis] += increment; }
-
-
-  protected:
-    Image::Voxel<value_type>& out;
-    Functor* in;
-    std::vector<ssize_t> N, x;
+    size_t ndim () const { return (N_.size()); }
+    ssize_t dim (size_t axis) const { return (axis == Functor::inner_axis ? 1 : N_[axis]); }
+    ssize_t& operator[] (size_t axis) { return (x_[axis]); }
+    template <class Set> 
+      void get (Set& out) {
+        in.get (x_, values);
+        for (out[Functor::inner_axis] = 0; out[Functor::inner_axis] < out.dim(Functor::inner_axis); ++out[Functor::inner_axis]) 
+          out.value() = values[out[Functor::inner_axis]];
+      }
+  private:
+    Functor& in;
+    std::vector<ssize_t> N_, x_;
     std::vector<value_type> values;
 };
+
+
+
 
 #define DEF_UNARY(name, operation) class name : public Unary { \
   public: \
@@ -245,11 +269,21 @@ DEF_UNARY (Atan, Math::atan (val));
 DEF_UNARY (Acosh, Math::acosh (val));
 DEF_UNARY (Asinh, Math::asinh (val));
 DEF_UNARY (Atanh, Math::atanh (val));
+DEF_UNARY (Round, Math::round (val));
+DEF_UNARY (Ceil, Math::ceil (val));
+DEF_UNARY (Floor, Math::floor (val));
 
 DEF_BINARY (Add, val1+val2);
 DEF_BINARY (Subtract, val1-val2);
 DEF_BINARY (Mult, val1*val2);
 DEF_BINARY (Divide, val1/val2);
+DEF_BINARY (Min, std::min (val1, val2));
+DEF_BINARY (Max, std::max (val1, val2));
+
+DEF_BINARY (LessThan, val1 < val2);
+DEF_BINARY (GreaterThan, val1 > val2);
+DEF_BINARY (LessThanOrEqualTo, val1 <= val2);
+DEF_BINARY (GreaterThanOrEqualTo, val1 >= val2);
 
 EXECUTE {
   Functor* last = new Source (argument[0].get_string());
@@ -274,10 +308,19 @@ EXECUTE {
       case 15: last = new Acosh (last); break;
       case 16: last = new Asinh (last); break;
       case 17: last = new Atanh (last); break;
-      case 18: last = new Add (last, new Source (option[n][0].get_string())); break;
-      case 19: last = new Subtract (last, new Source (option[n][0].get_string())); break;
-      case 20: last = new Mult (last, new Source (option[n][0].get_string())); break;
-      case 21: last = new Divide (last, new Source (option[n][0].get_string())); break;
+      case 18: last = new Round (last); break;
+      case 19: last = new Ceil (last); break;
+      case 20: last = new Floor (last); break;
+      case 21: last = new Add (last, new Source (option[n][0].get_string())); break;
+      case 22: last = new Subtract (last, new Source (option[n][0].get_string())); break;
+      case 23: last = new Mult (last, new Source (option[n][0].get_string())); break;
+      case 24: last = new Divide (last, new Source (option[n][0].get_string())); break;
+      case 25: last = new Min (last, new Source (option[n][0].get_string())); break;
+      case 26: last = new Max (last, new Source (option[n][0].get_string())); break;
+      case 27: last = new LessThan (last, new Source (option[n][0].get_string())); break;
+      case 28: last = new GreaterThan (last, new Source (option[n][0].get_string())); break;
+      case 29: last = new LessThanOrEqualTo (last, new Source (option[n][0].get_string())); break;
+      case 30: last = new GreaterThanOrEqualTo (last, new Source (option[n][0].get_string())); break;
       default: assert (0);
     }
   }
@@ -297,9 +340,15 @@ EXECUTE {
 
   Image::Header destination_header (argument[1].get_image (header));
 
-  Image::Voxel<value_type> vox (destination_header);
-  Kernel kernel (vox, last);
-  DataSet::loop (kernel,1);
+  Image::Voxel<value_type> out (destination_header);
+  Functor::inner_axis = DataSet::Stride::order (out)[0];
+
+  Counter count (*last, out);
+
+  DataSet::Loop loop ("performing mathematical operations...");
+  for (loop.start (count, out); loop.ok(); loop.next (count, out)) {
+    count.get (out);
+  }
 
   delete last;
 }

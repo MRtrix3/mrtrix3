@@ -34,7 +34,7 @@ namespace MR {
 
         Histogram (Set& D, size_t num_buckets=100) {
           if (num_buckets < 10) 
-            throw Exception ("Error initialising Histogram: number of buckets must be greater than 10");
+            throw Exception ("Error initialising histogram: number of buckets must be greater than 10");
 
           info ("Initialising histogram with " + str(num_buckets) + " buckets...");
           list.resize (num_buckets);
@@ -47,8 +47,15 @@ namespace MR {
           for (size_t n = 0; n < list.size(); n++)
             list[n].value = min + step * (n + 0.5);
 
-          Kernel kernel (list, min, step);
-          loop1 ("building histogram of \"" + D.name() + "\"...", kernel, D);
+          Loop loop ("building histogram of \"" + D.name() + "\"...");
+          for (loop.start (D); loop.ok(); loop.next (D)) {
+            value_type val = D.value();
+            if (finite (val) && val != 0.0) { 
+              size_t pos = size_t ((val-min)/step);
+              if (pos >= list.size()) pos = list.size()-1;
+              list[pos].frequency++;
+            }
+          }
         }
 
 
@@ -79,22 +86,6 @@ namespace MR {
             Entry () : frequency (0), value (0.0) { }
             size_t  frequency;
             value_type  value;
-        };
-
-        class Kernel {
-          public:
-            Kernel (std::vector<Entry>& hist, value_type min, value_type step) : list (hist), M (min), S (step) { }
-            void operator() (Set& D) { 
-              value_type val = D.value();
-              if (finite (val) && val != 0.0) { 
-                size_t pos = size_t ((val-M)/S);
-                if (pos >= list.size()) pos = list.size()-1;
-                list[pos].frequency++;
-              }
-            }
-          private:
-            std::vector<Entry>& list;
-            value_type M, S;
         };
 
         std::vector<Entry> list;

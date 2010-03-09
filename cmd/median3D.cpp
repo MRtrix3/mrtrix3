@@ -78,82 +78,74 @@ class DataLoader {
     DataLoader (Queue& queue, const Image::Header& src_header) : writer (queue), src (src_header) { } 
 
     void execute () {
-      Exec exec (*this);
-      DataSet::loop1 ("median filtering...", exec, src, 1, SIZE_MAX);
+      Queue::Writer::Item item (writer);
+      DataSet::Loop loop ("median filtering...", 1);
+      for (loop.start (src); loop.ok(); loop.next (src)) {
+        // get data:
+        if (src[1] == 0) get_plane (0);
+        if (src[1] < src.dim(1)-1) get_plane (1);
+
+        // set item data:
+        for (size_t j = 0; j < 3; ++j) 
+          for (size_t i = 0; i < 3; ++i) 
+            item->data[j][i] = data[j][i];
+
+        // set item position:
+        for (size_t n = 1; n < src.ndim(); ++n) 
+          item->pos[n] = src[n];
+
+        // dispatch:
+        if (!item.write()) throw Exception ("error writing to work queue");
+
+        // shuffle along:
+        data[0][0] = data[1][0];
+        data[0][1] = data[1][1];
+        data[0][2] = data[1][2];
+        data[1][0] = data[2][0];
+        data[1][1] = data[2][1];
+        data[1][2] = data[2][2];
+        data[2][0] = data[2][1] = data[2][2] = NULL; 
+      }
     }
 
   private:
     Queue::Writer writer;
     Image::Voxel<value_type>  src;
+    Array<value_type>::RefPtr data[3][3];
 
-    class Exec {
-      public:
-        Exec (DataLoader& parent) : P (parent), item (P.writer) { }
-        void operator() (Image::Voxel<value_type>& D) 
-        { 
-          // get data:
-          if (D[1] == 0) get_plane (D,0);
-          if (D[1] < D.dim(1)-1) get_plane (D,1);
+    void get_plane (ssize_t plane) 
+    {
+      src[1] += plane;
+      assert (src[1] < src.dim(1));
+      value_type* row;
 
-          // set item data:
-          for (size_t j = 0; j < 3; ++j) 
-            for (size_t i = 0; i < 3; ++i) 
-              item->data[j][i] = data[j][i];
+      if (src[2] > 0) {
+        --src[2];
+        row = new value_type [src.dim(0)];
+        for (src[0] = 0; src[0] < src.dim(0); ++src[0]) 
+          row[src[0]] = src.value();
+        data[plane+1][0] = row;
+        src[2]++;
+      }
+      else data[plane+1][0] = NULL;
 
-          // set item position:
-          for (size_t n = 1; n < D.ndim(); ++n) 
-            item->pos[n] = D[n];
+      row = new value_type [src.dim(0)];
+      for (src[0] = 0; src[0] < src.dim(0); ++src[0]) 
+        row[src[0]] = src.value();
+      data[plane+1][1] = row;
 
-          // dispatch:
-          if (!item.write()) throw Exception ("error writing to work queue");
+      if (src[2] < src.dim(2)-1) {
+        ++src[2];
+        row = new value_type [src.dim(0)];
+        for (src[0] = 0; src[0] < src.dim(0); ++src[0]) 
+          row[src[0]] = src.value();
+        data[plane+1][2] = row;
+        src[2]--;
+      }
+      else data[plane+1][2] = NULL;
 
-          // shuffle along:
-          data[0][0] = data[1][0];
-          data[0][1] = data[1][1];
-          data[0][2] = data[1][2];
-          data[1][0] = data[2][0];
-          data[1][1] = data[2][1];
-          data[1][2] = data[2][2];
-          data[2][0] = data[2][1] = data[2][2] = NULL; 
-        }
-
-      private:
-        DataLoader& P;
-        Queue::Writer::Item item;
-        Array<value_type>::RefPtr data[3][3];
-
-        void get_plane (Image::Voxel<value_type>& D, ssize_t plane) 
-        {
-          D[1] += plane;
-          assert (D[1] < D.dim(1));
-          value_type* row;
-
-          if (D[2] > 0) {
-            --D[2];
-            row = new value_type [D.dim(0)];
-            for (D[0] = 0; D[0] < D.dim(0); ++D[0]) row[D[0]] = D.value();
-            data[plane+1][0] = row;
-            D[2]++;
-          }
-          else data[plane+1][0] = NULL;
-
-          row = new value_type [D.dim(0)];
-          for (D[0] = 0; D[0] < D.dim(0); ++D[0]) row[D[0]] = D.value();
-          data[plane+1][1] = row;
-
-          if (D[2] < D.dim(2)-1) {
-            ++D[2];
-            row = new value_type [D.dim(0)];
-            for (D[0] = 0; D[0] < D.dim(0); ++D[0]) row[D[0]] = D.value();
-            data[plane+1][2] = row;
-            D[2]--;
-          }
-          else data[plane+1][2] = NULL;
-
-          D[1] -= plane;
-        }
-    };
-    friend class Exec;
+      src[1] -= plane;
+    }
 };
 
 

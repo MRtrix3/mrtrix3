@@ -82,67 +82,6 @@ OPTIONS = {
 
 
 
-
-
-
-template <template <class T> class Interp, class Set> class ResliceKernelOverSample 
-{
-  public:
-    ResliceKernelOverSample (Set& source_image, const Math::Matrix<float>& transform, const std::vector<int>& oversample) : 
-      vox (source_image), src (vox), M (transform), OS (oversample) { 
-        norm = 1.0;
-        for (size_t i = 0; i < 3; ++i) {
-          inc[i] = 1.0/float(OS[i]);
-          from[i] = 0.5*(inc[i]-1.0);
-          norm *= OS[i];
-        }
-        norm = 1.0 / norm;
-      }
-
-    void operator() (Set& dest) 
-    { 
-      Point d (dest[0]+from[0], dest[1]+from[1], dest[2]+from[2]);
-      Point s;
-      typename Set::value_type ret = 0.0;
-
-      for (size_t i = 3; i < vox.ndim(); ++i) vox[i] = dest[i];
-
-      for (int z = 0; z < OS[2]; ++z) {
-        s[2] = d[2] + z*inc[2];
-        for (int y = 0; y < OS[1]; ++y) {
-          s[1] = d[1] + y*inc[1];
-          for (int x = 0; x < OS[0]; ++x) {
-            s[0] = d[0] + x*inc[0];
-            Point pos;
-            DataSet::Transform::apply (pos, M, s);
-            src.voxel (pos);
-            if (!src) continue;
-            else ret += src.value();
-          }
-        }
-      }
-      dest.value() = ret * norm;
-    }
-
-    static void reslice (Set& dest_image, Set& source_image, const Math::Matrix<float>& transform, const std::vector<int>& oversample) {
-      ResliceKernelOverSample<Interp,Set> kernel (source_image, transform, oversample);
-      DataSet::loop1 ("reslicing image...", kernel, dest_image);
-    }
-
-  private:
-      Set& vox;
-      Interp<Set> src;
-      const Math::Matrix<float>& M;
-      const std::vector<int>& OS;
-      float from[3], inc[3];
-      float norm;
-};
-
-
-
-
-
-
 EXECUTE {
   Math::Matrix<float> T;
 

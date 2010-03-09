@@ -71,80 +71,6 @@ OPTIONS = {
 
 
 
-class ByValue {
-  public:
-    ByValue (float threshold, float value_if_less, float value_if_more) :
-      val (threshold), lt (value_if_less), gt (value_if_more) { }
-    void operator() (Image::Voxel<float>& dest, Image::Voxel<float>& src) {
-      dest.value() = src.value() < val ? lt : gt;
-    }
-  private:
-    float val, lt, gt;
-};
-
-
-
-
-class ByGreatestN {
-  public:
-    ByGreatestN (size_t num) : N (num) { }
-
-    void operator() (Image::Voxel<float>& D) {
-      assert (list.size() <= N);
-      float val = D.value();
-      if (list.size() == N) {
-        if (val < list.begin()->first) return;
-        list.erase (list.begin());
-      }
-      std::vector<ssize_t> pos (D.ndim());
-      for (size_t n = 0; n < D.ndim(); ++n) pos[n] = D[n];
-      list.insert (std::pair<float,std::vector<ssize_t> > (val, pos));
-    }
-
-    void write_back (Image::Voxel<float>& dest, float val_if_excluded, float val_if_included) {
-      ZeroKernel zero (val_if_excluded);
-      DataSet::loop1 (zero, dest);
-
-      for (std::multimap<float,std::vector<ssize_t> >::const_iterator i = list.begin(); i != list.end(); ++i) {
-        for (size_t n = 0; n < dest.ndim(); ++n)
-          dest[n] = i->second[n];
-        dest.value() = val_if_included;
-      }
-    }
-
-  protected:
-    class ZeroKernel {
-      public:
-        ZeroKernel (float value) : val (value) { }
-        void operator() (Image::Voxel<float>& D) { D.value() = val; }
-      private:
-        float val;
-    };
-
-    std::multimap<float,std::vector<ssize_t> > list;
-    size_t N;
-};
-
-
-class BySmallestN : public ByGreatestN {
-  public:
-    BySmallestN (size_t num) : ByGreatestN (num) { }
-    void operator() (Image::Voxel<float>& D) {
-      assert (list.size() <= N);
-      float val = D.value();
-      if (list.size() == N) {
-        std::multimap<float,std::vector<ssize_t> >::iterator i = list.end();
-        --i;
-        if (val > i->first) return;
-        list.erase (i);
-      }
-      std::vector<ssize_t> pos (D.ndim());
-      for (size_t n = 0; n < D.ndim(); ++n) pos[n] = D[n];
-      list.insert (std::pair<float,std::vector<ssize_t> > (val, pos));
-    }
-};
-
-
 
 
 EXECUTE {
@@ -190,10 +116,10 @@ EXECUTE {
   if (finite (percentile)) {
     percentile /= 100.0;
     if (percentile < 0.5) {
-      bottomN = round (DataSet::voxel_count (header_in) * percentile);
+      bottomN = Math::round (DataSet::voxel_count (header_in) * percentile);
       invert = !invert;
     }
-    else topN = round (DataSet::voxel_count (header_in) * (1.0 - percentile));
+    else topN = Math::round (DataSet::voxel_count (header_in) * (1.0 - percentile));
   }
 
   Image::Header header (header_in);
@@ -209,23 +135,54 @@ EXECUTE {
   float one  = 1.0;
   if (invert) std::swap (zero, one);
 
-  if (topN) {
-    ByGreatestN kernel (topN);
-    DataSet::loop1 ("thresholding \"" + in.name() + "\" at " + (
-          isnan (percentile) ? 
-          ( str (topN) + "th top voxel" ) : 
-          (str (percentile*100.0) + "\% percentile") 
-          ) + "...", kernel, in);
-    kernel.write_back (out, zero, one);
-  }
-  else if (bottomN) {
-    BySmallestN kernel (bottomN);
-    DataSet::loop1 ("thresholding \"" + in.name() + "\" at " + (
-          isnan (percentile) ? 
-          ( str (topN) + "th bottom voxel" ) : 
-          (str (percentile*100.0) + "\% percentile") 
-          ) + "...", kernel, in);
-    kernel.write_back (out, zero, one);
+  if (topN || bottomN) {
+    std::multimap<float,std::vector<ssize_t> > list;
+
+    {
+      DataSet::Loop loop ("thresholding \"" + in.name() + "\" at " + (
+            isnan (percentile) ? 
+            ( str (topN ? topN : bottomN) + "th " + (topN ? "top" : "bottom" ) + " voxel" ) : 
+            (str (percentile*100.0) + "\% percentile") 
+            ) + "...");
+
+      if (topN) {
+        for (loop.start (in); loop.ok(); loop.next (in)) { 
+          float val = in.value();
+          if (list.size() == topN) {
+            if (val < list.begin()->first) continue;
+            list.erase (list.begin());
+          }
+          std::vector<ssize_t> pos (in.ndim());
+          for (size_t n = 0; n < in.ndim(); ++n) pos[n] = in[n];
+          list.insert (std::pair<float,std::vector<ssize_t> > (val, pos));
+        }
+      }
+      else {
+        for (loop.start (in); loop.ok(); loop.next (in)) { 
+          float val = in.value();
+          if (list.size() == bottomN) {
+            std::multimap<float,std::vector<ssize_t> >::iterator i = list.end();
+            --i;
+            if (val > i->first) continue;
+            list.erase (i);
+          }
+          std::vector<ssize_t> pos (in.ndim());
+          for (size_t n = 0; n < in.ndim(); ++n) pos[n] = in[n];
+          list.insert (std::pair<float,std::vector<ssize_t> > (val, pos));
+        }
+      }
+    }
+
+    DataSet::Loop loop;
+    for (loop.start (out); loop.ok(); loop.next (out)) {
+      out.value() = zero;
+    }
+
+    for (std::multimap<float,std::vector<ssize_t> >::const_iterator i = list.begin(); i != list.end(); ++i) {
+      for (size_t n = 0; n < out.ndim(); ++n)
+        out[n] = i->second[n];
+      out.value() = one;
+    }
   }
   else {
     if (isnan (val)) {
@@ -233,7 +190,9 @@ EXECUTE {
       val = hist.first_min();
     }
 
-    ByValue kernel (val, zero, one);
-    DataSet::loop2 ("thresholding \"" + in.name() + "\" at intensity " + str(val) + "...", kernel, out, in);
+    DataSet::Loop loop ("thresholding \"" + in.name() + "\" at intensity " + str(val) + "...");
+    for (loop.start (out, in); loop.ok(); loop.next (out, in)) {
+      out.value() = in.value() < val ? zero : one;
+    }
   }
 }

@@ -23,33 +23,24 @@
 #ifndef __dataset_min_max_h__
 #define __dataset_min_max_h__
 
+#include "dataset/loop.h"
+
 namespace MR {
   namespace DataSet {
-
-    namespace {
-      template <class Set, typename T> class Kernel {
-        public:
-          Kernel (T& min_value, T& max_value) : min (min_value), max (max_value) { }
-          void operator() (Set& D) { 
-            T val = D.value();
-            if (finite (val)) {
-              if (min > val) min = val;
-              if (max < val) max = val;
-            }
-          }
-        private:
-          T& min;
-          T& max;
-      };
-    }
 
     template <class Set, typename T> 
       void min_max (Set& D, T& min, T& max, size_t from_axis = 0, size_t to_axis = SIZE_MAX)
       {
         min = T(INFINITY);
         max = T(-INFINITY);
-        Kernel<Set,T> kernel (min, max);
-        loop1 ("finding min/max of \"" + D.name() + "\"...", kernel, D, from_axis, to_axis);
+        Loop loop ("finding min/max of \"" + D.name() + "\"...");
+        for (loop.start (D); loop.ok(); loop.next (D)) {
+          T val = D.value();
+          if (finite (val)) {
+            if (min > val) min = val;
+            if (max < val) max = val;
+          }
+        }
       }
 
   }

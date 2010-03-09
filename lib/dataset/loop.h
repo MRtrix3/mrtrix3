@@ -29,201 +29,237 @@
 namespace MR {
   namespace DataSet {
 
-    //! \cond skip
-    namespace {
+    /** \addtogroup DataSet
+      @{ */
 
-      template <class Functor, class Set> class Kernel1 {
-        public:
-          Kernel1 (Functor& func, Set& set) : F (func), D (set) { assert (voxel_count (D)); }
-          const std::string& name () { return (D.name()); }
-          size_t ndim () const { return (D.ndim()); }
-          ssize_t dim (size_t axis) const { return (D.dim (axis)); }
-          Position<Kernel1<Functor,Set> > operator[] (size_t axis) {
-            return (Position<Kernel1<Functor,Set> > (*this, axis)); }
-          void check (size_t from_axis, size_t to_axis) { }
-          void operator() () { F (D); }
+    /** \defgroup loop Looping functions
+      @{ */
 
-          ssize_t get_pos (size_t axis) const { return (D[axis]); }
-          void set_pos (size_t axis, ssize_t position) { D[axis] = position; }
-          void move_pos (size_t axis, ssize_t inc) { D[axis] += inc; }
-        private:
-          Functor& F;
-          Set& D;
-      };
+    //! a class to loop over arbitrary numbers of axes of a DataSet
+    /*! This class can be used to loop over any number of axes of one of more
+     * DataSets. Its use is best illustrated with the following examples.
+     *
+     * If \a vox in the following example is a 3D DataSet (i.e. vox.ndim() ==
+     * 3), then:
+     * \code
+     * float sum = 0.0;
+     * Loop loop;
+     * for (loop.start (vox); loop.ok(); loop.next (vox))
+     *   sum += vox.value();
+     * \endcode
+     * is equivalent to:
+     * \code
+     * float sum = 0.0;
+     * for (vox[2] = 0; vox[2] < vox.dim(2); ++vox[2])
+     *   for (vox[1] = 0; vox[1] < vox.dim(1); ++vox[1])
+     *     for (vox[0] = 0; vox[0] < vox.dim(0); ++vox[0])
+     *       sum += vox.value();
+     * \endcode
+     * This has the advantage that the dimensionality of the DataSet does not
+     * need to be known at compile-time. In other words, if the DataSet was
+     * 4-dimensional, the first looping construct would correctly iterate over
+     * all voxels, whereas the second one would only process the first 3D
+     * volume.
+     *
+     * \section multiloop Looping over multiple DataSets:
+     * It is often required to loop over more than one DataSet of the same
+     * dimension. This is done trivially by passing any additional DataSets to
+     * be looped over to both the start() and next() member functions. For
+     * example, this code snippet will copy the contents of the DataSet \a src
+     * into a DataSet \a dest, assumed to have the same dimensions as \a src:
+     * \code
+     * Loop loop;
+     * for (loop.start (dest, src); loop.ok(); loop.next (dest, src))
+     *   dest.value() = vox.value();
+     * \endcode
+     *
+     * \section restrictedloop Looping over a specific range of axes
+     * It is also possible to explicitly specify the range of axes to be looped
+     * over. In the following example, the program will loop over each 3D
+     * volume in the DataSet in turn:
+     * \code
+     * Loop outer (3); // outer loop iterates over axes 3 and above
+     * for (outer.start (vox); outer.ok(); outer.next (vox)) {
+     *   float sum = 0.0;
+     *   Loop inner (0, 3); // inner loop iterates over axes 0 to 3
+     *   for (inner.start (vox); inner.ok(); inner.next (vox))
+     *     sum += vox.value();
+     *   print ("total = " + str (sum) + "\n");
+     * }
+     * \endcode
+     * 
+     * \section progressloop Displaying progress status
+     * The Loop object can also display its progress as it proceeds, using the
+     * appropriate constructor. In the following example, the program will
+     * display its progress as it averages a DataSet:
+     * \code
+     * float sum = 0.0;
+     *
+     * Loop loop ("averaging..."); 
+     * for (loop.start (vox); loop.ok(); loop.next (vox)) 
+     *   sum += vox.value();
+     *
+     * float average = sum / float (DataSet::voxel_count (vox));
+     * print ("average = " + str (average) + "\n");
+     * \endcode
+     * The output would look something like this:
+     * \code
+     * myprogram: averaging... 100%
+     * average = 23.42
+     * \endcode
+     * 
+     * \sa LoopInOrder
+     */
+    class Loop 
+    {
+      public:
+        //! Constructor
+        /*! Construct a Loop object to iterate over the axes specified. By
+         * default, the Loop will iterate over all axes of the first DataSet
+         * supplied to next(). */
+        Loop (size_t from_axis = 0, size_t to_axis = SIZE_MAX) : 
+          from_ (from_axis), to_ (to_axis), cont_ (true), progress_ (false) { }
 
-      template <class Functor, class Set, class Set2> class Kernel2 {
-        public:
-          Kernel2 (Functor& func, Set& set, Set2& set2) : F (func), D (set), D2 (set2) { assert (voxel_count (D)); }
-          const std::string& name () { return (D.name()); }
-          size_t ndim () const { return (D.ndim()); }
-          ssize_t dim (size_t axis) const { return (D.dim (axis)); }
-          Position<Kernel2<Functor,Set,Set2> > operator[] (size_t axis) {
-            return (Position<Kernel2<Functor,Set,Set2> > (*this, axis)); }
-          void check (size_t from_axis, size_t to_axis) const { 
-            if (!dimensions_match (D, D2, from_axis, to_axis))
-              throw Exception ("dimensions mismatch between \"" + D.name() + "\" and \"" + D2.name() + "\"");
+        //! Constructor with progress status
+        /*! Construct a Loop object to iterate over the axes specified and
+         * display the progress status with the specified message. By default,
+         * the Loop will iterate over all axes of the first DataSet supplied to
+         * next(). */
+        Loop (const std::string& message, size_t from_axis = 0, size_t to_axis = SIZE_MAX) :
+          from_ (from_axis), to_ (to_axis), cont_ (true), progress_ (true), progress_message_ (message) { }
+
+        //! Start the loop to iterate over a single DataSet
+        /*! Start the loop by resetting the appropriate coordinates of each of
+         * the specified DataSets to zero, and initialising the progress status
+         * if appropriate. Note that only those axes specified in the Loop
+         * constructor will have their coordinates set to zero; the coordinates
+         * of all other axes will be left untouched. */
+        template <class Set> 
+          inline void start (Set& set)
+          {
+            cont_ = true;
+            for (size_t n = from_; n < std::min (set.ndim(), to_); ++n)
+              set[n] = 0;
+            if (progress_)
+              ProgressBar::init (voxel_count (set, from_, to_), progress_message_);
           }
-          void operator() () { F (D, D2); }
-
-          ssize_t get_pos (size_t axis) const { return (D[axis]); }
-          void set_pos (size_t axis, ssize_t position) { D[axis] = position; D2[axis] = position; }
-          void move_pos (size_t axis, ssize_t inc) { D[axis] += inc; D2[axis] += inc; }
-        private:
-          Functor& F;
-          Set& D;
-          Set2& D2;
-      };
-
-
-      template <class FunctorKernel, class Mask> class KernelMask {
-        public:
-          KernelMask (FunctorKernel& func, Mask& mask) : F (func), M (mask) { assert (voxel_count (M)); }
-          const std::string& name () { return (M.name()); }
-          size_t ndim () const { return (M.ndim()); }
-          ssize_t dim (size_t axis) const { return (M.dim (axis)); }
-          Position<KernelMask<FunctorKernel,Mask> > operator[] (size_t axis) {
-            return (Position<KernelMask<FunctorKernel,Mask> > (*this, axis)); }
-          void check (size_t from_axis, size_t to_axis) const { 
-            if (!dimensions_match (M, F, from_axis, to_axis))
-              throw Exception ("dimensions mismatch between \"" + M.name() + "\" and \"" + F.name() + "\"");
+        //! Start the loop to iterate over two DataSets
+        /*! \copydetails Loop::start(Set&) */
+        template <class Set, class Set2> 
+          inline void start (Set& set, Set2& set2)
+          {
+            cont_ = true;
+            for (size_t n = from_; n < std::min (set.ndim(), to_); ++n) {
+              set[n] = 0;
+              set2[n] = 0;
+            }
+            if (progress_)
+              ProgressBar::init (voxel_count (set, from_, to_), progress_message_);
           }
-          void operator() () { 
-            if (M.value()) { 
-              for (size_t i = 0; i < M.ndim(); ++i) F[i] = M[i];
-              F ();
+
+        //! Start the loop to iterate over three DataSets
+        /*! \copydetails Loop::start(Set&) */
+        template <class Set, class Set2, class Set3> 
+          inline void start (Set& set, Set2& set2, Set3& set3) 
+          {
+            cont_ = true;
+            for (size_t n = from_; n < std::min (set.ndim(), to_); ++n) {
+              set[n] = 0;
+              set2[n] = 0;
+              set3[n] = 0;
+            }
+            if (progress_)
+              ProgressBar::init (voxel_count (set, from_, to_), progress_message_);
+          }
+
+        //! Check whether the loop should continue iterating
+        /*! \return true if the loop has not completed, false otherwise. */
+        bool ok () const { return (cont_); }
+
+        //! Proceed to next iteration for a single DataSet
+        /*! Advance coordinates of all specified DataSets to the next position
+         * to be processed, and update the progress status if appropriate. */
+        template <class Set> 
+          void next (Set& set)
+          { 
+            next_impl (from_, set);
+            if (cont_ && progress_) ProgressBar::inc();
+          }
+
+        //! Proceed to next iteration for two DataSets
+        /*! \copydetails Loop::next(Set&) */
+        template <class Set, class Set2> 
+          void next (Set& set, Set2& set2)
+          {
+            next_impl (from_, set, set2);
+            if (cont_ && progress_) ProgressBar::inc();
+          }
+
+        //! Proceed to next iteration for three DataSets
+        /*! \copydetails Loop::next(Set&) */
+        template <class Set, class Set2, class Set3> 
+          void next (Set& set, Set2& set2, Set3& set3)
+          {
+            next_impl (from_, set, set2, set3);
+            if (cont_ && progress_) ProgressBar::inc();
+          }
+
+      private:
+        const size_t from_, to_;
+        bool cont_;
+        const bool progress_;
+        const std::string progress_message_;
+
+        template <class Set> 
+          void next_impl (size_t axis, Set& set)
+          { 
+            if (set[axis] + 1 < set.dim(axis)) ++set[axis]; 
+            else {
+              if (axis+1 == std::min (to_,set.ndim())) {
+                cont_ = false;
+                if (progress_) ProgressBar::done();
+              }
+              else {
+                next_impl (axis+1, set);
+                if (cont_) set[axis] = 0;
+              }
             }
           }
 
-          ssize_t get_pos (size_t axis) const { return (M[axis]); }
-          void set_pos (size_t axis, ssize_t position) { M[axis] = position; }
-          void move_pos (size_t axis, ssize_t inc) { M[axis] += inc; }
-        private:
-          FunctorKernel& F;
-          Mask& M;
-      };
-
-
-      template <class Functor> class ProgressKernel {
-        public:
-          ProgressKernel (Functor& func, const std::string& message) : F (func), m (message) { }
-          ~ProgressKernel () { ProgressBar::done(); }
-          const std::string& name () { return (F.name()); }
-          size_t ndim () const { return (F.ndim()); }
-          ssize_t dim (size_t axis) const { return (F.dim (axis)); }
-          Position<ProgressKernel<Functor> > operator[] (size_t axis) {
-            return (Position<ProgressKernel<Functor> > (*this, axis)); }
-          void check (size_t from_axis, size_t to_axis) const { 
-            F.check (from_axis, to_axis);
-            size_t count = 1;
-            for (size_t i = from_axis; i < to_axis; ++i) count *= F.dim (i);
-            ProgressBar::init (count, m);
+        template <class Set, class Set2> 
+          void next_impl (size_t axis, Set& set, Set2& set2) 
+          { 
+            if (set[axis] + 1 < set.dim(axis)) { ++set[axis]; ++set2[axis]; }
+            else {
+              if (axis+1 == std::min (to_, set.ndim())) {
+                cont_ = false;
+                if (progress_) ProgressBar::done();
+              }
+              else {
+                next_impl (axis+1, set, set2);
+                if (cont_) { set[axis] = 0; set2[axis] = 0; }
+              }
+            }
           }
-          void operator() () { F(); ProgressBar::inc(); }
 
-          ssize_t get_pos (size_t axis) const { return (F[axis]); }
-          void set_pos (size_t axis, ssize_t position) { F[axis] = position; }
-          void move_pos (size_t axis, ssize_t inc) { F[axis] += inc; }
-        private:
-          Functor& F;
-          const std::string& m;
-      };
+        template <class Set, class Set2, class Set3> 
+          void next_impl (size_t axis, Set& set, Set2& set2, Set3& set3)
+          { 
+            if (set[axis] + 1 < set.dim(axis)) { ++set[axis]; ++set2[axis]; ++set3[axis]; }
+            else {
+              if (axis+1 == std::min (to_, set.ndim())) {
+                cont_ = false; 
+                if (progress_) ProgressBar::done();
+              }
+              else {
+                next_impl (axis+1, set, set2, set3);
+                if (cont_) { set[axis] = 0; set2[axis] = 0; set3[axis] = 0; }
+              }
+            }
+          }
 
+    };
 
-      template <class Kernel>
-        inline void loop_exec (Kernel& K, size_t from_axis, size_t to_axis) {
-          --to_axis;
-          assert (K.dim(to_axis));
-          K[to_axis] = 0;
-loop_start:
-          if (to_axis == from_axis) K();
-          else loop_exec (K, from_axis, to_axis);
-          if (K[to_axis] < K.dim(to_axis)-1) { ++K[to_axis]; goto loop_start; }
-        }
-
-    }
-    //! \endcond 
-
-    /** \addtogroup DataSet
-     @{ */
-
-    /** \defgroup loop Looping functions
-     @{ */
-
-
-    template <class Set> bool increment_position (Set& D, size_t from_axis, size_t to_axis) { 
-      if (from_axis >= to_axis) return (false);
-      if (D[from_axis]+1 < D.dim(from_axis)) { ++D[from_axis]; return (true); }
-      D[from_axis] = 0; 
-      return (increment_position (D, from_axis+1, to_axis));
-    }
-
-    template <class Set> inline bool increment_position (Set& D) { return (increment_position (D, 0, D.ndim())); }
-
-
-    template <class Kernel> 
-      void loop (Kernel& K, size_t from_axis = 0, size_t to_axis = SIZE_MAX) 
-      {
-        if (to_axis > K.ndim()) to_axis = K.ndim();
-        assert (from_axis < to_axis);
-        K.check (from_axis, to_axis);
-        loop_exec (K, from_axis, to_axis);
-      }
-
-
-    template <class Functor, class Set> 
-      void loop1 (Functor& func, Set& D, size_t from_axis = 0, size_t to_axis = SIZE_MAX) 
-      {
-        Kernel1<Functor,Set> kernel (func, D);
-        loop (kernel, from_axis, to_axis);
-      }
-
-    template <class Functor, class Set> 
-      void loop1 (const std::string& message, Functor& func, Set& D, size_t from_axis = 0, size_t to_axis = SIZE_MAX) 
-      {
-        typedef Kernel1<Functor,Set> MainKernel;
-        MainKernel kernel (func, D);
-        ProgressKernel<MainKernel> progress_kernel (kernel, message);
-        loop (progress_kernel, from_axis, to_axis);
-      }
-
-    template <class Functor, class Set, class Set2> 
-      void loop2 (Functor& func, Set& D, Set2& D2, size_t from_axis = 0, size_t to_axis = SIZE_MAX) 
-      {
-        Kernel2<Functor,Set,Set2> kernel (func, D, D2);
-        loop (kernel, from_axis, to_axis);
-      }
-
-    template <class Functor, class Set, class Set2> 
-      void loop2 (const std::string& message, Functor& func, Set& D, Set2& D2, size_t from_axis = 0, size_t to_axis = SIZE_MAX) 
-      {
-        typedef Kernel2<Functor,Set,Set2> MainKernel;
-        MainKernel kernel (func, D, D2);
-        ProgressKernel<MainKernel> progress_kernel (kernel, message);
-        loop (progress_kernel, from_axis, to_axis);
-      }
-
-
-    template <class Functor, class Mask, class Set> 
-      void loop1_mask (Functor& func, Mask& mask, Set& D, size_t from_axis = 0, size_t to_axis = 3) 
-      {
-        typedef Kernel1<Functor,Set> MainKernel;
-        typedef KernelMask<MainKernel,Mask> MaskKernel;
-        MainKernel main_kernel (func, D);
-        MaskKernel mask_kernel (main_kernel, mask);
-        loop (mask_kernel, from_axis, to_axis);
-      }
-
-
-    template <class Functor, class Mask, class Set> 
-      void loop1_mask (const std::string& message, Functor& func, Mask& mask, Set& D, size_t from_axis = 0, size_t to_axis = 3) 
-      {
-        typedef Kernel1<Functor,Set> MainKernel;
-        typedef KernelMask<MainKernel,Mask> MaskKernel;
-        MainKernel main_kernel (func, D);
-        MaskKernel mask_kernel (main_kernel, mask);
-        ProgressKernel<MaskKernel> progress_kernel (mask_kernel, message);
-        loop (progress_kernel, from_axis, to_axis);
-      }
 
     //! @}
     //! @}

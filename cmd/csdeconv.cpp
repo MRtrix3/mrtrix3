@@ -140,12 +140,19 @@ class DataLoader {
       normalise (normalise_to_b0) { }
 
     void execute () {
-      Exec exec (*this);
+      Queue::Writer::Item item (writer);
+      DataSet::Loop loop ("performing constrained spherical deconvolution...", 0, 3);
       if (mask) {
         Image::Voxel<value_type> mask_vox (*mask);
-        DataSet::loop1_mask ("performing constrained spherical deconvolution...", exec, mask_vox, dwi);
+        DataSet::check_dimensions (mask_vox, dwi, 0, 3);
+        for (loop.start (mask_vox, dwi); loop.ok(); loop.next (mask_vox, dwi)) 
+          if (mask_vox.value() > 0.5) 
+            load (item);
       }
-      else DataSet::loop1 ("performing constrained spherical deconvolution...", exec, dwi);
+      else {
+        for (loop.start (dwi); loop.ok(); loop.next (dwi)) 
+          load (item);
+      }
     }
 
   private:
@@ -156,38 +163,30 @@ class DataLoader {
     const std::vector<int>&  dwis;
     bool  normalise;
 
-    class Exec {
-      public:
-        Exec (DataLoader& parent) : P (parent), item (P.writer) { }
-        void operator() (Image::Voxel<value_type>& D) { 
-          value_type norm = 0.0;
-          if (P.normalise) {
-            for (size_t n = 0; n < P.bzeros.size(); n++) {
-              D[3] = P.bzeros[n];
-              norm += D.value ();
-            }
-            norm /= P.bzeros.size();
-          }
-
-          for (size_t n = 0; n < P.dwis.size(); n++) {
-            D[3] = P.dwis[n];
-            item->data[n] = D.value(); 
-            if (!finite (item->data[n])) return;
-            if (item->data[n] < 0.0) item->data[n] = 0.0;
-            if (P.normalise) item->data[n] /= norm;
-          }
-
-          item->pos[0] = D[0];
-          item->pos[1] = D[1];
-          item->pos[2] = D[2];
-
-          if (!item.write()) throw Exception ("error writing to work queue");
+    void load (Queue::Writer::Item& item) {
+      value_type norm = 0.0;
+      if (normalise) {
+        for (size_t n = 0; n < bzeros.size(); n++) {
+          dwi[3] = bzeros[n];
+          norm += dwi.value ();
         }
-      private:
-        DataLoader& P;
-        Queue::Writer::Item item;
-    };
-    friend class Exec;
+        norm /= bzeros.size();
+      }
+
+      for (size_t n = 0; n < dwis.size(); n++) {
+        dwi[3] = dwis[n];
+        item->data[n] = dwi.value(); 
+        if (!finite (item->data[n])) return;
+        if (item->data[n] < 0.0) item->data[n] = 0.0;
+        if (normalise) item->data[n] /= norm;
+      }
+
+      item->pos[0] = dwi[0];
+      item->pos[1] = dwi[1];
+      item->pos[2] = dwi[2];
+
+      if (!item.write()) throw Exception ("error writing to work queue");
+    }
 };
 
 
