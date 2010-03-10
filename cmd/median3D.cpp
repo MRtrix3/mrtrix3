@@ -75,15 +75,21 @@ typedef Thread::Queue<Item,Allocator> Queue;
 
 class DataLoader {
   public:
-    DataLoader (Queue& queue, const Image::Header& src_header) : writer (queue), src (src_header) { } 
+    DataLoader (Queue& queue, const Image::Header& src_header, const std::vector<size_t>& axes) : 
+      writer (queue), src (src_header), x (axes[0]), y (axes[1]), z(axes[2]) { } 
 
     void execute () {
       Queue::Writer::Item item (writer);
-      DataSet::Loop loop ("median filtering...", 1);
+      std::vector<size_t> axes (src.ndim()-1);
+      axes[0] = y;
+      axes[1] = z;
+      for (size_t n = 3; n < src.ndim(); ++n)
+        axes[n-1] = n;
+      DataSet::LoopInOrder loop (axes, "median filtering...");
       for (loop.start (src); loop.ok(); loop.next (src)) {
         // get data:
-        if (src[1] == 0) get_plane (0);
-        if (src[1] < src.dim(1)-1) get_plane (1);
+        if (src[y] == 0) get_plane (0);
+        if (src[y] < src.dim(y)-1) get_plane (1);
 
         // set item data:
         for (size_t j = 0; j < 3; ++j) 
@@ -91,7 +97,7 @@ class DataLoader {
             item->data[j][i] = data[j][i];
 
         // set item position:
-        for (size_t n = 1; n < src.ndim(); ++n) 
+        for (size_t n = 0; n < src.ndim(); ++n) 
           item->pos[n] = src[n];
 
         // dispatch:
@@ -112,39 +118,40 @@ class DataLoader {
     Queue::Writer writer;
     Image::Voxel<value_type>  src;
     Array<value_type>::RefPtr data[3][3];
+    const size_t x, y, z;
 
     void get_plane (ssize_t plane) 
     {
-      src[1] += plane;
-      assert (src[1] < src.dim(1));
+      src[y] += plane;
+      assert (src[y] < src.dim(y));
       value_type* row;
 
-      if (src[2] > 0) {
-        --src[2];
-        row = new value_type [src.dim(0)];
-        for (src[0] = 0; src[0] < src.dim(0); ++src[0]) 
-          row[src[0]] = src.value();
+      if (src[z] > 0) {
+        --src[z];
+        row = new value_type [src.dim(x)];
+        for (src[x] = 0; src[x] < src.dim(x); ++src[x]) 
+          row[src[x]] = src.value();
         data[plane+1][0] = row;
-        src[2]++;
+        ++src[z];
       }
       else data[plane+1][0] = NULL;
 
-      row = new value_type [src.dim(0)];
-      for (src[0] = 0; src[0] < src.dim(0); ++src[0]) 
-        row[src[0]] = src.value();
+      row = new value_type [src.dim(x)];
+      for (src[x] = 0; src[x] < src.dim(x); ++src[x]) 
+        row[src[x]] = src.value();
       data[plane+1][1] = row;
 
-      if (src[2] < src.dim(2)-1) {
-        ++src[2];
-        row = new value_type [src.dim(0)];
-        for (src[0] = 0; src[0] < src.dim(0); ++src[0]) 
-          row[src[0]] = src.value();
-        data[plane+1][2] = row;
-        src[2]--;
+      if (src[z] < src.dim(z)-1) {
+        ++src[z];
+        row = new value_type [src.dim(x)];
+        for (src[x] = 0; src[x] < src.dim(x); ++src[x]) 
+          row[src[x]] = src.value();
+        data[plane+1][z] = row;
+        --src[z];
       }
       else data[plane+1][2] = NULL;
 
-      src[1] -= plane;
+      src[y] -= plane;
     }
 };
 
@@ -154,7 +161,8 @@ class DataLoader {
 
 class Processor {
   public:
-    Processor (Queue& queue, const Image::Header& dest_header) : reader (queue), dest (dest_header) { }
+    Processor (Queue& queue, const Image::Header& dest_header, const std::vector<size_t>& axes) : 
+      reader (queue), dest (dest_header), x (axes[0]), y (axes[1]), z(axes[2]) { }
 
     void execute () {
       Queue::Reader::Item item (reader);
@@ -166,12 +174,12 @@ class Processor {
           for (size_t i = 0; i < 3; ++i)
             if (item->data[j][i]) ++nrows;
 
-        for (size_t i = 1; i < dest.ndim(); ++i)
+        for (size_t i = 0; i < dest.ndim(); ++i)
           dest[i] = item->pos[i];
 
-        for (dest[0] = 0; dest[0] < dest.dim(0); ++dest[0]) {
-          size_t from = dest[0] > 0 ? dest[0]-1 : 0;
-          size_t to = dest[0] < dest.dim(0)-1 ? dest[0]+2 : dest.dim(0);
+        for (dest[x] = 0; dest[x] < dest.dim(x); ++dest[x]) {
+          size_t from = dest[x] > 0 ? dest[x]-1 : 0;
+          size_t to = dest[x] < dest.dim(x)-1 ? dest[x]+2 : dest.dim(x);
           size_t nc = 0;
           value_type cm = -INFINITY;
           size_t n = (to-from) * nrows;
@@ -219,6 +227,7 @@ class Processor {
   private:
     Queue::Reader reader;
     Image::Voxel<value_type> dest;
+    const size_t x, y, z;
 };
 
 
@@ -226,10 +235,15 @@ class Processor {
 EXECUTE {
   const Image::Header source = argument[0].get_image();
   const Image::Header destination (argument[1].get_image (source));
+  std::vector<size_t> axes = DataSet::Stride::order (source, 0, 3);
+  /*std::vector<size_t> axes (3);
+  axes[0] = 0;
+  axes[1] = 1;
+  axes[2] = 2;*/
 
   Queue queue ("work queue", 100, Allocator (source.ndim()));
-  DataLoader loader (queue, source);
-  Processor processor (queue, destination);
+  DataLoader loader (queue, source, axes);
+  Processor processor (queue, destination, axes);
 
   Thread::Exec loader_thread (loader, "loader");
   Thread::Array<Processor> processor_list (processor);

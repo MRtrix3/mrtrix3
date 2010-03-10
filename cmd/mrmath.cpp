@@ -208,7 +208,7 @@ class Counter {
         values.resize (N_[Functor::inner_axis]);
       }
     size_t ndim () const { return (N_.size()); }
-    ssize_t dim (size_t axis) const { return (axis == Functor::inner_axis ? 1 : N_[axis]); }
+    ssize_t dim (size_t axis) const { return (N_[axis]); }
     ssize_t& operator[] (size_t axis) { return (x_[axis]); }
     template <class Set> 
       void get (Set& out) {
@@ -341,11 +341,13 @@ EXECUTE {
   Image::Header destination_header (argument[1].get_image (header));
 
   Image::Voxel<value_type> out (destination_header);
-  Functor::inner_axis = DataSet::Stride::order (out)[0];
+  std::vector<size_t> axes = DataSet::Stride::order (out);
+  Functor::inner_axis = axes[0];
+  axes.erase (axes.begin(), axes.begin()+1);
 
   Counter count (*last, out);
 
-  DataSet::Loop loop ("performing mathematical operations...");
+  DataSet::LoopInOrder loop (axes, "performing mathematical operations...");
   for (loop.start (count, out); loop.ok(); loop.next (count, out)) {
     count.get (out);
   }

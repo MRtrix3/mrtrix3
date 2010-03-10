@@ -38,7 +38,7 @@ namespace MR {
       if (to_axis > ds.ndim()) to_axis = ds.ndim();
       assert (from_axis < to_axis);
       off64_t fp = 1;
-      for (size_t n = from_axis; n < to_axis; n++) 
+      for (size_t n = from_axis; n < to_axis; ++n) 
         fp *= ds.dim(n);
       return (fp); 
     }
@@ -47,8 +47,19 @@ namespace MR {
     template <class Set> inline off64_t voxel_count (const Set& ds, const char* specifier) 
     { 
       off64_t fp = 1;
-      for (size_t n = 0; n < ds.ndim(); n++) 
+      for (size_t n = 0; n < ds.ndim(); ++n) 
         if (specifier[n] != ' ') fp *= ds.dim(n);
+      return (fp); 
+    }
+
+    //! returns the number of voxel in the relevant subvolume of the data set 
+    template <class Set> inline off64_t voxel_count (const Set& ds, const std::vector<size_t>& axes) 
+    { 
+      off64_t fp = 1;
+      for (size_t n = 0; n < axes.size(); ++n) {
+        assert (axes[n] < ds.ndim());
+        fp *= ds.dim(axes[n]);
+      }
       return (fp); 
     }
 
@@ -85,6 +96,14 @@ namespace MR {
       return (true);
     }
 
+    template <class Set1, class Set2> inline bool dimensions_match (Set1& D1, Set2& D2, const std::vector<size_t>& axes) {
+      for (size_t n = 0; n < axes.size(); ++n) {
+        if (D1.ndim() <= axes[n] || D2.ndim() <= axes[n]) return (false);
+        if (D1.dim(axes[n]) != D2.dim(axes[n])) return (false);
+      }
+      return (true);
+    }
+
     template <class Set1, class Set2> inline void check_dimensions (Set1& D1, Set2& D2) {
       if (!dimensions_match (D1, D2)) 
         throw Exception ("dimension mismatch between \"" + D1.name() + "\" and \"" + D2.name() + "\"");
@@ -92,6 +111,11 @@ namespace MR {
 
     template <class Set1, class Set2> inline void check_dimensions (Set1& D1, Set2& D2, size_t from_axis, size_t to_axis) {
       if (!dimensions_match (D1, D2, from_axis, to_axis)) 
+        throw Exception ("dimension mismatch between \"" + D1.name() + "\" and \"" + D2.name() + "\"");
+    }
+
+    template <class Set1, class Set2> inline void check_dimensions (Set1& D1, Set2& D2, const std::vector<size_t>& axes) {
+      if (!dimensions_match (D1, D2, axes)) 
         throw Exception ("dimension mismatch between \"" + D1.name() + "\" and \"" + D2.name() + "\"");
     }
 

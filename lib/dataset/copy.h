@@ -23,7 +23,6 @@
 #ifndef __dataset_copy_h__
 #define __dataset_copy_h__
 
-#include "dataset/reorder.h"
 #include "dataset/loop.h"
 
 namespace MR {
@@ -32,20 +31,12 @@ namespace MR {
     //! \addtogroup DataSet
     // @{
 
-
-
     template <class Set, class Set2> 
       void copy (Set& destination, Set2& source, size_t from_axis = 0, size_t to_axis = SIZE_MAX) 
       { 
-        typedef DataSet::Reorder<Set> R;
-        typedef DataSet::Reorder<Set2> R2;
-
-        R dest (destination);
-        R2 src (source, destination);
-
-        Loop loop (from_axis, to_axis);
-        for (loop.start (dest, src); loop.ok(); loop.next (dest, src)) 
-          dest.value() = src.value();
+        LoopInOrder loop (destination, from_axis, to_axis);
+        for (loop.start (destination, source); loop.ok(); loop.next (destination, source)) 
+          destination.value() = source.value();
       }
 
 
@@ -53,16 +44,9 @@ namespace MR {
     template <class Set, class Set2> 
       void copy_with_progress (Set& destination, Set2& source, size_t from_axis = 0, size_t to_axis = SIZE_MAX) 
       { 
-        typedef DataSet::Reorder<Set> R;
-        typedef DataSet::Reorder<Set2> R2;
-
-        R dest (destination);
-        R2 src (source, destination);
-
-        Loop loop ("copying from \"" + source.name() + "\" to \"" + destination.name() + "\"...", from_axis, to_axis);
-
-        for (loop.start (dest, src); loop.ok(); loop.next (dest, src)) 
-          dest.value() = src.value();
+        LoopInOrder loop (destination, "copying from \"" + source.name() + "\" to \"" + destination.name() + "\"...", from_axis, to_axis);
+        for (loop.start (destination, source); loop.ok(); loop.next (destination, source)) 
+          destination.value() = source.value();
       }
 
     //! @}

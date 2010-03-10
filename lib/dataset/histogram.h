@@ -47,7 +47,7 @@ namespace MR {
           for (size_t n = 0; n < list.size(); n++)
             list[n].value = min + step * (n + 0.5);
 
-          Loop loop ("building histogram of \"" + D.name() + "\"...");
+          LoopInOrder loop (D, "building histogram of \"" + D.name() + "\"...");
           for (loop.start (D); loop.ok(); loop.next (D)) {
             value_type val = D.value();
             if (finite (val) && val != 0.0) { 

@@ -123,6 +123,7 @@ namespace MR {
         std::sort (ret.begin(), ret.end(), compare);
         return (ret);
       }
+
       //! sort axes with respect to their absolute stride.
       /*! \return a vector of indices of the axes in order of increasing
        * absolute stride. 
@@ -131,6 +132,23 @@ namespace MR {
         const Wrapper wrapper (const_cast<List&> (strides)); 
         return (order (wrapper)); 
       }
+
+      //! sort range of axes with respect to their absolute stride.
+      /*! \return a vector of indices of the axes in order of increasing
+       * absolute stride. 
+       * \note all strides should be valid (i.e. non-zero). */
+      template <class Set> std::vector<size_t> order (const Set& set, size_t from_axis, size_t to_axis) 
+      {
+        to_axis = std::min (to_axis, set.ndim());
+        assert (to_axis > from_axis);
+        std::vector<size_t> ret (to_axis-from_axis);
+        for (size_t i = 0; i < ret.size(); ++i) ret[i] = from_axis+i;
+        Compare<Set> compare (set);
+        std::sort (ret.begin(), ret.end(), compare);
+        return (ret);
+      }
+
+
 
 
       //! remove duplicate and invalid strides.
