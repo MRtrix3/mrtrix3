@@ -151,8 +151,10 @@ EXECUTE {
   Image::Header map_header = argument[2].get_image (header);
   Image::Voxel<float> vox (map_header);
 
-  MapFunc mapfunc (countbuf, fibre_count ? 1.0 : 1.0/float(count), yskip, zskip);
-  DataSet::loop1 ("writing track count image...", mapfunc, vox, 0, 3);
+  float mult = fibre_count ? 1.0 : 1.0/float(count);
+  DataSet::LoopInOrder loop (vox, "writing track count image...", 0, 3);
+  for (loop.start (vox); loop.ok(); loop.next (vox)) 
+    vox.value() = mult * countbuf[vox[0] + yskip*vox[1] + zskip*vox[2]]; 
 
   delete [] countbuf;
 }

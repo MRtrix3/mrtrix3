@@ -106,7 +106,8 @@ class Kernel {
           SH += V;
         }
       }
-      for (D[3] = 0; D[3] < D.dim(3); ++D[3]) D.value() = SH[D[3]]/float(Math::pow2(N));
+      for (D[3] = 0; D[3] < D.dim(3); ++D[3])
+        D.value() = SH[D[3]]/float(Math::pow2(N));
     }
 
   private:
@@ -155,6 +156,8 @@ EXECUTE {
   const Image::Header FOD_header = argument[2].get_image (header);
   Image::Voxel<float> vox (FOD_header);
 
-  DataSet::loop1 ("generating FOD field...", kernel, vox, 0, 3);
+  DataSet::Loop loop ("generating FOD field...", 0, 3);
+  for (loop.start (vox); loop.ok(); loop.next (vox)) 
+    kernel (vox);
 }
 
