@@ -33,20 +33,20 @@ namespace MR {
     // @{
 
     //! returns the number of voxel in the data set, or a relevant subvolume
-    template <class Set> inline off64_t voxel_count (const Set& ds, size_t from_axis = 0, size_t to_axis = SIZE_MAX) 
+    template <class Set> inline size_t voxel_count (const Set& ds, size_t from_axis = 0, size_t to_axis = SIZE_MAX) 
     { 
       if (to_axis > ds.ndim()) to_axis = ds.ndim();
       assert (from_axis < to_axis);
-      off64_t fp = 1;
+      size_t fp = 1;
       for (size_t n = from_axis; n < to_axis; ++n) 
         fp *= ds.dim(n);
       return (fp); 
     }
 
     //! returns the number of voxel in the relevant subvolume of the data set 
-    template <class Set> inline off64_t voxel_count (const Set& ds, const char* specifier) 
+    template <class Set> inline size_t voxel_count (const Set& ds, const char* specifier) 
     { 
-      off64_t fp = 1;
+      size_t fp = 1;
       for (size_t n = 0; n < ds.ndim(); ++n) 
         if (specifier[n] != ' ') fp *= ds.dim(n);
       return (fp); 

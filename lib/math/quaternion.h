@@ -18,11 +18,6 @@
     You should have received a copy of the GNU General Public License
     along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
 
-
-    04-07-2008 J-Donald Tournier <d.tournier@brain.org.au>
-    * test for rounding errors in Quaternion::from_matrix().
-      In certain cases, a negative number was passed to sqrt()
-
 */
 
 #ifndef __quaternion_h__

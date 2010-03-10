@@ -193,10 +193,14 @@ namespace MR {
           skip *= set.dim(x[i]);
         }
       }
-      //! convert strides from actual to symbolic strides
-      /*! convert strides from actual to symbolic strides, assuming the strides
+      //! convert strides from symbolic to actual strides
+      /*! convert strides from symbolic to actual strides, assuming the strides
        * in \a strides and DataSet dimensions of \a set. */
-      template <class Set> void actualise (List& strides, const Set& set) { WrapperSet<Set> wrapper (strides, set); actualise (wrapper); }
+      template <class Set> void actualise (List& strides, const Set& set) 
+      {
+        WrapperSet<Set> wrapper (strides, set);
+        actualise (wrapper); 
+      }
 
 
 
