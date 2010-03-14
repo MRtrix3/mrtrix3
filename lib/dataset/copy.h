@@ -44,7 +44,7 @@ namespace MR {
     template <class Set, class Set2> 
       void copy_with_progress (Set& destination, Set2& source, size_t from_axis = 0, size_t to_axis = SIZE_MAX) 
       { 
-        LoopInOrder loop (destination, "copying from \"" + source.name() + "\" to \"" + destination.name() + "\"...", from_axis, to_axis);
+        LoopInOrder loop (destination, "copying from \"" + shorten (source.name()) + "\" to \"" + shorten (destination.name()) + "\"...", from_axis, to_axis);
         for (loop.start (destination, source); loop.ok(); loop.next (destination, source)) 
           destination.value() = source.value();
       }

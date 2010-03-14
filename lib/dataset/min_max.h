@@ -33,7 +33,7 @@ namespace MR {
       {
         min = T(INFINITY);
         max = T(-INFINITY);
-        LoopInOrder loop (D, "finding min/max of \"" + D.name() + "\"...");
+        LoopInOrder loop (D, "finding min/max of \"" + shorten (D.name()) + "\"...");
         for (loop.start (D); loop.ok(); loop.next (D)) {
           T val = D.value();
           if (finite (val)) {

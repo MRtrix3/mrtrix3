@@ -139,7 +139,7 @@ EXECUTE {
     std::multimap<float,std::vector<ssize_t> > list;
 
     {
-      DataSet::Loop loop ("thresholding \"" + in.name() + "\" at " + (
+      DataSet::Loop loop ("thresholding \"" + shorten (in.name()) + "\" at " + (
             isnan (percentile) ? 
             ( str (topN ? topN : bottomN) + "th " + (topN ? "top" : "bottom" ) + " voxel" ) : 
             (str (percentile*100.0) + "\% percentile") 
@@ -190,7 +190,7 @@ EXECUTE {
       val = hist.first_min();
     }
 
-    DataSet::Loop loop ("thresholding \"" + in.name() + "\" at intensity " + str(val) + "...");
+    DataSet::Loop loop ("thresholding \"" + shorten (in.name()) + "\" at intensity " + str(val) + "...");
     for (loop.start (out, in); loop.ok(); loop.next (out, in)) {
       out.value() = in.value() < val ? zero : one;
     }

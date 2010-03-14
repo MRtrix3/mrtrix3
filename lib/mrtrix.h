@@ -135,6 +135,12 @@ namespace MR {
   }
 
 
+  inline std::string shorten (const std::string& text, size_t longest = 40, size_t prefix = 10) 
+  {
+    if (text.size() > longest) 
+      return (text.substr (0,prefix) + "..." + text.substr (text.size()-longest+prefix-3));
+    else return (text);
+  }
 
 
   template <class T> inline T to (const std::string& string)

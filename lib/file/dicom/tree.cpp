@@ -111,7 +111,7 @@ namespace MR {
 
       void Tree::read (const std::string& filename)
       {
-        ProgressBar::init (0, "scanning DICOM folder \"" + filename + "\"");
+        ProgressBar::init (0, "scanning DICOM folder \"" + shorten (filename) + "\"");
         read_dir (filename);
         ProgressBar::done();
 
