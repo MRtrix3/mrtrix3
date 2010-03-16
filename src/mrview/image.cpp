@@ -29,7 +29,7 @@ namespace MR {
   namespace Viewer {
 
     Image::Image (Window& parent, MR::Image::Header* header) :
-      QAction (header->name().c_str(), &parent),
+      QAction (shorten(header->name(), 20, 0).c_str(), &parent),
       H (*header),
       vox (H),
       interp (H),
@@ -41,6 +41,8 @@ namespace MR {
     {
       assert (header);
       setCheckable (true);
+      setToolTip (header->name().c_str());
+      setStatusTip (header->name().c_str());
       window.image_group->addAction (this);
       window.image_menu->addAction (this);
       texture2D[0] = texture2D[1] = texture2D[2] = 0;

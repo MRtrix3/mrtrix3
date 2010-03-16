@@ -33,6 +33,7 @@
 #include "icon.h"
 #include "dialog/file.h"
 #include "dialog/opengl.h"
+#include "dialog/image_properties.h"
 #include "mrview/window.h"
 #include "mrview/mode/base.h"
 #include "mrview/tool/base.h"
@@ -79,16 +80,21 @@ namespace MR {
       open_action = new QAction (tr("&Open"), this);
       open_action->setShortcut (tr("Ctrl+O"));
       open_action->setStatusTip (tr("Open an existing image"));
-      connect (open_action, SIGNAL (triggered()), this, SLOT (open()));
+      connect (open_action, SIGNAL (triggered()), this, SLOT (image_open()));
 
       save_action = new QAction(tr("&Save"), this);
       save_action->setShortcut (tr("Ctrl+S"));
       save_action->setStatusTip (tr("Save the current image"));
-      connect (save_action, SIGNAL (triggered()), this, SLOT (save()));
+      connect (save_action, SIGNAL (triggered()), this, SLOT (image_save()));
+
+      close_action = new QAction(tr("&Close"), this);
+      close_action->setShortcut (tr("Ctrl+W"));
+      close_action->setStatusTip (tr("Close the current image"));
+      connect (close_action, SIGNAL (triggered()), this, SLOT (image_close()));
 
       properties_action = new QAction(tr("&Properties"), this);
       properties_action->setStatusTip (tr("Display the properties of the current image"));
-      connect (properties_action, SIGNAL (triggered()), this, SLOT (properties()));
+      connect (properties_action, SIGNAL (triggered()), this, SLOT (image_properties()));
 
       quit_action = new QAction(tr("&Quit"), this);
       quit_action->setShortcut (tr("Ctrl+Q"));
@@ -99,17 +105,13 @@ namespace MR {
       file_menu = menuBar()->addMenu (tr("&File"));
       file_menu->addAction (open_action);
       file_menu->addAction (save_action);
+      file_menu->addAction (close_action);
       file_menu->addSeparator();
       file_menu->addAction (properties_action);
       file_menu->addSeparator();
       file_menu->addAction (quit_action);
 
       // View actions:
-      reset_windowing_action = new QAction(tr("Reset &Windowing"), this);
-      reset_windowing_action->setShortcut (tr("Home"));
-      reset_windowing_action->setStatusTip (tr("Reset image brightness & contrast"));
-      connect (reset_windowing_action, SIGNAL (triggered()), this, SLOT (reset_windowing()));
-
       full_screen_action = new QAction(tr("F&ull Screen"), this);
       full_screen_action->setCheckable (true);
       full_screen_action->setChecked (false);
@@ -139,9 +141,6 @@ namespace MR {
       view_menu->addSeparator();
 
       view_menu_mode_area = view_menu->addSeparator();
-      view_menu->addAction (reset_windowing_action);
-      view_menu->addSeparator();
-
       view_menu->addSeparator();
       view_menu->addAction (full_screen_action);
 
@@ -158,14 +157,19 @@ namespace MR {
       // Image menu:
 
       next_image_action = new QAction(tr("&Next image"), this);
-      next_image_action->setShortcut (tr("PgUp"));
+      next_image_action->setShortcut (tr("Tab"));
       next_image_action->setStatusTip (tr("View the next image in the list"));
-      connect (next_image_action, SIGNAL (triggered()), this, SLOT (next_image()));
+      connect (next_image_action, SIGNAL (triggered()), this, SLOT (image_next()));
 
       prev_image_action = new QAction(tr("&Previous image"), this);
-      prev_image_action->setShortcut (tr("PgDown"));
+      prev_image_action->setShortcut (tr("Shift+Tab"));
       prev_image_action->setStatusTip (tr("View the previous image in the list"));
-      connect (prev_image_action, SIGNAL (triggered()), this, SLOT (previous_image()));
+      connect (prev_image_action, SIGNAL (triggered()), this, SLOT (image_previous()));
+
+      reset_windowing_action = new QAction(tr("Reset &Windowing"), this);
+      reset_windowing_action->setShortcut (tr("Home"));
+      reset_windowing_action->setStatusTip (tr("Reset image brightness & contrast"));
+      connect (reset_windowing_action, SIGNAL (triggered()), this, SLOT (image_reset()));
 
       image_group = new QActionGroup (this);
       image_group->setExclusive (true);
@@ -175,6 +179,9 @@ namespace MR {
       image_menu->addAction (next_image_action);
       image_menu->addAction (prev_image_action);
       image_menu->addSeparator();
+      image_menu->addAction (reset_windowing_action);
+      image_list_area = image_menu->addSeparator();
+
 
       menuBar()->addSeparator();
 
@@ -203,6 +210,7 @@ namespace MR {
       statusBar()->showMessage(tr("Ready"));
 
       select_mode (mode_actions[0]);
+      set_image_menu ();
     }
 
 
@@ -219,7 +227,7 @@ namespace MR {
 
 
 
-    void Window::open () 
+    void Window::image_open () 
     { 
       Dialog::File dialog (this, "Select images to open", true, true); 
       if (dialog.exec()) {
@@ -238,12 +246,32 @@ namespace MR {
         image_group->addAction (action);
         if (!i) action->setChecked (true);
       }
+      set_image_menu();
     }
 
 
 
-    void Window::save () { TEST; }
-    void Window::properties () { TEST; }
+    void Window::image_save () { TEST; }
+    void Window::image_close ()
+    {
+      Image* image = current_image();
+      assert (image);
+      QList<QAction*> list = image_group->actions();
+      if (list.size() > 1) {
+        for (int n = 0; n < list.size(); ++n) {
+          if (image == list[n]) {
+            list[(n+1)%list.size()]->setChecked (true);
+            break;
+          }
+        }
+      }
+      image_group->removeAction (image);
+      delete image;
+      set_image_menu();
+    }
+
+
+    void Window::image_properties () { assert (current_image()); Dialog::ImageProperties props (this, current_image()->H); props.exec(); }
 
     void Window::select_mode (QAction* action) 
     {
@@ -256,10 +284,10 @@ namespace MR {
       mode = Mode::create (*this, n);
     }
 
-    void Window::reset_windowing () { Image* image = current_image(); if (image) image->reset_windowing(); }
+    void Window::image_reset () { Image* image = current_image(); if (image) image->reset_windowing(); }
     void Window::full_screen () { if (full_screen_action->isChecked()) showFullScreen(); else showNormal(); }
 
-    void Window::next_image () 
+    void Window::image_next () 
     { 
       QAction* action = image_group->checkedAction();
       QList<QAction*> list = image_group->actions();
@@ -271,7 +299,7 @@ namespace MR {
       }
     }
 
-    void Window::previous_image ()
+    void Window::image_previous ()
     { 
       QAction* action = image_group->checkedAction();
       QList<QAction*> list = image_group->actions();
@@ -283,6 +311,17 @@ namespace MR {
       }
     }
 
+
+    inline void Window::set_image_menu ()
+    {
+      int N = image_group->actions().size();
+      next_image_action->setEnabled (N>1);
+      prev_image_action->setEnabled (N>1);
+      reset_windowing_action->setEnabled (N>0);
+      save_action->setEnabled (N>0);
+      close_action->setEnabled (N>0);
+      properties_action->setEnabled (N>0);
+    }
 
     void Window::select_image (QAction* action) { action->setChecked (true); }
 

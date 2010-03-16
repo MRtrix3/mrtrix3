@@ -20,101 +20,22 @@
 
 */
 
-#include <QModelIndex>
-#include <QVariant>
-#include <QList>
+#include <QTreeView>
+#include <QDialogButtonBox>
+#include <QVBoxLayout>
 
 #include "dialog/opengl.h"
+#include "dialog/list.h"
 #include "opengl/gl.h"
 
 namespace MR {
   namespace Dialog {
 
-    namespace GL {
-
-      class TreeItem
-      {
-        public:
-          TreeItem (const std::string& key, const std::string& value, TreeItem *parent = 0) { 
-            parentItem = parent;
-            itemData << key.c_str() << value.c_str();
-          }
-          ~TreeItem() { qDeleteAll(childItems); }
-          void appendChild (TreeItem *child)  { childItems.append (child); }
-          TreeItem *child (int row)  { return (childItems.value(row)); }
-          int childCount () const  { return (childItems.count()); } 
-          int columnCount () const  { return (itemData.count()); }
-          QVariant data (int column) const  { return (itemData.value (column)); } 
-          int row () const  { if (parentItem) return (parentItem->childItems.indexOf(const_cast<TreeItem*>(this))); return (0); }
-          TreeItem *parent ()  { return (parentItem); }
-
-        private:
-          QList<TreeItem*> childItems;
-          QList<QVariant> itemData;
-          TreeItem *parentItem;
-      };
-
-
-      TreeModel::TreeModel (QObject *parent) : QAbstractItemModel (parent) { 
-        QList<QVariant> rootData;
-        rootItem = new TreeItem ("Parameter", "Value");
-      }
-      TreeModel::~TreeModel () { delete rootItem; }
-
-      QVariant TreeModel::data (const QModelIndex &index, int role) const {
-        if (!index.isValid()) return (QVariant());
-        if (role != Qt::DisplayRole) return (QVariant());
-        return (static_cast<TreeItem*>(index.internalPointer())->data(index.column()));
-      }
-
-      Qt::ItemFlags TreeModel::flags (const QModelIndex &index) const {
-        if (!index.isValid()) return (0);
-        return (Qt::ItemIsEnabled | Qt::ItemIsSelectable);
-      }
-
-      QVariant TreeModel::headerData (int section, Qt::Orientation orientation, int role) const {
-        if (orientation == Qt::Horizontal && role == Qt::DisplayRole) return (rootItem->data(section));
-        return (QVariant());
-      }
-
-      QModelIndex TreeModel::index (int row, int column, const QModelIndex &parent) const {
-        if (!hasIndex(row, column, parent)) return (QModelIndex()); 
-        TreeItem *parentItem;
-        if (!parent.isValid()) parentItem = rootItem;
-        else parentItem = static_cast<TreeItem*>(parent.internalPointer());
-        TreeItem *childItem = parentItem->child(row);
-        if (childItem) return (createIndex(row, column, childItem));
-        else return (QModelIndex());
-      }
-
-      QModelIndex TreeModel::parent (const QModelIndex &index) const {
-        if (!index.isValid()) return (QModelIndex());
-        TreeItem *childItem = static_cast<TreeItem*>(index.internalPointer());
-        TreeItem *parentItem = childItem->parent();
-        if (parentItem == rootItem) return (QModelIndex());
-        return (createIndex(parentItem->row(), 0, parentItem));
-      }
-
-      int TreeModel::rowCount (const QModelIndex &parent) const {
-        if (parent.column() > 0) return (0);
-        TreeItem *parentItem;
-        if (!parent.isValid()) parentItem = rootItem;
-        else parentItem = static_cast<TreeItem*>(parent.internalPointer());
-        return (parentItem->childCount());
-      }
-
-      int TreeModel::columnCount (const QModelIndex &parent) const {
-        if (parent.isValid()) return static_cast<TreeItem*>(parent.internalPointer())->columnCount();
-        else return rootItem->columnCount();
-      }
-
-    }
-
     OpenGL::OpenGL (QWidget* parent) : QDialog (parent) 
     {
-      GL::TreeModel* model = new GL::TreeModel (this);
+      TreeModel* model = new TreeModel (this);
 
-      GL::TreeItem* root = model->rootItem;
+      TreeItem* root = model->rootItem;
 
       std::string text;
       if (GLEE_VERSION_3_0) text = "3.0";
@@ -126,51 +47,51 @@ namespace MR {
       else if (GLEE_VERSION_1_2) text = "1.2";
       else text = "1.1";
 
-      root->appendChild (new GL::TreeItem ("API version", text, root));
-      root->appendChild (new GL::TreeItem ("Renderer", (const char*) glGetString (GL_RENDERER), root));
-      root->appendChild (new GL::TreeItem ("Vendor", (const char*) glGetString (GL_VENDOR), root));
-      root->appendChild (new GL::TreeItem ("Version", (const char*) glGetString (GL_VERSION), root));
+      root->appendChild (new TreeItem ("API version", text, root));
+      root->appendChild (new TreeItem ("Renderer", (const char*) glGetString (GL_RENDERER), root));
+      root->appendChild (new TreeItem ("Vendor", (const char*) glGetString (GL_VENDOR), root));
+      root->appendChild (new TreeItem ("Version", (const char*) glGetString (GL_VERSION), root));
 
-      GL::TreeItem* extensions = new GL::TreeItem ("Extensions", std::string(), root);
+      TreeItem* extensions = new TreeItem ("Extensions", std::string(), root);
       root->appendChild (extensions);
 
       std::vector<std::string> ext = split ((const char*) glGetString (GL_EXTENSIONS));
       for (size_t n = 0; n < ext.size(); ++n)
-        extensions->appendChild (new GL::TreeItem (std::string(), ext[n], extensions));
+        extensions->appendChild (new TreeItem (std::string(), ext[n], extensions));
 
-      GL::TreeItem* bit_depths = new GL::TreeItem ("Bit depths", std::string(), root);
+      TreeItem* bit_depths = new TreeItem ("Bit depths", std::string(), root);
       root->appendChild (bit_depths);
 
       GLint i;
       glGetIntegerv (GL_RED_BITS, &i);
-      bit_depths->appendChild (new GL::TreeItem ("red", str(i), bit_depths));
+      bit_depths->appendChild (new TreeItem ("red", str(i), bit_depths));
       glGetIntegerv (GL_GREEN_BITS, &i);
-      bit_depths->appendChild (new GL::TreeItem ("green", str(i), bit_depths));
+      bit_depths->appendChild (new TreeItem ("green", str(i), bit_depths));
       glGetIntegerv (GL_BLUE_BITS, &i);
-      bit_depths->appendChild (new GL::TreeItem ("blue", str(i), bit_depths));
+      bit_depths->appendChild (new TreeItem ("blue", str(i), bit_depths));
       glGetIntegerv (GL_ALPHA_BITS, &i);
-      bit_depths->appendChild (new GL::TreeItem ("alpha", str(i), bit_depths));
+      bit_depths->appendChild (new TreeItem ("alpha", str(i), bit_depths));
       glGetIntegerv (GL_DEPTH_BITS, &i);
-      bit_depths->appendChild (new GL::TreeItem ("depth", str(i), bit_depths));
+      bit_depths->appendChild (new TreeItem ("depth", str(i), bit_depths));
       glGetIntegerv (GL_STENCIL_BITS, &i);
-      bit_depths->appendChild (new GL::TreeItem ("stencil", str(i), bit_depths));
+      bit_depths->appendChild (new TreeItem ("stencil", str(i), bit_depths));
 
-      GL::TreeItem* buffers = new GL::TreeItem ("Buffers", std::string(), root);
+      TreeItem* buffers = new TreeItem ("Buffers", std::string(), root);
       root->appendChild (buffers);
       glGetIntegerv (GL_DOUBLEBUFFER, &i);
-      buffers->appendChild (new GL::TreeItem ("Double buffering", i ? "on" : "off", buffers));
+      buffers->appendChild (new TreeItem ("Double buffering", i ? "on" : "off", buffers));
       glGetIntegerv (GL_STEREO, &i);
-      buffers->appendChild (new GL::TreeItem ("Stereo buffering", i ? "on" : "off", buffers));
+      buffers->appendChild (new TreeItem ("Stereo buffering", i ? "on" : "off", buffers));
       glGetIntegerv (GL_AUX_BUFFERS, &i);
-      buffers->appendChild (new GL::TreeItem ("Auxilliary buffers", str(i), buffers));
+      buffers->appendChild (new TreeItem ("Auxilliary buffers", str(i), buffers));
 
 
       glGetIntegerv (GL_MAX_TEXTURE_SIZE, &i);
-      root->appendChild (new GL::TreeItem ("Maximum texture size", str(i), root));
+      root->appendChild (new TreeItem ("Maximum texture size", str(i), root));
       glGetIntegerv (GL_MAX_LIGHTS, &i);
-      root->appendChild (new GL::TreeItem ("Maximum number of lights", str(i), root));
+      root->appendChild (new TreeItem ("Maximum number of lights", str(i), root));
       glGetIntegerv (GL_MAX_CLIP_PLANES, &i);
-      root->appendChild (new GL::TreeItem ("Maximum number of clip planes", str(i), root));
+      root->appendChild (new TreeItem ("Maximum number of clip planes", str(i), root));
 
 
       QTreeView* view = new QTreeView;

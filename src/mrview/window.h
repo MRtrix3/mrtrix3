@@ -60,16 +60,17 @@ namespace MR {
         int height () { return (reinterpret_cast <QWidget*>(glarea)->height()); }
 
       private slots:
-        void open ();
-        void save ();
-        void properties ();
+        void image_open ();
+        void image_save ();
+        void image_close ();
+        void image_properties ();
 
         void select_mode (QAction* action);
-        void reset_windowing ();
+        void image_reset ();
         void full_screen ();
 
-        void next_image ();
-        void previous_image ();
+        void image_next ();
+        void image_previous ();
         void select_image (QAction* action);
 
         void OpenGL ();
@@ -83,10 +84,10 @@ namespace MR {
         Mode::Base* mode;
 
         QMenu *file_menu, *view_menu, *tool_menu, *image_menu, *help_menu;
-        QAction *open_action, *save_action, *properties_action, *quit_action;
+        QAction *open_action, *save_action, *close_action, *properties_action, *quit_action;
         QAction *view_menu_mode_area, *reset_windowing_action, *full_screen_action;
         QAction **mode_actions;
-        QAction *next_image_action, *prev_image_action;
+        QAction *next_image_action, *prev_image_action, *image_list_area;
         QAction *OpenGL_action, *about_action, *aboutQt_action;
         QActionGroup *mode_group, *image_group;
 
@@ -98,6 +99,8 @@ namespace MR {
         void mouseDoubleClickEventGL (QMouseEvent* event);
         void mouseReleaseEventGL (QMouseEvent* event);
         void wheelEventGL (QWheelEvent* event);
+
+        void set_image_menu ();
 
         friend class Image;
         friend class Mode::Base;
