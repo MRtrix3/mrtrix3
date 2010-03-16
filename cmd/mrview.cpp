@@ -52,6 +52,20 @@ class MyApp : public MR::App {
     void execute () { 
       Viewer::Window window;
       window.show();
+      if (argument.size()) {
+        VecPtr<MR::Image::Header> list;
+        for (size_t n = 0; n < argument.size(); ++n) {
+          try {
+            list.push_back (new Image::Header (Image::Header::open (argument[n].get_string())));
+          }
+          catch (Exception& e) {
+            error (std::string ("error opening image \"") + argument[n].get_string() + "\":");
+            e.display();
+          }
+        }
+        if (list.size())
+          window.add_images (list);
+      }
       if (qapp.exec()) throw Exception ("error running Qt application");
     }
 

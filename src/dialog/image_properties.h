@@ -1,7 +1,7 @@
 /*
-    Copyright 2010 Brain Research Institute, Melbourne, Australia
+    Copyright 2008 Brain Research Institute, Melbourne, Australia
 
-    Written by J-Donald Tournier, 17/02/10.
+    Written by J-Donald Tournier, 27/06/08.
 
     This file is part of MRtrix.
 
@@ -20,36 +20,42 @@
 
 */
 
-#ifndef __mrview_camera_h__
-#define __mrview_camera_h__
+#ifndef __dialog_image_properties_h__
+#define __dialog_image_properties_h__
 
-#include "point.h"
-#include "math/quaternion.h"
+#include <QDialog>
+
+#include "math/matrix.h"
+
+class QTreeView;
 
 namespace MR {
-  namespace Viewer {
+  namespace Image { class Header; }
+  namespace Dialog {
+    class TreeModel;
 
-    class Camera {
+    class ImageProperties : public QDialog
+    {
+      Q_OBJECT
+
       public:
-        Camera () : 
-          orientation (NAN, NAN, NAN, NAN), 
-          focus (0.0, 0.0, 0.0),
-          projection (2),
-          interpolate (true),
-          FOV (100.0) { }
+        ImageProperties (QWidget* parent, const Image::Header& header);
 
-        Math::Quaternion orientation;
-        Point focus;
-        int projection;
-        bool interpolate;
-        float FOV;
+      private slots:
+        void context_menu (const QPoint& point);
+        void write_to_file ();
+      
+      private:
+        const Image::Header& H;
+        QTreeView* view;
+        TreeModel* model;
+        const Math::Matrix<float>* save_target;
     };
 
   }
 }
 
 #endif
-
 
 
 

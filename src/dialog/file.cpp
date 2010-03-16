@@ -312,6 +312,8 @@ namespace MR {
 
       connect (folder_view, SIGNAL (activated(const QModelIndex&)), this, SLOT (folder_selected_slot(const QModelIndex&)));
       connect (files_view, SIGNAL (activated(const QModelIndex&)), this, SLOT (file_selected_slot(const QModelIndex&)));
+      connect (files_view->selectionModel(), SIGNAL (selectionChanged (const QItemSelection&, const QItemSelection&)),
+            selection_entry, SLOT (clear()));
 
       main_layout->addLayout (buttons_layout);
       setLayout (main_layout);
@@ -417,10 +419,16 @@ namespace MR {
     void File::get_selection (std::vector<std::string>& filenames)
     {
       assert (!filter_images);
-      QModelIndexList indexes = files_view->selectionModel()->selectedIndexes();
-      QModelIndex index;
-      foreach (index, indexes) 
-        filenames.push_back (Path::join (cwd, files->name (index.row())));
+      if (selection_entry->text().size()) 
+        filenames.push_back (selection_entry->text().toAscii().constData());
+      else {
+        QModelIndexList indexes = files_view->selectionModel()->selectedIndexes();
+        if (indexes.size()) {
+          QModelIndex index;
+          foreach (index, indexes) 
+            filenames.push_back (Path::join (cwd, files->name (index.row())));
+        }
+      }
     }
 
 

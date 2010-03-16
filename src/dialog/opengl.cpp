@@ -20,12 +20,8 @@
 
 */
 
-#include <QTreeView>
-#include <QDialogButtonBox>
-#include <QVBoxLayout>
-
-#include "dialog/opengl.h"
 #include "dialog/list.h"
+#include "dialog/opengl.h"
 #include "opengl/gl.h"
 
 namespace MR {

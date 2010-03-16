@@ -55,7 +55,7 @@ namespace MR {
 
         MR::Image::Header& H;
         MR::Image::Voxel<float> vox;
-        MR::DataSet::Interp::Linear<MR::Image::Header> interp;
+        MR::DataSet::Interp::Linear<MR::Image::Voxel<float> > interp;
 
       private:
         Window& window;

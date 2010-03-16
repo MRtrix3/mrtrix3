@@ -42,7 +42,8 @@
 namespace MR {
   namespace Viewer {
 
-    class Window::GLArea : public QGLWidget {
+    class Window::GLArea : public QGLWidget 
+    {
       public:
         GLArea (Window& parent) : 
           QGLWidget (QGLFormat (QGL::DoubleBuffer | QGL::DepthBuffer | QGL::Rgba), &parent),
@@ -68,13 +69,15 @@ namespace MR {
 
     Window::Window() : 
       glarea (new GLArea (*this)),
-      mode (NULL) 
+      mode (NULL),
+      focal_point (0.0, 0.0, 0.0)
     { 
       setWindowTitle (tr("MRView"));
       setWindowIcon (get_icon());
       setMinimumSize (256, 256);
       setCentralWidget (glarea);
 
+      connect (this, SIGNAL (updateGL()), glarea, SLOT (updateGL()));
 
       // File actions:
       open_action = new QAction (tr("&Open"), this);
@@ -348,7 +351,7 @@ namespace MR {
     {
       glClear (GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
       glLoadIdentity();
-      mode->paint(); 
+      mode->paintGL(); 
       DEBUG_OPENGL;
     }
 

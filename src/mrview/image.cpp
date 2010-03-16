@@ -32,7 +32,7 @@ namespace MR {
       QAction (shorten(header->name(), 20, 0).c_str(), &parent),
       H (*header),
       vox (H),
-      interp (H),
+      interp (vox),
       window (parent),
       value_min (NAN),
       value_max (NAN),

@@ -28,16 +28,21 @@ namespace MR {
   namespace Viewer {
     namespace Mode {
 
-      Base::Base (Window& parent) : window (parent) { }
+      Base::Base (Window& parent) : 
+        window (parent),
+        orient(NAN, NAN, NAN, NAN), 
+        field_of_view (100.0),
+        interp (true),
+        proj (2) { }
       Base::~Base () { }
 
       void Base::paint () { }
 
-      void Base::mousePressEvent (QMouseEvent *event) { if (event->x() == event->y()) return; }
-      void Base::mouseMoveEvent (QMouseEvent *event) { if (event->x() == event->y()) return; }
-      void Base::mouseDoubleClickEvent (QMouseEvent* event) { if (event->x() == event->y()) return; }
-      void Base::mouseReleaseEvent (QMouseEvent* event) { if (event->x() == event->y()) return; }
-      void Base::wheelEvent (QWheelEvent* event) { if (event->x() == event->y()) return; }
+      void Base::mousePressEvent (QMouseEvent *event) { }
+      void Base::mouseMoveEvent (QMouseEvent *event) { }
+      void Base::mouseDoubleClickEvent (QMouseEvent* event) { }
+      void Base::mouseReleaseEvent (QMouseEvent* event) { }
+      void Base::wheelEvent (QWheelEvent* event) { }
 
       Base* create (Window& parent, size_t index) 
       {

@@ -27,6 +27,7 @@
 #include <QMouseEvent>
 #include <QMenu>
 
+#include "math/quaternion.h"
 #include "mrview/window.h"
 
 namespace MR {
@@ -49,6 +50,9 @@ namespace MR {
           virtual void mouseReleaseEvent (QMouseEvent* event);
           virtual void wheelEvent (QWheelEvent* event);
 
+          void paintGL () { modelview_matrix[0] = NAN; paint(); }
+
+          void updateGL () { emit window.updateGL(); }
 
         protected:
           Window& window;
@@ -69,6 +73,52 @@ namespace MR {
           void add_action (QAction* action)
           {
             window.view_menu->insertAction (window.view_menu_mode_area, action);
+          }
+
+          Point model_to_screen (const Point& pos)
+          {
+            double wx, wy, wz;
+            get_modelview_projection_viewport();
+            gluProject (pos[0], pos[1], pos[2], modelview_matrix, 
+                projection_matrix, viewport_matrix, &wx, &wy, &wz);
+            return (Point (wx, wy, wz));
+          }
+
+          Point screen_to_model (const Point& pos)
+          {
+            double wx, wy, wz;
+            get_modelview_projection_viewport();
+            gluUnProject (pos[0], pos[1], pos[2], modelview_matrix, 
+                projection_matrix, viewport_matrix, &wx, &wy, &wz);
+            return (Point (wx, wy, wz));
+          }
+
+          Image* image () { return (window.current_image()); }
+
+          const Math::Quaternion& orientation () const { return (orient); }
+          float FOV () const { return (field_of_view); }
+          bool interpolate () const { return (interp); }
+          const Point& focus () const { return (window.focus()); }
+          int projection () const { return (proj); }
+
+          void set_focus (const Point& p) { window.set_focus (p); }
+          void set_projection (int p) { proj = p; updateGL(); }
+
+        private:
+          Math::Quaternion orient;
+          float field_of_view;
+          bool interp;
+          int proj;
+          GLdouble modelview_matrix[16], projection_matrix[16];
+          GLint viewport_matrix[4];
+
+          void get_modelview_projection_viewport () 
+          {
+            if (isnan (modelview_matrix[0])) {
+              glGetIntegerv (GL_VIEWPORT, viewport_matrix); 
+              glGetDoublev (GL_MODELVIEW_MATRIX, modelview_matrix);
+              glGetDoublev (GL_PROJECTION_MATRIX, projection_matrix); 
+            }
           }
       };
 

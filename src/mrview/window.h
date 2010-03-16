@@ -31,7 +31,6 @@
 
 #include "ptr.h"
 #include "mrview/image.h"
-#include "mrview/camera.h"
 
 class QMenu;
 class QAction;
@@ -54,10 +53,14 @@ namespace MR {
         void add_images (VecPtr<MR::Image::Header>& list);
         Image* current_image () { return (static_cast<Image*> (image_group->checkedAction())); }
 
-        Camera camera;
-
         int width () { return (reinterpret_cast <QWidget*>(glarea)->width()); }
         int height () { return (reinterpret_cast <QWidget*>(glarea)->height()); }
+        const Point& focus () const { return (focal_point); }
+        void set_focus (const Point& p) { focal_point = p; emit updateGL(); }
+        bool show_focus () const { return (true); }
+
+      signals:
+        void updateGL ();
 
       private slots:
         void image_open ();
@@ -82,6 +85,7 @@ namespace MR {
 
         GLArea *glarea;
         Mode::Base* mode;
+        Point focal_point;
 
         QMenu *file_menu, *view_menu, *tool_menu, *image_menu, *help_menu;
         QAction *open_action, *save_action, *close_action, *properties_action, *quit_action;
