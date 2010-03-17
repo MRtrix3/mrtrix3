@@ -74,9 +74,9 @@ namespace MR {
           Point scanner2image (const Point& r) const { return (transform (S2I, r)); }
 
           //! Transform the orientation \p r from scanner-space to voxel-space
-          Point vec_R2P (const Point& r) const { return (transform_vector (S2V, r)); }
+          Point scanner2voxel_dir (const Point& r) const { return (transform_vector (S2V, r)); }
           //! Transform the orientation \p r from voxel-space to scanner-space
-          Point vec_P2R (const Point& r) const { return (transform_vector (V2S, r)); }
+          Point voxel2scanner_dir (const Point& r) const { return (transform_vector (V2S, r)); }
 
           const float* image2scanner_matrix () const { return (*I2S); }
           const float* scanner2image_matrix () const { return (*S2I); }
