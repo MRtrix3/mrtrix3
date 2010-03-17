@@ -54,6 +54,10 @@ namespace MR {
 
         protected:
           QAction *axial_action, *sagittal_action, *coronal_action, *reset_action, *show_focus_action;
+          Point lookat;
+          Qt::MouseButtons buttons;
+          Qt::KeyboardModifiers modifiers;
+          QPoint pos;
       };
 
     }

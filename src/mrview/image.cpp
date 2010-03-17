@@ -34,6 +34,7 @@ namespace MR {
       vox (H),
       interp (vox),
       window (parent),
+      interpolation (GL_NEAREST),
       value_min (NAN),
       value_max (NAN),
       display_min (NAN),
@@ -46,7 +47,7 @@ namespace MR {
       window.image_group->addAction (this);
       window.image_menu->addAction (this);
       texture2D[0] = texture2D[1] = texture2D[2] = 0;
-      slice_position[0] = slice_position[1] = slice_position[2] = 0;
+      slice_position[0] = slice_position[1] = slice_position[2] = INT_MIN;
     }
 
     Image::~Image () { }
@@ -63,14 +64,10 @@ namespace MR {
 
     void Image::render2D (int projection, int slice)
     {
-      VAR (projection);
-      VAR (slice);
       update_texture2D (projection, slice);
 
-      //int i = slice.interpolate ? GL_LINEAR : GL_NEAREST;
-      int i = GL_LINEAR;
-      glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, i);
-      glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, i);
+      glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, interpolation);
+      glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, interpolation);
 
       int x, y;
       get_axes (projection, x, y);
@@ -90,41 +87,46 @@ namespace MR {
 
     inline void Image::update_texture2D (int projection, int slice)
     {
-      if (slice_position[projection] == slice && texture2D[projection]) return;
-      slice_position[projection] = slice;
-
       if (!texture2D[projection]) { // allocate:
         glGenTextures (1, &texture2D[projection]);
         assert (texture2D[projection]);
         glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
         glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
       }
+      glBindTexture (GL_TEXTURE_2D, texture2D[projection]);
+
+      if (slice_position[projection] == slice) return;
+      slice_position[projection] = slice;
 
       int x, y;
       get_axes (projection, x, y);
-      VAR (x);
-      VAR (y);
       ssize_t xdim = H.dim(x), ydim = H.dim(y);
       float data [xdim*ydim];
 
-      // copy data:
-      vox[projection] = slice;
-      for (vox[y] = 0; vox[y] < ydim; ++vox[y])
-        for (vox[x] = 0; vox[x] < ydim; ++vox[x])
-          data[vox[x]+vox[y]*xdim] = vox.value();
+      if (slice_position[projection] < 0 || slice_position[projection] >= H.dim(projection)) {
+        memset (data, 0, xdim*ydim*sizeof(float));
+      }
+      else {
+        // copy data:
+        vox[projection] = slice;
+        for (vox[y] = 0; vox[y] < ydim; ++vox[y])
+          for (vox[x] = 0; vox[x] < xdim; ++vox[x])
+            data[vox[x]+vox[y]*xdim] = vox.value();
 
-      if (isnan (value_min) || isnan (value_max)) { // reset windowing:
-        value_min = INFINITY;
-        value_max = -INFINITY;
-        for (ssize_t i = 0; i < xdim*ydim; ++i) {
-          if (data[i] < value_min) value_min = data[i];
-          if (data[i] > value_max) value_max = data[i];
+        if (isnan (value_min) || isnan (value_max)) { // reset windowing:
+          value_min = INFINITY;
+          value_max = -INFINITY;
+          for (ssize_t i = 0; i < xdim*ydim; ++i) {
+            if (finite(data[i])) {
+              if (data[i] < value_min) value_min = data[i];
+              if (data[i] > value_max) value_max = data[i];
+            }
+          }
+          display_min = value_min;
+          display_max = value_max;
         }
-        display_min = value_min;
-        display_max = value_max;
       }
 
-      glBindTexture (GL_TEXTURE_2D, texture2D[projection]);
       glTexImage2D (GL_TEXTURE_2D, 0, GL_LUMINANCE32F_ARB, xdim, ydim, 0, GL_LUMINANCE, GL_FLOAT, data);
     }
   }

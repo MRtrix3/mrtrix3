@@ -74,6 +74,7 @@ namespace MR {
       void Mode2D::paint () 
       { 
         if (!image()) return;
+        if (!lookat) lookat = focus();
 
         // set up projection matrix:
         int w = window.width(), h = window.height();
@@ -86,7 +87,7 @@ namespace MR {
 
         // set up modelview matrix:
         float M[16];
-        const float* Q = image()->interp.image2scanner_matrix();
+        const float* Q = image()->interp.scanner2image_matrix();
         M[0]  = -Q[0]; M[1]  = Q[1]; M[2]  =  -Q[2]; M[3]  = 0.0;
         M[4]  = -Q[4]; M[5]  = Q[5]; M[6]  =  -Q[6]; M[7]  = 0.0;
         M[8]  = -Q[8]; M[9]  = Q[9]; M[10] = -Q[10]; M[11] = 0.0;
@@ -116,14 +117,19 @@ namespace MR {
         VAR (focus());
         Point voxel (image()->interp.scanner2voxel (focus()));
         VAR (voxel);
-        int slice = voxel[projection()] = Math::round (voxel[projection()]);
-        const Point n (M[2],M[6],M[10]);
-        VAR (n);
+        int slice = Math::round (voxel[projection()]);
         VAR (slice);
+        voxel = image()->interp.scanner2voxel (lookat);
+        VAR (voxel);
+        voxel[projection()] = slice;
+        VAR (voxel);
+        lookat = image()->interp.voxel2scanner (voxel);
+        VAR (lookat);
 
-        float a = n.dot (focus() - image()->interp.voxel2scanner (voxel));
-        voxel = a * n - focus();
-        glTranslatef (voxel[0], voxel[1], voxel[2]);
+        //const Point n (M[2],M[6],M[10]);
+        //float a = n.dot (focus() - lookat);
+        //lookat = a * n - lookat;
+        glTranslatef (lookat[0], lookat[1], lookat[2]);
 
         glDisable(GL_BLEND);
         glEnable (GL_TEXTURE_2D);
@@ -172,19 +178,69 @@ namespace MR {
         glDepthMask (GL_TRUE);
       }
 
-      void Mode2D::mousePressEvent (QMouseEvent* event) { }
-      void Mode2D::mouseMoveEvent (QMouseEvent* event) { }
+      void Mode2D::mousePressEvent (QMouseEvent* event)
+      { 
+        if (event->buttons() == Qt::LeftButton && event->modifiers() == Qt::NoModifier) {
+          set_focus (screen_to_model (Point (event->x(), height()-event->y(), 0.0)));
+          event->accept();
+          return;
+        }
+        buttons = event->buttons();
+        modifiers = event->modifiers();
+        pos = event->pos();
+        event->accept();
+      }
+
+
+
+      void Mode2D::mouseMoveEvent (QMouseEvent* event) 
+      {
+        if (event->buttons() == Qt::LeftButton && event->modifiers() == Qt::NoModifier) {
+          event->ignore();
+          return;
+        }
+        if (modifiers == Qt::NoModifier) {
+          if (buttons == Qt::MidButton) {
+            Point dir (pos.x()-event->pos().x(), event->pos().y()-pos.y(), 0.0);
+            lookat += screen_to_model_direction (dir);
+            updateGL();
+          }
+        }
+        pos = event->pos();
+      }
+
+
+
       void Mode2D::mouseDoubleClickEvent (QMouseEvent* event) { }
       void Mode2D::mouseReleaseEvent (QMouseEvent* event) { }
+
+
+
+
       void Mode2D::wheelEvent (QWheelEvent* event) 
       {
         if (!image()) return;
         if (event->orientation() != Qt::Vertical) return;
-        Point F (focus());
+
+        float inc = event->delta() / 120.0;
+
+        if (event->modifiers() == Qt::ControlModifier) {
+          change_FOV_scroll (-inc);
+          event->accept();
+          return;
+        }
+
+        if (event->modifiers() == Qt::ShiftModifier) inc *= 10.0;
+        else if (event->modifiers() != Qt::NoModifier) {
+          event->ignore();
+          return;
+        }
+
         Point D (0.0, 0.0, 0.0);
-        D[projection()] = event->delta() / 120.0;
-        F += image()->interp.voxel2scanner_dir (D);
-        set_focus (F);
+        D[projection()] = inc;
+        Point move = image()->interp.voxel2scanner_dir (D);
+        lookat += move;
+        set_focus (focus() + move);
         event->accept();
       }
 

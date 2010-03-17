@@ -60,7 +60,7 @@ namespace MR {
       private:
         Window& window;
         GLuint texture2D[3];
-        int slice_position[3];
+        int slice_position[3], interpolation;
         float value_min, value_max;
         float display_min, display_max;
 

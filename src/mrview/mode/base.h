@@ -93,6 +93,11 @@ namespace MR {
             return (Point (wx, wy, wz));
           }
 
+          Point screen_to_model_direction (const Point& pos)
+          {
+            return (screen_to_model (pos) - screen_to_model (Point (0.0, 0.0, 0.0)));
+          }
+
           Image* image () { return (window.current_image()); }
 
           const Math::Quaternion& orientation () const { return (orient); }
@@ -103,6 +108,12 @@ namespace MR {
 
           void set_focus (const Point& p) { window.set_focus (p); }
           void set_projection (int p) { proj = p; updateGL(); }
+          void set_FOV (float value) { field_of_view = value; updateGL(); }
+          void change_FOV_fine (float factor) { field_of_view *= Math::exp (0.01*factor); updateGL(); }
+          void change_FOV_scroll (float factor) { change_FOV_fine (10.0 * factor); }
+
+          int width () { get_modelview_projection_viewport(); return (viewport_matrix[2]); }
+          int height () { get_modelview_projection_viewport(); return (viewport_matrix[3]); }
 
         private:
           Math::Quaternion orient;
