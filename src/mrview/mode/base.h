@@ -50,22 +50,30 @@ namespace MR {
           virtual void mouseReleaseEvent (QMouseEvent* event);
           virtual void wheelEvent (QWheelEvent* event);
 
-          void paintGL () { modelview_matrix[0] = NAN; paint(); }
-
-          void updateGL () { emit window.updateGL(); }
+          void paintGL () { modelview_matrix[0] = NAN; paint(); get_modelview_projection_viewport(); }
+          void updateGL () { emit window.focus_changed(); }
 
         protected:
           Window& window;
           QPoint lastPos;
+          Qt::MouseButtons lastButtons;
+          Qt::KeyboardModifiers lastModifiers;
 
-          QPoint distance_moved (QMouseEvent* event) { 
-            QPoint d = event->pos() - lastPos; 
+          void grab_event (QMouseEvent* event)
+          {
+            lastButtons = event->buttons();
+            lastModifiers = event->modifiers();
+            lastPos = event->pos();
+          }
+
+          Point distance_moved (const QMouseEvent* event) { 
+            Point d (event->pos().x()-lastPos.x(), event->pos().y()-lastPos.y(), 0.0); 
             lastPos = event->pos();
             return (d);
           }
 
-          QPoint distance_moved_motionless (QMouseEvent* event) {
-            QPoint d = event->pos() - lastPos; 
+          Point distance_moved_motionless (const QMouseEvent* event) {
+            Point d (event->pos().x()-lastPos.x(), event->pos().y()-lastPos.y(), 0.0); 
             QCursor::setPos (reinterpret_cast<QWidget*> (window.glarea)->mapToGlobal (lastPos));
             return (d);
           }
@@ -88,12 +96,35 @@ namespace MR {
           {
             double wx, wy, wz;
             get_modelview_projection_viewport();
-            gluUnProject (pos[0], pos[1], pos[2], modelview_matrix, 
+            gluUnProject (pos[0], height()-pos[1], pos[2], modelview_matrix, 
                 projection_matrix, viewport_matrix, &wx, &wy, &wz);
             return (Point (wx, wy, wz));
           }
 
+          Point screen_to_model (const QPoint& pos)
+          {
+            Point f (model_to_screen (focus()));
+            f[0] = pos.x();
+            f[1] = pos.y();
+            return (screen_to_model (f));
+          }
+
+          Point screen_to_model (const QMouseEvent* event)
+          {
+            return (screen_to_model (event->pos()));
+          }
+
+          Point screen_to_model (const QWheelEvent* event)
+          {
+            return (screen_to_model (event->pos()));
+          }
+
           Point screen_to_model_direction (const Point& pos)
+          {
+            return (screen_to_model (pos) - screen_to_model (Point (0.0, 0.0, 0.0)));
+          }
+
+          Point screen_to_model_direction (const QPoint& pos)
           {
             return (screen_to_model (pos) - screen_to_model (Point (0.0, 0.0, 0.0)));
           }

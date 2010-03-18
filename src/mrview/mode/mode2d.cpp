@@ -76,62 +76,60 @@ namespace MR {
         if (!image()) return;
         if (!lookat) lookat = focus();
 
-        // set up projection matrix:
+        // set up modelview matrix:
+        const float* Q = image()->interp.scanner2image_matrix();
+        float M[16];
+        M[3] = M[7] = M[11] = M[12] = M[13] = M[14] = 0.0;
+        M[15] = 1.0;
+
+        if (projection() == 0) { // sagittal
+          for (size_t n = 0; n < 3; n++) {
+            M[4*n]   = -Q[4*n+1];  // x: -y
+            M[4*n+1] =  Q[4*n+2];  // y: z
+            M[4*n+2] = -Q[4*n];    // z: -x
+          }
+        }
+        else if (projection() == 1) { // coronal
+          for (size_t n = 0; n < 3; n++) {
+            M[4*n]   = -Q[4*n];    // x: -x
+            M[4*n+1] =  Q[4*n+2];  // y: z
+            M[4*n+2] =  Q[4*n+1];  // z: y
+          }
+        }
+        else { // axial
+          for (size_t n = 0; n < 3; n++) {
+            M[4*n]   = -Q[4*n];    // x: -x
+            M[4*n+1] =  Q[4*n+1];  // y: y
+            M[4*n+2] = -Q[4*n+2];  // z: -z
+          }
+        }
+
+        // image slice:
+        Point target (image()->interp.scanner2voxel (focus()));
+        int slice = Math::round (target[projection()]);
+
+        // camera target:
+        target = image()->interp.scanner2voxel (lookat);
+        target[projection()] = slice;
+        target = image()->interp.voxel2scanner (target);
+
+        // info for projection:
         int w = window.width(), h = window.height();
         float fov = FOV() / (float) (w+h);
         float depth = image()->vox.dim (projection()) * image()->vox.vox (projection());
 
+        // set up projection & modelview matrices:
         glMatrixMode (GL_PROJECTION);
         glLoadIdentity ();
         glOrtho (-w*fov, w*fov, -h*fov, h*fov, -depth, depth);
 
-        // set up modelview matrix:
-        float M[16];
-        const float* Q = image()->interp.scanner2image_matrix();
-        M[0]  = -Q[0]; M[1]  = Q[1]; M[2]  =  -Q[2]; M[3]  = 0.0;
-        M[4]  = -Q[4]; M[5]  = Q[5]; M[6]  =  -Q[6]; M[7]  = 0.0;
-        M[8]  = -Q[8]; M[9]  = Q[9]; M[10] = -Q[10]; M[11] = 0.0;
-        M[12] =   0.0; M[13] =  0.0; M[14] =    0.0; M[15] = 1.0;
-
-        if (projection() == 0) {
-          for (size_t n = 0; n < 3; n++) {
-            float f = M[4*n];
-            M[4*n] = -M[4*n+1];
-            M[4*n+1] = -M[4*n+2];
-            M[4*n+2] = f;
-          }
-        }
-        else if (projection() == 1) {
-          for (size_t n = 0; n < 3; n++) {
-            float f = M[4*n+1];
-            M[4*n+1] = -M[4*n+2];
-            M[4*n+2] = f;
-          }
-        }
-
         glMatrixMode (GL_MODELVIEW);
         glLoadIdentity ();
         glMultMatrixf (M);
+        glTranslatef (-target[0], -target[1], -target[2]);
 
-        // move to focus:
-        VAR (focus());
-        Point voxel (image()->interp.scanner2voxel (focus()));
-        VAR (voxel);
-        int slice = Math::round (voxel[projection()]);
-        VAR (slice);
-        voxel = image()->interp.scanner2voxel (lookat);
-        VAR (voxel);
-        voxel[projection()] = slice;
-        VAR (voxel);
-        lookat = image()->interp.voxel2scanner (voxel);
-        VAR (lookat);
-
-        //const Point n (M[2],M[6],M[10]);
-        //float a = n.dot (focus() - lookat);
-        //lookat = a * n - lookat;
-        glTranslatef (lookat[0], lookat[1], lookat[2]);
-
-        glDisable(GL_BLEND);
+        // set up OpenGL environment:
+        glDisable (GL_BLEND);
         glEnable (GL_TEXTURE_2D);
         glShadeModel (GL_FLAT);
         glDisable (GL_DEPTH_TEST);
@@ -139,10 +137,12 @@ namespace MR {
         glDepthMask (GL_FALSE);
         glColorMask (GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
 
+        // render image:
         image()->render2D (projection(), slice);
 
         glDisable (GL_TEXTURE_2D);
 
+        // draw focus:
         if (window.show_focus()) {
           Point F = model_to_screen (focus());
 
@@ -178,16 +178,15 @@ namespace MR {
         glDepthMask (GL_TRUE);
       }
 
+
+
+
       void Mode2D::mousePressEvent (QMouseEvent* event)
       { 
-        if (event->buttons() == Qt::LeftButton && event->modifiers() == Qt::NoModifier) {
-          set_focus (screen_to_model (Point (event->x(), height()-event->y(), 0.0)));
-          event->accept();
-          return;
-        }
-        buttons = event->buttons();
-        modifiers = event->modifiers();
-        pos = event->pos();
+        if (event->buttons() == Qt::LeftButton && event->modifiers() == Qt::NoModifier) 
+          set_focus (screen_to_model (event));
+
+        grab_event (event);
         event->accept();
       }
 
@@ -195,18 +194,17 @@ namespace MR {
 
       void Mode2D::mouseMoveEvent (QMouseEvent* event) 
       {
-        if (event->buttons() == Qt::LeftButton && event->modifiers() == Qt::NoModifier) {
+        if (lastButtons == Qt::LeftButton && lastModifiers == Qt::NoModifier) {
           event->ignore();
           return;
         }
-        if (modifiers == Qt::NoModifier) {
-          if (buttons == Qt::MidButton) {
-            Point dir (pos.x()-event->pos().x(), event->pos().y()-pos.y(), 0.0);
-            lookat += screen_to_model_direction (dir);
+
+        if (lastModifiers == Qt::NoModifier) {
+          if (lastButtons == Qt::MidButton) {
+            lookat -= screen_to_model_direction (distance_moved (event));
             updateGL();
           }
         }
-        pos = event->pos();
       }
 
 

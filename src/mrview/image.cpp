@@ -28,7 +28,7 @@
 namespace MR {
   namespace Viewer {
 
-    Image::Image (Window& parent, MR::Image::Header* header) :
+    Image::Image (Window& parent, const MR::Image::Header* header) :
       QAction (shorten(header->name(), 20, 0).c_str(), &parent),
       H (*header),
       vox (H),
@@ -48,6 +48,8 @@ namespace MR {
       window.image_menu->addAction (this);
       texture2D[0] = texture2D[1] = texture2D[2] = 0;
       slice_position[0] = slice_position[1] = slice_position[2] = INT_MIN;
+
+      emit ready();
     }
 
     Image::~Image () { }
@@ -71,16 +73,16 @@ namespace MR {
 
       int x, y;
       get_axes (projection, x, y);
-      size_t xdim = H.dim(x), ydim = H.dim(y);
+      float xdim = H.dim(x)-0.5, ydim = H.dim(y)-0.5;
 
       Point p, q;
       p[projection] = slice;
 
       glBegin (GL_QUADS);
-      glTexCoord2f (0.0, 0.0); p[x] =    0; p[y] =    0; q = interp.voxel2scanner (p); glVertex3fv (q.get());
-      glTexCoord2f (0.0, 1.0); p[x] =    0; p[y] = ydim; q = interp.voxel2scanner (p); glVertex3fv (q.get());
+      glTexCoord2f (0.0, 0.0); p[x] = -0.5; p[y] = -0.5; q = interp.voxel2scanner (p); glVertex3fv (q.get());
+      glTexCoord2f (0.0, 1.0); p[x] = -0.5; p[y] = ydim; q = interp.voxel2scanner (p); glVertex3fv (q.get());
       glTexCoord2f (1.0, 1.0); p[x] = xdim; p[y] = ydim; q = interp.voxel2scanner (p); glVertex3fv (q.get());
-      glTexCoord2f (1.0, 0.0); p[x] = xdim; p[y] =    0; q = interp.voxel2scanner (p); glVertex3fv (q.get());
+      glTexCoord2f (1.0, 0.0); p[x] = xdim; p[y] = -0.5; q = interp.voxel2scanner (p); glVertex3fv (q.get());
       glEnd();
     }
 

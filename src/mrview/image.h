@@ -38,8 +38,10 @@ namespace MR {
 
     class Image : public QAction
     {
+      Q_OBJECT
+
       public:
-        Image (Window& parent, MR::Image::Header* header);
+        Image (Window& parent, const MR::Image::Header* header);
         ~Image ();
 
         void reset_windowing ();
@@ -53,9 +55,12 @@ namespace MR {
           else { x = 1; y = 2; }
         }
 
-        MR::Image::Header& H;
+        const MR::Image::Header& H;
         MR::Image::Voxel<float> vox;
         MR::DataSet::Interp::Linear<MR::Image::Voxel<float> > interp;
+
+      signals:
+        void ready ();
 
       private:
         Window& window;

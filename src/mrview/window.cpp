@@ -37,6 +37,9 @@
 #include "mrview/window.h"
 #include "mrview/mode/base.h"
 #include "mrview/tool/base.h"
+#include "image/header.h"
+#include "image/voxel.h"
+#include "dataset/copy.h"
 
 
 namespace MR {
@@ -77,7 +80,7 @@ namespace MR {
       setMinimumSize (256, 256);
       setCentralWidget (glarea);
 
-      connect (this, SIGNAL (updateGL()), glarea, SLOT (updateGL()));
+      connect (this, SIGNAL (focus_changed()), glarea, SLOT (updateGL()));
 
       // File actions:
       open_action = new QAction (tr("&Open"), this);
@@ -254,7 +257,29 @@ namespace MR {
 
 
 
-    void Window::image_save () { TEST; }
+    void Window::image_save () 
+    { 
+      Dialog::File dialog (this, "Select image destination", false, true); 
+      if (dialog.exec()) {
+        std::vector<std::string> selection;
+        dialog.get_selection (selection);
+        if (selection.size() != 1) return;
+        try {
+          VAR (current_image()->H);
+          const MR::Image::Header header = MR::Image::Header::create (selection[0], current_image()->H);
+          VAR (header);
+          MR::Image::Voxel<float> dest (header);
+          DataSet::copy_with_progress (dest, current_image()->vox);
+        }
+        catch (Exception& E) {
+          E.display();
+        }
+      }
+    }
+
+
+
+
     void Window::image_close ()
     {
       Image* image = current_image();
@@ -274,7 +299,16 @@ namespace MR {
     }
 
 
-    void Window::image_properties () { assert (current_image()); Dialog::ImageProperties props (this, current_image()->H); props.exec(); }
+
+
+    void Window::image_properties () 
+    {
+      assert (current_image()); 
+      Dialog::ImageProperties props (this, current_image()->H);
+      props.exec(); 
+    }
+
+
 
     void Window::select_mode (QAction* action) 
     {
@@ -287,8 +321,29 @@ namespace MR {
       mode = Mode::create (*this, n);
     }
 
-    void Window::image_reset () { Image* image = current_image(); if (image) image->reset_windowing(); }
-    void Window::full_screen () { if (full_screen_action->isChecked()) showFullScreen(); else showNormal(); }
+
+
+
+    void Window::image_reset ()
+    { 
+      Image* image = current_image();
+      if (image)
+        image->reset_windowing(); 
+    }
+
+
+
+
+    void Window::full_screen ()
+    { 
+      if (full_screen_action->isChecked()) 
+        showFullScreen();
+      else
+        showNormal();
+    }
+
+
+
 
     void Window::image_next () 
     { 
@@ -301,6 +356,9 @@ namespace MR {
         }
       }
     }
+
+
+
 
     void Window::image_previous ()
     { 
@@ -315,6 +373,8 @@ namespace MR {
     }
 
 
+
+
     inline void Window::set_image_menu ()
     {
       int N = image_group->actions().size();
@@ -324,14 +384,33 @@ namespace MR {
       save_action->setEnabled (N>0);
       close_action->setEnabled (N>0);
       properties_action->setEnabled (N>0);
+      glarea->updateGL();
     }
 
-    void Window::select_image (QAction* action) { action->setChecked (true); }
 
-    void Window::OpenGL () { Dialog::OpenGL gl (this); gl.exec(); }
+
+
+
+    void Window::select_image (QAction* action)
+    {
+      action->setChecked (true); 
+      glarea->updateGL();
+    }
+
+
+    void Window::OpenGL () 
+    {
+      Dialog::OpenGL gl (this);
+      gl.exec(); 
+    }
+
+
+
 
     void Window::about () { 
-      std::string message = printf ("<h1>MRView</h1>The MRtrix viewer, version %zu.%zu.%zu<br><em>%d bit %s version, built " __DATE__ "</em><p>Author: %s<p><em>%s</em>",
+      std::string message = printf ("<h1>MRView</h1>The MRtrix viewer, version %zu.%zu.%zu<br>"
+          "<em>%d bit %s version, built " __DATE__ "</em><p>"
+          "Author: %s<p><em>%s</em>",
           App::version[0], App::version[1], App::version[2], int(8*sizeof(size_t)), 
 #ifdef NDEBUG
           "release"
@@ -354,6 +433,9 @@ namespace MR {
       mode->paintGL(); 
       DEBUG_OPENGL;
     }
+
+
+
 
     inline void Window::initGL () 
     { 

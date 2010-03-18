@@ -56,11 +56,11 @@ namespace MR {
         int width () { return (reinterpret_cast <QWidget*>(glarea)->width()); }
         int height () { return (reinterpret_cast <QWidget*>(glarea)->height()); }
         const Point& focus () const { return (focal_point); }
-        void set_focus (const Point& p) { focal_point = p; emit updateGL(); }
+        void set_focus (const Point& p) { focal_point = p; emit focus_changed(); }
         bool show_focus () const { return (true); }
 
       signals:
-        void updateGL ();
+        void focus_changed ();
 
       private slots:
         void image_open ();
