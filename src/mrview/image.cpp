@@ -48,8 +48,6 @@ namespace MR {
       window.image_menu->addAction (this);
       texture2D[0] = texture2D[1] = texture2D[2] = 0;
       slice_position[0] = slice_position[1] = slice_position[2] = INT_MIN;
-
-      emit ready();
     }
 
     Image::~Image () { }

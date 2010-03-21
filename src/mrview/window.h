@@ -30,6 +30,7 @@
 #endif
 
 #include "ptr.h"
+#include "cursor.h"
 #include "mrview/image.h"
 
 class QMenu;
@@ -59,6 +60,9 @@ namespace MR {
         void set_focus (const Point& p) { focal_point = p; emit focus_changed(); }
         bool show_focus () const { return (true); }
 
+        QWidget* get_glarea () { return (reinterpret_cast <QWidget*>(glarea)); }
+        
+
       signals:
         void focus_changed ();
 
@@ -81,6 +85,9 @@ namespace MR {
         void aboutQt ();
 
       private:
+        Cursor cursors_do_not_use;
+
+
         class GLArea;
 
         GLArea *glarea;

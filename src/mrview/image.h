@@ -59,9 +59,6 @@ namespace MR {
         MR::Image::Voxel<float> vox;
         MR::DataSet::Interp::Linear<MR::Image::Voxel<float> > interp;
 
-      signals:
-        void ready ();
-
       private:
         Window& window;
         GLuint texture2D[3];

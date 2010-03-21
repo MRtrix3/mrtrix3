@@ -39,8 +39,8 @@ namespace MR {
       public:
         Renderer () : 
           lmax_computed (0), lod_computed (0), hide_neg_lobes (true), recalculate (true),
-          recompute (true), nsh (0), row_size (0), shader_program (0) { }
-        ~Renderer ();
+          recompute (true), nsh (0), row_size (0) { }
+        ~Renderer () { clear(); }
 
         bool ready () const { return (shader_program); }
         void init ();
@@ -122,7 +122,10 @@ namespace MR {
         bool hide_neg_lobes, recalculate, recompute;
         size_t  nsh, row_size;
         void   precompute_row (GLfloat* row); 
-        GLhandleARB vertex_shader, fragment_shader, shader_program;
+        //GLhandleARB vertex_shader, fragment_shader, shader_program;
+        GL::Shader::Vertex vertex_shader;
+        GL::Shader::Fragment fragment_shader;
+        GL::Shader::Program shader_program;
     };
 
 

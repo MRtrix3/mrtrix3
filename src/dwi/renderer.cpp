@@ -18,10 +18,6 @@
     You should have received a copy of the GNU General Public License
     along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
 
-
-    24-07-2008 J-Donald Tournier <d.tournier@brain.org.au>
-    * added support of overlay of orientation plot on main window
-
 */
 
 #include <map>
@@ -115,34 +111,15 @@ namespace MR {
 
     void Renderer::init () 
     { 
-      vertex_shader = glCreateShaderObjectARB (GL_VERTEX_SHADER_ARB);
-      fragment_shader = glCreateShaderObjectARB (GL_FRAGMENT_SHADER_ARB);
-      glShaderSourceARB (vertex_shader, 1, &vertex_shader_source, NULL);
-      glShaderSourceARB (fragment_shader, 1, &fragment_shader_source, NULL);
-      glCompileShaderARB (vertex_shader);
-      glCompileShaderARB (fragment_shader);
-      shader_program = glCreateProgramObjectARB();
-      GL::Shader::print_log ("orientation plot vertex shader", vertex_shader);
-      GL::Shader::print_log ("orientation plot fragment shader", fragment_shader);
-
-      glAttachObjectARB (shader_program, vertex_shader);
-      glAttachObjectARB (shader_program, fragment_shader);
-      glLinkProgramARB (shader_program);
-      GL::Shader::print_log ("orientation plot shader program", shader_program);
+      vertex_shader.compile (vertex_shader_source);
+      fragment_shader.compile (fragment_shader_source);
+      shader_program.attach (vertex_shader);
+      shader_program.attach (fragment_shader);
+      shader_program.link();
     }
 
 
 
-
-    Renderer::~Renderer () 
-    { 
-      glDetachObjectARB (shader_program, vertex_shader);
-      glDetachObjectARB (shader_program, fragment_shader);
-      glDeleteObjectARB (vertex_shader);
-      glDeleteObjectARB (fragment_shader);
-      glDeleteObjectARB (shader_program); 
-      clear();
-    }
 
 
 
@@ -158,20 +135,21 @@ namespace MR {
       glVertexPointer (3, GL_FLOAT, sizeof(Vertex), &vertices[0].P);
       if (colour) glColor3fv (colour);
 
-      glUseProgramObjectARB (shader_program);
-      glUniform1iARB (glGetUniformLocationARB (shader_program, "color_by_direction"), colour ? 0 : 1);
-      glUniform1iARB (glGetUniformLocationARB (shader_program, "use_normals"), use_normals ? 1 : 0);
-      glUniform1iARB (glGetUniformLocationARB (shader_program, "hide_neg_lobes"), hide_neg_lobes ? 1 : 0);
-      glUniform1iARB (glGetUniformLocationARB (shader_program, "reverse"), 0);
+      shader_program.use();
+      shader_program.get_uniform ("color_by_direction") = colour ? 0 : 1;
+      shader_program.get_uniform ("use_normals") = use_normals ? 1 : 0;
+      shader_program.get_uniform ("hide_neg_lobes") = hide_neg_lobes ? 1 : 0;
+      GL::Shader::Uniform reverse = shader_program.get_uniform ("reverse");
 
       glEnableClientState (GL_NORMAL_ARRAY);
       glNormalPointer (GL_FLOAT, sizeof(Vertex), &vertices[0].N);
 
+      reverse = 0;
       glDrawElements (GL_TRIANGLES, 3*indices.size(), GL_UNSIGNED_INT, &indices[0]);
-      glUniform1iARB (glGetUniformLocationARB (shader_program, "reverse"), 1);
+      reverse = 1;
       glDrawElements (GL_TRIANGLES, 3*indices.size(), GL_UNSIGNED_INT, &indices[0]);
 
-      glUseProgramObjectARB (0);
+      shader_program.stop();
       glPopClientAttrib();
     }
 

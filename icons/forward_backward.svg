@@ -15,10 +15,10 @@
    id="svg2"
    version="1.1"
    inkscape:version="0.47pre4 r22446"
-   inkscape:export-filename="/home/donald/src/mrtrix/experimental/qt4/icons/window.png"
+   inkscape:export-filename="/home/donald/src/mrtrix/experimental/qt4/icons/forward_backward.png"
    inkscape:export-xdpi="90"
    inkscape:export-ydpi="90"
-   sodipodi:docname="window.svg">
+   sodipodi:docname="forward_backward.svg">
   <defs
      id="defs4">
     <linearGradient
@@ -39,16 +39,6 @@
        inkscape:vp_z="744.09448 : 526.18109 : 1"
        inkscape:persp3d-origin="372.04724 : 350.78739 : 1"
        id="perspective10" />
-    <linearGradient
-       inkscape:collect="always"
-       xlink:href="#linearGradient3594"
-       id="linearGradient3600"
-       x1="250"
-       y1="463.44913"
-       x2="250"
-       y2="483.01434"
-       gradientUnits="userSpaceOnUse"
-       gradientTransform="matrix(1,0,0,0.92,0.50003052,37.488969)" />
     <inkscape:perspective
        id="perspective3652"
        inkscape:persp3d-origin="0.5 : 0.33333333 : 1"
@@ -76,16 +66,6 @@
          offset="1"
          id="stop3598-1" />
     </linearGradient>
-    <linearGradient
-       gradientTransform="matrix(1,0,0,0.92,9.5000877,-911.23539)"
-       y2="486.27524"
-       x2="249.99994"
-       y1="466.71002"
-       x1="250"
-       gradientUnits="userSpaceOnUse"
-       id="linearGradient3661"
-       xlink:href="#linearGradient3594-5"
-       inkscape:collect="always" />
     <inkscape:perspective
        id="perspective3694"
        inkscape:persp3d-origin="0.5 : 0.33333333 : 1"
@@ -138,6 +118,48 @@
          offset="1"
          id="stop3598-4" />
     </linearGradient>
+    <inkscape:perspective
+       id="perspective4448"
+       inkscape:persp3d-origin="0.5 : 0.33333333 : 1"
+       inkscape:vp_z="1 : 0.5 : 1"
+       inkscape:vp_y="0 : 1000 : 0"
+       inkscape:vp_x="0 : 0.5 : 1"
+       sodipodi:type="inkscape:persp3d" />
+    <inkscape:perspective
+       id="perspective4474"
+       inkscape:persp3d-origin="0.5 : 0.33333333 : 1"
+       inkscape:vp_z="1 : 0.5 : 1"
+       inkscape:vp_y="0 : 1000 : 0"
+       inkscape:vp_x="0 : 0.5 : 1"
+       sodipodi:type="inkscape:persp3d" />
+    <inkscape:perspective
+       id="perspective4503"
+       inkscape:persp3d-origin="0.5 : 0.33333333 : 1"
+       inkscape:vp_z="1 : 0.5 : 1"
+       inkscape:vp_y="0 : 1000 : 0"
+       inkscape:vp_x="0 : 0.5 : 1"
+       sodipodi:type="inkscape:persp3d" />
+    <inkscape:perspective
+       id="perspective4503-1"
+       inkscape:persp3d-origin="0.5 : 0.33333333 : 1"
+       inkscape:vp_z="1 : 0.5 : 1"
+       inkscape:vp_y="0 : 1000 : 0"
+       inkscape:vp_x="0 : 0.5 : 1"
+       sodipodi:type="inkscape:persp3d" />
+    <inkscape:perspective
+       id="perspective4539"
+       inkscape:persp3d-origin="0.5 : 0.33333333 : 1"
+       inkscape:vp_z="1 : 0.5 : 1"
+       inkscape:vp_y="0 : 1000 : 0"
+       inkscape:vp_x="0 : 0.5 : 1"
+       sodipodi:type="inkscape:persp3d" />
+    <inkscape:perspective
+       id="perspective2849"
+       inkscape:persp3d-origin="0.5 : 0.33333333 : 1"
+       inkscape:vp_z="1 : 0.5 : 1"
+       inkscape:vp_y="0 : 1000 : 0"
+       inkscape:vp_x="0 : 0.5 : 1"
+       sodipodi:type="inkscape:persp3d" />
   </defs>
   <sodipodi:namedview
      id="base"
@@ -146,9 +168,9 @@
      borderopacity="1.0"
      inkscape:pageopacity="0.0"
      inkscape:pageshadow="2"
-     inkscape:zoom="9.0249997"
-     inkscape:cx="14.021368"
-     inkscape:cy="12.830529"
+     inkscape:zoom="12.763277"
+     inkscape:cx="17.445254"
+     inkscape:cy="18.3949"
      inkscape:document-units="px"
      inkscape:current-layer="layer1"
      showgrid="true"
@@ -165,7 +187,9 @@
        enabled="true"
        snapvisiblegridlinesonly="true"
        originx="0.5px"
-       originy="0.5px" />
+       originy="0.5px"
+       spacingx="1px"
+       spacingy="1px" />
   </sodipodi:namedview>
   <metadata
      id="metadata7">
@@ -184,6 +208,14 @@
      inkscape:groupmode="layer"
      id="layer1"
      transform="translate(-233,-451.36218)">
+    <path
+       style="fill:#ffffff;fill-opacity:1;stroke:#000000;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:round;stroke-opacity:1"
+       d="m 252.5,482.86218 12,-11 -7,0 -3,-6 4,0 -6,-3 -6,3 4,0 -2,6 -8,0 12,11 z"
+       id="path4579"
+       sodipodi:nodetypes="ccccccccccc"
+       inkscape:export-filename="/home/donald/Desktop/path4579.png"
+       inkscape:export-xdpi="90"
+       inkscape:export-ydpi="90" />
     <path
        style="fill:none;stroke:#000000;stroke-width:3;stroke-linecap:round;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none"
        d="m 241.5,452.86218 c 0,0 0,14 0,14"
@@ -204,35 +236,5 @@
        d="m 248.5,459.86218 c 0,0 -14,0 -14,0"
        id="path3684-6"
        sodipodi:nodetypes="cc" />
-    <rect
-       style="fill:none;stroke:#000000;stroke-width:2.87749887;stroke-linejoin:round;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none"
-       id="rect2820-5"
-       width="8"
-       height="18.00001"
-       x="245.50003"
-       y="463.86218" />
-    <rect
-       style="fill:none;stroke:#000000;stroke-width:2.87749887;stroke-linejoin:round;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none"
-       id="rect2820-3-5"
-       width="7.999939"
-       height="18"
-       x="255.50009"
-       y="-481.86218"
-       transform="scale(1,-1)" />
-    <rect
-       style="fill:url(#linearGradient3600);fill-opacity:1;fill-rule:nonzero;stroke:#ffffff;stroke-width:0.95916629;stroke-linejoin:round;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none"
-       id="rect2820"
-       width="7.9999771"
-       height="18.000013"
-       x="245.50003"
-       y="463.86218" />
-    <rect
-       style="fill:url(#linearGradient3661);fill-opacity:1;fill-rule:nonzero;stroke:#ffffff;stroke-width:0.95916629;stroke-linejoin:round;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none"
-       id="rect2820-3"
-       width="7.999939"
-       height="18"
-       x="255.50009"
-       y="-481.86218"
-       transform="scale(1,-1)" />
   </g>
 </svg>

@@ -15,7 +15,7 @@
    id="svg2"
    version="1.1"
    inkscape:version="0.47pre4 r22446"
-   inkscape:export-filename="/home/donald/Desktop/crosshair.png"
+   inkscape:export-filename="/home/donald/src/mrtrix/experimental/qt4/icons/crosshair.png"
    inkscape:export-xdpi="90"
    inkscape:export-ydpi="90"
    sodipodi:docname="crosshair.svg">
@@ -118,6 +118,13 @@
          offset="1"
          id="stop3598-4" />
     </linearGradient>
+    <inkscape:perspective
+       id="perspective2850"
+       inkscape:persp3d-origin="0.5 : 0.33333333 : 1"
+       inkscape:vp_z="1 : 0.5 : 1"
+       inkscape:vp_y="0 : 1000 : 0"
+       inkscape:vp_x="0 : 0.5 : 1"
+       sodipodi:type="inkscape:persp3d" />
   </defs>
   <sodipodi:namedview
      id="base"
@@ -126,14 +133,14 @@
      borderopacity="1.0"
      inkscape:pageopacity="0.0"
      inkscape:pageshadow="2"
-     inkscape:zoom="18.649941"
-     inkscape:cx="14.960776"
-     inkscape:cy="16.218611"
+     inkscape:zoom="11.313709"
+     inkscape:cx="38.082221"
+     inkscape:cy="17.798368"
      inkscape:document-units="px"
      inkscape:current-layer="layer1"
      showgrid="true"
-     inkscape:window-width="1680"
-     inkscape:window-height="976"
+     inkscape:window-width="1366"
+     inkscape:window-height="695"
      inkscape:window-x="0"
      inkscape:window-y="25"
      inkscape:window-maximized="1">
@@ -156,7 +163,7 @@
         <dc:format>image/svg+xml</dc:format>
         <dc:type
            rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
-        <dc:title></dc:title>
+        <dc:title />
       </cc:Work>
     </rdf:RDF>
   </metadata>
@@ -167,23 +174,23 @@
      transform="translate(-233.5,-451.86218)">
     <path
        style="fill:none;stroke:#000000;stroke-width:3;stroke-linecap:round;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none"
-       d="m 249,457.36218 c 0,0 0,20 0,20"
-       id="path3684-2"
+       d="m 242,453.36218 c 0,0 0,14 0,14"
+       id="path3684-2-1"
        sodipodi:nodetypes="cc" />
     <path
        style="fill:none;stroke:#000000;stroke-width:3;stroke-linecap:round;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none"
-       d="m 259,467.36218 c 0,0 -20,0 -20,0"
-       id="path3684-6-3"
+       d="m 249,460.36218 c 0,0 -14,0 -14,0"
+       id="path3684-6-3-5"
        sodipodi:nodetypes="cc" />
     <path
        style="fill:none;stroke:#ffffff;stroke-width:1px;stroke-linecap:round;stroke-linejoin:miter;stroke-opacity:1"
-       d="m 249,457.36218 c 0,0 0,20 0,20"
-       id="path3684"
+       d="m 242,453.36218 c 0,0 0,14 0,14"
+       id="path3684-9"
        sodipodi:nodetypes="cc" />
     <path
        style="fill:none;stroke:#ffffff;stroke-width:1px;stroke-linecap:round;stroke-linejoin:miter;stroke-opacity:1"
-       d="m 259,467.36218 c 0,0 -20,0 -20,0"
-       id="path3684-6"
+       d="m 249,460.36218 c 0,0 -14,0 -14,0"
+       id="path3684-6-8"
        sodipodi:nodetypes="cc" />
   </g>
 </svg>

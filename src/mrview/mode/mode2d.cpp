@@ -23,6 +23,7 @@
 #include <QAction>
 
 #include "mrtrix.h"
+#include "cursor.h"
 #include "mrview/mode/mode2d.h"
 
 namespace MR {
@@ -183,8 +184,14 @@ namespace MR {
 
       void Mode2D::mousePressEvent (QMouseEvent* event)
       { 
-        if (event->buttons() == Qt::LeftButton && event->modifiers() == Qt::NoModifier) 
-          set_focus (screen_to_model (event));
+        if (event->modifiers() == Qt::NoModifier) {
+          if (event->buttons() == Qt::LeftButton)
+            set_focus (screen_to_model (event));
+          else if (event->buttons() == Qt::MidButton)
+            window.get_glarea()->setCursor (Cursor::pan_crosshair);
+          else if (event->buttons() == Qt::RightButton)
+            window.get_glarea()->setCursor (Cursor::window);
+        }
 
         grab_event (event);
         event->accept();
@@ -210,7 +217,10 @@ namespace MR {
 
 
       void Mode2D::mouseDoubleClickEvent (QMouseEvent* event) { }
-      void Mode2D::mouseReleaseEvent (QMouseEvent* event) { }
+      void Mode2D::mouseReleaseEvent (QMouseEvent* event) 
+      {
+        window.get_glarea()->setCursor (Cursor::crosshair);
+      }
 
 
 

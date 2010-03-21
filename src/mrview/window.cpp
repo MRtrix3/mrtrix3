@@ -30,7 +30,7 @@
 #include <QGLWidget>
 
 #include "app.h"
-#include "icon.h"
+#include "icons.h"
 #include "dialog/file.h"
 #include "dialog/opengl.h"
 #include "dialog/image_properties.h"
@@ -49,10 +49,14 @@ namespace MR {
     {
       public:
         GLArea (Window& parent) : 
-          QGLWidget (QGLFormat (QGL::DoubleBuffer | QGL::DepthBuffer | QGL::Rgba), &parent),
-          main (parent) { }
-        QSize minimumSizeHint () const { return QSize (256, 256); }
-        QSize sizeHint () const { return QSize (256, 256); }
+          QGLWidget (QGLFormat (QGL::DoubleBuffer | QGL::DepthBuffer | QGL::StencilBuffer | QGL::Rgba), &parent),
+          main (parent) {
+            setCursor (Cursor::crosshair); 
+            setAutoBufferSwap (false);
+          }
+
+        QSize minimumSizeHint () const { return QSize (300, 300); }
+        QSize sizeHint () const { return QSize (300, 300); }
 
       private:
         Window& main;
@@ -76,9 +80,10 @@ namespace MR {
       focal_point (0.0, 0.0, 0.0)
     { 
       setWindowTitle (tr("MRView"));
-      setWindowIcon (get_icon());
-      setMinimumSize (256, 256);
       setCentralWidget (glarea);
+
+      QImage icon_image (Icon::mrtrix.data, Icon::mrtrix.width, Icon::mrtrix.height, QImage::Format_ARGB32);
+      setWindowIcon (QPixmap::fromImage (icon_image));
 
       connect (this, SIGNAL (focus_changed()), glarea, SLOT (updateGL()));
 
@@ -259,15 +264,13 @@ namespace MR {
 
     void Window::image_save () 
     { 
-      Dialog::File dialog (this, "Select image destination", false, true); 
+      Dialog::File dialog (this, "Select image destination", false, false); 
       if (dialog.exec()) {
         std::vector<std::string> selection;
         dialog.get_selection (selection);
         if (selection.size() != 1) return;
         try {
-          VAR (current_image()->H);
           const MR::Image::Header header = MR::Image::Header::create (selection[0], current_image()->H);
-          VAR (header);
           MR::Image::Voxel<float> dest (header);
           DataSet::copy_with_progress (dest, current_image()->vox);
         }
@@ -428,9 +431,23 @@ namespace MR {
 
     inline void Window::paintGL () 
     {
+      glDrawBuffer (GL_BACK);
       glClear (GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
       glLoadIdentity();
       mode->paintGL(); 
+
+      glReadBuffer (GL_BACK);
+      glDrawBuffer (GL_FRONT);
+
+      glBindFramebuffer (GL_READ_FRAMEBUFFER, 0);
+      glBindFramebuffer (GL_DRAW_FRAMEBUFFER, 0);
+
+      glBlitFramebuffer (
+          0, 0, width(), height(), 
+          0, 0, width(), height(), 
+          GL_COLOR_BUFFER_BIT, GL_NEAREST);
+      glFlush();
+
       DEBUG_OPENGL;
     }
 
