@@ -81,77 +81,78 @@ namespace MR {
          * Image::Voxel<float> vox1 (header);
          * Image::Voxel<float> vox2 (vox1);
          * \endcode
-       */
-        Voxel (const Header& parent) : H (parent), handler (*H.handler), x (ndim(), 0) {
-          assert (H.handler);
-          H.handler->prepare();
-          offset = handler.start();
+         */
+        Voxel (const Header& parent) : 
+          H (parent), handler (*H.handler), x (ndim(), 0) {
+            assert (H.handler);
+            H.handler->prepare();
+            offset = handler.start();
 
-          switch (H.datatype()()) {
-            case DataType::Bit:
-              get_func = &__get<value_type,bool>;   
-              put_func = &__put<value_type,bool>;
-              return;
-            case DataType::Int8:
-              get_func = &__get<value_type,int8_t>;
-              put_func = &__put<value_type,int8_t>;
-              return;
-            case DataType::UInt8:
-              get_func = &__get<value_type,uint8_t>;
-              put_func = &__put<value_type,uint8_t>;
-              return;
-            case DataType::Int16LE:
-              get_func = &__getLE<value_type,int16_t>;
-              put_func = &__putLE<value_type,int16_t>;
-              return;
-            case DataType::UInt16LE:
-              get_func = &__getLE<value_type,uint16_t>;
-              put_func = &__putLE<value_type,uint16_t>;
-              return;
-            case DataType::Int16BE:
-              get_func = &__getBE<value_type,int16_t>;
-              put_func = &__putBE<value_type,int16_t>;
-              return;
-            case DataType::UInt16BE:
-              get_func = &__getBE<value_type,uint16_t>;
-              put_func = &__putBE<value_type,uint16_t>;
-              return;
-            case DataType::Int32LE:
-              get_func = &__getLE<value_type,int32_t>;
-              put_func = &__putLE<value_type,int32_t>;
-              return;
-            case DataType::UInt32LE:
-              get_func = &__getLE<value_type,uint32_t>;
-              put_func = &__putLE<value_type,uint32_t>;
-              return;
-            case DataType::Int32BE:
-              get_func = &__getBE<value_type,int32_t>;
-              put_func = &__putBE<value_type,int32_t>;
-              return;
-            case DataType::UInt32BE:
-              get_func = &__getBE<value_type,uint32_t>;
-              put_func = &__putBE<value_type,uint32_t>;
-              return;
-            case DataType::Float32LE:
-              get_func = &__getLE<value_type,float>;
-              put_func = &__putLE<value_type,float>;
-              return;
-            case DataType::Float32BE:
-              get_func = &__getBE<value_type,float>;
-              put_func = &__putBE<value_type,float>;
-              return;
-            case DataType::Float64LE:
-              get_func = &__getLE<value_type,double>;
-              put_func = &__putLE<value_type,double>;
-              return;
-            case DataType::Float64BE:
-              get_func = &__getBE<value_type,double>;
-              put_func = &__putBE<value_type,double>;
-              return;
-            default: throw Exception ("invalid data type in image header");
+            switch (H.datatype()()) {
+              case DataType::Bit:
+                get_func = &__get<value_type,bool>;   
+                put_func = &__put<value_type,bool>;
+                return;
+              case DataType::Int8:
+                get_func = &__get<value_type,int8_t>;
+                put_func = &__put<value_type,int8_t>;
+                return;
+              case DataType::UInt8:
+                get_func = &__get<value_type,uint8_t>;
+                put_func = &__put<value_type,uint8_t>;
+                return;
+              case DataType::Int16LE:
+                get_func = &__getLE<value_type,int16_t>;
+                put_func = &__putLE<value_type,int16_t>;
+                return;
+              case DataType::UInt16LE:
+                get_func = &__getLE<value_type,uint16_t>;
+                put_func = &__putLE<value_type,uint16_t>;
+                return;
+              case DataType::Int16BE:
+                get_func = &__getBE<value_type,int16_t>;
+                put_func = &__putBE<value_type,int16_t>;
+                return;
+              case DataType::UInt16BE:
+                get_func = &__getBE<value_type,uint16_t>;
+                put_func = &__putBE<value_type,uint16_t>;
+                return;
+              case DataType::Int32LE:
+                get_func = &__getLE<value_type,int32_t>;
+                put_func = &__putLE<value_type,int32_t>;
+                return;
+              case DataType::UInt32LE:
+                get_func = &__getLE<value_type,uint32_t>;
+                put_func = &__putLE<value_type,uint32_t>;
+                return;
+              case DataType::Int32BE:
+                get_func = &__getBE<value_type,int32_t>;
+                put_func = &__putBE<value_type,int32_t>;
+                return;
+              case DataType::UInt32BE:
+                get_func = &__getBE<value_type,uint32_t>;
+                put_func = &__putBE<value_type,uint32_t>;
+                return;
+              case DataType::Float32LE:
+                get_func = &__getLE<value_type,float>;
+                put_func = &__putLE<value_type,float>;
+                return;
+              case DataType::Float32BE:
+                get_func = &__getBE<value_type,float>;
+                put_func = &__putBE<value_type,float>;
+                return;
+              case DataType::Float64LE:
+                get_func = &__getLE<value_type,double>;
+                put_func = &__putLE<value_type,double>;
+                return;
+              case DataType::Float64BE:
+                get_func = &__getBE<value_type,double>;
+                put_func = &__putBE<value_type,double>;
+                return;
+              default: throw Exception ("invalid data type in image header");
+            }
           }
-        }
-        
+
         const Header& header () const { return (H); }
         DataType datatype () const { return (H.datatype()); }
         const Math::Matrix<float>& transform () const { return (H.transform()); }

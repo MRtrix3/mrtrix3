@@ -44,17 +44,18 @@ namespace MR {
 
           //! construct an Base object to obtain interpolated values using the
           // parent DataSet class 
-          Base (Set& parent) : data (parent), out_of_bounds (true) { 
-            bounds[0] = data.dim(0) - 0.5;
-            bounds[1] = data.dim(1) - 0.5;
-            bounds[2] = data.dim(2) - 0.5;
+          Base (Set& parent) :
+            data (parent), out_of_bounds (true) { 
+              bounds[0] = data.dim(0) - 0.5;
+              bounds[1] = data.dim(1) - 0.5;
+              bounds[2] = data.dim(2) - 0.5;
 
-            Math::Matrix<float> M (4,4);
-            set_matrix (S2V, Transform::scanner2voxel (M, data));
-            set_matrix (V2S, Transform::voxel2scanner (M, data));
-            set_matrix (I2S, Transform::image2scanner (M, data));
-            set_matrix (S2I, Transform::scanner2image (M, data));
-          }
+              Math::Matrix<float> M (4,4);
+              set_matrix (S2V, Transform::scanner2voxel (M, data));
+              set_matrix (V2S, Transform::voxel2scanner (M, data));
+              set_matrix (I2S, Transform::image2scanner (M, data));
+              set_matrix (S2I, Transform::scanner2image (M, data));
+            }
 
           //! test whether current position is within bounds.
           /*! \return true if the current position is out of bounds, false otherwise */
