@@ -21,7 +21,7 @@
 */
 
 #include "app.h"
-#include "icon.h"
+#include "icons.h"
 #include "dwi/render_window.h"
 #include "dwi/render_frame.h"
 #include "dialog/lighting.h"
@@ -35,7 +35,8 @@ namespace MR {
       current (0), 
       is_response (is_response_coefs)
     {
-      setWindowIcon (get_icon());
+      QImage icon_image (Icon::mrtrix.data, Icon::mrtrix.width, Icon::mrtrix.height, QImage::Format_ARGB32);
+      setWindowIcon (QPixmap::fromImage (icon_image));
       setMinimumSize (300, 300);
 
       QAction* open_action = new QAction ("&Open", this);
