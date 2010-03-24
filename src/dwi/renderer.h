@@ -122,7 +122,6 @@ namespace MR {
         bool hide_neg_lobes, recalculate, recompute;
         size_t  nsh, row_size;
         void   precompute_row (GLfloat* row); 
-        //GLhandleARB vertex_shader, fragment_shader, shader_program;
         GL::Shader::Vertex vertex_shader;
         GL::Shader::Fragment fragment_shader;
         GL::Shader::Program shader_program;

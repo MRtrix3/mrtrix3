@@ -220,7 +220,6 @@ namespace MR {
       // StatusBar:
       statusBar()->showMessage(tr("Ready"));
 
-      select_mode (mode_actions[0]);
       set_image_menu ();
     }
 
@@ -472,6 +471,7 @@ namespace MR {
       glClearColor (0.0, 0.0, 0.0, 0.0);
       glEnable (GL_DEPTH_TEST);
 
+      select_mode (mode_actions[0]);
       DEBUG_OPENGL;
     }
 

@@ -26,6 +26,7 @@
 #include <QAction>
 
 #include "opengl/gl.h"
+#include "opengl/shader.h"
 #include "image/voxel.h"
 #include "dataset/interp/linear.h"
 
@@ -45,6 +46,11 @@ namespace MR {
         ~Image ();
 
         void reset_windowing ();
+        void adjust_windowing (float brightness, float contrast) 
+        {
+          display_midpoint -= 0.001 * display_range * brightness;
+          display_range *= Math::exp (0.01f * contrast);
+        }
 
         void render2D (int projection, int slice);
         void get_axes (int projection, int& x, int& y) { 
@@ -64,9 +70,20 @@ namespace MR {
         GLuint texture2D[3];
         int slice_position[3], interpolation;
         float value_min, value_max;
-        float display_min, display_max;
+        float display_midpoint, display_range;
+        GL::Shader::Vertex vertex_shader;
+        GL::Shader::Fragment fragment_shader;
+        GL::Shader::Program shader_program;
+
+        const std::string gen_fragment_shader_source () const;
+        static const char* vertex_shader_source;
 
         void update_texture2D (int projection, int slice);
+        void update_shaders ();
+        void update_windowing () {
+          display_range = value_max - value_min;
+          display_midpoint = 0.5 * (value_min + value_max);
+        }
 
         friend class Window;
     };

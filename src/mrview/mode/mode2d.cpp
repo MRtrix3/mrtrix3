@@ -211,6 +211,12 @@ namespace MR {
             lookat -= screen_to_model_direction (distance_moved (event));
             updateGL();
           }
+
+          if (lastButtons == Qt::RightButton && image()) {
+            Point d = distance_moved_motionless (event);
+            image()->adjust_windowing (d[0], d[1]);
+            updateGL();
+          }
         }
       }
 

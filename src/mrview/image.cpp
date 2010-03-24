@@ -25,6 +25,8 @@
 #include "mrview/image.h"
 #include "mrview/window.h"
 
+
+
 namespace MR {
   namespace Viewer {
 
@@ -37,8 +39,8 @@ namespace MR {
       interpolation (GL_NEAREST),
       value_min (NAN),
       value_max (NAN),
-      display_min (NAN),
-      display_max (NAN)
+      display_midpoint (NAN),
+      display_range (NAN)
     {
       assert (header);
       setCheckable (true);
@@ -56,8 +58,19 @@ namespace MR {
     { 
       if (isnan (value_min) || isnan (value_max)) {
       }
-      display_min = value_min;
-      display_max = value_max;
+      update_windowing();
+    }
+
+
+    void Image::update_shaders () 
+    {
+      if (!vertex_shader) vertex_shader.compile (vertex_shader_source);
+      if (!fragment_shader) fragment_shader.compile (gen_fragment_shader_source().c_str());
+      if (!shader_program) {
+        shader_program.attach (vertex_shader);
+        shader_program.attach (fragment_shader);
+        shader_program.link();
+      }
     }
 
 
@@ -65,6 +78,7 @@ namespace MR {
     void Image::render2D (int projection, int slice)
     {
       update_texture2D (projection, slice);
+      update_shaders();
 
       glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, interpolation);
       glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, interpolation);
@@ -76,12 +90,18 @@ namespace MR {
       Point p, q;
       p[projection] = slice;
 
+      shader_program.start();
+
+      shader_program.get_uniform ("offset") = display_midpoint - 0.5f * display_range;
+      shader_program.get_uniform ("scale") = 1.0f / display_range;
+
       glBegin (GL_QUADS);
       glTexCoord2f (0.0, 0.0); p[x] = -0.5; p[y] = -0.5; q = interp.voxel2scanner (p); glVertex3fv (q.get());
       glTexCoord2f (0.0, 1.0); p[x] = -0.5; p[y] = ydim; q = interp.voxel2scanner (p); glVertex3fv (q.get());
       glTexCoord2f (1.0, 1.0); p[x] = xdim; p[y] = ydim; q = interp.voxel2scanner (p); glVertex3fv (q.get());
       glTexCoord2f (1.0, 0.0); p[x] = xdim; p[y] = -0.5; q = interp.voxel2scanner (p); glVertex3fv (q.get());
       glEnd();
+      shader_program.stop();
     }
 
 
@@ -122,13 +142,36 @@ namespace MR {
               if (data[i] > value_max) value_max = data[i];
             }
           }
-          display_min = value_min;
-          display_max = value_max;
+          update_windowing();
         }
       }
 
       glTexImage2D (GL_TEXTURE_2D, 0, GL_LUMINANCE32F_ARB, xdim, ydim, 0, GL_LUMINANCE, GL_FLOAT, data);
     }
+
+
+
+    const std::string Image::gen_fragment_shader_source () const 
+    {
+      std::string source;
+      source = "uniform float offset, scale;"
+        "uniform sampler2D tex; void main() {"
+        "if (gl_TexCoord[0].s < 0.0 || gl_TexCoord[0].s > 1.0 ||"
+        "    gl_TexCoord[0].t < 0.0 || gl_TexCoord[0].t > 1.0) discard;"
+        "vec4 color = texture2D (tex,gl_TexCoord[0].st);";
+
+      source += "gl_FragColor.rgb = scale * (color.rgb - offset); gl_FragColor.a = color.a;";
+
+      source += "}";
+      return (source);
+    }
+
+    const char* Image::vertex_shader_source = 
+      "void main() {"
+      "  gl_TexCoord[0] = gl_MultiTexCoord0;"
+      "  gl_Position = ftransform();"
+      "}";
+
   }
 }
 

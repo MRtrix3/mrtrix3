@@ -135,7 +135,7 @@ namespace MR {
       glVertexPointer (3, GL_FLOAT, sizeof(Vertex), &vertices[0].P);
       if (colour) glColor3fv (colour);
 
-      shader_program.use();
+      shader_program.start();
       shader_program.get_uniform ("color_by_direction") = colour ? 0 : 1;
       shader_program.get_uniform ("use_normals") = use_normals ? 1 : 0;
       shader_program.get_uniform ("hide_neg_lobes") = hide_neg_lobes ? 1 : 0;

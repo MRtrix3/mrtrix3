@@ -113,7 +113,7 @@ namespace MR {
               throw Exception (std::string ("error linking shader program"));
             }
           }
-          void use () { assert (index_); glUseProgramObjectARB (index_); }
+          void start () { assert (index_); glUseProgramObjectARB (index_); }
           static void stop () { glUseProgramObjectARB (0); }
 
           Uniform get_uniform (const std::string& name)
