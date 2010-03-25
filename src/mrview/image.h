@@ -45,11 +45,12 @@ namespace MR {
         Image (Window& parent, const MR::Image::Header* header);
         ~Image ();
 
-        void reset_windowing ();
+        void reset_windowing () { update_windowing(); emit updated(); }
         void adjust_windowing (float brightness, float contrast) 
         {
           display_midpoint -= 0.001 * display_range * brightness;
-          display_range *= Math::exp (0.01f * contrast);
+          display_range *= Math::exp (0.002f * contrast);
+          emit updated();
         }
 
         void render2D (int projection, int slice);
@@ -64,6 +65,9 @@ namespace MR {
         const MR::Image::Header& H;
         MR::Image::Voxel<float> vox;
         MR::DataSet::Interp::Linear<MR::Image::Voxel<float> > interp;
+
+      signals:
+        void updated ();
 
       private:
         Window& window;

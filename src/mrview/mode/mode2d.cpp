@@ -30,7 +30,7 @@ namespace MR {
   namespace Viewer {
     namespace Mode {
 
-      Mode2D::Mode2D (Window& parent) : Base (parent) 
+      Mode2D::Mode2D (Window& parent) : Base (parent), show_focus (true)
       { 
         axial_action = new QAction(tr("&Axial"), this);
         axial_action->setShortcut (tr("A"));
@@ -57,7 +57,7 @@ namespace MR {
         show_focus_action = new QAction(tr("Show &Focus"), this);
         show_focus_action->setShortcut (tr("F"));
         show_focus_action->setStatusTip (tr("Show focus with the crosshairs"));
-        connect (show_focus_action, SIGNAL (triggered()), this, SLOT (show_focus()));
+        connect (show_focus_action, SIGNAL (triggered()), this, SLOT (toggle_show_focus()));
         add_action (show_focus_action);
 
         reset_action = new QAction(tr("Reset &View"), this);
@@ -65,8 +65,6 @@ namespace MR {
         reset_action->setStatusTip (tr("Reset image projection & zoom"));
         connect (reset_action, SIGNAL (triggered()), this, SLOT (reset()));
         add_action (reset_action);
-
-        reset();
       }
 
 
@@ -75,6 +73,7 @@ namespace MR {
       void Mode2D::paint () 
       { 
         if (!image()) return;
+        if (!focus()) reset_view();
         if (!lookat) lookat = focus();
 
         // set up modelview matrix:
@@ -144,7 +143,7 @@ namespace MR {
         glDisable (GL_TEXTURE_2D);
 
         // draw focus:
-        if (window.show_focus()) {
+        if (show_focus) {
           Point F = model_to_screen (focus());
 
           glMatrixMode (GL_PROJECTION);
@@ -261,10 +260,40 @@ namespace MR {
       void Mode2D::axial () { set_projection (2); }
       void Mode2D::sagittal () { set_projection (0); }
       void Mode2D::coronal () { set_projection (1); }
-      void Mode2D::show_focus () { TEST; }
-      void Mode2D::reset ()
+      void Mode2D::toggle_show_focus () { show_focus = !show_focus; updateGL(); }
+      void Mode2D::reset_view ()
       { 
+        Image* image = window.current_image();
+        if (!image) return;
+        float dim[] = {
+          image->H.dim(0) * image->H.vox(0), 
+          image->H.dim(1) * image->H.vox(1), 
+          image->H.dim(2) * image->H.vox(2)
+        };
+        if (dim[0] < dim[1] && dim[0] < dim[2])
+          set_projection (0);
+        else if (dim[1] < dim[0] && dim[1] < dim[2])
+          set_projection (1);
+        else 
+          set_projection (2);
+       
+        Point p (image->H.dim(0)/2.0, image->H.dim(1)/2.0, image->H.dim(2)/2.0);
+        set_focus (image->interp.voxel2scanner (p));
+
+        int x, y;
+        image->get_axes (projection(), x, y);
+        set_FOV (std::max (dim[x], dim[y]));
+
+        lookat.invalidate();
       }
+
+
+      void Mode2D::reset () 
+      {
+        reset_view();
+        updateGL();
+      }
+
     }
   }
 }

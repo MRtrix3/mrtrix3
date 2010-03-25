@@ -36,7 +36,7 @@ namespace MR {
       vox (H),
       interp (vox),
       window (parent),
-      interpolation (GL_NEAREST),
+      interpolation (GL_LINEAR),
       value_min (NAN),
       value_max (NAN),
       display_midpoint (NAN),
@@ -53,13 +53,6 @@ namespace MR {
     }
 
     Image::~Image () { }
-
-    void Image::reset_windowing () 
-    { 
-      if (isnan (value_min) || isnan (value_max)) {
-      }
-      update_windowing();
-    }
 
 
     void Image::update_shaders () 

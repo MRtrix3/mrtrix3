@@ -50,8 +50,18 @@ namespace MR {
           virtual void mouseReleaseEvent (QMouseEvent* event);
           virtual void wheelEvent (QWheelEvent* event);
 
-          void paintGL () { modelview_matrix[0] = NAN; paint(); get_modelview_projection_viewport(); }
-          void updateGL () { emit window.focus_changed(); }
+          void paintGL () 
+          { 
+            if (painting) return;
+            painting = true;
+            modelview_matrix[0] = NAN; 
+            paint(); 
+            get_modelview_projection_viewport();
+            painting = false;
+          }
+
+        public slots:
+          void updateGL ();
 
         protected:
           Window& window;
@@ -149,7 +159,7 @@ namespace MR {
         private:
           Math::Quaternion orient;
           float field_of_view;
-          bool interp;
+          bool interp, painting;
           int proj;
           GLdouble modelview_matrix[16], projection_matrix[16];
           GLint viewport_matrix[4];

@@ -58,7 +58,6 @@ namespace MR {
         int height () { return (reinterpret_cast <QWidget*>(glarea)->height()); }
         const Point& focus () const { return (focal_point); }
         void set_focus (const Point& p) { focal_point = p; emit focus_changed(); }
-        bool show_focus () const { return (true); }
 
         QWidget* get_glarea () { return (reinterpret_cast <QWidget*>(glarea)); }
         

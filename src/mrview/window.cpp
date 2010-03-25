@@ -76,8 +76,7 @@ namespace MR {
 
     Window::Window() : 
       glarea (new GLArea (*this)),
-      mode (NULL),
-      focal_point (0.0, 0.0, 0.0)
+      mode (NULL)
     { 
       setWindowTitle (tr("MRView"));
       setCentralWidget (glarea);
@@ -254,7 +253,7 @@ namespace MR {
       for (size_t i = 0; i < list.size(); ++i) {
         QAction* action = new Image (*this, list.release (i));
         image_group->addAction (action);
-        if (!i) action->setChecked (true);
+        if (!i) select_image (action);
       }
       set_image_menu();
     }
@@ -290,7 +289,7 @@ namespace MR {
       if (list.size() > 1) {
         for (int n = 0; n < list.size(); ++n) {
           if (image == list[n]) {
-            list[(n+1)%list.size()]->setChecked (true);
+            select_image (list[(n+1)%list.size()]);
             break;
           }
         }
@@ -353,7 +352,7 @@ namespace MR {
       QList<QAction*> list = image_group->actions();
       for (int n = 0; n < list.size(); ++n) {
         if (action == list[n]) {
-          list[(n+1)%list.size()]->setChecked (true);
+          select_image (list[(n+1)%list.size()]);
           return;
         }
       }
@@ -368,7 +367,7 @@ namespace MR {
       QList<QAction*> list = image_group->actions();
       for (int n = 0; n < list.size(); ++n) {
         if (action == list[n]) {
-          list[(n+list.size()-1)%list.size()]->setChecked (true);
+          select_image (list[(n+list.size()-1)%list.size()]);
           return;
         }
       }
@@ -395,7 +394,11 @@ namespace MR {
 
     void Window::select_image (QAction* action)
     {
+      Image* previous = reinterpret_cast<Image*> (image_group->checkedAction());
+      if (previous) 
+        previous->disconnect (mode, SLOT (updateGL()));
       action->setChecked (true); 
+      connect (reinterpret_cast<Image*> (action), SIGNAL (updated()), mode, SLOT (updateGL()));
       glarea->updateGL();
     }
 
