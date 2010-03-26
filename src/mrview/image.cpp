@@ -122,21 +122,21 @@ namespace MR {
       else {
         // copy data:
         vox[projection] = slice;
-        for (vox[y] = 0; vox[y] < ydim; ++vox[y])
-          for (vox[x] = 0; vox[x] < xdim; ++vox[x])
-            data[vox[x]+vox[y]*xdim] = vox.value();
-
-        if (isnan (value_min) || isnan (value_max)) { // reset windowing:
-          value_min = INFINITY;
-          value_max = -INFINITY;
-          for (ssize_t i = 0; i < xdim*ydim; ++i) {
-            if (finite(data[i])) {
-              if (data[i] < value_min) value_min = data[i];
-              if (data[i] > value_max) value_max = data[i];
+        value_min = INFINITY;
+        value_max = -INFINITY;
+        for (vox[y] = 0; vox[y] < ydim; ++vox[y]) {
+          for (vox[x] = 0; vox[x] < xdim; ++vox[x]) {
+            float val = vox.value();
+            data[vox[x]+vox[y]*xdim] = val;
+            if (finite (val)) {
+              if (val < value_min) value_min = val;
+              if (val > value_max) value_max = val;
             }
           }
-          update_windowing();
         }
+
+        if (isnan (display_midpoint) || isnan (display_range))
+          reset_windowing();
       }
 
       glTexImage2D (GL_TEXTURE_2D, 0, GL_LUMINANCE32F_ARB, xdim, ydim, 0, GL_LUMINANCE, GL_FLOAT, data);

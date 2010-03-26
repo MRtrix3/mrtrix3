@@ -72,9 +72,10 @@ namespace MR {
 
       void Mode2D::paint () 
       { 
+        glClear (GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         if (!image()) return;
         if (!focus()) reset_view();
-        if (!lookat) lookat = focus();
+        if (!target()) set_target (focus());
 
         // set up modelview matrix:
         const float* Q = image()->interp.scanner2image_matrix();
@@ -105,16 +106,16 @@ namespace MR {
         }
 
         // image slice:
-        Point target (image()->interp.scanner2voxel (focus()));
-        int slice = Math::round (target[projection()]);
+        Point F (image()->interp.scanner2voxel (focus()));
+        int slice = Math::round (F[projection()]);
 
         // camera target:
-        target = image()->interp.scanner2voxel (lookat);
-        target[projection()] = slice;
-        target = image()->interp.voxel2scanner (target);
+        F = image()->interp.scanner2voxel (target());
+        F[projection()] = slice;
+        F = image()->interp.voxel2scanner (F);
 
         // info for projection:
-        int w = window.width(), h = window.height();
+        int w = glarea()->width(), h = glarea()->height();
         float fov = FOV() / (float) (w+h);
         float depth = image()->vox.dim (projection()) * image()->vox.vox (projection());
 
@@ -126,7 +127,7 @@ namespace MR {
         glMatrixMode (GL_MODELVIEW);
         glLoadIdentity ();
         glMultMatrixf (M);
-        glTranslatef (-target[0], -target[1], -target[2]);
+        glTranslatef (-F[0], -F[1], -F[2]);
 
         // set up OpenGL environment:
         glDisable (GL_BLEND);
@@ -184,12 +185,14 @@ namespace MR {
       void Mode2D::mousePressEvent (QMouseEvent* event)
       { 
         if (event->modifiers() == Qt::NoModifier) {
-          if (event->buttons() == Qt::LeftButton)
+          if (event->buttons() == Qt::LeftButton) {
             set_focus (screen_to_model (event));
+            updateGL();
+          }
           else if (event->buttons() == Qt::MidButton)
-            window.get_glarea()->setCursor (Cursor::pan_crosshair);
+            glarea()->setCursor (Cursor::pan_crosshair);
           else if (event->buttons() == Qt::RightButton)
-            window.get_glarea()->setCursor (Cursor::window);
+            glarea()->setCursor (Cursor::window);
         }
 
         grab_event (event);
@@ -207,7 +210,7 @@ namespace MR {
 
         if (lastModifiers == Qt::NoModifier) {
           if (lastButtons == Qt::MidButton) {
-            lookat -= screen_to_model_direction (distance_moved (event));
+            set_target (target() - screen_to_model_direction (distance_moved (event)));
             updateGL();
           }
 
@@ -222,10 +225,7 @@ namespace MR {
 
 
       void Mode2D::mouseDoubleClickEvent (QMouseEvent* event) { }
-      void Mode2D::mouseReleaseEvent (QMouseEvent* event) 
-      {
-        window.get_glarea()->setCursor (Cursor::crosshair);
-      }
+      void Mode2D::mouseReleaseEvent (QMouseEvent* event) { glarea()->setCursor (Cursor::crosshair); }
 
 
 
@@ -239,6 +239,7 @@ namespace MR {
 
         if (event->modifiers() == Qt::ControlModifier) {
           change_FOV_scroll (-inc);
+          updateGL();
           event->accept();
           return;
         }
@@ -252,23 +253,23 @@ namespace MR {
         Point D (0.0, 0.0, 0.0);
         D[projection()] = inc;
         Point move = image()->interp.voxel2scanner_dir (D);
-        lookat += move;
+        set_target (target() + move);
         set_focus (focus() + move);
+        updateGL();
         event->accept();
       }
 
-      void Mode2D::axial () { set_projection (2); }
-      void Mode2D::sagittal () { set_projection (0); }
-      void Mode2D::coronal () { set_projection (1); }
+      void Mode2D::axial () { set_projection (2); updateGL(); }
+      void Mode2D::sagittal () { set_projection (0); updateGL(); }
+      void Mode2D::coronal () { set_projection (1); updateGL(); }
       void Mode2D::toggle_show_focus () { show_focus = !show_focus; updateGL(); }
       void Mode2D::reset_view ()
       { 
-        Image* image = window.current_image();
-        if (!image) return;
+        if (!image()) return;
         float dim[] = {
-          image->H.dim(0) * image->H.vox(0), 
-          image->H.dim(1) * image->H.vox(1), 
-          image->H.dim(2) * image->H.vox(2)
+          image()->H.dim(0) * image()->H.vox(0), 
+          image()->H.dim(1) * image()->H.vox(1), 
+          image()->H.dim(2) * image()->H.vox(2)
         };
         if (dim[0] < dim[1] && dim[0] < dim[2])
           set_projection (0);
@@ -277,14 +278,14 @@ namespace MR {
         else 
           set_projection (2);
        
-        Point p (image->H.dim(0)/2.0, image->H.dim(1)/2.0, image->H.dim(2)/2.0);
-        set_focus (image->interp.voxel2scanner (p));
+        Point p (image()->H.dim(0)/2.0, image()->H.dim(1)/2.0, image()->H.dim(2)/2.0);
+        set_focus (image()->interp.voxel2scanner (p));
 
         int x, y;
-        image->get_axes (projection(), x, y);
+        image()->get_axes (projection(), x, y);
         set_FOV (std::max (dim[x], dim[y]));
 
-        lookat.invalidate();
+        set_target (Point::Invalid);
       }
 
 

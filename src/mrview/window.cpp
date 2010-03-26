@@ -76,7 +76,10 @@ namespace MR {
 
     Window::Window() : 
       glarea (new GLArea (*this)),
-      mode (NULL)
+      mode (NULL),
+      orient (NAN, NAN, NAN, NAN), 
+      field_of_view (100.0),
+      proj (2)
     { 
       setWindowTitle (tr("MRView"));
       setCentralWidget (glarea);
@@ -84,27 +87,25 @@ namespace MR {
       QImage icon_image (Icon::mrtrix.data, Icon::mrtrix.width, Icon::mrtrix.height, QImage::Format_ARGB32);
       setWindowIcon (QPixmap::fromImage (icon_image));
 
-      connect (this, SIGNAL (focus_changed()), glarea, SLOT (updateGL()));
-
       // File actions:
       open_action = new QAction (tr("&Open"), this);
       open_action->setShortcut (tr("Ctrl+O"));
       open_action->setStatusTip (tr("Open an existing image"));
-      connect (open_action, SIGNAL (triggered()), this, SLOT (image_open()));
+      connect (open_action, SIGNAL (triggered()), this, SLOT (image_open_slot()));
 
       save_action = new QAction(tr("&Save"), this);
       save_action->setShortcut (tr("Ctrl+S"));
       save_action->setStatusTip (tr("Save the current image"));
-      connect (save_action, SIGNAL (triggered()), this, SLOT (image_save()));
+      connect (save_action, SIGNAL (triggered()), this, SLOT (image_save_slot()));
 
       close_action = new QAction(tr("&Close"), this);
       close_action->setShortcut (tr("Ctrl+W"));
       close_action->setStatusTip (tr("Close the current image"));
-      connect (close_action, SIGNAL (triggered()), this, SLOT (image_close()));
+      connect (close_action, SIGNAL (triggered()), this, SLOT (image_close_slot()));
 
       properties_action = new QAction(tr("&Properties"), this);
       properties_action->setStatusTip (tr("Display the properties of the current image"));
-      connect (properties_action, SIGNAL (triggered()), this, SLOT (image_properties()));
+      connect (properties_action, SIGNAL (triggered()), this, SLOT (image_properties_slot()));
 
       quit_action = new QAction(tr("&Quit"), this);
       quit_action->setShortcut (tr("Ctrl+Q"));
@@ -127,7 +128,7 @@ namespace MR {
       full_screen_action->setChecked (false);
       full_screen_action->setShortcut (tr("F11"));
       full_screen_action->setStatusTip (tr("Toggle full screen mode"));
-      connect (full_screen_action, SIGNAL (triggered()), this, SLOT (full_screen()));
+      connect (full_screen_action, SIGNAL (triggered()), this, SLOT (full_screen_slot()));
 
       // View menu:
       view_menu = menuBar()->addMenu (tr("&View"));
@@ -147,7 +148,7 @@ namespace MR {
         view_menu->addAction (mode_actions[n]);
       }
       mode_actions[0]->setChecked (true);
-      connect (mode_group, SIGNAL (triggered(QAction*)), this, SLOT (select_mode(QAction*)));
+      connect (mode_group, SIGNAL (triggered(QAction*)), this, SLOT (select_mode_slot(QAction*)));
       view_menu->addSeparator();
 
       view_menu_mode_area = view_menu->addSeparator();
@@ -169,27 +170,35 @@ namespace MR {
       next_image_action = new QAction(tr("&Next image"), this);
       next_image_action->setShortcut (tr("Tab"));
       next_image_action->setStatusTip (tr("View the next image in the list"));
-      connect (next_image_action, SIGNAL (triggered()), this, SLOT (image_next()));
+      connect (next_image_action, SIGNAL (triggered()), this, SLOT (image_next_slot()));
 
       prev_image_action = new QAction(tr("&Previous image"), this);
       prev_image_action->setShortcut (tr("Shift+Tab"));
       prev_image_action->setStatusTip (tr("View the previous image in the list"));
-      connect (prev_image_action, SIGNAL (triggered()), this, SLOT (image_previous()));
+      connect (prev_image_action, SIGNAL (triggered()), this, SLOT (image_previous_slot()));
 
       reset_windowing_action = new QAction(tr("Reset &Windowing"), this);
       reset_windowing_action->setShortcut (tr("Home"));
       reset_windowing_action->setStatusTip (tr("Reset image brightness & contrast"));
-      connect (reset_windowing_action, SIGNAL (triggered()), this, SLOT (image_reset()));
+      connect (reset_windowing_action, SIGNAL (triggered()), this, SLOT (image_reset_slot()));
+
+      image_interpolate_action = new QAction(tr("&Interpolate"), this);
+      image_interpolate_action->setShortcut (tr("I"));
+      image_interpolate_action->setCheckable (true);
+      image_interpolate_action->setChecked (true);
+      image_interpolate_action->setStatusTip (tr("Toggle between nearest-neighbour and linear interpolation"));
+      connect (image_interpolate_action, SIGNAL (triggered()), this, SLOT (image_interpolate_slot()));
 
       image_group = new QActionGroup (this);
       image_group->setExclusive (true);
-      connect (image_group, SIGNAL (triggered(QAction*)), this, SLOT (select_image(QAction*)));
+      connect (image_group, SIGNAL (triggered(QAction*)), this, SLOT (image_select_slot(QAction*)));
 
       image_menu = menuBar()->addMenu (tr("&Image"));
       image_menu->addAction (next_image_action);
       image_menu->addAction (prev_image_action);
       image_menu->addSeparator();
       image_menu->addAction (reset_windowing_action);
+      image_menu->addAction (image_interpolate_action);
       image_list_area = image_menu->addSeparator();
 
 
@@ -199,15 +208,15 @@ namespace MR {
       // Help actions:
       OpenGL_action = new QAction(tr("&OpenGL Info"), this);
       OpenGL_action->setStatusTip (tr("Display OpenGL information"));
-      connect (OpenGL_action, SIGNAL (triggered()), this, SLOT (OpenGL()));
+      connect (OpenGL_action, SIGNAL (triggered()), this, SLOT (OpenGL_slot()));
 
       about_action = new QAction(tr("&About"), this);
       about_action->setStatusTip (tr("Display information about MRView"));
-      connect (about_action, SIGNAL (triggered()), this, SLOT (about()));
+      connect (about_action, SIGNAL (triggered()), this, SLOT (about_slot()));
 
       aboutQt_action = new QAction(tr("about &Qt"), this);
       aboutQt_action->setStatusTip (tr("Display information about Qt"));
-      connect (aboutQt_action, SIGNAL (triggered()), this, SLOT (aboutQt()));
+      connect (aboutQt_action, SIGNAL (triggered()), this, SLOT (aboutQt_slot()));
 
       // Help menu:
       help_menu = menuBar()->addMenu (tr("&Help"));
@@ -236,7 +245,7 @@ namespace MR {
 
 
 
-    void Window::image_open () 
+    void Window::image_open_slot () 
     { 
       Dialog::File dialog (this, "Select images to open", true, true); 
       if (dialog.exec()) {
@@ -253,14 +262,14 @@ namespace MR {
       for (size_t i = 0; i < list.size(); ++i) {
         QAction* action = new Image (*this, list.release (i));
         image_group->addAction (action);
-        if (!i) select_image (action);
+        if (!i) image_select_slot (action);
       }
       set_image_menu();
     }
 
 
 
-    void Window::image_save () 
+    void Window::image_save_slot () 
     { 
       Dialog::File dialog (this, "Select image destination", false, false); 
       if (dialog.exec()) {
@@ -281,7 +290,7 @@ namespace MR {
 
 
 
-    void Window::image_close ()
+    void Window::image_close_slot ()
     {
       Image* image = current_image();
       assert (image);
@@ -289,7 +298,7 @@ namespace MR {
       if (list.size() > 1) {
         for (int n = 0; n < list.size(); ++n) {
           if (image == list[n]) {
-            select_image (list[(n+1)%list.size()]);
+            image_select_slot (list[(n+1)%list.size()]);
             break;
           }
         }
@@ -302,7 +311,7 @@ namespace MR {
 
 
 
-    void Window::image_properties () 
+    void Window::image_properties_slot () 
     {
       assert (current_image()); 
       Dialog::ImageProperties props (this, current_image()->H);
@@ -311,7 +320,7 @@ namespace MR {
 
 
 
-    void Window::select_mode (QAction* action) 
+    void Window::select_mode_slot (QAction* action) 
     {
       delete mode;
       size_t n = 0;
@@ -320,22 +329,34 @@ namespace MR {
         ++n;
       }
       mode = Mode::create (*this, n);
+      mode->updateGL();
     }
 
 
 
 
-    void Window::image_reset ()
+    void Window::image_reset_slot ()
     { 
       Image* image = current_image();
-      if (image)
+      if (image) {
         image->reset_windowing(); 
+        mode->updateGL();
+      }
     }
 
 
 
+    void Window::image_interpolate_slot ()
+    { 
+      Image* image = current_image();
+      if (image) {
+        image->set_interpolate (image_interpolate_action->isChecked());
+        mode->updateGL();
+      }
+    }
 
-    void Window::full_screen ()
+
+    void Window::full_screen_slot ()
     { 
       if (full_screen_action->isChecked()) 
         showFullScreen();
@@ -346,13 +367,13 @@ namespace MR {
 
 
 
-    void Window::image_next () 
+    void Window::image_next_slot () 
     { 
       QAction* action = image_group->checkedAction();
       QList<QAction*> list = image_group->actions();
       for (int n = 0; n < list.size(); ++n) {
         if (action == list[n]) {
-          select_image (list[(n+1)%list.size()]);
+          image_select_slot (list[(n+1)%list.size()]);
           return;
         }
       }
@@ -361,13 +382,13 @@ namespace MR {
 
 
 
-    void Window::image_previous ()
+    void Window::image_previous_slot ()
     { 
       QAction* action = image_group->checkedAction();
       QList<QAction*> list = image_group->actions();
       for (int n = 0; n < list.size(); ++n) {
         if (action == list[n]) {
-          select_image (list[(n+list.size()-1)%list.size()]);
+          image_select_slot (list[(n+list.size()-1)%list.size()]);
           return;
         }
       }
@@ -392,18 +413,15 @@ namespace MR {
 
 
 
-    void Window::select_image (QAction* action)
+    void Window::image_select_slot (QAction* action)
     {
-      Image* previous = reinterpret_cast<Image*> (image_group->checkedAction());
-      if (previous) 
-        previous->disconnect (mode, SLOT (updateGL()));
       action->setChecked (true); 
-      connect (reinterpret_cast<Image*> (action), SIGNAL (updated()), mode, SLOT (updateGL()));
+      image_interpolate_action->setChecked (current_image()->interpolate());
       glarea->updateGL();
     }
 
 
-    void Window::OpenGL () 
+    void Window::OpenGL_slot () 
     {
       Dialog::OpenGL gl (this);
       gl.exec(); 
@@ -412,7 +430,7 @@ namespace MR {
 
 
 
-    void Window::about () { 
+    void Window::about_slot () { 
       std::string message = printf ("<h1>MRView</h1>The MRtrix viewer, version %zu.%zu.%zu<br>"
           "<em>%d bit %s version, built " __DATE__ "</em><p>"
           "Author: %s<p><em>%s</em>",
@@ -426,7 +444,11 @@ namespace MR {
 
       QMessageBox::about(this, tr("About MRView"), message.c_str());
     }
-    void Window::aboutQt () { QMessageBox::aboutQt (this); }
+
+
+
+
+    void Window::aboutQt_slot () { QMessageBox::aboutQt (this); }
 
 
 
@@ -434,10 +456,11 @@ namespace MR {
     inline void Window::paintGL () 
     {
       glDrawBuffer (GL_BACK);
-      glClear (GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-      glLoadIdentity();
       mode->paintGL(); 
 
+      // blit back buffer to front buffer.
+      // we avoid flipping to guarantee back buffer is unchanged and can be
+      // re-used for incremental updates.
       glReadBuffer (GL_BACK);
       glDrawBuffer (GL_FRONT);
 
@@ -474,7 +497,7 @@ namespace MR {
       glClearColor (0.0, 0.0, 0.0, 0.0);
       glEnable (GL_DEPTH_TEST);
 
-      select_mode (mode_actions[0]);
+      mode = Mode::create (*this, 0);
       DEBUG_OPENGL;
     }
 

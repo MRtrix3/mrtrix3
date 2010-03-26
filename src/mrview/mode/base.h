@@ -27,7 +27,6 @@
 #include <QMouseEvent>
 #include <QMenu>
 
-#include "math/quaternion.h"
 #include "mrview/window.h"
 
 namespace MR {
@@ -52,12 +51,9 @@ namespace MR {
 
           void paintGL () 
           { 
-            if (painting) return;
-            painting = true;
             modelview_matrix[0] = NAN; 
             paint(); 
             get_modelview_projection_viewport();
-            painting = false;
           }
 
         public slots:
@@ -69,8 +65,7 @@ namespace MR {
           Qt::MouseButtons lastButtons;
           Qt::KeyboardModifiers lastModifiers;
 
-          void grab_event (QMouseEvent* event)
-          {
+          void grab_event (QMouseEvent* event) {
             lastButtons = event->buttons();
             lastModifiers = event->modifiers();
             lastPos = event->pos();
@@ -88,13 +83,9 @@ namespace MR {
             return (d);
           }
 
-          void add_action (QAction* action)
-          {
-            window.view_menu->insertAction (window.view_menu_mode_area, action);
-          }
+          void add_action (QAction* action) { window.view_menu->insertAction (window.view_menu_mode_area, action); }
 
-          Point model_to_screen (const Point& pos)
-          {
+          Point model_to_screen (const Point& pos) {
             double wx, wy, wz;
             get_modelview_projection_viewport();
             gluProject (pos[0], pos[1], pos[2], modelview_matrix, 
@@ -102,8 +93,7 @@ namespace MR {
             return (Point (wx, wy, wz));
           }
 
-          Point screen_to_model (const Point& pos)
-          {
+          Point screen_to_model (const Point& pos) {
             double wx, wy, wz;
             get_modelview_projection_viewport();
             gluUnProject (pos[0], height()-pos[1], pos[2], modelview_matrix, 
@@ -111,61 +101,43 @@ namespace MR {
             return (Point (wx, wy, wz));
           }
 
-          Point screen_to_model (const QPoint& pos)
-          {
+          Point screen_to_model (const QPoint& pos) {
             Point f (model_to_screen (focus()));
             f[0] = pos.x();
             f[1] = pos.y();
             return (screen_to_model (f));
           }
 
-          Point screen_to_model (const QMouseEvent* event)
-          {
-            return (screen_to_model (event->pos()));
-          }
+          Point screen_to_model (const QMouseEvent* event) { return (screen_to_model (event->pos())); } 
+          Point screen_to_model (const QWheelEvent* event) { return (screen_to_model (event->pos())); } 
 
-          Point screen_to_model (const QWheelEvent* event)
-          {
-            return (screen_to_model (event->pos()));
-          }
-
-          Point screen_to_model_direction (const Point& pos)
-          {
-            return (screen_to_model (pos) - screen_to_model (Point (0.0, 0.0, 0.0)));
-          }
-
-          Point screen_to_model_direction (const QPoint& pos)
-          {
-            return (screen_to_model (pos) - screen_to_model (Point (0.0, 0.0, 0.0)));
-          }
+          Point screen_to_model_direction (const Point& pos) { return (screen_to_model (pos) - screen_to_model (Point (0.0, 0.0, 0.0))); } 
+          Point screen_to_model_direction (const QPoint& pos) { return (screen_to_model (pos) - screen_to_model (Point (0.0, 0.0, 0.0))); }
 
           Image* image () { return (window.current_image()); }
 
-          const Math::Quaternion& orientation () const { return (orient); }
-          float FOV () const { return (field_of_view); }
-          bool interpolate () const { return (interp); }
-          const Point& focus () const { return (window.focus()); }
-          int projection () const { return (proj); }
+          const Math::Quaternion& orientation () const { return (window.orient); }
+          float FOV () const { return (window.field_of_view); }
+          const Point& focus () const { return (window.focal_point); }
+          const Point& target () const { return (window.camera_target); }
+          int projection () const { return (window.proj); }
 
-          void set_focus (const Point& p) { window.set_focus (p); }
-          void set_projection (int p) { proj = p; updateGL(); }
-          void set_FOV (float value) { field_of_view = value; updateGL(); }
-          void change_FOV_fine (float factor) { field_of_view *= Math::exp (0.01*factor); updateGL(); }
+          void set_focus (const Point& p) { window.focal_point = p; }
+          void set_target (const Point& p) { window.camera_target = p; }
+          void set_projection (int p) { window.proj = p; }
+          void set_FOV (float value) { window.field_of_view = value; }
+          void change_FOV_fine (float factor) { window.field_of_view *= Math::exp (0.01*factor); }
           void change_FOV_scroll (float factor) { change_FOV_fine (10.0 * factor); }
 
           int width () { get_modelview_projection_viewport(); return (viewport_matrix[2]); }
           int height () { get_modelview_projection_viewport(); return (viewport_matrix[3]); }
+          QWidget* glarea () const { return (reinterpret_cast <QWidget*>(window.glarea)); }
 
         private:
-          Math::Quaternion orient;
-          float field_of_view;
-          bool interp, painting;
-          int proj;
           GLdouble modelview_matrix[16], projection_matrix[16];
           GLint viewport_matrix[4];
 
-          void get_modelview_projection_viewport () 
-          {
+          void get_modelview_projection_viewport () {
             if (isnan (modelview_matrix[0])) {
               glGetIntegerv (GL_VIEWPORT, viewport_matrix); 
               glGetDoublev (GL_MODELVIEW_MATRIX, modelview_matrix);

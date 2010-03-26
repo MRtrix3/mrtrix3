@@ -29,16 +29,11 @@ namespace MR {
     namespace Mode {
 
       Base::Base (Window& parent) : 
-        window (parent),
-        orient(NAN, NAN, NAN, NAN), 
-        field_of_view (100.0),
-        interp (true),
-        painting (false),
-        proj (2) { }
+        window (parent) { }
       Base::~Base () { }
 
       void Base::paint () { }
-      void Base::updateGL () { emit window.focus_changed(); }
+      void Base::updateGL () { reinterpret_cast<QGLWidget*> (window.glarea)->updateGL(); }
 
       void Base::mousePressEvent (QMouseEvent *event) { }
       void Base::mouseMoveEvent (QMouseEvent *event) { }

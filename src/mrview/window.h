@@ -31,6 +31,7 @@
 
 #include "ptr.h"
 #include "cursor.h"
+#include "math/quaternion.h"
 #include "mrview/image.h"
 
 class QMenu;
@@ -52,50 +53,42 @@ namespace MR {
         ~Window();
 
         void add_images (VecPtr<MR::Image::Header>& list);
-        Image* current_image () { return (static_cast<Image*> (image_group->checkedAction())); }
-
-        int width () { return (reinterpret_cast <QWidget*>(glarea)->width()); }
-        int height () { return (reinterpret_cast <QWidget*>(glarea)->height()); }
-        const Point& focus () const { return (focal_point); }
-        void set_focus (const Point& p) { focal_point = p; emit focus_changed(); }
-
-        QWidget* get_glarea () { return (reinterpret_cast <QWidget*>(glarea)); }
-        
-
-      signals:
-        void focus_changed ();
 
       private slots:
-        void image_open ();
-        void image_save ();
-        void image_close ();
-        void image_properties ();
+        void image_open_slot ();
+        void image_save_slot ();
+        void image_close_slot ();
+        void image_properties_slot ();
 
-        void select_mode (QAction* action);
-        void image_reset ();
-        void full_screen ();
+        void select_mode_slot (QAction* action);
+        void full_screen_slot ();
 
-        void image_next ();
-        void image_previous ();
-        void select_image (QAction* action);
+        void image_next_slot ();
+        void image_previous_slot ();
+        void image_reset_slot ();
+        void image_interpolate_slot ();
+        void image_select_slot (QAction* action);
 
-        void OpenGL ();
-        void about ();
-        void aboutQt ();
+        void OpenGL_slot ();
+        void about_slot ();
+        void aboutQt_slot ();
 
       private:
         Cursor cursors_do_not_use;
-
 
         class GLArea;
 
         GLArea *glarea;
         Mode::Base* mode;
-        Point focal_point;
+
+        Point focal_point, camera_target;
+        Math::Quaternion orient;
+        float field_of_view;
+        int proj;
 
         QMenu *file_menu, *view_menu, *tool_menu, *image_menu, *help_menu;
         QAction *open_action, *save_action, *close_action, *properties_action, *quit_action;
-        QAction *view_menu_mode_area, *reset_windowing_action, *full_screen_action;
+        QAction *view_menu_mode_area, *reset_windowing_action, *image_interpolate_action, *full_screen_action;
         QAction **mode_actions;
         QAction *next_image_action, *prev_image_action, *image_list_area;
         QAction *OpenGL_action, *about_action, *aboutQt_action;
@@ -111,6 +104,7 @@ namespace MR {
         void wheelEventGL (QWheelEvent* event);
 
         void set_image_menu ();
+        Image* current_image () { return (static_cast<Image*> (image_group->checkedAction())); }
 
         friend class Image;
         friend class Mode::Base;

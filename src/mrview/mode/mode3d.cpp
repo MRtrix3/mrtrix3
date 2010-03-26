@@ -29,7 +29,9 @@ namespace MR {
       Mode3D::Mode3D (Window& parent) : Base (parent) { }
       Mode3D::~Mode3D () { }
 
-      void Mode3D::paint () { }
+      void Mode3D::paint () { 
+        glClear (GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+      }
 
       void Mode3D::mousePressEvent (QMouseEvent* event) { }
       void Mode3D::mouseMoveEvent (QMouseEvent* event) { }

@@ -45,13 +45,17 @@ namespace MR {
         Image (Window& parent, const MR::Image::Header* header);
         ~Image ();
 
-        void reset_windowing () { update_windowing(); emit updated(); }
+        void reset_windowing () { 
+          display_range = value_max - value_min;
+          display_midpoint = 0.5 * (value_min + value_max);
+        }
         void adjust_windowing (float brightness, float contrast) 
         {
-          display_midpoint -= 0.001 * display_range * brightness;
+          display_midpoint -= 0.0005f * display_range * brightness;
           display_range *= Math::exp (0.002f * contrast);
-          emit updated();
         }
+        void set_interpolate (bool linear) { interpolation = linear ? GL_LINEAR : GL_NEAREST; }
+        bool interpolate () const { return (interpolation == GL_LINEAR); }
 
         void render2D (int projection, int slice);
         void get_axes (int projection, int& x, int& y) { 
@@ -65,9 +69,6 @@ namespace MR {
         const MR::Image::Header& H;
         MR::Image::Voxel<float> vox;
         MR::DataSet::Interp::Linear<MR::Image::Voxel<float> > interp;
-
-      signals:
-        void updated ();
 
       private:
         Window& window;
@@ -84,10 +85,6 @@ namespace MR {
 
         void update_texture2D (int projection, int slice);
         void update_shaders ();
-        void update_windowing () {
-          display_range = value_max - value_min;
-          display_midpoint = 0.5 * (value_min + value_max);
-        }
 
         friend class Window;
     };
