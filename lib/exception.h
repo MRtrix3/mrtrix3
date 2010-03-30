@@ -52,6 +52,9 @@ namespace MR {
         }
       }
 
+      size_t num () const { return (description.size()); }
+      const std::string& operator[] (size_t n) const { return (description[n]); }
+
     private:
       std::vector<std::string> description;
   };
