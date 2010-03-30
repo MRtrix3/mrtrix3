@@ -23,6 +23,9 @@
 #include <QApplication>
 
 #include "app.h"
+#include "progressbar.h"
+#include "dialog/progress.h"
+#include "dialog/report_exception.h"
 #include "mrview/window.h"
 
 using namespace MR; 
@@ -47,7 +50,12 @@ OPTIONS = { Option::End };
 class MyApp : public MR::App { 
   public: 
     MyApp (int argc, char** argv) : App (argc, argv, __command_description, __command_arguments, __command_options, 
-        __command_version, __command_author, __command_copyright), qapp (argc, argv) { parse_arguments(); }
+        __command_version, __command_author, __command_copyright), qapp (argc, argv) { 
+      ProgressBar::init_func = Dialog::ProgressBar::init;
+      ProgressBar::display_func = Dialog::ProgressBar::display;
+      ProgressBar::done_func = Dialog::ProgressBar::done;
+      parse_arguments(); 
+    }
 
     void execute () { 
       Viewer::Window window;
@@ -59,8 +67,7 @@ class MyApp : public MR::App {
             list.push_back (new Image::Header (Image::Header::open (argument[n].get_string())));
           }
           catch (Exception& e) {
-            error (std::string ("error opening image \"") + argument[n].get_string() + "\":");
-            e.display();
+            Dialog::report_exception (e, &window);
           }
         }
         if (list.size())

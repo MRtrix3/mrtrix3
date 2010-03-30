@@ -32,6 +32,7 @@
 #include "app.h"
 #include "icons.h"
 #include "dialog/file.h"
+#include "dialog/report_exception.h"
 #include "dialog/opengl.h"
 #include "dialog/image_properties.h"
 #include "mrview/window.h"
@@ -282,7 +283,7 @@ namespace MR {
           DataSet::copy_with_progress (dest, current_image()->vox);
         }
         catch (Exception& E) {
-          E.display();
+          Dialog::report_exception (E, this);
         }
       }
     }

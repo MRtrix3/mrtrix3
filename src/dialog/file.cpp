@@ -31,6 +31,7 @@
 #include <QSortFilterProxyModel>
 
 #include "dialog/file.h"
+#include "dialog/report_exception.h"
 #include "image/format/list.h"
 #include "file/path.h"
 #include "file/dicom/quick_scan.h"
@@ -441,16 +442,20 @@ namespace MR {
       QModelIndexList indexes = files_view->selectionModel()->selectedIndexes();
       QModelIndex index;
       foreach (index, indexes) {
-        if (files->is_file (index.row())) {
-          images.push_back (new Image::Header (Image::Header::open (Path::join (cwd, files->name (index.row())))));
+        try {
+          if (files->is_file (index.row())) {
+            Image::Header* H = new Image::Header (Image::Header::open (Path::join (cwd, files->name (index.row()))));
+            images.push_back (H);
+          }
+          else {
+            std::vector< RefPtr<MR::File::Dicom::Series> > series;
+            series.push_back (RefPtr<MR::File::Dicom::Series> (files->get_dicom_series (index.row())));
+            Image::Header* H = new Image::Header;
+            dicom_to_mapper (*H, series);
+            images.push_back (H);
+          }
         }
-        else {
-          std::vector< RefPtr<MR::File::Dicom::Series> > series;
-          series.push_back (RefPtr<MR::File::Dicom::Series> (files->get_dicom_series (index.row())));
-          Image::Header* H = new Image::Header;
-          dicom_to_mapper (*H, series);
-          images.push_back (H);
-        }
+        catch (Exception& E) { report_exception (E, this); }
       }
     }
 
