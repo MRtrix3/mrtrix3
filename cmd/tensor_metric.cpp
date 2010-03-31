@@ -70,17 +70,43 @@ OPTIONS = {
 };
 
 
-EXECUTE {
-  Image::Voxel dt (*argument[0].get_image());
-  Image::Header header (dt.image);
+class ImagePair
+{
+  public:
+    ImagePair (const Image::Header& header) : H (header), vox (H) { }
+    Image::Header H;
+    Image::Voxel<float> vox;
+};
 
-  if (header.axes.size() != 4) 
+inline void set_zero (size_t axis, Ptr<ImagePair>& i0, Ptr<ImagePair>& i1, Ptr<ImagePair>& i2, Ptr<ImagePair>& i3, Ptr<ImagePair>& i4)
+{
+  if (i0) i0->vox[axis] = 0; 
+  if (i1) i1->vox[axis] = 0; 
+  if (i2) i2->vox[axis] = 0; 
+  if (i3) i3->vox[axis] = 0; 
+  if (i4) i4->vox[axis] = 0; 
+}
+
+inline void increment (size_t axis, Ptr<ImagePair>& i0, Ptr<ImagePair>& i1, Ptr<ImagePair>& i2, Ptr<ImagePair>& i3, Ptr<ImagePair>& i4)
+{
+  if (i0) ++i0->vox[axis]; 
+  if (i1) ++i1->vox[axis]; 
+  if (i2) ++i2->vox[axis]; 
+  if (i3) ++i3->vox[axis]; 
+  if (i4) ++i4->vox[axis]; 
+}
+
+EXECUTE {
+  Image::Header header (argument[0].get_image());
+  Image::Voxel<float> dt (header);
+
+  if (header.ndim() != 4) 
     throw Exception ("base image should contain 4 dimensions");
 
-  if (header.axes[3].dim != 6) 
-    throw Exception ("expecting dimension 3 of image \"" + header.name + "\" to be 6");
+  if (header.dim(3) != 6) 
+    throw Exception ("expecting dimension 3 of image \"" + header.name() + "\" to be 6");
 
-  header.data_type = DataType::Float32;
+  header.datatype() = DataType::Float32;
   std::vector<OptBase> opt;
 
   std::vector<int> vals(1);
@@ -93,31 +119,31 @@ EXECUTE {
       if (vals[i] < 1 || vals[i] > 3) throw Exception ("eigenvalue/eigenvector number is out of bounds");
   }
 
-  RefPtr<Image::Voxel> adc, fa, eval, evec, mask;
+  Ptr<ImagePair> adc, fa, eval, evec, mask;
 
   opt = get_options (3); // vector
   if (opt.size()) {
-    header.axes[3].dim = 3*vals.size();
-    evec = new Image::Voxel (*opt[0][0].get_image (header));
+    header.axes.dim(3) = 3*vals.size();
+    evec = new ImagePair (opt[0][0].get_image (header));
   }
 
   opt = get_options (4); // value
   if (opt.size()) {
-    header.axes[3].dim = vals.size();
-    eval = new Image::Voxel (*opt[0][0].get_image (header));
+    header.axes.dim(3) = vals.size();
+    eval = new ImagePair (opt[0][0].get_image (header));
   }
 
-  header.axes.resize (3);
+  header.axes.ndim() = 3;
   opt = get_options (0); // adc
-  if (opt.size()) adc = new Image::Voxel (*opt[0][0].get_image (header));
+  if (opt.size()) adc = new ImagePair (opt[0][0].get_image (header));
 
   opt = get_options (1); // FA
-  if (opt.size()) fa = new Image::Voxel (*opt[0][0].get_image (header));
+  if (opt.size()) fa = new ImagePair (opt[0][0].get_image (header));
 
   opt = get_options (5); // mask
   if (opt.size()) {
-    mask = new Image::Voxel (*opt[0][0].get_image ());
-    if (mask->dim(0) != dt.dim(0) || mask->dim(1) != dt.dim(1) || mask->dim(2) != dt.dim(2)) 
+    mask = new ImagePair (opt[0][0].get_image ());
+    if (mask->H.dim(0) != dt.dim(0) || mask->H.dim(1) != dt.dim(1) || mask->H.dim(2) != dt.dim(2)) 
       throw Exception ("dimensions of mask image do not match that of tensor image - aborting");
   }
 
@@ -142,33 +168,27 @@ EXECUTE {
   if (evec) eigv = new Math::Eigen::SymmV<double> (3);
   else eig = new Math::Eigen::Symm<double> (3);
 
-  ProgressBar::init (dt.dim(0)*dt.dim(1)*dt.dim(2), "computing tensor metrics...");
+  ProgressBar::init (DataSet::voxel_count (dt, 0, 3), "computing tensor metrics...");
 
   for (dt[2] = 0; dt[2] < dt.dim(2); dt[2]++) {
-    if (mask) (*mask)[1] = 0; 
-    if (fa) (*fa)[1] = 0; 
-    if (adc) (*adc)[1] = 0; 
-    if (eval) (*eval)[1] = 0; 
-    if (evec) (*evec)[1] = 0;
+    set_zero (1, mask, fa, adc, eval, evec);
+
     for (dt[1] = 0; dt[1] < dt.dim(1); dt[1]++) {
-      if (mask) (*mask)[0] = 0; 
-      if (fa) (*fa)[0] = 0; 
-      if (adc) (*adc)[0] = 0; 
-      if (eval) (*eval)[0] = 0; 
-      if (evec) (*evec)[0] = 0;
+      set_zero (0, mask, fa, adc, eval, evec);
+
       for (dt[0] = 0; dt[0] < dt.dim(0); dt[0]++) {
 
         bool skip = false;
-        if (mask) if (mask->value() < 0.5) skip = true;
+        if (mask) if (mask->vox.value() < 0.5) skip = true;
 
         if (!skip) {
 
           for (dt[3] = 0; dt[3] < dt.dim(3); dt[3]++) 
             el[dt[3]] = dt.value();
 
-          if (adc) adc->value() = DWI::tensor2ADC (el);
+          if (adc) adc->vox.value() = DWI::tensor2ADC (el);
           if (fa || modulate == 1) faval = DWI::tensor2FA (el);
-          if (fa) fa->value() = faval;
+          if (fa) fa->vox.value() = faval;
 
           if (eval || evec) {
             M(0,0) = el[0];
@@ -182,12 +202,12 @@ EXECUTE {
               (*eigv) (ev, M, V);
               Math::Eigen::sort (ev, V);
               if (modulate == 0) faval = 1.0;
-              (*evec)[3] = 0;
+              evec->vox[3] = 0;
               for (size_t i = 0; i < vals.size(); i++) {
                 if (modulate == 2) faval = ev[vals[i]];
-                evec->value() = faval*V(0,vals[i]); (*evec)[3]++;
-                evec->value() = faval*V(1,vals[i]); (*evec)[3]++;
-                evec->value() = faval*V(2,vals[i]); (*evec)[3]++;
+                evec->vox.value() = faval*V(0,vals[i]); ++evec->vox[3];
+                evec->vox.value() = faval*V(1,vals[i]); ++evec->vox[3];
+                evec->vox.value() = faval*V(2,vals[i]); ++evec->vox[3];
               }
             }
             else {
@@ -196,31 +216,18 @@ EXECUTE {
             }
 
             if (eval) {
-              for ((*eval)[3] = 0; (*eval)[3] < (int) vals.size(); (*eval)[3]++)
-                eval->value() = ev[vals[(*eval)[3]]]; 
+              for (eval->vox[3] = 0; eval->vox[3] < (int) vals.size(); ++eval->vox[3])
+                eval->vox.value() = ev[vals[eval->vox[3]]]; 
             }
           }
         }
 
         ProgressBar::inc();
-
-        if (mask) (*mask)[0]++;
-        if (fa) (*fa)[0]++;
-        if (adc) (*adc)[0]++;
-        if (eval) (*eval)[0]++;
-        if (evec) (*evec)[0]++;
+        increment (0, mask, fa, adc, eval, evec);
       }
-      if (mask) (*mask)[1]++;
-      if (fa) (*fa)[1]++;
-      if (adc) (*adc)[1]++;
-      if (eval) (*eval)[1]++;
-      if (evec) (*evec)[1]++;
+      increment (1, mask, fa, adc, eval, evec);
     }
-    if (mask) (*mask)[2]++;
-    if (fa) (*fa)[2]++;
-    if (adc) (*adc)[2]++;
-    if (eval) (*eval)[2]++;
-    if (evec) (*evec)[2]++;
+    increment (2, mask, fa, adc, eval, evec);
   }
 
   ProgressBar::done();
