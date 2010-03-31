@@ -76,7 +76,7 @@ ZLIB_LDFLAGS    Any flags required to link with the zlib compression library.
 CBLAS_LDFLAGS   Any flags required to link with an alternate cblas library.
 
 PATH            Set the path to use during the configure process.
-                This may be useful to set the path to GTK pkg-config.
+                This may be useful to set the path to Qt4's qmake.
                 For example:
                 $ PATH=/usr/local/bin:$PATH ./configure
 
