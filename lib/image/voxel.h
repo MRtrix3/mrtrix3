@@ -40,13 +40,13 @@ namespace MR {
     //! \cond skip
 
     namespace {
-      template <typename value_type, typename S> value_type __get   (const void* data, size_t i) { return (MR::get<S> (data, i)); }
-      template <typename value_type, typename S> value_type __getLE (const void* data, size_t i) { return (MR::getLE<S> (data, i)); }
-      template <typename value_type, typename S> value_type __getBE (const void* data, size_t i) { return (MR::getBE<S> (data, i)); }
+      template <typename value_type, typename S> value_type __get   (const void* data, size_t i) { return (value_type (MR::get<S> (data, i))); }
+      template <typename value_type, typename S> value_type __getLE (const void* data, size_t i) { return (value_type (MR::getLE<S> (data, i))); }
+      template <typename value_type, typename S> value_type __getBE (const void* data, size_t i) { return (value_type (MR::getBE<S> (data, i))); }
 
-      template <typename value_type, typename S> void __put   (value_type val, void* data, size_t i) { return (MR::put<S> (val, data, i)); }
-      template <typename value_type, typename S> void __putLE (value_type val, void* data, size_t i) { return (MR::putLE<S> (val, data, i)); }
-      template <typename value_type, typename S> void __putBE (value_type val, void* data, size_t i) { return (MR::putBE<S> (val, data, i)); }
+      template <typename value_type, typename S> void __put   (value_type val, void* data, size_t i) { return (MR::put<S> (S(val), data, i)); }
+      template <typename value_type, typename S> void __putLE (value_type val, void* data, size_t i) { return (MR::putLE<S> (S(val), data, i)); }
+      template <typename value_type, typename S> void __putBE (value_type val, void* data, size_t i) { return (MR::putBE<S> (S(val), data, i)); }
 
       // specialisation for conversion to bool
       template <> bool __getLE<bool,float> (const void* data, size_t i) { return (Math::round(MR::getLE<float> (data, i))); }

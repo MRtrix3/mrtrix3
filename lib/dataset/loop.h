@@ -62,7 +62,7 @@ namespace MR {
      * all voxels, whereas the second one would only process the first 3D
      * volume.
      *
-     * \section multiloop Looping over multiple DataSets:
+     * \section multiloop Looping over multiple DataSets
      * It is often required to loop over more than one DataSet of the same
      * dimensions. This is done trivially by passing any additional DataSets to
      * be looped over to both the start() and next() member functions. For
@@ -82,7 +82,7 @@ namespace MR {
      * Loop outer (3); // outer loop iterates over axes 3 and above
      * for (outer.start (vox); outer.ok(); outer.next (vox)) {
      *   float sum = 0.0;
-     *   Loop inner (0, 3); // inner loop iterates over axes 0 to 3
+     *   Loop inner (0, 3); // inner loop iterates over axes 0 to 2
      *   for (inner.start (vox); inner.ok(); inner.next (vox))
      *     sum += vox.value();
      *   print ("total = " + str (sum) + "\n");
@@ -117,7 +117,9 @@ namespace MR {
         //! Constructor
         /*! Construct a Loop object to iterate over the axes specified. By
          * default, the Loop will iterate over all axes of the first DataSet
-         * supplied to next(). */
+         * supplied to next(). If \a from_axis and \a to_axis are specified,
+         * the Loop will iterate from axis \a from_axis up to but \b not
+         * including axis \a to_axis. */
         Loop (size_t from_axis = 0, size_t to_axis = SIZE_MAX) : 
           from_ (from_axis), to_ (to_axis), cont_ (true), progress_ (false) { }
 
@@ -125,7 +127,9 @@ namespace MR {
         /*! Construct a Loop object to iterate over the axes specified and
          * display the progress status with the specified message. By default,
          * the Loop will iterate over all axes of the first DataSet supplied to
-         * next(). */
+         * next(). If \a from_axis and \a to_axis are specified, the Loop will
+         * iterate from axis \a from_axis up to but \b not including axis \a
+         * to_axis. */
         Loop (const std::string& message, size_t from_axis = 0, size_t to_axis = SIZE_MAX) :
           from_ (from_axis), to_ (to_axis), cont_ (true), progress_ (true), progress_message_ (message) { }
 
@@ -313,7 +317,7 @@ namespace MR {
      * Loop outer (3); // outer loop iterates over axes 3 and above
      * for (outer.start (vox); outer.ok(); outer.next (vox)) {
      *   float sum = 0.0;
-     *   LoopInOrder inner (vox, 0, 3); // inner loop iterates over axes 0 to 3
+     *   LoopInOrder inner (vox, 0, 3); // inner loop iterates over axes 0 to 2
      *   for (inner.start (vox); inner.ok(); inner.next (vox))
      *     sum += vox.value();
      *   print ("total = " + str (sum) + "\n");
@@ -391,7 +395,8 @@ namespace MR {
         /*! Construct a LoopInOrder object to iterate over the axes of \a set
          * in order of smallest stride first. If supplied, the optional
          * arguments \a from_axis and \a to_axis can be used to restrict those
-         * axes that will be looped over. */
+         * axes that will be looped over: the Loop will then iterate from axis
+         * \a from_axis up to but \b not including axis \a to_axis. */
         template <class Set>
           LoopInOrder (const Set& set, size_t from_axis = 0, size_t to_axis = SIZE_MAX) : 
             axes_ (Stride::order (set, from_axis, to_axis)), cont_ (true), progress_ (false) { }
@@ -401,7 +406,8 @@ namespace MR {
          * in order of smallest stride first, and display the progress status
          * with the specified message. If supplied, the optional arguments \a
          * from_axis and \a to_axis can be used to restrict those axes that
-         * will be looped over. */
+         * will be looped over: the Loop will then iterate from axis \a
+         * from_axis up to but \b not including axis \a to_axis. */
         template <class Set>
           LoopInOrder (const Set& set, const std::string& message, size_t from_axis = 0, size_t to_axis = SIZE_MAX) :
             axes_ (Stride::order (set, from_axis, to_axis)), cont_ (true), progress_ (true), progress_message_ (message) { }
