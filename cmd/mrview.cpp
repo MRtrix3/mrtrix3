@@ -26,6 +26,7 @@
 #include "progressbar.h"
 #include "dialog/progress.h"
 #include "dialog/report_exception.h"
+#include "dialog/dicom.h"
 #include "mrview/window.h"
 
 using namespace MR; 
@@ -54,6 +55,7 @@ class MyApp : public MR::App {
       ProgressBar::init_func = Dialog::ProgressBar::init;
       ProgressBar::display_func = Dialog::ProgressBar::display;
       ProgressBar::done_func = Dialog::ProgressBar::done;
+      MR::File::Dicom::select_func = Dialog::select_dicom;
       parse_arguments(); 
     }
 
