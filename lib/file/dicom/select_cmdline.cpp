@@ -18,10 +18,6 @@
     You should have received a copy of the GNU General Public License
     along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
 
-
-    18-12-2008 J-Donald Tournier <d.tournier@brain.org.au>
-    * change numbering of series to handle cases where the series number is not set
-
 */
 
 #include "file/dicom/image.h"

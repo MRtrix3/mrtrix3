@@ -58,16 +58,6 @@ namespace MR {
 
       extern std::vector< RefPtr<Series> > (*select_func) (const Tree& tree);
 
-
-
-
-
-
-
-
-
-
-
     }
   }
 }
