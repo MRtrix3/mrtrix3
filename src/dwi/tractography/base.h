@@ -89,7 +89,9 @@ namespace MR {
 
             class Sphere {
               public:
-                Sphere (const Point& position, float radius) : p (position), r (radius), r2 (Math::pow2 (r)), volume (4.0*M_PI*Math::pow3 (r)/3.0), included (false) { }
+                Sphere (const Point& position, float radius) : 
+                  p (position), r (radius), r2 (Math::pow2 (r)), volume (4.0*M_PI*Math::pow3 (r)/3.0), included (false) { }
+
                 Point p;
                 float r, r2, volume;
                 bool included;
@@ -104,19 +106,25 @@ namespace MR {
 
             class Mask {
               public:
-                Mask (Image::Object& image) : i (image), lower (i.dim(0), i.dim(1), i.dim(2)), upper (0.0, 0.0, 0.0), volume (0.0), included (false) { get_bounds(); }
+                Mask (Image::Object& image) : 
+                  i (image), lower (i.dim(0), i.dim(1), i.dim(2)), upper (0.0, 0.0, 0.0), volume (0.0), included (false) 
+              { get_bounds(); }
 
                 Image::Interp i;
                 Point lower, upper;
                 float volume;
                 bool included;
 
-                bool contains (const Point& pt) { 
+                bool contains (const Point& pt) 
+                { 
                   Point y (i.R2P (pt));
                   if (y[0] < lower[0] || y[0] >= upper[0] || y[1] < lower[1] || y[1] >= upper[1] || y[2] < lower[2] || y[2] >= upper[2]) return (false);
                   i.P (y);
                   return (i.value() >= 0.5);
                 }
+
+
+
                 Point seed (Math::RNG& rng) 
                 { 
                   Point p;
@@ -130,7 +138,7 @@ namespace MR {
               private:
                 void get_bounds ()
                 {
-                  uint count = 0;
+                  size_t count = 0;
                   for (i.set(2,0); i[2] < i.dim(2); i.inc(2)) {
                     for (i.set(1,0); i[1] < i.dim(1); i.inc(1)) {
                       for (i.set(0,0); i[0] < i.dim(0); i.inc(0)) {

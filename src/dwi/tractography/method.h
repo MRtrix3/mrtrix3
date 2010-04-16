@@ -48,7 +48,8 @@ namespace MR {
           Point pos, dir;
           float* values;
 
-          bool get_data (const Point& position) {
+          bool get_data (const Point& position) 
+          {
             interp.scanner (position); 
             if (!interp) return (false);
             for (source[3] = 0; source[3] < source.dim(3); ++source[3]) 

@@ -29,7 +29,8 @@ namespace MR {
       size_t MethodBase::rng_seed;
 
 
-      Point MethodBase::random_direction (const Point& d, float max_angle, float sin_max_angle) {
+      Point MethodBase::random_direction (const Point& d, float max_angle, float sin_max_angle) 
+      {
         using namespace Math;
 
         float phi = 2.0 * M_PI * rng.uniform();

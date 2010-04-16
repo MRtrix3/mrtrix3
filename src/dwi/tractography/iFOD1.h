@@ -40,15 +40,16 @@ namespace MR {
                 SharedBase (source, property_set),
                 lmax (Math::SH::LforN (source.dim(3))), 
                 max_trials (100),
-                sin_max_angle (sin (max_angle)) {
-                  properties["method"] = "iFOD1";
-                  properties.set (lmax, "lmax");
-                  properties.set (max_trials, "max_trials");
-                  bool precomputed = true;
-                  properties.set (precomputed, "sh_precomputed");
-                  if (precomputed) precomputer.init (lmax);
-                  info ("minimum radius of curvature = " + str(step_size / ( 2.0 * sin (max_angle / 2.0))) + " mm");
-                }
+                sin_max_angle (sin (max_angle)) 
+            {
+              properties["method"] = "iFOD1";
+              properties.set (lmax, "lmax");
+              properties.set (max_trials, "max_trials");
+              bool precomputed = true;
+              properties.set (precomputed, "sh_precomputed");
+              if (precomputed) precomputer.init (lmax);
+              info ("minimum radius of curvature = " + str(step_size / ( 2.0 * sin (max_angle / 2.0))) + " mm");
+            }
 
               size_t lmax, max_trials;
               float sin_max_angle;
@@ -57,7 +58,8 @@ namespace MR {
 
           iFOD1 (const Shared& shared) : MethodBase (shared.source), S (shared) { } 
 
-          bool init () { 
+          bool init () 
+          { 
             if (!get_data ()) return (false);
 
             if (!S.init_dir) {
@@ -87,7 +89,8 @@ namespace MR {
             return (false);
           }   
 
-          bool next () {
+          bool next () 
+          {
             if (!get_data ()) return (false);
 
             float max_val_actual = 0.0;

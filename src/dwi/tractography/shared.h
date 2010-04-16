@@ -41,40 +41,41 @@ namespace MR {
             max_angle (45.0),
             step_size (0.1),
             threshold (0.1), 
-            unidirectional (false) {
-              float max_dist = 200.0;
-              float min_dist = 10.0;
+            unidirectional (false) 
+        {
+          float max_dist = 200.0;
+          float min_dist = 10.0;
 
-              properties["source"] = source.name();
+          properties["source"] = source.name();
 
-              properties.set (step_size, "step_size");
-              properties.set (threshold, "threshold");
-              properties.set (max_angle, "max_angle");
-              properties.set (unidirectional, "unidirectional");
-              properties.set (max_num_tracks, "max_num_tracks");
-              properties.set (max_dist, "max_dist");
-              properties.set (min_dist, "min_dist");
+          properties.set (step_size, "step_size");
+          properties.set (threshold, "threshold");
+          properties.set (max_angle, "max_angle");
+          properties.set (unidirectional, "unidirectional");
+          properties.set (max_num_tracks, "max_num_tracks");
+          properties.set (max_dist, "max_dist");
+          properties.set (min_dist, "min_dist");
 
-              init_threshold = 2.0*threshold;
-              properties.set (init_threshold, "init_threshold");
+          init_threshold = 2.0*threshold;
+          properties.set (init_threshold, "init_threshold");
 
-              max_num_attempts = 100 * max_num_tracks;
-              properties.set (max_num_attempts, "max_num_attempts");
+          max_num_attempts = 100 * max_num_tracks;
+          properties.set (max_num_attempts, "max_num_attempts");
 
-              if (properties["init_direction"].size()) {
-                std::vector<float> V = parse_floats (properties["init_direction"]);
-                if (V.size() != 3) throw Exception (std::string ("invalid initial direction \"") + properties["init_direction"] + "\"");
-                init_dir[0] = V[0];
-                init_dir[1] = V[1];
-                init_dir[2] = V[2];
-                init_dir.normalise();
-              }
+          if (properties["init_direction"].size()) {
+            std::vector<float> V = parse_floats (properties["init_direction"]);
+            if (V.size() != 3) throw Exception (std::string ("invalid initial direction \"") + properties["init_direction"] + "\"");
+            init_dir[0] = V[0];
+            init_dir[1] = V[1];
+            init_dir[2] = V[2];
+            init_dir.normalise();
+          }
 
-              max_num_points = round (max_dist/step_size);
-              min_num_points = round (min_dist/step_size);
+          max_num_points = round (max_dist/step_size);
+          min_num_points = round (min_dist/step_size);
 
-              max_angle *= M_PI / 180.0;
-            }
+          max_angle *= M_PI / 180.0;
+        }
 
           const Image::Header& source;
           DWI::Tractography::Properties& properties;

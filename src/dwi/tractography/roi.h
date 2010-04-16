@@ -76,12 +76,13 @@ namespace MR {
           Point sample (Math::RNG& rng) const {
             Point p;
             if (mask) {
+              ssize_t x[3];
               do {
-                (*mask)[0] = rng.uniform_int (mask->dim(0));
-                (*mask)[1] = rng.uniform_int (mask->dim(1));
-                (*mask)[2] = rng.uniform_int (mask->dim(2));
-              } while (!mask->value());
-              p.set ((*mask)[0]+rng.uniform()-0.5, (*mask)[1]+rng.uniform()-0.5, (*mask)[2]+rng.uniform()-0.5);
+                x[0] = rng.uniform_int (mask->dim(0));
+                x[1] = rng.uniform_int (mask->dim(1));
+                x[2] = rng.uniform_int (mask->dim(2));
+              } while (!mask->value_at(x));
+              p.set (x[0]+rng.uniform()-0.5, x[1]+rng.uniform()-0.5, x[2]+rng.uniform()-0.5);
               return (mask->interp.voxel2scanner (p));
             }
 

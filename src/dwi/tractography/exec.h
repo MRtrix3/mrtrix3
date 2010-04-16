@@ -36,7 +36,8 @@ namespace MR {
 
       typedef std::vector<Point> Track;
 
-      class Allocator {
+      class Allocator 
+      {
         public:
           Allocator (size_t number_of_elements) : N (number_of_elements) { }
           Track* alloc () { Track* tck = new Track (); tck->reserve (N); return (tck); }
@@ -51,17 +52,20 @@ namespace MR {
 
 
 
-      class WriteThread {
+      class WriteThread 
+      {
         public:
           WriteThread (Queue& queue, const SharedBase& shared, const std::string& output_file, DWI::Tractography::Properties& properties) :
             tracks (queue), S (shared) { writer.create (output_file, properties); }
 
-          ~WriteThread () { 
+          ~WriteThread () 
+          { 
             fprintf (stderr, "\r%8u generated, %8u selected    [100%%]\n", writer.total_count, writer.count);
             writer.close(); 
           }
 
-          void execute () { 
+          void execute () 
+          { 
             Queue::Reader::Item tck (tracks);
             while (tck.read() && writer.count < S.max_num_tracks && writer.total_count < S.max_num_attempts) {
               writer.append (*tck);
@@ -83,7 +87,8 @@ namespace MR {
 
       template <class Method> class Exec {
         public:
-          static void run (const Image::Header& source, const std::string& destination, DWI::Tractography::Properties& properties) {
+          static void run (const Image::Header& source, const std::string& destination, DWI::Tractography::Properties& properties)
+          {
             typename Method::Shared shared (source, properties);
             MethodBase::init(); 
 
@@ -98,7 +103,10 @@ namespace MR {
             writer.execute();
           }
 
-          void execute () { 
+
+
+          void execute () 
+          { 
             Queue::Writer::Item item (writer);
             do {
               gen_track (*item);
@@ -117,14 +125,16 @@ namespace MR {
             S (shared), method (shared), writer (queue), track_included (S.properties.include.size()) { } 
 
 
-          bool track_is_not_included () const { 
+          bool track_is_not_included () const 
+          { 
             for (size_t n = 0; n < track_included.size(); ++n) 
               if (!track_included[n]) return (true); 
             return (false); 
           }
 
 
-          void gen_track (Track& tck) {
+          void gen_track (Track& tck) 
+          {
             track_excluded = false;
             track_included.assign (track_included.size(), false);
 
@@ -148,7 +158,8 @@ namespace MR {
             }
           }
 
-          bool iterate () {
+          bool iterate () 
+          {
             if (!method.next()) return (false);
             if (S.properties.mask.size() && !S.properties.mask.contains (method.pos)) return (false);
             if (S.properties.exclude.contains (method.pos)) { track_excluded = true; return (false); }
