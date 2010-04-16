@@ -41,12 +41,12 @@ namespace MR {
       template <typename X> inline size_t __footprint (size_t count) { return (count*sizeof(X)); }
       template <> inline size_t __footprint<bool> (size_t count) { return ((count+7)/8); }
 
-      template <typename X> inline X __get (const X* const data, ssize_t offset) { return (data[offset]); }
-      template <typename X> inline void __set (X* data, ssize_t offset, X val) { data[offset] = val; }
+      template <typename X> inline X __get (const X* const data, size_t offset) { return (data[offset]); }
+      template <typename X> inline void __set (X* data, size_t offset, X val) { data[offset] = val; }
 
-      template <> inline bool __get<bool> (const bool* const data, ssize_t offset) 
+      template <> inline bool __get<bool> (const bool* const data, size_t offset) 
       { return ((((uint8_t*) data)[offset/8]) & (BITMASK >> offset%8)); } 
-      template <> inline void __set<bool> (bool* data, ssize_t offset, bool val) { 
+      template <> inline void __set<bool> (bool* data, size_t offset, bool val) { 
         if (val) ((uint8_t*) data)[offset/8] |= (BITMASK >> offset%8); 
         else ((uint8_t*) data)[offset/8] &= ~(BITMASK >> offset%8); 
       }
@@ -90,6 +90,12 @@ namespace MR {
         void    reset () { memset (x, 0, NDIM*sizeof(ssize_t)); offset = start; }
         void    clear () { memset (data, 0, __footprint<value_type> (voxel_count (*this))); }
 
+        template <class A> value_type value_at (const A& pos) const 
+        { 
+         return (__get<value_type> (data.get(), get_offset (pos))); 
+        }
+          
+
       private:
         typename Array<value_type>::RefPtr data;
         size_t offset, start;
@@ -102,6 +108,11 @@ namespace MR {
         Math::Matrix<float> transform_matrix;
 
         ssize_t& stride (size_t axis) { return (skip[axis]); }
+
+        template <class A> size_t get_offset (const A& pos, size_t n = 0) const 
+        {
+          return (n < NDIM ? skip[n] * pos[n] + get_offset (n+1) : start);
+        }
 
         void setup () 
         {
