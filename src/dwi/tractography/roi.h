@@ -59,21 +59,36 @@ namespace MR {
           }
 
           std::string shape () const { return (mask ? "image" : "sphere"); }
-          std::string parameters () const { return (mask ? mask->name() : str(pos[0]) + "," + str(pos[1]) + "," + str(pos[2]) + "," + str(rad)); }
+
+          std::string parameters () const {
+            return (mask ? mask->name() : str(pos[0]) + "," + str(pos[1]) + "," + str(pos[2]) + "," + str(rad)); 
+          }
+
+
           float volume () const { return (vol); }
 
-          bool contains (const Point& p) const {
+          bool contains (const Point& p) const
+          {
             if (mask) {
               Point pix = mask->interp.scanner2voxel (p);
-              (*mask)[0] = Math::round (pix[0]);
-              (*mask)[1] = Math::round (pix[1]);
-              (*mask)[2] = Math::round (pix[2]);
-              return (mask->value());
+              ssize_t x[] = { 
+                Math::round (pix[0]),
+                Math::round (pix[1]),
+                Math::round (pix[2])
+              };
+              if (x[0] < 0 || x[0] >= mask->dim(0) || 
+                  x[1] < 0 || x[1] >= mask->dim(1) || 
+                  x[2] < 0 || x[2] >= mask->dim(2)) 
+                return (false);
+              return (mask->value_at (x));
             }
             else return ((pos-p).norm2() <= rad2);
           }
 
-          Point sample (Math::RNG& rng) const {
+
+
+          Point sample (Math::RNG& rng) const 
+          {
             Point p;
             if (mask) {
               ssize_t x[3];
@@ -81,7 +96,7 @@ namespace MR {
                 x[0] = rng.uniform_int (mask->dim(0));
                 x[1] = rng.uniform_int (mask->dim(1));
                 x[2] = rng.uniform_int (mask->dim(2));
-              } while (!mask->value_at(x));
+              } while (!mask->value_at (x));
               p.set (x[0]+rng.uniform()-0.5, x[1]+rng.uniform()-0.5, x[2]+rng.uniform()-0.5);
               return (mask->interp.voxel2scanner (p));
             }
@@ -93,7 +108,8 @@ namespace MR {
           }
 
 
-          friend inline std::ostream& operator<< (std::ostream& stream, const ROI& roi) {
+          friend inline std::ostream& operator<< (std::ostream& stream, const ROI& roi) 
+          {
             stream << roi.shape() << " (" << roi.parameters() << ")";
             return (stream);
           }

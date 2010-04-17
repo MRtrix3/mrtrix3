@@ -60,7 +60,7 @@ namespace MR {
 
           ~WriteThread () 
           { 
-            fprintf (stderr, "\r%8u generated, %8u selected    [100%%]\n", writer.total_count, writer.count);
+            fprintf (stderr, "\r%8zu generated, %8zu selected    [100%%]\n", writer.total_count, writer.count);
             writer.close(); 
           }
 
@@ -69,7 +69,7 @@ namespace MR {
             Queue::Reader::Item tck (tracks);
             while (tck.read() && writer.count < S.max_num_tracks && writer.total_count < S.max_num_attempts) {
               writer.append (*tck);
-              fprintf (stderr, "\r%8u generated, %8u selected    [%3d%%]", 
+              fprintf (stderr, "\r%8zu generated, %8zu selected    [%3d%%]", 
                   writer.total_count, writer.count, int((100.0*writer.count)/float(S.max_num_tracks)));
             }
           }
