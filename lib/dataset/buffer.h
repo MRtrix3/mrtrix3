@@ -111,7 +111,7 @@ namespace MR {
 
         template <class A> size_t get_offset (const A& pos, size_t n = 0) const 
         {
-          return (n < NDIM ? skip[n] * pos[n] + get_offset (n+1) : start);
+          return (n < NDIM ? skip[n] * pos[n] + get_offset (pos, n+1) : start);
         }
 
         void setup () 

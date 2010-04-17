@@ -50,8 +50,9 @@ namespace MR {
 
 
 
-    inline void create (const std::string& filename, off64_t size = 0) {
-      int fid = open64 (filename.c_str(), O_CREAT | O_RDWR | O_EXCL, 0755);
+    inline void create (const std::string& filename, off64_t size = 0) 
+    {
+      int fid = open64 (filename.c_str(), O_CREAT | O_RDWR | O_EXCL, 0644);
       if (fid < 0) throw Exception ("error creating file \"" + filename + "\": " + strerror(errno));
 
       if (size) size = ftruncate64 (fid, size);
@@ -66,7 +67,7 @@ namespace MR {
     {
       debug ("resizing file \"" + filename + "\" to " + str (size) + "...");
 
-      int fd = open64 (filename.c_str(), O_RDWR, 0755);
+      int fd = open64 (filename.c_str(), O_RDWR, 0644);
       if (fd < 0) throw Exception ("error opening file \"" + filename + "\" for resizing: " + strerror(errno));
       int status = ftruncate64 (fd, size);
       close (fd);
@@ -97,7 +98,7 @@ namespace MR {
       do {
         for (int n = 0; n < 6; n++) 
           filename[TMPFILE_ROOT_LEN+n] = random_char();
-      } while ((fid = open64 (filename.c_str(), O_CREAT | O_RDWR | O_EXCL, 0755)) < 0);
+      } while ((fid = open64 (filename.c_str(), O_CREAT | O_RDWR | O_EXCL, 0644)) < 0);
 
       int status = size ? ftruncate64 (fid, size) : 0;
       close (fid);

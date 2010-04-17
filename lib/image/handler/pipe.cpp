@@ -49,12 +49,12 @@ namespace MR {
       void Pipe::execute ()
       {
         assert (H.files.size() == 1);
-        debug ("mapping piped image \"" + H.name() + "\"...");
+        debug ("mapping piped image \"" + H.files[0].name + "\"...");
 
         segsize = DataSet::voxel_count (H) / H.files.size();
         off64_t bytes_per_segment = (H.datatype().bits() * segsize + 7) / 8;
 
-        if (bytes_per_segment > off64_t (std::numeric_limits<size_t>::max()))
+        if (double (bytes_per_segment) >= double (std::numeric_limits<size_t>::max()))
           throw Exception ("image \"" + H.name() + "\" is larger than maximum accessible memory");
 
         file = new File::MMap (H.files[0], H.readwrite, bytes_per_segment); 

@@ -33,7 +33,12 @@ namespace MR {
       bool Pipe::read (Header& H) const
       { 
         if (H.name() != "-") return (false);
+
         getline (std::cin, H.name());
+
+        if (H.name().empty()) 
+          throw Exception ("no filename supplied to standard input (broken pipe?)");
+
         if (!Path::has_suffix (H.name(), ".mif")) 
           throw Exception ("MRtrix only supports the .mif format for command-line piping");
 
