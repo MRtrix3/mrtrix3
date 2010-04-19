@@ -249,12 +249,14 @@ namespace MR {
           ssize_t order[H.ndim()];
           size_t i, axis = 0;
           for (i = 0; i < H.ndim() && axis < 3; ++i) 
-            if (abs(H.axes.stride(i)) <= 3) order[axis++] = H.axes.stride(i);
+            if (abs(H.axes.stride(i)) <= 3) 
+              order[axis++] = H.axes.stride(i);
 
           assert (axis == 3);
 
           for (i = 0; i < H.ndim(); ++i)
-            if (abs(H.axes.stride(i)) > 3) order[axis++] = H.axes.stride(i);
+            if (abs(H.axes.stride(i)) > 3) 
+              order[axis++] = H.axes.stride(i);
 
           assert (axis == H.ndim());
 
@@ -294,13 +296,15 @@ namespace MR {
         bool is_BE = H.datatype().is_big_endian();
 
         // new transform handling code starts here
+        // TODO: outstanding issues in transform handling!
         Math::Permutation permutation (3);
         for (size_t i = 0; i < 3; ++i) {
           assert (abs(H.axes.stride(i)) <= 3 && abs(H.axes.stride(i)) > 0);
           permutation[i] = abs(H.axes.stride(i))-1;
         }
 
-        Math::Matrix<float> M (H.transform());
+        Math::Matrix<float> M;
+        M.copy (H.transform());
 
         if (permutation[0] != 0 || permutation[1] != 1 || permutation[2] != 2 || 
             !H.axes.forward(0)  || !H.axes.forward(1)  || !H.axes.forward(2)) {

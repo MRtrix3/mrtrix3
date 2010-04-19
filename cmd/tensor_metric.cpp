@@ -42,7 +42,7 @@ ARGUMENTS = {
   Argument::End
 };
 
-const char* modulate_choices[] = { "NONE", "FA", "EVAL", NULL };
+const char* modulate_choices[] = { "none", "fa", "eval", NULL };
 
 OPTIONS = { 
   Option ("adc", "mean ADC", "compute the mean apparent diffusion coefficient (ADC) of the diffusion tensor.")

@@ -102,13 +102,15 @@ namespace MR {
       int current = fprintf (stderr, "%-*s%-*s ", header_indent, "", indent-header_indent-2, header.c_str());
 
       std::string::size_type start = 0, end;
+      bool newline = false;
       do {
         end = start;
         while (!isspace(text [end]) && end < text.size()) end++;
         std::string token (text.substr (start, end-start));
-        if (current + (int) token.size() + 1 >= width) 
+        if (newline || current + (int) token.size() + 1 >= width) 
           current = fprintf (stderr, "\n%*s%s", indent, "", token.c_str()) - 1;
         else current += fprintf (stderr, " %s", token.c_str());
+        newline = text[end] == '\n';
         start = end + 1;
       } while (end < text.size());
       fprintf (stderr, "\n");
@@ -396,8 +398,16 @@ namespace MR {
       text += opt->sname;
       for (size_t n = 0; n < opt->size(); n++) { text += " "; text += (*opt)[n].sname; }
       print_formatted_paragraph (text, opt->desc, HELP_OPTION_INDENT);
-      for (size_t n = 0; n < opt->size(); n++) 
-        print_formatted_paragraph ("", std::string ("\"") + (*opt)[n].sname + "\": " + (*opt)[n].desc, HELP_OPTION_INDENT);
+      for (size_t n = 0; n < opt->size(); n++) {
+        std::string desc = (*opt)[n].desc;
+        if ((*opt)[n].type == Choice) {
+          const char** p = (*opt)[n].extra_info.choice;
+          desc += std::string (" Valid choices: ") + *p;
+          for (++p; *p; ++p) desc += std::string(", ") + *p;
+          desc += ".";
+        }
+        print_formatted_paragraph ("", std::string ("\"") + (*opt)[n].sname + "\": " + desc, HELP_OPTION_INDENT);
+      }
       fprintf (stderr, "\n");
     }
 

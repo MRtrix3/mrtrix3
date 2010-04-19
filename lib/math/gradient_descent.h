@@ -104,7 +104,7 @@ namespace MR {
 
             while (true) { 
               bool no_change = true;
-              for (int n = 0; n < func.size(); n++) {
+              for (size_t n = 0; n < func.size(); n++) {
                 x2[n] = x[n] - step * g[n];
                 if (x2[n] != x[n]) no_change = false;
               }

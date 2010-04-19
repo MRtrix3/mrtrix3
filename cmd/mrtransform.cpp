@@ -49,7 +49,7 @@ ARGUMENTS = {
 };
 
 
-const char* interp_choices[] = { "NEAREST", "LINEAR", "CUBIC" };
+const char* interp_choices[] = { "nearest", "linear", "cubic", NULL };
 
 OPTIONS = {
 

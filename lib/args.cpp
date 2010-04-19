@@ -70,7 +70,7 @@ namespace MR {
       case Choice:
         data.i = -1;
         for (size_t n = 0; arg.extra_info.choice[n]; n++) {
-          if (uppercase (string) == arg.extra_info.choice[n]) {
+          if (lowercase (string) == arg.extra_info.choice[n]) {
             data.i = n;
             break;
           }

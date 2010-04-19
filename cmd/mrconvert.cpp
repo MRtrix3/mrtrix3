@@ -44,7 +44,7 @@ ARGUMENTS = {
 };
 
 
-const char* type_choices[] = { "REAL", "IMAG", "MAG", "PHASE", "COMPLEX", NULL };
+const char* type_choices[] = { "real", "imag", "mag", "phase", "complex", NULL };
 
 OPTIONS = {
   Option ("coord", "select coordinates", "extract data only at the coordinates specified.", Optional | AllowMultiple)
