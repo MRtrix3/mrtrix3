@@ -18,7 +18,7 @@
     You should have received a copy of the GNU General Public License
     along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
 
-*/
+ */
 
 #ifndef __math_gradient_descent_h__
 #define __math_gradient_descent_h__
@@ -29,123 +29,122 @@
 
 namespace MR {
   namespace Math {
-    namespace Optim {
 
-      template <class F, typename T = float> class GradientDescent 
-      {
-        public:
-          GradientDescent (F& function, T step_size_upfactor = 1.5, T step_size_downfactor = 0.1) : 
-            func (function), 
-            step_up (step_size_upfactor),
-            step_down (step_size_downfactor),
-            workspace (new T [4*func.size()]),
-            x (workspace),
-            x2 (workspace + func.size()),
-            g (workspace + 2*func.size()), 
-            g2 (workspace + 3*func.size()) { }
-
-          ~GradientDescent () { delete [] workspace; }
+    template <class F, typename T = float> class GradientDescent 
+    {
+      public:
+        GradientDescent (F& function, T step_size_upfactor = 1.5, T step_size_downfactor = 0.1) : 
+          func (function), 
+          step_up (step_size_upfactor),
+          step_down (step_size_downfactor),
+          x (func.size()),
+          x2 (func.size()),
+          g (func.size()), 
+          g2 (func.size()) { }
 
 
-          T        value () const throw ()                { return (f); }
-          const T* state () const throw ()                { return (x); }
-          const T* gradient () const throw ()             { return (g); }
+        T                value () const throw ()     { return (f); }
+        const Vector<T>& state () const throw ()     { return (x); }
+        const Vector<T>& gradient () const throw ()  { return (g); }
 
-          T        gradient_norm () const throw ()        { return (normg); }
-          int      function_evaluations () const throw () { return (nfeval); }
+        T   gradient_norm () const throw ()        { return (normg); }
+        int function_evaluations () const throw () { return (nfeval); }
 
 
-          void run (const int max_iterations = 1000, const T grad_tolerance = 1e-4) 
-          {
-            init();
+        void run (const int max_iterations = 1000, const T grad_tolerance = 1e-4) 
+        {
+          init();
 #ifdef PRINT_STATE
-              std::cout << f << " ";
-              for (int i = 0; i < func.size(); i++) 
-                std::cout << x[i] << " ";
-              std::cout << "\n";
+          std::cout << f << " ";
+          for (int i = 0; i < func.size(); i++) 
+            std::cout << x[i] << " ";
+          std::cout << "\n";
 #endif
-            T gradient_tolerance = grad_tolerance * gradient_norm();
+          T gradient_tolerance = grad_tolerance * gradient_norm();
 
-            for (int niter = 0; niter < max_iterations; niter++) {
-              if (!iterate()) return;
+          for (int niter = 0; niter < max_iterations; niter++) {
+            if (!iterate()) return;
 
-              T grad_norm = gradient_norm();
+            T grad_norm = gradient_norm();
 
-              info ("iteration " + str(niter) + ": f = " + str(f) + ", |g| = " + str(grad_norm));
+            debug ("iteration " + str(niter) + ": f = " + str(f) + ", |g| = " + str(grad_norm));
 #ifdef PRINT_STATE
-              std::cout << f << " ";
-              for (int i = 0; i < func.size(); i++) 
-                std::cout << x[i] << " ";
-              std::cout << "\n";
+            std::cout << f << " ";
+            for (int i = 0; i < func.size(); i++) 
+              std::cout << x[i] << " ";
+            std::cout << "\n";
 #endif
 
-              if (grad_norm < gradient_tolerance) return; 
-            }
-            throw Exception ("failed to converge");
+            if (grad_norm < gradient_tolerance) return; 
           }
+          throw Exception ("failed to converge");
+        }
 
 
-          void init ()
-          {
-            dt = func.init (x);
-            nfeval = 0;
-            f = evaluate_func (x, g);
-            normg = norm (g, func.size());
-            assert (finite (f));
-            assert (finite (normg));
-          } 
+        void init ()
+        {
+          dt = func.init (x);
+          nfeval = 0;
+          f = evaluate_func (x, g);
+          normg = norm (g);
+          assert (finite (f));
+          assert (finite (normg));
+        } 
 
 
-          bool iterate () 
-          { 
-            assert (normg != 0.0);
-            T step = dt / normg;
-            T f2;
+        bool iterate () 
+        { 
+          assert (normg != 0.0);
+          T step = dt / normg;
+          T f2;
 
-            while (true) { 
-              bool no_change = true;
-              for (size_t n = 0; n < func.size(); n++) {
-                x2[n] = x[n] - step * g[n];
-                if (x2[n] != x[n]) no_change = false;
-              }
-              if (no_change) return (false);
-
-              f2 = evaluate_func (x2, g2);
-
-              if (f2 < f) {
-                dt *= step_up;
-                f = f2;
-                std::swap (x, x2);
-                std::swap (g, g2);
-                normg = norm (g, func.size());
-                return (true);
-              }
-
-              // quadratic minimum
-
-              T denom = 2.0 * (f2 - f + normg * step);
-              if (denom) {
-                T step_mult = step * normg / denom;
-                assert (step_mult > 0.0 && step_mult < 1.0);
-                step *= step_mult;
-              }
-              else step *= 2.0;
-
-              dt *= step_down;
+          while (true) { 
+            bool no_change = true;
+            for (size_t n = 0; n < func.size(); n++) {
+              x2[n] = x[n] - step * g[n];
+              if (x2[n] != x[n]) no_change = false;
             }
-          } 
+            if (no_change) return (false);
 
-        protected:
-          F& func;
-          const T step_up, step_down;
-          T *workspace, *x, *x2, *g, *g2;
-          T f, dt, normg;
-          int nfeval;
+            f2 = evaluate_func (x2, g2);
 
-          T evaluate_func (const T* newx, T* newg) { nfeval++; return (func (newx, newg)); }
-      };
+            if (f2 < f) {
+              dt *= step_up;
+              f = f2;
+              x.swap (x2);
+              g.swap (g2);
+              normg = norm (g);
+              return (true);
+            }
 
-    }
+            // quadratic minimum
+
+            T denom = 2.0 * (f2 - f + normg * step);
+            if (denom) {
+              T step_mult = step * normg / denom;
+              assert (step_mult > 0.0 && step_mult < 1.0);
+              step *= step_mult;
+            }
+            else step *= 2.0;
+
+            dt *= step_down;
+          }
+        } 
+
+      protected:
+        F& func;
+        const T step_up, step_down;
+        Vector<T> x, x2, g, g2;
+        T f, dt, normg;
+        int nfeval;
+
+        T evaluate_func (const Vector<T>& newx, Vector<T>& newg) 
+        {
+          nfeval++; 
+          return (func (newx, newg)); 
+        }
+    };
+
   }
 }
 
