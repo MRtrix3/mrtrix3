@@ -494,7 +494,7 @@ namespace MR {
       @{ */
 
 
-    //! computes the general matrix-matrix multiplication \a C = \a alpha \a op_A (\a A) \a op_A (\a B) + \a beta \a C
+    //! computes the general matrix-matrix multiplication \a C = \a alpha \a op_A (\a A) \a op_B (\a B) + \a beta \a C
     /** \param C the target matrix
      * \param beta used to add a multiple of \a C to the final product
      * \param alpha used to scale the product

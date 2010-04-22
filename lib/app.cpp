@@ -99,7 +99,7 @@ namespace MR {
 
     void print_formatted_paragraph (const std::string& header, const std::string& text, int header_indent, int indent, int width)
     {
-      int current = fprintf (stderr, "%-*s%-*s ", header_indent, "", indent-header_indent-2, header.c_str());
+      int current = fprintf (stderr, "%-*s%-*s", header_indent, "", indent-header_indent-1, header.c_str());
 
       std::string::size_type start = 0, end;
       bool newline = false;
@@ -119,13 +119,13 @@ namespace MR {
   }
 
 
-#define HELP_INDENT 10
 #define HELP_WIDTH  80
 
 
-#define HELP_PURPOSE_INDENT 0, HELP_INDENT, HELP_WIDTH
-#define HELP_ARG_INDENT 12, 24, HELP_WIDTH
-#define HELP_OPTION_INDENT 2, 16, HELP_WIDTH
+#define HELP_PURPOSE_INDENT 0, 4, HELP_WIDTH
+#define HELP_ARG_INDENT 8, 20, HELP_WIDTH
+#define HELP_OPTION_INDENT 2, 20, HELP_WIDTH
+#define HELP_OPTION_ARG_INDENT 20, 24, HELP_WIDTH
 
 
 
@@ -363,7 +363,7 @@ namespace MR {
   {
     fprintf (stderr, "%s: part of the MRtrix package\n\n", App::name().c_str());
     if (command_description[0]) {
-      print_formatted_paragraph ("PURPOSE:", command_description[0], HELP_PURPOSE_INDENT);
+      print_formatted_paragraph ("", command_description[0], HELP_PURPOSE_INDENT);
       fprintf (stderr, "\n");
       for (const char** p = command_description+1; *p; p++) {
         print_formatted_paragraph ("", *p, HELP_PURPOSE_INDENT);
@@ -372,7 +372,7 @@ namespace MR {
     }
     else fprintf (stderr, "(no description available)\n\n");
 
-    fprintf (stderr, "%-*s%s [ options ]", HELP_INDENT, "SYNTAX:", App::name().c_str());
+    fprintf (stderr, "SYNTAX: %s [ options ]", App::name().c_str());
     for (const Argument* arg = command_arguments; arg->is_valid(); arg++) {
       if (!arg->mandatory) fprintf (stderr, " [");
       fprintf (stderr, " %s", arg->sname);
@@ -386,10 +386,9 @@ namespace MR {
 
 
 
-    for (const Argument* arg = command_arguments; arg->is_valid(); arg++) {
-      print_formatted_paragraph (arg->sname, arg->desc, HELP_ARG_INDENT);
-      fprintf (stderr, "\n");
-    }
+    for (const Argument* arg = command_arguments; arg->is_valid(); arg++) 
+      print_formatted_paragraph (std::string("- ") + arg->sname + " ", arg->desc, HELP_ARG_INDENT);
+    fprintf (stderr, "\n");
 
 
     fprintf (stderr, "OPTIONS:\n\n");
@@ -397,7 +396,7 @@ namespace MR {
       std::string text ("-");
       text += opt->sname;
       for (size_t n = 0; n < opt->size(); n++) { text += " "; text += (*opt)[n].sname; }
-      print_formatted_paragraph (text, opt->desc, HELP_OPTION_INDENT);
+      print_formatted_paragraph (text + " ", opt->desc, HELP_OPTION_INDENT);
       for (size_t n = 0; n < opt->size(); n++) {
         std::string desc = (*opt)[n].desc;
         if ((*opt)[n].type == Choice) {
@@ -406,17 +405,18 @@ namespace MR {
           for (++p; *p; ++p) desc += std::string(", ") + *p;
           desc += ".";
         }
-        print_formatted_paragraph ("", std::string ("\"") + (*opt)[n].sname + "\": " + desc, HELP_OPTION_INDENT);
+        print_formatted_paragraph (std::string ("- ") + (*opt)[n].sname + " ", desc, HELP_OPTION_ARG_INDENT);
       }
       fprintf (stderr, "\n");
     }
 
+    fprintf (stderr, "Standard options:\n");
     for (size_t n = 0; n < NUM_DEFAULT_OPTIONS; n++) {
       std::string text ("-");
       text += default_options[n].sname;
       print_formatted_paragraph (text, default_options[n].desc, HELP_OPTION_INDENT);
-      fprintf (stderr, "\n");
     }
+    fprintf (stderr, "\n");
   }
 
 

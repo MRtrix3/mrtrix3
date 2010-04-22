@@ -96,7 +96,7 @@ namespace MR {
           default: throw Exception ("unknown data type for Analyse image \"" + H.name() + "\"");
         }
 
-        if ( !( H.datatype().is (DataType::UInt8) || H.datatype().is (DataType::Int8) ) ) {
+        if ( !( H.datatype().is (DataType::Bit) || H.datatype().is (DataType::UInt8) || H.datatype().is (DataType::Int8) ) ) {
           if (is_BE) H.datatype().set_flag (DataType::BigEndian);
           else H.datatype().set_flag (DataType::LittleEndian);
         }
