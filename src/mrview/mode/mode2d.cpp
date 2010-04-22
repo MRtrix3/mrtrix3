@@ -30,7 +30,7 @@ namespace MR {
   namespace Viewer {
     namespace Mode {
 
-      Mode2D::Mode2D (Window& parent) : Base (parent), show_focus (true)
+      Mode2D::Mode2D (Window& parent) : Base (parent), show_focus (true), edge (0)
       { 
         axial_action = new QAction(tr("&Axial"), this);
         axial_action->setShortcut (tr("A"));
@@ -185,14 +185,17 @@ namespace MR {
       void Mode2D::mousePressEvent (QMouseEvent* event)
       { 
         if (event->modifiers() == Qt::NoModifier) {
+
           if (event->buttons() == Qt::LeftButton) {
             set_focus (screen_to_model (event));
             updateGL();
           }
           else if (event->buttons() == Qt::MidButton)
             glarea()->setCursor (Cursor::pan_crosshair);
-          else if (event->buttons() == Qt::RightButton)
-            glarea()->setCursor (Cursor::window);
+          else if (event->buttons() == Qt::RightButton) {
+            if (cursor_right (event)) edge = 2;
+            else glarea()->setCursor (Cursor::window);
+          }
         }
 
         grab_event (event);
@@ -203,8 +206,19 @@ namespace MR {
 
       void Mode2D::mouseMoveEvent (QMouseEvent* event) 
       {
-        if (lastButtons == Qt::LeftButton && lastModifiers == Qt::NoModifier) {
+
+        if (lastButtons == Qt::NoButton) {
+          if (cursor_right (event)) 
+            glarea()->setCursor (Cursor::forward_backward);
+          else
+            glarea()->setCursor (Cursor::crosshair);
           event->ignore();
+          return;
+        }
+
+        if (lastButtons == Qt::LeftButton && lastModifiers == Qt::NoModifier) {
+          set_focus (screen_to_model (event));
+          updateGL();
           return;
         }
 
@@ -215,8 +229,14 @@ namespace MR {
           }
 
           if (lastButtons == Qt::RightButton && image()) {
-            Point d = distance_moved_motionless (event);
-            image()->adjust_windowing (d[0], d[1]);
+            if (edge == 2) {
+              Point d = distance_moved (event);
+              move_in_out (-0.1*d[1]);
+            }
+            else {
+              Point d = distance_moved_motionless (event);
+              image()->adjust_windowing (d[0], d[1]);
+            }
             updateGL();
           }
         }
@@ -225,7 +245,14 @@ namespace MR {
 
 
       void Mode2D::mouseDoubleClickEvent (QMouseEvent* event) { }
-      void Mode2D::mouseReleaseEvent (QMouseEvent* event) { glarea()->setCursor (Cursor::crosshair); }
+
+      void Mode2D::mouseReleaseEvent (QMouseEvent* event) 
+      { 
+        glarea()->setCursor (Cursor::crosshair); 
+        lastButtons = Qt::NoButton;
+        lastModifiers = Qt::NoModifier;
+        edge = 0;
+      }
 
 
 
@@ -250,14 +277,22 @@ namespace MR {
           return;
         }
 
-        Point D (0.0, 0.0, 0.0);
-        D[projection()] = inc;
-        Point move = image()->interp.voxel2scanner_dir (D);
-        set_target (target() + move);
-        set_focus (focus() + move);
+        move_in_out (inc);
         updateGL();
         event->accept();
       }
+
+
+
+      void Mode2D::move_in_out (float distance) 
+      {
+        Point D (0.0, 0.0, 0.0);
+        D[projection()] = distance;
+        Point move = image()->interp.voxel2scanner_dir (D);
+        set_target (target() + move);
+        set_focus (focus() + move);
+      }
+
 
       void Mode2D::axial () { set_projection (2); updateGL(); }
       void Mode2D::sagittal () { set_projection (0); updateGL(); }

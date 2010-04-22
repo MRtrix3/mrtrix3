@@ -56,7 +56,10 @@ namespace MR {
           QAction *axial_action, *sagittal_action, *coronal_action, *reset_action, *show_focus_action;
           Point lookat;
           bool show_focus;
+          int  edge;
           void reset_view ();
+
+          void move_in_out (float distance);
       };
 
     }

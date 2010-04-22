@@ -129,15 +129,20 @@ namespace MR {
           void change_FOV_fine (float factor) { window.field_of_view *= Math::exp (0.01*factor); }
           void change_FOV_scroll (float factor) { change_FOV_fine (10.0 * factor); }
 
-          int width () { get_modelview_projection_viewport(); return (viewport_matrix[2]); }
-          int height () { get_modelview_projection_viewport(); return (viewport_matrix[3]); }
+          int width () const { get_modelview_projection_viewport(); return (viewport_matrix[2]); }
+          int height () const { get_modelview_projection_viewport(); return (viewport_matrix[3]); }
           QWidget* glarea () const { return (reinterpret_cast <QWidget*>(window.glarea)); }
 
-        private:
-          GLdouble modelview_matrix[16], projection_matrix[16];
-          GLint viewport_matrix[4];
+          bool cursor_left (const QMouseEvent* event) const { return (10*event->x() < width()); }
+          bool cursor_right (const QMouseEvent* event) const { return (10*(width()-event->x()) < width()); }
+          bool cursor_top (const QMouseEvent* event) const { return (10*event->y() < height()); }
+          bool cursor_bottom (const QMouseEvent* event) const { return (10*(height()-event->y()) < height()); }
 
-          void get_modelview_projection_viewport () {
+        private:
+          mutable GLdouble modelview_matrix[16], projection_matrix[16];
+          mutable GLint viewport_matrix[4];
+
+          void get_modelview_projection_viewport () const {
             if (isnan (modelview_matrix[0])) {
               glGetIntegerv (GL_VIEWPORT, viewport_matrix); 
               glGetDoublev (GL_MODELVIEW_MATRIX, modelview_matrix);

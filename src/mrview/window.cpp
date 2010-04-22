@@ -54,10 +54,11 @@ namespace MR {
           main (parent) {
             setCursor (Cursor::crosshair); 
             setAutoBufferSwap (false);
+            setMouseTracking (true);
           }
 
-        QSize minimumSizeHint () const { return QSize (300, 300); }
-        QSize sizeHint () const { return QSize (300, 300); }
+        QSize minimumSizeHint () const { return QSize (512, 512); }
+        QSize sizeHint () const { return QSize (512, 512); }
 
       private:
         Window& main;
