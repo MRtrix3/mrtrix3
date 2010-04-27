@@ -55,10 +55,34 @@ namespace MR {
             setCursor (Cursor::crosshair); 
             setAutoBufferSwap (false);
             setMouseTracking (true);
+            setAcceptDrops (true);
           }
 
         QSize minimumSizeHint () const { return QSize (512, 512); }
         QSize sizeHint () const { return QSize (512, 512); }
+
+      protected:
+        void dragEnterEvent(QDragEnterEvent *event) { event->acceptProposedAction(); }
+        void dragMoveEvent(QDragMoveEvent *event) { event->acceptProposedAction(); }
+        void dragLeaveEvent(QDragLeaveEvent *event) { event->accept(); }
+        void dropEvent(QDropEvent *event) 
+        {
+          const QMimeData *mimeData = event->mimeData();
+          if (mimeData->hasUrls()) {
+            VecPtr<MR::Image::Header> list;
+            QList<QUrl> urlList = mimeData->urls();
+            for (int i = 0; i < urlList.size() && i < 32; ++i) {
+              try {
+                list.push_back (new MR::Image::Header (MR::Image::Header::open (urlList.at(i).path().toAscii().constData())));
+              }
+              catch (Exception& e) {
+                Dialog::report_exception (e, &main);
+              }
+            }
+            if (list.size())
+              main.add_images (list);
+          }
+        }
 
       private:
         Window& main;
@@ -228,7 +252,7 @@ namespace MR {
 
 
       // StatusBar:
-      statusBar()->showMessage(tr("Ready"));
+      //statusBar()->showMessage(tr("Ready"));
 
       set_image_menu ();
     }

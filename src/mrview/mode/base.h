@@ -23,9 +23,13 @@
 #ifndef __viewer_mode_base_h__
 #define __viewer_mode_base_h__
 
+#include "opengl/gl.h"
+
 #include <QCursor>
 #include <QMouseEvent>
 #include <QMenu>
+#include <QGLWidget>
+#include <QFontMetrics>
 
 #include "mrview/window.h"
 
@@ -43,11 +47,11 @@ namespace MR {
 
           virtual void paint ();
 
-          virtual void mousePressEvent (QMouseEvent* event);
-          virtual void mouseMoveEvent (QMouseEvent* event);
-          virtual void mouseDoubleClickEvent (QMouseEvent* event);
-          virtual void mouseReleaseEvent (QMouseEvent* event);
-          virtual void wheelEvent (QWheelEvent* event);
+          virtual bool mouse_click ();
+          virtual bool mouse_move ();
+          virtual bool mouse_doubleclick ();
+          virtual bool mouse_release ();
+          virtual bool mouse_wheel (float delta, Qt::Orientation orientation);
 
           void paintGL () 
           { 
@@ -61,31 +65,27 @@ namespace MR {
 
         protected:
           Window& window;
-          QPoint lastPos;
-          Qt::MouseButtons lastButtons;
-          Qt::KeyboardModifiers lastModifiers;
 
-          void grab_event (QMouseEvent* event) {
-            lastButtons = event->buttons();
-            lastModifiers = event->modifiers();
-            lastPos = event->pos();
-          }
+          static const int TopEdge = 1;
+          static const int BottomEdge = 1<<1;
+          static const int LeftEdge = 1<<2;
+          static const int RightEdge = 1<<3;
 
-          Point distance_moved (const QMouseEvent* event) { 
-            Point d (event->pos().x()-lastPos.x(), event->pos().y()-lastPos.y(), 0.0); 
-            lastPos = event->pos();
-            return (d);
+          const QPoint& mouse_pos () const { return (currentPos); }
+          QPoint mouse_dpos () const { return (currentPos - lastPos); }
+          QPoint mouse_dpos_static () const 
+          {
+            QCursor::setPos (reinterpret_cast<QWidget*> (window.glarea)->mapToGlobal (initialPos));
+            return (currentPos - initialPos); 
           }
-
-          Point distance_moved_motionless (const QMouseEvent* event) {
-            Point d (event->pos().x()-lastPos.x(), event->pos().y()-lastPos.y(), 0.0); 
-            QCursor::setPos (reinterpret_cast<QWidget*> (window.glarea)->mapToGlobal (lastPos));
-            return (d);
-          }
+          Qt::MouseButtons mouse_buttons () const { return (buttons_); }
+          Qt::KeyboardModifiers mouse_modifiers () const { return (modifiers_); }
+          int mouse_edge () const { return (edge_); }
 
           void add_action (QAction* action) { window.view_menu->insertAction (window.view_menu_mode_area, action); }
 
-          Point model_to_screen (const Point& pos) {
+          Point model_to_screen (const Point& pos) const
+          {
             double wx, wy, wz;
             get_modelview_projection_viewport();
             gluProject (pos[0], pos[1], pos[2], modelview_matrix, 
@@ -93,7 +93,8 @@ namespace MR {
             return (Point (wx, wy, wz));
           }
 
-          Point screen_to_model (const Point& pos) {
+          Point screen_to_model (const Point& pos) const 
+          {
             double wx, wy, wz;
             get_modelview_projection_viewport();
             gluUnProject (pos[0], height()-pos[1], pos[2], modelview_matrix, 
@@ -101,18 +102,19 @@ namespace MR {
             return (Point (wx, wy, wz));
           }
 
-          Point screen_to_model (const QPoint& pos) {
+          Point screen_to_model (const QPoint& pos) const
+          {
             Point f (model_to_screen (focus()));
             f[0] = pos.x();
             f[1] = pos.y();
             return (screen_to_model (f));
           }
 
-          Point screen_to_model (const QMouseEvent* event) { return (screen_to_model (event->pos())); } 
-          Point screen_to_model (const QWheelEvent* event) { return (screen_to_model (event->pos())); } 
+          Point screen_to_model () const { return (screen_to_model (currentPos)); } 
 
-          Point screen_to_model_direction (const Point& pos) { return (screen_to_model (pos) - screen_to_model (Point (0.0, 0.0, 0.0))); } 
-          Point screen_to_model_direction (const QPoint& pos) { return (screen_to_model (pos) - screen_to_model (Point (0.0, 0.0, 0.0))); }
+          Point screen_to_model_direction (const Point& pos) const
+          { return (screen_to_model (pos) - screen_to_model (Point (0.0, 0.0, 0.0))); } 
+
 
           Image* image () { return (window.current_image()); }
 
@@ -133,22 +135,101 @@ namespace MR {
           int height () const { get_modelview_projection_viewport(); return (viewport_matrix[3]); }
           QWidget* glarea () const { return (reinterpret_cast <QWidget*>(window.glarea)); }
 
-          bool cursor_left (const QMouseEvent* event) const { return (10*event->x() < width()); }
-          bool cursor_right (const QMouseEvent* event) const { return (10*(width()-event->x()) < width()); }
-          bool cursor_top (const QMouseEvent* event) const { return (10*event->y() < height()); }
-          bool cursor_bottom (const QMouseEvent* event) const { return (10*(height()-event->y()) < height()); }
+          void renderText (int x, int y, const std::string& text)
+          { reinterpret_cast<QGLWidget*>(window.glarea)->renderText (x, height()-y, text.c_str(), font_); }
+
+          void renderText (const std::string& text, int position, int line = 0)
+          {
+            QFontMetrics fm (font_);
+            QString s (text.c_str());
+            int x, y;
+
+            if (position & RightEdge) x = width() - fm.height()/2 - fm.width (s);
+            else if (position & LeftEdge) x = fm.height()/2;
+            else x = (width() - fm.width (s)) / 2;
+
+            if (position & TopEdge) y = 2 * fm.height()/2 + line * fm.lineSpacing();
+            else if (position & BottomEdge) y = height() - fm.height()/2 - line * fm.lineSpacing();
+            else y = (height() + fm.height()) / 2 + line * fm.lineSpacing();
+
+            reinterpret_cast<QGLWidget*>(window.glarea)->renderText (x, y, text.c_str(), font_); 
+          }
+
+          //void renderText (const std::string& text, 
 
         private:
           mutable GLdouble modelview_matrix[16], projection_matrix[16];
           mutable GLint viewport_matrix[4];
 
-          void get_modelview_projection_viewport () const {
+          QPoint currentPos, lastPos, initialPos;
+          Qt::MouseButtons buttons_;
+          Qt::KeyboardModifiers modifiers_;
+          int edge_;
+
+          QFont font_;
+
+          void mousePressEvent (QMouseEvent* event)
+          {
+            buttons_ = event->buttons();
+            modifiers_ = event->modifiers();
+            lastPos = currentPos = initialPos = event->pos();
+            if (mouse_click()) event->accept();
+            else event->ignore();
+          }
+
+          void mouseMoveEvent (QMouseEvent* event)
+          {
+            lastPos = currentPos;
+            currentPos = event->pos();
+            if (buttons_ == Qt::NoButton) 
+              edge_ = 
+                ( 10*currentPos.x() < width() ? LeftEdge : 0 ) |
+                ( 10*(width()-currentPos.x()) < width() ? RightEdge : 0 ) |
+                ( 10*currentPos.y() < width() ? TopEdge : 0 ) |
+                ( 10*(width()-currentPos.y()) < width() ? BottomEdge : 0 );
+            if (mouse_move()) event->accept();
+            else event->ignore();
+          }
+
+
+          void mouseDoubleClickEvent (QMouseEvent* event) 
+          {
+            if (mouse_doubleclick()) 
+              event->accept();
+            else
+              event->ignore(); 
+          }
+
+          void mouseReleaseEvent (QMouseEvent* event) 
+          {
+            if (mouse_release()) 
+              event->accept();
+            else
+              event->ignore(); 
+
+            buttons_ = Qt::NoButton;
+            modifiers_ = Qt::NoModifier;
+          }
+
+          void wheelEvent (QWheelEvent* event)
+          {
+            buttons_ = event->buttons();
+            modifiers_ = event->modifiers();
+            lastPos = currentPos = event->pos();
+            if (mouse_wheel (event->delta()/120.0, event->orientation())) event->accept();
+            else event->ignore();
+          }
+
+          void get_modelview_projection_viewport () const 
+          {
             if (isnan (modelview_matrix[0])) {
               glGetIntegerv (GL_VIEWPORT, viewport_matrix); 
               glGetDoublev (GL_MODELVIEW_MATRIX, modelview_matrix);
               glGetDoublev (GL_PROJECTION_MATRIX, projection_matrix); 
             }
           }
+
+          friend class MR::Viewer::Window;
       };
 
       Base* create (Window& parent, size_t index);

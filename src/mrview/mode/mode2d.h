@@ -39,24 +39,23 @@ namespace MR {
 
           virtual void paint ();
 
-          virtual void mousePressEvent (QMouseEvent* event);
-          virtual void mouseMoveEvent (QMouseEvent* event);
-          virtual void mouseDoubleClickEvent (QMouseEvent* event);
-          virtual void mouseReleaseEvent (QMouseEvent* event);
-          virtual void wheelEvent (QWheelEvent* event);
+          virtual bool mouse_click ();
+          virtual bool mouse_move ();
+          virtual bool mouse_doubleclick ();
+          virtual bool mouse_release ();
+          virtual bool mouse_wheel (float delta, Qt::Orientation orientation);
 
         public slots:
           void axial ();
           void sagittal ();
           void coronal ();
           void reset ();
-          void toggle_show_focus ();
+          void toggle_show_xyz ();
 
         protected:
           QAction *axial_action, *sagittal_action, *coronal_action, *reset_action, *show_focus_action;
+          QAction *show_image_info_action, *show_position_action, *show_orientation_action;
           Point lookat;
-          bool show_focus;
-          int  edge;
           void reset_view ();
 
           void move_in_out (float distance);

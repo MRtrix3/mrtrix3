@@ -37,11 +37,11 @@ namespace MR {
 
           virtual void paint ();
 
-          virtual void mousePressEvent (QMouseEvent* event);
-          virtual void mouseMoveEvent (QMouseEvent* event);
-          virtual void mouseDoubleClickEvent (QMouseEvent* event);
-          virtual void mouseReleaseEvent (QMouseEvent* event);
-          virtual void wheelEvent (QWheelEvent* event);
+          virtual bool mouse_click ();
+          virtual bool mouse_move ();
+          virtual bool mouse_doubleclick ();
+          virtual bool mouse_release ();
+          virtual bool mouse_wheel (float delta, Qt::Orientation orientation);
       };
 
     }

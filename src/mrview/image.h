@@ -54,6 +54,7 @@ namespace MR {
           display_midpoint -= 0.0005f * display_range * brightness;
           display_range *= Math::exp (0.002f * contrast);
         }
+        void adjust_windowing (const QPoint& p) { adjust_windowing (p.x(), p.y()); }
         void set_interpolate (bool linear) { interpolation = linear ? GL_LINEAR : GL_NEAREST; }
         bool interpolate () const { return (interpolation == GL_LINEAR); }
 

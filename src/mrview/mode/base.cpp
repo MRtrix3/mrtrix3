@@ -29,17 +29,19 @@ namespace MR {
     namespace Mode {
 
       Base::Base (Window& parent) : 
-        window (parent) { }
+        window (parent) { 
+          font_.setPointSize (0.9*font_.pointSize());
+        }
       Base::~Base () { }
 
       void Base::paint () { }
       void Base::updateGL () { reinterpret_cast<QGLWidget*> (window.glarea)->updateGL(); }
 
-      void Base::mousePressEvent (QMouseEvent *event) { }
-      void Base::mouseMoveEvent (QMouseEvent *event) { }
-      void Base::mouseDoubleClickEvent (QMouseEvent* event) { }
-      void Base::mouseReleaseEvent (QMouseEvent* event) { }
-      void Base::wheelEvent (QWheelEvent* event) { }
+      bool Base::mouse_click () { return (false); }
+      bool Base::mouse_move () { return (false); }
+      bool Base::mouse_doubleclick () { return (false); }
+      bool Base::mouse_release () { return (false); }
+      bool Base::mouse_wheel (float delta, Qt::Orientation orientation) { return (false); }
 
       Base* create (Window& parent, size_t index) 
       {

@@ -33,11 +33,11 @@ namespace MR {
         glClear (GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
       }
 
-      void Mode3D::mousePressEvent (QMouseEvent* event) { }
-      void Mode3D::mouseMoveEvent (QMouseEvent* event) { }
-      void Mode3D::mouseDoubleClickEvent (QMouseEvent* event) { }
-      void Mode3D::mouseReleaseEvent (QMouseEvent* event) { }
-      void Mode3D::wheelEvent (QWheelEvent* event) { }
+      bool Mode3D::mouse_click () { return (false); }
+      bool Mode3D::mouse_move () { return (false); }
+      bool Mode3D::mouse_doubleclick () { return (false); }
+      bool Mode3D::mouse_release () { return (false); }
+      bool Mode3D::mouse_wheel (float delta, Qt::Orientation orientation) { return (false); }
 
     }
   }

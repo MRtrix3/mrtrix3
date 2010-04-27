@@ -14,7 +14,7 @@
    height="32"
    id="svg2"
    version="1.1"
-   inkscape:version="0.47pre4 r22446"
+   inkscape:version="0.47 r22583"
    inkscape:export-filename="/home/donald/src/mrtrix/experimental/qt4/icons/forward_backward.png"
    inkscape:export-xdpi="90"
    inkscape:export-ydpi="90"
@@ -170,12 +170,12 @@
      inkscape:pageshadow="2"
      inkscape:zoom="12.763277"
      inkscape:cx="17.445254"
-     inkscape:cy="18.3949"
+     inkscape:cy="15.260909"
      inkscape:document-units="px"
      inkscape:current-layer="layer1"
      showgrid="true"
      inkscape:window-width="1366"
-     inkscape:window-height="695"
+     inkscape:window-height="694"
      inkscape:window-x="0"
      inkscape:window-y="25"
      inkscape:window-maximized="1">
@@ -210,7 +210,7 @@
      transform="translate(-233,-451.36218)">
     <path
        style="fill:#ffffff;fill-opacity:1;stroke:#000000;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:round;stroke-opacity:1"
-       d="m 252.5,482.86218 12,-11 -7,0 -3,-6 4,0 -6,-3 -6,3 4,0 -2,6 -8,0 12,11 z"
+       d="m 252.5,482.86218 12,-11 -6,0 -3,-5 5,0 -8,-5 -8,5 5,0 -2,5 -7,0 12,11 z"
        id="path4579"
        sodipodi:nodetypes="ccccccccccc"
        inkscape:export-filename="/home/donald/Desktop/path4579.png"

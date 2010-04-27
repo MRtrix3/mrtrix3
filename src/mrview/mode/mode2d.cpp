@@ -30,7 +30,7 @@ namespace MR {
   namespace Viewer {
     namespace Mode {
 
-      Mode2D::Mode2D (Window& parent) : Base (parent), show_focus (true), edge (0)
+      Mode2D::Mode2D (Window& parent) : Base (parent)
       { 
         axial_action = new QAction(tr("&Axial"), this);
         axial_action->setShortcut (tr("A"));
@@ -54,13 +54,43 @@ namespace MR {
         separator->setSeparator (true);
         add_action (separator);
 
-        show_focus_action = new QAction(tr("Show &Focus"), this);
+        show_image_info_action = new QAction(tr("Show &image info"), this);
+        show_image_info_action->setCheckable (true);
+        show_image_info_action->setShortcut (tr("H"));
+        show_image_info_action->setStatusTip (tr("Show image header information"));
+        show_image_info_action->setChecked (true);
+        connect (show_image_info_action, SIGNAL (triggered()), this, SLOT (toggle_show_xyz()));
+        add_action (show_image_info_action);
+
+        show_orientation_action = new QAction(tr("Show &orientation"), this);
+        show_orientation_action->setCheckable (true);
+        show_orientation_action->setShortcut (tr("O"));
+        show_orientation_action->setStatusTip (tr("Show image orientation labels"));
+        show_orientation_action->setChecked (true);
+        connect (show_orientation_action, SIGNAL (triggered()), this, SLOT (toggle_show_xyz()));
+        add_action (show_orientation_action);
+
+        show_position_action = new QAction(tr("Show &voxel"), this);
+        show_position_action->setCheckable (true);
+        show_position_action->setShortcut (tr("V"));
+        show_position_action->setStatusTip (tr("Show image voxel position and value"));
+        show_position_action->setChecked (true);
+        connect (show_position_action, SIGNAL (triggered()), this, SLOT (toggle_show_xyz()));
+        add_action (show_position_action);
+
+        separator = new QAction (this);
+        separator->setSeparator (true);
+        add_action (separator);
+
+        show_focus_action = new QAction(tr("Show &focus"), this);
+        show_focus_action->setCheckable (true);
         show_focus_action->setShortcut (tr("F"));
         show_focus_action->setStatusTip (tr("Show focus with the crosshairs"));
-        connect (show_focus_action, SIGNAL (triggered()), this, SLOT (toggle_show_focus()));
+        show_focus_action->setChecked (true);
+        connect (show_focus_action, SIGNAL (triggered()), this, SLOT (toggle_show_xyz()));
         add_action (show_focus_action);
 
-        reset_action = new QAction(tr("Reset &View"), this);
+        reset_action = new QAction(tr("Reset &view"), this);
         reset_action->setShortcut (tr("Crtl+R"));
         reset_action->setStatusTip (tr("Reset image projection & zoom"));
         connect (reset_action, SIGNAL (triggered()), this, SLOT (reset()));
@@ -73,7 +103,10 @@ namespace MR {
       void Mode2D::paint () 
       { 
         glClear (GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-        if (!image()) return;
+        if (!image()) {
+          renderText (10, 10, "No image loaded");
+          return;
+        }
         if (!focus()) reset_view();
         if (!target()) set_target (focus());
 
@@ -106,11 +139,11 @@ namespace MR {
         }
 
         // image slice:
-        Point F (image()->interp.scanner2voxel (focus()));
-        int slice = Math::round (F[projection()]);
+        Point voxel (image()->interp.scanner2voxel (focus()));
+        int slice = Math::round (voxel[projection()]);
 
         // camera target:
-        F = image()->interp.scanner2voxel (target());
+        Point F = image()->interp.scanner2voxel (target());
         F[projection()] = slice;
         F = image()->interp.voxel2scanner (F);
 
@@ -144,7 +177,7 @@ namespace MR {
         glDisable (GL_TEXTURE_2D);
 
         // draw focus:
-        if (show_focus) {
+        if (show_focus_action->isChecked()) {
           Point F = model_to_screen (focus());
 
           glMatrixMode (GL_PROJECTION);
@@ -177,115 +210,161 @@ namespace MR {
 
         }
         glDepthMask (GL_TRUE);
-      }
 
-
-
-
-      void Mode2D::mousePressEvent (QMouseEvent* event)
-      { 
-        if (event->modifiers() == Qt::NoModifier) {
-
-          if (event->buttons() == Qt::LeftButton) {
-            set_focus (screen_to_model (event));
-            updateGL();
-          }
-          else if (event->buttons() == Qt::MidButton)
-            glarea()->setCursor (Cursor::pan_crosshair);
-          else if (event->buttons() == Qt::RightButton) {
-            if (cursor_right (event)) edge = 2;
-            else glarea()->setCursor (Cursor::window);
+        if (show_orientation_action->isChecked()) {
+          glColor4f (1.0, 0.0, 0.0, 1.0);
+          switch (projection()) {
+            case 0: 
+              renderText ("A", LeftEdge);
+              renderText ("S", TopEdge);
+              renderText ("P", RightEdge);
+              renderText ("I", BottomEdge);
+              break;
+            case 1: 
+              renderText ("R", LeftEdge);
+              renderText ("S", TopEdge);
+              renderText ("L", RightEdge);
+              renderText ("I", BottomEdge);
+              break;
+            case 2: 
+              renderText ("R", LeftEdge);
+              renderText ("A", TopEdge);
+              renderText ("L", RightEdge);
+              renderText ("P", BottomEdge);
+              break;
+            default:
+              assert (0);
           }
         }
 
-        grab_event (event);
-        event->accept();
+        glColor4f (1.0, 1.0, 0.0, 1.0);
+        ssize_t vox [] = { Math::round<int>(voxel[0]), Math::round<int>(voxel[1]), Math::round<int>(voxel[2]) };
+
+        if (show_position_action->isChecked()) {
+          renderText (printf ("position: [ %.4g %.4g %.4g ] mm", focus()[0], focus()[1], focus()[2]), LeftEdge | BottomEdge);
+          renderText (printf ("voxel: [ %d %d %d ]", vox[0], vox[1], vox[2]), LeftEdge | BottomEdge, 1);
+          std::string value;
+          if (vox[0] >= 0 && vox[0] < image()->vox.dim(0) && 
+              vox[1] >= 0 && vox[1] < image()->vox.dim(1) && 
+              vox[2] >= 0 && vox[2] < image()->vox.dim(2)) {
+            image()->vox[0] = vox[0];
+            image()->vox[1] = vox[1];
+            image()->vox[2] = vox[2];
+            value = printf ("value: %.5g", float (image()->vox.value()));
+          }
+          else value = "value: ?";
+          renderText (value, LeftEdge | BottomEdge, 2);
+        }
+
+        if (show_image_info_action->isChecked()) {
+          for (size_t i = 0; i < image()->H.comments.size(); ++i)
+            renderText (image()->H.comments[i], LeftEdge | TopEdge, i);
+        }
       }
 
 
 
-      void Mode2D::mouseMoveEvent (QMouseEvent* event) 
-      {
 
-        if (lastButtons == Qt::NoButton) {
-          if (cursor_right (event)) 
+      bool Mode2D::mouse_click ()
+      { 
+        if (mouse_modifiers() == Qt::NoModifier) {
+
+          if (mouse_buttons() == Qt::LeftButton) {
+            set_focus (screen_to_model (mouse_pos()));
+            updateGL();
+            return (true);
+          }
+
+          else if (mouse_buttons() == Qt::MidButton)
+            glarea()->setCursor (Cursor::pan_crosshair);
+
+          else if (mouse_buttons() == Qt::RightButton) {
+            if (!mouse_edge()) 
+              glarea()->setCursor (Cursor::window);
+          }
+        }
+
+        return (false);
+      }
+
+
+
+      bool Mode2D::mouse_move () 
+      {
+        if (mouse_buttons() == Qt::NoButton) {
+          if (mouse_edge() & RightEdge) 
             glarea()->setCursor (Cursor::forward_backward);
           else
             glarea()->setCursor (Cursor::crosshair);
-          event->ignore();
-          return;
+          return (false);
         }
 
-        if (lastButtons == Qt::LeftButton && lastModifiers == Qt::NoModifier) {
-          set_focus (screen_to_model (event));
-          updateGL();
-          return;
-        }
+        if (mouse_modifiers() == Qt::NoModifier) {
 
-        if (lastModifiers == Qt::NoModifier) {
-          if (lastButtons == Qt::MidButton) {
-            set_target (target() - screen_to_model_direction (distance_moved (event)));
+          if (mouse_buttons() == Qt::LeftButton) {
+            set_focus (screen_to_model());
             updateGL();
+            return (true);
           }
 
-          if (lastButtons == Qt::RightButton && image()) {
-            if (edge == 2) {
-              Point d = distance_moved (event);
-              move_in_out (-0.1*d[1]);
-            }
-            else {
-              Point d = distance_moved_motionless (event);
-              image()->adjust_windowing (d[0], d[1]);
-            }
+          if (mouse_buttons() == Qt::MidButton) {
+            set_target (target() - screen_to_model_direction (Point (mouse_dpos().x(), mouse_dpos().y(), 0.0)));
             updateGL();
+            return (true);
+          }
+
+          if (mouse_buttons() == Qt::RightButton) {
+            if (mouse_edge() & RightEdge) {
+              move_in_out (-0.1*mouse_dpos().y());
+              updateGL();
+              return (true);
+            }
+
+            if (image()) {
+              image()->adjust_windowing (mouse_dpos_static());
+              updateGL();
+              return (true);
+            }
           }
         }
+
+        return (false);
       }
 
 
 
-      void Mode2D::mouseDoubleClickEvent (QMouseEvent* event) { }
+      bool Mode2D::mouse_doubleclick () { return (false); }
 
-      void Mode2D::mouseReleaseEvent (QMouseEvent* event) 
-      { 
-        glarea()->setCursor (Cursor::crosshair); 
-        lastButtons = Qt::NoButton;
-        lastModifiers = Qt::NoModifier;
-        edge = 0;
-      }
+      bool Mode2D::mouse_release () { glarea()->setCursor (Cursor::crosshair); return (true); }
 
 
 
 
-      void Mode2D::wheelEvent (QWheelEvent* event) 
+      bool Mode2D::mouse_wheel (float delta, Qt::Orientation orientation) 
       {
-        if (!image()) return;
-        if (event->orientation() != Qt::Vertical) return;
+        if (!image()) return (false);
+        if (orientation != Qt::Vertical) return (false);
 
-        float inc = event->delta() / 120.0;
-
-        if (event->modifiers() == Qt::ControlModifier) {
-          change_FOV_scroll (-inc);
+        if (mouse_modifiers() == Qt::ControlModifier) {
+          change_FOV_scroll (-delta);
           updateGL();
-          event->accept();
-          return;
+          return (true);
         }
 
-        if (event->modifiers() == Qt::ShiftModifier) inc *= 10.0;
-        else if (event->modifiers() != Qt::NoModifier) {
-          event->ignore();
-          return;
-        }
+        if (mouse_modifiers() == Qt::ShiftModifier) delta *= 10.0;
+        else if (mouse_modifiers() != Qt::NoModifier) 
+          return (false);
 
-        move_in_out (inc);
+        move_in_out (delta);
         updateGL();
-        event->accept();
+        return (true);
       }
 
 
 
       void Mode2D::move_in_out (float distance) 
       {
+        if (!image()) return;
         Point D (0.0, 0.0, 0.0);
         D[projection()] = distance;
         Point move = image()->interp.voxel2scanner_dir (D);
@@ -297,7 +376,10 @@ namespace MR {
       void Mode2D::axial () { set_projection (2); updateGL(); }
       void Mode2D::sagittal () { set_projection (0); updateGL(); }
       void Mode2D::coronal () { set_projection (1); updateGL(); }
-      void Mode2D::toggle_show_focus () { show_focus = !show_focus; updateGL(); }
+      void Mode2D::toggle_show_xyz () { updateGL(); }
+
+
+
       void Mode2D::reset_view ()
       { 
         if (!image()) return;
