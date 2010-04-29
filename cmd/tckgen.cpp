@@ -44,7 +44,7 @@ ARGUMENTS = {
   Argument::End
 };
 
-const char* algorithms[] = { "IFOD1", "IFOD2" };
+const char* algorithms[] = { "ifod1", "ifod2", NULL };
 
 OPTIONS = {
   Option ("algorithm", "algorithm", "specify the tractography algorithm to use (default: iFOD2).")
@@ -66,7 +66,7 @@ OPTIONS = {
     .append (Argument ("size", "step size", "the step size to use in mm (default is 0.2 mm).").type_float (1e-6, 10.0, 0.2)),
 
   Option ("angle", "maximum deflection angle", "set the maximum angle between successive steps (default is 45°).")
-    .append (Argument ("radius", "radius of curvature", "the radius of curvature to use in mm.").type_float (1e-6, 90.0, 45.0)),
+    .append (Argument ("theta", "theta", "theta, the maximum angle.").type_float (1e-6, 90.0, 45.0)),
 
   Option ("number", "desired number of tracks", "set the desired number of tracks. The program will continue to generate tracks until this number of tracks have been selected and written to the output file (default is 100 for *_STREAM methods, 1000 for *_PROB methods).")
     .append (Argument ("tracks", "number of tracks", "the number of tracks.").type_integer (1, INT_MAX, 1)),

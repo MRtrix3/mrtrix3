@@ -151,7 +151,7 @@ namespace MR {
               float val = FOD (next_pos, next_dir);
               if (isnan (val) || val < S.threshold) return (NAN);
 
-              for (size_t i = S.num_samples-1; i > 0; --i) {
+              for (size_t i = S.num_samples; i > 0; --i) {
                 float a = (theta * i) / S.num_samples, cos_a = cos (a), sin_a = sin (a);
                 Point x = pos + R * (sin_a * dir + (1.0 - cos_a) * curv);
                 Point t = cos_a * dir + sin_a * curv;
@@ -166,7 +166,7 @@ namespace MR {
               float val = FOD (next_pos, dir);
               if (isnan (val) || val < S.threshold) return (NAN);
 
-              for (size_t i = S.num_samples-1; i > 0; --i) {
+              for (size_t i = S.num_samples; i > 0; --i) {
                 float f = (S.step_size * i) / S.num_samples;
                 Point x = pos + f * dir;
                 float amp = FOD (x, dir);
