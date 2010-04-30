@@ -35,6 +35,18 @@ namespace MR {
     namespace Transform {
 
       template <class Set, typename T> 
+        inline Math::Matrix<T>& set_default (Math::Matrix<T>& M, const Set& ds)
+        {
+          M.allocate(4,4);
+          M.identity();
+          M(0,3) = -0.5 * (ds.dim(0)-1) * ds.vox(0);
+          M(1,3) = -0.5 * (ds.dim(1)-1) * ds.vox(1);
+          M(2,3) = -0.5 * (ds.dim(2)-1) * ds.vox(2);
+          return (M);
+        }
+
+
+      template <class Set, typename T> 
         inline Math::Matrix<T>& voxel2image (Math::Matrix<T>& M, const Set& ds) 
         {
           M.allocate(4,4);

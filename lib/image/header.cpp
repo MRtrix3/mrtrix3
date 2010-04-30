@@ -23,6 +23,7 @@
 #include "app.h"
 #include "image/header.h"
 #include "dataset/stride.h"
+#include "dataset/transform.h"
 #include "math/matrix.h"
 #include "math/permutation.h"
 #include "image/axis.h"
@@ -66,13 +67,8 @@ namespace MR {
         }
       }
 
-      if (!transform_matrix.is_set()) {
-        transform_matrix.allocate (4,4);
-        transform_matrix.identity();
-        transform_matrix(0,3) = -0.5 * (axes.dim(0)-1) * axes.vox(0);
-        transform_matrix(1,3) = -0.5 * (axes.dim(1)-1) * axes.vox(1);
-        transform_matrix(2,3) = -0.5 * (axes.dim(2)-1) * axes.vox(2);
-      }
+      if (!transform_matrix.is_set()) 
+        DataSet::Transform::set_default (transform_matrix, *this);
 
       transform_matrix(3,0) = transform_matrix(3,1) = transform_matrix(3,2) = 0.0; transform_matrix(3,3) = 1.0;
 

@@ -56,90 +56,190 @@ namespace MR {
     //! \addtogroup DataSet
     // @{
 
-    template <typename T = float, size_t NDIM = 3> class Buffer {
-      public:
-        typedef T value_type;
 
-        template <class Set> Buffer (const Set& D, const std::string& id = "unnamed") :
-          offset (0),
-          start (0),
-          descriptor (id),
-          transform_matrix (D.transform()) {
-            assert (D.ndim() >= NDIM);
-            for (size_t n = 0; n < NDIM; ++n) {
-              N[n] = D.dim(n);
-              V[n] = D.vox(n);
-              skip[n] = D.stride(n);
+    //! A class to hold data in memory with fast data access
+    /*! The Buffer class is a thin wrapper around a memory region, and provides
+     * a DataSet interface to image data in that memory buffer. 
+     *
+     * \section simpleuse Use as a image buffer
+     * The simplest way to use the image buffer is to provide an existing
+     * DataSet object to the constructor, which will create a Buffer with the
+     * same dimensions, voxel size, etc. For more fine-grained usage, create a
+     * Buffer::Prototype, set the desired properties, and pass that to the
+     * constructor for the Buffer.
+     *
+     * \section threadsafety Thread-safety
+     * The Buffer class copy constructor creates a copy that references the
+     * data from the original Buffer. Multiple copies can therefore be used
+     * concurrently to access the data from multiple threads. It is also
+     * compatible with the Thread::Array API.
+     *
+     * Note that concurrent access to the same voxel is \b not thread-safe, and
+     * applications will need to coordinate any read/write access to the voxel
+     * data.
+     *
+     */
+    template <typename T = float, size_t NDIM = 3> 
+      class Buffer 
+      {
+        public:
+
+          typedef T value_type;
+
+          class Prototype 
+          {
+            public:
+              Prototype () : 
+                data (NULL) { 
+                  for (size_t n = 0; n < NDIM; ++n) {
+                    dim_[n] = 0;
+                    vox_[n] = 1.0;
+                    stride_[n] = n+1;
+                  }
+                }
+
+              value_type* data;
+
+              size_t ndim () const { return (NDIM); }
+
+              size_t dim (size_t axis) const { return (dim_[axis]); }
+              size_t& dim (size_t axis) { return (dim_[axis]); }
+
+              float vox (size_t axis) const { return (vox_[axis]); }
+              float& vox (size_t axis) { return (vox_[axis]); }
+
+              ssize_t stride (size_t axis) const { return (stride_[axis]); }
+              ssize_t& stride (size_t axis) { return (stride_[axis]); }
+
+              const Math::Matrix<float>& transform () const { return (transform_); }
+              Math::Matrix<float>& transform () { return (transform_); }
+
+              const std::string& name () const { return (name_); }
+              std::string& name () { return (name_); }
+
+            private:
+              size_t start_;
+              ssize_t stride_ [NDIM];
+              size_t dim_ [NDIM];
+              float  vox_ [NDIM];
+              Math::Matrix<float> transform_;
+              typename Array<value_type>::RefPtr block_;
+              std::string name_;
+
+              Prototype (const Prototype& prot) :
+                data (prot.data),
+                transform_ (prot.transform_),
+                name_ (prot.name_) {
+                  memcpy (stride_, prot.stride_, sizeof (stride_));
+                  memcpy (dim_, prot.dim_, sizeof (dim_));
+                  memcpy (vox_, prot.vox_, sizeof (vox_));
+                  init();
+                }
+
+              template <class Set> Prototype (const Set& D, const std::string& id) : 
+                data (NULL),
+                transform_ (D.transform()),
+                name_ (id) {
+                  assert (D.ndim() >= NDIM);
+                  for (size_t n = 0; n < NDIM; ++n) {
+                    dim_[n] = D.dim(n);
+                    vox_[n] = D.vox(n);
+                    stride_[n] = D.stride(n);
+                  }
+                  init();
+                }
+
+              void init () 
+              {
+                Stride::actualise (*this);
+                start_ = Stride::offset (*this);
+
+                if (transform_.rows() != 4 || transform_.columns() != 4)
+                  Transform::set_default (transform_, *this);
+
+                if (!data) {
+                  block_ = __allocate<value_type> (voxel_count (*this));
+                  data = block_.get();
+                }
+              }
+
+              friend class Buffer<T,NDIM>;
+          };
+
+
+
+          //! Construct by using \a D as prototype
+          template <class Set> Buffer (const Set& D, const std::string& id = "unnamed") :
+            instance (new Prototype (D, id)) {
+              ptr = instance.get();
+              reset();
             }
-            setup();
+
+          //! Construct by supplying a fully-formed prototype
+          /*! \note if the \a data member of the prototype is set to NULL (the
+           * default), a new data block will be allocated to house the data.
+           * Otherwise the memory region pointed to by \a data will be used as
+           * the data storage. */
+          Buffer (const Prototype& prot) :
+            instance (new Prototype (prot)) {
+              ptr = instance.get();
+              reset();
+            }
+
+          //! Copy constructor
+          /*! \note the new instance will refer to the data from the original
+           * Buffer, but will not try to delete the data when the destructor is
+           * called. */
+          Buffer (const Buffer& buf) :
+            ptr (buf.ptr), 
+            offset (buf.offset) {
+              memcpy (x, buf.x, sizeof (x));
+            }
+
+          const std::string& name () const { return (ptr->name()); }
+          size_t  ndim () const { return (NDIM); }
+          int     dim (size_t axis) const { return (ptr->dim(axis)); }
+          float   vox (size_t axis) const { return (ptr->vox(axis)); }
+          ssize_t stride (size_t axis) const { return (ptr->stride(axis)); }
+
+          const Math::Matrix<float>& transform () const { return (ptr->transform()); }
+
+          Position<Buffer<T,NDIM> > operator[] (size_t axis) { return (Position<Buffer<T,NDIM> > (*this, axis)); }
+          Value<Buffer<T,NDIM> > value () { return (Value<Buffer<T,NDIM> > (*this)); }
+
+          void    reset () { memset (x, 0, NDIM*sizeof(ssize_t)); offset = ptr->start_; }
+
+          //! set all voxel values to zero
+          void    clear () { memset (ptr->data, 0, __footprint<value_type> (voxel_count (*this))); }
+
+          //! return the value at \a pos in a thread-safe manner
+          template <class A> value_type value_at (const A& pos) const 
+          { 
+            return (__get<value_type> (ptr->data, get_offset (pos))); 
           }
 
-        ~Buffer () { }
 
-        const std::string& name () const { return (descriptor); }
-        size_t  ndim () const { return (NDIM); }
-        int     dim (size_t axis) const { return (N[axis]); }
-        float   vox (size_t axis) const { return (V[axis]); }
-        ssize_t stride (size_t axis) const { return (skip[axis]); }
+        private:
+          Prototype* ptr;
+          size_t offset;
+          ssize_t x [NDIM];
 
-        const Math::Matrix<float>& transform () const { return (transform_matrix); }
+          Ptr<Prototype> instance;
 
-        Position<Buffer<T,NDIM> > operator[] (size_t axis) { return (Position<Buffer<T,NDIM> > (*this, axis)); }
-        Value<Buffer<T,NDIM> > value () { return (Value<Buffer<T,NDIM> > (*this)); }
+          template <class A> size_t get_offset (const A& pos, size_t n = 0) const 
+          { return (n < NDIM ? stride(n) * pos[n] + get_offset (pos, n+1) : ptr->start_); }
 
-        void    reset () { memset (x, 0, NDIM*sizeof(ssize_t)); offset = start; }
-        void    clear () { memset (data, 0, __footprint<value_type> (voxel_count (*this))); }
+          ssize_t get_pos (size_t axis) const { return (x[axis]); }
+          void    set_pos (size_t axis, ssize_t position) { 
+            offset += stride(axis) * (position - x[axis]); x[axis] = position; }
+          void    move_pos (size_t axis, ssize_t increment) { offset += stride(axis) * increment; x[axis] += increment; }
 
-        template <class A> value_type value_at (const A& pos) const 
-        { 
-         return (__get<value_type> (data.get(), get_offset (pos))); 
-        }
-          
+          value_type   get_value () const { return (__get<value_type>(ptr->data, offset)); }
+          void         set_value (value_type val) { __set<value_type>(ptr->data, offset, val); }
 
-      private:
-        typename Array<value_type>::RefPtr data;
-        size_t offset, start;
-        size_t N [NDIM];
-        ssize_t x [NDIM], skip[NDIM];
-        float  V [NDIM];
-        size_t axes_layout[NDIM];
-        std::string descriptor;
-
-        Math::Matrix<float> transform_matrix;
-
-        ssize_t& stride (size_t axis) { return (skip[axis]); }
-
-        template <class A> size_t get_offset (const A& pos, size_t n = 0) const 
-        {
-          return (n < NDIM ? skip[n] * pos[n] + get_offset (pos, n+1) : start);
-        }
-
-        void setup () 
-        {
-          data = __allocate<value_type> (voxel_count (*this));
-          Stride::actualise (*this);
-          start = Stride::offset (*this);
-          reset();
-          if (transform_matrix.rows() == 4 && transform_matrix.columns() == 4) return;
-          transform_matrix.allocate(4,4);
-          transform_matrix.identity();
-          transform_matrix(0,3) = N[0]/2.0;
-          transform_matrix(1,3) = N[1]/2.0;
-          transform_matrix(2,3) = N[2]/2.0;
-        }
-
-        ssize_t get_pos (size_t axis) const { return (x[axis]); }
-        void    set_pos (size_t axis, ssize_t position) { 
-          offset += skip[axis] * (position - x[axis]); x[axis] = position; }
-        void    move_pos (size_t axis, ssize_t increment) { offset += skip[axis] * increment; x[axis] += increment; }
-
-        value_type   get_value () const { return (__get<value_type>(data.get(), offset)); }
-        void         set_value (value_type val) { __set<value_type>(data.get(), offset, val); }
-
-        friend void Stride::actualise<Buffer<T,NDIM> > (Buffer<T,NDIM>& set);
-        friend class Position<Buffer<T,NDIM> >;
-        friend class Value<Buffer<T,NDIM> >;
-    };
+          friend class Position<Buffer<T,NDIM> >;
+          friend class Value<Buffer<T,NDIM> >;
+      };
 
     //! @}
   }
