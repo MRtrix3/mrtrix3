@@ -158,19 +158,22 @@ namespace MR {
        * lowest number greater than any of the currently valid strides. */
       template <class Set> void sanitise (Set& set) 
       {
-        size_t max = 0;
         for (size_t i = 0; i < set.ndim()-1; ++i) {
           if (!set.stride(i)) continue;
-          if (size_t (abs(set.stride(i))) > max) max = abs (set.stride(i));
           for (size_t j = i+1; j < set.ndim(); ++j) {
             if (!set.stride(j)) continue;
             if (abs(set.stride(i)) == abs(set.stride(j))) set.stride(j) = 0;
           }
         }
 
+        size_t max = 0;
+        for (size_t i = 0; i < set.ndim(); ++i) 
+          if (size_t (abs(set.stride(i))) > max)
+            max = abs (set.stride(i));
+
         for (size_t i = 0; i < set.ndim(); ++i) {
           if (set.stride(i)) continue;
-          set.stride(i) = max++;
+          set.stride(i) = ++max;
         }
       }
       //! remove duplicate and invalid strides.

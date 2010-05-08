@@ -202,6 +202,61 @@ namespace MR {
               header.handler->prepare();
               if (header.handler->nsegments() == 1 && 
                   header.datatype() == DataType::from<value_type>()) {
+                info ("data in \"" + header.name() + "\" already in required format - mapping as-is");
+                ptr->data = reinterpret_cast<value_type*> (header.handler->segment(0));
+              }
+
+              ptr->init();
+              reset(); 
+
+              if (ptr->block_) {
+                info ("data in \"" + header.name() + "\" not in required format - loading into memory...");
+                Image::Voxel<value_type> vox (header);
+                copy_with_progress_message ("loading data for image \"" + header.name() + "\"...", *this, vox);
+              }
+            }
+
+
+          //! Construct from an Image::Header object
+          /*! If the data type matches and the image only contains one file,
+           * the data will be accessed using memory-mapping. Otherwise, the
+           * data will be loaded into memory. */
+          Buffer (const Image::Header& header, const std::vector<ssize_t>& desired_strides) :
+            ptr (new Prototype), instance (ptr) {
+              assert (header.ndim() >= NDIM);
+              bool strides_match = true;
+              for (size_t i = 0; i < std::min (desired_strides.size(), NDIM); ++i) {
+                if (desired_strides[i]) {
+                  if (Math::abs (desired_strides[i]) != Math::abs (header.stride(i))) {
+                    strides_match = false;
+                    break;
+                  }
+                }
+              }
+
+              if (strides_match) {
+                for (size_t i = 0; i < NDIM; ++i) 
+                  ptr->stride(i) = header.stride(i);
+              }
+              else {
+                for (size_t i = 0; i < NDIM; ++i) 
+                  ptr->stride(i) = 0;
+                for (size_t i = 0; i < std::min (desired_strides.size(), NDIM); ++i)
+                  ptr->stride(i) = desired_strides[i];
+                Stride::sanitise (*ptr);
+              }
+
+              for (size_t i = 0; i < NDIM; ++i) {
+                ptr->dim(i) = header.dim(i);
+                ptr->vox(i) = header.vox(i);
+              }
+              ptr->transform().copy (header.transform());
+              ptr->name() = header.name();
+
+              header.handler->prepare();
+              if (header.handler->nsegments() == 1 && 
+                  header.datatype() == DataType::from<value_type>()
+                  && strides_match) {
                 info ("data in \"" + header.name() + "\" already in native format - mapping as-is");
                 ptr->data = reinterpret_cast<value_type*> (header.handler->segment(0));
               }
@@ -212,7 +267,7 @@ namespace MR {
               if (ptr->block_) {
                 info ("data in \"" + header.name() + "\" not in native format - loading into memory...");
                 Image::Voxel<value_type> vox (header);
-                copy_with_progress (*this, vox);
+                copy_with_progress_message ("loading data for image \"" + header.name() + "\"...", *this, vox);
               }
             }
 

@@ -153,6 +153,11 @@ namespace MR {
             }
           }
 
+        Voxel (const Voxel& vox) : 
+          H (vox.H), handler (*H.handler), offset (vox.offset), x (vox.x),
+          get_func (vox.get_func), put_func (vox.put_func) {
+        }
+
         const Header& header () const { return (H); }
         DataType datatype () const { return (H.datatype()); }
         const Math::Matrix<float>& transform () const { return (H.transform()); }

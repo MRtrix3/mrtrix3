@@ -49,6 +49,15 @@ namespace MR {
           destination.value() = source.value();
       }
 
+
+    template <class Set, class Set2> 
+      void copy_with_progress_message (const std::string& message, Set& destination, Set2& source, size_t from_axis = 0, size_t to_axis = SIZE_MAX) 
+      { 
+        LoopInOrder loop (destination, message, from_axis, to_axis);
+        for (loop.start (destination, source); loop.ok(); loop.next (destination, source)) 
+          destination.value() = source.value();
+      }
+
     //! @}
   }
 }
