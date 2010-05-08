@@ -32,11 +32,14 @@ namespace MR {
   namespace DWI {
     namespace Tractography {
 
+      typedef DataSet::Buffer<float,4> StorageType;
+
       class SharedBase {
         public:
+
           SharedBase (const Image::Header& source_header, DWI::Tractography::Properties& property_set) :
             H (source_header),
-            source (H),
+            source (H, strides_by_volume()),
             properties (property_set), 
             max_num_tracks (1000),
             max_angle (45.0),
@@ -79,12 +82,15 @@ namespace MR {
         }
 
           const Image::Header& H;
-          DataSet::Buffer<float,4> source;
+          StorageType source;
           DWI::Tractography::Properties& properties;
           Point init_dir;
           size_t max_num_tracks, max_num_attempts, min_num_points, max_num_points;
           float max_angle, step_size, threshold, init_threshold;
           bool unidirectional;
+
+        private:
+          static const std::vector<ssize_t>& strides_by_volume ();
       };
 
     }

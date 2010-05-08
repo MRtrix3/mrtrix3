@@ -43,8 +43,8 @@ namespace MR {
 
           ~MethodBase () { delete values; }
 
-          DataSet::Buffer<float,4> source;
-          DataSet::Interp::Linear<DataSet::Buffer<float,4> > interp;
+          StorageType source;
+          DataSet::Interp::Linear<StorageType> interp;
           Math::RNG rng;
           Point pos, dir;
           float* values;
