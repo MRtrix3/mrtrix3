@@ -27,6 +27,9 @@
 #include "dataset/value.h"
 #include "dataset/position.h"
 #include "dataset/stride.h"
+#include "dataset/copy.h"
+#include "image/header.h"
+#include "image/voxel.h"
 
 #define BITMASK 0x01U << 7
 
@@ -98,6 +101,7 @@ namespace MR {
                   }
                 }
 
+
               value_type* data;
 
               size_t ndim () const { return (NDIM); }
@@ -128,17 +132,16 @@ namespace MR {
 
               Prototype (const Prototype& prot) :
                 data (prot.data),
-                transform_ (prot.transform_),
                 name_ (prot.name_) {
                   memcpy (stride_, prot.stride_, sizeof (stride_));
                   memcpy (dim_, prot.dim_, sizeof (dim_));
                   memcpy (vox_, prot.vox_, sizeof (vox_));
+                  transform_.copy (prot.transform_);
                   init();
                 }
 
               template <class Set> Prototype (const Set& D, const std::string& id) : 
                 data (NULL),
-                transform_ (D.transform()),
                 name_ (id) {
                   assert (D.ndim() >= NDIM);
                   for (size_t n = 0; n < NDIM; ++n) {
@@ -146,6 +149,7 @@ namespace MR {
                     vox_[n] = D.vox(n);
                     stride_[n] = D.stride(n);
                   }
+                  transform_.copy (D.transform());
                   init();
                 }
 
@@ -170,10 +174,7 @@ namespace MR {
 
           //! Construct by using \a D as prototype
           template <class Set> Buffer (const Set& D, const std::string& id = "unnamed") :
-            instance (new Prototype (D, id)) {
-              ptr = instance.get();
-              reset();
-            }
+            ptr (new Prototype (D, id)), instance (ptr) { reset(); }
 
           //! Construct by supplying a fully-formed prototype
           /*! \note if the \a data member of the prototype is set to NULL (the
@@ -181,9 +182,38 @@ namespace MR {
            * Otherwise the memory region pointed to by \a data will be used as
            * the data storage. */
           Buffer (const Prototype& prot) :
-            instance (new Prototype (prot)) {
-              ptr = instance.get();
-              reset();
+            ptr (new Prototype (prot)), instance (ptr) { reset(); }
+
+          //! Construct from an Image::Header object
+          /*! If the data type matches and the image only contains one file,
+           * the data will be accessed using memory-mapping. Otherwise, the
+           * data will be loaded into memory. */
+          Buffer (const Image::Header& header) :
+            ptr (new Prototype), instance (ptr) {
+              assert (header.ndim() >= NDIM);
+              for (size_t i = 0; i < NDIM; ++i) {
+                ptr->dim(i) = header.dim(i);
+                ptr->vox(i) = header.vox(i);
+                ptr->stride(i) = header.stride(i);
+              }
+              ptr->transform().copy (header.transform());
+              ptr->name() = header.name();
+
+              header.handler->prepare();
+              if (header.handler->nsegments() == 1 && 
+                  header.datatype() == DataType::from<value_type>()) {
+                info ("data in \"" + header.name() + "\" already in native format - mapping as-is");
+                ptr->data = reinterpret_cast<value_type*> (header.handler->segment(0));
+              }
+
+              ptr->init();
+              reset(); 
+
+              if (ptr->block_) {
+                info ("data in \"" + header.name() + "\" not in native format - loading into memory...");
+                Image::Voxel<value_type> vox (header);
+                copy_with_progress (*this, vox);
+              }
             }
 
           //! Copy constructor

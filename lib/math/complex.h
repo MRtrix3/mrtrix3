@@ -23,16 +23,12 @@
 #ifndef __math_complex_h__
 #define __math_complex_h__
 
-#include <complex>
 #include <gsl/gsl_vector_complex_double.h>
 #include <gsl/gsl_vector_complex_float.h>
 #include <gsl/gsl_matrix_complex_double.h>
 #include <gsl/gsl_matrix_complex_float.h>
 
 namespace MR {
-
-  typedef std::complex<double> cdouble;
-  typedef std::complex<float> cfloat;
 
   namespace Math {
     

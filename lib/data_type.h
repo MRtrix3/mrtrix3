@@ -70,6 +70,10 @@ namespace MR {
       void set_flag (uint8_t flag) { dt |= flag; }
       void unset_flag (uint8_t flag) { dt &= ~flag; }
 
+      template <typename T> 
+        static DataType from ();
+
+      static DataType native (DataType dt) { dt.set_byte_order_native(); return (dt); }
 
 
       static const uint8_t     Attributes    = 0xF0U;
@@ -123,6 +127,17 @@ namespace MR {
       uint8_t dt;
 
   };
+
+  template <> inline DataType DataType::from<int8_t> () { return (DataType::Int8); }
+  template <> inline DataType DataType::from<uint8_t> () { return (DataType::UInt8); }
+  template <> inline DataType DataType::from<int16_t> () { return (DataType::native (DataType::Int16)); }
+  template <> inline DataType DataType::from<uint16_t> () { return (DataType::native (DataType::UInt16)); }
+  template <> inline DataType DataType::from<int32_t> () { return (DataType::native (DataType::Int32)); }
+  template <> inline DataType DataType::from<uint32_t> () { return (DataType::native (DataType::UInt32)); }
+  template <> inline DataType DataType::from<float> () { return (DataType::native (DataType::Float32)); }
+  template <> inline DataType DataType::from<double> () { return (DataType::native (DataType::Float64)); }
+  template <> inline DataType DataType::from<cfloat> () { return (DataType::native (DataType::CFloat32)); }
+  template <> inline DataType DataType::from<cdouble> () { return (DataType::native (DataType::CFloat64)); }
 
 }
 

@@ -55,7 +55,7 @@ namespace MR {
           const size_t&  start () const { return (start_); }
           const ssize_t& stride (size_t axis) const { return (stride_[axis]); }
 
-          uint8_t* segment (size_t n) const { return (addresses[n]); }
+          uint8_t* segment (size_t n) const { assert (n < addresses.size()); return (addresses[n]); }
           size_t   nsegments () const { return (addresses.size()); }
           size_t   segment_size () const { check(); return (segsize); }
 

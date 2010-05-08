@@ -32,7 +32,9 @@ namespace MR {
       {
         using namespace DataSet::Stride;
       
-        assert (addresses.empty());
+        if (addresses.size())
+          return;
+
         execute(); 
         stride_ = get (H);
         actualise (stride_, H);

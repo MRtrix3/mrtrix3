@@ -24,6 +24,7 @@
 #define __mrtrix_types_h__
 
 #include <stdint.h>
+#include <complex>
 
 #ifndef HAVE_LARGE_FILE_SUPPORT
   typedef off_t off64_t;
@@ -33,6 +34,9 @@ namespace MR {
 
   typedef float  float32;
   typedef double float64;
+  typedef std::complex<double> cdouble;
+  typedef std::complex<float> cfloat;
+
 
 }
 
