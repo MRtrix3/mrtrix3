@@ -35,7 +35,8 @@ namespace MR {
       class SharedBase {
         public:
           SharedBase (const Image::Header& source_header, DWI::Tractography::Properties& property_set) :
-            source (source_header),
+            H (source_header),
+            source (H),
             properties (property_set), 
             max_num_tracks (1000),
             max_angle (45.0),
@@ -77,7 +78,8 @@ namespace MR {
           max_angle *= M_PI / 180.0;
         }
 
-          const Image::Header& source;
+          const Image::Header& H;
+          DataSet::Buffer<float,4> source;
           DWI::Tractography::Properties& properties;
           Point init_dir;
           size_t max_num_tracks, max_num_attempts, min_num_points, max_num_points;

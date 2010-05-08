@@ -59,7 +59,7 @@ namespace MR {
               Math::SH::PrecomputedAL<float> precomputer;
           };
 
-          iFOD2 (const Shared& shared) : MethodBase (shared.source), S (shared), mean_sample_num (0), num_sample_runs (0) { } 
+          iFOD2 (const Shared& shared) : MethodBase (shared), S (shared), mean_sample_num (0), num_sample_runs (0) { } 
           ~iFOD2 () { info ("mean number of samples per step = " + str (float(mean_sample_num)/float(num_sample_runs))); }
 
           bool init () { 

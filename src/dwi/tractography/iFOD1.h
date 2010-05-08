@@ -56,7 +56,7 @@ namespace MR {
               Math::SH::PrecomputedAL<float> precomputer;
           };
 
-          iFOD1 (const Shared& shared) : MethodBase (shared.source), S (shared) { } 
+          iFOD1 (const Shared& shared) : MethodBase (shared), S (shared) { } 
 
           bool init () 
           { 

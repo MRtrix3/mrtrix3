@@ -27,6 +27,7 @@
 #include "math/rng.h"
 #include "image/voxel.h"
 #include "dataset/interp/linear.h"
+#include "dwi/tractography/shared.h"
 
 namespace MR {
   namespace DWI {
@@ -34,16 +35,16 @@ namespace MR {
 
       class MethodBase {
         public:
-          MethodBase (const Image::Header& source_header) : 
-            source (source_header), interp (source), rng (rng_seed++), values (new float [source.dim(3)]) { }
+          MethodBase (const SharedBase& shared) : 
+            source (shared.source), interp (source), rng (rng_seed++), values (new float [source.dim(3)]) { }
 
           MethodBase (const MethodBase& base) : 
             source (base.source), interp (source), rng (rng_seed++), values (new float [source.dim(3)]) { }
 
           ~MethodBase () { delete values; }
 
-          Image::Voxel<float> source;
-          DataSet::Interp::Linear<Image::Voxel<float> > interp;
+          DataSet::Buffer<float,4> source;
+          DataSet::Interp::Linear<DataSet::Buffer<float,4> > interp;
           Math::RNG rng;
           Point pos, dir;
           float* values;
