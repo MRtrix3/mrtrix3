@@ -59,19 +59,19 @@ namespace MR {
 
 
 
-      void Tree::read_dir (const std::string& filename)
+      void Tree::read_dir (const std::string& filename, ProgressBar& progress)
       {
         try { 
           Path::Dir folder (filename); 
           std::string entry;
           while ((entry = folder.read_name()).size()) {
             std::string name (Path::join (filename, entry));
-            if (Path::is_dir (name)) read_dir (name);
+            if (Path::is_dir (name)) read_dir (name, progress);
             else {
               try { read_file (name); }
               catch (Exception& E) { E.display (3); }
             }
-            ProgressBar::inc();
+            ++progress;
           }
         }
         catch (Exception& E) { throw Exception (E, "error opening DICOM folder \"" + filename + "\": " + strerror (errno)); }
@@ -111,9 +111,8 @@ namespace MR {
 
       void Tree::read (const std::string& filename)
       {
-        ProgressBar::init (0, "scanning DICOM folder \"" + shorten (filename) + "\"");
-        read_dir (filename);
-        ProgressBar::done();
+        ProgressBar progress ("scanning DICOM folder \"" + shorten (filename) + "\"");
+        read_dir (filename, progress);
 
         if (size() > 0) return;
 

@@ -53,9 +53,11 @@ namespace MR {
           std::string  time;
 
           void read () {
-            ProgressBar::init (size(), "reading DICOM series \"" + name + "\"...");
-            for (size_t i = 0; i < size(); i++) { (*this)[i]->read(); ProgressBar::inc(); }
-            ProgressBar::done();
+            ProgressBar progress ("reading DICOM series \"" + name + "\"...", size());
+            for (size_t i = 0; i < size(); i++) {
+              (*this)[i]->read();
+              ++progress;
+            }
           }
 
           void print_fields (bool dcm, bool csa) const { for (size_t i = 0; i < size(); i++) (*this)[i]->print_fields (dcm, csa); }

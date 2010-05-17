@@ -121,7 +121,7 @@ namespace MR {
          * the Loop will iterate from axis \a from_axis up to but \b not
          * including axis \a to_axis. */
         Loop (size_t from_axis = 0, size_t to_axis = SIZE_MAX) : 
-          from_ (from_axis), to_ (to_axis), cont_ (true), progress_ (false) { }
+          from_ (from_axis), to_ (to_axis), cont_ (true) { }
 
         //! Constructor with progress status
         /*! Construct a Loop object to iterate over the axes specified and
@@ -131,7 +131,7 @@ namespace MR {
          * iterate from axis \a from_axis up to but \b not including axis \a
          * to_axis. */
         Loop (const std::string& message, size_t from_axis = 0, size_t to_axis = SIZE_MAX) :
-          from_ (from_axis), to_ (to_axis), cont_ (true), progress_ (true), progress_message_ (message) { }
+          from_ (from_axis), to_ (to_axis), cont_ (true), progress_ (message, 1) { }
 
         //! Start the loop to iterate over a single DataSet
         /*! Start the loop by resetting the appropriate coordinates of each of
@@ -146,7 +146,7 @@ namespace MR {
             for (size_t n = from_; n < std::min (set.ndim(), to_); ++n)
               set[n] = 0;
             if (progress_)
-              ProgressBar::init (voxel_count (set, from_, to_), progress_message_);
+              progress_.set_max (voxel_count (set, from_, to_));
           }
         //! Start the loop to iterate over two DataSets
         /*! \copydetails Loop::start(Set&) */
@@ -159,7 +159,7 @@ namespace MR {
               set2[n] = 0;
             }
             if (progress_)
-              ProgressBar::init (voxel_count (set, from_, to_), progress_message_);
+              progress_.set_max (voxel_count (set, from_, to_));
           }
 
         //! Start the loop to iterate over three DataSets
@@ -174,7 +174,7 @@ namespace MR {
               set3[n] = 0;
             }
             if (progress_)
-              ProgressBar::init (voxel_count (set, from_, to_), progress_message_);
+              progress_.set_max (voxel_count (set, from_, to_));
           }
 
         //! Check whether the loop should continue iterating
@@ -188,7 +188,7 @@ namespace MR {
           void next (Set& set)
           { 
             next_impl (from_, set);
-            if (cont_ && progress_) ProgressBar::inc();
+            ++progress_;
           }
 
         //! Proceed to next iteration for two DataSets
@@ -197,7 +197,7 @@ namespace MR {
           void next (Set& set, Set2& set2)
           {
             next_impl (from_, set, set2);
-            if (cont_ && progress_) ProgressBar::inc();
+            ++progress_;
           }
 
         //! Proceed to next iteration for three DataSets
@@ -206,14 +206,13 @@ namespace MR {
           void next (Set& set, Set2& set2, Set3& set3)
           {
             next_impl (from_, set, set2, set3);
-            if (cont_ && progress_) ProgressBar::inc();
+            ++progress_;
           }
 
       private:
         const size_t from_, to_;
         bool cont_;
-        const bool progress_;
-        const std::string progress_message_;
+        ProgressBar progress_;
 
         template <class Set> 
           void next_impl (size_t axis, Set& set)
@@ -222,7 +221,6 @@ namespace MR {
             else {
               if (axis+1 == std::min (to_,set.ndim())) {
                 cont_ = false;
-                if (progress_) ProgressBar::done();
               }
               else {
                 next_impl (axis+1, set);
@@ -238,7 +236,6 @@ namespace MR {
             else {
               if (axis+1 == std::min (to_, set.ndim())) {
                 cont_ = false;
-                if (progress_) ProgressBar::done();
               }
               else {
                 next_impl (axis+1, set, set2);
@@ -254,7 +251,6 @@ namespace MR {
             else {
               if (axis+1 == std::min (to_, set.ndim())) {
                 cont_ = false; 
-                if (progress_) ProgressBar::done();
               }
               else {
                 next_impl (axis+1, set, set2, set3);
@@ -383,13 +379,13 @@ namespace MR {
         //! Constructor from axes indices
         /*! Construct a LoopInOrder object to iterate over the axes specified. */
         LoopInOrder (const std::vector<size_t>& axes) : 
-          axes_ (axes), cont_ (true), progress_ (false) { }
+          axes_ (axes), cont_ (true) { }
 
         //! Construct from axes indices with progress status
         /*! Construct a LoopInOrder object to iterate over the axes specified and
          * display the progress status with the specified message. */
         LoopInOrder (const std::vector<size_t>& axes, const std::string& message) :
-          axes_ (axes), cont_ (true), progress_ (true), progress_message_ (message) { }
+          axes_ (axes), cont_ (true), progress_ (message, 1) { }
 
         //! Construct from DataSet strides
         /*! Construct a LoopInOrder object to iterate over the axes of \a set
@@ -399,7 +395,7 @@ namespace MR {
          * \a from_axis up to but \b not including axis \a to_axis. */
         template <class Set>
           LoopInOrder (const Set& set, size_t from_axis = 0, size_t to_axis = SIZE_MAX) : 
-            axes_ (Stride::order (set, from_axis, to_axis)), cont_ (true), progress_ (false) { }
+            axes_ (Stride::order (set, from_axis, to_axis)), cont_ (true) { }
 
         //! Constructor from DataSet strides with progress status
         /*! Construct a LoopInOrder object to iterate over the axes specified
@@ -410,7 +406,7 @@ namespace MR {
          * from_axis up to but \b not including axis \a to_axis. */
         template <class Set>
           LoopInOrder (const Set& set, const std::string& message, size_t from_axis = 0, size_t to_axis = SIZE_MAX) :
-            axes_ (Stride::order (set, from_axis, to_axis)), cont_ (true), progress_ (true), progress_message_ (message) { }
+            axes_ (Stride::order (set, from_axis, to_axis)), cont_ (true), progress_ (message, 1) { }
 
         //! Start the loop to iterate over a single DataSet
         /*! Start the loop by resetting the appropriate coordinates of each of
@@ -425,7 +421,7 @@ namespace MR {
             for (size_t n = 0; n < axes_.size(); ++n)
               set[axes_[n]] = 0;
             if (progress_)
-              ProgressBar::init (voxel_count (set, axes_), progress_message_);
+              progress_.set_max (voxel_count (set, axes_));
           }
         //! Start the loop to iterate over two DataSets
         /*! \copydetails LoopInOrder::start(Set&) */
@@ -438,7 +434,7 @@ namespace MR {
               set2[axes_[n]] = 0;
             }
             if (progress_)
-              ProgressBar::init (voxel_count (set, axes_), progress_message_);
+              progress_.set_max (voxel_count (set, axes_));
           }
 
         //! Start the loop to iterate over three DataSets
@@ -453,7 +449,7 @@ namespace MR {
               set3[axes_[n]] = 0;
             }
             if (progress_)
-              ProgressBar::init (voxel_count (set, axes_), progress_message_);
+              progress_.set_max (voxel_count (set, axes_));
           }
 
         //! Check whether the loop should continue iterating
@@ -467,7 +463,7 @@ namespace MR {
           void next (Set& set)
           { 
             next_impl (0, set);
-            if (cont_ && progress_) ProgressBar::inc();
+            ++progress_;
           }
 
         //! Proceed to next iteration for two DataSets
@@ -476,7 +472,7 @@ namespace MR {
           void next (Set& set, Set2& set2)
           {
             next_impl (0, set, set2);
-            if (cont_ && progress_) ProgressBar::inc();
+            ++progress_;
           }
 
         //! Proceed to next iteration for three DataSets
@@ -485,14 +481,13 @@ namespace MR {
           void next (Set& set, Set2& set2, Set3& set3)
           {
             next_impl (0, set, set2, set3);
-            if (cont_ && progress_) ProgressBar::inc();
+            ++progress_;
           }
 
       private:
         const std::vector<size_t> axes_;
         bool cont_;
-        const bool progress_;
-        const std::string progress_message_;
+        ProgressBar progress_;
 
         template <class Set> 
           void next_impl (size_t axis, Set& set)
@@ -502,7 +497,6 @@ namespace MR {
             else {
               if (axis+1 == axes_.size()) {
                 cont_ = false;
-                if (progress_) ProgressBar::done();
               }
               else {
                 next_impl (axis+1, set);
@@ -519,7 +513,6 @@ namespace MR {
             else {
               if (axis+1 == axes_.size()) {
                 cont_ = false;
-                if (progress_) ProgressBar::done();
               }
               else {
                 next_impl (axis+1, set, set2);
@@ -536,7 +529,6 @@ namespace MR {
             else {
               if (axis+1 == axes_.size()) {
                 cont_ = false; 
-                if (progress_) ProgressBar::done();
               }
               else {
                 next_impl (axis+1, set, set2, set3);

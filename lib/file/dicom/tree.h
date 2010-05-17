@@ -50,7 +50,7 @@ namespace MR {
           }
 
         protected:
-          void read_dir (const std::string& filename);
+          void read_dir (const std::string& filename, ProgressBar& progress);
           void read_file (const std::string& filename);
       }; 
 

@@ -25,6 +25,7 @@
 
 #include <string>
 
+#include "mrtrix.h"
 #include "timer.h"
 #include "types.h"
 #include "math/math.h"
@@ -32,37 +33,98 @@
 #define BUSY_INTERVAL 0.1
 
 namespace MR {
-  namespace ProgressBar {
 
-    extern std::string message; 
-    extern size_t current_val, percent;
-    extern float multiplier;
-    extern bool display, stop;
-    extern Timer stop_watch;
+  class ProgressInfo 
+  {
+    public:
+      ProgressInfo () : as_percentage (false), value (0), data (NULL) { }
+      ProgressInfo (const std::string& message, bool has_target) :
+        as_percentage (has_target), value (0), text (message), data (NULL) { }
 
-    extern void (*init_func)();
-    extern void (*display_func)();
-    extern void (*done_func)();
+      const bool as_percentage;
+      size_t value;
+      const std::string text;
+      void* data;
+  };
 
 
-    void init (size_t target, const std::string& msg);
+  class ProgressBar : private ProgressInfo
+  {
+    public:
 
+      ProgressBar () : show (0) { }
 
-    inline int inc ()
-    {
-      current_val++; 
-      if (!display) return (stop);
-      size_t t = std::isnan (multiplier) ? (size_t) (stop_watch.elapsed() / BUSY_INTERVAL) : (size_t) (multiplier*current_val);
-      if (percent != t) {
-        percent = t;
-        display_func();
+      ProgressBar (const std::string& text, size_t target = 0) : 
+        ProgressInfo (text, target),
+        show (display),
+        current_val (0) {
+          if (show) {
+            if (as_percentage) 
+              set_max (target);
+            else 
+              next_val.d = BUSY_INTERVAL;
+          }
+        }
+
+      ~ProgressBar () 
+      { 
+        if (show)
+          done_func (*this);
       }
-      return (stop);
-    }
 
-    inline void done () { if (display) done_func(); }
+      operator bool () const { return (show); }
+      bool operator! () const { return (!show); }
 
-  }
+      void set_max (size_t target) 
+      {
+        assert (target);
+        assert (as_percentage);
+        multiplier = 0.01 * target;
+        next_val.i = multiplier;
+        if (!next_val.i)
+          next_val.i = 1;
+      }
+
+      void operator++ () 
+      {
+        if (show) {
+          if (as_percentage) {
+            ++current_val; 
+            if (current_val >= next_val.i) {
+              value = next_val.i / multiplier;
+              next_val.i = (value+1) * multiplier;
+              while (next_val.i <= current_val) 
+                ++next_val.i;
+              display_func (*this);
+            }
+          }
+          else {
+            double time = timer.elapsed();
+            if (time >= next_val.d) {
+              value = time / BUSY_INTERVAL;
+              do {
+                next_val.d += BUSY_INTERVAL;
+              } while (next_val.d <= time);
+              display_func (*this);
+            }
+          }
+        }
+      }
+
+      void operator++ (int unused) { return ((*this)++); }
+
+      static bool display;
+      static void (*display_func) (ProgressInfo& p);
+      static void (*done_func) (ProgressInfo& p);
+
+    private:
+      const bool show;
+      size_t current_val;
+      union { size_t i; double d; } next_val;
+      float multiplier;
+      Timer timer;
+  };
+
 }
 
 #endif

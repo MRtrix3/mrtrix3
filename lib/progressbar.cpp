@@ -23,32 +23,10 @@
 #include "progressbar.h"
 
 namespace MR {
-  namespace ProgressBar {
 
-    std::string message; 
-    size_t current_val = 0, percent = 0;
-    float multiplier = 0.0;
-    bool display = true;
-    bool stop = false;
-    Timer stop_watch;
+  bool ProgressBar::display = true;
+  void (*ProgressBar::display_func) (ProgressInfo& p) = NULL;
+  void (*ProgressBar::done_func) (ProgressInfo& p) = NULL;
 
-    void (*init_func) () = NULL;
-    void (*display_func) () = NULL;
-    void (*done_func) () = NULL;
-
-
-    void init (size_t target, const std::string& msg)
-    {
-      stop = false;
-      message = msg;
-      if (target) multiplier = 100.0/((float) target);
-      else multiplier = NAN;
-      current_val = percent = 0;
-      if (isnan (multiplier)) stop_watch.start();
-      init_func ();
-      if (display) display_func ();
-    }
-
-  }
 }
 

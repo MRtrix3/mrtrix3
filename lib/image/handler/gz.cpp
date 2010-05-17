@@ -40,7 +40,8 @@ namespace MR {
           assert (addresses[0]);
 
           if (H.readwrite) {
-            ProgressBar::init (H.files.size() * bytes_per_segment / BYTES_PER_ZCALL, "compressing image \"" + H.name() + "\"...");
+            ProgressBar progress ("compressing image \"" + H.name() + "\"...",
+                H.files.size() * bytes_per_segment / BYTES_PER_ZCALL);
             for (size_t n = 0; n < H.files.size(); n++) {
               assert (H.files[n].start == off64_t(lead_in_size));
               File::GZ zf (H.files[n].name, "wb");
@@ -50,11 +51,10 @@ namespace MR {
               while (address < last) {
                 zf.write (reinterpret_cast<const char*> (address), BYTES_PER_ZCALL);
                 address += BYTES_PER_ZCALL;
-                ProgressBar::inc();
+                ++progress;
               }
               last += BYTES_PER_ZCALL;
               zf.write (reinterpret_cast<const char*> (address), last - address);
-              ProgressBar::done();
             }
           }
 
@@ -82,7 +82,8 @@ namespace MR {
 
         if (is_new) memset (addresses[0], 0, H.files.size() * bytes_per_segment);
         else {
-          ProgressBar::init (H.files.size() * bytes_per_segment / BYTES_PER_ZCALL, "uncompressing image \"" + H.name() + "\"...");
+          ProgressBar progress ("uncompressing image \"" + H.name() + "\"...", 
+              H.files.size() * bytes_per_segment / BYTES_PER_ZCALL);
           for (size_t n = 0; n < H.files.size(); n++) {
             File::GZ zf (H.files[n].name, "rb");
             zf.seek (H.files[n].start);
@@ -91,12 +92,11 @@ namespace MR {
             while (address < last) {
               zf.read (reinterpret_cast<char*> (address), BYTES_PER_ZCALL);
               address += BYTES_PER_ZCALL;
-              ProgressBar::inc();
+              ++progress;
             }
             last += BYTES_PER_ZCALL;
             zf.read (reinterpret_cast<char*> (address), last - address);
           }
-          ProgressBar::done();
         }
         
         if (addresses.size() > 1) 

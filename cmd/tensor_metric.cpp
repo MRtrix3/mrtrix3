@@ -168,7 +168,7 @@ EXECUTE {
   if (evec) eigv = new Math::Eigen::SymmV<double> (3);
   else eig = new Math::Eigen::Symm<double> (3);
 
-  ProgressBar::init (DataSet::voxel_count (dt, 0, 3), "computing tensor metrics...");
+  ProgressBar progress ("computing tensor metrics...", DataSet::voxel_count (dt, 0, 3));
 
   for (dt[2] = 0; dt[2] < dt.dim(2); dt[2]++) {
     set_zero (1, mask, fa, adc, eval, evec);
@@ -222,14 +222,12 @@ EXECUTE {
           }
         }
 
-        ProgressBar::inc();
+        ++progress;
         increment (0, mask, fa, adc, eval, evec);
       }
       increment (1, mask, fa, adc, eval, evec);
     }
     increment (2, mask, fa, adc, eval, evec);
   }
-
-  ProgressBar::done();
 }
 

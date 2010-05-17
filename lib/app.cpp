@@ -33,40 +33,36 @@ namespace MR {
 
   const std::string& get_application_name () { return (App::name()); }
 
-  namespace ProgressBar {
-    namespace {
+  namespace {
 
-      const char* busy[] = {
-        ".    ",
-        " .   ",
-        "  .  ",
-        "   . ",
-        "    .",
-        "   . ",
-        "  .  ",
-        " .   "
-      };
-
+    const char* busy[] = {
+      ".    ",
+      " .   ",
+      "  .  ",
+      "   . ",
+      "    .",
+      "   . ",
+      "  .  ",
+      " .   "
+    };
 
 
-      void init_func_cmdline () 
-      { 
-      }
+
+    void display_func_cmdline (ProgressInfo& p)
+    {
+      if (p.as_percentage) 
+        fprintf (stderr, "\r%s: %s %3zu%%", App::name().c_str(), p.text.c_str(), size_t(p.value));
+      else
+        fprintf (stderr, "\r%s: %s %s", App::name().c_str(), p.text.c_str(), busy[p.value%8]);
+    }
 
 
-      void display_func_cmdline ()
-      {
-        if (isnan (multiplier)) 
-          fprintf (stderr, "\r%s: %s %s", App::name().c_str(), message.c_str(), busy[percent%8]);
-        else fprintf (stderr, "\r%s: %s %3zu%%", App::name().c_str(), message.c_str(), size_t(percent));
-      }
-
-
-      void done_func_cmdline () 
-      { 
-        if (isnan (multiplier)) fprintf (stderr, "\r%s: %s  - ok\n", App::name().c_str(), message.c_str()); 
-        else fprintf (stderr, "\r%s: %s %3u%%\n", App::name().c_str(), message.c_str(), 100); 
-      }
+    void done_func_cmdline (ProgressInfo& p) 
+    { 
+      if (p.as_percentage)
+        fprintf (stderr, "\r%s: %s %3u%%\n", App::name().c_str(), p.text.c_str(), 100); 
+      else
+        fprintf (stderr, "\r%s: %s  - ok\n", App::name().c_str(), p.text.c_str()); 
     }
   }
 
@@ -177,7 +173,7 @@ namespace MR {
 
 
   App::App (int argc, char** argv, const char** cmd_desc, const MR::Argument* cmd_args, const MR::Option* cmd_opts, 
-          const size_t* cmd_version, const char* cmd_author, const char* cmd_copyright)
+      const size_t* cmd_version, const char* cmd_author, const char* cmd_copyright)
   {
 #ifdef WINDOWS
     // force stderr to be unbuffered, and stdout to be line-buffered:
@@ -207,9 +203,8 @@ namespace MR {
 
     log_level = 1;
 
-    ProgressBar::init_func = ProgressBar::init_func_cmdline;
-    ProgressBar::display_func = ProgressBar::display_func_cmdline;
-    ProgressBar::done_func = ProgressBar::done_func_cmdline;
+    ProgressBar::display_func = display_func_cmdline;
+    ProgressBar::done_func = done_func_cmdline;
 
     print = cmdline_print;
     error = cmdline_error;
@@ -220,7 +215,7 @@ namespace MR {
     sort_arguments (argc, argv); 
 
     srand (time (NULL));
-      
+
     File::Config::init ();
   }
 
@@ -302,7 +297,7 @@ namespace MR {
 
     if (has_optional_arguments && num_args_required > parsed_arguments.size()) 
       throw Exception ("expected at least " + str (num_args_required) + " arguments (" + str(parsed_arguments.size()) + " supplied)");
-    
+
     if (!has_optional_arguments && num_args_required != parsed_arguments.size()) 
       throw Exception ("expected exactly " + str (num_args_required) + " arguments (" + str (parsed_arguments.size()) + " supplied)");
 
@@ -323,7 +318,7 @@ namespace MR {
       argument.push_back (ArgBase (command_arguments[index], parsed_arguments[n]));
       if (argument.back().type() == Undefined) 
         throw Exception (std::string ("error parsing argument \"") + command_arguments[index].sname + 
-              "\" (specified as \"" + parsed_arguments[n] + "\")"); 
+            "\" (specified as \"" + parsed_arguments[n] + "\")"); 
     }
 
     for (size_t n = 0; n < parsed_options.size(); n++) {
@@ -333,8 +328,8 @@ namespace MR {
         ArgBase arg (command_options[parsed_options[n].index][a], parsed_options[n].args[a]);
         if (arg.type() == Undefined) 
           throw Exception (std::string ("error parsing argument \"") + command_options[parsed_options[n].index][a].sname 
-                + "\" of option \"-" + command_options[parsed_options[n].index].sname
-                + "\" (specified as \"" + parsed_options[n].args[a] + "\")");
+              + "\" of option \"-" + command_options[parsed_options[n].index].sname
+              + "\" (specified as \"" + parsed_options[n].args[a] + "\")");
         option.back().push_back (arg);
       }
     }
