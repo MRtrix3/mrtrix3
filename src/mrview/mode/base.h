@@ -128,8 +128,8 @@ namespace MR {
           void set_target (const Point& p) { window.camera_target = p; }
           void set_projection (int p) { window.proj = p; }
           void set_FOV (float value) { window.field_of_view = value; }
-          void change_FOV_fine (float factor) { window.field_of_view *= Math::exp (0.01*factor); }
-          void change_FOV_scroll (float factor) { change_FOV_fine (10.0 * factor); }
+          void change_FOV_fine (float factor) { window.field_of_view *= Math::exp (0.005*factor); }
+          void change_FOV_scroll (float factor) { change_FOV_fine (20.0 * factor); }
 
           int width () const { get_modelview_projection_viewport(); return (viewport_matrix[2]); }
           int height () const { get_modelview_projection_viewport(); return (viewport_matrix[3]); }
@@ -170,6 +170,7 @@ namespace MR {
 
           void mousePressEvent (QMouseEvent* event)
           {
+            if (buttons_ != Qt::NoButton) return;
             buttons_ = event->buttons();
             modifiers_ = event->modifiers();
             lastPos = currentPos = initialPos = event->pos();
@@ -202,6 +203,7 @@ namespace MR {
 
           void mouseReleaseEvent (QMouseEvent* event) 
           {
+            if (event->buttons() != Qt::NoButton) return;
             if (mouse_release()) 
               event->accept();
             else

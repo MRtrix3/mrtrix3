@@ -23,13 +23,14 @@
 #ifndef __dialog_progressbar_h__
 #define __dialog_progressbar_h__
 
+#include "progressbar.h"
+
 namespace MR {
   namespace Dialog {
     namespace ProgressBar {
 
-      void init ();
-      void display ();
-      void done ();
+      void display (ProgressInfo& p);
+      void done (ProgressInfo& p);
 
     }
   }

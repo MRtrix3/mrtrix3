@@ -294,6 +294,8 @@ namespace MR {
         if (mouse_buttons() == Qt::NoButton) {
           if (mouse_edge() & RightEdge) 
             glarea()->setCursor (Cursor::forward_backward);
+          else if (mouse_edge() & LeftEdge) 
+            glarea()->setCursor (Cursor::zoom);
           else
             glarea()->setCursor (Cursor::crosshair);
           return (false);
@@ -315,7 +317,13 @@ namespace MR {
 
           if (mouse_buttons() == Qt::RightButton) {
             if (mouse_edge() & RightEdge) {
-              move_in_out (-0.1*mouse_dpos().y());
+              move_in_out (-0.001*mouse_dpos().y()*FOV());
+              updateGL();
+              return (true);
+            }
+
+            if (mouse_edge() & LeftEdge) {
+              change_FOV_fine (mouse_dpos().y());
               updateGL();
               return (true);
             }
@@ -335,7 +343,16 @@ namespace MR {
 
       bool Mode2D::mouse_doubleclick () { return (false); }
 
-      bool Mode2D::mouse_release () { glarea()->setCursor (Cursor::crosshair); return (true); }
+      bool Mode2D::mouse_release () 
+      {
+        if (mouse_edge() & RightEdge) 
+          glarea()->setCursor (Cursor::forward_backward);
+        else if (mouse_edge() & LeftEdge) 
+          glarea()->setCursor (Cursor::zoom);
+        else 
+          glarea()->setCursor (Cursor::crosshair);
+        return (true); 
+      }
 
 
 

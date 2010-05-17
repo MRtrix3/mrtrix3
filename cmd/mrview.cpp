@@ -52,7 +52,6 @@ class MyApp : public MR::App {
   public: 
     MyApp (int argc, char** argv) : App (argc, argv, __command_description, __command_arguments, __command_options, 
         __command_version, __command_author, __command_copyright), qapp (argc, argv) { 
-      ProgressBar::init_func = Dialog::ProgressBar::init;
       ProgressBar::display_func = Dialog::ProgressBar::display;
       ProgressBar::done_func = Dialog::ProgressBar::done;
       MR::File::Dicom::select_func = Dialog::select_dicom;

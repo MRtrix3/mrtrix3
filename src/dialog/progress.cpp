@@ -20,39 +20,35 @@
 
 */
 
-#ifndef __dialog_progressbar_h__
-#define __dialog_progressbar_h__
-
 #include <QApplication>
 #include <QProgressDialog>
 
 #include <cassert>
-#include "progressbar.h"
 #include "dialog/progress.h"
 
 namespace MR {
   namespace Dialog {
     namespace ProgressBar {
 
-      namespace {
-        QProgressDialog* dialog = NULL;
+      void display (ProgressInfo& p) 
+      { 
+        if (!p.data) {
+          p.data = new QProgressDialog (p.text.c_str(), "Cancel", 0, p.as_percentage ? 100 : 0);
+          reinterpret_cast<QProgressDialog*>(p.data)->setWindowModality (Qt::WindowModal);
+        }
+        reinterpret_cast<QProgressDialog*>(p.data)->setValue (p.value); 
       }
 
-      void init ()
+
+      void done (ProgressInfo& p)
       {
-        assert (dialog == NULL);
-        dialog = new QProgressDialog (MR::ProgressBar::message.c_str(), "Cancel", 0, 
-            isnan (MR::ProgressBar::multiplier) ? 0 : 100);
-        dialog->setWindowModality (Qt::WindowModal);
+        delete reinterpret_cast<QProgressDialog*>(p.data);
+        p.data = NULL; 
       }
-
-      void display () { dialog->setValue (MR::ProgressBar::percent); }
-      void done () { delete dialog; dialog = NULL; }
 
     }
   }
 }
 
-#endif
 
 
