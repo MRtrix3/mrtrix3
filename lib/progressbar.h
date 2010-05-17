@@ -34,6 +34,7 @@
 
 namespace MR {
 
+  //! base class for the ProgressBar interface
   class ProgressInfo 
   {
     public:
@@ -41,19 +42,57 @@ namespace MR {
       ProgressInfo (const std::string& message, bool has_target) :
         as_percentage (has_target), value (0), text (message), data (NULL) { }
 
+      //! is progress shown as a percentage or a busy indicator
       const bool as_percentage;
-      size_t value;
+
+      //! the value of the progressbar
+      /*! If the progress is shown as a percentage, this is the percentage
+       * value. Otherwise, \a value is simply incremented at regular time
+       * intervals. */
+      size_t value; 
+      //! the text to be shown with the progressbar
       const std::string text;
+      //! a pointer to additional data required by alternative implementations
       void* data;
   };
 
 
+
+  //! implements a progress meter to provide feedback to the user
+  /*! The ProgressBar class displays a text message along with a indication of
+   * the progress status. For command-line applications, this will be shown on
+   * the terminal. For GUI applications, this will be shown as a graphical
+   * progress bar.
+   *
+   * It has two modes of operation:
+   * - percentage completion: if the maximum value is non-zero, then the
+   * percentage completed will be displayed. Each call to
+   * ProgressBar::operator++() will increment the value by one, and the
+   * percentage displayed is computed from the current value with respect to
+   * the maximum specified.
+   * - busy indicator: if the maximum value is set to zero, then a 'busy'
+   * indicator will be shown instead. For the command-line version, this
+   * consists of a dot moving from side to side. 
+   *
+   * Other implementations can be created by overriding the display_func() and
+   * done_func() static functions. These functions will then be used throughout
+   * the application.  */
   class ProgressBar : private ProgressInfo
   {
     public:
 
+      //! Create an unusable ProgressBar. 
+      /*! This should not be used unless you need to initialise a member
+       * ProgressBar within another class' constructor, and that ProgressBar
+       * will never be used in that particular instance. */
       ProgressBar () : show (0) { }
 
+      //! Create a new ProgressBar, displaying the specified text.
+      /*! If \a target is unspecified or set to zero, the ProgressBar will
+       * display a busy indicator, updated at regular time intervals.
+       * Otherwise, the ProgressBar will display the percentage completed,
+       * computed from the number of times the ProgressBar::operator++()
+       * function was called relative to the value specified with \a target. */
       ProgressBar (const std::string& text, size_t target = 0) : 
         ProgressInfo (text, target),
         show (display),
@@ -72,9 +111,23 @@ namespace MR {
           done_func (*this);
       }
 
+      //! returns whether the progress will be shown
+      /*! The progress may not be shown if the -quiet option has been supplied
+       * to the application.
+        * \returns true if the progress will be shown, false otherwise. */
       operator bool () const { return (show); }
+
+      //! returns whether the progress will be shown
+      /*! The progress may not be shown if the -quiet option has been supplied
+       * to the application.
+       * \returns true if the progress will not be shown, false otherwise. */
       bool operator! () const { return (!show); }
 
+      //! set the maximum target value of the ProgressBar
+      /*! This function should only be called if the ProgressBar has been
+       * created with a non-zero target value. In other words, the ProgressBar
+       * has been created to display a percentage value, rather than a busy
+       * indicator. */
       void set_max (size_t target) 
       {
         assert (target);
@@ -85,6 +138,7 @@ namespace MR {
           next_val.i = 1;
       }
 
+      //! increment the current value by one.
       void operator++ () 
       {
         if (show) {
