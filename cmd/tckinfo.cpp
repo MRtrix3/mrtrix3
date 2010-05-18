@@ -83,7 +83,7 @@ EXECUTE {
 
 
     if (opt.size()) {
-      ProgressBar::init (0, "writing track data to ascii files");
+      ProgressBar progress ("writing track data to ascii files");
       std::vector<Point> tck;
       while (file.next (tck)) {
         std::string filename (opt[0][0].get_string());
@@ -100,9 +100,8 @@ EXECUTE {
         out.close();
           
         count++;
-        ProgressBar::inc();
+        ++progress;
       }
-      ProgressBar::done();
     }
   }
 }

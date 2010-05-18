@@ -67,7 +67,7 @@ EXECUTE {
   std::vector<Point> tck;
 
   DataSet::Interp::Linear<Image::Voxel<float> > interp (vox);
-  ProgressBar::init (0, "normalising tracks...");
+  ProgressBar progress ("normalising tracks...");
 
   while (file.next (tck)) {
     for (std::vector<Point>::iterator i = tck.begin(); i != tck.end(); ++i) {
@@ -78,9 +78,8 @@ EXECUTE {
     }
     writer.append (tck);
     writer.total_count++;
-    ProgressBar::inc();
+    ++progress;
   }
 
-  ProgressBar::done();
 }
 

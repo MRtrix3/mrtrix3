@@ -120,28 +120,29 @@ EXECUTE {
   uint8_t* visited = new uint8_t [voxel_count];
   std::vector<Point> tck;
 
-  DataSet::Interp::Linear<Image::Header> interp (header);
-  ProgressBar::init (num_tracks, "generating track count image...");
+  { 
+    DataSet::Interp::Linear<Image::Header> interp (header);
+    ProgressBar progress ("generating track count image...", num_tracks);
 
-  while (file.next (tck)) {
-    memset (visited, 0, voxel_count*sizeof(uint8_t));
-    for (std::vector<Point>::iterator i = tck.begin(); i != tck.end(); ++i) {
-      Point p (interp.scanner2voxel (*i));
-      int x = round (p[0]);
-      int y = round (p[1]);
-      int z = round (p[2]);
-      if (x >= 0 && y >= 0 && z >= 0 && x < xmax && y < ymax && z < zmax) {
-        size_t offset = x + yskip*y + zskip*z;
-        if (!get<bool>(visited, static_cast<size_t>(offset))) {
-          put<bool> (true, visited, static_cast<size_t>(offset));
-          countbuf[offset]++;
+    while (file.next (tck)) {
+      memset (visited, 0, voxel_count*sizeof(uint8_t));
+      for (std::vector<Point>::iterator i = tck.begin(); i != tck.end(); ++i) {
+        Point p (interp.scanner2voxel (*i));
+        int x = round (p[0]);
+        int y = round (p[1]);
+        int z = round (p[2]);
+        if (x >= 0 && y >= 0 && z >= 0 && x < xmax && y < ymax && z < zmax) {
+          size_t offset = x + yskip*y + zskip*z;
+          if (!get<bool>(visited, static_cast<size_t>(offset))) {
+            put<bool> (true, visited, static_cast<size_t>(offset));
+            countbuf[offset]++;
+          }
         }
       }
+      count++;
+      ++progress;
     }
-    count++;
-    ProgressBar::inc();
   }
-  ProgressBar::done();
 
   delete [] visited;
 
