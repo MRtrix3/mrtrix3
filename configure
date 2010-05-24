@@ -5,6 +5,7 @@ import subprocess, sys, tempfile, os, platform, tempfile, shutil
 debug = False
 profile = False
 nogui = False
+noshared = False
 verbose = False
 
 
@@ -12,10 +13,11 @@ for arg in sys.argv[1:]:
   if '-debug'.startswith (arg): debug = True
   elif '-profile'.startswith (arg): profile = True
   elif '-nogui'.startswith (arg): nogui = True
+  elif '-noshared'.startswith (arg): noshared = True
   elif '-verbose'.startswith (arg): verbose = True
   else: 
     print """\
-usage: [ENV] ./configure [-debug] [-profile] [-nogui]'
+usage: [ENV] ./configure [-debug] [-profile] [-nogui] [-noshared]'
 
 In most cases, a simple invocation should work:
    $ ./configure
@@ -31,6 +33,8 @@ The '-profile' option will produce a configuration with profiling enabled.
       note: this will also enable the -debug option.
 
 The '-nogui' option will produce a configuration without any GUI components.
+
+The '-noshared' option will produce a configuration without a shared library.
 
 The '-verbose' option will cause configure to output more information.
 
@@ -577,47 +581,50 @@ variable is correct.''')
 
 
 # shared library generation:
+if not noshared:
+  report ('Checking shared library generation: ')
 
-report ('Checking shared library generation: ')
+  F = TempFile ('.cpp')
+  F.fid.write ('int bogus() { return (1); }')
+  F.fid.flush()
+  obj = DeleteAfter (F.name[:-4] + '.o')
+  cmd = fillin (cpp, {
+    'CFLAGS': cpp_flags,
+    'SRC': F.name,
+    'OBJECT': obj.name })
+  try: process = subprocess.Popen (cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+  except OSError:
+    error ('''compiler not found!
 
-F = TempFile ('.cpp')
-F.fid.write ('int bogus() { return (1); }')
-F.fid.flush()
-obj = DeleteAfter (F.name[:-4] + '.o')
-cmd = fillin (cpp, {
-  'CFLAGS': cpp_flags,
-  'SRC': F.name,
-  'OBJECT': obj.name })
-try: process = subprocess.Popen (cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-except OSError:
-  error ('''compiler not found!
+  an unexpected error occurred''')
+  if process.wait() != 0: 
+    error ('''compiler error!
 
-an unexpected error occurred''')
-if process.wait() != 0: 
-  error ('''compiler error!
+  an unexpected error occurred''')
+  
+  lib = DeleteAfter (lib_prefix + 'test' + lib_suffix)
+  cmd = fillin (ld_lib, {
+    'LDLIB_FLAGS': ld_lib_flags,
+    'OBJECTS': obj.name,
+    'LIB': lib.name })
+  try: process = subprocess.Popen (cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+  except OSError: 
+    error ('''linker not found!
 
-an unexpected error occurred''')
+  Use the LDLIB environment variable to set the command-line
+  for shared library generation''')
+  status = process.wait()
 
-lib = DeleteAfter (lib_prefix + 'test' + lib_suffix)
-cmd = fillin (ld_lib, {
-  'LDLIB_FLAGS': ld_lib_flags,
-  'OBJECTS': obj.name,
-  'LIB': lib.name })
-try: process = subprocess.Popen (cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-except OSError: 
-  error ('''linker not found!
+  if status != 0:
+    error ('''linker error!
 
-Use the LDLIB environment variable to set the command-line
-for shared library generation''')
-status = process.wait()
+  Use the LDLIB_FLAGS environment variable to set the flags required
+  for shared library generation''')
 
-if status != 0:
-  error ('''linker error!
+  report ('yes\n')
 
-Use the LDLIB_FLAGS environment variable to set the flags required
-for shared library generation''')
 
-report ('yes\n')
+
 
 
 
@@ -682,6 +689,12 @@ int main() { Foo f; }
     try: process = subprocess.Popen ([ 'qmake' ], cwd=qt_dir.name, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     except OSError: raise QMakeError
     if process.wait() != 0: raise QMakeError
+
+    qt_defines = [] 
+    qt_includes = []
+    qt_cflags = []
+    qt_libs = []
+    qt_ldflags = []
 
     for line in open (os.path.join (qt_dir.name, 'Makefile')):
       line = line.strip()
@@ -869,8 +882,13 @@ commit ('cpp', cpp);
 commit ('cpp_flags', cpp_flags);
 commit ('ld', ld);
 commit ('ld_flags', ld_flags);
-commit ('ld_lib', ld_lib);
-commit ('ld_lib_flags', ld_lib_flags);
+cache.write ('ld_enabled = ')
+if noshared:
+  cache.write ('False\n')
+else:
+  cache.write ('True\n')
+  commit ('ld_lib', ld_lib);
+  commit ('ld_lib_flags', ld_lib_flags);
 commit ('thread_cflags', thread_cflags)
 commit ('thread_ldflags', thread_ldflags)
 commit ('gsl_cflags', gsl_cflags)

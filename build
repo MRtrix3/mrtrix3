@@ -96,17 +96,21 @@ if mrtrix_dir:
 
 # get version info:
 
-f = open (os.path.join (lib_dir, 'mrtrix.h'), 'r')
-for line in f:
-  line = line.split()
-  if len(line) != 3: continue
-  if line[0] == '#define':
-    if line[1] == 'MRTRIX_MAJOR_VERSION': major = line[2]
-    elif line[1] == 'MRTRIX_MINOR_VERSION': minor = line[2]
-    elif line[1] == 'MRTRIX_MICRO_VERSION': micro = line[2]
-f.close()
+if ld_enabled:
+  f = open (os.path.join (lib_dir, 'mrtrix.h'), 'r')
+  for line in f:
+    line = line.split()
+    if len(line) != 3: continue
+    if line[0] == '#define':
+      if line[1] == 'MRTRIX_MAJOR_VERSION': major = line[2]
+      elif line[1] == 'MRTRIX_MINOR_VERSION': minor = line[2]
+      elif line[1] == 'MRTRIX_MICRO_VERSION': micro = line[2]
+  f.close()
 
-libname += '-' + major + '_' + minor + '_' + micro
+  libname += '-' + major + '_' + minor + '_' + micro
+
+  ld_flags += [ '-l' + libname ]
+  libname = lib_prefix + libname + lib_suffix
 
 
 # Qt4 settings:
@@ -117,8 +121,8 @@ libname += '-' + major + '_' + minor + '_' + micro
 # other settings:
 include_paths += [ lib_dir, misc_dir, cmd_dir ]
 cpp_flags += [ '-Wall' ] + [ '-I' + entry for entry in include_paths ]
-ld_flags += [ '-L' + lib_dir, '-l' + libname ]
-libname = lib_prefix + libname + lib_suffix
+ld_flags += [ '-L' + lib_dir ]
+
 
 
 
@@ -183,6 +187,12 @@ class Entry:
 
 
     if not skip: 
+      if not os.path.isdir (bin_dir): os.mkdir (bin_dir)
+      if ld_enabled: 
+        self.deps.add (os.path.join (lib_dir, libname))
+      else:
+        self.deps = self.deps.union (list_lib_deps())
+
       self.cmd = fillin (ld, { 
         'LDFLAGS': ld_flags + flags,
         'OBJECTS': self.deps,
@@ -191,9 +201,6 @@ class Entry:
       try:
         if ld_use_shell: self.cmd = [ 'sh', '-c', ' '.join(self.cmd) ]
       except NameError: pass
-
-      if not os.path.isdir (bin_dir): os.mkdir (bin_dir)
-      self.deps.add (os.path.join (lib_dir, libname))
 
 
 
@@ -235,12 +242,12 @@ class Entry:
 
     
   def set_library (self):
+    if not ld_enabled:
+      disp ('ERROR: shared library generation is disabled in this configuration')
+      exit (1)
+
     self.action = 'LD'
-    for root, dirs, files in os.walk (os.path.split(self.name)[0]):
-      for file in files:
-        if file[0] == '.': continue
-        if file.endswith (cpp_suffix):
-          self.deps.add (os.path.join (root, file[:-len(cpp_suffix)] + obj_suffix))
+    self.deps = list_lib_deps()
 
     self.cmd = fillin (ld_lib, {
       'LDLIB_FLAGS': ld_lib_flags,
@@ -427,6 +434,16 @@ def list_cmd_deps (file_cc):
   return object_deps[file_cc]
 
 
+
+def list_lib_deps ():
+  deps = set()
+  for root, dirs, files in os.walk (lib_dir):
+    for file in files:
+      if file[0] == '.': continue
+      if file.endswith (cpp_suffix):
+        deps.add (os.path.join (root, file[:-len(cpp_suffix)] + obj_suffix))
+
+  return (deps)
 
 
 

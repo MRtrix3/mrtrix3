@@ -262,7 +262,7 @@ namespace MR {
 	//! return a subvector of the vector
         const Vector sub (size_t from, size_t to) const throw () { 
           assert (from <= to && to <= size());
-          return (Vector (ptr() + from*GSLVector<T>::stride, to-from, GSLVector<T>::stride));
+          return (Vector (const_cast<T*> (ptr()) + from*GSLVector<T>::stride, to-from, GSLVector<T>::stride));
         }
 
 	//! return a subvector of the vector
