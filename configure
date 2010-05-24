@@ -6,6 +6,7 @@ debug = False
 profile = False
 nogui = False
 noshared = False
+static = False
 verbose = False
 
 
@@ -14,6 +15,9 @@ for arg in sys.argv[1:]:
   elif '-profile'.startswith (arg): profile = True
   elif '-nogui'.startswith (arg): nogui = True
   elif '-noshared'.startswith (arg): noshared = True
+  elif '-static'.startswith (arg): 
+    static = True
+    noshared = True
   elif '-verbose'.startswith (arg): verbose = True
   else: 
     print """\
@@ -35,6 +39,8 @@ The '-profile' option will produce a configuration with profiling enabled.
 The '-nogui' option will produce a configuration without any GUI components.
 
 The '-noshared' option will produce a configuration without a shared library.
+
+The '-static' option will produce a statically-linked configuration.
 
 The '-verbose' option will cause configure to output more information.
 
@@ -131,7 +137,7 @@ global cpp, cpp_cmd, ld, ld_cmd
 cpp = 'g++ -c CFLAGS SRC -o OBJECT'.split()
 cpp_flags = [ '-fPIC', '-Wno-unused-parameter' ]
 
-ld = 'g++ LDFLAGS OBJECTS -o EXECUTABLE'.split()
+ld = 'g++ OBJECTS LDFLAGS -o EXECUTABLE'.split()
 ld_flags = []
 
 ld_lib = 'g++ -shared LDLIB_FLAGS OBJECTS -o LIB'.split()
@@ -460,8 +466,8 @@ ld_lib_flags += zlib_ldflags
 
 report ('Checking for POSIX threads: ')
 
-if 'PTHREAD_CFLAGS' in os.environ.keys(): pthread_cflags = os.environ['PTHREAD_CFLAGS'].split()
-if 'PTHREAD_LDFLAGS' in os.environ.keys(): pthread_ldflags = os.environ['PTHREAD_LDFLAGS'].split()
+if 'PTHREAD_CFLAGS' in os.environ.keys(): thread_cflags = os.environ['PTHREAD_CFLAGS'].split()
+if 'PTHREAD_LDFLAGS' in os.environ.keys(): thread_ldflags = os.environ['PTHREAD_LDFLAGS'].split()
 
 try:
   compile ('''
@@ -853,6 +859,14 @@ elif debug:
   ld_lib_flags += [ '-g' ]
 else:
   cpp_flags += [ '-O2', '-DNDEBUG' ]
+
+
+
+
+# set flags for static build if required:
+if static:
+  ld_flags = [ '-static' ] + zlib_ldflags + gsl_ldflags + thread_ldflags
+
 
 
 
