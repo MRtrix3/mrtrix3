@@ -111,7 +111,7 @@ EXECUTE {
 
   std::vector<int> vals(1);
   vals[0] = 1;
-  opt = get_options (2); // num
+  opt = get_options ("num");
   if (opt.size()) {
     vals = parse_ints (opt[0][0].get_string());
     if (vals.empty()) throw Exception ("invalid eigenvalue/eigenvector number specifier");
@@ -121,26 +121,26 @@ EXECUTE {
 
   Ptr<ImagePair> adc, fa, eval, evec, mask;
 
-  opt = get_options (3); // vector
+  opt = get_options ("vector");
   if (opt.size()) {
     header.axes.dim(3) = 3*vals.size();
     evec = new ImagePair (opt[0][0].get_image (header));
   }
 
-  opt = get_options (4); // value
+  opt = get_options ("value");
   if (opt.size()) {
     header.axes.dim(3) = vals.size();
     eval = new ImagePair (opt[0][0].get_image (header));
   }
 
   header.axes.ndim() = 3;
-  opt = get_options (0); // adc
+  opt = get_options ("adc");
   if (opt.size()) adc = new ImagePair (opt[0][0].get_image (header));
 
-  opt = get_options (1); // FA
+  opt = get_options ("fa");
   if (opt.size()) fa = new ImagePair (opt[0][0].get_image (header));
 
-  opt = get_options (5); // mask
+  opt = get_options ("mask");
   if (opt.size()) {
     mask = new ImagePair (opt[0][0].get_image ());
     if (mask->H.dim(0) != dt.dim(0) || mask->H.dim(1) != dt.dim(1) || mask->H.dim(2) != dt.dim(2)) 
@@ -148,7 +148,7 @@ EXECUTE {
   }
 
   int modulate = 1;
-  opt = get_options (6); // modulate
+  opt = get_options ("modulate");
   if (opt.size()) modulate = opt[0][0].get_int();
 
   if ( ! (adc || fa || eval || evec))

@@ -265,9 +265,8 @@ namespace MR {
           throw 0;
         }
         else {
-          if (n + (int) command_options[opt].size() >= argc) {
+          if (n + int(command_options[opt].size()) >= argc) 
             throw Exception (std::string ("not enough parameters to option \"-") + command_options[opt].sname + "\"");
-          }
 
           parsed_options.push_back (ParsedOption());
           parsed_options.back().index = opt;
@@ -288,6 +287,7 @@ namespace MR {
   {
     size_t num_args_required = 0, num_command_arguments = 0;
     bool has_optional_arguments = false;
+
     for (const Argument* arg = App::command_arguments; arg->is_valid(); arg++) {
       num_command_arguments++;
       if (arg->mandatory) num_args_required++; 
@@ -305,15 +305,19 @@ namespace MR {
     for (size_t n = 0; n < parsed_arguments.size(); n++) {
 
       if (n < optional_argument) 
-        if (!command_arguments[n].mandatory || command_arguments[n].allow_multiple) optional_argument = n;
+        if (!command_arguments[n].mandatory || command_arguments[n].allow_multiple) 
+          optional_argument = n;
 
       size_t index = n;
       if (n >= optional_argument) {
-        if ((int) (num_args_required - optional_argument) < (int) (parsed_arguments.size() - n)) index = optional_argument;
-        else index = num_args_required - parsed_arguments.size() + n + (command_arguments[optional_argument].mandatory ? 0 : 1);
+        if (int(num_args_required - optional_argument) < int(parsed_arguments.size()-n)) 
+          index = optional_argument;
+        else 
+          index = num_args_required - parsed_arguments.size() + n + (command_arguments[optional_argument].mandatory ? 0 : 1);
       }
 
-      if (index >= num_command_arguments) throw Exception ("too many arguments");
+      if (index >= num_command_arguments) 
+        throw Exception ("too many arguments");
 
       argument.push_back (ArgBase (command_arguments[index], parsed_arguments[n]));
       if (argument.back().type() == Undefined) 
@@ -321,9 +325,21 @@ namespace MR {
             "\" (specified as \"" + parsed_arguments[n] + "\")"); 
     }
 
+    for (size_t index = 0; command_options[index].is_valid(); index++) {
+      size_t count = 0;
+      for (size_t n = 0; n < parsed_options.size(); n++)
+        if (parsed_options[n].index == index)
+          count++;
+
+      if (command_options[index].mandatory && count < 1) 
+        throw Exception (std::string ("mandatory option \"") + command_options[index].sname + "\" must be specified");
+
+      if (!command_options[index].allow_multiple && count > 1) 
+        throw Exception (std::string ("multiple instances of option \"") +  command_options[index].sname + "\" are not allowed");
+    }
+
     for (size_t n = 0; n < parsed_options.size(); n++) {
-      option.push_back (OptBase());
-      option.back().index = parsed_options[n].index;
+      option.push_back (OptBase(command_options[parsed_options[n].index].sname));
       for (size_t a = 0; a < parsed_options[n].args.size(); a++) {
         ArgBase arg (command_options[parsed_options[n].index][a], parsed_options[n].args[a]);
         if (arg.type() == Undefined) 
@@ -332,19 +348,6 @@ namespace MR {
               + "\" (specified as \"" + parsed_options[n].args[a] + "\")");
         option.back().push_back (arg);
       }
-    }
-
-    for (size_t index = 0; command_options[index].is_valid(); index++) {
-      size_t count = 0;
-      for (size_t n = 0; n < option.size(); n++)
-        if (option[n].index == index)
-          count++;
-
-      if (command_options[index].mandatory && count < 1) 
-        throw Exception (std::string ("mandatory option \"") + command_options[index].sname + "\" must be specified");
-
-      if (!command_options[index].allow_multiple && count > 1) 
-        throw Exception (std::string ("multiple instances of option \"") +  command_options[index].sname + "\" are not allowed");
     }
 
   }

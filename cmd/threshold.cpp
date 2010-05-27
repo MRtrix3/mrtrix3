@@ -75,27 +75,27 @@ OPTIONS = {
 
 EXECUTE {
   float val (NAN), percentile (NAN);
-  off64_t topN (0), bottomN (0), nopt (0);
+  size_t topN (0), bottomN (0), nopt (0);
 
-  OptionList opt = get_options (0); // abs
+  OptionList opt = get_options ("abs");
   if (opt.size()) {
     val = opt[0][0].get_float();
     ++nopt;
   }
 
-  opt = get_options (1); // percentile
+  opt = get_options ("percentile"); 
   if (opt.size()) {
     percentile = opt[0][0].get_float();
     ++nopt;
   }
 
-  opt = get_options (2); // top
+  opt = get_options ("top");
   if (opt.size()) {
     topN = opt[0][0].get_int();
     ++nopt;
   }
 
-  opt = get_options (3); // bottom
+  opt = get_options ("bottom");
   if (opt.size()) {
     bottomN = opt[0][0].get_int();
     ++nopt;
@@ -104,8 +104,8 @@ EXECUTE {
   if (nopt > 1) throw Exception ("too many conflicting options");
 
 
-  bool invert = get_options(4).size(); // invert
-  bool use_NaN = get_options(5).size(); // nan
+  bool invert = get_options("invert").size();
+  bool use_NaN = get_options("nan").size();
 
   const Image::Header header_in (argument[0].get_image());
   assert (!header_in.is_complex());

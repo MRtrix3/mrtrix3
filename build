@@ -187,10 +187,10 @@ class Entry:
 
 
     if not skip: 
-      if not os.path.isdir (bin_dir): os.mkdir (bin_dir)
-      if ld_enabled: 
-        self.deps.add (os.path.join (lib_dir, libname))
-      else:
+      if not os.path.isdir (bin_dir): 
+        os.mkdir (bin_dir)
+
+      if not ld_enabled: 
         self.deps = self.deps.union (list_lib_deps())
 
       self.cmd = fillin (ld, { 
@@ -201,6 +201,9 @@ class Entry:
       try:
         if ld_use_shell: self.cmd = [ 'sh', '-c', ' '.join(self.cmd) ]
       except NameError: pass
+
+      if ld_enabled:
+        self.deps.add (os.path.join (lib_dir, libname))
 
 
 

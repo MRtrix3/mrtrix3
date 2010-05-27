@@ -55,8 +55,11 @@ EXECUTE {
   bool print_DICOM_fields = false;
   bool print_CSA_fields = false;
 
-  if (get_options (0).size()) print_DICOM_fields = true;
-  if (get_options (1).size()) print_CSA_fields = true;
+  if (get_options ("all").size()) 
+    print_DICOM_fields = true;
+
+  if (get_options ("csa").size()) 
+    print_CSA_fields = true;
 
   for (size_t n = 0; n < argument.size();  n++) {
 

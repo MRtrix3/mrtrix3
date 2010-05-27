@@ -102,7 +102,10 @@ namespace MR {
 
   class OptBase : public std::vector<ArgBase> {
     public:
-      size_t index;
+      OptBase (const char* sname) : name (sname) { }
+      const char* name;
+
+      bool is (const std::string& text) { return (text == name); }
 
       friend std::ostream& operator<< (std::ostream& stream, const OptBase& opt);
       friend class Dialog::Window;

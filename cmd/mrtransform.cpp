@@ -85,32 +85,32 @@ OPTIONS = {
 EXECUTE {
   Math::Matrix<float> T;
 
-  std::vector<OptBase> opt = get_options (0); // transform
+  std::vector<OptBase> opt = get_options ("transform");
   if (opt.size()) {
     T.load (opt[0][0].get_string());
     if (T.rows() != 4 || T.columns() != 4) 
       throw Exception (std::string("transform matrix supplied in file \"") + opt[0][0].get_string() + "\" is not 4x4");
   }
 
-  bool replace = get_options(1).size(); // replace
+  bool replace = get_options("replace").size();
 
   const Image::Header header_in (argument[0].get_image());
   Image::Header header (header_in);
 
   if (T.is_set()) {
 
-    if (get_options(2).size()) { // inverse
+    if (get_options("inverse").size()) {
       Math::Matrix<float> I;
       Math::LU::inv (I, T);
       T.swap (I);
     }
 
-    opt = get_options(4); // reference 
+    opt = get_options("reference");
     if (opt.size()) {
       replace = true;
       Image::Header ref_header (opt[0][0].get_image());
 
-      if (get_options(5).size()) { // flipx 
+      if (get_options("flipx").size()) {
         Math::Matrix<float> R(4,4);
         R.identity();
         R(0,0) = -1.0;
@@ -133,7 +133,7 @@ EXECUTE {
   }
 
 
-  opt = get_options(3); // template : need to reslice
+  opt = get_options("template"); // need to reslice
   if (opt.size()) {
     Image::Header template_header (opt[0][0].get_image());
     header.axes[0].dim = template_header.axes[0].dim;
@@ -153,12 +153,12 @@ EXECUTE {
     Math::mult (M, Mi, M2);
 
     int interp = 1;
-    opt = get_options (6); // interp
+    opt = get_options ("interp");
     if (opt.size()) interp = opt[0][0].get_int();
 
 
     std::vector<int> oversample;
-    opt = get_options (7); // oversample
+    opt = get_options ("oversample");
     if (opt.size()) {
       oversample = parse_ints (opt[0][0].get_string());
       if (oversample.size() != 3) throw Exception ("option \"oversample\" expects a vector of 3 values");

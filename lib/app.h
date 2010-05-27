@@ -96,7 +96,14 @@ namespace MR {
       std::vector<OptBase> option;
 
       virtual void execute () = 0;
-      OptionList get_options (size_t index);
+      OptionList get_options (const std::string& name)
+      {
+        OptionList a;
+        for (size_t n = 0; n < option.size(); n++) 
+          if (option[n].name == name)
+            a.push_back (option[n]);
+        return (a);
+      }
 
       void parse_arguments ();
 
@@ -131,18 +138,6 @@ namespace MR {
   void cmdline_error (const std::string& msg);
   void cmdline_info  (const std::string& msg);
   void cmdline_debug (const std::string& msg);
-
-
-
-
-  inline OptionList App::get_options (size_t index)
-  {
-    OptionList a;
-    for (size_t n = 0; n < option.size(); n++) 
-      if (option[n].index == index)
-        a.push_back (option[n]);
-    return (a);
-  }
 
 }
 

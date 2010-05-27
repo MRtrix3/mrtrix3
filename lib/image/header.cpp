@@ -43,6 +43,9 @@ namespace MR {
         axes.ndim() = 3;
       }
 
+      DataSet::Stride::sanitise (axes);
+      DataSet::Stride::symbolise (axes);
+
       if (!finite (axes.vox(0)) || !finite (axes.vox(1)) || !finite (axes.vox(2))) {
         error ("invalid voxel sizes - resetting to sane defaults");
         axes.vox(0) = axes.vox(1) = axes.vox(2) = 1.0;
@@ -110,9 +113,6 @@ namespace MR {
           }
         }
       }
-
-      DataSet::Stride::sanitise (axes);
-      DataSet::Stride::symbolise (axes);
     }
 
 
@@ -135,7 +135,7 @@ namespace MR {
           throw Exception ("dimension mismatch between image files for \"" + name() + "\"");
 
         if (axes.stride(n) != H.axes.stride(n))
-          throw Exception ("data layout differs image files for \"" + name() + "\"");
+          throw Exception ("data strides differs image files for \"" + name() + "\"");
 
         if (axes.vox(n) != H.axes.vox(n))
           error ("WARNING: voxel dimensions differ between image files for \"" + name() + "\"");
@@ -220,7 +220,6 @@ namespace MR {
       if (image_name.empty()) throw Exception ("no name supplied to open image!");
       Header H (template_header);
       H.readwrite = true;
-      DataSet::Stride::symbolise (H.axes);
 
       try {
         info ("creating image \"" + image_name + "\"...");
@@ -334,13 +333,13 @@ namespace MR {
 
 
       desc += std::string ("  Data type:         ") + ( dtype.description() ? dtype.description() : "invalid" ) + "\n"
-            "  Data layout:       [ ";
+            "  Data strides:      [ ";
 
 
       std::vector<ssize_t> strides (DataSet::Stride::get (axes));
       DataSet::Stride::symbolise (strides);
       for (i = 0; i < axes.ndim(); i++) 
-        desc += axes.stride(i) ? ( strides[i] > 0 ? '+' : '-' ) + str (Math::abs(strides[i])-1) + " " : "? ";
+        desc += axes.stride(i) ? str (strides[i]) + " " : "? ";
 
 
 

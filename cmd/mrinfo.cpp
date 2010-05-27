@@ -53,7 +53,7 @@ OPTIONS = {
 
 EXECUTE {
 
-  std::vector<OptBase> opt = get_options (0);
+  std::vector<OptBase> opt = get_options ("grad");
   if (opt.size()) {
     if (argument.size() != 1)
       throw Exception ("Please specify a single image when using the \"-grad\" option");

@@ -58,18 +58,12 @@ OPTIONS = {
   Option ("datatype", "data type", "specify output image data type.")
     .append (Argument ("spec", "specifier", "the data type specifier.").type_choice (DataType::identifiers)),
 
-  Option ("scale", "scaling factor", "apply scaling to the intensity values.")
-    .append (Argument ("factor", "factor", "the factor by which to multiply the intensities.").type_float (NAN, NAN, 1.0)),
-
-  Option ("offset", "offset", "apply offset to the intensity values.")
-    .append (Argument ("bias", "bias", "the value of the offset.").type_float (NAN, NAN, 0.0)),
-
   Option ("output", "output type", "specify type of output")
     .append (Argument ("type", "type", "type of output.")
         .type_choice (type_choices)),
 
-  Option ("layout", "data layout", "specify the layout of the data in memory. The actual layout produced will depend on whether the output image format can support it.")
-    .append (Argument ("spec", "specifier", "the data layout specifier.").type_string ()),
+  Option ("stride", "data strides", "specify the strides of the data in memory. The actual strides produced will depend on whether the output image format can support it.")
+    .append (Argument ("spec", "specifier", "a comma-separated list of data strides.").type_string ()),
 
   Option ("prs", "DW gradient specified as PRS", "assume that the DW gradients are specified in the PRS frame (Siemens DICOM only)."),
 
@@ -81,20 +75,12 @@ OPTIONS = {
 
 
 EXECUTE {
-  OptionList opt = get_options (1); // vox
+  OptionList opt = get_options ("vox");
   std::vector<float> vox;
   if (opt.size()) 
     vox = parse_floats (opt[0][0].get_string());
 
-  opt = get_options (3); // scale
-  float scale = 1.0;
-  if (opt.size()) scale = opt[0][0].get_float();
-
-  opt = get_options (4); // offset
-  float offset = 0.0;
-  if (opt.size()) offset = opt[0][0].get_float();
-
-  opt = get_options (5); // output
+  opt = get_options ("output");
   Image::OutputType output_type = Image::Default;
   if (opt.size()) {
     switch (opt[0][0].get_int()) {
@@ -111,6 +97,7 @@ EXECUTE {
 
   const Image::Header header_in = argument[0].get_image ();
   Image::Header header (header_in);
+  header.reset_scaling();
 
   if (output_type == 0) {
     if (header_in.is_complex()) output_type = Image::RealImag;
@@ -122,24 +109,24 @@ EXECUTE {
   else header.datatype().unset_flag (DataType::Complex);
 
   
-  opt = get_options (2); // datatype
+  opt = get_options ("datatype");
   if (opt.size()) header.datatype().parse (DataType::identifiers[opt[0][0].get_int()]);
 
   for (size_t n = 0; n < vox.size(); n++) 
     if (std::isfinite (vox[n])) header.axes.vox(n) = vox[n];
 
-  opt = get_options (6); // layout
+  opt = get_options ("stride");
   if (opt.size()) {
-    std::vector<ssize_t> ax = Image::Axes::parse (header.ndim(), opt[0][0].get_string());
-    if (ax.size() != header.axes.ndim()) 
-      throw Exception (std::string("specified layout \"") + opt[0][0].get_string() + "\" does not match image dimensions");
-
-    for (size_t i = 0; i < ax.size(); i++)
+    std::vector<int> ax = parse_ints (opt[0][0].get_string());
+    size_t i;
+    for (i = 0; i < std::min (ax.size(), header.ndim()); i++)
       header.axes.stride(i) = ax[i];
+    for (; i < header.ndim(); i++)
+      header.axes.stride(i) = 0;
   }
 
 
-  opt = get_options (7); // prs
+  opt = get_options ("prs");
   if (opt.size() && header.DW_scheme.rows() && header.DW_scheme.columns()) {
     for (size_t row = 0; row < header.DW_scheme.rows(); row++) {
       double tmp = header.DW_scheme(row, 0);
@@ -151,16 +138,13 @@ EXECUTE {
 
   std::vector<std::vector<int> > pos;
 
-  opt = get_options (0); // coord
+  opt = get_options ("coord");
   for (size_t n = 0; n < opt.size(); n++) {
     pos.resize (header.ndim());
     int axis = opt[n][0].get_int();
     if (pos[axis].size()) throw Exception ("\"coord\" option specified twice for axis " + str (axis));
     pos[axis] = parse_ints (opt[n][1].get_string());
   }
-
-
-  header.apply_scaling (scale, offset);
 
   assert (!header_in.is_complex());
   Image::Voxel<float> in (header_in);
@@ -170,7 +154,8 @@ EXECUTE {
     for (size_t n = 0; n < header_in.ndim(); n++) {
       if (pos[n].empty()) { 
         pos[n].resize (header_in.dim(n));
-        for (size_t i = 0; i < pos[n].size(); i++) pos[n][i] = i;
+        for (size_t i = 0; i < pos[n].size(); i++) 
+          pos[n][i] = i;
       }
     }
     DataSet::Extract<Image::Voxel<float> > extract (in, pos);

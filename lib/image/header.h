@@ -53,9 +53,10 @@ namespace MR {
     class Header : public std::map<std::string, std::string> {
       public:
         Header () : format (NULL), offset (0.0), scale (1.0), readwrite (false) { }
+
         Header (const Header& H) :
           std::map<std::string, std::string> (H), dtype (H.dtype), 
-          format (NULL), axes (H.axes), offset (0.0), scale (1.0), 
+          format (NULL), axes (H.axes), offset (H.offset), scale (H.scale), 
           readwrite (false), DW_scheme (H.DW_scheme), comments (H.comments) { 
             transform_matrix.copy (H.transform_matrix); 
           } 
@@ -69,6 +70,15 @@ namespace MR {
               axes.vox(i) = ds.vox(i);
             }
           } 
+
+        Header& operator= (const Header& H) 
+        {
+          std::map<std::string, std::string>::operator= (H); 
+          format = NULL; offset = H.offset; scale = H.scale; readwrite = false;
+          transform_matrix.copy (H.transform()); 
+          axes = H.axes;
+          return (*this);
+        } 
 
         template <class DataSet> Header& operator= (const DataSet& ds) {
           format = NULL; offset = 0.0; scale = 1.0; readwrite = false;

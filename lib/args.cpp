@@ -106,8 +106,7 @@ namespace MR {
 
   std::ostream& operator<< (std::ostream& stream, const OptBase& opt)
   {
-    stream << "-" << App::command_options[opt.index].sname << " " << static_cast<std::vector<ArgBase> > (opt) 
-      << " (" << opt.index << ")";
+    stream << "-" << opt.name << " " << static_cast<std::vector<ArgBase> > (opt);
     return (stream);
   }
 

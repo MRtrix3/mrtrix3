@@ -99,10 +99,10 @@ EXECUTE {
   uint niter = 10000;
   float target_power = 128.0;
 
-  std::vector<OptBase> opt = get_options (0); // power
+  std::vector<OptBase> opt = get_options ("power");
   if (opt.size()) target_power = opt[0][0].get_int();
 
-  opt = get_options (1); // niter
+  opt = get_options ("niter");
   if (opt.size()) niter = opt[0][0].get_int();
 
   ndirs = argument[0].get_int();
@@ -128,29 +128,29 @@ EXECUTE {
       gsl_multimin_fdfminimizer_alloc (gsl_multimin_fdfminimizer_conjugate_fr, 2*ndirs-3);
 
 
-  ProgressBar::init (0, "Optimising directions");
-  for (power = -1.0; power >= -target_power/2.0; power *= 2.0) {
-    info ("setting power = " + str (-power*2.0));
-    gsl_multimin_fdfminimizer_set (minimizer, &fdf, v.gsl(), 0.01, 1e-4);
+  {
+    ProgressBar progress ("Optimising directions");
+    for (power = -1.0; power >= -target_power/2.0; power *= 2.0) {
+      info ("setting power = " + str (-power*2.0));
+      gsl_multimin_fdfminimizer_set (minimizer, &fdf, v.gsl(), 0.01, 1e-4);
 
-    for (uint iter = 0; iter < niter; iter++) {
+      for (uint iter = 0; iter < niter; iter++) {
 
-      int status = gsl_multimin_fdfminimizer_iterate (minimizer);
+        int status = gsl_multimin_fdfminimizer_iterate (minimizer);
 
-      if (iter%10 == 0) 
-        info ("[ " + str(iter) + " ] (pow = " + str(-power*2.0) + ") E = " + str(minimizer->f) + ", grad = " + str(gsl_blas_dnrm2 (minimizer->gradient)));
+        if (iter%10 == 0) 
+          info ("[ " + str(iter) + " ] (pow = " + str(-power*2.0) + ") E = " + str(minimizer->f) + ", grad = " + str(gsl_blas_dnrm2 (minimizer->gradient)));
 
-      if (status) {
-        info (std::string("iteration stopped: ") + gsl_strerror (status));
-        break;
+        if (status) {
+          info (std::string("iteration stopped: ") + gsl_strerror (status));
+          break;
+        }
+
+        ++progress;
       }
-
-      ProgressBar::inc();
+      gsl_vector_memcpy (v.gsl(), minimizer->x);
     }
-    gsl_vector_memcpy (v.gsl(), minimizer->x);
   }
-  ProgressBar::done();
-
 
 
   Math::Matrix<double> directions (ndirs, 2);

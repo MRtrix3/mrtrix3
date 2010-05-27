@@ -245,7 +245,7 @@ EXECUTE {
 
   Math::Matrix<float> grad;
 
-  std::vector<OptBase> opt = get_options (0);
+  std::vector<OptBase> opt = get_options ("grad");
   if (opt.size()) grad.load (opt[0][0].get_string());
   else {
     if (!header.DW_scheme.is_set()) 
@@ -272,7 +272,7 @@ EXECUTE {
   Math::Matrix<float> DW_dirs;
   DWI::gen_direction_matrix (DW_dirs, grad, dwis);
 
-  opt = get_options (1);
+  opt = get_options ("lmax");
   int lmax = opt.size() ? opt[0][0].get_int() : Math::SH::LforN (dwis.size());
   info ("calculating even spherical harmonic components up to order " + str(lmax));
 
@@ -283,7 +283,7 @@ EXECUTE {
   info ("setting response function using even SH coefficients: " + str(response));
 
 
-  opt = get_options (4); // filter
+  opt = get_options ("filter");
   Math::Vector<float> filter;
   if (opt.size()) filter.load (opt[0][0].get_string());
   else {
@@ -295,7 +295,7 @@ EXECUTE {
 
 
 
-  opt = get_options (3); // directions
+  opt = get_options ("directions");
   Math::Matrix<float> HR_dirs;
   if (opt.size()) HR_dirs.load (opt[0][0].get_string());
   else {
@@ -311,25 +311,25 @@ EXECUTE {
   header.axes.stride(3) = 1;
 
   const Image::Header* mask_header = NULL;
-  opt = get_options (2); // mask
+  opt = get_options ("mask");
   if (opt.size())
     mask_header = new Image::Header (opt[0][0].get_image());
 
-  bool normalise = get_options(5).size();
+  bool normalise = get_options("normalise").size();
 
-  opt = get_options(6); // neg_lambda
+  opt = get_options("neg_lambda");
   float neg_lambda = 1.0;
   if (opt.size()) neg_lambda = opt[0][0].get_float();
 
-  opt = get_options(7); // norm_lambda
+  opt = get_options("norm_lambda");
   float norm_lambda = 1.0;
   if (opt.size()) norm_lambda = opt[0][0].get_float();
 
-  opt = get_options(8); // threshold
+  opt = get_options("threshold");
   float threshold = 0.1;
   if (opt.size()) threshold = opt[0][0].get_float();
 
-  opt = get_options(9); // niter
+  opt = get_options("niter");
   int niter = 50;
   if (opt.size()) niter = opt[0][0].get_int();
 

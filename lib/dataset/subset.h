@@ -41,12 +41,12 @@ namespace MR {
 
           Subset (Set& original, const size_t* from, const size_t* dimensions, const std::string& description = "") : 
             D (original),
-            descriptor (description.empty() ? D.name() + " [subset]" : description),
-            transform_matrix (D.transform()) {
+            descriptor (description.empty() ? D.name() + " [subset]" : description) {
               assert (D.ndim() >= NDIM);
               for (size_t n = 0; n < NDIM; ++n) assert (ssize_t(from[n] + dimensions[n]) <= D.dim(n));
               memcpy (C, from, NDIM*sizeof(size_t));
               memcpy (N, dimensions, NDIM*sizeof(size_t));
+              transform_matrix.copy (D.transform());
 
               for (size_t j = 0; j < 3; ++j) 
                 for (size_t i = 0; i < 3; ++i) 
@@ -64,25 +64,25 @@ namespace MR {
 
           void    reset () { for (size_t n = 0; n < NDIM; ++n) set_pos(n, 0); }
 
-        Value<Subset<Set> > value () { return (Value<Subset<Set> > (*this)); }
-        Position<Subset<Set> > operator[] (size_t axis) { return (Position<Subset<Set> > (*this, axis)); }
+          Value<Subset<Set,NDIM> > value () { return (Value<Subset<Set,NDIM> > (*this)); }
+          Position<Subset<Set,NDIM> > operator[] (size_t axis) { return (Position<Subset<Set,NDIM> > (*this, axis)); }
 
-      private:
-        Set& D;
-        size_t C [NDIM];
-        size_t N [NDIM];
-        std::string descriptor;
-        Math::Matrix<float> transform_matrix;
+        private:
+          Set& D;
+          size_t C [NDIM];
+          size_t N [NDIM];
+          std::string descriptor;
+          Math::Matrix<float> transform_matrix;
 
-        value_type get_value () const { return (D.value()); }
-        void set_value (value_type val) { D.value() = val; }
-        ssize_t get_pos (size_t axis) const { return (D[axis]-C[axis]); }
-        void set_pos (size_t axis, ssize_t position) const { D[axis] = position + C[axis]; }
-        void move_pos (size_t axis, ssize_t increment) const { D[axis] += increment; }
+          value_type get_value () const { return (D.value()); }
+          void set_value (value_type val) { D.value() = val; }
+          ssize_t get_pos (size_t axis) const { return (D[axis]-C[axis]); }
+          void set_pos (size_t axis, ssize_t position) const { D[axis] = position + C[axis]; }
+          void move_pos (size_t axis, ssize_t increment) const { D[axis] += increment; }
 
-        friend class Value<Subset<Set> >;
-        friend class Position<Subset<Set> >;
-    };
+          friend class Value<Subset<Set,NDIM> >;
+          friend class Position<Subset<Set,NDIM> >;
+      };
 
     //! @}
   }

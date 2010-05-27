@@ -45,7 +45,12 @@ namespace MR {
         const Math::Matrix<float>& transform () const { return (D.transform()); }
         const std::vector<ssize_t>& stride () const { return (D.stride()); }
 
-        void reset () { memset (x, 0, sizeof(size_t)*ndim()); for (size_t a = 0; a < ndim(); ++a) D.pos (a, P[a][0]); }
+        void reset () 
+        { 
+          memset (x, 0, sizeof(size_t)*ndim()); 
+          for (size_t a = 0; a < ndim(); ++a)
+            D.pos (a, P[a][0]); 
+        }
 
         Position<Extract<Set> > operator[] (size_t axis) { return (Position<Extract<Set> > (*this, axis)); }
         Value<Extract<Set> > value () { return (Value<Extract<Set> > (*this)); }
@@ -58,8 +63,18 @@ namespace MR {
         value_type get_value () const { return (D.value()); }
         void set_value (value_type val) { D.value (val); }
         ssize_t get_pos (size_t axis) const { return (x[axis]); } 
-        void set_pos (size_t axis, ssize_t position) const { x[axis] = position; D[axis] = P[axis][position]; }
-        void move_pos (size_t axis, ssize_t increment) const { x[axis] += increment; D[axis] += P[axis][x[axis]]; }
+        void set_pos (size_t axis, ssize_t position) const
+        {
+          x[axis] = position; 
+          D[axis] = P[axis][position]; 
+        }
+
+        void move_pos (size_t axis, ssize_t increment) const 
+        {
+          int prev = x[axis]; 
+          x[axis] += increment; 
+          D[axis] += P[axis][x[axis]] - P[axis][prev]; 
+        }
 
         friend class Position<Extract<Set> >;
         friend class Value<Extract<Set> >;
