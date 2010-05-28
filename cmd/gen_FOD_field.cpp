@@ -127,13 +127,13 @@ EXECUTE {
   Math::Vector<float> coef (argument[1].get_string());
 
   float angle (NAN), width (NAN);
-  std::vector<OptBase> opt = get_options (0); // crossing
+  std::vector<OptBase> opt = get_options ("crossing");
   if (opt.size()) {
     angle = opt[0][0].get_float();
     width = opt[0][1].get_float() / 2.0;
   }
 
-  opt = get_options (1); // lmax
+  opt = get_options ("lmax");
   if (opt.size()) {
     int n = (opt[0][0].get_int()/2)+1;
     if (size_t(n) < coef.size()) coef.resize(n);

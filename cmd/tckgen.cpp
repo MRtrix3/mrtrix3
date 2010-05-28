@@ -116,62 +116,62 @@ EXECUTE {
   properties["sh_precomputed"] = "1";
 
   int algorithm = 1;
-  std::vector<OptBase> opt = get_options (0); // algorithm
+  std::vector<OptBase> opt = get_options ("algorithm");
   if (opt.size()) algorithm = opt[0][0].get_int();
 
-  opt = get_options (1); // seed
+  opt = get_options ("seed");
   for (std::vector<OptBase>::iterator i = opt.begin(); i != opt.end(); ++i)
     properties.seed.add (ROI (std::string ((*i)[0].get_string())));
 
-  opt = get_options (2); // include
+  opt = get_options ("include");
   for (std::vector<OptBase>::iterator i = opt.begin(); i != opt.end(); ++i)
     properties.include.add (ROI (std::string ((*i)[0].get_string())));
 
-  opt = get_options (3); // exclude
+  opt = get_options ("exclude");
   for (std::vector<OptBase>::iterator i = opt.begin(); i != opt.end(); ++i)
     properties.exclude.add (ROI (std::string ((*i)[0].get_string())));
 
-  opt = get_options (4); // mask
+  opt = get_options ("mask");
   for (std::vector<OptBase>::iterator i = opt.begin(); i != opt.end(); ++i)
     properties.mask.add (ROI (std::string ((*i)[0].get_string())));
 
-  opt = get_options (5); // step
+  opt = get_options ("step");
   if (opt.size()) properties["step_size"] = str (opt[0][0].get_float());
 
-  opt = get_options (6); // angle
+  opt = get_options ("angle");
   if (opt.size()) properties["max_angle"] = str (opt[0][0].get_float());
 
-  opt = get_options (7); // number
+  opt = get_options ("number");
   if (opt.size()) properties["max_num_tracks"] = str (opt[0][0].get_int());
 
-  opt = get_options (8); // maxnum
+  opt = get_options ("maxnum");
   if (opt.size()) properties["max_num_attempts"] = str (opt[0][0].get_int());
 
-  opt = get_options (9); // length
+  opt = get_options ("length");
   if (opt.size()) properties["max_dist"] = str (opt[0][0].get_float());
 
-  opt = get_options (10); // min_length
+  opt = get_options ("min_length");
   if (opt.size()) properties["min_dist"] = str (opt[0][0].get_float());
 
-  opt = get_options (11); // cutoff
+  opt = get_options ("cutoff");
   if (opt.size()) properties["threshold"] = str (opt[0][0].get_float());
 
-  opt = get_options (12); // initcutoff
+  opt = get_options ("initcutoff");
   if (opt.size()) properties["init_threshold"] = str (opt[0][0].get_float());
 
-  opt = get_options (13); // trials
+  opt = get_options ("trials");
   if (opt.size()) properties["max_trials"] = str (opt[0][0].get_int());
 
-  opt = get_options (14); // unidirectional
+  opt = get_options ("unidirectional");
   if (opt.size()) properties["unidirectional"] = "1";
 
-  opt = get_options (15); // initdirection
+  opt = get_options ("initdirection");
   if (opt.size()) properties["init_direction"] = opt[0][0].get_string();
 
-  opt = get_options (16); // noprecomputed
+  opt = get_options ("noprecomputed");
   if (opt.size()) properties["sh_precomputed"] = "0";
 
-  opt = get_options (17); // samples
+  opt = get_options ("samples");
   if (opt.size()) properties["samples_per_step"] = str (opt[0][0].get_int());
 
   switch (algorithm) {

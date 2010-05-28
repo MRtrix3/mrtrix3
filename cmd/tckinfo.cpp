@@ -56,8 +56,8 @@ OPTIONS = {
 
 EXECUTE {
 
-  std::vector<OptBase> opt = get_options (0); 
-  uint count = 0;
+  std::vector<OptBase> opt = get_options ("ascii"); 
+  size_t count = 0;
 
   for (std::vector<ArgBase>::iterator arg = argument.begin(); arg != argument.end(); ++arg) {
     Tractography::Properties properties;

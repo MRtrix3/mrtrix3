@@ -21,13 +21,18 @@
 */
 
 #include <fstream>
+#include <set>
 
 #include "app.h"
 #include "progressbar.h"
 #include "get_set.h"
 #include "image/voxel.h"
 #include "dataset/misc.h"
+#include "dataset/buffer.h"
 #include "dataset/interp/linear.h"
+#include "thread/exec.h"
+#include "thread/queue.h"
+#include "math/hermite.h"
 #include "dwi/tractography/file.h"
 #include "dwi/tractography/properties.h"
 
@@ -50,50 +55,204 @@ ARGUMENTS = {
 };
 
 
-const char* data_type_choices[] = { "FLOAT32", "FLOAT32LE", "FLOAT32BE", "FLOAT64", "FLOAT64LE", "FLOAT64BE", 
-    "INT32", "UINT32", "INT32LE", "UINT32LE", "INT32BE", "UINT32BE", 
-    "INT16", "UINT16", "INT16LE", "UINT16LE", "INT16BE", "UINT16BE", 
-    "CFLOAT32", "CFLOAT32LE", "CFLOAT32BE", "CFLOAT64", "CFLOAT64LE", "CFLOAT64BE", 
-    "INT8", "UINT8", "BIT", NULL };
-
 OPTIONS = {
-  Option ("count", "output fibre count", "produce an image of the fibre count through each voxel, rather than the fraction."),
+  Option ("fraction", "output fibre fraction", "produce an image of the fraction of fibres through each voxel (as a proportion of the total number in the file), rather than the count."),
 
   Option ("datatype", "data type", "specify output image data type.")
-    .append (Argument ("spec", "specifier", "the data type specifier.").type_choice (data_type_choices)),
+    .append (Argument ("spec", "specifier", "the data type specifier.").type_choice (DataType::identifiers)),
+
+  Option ("resample", "resample tracks", "resample the tracks at regular intervals using Hermite interpolation.")
+    .append (Argument ("factor", "factor", "the factor by which to resample.").type_integer (1, INT_MAX, 1)),
 
   Option::End
 };
 
 
 
-class MapFunc {
+
+
+class Voxel 
+{
   public:
-    MapFunc (size_t* buffer, float multiplier, size_t yskip, size_t zskip) : buf (buffer), mult (multiplier), Y (yskip), Z (zskip) { }
-    void operator() (Image::Voxel<float>& vox) { vox.value() = mult * buf[vox[0] + Y*vox[1] + Z*vox[2]]; }
-  private:
-    size_t* buf;
-    float mult;
-    size_t Y, Z;
+    Voxel () { }
+    Voxel (const Point& p) : 
+      x (Math::round<size_t> (p[0])), 
+      y (Math::round<size_t> (p[1])), 
+      z (Math::round<size_t> (p[2])) { }
+
+    bool operator< (const Voxel& v) const 
+    {
+      if (x < v.x) return (true);
+      if (x > v.x) return (false);
+      if (y < v.y) return (true);
+      if (y > v.y) return (false);
+      if (z < v.z) return (true);
+      return (false);
+    }
+
+    size_t x, y, z;
 };
+
+
+
+typedef Thread::Queue<std::vector<Point> > Queue1;
+typedef Thread::Queue<std::set<Voxel> > Queue2;
+
+
+
+
+
+
+class TrackLoader 
+{
+  public:
+    TrackLoader (Queue1& queue, DWI::Tractography::Reader& file, size_t count) :
+      writer (queue),
+      reader (file),
+      total_count (count) { }
+
+    void execute () 
+    {
+      Queue1::Writer::Item item (writer);
+
+      ProgressBar progress ("mapping tracks to image...", total_count);
+      while (reader.next (*item)) {
+        if (!item.write())
+          throw Exception ("error writing to track-mapping queue!");
+        ++progress;
+      }
+    }
+
+  private:
+    Queue1::Writer writer;
+    DWI::Tractography::Reader& reader;
+    size_t total_count;
+};
+
+
+
+
+
+
+class TrackMapper 
+{
+  public:
+    TrackMapper (Queue1& input, Queue2& output, const Image::Header& header, const Math::Matrix<float>* resample_matrix = NULL) :
+      reader (input),
+      writer (output),
+      H (header),
+      resampler (resample_matrix) {
+      }
+
+    void execute () 
+    {
+      Queue1::Reader::Item in (reader);
+      Queue2::Writer::Item out (writer);
+      DataSet::Interp::Linear<const Image::Header> interp (H);
+      Math::Matrix<float> resampled, orig (4,3);
+      if (resampler) 
+        resampled.allocate (resampler->rows(), 3);
+
+      while (in.read()) {
+        out->clear();
+        for (std::vector<Point>::const_iterator i = in->begin(); i != in->end(); ++i) {
+          out->insert (Voxel (interp.scanner2voxel (*i)));
+          if (resampler) { // TODO: this is not complete!!!
+            Math::mult (resampled, *resampler, orig);
+          }
+        }
+
+        if (!out.write()) 
+          throw Exception ("error writing to write-back queue!");
+      }
+    }
+
+  private:
+    Queue1::Reader reader;
+    Queue2::Writer writer;
+    const Image::Header& H;
+    const Math::Matrix<float>* resampler;
+};
+
+
+
+
+
+
+
+class MapWriter
+{
+  public:
+    MapWriter (Queue2& queue, const Image::Header& header, bool fraction_scaling_factor) :
+      reader (queue),
+      H (header),
+      buffer (H, "buffer"),
+      interp (H),
+      scale (fraction_scaling_factor)
+    {
+    }
+
+    ~MapWriter () 
+    {
+      if (scale) {
+        Image::Voxel<float> vox (H);
+        DataSet::Loop loop ("writing data back to image...", 0, 3);
+        for (loop.start (vox, buffer); loop.ok(); loop.next (vox, buffer))
+          vox.value() = scale * buffer.value();
+      }
+      else {
+        Image::Voxel<size_t> vox (H);
+        DataSet::copy_with_progress_message ("writing data back to image...", vox, buffer, 0, 3);
+      }
+    }
+
+
+    void execute () 
+    {
+      Queue2::Reader::Item item (reader);
+      while (item.read()) {
+        for (std::set<Voxel>::const_iterator i = item->begin(); i != item->end(); ++i) {
+          buffer[0] = i->x;
+          buffer[1] = i->y;
+          buffer[2] = i->z;
+          buffer.value() += 1;
+        }
+      }
+    }
+
+
+  private:
+    Queue2::Reader reader;
+    const Image::Header& H;
+    DataSet::Buffer<size_t,3> buffer;
+    DataSet::Interp::Linear<const Image::Header> interp;
+    float scale;
+};
+
+
+
+
+
 
 
 EXECUTE {
 
   Image::Header header (argument[1].get_image());
 
-  bool fibre_count = get_options(0).size(); // count
+  bool fibre_fraction = get_options("count").size();
 
-  std::vector<OptBase> opt = get_options (2); // datatype
-  if (opt.size()) header.datatype().parse (data_type_choices[opt[0][0].get_int()]);
-  else header.datatype() = fibre_count ? DataType::UInt32 : DataType::Float32;
+  std::vector<OptBase> opt = get_options ("datatype");
+  if (opt.size()) 
+    header.datatype().parse (DataType::identifiers[opt[0][0].get_int()]);
+  else 
+    header.datatype() = fibre_fraction ? DataType::Float32 : DataType::UInt32;
 
   Tractography::Properties properties;
   Tractography::Reader file;
   file.open (argument[0].get_string(), properties);
 
   header.axes.ndim() = 3;
-  header.comments.push_back (std::string ("track ") + (fibre_count ? "count" : "fraction") + " map");
+  header.comments.push_back (std::string ("track ") + (fibre_fraction ? "fraction" : "count") + " map");
   for (Tractography::Properties::iterator i = properties.begin(); i != properties.end(); ++i) 
     header.comments.push_back (i->first + ": " + i->second);
   for (std::multimap<std::string,std::string>::const_iterator i = properties.roi.begin(); i != properties.roi.end(); ++i)
@@ -101,62 +260,22 @@ EXECUTE {
   for (std::vector<std::string>::iterator i = properties.comments.begin(); i != properties.comments.end(); ++i)
     header.comments.push_back ("comment: " + *i);
 
+  const Image::Header header_out = argument[2].get_image (header);
+
   size_t total_count = properties["total_count"].empty() ? 0 : to<size_t> (properties["total_count"]);
   size_t num_tracks = properties["count"].empty() ? 0 : to<size_t> (properties["count"]);
-  size_t count = 0;
 
-  off64_t voxel_count = DataSet::voxel_count (header, 3);
-  int xmax = header.dim(0);
-  int ymax = header.dim(1);
-  int zmax = header.dim(2);
+  Queue1 queue1 ("loaded tracks");
+  Queue2 queue2 ("processed tracks");
 
-  size_t yskip = xmax;
-  size_t zskip = xmax*ymax;
+  TrackLoader loader (queue1, file, num_tracks);
+  TrackMapper mapper (queue1, queue2, header_out);
+  MapWriter writer (queue2, header_out, total_count ? 1.0 / total_count : 0.0);
+  
+  Thread::Exec loader_thread (loader, "loader");
+  Thread::Array<TrackMapper> mapper_list (mapper);
+  Thread::Exec mapper_threads (mapper_list, "mapper");
 
-  size_t* countbuf = new size_t [voxel_count];
-  memset (countbuf, 0, voxel_count*sizeof(size_t));
-
-  voxel_count = (voxel_count+7)/8;
-  uint8_t* visited = new uint8_t [voxel_count];
-  std::vector<Point> tck;
-
-  { 
-    DataSet::Interp::Linear<Image::Header> interp (header);
-    ProgressBar progress ("generating track count image...", num_tracks);
-
-    while (file.next (tck)) {
-      memset (visited, 0, voxel_count*sizeof(uint8_t));
-      for (std::vector<Point>::iterator i = tck.begin(); i != tck.end(); ++i) {
-        Point p (interp.scanner2voxel (*i));
-        int x = round (p[0]);
-        int y = round (p[1]);
-        int z = round (p[2]);
-        if (x >= 0 && y >= 0 && z >= 0 && x < xmax && y < ymax && z < zmax) {
-          size_t offset = x + yskip*y + zskip*z;
-          if (!get<bool>(visited, static_cast<size_t>(offset))) {
-            put<bool> (true, visited, static_cast<size_t>(offset));
-            countbuf[offset]++;
-          }
-        }
-      }
-      count++;
-      ++progress;
-    }
-  }
-
-  delete [] visited;
-
-
-  if (total_count > 0) count = total_count;
-
-  Image::Header map_header = argument[2].get_image (header);
-  Image::Voxel<float> vox (map_header);
-
-  float mult = fibre_count ? 1.0 : 1.0/float(count);
-  DataSet::LoopInOrder loop (vox, "writing track count image...", 0, 3);
-  for (loop.start (vox); loop.ok(); loop.next (vox)) 
-    vox.value() = mult * countbuf[vox[0] + yskip*vox[1] + zskip*vox[2]]; 
-
-  delete [] countbuf;
+  writer.execute();
 }
 
