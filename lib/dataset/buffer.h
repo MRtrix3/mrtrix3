@@ -28,6 +28,7 @@
 #include "dataset/position.h"
 #include "dataset/stride.h"
 #include "dataset/copy.h"
+#include "dataset/transform.h"
 #include "image/header.h"
 #include "image/voxel.h"
 

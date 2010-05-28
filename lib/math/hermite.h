@@ -43,6 +43,9 @@ namespace MR {
           w[2] = (T(2.0)+T(2.0)*t)*p2 + (T(0.5)-t)*position - (T(1.5)+t)*p3;
           w[3] = (T(0.5)-t) * (p3 - p2);
         }
+
+        value_type coef (size_t i) const { return (w[i]); }
+
         value_type value (const value_type* vals) const {  return (value (vals[0], vals[1], vals[2], vals[3])); }
         value_type value (value_type a, value_type b, value_type c, value_type d) const { return (w[0]*a + w[1]*b + w[2]*c + w[3]*d); }
 
