@@ -46,8 +46,11 @@ namespace MR {
 
         value_type coef (size_t i) const { return (w[i]); }
 
-        value_type value (const value_type* vals) const {  return (value (vals[0], vals[1], vals[2], vals[3])); }
-        value_type value (value_type a, value_type b, value_type c, value_type d) const { return (w[0]*a + w[1]*b + w[2]*c + w[3]*d); }
+        template <class S> 
+          value_type value (const S* vals) const { return (value (vals[0], vals[1], vals[2], vals[3])); }
+
+        template <class S> 
+          value_type value (const S& a, const S& b, const S& c, const S& d) const { return (w[0]*a + w[1]*b + w[2]*c + w[3]*d); }
 
       private:
         value_type w[4];
