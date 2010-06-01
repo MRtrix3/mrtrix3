@@ -39,8 +39,21 @@ namespace MR {
 
     //! \cond skip
     namespace {
-      template <typename X> inline X* __allocate (size_t count) { return (new X [count]); }
-      template <> inline bool* __allocate<bool> (size_t count) { return ((bool*) (new uint8_t [(count+7)/8])); }
+
+      template <typename X> inline X* __allocate (size_t count)
+      {
+        X* retval = new X [count];
+        memset (retval, 0, count*sizeof(X));
+        return (retval);
+      }
+
+      template <> inline bool* __allocate<bool> (size_t count)
+      {
+        count = (count+7)/8;
+        uint8_t* retval = new uint8_t [count];
+        memset (retval, 0, count*sizeof(uint8_t));
+        return ((bool*) retval);
+      }
 
       template <typename X> inline size_t __footprint (size_t count) { return (count*sizeof(X)); }
       template <> inline size_t __footprint<bool> (size_t count) { return ((count+7)/8); }
@@ -54,6 +67,7 @@ namespace MR {
         if (val) ((uint8_t*) data)[offset/8] |= (BITMASK >> offset%8); 
         else ((uint8_t*) data)[offset/8] &= ~(BITMASK >> offset%8); 
       }
+
     }
     //! \endcond
 

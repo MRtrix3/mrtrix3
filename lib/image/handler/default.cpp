@@ -55,7 +55,13 @@ namespace MR {
 
         segsize = DataSet::voxel_count (H) / H.files.size();
 
-        bytes_per_segment = (H.datatype().bits() * segsize + 7) / 8;
+        if (H.datatype().bits() == 1) {
+          bytes_per_segment = segsize/8;
+          if (bytes_per_segment*8 < off64_t(segsize))
+            ++bytes_per_segment;
+        }
+        else bytes_per_segment = H.datatype().bytes() * segsize;
+
         if (H.files.size() * double (bytes_per_segment) >= double (std::numeric_limits<size_t>::max()))
           throw Exception ("image \"" + H.name() + "\" is larger than maximum accessible memory");
 
