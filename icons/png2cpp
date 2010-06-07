@@ -1,0 +1,49 @@
+#!/usr/bin/python
+
+from PIL import Image
+import os
+
+h = open ('icons.h', 'w')
+cpp = open ('icons.cpp', 'w')
+
+h.write ('''#ifndef __icons_h__
+#define __icons_h__
+
+namespace MR {
+
+  class Icon {
+    public:
+      Icon (const unsigned char* d, int w, int h) : 
+            data (d), width (w), height (h) { }
+      const unsigned char* data;
+      int width, height;
+
+''')
+
+cpp.write ('''#include "icons.h"
+
+namespace MR {
+
+''')
+
+for image in os.listdir('.'):
+  if not image.endswith ('.png'): continue
+  im = Image.open (image)
+  print image + ':', im.format, im.size, im.mode
+
+  h.write ('    static const Icon ' + image[:-4] + ';\n')
+  cpp.write ('  namespace {\n    const int ' + image[:-4] + '_data [' + str(im.size[0]*im.size[1]) + '] = {\n')
+
+  pix = im.load()
+  for y in range(0,im.size[1]):
+    for x in range(0,im.size[0]):
+      cpp.write ('0x{0[3]:02X}{0[0]:02X}{0[1]:02X}{0[2]:02X}, '.format(pix[x,y]))
+    cpp.write ('\n');
+
+  cpp.seek (-3, 1)
+  cpp.write (' };\n  }\n\n  const Icon Icon::' + image[:-4] + ' (reinterpret_cast<const unsigned char*>(' + image[:-4] + '_data), ' + str(im.size[0]) + ', ' + str(im.size[1]) + ');\n\n')
+
+
+h.write ('  };\n}\n\n#endif\n')
+cpp.write ('}\n')
+
