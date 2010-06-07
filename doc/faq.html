@@ -1,0 +1,231 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html;charset=iso-8859-1">
+<title>MRtrix documentation</title>
+<link rel="stylesheet" href="stylesheet.css" type="text/css" media=screen>
+</head>
+
+<body>
+
+<table class=nav>
+  <tr>
+    <td><a href="tractography/index.html"><img src="left.png"></a></td>
+    <td><a href="index.html"><img src="up.png"></a></td>
+    <td><a href="index.html"><img src="home.png"></a></td>
+    <th>Frequently Asked Questions</th>
+    <td><a href="commands/index.html"><img src="right.png"></a></td>
+  </tr>
+</table>
+
+
+<ul>
+  <li><a href='#help'>I want to get help or discuss issues about MRtrix</a></li>
+  <li><a href='#acquisition'>What data do I need to perform constrained spherical deconvolution?</a></li>
+  <li><a href='#super'>How do I perform the super-resolved version of CSD?</a></li>
+  <li><a href='#converge'>I keep getting 'failed to converge' messages with csdeconv</a></li>
+  <li><a href='#coreg'>I want to coregister my anatomical images with the DWI/tracks</a></li>
+  <li><a href='#probmap'>How do I produce an image of the track count through each voxel?</a></li>
+  <li><a href='#temp'>What are these 'mrtrix-azdj28.mif' files that keep appearing in my folder?</a></li>
+</ul>
+
+<p class=sep><a href="#top">top</a></p>
+
+<h3><a name='help'>I want to get help or discuss issues about MRtrix</a></h3>
+<p>
+Please subscribe to the <a href='http://www.nitrc.org/mailman/listinfo/mrtrix-discussion'>MRtrix mailing list</a> and post your questions there.
+You can also browse through the <a href='http://www.nitrc.org/pipermail/mrtrix-discussion/'>archives</a> to see if your question has already been addressed.
+Another advantage of joining the mailing list is that you get notified of any new releases.
+</p>
+
+<p class=sep><a href="#top">top</a></p>
+
+<h3><a name='acquisition'>What data do I need to perform constrained spherical deconvolution?</a></h3>
+<p>
+The input data for CSD is a high angular resolution diffusion-weighted imaging (HARDI) data set. 
+There are three main aspects of the acquisition that impact on the quality of the CSD results.
+In general, there will be trade-offs between the parameters concerned, meaning that there is no simple answer to this question.
+However, we do provide our own recommendations as part of this discussion.
+</p>
+<dl>
+  <dt><i>b</i>-value:</dt>
+  <dd>higher <i>b</i>-values produce stronger angular contrast in the DW signal, 
+  providing improved discrimination between the different fibre orientations.
+  Note that although the raw DW images will look much noisier at higher <i>b</i>-values, 
+  it is the vastly improved <em>constrast to noise</em> ratio in the angular domain that is critical for CSD.<br> 
+  We would recommend a <i>b</i>-value of approximately 3000s/mm&sup2;.</dd>
+  <dt>number of DW directions:</dt>
+  <dd>a larger number of DW directions will produce a better characterisation of the DW signal.
+  In addition to an overall increase in SNR, it provides a more precise definition of the features of the DW signal in the angular domain, 
+  which is critical for CSD. In addition, since the DW signal increases in angular constrast with higher <i>b</i>-values, 
+  a larger number of DW directions becomes even more important then. 
+  Please note that in the context of this discussion, it is the number of <em>unique</em> directions that is important: 
+  a 3 &times; 12 directions acquisition still only contains 12 directions (although with improved SNR).<br>
+  We would recommend a minimum of 60 DW directions.</dd>
+  <dt>SNR:</dt>
+  <dd>higher SNR obviously produces better results. 
+  Larger voxels will provide higher SNR, but at the expense of spatial localisation. 
+  However, CSD will produce poor quality results if the SNR in the <i>b</i>=0 image is too low.
+  We would recommend adjusting the voxel size until the SNR exceeds 20. 
+  This should not require a huge sacrifice in terms of imaging resolution:
+  for example, using 2.5mm rather than 2mm isotropic voxels effectively doubles the SNR, 
+  at the expense of a relatively small reduction in spatial resolution.</dd>
+</dl>
+<p>
+In the same way, there is also no simple answer to what the minimum requirements are.
+It is possible to get reasonable-looking results using <i>b</i>=1000s/mm&sup2; and 30 DW directions, 
+but the quality may then be questionable.
+In general, we would urge you to follow the recommendations given here if you intend to use CSD.
+</p>
+
+<p class=sep><a href="#top">top</a></p>
+
+<h3><a name='super'>How do I perform the super-resolved version of CSD?</a></h3>
+<p>
+Super-CSD is actually performed in the same way as 'normal' CSD, 
+but using a higher harmonic order (lmax) than would otherwise be possible given the data.
+For example, 60 directions provides enough data to perform a spherical harmonic fit up to harmonic order 8 
+(which requires 45 parameters), but not enough for harmonic order 10 (which requires 66 parameters) 
+&ndash; see the table in the <a href='tractography/preprocess.html#response'>response function coefficient</a> section.
+This means that a 60 direction data set will be analysed using straight CSD if 
+<kbd><a href='commands/csdeconv.html'>csdeconv</a></kbd> is performed with lmax=8 or lower, 
+and super-resolved CSD if <kbd><a href='commands/csdeconv.html'>csdeconv</a></kbd> is performed with lmax=10 or higher.
+</p>
+
+<p class=sep><a href="#top">top</a></p>
+
+<h3><a name='converge'>I keep getting 'failed to converge' messages with csdeconv</a></h3>
+<p>
+<kbd><a href='commands/csdeconv.html'>csdeconv</a></kbd> will produce one such message per voxel
+where the CSD fails to converge. It is not unusual to get a dozen or so such messages per data set 
+when performing a super-resolved reconstruction (see above). 
+The voxels affected are typically not in white matter, so these failures usually won't affect any 
+subsequent tractography. 
+</p>
+<p>
+However, if you are getting a lot of these messages, you may need to check that the CSD images are suitable.
+They can be loaded directly into <a href='general/mrview.html'>MRview</a>: the voxels that failed to converge will appear black.
+If these messages do signal a real problem, you should try to perform the CSD using a lower value of lmax.
+In particular, you will usually not get any such messages when performing non-super-resolved CSD (see above).
+</p>
+
+<p class=sep><a href="#top">top</a></p>
+
+<h3><a name='coreg'>I want to coregister my anatomical images with the DWI/tracks</a></h3>
+<p>
+MRtrix now includes support for the <a href='general/formats.html#NIfTI'>NIfTI</a> image format, allowing straightforward interaction with 
+<a href='http://www.fil.ion.ucl.ac.uk/spm/'>SPM5</a> and <a href='http://www.fmrib.ox.ac.uk/fsl/'>FSL</a> (amongst others). 
+Both of these packages provide robust functionality for coregistration. 
+Some simple instructions for coregistration using these packages are given below.
+<p>
+</p>
+An important point to bear in mind is that the orientation of the DWI data and any images derived from them (including the CSD results)
+should not be modified, since this may affect the orientation of the DW gradients with respect to the data, 
+and hence also affect the orientation of the fibres relative to the data, 
+which would obviously invalidate any subsequent tractography results.
+In practice, this means that the anatomical images should be coregistered to the DWI data, 
+leaving the DWI data unmodified.
+</p>
+<p>
+The first step in the coregistration procedure is to convert the images of interest to <a href='general/formats.html#NIfTI'>NIfTI</a> format. 
+The FA map appears to provide adequate contrast for coregistration with the anatomical images, so we will convert these data:
+</p>
+<pre>
+&gt; <b><a href='commands/mrconvert.html'>mrconvert</a> anat.mif anat_coreg.nii</b>
+<a href='commands/mrconvert.html'>mrconvert</a>: copying data... 100%
+&gt; <b><a href='commands/mrconvert.html'>mrconvert</a> fa.mif fa_coreg.nii</b>
+<a href='commands/mrconvert.html'>mrconvert</a>: copying data... 100%
+</pre>
+<p>
+The subsequent steps depend on the software package to be used.
+</p>
+<h4>SPM5</h4>
+<p>
+The procedure with <a href='http://www.fil.ion.ucl.ac.uk/spm/'>SPM5</a> is straightforward: 
+set the FA map as the reference image, the anatomical as the source image, 
+and coregister (estimate only) with the normalised mutual information cost function. 
+Once the processing is done, the <kbd>anat_coreg.nii</kbd> image will have been re-oriented 
+to match that of the FA map (only the header's orientation field will have been modified).
+The <kbd>anat_coreg.nii</kbd> can then be loaded into <a href='general/mrview.html'>MRview</a> instead of the original <kbd>anat.mif</kbd>.
+<p>
+<ul>
+  <li>open SPM5, and click on 'coregister' in the <em>spatial pre-processing</em> box</li>
+  <li>select <em>New "Coreg: Estimate"</em></li>
+  <li>double-click on <em>+Coreg: Estimate &lt;- X</em> to expand the parameter list</li>
+  <li>click on <em>Reference Image &lt;- X</em> to highlight it</li>
+  <li>click on <em>Specify Files</em> to open the file dialog</li>
+  <li>select the <kbd>fa_coreg.nii</kbd> file and press <em>Done</em></li>
+  <li>click on <em>Source Image &lt;- X</em> to highlight it</li>
+  <li>click on <em>Specify Files</em> to open the file dialog</li>
+  <li>select the <kbd>anat_coreg.nii</kbd> file and press <em>Done</em></li> 
+  <li>double-click on <em>+Estimation options</em> to expand the list</li>
+  <li>click on <em>Objective Function</em> to select it</li> 
+  <li>make sure it is set to <em>Normalised Mutual Information</em></li> 
+  <li>press <em>Run</em> to start the coregistration</li> 
+</ul>
+<p>
+<kbd>anat_coreg.nii</kbd> should now be coregistered with the DWI data and any tracks generated from them.
+</p>
+
+<h4>FSL</h4>
+<p>
+The procedure to use with <a href='http://www.fmrib.ox.ac.uk/fsl/'>FSL</a> is slightly more complex.
+The <a href='http://www.fmrib.ox.ac.uk/fsl/flirt/'>FLIRT</a> command does not produce good results
+if the FA map is specified as the reference. The steps required are therefore to coregister the
+anatomical images to the FA map, producing a 4&times;4 affine transform matrix.
+As with <a href='http://www.fil.ion.ucl.ac.uk/spm/'>SPM5</a>, the normalised mutual information cost function produces the best results.
+The inverse of this transform can then be applied to the anatomical images 
+using the <a href='commands/mrtransform.html'>mrtransform</a> command included as part of MRtrix.
+<pre>
+&gt; <b><a href='http://www.fmrib.ox.ac.uk/fsl/flirt/overview.html'>flirt</a> -ref anat_coreg.nii -in fa_coreg.nii -cost normmi -searchcost normmi -dof 6 -omat transform.txt</b>
+&gt; <b><a href='commands/mrtransform.html'>mrtransform</a> anat_coreg.nii -transform transform.txt -reference fa_coreg.nii -inverse -flipx anat_coreg.mif</b>
+mrtransform: copying image data... 100%
+</pre>
+<p>
+<kbd>anat_coreg.mif</kbd> should now be coregistered with the DWI data and any tracks generated from them.
+</p>
+
+<p class=sep><a href="#top">top</a></p>
+
+<h3><a name='probmap'>How do I produce an image of the track count through each voxel?</a></h3>
+<p>
+The <a href='commands/tracks2prob.html'>tracks2prob</a> command can be used to generate an image 
+where each voxel contains the fraction of the total number of tracks generated that pass through that voxel.
+For example:
+</p>
+<pre>
+&gt; <b><a href='commands/tracks2prob.html'>tracks2prob</a> tracks.tck anat.mif track_image.mif</b>
+tracks2prob: generating track count image...  - ok
+</pre>
+<p>
+This will produce an image of the fraction of tracks through each voxel based on the <kbd>anat.mif</kbd> template image.
+</p>
+
+
+<p class=sep><a href="#top">top</a></p>
+
+<h3><a name='temp'>What are these 'mrtrix-azdj28.mif' files that keep appearing in my folder?</a></h3>
+<p>
+MRtrix will produce temporary files when <a href='general/cmdline.html#pipes'>data pipes</a> are used.
+If one of the programs in the pipeline crashes, these files will not be deleted (see <a href='general/cmdline.html#pipes'>here</a> for details).
+If you find one or more of these files amongst your data, you can safely delete them &ndash; 
+assuming of course that there are no currently running MRtrix programs that may be accessing the file!
+</p>
+
+
+
+
+
+<table class=nav>
+  <tr>
+    <td><a href="tractography/index.html"><img src="left.png"></a></td>
+    <td><a href="index.html"><img src="up.png"></a></td>
+    <td><a href="index.html"><img src="home.png"></a></td>
+    <th><a href='#top'>top</a></th>
+    <td><a href="commands/index.html"><img src="right.png"></a></td>
+  </tr>
+</table>
+
+</body>
+</html>
+

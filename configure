@@ -1,0 +1,915 @@
+#!/usr/bin/python
+
+import subprocess, sys, tempfile, os, platform, tempfile, shutil
+
+debug = False
+profile = False
+nogui = False
+noshared = False
+static = False
+verbose = False
+
+
+for arg in sys.argv[1:]:
+  if '-debug'.startswith (arg): debug = True
+  elif '-profile'.startswith (arg): profile = True
+  elif '-nogui'.startswith (arg): nogui = True
+  elif '-noshared'.startswith (arg): noshared = True
+  elif '-static'.startswith (arg): 
+    static = True
+    noshared = True
+  elif '-verbose'.startswith (arg): verbose = True
+  else: 
+    print """\
+usage: [ENV] ./configure [-debug] [-profile] [-nogui] [-noshared]'
+
+In most cases, a simple invocation should work:
+   $ ./configure
+
+For non-standard setups, you may need to supply additional
+information using environment variables. For example, to set
+the compiler, use:
+   $ CXX=/usr/local/bin/g++-4.1 ./configure
+
+The '-debug' option will produce a configuration with debug symbols enabled.
+
+The '-profile' option will produce a configuration with profiling enabled.
+      note: this will also enable the -debug option.
+
+The '-nogui' option will produce a configuration without any GUI components.
+
+The '-noshared' option will produce a configuration without a shared library.
+
+The '-static' option will produce a statically-linked configuration.
+
+The '-verbose' option will cause configure to output more information.
+
+
+The following environment variables can be set:
+
+CXX             The compiler command-line to use. The default is:
+                "g++ -c CFLAGS SRC -o OBJECT"
+
+LD              The linker command-line to use. The default is:
+                "g++ LDFLAGS OBJECTS -o EXECUTABLE"
+
+LDLIB           The linker command-line to use for generating a shared library.
+                The default is:
+                "g++ -shared LDLIB_FLAGS OBJECTS -o LIB"
+
+CFLAGS          Any additional flags to the compiler.
+
+LDFLAGS         Any additional flags to the linker.
+
+LDLIB_FLAGS     Any additional flags to the linker to generate a shared library.
+
+PTHREAD_CFLAGS  Any flags required to compile with POSIX threads.
+
+PTHREAD_LDFLAGS Any flags required to link with POSIX threads.
+
+GSL_CFLAGS      Any flags required to compile with the GSL.
+                This may include in particular the path to the
+                include files, if not in a standard location
+                For example:
+                $ GSL_CFLAGS="-I/usr/local/include" ./configure
+
+GSL_LDFLAGS     Any flags required to link with the GSL.
+                This may include in particular the path to the
+                libraries, if not in a standard location
+                For example:
+                $ GSL_LDFLAGS="-L/usr/local/lib -lgsl -lgslcblas" ./configure
+
+ZLIB_CFLAGS     Any flags required to compile with the zlib compression library.
+
+ZLIB_LDFLAGS    Any flags required to link with the zlib compression library.
+
+CBLAS_LDFLAGS   Any flags required to link with an alternate cblas library.
+
+PATH            Set the path to use during the configure process.
+                This may be useful to set the path to Qt4's qmake.
+                For example:
+                $ PATH=/usr/local/bin:$PATH ./configure
+
+                Note that this path will NOT be used during the build
+                process itself.
+"""
+    sys.exit (0)
+  
+global logfile, config_report
+logfile = open (os.path.join (os.path.dirname(sys.argv[0]), 'configure.log'), 'w')
+config_report = ''
+
+
+def log (message):
+  global logfile
+  logfile.write (message)
+  if (verbose): 
+    sys.stdout.write (message)
+    sys.stdout.flush()
+
+def report (message):
+  global config_report, logfile
+  config_report += message
+  sys.stdout.write (message)
+  sys.stdout.flush()
+  logfile.write (message)
+
+def error (message):
+  global logfile
+  logfile.write ('\nERROR: ' + message + '\n\n')
+  sys.stderr.write ('\nERROR: ' + message + '\n\n')
+  sys.exit (1)
+
+
+report ("""
+MRtrix build type requested: """)
+if profile: report ('profiling')
+elif debug: report ('debug')
+else: report ('release')
+if nogui: report (' [command-line only]')
+report ('\n\n')
+
+
+
+
+global cpp, cpp_cmd, ld, ld_cmd
+
+cpp = 'g++ -c CFLAGS SRC -o OBJECT'.split()
+cpp_flags = [ '-fPIC', '-Wno-unused-parameter' ]
+
+ld = 'g++ OBJECTS LDFLAGS -o EXECUTABLE'.split()
+ld_flags = []
+
+ld_lib = 'g++ -shared LDLIB_FLAGS OBJECTS -o LIB'.split()
+ld_lib_flags = []
+
+thread_cflags = []
+thread_ldflags = [ '-lpthread' ]
+
+zlib_cflags = []
+zlib_ldflags = [ '-lz' ]
+
+gsl_cflags = []
+gsl_ldflags = [ '-lgsl', '-lgslcblas' ]
+
+
+class TempFile:
+  def __init__ (self, suffix):
+    self.fid = None
+    self.name = None
+    [ fid, self.name ] = tempfile.mkstemp (suffix)
+    self.fid = os.fdopen (fid, 'w')
+
+  def __del__ (self):
+    try:
+      os.unlink (self.name)
+    except OSError:
+      log ('error deleting temporary file "' + self.name + '"')
+
+
+class DeleteAfter:
+  def __init__ (self, name):
+    self.name = name
+
+  def __del__ (self):
+    try:
+      os.unlink (self.name)
+    except OSError:
+      log ('error deleting temporary file "' + self.name + '"')
+    
+    
+class TempDir:
+  def __init__ (self):
+    self.name = tempfile.mkdtemp ();
+
+  def __del__ (self):
+    try:
+      for entry in os.listdir (self.name):
+        os.remove (os.path.join (self.name, entry))
+      os.rmdir (self.name)
+    except OSError:
+      log ('error deleting temporary folder "' + self.name + '"')
+
+
+
+class QMakeError: pass
+class QMOCError: pass
+class CompileError: pass
+class LinkError: pass
+class RuntimeError: pass
+
+def commit (name, variable):
+  cache.write (name + ' = ')
+  if type (variable) == type([]): 
+    cache.write ('[')
+    if len(variable): cache.write(' \'' + '\', \''.join (variable) + '\' ')
+    cache.write (']\n')
+  else: cache.write ('\'' + variable + '\'\n')
+
+
+
+def fillin (template, keyvalue):
+  cmd = []
+  for item in template:
+    if item in keyvalue: 
+      if type(keyvalue[item]) == type ([]): cmd += keyvalue[item]
+      else: cmd += [ keyvalue[item] ]
+    else: cmd += [ item ]
+  return cmd
+
+
+def compile (source, compiler_flags = [], linker_flags = []):
+  global cpp, ld
+  log ('\n** COMPILE **\n\nsource file:\n---\n' + source + '\n---\n\n')
+  F = TempFile ('.cpp')
+  F.fid.write (source)
+  F.fid.flush()
+  obj = DeleteAfter (F.name[:-4] + '.o')
+  cmd = fillin (cpp, {
+    'CFLAGS': compiler_flags,
+    'SRC': F.name,
+    'OBJECT': obj.name })
+  log ('executing "' + ' '.join(cmd) + '"...\n\n')
+  try: process = subprocess.Popen (cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+  except OSError: 
+    log ('failed with stderr:\n' + process.stderr.read())
+    raise CompileError
+  if process.wait() != 0:
+    log ('failed with stderr:\n' + process.stderr.read())
+    raise CompileError
+
+  out = DeleteAfter ('./a.out')
+  cmd = fillin (ld, {
+    'LDFLAGS': linker_flags,
+    'OBJECTS': obj.name,
+    'EXECUTABLE': out.name })
+  log ('executing "' + ' '.join(cmd) + '"...\n\n')
+  try: process = subprocess.Popen (cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+  except OSError: 
+    log ('failed with stderr:\n' + process.stderr.read())
+    raise LinkError
+  status = process.wait()
+  if status != 0: raise LinkError
+
+  log ('executing command...\n\n')
+  process = subprocess.Popen ([ out.name ], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+  status = process.wait()
+  if status != 0: raise RuntimeError
+
+  return process.stdout.read()
+
+
+
+
+
+
+
+
+
+# set CPP compiler:
+
+if 'CXX' in os.environ.keys(): cpp = os.environ['CXX'].split()
+if 'LD' in os.environ.keys(): ld = os.environ['LD'].split()
+if 'LDLIB' in os.environ.keys(): ld_lib = os.environ['LDLIB'].split()
+
+report ('Checking C++ compiler [' + cpp[0] + ']: ')
+try: 
+  process = subprocess.Popen ([ cpp[0], '-dumpversion' ], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+  process.wait()
+  compiler_version = process.stdout.read().strip()
+  if len(compiler_version) == 0: report ('(no version information)')
+  else: report (compiler_version)
+except:
+  error ('''compiler not found!
+
+Use CXX environment variable to set path to compiler, as follows:
+     CXX=/usr/bin/g++-4.2 ./configure.py''')
+
+try:
+  compile ('int main() { return (0); }')
+  report (' - tested ok\n')
+except CompileError:
+  error ('''compiler error!
+
+Use CXX environment variable to set path to compiler, as follows:
+     CXX=/usr/bin/g++-4.2 ./configure.py''')
+except (LinkError, RuntimeError):
+  error ('''linking error!
+
+Use LD environment variable to set path to compiler, as follows:
+     LD=/usr/bin/g++-4.2 ./configure.py''')
+
+
+
+
+# CPP flags:
+
+if 'CFLAGS' in os.environ.keys(): cpp_flags = os.environ['CFLAGS'].split()
+if 'LDFLAGS' in os.environ.keys(): ld_flags = os.environ['LDFLAGS'].split()
+if 'LDLIB_FLAGS' in os.environ.keys(): ld_lib_flags = os.environ['LDLIB_FLAGS'].split()
+
+
+# OS-dependent variables:
+
+obj_suffix = '.o'
+exe_suffix = ''
+lib_prefix = 'lib'
+
+system = platform.system().lower()
+report ('Detecting OS: ' + system + '\n')
+if system == 'linux':
+  lib_suffix = '.so'
+elif system == 'windows':
+  cpp_flags += [ '-DWINDOWS', '-mno-cygwin', '-mms-bitfields' ]
+  exe_suffix = '.exe'
+  lib_prefix = ''
+  lib_suffix = '.dll'
+elif system == 'darwin':
+  cpp_flags += [ '-DMACOSX', '-fPIC' ]
+  ld_flags += [ '-dynamiclib' ]
+  lib_suffix = '.dylib'
+
+
+
+
+report ('Detecting machine architecture: ')
+march = platform.machine()
+if march == 'x86_64': march = 'x86-64'
+elif march == 'i686': pass
+elif march == 'i586': pass
+else: march = None
+
+if march: 
+  report (march + '\n')
+  cpp_flags += [ '-march='+march ]
+else:
+  report ('unknown\n')
+
+
+
+
+
+report ('Detecting pointer size: ')
+try:
+  pointer_size = int (compile ('''
+#include <iostream>
+int main() { 
+  std::cout << sizeof(void*); 
+  return (0);
+}
+'''))
+  report (str(8*pointer_size) + ' bit\n')
+  if pointer_size == 8: cpp_flags += [ '-DWORD64' ]
+  elif pointer_size != 4: 
+    error ('unexpected pointer size!')
+except:
+  error ('unable to determine pointer size!')
+
+
+
+
+report ('Detecting byte order: ')
+if sys.byteorder == 'big':
+  report ('big-endian\n')
+  cpp_flags += [ '-DBYTE_ORDER_IS_BIG_ENDIAN' ]
+else:
+  report ('little-endian\n')
+
+
+
+report ('Checking for C++ TR1 implementation: ')
+try:
+  compile ('''
+#include <tr1/unordered_map>
+
+int main() { 
+  std::tr1::unordered_map<int,int> map; 
+  return (map.size());
+}
+''')
+  report ('present\n')
+  cpp_flags += [ '-DUSE_TR1' ]
+except:
+  report ('not present - using SGI hash_map instead\n')
+
+
+
+
+report ('Checking for large file support: ')
+try:
+  compile ('''
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <unistd.h>
+
+int main() { 
+  off64_t t = 0; 
+  return (t); 
+}
+''')
+  cpp_flags += [ '-DHAVE_LARGE_FILE_SUPPORT' ]
+  report ('yes\n')
+except:
+  report ('no\n')
+
+
+
+
+# zlib:
+
+report ('Checking for zlib compression library: ')
+
+if 'ZLIB_CFLAGS' in os.environ.keys(): zlib_cflags = os.environ['ZLIB_CFLAGS'].split()
+if 'ZLIB_LDFLAGS' in os.environ.keys(): zlib_ldflags = os.environ['ZLIB_LDFLAGS'].split()
+
+try:
+  zlib_version = compile ('''
+#include <iostream>
+#include <zlib.h>
+
+int main() { 
+  std::cout << zlibVersion(); 
+  return (0);
+}
+''', zlib_cflags, zlib_ldflags)
+  report (zlib_version + '\n')
+except CompileError:
+  error ('''compiler error!
+
+Use the ZLIB_CFLAGS environment variable to set the path to
+the zlib include files and to set any required flags
+For example:
+     ZLIB_CFLAGS="-I/usr/local/include" ./configure.py''')
+except LinkError:
+  error ('''linker error!
+
+Use the ZLIB_LDFLAGS environment variable to set the path to
+the zlib libraries and to set the library to use
+For example:
+     ZLIB_LDFLAGS="-L/usr/local/lib -lz" ./configure.py''')
+except RuntimeError:
+  error ('''runtime error!
+
+There is something wrong with your zlib implementation!''')
+except:
+  error ('zlib implementation not found!')
+
+cpp_flags += zlib_cflags
+ld_flags += zlib_ldflags
+ld_lib_flags += zlib_ldflags
+
+
+
+
+
+# POSIX threads:
+
+report ('Checking for POSIX threads: ')
+
+if 'PTHREAD_CFLAGS' in os.environ.keys(): thread_cflags = os.environ['PTHREAD_CFLAGS'].split()
+if 'PTHREAD_LDFLAGS' in os.environ.keys(): thread_ldflags = os.environ['PTHREAD_LDFLAGS'].split()
+
+try:
+  compile ('''
+#include <pthread.h>
+
+void* func (void*) { return (NULL); } 
+
+int main() { 
+  pthread_t t; 
+  if (pthread_create(&t, NULL, func, NULL)) return (1);
+  pthread_exit (NULL); 
+  return (0); 
+}
+''', thread_cflags, thread_ldflags)
+  report ('yes\n')
+except CompileError:
+  error ('''compiler error!
+
+Use the PTHREAD_CFLAGS environment variable to set the path to
+the pthread include files and to set any required flags
+For example:
+     PTHREAD_CFLAGS="-I/usr/local/include" ./configure.py''')
+except LinkError:
+  error ('''linker error!
+
+Use the PTHREAD_LDFLAGS environment variable to set the path to
+the pthread libraries and to set the library to use
+For example:
+     PTHREAD_LDFLAGS="-L/usr/local/lib -lpthread" ./configure.py''')
+except RuntimeError:
+  error ('''runtime error!
+
+There is something wrong with your POSIX threads implementation!''')
+except:
+  error (' POSIX threads implementation not found!')
+
+
+
+
+# GSL flags:
+
+report ('Checking for GNU Scientific Library: ')
+if 'GSL_CFLAGS' in os.environ.keys(): gsl_cflags = os.environ['GSL_CFLAGS'].split()
+if 'GSL_LDFLAGS' in os.environ.keys(): gsl_ldflags = os.environ['GSL_LDFLAGS'].split()
+
+try:
+  gsl_version = compile ('''
+#include <iostream>
+#include <gsl/gsl_version.h>
+#include <gsl/gsl_matrix.h>
+
+int main() { 
+  std::cout << gsl_version; 
+  gsl_matrix* M = gsl_matrix_alloc (3,3); 
+  return (M->size1 != 3);
+}
+''', gsl_cflags, gsl_ldflags)
+  report (gsl_version + '\n')
+except CompileError:
+  error ('''compiler error!
+
+Use the GSL_CFLAGS environment variable to set the path to the GSL include files'
+For example:'
+     GSL_CFLAGS=-I/usr/local/include ./configure.py''')
+except LinkError:
+  error ('''linker error!'
+
+Use the GSL_LDFLAGS environment variable to set the path to the GSL libraries'
+and include any required libraries'
+For example:'
+     GSL_LDFLAGS="-L/usr/local/lib -lgsl -lgslcblas" ./configure.py''')
+
+
+
+report ('Checking whether GSL compiles with -DHAVE_INLINE: ')
+try:
+  gsl_version = compile ('#include <gsl/gsl_matrix.h>\nint main() { gsl_matrix* M = gsl_matrix_alloc (3,3); gsl_matrix_set(M,0,0,3.14); return (gsl_matrix_get(M,0,0) != 3.14); }', gsl_cflags + [ '-DHAVE_INLINE' ], gsl_ldflags)
+  gsl_cflags += [ '-DHAVE_INLINE' ]
+  report ('yes\n')
+except:
+  report ('no\n')
+
+
+
+
+# check for alternate cblas libraries:
+
+if 'CBLAS_LDFLAGS' in os.environ.keys(): 
+  cblas_ldflags = os.environ['CBLAS_LDFLAGS'].split()
+  flags = gsl_ldflags[:]
+  flags.remove ('-lgslcblas')
+  flags += cblas_ldflags;
+  report ('Checking whether GSL compiles with alternate C BLAS libraries ("' + ' '.join(cblas_ldflags) + '"): ')
+  try:
+    compile ('''
+#include <iostream>
+#include <gsl/gsl_version.h>
+#include <gsl/gsl_matrix.h>
+
+int main() { 
+  std::cout << gsl_version; 
+  gsl_matrix* M = gsl_matrix_alloc (3,3); 
+  return (M->size1 != 3);
+}
+''', gsl_cflags, flags)
+    report ('yes\n')
+    gsl_ldflags = flags
+  except:
+    error ('''Error compiling and/or linking with alternative C BLAS libraries provided!
+Check whether the information provided by the CBLAS_LDFLAGS environment
+variable is correct.''')
+
+
+
+
+
+
+
+# shared library generation:
+if not noshared:
+  report ('Checking shared library generation: ')
+
+  F = TempFile ('.cpp')
+  F.fid.write ('int bogus() { return (1); }')
+  F.fid.flush()
+  obj = DeleteAfter (F.name[:-4] + '.o')
+  cmd = fillin (cpp, {
+    'CFLAGS': cpp_flags,
+    'SRC': F.name,
+    'OBJECT': obj.name })
+  try: process = subprocess.Popen (cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+  except OSError:
+    error ('''compiler not found!
+
+  an unexpected error occurred''')
+  if process.wait() != 0: 
+    error ('''compiler error!
+
+  an unexpected error occurred''')
+  
+  lib = DeleteAfter (lib_prefix + 'test' + lib_suffix)
+  cmd = fillin (ld_lib, {
+    'LDLIB_FLAGS': ld_lib_flags,
+    'OBJECTS': obj.name,
+    'LIB': lib.name })
+  try: process = subprocess.Popen (cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+  except OSError: 
+    error ('''linker not found!
+
+  Use the LDLIB environment variable to set the command-line
+  for shared library generation''')
+  status = process.wait()
+
+  if status != 0:
+    error ('''linker error!
+
+  Use the LDLIB_FLAGS environment variable to set the flags required
+  for shared library generation''')
+
+  report ('yes\n')
+
+
+
+
+
+
+qt_cflags = []
+qt_ldflags = []
+
+
+if not nogui:
+
+  report ('Checking for Qt: ')
+
+  try:
+    qt_dir = TempDir()
+    file = '''#include <QObject>
+
+class Foo: public QObject {
+  Q_OBJECT;
+  public:
+    Foo();
+    ~Foo();
+  public slots:
+    void setValue(int value);
+  signals:
+    void valueChanged (int newValue);
+  private:
+    int value_;
+};
+'''
+    log ('\nsource file "qt.h":\n---\n' + file + '---\n')
+
+    f=open (os.path.join (qt_dir.name, 'qt.h'), 'w')
+    f.write (file)
+    f.close();
+
+    file = '''#include <iostream>
+#include "qt.h"
+
+Foo::Foo() : value_ (42) { connect (this, SIGNAL(valueChanged(int)), this, SLOT(setValue(int))); }
+
+Foo::~Foo() { std::cout << qVersion() << "\\n"; }
+
+void Foo::setValue (int value) { value_ = value; }
+
+int main() { Foo f; }
+'''
+
+    log ('\nsource file "qt.cpp":\n---\n' + file + '---\n')
+    f=open (os.path.join (qt_dir.name, 'qt.cpp'), 'w')
+    f.write (file)
+    f.close();
+
+    file = 'CONFIG += qt'
+    if debug: file += ' debug'
+    file += '\nQT += opengl\nHEADERS += qt.h\nSOURCES += qt.cpp\n'
+
+    log ('\nproject file "qt.pro":\n---\n' + file + '---\n')
+    f=open (os.path.join (qt_dir.name, 'qt.pro'), 'w')
+    f.write (file)
+    f.close();
+
+    log ('\nexecuting "qmake"...\n')
+    try: process = subprocess.Popen ([ 'qmake' ], cwd=qt_dir.name, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    except OSError: raise QMakeError
+    if process.wait() != 0: raise QMakeError
+
+    qt_defines = [] 
+    qt_includes = []
+    qt_cflags = []
+    qt_libs = []
+    qt_ldflags = []
+
+    for line in open (os.path.join (qt_dir.name, 'Makefile')):
+      line = line.strip()
+      if line.startswith ('DEFINES'):
+        qt_defines = line[line.find('=')+1:].strip().split()
+      elif line.startswith ('CXXFLAGS'):
+        qt_cflags = line[line.find('=')+1:].strip().split()
+      elif line.startswith ('INCPATH'):
+        qt_includes = line[line.find('=')+1:].strip().split()
+      elif line.startswith ('LIBS'):
+        qt_libs = line[line.find('=')+1:].strip().split()
+      elif line.startswith ('LFLAGS'):
+        qt_ldflags = line[line.find('=')+1:].strip().split()
+
+    qt = qt_cflags + qt_defines + qt_includes
+    qt_cflags = []
+    for entry in qt:
+      if entry[0] != '$' and not entry == '-I.': qt_cflags += [ entry ]
+
+    qt = qt_ldflags + qt_libs
+    qt_ldflags = []
+    for entry in qt:
+      if entry[0] != '$': qt_ldflags += [ entry ]
+
+    cmd = [ 'moc-qt4', 'qt.h', '-o', 'qt_moc.cpp' ]
+    log ('\nexecuting "' + ' ' .join(cmd) + '"...\n')
+    try: process = subprocess.Popen (cmd, cwd=qt_dir.name, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    except OSError: raise QMOCError
+    if process.wait() != 0: raise QMOCError
+
+    cmd = [ 'g++', '-c' ] + qt_cflags + [ 'qt.cpp', '-o', 'qt.o' ]
+    log ('\nexecuting "' + ' ' .join(cmd) + '"...\n')
+    try: process = subprocess.Popen (cmd, cwd=qt_dir.name, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    except OSError: raise CompileError
+    if process.wait() != 0: raise CompileError
+
+    cmd = [ 'g++', '-c' ] + qt_cflags + [ 'qt_moc.cpp', '-o', 'qt_moc.o' ]
+    log ('\nexecuting "' + ' ' .join(cmd) + '"...\n')
+    try: process = subprocess.Popen (cmd , cwd=qt_dir.name, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    except OSError: raise CompileError
+    if process.wait() != 0: raise CompileError
+
+    cmd = [ 'g++' ] + qt_ldflags + [ 'qt_moc.o', 'qt.o', '-o', 'qt' ]
+    log ('\nexecuting "' + ' ' .join(cmd) + '"...\n')
+    try: process = subprocess.Popen (cmd , cwd=qt_dir.name, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    except OSError: raise LinkError
+    if process.wait() != 0: raise LinkError
+
+    cmd = os.path.join(qt_dir.name, 'qt')
+    log ('\nexecuting "' + cmd + '"...\n')
+    process = subprocess.Popen (cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    if process.wait() != 0: raise LinkError
+    report (process.stdout.read().strip() + '\n')
+
+    
+  except QMakeError:
+    error ('error invoking Qt qmake!')
+  except QMOCError:
+    error ('error invoking Qt moc!')
+  except CompileError:
+    error ('error compiling Qt application!')
+  except OSError:
+    error ('Unexpected error! Unable to configure Qt environment')
+
+
+
+
+  report ('Checking for OpenGL: ')
+  try:
+    gl_test = compile ('''
+#include <QtGui>
+#include <QtOpenGL>
+#include <QApplication>
+#include <QGLWidget>
+#include <iostream>
+
+const char *extensions[] = {
+  "GL_ARB_fragment_shader",
+  "GL_ARB_vertex_shader",
+  "GL_ARB_geometry_shader4", 
+  "GL_EXT_texture3D",
+  "GL_ARB_texture_float",
+  "GL_ARB_texture_non_power_of_two",
+  "GL_ARB_framebuffer_object",
+  NULL
+};
+
+class GLWidget : public QGLWidget {
+  public:
+    GLWidget (QWidget *parent = 0) : QGLWidget (parent) { }
+    ~GLWidget() { }
+  protected:
+    void initializeGL () { 
+      std::cout << glGetString (GL_VERSION) << "\\n";
+
+      size_t num = 0;
+      while (extensions[num]) ++num;
+      bool found[num];
+      for (size_t n = 0; n < num; ++n) found[n] = false;
+      
+      std::string ext ((const char*) glGetString (GL_EXTENSIONS));
+      std::string::size_type start = 0, end;
+      do {
+        end = ext.find_first_of (" \\n\\t", start);
+        std::string e (ext.substr (start, end-start));
+        for (size_t n = 0; n < num; ++n) 
+          if (e == extensions[n]) found[n] = true;
+        start = ext.find_first_not_of (" \\n\\t", end+1);
+      } while (start < std::string::npos);
+
+      std::cout << "    OpenGL extensions:\\n";
+      for (size_t n = 0; n < num; ++n) 
+        std::cout << "        " << extensions[n] << ": " << ( found[n] ? "supported" : "*** NOT SUPPORTED! ***" ) << "\\n";
+
+      exit (0); 
+    }
+
+    void paintGL () { }
+    void resizeGL (int width, int height) { }
+};
+
+int main (int argc, char *argv[]) {
+  QApplication app (argc, argv);
+  GLWidget window;
+  window.show();
+  return app.exec();
+}
+''', qt_cflags, qt_ldflags)
+    report (gl_test.strip() + '\n')
+    if 'NOT SUPPORTED' in gl_test:
+      report ('''
+WARNING: not all required OpenGL extensions are supported (see above).
+         Some of the graphical user interface components may not be stable on
+         this system.
+''')
+  except:
+    error ('OpenGL implementation not found!')
+
+
+
+
+
+
+
+# add debugging or profiling flags if requested:
+
+cpp_flags += [ '-D__STDC_LIMIT_MACROS' ]
+
+if profile:
+  cpp_flags += [ '-g', '-pg' ]
+  ld_flags += [ '-g', '-pg' ]
+  ld_lib_flags += [ '-g', '-pg' ]
+elif debug:
+  cpp_flags += [ '-O0', '-g', '-D_GLIBCXX_DEBUG=1', '-D_GLIBCXX_DEBUG_PEDANTIC=1' ]
+  ld_flags += [ '-g' ]
+  ld_lib_flags += [ '-g' ]
+else:
+  cpp_flags += [ '-O2', '-DNDEBUG' ]
+
+
+
+
+# set flags for static build if required:
+if static:
+  ld_flags = [ '-static' ] + zlib_ldflags + gsl_ldflags + thread_ldflags
+
+
+
+
+# write out configuration:
+
+cache_filename = os.path.join (os.path.dirname(sys.argv[0]), 'configuration.py')
+
+sys.stdout.write ('\nwriting configuration to file \'' + cache_filename + '\': ')
+
+cache = open (cache_filename, 'w')
+
+cache.write ("""#!/usr/bin/python
+#
+# autogenerated by MRtrix configure script
+#
+# configure output:
+""")
+for line in config_report.splitlines():
+  cache.write ('# ' + line + '\n')
+cache.write ('\n\n')
+
+commit ('obj_suffix', obj_suffix)
+commit ('exe_suffix', exe_suffix)
+commit ('lib_prefix', lib_prefix)
+commit ('lib_suffix', lib_suffix)
+commit ('cpp', cpp);
+commit ('cpp_flags', cpp_flags);
+commit ('ld', ld);
+commit ('ld_flags', ld_flags);
+cache.write ('ld_enabled = ')
+if noshared:
+  cache.write ('False\n')
+else:
+  cache.write ('True\n')
+  commit ('ld_lib', ld_lib);
+  commit ('ld_lib_flags', ld_lib_flags);
+commit ('thread_cflags', thread_cflags)
+commit ('thread_ldflags', thread_ldflags)
+commit ('gsl_cflags', gsl_cflags)
+commit ('gsl_ldflags', gsl_ldflags)
+commit ('qt_cflags', qt_cflags)
+commit ('qt_ldflags', qt_ldflags)
+
+cache.close()
+sys.stdout.write ('ok\n\n')
+

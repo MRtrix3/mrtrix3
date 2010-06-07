@@ -1,0 +1,93 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html;charset=iso-8859-1">
+<title>MRtrix documentation</title>
+<link rel="stylesheet" href="../stylesheet.css" type="text/css" media=screen>
+</head>
+
+<body>
+
+<table class=nav>
+  <tr>
+    <td><a href="index.html"><img src="../left.png"></a></td>
+    <td><a href="../index.html"><img src="../home.png"></a></td>
+    <th>The MRtrix configuration file</th>
+    <td><a href="mrtrix.html"><img src="../right.png"></a></td>
+  </tr>
+</table>
+
+<h2><a name="location">Location</a></h2>
+<p>
+MRtrix applications will attempt to read configuration information 
+from a number of possible locations, if they exist. 
+There will in general be a system-wide configuration file, 
+and a user specific configuration file.
+Their exact location is platform-dependent, as detailed below:
+</p>
+<table class=desc>
+  <tr><th>platform</th><th>location</th></tr>
+  <tr><td>Unix</td><td>system: <kbd>/etc/mrtrix.conf</kbd><br>user: <kbd>$HOME/.mrtrix.conf</kbd></td></tr>
+  <tr><td>Windows</td><td>system: <kbd>C:\mrtrix.conf</kbd><br>user: <kbd>$HOME\mrtrix.conf</kbd> (e.g. <kbd>C:\Documents and Settings\username\mrtrix.conf</kbd>)</td></tr>
+</table>
+
+<p>
+The system-wide configuration file will be read first (if found),
+followed by the user configuration file (if found).
+In case of conflict between the system-wide and user configuration,
+the user settings will be used.
+If a particular configuration parameter is not defined, 
+MRtrix will use hard-coded defaults.
+</p>
+
+
+<p class=sep><a href="#top">top</a></p>
+<h2><a name="format">Format</a></h2>
+<p>
+The configuration files are text files, with each line containing a key: value pair.
+For example:
+</p>
+<pre>
+Analyse.LeftToRight: false
+NumberOfThreads: 2
+</pre>
+<p>
+<strong>Note:</strong> key names are case-sensitive.
+</p>
+<p>
+The value entry may be interpreted by MRtrix applications as either:
+<ul>
+  <li>Boolean: allowed values here are <kbd>true</kbd> or <kbd>false</kbd></li>
+  <li>Integer: any integer value</li>
+  <li>Floating-point: any floating-point value</li>
+  <li>Text: any text string, without any further interpretation</li>
+</ul>
+
+
+
+<p class=sep><a href="#top">top</a></p>
+<h2><a name="list">List of parameters</a></h2>
+<p>
+These parameters are currently interpreted by MRtrix:
+</p>
+<table class=args>
+  <tr><td>Analyse.LeftToRight</td><td>bool</td><td>specifies the order in which voxels are stored in Analyse format image data files.</td></tr>
+  <tr><td>NumberOfThreads</td><td>integer</td><td>number of threads to lauch in multi-threaded applications (e.g. <a href='../commands/csdeconv.html'>csdeconv</a>)</td></tr>
+</table>
+
+
+
+<table class=nav>
+  <tr>
+    <td><a href="index.html"><img src="../left.png"></a></td>
+    <td><a href="index.html"><img src="../up.png"></a></td>
+    <td><a href="../index.html"><img src="../home.png"></a></td>
+    <th><a href='#top'>top</a></th>
+    <td><a href="mrtrix.html"><img src="../right.png"></a></td>
+  </tr>
+</table>
+
+</body>
+</html>
+
+
