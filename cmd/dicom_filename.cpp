@@ -69,8 +69,8 @@ EXECUTE {
     else if (item.is (0x0008U, 0x103EU)) series_name = item.get_string()[0];
     else if (item.is (0x0010U, 0x0010U)) patient_name = item.get_string()[0];
     else if (item.is (0x0010U, 0x0020U)) patient_id = item.get_string()[0];
-    else if (item.is (0x0020U, 0x0011U)) series_number = item.get_string()[0];
-    else if (item.is (0x0020U, 0x0013U)) instance_number = item.get_string()[0];
+    else if (item.is (0x0020U, 0x0011U)) series_number = MR::printf ("%03d", item.get_int()[0]);
+    else if (item.is (0x0020U, 0x0013U)) instance_number = MR::printf ("%05d", item.get_int()[0]);
   }
 
   if (study_date.empty()) study_date = "nodate";
