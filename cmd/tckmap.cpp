@@ -43,7 +43,7 @@ using namespace std;
 SET_VERSION_DEFAULT;
 
 DESCRIPTION = {
-  "convert a tracks file into a map of the fraction of tracks to enter each voxel.",
+  "convert a tracks file into a map of the number of tracks to enter each voxel.",
   NULL
 };
 
