@@ -156,9 +156,14 @@ class TrackMapper
       while (in.read()) {
         out->clear();
         for (std::vector<Point>::const_iterator i = in->begin(); i != in->end(); ++i) {
-          out->insert (Voxel (interp.scanner2voxel (*i)));
-          if (resampler) { // TODO: this is not complete!!!
-            Math::mult (resampled, *resampler, orig);
+          Voxel vox (interp.scanner2voxel (*i));
+          if (vox.x >= 0 && vox.x < size_t (H.dim(0)) && 
+              vox.y >= 0 && vox.y < size_t (H.dim(1)) && 
+              vox.z >= 0 && vox.z < size_t (H.dim(2))) {
+            out->insert (Voxel (interp.scanner2voxel (*i)));
+            if (resampler) { // TODO: this is not complete!!!
+              Math::mult (resampled, *resampler, orig);
+            }
           }
         }
 
