@@ -102,6 +102,7 @@ namespace MR {
               set_max (target);
             else 
               next_val.d = BUSY_INTERVAL;
+            display_func (*this);
           }
         }
 
