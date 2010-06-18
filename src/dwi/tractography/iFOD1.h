@@ -123,7 +123,7 @@ namespace MR {
             return (false);
           }
 
-        private:
+        protected:
           const Shared& S;
           float prev_FOD_val;
 
