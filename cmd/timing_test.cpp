@@ -32,20 +32,64 @@ class TimingTest : public iFOD1
       const ROI& roi (S.properties.seed[0]);
 
       Timer stop_watch;
-      stop_watch.start();
 
-      for (size_t n = 0; n < 1000000; ++n) {
-        Point p = roi.sample (rng);
-        count += roi.contains (p);
-        Point dir (rng.normal(), rng.normal(), rng.normal());
-        dir.normalise();
+
+
+      /*
+      {
+        stop_watch.start();
+
+        for (size_t n = 0; n < 1000000; ++n) {
+          Point p = roi.sample (rng);
+          count += roi.contains (p);
+          Point dir (rng.normal(), rng.normal(), rng.normal());
+          dir.normalise();
+          get_data (p);
+          sum += S.precomputer.value (values, dir);
+        };
+
+        std::cout << stop_watch.elapsed() << " s\n";
+        VAR (count);
+        VAR (sum);
+      }
+      */
+
+      /*
+      {
+        sum = 0.0;
+        Point p (0.0, 0.0, 0.0);
         get_data (p);
-        sum += S.precomputer.value (values, dir);
-      };
 
-      std::cout << stop_watch.elapsed() << " s\n";
-      VAR (count);
-      VAR (sum);
+        stop_watch.start();
+
+        for (size_t n = 0; n < 1000000; ++n) {
+          Point dir (rng.normal(), rng.normal(), rng.normal());
+          dir.normalise();
+          sum += S.precomputer.value (values, dir);
+        };
+
+        std::cout << stop_watch.elapsed() << " s\n";
+        VAR (sum);
+      }
+      */
+
+
+      {
+        Point p, mean_p (0.0, 0.0, 0.0);
+        stop_watch.start();
+        for (size_t n = 0; n < 100000; ++n) {
+          size_t num_attempts = 0;
+          do { 
+            pos = S.properties.seed.sample (rng);
+            num_attempts++;
+            if (num_attempts++ > 10000) throw Exception ("failed to find suitable seed point after 10,000 attempts - aborting");
+          } while (!start ());
+          mean_p += pos;
+        }
+        std::cout << stop_watch.elapsed() << " s\n";
+        VAR (mean_p*(1.0/100000.0));
+      }
+
     }
 };
 
@@ -56,6 +100,7 @@ EXECUTE {
   props.seed.add (ROI (std::string ("mask.mif")));
 
   iFOD1::Shared shared (source, props);
+  shared.init_threshold = 0.1;
   TimingTest test (shared);
 }
 
