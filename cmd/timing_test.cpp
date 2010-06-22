@@ -83,7 +83,7 @@ class TimingTest : public iFOD1
             pos = S.properties.seed.sample (rng);
             num_attempts++;
             if (num_attempts++ > 10000) throw Exception ("failed to find suitable seed point after 10,000 attempts - aborting");
-          } while (!start ());
+          } while (!init ());
           mean_p += pos;
         }
         std::cout << stop_watch.elapsed() << " s\n";
