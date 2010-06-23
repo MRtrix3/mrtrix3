@@ -27,10 +27,11 @@
 #include "math/eigen.h"
 #include "dwi/tensor.h"
 
-using namespace std; 
 using namespace MR; 
 
 SET_VERSION_DEFAULT;
+SET_AUTHOR (NULL);
+SET_COPYRIGHT (NULL);
 
 DESCRIPTION = {
   "generate maps of tensor-derived parameters.",

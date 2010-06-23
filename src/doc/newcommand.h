@@ -39,14 +39,20 @@ namespace MR {
  * \endcode
  * Note that the \c lib/ folder is in the default search path. See \ref
  * include_path for details.
+ * -# At this point, it is helpful to bring the MR namespace within the current
+ * scope:
+ * \code
+ * using namespace MR;
+ * \endcode
  * -# Information about the application, provided via the following macros:
  * \code 
- * SET_VERSION(0, 4, 3);
- * SET_AUTHOR("Joe Bloggs");
- * SET_COPYRIGHT("Copyright 1967 The Institute of Bogus Science");
+ * SET_VERSION (0, 4, 3);
+ * SET_AUTHOR ("Joe Bloggs");
+ * SET_COPYRIGHT ("Copyright 1967 The Institute of Bogus Science");
  * \endcode
- * Alternatively, the \c SET_VERSION_DEFAULT macro will set all three of
- * these to the default values for MRtrix.
+ * The \c SET_VERSION_DEFAULT macro can also be used to set the version to the
+ * same as the main MRtrix library. If either the author or the copyright are
+ * set to NULL, default values will be used instead.
  * -# A description of what the application does, provided via the \c
  * DESCRIPTION macro:
  * \code 
@@ -109,7 +115,8 @@ namespace MR {
  * \code
  * void myfunc (float param) 
  * {
- *   if (isnan (param)) throw Exception ("NaN is not a valid parameter");
+ *   if (isnan (param))
+ *     throw Exception ("NaN is not a valid parameter");
  *   ...
  *   // do something useful
  *   ...
@@ -146,10 +153,15 @@ namespace MR {
  *   return (0);
  * }
  * catch (Exception& E) {
- *   error ("error in processing - message was: " + E.description);
+ *   error ("error in processing - message was:");
+ *   E.display();
  *   return (1);
  * }
  * \endcode
+ *
+ * \note the error message of an Exception will only be shown if it left
+ * uncaught, or if it is explicitly displayed using its display() member
+ * function. 
  *
  *
  * \section include_path Header search path
@@ -181,7 +193,7 @@ namespace MR {
  * // These headers will be taken into account:
  * // any changes to these headers (or any header they themselves
  * // include) will cause the enclosing file to be recompiled
- * // the next time the \c build script encounters them.
+ * // the next time the build script encounters them.
  * #include "mrtrix.h"
  * #include "math/SH.h"
  * \endcode

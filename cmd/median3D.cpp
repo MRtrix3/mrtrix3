@@ -33,6 +33,8 @@ using namespace std;
 using namespace MR; 
 
 SET_VERSION_DEFAULT;
+SET_AUTHOR (NULL);
+SET_COPYRIGHT (NULL);
 
 DESCRIPTION = {
  "smooth images using a 3x3x3 median filter.",

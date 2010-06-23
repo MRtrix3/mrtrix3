@@ -31,6 +31,8 @@ using namespace std;
 using namespace MR; 
 
 SET_VERSION_DEFAULT;
+SET_AUTHOR (NULL);
+SET_COPYRIGHT (NULL);
 
 DESCRIPTION = {
   "generate a set of directions evenly distributed over a hemisphere.",
@@ -60,7 +62,7 @@ OPTIONS = {
 
 namespace {
   double power = -1.0;
-  uint   ndirs = 0;
+  size_t   ndirs = 0;
 }
 
 
@@ -79,10 +81,10 @@ class SinCos {
     double rdel (const SinCos& B) const;
 
   public:
-    SinCos (const gsl_vector* v, uint index);
+    SinCos (const gsl_vector* v, size_t index);
     double f (const SinCos& B);
-    void   df (const SinCos& B, gsl_vector* deriv, uint i, uint j);
-    double fdf (const SinCos& B, gsl_vector* deriv, uint i, uint j);
+    void   df (const SinCos& B, gsl_vector* deriv, size_t i, size_t j);
+    double fdf (const SinCos& B, gsl_vector* deriv, size_t i, size_t j);
 };
 
 
@@ -96,7 +98,7 @@ void range (double& azimuth, double& elevation);
 
 
 EXECUTE {
-  uint niter = 10000;
+  size_t niter = 10000;
   float target_power = 128.0;
 
   std::vector<OptBase> opt = get_options ("power");
@@ -112,7 +114,7 @@ EXECUTE {
   Math::Vector<double> v (2*ndirs-3);
 
   v[0] = asin (2.0 * rng.uniform() - 1.0);
-  for (uint n = 1; n < 2*ndirs-3; n+=2) {
+  for (size_t n = 1; n < 2*ndirs-3; n+=2) {
     v[n] =  M_PI * (2.0 * rng.uniform() - 1.0);
     v[n+1] = asin (2.0 * rng.uniform() - 1.0);
   }
@@ -134,7 +136,7 @@ EXECUTE {
       info ("setting power = " + str (-power*2.0));
       gsl_multimin_fdfminimizer_set (minimizer, &fdf, v.gsl(), 0.01, 1e-4);
 
-      for (uint iter = 0; iter < niter; iter++) {
+      for (size_t iter = 0; iter < niter; iter++) {
 
         int status = gsl_multimin_fdfminimizer_iterate (minimizer);
 
@@ -158,7 +160,7 @@ EXECUTE {
   directions(0,1) = 0.0;
   directions(1,0) = 0.0;
   directions(1,1) = gsl_vector_get (minimizer->x, 0);
-  for (uint n = 2; n < ndirs; n++) {
+  for (size_t n = 2; n < ndirs; n++) {
     double az = gsl_vector_get (minimizer->x, 2*n-3);
     double el = gsl_vector_get (minimizer->x, 2*n-2);
     range(az, el);
@@ -210,7 +212,7 @@ inline double SinCos::rdel (const SinCos& B) const
   return (multiplier * (B.cos_az*B.cos_el*cos_az*sin_el + B.sin_az*B.cos_el*sin_az*sin_el - B.sin_el*cos_el)); 
 }
 
-inline SinCos::SinCos (const gsl_vector* v, uint index) 
+inline SinCos::SinCos (const gsl_vector* v, size_t index) 
 {
   double az = index > 1 ? gsl_vector_get (v, 2*index-3) : 0.0;
   double el = index ? gsl_vector_get (v, 2*index-2) : 0.0;
@@ -224,7 +226,7 @@ inline double SinCos::f (const SinCos& B)
   return (energy()); 
 }
 
-inline void SinCos::df (const SinCos& B, gsl_vector* deriv, uint i, uint j) 
+inline void SinCos::df (const SinCos& B, gsl_vector* deriv, size_t i, size_t j) 
 {
   dist (B); 
   init_deriv ();
@@ -240,7 +242,7 @@ inline void SinCos::df (const SinCos& B, gsl_vector* deriv, uint i, uint j)
 }
 
 
-inline double SinCos::fdf (const SinCos& B, gsl_vector* deriv, uint i, uint j)
+inline double SinCos::fdf (const SinCos& B, gsl_vector* deriv, size_t i, size_t j)
 {
   df (B, deriv, i, j);
   return (energy());
@@ -250,9 +252,9 @@ inline double SinCos::fdf (const SinCos& B, gsl_vector* deriv, uint i, uint j)
 double energy_f (const gsl_vector *x, void *params)
 {
   double  E = 0.0;
-  for (uint i = 0; i < ndirs; i++) {
+  for (size_t i = 0; i < ndirs; i++) {
     SinCos I (x, i);
-    for (uint j = i+1; j < ndirs; j++) 
+    for (size_t j = i+1; j < ndirs; j++) 
       E += 2.0 *I.f (SinCos (x, j));
   }
   return (E);
@@ -263,9 +265,9 @@ double energy_f (const gsl_vector *x, void *params)
 void energy_df (const gsl_vector *x, void *params, gsl_vector *df)
 {
   gsl_vector_set_zero (df);
-  for (uint i = 0; i < ndirs; i++) {
+  for (size_t i = 0; i < ndirs; i++) {
     SinCos I (x, i);
-    for (uint j = i+1; j < ndirs; j++) 
+    for (size_t j = i+1; j < ndirs; j++) 
       I.df (SinCos (x, j), df, i, j);
   }
 }
@@ -276,9 +278,9 @@ void energy_fdf (const gsl_vector *x, void *params, double *f, gsl_vector *df)
 {
   *f = 0.0;
   gsl_vector_set_zero (df);
-  for (uint i = 0; i < ndirs; i++) {
+  for (size_t i = 0; i < ndirs; i++) {
     SinCos I (x, i);
-    for (uint j = i+1; j < ndirs; j++) 
+    for (size_t j = i+1; j < ndirs; j++) 
       *f += 2.0 * I.fdf (SinCos (x, j), df, i, j);
   }
 }

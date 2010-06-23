@@ -30,15 +30,21 @@
 using namespace MR; 
 
 SET_VERSION_DEFAULT;
+SET_AUTHOR (NULL);
+SET_COPYRIGHT (NULL);
 
 DESCRIPTION = {
   "this is used to test stuff.",
   NULL
 };
 
-
 ARGUMENTS = { Argument::End }; 
+
 OPTIONS = { Option::End };
+
+
+
+
 
 typedef float T;
 
@@ -53,9 +59,9 @@ EXECUTE {
   header.axes.vox(1) = 1.0;
   header.axes.vox(2) = 1.0;
 
-  header.axes.order(0) = 0;
-  header.axes.order(1) = 1;
-  header.axes.order(2) = 2;
+  header.axes.stride(0) = 1;
+  header.axes.stride(1) = 2;
+  header.axes.stride(2) = 3;
 
   VAR (header.datatype().description());
   //header.data_type = DataType::UInt8;
@@ -64,11 +70,11 @@ EXECUTE {
   obj.create ("poo.mif", header);
   
   Image::Voxel<float> vox (obj);
-  vox.pos(0, 1023);
-  vox.pos(1, 1023);
-  vox.pos(2, 1023);
+  vox[0] = 1023;
+  vox[1] = 1023;
+  vox[2] = 1023;
 
-  vox.value (0.0);
+  vox.value() = 0.0;
 
 
   /*

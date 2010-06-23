@@ -253,7 +253,12 @@ namespace MR {
           throw 0;
         }
         else if (opt == DEFAULT_OPTIONS_OFFSET+4) {
-          std::printf ("== %s %zu.%zu.%zu ==\n%d bit %s version, built " __DATE__ " against MRtrix %zu.%zu.%zu, using GSL %s\nAuthor: %s\n%s\n",
+          std::printf (
+              "== %s %zu.%zu.%zu ==\n"
+              "%d bit %s version, built " __DATE__ " against MRtrix %zu.%zu.%zu, using GSL %s\n"
+              "Author: %s\n"
+              "%s\n",
+
               App::name().c_str(), version[0], version[1], version[2], 
               int(8*sizeof(size_t)), 
 #ifdef NDEBUG
@@ -261,7 +266,14 @@ namespace MR {
 #else
               "debug"
 #endif
-              , mrtrix_major_version, mrtrix_minor_version, mrtrix_micro_version, gsl_version, author, copyright);
+              , mrtrix_major_version, mrtrix_minor_version, mrtrix_micro_version, gsl_version, 
+              ( author ? author : "J-Donald Tournier (d.tournier@brain.org.au)" ),
+              ( copyright ? copyright : 
+                "Copyright (C) 2008 Brain Research Institute, Melbourne, Australia.\n"
+                "This is free software; see the source for copying conditions.\n"
+                "There is NO warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE." ) 
+              );
+
           throw 0;
         }
         else {

@@ -33,6 +33,8 @@
 using namespace MR; 
 
 SET_VERSION_DEFAULT;
+SET_AUTHOR (NULL);
+SET_COPYRIGHT (NULL);
 
 DESCRIPTION = {
   "perform non-negativity constrained spherical deconvolution.",
@@ -97,6 +99,10 @@ OPTIONS = {
 
   Option::End 
 };
+
+
+
+
 
 
 typedef float value_type;

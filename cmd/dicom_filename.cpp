@@ -23,11 +23,11 @@
 #include "file/dicom/element.h"
 #include "app.h"
 
-using namespace std; 
 using namespace MR; 
-using namespace File::Dicom; 
 
 SET_VERSION_DEFAULT;
+SET_AUTHOR (NULL);
+SET_COPYRIGHT (NULL);
 
 DESCRIPTION = {
   "read a DICOM file and output a suitable filename for its storage.",
@@ -42,6 +42,11 @@ ARGUMENTS = {
 OPTIONS = { Option::End };
 
   
+
+
+using namespace std; 
+using namespace File::Dicom; 
+
 
 
 void make_valid (std::string& str, const std::string& alternate) {

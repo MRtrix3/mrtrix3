@@ -23,10 +23,11 @@
 #include "app.h"
 #include "file/ximg.h"
 
-using namespace std; 
 using namespace MR; 
 
 SET_VERSION_DEFAULT;
+SET_AUTHOR (NULL);
+SET_COPYRIGHT (NULL);
 
 DESCRIPTION = {
   "output XIMG fields in human-readable format.",
@@ -50,7 +51,7 @@ EXECUTE {
   for (size_t n = 0; n < argument.size();  n++) {
     try {
       File::XImg reader (argument[n].get_string());
-      cout << reader << "\n";
+      std::cout << reader << "\n";
     }
     catch (...) { 
       error (std::string ("error reading file \"") + argument[n].get_string() + "\"");

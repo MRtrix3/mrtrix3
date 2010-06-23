@@ -31,11 +31,11 @@
 #include "dataset/loop.h"
 #include "dataset/copy.h"
 
-
-using namespace std; 
 using namespace MR; 
 
 SET_VERSION_DEFAULT;
+SET_AUTHOR (NULL);
+SET_COPYRIGHT (NULL);
 
 DESCRIPTION = {
  "apply spatial transformations or reslice images.",

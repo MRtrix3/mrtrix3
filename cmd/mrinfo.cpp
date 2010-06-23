@@ -18,19 +18,16 @@
     You should have received a copy of the GNU General Public License
     along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
 
-
-    31-10-2008 J-Donald Tournier <d.tournier@brain.org.au>
-    * remove obsolete -dicom & -csa options
-   
 */
 
 #include "image/header.h"
 #include "app.h"
 
-using namespace std; 
 using namespace MR; 
 
 SET_VERSION_DEFAULT;
+SET_AUTHOR (NULL);
+SET_COPYRIGHT (NULL);
 
 DESCRIPTION = {
   "display header information",
@@ -69,7 +66,7 @@ EXECUTE {
   else {
     for (size_t i = 0; i < argument.size(); i++) {
       const Image::Header header = argument[i].get_image (); 
-      cout << header.description();
+      std::cout << header.description();
     }
   }
 }

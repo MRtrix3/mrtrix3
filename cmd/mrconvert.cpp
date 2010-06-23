@@ -30,6 +30,8 @@
 using namespace MR; 
 
 SET_VERSION_DEFAULT;
+SET_AUTHOR (NULL);
+SET_COPYRIGHT (NULL);
 
 DESCRIPTION = {
   "perform conversion between different file types and optionally extract a subset of the input image.",
@@ -44,8 +46,6 @@ ARGUMENTS = {
 };
 
 
-const char* type_choices[] = { "real", "imag", "mag", "phase", "complex", NULL };
-
 OPTIONS = {
   Option ("coord", "select coordinates", "extract data only at the coordinates specified.", Optional | AllowMultiple)
     .append (Argument ("axis", "axis", "the axis of interest").type_integer (0, INT_MAX, 0))
@@ -57,10 +57,6 @@ OPTIONS = {
 
   Option ("datatype", "data type", "specify output image data type.")
     .append (Argument ("spec", "specifier", "the data type specifier.").type_choice (DataType::identifiers)),
-
-  Option ("output", "output type", "specify type of output")
-    .append (Argument ("type", "type", "type of output.")
-        .type_choice (type_choices)),
 
   Option ("stride", "data strides", "specify the strides of the data in memory. The actual strides produced will depend on whether the output image format can support it.")
     .append (Argument ("spec", "specifier", "a comma-separated list of data strides.").type_string ()),
@@ -80,35 +76,10 @@ EXECUTE {
   if (opt.size()) 
     vox = parse_floats (opt[0][0].get_string());
 
-  opt = get_options ("output");
-  Image::OutputType output_type = Image::Default;
-  if (opt.size()) {
-    switch (opt[0][0].get_int()) {
-      case 0: output_type = Image::Real; break;
-      case 1: output_type = Image::Imaginary; break;
-      case 2: output_type = Image::Magnitude; break;
-      case 3: output_type = Image::Phase; break;
-      case 4: output_type = Image::RealImag; break;
-    }
-  }
-
-
-
-
   const Image::Header header_in = argument[0].get_image ();
   Image::Header header (header_in);
   header.reset_scaling();
 
-  if (output_type == 0) {
-    if (header_in.is_complex()) output_type = Image::RealImag;
-    else output_type = Image::Default;
-  }
-
-  if (output_type == Image::RealImag) header.datatype() = DataType::CFloat32;
-  else if (output_type == Image::Phase) header.datatype() = DataType::Float32;
-  else header.datatype().unset_flag (DataType::Complex);
-
-  
   opt = get_options ("datatype");
   if (opt.size()) header.datatype().parse (DataType::identifiers[opt[0][0].get_int()]);
 

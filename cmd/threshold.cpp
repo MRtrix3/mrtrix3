@@ -29,10 +29,11 @@
 #include "dataset/min_max.h"
 #include "dataset/histogram.h"
 
-using namespace std; 
 using namespace MR; 
 
 SET_VERSION_DEFAULT;
+SET_AUTHOR (NULL);
+SET_COPYRIGHT (NULL);
 
 DESCRIPTION = {
  "create bitwise image by thresholding image intensity.",

@@ -25,10 +25,11 @@
 #include "file/path.h"
 #include "file/dicom/quick_scan.h"
 
-using namespace std; 
 using namespace MR; 
 
 SET_VERSION_DEFAULT;
+SET_AUTHOR (NULL);
+SET_COPYRIGHT (NULL);
 
 DESCRIPTION = {
   "output DICOM fields in human-readable format.",
@@ -73,13 +74,13 @@ EXECUTE {
       while ((entry = dir->read_name()).size()) {
         if (reader.read (Path::join (argument[n].get_string(), entry), print_DICOM_fields, print_CSA_fields))
           error ("error reading file \"" + reader.filename + "\"");
-        else cout << reader << "\n";
+        else std::cout << reader << "\n";
       }
     }
     else if (reader.read (argument[n].get_string(), print_DICOM_fields, print_CSA_fields))
       error ("error reading file \"" + reader.filename + "\"");
 
-    else if (!print_DICOM_fields) cout << reader << "\n";
+    else if (!print_DICOM_fields) std::cout << reader << "\n";
   }
 
 }

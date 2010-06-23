@@ -29,6 +29,8 @@
 using namespace MR; 
 
 SET_VERSION_DEFAULT;
+SET_AUTHOR (NULL);
+SET_COPYRIGHT (NULL);
 
 DESCRIPTION = {
   "this is used to test stuff.",
@@ -119,15 +121,13 @@ EXECUTE {
 
   size_t count = 0;
   const size_t N = 100000;
-  ProgressBar::init (N, "testing threads...");
+  ProgressBar progress ("testing threads...", N);
   FloatQueue::Writer::Item value (writer);
   do {
     *value = rng.uniform();
     ++count;
-    ProgressBar::inc();
+    ++progress;
   } while (value.write() && count < N);
-  ProgressBar::done();
   print ("producer count = " + str(count) + "\n");
-
 }
 

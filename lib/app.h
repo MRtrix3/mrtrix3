@@ -25,18 +25,14 @@
 
 #include "args.h"
 
+#define SET_VERSION(a, b, c) const size_t __command_version[3] = { (a), (b), (c) }
+#define SET_VERSION_DEFAULT SET_VERSION (MRTRIX_MAJOR_VERSION, MRTRIX_MINOR_VERSION, MRTRIX_MICRO_VERSION); 
+#define SET_AUTHOR(a) const char* __command_author = (a)
+#define SET_COPYRIGHT(a) const char* __command_copyright = (a)
 
 #define DESCRIPTION const char* __command_description[]
 #define ARGUMENTS   const MR::Argument __command_arguments[]
 #define OPTIONS const MR::Option __command_options[]
-#define SET_VERSION(a, b, c) const size_t __command_version[3] = { (a), (b), (c) }
-#define SET_AUTHOR(a) const char* __command_author = (a)
-#define SET_COPYRIGHT(a) const char* __command_copyright = (a)
-
-#define SET_VERSION_DEFAULT \
-  SET_VERSION (MRTRIX_MAJOR_VERSION, MRTRIX_MINOR_VERSION, MRTRIX_MICRO_VERSION); \
-  SET_COPYRIGHT ("Copyright (C) 2008 Brain Research Institute, Melbourne, Australia.\nThis is free software; see the source for copying conditions.\nThere is NO warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE."); \
-  SET_AUTHOR ("J-Donald Tournier (d.tournier@brain.org.au)")
 
 #define EXECUTE class MyApp : public MR::App { \
   public: \
