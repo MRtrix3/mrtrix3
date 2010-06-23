@@ -33,6 +33,8 @@ using namespace MR::DWI;
 using namespace std; 
 
 SET_VERSION_DEFAULT;
+SET_AUTHOR (NULL);
+SET_COPYRIGHT (NULL);
 
 DESCRIPTION = {
   "apply a normalisation map to a tracks file.",

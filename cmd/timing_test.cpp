@@ -13,6 +13,8 @@ using namespace MR::DWI;
 using namespace MR::DWI::Tractography; 
 
 SET_VERSION_DEFAULT;
+SET_AUTHOR (NULL);
+SET_COPYRIGHT (NULL);
 
 DESCRIPTION = {
   "perform timing tests for streamlines tracking.",

@@ -28,6 +28,8 @@
 using namespace MR; 
 
 SET_VERSION_DEFAULT;
+SET_AUTHOR (NULL);
+SET_COPYRIGHT (NULL);
 
 DESCRIPTION = {
   "convert ascii track files into MRtrix format.",

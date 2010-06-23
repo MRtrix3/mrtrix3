@@ -32,6 +32,8 @@
 using namespace MR; 
 
 SET_VERSION_DEFAULT;
+SET_AUTHOR (NULL);
+SET_COPYRIGHT (NULL);
 
 DESCRIPTION = {
   "perform streamlines tracking.",
