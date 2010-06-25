@@ -91,8 +91,8 @@ OPTIONS = {
   Option ("norm_lambda", "norm_lambda", "the regularisation parameter lambda that controls the strength of the constraint on the norm of the solution (default = 1.0).")
     .append (Argument ("value", "value", "the value of lambda to use.").type_float (0.0, 1.0e12, 1.0)),
 
-  Option ("threshold", "amplitude threshold", "the threshold below which the amplitude of the FOD is assumed to be zero, expressed as a fraction of the mean value of the initial FOD (default = 0.1).")
-    .append (Argument ("value", "value", "the value of lambda to use.").type_float (-1.0, 2.0, 0.1)),
+  Option ("threshold", "amplitude threshold", "the threshold below which the amplitude of the FOD is assumed to be zero, expressed as a fraction of the mean value of the initial FOD (default = 0.0).")
+    .append (Argument ("value", "value", "the value of lambda to use.").type_float (-1.0, 10.0, 0.0)),
 
   Option ("niter", "maximum number of iterations", "the maximum number of iterations to perform for each voxel (default = 50).")
     .append (Argument ("number", "number", "the maximum number of iterations to use.").type_integer (1, 1000, 50)),
@@ -214,9 +214,9 @@ class Processor {
 
         int n;
         for (n = 0; n < niter; n++) if (sdeconv.iterate()) break;
-        if (n == niter) error ("voxel [ " + 
-            str(item->pos[0]) + " " + str(item->pos[1]) + " " + str(item->pos[2]) +
-            " ] failed to converge"); 
+        if (n == niter) 
+          info ("voxel [ " + str(item->pos[0]) + " " + str(item->pos[1]) + " " + str(item->pos[2]) +
+            " ] did not reach full convergence"); 
 
         SH[0] = item->pos[0];
         SH[1] = item->pos[1];
@@ -256,7 +256,7 @@ EXECUTE {
   else {
     if (!header.DW_scheme.is_set()) 
       throw Exception ("no diffusion encoding found in image \"" + header.name() + "\"");
-    grad.copy (header.DW_scheme);
+    grad = header.DW_scheme;
   }
 
   if (grad.rows() < 7 || grad.columns() != 4) 
@@ -348,6 +348,7 @@ EXECUTE {
   DWI::CSDeconv<value_type>::Shared shared (response, filter, DW_dirs, HR_dirs, lmax);
   shared.neg_lambda = neg_lambda;
   shared.norm_lambda = norm_lambda;
+  shared.threshold = threshold;
 
   Processor processor (queue, SH_header, shared, niter);
 

@@ -147,16 +147,17 @@ namespace MR {
 
               Prototype (const Prototype& prot) :
                 data (prot.data),
+                transform_ (prot.transform_),
                 name_ (prot.name_) {
                   memcpy (stride_, prot.stride_, sizeof (stride_));
                   memcpy (dim_, prot.dim_, sizeof (dim_));
                   memcpy (vox_, prot.vox_, sizeof (vox_));
-                  transform_.copy (prot.transform_);
                   init();
                 }
 
               template <class Set> Prototype (const Set& D, const std::string& id) : 
                 data (NULL),
+                transform_ (D.transform()),
                 name_ (id) {
                   assert (D.ndim() >= NDIM);
                   for (size_t n = 0; n < NDIM; ++n) {
@@ -164,7 +165,6 @@ namespace MR {
                     vox_[n] = D.vox(n);
                     stride_[n] = D.stride(n);
                   }
-                  transform_.copy (D.transform());
                   init();
                 }
 
@@ -211,7 +211,7 @@ namespace MR {
                 ptr->vox(i) = header.vox(i);
                 ptr->stride(i) = header.stride(i);
               }
-              ptr->transform().copy (header.transform());
+              ptr->transform() = header.transform();
               ptr->name() = header.name();
 
               header.handler->prepare();
@@ -265,7 +265,7 @@ namespace MR {
                 ptr->dim(i) = header.dim(i);
                 ptr->vox(i) = header.vox(i);
               }
-              ptr->transform().copy (header.transform());
+              ptr->transform() = header.transform();
               ptr->name() = header.name();
 
               header.handler->prepare();

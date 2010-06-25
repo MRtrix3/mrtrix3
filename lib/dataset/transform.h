@@ -75,7 +75,7 @@ namespace MR {
       template <class Set, typename T> 
         inline Math::Matrix<T>& scanner2image (Math::Matrix<T>& M, const Set& ds) 
         {
-          M.copy (ds.transform());
+          M = ds.transform();
           return (M);
         }
 
@@ -85,8 +85,7 @@ namespace MR {
         {
           int signum;
           Math::Permutation p (4);
-          Math::Matrix<T> D;
-          D.copy (ds.transform());
+          Math::Matrix<T> D (ds.transform());
           Math::LU::decomp (D, p, signum);
           Math::LU::inv (M, D, p);
           M(3,0) = M(3,1) = M(3,2) = 0.0; M(3,3) = 1.0;
@@ -97,7 +96,7 @@ namespace MR {
       template <class Set, typename T> 
         inline Math::Matrix<T>& voxel2scanner (Math::Matrix<T>& M, const Set& ds) 
         {
-          M.copy (ds.transform());
+          M = ds.transform();
           for (size_t i = 0; i < 3; i++) 
             for (size_t j = 0; j < 3; j++) 
               M(i,j) *= ds.vox(i);

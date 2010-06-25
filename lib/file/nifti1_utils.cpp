@@ -303,8 +303,7 @@ namespace MR {
           permutation[i] = abs(H.axes.stride(i))-1;
         }
 
-        Math::Matrix<float> M;
-        M.copy (H.transform());
+        Math::Matrix<float> M (H.transform());
 
         if (permutation[0] != 0 || permutation[1] != 1 || permutation[2] != 2 || 
             !H.axes.forward(0)  || !H.axes.forward(1)  || !H.axes.forward(2)) {

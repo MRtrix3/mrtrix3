@@ -20,13 +20,8 @@
 
 */
 
-/** \file
-  This file describes a number of functions related to performing
-  Monte Carlo Markhov Chain simulations of regularised spherical deconvolution.
-  */
-
-#ifndef __dwi_SH_sdeconv_constrained_h__
-#define __dwi_SH_sdeconv_constrained_h__
+#ifndef __dwi_sdeconv_constrained_h__
+#define __dwi_sdeconv_constrained_h__
 
 #include "math/SH.h"
 #include "math/least_squares.h"
@@ -140,7 +135,7 @@ namespace MR {
             if (HR_amps[n] < threshold)
               neg.push_back (n);
 
-          if (computed_once && old_neg.size() == neg.size()) 
+          if (computed_once && old_neg == neg) 
             if (old_neg == neg) return (true);
 
           for (size_t i = 0; i < work.rows(); i++) {

@@ -55,40 +55,113 @@ namespace MR {
       @{ */
 
     //! A matrix class
+    /*! This class is a thin wrapper around the GSL matrix classes, and can be
+     * passed to existing GSL functions by pointer using the gsl() member
+     * functions. */
     template <typename T> class Matrix : protected GSLMatrix<T> 
     {
       public:
         template <typename U> friend class Matrix;
+        typedef T value_type;
+        typedef typename Vector<T>::View VectorView;
 
-	//! construct empty matrix
-        Matrix () throw () {
-	  GSLMatrix<T>::size1 = GSLMatrix<T>::size2 = GSLMatrix<T>::tda = 0;
-	  GSLMatrix<T>::data = NULL; GSLMatrix<T>::block = NULL; GSLMatrix<T>::owner = 1; 
+        //! A class to reference existing Matrix data
+        /*! This class is used purely to access and modify the elements of
+         * existing Matrices. It cannot perform allocation/deallocation or
+         * resizing operations. It is designed to be returned by members
+         * functions of the Matrix classes to allow convenient access to
+         * specific portions of the data (i.e. a subset of a Matrix).
+         * 
+         * For example:
+         * \code
+* // create instance of Matrix:
+         * Math::Matrix<float> M (10,10);
+         *
+         * // set all elements to zero:
+         * M = 0.0;
+         *
+         * // set diagonal elements to 1 (this uses the diagonal() function,
+         * // which returns a Matrix::View):
+         * M.diagonal() = 1.0;
+         * 
+         * // create instance of Vector from data file:
+         * Math::Vector<double> V ("mydatafile.txt");
+         *
+         * // set every other element of the bottom row to the contents of V
+         * // (in this case, this assumes that V has size 5):
+         * M.row(9).sub(0,10,2) = V;
+         *
+         * // in the above, M.row(9) returns the 9th row as a Vector::View,
+         * // and the .sub(0,10,2) return a Vector::View of this, skipping
+         * // every other element (i.e. stride 2).
+         * \endcode
+         */
+        class View : public Matrix<T> {
+          public:
+
+            //! assign the specified \a value to all elements of the matrix
+            View& operator= (T value) throw () 
+            {
+              LOOP (operator()(i,j) = value);
+              return (*this); 
+            }
+
+            //! assign the values in \a M to the corresponding elements of the matrix
+            View& operator= (const Matrix<T>& M) throw () 
+            {
+              assert (rows() == M.rows() && columns() == M.columns());
+              LOOP (operator()(i,j) = M(i,j));
+              return (*this);
+            }
+
+            //! assign the values in \a M to the corresponding elements of the matrix
+            template <typename U> View& operator= (const Matrix<U>& M) throw () 
+            {
+              assert (rows() == M.rows() && columns() == M.columns());
+              LOOP (operator()(i,j) = M(i,j));
+              return (*this);
+            }
+
+          private:
+            View (T* data, size_t nrows, size_t ncolumns, size_t row_skip) throw ()
+            {  
+              GSLMatrix<T>::size1 = nrows;
+              GSLMatrix<T>::size2 = ncolumns; 
+              GSLMatrix<T>::tda = row_skip;
+              GSLMatrix<T>::set (data);
+              GSLMatrix<T>::block = NULL;
+              GSLMatrix<T>::owner = 0; 
+            }
+
+            friend class Matrix<T>;
+        };
+
+        //! construct empty matrix
+        Matrix () throw () 
+        {
+          GSLMatrix<T>::size1 = GSLMatrix<T>::size2 = GSLMatrix<T>::tda = 0;
+          GSLMatrix<T>::data = NULL; 
+          GSLMatrix<T>::block = NULL; 
+          GSLMatrix<T>::owner = 1; 
         }
 
-	//! copy constructor
-        /*! \note the new instance will reference the same data as the
-         * original, but will not be responsible for (or even capable of) any
-         * operation requiring data allocation or deallocation. */
-        Matrix (const Matrix<T>& M) throw () { 
-	  GSLMatrix<T>::size1 = M.GSLMatrix<T>::size1;
-          GSLMatrix<T>::size2 = M.GSLMatrix<T>::size2; 
-          GSLMatrix<T>::tda = M.GSLMatrix<T>::tda;
-	  GSLMatrix<T>::data = M.GSLMatrix<T>::data; 
-          GSLMatrix<T>::block = NULL; GSLMatrix<T>::owner = 0; 
+        //! copy constructor
+        Matrix (const Matrix& M)
+        { 
+          initialize (M.rows(), M.columns());
+          LOOP (operator()(i,j) = M(i,j));
         }
 
-	//! construct matrix of size \a nrows by \a ncolumns
+        //! copy constructor
+        template <typename U> Matrix (const Matrix<U>& M)
+        { 
+          initialize (M.rows(), M.columns());
+          LOOP (operator()(i,j) = M(i,j));
+        }
+
+        //! construct matrix of size \a nrows by \a ncolumns
 	/** \note the elements of the matrix are left uninitialised. */
-        Matrix (size_t nrows, size_t ncolumns) { 
-          if (nrows && ncolumns) {
-            GSLMatrix<T>::block = GSLBlock<T>::alloc (nrows * ncolumns);
-            if (!GSLMatrix<T>::block) throw Exception ("Failed to allocate memory for Matrix data");  
-          }
-          else GSLMatrix<T>::block = NULL;
-	  GSLMatrix<T>::size1 = nrows; GSLMatrix<T>::size2 = GSLMatrix<T>::tda = ncolumns; GSLMatrix<T>::owner = 1;
-          GSLMatrix<T>::data = GSLMatrix<T>::block ? GSLMatrix<T>::block->data : NULL;
-        }
+        Matrix (size_t nrows, size_t ncolumns) { initialize (nrows, ncolumns); }
 
 	//! construct from existing data array
         /*! \note with this constructor, the matrix is not responsible for
@@ -96,9 +169,13 @@ namespace MR {
          * allow access to the data provided using the Matrix interface. The
          * underlying data array must remain accessible during the lifetime of
          * the Matrix class. */
-        Matrix (T* data, size_t nrows, size_t ncolumns) throw () { 
-	  GSLMatrix<T>::size1 = nrows; GSLMatrix<T>::size2 = GSLMatrix<T>::tda = ncolumns;
-	  GSLMatrix<T>::set(data); GSLMatrix<T>::block = NULL; GSLMatrix<T>::owner = 0; 
+        Matrix (T* data, size_t nrows, size_t ncolumns) throw () 
+        { 
+	  GSLMatrix<T>::size1 = nrows; 
+          GSLMatrix<T>::size2 = GSLMatrix<T>::tda = ncolumns;
+	  GSLMatrix<T>::set(data); 
+          GSLMatrix<T>::block = NULL;
+          GSLMatrix<T>::owner = 0; 
         }
 	//! construct from existing data array with non-standard row stride
         /*! \note with this constructor, the matrix is not responsible for
@@ -106,23 +183,38 @@ namespace MR {
          * allow access to the data provided using the Matrix interface. The
          * underlying data array must remain accessible during the lifetime of
          * the Matrix class. */
-        Matrix (T* data, size_t nrows, size_t ncolumns, size_t row_skip) throw () {  
-	  GSLMatrix<T>::size1 = nrows; GSLMatrix<T>::size2 = ncolumns; GSLMatrix<T>::tda = row_skip;
-	  GSLMatrix<T>::set (data); GSLMatrix<T>::block = NULL; GSLMatrix<T>::owner = 0; 
+        Matrix (T* data, size_t nrows, size_t ncolumns, size_t row_skip) throw ()
+        {  
+	  GSLMatrix<T>::size1 = nrows;
+          GSLMatrix<T>::size2 = ncolumns; 
+          GSLMatrix<T>::tda = row_skip;
+	  GSLMatrix<T>::set (data);
+          GSLMatrix<T>::block = NULL;
+          GSLMatrix<T>::owner = 0; 
         }
 
 	//! construct a matrix by reading from the text file \a filename
-        Matrix (const std::string& filename) { 
+        Matrix (const std::string& filename)
+        { 
 	  GSLMatrix<T>::size1 = GSLMatrix<T>::size2 = GSLMatrix<T>::tda = 0;
-	  GSLMatrix<T>::data = NULL; GSLMatrix<T>::block = NULL; GSLMatrix<T>::owner = 1; 
+	  GSLMatrix<T>::data = NULL;
+          GSLMatrix<T>::block = NULL;
+          GSLMatrix<T>::owner = 1; 
           load (filename); 
         } 
 
 	//! destructor
-        ~Matrix () { if (GSLMatrix<T>::block) { assert (GSLMatrix<T>::owner); GSLBlock<T>::free (GSLMatrix<T>::block); } }
+        ~Matrix () 
+        {
+          if (GSLMatrix<T>::block) { 
+            assert (GSLMatrix<T>::owner);
+            GSLBlock<T>::free (GSLMatrix<T>::block);
+          }
+        }
 
 	//! deallocate the matrix data
-        Matrix<T>& clear () { 
+        Matrix& clear ()
+        { 
           if (GSLMatrix<T>::block) {
             assert (GSLMatrix<T>::owner);
 	    GSLBlock<T>::free (GSLMatrix<T>::block);
@@ -132,13 +224,15 @@ namespace MR {
           return (*this);
         }
 	//! allocate the matrix to have the same size as \a M
-        Matrix<T>& allocate (const Matrix<T>& M) { allocate (M.rows(), M.columns()); return (*this); }
+        Matrix& allocate (const Matrix& M) { allocate (M.rows(), M.columns()); return (*this); }
 	//! allocate the matrix to have the same size as \a M
         template <typename U> Matrix& allocate (const Matrix<U>& M) { allocate (M.rows(), M.columns()); return (*this); }
 
 	//! allocate the matrix to have size \a nrows by \a ncolumns
-        Matrix<T>& allocate (size_t nrows, size_t ncolumns) {
-          if (rows() == nrows && columns() == ncolumns) return (*this);
+        Matrix& allocate (size_t nrows, size_t ncolumns) 
+        {
+          if (rows() == nrows && columns() == ncolumns)
+            return (*this);
           if (GSLMatrix<T>::block) {
             assert (GSLMatrix<T>::owner);
             if (GSLMatrix<T>::block->size < nrows * ncolumns) { 
@@ -149,26 +243,22 @@ namespace MR {
 
           if (!GSLMatrix<T>::block && nrows*ncolumns) {
             GSLMatrix<T>::block = GSLBlock<T>::alloc (nrows * ncolumns);
-            if (!GSLMatrix<T>::block) throw Exception ("Failed to allocate memory for Matrix data");  
+            if (!GSLMatrix<T>::block) 
+              throw Exception ("Failed to allocate memory for Matrix data");  
           }
-	  GSLMatrix<T>::size1 = nrows; GSLMatrix<T>::size2 = GSLMatrix<T>::tda = ncolumns; GSLMatrix<T>::owner = 1;
+	  GSLMatrix<T>::size1 = nrows;
+          GSLMatrix<T>::size2 = GSLMatrix<T>::tda = ncolumns;
+          GSLMatrix<T>::owner = 1;
           GSLMatrix<T>::data = GSLMatrix<T>::block ? GSLMatrix<T>::block->data : NULL;
           return (*this);
         }
-
-        //! copy contents of \a M into current matrix
-        /*! \note this will also perform any reallocation required */
-        Matrix<T>& copy (const Matrix<T>& M) { allocate (M); return (operator= (M)); }
-
-        //! copy contents of \a M into current matrix
-        /*! \note this will also perform any reallocation required */
-        template <typename U> Matrix<T>& copy (const Matrix<U>& M) { allocate (M); return (operator= (M)); }
 
 	//! resize matrix to have size \a nrows by \a ncolumns
         /*! \note this function will not perform any data reallocation. If the
          * size requested exceeds the original size of the data, an exception
          * will be thrown. */
-        Matrix<T>& resize (size_t nrows, size_t ncolumns) {
+        Matrix& resize (size_t nrows, size_t ncolumns)
+        {
           if (ncolumns > GSLMatrix<T>::tda || GSLMatrix<T>::block->size < nrows*GSLMatrix<T>::tda) 
             throw Exception ("cannot resize matrix: size requested exceeds dimensions originally allocated");
           GSLMatrix<T>::size1 = nrows;
@@ -177,18 +267,26 @@ namespace MR {
         }
 
 	//! read matrix data from the text file \a filename
-        Matrix<T>& load (const std::string& filename) {
+        Matrix& load (const std::string& filename)
+        {
           std::ifstream in (filename.c_str());
-          if (!in) throw Exception ("cannot open matrix file \"" + filename + "\": " + strerror (errno));
-          try { in >> *this; }
-          catch (Exception& E) { throw Exception (E, "error loading matrix file \"" + filename + "\""); }
+          if (!in) 
+            throw Exception ("cannot open matrix file \"" + filename + "\": " + strerror (errno));
+          try {
+            in >> *this; 
+          }
+          catch (Exception& E) { 
+            throw Exception (E, "error loading matrix file \"" + filename + "\""); 
+          }
           return (*this);
         }
 
 	//! write to text file \a filename
-        void save (const std::string& filename) const {
+        void save (const std::string& filename) const
+        {
           std::ofstream out (filename.c_str());
-          if (!out) throw Exception ("cannot open matrix file \"" + filename + "\": " + strerror (errno));
+          if (!out)
+            throw Exception ("cannot open matrix file \"" + filename + "\": " + strerror (errno));
           out << *this;
         }
 
@@ -199,18 +297,24 @@ namespace MR {
         const GSLMatrix<T>* gsl () const { return (this); }
 
 	//! assign the specified \a value to all elements of the matrix
-        Matrix<T>&  operator= (T value) throw () { LOOP (operator()(i,j) = value); return (*this); }
+        Matrix&  operator= (T value) throw ()
+        {
+          LOOP (operator()(i,j) = value);
+          return (*this); 
+        }
 
 	//! assign the values in \a M to the corresponding elements of the matrix
-        Matrix<T>&  operator= (const Matrix& M) throw () { 
-          assert (rows() == M.rows() && columns() == M.columns());
+        Matrix&  operator= (const Matrix& M) 
+        { 
+          allocate (M);
           LOOP (operator()(i,j) = M(i,j)); 
           return (*this); 
         }
 
 	//! assign the values in \a M to the corresponding elements of the matrix
-        template <typename U> Matrix<T>& operator= (const Matrix<U>& M) {
-          assert (rows() == M.rows() && columns() == M.columns());
+        template <typename U> Matrix& operator= (const Matrix<U>& M)
+        {
+          allocate (M);
           LOOP (operator()(i,j) = M(i,j)); 
           return (*this); 
         }
@@ -219,14 +323,16 @@ namespace MR {
         bool operator== (const Matrix& M) throw () { return (! (*this != M)); }
 
 	//! comparison operator
-        bool operator!= (const Matrix& M) throw ()  { 
+        bool operator!= (const Matrix& M) throw ()
+        { 
           if (rows() != M.rows() || columns() != M.columns()) return (true);
           LOOP (if (operator()(i,j) != M(i,j)) return (true)); 
           return (false);
         }
 
 	//! swap contents with \a M without copying
-        void swap (Matrix& M) throw () { 
+        void swap (Matrix& M) throw ()
+        { 
           char c [sizeof (Matrix)];
           memcpy (&c, this, sizeof (Matrix));
           memcpy (this, &M, sizeof (Matrix));
@@ -234,13 +340,15 @@ namespace MR {
         }
 
 	//! return reference to element at \a i, \a j
-        T& operator() (size_t i, size_t j) throw () { 
+        T& operator() (size_t i, size_t j) throw ()
+        { 
 	  assert (i < rows()); assert (j < columns()); 
 	  return (ptr()[i * GSLMatrix<T>::tda + j]); 
 	}
 
 	//! return const reference to element at \a i, \a j
-        const T& operator() (size_t i, size_t j) const throw () { 
+        const T& operator() (size_t i, size_t j) const throw ()
+        { 
 	  assert (i < rows()); assert (j < columns()); 
 	  return (ptr()[i * GSLMatrix<T>::tda + j]); 
 	}
@@ -264,124 +372,155 @@ namespace MR {
         size_t row_stride () const throw () { return (GSLMatrix<T>::tda); }
 
 	//! set all elements of matrix to zero
-        Matrix<T>& zero () { LOOP (operator()(i,j) = 0.0); return (*this); }
+        Matrix& zero () { LOOP (operator()(i,j) = 0.0); return (*this); }
 
 	//! set all diagonal elements of matrix to one, and all others to zero
-        Matrix<T>& identity () throw () { LOOP (operator()(i,j) = (i==j?1.0:0.0)); return (*this); }
+        Matrix& identity () throw () { LOOP (operator()(i,j) = (i==j?1.0:0.0)); return (*this); }
 
 	//! add \a value to all elements of the matrix
-        Matrix<T>& operator+= (T value) throw () { LOOP (operator()(i,j) += value); return (*this); }
+        Matrix& operator+= (T value) throw () { LOOP (operator()(i,j) += value); return (*this); }
 	//! subtract \a value from all elements of the matrix
-        Matrix<T>& operator-= (T value) throw () { LOOP (operator()(i,j) -= value); return (*this); }
+        Matrix& operator-= (T value) throw () { LOOP (operator()(i,j) -= value); return (*this); }
 	//! multiply all elements of the matrix by \a value 
-        Matrix<T>& operator*= (T value) throw () { LOOP (operator()(i,j) *= value); return (*this); }
+        Matrix& operator*= (T value) throw () { LOOP (operator()(i,j) *= value); return (*this); }
 	//! divide all elements of the matrix by \a value 
-        Matrix<T>& operator/= (T value) throw () { LOOP (operator()(i,j) /= value); return (*this); }
+        Matrix& operator/= (T value) throw () { LOOP (operator()(i,j) /= value); return (*this); }
 
 	//! add each element of \a M to the corresponding element of the matrix
-        Matrix<T>& operator+= (const Matrix& M) throw () { 
+        Matrix& operator+= (const Matrix& M) throw ()
+        { 
           assert (rows() == M.rows() && columns() == M.columns());
           LOOP (operator()(i,j) += M(i,j));
           return (*this); 
         }
 
 	//! subtract each element of \a M from the corresponding element of the matrix
-        Matrix<T>& operator-= (const Matrix& M) throw () { 
+        Matrix& operator-= (const Matrix& M) throw ()
+        { 
           assert (rows() == M.rows() && columns() == M.columns());
           LOOP (operator()(i,j) -= M(i,j)); 
           return (*this);
         }
 
 	//! multiply each element of the matrix by the corresponding element of \a M
-        Matrix<T>& operator*= (const Matrix& M) throw () {
+        Matrix& operator*= (const Matrix& M) throw ()
+        {
           assert (rows() == M.rows() && columns() == M.columns());
           LOOP (operator()(i,j) *= M(i,j)); 
           return (*this);
         }
 
 	//! divide each element of the matrix by the corresponding element of \a M
-        Matrix<T>& operator/= (const Matrix& M) throw () { 
+        Matrix& operator/= (const Matrix& M) throw ()
+        { 
           assert (rows() == M.rows() && columns() == M.columns());
           LOOP (operator()(i,j) /= M(i,j));
           return (*this); 
         }
 
-	//! return a Matrix corresponding to a submatrix of the matrix
-        Matrix<T> sub (size_t from_row, size_t to_row, size_t from_column, size_t to_column) throw () {
+	//! return a Matrix::View corresponding to a submatrix of the matrix
+        View sub (size_t from_row, size_t to_row, size_t from_column, size_t to_column) throw ()
+        {
           assert (from_row <= to_row && to_row <= rows());
           assert (from_column <= to_column && to_column <= columns());
-          return (Matrix<T> (Matrix (ptr() + from_row*GSLMatrix<T>::tda + from_column, 
-                  to_row-from_row, to_column-from_column, GSLMatrix<T>::tda)));
+          return (View (ptr() + from_row*GSLMatrix<T>::tda + from_column, 
+                  to_row-from_row, to_column-from_column, GSLMatrix<T>::tda));
         }
 
-	//! return a Matrix corresponding to a submatrix of the matrix
-        const Matrix<T> sub (size_t from_row, size_t to_row, size_t from_column, size_t to_column) const throw () {
+	//! return a Matrix::View corresponding to a submatrix of the matrix
+        const View sub (size_t from_row, size_t to_row, size_t from_column, size_t to_column) const throw ()
+        {
           assert (from_row <= to_row && to_row <= rows());
           assert (from_column <= to_column && to_column <= columns());
-          return (Matrix<T> (Matrix (ptr() + from_row*GSLMatrix<T>::tda + from_column, 
-                  to_row-from_row, to_column-from_column, GSLMatrix<T>::tda)));
+          return (View (ptr() + from_row*GSLMatrix<T>::tda + from_column, 
+                  to_row-from_row, to_column-from_column, GSLMatrix<T>::tda));
         }
 
-	//! return a Matrix corresponding to a row of the matrix
-        Vector<T> row (size_t index = 0) throw () { 
+	//! return a Vector::View corresponding to a row of the matrix
+        VectorView row (size_t index = 0) throw ()
+        { 
 	  assert (index < rows()); 
-	  return (Vector<T> (ptr()+index*GSLMatrix<T>::tda, GSLMatrix<T>::size2, 1)); 
+	  return (VectorView (ptr()+index*GSLMatrix<T>::tda, GSLMatrix<T>::size2, 1)); 
 	}
-	//! return a Matrix corresponding to a row of the matrix
-        const Vector<T> row (size_t index = 0) const throw () { 
+	//! return a Vector::View corresponding to a row of the matrix
+        const VectorView row (size_t index = 0) const throw ()
+        { 
 	  assert (index < rows()); 
-	  return (Vector<T> (const_cast<T*> (ptr())+index*GSLMatrix<T>::tda, GSLMatrix<T>::size2, 1)); 
+	  return (VectorView (const_cast<T*> (ptr())+index*GSLMatrix<T>::tda, GSLMatrix<T>::size2, 1)); 
 	}
 
-	//! return a Matrix corresponding to a column of the matrix
-        Vector<T> column (size_t index = 0)  throw () { 
+	//! return a Vector::View corresponding to a column of the matrix
+        VectorView column (size_t index = 0) throw ()
+        { 
 	  assert (index < columns());
-	  return (Vector<T> (ptr()+index, GSLMatrix<T>::size1, GSLMatrix<T>::tda)); 
+	  return (VectorView (ptr()+index, GSLMatrix<T>::size1, GSLMatrix<T>::tda)); 
 	}
 
-	//! return a Matrix corresponding to a column of the matrix
-        const Vector<T> column (size_t index = 0) const throw () { 
+	//! return a Vector::View corresponding to a column of the matrix
+        const VectorView column (size_t index = 0) const throw () { 
 	  assert (index < columns());
-	  return (Vector<T> (const_cast<T*> (ptr())+index, GSLMatrix<T>::size1, GSLMatrix<T>::tda)); 
+	  return (VectorView (const_cast<T*> (ptr())+index, GSLMatrix<T>::size1, GSLMatrix<T>::tda)); 
 	}
 
-	//! return a Matrix corresponding to the diagonal of the matrix
-        Vector<T> diagonal () const throw () {
+	//! return a Vector::View corresponding to the diagonal of the matrix
+        VectorView diagonal () throw () 
+        {
 	  assert (rows() > 0 && columns() > 0);
-	  return (Vector<T> (ptr(), MIN(GSLMatrix<T>::size1,GSLMatrix<T>::size2), GSLMatrix<T>::tda+1)); 
+	  return (VectorView (ptr(), MIN(GSLMatrix<T>::size1,GSLMatrix<T>::size2), GSLMatrix<T>::tda+1)); 
 	}
 
-	//! return a Matrix corresponding to a diagonal of the matrix
+	//! return a Vector::View corresponding to the diagonal of the matrix
+        const VectorView diagonal () const throw () 
+        {
+	  assert (rows() > 0 && columns() > 0);
+	  return (VectorView (const_cast<T*> (ptr()), MIN(GSLMatrix<T>::size1,GSLMatrix<T>::size2), GSLMatrix<T>::tda+1)); 
+	}
+
+	//! return a Vector::View corresponding to a diagonal of the matrix
 	/** \param offset the diagonal to obtain. If \a offset > 0, return the corresponding upper diagonal. 
 	  If \a offset < 0, return the corresponding lower diagonal. */ 
-        Vector<T> diagonal (int offset) const throw () {
+        VectorView diagonal (int offset) throw ()
+        {
           assert (rows() > 0 && columns() > 0);
           if (offset == 0) return (diagonal());
-          if (offset < 0) return (Vector<T> (
-		ptr()-GSLMatrix<T>::tda*offset, 
-		MIN(GSLMatrix<T>::size1+offset,GSLMatrix<T>::size2+offset), 
-		GSLMatrix<T>::tda+1));
-          return (Vector<T> (
-		ptr()+offset,
-	       	MIN(GSLMatrix<T>::size1-offset,GSLMatrix<T>::size2-offset),
-	       	GSLMatrix<T>::tda+1));
+          if (offset < 0) 
+            return (VectorView (ptr()-GSLMatrix<T>::tda*offset, 
+                  MIN(GSLMatrix<T>::size1+offset,GSLMatrix<T>::size2+offset), GSLMatrix<T>::tda+1));
+          return (VectorView (ptr()+offset,
+	       	MIN(GSLMatrix<T>::size1-offset,GSLMatrix<T>::size2-offset), GSLMatrix<T>::tda+1));
+        }
+
+	//! return a Vector::View corresponding to a diagonal of the matrix
+        /*! \copydetails Matrix<T>::diagonal(int) */
+        const VectorView diagonal (int offset) const throw ()
+        {
+          assert (rows() > 0 && columns() > 0);
+          if (offset == 0) return (diagonal());
+          if (offset < 0) 
+            return (VectorView (const_cast<T*> (ptr()-GSLMatrix<T>::tda*offset), 
+                  MIN(GSLMatrix<T>::size1+offset,GSLMatrix<T>::size2+offset), GSLMatrix<T>::tda+1));
+          return (VectorView (const_cast<T*> (ptr()+offset),
+	       	MIN(GSLMatrix<T>::size1-offset,GSLMatrix<T>::size2-offset), GSLMatrix<T>::tda+1));
         }
 
 	//! swap two rows of the matrix
-        void swap_rows (size_t n, size_t m) {
+        void swap_rows (size_t n, size_t m) 
+        {
 	  for (size_t i = 0; i < GSLMatrix<T>::size2; i++)
 	    std::swap (operator()(n,i), operator()(m,i)); 
 	}
 
 	//! swap two columns of the matrix
-        void swap_columns (size_t n, size_t m) { 
+        void swap_columns (size_t n, size_t m)
+        { 
 	  for (size_t i = 0; i < GSLMatrix<T>::size1; i++) 
 	    std::swap (operator()(i,n), operator()(i,m)); 
 	}
 
 
 	//! write the matrix \a M to \a stream as text
-        friend std::ostream& operator<< (std::ostream& stream, const Matrix& M) {
+        friend std::ostream& operator<< (std::ostream& stream, const Matrix& M) 
+        {
           for (size_t i = 0; i < M.rows(); i++) {
             for (size_t j = 0; j < M.columns(); j++) 
               stream << M(i,j) << " ";
@@ -391,7 +530,8 @@ namespace MR {
         }
 
 	//! read the matrix data from \a stream and assign to the matrix \a M
-        friend std::istream& operator>> (std::istream& stream, Matrix<T>& M)  {
+        friend std::istream& operator>> (std::istream& stream, Matrix& M)
+        {
           std::vector< RefPtr< std::vector<T> > > V;
           do {
             std::string sbuf;
@@ -428,6 +568,20 @@ namespace MR {
           return (stream);
         }
 
+      protected:
+        void initialize (size_t nrows, size_t ncolumns) 
+        { 
+          if (nrows && ncolumns) {
+            GSLMatrix<T>::block = GSLBlock<T>::alloc (nrows * ncolumns);
+            if (!GSLMatrix<T>::block) 
+              throw Exception ("Failed to allocate memory for Matrix data");  
+          }
+          else GSLMatrix<T>::block = NULL;
+	  GSLMatrix<T>::size1 = nrows; 
+          GSLMatrix<T>::size2 = GSLMatrix<T>::tda = ncolumns;
+          GSLMatrix<T>::owner = 1;
+          GSLMatrix<T>::data = GSLMatrix<T>::block ? GSLMatrix<T>::block->data : NULL;
+        }
     };
 
 

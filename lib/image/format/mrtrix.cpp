@@ -107,7 +107,7 @@ namespace MR {
             for (int col = 0; col < 4; col++) 
               T(row,col) = transform[count++];
           T(3,0) = T(3,1) = T(3,2) = 0.0; T(3,3) = 1.0;
-          H.transform().copy (T);
+          H.transform() = T;
         }
 
 
@@ -119,7 +119,7 @@ namespace MR {
             for (size_t row = 0; row < M.rows(); row++) 
               for (size_t col = 0; col < 4; col++) 
                 M(row,col) = dw_scheme[count++];
-            H.DW_scheme.copy (M);
+            H.DW_scheme = M;
           }
         }
 

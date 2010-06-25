@@ -55,15 +55,13 @@ namespace MR {
         Header () : format (NULL), offset (0.0), scale (1.0), readwrite (false) { }
 
         Header (const Header& H) :
-          std::map<std::string, std::string> (H), dtype (H.dtype), 
+          std::map<std::string, std::string> (H), dtype (H.dtype), transform_matrix (H.transform_matrix),
           format (NULL), axes (H.axes), offset (H.offset), scale (H.scale), 
-          readwrite (false), DW_scheme (H.DW_scheme), comments (H.comments) { 
-            transform_matrix.copy (H.transform_matrix); 
-          } 
+          readwrite (false), DW_scheme (H.DW_scheme), comments (H.comments) { } 
 
         template <class DataSet> Header (const DataSet& ds) :
-          format (NULL), offset (0.0), scale (1.0), readwrite (false) { 
-            transform_matrix.copy (ds.transform()); 
+          transform_matrix (ds.transform()), format (NULL), 
+          offset (0.0), scale (1.0), readwrite (false) { 
             axes.ndim() = ds.ndim();
             for (size_t i = 0; i < ds.ndim(); i++) {
               axes.dim(i) = ds.dim(i);
@@ -75,14 +73,15 @@ namespace MR {
         {
           std::map<std::string, std::string>::operator= (H); 
           format = NULL; offset = H.offset; scale = H.scale; readwrite = false;
-          transform_matrix.copy (H.transform()); 
+          transform_matrix = H.transform(); 
           axes = H.axes;
           return (*this);
         } 
 
-        template <class DataSet> Header& operator= (const DataSet& ds) {
+        template <class DataSet> Header& operator= (const DataSet& ds)
+        {
           format = NULL; offset = 0.0; scale = 1.0; readwrite = false;
-          transform_matrix.copy (ds.transform()); 
+          transform_matrix = ds.transform(); 
           axes.ndim() = ds.ndim();
           for (size_t i = 0; i < ds.ndim(); i++) {
             axes.dim(i) = ds.dim(i);

@@ -49,33 +49,40 @@ OPTIONS = { Option::End };
 typedef float T;
 
 EXECUTE {
-  Image::Header header;
-  header.axes.ndim() = 3;
-  header.axes.dim(0) = 1024;
-  header.axes.dim(1) = 1024;
-  header.axes.dim(2) = 1024;
 
-  header.axes.vox(0) = 1.0;
-  header.axes.vox(1) = 1.0;
-  header.axes.vox(2) = 1.0;
+  // create instance of Matrix:
+  Math::Matrix<float> M (10,10);
 
-  header.axes.stride(0) = 1;
-  header.axes.stride(1) = 2;
-  header.axes.stride(2) = 3;
+  // set all elements to zero:
+  M = 0.0;
 
-  VAR (header.datatype().description());
-  //header.data_type = DataType::UInt8;
+  // set diagonal elements to 1 (this uses the diagonal() function,
+  // which returns a Matrix::View):
+  M.diagonal() = 1.0;
+  VAR (M);
 
-  const Image::Header obj;
-  obj.create ("poo.mif", header);
-  
-  Image::Voxel<float> vox (obj);
-  vox[0] = 1023;
-  vox[1] = 1023;
-  vox[2] = 1023;
+  // create instance of Vector from data file:
+  Math::Vector<double> V ("mydatafile.txt");
+  VAR (V);
 
-  vox.value() = 0.0;
 
+  // set every other element of the bottom row to the contents of V
+  // (in this case, this assumes that V has size 5):
+  M.row(9).sub(0,10,2) = V;
+
+  VAR (M);
+
+  M.sub (0,4,6,10) = 3.0;
+
+  VAR(M);
+
+  M.sub(6,10,0,4).diagonal() = 5.0;
+
+  VAR(M);
+
+  // in the above, M.row(9) returns the 9th row as a Vector::View,
+  // and the .sub(0,10,2) return a Vector::View of this, skipping
+  // every other element (i.e. stride 2)
 
   /*
   Math::RNG rng (1);

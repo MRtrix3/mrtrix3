@@ -91,8 +91,8 @@ namespace MR {
                 const std::string& description = "") :
               D (original),
               interp (D),
+              transform_matrix (reference.transform()),
               descriptor (description.empty() ? D.name() + " [resliced]" : description) {
-                transform_matrix.copy (reference.transform());
                 assert (reference.ndim() >= 3);
                 x[0] = x[1] = x[2] = 0;
                 N[0] = reference.dim(0); N[1] = reference.dim(1); N[2] = reference.dim(2);
