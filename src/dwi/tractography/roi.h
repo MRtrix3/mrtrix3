@@ -115,12 +115,12 @@ namespace MR {
           }
 
         private:
-          class Mask : public DataSet::Buffer<bool,3> {
+          class Mask : public DataSet::Buffer<bool> {
             public:
               template <class Set> Mask (Set& D, const std::string& description) : 
-                DataSet::Buffer<bool,3> (D, description), interp (*this) { 
+                DataSet::Buffer<bool> (D, 3, description), interp (*this) { 
                   DataSet::copy (*this, D); }
-              DataSet::Interp::Linear<DataSet::Buffer<bool,3> > interp;
+              DataSet::Interp::Linear<DataSet::Buffer<bool> > interp;
           };
 
           Point  pos;

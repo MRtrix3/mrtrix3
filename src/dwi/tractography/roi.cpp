@@ -30,7 +30,8 @@ namespace MR {
   namespace DWI {
     namespace Tractography {
 
-      void ROI::get_mask (const Image::Header& mask_header) {
+      void ROI::get_mask (const Image::Header& mask_header) 
+      {
         Image::Voxel<bool> vox (mask_header);
         size_t bottom[] = { SIZE_MAX, SIZE_MAX, SIZE_MAX };
         size_t top[] = { 0, 0, 0 };
@@ -53,7 +54,7 @@ namespace MR {
         top[1] = top[1] + 1 - bottom[1];
         top[2] = top[2] + 1 - bottom[2];
 
-        DataSet::Subset<Image::Voxel<bool>, 3> sub (vox, bottom, top);
+        DataSet::Subset<Image::Voxel<bool> > sub (vox, 3, bottom, top);
 
         mask = new Mask (sub, mask_header.name());
 

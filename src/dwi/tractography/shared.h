@@ -25,6 +25,7 @@
 
 #include "point.h"
 #include "image/header.h"
+#include "image/buffer.h"
 #include "dwi/tractography/file.h"
 #include "dwi/tractography/roi.h"
 
@@ -32,14 +33,14 @@ namespace MR {
   namespace DWI {
     namespace Tractography {
 
-      typedef DataSet::Buffer<float,4> StorageType;
+      typedef Image::Buffer<float> StorageType;
 
       class SharedBase {
         public:
 
           SharedBase (const Image::Header& source_header, DWI::Tractography::Properties& property_set) :
             H (source_header),
-            source (H, strides_by_volume()),
+            source (H, strides_by_volume(), 4),
             properties (property_set), 
             max_num_tracks (1000),
             max_angle (45.0),

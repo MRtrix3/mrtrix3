@@ -427,7 +427,7 @@ class MapWriter
 
       if (H.axes.ndim() == 3) {
 
-        buffer = new DataSet::Buffer<size_t, 3>(H, "buffer");
+        buffer = new DataSet::Buffer<size_t>(H, 3, "buffer");
         while (item.read()) {
           for (vector<Voxel>::const_iterator i = item->begin(); i != item->end(); ++i) {
             if (i->x >= 0 && i->x < (size_t)H.dim(0) && i->y >= 0 && i->y < (size_t)H.dim(1) && i->z >= 0 && i->z < (size_t)H.dim(2)) {
@@ -444,7 +444,7 @@ class MapWriter
       }
       else {
 
-        dir_buffer = new DataSet::Buffer<Xyz, 3>(H, "dir_buffer");
+        dir_buffer = new DataSet::Buffer<Xyz>(H, 3, "dir_buffer");
         while (item.read()) {
           for (vector<Voxel>::const_iterator i = item->begin(); i != item->end(); ++i) {
             if (i->x >= 0 && i->x < (size_t)H.dim(0) && i->y >= 0 && i->y < (size_t)H.dim(1) && i->z >= 0 && i->z < (size_t)H.dim(2)) {
@@ -466,8 +466,8 @@ class MapWriter
    private:
     Queue2::Reader reader;
     const Image::Header& H;
-    DataSet::Buffer<size_t, 3>* buffer;
-    DataSet::Buffer<Xyz,    3>* dir_buffer;
+    DataSet::Buffer<size_t>* buffer;
+    DataSet::Buffer<Xyz>* dir_buffer;
     DataSet::Interp::Linear<const Image::Header> interp;
     float scale;
 };
@@ -531,7 +531,7 @@ void generate_header(Image::Header& header, const char* path, const float voxel_
   t_matrix(1, 0) = 0.0; t_matrix(1, 1) = 1.0; t_matrix(1, 2) = 0.0; t_matrix(1, 3) = min_values[1];
   t_matrix(2, 0) = 0.0; t_matrix(2, 1) = 0.0; t_matrix(2, 2) = 1.0; t_matrix(2, 3) = min_values[2];
   t_matrix(3, 0) = 0.0; t_matrix(3, 1) = 0.0; t_matrix(3, 2) = 0.0; t_matrix(3, 3) = 1.0;
-  header.transform().copy(t_matrix);
+  header.transform() = t_matrix;
 
 }
 
