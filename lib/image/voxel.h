@@ -29,13 +29,8 @@
 #include "dataset/value.h"
 #include "dataset/position.h"
 
-#define MAX_FILES_PER_IMAGE 256U
-#define MAX_NDIM 16
-
 namespace MR {
   namespace Image {
-
-    class Object;
 
     //! \cond skip
 
@@ -153,6 +148,10 @@ namespace MR {
             }
           }
 
+        //! copy constructor
+        /*! \note this will construct a copy that still references the same
+         * image data. Multiple copies of an Image::Voxel can therefore by
+         * used safely in multi-threaded applications. */
         Voxel (const Voxel& vox) : 
           H (vox.H), handler (*H.handler), offset (vox.offset), x (vox.x),
           get_func (vox.get_func), put_func (vox.put_func) {

@@ -69,6 +69,7 @@ namespace MR {
       }
 
     }
+
     //! \endcond
 
     //! \addtogroup DataSet
@@ -97,38 +98,47 @@ namespace MR {
      * data.
      *
      */
-    template <typename T = float, size_t NDIM = 3> 
+    template <typename T = float> 
       class Buffer 
       {
         public:
 
           typedef T value_type;
 
+          class Axis 
+          {
+            public:
+              ssize_t stride;
+              size_t dim;
+              float  vox;
+          };
+
           class Prototype 
           {
             public:
-              Prototype () : 
-                data (NULL) { 
-                  for (size_t n = 0; n < NDIM; ++n) {
-                    dim_[n] = 0;
-                    vox_[n] = 1.0;
-                    stride_[n] = n+1;
+              Prototype (size_t NDIM) : 
+                data (NULL),
+                axes_ (NDIM) { 
+                  for (size_t n = 0; n < ndim(); ++n) {
+                    dim(n) = 0;
+                    vox(n) = 1.0;
+                    stride(n) = n+1;
                   }
                 }
 
 
               value_type* data;
 
-              size_t ndim () const { return (NDIM); }
+              size_t ndim () const { return (axes_.size()); }
 
-              size_t dim (size_t axis) const { return (dim_[axis]); }
-              size_t& dim (size_t axis) { return (dim_[axis]); }
+              size_t dim (size_t axis) const { return (axes_[axis]).dim; }
+              size_t& dim (size_t axis) { return (axes_[axis].dim); }
 
-              float vox (size_t axis) const { return (vox_[axis]); }
-              float& vox (size_t axis) { return (vox_[axis]); }
+              float vox (size_t axis) const { return (axes_[axis].vox); }
+              float& vox (size_t axis) { return (axes_[axis].vox); }
 
-              ssize_t stride (size_t axis) const { return (stride_[axis]); }
-              ssize_t& stride (size_t axis) { return (stride_[axis]); }
+              ssize_t stride (size_t axis) const { return (axes_[axis].stride); }
+              ssize_t& stride (size_t axis) { return (axes_[axis].stride); }
 
               const Math::Matrix<float>& transform () const { return (transform_); }
               Math::Matrix<float>& transform () { return (transform_); }
@@ -138,32 +148,41 @@ namespace MR {
 
             private:
               size_t start_;
-              ssize_t stride_ [NDIM];
-              size_t dim_ [NDIM];
-              float  vox_ [NDIM];
+              std::vector<Axis> axes_;
               Math::Matrix<float> transform_;
               typename Array<value_type>::RefPtr block_;
               std::string name_;
 
               Prototype (const Prototype& prot) :
                 data (prot.data),
+                axes_ (prot.axes_),
                 transform_ (prot.transform_),
                 name_ (prot.name_) {
-                  memcpy (stride_, prot.stride_, sizeof (stride_));
-                  memcpy (dim_, prot.dim_, sizeof (dim_));
-                  memcpy (vox_, prot.vox_, sizeof (vox_));
                   init();
                 }
 
               template <class Set> Prototype (const Set& D, const std::string& id) : 
                 data (NULL),
+                axes_ (D.ndim()),
                 transform_ (D.transform()),
                 name_ (id) {
-                  assert (D.ndim() >= NDIM);
-                  for (size_t n = 0; n < NDIM; ++n) {
-                    dim_[n] = D.dim(n);
-                    vox_[n] = D.vox(n);
-                    stride_[n] = D.stride(n);
+                  for (size_t n = 0; n < ndim(); ++n) {
+                    dim(n) = D.dim(n);
+                    vox(n) = D.vox(n);
+                    stride(n) = D.stride(n);
+                  }
+                  init();
+                }
+
+              template <class Set> Prototype (const Set& D, size_t NDIM, const std::string& id) : 
+                data (NULL),
+                axes_ (NDIM),
+                transform_ (D.transform()),
+                name_ (id) {
+                  for (size_t n = 0; n < ndim(); ++n) {
+                    dim(n) = D.dim(n);
+                    vox(n) = D.vox(n);
+                    stride(n) = D.stride(n);
                   }
                   init();
                 }
@@ -182,14 +201,26 @@ namespace MR {
                 }
               }
 
-              friend class Buffer<T,NDIM>;
+              friend class Buffer<T>;
           };
 
 
 
           //! Construct by using \a D as prototype
           template <class Set> Buffer (const Set& D, const std::string& id = "unnamed") :
-            ptr (new Prototype (D, id)), instance (ptr) { reset(); }
+            ptr (new Prototype (D, id)),
+            x (ndim()),
+            instance (ptr) {
+              reset();
+            }
+
+          //! Construct by using \a D as prototype, using only the first NDIM dimensions
+          template <class Set> Buffer (const Set& D, size_t NDIM, const std::string& id = "unnamed") :
+            ptr (new Prototype (D, NDIM, id)),
+            x (ndim()),
+            instance (ptr) {
+              reset();
+            }
 
           //! Construct by supplying a fully-formed prototype
           /*! \note if the \a data member of the prototype is set to NULL (the
@@ -197,93 +228,10 @@ namespace MR {
            * Otherwise the memory region pointed to by \a data will be used as
            * the data storage. */
           Buffer (const Prototype& prot) :
-            ptr (new Prototype (prot)), instance (ptr) { reset(); }
-
-          //! Construct from an Image::Header object
-          /*! If the data type matches and the image only contains one file,
-           * the data will be accessed using memory-mapping. Otherwise, the
-           * data will be loaded into memory. */
-          Buffer (const Image::Header& header) :
-            ptr (new Prototype), instance (ptr) {
-              assert (header.ndim() >= NDIM);
-              for (size_t i = 0; i < NDIM; ++i) {
-                ptr->dim(i) = header.dim(i);
-                ptr->vox(i) = header.vox(i);
-                ptr->stride(i) = header.stride(i);
-              }
-              ptr->transform() = header.transform();
-              ptr->name() = header.name();
-
-              header.handler->prepare();
-              if (header.handler->nsegments() == 1 && 
-                  header.datatype() == DataType::from<value_type>()) {
-                info ("data in \"" + header.name() + "\" already in required format - mapping as-is");
-                ptr->data = reinterpret_cast<value_type*> (header.handler->segment(0));
-              }
-
-              ptr->init();
-              reset(); 
-
-              if (ptr->block_) {
-                info ("data in \"" + header.name() + "\" not in required format - loading into memory...");
-                Image::Voxel<value_type> vox (header);
-                copy_with_progress_message ("loading data for image \"" + header.name() + "\"...", *this, vox);
-              }
-            }
-
-
-          //! Construct from an Image::Header object
-          /*! If the data type matches and the image only contains one file,
-           * the data will be accessed using memory-mapping. Otherwise, the
-           * data will be loaded into memory. */
-          Buffer (const Image::Header& header, const std::vector<ssize_t>& desired_strides) :
-            ptr (new Prototype), instance (ptr) {
-              assert (header.ndim() >= NDIM);
-              bool strides_match = true;
-              for (size_t i = 0; i < std::min (desired_strides.size(), NDIM); ++i) {
-                if (desired_strides[i]) {
-                  if (Math::abs (desired_strides[i]) != Math::abs (header.stride(i))) {
-                    strides_match = false;
-                    break;
-                  }
-                }
-              }
-
-              if (strides_match) {
-                for (size_t i = 0; i < NDIM; ++i) 
-                  ptr->stride(i) = header.stride(i);
-              }
-              else {
-                for (size_t i = 0; i < NDIM; ++i) 
-                  ptr->stride(i) = 0;
-                for (size_t i = 0; i < std::min (desired_strides.size(), NDIM); ++i)
-                  ptr->stride(i) = desired_strides[i];
-                Stride::sanitise (*ptr);
-              }
-
-              for (size_t i = 0; i < NDIM; ++i) {
-                ptr->dim(i) = header.dim(i);
-                ptr->vox(i) = header.vox(i);
-              }
-              ptr->transform() = header.transform();
-              ptr->name() = header.name();
-
-              header.handler->prepare();
-              if (header.handler->nsegments() == 1 && 
-                  header.datatype() == DataType::from<value_type>()
-                  && strides_match) {
-                info ("data in \"" + header.name() + "\" already in native format - mapping as-is");
-                ptr->data = reinterpret_cast<value_type*> (header.handler->segment(0));
-              }
-
-              ptr->init();
-              reset(); 
-
-              if (ptr->block_) {
-                info ("data in \"" + header.name() + "\" not in native format - loading into memory...");
-                Image::Voxel<value_type> vox (header);
-                copy_with_progress_message ("loading data for image \"" + header.name() + "\"...", *this, vox);
-              }
+            ptr (new Prototype (prot)), 
+            x (ndim()),
+            instance (ptr) { 
+              reset();
             }
 
           //! Copy constructor
@@ -292,22 +240,21 @@ namespace MR {
            * called. */
           Buffer (const Buffer& buf) :
             ptr (buf.ptr), 
-            offset (buf.offset) {
-              memcpy (x, buf.x, sizeof (x));
-            }
+            offset (buf.offset),
+            x (buf.x) { }
 
           const std::string& name () const { return (ptr->name()); }
-          size_t  ndim () const { return (NDIM); }
+          size_t  ndim () const { return (ptr->ndim()); }
           int     dim (size_t axis) const { return (ptr->dim(axis)); }
           float   vox (size_t axis) const { return (ptr->vox(axis)); }
           ssize_t stride (size_t axis) const { return (ptr->stride(axis)); }
 
           const Math::Matrix<float>& transform () const { return (ptr->transform()); }
 
-          Position<Buffer<T,NDIM> > operator[] (size_t axis) { return (Position<Buffer<T,NDIM> > (*this, axis)); }
-          Value<Buffer<T,NDIM> > value () { return (Value<Buffer<T,NDIM> > (*this)); }
+          Position<Buffer<T> > operator[] (size_t axis) { return (Position<Buffer<T> > (*this, axis)); }
+          Value<Buffer<T> > value () { return (Value<Buffer<T> > (*this)); }
 
-          void    reset () { memset (x, 0, NDIM*sizeof(ssize_t)); offset = ptr->start_; }
+          void    reset () { std::fill (x.begin(), x.end(), 0); offset = ptr->start_; }
 
           //! set all voxel values to zero
           void    clear () { memset (ptr->data, 0, __footprint<value_type> (voxel_count (*this))); }
@@ -320,14 +267,16 @@ namespace MR {
 
 
         private:
+          Buffer () : ptr (NULL), offset (0) { }
+
           Prototype* ptr;
           size_t offset;
-          ssize_t x [NDIM];
+          std::vector<ssize_t> x;
 
           Ptr<Prototype> instance;
 
           template <class A> size_t get_offset (const A& pos, size_t n = 0) const 
-          { return (n < NDIM ? stride(n) * pos[n] + get_offset (pos, n+1) : ptr->start_); }
+          { return (n < ndim() ? stride(n) * pos[n] + get_offset (pos, n+1) : ptr->start_); }
 
           ssize_t get_pos (size_t axis) const { return (x[axis]); }
           void    set_pos (size_t axis, ssize_t position) { 
@@ -337,8 +286,8 @@ namespace MR {
           value_type   get_value () const { return (__get<value_type>(ptr->data, offset)); }
           void         set_value (value_type val) { __set<value_type>(ptr->data, offset, val); }
 
-          friend class Position<Buffer<T,NDIM> >;
-          friend class Value<Buffer<T,NDIM> >;
+          friend class Position<Buffer<T> >;
+          friend class Value<Buffer<T> >;
       };
 
     //! @}
