@@ -58,7 +58,7 @@ namespace MR {
                 Math::Vector<T> RH;
                 Math::SH::SH2RH (RH, response);
 
-                Math::Matrix<float> fconv;
+                Math::Matrix<T> fconv;
                 Math::SH::init_transform (fconv, DW_dirs, lmax_data);
                 rconv.allocate (fconv.columns(), fconv.rows());
                 Math::pinv (rconv, fconv);
@@ -79,7 +79,7 @@ namespace MR {
                 M.sub (0,M.rows(),0,fconv.columns()) = fconv;
                 M.sub (0,M.rows(),fconv.columns(),M.columns()) = 0.0;
                 Mt_M.allocate (M.columns(), M.columns());
-                rankN_update (Mt_M, M, CblasTrans);
+                rankN_update (Mt_M, M, CblasTrans, CblasLower, T(1.0), T(0.0));
 
                 info ("constrained spherical deconvolution initiated successfully");
               }

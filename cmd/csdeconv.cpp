@@ -249,7 +249,7 @@ EXECUTE {
   if (header.ndim() != 4) 
     throw Exception ("dwi image should contain 4 dimensions");
 
-  Math::Matrix<float> grad;
+  Math::Matrix<value_type> grad;
 
   std::vector<OptBase> opt = get_options ("grad");
   if (opt.size()) grad.load (opt[0][0].get_string());
@@ -275,7 +275,7 @@ EXECUTE {
   DWI::guess_DW_directions (dwis, bzeros, grad);
   info ("found " + str(dwis.size()) + " diffusion-weighted directions");
 
-  Math::Matrix<float> DW_dirs;
+  Math::Matrix<value_type> DW_dirs;
   DWI::gen_direction_matrix (DW_dirs, grad, dwis);
 
   opt = get_options ("lmax");
@@ -284,13 +284,13 @@ EXECUTE {
 
 
   info (std::string ("setting response function from file \"") + argument[1].get_string() + "\"");
-  Math::Vector<float> response;
+  Math::Vector<value_type> response;
   response.load (argument[1].get_string());
   info ("setting response function using even SH coefficients: " + str(response));
 
 
   opt = get_options ("filter");
-  Math::Vector<float> filter;
+  Math::Vector<value_type> filter;
   if (opt.size()) filter.load (opt[0][0].get_string());
   else {
     filter.allocate (response.size());
@@ -302,11 +302,11 @@ EXECUTE {
 
 
   opt = get_options ("directions");
-  Math::Matrix<float> HR_dirs;
+  Math::Matrix<value_type> HR_dirs;
   if (opt.size()) HR_dirs.load (opt[0][0].get_string());
   else {
     HR_dirs.allocate (300,2);
-    HR_dirs = Math::Matrix<float> (default_directions, 300, 2);
+    HR_dirs = Math::Matrix<value_type> (default_directions, 300, 2);
   }
 
   header.axes.dim(3) = Math::SH::NforL (lmax);
@@ -324,15 +324,15 @@ EXECUTE {
   bool normalise = get_options("normalise").size();
 
   opt = get_options("neg_lambda");
-  float neg_lambda = 1.0;
+  value_type neg_lambda = 1.0;
   if (opt.size()) neg_lambda = opt[0][0].get_float();
 
   opt = get_options("norm_lambda");
-  float norm_lambda = 1.0;
+  value_type norm_lambda = 1.0;
   if (opt.size()) norm_lambda = opt[0][0].get_float();
 
   opt = get_options("threshold");
-  float threshold = 0.1;
+  value_type threshold = 0.1;
   if (opt.size()) threshold = opt[0][0].get_float();
 
   opt = get_options("niter");
