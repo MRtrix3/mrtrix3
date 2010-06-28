@@ -123,7 +123,8 @@ class DataLoader {
                 sh (sh_header),
                 mask (mask_header) { }
 
-    void execute () {
+    void execute () 
+    {
       Queue::Writer::Item item (writer);
       DataSet::Loop loop ("computing amplitudes...", 0, 3 );
       if (mask) {
@@ -144,15 +145,15 @@ class DataLoader {
     Image::Voxel<value_type>  sh;
     const Image::Header* mask;
 
-    void load (Queue::Writer::Item& item) {
+    void load (Queue::Writer::Item& item) 
+    {
       item->pos[0] = sh[0];
       item->pos[1] = sh[1];
       item->pos[2] = sh[2];
 
       DataSet::Loop inner (3); // iterates over SH coefficients
-      unsigned int c = 0;
       for (inner.start (sh); inner.ok(); inner.next (sh))
-        item->data[c++] = sh.value();
+        item->data[sh[3]] = sh.value();
 
       if (!item.write()) throw Exception ("error writing to work queue");
     }
@@ -173,12 +174,13 @@ class Processor {
                reader (queue), dirs_image (dirs_header), dirs(directions),
                lmax (lmax), npeaks(npeaks),
                true_peaks(true_peaks), threshold(threshold),
-               ipeaks(ipeaks_header){}
+               ipeaks(ipeaks_header) { }
 
-    void execute () {
+    void execute () 
+    {
       Queue::Reader::Item item (reader);
 
-      while ((item.read())) {
+      while (item.read()) {
         Math::Vector<value_type> amplitudes;
         std::vector<Direction> peaks_out (npeaks);
 
@@ -187,7 +189,8 @@ class Processor {
         dirs_image[2] = item->pos[2];
 
         if (check_input(item)) {
-          for (dirs_image[3] = 0; dirs_image[3] < dirs_image.dim(3); dirs_image[3]++)
+          DataSet::Loop inner (3); 
+          for (inner.start (dirs_image); inner.ok(); inner.next (dirs_image))
             dirs_image.value() = NAN;
           continue;
         }
@@ -217,7 +220,10 @@ class Processor {
           for (int i = 0; i < npeaks; i++) {
             Point p;
             ipeaks_vox[3] = 3*i;
-            for (int n = 0; n < 3; n++) { p[n] = ipeaks_vox.value(); ipeaks_vox[3]++; }
+            for (int n = 0; n < 3; n++) {
+              p[n] = ipeaks_vox.value();
+              ipeaks_vox[3]++; 
+            }
             p.normalise();
 
             float mdot = 0.0;
@@ -265,20 +271,22 @@ class Processor {
    value_type threshold;
    const Image::Header* ipeaks;
 
-   bool check_input(Queue::Reader::Item &item) {
-
+   bool check_input (Queue::Reader::Item &item) 
+   {
       if (ipeaks) {
         Image::Voxel<value_type> ipeaks_vox (*ipeaks);
         ipeaks_vox[0] = item->pos[0];
         ipeaks_vox[1] = item->pos[1];
         ipeaks_vox[2] = item->pos[2];
         ipeaks_vox[3] = 0;
-        if (isnan (ipeaks_vox.value())) return (true);
+        if (isnan (ipeaks_vox.value()))
+          return (true);
       }
 
       bool no_peaks = true;
-      for (unsigned int i = 0; i < item->data.size(); i++) {
-        if (isnan (item->data[i])) return (true);
+      for (size_t i = 0; i < item->data.size(); i++) {
+        if (isnan (item->data[i]))
+          return (true);
         if (no_peaks)
           if (i && item->data[i] != 0.0) no_peaks = false;
       }
@@ -298,19 +306,18 @@ EXECUTE {
   assert (!sh_header.is_complex());
 
   if (sh_header.ndim() != 4)
-    throw Exception ("Spherical harmonic image should contain 4 dimensions");
+    throw Exception ("spherical harmonic image should contain 4 dimensions");
 
   std::vector<OptBase> opt = get_options ("mask"); // mask
 
-  const Image::Header* mask_header = NULL;
+  Ptr<const Image::Header> mask_header;
   if (opt.size())
     mask_header = new Image::Header (opt[0][0].get_image());
 
   opt = get_options ("seeds");
   Math::Matrix<value_type> dirs;
-  if (opt.size()) {
+  if (opt.size()) 
     dirs.load (opt[0][0].get_string());
-  }
   else {
     dirs.allocate (60,2);
     dirs = Math::Matrix<value_type> (default_directions, 60, 2);
@@ -331,13 +338,14 @@ EXECUTE {
 
   opt = get_options ("threshold");
   float threshold = -INFINITY;
-  if (opt.size()) threshold = opt[0][0].get_float();
+  if (opt.size())
+    threshold = opt[0][0].get_float();
 
   Image::Header header (sh_header);
   header.datatype() = DataType::Float32;
 
   opt = get_options ("peaks");
-  const Image::Header* ipeaks_header = NULL;
+  Ptr<const Image::Header> ipeaks_header;
   if (opt.size()) {
     if (true_peaks.size())
       throw Exception ("you can't specify both a peaks file and orientations to be estimated at the same time");
@@ -347,7 +355,8 @@ EXECUTE {
     if (ipeaks_header->dim(0) != header.axes[0].dim ||
         ipeaks_header->dim(1) != header.axes[1].dim ||
         ipeaks_header->dim(2) != header.axes[2].dim)
-      throw Exception ("dimensions of peaks image \"" + ipeaks_header->name() + "\" do not match that of SH coefficients image \"" + header.name() + "\"");
+      throw Exception ("dimensions of peaks image \"" + ipeaks_header->name() + 
+          "\" do not match that of SH coefficients image \"" + header.name() + "\"");
     npeaks = ipeaks_header->dim(3) / 3;
   }
   header.axes[3].dim = 3 * npeaks;
@@ -355,8 +364,9 @@ EXECUTE {
   const Image::Header directions_header (argument[1].get_image (header));
 
   Queue queue ("find_SH_peaks queue", 100, ItemAllocator (sh_header.dim(3)));
-  DataLoader loader (queue, sh_header, mask_header);
-  Processor processor (queue, directions_header, dirs, Math::SH::LforN (sh_header.dim(3)), npeaks, true_peaks, threshold, ipeaks_header);
+  DataLoader loader (queue, sh_header, mask_header.get());
+  Processor processor (queue, directions_header, dirs, Math::SH::LforN (sh_header.dim(3)), 
+      npeaks, true_peaks, threshold, ipeaks_header.get());
 
   Thread::Exec loader_thread (loader, "loader");
   Thread::Array<Processor> processor_list (processor);
