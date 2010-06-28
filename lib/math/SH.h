@@ -68,7 +68,7 @@ namespace MR {
         public:
           Transform (const Math::Matrix<T>& dirs, int lmax)   { init_transform (SHT, dirs, lmax); iSHT.allocate (SHT.columns(), SHT.rows()); Math::pinv (iSHT, SHT); }
           void set_filter (const Math::Vector<T>& filter)
-          { 
+          {
             int l = 0;
             size_t nl = 1;
             for (size_t n = 0; n < iSHT.rows(); n++) {
@@ -105,7 +105,7 @@ namespace MR {
           Legendre::Plm_sph (AL, lmax, m, T(unit_dir[2]));
           T c = Math::cos (m*az);
           T s = Math::sin (m*az);
-          for (int l = ((m&1) ? m+1 : m); l <= lmax; l+=2) 
+          for (int l = ((m&1) ? m+1 : m); l <= lmax; l+=2)
             value += AL[l] * (c * val[index(l,m)] + s * val[index(l,-m)]);
         }
         return (value);
@@ -139,7 +139,7 @@ namespace MR {
         int lmax = 2*SH.size()+1;
         T AL [lmax+1];
         Legendre::Plm_sph (AL, lmax, 0, T(1.0));
-        for (size_t l = 0; l < SH.size(); l++) RH[l] = SH[l]/ AL[2*l]; 
+        for (size_t l = 0; l < SH.size(); l++) RH[l] = SH[l]/ AL[2*l];
         return (RH);
       }
 
@@ -151,7 +151,7 @@ namespace MR {
         C.allocate (NforL (2*(RH.size()-1)));
         for (int i = 0; i < int (RH.size()); ++i) {
           int l = 2*i;
-          for (int m = -l; m <= l; ++m) 
+          for (int m = -l; m <= l; ++m)
             C[index(l,m)] = RH[i] * SH[index(l,m)];
         }
         return (C);
@@ -183,7 +183,7 @@ namespace MR {
 
 
 
-      template <typename T > class PrecomputedFraction 
+      template <typename T > class PrecomputedFraction
       {
         public:
           PrecomputedFraction () : f1 (0.0), f2 (0.0), p1 (NULL), p2 (NULL) { }
@@ -191,7 +191,7 @@ namespace MR {
       };
 
 
-      template <typename T> class PrecomputedAL 
+      template <typename T> class PrecomputedAL
       {
         public:
           typedef T value_type;
@@ -217,7 +217,7 @@ namespace MR {
               value_type cos_el = Math::cos (n*inc);
               for (int m = 0; m <= lmax; m++) {
                 Legendre::Plm_sph (buf, lmax, m, cos_el);
-                for (int l = ((m&1)?m+1:m); l <= lmax; l+=2) 
+                for (int l = ((m&1)?m+1:m); l <= lmax; l+=2)
                   p[index_mpos(l,m)] = buf[l];
               }
             }
@@ -257,7 +257,7 @@ namespace MR {
             for (int m = 1; m <= lmax; m++) {
               T c = Math::cos (m*az);
               T s = Math::sin (m*az);
-              for (int l = ((m&1) ? m+1 : m); l <= lmax; l+=2) 
+              for (int l = ((m&1) ? m+1 : m); l <= lmax; l+=2)
                 v += get(f,l,m) * (c * val[index(l,m)] + s * val[index(l,-m)]);
             }
             return (v);
@@ -331,13 +331,13 @@ namespace MR {
           T buf [lmax+1];
           for (int m = 0; m <= lmax; m++) {
             Legendre::Plm_sph (buf, lmax, m, cel);
-            for (int l = ((m&1)?m+1:m); l <= lmax; l+=2) 
+            for (int l = ((m&1)?m+1:m); l <= lmax; l+=2)
               AL[index_mpos(l,m)] = buf[l];
           }
         }
 
         amplitude = SH[0] * AL[0];
-        for (int l = 1; l <= (int) lmax; l+=2) {
+        for (int l = 0; l <= (int) lmax; l+=2) {
           const T& v (SH[index(l,0)]);
           amplitude += v * AL[index_mpos(l,0)];
           dSH_del += v * sqrt(T(l*(l+1))) * AL[index_mpos(l,1)];
