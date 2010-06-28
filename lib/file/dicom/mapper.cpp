@@ -70,31 +70,31 @@ namespace MR {
 
 
         bool slicesep_warning = false;
-        bool slicegap_warning = false;
 
-
-        float slice_separation = (*series[0])[0]->slice_thickness;
+        float slice_separation = (*series[0])[0]->slice_spacing;
         for (size_t s = 0; s < series.size(); s++) {
           float previous_distance = (*series[s])[0]->distance;
           for (int i = 1; i < dim[1]; i++) {
             const Image& image (*(*series[s])[i*dim[0]]);
-            if (!slicegap_warning) {
-              if (Math::abs (image.distance - previous_distance - image.slice_thickness) > 1e-4) {
-                error ("WARNING: slice gap detected");
-                slicegap_warning = true;
-                slice_separation = image.distance - previous_distance;
-              }
-            }
+            float sep = image.distance - previous_distance;
 
-            if (!slicesep_warning) {
-              if (Math::abs(image.distance - previous_distance - slice_separation) > 1e-4) {
+            if (finite (slice_separation))
+              if (Math::abs (sep - slice_separation) > 1e-4)
                 slicesep_warning = true;
-                error ("WARNING: slice separation is not constant");
-              }
-            }
+            
+            if (sep > slice_separation)
+              slice_separation = sep;
+
             previous_distance = image.distance;
           }
         }
+        float slice_thickness = (*series[0])[0]->slice_thickness;
+
+        if (slicesep_warning)
+          error ("WARNING: slice separation is not constant");
+
+        if (Math::abs (slice_separation - slice_thickness) > 1e-4)
+          error ("WARNING: slice gap detected");
 
 
 

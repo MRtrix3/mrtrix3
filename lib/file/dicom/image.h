@@ -46,7 +46,7 @@ namespace MR {
 
           size_t   acq_dim[2], dim[2], instance, acq, sequence;
           float    position_vector[3], orientation_x[3], orientation_y[3], orientation_z[3], distance;
-          float    pixel_size[2], slice_thickness, scale_slope, scale_intercept;
+          float    pixel_size[2], slice_thickness, slice_spacing, scale_slope, scale_intercept;
           float    bvalue, G[3];
           size_t   data, bits_alloc, images_in_mosaic, data_size;
           DataType data_type;
@@ -87,7 +87,7 @@ namespace MR {
         orientation_y[0] = orientation_y[1] = orientation_y[2] = NAN;
         orientation_z[0] = orientation_z[1] = orientation_z[2] = NAN;
         distance = NAN;
-        pixel_size[0] = pixel_size[0] = slice_thickness = NAN; 
+        pixel_size[0] = pixel_size[0] = slice_thickness = slice_spacing = NAN; 
         scale_intercept = 0.0;
         scale_slope = 1.0;
         bvalue = G[0] = G[1] = G[2] = NAN;

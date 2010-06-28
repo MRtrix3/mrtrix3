@@ -46,6 +46,7 @@ namespace MR {
           case 0x0018U: 
             switch (item.element) {
               case 0x0050U: slice_thickness = item.get_float()[0]; return;
+              case 0x0088U: slice_spacing = item.get_float()[0]; return;
               case 0x1310U: acq_dim[0] = item.get_uint()[0];
                             acq_dim[1] = item.get_uint()[3];
                             return;
