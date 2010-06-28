@@ -337,7 +337,7 @@ namespace MR {
         }
 
         amplitude = SH[0] * AL[0];
-        for (int l = 0; l <= (int) lmax; l+=2) {
+        for (int l = 2; l <= (int) lmax; l+=2) {
           const T& v (SH[index(l,0)]);
           amplitude += v * AL[index_mpos(l,0)];
           dSH_del += v * sqrt(T(l*(l+1))) * AL[index_mpos(l,1)];
