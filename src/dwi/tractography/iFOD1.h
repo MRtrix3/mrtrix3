@@ -27,6 +27,7 @@
 #include "math/SH.h"
 #include "dwi/tractography/method.h"
 #include "dwi/tractography/shared.h"
+#include "dwi/tractography/calibrator.h"
 
 namespace MR {
   namespace DWI {
@@ -49,6 +50,8 @@ namespace MR {
               properties.set (precomputed, "sh_precomputed");
               if (precomputed) precomputer.init (lmax);
               info ("minimum radius of curvature = " + str(step_size / ( 2.0 * sin (max_angle / 2.0))) + " mm");
+
+              //Calibrator calibrate (max_angle, 0.2);
             }
 
               size_t lmax, max_trials;
@@ -56,7 +59,9 @@ namespace MR {
               Math::SH::PrecomputedAL<float> precomputer;
           };
 
-          iFOD1 (const Shared& shared) : MethodBase (shared), S (shared) { } 
+          iFOD1 (const Shared& shared) : 
+            MethodBase (shared), 
+            S (shared) { } 
 
           bool init () 
           { 
@@ -127,8 +132,13 @@ namespace MR {
           const Shared& S;
           float prev_FOD_val;
 
-          float FOD (const Point& d) const {
-            return (S.precomputer ?  S.precomputer.value (values, d) : Math::SH::value (values, d, S.lmax)); }
+          float FOD (const Point& d) const 
+          {
+            return (S.precomputer ?
+                S.precomputer.value (values, d) :
+                Math::SH::value (values, d, S.lmax)
+                );
+          }
 
           Point rand_dir (const Point& d) { return (random_direction (d, S.max_angle, S.sin_max_angle)); }
       };

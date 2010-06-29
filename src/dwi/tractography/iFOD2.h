@@ -59,10 +59,19 @@ namespace MR {
               Math::SH::PrecomputedAL<float> precomputer;
           };
 
-          iFOD2 (const Shared& shared) : MethodBase (shared), S (shared), mean_sample_num (0), num_sample_runs (0) { } 
-          ~iFOD2 () { info ("mean number of samples per step = " + str (float(mean_sample_num)/float(num_sample_runs))); }
+          iFOD2 (const Shared& shared) :
+            MethodBase (shared), 
+            S (shared), 
+            mean_sample_num (0), 
+            num_sample_runs (0) { } 
 
-          bool init () { 
+          ~iFOD2 () 
+          { 
+            info ("mean number of samples per step = " + str (float(mean_sample_num)/float(num_sample_runs))); 
+          }
+
+          bool init () 
+          { 
             if (!get_data ()) return (false);
 
             if (!S.init_dir) {
@@ -92,7 +101,8 @@ namespace MR {
             return (false);
           }   
 
-          bool next () {
+          bool next () 
+          {
             Point next_pos, next_dir;
 
             float max_val_actual = 0.0;
@@ -130,15 +140,23 @@ namespace MR {
           float prev_prob_val;
           size_t mean_sample_num, num_sample_runs;
 
-          float FOD (const Point& direction) const {
-            return (S.precomputer ?  S.precomputer.value (values, direction) : Math::SH::value (values, direction, S.lmax)); }
+          float FOD (const Point& direction) const 
+          {
+            return (S.precomputer ?  
+                S.precomputer.value (values, direction) : 
+                Math::SH::value (values, direction, S.lmax)
+                );
+          }
 
-          float FOD (const Point& position, const Point& direction) {
-            if (!get_data (position)) return (NAN);
+          float FOD (const Point& position, const Point& direction) 
+          {
+            if (!get_data (position)) 
+              return (NAN);
             return (FOD (direction));
           }
 
-          float rand_path (Point& next_pos, Point& next_dir) {
+          float rand_path (Point& next_pos, Point& next_dir) 
+          {
             next_dir = rand_dir (dir);
             float cos_theta = next_dir.dot (dir);
             if (cos_theta > 1.0) cos_theta = 1.0;

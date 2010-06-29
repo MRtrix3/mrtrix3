@@ -537,8 +537,8 @@ void generate_header(Image::Header& header, const char* path, const float voxel_
 
 
 
-void oversample_header(Image::Header& header, const float os_ratio) {
-
+void oversample_header (Image::Header& header, const float os_ratio) 
+{
   if (os_ratio == 1.0)
     return;
 
@@ -548,7 +548,6 @@ void oversample_header(Image::Header& header, const float os_ratio) {
   }
 
   header.comments.push_back (std::string (("image_oversampling: ") + str(os_ratio)));
-
 }
 
 
