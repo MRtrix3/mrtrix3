@@ -125,7 +125,7 @@ namespace MR {
       layout->addWidget (buttonBox);
       setLayout (layout);
 
-      setWindowTitle (tr("OpenGL information"));
+      setWindowTitle (tr("Image Properties"));
       setSizeGripEnabled (true);
       adjustSize();
     }
