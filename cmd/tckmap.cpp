@@ -79,96 +79,79 @@ OPTIONS = {
 
 
 using namespace MR::DWI;
-using namespace std;
 
 
 #define HERMITE_TENSION 0.1
-#define DIRECTION_INTEGER_MULTIPLIER 100
 #define MAX_TRACKS_READ_FOR_HEADER 1000000
 
 
 
-typedef Thread::Queue<vector<Point> > Queue_tracks;
+typedef Thread::Queue<std::vector<Point> > Queue_tracks;
 
 
 
 
-template <typename T> class Gen_interp_matrix {
-
-  public:
-    Gen_interp_matrix(const size_t os_factor) {
-      if (os_factor > 1) {
-        const size_t dim = os_factor - 1;
-        Math::Hermite<T> interp(HERMITE_TENSION);
-        M = new Math::Matrix<T>(dim, 4);
-        for (size_t i = 0; i != dim; ++i) {
-          interp.set((float)(i + 1) / (float)os_factor);
-          for (size_t j = 0; j != 4; ++j)
-            (*M)(i, j) = interp.coef(j);
-        }
-      } else {
-        M = NULL;
-      }
+template <typename T> Math::Matrix<T> gen_interp_matrix (const size_t os_factor) 
+{
+  Math::Matrix<T> M;
+  if (os_factor > 1) {
+    const size_t dim = os_factor - 1;
+    Math::Hermite<T> interp (HERMITE_TENSION);
+    M.allocate (dim, 4);
+    for (size_t i = 0; i != dim; ++i) {
+      interp.set ((i+1.0) / float(os_factor));
+      for (size_t j = 0; j != 4; ++j)
+        M(i,j) = interp.coef(j);
     }
+  }
+  return (M);
+}
 
-    ~Gen_interp_matrix() {
-      if (M) {
-        delete M;
-        M = NULL;
-      }
-    }
-
-    const Math::Matrix<T>* get_matrix() const {return M;}
-
-  private:
-    Math::Matrix<T>* M;
-
-};
 
 
 
 template <typename T> class Resampler {
 
   public:
-    Resampler(const Math::Matrix<T>* matrix, const size_t c) :
-      M (matrix),
+    Resampler (const Math::Matrix<T>& interp_matrix, const size_t c) :
+      M (interp_matrix),
       columns (c),
-      data (4, c)
+      data (4, c) { }
+
+    ~Resampler() { }
+
+    size_t get_columns () const { return (columns); }
+    bool valid () const { return (M.is_set()); }
+
+    void init (T* a, T* b, T* c) 
     {
-    }
-
-    ~Resampler() {}
-
-    size_t get_columns() const {return columns;}
-    bool valid() const {return M;}
-
-    void init(T* a, T* b, T* c) {
       for (size_t i = 0; i != columns; ++i) {
-        data(0, i) = 0.0;
-        data(1, i) = *a; ++a;
-        data(2, i) = *b; ++b;
-        data(3, i) = *c; ++c;
+        data(0,i) = 0.0;
+        data(1,i) = *a; ++a;
+        data(2,i) = *b; ++b;
+        data(3,i) = *c; ++c;
       }
     }
 
-    void increment(T* a) {
+    void increment (T* a) 
+    {
       for (size_t i = 0; i != columns; ++i) {
-        data(0, i) = data(1, i);
-        data(1, i) = data(2, i);
-        data(2, i) = data(3, i);
-        data(3, i) = *a; ++a;
+        data(0,i) = data(1,i);
+        data(1,i) = data(2,i);
+        data(2,i) = data(3,i);
+        data(3,i) = *a; ++a;
       }
     }
 
-    MR::Math::Matrix<T>& interpolate(Math::Matrix<T>& result) {
-      return (Math::mult(result, *M, data));
+    MR::Math::Matrix<T>& interpolate (Math::Matrix<T>& result) const 
+    {
+      return (Math::mult (result, M, data));
     }
 
   private:
-    const Math::Matrix<T>* M;
+    const Math::Matrix<T>& M;
     size_t columns;
     Math::Matrix<T> data;
-
 };
 
 
@@ -181,61 +164,48 @@ class Voxel
     Voxel(const size_t _x_, const size_t _y_, const size_t _z_) :
       x (_x_),
       y (_y_),
-      z (_z_)
-    {
-    }
+      z (_z_) { }
 
     Voxel(const Point& p) :
       x (Math::round<size_t> (p[0])),
       y (Math::round<size_t> (p[1])),
-      z (Math::round<size_t> (p[2]))
+      z (Math::round<size_t> (p[2])) { }
+
+    Voxel& operator+= (const Voxel& source) 
     {
-    }
-
-    ~Voxel() {}
-
-    Voxel& operator+=(const Voxel& source) {
       x += source.x;
       y += source.y;
       z += source.z;
-      return *this;
+      return (*this);
     }
 
-    bool test_bounds(const Image::Header& H) const {
-      return (x >= 0 && x < size_t(H.dim(0)) && y >= 0 && y < size_t(H.dim(1)) && z >= 0 && z < size_t(H.dim(2)));
+    bool test_bounds(const Image::Header& H) const 
+    {
+      return (x < size_t(H.dim(0)) && y < size_t(H.dim(1)) && z < size_t(H.dim(2)));
     }
 
     size_t x, y, z;
-
 };
 
 
-class Voxel_dir : public Voxel
+class VoxelDir : public Voxel
 {
   public:
-    Voxel_dir() :
-      Voxel()
-    {
-    }
+    VoxelDir () : Voxel () { }
 
-    Voxel_dir (const Point& p) :
-      Voxel(p),
-      dx (0),
-      dy (0),
-      dz (0)
-    {
-    }
-
-    Voxel_dir (const Point& p, const Point& dp) :
+    VoxelDir (const Point& p) :
       Voxel (p),
-      dx (abs<int>(Math::round<size_t> (dp[0]))),
-      dy (abs<int>(Math::round<size_t> (dp[1]))),
-      dz (abs<int>(Math::round<size_t> (dp[2])))
+      dir (0.0, 0.0, 0.0)
     {
     }
 
-    size_t dx, dy, dz;
+    VoxelDir (const Point& p, const Point& dp) :
+      Voxel (p),
+      dir (Math::abs(dp[0]), Math::abs(dp[1]), Math::abs(dp[2]))
+    {
+    }
 
+    Point dir;
 };
 
 
@@ -278,86 +248,93 @@ class TrackLoader
 template <class T> class TrackMapper {
 
   public:
-    TrackMapper (Queue_tracks& input, Thread::Queue< vector<T> >& output, const Image::Header& header, const Math::Matrix<float>* r_m = NULL) :
+    TrackMapper (Queue_tracks& input, Thread::Queue< std::vector<T> >& output, const Image::Header& header, const Math::Matrix<float>& interp_matrix) :
       reader (input),
       writer (output),
       H (header),
-      resample_matrix (r_m)
+      resample_matrix (interp_matrix)
     {
     }
-
-    ~TrackMapper() {}
 
     void execute ()
     {
       Queue_tracks::Reader::Item in (reader);
-      typename Thread::Queue< vector<T> >::Writer::Item out (writer);
+      typename Thread::Queue< std::vector<T> >::Writer::Item out (writer);
       DataSet::Interp::Linear<const Image::Header> interp (H);
+      Resampler<float> R (resample_matrix, 3);
+      Math::Matrix<float> data;
+      if (R.valid()) {
+        assert (resample_matrix.is_set());
+        assert (resample_matrix.rows());
+        data.allocate (resample_matrix.rows(), 3);
+      }
 
       while (in.read()) {
       	out->clear();
-      	vector<Point> tck;
-      	interp_track(tck, *in, interp);
-      	output(tck, H, out);
+        std::vector<Point> tck;
+      	interp_track (tck, *in, interp, R, data);
+      	output (tck, H, out);
 
       	if (!out.write())
-      		throw Exception ("error writing to write-back queue!");
+          throw Exception ("error writing to write-back queue!");
       }
     }
 
 
   private:
     Queue_tracks::Reader                       reader;
-    typename Thread::Queue<vector<T> >::Writer writer;
+    typename Thread::Queue<std::vector<T> >::Writer writer;
     const Image::Header& H;
-    const Math::Matrix<float>* resample_matrix;
+    const Math::Matrix<float>& resample_matrix;
 
 
-    void interp_prepare(vector<Point>& v) {
+    void interp_prepare (std::vector<Point>& v) 
+    {
       const size_t s = v.size();
       v.insert   (v.begin(), v[ 0 ] + (2 * (v[ 0 ] - v[ 1 ])) - (v[ 1 ] - v[ 2 ]));
       v.push_back(           v[ s ] + (2 * (v[ s ] - v[s-1])) - (v[s-1] - v[s-2]));
     }
 
-    void interp_track(vector<Point>& output, vector<Point>& input, DataSet::Interp::Linear<const Image::Header>& interp) {
-      Resampler<float> R (resample_matrix, 3);
-      Math::Matrix<float> data (resample_matrix ? resample_matrix->rows() : 0, 3);
+    void interp_track (std::vector<Point>& output, std::vector<Point>& input, DataSet::Interp::Linear<const Image::Header>& interp, Resampler<float>& R, Math::Matrix<float>& data)
+    {
       if (R.valid()) {
-        interp_prepare(input);
-        R.init(input[0].get(), input[1].get(), input[2].get());
+        interp_prepare (input);
+        R.init (input[0].get(), input[1].get(), input[2].get());
         for (size_t i = 3; i < input.size(); ++i) {
           output.push_back (interp.scanner2voxel (input[i-2]));
-          R.increment(input[i].get());
-          R.interpolate(data);
+          R.increment (input[i].get());
+          R.interpolate (data);
           for (size_t row = 0; row != data.rows(); ++row)
             output.push_back (interp.scanner2voxel (Point (data(row,0), data(row,1), data(row,2))));
         }
         output.push_back (interp.scanner2voxel (input[input.size() - 2]));
-      } else {
-        for (vector<Point>::const_iterator i = input.begin(); i != input.end(); ++i)
+      } 
+      else 
+        for (std::vector<Point>::const_iterator i = input.begin(); i != input.end(); ++i)
           output.push_back (interp.scanner2voxel (*i));
-      }
     }
 
-    void output(vector<Point>&, const Image::Header& H, typename Thread::Queue< vector<T> >::Writer::Item&);
+    void output (std::vector<Point>&, const Image::Header& H, typename Thread::Queue< std::vector<T> >::Writer::Item&);
 
 };
 
 
-template<> void TrackMapper<Voxel>::output(vector<Point>& tck, const Image::Header& H, Thread::Queue< vector<Voxel> >::Writer::Item& out) {
-  for (vector<Point>::const_iterator i = tck.begin(); i != tck.end(); ++i)
-    out->push_back(Voxel(*i));
+template<> void TrackMapper<Voxel>::output (std::vector<Point>& tck, const Image::Header& H, Thread::Queue< std::vector<Voxel> >::Writer::Item& out) 
+{
+  for (std::vector<Point>::const_iterator i = tck.begin(); i != tck.end(); ++i)
+    out->push_back (Voxel(*i));
 }
 
-template<> void TrackMapper<Voxel_dir>::output(vector<Point>& tck, const Image::Header& H, Thread::Queue< vector<Voxel_dir> >::Writer::Item& out) {
+template<> void TrackMapper<VoxelDir>::output (std::vector<Point>& tck, const Image::Header& H, Thread::Queue< std::vector<VoxelDir> >::Writer::Item& out) 
+{
   Point prev_point = tck.front();
-  const vector<Point>::const_iterator last_point = tck.end() - 1;
-  for (vector<Point>::const_iterator i = tck.begin(); i != last_point; ++i) {
-    const Point di = (*(i + 1) - prev_point).normalise() * DIRECTION_INTEGER_MULTIPLIER;
-    out->push_back(Voxel_dir(*i, di));
+  const std::vector<Point>::const_iterator last_point = tck.end() - 1;
+  for (std::vector<Point>::const_iterator i = tck.begin(); i != last_point; ++i) {
+    const Point di = (*(i + 1) - prev_point).normalise();
+    out->push_back (VoxelDir (*i, di));
     prev_point = *i;
   }
-  out->push_back(Voxel_dir(*last_point, (*last_point - prev_point).normalise() * DIRECTION_INTEGER_MULTIPLIER));
+  out->push_back (VoxelDir (*last_point, (*last_point - prev_point).normalise()));
 }
 
 
@@ -366,22 +343,21 @@ template<> void TrackMapper<Voxel_dir>::output(vector<Point>& tck, const Image::
 
 
 
-template <class T> class MapWriter_Base
+template <class T> class MapWriterBase
 {
   public:
-    MapWriter_Base (Thread::Queue<vector<T> >& queue, const Image::Header& header, const float fraction_scaling_factor) :
+    MapWriterBase (Thread::Queue<std::vector<T> >& queue, const Image::Header& header, const float fraction_scaling_factor) :
       reader (queue),
       H (header),
       interp (H),
       scale (fraction_scaling_factor)
     {
     }
-    ~MapWriter_Base() {}
 
-    virtual void execute() {throw Exception ("Running empty virtual function MapWriter_Base::execute()");}
+    virtual void execute () = 0;
 
    protected:
-    typename Thread::Queue<vector<T> >::Reader reader;
+    typename Thread::Queue<std::vector<T> >::Reader reader;
     const Image::Header& H;
     DataSet::Interp::Linear<const Image::Header> interp;
     float scale;
@@ -389,12 +365,12 @@ template <class T> class MapWriter_Base
 };
 
 
-class MapWriter : public MapWriter_Base<Voxel> {
-
+class MapWriter : public MapWriterBase<Voxel> 
+{
   public:
-    MapWriter(Thread::Queue<vector<Voxel> >& queue, const Image::Header& header, const float fraction_scaling_factor) :
-      MapWriter_Base<Voxel>(queue, header, fraction_scaling_factor),
-      buffer (NULL)
+    MapWriter (Thread::Queue<std::vector<Voxel> >& queue, const Image::Header& header, const float fraction_scaling_factor) :
+      MapWriterBase<Voxel> (queue, header, fraction_scaling_factor),
+      buffer (H, 3, "buffer")
     {
     }
 
@@ -402,126 +378,119 @@ class MapWriter : public MapWriter_Base<Voxel> {
     {
       Image::Voxel<float> vox (H);
       DataSet::LoopInOrder loop (vox, "writing image to file...", 0, 3);
-      for (loop.start (vox, *buffer); loop.ok(); loop.next (vox, *buffer))
-        vox.value() = scale * buffer->value();
-      delete buffer; buffer = NULL;
+      for (loop.start (vox, buffer); loop.ok(); loop.next (vox, buffer))
+        vox.value() = scale * buffer.value();
     }
 
     void execute ()
     {
-      Thread::Queue<vector<Voxel> >::Reader::Item item (reader);
-      buffer = new DataSet::Buffer<size_t>(H, 3, "buffer");
+      Thread::Queue<std::vector<Voxel> >::Reader::Item item (reader);
       while (item.read()) {
-        for (vector<Voxel>::const_iterator i = item->begin(); i != item->end(); ++i) {
-          if (i->test_bounds(H)) {
-            (*buffer)[0] = i->x;
-            (*buffer)[1] = i->y;
-            (*buffer)[2] = i->z;
-            buffer->value() += 1;
-          } else {
+        for (std::vector<Voxel>::const_iterator i = item->begin(); i != item->end(); ++i) {
+          if (i->test_bounds (H)) {
+            buffer[0] = i->x;
+            buffer[1] = i->y;
+            buffer[2] = i->z;
+            buffer.value() += 1;
+          } 
+          else 
             debug("Mapping voxel outside image bounds: [" + str(i->x) + " " + str(i->y) + " " + str(i->z) + "]");
-          }
         }
       }
     }
 
   private:
-    DataSet::Buffer<size_t>* buffer;
+    DataSet::Buffer<size_t> buffer;
 
 };
 
 
-class MapWriter_Colour : public MapWriter_Base<Voxel_dir> {
+class MapWriter_Colour : public MapWriterBase<VoxelDir> {
 
   public:
-    MapWriter_Colour(Thread::Queue<vector<Voxel_dir> >& queue, const Image::Header& header, const float fraction_scaling_factor) :
-      MapWriter_Base<Voxel_dir>(queue, header, fraction_scaling_factor),
-      buffer (NULL)
+    MapWriter_Colour(Thread::Queue<std::vector<VoxelDir> >& queue, const Image::Header& header, const float fraction_scaling_factor) :
+      MapWriterBase<VoxelDir>(queue, header, fraction_scaling_factor),
+      buffer (H, 3, "directional_buffer")
     {
     }
 
     ~MapWriter_Colour ()
     {
-      scale /= (float)DIRECTION_INTEGER_MULTIPLIER;
       Image::Voxel<float> vox (H);
       DataSet::LoopInOrder loop (vox, "writing image to file...", 0, 3);
-      for (loop.start (vox, *buffer); loop.ok(); loop.next (vox, *buffer)) {
-        const Voxel temp = buffer->value();
-        vox[3] = 0; vox.value() = scale * temp.x;
-        vox[3] = 1; vox.value() = scale * temp.y;
-        vox[3] = 2; vox.value() = scale * temp.z;
+      for (loop.start (vox, buffer); loop.ok(); loop.next (vox, buffer)) {
+        const Point temp = buffer.value();
+        vox[3] = 0; vox.value() = scale * temp[0];
+        vox[3] = 1; vox.value() = scale * temp[1];
+        vox[3] = 2; vox.value() = scale * temp[2];
       }
-      delete buffer; buffer = NULL;
     }
 
     void execute ()
     {
-      Thread::Queue<vector<Voxel_dir> >::Reader::Item item (reader);
-      buffer = new DataSet::Buffer<Voxel>(H, 3, "directional_buffer");
+      Thread::Queue<std::vector<VoxelDir> >::Reader::Item item (reader);
       while (item.read()) {
-        for (vector<Voxel_dir>::const_iterator i = item->begin(); i != item->end(); ++i) {
-          if (i->test_bounds(H)) {
-            (*buffer)[0] = i->x;
-            (*buffer)[1] = i->y;
-            (*buffer)[2] = i->z;
-            buffer->value() += Voxel(i->dx, i->dy, i->dz);
-          } else {
-            debug("Mapping voxel outside image bounds: [" + str(i->x) + " " + str(i->y) + " " + str(i->z) + "]");
+        for (std::vector<VoxelDir>::const_iterator i = item->begin(); i != item->end(); ++i) {
+          if (i->test_bounds (H)) {
+            buffer[0] = i->x;
+            buffer[1] = i->y;
+            buffer[2] = i->z;
+            buffer.value() += i->dir;
           }
+          else
+            debug ("Mapping voxel outside image bounds: [" + str(i->x) + " " + str(i->y) + " " + str(i->z) + "]");
         }
       }
     }
 
 
   private:
-    DataSet::Buffer<Voxel>*  buffer;
-
+    DataSet::Buffer<Point> buffer;
 };
 
 
 
 
-void generate_header(Image::Header& header, Tractography::Reader& file, const std::vector<float>& voxel_size) {
+void generate_header (Image::Header& header, Tractography::Reader& file, const std::vector<float>& voxel_size) 
+{
 
-  ProgressBar progress ("creating new template image...", 0);
-
-  vector<Point> tck;
+  std::vector<Point> tck;
   size_t track_counter = 0;
 
-  Point min_values( INFINITY,  INFINITY,  INFINITY);
-  Point max_values(-INFINITY, -INFINITY, -INFINITY);
+  Point min_values ( INFINITY,  INFINITY,  INFINITY);
+  Point max_values (-INFINITY, -INFINITY, -INFINITY);
 
-  while (file.next(tck) && track_counter++ < MAX_TRACKS_READ_FOR_HEADER) {
-    for (vector<Point>::const_iterator i = tck.begin(); i != tck.end(); ++i) {
-      min_values[0] = MIN(min_values[0], (*i)[0]);
-      max_values[0] = MAX(max_values[0], (*i)[0]);
-      min_values[1] = MIN(min_values[1], (*i)[1]);
-      max_values[1] = MAX(max_values[1], (*i)[1]);
-      min_values[2] = MIN(min_values[2], (*i)[2]);
-      max_values[2] = MAX(max_values[2], (*i)[2]);
+  {
+    ProgressBar progress ("creating new template image...", 0);
+    while (file.next(tck) && track_counter++ < MAX_TRACKS_READ_FOR_HEADER) {
+      for (std::vector<Point>::const_iterator i = tck.begin(); i != tck.end(); ++i) {
+        min_values[0] = std::min (min_values[0], (*i)[0]);
+        max_values[0] = std::max (max_values[0], (*i)[0]);
+        min_values[1] = std::min (min_values[1], (*i)[1]);
+        max_values[1] = std::max (max_values[1], (*i)[1]);
+        min_values[2] = std::min (min_values[2], (*i)[2]);
+        max_values[2] = std::max (max_values[2], (*i)[2]);
+      }
+      ++progress;
     }
-    ++progress;
   }
 
-  min_values -= Point(3*voxel_size[0], 3*voxel_size[1], 3*voxel_size[2]);
-  max_values += Point(3*voxel_size[0], 3*voxel_size[1], 3*voxel_size[2]);
+  min_values -= Point (3.0*voxel_size[0], 3.0*voxel_size[1], 3.0*voxel_size[2]);
+  max_values += Point (3.0*voxel_size[0], 3.0*voxel_size[1], 3.0*voxel_size[2]);
 
-  header.name() = "tckmap_image_header";
+  header.name() = "tckmap image header";
   header.axes.ndim() = 3;
 
   for (size_t i = 0; i != 3; ++i) {
-    header.axes.dim(i)   = Math::ceil((max_values[i] - min_values[i]) / voxel_size[i]);
-    header.axes.vox(i)   = voxel_size[i];
-    header.axes.units(i) = Image::Axes::millimeters;
+    header.axes.dim(i)    = Math::ceil((max_values[i] - min_values[i]) / voxel_size[i]);
+    header.axes.vox(i)    = voxel_size[i];
+    header.axes.stride(i) = i+1;
+    header.axes.units(i)  = Image::Axes::millimeters;
   }
 
   header.axes.description(0) = Image::Axes::left_to_right;
   header.axes.description(1) = Image::Axes::posterior_to_anterior;
   header.axes.description(2) = Image::Axes::inferior_to_superior;
-
-  header.axes.stride(0) = 1;
-  header.axes.stride(1) = header.axes.dim(0);
-  header.axes.stride(2) = header.axes.dim(0) * header.axes.dim(1);
 
   Math::Matrix<float> t_matrix(4, 4);
   t_matrix(0, 0) = 1.0; t_matrix(0, 1) = 0.0; t_matrix(0, 2) = 0.0; t_matrix(0, 3) = min_values[0];
@@ -534,22 +503,23 @@ void generate_header(Image::Header& header, Tractography::Reader& file, const st
 
 
 
-void oversample_header (Image::Header& header, const std::vector<float>& voxel_size) {
-
-  info("Oversampling header...");
+void oversample_header (Image::Header& header, const std::vector<float>& voxel_size) 
+{
+  info ("oversampling header...");
 
   // FIXME Introducing voxel anisotropy to a template image produces shear distortion
 
   for (size_t i = 0; i != 3; ++i) {
-
     header.transform()(i, 3) += 0.5 * (voxel_size[i] - header.axes.vox(i));
 
     header.axes.dim(i) = Math::ceil(header.axes.dim(i) * header.axes.vox(i) / voxel_size[i]);
     header.axes.vox(i) = voxel_size[i];
-
   }
-
 }
+
+
+
+
 
 
 EXECUTE {
@@ -566,11 +536,12 @@ EXECUTE {
   const bool template_image = get_options("template").size();
 
   std::vector<float> voxel_size;
-  if (get_options("vox").size())
-    voxel_size = parse_floats(get_options("vox")[0][0].get_string());
+  OptionList opt = get_options("vox");
+  if (opt.size())
+    voxel_size = parse_floats(opt[0][0].get_string());
 
   if (voxel_size.size() == 1)
-    voxel_size.assign(3, voxel_size.front());
+    voxel_size.assign (3, voxel_size.front());
   else if (!voxel_size.empty() && voxel_size.size() != 3)
     throw Exception ("The voxel size parameter must either be a single isotropic value, or a list of 3 comma-separated voxel dimensions");
 
@@ -581,16 +552,17 @@ EXECUTE {
   if (template_image) {
     header = get_options("template")[0][0].get_image();
     if (!voxel_size.empty())
-      oversample_header(header, voxel_size);
-  } else {
+      oversample_header (header, voxel_size);
+  }
+  else {
     if (voxel_size.empty())
       throw Exception ("You must provide at least one of either a template image, or a desired voxel size, for the output image");
-    generate_header(header, file, voxel_size);
+    generate_header (header, file, voxel_size);
     file.close();
-    file.open(argument[0].get_string(), properties);
+    file.open (argument[0].get_string(), properties);
   }
 
-  vector<OptBase> opt = get_options ("datatype");
+  opt = get_options ("datatype");
   if (opt.size())
     header.datatype().parse (DataType::identifiers[opt[0][0].get_int()]);
   else
@@ -598,32 +570,34 @@ EXECUTE {
 
   for (Tractography::Properties::iterator i = properties.begin(); i != properties.end(); ++i)
     header.comments.push_back (i->first + ": " + i->second);
-  for (multimap<std::string,std::string>::const_iterator i = properties.roi.begin(); i != properties.roi.end(); ++i)
+  for (std::multimap<std::string,std::string>::const_iterator i = properties.roi.begin(); i != properties.roi.end(); ++i)
     header.comments.push_back ("ROI: " + i->first + " " + i->second);
-  for (vector<std::string>::iterator i = properties.comments.begin(); i != properties.comments.end(); ++i)
+  for (std::vector<std::string>::iterator i = properties.comments.begin(); i != properties.comments.end(); ++i)
     header.comments.push_back ("comment: " + *i);
 
-  float scaling_factor = fibre_fraction ? 1.0 / (float)num_tracks : 1.0;
+  float scaling_factor = fibre_fraction ? 1.0 / float(num_tracks) : 1.0;
   scaling_factor *= properties["step_size"].empty() ? 1.0 : (to<float>(properties["step_size"]) / minvalue(header.vox(0), header.vox(1), header.vox(2)));
   header.comments.push_back("scaling_factor: " + str(scaling_factor));
   info ("Intensity scaling factor set to " + str(scaling_factor));
 
-  unsigned int resample_factor;
-  opt = get_options("resample");
+  size_t resample_factor;
+  opt = get_options ("resample");
   if (opt.size()) {
     resample_factor = opt[0][0].get_int();
     info ("Track interpolation factor manually set to " + str(resample_factor));
-  } else if (step_size) {
-    const float min_vox = minvalue(header.vox(0), header.vox(1), header.vox(2));
-    resample_factor = Math::ceil(step_size / min_vox);
+  } 
+  else if (step_size) {
+    const float min_vox = minvalue (header.vox(0), header.vox(1), header.vox(2));
+    resample_factor = Math::ceil<size_t> (step_size / min_vox);
     info ("Track interpolation factor automatically set to " + str(resample_factor));
     properties["step_size"] = str(step_size / resample_factor);
-  } else {
+  } 
+  else {
     resample_factor = 1;
     info ("Track interpolation off; no track step size information in header");
   }
 
-  Gen_interp_matrix<float> coef_matrix(resample_factor);
+  Math::Matrix<float> interp_matrix (gen_interp_matrix<float> (resample_factor));
 
 
   // TODO Enable segmentwise processing in scenario where not enough memory is available for both the buffer and the memory-mapped output file
@@ -633,7 +607,7 @@ EXECUTE {
     header.axes.ndim() = 4;
     header.axes.dim(3) = 3;
     header.axes.description(3) = "direction";
-    for (size_t i = 0; i != 3; ++i) {
+    for (size_t i = 0; i != 3; ++i) { // TODO: what's this supposed to do?
       if (abs(header.axes.stride(i)) == 1)
         header.axes.stride(3) = header.axes.stride(i) < 0 ? -1 : 1;
       header.axes.stride(i) *= 3;
@@ -643,19 +617,20 @@ EXECUTE {
     const Image::Header header_out = argument[1].get_image (header);
 
     Queue_tracks queue1 ("loaded tracks");
-    Thread::Queue< vector<Voxel_dir> > queue2 ("processed tracks");
+    Thread::Queue< std::vector<VoxelDir> > queue2 ("processed tracks");
 
     TrackLoader            loader (queue1, file, num_tracks);
-    TrackMapper<Voxel_dir> mapper (queue1, queue2, header_out, coef_matrix.get_matrix());
+    TrackMapper<VoxelDir>  mapper (queue1, queue2, header_out, interp_matrix);
     MapWriter_Colour       writer (queue2, header_out, scaling_factor);
 
     Thread::Exec loader_thread (loader, "loader");
-    Thread::Array< TrackMapper<Voxel_dir> > mapper_list (mapper);
+    Thread::Array< TrackMapper<VoxelDir> > mapper_list (mapper);
     Thread::Exec mapper_threads (mapper_list, "mapper");
 
     writer.execute();
 
-  } else {
+  } 
+  else {
 
     header.axes.ndim() = 3;
     header.comments.push_back (std::string (("track ") + str(fibre_fraction ? "fraction" : "count") + " map"));
@@ -663,10 +638,10 @@ EXECUTE {
     const Image::Header header_out = argument[1].get_image (header);
 
     Queue_tracks queue1 ("loaded tracks");
-    Thread::Queue< vector<Voxel> > queue2 ("processed tracks");
+    Thread::Queue< std::vector<Voxel> > queue2 ("processed tracks");
 
     TrackLoader        loader (queue1, file, num_tracks);
-    TrackMapper<Voxel> mapper (queue1, queue2, header_out, coef_matrix.get_matrix());
+    TrackMapper<Voxel> mapper (queue1, queue2, header_out, interp_matrix);
     MapWriter          writer (queue2, header_out, scaling_factor);
 
     Thread::Exec loader_thread (loader, "loader");
