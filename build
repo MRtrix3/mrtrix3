@@ -19,7 +19,6 @@ targets = []
 global todo, headers, object_deps, file_flags, thread_cflags, thread_ldflags, lock, print_lock, stop
 global include_paths
 todo, headers, object_deps, file_flags = {}, {}, {}, {}
-include_paths = []
 lock = threading.Lock()
 print_lock = threading.Lock()
 stop = False
@@ -66,14 +65,6 @@ h_suffix = '.h'
 libname = 'mrtrix'
 
 
-# check if we are compiling a separate project:
-
-mrtrix_dir = os.path.dirname (os.path.realpath(sys.argv[0]))
-if os.path.abspath(mrtrix_dir) == os.path.abspath(os.getcwd()): mrtrix_dir = None
-else:
-  if verbose: 
-    print 'compiling separate project against "' + mrtrix_dir + '"'
-    print ''
 
 # load configuration file:
 try:
@@ -85,13 +76,41 @@ except ImportError:
   sys.exit (1)
 
 
-# if compiling a separate project, modify include paths:
 
-if mrtrix_dir:
-  include_paths = [ misc_dir ]
+
+include_paths = [ misc_dir, cmd_dir ]
+
+# check if we are compiling a separate project:
+
+if os.path.islink (sys.argv[0]):
+  build_script = sys.argv[0]
+  mrtrix_dir = os.path.dirname (build_script)
+  if verbose:
+    print 'compiling separate project against:'
+  while os.path.islink (build_script):
+    build_script = os.path.normpath (os.path.join (mrtrix_dir, os.readlink (build_script)))
+    mrtrix_dir = os.path.dirname (build_script)
+    include_paths += [ os.path.join (mrtrix_dir, misc_dir) ]
+    if verbose: 
+      print '    ' + mrtrix_dir
+  if verbose:
+    print ''
+
   lib_dir = os.path.join (mrtrix_dir, lib_dir)
   misc_dir = os.path.join (mrtrix_dir, misc_dir)
   cache_filename = os.path.join (mrtrix_dir, cache_filename)
+else:
+  mrtrix_dir = None
+
+
+
+# if compiling a separate project, modify include paths:
+
+#if mrtrix_dir:
+  #include_paths = [ misc_dir ]
+  #lib_dir = os.path.join (mrtrix_dir, lib_dir)
+  #misc_dir = os.path.join (mrtrix_dir, misc_dir)
+  #cache_filename = os.path.join (mrtrix_dir, cache_filename)
 
 
 # get version info:
