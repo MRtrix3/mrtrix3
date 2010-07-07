@@ -73,7 +73,7 @@ namespace MR {
 
 
       template <class Set, typename T> 
-        inline Math::Matrix<T>& scanner2image (Math::Matrix<T>& M, const Set& ds) 
+        inline Math::Matrix<T>& image2scanner (Math::Matrix<T>& M, const Set& ds) 
         {
           M = ds.transform();
           return (M);
@@ -81,7 +81,7 @@ namespace MR {
 
 
       template <class Set, typename T> 
-        inline Math::Matrix<T>& image2scanner (Math::Matrix<T>& M, const Set& ds) 
+        inline Math::Matrix<T>& scanner2image (Math::Matrix<T>& M, const Set& ds) 
         {
           int signum;
           Math::Permutation p (4);
@@ -99,7 +99,7 @@ namespace MR {
           M = ds.transform();
           for (size_t i = 0; i < 3; i++) 
             for (size_t j = 0; j < 3; j++) 
-              M(i,j) *= ds.vox(i);
+              M(i,j) *= ds.vox(j);
           return (M);
         }
 

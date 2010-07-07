@@ -133,7 +133,7 @@ namespace MR {
         template <class Functor> Exec (Functor& functor, const std::string& description = "unnamed") : 
           ID (1), name (description), responsible (false) { 
             if (!default_attributes) init();
-            info ("launching thread \"" + name + "\"");
+            info ("launching thread \"" + name + "\"...");
             start (ID[0], functor); 
           }
 
@@ -143,7 +143,7 @@ namespace MR {
         template <class Functor> Exec (Array<Functor>& functor, const std::string& description = "unnamed") : 
           ID (functor.functors.size()+1), name (description), responsible (false) {
             if (!default_attributes) init();
-            info ("launching " + str(ID.size()) + " thread" + (ID.size() > 1 ? "s" : "") +  " \"" + name + "\"");
+            info ("launching " + str(ID.size()) + " thread" + (ID.size() > 1 ? "s" : "") +  " \"" + name + "\"...");
             start (ID[0], functor.first_functor);
             for (size_t i = 1; i < ID.size(); ++i) 
               start (ID[i], *functor.functors[i-1]);
@@ -172,7 +172,7 @@ namespace MR {
         template <class Functor> void start (pthread_t& id, Functor& functor) { 
           if (pthread_create (&id, default_attributes, static_exec<Functor>, static_cast<void*> (&functor))) 
             throw Exception (std::string("error launching thread \"" + name + "\": ") + strerror (errno));
-          debug ("launched thread \"" + name + "\" [ID " + str(id) + "]..."); 
+          debug ("launched thread \"" + name + "\" [ID " + str(id) + "]"); 
         }
 
         template <class Functor> static void* static_exec (void* data) { 
