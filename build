@@ -104,14 +104,6 @@ else:
 
 
 
-# if compiling a separate project, modify include paths:
-
-#if mrtrix_dir:
-  #include_paths = [ misc_dir ]
-  #lib_dir = os.path.join (mrtrix_dir, lib_dir)
-  #misc_dir = os.path.join (mrtrix_dir, misc_dir)
-  #cache_filename = os.path.join (mrtrix_dir, cache_filename)
-
 
 # get version info:
 
