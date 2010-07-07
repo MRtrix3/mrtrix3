@@ -97,10 +97,7 @@ if os.path.islink (sys.argv[0]):
     print ''
 
   lib_dir = os.path.join (mrtrix_dir, lib_dir)
-  misc_dir = os.path.join (mrtrix_dir, misc_dir)
   cache_filename = os.path.join (mrtrix_dir, cache_filename)
-else:
-  mrtrix_dir = None
 
 
 
@@ -130,7 +127,7 @@ if ld_enabled:
 
 
 # other settings:
-include_paths += [ lib_dir, misc_dir, cmd_dir ]
+include_paths += [ lib_dir, cmd_dir ]
 cpp_flags += [ '-Wall' ] + [ '-I' + entry for entry in include_paths ]
 ld_flags += [ '-L' + lib_dir ]
 
