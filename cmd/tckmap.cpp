@@ -155,8 +155,8 @@ typedef Thread::Queue<std::vector<VoxelDir> > VoxelDirQueue;
 
 
 
-template <typename T> class Resampler {
-
+template <typename T> class Resampler 
+{
   public:
     Resampler (const Math::Matrix<T>& interp_matrix, const size_t c) :
       M (interp_matrix),
@@ -407,16 +407,16 @@ class MapWriter : public MapWriterBase<Voxel>
 };
 
 
-class MapWriter_Colour : public MapWriterBase<VoxelDir> {
+class MapWriterColour : public MapWriterBase<VoxelDir> {
 
   public:
-    MapWriter_Colour(VoxelDirQueue& queue, const Image::Header& header, const float fraction_scaling_factor) :
+    MapWriterColour(VoxelDirQueue& queue, const Image::Header& header, const float fraction_scaling_factor) :
       MapWriterBase<VoxelDir>(queue, header, fraction_scaling_factor),
       buffer (H, 3, "directional_buffer")
     {
     }
 
-    ~MapWriter_Colour ()
+    ~MapWriterColour ()
     {
       Image::Voxel<float> vox (H);
       DataSet::LoopInOrder loop (vox, "writing image to file...", 0, 3);
@@ -623,12 +623,11 @@ EXECUTE {
 
     header.axes.ndim() = 4;
     header.axes.dim(3) = 3;
+    header.axes.stride(0) += header.axes.stride(0) > 0 ? 1 : -1;
+    header.axes.stride(1) += header.axes.stride(1) > 0 ? 1 : -1;
+    header.axes.stride(2) += header.axes.stride(2) > 0 ? 1 : -1;
+    header.axes.stride(3) = 1;
     header.axes.description(3) = "direction";
-    for (size_t i = 0; i != 3; ++i) { // TODO: what's this supposed to do?
-      if (abs(header.axes.stride(i)) == 1)
-        header.axes.stride(3) = header.axes.stride(i) < 0 ? -1 : 1;
-      header.axes.stride(i) *= 3;
-    }
     header.comments.push_back (std::string ("coloured track density map"));
 
     const Image::Header header_out = argument[1].get_image (header);
@@ -638,7 +637,7 @@ EXECUTE {
 
     TrackLoader            loader (queue1, file, num_tracks);
     TrackMapper<VoxelDir>  mapper (queue1, queue2, header_out, interp_matrix);
-    MapWriter_Colour       writer (queue2, header_out, scaling_factor);
+    MapWriterColour        writer (queue2, header_out, scaling_factor);
 
     Thread::Exec loader_thread (loader, "loader");
     Thread::Array<TrackMapper<VoxelDir> > mapper_list (mapper);
