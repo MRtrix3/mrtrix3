@@ -30,7 +30,7 @@
 #include "dwi/gradient.h"
 #include "dwi/sdeconv/constrained.h"
 
-using namespace MR; 
+using namespace MR;
 
 SET_VERSION_DEFAULT;
 SET_AUTHOR (NULL);
@@ -67,7 +67,7 @@ ARGUMENTS = {
 };
 
 
-OPTIONS = { 
+OPTIONS = {
   Option ("grad", "supply gradient encoding", "specify the diffusion-weighted gradient scheme used in the acquisition. The program will normally attempt to use the encoding stored in image header.")
     .append (Argument ("encoding", "gradient encoding", "the gradient encoding, supplied as a 4xN text file with each line is in the format [ X Y Z b ], where [ X Y Z ] describe the direction of the applied gradient, and b gives the b-value in units (1000 s/mm^2).").type_file ()),
 
@@ -97,7 +97,7 @@ OPTIONS = {
   Option ("niter", "maximum number of iterations", "the maximum number of iterations to perform for each voxel (default = 50).")
     .append (Argument ("number", "number", "the maximum number of iterations to use.").type_integer (1, 1000, 50)),
 
-  Option::End 
+  Option::End
 };
 
 
@@ -132,14 +132,14 @@ typedef Thread::Queue<Item,Allocator> Queue;
 
 class DataLoader {
   public:
-    DataLoader (Queue& queue, 
-        const Image::Header& dwi_header, 
+    DataLoader (Queue& queue,
+        const Image::Header& dwi_header,
         const Image::Header* mask_header,
         const std::vector<int>& vec_bzeros,
         const std::vector<int>& vec_dwis,
-        bool normalise_to_b0) : 
-      writer (queue), 
-      dwi (dwi_header), 
+        bool normalise_to_b0) :
+      writer (queue),
+      dwi (dwi_header),
       mask (mask_header),
       bzeros (vec_bzeros),
       dwis (vec_dwis),
@@ -151,12 +151,12 @@ class DataLoader {
       if (mask) {
         Image::Voxel<value_type> mask_vox (*mask);
         DataSet::check_dimensions (mask_vox, dwi, 0, 3);
-        for (loop.start (mask_vox, dwi); loop.ok(); loop.next (mask_vox, dwi)) 
-          if (mask_vox.value() > 0.5) 
+        for (loop.start (mask_vox, dwi); loop.ok(); loop.next (mask_vox, dwi))
+          if (mask_vox.value() > 0.5)
             load (item);
       }
       else {
-        for (loop.start (dwi); loop.ok(); loop.next (dwi)) 
+        for (loop.start (dwi); loop.ok(); loop.next (dwi))
           load (item);
       }
     }
@@ -181,7 +181,7 @@ class DataLoader {
 
       for (size_t n = 0; n < dwis.size(); n++) {
         dwi[3] = dwis[n];
-        item->data[n] = dwi.value(); 
+        item->data[n] = dwi.value();
         if (!finite (item->data[n])) return;
         if (item->data[n] < 0.0) item->data[n] = 0.0;
         if (normalise) item->data[n] /= norm;
@@ -201,9 +201,9 @@ class DataLoader {
 
 class Processor {
   public:
-    Processor (Queue& queue, 
-        const Image::Header& header, 
-        const DWI::CSDeconv<value_type>::Shared& shared, 
+    Processor (Queue& queue,
+        const Image::Header& header,
+        const DWI::CSDeconv<value_type>::Shared& shared,
         int max_num_iterations) :
       reader (queue), SH (header), sdeconv (shared), niter (max_num_iterations) { }
 
@@ -214,9 +214,9 @@ class Processor {
 
         int n;
         for (n = 0; n < niter; n++) if (sdeconv.iterate()) break;
-        if (n == niter) 
+        if (n == niter)
           info ("voxel [ " + str(item->pos[0]) + " " + str(item->pos[1]) + " " + str(item->pos[2]) +
-            " ] did not reach full convergence"); 
+            " ] did not reach full convergence");
 
         SH[0] = item->pos[0];
         SH[1] = item->pos[1];
@@ -246,7 +246,7 @@ EXECUTE {
   const Image::Header dwi_header = argument[0].get_image();
   Image::Header header (dwi_header);
 
-  if (header.ndim() != 4) 
+  if (header.ndim() != 4)
     throw Exception ("dwi image should contain 4 dimensions");
 
   Math::Matrix<value_type> grad;
@@ -254,22 +254,20 @@ EXECUTE {
   std::vector<OptBase> opt = get_options ("grad");
   if (opt.size()) grad.load (opt[0][0].get_string());
   else {
-    if (!header.DW_scheme.is_set()) 
+    if (!header.DW_scheme.is_set())
       throw Exception ("no diffusion encoding found in image \"" + header.name() + "\"");
     grad = header.DW_scheme;
   }
 
-  if (grad.rows() < 7 || grad.columns() != 4) 
+  if (grad.rows() < 7 || grad.columns() != 4)
     throw Exception ("unexpected diffusion encoding matrix dimensions");
 
   info ("found " + str(grad.rows()) + "x" + str(grad.columns()) + " diffusion-weighted encoding");
 
-  if (header.dim(3) != (int) grad.rows()) 
+  if (header.dim(3) != (int) grad.rows())
     throw Exception ("number of studies in base image does not match that in encoding file");
 
   DWI::normalise_grad (grad);
-  if (grad.rows() < 7 || grad.columns() != 4) 
-    throw Exception ("unexpected diffusion encoding matrix dimensions");
 
   std::vector<int> bzeros, dwis;
   DWI::guess_DW_directions (dwis, bzeros, grad);
