@@ -57,7 +57,7 @@ class MyApp : public MR::App {
         __command_version, __command_author, __command_copyright), qapp (argc, argv) { parse_arguments(); }
 
     void execute () { 
-      DWI::Window window (get_options(0).size());
+      DWI::Window window (get_options("response").size());
       if (argument.size()) window.set_values (argument[0].get_string());
       window.show();
       if (qapp.exec()) throw Exception ("error running Qt application");
