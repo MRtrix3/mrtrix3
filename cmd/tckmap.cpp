@@ -131,11 +131,9 @@ class VoxelDir : public Voxel
     {
     }
 
-    void set_dir (const Point& dp) 
+    void set_dir (const Point& dp)
     {
-      dir[0] = Math::abs(dp[0]);
-      dir[1] = Math::abs(dp[1]);
-      dir[2] = Math::abs(dp[2]);
+      dir = p;
     }
 
     Point dir;
