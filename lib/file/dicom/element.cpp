@@ -33,7 +33,7 @@ namespace MR {
         group = element = VR = 0;
         size = 0;
         start = data = next = NULL;
-        is_BE = previous_BO_was_BE = false;
+        is_BE = is_transfer_syntax_BE = false;
         end_seq.clear();
         item_number.clear();
 
@@ -98,7 +98,7 @@ namespace MR {
         if (start < (uint8_t*) fmap->address()) throw Exception ("invalid DICOM element");
         if (start + 8 > (uint8_t*) fmap->address() + fmap->size()) return (true);
 
-        is_BE = previous_BO_was_BE;
+        is_BE = is_transfer_syntax_BE;
 
         group = get<uint16_t> (start, is_BE);
 
@@ -189,15 +189,15 @@ namespace MR {
             switch (element) {
               case ELEMENT_TRANSFER_SYNTAX_UID:
                 if (strncmp ((const char*) data, "1.2.840.10008.1.2.1", size) == 0) {
-                  is_BE = false; // explicit VR Little Endian
+                  is_BE = is_transfer_syntax_BE = false; // explicit VR Little Endian
                   is_explicit = true;
                 }
                 else if (strncmp ((const char*) data, "1.2.840.10008.1.2.2", size) == 0) {
-                  is_BE = true; // Explicit VR Big Endian
+                  is_BE = is_transfer_syntax_BE = true; // Explicit VR Big Endian
                   is_explicit = true;
                 }
                 else if (strncmp ((const char*) data, "1.2.840.10008.1.2", size) == 0) {
-                  is_BE = false; // Implicit VR Little Endian
+                  is_BE = is_transfer_syntax_BE = false; // Implicit VR Little Endian
                   is_explicit = false;
                 }
                 else if (strncmp ((const char*) data, "1.2.840.10008.1.2.1.99", size) == 0) {

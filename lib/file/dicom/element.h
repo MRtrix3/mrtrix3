@@ -100,7 +100,7 @@ namespace MR {
           uint8_t* start;
           bool     is_explicit;
           bool     is_BE;
-          bool     previous_BO_was_BE;
+          bool     is_transfer_syntax_BE;
 
           std::vector<uint8_t*>  end_seq;
 
