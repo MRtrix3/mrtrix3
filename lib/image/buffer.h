@@ -81,7 +81,7 @@ namespace MR {
             T* data;
             DataSet::Stride::List stride;
             size_t start;
-            typename Array<T>::Ptr block;
+            Ptr<T,true> block;
         };
 
       public:

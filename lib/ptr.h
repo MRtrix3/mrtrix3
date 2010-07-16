@@ -34,17 +34,6 @@ namespace MR {
   /** \addtogroup Memory 
    * @{ */
 
-  //! The default de-allocator: it simply calls \c delete on \a p
-  template <class T> class SingleDealloc {
-    public:
-      SingleDealloc () throw() { }
-      SingleDealloc (const SingleDealloc&) throw() { }
-      template <class U> SingleDealloc (const SingleDealloc<U>& a) throw() { }
-      ~SingleDealloc () throw() { }
-      void operator() (T* p) { delete p; }
-  };
-
-
 
 
   //! A simple smart pointer implementation
@@ -81,11 +70,11 @@ namespace MR {
    * \sa RefPtr A reference-counting pointer
    * \sa VecPtr A %vector of pointers %to objects
    */
-  template <class T, class Dealloc = SingleDealloc<T> > class Ptr
+  template <class T, bool is_array = false> class Ptr
   {
     public:
-      explicit Ptr (T* p = NULL, const Dealloc& deallocator = Dealloc()) throw () : ptr (p), dealloc (deallocator) { }
-      ~Ptr () { dealloc (ptr); }
+      explicit Ptr (T* p = NULL) throw () : ptr (p) { }
+      ~Ptr () { dealloc(); }
 
       //! test whether the pointer is non-NULL
       operator bool() const throw ()       { return (ptr); }
@@ -95,7 +84,7 @@ namespace MR {
       //! Assignment operator
       /*! This will free the object currently pointed to by the Ptr<T> (if
        * any), and manage the new object instead. */
-      Ptr&    operator= (T* p)   { dealloc (ptr); ptr = p; return (*this); }
+      Ptr&    operator= (T* p)   { dealloc(); ptr = p; return (*this); }
       bool    operator== (const Ptr& R) const throw () { return (ptr == R.ptr); }
       bool    operator!= (const Ptr& R) const throw () { return (ptr != R.ptr); }
       T&      operator*() const throw ()   { return (*ptr); }
@@ -115,7 +104,7 @@ namespace MR {
 
     private:
       T*   ptr;
-      Dealloc dealloc;
+      void dealloc () { if (is_array) delete [] ptr; else delete ptr; }
 
       Ptr (const Ptr& R) : ptr (NULL) { assert (0); };
       Ptr& operator= (const Ptr& R) { assert (0); return (*this); }
@@ -125,12 +114,12 @@ namespace MR {
 
 
 
-  template <class T, class Dealloc = SingleDealloc<T> > class RefPtr
+  template <class T, bool is_array = false> class RefPtr
   {
     public:
-      explicit RefPtr (T* p = NULL, const Dealloc& deallocator = Dealloc()) throw () : ptr (p), count (new size_t), dealloc (deallocator) { *count = 1; }
-      RefPtr (const RefPtr& R) throw () : ptr (R.ptr), count (R.count), dealloc (R.dealloc) { ++*count; }
-      ~RefPtr () { if (*count == 1) { dealloc (ptr); delete count; } else --*count; }
+      explicit RefPtr (T* p = NULL) throw () : ptr (p), count (new size_t) { *count = 1; }
+      RefPtr (const RefPtr& R) throw () : ptr (R.ptr), count (R.count) { ++*count; }
+      ~RefPtr () { if (*count == 1) { dealloc(); delete count; } else --*count; }
 
       operator bool() const throw ()       { return (ptr); }
       bool     operator! () const throw () { return (!ptr); }
@@ -138,7 +127,7 @@ namespace MR {
       RefPtr&    operator= (const RefPtr& R)
       { 
         if (this == &R) return (*this);
-        if (*count == 1) { dealloc (ptr); delete count; } 
+        if (*count == 1) { dealloc(); delete count; } 
         else --*count; 
         ptr = R.ptr; count = R.count; ++*count;
         return (*this);
@@ -146,7 +135,7 @@ namespace MR {
       RefPtr&    operator= (T* p)
       {
         if (ptr == p) return (*this);
-        if (*count == 1) dealloc (ptr); 
+        if (*count == 1) dealloc(); 
         else { --*count; count = new size_t; *count = 1; }
         ptr = p; 
         return (*this); 
@@ -162,16 +151,16 @@ namespace MR {
 
       bool    operator< (const RefPtr& R) const { return (*ptr < *R.ptr); }
 
-      template <class U, class V> friend class RefPtr;
-      template <class U, class V> RefPtr (const RefPtr<U,V>& R) throw () : ptr (R.ptr), count (R.count), dealloc (R.dealloc) { ++*count; }
-      template <class U, class V> RefPtr& operator= (const RefPtr<U,V>& R) 
+      template <class U, bool> friend class RefPtr;
+      template <class U> RefPtr (const RefPtr<U,is_array>& R) throw () : ptr (R.ptr), count (R.count) { ++*count; }
+      template <class U> RefPtr<U,is_array>& operator= (const RefPtr<U,is_array>& R) 
       { 
         if (this == &R) return (*this);
-        if (*count == 1) { dealloc (ptr); delete count; } else --*count; 
+        if (*count == 1) { dealloc(); delete count; } else --*count; 
         ptr = R.ptr; count = R.count; ++*count; return (*this) ; 
       } 
 
-      friend std::ostream& operator<< (std::ostream& stream, const RefPtr<T,Dealloc>& R)
+      friend std::ostream& operator<< (std::ostream& stream, const RefPtr<T,is_array>& R)
       {
         stream << "(" << R.ptr << "): ";
         if (R) stream << *R.ptr;
@@ -183,11 +172,12 @@ namespace MR {
     private:
       T*      ptr;
       size_t* count;
-      Dealloc dealloc;
+
+      void dealloc () { if (is_array) delete [] ptr; else delete ptr; }
   };
 
 
-  template <class T, class Dealloc = SingleDealloc<T> > class VecPtr 
+  template <class T, bool is_array = false> class VecPtr 
   {
     public:
       typedef typename std::vector<T*>::iterator iterator;
@@ -195,9 +185,8 @@ namespace MR {
       typedef typename std::vector<T*>::reference reference;
       typedef typename std::vector<T*>::const_reference const_reference;
 
-      VecPtr (const Dealloc& deallocator = Dealloc()) : dealloc (deallocator) { }
-      VecPtr (size_t num, const Dealloc deallocator = Dealloc()) : 
-        V (num), dealloc (deallocator) { for (size_t i = 0; i < size(); ++i) V[i] = NULL; }
+      VecPtr () { }
+      VecPtr (size_t num) : V (num) { for (size_t i = 0; i < size(); ++i) V[i] = NULL; }
       ~VecPtr() { for (size_t i = 0; i < size(); ++i) dealloc (V[i]); }
 
       size_t size () const { return (V.size()); }
@@ -235,43 +224,13 @@ namespace MR {
 
     private:
       std::vector<T*> V;
-      Dealloc dealloc;
+      void dealloc (T* p) { if (is_array) delete [] p; else delete p; }
   };
 
 
 
 
 
-
-  //! Equivalent classes for pointers to arrays
-  /*! Use this construct when using the Ptr or RefPtr classes to refer to
-   * array pointers. The difference between these and the regular Ptr anf
-   * RefPtr classes is that the array versions use the delete [] operator.
-   *
-   * \code
-   * Array<Item>::Ptr pointer (new Item [128]);
-   * Array<Item>::RefPtr refpointer (new Item [12]);
-   * \endcode
-   * This is used instead of the equivalent non-array version:
-   * \code
-   * Ptr<Item> pointer (new Item);
-   * RefPtr<Item> refpointer (new Item);
-   * \endcode
-   *
-   * These Array versions ensure that the items are deallocated using the
-   * array \c delete[] operator, rather than the single item \c delete
-   * operator. Incorrect matching of \c new and \c delete can otherwise cause
-   * programs to crash when \c delete is called.
-   */
-  template <class T> class Array {
-    public:
-      class Dealloc {
-        public:
-          void operator() (T* p) { delete [] p; }
-      };
-      typedef MR::Ptr<T, Dealloc>     Ptr;
-      typedef MR::RefPtr<T, Dealloc>  RefPtr;
-  };
 
   /** @} */
 }

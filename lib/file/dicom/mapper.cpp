@@ -71,7 +71,11 @@ namespace MR {
 
         bool slicesep_warning = false;
 
+        const float slice_thickness = (*series[0])[0]->slice_thickness;
         float slice_separation = (*series[0])[0]->slice_spacing;
+        if (!finite(slice_separation))
+          slice_separation = slice_thickness;
+
         for (size_t s = 0; s < series.size(); s++) {
           float previous_distance = (*series[s])[0]->distance;
           for (int i = 1; i < dim[1]; i++) {
@@ -82,13 +86,12 @@ namespace MR {
               if (Math::abs (sep - slice_separation) > 1e-4)
                 slicesep_warning = true;
             
-            if (sep > slice_separation)
+            if (!finite (slice_separation) || sep > slice_separation + 1e-4)
               slice_separation = sep;
 
             previous_distance = image.distance;
           }
         }
-        float slice_thickness = (*series[0])[0]->slice_thickness;
 
         if (slicesep_warning)
           error ("WARNING: slice separation is not constant");
@@ -141,21 +144,21 @@ namespace MR {
         H.axes.stride(0) = current_axis+1;
         H.axes.dim(0) = image.dim[0];
         H.axes.vox(0) = image.pixel_size[0];
-        H.axes.description(0) = MR::Image::Axes::left_to_right;
+        H.axes.description(0) = "row";
         H.axes.units(0) = MR::Image::Axes::millimeters;
         ++current_axis;
 
         H.axes.stride(1) = current_axis+1;
         H.axes.dim(1) = image.dim[1];
         H.axes.vox(1) = image.pixel_size[1];
-        H.axes.description(1) = MR::Image::Axes::posterior_to_anterior;
+        H.axes.description(1) = "column";
         H.axes.units(1) = MR::Image::Axes::millimeters;
         ++current_axis;
 
         H.axes.stride(2) = current_axis+1;
         H.axes.dim(2) = dim[1];
         H.axes.vox(2) = slice_separation;
-        H.axes.description(2) = MR::Image::Axes::inferior_to_superior;
+        H.axes.description(2) = "slice";
         H.axes.units(2) = MR::Image::Axes::millimeters;
         ++current_axis;
 

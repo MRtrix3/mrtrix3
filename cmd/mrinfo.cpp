@@ -30,44 +30,51 @@ SET_AUTHOR (NULL);
 SET_COPYRIGHT (NULL);
 
 DESCRIPTION = {
-  "display header information",
+  "display header information, or extract specific information from the header",
   NULL
 };
 
 ARGUMENTS = {
-  Argument ("image", "input image", "the input image.", AllowMultiple).type_image_in (),
+  Argument ("image", "input image", "the input image.").type_image_in (),
   Argument::End
 };
 
 
 
 OPTIONS = {
-  Option ("grad", "output DW scheme", "write DW gradient scheme to file").append (Argument ("file", "DW encoding file", "the DW gradient scheme file.").type_file ()),
+
+  Option ("transform", "output transform`", 
+      "write transform matrix to file")
+    .append (Argument ("file", "transform file", 
+          "the transform matrix file.").type_file ()),
+
+  Option ("gradient", "output DW scheme", 
+      "write DW gradient scheme to file")
+    .append (Argument ("file", "DW encoding file", 
+          "the DW gradient scheme file.").type_file ()),
+
   Option::End
 };
 
 
 
 EXECUTE {
+  const Image::Header header = argument[0].get_image (); 
 
-  std::vector<OptBase> opt = get_options ("grad");
+  OptionList opt = get_options ("gradient");
   if (opt.size()) {
-    if (argument.size() != 1)
-      throw Exception ("Please specify a single image when using the \"-grad\" option");
-
-    const Image::Header header = argument[0].get_image (); 
-
     if (!header.DW_scheme.is_set()) 
       error ("no gradient file found for image \"" + header.name() + "\"");
-
     header.DW_scheme.save (opt[0][0].get_string());
-  
+    return;
   }
-  else {
-    for (size_t i = 0; i < argument.size(); i++) {
-      const Image::Header header = argument[i].get_image (); 
-      std::cout << header.description();
-    }
+
+  opt = get_options ("transform");
+  if (opt.size()) {
+    header.transform().save (opt[0][0].get_string());
+    return;
   }
+
+  std::cout << header.description();
 }
 

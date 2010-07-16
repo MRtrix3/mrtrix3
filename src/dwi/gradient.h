@@ -90,9 +90,9 @@ namespace MR {
     {
       dirs.allocate (dwi.size(),2);
       for (size_t i = 0; i < dwi.size(); i++) {
-        T norm = Point (grad(dwi[i],0), grad(dwi[i],1), grad(dwi[i],2)).norm();
-        dirs(i,0) = atan2 (grad(dwi[i],1), grad(dwi[i],0));
-        dirs(i,1) = acos (grad(dwi[i],2)/norm);
+        T n = norm (grad.row(dwi[i]).sub(0,3));
+        dirs(i,0) = Math::atan2 (grad(dwi[i],1), grad(dwi[i],0));
+        dirs(i,1) = Math::acos (grad(dwi[i],2)/n);
       }
       return (dirs);
     }

@@ -73,20 +73,20 @@ OPTIONS = {
 };
 
 
+typedef float value_type;
+
+
 
 class Direction {
   public:
     Direction () : a (NAN) { }
     Direction (const Direction& d) : a (d.a), v (d.v) { }
-    Direction (float phi, float theta) : a (1.0), v (cos(phi)*sin(theta), sin(phi)*sin(theta), cos(theta)) { }
-    float a;
-    Point v;
+    Direction (value_type phi, value_type theta) : a (1.0), v (cos(phi)*sin(theta), sin(phi)*sin(theta), cos(theta)) { }
+    value_type a;
+    Point<value_type> v;
     bool operator<(const Direction& d) const { return (a > d.a); }
 };
 
-
-
-typedef float value_type;
 
 
 
@@ -218,7 +218,7 @@ class Processor {
           ipeaks_vox[2] = item->pos[2];
 
           for (int i = 0; i < npeaks; i++) {
-            Point p;
+            Point<value_type> p;
             ipeaks_vox[3] = 3*i;
             for (int n = 0; n < 3; n++) {
               p[n] = ipeaks_vox.value();
@@ -226,9 +226,9 @@ class Processor {
             }
             p.normalise();
 
-            float mdot = 0.0;
+            value_type mdot = 0.0;
             for (size_t n = 0; n < all_peaks.size(); n++) {
-              float f = Math::abs (p.dot (all_peaks[n].v));
+              value_type f = Math::abs (p.dot (all_peaks[n].v));
               if (f > mdot) {
                 mdot = f;
                 peaks_out[i] = all_peaks[n];
@@ -238,9 +238,9 @@ class Processor {
         }
         else if (true_peaks.size()) {
           for (int i = 0; i < npeaks; i++) {
-            float mdot = 0.0;
+            value_type mdot = 0.0;
             for (size_t n = 0; n < all_peaks.size(); n++) {
-              float f = Math::abs (all_peaks[n].v.dot (true_peaks[i].v));
+              value_type f = Math::abs (all_peaks[n].v.dot (true_peaks[i].v));
               if (f > mdot) {
                 mdot = f;
                 peaks_out[i] = all_peaks[n];
@@ -337,7 +337,7 @@ EXECUTE {
   if (true_peaks.size()) npeaks = true_peaks.size();
 
   opt = get_options ("threshold");
-  float threshold = -INFINITY;
+  value_type threshold = -INFINITY;
   if (opt.size())
     threshold = opt[0][0].get_float();
 

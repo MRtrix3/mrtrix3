@@ -34,7 +34,7 @@ namespace MR {
     namespace Interp {
 
       extern const Math::Matrix<float> NoOp;
-      extern const std::vector<int> NoOverSampling;
+      extern const std::vector<int> AutoOverSample;
 
       //! \addtogroup interp
       // @{
@@ -80,14 +80,15 @@ namespace MR {
        *
        * \sa DataSet::Interp::reslice()
        */
-      template <template <class Set> class Interpolator, class Set, class RefSet> 
+      template <template <class Set, typename T> class Interpolator, class Set, class RefSet, typename T> 
         class Reslice {
           public:
             typedef typename Set::value_type value_type;
+            typedef T pos_type;
 
             Reslice (Set& original, RefSet& reference, 
-                const Math::Matrix<float>& operation = NoOp, 
-                const std::vector<int>& oversample = NoOverSampling, 
+                const Math::Matrix<pos_type>& operation = NoOp, 
+                const std::vector<int>& oversample = AutoOverSample, 
                 const std::string& description = "") :
               D (original),
               interp (D),
@@ -98,7 +99,7 @@ namespace MR {
                 N[0] = reference.dim(0); N[1] = reference.dim(1); N[2] = reference.dim(2);
                 V[0] = reference.vox(0); V[1] = reference.vox(1); V[2] = reference.vox(2); 
 
-                Math::Matrix<float> Mr(4,4);
+                Math::Matrix<pos_type> Mr(4,4);
                 if (operation.is_set()) {
                   Math::mult (Mr, operation, reference.transform());
                   for (size_t i = 0; i < 3; i++) 
@@ -107,7 +108,7 @@ namespace MR {
                 }
                 else DataSet::Transform::voxel2scanner (Mr, reference);
 
-                Math::Matrix<float> Mo(4,4);
+                Math::Matrix<pos_type> Mo(4,4);
                 DataSet::Transform::scanner2voxel (Mo, original);
                 Math::mult (M, Mo, Mr);
 
@@ -118,7 +119,7 @@ namespace MR {
                   OS[0] = oversample[0]; OS[1] = oversample[1]; OS[2] = oversample[2]; 
                 }
                 else {
-                  Point y, x0, x1(0.0,0.0,0.0);
+                  Point<value_type> y, x0, x1(0.0,0.0,0.0);
                   DataSet::Transform::apply (x0, M, x1);
                   x1[0] = 1.0; DataSet::Transform::apply (y, M, x1); OS[0] = Math::ceil (0.999 * (y-x0).norm()); x1[0] = 0.0;
                   x1[1] = 1.0; DataSet::Transform::apply (y, M, x1); OS[1] = Math::ceil (0.999 * (y-x0).norm()); x1[1] = 0.0;
@@ -130,7 +131,7 @@ namespace MR {
                   oversampling = true;
                   norm = 1.0;
                   for (size_t i = 0; i < 3; ++i) {
-                    inc[i] = 1.0/float(OS[i]);
+                    inc[i] = 1.0/pos_type(OS[i]);
                     from[i] = 0.5*(inc[i]-1.0);
                     norm *= OS[i];
                   }
@@ -146,22 +147,22 @@ namespace MR {
             ssize_t stride (size_t axis) const { return (D.stride (axis)); }
             float   vox (size_t axis) const { return (axis < 3 ? V[axis] : D.vox(axis)); }
 
-            const Math::Matrix<float>& transform () const { return (transform_matrix); }
+            const Math::Matrix<pos_type>& transform () const { return (transform_matrix); }
 
             void    reset () { x[0] = x[1] = x[2] = 0; for (size_t n = 3; n < D.ndim(); ++n) D[n] = 0; }
 
             value_type value () { 
               if (oversampling) {
-                Point d (x[0]+from[0], x[1]+from[1], x[2]+from[2]);
+                Point<pos_type> d (x[0]+from[0], x[1]+from[1], x[2]+from[2]);
                 value_type ret = 0.0;
-                Point s;
+                Point<pos_type> s;
                 for (int z = 0; z < OS[2]; ++z) {
                   s[2] = d[2] + z*inc[2];
                   for (int y = 0; y < OS[1]; ++y) {
                     s[1] = d[1] + y*inc[1];
                     for (int x = 0; x < OS[0]; ++x) {
                       s[0] = d[0] + x*inc[0];
-                      Point pos;
+                      Point<pos_type> pos;
                       DataSet::Transform::apply (pos, M, s);
                       interp.voxel (pos);
                       if (!interp) continue;
@@ -172,33 +173,37 @@ namespace MR {
                 return (ret * norm);
               }
               else {
-                Point pos;
+                Point<pos_type> pos;
                 Transform::apply (pos, M, x);
                 interp.voxel (pos); 
                 return (!interp ? 0.0 : interp.value()); 
               }
             }
-            Position<Reslice<Interpolator,Set,RefSet> > operator[] (size_t axis) { return (Position<Reslice<Interpolator,Set,RefSet> > (*this, axis)); }
+
+            Position<Reslice<Interpolator,Set,RefSet,pos_type> > operator[] (size_t axis) 
+            { 
+              return (Position<Reslice<Interpolator,Set,RefSet,pos_type> > (*this, axis)); 
+            }
 
           private:
             Set& D;
-            Interpolator<Set> interp;
+            Interpolator<Set,pos_type> interp;
             size_t N[3];
             ssize_t x[3];
             bool oversampling;
             int OS[3];
-            float from[3], inc[3];
-            float norm;
+            pos_type from[3], inc[3];
+            pos_type norm;
 
-            float V[3];
-            Math::Matrix<float> M, transform_matrix;
+            pos_type V[3];
+            Math::Matrix<pos_type> M, transform_matrix;
             std::string descriptor;
 
             ssize_t get_pos (size_t axis) const { return (axis < 3 ? x[axis] : D[axis]); }
             void set_pos (size_t axis, ssize_t position) { if (axis < 3) x[axis] = position; else D[axis] = position; }
             void move_pos (size_t axis, ssize_t increment) { if (axis < 3) x[axis] += increment; else D[axis] += increment; }
 
-            friend class Position<Reslice<Interpolator,Set,RefSet> >;
+            friend class Position<Reslice<Interpolator,Set,RefSet,pos_type> >;
         };
 
 
@@ -219,14 +224,14 @@ namespace MR {
        * DataSet::Interp::reslice<DataSet::Interp::Linear> (destination, source);
        * \endcode
        */
-      template <template <class Set> class Interpolator, class Set1, class Set2>
+      template <template <class Set, typename T> class Interpolator, class Set1, class Set2, typename T>
         void reslice (
             Set1& destination, 
             Set2& source, 
-            const Math::Matrix<float>& operation = NoOp, 
-            const std::vector<int>& oversampling = NoOverSampling)
+            const Math::Matrix<T>& operation = NoOp, 
+            const std::vector<int>& oversampling = AutoOverSample)
         {
-          Reslice<Interpolator,Set2,Set1> interp (source, destination, operation);
+          Reslice<Interpolator,Set2,Set1,T> interp (source, destination, operation);
           DataSet::copy_with_progress (destination, interp);
         }
 

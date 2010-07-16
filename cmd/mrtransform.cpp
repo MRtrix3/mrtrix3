@@ -39,6 +39,9 @@ SET_COPYRIGHT (NULL);
 
 DESCRIPTION = {
  "apply spatial transformations or reslice images.",
+ "In most cases, this command will only modify the transform matrix, "
+   "without reslicing the image. Only the \"reslice\" option will "
+   "actually modify the image data.",
   NULL
 };
 
@@ -53,26 +56,49 @@ const char* interp_choices[] = { "nearest", "linear", "cubic", NULL };
 
 OPTIONS = {
 
-  Option ("transform", "the transform to use", "specified the 4x4 transform to apply.")
-    .append (Argument ("transform", "transform", "the transform to apply, in the form of a 4x4 ascii file.").type_file ()),
+  Option ("transform", "the transform to use", 
+      "specify the 4x4 transform to apply.")
+    .append (Argument ("transform", "transform", 
+          "the transform to apply, in the form of a 4x4 ascii file.").type_file ()),
 
-  Option ("replace", "replace transform", "replace the current transform by that specified, rather than applying it to the current transform."),
+  Option ("replace", "replace transform", 
+      "replace the current transform by that specified, rather than applying it "
+      "to the current transform."),
 
-  Option ("inverse", "use inverse transform", "invert the specified transform before using it."),
+  Option ("inverse", "use inverse transform", 
+      "invert the specified transform before using it."),
 
-  Option ("template", "template image", "reslice the input image to match the specified template image.")
-    .append (Argument ("image", "image", "the template image.").type_image_in ()),
+  Option ("reslice", "reslice to template image", 
+      "reslice the input image to match the specified template image.")
+    .append (Argument ("template", "template", "the template image.").type_image_in ()),
 
-  Option ("reference", "reference image for transform", "in case the transform supplied maps from the input image onto a reference image, use this option to specify the reference. Noe that this implicitly sets the -replace option.")
+  Option ("reference", "reference image for transform", 
+      "if the transform supplied maps from the input image onto a reference "
+      "image (i.e. not to scanner coordinates), use this option to specify "
+      "the reference image. Note that this implicitly sets the -replace option.")
     .append (Argument ("image", "image", "the reference image.").type_image_in ()),
 
-  Option ("flipx", "assume x-flipped transform", "assume the transform is supplied assuming a coordinate system with the x-axis reversed relative to the MRtrix convention (i.e. x increases from right to left). This is required to handle transform matrices produced by FSL's FLIRT command. This is only used in conjunction with the -reference option."),
+  Option ("flipx", "assume x-flipped transform", 
+      "assume the transform is supplied assuming a coordinate system with the "
+      "x-axis reversed relative to the MRtrix convention (i.e. x increases "
+      "from right to left). This is required to handle transform matrices "
+      "produced by FSL's FLIRT command. This is only used in conjunction with "
+      "the -reference option."),
 
-  Option ("interp", "interpolation method", "set the interpolation method. Valid choices are nearest, linear and cubic (default is linear).")
-    .append (Argument ("method", "method", "the interpolation method").type_choice (interp_choices)),
+  Option ("interp", "interpolation method", 
+      "set the interpolation method to use when reslicing (default: linear).")
+    .append (Argument ("method", "method", "the interpolation method.").type_choice (interp_choices)),
 
-  Option ("oversample", "oversample", "set the oversampling factor, as a vector of 3 integers.")
-    .append (Argument ("factors", "factors", "the oversampling factors.").type_sequence_int()),
+  Option ("oversample", "oversample", 
+      "set the oversampling factor to use when reslicing (i.e. the "
+      "number of samples to take per voxel along each spatial dimension). "
+      "This should be supplied as a vector of 3 integers. By default, the "
+      "oversampling factor is determined based on the differences between "
+      "input and output voxel sizes."
+    ).append (Argument ("factors", "factors", "the oversampling factors.").type_sequence_int()),
+
+  Option ("datatype", "data type", "specify output image data type (default: same as input image).")
+    .append (Argument ("spec", "specifier", "the data type specifier.").type_choice (DataType::identifiers)),
 
   Option::End 
 };
@@ -96,6 +122,9 @@ EXECUTE {
 
   const Image::Header header_in (argument[0].get_image());
   Image::Header header (header_in);
+
+  opt = get_options ("datatype");
+  if (opt.size()) header.datatype().parse (DataType::identifiers[opt[0][0].get_int()]);
 
   if (T.is_set()) {
 
@@ -133,7 +162,16 @@ EXECUTE {
   }
 
 
-  opt = get_options("template"); // need to reslice
+  if (T.is_set()) {
+    if (replace) header.transform() = T;
+    else {
+      Math::Matrix<float> M;
+      Math::mult (M, T, header.transform());
+      header.transform() = M;
+    }
+  }
+
+  opt = get_options("reslice"); // need to reslice
   if (opt.size()) {
     Image::Header template_header (opt[0][0].get_image());
     header.axes[0].dim = template_header.axes[0].dim;
@@ -145,17 +183,9 @@ EXECUTE {
     header.transform() = template_header.transform();
     header.comments.push_back ("resliced to reference image \"" + template_header.name() + "\"");
 
-    Math::Matrix<float> Mi(4,4);
-    DataSet::Transform::scanner2voxel (Mi, header_in);
-
-    Math::Matrix<float> M, M2(4,4);
-    DataSet::Transform::voxel2scanner (M2, template_header);
-    Math::mult (M, Mi, M2);
-
     int interp = 1;
     opt = get_options ("interp");
     if (opt.size()) interp = opt[0][0].get_int();
-
 
     std::vector<int> oversample;
     opt = get_options ("oversample");
@@ -181,15 +211,6 @@ EXECUTE {
   }
   else {
     // straight copy:
-
-    if (T.is_set()) {
-      if (replace) header.transform() = T;
-      else {
-        Math::Matrix<float> M;
-        Math::mult (M, T, header.transform());
-        header.transform() = M;
-      }
-    }
 
     const Image::Header header_out = argument[1].get_image (header);
     Image::Voxel<float> in (header_in);

@@ -26,7 +26,7 @@ namespace MR {
   namespace DataSet {
     namespace Interp {
       const Math::Matrix<float> NoOp;
-      const std::vector<int> NoOverSampling;
+      const std::vector<int> AutoOverSample;
     }
   }
 }
