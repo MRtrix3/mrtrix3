@@ -872,7 +872,7 @@ if static:
 
 # write out configuration:
 
-cache_filename = os.path.join (os.path.dirname(sys.argv[0]), 'configuration.py')
+cache_filename = os.path.join (os.path.dirname(sys.argv[0]), 'configuration')
 
 sys.stdout.write ('\nwriting configuration to file \'' + cache_filename + '\': ')
 

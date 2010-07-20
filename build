@@ -8,7 +8,7 @@ import threading
 import subprocess 
 
 
-cache_filename = 'configuration.py'
+config_file = 'configuration'
 
 
 system = None
@@ -66,38 +66,46 @@ libname = 'mrtrix'
 
 
 
-# load configuration file:
-try:
-  exec 'from ' + cache_filename[:-3] + ' import *'
-except ImportError:
-  print 'no configuration file found!'
-  print 'please run ./configure prior to invoking this script'
-  print ''
-  sys.exit (1)
-
-
-
 
 include_paths = [ misc_dir, cmd_dir ]
 
 # check if we are compiling a separate project:
+mrtrix_dir = '.'
+build_script = sys.argv[0]
+separate_project = False
 
-if os.path.islink (sys.argv[0]):
-  build_script = sys.argv[0]
-  mrtrix_dir = os.path.dirname (build_script)
-  if verbose:
+def get_real_name (path):
+  if os.path.islink (path): return os.readlink (path)
+  else: return (path)
+
+while os.path.abspath (os.path.dirname (get_real_name (build_script))) != os.path.abspath (mrtrix_dir):
+  if verbose and not separate_project:
     print 'compiling separate project against:'
-  while os.path.islink (build_script):
-    build_script = os.path.normpath (os.path.join (mrtrix_dir, os.readlink (build_script)))
-    mrtrix_dir = os.path.dirname (build_script)
-    include_paths += [ os.path.join (mrtrix_dir, misc_dir) ]
-    if verbose: 
-      print '    ' + mrtrix_dir
+  separate_project = True
+  build_script = os.path.normpath (os.path.join (mrtrix_dir, get_real_name (build_script)))
+  mrtrix_dir = os.path.dirname (build_script)
+  include_paths += [ os.path.join (mrtrix_dir, misc_dir) ]
+  if verbose: 
+    print '    ' + mrtrix_dir
+
+if separate_project:
+  lib_dir = os.path.join (mrtrix_dir, lib_dir)
+  config_file = os.path.join (mrtrix_dir, config_file)
+
   if verbose:
     print ''
 
-  lib_dir = os.path.join (mrtrix_dir, lib_dir)
-  cache_filename = os.path.join (mrtrix_dir, cache_filename)
+
+
+
+# load configuration file:
+try:
+  exec (open (config_file))
+except IOError:
+  print '''no configuration file found!
+please run "./configure" prior to invoking this script
+'''
+  sys.exit (1)
 
 
 
@@ -226,7 +234,7 @@ class Entry:
       list_headers (src_header)
       file_flags[cc_file] = file_flags[src_header]
     else: self.deps = self.deps.union (list_headers (cc_file))
-    self.deps.add (cache_filename)
+    self.deps.add (config_file)
 
     skip = False
     if 'T' in file_flags[cc_file]: flags += thread_cflags
