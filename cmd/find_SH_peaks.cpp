@@ -51,7 +51,7 @@ ARGUMENTS = {
 
 OPTIONS = {
   Option ("num", "number of peaks", "the number of peaks to extract (default is 3).")
-    .append (Argument ("peaks", "number", "the number of peaks").type_integer (0, INT_MAX, 3)),
+    .append (Argument ("peaks", "number", "the number of peaks").type_integer (0, std::numeric_limits<int>::max(), 3)),
 
   Option ("direction", "specify direction", "the direction of a peak to estimate. The algorithm will attempt to find the same number of peaks as have been specified using this option.", Optional | AllowMultiple)
     .append (Argument ("phi", "azimuthal angle", "the azimuthal angle of the direction (in degrees).").type_float (-INFINITY, INFINITY, 0.0))

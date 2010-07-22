@@ -67,7 +67,9 @@ namespace MR {
        * 
        * It is also possible to supply an additional transform to be applied to
        * the data, using the \a operation parameter. The transform will be
-       * applied in the scanner frame to each source position. 
+       * applied in the scanner coordinate system, and should map scanner-space
+       * coordinates in the original image to scanner-space coordinates in the
+       * reference image.
        *
        * To deal with possible aliasing due to sparse sampling of a
        * high-resolution image, the Reslice object may perform over-sampling,
@@ -99,18 +101,19 @@ namespace MR {
                 N[0] = reference.dim(0); N[1] = reference.dim(1); N[2] = reference.dim(2);
                 V[0] = reference.vox(0); V[1] = reference.vox(1); V[2] = reference.vox(2); 
 
-                Math::Matrix<pos_type> Mr(4,4);
-                if (operation.is_set()) {
-                  Math::mult (Mr, operation, reference.transform());
-                  for (size_t i = 0; i < 3; i++) 
-                    for (size_t j = 0; j < 3; j++) 
-                      Mr(i,j) *= reference.vox(i);
-                }
-                else DataSet::Transform::voxel2scanner (Mr, reference);
+                Math::Matrix<pos_type> Mr, Mo;
+                DataSet::Transform::voxel2scanner (Mr, reference);
+                DataSet::Transform::voxel2scanner (Mo, original);
 
-                Math::Matrix<pos_type> Mo(4,4);
-                DataSet::Transform::scanner2voxel (Mo, original);
-                Math::mult (M, Mo, Mr);
+                if (operation.is_set()) {
+                  Math::Matrix<T> Mt;
+                  Math::mult (Mt, operation, Mo);
+                  Mo.swap (Mt);
+                }
+
+                Math::Matrix<pos_type> iMo;
+                Math::LU::inv (iMo, Mo);
+                Math::mult (M, iMo, Mr);
 
                 if (oversample.size()) {
                   assert (oversample.size() == 3);

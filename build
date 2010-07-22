@@ -8,7 +8,7 @@ import threading
 import subprocess 
 
 
-config_file = 'configuration'
+config_file = 'config.default'
 
 
 system = None
@@ -31,21 +31,6 @@ def disp (msg):
   
 
 
-# parse command-line:
-
-for arg in sys.argv[1:]:
-  if   '-verbose'.startswith(arg): verbose = True
-  elif '-dependencies'.startswith(arg): dependencies = True
-  elif arg[0] == '-':
-    print 'unknown command-line option "' + arg + '"'
-    sys.stdout.flush()
-    sys.exit (1)
-  elif arg == 'clean':
-    targets = [ 'clean' ]
-    break
-  else: targets.append(arg)
-
-
 
 
 # common definitions:
@@ -63,6 +48,7 @@ icon_dep = 'icons/icon.rc'
 cpp_suffix = '.cpp'
 h_suffix = '.h'
 libname = 'mrtrix'
+config_suffix = ''
 
 
 
@@ -98,14 +84,40 @@ if separate_project:
 
 
 
+
+
+# parse command-line:
+for arg in sys.argv[1:]:
+  if   '-verbose'.startswith(arg): verbose = True
+  elif '-dependencies'.startswith(arg): dependencies = True
+  elif arg[0] == '-':
+    print 'unknown command-line option "' + arg + '"'
+    sys.stdout.flush()
+    sys.exit (1)
+  elif arg == 'clean':
+    targets = [ 'clean' ]
+    break
+  elif os.path.isfile (os.path.join (mrtrix_dir, "config." + arg)):
+    config_file = os.path.join (mrtrix_dir, "config." + arg)
+    config_suffix = '__' + arg
+  else: targets.append(arg)
+
+
+
+
+
 # load configuration file:
 try:
+  if verbose:
+    print 'reading configuration from "' + config_file + '"...'
   exec (open (config_file))
 except IOError:
   print '''no configuration file found!
 please run "./configure" prior to invoking this script
 '''
   sys.exit (1)
+
+
 
 
 
@@ -123,11 +135,13 @@ if ld_enabled:
       elif line[1] == 'MRTRIX_MICRO_VERSION': micro = line[2]
   f.close()
 
-  libname += '-' + major + '_' + minor + '_' + micro
+  libname += '-' + major + '_' + minor + '_' + micro + config_suffix
 
   ld_flags += [ '-l' + libname ]
   libname = lib_prefix + libname + lib_suffix
 
+obj_suffix = config_suffix + obj_suffix
+exe_suffix = config_suffix + exe_suffix
 
 # Qt4 settings:
 #qt4_cflags += [ '-I' + entry for entry in qt4_include_path ]
@@ -391,7 +405,7 @@ def list_headers (file):
     for line in fd:
       line = line.strip()
       if line.startswith('#include'):
-        line = line[8:].strip()
+        line = line[8:].split ('//')[0].split ('/*')[0].strip()
         if line[0] == '"':
           line = line[1:].rstrip('"')
           if line == 'thread/exec.h':

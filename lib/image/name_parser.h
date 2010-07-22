@@ -62,7 +62,7 @@ namespace MR {
     class NameParser {
       public:
         NameParser () : folder (NULL) { } 
-        void                       parse (const std::string& imagename, size_t max_num_sequences = SIZE_MAX);
+        void                       parse (const std::string& imagename, size_t max_num_sequences = std::numeric_limits<size_t>::max());
         size_t                     num () const { return (array.size()); }
         std::string                spec () const { return (specification); }
         const NameParserItem&      operator[] (size_t i) const { return (array[i]); }
@@ -131,7 +131,7 @@ namespace MR {
         size_t max_name_size;
 
       public:
-        std::vector<int> parse_scan_check (const std::string& specifier, size_t max_num_sequences = SIZE_MAX);
+        std::vector<int> parse_scan_check (const std::string& specifier, size_t max_num_sequences = std::numeric_limits<size_t>::max());
         void             scan (NameParser& parser);
 
         std::vector<int> count () const;

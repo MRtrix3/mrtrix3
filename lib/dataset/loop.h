@@ -120,7 +120,7 @@ namespace MR {
          * supplied to next(). If \a from_axis and \a to_axis are specified,
          * the Loop will iterate from axis \a from_axis up to but \b not
          * including axis \a to_axis. */
-        Loop (size_t from_axis = 0, size_t to_axis = SIZE_MAX) : 
+        Loop (size_t from_axis = 0, size_t to_axis = std::numeric_limits<size_t>::max()) : 
           from_ (from_axis), to_ (to_axis), cont_ (true) { }
 
         //! Constructor with progress status
@@ -130,7 +130,7 @@ namespace MR {
          * next(). If \a from_axis and \a to_axis are specified, the Loop will
          * iterate from axis \a from_axis up to but \b not including axis \a
          * to_axis. */
-        Loop (const std::string& message, size_t from_axis = 0, size_t to_axis = SIZE_MAX) :
+        Loop (const std::string& message, size_t from_axis = 0, size_t to_axis = std::numeric_limits<size_t>::max()) :
           from_ (from_axis), to_ (to_axis), cont_ (true), progress_ (message, 1) { }
 
         //! Start the loop to iterate over a single DataSet
@@ -394,7 +394,7 @@ namespace MR {
          * axes that will be looped over: the Loop will then iterate from axis
          * \a from_axis up to but \b not including axis \a to_axis. */
         template <class Set>
-          LoopInOrder (const Set& set, size_t from_axis = 0, size_t to_axis = SIZE_MAX) : 
+          LoopInOrder (const Set& set, size_t from_axis = 0, size_t to_axis = std::numeric_limits<size_t>::max()) : 
             axes_ (Stride::order (set, from_axis, to_axis)), cont_ (true) { }
 
         //! Constructor from DataSet strides with progress status
@@ -405,7 +405,7 @@ namespace MR {
          * will be looped over: the Loop will then iterate from axis \a
          * from_axis up to but \b not including axis \a to_axis. */
         template <class Set>
-          LoopInOrder (const Set& set, const std::string& message, size_t from_axis = 0, size_t to_axis = SIZE_MAX) :
+          LoopInOrder (const Set& set, const std::string& message, size_t from_axis = 0, size_t to_axis = std::numeric_limits<size_t>::max()) :
             axes_ (Stride::order (set, from_axis, to_axis)), cont_ (true), progress_ (message, 1) { }
 
         //! Start the loop to iterate over a single DataSet

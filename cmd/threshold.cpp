@@ -56,10 +56,10 @@ OPTIONS = {
     .append (Argument ("value", "value", "the percentile at which to threshold.").type_float (0.0, 100.0, 95.0)),
 
   Option ("top", "top N voxels", "provide a mask of the N top-valued voxels")
-    .append (Argument ("N", "N", "the number of voxels.").type_integer (0, INT_MAX, 100)),
+    .append (Argument ("N", "N", "the number of voxels.").type_integer (0, std::numeric_limits<int>::max(), 100)),
 
   Option ("bottom", "bottom N voxels", "provide a mask of the N bottom-valued voxels")
-    .append (Argument ("N", "N", "the number of voxels.").type_integer (0, INT_MAX, 100)),
+    .append (Argument ("N", "N", "the number of voxels.").type_integer (0, std::numeric_limits<int>::max(), 100)),
 
   Option ("invert", "invert mask.", "invert output binary mask."),
 

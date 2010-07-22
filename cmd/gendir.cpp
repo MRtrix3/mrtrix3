@@ -40,14 +40,14 @@ DESCRIPTION = {
 };
 
 ARGUMENTS = {
-  Argument ("ndir", "number of directions", "the number of directions to generate.").type_integer (6, INT_MAX, 60),
+  Argument ("ndir", "number of directions", "the number of directions to generate.").type_integer (6, std::numeric_limits<int>::max(), 60),
   Argument ("dirs", "output directions file", "the text file to write the directions to, as [ az el ] pairs.").type_file(),
   Argument::End
 };
 
 OPTIONS = { 
   Option ("power", "power law exponent", "specify exponent to use for repulsion power law.")
-    .append (Argument ("exp", "exponent", "exponent").type_integer(2, INT_MAX, 128)),
+    .append (Argument ("exp", "exponent", "exponent").type_integer(2, std::numeric_limits<int>::max(), 128)),
 
   Option ("niter", "max number of iterations", "specify the maximum number of iterations to perform.")
     .append (Argument ("num", "number", "maximum number of iterations to perform").type_integer (1, 1000000, 10000)),

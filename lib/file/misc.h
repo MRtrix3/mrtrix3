@@ -29,6 +29,7 @@
 #include <fcntl.h>
 
 #include "mrtrix.h"
+#include "types.h"
 #include "file/path.h"
 
 #define TMPFILE_ROOT "mrtrix-tmp-"
@@ -50,7 +51,7 @@ namespace MR {
 
 
 
-    inline void create (const std::string& filename, off64_t size = 0) 
+    inline void create (const std::string& filename, int64_t size = 0) 
     {
       int fid = open64 (filename.c_str(), O_CREAT | O_RDWR | O_EXCL, 0644);
       if (fid < 0) throw Exception ("error creating file \"" + filename + "\": " + strerror(errno));
@@ -63,7 +64,7 @@ namespace MR {
 
 
 
-    inline void resize (const std::string& filename, off64_t size)
+    inline void resize (const std::string& filename, int64_t size)
     {
       debug ("resizing file \"" + filename + "\" to " + str (size) + "...");
 
@@ -87,7 +88,7 @@ namespace MR {
 
 
 
-    inline std::string create_tempfile (off64_t size = 0, const char* suffix = NULL) 
+    inline std::string create_tempfile (int64_t size = 0, const char* suffix = NULL) 
     {
       debug ("creating temporary file of size " + str(size));
 

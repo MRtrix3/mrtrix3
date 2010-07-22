@@ -69,7 +69,7 @@ namespace MR {
             case 'B': forward = true;  return (3);
             case 'E': forward = false; return (3);
           }
-          return (SIZE_MAX);
+          return (std::numeric_limits<size_t>::max());
         }
 
 
@@ -156,7 +156,8 @@ namespace MR {
               for (size_t n = 0; n < 4; n++) {
                 bool forward = true;
                 size_t ax = char2order (c[n], forward);
-                if (ax == SIZE_MAX) throw Exception ("invalid order specifier in MRI image \"" + H.name() + "\"");
+                if (ax == std::numeric_limits<size_t>::max()) 
+                  throw Exception ("invalid order specifier in MRI image \"" + H.name() + "\"");
                 H.axes.stride(ax) = n+1;
                 if (!forward) H.axes.stride(ax) = -H.axes.stride(ax);
               }

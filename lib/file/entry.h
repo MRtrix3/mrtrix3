@@ -25,16 +25,18 @@
 
 #include <string>
 
+#include "types.h"
+
 namespace MR {
   namespace File {
 
     class Entry {
       public:
-        Entry (const std::string& fname, off64_t offset = 0) :
+        Entry (const std::string& fname, int64_t offset = 0) :
           name (fname), start (offset) { }
 
         std::string name;
-        off64_t start;
+        int64_t start;
     };
 
 

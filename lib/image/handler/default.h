@@ -23,6 +23,7 @@
 #ifndef __image_handler_default_h__
 #define __image_handler_default_h__
 
+#include "types.h"
 #include "image/handler/base.h"
 #include "file/mmap.h"
 
@@ -39,7 +40,7 @@ namespace MR {
 
         protected:
           std::vector<RefPtr<File::MMap> > files;
-          off64_t bytes_per_segment;
+          int64_t bytes_per_segment;
 
           void map_files ();
           void copy_to_mem ();

@@ -26,10 +26,6 @@
 #include <stdint.h>
 #include <complex>
 
-#ifndef HAVE_LARGE_FILE_SUPPORT
-  typedef off_t off64_t;
-#endif
-
 namespace MR {
 
   typedef float  float32;

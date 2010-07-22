@@ -8,7 +8,7 @@ nogui = False
 noshared = False
 static = False
 verbose = False
-
+profile_name = None
 
 for arg in sys.argv[1:]:
   if '-debug'.startswith (arg): debug = True
@@ -19,31 +19,54 @@ for arg in sys.argv[1:]:
     static = True
     noshared = True
   elif '-verbose'.startswith (arg): verbose = True
+  elif arg[0] != '-':
+    if profile_name != None: 
+      print 'configure: too many names supplied'
+      sys.exit (1)
+    profile_name = arg
   else: 
     print """\
-usage: [ENV] ./configure [-debug] [-profile] [-nogui] [-noshared]'
+usage: [ENV] ./configure [name] [-debug] [-profile] [-nogui] [-noshared]'
 
 In most cases, a simple invocation should work:
+
    $ ./configure
+
+If a name is provided, the configuration will be written to a different file, 
+which can then be used by the build script. For example:
+
+   $ ./configure testing -debug
+
+will generate the file 'config.testing', which can be used with the build
+script as follows:
+
+   $ ./build testing
+
+Note that all intermediate files will be named according to the name of the
+configuration to avoid conflict with any other configuration.
+
+
+OPTIONS:
+
+    -debug       enable debugging symbols.
+
+    -profile     enable profiling.
+
+    -nogui       disable GUI components.
+
+    -noshared    disable shared library generation.
+
+    -static      produce statically-linked executables.
+
+    -verbose     enable more informative output.
+
+
+ENVIRONMENT VARIABLES:
 
 For non-standard setups, you may need to supply additional
 information using environment variables. For example, to set
 the compiler, use:
    $ CXX=/usr/local/bin/g++-4.1 ./configure
-
-The '-debug' option will produce a configuration with debug symbols enabled.
-
-The '-profile' option will produce a configuration with profiling enabled.
-      note: this will also enable the -debug option.
-
-The '-nogui' option will produce a configuration without any GUI components.
-
-The '-noshared' option will produce a configuration without a shared library.
-
-The '-static' option will produce a statically-linked configuration.
-
-The '-verbose' option will cause configure to output more information.
-
 
 The following environment variables can be set:
 
@@ -95,6 +118,11 @@ PATH            Set the path to use during the configure process.
 """
     sys.exit (0)
   
+
+if not profile_name:
+  profile_name = 'default'
+
+
 global logfile, config_report
 logfile = open (os.path.join (os.path.dirname(sys.argv[0]), 'configure.log'), 'w')
 config_report = ''
@@ -395,22 +423,20 @@ except:
 
 
 
-report ('Checking for large file support: ')
+report ('Checking for 64-bit integer type: ')
 try:
   compile ('''
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <unistd.h>
+#include <stdint.h>
 
 int main() { 
-  off64_t t = 0; 
+  int64_t t = 0; 
   return (t); 
 }
 ''')
-  cpp_flags += [ '-DHAVE_LARGE_FILE_SUPPORT' ]
   report ('yes\n')
 except:
   report ('no\n')
+  error ('<stdint.h> is not C99 compliant - it does not define a int64_t type.')
 
 
 
@@ -847,10 +873,8 @@ WARNING: not all required OpenGL extensions are supported (see above).
 
 # add debugging or profiling flags if requested:
 
-cpp_flags += [ '-D__STDC_LIMIT_MACROS' ]
-
 if profile:
-  cpp_flags += [ '-g', '-pg' ]
+  cpp_flags += [ '-g', '-pg', '-DNDEBUG' ]
   ld_flags += [ '-g', '-pg' ]
   ld_lib_flags += [ '-g', '-pg' ]
 elif debug:
@@ -872,7 +896,7 @@ if static:
 
 # write out configuration:
 
-cache_filename = os.path.join (os.path.dirname(sys.argv[0]), 'configuration')
+cache_filename = os.path.join (os.path.dirname(sys.argv[0]), 'config.' + profile_name)
 
 sys.stdout.write ('\nwriting configuration to file \'' + cache_filename + '\': ')
 

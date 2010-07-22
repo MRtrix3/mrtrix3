@@ -32,7 +32,7 @@ namespace MR {
     // @{
 
     template <class Set, class Set2> 
-      void copy (Set& destination, Set2& source, size_t from_axis = 0, size_t to_axis = SIZE_MAX) 
+      void copy (Set& destination, Set2& source, size_t from_axis = 0, size_t to_axis = std::numeric_limits<size_t>::max()) 
       { 
         LoopInOrder loop (destination, from_axis, to_axis);
         for (loop.start (destination, source); loop.ok(); loop.next (destination, source)) 
@@ -42,7 +42,7 @@ namespace MR {
 
 
     template <class Set, class Set2> 
-      void copy_with_progress (Set& destination, Set2& source, size_t from_axis = 0, size_t to_axis = SIZE_MAX) 
+      void copy_with_progress (Set& destination, Set2& source, size_t from_axis = 0, size_t to_axis = std::numeric_limits<size_t>::max()) 
       { 
         LoopInOrder loop (destination, "copying from \"" + shorten (source.name()) + "\" to \"" + shorten (destination.name()) + "\"...", from_axis, to_axis);
         for (loop.start (destination, source); loop.ok(); loop.next (destination, source)) 
@@ -51,7 +51,7 @@ namespace MR {
 
 
     template <class Set, class Set2> 
-      void copy_with_progress_message (const std::string& message, Set& destination, Set2& source, size_t from_axis = 0, size_t to_axis = SIZE_MAX) 
+      void copy_with_progress_message (const std::string& message, Set& destination, Set2& source, size_t from_axis = 0, size_t to_axis = std::numeric_limits<size_t>::max()) 
       { 
         LoopInOrder loop (destination, message, from_axis, to_axis);
         for (loop.start (destination, source); loop.ok(); loop.next (destination, source)) 

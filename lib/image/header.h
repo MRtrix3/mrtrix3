@@ -26,6 +26,7 @@
 #include <map>
 
 #include "ptr.h"
+#include "types.h"
 #include "data_type.h"
 #include "image/axis.h"
 #include "dataset/misc.h"
@@ -129,11 +130,11 @@ namespace MR {
         template <typename T> float scale_to_storage (T val) const   { return (scale_to_storage (val, scale, offset)); }
 
         //! returns the memory footprint of the Image
-        off64_t footprint (size_t from_dim = 0, size_t up_to_dim = SIZE_MAX) { 
+        int64_t footprint (size_t from_dim = 0, size_t up_to_dim = std::numeric_limits<size_t>::max()) { 
           return (footprint_for_count (DataSet::voxel_count (*this, from_dim, up_to_dim))); }
 
         //! returns the memory footprint of a DataSet
-        off64_t footprint (const char* specifier) { return (footprint_for_count (DataSet::voxel_count (*this, specifier))); }
+        int64_t footprint (const char* specifier) { return (footprint_for_count (DataSet::voxel_count (*this, specifier))); }
 
         static const Header open (const std::string& image_name, bool read_write = false);
         static const Header create (const std::string& image_name, const Header& template_header);
@@ -147,7 +148,7 @@ namespace MR {
 
         void merge (const Header& H);
 
-        off64_t footprint_for_count (off64_t count) { return (dtype == DataType::Bit ? (count+7)/8 : count * dtype.bytes()); }
+        int64_t footprint_for_count (int64_t count) { return (dtype == DataType::Bit ? (count+7)/8 : count * dtype.bytes()); }
 
       public:
         const char*                format;

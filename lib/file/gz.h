@@ -32,6 +32,7 @@
 #include <zlib.h>
 
 #include "mrtrix.h"
+#include "types.h"
 #include "exception.h"
 #include "file/confirm.h"
 #include "file/path.h"
@@ -64,9 +65,9 @@ namespace MR {
 
         bool is_open () const { return (gz); }
         bool eof () const { assert (gz); return (gzeof (gz)); }
-        off64_t tell () const { assert (gz); return (gztell64 (gz)); }
+        int64_t tell () const { assert (gz); return (gztell64 (gz)); }
 
-        void seek (off64_t offset) { 
+        void seek (int64_t offset) { 
           assert (gz);
           z_off_t pos = gzseek64 (gz, offset, SEEK_SET); 
           if (pos < 0) throw Exception ("error seeking in file \"" + filename + "\": " + error()); 
@@ -115,7 +116,7 @@ namespace MR {
           return (val);
         }
 
-        template <typename T> T get (off64_t offset) { seek (offset); return (get<T>()); }
+        template <typename T> T get (int64_t offset) { seek (offset); return (get<T>()); }
 
         template <typename T> T* get (T* buf, size_t n) { 
           if (read (buf, n*sizeof(T)) != n*sizeof(T)) 
@@ -123,7 +124,7 @@ namespace MR {
           return (buf);
         }
 
-        template <typename T> T* get (off64_t offset, T* buf, size_t n) { seek (offset); return (get<T>(buf, n)); }
+        template <typename T> T* get (int64_t offset, T* buf, size_t n) { seek (offset); return (get<T>(buf, n)); }
 
       protected:
         gzFile       gz;

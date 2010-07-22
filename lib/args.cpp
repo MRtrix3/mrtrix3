@@ -123,7 +123,7 @@ namespace MR {
       << " (" << argument_type_description (arg.type); 
     switch (arg.type) {
       case Integer:
-        if (arg.extra_info.i.def != INT_MAX) stream << ", default=" << arg.extra_info.i.def;
+        if (arg.extra_info.i.def != std::numeric_limits<int>::max()) stream << ", default=" << arg.extra_info.i.def;
         stream << ", range: " << arg.extra_info.i.min << ":" << arg.extra_info.i.max;
         break;
       case Float:

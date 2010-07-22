@@ -24,6 +24,7 @@
 #include <fcntl.h>
 #include <fstream>
 
+#include "types.h"
 #include "file/misc.h"
 #include "file/entry.h"
 #include "file/path.h"
@@ -218,7 +219,7 @@ namespace MR {
 
         bool single_file = Path::has_suffix (H.name(), ".mif");
 
-        off64_t offset = 0;
+        int64_t offset = 0;
         out << "\nfile: ";
         if (single_file) {
           offset = out.tellp();

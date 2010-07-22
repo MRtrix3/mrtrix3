@@ -48,7 +48,7 @@ ARGUMENTS = {
 
 OPTIONS = {
   Option ("coord", "select coordinates", "extract data only at the coordinates specified.", Optional | AllowMultiple)
-    .append (Argument ("axis", "axis", "the axis of interest").type_integer (0, INT_MAX, 0))
+    .append (Argument ("axis", "axis", "the axis of interest").type_integer (0, std::numeric_limits<int>::max(), 0))
     .append (Argument ("coord", "coordinates", "the coordinates of interest").type_sequence_int()),
 
   Option ("vox", "voxel size", "change the voxel dimensions.")

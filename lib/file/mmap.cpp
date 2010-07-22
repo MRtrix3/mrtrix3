@@ -104,7 +104,7 @@ namespace MR {
       assert (fd >= 0);
       struct stat64 sbuf;
       if (fstat64 (fd, &sbuf)) return (false);
-      if (off64_t (msize) != sbuf.st_size) return (true);
+      if (int64_t (msize) != sbuf.st_size) return (true);
       if (mtime != sbuf.st_mtime) return (true);
       return (false);
     }

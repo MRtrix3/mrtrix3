@@ -43,7 +43,7 @@ namespace MR {
           uint8_t* header () { return (lead_in); }
 
         protected:
-          off64_t  bytes_per_segment;
+          int64_t  bytes_per_segment;
           uint8_t* lead_in;
           size_t   lead_in_size;
       };
