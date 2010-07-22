@@ -63,7 +63,7 @@ EXECUTE {
 
   for (std::vector<ArgBase>::iterator arg = argument.begin(); arg != argument.end(); ++arg) {
     Tractography::Properties properties;
-    Tractography::Reader file;
+    Tractography::Reader<float> file;
     file.open (arg->get_string(), properties);
 
     std::cout << "***********************************\n";
@@ -86,7 +86,7 @@ EXECUTE {
 
     if (opt.size()) {
       ProgressBar progress ("writing track data to ascii files");
-      std::vector<Point> tck;
+      std::vector<Point<float> > tck;
       while (file.next (tck)) {
         std::string filename (opt[0][0].get_string());
         filename += "-000000.txt";
@@ -96,7 +96,7 @@ EXECUTE {
         std::ofstream out (filename.c_str());
         if (!out) throw Exception ("error opening ascii file \"" + filename + "\": " + strerror (errno));
 
-        for (std::vector<Point>::iterator i = tck.begin(); i != tck.end(); ++i)
+        for (std::vector<Point<float> >::iterator i = tck.begin(); i != tck.end(); ++i)
           out << (*i)[0] << " " << (*i)[1] << " " << (*i)[2] << "\n";
 
         out.close();

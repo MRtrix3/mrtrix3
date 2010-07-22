@@ -28,7 +28,7 @@ namespace MR {
   namespace DWI {
     namespace Tractography {
 
-      void Reader::open (const std::string& file, Properties& properties)
+      void __ReaderBase__::open (const std::string& file, Properties& properties)
       {
         properties.clear();
         dtype = DataType::Undefined;
@@ -54,15 +54,16 @@ namespace MR {
         }
 
         if (dtype == DataType::Undefined) throw Exception ("no datatype specified for tracks file \"" + file + "\"");
-        if (dtype != DataType::Float32LE && dtype != DataType::Float32BE)
-          throw Exception ("only supported datatype for tracks file are Float32LE or Float32BE (in tracks file \"" + file + "\")");
+        if (dtype != DataType::Float32LE && dtype != DataType::Float32BE && 
+            dtype != DataType::Float64BE && dtype != DataType::Float64BE)
+          throw Exception ("only supported datatype for tracks file are Float32LE, Float32BE, Float64LE & Float64BE (in tracks file \"" + file + "\")");
 
         if (data_file.empty()) throw Exception ("missing \"files\" specification for tracks file \"" + file + "\"");
 
         std::istringstream files_stream (data_file);
         std::string fname;
         files_stream >> fname;
-        off64_t offset = 0;
+        int64_t offset = 0;
         if (files_stream.good()) {
           try { files_stream >> offset; }
           catch (...) { throw Exception ("invalid offset specified for file \"" + fname + "\" in tracks file \"" + file + "\""); }
@@ -80,29 +81,6 @@ namespace MR {
 
 
 
-      bool Reader::next (std::vector<Point>& tck)
-      {
-        tck.clear();
-
-        if (!in.is_open()) return (false);
-        do {
-          Point p = get_next_point();
-          if (isinf (p[0])) {
-            in.close();
-            return (false);
-          }
-          if (in.eof()) {
-            in.close();
-            return (true);
-          }
-
-          if (isnan (p[0])) return (true);
-          tck.push_back (p);
-        } while (in.good());
-
-        in.close();
-        return (false);
-      }
 
 
 
@@ -112,51 +90,6 @@ namespace MR {
 
 
 
-
-
-
-
-      void Writer::create (const std::string& file, const Properties& properties)
-      {
-        out.open (file.c_str(), std::ios::out | std::ios::binary);
-        if (!out) throw Exception ("error creating tracks file \"" + file + "\": " + strerror (errno));
-
-        out << "mrtrix tracks\nEND\n";
-        for (Properties::const_iterator i = properties.begin(); i != properties.end(); ++i) 
-          out << i->first << ": " << i->second << "\n";
-
-        for (std::vector<std::string>::const_iterator i = properties.comments.begin(); i != properties.comments.end(); ++i)
-          out << "comment: " << *i << "\n";
-
-        for (size_t n = 0; n < properties.seed.size(); ++n) out << "roi: seed " << properties.seed[n].parameters() << "\n";
-        for (size_t n = 0; n < properties.include.size(); ++n) out << "roi: include " << properties.include[n].parameters() << "\n";
-        for (size_t n = 0; n < properties.exclude.size(); ++n) out << "roi: exclude " << properties.exclude[n].parameters() << "\n";
-        for (size_t n = 0; n < properties.mask.size(); ++n) out << "roi: mask " << properties.mask[n].parameters() << "\n";
-
-        for (std::multimap<std::string,std::string>::const_iterator it = properties.roi.begin(); it != properties.roi.end(); ++it) 
-          out << "roi: " << it->first << " " << it->second << "\n";
-
-        out << "datatype: " << dtype.specifier() << "\n";
-        off64_t data_offset = off64_t(out.tellp()) + 65;
-        out << "file: . " << data_offset << "\n";
-        out << "count: ";
-        count_offset = out.tellp();
-        out << "\nEND\n";
-        out.seekp (0);
-        out << "mrtrix tracks    ";
-        out.seekp (data_offset);
-        write_next_point (Point (INFINITY, INFINITY, INFINITY));
-      }
-
-
-
-
-      void Writer::close ()
-      {
-        out.seekp (count_offset);
-        out << count << "\ntotal_count: " << total_count << "\nEND\n";
-        out.close();
-      }
 
 
 

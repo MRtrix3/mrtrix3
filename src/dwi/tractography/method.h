@@ -36,20 +36,20 @@ namespace MR {
       class MethodBase {
         public:
           MethodBase (const SharedBase& shared) : 
-            source (shared.source), interp (source), rng (rng_seed++), values (new float [source.dim(3)]) { }
+            source (shared.source), interp (source), rng (rng_seed++), values (new value_type [source.dim(3)]) { }
 
           MethodBase (const MethodBase& base) : 
-            source (base.source), interp (source), rng (rng_seed++), values (new float [source.dim(3)]) { }
+            source (base.source), interp (source), rng (rng_seed++), values (new value_type [source.dim(3)]) { }
 
           ~MethodBase () { delete values; }
 
           StorageType source;
           DataSet::Interp::Linear<StorageType> interp;
           Math::RNG rng;
-          Point pos, dir;
-          float* values;
+          Point<value_type> pos, dir;
+          value_type* values;
 
-          bool get_data (const Point& position) 
+          bool get_data (const Point<value_type>& position) 
           {
             interp.scanner (position); 
             if (!interp) return (false);
@@ -60,7 +60,7 @@ namespace MR {
 
           bool get_data () { return (get_data (pos)); }
 
-          Point random_direction (const Point& d, float max_angle, float sin_max_angle);
+          Point<value_type> random_direction (const Point<value_type>& d, value_type max_angle, value_type sin_max_angle);
 
           static void init () { rng_seed = time (NULL); }
 

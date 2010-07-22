@@ -55,8 +55,8 @@ namespace MR {
             }
 
               size_t lmax, max_trials;
-              float sin_max_angle;
-              Math::SH::PrecomputedAL<float> precomputer;
+              value_type sin_max_angle;
+              Math::SH::PrecomputedAL<value_type> precomputer;
           };
 
           iFOD1 (const Shared& shared) : 
@@ -71,7 +71,7 @@ namespace MR {
               for (size_t n = 0; n < S.max_trials; n++) {
                 dir.set (rng.normal(), rng.normal(), rng.normal());
                 dir.normalise();
-                float val = FOD (dir);
+                value_type val = FOD (dir);
                 if (!isnan (val)) {
                   if (val > S.init_threshold) {
                     prev_FOD_val = val;
@@ -82,7 +82,7 @@ namespace MR {
             }   
             else {
               dir = S.init_dir;
-              float val = FOD (dir);
+              value_type val = FOD (dir);
               if (finite (val)) { 
                 if (val > S.init_threshold) {
                   prev_FOD_val = val;
@@ -98,13 +98,13 @@ namespace MR {
           {
             if (!get_data ()) return (false);
 
-            float max_val_actual = 0.0;
+            value_type max_val_actual = 0.0;
             for (int n = 0; n < 50; n++) {
-              Point new_dir = rand_dir (dir);
-              float val = FOD (new_dir);
+              Point<value_type> new_dir = rand_dir (dir);
+              value_type val = FOD (new_dir);
               if (val > max_val_actual) max_val_actual = val;
             }
-            float max_val = MAX (prev_FOD_val, max_val_actual);
+            value_type max_val = MAX (prev_FOD_val, max_val_actual);
             prev_FOD_val = max_val_actual;
 
             if (isnan (max_val) || max_val < S.threshold) return (false);
@@ -112,8 +112,8 @@ namespace MR {
 
             size_t nmax = max_val_actual > S.threshold ? 10000 : S.max_trials;
             for (size_t n = 0; n < nmax; n++) {
-              Point new_dir = rand_dir (dir);
-              float val = FOD (new_dir);
+              Point<value_type> new_dir = rand_dir (dir);
+              value_type val = FOD (new_dir);
               if (val > S.threshold) {
                 if (val > max_val) info ("max_val exceeded!!! (val = " + str(val) + ", max_val = " + str (max_val) + ")");
                 if (rng.uniform() < val/max_val) {
@@ -130,9 +130,9 @@ namespace MR {
 
         protected:
           const Shared& S;
-          float prev_FOD_val;
+          value_type prev_FOD_val;
 
-          float FOD (const Point& d) const 
+          value_type FOD (const Point<value_type>& d) const 
           {
             return (S.precomputer ?
                 S.precomputer.value (values, d) :
@@ -140,7 +140,7 @@ namespace MR {
                 );
           }
 
-          Point rand_dir (const Point& d) { return (random_direction (d, S.max_angle, S.sin_max_angle)); }
+          Point<value_type> rand_dir (const Point<value_type>& d) { return (random_direction (d, S.max_angle, S.sin_max_angle)); }
       };
 
     }

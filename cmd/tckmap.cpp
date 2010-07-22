@@ -85,66 +85,30 @@ using namespace MR::DWI;
 #define MAX_TRACKS_READ_FOR_HEADER 1000000
 
 
-class Voxel
+typedef Point<size_t> Voxel;
+Voxel round (const Point<float>& p) 
+{ 
+  assert (finite (p[0]) && finite (p[1]) && finite (p[2]));
+  return (Voxel (Math::round<size_t> (p[0]), Math::round<size_t> (p[1]), Math::round<size_t> (p[2])));
+}
+bool check (const Voxel& V, const Image::Header& H) 
+{
+  return (V[0] < size_t(H.dim(0)) && V[1] < size_t(H.dim(1)) && V[2] < size_t(H.dim(2)));
+}
+
+class VoxelDir : public Voxel 
 {
   public:
-    Voxel () : x (0), y (0), z (0) {}
-
-    Voxel (const size_t _x_, const size_t _y_, const size_t _z_) :
-      x (_x_),
-      y (_y_),
-      z (_z_) { }
-
-    Voxel (const Point& p) :
-      x (Math::round<size_t> (p[0])),
-      y (Math::round<size_t> (p[1])),
-      z (Math::round<size_t> (p[2])) 
-    { 
-      assert (finite (p[0]) && finite (p[1]) && finite (p[2]));
-    }
-
-    Voxel& operator+= (const Voxel& source) 
-    {
-      x += source.x;
-      y += source.y;
-      z += source.z;
-      return (*this);
-    }
-
-    bool test_bounds (const Image::Header& H) const 
-    {
-      return (x < size_t(H.dim(0)) && y < size_t(H.dim(1)) && z < size_t(H.dim(2)));
-    }
-
-    size_t x, y, z;
+    Point<float> dir;
+    VoxelDir& operator= (const Voxel& V) { Voxel::operator= (V); return (*this); }
 };
-
-
-class VoxelDir : public Voxel
+Point<float> abs (const Point<float>& d) 
 {
-  public:
-    VoxelDir () : Voxel () { }
-
-    VoxelDir (const Point& p) :
-      Voxel (p),
-      dir (0.0, 0.0, 0.0)
-    {
-    }
-
-    void set_dir (const Point& dp) 
-    {
-      dir[0] = Math::abs(dp[0]);
-      dir[1] = Math::abs(dp[1]);
-      dir[2] = Math::abs(dp[2]);
-    }
-
-    Point dir;
-};
+  return (Point<float> (Math::abs(d[0]), Math::abs(d[1]), Math::abs(d[2])));
+}
 
 
-
-
-typedef Thread::Queue<std::vector<Point> >    TrackQueue;
+typedef Thread::Queue<std::vector<Point<float> > >    TrackQueue;
 typedef Thread::Queue<std::vector<Voxel> >    VoxelQueue;
 typedef Thread::Queue<std::vector<VoxelDir> > VoxelDirQueue;
 
@@ -204,7 +168,7 @@ template <typename T> class Resampler
 class TrackLoader
 {
   public:
-    TrackLoader (TrackQueue& queue, DWI::Tractography::Reader& file, size_t count) :
+    TrackLoader (TrackQueue& queue, DWI::Tractography::Reader<float>& file, size_t count) :
       writer (queue),
       reader (file),
       total_count (count)
@@ -225,7 +189,7 @@ class TrackLoader
 
   private:
     TrackQueue::Writer writer;
-    DWI::Tractography::Reader& reader;
+    DWI::Tractography::Reader<float>& reader;
     size_t total_count;
 
 };
@@ -280,19 +244,19 @@ template <class T> class TrackMapper
     const Math::Matrix<float>& resample_matrix;
 
 
-    void interp_prepare (std::vector<Point>& v) 
+    void interp_prepare (std::vector<Point<float> >& v) 
     {
       const size_t s = v.size();
-      v.insert   (v.begin(), v[ 0 ] + (2 * (v[ 0 ] - v[ 1 ])) - (v[ 1 ] - v[ 2 ]));
-      v.push_back(           v[ s ] + (2 * (v[ s ] - v[s-1])) - (v[s-1] - v[s-2]));
+      v.insert   (v.begin(), v[ 0 ] + (float(2.0) * (v[ 0 ] - v[ 1 ])) - (v[ 1 ] - v[ 2 ]));
+      v.push_back(           v[ s ] + (float(2.0) * (v[ s ] - v[s-1])) - (v[s-1] - v[s-2]));
     }
 
     void interp_track (
-        std::vector<Point>& tck,
+        std::vector<Point<float> >& tck,
         Resampler<float>& R,
         Math::Matrix<float>& data)
     {
-      std::vector<Point> out;
+      std::vector<Point<float> > out;
       interp_prepare (tck);
       R.init (tck[0].get(), tck[1].get(), tck[2].get());
       for (size_t i = 3; i < tck.size(); ++i) {
@@ -300,47 +264,49 @@ template <class T> class TrackMapper
         R.increment (tck[i].get());
         R.interpolate (data);
         for (size_t row = 0; row != data.rows(); ++row)
-          out.push_back (Point (data(row,0), data(row,1), data(row,2)));
+          out.push_back (Point<float> (data(row,0), data(row,1), data(row,2)));
       }
       out.push_back (tck[tck.size() - 2]);
       out.swap (tck);
     }
 
 
-    void voxelise (std::vector<T>& voxels, const std::vector<Point>& tck, const HeaderInterp& interp) const;
+    void voxelise (std::vector<T>& voxels, const std::vector<Point<float> >& tck, const HeaderInterp& interp) const;
 };
 
 
 
 
 
-template<> void TrackMapper<Voxel>::voxelise (std::vector<Voxel>& voxels, const std::vector<Point>& tck, const HeaderInterp& interp) const
+template<> void TrackMapper<Voxel>::voxelise (std::vector<Voxel>& voxels, const std::vector<Point<float> >& tck, const HeaderInterp& interp) const
 {
-  for (std::vector<Point>::const_iterator i = tck.begin(); i != tck.end(); ++i) {
-    Voxel vox (interp.scanner2voxel (*i));
-    if (vox.test_bounds (H)) 
+  Voxel vox;
+  for (std::vector<Point<float> >::const_iterator i = tck.begin(); i != tck.end(); ++i) {
+    vox = round (interp.scanner2voxel (*i));
+    if (check (vox, H)) 
       voxels.push_back (vox);
   }
 }
 
 
 
-template<> void TrackMapper<VoxelDir>::voxelise (std::vector<VoxelDir>& voxels, const std::vector<Point>& tck, const HeaderInterp& interp) const
+template<> void TrackMapper<VoxelDir>::voxelise (std::vector<VoxelDir>& voxels, const std::vector<Point<float> >& tck, const HeaderInterp& interp) const
 {
-  std::vector<Point>::const_iterator prev = tck.begin();
-  const std::vector<Point>::const_iterator last = tck.end() - 1;
+  std::vector<Point<float> >::const_iterator prev = tck.begin();
+  const std::vector<Point<float> >::const_iterator last = tck.end() - 1;
 
-  for (std::vector<Point>::const_iterator i = tck.begin(); i != last; ++i) {
-    VoxelDir vox (interp.scanner2voxel (*i));
-    if (vox.test_bounds (H)) {
-      vox.set_dir ((*(i+1) - *prev).normalise());
+  VoxelDir vox;
+  for (std::vector<Point<float> >::const_iterator i = tck.begin(); i != last; ++i) {
+    vox = round (interp.scanner2voxel (*i));
+    if (check (vox, H)) {
+      vox.dir = (*(i+1) - *prev).normalise();
       voxels.push_back (vox);
     }
     prev = i;
   }
-  VoxelDir vox (interp.scanner2voxel (*last));
-  if (vox.test_bounds (H)) {
-    vox.set_dir ((*last - *prev).normalise());
+  vox = round (interp.scanner2voxel (*last));
+  if (check (vox, H)) {
+    vox.dir = (*last - *prev).normalise();
     voxels.push_back (vox);
   }
 }
@@ -393,9 +359,9 @@ class MapWriter : public MapWriterBase<Voxel>
       VoxelQueue::Reader::Item item (reader);
       while (item.read()) {
         for (std::vector<Voxel>::const_iterator i = item->begin(); i != item->end(); ++i) {
-          buffer[0] = i->x;
-          buffer[1] = i->y;
-          buffer[2] = i->z;
+          buffer[0] = (*i)[0];
+          buffer[1] = (*i)[1];
+          buffer[2] = (*i)[2];
           buffer.value() += 1;
         }
       }
@@ -421,7 +387,7 @@ class MapWriterColour : public MapWriterBase<VoxelDir> {
       Image::Voxel<float> vox (H);
       DataSet::LoopInOrder loop (vox, "writing image to file...", 0, 3);
       for (loop.start (vox, buffer); loop.ok(); loop.next (vox, buffer)) {
-        const Point temp = buffer.value();
+        const Point<float>  temp = buffer.value();
         vox[3] = 0; vox.value() = scale * temp[0];
         vox[3] = 1; vox.value() = scale * temp[1];
         vox[3] = 2; vox.value() = scale * temp[2];
@@ -433,35 +399,35 @@ class MapWriterColour : public MapWriterBase<VoxelDir> {
       VoxelDirQueue::Reader::Item item (reader);
       while (item.read()) {
         for (std::vector<VoxelDir>::const_iterator i = item->begin(); i != item->end(); ++i) {
-          buffer[0] = i->x;
-          buffer[1] = i->y;
-          buffer[2] = i->z;
-          buffer.value() += i->dir;
+          buffer[0] = (*i)[0];
+          buffer[1] = (*i)[1];
+          buffer[2] = (*i)[2];
+          buffer.value() += abs (i->dir);
         }
       }
     }
 
 
   private:
-    DataSet::Buffer<Point> buffer;
+    DataSet::Buffer<Point<float> > buffer;
 };
 
 
 
 
-void generate_header (Image::Header& header, Tractography::Reader& file, const std::vector<float>& voxel_size) 
+void generate_header (Image::Header& header, Tractography::Reader<float>& file, const std::vector<float>& voxel_size) 
 {
 
-  std::vector<Point> tck;
+  std::vector<Point<float> > tck;
   size_t track_counter = 0;
 
-  Point min_values ( INFINITY,  INFINITY,  INFINITY);
-  Point max_values (-INFINITY, -INFINITY, -INFINITY);
+  Point<float>  min_values ( INFINITY,  INFINITY,  INFINITY);
+  Point<float>  max_values (-INFINITY, -INFINITY, -INFINITY);
 
   {
     ProgressBar progress ("creating new template image...", 0);
     while (file.next(tck) && track_counter++ < MAX_TRACKS_READ_FOR_HEADER) {
-      for (std::vector<Point>::const_iterator i = tck.begin(); i != tck.end(); ++i) {
+      for (std::vector<Point<float> >::const_iterator i = tck.begin(); i != tck.end(); ++i) {
         min_values[0] = std::min (min_values[0], (*i)[0]);
         max_values[0] = std::max (max_values[0], (*i)[0]);
         min_values[1] = std::min (min_values[1], (*i)[1]);
@@ -473,8 +439,8 @@ void generate_header (Image::Header& header, Tractography::Reader& file, const s
     }
   }
 
-  min_values -= Point (3.0*voxel_size[0], 3.0*voxel_size[1], 3.0*voxel_size[2]);
-  max_values += Point (3.0*voxel_size[0], 3.0*voxel_size[1], 3.0*voxel_size[2]);
+  min_values -= Point<float>  (3.0*voxel_size[0], 3.0*voxel_size[1], 3.0*voxel_size[2]);
+  max_values += Point<float>  (3.0*voxel_size[0], 3.0*voxel_size[1], 3.0*voxel_size[2]);
 
   header.name() = "tckmap image header";
   header.axes.ndim() = 3;
@@ -542,7 +508,7 @@ void oversample_header (Image::Header& header, const std::vector<float>& voxel_s
 EXECUTE {
 
   Tractography::Properties properties;
-  Tractography::Reader file;
+  Tractography::Reader<float> file;
   file.open (argument[0].get_string(), properties);
 
   const size_t num_tracks = properties["count"]    .empty() ? 0   : to<size_t> (properties["count"]);

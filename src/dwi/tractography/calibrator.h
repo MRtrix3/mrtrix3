@@ -33,24 +33,24 @@ namespace MR {
       class Calibrator
       {
         public:
-          Calibrator (float max_angle, float spacing) :
+          Calibrator (value_type max_angle, value_type spacing) :
             max_a (max_angle), 
             spac (spacing) { 
               VAR (max_angle);
               VAR (spacing);
               ssize_t N = Math::ceil<ssize_t> (max_a/spac);
-              const float maxR = Math::pow2(max_a/spac);
+              const value_type maxR = Math::pow2(max_a/spac);
               for (ssize_t i = -N; i <= N; ++i) {
                 for (ssize_t j = -N; j <= N; ++j) {
-                  float x = i + 0.5*j, y = 0.5*Math::sqrt(3.0)*j;
-                  float n = Math::pow2(x) + Math::pow2(y);
+                  value_type x = i + 0.5*j, y = 0.5*Math::sqrt(3.0)*j;
+                  value_type n = Math::pow2(x) + Math::pow2(y);
                   if (n > maxR) 
                     continue;
 
                   n = spac*Math::sqrt (n);
-                  float z = Math::cos (n);
+                  value_type z = Math::cos (n);
                   if (n) n = spac * Math::sin (n) / n;
-                  list.push_back (Point (n*x, n*y, z));
+                  list.push_back (Point<value_type> (n*x, n*y, z));
                 }
               }
 
@@ -59,11 +59,11 @@ namespace MR {
             }
 
           size_t count () const { return (list.size()); }
-          const Point& dir (size_t index) const { return (list[index]); }
+          const Point<value_type>& dir (size_t index) const { return (list[index]); }
 
         private:
-          float max_a, spac;
-          std::vector<Point> list;
+          value_type max_a, spac;
+          std::vector<Point<value_type> > list;
       };
 
     }

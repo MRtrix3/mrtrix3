@@ -55,8 +55,8 @@ namespace MR {
                 }
 
               size_t lmax, num_samples, max_trials;
-              float sin_max_angle, prob_threshold;
-              Math::SH::PrecomputedAL<float> precomputer;
+              value_type sin_max_angle, prob_threshold;
+              Math::SH::PrecomputedAL<value_type> precomputer;
           };
 
           iFOD2 (const Shared& shared) :
@@ -67,7 +67,7 @@ namespace MR {
 
           ~iFOD2 () 
           { 
-            info ("mean number of samples per step = " + str (float(mean_sample_num)/float(num_sample_runs))); 
+            info ("mean number of samples per step = " + str (value_type(mean_sample_num)/value_type(num_sample_runs))); 
           }
 
           bool init () 
@@ -78,7 +78,7 @@ namespace MR {
               for (size_t n = 0; n < S.max_trials; n++) {
                 dir.set (rng.normal(), rng.normal(), rng.normal());
                 dir.normalise();
-                float val = FOD (dir);
+                value_type val = FOD (dir);
                 if (!isnan (val)) {
                   if (val > S.init_threshold) {
                     prev_prob_val = Math::pow (val, S.num_samples);
@@ -89,7 +89,7 @@ namespace MR {
             }   
             else {
               dir = S.init_dir;
-              float val = FOD (dir);
+              value_type val = FOD (dir);
               if (finite (val)) { 
                 if (val > S.init_threshold) {
                   prev_prob_val = Math::pow (val, S.num_samples);
@@ -103,14 +103,14 @@ namespace MR {
 
           bool next () 
           {
-            Point next_pos, next_dir;
+            Point<value_type> next_pos, next_dir;
 
-            float max_val_actual = 0.0;
+            value_type max_val_actual = 0.0;
             for (int n = 0; n < 100; n++) {
-              float val = rand_path (next_pos, next_dir);
+              value_type val = rand_path (next_pos, next_dir);
               if (val > max_val_actual) max_val_actual = val;
             }
-            float max_val = MAX (prev_prob_val, max_val_actual);
+            value_type max_val = MAX (prev_prob_val, max_val_actual);
             prev_prob_val = max_val_actual;
 
             if (isnan (max_val) || max_val < S.prob_threshold) return (false);
@@ -118,7 +118,7 @@ namespace MR {
 
             size_t nmax = max_val_actual > S.prob_threshold ? 10000 : S.max_trials;
             for (size_t n = 0; n < nmax; n++) {
-              float val = rand_path (next_pos, next_dir);
+              value_type val = rand_path (next_pos, next_dir);
               if (val > S.prob_threshold) {
                 if (val > max_val) info ("max_val exceeded!!! (val = " + str(val) + ", max_val = " + str (max_val) + ")");
                 if (rng.uniform() < val/max_val) {
@@ -137,10 +137,10 @@ namespace MR {
 
         private:
           const Shared& S;
-          float prev_prob_val;
+          value_type prev_prob_val;
           size_t mean_sample_num, num_sample_runs;
 
-          float FOD (const Point& direction) const 
+          value_type FOD (const Point<value_type>& direction) const 
           {
             return (S.precomputer ?  
                 S.precomputer.value (values, direction) : 
@@ -148,32 +148,32 @@ namespace MR {
                 );
           }
 
-          float FOD (const Point& position, const Point& direction) 
+          value_type FOD (const Point<value_type>& position, const Point<value_type>& direction) 
           {
             if (!get_data (position)) 
               return (NAN);
             return (FOD (direction));
           }
 
-          float rand_path (Point& next_pos, Point& next_dir) 
+          value_type rand_path (Point<value_type>& next_pos, Point<value_type>& next_dir) 
           {
             next_dir = rand_dir (dir);
-            float cos_theta = next_dir.dot (dir);
+            value_type cos_theta = next_dir.dot (dir);
             if (cos_theta > 1.0) cos_theta = 1.0;
-            float theta = Math::acos (cos_theta);
+            value_type theta = Math::acos (cos_theta);
 
             if (theta) {
-              Point curv = next_dir - cos_theta * dir; curv.normalise();
-              float R = S.step_size / theta;
-              next_pos = pos + R * (sin (theta) * dir + (1.0-cos_theta) * curv);
-              float val = FOD (next_pos, next_dir);
+              Point<value_type> curv = next_dir - cos_theta * dir; curv.normalise();
+              value_type R = S.step_size / theta;
+              next_pos = pos + R * (Math::sin (theta) * dir + (value_type(1.0)-cos_theta) * curv);
+              value_type val = FOD (next_pos, next_dir);
               if (isnan (val) || val < S.threshold) return (NAN);
 
               for (size_t i = S.num_samples; i > 0; --i) {
-                float a = (theta * i) / S.num_samples, cos_a = cos (a), sin_a = sin (a);
-                Point x = pos + R * (sin_a * dir + (1.0 - cos_a) * curv);
-                Point t = cos_a * dir + sin_a * curv;
-                float amp = FOD (x, t);
+                value_type a = (theta * i) / S.num_samples, cos_a = Math::cos (a), sin_a = sin (a);
+                Point<value_type> x = pos + R * (sin_a * dir + (value_type(1.0) - cos_a) * curv);
+                Point<value_type> t = cos_a * dir + sin_a * curv;
+                value_type amp = FOD (x, t);
                 if (isnan (val) || amp < S.threshold) return (NAN);
                 val *= amp;
               }
@@ -181,13 +181,13 @@ namespace MR {
             }
             else { // straight on:
               next_pos = pos + S.step_size * dir;
-              float val = FOD (next_pos, dir);
+              value_type val = FOD (next_pos, dir);
               if (isnan (val) || val < S.threshold) return (NAN);
 
               for (size_t i = S.num_samples; i > 0; --i) {
-                float f = (S.step_size * i) / S.num_samples;
-                Point x = pos + f * dir;
-                float amp = FOD (x, dir);
+                value_type f = (S.step_size * i) / S.num_samples;
+                Point<value_type> x = pos + f * dir;
+                value_type amp = FOD (x, dir);
                 if (isnan (val) || amp < S.threshold) return (NAN);
                 val *= amp;
               }
@@ -195,7 +195,7 @@ namespace MR {
             }
           }
 
-          Point rand_dir (const Point& d) { return (random_direction (d, S.max_angle, S.sin_max_angle)); }
+          Point<value_type> rand_dir (const Point<value_type>& d) { return (random_direction (d, S.max_angle, S.sin_max_angle)); }
       };
 
     }

@@ -57,22 +57,22 @@ OPTIONS = { Option::End };
 
 EXECUTE {
   Tractography::Properties properties;
-  Tractography::Reader file;
+  Tractography::Reader<> file;
   file.open (argument[0].get_string(), properties);
 
   Image::Header header = argument[1].get_image();
   Image::Voxel<float> vox (header);
 
-  Tractography::Writer writer;
+  Tractography::Writer<> writer;
   writer.create (argument[2].get_string(), properties);
 
-  std::vector<Point> tck;
+  std::vector<Point<float> > tck;
 
   DataSet::Interp::Linear<Image::Voxel<float> > interp (vox);
   ProgressBar progress ("normalising tracks...");
 
   while (file.next (tck)) {
-    for (std::vector<Point>::iterator i = tck.begin(); i != tck.end(); ++i) {
+    for (std::vector<Point<float> >::iterator i = tck.begin(); i != tck.end(); ++i) {
       interp.scanner (*i);
       vox[3] = 0; (*i)[0] = interp.value();
       vox[3] = 1; (*i)[1] = interp.value();

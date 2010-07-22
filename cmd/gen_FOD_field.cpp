@@ -90,12 +90,12 @@ class Kernel {
       for (int y = 0; y < N; ++y) {
         for (int x = 0; x < N; ++x) {
           if (isnan (angle)) {
-            Point dir (y+yp, x+xp, 0.0);
+            Point<float> dir (y+yp, x+xp, 0.0);
             dir.normalise();
             Math::SH::delta (V, dir, lmax);
           }
           else {
-            Point dir (1.0, 0.0, 0.0);
+            Point<float> dir (1.0, 0.0, 0.0);
             Math::SH::delta (V, dir, lmax);
             if (Math::abs ((x+xp)*sin_angle + (y+yc)*cos_angle) <= N*width) {
               dir.set (cos_angle, sin_angle, 0.0);

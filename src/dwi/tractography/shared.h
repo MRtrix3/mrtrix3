@@ -33,7 +33,8 @@ namespace MR {
   namespace DWI {
     namespace Tractography {
 
-      typedef Image::Buffer<float> StorageType;
+      typedef float value_type;
+      typedef Image::Buffer<value_type> StorageType;
 
       class SharedBase {
         public:
@@ -48,8 +49,8 @@ namespace MR {
             threshold (0.1), 
             unidirectional (false) 
         {
-          float max_dist = 200.0;
-          float min_dist = 10.0;
+          value_type max_dist = 200.0;
+          value_type min_dist = 10.0;
 
           properties["source"] = source.name();
 
@@ -85,9 +86,9 @@ namespace MR {
           const Image::Header& H;
           StorageType source;
           DWI::Tractography::Properties& properties;
-          Point init_dir;
+          Point<value_type> init_dir;
           size_t max_num_tracks, max_num_attempts, min_num_points, max_num_points;
-          float max_angle, step_size, threshold, init_threshold;
+          value_type max_angle, step_size, threshold, init_threshold;
           bool unidirectional;
 
         private:

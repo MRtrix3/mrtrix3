@@ -34,7 +34,7 @@ namespace MR {
   namespace DWI {
     namespace Tractography {
 
-      typedef std::vector<Point> Track;
+      typedef std::vector<Point<value_type> > Track;
 
       class Allocator 
       {
@@ -77,7 +77,7 @@ namespace MR {
         private:
           Queue::Reader tracks;
           const SharedBase& S;
-          Writer writer;
+          Writer<value_type> writer;
       };
 
 
@@ -144,7 +144,7 @@ namespace MR {
               num_attempts++;
               if (num_attempts++ > 10000) throw Exception ("failed to find suitable seed point after 10,000 attempts - aborting");
             } while (!method.init ());
-            Point seed_dir (method.dir);
+            Point<value_type> seed_dir (method.dir);
 
             tck.push_back (method.pos);
             while (iterate() && tck.size() < S.max_num_points) tck.push_back (method.pos);

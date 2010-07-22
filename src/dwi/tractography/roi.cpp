@@ -33,7 +33,7 @@ namespace MR {
       void ROI::get_mask (const Image::Header& mask_header) 
       {
         Image::Voxel<bool> vox (mask_header);
-        size_t bottom[] = { SIZE_MAX, SIZE_MAX, SIZE_MAX };
+        size_t bottom[] = { std::numeric_limits<size_t>::max(), std::numeric_limits<size_t>::max(), std::numeric_limits<size_t>::max() };
         size_t top[] = { 0, 0, 0 };
         size_t count = 0;
 

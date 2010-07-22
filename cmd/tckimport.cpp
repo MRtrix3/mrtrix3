@@ -54,7 +54,7 @@ EXECUTE {
 
   DWI::Tractography::Properties properties;
 
-  DWI::Tractography::Writer writer;
+  DWI::Tractography::Writer<> writer;
   writer.create (argument.back().get_string(), properties);
 
   for (size_t n = 0; n < argument.size()-1; n++) {
@@ -64,7 +64,7 @@ EXECUTE {
       if (M.columns() != 3) 
         throw Exception (std::string ("WARNING: file \"") + argument[n].get_string() + "\" does not contain 3 columns - ignored");
 
-      std::vector<Point> tck (M.rows());
+      std::vector<Point<float> > tck (M.rows());
       for (size_t i = 0; i < M.rows(); i++) {
         tck[i].set (M(i,0), M(i,1), M(i,2));
       }

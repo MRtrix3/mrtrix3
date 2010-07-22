@@ -38,7 +38,7 @@ namespace MR {
 
       class ROI {
         public:
-          ROI (const Point& sphere_pos, float sphere_radius) : 
+          ROI (const Point<>& sphere_pos, float sphere_radius) : 
             pos (sphere_pos), rad (sphere_radius), rad2 (Math::pow2(rad)), vol (4.0*M_PI*Math::pow3(rad)/3.0) { }
 
           ROI (const Image::Header& mask_header) : rad (NAN), rad2(NAN), vol (0.0) { get_mask (mask_header); }
@@ -67,10 +67,10 @@ namespace MR {
 
           float volume () const { return (vol); }
 
-          bool contains (const Point& p) const
+          bool contains (const Point<>& p) const
           {
             if (mask) {
-              Point pix = mask->interp.scanner2voxel (p);
+              Point<> pix = mask->interp.scanner2voxel (p);
               ssize_t x[] = { 
                 Math::round (pix[0]),
                 Math::round (pix[1]),
@@ -87,9 +87,9 @@ namespace MR {
 
 
 
-          Point sample (Math::RNG& rng) const 
+          Point<> sample (Math::RNG& rng) const 
           {
-            Point p;
+            Point<> p;
             if (mask) {
               ssize_t x[3];
               do {
@@ -123,7 +123,7 @@ namespace MR {
               DataSet::Interp::Linear<DataSet::Buffer<bool> > interp;
           };
 
-          Point  pos;
+          Point<>  pos;
           float  rad, rad2, vol;
           RefPtr<Mask> mask;
 
@@ -145,18 +145,18 @@ namespace MR {
 
           float volume () const { return (total_volume); }
 
-          bool contains (const Point& p) {
+          bool contains (const Point<>& p) {
             for (size_t n = 0; n < R.size(); ++n)
               if (R[n].contains (p)) return (true);
             return (false);
           }
 
-          void contains (const Point& p, std::vector<bool>& retval) {
+          void contains (const Point<>& p, std::vector<bool>& retval) {
             for (size_t n = 0; n < R.size(); ++n)
               if (R[n].contains (p)) retval[n] = true;
           }
 
-          Point sample (Math::RNG& rng) {
+          Point<> sample (Math::RNG& rng) {
             float seed_selection = 0.0;
             float seed_selector = total_volume * rng.uniform();
             for (std::vector<ROI>::const_iterator i = R.begin(); i != R.end(); ++i) { 
