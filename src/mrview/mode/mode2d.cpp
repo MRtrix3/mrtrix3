@@ -139,11 +139,11 @@ namespace MR {
         }
 
         // image slice:
-        Point voxel (image()->interp.scanner2voxel (focus()));
+        Point<> voxel (image()->interp.scanner2voxel (focus()));
         int slice = Math::round (voxel[projection()]);
 
         // camera target:
-        Point F = image()->interp.scanner2voxel (target());
+        Point<> F = image()->interp.scanner2voxel (target());
         F[projection()] = slice;
         F = image()->interp.voxel2scanner (F);
 
@@ -178,7 +178,7 @@ namespace MR {
 
         // draw focus:
         if (show_focus_action->isChecked()) {
-          Point F = model_to_screen (focus());
+          Point<> F = model_to_screen (focus());
 
           glMatrixMode (GL_PROJECTION);
           glPushMatrix ();
@@ -310,7 +310,7 @@ namespace MR {
           }
 
           if (mouse_buttons() == Qt::MidButton) {
-            set_target (target() - screen_to_model_direction (Point (mouse_dpos().x(), mouse_dpos().y(), 0.0)));
+            set_target (target() - screen_to_model_direction (Point<> (mouse_dpos().x(), mouse_dpos().y(), 0.0)));
             updateGL();
             return (true);
           }
@@ -382,9 +382,9 @@ namespace MR {
       void Mode2D::move_in_out (float distance) 
       {
         if (!image()) return;
-        Point D (0.0, 0.0, 0.0);
+        Point<> D (0.0, 0.0, 0.0);
         D[projection()] = distance;
-        Point move = image()->interp.voxel2scanner_dir (D);
+        Point<> move = image()->interp.voxel2scanner_dir (D);
         set_target (target() + move);
         set_focus (focus() + move);
       }
@@ -412,14 +412,14 @@ namespace MR {
         else 
           set_projection (2);
        
-        Point p (image()->H.dim(0)/2.0, image()->H.dim(1)/2.0, image()->H.dim(2)/2.0);
+        Point<> p (image()->H.dim(0)/2.0, image()->H.dim(1)/2.0, image()->H.dim(2)/2.0);
         set_focus (image()->interp.voxel2scanner (p));
 
         int x, y;
         image()->get_axes (projection(), x, y);
         set_FOV (std::max (dim[x], dim[y]));
 
-        set_target (Point::Invalid);
+        set_target (Point<>());
       }
 
 

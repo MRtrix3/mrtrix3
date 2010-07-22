@@ -310,12 +310,12 @@ namespace MR {
       if (event->modifiers() == Qt::NoModifier) {
         if (event->buttons() == Qt::LeftButton) {
           float angle = 0.0;
-          Point x (
+          Point<> x (
               dx*modelview[0] - dy*modelview[1], 
               dx*modelview[4] - dy*modelview[5], 
               dx*modelview[8] - dy*modelview[9]);
-          Point z (modelview[2], modelview[6], modelview[10]);
-          Point v = x.cross (z);
+          Point<> z (modelview[2], modelview[6], modelview[10]);
+          Point<> v = x.cross (z);
           angle = ROTATION_INC * v.norm();
           v.normalise();
           if (angle > M_PI_2) angle = M_PI_2;

@@ -84,7 +84,7 @@ namespace MR {
         GLdouble modelview[16], projection[16];
         GLint viewport[4];
         Math::Quaternion orientation;
-        Point focus;
+        Point<> focus;
 
         std::string screenshot_name;
         Ptr<QImage> pix;

@@ -84,48 +84,48 @@ namespace MR {
 
           void add_action (QAction* action) { window.view_menu->insertAction (window.view_menu_mode_area, action); }
 
-          Point model_to_screen (const Point& pos) const
+          Point<> model_to_screen (const Point<>& pos) const
           {
             double wx, wy, wz;
             get_modelview_projection_viewport();
             gluProject (pos[0], pos[1], pos[2], modelview_matrix, 
                 projection_matrix, viewport_matrix, &wx, &wy, &wz);
-            return (Point (wx, wy, wz));
+            return (Point<> (wx, wy, wz));
           }
 
-          Point screen_to_model (const Point& pos) const 
+          Point<> screen_to_model (const Point<>& pos) const 
           {
             double wx, wy, wz;
             get_modelview_projection_viewport();
             gluUnProject (pos[0], height()-pos[1], pos[2], modelview_matrix, 
                 projection_matrix, viewport_matrix, &wx, &wy, &wz);
-            return (Point (wx, wy, wz));
+            return (Point<> (wx, wy, wz));
           }
 
-          Point screen_to_model (const QPoint& pos) const
+          Point<> screen_to_model (const QPoint& pos) const
           {
-            Point f (model_to_screen (focus()));
+            Point<> f (model_to_screen (focus()));
             f[0] = pos.x();
             f[1] = pos.y();
             return (screen_to_model (f));
           }
 
-          Point screen_to_model () const { return (screen_to_model (currentPos)); } 
+          Point<> screen_to_model () const { return (screen_to_model (currentPos)); } 
 
-          Point screen_to_model_direction (const Point& pos) const
-          { return (screen_to_model (pos) - screen_to_model (Point (0.0, 0.0, 0.0))); } 
+          Point<> screen_to_model_direction (const Point<>& pos) const
+          { return (screen_to_model (pos) - screen_to_model (Point<> (0.0, 0.0, 0.0))); } 
 
 
           Image* image () { return (window.current_image()); }
 
           const Math::Quaternion& orientation () const { return (window.orient); }
           float FOV () const { return (window.field_of_view); }
-          const Point& focus () const { return (window.focal_point); }
-          const Point& target () const { return (window.camera_target); }
+          const Point<>& focus () const { return (window.focal_point); }
+          const Point<>& target () const { return (window.camera_target); }
           int projection () const { return (window.proj); }
 
-          void set_focus (const Point& p) { window.focal_point = p; }
-          void set_target (const Point& p) { window.camera_target = p; }
+          void set_focus (const Point<>& p) { window.focal_point = p; }
+          void set_target (const Point<>& p) { window.camera_target = p; }
           void set_projection (int p) { window.proj = p; }
           void set_FOV (float value) { window.field_of_view = value; }
           void change_FOV_fine (float factor) { window.field_of_view *= Math::exp (0.005*factor); }

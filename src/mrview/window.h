@@ -81,7 +81,7 @@ namespace MR {
         GLArea *glarea;
         Mode::Base* mode;
 
-        Point focal_point, camera_target;
+        Point<> focal_point, camera_target;
         Math::Quaternion orient;
         float field_of_view;
         int proj;

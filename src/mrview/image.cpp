@@ -80,7 +80,7 @@ namespace MR {
       get_axes (projection, x, y);
       float xdim = H.dim(x)-0.5, ydim = H.dim(y)-0.5;
 
-      Point p, q;
+      Point<> p, q;
       p[projection] = slice;
 
       shader_program.start();

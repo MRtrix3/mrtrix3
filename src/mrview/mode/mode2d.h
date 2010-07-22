@@ -55,7 +55,7 @@ namespace MR {
         protected:
           QAction *axial_action, *sagittal_action, *coronal_action, *reset_action, *show_focus_action;
           QAction *show_image_info_action, *show_position_action, *show_orientation_action;
-          Point lookat;
+          Point<> lookat;
           void reset_view ();
 
           void move_in_out (float distance);
