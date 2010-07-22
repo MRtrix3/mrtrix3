@@ -23,6 +23,7 @@
 #ifndef __dataset_misc_h__
 #define __dataset_misc_h__
 
+#include "types.h"
 #include "data_type.h"
 #include "math/complex.h"
 
@@ -33,7 +34,7 @@ namespace MR {
     // @{
 
     //! returns the number of voxel in the data set, or a relevant subvolume
-    template <class Set> inline size_t voxel_count (const Set& ds, size_t from_axis = 0, size_t to_axis = SIZE_MAX) 
+    template <class Set> inline size_t voxel_count (const Set& ds, size_t from_axis = 0, size_t to_axis = std::numeric_limits<size_t>::max()) 
     { 
       if (to_axis > ds.ndim()) to_axis = ds.ndim();
       assert (from_axis < to_axis);
@@ -53,9 +54,9 @@ namespace MR {
     }
 
     //! returns the number of voxel in the relevant subvolume of the data set 
-    template <class Set> inline off64_t voxel_count (const Set& ds, const std::vector<size_t>& axes) 
+    template <class Set> inline int64_t voxel_count (const Set& ds, const std::vector<size_t>& axes) 
     { 
-      off64_t fp = 1;
+      int64_t fp = 1;
       for (size_t n = 0; n < axes.size(); ++n) {
         assert (axes[n] < ds.ndim());
         fp *= ds.dim(axes[n]);

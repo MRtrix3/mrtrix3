@@ -94,7 +94,7 @@ namespace MR {
 
 
 
-      template <typename T> inline T value (const T* val, const Point& unit_dir, int lmax)
+      template <typename T> inline T value (const T* val, const Point<T>& unit_dir, int lmax)
       {
         T value = 0.0;
         T az = atan2 (unit_dir[1], unit_dir[0]);
@@ -112,7 +112,7 @@ namespace MR {
       }
 
 
-      template <typename T> inline Math::Vector<T>& delta (Math::Vector<T>& D, const Point& unit_dir, int lmax)
+      template <typename T> inline Math::Vector<T>& delta (Math::Vector<T>& D, const Point<T>& unit_dir, int lmax)
       {
         D.allocate (NforL (lmax));
         T az = Math::atan2 (unit_dir[1], unit_dir[0]);
@@ -247,7 +247,7 @@ namespace MR {
             }
           }
 
-          T value (const T* val, const Point& unit_dir) const
+          T value (const T* val, const Point<T>& unit_dir) const
           {
             PrecomputedFraction<T> f;
             set (f, Math::acos (unit_dir[2]));
@@ -273,7 +273,7 @@ namespace MR {
 
 
 
-      template <typename T> inline T get_peak (const T* SH, int lmax, Point& unit_init_dir, PrecomputedAL<T>* precomputer = NULL)
+      template <typename T> inline T get_peak (const T* SH, int lmax, Point<T>& unit_init_dir, PrecomputedAL<T>* precomputer = NULL)
       {
         assert (unit_init_dir.valid());
         for (int i = 0; i < 50; i++) {
@@ -295,7 +295,7 @@ namespace MR {
           del *= dt;
           daz *= dt;
 
-          unit_init_dir += Point (del*cos(az)*cos(el) - daz*sin(az), del*sin(az)*cos(el) + daz*cos(az), -del*sin(el));
+          unit_init_dir += Point<T> (del*cos(az)*cos(el) - daz*sin(az), del*sin(az)*cos(el) + daz*cos(az), -del*sin(el));
           unit_init_dir.normalise();
 
           if (dt < ANGLE_TOLERANCE) return (amplitude);

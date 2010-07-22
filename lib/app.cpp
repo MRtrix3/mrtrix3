@@ -158,7 +158,7 @@ namespace MR {
       if (s.compare (0, s.size(), default_options[n].sname, s.size()) == 0)
         candidates.push_back (n + DEFAULT_OPTIONS_OFFSET);
 
-    if (candidates.size() == 0) return (SIZE_MAX);
+    if (candidates.size() == 0) return (std::numeric_limits<size_t>::max());
     if (candidates.size() == 1) return (candidates[0]);
 
     for (size_t n = 0; n < candidates.size(); ++n) 
@@ -235,7 +235,7 @@ namespace MR {
         while (*arg == '-') arg++;
         size_t opt = match_option (arg);
 
-        if (opt == SIZE_MAX) {
+        if (opt == std::numeric_limits<size_t>::max()) {
           throw Exception (std::string ("unknown option \"-") + arg + "\"");
         }
         else if (opt == DEFAULT_OPTIONS_OFFSET) {
@@ -313,7 +313,7 @@ namespace MR {
     if (!has_optional_arguments && num_args_required != parsed_arguments.size()) 
       throw Exception ("expected exactly " + str (num_args_required) + " arguments (" + str (parsed_arguments.size()) + " supplied)");
 
-    size_t optional_argument = SIZE_MAX;
+    size_t optional_argument = std::numeric_limits<size_t>::max();
     for (size_t n = 0; n < parsed_arguments.size(); n++) {
 
       if (n < optional_argument) 

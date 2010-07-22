@@ -58,7 +58,7 @@ namespace KernelOp
     {
       public:
         Item (size_t ndim) : pos (ndim) { }
-        typename Array<T>::RefPtr data[3][3];
+        RefPtr<T,true> data[3][3];
         std::vector<ssize_t> pos;
     };
 
@@ -146,12 +146,12 @@ namespace KernelOp
       private:
         typename Queue::Writer writer;
         Input&  src;
-        typename Array<value_type>::RefPtr data[3][3];
+        RefPtr<value_type,true> data[3][3];
         const size_t x, y, z;
 
-        std::vector<typename Array<value_type>::RefPtr> row_buffer;
+        std::vector<RefPtr<value_type,true> > row_buffer;
 
-        void new_row (typename Array<value_type>::RefPtr& row) 
+        void new_row (RefPtr<value_type,true>& row) 
         {
           if (row_buffer.size()) {
             row = row_buffer.back();
@@ -160,14 +160,14 @@ namespace KernelOp
           else row = new value_type [src.dim(x)];
         }
 
-        void set_row (typename Array<value_type>::RefPtr& row, typename Array<value_type>::RefPtr& original) 
+        void set_row (RefPtr<value_type,true>& row, RefPtr<value_type,true>& original) 
         {
           if (row && row.unique()) 
             row_buffer.push_back (row);
           row = original;
         }
 
-        void release_row (typename Array<value_type>::RefPtr& row) 
+        void release_row (RefPtr<value_type,true>& row) 
         {
           if (row && row.unique()) 
             row_buffer.push_back (row);

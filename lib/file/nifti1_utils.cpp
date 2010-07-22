@@ -27,6 +27,7 @@
 #include "math/permutation.h"
 #include "math/quaternion.h"
 #include "image/header.h"
+#include "dataset/stride.h"
 
 namespace MR {
   namespace File {
@@ -243,7 +244,8 @@ namespace MR {
       void check (Image::Header& H, bool single_file)
       {
         for (size_t i = 0; i < H.ndim(); ++i) 
-          if (H.axes.dim(i) < 1) H.axes.dim(i) = 1;
+          if (H.axes.dim(i) < 1) 
+            H.axes.dim(i) = 1;
 
         if (single_file) { 
           ssize_t order[H.ndim()];
@@ -260,12 +262,17 @@ namespace MR {
 
           assert (axis == H.ndim());
 
-          for (i = 0; i < 3; ++i) H.axes.stride(i) = order[i];
-          for (; i < H.ndim(); ++i) H.axes.stride(i) = abs(order[i]);
+          for (i = 0; i < 3; ++i) 
+            H.axes.stride(i) = order[i];
+
+          for (; i < H.ndim(); ++i) 
+            H.axes.stride(i) = abs(order[i]);
         }
         else {
-          for (size_t i = 0; i < H.ndim(); ++i) H.axes.stride(i) = i+1;
-          if (File::Config::get_bool ("Analyse.LeftToRight", true)) H.axes.stride(0) = -H.axes.stride(0);
+          for (size_t i = 0; i < H.ndim(); ++i) 
+            H.axes.stride(i) = i+1;
+          if (File::Config::get_bool ("Analyse.LeftToRight", true)) 
+            H.axes.stride(0) = -H.axes.stride(0);
 
           if (!right_left_warning_issued) {
             info ("assuming Analyse images are encoded " + std::string (H.axes.forward(0) ? "left to right" : "right to left"));
@@ -295,24 +302,28 @@ namespace MR {
 
         bool is_BE = H.datatype().is_big_endian();
 
+        
+
         // new transform handling code starts here
-        // TODO: outstanding issues in transform handling!
-        Math::Permutation permutation (3);
-        for (size_t i = 0; i < 3; ++i) {
-          assert (abs(H.axes.stride(i)) <= 3 && abs(H.axes.stride(i)) > 0);
-          permutation[i] = abs(H.axes.stride(i))-1;
-        }
+
+        DataSet::Stride::List strides = DataSet::Stride::get (H);
+        strides.resize (3);
+        std::vector<size_t> perm = DataSet::Stride::order (strides);
+        bool flip[] = { strides[perm[0]] < 0, strides[perm[1]] < 0, strides[perm[2]] < 0 };
 
         Math::Matrix<float> M (H.transform());
 
-        if (permutation[0] != 0 || permutation[1] != 1 || permutation[2] != 2 || 
-            !H.axes.forward(0)  || !H.axes.forward(1)  || !H.axes.forward(2)) {
+        if (perm[0] != 0 || perm[1] != 1 || perm[2] != 2 || 
+            flip[0] || flip[1] || flip[2]) {
 
-          Math::Vector<float> translation = M.column(3).sub(0,3);
-          for (size_t i = 0; i < 3; i++) {
-            if (!H.axes.forward(i)) {
-              float length = float(H.axes.dim(i)-1) * H.axes.vox(i);
-              Math::Vector<float> axis = M.column(i).sub(0,3);
+          for (size_t i = 0; i < 3; i++) 
+            M.column(i) = H.transform().column(perm[i]);
+
+          Math::Vector<float>::View translation = M.column(3).sub(0,3);
+          for (size_t i = 0; i < 3; ++i) {
+            if (flip[i]) {
+              float length = float(H.dim(perm[i])-1) * H.vox(perm[i]);
+              Math::Vector<float>::View axis = M.column(i).sub(0,3);
               for (size_t n = 0; n < 3; n++) {
                 axis[n] = -axis[n];
                 translation[n] -= length*axis[n];
@@ -320,10 +331,6 @@ namespace MR {
             }
           }
 
-          for (size_t i = 0; i < 3; i++) {
-            Math::Vector<float> row = M.row(i).sub(0,3);
-            permutation.apply (row); 
-          }
         }
 
         // new transform handling code ends here
@@ -340,7 +347,7 @@ namespace MR {
         // data set dimensions:
         put<int16_t> (H.ndim(), &NH.dim[0], is_BE);
         for (size_t i = 0; i < 3; i++) 
-          put<int16_t> (H.axes.dim(permutation[i]), &NH.dim[i+1], is_BE);
+          put<int16_t> (H.axes.dim(perm[i]), &NH.dim[i+1], is_BE);
         for (size_t i = 3; i < H.ndim(); i++) 
           put<int16_t> (H.axes.dim(i), &NH.dim[i+1], is_BE);
 
@@ -374,7 +381,7 @@ namespace MR {
 
         // voxel sizes:
         for (size_t i = 0; i < 3; i++) 
-          put<float32> (H.axes.vox(permutation[i]), &NH.pixdim[i+1], is_BE);
+          put<float32> (H.axes.vox(perm[i]), &NH.pixdim[i+1], is_BE);
         for (size_t i = 3; i < H.ndim(); i++) 
           put<float32> (H.axes.vox(i), &NH.pixdim[i+1], is_BE);
 
@@ -403,19 +410,19 @@ namespace MR {
         put<int16_t> (NIFTI_XFORM_UNKNOWN, &NH.qform_code, is_BE);
         put<int16_t> (NIFTI_XFORM_SCANNER_ANAT, &NH.sform_code, is_BE);
 
-        put<float32> (H.axes.vox(permutation[0])*M(0,0), &NH.srow_x[0], is_BE);
-        put<float32> (H.axes.vox(permutation[1])*M(0,1), &NH.srow_x[1], is_BE);
-        put<float32> (H.axes.vox(permutation[2])*M(0,2), &NH.srow_x[2], is_BE);
+        put<float32> (H.axes.vox(perm[0])*M(0,0), &NH.srow_x[0], is_BE);
+        put<float32> (H.axes.vox(perm[1])*M(0,1), &NH.srow_x[1], is_BE);
+        put<float32> (H.axes.vox(perm[2])*M(0,2), &NH.srow_x[2], is_BE);
         put<float32> (M(0,3), &NH.srow_x[3], is_BE);
 
-        put<float32> (H.axes.vox(permutation[0])*M(1,0), &NH.srow_y[0], is_BE);
-        put<float32> (H.axes.vox(permutation[1])*M(1,1), &NH.srow_y[1], is_BE);
-        put<float32> (H.axes.vox(permutation[2])*M(1,2), &NH.srow_y[2], is_BE);
+        put<float32> (H.axes.vox(perm[0])*M(1,0), &NH.srow_y[0], is_BE);
+        put<float32> (H.axes.vox(perm[1])*M(1,1), &NH.srow_y[1], is_BE);
+        put<float32> (H.axes.vox(perm[2])*M(1,2), &NH.srow_y[2], is_BE);
         put<float32> (M(1,3), &NH.srow_y[3], is_BE);
 
-        put<float32> (H.axes.vox(permutation[0])*M(2,0), &NH.srow_z[0], is_BE);
-        put<float32> (H.axes.vox(permutation[1])*M(2,1), &NH.srow_z[1], is_BE);
-        put<float32> (H.axes.vox(permutation[2])*M(2,2), &NH.srow_z[2], is_BE);
+        put<float32> (H.axes.vox(perm[0])*M(2,0), &NH.srow_z[0], is_BE);
+        put<float32> (H.axes.vox(perm[1])*M(2,1), &NH.srow_z[1], is_BE);
+        put<float32> (H.axes.vox(perm[2])*M(2,2), &NH.srow_z[2], is_BE);
         put<float32> (M(2,3), &NH.srow_z[3], is_BE);
 
         strncpy ((char*) &NH.magic, single_file ? "n+1\0" : "ni1\0", 4);

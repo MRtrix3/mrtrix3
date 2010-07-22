@@ -43,6 +43,7 @@ namespace MR {
         static const char*  millimeters;
         static const char*  milliseconds;
 
+        // TODO: leave description field blank by default
         class Axis {
           public:
             Axis () : dim (1), vox (NAN), stride (0) { }

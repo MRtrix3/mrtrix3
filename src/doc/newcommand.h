@@ -127,7 +127,7 @@ namespace MR {
  * information:
  *
  * \code
- * void read_file (const std::string& filename, off64_t offset) 
+ * void read_file (const std::string& filename, int64_t offset) 
  * {
  *   std::ifstream in (filename.c_str());
  *   if (!in)

@@ -73,46 +73,57 @@ namespace MR {
       if (!transform_matrix.is_set()) 
         DataSet::Transform::set_default (transform_matrix, *this);
 
-      transform_matrix(3,0) = transform_matrix(3,1) = transform_matrix(3,2) = 0.0; transform_matrix(3,3) = 1.0;
+      transform_matrix(3,0) = transform_matrix(3,1) = transform_matrix(3,2) = 0.0;
+      transform_matrix(3,3) = 1.0;
 
-      Math::Permutation permutation (3);
-      Math::absmax (transform_matrix.row(0).sub(0,3), permutation[0]);
-      Math::absmax (transform_matrix.row(1).sub(0,3), permutation[1]);
-      Math::absmax (transform_matrix.row(2).sub(0,3), permutation[2]);
+      Math::Permutation perm (3);
+      Math::absmax (transform_matrix.row(0).sub(0,3), perm[0]);
+      Math::absmax (transform_matrix.row(1).sub(0,3), perm[1]);
+      Math::absmax (transform_matrix.row(2).sub(0,3), perm[2]);
 
-      assert (permutation[0] != permutation[1] && permutation[1] != permutation[2] && permutation[2] != permutation[0]);
+      assert (perm[0] != perm[1] && perm[1] != perm[2] && perm[2] != perm[0]);
 
-      bool flip[3] = {
-        ( transform_matrix(0, permutation[0]) < 0.0 ),
-        ( transform_matrix(1, permutation[1]) < 0.0 ),
-        ( transform_matrix(2, permutation[2]) < 0.0 )
-      };
+      bool flip [3];
+      flip[perm[0]] = transform_matrix (0,perm[0]) < 0.0;
+      flip[perm[1]] = transform_matrix (1,perm[1]) < 0.0;
+      flip[perm[2]] = transform_matrix (2,perm[2]) < 0.0;
 
-      if (permutation[0] != 0 || permutation[1] != 1 || permutation[2] != 2 || flip[0] || flip[1] || flip[2]) {
+      if (perm[0] != 0 || perm[1] != 1 || perm[2] != 2 || 
+          flip[0] || flip[1] || flip[2]) {
+        // axes in transform need to be realigned to MRtrix coordinate system:
+        Math::Matrix<float> M (transform_matrix);
 
-        Axes::Axis a[] = { axes[permutation[0]], axes[permutation[1]], axes[permutation[2]] };
-        axes[0] = a[0];
-        axes[1] = a[1];
-        axes[2] = a[2];
-
-        for (size_t i = 0; i < 3; i++) {
-          Math::Vector<float> row = transform_matrix.row(i).sub(0,3);
-          permutation.apply (row); 
-        }
-
-        Math::Vector<float> translation = transform_matrix.column(3).sub(0,3);
-        for (size_t i = 0; i < 3; i++) {
+        Math::Vector<float>::View translation = M.column(3).sub(0,3);
+        for (size_t i = 0; i < 3; ++i) {
           if (flip[i]) {
-            axes.stride(i) = -axes.stride(i);
-            float length = float(axes[i].dim-1) * axes[i].vox;
-            Math::Vector<float> axis = transform_matrix.column(i).sub(0,3);
-            for (size_t n = 0; n < 3; n++) {
+            const float length = (dim(i)-1) * vox(i);
+            Math::Vector<float>::View axis = M.column(i);
+            for (size_t n = 0; n < 3; ++n) {
               axis[n] = -axis[n];
               translation[n] -= length*axis[n];
             }
           }
         }
+
+        for (size_t i = 0; i < 3; ++i) {
+          Math::Vector<float>::View row = M.row(i).sub(0,3);
+          perm.apply (row); 
+          if (flip[i]) 
+            axes.stride(i) = -axes.stride(i);
+        }
+
+        transform_matrix.swap (M);
+
+        Axes::Axis a[] = { 
+          axes[perm[0]], 
+          axes[perm[1]], 
+          axes[perm[2]]
+        };
+        axes[0] = a[0];
+        axes[1] = a[1];
+        axes[2] = a[2];
       }
+
     }
 
 

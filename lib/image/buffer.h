@@ -81,16 +81,16 @@ namespace MR {
             T* data;
             DataSet::Stride::List stride;
             size_t start;
-            typename Array<T>::Ptr block;
+            Ptr<T,true> block;
         };
 
       public:
         typedef T value_type;
 
         //! construct an Image::Buffer object to access the data in the Image::Header \p header
-        Buffer (const Image::Header& header, size_t NDIM = SIZE_MAX) :
+        Buffer (const Image::Header& header, size_t NDIM = std::numeric_limits<size_t>::max()) :
           H (header),
-          ptr (new Shared (NDIM == SIZE_MAX ? header.ndim() : NDIM)), 
+          ptr (new Shared (NDIM == std::numeric_limits<size_t>::max() ? header.ndim() : NDIM)), 
           x (ndim()),
           stride_instance (ptr) {
             for (size_t i = 0; i < ndim(); ++i) 
@@ -120,9 +120,9 @@ namespace MR {
         //! Construct from an Image::Header object with guaranteed strides
         /*! the resulting instance is guaranteed to have the strides specified.
          * Any zero strides will be ignored. */
-        Buffer (const Image::Header& header, const std::vector<ssize_t>& desired_strides, size_t NDIM = SIZE_MAX) :
+        Buffer (const Image::Header& header, const std::vector<ssize_t>& desired_strides, size_t NDIM = std::numeric_limits<size_t>::max()) :
           H (header),
-          ptr (new Shared (NDIM == SIZE_MAX ? header.ndim() : NDIM)), 
+          ptr (new Shared (NDIM == std::numeric_limits<size_t>::max() ? header.ndim() : NDIM)), 
           x (ndim()),
           stride_instance (ptr) {
             bool strides_match = true;

@@ -198,9 +198,9 @@ namespace MR {
 
       std::ostream& operator<< (std::ostream& stream, const Image& item)
       {
-        stream << "            " << ( item.instance == SIZE_MAX ? 0 : item.instance ) << "#" 
-          << ( item.acq == SIZE_MAX ? 0 : item.acq) << ":"
-          << ( item.sequence == SIZE_MAX ? 0 : item.sequence ) << " (" 
+        stream << "            " << ( item.instance == std::numeric_limits<size_t>::max() ? 0 : item.instance ) << "#" 
+          << ( item.acq == std::numeric_limits<size_t>::max() ? 0 : item.acq) << ":"
+          << ( item.sequence == std::numeric_limits<size_t>::max() ? 0 : item.sequence ) << " (" 
           << ( item.sequence_name.size() ? item.sequence_name : "?" ) << "), "
           << item.dim[0] << "x" << item.dim[1] << ", "
           << item.pixel_size[0] << "x" << item.pixel_size[1] << " x " 

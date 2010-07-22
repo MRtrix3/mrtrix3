@@ -66,13 +66,14 @@ namespace MR {
        * \endcode
        */
 
-      template <class Set> class Nearest : public Base<Set> 
+      template <class Set, typename T = float> class Nearest : public Base<Set,T> 
       {
         private:
           typedef class Base<Set> B;
 
         public:
           typedef typename Set::value_type value_type;
+          typedef typename B::pos_type pos_type;
 
           //! construct an Nearest object to obtain interpolated values using the
           // parent DataSet class 
@@ -82,9 +83,9 @@ namespace MR {
           /*! This will set the position from which the image intensity values will
            * be interpolated, assuming that \a pos provides the position as a
            * (floating-point) voxel coordinate within the dataset. */
-          bool voxel (const Point& pos)
+          bool voxel (const Point<pos_type>& pos)
           {
-            Point f = B::set (pos);
+            Point<pos_type> f = B::set (pos);
             if (B::out_of_bounds) return (true);
             B::data[0] = Math::round<ssize_t> (pos[0]);
             B::data[1] = Math::round<ssize_t> (pos[1]);
@@ -99,12 +100,12 @@ namespace MR {
            * coordinate relative to the axes of the dataset, in units of
            * millimeters. The origin is taken to be the centre of the voxel at [
            * 0 0 0 ]. */
-          bool image (const Point& pos) { return (voxel (B::image2voxel (pos))); }
+          bool image (const Point<pos_type>& pos) { return (voxel (B::image2voxel (pos))); }
           //! Set the current position to the <b>scanner space</b> position \a pos
           /*! This will set the position from which the image intensity values will
            * be interpolated, assuming that \a pos provides the position as a
            * scanner space coordinate, in units of millimeters. */
-          bool scanner (const Point& pos) { return (voxel (B::scanner2voxel (pos))); }
+          bool scanner (const Point<pos_type>& pos) { return (voxel (B::scanner2voxel (pos))); }
 
           value_type value () const
           {

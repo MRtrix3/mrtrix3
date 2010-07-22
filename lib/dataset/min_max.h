@@ -29,7 +29,7 @@ namespace MR {
   namespace DataSet {
 
     template <class Set, typename T> 
-      void min_max (Set& D, T& min, T& max, size_t from_axis = 0, size_t to_axis = SIZE_MAX)
+      void min_max (Set& D, T& min, T& max, size_t from_axis = 0, size_t to_axis = std::numeric_limits<size_t>::max())
       {
         min = T(INFINITY);
         max = T(-INFINITY);

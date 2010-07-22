@@ -52,7 +52,7 @@ namespace MR {
         debug ("mapping piped image \"" + H.files[0].name + "\"...");
 
         segsize = DataSet::voxel_count (H) / H.files.size();
-        off64_t bytes_per_segment = (H.datatype().bits() * segsize + 7) / 8;
+        int64_t bytes_per_segment = (H.datatype().bits() * segsize + 7) / 8;
 
         if (double (bytes_per_segment) >= double (std::numeric_limits<size_t>::max()))
           throw Exception ("image \"" + H.name() + "\" is larger than maximum accessible memory");

@@ -57,7 +57,7 @@ namespace MR {
 
         if (H.datatype().bits() == 1) {
           bytes_per_segment = segsize/8;
-          if (bytes_per_segment*8 < off64_t(segsize))
+          if (bytes_per_segment*8 < int64_t(segsize))
             ++bytes_per_segment;
         }
         else bytes_per_segment = H.datatype().bytes() * segsize;

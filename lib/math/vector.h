@@ -30,7 +30,7 @@
 #include "mrtrix.h"
 #include "math/math.h"
 
-#define LOOP(op) for (size_t i = 0; i < GSLVector<T>::size; i++) { op; }
+#define LOOP(op) for (size_t i = 0; i < size(); i++) { op; }
 
 namespace MR {
   namespace Math {
@@ -97,7 +97,7 @@ namespace MR {
 
             //! assign the values in \a V to the corresponding elements of the vector
             View& operator= (const Vector<T>& V) { 
-              assert (GSLVector<T>::size == V.GSLVector<T>::size); 
+              assert (size() == V.size()); 
               LOOP (operator[](i) = V[i]); 
               return (*this);
             }
@@ -128,9 +128,9 @@ namespace MR {
         Vector () throw () 
         {
           GSLVector<T>::size = GSLVector<T>::stride = 1; 
-          GSLVector<T>::data = NULL; 
-          GSLVector<T>::block = NULL;
-          GSLVector<T>::owner = 1;
+          data = NULL; 
+          block = NULL;
+          owner = 1;
         }
 
         //! copy constructor
@@ -156,41 +156,41 @@ namespace MR {
         { 
 	  GSLVector<T>::size = nelements;
 	  GSLVector<T>::stride = skip;
-	  GSLVector<T>::set (vector_data);
-	  GSLVector<T>::block = NULL;
-	  GSLVector<T>::owner = 0;
+	  set (vector_data);
+	  block = NULL;
+	  owner = 0;
         }
 
 	//! construct a vector by reading from the text file \a filename
         Vector (const std::string& file)
         { 
           GSLVector<T>::size = GSLVector<T>::stride = 1; 
-          GSLVector<T>::data = NULL; 
-          GSLVector<T>::block = NULL;
-          GSLVector<T>::owner = 1;
+          data = NULL; 
+          block = NULL;
+          owner = 1;
           load (file); 
         } 
 
 	//! destructor
         ~Vector ()
         {
-          if (GSLVector<T>::block) { 
-            assert (GSLVector<T>::owner);
-            GSLBlock<T>::free (GSLVector<T>::block);
+          if (block) { 
+            assert (owner);
+            GSLBlock<T>::free (block);
           }
         }
 
 	//! deallocate the vector data
         Vector& clear () 
         {
-          if (GSLVector<T>::block) {
-            assert (GSLVector<T>::owner);
-            GSLBlock<T>::free (GSLVector<T>::block);
+          if (block) {
+            assert (owner);
+            GSLBlock<T>::free (block);
           }
 	  GSLVector<T>::size = GSLVector<T>::stride = 0; 
-          GSLVector<T>::data = NULL; 
-          GSLVector<T>::block = NULL; 
-          GSLVector<T>::owner = 1; 
+          data = NULL; 
+          block = NULL; 
+          owner = 1; 
           return (*this); 
         }
 
@@ -204,37 +204,48 @@ namespace MR {
         Vector& allocate (size_t nelements)
         {
           if (nelements == size()) return (*this);
-          if (GSLVector<T>::block) {
-            assert (GSLVector<T>::owner);
-            if (GSLVector<T>::block->size < nelements) {
-	      GSLBlock<T>::free (GSLVector<T>::block);
-	      GSLVector<T>::block = NULL;
+          if (block) {
+            assert (owner);
+            if (block->size < nelements) {
+	      GSLBlock<T>::free (block);
+	      block = NULL;
             }
           }
-          if (!GSLVector<T>::block && nelements) {
-            GSLVector<T>::block = GSLBlock<T>::alloc (nelements);
-            if (!GSLVector<T>::block)
+          if (!block && nelements) {
+            block = GSLBlock<T>::alloc (nelements);
+            if (!block)
               throw Exception ("Failed to allocate memory for Vector data");
           }
 	  GSLVector<T>::size = nelements; 
           GSLVector<T>::stride = 1;
-          GSLVector<T>::owner = 1;
-          GSLVector<T>::data = GSLVector<T>::block ? GSLVector<T>::block->data : NULL;
+          owner = 1;
+          data = block ? block->data : NULL;
           return (*this);
         }
 
-	//! resize the vector to have size \a nelements
-        /** \note no bounds checking and no data
-         * allocation/deallocation/copying is performed by this function. */
-        Vector& resize (size_t nelements) { GSLVector<T>::size = nelements; return (*this); }
-
-	//! resize the vector to refer to the subvector specified
-        /** \note no bounds checking and no data
-         * allocation/deallocation/copying is performed by this function. */
-        Vector& resize (size_t from, size_t to) 
-        { 
-          ptr() += from*GSLVector<T>::stride; 
-          GSLVector<T>::size = to-from; 
+	//! resize the vector to have size \a nelements, preserving existing data
+        /*! The \c fill_value argument determines what value the elements of
+         * the Vector will be set to in case the size requested exceeds the
+         * current size. */
+        Vector& resize (size_t nelements, value_type fill_value = 0.0) 
+        {
+          if (nelements == 0) {
+            GSLVector<T>::size = 0;
+            return (*this);
+          }
+          if (!block) {
+            allocate (nelements);
+            operator= (fill_value);
+            return (*this);
+          }
+          if (nelements*stride() > block->size) {
+            Vector V (nelements);
+            V.sub (0, size()) = *this;
+            V.sub (size(), V.size()) = fill_value;
+            swap (V);
+            return (*this);
+          }
+          GSLVector<T>::size = nelements; 
           return (*this); 
         }
 
@@ -273,16 +284,16 @@ namespace MR {
         size_t size () const throw ()  { return (GSLVector<T>::size); }
 
 	//! returns a reference to the element at \a i
-        T& operator[] (size_t i) throw ()          { return (ptr()[i*GSLVector<T>::stride]); }
+        T& operator[] (size_t i) throw ()          { return (ptr()[i*stride()]); }
 
 	//! returns a reference to the element at \a i
-        const T& operator[] (size_t i) const throw ()    { return (ptr()[i*GSLVector<T>::stride]); }
+        const T& operator[] (size_t i) const throw ()    { return (ptr()[i*stride()]); }
 
 	//! return a pointer to the underlying data
-        T* ptr () throw () { return ((T*) (GSLVector<T>::data)); }
+        T* ptr () throw () { return ((T*) (data)); }
 
 	//! return a pointer to the underlying data
-        const T* ptr () const throw () { return ((const T*) (GSLVector<T>::data)); }
+        const T* ptr () const throw () { return ((const T*) (data)); }
 
 	//! return the stride of the vector
         size_t stride () const throw () { return (GSLVector<T>::stride); }
@@ -345,34 +356,34 @@ namespace MR {
         View sub (size_t from, size_t to) throw () 
         { 
           assert (from <= to && to <= size());
-          return (View (ptr() + from*GSLVector<T>::stride, to-from, GSLVector<T>::stride));
+          return (View (ptr() + from*stride(), to-from, stride()));
         }
 
 	//! return a subvector of the vector
         const View sub (size_t from, size_t to) const throw ()
         { 
           assert (from <= to && to <= size());
-          return (View (const_cast<T*> (ptr()) + from*GSLVector<T>::stride, to-from, GSLVector<T>::stride));
+          return (View (const_cast<T*> (ptr()) + from*stride(), to-from, stride()));
         }
 
 	//! return a subvector of the vector
         View sub (size_t from, size_t to, size_t skip) throw () 
         { 
           assert (from <= to && to <= size());
-          return (View (ptr() + from*GSLVector<T>::stride, ceil<size_t> ((to-from)/float(skip)), GSLVector<T>::stride*skip));
+          return (View (ptr() + from*stride(), ceil<size_t> ((to-from)/float(skip)), stride()*skip));
         }
 
 	//! return a subvector of the vector
         const View sub (size_t from, size_t to, size_t skip) const throw ()
         { 
           assert (from <= to && to <= size());
-          return (View (ptr() + from*GSLVector<T>::stride, ceil<size_t> ((to-from)/float(skip)), GSLVector<T>::stride*skip));
+          return (View (ptr() + from*stride(), ceil<size_t> ((to-from)/float(skip)), stride()*skip));
         }
 
 	//! write the vector \a V to \a stream as text
         friend std::ostream& operator<< (std::ostream& stream, const Vector& V)
         {
-          for (size_t i = 0; i < V.size(); i++) stream << V[i] << "\n"; 
+          for (size_t i = 0; i < V.size(); i++) stream << V[i] << " "; 
           return (stream); 
         }
 
@@ -394,15 +405,19 @@ namespace MR {
         }
 
       protected:
+        using GSLVector<T>::data;
+        using GSLVector<T>::block;
+        using GSLVector<T>::owner;
+
         void initialize (size_t nelements) 
         {   
-	  GSLVector<T>::block = GSLBlock<T>::alloc (nelements);
-          if (!GSLVector<T>::block) 
+	  block = GSLBlock<T>::alloc (nelements);
+          if (!block) 
             throw Exception ("Failed to allocate memory for Vector data");  
 	  GSLVector<T>::size = nelements; 
           GSLVector<T>::stride = 1; 
-          GSLVector<T>::data = GSLVector<T>::block->data; 
-          GSLVector<T>::owner = 1;
+          data = block->data; 
+          owner = 1;
         }
     };
 

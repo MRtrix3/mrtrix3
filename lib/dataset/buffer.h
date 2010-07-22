@@ -150,7 +150,7 @@ namespace MR {
               size_t start_;
               std::vector<Axis> axes_;
               Math::Matrix<float> transform_;
-              typename Array<value_type>::RefPtr block_;
+              RefPtr<value_type,true> block_;
               std::string name_;
 
               Prototype (const Prototype& prot) :

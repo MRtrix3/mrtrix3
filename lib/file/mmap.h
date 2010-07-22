@@ -27,6 +27,7 @@
 #include <cassert>
 #include <stdint.h>
 
+#include "types.h"
 #include "file/entry.h"
 
 namespace MR {
@@ -34,14 +35,14 @@ namespace MR {
 
     class MMap : protected Entry {
       public:
-        MMap (const Entry& entry, bool read_write = false, off64_t mapped_size = -1) : 
+        MMap (const Entry& entry, bool read_write = false, int64_t mapped_size = -1) : 
           Entry (entry), msize (mapped_size), readwrite (read_write) { map(); }
-        MMap (const std::string& fname, bool read_write = false, off64_t from = 0, off64_t mapped_size = -1) :
+        MMap (const std::string& fname, bool read_write = false, int64_t from = 0, int64_t mapped_size = -1) :
           Entry (fname, from), msize (mapped_size), readwrite (read_write) { map(); }
         ~MMap ();
 
         std::string     name () const        { return (Entry::name); }
-        off64_t         size () const        { return (msize); }
+        int64_t         size () const        { return (msize); }
         uint8_t*        address()            { return (addr + start); }
         const uint8_t*  address() const      { return (addr + start); }
 
@@ -58,7 +59,7 @@ namespace MR {
       protected:
         int       fd;
         uint8_t*  addr;        /**< The address in memory where the file has been mapped. */
-        off64_t   msize;       /**< The size of the file. */
+        int64_t   msize;       /**< The size of the file. */
         time_t    mtime;       /**< The modification time of the file at the last check. */
         bool      readwrite;
 
