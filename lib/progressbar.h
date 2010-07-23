@@ -166,7 +166,7 @@ namespace MR {
         }
       }
 
-      void operator++ (int unused) { return ((*this)++); }
+      void operator++ (int unused) { ++(*this); }
 
       static bool display;
       static void (*display_func) (ProgressInfo& p);
