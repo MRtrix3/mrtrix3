@@ -559,9 +559,6 @@ EXECUTE {
     header.comments.push_back ("comment: " + *i);
 
   float scaling_factor = fibre_fraction ? 1.0 / float(num_tracks) : 1.0;
-  scaling_factor *= properties["step_size"].empty() ? 1.0 : (to<float>(properties["step_size"]) / minvalue (header.vox(0), header.vox(1), header.vox(2)));
-  header.comments.push_back("scaling_factor: " + str(scaling_factor));
-  info ("intensity scaling factor set to " + str(scaling_factor));
 
   size_t resample_factor;
   opt = get_options ("resample");
@@ -570,20 +567,20 @@ EXECUTE {
     info ("track interpolation factor manually set to " + str(resample_factor));
   } 
   else if (step_size) {
-    const float min_vox = minvalue (header.vox(0), header.vox(1), header.vox(2));
-    resample_factor = Math::ceil<size_t> (step_size / min_vox);
+    resample_factor = Math::ceil<size_t> (step_size / minvalue (header.vox(0), header.vox(1), header.vox(2)));
     info ("track interpolation factor automatically set to " + str(resample_factor));
-    properties["step_size"] = str(step_size / resample_factor);
   } 
   else {
     resample_factor = 1;
     info ("track interpolation off; no track step size information in header");
   }
 
+  scaling_factor *= (step_size / float(resample_factor)) / minvalue (header.vox(0), header.vox(1), header.vox(2));
+  header.comments.push_back("scaling_factor: " + str(scaling_factor));
+  info ("intensity scaling factor set to " + str(scaling_factor));
+
   Math::Matrix<float> interp_matrix (gen_interp_matrix<float> (resample_factor));
 
-
-  // TODO Enable segmentwise processing in scenario where not enough memory is available for both the buffer and the memory-mapped output file
 
   if (colour) {
 
