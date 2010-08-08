@@ -333,8 +333,8 @@ namespace MR {
 
         }
 
-        // new transform handling code ends here
 
+        memset (&NH, 0, sizeof (NH));
 
         // magic number:
         put<int32_t> (348, &NH.sizeof_hdr, is_BE);
