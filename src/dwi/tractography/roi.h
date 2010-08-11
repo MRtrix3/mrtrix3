@@ -49,6 +49,7 @@ namespace MR {
               if (F.size() != 4) throw 1;
               pos.set (F[0], F[1], F[2]);
               rad = F[3];
+              rad2 = Math::pow2(rad);
               vol = 4.0*M_PI*Math::pow3(rad)/3.0;
             }
             catch (...) { 
