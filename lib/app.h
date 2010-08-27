@@ -34,7 +34,7 @@
 #define ARGUMENTS   const MR::Argument __command_arguments[]
 #define OPTIONS const MR::Option __command_options[]
 
-#define EXECUTE class MyApp : public MR::App { \
+#define __EXECUTE__(_code_) class MyApp : public MR::App { \
   public: \
   MyApp (int argc, char** argv, const char** cmd_desc, const MR::Argument* cmd_args, const MR::Option* cmd_opts, \
       const size_t* cmd_version, const char* cmd_author, const char* cmd_copyright) : \
@@ -42,14 +42,26 @@
   void execute (); \
 }; \
 int main (int argc, char* argv[]) { \
+  _code_ \
+  return (0); } \
+void MyApp::execute ()
+
+
+#ifdef NDEBUG
+# define EXECUTE __EXECUTE__( \
   try { \
     MyApp app (argc, argv, __command_description, __command_arguments, __command_options, __command_version, __command_author, __command_copyright); \
     app.run (); \
   } \
   catch (Exception& E) { E.display(); return (1); } \
-  catch (int ret) { return (ret); } \
-  return (0); } \
-void MyApp::execute ()
+  catch (int ret) { return (ret); } )
+
+#else
+# define EXECUTE __EXECUTE__( \
+    MyApp app (argc, argv, __command_description, __command_arguments, __command_options, __command_version, __command_author, __command_copyright); \
+    app.run ();)
+#endif
+
 
 #define DEFAULT_OPTIONS_OFFSET 65536U
 

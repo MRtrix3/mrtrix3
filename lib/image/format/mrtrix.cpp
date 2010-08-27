@@ -72,7 +72,7 @@ namespace MR {
             std::vector<float> V (parse_floats (kv.value()));
             dw_scheme.insert (dw_scheme.end(), V.begin(), V.end()); 
           }
-          else error ("WARNING: invalid key \"" + kv.key() + " in MRtrix image header \"" + H.name() + "\" - ignored");
+          else H[key] = kv.value();
         }
 
         if (dim.empty()) throw Exception ("missing \"dim\" specification for MRtrix image \"" + H.name() + "\"");
@@ -189,15 +189,21 @@ namespace MR {
         for (size_t n = 1; n < H.axes.ndim(); n++) out << "," << H.axes.vox(n);
 
         out << "\nlayout: " << ( H.axes.forward(0) ? "+" : "-" ) << abs(H.axes.stride(0))-1;
-        for (size_t n = 1; n < H.axes.ndim(); n++) out << "," << ( H.axes.forward(n) ? "+" : "-" ) << abs(H.axes.stride(n))-1;
+        for (size_t n = 1; n < H.axes.ndim(); n++) 
+          out << "," << ( H.axes.forward(n) ? "+" : "-" ) << abs(H.axes.stride(n))-1;
 
         out << "\ndatatype: " << H.datatype().specifier();
 
         out << "\nlabels: " << H.axes.description(0);
-        for (size_t n = 1; n < H.axes.ndim(); n++) out << "\\" << H.axes.description(n);
+        for (size_t n = 1; n < H.axes.ndim(); n++) 
+          out << "\\" << H.axes.description(n);
 
         out << "\nunits: " <<  H.axes.units(0);
-        for (size_t n = 1; n < H.axes.ndim(); n++) out << "\\" << H.axes.units(n);
+        for (size_t n = 1; n < H.axes.ndim(); n++) 
+          out << "\\" << H.axes.units(n);
+
+        for (std::map<std::string, std::string>::iterator i = H.begin(); i != H.end(); ++i)
+          out << "\n" << i->first << ": " << i->second;
 
         for (std::vector<std::string>::const_iterator i = H.comments.begin(); i != H.comments.end(); i++) 
           out << "\ncomments: " << *i;
