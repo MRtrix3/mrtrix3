@@ -23,6 +23,7 @@
 #include <limits>
 
 #include "app.h"
+#include "image/header.h"
 #include "image/handler/default.h"
 #include "dataset/misc.h"
 
@@ -35,9 +36,10 @@ namespace MR {
         if (files.empty() && addresses.size()) {
           assert (addresses[0]);
 
-          if (H.readwrite) {
-            for (size_t n = 0; n < H.files.size(); n++) {
-              File::MMap file (H.files[n], true, bytes_per_segment);
+          if (H.readwrite()) {
+            const std::vector<File::Entry>& Hfiles (H.get_files());
+            for (size_t n = 0; n < Hfiles.size(); n++) {
+              File::MMap file (Hfiles[n], true, bytes_per_segment);
               memcpy (file.address(), addresses[0] + n*bytes_per_segment, bytes_per_segment);
             }
           }
@@ -51,9 +53,11 @@ namespace MR {
 
       void Default::execute ()
       {
-        if (H.files.empty()) throw Exception ("no files specified in header for image \"" + H.name() + "\"");
+        const std::vector<File::Entry>& Hfiles (H.get_files());
+        if (Hfiles.empty())
+          throw Exception ("no files specified in header for image \"" + H.name() + "\"");
 
-        segsize = DataSet::voxel_count (H) / H.files.size();
+        segsize = DataSet::voxel_count (H) / Hfiles.size();
 
         if (H.datatype().bits() == 1) {
           bytes_per_segment = segsize/8;
@@ -62,10 +66,10 @@ namespace MR {
         }
         else bytes_per_segment = H.datatype().bytes() * segsize;
 
-        if (H.files.size() * double (bytes_per_segment) >= double (std::numeric_limits<size_t>::max()))
+        if (Hfiles.size() * double (bytes_per_segment) >= double (std::numeric_limits<size_t>::max()))
           throw Exception ("image \"" + H.name() + "\" is larger than maximum accessible memory");
 
-        if (H.files.size() > MAX_FILES_PER_IMAGE) copy_to_mem ();
+        if (Hfiles.size() > MAX_FILES_PER_IMAGE) copy_to_mem ();
         else map_files ();
       }
 
@@ -76,10 +80,11 @@ namespace MR {
       void Default::map_files () 
       {
         debug ("mapping image \"" + H.name() + "\"...");
-        files.resize (H.files.size());
+        const std::vector<File::Entry>& Hfiles (H.get_files());
+        files.resize (Hfiles.size());
         addresses.resize (files.size());
-        for (size_t n = 0; n < H.files.size(); n++) {
-          files[n] = new File::MMap (H.files[n], H.readwrite, bytes_per_segment); 
+        for (size_t n = 0; n < Hfiles.size(); n++) {
+          files[n] = new File::MMap (Hfiles[n], H.readwrite(), bytes_per_segment); 
           addresses[n] = files[n]->address();
         }
       }
@@ -91,14 +96,15 @@ namespace MR {
       void Default::copy_to_mem () 
       {
         debug ("loading image \"" + H.name() + "\"...");
-        addresses.resize (H.files.size() > 1 && H.datatype().bits()*segsize != 8*size_t(bytes_per_segment) ? H.files.size() : 1 );
-        addresses[0] = new uint8_t [H.files.size() * bytes_per_segment];
+        const std::vector<File::Entry>& Hfiles (H.get_files());
+        addresses.resize (Hfiles.size() > 1 && H.datatype().bits()*segsize != 8*size_t(bytes_per_segment) ? Hfiles.size() : 1 );
+        addresses[0] = new uint8_t [Hfiles.size() * bytes_per_segment];
         if (!addresses[0]) throw Exception ("failed to allocate memory for image \"" + H.name() + "\"");
 
-        if (is_new) memset (addresses[0], 0, H.files.size() * bytes_per_segment);
+        if (is_new) memset (addresses[0], 0, Hfiles.size() * bytes_per_segment);
         else {
-          for (size_t n = 0; n < H.files.size(); n++) {
-            File::MMap file (H.files[n], false, bytes_per_segment);
+          for (size_t n = 0; n < Hfiles.size(); n++) {
+            File::MMap file (Hfiles[n], false, bytes_per_segment);
             memcpy (addresses[0] + n*bytes_per_segment, file.address(), bytes_per_segment);
           }
         }

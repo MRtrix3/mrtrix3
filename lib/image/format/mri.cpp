@@ -120,7 +120,8 @@ namespace MR {
 
       bool MRI::read (Header& H) const
       {
-        if (!Path::has_suffix (H.name(), ".mri")) return (false);
+        if (!Path::has_suffix (H.name(), ".mri"))
+          return (false);
 
         File::MMap fmap (H.name());
 
@@ -132,7 +133,7 @@ namespace MR {
         else if (get<uint16_t> ((uint8_t*) fmap.address() + sizeof (uint32_t), is_BE) != 0x0001U) 
           throw Exception ("MRI file \"" + H.name() + "\" is badly formed (invalid byte order specifier)");
 
-        H.axes.ndim() = 4;
+        H.set_ndim (4);
 
         size_t data_offset = 0;
         char* c;
@@ -142,14 +143,14 @@ namespace MR {
         while (current <= last) {
           switch (type (current, is_BE)) {
             case MRI_DATA:
-              H.datatype() = (((const char*) data (current)) - 4)[0];
+              H.set_datatype ((((const char*) data (current)) - 4)[0]);
               data_offset = current + 5 - (uint8_t*) fmap.address();
               break;
             case MRI_DIMENSIONS:
-              H.axes.dim(0) = get<uint32_t> (data (current), is_BE);
-              H.axes.dim(1) = get<uint32_t> (data (current) + sizeof (uint32_t), is_BE);
-              H.axes.dim(2) = get<uint32_t> (data (current) + 2*sizeof (uint32_t), is_BE);
-              H.axes.dim(3) = get<uint32_t> (data (current) + 3*sizeof (uint32_t), is_BE);
+              H.set_dim (0, get<uint32_t> (data (current), is_BE));
+              H.set_dim (1, get<uint32_t> (data (current) + sizeof (uint32_t), is_BE));
+              H.set_dim (2, get<uint32_t> (data (current) + 2*sizeof (uint32_t), is_BE));
+              H.set_dim (3, get<uint32_t> (data (current) + 3*sizeof (uint32_t), is_BE));
               break;
             case MRI_ORDER:
               c = (char*) data (current);
@@ -158,29 +159,30 @@ namespace MR {
                 size_t ax = char2order (c[n], forward);
                 if (ax == std::numeric_limits<size_t>::max()) 
                   throw Exception ("invalid order specifier in MRI image \"" + H.name() + "\"");
-                H.axes.stride(ax) = n+1;
-                if (!forward) H.axes.stride(ax) = -H.axes.stride(ax);
+                H.set_stride (ax, n+1);
+                if (!forward) 
+                  H.set_stride (ax, -H.stride(ax));
               }
               break;
             case MRI_VOXELSIZE:
-              H.axes.vox(0) = get<float32> (data (current), is_BE);
-              H.axes.vox(1) = get<float32> (data (current) + sizeof (float32), is_BE);
-              H.axes.vox(2) = get<float32> (data (current) + 2*sizeof (float32), is_BE);
+              H.set_vox (0, get<float32> (data (current), is_BE));
+              H.set_vox (1, get<float32> (data (current) + sizeof (float32), is_BE));
+              H.set_vox (2, get<float32> (data (current) + 2*sizeof (float32), is_BE));
               break;
             case MRI_COMMENT:
-              H.comments.push_back (std::string ((const char*) data (current), size (current, is_BE)));
+              H.add_comment (std::string ((const char*) data (current), size (current, is_BE)));
               break;
             case MRI_TRANSFORM:
-              H.transform().allocate (4,4);
-              for (size_t i = 0; i < 4; i++)
-                for (size_t j = 0; j < 4; j++)
-                  H.transform()(i,j) = get<float32> (data (current) + ( i*4 + j )*sizeof (float32), is_BE);
+              H.get_transform().allocate (4,4);
+              for (size_t i = 0; i < 4; ++i)
+                for (size_t j = 0; j < 4; ++j)
+                  H.get_transform()(i,j) = get<float32> (data (current) + ( i*4 + j )*sizeof (float32), is_BE);
               break;
             case MRI_DWSCHEME:
-              H.DW_scheme.allocate (size (current, is_BE)/(4*sizeof (float32)), 4);
-              for (size_t i = 0; i < H.DW_scheme.rows(); i++)
-                for (size_t j = 0; j < 4; j++)
-                  H.DW_scheme(i,j) = get<float32> (data (current) + ( i*4 + j )*sizeof (float32), is_BE);
+              H.get_DW_scheme().allocate (size (current, is_BE)/(4*sizeof (float32)), 4);
+              for (size_t i = 0; i < H.DW_scheme().rows(); ++i)
+                for (size_t j = 0; j < 4; ++j)
+                  H.get_DW_scheme()(i,j) = get<float32> (data (current) + ( i*4 + j )*sizeof (float32), is_BE);
               break;
             default:
               error ("unknown header entity (" + str (type (current, is_BE)) 
@@ -188,26 +190,18 @@ namespace MR {
                   + ") in image \"" + H.name() + "\" - ignored");
               break;
           }
-          if (data_offset) break;
+
+          if (data_offset) 
+            break;
+
           current = next (current, is_BE);
         }
 
 
-        if (!data_offset) throw Exception ("no data field found in MRI image \"" + H.name() + "\"");
+        if (!data_offset) 
+          throw Exception ("no data field found in MRI image \"" + H.name() + "\"");
 
-
-        if (!H.axes.description(0).size()) H.axes.description(0) = Axes::left_to_right;
-        if (!H.axes.units(0).size()) H.axes.units(0) = Axes::millimeters;
-        if (H.ndim() > 1) {
-          if (!H.axes.description(1).size()) H.axes.description(1) = Axes::posterior_to_anterior;
-          if (!H.axes.units(1).size()) H.axes.units(1) = Axes::millimeters;
-          if (H.ndim() > 2) {
-            if (!H.axes.description(2).size()) H.axes.description(2) = Axes::inferior_to_superior;
-            if (!H.axes.units(2).size()) H.axes.units(2) = Axes::millimeters;
-          }
-        }
-
-        H.files.push_back (File::Entry (H.name(), data_offset));
+        H.add_file (File::Entry (H.name(), data_offset));
 
         return (true);
       }
@@ -218,21 +212,13 @@ namespace MR {
 
       bool MRI::check (Header& H, size_t num_axes) const
       {
-        if (!Path::has_suffix (H.name(), ".mri")) return (false);
-        if (H.ndim() > num_axes && num_axes != 4) throw Exception ("MRTools format can only support 4 dimensions");
+        if (!Path::has_suffix (H.name(), ".mri")) 
+          return (false);
 
-        H.axes.ndim() = num_axes;
+        if (H.ndim() > num_axes && num_axes != 4)
+          throw Exception ("MRTools format can only support 4 dimensions");
 
-        if (H.axes.description(0).empty()) H.axes.description(0) = Axes::left_to_right;
-        if (H.axes.units(0).empty()) H.axes.units(0) = Axes::millimeters;
-        if (H.ndim() > 1) {
-          if (H.axes.description(1).empty()) H.axes.description(1) = Axes::posterior_to_anterior;
-          if (H.axes.units(1).empty()) H.axes.units(1) = Axes::millimeters;
-          if (H.ndim() > 2) {
-            if (H.axes.description(2).empty()) H.axes.description(2) = Axes::inferior_to_superior;
-            if (H.axes.units(2).empty()) H.axes.units(2) = Axes::millimeters;
-          }
-        }
+        H.set_ndim (num_axes);
 
         return (true);
       }
@@ -247,7 +233,8 @@ namespace MR {
       {
         File::create (H.name());
         std::ofstream out (H.name().c_str());
-        if (!out) throw Exception ("error creating file \"" + H.name() + "\": " + strerror (errno));
+        if (!out) 
+          throw Exception ("error creating file \"" + H.name() + "\": " + strerror (errno));
 
 #ifdef BYTE_ORDER_BIG_ENDIAN
         bool is_BE = true;
@@ -261,43 +248,45 @@ namespace MR {
         //put<uint16_t> (0x01U, (uint8_t*) fmap.address() + sizeof (uint32_t), is_BE);
 
         write_tag (out, MRI_DIMENSIONS, 4*sizeof (uint32_t), is_BE);
-        write<uint32_t> (out, H.axes.dim(0), is_BE);
-        write<uint32_t> (out, ( H.ndim() > 1 ? H.axes.dim(1) : 1 ), is_BE);
-        write<uint32_t> (out, ( H.ndim() > 2 ? H.axes.dim(2) : 1 ), is_BE);
-        write<uint32_t> (out, ( H.ndim() > 3 ? H.axes.dim(3) : 1 ), is_BE);
+        write<uint32_t> (out, H.dim(0), is_BE);
+        write<uint32_t> (out, ( H.ndim() > 1 ? H.dim(1) : 1 ), is_BE);
+        write<uint32_t> (out, ( H.ndim() > 2 ? H.dim(2) : 1 ), is_BE);
+        write<uint32_t> (out, ( H.ndim() > 3 ? H.dim(3) : 1 ), is_BE);
 
         write_tag (out, MRI_ORDER, 4*sizeof (uint8_t), is_BE);
         size_t n;
         char order[4];
-        for (n = 0; n < H.ndim(); n++) order[abs(H.axes.stride(n))-1] = order2char (n, H.axes.forward(n));
-        for (; n < 4; n++) order[n] = order2char (n, true);
+        for (n = 0; n < H.ndim(); ++n) 
+          order[abs(H.stride(n))-1] = order2char (n, H.stride(n)>0);
+        for (; n < 4; ++n)
+          order[n] = order2char (n, true);
         out.write (order, 4);
 
         write_tag (out, MRI_VOXELSIZE, 3*sizeof (float32), is_BE);
-        write<float> (out, H.axes.vox(0), is_BE);
-        write<float> (out, ( H.ndim() > 1 ? H.axes.vox(1) : 2.0f ), is_BE);
-        write<float> (out, ( H.ndim() > 2 ? H.axes.vox(2) : 2.0f ), is_BE);
+        write<float> (out, H.vox(0), is_BE);
+        write<float> (out, ( H.ndim() > 1 ? H.vox(1) : 2.0f ), is_BE);
+        write<float> (out, ( H.ndim() > 2 ? H.vox(2) : 2.0f ), is_BE);
 
-        for (size_t n = 0; n < H.comments.size(); n++) {
-          size_t l = H.comments[n].size();
+        for (size_t n = 0; n < H.comments().size(); n++) {
+          size_t l = H.comments()[n].size();
           if (l) {
             write_tag (out, MRI_COMMENT, l, is_BE);
-            out.write (H.comments[n].c_str(), l);
+            out.write (H.comments()[n].c_str(), l);
           }
         }
 
         if (H.transform().is_set()) {
           write_tag (out, MRI_TRANSFORM, 16*sizeof (float32), is_BE);
-          for (size_t i = 0; i < 4; i++)
-            for (size_t j = 0; j < 4; j++)
+          for (size_t i = 0; i < 4; ++i)
+            for (size_t j = 0; j < 4; ++j)
               write<float> (out, H.transform()(i,j), is_BE);
         }
 
-        if (H.DW_scheme.is_set()) {
-          write_tag (out, MRI_DWSCHEME, 4*H.DW_scheme.rows()*sizeof (float32), is_BE);
-          for (size_t i = 0; i < H.DW_scheme.rows(); i++)
-            for (size_t j = 0; j < 4; j++)
-              write<float> (out, H.DW_scheme(i,j), is_BE);
+        if (H.DW_scheme().is_set()) {
+          write_tag (out, MRI_DWSCHEME, 4*H.DW_scheme().rows()*sizeof (float32), is_BE);
+          for (size_t i = 0; i < H.DW_scheme().rows(); ++i)
+            for (size_t j = 0; j < 4; ++j)
+              write<float> (out, H.DW_scheme()(i,j), is_BE);
         }
 
         write_tag (out, MRI_DATA, 0, is_BE);
@@ -307,7 +296,7 @@ namespace MR {
         out.close();
 
         File::resize (H.name(), data_offset + H.footprint());
-        H.files.push_back (File::Entry (H.name(), data_offset));
+        H.add_file (File::Entry (H.name(), data_offset));
       }
 
     }

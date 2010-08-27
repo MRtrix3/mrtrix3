@@ -36,13 +36,17 @@ DESCRIPTION = {
 
 
 ARGUMENTS = {
-  Argument ("file", "XIMG file", "the XIMG file to be scanned.", AllowMultiple).type_file (),
-  Argument::End
+
+  Argument ("file", "the XIMG file to be scanned.")
+    .allow_multiple()
+    .type_file (),
+
+  Argument ()
 };
 
 
 OPTIONS = {
-  Option::End
+  Option ()
 };
 
 
@@ -50,11 +54,11 @@ EXECUTE {
 
   for (size_t n = 0; n < argument.size();  n++) {
     try {
-      File::XImg reader (argument[n].get_string());
+      File::XImg reader (argument[n]);
       std::cout << reader << "\n";
     }
     catch (...) { 
-      error (std::string ("error reading file \"") + argument[n].get_string() + "\"");
+      error (std::string ("error reading file \"") + argument[n] + "\"");
     }
   }
 }

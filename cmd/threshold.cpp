@@ -42,30 +42,30 @@ DESCRIPTION = {
 };
 
 ARGUMENTS = {
-  Argument ("input", "input image", "the input image to be thresholded.").type_image_in (),
-  Argument ("output", "output image", "the output binary image mask.").type_image_out (),
-  Argument::End
+  Argument ("input", "the input image to be thresholded.").type_image_in (),
+  Argument ("output", "the output binary image mask.").type_image_out (),
+  Argument()
 };
 
 
 OPTIONS = { 
-  Option ("abs", "absolute threshold", "specify threshold value as absolute intensity.")
-    .append (Argument ("value", "value", "the absolute threshold to use.").type_float (NAN, NAN, 0.0)),
+  Option ("abs", "specify threshold value as absolute intensity.")
+    + Argument ("value").type_float(),
 
-  Option ("percentile", "threshold ith percentile", "threshold the image at the ith percentile.")
-    .append (Argument ("value", "value", "the percentile at which to threshold.").type_float (0.0, 100.0, 95.0)),
+  Option ("percentile", "threshold the image at the ith percentile.")
+    + Argument ("value").type_float (0.0, 95.0, 100.0),
 
-  Option ("top", "top N voxels", "provide a mask of the N top-valued voxels")
-    .append (Argument ("N", "N", "the number of voxels.").type_integer (0, std::numeric_limits<int>::max(), 100)),
+  Option ("top", "provide a mask of the N top-valued voxels")
+    + Argument ("N").type_integer (0, 100, std::numeric_limits<int>::max()),
 
-  Option ("bottom", "bottom N voxels", "provide a mask of the N bottom-valued voxels")
-    .append (Argument ("N", "N", "the number of voxels.").type_integer (0, std::numeric_limits<int>::max(), 100)),
+  Option ("bottom", "provide a mask of the N bottom-valued voxels")
+    + Argument ("N").type_integer (0, 100, std::numeric_limits<int>::max()),
 
-  Option ("invert", "invert mask.", "invert output binary mask."),
+  Option ("invert", "invert output binary mask."),
 
-  Option ("nan", "use NaN.", "replace all zero values with NaN."),
+  Option ("nan", "replace all zero values with NaN."),
 
-  Option::End 
+  Option()
 };
 
 
@@ -78,27 +78,27 @@ EXECUTE {
   float val (NAN), percentile (NAN);
   size_t topN (0), bottomN (0), nopt (0);
 
-  OptionList opt = get_options ("abs");
+  Options opt = get_options ("abs");
   if (opt.size()) {
-    val = opt[0][0].get_float();
+    val = to<float> (opt[0][0]);
     ++nopt;
   }
 
   opt = get_options ("percentile"); 
   if (opt.size()) {
-    percentile = opt[0][0].get_float();
+    percentile = to<float> (opt[0][0]);
     ++nopt;
   }
 
   opt = get_options ("top");
   if (opt.size()) {
-    topN = opt[0][0].get_int();
+    topN = to<int> (opt[0][0]);
     ++nopt;
   }
 
   opt = get_options ("bottom");
   if (opt.size()) {
-    bottomN = opt[0][0].get_int();
+    bottomN = to<int> (opt[0][0]);
     ++nopt;
   }
 
@@ -108,7 +108,7 @@ EXECUTE {
   bool invert = get_options("invert").size();
   bool use_NaN = get_options("nan").size();
 
-  const Image::Header header_in (argument[0].get_image());
+  Image::Header header_in (argument[0]);
   assert (!header_in.is_complex());
 
   if (DataSet::voxel_count (header_in) < topN || DataSet::voxel_count (header_in) < bottomN)
@@ -123,11 +123,11 @@ EXECUTE {
     else topN = Math::round (DataSet::voxel_count (header_in) * (1.0 - percentile));
   }
 
-  Image::Header header (header_in);
-  if (use_NaN) header.datatype() = DataType::Float32;
-  else header.datatype() = DataType::Bit;
+  Image::Header header_out (header_in);
+  if (use_NaN) header_out.set_datatype (DataType::Float32);
+  else header_out.set_datatype (DataType::Bit);
 
-  const Image::Header header_out (argument[1].get_image (header));
+  header_out.create (argument[1]);
 
   Image::Voxel<float> in (header_in);
   Image::Voxel<float> out (header_out);

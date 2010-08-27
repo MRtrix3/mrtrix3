@@ -207,14 +207,9 @@ class Entry:
     else: self.deps.add (icon)
 
     skip = False
-    flags = []
+    flags = gsl_ldflags
     if 'T' in file_flags[cc_file]: flags += thread_ldflags
     if 'Q' in file_flags[cc_file]: flags += qt_ldflags
-    if 'G' in file_flags[cc_file]: flags += gsl_ldflags
-    if 'K' in file_flags[cc_file]: 
-      if len(gtk_cflags) == 0 or len(gtk_ldflags) == 0: skip = True
-      else: flags += gtk_ldflags
-
 
     if not skip: 
       if not os.path.isdir (bin_dir): 
@@ -241,7 +236,7 @@ class Entry:
     self.action = 'CC'
     cc_file = self.name[:-len(obj_suffix)] + cpp_suffix
     self.deps = set([ cc_file ])
-    flags = []
+    flags = gsl_cflags
 
     if is_moc (cc_file):
       src_header = cc_file[:-len('_moc'+cpp_suffix)] + h_suffix
@@ -253,10 +248,6 @@ class Entry:
     skip = False
     if 'T' in file_flags[cc_file]: flags += thread_cflags
     if 'Q' in file_flags[cc_file]: flags += qt_cflags
-    if 'G' in file_flags[cc_file]: flags += gsl_cflags
-    if 'K' in file_flags[cc_file]:
-      if len(gtk_cflags) == 0 or len(gtk_ldflags) == 0: skip = True
-      else: flags += gtk_cflags
 
     if not skip: 
       self.cmd = fillin (cpp, { 
@@ -424,12 +415,6 @@ def list_headers (file):
         elif line.startswith ('<Q'):
           if 'Q' not in file_flags[file]:
             file_flags[file] += 'Q'
-        elif line.startswith ('<gsl/'):
-          if 'G' not in file_flags[file]:
-            file_flags[file] += 'G'
-        elif line.startswith ('<gtk') or line.startswith ('<gdk'):
-          if 'K' not in file_flags[file]:
-            file_flags[file] += 'K'
       elif line == 'Q_OBJECT':
         if 'M' not in file_flags[file]:
           file_flags[file] += 'M'

@@ -77,10 +77,10 @@ namespace MR {
          * Image::Voxel<float> vox2 (vox1);
          * \endcode
          */
-        Voxel (const Header& parent) : 
-          H (parent), handler (*H.handler), x (ndim(), 0) {
-            assert (H.handler);
-            H.handler->prepare();
+        Voxel (Header& parent) : 
+          H (parent), handler (*H.get_handler()), x (ndim(), 0) {
+            assert (H.get_handler());
+            handler.prepare();
             offset = handler.start();
 
             switch (H.datatype()()) {
@@ -153,11 +153,11 @@ namespace MR {
          * image data. Multiple copies of an Image::Voxel can therefore by
          * used safely in multi-threaded applications. */
         Voxel (const Voxel& vox) : 
-          H (vox.H), handler (*H.handler), offset (vox.offset), x (vox.x),
+          H (vox.H), handler (vox.handler), offset (vox.offset), x (vox.x),
           get_func (vox.get_func), put_func (vox.put_func) {
         }
 
-        const Header& header () const { return (H); }
+        Header& header () const { return (H); }
         DataType datatype () const { return (H.datatype()); }
         const Math::Matrix<float>& transform () const { return (H.transform()); }
 
@@ -201,8 +201,8 @@ namespace MR {
         }
 
       private:
-        const Header&   H; //!< reference to the corresponding Image::Header
-        const Handler::Base& handler;
+        Header&   H; //!< reference to the corresponding Image::Header
+        Handler::Base& handler;
         size_t   offset; //!< the offset in memory to the current voxel
         std::vector<ssize_t> x;
 

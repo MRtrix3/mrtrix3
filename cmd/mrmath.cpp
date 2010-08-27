@@ -39,73 +39,73 @@ DESCRIPTION = {
 
 
 ARGUMENTS = { 
-  Argument ("image", "input image", "the input image.").type_string (),
-  Argument ("output", "output image", "the output image.").type_image_out (),
-  Argument::End 
+  Argument ("image", "the input image or intensity."),
+  Argument ("output", "the output image.").type_image_out (),
+  Argument ()
 }; 
 
 OPTIONS = { 
-  Option ("abs", "absolute value", "take absolute value of current voxel value"),
-  Option ("neg", "negative value", "take negative value of current voxel value"),
-  Option ("sqrt", "square root", "take square root of current voxel value"),
-  Option ("exp", "exp", "take e raised to the power of current voxel value"),
-  Option ("log", "log", "take natural logarithm of current voxel value"),
-  Option ("cos", "cos", "take cosine of current voxel value"),
-  Option ("sin", "sin", "take sine of current voxel value"),
-  Option ("tan", "tanh", "take tangent of current voxel value"),
-  Option ("cosh", "cosh", "take hyperbolic cosine of current voxel value"),
-  Option ("sinh", "sinh", "take hyperbolic sine of current voxel value"),
-  Option ("tanh", "tanh", "take hyperbolic tangent of current voxel value"),
-  Option ("acos", "acos", "take inverse cosine of current voxel value"),
-  Option ("asin", "asin", "take inverse sine of current voxel value"),
-  Option ("atan", "atan", "take inverse tangent of current voxel value"),
-  Option ("acosh", "acosh", "take inverse hyperbolic cosine of current voxel value"),
-  Option ("asinh", "asinh", "take inverse hyperbolic sine of current voxel value"),
-  Option ("atanh", "atanh", "take inverse hyperbolic tangent of current voxel value"),
-  Option ("round", "round", "round current voxel value to nearest integer"),
-  Option ("ceil", "ceil", "round current voxel value up to smallest integer not less than current value"),
-  Option ("floor", "floor", "round current voxel value down to largest integer not greater than current value"),
+  Option ("abs", "take absolute value of current voxel value"),
+  Option ("neg", "take negative value of current voxel value"),
+  Option ("sqrt", "take square root of current voxel value"),
+  Option ("exp", "take e raised to the power of current voxel value"),
+  Option ("log", "take natural logarithm of current voxel value"),
+  Option ("cos", "take cosine of current voxel value"),
+  Option ("sin", "take sine of current voxel value"),
+  Option ("tan", "take tangent of current voxel value"),
+  Option ("cosh", "take hyperbolic cosine of current voxel value"),
+  Option ("sinh", "take hyperbolic sine of current voxel value"),
+  Option ("tanh", "take hyperbolic tangent of current voxel value"),
+  Option ("acos", "take inverse cosine of current voxel value"),
+  Option ("asin", "take inverse sine of current voxel value"),
+  Option ("atan", "take inverse tangent of current voxel value"),
+  Option ("acosh", "take inverse hyperbolic cosine of current voxel value"),
+  Option ("asinh", "take inverse hyperbolic sine of current voxel value"),
+  Option ("atanh", "take inverse hyperbolic tangent of current voxel value"),
+  Option ("round", "round current voxel value to nearest integer"),
+  Option ("ceil", "round current voxel value up to smallest integer not less than current value"),
+  Option ("floor", "round current voxel value down to largest integer not greater than current value"),
 
-  Option ("add", "add", "add to current voxel value the corresponding voxel value of 'source'")
-    .append (Argument ("source", "source", "the source image or value").type_string()),
+  Option ("add", "add to current voxel value the corresponding voxel value of 'source'")
+    + Argument ("source"),
 
-  Option ("subtract", "subtract", "subtract from current voxel value the corresponding voxel value of 'source'")
-    .append (Argument ("source", "source", "the source image or value").type_string()),
+  Option ("subtract", "subtract from current voxel value the corresponding voxel value of 'source'")
+    + Argument ("source"),
 
-  Option ("multiply", "multiply", "multiply current voxel value by corresponding voxel value of 'source'")
-    .append (Argument ("source", "source", "the source image or value").type_string()),
+  Option ("multiply", "multiply current voxel value by corresponding voxel value of 'source'")
+    + Argument ("source"),
 
-  Option ("divide", "divide", "divide current voxel value by corresponding voxel value of 'source'")
-    .append (Argument ("source", "source", "the source image or value").type_string()),
+  Option ("divide", "divide current voxel value by corresponding voxel value of 'source'")
+    + Argument ("source"),
 
-  Option ("min", "min", "return smallest of current voxel value and corresponding voxel value of 'source'")
-    .append (Argument ("source", "source", "the source image or value").type_string()),
+  Option ("min", "return smallest of current voxel value and corresponding voxel value of 'source'")
+    + Argument ("source"),
 
-  Option ("max", "max", "return greatest of current voxel value and corresponding voxel value of 'source'")
-    .append (Argument ("source", "source", "the source image or value").type_string()),
+  Option ("max", "return greatest of current voxel value and corresponding voxel value of 'source'")
+    + Argument ("source"),
 
-  Option ("lt", "less than", "return 1 if current voxel value is less than corresponding voxel value of 'source', 0 otherwise")
-    .append (Argument ("source", "source", "the source image or value").type_string()),
+  Option ("lt", "return 1 if current voxel value is less than corresponding voxel value of 'source', 0 otherwise")
+    + Argument ("source"),
 
-  Option ("gt", "greater than", "return 1 if current voxel value is greater than corresponding voxel value of 'source', 0 otherwise")
-    .append (Argument ("source", "source", "the source image or value").type_string()),
+  Option ("gt", "return 1 if current voxel value is greater than corresponding voxel value of 'source', 0 otherwise")
+    + Argument ("source"),
 
-  Option ("le", "less than or equal to", "return 1 if current voxel value is less than or equal to corresponding voxel value of 'source', 0 otherwise")
-    .append (Argument ("source", "source", "the source image or value").type_string()),
+  Option ("le", "return 1 if current voxel value is less than or equal to corresponding voxel value of 'source', 0 otherwise")
+    + Argument ("source"),
 
-  Option ("ge", "greater than or equal to", "return 1 if current voxel value is greater than or equal to corresponding voxel value of 'source', 0 otherwise")
-    .append (Argument ("source", "source", "the source image or value").type_string()),
+  Option ("ge", "return 1 if current voxel value is greater than or equal to corresponding voxel value of 'source', 0 otherwise")
+    + Argument ("source"),
 
-  Option ("mean", "mean value", "return return the arithmetic mean of the voxel values along the axes specified.")
-    .append (Argument ("axis", "axis", "a comma-separated list of axes along which to estimate the mean").type_string()),
+  Option ("mean", "return return the arithmetic mean of the voxel values along the axes specified.")
+    + Argument ("axis"),
 
-  Option ("std", "standard deviation", "return return the standard deviation of the voxel values along the axes specified.")
-    .append (Argument ("axis", "axis", "a comma-separated list of axes along which to estimate the standard deviation").type_string()),
+  Option ("std", "return return the standard deviation of the voxel values along the axes specified.")
+    + Argument ("axis"),
 
-  Option ("datatype", "data type", "specify output image data type.") 
-    .append (Argument ("spec", "specifier", "the data type specifier.").type_choice (DataType::identifiers)),
+  Option ("datatype", "specify output image data type.") 
+    + Argument ("spec").type_choice (DataType::identifiers),
 
-  Option::End 
+  Option ()
 };
 
 typedef double value_type;
@@ -134,7 +134,7 @@ class Source : public Functor {
   public:
     Source (const std::string& text) : Functor (NULL) {
       try {
-        H = new Image::Header (Image::Header::open (text));
+        H = new Image::Header (text);
         V = new Image::Voxel<value_type> (*H);
       }
       catch (Exception) {
@@ -406,62 +406,63 @@ class Std : public Mean {
 
 
 EXECUTE {
-  Functor* last = new Source (argument[0].get_string());
+  Functor* last = new Source (argument[0]);
 
-  for (size_t n = 0; n < option.size(); ++n) {
-    if (option[n].is ("datatype")) continue;
-    if (option[n].is ("abs")) { last = new Abs (last); continue; }
-    if (option[n].is ("neg")) { last = new Neg (last); continue; }
-    if (option[n].is ("sqrt")) { last = new Sqrt (last); continue; }
-    if (option[n].is ("exp")) { last = new Exp (last); continue; }
-    if (option[n].is ("log")) { last = new Log (last); continue; }
-    if (option[n].is ("cos")) { last = new Cos (last); continue; }
-    if (option[n].is ("sin")) { last = new Sin (last); continue; }
-    if (option[n].is ("tan")) { last = new Tan (last); continue; }
-    if (option[n].is ("cosh")) { last = new Cosh (last); continue; }
-    if (option[n].is ("sinh")) { last = new Sinh (last); continue; }
-    if (option[n].is ("tanh")) { last = new Tanh (last); continue; }
-    if (option[n].is ("acos")) { last = new Acos (last); continue; }
-    if (option[n].is ("asin")) { last = new Asin (last); continue; }
-    if (option[n].is ("atan")) { last = new Atan (last); continue; }
-    if (option[n].is ("acosh")) { last = new Acosh (last); continue; }
-    if (option[n].is ("asinh")) { last = new Asinh (last); continue; }
-    if (option[n].is ("atanh")) { last = new Atanh (last); continue; }
-    if (option[n].is ("round")) { last = new Round (last); continue; }
-    if (option[n].is ("ceil")) { last = new Ceil (last); continue; }
-    if (option[n].is ("floor")) { last = new Floor (last); continue; }
-    if (option[n].is ("add")) { last = new Add (last, new Source (option[n][0].get_string())); continue; }
-    if (option[n].is ("subtract")) { last = new Subtract (last, new Source (option[n][0].get_string())); continue; }
-    if (option[n].is ("multiply")) { last = new Mult (last, new Source (option[n][0].get_string())); continue; }
-    if (option[n].is ("divide")) { last = new Divide (last, new Source (option[n][0].get_string())); continue; }
-    if (option[n].is ("min")) { last = new Min (last, new Source (option[n][0].get_string())); continue; }
-    if (option[n].is ("max")) { last = new Max (last, new Source (option[n][0].get_string())); continue; }
-    if (option[n].is ("lt")) { last = new LessThan (last, new Source (option[n][0].get_string())); continue; }
-    if (option[n].is ("gt")) { last = new GreaterThan (last, new Source (option[n][0].get_string())); continue; }
-    if (option[n].is ("le")) { last = new LessThanOrEqualTo (last, new Source (option[n][0].get_string())); continue; }
-    if (option[n].is ("ge")) { last = new GreaterThanOrEqualTo (last, new Source (option[n][0].get_string())); continue; }
-    if (option[n].is ("mean")) { last = new Mean (last, option[n][0].get_string()); continue; }
-    if (option[n].is ("std")) { last = new Std (last, option[n][0].get_string()); continue; }
+  for (std::vector<App::ParsedOption>::const_iterator opt = option.begin();
+      opt != option.end(); ++opt) {
+    if (*opt == "datatype") continue;
+    if (*opt == "abs") { last = new Abs (last); continue; }
+    if (*opt == "neg") { last = new Neg (last); continue; }
+    if (*opt == "sqrt") { last = new Sqrt (last); continue; }
+    if (*opt == "exp") { last = new Exp (last); continue; }
+    if (*opt == "log") { last = new Log (last); continue; }
+    if (*opt == "cos") { last = new Cos (last); continue; }
+    if (*opt == "sin") { last = new Sin (last); continue; }
+    if (*opt == "tan") { last = new Tan (last); continue; }
+    if (*opt == "cosh") { last = new Cosh (last); continue; }
+    if (*opt == "sinh") { last = new Sinh (last); continue; }
+    if (*opt == "tanh") { last = new Tanh (last); continue; }
+    if (*opt == "acos") { last = new Acos (last); continue; }
+    if (*opt == "asin") { last = new Asin (last); continue; }
+    if (*opt == "atan") { last = new Atan (last); continue; }
+    if (*opt == "acosh") { last = new Acosh (last); continue; }
+    if (*opt == "asinh") { last = new Asinh (last); continue; }
+    if (*opt == "atanh") { last = new Atanh (last); continue; }
+    if (*opt == "round") { last = new Round (last); continue; }
+    if (*opt == "ceil") { last = new Ceil (last); continue; }
+    if (*opt == "floor") { last = new Floor (last); continue; }
+    if (*opt == "add") { last = new Add (last, new Source (opt->args[0])); continue; }
+    if (*opt == "subtract") { last = new Subtract (last, new Source (opt->args[0])); continue; }
+    if (*opt == "multiply") { last = new Mult (last, new Source (opt->args[0])); continue; }
+    if (*opt == "divide") { last = new Divide (last, new Source (opt->args[0])); continue; }
+    if (*opt == "min") { last = new Min (last, new Source (opt->args[0])); continue; }
+    if (*opt == "max") { last = new Max (last, new Source (opt->args[0])); continue; }
+    if (*opt == "lt") { last = new LessThan (last, new Source (opt->args[0])); continue; }
+    if (*opt == "gt") { last = new GreaterThan (last, new Source (opt->args[0])); continue; }
+    if (*opt == "le") { last = new LessThanOrEqualTo (last, new Source (opt->args[0])); continue; }
+    if (*opt == "ge") { last = new GreaterThanOrEqualTo (last, new Source (opt->args[0])); continue; }
+    if (*opt == "mean") { last = new Mean (last, opt->args[0]); continue; }
+    if (*opt == "std") { last = new Std (last, opt->args[0]); continue; }
 
     assert (0);
   }
 
   const Image::Header* source_header = last->header();
-  if (!source_header) throw Exception ("no source images found - aborting");
-  Image::Header header = *source_header;
-  header.reset_scaling();
+  if (!source_header) 
+    throw Exception ("no source images found - aborting");
+  Image::Header destination_header = *source_header;
+  destination_header.reset_scaling();
 
-  header.axes.ndim() = last->ndim();
+  destination_header.set_ndim (last->ndim());
   for (size_t i = 0; i < last->ndim(); ++i)
-    header.axes.dim(i) = last->dim(i);
+    destination_header.set_dim (i, last->dim(i));
 
-  header.datatype() = DataType::Float32;
-  OptionList opt = get_options ("datatype");
+  destination_header.set_datatype (DataType::Float32);
+  Options opt = get_options ("datatype");
   if (opt.size()) 
-    header.datatype().parse (DataType::identifiers[opt[0][0].get_int()]);
+    destination_header.set_datatype (opt[0][0]);
 
-
-  const Image::Header destination_header (argument[1].get_image (header));
+  destination_header.create (argument[1]);
 
   Image::Voxel<value_type> out (destination_header);
   std::vector<size_t> axes = DataSet::Stride::order (out);

@@ -38,7 +38,7 @@ namespace MR {
         File::MMap fmap (H.name());
         size_t data_offset = File::NIfTI::read (H, *((const nifti_1_header*) fmap.address()));
 
-        H.files.push_back (File::Entry (H.name(), data_offset));
+        H.add_file (File::Entry (H.name(), data_offset));
 
         return (true);
       }
@@ -53,7 +53,7 @@ namespace MR {
         if (num_axes < 3) throw Exception ("cannot create NIfTI-1.1 image with less than 3 dimensions");
         if (num_axes > 8) throw Exception ("cannot create NIfTI-1.1 image with more than 8 dimensions");
 
-        H.axes.ndim() = num_axes;
+        H.set_ndim (num_axes);
         File::NIfTI::check (H, true);
 
         return (true);
@@ -80,7 +80,7 @@ namespace MR {
 
         File::resize (H.name(), 352 + H.footprint());
 
-        H.files.push_back (File::Entry (H.name(), 352));
+        H.add_file (File::Entry (H.name(), 352));
       }
 
     }

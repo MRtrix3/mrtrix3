@@ -25,6 +25,7 @@
 
 #include "args.h"
 
+// TODO: are these really necessary?
 #define SET_VERSION(a, b, c) const size_t __command_version[3] = { (a), (b), (c) }
 #define SET_VERSION_DEFAULT SET_VERSION (MRTRIX_MAJOR_VERSION, MRTRIX_MINOR_VERSION, MRTRIX_MICRO_VERSION); 
 #define SET_AUTHOR(a) const char* __command_author = (a)
@@ -70,12 +71,6 @@ namespace MR {
   
   namespace Viewer { class Window; }
 
-  class ParsedOption {
-    public:
-      size_t index;
-      std::vector<const char*> args;
-  };
-
 
   //! \addtogroup CmdParse 
   // @{
@@ -85,6 +80,7 @@ namespace MR {
     public:
       App (int argc, char** argv, const char** cmd_desc, const MR::Argument* cmd_args, const MR::Option* cmd_opts,
           const size_t* cmd_version, const char* cmd_author, const char* cmd_copyright);
+
       virtual ~App ();
 
       void   run () { parse_arguments (); execute (); }
@@ -96,21 +92,38 @@ namespace MR {
       static const char*        author;
       static const std::string& name () { return (application_name); }
 
-      friend std::ostream& operator<< (std::ostream& stream, const App& app);
-      friend std::ostream& operator<< (std::ostream& stream, const OptBase& opt);
-
     protected:
-      std::vector<ArgBase> argument;
-      std::vector<OptBase> option;
+      class ParsedOption {
+        public:
+          ParsedOption (const char* name, const char* const* arguments) : 
+            id (name), args (arguments) { }
+          const char* id;
+          const char* const* args;
+
+          bool operator== (const char* match) const 
+          {
+            std::string name = lowercase (match);
+            return (name == id);
+          }
+
+      };
+
+      std::vector<const char*> argument;
+      std::vector<ParsedOption> option;
 
       virtual void execute () = 0;
-      OptionList get_options (const std::string& name)
+
+      typedef std::vector<const char* const*> Options;
+      Options get_options (const std::string& name)
       {
-        OptionList a;
-        for (size_t n = 0; n < option.size(); n++) 
-          if (option[n].name == name)
-            a.push_back (option[n]);
-        return (a);
+        Options matches;
+        for (std::vector<ParsedOption>::const_iterator opt = option.begin(); 
+            opt != option.end(); ++opt) {
+          assert (opt->id);
+          if (name == opt->id) 
+            matches.push_back (opt->args);
+        }
+        return (matches);
       }
 
       void parse_arguments ();
@@ -119,24 +132,24 @@ namespace MR {
 
       void   print_help () const;
       void   print_full_usage () const;
-      void   print_full_argument_usage (const Argument& arg) const;
-      void   print_full_option_usage (const Option& opt) const;
-      size_t match_option (const char* stub) const;
+      const Option* match_option (const char* stub) const;
       void   sort_arguments (int argc, char** argv);
 
       static std::string     application_name;
       static const char**    command_description;
       static const Argument* command_arguments;
       static const Option*   command_options;
+      static const Option    default_options[];
 
-      static const Option       default_options[];
-      std::vector<const char*>  parsed_arguments;
-      std::vector<ParsedOption> parsed_options;
-
-      const char* option_name (size_t num) const { 
-        return (num < DEFAULT_OPTIONS_OFFSET ? command_options[num].sname : default_options[num - DEFAULT_OPTIONS_OFFSET].sname ); 
+/*
+      const char* option_name (size_t num) const 
+      { 
+        return (num < DEFAULT_OPTIONS_OFFSET ? 
+            command_options[num].id : 
+            default_options[num - DEFAULT_OPTIONS_OFFSET].id 
+            ); 
       }
-
+*/
   };
 
   //! @}

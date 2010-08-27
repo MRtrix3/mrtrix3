@@ -80,6 +80,10 @@ LDLIB           The linker command-line to use for generating a shared library.
                 The default is:
                 "g++ -shared LDLIB_FLAGS OBJECTS -o LIB"
 
+ARCH            the specific CPU architecture to compile for. This variable 
+                will be passed to the compiler using -march=$ARCH.
+                The default is 'native'.
+
 CFLAGS          Any additional flags to the compiler.
 
 LDFLAGS         Any additional flags to the linker.
@@ -360,18 +364,10 @@ elif system == 'darwin':
 
 
 
-report ('Detecting machine architecture: ')
-march = platform.machine()
-if march == 'x86_64': march = 'x86-64'
-elif march == 'i686': pass
-elif march == 'i586': pass
-else: march = None
-
-if march: 
-  report (march + '\n')
+if 'ARCH' in os.environ.keys(): 
+  march = os.environ['ARCH']
+  report ('Machine architecture set by ARCH environment variable to: ' + march + '\n')
   cpp_flags += [ '-march='+march ]
-else:
-  report ('unknown\n')
 
 
 

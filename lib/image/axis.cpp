@@ -26,20 +26,19 @@
 namespace MR {
   namespace Image {
 
-    const std::string Axes::axes_name ("anonymous axes");
-    const char* Axes::left_to_right = "left->right";
-    const char* Axes::posterior_to_anterior = "posterior->anterior";
-    const char* Axes::inferior_to_superior = "inferior->superior";
-    const char* Axes::time = "time";
-    const char* Axes::real_imag = "real-imaginary";
-    const char* Axes::millimeters = "mm";
-    const char* Axes::milliseconds = "ms";
+    const char* Axis::left_to_right = "left->right";
+    const char* Axis::posterior_to_anterior = "posterior->anterior";
+    const char* Axis::inferior_to_superior = "inferior->superior";
+    const char* Axis::time = "time";
+    const char* Axis::real_imag = "real-imaginary";
+    const char* Axis::millimeters = "mm";
+    const char* Axis::milliseconds = "ms";
 
 
 
 
 
-    std::vector<ssize_t> Axes::parse (size_t ndim, const std::string& specifier)
+    std::vector<ssize_t> Axis::parse (size_t ndim, const std::string& specifier)
     {
       std::vector<ssize_t> parsed (ndim);
 
@@ -82,7 +81,7 @@ namespace MR {
 
 
 
-    void Axes::check (const std::vector<ssize_t>& parsed, size_t ndim)
+    void Axis::check (const std::vector<ssize_t>& parsed, size_t ndim)
     {
       if (parsed.size() != ndim) 
         throw Exception ("incorrect number of dimensions for axes specifier");
@@ -105,19 +104,16 @@ namespace MR {
 
 
 
-    std::ostream& operator<< (std::ostream& stream, const Axes& axes)
+    std::ostream& operator<< (std::ostream& stream, const Axis& axis)
     {
-      stream << "dim [ ";
-      for (size_t n = 0; n < axes.ndim(); n++) stream << axes.dim(n) << " ";
-      stream << "], vox [ ";
-      for (size_t n = 0; n < axes.ndim(); n++) stream << axes.vox(n) << " ";
-      stream << "], stride [ ";
-      for (size_t n = 0; n < axes.ndim(); n++) stream << std::showpos << axes.stride(n) << " ";
-      stream << "], desc [ ";
-      for (size_t n = 0; n < axes.ndim(); n++) stream << "\n" << axes.description(n) << "\" ";
-      stream << "], units [ ";
-      for (size_t n = 0; n < axes.ndim(); n++) stream << "\n" << axes.units(n) << "\" ";
-
+      stream << "[ dim: " << axis.dim << ", vox: " << axis.vox << ", stride: " << axis.stride 
+        << ", description: ";
+      if (axis.description.size()) stream << "\"" << axis.description << "\"";
+      else stream << "(empty)";
+      stream << ", units: ";
+      if (axis.units.size()) stream << axis.units;
+      else stream << "(empty)";
+      stream << " ]";
       return (stream);
     }
 

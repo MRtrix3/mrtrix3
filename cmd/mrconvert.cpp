@@ -40,30 +40,38 @@ DESCRIPTION = {
 };
 
 ARGUMENTS = {
-  Argument ("input", "input image", "the input image.").type_image_in (),
-  Argument ("ouput", "output image", "the output image.").type_image_out (),
-  Argument::End
+  Argument ("input", "the input image.").type_image_in (),
+  Argument ("ouput", "the output image.").type_image_out (),
+  Argument()
 };
 
 
 OPTIONS = {
-  Option ("coord", "select coordinates", "extract data only at the coordinates specified.", Optional | AllowMultiple)
-    .append (Argument ("axis", "axis", "the axis of interest").type_integer (0, std::numeric_limits<int>::max(), 0))
-    .append (Argument ("coord", "coordinates", "the coordinates of interest").type_sequence_int()),
+  Option ("coord", "extract data only at the coordinates specified.")
+    .allow_multiple()
+    + Argument ("axis").type_integer (0, 0, std::numeric_limits<int>::max())
+    + Argument ("coord").type_sequence_int(),
 
-  Option ("vox", "voxel size", "change the voxel dimensions.")
-    .append (Argument ("sizes", "new dimensions", "A comma-separated list of values. Only those values specified will be changed. For example: 1,,3.5 will change the voxel size along the x & z axes, and leave the y-axis voxel size unchanged.")
-        .type_sequence_float ()),
+  Option ("vox",
+      "change the voxel dimensions. The new sizes should be provided as a "
+      "comma-separated list of values. Only those values specified will be "
+      "changed. For example: 1,,3.5 will change the voxel size along the x & "
+      "z axes, and leave the y-axis voxel size unchanged.") 
+    + Argument ("sizes").type_sequence_float(),
 
-  Option ("datatype", "data type", "specify output image data type.")
-    .append (Argument ("spec", "specifier", "the data type specifier.").type_choice (DataType::identifiers)),
+  Option ("datatype", "specify output image data type.")
+    + Argument ("spec").type_choice (DataType::identifiers),
 
-  Option ("stride", "data strides", "specify the strides of the data in memory. The actual strides produced will depend on whether the output image format can support it.")
-    .append (Argument ("spec", "specifier", "a comma-separated list of data strides.").type_string ()),
+  Option ("stride",
+      "specify the strides of the data in memory, as a commo-separated list. "
+      "The actual strides produced will depend on whether the output image "
+      "format can support it.")
+    + Argument ("spec"),
 
-  Option ("prs", "DW gradient specified as PRS", "assume that the DW gradients are specified in the PRS frame (Siemens DICOM only)."),
+  Option ("prs",
+      "assume that the DW gradients are specified in the PRS frame (Siemens DICOM only)."),
 
-  Option::End
+  Option()
 };
 
 
@@ -71,39 +79,46 @@ OPTIONS = {
 
 
 EXECUTE {
-  OptionList opt = get_options ("vox");
-  std::vector<float> vox;
+
+  Image::Header header_in (argument[0]);
+  Image::Header header_out (header_in);
+  header_out.reset_scaling();
+
+  Options opt = get_options ("datatype");
   if (opt.size()) 
-    vox = parse_floats (opt[0][0].get_string());
+    header_out.set_datatype (opt[0][0]);
 
-  const Image::Header header_in = argument[0].get_image ();
-  Image::Header header (header_in);
-  header.reset_scaling();
-
-  opt = get_options ("datatype");
-  if (opt.size()) header.datatype().parse (DataType::identifiers[opt[0][0].get_int()]);
-
-  for (size_t n = 0; n < vox.size(); n++) 
-    if (std::isfinite (vox[n])) header.axes.vox(n) = vox[n];
+  opt = get_options ("vox");
+  if (opt.size()) {
+    std::vector<float> vox = parse_floats (opt[0][0]);
+    for (size_t n = 0; n < vox.size(); n++) 
+      if (std::isfinite (vox[n]))
+        header_out.set_vox (n, vox[n]);
+  }
 
   opt = get_options ("stride");
   if (opt.size()) {
-    std::vector<int> ax = parse_ints (opt[0][0].get_string());
+    std::vector<int> ax = parse_ints (opt[0][0]);
     size_t i;
-    for (i = 0; i < std::min (ax.size(), header.ndim()); i++)
-      header.axes.stride(i) = ax[i];
-    for (; i < header.ndim(); i++)
-      header.axes.stride(i) = 0;
+
+    for (i = 0; i < std::min (ax.size(), header_out.ndim()); i++)
+      header_out.set_stride (i, ax[i]);
+
+    for (; i < header_out.ndim(); i++)
+      header_out.set_stride (i, 0);
   }
 
 
   opt = get_options ("prs");
-  if (opt.size() && header.DW_scheme.rows() && header.DW_scheme.columns()) {
-    for (size_t row = 0; row < header.DW_scheme.rows(); row++) {
-      double tmp = header.DW_scheme(row, 0);
-      header.DW_scheme(row, 0) = header.DW_scheme(row, 1);
-      header.DW_scheme(row, 1) = tmp;
-      header.DW_scheme(row, 2) = -header.DW_scheme(row, 2);
+  if (opt.size() && 
+      header_out.DW_scheme().rows() &&
+      header_out.DW_scheme().columns()) {
+    Math::Matrix<float>& M (header_out.get_DW_scheme());
+    for (size_t row = 0; row < M.rows(); ++row) {
+      float tmp = M(row, 0);
+      M(row, 0) = M(row, 1);
+      M(row, 1) = tmp;
+      M(row, 2) = -M(row, 2);
     }
   }
 
@@ -111,10 +126,11 @@ EXECUTE {
 
   opt = get_options ("coord");
   for (size_t n = 0; n < opt.size(); n++) {
-    pos.resize (header.ndim());
-    int axis = opt[n][0].get_int();
-    if (pos[axis].size()) throw Exception ("\"coord\" option specified twice for axis " + str (axis));
-    pos[axis] = parse_ints (opt[n][1].get_string());
+    pos.resize (header_out.ndim());
+    int axis = to<int> (opt[n][0]);
+    if (pos[axis].size()) 
+      throw Exception ("\"coord\" option specified twice for axis " + str (axis));
+    pos[axis] = parse_ints (opt[n][1]);
   }
 
   assert (!header_in.is_complex());
@@ -129,16 +145,19 @@ EXECUTE {
           pos[n][i] = i;
       }
     }
+
     DataSet::Extract<Image::Voxel<float> > extract (in, pos);
+
     for (size_t n = 0; n < extract.ndim(); ++n)
-      header.axes.dim(n) = extract.dim(n);
-    const Image::Header header_out = argument[1].get_image (header);
+      header_out.set_dim (n, extract.dim(n));
+
+    header_out.create (argument[1]);
     Image::Voxel<float> out (header_out);
     DataSet::copy_with_progress (out, extract);
   }
   else { 
     // straight copy:
-    const Image::Header header_out = argument[1].get_image (header);
+    header_out.create (argument[1]);
     Image::Voxel<float> out (header_out);
     DataSet::copy_with_progress (out, in);
   }

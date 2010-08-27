@@ -35,11 +35,11 @@ DESCRIPTION = {
 };
 
 ARGUMENTS = {
-  Argument ("file", "DICOM file", "the DICOM file to be scanned.").type_file (),
-  Argument::End
+  Argument ("file", "the DICOM file to be scanned.").type_file (),
+  Argument()
 };
 
-OPTIONS = { Option::End };
+OPTIONS = { Option() };
 
   
 
@@ -61,7 +61,7 @@ void make_valid (std::string& str, const std::string& alternate) {
 
 EXECUTE {
   Element item;
-  item.set (argument[0].get_string());
+  item.set (argument[0]);
 
   std::string patient_name, patient_id, study_date, study_name, 
     study_time, series_name, series_number, instance_number, SOP_instance_number;
@@ -92,7 +92,8 @@ EXECUTE {
   make_valid (SOP_instance_number, "");
   make_valid (instance_number, SOP_instance_number);
 
-  if (instance_number.empty()) throw Exception ("no instance number");
+  if (instance_number.empty()) 
+    throw Exception ("no instance number");
 
   print (study_date + " - " + patient_name + " (" + patient_id + ")/" 
     + study_time + " - " + study_name + "/"

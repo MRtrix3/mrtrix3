@@ -46,8 +46,8 @@ namespace MR {
        
         size_t data_offset = File::NIfTI::read (H, NH);
 
-        H.handler = new Handler::GZ (H, 0, false);
-        H.files.push_back (File::Entry (H.name(), data_offset));
+        H.set_handler (new Handler::GZ (H, 0, false));
+        H.add_file (File::Entry (H.name(), data_offset));
 
         return (true);
       }
@@ -58,11 +58,16 @@ namespace MR {
 
       bool NIfTI_GZ::check (Header& H, size_t num_axes) const
       {
-        if (!Path::has_suffix (H.name(), ".nii.gz")) return (false);
-        if (num_axes < 3) throw Exception ("cannot create NIfTI-1.1 image with less than 3 dimensions");
-        if (num_axes > 8) throw Exception ("cannot create NIfTI-1.1 image with more than 8 dimensions");
+        if (!Path::has_suffix (H.name(), ".nii.gz")) 
+          return (false);
 
-        H.axes.ndim() = num_axes;
+        if (num_axes < 3) 
+          throw Exception ("cannot create NIfTI-1.1 image with less than 3 dimensions");
+        
+        if (num_axes > 8)
+          throw Exception ("cannot create NIfTI-1.1 image with more than 8 dimensions");
+
+        H.set_ndim (num_axes);
         File::NIfTI::check (H, true);
 
         return (true);
@@ -81,10 +86,10 @@ namespace MR {
       
         File::NIfTI::write (*reinterpret_cast<nifti_1_header*> (handler->header()), H, true);
 
-        H.handler = handler;
+        H.set_handler (handler);
 
         File::create (H.name());
-        H.files.push_back (File::Entry (H.name(), 352));
+        H.add_file (File::Entry (H.name(), 352));
       }
 
     }

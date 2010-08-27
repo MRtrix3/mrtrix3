@@ -34,7 +34,9 @@ namespace MR {
       { 
         if (H.name() != "-") return (false);
 
-        getline (std::cin, H.name());
+        std::string name;
+        getline (std::cin, name);
+        H.set_name (name);
 
         if (H.name().empty()) 
           throw Exception ("no filename supplied to standard input (broken pipe?)");
@@ -44,11 +46,13 @@ namespace MR {
 
         try {
           if (mrtrix_handler.read (H)) {
-            H.handler = new Handler::Pipe (H, false);
+            H.set_handler (new Handler::Pipe (H, false));
             return (true);
           }
         }
-        catch (Exception& E) { throw Exception (E, "error reading image data from command-line pipe"); }
+        catch (Exception& E) { 
+          throw Exception (E, "error reading image data from command-line pipe");
+        }
         return (false);
       }
 
@@ -58,8 +62,10 @@ namespace MR {
 
       bool Pipe::check (Header& H, size_t num_axes) const
       {
-        if (H.name() != "-") return (false);
-        H.name() = File::create_tempfile (0, "mif");
+        if (H.name() != "-") 
+          return (false);
+
+        H.set_name (File::create_tempfile (0, "mif"));
 
         return (mrtrix_handler.check (H, num_axes));
       }
@@ -70,7 +76,7 @@ namespace MR {
       void Pipe::create (Header& H) const
       {
         mrtrix_handler.create (H);
-        H.handler = new Handler::Pipe (H, true);
+        H.set_handler (new Handler::Pipe (H, true));
       }
 
 

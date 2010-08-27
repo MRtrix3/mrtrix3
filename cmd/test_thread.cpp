@@ -38,8 +38,8 @@ DESCRIPTION = {
 };
 
 
-ARGUMENTS = { Argument::End }; 
-OPTIONS = { Option::End };
+ARGUMENTS = { Argument() }; 
+OPTIONS = { Option() };
 
 class Item {
   public:

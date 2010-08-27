@@ -38,15 +38,19 @@ DESCRIPTION = {
 
 
 ARGUMENTS = {
-  Argument ("file", "DICOM file", "the DICOM file to be scanned.", AllowMultiple).type_file (),
-  Argument::End
+
+  Argument ("file", "the DICOM file to be scanned.")
+    .allow_multiple()
+    .type_file (),
+
+  Argument ()
 };
 
 
 OPTIONS = {
-  Option ("all", "all DICOM fields", "print all DICOM fields."),
-  Option ("csa", "Siemens CSA fields", "print all Siemens CSA fields"),
-  Option::End
+  Option ("all", "print all DICOM fields."),
+  Option ("csa", "print all Siemens CSA fields"),
+  Option ()
 };
 
 
@@ -64,20 +68,20 @@ EXECUTE {
 
   for (size_t n = 0; n < argument.size();  n++) {
 
-    if (Path::is_dir (argument[n].get_string())) {
+    if (Path::is_dir (argument[n])) {
       Path::Dir* dir;
-      try { dir = new Path::Dir (argument[n].get_string()); }
-      catch (...) { throw Exception (std::string ("error opening folder \"") + argument[n].get_string() 
+      try { dir = new Path::Dir (argument[n]); }
+      catch (...) { throw Exception (std::string ("error opening folder \"") + argument[n] 
           + "\": " + strerror (errno)); }
       
       std::string entry;
       while ((entry = dir->read_name()).size()) {
-        if (reader.read (Path::join (argument[n].get_string(), entry), print_DICOM_fields, print_CSA_fields))
+        if (reader.read (Path::join (argument[n], entry), print_DICOM_fields, print_CSA_fields))
           error ("error reading file \"" + reader.filename + "\"");
         else std::cout << reader << "\n";
       }
     }
-    else if (reader.read (argument[n].get_string(), print_DICOM_fields, print_CSA_fields))
+    else if (reader.read (argument[n], print_DICOM_fields, print_CSA_fields))
       error ("error reading file \"" + reader.filename + "\"");
 
     else if (!print_DICOM_fields) std::cout << reader << "\n";

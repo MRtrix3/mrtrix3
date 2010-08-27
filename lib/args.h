@@ -24,7 +24,6 @@
 #define __args_h__
 
 #include "ptr.h"
-#include "image/header.h"
 
 #ifdef None
 # undef None
@@ -32,23 +31,15 @@
 
 namespace MR {
 
-  namespace Dialog {
-    class Window;
-    class Argument;
-  }
-
   /*! \defgroup CmdParse Command-Line Parsing
    * \brief Classes and functions to parse command-line arguments and options.
    * */
 
-  //! \addtogroup CmdParse 
-  // @{
-
+  //! \cond skip
   typedef enum {
-    Undefined,
+    Text,
     Integer,
     Float,
-    Text,
     ArgFile,
     Choice,
     ImageIn,
@@ -57,201 +48,290 @@ namespace MR {
     FloatSeq
   } ArgType;
 
+  const char* argtype_description (ArgType type);
+
   typedef int ArgFlags;
   const ArgFlags None = 0;
   const ArgFlags Optional = 0x1;
   const ArgFlags AllowMultiple = 0x2;
+  //! \endcond
 
 
-  const char* argument_type_description (ArgType type);
 
+  //! \addtogroup CmdParse 
+  // @{
 
-  class Argument;
-
-  class ArgBase {
+  //! A class to specify a command-line argument
+  /*! Command-line arguments that are accepted by a particular command are
+   * specified as an array of Arguments objects, terminated with an empty
+   * Argument (constructed using default parameters). Please refer to \ref
+   * command_line_parsing for more information.
+   *
+   * The list of arguments is provided using the ARGUMENTS macro, like this:
+   * \code
+   * ARGUMENTS = {
+   *
+   *   Argument ("input", "the input image")
+   *     .type_image_in(),
+   *
+   *   Argument ("parameter", 
+   *        "the parameter to use during processing. Allowed values are "
+   *        "between 0 and 10 (default = 1).")
+   *     .type_float (0.0, 1.0, 10.0),
+   *
+   *   Argument ("output", "the output image")
+   *     .type_image_out(),
+   *
+   *   Argument () // don't forget to terminate with the default Argument
+   * };
+   * \endcode
+   * The example above specifies that the application expects exactly 3
+   * arguments, with the first one being an existing image to be used as input,
+   * the second one being a floating-point value, and the last one being an
+   * image to be created and used as output.
+   *
+   * There are a number of types that the argument can be specified as. The
+   * argument can also be specified as optional (see optional() function), or
+   * as multiple (see allow_multiple() function). Note that in this case only
+   * one such argument can be optional and/or multiple, since more than one
+   * such argument would lead to ambiguities when parsing the command-line.  */
+  class Argument
+  {
     public:
-      ArgBase () : argtype (Undefined) { data.string = NULL; }
-      ArgBase (const Argument& arg, const char* string);
+      //! constructor
+      /*! this is used to construct a command-line argument object, with a name
+       * and description. If default arguments are used, the object corresponds
+       * to the end-of-list specifier, as detailed in \ref command_line_parsing. */
+      Argument (const char* name = NULL, const char* description = NULL) : 
+        id (name), desc (description), type (Text), flags (None) { defaults.text = NULL; }
 
-      int         get_int () const     { return (data.i); }
-      float       get_float () const   { return (data.f); }
-      const char* get_string () const  { return (data.string); }
-      const Image::Header get_image (bool readwrite = false) const { 
-        assert (type() == ImageIn);
-        return (Image::Header::open (data.string, readwrite));
-      }
-      const Image::Header get_image (const Image::Header& template_header) const { 
-        assert (type() == ImageOut); 
-        return (Image::Header::create (data.string, template_header)); 
-      }
-
-      ArgType type () const { return (argtype); }
-
-      friend class Dialog::Window;
-      friend class Dialog::Argument;
-
-    protected:
-      ArgType argtype;
-      union { int i; float f; const char* string; } data;
-  };
-
-  std::ostream& operator<< (std::ostream& stream, const ArgBase& arg);
-
-
-
-
-  class OptBase : public std::vector<ArgBase> {
-    public:
-      OptBase (const char* sname) : name (sname) { }
-      const char* name;
-
-      bool is (const std::string& text) { return (text == name); }
-
-      friend std::ostream& operator<< (std::ostream& stream, const OptBase& opt);
-      friend class Dialog::Window;
-  };
-
-
-  typedef std::vector<OptBase> OptionList;
-
-
-  class Argument {
-    public:
-      Argument () : type (Undefined) { sname = lname = desc = NULL; } 
-      Argument (const char* Short_Name, const char* Long_Name, const char* Description, ArgFlags flags = None) :
-        sname (Short_Name), lname (Long_Name), desc (Description), mandatory (!(flags & Optional)), allow_multiple (flags & AllowMultiple) { }
-
-      const char* sname;
-      const char* lname;
+      const char* id;
       const char* desc;
-      bool mandatory, allow_multiple;
-      ArgType type;
+      ArgType  type;
+      ArgFlags flags;
 
       union {
-        struct { int def, min, max; }     i;
-        struct { float def, min, max; }   f;
-        const char*                       string;
-        const char**                      choice;
-      } extra_info;
+        const char* text;
+        struct { const char** list; int def; } choices;
+        struct { int def, min, max; } i;
+        struct { float def, min, max; } f;
+      } defaults;
 
-      const Argument& type_integer (int lowest, int highest, int default_value);
-      const Argument& type_float   (float lowest, float highest, float default_value);
-      const Argument& type_string  (const char* default_value = NULL);
-      const Argument& type_file    ();
-      const Argument& type_image_in ();
-      const Argument& type_image_out ();
-      const Argument& type_choice  (const char** choices);
-      const Argument& type_sequence_int ();
-      const Argument& type_sequence_float ();
 
-      bool is_valid () const { return (sname); }
+      operator bool () const { return (id); }
 
-      static const Argument End;
-      friend std::ostream& operator<< (std::ostream& stream, const Argument& arg);
-      friend class ArgBase;
+      //! specifies that the argument is optional
+      /*! For example:
+       * \code
+       * ARGUMENTS = {
+       *
+       *   Argument ("input", "the input image")
+       *     .type_image_in()
+       *     .optional()
+       *     .allow_multiple(),
+       *
+       *   Argument ()
+       * };
+       * \endcode
+       * \note Only one argument can be specified as optional and/or multiple. 
+       */
+      Argument& optional () { flags |= Optional; return (*this); }
+
+      //! specifies that multiple such arguments can be specified 
+      /*! See optional() for details. */
+      Argument& allow_multiple () { flags |= AllowMultiple; return (*this); }
+
+      //! specifies that the argument should be a text string
+      /*! If desired, a default string can be specified using the \a
+       * default_text argument. */
+      Argument& type_text (const char* default_text = NULL) 
+      {
+        type = Text; 
+        defaults.text = default_text;
+        return (*this); 
+      } 
+
+      //! specifies that the argument should be an input image
+      Argument& type_image_in () 
+      {
+        type = ImageIn;
+        defaults.text = NULL;
+        return (*this); 
+      }
+
+      //! specifies that the argument should be an output image
+      Argument& type_image_out () 
+      {
+        type = ImageOut; 
+        defaults.text = NULL;
+        return (*this); 
+      } 
+
+      //! specifies that the argument should be an integer
+      /*! if desired, a default value can be specified, along with a range of
+       * allowed values. */
+      Argument& type_integer (int min = std::numeric_limits<int>::min(), int def = 0, int max = std::numeric_limits<int>::max()) 
+      {
+        type = Integer;
+        defaults.i.min = min; 
+        defaults.i.def = def; 
+        defaults.i.max = max; 
+        return (*this); 
+      } 
+
+      //! specifies that the argument should be a floating-point value
+      /*! if desired, a default value can be specified, along with a range of
+       * allowed values. */
+      Argument& type_float (float min = -INFINITY, float def = 0.0, float max = INFINITY) 
+      {
+        type = Float; 
+        defaults.f.min = min; 
+        defaults.f.def = def; 
+        defaults.f.max = max; 
+        return (*this); 
+      } 
+
+      //! specifies that the argument should be selected from a predefined list
+      /*! The list of allowed values must be specified as a NULL-terminated
+       * list of C strings.  If desired, a default value can be specified,
+       * in the form of an index into the list. Here is an example usage:
+       * \code
+       * const char* mode_list [] = { "standard", "pedantic", "approx", NULL };
+       *
+       * ARGUMENTS = {
+       *
+       *   Argument ("mode", "the mode of operation")
+       *     .type_choice (mode_list, 0),
+       *
+       *   Argument ()
+       * };
+       * \endcode
+       * \note Each string in the list must be supplied in \b lowercase. */
+      Argument& type_choice (const char** choices, int default_index = -1)
+      {
+        type = Choice;
+        defaults.choices.list = choices;
+        defaults.choices.def = default_index;
+        return (*this);
+      }
+
+      //! specifies that the argument should be a file
+      Argument& type_file ()
+      {
+        type = ArgFile;
+        defaults.text = NULL;
+        return (*this);
+      }
+
+      //! specifies that the argument should be a sequence of comma-separated integer values
+      Argument& type_sequence_int ()
+      {
+        type = IntSeq;
+        defaults.text = NULL;
+        return (*this);
+      }
+
+      //! specifies that the argument should be a sequence of comma-separated floating-point values.
+      Argument& type_sequence_float ()
+      {
+        type = FloatSeq;
+        defaults.text = NULL;
+        return (*this);
+      }
+
+
+      void print () const;
+      void print_usage () const;
+      void check (const char* actual) const;
   };
 
 
 
 
-
-  class Option : public std::vector<Argument> {
+  //! A class to specify a command-line option
+  /*! Command-line options that are accepted by a particular command are
+   * specified as an array of Option objects, terminated with an empty
+   * Option (constructed using default parameters). Please refer to \ref
+   * command_line_parsing for more information.
+   *
+   * The list of options is provided using the OPTIONS macro, like this:
+   * \code
+   * OPTIONS = {
+   *
+   *   Option ("exact", "do not use approximations when processing"),
+   *
+   *   Option ("mask", 
+   *        "only perform processing within the voxels contained in " 
+   *        "the binary image specified")
+   *     + Argument ("image").type_image_in(),
+   *
+   *   Option ("regularisation", "set the regularisation term")
+   *     + Argument ("value").type_float (0.0, 1.0, 100.0),
+   *
+   *   Option ("dump", "dump all intermediate values to file")
+   *     + Argument ("file").type_file(),
+   *
+   *   Option () // don't forget to terminate with the default Option
+   * };
+   * \endcode
+   * The example above specifies that the application accepts four options, in
+   * addition to the standard ones (see \ref command_line_parsing for details).
+   * The first option is a simple switch: specifying '-exact' on the
+   * command line will cause the application to behave differently.
+   * The next options all expect an additional argument, supplied using the
+   * Argument class. Note that the description field of the Argument class is
+   * unused in this case. Multiple additional arguments can be specified in
+   * this way using the addition operator.
+   *
+   * Options can also be specified as required (see required() function), or
+   * as multiple (see allow_multiple() function). 
+   */
+  class Option 
+  {
     public:
-      Option () { sname = lname = desc = NULL; } 
-      Option (const char* Short_Name, const char* Long_Name, const char* Description, ArgFlags flags = Optional) :
-        sname (Short_Name), lname (Long_Name), desc (Description), mandatory (!(flags & Optional)), allow_multiple (flags & AllowMultiple) { }
+      Option () : id (NULL), desc (NULL), flags (Optional) { }
 
-      const char* sname;
-      const char* lname;
+      Option (const char* name, const char* description) :
+        id (name), desc (description), flags (Optional) { }
+
+      Option& operator+ (const Argument& arg) { args.push_back (arg); return (*this); }
+      operator bool () const { return (id); }
+
+      const char* id;
       const char* desc;
-      bool mandatory, allow_multiple;
+      ArgFlags flags;
 
-      Option& append (const Argument& argument) { std::vector<Argument>::push_back (argument); return (*this); }
-      bool    is_valid () const { return (sname); }
+      std::vector<Argument> args;
 
-      friend std::ostream& operator<< (std::ostream& stream, const Option& opt);
-      friend std::ostream& operator<< (std::ostream& stream, const OptBase& opt);
+      //! specifies that the option is required
+      /*! An option specified as required must be supplied on the command line. 
+        * For example:
+       * \code
+       * OPTIONS = {
+       *
+       *   Option ("roi", 
+       *       "the region of interest over which to perform the processing. "
+       *       "Mulitple such regions can be specified")
+       *     .required()
+       *     .allow_multiple()
+       *     + Argument ("image").type_image_in(),
+       *
+       *   Argument ()
+       * };
+       * \endcode
+       * \note Only one argument can be specified as optional and/or multiple. 
+       */
+      Option& required () { flags &= ~Optional; return (*this); }
 
-      static const Option End;
+      //! specifies that multiple such options can be specified 
+      /*! See required() for details. */
+      Option& allow_multiple () { flags |= AllowMultiple; return (*this); }
+
+      void print () const;
+      void print_usage () const;
   };
 
-
-
-
-
-
-
-
-
-
-  inline const Argument& Argument::type_integer (int lowest, int highest, int default_value)
-  {
-    type = Integer;
-    extra_info.i.def = default_value;
-    extra_info.i.min = lowest;
-    extra_info.i.max = highest;
-    return (*this);
-  }
-
-  inline const Argument& Argument::type_float (float lowest, float highest, float default_value)
-  {
-    type = Float;
-    extra_info.f.def = default_value;
-    extra_info.f.min = lowest;
-    extra_info.f.max = highest;
-    return (*this);
-  }
-
-  inline const Argument& Argument::type_string (const char* default_value)
-  {
-    type = Text;
-    extra_info.string = default_value;
-    return (*this);
-  }
-
-  inline const Argument& Argument::type_choice (const char** choices)
-  {
-    type = Choice;
-    extra_info.choice = choices;
-    return (*this);
-  }
-
-  inline const Argument& Argument::type_file ()
-  {
-    type = ArgFile;
-    extra_info.string = NULL;
-    return (*this);
-  }
-
-  inline const Argument& Argument::type_image_in ()
-  {
-    type = ImageIn;
-    extra_info.string = NULL;
-    return (*this);
-  }
-
-  inline const Argument& Argument::type_image_out ()
-  {
-    type = ImageOut;
-    extra_info.string = NULL;
-    return (*this);
-  }
-
-  inline const Argument& Argument::type_sequence_int ()
-  {
-    type = IntSeq;
-    extra_info.string = NULL;
-    return (*this);
-  }
-
-  inline const Argument& Argument::type_sequence_float ()
-  {
-    type = FloatSeq;
-    extra_info.string = NULL;
-    return (*this);
-  }
-
-  //! @}
+  // @}
 
 }
 

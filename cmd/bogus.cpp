@@ -38,9 +38,9 @@ DESCRIPTION = {
   NULL
 };
 
-ARGUMENTS = { Argument::End }; 
+ARGUMENTS = { Argument() }; 
 
-OPTIONS = { Option::End };
+OPTIONS = { Option() };
 
 
 

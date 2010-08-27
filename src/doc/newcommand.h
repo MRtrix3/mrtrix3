@@ -68,9 +68,9 @@ namespace MR {
  * -# A list of the required command-line arguments:
  * \code
  * ARGUMENTS = {
- *   Argument ("input", "input image", "the input image.").type_image_in (),
- *   Argument ("ouput", "output image", "the output image.").type_image_out (),
- *   Argument::End
+ *   Argument ("input", "the input image.").type_image_in (),
+ *   Argument ("ouput", "the output image.").type_image_out (),
+ *   Argument ()
  * };
  * \endcode
  * More information about the command-line parsing interface is provided in
@@ -78,13 +78,13 @@ namespace MR {
  * -# A list of any command-line options that the application may accept:
  * \code
  * OPTIONS = {
- *   Option ("scale", "scaling factor", "apply scaling to the intensity values.")
- *     .append (Argument ("factor", "factor", "the factor by which to multiply the intensities.").type_float (NAN, NAN, 1.0)),
+ *   Option ("scale", "apply scaling to the intensity values.")
+ *     + Argument ("factor").type_float (),
  * 
- *   Option ("offset", "offset", "apply offset to the intensity values.")
- *     .append (Argument ("bias", "bias", "the value of the offset.").type_float (NAN, NAN, 0.0)),
+ *   Option ("offset", "apply offset to the intensity values.")
+ *     + Argument ("bias").type_float (),
  *
- *   Option::End
+ *   Option()
  * };
  * \endcode
  * More information about the command-line parsing interface is provided in
