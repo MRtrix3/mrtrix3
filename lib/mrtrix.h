@@ -48,16 +48,6 @@
 #define MRTRIX_MINOR_VERSION 3
 #define MRTRIX_MICRO_VERSION 5
 
-
-/** Prints the file and line number. Useful for debugging purposes. */
-#define TEST std::cerr << MR::App::name() << ": line " << __LINE__ \
-  << " in " << __func__ << "() from file " << __FILE__ << "\n"
-
-
-/** Prints a variable name and its value, followed by the file and line number. Useful for debugging purposes. */
-#define VAR(variable) std::cerr << MR::App::name() << ": " << #variable << " = " << (variable) \
-  << " (in " << __func__ << "() from " << __FILE__  << ": " << __LINE__ << ")\n"
-
 #define GUI_SPACING 5
 
 #define MODIFIERS ( \

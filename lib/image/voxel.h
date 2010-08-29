@@ -23,6 +23,7 @@
 #ifndef __image_voxel_h__
 #define __image_voxel_h__
 
+#include "debug.h"
 #include "get_set.h"
 #include "image/header.h"
 #include "math/complex.h"
@@ -209,14 +210,18 @@ namespace MR {
         value_type (*get_func) (const void* data, size_t i);
         void       (*put_func) (value_type val, void* data, size_t i);
 
-        value_type get_value () const { 
+        value_type get_value () const 
+        { 
           ssize_t nseg (offset / handler.segment_size());
           return (H.scale_from_storage (get_func (handler.segment(nseg), offset - nseg*handler.segment_size()))); 
         }
-        void set_value (value_type val) {
+
+        void set_value (value_type val) 
+        {
           ssize_t nseg (offset / handler.segment_size());
           put_func (H.scale_to_storage (val), handler.segment(nseg), offset - nseg*handler.segment_size()); 
         }
+
         ssize_t get_pos (size_t axis) const { return (x[axis]); }
         void set_pos (size_t axis, ssize_t position) { 
           offset += stride(axis) * (position - x[axis]); 

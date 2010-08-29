@@ -124,9 +124,9 @@ namespace MR {
         if (finite(scale) && scale != 0.0) {
           float offset = get<float32> (&NH.scl_inter, is_BE);
           if (!finite (offset)) offset = 0.0;
-          H.set_scaling (offset, scale);
+          H.set_scaling (scale, offset);
         }
-        else H.set_scaling (0.0, 1.0);
+        else H.set_scaling ();
 
         size_t data_offset = (size_t) get<float32> (&NH.vox_offset, is_BE);
 

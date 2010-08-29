@@ -84,6 +84,7 @@ EXECUTE {
   Image::Header header_out (header_in);
   header_out.reset_scaling();
 
+
   Options opt = get_options ("datatype");
   if (opt.size()) 
     header_out.set_datatype (opt[0][0]);

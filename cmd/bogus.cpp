@@ -21,6 +21,7 @@
 */
 
 #include "app.h"
+#include "debug.h"
 #include "image/voxel.h"
 #include "math/rng.h"
 #include "math/cholesky.h"

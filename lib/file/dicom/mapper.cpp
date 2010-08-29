@@ -191,7 +191,7 @@ namespace MR {
         else throw Exception ("unexpected number of allocated bits per pixel (" 
             + str (image.bits_alloc) + ") in file \"" + H.name() + "\"");
 
-        H.set_scaling (image.scale_intercept, image.scale_slope);
+        H.set_scaling (image.scale_slope, image.scale_intercept);
 
         Math::Matrix<float>& M (H.get_transform());
         M.allocate (4,4);

@@ -25,6 +25,7 @@
 
 #include <map>
 
+#include "debug.h"
 #include "ptr.h"
 #include "types.h"
 #include "data_type.h"
@@ -187,11 +188,17 @@ namespace MR {
 
         // HELPERS:
 
-        template <typename T> static inline T scale_from_storage (T val, float scale_f, float offset_f) { return (offset_f + scale_f * val); }
-        template <typename T> static inline T scale_to_storage (T val, float scale_f, float offset_f) { return ((val - offset_f) / scale_f); }
+        template <typename T> static inline 
+          T scale_from_storage (T val, float scale_f, float offset_f) { return (offset_f + scale_f * val); }
 
-        template <typename T> float scale_from_storage (T val) const { return (scale_from_storage (val, scale_, offset_)); }
-        template <typename T> float scale_to_storage (T val) const   { return (scale_to_storage (val, scale_, offset_)); }
+        template <typename T> static inline 
+          T scale_to_storage (T val, float scale_f, float offset_f) { return ((val - offset_f) / scale_f); }
+
+        template <typename T> 
+          float scale_from_storage (T val) const { return (scale_from_storage (val, scale_, offset_)); }
+
+        template <typename T> 
+          float scale_to_storage (T val) const   { return (scale_to_storage (val, scale_, offset_)); }
 
         //! returns the memory footprint of the Image
         int64_t footprint (size_t from_dim = 0, size_t up_to_dim = std::numeric_limits<size_t>::max()) { 
