@@ -23,6 +23,7 @@
 #include <gsl/gsl_version.h>
 
 #include "app.h"
+#include "debug.h"
 #include "progressbar.h"
 #include "file/path.h"
 #include "file/config.h"
@@ -288,9 +289,13 @@ namespace MR {
             throw Exception (std::string ("not enough parameters to option \"-") + opt->id + "\"");
 
           option.push_back (ParsedOption (opt->id, argv+n+1));
+          n += opt->args.size();
         }
       }
-      else argument.push_back (argv[n]);
+      else {
+        argument.push_back (argv[n]);
+        VAR (argv[n]);
+      }
     }
   }
 
