@@ -41,23 +41,23 @@ DESCRIPTION = {
 };
 
 ARGUMENTS = {
-  Argument ("dim", "dimensions", "the image dimensions, as comma-separated 3-vector of ints.").type_string(),
-  Argument ("coefs", "SH coefficients", "even, m=0 SH coefficients of the profile for a fibre population oriented along the z-axis.").type_file(),
-  Argument ("FOD", "output FOD image", "the output image containing the SH coefficients of the simulated FOD field.").type_image_out(),
-  Argument::End
+  Argument ("dim", "the image dimensions, as comma-separated 3-vector of ints."),
+  Argument ("coefs", "even, m=0 SH coefficients of the profile for a fibre population oriented along the z-axis.").type_file(),
+  Argument ("FOD", "the output image containing the SH coefficients of the simulated FOD field.").type_image_out(),
+  Argument ()
 };
 
 
 OPTIONS = {
 
-  Option ("crossing", "crossing phantom", "Generate crossing fibre phantom rather than default curved phantom.")
-    .append (Argument ("angle", "angle", "the angle of the crossing fibres").type_float (0.0, 90.0, 90.0))
-    .append (Argument ("width", "width", "the width of the crossing fibre bundle").type_float (0.0, 100.0, 10.0)),
+  Option ("crossing", "Generate crossing fibre phantom rather than default curved phantom.")
+    + Argument ("angle").type_float (0.0, 90.0, 90.0)
+    + Argument ("width").type_float (0.0, 10.0, 100.0),
 
-  Option ("lmax", "lmax", "maximum harmonic order (default: determined from coefficients provided).")
-    .append (Argument ("num", "number", "harmonic order.").type_integer (0, 8, 20)),
+  Option ("lmax", "maximum harmonic degree (default: determined from coefficients provided).")
+    + Argument ("degree").type_integer (0, 8, 20),
 
-  Option::End
+  Option ()
 };
 
 
@@ -121,42 +121,49 @@ class Kernel {
 
 
 EXECUTE {
-  std::vector<int> D = parse_ints (argument[0].get_string()); 
-  if (D.size() != 3) throw Exception ("number of dimensions must be 3");
-  for (size_t i = 0; i < 3; ++i) 
-    if (D[i] < 1) throw Exception ("dimensions must be greater than zero");
+  std::vector<int> D = parse_ints (argument[0]); 
 
-  Math::Vector<float> coef (argument[1].get_string());
+  if (D.size() != 3) 
+    throw Exception ("number of dimensions must be 3");
+
+  for (size_t i = 0; i < 3; ++i) 
+    if (D[i] < 1) 
+      throw Exception ("dimensions must be greater than zero");
+
+  Math::Vector<float> coef (argument[1]);
 
   float angle (NAN), width (NAN);
-  std::vector<OptBase> opt = get_options ("crossing");
+  Options opt = get_options ("crossing");
   if (opt.size()) {
-    angle = opt[0][0].get_float();
-    width = opt[0][1].get_float() / 2.0;
+    angle = to<float> (opt[0][0]);
+    width = to<float> (opt[0][1]) / 2.0;
   }
 
   opt = get_options ("lmax");
   if (opt.size()) {
-    int n = (opt[0][0].get_int()/2)+1;
-    if (size_t(n) < coef.size()) coef.resize(n);
+    int n = (to<int> (opt[0][0]))/2 + 1;
+    if (size_t(n) < coef.size()) 
+      coef.resize(n);
   }
   Kernel kernel (coef, 10, angle, width);
 
   Image::Header header;
-  header.axes.ndim() = 4;
-  header.axes.dim(0) = D[0];
-  header.axes.dim(1) = D[1];
-  header.axes.dim(2) = D[2];
-  header.axes.dim(3) = kernel.size();
-  header.axes.vox(0) = header.axes.vox(1) = header.axes.vox(2) = 2.0;
-  header.axes.stride(0) = 2;
-  header.axes.stride(1) = 3;
-  header.axes.stride(2) = 4;
-  header.axes.stride(3) = 1;
+  header.set_ndim (4);
+  header.set_dim (0, D[0]);
+  header.set_dim (1, D[1]);
+  header.set_dim (2, D[2]);
+  header.set_dim (3, kernel.size());
+  header.set_vox (0, 2.0);
+  header.set_vox (1, 2.0);
+  header.set_vox (2, 2.0);
+  header.set_stride (0, 2);
+  header.set_stride (1, 3);
+  header.set_stride (2, 4);
+  header.set_stride (3, 1);
 
 
-  const Image::Header FOD_header = argument[2].get_image (header);
-  Image::Voxel<float> vox (FOD_header);
+  header.create (argument[2]);
+  Image::Voxel<float> vox (header);
 
   DataSet::Loop loop ("generating FOD field...", 0, 3);
   for (loop.start (vox); loop.ok(); loop.next (vox)) 

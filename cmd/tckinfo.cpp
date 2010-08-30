@@ -41,16 +41,21 @@ DESCRIPTION = {
 };
 
 ARGUMENTS = {
-  Argument ("tracks", "track file", "the input track file.", AllowMultiple).type_file (),
-  Argument::End
+  Argument ("tracks", "the input track file.")
+    .allow_multiple()
+    .type_file (),
+
+  Argument ()
 };
 
 
 
 OPTIONS = {
-  Option ("ascii", "output tracks as text", "save positions of each track in individual ascii files.")
-    .append (Argument ("prefix", "file prefix", "the prefix of each file").type_string ()),
-  Option::End
+  Option ("ascii",
+      "save positions of each track in individual ascii files, with the "
+      "specified prefix.")
+    + Argument ("prefix"),
+  Option ()
 };
 
 
@@ -58,16 +63,16 @@ OPTIONS = {
 
 EXECUTE {
 
-  std::vector<OptBase> opt = get_options ("ascii"); 
+  Options opt = get_options ("ascii"); 
   size_t count = 0;
 
-  for (std::vector<ArgBase>::iterator arg = argument.begin(); arg != argument.end(); ++arg) {
+  for (std::vector<const char*>::iterator arg = argument.begin(); arg != argument.end(); ++arg) {
     Tractography::Properties properties;
     Tractography::Reader<float> file;
-    file.open (arg->get_string(), properties);
+    file.open (*arg, properties);
 
     std::cout << "***********************************\n";
-    std::cout << "  Tracks file: \"" << arg->get_string() << "\"\n";
+    std::cout << "  Tracks file: \"" << *arg << "\"\n";
     for (Tractography::Properties::iterator i = properties.begin(); i != properties.end(); ++i) {
       std::string S (i->first + ':');
       S.resize (22, ' ');
@@ -88,7 +93,7 @@ EXECUTE {
       ProgressBar progress ("writing track data to ascii files");
       std::vector<Point<float> > tck;
       while (file.next (tck)) {
-        std::string filename (opt[0][0].get_string());
+        std::string filename (opt[0][0]);
         filename += "-000000.txt";
         std::string num (str(count));
         filename.replace (filename.size()-4-num.size(), num.size(), num);

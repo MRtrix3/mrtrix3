@@ -41,7 +41,7 @@ namespace MR {
           ROI (const Point<>& sphere_pos, float sphere_radius) : 
             pos (sphere_pos), rad (sphere_radius), rad2 (Math::pow2(rad)), vol (4.0*M_PI*Math::pow3(rad)/3.0) { }
 
-          ROI (const Image::Header& mask_header) : rad (NAN), rad2(NAN), vol (0.0) { get_mask (mask_header); }
+          ROI (Image::Header& mask_header) : rad (NAN), rad2(NAN), vol (0.0) { get_mask (mask_header); }
 
           ROI (const std::string& spec) : rad (NAN), rad2 (NAN), vol (0.0) {
             try {
@@ -54,7 +54,7 @@ namespace MR {
             }
             catch (...) { 
               info ("error parsing spherical ROI specification \"" + spec + "\" - assuming mask image");
-              Image::Header mask_header = Image::Header::open (spec);
+              Image::Header mask_header (spec);
               get_mask (mask_header);
             }
           }
@@ -128,7 +128,7 @@ namespace MR {
           float  rad, rad2, vol;
           RefPtr<Mask> mask;
 
-          void get_mask (const Image::Header& mask_header);
+          void get_mask (Image::Header& mask_header);
       };
 
 

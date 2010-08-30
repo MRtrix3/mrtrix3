@@ -49,31 +49,40 @@ DESCRIPTION = {
 };
 
 ARGUMENTS = {
-  Argument ("tracks", "track file", "the input track file.").type_file (),
-  Argument ("output", "output image", "the output fraction image").type_image_out(),
-  Argument::End
+  Argument ("tracks", "the input track file.").type_file (),
+  Argument ("output", "the output fraction image").type_image_out(),
+  Argument ()
 };
 
 
 OPTIONS = {
 
-  Option ("template", "template image", "an image file to be used as a template for the output (the output image wil have the same transform and field of view).")
-    .append (Argument ("image", "template image", "the input template image").type_image_in()),
+  Option ("template", 
+      "an image file to be used as a template for the output (the output "
+      "image wil have the same transform and field of view).")
+    + Argument ("image").type_image_in(),
 
-  Option ("vox", "voxel size", "provide either an isotropic voxel size, or comma-separated list of 3 voxel dimensions.")
-    .append (Argument ("size", "voxel size", "the voxel size (in mm).").type_sequence_float()),
+  Option ("vox", 
+      "provide either an isotropic voxel size, or comma-separated list of "
+      "3 voxel dimensions (in mm).")
+    + Argument ("size").type_sequence_float(),
 
-  Option ("colour", "coloured map", "add colour to the output image according to the direction of the tracks."),
+  Option ("colour", 
+      "add colour to the output image according to the direction of the tracks."),
 
-  Option ("fraction", "output fibre fraction", "produce an image of the fraction of fibres through each voxel (as a proportion of the total number in the file), rather than the count."),
+  Option ("fraction", 
+      "produce an image of the fraction of fibres through each voxel (as a "
+      "proportion of the total number in the file), rather than the count."),
 
-  Option ("datatype", "data type", "specify output image data type.")
-    .append (Argument ("spec", "specifier", "the data type specifier.").type_choice (DataType::identifiers)),
+  Option ("datatype", 
+      "specify output image data type.")
+    + Argument ("spec").type_choice (DataType::identifiers),
 
-  Option ("resample", "resample tracks", "resample the tracks at regular intervals using Hermite interpolation.")
-    .append (Argument ("factor", "factor", "the factor by which to resample.").type_integer (1, INT_MAX, 1)),
+  Option ("resample", 
+      "resample the tracks at regular intervals using Hermite interpolation.")
+    + Argument ("factor").type_integer (1, 1, INT_MAX),
 
-  Option::End
+  Option ()
 };
 
 
@@ -320,7 +329,7 @@ template<> void TrackMapper<VoxelDir>::voxelise (std::vector<VoxelDir>& voxels, 
 template <class T> class MapWriterBase
 {
   public:
-    MapWriterBase (Thread::Queue<std::vector<T> >& queue, const Image::Header& header, const float fraction_scaling_factor) :
+    MapWriterBase (Thread::Queue<std::vector<T> >& queue, Image::Header& header, const float fraction_scaling_factor) :
       reader (queue),
       H (header),
       scale (fraction_scaling_factor)
@@ -331,7 +340,7 @@ template <class T> class MapWriterBase
 
    protected:
     typename Thread::Queue<std::vector<T> >::Reader reader;
-    const Image::Header& H;
+    Image::Header& H;
     float scale;
 
 };
@@ -340,7 +349,7 @@ template <class T> class MapWriterBase
 class MapWriter : public MapWriterBase<Voxel> 
 {
   public:
-    MapWriter (VoxelQueue& queue, const Image::Header& header, const float fraction_scaling_factor) :
+    MapWriter (VoxelQueue& queue, Image::Header& header, const float fraction_scaling_factor) :
       MapWriterBase<Voxel> (queue, header, fraction_scaling_factor),
       buffer (H, 3, "buffer")
     {
@@ -376,7 +385,7 @@ class MapWriter : public MapWriterBase<Voxel>
 class MapWriterColour : public MapWriterBase<VoxelDir> {
 
   public:
-    MapWriterColour(VoxelDirQueue& queue, const Image::Header& header, const float fraction_scaling_factor) :
+    MapWriterColour(VoxelDirQueue& queue, Image::Header& header, const float fraction_scaling_factor) :
       MapWriterBase<VoxelDir>(queue, header, fraction_scaling_factor),
       buffer (H, 3, "directional_buffer")
     {
@@ -442,25 +451,25 @@ void generate_header (Image::Header& header, Tractography::Reader<float>& file, 
   min_values -= Point<float>  (3.0*voxel_size[0], 3.0*voxel_size[1], 3.0*voxel_size[2]);
   max_values += Point<float>  (3.0*voxel_size[0], 3.0*voxel_size[1], 3.0*voxel_size[2]);
 
-  header.name() = "tckmap image header";
-  header.axes.ndim() = 3;
+  header.set_name ("tckmap image header");
+  header.set_ndim (3);
 
   for (size_t i = 0; i != 3; ++i) {
-    header.axes.dim(i)    = Math::ceil((max_values[i] - min_values[i]) / voxel_size[i]);
-    header.axes.vox(i)    = voxel_size[i];
-    header.axes.stride(i) = i+1;
-    header.axes.units(i)  = Image::Axes::millimeters;
+    header.set_dim (i, Math::ceil((max_values[i] - min_values[i]) / voxel_size[i]));
+    header.set_vox (i, voxel_size[i]);
+    header.set_stride (i, i+1);
+    header.set_units (i, Image::Axis::millimeters);
   }
 
-  header.axes.description(0) = Image::Axes::left_to_right;
-  header.axes.description(1) = Image::Axes::posterior_to_anterior;
-  header.axes.description(2) = Image::Axes::inferior_to_superior;
+  header.set_description (0, Image::Axis::left_to_right);
+  header.set_description (1, Image::Axis::posterior_to_anterior);
+  header.set_description (2, Image::Axis::inferior_to_superior);
 
-  header.transform().allocate (4,4);
-  header.transform().identity();
-  header.transform()(0,3) = min_values[0];
-  header.transform()(1,3) = min_values[1];
-  header.transform()(2,3) = min_values[2];
+  header.get_transform().allocate (4,4);
+  header.get_transform().identity();
+  header.get_transform()(0,3) = min_values[0];
+  header.get_transform()(1,3) = min_values[1];
+  header.get_transform()(2,3) = min_values[2];
 
 }
 
@@ -494,9 +503,9 @@ void oversample_header (Image::Header& header, const std::vector<float>& voxel_s
   info ("oversampling header...");
 
   for (size_t i = 0; i != 3; ++i) {
-    header.transform()(i, 3) += 0.5 * (voxel_size[i] - header.axes.vox(i));
-    header.axes.dim(i) = Math::ceil(header.axes.dim(i) * header.axes.vox(i) / voxel_size[i]);
-    header.axes.vox(i) = voxel_size[i];
+    header.get_transform()(i, 3) += 0.5 * (voxel_size[i] - header.vox(i));
+    header.set_dim (i, Math::ceil(header.dim(i) * header.vox(i) / voxel_size[i]));
+    header.set_vox (i, voxel_size[i]);
   }
 }
 
@@ -509,7 +518,7 @@ EXECUTE {
 
   Tractography::Properties properties;
   Tractography::Reader<float> file;
-  file.open (argument[0].get_string(), properties);
+  file.open (argument[0], properties);
 
   const size_t num_tracks = properties["count"]    .empty() ? 0   : to<size_t> (properties["count"]);
   const float  step_size  = properties["step_size"].empty() ? 0.0 : to<float>  (properties["step_size"]);
@@ -518,22 +527,24 @@ EXECUTE {
   const bool fibre_fraction = get_options("fraction").size();
 
   std::vector<float> voxel_size;
-  OptionList opt = get_options("vox");
+  Options opt = get_options("vox");
   if (opt.size())
-    voxel_size = parse_floats(opt[0][0].get_string());
+    voxel_size = parse_floats(opt[0][0]);
 
   if (voxel_size.size() == 1)
     voxel_size.assign (3, voxel_size.front());
   else if (!voxel_size.empty() && voxel_size.size() != 3)
-    throw Exception ("voxel size must either be a single isotropic value, or a list of 3 comma-separated voxel dimensions");
+    throw Exception ("voxel size must either be a single isotropic "
+        "value, or a list of 3 comma-separated voxel dimensions");
 
   if (!voxel_size.empty())
-    info("creating image with voxel dimensions [ " + str(voxel_size[0]) + " " + str(voxel_size[1]) + " " + str(voxel_size[2]) + " ]");
+    info("creating image with voxel dimensions [ " + str(voxel_size[0]) + 
+        " " + str(voxel_size[1]) + " " + str(voxel_size[2]) + " ]");
 
   Image::Header header;
   opt = get_options ("template");
   if (opt.size()) {
-    header = opt[0][0].get_image();
+    header.open (opt[0][0]);
     if (!voxel_size.empty())
       oversample_header (header, voxel_size);
   }
@@ -542,28 +553,30 @@ EXECUTE {
       throw Exception ("please specify either a template image or the desired voxel size");
     generate_header (header, file, voxel_size);
     file.close();
-    file.open (argument[0].get_string(), properties);
+    file.open (argument[0], properties);
   }
 
   opt = get_options ("datatype");
+  DataType datatype;
   if (opt.size())
-    header.datatype().parse (DataType::identifiers[opt[0][0].get_int()]);
+    datatype.parse (opt[0][0]);
   else
-    header.datatype() = (fibre_fraction || colour) ? DataType::Float32 : DataType::UInt32;
+    datatype = (fibre_fraction || colour) ? DataType::Float32 : DataType::UInt32;
+  header.set_datatype (datatype);
 
   for (Tractography::Properties::iterator i = properties.begin(); i != properties.end(); ++i)
-    header.comments.push_back (i->first + ": " + i->second);
+    header.add_comment (i->first + ": " + i->second);
   for (std::multimap<std::string,std::string>::const_iterator i = properties.roi.begin(); i != properties.roi.end(); ++i)
-    header.comments.push_back ("ROI: " + i->first + " " + i->second);
+    header.add_comment ("ROI: " + i->first + " " + i->second);
   for (std::vector<std::string>::iterator i = properties.comments.begin(); i != properties.comments.end(); ++i)
-    header.comments.push_back ("comment: " + *i);
+    header.add_comment ("comment: " + *i);
 
   float scaling_factor = fibre_fraction ? 1.0 / float(num_tracks) : 1.0;
 
   size_t resample_factor;
   opt = get_options ("resample");
   if (opt.size()) {
-    resample_factor = opt[0][0].get_int();
+    resample_factor = to<int> (opt[0][0]);
     info ("track interpolation factor manually set to " + str(resample_factor));
   } 
   else if (step_size) {
@@ -576,7 +589,7 @@ EXECUTE {
   }
 
   scaling_factor *= (step_size / float(resample_factor)) / minvalue (header.vox(0), header.vox(1), header.vox(2));
-  header.comments.push_back("scaling_factor: " + str(scaling_factor));
+  header.add_comment ("scaling_factor: " + str(scaling_factor));
   info ("intensity scaling factor set to " + str(scaling_factor));
 
   Math::Matrix<float> interp_matrix (gen_interp_matrix<float> (resample_factor));
@@ -584,23 +597,23 @@ EXECUTE {
 
   if (colour) {
 
-    header.axes.ndim() = 4;
-    header.axes.dim(3) = 3;
-    header.axes.stride(0) += header.axes.stride(0) > 0 ? 1 : -1;
-    header.axes.stride(1) += header.axes.stride(1) > 0 ? 1 : -1;
-    header.axes.stride(2) += header.axes.stride(2) > 0 ? 1 : -1;
-    header.axes.stride(3) = 1;
-    header.axes.description(3) = "direction";
-    header.comments.push_back (std::string ("coloured track density map"));
+    header.set_ndim (4);
+    header.set_dim (3, 3);
+    header.set_stride (0, header.stride(0) + ( header.stride(0) > 0 ? 1 : -1 ));
+    header.set_stride (1, header.stride(1) + ( header.stride(1) > 0 ? 1 : -1 ));
+    header.set_stride (2, header.stride(2) + ( header.stride(2) > 0 ? 1 : -1 ));
+    header.set_stride (3, 1);
+    header.set_description (3, "direction");
+    header.add_comment (std::string ("coloured track density map"));
 
-    const Image::Header header_out = argument[1].get_image (header);
+    header.create (argument[1]);
 
     TrackQueue queue1 ("loaded tracks");
     VoxelDirQueue queue2 ("processed tracks");
 
     TrackLoader            loader (queue1, file, num_tracks);
-    TrackMapper<VoxelDir>  mapper (queue1, queue2, header_out, interp_matrix);
-    MapWriterColour        writer (queue2, header_out, scaling_factor);
+    TrackMapper<VoxelDir>  mapper (queue1, queue2, header, interp_matrix);
+    MapWriterColour        writer (queue2, header, scaling_factor);
 
     Thread::Exec loader_thread (loader, "loader");
     Thread::Array<TrackMapper<VoxelDir> > mapper_list (mapper);
@@ -611,17 +624,17 @@ EXECUTE {
   } 
   else {
 
-    header.axes.ndim() = 3;
-    header.comments.push_back (std::string (("track ") + str(fibre_fraction ? "fraction" : "count") + " map"));
+    header.set_ndim (3);
+    header.add_comment (std::string (("track ") + str(fibre_fraction ? "fraction" : "count") + " map"));
 
-    const Image::Header header_out = argument[1].get_image (header);
+    header.create (argument[1]);
 
     TrackQueue queue1 ("loaded tracks");
     VoxelQueue queue2 ("processed tracks");
 
     TrackLoader        loader (queue1, file, num_tracks);
-    TrackMapper<Voxel> mapper (queue1, queue2, header_out, interp_matrix);
-    MapWriter          writer (queue2, header_out, scaling_factor);
+    TrackMapper<Voxel> mapper (queue1, queue2, header, interp_matrix);
+    MapWriter          writer (queue2, header, scaling_factor);
 
     Thread::Exec loader_thread (loader, "loader");
     Thread::Array<TrackMapper<Voxel> > mapper_list (mapper);

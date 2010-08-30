@@ -39,7 +39,7 @@ namespace MR {
       class SharedBase {
         public:
 
-          SharedBase (const Image::Header& source_header, DWI::Tractography::Properties& property_set) :
+          SharedBase (Image::Header& source_header, DWI::Tractography::Properties& property_set) :
             H (source_header),
             source (H, strides_by_volume(), 4),
             properties (property_set), 
@@ -83,7 +83,7 @@ namespace MR {
           max_angle *= M_PI / 180.0;
         }
 
-          const Image::Header& H;
+          Image::Header& H;
           StorageType source;
           DWI::Tractography::Properties& properties;
           Point<value_type> init_dir;

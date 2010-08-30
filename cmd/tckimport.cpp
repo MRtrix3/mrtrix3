@@ -38,13 +38,18 @@ DESCRIPTION = {
 };
 
 ARGUMENTS = {
-  Argument ("input", "input track", "The input tracks to be included into the output track file.", AllowMultiple).type_file (),
-  Argument ("output", "output tracks file", "The output tracks file in MRtrix format").type_file(),
-  Argument::End
+  Argument ("input", 
+      "The input tracks to be included into the output track file.")
+    .allow_multiple()
+    .type_file (),
+
+  Argument ("output", 
+      "The output tracks file in MRtrix format").type_file(),
+  Argument ()
 };
 
 
-OPTIONS = { Option::End };
+OPTIONS = { Option () };
 
 
 
@@ -55,14 +60,15 @@ EXECUTE {
   DWI::Tractography::Properties properties;
 
   DWI::Tractography::Writer<> writer;
-  writer.create (argument.back().get_string(), properties);
+  writer.create (argument.back(), properties);
 
   for (size_t n = 0; n < argument.size()-1; n++) {
     Math::Matrix<float> M;
     try { 
-      M.load (argument[n].get_string()); 
+      M.load (argument[n]); 
       if (M.columns() != 3) 
-        throw Exception (std::string ("WARNING: file \"") + argument[n].get_string() + "\" does not contain 3 columns - ignored");
+        throw Exception (std::string ("WARNING: file \"") + 
+            argument[n] + "\" does not contain 3 columns - ignored");
 
       std::vector<Point<float> > tck (M.rows());
       for (size_t i = 0; i < M.rows(); i++) {

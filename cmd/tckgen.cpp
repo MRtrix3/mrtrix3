@@ -41,67 +41,110 @@ DESCRIPTION = {
 };
 
 ARGUMENTS = {
-  Argument ("FOD", "FOD image", "the image containing the FOD data, expressed in spherical harmonics.").type_image_in(),
-  Argument ("tracks", "output tracks file", "the output file containing the tracks generated.").type_file(),
-  Argument::End
+  Argument ("FOD", "the image containing the FOD data, expressed in spherical harmonics.").type_image_in(),
+  Argument ("tracks", "the output file containing the tracks generated.").type_file(),
+  Argument ()
 };
 
 const char* algorithms[] = { "ifod1", "ifod2", NULL };
 
 OPTIONS = {
-  Option ("algorithm", "algorithm", "specify the tractography algorithm to use (default: iFOD2).")
-    .append (Argument ("name", "algorithm name", "the name of the algorithm to use. Valid choices are: iFOD1, iFOD2.").type_choice (algorithms)),
+  Option ("algorithm", 
+      "specify the tractography algorithm to use. Valid choices are: iFOD1, "
+      "iFOD2 (default: iFOD2).")
+    + Argument ("name").type_choice (algorithms),
 
-  Option ("seed", "seed region", "specify the seed region of interest.", AllowMultiple)
-    .append (Argument ("spec", "ROI specification", "specifies the parameters necessary to define the ROI. This should be either the path to a binary mask image, or a comma-separated list of 4 floating-point values, specifying the [x,y,z] coordinates of the centre and radius of a spherical ROI.").type_string()),
+  Option ("seed", 
+      "specify the seed region of interest. This should be either the path "
+      "to a binary mask image, or a comma-separated list of 4 floating-point "
+      "values, specifying the [x,y,z] coordinates of the centre and radius "
+      "of a spherical ROI.")
+    .allow_multiple()
+    + Argument ("spec"),
 
-  Option ("include", "inclusion ROI", "specify an inclusion region of interest, in the same format as the seed region. Only tracks that enter all such inclusion ROI will be produced.", Optional | AllowMultiple)
-    .append (Argument ("spec", "ROI specification", "specifies the parameters necessary to define the ROI.").type_string()),
+  Option ("include", 
+      "specify an inclusion region of interest, in the same format as the "
+      "seed region. Only tracks that enter all such inclusion ROI will be "
+      "produced.")
+    .allow_multiple()
+    + Argument ("spec"),
 
-  Option ("exclude", "exclusion ROI", "specify an exclusion region of interest, in the same format as the seed region. Only tracks that enter any such exclusion ROI will be discarded.", Optional | AllowMultiple)
-    .append (Argument ("spec", "ROI specification", "specifies the parameters necessary to define the ROI.").type_string()),
+  Option ("exclude", 
+      "specify an exclusion region of interest, in the same format as the "
+      "seed region. Only tracks that enter any such exclusion ROI will be "
+      "discarded.")
+    .allow_multiple()
+    + Argument ("spec"),
 
-  Option ("mask", "mask ROI", "specify a mask region of interest, in the same format as the seed region. Tracks will be terminated when they leave any such ROI.", Optional | AllowMultiple)
-    .append (Argument ("spec", "ROI specification", "specifies the parameters necessary to define the ROI.").type_string()),
+  Option ("mask", 
+      "specify a mask region of interest, in the same format as the seed "
+      "region. Tracks will be terminated when they leave any such ROI.")
+    .allow_multiple()
+    + Argument ("spec"),
 
-  Option ("step", "step size", "set the step size of the algorithm.")
-    .append (Argument ("size", "step size", "the step size to use in mm (default is 0.2 mm).").type_float (1e-6, 10.0, 0.2)),
+  Option ("step", 
+      "set the step size of the algorithm in mm (default is 0.2 mm).")
+    + Argument ("size").type_float (1e-6, 0.2, 10.0),
 
-  Option ("angle", "maximum deflection angle", "set the maximum angle between successive steps (default is 45°).")
-    .append (Argument ("theta", "theta", "theta, the maximum angle.").type_float (1e-6, 90.0, 45.0)),
+  Option ("angle", 
+      "set the maximum angle between successive steps (default is 45°).")
+    + Argument ("theta").type_float (1e-6, 45.0, 90.0),
 
-  Option ("number", "desired number of tracks", "set the desired number of tracks. The program will continue to generate tracks until this number of tracks have been selected and written to the output file (default is 100 for *_STREAM methods, 1000 for *_PROB methods).")
-    .append (Argument ("tracks", "number of tracks", "the number of tracks.").type_integer (1, INT_MAX, 1)),
+  Option ("number", 
+      "set the desired number of tracks. The program will continue to "
+      "generate tracks until this number of tracks have been selected "
+      "and written to the output file (default is 100 for *_STREAM methods, "
+      "1000 for *_PROB methods).")
+    + Argument ("tracks").type_integer (1, 1, INT_MAX),
 
-  Option ("maxnum", "maximum number of tracks to generate", "set the maximum number of tracks to generate. The program will not generate more tracks than this number, even if the desired number of tracks hasn't yet been reached (default is 100 x number).")
-    .append (Argument ("tracks", "maximum number of tracks", "the maximum number of tracks.").type_integer (1, INT_MAX, 1)),
+  Option ("maxnum", 
+      "set the maximum number of tracks to generate. The program will "
+      "not generate more tracks than this number, even if the desired "
+      "number of tracks hasn't yet been reached (default is 100 x number).")
+    + Argument ("tracks").type_integer (1, 1, INT_MAX),
 
-  Option ("length", "track length", "set the maximum length of any track.")
-    .append (Argument ("value", "track distance", "the maximum length to use in mm (default is 200 mm).").type_float (1e-2, 1e6, 200.0)),
+  Option ("length", 
+      "set the maximum length of any track in mm (default is 200 mm).")
+    + Argument ("value").type_float (1.0e-2, 200.0, 1.e6),
 
-  Option ("minlength", "minimum track length", "set the minimum length of any track.")
-    .append (Argument ("value", "track distance", "the minimum length to use in mm (default is 10 mm).").type_float (1e-2, 1e6, 10.0)),
+  Option ("minlength", 
+      "set the minimum length of any track in mm (default is 10 mm).")
+    + Argument ("value").type_float (1.0e-2, 10.0, 1.0e6),
 
-  Option ("cutoff", "cutoff threshold", "set the FA or FOD amplitude cutoff for terminating tracks (default is 0.1).")
-    .append (Argument ("value", "value", "the cutoff to use.").type_float (0, 1e6, 0.1)),
+  Option ("cutoff", 
+      "set the FA or FOD amplitude cutoff for terminating tracks "
+      "(default is 0.1).")
+    + Argument ("value").type_float (0.0, 0.1, 1.0e6),
 
-  Option ("initcutoff", "intial cutoff threshold", "set the minimum FA or FOD amplitude for initiating tracks (default is twice the normal cutoff).")
-    .append (Argument ("value", "value", "the initial cutoff to use.").type_float (0, 1e6, 0.1)),
+  Option ("initcutoff", 
+      "set the minimum FA or FOD amplitude for initiating tracks (default "
+      "is twice the normal cutoff).")
+    + Argument ("value").type_float (0.0, 0.1, 1.0e6),
 
-  Option ("trials", "number of trials", "set the maximum number of sampling trials at each point (only used for probabilistic tracking).")
-    .append (Argument ("number", "number", "the number of trials.").type_integer(1, 10000, 50)),
+  Option ("trials", 
+      "set the maximum number of sampling trials at each point (only "
+      "used for probabilistic tracking).")
+    + Argument ("number").type_integer(1, 50, 10000),
 
-  Option ("unidirectional", "unidirectional", "track from the seed point in one direction only (default is to track in both directions)."),
+  Option ("unidirectional", 
+      "track from the seed point in one direction only (default is to "
+      "track in both directions)."),
 
-  Option ("initdirection", "initial direction", "specify an initial direction for the tracking.")
-    .append (Argument ("dir", "direction", "the vector specifying the initial direction.").type_sequence_float()),
+  Option ("initdirection", 
+      "specify an initial direction for the tracking (this should be "
+      "supplied as a vector of 3 comma-separated values.")
+    + Argument ("dir").type_sequence_float(),
 
-  Option ("noprecomputed", "no precomputation", "do NOT pre-compute legendre polynomial values. Warning: this will slow down the algorithm by a factor of approximately 4."),
+  Option ("noprecomputed", 
+      "do NOT pre-compute legendre polynomial values. Warning: "
+      "this will slow down the algorithm by a factor of approximately 4."),
 
-  Option ("samples", "samples per step", "set the number of FOD samples to take per step for the 2nd order method (iFOD2).")
-    .append (Argument ("number", "number", "the number of samples.").type_integer(1, 20, 3)),
+  Option ("samples", 
+      "set the number of FOD samples to take per step for the 2nd order "
+      "method (iFOD2).")
+    + Argument ("number").type_integer(1, 3, 20),
 
-  Option::End
+  Option ()
 };
 
 
@@ -118,67 +161,69 @@ EXECUTE {
   properties["sh_precomputed"] = "1";
 
   int algorithm = 1;
-  std::vector<OptBase> opt = get_options ("algorithm");
-  if (opt.size()) algorithm = opt[0][0].get_int();
+  Options opt = get_options ("algorithm");
+  if (opt.size()) algorithm = to<int> (opt[0][0]);
 
   opt = get_options ("seed");
-  for (std::vector<OptBase>::iterator i = opt.begin(); i != opt.end(); ++i)
-    properties.seed.add (ROI (std::string ((*i)[0].get_string())));
+  for (Options::iterator i = opt.begin(); i != opt.end(); ++i)
+    properties.seed.add (ROI ((*i)[0]));
 
   opt = get_options ("include");
-  for (std::vector<OptBase>::iterator i = opt.begin(); i != opt.end(); ++i)
-    properties.include.add (ROI (std::string ((*i)[0].get_string())));
+  for (Options::iterator i = opt.begin(); i != opt.end(); ++i)
+    properties.include.add (ROI ((*i)[0]));
 
   opt = get_options ("exclude");
-  for (std::vector<OptBase>::iterator i = opt.begin(); i != opt.end(); ++i)
-    properties.exclude.add (ROI (std::string ((*i)[0].get_string())));
+  for (Options::iterator i = opt.begin(); i != opt.end(); ++i)
+    properties.exclude.add (ROI ((*i)[0]));
 
   opt = get_options ("mask");
-  for (std::vector<OptBase>::iterator i = opt.begin(); i != opt.end(); ++i)
-    properties.mask.add (ROI (std::string ((*i)[0].get_string())));
+  for (Options::iterator i = opt.begin(); i != opt.end(); ++i)
+    properties.mask.add (ROI ((*i)[0]));
 
   opt = get_options ("step");
-  if (opt.size()) properties["step_size"] = str (opt[0][0].get_float());
+  if (opt.size()) properties["step_size"] = opt[0][0];
 
   opt = get_options ("angle");
-  if (opt.size()) properties["max_angle"] = str (opt[0][0].get_float());
+  if (opt.size()) properties["max_angle"] = opt[0][0];
 
   opt = get_options ("number");
-  if (opt.size()) properties["max_num_tracks"] = str (opt[0][0].get_int());
+  if (opt.size()) properties["max_num_tracks"] = opt[0][0];
 
   opt = get_options ("maxnum");
-  if (opt.size()) properties["max_num_attempts"] = str (opt[0][0].get_int());
+  if (opt.size()) properties["max_num_attempts"] = opt[0][0];
 
   opt = get_options ("length");
-  if (opt.size()) properties["max_dist"] = str (opt[0][0].get_float());
+  if (opt.size()) properties["max_dist"] = opt[0][0];
 
   opt = get_options ("min_length");
-  if (opt.size()) properties["min_dist"] = str (opt[0][0].get_float());
+  if (opt.size()) properties["min_dist"] = opt[0][0];
 
   opt = get_options ("cutoff");
-  if (opt.size()) properties["threshold"] = str (opt[0][0].get_float());
+  if (opt.size()) properties["threshold"] = opt[0][0];
 
   opt = get_options ("initcutoff");
-  if (opt.size()) properties["init_threshold"] = str (opt[0][0].get_float());
+  if (opt.size()) properties["init_threshold"] = opt[0][0];
 
   opt = get_options ("trials");
-  if (opt.size()) properties["max_trials"] = str (opt[0][0].get_int());
+  if (opt.size()) properties["max_trials"] = opt[0][0];
 
   opt = get_options ("unidirectional");
   if (opt.size()) properties["unidirectional"] = "1";
 
   opt = get_options ("initdirection");
-  if (opt.size()) properties["init_direction"] = opt[0][0].get_string();
+  if (opt.size()) properties["init_direction"] = opt[0][0];
 
   opt = get_options ("noprecomputed");
   if (opt.size()) properties["sh_precomputed"] = "0";
 
   opt = get_options ("samples");
-  if (opt.size()) properties["samples_per_step"] = str (opt[0][0].get_int());
+  if (opt.size()) properties["samples_per_step"] = opt[0][0];
+
+  Image::Header source (argument[0]);
 
   switch (algorithm) {
-    case 0: Exec<iFOD1>::run (argument[0].get_image(), argument[1].get_string(), properties); break;
-    case 1: Exec<iFOD2>::run (argument[0].get_image(), argument[1].get_string(), properties); break;
+    case 0: Exec<iFOD1>::run (source, argument[1], properties); break;
+    case 1: Exec<iFOD2>::run (source, argument[1], properties); break;
     default: assert (0);
   }
 }

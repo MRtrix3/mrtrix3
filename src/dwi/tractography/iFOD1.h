@@ -37,7 +37,7 @@ namespace MR {
         public:
           class Shared : public SharedBase {
             public:
-              Shared (const Image::Header& source, DWI::Tractography::Properties& property_set) :
+              Shared (Image::Header& source, DWI::Tractography::Properties& property_set) :
                 SharedBase (source, property_set),
                 lmax (Math::SH::LforN (source.dim(3))), 
                 max_trials (100),

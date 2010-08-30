@@ -87,7 +87,7 @@ namespace MR {
 
       template <class Method> class Exec {
         public:
-          static void run (const Image::Header& source, const std::string& destination, DWI::Tractography::Properties& properties)
+          static void run (Image::Header& source, const std::string& destination, DWI::Tractography::Properties& properties)
           {
             typename Method::Shared shared (source, properties);
             MethodBase::init(); 
