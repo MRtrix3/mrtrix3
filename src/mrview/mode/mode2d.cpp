@@ -111,7 +111,7 @@ namespace MR {
         if (!target()) set_target (focus());
 
         // set up modelview matrix:
-        const float* Q = image()->interp.scanner2image_matrix();
+        const float* Q = image()->interp.image2scanner_matrix();
         float M[16];
         M[3] = M[7] = M[11] = M[12] = M[13] = M[14] = 0.0;
         M[15] = 1.0;
