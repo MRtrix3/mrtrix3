@@ -444,7 +444,7 @@ namespace MR {
       foreach (index, indexes) {
         try {
           if (files->is_file (index.row())) {
-            Image::Header* H = new Image::Header (Image::Header::open (Path::join (cwd, files->name (index.row()))));
+            Image::Header* H = new Image::Header (Path::join (cwd, files->name (index.row())));
             images.push_back (H);
           }
           else {
