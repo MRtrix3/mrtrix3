@@ -30,7 +30,7 @@
 namespace MR {
   namespace Viewer {
 
-    Image::Image (Window& parent, const MR::Image::Header* header) :
+    Image::Image (Window& parent, MR::Image::Header* header) :
       QAction (shorten(header->name(), 20, 0).c_str(), &parent),
       H (*header),
       vox (H),

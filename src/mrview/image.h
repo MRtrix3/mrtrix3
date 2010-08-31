@@ -42,7 +42,7 @@ namespace MR {
       Q_OBJECT
 
       public:
-        Image (Window& parent, const MR::Image::Header* header);
+        Image (Window& parent, MR::Image::Header* header);
         ~Image ();
 
         void reset_windowing () { 
@@ -67,7 +67,7 @@ namespace MR {
           else { x = 1; y = 2; }
         }
 
-        const MR::Image::Header& H;
+        MR::Image::Header& H;
         MR::Image::Voxel<float> vox;
         MR::DataSet::Interp::Linear<MR::Image::Voxel<float> > interp;
 

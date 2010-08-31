@@ -38,14 +38,22 @@ DESCRIPTION = {
 };
 
 ARGUMENTS = {
-  Argument ("coefs", "SH coefficients", "a text file containing the even spherical harmonics coefficients to display.", Optional).type_file (),
-  Argument::End
+
+  Argument ("coefs",
+      "a text file containing the even spherical harmonics coefficients to display.")
+    .optional()
+    .type_file(),
+
+  Argument()
 };
 
 OPTIONS = { 
-  Option ("response", "display response function", "assume SH coefficients file only contains even, m=0 terms. Used to display the response function as produced by estimate_response"),
 
-  Option::End 
+  Option ("response",
+      "assume SH coefficients file only contains even, m=0 terms. Used to "
+      "display the response function as produced by estimate_response"),
+
+  Option ()
 };
 
 
@@ -56,11 +64,17 @@ class MyApp : public MR::App {
     MyApp (int argc, char** argv) : App (argc, argv, __command_description, __command_arguments, __command_options, 
         __command_version, __command_author, __command_copyright), qapp (argc, argv) { parse_arguments(); }
 
-    void execute () { 
+    void execute () 
+    { 
       DWI::Window window (get_options("response").size());
-      if (argument.size()) window.set_values (argument[0].get_string());
+
+      if (argument.size()) 
+        window.set_values (argument[0]);
+
       window.show();
-      if (qapp.exec()) throw Exception ("error running Qt application");
+
+      if (qapp.exec()) 
+        throw Exception ("error running Qt application");
     }
 
 

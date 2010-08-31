@@ -41,11 +41,16 @@ DESCRIPTION = {
 };
 
 ARGUMENTS = {
-  Argument ("image", "an image specifier", "an image to be loaded.", Optional | AllowMultiple).type_image_in (),
-  Argument::End
+
+  Argument ("image", "an image to be loaded.")
+    .optional()
+    .allow_multiple()
+    .type_image_in (),
+
+  Argument()
 };
 
-OPTIONS = { Option::End };
+OPTIONS = { Option() };
 
 
 
@@ -60,23 +65,29 @@ class MyApp : public MR::App {
       parse_arguments(); 
     }
 
-    void execute () { 
+    void execute () 
+    { 
       Viewer::Window window;
       window.show();
+
       if (argument.size()) {
         VecPtr<MR::Image::Header> list;
+
         for (size_t n = 0; n < argument.size(); ++n) {
           try {
-            list.push_back (new Image::Header (Image::Header::open (argument[n].get_string())));
+            list.push_back (new Image::Header (argument[n]));
           }
           catch (Exception& e) {
             Dialog::report_exception (e, &window);
           }
         }
+
         if (list.size())
           window.add_images (list);
       }
-      if (qapp.exec()) throw Exception ("error running Qt application");
+
+      if (qapp.exec()) 
+        throw Exception ("error running Qt application");
     }
 
   protected:

@@ -257,8 +257,8 @@ namespace MR {
         }
 
         if (show_image_info_action->isChecked()) {
-          for (size_t i = 0; i < image()->H.comments.size(); ++i)
-            renderText (image()->H.comments[i], LeftEdge | TopEdge, i);
+          for (size_t i = 0; i < image()->H.comments().size(); ++i)
+            renderText (image()->H.comments()[i], LeftEdge | TopEdge, i);
         }
       }
 

@@ -73,7 +73,7 @@ namespace MR {
             QList<QUrl> urlList = mimeData->urls();
             for (int i = 0; i < urlList.size() && i < 32; ++i) {
               try {
-                list.push_back (new MR::Image::Header (MR::Image::Header::open (urlList.at(i).path().toAscii().constData())));
+                list.push_back (new MR::Image::Header (urlList.at(i).path().toAscii().constData()));
               }
               catch (Exception& e) {
                 Dialog::report_exception (e, &main);
@@ -303,8 +303,8 @@ namespace MR {
         dialog.get_selection (selection);
         if (selection.size() != 1) return;
         try {
-          const MR::Image::Header header = MR::Image::Header::create (selection[0], current_image()->H);
-          MR::Image::Voxel<float> dest (header);
+          current_image()->H.create (selection[0]);
+          MR::Image::Voxel<float> dest (current_image()->H);
           DataSet::copy_with_progress (dest, current_image()->vox);
         }
         catch (Exception& E) {

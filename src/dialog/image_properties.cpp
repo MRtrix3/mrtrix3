@@ -38,13 +38,13 @@ namespace MR {
       TreeItem* root = model->rootItem;
 
       root->appendChild (new TreeItem ("File", H.name(), root));
-      root->appendChild (new TreeItem ("Format", H.format, root));
+      root->appendChild (new TreeItem ("Format", H.format(), root));
 
-      if (H.comments.size()) {
+      if (H.comments().size()) {
         TreeItem* comments = new TreeItem ("Comments", std::string(), root);
         root->appendChild (comments);
-        for (size_t n = 0; n < H.comments.size(); ++n)
-          comments->appendChild (new TreeItem (std::string(), H.comments[n], comments));
+        for (size_t n = 0; n < H.comments().size(); ++n)
+          comments->appendChild (new TreeItem (std::string(), H.comments()[n], comments));
       }
 
       std::string text;
@@ -62,8 +62,8 @@ namespace MR {
       root->appendChild (labels);
       for (size_t n = 0; n < H.ndim(); ++n)
         labels->appendChild (new TreeItem (std::string(), 
-        ( H.axes.description(n).size() ? H.axes.description(n) : "undefined" ) +
-        " (" + ( H.axes.units(n).size() ? H.axes.units(n) : "?" ) + ")", labels));
+        ( H.description(n).size() ? H.description(n) : "undefined" ) +
+        " (" + ( H.units(n).size() ? H.units(n) : "?" ) + ")", labels));
 
       root->appendChild (new TreeItem ("Data type", H.datatype().description(), root));
 
@@ -73,7 +73,7 @@ namespace MR {
       root->appendChild (new TreeItem ("Strides", text, root));
 
       root->appendChild (new TreeItem ("Data scaling", 
-            "offset: " + str (H.offset) + ", multiplier = " + str (H.scale), root));
+            "offset: " + str (H.data_offset()) + ", multiplier = " + str (H.data_scale()), root));
 
       if (H.transform().rows() != 4 || H.transform().columns() != 4) {
         root->appendChild (new TreeItem ("Transform", "(invalid)", root));
@@ -90,19 +90,19 @@ namespace MR {
                 transform));
       }
 
-      if (H.DW_scheme.is_set()) {
-        if (H.DW_scheme.rows() == 0 || H.DW_scheme.columns() != 4) {
+      if (H.DW_scheme().is_set()) {
+        if (H.DW_scheme().rows() == 0 || H.DW_scheme().columns() != 4) {
           root->appendChild (new TreeItem ("Diffusion scheme", "(invalid)", root));
         }
         else {
           TreeItem* scheme = new TreeItem ("Diffusion scheme", std::string(), root);
           root->appendChild (scheme);
-          for (size_t n = 0; n < H.DW_scheme.rows(); ++n)
+          for (size_t n = 0; n < H.DW_scheme().rows(); ++n)
             scheme->appendChild (new TreeItem (std::string(), 
-                  str (H.DW_scheme(n,0)) + ", " +
-                  str (H.DW_scheme(n,1)) + ", " +
-                  str (H.DW_scheme(n,2)) + ", " +
-                  str (H.DW_scheme(n,3)),
+                  str (H.DW_scheme()(n,0)) + ", " +
+                  str (H.DW_scheme()(n,1)) + ", " +
+                  str (H.DW_scheme()(n,2)) + ", " +
+                  str (H.DW_scheme()(n,3)),
                   scheme));
         }
       }
@@ -140,7 +140,7 @@ namespace MR {
       std::string text = k.data().toString().toAscii().constData();
 
       if (text == "Transform") save_target = &H.transform();
-      else if (text == "Diffusion scheme") save_target = &H.DW_scheme;
+      else if (text == "Diffusion scheme") save_target = &H.DW_scheme();
       else { save_target = NULL; return; }
 
       QAction* save_action = new QAction (tr("&Save as..."), this);
