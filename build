@@ -1,11 +1,6 @@
 #!/usr/bin/python
 
-import platform
-import sys 
-import os
-import time
-import threading
-import subprocess 
+import platform, sys, os, time, threading, subprocess, copy
 
 
 config_file = 'config.default'
@@ -207,7 +202,7 @@ class Entry:
     else: self.deps.add (icon)
 
     skip = False
-    flags = gsl_ldflags
+    flags = copy.copy (gsl_ldflags)
     if 'T' in file_flags[cc_file]: flags += thread_ldflags
     if 'Q' in file_flags[cc_file]: flags += qt_ldflags
 
@@ -236,7 +231,7 @@ class Entry:
     self.action = 'CC'
     cc_file = self.name[:-len(obj_suffix)] + cpp_suffix
     self.deps = set([ cc_file ])
-    flags = gsl_cflags
+    flags = copy.copy (gsl_cflags)
 
     if is_moc (cc_file):
       src_header = cc_file[:-len('_moc'+cpp_suffix)] + h_suffix
