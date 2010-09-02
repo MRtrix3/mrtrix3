@@ -23,6 +23,8 @@
 #ifndef __dwi_tractography_iFOD2_h__
 #define __dwi_tractography_iFOD2_h__
 
+#include <algorithm>
+
 #include "point.h"
 #include "math/SH.h"
 #include "dwi/tractography/method.h"
@@ -107,20 +109,26 @@ namespace MR {
 
             value_type max_val_actual = 0.0;
             for (int n = 0; n < 100; n++) {
-              value_type val = rand_path (next_pos, next_dir);
-              if (val > max_val_actual) max_val_actual = val;
+              value_type val = rand_path_prob (next_pos, next_dir);
+              if (val > max_val_actual) 
+                max_val_actual = val;
             }
             value_type max_val = MAX (prev_prob_val, max_val_actual);
             prev_prob_val = max_val_actual;
 
-            if (isnan (max_val) || max_val < S.prob_threshold) return (false);
+            if (isnan (max_val) || max_val < S.prob_threshold)
+              return (false);
             max_val *= 1.5;
 
             size_t nmax = max_val_actual > S.prob_threshold ? 10000 : S.max_trials;
+
             for (size_t n = 0; n < nmax; n++) {
-              value_type val = rand_path (next_pos, next_dir);
+              value_type val = rand_path_prob (next_pos, next_dir);
+
               if (val > S.prob_threshold) {
-                if (val > max_val) info ("max_val exceeded!!! (val = " + str(val) + ", max_val = " + str (max_val) + ")");
+                if (val > max_val) 
+                  info ("max_val exceeded!!! (val = " + str(val) + ", max_val = " + str (max_val) + ")");
+
                 if (rng.uniform() < val/max_val) {
                   dir = next_dir;
                   dir.normalise();
@@ -155,11 +163,15 @@ namespace MR {
             return (FOD (direction));
           }
 
-          value_type rand_path (Point<value_type>& next_pos, Point<value_type>& next_dir) 
+          value_type rand_path_prob (Point<value_type>& next_pos, Point<value_type>& next_dir) 
           {
+            Point<value_type> positions [S.num_samples], tangents [S.num_samples];
+            tangents[0] = rand_dir (dir);
+            get_path (positions, tangents);
+
             next_dir = rand_dir (dir);
             value_type cos_theta = next_dir.dot (dir);
-            if (cos_theta > 1.0) cos_theta = 1.0;
+            cos_theta = std::min (cos_theta, value_type(1.0));
             value_type theta = Math::acos (cos_theta);
 
             if (theta) {
@@ -193,6 +205,47 @@ namespace MR {
               }
               return (val);
             }
+          }
+
+          void get_path (Point<value_type>* positions, Point<value_type>* tangents) 
+          {
+            value_type cos_theta = tangents[0].dot (dir);
+            cos_theta = std::min (cos_theta, value_type(1.0));
+            value_type theta = Math::acos (cos_theta);
+
+            /*
+            if (theta) {
+              Point<value_type> curv = next_dir - cos_theta * dir; curv.normalise();
+              value_type R = S.step_size / theta;
+              next_pos = pos + R * (Math::sin (theta) * dir + (value_type(1.0)-cos_theta) * curv);
+              value_type val = FOD (next_pos, next_dir);
+              if (isnan (val) || val < S.threshold) return (NAN);
+
+              for (size_t i = S.num_samples; i > 0; --i) {
+                value_type a = (theta * i) / S.num_samples, cos_a = Math::cos (a), sin_a = sin (a);
+                Point<value_type> x = pos + R * (sin_a * dir + (value_type(1.0) - cos_a) * curv);
+                Point<value_type> t = cos_a * dir + sin_a * curv;
+                value_type amp = FOD (x, t);
+                if (isnan (val) || amp < S.threshold) return (NAN);
+                val *= amp;
+              }
+              return (val);
+            }
+            else { // straight on:
+              next_pos = pos + S.step_size * dir;
+              value_type val = FOD (next_pos, dir);
+              if (isnan (val) || val < S.threshold) return (NAN);
+
+              for (size_t i = S.num_samples; i > 0; --i) {
+                value_type f = (S.step_size * i) / S.num_samples;
+                Point<value_type> x = pos + f * dir;
+                value_type amp = FOD (x, dir);
+                if (isnan (val) || amp < S.threshold) return (NAN);
+                val *= amp;
+              }
+              return (val);
+            }
+            */
           }
 
           Point<value_type> rand_dir (const Point<value_type>& d) { return (random_direction (d, S.max_angle, S.sin_max_angle)); }
