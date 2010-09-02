@@ -45,64 +45,77 @@ ARGUMENTS = {
 }; 
 
 OPTIONS = { 
-  Option ("abs", "take absolute value of current voxel value"),
-  Option ("neg", "take negative value of current voxel value"),
-  Option ("sqrt", "take square root of current voxel value"),
-  Option ("exp", "take e raised to the power of current voxel value"),
-  Option ("log", "take natural logarithm of current voxel value"),
-  Option ("cos", "take cosine of current voxel value"),
-  Option ("sin", "take sine of current voxel value"),
-  Option ("tan", "take tangent of current voxel value"),
-  Option ("cosh", "take hyperbolic cosine of current voxel value"),
-  Option ("sinh", "take hyperbolic sine of current voxel value"),
-  Option ("tanh", "take hyperbolic tangent of current voxel value"),
-  Option ("acos", "take inverse cosine of current voxel value"),
-  Option ("asin", "take inverse sine of current voxel value"),
-  Option ("atan", "take inverse tangent of current voxel value"),
-  Option ("acosh", "take inverse hyperbolic cosine of current voxel value"),
-  Option ("asinh", "take inverse hyperbolic sine of current voxel value"),
-  Option ("atanh", "take inverse hyperbolic tangent of current voxel value"),
-  Option ("round", "round current voxel value to nearest integer"),
-  Option ("ceil", "round current voxel value up to smallest integer not less than current value"),
-  Option ("floor", "round current voxel value down to largest integer not greater than current value"),
+  Option ("abs", "take absolute value of current voxel value").allow_multiple(),
+  Option ("neg", "take negative value of current voxel value").allow_multiple(),
+  Option ("sqrt", "take square root of current voxel value").allow_multiple(),
+  Option ("exp", "take e raised to the power of current voxel value").allow_multiple(),
+  Option ("log", "take natural logarithm of current voxel value").allow_multiple(),
+  Option ("cos", "take cosine of current voxel value").allow_multiple(),
+  Option ("sin", "take sine of current voxel value").allow_multiple(),
+  Option ("tan", "take tangent of current voxel value").allow_multiple(),
+  Option ("cosh", "take hyperbolic cosine of current voxel value").allow_multiple(),
+  Option ("sinh", "take hyperbolic sine of current voxel value").allow_multiple(),
+  Option ("tanh", "take hyperbolic tangent of current voxel value").allow_multiple(),
+  Option ("acos", "take inverse cosine of current voxel value").allow_multiple(),
+  Option ("asin", "take inverse sine of current voxel value").allow_multiple(),
+  Option ("atan", "take inverse tangent of current voxel value").allow_multiple(),
+  Option ("acosh", "take inverse hyperbolic cosine of current voxel value").allow_multiple(),
+  Option ("asinh", "take inverse hyperbolic sine of current voxel value").allow_multiple(),
+  Option ("atanh", "take inverse hyperbolic tangent of current voxel value").allow_multiple(),
+  Option ("round", "round current voxel value to nearest integer").allow_multiple(),
+  Option ("ceil", "round current voxel value up to smallest integer not less than current value").allow_multiple(),
+  Option ("floor", "round current voxel value down to largest integer not greater than current value").allow_multiple(),
 
   Option ("add", "add to current voxel value the corresponding voxel value of 'source'")
+    .allow_multiple()
     + Argument ("source"),
 
   Option ("subtract", "subtract from current voxel value the corresponding voxel value of 'source'")
+    .allow_multiple()
     + Argument ("source"),
 
   Option ("multiply", "multiply current voxel value by corresponding voxel value of 'source'")
+    .allow_multiple()
     + Argument ("source"),
 
   Option ("divide", "divide current voxel value by corresponding voxel value of 'source'")
+    .allow_multiple()
     + Argument ("source"),
 
   Option ("min", "return smallest of current voxel value and corresponding voxel value of 'source'")
+    .allow_multiple()
     + Argument ("source"),
 
   Option ("max", "return greatest of current voxel value and corresponding voxel value of 'source'")
+    .allow_multiple()
     + Argument ("source"),
 
   Option ("lt", "return 1 if current voxel value is less than corresponding voxel value of 'source', 0 otherwise")
+    .allow_multiple()
     + Argument ("source"),
 
   Option ("gt", "return 1 if current voxel value is greater than corresponding voxel value of 'source', 0 otherwise")
+    .allow_multiple()
     + Argument ("source"),
 
   Option ("le", "return 1 if current voxel value is less than or equal to corresponding voxel value of 'source', 0 otherwise")
+    .allow_multiple()
     + Argument ("source"),
 
   Option ("ge", "return 1 if current voxel value is greater than or equal to corresponding voxel value of 'source', 0 otherwise")
+    .allow_multiple()
     + Argument ("source"),
 
   Option ("mean", "return return the arithmetic mean of the voxel values along the axes specified.")
+    .allow_multiple()
     + Argument ("axis"),
 
   Option ("std", "return return the standard deviation of the voxel values along the axes specified.")
+    .allow_multiple()
     + Argument ("axis"),
 
   Option ("datatype", "specify output image data type.") 
+    .allow_multiple()
     + Argument ("spec").type_choice (DataType::identifiers),
 
   Option ()
