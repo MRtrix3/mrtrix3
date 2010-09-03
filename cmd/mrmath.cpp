@@ -66,56 +66,43 @@ OPTIONS = {
   Option ("ceil", "round current voxel value up to smallest integer not less than current value").allow_multiple(),
   Option ("floor", "round current voxel value down to largest integer not greater than current value").allow_multiple(),
 
-  Option ("add", "add to current voxel value the corresponding voxel value of 'source'")
-    .allow_multiple()
+  Option ("add", "add to current voxel value the corresponding voxel value of 'source'").allow_multiple()
     + Argument ("source"),
 
-  Option ("subtract", "subtract from current voxel value the corresponding voxel value of 'source'")
-    .allow_multiple()
+  Option ("subtract", "subtract from current voxel value the corresponding voxel value of 'source'").allow_multiple()
     + Argument ("source"),
 
-  Option ("multiply", "multiply current voxel value by corresponding voxel value of 'source'")
-    .allow_multiple()
+  Option ("multiply", "multiply current voxel value by corresponding voxel value of 'source'").allow_multiple()
     + Argument ("source"),
 
-  Option ("divide", "divide current voxel value by corresponding voxel value of 'source'")
-    .allow_multiple()
+  Option ("divide", "divide current voxel value by corresponding voxel value of 'source'").allow_multiple()
     + Argument ("source"),
 
-  Option ("min", "return smallest of current voxel value and corresponding voxel value of 'source'")
-    .allow_multiple()
+  Option ("min", "return smallest of current voxel value and corresponding voxel value of 'source'").allow_multiple()
     + Argument ("source"),
 
-  Option ("max", "return greatest of current voxel value and corresponding voxel value of 'source'")
-    .allow_multiple()
+  Option ("max", "return greatest of current voxel value and corresponding voxel value of 'source'").allow_multiple()
     + Argument ("source"),
 
-  Option ("lt", "return 1 if current voxel value is less than corresponding voxel value of 'source', 0 otherwise")
-    .allow_multiple()
+  Option ("lt", "return 1 if current voxel value is less than corresponding voxel value of 'source', 0 otherwise").allow_multiple()
     + Argument ("source"),
 
-  Option ("gt", "return 1 if current voxel value is greater than corresponding voxel value of 'source', 0 otherwise")
-    .allow_multiple()
+  Option ("gt", "return 1 if current voxel value is greater than corresponding voxel value of 'source', 0 otherwise").allow_multiple()
     + Argument ("source"),
 
-  Option ("le", "return 1 if current voxel value is less than or equal to corresponding voxel value of 'source', 0 otherwise")
-    .allow_multiple()
+  Option ("le", "return 1 if current voxel value is less than or equal to corresponding voxel value of 'source', 0 otherwise").allow_multiple()
     + Argument ("source"),
 
-  Option ("ge", "return 1 if current voxel value is greater than or equal to corresponding voxel value of 'source', 0 otherwise")
-    .allow_multiple()
+  Option ("ge", "return 1 if current voxel value is greater than or equal to corresponding voxel value of 'source', 0 otherwise").allow_multiple()
     + Argument ("source"),
 
-  Option ("mean", "return return the arithmetic mean of the voxel values along the axes specified.")
-    .allow_multiple()
+  Option ("mean", "return return the arithmetic mean of the voxel values along the axes specified.").allow_multiple()
     + Argument ("axis"),
 
-  Option ("std", "return return the standard deviation of the voxel values along the axes specified.")
-    .allow_multiple()
+  Option ("std", "return return the standard deviation of the voxel values along the axes specified.").allow_multiple()
     + Argument ("axis"),
 
-  Option ("datatype", "specify output image data type.") 
-    .allow_multiple()
+  Option ("datatype", "specify output image data type.").allow_multiple()
     + Argument ("spec").type_choice (DataType::identifiers),
 
   Option ()

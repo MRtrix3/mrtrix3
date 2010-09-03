@@ -24,8 +24,6 @@
 #ifndef __debug_h__
 #define __debug_h__
 
-#ifndef NDEBUG
-
 #include "mrtrix.h"
 #include "app.h"
 
@@ -38,9 +36,5 @@
 #define VAR(variable) std::cerr << MR::App::name() << ": " << #variable << " = " << (variable) \
   << " (in " << __func__ << "() from " << __FILE__  << ": " << __LINE__ << ")\n"
 
-#else 
-#define TEST
-#define VAR(variable)
-#endif
 #endif
 

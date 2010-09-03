@@ -292,10 +292,7 @@ namespace MR {
           n += opt->args.size();
         }
       }
-      else {
-        argument.push_back (argv[n]);
-        VAR (argv[n]);
-      }
+      else argument.push_back (argv[n]);
     }
   }
 
