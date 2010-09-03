@@ -45,64 +45,64 @@ ARGUMENTS = {
 }; 
 
 OPTIONS = { 
-  Option ("abs", "absolute value", "take absolute value of current voxel value"),
-  Option ("neg", "negative value", "take negative value of current voxel value"),
-  Option ("sqrt", "square root", "take square root of current voxel value"),
-  Option ("exp", "exp", "take e raised to the power of current voxel value"),
-  Option ("log", "log", "take natural logarithm of current voxel value"),
-  Option ("cos", "cos", "take cosine of current voxel value"),
-  Option ("sin", "sin", "take sine of current voxel value"),
-  Option ("tan", "tanh", "take tangent of current voxel value"),
-  Option ("cosh", "cosh", "take hyperbolic cosine of current voxel value"),
-  Option ("sinh", "sinh", "take hyperbolic sine of current voxel value"),
-  Option ("tanh", "tanh", "take hyperbolic tangent of current voxel value"),
-  Option ("acos", "acos", "take inverse cosine of current voxel value"),
-  Option ("asin", "asin", "take inverse sine of current voxel value"),
-  Option ("atan", "atan", "take inverse tangent of current voxel value"),
-  Option ("acosh", "acosh", "take inverse hyperbolic cosine of current voxel value"),
-  Option ("asinh", "asinh", "take inverse hyperbolic sine of current voxel value"),
-  Option ("atanh", "atanh", "take inverse hyperbolic tangent of current voxel value"),
-  Option ("round", "round", "round current voxel value to nearest integer"),
-  Option ("ceil", "ceil", "round current voxel value up to smallest integer not less than current value"),
-  Option ("floor", "floor", "round current voxel value down to largest integer not greater than current value"),
+  Option ("abs", "absolute value", "take absolute value of current voxel value", AllowMultiple | Optional),
+  Option ("neg", "negative value", "take negative value of current voxel value", AllowMultiple | Optional),
+  Option ("sqrt", "square root", "take square root of current voxel value", AllowMultiple | Optional),
+  Option ("exp", "exp", "take e raised to the power of current voxel value", AllowMultiple | Optional),
+  Option ("log", "log", "take natural logarithm of current voxel value", AllowMultiple | Optional),
+  Option ("cos", "cos", "take cosine of current voxel value", AllowMultiple | Optional),
+  Option ("sin", "sin", "take sine of current voxel value", AllowMultiple | Optional),
+  Option ("tan", "tanh", "take tangent of current voxel value", AllowMultiple | Optional),
+  Option ("cosh", "cosh", "take hyperbolic cosine of current voxel value", AllowMultiple | Optional),
+  Option ("sinh", "sinh", "take hyperbolic sine of current voxel value", AllowMultiple | Optional),
+  Option ("tanh", "tanh", "take hyperbolic tangent of current voxel value", AllowMultiple | Optional),
+  Option ("acos", "acos", "take inverse cosine of current voxel value", AllowMultiple | Optional),
+  Option ("asin", "asin", "take inverse sine of current voxel value", AllowMultiple | Optional),
+  Option ("atan", "atan", "take inverse tangent of current voxel value", AllowMultiple | Optional),
+  Option ("acosh", "acosh", "take inverse hyperbolic cosine of current voxel value", AllowMultiple | Optional),
+  Option ("asinh", "asinh", "take inverse hyperbolic sine of current voxel value", AllowMultiple | Optional),
+  Option ("atanh", "atanh", "take inverse hyperbolic tangent of current voxel value", AllowMultiple | Optional),
+  Option ("round", "round", "round current voxel value to nearest integer", AllowMultiple | Optional),
+  Option ("ceil", "ceil", "round current voxel value up to smallest integer not less than current value", AllowMultiple | Optional),
+  Option ("floor", "floor", "round current voxel value down to largest integer not greater than current value", AllowMultiple | Optional),
 
-  Option ("add", "add", "add to current voxel value the corresponding voxel value of 'source'")
+  Option ("add", "add", "add to current voxel value the corresponding voxel value of 'source'", AllowMultiple | Optional)
     .append (Argument ("source", "source", "the source image or value").type_string()),
 
-  Option ("subtract", "subtract", "subtract from current voxel value the corresponding voxel value of 'source'")
+  Option ("subtract", "subtract", "subtract from current voxel value the corresponding voxel value of 'source'", AllowMultiple | Optional)
     .append (Argument ("source", "source", "the source image or value").type_string()),
 
-  Option ("multiply", "multiply", "multiply current voxel value by corresponding voxel value of 'source'")
+  Option ("multiply", "multiply", "multiply current voxel value by corresponding voxel value of 'source'", AllowMultiple | Optional)
     .append (Argument ("source", "source", "the source image or value").type_string()),
 
-  Option ("divide", "divide", "divide current voxel value by corresponding voxel value of 'source'")
+  Option ("divide", "divide", "divide current voxel value by corresponding voxel value of 'source'", AllowMultiple | Optional)
     .append (Argument ("source", "source", "the source image or value").type_string()),
 
-  Option ("min", "min", "return smallest of current voxel value and corresponding voxel value of 'source'")
+  Option ("min", "min", "return smallest of current voxel value and corresponding voxel value of 'source'", AllowMultiple | Optional)
     .append (Argument ("source", "source", "the source image or value").type_string()),
 
-  Option ("max", "max", "return greatest of current voxel value and corresponding voxel value of 'source'")
+  Option ("max", "max", "return greatest of current voxel value and corresponding voxel value of 'source'", AllowMultiple | Optional)
     .append (Argument ("source", "source", "the source image or value").type_string()),
 
-  Option ("lt", "less than", "return 1 if current voxel value is less than corresponding voxel value of 'source', 0 otherwise")
+  Option ("lt", "less than", "return 1 if current voxel value is less than corresponding voxel value of 'source', 0 otherwise", AllowMultiple | Optional)
     .append (Argument ("source", "source", "the source image or value").type_string()),
 
-  Option ("gt", "greater than", "return 1 if current voxel value is greater than corresponding voxel value of 'source', 0 otherwise")
+  Option ("gt", "greater than", "return 1 if current voxel value is greater than corresponding voxel value of 'source', 0 otherwise", AllowMultiple | Optional)
     .append (Argument ("source", "source", "the source image or value").type_string()),
 
-  Option ("le", "less than or equal to", "return 1 if current voxel value is less than or equal to corresponding voxel value of 'source', 0 otherwise")
+  Option ("le", "less than or equal to", "return 1 if current voxel value is less than or equal to corresponding voxel value of 'source', 0 otherwise", AllowMultiple | Optional)
     .append (Argument ("source", "source", "the source image or value").type_string()),
 
-  Option ("ge", "greater than or equal to", "return 1 if current voxel value is greater than or equal to corresponding voxel value of 'source', 0 otherwise")
+  Option ("ge", "greater than or equal to", "return 1 if current voxel value is greater than or equal to corresponding voxel value of 'source', 0 otherwise", AllowMultiple | Optional)
     .append (Argument ("source", "source", "the source image or value").type_string()),
 
-  Option ("mean", "mean value", "return return the arithmetic mean of the voxel values along the axes specified.")
+  Option ("mean", "mean value", "return return the arithmetic mean of the voxel values along the axes specified.", AllowMultiple | Optional)
     .append (Argument ("axis", "axis", "a comma-separated list of axes along which to estimate the mean").type_string()),
 
-  Option ("std", "standard deviation", "return return the standard deviation of the voxel values along the axes specified.")
+  Option ("std", "standard deviation", "return return the standard deviation of the voxel values along the axes specified.", AllowMultiple | Optional)
     .append (Argument ("axis", "axis", "a comma-separated list of axes along which to estimate the standard deviation").type_string()),
 
-  Option ("datatype", "data type", "specify output image data type.") 
+  Option ("datatype", "data type", "specify output image data type.", AllowMultiple | Optional) 
     .append (Argument ("spec", "specifier", "the data type specifier.").type_choice (DataType::identifiers)),
 
   Option::End 
