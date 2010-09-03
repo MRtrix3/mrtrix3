@@ -166,86 +166,54 @@ namespace MR {
           value_type rand_path_prob (Point<value_type>& next_pos, Point<value_type>& next_dir) 
           {
             Point<value_type> positions [S.num_samples], tangents [S.num_samples];
-            tangents[0] = rand_dir (dir);
             get_path (positions, tangents);
 
-            next_dir = rand_dir (dir);
-            value_type cos_theta = next_dir.dot (dir);
-            cos_theta = std::min (cos_theta, value_type(1.0));
-            value_type theta = Math::acos (cos_theta);
-
-            if (theta) {
-              Point<value_type> curv = next_dir - cos_theta * dir; curv.normalise();
-              value_type R = S.step_size / theta;
-              next_pos = pos + R * (Math::sin (theta) * dir + (value_type(1.0)-cos_theta) * curv);
-              value_type val = FOD (next_pos, next_dir);
-              if (isnan (val) || val < S.threshold) return (NAN);
-
-              for (size_t i = S.num_samples; i > 0; --i) {
-                value_type a = (theta * i) / S.num_samples, cos_a = Math::cos (a), sin_a = sin (a);
-                Point<value_type> x = pos + R * (sin_a * dir + (value_type(1.0) - cos_a) * curv);
-                Point<value_type> t = cos_a * dir + sin_a * curv;
-                value_type amp = FOD (x, t);
-                if (isnan (val) || amp < S.threshold) return (NAN);
-                val *= amp;
-              }
-              return (val);
+            value_type prob = 1.0;
+            for (size_t i = 0; i < S.num_samples; ++i) {
+              value_type fod_amp = FOD (positions[i], tangents[i]);
+              if (isnan (fod_amp) || fod_amp < S.threshold) 
+                return (NAN);
+              prob *= fod_amp;
             }
-            else { // straight on:
-              next_pos = pos + S.step_size * dir;
-              value_type val = FOD (next_pos, dir);
-              if (isnan (val) || val < S.threshold) return (NAN);
 
-              for (size_t i = S.num_samples; i > 0; --i) {
-                value_type f = (S.step_size * i) / S.num_samples;
-                Point<value_type> x = pos + f * dir;
-                value_type amp = FOD (x, dir);
-                if (isnan (val) || amp < S.threshold) return (NAN);
-                val *= amp;
-              }
-              return (val);
-            }
+            next_pos = positions[S.num_samples-1];
+            next_dir = tangents[S.num_samples-1];
+
+            return (prob);
           }
+
+
+
 
           void get_path (Point<value_type>* positions, Point<value_type>* tangents) 
           {
-            value_type cos_theta = tangents[0].dot (dir);
+            Point<value_type> end_dir = rand_dir (dir);
+            value_type cos_theta = end_dir.dot (dir);
             cos_theta = std::min (cos_theta, value_type(1.0));
             value_type theta = Math::acos (cos_theta);
 
-            /*
             if (theta) {
-              Point<value_type> curv = next_dir - cos_theta * dir; curv.normalise();
+              Point<value_type> curv = end_dir - cos_theta * dir;
+              curv.normalise();
               value_type R = S.step_size / theta;
-              next_pos = pos + R * (Math::sin (theta) * dir + (value_type(1.0)-cos_theta) * curv);
-              value_type val = FOD (next_pos, next_dir);
-              if (isnan (val) || val < S.threshold) return (NAN);
 
-              for (size_t i = S.num_samples; i > 0; --i) {
-                value_type a = (theta * i) / S.num_samples, cos_a = Math::cos (a), sin_a = sin (a);
-                Point<value_type> x = pos + R * (sin_a * dir + (value_type(1.0) - cos_a) * curv);
-                Point<value_type> t = cos_a * dir + sin_a * curv;
-                value_type amp = FOD (x, t);
-                if (isnan (val) || amp < S.threshold) return (NAN);
-                val *= amp;
+              for (size_t i = 0; i < S.num_samples-1; ++i) {
+                value_type a = (theta * (i+1)) / S.num_samples;
+                value_type cos_a = Math::cos (a);
+                value_type sin_a = Math::sin (a);
+                *positions++ = pos + R * (sin_a * dir + (value_type(1.0) - cos_a) * curv);
+                *tangents++ = cos_a * dir + sin_a * curv;
               }
-              return (val);
+              *positions = pos + R * (Math::sin (theta) * dir + (value_type(1.0)-cos_theta) * curv);
+              *tangents = end_dir;
             }
             else { // straight on:
-              next_pos = pos + S.step_size * dir;
-              value_type val = FOD (next_pos, dir);
-              if (isnan (val) || val < S.threshold) return (NAN);
-
-              for (size_t i = S.num_samples; i > 0; --i) {
-                value_type f = (S.step_size * i) / S.num_samples;
-                Point<value_type> x = pos + f * dir;
-                value_type amp = FOD (x, dir);
-                if (isnan (val) || amp < S.threshold) return (NAN);
-                val *= amp;
+              for (size_t i = 0; i <= S.num_samples; ++i) {
+                value_type f = (i+1) * (S.step_size / S.num_samples);
+                *positions++ = pos + f * dir;
+                *tangents++ = dir;
               }
-              return (val);
             }
-            */
           }
 
           Point<value_type> rand_dir (const Point<value_type>& d) { return (random_direction (d, S.max_angle, S.sin_max_angle)); }
