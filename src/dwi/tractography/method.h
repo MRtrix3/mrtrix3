@@ -60,7 +60,43 @@ namespace MR {
 
           bool get_data () { return (get_data (pos)); }
 
-          Point<value_type> random_direction (const Point<value_type>& d, value_type max_angle, value_type sin_max_angle);
+          Point<value_type> random_direction (value_type max_angle, value_type sin_max_angle)
+          {
+            value_type phi = 2.0 * M_PI * rng.uniform();
+            value_type theta;
+            do { 
+              theta = max_angle * rng.uniform();
+            } while (sin_max_angle * rng.uniform() > sin (theta)); 
+            return (Point<value_type> (sin(theta)*cos(phi), sin(theta)*sin(phi), cos(theta)));
+          }
+
+
+          Point<value_type> rotate_direction (const Point<value_type>& reference, const Point<value_type>& direction) 
+          {
+            using namespace Math;
+
+            value_type n = sqrt (pow2(reference[0]) + pow2(reference[1]));
+            if (n == 0.0)
+              return (reference[2] < 0.0 ? -direction : direction);
+
+            Point<value_type> m (reference[0]/n, reference[1]/n, 0.0);
+            Point<value_type> mp (reference[2]*m[0], reference[2]*m[1], -n);
+
+            value_type alpha = direction[2];
+            value_type beta = direction[0]*m[0] + direction[1]*m[1];
+
+            return (Point<value_type> (
+                  direction[0] + alpha * reference[0] + beta * (mp[0] - m[0]),
+                  direction[1] + alpha * reference[1] + beta * (mp[1] - m[1]),
+                  direction[2] + alpha * (reference[2]-1.0) + beta * (mp[2] - m[2])
+                  ));
+          }
+
+
+          Point<value_type> random_direction (const Point<value_type>& d, value_type max_angle, value_type sin_max_angle)
+          {
+            return (rotate_direction (d, random_direction (max_angle, sin_max_angle)));
+          }
 
           static void init () { rng_seed = time (NULL); }
 

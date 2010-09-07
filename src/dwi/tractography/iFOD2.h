@@ -29,7 +29,9 @@
 #include "math/SH.h"
 #include "dwi/tractography/method.h"
 #include "dwi/tractography/shared.h"
+#include "dwi/tractography/direction_grid.h"
 
+#define NUM_CALIBRATE 1000
 
 namespace MR {
   namespace DWI {
@@ -52,12 +54,11 @@ namespace MR {
                   bool precomputed = true;
                   properties.set (precomputed, "sh_precomputed");
                   if (precomputed) precomputer.init (lmax);
-                  prob_threshold = Math::pow (threshold, num_samples);
                   info ("minimum radius of curvature = " + str(step_size / max_angle) + " mm");
                 }
 
               size_t lmax, num_samples, max_trials;
-              value_type sin_max_angle, prob_threshold;
+              value_type sin_max_angle;
               Math::SH::PrecomputedAL<value_type> precomputer;
           };
 
@@ -65,7 +66,60 @@ namespace MR {
             MethodBase (shared), 
             S (shared), 
             mean_sample_num (0), 
-            num_sample_runs (0) { } 
+            num_sample_runs (0) 
+          { 
+            using namespace Math;
+
+            Vector<value_type> fod (values, source.dim(3));
+            Point<value_type> positions [S.num_samples], tangents [S.num_samples];
+
+            pos.set (0.0, 0.0, 0.0);
+            dir.set (0.0, 0.0, 1.0);
+
+            SH::delta (fod, dir, S.lmax);
+            value_type peak = pow (SH::value (values, dir, S.lmax), S.num_samples);
+
+            {
+              ProgressBar progress ("calibrating rejection sampling...");
+
+              for (size_t extent = 1; extent < 9; ++extent) {
+                value_type min = std::numeric_limits<value_type>::infinity();
+                calibrate_list = direction_grid (S.max_angle, extent);
+
+                for (size_t n = 0; n < NUM_CALIBRATE; ++n) {
+                  value_type max = 0.0;
+                  Point<value_type> end_dir = rand_dir (dir);
+
+                  for (size_t i = 0; i < calibrate_list.size(); ++i) {
+                    get_path (positions, tangents, calibrate_list[i]);
+
+                    value_type prob = 1.0;
+                    for (size_t i = 0; i < S.num_samples; ++i) {
+                      SH::delta (fod, get_tangent (positions[i], end_dir, S.step_size), S.lmax);
+                      prob *= SH::value (values, tangents[i], S.lmax);
+                    }
+
+                    if (prob > max) 
+                      max = prob;
+
+                    ++progress;
+                  }
+
+                  if (max < min)
+                    min = max;
+                }
+
+                calibrate_ratio = 1.1 * peak / min;
+                if (calibrate_ratio < 3.0) 
+                  break;
+              }
+            }
+
+            info ("rejection sampling will use " + str (calibrate_list.size()) 
+                + " directions with a ratio of " + str (calibrate_ratio));
+          } 
+
+
 
           ~iFOD2 () 
           { 
@@ -82,10 +136,8 @@ namespace MR {
                 dir.normalise();
                 value_type val = FOD (dir);
                 if (!isnan (val)) {
-                  if (val > S.init_threshold) {
-                    prev_prob_val = Math::pow (val, S.num_samples);
+                  if (val > S.init_threshold) 
                     return (true);
-                  }
                 }
               }   
             }   
@@ -93,10 +145,8 @@ namespace MR {
               dir = S.init_dir;
               value_type val = FOD (dir);
               if (finite (val)) { 
-                if (val > S.init_threshold) {
-                  prev_prob_val = Math::pow (val, S.num_samples);
+                if (val > S.init_threshold) 
                   return (true);
-                }
               }
             }   
 
@@ -106,37 +156,34 @@ namespace MR {
           bool next () 
           {
             Point<value_type> next_pos, next_dir;
+            Point<value_type> positions [S.num_samples], tangents [S.num_samples];
 
-            value_type max_val_actual = 0.0;
-            for (int n = 0; n < 100; n++) {
-              value_type val = rand_path_prob (next_pos, next_dir);
-              if (val > max_val_actual) 
-                max_val_actual = val;
+            value_type max_val = 0.0;
+            for (size_t i = 0; i < calibrate_list.size(); ++i) {
+              get_path (positions, tangents, rotate_direction (dir, calibrate_list[i]));
+              value_type val = path_prob (positions, tangents);
+              if (val > max_val) 
+                max_val = val;
             }
-            value_type max_val = MAX (prev_prob_val, max_val_actual);
-            prev_prob_val = max_val_actual;
 
-            if (isnan (max_val) || max_val < S.prob_threshold)
+            if (max_val <= 0.0 || !finite (max_val))
               return (false);
-            max_val *= 1.5;
 
-            size_t nmax = max_val_actual > S.prob_threshold ? 10000 : S.max_trials;
+            max_val *= calibrate_ratio;
 
-            for (size_t n = 0; n < nmax; n++) {
+            for (size_t n = 0; n < S.max_trials; n++) {
               value_type val = rand_path_prob (next_pos, next_dir);
 
-              if (val > S.prob_threshold) {
-                if (val > max_val) 
-                  info ("max_val exceeded!!! (val = " + str(val) + ", max_val = " + str (max_val) + ")");
+              if (val > max_val) 
+                info ("max_val exceeded!!! (val = " + str(val) + ", max_val = " + str (max_val) + ")");
 
-                if (rng.uniform() < val/max_val) {
-                  dir = next_dir;
-                  dir.normalise();
-                  pos = next_pos;
-                  mean_sample_num += n;
-                  num_sample_runs++;
-                  return (true);
-                }
+              if (rng.uniform() < val/max_val) {
+                dir = next_dir;
+                dir.normalise();
+                pos = next_pos;
+                mean_sample_num += n;
+                num_sample_runs++;
+                return (true);
               }
             }
 
@@ -145,8 +192,9 @@ namespace MR {
 
         private:
           const Shared& S;
-          value_type prev_prob_val;
+          value_type calibrate_ratio;
           size_t mean_sample_num, num_sample_runs;
+          std::vector<Point<value_type> > calibrate_list;
 
           value_type FOD (const Point<value_type>& direction) const 
           {
@@ -166,15 +214,9 @@ namespace MR {
           value_type rand_path_prob (Point<value_type>& next_pos, Point<value_type>& next_dir) 
           {
             Point<value_type> positions [S.num_samples], tangents [S.num_samples];
-            get_path (positions, tangents);
+            get_path (positions, tangents, rand_dir (dir));
 
-            value_type prob = 1.0;
-            for (size_t i = 0; i < S.num_samples; ++i) {
-              value_type fod_amp = FOD (positions[i], tangents[i]);
-              if (isnan (fod_amp) || fod_amp < S.threshold) 
-                return (NAN);
-              prob *= fod_amp;
-            }
+            value_type prob = path_prob (positions, tangents);
 
             next_pos = positions[S.num_samples-1];
             next_dir = tangents[S.num_samples-1];
@@ -183,11 +225,25 @@ namespace MR {
           }
 
 
-
-
-          void get_path (Point<value_type>* positions, Point<value_type>* tangents) 
+          value_type path_prob (Point<value_type>* positions, Point<value_type>* tangents)
           {
-            Point<value_type> end_dir = rand_dir (dir);
+            value_type prob = 1.0;
+            for (size_t i = 0; i < S.num_samples; ++i) {
+              value_type fod_amp = FOD (positions[i], tangents[i]);
+              if (isnan (fod_amp) || fod_amp < S.threshold) 
+                return (NAN);
+              prob *= fod_amp;
+            }
+
+            return (prob);
+          }
+
+
+
+
+
+          void get_path (Point<value_type>* positions, Point<value_type>* tangents, const Point<value_type>& end_dir) 
+          {
             value_type cos_theta = end_dir.dot (dir);
             cos_theta = std::min (cos_theta, value_type(1.0));
             value_type theta = Math::acos (cos_theta);
