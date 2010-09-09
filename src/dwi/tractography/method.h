@@ -36,10 +36,20 @@ namespace MR {
       class MethodBase {
         public:
           MethodBase (const SharedBase& shared) : 
-            source (shared.source), interp (source), rng (rng_seed++), values (new value_type [source.dim(3)]) { }
+            source (shared.source), 
+            interp (source), 
+            rng (rng_seed++), 
+            pos (0.0, 0.0, 0.0),
+            dir (0.0, 0.0, 1.0),
+            values (new value_type [source.dim(3)]) { }
 
           MethodBase (const MethodBase& base) : 
-            source (base.source), interp (source), rng (rng_seed++), values (new value_type [source.dim(3)]) { }
+            source (base.source), 
+            interp (source),
+            rng (rng_seed++),
+            pos (0.0, 0.0, 0.0),
+            dir (0.0, 0.0, 1.0),
+            values (new value_type [source.dim(3)]) { }
 
           ~MethodBase () { delete values; }
 

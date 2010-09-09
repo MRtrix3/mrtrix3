@@ -103,7 +103,7 @@ OPTIONS = {
       "number of tracks hasn't yet been reached (default is 100 x number).")
     + Argument ("tracks").type_integer (1, 1, INT_MAX),
 
-  Option ("length", 
+  Option ("maxlength", 
       "set the maximum length of any track in mm (default is 200 mm).")
     + Argument ("value").type_float (1.0e-2, 200.0, 1.e6),
 
@@ -124,7 +124,7 @@ OPTIONS = {
   Option ("trials", 
       "set the maximum number of sampling trials at each point (only "
       "used for probabilistic tracking).")
-    + Argument ("number").type_integer(1, 50, 10000),
+    + Argument ("number").type_integer(1, MAX_TRIALS, 10000),
 
   Option ("unidirectional", 
       "track from the seed point in one direction only (default is to "
@@ -138,6 +138,10 @@ OPTIONS = {
   Option ("noprecomputed", 
       "do NOT pre-compute legendre polynomial values. Warning: "
       "this will slow down the algorithm by a factor of approximately 4."),
+
+  Option ("power", 
+      "raise the FOD to the power specified (default: 1.0)")
+    + Argument ("value").type_float(1e-6, 1.0, 1e6),
 
   Option ("samples", 
       "set the number of FOD samples to take per step for the 2nd order "
@@ -160,9 +164,9 @@ EXECUTE {
   properties["unidirectional"] = "0";
   properties["sh_precomputed"] = "1";
 
-  int algorithm = 1;
+  const char* algorithm = algorithms[1];
   Options opt = get_options ("algorithm");
-  if (opt.size()) algorithm = to<int> (opt[0][0]);
+  if (opt.size()) algorithm = opt[0][0];
 
   opt = get_options ("seed");
   for (Options::iterator i = opt.begin(); i != opt.end(); ++i)
@@ -192,10 +196,10 @@ EXECUTE {
   opt = get_options ("maxnum");
   if (opt.size()) properties["max_num_attempts"] = opt[0][0];
 
-  opt = get_options ("length");
+  opt = get_options ("maxlength");
   if (opt.size()) properties["max_dist"] = opt[0][0];
 
-  opt = get_options ("min_length");
+  opt = get_options ("minlength");
   if (opt.size()) properties["min_dist"] = opt[0][0];
 
   opt = get_options ("cutoff");
@@ -216,14 +220,18 @@ EXECUTE {
   opt = get_options ("noprecomputed");
   if (opt.size()) properties["sh_precomputed"] = "0";
 
+  opt = get_options ("power");
+  if (opt.size()) properties["fod_power"] = opt[0][0];
+
   opt = get_options ("samples");
   if (opt.size()) properties["samples_per_step"] = opt[0][0];
 
   Image::Header source (argument[0]);
 
-  switch (algorithm) {
-    case 0: Exec<iFOD1>::run (source, argument[1], properties); break;
-    case 1: Exec<iFOD2>::run (source, argument[1], properties); break;
-    default: assert (0);
-  }
+  if (algorithm == std::string("ifod1")) 
+    Exec<iFOD1>::run (source, argument[1], properties);
+  else if (algorithm == std::string("ifod2")) 
+    Exec<iFOD2>::run (source, argument[1], properties);
+  else
+    assert (0);
 }

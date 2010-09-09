@@ -29,9 +29,8 @@
 #include "math/SH.h"
 #include "dwi/tractography/method.h"
 #include "dwi/tractography/shared.h"
-#include "dwi/tractography/direction_grid.h"
+#include "dwi/tractography/calibrator.h"
 
-#define NUM_CALIBRATE 1000
 
 namespace MR {
   namespace DWI {
@@ -39,119 +38,90 @@ namespace MR {
 
       class iFOD2 : public MethodBase {
         public:
+
+
           class Shared : public SharedBase {
             public:
               Shared (Image::Header& source, DWI::Tractography::Properties& property_set) :
                 SharedBase (source, property_set),
                 lmax (Math::SH::LforN (source.dim(3))), 
                 num_samples (1),
-                max_trials (100),
-                sin_max_angle (sin (max_angle)) {
+                max_trials (MAX_TRIALS),
+                sin_max_angle (sin (max_angle)),
+                FOD_power (1.0) {
                   properties["method"] = "iFOD2";
                   properties.set (lmax, "lmax");
                   properties.set (num_samples, "samples_per_step");
                   properties.set (max_trials, "max_trials");
+                  properties.set (FOD_power, "fod_power");
                   bool precomputed = true;
                   properties.set (precomputed, "sh_precomputed");
                   if (precomputed) precomputer.init (lmax);
                   info ("minimum radius of curvature = " + str(step_size / max_angle) + " mm");
+                  value_type vox = Math::pow (source.vox(0)*source.vox(1)*source.vox(2), value_type (1.0/3.0));
+                  FOD_power *= step_size / (vox * num_samples);
+                  info ("FOD will be raised to the power " + str(FOD_power));
                 }
 
               size_t lmax, num_samples, max_trials;
-              value_type sin_max_angle;
+              value_type sin_max_angle, FOD_power;
               Math::SH::PrecomputedAL<value_type> precomputer;
           };
+
+
+
+
+
+
+
+
 
           iFOD2 (const Shared& shared) :
             MethodBase (shared), 
             S (shared), 
             mean_sample_num (0), 
-            num_sample_runs (0) 
-          { 
-            using namespace Math;
-
-            Vector<value_type> fod (values, source.dim(3));
-            Point<value_type> positions [S.num_samples], tangents [S.num_samples];
-
-            pos.set (0.0, 0.0, 0.0);
-            dir.set (0.0, 0.0, 1.0);
-
-            SH::delta (fod, dir, S.lmax);
-            value_type peak = pow (SH::value (values, dir, S.lmax), S.num_samples);
-
-            {
-              ProgressBar progress ("calibrating rejection sampling...");
-
-              for (size_t extent = 1; extent < 9; ++extent) {
-                value_type min = std::numeric_limits<value_type>::infinity();
-                calibrate_list = direction_grid (S.max_angle, extent);
-
-                for (size_t n = 0; n < NUM_CALIBRATE; ++n) {
-                  value_type max = 0.0;
-                  Point<value_type> end_dir = rand_dir (dir);
-
-                  for (size_t i = 0; i < calibrate_list.size(); ++i) {
-                    get_path (positions, tangents, calibrate_list[i]);
-
-                    value_type prob = 1.0;
-                    for (size_t i = 0; i < S.num_samples; ++i) {
-                      SH::delta (fod, get_tangent (positions[i], end_dir, S.step_size), S.lmax);
-                      prob *= SH::value (values, tangents[i], S.lmax);
-                    }
-
-                    if (prob > max) 
-                      max = prob;
-
-                    ++progress;
-                  }
-
-                  if (max < min)
-                    min = max;
-                }
-
-                calibrate_ratio = 1.1 * peak / min;
-                if (calibrate_ratio < 3.0) 
-                  break;
-              }
-            }
-
-            info ("rejection sampling will use " + str (calibrate_list.size()) 
-                + " directions with a ratio of " + str (calibrate_ratio));
-          } 
+            num_sample_runs (0) { 
+              calibrate (*this);
+            } 
 
 
 
           ~iFOD2 () 
           { 
-            info ("mean number of samples per step = " + str (value_type(mean_sample_num)/value_type(num_sample_runs))); 
+            info ("mean number of samples per step = " + str (calibrate_list.size() + value_type(mean_sample_num)/value_type(num_sample_runs))); 
           }
+
+
+
 
           bool init () 
           { 
-            if (!get_data ()) return (false);
+            if (!get_data ()) 
+              return (false);
 
             if (!S.init_dir) {
               for (size_t n = 0; n < S.max_trials; n++) {
                 dir.set (rng.normal(), rng.normal(), rng.normal());
                 dir.normalise();
                 value_type val = FOD (dir);
-                if (!isnan (val)) {
+                if (finite (val)) 
                   if (val > S.init_threshold) 
                     return (true);
-                }
               }   
             }   
             else {
               dir = S.init_dir;
               value_type val = FOD (dir);
-              if (finite (val)) { 
+              if (finite (val)) 
                 if (val > S.init_threshold) 
                   return (true);
-              }
             }   
 
             return (false);
           }   
+
+
+
 
           bool next () 
           {
@@ -166,7 +136,7 @@ namespace MR {
                 max_val = val;
             }
 
-            if (max_val <= 0.0 || !finite (max_val))
+            if (max_val <= 0.0 || !finite (max_val)) 
               return (false);
 
             max_val *= calibrate_ratio;
@@ -235,14 +205,14 @@ namespace MR {
               prob *= fod_amp;
             }
 
-            return (prob);
+            return (Math::pow (prob, S.FOD_power));
           }
 
 
 
 
 
-          void get_path (Point<value_type>* positions, Point<value_type>* tangents, const Point<value_type>& end_dir) 
+          void get_path (Point<value_type>* positions, Point<value_type>* tangents, const Point<value_type>& end_dir) const
           {
             value_type cos_theta = end_dir.dot (dir);
             cos_theta = std::min (cos_theta, value_type(1.0));
@@ -273,6 +243,73 @@ namespace MR {
           }
 
           Point<value_type> rand_dir (const Point<value_type>& d) { return (random_direction (d, S.max_angle, S.sin_max_angle)); }
+
+
+
+
+
+
+          class Calibrate
+          {
+            public:
+              Calibrate (iFOD2& method) : 
+                P (method),
+                fod (P.values, P.source.dim(3)) {
+                }
+
+              value_type operator() (const Point<value_type>& dir, const Point<value_type>& sample_dir) 
+              {
+                using namespace Math;
+                Point<value_type> positions [P.S.num_samples], tangents [P.S.num_samples];
+                P.get_path (positions, tangents, sample_dir);
+
+                value_type prob = 1.0;
+                for (size_t i = 0; i < P.S.num_samples; ++i) {
+                  SH::delta (fod, get_tangent (positions[i], dir, P.S.step_size), P.S.lmax);
+                  prob *= SH::value (P.values, tangents[i], P.S.lmax);
+                }
+                return (pow (prob, P.S.FOD_power));
+              }
+
+
+              value_type get_peak ()
+              {
+                using namespace Math;
+                Point<value_type> dir (0.0, 0.0, 1.0);
+                SH::delta (fod, dir, P.S.lmax);
+                return pow (SH::value (P.values, dir, P.S.lmax), P.S.num_samples * P.S.FOD_power);
+              }
+
+            private:
+              const iFOD2& P;
+              Math::Vector<value_type> fod;
+
+              Point<value_type> get_tangent (const Point<value_type>& position, const Point<value_type>& end_dir, value_type step_size)
+              {
+                using namespace Math;
+
+                if (end_dir == Point<value_type> (0.0, 0.0, 1.0))
+                  return (end_dir);
+
+                value_type theta = acos (end_dir[2]);
+                value_type R = step_size / theta;
+                Point<value_type> C (end_dir[0], end_dir[1], 0.0);
+                C.normalise();
+                C *= R;
+
+                Point<value_type> d = position - C;
+                value_type a = - d[2] / d.dot (end_dir);
+
+                d = a * end_dir;
+                d[2] += 1.0;
+                d.normalise();
+
+                return (d);
+              }
+          };
+
+          friend void calibrate<iFOD2> (iFOD2& method);
+
       };
 
     }

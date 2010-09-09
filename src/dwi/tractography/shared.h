@@ -29,6 +29,8 @@
 #include "dwi/tractography/file.h"
 #include "dwi/tractography/roi.h"
 
+#define MAX_TRIALS 1000
+
 namespace MR {
   namespace DWI {
     namespace Tractography {
