@@ -77,7 +77,7 @@ namespace MR {
         class Shared
         {
           public:
-            Shared (size_t NDIM) : stride (NDIM) { }
+            Shared (size_t NDIM) : data (NULL), stride (NDIM), start (0) { }
             T* data;
             DataSet::Stride::List stride;
             size_t start;
