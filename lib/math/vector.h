@@ -472,7 +472,7 @@ namespace MR {
     //! normalise a vector to have unit 2-norm
     template <typename T> inline void normalise (T* V, size_t size = 3, size_t stride = 1)
     {
-      T n = norm(V, size);
+      T n = norm (V, size, stride);
       for (size_t i = 0; i < size; i++)
         V[i*stride] /= n;
     }
