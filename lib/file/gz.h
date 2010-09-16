@@ -78,7 +78,7 @@ namespace MR {
         { 
           assert (gz);
           z_off_t pos = gzseek64 (gz, offset, SEEK_SET); 
-          if (pos < 0) i
+          if (pos < 0) 
             throw Exception ("error seeking in file \"" + filename + "\": " + error()); 
         }
 
