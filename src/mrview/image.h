@@ -28,6 +28,7 @@
 #include "opengl/gl.h"
 #include "opengl/shader.h"
 #include "image/voxel.h"
+#include "math/quaternion.h"
 #include "dataset/interp/linear.h"
 
 class QAction;
@@ -45,10 +46,12 @@ namespace MR {
         Image (Window& parent, MR::Image::Header* header);
         ~Image ();
 
-        void reset_windowing () { 
+        void reset_windowing ()
+        { 
           display_range = value_max - value_min;
           display_midpoint = 0.5 * (value_min + value_max);
         }
+
         void adjust_windowing (float brightness, float contrast) 
         {
           display_midpoint -= 0.0005f * display_range * brightness;
@@ -59,7 +62,10 @@ namespace MR {
         bool interpolate () const { return (interpolation == GL_LINEAR); }
 
         void render2D (int projection, int slice);
-        void get_axes (int projection, int& x, int& y) { 
+        void render3D (const Math::Quaternion& view, const Point<>& focus);
+
+        void get_axes (int projection, int& x, int& y)
+        { 
           if (projection) {
             if (projection == 1) { x = 0; y = 2; }
             else { x = 0; y = 1; }
@@ -73,19 +79,31 @@ namespace MR {
 
       private:
         Window& window;
-        GLuint texture2D[3];
-        int slice_position[3], interpolation;
+        GLuint texture2D[3], texture3D;
+        int interpolation;
         float value_min, value_max;
         float display_midpoint, display_range;
-        GL::Shader::Vertex vertex_shader;
-        GL::Shader::Fragment fragment_shader;
-        GL::Shader::Program shader_program;
+        std::vector<ssize_t> position;
 
-        const std::string gen_fragment_shader_source () const;
+        GL::Shader::Vertex vertex_shader;
+
+        GL::Shader::Fragment fragment_shader_2D;
+        GL::Shader::Program shader_program_2D;
+
+        GL::Shader::Fragment fragment_shader_3D;
+        GL::Shader::Program shader_program_3D;
+
+        const std::string gen_fragment_shader_source_2D () const;
+        const std::string gen_fragment_shader_source_3D () const;
         static const char* vertex_shader_source;
 
         void update_texture2D (int projection, int slice);
-        void update_shaders ();
+        void update_shaders_2D ();
+
+        void update_texture3D ();
+        void update_shaders_3D ();
+
+        bool volume_unchanged ();
 
         friend class Window;
     };
