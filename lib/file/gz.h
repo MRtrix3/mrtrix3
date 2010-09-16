@@ -48,17 +48,18 @@ namespace MR {
 
         const std::string&  name () const  { return (filename); }
 
-        void open (const std::string& fname, const char* mode) { 
+        void open (const std::string& fname, const char* mode) {
           close();
           filename = fname;
+          if (!MR::Path::exists(filename)) throw Exception ("cannot access file \"" + filename + "\": No such file or directory");
           gz = gzopen64 (filename.c_str(), mode);
           if (!gz) throw Exception ("error opening file \"" + filename + "\": insufficient memory");
         }
 
         void close () {
           if (gz) {
-            if (gzclose (gz)) throw Exception ("error closing file \"" + filename + "\": " + error()); 
-            filename.clear(); 
+            if (gzclose (gz)) throw Exception ("error closing file \"" + filename + "\": " + error());
+            filename.clear();
             gz = NULL;
           }
         }
@@ -67,15 +68,15 @@ namespace MR {
         bool eof () const { assert (gz); return (gzeof (gz)); }
         int64_t tell () const { assert (gz); return (gztell64 (gz)); }
 
-        void seek (int64_t offset) { 
+        void seek (int64_t offset) {
           assert (gz);
-          z_off_t pos = gzseek64 (gz, offset, SEEK_SET); 
-          if (pos < 0) throw Exception ("error seeking in file \"" + filename + "\": " + error()); 
+          z_off_t pos = gzseek64 (gz, offset, SEEK_SET);
+          if (pos < 0) throw Exception ("error seeking in file \"" + filename + "\": " + error());
         }
 
         int read (char* s, size_t n) {
           assert (gz);
-          int n_read = gzread (gz, s, n); 
+          int n_read = gzread (gz, s, n);
           if (n_read < 0) throw Exception ("error reading from file \"" + filename + "\": " + error());
           return (n_read);
         }
@@ -109,17 +110,17 @@ namespace MR {
           return (string);
         }
 
-        template <typename T> T get () { 
+        template <typename T> T get () {
           T val;
-          if (read (&val, sizeof(T)) != sizeof(T)) 
+          if (read (&val, sizeof(T)) != sizeof(T))
             throw Exception ("error reading from file \"" + filename + "\": " + error());
           return (val);
         }
 
         template <typename T> T get (int64_t offset) { seek (offset); return (get<T>()); }
 
-        template <typename T> T* get (T* buf, size_t n) { 
-          if (read (buf, n*sizeof(T)) != n*sizeof(T)) 
+        template <typename T> T* get (T* buf, size_t n) {
+          if (read (buf, n*sizeof(T)) != n*sizeof(T))
             throw Exception ("error reading from file \"" + filename + "\": " + error());
           return (buf);
         }
@@ -128,7 +129,7 @@ namespace MR {
 
       protected:
         gzFile       gz;
-        std::string  filename; 
+        std::string  filename;
 
         const char*  error () {
           int error_number;
