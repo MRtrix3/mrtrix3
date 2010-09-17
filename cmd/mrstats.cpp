@@ -21,6 +21,7 @@
 */
 
 #include "app.h"
+#include "point.h"
 #include "image/voxel.h"
 #include "dataset/loop.h"
 
@@ -51,6 +52,12 @@ OPTIONS = {
   Option ("mask",
       "only perform computation within the specified binary brain mask image.")
     + Argument ("image").type_image_in (),
+
+  Option ("voxel",
+      "only perform computation within the specified voxel, supplied as a "
+      "comma-separated vector of 3 integer values (multiple voxels can be included).")
+    .allow_multiple()
+    + Argument ("pos").type_sequence_int (),
 
   Option ("histogram", 
       "generate histogram of intensities and store in specified text file. Note "
@@ -217,8 +224,13 @@ EXECUTE {
   }
 
 
+  Options voxels = get_options ("voxel");
+
   opt = get_options ("mask");
-  if (opt.size()) {
+  if (opt.size()) { // within mask:
+
+    if (voxels.size())
+      throw Exception ("cannot use mask with -voxel option");
 
     Image::Header mask_header (opt[0][0]);
 
@@ -271,8 +283,13 @@ EXECUTE {
         stats.write_histogram (*hist_stream);
     }
 
+    return;
   }
-  else {
+
+
+
+
+  if (voxels.empty()) { // whole data set:
 
     if (hist_stream) {
       ProgressBar progress ("calibrating histogram...", DataSet::voxel_count (vox));
@@ -313,7 +330,70 @@ EXECUTE {
         stats.write_histogram (*hist_stream);
     }
 
+    return;
   }
 
+
+
+
+  // voxels:
+
+  std::vector<Point<ssize_t> > voxel (voxels.size());
+  for (size_t i = 0; i < voxels.size(); ++i) {
+    std::vector<int> x = parse_ints (voxels[i][0]);
+    if (x.size() != 3) 
+      throw Exception ("vector positions must be supplied as x,y,z");
+    if (x[0] < 0 || x[0] >= vox.dim(0) ||
+        x[1] < 0 || x[1] >= vox.dim(1) ||
+        x[2] < 0 || x[2] >= vox.dim(2)) 
+      throw Exception ("voxel at [ " + str(x[0]) + " " + str(x[1]) 
+          + " " + str(x[2]) + " ] is out of bounds");
+    voxel[i].set (x[0], x[1], x[2]);
+  }
+
+  if (hist_stream) {
+    ProgressBar progress ("calibrating histogram...", voxel.size());
+    for (outer_loop.start (vox); outer_loop.ok(); outer_loop.next (vox)) {
+      for (size_t i = 0; i < voxel.size(); ++i) {
+        vox[0] = voxel[i][0];
+        vox[1] = voxel[i][1];
+        vox[2] = voxel[i][2];
+        calibrate (vox.value());
+        ++progress;
+      }
+    }
+    calibrate.init (*hist_stream);
+  }
+
+  for (outer_loop.start (vox); outer_loop.ok(); outer_loop.next (vox)) {
+    Stats stats;
+
+    if (dumpstream) 
+      stats.dump_to (*dumpstream);
+
+    if (hist_stream)
+      stats.generate_histogram (calibrate);
+
+    for (size_t i = 0; i < voxel.size(); ++i) {
+      vox[0] = voxel[i][0];
+      vox[1] = voxel[i][1];
+      vox[2] = voxel[i][2];
+      stats (vox.value());
+      if (position_stream) {
+        for (size_t i = 0; i < vox.ndim(); ++i)
+          *position_stream << vox[i] << " ";
+        *position_stream << "\n";
+      }
+    }
+
+    if (!header_shown) 
+      print (header_string);
+    header_shown = true;
+
+    stats.print (vox);
+
+    if (hist_stream)
+      stats.write_histogram (*hist_stream);
+  }
 }
 
