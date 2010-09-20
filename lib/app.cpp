@@ -191,9 +191,12 @@ namespace MR {
     command_description = cmd_desc;
     command_arguments = cmd_args;
     command_options = cmd_opts;
-    author = cmd_author;
+    author = ( cmd_author ? cmd_author : "J-Donald Tournier (d.tournier@brain.org.au)" );
     version = cmd_version;
-    copyright = cmd_copyright;
+    copyright = ( cmd_copyright ? cmd_copyright : 
+                "Copyright (C) 2008 Brain Research Institute, Melbourne, Australia.\n"
+                "This is free software; see the source for copying conditions.\n"
+                "There is NO warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE." );
 
     if (argc == 2) {
       if (strcmp (argv[1], "__print_full_usage__") == 0) {
@@ -274,13 +277,8 @@ namespace MR {
 #else
               "debug"
 #endif
-              , mrtrix_major_version, mrtrix_minor_version, mrtrix_micro_version, gsl_version, 
-              ( author ? author : "J-Donald Tournier (d.tournier@brain.org.au)" ),
-              ( copyright ? copyright : 
-                "Copyright (C) 2008 Brain Research Institute, Melbourne, Australia.\n"
-                "This is free software; see the source for copying conditions.\n"
-                "There is NO warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE." ) 
-              );
+              , mrtrix_major_version, mrtrix_minor_version, mrtrix_micro_version, 
+              gsl_version, author, copyright);
 
           throw 0;
         }
