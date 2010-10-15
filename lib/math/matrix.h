@@ -711,7 +711,7 @@ namespace MR {
      * \return a reference to the target matrix \a C
      */
     template <typename T> inline Matrix<T>& mult (Matrix<T>& C, T alpha, CBLAS_TRANSPOSE op_A, const Matrix<T>& A, CBLAS_TRANSPOSE op_B, const Matrix<T>& B) { 
-      C.allocate (A.rows(), B.columns());
+      C.allocate (op_A == CblasNoTrans ? A.rows() : A.columns(), op_B == CblasNoTrans ? B.columns() : B.rows());
       mult (C, T(0.0), alpha, op_A, A, op_B, B);
       return (C); 
     }
