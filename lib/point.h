@@ -64,6 +64,7 @@ namespace MR {
       template <typename U> Point& operator+= (const Point<U>& inc) { p[0] += inc[0]; p[1] += inc[1]; p[2] += inc[2]; return (*this); }
       template <typename U> Point& operator-= (const Point<U>& inc) { p[0] -= inc[0]; p[1] -= inc[1]; p[2] -= inc[2]; return (*this); }
       template <typename U> Point& operator*= (U M)                 { p[0] *= M; p[1] *= M; p[2] *= M; return (*this); }
+      template <typename U> Point& operator/= (U M)                 { p[0] /= M; p[1] /= M; p[2] /= M; return (*this); }
 
       value_type   dot (const Point& A) const   { return (p[0]*A[0] + p[1]*A[1] + p[2]*A[2]); }
       Point        cross (const Point& A) const { return (Point (p[1]*A[2]-p[2]*A[1], p[2]*A[0]-p[0]*A[2], p[0]*A[1]-p[1]*A[0])); }
