@@ -77,7 +77,7 @@ namespace MR {
         class Shared
         {
           public:
-            Shared (size_t NDIM) : stride (NDIM) { }
+            Shared (size_t NDIM) : data (NULL), stride (NDIM), start (0) { }
             T* data;
             DataSet::Stride::List stride;
             size_t start;
@@ -148,25 +148,26 @@ namespace MR {
             }
 
             header.handler->prepare();
-              if (header.handler->nsegments() == 1 && 
-                  header.datatype() == DataType::from<value_type>()
-                  && strides_match) {
-                info ("data in \"" + header.name() + "\" already in native format - mapping as-is");
-                ptr->data = reinterpret_cast<value_type*> (header.handler->segment(0));
-              }
 
-              DataSet::Stride::actualise (ptr->stride, H);
-              ptr->start = DataSet::Stride::offset (ptr->stride, H);
-              reset(); 
-
-              if (!ptr->data) {
-                ptr->data = DataSet::__allocate<value_type> (DataSet::voxel_count (*this));
-                ptr->block = ptr->data;
-                info ("data in \"" + header.name() + "\" not in native format - loading into memory...");
-                Image::Voxel<value_type> vox (header);
-                DataSet::copy_with_progress_message ("loading data for image \"" + header.name() + "\"...", *this, vox);
-              }
+            if (header.handler->nsegments() == 1 && 
+                header.datatype() == DataType::from<value_type>()
+                && strides_match) {
+              info ("data in \"" + header.name() + "\" already in native format - mapping as-is");
+              ptr->data = reinterpret_cast<value_type*> (header.handler->segment(0));
             }
+
+            DataSet::Stride::actualise (ptr->stride, H);
+            ptr->start = DataSet::Stride::offset (ptr->stride, H);
+            reset(); 
+
+            if (!ptr->data) {
+              ptr->data = DataSet::__allocate<value_type> (DataSet::voxel_count (*this));
+              ptr->block = ptr->data;
+              info ("data in \"" + header.name() + "\" not in native format - loading into memory...");
+              Image::Voxel<value_type> vox (header);
+              DataSet::copy_with_progress_message ("loading data for image \"" + header.name() + "\"...", *this, vox);
+            }
+          }
 
 
         //! Copy constructor
