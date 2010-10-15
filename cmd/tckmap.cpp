@@ -71,6 +71,8 @@ OPTIONS = {
 
   Option ("alt", "alternative count mode", "alternative track counting mode which improves rotational invariance, but individual voxel values no longer correspond to an exact track count"),
 
+  Option ("lengthnorm", "weight by track length", "weight the contribution of each track by the inverse of its length."),
+
   Option ("datatype", "data type", "specify output image data type.")
     .append (Argument ("spec", "specifier", "the data type specifier.").type_choice (DataType::identifiers)),
 
@@ -131,6 +133,11 @@ Point<float> abs (const Point<float>& d)
   return (Point<float> (Math::abs(d[0]), Math::abs(d[1]), Math::abs(d[2])));
 }
 
+
+class SetVoxel : public std::set<Voxel> { public: size_t num_points; };
+class VectorVoxel : public std::vector<Voxel> { public: size_t num_points; };
+class SetVoxelDir : public std::set<VoxelDir> { public: size_t num_points; };
+class VectorVoxelDir : public std::vector<VoxelDir> { public: size_t num_points; };
 
 typedef Thread::Queue<std::vector<Point<float> > >    TrackQueue;
 
@@ -216,12 +223,12 @@ class TrackLoader
 
 
 
-template <typename cont> class TrackMapper
+template <typename Cont> class TrackMapper
 {
   public:
     typedef DataSet::Interp::Linear<const Image::Header> HeaderInterp;
 
-    TrackMapper (TrackQueue& input, Thread::Queue<cont>& output, const Image::Header& header, const Math::Matrix<float>& interp_matrix) :
+    TrackMapper (TrackQueue& input, Thread::Queue<Cont>& output, const Image::Header& header, const Math::Matrix<float>& interp_matrix) :
       reader (input),
       writer (output),
       H (header),
@@ -232,7 +239,7 @@ template <typename cont> class TrackMapper
     void execute ()
     {
       TrackQueue::Reader::Item in (reader);
-      typename Thread::Queue<cont>::Writer::Item out (writer);
+      typename Thread::Queue<Cont>::Writer::Item out (writer);
       HeaderInterp interp (H);
       Resampler<float> R (resample_matrix, 3);
       Math::Matrix<float> data;
@@ -247,6 +254,7 @@ template <typename cont> class TrackMapper
         if (R.valid()) 
           interp_track (*in, R, data);
       	voxelise (*out, *in, interp);
+        out->num_points = in->size();
 
       	if (!out.write())
           throw Exception ("error writing to write-back queue!");
@@ -256,7 +264,7 @@ template <typename cont> class TrackMapper
 
   private:
     TrackQueue::Reader reader;
-    typename Thread::Queue<cont>::Writer writer;
+    typename Thread::Queue<Cont>::Writer writer;
     const Image::Header& H;
     const Math::Matrix<float>& resample_matrix;
 
@@ -288,14 +296,14 @@ template <typename cont> class TrackMapper
     }
 
 
-    void voxelise (cont& voxels, const std::vector< Point<float> >& tck, const HeaderInterp& interp) const;
+    void voxelise (Cont& voxels, const std::vector< Point<float> >& tck, const HeaderInterp& interp) const;
 
 };
 
 
 
 
-template<> void TrackMapper< std::vector<Voxel> >::voxelise (std::vector<Voxel>& voxels, const std::vector< Point<float> >& tck, const HeaderInterp& interp) const
+template<> void TrackMapper<VectorVoxel>::voxelise (VectorVoxel& voxels, const std::vector< Point<float> >& tck, const HeaderInterp& interp) const
 {
   Voxel vox;
   for (std::vector<Point<float> >::const_iterator i = tck.begin(); i != tck.end(); ++i) {
@@ -305,7 +313,7 @@ template<> void TrackMapper< std::vector<Voxel> >::voxelise (std::vector<Voxel>&
   }
 }
 
-template<> void TrackMapper< std::set<Voxel> >::voxelise (std::set<Voxel>& voxels, const std::vector< Point<float> >& tck, const HeaderInterp& interp) const
+template<> void TrackMapper<SetVoxel>::voxelise (SetVoxel& voxels, const std::vector< Point<float> >& tck, const HeaderInterp& interp) const
 {
   Voxel vox;
   for (std::vector<Point<float> >::const_iterator i = tck.begin(); i != tck.end(); ++i) {
@@ -315,7 +323,7 @@ template<> void TrackMapper< std::set<Voxel> >::voxelise (std::set<Voxel>& voxel
   }
 }
 
-template<> void TrackMapper< std::vector<VoxelDir> >::voxelise (std::vector<VoxelDir>& voxels, const std::vector< Point<float> >& tck, const HeaderInterp& interp) const
+template<> void TrackMapper<VectorVoxelDir>::voxelise (VectorVoxelDir& voxels, const std::vector< Point<float> >& tck, const HeaderInterp& interp) const
 {
   std::vector< Point<float> >::const_iterator prev = tck.begin();
   const std::vector< Point<float> >::const_iterator last = tck.end() - 1;
@@ -336,7 +344,7 @@ template<> void TrackMapper< std::vector<VoxelDir> >::voxelise (std::vector<Voxe
   }
 }
 
-template<> void TrackMapper< std::set<VoxelDir> >::voxelise (std::set<VoxelDir>& voxels, const std::vector< Point<float> >& tck, const HeaderInterp& interp) const
+template<> void TrackMapper<SetVoxelDir>::voxelise (SetVoxelDir& voxels, const std::vector< Point<float> >& tck, const HeaderInterp& interp) const
 {
   std::vector< Point<float> >::const_iterator prev = tck.begin();
   const std::vector< Point<float> >::const_iterator last = tck.end() - 1;
@@ -371,95 +379,100 @@ template<> void TrackMapper< std::set<VoxelDir> >::voxelise (std::set<VoxelDir>&
 
 
 
-template <typename cont>
+template <typename Cont>
 class MapWriterBase
 {
   public:
-    MapWriterBase (Thread::Queue<cont>& queue, const Image::Header& header, const float fraction_scaling_factor) :
+    MapWriterBase (Thread::Queue<Cont>& queue, const Image::Header& header, const float fraction_scaling_factor, bool use_length) :
       reader (queue),
       H (header),
-      scale (fraction_scaling_factor)
+      scale (fraction_scaling_factor),
+      weight_by_length (use_length)
     {
     }
 
     virtual void execute () = 0;
 
    protected:
-    typename Thread::Queue<cont>::Reader reader;
+    typename Thread::Queue<Cont>::Reader reader;
     const Image::Header& H;
     float scale;
+    bool weight_by_length;
 
 };
 
 
-template <typename cont>
-class MapWriter : public MapWriterBase<cont>
+template <typename Cont>
+class MapWriter : public MapWriterBase<Cont>
 {
   public:
-    MapWriter (Thread::Queue<cont>& queue, const Image::Header& header, const float fraction_scaling_factor) :
-      MapWriterBase<cont> (queue, header, fraction_scaling_factor),
-      buffer (MapWriterBase<cont>::H, 3, "buffer")
+    MapWriter (Thread::Queue<Cont>& queue, const Image::Header& header, const float fraction_scaling_factor, bool use_length) :
+      MapWriterBase<Cont> (queue, header, fraction_scaling_factor, use_length),
+      buffer (MapWriterBase<Cont>::H, 3, "buffer")
     {
     }
 
     ~MapWriter ()
     {
-      Image::Voxel<float> vox (MapWriterBase<cont>::H);
+      Image::Voxel<float> vox (MapWriterBase<Cont>::H);
       DataSet::LoopInOrder loop (vox, "writing image to file...", 0, 3);
       for (loop.start (vox, buffer); loop.ok(); loop.next (vox, buffer))
-        vox.value() = MapWriterBase<cont>::scale * buffer.value();
+        vox.value() = MapWriterBase<Cont>::scale * buffer.value();
     }
 
     void execute ()
     {
-      typename Thread::Queue<cont>::Reader::Item item (MapWriterBase<cont>::reader);
+      typename Thread::Queue<Cont>::Reader::Item item (MapWriterBase<Cont>::reader);
       while (item.read()) {
-        for (typename cont::const_iterator i = item->begin(); i != item->end(); ++i) {
+        for (typename Cont::const_iterator i = item->begin(); i != item->end(); ++i) {
           buffer[0] = (*i)[0];
           buffer[1] = (*i)[1];
           buffer[2] = (*i)[2];
-          buffer.value() += 1;
+          buffer.value() += this->weight_by_length ? 1.0 / item->num_points : 1.0;
         }
       }
     }
 
   private:
-    DataSet::Buffer<size_t> buffer;
+    DataSet::Buffer<float> buffer;
 
 };
 
 
-template <typename cont>
-class MapWriterColour : public MapWriterBase<cont> {
+template <typename Cont>
+class MapWriterColour : public MapWriterBase<Cont> {
 
   public:
-    MapWriterColour(Thread::Queue<cont>& queue, const Image::Header& header, const float fraction_scaling_factor) :
-      MapWriterBase<cont>(queue, header, fraction_scaling_factor),
-      buffer (MapWriterBase<cont>::H, 3, "directional_buffer")
+    MapWriterColour(Thread::Queue<Cont>& queue, const Image::Header& header, const float fraction_scaling_factor, bool use_length) :
+      MapWriterBase<Cont>(queue, header, fraction_scaling_factor, use_length),
+      buffer (MapWriterBase<Cont>::H, 3, "directional_buffer")
     {
     }
 
     ~MapWriterColour ()
     {
-      Image::Voxel<float> vox (MapWriterBase<cont>::H);
+      Image::Voxel<float> vox (MapWriterBase<Cont>::H);
       DataSet::LoopInOrder loop (vox, "writing image to file...", 0, 3);
       for (loop.start (vox, buffer); loop.ok(); loop.next (vox, buffer)) {
         const Point<float>  temp = buffer.value();
-        vox[3] = 0; vox.value() = MapWriterBase<cont>::scale * temp[0];
-        vox[3] = 1; vox.value() = MapWriterBase<cont>::scale * temp[1];
-        vox[3] = 2; vox.value() = MapWriterBase<cont>::scale * temp[2];
+        vox[3] = 0; vox.value() = MapWriterBase<Cont>::scale * temp[0];
+        vox[3] = 1; vox.value() = MapWriterBase<Cont>::scale * temp[1];
+        vox[3] = 2; vox.value() = MapWriterBase<Cont>::scale * temp[2];
       }
     }
 
     void execute ()
     {
-      typename Thread::Queue<cont>::Reader::Item item (MapWriterBase<cont>::reader);
+      typename Thread::Queue<Cont>::Reader::Item item (MapWriterBase<Cont>::reader);
       while (item.read()) {
-        for (typename cont::const_iterator i = item->begin(); i != item->end(); ++i) {
+        for (typename Cont::const_iterator i = item->begin(); i != item->end(); ++i) {
           buffer[0] = (*i)[0];
           buffer[1] = (*i)[1];
           buffer[2] = (*i)[2];
-          buffer.value() += abs (i->dir);
+          Point<float> val = abs (i->dir);
+          if (this->weight_by_length)
+            val /= item->num_points;
+          buffer.value() += val;
         }
       }
     }
@@ -561,7 +574,6 @@ void oversample_header (Image::Header& header, const std::vector<float>& voxel_s
 
 
 
-
 EXECUTE {
 
   Tractography::Properties properties;
@@ -571,9 +583,10 @@ EXECUTE {
   const size_t num_tracks = properties["count"]    .empty() ? 0   : to<size_t> (properties["count"]);
   const float  step_size  = properties["step_size"].empty() ? 0.0 : to<float>  (properties["step_size"]);
 
-  const bool colour         = get_options("colour")  .size();
-  const bool fibre_fraction = get_options("fraction").size();
-  const bool alt_mode       = get_options("alt")     .size();
+  const bool colour           = get_options("colour")    .size();
+  const bool fibre_fraction   = get_options("fraction")  .size();
+  const bool alt_mode         = get_options("alt")       .size();
+  const bool weight_by_length = get_options("lengthnorm").size();
 
   std::vector<float> voxel_size;
   OptionList opt = get_options("vox");
@@ -607,7 +620,7 @@ EXECUTE {
   if (opt.size())
     header.datatype().parse (DataType::identifiers[opt[0][0].get_int()]);
   else
-    header.datatype() = (fibre_fraction || colour || alt_mode) ? DataType::Float32 : DataType::UInt32;
+    header.datatype() = (fibre_fraction || colour || alt_mode || weight_by_length) ? DataType::Float32 : DataType::UInt32;
 
   for (Tractography::Properties::iterator i = properties.begin(); i != properties.end(); ++i)
     header.comments.push_back (i->first + ": " + i->second);
@@ -661,13 +674,13 @@ EXECUTE {
 
     if (alt_mode) {
 
-      Thread::Queue   < std::vector<VoxelDir> > queue2 ("processed tracks");
+      Thread::Queue   <VectorVoxelDir> queue2 ("processed tracks");
       TrackLoader                               loader (queue1, file, num_tracks);
-      TrackMapper     < std::vector<VoxelDir> > mapper (queue1, queue2, header_out, interp_matrix);
-      MapWriterColour < std::vector<VoxelDir> > writer (queue2, header_out, scaling_factor);
+      TrackMapper     <VectorVoxelDir> mapper (queue1, queue2, header_out, interp_matrix);
+      MapWriterColour <VectorVoxelDir> writer (queue2, header_out, scaling_factor, weight_by_length);
 
       Thread::Exec loader_thread (loader, "loader");
-      Thread::Array< TrackMapper< std::vector<VoxelDir> > > mapper_list (mapper);
+      Thread::Array< TrackMapper<VectorVoxelDir> > mapper_list (mapper);
       Thread::Exec mapper_threads (mapper_list, "mapper");
 
       writer.execute();
@@ -675,13 +688,13 @@ EXECUTE {
     }
     else {
 
-      Thread::Queue   < std::set<VoxelDir> > queue2 ("processed tracks");
+      Thread::Queue   <SetVoxelDir> queue2 ("processed tracks");
       TrackLoader                            loader (queue1, file, num_tracks);
-      TrackMapper     < std::set<VoxelDir> > mapper (queue1, queue2, header_out, interp_matrix);
-      MapWriterColour < std::set<VoxelDir> > writer (queue2, header_out, scaling_factor);
+      TrackMapper     <SetVoxelDir> mapper (queue1, queue2, header_out, interp_matrix);
+      MapWriterColour <SetVoxelDir> writer (queue2, header_out, scaling_factor, weight_by_length);
 
       Thread::Exec loader_thread (loader, "loader");
-      Thread::Array< TrackMapper< std::set<VoxelDir> > > mapper_list (mapper);
+      Thread::Array< TrackMapper<SetVoxelDir> > mapper_list (mapper);
       Thread::Exec mapper_threads (mapper_list, "mapper");
 
       writer.execute();
@@ -698,13 +711,13 @@ EXECUTE {
 
     if (alt_mode) {
 
-      Thread::Queue< std::vector<Voxel> > queue2 ("processed tracks");
+      Thread::Queue<VectorVoxel> queue2 ("processed tracks");
       TrackLoader                         loader (queue1, file, num_tracks);
-      TrackMapper  < std::vector<Voxel> > mapper (queue1, queue2, header_out, interp_matrix);
-      MapWriter    < std::vector<Voxel> > writer (queue2, header_out, scaling_factor);
+      TrackMapper  <VectorVoxel> mapper (queue1, queue2, header_out, interp_matrix);
+      MapWriter    <VectorVoxel> writer (queue2, header_out, scaling_factor, weight_by_length);
 
       Thread::Exec loader_thread (loader, "loader");
-      Thread::Array< TrackMapper< std::vector<Voxel> > > mapper_list (mapper);
+      Thread::Array< TrackMapper<VectorVoxel> > mapper_list (mapper);
       Thread::Exec mapper_threads (mapper_list, "mapper");
 
       writer.execute();
@@ -712,13 +725,13 @@ EXECUTE {
     }
     else {
 
-      Thread::Queue< std::set<Voxel> > queue2 ("processed tracks");
+      Thread::Queue<SetVoxel> queue2 ("processed tracks");
       TrackLoader                      loader (queue1, file, num_tracks);
-      TrackMapper  < std::set<Voxel> > mapper (queue1, queue2, header_out, interp_matrix);
-      MapWriter    < std::set<Voxel> > writer (queue2, header_out, scaling_factor);
+      TrackMapper  <SetVoxel> mapper (queue1, queue2, header_out, interp_matrix);
+      MapWriter    <SetVoxel> writer (queue2, header_out, scaling_factor, weight_by_length);
 
       Thread::Exec loader_thread (loader, "loader");
-      Thread::Array< TrackMapper< std::set<Voxel> > > mapper_list (mapper);
+      Thread::Array< TrackMapper<SetVoxel> > mapper_list (mapper);
       Thread::Exec mapper_threads (mapper_list, "mapper");
 
       writer.execute();
