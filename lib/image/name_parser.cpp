@@ -63,6 +63,8 @@ namespace MR {
       }
 
       folder_name = Path::dirname (specification);
+      if (folder_name.empty())
+        folder_name = ".";
 
 
       try {

@@ -193,8 +193,8 @@ namespace MR {
         if (!*format_handler) throw Exception ("unknown format for image \"" + H.name() + "\"");
         H.format = (*format_handler)->description;
 
-        Header header (H);
         while (++item != list.end()) {
+          Header header (H);
           header.name() = (*item)->name();
           if (!(*format_handler)->read (header)) throw Exception ("image specifier contains mixed format files");
           H.merge (header);
