@@ -234,7 +234,7 @@ namespace MR {
             const Math::Matrix<T>& operation = NoOp, 
             const std::vector<int>& oversampling = AutoOverSample)
         {
-          Reslice<Interpolator,Set2,Set1,T> interp (source, destination, operation);
+          Reslice<Interpolator,Set2,Set1,T> interp (source, destination, operation, oversampling);
           DataSet::copy_with_progress (destination, interp);
         }
 

@@ -178,7 +178,7 @@ EXECUTE {
   opt = get_options("reslice"); // need to reslice
   if (opt.size()) {
     Image::Header template_header (opt[0][0].get_image());
-    header_in.axes[0].dim = template_header.axes[0].dim;
+    header.axes[0].dim = template_header.axes[0].dim;
     header.axes[1].dim = template_header.axes[1].dim;
     header.axes[2].dim = template_header.axes[2].dim;
     header.axes[0].vox = template_header.axes[0].vox;
