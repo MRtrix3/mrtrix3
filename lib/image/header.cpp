@@ -225,8 +225,8 @@ namespace MR {
 
         format_ = (*format_handler)->description;
 
-        Header header (*this);
         while (++item != list.end()) {
+          Header header (*this);
           header.name_ = (*item)->name();
           if (!(*format_handler)->read (header)) 
             throw Exception ("image specifier contains mixed format files");
@@ -238,12 +238,12 @@ namespace MR {
           for (size_t i = 0; i < ndim(); i++) 
             if (stride(i)) 
               ++n;
-          set_ndim (n + num.size());
+          axes_.resize (n + num.size());
 
           for (std::vector<int>::const_iterator item = num.begin(); item != num.end(); ++item) {
             while (stride (a)) ++a;
-            set_dim (a, *item);
-            set_stride (a, ++n);
+            axes_[a].dim = *item;
+            axes_[a].stride = ++n;
           }
         }
 

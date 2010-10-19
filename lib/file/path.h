@@ -45,20 +45,26 @@
 namespace MR {
   namespace Path {
 
-    inline std::string basename (const std::string& name) {
+    inline std::string basename (const std::string& name) 
+    {
       size_t i = name.find_last_of (PATH_SEPARATOR);
       return (i == std::string::npos ? name : name.substr (i+1));
     }
 
 
-    inline std::string dirname (const std::string& name) {
+    inline std::string dirname (const std::string& name) 
+    {
       size_t i = name.find_last_of (PATH_SEPARATOR);
       return (i == std::string::npos ? std::string("") : ( i ? name.substr (0,i) : std::string(PATH_SEPARATOR) ));
     }
 
 
     inline std::string join (const std::string& first, const std::string& second) 
-    { return (first.empty() ? second : first + std::string(PATH_SEPARATOR)[0] + second); }
+    {
+      return (first.empty() ?
+          second :
+          first + std::string(PATH_SEPARATOR)[0] + second); 
+    }
 
 
     inline bool exists (const std::string& path) 
@@ -91,14 +97,20 @@ namespace MR {
     }
 
     inline bool has_suffix (const std::string& name, const std::string& suffix) 
-    { return (name.size() < suffix.size() ? false : name.substr (name.size()-suffix.size()) == suffix); }
+    {
+      return (name.size() < suffix.size() ? 
+          false : 
+          name.substr (name.size()-suffix.size()) == suffix); 
+    }
 
 
     inline std::string cwd (size_t buf_size = 32) 
     { 
       char buf [buf_size];
-      if (getcwd (buf, buf_size)) return (buf);
-      if (errno != ERANGE) throw Exception ("failed to get current working directory!");
+      if (getcwd (buf, buf_size))
+        return (buf);
+      if (errno != ERANGE)
+        throw Exception ("failed to get current working directory!");
       return (cwd (buf_size * 2));
     }
 
@@ -112,7 +124,11 @@ namespace MR {
     class Dir 
     {
       public:
-        Dir (const std::string& name) : p (opendir (name.c_str())) { if (!p) { throw Exception ("error opening folder " + name + ": " + strerror (errno)); } }
+        Dir (const std::string& name) : 
+          p (opendir (name.c_str())) { 
+            if (!p) 
+              throw Exception ("error opening folder " + name + ": " + strerror (errno));
+          }
         ~Dir () { if (p) closedir (p); }
 
         std::string read_name () { 
