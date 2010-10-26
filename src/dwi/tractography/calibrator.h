@@ -25,6 +25,7 @@
 
 #include "point.h"
 #include "math/SH.h"
+#include "dwi/tractography/shared.h"
 
 #define SQRT_3_OVER_2 0.866025403784439
 #define NUM_CALIBRATE 1000
@@ -34,13 +35,12 @@ namespace MR {
     namespace Tractography {
 
       template <typename value_type>
-        std::vector<Point<value_type> > direction_grid (value_type max_angle, value_type num)
+        std::vector<Point<value_type> > direction_grid (value_type max_angle, value_type spacing)
         {
           using namespace Math;
-          value_type spacing = max_angle / num;
-          const value_type maxR = pow2 (num);
+          const value_type maxR = pow2 (max_angle / spacing);
           std::vector<Point<value_type> > list;
-          ssize_t extent = ceil (num);
+          ssize_t extent = ceil (max_angle / spacing);
 
           for (ssize_t i = -extent; i <= extent; ++i) {
             for (ssize_t j = -extent; j <= extent; ++j) {
@@ -58,54 +58,49 @@ namespace MR {
           return (list);
         }
 
+      namespace {
+        class Pair {
+          public:
+            Pair (value_type elevation, value_type amplitude) : el (elevation), amp (amplitude) { }
+            value_type el, amp;
+        };
+      }
 
       template <class Method> 
         void calibrate (Method& method) 
         {
-          using namespace Math;
-
           typename Method::Calibrate calibrate_func (method);
-          value_type peak = calibrate_func.get_peak();
+          const value_type sqrt3 = Math::sqrt (3.0);
 
-          method.pos.set (0.0, 0.0, 0.0);
-          method.dir.set (0.0, 0.0, 1.0);
+          std::vector<Pair> amps;
+          for (value_type el = 0.0; el < method.S.max_angle; el += 0.001) {
+            amps.push_back (Pair (el, calibrate_func (el)));
+            if (!finite (amps.back().amp) || amps.back().amp <= 0.0) break;
+          }
+          value_type zero = amps.back().el;
 
-          Vector<value_type> fod (method.values, method.source.dim(3));
-
-          {
-            ProgressBar progress ("calibrating rejection sampling...");
-
-            for (value_type extent = 1.0; extent < 5.0; extent += 0.5) {
-              value_type min = std::numeric_limits<value_type>::infinity();
-              method.calibrate_list = direction_grid (method.S.max_angle, extent);
-
-              for (size_t n = 0; n < NUM_CALIBRATE; ++n) {
-                value_type max = 0.0;
-                Point<value_type> end_dir = method.rand_dir (method.dir);
-
-                for (size_t i = 0; i < method.calibrate_list.size(); ++i) {
-                  value_type prob = calibrate_func (end_dir, method.calibrate_list[i]);
-
-                  if (prob > max) 
-                    max = prob;
-
-                  ++progress;
-                }
-
-                if (max < min)
-                  min = max;
-              }
-
-              method.calibrate_ratio = 1.1 * peak / min;
-
-              if (method.calibrate_ratio < 3.0) 
-                break;
+          value_type N_min = INFINITY, theta_min = NAN, ratio = NAN;
+          for (size_t i = 1; i < amps.size(); ++i) {
+            value_type N = Math::pow2 (method.S.max_angle);
+            value_type Ns =  N * (1.0+amps[0].amp/amps[i].amp)/(2.0*Math::pow2(zero));
+            std::vector<Point<value_type> > dirs = direction_grid<value_type> (method.S.max_angle + amps[i].el, sqrt3*amps[i].el);
+            N = Ns+dirs.size();
+            //std::cout << amps[i].el << " " << amps[i].amp << " " << Ns << " " << dirs.size() << " " << Ns+dirs.size() << "\n";
+            if (N > 0.0 && N < N_min) {
+              N_min = N;
+              theta_min = amps[i].el;
+              ratio = amps[0].amp / amps[i].amp;
             }
           }
 
+          method.calibrate_list = direction_grid (method.S.max_angle+theta_min, sqrt3*theta_min);
+          method.calibrate_ratio = ratio;
+
           info ("rejection sampling will use " + str (method.calibrate_list.size()) 
-              + " directions with a ratio of " + str (method.calibrate_ratio));
+              + " directions with a ratio of " + str (method.calibrate_ratio) + " (predicted number of samples per step = " + str (N_min) + ")");
         }
+
+      
 
     }
   }

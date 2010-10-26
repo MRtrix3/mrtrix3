@@ -43,23 +43,45 @@ namespace MR {
                 lmax (Math::SH::LforN (source.dim(3))), 
                 max_trials (MAX_TRIALS),
                 sin_max_angle (sin (max_angle)),
-                FOD_power (1.0) {
+                mean_samples (0.0),
+                mean_num_truncations (0.0),
+                max_max_truncation (0.0),
+                num_proc (0) {
+
+                  set_step_size (0.1);
+                  info ("minimum radius of curvature = " + str(step_size / ( 2.0 * sin (max_angle / 2.0))) + " mm");
+
                   properties["method"] = "iFOD1";
                   properties.set (lmax, "lmax");
                   properties.set (max_trials, "max_trials");
                   bool precomputed = true;
                   properties.set (precomputed, "sh_precomputed");
-                  properties.set (FOD_power, "fod_power");
                   if (precomputed) precomputer.init (lmax);
-                  info ("minimum radius of curvature = " + str(step_size / ( 2.0 * sin (max_angle / 2.0))) + " mm");
-                  value_type vox = Math::pow (source.vox(0)*source.vox(1)*source.vox(2), value_type (1.0/3.0));
-                  FOD_power *= step_size / vox;
-                  info ("FOD will be raised to the power " + str(FOD_power));
                 }
 
+              ~Shared ()
+              {
+                info ("mean number of samples per step = " + str (mean_samples/double(num_proc))); 
+                info ("mean number of rejection sampling truncations per step = " + str (mean_num_truncations/double(num_proc))); 
+                info ("maximum truncation error = " + str (max_max_truncation)); 
+              }
+
+              void update_stats (double mean_samples_per_run, double num_truncations, double max_truncation) const 
+              {
+                mean_samples += mean_samples_per_run;
+                mean_num_truncations += num_truncations;
+                if (max_truncation > max_max_truncation) 
+                  max_max_truncation = max_truncation;
+                ++num_proc;
+              }
+
               size_t lmax, max_trials;
-              value_type sin_max_angle, FOD_power;
+              value_type sin_max_angle;
               Math::SH::PrecomputedAL<value_type> precomputer;
+
+            private:
+              mutable double mean_samples, mean_num_truncations, max_max_truncation;
+              mutable int num_proc;
           };
 
 
@@ -71,14 +93,18 @@ namespace MR {
             MethodBase (shared), 
             S (shared),
             mean_sample_num (0), 
-            num_sample_runs (0) {
+            num_sample_runs (0),
+            num_truncations (0),
+            max_truncation (0.0) {
               calibrate (*this);
             } 
 
 
           ~iFOD1 () 
           { 
-            info ("mean number of samples per step = " + str (calibrate_list.size() + value_type(mean_sample_num)/value_type(num_sample_runs))); 
+            S.update_stats (calibrate_list.size() + value_type(mean_sample_num)/value_type(num_sample_runs), 
+                value_type(num_truncations)/value_type(num_sample_runs),
+                max_truncation);
           }
 
 
@@ -127,21 +153,26 @@ namespace MR {
 
             max_val *= calibrate_ratio;
 
+            num_sample_runs++;
+
             for (size_t n = 0; n < S.max_trials; n++) {
               Point<value_type> new_dir = rand_dir (dir);
               value_type val = FOD (new_dir);
 
               if (val > S.threshold) {
 
-                if (val > max_val)
-                  info ("max_val exceeded!!! (val = " + str(val) + ", max_val = " + str (max_val) + ")");
+                if (val > max_val) {
+                  debug ("max_val exceeded!!! (val = " + str(val) + ", max_val = " + str (max_val) + ")");
+                  ++num_truncations;
+                  if (val/max_val > max_truncation)
+                    max_truncation = val/max_val;
+                }
 
                 if (rng.uniform() < val/max_val) {
                   dir = new_dir;
                   dir.normalise();
                   pos += S.step_size * dir;
                   mean_sample_num += n;
-                  num_sample_runs++;
                   return (true);
                 }
 
@@ -154,7 +185,8 @@ namespace MR {
         protected:
           const Shared& S;
           value_type calibrate_ratio;
-          size_t mean_sample_num, num_sample_runs;
+          size_t mean_sample_num, num_sample_runs, num_truncations;
+          float max_truncation;
           std::vector<Point<value_type> > calibrate_list;
 
           value_type FOD (const Point<value_type>& d) const 
@@ -177,22 +209,12 @@ namespace MR {
               Calibrate (iFOD1& method) : 
                 P (method),
                 fod (P.values, P.source.dim(3)) {
+                  Math::SH::delta (fod, Point<value_type> (0.0, 0.0, 1.0), P.S.lmax);
                 }
 
-              value_type operator() (const Point<value_type>& dir, const Point<value_type>& sample_dir) 
+              value_type operator() (value_type el) 
               {
-                using namespace Math;
-                SH::delta (fod, dir, P.S.lmax);
-                return SH::value (P.values, sample_dir, P.S.lmax);
-              }
-
-
-              value_type get_peak ()
-              {
-                using namespace Math;
-                Point<value_type> dir (0.0, 0.0, 1.0);
-                SH::delta (fod, dir, P.S.lmax);
-                return SH::value (P.values, dir, P.S.lmax);
+                return Math::SH::value (P.values, Point<value_type> (Math::sin (el), 0.0, Math::cos(el)), P.S.lmax);
               }
 
             private:

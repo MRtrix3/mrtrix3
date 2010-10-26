@@ -51,7 +51,7 @@ namespace MR {
             dir (0.0, 0.0, 1.0),
             values (new value_type [source.dim(3)]) { }
 
-          ~MethodBase () { delete values; }
+          ~MethodBase () { delete [] values; }
 
           StorageType source;
           DataSet::Interp::Linear<StorageType> interp;
@@ -107,6 +107,8 @@ namespace MR {
           {
             return (rotate_direction (d, random_direction (max_angle, sin_max_angle)));
           }
+
+
 
           static void init () { rng_seed = time (NULL); }
 

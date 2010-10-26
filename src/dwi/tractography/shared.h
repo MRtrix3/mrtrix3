@@ -46,44 +46,60 @@ namespace MR {
             source (H, strides_by_volume(), 4),
             properties (property_set), 
             max_num_tracks (1000),
-            max_angle (45.0),
-            step_size (0.1),
+            max_angle (NAN),
+            step_size (NAN),
             threshold (0.1), 
-            unidirectional (false) 
-        {
-          value_type max_dist = 200.0;
-          value_type min_dist = 10.0;
+            unidirectional (false) {
 
-          properties["source"] = source.name();
+              properties.set (threshold, "threshold");
+              properties.set (unidirectional, "unidirectional");
+              properties.set (max_num_tracks, "max_num_tracks");
 
-          properties.set (step_size, "step_size");
-          properties.set (threshold, "threshold");
-          properties.set (max_angle, "max_angle");
-          properties.set (unidirectional, "unidirectional");
-          properties.set (max_num_tracks, "max_num_tracks");
-          properties.set (max_dist, "max_dist");
-          properties.set (min_dist, "min_dist");
+              properties["source"] = source.name();
 
-          init_threshold = 2.0*threshold;
-          properties.set (init_threshold, "init_threshold");
+              init_threshold = 2.0*threshold;
+              properties.set (init_threshold, "init_threshold");
 
-          max_num_attempts = 100 * max_num_tracks;
-          properties.set (max_num_attempts, "max_num_attempts");
+              max_num_attempts = 100 * max_num_tracks;
+              properties.set (max_num_attempts, "max_num_attempts");
 
-          if (properties["init_direction"].size()) {
-            std::vector<float> V = parse_floats (properties["init_direction"]);
-            if (V.size() != 3) throw Exception (std::string ("invalid initial direction \"") + properties["init_direction"] + "\"");
-            init_dir[0] = V[0];
-            init_dir[1] = V[1];
-            init_dir[2] = V[2];
-            init_dir.normalise();
+              if (properties["init_direction"].size()) {
+                std::vector<float> V = parse_floats (properties["init_direction"]);
+                if (V.size() != 3) throw Exception (std::string ("invalid initial direction \"") + properties["init_direction"] + "\"");
+                init_dir[0] = V[0];
+                init_dir[1] = V[1];
+                init_dir[2] = V[2];
+                init_dir.normalise();
+              }
+
+            }
+
+
+          value_type vox () const 
+          {
+            return Math::pow (source.vox(0)*source.vox(1)*source.vox(2), value_type (1.0/3.0));
           }
 
-          max_num_points = round (max_dist/step_size);
-          min_num_points = round (min_dist/step_size);
+          void set_step_size (value_type stepsize) 
+          {
+            step_size = stepsize * vox();
+            properties.set (step_size, "step_size");
+            info ("step size = " + str (step_size) + " mm");
 
-          max_angle *= M_PI / 180.0;
-        }
+            value_type max_dist = 100.0 * vox();
+            properties.set (max_dist, "max_dist");
+            max_num_points = round (max_dist/step_size);
+
+            value_type min_dist = 5.0 * vox();
+            properties.set (min_dist, "min_dist");
+            min_num_points = round (min_dist/step_size);
+
+            max_angle = 90.0 * step_size / vox();
+            properties.set (max_angle, "max_angle");
+            info ("maximum deviation angle = " + str (max_angle) + "°");
+
+            max_angle *= M_PI / 180.0;
+          }
 
           Image::Header& H;
           StorageType source;

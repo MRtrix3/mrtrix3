@@ -83,19 +83,19 @@ OPTIONS = {
     + Argument ("spec"),
 
   Option ("step", 
-      "set the step size of the algorithm in mm (default is 0.2 mm).")
-    + Argument ("size").type_float (1e-6, 0.2, 10.0),
+      "set the step size of the algorithm in mm (default for iFOD1: 0.1 x voxelsize; for iFOD2: 0.5 x voxelsize).")
+    + Argument ("size").type_float (0.0, 0.0, INFINITY),
 
   Option ("angle", 
-      "set the maximum angle between successive steps (default is 45°).")
-    + Argument ("theta").type_float (1e-6, 45.0, 90.0),
+      "set the maximum angle between successive steps (default is 90° x stepsize / voxelsize).")
+    + Argument ("theta").type_float (0.0, 45.0, 90.0),
 
   Option ("number", 
       "set the desired number of tracks. The program will continue to "
       "generate tracks until this number of tracks have been selected "
       "and written to the output file (default is 100 for *_STREAM methods, "
       "1000 for *_PROB methods).")
-    + Argument ("tracks").type_integer (1, 1, INT_MAX),
+    + Argument ("tracks").type_integer (1, 1, std::numeric_limits<int>::max()),
 
   Option ("maxnum", 
       "set the maximum number of tracks to generate. The program will "
@@ -104,27 +104,27 @@ OPTIONS = {
     + Argument ("tracks").type_integer (1, 1, INT_MAX),
 
   Option ("maxlength", 
-      "set the maximum length of any track in mm (default is 200 mm).")
-    + Argument ("value").type_float (1.0e-2, 200.0, 1.e6),
+      "set the maximum length of any track in mm (default is 100 x voxelsize).")
+    + Argument ("value").type_float (0.0, 0.0, INFINITY),
 
   Option ("minlength", 
-      "set the minimum length of any track in mm (default is 10 mm).")
-    + Argument ("value").type_float (1.0e-2, 10.0, 1.0e6),
+      "set the minimum length of any track in mm (default is 5 x voxelsize).")
+    + Argument ("value").type_float (0.0, 0.0, INFINITY),
 
   Option ("cutoff", 
       "set the FA or FOD amplitude cutoff for terminating tracks "
       "(default is 0.1).")
-    + Argument ("value").type_float (0.0, 0.1, 1.0e6),
+    + Argument ("value").type_float (0.0, 0.1, INFINITY),
 
   Option ("initcutoff", 
       "set the minimum FA or FOD amplitude for initiating tracks (default "
       "is twice the normal cutoff).")
-    + Argument ("value").type_float (0.0, 0.1, 1.0e6),
+    + Argument ("value").type_float (0.0, 0.1, INFINITY),
 
   Option ("trials", 
       "set the maximum number of sampling trials at each point (only "
       "used for probabilistic tracking).")
-    + Argument ("number").type_integer(1, MAX_TRIALS, 10000),
+    + Argument ("number").type_integer(1, MAX_TRIALS, std::numeric_limits<int>::max()),
 
   Option ("unidirectional", 
       "track from the seed point in one direction only (default is to "
@@ -140,13 +140,14 @@ OPTIONS = {
       "this will slow down the algorithm by a factor of approximately 4."),
 
   Option ("power", 
-      "raise the FOD to the power specified (default: 1.0)")
+      "raise the FOD to the power specified (default is stepsize / "
+      "(voxelsize x nsamples)).")
     + Argument ("value").type_float(1e-6, 1.0, 1e6),
 
   Option ("samples", 
       "set the number of FOD samples to take per step for the 2nd order "
-      "method (iFOD2).")
-    + Argument ("number").type_integer(1, 3, 20),
+      "(iFOD2) method (Default: 4).")
+    + Argument ("number").type_integer(2, 4, 100),
 
   Option ()
 };
@@ -157,12 +158,6 @@ EXECUTE {
   using namespace DWI::Tractography;
 
   Properties properties;
-  properties["step_size"] = "0.2";
-  properties["max_dist"] = "200";
-  properties["min_dist"] = "10";
-  properties["threshold"] = "0.1";
-  properties["unidirectional"] = "0";
-  properties["sh_precomputed"] = "1";
 
   const char* algorithm = algorithms[1];
   Options opt = get_options ("algorithm");
