@@ -251,18 +251,29 @@ namespace MR {
 
 
         if (DW_scheme.size()) {
-          Math::Matrix<float> M (H.get_DW_scheme());
-          M.allocate (DW_scheme.size(), 4);
+          Math::Matrix<float>& G (H.get_DW_scheme());
+          G.allocate (DW_scheme.size(), 4);
+          bool is_not_GE = image.manufacturer.compare (0, 2, "GE");
           for (size_t s = 0; s < DW_scheme.size(); s++) {
-            M(s,3) = DW_scheme[s]->bvalue;
-            if (M(s,3) != 0.0) {
+            if ((G(s,3) = DW_scheme[s]->bvalue) != 0.0) {
               float norm = Math::norm (DW_scheme[s]->G);
-              M(s,3) *= norm;
-              M(s,0) = -DW_scheme[s]->G[0]/norm;
-              M(s,1) = -DW_scheme[s]->G[1]/norm;
-              M(s,2) = DW_scheme[s]->G[2]/norm;
-            }
-            else M(s,0) = M(s,1) = M(s,2) = 0.0;
+              G(s,3) *= norm;
+              if (norm) {
+                float d[] = { DW_scheme[s]->G[0]/norm, DW_scheme[s]->G[1]/norm, DW_scheme[s]->G[2]/norm };
+                if (is_not_GE) {
+                  G(s,0) = - d[0];
+                  G(s,1) = - d[1];
+                  G(s,2) = d[2];
+                }   
+                else {
+                  G(s,0) = M(0,0)*d[0] + M(0,1)*d[1] - M(0,2)*d[2];
+                  G(s,1) = M(1,0)*d[0] + M(1,1)*d[1] - M(1,2)*d[2];
+                  G(s,2) = M(2,0)*d[0] + M(2,1)*d[1] - M(2,2)*d[2];
+                }   
+              }   
+              else G(s,0) = G(s,1) = G(s,2) = 0.0;
+            }   
+            else G(s,0) = G(s,1) = G(s,2) = 0.0;
           }
         }
       }

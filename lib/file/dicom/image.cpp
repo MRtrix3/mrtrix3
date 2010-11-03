@@ -43,21 +43,40 @@ namespace MR {
                 filename = Path::join (filename, V[n]);
             }
             break;
+          case 0x0008U: 
+            if (item.element == 0x0070U) manufacturer = item.get_string()[0];
+            return;
           case 0x0018U: 
             switch (item.element) {
               case 0x0050U: slice_thickness = item.get_float()[0]; return;
               case 0x0088U: slice_spacing = item.get_float()[0]; return;
-              case 0x1310U: acq_dim[0] = item.get_uint()[0];
-                            acq_dim[1] = item.get_uint()[3];
+              case 0x1310U: acq_dim[0] = std::max (item.get_uint()[0], item.get_uint()[1]);
+                            acq_dim[1] = std::max (item.get_uint()[2], item.get_uint()[3]);
+
                             return;
               case 0x0024U: sequence_name = item.get_string()[0];
                             if (!sequence_name.size()) return;
-                            int c = sequence_name.size()-1;
-                            while (c >= 0 && isdigit (sequence_name[c])) c--;
-                            c++;
-                            sequence = to<size_t> (sequence_name.substr (c));
+                            {
+                              int c = sequence_name.size()-1;
+                              while (c >= 0 && isdigit (sequence_name[c])) c--;
+                              c++;
+                              sequence = to<size_t> (sequence_name.substr (c));
+                            }
                             return;
+              case 0x9087U: bvalue = item.get_float()[0]; return;
+              case 0x9089U: G[0] = item.get_float()[0];
+                            G[1] = item.get_float()[1];
+                            G[2] = item.get_float()[2];
+                            return;
+
             }
+            return;
+          case 0x0019U: 
+            switch (item.element) { // GE DW encoding info:
+              case 0x10BBU: if (item.get_float().size()) G[0] = item.get_float()[0]; return;
+              case 0x10BCU: if (item.get_float().size()) G[1] = item.get_float()[0]; return;
+              case 0x10BDU: if (item.get_float().size()) G[2] = item.get_float()[0]; return;
+            }   
             return;
           case 0x0020U: 
             switch (item.element) {
@@ -96,6 +115,20 @@ namespace MR {
               return;
             }
             else return;
+          case 0x0043U: // GEMS_PARMS_01 block
+            if (item.element == 0x1039U) if (item.get_int().size()) bvalue = item.get_int()[0];
+            return;
+          case 0x2001U: // Philips DW encoding info: 
+            if (item.element == 0x1003) bvalue = item.get_float()[0];
+            return;
+          case 0x2005U: // Philips DW encoding info: 
+            switch (item.element) {
+              case 0x10B0U: G[0] = item.get_float()[0]; return;
+              case 0x10B1U: G[1] = item.get_float()[0]; return;
+              case 0x10B2U: G[2] = item.get_float()[0]; return;
+            }
+            return;
+
           case 0x7FE0U: 
             if (item.element == 0x0010U) {
               data = item.offset (item.data);
