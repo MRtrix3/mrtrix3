@@ -36,20 +36,31 @@ namespace MR {
       public:
         typedef typename Set::value_type value_type;
 
-        Extract (Set& original, const std::vector<std::vector<int> >& positions) : D (original), x (new size_t [ndim()]), P (positions) { }
+        Extract (Set& original, const std::vector<std::vector<int> >& positions) : 
+          D (original), x (new size_t [ndim()]), P (positions), _transform (D.transform()) { 
+            reset();
+
+            Math::Vector<float> a (4), b(4);
+            a[0] = P[0][0] * vox(0);
+            a[1] = P[1][0] * vox(1);
+            a[2] = P[2][0] * vox(2);
+            a[3] = 1.0;
+            Math::mult (b, D.transform(), a);
+            _transform.column(3) = b;
+          }
         ~Extract () { delete [] x; }
         const std::string& name () const { return (D.name()); }
         size_t  ndim () const { return (D.ndim()); }
         int     dim (size_t axis) const { return (P[axis].size()); }
         float   vox (size_t axis) const { return (D.vox (axis)); }
-        const Math::Matrix<float>& transform () const { return (D.transform()); }
-        const std::vector<ssize_t>& stride () const { return (D.stride()); }
+        const Math::Matrix<float>& transform () const { return (_transform); }
+        ssize_t stride (size_t axis) const { return (D.stride (axis)); }
 
         void reset () 
         { 
           memset (x, 0, sizeof(size_t)*ndim()); 
           for (size_t a = 0; a < ndim(); ++a)
-            D.pos (a, P[a][0]); 
+            D[a] = P[a][0]; 
         }
 
         Position<Extract<Set> > operator[] (size_t axis) { return (Position<Extract<Set> > (*this, axis)); }
@@ -59,6 +70,7 @@ namespace MR {
         Set& D;
         size_t* x;
         const std::vector<std::vector<int> > P;
+        Math::Matrix<float> _transform;
 
         value_type get_value () const { return (D.value()); }
         void set_value (value_type val) { D.value (val); }
