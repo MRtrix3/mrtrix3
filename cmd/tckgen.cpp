@@ -27,6 +27,7 @@
 #include "dwi/tractography/exec.h"
 #include "dwi/tractography/iFOD1.h"
 #include "dwi/tractography/iFOD2.h"
+#include "dwi/tractography/vecstream.h"
 
 
 using namespace MR; 
@@ -41,17 +42,25 @@ DESCRIPTION = {
 };
 
 ARGUMENTS = {
-  Argument ("FOD", "the image containing the FOD data, expressed in spherical harmonics.").type_image_in(),
-  Argument ("tracks", "the output file containing the tracks generated.").type_file(),
+  Argument ("source", 
+      "the image containing the source data. "
+      "For iFOD1/2, this should be the FOD file, expressed in spherical harmonics. "
+      "For VecStream, this should be the directions file."
+      ).type_image_in(),
+
+  Argument ("tracks", 
+      "the output file containing the tracks generated."
+      ).type_file(),
+
   Argument ()
 };
 
-const char* algorithms[] = { "ifod1", "ifod2", NULL };
+const char* algorithms[] = { "ifod1", "ifod2", "vecstream", NULL };
 
 OPTIONS = {
   Option ("algorithm", 
       "specify the tractography algorithm to use. Valid choices are: iFOD1, "
-      "iFOD2 (default: iFOD2).")
+      "iFOD2, VecStream (default: iFOD2).")
     + Argument ("name").type_choice (algorithms),
 
   Option ("seed", 
@@ -227,6 +236,8 @@ EXECUTE {
     Exec<iFOD1>::run (source, argument[1], properties);
   else if (algorithm == std::string("ifod2")) 
     Exec<iFOD2>::run (source, argument[1], properties);
+  else if (algorithm == std::string("vecstream")) 
+    Exec<VecStream>::run (source, argument[1], properties);
   else
-    assert (0);
+    throw Exception (std::string ("unknown algorihtm: \"") + algorithm + "\"");
 }

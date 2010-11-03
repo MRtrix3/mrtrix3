@@ -42,7 +42,7 @@ namespace MR {
                 SharedBase (source, property_set),
                 lmax (Math::SH::LforN (source.dim(3))), 
                 max_trials (MAX_TRIALS),
-                sin_max_angle (sin (max_angle)),
+                sin_max_angle (Math::sin (max_angle)),
                 mean_samples (0.0),
                 mean_num_truncations (0.0),
                 max_max_truncation (0.0),
