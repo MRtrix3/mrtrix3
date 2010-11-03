@@ -192,8 +192,7 @@ EXECUTE {
     }
 
     DataSet::Loop loop ("thresholding \"" + shorten (in.name()) + "\" at intensity " + str(val) + "...");
-    for (loop.start (out, in); loop.ok(); loop.next (out, in)) {
+    for (loop.start (out, in); loop.ok(); loop.next (out, in)) 
       out.value() = in.value() < val ? zero : one;
-    }
   }
 }
