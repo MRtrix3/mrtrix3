@@ -125,7 +125,7 @@ namespace MR {
     {
       public:
         Dir (const std::string& name) : 
-          p (opendir (name.c_str())) { 
+          p (opendir (name.size() ? name.c_str() : ".")) { 
             if (!p) 
               throw Exception ("error opening folder " + name + ": " + strerror (errno));
           }
