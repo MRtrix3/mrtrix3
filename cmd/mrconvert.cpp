@@ -26,6 +26,7 @@
 #include "image/axis.h"
 #include "dataset/copy.h"
 #include "dataset/extract.h"
+#include "dataset/permute_axes.h"
 
 using namespace MR; 
 
@@ -35,7 +36,7 @@ SET_COPYRIGHT (NULL);
 
 DESCRIPTION = {
   "perform conversion between different file types and optionally extract a subset of the input image.",
-  "If used correctly, this program can be a very useful workhorse. In addition to converting images between different formats, it can be used to extract specific studies from a data set, extract a specific region of interest, flip the images, or to scale the intensity of the images.",
+  "If used correctly, this program can be a very useful workhorse. In addition to converting images between different formats, it can be used to extract specific studies from a data set, extract a specific region of interest, or flip the images.",
   NULL
 };
 
@@ -47,26 +48,35 @@ ARGUMENTS = {
 
 
 OPTIONS = {
-  Option ("coord", "extract data only at the coordinates specified.")
+  Option ("coord", 
+      "extract data from the input image only at the coordinates specified.")
     .allow_multiple()
     + Argument ("axis").type_integer (0, 0, std::numeric_limits<int>::max())
     + Argument ("coord").type_sequence_int(),
 
   Option ("vox",
-      "change the voxel dimensions. The new sizes should be provided as a "
-      "comma-separated list of values. Only those values specified will be "
-      "changed. For example: 1,,3.5 will change the voxel size along the x & "
-      "z axes, and leave the y-axis voxel size unchanged.") 
+      "change the voxel dimensions of the output image. The new sizes should "
+      "be provided as a comma-separated list of values. Only those values "
+      "specified will be changed. For example: 1,,3.5 will change the voxel "
+      "size along the x & z axes, and leave the y-axis voxel size unchanged.") 
     + Argument ("sizes").type_sequence_float(),
 
   Option ("datatype", "specify output image data type.")
     + Argument ("spec").type_choice (DataType::identifiers),
 
   Option ("stride",
-      "specify the strides of the data in memory, as a commo-separated list. "
+      "specify the strides of the output data in memory, as a comma-separated list. "
       "The actual strides produced will depend on whether the output image "
       "format can support it.")
     + Argument ("spec"),
+
+  Option ("axes",
+      "specify the axes from the input image that will be used to form the output "
+      "image. This allows the permutation, ommission, or addition of axes into the "
+      "output image. The axes should be supplied as a comma-separated list of axes. "
+      "Any ommitted axes must have dimension 1. Axes can be inserted by supplying "
+      "-1 at the corresponding position in the list.")
+    + Argument ("axes"),
 
   Option ("prs",
       "assume that the DW gradients are specified in the PRS frame (Siemens DICOM only)."),
@@ -75,6 +85,34 @@ OPTIONS = {
 };
 
 
+
+template <class Set> 
+inline void set_header_out (
+    Image::Header& header_out,
+    const Set& S,
+    const std::vector<int>& axes,
+    const std::vector<float>& vox,
+    const std::vector<int>& strides)
+{
+  header_out.set_transform (S.transform());
+
+  if (axes.size()) {
+    header_out.set_ndim (axes.size());
+    for (size_t n = 0; n < header_out.ndim(); ++n) 
+      header_out.set_dim (n, axes[n]<0 ? 1 : S.dim(axes[n]));
+  }
+  else 
+    for (size_t n = 0; n < header_out.ndim(); ++n) 
+      header_out.set_dim (n, S.dim(n));
+
+  for (size_t n = 0; n < header_out.ndim(); ++n) {
+    if (n < vox.size())
+      if (std::isfinite (vox[n]))
+        header_out.set_vox (n, vox[n]);
+    if (strides.size())
+      header_out.set_stride (n, ( n < strides.size() ? strides[n] : 0 ));
+  }
+}
 
 
 
@@ -90,24 +128,25 @@ EXECUTE {
     header_out.set_datatype (opt[0][0]);
 
   opt = get_options ("vox");
-  if (opt.size()) {
-    std::vector<float> vox = parse_floats (opt[0][0]);
-    for (size_t n = 0; n < vox.size(); n++) 
-      if (std::isfinite (vox[n]))
-        header_out.set_vox (n, vox[n]);
-  }
+  std::vector<float> vox;
+  if (opt.size()) 
+    vox = parse_floats (opt[0][0]);
+  
 
   opt = get_options ("stride");
+  std::vector<int> strides;
+  if (opt.size()) 
+    strides = parse_ints (opt[0][0]);
+
+  opt = get_options ("axes");
+  std::vector<int> axes;
   if (opt.size()) {
-    std::vector<int> ax = parse_ints (opt[0][0]);
-    size_t i;
-
-    for (i = 0; i < std::min (ax.size(), header_out.ndim()); i++)
-      header_out.set_stride (i, ax[i]);
-
-    for (; i < header_out.ndim(); i++)
-      header_out.set_stride (i, 0);
+    axes = parse_ints (opt[0][0]);
+    for (size_t i = 0; i < axes.size(); ++i)
+      if (axes[i] >= static_cast<int>(header_in.ndim()))
+        throw Exception ("axis supplied to option -axes is out of bounds");
   }
+
 
 
   opt = get_options ("prs");
@@ -127,7 +166,7 @@ EXECUTE {
 
   opt = get_options ("coord");
   for (size_t n = 0; n < opt.size(); n++) {
-    pos.resize (header_out.ndim());
+    pos.resize (header_in.ndim());
     int axis = to<int> (opt[n][0]);
     if (pos[axis].size()) 
       throw Exception ("\"coord\" option specified twice for axis " + str (axis));
@@ -138,6 +177,7 @@ EXECUTE {
   Image::Voxel<float> in (header_in);
 
   if (pos.size()) { 
+
     // extract specific coordinates:
     for (size_t n = 0; n < header_in.ndim(); n++) {
       if (pos[n].empty()) { 
@@ -146,21 +186,29 @@ EXECUTE {
           pos[n][i] = i;
       }
     }
-
     DataSet::Extract<Image::Voxel<float> > extract (in, pos);
 
-    for (size_t n = 0; n < extract.ndim(); ++n)
-      header_out.set_dim (n, extract.dim(n));
-
+    set_header_out (header_out, extract, axes, vox, strides);
     header_out.create (argument[1]);
     Image::Voxel<float> out (header_out);
-    DataSet::copy_with_progress (out, extract);
+    if (axes.size()) {
+      DataSet::PermuteAxes<DataSet::Extract<Image::Voxel<float> > > perm (extract, axes);
+      DataSet::copy_with_progress (out, perm);
+    }
+    else
+      DataSet::copy_with_progress (out, extract);
   }
   else { 
     // straight copy:
+    set_header_out (header_out, in, axes, vox, strides);
     header_out.create (argument[1]);
     Image::Voxel<float> out (header_out);
-    DataSet::copy_with_progress (out, in);
+    if (axes.size()) {
+      DataSet::PermuteAxes<Image::Voxel<float> > perm (in, axes);
+      DataSet::copy_with_progress (out, perm);
+    }
+    else
+      DataSet::copy_with_progress (out, in);
   }
 }
 
