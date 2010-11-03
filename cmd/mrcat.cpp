@@ -115,15 +115,15 @@ EXECUTE {
     }
   }
 
-  header_out.set_dim (axis, 0);
 
-  for (int n = 0; n < num_images; n++) {
-    if (in[n]->is_complex())
-      header_out.set_datatype (DataType::CFloat32);
-
-    if (static_cast<int>(in[n]->ndim()) > axis)
-      header_out.set_dim (axis, header_out.dim(axis) + in[n]->dim(axis) > 1 ? in[n]->dim(axis) : 1);
-    else header_out.set_dim (axis, header_out.dim(axis)+1);
+  {
+    size_t axis_dim = 0;
+    for (int n = 0; n < num_images; n++) {
+      if (in[n]->is_complex())
+        header_out.set_datatype (DataType::CFloat32);
+      axis_dim += in[n]->ndim() > size_t(axis) ? ( in[n]->dim(axis) > 1 ? in[n]->dim(axis) : 1) : 1;
+    }
+    header_out.set_dim (axis, axis_dim);
   }
 
   header_out.create (argument[num_images]);
