@@ -218,8 +218,8 @@ namespace MR {
         float                offset_, scale_;
         bool                 readwrite_;
         std::vector<std::string>   comments_;
-        Ptr<Handler::Base>   handler_;
         std::vector<File::Entry>   files_;
+        Ptr<Handler::Base>   handler_;
 
         void sanitise ();
         void merge (const Header& H);
