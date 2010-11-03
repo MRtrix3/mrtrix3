@@ -160,7 +160,7 @@ EXECUTE {
 
   opt = get_options ("adc");
   if (opt.size()) 
-    adc = new ImagePair (dt_header, opt[0][0], 3);
+    adc = new ImagePair (dt_header, opt[0][0], 0);
 
   opt = get_options ("fa");
   if (opt.size()) fa = new ImagePair (dt_header, opt[0][0], 0);
