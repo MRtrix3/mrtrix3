@@ -32,7 +32,7 @@
 
 #include "dialog/file.h"
 #include "dialog/report_exception.h"
-#include "image/format/list.h"
+#include "image/handler/default.h"
 #include "file/path.h"
 #include "file/dicom/quick_scan.h"
 #include "file/dicom/image.h"
@@ -43,6 +43,7 @@
 #include "app.h"
 
 #define FILE_DIALOG_BUSY_INTERVAL 0.1
+#define SPACING 12
 
 // TODO: volumes under Windows
 
@@ -99,67 +100,6 @@ namespace MR {
      *                 FileModel                     *
      *************************************************/
 
-
-    void FileModel::add_entries (const std::vector<std::string>& more)
-    {
-      size_t prev_num_dicom_series = num_dicom_series;
-      num_dicom_series = 0;
-      for (size_t pat = 0; pat < dicom_tree.size(); ++pat) 
-        for (size_t study = 0; study < dicom_tree[pat]->size(); ++study) 
-          num_dicom_series += (*dicom_tree[pat])[study]->size(); 
-
-      if (more.empty() && prev_num_dicom_series == num_dicom_series) return;
-      beginInsertRows (QModelIndex(), list.size() + prev_num_dicom_series, list.size() + more.size() + num_dicom_series - 1);
-      list.insert (list.end(), more.begin(), more.end());
-      std::sort (list.begin(), list.end());
-      endInsertRows();
-      emit layoutChanged();
-    }
-
-    void FileModel::clear ()
-    {
-      if (list.size() + num_dicom_series) {
-        beginRemoveRows (QModelIndex(), 0, list.size()-1);
-        dicom_tree.clear();
-        list.clear();
-        num_dicom_series = 0;
-        endRemoveRows();
-      }
-      emit layoutChanged();
-    }
-
-    int FileModel::rowCount (const QModelIndex &parent) const { return (list.size() + num_dicom_series); }
-
-    QVariant FileModel::data (const QModelIndex &index, int role) const 
-    { 
-      if (index.isValid()) {
-        if (role == Qt::DisplayRole) {
-          if (index.row() < int (num_dicom_series)) {
-            const MR::File::Dicom::Series& series (*get_dicom_series (index.row()));
-            return (QVariant (std::string (
-                    "[" + str (series.number) + "] " + series.name + ": " + str (series.size()) + " images (" + series.study->patient->name 
-            + " - " + MR::File::Dicom::format_date (series.date) + ")").c_str()));
-          }
-          else if (index.row() < int (num_dicom_series + list.size())) 
-            return (QVariant (list[index.row()-num_dicom_series].c_str()));
-        }
-        else if (role == Qt::ToolTipRole) {
-          if (index.row() < int (num_dicom_series)) {
-            const MR::File::Dicom::Series& series (*get_dicom_series (index.row()));
-            return (QVariant (std::string (
-                    "patient: " + series.study->patient->name 
-                    + "\n\tDOB: " + MR::File::Dicom::format_date (series.study->patient->DOB) + "\n\tID: " + series.study->patient->ID
-                    + "\nstudy: " + series.study->name + "\n\tdate: " + MR::File::Dicom::format_date (series.study->date) + " at "
-                    + MR::File::Dicom::format_time (series.study->time) +"\n\tID: " + series.study->ID
-                    + "\nseries " + str (series.number) + ": " + series.name + "\n\t" + str (series.size()) + " images\n\tdate: " 
-                    + MR::File::Dicom::format_date (series.date) + " at " + MR::File::Dicom::format_time (series.time)).c_str()));
-          }
-        }
-        
-      }
-      return (QVariant());
-    }
-
     QVariant FileModel::headerData (int section, Qt::Orientation orientation, int role) const 
     {
       if (role != Qt::DisplayRole) return QVariant();
@@ -167,43 +107,6 @@ namespace MR {
     }
 
 
-    inline bool FileModel::check_image (const std::string& path)
-    {
-      for (const char** ext = Image::Format::known_extensions; *ext; ext++) 
-        if (Path::has_suffix (path, *ext)) return (true);
-      check_dicom (path);
-      return (false);
-    }
-
-
-    void FileModel::check_dicom (const std::string& path)
-    {
-      MR::File::Dicom::QuickScan reader;
-      if (reader.read (path)) return;
-
-      RefPtr<MR::File::Dicom::Patient> patient = dicom_tree.find (reader.patient, reader.patient_ID, reader.patient_DOB);
-      RefPtr<MR::File::Dicom::Study> study = patient->find (reader.study, reader.study_ID, reader.study_date, reader.study_time);
-      RefPtr<MR::File::Dicom::Series> series = study->find (reader.series, reader.series_number, reader.modality, reader.series_date, reader.series_time);
-
-      RefPtr<MR::File::Dicom::Image> image (new MR::File::Dicom::Image);
-      image->filename = path;
-      image->series = series.get();
-      image->sequence_name = reader.sequence;
-      series->push_back (image);
-      emit layoutChanged(); 
-    }
-
-
-    RefPtr<MR::File::Dicom::Series> FileModel::get_dicom_series (size_t index) const
-    {
-      assert (index < num_dicom_series);
-      size_t i = 0;
-      for (size_t pat = 0; pat < dicom_tree.size(); ++pat) 
-        for (size_t study = 0; study < dicom_tree[pat]->size(); ++study) 
-          for (size_t series = 0; series < (*dicom_tree[pat])[study]->size(); ++series) 
-            if (i++ == index) return ((*(*dicom_tree[pat])[study])[series]);
-      return ((*(*dicom_tree[0])[0])[0]);
-    }
 
 
 
@@ -216,7 +119,8 @@ namespace MR {
     File::File (QWidget* parent, const std::string& message, bool multiselection, bool images_only) :
       QDialog (parent), 
       filter_images (images_only),
-      updating_selection (false)
+      updating_selection (false),
+      DICOM_import (false)
     {
       setWindowTitle (QString (message.c_str()));
       setModal (true);
@@ -245,7 +149,7 @@ namespace MR {
       buttons_layout->addWidget (button);
 
       main_layout->addLayout (buttons_layout);
-      main_layout->addSpacing (12);
+      main_layout->addSpacing (SPACING);
 
       QHBoxLayout* h_layout = new QHBoxLayout;
       h_layout->addWidget (new QLabel ("Path:"));
@@ -253,7 +157,16 @@ namespace MR {
       h_layout->addWidget (path_entry);
       main_layout->addLayout (h_layout);
 
-      main_layout->addSpacing (12);
+      main_layout->addSpacing (SPACING);
+
+      if (filter_images) {
+        button = new QPushButton (style()->standardIcon (QStyle::SP_DirIcon), tr("DICOM import..."));
+        button->setToolTip ("recursively scan for DICOM images\nin this folder and all its subfolders");
+        connect (button, SIGNAL(clicked()), this, SLOT(DICOM_import_slot()));
+        main_layout->addWidget (button);
+
+        main_layout->addSpacing (SPACING);
+      }
 
       folders = new FolderModel;
       sorted_folders = new QSortFilterProxyModel;
@@ -275,8 +188,7 @@ namespace MR {
       files_view = new QTreeView;
       files_view->setModel (sorted_files);
       files_view->setRootIsDecorated (false);
-      files_view->setSortingEnabled (true);
-      files_view->sortByColumn (0, Qt::AscendingOrder);
+      files_view->setSortingEnabled (false);
       files_view->setWordWrap (false);
       files_view->setItemsExpandable (false);
       files_view->setSelectionMode (multiselection ? QAbstractItemView::ExtendedSelection : QAbstractItemView::SingleSelection);
@@ -289,7 +201,7 @@ namespace MR {
       splitter->setStretchFactor (1, 3);
       main_layout->addWidget (splitter);
 
-      main_layout->addSpacing (12);
+      main_layout->addSpacing (SPACING);
 
       h_layout = new QHBoxLayout;
       h_layout->addWidget (new QLabel ("Selection:"));
@@ -297,7 +209,7 @@ namespace MR {
       h_layout->addWidget (selection_entry);
       main_layout->addLayout (h_layout);
 
-      main_layout->addSpacing (12);
+      main_layout->addSpacing (SPACING);
 
       buttons_layout = new QHBoxLayout;
       buttons_layout->addStretch(1);
@@ -308,13 +220,14 @@ namespace MR {
 
       ok_button = new QPushButton (tr("OK"));
       ok_button->setDefault (true);
+      ok_button->setEnabled (false);
       connect (ok_button, SIGNAL(clicked()), this, SLOT(accept()));
       buttons_layout->addWidget (ok_button);
 
       connect (folder_view, SIGNAL (activated(const QModelIndex&)), this, SLOT (folder_selected_slot(const QModelIndex&)));
       connect (files_view, SIGNAL (activated(const QModelIndex&)), this, SLOT (file_selected_slot(const QModelIndex&)));
       connect (files_view->selectionModel(), SIGNAL (selectionChanged (const QItemSelection&, const QItemSelection&)),
-            selection_entry, SLOT (clear()));
+            this, SLOT (file_selection_changed_slot()));
 
       main_layout->addLayout (buttons_layout);
       setLayout (main_layout);
@@ -337,7 +250,6 @@ namespace MR {
 
     void File::update () 
     {
-      ok_button->setEnabled (false);
       setCursor (Qt::WaitCursor);
       folders->clear();
       files->clear();
@@ -374,7 +286,7 @@ namespace MR {
 
     void File::folder_selected_slot (const QModelIndex& index)
     {
-      cwd = Path::join (cwd, folders->name (sorted_folders->mapToSource (index).row()));
+      cwd = Path::join (cwd, folders->name (sorted_folders->mapToSource (index)));
       update();
     }
 
@@ -382,11 +294,31 @@ namespace MR {
 
 
 
+    void File::file_selection_changed_slot ()
+    {
+      QModelIndexList indexes = files_view->selectionModel()->selectedIndexes();
+      ok_button->setEnabled (indexes.size());
+      if (indexes.size() == 1)
+        selection_entry->setText (files->data (sorted_files->mapToSource (indexes[0]), Qt::DisplayRole).toString());
+      else selection_entry->clear();
+    }
+
+
+
+    void File::DICOM_import_slot ()
+    {
+      files_view->selectionModel()->clear();
+      selection_entry->clear();
+      DICOM_import = true;
+      accept();
+    }
+
+
 
     void File::idle_slot ()
     {
       assert (dir);
-      std::vector<std::string> file_list;
+      QStringList file_list;
       std::string entry;
       while (elapsed_timer.elapsed() < FILE_DIALOG_BUSY_INTERVAL) {
         entry = get_next_file();
@@ -394,16 +326,15 @@ namespace MR {
           idle_timer->stop();
           files->add_entries (file_list);
           unsetCursor ();
-          ok_button->setEnabled (true);
           dir = NULL;
           return;
         }
 
-        if (filter_images) {
-          if (files->check_image (Path::join (cwd, entry)))
-            file_list.push_back (entry);
-        }
-        else file_list.push_back (entry);
+        if (filter_images) 
+          if (!check_image (Path::join (cwd, entry)))
+            continue;
+
+        file_list += entry.c_str();
       }
 
       elapsed_timer.start();
@@ -427,7 +358,7 @@ namespace MR {
         if (indexes.size()) {
           QModelIndex index;
           foreach (index, indexes) 
-            filenames.push_back (Path::join (cwd, files->name (index.row())));
+            filenames.push_back (Path::join (cwd, files->name (sorted_files->mapToSource (index))));
         }
       }
     }
@@ -439,21 +370,22 @@ namespace MR {
     void File::get_images (VecPtr<Image::Header>& images)
     {
       assert (filter_images);
+
+      if (DICOM_import) {
+        try {
+          Image::Header* H = new Image::Header (cwd);
+          images.push_back (H);
+        }
+        catch (Exception& E) { report_exception (E, this); }
+        return;
+      }
+
       QModelIndexList indexes = files_view->selectionModel()->selectedIndexes();
       QModelIndex index;
       foreach (index, indexes) {
         try {
-          if (files->is_file (index.row())) {
-            Image::Header* H = new Image::Header (Path::join (cwd, files->name (index.row())));
-            images.push_back (H);
-          }
-          else {
-            std::vector< RefPtr<MR::File::Dicom::Series> > series;
-            series.push_back (RefPtr<MR::File::Dicom::Series> (files->get_dicom_series (index.row())));
-            Image::Header* H = new Image::Header;
-            dicom_to_mapper (*H, series);
-            images.push_back (H);
-          }
+          Image::Header* H = new Image::Header (Path::join (cwd, files->name (sorted_files->mapToSource (index))));
+          images.push_back (H);
         }
         catch (Exception& E) { report_exception (E, this); }
       }

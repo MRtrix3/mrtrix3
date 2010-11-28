@@ -29,6 +29,7 @@
 #include "ptr.h"
 #include "timer.h"
 #include "image/header.h"
+#include "image/format/list.h"
 #include "file/path.h"
 #include "file/dicom/tree.h"
 
@@ -56,9 +57,9 @@ namespace MR {
       Q_OBJECT
 
       public:
-        void add_entries (const QStringList& more);
         void clear ();
-        std::string name (int num) const { return (list[num].toAscii().data()); }
+        void add_entries (const QStringList& more);
+        std::string name (const QModelIndex &index) const { return list[index.row()].toAscii().data(); }
 
         int rowCount (const QModelIndex &parent = QModelIndex()) const;
         QVariant data (const QModelIndex &index, int role) const;
@@ -68,27 +69,10 @@ namespace MR {
     };
 
 
-    class FileModel : public QAbstractListModel 
+    class FileModel : public FolderModel 
     {
-      Q_OBJECT
-
       public:
-        FileModel () : num_dicom_series (0) { }
-        void add_entries (const std::vector<std::string>& more);
-        void clear ();
-        bool is_file (int num) const { return (num >= int (num_dicom_series)); }
-        std::string name (int num) const { assert (is_file (num)); return (list[num-num_dicom_series]); }
-        RefPtr<MR::File::Dicom::Series> get_dicom_series (size_t index) const;
-        bool check_image (const std::string& path);
-        void check_dicom (const std::string& path);
-
-        int rowCount (const QModelIndex &parent = QModelIndex()) const;
-        QVariant data (const QModelIndex &index, int role) const;
         QVariant headerData (int section, Qt::Orientation orientation, int role = Qt::DisplayRole) const;
-      private:
-        std::vector<std::string> list;
-        MR::File::Dicom::Tree dicom_tree;
-        size_t num_dicom_series;
     };
 
 
@@ -111,6 +95,8 @@ namespace MR {
         void home_slot ();
         void folder_selected_slot (const QModelIndex& index);
         void file_selected_slot (const QModelIndex& index);
+        void file_selection_changed_slot ();
+        void DICOM_import_slot ();
         void update ();
 
       protected:
@@ -127,18 +113,26 @@ namespace MR {
         QTimer*      idle_timer;
         Timer        elapsed_timer;
 
-        bool filter_images, updating_selection;
+        bool filter_images, updating_selection, DICOM_import;
         size_t current_index;
         Ptr<Path::Dir> dir;
 
-        std::string get_next_file () {
+        std::string get_next_file () 
+        {
           while (true) {
             std::string entry = dir->read_name();
-            if (entry.empty()) return (entry);
+            if (entry.empty()) return entry;
             if (entry[0] == '.') continue;
             if (Path::is_dir (Path::join (cwd, entry))) continue;
-            return (entry);
+            return entry;
           } 
+        }
+
+        bool check_image (const std::string& path)
+        {
+          for (const char** ext = Image::Format::known_extensions; *ext; ext++) 
+            if (Path::has_suffix (path, *ext)) return (true);
+          return (false);
         }
 
         static std::string cwd;
