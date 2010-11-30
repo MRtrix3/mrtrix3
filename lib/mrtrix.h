@@ -117,8 +117,9 @@ namespace MR {
   template <class T> inline std::string str (const T& value)
   { 
     std::ostringstream stream; 
-    try { stream << value; }
-    catch (...) { throw Exception ("error converting value to string"); }
+    stream << value; 
+    if (stream.fail())
+      throw Exception ("error converting value to string"); 
     return (stream.str());
   }
 
@@ -135,8 +136,9 @@ namespace MR {
   {
     std::istringstream stream (string);
     T value;
-    try { stream >> value; }
-    catch (...) { throw Exception ("error converting string \"" + string + "\""); }
+    stream >> value; 
+    if (stream.fail()) 
+      throw Exception ("error converting string \"" + string + "\""); 
     return (value);
   }
 

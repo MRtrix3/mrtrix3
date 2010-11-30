@@ -74,9 +74,9 @@ namespace MR {
     try {
       do {
         end = spec.find_first_of (",:", start);
-        std::string str (strip (spec.substr (start, end-start)));
-        lowercase (str);
-        if (str == "end") {
+        std::string token (strip (spec.substr (start, end-start)));
+        lowercase (token);
+        if (token == "end") {
           if (last == std::numeric_limits<int>::max()) 
             throw Exception ("value of \"end\" is not known in number sequence \"" + spec + "\"");
           num[i] = last;
