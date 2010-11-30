@@ -171,6 +171,7 @@ namespace MR {
       folders = new FolderModel;
       sorted_folders = new QSortFilterProxyModel;
       sorted_folders->setSourceModel (folders);
+      sorted_folders->setSortCaseSensitivity (Qt::CaseInsensitive);
 
       folder_view = new QTreeView;
       folder_view->setModel (sorted_folders);
@@ -184,6 +185,7 @@ namespace MR {
       files = new FileModel;
       sorted_files = new QSortFilterProxyModel;
       sorted_files->setSourceModel (files);
+      sorted_files->setSortCaseSensitivity (Qt::CaseInsensitive);
 
       files_view = new QTreeView;
       files_view->setModel (sorted_files);
