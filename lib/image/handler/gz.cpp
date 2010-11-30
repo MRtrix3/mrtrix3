@@ -24,6 +24,7 @@
 
 #include "app.h"
 #include "progressbar.h"
+#include "image/header.h"
 #include "image/handler/gz.h"
 #include "dataset/misc.h"
 #include "file/gz.h"
@@ -38,13 +39,14 @@ namespace MR {
       {
         if (addresses.size()) {
           assert (addresses[0]);
+          const std::vector<File::Entry>& files (H.get_files());
 
-          if (H.readwrite) {
+          if (H.readwrite()) {
             ProgressBar progress ("compressing image \"" + H.name() + "\"...",
-                H.files.size() * bytes_per_segment / BYTES_PER_ZCALL);
-            for (size_t n = 0; n < H.files.size(); n++) {
-              assert (H.files[n].start == int64_t(lead_in_size));
-              File::GZ zf (H.files[n].name, "wb");
+                files.size() * bytes_per_segment / BYTES_PER_ZCALL);
+            for (size_t n = 0; n < files.size(); n++) {
+              assert (files[n].start == int64_t(lead_in_size));
+              File::GZ zf (files[n].name, "wb");
               if (lead_in) zf.write (reinterpret_cast<const char*> (lead_in), lead_in_size);
               uint8_t* address = addresses[0] + n*bytes_per_segment;
               uint8_t* last = address + bytes_per_segment - BYTES_PER_ZCALL;
@@ -68,25 +70,26 @@ namespace MR {
 
       void GZ::execute ()
       {
-        if (H.files.empty()) throw Exception ("no files specified in header for image \"" + H.name() + "\"");
+        const std::vector<File::Entry>& files (H.get_files());
+        if (files.empty()) throw Exception ("no files specified in header for image \"" + H.name() + "\"");
 
-        segsize = DataSet::voxel_count (H) / H.files.size();
+        segsize = DataSet::voxel_count (H) / files.size();
         bytes_per_segment = (H.datatype().bits() * segsize + 7) / 8;
-        if (H.files.size() * bytes_per_segment > std::numeric_limits<size_t>::max())
+        if (files.size() * bytes_per_segment > std::numeric_limits<size_t>::max())
           throw Exception ("image \"" + H.name() + "\" is larger than maximum accessible memory");
 
         debug ("loading image \"" + H.name() + "\"...");
-        addresses.resize ( H.datatype().bits() == 1 && H.files.size() > 1 ? H.files.size() : 1 );
-        addresses[0] = new uint8_t [H.files.size() * bytes_per_segment];
+        addresses.resize ( H.datatype().bits() == 1 && files.size() > 1 ? files.size() : 1 );
+        addresses[0] = new uint8_t [files.size() * bytes_per_segment];
         if (!addresses[0]) throw Exception ("failed to allocate memory for image \"" + H.name() + "\"");
 
-        if (is_new) memset (addresses[0], 0, H.files.size() * bytes_per_segment);
+        if (is_new) memset (addresses[0], 0, files.size() * bytes_per_segment);
         else {
           ProgressBar progress ("uncompressing image \"" + H.name() + "\"...", 
-              H.files.size() * bytes_per_segment / BYTES_PER_ZCALL);
-          for (size_t n = 0; n < H.files.size(); n++) {
-            File::GZ zf (H.files[n].name, "rb");
-            zf.seek (H.files[n].start);
+              files.size() * bytes_per_segment / BYTES_PER_ZCALL);
+          for (size_t n = 0; n < files.size(); n++) {
+            File::GZ zf (files[n].name, "rb");
+            zf.seek (files[n].start);
             uint8_t* address = addresses[0] + n*bytes_per_segment;
             uint8_t* last = address + bytes_per_segment - BYTES_PER_ZCALL;
             while (address < last) {

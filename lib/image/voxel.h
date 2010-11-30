@@ -23,6 +23,7 @@
 #ifndef __image_voxel_h__
 #define __image_voxel_h__
 
+#include "debug.h"
 #include "get_set.h"
 #include "image/header.h"
 #include "math/complex.h"
@@ -77,10 +78,10 @@ namespace MR {
          * Image::Voxel<float> vox2 (vox1);
          * \endcode
          */
-        Voxel (const Header& parent) : 
-          H (parent), handler (*H.handler), x (ndim(), 0) {
-            assert (H.handler);
-            H.handler->prepare();
+        Voxel (Header& parent) : 
+          H (parent), handler (*H.get_handler()), x (ndim(), 0) {
+            assert (H.get_handler());
+            handler.prepare();
             offset = handler.start();
 
             switch (H.datatype()()) {
@@ -153,11 +154,11 @@ namespace MR {
          * image data. Multiple copies of an Image::Voxel can therefore by
          * used safely in multi-threaded applications. */
         Voxel (const Voxel& vox) : 
-          H (vox.H), handler (*H.handler), offset (vox.offset), x (vox.x),
+          H (vox.H), handler (vox.handler), offset (vox.offset), x (vox.x),
           get_func (vox.get_func), put_func (vox.put_func) {
         }
 
-        const Header& header () const { return (H); }
+        Header& header () const { return (H); }
         DataType datatype () const { return (H.datatype()); }
         const Math::Matrix<float>& transform () const { return (H.transform()); }
 
@@ -201,22 +202,26 @@ namespace MR {
         }
 
       private:
-        const Header&   H; //!< reference to the corresponding Image::Header
-        const Handler::Base& handler;
+        Header&   H; //!< reference to the corresponding Image::Header
+        Handler::Base& handler;
         size_t   offset; //!< the offset in memory to the current voxel
         std::vector<ssize_t> x;
 
         value_type (*get_func) (const void* data, size_t i);
         void       (*put_func) (value_type val, void* data, size_t i);
 
-        value_type get_value () const { 
+        value_type get_value () const 
+        { 
           ssize_t nseg (offset / handler.segment_size());
           return (H.scale_from_storage (get_func (handler.segment(nseg), offset - nseg*handler.segment_size()))); 
         }
-        void set_value (value_type val) {
+
+        void set_value (value_type val) 
+        {
           ssize_t nseg (offset / handler.segment_size());
           put_func (H.scale_to_storage (val), handler.segment(nseg), offset - nseg*handler.segment_size()); 
         }
+
         ssize_t get_pos (size_t axis) const { return (x[axis]); }
         void set_pos (size_t axis, ssize_t position) { 
           offset += stride(axis) * (position - x[axis]); 

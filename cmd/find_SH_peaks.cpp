@@ -43,33 +43,48 @@ DESCRIPTION = {
 
 
 ARGUMENTS = {
-  Argument ("SH", "SH coefficients image", "the input image of SH coefficients.").type_image_in (),
-  Argument ("ouput", "output image", "the output image. Each volume corresponds to the x, y & z component of each peak direction vector in turn.").type_image_out (),
-  Argument::End
+  Argument ("SH", "the input image of SH coefficients.")
+    .type_image_in (),
+  
+  Argument ("ouput", 
+      "the output image. Each volume corresponds to the x, y & z component "
+      "of each peak direction vector in turn.")
+    .type_image_out (),
+
+  Argument ()
 };
 
 
 OPTIONS = {
-  Option ("num", "number of peaks", "the number of peaks to extract (default is 3).")
-    .append (Argument ("peaks", "number", "the number of peaks").type_integer (0, std::numeric_limits<int>::max(), 3)),
+  Option ("num", "the number of peaks to extract (default is 3).")
+    + Argument ("peaks").type_integer (0, 3, std::numeric_limits<int>::max()),
 
-  Option ("direction", "specify direction", "the direction of a peak to estimate. The algorithm will attempt to find the same number of peaks as have been specified using this option.", Optional | AllowMultiple)
-    .append (Argument ("phi", "azimuthal angle", "the azimuthal angle of the direction (in degrees).").type_float (-INFINITY, INFINITY, 0.0))
-    .append (Argument ("theta", "elevation angle", "the elevation angle of the direction (in degrees, from the vertical z-axis).").type_float (-INFINITY, INFINITY, 0.0)),
+  Option ("direction", 
+      "the direction of a peak to estimate. The algorithm will attempt to "
+      "find the same number of peaks as have been specified using this option.")
+    .allow_multiple()
+    + Argument ("phi").type_float()
+    + Argument ("theta").type_float(),
 
-  Option ("peaks", "true peaks image", "the program will try to find the peaks that most closely match those in the image provided.")
-    .append (Argument ("image", "peaks image", "an image containing the true peaks to be estimated.").type_image_in ()),
+  Option ("peaks", 
+      "the program will try to find the peaks that most closely match those "
+      "in the image provided.")
+    + Argument ("image").type_image_in(),
 
-  Option ("threshold", "amplitude threshold", "only peak amplitudes greater than the threshold will be considered.")
-    .append (Argument ("value", "value", "the threshold value").type_float (-INFINITY, INFINITY, 0.0)),
+  Option ("threshold", 
+      "only peak amplitudes greater than the threshold will be considered.")
+    + Argument ("value").type_float(),
 
-  Option ("seeds", "seed direction set for multiple restarts", "specify a set of directions from which to start the multiple restarts of the optimisation (by default, the built-in 60 direction set is used)")
-    .append (Argument ("file", "file", "a text file containing the [ el az ] pairs for the directions.").type_file ()),
+  Option ("seeds",
+      "specify a set of directions from which to start the multiple restarts of "
+      "the optimisation (by default, the built-in 60 direction set is used)")
+    + Argument ("file").type_file(),
 
-  Option ("mask", "brain mask", "only perform computation within the specified binary brain mask image.")
-    .append (Argument ("image", "image", "the mask image to use.").type_image_in ()),
+  Option ("mask",
+      "only perform computation within the specified binary brain mask image.")
+    + Argument ("image").type_image_in (),
 
-  Option::End
+  Option ()
 };
 
 
@@ -117,8 +132,8 @@ typedef Thread::Queue<Item,ItemAllocator> Queue;
 class DataLoader {
   public:
     DataLoader (Queue& queue,
-                const Image::Header& sh_header,
-                const Image::Header* mask_header) :
+                Image::Header& sh_header,
+                Image::Header* mask_header) :
                 writer (queue),
                 sh (sh_header),
                 mask (mask_header) { }
@@ -143,7 +158,7 @@ class DataLoader {
   private:
     Queue::Writer writer;
     Image::Voxel<value_type>  sh;
-    const Image::Header* mask;
+    Image::Header* mask;
 
     void load (Queue::Writer::Item& item) 
     {
@@ -164,13 +179,13 @@ class DataLoader {
 class Processor {
   public:
     Processor (Queue& queue,
-               const Image::Header& dirs_header,
+               Image::Header& dirs_header,
                Math::Matrix<value_type>& directions,
                int lmax,
                int npeaks,
                std::vector<Direction> true_peaks,
                value_type threshold,
-               const Image::Header* ipeaks_header):
+               Image::Header* ipeaks_header):
                reader (queue), dirs_image (dirs_header), dirs(directions),
                lmax (lmax), npeaks(npeaks),
                true_peaks(true_peaks), threshold(threshold),
@@ -269,7 +284,7 @@ class Processor {
    int lmax, npeaks;
    std::vector<Direction> true_peaks;
    value_type threshold;
-   const Image::Header* ipeaks;
+   Image::Header* ipeaks;
 
    bool check_input (Queue::Reader::Item &item) 
    {
@@ -302,22 +317,22 @@ extern value_type default_directions [];
 
 
 EXECUTE {
-  const Image::Header sh_header = argument[0].get_image();
+  Image::Header sh_header (argument[0]);
   assert (!sh_header.is_complex());
 
   if (sh_header.ndim() != 4)
     throw Exception ("spherical harmonic image should contain 4 dimensions");
 
-  std::vector<OptBase> opt = get_options ("mask"); // mask
+  Options opt = get_options ("mask");
 
-  Ptr<const Image::Header> mask_header;
+  Ptr<Image::Header> mask_header;
   if (opt.size())
-    mask_header = new Image::Header (opt[0][0].get_image());
+    mask_header = new Image::Header (opt[0][0]);
 
   opt = get_options ("seeds");
   Math::Matrix<value_type> dirs;
   if (opt.size()) 
-    dirs.load (opt[0][0].get_string());
+    dirs.load (opt[0][0]);
   else {
     dirs.allocate (60,2);
     dirs = Math::Matrix<value_type> (default_directions, 60, 2);
@@ -326,12 +341,12 @@ EXECUTE {
     throw Exception ("expecting 2 columns for search directions matrix");
 
   opt = get_options ("num");
-  int npeaks = opt.size() ? opt[0][0].get_int() : 3;
+  int npeaks = opt.size() ? opt[0][0] : 3;
 
   opt = get_options ("direction");
   std::vector<Direction> true_peaks;
-  for (size_t n = 0; n < opt.size(); n++) {
-    Direction p (M_PI*opt[n][0].get_float()/180.0, M_PI*opt[n][1].get_float()/180.0);
+  for (size_t n = 0; n < opt.size(); ++n) {
+    Direction p (M_PI*to<float> (opt[n][0])/180.0, M_PI*float(opt[n][1])/180.0);
     true_peaks.push_back (p);
   }
   if (true_peaks.size()) npeaks = true_peaks.size();
@@ -339,29 +354,29 @@ EXECUTE {
   opt = get_options ("threshold");
   value_type threshold = -INFINITY;
   if (opt.size())
-    threshold = opt[0][0].get_float();
+    threshold = opt[0][0];
 
-  Image::Header header (sh_header);
-  header.datatype() = DataType::Float32;
+  Image::Header directions_header (sh_header);
+  directions_header.set_datatype (DataType::Float32);
 
   opt = get_options ("peaks");
-  Ptr<const Image::Header> ipeaks_header;
+  Ptr<Image::Header> ipeaks_header;
   if (opt.size()) {
     if (true_peaks.size())
       throw Exception ("you can't specify both a peaks file and orientations to be estimated at the same time");
     if (opt.size())
-      ipeaks_header = new Image::Header (opt[0][0].get_image());
+      ipeaks_header = new Image::Header (opt[0][0]);
 
-    if (ipeaks_header->dim(0) != header.axes[0].dim ||
-        ipeaks_header->dim(1) != header.axes[1].dim ||
-        ipeaks_header->dim(2) != header.axes[2].dim)
+    if (ipeaks_header->dim(0) != directions_header.dim(0) ||
+        ipeaks_header->dim(1) != directions_header.dim(1) ||
+        ipeaks_header->dim(2) != directions_header.dim(2))
       throw Exception ("dimensions of peaks image \"" + ipeaks_header->name() + 
-          "\" do not match that of SH coefficients image \"" + header.name() + "\"");
+          "\" do not match that of SH coefficients image \"" + directions_header.name() + "\"");
     npeaks = ipeaks_header->dim(3) / 3;
   }
-  header.axes[3].dim = 3 * npeaks;
+  directions_header.set_dim (3, 3 * npeaks);
 
-  const Image::Header directions_header (argument[1].get_image (header));
+  directions_header.create (argument[1]);
 
   Queue queue ("find_SH_peaks queue", 100, ItemAllocator (sh_header.dim(3)));
   DataLoader loader (queue, sh_header, mask_header.get());

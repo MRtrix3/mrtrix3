@@ -35,43 +35,39 @@ DESCRIPTION = {
 };
 
 ARGUMENTS = {
-  Argument ("image", "input image", "the input image.").type_image_in (),
-  Argument::End
+  Argument ("image", "the input image.").type_image_in (),
+  Argument ()
 };
 
 
 
 OPTIONS = {
 
-  Option ("transform", "output transform`", 
-      "write transform matrix to file")
-    .append (Argument ("file", "transform file", 
-          "the transform matrix file.").type_file ()),
+  Option ("transform", "write transform matrix to file")
+    + Argument ("file").type_file (),
 
-  Option ("gradient", "output DW scheme", 
-      "write DW gradient scheme to file")
-    .append (Argument ("file", "DW encoding file", 
-          "the DW gradient scheme file.").type_file ()),
+  Option ("gradient", "write DW gradient scheme to file")
+    + Argument ("file").type_file (),
 
-  Option::End
+  Option ()
 };
 
 
 
 EXECUTE {
-  const Image::Header header = argument[0].get_image (); 
+  Image::Header header (argument[0]); 
 
-  OptionList opt = get_options ("gradient");
+  Options opt = get_options ("gradient");
   if (opt.size()) {
-    if (!header.DW_scheme.is_set()) 
+    if (!header.DW_scheme().is_set()) 
       error ("no gradient file found for image \"" + header.name() + "\"");
-    header.DW_scheme.save (opt[0][0].get_string());
+    header.DW_scheme().save (opt[0][0]);
     return;
   }
 
   opt = get_options ("transform");
   if (opt.size()) {
-    header.transform().save (opt[0][0].get_string());
+    header.transform().save (opt[0][0]);
     return;
   }
 

@@ -34,64 +34,87 @@
 namespace MR {
   namespace Image {
 
+    namespace {
+      class AxesWrapper 
+      {
+        private:
+          std::vector<Axis>& A;
+        public:
+          AxesWrapper (std::vector<Axis>& axes) : A (axes) { }
+
+          size_t ndim () const { return (A.size()); }
+          const ssize_t& stride (int axis) const { return (A[axis].stride); }
+          ssize_t& stride (int axis) { return (A[axis].stride); }
+      };
+    }
+
+
+
+
     void Header::sanitise ()
     {
       debug ("sanitising header...");
 
-      if (axes.ndim() < 3) {
+      if (ndim() < 3) {
         info ("image contains fewer than 3 dimensions - adding extra dimensions");
-        axes.ndim() = 3;
+        set_ndim(3);
       }
 
-      DataSet::Stride::sanitise (axes);
-      DataSet::Stride::symbolise (axes);
+      {
+        AxesWrapper wrap (axes_);
+        DataSet::Stride::sanitise (wrap);
+        DataSet::Stride::symbolise (wrap);
+      }
 
-      if (!finite (axes.vox(0)) || !finite (axes.vox(1)) || !finite (axes.vox(2))) {
+
+      if (!finite (vox(0)) || !finite (vox(1)) || !finite (vox(2))) {
         error ("invalid voxel sizes - resetting to sane defaults");
-        axes.vox(0) = axes.vox(1) = axes.vox(2) = 1.0;
+        set_vox (0, 1.0);
+        set_vox (1, 1.0);
+        set_vox (2, 1.0);
       }
 
-      if (transform_matrix.is_set()) {
-        if (transform_matrix.rows() != 4 || transform_matrix.columns() != 4) {
-          transform_matrix.clear();
+      if (transform().is_set()) {
+        if (transform().rows() != 4 || transform().columns() != 4) {
+          transform_.clear();
           error ("transform matrix is not 4x4 - resetting to sane defaults");
         }
         else {
           for (size_t i = 0; i < 3; i++) {
             for (size_t j = 0; j < 4; j++) {
-              if (!finite (transform_matrix(i,j))) {
-                transform_matrix.clear();
+              if (!finite (transform_(i,j))) {
+                transform_.clear();
                 error ("transform matrix contains invalid entries - resetting to sane defaults");
                 break;
               }
             }
-            if (!transform_matrix.is_set()) break;
+            if (!transform().is_set()) break;
           }
         }
       }
 
-      if (!transform_matrix.is_set()) 
-        DataSet::Transform::set_default (transform_matrix, *this);
+      if (!transform().is_set()) 
+        DataSet::Transform::set_default (transform_, *this);
 
-      transform_matrix(3,0) = transform_matrix(3,1) = transform_matrix(3,2) = 0.0;
-      transform_matrix(3,3) = 1.0;
+      transform_(3,0) = transform_(3,1) = transform_(3,2) = 0.0;
+      transform_(3,3) = 1.0;
 
       Math::Permutation perm (3);
-      Math::absmax (transform_matrix.row(0).sub(0,3), perm[0]);
-      Math::absmax (transform_matrix.row(1).sub(0,3), perm[1]);
-      Math::absmax (transform_matrix.row(2).sub(0,3), perm[2]);
+      Math::absmax (transform_.row(0).sub(0,3), perm[0]);
+      Math::absmax (transform_.row(1).sub(0,3), perm[1]);
+      Math::absmax (transform_.row(2).sub(0,3), perm[2]);
 
       assert (perm[0] != perm[1] && perm[1] != perm[2] && perm[2] != perm[0]);
 
       bool flip [3];
-      flip[perm[0]] = transform_matrix (0,perm[0]) < 0.0;
-      flip[perm[1]] = transform_matrix (1,perm[1]) < 0.0;
-      flip[perm[2]] = transform_matrix (2,perm[2]) < 0.0;
+      flip[perm[0]] = transform_ (0,perm[0]) < 0.0;
+      flip[perm[1]] = transform_ (1,perm[1]) < 0.0;
+      flip[perm[2]] = transform_ (2,perm[2]) < 0.0;
 
       if (perm[0] != 0 || perm[1] != 1 || perm[2] != 2 || 
           flip[0] || flip[1] || flip[2]) {
         // axes in transform need to be realigned to MRtrix coordinate system:
-        Math::Matrix<float> M (transform_matrix);
+        Math::Matrix<float> M (transform_);
 
         Math::Vector<float>::View translation = M.column(3).sub(0,3);
         for (size_t i = 0; i < 3; ++i) {
@@ -109,19 +132,19 @@ namespace MR {
           Math::Vector<float>::View row = M.row(i).sub(0,3);
           perm.apply (row); 
           if (flip[i]) 
-            axes.stride(i) = -axes.stride(i);
+            axes_[i].stride = -axes_[i].stride;
         }
 
-        transform_matrix.swap (M);
+        transform_.swap (M);
 
-        Axes::Axis a[] = { 
-          axes[perm[0]], 
-          axes[perm[1]], 
-          axes[perm[2]]
+        Axis a[] = { 
+          axes_[perm[0]], 
+          axes_[perm[1]], 
+          axes_[perm[2]]
         };
-        axes[0] = a[0];
-        axes[1] = a[1];
-        axes[2] = a[2];
+        axes_[0] = a[0];
+        axes_[1] = a[1];
+        axes_[2] = a[2];
       }
 
     }
@@ -132,39 +155,42 @@ namespace MR {
     void Header::merge (const Header& H)
     {
 
-      if (dtype != H.dtype) 
+      if (dtype_ != H.dtype_) 
         throw Exception ("data types differ between image files for \"" + name() + "\"");
 
-      if (offset != H.offset || scale != H.scale) 
+      if (offset_ != H.offset_ || scale_ != H.scale_) 
         throw Exception ("scaling coefficients differ between image files for \"" + name() + "\"");
 
       if (ndim() != H.ndim()) 
         throw Exception ("dimension mismatch between image files for \"" + name() + "\"");
 
-      for (size_t n = 0; n < ndim(); n++) {
+      for (size_t n = 0; n < ndim(); ++n) {
         if (dim(n) != H.dim(n)) 
           throw Exception ("dimension mismatch between image files for \"" + name() + "\"");
 
-        if (axes.stride(n) != H.axes.stride(n))
+        if (stride(n) != H.stride(n))
           throw Exception ("data strides differs image files for \"" + name() + "\"");
 
-        if (axes.vox(n) != H.axes.vox(n))
+        if (vox(n) != H.vox(n))
           error ("WARNING: voxel dimensions differ between image files for \"" + name() + "\"");
       }
 
-      for (std::vector<File::Entry>::const_iterator item = H.files.begin(); item != H.files.end(); item++)
-        files.push_back (*item);
+      for (std::vector<File::Entry>::const_iterator item = H.files_.begin(); item != H.files_.end(); ++item)
+        files_.push_back (*item);
 
-      for (std::map<std::string, std::string>::const_iterator item = H.begin(); item != H.end(); item++)
+      for (std::map<std::string, std::string>::const_iterator item = H.begin(); item != H.end(); ++item)
         if (std::find (begin(), end(), *item) == end())
           insert (*item);
 
-      for (std::vector<std::string>::const_iterator item = H.comments.begin(); item != H.comments.end(); item++)
-        if (std::find (comments.begin(), comments.end(), *item) == comments.end())
-          comments.push_back (*item);
+      for (std::vector<std::string>::const_iterator item = H.comments_.begin(); item != H.comments_.end(); ++item)
+        if (std::find (comments_.begin(), comments_.end(), *item) == comments_.end())
+          comments_.push_back (*item);
 
-      if (!transform_matrix.is_set() && H.transform_matrix.is_set()) transform_matrix = H.transform_matrix;
-      if (!DW_scheme.is_set() && H.DW_scheme.is_set()) DW_scheme = H.DW_scheme; 
+      if (!transform().is_set() && H.transform().is_set())
+        transform_ = H.transform();
+
+      if (!DW_scheme().is_set() && H.DW_scheme().is_set()) 
+        DW_scheme_ = H.DW_scheme(); 
     }
 
 
@@ -173,11 +199,12 @@ namespace MR {
 
 
 
-    const Header Header::open (const std::string& image_name, bool read_write)
+    void Header::open (const std::string& image_name)
     {
-      if (image_name.empty()) throw Exception ("no name supplied to open image!");
-      Header H;
-      H.readwrite = read_write;
+      if (image_name.empty()) 
+        throw Exception ("no name supplied to open image!");
+
+      readwrite_ = false;
 
       try {
         info ("opening image \"" + image_name + "\"...");
@@ -187,112 +214,134 @@ namespace MR {
 
         const Format::Base** format_handler = Format::handlers;
         std::vector< RefPtr<ParsedName> >::iterator item = list.begin();
-        H.identifier = (*item)->name();
+        name_ = (*item)->name();
 
-        for (; *format_handler; format_handler++) if ((*format_handler)->read (H)) break;
-        if (!*format_handler) throw Exception ("unknown format for image \"" + H.name() + "\"");
-        H.format = (*format_handler)->description;
+        for (; *format_handler; format_handler++) 
+          if ((*format_handler)->read (*this))
+            break;
+
+        if (!*format_handler) 
+          throw Exception ("unknown format for image \"" + name() + "\"");
+
+        format_ = (*format_handler)->description;
 
         while (++item != list.end()) {
-          Header header (H);
-          header.name() = (*item)->name();
-          if (!(*format_handler)->read (header)) throw Exception ("image specifier contains mixed format files");
-          H.merge (header);
+          Header header (*this);
+          header.name_ = (*item)->name();
+          if (!(*format_handler)->read (header)) 
+            throw Exception ("image specifier contains mixed format files");
+          merge (header);
         }
 
         if (num.size()) {
           int a = 0, n = 0;
-          for (size_t i = 0; i < H.axes.ndim(); i++) if (H.axes.stride(i)) n++;
-          H.axes.ndim() = n + num.size();
+          for (size_t i = 0; i < ndim(); i++) 
+            if (stride(i)) 
+              ++n;
+          axes_.resize (n + num.size());
 
-          for (std::vector<int>::const_iterator item = num.begin(); item != num.end(); item++) {
-            while (H.axes[a].stride) a++;
-            H.axes.dim(a) = *item;
-            H.axes.stride(a) = ++n;
+          for (std::vector<int>::const_iterator item = num.begin(); item != num.end(); ++item) {
+            while (stride (a)) ++a;
+            axes_[a].dim = *item;
+            axes_[a].stride = ++n;
           }
         }
 
-        H.sanitise();
-        if (!H.handler) H.handler = new Handler::Default (H, false);
+        sanitise();
+        if (!handler_) 
+          handler_ = new Handler::Default (*this, false);
 
-        H.identifier = image_name;
+        name_ = image_name;
       }
-      catch (Exception& E) { throw Exception (E, "error opening image \"" + image_name + "\""); }
+      catch (Exception& E) { 
+        throw Exception (E, "error opening image \"" + image_name + "\""); 
+      }
 
-      return (H);
     }
 
 
 
 
 
-    const Header Header::create (const std::string& image_name, const Header& template_header)
+    void Header::create (const std::string& image_name)
     {
-      if (image_name.empty()) throw Exception ("no name supplied to open image!");
-      Header H (template_header);
-      H.readwrite = true;
+      if (image_name.empty()) 
+        throw Exception ("no name supplied to open image!");
+
+      readwrite_ = true;
 
       try {
         info ("creating image \"" + image_name + "\"...");
 
-        H.sanitise();
+        sanitise();
 
         NameParser parser;
         parser.parse (image_name);
         std::vector<int> Pdim (parser.ndim());
 
-        int Hdim [H.ndim()];
-        for (size_t i = 0; i < H.ndim(); i++) Hdim[i] = H.dim(i);
+        int Hdim [ndim()];
+        for (size_t i = 0; i < ndim(); ++i)
+          Hdim[i] = dim(i);
 
-        H.identifier = image_name;
+        name_ = image_name;
 
         const Format::Base** format_handler = Format::handlers;
-        for (; *format_handler; format_handler++) {
-          if ((*format_handler)->check (H, H.ndim() - Pdim.size())) break;
-        }
-        if (!*format_handler) throw Exception ("unknown format for image \"" + image_name + "\"");
-        H.format = (*format_handler)->description;
+        for (; *format_handler; format_handler++) 
+          if ((*format_handler)->check (*this, ndim() - Pdim.size())) 
+            break;
 
-        H.dtype.set_byte_order_native();
+        if (!*format_handler) 
+          throw Exception ("unknown format for image \"" + image_name + "\"");
+
+        format_ = (*format_handler)->description;
+
+        dtype_.set_byte_order_native();
         int a = 0;
-        for (size_t n = 0; n < Pdim.size(); n++) {
-          while (H.axes.stride(a)) a++;
+        for (size_t n = 0; n < Pdim.size(); ++n) {
+          while (stride(a)) a++;
           Pdim[n] = Hdim[a];
         }
         parser.calculate_padding (Pdim);
 
-        Header header (H);
+        Header header (*this);
         std::vector<int> num (Pdim.size());
 
-        if (image_name != "-") H.name() = parser.name (num);
-        (*format_handler)->create (H);
+        if (image_name != "-") 
+          name_ = parser.name (num);
+
+        (*format_handler)->create (*this);
 
         while (get_next (num, Pdim)) {
-          header.name() = parser.name (num);
+          header.name_ = parser.name (num);
           (*format_handler)->create (header);
-          H.merge (header);
+          merge (header);
         }
 
         if (Pdim.size()) {
           int a = 0, n = 0;
-          for (size_t i = 0; i < H.ndim(); i++) if (H.axes.stride(i)) n++;
-          H.axes.ndim() = n + Pdim.size();
+          for (size_t i = 0; i < ndim(); ++i)
+            if (stride(i)) 
+              ++n;
 
-          for (std::vector<int>::const_iterator item = Pdim.begin(); item != Pdim.end(); item++) {
-            while (H.axes.stride(a)) a++;
-            H.axes.dim(a) = *item;
-            H.axes.stride(a) = ++n;
+          set_ndim (n + Pdim.size());
+
+          for (std::vector<int>::const_iterator item = Pdim.begin(); item != Pdim.end(); ++item) {
+            while (stride(a)) ++a;
+            set_dim (a, *item);
+            set_stride (a, ++n);
           }
         }
 
-        H.sanitise();
-        if (!H.handler) H.handler = new Handler::Default (H, false);
+        sanitise();
+        if (!handler_)
+          handler_ = new Handler::Default (*this, false);
 
-        H.identifier = image_name;
+        name_ = image_name;
       }
-      catch (Exception& E) { throw Exception (E, "error creating image \"" + image_name + "\""); }
+      catch (Exception& E) { 
+        throw Exception (E, "error creating image \"" + image_name + "\""); 
+      }
 
-      return (H);
     }
 
 
@@ -313,22 +362,22 @@ namespace MR {
             "************************************************\n"
             "Image:               \"" + name() + "\"\n"
             "************************************************\n"
-            "  Format:            " + ( format ? format : "undefined" ) + "\n"
+            "  Format:            " + ( format() ? format() : "undefined" ) + "\n"
             "  Dimensions:        ");
 
       size_t i;
-      for (i = 0; i < axes.ndim(); i++) {
+      for (i = 0; i < ndim(); i++) {
         if (i) desc += " x ";
-        desc += str (axes.dim(i));
+        desc += str (dim(i));
       }
 
 
 
       desc += "\n  Voxel size:        ";
 
-      for (i = 0; i < axes.ndim(); i++) {
+      for (i = 0; i < ndim(); i++) {
         if (i) desc += " x ";
-        desc += isnan (axes.vox(i)) ? "?" : str (axes.vox(i));
+        desc += isnan (vox(i)) ? "?" : str (vox(i));
       }
 
 
@@ -336,32 +385,32 @@ namespace MR {
 
       desc += "\n  Dimension labels:  ";
 
-      for (i = 0; i < axes.ndim(); i++)  
+      for (i = 0; i < ndim(); i++)  
         desc += ( i ? "                     " : "" ) + str (i) + ". " 
-          + ( axes.description(i).size() ? axes.description(i) : "undefined" ) + " ("
-          + ( axes.units(i).size() ? axes.units(i) : "?" ) + ")\n";
+          + ( description(i).size() ? description(i) : "undefined" ) + " ("
+          + ( units(i).size() ? units(i) : "?" ) + ")\n";
 
 
 
-      desc += std::string ("  Data type:         ") + ( dtype.description() ? dtype.description() : "invalid" ) + "\n"
+      desc += std::string ("  Data type:         ") + ( datatype().description() ? datatype().description() : "invalid" ) + "\n"
             "  Data strides:      [ ";
 
 
-      std::vector<ssize_t> strides (DataSet::Stride::get (axes));
+      std::vector<ssize_t> strides (DataSet::Stride::get (*this));
       DataSet::Stride::symbolise (strides);
-      for (i = 0; i < axes.ndim(); i++) 
-        desc += axes.stride(i) ? str (strides[i]) + " " : "? ";
+      for (i = 0; i < ndim(); i++) 
+        desc += stride(i) ? str (strides[i]) + " " : "? ";
 
 
 
       desc += "]\n"
-            "  Data scaling:      offset = " + str (offset) + ", multiplier = " + str (scale) + "\n"
-            "  Comments:          " + ( comments.size() ? comments[0] : "(none)" ) + "\n";
+            "  Data scaling:      offset = " + str (data_offset()) + ", multiplier = " + str (data_scale()) + "\n"
+            "  Comments:          " + ( comments().size() ? comments()[0] : "(none)" ) + "\n";
 
 
 
-      for (i = 1; i < comments.size(); i++)
-        desc += "                     " + comments[i] + "\n";
+      for (i = 1; i < comments().size(); i++)
+        desc += "                     " + comments()[i] + "\n";
 
       if (size() > 0) {
         desc += "  Properties:\n";
@@ -369,13 +418,13 @@ namespace MR {
           desc += "    " + it->first + ": " + it->second + "\n";
       }
 
-      if (transform_matrix.is_set()) {
+      if (transform().is_set()) {
         desc += "  Transform:         ";
-        for (size_t i = 0; i < transform_matrix.rows(); i++) {
+        for (size_t i = 0; i < transform().rows(); i++) {
           if (i) desc +=  "                     ";
-          for (size_t j = 0; j < transform_matrix.columns(); j++) {
+          for (size_t j = 0; j < transform().columns(); j++) {
             char buf[14], buf2[14];
-            snprintf (buf, 14, "%.4g", transform_matrix(i,j));
+            snprintf (buf, 14, "%.4g", transform()(i,j));
             snprintf (buf2, 14, "%12.10s", buf);
             desc += buf2;
           }
@@ -384,8 +433,8 @@ namespace MR {
         }
       }
 
-      if (DW_scheme.is_set()) 
-        desc += "  DW scheme:         " + str (DW_scheme.rows()) + " x " + str (DW_scheme.columns()) + "\n";
+      if (DW_scheme().is_set()) 
+        desc += "  DW scheme:         " + str (DW_scheme().rows()) + " x " + str (DW_scheme().columns()) + "\n";
 
       return (desc);
     }

@@ -21,6 +21,7 @@
 */
 
 #include "app.h"
+#include "debug.h"
 #include "image/voxel.h"
 #include "math/rng.h"
 #include "math/cholesky.h"
@@ -38,9 +39,9 @@ DESCRIPTION = {
   NULL
 };
 
-ARGUMENTS = { Argument::End }; 
+ARGUMENTS = { Argument() }; 
 
-OPTIONS = { Option::End };
+OPTIONS = { Option() };
 
 
 

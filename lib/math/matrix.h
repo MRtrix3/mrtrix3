@@ -506,7 +506,8 @@ namespace MR {
         }
 
 	//! return a Vector::View corresponding to a diagonal of the matrix
-        /*! \copydetails Matrix<T>::diagonal(int) */
+	/** \param offset the diagonal to obtain. If \a offset > 0, return the corresponding upper diagonal. 
+	  If \a offset < 0, return the corresponding lower diagonal. */ 
         const VectorView diagonal (int offset) const throw ()
         {
           assert (rows() > 0 && columns() > 0);

@@ -39,43 +39,70 @@ DESCRIPTION = {
 };
 
 ARGUMENTS = {
-  Argument ("tensor", "input tensor image", "the input diffusion tensor image.").type_image_in (),
-  Argument::End
+  Argument ("tensor", "the input diffusion tensor image.").type_image_in (),
+  Argument ()
 };
 
 const char* modulate_choices[] = { "none", "fa", "eval", NULL };
 
 OPTIONS = { 
-  Option ("adc", "mean ADC", "compute the mean apparent diffusion coefficient (ADC) of the diffusion tensor.")
-    .append (Argument ("image", "image", "the output mean ADC image.").type_image_out ()),
+  Option ("adc", 
+      "compute the mean apparent diffusion coefficient (ADC) of the diffusion tensor.")
+    + Argument ("image").type_image_out(),
 
-  Option ("fa", "fractional anisotropy", "compute the fractional anisotropy of the diffusion tensor.")
-    .append (Argument ("image", "image", "the output fractional anisotropy image.").type_image_out ()),
+  Option ("fa", 
+      "compute the fractional anisotropy of the diffusion tensor.")
+    + Argument ("image").type_image_out(),
 
-  Option ("num", "numbers", "specify the desired eigenvalue/eigenvector(s). Note that several eigenvalues can be specified as a number sequence. For example, '1,3' specifies the major (1) and minor (3) eigenvalues/eigenvectors (default = 1).")
-    .append (Argument ("image", "image", "the mask image to use.").type_string ()),
+  Option ("num", 
+      "specify the desired eigenvalue/eigenvector(s). Note that several eigenvalues "
+      "can be specified as a number sequence. For example, '1,3' specifies the "
+      "major (1) and minor (3) eigenvalues/eigenvectors (default = 1).")
+    + Argument ("image"),
 
-  Option ("vector", "eigenvector", "compute the selected eigenvector(s) of the diffusion tensor.")
-    .append (Argument ("image", "image", "the output eigenvector image.").type_image_out ()),
+  Option ("vector",
+      "compute the selected eigenvector(s) of the diffusion tensor.")
+    + Argument ("image").type_image_out(),
 
-  Option ("value", "eigenvalue", "compute the selected eigenvalue(s) of the diffusion tensor.")
-    .append (Argument ("image", "image", "the output eigenvalue image.").type_image_out ()),
+  Option ("value", 
+      "compute the selected eigenvalue(s) of the diffusion tensor.")
+    + Argument ("image").type_image_out(),
 
-  Option ("mask", "brain mask", "only perform computation within the specified binary brain mask image.")
-    .append (Argument ("image", "image", "the mask image to use.").type_image_in ()),
+  Option ("mask", 
+      "only perform computation within the specified binary brain mask image.")
+    + Argument ("image").type_image_in(),
 
-  Option ("modulate", "modulate vector", "specify how to modulate the magnitude of the eigenvectors. Valid choices are: none, FA, eval (default = FA).")
-    .append (Argument ("spec", "specifier", "the modulation specifier.").type_choice (modulate_choices)),
+  Option ("modulate", 
+      "specify how to modulate the magnitude of the eigenvectors. Valid choices "
+      "are: none, FA, eval (default = FA).")
+    + Argument ("spec").type_choice (modulate_choices),
 
-  Option::End 
+  Option ()
 };
 
 
 class ImagePair
 {
   public:
-    ImagePair (const Image::Header& header) : H (header), vox (H) { }
-    Image::Header H;
+    class Header : public Image::Header {
+      public:
+        Header (const Image::Header& header, const std::string& name, size_t nvols) : 
+          Image::Header (header) {
+            set_datatype (DataType::Float32);
+            if (nvols) set_dim (3, nvols);
+            else set_ndim (3);
+            create (name);
+          }
+
+        Header (const std::string& name) : Image::Header (name) { }
+    };
+
+    ImagePair (const Image::Header& header, const std::string& name, size_t nvols) : 
+      H (header, name, nvols), vox (H) { }
+
+    ImagePair (const std::string& name) : H (name), vox (H) { }
+
+    Header H;
     Image::Voxel<float> vox;
 };
 
@@ -98,59 +125,59 @@ inline void increment (size_t axis, Ptr<ImagePair>& i0, Ptr<ImagePair>& i1, Ptr<
 }
 
 EXECUTE {
-  Image::Header header (argument[0].get_image());
-  Image::Voxel<float> dt (header);
+  Image::Header dt_header (argument[0]);
 
-  if (header.ndim() != 4) 
+  if (dt_header.ndim() != 4) 
     throw Exception ("base image should contain 4 dimensions");
 
-  if (header.dim(3) != 6) 
-    throw Exception ("expecting dimension 3 of image \"" + header.name() + "\" to be 6");
+  if (dt_header.dim(3) != 6) 
+    throw Exception ("expecting dimension 3 of image \"" + dt_header.name() + "\" to be 6");
 
-  header.datatype() = DataType::Float32;
-  std::vector<OptBase> opt;
 
   std::vector<int> vals(1);
   vals[0] = 1;
-  opt = get_options ("num");
+  Options opt = get_options ("num");
   if (opt.size()) {
-    vals = parse_ints (opt[0][0].get_string());
-    if (vals.empty()) throw Exception ("invalid eigenvalue/eigenvector number specifier");
-    for (size_t i = 0; i < vals.size(); i++)
-      if (vals[i] < 1 || vals[i] > 3) throw Exception ("eigenvalue/eigenvector number is out of bounds");
+    vals = opt[0][0];
+
+    if (vals.empty()) 
+      throw Exception ("invalid eigenvalue/eigenvector number specifier");
+
+    for (size_t i = 0; i < vals.size(); ++i)
+      if (vals[i] < 1 || vals[i] > 3) 
+        throw Exception ("eigenvalue/eigenvector number is out of bounds");
   }
 
   Ptr<ImagePair> adc, fa, eval, evec, mask;
 
   opt = get_options ("vector");
-  if (opt.size()) {
-    header.axes.dim(3) = 3*vals.size();
-    evec = new ImagePair (opt[0][0].get_image (header));
-  }
+  if (opt.size()) 
+    evec = new ImagePair (dt_header, opt[0][0], 3*vals.size());
 
   opt = get_options ("value");
-  if (opt.size()) {
-    header.axes.dim(3) = vals.size();
-    eval = new ImagePair (opt[0][0].get_image (header));
-  }
+  if (opt.size()) 
+    eval = new ImagePair (dt_header, opt[0][0], vals.size());
 
-  header.axes.ndim() = 3;
   opt = get_options ("adc");
-  if (opt.size()) adc = new ImagePair (opt[0][0].get_image (header));
+  if (opt.size()) 
+    adc = new ImagePair (dt_header, opt[0][0], 0);
 
   opt = get_options ("fa");
-  if (opt.size()) fa = new ImagePair (opt[0][0].get_image (header));
+  if (opt.size()) fa = new ImagePair (dt_header, opt[0][0], 0);
 
   opt = get_options ("mask");
   if (opt.size()) {
-    mask = new ImagePair (opt[0][0].get_image ());
-    if (mask->H.dim(0) != dt.dim(0) || mask->H.dim(1) != dt.dim(1) || mask->H.dim(2) != dt.dim(2)) 
+    mask = new ImagePair (opt[0][0]);
+    if (mask->H.dim(0) != dt_header.dim(0) || 
+        mask->H.dim(1) != dt_header.dim(1) ||
+        mask->H.dim(2) != dt_header.dim(2)) 
       throw Exception ("dimensions of mask image do not match that of tensor image - aborting");
   }
 
   int modulate = 1;
   opt = get_options ("modulate");
-  if (opt.size()) modulate = opt[0][0].get_int();
+  if (opt.size()) 
+    modulate = opt[0][0];
 
   if ( ! (adc || fa || eval || evec))
     throw Exception ("no output metric specified - aborting");
@@ -166,8 +193,12 @@ EXECUTE {
 
   Ptr<Math::Eigen::Symm<double> > eig;
   Ptr<Math::Eigen::SymmV<double> > eigv;
-  if (evec) eigv = new Math::Eigen::SymmV<double> (3);
-  else eig = new Math::Eigen::Symm<double> (3);
+  if (evec) 
+    eigv = new Math::Eigen::SymmV<double> (3);
+  else 
+    eig = new Math::Eigen::Symm<double> (3);
+
+  Image::Voxel<float> dt (dt_header);
 
   ProgressBar progress ("computing tensor metrics...", DataSet::voxel_count (dt, 0, 3));
 

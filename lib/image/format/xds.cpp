@@ -36,46 +36,44 @@ namespace MR {
 
       bool XDS::read (Header& H) const
       {
-        if (!Path::has_suffix (H.name(), ".bfloat") && !Path::has_suffix (H.name(), ".bshort")) return (false);
+        if (!Path::has_suffix (H.name(), ".bfloat") && 
+            !Path::has_suffix (H.name(), ".bshort")) 
+          return (false);
 
-        H.axes.ndim() = 4;
+        H.set_ndim (4);
         int BE;
 
         std::string name (H.name());
         name.replace (name.size()-6, 6, "hdr");
 
         std::ifstream in (name.c_str());
-        if (!in) throw Exception ("error reading header file \"" + name + "\": " + strerror (errno));
-        in >> H.axes.dim(1) >> H.axes.dim(0) >> H.axes.dim(3) >> BE;
+        if (!in) 
+          throw Exception ("error reading header file \"" + name + "\": " + strerror (errno));
+        int dim[3];
+        in >> dim[0] >> dim[1] >> dim[2] >> BE;
+        H.set_dim (0, dim[1]);
+        H.set_dim (1, dim[0]);
+        H.set_dim (2, dim[2]);
         in.close();
 
-        H.datatype() = ( Path::has_suffix (H.name(), ".bfloat") ? DataType::Float32 : DataType::UInt16 );
+        DataType dtype = (Path::has_suffix (H.name(), ".bfloat") ? DataType::Float32 : DataType::UInt16 );
+        if (BE) dtype.set_flag (DataType::LittleEndian);
+        else dtype.set_flag (DataType::BigEndian);
+        H.set_datatype (dtype);
 
-        if (BE) H.datatype().set_flag (DataType::LittleEndian);
-        else H.datatype().set_flag (DataType::BigEndian);
+        H.set_dim (2, 1);
 
-        H.axes.dim(2) = 1;
+        H.set_vox(0, 3.0);
+        H.set_vox(1, 3.0);
+        H.set_vox(2, 10.0);
+        H.set_vox(3, 1.0);
 
-        H.axes.vox(0) = H.axes.vox(1) = 3.0;
-        H.axes.vox(2) = 10.0;
-        H.axes.vox(3) = 1.0;
+        H.set_stride (0, -1);
+        H.set_stride (1, -2);
+        H.set_stride (2, 0);
+        H.set_stride (3, 3);
 
-        H.axes.stride(0) = -1;
-        H.axes.stride(1) = -2;
-        H.axes.stride(2) = 0;
-        H.axes.stride(3) = 3;
-
-        H.axes.description(0) = Axes::left_to_right;
-        H.axes.description(1) = Axes::posterior_to_anterior;
-        H.axes.description(2) = Axes::inferior_to_superior;
-        H.axes.description(3) = Axes::time;
-
-        H.axes.units(0) = Axes::millimeters; 
-        H.axes.units(1) = Axes::millimeters; 
-        H.axes.units(2) = Axes::millimeters;
-        H.axes.units(3) = Axes::milliseconds;
-
-        H.files.push_back (File::Entry (H.name()));
+        H.add_file (File::Entry (H.name()));
 
         return (true);
       }
@@ -88,42 +86,41 @@ namespace MR {
 
       bool XDS::check (Header& H, size_t num_axes) const
       {
-        if (!Path::has_suffix (H.name(), ".bfloat") && !Path::has_suffix (H.name(), ".bshort")) return (false);
-        if (num_axes > 4) throw Exception ("cannot create XDS image with more than 4 dimensions");
-        if (num_axes == 4 && H.axes.dim(2) > 1) throw Exception ("cannot create multi-slice XDS image with a single file");
-        if (num_axes < 2) throw Exception ("cannot create XDS image with less than 2 dimensions");
+        if (!Path::has_suffix (H.name(), ".bfloat") && 
+            !Path::has_suffix (H.name(), ".bshort")) 
+          return (false);
 
-        H.axes.ndim() = 4;
+        if (num_axes > 4)
+          throw Exception ("cannot create XDS image with more than 4 dimensions");
+        
+        if (num_axes == 4 && H.dim(2) > 1)
+          throw Exception ("cannot create multi-slice XDS image with a single file");
 
-        H.axes.dim(2) = 1;
-        for (size_t n = 0; n < 4; n++)
-          if (H.axes.dim(n) < 1) H.axes.dim(n) = 1;
+        if (num_axes < 2) 
+          throw Exception ("cannot create XDS image with less than 2 dimensions");
 
-        H.axes.vox(0) = H.axes.vox(1) = 3.0;
-        H.axes.vox(2) = 10.0;
-        H.axes.vox(3) = 1.0;
+        H.set_ndim (4);
 
-        H.axes.stride(0) = -1;
-        H.axes.stride(1) = -2;
-        H.axes.stride(2) = 0;
-        H.axes.stride(3) = 3;
+        H.set_dim (2, 1);
+        for (size_t n = 0; n < 4; ++n)
+          if (H.dim(n) < 1) 
+            H.set_dim (n, 1);
 
-        H.axes.description(0) = Axes::left_to_right;
-        H.axes.description(1) = Axes::posterior_to_anterior;
-        H.axes.description(2) = Axes::inferior_to_superior;
-        H.axes.description(3) = Axes::time;
 
-        H.axes.units(0) = Axes::millimeters; 
-        H.axes.units(1) = Axes::millimeters; 
-        H.axes.units(2) = Axes::millimeters;
-        H.axes.units(3) = Axes::milliseconds;
+        H.set_vox(0, 3.0);
+        H.set_vox(1, 3.0);
+        H.set_vox(2, 10.0);
+        H.set_vox(3, 1.0);
 
-        bool is_BE = H.datatype().is_big_endian();
+        H.set_stride (0, -1);
+        H.set_stride (1, -2);
+        H.set_stride (2, 0);
+        H.set_stride (3, 3);
 
-        H.datatype() = ( Path::has_suffix (H.name(), ".bfloat") ? DataType::Float32 : DataType::UInt16 );
-
-        if (is_BE) H.datatype().set_flag (DataType::BigEndian);
-        else H.datatype().set_flag (DataType::LittleEndian);
+        DataType dtype (Path::has_suffix (H.name(), ".bfloat") ? DataType::Float32 : DataType::UInt16);
+        if (H.datatype().is_big_endian()) dtype.set_flag (DataType::LittleEndian);
+        else dtype.set_flag (DataType::BigEndian);
+        H.set_datatype (dtype);
 
         return (true);
       }
@@ -137,14 +134,15 @@ namespace MR {
         header_name.replace (header_name.size()-6, 6, "hdr");
 
         std::ofstream out(header_name.c_str());
-        if (!out) throw Exception ("error writing header file \"" + header_name + "\": " + strerror (errno));
+        if (!out) 
+          throw Exception ("error writing header file \"" + header_name + "\": " + strerror (errno));
 
-        out << H.axes.dim(1) << " " << H.axes.dim(0) << " " << H.axes.dim(3) 
+        out << H.dim(1) << " " << H.dim(0) << " " << H.dim(3) 
             << " " << ( H.datatype().is_little_endian() ? 1 : 0 ) << "\n";
         out.close();
 
         File::create (H.name(), H.footprint ("11 1"));
-        H.files.push_back (File::Entry (H.name()));
+        H.add_file (File::Entry (H.name()));
       }
 
     } 

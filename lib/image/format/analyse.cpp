@@ -38,12 +38,13 @@ namespace MR {
 
       bool Analyse::read (Header& H) const
       {
-        if (!Path::has_suffix (H.name(), ".img")) return (false);
+        if (!Path::has_suffix (H.name(), ".img"))
+          return (false);
 
         File::MMap fmap (H.name().substr (0, H.name().size()-4) + ".hdr");
         size_t data_offset = File::NIfTI::read (H, *((const nifti_1_header*) fmap.address()));
 
-        H.files.push_back (File::Entry (H.name(), data_offset));
+        H.add_file (File::Entry (H.name(), data_offset));
 
         return (true);
       }
@@ -54,11 +55,16 @@ namespace MR {
 
       bool Analyse::check (Header& H, size_t num_axes) const
       {
-        if (!Path::has_suffix (H.name(), ".img")) return (false);
-        if (num_axes < 3) throw Exception ("cannot create NIfTI-1.1 image with less than 3 dimensions");
-        if (num_axes > 8) throw Exception ("cannot create NIfTI-1.1 image with more than 8 dimensions");
+        if (!Path::has_suffix (H.name(), ".img")) 
+          return (false);
+        
+        if (num_axes < 3) 
+          throw Exception ("cannot create NIfTI-1.1 image with less than 3 dimensions");
 
-        H.axes.ndim() = num_axes;
+        if (num_axes > 8) 
+          throw Exception ("cannot create NIfTI-1.1 image with more than 8 dimensions");
+
+        H.set_ndim (num_axes);
         File::NIfTI::check (H, false);
 
         return (true);
@@ -80,13 +86,14 @@ namespace MR {
         File::create (hdr_name);
 
         std::ofstream out (hdr_name.c_str());
-        if (!out) throw Exception ("error opening file \"" + hdr_name + "\" for writing: " + strerror (errno));
+        if (!out) 
+          throw Exception ("error opening file \"" + hdr_name + "\" for writing: " + strerror (errno));
         out.write ((char*) &NH, 352);
         out.close();
 
         File::create (H.name(), H.footprint());
 
-        H.files.push_back (File::Entry (H.name()));
+        H.add_file (File::Entry (H.name()));
       }
 
     }

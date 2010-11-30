@@ -23,6 +23,7 @@
 #ifndef __dataset_copy_h__
 #define __dataset_copy_h__
 
+#include "debug.h"
 #include "dataset/loop.h"
 
 namespace MR {

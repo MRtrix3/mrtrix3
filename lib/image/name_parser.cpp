@@ -235,7 +235,8 @@ namespace MR {
 
     std::string NameParser::get_next_match (std::vector<int>& indices, bool return_seq_index)
     {
-      if (!folder) folder = new Path::Dir (folder_name); 
+      if (!folder) 
+        folder = new Path::Dir (folder_name); 
 
       std::string fname;
       while ((fname = folder->read_name()).size()) {

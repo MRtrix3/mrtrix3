@@ -42,12 +42,12 @@ DESCRIPTION = {
 };
 
 ARGUMENTS = {
-  Argument ("input", "input image", "input image to be median-filtered.").type_image_in (),
-  Argument ("output", "output image", "the output image.").type_image_out (),
-  Argument::End
+  Argument ("input", "input image to be median-filtered.").type_image_in (),
+  Argument ("output", "the output image.").type_image_out (),
+  Argument()
 };
 
-OPTIONS = { Option::End };
+OPTIONS = { Option () };
 
 
 namespace KernelOp 
@@ -334,8 +334,9 @@ template <typename T> inline T MedianFunc (const KernelOp::Kernel<T>& kernel)
 
 
 EXECUTE {
-  const Image::Header source = argument[0].get_image();
-  const Image::Header destination (argument[1].get_image (source));
+  Image::Header source (argument[0]);
+  Image::Header destination (source);
+  destination.create (argument[1]);
 
   Image::Voxel<float> src (source);
   Image::Voxel<float> dest (destination);

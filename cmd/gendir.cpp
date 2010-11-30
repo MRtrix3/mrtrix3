@@ -20,11 +20,13 @@
 
 */
 
+#include <gsl/gsl_blas.h>
 #include <gsl/gsl_multimin.h>
 
 #include "app.h"
 #include "progressbar.h"
 #include "math/vector.h"
+#include "math/matrix.h"
 #include "math/rng.h"
 
 using namespace std; 
@@ -40,19 +42,19 @@ DESCRIPTION = {
 };
 
 ARGUMENTS = {
-  Argument ("ndir", "number of directions", "the number of directions to generate.").type_integer (6, std::numeric_limits<int>::max(), 60),
-  Argument ("dirs", "output directions file", "the text file to write the directions to, as [ az el ] pairs.").type_file(),
-  Argument::End
+  Argument ("ndir", "the number of directions to generate.").type_integer (6, 60, std::numeric_limits<int>::max()),
+  Argument ("dirs", "the text file to write the directions to, as [ az el ] pairs.").type_file(),
+  Argument ()
 };
 
 OPTIONS = { 
-  Option ("power", "power law exponent", "specify exponent to use for repulsion power law.")
-    .append (Argument ("exp", "exponent", "exponent").type_integer(2, std::numeric_limits<int>::max(), 128)),
+  Option ("power", "specify exponent to use for repulsion power law.")
+    + Argument ("exp").type_integer (2, 128, std::numeric_limits<int>::max()),
 
-  Option ("niter", "max number of iterations", "specify the maximum number of iterations to perform.")
-    .append (Argument ("num", "number", "maximum number of iterations to perform").type_integer (1, 1000000, 10000)),
+  Option ("niter", "specify the maximum number of iterations to perform.")
+    + Argument ("num").type_integer (1, 10000, 1000000),
 
-  Option::End 
+  Option ()
 };
 
 
@@ -101,13 +103,15 @@ EXECUTE {
   size_t niter = 10000;
   float target_power = 128.0;
 
-  std::vector<OptBase> opt = get_options ("power");
-  if (opt.size()) target_power = opt[0][0].get_int();
+  Options opt = get_options ("power");
+  if (opt.size())
+    target_power = opt[0][0];
 
   opt = get_options ("niter");
-  if (opt.size()) niter = opt[0][0].get_int();
+  if (opt.size())
+    niter = opt[0][0];
 
-  ndirs = argument[0].get_int();
+  ndirs = to<int> (argument[0]);
 
 
   Math::RNG    rng;
@@ -141,7 +145,8 @@ EXECUTE {
         int status = gsl_multimin_fdfminimizer_iterate (minimizer);
 
         if (iter%10 == 0) 
-          info ("[ " + str(iter) + " ] (pow = " + str(-power*2.0) + ") E = " + str(minimizer->f) + ", grad = " + str(gsl_blas_dnrm2 (minimizer->gradient)));
+          info ("[ " + str(iter) + " ] (pow = " + str(-power*2.0) + ") E = " + str(minimizer->f) 
+              + ", grad = " + str(gsl_blas_dnrm2 (minimizer->gradient)));
 
         if (status) {
           info (std::string("iteration stopped: ") + gsl_strerror (status));
@@ -170,7 +175,7 @@ EXECUTE {
 
   gsl_multimin_fdfminimizer_free (minimizer);
 
-  directions.save (argument[1].get_string());
+  directions.save (argument[1]);
 }
 
 

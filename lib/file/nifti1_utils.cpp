@@ -59,7 +59,7 @@ namespace MR {
         strncpy (db_name, NH.db_name, 18);
         if (db_name[0]) {
           db_name[18] = '\0';
-          H.comments.push_back (db_name);
+          H.add_comment (db_name);
         }
 
         // data set dimensions:
@@ -68,63 +68,65 @@ namespace MR {
           throw Exception ("too few dimensions specified in NIfTI image \"" + H.name() + "\"");
         if (ndim > 7) 
           throw Exception ("too many dimensions specified in NIfTI image \"" + H.name() + "\"");
-        H.axes.ndim() = ndim;
+        H.set_ndim (ndim);
 
 
         for (int i = 0; i < ndim; i++) {
-          H.axes.dim(i) = get<int16_t> (&NH.dim[i+1], is_BE);
-          if (H.axes.dim(i) < 0) {
+          H.set_dim (i, get<int16_t> (&NH.dim[i+1], is_BE));
+          if (H.dim(i) < 0) {
             info ("dimension along axis " + str(i) + " specified as negative in NIfTI image \"" + H.name() + "\" - taking absolute value");
-            H.axes.dim(i) = abs (H.axes.dim(i));
+            H.set_dim (i, abs (H.dim(i)));
           }
-          if (!H.axes.dim(i)) H.axes.dim(i) = 1;
-          H.axes.stride(i) = i+1;
+          if (!H.dim(i))
+            H.set_dim (i, 1);
+          H.set_stride (i, i+1);
         }
 
         // data type:
+        DataType dtype;
         switch (get<int16_t> (&NH.datatype, is_BE)) {
-          case DT_BINARY:     H.datatype() = DataType::Bit;        break;
-          case DT_INT8:       H.datatype() = DataType::Int8;       break;
-          case DT_UINT8:      H.datatype() = DataType::UInt8;      break;
-          case DT_INT16:      H.datatype() = DataType::Int16;      break;
-          case DT_UINT16:     H.datatype() = DataType::UInt16;     break;
-          case DT_INT32:      H.datatype() = DataType::Int32;      break;
-          case DT_UINT32:     H.datatype() = DataType::UInt32;     break;
-          case DT_FLOAT32:    H.datatype() = DataType::Float32;    break;
-          case DT_FLOAT64:    H.datatype() = DataType::Float64;    break;
-          case DT_COMPLEX64:  H.datatype() = DataType::CFloat32;   break;
-          case DT_COMPLEX128: H.datatype() = DataType::CFloat64;   break;
+          case DT_BINARY:     dtype = DataType::Bit;        break;
+          case DT_INT8:       dtype = DataType::Int8;       break;
+          case DT_UINT8:      dtype = DataType::UInt8;      break;
+          case DT_INT16:      dtype = DataType::Int16;      break;
+          case DT_UINT16:     dtype = DataType::UInt16;     break;
+          case DT_INT32:      dtype = DataType::Int32;      break;
+          case DT_UINT32:     dtype = DataType::UInt32;     break;
+          case DT_FLOAT32:    dtype = DataType::Float32;    break;
+          case DT_FLOAT64:    dtype = DataType::Float64;    break;
+          case DT_COMPLEX64:  dtype = DataType::CFloat32;   break;
+          case DT_COMPLEX128: dtype = DataType::CFloat64;   break;
           default: throw Exception ("unknown data type for Analyse image \"" + H.name() + "\"");
         }
 
-        if ( !( H.datatype().is (DataType::Bit) || H.datatype().is (DataType::UInt8) || H.datatype().is (DataType::Int8) ) ) {
-          if (is_BE) H.datatype().set_flag (DataType::BigEndian);
-          else H.datatype().set_flag (DataType::LittleEndian);
+        if ( !( dtype.is (DataType::Bit) || dtype.is (DataType::UInt8) || dtype.is (DataType::Int8) ) ) {
+          if (is_BE) dtype.set_flag (DataType::BigEndian);
+          else dtype.set_flag (DataType::LittleEndian);
         }
 
-        if (get<int16_t> (&NH.bitpix, is_BE) != (int16_t) H.datatype().bits())
+        if (get<int16_t> (&NH.bitpix, is_BE) != (int16_t) dtype.bits())
           error ("WARNING: bitpix field does not match data type in NIfTI image \"" + H.name() + "\" - ignored");
+
+        H.set_datatype (dtype);
 
         // voxel sizes:
         for (int i = 0; i < ndim; i++) {
-          H.axes.vox(i) = get<float32> (&NH.pixdim[i+1], is_BE);
-          if (H.axes.vox(i) < 0.0) {
+          H.set_vox (i, get<float32> (&NH.pixdim[i+1], is_BE));
+          if (H.vox(i) < 0.0) {
             info ("voxel size along axis " + str(i) + " specified as negative in NIfTI image \"" + H.name() + "\" - taking absolute value");
-            H.axes.vox(i) = Math::abs (H.axes.vox(i));
+            H.set_vox (i, Math::abs (H.vox(i)));
           }
         }
 
 
         // offset and scale:
-        H.scale = get<float32> (&NH.scl_slope, is_BE);
-        if (finite(H.scale) && H.scale != 0.0) {
-          H.offset = get<float32> (&NH.scl_inter, is_BE);
-          H.offset = finite (H.offset) ? H.offset : 0.0;
+        float scale = get<float32> (&NH.scl_slope, is_BE);
+        if (finite(scale) && scale != 0.0) {
+          float offset = get<float32> (&NH.scl_inter, is_BE);
+          if (!finite (offset)) offset = 0.0;
+          H.set_scaling (scale, offset);
         }
-        else {
-          H.scale = 1.0;
-          H.offset = 0.0;
-        }
+        else H.set_scaling ();
 
         size_t data_offset = (size_t) get<float32> (&NH.vox_offset, is_BE);
 
@@ -132,12 +134,12 @@ namespace MR {
         strncpy (descrip, NH.descrip, 80);
         if (descrip[0]) {
           descrip[80] = '\0';
-          H.comments.push_back (descrip);
+          H.add_comment (descrip);
         }
 
         if (is_nifti) {
           if (get<int16_t> (&NH.sform_code, is_BE)) {
-            Math::Matrix<float>& M (H.transform());
+            Math::Matrix<float>& M (H.get_transform());
             M.allocate (4,4);
 
             M(0,0) = get<float32> (&NH.srow_x[0], is_BE);
@@ -159,28 +161,28 @@ namespace MR {
             M(3,3) = 1.0;
 
             // get voxel sizes:
-            H.axes.vox(0) = Math::sqrt (Math::pow2 (M(0,0)) + Math::pow2 (M(1,0)) + Math::pow2 (M(2,0)));
-            H.axes.vox(1) = Math::sqrt (Math::pow2 (M(0,1)) + Math::pow2 (M(1,1)) + Math::pow2 (M(2,1)));
-            H.axes.vox(2) = Math::sqrt (Math::pow2 (M(0,2)) + Math::pow2 (M(1,2)) + Math::pow2 (M(2,2)));
+            H.set_vox (0, Math::sqrt (Math::pow2 (M(0,0)) + Math::pow2 (M(1,0)) + Math::pow2 (M(2,0))));
+            H.set_vox (1, Math::sqrt (Math::pow2 (M(0,1)) + Math::pow2 (M(1,1)) + Math::pow2 (M(2,1))));
+            H.set_vox (2, Math::sqrt (Math::pow2 (M(0,2)) + Math::pow2 (M(1,2)) + Math::pow2 (M(2,2))));
 
             // normalize each transform axis:
-            M(0,0) /= H.axes.vox(0);
-            M(1,0) /= H.axes.vox(0);
-            M(2,0) /= H.axes.vox(0);
+            M(0,0) /= H.vox(0);
+            M(1,0) /= H.vox(0);
+            M(2,0) /= H.vox(0);
 
-            M(0,1) /= H.axes.vox(1);
-            M(1,1) /= H.axes.vox(1);
-            M(2,1) /= H.axes.vox(1);
+            M(0,1) /= H.vox(1);
+            M(1,1) /= H.vox(1);
+            M(2,1) /= H.vox(1);
 
-            M(0,2) /= H.axes.vox(2);
-            M(1,2) /= H.axes.vox(2);
-            M(2,2) /= H.axes.vox(2);
+            M(0,2) /= H.vox(2);
+            M(1,2) /= H.vox(2);
+            M(2,2) /= H.vox(2);
           }
           else if (get<int16_t> (&NH.qform_code, is_BE)) {
             Math::Quaternion Q (get<float32> (&NH.quatern_b, is_BE), get<float32> (&NH.quatern_c, is_BE), get<float32> (&NH.quatern_d, is_BE));
             float transform[9];
             Q.to_matrix (transform);
-            Math::Matrix<float>& M (H.transform());
+            Math::Matrix<float>& M (H.get_transform());
             M.allocate (4,4);
 
             M(0,0) = transform[0];
@@ -212,23 +214,11 @@ namespace MR {
           }
         }
         else {
-          H.transform().clear();
-          if (!File::Config::get_bool ("Analyse.LeftToRight", true)) H.axes.stride(0) = -H.axes.stride(0);
+          H.get_transform().clear();
+          if (!File::Config::get_bool ("Analyse.LeftToRight", true)) H.set_stride (0, -H.stride(0));
           if (!right_left_warning_issued) {
-            info ("assuming Analyse images are encoded " + std::string (H.axes.forward(0) ? "left to right" : "right to left"));
+            info ("assuming Analyse images are encoded " + std::string (H.stride(0)>0 ? "left to right" : "right to left"));
             right_left_warning_issued = true;
-          }
-        }
-
-
-        if (!H.axes.description(0).size()) H.axes.description(0) = Image::Axes::left_to_right;
-        if (!H.axes.units(0).size()) H.axes.units(0) = Image::Axes::millimeters;
-        if (H.ndim() > 1) {
-          if (!H.axes.description(1).size()) H.axes.description(1) = Image::Axes::posterior_to_anterior;
-          if (!H.axes.units(1).size()) H.axes.units(1) = Image::Axes::millimeters;
-          if (H.ndim() > 2) {
-            if (!H.axes.description(2).size()) H.axes.description(2) = Image::Axes::inferior_to_superior;
-            if (!H.axes.units(2).size()) H.axes.units(2) = Image::Axes::millimeters;
           }
         }
 
@@ -244,50 +234,41 @@ namespace MR {
       void check (Image::Header& H, bool single_file)
       {
         for (size_t i = 0; i < H.ndim(); ++i) 
-          if (H.axes.dim(i) < 1) 
-            H.axes.dim(i) = 1;
+          if (H.dim(i) < 1) 
+            H.set_dim (i, 1);
 
         if (single_file) { 
           ssize_t order[H.ndim()];
           size_t i, axis = 0;
           for (i = 0; i < H.ndim() && axis < 3; ++i) 
-            if (abs(H.axes.stride(i)) <= 3) 
-              order[axis++] = H.axes.stride(i);
+            if (abs(H.stride(i)) <= 3) 
+              order[axis++] = H.stride(i);
 
           assert (axis == 3);
 
           for (i = 0; i < H.ndim(); ++i)
-            if (abs(H.axes.stride(i)) > 3) 
-              order[axis++] = H.axes.stride(i);
+            if (abs(H.stride(i)) > 3) 
+              order[axis++] = H.stride(i);
 
           assert (axis == H.ndim());
 
           for (i = 0; i < 3; ++i) 
-            H.axes.stride(i) = order[i];
+            H.set_stride (i, order[i]);
 
           for (; i < H.ndim(); ++i) 
-            H.axes.stride(i) = abs(order[i]);
+            H.set_stride (i, abs(order[i]));
         }
         else {
           for (size_t i = 0; i < H.ndim(); ++i) 
-            H.axes.stride(i) = i+1;
+            H.set_stride (i, i+1);
           if (File::Config::get_bool ("Analyse.LeftToRight", true)) 
-            H.axes.stride(0) = -H.axes.stride(0);
+            H.set_stride (0, -H.stride(0));
 
           if (!right_left_warning_issued) {
-            info ("assuming Analyse images are encoded " + std::string (H.axes.forward(0) ? "left to right" : "right to left"));
+            info ("assuming Analyse images are encoded " + std::string (H.stride(0)>0 ? "left to right" : "right to left"));
             right_left_warning_issued = true;
           }
         }
-
-        H.axes.description(0) = Image::Axes::left_to_right;
-        H.axes.units(0) = Image::Axes::millimeters;
-
-        H.axes.description(1) = Image::Axes::posterior_to_anterior;
-        H.axes.units(1) = Image::Axes::millimeters;
-
-        H.axes.description(1) = Image::Axes::inferior_to_superior;
-        H.axes.units(1) = Image::Axes::millimeters;
 
       }
 
@@ -340,16 +321,16 @@ namespace MR {
         put<int32_t> (348, &NH.sizeof_hdr, is_BE);
 
         strncpy ((char*) &NH.datatype, "dsr      \0", 10);
-        strncpy ((char*) &NH.db_name, H.comments.size() ? H.comments[0].c_str() : "untitled\0\0\0\0\0\0\0\0\0\0\0", 18);
+        strncpy ((char*) &NH.db_name, H.comments().size() ? H.comments()[0].c_str() : "untitled\0\0\0\0\0\0\0\0\0\0\0", 18);
         put<int32_t> (16384, &NH.extents, is_BE);
         strncpy ((char*) &NH.regular, "r\0", 2);
 
         // data set dimensions:
         put<int16_t> (H.ndim(), &NH.dim[0], is_BE);
         for (size_t i = 0; i < 3; i++) 
-          put<int16_t> (H.axes.dim(perm[i]), &NH.dim[i+1], is_BE);
+          put<int16_t> (H.dim(perm[i]), &NH.dim[i+1], is_BE);
         for (size_t i = 3; i < H.ndim(); i++) 
-          put<int16_t> (H.axes.dim(i), &NH.dim[i+1], is_BE);
+          put<int16_t> (H.dim(i), &NH.dim[i+1], is_BE);
 
         // data type:
         int16_t dt = 0;
@@ -381,48 +362,48 @@ namespace MR {
 
         // voxel sizes:
         for (size_t i = 0; i < 3; i++) 
-          put<float32> (H.axes.vox(perm[i]), &NH.pixdim[i+1], is_BE);
+          put<float32> (H.vox(perm[i]), &NH.pixdim[i+1], is_BE);
         for (size_t i = 3; i < H.ndim(); i++) 
-          put<float32> (H.axes.vox(i), &NH.pixdim[i+1], is_BE);
+          put<float32> (H.vox(i), &NH.pixdim[i+1], is_BE);
 
         put<float32> (352.0, &NH.vox_offset, is_BE);
 
         // offset and scale:
-        put<float32> (H.scale, &NH.scl_slope, is_BE);
-        put<float32> (H.offset, &NH.scl_inter, is_BE);
+        put<float32> (H.data_scale(), &NH.scl_slope, is_BE);
+        put<float32> (H.data_offset(), &NH.scl_inter, is_BE);
 
         NH.xyzt_units = SPACE_TIME_TO_XYZT (NIFTI_UNITS_MM, NIFTI_UNITS_SEC);
 
         int pos = 0;
         char descrip[81];
         descrip[0] = '\0';
-        for (size_t i = 1; i < H.comments.size(); i++) {
+        for (size_t i = 1; i < H.comments().size(); i++) {
           if (pos >= 75) break;
           if (i > 1) {
             descrip[pos++] = ';';
             descrip[pos++] = ' ';
           }
-          strncpy (descrip + pos, H.comments[i].c_str(), 80-pos);
-          pos += H.comments[i].size();
+          strncpy (descrip + pos, H.comments()[i].c_str(), 80-pos);
+          pos += H.comments()[i].size();
         }
         strncpy ((char*) &NH.descrip, descrip, 80);
 
         put<int16_t> (NIFTI_XFORM_UNKNOWN, &NH.qform_code, is_BE);
         put<int16_t> (NIFTI_XFORM_SCANNER_ANAT, &NH.sform_code, is_BE);
 
-        put<float32> (H.axes.vox(perm[0])*M(0,0), &NH.srow_x[0], is_BE);
-        put<float32> (H.axes.vox(perm[1])*M(0,1), &NH.srow_x[1], is_BE);
-        put<float32> (H.axes.vox(perm[2])*M(0,2), &NH.srow_x[2], is_BE);
+        put<float32> (H.vox(perm[0])*M(0,0), &NH.srow_x[0], is_BE);
+        put<float32> (H.vox(perm[1])*M(0,1), &NH.srow_x[1], is_BE);
+        put<float32> (H.vox(perm[2])*M(0,2), &NH.srow_x[2], is_BE);
         put<float32> (M(0,3), &NH.srow_x[3], is_BE);
 
-        put<float32> (H.axes.vox(perm[0])*M(1,0), &NH.srow_y[0], is_BE);
-        put<float32> (H.axes.vox(perm[1])*M(1,1), &NH.srow_y[1], is_BE);
-        put<float32> (H.axes.vox(perm[2])*M(1,2), &NH.srow_y[2], is_BE);
+        put<float32> (H.vox(perm[0])*M(1,0), &NH.srow_y[0], is_BE);
+        put<float32> (H.vox(perm[1])*M(1,1), &NH.srow_y[1], is_BE);
+        put<float32> (H.vox(perm[2])*M(1,2), &NH.srow_y[2], is_BE);
         put<float32> (M(1,3), &NH.srow_y[3], is_BE);
 
-        put<float32> (H.axes.vox(perm[0])*M(2,0), &NH.srow_z[0], is_BE);
-        put<float32> (H.axes.vox(perm[1])*M(2,1), &NH.srow_z[1], is_BE);
-        put<float32> (H.axes.vox(perm[2])*M(2,2), &NH.srow_z[2], is_BE);
+        put<float32> (H.vox(perm[0])*M(2,0), &NH.srow_z[0], is_BE);
+        put<float32> (H.vox(perm[1])*M(2,1), &NH.srow_z[1], is_BE);
+        put<float32> (H.vox(perm[2])*M(2,2), &NH.srow_z[2], is_BE);
         put<float32> (M(2,3), &NH.srow_z[3], is_BE);
 
         strncpy ((char*) &NH.magic, single_file ? "n+1\0" : "ni1\0", 4);

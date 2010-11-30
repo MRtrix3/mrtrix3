@@ -42,6 +42,7 @@ namespace MR {
 
           std::string  filename;
           std::string  sequence_name;
+          std::string  manufacturer;
           Series*      series;
 
           size_t   acq_dim[2], dim[2], instance, acq, sequence;

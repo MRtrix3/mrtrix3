@@ -24,6 +24,7 @@
 #include <unistd.h>
 
 #include "app.h"
+#include "image/header.h"
 #include "image/handler/pipe.h"
 #include "dataset/misc.h"
 
@@ -34,11 +35,12 @@ namespace MR {
       Pipe::~Pipe () 
       {
         if (file) {
-          if (is_new) std::cout << H.files[0].name << "\n";
+          const std::vector<File::Entry>& Hfiles (H.get_files());
+          if (is_new) std::cout << Hfiles[0].name << "\n";
           else {
             file = NULL;
-            debug ("deleting piped image file \"" + H.files[0].name + "\"...");
-            unlink (H.files[0].name.c_str());
+            debug ("deleting piped image file \"" + Hfiles[0].name + "\"...");
+            unlink (Hfiles[0].name.c_str());
           }
         }
       }
@@ -48,16 +50,17 @@ namespace MR {
 
       void Pipe::execute ()
       {
-        assert (H.files.size() == 1);
-        debug ("mapping piped image \"" + H.files[0].name + "\"...");
+        const std::vector<File::Entry>& Hfiles (H.get_files());
+        assert (Hfiles.size() == 1);
+        debug ("mapping piped image \"" + Hfiles[0].name + "\"...");
 
-        segsize = DataSet::voxel_count (H) / H.files.size();
+        segsize = DataSet::voxel_count (H) / Hfiles.size();
         int64_t bytes_per_segment = (H.datatype().bits() * segsize + 7) / 8;
 
         if (double (bytes_per_segment) >= double (std::numeric_limits<size_t>::max()))
           throw Exception ("image \"" + H.name() + "\" is larger than maximum accessible memory");
 
-        file = new File::MMap (H.files[0], H.readwrite, bytes_per_segment); 
+        file = new File::MMap (Hfiles[0], H.readwrite(), bytes_per_segment); 
         addresses.resize(1);
         addresses[0] = file->address();
       }

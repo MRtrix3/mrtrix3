@@ -38,17 +38,28 @@ DESCRIPTION = {
 };
 
 ARGUMENTS = {
-  Argument ("image1", "first input image", "the first input image.").type_image_in (),
-  Argument ("image2", "second input image", "the second input image.", AllowMultiple).type_image_in (),
-  Argument ("output", "output image", "the output image.").type_image_out (),
-  Argument::End
+  Argument ("image1", "the first input image.")
+    .type_image_in(),
+
+  Argument ("image2", "the second input image.")
+    .type_image_in()
+    .allow_multiple(),
+
+  Argument ("output", "the output image.")
+    .type_image_out (),
+
+  Argument ()
 };
 
 OPTIONS = {
-  Option ("axis", "concatenation axis", "specify axis along which concatenation should be performed. By default, the program will use the axis after the last non-singleton axis of any of the input images")
-    .append (Argument ("axis", "axis", "the concatenation axis").type_integer (0, INT_MAX, 0)),
 
-  Option::End
+  Option ("axis", 
+      "specify axis along which concatenation should be performed. By default, "
+      "the program will use the axis after the last non-singleton axis of any "
+      "of the input images")
+    + Argument ("axis").type_integer (0, std::numeric_limits<int>::max(), std::numeric_limits<int>::max()),
+
+  Option ()
 };
 
 typedef float value_type;
@@ -57,18 +68,20 @@ typedef float value_type;
 EXECUTE {
   int axis = -1;
 
-  std::vector<OptBase> opt = get_options ("axis");
-  if (opt.size()) axis = opt[0][0].get_int();
+  Options opt = get_options ("axis");
+  if (opt.size()) 
+    axis = opt[0][0];
 
   int num_images = argument.size()-1;
-  Ptr<Image::Header> in[num_images];
-  Image::Header header (argument[0].get_image());
+  Ptr<Image::Header> in [num_images];
+  in[0] = new Image::Header (argument[0]);
+  Image::Header& header_in (*in[0]);
 
   int ndims = 0;
   int last_dim;
 
-  for (int i = 0; i < num_images; i++) {
-    in[i] = new Image::Header(argument[i].get_image());
+  for (int i = 1; i < num_images; i++) {
+    in[i] = new Image::Header (argument[i]);
     for (last_dim = in[i]->ndim()-1; in[i]->dim (last_dim) <= 1 && last_dim >= 0; last_dim--);
       if (last_dim > ndims)
         ndims = last_dim;
@@ -85,32 +98,36 @@ EXECUTE {
 
   if (axis >= ndims) ndims = axis+1;
 
-  header.axes.ndim() = ndims;
+  Image::Header header_out (header_in);
+  header_out.set_ndim (ndims);
 
-  for (uint i = 0; i < header.axes.ndim(); i++) {
-    if (header.axes.dim(i) <= 1) {
+  for (size_t i = 0; i < header_out.ndim(); i++) {
+    if (header_out.dim(i) <= 1) {
       for (int n = 0; n < num_images; n++) {
         if (in[n]->ndim() > i) {
-          header.axes[i] = (*in[n]).axes[i];
+          header_out.set_dim (i, in[n]->dim(i));
+          header_out.set_vox (i, in[n]->vox(i));
+          header_out.set_description (i, in[n]->description(i));
+          header_out.set_units (i, in[n]->units(i));
           break;
         }
       }
     }
   }
 
-  header.axes.dim(axis) = 0;
 
-  for (int n = 0; n < num_images; n++) {
-    if (in[n]->is_complex())
-      header.datatype() = DataType::CFloat32;
-
-    if (static_cast<int>(in[n]->ndim()) > axis)
-      header.axes.dim(axis) += in[n]->dim(axis) > 1 ? in[n]->dim(axis) : 1;
-    else header.axes.dim(axis)++;
+  {
+    size_t axis_dim = 0;
+    for (int n = 0; n < num_images; n++) {
+      if (in[n]->is_complex())
+        header_out.set_datatype (DataType::CFloat32);
+      axis_dim += in[n]->ndim() > size_t(axis) ? ( in[n]->dim(axis) > 1 ? in[n]->dim(axis) : 1) : 1;
+    }
+    header_out.set_dim (axis, axis_dim);
   }
 
-  Image::Header output_header (argument[num_images].get_image (header));
-  Image::Voxel<value_type> out_vox (output_header);
+  header_out.create (argument[num_images]);
+  Image::Voxel<value_type> out_vox (header_out);
   ProgressBar progress("concatenating...", DataSet::voxel_count(out_vox));
   int axis_offset = 0;
 
@@ -118,7 +135,7 @@ EXECUTE {
     DataSet::Loop loop;
     Image::Voxel<value_type> in_vox(*in[i]);
     for (loop.start(in_vox); loop.ok(); loop.next(in_vox)) {
-      for (uint dim = 0; dim < out_vox.ndim(); dim++) {
+      for (size_t dim = 0; dim < out_vox.ndim(); dim++) {
         if (static_cast<int>(dim) == axis)
           out_vox[dim] = dim < in_vox.ndim() ? axis_offset + in_vox[dim] : i;
         else

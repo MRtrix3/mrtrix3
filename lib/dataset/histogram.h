@@ -62,7 +62,8 @@ namespace MR {
         size_t      frequency (size_t index) const    { return (list[index].frequency); }
         value_type  value (size_t index) const        { return (list[index].value); }
         size_t      num () const                      { return (list.size()); }
-        value_type  first_min () const {
+        value_type  first_min () const
+        {
           size_t p1 = 0;
           while (list[p1].frequency <= list[p1+1].frequency && p1+2 < list.size()) ++p1;
           for (size_t p = p1; p < list.size(); ++p) {

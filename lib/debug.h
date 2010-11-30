@@ -20,46 +20,21 @@
 
 */
 
+
+#ifndef __debug_h__
+#define __debug_h__
+
+#include "mrtrix.h"
 #include "app.h"
-#include "file/ximg.h"
 
-using namespace MR; 
-
-SET_VERSION_DEFAULT;
-SET_AUTHOR (NULL);
-SET_COPYRIGHT (NULL);
-
-DESCRIPTION = {
-  "output XIMG fields in human-readable format.",
-  NULL
-};
+/** Prints the file and line number. Useful for debugging purposes. */
+#define TEST std::cerr << MR::App::name() << ": line " << __LINE__ \
+  << " in " << __func__ << "() from file " << __FILE__ << "\n"
 
 
-ARGUMENTS = {
+/** Prints a variable name and its value, followed by the file and line number. Useful for debugging purposes. */
+#define VAR(variable) std::cerr << MR::App::name() << ": " << #variable << " = " << (variable) \
+  << " (in " << __func__ << "() from " << __FILE__  << ": " << __LINE__ << ")\n"
 
-  Argument ("file", "the XIMG file to be scanned.")
-    .allow_multiple()
-    .type_file (),
+#endif
 
-  Argument ()
-};
-
-
-OPTIONS = {
-  Option ()
-};
-
-
-EXECUTE {
-
-  for (size_t n = 0; n < argument.size();  n++) {
-    try {
-      File::XImg reader (argument[n]);
-      std::cout << reader << "\n";
-    }
-    catch (...) { 
-      error ("error reading file \"" + argument[n] + "\"");
-    }
-  }
-}
-  

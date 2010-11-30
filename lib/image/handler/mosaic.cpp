@@ -24,6 +24,7 @@
 
 #include "app.h"
 #include "progressbar.h"
+#include "image/header.h"
 #include "image/handler/mosaic.h"
 #include "dataset/misc.h"
 
@@ -33,7 +34,8 @@ namespace MR {
 
       Mosaic::~Mosaic () 
       {
-        if (addresses.size()) delete [] addresses[0];
+        if (addresses.size()) 
+          delete [] addresses[0];
       }
 
 
@@ -41,25 +43,26 @@ namespace MR {
 
       void Mosaic::execute ()
       {
-        if (H.files.empty()) throw Exception ("no files specified in header for image \"" + H.name() + "\"");
+        const std::vector<File::Entry>& files (H.get_files());
+        if (files.empty()) throw Exception ("no files specified in header for image \"" + H.name() + "\"");
         assert (H.datatype().bits() > 1);
 
         segsize = H.dim(0) * H.dim(1) * H.dim(2);
-        assert (segsize * H.files.size() == DataSet::voxel_count (H));
+        assert (segsize * files.size() == DataSet::voxel_count (H));
 
         size_t bytes_per_segment = H.datatype().bytes() * segsize;
-        if (H.files.size() * bytes_per_segment > std::numeric_limits<size_t>::max())
+        if (files.size() * bytes_per_segment > std::numeric_limits<size_t>::max())
           throw Exception ("image \"" + H.name() + "\" is larger than maximum accessible memory");
 
         debug ("loading mosaic image \"" + H.name() + "\"...");
         addresses.resize (1);
-        addresses[0] = new uint8_t [H.files.size() * bytes_per_segment];
+        addresses[0] = new uint8_t [files.size() * bytes_per_segment];
         if (!addresses[0]) throw Exception ("failed to allocate memory for image \"" + H.name() + "\"");
 
-        ProgressBar progress ("reformatting DICOM mosaic images...", slices*H.files.size()); 
+        ProgressBar progress ("reformatting DICOM mosaic images...", slices*files.size()); 
         uint8_t* data = addresses[0];
-        for (size_t n = 0; n < H.files.size(); n++) {
-          File::MMap file (H.files[n], false, m_xdim * m_ydim * H.datatype().bytes());
+        for (size_t n = 0; n < files.size(); n++) {
+          File::MMap file (files[n], false, m_xdim * m_ydim * H.datatype().bytes());
           size_t nx = 0, ny = 0;
           for (size_t z = 0; z < slices; z++) {
             size_t ox = nx*xdim;

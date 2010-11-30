@@ -217,46 +217,55 @@ namespace MR {
         template <class Set> 
           void next_impl (size_t axis, Set& set)
           { 
-            if (set[axis] + 1 < set.dim(axis)) ++set[axis]; 
-            else {
-              if (axis+1 == std::min (to_,set.ndim())) {
-                cont_ = false;
-              }
+            if (axis < std::min (to_,set.ndim())) {
+              if (set[axis] + 1 < set.dim(axis)) ++set[axis]; 
               else {
-                next_impl (axis+1, set);
-                if (cont_) set[axis] = 0;
+                if (axis+1 == std::min (to_,set.ndim())) {
+                  cont_ = false;
+                }
+                else {
+                  next_impl (axis+1, set);
+                  if (cont_) set[axis] = 0;
+                }
               }
             }
+            else cont_ = false;
           }
 
         template <class Set, class Set2> 
           void next_impl (size_t axis, Set& set, Set2& set2) 
           { 
-            if (set[axis] + 1 < set.dim(axis)) { ++set[axis]; ++set2[axis]; }
-            else {
-              if (axis+1 == std::min (to_, set.ndim())) {
-                cont_ = false;
-              }
+            if (axis < std::min (to_,set.ndim())) {
+              if (set[axis] + 1 < set.dim(axis)) { ++set[axis]; ++set2[axis]; }
               else {
-                next_impl (axis+1, set, set2);
-                if (cont_) { set[axis] = 0; set2[axis] = 0; }
+                if (axis+1 == std::min (to_, set.ndim())) {
+                  cont_ = false;
+                }
+                else {
+                  next_impl (axis+1, set, set2);
+                  if (cont_) { set[axis] = 0; set2[axis] = 0; }
+                }
               }
             }
+            else cont_ = false;
           }
 
         template <class Set, class Set2, class Set3> 
           void next_impl (size_t axis, Set& set, Set2& set2, Set3& set3)
           { 
-            if (set[axis] + 1 < set.dim(axis)) { ++set[axis]; ++set2[axis]; ++set3[axis]; }
-            else {
-              if (axis+1 == std::min (to_, set.ndim())) {
-                cont_ = false; 
-              }
+            if (axis < std::min (to_,set.ndim())) {
+              if (set[axis] + 1 < set.dim(axis)) { ++set[axis]; ++set2[axis]; ++set3[axis]; }
               else {
-                next_impl (axis+1, set, set2, set3);
-                if (cont_) { set[axis] = 0; set2[axis] = 0; set3[axis] = 0; }
+                if (axis+1 == std::min (to_, set.ndim())) {
+                  cont_ = false; 
+                }
+                else {
+                  next_impl (axis+1, set, set2, set3);
+                  if (cont_) { set[axis] = 0; set2[axis] = 0; set3[axis] = 0; }
+                }
               }
             }
+            else cont_ = false;
           }
 
     };

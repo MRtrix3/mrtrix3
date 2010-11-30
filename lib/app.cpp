@@ -23,15 +23,14 @@
 #include <gsl/gsl_version.h>
 
 #include "app.h"
+#include "debug.h"
 #include "progressbar.h"
 #include "file/path.h"
 #include "file/config.h"
 
-#define NUM_DEFAULT_OPTIONS 5
+//#define NUM_DEFAULT_OPTIONS 5
 
 namespace MR {
-
-  const std::string& get_application_name () { return (App::name()); }
 
   namespace {
 
@@ -135,38 +134,46 @@ namespace MR {
   const char*     App::author = NULL;
 
   const Option App::default_options[] = {
-    Option ("info", "display information", "display information messages."),
-    Option ("quiet", "suppress reporting", "do not display information messages or progress status."),
-    Option ("debug", "display debug messages", "display debugging messages."),
-    Option ("help", "show help page", "display this information page and exit."),
-    Option ("version", "show version", "display version information and exit.")
+    Option ("info", "display information messages."),
+    Option ("quiet", "do not display information messages or progress status."),
+    Option ("debug", "display debugging messages."),
+    Option ("help", "display this information page and exit."),
+    Option ("version", "display version information and exit."),
+    Option()
   };
 
 
 
 
-  size_t App::match_option (const char* stub) const
+  const Option* App::match_option (const char* stub) const
   {
-    std::vector<size_t> candidates;
-    std::string s (stub);
+    std::vector<const Option*> candidates;
+    std::string root (stub);
 
-    for (size_t n = 0; command_options[n].is_valid(); n++) 
-      if (s.compare (0, s.size(), command_options[n].sname, s.size()) == 0)
-        candidates.push_back (n);
+    for (const Option* opt = command_options; *opt; ++opt)
+      if (root.compare (0, root.size(), opt->id, root.size()) == 0)
+        candidates.push_back (opt);
 
-    for (size_t n = 0; n < NUM_DEFAULT_OPTIONS; n++) 
-      if (s.compare (0, s.size(), default_options[n].sname, s.size()) == 0)
-        candidates.push_back (n + DEFAULT_OPTIONS_OFFSET);
+    for (const Option* opt = default_options; *opt; ++opt)
+      if (root.compare (0, root.size(), opt->id, root.size()) == 0)
+        candidates.push_back (opt);
 
-    if (candidates.size() == 0) return (std::numeric_limits<size_t>::max());
-    if (candidates.size() == 1) return (candidates[0]);
+    if (candidates.size() == 0) 
+      return (NULL);
 
-    for (size_t n = 0; n < candidates.size(); ++n) 
-      if (option_name (candidates[n]) == s) return (candidates[n]);
+    if (candidates.size() == 1) 
+      return (candidates[0]);
 
-    s = "several matches possible for option \"-" + s + "\": \"-" + option_name (candidates[0]) + "\", \"-" + option_name (candidates[1]) + "\"";
-    for (size_t n = 2; n < candidates.size(); n++) { s += ", \"-"; s += option_name (candidates[n]); s += "\""; }
-    throw Exception (s);
+    for (std::vector<const Option*>::const_iterator opt = candidates.begin(); opt != candidates.end(); ++opt) 
+      if (root == (*opt)->id)
+        return (*opt);
+
+    root = "several matches possible for option \"-" + root + "\": \"-" + candidates[0]->id;
+
+    for (std::vector<const Option*>::const_iterator opt = candidates.begin()+1; opt != candidates.end(); ++opt) 
+      root += std::string (", \"-") + (*opt)->id + "\"";
+
+    throw Exception (root);
   }
 
 
@@ -184,9 +191,12 @@ namespace MR {
     command_description = cmd_desc;
     command_arguments = cmd_args;
     command_options = cmd_opts;
-    author = cmd_author;
+    author = ( cmd_author ? cmd_author : "J-Donald Tournier (d.tournier@brain.org.au)" );
     version = cmd_version;
-    copyright = cmd_copyright;
+    copyright = ( cmd_copyright ? cmd_copyright : 
+                "Copyright (C) 2008 Brain Research Institute, Melbourne, Australia.\n"
+                "This is free software; see the source for copying conditions.\n"
+                "There is NO warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE." );
 
     if (argc == 2) {
       if (strcmp (argv[1], "__print_full_usage__") == 0) {
@@ -233,26 +243,27 @@ namespace MR {
       if (arg[0] == '-' && arg[1] && !isdigit(arg[1]) && arg[1] != '.') {
 
         while (*arg == '-') arg++;
-        size_t opt = match_option (arg);
+        const Option* opt = match_option (arg);
 
-        if (opt == std::numeric_limits<size_t>::max()) {
+        if (!opt) 
           throw Exception (std::string ("unknown option \"-") + arg + "\"");
+
+        else if (opt == default_options) { // info
+          if (log_level < 2) 
+            log_level = 2;
         }
-        else if (opt == DEFAULT_OPTIONS_OFFSET) {
-          if (log_level < 2) log_level = 2;
-        }
-        else if (opt == DEFAULT_OPTIONS_OFFSET+1) {
+        else if (opt == default_options+1) { // quiet
           log_level = 0;
           ProgressBar::display = false;
         }
-        else if (opt == DEFAULT_OPTIONS_OFFSET+2) {
+        else if (opt == default_options+2) { // debug
           log_level = 3;
         }
-        else if (opt == DEFAULT_OPTIONS_OFFSET+3) {
+        else if (opt == default_options+3) { // help
           print_help ();
           throw 0;
         }
-        else if (opt == DEFAULT_OPTIONS_OFFSET+4) {
+        else if (opt == default_options+4) { // version
           std::printf (
               "== %s %zu.%zu.%zu ==\n"
               "%d bit %s version, built " __DATE__ " against MRtrix %zu.%zu.%zu, using GSL %s\n"
@@ -266,27 +277,20 @@ namespace MR {
 #else
               "debug"
 #endif
-              , mrtrix_major_version, mrtrix_minor_version, mrtrix_micro_version, gsl_version, 
-              ( author ? author : "J-Donald Tournier (d.tournier@brain.org.au)" ),
-              ( copyright ? copyright : 
-                "Copyright (C) 2008 Brain Research Institute, Melbourne, Australia.\n"
-                "This is free software; see the source for copying conditions.\n"
-                "There is NO warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE." ) 
-              );
+              , mrtrix_major_version, mrtrix_minor_version, mrtrix_micro_version, 
+              gsl_version, author, copyright);
 
           throw 0;
         }
-        else {
-          if (n + int(command_options[opt].size()) >= argc) 
-            throw Exception (std::string ("not enough parameters to option \"-") + command_options[opt].sname + "\"");
+        else { // command option
+          if (n + int(opt->args.size()) >= argc) 
+            throw Exception (std::string ("not enough parameters to option \"-") + opt->id + "\"");
 
-          parsed_options.push_back (ParsedOption());
-          parsed_options.back().index = opt;
-          while (parsed_options.back().args.size() < command_options[opt].size()) 
-            parsed_options.back().args.push_back (argv[++n]);
+          option.push_back (ParsedOption (opt, argv+n+1));
+          n += opt->args.size();
         }
       }
-      else parsed_arguments.push_back (argv[n]);
+      else argument.push_back (ParsedArgument (NULL, NULL, argv[n]));
     }
   }
 
@@ -300,66 +304,54 @@ namespace MR {
     size_t num_args_required = 0, num_command_arguments = 0;
     bool has_optional_arguments = false;
 
-    for (const Argument* arg = App::command_arguments; arg->is_valid(); arg++) {
+    for (const Argument* arg = App::command_arguments; *arg; arg++) {
       num_command_arguments++;
-      if (arg->mandatory) num_args_required++; 
-      else has_optional_arguments = true;
-      if (arg->allow_multiple) has_optional_arguments = true;
+      if (arg->flags & Optional) has_optional_arguments = true;
+      else num_args_required++; 
+      if (arg->flags & AllowMultiple) has_optional_arguments = true;
     }
 
-    if (has_optional_arguments && num_args_required > parsed_arguments.size()) 
-      throw Exception ("expected at least " + str (num_args_required) + " arguments (" + str(parsed_arguments.size()) + " supplied)");
+    if (has_optional_arguments && num_args_required > argument.size()) 
+      throw Exception ("expected at least " + str (num_args_required) 
+          + " arguments (" + str(argument.size()) + " supplied)");
 
-    if (!has_optional_arguments && num_args_required != parsed_arguments.size()) 
-      throw Exception ("expected exactly " + str (num_args_required) + " arguments (" + str (parsed_arguments.size()) + " supplied)");
+    if (!has_optional_arguments && num_args_required != argument.size()) 
+      throw Exception ("expected exactly " + str (num_args_required) 
+          + " arguments (" + str (argument.size()) + " supplied)");
 
     size_t optional_argument = std::numeric_limits<size_t>::max();
-    for (size_t n = 0; n < parsed_arguments.size(); n++) {
+    for (size_t n = 0; n < argument.size(); n++) {
 
       if (n < optional_argument) 
-        if (!command_arguments[n].mandatory || command_arguments[n].allow_multiple) 
+        if (command_arguments[n].flags & (Optional | AllowMultiple) )
           optional_argument = n;
 
       size_t index = n;
       if (n >= optional_argument) {
-        if (int(num_args_required - optional_argument) < int(parsed_arguments.size()-n)) 
+        if (int(num_args_required - optional_argument) < int(argument.size()-n)) 
           index = optional_argument;
         else 
-          index = num_args_required - parsed_arguments.size() + n + (command_arguments[optional_argument].mandatory ? 0 : 1);
+          index = num_args_required - argument.size() + n + (command_arguments[optional_argument].flags & Optional ? 1 : 0);
       }
 
       if (index >= num_command_arguments) 
         throw Exception ("too many arguments");
 
-      argument.push_back (ArgBase (command_arguments[index], parsed_arguments[n]));
-      if (argument.back().type() == Undefined) 
-        throw Exception (std::string ("error parsing argument \"") + command_arguments[index].sname + 
-            "\" (specified as \"" + parsed_arguments[n] + "\")"); 
+      argument[n].arg = command_arguments + index;
     }
 
-    for (size_t index = 0; command_options[index].is_valid(); index++) {
+    for (const Option* opt = command_options; *opt; ++opt) {
       size_t count = 0;
-      for (size_t n = 0; n < parsed_options.size(); n++)
-        if (parsed_options[n].index == index)
+      for (std::vector<ParsedOption>::const_iterator popt = option.begin(); 
+          popt != option.end(); ++popt)
+        if (popt->opt == opt)
           count++;
 
-      if (command_options[index].mandatory && count < 1) 
-        throw Exception (std::string ("mandatory option \"") + command_options[index].sname + "\" must be specified");
+      if (count < 1 && !(opt->flags & Optional)) 
+        throw Exception (std::string ("mandatory option \"") + opt->id + "\" must be specified");
 
-      if (!command_options[index].allow_multiple && count > 1) 
-        throw Exception (std::string ("multiple instances of option \"") +  command_options[index].sname + "\" are not allowed");
-    }
-
-    for (size_t n = 0; n < parsed_options.size(); n++) {
-      option.push_back (OptBase(command_options[parsed_options[n].index].sname));
-      for (size_t a = 0; a < parsed_options[n].args.size(); a++) {
-        ArgBase arg (command_options[parsed_options[n].index][a], parsed_options[n].args[a]);
-        if (arg.type() == Undefined) 
-          throw Exception (std::string ("error parsing argument \"") + command_options[parsed_options[n].index][a].sname 
-              + "\" of option \"-" + command_options[parsed_options[n].index].sname
-              + "\" (specified as \"" + parsed_options[n].args[a] + "\")");
-        option.back().push_back (arg);
-      }
+      if (count > 1 && !(opt->flags & AllowMultiple)) 
+        throw Exception (std::string ("multiple instances of option \"") +  opt->id + "\" are not allowed");
     }
 
   }
@@ -383,87 +375,52 @@ namespace MR {
     else fprintf (stderr, "(no description available)\n\n");
 
     fprintf (stderr, "SYNTAX: %s [ options ]", App::name().c_str());
-    for (const Argument* arg = command_arguments; arg->is_valid(); arg++) {
-      if (!arg->mandatory) fprintf (stderr, " [");
-      fprintf (stderr, " %s", arg->sname);
-      if (arg->allow_multiple) {
-        if (arg->mandatory) fprintf (stderr, " [ %s", arg->sname);
+    for (const Argument* arg = command_arguments; *arg; ++arg) {
+
+      if (arg->flags & Optional)
+        fprintf (stderr, " [");
+
+      fprintf (stderr, " %s", arg->id);
+
+      if (arg->flags & AllowMultiple) {
+        if (!(arg->flags & Optional))
+          fprintf (stderr, " [ %s", arg->id);
         fprintf (stderr, " ...");
       }
-      if (!arg->mandatory || arg->allow_multiple) fprintf (stderr, " ]");
+      if (arg->flags & (Optional | AllowMultiple)) 
+        fprintf (stderr, " ]");
     }
     fprintf (stderr, "\n\n");
 
 
 
-    for (const Argument* arg = command_arguments; arg->is_valid(); arg++) 
-      print_formatted_paragraph (std::string("- ") + arg->sname + " ", arg->desc, HELP_ARG_INDENT);
+    for (const Argument* arg = command_arguments; *arg; ++arg) 
+      print_formatted_paragraph (std::string("- ") + arg->id + " ", arg->desc, HELP_ARG_INDENT);
     fprintf (stderr, "\n");
 
 
     fprintf (stderr, "OPTIONS:\n\n");
-    for (const Option* opt = command_options; opt->is_valid(); opt++) {
+    for (const Option* opt = command_options; *opt; ++opt) {
       std::string text ("-");
-      text += opt->sname;
-      for (size_t n = 0; n < opt->size(); n++) { text += " "; text += (*opt)[n].sname; }
+      text += opt->id;
+
+      for (std::vector<Argument>::const_iterator optarg = opt->args.begin(); 
+          optarg != opt->args.end(); ++optarg) 
+        text += std::string (" ") + optarg->id;
+      
       print_formatted_paragraph (text + " ", opt->desc, HELP_OPTION_INDENT);
-      for (size_t n = 0; n < opt->size(); n++) {
-        std::string desc = (*opt)[n].desc;
-        if ((*opt)[n].type == Choice) {
-          const char** p = (*opt)[n].extra_info.choice;
-          desc += std::string (" Valid choices: ") + *p;
-          for (++p; *p; ++p) desc += std::string(", ") + *p;
-          desc += ".";
-        }
-        print_formatted_paragraph (std::string ("- ") + (*opt)[n].sname + " ", desc, HELP_OPTION_ARG_INDENT);
-      }
+      // TODO: add argument defaults like this:
+      //print_formatted_paragraph (text + " ", opt->desc + opt->arg_defaults(), HELP_OPTION_INDENT);
+
       fprintf (stderr, "\n");
     }
 
     fprintf (stderr, "Standard options:\n");
-    for (size_t n = 0; n < NUM_DEFAULT_OPTIONS; n++) {
-      std::string text ("-");
-      text += default_options[n].sname;
-      print_formatted_paragraph (text, default_options[n].desc, HELP_OPTION_INDENT);
-    }
+    for (const Option* opt = default_options; *opt; ++opt) 
+      print_formatted_paragraph (std::string("-") + opt->id, opt->desc, HELP_OPTION_INDENT);
     fprintf (stderr, "\n");
   }
 
-
-
-
-  void App::print_full_argument_usage (const Argument& arg) const
-  {
-    std::cout << "ARGUMENT " << arg.sname << " " << (arg.mandatory ? '1' : '0') << " " << (arg.allow_multiple ? '1' : '0') << " ";
-    switch (arg.type) {
-      case Integer: std::cout << "INT " << arg.extra_info.i.min << " " << arg.extra_info.i.max << " " << arg.extra_info.i.def; break;
-      case Float: std::cout << "FLOAT " << arg.extra_info.f.min << " " << arg.extra_info.f.max << " " << arg.extra_info.f.def; break;
-      case Text: std::cout << "TEXT"; if (arg.extra_info.string) std::cout << " " << arg.extra_info.string; break;
-      case ArgFile: std::cout << "FILE"; break;
-      case Choice: std::cout << "CHOICE"; for (const char** p = arg.extra_info.choice; *p; p++) std::cout << " " << *p; break;
-      case ImageIn: std::cout << "IMAGEIN"; break;
-      case ImageOut: std::cout << "IMAGEOUT"; break;
-      case IntSeq: std::cout << "ISEQ"; break;
-      case FloatSeq: std::cout << "FSEQ"; break;
-      default:
-                     throw (1);
-    }
-    std::cout << "\n" << arg.lname << "\n" << arg.desc << "\n";
-  }
-
-
-
-
-
-
-  void App::print_full_option_usage (const Option& opt) const
-  {
-    std::cout << "OPTION " << opt.sname << " " << (opt.mandatory ? '1' : '0') << " " << (opt.allow_multiple ? '1' : '0') << "\n";
-    std::cout << opt.lname << "\n" << opt.desc << "\n";
-
-    for (std::vector<Argument>::const_iterator i = opt.begin(); i != opt.end(); ++i) 
-      print_full_argument_usage (*i);
-  }
 
 
 
@@ -475,14 +432,14 @@ namespace MR {
     for (const char** p = command_description; *p; p++) 
       std::cout << *p << "\n";
 
-    for (const Argument* arg = command_arguments; arg->is_valid(); arg++) 
-      print_full_argument_usage (*arg);
+    for (const Argument* arg = command_arguments; arg; ++arg) 
+      arg->print_usage();
 
-    for (const Option* opt = command_options; opt->is_valid(); opt++) 
-      print_full_option_usage (*opt);
+    for (const Option* opt = command_options; opt; ++opt) 
+      opt->print_usage();
 
-    for (size_t n = 0; n < NUM_DEFAULT_OPTIONS; n++) 
-      print_full_option_usage (default_options[n]);
+    for (const Option* opt = default_options; opt; ++opt)
+      opt->print_usage();
   }
 
 
@@ -490,28 +447,81 @@ namespace MR {
 
 
 
-  std::ostream& operator<< (std::ostream& stream, const App& app)
+
+  App::ParsedArgument::operator int () const 
   {
-    stream 
-      << "----------------------------------\n  COMMAND: " 
-      << App::name()
-      << "\n----------------------------------\n\n";
+    if (arg->type == Integer) {
+      const int retval = to<int> (p);
+      const int min = arg->defaults.i.min;
+      const int max = arg->defaults.i.max;
+      if (retval < min || retval > max) {
+        std::string msg ("value supplied for ");
+        if (opt) msg += std::string ("option \"") + opt->id;
+        else msg += std::string ("argument \"") + arg->id;
+        msg += "\" is out of bounds (valid range: " + str(min) + " to " + str(max) + ", value supplied: " + str(retval) + ")";
+        throw Exception (msg);
+      }
+      return retval;
+    }
 
-    const char** c = App::command_description;
-    while (*c) { stream << *c << "\n\n"; c++; }
-
-    stream << "ARGUMENTS:\n\n";
-    for (size_t n = 0; App::command_arguments[n].is_valid(); n++)
-      stream << "[" << n << "] " << App::command_arguments[n] << "\n\n";
-
-    stream << "OPTIONS:\n\n";
-    for (size_t n = 0; App::command_options[n].is_valid(); n++)
-      stream << App::command_options[n] << "\n";
-
-    return (stream);
+    if (arg->type == Choice) {
+      std::string selection = lowercase (p);
+      const char* const * choices = arg->defaults.choices.list;
+      for (int i = 0; choices[i]; ++i) {
+        if (selection == choices[i]) {
+          return i;
+        }
+      }
+      std::string msg = std::string ("unexpected value supplied for ");
+      if (opt) msg += std::string ("option \"") + opt->id;
+      else msg += std::string ("argument \"") + arg->id;
+      msg += std::string ("\" (valid choices are: ") + choices[0];
+      for (int i = 1; choices[i]; ++i) {
+        msg += ", ";
+        msg += choices[i];
+      }
+      throw Exception (msg + ")");
+    }
+    assert (0);
+    return (0);
   }
 
 
+
+  App::ParsedArgument::operator float () const 
+  { 
+    const float retval = to<float> (p);
+    const float min = arg->defaults.i.min;
+    const float max = arg->defaults.i.max;
+    if (retval < min || retval > max) {
+      std::string msg ("value supplied for ");
+      if (opt) msg += std::string ("option \"") + opt->id;
+      else msg += std::string ("argument \"") + arg->id;
+      msg += "\" is out of bounds (valid range: " + str(min) + " to " + str(max) + ", value supplied: " + str(retval) + ")";
+      throw Exception (msg);
+    }
+
+    return retval;
+  }
+
+
+
+
+  App::ParsedArgument::operator double () const 
+  { 
+    const double retval = to<double> (p);
+    const double min = arg->defaults.i.min;
+    const double max = arg->defaults.i.max;
+    if (retval < min || retval > max) {
+      std::string msg ("value supplied for ");
+      if (opt) msg += std::string ("option \"") + opt->id;
+      else msg += std::string ("argument \"") + arg->id;
+      msg += "\" is out of bounds (valid range: " + str(min) + " to " + str(max) + ", value supplied: " + str(retval) + ")";
+      throw Exception (msg);
+    }
+
+    return retval;
+  }
 
 }
 

@@ -88,7 +88,7 @@ namespace MR {
         typedef T value_type;
 
         //! construct an Image::Buffer object to access the data in the Image::Header \p header
-        Buffer (const Image::Header& header, size_t NDIM = std::numeric_limits<size_t>::max()) :
+        Buffer (Image::Header& header, size_t NDIM = std::numeric_limits<size_t>::max()) :
           H (header),
           ptr (new Shared (NDIM == std::numeric_limits<size_t>::max() ? header.ndim() : NDIM)), 
           x (ndim()),
@@ -96,11 +96,12 @@ namespace MR {
             for (size_t i = 0; i < ndim(); ++i) 
               ptr->stride[i] = header.stride(i);
             
-            header.handler->prepare();
-            if (header.handler->nsegments() == 1 && 
+            Handler::Base* handler = header.get_handler();
+            handler->prepare();
+            if (handler->nsegments() == 1 && 
                 header.datatype() == DataType::from<value_type>()) {
               info ("data in \"" + header.name() + "\" already in required format - mapping as-is");
-              ptr->data = reinterpret_cast<value_type*> (header.handler->segment(0));
+              ptr->data = reinterpret_cast<value_type*> (handler->segment(0));
             }
 
             DataSet::Stride::actualise (ptr->stride, H);
@@ -120,7 +121,7 @@ namespace MR {
         //! Construct from an Image::Header object with guaranteed strides
         /*! the resulting instance is guaranteed to have the strides specified.
          * Any zero strides will be ignored. */
-        Buffer (const Image::Header& header, const std::vector<ssize_t>& desired_strides, size_t NDIM = std::numeric_limits<size_t>::max()) :
+        Buffer (Image::Header& header, const std::vector<ssize_t>& desired_strides, size_t NDIM = std::numeric_limits<size_t>::max()) :
           H (header),
           ptr (new Shared (NDIM == std::numeric_limits<size_t>::max() ? header.ndim() : NDIM)), 
           x (ndim()),
@@ -147,13 +148,13 @@ namespace MR {
               DataSet::Stride::sanitise (ptr->stride);
             }
 
-            header.handler->prepare();
-
-            if (header.handler->nsegments() == 1 && 
+            Handler::Base* handler = header.get_handler();
+            handler->prepare();
+            if (handler->nsegments() == 1 && 
                 header.datatype() == DataType::from<value_type>()
                 && strides_match) {
               info ("data in \"" + header.name() + "\" already in native format - mapping as-is");
-              ptr->data = reinterpret_cast<value_type*> (header.handler->segment(0));
+              ptr->data = reinterpret_cast<value_type*> (handler->segment(0));
             }
 
             DataSet::Stride::actualise (ptr->stride, H);

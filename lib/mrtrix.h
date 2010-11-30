@@ -46,17 +46,7 @@
 
 #define MRTRIX_MAJOR_VERSION 0
 #define MRTRIX_MINOR_VERSION 3
-#define MRTRIX_MICRO_VERSION 4
-
-
-/** Prints the file and line number. Useful for debugging purposes. */
-#define TEST std::cerr << MR::get_application_name() << ": line " << __LINE__ \
-  << " in " << __func__ << "() from file " << __FILE__ << "\n"
-
-
-/** Prints a variable name and its value, followed by the file and line number. Useful for debugging purposes. */
-#define VAR(variable) std::cerr << MR::get_application_name() << ": " << #variable << " = " << (variable) \
-  << " (in " << __func__ << "() from " << __FILE__  << ": " << __LINE__ << ")\n"
+#define MRTRIX_MICRO_VERSION 5
 
 #define GUI_SPACING 5
 
@@ -97,8 +87,6 @@ namespace std {
 
 namespace MR {
 
-  const std::string& get_application_name ();
-
   extern const size_t mrtrix_major_version;
   extern const size_t mrtrix_minor_version;
   extern const size_t mrtrix_micro_version;
@@ -129,8 +117,9 @@ namespace MR {
   template <class T> inline std::string str (const T& value)
   { 
     std::ostringstream stream; 
-    try { stream << value; }
-    catch (...) { throw Exception ("error converting value to string"); }
+    stream << value; 
+    if (stream.fail())
+      throw Exception ("error converting value to string"); 
     return (stream.str());
   }
 
@@ -147,8 +136,9 @@ namespace MR {
   {
     std::istringstream stream (string);
     T value;
-    try { stream >> value; }
-    catch (...) { throw Exception ("error converting string \"" + string + "\""); }
+    stream >> value; 
+    if (stream.fail()) 
+      throw Exception ("error converting string \"" + string + "\""); 
     return (value);
   }
 

@@ -46,9 +46,9 @@ DESCRIPTION = {
 };
 
 ARGUMENTS = {
-  Argument ("input", "input image", "input image to be transformed.").type_image_in (),
-  Argument ("output", "output image", "the output image.").type_image_out (),
-  Argument::End
+  Argument ("input", "input image to be transformed.").type_image_in (),
+  Argument ("output", "the output image.").type_image_out (),
+  Argument ()
 };
 
 
@@ -56,51 +56,36 @@ const char* interp_choices[] = { "nearest", "linear", "cubic", NULL };
 
 OPTIONS = {
 
-  Option ("transform", "the transform to use", 
-      "specify the 4x4 transform to apply.")
-    .append (Argument ("transform", "transform", 
-          "the transform to apply, in the form of a 4x4 ascii file.").type_file ()),
+  Option ("transform", "specify the 4x4 transform to apply, in the form of a 4x4 ascii file.")
+    + Argument ("transform").type_file (),
 
-  Option ("replace", "replace transform", 
+  Option ("replace",
       "replace the transform of the original image by that specified, "
       "rather than applying it to the original image."),
 
-  Option ("inverse", "use inverse transform", 
+  Option ("inverse", 
       "invert the specified transform before using it."),
 
-  Option ("reslice", "reslice to template image", 
+  Option ("reslice",
       "reslice the input image to match the specified template image.")
-    .append (Argument ("template", "template", "the template image.").type_image_in ()),
+    + Argument ("template").type_image_in (),
 
-  Option ("reference", "reference image for transform", 
-      "if the transform supplied maps from the input image onto a reference "
-      "image (i.e. not to scanner coordinates), use this option to specify "
-      "the reference image. Note that this implicitly sets the -replace option.")
-    .append (Argument ("image", "image", "the reference image.").type_image_in ()),
-
-  Option ("flipx", "assume x-flipped transform", 
-      "assume the transform is supplied assuming a coordinate system with the "
-      "x-axis reversed relative to the MRtrix convention (i.e. x increases "
-      "from right to left). This is required to handle transform matrices "
-      "produced by FSL's FLIRT command. This is only used in conjunction with "
-      "the -reference option."),
-
-  Option ("interp", "interpolation method", 
+  Option ("interp", 
       "set the interpolation method to use when reslicing (default: linear).")
-    .append (Argument ("method", "method", "the interpolation method.").type_choice (interp_choices)),
+    + Argument ("method").type_choice (interp_choices),
 
-  Option ("oversample", "oversample", 
+  Option ("oversample",
       "set the oversampling factor to use when reslicing (i.e. the "
       "number of samples to take per voxel along each spatial dimension). "
       "This should be supplied as a vector of 3 integers. By default, the "
       "oversampling factor is determined based on the differences between "
-      "input and output voxel sizes."
-    ).append (Argument ("factors", "factors", "the oversampling factors.").type_sequence_int()),
+      "input and output voxel sizes.")
+    + Argument ("factors").type_sequence_int(),
 
-  Option ("datatype", "data type", "specify output image data type (default: same as input image).")
-    .append (Argument ("spec", "specifier", "the data type specifier.").type_choice (DataType::identifiers)),
+  Option ("datatype", "specify output image data type (default: same as input image).")
+    + Argument ("spec").type_choice (DataType::identifiers),
 
-  Option::End 
+  Option ()
 };
 
 
@@ -111,19 +96,20 @@ OPTIONS = {
 EXECUTE {
   Math::Matrix<float> T;
 
-  std::vector<OptBase> opt = get_options ("transform");
+  Options opt = get_options ("transform");
   if (opt.size()) {
-    T.load (opt[0][0].get_string());
+    T.load (opt[0][0]);
     if (T.rows() != 4 || T.columns() != 4) 
-      throw Exception (std::string("transform matrix supplied in file \"") + opt[0][0].get_string() + "\" is not 4x4");
+      throw Exception ("transform matrix supplied in file \"" + opt[0][0] + "\" is not 4x4");
   }
 
 
-  Image::Header header_in (argument[0].get_image());
-  Image::Header header (header_in);
+  Image::Header header_in (argument[0]);
+  Image::Header header_out (header_in);
 
   opt = get_options ("datatype");
-  if (opt.size()) header.datatype().parse (DataType::identifiers[opt[0][0].get_int()]);
+  if (opt.size()) 
+    header_out.set_datatype (opt[0][0]);
 
   bool inverse = get_options("inverse").size();
   bool replace = get_options("replace").size();
@@ -136,38 +122,6 @@ EXECUTE {
     T.swap (I);
   }
 
-  opt = get_options("reference");
-  if (opt.size()) {
-    if (!T.is_set()) 
-      throw Exception ("no transform provided for option '-reference' (specify using '-transform' option)");
-
-    Image::Header ref_header (opt[0][0].get_image());
-
-    if (get_options("flipx").size()) {
-      Math::Matrix<float> R_ref(4,4);
-      R_ref.identity();
-      R_ref(0,0) = -1.0;
-
-      Math::Matrix<float> R_orig (R_ref);
-
-      R_ref(0,3) = (ref_header.dim(0)-1) * ref_header.vox(0);
-      R_orig(0,3) = (header.dim(0)-1) * header.vox(0);
-
-      if (inverse) 
-        R_ref.swap (R_orig);
-
-      Math::Matrix<float> T_tmp;
-      Math::mult (T_tmp, T, R_orig);
-      Math::mult (T, R_ref, T_tmp);
-    }
-
-    Math::Matrix<float> T_tmp;
-    Math::mult (T_tmp, ref_header.transform(), T);
-    T.swap (T_tmp);
-    replace = true;
-  }
-
-
 
   if (replace) 
     if (!T.is_set()) 
@@ -177,43 +131,50 @@ EXECUTE {
 
   opt = get_options("reslice"); // need to reslice
   if (opt.size()) {
-    Image::Header template_header (opt[0][0].get_image());
-    header.axes[0].dim = template_header.axes[0].dim;
-    header.axes[1].dim = template_header.axes[1].dim;
-    header.axes[2].dim = template_header.axes[2].dim;
-    header.axes[0].vox = template_header.axes[0].vox;
-    header.axes[1].vox = template_header.axes[1].vox;
-    header.axes[2].vox = template_header.axes[2].vox;
-    header.transform() = template_header.transform();
-    header.comments.push_back ("resliced to reference image \"" + template_header.name() + "\"");
+    Image::Header template_header (opt[0][0]);
+
+    header_out.set_dim (0, template_header.dim(0));
+    header_out.set_dim (1, template_header.dim(1));
+    header_out.set_dim (2, template_header.dim(2));
+
+    header_out.set_vox (0, template_header.vox(0));
+    header_out.set_vox (1, template_header.vox(1));
+    header_out.set_vox (2, template_header.vox(2));
+
+    header_out.set_transform (template_header.transform());
+    header_out.add_comment ("resliced to reference image \"" + template_header.name() + "\"");
 
     int interp = 1;
     opt = get_options ("interp");
-    if (opt.size()) interp = opt[0][0].get_int();
+    if (opt.size()) 
+      interp = opt[0][0];
 
     std::vector<int> oversample;
     opt = get_options ("oversample");
     if (opt.size()) {
-      oversample = parse_ints (opt[0][0].get_string());
-      if (oversample.size() != 3) throw Exception ("option \"oversample\" expects a vector of 3 values");
+      oversample = opt[0][0];
+
+      if (oversample.size() != 3) 
+        throw Exception ("option \"oversample\" expects a vector of 3 values");
+
       if (oversample[0] < 1 || oversample[1] < 1 || oversample[2] < 1) 
         throw Exception ("oversample factors must be greater than zero");
     }
 
     if (replace) {
-      header_in.transform().swap (T);
+      header_in.get_transform().swap (T);
       T.clear();
     }
 
-    const Image::Header header_out = argument[1].get_image (header);
+    header_out.create (argument[1]);
 
     Image::Voxel<float> in (header_in);
     Image::Voxel<float> out (header_out);
 
     switch (interp) {
-      case 0: DataSet::Interp::reslice<DataSet::Interp::Nearest> (out, in, T, oversample); break;
-      case 1: DataSet::Interp::reslice<DataSet::Interp::Linear> (out, in, T, oversample); break;
-      case 2: DataSet::Interp::reslice<DataSet::Interp::Cubic> (out, in, T, oversample); break;
+      case 0:  DataSet::Interp::reslice<DataSet::Interp::Nearest> (out, in, T, oversample); break;
+      case 1:  DataSet::Interp::reslice<DataSet::Interp::Linear> (out, in, T, oversample); break;
+      case 2:  DataSet::Interp::reslice<DataSet::Interp::Cubic> (out, in, T, oversample); break;
       default: assert (0);
     }
 
@@ -221,16 +182,16 @@ EXECUTE {
   else {
     // straight copy:
     if (T.is_set()) {
-      header.comments.push_back ("transform modified");
+      header_out.add_comment ("transform modified");
       if (replace) 
-        header.transform().swap (T);
+        header_out.get_transform().swap (T);
       else {
-        Math::Matrix<float> M (header.transform());
-        Math::mult (header.transform(), T, M);
+        Math::Matrix<float> M (header_out.transform());
+        Math::mult (header_out.get_transform(), T, M);
       }
     }
 
-    const Image::Header header_out = argument[1].get_image (header);
+    header_out.create (argument[1]);
     Image::Voxel<float> in (header_in);
     Image::Voxel<float> out (header_out);
     DataSet::copy_with_progress (out, in);
