@@ -130,18 +130,18 @@ EXECUTE {
   opt = get_options ("vox");
   std::vector<float> vox;
   if (opt.size()) 
-    vox = parse_floats (opt[0][0]);
+    vox = opt[0][0];
   
 
   opt = get_options ("stride");
   std::vector<int> strides;
   if (opt.size()) 
-    strides = parse_ints (opt[0][0]);
+    strides = opt[0][0];
 
   opt = get_options ("axes");
   std::vector<int> axes;
   if (opt.size()) {
-    axes = parse_ints (opt[0][0]);
+    axes = opt[0][0];
     for (size_t i = 0; i < axes.size(); ++i)
       if (axes[i] >= static_cast<int>(header_in.ndim()))
         throw Exception ("axis supplied to option -axes is out of bounds");
@@ -167,10 +167,10 @@ EXECUTE {
   opt = get_options ("coord");
   for (size_t n = 0; n < opt.size(); n++) {
     pos.resize (header_in.ndim());
-    int axis = to<int> (opt[n][0]);
+    int axis = opt[0][0];
     if (pos[axis].size()) 
       throw Exception ("\"coord\" option specified twice for axis " + str (axis));
-    pos[axis] = parse_ints (opt[n][1]);
+    pos[axis] = opt[n][1];
   }
 
   assert (!header_in.is_complex());

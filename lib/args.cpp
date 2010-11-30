@@ -43,51 +43,6 @@ namespace MR {
   }
 
 
-  void Argument::check (const char* actual) const
-  {
-    switch (type) {
-      case Integer:
-        if (defaults.i.min != std::numeric_limits<int>::min() && 
-            defaults.i.def != 0 &&
-            defaults.i.max != std::numeric_limits<int>::max()) {
-          int val = to<int> (actual);
-          if (val < defaults.i.min || val > defaults.i.max) 
-            throw Exception (std::string ("value \"") + actual 
-                + "\" is out of bounds (allowed range is [ " 
-                + str(defaults.i.min) + " " + str(defaults.i.max) + " ]");
-        }
-        break;
-      case Float:
-        if (defaults.f.min != -INFINITY && 
-            defaults.f.def != 0.0 &&
-            defaults.f.max != INFINITY) {
-          int val = to<int> (actual);
-          if (val < defaults.i.min || val > defaults.i.max) 
-            throw Exception (std::string ("value \"") + actual 
-                + "\" is out of bounds (allowed range is [ " 
-                + str(defaults.i.min) + " " + str(defaults.i.max) + " ]");
-        }
-        break;
-      case Choice:
-        {
-          std::string choice = lowercase (actual);
-          for (const char** entry = defaults.choices.list; *entry; ++entry)
-            if (choice == *entry)
-              break;
-
-          choice = "value \"";
-          choice += actual + std::string ("\" is not a valid choice (choose from ") + defaults.choices.list[0];
-          for (const char** entry = defaults.choices.list+1; *entry; ++entry)
-            choice += std::string (", ") + *entry;
-          choice += ")";
-          throw Exception (choice);
-        }
-      default: 
-        break;
-    }
-  }
-
-
   void Argument::print () const
   {
   }

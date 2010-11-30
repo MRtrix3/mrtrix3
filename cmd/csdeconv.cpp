@@ -300,11 +300,11 @@ EXECUTE {
   DWI::gen_direction_matrix (DW_dirs, grad, dwis);
 
   opt = get_options ("lmax");
-  int lmax = opt.size() ? to<int> (opt[0][0]) : Math::SH::LforN (dwis.size());
+  int lmax = opt.size() ? opt[0][0] : Math::SH::LforN (dwis.size());
   info ("calculating even spherical harmonic components up to order " + str(lmax));
 
 
-  info (std::string ("setting response function from file \"") + argument[1] + "\"");
+  info ("setting response function from file \"" + argument[1] + "\"");
   Math::Vector<value_type> response;
   response.load (argument[1]);
   info ("setting response function using even SH coefficients: " + str(response));
@@ -350,22 +350,22 @@ EXECUTE {
   opt = get_options("neg_lambda");
   value_type neg_lambda = 1.0;
   if (opt.size()) 
-    neg_lambda = to<value_type> (opt[0][0]);
+    neg_lambda = opt[0][0];
 
   opt = get_options("norm_lambda");
   value_type norm_lambda = 1.0;
   if (opt.size()) 
-    norm_lambda = to<value_type> (opt[0][0]);
+    norm_lambda = opt[0][0];
 
   opt = get_options("threshold");
   value_type threshold = 0.1;
   if (opt.size()) 
-    threshold = to<value_type> (opt[0][0]);
+    threshold = opt[0][0];
 
   opt = get_options("niter");
   int niter = 50;
   if (opt.size()) 
-    niter = to<int> (opt[0][0]);
+    niter = opt[0][0];
 
 
   SH_header.create (argument[2]);

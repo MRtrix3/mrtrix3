@@ -105,11 +105,11 @@ EXECUTE {
 
   Options opt = get_options ("power");
   if (opt.size())
-    target_power = to<int> (opt[0][0]);
+    target_power = opt[0][0];
 
   opt = get_options ("niter");
   if (opt.size())
-    niter = to<int> (opt[0][0]);
+    niter = opt[0][0];
 
   ndirs = to<int> (argument[0]);
 

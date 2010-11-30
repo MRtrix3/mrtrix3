@@ -80,25 +80,25 @@ EXECUTE {
 
   Options opt = get_options ("abs");
   if (opt.size()) {
-    val = to<float> (opt[0][0]);
+    val = opt[0][0];
     ++nopt;
   }
 
   opt = get_options ("percentile"); 
   if (opt.size()) {
-    percentile = to<float> (opt[0][0]);
+    percentile = opt[0][0];
     ++nopt;
   }
 
   opt = get_options ("top");
   if (opt.size()) {
-    topN = to<int> (opt[0][0]);
+    topN = opt[0][0];
     ++nopt;
   }
 
   opt = get_options ("bottom");
   if (opt.size()) {
-    bottomN = to<int> (opt[0][0]);
+    bottomN = opt[0][0];
     ++nopt;
   }
 

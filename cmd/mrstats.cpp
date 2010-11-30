@@ -197,30 +197,30 @@ EXECUTE {
 
   Options opt = get_options ("histogram");
   if (opt.size()) {
-    hist_stream = new std::ofstream (opt[0][0]);
+    hist_stream = new std::ofstream (opt[0][0].c_str());
     if (!*hist_stream) 
-      throw Exception (std::string("error opening histogram file \"") + opt[0][0] + "\": " + strerror (errno));
+      throw Exception ("error opening histogram file \"" + opt[0][0] + "\": " + strerror (errno));
   }
 
   int nbins = 100;
   opt = get_options ("bins");
   if (opt.size())
-    nbins = to<int>(opt[0][0]);
+    nbins = opt[0][0];
   CalibrateHistogram calibrate (nbins);
 
   
   opt = get_options ("dump");
   if (opt.size()) {
-    dumpstream = new std::ofstream (opt[0][0]);
+    dumpstream = new std::ofstream (opt[0][0].c_str());
     if (!*dumpstream) 
-      throw Exception (std::string("error opening dump file \"") + opt[0][0] + "\": " + strerror (errno));
+      throw Exception ("error opening dump file \"" + opt[0][0] + "\": " + strerror (errno));
   }
   
   opt = get_options ("position");
   if (opt.size()) {
-    position_stream = new std::ofstream (opt[0][0]);
+    position_stream = new std::ofstream (opt[0][0].c_str());
     if (!*position_stream) 
-      throw Exception (std::string("error opening positions file \"") + opt[0][0] + "\": " + strerror (errno));
+      throw Exception ("error opening positions file \"" + opt[0][0] + "\": " + strerror (errno));
   }
 
 
@@ -289,7 +289,7 @@ EXECUTE {
 
 
 
-  if (voxels.empty()) { // whole data set:
+  if (!voxels.size()) { // whole data set:
 
     if (hist_stream) {
       ProgressBar progress ("calibrating histogram...", DataSet::voxel_count (vox));

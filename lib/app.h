@@ -59,8 +59,11 @@ void MyApp::execute ()
 
 #else
 # define EXECUTE __EXECUTE__( \
+  try { \
     MyApp app (argc, argv, __command_description, __command_arguments, __command_options, __command_version, __command_author, __command_copyright); \
-    app.run ();)
+    app.run (); \
+  } \
+  catch (Exception& E) { E.display(); throw; } )
 #endif
 
 
@@ -93,39 +96,133 @@ namespace MR {
       static const std::string& name () { return (application_name); }
 
     protected:
+      class ParsedArgument;
+
+      class Options {
+        public:
+
+          class Opt {
+            public:
+              const ParsedArgument operator[] (size_t num) const;
+
+            private:
+              Opt (const Option* parent, const char* const* arguments) : 
+                opt (parent), args (arguments) { }
+
+              const Option* opt;
+              const char* const* args;
+              friend class ParsedArgument;
+              friend class Options;
+          };
+
+
+          size_t size () const { return args.size(); }
+
+          const Opt operator[] (size_t num) const
+          {
+            assert (num < args.size());
+            return Opt (opt, args[num]); 
+          }
+
+
+        private:
+          const Option* opt;
+          std::vector<const char* const*> args;
+          friend class App;
+      };
+
+      class ParsedArgument {
+        public:
+          operator std::string () const { return p; } 
+          operator int () const;
+          operator size_t () const { return operator int (); }
+          operator float () const;
+          operator double () const;
+
+          operator std::vector<int> () const
+          {
+            assert (arg->type == IntSeq);
+            try { return parse_ints (p); }
+            catch (Exception& e) { error (e); }
+            return std::vector<int>();
+          }
+          operator std::vector<float> () const
+          {
+            assert (arg->type == FloatSeq);
+            try { return parse_floats (p); }
+            catch (Exception& e) { error (e); }
+            return std::vector<float>();
+          }
+
+          const char* c_str () const { return p; } 
+
+        private:
+          ParsedArgument (const Option* option, const Argument* argument, const char* text) :
+            opt (option), arg (argument), p(text) 
+        { assert (text); }
+
+          const Option* opt;
+          const Argument* arg;
+          const char* p;
+
+          void error (Exception& e) const 
+          {
+            std::string msg ("error parsing token \"");
+            msg += p;
+            if (opt) msg += std::string("\" for option \"") + opt->id + "\"";
+            else msg += std::string("\" for argument \"") + arg->id + "\"";
+            throw Exception (e, msg);
+          }
+
+          friend class App;
+          friend class Options;
+          friend class Options::Opt;
+      };
+
       class ParsedOption {
         public:
-          ParsedOption (const char* name, const char* const* arguments) : 
-            id (name), args (arguments) { }
-          const char* id;
+          ParsedOption (const Option* option, const char* const* arguments) : 
+            opt (option), args (arguments) { assert (opt); }
+
+          //! pointer to the corresponding Option entry in the OPTIONS section
+          const Option* opt;
+          //! pointer into \c argv corresponding to the option's first argument
           const char* const* args;
 
+          //! check whether this option matches the name supplied
           bool operator== (const char* match) const 
           {
             std::string name = lowercase (match);
-            return (name == id);
+            return (name == opt->id);
           }
 
       };
 
-      std::vector<const char*> argument;
+
+
+      //! the list of arguments parsed from the command-line
+      std::vector<ParsedArgument> argument;
+      //! the list of options parsed from the command-line
       std::vector<ParsedOption> option;
 
       virtual void execute () = 0;
 
-      typedef std::vector<const char* const*> Options;
+      //! find all matching options and provide a list of their arguments
       Options get_options (const std::string& name)
       {
         Options matches;
         for (std::vector<ParsedOption>::const_iterator opt = option.begin(); 
             opt != option.end(); ++opt) {
-          assert (opt->id);
-          if (name == opt->id) 
-            matches.push_back (opt->args);
+          assert (opt->opt);
+          if (name == opt->opt->id) {
+            matches.opt = opt->opt;
+            matches.args.push_back (opt->args);
+          }
         }
-        return (matches);
+        return matches;
       }
 
+      //! this should not be called directly
       void parse_arguments ();
 
     private:
@@ -141,16 +238,23 @@ namespace MR {
       static const Option*   command_options;
       static const Option    default_options[];
 
-/*
-      const char* option_name (size_t num) const 
-      { 
-        return (num < DEFAULT_OPTIONS_OFFSET ? 
-            command_options[num].id : 
-            default_options[num - DEFAULT_OPTIONS_OFFSET].id 
-            ); 
-      }
-*/
+      friend std::string operator+ (const char* left, const ParsedArgument& right);
   };
+
+
+  //! convenience function provided mostly to ease writing Exception strings
+  inline std::string operator+ (const char* left, const App::ParsedArgument& right) 
+  {
+    std::string retval (left);
+    retval += std::string (right);
+    return (retval);
+  }
+
+  inline const App::ParsedArgument App::Options::Opt::operator[] (size_t num) const 
+  {
+    assert (num < opt->args.size());
+    return ParsedArgument (opt, &opt->args[num], args[num]); 
+  }
 
   //! @}
 
@@ -159,6 +263,8 @@ namespace MR {
   void cmdline_error (const std::string& msg);
   void cmdline_info  (const std::string& msg);
   void cmdline_debug (const std::string& msg);
+
+
 
 }
 

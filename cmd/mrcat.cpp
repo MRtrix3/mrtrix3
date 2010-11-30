@@ -70,7 +70,7 @@ EXECUTE {
 
   Options opt = get_options ("axis");
   if (opt.size()) 
-    axis = to<int> (opt[0][0]);
+    axis = opt[0][0];
 
   int num_images = argument.size()-1;
   Ptr<Image::Header> in [num_images];

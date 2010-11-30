@@ -286,11 +286,11 @@ namespace MR {
           if (n + int(opt->args.size()) >= argc) 
             throw Exception (std::string ("not enough parameters to option \"-") + opt->id + "\"");
 
-          option.push_back (ParsedOption (opt->id, argv+n+1));
+          option.push_back (ParsedOption (opt, argv+n+1));
           n += opt->args.size();
         }
       }
-      else argument.push_back (argv[n]);
+      else argument.push_back (ParsedArgument (NULL, NULL, argv[n]));
     }
   }
 
@@ -337,15 +337,14 @@ namespace MR {
       if (index >= num_command_arguments) 
         throw Exception ("too many arguments");
 
-      
-      command_arguments[index].check (argument[n]);
+      argument[n].arg = command_arguments + index;
     }
 
     for (const Option* opt = command_options; *opt; ++opt) {
       size_t count = 0;
       for (std::vector<ParsedOption>::const_iterator popt = option.begin(); 
           popt != option.end(); ++popt)
-        if (popt->id == opt->id)
+        if (popt->opt == opt)
           count++;
 
       if (count < 1 && !(opt->flags & Optional)) 
@@ -445,6 +444,84 @@ namespace MR {
 
 
 
+
+
+
+
+  App::ParsedArgument::operator int () const 
+  {
+    if (arg->type == Integer) {
+      const int retval = to<int> (p);
+      const int min = arg->defaults.i.min;
+      const int max = arg->defaults.i.max;
+      if (retval < min || retval > max) {
+        std::string msg ("value supplied for ");
+        if (opt) msg += std::string ("option \"") + opt->id;
+        else msg += std::string ("argument \"") + arg->id;
+        msg += "\" is out of bounds (valid range: " + str(min) + " to " + str(max) + ", value supplied: " + str(retval) + ")";
+        throw Exception (msg);
+      }
+      return retval;
+    }
+
+    if (arg->type == Choice) {
+      std::string selection = lowercase (p);
+      const char* const * choices = arg->defaults.choices.list;
+      for (int i = 0; choices[i]; ++i) {
+        if (selection == choices[i]) {
+          return i;
+        }
+      }
+      std::string msg = std::string ("unexpected value supplied for ");
+      if (opt) msg += std::string ("option \"") + opt->id;
+      else msg += std::string ("argument \"") + arg->id;
+      msg += std::string ("\" (valid choices are: ") + choices[0];
+      for (int i = 1; choices[i]; ++i) {
+        msg += ", ";
+        msg += choices[i];
+      }
+      throw Exception (msg + ")");
+    }
+    assert (0);
+    return (0);
+  }
+
+
+
+  App::ParsedArgument::operator float () const 
+  { 
+    const float retval = to<float> (p);
+    const float min = arg->defaults.i.min;
+    const float max = arg->defaults.i.max;
+    if (retval < min || retval > max) {
+      std::string msg ("value supplied for ");
+      if (opt) msg += std::string ("option \"") + opt->id;
+      else msg += std::string ("argument \"") + arg->id;
+      msg += "\" is out of bounds (valid range: " + str(min) + " to " + str(max) + ", value supplied: " + str(retval) + ")";
+      throw Exception (msg);
+    }
+
+    return retval;
+  }
+
+
+
+
+  App::ParsedArgument::operator double () const 
+  { 
+    const double retval = to<double> (p);
+    const double min = arg->defaults.i.min;
+    const double max = arg->defaults.i.max;
+    if (retval < min || retval > max) {
+      std::string msg ("value supplied for ");
+      if (opt) msg += std::string ("option \"") + opt->id;
+      else msg += std::string ("argument \"") + arg->id;
+      msg += "\" is out of bounds (valid range: " + str(min) + " to " + str(max) + ", value supplied: " + str(retval) + ")";
+      throw Exception (msg);
+    }
+
+    return retval;
+  }
 
 }
 

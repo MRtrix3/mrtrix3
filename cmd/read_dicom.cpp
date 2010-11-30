@@ -71,7 +71,7 @@ EXECUTE {
     if (Path::is_dir (argument[n])) {
       Path::Dir* dir;
       try { dir = new Path::Dir (argument[n]); }
-      catch (...) { throw Exception (std::string ("error opening folder \"") + argument[n] 
+      catch (...) { throw Exception ("error opening folder \"" + argument[n] 
           + "\": " + strerror (errno)); }
       
       std::string entry;

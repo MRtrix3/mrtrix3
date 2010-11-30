@@ -33,6 +33,9 @@ namespace MR {
 
   /*! \defgroup CmdParse Command-Line Parsing
    * \brief Classes and functions to parse command-line arguments and options.
+   *
+   * For a detailed description of the command-line parsing interface, see the
+   * \ref command_line_parsing page.
    * */
 
   //! \cond skip
@@ -105,11 +108,16 @@ namespace MR {
       Argument (const char* name = NULL, const char* description = NULL) : 
         id (name), desc (description), type (Text), flags (None) { defaults.text = NULL; }
 
+      //! the argument name 
       const char* id;
+      //! the argument description 
       const char* desc;
+      //! the argument type
       ArgType  type;
+      //! the argument flags (AllowMultiple and/or Optional)
       ArgFlags flags;
 
+      //! a structure to store the various parameters of the Argument
       union {
         const char* text;
         struct { const char** list; int def; } choices;
@@ -242,7 +250,6 @@ namespace MR {
 
       void print () const;
       void print_usage () const;
-      void check (const char* actual) const;
   };
 
 
@@ -297,10 +304,14 @@ namespace MR {
       Option& operator+ (const Argument& arg) { args.push_back (arg); return (*this); }
       operator bool () const { return (id); }
 
+      //! the option name
       const char* id;
+      //! the option description
       const char* desc;
+      //! option flags (AllowMultiple and/or Optional)
       ArgFlags flags;
 
+      //! a vector of argument that must be supplied with the option
       std::vector<Argument> args;
 
       //! specifies that the option is required

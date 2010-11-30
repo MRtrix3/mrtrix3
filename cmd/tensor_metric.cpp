@@ -138,7 +138,7 @@ EXECUTE {
   vals[0] = 1;
   Options opt = get_options ("num");
   if (opt.size()) {
-    vals = parse_ints (opt[0][0]);
+    vals = opt[0][0];
 
     if (vals.empty()) 
       throw Exception ("invalid eigenvalue/eigenvector number specifier");
@@ -177,7 +177,7 @@ EXECUTE {
   int modulate = 1;
   opt = get_options ("modulate");
   if (opt.size()) 
-    modulate = to<int> (opt[0][0]);
+    modulate = opt[0][0];
 
   if ( ! (adc || fa || eval || evec))
     throw Exception ("no output metric specified - aborting");

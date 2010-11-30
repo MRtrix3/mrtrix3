@@ -100,7 +100,7 @@ EXECUTE {
   if (opt.size()) {
     T.load (opt[0][0]);
     if (T.rows() != 4 || T.columns() != 4) 
-      throw Exception (std::string("transform matrix supplied in file \"") + opt[0][0] + "\" is not 4x4");
+      throw Exception ("transform matrix supplied in file \"" + opt[0][0] + "\" is not 4x4");
   }
 
 
@@ -144,15 +144,15 @@ EXECUTE {
     header_out.set_transform (template_header.transform());
     header_out.add_comment ("resliced to reference image \"" + template_header.name() + "\"");
 
-    std::string interp ("linear");
+    int interp = 1;
     opt = get_options ("interp");
     if (opt.size()) 
-      interp = lowercase (opt[0][0]);
+      interp = opt[0][0];
 
     std::vector<int> oversample;
     opt = get_options ("oversample");
     if (opt.size()) {
-      oversample = parse_ints (opt[0][0]);
+      oversample = opt[0][0];
 
       if (oversample.size() != 3) 
         throw Exception ("option \"oversample\" expects a vector of 3 values");
@@ -171,10 +171,12 @@ EXECUTE {
     Image::Voxel<float> in (header_in);
     Image::Voxel<float> out (header_out);
 
-    if (interp == "nearest")     DataSet::Interp::reslice<DataSet::Interp::Nearest> (out, in, T, oversample); 
-    else if (interp == "linear") DataSet::Interp::reslice<DataSet::Interp::Linear> (out, in, T, oversample); 
-    else if (interp == "cubic")  DataSet::Interp::reslice<DataSet::Interp::Cubic> (out, in, T, oversample); 
-    else assert (0);
+    switch (interp) {
+      case 0:  DataSet::Interp::reslice<DataSet::Interp::Nearest> (out, in, T, oversample); break;
+      case 1:  DataSet::Interp::reslice<DataSet::Interp::Linear> (out, in, T, oversample); break;
+      case 2:  DataSet::Interp::reslice<DataSet::Interp::Cubic> (out, in, T, oversample); break;
+      default: assert (0);
+    }
 
   }
   else {

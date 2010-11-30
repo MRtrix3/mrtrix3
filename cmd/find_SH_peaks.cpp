@@ -341,12 +341,12 @@ EXECUTE {
     throw Exception ("expecting 2 columns for search directions matrix");
 
   opt = get_options ("num");
-  int npeaks = opt.size() ? to<int> (opt[0][0]) : 3;
+  int npeaks = opt.size() ? opt[0][0] : 3;
 
   opt = get_options ("direction");
   std::vector<Direction> true_peaks;
   for (size_t n = 0; n < opt.size(); ++n) {
-    Direction p (M_PI*to<float> (opt[n][0])/180.0, M_PI*to<float>(opt[n][1])/180.0);
+    Direction p (M_PI*to<float> (opt[n][0])/180.0, M_PI*float(opt[n][1])/180.0);
     true_peaks.push_back (p);
   }
   if (true_peaks.size()) npeaks = true_peaks.size();
@@ -354,7 +354,7 @@ EXECUTE {
   opt = get_options ("threshold");
   value_type threshold = -INFINITY;
   if (opt.size())
-    threshold = to<float> (opt[0][0]);
+    threshold = opt[0][0];
 
   Image::Header directions_header (sh_header);
   directions_header.set_datatype (DataType::Float32);

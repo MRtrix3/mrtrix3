@@ -58,7 +58,7 @@ EXECUTE {
       std::cout << reader << "\n";
     }
     catch (...) { 
-      error (std::string ("error reading file \"") + argument[n] + "\"");
+      error ("error reading file \"" + argument[n] + "\"");
     }
   }
 }
