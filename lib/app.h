@@ -193,7 +193,7 @@ namespace MR {
           bool operator== (const char* match) const 
           {
             std::string name = lowercase (match);
-            return (name == opt->id);
+            return name == opt->id;
           }
 
       };
@@ -239,6 +239,7 @@ namespace MR {
       static const Option    default_options[];
 
       friend std::string operator+ (const char* left, const ParsedArgument& right);
+      friend std::ostream& operator<< (std::ostream& stream, const App::ParsedArgument& arg);
   };
 
 
@@ -247,7 +248,7 @@ namespace MR {
   {
     std::string retval (left);
     retval += std::string (right);
-    return (retval);
+    return retval;
   }
 
   inline const App::ParsedArgument App::Options::Opt::operator[] (size_t num) const 
@@ -256,6 +257,12 @@ namespace MR {
     return ParsedArgument (opt, &opt->args[num], args[num]); 
   }
 
+
+  inline std::ostream& operator<< (std::ostream& stream, const App::ParsedArgument& arg)
+  {
+    stream << std::string (arg);
+    return stream;
+  }
   //! @}
 
 
