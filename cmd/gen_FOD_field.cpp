@@ -130,7 +130,7 @@ EXECUTE {
     if (D[i] < 1) 
       throw Exception ("dimensions must be greater than zero");
 
-  Math::Vector<float> coef (argument[1]);
+  Math::Vector<float> coef (argument[1].c_str());
 
   float angle (NAN), width (NAN);
   Options opt = get_options ("crossing");

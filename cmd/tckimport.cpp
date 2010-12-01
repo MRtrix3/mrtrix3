@@ -67,8 +67,7 @@ EXECUTE {
     try { 
       M.load (argument[n]); 
       if (M.columns() != 3) 
-        throw Exception (std::string ("WARNING: file \"") + 
-            argument[n] + "\" does not contain 3 columns - ignored");
+        throw Exception ("WARNING: file \"" + argument[n] + "\" does not contain 3 columns - ignored");
 
       std::vector<Point<float> > tck (M.rows());
       for (size_t i = 0; i < M.rows(); i++) {

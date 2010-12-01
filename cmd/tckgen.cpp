@@ -168,76 +168,74 @@ EXECUTE {
 
   Properties properties;
 
-  const char* algorithm = algorithms[1];
+  int algorithm = 1;
   Options opt = get_options ("algorithm");
   if (opt.size()) algorithm = opt[0][0];
 
   opt = get_options ("seed");
-  for (Options::iterator i = opt.begin(); i != opt.end(); ++i)
-    properties.seed.add (ROI ((*i)[0]));
+  for (size_t i = 0; i < opt.size(); ++i)
+    properties.seed.add (ROI (opt[i][0]));
 
   opt = get_options ("include");
-  for (Options::iterator i = opt.begin(); i != opt.end(); ++i)
-    properties.include.add (ROI ((*i)[0]));
+  for (size_t i = 0; i < opt.size(); ++i)
+    properties.include.add (ROI (opt[i][0]));
 
   opt = get_options ("exclude");
-  for (Options::iterator i = opt.begin(); i != opt.end(); ++i)
-    properties.exclude.add (ROI ((*i)[0]));
+  for (size_t i = 0; i < opt.size(); ++i)
+    properties.exclude.add (ROI (opt[i][0]));
 
   opt = get_options ("mask");
-  for (Options::iterator i = opt.begin(); i != opt.end(); ++i)
-    properties.mask.add (ROI ((*i)[0]));
+  for (size_t i = 0; i < opt.size(); ++i)
+    properties.mask.add (ROI (opt[i][0]));
 
   opt = get_options ("step");
-  if (opt.size()) properties["step_size"] = opt[0][0];
+  if (opt.size()) properties["step_size"] = std::string (opt[0][0]);
 
   opt = get_options ("angle");
-  if (opt.size()) properties["max_angle"] = opt[0][0];
+  if (opt.size()) properties["max_angle"] = std::string (opt[0][0]);
 
   opt = get_options ("number");
-  if (opt.size()) properties["max_num_tracks"] = opt[0][0];
+  if (opt.size()) properties["max_num_tracks"] = std::string (opt[0][0]);
 
   opt = get_options ("maxnum");
-  if (opt.size()) properties["max_num_attempts"] = opt[0][0];
+  if (opt.size()) properties["max_num_attempts"] = std::string (opt[0][0]);
 
   opt = get_options ("maxlength");
-  if (opt.size()) properties["max_dist"] = opt[0][0];
+  if (opt.size()) properties["max_dist"] = std::string (opt[0][0]);
 
   opt = get_options ("minlength");
-  if (opt.size()) properties["min_dist"] = opt[0][0];
+  if (opt.size()) properties["min_dist"] = std::string (opt[0][0]);
 
   opt = get_options ("cutoff");
-  if (opt.size()) properties["threshold"] = opt[0][0];
+  if (opt.size()) properties["threshold"] = std::string (opt[0][0]);
 
   opt = get_options ("initcutoff");
-  if (opt.size()) properties["init_threshold"] = opt[0][0];
+  if (opt.size()) properties["init_threshold"] = std::string (opt[0][0]);
 
   opt = get_options ("trials");
-  if (opt.size()) properties["max_trials"] = opt[0][0];
+  if (opt.size()) properties["max_trials"] = std::string (opt[0][0]);
 
   opt = get_options ("unidirectional");
   if (opt.size()) properties["unidirectional"] = "1";
 
   opt = get_options ("initdirection");
-  if (opt.size()) properties["init_direction"] = opt[0][0];
+  if (opt.size()) properties["init_direction"] = std::string (opt[0][0]);
 
   opt = get_options ("noprecomputed");
   if (opt.size()) properties["sh_precomputed"] = "0";
 
   opt = get_options ("power");
-  if (opt.size()) properties["fod_power"] = opt[0][0];
+  if (opt.size()) properties["fod_power"] = std::string (opt[0][0]);
 
   opt = get_options ("samples");
-  if (opt.size()) properties["samples_per_step"] = opt[0][0];
+  if (opt.size()) properties["samples_per_step"] = std::string (opt[0][0]);
 
   Image::Header source (argument[0]);
 
-  if (algorithm == std::string("ifod1")) 
-    Exec<iFOD1>::run (source, argument[1], properties);
-  else if (algorithm == std::string("ifod2")) 
-    Exec<iFOD2>::run (source, argument[1], properties);
-  else if (algorithm == std::string("vecstream")) 
-    Exec<VecStream>::run (source, argument[1], properties);
-  else
-    throw Exception (std::string ("unknown algorihtm: \"") + algorithm + "\"");
+  switch (algorithm) {
+    case 0: Exec<iFOD1>::run (source, argument[1], properties); break;
+    case 1: Exec<iFOD2>::run (source, argument[1], properties); break;
+    case 2: Exec<VecStream>::run (source, argument[1], properties); break;
+    default: assert (0);
+  }
 }

@@ -66,13 +66,13 @@ EXECUTE {
   Options opt = get_options ("ascii"); 
   size_t count = 0;
 
-  for (std::vector<const char*>::iterator arg = argument.begin(); arg != argument.end(); ++arg) {
+  for (size_t i = 0; i < argument.size(); ++i) {
     Tractography::Properties properties;
     Tractography::Reader<float> file;
-    file.open (*arg, properties);
+    file.open (argument[i], properties);
 
     std::cout << "***********************************\n";
-    std::cout << "  Tracks file: \"" << *arg << "\"\n";
+    std::cout << "  Tracks file: \"" << argument[i] << "\"\n";
     for (Tractography::Properties::iterator i = properties.begin(); i != properties.end(); ++i) {
       std::string S (i->first + ':');
       S.resize (22, ' ');
