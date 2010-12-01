@@ -23,10 +23,13 @@
 #ifndef __dwi_tractography_iFOD2_h__
 #define __dwi_tractography_iFOD2_h__
 
+#include <algorithm>
+
 #include "point.h"
 #include "math/SH.h"
 #include "dwi/tractography/method.h"
 #include "dwi/tractography/shared.h"
+#include "dwi/tractography/calibrator.h"
 
 
 namespace MR {
@@ -35,14 +38,24 @@ namespace MR {
 
       class iFOD2 : public MethodBase {
         public:
+
+
           class Shared : public SharedBase {
             public:
-              Shared (const Image::Header& source, DWI::Tractography::Properties& property_set) :
+              Shared (Image::Header& source, DWI::Tractography::Properties& property_set) :
                 SharedBase (source, property_set),
                 lmax (Math::SH::LforN (source.dim(3))), 
-                num_samples (1),
-                max_trials (100),
-                sin_max_angle (sin (max_angle)) {
+                num_samples (4),
+                max_trials (MAX_TRIALS),
+                sin_max_angle (Math::sin (max_angle)),
+                mean_samples (0.0),
+                mean_num_truncations (0.0),
+                max_max_truncation (0.0),
+                num_proc (0) {
+
+                  set_step_size (1.0);
+                  info ("minimum radius of curvature = " + str(step_size / max_angle) + " mm");
+
                   properties["method"] = "iFOD2";
                   properties.set (lmax, "lmax");
                   properties.set (num_samples, "samples_per_step");
@@ -50,95 +63,148 @@ namespace MR {
                   bool precomputed = true;
                   properties.set (precomputed, "sh_precomputed");
                   if (precomputed) precomputer.init (lmax);
-                  prob_threshold = Math::pow (threshold, num_samples);
-                  info ("minimum radius of curvature = " + str(step_size / max_angle) + " mm");
+
+                  // num_samples is number of samples excluding first point:
+                  --num_samples;
                 }
 
+              ~Shared ()
+              {
+                info ("mean number of samples per step = " + str (mean_samples/double(num_proc))); 
+                info ("mean number of rejection sampling truncations per step = " + str (mean_num_truncations/double(num_proc))); 
+                info ("maximum truncation error = " + str (max_max_truncation)); 
+              }
+
+              void update_stats (double mean_samples_per_run, double num_truncations, double max_truncation) const 
+              {
+                mean_samples += mean_samples_per_run;
+                mean_num_truncations += num_truncations;
+                if (max_truncation > max_max_truncation) 
+                  max_max_truncation = max_truncation;
+                ++num_proc;
+              }
+
               size_t lmax, num_samples, max_trials;
-              value_type sin_max_angle, prob_threshold;
+              value_type sin_max_angle;
               Math::SH::PrecomputedAL<value_type> precomputer;
+
+            private:
+              mutable double mean_samples, mean_num_truncations, max_max_truncation;
+              mutable int num_proc;
           };
+
+
+
+
+
+
+
+
 
           iFOD2 (const Shared& shared) :
             MethodBase (shared), 
             S (shared), 
             mean_sample_num (0), 
-            num_sample_runs (0) { } 
+            num_sample_runs (0),
+            num_truncations (0),
+            max_truncation (0.0) {
+              calibrate (*this);
+            } 
+
+
 
           ~iFOD2 () 
           { 
-            info ("mean number of samples per step = " + str (value_type(mean_sample_num)/value_type(num_sample_runs))); 
+            S.update_stats (calibrate_list.size() + value_type(mean_sample_num)/value_type(num_sample_runs), 
+                value_type(num_truncations)/value_type(num_sample_runs),
+                max_truncation);
           }
+
+
+
 
           bool init () 
           { 
-            if (!get_data ()) return (false);
+            if (!get_data ()) 
+              return false;
 
             if (!S.init_dir) {
               for (size_t n = 0; n < S.max_trials; n++) {
                 dir.set (rng.normal(), rng.normal(), rng.normal());
                 dir.normalise();
-                value_type val = FOD (dir);
-                if (!isnan (val)) {
-                  if (val > S.init_threshold) {
-                    prev_prob_val = Math::pow (val, S.num_samples);
-                    return (true);
-                  }
-                }
+                half_log_prob0 = FOD (dir);
+                if (finite (half_log_prob0)) 
+                  if (half_log_prob0 > S.init_threshold) 
+                    goto end_init;
               }   
             }   
             else {
               dir = S.init_dir;
-              value_type val = FOD (dir);
-              if (finite (val)) { 
-                if (val > S.init_threshold) {
-                  prev_prob_val = Math::pow (val, S.num_samples);
-                  return (true);
-                }
-              }
+              half_log_prob0 = FOD (dir);
+              if (finite (half_log_prob0)) 
+                if (half_log_prob0 > S.init_threshold) 
+                  goto end_init;
             }   
 
-            return (false);
+            return false;
+
+end_init:
+            half_log_prob0 = 0.5 * Math::log (half_log_prob0);
+            return true;
           }   
+
+
+
 
           bool next () 
           {
             Point<value_type> next_pos, next_dir;
+            Point<value_type> positions [S.num_samples], tangents [S.num_samples];
 
-            value_type max_val_actual = 0.0;
-            for (int n = 0; n < 100; n++) {
-              value_type val = rand_path (next_pos, next_dir);
-              if (val > max_val_actual) max_val_actual = val;
+            value_type max_val = 0.0;
+            for (size_t i = 0; i < calibrate_list.size(); ++i) {
+              get_path (positions, tangents, rotate_direction (dir, calibrate_list[i]));
+              value_type val = path_prob (positions, tangents);
+              if (val > max_val) 
+                max_val = val;
             }
-            value_type max_val = MAX (prev_prob_val, max_val_actual);
-            prev_prob_val = max_val_actual;
 
-            if (isnan (max_val) || max_val < S.prob_threshold) return (false);
-            max_val *= 1.5;
+            if (max_val <= 0.0 || !finite (max_val)) 
+              return false;
 
-            size_t nmax = max_val_actual > S.prob_threshold ? 10000 : S.max_trials;
-            for (size_t n = 0; n < nmax; n++) {
-              value_type val = rand_path (next_pos, next_dir);
-              if (val > S.prob_threshold) {
-                if (val > max_val) info ("max_val exceeded!!! (val = " + str(val) + ", max_val = " + str (max_val) + ")");
-                if (rng.uniform() < val/max_val) {
-                  dir = next_dir;
-                  dir.normalise();
-                  pos = next_pos;
-                  mean_sample_num += n;
-                  num_sample_runs++;
-                  return (true);
-                }
+            max_val *= calibrate_ratio;
+
+            num_sample_runs++;
+
+            for (size_t n = 0; n < S.max_trials; n++) {
+              value_type val = rand_path_prob (next_pos, next_dir);
+
+              if (val > max_val) {
+                debug ("max_val exceeded!!! (val = " + str(val) + ", max_val = " + str (max_val) + ")");
+                  ++num_truncations;
+                  if (val/max_val > max_truncation)
+                    max_truncation = val/max_val;
+              }
+
+              if (rng.uniform() < val/max_val) {
+                dir = next_dir;
+                dir.normalise();
+                pos = next_pos;
+                mean_sample_num += n;
+                half_log_prob0 = last_half_log_probN;
+                return true;
               }
             }
 
-            return (false);
+            return false;
           }
 
         private:
           const Shared& S;
-          value_type prev_prob_val;
-          size_t mean_sample_num, num_sample_runs;
+          value_type calibrate_ratio, half_log_prob0, last_half_log_probN;
+          size_t mean_sample_num, num_sample_runs, num_truncations;
+          value_type max_truncation;
+          std::vector<Point<value_type> > calibrate_list;
 
           value_type FOD (const Point<value_type>& direction) const 
           {
@@ -151,51 +217,119 @@ namespace MR {
           value_type FOD (const Point<value_type>& position, const Point<value_type>& direction) 
           {
             if (!get_data (position)) 
-              return (NAN);
-            return (FOD (direction));
+              return NAN;
+            return FOD (direction);
           }
 
-          value_type rand_path (Point<value_type>& next_pos, Point<value_type>& next_dir) 
+          value_type rand_path_prob (Point<value_type>& next_pos, Point<value_type>& next_dir) 
           {
-            next_dir = rand_dir (dir);
-            value_type cos_theta = next_dir.dot (dir);
-            if (cos_theta > 1.0) cos_theta = 1.0;
+            Point<value_type> positions [S.num_samples], tangents [S.num_samples];
+            get_path (positions, tangents, rand_dir (dir));
+
+            value_type prob = path_prob (positions, tangents);
+
+            next_pos = positions[S.num_samples-1];
+            next_dir = tangents[S.num_samples-1];
+
+            return prob;
+          }
+
+
+          value_type path_prob (Point<value_type>* positions, Point<value_type>* tangents)
+          {
+            value_type log_prob = half_log_prob0;
+            for (size_t i = 0; i < S.num_samples; ++i) {
+              value_type fod_amp = FOD (positions[i], tangents[i]);
+              if (isnan (fod_amp) || fod_amp < S.threshold) 
+                return (NAN);
+              fod_amp = Math::log (fod_amp);
+              if (i < S.num_samples-1) log_prob += fod_amp;
+              else {
+                last_half_log_probN = 0.5*fod_amp;
+                log_prob += last_half_log_probN;
+              }
+            }
+
+            return Math::exp (log_prob / S.num_samples);
+          }
+
+
+
+
+
+          void get_path (Point<value_type>* positions, Point<value_type>* tangents, const Point<value_type>& end_dir) const
+          {
+            value_type cos_theta = end_dir.dot (dir);
+            cos_theta = std::min (cos_theta, value_type(1.0));
             value_type theta = Math::acos (cos_theta);
 
             if (theta) {
-              Point<value_type> curv = next_dir - cos_theta * dir; curv.normalise();
+              Point<value_type> curv = end_dir - cos_theta * dir;
+              curv.normalise();
               value_type R = S.step_size / theta;
-              next_pos = pos + R * (Math::sin (theta) * dir + (value_type(1.0)-cos_theta) * curv);
-              value_type val = FOD (next_pos, next_dir);
-              if (isnan (val) || val < S.threshold) return (NAN);
 
-              for (size_t i = S.num_samples; i > 0; --i) {
-                value_type a = (theta * i) / S.num_samples, cos_a = Math::cos (a), sin_a = sin (a);
-                Point<value_type> x = pos + R * (sin_a * dir + (value_type(1.0) - cos_a) * curv);
-                Point<value_type> t = cos_a * dir + sin_a * curv;
-                value_type amp = FOD (x, t);
-                if (isnan (val) || amp < S.threshold) return (NAN);
-                val *= amp;
+              for (size_t i = 0; i < S.num_samples-1; ++i) {
+                value_type a = (theta * (i+1)) / S.num_samples;
+                value_type cos_a = Math::cos (a);
+                value_type sin_a = Math::sin (a);
+                *positions++ = pos + R * (sin_a * dir + (value_type(1.0) - cos_a) * curv);
+                *tangents++ = cos_a * dir + sin_a * curv;
               }
-              return (val);
+              *positions = pos + R * (Math::sin (theta) * dir + (value_type(1.0)-cos_theta) * curv);
+              *tangents = end_dir;
             }
             else { // straight on:
-              next_pos = pos + S.step_size * dir;
-              value_type val = FOD (next_pos, dir);
-              if (isnan (val) || val < S.threshold) return (NAN);
-
-              for (size_t i = S.num_samples; i > 0; --i) {
-                value_type f = (S.step_size * i) / S.num_samples;
-                Point<value_type> x = pos + f * dir;
-                value_type amp = FOD (x, dir);
-                if (isnan (val) || amp < S.threshold) return (NAN);
-                val *= amp;
+              for (size_t i = 0; i <= S.num_samples; ++i) {
+                value_type f = (i+1) * (S.step_size / S.num_samples);
+                *positions++ = pos + f * dir;
+                *tangents++ = dir;
               }
-              return (val);
             }
           }
 
           Point<value_type> rand_dir (const Point<value_type>& d) { return (random_direction (d, S.max_angle, S.sin_max_angle)); }
+
+
+
+
+
+
+          class Calibrate
+          {
+            public:
+              Calibrate (iFOD2& method) : 
+                P (method),
+                fod (P.values, P.source.dim(3)) {
+                  Math::SH::delta (fod, Point<value_type> (0.0, 0.0, 1.0), P.S.lmax);
+                  init_log_prob = 0.5 * Math::log (Math::SH::value (P.values, Point<value_type> (0.0, 0.0, 1.0), P.S.lmax));
+                }
+
+              value_type operator() (value_type el) 
+              {
+                Point<value_type> positions [P.S.num_samples], tangents [P.S.num_samples];
+                P.get_path (positions, tangents, Point<value_type> (Math::sin (el), 0.0, Math::cos(el)));
+                
+                value_type log_prob = init_log_prob;
+                for (size_t i = 0; i < P.S.num_samples; ++i) {
+                  value_type prob = Math::SH::value (P.values, tangents[i], P.S.lmax);
+                  if (prob <= 0.0)
+                    return 0.0;
+                  prob = Math::log (prob);
+                  if (i < P.S.num_samples-1) log_prob += prob;
+                  else log_prob += 0.5*prob;
+                }
+
+                return Math::exp (log_prob / P.S.num_samples);
+              }
+
+            private:
+              const iFOD2& P;
+              Math::Vector<value_type> fod;
+              value_type init_log_prob;
+          };
+
+          friend void calibrate<iFOD2> (iFOD2& method);
+
       };
 
     }

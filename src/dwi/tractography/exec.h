@@ -87,7 +87,7 @@ namespace MR {
 
       template <class Method> class Exec {
         public:
-          static void run (const Image::Header& source, const std::string& destination, DWI::Tractography::Properties& properties)
+          static void run (Image::Header& source, const std::string& destination, DWI::Tractography::Properties& properties)
           {
             typename Method::Shared shared (source, properties);
             MethodBase::init(); 
@@ -110,7 +110,8 @@ namespace MR {
             Queue::Writer::Item item (writer);
             do {
               gen_track (*item);
-              if (item->size() < S.min_num_points || track_excluded || track_is_not_included()) item->clear();
+              if (item->size() < S.min_num_points || track_excluded || track_is_not_included()) 
+                item->clear();
             } while (item.write());
           }
 
@@ -128,7 +129,8 @@ namespace MR {
           bool track_is_not_included () const 
           { 
             for (size_t n = 0; n < track_included.size(); ++n) 
-              if (!track_included[n]) return (true); 
+              if (!track_included[n]) 
+                return (true); 
             return (false); 
           }
 
@@ -142,8 +144,10 @@ namespace MR {
             do { 
               method.pos = S.properties.seed.sample (method.rng);
               num_attempts++;
-              if (num_attempts++ > 10000) throw Exception ("failed to find suitable seed point after 10,000 attempts - aborting");
+              if (num_attempts++ > 10000) 
+                throw Exception ("failed to find suitable seed point after 10,000 attempts - aborting");
             } while (!method.init ());
+
             Point<value_type> seed_dir (method.dir);
 
             tck.push_back (method.pos);
@@ -154,15 +158,24 @@ namespace MR {
               method.dir[1] = -seed_dir[1];
               method.dir[2] = -seed_dir[2];
               method.pos = tck.back();
-              while (iterate() && tck.size() < S.max_num_points) tck.push_back (method.pos);
+              while (iterate() && tck.size() < S.max_num_points) 
+                tck.push_back (method.pos);
             }
           }
 
           bool iterate () 
           {
-            if (!method.next()) return (false);
-            if (S.properties.mask.size() && !S.properties.mask.contains (method.pos)) return (false);
-            if (S.properties.exclude.contains (method.pos)) { track_excluded = true; return (false); }
+            if (!method.next()) 
+              return (false);
+
+            if (S.properties.mask.size() && !S.properties.mask.contains (method.pos)) 
+              return (false);
+
+            if (S.properties.exclude.contains (method.pos)) { 
+              track_excluded = true; 
+              return (false); 
+            }
+
             S.properties.include.contains (method.pos, track_included);
             return (true);
           };

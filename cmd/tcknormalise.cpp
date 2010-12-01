@@ -42,15 +42,15 @@ DESCRIPTION = {
 };
 
 ARGUMENTS = {
-  Argument ("tracks", "track file", "the input track file.").type_file (),
-  Argument ("transform", "transform image", "the image containing the transform.").type_image_in(),
-  Argument ("output", "output image", "the output fraction image").type_image_out(),
-  Argument::End
+  Argument ("tracks", "the input track file.").type_file (),
+  Argument ("transform", "the image containing the transform.").type_image_in(),
+  Argument ("output", "the output fraction image").type_image_out(),
+  Argument ()
 };
 
 
 
-OPTIONS = { Option::End };
+OPTIONS = { Option() };
 
 
 
@@ -58,13 +58,13 @@ OPTIONS = { Option::End };
 EXECUTE {
   Tractography::Properties properties;
   Tractography::Reader<> file;
-  file.open (argument[0].get_string(), properties);
+  file.open (argument[0], properties);
 
-  Image::Header header = argument[1].get_image();
+  Image::Header header (argument[1]);
   Image::Voxel<float> vox (header);
 
   Tractography::Writer<> writer;
-  writer.create (argument[2].get_string(), properties);
+  writer.create (argument[2], properties);
 
   std::vector<Point<float> > tck;
 
