@@ -49,52 +49,6 @@ namespace MR {
         coronal_action->setStatusTip (tr("Switch to coronal projection"));
         connect (coronal_action, SIGNAL (triggered()), this, SLOT (coronal()));
         add_action (coronal_action);
-
-        QAction* separator = new QAction (this);
-        separator->setSeparator (true);
-        add_action (separator);
-
-        show_image_info_action = new QAction(tr("Show &image info"), this);
-        show_image_info_action->setCheckable (true);
-        show_image_info_action->setShortcut (tr("H"));
-        show_image_info_action->setStatusTip (tr("Show image header information"));
-        show_image_info_action->setChecked (true);
-        connect (show_image_info_action, SIGNAL (triggered()), this, SLOT (toggle_show_xyz()));
-        add_action (show_image_info_action);
-
-        show_orientation_action = new QAction(tr("Show &orientation"), this);
-        show_orientation_action->setCheckable (true);
-        show_orientation_action->setShortcut (tr("O"));
-        show_orientation_action->setStatusTip (tr("Show image orientation labels"));
-        show_orientation_action->setChecked (true);
-        connect (show_orientation_action, SIGNAL (triggered()), this, SLOT (toggle_show_xyz()));
-        add_action (show_orientation_action);
-
-        show_position_action = new QAction(tr("Show &voxel"), this);
-        show_position_action->setCheckable (true);
-        show_position_action->setShortcut (tr("V"));
-        show_position_action->setStatusTip (tr("Show image voxel position and value"));
-        show_position_action->setChecked (true);
-        connect (show_position_action, SIGNAL (triggered()), this, SLOT (toggle_show_xyz()));
-        add_action (show_position_action);
-
-        separator = new QAction (this);
-        separator->setSeparator (true);
-        add_action (separator);
-
-        show_focus_action = new QAction(tr("Show &focus"), this);
-        show_focus_action->setCheckable (true);
-        show_focus_action->setShortcut (tr("F"));
-        show_focus_action->setStatusTip (tr("Show focus with the crosshairs"));
-        show_focus_action->setChecked (true);
-        connect (show_focus_action, SIGNAL (triggered()), this, SLOT (toggle_show_xyz()));
-        add_action (show_focus_action);
-
-        reset_action = new QAction(tr("Reset &view"), this);
-        reset_action->setShortcut (tr("Crtl+R"));
-        reset_action->setStatusTip (tr("Reset image projection & zoom"));
-        connect (reset_action, SIGNAL (triggered()), this, SLOT (reset()));
-        add_action (reset_action);
       }
 
 
@@ -393,7 +347,6 @@ namespace MR {
       void Mode2D::axial () { set_projection (2); updateGL(); }
       void Mode2D::sagittal () { set_projection (0); updateGL(); }
       void Mode2D::coronal () { set_projection (1); updateGL(); }
-      void Mode2D::toggle_show_xyz () { updateGL(); }
 
 
 

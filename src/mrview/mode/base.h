@@ -62,9 +62,14 @@ namespace MR {
 
         public slots:
           void updateGL ();
+          virtual void reset ();
+          virtual void toggle_show_xyz ();
 
         protected:
           Window& window;
+
+          QAction *reset_action, *show_focus_action;
+          QAction *show_image_info_action, *show_position_action, *show_orientation_action;
 
           static const int TopEdge = 1;
           static const int BottomEdge = 1<<1;
@@ -83,6 +88,7 @@ namespace MR {
           int mouse_edge () const { return (edge_); }
 
           void add_action (QAction* action) { window.view_menu->insertAction (window.view_menu_mode_area, action); }
+          void add_action_common (QAction* action) { window.view_menu->insertAction (window.view_menu_mode_common_area, action); }
 
           Point<> model_to_screen (const Point<>& pos) const
           {

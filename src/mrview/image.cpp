@@ -52,39 +52,16 @@ namespace MR {
       window.image_menu->addAction (this);
       texture2D[0] = texture2D[1] = texture2D[2] = 0;
       position[0] = position[1] = position[2] = std::numeric_limits<ssize_t>::min();
+      set_colourmap (0, false);
     }
 
     Image::~Image () { }
 
 
-    void Image::update_shaders_2D () 
-    {
-      if (!vertex_shader) vertex_shader.compile (vertex_shader_source);
-      if (!fragment_shader_2D) fragment_shader_2D.compile (gen_fragment_shader_source_2D().c_str());
-      if (!shader_program_2D) {
-        shader_program_2D.attach (vertex_shader);
-        shader_program_2D.attach (fragment_shader_2D);
-        shader_program_2D.link();
-      }
-    }
 
-    void Image::update_shaders_3D () 
-    {
-      if (!vertex_shader) vertex_shader.compile (vertex_shader_source);
-      if (!fragment_shader_3D) fragment_shader_3D.compile (gen_fragment_shader_source_3D().c_str());
-      if (!shader_program_3D) {
-        shader_program_3D.attach (vertex_shader);
-        shader_program_3D.attach (fragment_shader_3D);
-        shader_program_3D.link();
-      }
-    }
-
-
-
-    void Image::render2D (int projection, int slice)
+    void Image::render2D (Shader& shader, int projection, int slice)
     {
       update_texture2D (projection, slice);
-      update_shaders_2D();
 
       glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, interpolation);
       glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, interpolation);
@@ -96,10 +73,10 @@ namespace MR {
       Point<> p, q;
       p[projection] = slice;
 
-      shader_program_2D.start();
+      shader.start();
 
-      shader_program_2D.get_uniform ("offset") = display_midpoint - 0.5f * display_range;
-      shader_program_2D.get_uniform ("scale") = 1.0f / display_range;
+      shader.get_uniform ("offset") = display_midpoint - 0.5f * display_range;
+      shader.get_uniform ("scale") = 1.0f / display_range;
 
       glBegin (GL_QUADS);
       glTexCoord2f (0.0, 0.0); p[x] = -0.5; p[y] = -0.5; q = interp.voxel2scanner (p); glVertex3fv (q.get());
@@ -107,17 +84,16 @@ namespace MR {
       glTexCoord2f (1.0, 1.0); p[x] = xdim; p[y] = ydim; q = interp.voxel2scanner (p); glVertex3fv (q.get());
       glTexCoord2f (1.0, 0.0); p[x] = xdim; p[y] = -0.5; q = interp.voxel2scanner (p); glVertex3fv (q.get());
       glEnd();
-      shader_program_2D.stop();
+      shader.stop();
     }
 
 
 
 
 
-    void Image::render3D (const Math::Quaternion& view, const Point<>& focus)
+    void Image::render3D (Shader& shader, const Math::Quaternion& view, const Point<>& focus)
     {
       update_texture3D ();
-      update_shaders_3D();
 
       glTexParameteri (GL_TEXTURE_3D, GL_TEXTURE_MAG_FILTER, interpolation);
       glTexParameteri (GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, interpolation);
@@ -131,10 +107,10 @@ namespace MR {
       p[projection] = slice;
       */
 
-      shader_program_3D.start();
+      shader.start();
 
-      shader_program_3D.get_uniform ("offset") = display_midpoint - 0.5f * display_range;
-      shader_program_3D.get_uniform ("scale") = 1.0f / display_range;
+      shader.get_uniform ("offset") = display_midpoint - 0.5f * display_range;
+      shader.get_uniform ("scale") = 1.0f / display_range;
 
       glBegin (GL_QUADS);
       glTexCoord3f (0.0, 0.0, 0.5);// p[x] = -0.5; p[y] = -0.5; q = interp.voxel2scanner (p); glVertex3fv (q.get());
@@ -142,7 +118,7 @@ namespace MR {
       glTexCoord3f (1.0, 1.0, 0.5);// p[x] = xdim; p[y] = ydim; q = interp.voxel2scanner (p); glVertex3fv (q.get());
       glTexCoord3f (1.0, 0.0, 0.5);// p[x] = xdim; p[y] = -0.5; q = interp.voxel2scanner (p); glVertex3fv (q.get());
       glEnd();
-      shader_program_3D.stop();
+      shader.stop();
     }
 
 
@@ -255,45 +231,6 @@ namespace MR {
     }
 
 
-
-
-    const std::string Image::gen_fragment_shader_source_2D () const 
-    {
-      std::string source;
-      source = "uniform float offset, scale;"
-        "uniform sampler2D tex; void main() {"
-        "if (gl_TexCoord[0].s < 0.0 || gl_TexCoord[0].s > 1.0 ||"
-        "    gl_TexCoord[0].t < 0.0 || gl_TexCoord[0].t > 1.0) discard;"
-        "vec4 color = texture2D (tex,gl_TexCoord[0].st);";
-
-      source += "gl_FragColor.rgb = scale * (color.rgb - offset); gl_FragColor.a = color.a;";
-
-      source += "}";
-      return source;
-    }
-
-
-    const std::string Image::gen_fragment_shader_source_3D () const 
-    {
-      std::string source;
-      source = "uniform float offset, scale;"
-        "uniform sampler3D tex; void main() {"
-        "if (gl_TexCoord[0].s < 0.0 || gl_TexCoord[0].s > 1.0 ||"
-        "    gl_TexCoord[0].t < 0.0 || gl_TexCoord[0].t > 1.0 ||"
-        "    gl_TexCoord[0].p < 0.0 || gl_TexCoord[0].p > 1.0) discard;"
-        "vec4 color = texture3D (tex,gl_TexCoord[0].stp);";
-
-      source += "gl_FragColor.rgb = scale * (color.rgb - offset); gl_FragColor.a = color.a;";
-
-      source += "}";
-      return source;
-    }
-
-    const char* Image::vertex_shader_source = 
-      "void main() {"
-      "  gl_TexCoord[0] = gl_MultiTexCoord0;"
-      "  gl_Position = ftransform();"
-      "}";
 
   }
 }

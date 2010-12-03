@@ -50,11 +50,9 @@ namespace MR {
           void sagittal ();
           void coronal ();
           void reset ();
-          void toggle_show_xyz ();
 
         protected:
-          QAction *axial_action, *sagittal_action, *coronal_action, *reset_action, *show_focus_action;
-          QAction *show_image_info_action, *show_position_action, *show_orientation_action;
+          QAction *axial_action, *sagittal_action, *coronal_action;
           Point<> lookat;
           void reset_view ();
 

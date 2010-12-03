@@ -25,8 +25,7 @@
 
 #include <QAction>
 
-#include "opengl/gl.h"
-#include "opengl/shader.h"
+#include "mrview/shader.h"
 #include "image/voxel.h"
 #include "math/quaternion.h"
 #include "dataset/interp/linear.h"
@@ -59,10 +58,13 @@ namespace MR {
         }
         void adjust_windowing (const QPoint& p) { adjust_windowing (p.x(), p.y()); }
         void set_interpolate (bool linear) { interpolation = linear ? GL_LINEAR : GL_NEAREST; }
-        bool interpolate () const { return (interpolation == GL_LINEAR); }
+        bool interpolate () const { return interpolation == GL_LINEAR; }
 
-        void render2D (int projection, int slice);
-        void render3D (const Math::Quaternion& view, const Point<>& focus);
+        void render2D (int projection, int slice) { render2D (shader2D, projection, slice); }
+        void render3D (const Math::Quaternion& view, const Point<>& focus) { render3D (shader3D, view, focus); }
+
+        void render2D (Shader& shader, int projection, int slice);
+        void render3D (Shader& shader, const Math::Quaternion& view, const Point<>& focus);
 
         void get_axes (int projection, int& x, int& y)
         { 
@@ -71,6 +73,15 @@ namespace MR {
             else { x = 0; y = 1; }
           }
           else { x = 1; y = 2; }
+        }
+
+        void set_colourmap (uint32_t index, bool invert)
+        { 
+          colourmap = index; 
+          if (invert) 
+            colourmap |= Invert;
+          shader2D.set (Texture2D | colourmap);
+          shader3D.set (Texture3D | colourmap);
         }
 
         MR::Image::Header& H;
@@ -83,25 +94,13 @@ namespace MR {
         int interpolation;
         float value_min, value_max;
         float display_midpoint, display_range;
+        uint32_t colourmap;
         std::vector<ssize_t> position;
 
-        GL::Shader::Vertex vertex_shader;
-
-        GL::Shader::Fragment fragment_shader_2D;
-        GL::Shader::Program shader_program_2D;
-
-        GL::Shader::Fragment fragment_shader_3D;
-        GL::Shader::Program shader_program_3D;
-
-        const std::string gen_fragment_shader_source_2D () const;
-        const std::string gen_fragment_shader_source_3D () const;
-        static const char* vertex_shader_source;
+        Shader shader2D, shader3D;
 
         void update_texture2D (int projection, int slice);
-        void update_shaders_2D ();
-
         void update_texture3D ();
-        void update_shaders_3D ();
 
         bool volume_unchanged ();
 

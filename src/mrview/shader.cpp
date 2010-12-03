@@ -75,17 +75,14 @@ namespace MR {
             "gl_FragColor.r = 2.7213 * color.r;"
             "gl_FragColor.g = 2.7213 * color.r - 1.0;"
             "gl_FragColor.b = 3.7727 * color.r - 2.7727;";
-        else if (colourmap == ColourMap::Cool)
-          source += 
-            "gl_FragColor.r = 1.0 - 2.7213 * color.r;"
-            "gl_FragColor.g = 2.0 - 2.7213 * color.r;"
-            "gl_FragColor.b = 3.7727 - 3.7727 * color.r;";
         else if (colourmap == ColourMap::Jet)
           source += 
-            "gl_FragColor.rgb = 1.5 - abs (color.rgb - vec3(0.25, 0.5, 0.75));";
+            "gl_FragColor.rgb = 1.5 - 8.0 * abs (color.rgb - vec3(0.25, 0.5, 0.75));";
         else assert (0);
       }
 
+      if (flags & Invert)
+        source += "gl_FragColor = 1.0 - gl_FragColor;";
       source += 
         "gl_FragColor.a = color.a;"
         "}";
@@ -96,6 +93,7 @@ namespace MR {
       shader_program.link();
     }
 
+    GL::Shader::Vertex Shader::vertex_shader;
 
     const char* Shader::vertex_shader_source = 
       "void main() {"

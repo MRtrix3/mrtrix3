@@ -36,6 +36,7 @@
 #include "dialog/opengl.h"
 #include "dialog/image_properties.h"
 #include "mrview/window.h"
+#include "mrview/shader.h"
 #include "mrview/mode/base.h"
 #include "mrview/tool/base.h"
 #include "image/header.h"
@@ -178,7 +179,7 @@ namespace MR {
       view_menu->addSeparator();
 
       view_menu_mode_area = view_menu->addSeparator();
-      view_menu->addSeparator();
+      view_menu_mode_common_area = view_menu->addSeparator();
       view_menu->addAction (full_screen_action);
 
 
@@ -225,8 +226,18 @@ namespace MR {
       image_menu->addSeparator();
       image_menu->addAction (reset_windowing_action);
       image_menu->addAction (image_interpolate_action);
+      colourmap_menu = image_menu->addMenu (tr("&colourmap"));
       image_list_area = image_menu->addSeparator();
 
+      // Colourmap menu:
+      ColourMap::init (this, colourmap_group, colourmap_menu, colourmap_actions);
+      connect (colourmap_group, SIGNAL (triggered(QAction*)), this, SLOT (select_colourmap_slot()));
+      colourmap_menu->addSeparator();
+      invert_colourmap_action = new QAction(tr("&Invert"), this);
+      invert_colourmap_action->setCheckable (true);
+      invert_colourmap_action->setStatusTip (tr("invert the current colourmap"));
+      connect (invert_colourmap_action, SIGNAL (changed()), this, SLOT (select_colourmap_slot()));
+      colourmap_menu->addAction (invert_colourmap_action);
 
       menuBar()->addSeparator();
 
@@ -250,10 +261,6 @@ namespace MR {
       help_menu->addAction (about_action);
       help_menu->addAction (aboutQt_action);
 
-
-      // StatusBar:
-      //statusBar()->showMessage(tr("Ready"));
-
       set_image_menu ();
     }
 
@@ -263,6 +270,8 @@ namespace MR {
     Window::~Window () 
     {
       delete glarea;
+      delete [] mode_actions;
+      delete [] colourmap_actions;
     }
 
 
@@ -361,6 +370,22 @@ namespace MR {
 
 
 
+    void Window::select_colourmap_slot () 
+    {
+      Image* image = current_image();
+      if (image) {
+        QAction* action = colourmap_group->checkedAction();
+        size_t n = 0;
+        while (action != colourmap_actions[n]) 
+          ++n;
+        image->set_colourmap (ColourMap::from_menu (n), invert_colourmap_action->isChecked());
+        mode->updateGL();
+      }
+    }
+
+
+
+
     void Window::image_reset_slot ()
     { 
       Image* image = current_image();
@@ -429,6 +454,7 @@ namespace MR {
       next_image_action->setEnabled (N>1);
       prev_image_action->setEnabled (N>1);
       reset_windowing_action->setEnabled (N>0);
+      colourmap_menu->setEnabled (N>0);
       save_action->setEnabled (N>0);
       close_action->setEnabled (N>0);
       properties_action->setEnabled (N>0);

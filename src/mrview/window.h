@@ -61,6 +61,7 @@ namespace MR {
         void image_properties_slot ();
 
         void select_mode_slot (QAction* action);
+        void select_colourmap_slot ();
         void full_screen_slot ();
 
         void image_next_slot ();
@@ -86,13 +87,14 @@ namespace MR {
         float field_of_view;
         int proj;
 
-        QMenu *file_menu, *view_menu, *tool_menu, *image_menu, *help_menu;
+        QMenu *file_menu, *view_menu, *tool_menu, *image_menu, *help_menu, *colourmap_menu;
         QAction *open_action, *save_action, *close_action, *properties_action, *quit_action;
-        QAction *view_menu_mode_area, *reset_windowing_action, *image_interpolate_action, *full_screen_action;
-        QAction **mode_actions;
+        QAction *view_menu_mode_area, *view_menu_mode_common_area, *reset_windowing_action;
+        QAction *image_interpolate_action, *full_screen_action;
+        QAction **mode_actions, **colourmap_actions, *invert_colourmap_action;
         QAction *next_image_action, *prev_image_action, *image_list_area;
         QAction *OpenGL_action, *about_action, *aboutQt_action;
-        QActionGroup *mode_group, *image_group;
+        QActionGroup *mode_group, *image_group, *colourmap_group;
 
         void paintGL ();
         void initGL ();

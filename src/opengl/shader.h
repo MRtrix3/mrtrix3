@@ -23,6 +23,7 @@
 #ifndef __opengl_shader_h__
 #define __opengl_gl_h__
 
+#include "app.h"
 #include "opengl/gl.h"
 
 namespace MR {
@@ -41,6 +42,12 @@ namespace MR {
           operator GLhandleARB () const { return (index_); }
           void compile (const std::string& source) 
           { 
+            if (App::log_level > 2) {
+              std::string msg ("compiling OpenGL ");
+              msg += TYPE == GL_VERTEX_SHADER_ARB ? "vertex" : "fragment";
+              msg += " shader:\n" + source;
+              MR::debug (msg);
+            }
             if (!index_) index_ = glCreateShaderObjectARB (TYPE);
             const char* p = source.c_str();
             glShaderSourceARB (index_, 1, &p, NULL);
@@ -104,6 +111,7 @@ namespace MR {
           }
           void link () 
           {
+            MR::debug ("linking OpenGL shader program...");
             assert (index_);
             glLinkProgramARB (index_); 
             GLint status;

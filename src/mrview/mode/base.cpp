@@ -31,11 +31,61 @@ namespace MR {
       Base::Base (Window& parent) : 
         window (parent) { 
           font_.setPointSize (0.9*font_.pointSize());
+
+          QAction* separator = new QAction (this);
+          separator->setSeparator (true);
+          add_action_common (separator);
+
+          show_image_info_action = new QAction(tr("Show &image info"), this);
+          show_image_info_action->setCheckable (true);
+          show_image_info_action->setShortcut (tr("H"));
+          show_image_info_action->setStatusTip (tr("Show image header information"));
+          show_image_info_action->setChecked (true);
+          connect (show_image_info_action, SIGNAL (triggered()), this, SLOT (toggle_show_xyz()));
+          add_action_common (show_image_info_action);
+
+          show_orientation_action = new QAction(tr("Show &orientation"), this);
+          show_orientation_action->setCheckable (true);
+          show_orientation_action->setShortcut (tr("O"));
+          show_orientation_action->setStatusTip (tr("Show image orientation labels"));
+          show_orientation_action->setChecked (true);
+          connect (show_orientation_action, SIGNAL (triggered()), this, SLOT (toggle_show_xyz()));
+          add_action_common (show_orientation_action);
+
+          show_position_action = new QAction(tr("Show &voxel"), this);
+          show_position_action->setCheckable (true);
+          show_position_action->setShortcut (tr("V"));
+          show_position_action->setStatusTip (tr("Show image voxel position and value"));
+          show_position_action->setChecked (true);
+          connect (show_position_action, SIGNAL (triggered()), this, SLOT (toggle_show_xyz()));
+          add_action_common (show_position_action);
+
+          separator = new QAction (this);
+          separator->setSeparator (true);
+          add_action_common (separator);
+
+          show_focus_action = new QAction(tr("Show &focus"), this);
+          show_focus_action->setCheckable (true);
+          show_focus_action->setShortcut (tr("F"));
+          show_focus_action->setStatusTip (tr("Show focus with the crosshairs"));
+          show_focus_action->setChecked (true);
+          connect (show_focus_action, SIGNAL (triggered()), this, SLOT (toggle_show_xyz()));
+          add_action_common (show_focus_action);
+
+          reset_action = new QAction(tr("Reset &view"), this);
+          reset_action->setShortcut (tr("Crtl+R"));
+          reset_action->setStatusTip (tr("Reset image projection & zoom"));
+          connect (reset_action, SIGNAL (triggered()), this, SLOT (reset()));
+          add_action_common (reset_action);
         }
+
+
       Base::~Base () { }
 
       void Base::paint () { }
       void Base::updateGL () { reinterpret_cast<QGLWidget*> (window.glarea)->updateGL(); }
+      void Base::reset () { }
+      void Base::toggle_show_xyz () { updateGL(); }
 
       bool Base::mouse_click () { return (false); }
       bool Base::mouse_move () { return (false); }
