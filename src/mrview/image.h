@@ -35,6 +35,10 @@ class QAction;
 namespace MR {
   namespace Viewer {
 
+    namespace Mode {
+      class Base;
+    }
+
     class Window;
 
     class Image : public QAction
@@ -61,10 +65,10 @@ namespace MR {
         bool interpolate () const { return interpolation == GL_LINEAR; }
 
         void render2D (int projection, int slice) { render2D (shader2D, projection, slice); }
-        void render3D (const Math::Quaternion& view, const Point<>& focus) { render3D (shader3D, view, focus); }
+        void render3D (const Mode::Base& mode) { render3D (shader3D, mode); }
 
         void render2D (Shader& shader, int projection, int slice);
-        void render3D (Shader& shader, const Math::Quaternion& view, const Point<>& focus);
+        void render3D (Shader& shader, const Mode::Base& mode);
 
         void get_axes (int projection, int& x, int& y)
         { 
@@ -75,11 +79,11 @@ namespace MR {
           else { x = 1; y = 2; }
         }
 
-        void set_colourmap (uint32_t index, bool invert)
+        void set_colourmap (uint32_t index, bool invert_scale, bool invert_map)
         { 
           colourmap = index; 
-          if (invert) 
-            colourmap |= Invert;
+          if (invert_scale) colourmap |= InvertScale;
+          if (invert_map) colourmap |= InvertMap;
           shader2D.set (Texture2D | colourmap);
           shader3D.set (Texture3D | colourmap);
         }

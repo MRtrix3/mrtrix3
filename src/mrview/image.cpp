@@ -24,6 +24,7 @@
 
 #include "mrview/image.h"
 #include "mrview/window.h"
+#include "mrview/mode/base.h"
 
 
 
@@ -52,7 +53,7 @@ namespace MR {
       window.image_menu->addAction (this);
       texture2D[0] = texture2D[1] = texture2D[2] = 0;
       position[0] = position[1] = position[2] = std::numeric_limits<ssize_t>::min();
-      set_colourmap (0, false);
+      set_colourmap (0, false, false);
     }
 
     Image::~Image () { }
@@ -91,32 +92,39 @@ namespace MR {
 
 
 
-    void Image::render3D (Shader& shader, const Math::Quaternion& view, const Point<>& focus)
+    void Image::render3D (Shader& shader, const Mode::Base& mode)
     {
       update_texture3D ();
 
       glTexParameteri (GL_TEXTURE_3D, GL_TEXTURE_MAG_FILTER, interpolation);
       glTexParameteri (GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, interpolation);
 
-      /*
-      int x, y;
-      get_axes (projection, x, y);
-      float xdim = H.dim(x)-0.5, ydim = H.dim(y)-0.5;
-
-      Point<> p, q;
-      p[projection] = slice;
-      */
-
       shader.start();
 
       shader.get_uniform ("offset") = display_midpoint - 0.5f * display_range;
       shader.get_uniform ("scale") = 1.0f / display_range;
 
+      Point<> pos[4];
+      pos[0] = mode.screen_to_model (QPoint (0, mode.height()));
+      pos[1] = mode.screen_to_model (QPoint (0, 0));
+      pos[2] = mode.screen_to_model (QPoint (mode.width(), 0));
+      pos[3] = mode.screen_to_model (QPoint (mode.width(), mode.height()));
+
+      Point<> tex[4];
+      tex[0] = interp.scanner2voxel (pos[0]);
+      tex[1] = interp.scanner2voxel (pos[1]);
+      tex[2] = interp.scanner2voxel (pos[2]);
+      tex[3] = interp.scanner2voxel (pos[3]);
+
+      for (size_t i = 0; i < 4; ++i)
+        for (size_t j = 0; j < 3; ++j)
+          tex[i][j] /= H.dim(j);
+
       glBegin (GL_QUADS);
-      glTexCoord3f (0.0, 0.0, 0.5);// p[x] = -0.5; p[y] = -0.5; q = interp.voxel2scanner (p); glVertex3fv (q.get());
-      glTexCoord3f (0.0, 1.0, 0.5);// p[x] = -0.5; p[y] = ydim; q = interp.voxel2scanner (p); glVertex3fv (q.get());
-      glTexCoord3f (1.0, 1.0, 0.5);// p[x] = xdim; p[y] = ydim; q = interp.voxel2scanner (p); glVertex3fv (q.get());
-      glTexCoord3f (1.0, 0.0, 0.5);// p[x] = xdim; p[y] = -0.5; q = interp.voxel2scanner (p); glVertex3fv (q.get());
+      glTexCoord3fv (tex[0].get()); glVertex3fv (pos[0].get());
+      glTexCoord3fv (tex[1].get()); glVertex3fv (pos[1].get());
+      glTexCoord3fv (tex[2].get()); glVertex3fv (pos[2].get());
+      glTexCoord3fv (tex[3].get()); glVertex3fv (pos[3].get());
       glEnd();
       shader.stop();
     }
@@ -179,11 +187,11 @@ namespace MR {
       if (!texture3D) { // allocate:
         glGenTextures (1, &texture3D);
         assert (texture3D);
-        glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
-        glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
         glBindTexture (GL_TEXTURE_3D, texture3D);
+        glTexParameteri (GL_TEXTURE_3D, GL_TEXTURE_WRAP_S, GL_CLAMP);
+        glTexParameteri (GL_TEXTURE_3D, GL_TEXTURE_WRAP_T, GL_CLAMP);
         glTexImage3D (GL_TEXTURE_3D, 0, GL_LUMINANCE32F_ARB, 
-            vox.dim(0), vox.dim(1), vox.dim(3), 
+            vox.dim(0), vox.dim(1), vox.dim(2), 
             0, GL_LUMINANCE, GL_FLOAT, NULL);
       }
       else if (volume_unchanged()) {
@@ -195,20 +203,22 @@ namespace MR {
 
       value_min = INFINITY;
       value_max = -INFINITY;
-      for (ssize_t k = 0; k < vox.dim (2); ++k) {
-        float data [vox.dim(0)*vox.dim(1)];
+      const ssize_t x = 0, y = 1, z = 2;
+      float data [vox.dim(x)*vox.dim(y)];
+      for (vox[z] = 0; vox[z] < vox.dim(z); ++vox[z]) {
         float* p = data;
-        for (ssize_t j = 0; j < vox.dim (1); ++j) {
-          for (ssize_t i = 0; i < vox.dim (0); ++i) {
-            float val = *p++ = vox.value();
+        for (vox[y] = 0; vox[y] < vox.dim(y); ++vox[y]) {
+          for (vox[x] = 0; vox[x] < vox.dim(x); ++vox[x]) {
+            float val = *p = vox.value();
             if (finite (val)) {
               if (val < value_min) value_min = val;
               if (val > value_max) value_max = val;
             }
+            ++p;
           }
         }
         glTexSubImage3D (GL_TEXTURE_3D, 0, 
-            0, 0, k, 
+            0, 0, vox[z], 
             vox.dim(0), vox.dim(1), 1,
             GL_LUMINANCE, GL_FLOAT, data);
       }
@@ -216,7 +226,7 @@ namespace MR {
       if (isnan (display_midpoint) || isnan (display_range))
         reset_windowing();
 
-      }
+    }
 
 
 

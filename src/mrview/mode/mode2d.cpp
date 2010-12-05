@@ -295,7 +295,6 @@ namespace MR {
 
 
 
-      bool Mode2D::mouse_doubleclick () { return (false); }
 
       bool Mode2D::mouse_release () 
       {

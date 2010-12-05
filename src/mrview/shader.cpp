@@ -67,21 +67,24 @@ namespace MR {
         else assert (0);
       }
       else { // scalar colourmaps:
-        source += "color.rgb = scale * (color.rgb - offset);";
+        source += "color.rgb = clamp (";
+        if (flags & InvertScale) source += "1.0 -";
+        source += " scale * (color.rgb - offset), 0.0, 1.0);";
         if (colourmap == ColourMap::Gray)
           source += "gl_FragColor.rgb = color.rgb;";
         else if (colourmap == ColourMap::Hot)
           source += 
+            "color.r = clamp (color.r, 0.0, 1.0);"
             "gl_FragColor.r = 2.7213 * color.r;"
             "gl_FragColor.g = 2.7213 * color.r - 1.0;"
             "gl_FragColor.b = 3.7727 * color.r - 2.7727;";
         else if (colourmap == ColourMap::Jet)
           source += 
-            "gl_FragColor.rgb = 1.5 - 8.0 * abs (color.rgb - vec3(0.25, 0.5, 0.75));";
+            "gl_FragColor.rgb = 1.5 - 4.0 * abs (color.rgb - vec3(0.25, 0.5, 0.75));";
         else assert (0);
       }
 
-      if (flags & Invert)
+      if (flags & InvertMap)
         source += "gl_FragColor = 1.0 - gl_FragColor;";
       source += 
         "gl_FragColor.a = color.a;"

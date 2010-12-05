@@ -233,7 +233,13 @@ namespace MR {
       ColourMap::init (this, colourmap_group, colourmap_menu, colourmap_actions);
       connect (colourmap_group, SIGNAL (triggered(QAction*)), this, SLOT (select_colourmap_slot()));
       colourmap_menu->addSeparator();
-      invert_colourmap_action = new QAction(tr("&Invert"), this);
+      invert_scale_action = new QAction(tr("&Invert scaling"), this);
+      invert_scale_action->setCheckable (true);
+      invert_scale_action->setStatusTip (tr("invert the current scaling"));
+      connect (invert_scale_action, SIGNAL (changed()), this, SLOT (select_colourmap_slot()));
+      colourmap_menu->addAction (invert_scale_action);
+
+      invert_colourmap_action = new QAction(tr("Invert &Colourmap"), this);
       invert_colourmap_action->setCheckable (true);
       invert_colourmap_action->setStatusTip (tr("invert the current colourmap"));
       connect (invert_colourmap_action, SIGNAL (changed()), this, SLOT (select_colourmap_slot()));
@@ -378,7 +384,10 @@ namespace MR {
         size_t n = 0;
         while (action != colourmap_actions[n]) 
           ++n;
-        image->set_colourmap (ColourMap::from_menu (n), invert_colourmap_action->isChecked());
+        image->set_colourmap (
+            ColourMap::from_menu (n), 
+            invert_scale_action->isChecked(), 
+            invert_colourmap_action->isChecked());
         mode->updateGL();
       }
     }

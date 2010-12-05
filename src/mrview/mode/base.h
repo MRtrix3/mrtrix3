@@ -42,6 +42,9 @@ namespace MR {
         Q_OBJECT
 
         public:
+          Window& window;
+
+
           Base (Window& parent);
           virtual ~Base ();
 
@@ -60,21 +63,12 @@ namespace MR {
             get_modelview_projection_viewport();
           }
 
-        public slots:
-          void updateGL ();
-          virtual void reset ();
-          virtual void toggle_show_xyz ();
-
-        protected:
-          Window& window;
-
-          QAction *reset_action, *show_focus_action;
-          QAction *show_image_info_action, *show_position_action, *show_orientation_action;
-
           static const int TopEdge = 1;
           static const int BottomEdge = 1<<1;
           static const int LeftEdge = 1<<2;
           static const int RightEdge = 1<<3;
+
+
 
           const QPoint& mouse_pos () const { return (currentPos); }
           QPoint mouse_dpos () const { return (currentPos - lastPos); }
@@ -122,6 +116,7 @@ namespace MR {
           { return (screen_to_model (pos) - screen_to_model (Point<> (0.0, 0.0, 0.0))); } 
 
 
+          const Image* image () const { return (window.current_image()); }
           Image* image () { return (window.current_image()); }
 
           const Math::Quaternion& orientation () const { return (window.orient); }
@@ -133,6 +128,7 @@ namespace MR {
           void set_focus (const Point<>& p) { window.focal_point = p; }
           void set_target (const Point<>& p) { window.camera_target = p; }
           void set_projection (int p) { window.proj = p; }
+          void set_orientation (const Math::Quaternion& Q) { window.orient = Q; }
           void set_FOV (float value) { window.field_of_view = value; }
           void change_FOV_fine (float factor) { window.field_of_view *= Math::exp (0.005*factor); }
           void change_FOV_scroll (float factor) { change_FOV_fine (20.0 * factor); }
@@ -161,7 +157,24 @@ namespace MR {
             reinterpret_cast<QGLWidget*>(window.glarea)->renderText (x, y, text.c_str(), font_); 
           }
 
-          //void renderText (const std::string& text, 
+
+        public slots:
+          void updateGL ();
+          virtual void reset ();
+          virtual void toggle_show_xyz ();
+
+        protected:
+          QAction *reset_action, *show_focus_action;
+          QAction *show_image_info_action, *show_position_action, *show_orientation_action;
+
+          void get_modelview_projection_viewport () const 
+          {
+            if (isnan (modelview_matrix[0])) {
+              glGetIntegerv (GL_VIEWPORT, viewport_matrix); 
+              glGetDoublev (GL_MODELVIEW_MATRIX, modelview_matrix);
+              glGetDoublev (GL_PROJECTION_MATRIX, projection_matrix); 
+            }
+          }
 
         private:
           mutable GLdouble modelview_matrix[16], projection_matrix[16];
@@ -226,15 +239,6 @@ namespace MR {
             lastPos = currentPos = event->pos();
             if (mouse_wheel (event->delta()/120.0, event->orientation())) event->accept();
             else event->ignore();
-          }
-
-          void get_modelview_projection_viewport () const 
-          {
-            if (isnan (modelview_matrix[0])) {
-              glGetIntegerv (GL_VIEWPORT, viewport_matrix); 
-              glGetDoublev (GL_MODELVIEW_MATRIX, modelview_matrix);
-              glGetDoublev (GL_PROJECTION_MATRIX, projection_matrix); 
-            }
           }
 
           friend class MR::Viewer::Window;

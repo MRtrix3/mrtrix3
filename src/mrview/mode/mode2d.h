@@ -41,9 +41,11 @@ namespace MR {
 
           virtual bool mouse_click ();
           virtual bool mouse_move ();
-          virtual bool mouse_doubleclick ();
           virtual bool mouse_release ();
           virtual bool mouse_wheel (float delta, Qt::Orientation orientation);
+
+          void reset_view ();
+          void move_in_out (float distance);
 
         public slots:
           void axial ();
@@ -54,9 +56,6 @@ namespace MR {
         protected:
           QAction *axial_action, *sagittal_action, *coronal_action;
           Point<> lookat;
-          void reset_view ();
-
-          void move_in_out (float distance);
       };
 
     }
