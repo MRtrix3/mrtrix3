@@ -80,7 +80,46 @@ namespace MR {
         }
 
 
-      Base::~Base () { }
+      Base::~Base () { glarea()->setCursor (Cursor::crosshair); }
+
+      void Base::paintGL () 
+      { 
+        glClear (GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        if (!image()) {
+          renderText (10, 10, "No image loaded");
+          return;
+        }
+
+        modelview_matrix[0] = NAN; 
+        paint(); 
+        get_modelview_projection_viewport();
+
+        Point<> voxel (image()->interp.scanner2voxel (focus()));
+        glColor4f (1.0, 1.0, 0.0, 1.0);
+        ssize_t vox [] = { Math::round<int>(voxel[0]), Math::round<int>(voxel[1]), Math::round<int>(voxel[2]) };
+
+        if (show_position_action->isChecked()) {
+          renderText (printf ("position: [ %.4g %.4g %.4g ] mm", focus()[0], focus()[1], focus()[2]), LeftEdge | BottomEdge);
+          renderText (printf ("voxel: [ %d %d %d ]", vox[0], vox[1], vox[2]), LeftEdge | BottomEdge, 1);
+          std::string value;
+          if (vox[0] >= 0 && vox[0] < image()->vox.dim(0) && 
+              vox[1] >= 0 && vox[1] < image()->vox.dim(1) && 
+              vox[2] >= 0 && vox[2] < image()->vox.dim(2)) {
+            image()->vox[0] = vox[0];
+            image()->vox[1] = vox[1];
+            image()->vox[2] = vox[2];
+            value = printf ("value: %.5g", float (image()->vox.value()));
+          }
+          else value = "value: ?";
+          renderText (value, LeftEdge | BottomEdge, 2);
+        }
+
+        if (show_image_info_action->isChecked()) {
+          for (size_t i = 0; i < image()->H.comments().size(); ++i)
+            renderText (image()->H.comments()[i], LeftEdge | TopEdge, i);
+        }
+      }
+
 
       void Base::paint () { }
       void Base::updateGL () { reinterpret_cast<QGLWidget*> (window.glarea)->updateGL(); }
@@ -92,6 +131,84 @@ namespace MR {
       bool Base::mouse_doubleclick () { return (false); }
       bool Base::mouse_release () { return (false); }
       bool Base::mouse_wheel (float delta, Qt::Orientation orientation) { return (false); }
+
+      void Base::move_in_out (float distance) 
+      {
+        if (!image()) return;
+        Point<> D (0.0, 0.0, 0.0);
+        D[projection()] = distance;
+        Point<> move = image()->interp.voxel2scanner_dir (D);
+        set_target (target() + move);
+        set_focus (focus() + move);
+      }
+
+      void Base::draw_focus () const
+      {
+        // draw focus:
+        if (show_focus_action->isChecked()) {
+          glPushAttrib (GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+          glDepthMask (GL_FALSE);
+          Point<> F = model_to_screen (focus());
+
+          glMatrixMode (GL_PROJECTION);
+          glPushMatrix ();
+          glLoadIdentity ();
+          glOrtho (0, width(), 0, height(), -1.0, 1.0);
+          glMatrixMode (GL_MODELVIEW);
+          glPushMatrix ();
+          glLoadIdentity ();
+
+          float alpha = 0.5;
+
+          glColor4f (1.0, 1.0, 0.0, alpha);
+          glLineWidth (1.0);
+          glEnable (GL_BLEND);
+          glBlendFunc (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+          glBegin (GL_LINES);
+          glVertex2f (0.0, F[1]);
+          glVertex2f (width(), F[1]);
+          glVertex2f (F[0], 0.0);
+          glVertex2f (F[0], height());
+          glEnd ();
+
+          glDisable(GL_BLEND);
+          glPopMatrix ();
+          glMatrixMode (GL_PROJECTION);
+          glPopMatrix ();
+          glMatrixMode (GL_MODELVIEW);
+          glPopAttrib();
+        }
+      }
+
+      void Base::adjust_projection_matrix (float* M, const float* Q) const
+      {
+        M[3] = M[7] = M[11] = M[12] = M[13] = M[14] = 0.0;
+        M[15] = 1.0;
+        if (projection() == 0) { // sagittal
+          for (size_t n = 0; n < 3; n++) {
+            M[4*n]   = -Q[4*n+1];  // x: -y
+            M[4*n+1] =  Q[4*n+2];  // y: z
+            M[4*n+2] = -Q[4*n];    // z: -x
+          }
+        }
+        else if (projection() == 1) { // coronal
+          for (size_t n = 0; n < 3; n++) {
+            M[4*n]   = -Q[4*n];    // x: -x
+            M[4*n+1] =  Q[4*n+2];  // y: z
+            M[4*n+2] =  Q[4*n+1];  // z: y
+          }
+        }
+        else { // axial
+          for (size_t n = 0; n < 3; n++) {
+            M[4*n]   = -Q[4*n];    // x: -x
+            M[4*n+1] =  Q[4*n+1];  // y: y
+            M[4*n+2] = -Q[4*n+2];  // z: -z
+          }
+        }
+      }
+
+
 
       Base* create (Window& parent, size_t index) 
       {

@@ -190,6 +190,7 @@ namespace MR {
         glBindTexture (GL_TEXTURE_3D, texture3D);
         glTexParameteri (GL_TEXTURE_3D, GL_TEXTURE_WRAP_S, GL_CLAMP);
         glTexParameteri (GL_TEXTURE_3D, GL_TEXTURE_WRAP_T, GL_CLAMP);
+        glTexParameteri (GL_TEXTURE_3D, GL_TEXTURE_WRAP_R, GL_CLAMP);
         glTexImage3D (GL_TEXTURE_3D, 0, GL_LUMINANCE32F_ARB, 
             vox.dim(0), vox.dim(1), vox.dim(2), 
             0, GL_LUMINANCE, GL_FLOAT, NULL);

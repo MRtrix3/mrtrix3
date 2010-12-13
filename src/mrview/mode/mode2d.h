@@ -45,7 +45,6 @@ namespace MR {
           virtual bool mouse_wheel (float delta, Qt::Orientation orientation);
 
           void reset_view ();
-          void move_in_out (float distance);
 
         public slots:
           void axial ();

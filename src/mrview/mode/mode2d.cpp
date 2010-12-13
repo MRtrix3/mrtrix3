@@ -56,41 +56,14 @@ namespace MR {
 
       void Mode2D::paint () 
       { 
-        glClear (GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-        if (!image()) {
-          renderText (10, 10, "No image loaded");
-          return;
-        }
         if (!focus()) reset_view();
         if (!target()) set_target (focus());
 
         // set up modelview matrix:
         const float* Q = image()->interp.image2scanner_matrix();
         float M[16];
-        M[3] = M[7] = M[11] = M[12] = M[13] = M[14] = 0.0;
-        M[15] = 1.0;
 
-        if (projection() == 0) { // sagittal
-          for (size_t n = 0; n < 3; n++) {
-            M[4*n]   = -Q[4*n+1];  // x: -y
-            M[4*n+1] =  Q[4*n+2];  // y: z
-            M[4*n+2] = -Q[4*n];    // z: -x
-          }
-        }
-        else if (projection() == 1) { // coronal
-          for (size_t n = 0; n < 3; n++) {
-            M[4*n]   = -Q[4*n];    // x: -x
-            M[4*n+1] =  Q[4*n+2];  // y: z
-            M[4*n+2] =  Q[4*n+1];  // z: y
-          }
-        }
-        else { // axial
-          for (size_t n = 0; n < 3; n++) {
-            M[4*n]   = -Q[4*n];    // x: -x
-            M[4*n+1] =  Q[4*n+1];  // y: y
-            M[4*n+2] = -Q[4*n+2];  // z: -z
-          }
-        }
+        adjust_projection_matrix (M, Q);
 
         // image slice:
         Point<> voxel (image()->interp.scanner2voxel (focus()));
@@ -130,40 +103,7 @@ namespace MR {
 
         glDisable (GL_TEXTURE_2D);
 
-        // draw focus:
-        if (show_focus_action->isChecked()) {
-          Point<> F = model_to_screen (focus());
-
-          glMatrixMode (GL_PROJECTION);
-          glPushMatrix ();
-          glLoadIdentity ();
-          glOrtho (0, w, 0, h, -1.0, 1.0);
-          glMatrixMode (GL_MODELVIEW);
-          glPushMatrix ();
-          glLoadIdentity ();
-
-          float alpha = 0.5;
-
-          glColor4f (1.0, 1.0, 0.0, alpha);
-          glLineWidth (1.0);
-          glEnable (GL_BLEND);
-          glBlendFunc (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
-          glBegin (GL_LINES);
-          glVertex2f (0.0, F[1]);
-          glVertex2f (w, F[1]);
-          glVertex2f (F[0], 0.0);
-          glVertex2f (F[0], h);
-          glEnd ();
-
-          glDisable(GL_BLEND);
-          glPopMatrix ();
-          glMatrixMode (GL_PROJECTION);
-          glPopMatrix ();
-          glMatrixMode (GL_MODELVIEW);
-
-        }
-        glDepthMask (GL_TRUE);
+        draw_focus();
 
         if (show_orientation_action->isChecked()) {
           glColor4f (1.0, 0.0, 0.0, 1.0);
@@ -190,30 +130,6 @@ namespace MR {
               assert (0);
           }
         }
-
-        glColor4f (1.0, 1.0, 0.0, 1.0);
-        ssize_t vox [] = { Math::round<int>(voxel[0]), Math::round<int>(voxel[1]), Math::round<int>(voxel[2]) };
-
-        if (show_position_action->isChecked()) {
-          renderText (printf ("position: [ %.4g %.4g %.4g ] mm", focus()[0], focus()[1], focus()[2]), LeftEdge | BottomEdge);
-          renderText (printf ("voxel: [ %d %d %d ]", vox[0], vox[1], vox[2]), LeftEdge | BottomEdge, 1);
-          std::string value;
-          if (vox[0] >= 0 && vox[0] < image()->vox.dim(0) && 
-              vox[1] >= 0 && vox[1] < image()->vox.dim(1) && 
-              vox[2] >= 0 && vox[2] < image()->vox.dim(2)) {
-            image()->vox[0] = vox[0];
-            image()->vox[1] = vox[1];
-            image()->vox[2] = vox[2];
-            value = printf ("value: %.5g", float (image()->vox.value()));
-          }
-          else value = "value: ?";
-          renderText (value, LeftEdge | BottomEdge, 2);
-        }
-
-        if (show_image_info_action->isChecked()) {
-          for (size_t i = 0; i < image()->H.comments().size(); ++i)
-            renderText (image()->H.comments()[i], LeftEdge | TopEdge, i);
-        }
       }
 
 
@@ -224,21 +140,18 @@ namespace MR {
         if (mouse_modifiers() == Qt::NoModifier) {
 
           if (mouse_buttons() == Qt::LeftButton) {
-            set_focus (screen_to_model (mouse_pos()));
-            updateGL();
-            return (true);
+            if (!mouse_edge()) {
+              set_focus (screen_to_model (mouse_pos()));
+              updateGL();
+              return true;
+            }
           }
 
-          else if (mouse_buttons() == Qt::MidButton)
+          else if (mouse_buttons() == Qt::RightButton) 
             glarea()->setCursor (Cursor::pan_crosshair);
-
-          else if (mouse_buttons() == Qt::RightButton) {
-            if (!mouse_edge()) 
-              glarea()->setCursor (Cursor::window);
-          }
         }
 
-        return (false);
+        return false;
       }
 
 
@@ -246,51 +159,53 @@ namespace MR {
       bool Mode2D::mouse_move () 
       {
         if (mouse_buttons() == Qt::NoButton) {
-          if (mouse_edge() & RightEdge) 
+          if (mouse_edge() == ( RightEdge | BottomEdge ))
+            glarea()->setCursor (Cursor::window);
+          else if (mouse_edge() & RightEdge) 
             glarea()->setCursor (Cursor::forward_backward);
           else if (mouse_edge() & LeftEdge) 
             glarea()->setCursor (Cursor::zoom);
           else
             glarea()->setCursor (Cursor::crosshair);
-          return (false);
+          return false;
         }
 
         if (mouse_modifiers() == Qt::NoModifier) {
 
           if (mouse_buttons() == Qt::LeftButton) {
-            set_focus (screen_to_model());
-            updateGL();
-            return (true);
-          }
 
-          if (mouse_buttons() == Qt::MidButton) {
-            set_target (target() - screen_to_model_direction (Point<> (mouse_dpos().x(), mouse_dpos().y(), 0.0)));
-            updateGL();
-            return (true);
-          }
+            if (mouse_edge() == ( RightEdge | BottomEdge) ) {
+              image()->adjust_windowing (mouse_dpos_static());
+              updateGL();
+              return true;
+            }
 
-          if (mouse_buttons() == Qt::RightButton) {
             if (mouse_edge() & RightEdge) {
               move_in_out (-0.001*mouse_dpos().y()*FOV());
               updateGL();
-              return (true);
+              return true;
             }
 
             if (mouse_edge() & LeftEdge) {
               change_FOV_fine (mouse_dpos().y());
               updateGL();
-              return (true);
+              return true;
             }
 
-            if (image()) {
-              image()->adjust_windowing (mouse_dpos_static());
-              updateGL();
-              return (true);
-            }
+            set_focus (screen_to_model());
+            updateGL();
+            return true;
           }
+
+          if (mouse_buttons() == Qt::RightButton) {
+            set_target (target() - screen_to_model_direction (Point<> (mouse_dpos().x(), mouse_dpos().y(), 0.0)));
+            updateGL();
+            return true;
+          }
+
         }
 
-        return (false);
+        return false;
       }
 
 
@@ -298,13 +213,15 @@ namespace MR {
 
       bool Mode2D::mouse_release () 
       {
-        if (mouse_edge() & RightEdge) 
+        if (mouse_edge() == ( RightEdge | BottomEdge)) 
+          glarea()->setCursor (Cursor::window);
+        else if (mouse_edge() & RightEdge) 
           glarea()->setCursor (Cursor::forward_backward);
         else if (mouse_edge() & LeftEdge) 
           glarea()->setCursor (Cursor::zoom);
         else 
           glarea()->setCursor (Cursor::crosshair);
-        return (true); 
+        return true; 
       }
 
 
@@ -312,35 +229,28 @@ namespace MR {
 
       bool Mode2D::mouse_wheel (float delta, Qt::Orientation orientation) 
       {
-        if (!image()) return (false);
-        if (orientation != Qt::Vertical) return (false);
+        if (orientation == Qt::Vertical) {
 
-        if (mouse_modifiers() == Qt::ControlModifier) {
-          change_FOV_scroll (-delta);
+          if (mouse_modifiers() == Qt::ControlModifier) {
+            change_FOV_scroll (-delta);
+            updateGL();
+            return true;
+          }
+
+          if (mouse_modifiers() == Qt::ShiftModifier) delta *= 10.0;
+          else if (mouse_modifiers() != Qt::NoModifier) 
+            return false;
+
+          move_in_out (delta);
           updateGL();
-          return (true);
+          return true;
         }
+        // TODO: use horizontal scroll to go through volumes.
 
-        if (mouse_modifiers() == Qt::ShiftModifier) delta *= 10.0;
-        else if (mouse_modifiers() != Qt::NoModifier) 
-          return (false);
-
-        move_in_out (delta);
-        updateGL();
-        return (true);
+        return false;
       }
 
 
-
-      void Mode2D::move_in_out (float distance) 
-      {
-        if (!image()) return;
-        Point<> D (0.0, 0.0, 0.0);
-        D[projection()] = distance;
-        Point<> move = image()->interp.voxel2scanner_dir (D);
-        set_target (target() + move);
-        set_focus (focus() + move);
-      }
 
 
       void Mode2D::axial () { set_projection (2); updateGL(); }

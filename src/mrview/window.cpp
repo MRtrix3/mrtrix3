@@ -569,11 +569,41 @@ namespace MR {
       glViewport (0, 0, width, height); 
     }
 
-    inline void Window::mousePressEventGL (QMouseEvent* event) { mode->mousePressEvent (event); }
-    inline void Window::mouseMoveEventGL (QMouseEvent* event) { mode->mouseMoveEvent (event); }
-    inline void Window::mouseDoubleClickEventGL (QMouseEvent* event) { mode->mouseDoubleClickEvent (event); }
-    inline void Window::mouseReleaseEventGL (QMouseEvent* event) { mode->mouseReleaseEvent (event); }
-    inline void Window::wheelEventGL (QWheelEvent* event) { mode->wheelEvent (event); }
+    inline void Window::mousePressEventGL (QMouseEvent* event) 
+    {
+      assert (mode);
+      if (current_image())
+        mode->mousePressEvent (event);
+    }
+
+    inline void Window::mouseMoveEventGL (QMouseEvent* event) 
+    {
+      assert (mode);
+      if (current_image())
+        mode->mouseMoveEvent (event);
+    }
+
+    inline void Window::mouseDoubleClickEventGL (QMouseEvent* event) 
+    {
+      assert (mode);
+      if (current_image())
+        mode->mouseDoubleClickEvent (event);
+    }
+
+    inline void Window::mouseReleaseEventGL (QMouseEvent* event) 
+    {
+      assert (mode);
+      if (current_image())
+        mode->mouseReleaseEvent (event);
+    }
+
+    inline void Window::wheelEventGL (QWheelEvent* event) 
+    {
+      assert (mode);
+      if (current_image())
+        mode->wheelEvent (event);
+    }
+
 
 
 

@@ -56,18 +56,12 @@ namespace MR {
           virtual bool mouse_release ();
           virtual bool mouse_wheel (float delta, Qt::Orientation orientation);
 
-          void paintGL () 
-          { 
-            modelview_matrix[0] = NAN; 
-            paint(); 
-            get_modelview_projection_viewport();
-          }
+          void paintGL ();
 
           static const int TopEdge = 1;
           static const int BottomEdge = 1<<1;
           static const int LeftEdge = 1<<2;
           static const int RightEdge = 1<<3;
-
 
 
           const QPoint& mouse_pos () const { return (currentPos); }
@@ -157,6 +151,8 @@ namespace MR {
             reinterpret_cast<QGLWidget*>(window.glarea)->renderText (x, y, text.c_str(), font_); 
           }
 
+          void move_in_out (float distance);
+
 
         public slots:
           void updateGL ();
@@ -175,6 +171,10 @@ namespace MR {
               glGetDoublev (GL_PROJECTION_MATRIX, projection_matrix); 
             }
           }
+
+          void adjust_projection_matrix (float* M, const float* Q) const;
+
+          void draw_focus () const;
 
         private:
           mutable GLdouble modelview_matrix[16], projection_matrix[16];
@@ -205,8 +205,8 @@ namespace MR {
               edge_ = 
                 ( 10*currentPos.x() < width() ? LeftEdge : 0 ) |
                 ( 10*(width()-currentPos.x()) < width() ? RightEdge : 0 ) |
-                ( 10*currentPos.y() < width() ? TopEdge : 0 ) |
-                ( 10*(width()-currentPos.y()) < width() ? BottomEdge : 0 );
+                ( 10*currentPos.y() < height() ? TopEdge : 0 ) |
+                ( 10*(height()-currentPos.y()) < height() ? BottomEdge : 0 );
             if (mouse_move()) event->accept();
             else event->ignore();
           }
@@ -247,6 +247,7 @@ namespace MR {
       Base* create (Window& parent, size_t index);
       const char* name (size_t index);
       const char* tooltip (size_t index);
+
 
     }
   }

@@ -39,7 +39,6 @@ namespace MR {
 
           virtual bool mouse_click ();
           virtual bool mouse_move ();
-          virtual bool mouse_doubleclick ();
           virtual bool mouse_release ();
           virtual bool mouse_wheel (float delta, Qt::Orientation orientation);
       };

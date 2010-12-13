@@ -21,6 +21,9 @@
 */
 
 #include "mrview/mode/mode3d.h"
+#include "math/vector.h"
+
+#define ROTATION_INC 0.001
 
 namespace MR {
   namespace Viewer {
@@ -31,11 +34,6 @@ namespace MR {
 
       void Mode3D::paint () 
       { 
-        glClear (GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-        if (!image()) {
-          renderText (10, 10, "No image loaded");
-          return;
-        }
         if (!target()) set_target (focus());
 
         // camera target:
@@ -53,8 +51,26 @@ namespace MR {
 
         glMatrixMode (GL_MODELVIEW);
         glLoadIdentity ();
-        //glMultMatrixf (M);
-        //glTranslatef (-F[0], -F[1], -F[2]);
+
+        Math::Quaternion Q = orientation();
+        if (!Q) {
+          Q = Math::Quaternion (1.0, 0.0, 0.0, 0.0);
+          set_orientation (Q);
+        }
+
+        float M[9];
+        Q.to_matrix (M);
+        float T [] = {
+          M[0], M[1], M[2], 0.0,
+          M[3], M[4], M[5], 0.0,
+          M[6], M[7], M[8], 0.0,
+          0.0, 0.0, 0.0, 1.0
+        };
+        float S[16];
+        adjust_projection_matrix (S, T);
+        glMultMatrixf (S);
+
+        glTranslatef (-target()[0], -target()[1], -target()[2]);
         get_modelview_projection_viewport();
 
         // set up OpenGL environment:
@@ -66,20 +82,134 @@ namespace MR {
         glDepthMask (GL_FALSE);
         glColorMask (GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
 
-        Math::Quaternion view;
         // render image:
         DEBUG_OPENGL;
         image()->render3D (*this);
         DEBUG_OPENGL;
 
         glDisable (GL_TEXTURE_3D);
+
+        draw_focus();
       }
 
-      bool Mode3D::mouse_click () { return (false); }
-      bool Mode3D::mouse_move () { return (false); }
-      bool Mode3D::mouse_doubleclick () { return (false); }
-      bool Mode3D::mouse_release () { return (false); }
-      bool Mode3D::mouse_wheel (float delta, Qt::Orientation orientation) { return (false); }
+
+
+
+
+      bool Mode3D::mouse_click ()
+      { 
+        if (mouse_modifiers() == Qt::NoModifier) {
+
+          if (mouse_buttons() == Qt::LeftButton) {
+            if (!mouse_edge()) {
+              set_focus (screen_to_model (mouse_pos()));
+              updateGL();
+              return true;
+            }
+          }
+
+          else if (mouse_buttons() == Qt::RightButton) 
+            glarea()->setCursor (Cursor::pan_crosshair);
+        }
+
+        return false; 
+      }
+
+
+
+
+
+      bool Mode3D::mouse_move () 
+      {
+        if (mouse_buttons() == Qt::NoButton) {
+          if (mouse_edge() == ( RightEdge | BottomEdge ))
+            glarea()->setCursor (Cursor::window);
+          else if (mouse_edge() & RightEdge) 
+            glarea()->setCursor (Cursor::forward_backward);
+          else if (mouse_edge() & LeftEdge) 
+            glarea()->setCursor (Cursor::zoom);
+          else if (mouse_edge() & TopEdge) 
+            glarea()->setCursor (Cursor::pan_crosshair);
+          else
+            glarea()->setCursor (Cursor::crosshair);
+          return false;
+        }
+
+        if (mouse_modifiers() == Qt::NoModifier) {
+
+          if (mouse_buttons() == Qt::LeftButton) {
+
+            if (mouse_edge() == ( RightEdge | BottomEdge) ) {
+              image()->adjust_windowing (mouse_dpos_static());
+              updateGL();
+              return true;
+            }
+
+            if (mouse_edge() & RightEdge) {
+              move_in_out (-0.001*mouse_dpos().y()*FOV());
+              updateGL();
+              return true;
+            }
+
+            if (mouse_edge() & LeftEdge) {
+              change_FOV_fine (mouse_dpos().y());
+              updateGL();
+              return true;
+            }
+
+            set_focus (screen_to_model());
+            updateGL();
+            return true;
+          }
+
+          if (mouse_buttons() == Qt::RightButton) {
+            set_target (target() - screen_to_model_direction (Point<> (mouse_dpos().x(), mouse_dpos().y(), 0.0)));
+            updateGL();
+            return true;
+          }
+
+          if (mouse_buttons() == Qt::MiddleButton) {
+            if (mouse_dpos().x() == 0 && mouse_dpos().y() == 0) 
+              return true;
+            Point<> x = screen_to_model_direction (Point<> (mouse_dpos().x(), mouse_dpos().y(), 0.0));
+            Point<> z = screen_to_model_direction (Point<> (0.0, 0.0, 1.0));
+            Point<> v;
+            Math::cross (v.get(), x.get(), z.get());
+            float angle = ROTATION_INC * Math::sqrt (float (Math::pow2(mouse_dpos().x()) + Math::pow2(mouse_dpos().y())));
+            v.normalise();
+            if (angle > M_PI_2) angle = M_PI_2;
+
+            Math::Quaternion q = Math::Quaternion (angle, v.get()) * orientation();
+            q.normalise();
+            set_orientation (q);
+            updateGL();
+            return true;
+          }
+
+        }
+        return false; 
+      }
+
+
+
+
+
+
+      bool Mode3D::mouse_release () 
+      { 
+        if (mouse_edge() == ( RightEdge | BottomEdge)) 
+          glarea()->setCursor (Cursor::window);
+        else if (mouse_edge() & RightEdge) 
+          glarea()->setCursor (Cursor::forward_backward);
+        else if (mouse_edge() & LeftEdge) 
+          glarea()->setCursor (Cursor::zoom);
+        else 
+          glarea()->setCursor (Cursor::crosshair);
+        return true; 
+      }
+
+
+      bool Mode3D::mouse_wheel (float delta, Qt::Orientation orientation) { return false; }
 
     }
   }
