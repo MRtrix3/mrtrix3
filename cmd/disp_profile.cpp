@@ -69,7 +69,7 @@ class MyApp : public MR::App {
       DWI::Window window (get_options("response").size());
 
       if (argument.size()) 
-        window.set_values (argument[0]);
+        window.set_values ((std::string) argument[0]);
 
       window.show();
 

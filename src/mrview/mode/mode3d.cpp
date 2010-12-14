@@ -168,7 +168,7 @@ namespace MR {
             return true;
           }
 
-          if (mouse_buttons() == Qt::MiddleButton) {
+          if (mouse_buttons() == Qt::MidButton) {
             if (mouse_dpos().x() == 0 && mouse_dpos().y() == 0) 
               return true;
             Point<> x = screen_to_model_direction (Point<> (mouse_dpos().x(), mouse_dpos().y(), 0.0));
