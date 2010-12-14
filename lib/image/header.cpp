@@ -46,6 +46,30 @@ namespace MR {
           const ssize_t& stride (int axis) const { return (A[axis].stride); }
           ssize_t& stride (int axis) { return (A[axis].stride); }
       };
+
+      inline size_t not_any_of (size_t a, size_t b)  
+      {   
+        for (size_t i = 0; i < 3; ++i) {
+          if (a == i || b == i)  
+            continue;
+          return (i);
+        }   
+        assert (0);
+        return (UINT_MAX);
+      }   
+
+      void disambiguate_permutation (Math::Permutation& permutation) 
+      {   
+        if (permutation[0] == permutation[1]) 
+          permutation[1] = not_any_of (permutation[0], permutation[2]);
+
+        if (permutation[0] == permutation[2]) 
+          permutation[2] = not_any_of (permutation[0], permutation[1]);
+
+        if (permutation[1] == permutation[2]) 
+          permutation[2] = not_any_of (permutation[0], permutation[1]);
+      }   
+
     }
 
 
@@ -103,6 +127,8 @@ namespace MR {
       Math::absmax (transform_.row(0).sub(0,3), perm[0]);
       Math::absmax (transform_.row(1).sub(0,3), perm[1]);
       Math::absmax (transform_.row(2).sub(0,3), perm[2]);
+
+      disambiguate_permutation (perm);
 
       assert (perm[0] != perm[1] && perm[1] != perm[2] && perm[2] != perm[0]);
 
