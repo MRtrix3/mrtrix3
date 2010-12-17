@@ -36,13 +36,13 @@ namespace MR {
   namespace Math {
     namespace SH {
 
-      inline size_t NforL (int lmax) { return ((lmax+1)*(lmax+2)/2); }
-      inline size_t index (int l, int m) { return (l*(l+1)/2 + m); }
+      inline size_t NforL (int lmax) { return (lmax+1)*(lmax+2)/2; }
+      inline size_t index (int l, int m) { return l*(l+1)/2 + m; }
 
-      inline size_t NforL_mpos (int lmax) { return ((lmax/2+1)*(lmax/2+1)); }
-      inline size_t index_mpos (int l, int m) { return (l*l/4 + m); }
+      inline size_t NforL_mpos (int lmax) { return (lmax/2+1)*(lmax/2+1); }
+      inline size_t index_mpos (int l, int m) { return l*l/4 + m; }
 
-      inline size_t LforN (int N) { return (N ? 2 * floor<size_t>((sqrt(float(1+8*N))-3.0)/4.0) : 0); }
+      inline size_t LforN (int N) { return N ? 2 * floor<size_t>((sqrt(float(1+8*N))-3.0)/4.0) : 0; }
 
       template <typename T> Math::Matrix<T>& init_transform (Math::Matrix<T>& SHT, const Math::Matrix<T>& dirs, int lmax)
       {
@@ -61,7 +61,7 @@ namespace MR {
             }
           }
         }
-        return (SHT);
+        return SHT;
       }
 
 
@@ -89,11 +89,11 @@ namespace MR {
           void A2SH (Math::Vector<T>& SH, const Math::Vector<T>& amplitudes)  { Math::mult (SH, iSHT, amplitudes); }
           void SH2A (Math::Vector<T>& amplitudes, const Math::Vector<T>& SH)  { Math::mult (amplitudes, SHT, SH); }
 
-          size_t n_SH () const { return (SHT.columns()); }
-          size_t n_amp () const  { return (SHT.rows()); }
+          size_t n_SH () const { return SHT.columns(); }
+          size_t n_amp () const  { return SHT.rows(); }
 
-          const Math::Matrix<T>& mat_A2SH () const { return (iSHT); }
-          const Math::Matrix<T>& mat_SH2A () const { return (SHT); }
+          const Math::Matrix<T>& mat_A2SH () const { return iSHT; }
+          const Math::Matrix<T>& mat_SH2A () const { return SHT; }
 
         protected:
           Math::Matrix<T> SHT, iSHT;
@@ -115,7 +115,7 @@ namespace MR {
           for (int l = ((m&1) ? m+1 : m); l <= lmax; l+=2)
             value += AL[l] * (c * val[index(l,m)] + s * val[index(l,-m)]);
         }
-        return (value);
+        return value;
       }
 
 
@@ -135,7 +135,7 @@ namespace MR {
             D[index(l,-m)] = 2.0 * AL[l] * s;
           }
         }
-        return (D);
+        return D;
       }
 
 
@@ -147,7 +147,7 @@ namespace MR {
         T AL [lmax+1];
         Legendre::Plm_sph (AL, lmax, 0, T(1.0));
         for (size_t l = 0; l < SH.size(); l++) RH[l] = SH[l]/ AL[2*l];
-        return (RH);
+        return RH;
       }
 
 
@@ -161,7 +161,7 @@ namespace MR {
           for (int m = -l; m <= l; ++m)
             C[index(l,m)] = RH[i] * SH[index(l,m)];
         }
-        return (C);
+        return C;
       }
 
 
@@ -190,7 +190,7 @@ namespace MR {
                 Matrix<T> D (nSH, directions.rows());
                 Matrix<T> D_rot (nSH, directions.rows());
                 for (size_t i = 0; i < directions.rows(); ++i) {
-                  typename Vector<T>::View V (D.column (i));
+                  Vector<T> V (D.column (i));
                   Point<T> dir = S2C (directions(i,0), directions(i,1));
                   delta (V, dir, lmax);
 
@@ -198,7 +198,7 @@ namespace MR {
                   Vector<T> V_dir (dir.get(), 3);
                   Vector<T> V_dir_rot (dir_rot.get(), 3);
                   mult (V_dir_rot, R, V_dir);
-                  typename Vector<T>::View V_rot (D_rot.column (i));
+                  Vector<T> V_rot (D_rot.column (i));
                   delta (V_rot, dir_rot, lmax);
                 }
 
@@ -208,8 +208,8 @@ namespace MR {
                   M.push_back (new Matrix<T> (nSH_l, nSH_l));
                   Matrix<T>& RH (*M.back());
 
-                  const typename Matrix<T>::View d = D.sub (n, n+nSH_l, 0, D.columns());
-                  const typename Matrix<T>::View d_rot = D_rot.sub (n, n+nSH_l, 0, D.columns());
+                  const Matrix<T> d = D.sub (n, n+nSH_l, 0, D.columns());
+                  const Matrix<T> d_rot = D_rot.sub (n, n+nSH_l, 0, D.columns());
 
                   Matrix<T> d_rot_x_d_T;
                   mult (d_rot_x_d_T, T(1.0), CblasNoTrans, d_rot, CblasTrans, d);
@@ -232,13 +232,13 @@ namespace MR {
               size_t n = 1;
               for (size_t l = 0; l < M.size(); ++l) {
                 const size_t nSH_l = M[l]->rows();
-                typename Vector<T>::View R = SH_rot.sub (n, n+nSH_l);
-                const typename Vector<T>::View S = SH.sub (n, n+nSH_l);
+                Vector<T> R = SH_rot.sub (n, n+nSH_l);
+                const Vector<T> S = SH.sub (n, n+nSH_l);
                 mult (R, *M[l], S);
                 n += nSH_l;
               }
 
-              return (SH_rot);
+              return SH_rot;
             }
 
           protected:
@@ -266,7 +266,7 @@ namespace MR {
         }
 
         Math::Matrix<T> SHinv (SHT.columns(), SHT.rows());
-        return (Math::mult (SH, pinv(SHinv, SHT), sigs));
+        return Math::mult (SH, pinv(SHinv, SHT), sigs);
       }
 
 
@@ -289,8 +289,8 @@ namespace MR {
           PrecomputedAL (int up_to_lmax, int num_dir = 512) : AL (NULL) { init (up_to_lmax, num_dir); }
           ~PrecomputedAL () { delete [] AL; }
 
-          bool operator! () const { return (!AL); }
-          operator bool () const { return (AL); }
+          bool operator! () const { return !AL; }
+          operator bool () const { return AL; }
 
           void init (int up_to_lmax, int num_dir = 512) {
             delete [] AL;
@@ -323,8 +323,8 @@ namespace MR {
             f.p2 = f.p1 + nAL;
           }
 
-          T get (const PrecomputedFraction<T>& f, int i) const { T v = f.f1*f.p1[i]; if (f.f2) v += f.f2*f.p2[i]; return (v); }
-          T get (const PrecomputedFraction<T>& f, int l, int m) const { return (get (f, index_mpos(l,m))); }
+          T get (const PrecomputedFraction<T>& f, int i) const { T v = f.f1*f.p1[i]; if (f.f2) v += f.f2*f.p2[i]; return v; }
+          T get (const PrecomputedFraction<T>& f, int l, int m) const { return get (f, index_mpos(l,m)); }
 
           void get (T* dest, const PrecomputedFraction<T>& f) const
           {
@@ -349,7 +349,7 @@ namespace MR {
               for (int l = ((m&1) ? m+1 : m); l <= lmax; l+=2)
                 v += get(f,l,m) * (c * val[index(l,m)] + s * val[index(l,-m)]);
             }
-            return (v);
+            return v;
           }
 
         protected:
@@ -387,12 +387,12 @@ namespace MR {
           unit_init_dir += Point<T> (del*cos(az)*cos(el) - daz*sin(az), del*sin(az)*cos(el) + daz*cos(az), -del*sin(el));
           unit_init_dir.normalise();
 
-          if (dt < ANGLE_TOLERANCE) return (amplitude);
+          if (dt < ANGLE_TOLERANCE) return amplitude;
         }
 
         unit_init_dir.invalidate();
         info ("failed to find SH peak!");
-        return (NAN);
+        return NAN;
       }
 
 

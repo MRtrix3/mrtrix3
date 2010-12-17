@@ -222,7 +222,7 @@ namespace MR {
           }
         }
 
-        return (data_offset);
+        return data_offset;
       }
 
 
@@ -300,11 +300,11 @@ namespace MR {
           for (size_t i = 0; i < 3; i++) 
             M.column(i) = H.transform().column(perm[i]);
 
-          Math::Vector<float>::View translation = M.column(3).sub(0,3);
+          Math::Vector<float> translation = M.column(3).sub(0,3);
           for (size_t i = 0; i < 3; ++i) {
             if (flip[i]) {
               float length = float(H.dim(perm[i])-1) * H.vox(perm[i]);
-              Math::Vector<float>::View axis = M.column(i).sub(0,3);
+              Math::Vector<float> axis = M.column(i).sub(0,3);
               for (size_t n = 0; n < 3; n++) {
                 axis[n] = -axis[n];
                 translation[n] -= length*axis[n];

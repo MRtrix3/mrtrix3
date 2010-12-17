@@ -42,9 +42,9 @@ namespace MR {
         public:
           AxesWrapper (std::vector<Axis>& axes) : A (axes) { }
 
-          size_t ndim () const { return (A.size()); }
-          const ssize_t& stride (int axis) const { return (A[axis].stride); }
-          ssize_t& stride (int axis) { return (A[axis].stride); }
+          size_t ndim () const { return A.size(); }
+          const ssize_t& stride (int axis) const { return A[axis].stride; }
+          ssize_t& stride (int axis) { return A[axis].stride; }
       };
 
       inline size_t not_any_of (size_t a, size_t b)  
@@ -52,10 +52,10 @@ namespace MR {
         for (size_t i = 0; i < 3; ++i) {
           if (a == i || b == i)  
             continue;
-          return (i);
+          return i;
         }   
         assert (0);
-        return (UINT_MAX);
+        return UINT_MAX;
       }   
 
       void disambiguate_permutation (Math::Permutation& permutation) 
@@ -142,11 +142,11 @@ namespace MR {
         // axes in transform need to be realigned to MRtrix coordinate system:
         Math::Matrix<float> M (transform_);
 
-        Math::Vector<float>::View translation = M.column(3).sub(0,3);
+        Math::Vector<float> translation = M.column(3).sub(0,3);
         for (size_t i = 0; i < 3; ++i) {
           if (flip[i]) {
             const float length = (dim(i)-1) * vox(i);
-            Math::Vector<float>::View axis = M.column(i);
+            Math::Vector<float> axis = M.column(i);
             for (size_t n = 0; n < 3; ++n) {
               axis[n] = -axis[n];
               translation[n] -= length*axis[n];
@@ -155,7 +155,7 @@ namespace MR {
         }
 
         for (size_t i = 0; i < 3; ++i) {
-          Math::Vector<float>::View row = M.row(i).sub(0,3);
+          Math::Vector<float> row = M.row(i).sub(0,3);
           perm.apply (row); 
           if (flip[i]) 
             axes_[i].stride = -axes_[i].stride;
@@ -462,7 +462,7 @@ namespace MR {
       if (DW_scheme().is_set()) 
         desc += "  DW scheme:         " + str (DW_scheme().rows()) + " x " + str (DW_scheme().columns()) + "\n";
 
-      return (desc);
+      return desc;
     }
 
 
@@ -470,7 +470,7 @@ namespace MR {
     std::ostream& operator<< (std::ostream& stream, const Header& H)
     {
       stream << H.description();
-      return (stream);
+      return stream;
     }
 
   }

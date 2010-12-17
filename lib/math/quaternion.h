@@ -43,8 +43,8 @@ namespace MR {
           }
           Quaternion (const value_type* matrix)             { from_matrix (matrix); }
 
-          operator bool () const   { return (!(isnan (x[0]) || isnan (x[1]) || isnan (x[2]) || isnan (x[3]))); }
-          bool          operator! () const   { return (isnan (x[0]) || isnan (x[1]) || isnan (x[2]) || isnan (x[3])); }
+          operator bool () const   { return !(isnan (x[0]) || isnan (x[1]) || isnan (x[2]) || isnan (x[3])); }
+          bool          operator! () const   { return isnan (x[0]) || isnan (x[1]) || isnan (x[2]) || isnan (x[3]); }
 
           void          invalidate ()  { x[0] = x[1] = x[2] = x[3] = NAN; }
           void          normalise ()
@@ -55,14 +55,14 @@ namespace MR {
           void          from_matrix (const value_type* matrix);
           void          to_matrix (value_type* matrix);
 
-          const value_type&  operator[] (int index) const    { return (x[index]); }
-          value_type&        operator[] (int index)          { return (x[index]); }
+          const value_type&  operator[] (int index) const    { return x[index]; }
+          value_type&        operator[] (int index)          { return x[index]; }
 
-          bool          operator== (const Quaternion& y) const { return (memcmp (x, y.x, 4*sizeof(value_type)) == 0); }
-          bool          operator!= (const Quaternion& y) const { return (memcmp (x, y.x, 4*sizeof(value_type))); }
+          bool          operator== (const Quaternion& y) const { return memcmp (x, y.x, 4*sizeof(value_type)) == 0; }
+          bool          operator!= (const Quaternion& y) const { return memcmp (x, y.x, 4*sizeof(value_type)); }
 
           Quaternion    operator* (const Quaternion& y) const;
-          const Quaternion& operator*= (const Quaternion& y) { *this = (*this) * y; return (*this); }
+          const Quaternion& operator*= (const Quaternion& y) { *this = (*this) * y; return *this; }
 
         protected:
           value_type   x[4];
@@ -84,7 +84,7 @@ namespace MR {
 
 
     template <typename T> 
-      inline Quaternion<T> Quaternion<T>::operator* (const Quaternion<T>& y) const
+      inline Quaternion<T> Quaternion<T>::operator* (const Quaternion& y) const
       {
         Quaternion q (
             x[0]*y[0] - x[1]*y[1] - x[2]*y[2] - x[3]*y[3],
@@ -92,7 +92,7 @@ namespace MR {
             x[0]*y[2] - x[1]*y[3] + x[2]*y[0] + x[3]*y[1],
             x[0]*y[3] + x[1]*y[2] - x[2]*y[1] + x[3]*y[0] );
         q.normalise();
-        return (q);
+        return q;
       }
 
 
@@ -159,7 +159,7 @@ namespace MR {
       inline std::ostream& operator<< (std::ostream& stream, const Quaternion<T>& q)
       {
         stream << "[ " << q[0] << " " << q[1] << "i " << q[2] << "j " << q[3] << "k ]";
-        return (stream);
+        return stream;
       }
 
 
