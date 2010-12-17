@@ -28,6 +28,7 @@
 #include <gsl/gsl_vector_float.h>
 
 #include "mrtrix.h"
+#include "debug.h"
 #include "math/math.h"
 
 #define LOOP(op) for (size_t i = 0; i < size(); i++) { op; }
@@ -204,8 +205,9 @@ namespace MR {
         Vector& allocate (size_t nelements)
         {
           if (nelements == size()) return (*this);
+          if (!owner)
+            throw Exception ("attempt to allocate Vector::View!");
           if (block) {
-            assert (owner);
             if (block->size < nelements) {
 	      GSLBlock<T>::free (block);
 	      block = NULL;

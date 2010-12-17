@@ -233,8 +233,9 @@ namespace MR {
         {
           if (rows() == nrows && columns() == ncolumns)
             return (*this);
+          if (!owner)
+            throw Exception ("attempt to allocate Matrix::View!");
           if (block) {
-            assert (owner);
             if (block->size < nrows * ncolumns) { 
 	      GSLBlock<T>::free (block);
 	      block = NULL;
@@ -472,7 +473,8 @@ namespace MR {
 	}
 
 	//! return a Vector::View corresponding to a column of the matrix
-        const VectorView column (size_t index = 0) const throw () { 
+        const VectorView column (size_t index = 0) const throw () 
+        { 
 	  assert (index < columns());
 	  return (VectorView (const_cast<T*> (ptr())+index, size1, tda)); 
 	}
