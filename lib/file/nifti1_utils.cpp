@@ -179,7 +179,7 @@ namespace MR {
             M(2,2) /= H.vox(2);
           }
           else if (get<int16_t> (&NH.qform_code, is_BE)) {
-            Math::Quaternion Q (get<float32> (&NH.quatern_b, is_BE), get<float32> (&NH.quatern_c, is_BE), get<float32> (&NH.quatern_d, is_BE));
+            Math::Quaternion<float> Q (get<float32> (&NH.quatern_b, is_BE), get<float32> (&NH.quatern_c, is_BE), get<float32> (&NH.quatern_d, is_BE));
             float transform[9];
             Q.to_matrix (transform);
             Math::Matrix<float>& M (H.get_transform());
