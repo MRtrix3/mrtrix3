@@ -25,6 +25,7 @@
 
 #include "point.h"
 #include "math/legendre.h"
+#include "math/quaternion.h"
 #include "math/matrix.h"
 #include "math/least_squares.h"
 
@@ -66,7 +67,13 @@ namespace MR {
 
       template <typename T> class Transform {
         public:
-          Transform (const Math::Matrix<T>& dirs, int lmax)   { init_transform (SHT, dirs, lmax); iSHT.allocate (SHT.columns(), SHT.rows()); Math::pinv (iSHT, SHT); }
+          Transform (const Math::Matrix<T>& dirs, int lmax) 
+          {
+            init_transform (SHT, dirs, lmax); 
+            iSHT.allocate (SHT.columns(), SHT.rows()); 
+            Math::pinv (iSHT, SHT);
+          }
+
           void set_filter (const Math::Vector<T>& filter)
           {
             int l = 0;
@@ -157,6 +164,88 @@ namespace MR {
         return (C);
       }
 
+
+      template <typename T>
+        Point<T> S2C (T az, T el) 
+        {
+          return Point<T> (
+              sin (el) * cos (az),
+              sin (el) * sin (az),
+              cos (el));
+        }
+
+
+      template <typename T> 
+        class Rotate 
+        {
+          public:
+            Rotate (Point<T>& axis, T angle, int l_max, const Math::Matrix<T>& directions) :
+              lmax (l_max) {
+                Quaternion<T> Q (angle, axis.get());
+                T rotation_data [9];
+                Q.to_matrix (rotation_data);
+                const Matrix<T> R (rotation_data, 3, 3);
+                const size_t nSH = NforL (lmax);
+
+                Matrix<T> D (nSH, directions.rows());
+                Matrix<T> D_rot (nSH, directions.rows());
+                for (size_t i = 0; i < directions.rows(); ++i) {
+                  typename Vector<T>::View V (D.column (i));
+                  Point<T> dir = S2C (directions(i,0), directions(i,1));
+                  delta (V, dir, lmax);
+
+                  Point<T> dir_rot;
+                  Vector<T> V_dir (dir.get(), 3);
+                  Vector<T> V_dir_rot (dir_rot.get(), 3);
+                  mult (V_dir_rot, R, V_dir);
+                  typename Vector<T>::View V_rot (D_rot.column (i));
+                  delta (V_rot, dir_rot, lmax);
+                }
+
+                size_t n = 1;
+                for (int l = 2; l <= lmax; l += 2) {
+                  const size_t nSH_l = 2*l+1;
+                  M.push_back (new Matrix<T> (nSH_l, nSH_l));
+                  Matrix<T>& RH (*M.back());
+
+                  const typename Matrix<T>::View d = D.sub (n, n+nSH_l, 0, D.columns());
+                  const typename Matrix<T>::View d_rot = D_rot.sub (n, n+nSH_l, 0, D.columns());
+
+                  Matrix<T> d_rot_x_d_T;
+                  mult (d_rot_x_d_T, T(1.0), CblasNoTrans, d_rot, CblasTrans, d);
+
+                  Matrix<T> d_x_d_T;
+                  mult (d_x_d_T, T(1.0), CblasNoTrans, d, CblasTrans, d);
+
+                  Matrix<T> d_x_d_T_inv;
+                  LU::inv (d_x_d_T_inv, d_x_d_T);
+                  mult (RH, d_rot_x_d_T, d_x_d_T_inv);
+
+                  n += nSH_l;
+                }
+              }
+
+            Math::Vector<T>& operator() (Math::Vector<T>& SH_rot, const Math::Vector<T>& SH) const 
+            {
+              SH_rot.allocate (SH);
+              SH_rot[0] = SH[0];
+              size_t n = 1;
+              for (size_t l = 0; l < M.size(); ++l) {
+                const size_t nSH_l = M[l]->rows();
+                typename Vector<T>::View R = SH_rot.sub (n, n+nSH_l);
+                const typename Vector<T>::View S = SH.sub (n, n+nSH_l);
+                mult (R, *M[l], S);
+                n += nSH_l;
+              }
+
+              return (SH_rot);
+            }
+
+          protected:
+            VecPtr<Matrix<T> > M;
+            int lmax;
+        };
+          
 
 
 
