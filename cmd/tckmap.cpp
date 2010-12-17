@@ -428,7 +428,7 @@ class MapWriter : public MapWriterBase<Cont>
     {
       Image::Voxel<float> vox (MapWriterBase<Cont>::H);
       DataSet::LoopInOrder loop (vox, "writing image to file...", 0, 3);
-      for (loop.start (vox, buffer); loop.ok(); loop.next (vox, buffer))
+      for (loop.start (vox, buffer); loop.ok(); loop.next (vox, buffer)) 
         vox.value() = MapWriterBase<Cont>::scale * buffer.value();
     }
 
@@ -617,9 +617,10 @@ EXECUTE {
   Image::Header header;
   opt = get_options ("template");
   if (opt.size()) {
-    header.open (opt[0][0]);
+    Image::Header template_header (opt[0][0]);
     if (!voxel_size.empty())
-      oversample_header (header, voxel_size);
+      oversample_header (template_header, voxel_size);
+    header = template_header;
   }
   else {
     if (voxel_size.empty())
@@ -725,7 +726,7 @@ EXECUTE {
     if (alt_mode) {
 
       Thread::Queue<VectorVoxel> queue2 ("processed tracks");
-      TrackLoader                         loader (queue1, file, num_tracks);
+      TrackLoader                loader (queue1, file, num_tracks);
       TrackMapper  <VectorVoxel> mapper (queue1, queue2, header, interp_matrix);
       MapWriter    <VectorVoxel> writer (queue2, header, scaling_factor, weight_by_length);
 
@@ -739,7 +740,7 @@ EXECUTE {
     else {
 
       Thread::Queue<SetVoxel> queue2 ("processed tracks");
-      TrackLoader                      loader (queue1, file, num_tracks);
+      TrackLoader             loader (queue1, file, num_tracks);
       TrackMapper  <SetVoxel> mapper (queue1, queue2, header, interp_matrix);
       MapWriter    <SetVoxel> writer (queue2, header, scaling_factor, weight_by_length);
 

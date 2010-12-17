@@ -149,8 +149,7 @@ OPTIONS = {
       "this will slow down the algorithm by a factor of approximately 4."),
 
   Option ("power", 
-      "raise the FOD to the power specified (default is stepsize / "
-      "(voxelsize x nsamples)).")
+      "raise the FOD to the power specified (default is 1/nsamples).")
     + Argument ("value").type_float(1e-6, 1.0, 1e6),
 
   Option ("samples", 
