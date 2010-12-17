@@ -83,7 +83,7 @@ namespace MR {
         Mode::Base* mode;
 
         Point<> focal_point, camera_target;
-        Math::Quaternion orient;
+        Math::Quaternion<float> orient;
         float field_of_view;
         int proj;
 

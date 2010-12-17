@@ -83,7 +83,7 @@ namespace MR {
         QPoint last_pos;
         GLdouble modelview[16], projection[16];
         GLint viewport[4];
-        Math::Quaternion orientation;
+        Math::Quaternion<float> orientation;
         Point<> focus;
 
         std::string screenshot_name;

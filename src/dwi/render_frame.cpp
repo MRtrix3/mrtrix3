@@ -287,7 +287,7 @@ namespace MR {
     {
       if (event->modifiers() == Qt::NoModifier) {
         if (event->buttons() == Qt::LeftButton) {
-          orientation = Math::Quaternion();
+          orientation = Math::Quaternion<float>();
           updateGL();
         }
         else if (event->buttons() == Qt::MidButton) {
@@ -320,7 +320,7 @@ namespace MR {
           v.normalise();
           if (angle > M_PI_2) angle = M_PI_2;
 
-          Math::Quaternion rot (angle, v.get());
+          Math::Quaternion<float> rot (angle, v.get());
           orientation = rot * orientation;
           updateGL();
         } 

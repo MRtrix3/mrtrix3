@@ -52,9 +52,9 @@ namespace MR {
         glMatrixMode (GL_MODELVIEW);
         glLoadIdentity ();
 
-        Math::Quaternion Q = orientation();
+        Math::Quaternion<float> Q = orientation();
         if (!Q) {
-          Q = Math::Quaternion (1.0, 0.0, 0.0, 0.0);
+          Q = Math::Quaternion<float> (1.0, 0.0, 0.0, 0.0);
           set_orientation (Q);
         }
 
@@ -179,7 +179,7 @@ namespace MR {
             v.normalise();
             if (angle > M_PI_2) angle = M_PI_2;
 
-            Math::Quaternion q = Math::Quaternion (angle, v.get()) * orientation();
+            Math::Quaternion<float> q = Math::Quaternion<float> (angle, v.get()) * orientation();
             q.normalise();
             set_orientation (q);
             updateGL();

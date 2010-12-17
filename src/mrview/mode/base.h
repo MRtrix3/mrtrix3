@@ -113,7 +113,7 @@ namespace MR {
           const Image* image () const { return (window.current_image()); }
           Image* image () { return (window.current_image()); }
 
-          const Math::Quaternion& orientation () const { return (window.orient); }
+          const Math::Quaternion<float>& orientation () const { return (window.orient); }
           float FOV () const { return (window.field_of_view); }
           const Point<>& focus () const { return (window.focal_point); }
           const Point<>& target () const { return (window.camera_target); }
@@ -122,7 +122,7 @@ namespace MR {
           void set_focus (const Point<>& p) { window.focal_point = p; }
           void set_target (const Point<>& p) { window.camera_target = p; }
           void set_projection (int p) { window.proj = p; }
-          void set_orientation (const Math::Quaternion& Q) { window.orient = Q; }
+          void set_orientation (const Math::Quaternion<float>& Q) { window.orient = Q; }
           void set_FOV (float value) { window.field_of_view = value; }
           void change_FOV_fine (float factor) { window.field_of_view *= Math::exp (0.005*factor); }
           void change_FOV_scroll (float factor) { change_FOV_fine (20.0 * factor); }
