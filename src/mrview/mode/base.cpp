@@ -29,7 +29,8 @@ namespace MR {
     namespace Mode {
 
       Base::Base (Window& parent) : 
-        window (parent) { 
+        window (parent),
+        painting (false) { 
           font_.setPointSize (0.9*font_.pointSize());
 
           QAction* separator = new QAction (this);
@@ -77,6 +78,8 @@ namespace MR {
           reset_action->setStatusTip (tr("Reset image projection & zoom"));
           connect (reset_action, SIGNAL (triggered()), this, SLOT (reset()));
           add_action_common (reset_action);
+
+          modelview_matrix[0] = NAN; 
         }
 
 
@@ -84,40 +87,47 @@ namespace MR {
 
       void Base::paintGL () 
       { 
+        painting = true;
+
         glClear (GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         if (!image()) {
           renderText (10, 10, "No image loaded");
-          return;
+          goto done_painting;
         }
 
-        modelview_matrix[0] = NAN; 
-        paint(); 
-        get_modelview_projection_viewport();
+        {
+          modelview_matrix[0] = NAN; 
+          paint(); 
+          get_modelview_projection_viewport();
 
-        Point<> voxel (image()->interp.scanner2voxel (focus()));
-        glColor4f (1.0, 1.0, 0.0, 1.0);
-        ssize_t vox [] = { Math::round<int>(voxel[0]), Math::round<int>(voxel[1]), Math::round<int>(voxel[2]) };
+          Point<> voxel (image()->interp.scanner2voxel (focus()));
+          glColor4f (1.0, 1.0, 0.0, 1.0);
+          ssize_t vox [] = { Math::round<int>(voxel[0]), Math::round<int>(voxel[1]), Math::round<int>(voxel[2]) };
 
-        if (show_position_action->isChecked()) {
-          renderText (printf ("position: [ %.4g %.4g %.4g ] mm", focus()[0], focus()[1], focus()[2]), LeftEdge | BottomEdge);
-          renderText (printf ("voxel: [ %d %d %d ]", vox[0], vox[1], vox[2]), LeftEdge | BottomEdge, 1);
-          std::string value;
-          if (vox[0] >= 0 && vox[0] < image()->vox.dim(0) && 
-              vox[1] >= 0 && vox[1] < image()->vox.dim(1) && 
-              vox[2] >= 0 && vox[2] < image()->vox.dim(2)) {
-            image()->vox[0] = vox[0];
-            image()->vox[1] = vox[1];
-            image()->vox[2] = vox[2];
-            value = printf ("value: %.5g", float (image()->vox.value()));
+          if (show_position_action->isChecked()) {
+            renderText (printf ("position: [ %.4g %.4g %.4g ] mm", focus()[0], focus()[1], focus()[2]), LeftEdge | BottomEdge);
+            renderText (printf ("voxel: [ %d %d %d ]", vox[0], vox[1], vox[2]), LeftEdge | BottomEdge, 1);
+            std::string value;
+            if (vox[0] >= 0 && vox[0] < image()->vox.dim(0) && 
+                vox[1] >= 0 && vox[1] < image()->vox.dim(1) && 
+                vox[2] >= 0 && vox[2] < image()->vox.dim(2)) {
+              image()->vox[0] = vox[0];
+              image()->vox[1] = vox[1];
+              image()->vox[2] = vox[2];
+              value = printf ("value: %.5g", float (image()->vox.value()));
+            }
+            else value = "value: ?";
+            renderText (value, LeftEdge | BottomEdge, 2);
           }
-          else value = "value: ?";
-          renderText (value, LeftEdge | BottomEdge, 2);
+
+          if (show_image_info_action->isChecked()) {
+            for (size_t i = 0; i < image()->H.comments().size(); ++i)
+              renderText (image()->H.comments()[i], LeftEdge | TopEdge, i);
+          }
         }
 
-        if (show_image_info_action->isChecked()) {
-          for (size_t i = 0; i < image()->H.comments().size(); ++i)
-            renderText (image()->H.comments()[i], LeftEdge | TopEdge, i);
-        }
+done_painting:
+        painting = false;
       }
 
 

@@ -154,6 +154,9 @@ namespace MR {
           void move_in_out (float distance);
 
 
+          bool in_paint () const { return (painting); }
+
+
         public slots:
           void updateGL ();
           virtual void reset ();
@@ -184,6 +187,7 @@ namespace MR {
           Qt::MouseButtons buttons_;
           Qt::KeyboardModifiers modifiers_;
           int edge_;
+          bool painting;
 
           QFont font_;
 

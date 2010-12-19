@@ -22,6 +22,7 @@
 
 #include <QMenu>
 
+#include "progressbar.h"
 #include "mrview/image.h"
 #include "mrview/window.h"
 #include "mrview/mode/base.h"
@@ -56,7 +57,11 @@ namespace MR {
       set_colourmap (0, false, false);
     }
 
-    Image::~Image () { }
+    Image::~Image () 
+    {
+      glDeleteTextures (3, texture2D);
+      glDeleteTextures (1, &texture3D);
+    }
 
 
 
@@ -194,6 +199,7 @@ namespace MR {
         glTexImage3D (GL_TEXTURE_3D, 0, GL_LUMINANCE32F_ARB, 
             vox.dim(0), vox.dim(1), vox.dim(2), 
             0, GL_LUMINANCE, GL_FLOAT, NULL);
+        DEBUG_OPENGL;
       }
       else if (volume_unchanged()) {
         glBindTexture (GL_TEXTURE_3D, texture3D);
@@ -205,9 +211,11 @@ namespace MR {
       value_min = INFINITY;
       value_max = -INFINITY;
       const ssize_t x = 0, y = 1, z = 2;
-      float data [vox.dim(x)*vox.dim(y)];
+      Ptr<float,true> data (new float [vox.dim(x)*vox.dim(y)]);
+
+      ProgressBar progress ("loading image data...", vox.dim(z));
       for (vox[z] = 0; vox[z] < vox.dim(z); ++vox[z]) {
-        float* p = data;
+        float* p = data.get();
         for (vox[y] = 0; vox[y] < vox.dim(y); ++vox[y]) {
           for (vox[x] = 0; vox[x] < vox.dim(x); ++vox[x]) {
             float val = *p = vox.value();
@@ -221,12 +229,13 @@ namespace MR {
         glTexSubImage3D (GL_TEXTURE_3D, 0, 
             0, 0, vox[z], 
             vox.dim(0), vox.dim(1), 1,
-            GL_LUMINANCE, GL_FLOAT, data);
+            GL_LUMINANCE, GL_FLOAT, data.get());
+        DEBUG_OPENGL;
+        ++progress;
       }
 
       if (isnan (display_midpoint) || isnan (display_range))
         reset_windowing();
-
     }
 
 
