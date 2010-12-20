@@ -321,7 +321,7 @@ end_init:
                   else log_prob += 0.5*prob;
                 }
 
-                return Math::exp (log_prob / P.S.num_samples);
+                return Math::exp (P.S.fod_power * log_prob);
               }
 
             private:
