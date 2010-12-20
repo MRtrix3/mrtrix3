@@ -60,6 +60,8 @@ namespace MR {
                   properties.set (lmax, "lmax");
                   properties.set (num_samples, "samples_per_step");
                   properties.set (max_trials, "max_trials");
+                  fod_power = 1.0/num_samples;
+                  properties.set (fod_power, "fod_power");
                   bool precomputed = true;
                   properties.set (precomputed, "sh_precomputed");
                   if (precomputed) precomputer.init (lmax);
@@ -85,7 +87,7 @@ namespace MR {
               }
 
               size_t lmax, num_samples, max_trials;
-              value_type sin_max_angle;
+              value_type sin_max_angle, fod_power;
               Math::SH::PrecomputedAL<value_type> precomputer;
 
             private:
@@ -250,7 +252,7 @@ end_init:
               }
             }
 
-            return Math::exp (log_prob / S.num_samples);
+            return Math::exp (S.fod_power * log_prob);
           }
 
 
