@@ -25,23 +25,25 @@
 
 #include "dataset/loop.h"
 
-namespace MR {
-  namespace DataSet {
+namespace MR
+{
+  namespace DataSet
+  {
 
-    template <class Set, typename T> 
-      void min_max (Set& D, T& min, T& max, size_t from_axis = 0, size_t to_axis = std::numeric_limits<size_t>::max())
-      {
-        min = T(INFINITY);
-        max = T(-INFINITY);
-        LoopInOrder loop (D, "finding min/max of \"" + shorten (D.name()) + "\"...");
-        for (loop.start (D); loop.ok(); loop.next (D)) {
-          T val = D.value();
-          if (finite (val)) {
-            if (min > val) min = val;
-            if (max < val) max = val;
-          }
+    template <class Set, typename T>
+    void min_max (Set& D, T& min, T& max, size_t from_axis = 0, size_t to_axis = std::numeric_limits<size_t>::max())
+    {
+      min = T (INFINITY);
+      max = T (-INFINITY);
+      LoopInOrder loop (D, "finding min/max of \"" + shorten (D.name()) + "\"...");
+      for (loop.start (D); loop.ok(); loop.next (D)) {
+        T val = D.value();
+        if (finite (val)) {
+          if (min > val) min = val;
+          if (max < val) max = val;
         }
       }
+    }
 
   }
 }

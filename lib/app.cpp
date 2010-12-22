@@ -30,9 +30,11 @@
 
 //#define NUM_DEFAULT_OPTIONS 5
 
-namespace MR {
+namespace MR
+{
 
-  namespace {
+  namespace
+  {
 
     const char* busy[] = {
       ".    ",
@@ -49,19 +51,19 @@ namespace MR {
 
     void display_func_cmdline (ProgressInfo& p)
     {
-      if (p.as_percentage) 
-        fprintf (stderr, "\r%s: %s %3zu%%", App::name().c_str(), p.text.c_str(), size_t(p.value));
+      if (p.as_percentage)
+        fprintf (stderr, "\r%s: %s %3zu%%", App::name().c_str(), p.text.c_str(), size_t (p.value));
       else
         fprintf (stderr, "\r%s: %s %s", App::name().c_str(), p.text.c_str(), busy[p.value%8]);
     }
 
 
-    void done_func_cmdline (ProgressInfo& p) 
-    { 
+    void done_func_cmdline (ProgressInfo& p)
+    {
       if (p.as_percentage)
-        fprintf (stderr, "\r%s: %s %3u%%\n", App::name().c_str(), p.text.c_str(), 100); 
+        fprintf (stderr, "\r%s: %s %3u%%\n", App::name().c_str(), p.text.c_str(), 100);
       else
-        fprintf (stderr, "\r%s: %s  - ok\n", App::name().c_str(), p.text.c_str()); 
+        fprintf (stderr, "\r%s: %s  - ok\n", App::name().c_str(), p.text.c_str());
     }
   }
 
@@ -69,28 +71,32 @@ namespace MR {
 
 
 
-  void cmdline_print (const std::string& msg) { std::cout << msg; }
-
-  void cmdline_error (const std::string& msg) 
+  void cmdline_print (const std::string& msg)
   {
-    if (App::log_level) std::cerr << App::name() << ": " << msg << "\n"; 
+    std::cout << msg;
   }
 
-  void cmdline_info  (const std::string& msg) 
-  { 
-    if (App::log_level > 1) std::cerr << App::name() << " [INFO]: " <<  msg << "\n"; 
+  void cmdline_error (const std::string& msg)
+  {
+    if (App::log_level) std::cerr << App::name() << ": " << msg << "\n";
+  }
+
+  void cmdline_info (const std::string& msg)
+  {
+    if (App::log_level > 1) std::cerr << App::name() << " [INFO]: " <<  msg << "\n";
   }
 
   void cmdline_debug (const std::string& msg)
-  { 
-    if (App::log_level > 2) std::cerr << App::name() << " [DEBUG]: " <<  msg << "\n"; 
+  {
+    if (App::log_level > 2) std::cerr << App::name() << " [DEBUG]: " <<  msg << "\n";
   }
 
 
 
 
 
-  namespace {
+  namespace
+  {
 
     void print_formatted_paragraph (const std::string& header, const std::string& text, int header_indent, int indent, int width)
     {
@@ -100,14 +106,15 @@ namespace MR {
       bool newline = false;
       do {
         end = start;
-        while (!isspace(text [end]) && end < text.size()) end++;
+        while (!isspace (text [end]) && end < text.size()) end++;
         std::string token (text.substr (start, end-start));
-        if (newline || current + (int) token.size() + 1 >= width) 
+        if (newline || current + (int) token.size() + 1 >= width)
           current = fprintf (stderr, "\n%*s%s", indent, "", token.c_str()) - 1;
         else current += fprintf (stderr, " %s", token.c_str());
         newline = text[end] == '\n';
         start = end + 1;
-      } while (end < text.size());
+      }
+      while (end < text.size());
       fprintf (stderr, "\n");
     }
 
@@ -158,19 +165,19 @@ namespace MR {
       if (root.compare (0, root.size(), opt->id, root.size()) == 0)
         candidates.push_back (opt);
 
-    if (candidates.size() == 0) 
+    if (candidates.size() == 0)
       return (NULL);
 
-    if (candidates.size() == 1) 
+    if (candidates.size() == 1)
       return (candidates[0]);
 
-    for (std::vector<const Option*>::const_iterator opt = candidates.begin(); opt != candidates.end(); ++opt) 
+    for (std::vector<const Option*>::const_iterator opt = candidates.begin(); opt != candidates.end(); ++opt)
       if (root == (*opt)->id)
         return (*opt);
 
     root = "several matches possible for option \"-" + root + "\": \"-" + candidates[0]->id;
 
-    for (std::vector<const Option*>::const_iterator opt = candidates.begin()+1; opt != candidates.end(); ++opt) 
+    for (std::vector<const Option*>::const_iterator opt = candidates.begin() +1; opt != candidates.end(); ++opt)
       root += std::string (", \"-") + (*opt)->id + "\"";
 
     throw Exception (root);
@@ -179,8 +186,8 @@ namespace MR {
 
 
 
-  App::App (int argc, char** argv, const char** cmd_desc, const MR::Argument* cmd_args, const MR::Option* cmd_opts, 
-      const size_t* cmd_version, const char* cmd_author, const char* cmd_copyright)
+  App::App (int argc, char** argv, const char** cmd_desc, const MR::Argument* cmd_args, const MR::Option* cmd_opts,
+            const size_t* cmd_version, const char* cmd_author, const char* cmd_copyright)
   {
 #ifdef WINDOWS
     // force stderr to be unbuffered, and stdout to be line-buffered:
@@ -191,12 +198,12 @@ namespace MR {
     command_description = cmd_desc;
     command_arguments = cmd_args;
     command_options = cmd_opts;
-    author = ( cmd_author ? cmd_author : "J-Donald Tournier (d.tournier@brain.org.au)" );
+    author = (cmd_author ? cmd_author : "J-Donald Tournier (d.tournier@brain.org.au)");
     version = cmd_version;
-    copyright = ( cmd_copyright ? cmd_copyright : 
-                "Copyright (C) 2008 Brain Research Institute, Melbourne, Australia.\n"
-                "This is free software; see the source for copying conditions.\n"
-                "There is NO warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE." );
+    copyright = (cmd_copyright ? cmd_copyright :
+                 "Copyright (C) 2008 Brain Research Institute, Melbourne, Australia.\n"
+                 "This is free software; see the source for copying conditions.\n"
+                 "There is NO warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.");
 
     if (argc == 2) {
       if (strcmp (argv[1], "__print_full_usage__") == 0) {
@@ -207,7 +214,7 @@ namespace MR {
 
     application_name = Path::basename (argv[0]);
 #ifdef WINDOWS
-    if (Path::has_suffix (application_name, ".exe")) 
+    if (Path::has_suffix (application_name, ".exe"))
       application_name.erase (application_name.size()-4);
 #endif
 
@@ -222,7 +229,7 @@ namespace MR {
     debug = cmdline_debug;
 
 
-    sort_arguments (argc, argv); 
+    sort_arguments (argc, argv);
 
     srand (time (NULL));
 
@@ -240,16 +247,16 @@ namespace MR {
   {
     for (int n = 1; n < argc; n++) {
       const char* arg = argv[n];
-      if (arg[0] == '-' && arg[1] && !isdigit(arg[1]) && arg[1] != '.') {
+      if (arg[0] == '-' && arg[1] && !isdigit (arg[1]) && arg[1] != '.') {
 
         while (*arg == '-') arg++;
         const Option* opt = match_option (arg);
 
-        if (!opt) 
+        if (!opt)
           throw Exception (std::string ("unknown option \"-") + arg + "\"");
 
         else if (opt == default_options) { // info
-          if (log_level < 2) 
+          if (log_level < 2)
             log_level = 2;
         }
         else if (opt == default_options+1) { // quiet
@@ -265,25 +272,25 @@ namespace MR {
         }
         else if (opt == default_options+4) { // version
           std::printf (
-              "== %s %zu.%zu.%zu ==\n"
-              "%d bit %s version, built " __DATE__ " against MRtrix %zu.%zu.%zu, using GSL %s\n"
-              "Author: %s\n"
-              "%s\n",
+            "== %s %zu.%zu.%zu ==\n"
+            "%d bit %s version, built " __DATE__ " against MRtrix %zu.%zu.%zu, using GSL %s\n"
+            "Author: %s\n"
+            "%s\n",
 
-              App::name().c_str(), version[0], version[1], version[2], 
-              int(8*sizeof(size_t)), 
+            App::name().c_str(), version[0], version[1], version[2],
+            int (8*sizeof (size_t)),
 #ifdef NDEBUG
-              "release"
+            "release"
 #else
-              "debug"
+            "debug"
 #endif
-              , mrtrix_major_version, mrtrix_minor_version, mrtrix_micro_version, 
-              gsl_version, author, copyright);
+            , mrtrix_major_version, mrtrix_minor_version, mrtrix_micro_version,
+            gsl_version, author, copyright);
 
           throw 0;
         }
         else { // command option
-          if (n + int(opt->args.size()) >= argc) 
+          if (n + int (opt->args.size()) >= argc)
             throw Exception (std::string ("not enough parameters to option \"-") + opt->id + "\"");
 
           option.push_back (ParsedOption (opt, argv+n+1));
@@ -307,34 +314,34 @@ namespace MR {
     for (const Argument* arg = App::command_arguments; *arg; arg++) {
       num_command_arguments++;
       if (arg->flags & Optional) has_optional_arguments = true;
-      else num_args_required++; 
+      else num_args_required++;
       if (arg->flags & AllowMultiple) has_optional_arguments = true;
     }
 
-    if (has_optional_arguments && num_args_required > argument.size()) 
-      throw Exception ("expected at least " + str (num_args_required) 
-          + " arguments (" + str(argument.size()) + " supplied)");
+    if (has_optional_arguments && num_args_required > argument.size())
+      throw Exception ("expected at least " + str (num_args_required)
+                       + " arguments (" + str (argument.size()) + " supplied)");
 
-    if (!has_optional_arguments && num_args_required != argument.size()) 
-      throw Exception ("expected exactly " + str (num_args_required) 
-          + " arguments (" + str (argument.size()) + " supplied)");
+    if (!has_optional_arguments && num_args_required != argument.size())
+      throw Exception ("expected exactly " + str (num_args_required)
+                       + " arguments (" + str (argument.size()) + " supplied)");
 
     size_t optional_argument = std::numeric_limits<size_t>::max();
     for (size_t n = 0; n < argument.size(); n++) {
 
-      if (n < optional_argument) 
-        if (command_arguments[n].flags & (Optional | AllowMultiple) )
+      if (n < optional_argument)
+        if (command_arguments[n].flags & (Optional | AllowMultiple))
           optional_argument = n;
 
       size_t index = n;
       if (n >= optional_argument) {
-        if (int(num_args_required - optional_argument) < int(argument.size()-n)) 
+        if (int (num_args_required - optional_argument) < int (argument.size()-n))
           index = optional_argument;
-        else 
+        else
           index = num_args_required - argument.size() + n + (command_arguments[optional_argument].flags & Optional ? 1 : 0);
       }
 
-      if (index >= num_command_arguments) 
+      if (index >= num_command_arguments)
         throw Exception ("too many arguments");
 
       argument[n].arg = command_arguments + index;
@@ -342,15 +349,15 @@ namespace MR {
 
     for (const Option* opt = command_options; *opt; ++opt) {
       size_t count = 0;
-      for (std::vector<ParsedOption>::const_iterator popt = option.begin(); 
-          popt != option.end(); ++popt)
+      for (std::vector<ParsedOption>::const_iterator popt = option.begin();
+           popt != option.end(); ++popt)
         if (popt->opt == opt)
           count++;
 
-      if (count < 1 && !(opt->flags & Optional)) 
+      if (count < 1 && ! (opt->flags & Optional))
         throw Exception (std::string ("mandatory option \"") + opt->id + "\" must be specified");
 
-      if (count > 1 && !(opt->flags & AllowMultiple)) 
+      if (count > 1 && ! (opt->flags & AllowMultiple))
         throw Exception (std::string ("multiple instances of option \"") +  opt->id + "\" are not allowed");
     }
 
@@ -383,19 +390,19 @@ namespace MR {
       fprintf (stderr, " %s", arg->id);
 
       if (arg->flags & AllowMultiple) {
-        if (!(arg->flags & Optional))
+        if (! (arg->flags & Optional))
           fprintf (stderr, " [ %s", arg->id);
         fprintf (stderr, " ...");
       }
-      if (arg->flags & (Optional | AllowMultiple)) 
+      if (arg->flags & (Optional | AllowMultiple))
         fprintf (stderr, " ]");
     }
     fprintf (stderr, "\n\n");
 
 
 
-    for (const Argument* arg = command_arguments; *arg; ++arg) 
-      print_formatted_paragraph (std::string("- ") + arg->id + " ", arg->desc, HELP_ARG_INDENT);
+    for (const Argument* arg = command_arguments; *arg; ++arg)
+      print_formatted_paragraph (std::string ("- ") + arg->id + " ", arg->desc, HELP_ARG_INDENT);
     fprintf (stderr, "\n");
 
 
@@ -404,10 +411,10 @@ namespace MR {
       std::string text ("-");
       text += opt->id;
 
-      for (std::vector<Argument>::const_iterator optarg = opt->args.begin(); 
-          optarg != opt->args.end(); ++optarg) 
+      for (std::vector<Argument>::const_iterator optarg = opt->args.begin();
+           optarg != opt->args.end(); ++optarg)
         text += std::string (" ") + optarg->id;
-      
+
       print_formatted_paragraph (text + " ", opt->desc, HELP_OPTION_INDENT);
       // TODO: add argument defaults like this:
       //print_formatted_paragraph (text + " ", opt->desc + opt->arg_defaults(), HELP_OPTION_INDENT);
@@ -416,8 +423,8 @@ namespace MR {
     }
 
     fprintf (stderr, "Standard options:\n");
-    for (const Option* opt = default_options; *opt; ++opt) 
-      print_formatted_paragraph (std::string("-") + opt->id, opt->desc, HELP_OPTION_INDENT);
+    for (const Option* opt = default_options; *opt; ++opt)
+      print_formatted_paragraph (std::string ("-") + opt->id, opt->desc, HELP_OPTION_INDENT);
     fprintf (stderr, "\n");
   }
 
@@ -429,13 +436,13 @@ namespace MR {
 
   void App::print_full_usage () const
   {
-    for (const char** p = command_description; *p; p++) 
+    for (const char** p = command_description; *p; p++)
       std::cout << *p << "\n";
 
-    for (const Argument* arg = command_arguments; arg; ++arg) 
+    for (const Argument* arg = command_arguments; arg; ++arg)
       arg->print_usage();
 
-    for (const Option* opt = command_options; opt; ++opt) 
+    for (const Option* opt = command_options; opt; ++opt)
       opt->print_usage();
 
     for (const Option* opt = default_options; opt; ++opt)
@@ -448,7 +455,7 @@ namespace MR {
 
 
 
-  App::ParsedArgument::operator int () const 
+  App::ParsedArgument::operator int () const
   {
     if (arg->type == Integer) {
       const int retval = to<int> (p);
@@ -458,7 +465,7 @@ namespace MR {
         std::string msg ("value supplied for ");
         if (opt) msg += std::string ("option \"") + opt->id;
         else msg += std::string ("argument \"") + arg->id;
-        msg += "\" is out of bounds (valid range: " + str(min) + " to " + str(max) + ", value supplied: " + str(retval) + ")";
+        msg += "\" is out of bounds (valid range: " + str (min) + " to " + str (max) + ", value supplied: " + str (retval) + ")";
         throw Exception (msg);
       }
       return retval;
@@ -466,7 +473,7 @@ namespace MR {
 
     if (arg->type == Choice) {
       std::string selection = lowercase (p);
-      const char* const * choices = arg->defaults.choices.list;
+      const char* const* choices = arg->defaults.choices.list;
       for (int i = 0; choices[i]; ++i) {
         if (selection == choices[i]) {
           return i;
@@ -488,8 +495,8 @@ namespace MR {
 
 
 
-  App::ParsedArgument::operator float () const 
-  { 
+  App::ParsedArgument::operator float () const
+  {
     const float retval = to<float> (p);
     const float min = arg->defaults.i.min;
     const float max = arg->defaults.i.max;
@@ -497,7 +504,7 @@ namespace MR {
       std::string msg ("value supplied for ");
       if (opt) msg += std::string ("option \"") + opt->id;
       else msg += std::string ("argument \"") + arg->id;
-      msg += "\" is out of bounds (valid range: " + str(min) + " to " + str(max) + ", value supplied: " + str(retval) + ")";
+      msg += "\" is out of bounds (valid range: " + str (min) + " to " + str (max) + ", value supplied: " + str (retval) + ")";
       throw Exception (msg);
     }
 
@@ -507,8 +514,8 @@ namespace MR {
 
 
 
-  App::ParsedArgument::operator double () const 
-  { 
+  App::ParsedArgument::operator double () const
+  {
     const double retval = to<double> (p);
     const double min = arg->defaults.i.min;
     const double max = arg->defaults.i.max;
@@ -516,7 +523,7 @@ namespace MR {
       std::string msg ("value supplied for ");
       if (opt) msg += std::string ("option \"") + opt->id;
       else msg += std::string ("argument \"") + arg->id;
-      msg += "\" is out of bounds (valid range: " + str(min) + " to " + str(max) + ", value supplied: " + str(retval) + ")";
+      msg += "\" is out of bounds (valid range: " + str (min) + " to " + str (max) + ", value supplied: " + str (retval) + ")";
       throw Exception (msg);
     }
 

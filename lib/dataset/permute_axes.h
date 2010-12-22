@@ -26,42 +26,63 @@
 #include "math/matrix.h"
 #include "dataset/value.h"
 
-namespace MR {
-  namespace DataSet {
+namespace MR
+{
+  namespace DataSet
+  {
 
     //! \addtogroup DataSet
     // @{
 
-    template <class Set> class PermuteAxes {
+    template <class Set> class PermuteAxes
+    {
       public:
         typedef typename Set::value_type value_type;
 
-        PermuteAxes (Set& original, const std::vector<int>& axes) : 
-          D (original), A (axes), S (A.size()) { 
-            for (size_t i = 0; i < A.size(); ++i) 
-              S[i] = A[i]<0 ? 0 : D.stride(A[i]);
+        PermuteAxes (Set& original, const std::vector<int>& axes) :
+          D (original), A (axes), S (A.size()) {
+          for (size_t i = 0; i < A.size(); ++i)
+            S[i] = A[i]<0 ? 0 : D.stride (A[i]);
 
-            for (int i = 0; i < static_cast<int> (D.ndim()); ++i) {
-              for (size_t a = 0; a < A.size(); ++a)
-                if (A[a] == i) 
-                  goto next_axis;
-              if (D.dim(i) != 1)
-                throw Exception ("ommitted axis \"" + str(i) + "\" has dimension greater than 1");
+          for (int i = 0; i < static_cast<int> (D.ndim()); ++i) {
+            for (size_t a = 0; a < A.size(); ++a)
+              if (A[a] == i)
+                goto next_axis;
+            if (D.dim (i) != 1)
+              throw Exception ("ommitted axis \"" + str (i) + "\" has dimension greater than 1");
 next_axis:
             continue;
-            }
           }
-        const std::string& name () const { return (D.name()); }
-        size_t  ndim () const { return (A.size()); }
-        int     dim (size_t axis) const { return (A[axis] < 0 ? 1 : D.dim (A[axis])); }
-        float   vox (size_t axis) const { return (A[axis] < 0 ? NAN : D.vox (A[axis])); }
-        const Math::Matrix<float>& transform () const { return (D.transform()); }
-        ssize_t stride (size_t axis) const { return (A[axis] < 0 ? 0 : D.stride (A[axis])); }
+        }
+        const std::string& name () const {
+          return (D.name());
+        }
+        size_t  ndim () const {
+          return (A.size());
+        }
+        int     dim (size_t axis) const {
+          return (A[axis] < 0 ? 1 : D.dim (A[axis]));
+        }
+        float   vox (size_t axis) const {
+          return (A[axis] < 0 ? NAN : D.vox (A[axis]));
+        }
+        const Math::Matrix<float>& transform () const {
+          return (D.transform());
+        }
+        ssize_t stride (size_t axis) const {
+          return (A[axis] < 0 ? 0 : D.stride (A[axis]));
+        }
 
-        void reset () { D.reset(); }
+        void reset () {
+          D.reset();
+        }
 
-        Position<PermuteAxes<Set> > operator[] (size_t axis) { return (Position<PermuteAxes<Set> > (*this, axis)); }
-        Value<PermuteAxes<Set> > value () { return (Value<PermuteAxes<Set> > (*this)); }
+        Position<PermuteAxes<Set> > operator[] (size_t axis) {
+          return (Position<PermuteAxes<Set> > (*this, axis));
+        }
+        Value<PermuteAxes<Set> > value () {
+          return (Value<PermuteAxes<Set> > (*this));
+        }
 
       private:
         Set& D;
@@ -69,16 +90,26 @@ next_axis:
         const std::vector<int> A;
         std::vector<ssize_t> S;
 
-        value_type get_value () const { return (D.value()); }
-        void set_value (value_type val) { D.value() = val; }
-        ssize_t get_pos (size_t axis) const { return (A[axis] < 0 ? 0 : D[A[axis]]); } 
-        void set_pos (size_t axis, ssize_t position) const { D[A[axis]] = position; }
-        void move_pos (size_t axis, ssize_t increment) const { D[A[axis]] += increment; }
+        value_type get_value () const {
+          return (D.value());
+        }
+        void set_value (value_type val) {
+          D.value() = val;
+        }
+        ssize_t get_pos (size_t axis) const {
+          return (A[axis] < 0 ? 0 : D[A[axis]]);
+        }
+        void set_pos (size_t axis, ssize_t position) const {
+          D[A[axis]] = position;
+        }
+        void move_pos (size_t axis, ssize_t increment) const {
+          D[A[axis]] += increment;
+        }
 
         friend class Position<PermuteAxes<Set> >;
         friend class Value<PermuteAxes<Set> >;
     };
-    
+
     //! @}
   }
 }

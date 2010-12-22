@@ -26,60 +26,36 @@
 #include "math/matrix.h"
 #include "point.h"
 
-namespace MR {
-  namespace DWI {
+namespace MR
+{
+  namespace DWI
+  {
 
     template <typename T> Math::Matrix<T>& normalise_grad (Math::Matrix<T>& grad)
     {
-      if (grad.columns() != 4) throw Exception ("invalid gradient matrix dimensions");
+      if (grad.columns() != 4)
+        throw Exception ("invalid gradient matrix dimensions");
       for (size_t i = 0; i < grad.rows(); i++) {
-        T norm = grad(i,3) ? 1.0/sqrt(grad(i,0)*grad(i,0)+grad(i,1)*grad(i,1)+grad(i,2)*grad(i,2)) : 0.0;
-        grad(i,0) *= norm;
-        grad(i,1) *= norm;
-        grad(i,2) *= norm;
+        T norm = grad (i,3) ?
+                 T (1.0) /Math::norm (grad.row (i).sub (0,3)) :
+                 T (0.0);
+        grad.row (i).sub (0,3) *= norm;
       }
       return (grad);
     }
 
 
-    template <typename T> inline Math::Matrix<T> grad2bmatrix (Math::Matrix<T> &bmat, const Math::Matrix<T> &grad)
-    {
-      bmat.allocate (grad.rows(),7);
-      for (size_t i = 0; i < grad.rows(); i++) {
-        bmat(i,0) = grad(i,3) * grad(i,0)*grad(i,0);
-        bmat(i,1) = grad(i,3) * grad(i,1)*grad(i,1);
-        bmat(i,2) = grad(i,3) * grad(i,2)*grad(i,2);
-        bmat(i,3) = grad(i,3) * 2*grad(i,0)*grad(i,1);
-        bmat(i,4) = grad(i,3) * 2*grad(i,0)*grad(i,2);
-        bmat(i,5) = grad(i,3) * 2*grad(i,1)*grad(i,2);
-        bmat(i,6) = -1.0;
-      }
-      return (bmat);
-    }
-
-
-
-
-    template <typename T> inline void dwi2tensor (const Math::Matrix<T>& binv, T *d)
-    {
-      T logs[binv.columns()];
-      for (size_t i = 0; i < binv.columns(); i++) logs[i] = d[i] > 0.0 ? -log(d[i]) : 0.0;
-      for (size_t i = 0; i < 6; i++) {
-        d[i] = 0.0;
-        for (size_t j = 0; j < binv.columns(); j++)
-          d[i] += binv(i,j)*logs[j];
-      }
-    }
-
-
     template <typename T> inline void guess_DW_directions (std::vector<int>& dwi, std::vector<int>& bzero, const Math::Matrix<T>& grad)
     {
-      if (grad.columns() != 4) throw Exception ("invalid gradient encoding matrix: expecting 4 columns.");
+      if (grad.columns() != 4)
+        throw Exception ("invalid gradient encoding matrix: expecting 4 columns.");
       dwi.clear();
       bzero.clear();
       for (size_t i = 0; i < grad.rows(); i++) {
-        if (grad(i,3)) dwi.push_back (i);
-        else bzero.push_back (i);
+        if (grad (i,3))
+          dwi.push_back (i);
+        else
+          bzero.push_back (i);
       }
     }
 
@@ -90,11 +66,11 @@ namespace MR {
     {
       dirs.allocate (dwi.size(),2);
       for (size_t i = 0; i < dwi.size(); i++) {
-        T n = norm (grad.row(dwi[i]).sub(0,3));
-        dirs(i,0) = Math::atan2 (grad(dwi[i],1), grad(dwi[i],0));
-        dirs(i,1) = Math::acos (grad(dwi[i],2)/n);
+        T n = Math::norm (grad.row (dwi[i]).sub (0,3));
+        dirs (i,0) = Math::atan2 (grad (dwi[i],1), grad (dwi[i],0));
+        dirs (i,1) = Math::acos (grad (dwi[i],2) /n);
       }
-      return (dirs);
+      return dirs;
     }
 
 

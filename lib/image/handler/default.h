@@ -27,12 +27,16 @@
 #include "image/handler/base.h"
 #include "file/mmap.h"
 
-namespace MR {
-  namespace Image {
+namespace MR
+{
+  namespace Image
+  {
 
-    namespace Handler {
+    namespace Handler
+    {
 
-      class Default : public Base {
+      class Default : public Base
+      {
         public:
           Default (Header& header, bool image_is_new) : Base (header, image_is_new) { }
           virtual ~Default ();

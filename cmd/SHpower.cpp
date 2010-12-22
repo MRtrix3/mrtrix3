@@ -27,8 +27,8 @@
 #include "math/SH.h"
 #include "dataset/loop.h"
 
-using namespace std; 
-using namespace MR; 
+using namespace std;
+using namespace MR;
 
 SET_VERSION_DEFAULT;
 SET_AUTHOR (NULL);
@@ -46,7 +46,7 @@ ARGUMENTS = {
 };
 
 
-OPTIONS = { 
+OPTIONS = {
   Option ()
 };
 
@@ -55,12 +55,12 @@ EXECUTE {
   Image::Header SH_header (argument[0]);
   Image::Header power_header (SH_header);
 
-  if (power_header.ndim() != 4) 
+  if (power_header.ndim() != 4)
     throw Exception ("SH image should contain 4 dimensions");
 
 
-  int lmax = Math::SH::LforN (SH_header.dim(3));
-  info ("calculating spherical harmonic power up to degree " + str(lmax));
+  int lmax = Math::SH::LforN (SH_header.dim (3));
+  info ("calculating spherical harmonic power up to degree " + str (lmax));
 
   power_header.set_dim (3, 1 + lmax/2);
   power_header.set_datatype (DataType::Float32);

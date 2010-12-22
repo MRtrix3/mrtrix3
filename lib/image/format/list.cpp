@@ -24,9 +24,12 @@
 
 #include "image/format/list.h"
 
-namespace MR {
-  namespace Image {
-    namespace Format {
+namespace MR
+{
+  namespace Image
+  {
+    namespace Format
+    {
 
       Format::Pipe       pipe_handler;
       Format::MRtrix     mrtrix_handler;

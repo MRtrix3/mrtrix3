@@ -25,52 +25,93 @@
 
 #include "mrtrix.h"
 
-namespace MR {
-  namespace Math {
+namespace MR
+{
+  namespace Math
+  {
 
-    template <typename T> 
-      class Quaternion {
-        public:
-          typedef T value_type;
-          Quaternion () { x[0] = 1.0; x[1] = x[2] = x[3] = 0.0; }
-          Quaternion (value_type t, value_type vx, value_type vy, value_type vz) { x[0] = t; x[1] = vx; x[2] = vy; x[3] = vz; }
-          Quaternion (value_type b, value_type c, value_type d) { x[0] = sqrt(1.0 - b*b - c*c - d*d); x[1] = b; x[2] = c; x[3] = d; }
-          Quaternion (value_type angle, value_type* axis)
-          {
-            x[0] = cos (angle/2.0); x[1] = axis[0]; x[2] = axis[1]; x[3] = axis[2]; 
-            value_type norm = sin (angle/2.0) / sqrt (x[1]*x[1] + x[2]*x[2] + x[3]*x[3]);
-            x[1] *= norm; x[2] *= norm; x[3] *= norm;
-          }
-          Quaternion (const value_type* matrix)             { from_matrix (matrix); }
+    template <typename T>
+    class Quaternion
+    {
+      public:
+        typedef T value_type;
+        Quaternion () {
+          x[0] = 1.0;
+          x[1] = x[2] = x[3] = 0.0;
+        }
+        Quaternion (value_type t, value_type vx, value_type vy, value_type vz) {
+          x[0] = t;
+          x[1] = vx;
+          x[2] = vy;
+          x[3] = vz;
+        }
+        Quaternion (value_type b, value_type c, value_type d) {
+          x[0] = sqrt (1.0 - b*b - c*c - d*d);
+          x[1] = b;
+          x[2] = c;
+          x[3] = d;
+        }
+        Quaternion (value_type angle, value_type* axis) {
+          x[0] = cos (angle/2.0);
+          x[1] = axis[0];
+          x[2] = axis[1];
+          x[3] = axis[2];
+          value_type norm = sin (angle/2.0) / sqrt (x[1]*x[1] + x[2]*x[2] + x[3]*x[3]);
+          x[1] *= norm;
+          x[2] *= norm;
+          x[3] *= norm;
+        }
+        Quaternion (const value_type* matrix)             {
+          from_matrix (matrix);
+        }
 
-          operator bool () const   { return !(isnan (x[0]) || isnan (x[1]) || isnan (x[2]) || isnan (x[3])); }
-          bool          operator! () const   { return isnan (x[0]) || isnan (x[1]) || isnan (x[2]) || isnan (x[3]); }
+        operator bool () const   {
+          return ! (isnan (x[0]) || isnan (x[1]) || isnan (x[2]) || isnan (x[3]));
+        }
+        bool          operator! () const   {
+          return isnan (x[0]) || isnan (x[1]) || isnan (x[2]) || isnan (x[3]);
+        }
 
-          void          invalidate ()  { x[0] = x[1] = x[2] = x[3] = NAN; }
-          void          normalise ()
-          {
-            value_type n = 1.0 / sqrt (x[0]*x[0] + x[1]*x[1] + x[2]*x[2] + x[3]*x[3]);
-            x[0] *= n; x[1] *= n; x[2] *= n; x[3] *= n;
-          }
-          void          from_matrix (const value_type* matrix);
-          void          to_matrix (value_type* matrix);
+        void          invalidate ()  {
+          x[0] = x[1] = x[2] = x[3] = NAN;
+        }
+        void          normalise () {
+          value_type n = 1.0 / sqrt (x[0]*x[0] + x[1]*x[1] + x[2]*x[2] + x[3]*x[3]);
+          x[0] *= n;
+          x[1] *= n;
+          x[2] *= n;
+          x[3] *= n;
+        }
+        void          from_matrix (const value_type* matrix);
+        void          to_matrix (value_type* matrix);
 
-          const value_type&  operator[] (int index) const    { return x[index]; }
-          value_type&        operator[] (int index)          { return x[index]; }
+        const value_type&  operator[] (int index) const    {
+          return x[index];
+        }
+        value_type&        operator[] (int index)          {
+          return x[index];
+        }
 
-          bool          operator== (const Quaternion& y) const { return memcmp (x, y.x, 4*sizeof(value_type)) == 0; }
-          bool          operator!= (const Quaternion& y) const { return memcmp (x, y.x, 4*sizeof(value_type)); }
+        bool          operator== (const Quaternion& y) const {
+          return memcmp (x, y.x, 4*sizeof (value_type)) == 0;
+        }
+        bool          operator!= (const Quaternion& y) const {
+          return memcmp (x, y.x, 4*sizeof (value_type));
+        }
 
-          Quaternion    operator* (const Quaternion& y) const;
-          const Quaternion& operator*= (const Quaternion& y) { *this = (*this) * y; return *this; }
+        Quaternion    operator* (const Quaternion& y) const;
+        const Quaternion& operator*= (const Quaternion& y) {
+          *this = (*this) * y;
+          return *this;
+        }
 
-        protected:
-          value_type   x[4];
-      };
+      protected:
+        value_type   x[4];
+    };
 
 
     template <typename T>
-      std::ostream& operator<< (std::ostream& stream, const Quaternion<T>& q);
+    std::ostream& operator<< (std::ostream& stream, const Quaternion<T>& q);
 
 
 
@@ -83,84 +124,84 @@ namespace MR {
 
 
 
-    template <typename T> 
-      inline Quaternion<T> Quaternion<T>::operator* (const Quaternion& y) const
-      {
-        Quaternion q (
-            x[0]*y[0] - x[1]*y[1] - x[2]*y[2] - x[3]*y[3],
-            x[0]*y[1] + x[1]*y[0] + x[2]*y[3] - x[3]*y[2],
-            x[0]*y[2] - x[1]*y[3] + x[2]*y[0] + x[3]*y[1],
-            x[0]*y[3] + x[1]*y[2] - x[2]*y[1] + x[3]*y[0] );
-        q.normalise();
-        return q;
-      }
+    template <typename T>
+    inline Quaternion<T> Quaternion<T>::operator* (const Quaternion& y) const
+    {
+      Quaternion q (
+        x[0]*y[0] - x[1]*y[1] - x[2]*y[2] - x[3]*y[3],
+        x[0]*y[1] + x[1]*y[0] + x[2]*y[3] - x[3]*y[2],
+        x[0]*y[2] - x[1]*y[3] + x[2]*y[0] + x[3]*y[1],
+        x[0]*y[3] + x[1]*y[2] - x[2]*y[1] + x[3]*y[0]);
+      q.normalise();
+      return q;
+    }
 
 
 
 
 
 
-    template <typename T> 
-      inline void Quaternion<T>::from_matrix (const T* matrix)
-      {
-        x[0] = 1.0 + matrix[0] + matrix[4] + matrix[8];
-        x[0] = x[0] > 0.0 ? 0.5 * sqrt (x[0]) : 0.0;
-        if (fabs (x[0]) < 0.1) {
-          x[1] = 1.0 + matrix[0] - matrix[4] - matrix[8];
-          x[1] = x[1] > 0.0 ? 0.5 * sqrt (x[1]) : 0.0;
-          if (fabs (x[1]) < 0.1) {
-            x[2] = 1.0 - matrix[0] + matrix[4] - matrix[8];
-            x[2] = x[2] > 0.0 ? 0.5 * sqrt (x[2]) : 0.0;
-            if (fabs (x[2]) < 0.1) {
-              x[3] = 0.5 * sqrt (1.0 - matrix[0] - matrix[4] + matrix[8]);
-              x[0] = (matrix[3] - matrix[1]) / (4.0 * x[3]);
-              x[1] = (matrix[2] + matrix[6]) / (4.0 * x[3]);
-              x[2] = (matrix[7] + matrix[5]) / (4.0 * x[3]);
-            }
-            else {
-              x[0] = (matrix[2] - matrix[6]) / (4.0 * x[2]);
-              x[1] = (matrix[3] + matrix[1]) / (4.0 * x[2]);
-              x[3] = (matrix[7] + matrix[5]) / (4.0 * x[2]);
-            }
+    template <typename T>
+    inline void Quaternion<T>::from_matrix (const T* matrix)
+    {
+      x[0] = 1.0 + matrix[0] + matrix[4] + matrix[8];
+      x[0] = x[0] > 0.0 ? 0.5 * sqrt (x[0]) : 0.0;
+      if (fabs (x[0]) < 0.1) {
+        x[1] = 1.0 + matrix[0] - matrix[4] - matrix[8];
+        x[1] = x[1] > 0.0 ? 0.5 * sqrt (x[1]) : 0.0;
+        if (fabs (x[1]) < 0.1) {
+          x[2] = 1.0 - matrix[0] + matrix[4] - matrix[8];
+          x[2] = x[2] > 0.0 ? 0.5 * sqrt (x[2]) : 0.0;
+          if (fabs (x[2]) < 0.1) {
+            x[3] = 0.5 * sqrt (1.0 - matrix[0] - matrix[4] + matrix[8]);
+            x[0] = (matrix[3] - matrix[1]) / (4.0 * x[3]);
+            x[1] = (matrix[2] + matrix[6]) / (4.0 * x[3]);
+            x[2] = (matrix[7] + matrix[5]) / (4.0 * x[3]);
           }
           else {
-            x[0] = (matrix[7] - matrix[5]) / (4.0 * x[1]);
-            x[2] = (matrix[3] + matrix[1]) / (4.0 * x[1]);
-            x[3] = (matrix[2] + matrix[6]) / (4.0 * x[1]);
+            x[0] = (matrix[2] - matrix[6]) / (4.0 * x[2]);
+            x[1] = (matrix[3] + matrix[1]) / (4.0 * x[2]);
+            x[3] = (matrix[7] + matrix[5]) / (4.0 * x[2]);
           }
         }
         else {
-          x[1] = (matrix[7] - matrix[5]) / (4.0 * x[0]);
-          x[2] = (matrix[2] - matrix[6]) / (4.0 * x[0]);
-          x[3] = (matrix[3] - matrix[1]) / (4.0 * x[0]);
+          x[0] = (matrix[7] - matrix[5]) / (4.0 * x[1]);
+          x[2] = (matrix[3] + matrix[1]) / (4.0 * x[1]);
+          x[3] = (matrix[2] + matrix[6]) / (4.0 * x[1]);
         }
-
-        normalise();
       }
+      else {
+        x[1] = (matrix[7] - matrix[5]) / (4.0 * x[0]);
+        x[2] = (matrix[2] - matrix[6]) / (4.0 * x[0]);
+        x[3] = (matrix[3] - matrix[1]) / (4.0 * x[0]);
+      }
+
+      normalise();
+    }
 
 
     template <typename T>
-      inline void Quaternion<T>::to_matrix (value_type* matrix)
-      {
-        matrix[0] = x[0]*x[0] + x[1]*x[1] - x[2]*x[2] - x[3]*x[3];
-        matrix[1] = 2.0*x[1]*x[2] - 2.0*x[0]*x[3]; 
-        matrix[2] = 2.0*x[1]*x[3] + 2.0*x[0]*x[2];
-        matrix[3] = 2.0*x[1]*x[2] + 2.0*x[0]*x[3];
-        matrix[4] = x[0]*x[0] + x[2]*x[2] - x[1]*x[1] - x[3]*x[3];
-        matrix[5] = 2.0*x[2]*x[3] - 2.0*x[0]*x[1];
-        matrix[6] = 2.0*x[1]*x[3] - 2.0*x[0]*x[2];
-        matrix[7] = 2.0*x[2]*x[3] + 2*x[0]*x[1];
-        matrix[8] = x[0]*x[0] + x[3]*x[3] - x[2]*x[2] - x[1]*x[1];
-      }
+    inline void Quaternion<T>::to_matrix (value_type* matrix)
+    {
+      matrix[0] = x[0]*x[0] + x[1]*x[1] - x[2]*x[2] - x[3]*x[3];
+      matrix[1] = 2.0*x[1]*x[2] - 2.0*x[0]*x[3];
+      matrix[2] = 2.0*x[1]*x[3] + 2.0*x[0]*x[2];
+      matrix[3] = 2.0*x[1]*x[2] + 2.0*x[0]*x[3];
+      matrix[4] = x[0]*x[0] + x[2]*x[2] - x[1]*x[1] - x[3]*x[3];
+      matrix[5] = 2.0*x[2]*x[3] - 2.0*x[0]*x[1];
+      matrix[6] = 2.0*x[1]*x[3] - 2.0*x[0]*x[2];
+      matrix[7] = 2.0*x[2]*x[3] + 2*x[0]*x[1];
+      matrix[8] = x[0]*x[0] + x[3]*x[3] - x[2]*x[2] - x[1]*x[1];
+    }
 
 
 
-    template <typename T> 
-      inline std::ostream& operator<< (std::ostream& stream, const Quaternion<T>& q)
-      {
-        stream << "[ " << q[0] << " " << q[1] << "i " << q[2] << "j " << q[3] << "k ]";
-        return stream;
-      }
+    template <typename T>
+    inline std::ostream& operator<< (std::ostream& stream, const Quaternion<T>& q)
+    {
+      stream << "[ " << q[0] << " " << q[1] << "i " << q[2] << "j " << q[3] << "k ]";
+      return stream;
+    }
 
 
   }

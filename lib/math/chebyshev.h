@@ -22,8 +22,8 @@
 
 
 
-/* 
- 
+/*
+
  Implementation based on the GSL (http://www.gnu.org/software/gsl/)
 
 */
@@ -33,9 +33,12 @@
 
 #include "math/math.h"
 
-namespace MR {
-  namespace Math {
-    namespace Chebyshev {
+namespace MR
+{
+  namespace Math
+  {
+    namespace Chebyshev
+    {
 
       template <typename T> inline T eval (const double* coef, const int order, const T lower, const T upper, const T x)
       {

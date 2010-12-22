@@ -26,10 +26,12 @@
 #include "math/cholesky.h"
 #include "math/LU.h"
 
-namespace MR {
-  namespace Math {
+namespace MR
+{
+  namespace Math
+  {
 
-    /** @addtogroup linalg 
+    /** @addtogroup linalg
       @{ */
 
     /** @defgroup ls Least-squares & Moore-Penrose pseudo-inverse
@@ -37,26 +39,29 @@ namespace MR {
 
 
     //! solve least-squares problem Mx = b
-    template <typename T> inline Vector<T>& solve_LS (Vector<T>& x, const Matrix<T>& M, const Vector<T>& b, Matrix<T>& work) {
+    template <typename T> inline Vector<T>& solve_LS (Vector<T>& x, const Matrix<T>& M, const Vector<T>& b, Matrix<T>& work)
+    {
       rankN_update (work, M, CblasTrans);
       Cholesky::decomp (work);
-      mult (x, T(1.0), CblasTrans, M, b);
+      mult (x, T (1.0), CblasTrans, M, b);
       return (Cholesky::solve (x, work));
     }
 
     //! compute Moore-Penrose pseudo-inverse of M given its transpose Mt
-    template <typename T> inline Matrix<T>& pinv (Matrix<T>& I, const Matrix<T>& Mt, Matrix<T>& work) {
-      mult (work, T(0.0), T(1.0), CblasNoTrans, Mt, CblasTrans, Mt);
+    template <typename T> inline Matrix<T>& pinv (Matrix<T>& I, const Matrix<T>& Mt, Matrix<T>& work)
+    {
+      mult (work, T (0.0), T (1.0), CblasNoTrans, Mt, CblasTrans, Mt);
       Cholesky::inv (work);
-      return (mult (I, CblasLeft, T(0.0), T(1.0), CblasUpper, work, Mt));
+      return (mult (I, CblasLeft, T (0.0), T (1.0), CblasUpper, work, Mt));
     }
 
-    //! compute Moore-Penrose pseudo-inverse of M 
-    template <typename T> inline Matrix<T>& pinv (Matrix<T>& I, const Matrix<T>& M) {
+    //! compute Moore-Penrose pseudo-inverse of M
+    template <typename T> inline Matrix<T>& pinv (Matrix<T>& I, const Matrix<T>& M)
+    {
       I.allocate (M.columns(), M.rows());
       Matrix<T> work (M.columns(), M.columns());
       Matrix<T> Mt (M.columns(), M.rows());
-      return (pinv (I, transpose(Mt, M), work));
+      return (pinv (I, transpose (Mt, M), work));
     }
 
     /** @} */

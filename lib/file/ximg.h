@@ -27,28 +27,43 @@
 #include "file/mmap.h"
 
 
-namespace MR {
-  namespace File {
+namespace MR
+{
+  namespace File
+  {
 
-    class XImg {
+    class XImg
+    {
       public:
         XImg (const std::string& filename) : mmap (filename) { }
-        std::string    name () const { return (mmap.name()); }
+        std::string    name () const {
+          return (mmap.name());
+        }
 
-        const uint8_t* pixel_data () const { return (bof() + getBE<int32_t> (bof() + 0x4)); }
-        int            width () const      { return (getBE<int32_t> (bof() + 0x8)); }
-        int            height () const     { return (getBE<int32_t> (bof() + 0xc)); }
-        int            depth () const      { return (getBE<int32_t> (bof() + 0x10)); }
+        const uint8_t* pixel_data () const {
+          return (bof() + getBE<int32_t> (bof() + 0x4));
+        }
+        int            width () const      {
+          return (getBE<int32_t> (bof() + 0x8));
+        }
+        int            height () const     {
+          return (getBE<int32_t> (bof() + 0xc));
+        }
+        int            depth () const      {
+          return (getBE<int32_t> (bof() + 0x10));
+        }
 
         friend std::ostream& operator<< (std::ostream& stream, const XImg& X) {
-          stream << "name: \"" << X.name() << ", pixel_data at " 
-            << size_t (X.pixel_data() - X.bof()) << ", dim: [ " << X.width() << " " << X.height() << " ]\n";
+          stream << "name: \"" << X.name() << ", pixel_data at "
+                 << size_t (X.pixel_data() - X.bof()) << ", dim: [ " << X.width() << " " << X.height() << " ]\n";
           return (stream);
         }
 
       private:
         MMap           mmap;
-        const uint8_t* bof () const { return ((uint8_t*) mmap.address()); }
+        const uint8_t* bof () const {
+          return ( (uint8_t*) mmap.address());
+        }
     };
 
 

@@ -22,20 +22,23 @@
 
 
 
-/* 
+/*
  Implementation based on the GSL (http://www.gnu.org/software/gsl/)
 */
 
 #include "math/bessel.h"
 
-namespace MR {
-  namespace Math {
-    namespace Bessel {
+namespace MR
+{
+  namespace Math
+  {
+    namespace Bessel
+    {
 
       const double coef_aI0[12] = {
         -.07660547252839144951,
         1.92733795399380827000,
-        .22826445869203013390, 
+        .22826445869203013390,
         .01304891466707290428,
         .00043442709008164874,
         .00000942265768600193,
@@ -48,7 +51,7 @@ namespace MR {
       };
 
       const double coef_bI0[21] = {
-        .07575994494023796, 
+        .07575994494023796,
         .00759138081082334,
         .00041531313389237,
         .00001070076463439,

@@ -30,11 +30,15 @@
 #include "file/mmap.h"
 #include "file/dicom/definitions.h"
 
-namespace MR {
-  namespace File {
-    namespace Dicom {
+namespace MR
+{
+  namespace File
+  {
+    namespace Dicom
+    {
 
-      class Element {
+      class Element
+      {
         public:
           typedef enum _Type {
             INVALID,
@@ -67,19 +71,28 @@ namespace MR {
           }
 
           uint32_t     tag () const {
-            union __DICOM_group_element_pair__ { uint16_t s[2]; uint32_t i; } val = { {
+            union __DICOM_group_element_pair__ {
+              uint16_t s[2];
+              uint32_t i;
+            } val = { {
 #ifdef BYTE_ORDER_BIG_ENDIAN
-              group, element
+                group, element
 #else
                 element, group
-#endif 
-            } };
+#endif
+              }
+            };
             return (val.i);
           }
 
           Type   type () const;
-          size_t offset (uint8_t* address) const { assert (fmap); return (address - (uint8_t*) fmap->address()); }
-          bool   is_big_endian () const { return (is_BE); }
+          size_t offset (uint8_t* address) const {
+            assert (fmap);
+            return (address - (uint8_t*) fmap->address());
+          }
+          bool   is_big_endian () const {
+            return (is_BE);
+          }
 
           std::vector<int32_t>      get_int () const;
           std::vector<uint32_t>     get_uint () const;

@@ -25,11 +25,15 @@
 
 #include "mrtrix.h"
 
-namespace MR {
-  namespace File {
-    namespace Dicom {
+namespace MR
+{
+  namespace File
+  {
+    namespace Dicom
+    {
 
-      class QuickScan {
+      class QuickScan
+      {
 
         public:
           /*! \todo could exclude Siemens MPR info images by splitting the

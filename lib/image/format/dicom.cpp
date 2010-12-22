@@ -32,16 +32,19 @@
 #include "image/format/list.h"
 #include "image/header.h"
 
-namespace MR {
-  namespace Image {
-    namespace Format {
+namespace MR
+{
+  namespace Image
+  {
+    namespace Format
+    {
 
       bool DICOM::read (Header& H) const
       {
         if (!Path::is_dir (H.name())) return (false);
 
         File::Dicom::Tree dicom;
-        
+
         dicom.read (H.name());
         dicom.sort();
 
@@ -54,8 +57,14 @@ namespace MR {
       }
 
 
-      bool DICOM::check (Header& H, size_t num_axes) const { return (false); }
-      void DICOM::create (Header& H) const { assert (0); }
+      bool DICOM::check (Header& H, size_t num_axes) const
+      {
+        return (false);
+      }
+      void DICOM::create (Header& H) const
+      {
+        assert (0);
+      }
 
 
     }

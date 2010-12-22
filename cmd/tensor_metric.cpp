@@ -27,7 +27,7 @@
 #include "math/eigen.h"
 #include "dwi/tensor.h"
 
-using namespace MR; 
+using namespace MR;
 
 SET_VERSION_DEFAULT;
 SET_AUTHOR (NULL);
@@ -45,37 +45,37 @@ ARGUMENTS = {
 
 const char* modulate_choices[] = { "none", "fa", "eval", NULL };
 
-OPTIONS = { 
-  Option ("adc", 
-      "compute the mean apparent diffusion coefficient (ADC) of the diffusion tensor.")
-    + Argument ("image").type_image_out(),
+OPTIONS = {
+  Option ("adc",
+  "compute the mean apparent diffusion coefficient (ADC) of the diffusion tensor.")
+  + Argument ("image").type_image_out(),
 
-  Option ("fa", 
-      "compute the fractional anisotropy of the diffusion tensor.")
-    + Argument ("image").type_image_out(),
+  Option ("fa",
+  "compute the fractional anisotropy of the diffusion tensor.")
+  + Argument ("image").type_image_out(),
 
-  Option ("num", 
-      "specify the desired eigenvalue/eigenvector(s). Note that several eigenvalues "
-      "can be specified as a number sequence. For example, '1,3' specifies the "
-      "major (1) and minor (3) eigenvalues/eigenvectors (default = 1).")
-    + Argument ("image"),
+  Option ("num",
+  "specify the desired eigenvalue/eigenvector(s). Note that several eigenvalues "
+  "can be specified as a number sequence. For example, '1,3' specifies the "
+  "major (1) and minor (3) eigenvalues/eigenvectors (default = 1).")
+  + Argument ("image"),
 
   Option ("vector",
-      "compute the selected eigenvector(s) of the diffusion tensor.")
-    + Argument ("image").type_image_out(),
+  "compute the selected eigenvector(s) of the diffusion tensor.")
+  + Argument ("image").type_image_out(),
 
-  Option ("value", 
-      "compute the selected eigenvalue(s) of the diffusion tensor.")
-    + Argument ("image").type_image_out(),
+  Option ("value",
+  "compute the selected eigenvalue(s) of the diffusion tensor.")
+  + Argument ("image").type_image_out(),
 
-  Option ("mask", 
-      "only perform computation within the specified binary brain mask image.")
-    + Argument ("image").type_image_in(),
+  Option ("mask",
+  "only perform computation within the specified binary brain mask image.")
+  + Argument ("image").type_image_in(),
 
-  Option ("modulate", 
-      "specify how to modulate the magnitude of the eigenvectors. Valid choices "
-      "are: none, FA, eval (default = FA).")
-    + Argument ("spec").type_choice (modulate_choices),
+  Option ("modulate",
+  "specify how to modulate the magnitude of the eigenvectors. Valid choices "
+  "are: none, FA, eval (default = FA).")
+  + Argument ("spec").type_choice (modulate_choices),
 
   Option ()
 };
@@ -84,20 +84,21 @@ OPTIONS = {
 class ImagePair
 {
   public:
-    class Header : public Image::Header {
+    class Header : public Image::Header
+    {
       public:
-        Header (const Image::Header& header, const std::string& name, size_t nvols) : 
+        Header (const Image::Header& header, const std::string& name, size_t nvols) :
           Image::Header (header) {
-            set_datatype (DataType::Float32);
-            if (nvols) set_dim (3, nvols);
-            else set_ndim (3);
-            create (name);
-          }
+          set_datatype (DataType::Float32);
+          if (nvols) set_dim (3, nvols);
+          else set_ndim (3);
+          create (name);
+        }
 
         Header (const std::string& name) : Image::Header (name) { }
     };
 
-    ImagePair (const Image::Header& header, const std::string& name, size_t nvols) : 
+    ImagePair (const Image::Header& header, const std::string& name, size_t nvols) :
       H (header, name, nvols), vox (H) { }
 
     ImagePair (const std::string& name) : H (name), vox (H) { }
@@ -108,58 +109,58 @@ class ImagePair
 
 inline void set_zero (size_t axis, Ptr<ImagePair>& i0, Ptr<ImagePair>& i1, Ptr<ImagePair>& i2, Ptr<ImagePair>& i3, Ptr<ImagePair>& i4)
 {
-  if (i0) i0->vox[axis] = 0; 
-  if (i1) i1->vox[axis] = 0; 
-  if (i2) i2->vox[axis] = 0; 
-  if (i3) i3->vox[axis] = 0; 
-  if (i4) i4->vox[axis] = 0; 
+  if (i0) i0->vox[axis] = 0;
+  if (i1) i1->vox[axis] = 0;
+  if (i2) i2->vox[axis] = 0;
+  if (i3) i3->vox[axis] = 0;
+  if (i4) i4->vox[axis] = 0;
 }
 
 inline void increment (size_t axis, Ptr<ImagePair>& i0, Ptr<ImagePair>& i1, Ptr<ImagePair>& i2, Ptr<ImagePair>& i3, Ptr<ImagePair>& i4)
 {
-  if (i0) ++i0->vox[axis]; 
-  if (i1) ++i1->vox[axis]; 
-  if (i2) ++i2->vox[axis]; 
-  if (i3) ++i3->vox[axis]; 
-  if (i4) ++i4->vox[axis]; 
+  if (i0) ++i0->vox[axis];
+  if (i1) ++i1->vox[axis];
+  if (i2) ++i2->vox[axis];
+  if (i3) ++i3->vox[axis];
+  if (i4) ++i4->vox[axis];
 }
 
 EXECUTE {
   Image::Header dt_header (argument[0]);
 
-  if (dt_header.ndim() != 4) 
+  if (dt_header.ndim() != 4)
     throw Exception ("base image should contain 4 dimensions");
 
-  if (dt_header.dim(3) != 6) 
+  if (dt_header.dim (3) != 6)
     throw Exception ("expecting dimension 3 of image \"" + dt_header.name() + "\" to be 6");
 
 
-  std::vector<int> vals(1);
+  std::vector<int> vals (1);
   vals[0] = 1;
   Options opt = get_options ("num");
   if (opt.size()) {
     vals = opt[0][0];
 
-    if (vals.empty()) 
+    if (vals.empty())
       throw Exception ("invalid eigenvalue/eigenvector number specifier");
 
     for (size_t i = 0; i < vals.size(); ++i)
-      if (vals[i] < 1 || vals[i] > 3) 
+      if (vals[i] < 1 || vals[i] > 3)
         throw Exception ("eigenvalue/eigenvector number is out of bounds");
   }
 
   Ptr<ImagePair> adc, fa, eval, evec, mask;
 
   opt = get_options ("vector");
-  if (opt.size()) 
+  if (opt.size())
     evec = new ImagePair (dt_header, opt[0][0], 3*vals.size());
 
   opt = get_options ("value");
-  if (opt.size()) 
+  if (opt.size())
     eval = new ImagePair (dt_header, opt[0][0], vals.size());
 
   opt = get_options ("adc");
-  if (opt.size()) 
+  if (opt.size())
     adc = new ImagePair (dt_header, opt[0][0], 0);
 
   opt = get_options ("fa");
@@ -168,54 +169,54 @@ EXECUTE {
   opt = get_options ("mask");
   if (opt.size()) {
     mask = new ImagePair (opt[0][0]);
-    if (mask->H.dim(0) != dt_header.dim(0) || 
-        mask->H.dim(1) != dt_header.dim(1) ||
-        mask->H.dim(2) != dt_header.dim(2)) 
+    if (mask->H.dim (0) != dt_header.dim (0) ||
+    mask->H.dim (1) != dt_header.dim (1) ||
+    mask->H.dim (2) != dt_header.dim (2))
       throw Exception ("dimensions of mask image do not match that of tensor image - aborting");
   }
 
   int modulate = 1;
   opt = get_options ("modulate");
-  if (opt.size()) 
+  if (opt.size())
     modulate = opt[0][0];
 
-  if ( ! (adc || fa || eval || evec))
+  if (! (adc || fa || eval || evec))
     throw Exception ("no output metric specified - aborting");
 
 
   for (size_t i = 0; i < vals.size(); i++)
     vals[i] = 3-vals[i];
- 
 
-  Math::Matrix<double> V(3,3), M(3,3);
-  Math::Vector<double> ev(3);
+
+  Math::Matrix<double> V (3,3), M (3,3);
+  Math::Vector<double> ev (3);
   float el[6], faval = NAN;
 
   Ptr<Math::Eigen::Symm<double> > eig;
   Ptr<Math::Eigen::SymmV<double> > eigv;
-  if (evec) 
+  if (evec)
     eigv = new Math::Eigen::SymmV<double> (3);
-  else 
+  else
     eig = new Math::Eigen::Symm<double> (3);
 
   Image::Voxel<float> dt (dt_header);
 
   ProgressBar progress ("computing tensor metrics...", DataSet::voxel_count (dt, 0, 3));
 
-  for (dt[2] = 0; dt[2] < dt.dim(2); dt[2]++) {
+  for (dt[2] = 0; dt[2] < dt.dim (2); dt[2]++) {
     set_zero (1, mask, fa, adc, eval, evec);
 
-    for (dt[1] = 0; dt[1] < dt.dim(1); dt[1]++) {
+    for (dt[1] = 0; dt[1] < dt.dim (1); dt[1]++) {
       set_zero (0, mask, fa, adc, eval, evec);
 
-      for (dt[0] = 0; dt[0] < dt.dim(0); dt[0]++) {
+      for (dt[0] = 0; dt[0] < dt.dim (0); dt[0]++) {
 
         bool skip = false;
         if (mask) if (mask->vox.value() < 0.5) skip = true;
 
         if (!skip) {
 
-          for (dt[3] = 0; dt[3] < dt.dim(3); dt[3]++) 
+          for (dt[3] = 0; dt[3] < dt.dim (3); dt[3]++)
             el[dt[3]] = dt.value();
 
           if (adc) adc->vox.value() = DWI::tensor2ADC (el);
@@ -223,12 +224,12 @@ EXECUTE {
           if (fa) fa->vox.value() = faval;
 
           if (eval || evec) {
-            M(0,0) = el[0];
-            M(1,1) = el[1];
-            M(2,2) = el[2];
-            M(0,1) = M(1,0) = el[3];
-            M(0,2) = M(2,0) = el[4];
-            M(1,2) = M(2,1) = el[5];
+            M (0,0) = el[0];
+            M (1,1) = el[1];
+            M (2,2) = el[2];
+            M (0,1) = M (1,0) = el[3];
+            M (0,2) = M (2,0) = el[4];
+            M (1,2) = M (2,1) = el[5];
 
             if (evec) {
               (*eigv) (ev, M, V);
@@ -237,9 +238,12 @@ EXECUTE {
               evec->vox[3] = 0;
               for (size_t i = 0; i < vals.size(); i++) {
                 if (modulate == 2) faval = ev[vals[i]];
-                evec->vox.value() = faval*V(0,vals[i]); ++evec->vox[3];
-                evec->vox.value() = faval*V(1,vals[i]); ++evec->vox[3];
-                evec->vox.value() = faval*V(2,vals[i]); ++evec->vox[3];
+                evec->vox.value() = faval*V (0,vals[i]);
+                ++evec->vox[3];
+                evec->vox.value() = faval*V (1,vals[i]);
+                ++evec->vox[3];
+                evec->vox.value() = faval*V (2,vals[i]);
+                ++evec->vox[3];
               }
             }
             else {
@@ -249,7 +253,7 @@ EXECUTE {
 
             if (eval) {
               for (eval->vox[3] = 0; eval->vox[3] < (int) vals.size(); ++eval->vox[3])
-                eval->vox.value() = ev[vals[eval->vox[3]]]; 
+                eval->vox.value() = ev[vals[eval->vox[3]]];
             }
           }
         }

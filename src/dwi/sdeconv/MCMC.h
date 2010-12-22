@@ -34,7 +34,8 @@
 #include <gsl/gsl_multimin.h>
 #include "matrix_ops.h"
 
-namespace MR {
+namespace MR
+{
 
   class MCMCSphericalDeconv
   {
@@ -55,9 +56,9 @@ namespace MR {
       double*            M_col_norm2;
       gsl_rng*            rng;
 
-      double             eval_f(Vector& residue);
-      void                eval_df(Vector& df, const Vector& residue);
-      void                subsolve(NumberSequence& pos_val);
+      double             eval_f (Vector& residue);
+      void                eval_df (Vector& df, const Vector& residue);
+      void                subsolve (NumberSequence& pos_val);
       double             min_fval;
 
       Matrix              B, Binv, N;
@@ -70,19 +71,19 @@ namespace MR {
       MCMCSphericalDeconv();
       ~MCMCSphericalDeconv();
 
-      int  init(SHcoefs& response, Vector& init_filter,
-                Matrix& DW_encoding, Matrix& HR_encoding, double noise_level, uint lmax = 8);
+      int  init (SHcoefs& response, Vector& init_filter,
+                 Matrix& DW_encoding, Matrix& HR_encoding, double noise_level, uint lmax = 8);
 
-      void   set(Vector& sigs);
+      void   set (Vector& sigs);
       float iterate_MAP();
       int   iterate_MAP2();
-      int   iterate_MAP3(double& fval);
+      int   iterate_MAP3 (double& fval);
       void   iterate_MCMC();
-      void   FOD2SH(const Vector& fod, Vector& SH, uint lmax = 8);
-      void   get_state(Vector& state) const;
-      void   get_best_state(Vector& state);
-      void   get_sigs(Vector& sigs) const;
-      void   FOD2sigs(const Vector& fod, Vector& SH) const;
+      void   FOD2SH (const Vector& fod, Vector& SH, uint lmax = 8);
+      void   get_state (Vector& state) const;
+      void   get_best_state (Vector& state);
+      void   get_sigs (Vector& sigs) const;
+      void   FOD2sigs (const Vector& fod, Vector& SH) const;
 
   };
 
@@ -90,43 +91,49 @@ namespace MR {
 
 
 
-  inline double rand_truncated_Gaussian(const gsl_rng* r, double mu, double sigma)
+  inline double rand_truncated_Gaussian (const gsl_rng* r, double mu, double sigma)
   {
-    double zero = gsl_cdf_gaussian_P(-mu, sigma);
-    double rn = gsl_rng_uniform(r);
+    double zero = gsl_cdf_gaussian_P (-mu, sigma);
+    double rn = gsl_rng_uniform (r);
     double val = rn * (1.0 - zero) + zero;
-    val = mu + gsl_cdf_ugaussian_Pinv(val)*sigma;
-    if (isinf(val) || val < 0.0) val = 0.0;
+    val = mu + gsl_cdf_ugaussian_Pinv (val) *sigma;
+    if (isinf (val) || val < 0.0) val = 0.0;
     return (val);
   }
 
-/****************************************************************
-  *       MCMCRegularisedSphericalDeconv inline functions:
- ***************************************************************/
+  /****************************************************************
+    *       MCMCRegularisedSphericalDeconv inline functions:
+   ***************************************************************/
 
 
-  inline void MCMCSphericalDeconv::get_state(Vector& state) const { state.copy(FOD); }
-
-  inline void MCMCSphericalDeconv::get_sigs(Vector& sigs) const { sigs.copy(p_sigs); }
-  inline void MCMCSphericalDeconv::FOD2sigs(const Vector& fod, Vector& SH) const
+  inline void MCMCSphericalDeconv::get_state (Vector& state) const
   {
-    SH.allocate(fconv.rows());
-    SH.multiply(fconv, fod);
+    state.copy (FOD);
   }
 
-  inline double MCMCSphericalDeconv::eval_f(Vector& residue)
+  inline void MCMCSphericalDeconv::get_sigs (Vector& sigs) const
   {
-    residue.multiply(fconv, FOD);
-    residue.sub(p_sigs);
-    return(residue.norm2());
+    sigs.copy (p_sigs);
+  }
+  inline void MCMCSphericalDeconv::FOD2sigs (const Vector& fod, Vector& SH) const
+  {
+    SH.allocate (fconv.rows());
+    SH.multiply (fconv, fod);
+  }
+
+  inline double MCMCSphericalDeconv::eval_f (Vector& residue)
+  {
+    residue.multiply (fconv, FOD);
+    residue.sub (p_sigs);
+    return (residue.norm2());
   }
 
 
 
 
-  inline void MCMCSphericalDeconv::eval_df(Vector& df, const Vector& residue)
+  inline void MCMCSphericalDeconv::eval_df (Vector& df, const Vector& residue)
   {
-    df.multiply_trans(fconv, residue);
+    df.multiply_trans (fconv, residue);
   }
 
 

@@ -32,9 +32,12 @@
 #include "math/quaternion.h"
 #include "file/nifti1.h"
 
-namespace MR {
-  namespace Image {
-    namespace Format {
+namespace MR
+{
+  namespace Image
+  {
+    namespace Format
+    {
 
       bool Analyse::read (Header& H) const
       {
@@ -42,7 +45,7 @@ namespace MR {
           return (false);
 
         File::MMap fmap (H.name().substr (0, H.name().size()-4) + ".hdr");
-        size_t data_offset = File::NIfTI::read (H, *((const nifti_1_header*) fmap.address()));
+        size_t data_offset = File::NIfTI::read (H, * ( (const nifti_1_header*) fmap.address()));
 
         H.add_file (File::Entry (H.name(), data_offset));
 
@@ -55,13 +58,13 @@ namespace MR {
 
       bool Analyse::check (Header& H, size_t num_axes) const
       {
-        if (!Path::has_suffix (H.name(), ".img")) 
+        if (!Path::has_suffix (H.name(), ".img"))
           return (false);
-        
-        if (num_axes < 3) 
+
+        if (num_axes < 3)
           throw Exception ("cannot create NIfTI-1.1 image with less than 3 dimensions");
 
-        if (num_axes > 8) 
+        if (num_axes > 8)
           throw Exception ("cannot create NIfTI-1.1 image with more than 8 dimensions");
 
         H.set_ndim (num_axes);
@@ -76,7 +79,7 @@ namespace MR {
 
       void Analyse::create (Header& H) const
       {
-        if (H.ndim() > 7) 
+        if (H.ndim() > 7)
           throw Exception ("NIfTI-1.1 format cannot support more than 7 dimensions for image \"" + H.name() + "\"");
 
         nifti_1_header NH;
@@ -86,9 +89,9 @@ namespace MR {
         File::create (hdr_name);
 
         std::ofstream out (hdr_name.c_str());
-        if (!out) 
+        if (!out)
           throw Exception ("error opening file \"" + hdr_name + "\" for writing: " + strerror (errno));
-        out.write ((char*) &NH, 352);
+        out.write ( (char*) &NH, 352);
         out.close();
 
         File::create (H.name(), H.footprint());

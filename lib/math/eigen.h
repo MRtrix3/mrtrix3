@@ -28,11 +28,14 @@
 #include "math/matrix.h"
 #include "math/permutation.h"
 
-namespace MR {
-  namespace Math {
-    namespace Eigen {
+namespace MR
+{
+  namespace Math
+  {
+    namespace Eigen
+    {
 
-      /** @addtogroup linalg 
+      /** @addtogroup linalg
         @{ */
 
       /** @defgroup eigen Eigensystems
@@ -40,18 +43,20 @@ namespace MR {
 
       //! Eigenvalue decomposition for real symmetric matrices
       /** \note the diagonal and lower part of \a A will be destroyed during the decomposition */
-      template <typename T> class Symm 
+      template <typename T> class Symm
       {
         public:
-          Symm (size_t n) : work (gsl_eigen_symm_alloc(n)) { }
-          ~Symm () { gsl_eigen_symm_free (work); }
+          Symm (size_t n) : work (gsl_eigen_symm_alloc (n)) { }
+          ~Symm () {
+            gsl_eigen_symm_free (work);
+          }
 
           Vector<T>& operator () (Vector<T>& eval, Matrix<T>& A) {
             assert (A.rows() == A.columns());
             assert (A.rows() == eval.size());
             assert (A.rows() == work->size);
             int status = gsl_eigen_symm (A.gsl(), eval.gsl(), work);
-            if (status) throw Exception (std::string ("eigenvalue decomposition failed: ") + gsl_strerror (status)); 
+            if (status) throw Exception (std::string ("eigenvalue decomposition failed: ") + gsl_strerror (status));
             return (eval);
           }
         protected:
@@ -62,11 +67,14 @@ namespace MR {
 
       //! Eigenvalue and eigenvector decomposition for real symmetric matrices
       /** \note the diagonal and lower part of \a A will be destroyed during the decomposition */
-      template <typename T> class SymmV 
+      template <typename T> class SymmV
       {
         public:
-          SymmV (size_t n) : work (gsl_eigen_symmv_alloc(n)) { }
-          ~SymmV () { gsl_eigen_symmv_free (work); }
+          SymmV (size_t n) : work (gsl_eigen_symmv_alloc (n)), N (n) { }
+          SymmV (const SymmV& SV) : work (gsl_eigen_symmv_alloc (SV.size())), N (SV.size()) { }
+          ~SymmV () {
+            gsl_eigen_symmv_free (work);
+          }
 
           Vector<T>& operator () (Vector<T>& eval, Matrix<T>& A, Matrix<T>& evec) {
             assert (A.rows() == A.columns());
@@ -75,18 +83,29 @@ namespace MR {
             assert (A.rows() == eval.size());
             assert (A.rows() == work->size);
             int status = gsl_eigen_symmv (A.gsl(), eval.gsl(), evec.gsl(), work);
-            if (status) throw Exception (std::string ("eigenvalue decomposition failed: ") + gsl_strerror (status)); 
+            if (status) throw Exception (std::string ("eigenvalue decomposition failed: ") + gsl_strerror (status));
             return (eval);
           }
+
+          size_t size () const {
+            return N;
+          }
+
         protected:
           gsl_eigen_symmv_workspace* work;
+          const size_t N;
       };
 
 
       //! Eigenvalue sorting
-      inline Vector<double>& sort (Vector<double>& eval) { gsl_sort_vector (eval.gsl()); return (eval); } 
+      inline Vector<double>& sort (Vector<double>& eval)
+      {
+        gsl_sort_vector (eval.gsl());
+        return (eval);
+      }
       //! Eigenvalue sorting
-      template <typename T> inline Vector<T>& sort (Vector<T>& eval, Matrix<T>& evec) { 
+      template <typename T> inline Vector<T>& sort (Vector<T>& eval, Matrix<T>& evec)
+      {
         gsl_eigen_symmv_sort (eval.gsl(), evec.gsl(), GSL_EIGEN_SORT_VAL_ASC);
         return (eval);
       }

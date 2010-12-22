@@ -26,22 +26,25 @@
 #include "image/handler/pipe.h"
 #include "image/format/list.h"
 
-namespace MR {
-  namespace Image {
-    namespace Format {
+namespace MR
+{
+  namespace Image
+  {
+    namespace Format
+    {
 
       bool Pipe::read (Header& H) const
-      { 
+      {
         if (H.name() != "-") return (false);
 
         std::string name;
         getline (std::cin, name);
         H.set_name (name);
 
-        if (H.name().empty()) 
+        if (H.name().empty())
           throw Exception ("no filename supplied to standard input (broken pipe?)");
 
-        if (!Path::has_suffix (H.name(), ".mif")) 
+        if (!Path::has_suffix (H.name(), ".mif"))
           throw Exception ("MRtrix only supports the .mif format for command-line piping");
 
         try {
@@ -50,7 +53,7 @@ namespace MR {
             return (true);
           }
         }
-        catch (Exception& E) { 
+        catch (Exception& E) {
           throw Exception (E, "error reading image data from command-line pipe");
         }
         return (false);
@@ -62,7 +65,7 @@ namespace MR {
 
       bool Pipe::check (Header& H, size_t num_axes) const
       {
-        if (H.name() != "-") 
+        if (H.name() != "-")
           return (false);
 
         H.set_name (File::create_tempfile (0, "mif"));

@@ -30,8 +30,10 @@
 #include "dataset/value.h"
 #include "dataset/position.h"
 
-namespace MR {
-  namespace Image {
+namespace MR
+{
+  namespace Image
+  {
 
     //! \addtogroup Image
     // @{
@@ -71,7 +73,7 @@ namespace MR {
      * access to the same voxel data; it is up to the programmer to ensure
      * such situations are avoided, or at least handled properly.
      */
-    template <typename T> class Buffer 
+    template <typename T> class Buffer
     {
       private:
         class Shared
@@ -90,32 +92,32 @@ namespace MR {
         //! construct an Image::Buffer object to access the data in the Image::Header \p header
         Buffer (Image::Header& header, size_t NDIM = std::numeric_limits<size_t>::max()) :
           H (header),
-          ptr (new Shared (NDIM == std::numeric_limits<size_t>::max() ? header.ndim() : NDIM)), 
+          ptr (new Shared (NDIM == std::numeric_limits<size_t>::max() ? header.ndim() : NDIM)),
           x (ndim()),
           stride_instance (ptr) {
-            for (size_t i = 0; i < ndim(); ++i) 
-              ptr->stride[i] = header.stride(i);
-            
-            Handler::Base* handler = header.get_handler();
-            handler->prepare();
-            if (handler->nsegments() == 1 && 
-                header.datatype() == DataType::from<value_type>()) {
-              info ("data in \"" + header.name() + "\" already in required format - mapping as-is");
-              ptr->data = reinterpret_cast<value_type*> (handler->segment(0));
-            }
+          for (size_t i = 0; i < ndim(); ++i)
+            ptr->stride[i] = header.stride (i);
 
-            DataSet::Stride::actualise (ptr->stride, H);
-            ptr->start = DataSet::Stride::offset (ptr->stride, H);
-            reset(); 
-
-            if (!ptr->data) {
-              ptr->data = DataSet::__allocate<value_type> (DataSet::voxel_count (*this));
-              ptr->block = ptr->data;
-              info ("data in \"" + header.name() + "\" not in required format - loading into memory...");
-              Image::Voxel<value_type> vox (header);
-              DataSet::copy_with_progress_message ("loading data for image \"" + header.name() + "\"...", *this, vox);
-            }
+          Handler::Base* handler = header.get_handler();
+          handler->prepare();
+          if (handler->nsegments() == 1 &&
+              header.datatype() == DataType::from<value_type>()) {
+            info ("data in \"" + header.name() + "\" already in required format - mapping as-is");
+            ptr->data = reinterpret_cast<value_type*> (handler->segment (0));
           }
+
+          DataSet::Stride::actualise (ptr->stride, H);
+          ptr->start = DataSet::Stride::offset (ptr->stride, H);
+          reset();
+
+          if (!ptr->data) {
+            ptr->data = DataSet::__allocate<value_type> (DataSet::voxel_count (*this));
+            ptr->block = ptr->data;
+            info ("data in \"" + header.name() + "\" not in required format - loading into memory...");
+            Image::Voxel<value_type> vox (header);
+            DataSet::copy_with_progress_message ("loading data for image \"" + header.name() + "\"...", *this, vox);
+          }
+        }
 
 
         //! Construct from an Image::Header object with guaranteed strides
@@ -123,52 +125,52 @@ namespace MR {
          * Any zero strides will be ignored. */
         Buffer (Image::Header& header, const std::vector<ssize_t>& desired_strides, size_t NDIM = std::numeric_limits<size_t>::max()) :
           H (header),
-          ptr (new Shared (NDIM == std::numeric_limits<size_t>::max() ? header.ndim() : NDIM)), 
+          ptr (new Shared (NDIM == std::numeric_limits<size_t>::max() ? header.ndim() : NDIM)),
           x (ndim()),
           stride_instance (ptr) {
-            bool strides_match = true;
-            for (size_t i = 0; i < std::min (desired_strides.size(), ndim()); ++i) {
-              if (desired_strides[i]) {
-                if (Math::abs (desired_strides[i]) != Math::abs (header.stride(i))) {
-                  strides_match = false;
-                  break;
-                }
+          bool strides_match = true;
+          for (size_t i = 0; i < std::min (desired_strides.size(), ndim()); ++i) {
+            if (desired_strides[i]) {
+              if (Math::abs (desired_strides[i]) != Math::abs (header.stride (i))) {
+                strides_match = false;
+                break;
               }
             }
-
-            if (strides_match) {
-              for (size_t i = 0; i < ndim(); ++i) 
-                ptr->stride[i] = header.stride(i);
-            }
-            else {
-              for (size_t i = 0; i < ndim(); ++i) 
-                ptr->stride[i] = 0;
-              for (size_t i = 0; i < std::min (desired_strides.size(), ndim()); ++i)
-                ptr->stride[i] = desired_strides[i];
-              DataSet::Stride::sanitise (ptr->stride);
-            }
-
-            Handler::Base* handler = header.get_handler();
-            handler->prepare();
-            if (handler->nsegments() == 1 && 
-                header.datatype() == DataType::from<value_type>()
-                && strides_match) {
-              info ("data in \"" + header.name() + "\" already in native format - mapping as-is");
-              ptr->data = reinterpret_cast<value_type*> (handler->segment(0));
-            }
-
-            DataSet::Stride::actualise (ptr->stride, H);
-            ptr->start = DataSet::Stride::offset (ptr->stride, H);
-            reset(); 
-
-            if (!ptr->data) {
-              ptr->data = DataSet::__allocate<value_type> (DataSet::voxel_count (*this));
-              ptr->block = ptr->data;
-              info ("data in \"" + header.name() + "\" not in native format - loading into memory...");
-              Image::Voxel<value_type> vox (header);
-              DataSet::copy_with_progress_message ("loading data for image \"" + header.name() + "\"...", *this, vox);
-            }
           }
+
+          if (strides_match) {
+            for (size_t i = 0; i < ndim(); ++i)
+              ptr->stride[i] = header.stride (i);
+          }
+          else {
+            for (size_t i = 0; i < ndim(); ++i)
+              ptr->stride[i] = 0;
+            for (size_t i = 0; i < std::min (desired_strides.size(), ndim()); ++i)
+              ptr->stride[i] = desired_strides[i];
+            DataSet::Stride::sanitise (ptr->stride);
+          }
+
+          Handler::Base* handler = header.get_handler();
+          handler->prepare();
+          if (handler->nsegments() == 1 &&
+              header.datatype() == DataType::from<value_type>()
+              && strides_match) {
+            info ("data in \"" + header.name() + "\" already in native format - mapping as-is");
+            ptr->data = reinterpret_cast<value_type*> (handler->segment (0));
+          }
+
+          DataSet::Stride::actualise (ptr->stride, H);
+          ptr->start = DataSet::Stride::offset (ptr->stride, H);
+          reset();
+
+          if (!ptr->data) {
+            ptr->data = DataSet::__allocate<value_type> (DataSet::voxel_count (*this));
+            ptr->block = ptr->data;
+            info ("data in \"" + header.name() + "\" not in native format - loading into memory...");
+            Image::Voxel<value_type> vox (header);
+            DataSet::copy_with_progress_message ("loading data for image \"" + header.name() + "\"...", *this, vox);
+          }
+        }
 
 
         //! Copy constructor
@@ -176,30 +178,51 @@ namespace MR {
          * Buffer, but will not try to delete the data when the destructor is
          * called. */
         Buffer (const Buffer& buf) :
-          H (buf.H), 
+          H (buf.H),
           ptr (buf.ptr),
           offset (buf.offset),
           x (buf.x) { }
 
-        const Header& header () const { return (H); }
-        const Math::Matrix<float>& transform () const { return (H.transform()); }
+        const Header& header () const {
+          return (H);
+        }
+        const Math::Matrix<float>& transform () const {
+          return (H.transform());
+        }
 
 
-        ssize_t stride (size_t axis) const { return (ptr->stride[axis]); }
-        size_t  ndim () const { return (ptr->stride.size()); }
-        ssize_t dim (size_t axis) const { return (H.dim(axis)); }
-        float   vox (size_t axis) const { return (H.vox(axis)); }
-        const std::string& name () const { return (H.name()); }
+        ssize_t stride (size_t axis) const {
+          return (ptr->stride[axis]);
+        }
+        size_t  ndim () const {
+          return (ptr->stride.size());
+        }
+        ssize_t dim (size_t axis) const {
+          return (H.dim (axis));
+        }
+        float   vox (size_t axis) const {
+          return (H.vox (axis));
+        }
+        const std::string& name () const {
+          return (H.name());
+        }
 
-        //! reset all coordinates to zero. 
-        void    reset () { std::fill (x.begin(), x.end(), 0); offset = ptr->start; }
-       
-        DataSet::Position<Buffer<T> > operator[] (size_t axis) { return (DataSet::Position<Buffer<T> > (*this, axis)); }
-        DataSet::Value<Buffer<T> > value () { return (DataSet::Value<Buffer<T> > (*this)); }
+        //! reset all coordinates to zero.
+        void    reset () {
+          std::fill (x.begin(), x.end(), 0);
+          offset = ptr->start;
+        }
+
+        DataSet::Position<Buffer<T> > operator[] (size_t axis) {
+          return (DataSet::Position<Buffer<T> > (*this, axis));
+        }
+        DataSet::Value<Buffer<T> > value () {
+          return (DataSet::Value<Buffer<T> > (*this));
+        }
 
         friend std::ostream& operator<< (std::ostream& stream, const Buffer& V) {
           stream << "position for image \"" << V.name() << "\" = [ ";
-          for (size_t n = 0; n < V.ndim(); ++n) stream << const_cast<Buffer&>(V)[n] << " ";
+          for (size_t n = 0; n < V.ndim(); ++n) stream << const_cast<Buffer&> (V) [n] << " ";
           stream << "]\n  current offset = " << V.offset;
           return (stream);
         }
@@ -212,15 +235,28 @@ namespace MR {
 
         Ptr<Shared> stride_instance;
 
-        template <class A> size_t get_offset (const A& pos, size_t n = 0) const 
-        { return (n < ndim() ? stride(n) * pos[n] + get_offset (pos, n+1) : ptr->start); }
+        template <class A> size_t get_offset (const A& pos, size_t n = 0) const {
+          return (n < ndim() ? stride (n) * pos[n] + get_offset (pos, n+1) : ptr->start);
+        }
 
-        ssize_t get_pos (size_t axis) const { return (x[axis]); }
-        void    set_pos (size_t axis, ssize_t position) { offset += stride(axis) * (position - x[axis]); x[axis] = position; }
-        void    move_pos (size_t axis, ssize_t increment) { offset += stride(axis) * increment; x[axis] += increment; }
+        ssize_t get_pos (size_t axis) const {
+          return (x[axis]);
+        }
+        void    set_pos (size_t axis, ssize_t position) {
+          offset += stride (axis) * (position - x[axis]);
+          x[axis] = position;
+        }
+        void    move_pos (size_t axis, ssize_t increment) {
+          offset += stride (axis) * increment;
+          x[axis] += increment;
+        }
 
-        value_type   get_value () const { return (DataSet::__get<value_type>(ptr->data, offset)); }
-        void         set_value (value_type val) { DataSet::__set<value_type>(ptr->data, offset, val); }
+        value_type   get_value () const {
+          return (DataSet::__get<value_type> (ptr->data, offset));
+        }
+        void         set_value (value_type val) {
+          DataSet::__set<value_type> (ptr->data, offset, val);
+        }
 
         friend class DataSet::Position<Buffer<T> >;
         friend class DataSet::Value<Buffer<T> >;

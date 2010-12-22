@@ -25,11 +25,13 @@
 
 #include <string>
 
-namespace MR {
-  namespace File {
+namespace MR
+{
+  namespace File
+  {
 
-      extern bool (*confirm) (const std::string& message);
-      bool confirm_func_cmdline (const std::string& message);
+    extern bool (*confirm) (const std::string& message);
+    bool confirm_func_cmdline (const std::string& message);
 
   }
 }

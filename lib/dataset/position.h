@@ -23,25 +23,57 @@
 #ifndef __dataset_position_h__
 #define __dataset_position_h__
 
-namespace MR {
-  namespace DataSet {
+namespace MR
+{
+  namespace DataSet
+  {
 
     //! \addtogroup DataSet
     // @{
 
-    template <class Set> class Position 
+    template <class Set> class Position
     {
       public:
-        Position (Set& parent, size_t corresponding_axis) : S (parent), axis (corresponding_axis) { assert (axis < S.ndim()); }
-        operator ssize_t () const          { return (S.get_pos (axis)); }
-        ssize_t operator++ ()              { ssize_t p = S.get_pos(axis); S.move_pos (axis,1); return (p); }
-        ssize_t operator-- ()              { ssize_t p = S.get_pos(axis); S.move_pos (axis,-1); return (p); }
-        ssize_t operator++ (int notused)   { S.move_pos (axis,1); return (S.get_pos (axis)); }
-        ssize_t operator-- (int notused)   { S.move_pos (axis,-1); return (S.get_pos (axis)); }
-        ssize_t operator+= (ssize_t increment) { S.move_pos (axis, increment); return (S.get_pos(axis)); }
-        ssize_t operator-= (ssize_t increment) { S.move_pos (axis, -increment); return (S.get_pos(axis)); }
-        ssize_t operator= (ssize_t position)   { S.set_pos (axis, position); return (position); }
-        ssize_t operator= (const Position& position) { S.set_pos (axis, ssize_t(position)); return (ssize_t(position)); }
+        Position (Set& parent, size_t corresponding_axis) : S (parent), axis (corresponding_axis) {
+          assert (axis < S.ndim());
+        }
+        operator ssize_t () const          {
+          return (S.get_pos (axis));
+        }
+        ssize_t operator++ ()              {
+          ssize_t p = S.get_pos (axis);
+          S.move_pos (axis,1);
+          return (p);
+        }
+        ssize_t operator-- ()              {
+          ssize_t p = S.get_pos (axis);
+          S.move_pos (axis,-1);
+          return (p);
+        }
+        ssize_t operator++ (int notused)   {
+          S.move_pos (axis,1);
+          return (S.get_pos (axis));
+        }
+        ssize_t operator-- (int notused)   {
+          S.move_pos (axis,-1);
+          return (S.get_pos (axis));
+        }
+        ssize_t operator+= (ssize_t increment) {
+          S.move_pos (axis, increment);
+          return (S.get_pos (axis));
+        }
+        ssize_t operator-= (ssize_t increment) {
+          S.move_pos (axis, -increment);
+          return (S.get_pos (axis));
+        }
+        ssize_t operator= (ssize_t position)   {
+          S.set_pos (axis, position);
+          return (position);
+        }
+        ssize_t operator= (const Position& position) {
+          S.set_pos (axis, ssize_t (position));
+          return (ssize_t (position));
+        }
       private:
         Set& S;
         size_t axis;

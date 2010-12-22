@@ -26,7 +26,7 @@
 #include "math/rng.h"
 #include "math/matrix.h"
 
-using namespace MR; 
+using namespace MR;
 
 SET_VERSION_DEFAULT;
 SET_AUTHOR (NULL);
@@ -37,7 +37,7 @@ DESCRIPTION = {
   NULL
 };
 
-ARGUMENTS = { Argument() }; 
+ARGUMENTS = { Argument() };
 
 OPTIONS = { Option() };
 
@@ -66,7 +66,7 @@ EXECUTE {
   }
   VAR (V);
 
-  V.sub (2,5) += V.sub(6,9);
+  V.sub (2,5) += V.sub (6,9);
   VAR (V);
 }
 

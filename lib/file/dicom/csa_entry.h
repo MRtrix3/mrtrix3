@@ -31,29 +31,33 @@
 #include "get_set.h"
 #include "file/dicom/element.h"
 
-namespace MR {
-  namespace File {
-    namespace Dicom {
+namespace MR
+{
+  namespace File
+  {
+    namespace Dicom
+    {
 
-        class CSAEntry {
-          protected:
-            const uint8_t* start;
-            const uint8_t* next;
-            const uint8_t* end;
-            bool          print;
-            char         name[65], vr[5];
-            int32_t        nitems, num, cnum;
+      class CSAEntry
+      {
+        protected:
+          const uint8_t* start;
+          const uint8_t* next;
+          const uint8_t* end;
+          bool          print;
+          char         name[65], vr[5];
+          int32_t        nitems, num, cnum;
 
-          public:
-            CSAEntry (const uint8_t* start_p, const uint8_t* end_p, bool output_fields = false);
-            bool         parse ();
-            const char* key () const;
-            int         get_int () const;
-            float       get_float () const;  
-            void         get_float (float* v) const;
+        public:
+          CSAEntry (const uint8_t* start_p, const uint8_t* end_p, bool output_fields = false);
+          bool         parse ();
+          const char* key () const;
+          int         get_int () const;
+          float       get_float () const;
+          void         get_float (float* v) const;
 
-            friend std::ostream& operator<< (std::ostream& stream, const CSAEntry& item);
-        };
+          friend std::ostream& operator<< (std::ostream& stream, const CSAEntry& item);
+      };
 
 
 
@@ -69,7 +73,7 @@ namespace MR {
         end (end_p),
         print (output_fields)
       {
-        if (strncmp ("SV10", (const char*) start, 4)) 
+        if (strncmp ("SV10", (const char*) start, 4))
           throw Exception ("CSA data is not in SV10 format");
 
         cnum = 0;
@@ -97,12 +101,12 @@ namespace MR {
 
         for (int32_t m = 0; m < nitems; m++) {
           int32_t length = getLE<int32_t> (next);
-          size_t size = 16 + 4*((length+3)/4);
+          size_t size = 16 + 4* ( (length+3) /4);
           if (next + size > end) return (false);
-          if (print) fprintf(stdout, "%.*s ", length, (const char*) next+16);
+          if (print) fprintf (stdout, "%.*s ", length, (const char*) next+16);
           next += size;
         }
-        if (print) fprintf(stdout, "\n");
+        if (print) fprintf (stdout, "\n");
 
         cnum++;
         return (true);
@@ -111,19 +115,22 @@ namespace MR {
 
 
 
-      
-      inline const char* CSAEntry::key () const        { return (name); }
-      
-      
-      
-      
+
+      inline const char* CSAEntry::key () const
+      {
+        return (name);
+      }
+
+
+
+
       inline int CSAEntry::get_int () const
-      { 
+      {
         const uint8_t* p = start + 84;
         for (int32_t m = 0; m < nitems; m++) {
           int32_t length = getLE<int32_t> (p);
-          if (length) return (to<int> (std::string ((const char*) p+16, 4*((length+3)/4))));
-          p += 16 + 4*((length+3)/4);
+          if (length) return (to<int> (std::string ( (const char*) p+16, 4* ( (length+3) /4))));
+          p += 16 + 4* ( (length+3) /4);
         }
         return (0);
       }
@@ -131,13 +138,13 @@ namespace MR {
 
 
 
-      inline float CSAEntry::get_float () const  
-      { 
+      inline float CSAEntry::get_float () const
+      {
         const uint8_t* p = start + 84;
         for (int32_t m = 0; m < nitems; m++) {
           int32_t length = getLE<int32_t> (p);
-          if (length) return (to<float> (std::string ((const char*) p+16, 4*((length+3)/4))));
-          p += 16 + 4*((length+3)/4);
+          if (length) return (to<float> (std::string ( (const char*) p+16, 4* ( (length+3) /4))));
+          p += 16 + 4* ( (length+3) /4);
         }
         return (NAN);
       }
@@ -147,12 +154,12 @@ namespace MR {
 
 
       inline void CSAEntry::get_float (float* v) const
-      { 
+      {
         const uint8_t* p = start + 84;
         for (int32_t m = 0; m < nitems; m++) {
           int32_t length = getLE<int32_t> (p);
-          if (length) v[m] = to<float> (std::string ((const char*) p+16, 4*((length+3)/4)));
-          p += 16 + 4*((length+3)/4);
+          if (length) v[m] = to<float> (std::string ( (const char*) p+16, 4* ( (length+3) /4)));
+          p += 16 + 4* ( (length+3) /4);
         }
       }
 
@@ -167,13 +174,13 @@ namespace MR {
 
         for (int32_t m = 0; m < item.nitems; m++) {
           int32_t length = getLE<int32_t> (next);
-          size_t size = 16 + 4*((length+3)/4);
+          size_t size = 16 + 4* ( (length+3) /4);
           while (length > 0 && !next[16+length-1]) length--;
           stream << " ";
-          stream.write ((const char*) next+16, length);
+          stream.write ( (const char*) next+16, length);
           next += size;
         }
-         
+
         return (stream);
       }
 

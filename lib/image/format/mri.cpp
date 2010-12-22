@@ -51,23 +51,43 @@
 #define MRI_TRANSFORM  0x06
 #define MRI_DWSCHEME   0x07
 
-namespace MR {
-  namespace Image {
-    namespace Format {
+namespace MR
+{
+  namespace Image
+  {
+    namespace Format
+    {
 
-      namespace {
+      namespace
+      {
 
         inline size_t char2order (char item, bool& forward)
         {
           switch (item) {
-            case 'L': forward = true;  return (0);
-            case 'R': forward = false; return (0);
-            case 'P': forward = true;  return (1);
-            case 'A': forward = false; return (1);
-            case 'I': forward = true;  return (2);
-            case 'S': forward = false; return (2);
-            case 'B': forward = true;  return (3);
-            case 'E': forward = false; return (3);
+            case 'L':
+              forward = true;
+              return (0);
+            case 'R':
+              forward = false;
+              return (0);
+            case 'P':
+              forward = true;
+              return (1);
+            case 'A':
+              forward = false;
+              return (1);
+            case 'I':
+              forward = true;
+              return (2);
+            case 'S':
+              forward = false;
+              return (2);
+            case 'B':
+              forward = true;
+              return (3);
+            case 'E':
+              forward = false;
+              return (3);
           }
           return (std::numeric_limits<size_t>::max());
         }
@@ -76,21 +96,41 @@ namespace MR {
         inline char order2char (size_t axis, bool forward)
         {
           switch (axis) {
-            case 0: if (forward) return ('L'); else return ('R');
-            case 1: if (forward) return ('P'); else return ('A');
-            case 2: if (forward) return ('I'); else return ('S');
-            case 3: if (forward) return ('B'); else return ('E');
+            case 0:
+              if (forward) return ('L');
+              else return ('R');
+            case 1:
+              if (forward) return ('P');
+              else return ('A');
+            case 2:
+              if (forward) return ('I');
+              else return ('S');
+            case 3:
+              if (forward) return ('B');
+              else return ('E');
           }
           return ('\0');
         }
 
 
-        inline size_t type (const uint8_t* pos, bool is_BE) { return (get<uint32_t> (pos, is_BE)); }
-        inline size_t size (const uint8_t* pos, bool is_BE) { return (get<uint32_t> (pos + sizeof (uint32_t), is_BE)); }
-        inline uint8_t* data (uint8_t* pos)                 { return (pos + 2*sizeof (uint32_t)); }
-        inline const uint8_t* data (const uint8_t* pos)     { return (pos + 2*sizeof (uint32_t)); }
+        inline size_t type (const uint8_t* pos, bool is_BE)
+        {
+          return (get<uint32_t> (pos, is_BE));
+        }
+        inline size_t size (const uint8_t* pos, bool is_BE)
+        {
+          return (get<uint32_t> (pos + sizeof (uint32_t), is_BE));
+        }
+        inline uint8_t* data (uint8_t* pos)
+        {
+          return (pos + 2*sizeof (uint32_t));
+        }
+        inline const uint8_t* data (const uint8_t* pos)
+        {
+          return (pos + 2*sizeof (uint32_t));
+        }
 
-        inline const uint8_t* next (const uint8_t* current_pos, bool is_BE) 
+        inline const uint8_t* next (const uint8_t* current_pos, bool is_BE)
         {
           return (current_pos + 2*sizeof (uint32_t) + size (current_pos, is_BE));
         }
@@ -98,15 +138,15 @@ namespace MR {
         inline void write_tag (std::ostream& out, uint32_t Type, uint32_t Size, bool is_BE)
         {
           Type = ByteOrder::swap<uint32_t> (Type, is_BE);
-          out.write ((const char*) &Type, sizeof(uint32_t));
+          out.write ( (const char*) &Type, sizeof (uint32_t));
           Size = ByteOrder::swap<uint32_t> (Size, is_BE);
-          out.write ((const char*) &Size, sizeof(uint32_t));
+          out.write ( (const char*) &Size, sizeof (uint32_t));
         }
 
         template <typename T> inline void write (std::ostream& out, T val, bool is_BE)
         {
           val = ByteOrder::swap<T> (val, is_BE);
-          out.write ((const char*) &val, sizeof(T));
+          out.write ( (const char*) &val, sizeof (T));
         }
 
       }
@@ -125,12 +165,12 @@ namespace MR {
 
         File::MMap fmap (H.name());
 
-        if (memcmp ((uint8_t*) fmap.address(), "MRI#", 4)) 
+        if (memcmp ( (uint8_t*) fmap.address(), "MRI#", 4))
           throw Exception ("file \"" + H.name() + "\" is not in MRI format (unrecognised magic number)");
 
         bool is_BE = false;
-        if (get<uint16_t> ((uint8_t*) fmap.address() + sizeof (int32_t), is_BE) == 0x0100U) is_BE = true;
-        else if (get<uint16_t> ((uint8_t*) fmap.address() + sizeof (uint32_t), is_BE) != 0x0001U) 
+        if (get<uint16_t> ( (uint8_t*) fmap.address() + sizeof (int32_t), is_BE) == 0x0100U) is_BE = true;
+        else if (get<uint16_t> ( (uint8_t*) fmap.address() + sizeof (uint32_t), is_BE) != 0x0001U)
           throw Exception ("MRI file \"" + H.name() + "\" is badly formed (invalid byte order specifier)");
 
         H.set_ndim (4);
@@ -143,7 +183,7 @@ namespace MR {
         while (current <= last) {
           switch (type (current, is_BE)) {
             case MRI_DATA:
-              H.set_datatype ((((const char*) data (current)) - 4)[0]);
+              H.set_datatype ( ( ( (const char*) data (current)) - 4) [0]);
               data_offset = current + 5 - (uint8_t*) fmap.address();
               break;
             case MRI_DIMENSIONS:
@@ -157,11 +197,11 @@ namespace MR {
               for (size_t n = 0; n < 4; n++) {
                 bool forward = true;
                 size_t ax = char2order (c[n], forward);
-                if (ax == std::numeric_limits<size_t>::max()) 
+                if (ax == std::numeric_limits<size_t>::max())
                   throw Exception ("invalid order specifier in MRI image \"" + H.name() + "\"");
                 H.set_stride (ax, n+1);
-                if (!forward) 
-                  H.set_stride (ax, -H.stride(ax));
+                if (!forward)
+                  H.set_stride (ax, -H.stride (ax));
               }
               break;
             case MRI_VOXELSIZE:
@@ -170,35 +210,35 @@ namespace MR {
               H.set_vox (2, get<float32> (data (current) + 2*sizeof (float32), is_BE));
               break;
             case MRI_COMMENT:
-              H.add_comment (std::string ((const char*) data (current), size (current, is_BE)));
+              H.add_comment (std::string ( (const char*) data (current), size (current, is_BE)));
               break;
             case MRI_TRANSFORM:
               H.get_transform().allocate (4,4);
               for (size_t i = 0; i < 4; ++i)
                 for (size_t j = 0; j < 4; ++j)
-                  H.get_transform()(i,j) = get<float32> (data (current) + ( i*4 + j )*sizeof (float32), is_BE);
+                  H.get_transform() (i,j) = get<float32> (data (current) + (i*4 + j) *sizeof (float32), is_BE);
               break;
             case MRI_DWSCHEME:
-              H.get_DW_scheme().allocate (size (current, is_BE)/(4*sizeof (float32)), 4);
+              H.get_DW_scheme().allocate (size (current, is_BE) / (4*sizeof (float32)), 4);
               for (size_t i = 0; i < H.DW_scheme().rows(); ++i)
                 for (size_t j = 0; j < 4; ++j)
-                  H.get_DW_scheme()(i,j) = get<float32> (data (current) + ( i*4 + j )*sizeof (float32), is_BE);
+                  H.get_DW_scheme() (i,j) = get<float32> (data (current) + (i*4 + j) *sizeof (float32), is_BE);
               break;
             default:
-              error ("unknown header entity (" + str (type (current, is_BE)) 
-                  + ", offset " + str (current - (uint8_t*) fmap.address()) 
-                  + ") in image \"" + H.name() + "\" - ignored");
+              error ("unknown header entity (" + str (type (current, is_BE))
+                     + ", offset " + str (current - (uint8_t*) fmap.address())
+                     + ") in image \"" + H.name() + "\" - ignored");
               break;
           }
 
-          if (data_offset) 
+          if (data_offset)
             break;
 
           current = next (current, is_BE);
         }
 
 
-        if (!data_offset) 
+        if (!data_offset)
           throw Exception ("no data field found in MRI image \"" + H.name() + "\"");
 
         H.add_file (File::Entry (H.name(), data_offset));
@@ -212,7 +252,7 @@ namespace MR {
 
       bool MRI::check (Header& H, size_t num_axes) const
       {
-        if (!Path::has_suffix (H.name(), ".mri")) 
+        if (!Path::has_suffix (H.name(), ".mri"))
           return (false);
 
         if (H.ndim() > num_axes && num_axes != 4)
@@ -233,7 +273,7 @@ namespace MR {
       {
         File::create (H.name());
         std::ofstream out (H.name().c_str());
-        if (!out) 
+        if (!out)
           throw Exception ("error creating file \"" + H.name() + "\": " + strerror (errno));
 
 #ifdef BYTE_ORDER_BIG_ENDIAN
@@ -248,30 +288,30 @@ namespace MR {
         //put<uint16_t> (0x01U, (uint8_t*) fmap.address() + sizeof (uint32_t), is_BE);
 
         write_tag (out, MRI_DIMENSIONS, 4*sizeof (uint32_t), is_BE);
-        write<uint32_t> (out, H.dim(0), is_BE);
-        write<uint32_t> (out, ( H.ndim() > 1 ? H.dim(1) : 1 ), is_BE);
-        write<uint32_t> (out, ( H.ndim() > 2 ? H.dim(2) : 1 ), is_BE);
-        write<uint32_t> (out, ( H.ndim() > 3 ? H.dim(3) : 1 ), is_BE);
+        write<uint32_t> (out, H.dim (0), is_BE);
+        write<uint32_t> (out, (H.ndim() > 1 ? H.dim (1) : 1), is_BE);
+        write<uint32_t> (out, (H.ndim() > 2 ? H.dim (2) : 1), is_BE);
+        write<uint32_t> (out, (H.ndim() > 3 ? H.dim (3) : 1), is_BE);
 
         write_tag (out, MRI_ORDER, 4*sizeof (uint8_t), is_BE);
         size_t n;
         char order[4];
-        for (n = 0; n < H.ndim(); ++n) 
-          order[abs(H.stride(n))-1] = order2char (n, H.stride(n)>0);
+        for (n = 0; n < H.ndim(); ++n)
+          order[abs (H.stride (n))-1] = order2char (n, H.stride (n) >0);
         for (; n < 4; ++n)
           order[n] = order2char (n, true);
         out.write (order, 4);
 
         write_tag (out, MRI_VOXELSIZE, 3*sizeof (float32), is_BE);
-        write<float> (out, H.vox(0), is_BE);
-        write<float> (out, ( H.ndim() > 1 ? H.vox(1) : 2.0f ), is_BE);
-        write<float> (out, ( H.ndim() > 2 ? H.vox(2) : 2.0f ), is_BE);
+        write<float> (out, H.vox (0), is_BE);
+        write<float> (out, (H.ndim() > 1 ? H.vox (1) : 2.0f), is_BE);
+        write<float> (out, (H.ndim() > 2 ? H.vox (2) : 2.0f), is_BE);
 
         for (size_t n = 0; n < H.comments().size(); n++) {
-          size_t l = H.comments()[n].size();
+          size_t l = H.comments() [n].size();
           if (l) {
             write_tag (out, MRI_COMMENT, l, is_BE);
-            out.write (H.comments()[n].c_str(), l);
+            out.write (H.comments() [n].c_str(), l);
           }
         }
 
@@ -279,18 +319,18 @@ namespace MR {
           write_tag (out, MRI_TRANSFORM, 16*sizeof (float32), is_BE);
           for (size_t i = 0; i < 4; ++i)
             for (size_t j = 0; j < 4; ++j)
-              write<float> (out, H.transform()(i,j), is_BE);
+              write<float> (out, H.transform() (i,j), is_BE);
         }
 
         if (H.DW_scheme().is_set()) {
-          write_tag (out, MRI_DWSCHEME, 4*H.DW_scheme().rows()*sizeof (float32), is_BE);
+          write_tag (out, MRI_DWSCHEME, 4*H.DW_scheme().rows() *sizeof (float32), is_BE);
           for (size_t i = 0; i < H.DW_scheme().rows(); ++i)
             for (size_t j = 0; j < 4; ++j)
-              write<float> (out, H.DW_scheme()(i,j), is_BE);
+              write<float> (out, H.DW_scheme() (i,j), is_BE);
         }
 
         write_tag (out, MRI_DATA, 0, is_BE);
-        out.write ((const char*) H.datatype()(), 1);
+        out.write ( (const char*) H.datatype() (), 1);
 
         size_t data_offset = out.tellp();
         out.close();

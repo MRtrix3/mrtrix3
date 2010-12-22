@@ -34,23 +34,27 @@
       virtual void create (Header& H) const; \
   }
 
-namespace MR {
-  namespace Image {
+namespace MR
+{
+  namespace Image
+  {
 
-    //! \addtogroup Image 
+    //! \addtogroup Image
     // @{
 
     /*! \todo add Image::Format::Folder class to handle both DICOM, GE I-dot
      * and potentially Siemens Numaris 3 images. */
 
-    namespace Format {
+    namespace Format
+    {
 
       /*! the interface for classes that support the various image formats.
-       * 
+       *
        * All image formats supported by %MRtrix are handled by a class derived
        * from the Image::Format::Base. An instance of each of these classes is
        * added to the list in the file list.cpp. */
-      class Base {
+      class Base
+      {
         public:
           Base (const char* desc) : description (desc) { }
           virtual ~Base() { }
@@ -63,8 +67,8 @@ namespace MR {
            * This function will check whether this handler can read images in
            * the format suggested by the filename. It will then attempt to read
            * the corresponding image, and update the Image::Header \c H with
-           * the relevant information. 
-           * 
+           * the relevant information.
+           *
            * \return true if this Format handler can read this type of file,
            * false otherwise.  If true, this function should fill the Header \c
            * H with all the relevant information as read from the images before
@@ -73,7 +77,7 @@ namespace MR {
           virtual bool read (Header& H) const = 0;
 
           /*! \brief check whether the Image::Header \c H can be created using
-           * this handler. 
+           * this handler.
            *
            * This function will check whether this handler can write images in
            * the format suggested by the filename. It will then check whether
@@ -81,7 +85,7 @@ namespace MR {
            * modify the header appropriately if needed.
            *
            * \return true if this Format handler can write this type of file,
-           * false otherwise. 
+           * false otherwise.
            * \note this function should throw an Exception in case of error, or
            * if this image format cannot support the header information. */
           virtual bool check (Header& H, size_t num_axes) const = 0;
@@ -90,7 +94,7 @@ namespace MR {
            *
            * This function will create images in the corresponding format,
            * assuming the header has been validated using the check() function
-           * beforehand. 
+           * beforehand.
            *
            * \note this function should throw an Exception in case of error. */
           virtual void create (Header& H) const = 0;
@@ -109,7 +113,7 @@ namespace MR {
       extern const char* known_extensions[];
 
       /*! a list of all handlers for supported image formats. */
-      extern const Base* handlers[]; 
+      extern const Base* handlers[];
 
 
 

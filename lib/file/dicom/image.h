@@ -28,14 +28,18 @@
 #include "math/vector.h"
 #include "file/dicom/element.h"
 
-namespace MR {
-  namespace File {
-    namespace Dicom {
+namespace MR
+{
+  namespace File
+  {
+    namespace Dicom
+    {
 
       class Series;
       class Element;
 
-      class Image {
+      class Image
+      {
 
         public:
           Image (Series* parent = NULL);
@@ -81,14 +85,14 @@ namespace MR {
 
       inline Image::Image (Series* parent) :
         series (parent)
-      { 
+      {
         acq_dim[0] = acq_dim[1] = dim[0] = dim[1] = instance = acq = sequence = std::numeric_limits<size_t>::max();
         position_vector[0] = position_vector[1] = position_vector[2] = NAN;
         orientation_x[0] = orientation_x[1] = orientation_x[2] = NAN;
         orientation_y[0] = orientation_y[1] = orientation_y[2] = NAN;
         orientation_z[0] = orientation_z[1] = orientation_z[2] = NAN;
         distance = NAN;
-        pixel_size[0] = pixel_size[0] = slice_thickness = slice_spacing = NAN; 
+        pixel_size[0] = pixel_size[0] = slice_thickness = slice_spacing = NAN;
         scale_intercept = 0.0;
         scale_slope = 1.0;
         bvalue = G[0] = G[1] = G[2] = NAN;
@@ -107,7 +111,7 @@ namespace MR {
         if (images_in_mosaic) {
           float xinc = pixel_size[0] * float (dim[0] - acq_dim[0]) / 2.0;
           float yinc = pixel_size[1] * float (dim[1] - acq_dim[1]) / 2.0;
-          for (size_t i = 0; i < 3; i++) 
+          for (size_t i = 0; i < 3; i++)
             position_vector[i] += xinc * orientation_x[i] + yinc * orientation_y[i];
 
           float normal[3];

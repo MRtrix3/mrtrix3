@@ -17,7 +17,7 @@
 
     You should have received a copy of the GNU General Public License
     along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
- 
+
 */
 
 #include <fcntl.h>
@@ -26,7 +26,7 @@
 
 #ifdef WINDOWS
 #include <windows.h>
-#else 
+#else
 #include <sys/mman.h>
 #endif
 
@@ -34,47 +34,49 @@
 #include "file/mmap.h"
 #include "file/config.h"
 
-namespace MR {
-  namespace File {
+namespace MR
+{
+  namespace File
+  {
 
     void MMap::map()
     {
       debug ("memory-mapping file \"" + Entry::name + "\"...");
 
       struct stat64 sbuf;
-      if (stat64 (Entry::name.c_str(), &sbuf)) 
-        throw Exception ("cannot stat file \"" + Entry::name + "\": " + strerror(errno));
+      if (stat64 (Entry::name.c_str(), &sbuf))
+        throw Exception ("cannot stat file \"" + Entry::name + "\": " + strerror (errno));
 
       mtime = sbuf.st_mtime;
 
       if (start + msize > sbuf.st_size) throw Exception ("file \"" + Entry::name + "\" is smaller than expected");
       if (msize < 0) msize = sbuf.st_size - start;
 
-      if ((fd = open64 (Entry::name.c_str(), (readwrite ? O_RDWR : O_RDONLY), 0644)) < 0) 
-        throw Exception ("error opening file \"" + Entry::name + "\": " + strerror(errno));
+      if ( (fd = open64 (Entry::name.c_str(), (readwrite ? O_RDWR : O_RDONLY), 0644)) < 0)
+        throw Exception ("error opening file \"" + Entry::name + "\": " + strerror (errno));
 
       try {
 #ifdef WINDOWS
-        HANDLE handle = CreateFileMapping ((HANDLE) _get_osfhandle(fd), NULL, 
-            (readwrite ? PAGE_READWRITE : PAGE_READONLY), 0, start + msize, NULL);
+        HANDLE handle = CreateFileMapping ( (HANDLE) _get_osfhandle (fd), NULL,
+                                            (readwrite ? PAGE_READWRITE : PAGE_READONLY), 0, start + msize, NULL);
         if (!handle) throw 0;
         addr = static_cast<uint8_t*> (MapViewOfFile (handle, (readwrite ? FILE_MAP_ALL_ACCESS : FILE_MAP_READ), 0, 0, start + msize));
         if (!addr) throw 0;
         CloseHandle (handle);
-#else 
-        addr = static_cast<uint8_t*> (mmap64((char*)0, start + msize, 
-              (readwrite ? PROT_READ | PROT_WRITE : PROT_READ), MAP_SHARED, fd, 0));
+#else
+        addr = static_cast<uint8_t*> (mmap64 ( (char*) 0, start + msize,
+                                               (readwrite ? PROT_READ | PROT_WRITE : PROT_READ), MAP_SHARED, fd, 0));
         if (addr == MAP_FAILED) throw 0;
 #endif
       }
       catch (...) {
         close (fd);
         addr = NULL;
-        throw Exception ("memmory-mapping failed for file \"" + Entry::name + "\": " + strerror(errno));
+        throw Exception ("memmory-mapping failed for file \"" + Entry::name + "\": " + strerror (errno));
       }
 
-      debug ("file \"" + Entry::name + "\" mapped at " + str ((void*) addr) + ", size " + str (msize) 
-          + " (read-" + ( readwrite ? "write" : "only" ) + ")"); 
+      debug ("file \"" + Entry::name + "\" mapped at " + str ( (void*) addr) + ", size " + str (msize)
+             + " (read-" + (readwrite ? "write" : "only") + ")");
     }
 
 
@@ -86,11 +88,11 @@ namespace MR {
       if (!addr) return;
       debug ("unmapping file \"" + Entry::name + "\"");
 #ifdef WINDOWS
-      if (!UnmapViewOfFile ((LPVOID) addr))
-#else 
-        if (munmap (addr, msize))
+      if (!UnmapViewOfFile ( (LPVOID) addr))
+#else
+      if (munmap (addr, msize))
 #endif
-          error ("error unmapping file \"" + Entry::name + "\": " + strerror(errno));
+        error ("error unmapping file \"" + Entry::name + "\": " + strerror (errno));
       close (fd);
     }
 
@@ -100,7 +102,7 @@ namespace MR {
 
 
     bool MMap::changed () const
-    { 
+    {
       assert (fd >= 0);
       struct stat64 sbuf;
       if (fstat64 (fd, &sbuf)) return (false);

@@ -26,22 +26,30 @@
 #include <sys/time.h>
 #include <time.h>
 
-namespace MR {
+namespace MR
+{
 
-  class Timer {
+  class Timer
+  {
     public:
-      Timer () { start(); }
+      Timer () {
+        start();
+      }
 
-      void start () { from = current_time(); }
-      double elapsed () { return (current_time()-from); }
+      void start () {
+        from = current_time();
+      }
+      double elapsed () {
+        return (current_time()-from);
+      }
 
     protected:
       double from;
 
-      double current_time () { 
+      double current_time () {
         struct timeval tv;
         gettimeofday (&tv, NULL);
-        return (tv.tv_sec + 1.0e-6*float(tv.tv_usec)); 
+        return (tv.tv_sec + 1.0e-6*float (tv.tv_usec));
       }
   };
 

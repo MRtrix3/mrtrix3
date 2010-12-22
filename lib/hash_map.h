@@ -35,7 +35,7 @@
 #  include <tr1/unordered_map>
 #  undef HASH_MAP_TYPE
 #  define HASH_MAP_TYPE std::tr1::unordered_map
-#else 
+#else
 #  ifdef __GNUC__
 #    if __GNUC__ < 3
 #      include <hash_map.h>
@@ -49,10 +49,11 @@
 #  endif
 #endif
 
-namespace MR {
+namespace MR
+{
   template <class K, class V> struct UnorderedMap {
     typedef
-      HASH_MAP_TYPE <K,V> Type;
+    HASH_MAP_TYPE <K,V> Type;
   };
 }
 

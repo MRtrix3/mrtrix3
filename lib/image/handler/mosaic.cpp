@@ -28,13 +28,16 @@
 #include "image/handler/mosaic.h"
 #include "dataset/misc.h"
 
-namespace MR {
-  namespace Image {
-    namespace Handler {
+namespace MR
+{
+  namespace Image
+  {
+    namespace Handler
+    {
 
-      Mosaic::~Mosaic () 
+      Mosaic::~Mosaic ()
       {
-        if (addresses.size()) 
+        if (addresses.size())
           delete [] addresses[0];
       }
 
@@ -47,7 +50,7 @@ namespace MR {
         if (files.empty()) throw Exception ("no files specified in header for image \"" + H.name() + "\"");
         assert (H.datatype().bits() > 1);
 
-        segsize = H.dim(0) * H.dim(1) * H.dim(2);
+        segsize = H.dim (0) * H.dim (1) * H.dim (2);
         assert (segsize * files.size() == DataSet::voxel_count (H));
 
         size_t bytes_per_segment = H.datatype().bytes() * segsize;
@@ -59,7 +62,7 @@ namespace MR {
         addresses[0] = new uint8_t [files.size() * bytes_per_segment];
         if (!addresses[0]) throw Exception ("failed to allocate memory for image \"" + H.name() + "\"");
 
-        ProgressBar progress ("reformatting DICOM mosaic images...", slices*files.size()); 
+        ProgressBar progress ("reformatting DICOM mosaic images...", slices*files.size());
         uint8_t* data = addresses[0];
         for (size_t n = 0; n < files.size(); n++) {
           File::MMap file (files[n], false, m_xdim * m_ydim * H.datatype().bytes());
@@ -68,11 +71,14 @@ namespace MR {
             size_t ox = nx*xdim;
             size_t oy = ny*ydim;
             for (size_t y = 0; y < ydim; y++) {
-              memcpy (data, file.address() + H.datatype().bytes()*(ox + m_xdim*(y+oy)), xdim * H.datatype().bytes());
+              memcpy (data, file.address() + H.datatype().bytes() * (ox + m_xdim* (y+oy)), xdim * H.datatype().bytes());
               data += xdim * H.datatype().bytes();
             }
             nx++;
-            if (nx >= m_xdim / xdim) { nx = 0; ny++; }
+            if (nx >= m_xdim / xdim) {
+              nx = 0;
+              ny++;
+            }
             ++progress;
           }
         }

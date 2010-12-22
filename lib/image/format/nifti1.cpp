@@ -27,16 +27,19 @@
 #include "image/header.h"
 #include "image/format/list.h"
 
-namespace MR {
-  namespace Image {
-    namespace Format {
+namespace MR
+{
+  namespace Image
+  {
+    namespace Format
+    {
 
       bool NIfTI::read (Header& H) const
       {
         if (!Path::has_suffix (H.name(), ".nii")) return (false);
 
         File::MMap fmap (H.name());
-        size_t data_offset = File::NIfTI::read (H, *((const nifti_1_header*) fmap.address()));
+        size_t data_offset = File::NIfTI::read (H, * ( (const nifti_1_header*) fmap.address()));
 
         H.add_file (File::Entry (H.name(), data_offset));
 
@@ -65,7 +68,7 @@ namespace MR {
 
       void NIfTI::create (Header& H) const
       {
-        if (H.ndim() > 7) 
+        if (H.ndim() > 7)
           throw Exception ("NIfTI-1.1 format cannot support more than 7 dimensions for image \"" + H.name() + "\"");
 
         nifti_1_header NH;
@@ -75,7 +78,7 @@ namespace MR {
 
         std::ofstream out (H.name().c_str());
         if (!out) throw Exception ("error opening file \"" + H.name() + "\" for writing: " + strerror (errno));
-        out.write ((char*) &NH, 352);
+        out.write ( (char*) &NH, 352);
         out.close();
 
         File::resize (H.name(), 352 + H.footprint());

@@ -25,8 +25,10 @@
 #include "thread/mutex.h"
 #include "file/config.h"
 
-namespace MR {
-  namespace Thread {
+namespace MR
+{
+  namespace Thread
+  {
 
     pthread_attr_t* Exec::default_attributes = NULL;
     pthread_t Exec::main_thread;
@@ -34,34 +36,42 @@ namespace MR {
 
     void (*Exec::previous_print) (const std::string& msg);
     void (*Exec::previous_error) (const std::string& msg);
-    void (*Exec::previous_info)  (const std::string& msg);
+    void (*Exec::previous_info) (const std::string& msg);
     void (*Exec::previous_debug) (const std::string& msg);
 
-    void Exec::thread_print (const std::string& msg) { Mutex::Lock lock (mutex); std::cout << msg; }
+    void Exec::thread_print (const std::string& msg)
+    {
+      Mutex::Lock lock (mutex);
+      std::cout << msg;
+    }
 
-    void Exec::thread_error (const std::string& msg) {
+    void Exec::thread_error (const std::string& msg)
+    {
       if (App::log_level) {
         Mutex::Lock lock (mutex);
-        std::cerr << App::name() << ": " << msg << "\n"; 
+        std::cerr << App::name() << ": " << msg << "\n";
       }
     }
 
-    void Exec::thread_info  (const std::string& msg) { 
+    void Exec::thread_info (const std::string& msg)
+    {
       if (App::log_level > 1) {
         Mutex::Lock lock (mutex);
-        std::cerr << App::name() << " [INFO]: " <<  msg << "\n"; 
+        std::cerr << App::name() << " [INFO]: " <<  msg << "\n";
       }
     }
 
-    void Exec::thread_debug (const std::string& msg) { 
+    void Exec::thread_debug (const std::string& msg)
+    {
       if (App::log_level > 2) {
         Mutex::Lock lock (mutex);
-        std::cerr << App::name() << " [DEBUG]: " <<  msg << "\n"; 
+        std::cerr << App::name() << " [DEBUG]: " <<  msg << "\n";
       }
     }
 
 
-    void Exec::init () {
+    void Exec::init ()
+    {
       assert (!default_attributes);
       responsible = true;
       main_thread = pthread_self();
@@ -84,7 +94,8 @@ namespace MR {
 
 
 
-    void Exec::revert () {
+    void Exec::revert ()
+    {
       pthread_attr_destroy (default_attributes);
       delete default_attributes;
       default_attributes = NULL;
@@ -95,9 +106,10 @@ namespace MR {
       debug = previous_debug;
     }
 
-    size_t available_cores () { 
+    size_t available_cores ()
+    {
       static const size_t number_of_threads = File::Config::get_int ("NumberOfThreads", 1);
-      return (number_of_threads); 
+      return (number_of_threads);
     }
 
   }

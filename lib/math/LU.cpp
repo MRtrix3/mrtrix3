@@ -1,17 +1,17 @@
 /* linalg/lu.c
- * 
+ *
  * Copyright (C) 1996, 1997, 1998, 1999, 2000, 2007 Gerard Jungman, Brian Gough
- * 
+ *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 3 of the License, or (at
  * your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful, but
  * WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  * General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
@@ -19,7 +19,7 @@
 
 /* Author:  G. Jungman */
 
-/* modified 17/05/2009 J-Donald Tournier (d.tournier@brain.org.au) 
+/* modified 17/05/2009 J-Donald Tournier (d.tournier@brain.org.au)
    to provide single-precision equivalent functions */
 
 #include <stdlib.h>
@@ -47,75 +47,68 @@
  * matrix. The diagonal elements of L are unity and are not stored.
  *
  * U is stored in the diagonal and upper triangular part of the
- * input matrix.  
- * 
+ * input matrix.
+ *
  * P is stored in the permutation p. Column j of P is column k of the
  * identity matrix, where k = permutation->data[j]
  *
  * signum gives the sign of the permutation, (-1)^n, where n is the
- * number of interchanges in the permutation. 
+ * number of interchanges in the permutation.
  *
  * See Golub & Van Loan, Matrix Computations, Algorithm 3.4.1 (Gauss
  * Elimination with Partial Pivoting).
  */
-namespace MR {
-  namespace Math {
-    namespace LU {
+namespace MR
+{
+  namespace Math
+  {
+    namespace LU
+    {
 
-      int gsl_linalg_LU_decomp (gsl_matrix_float * A, gsl_permutation * p, int *signum)
+      int gsl_linalg_LU_decomp (gsl_matrix_float* A, gsl_permutation* p, int* signum)
       {
-        if (A->size1 != A->size2)
-        {
+        if (A->size1 != A->size2) {
           GSL_ERROR ("LU decomposition requires square matrix", GSL_ENOTSQR);
         }
-        else if (p->size != A->size1)
-        {
+        else if (p->size != A->size1) {
           GSL_ERROR ("permutation length must match matrix size", GSL_EBADLEN);
         }
-        else
-        {
+        else {
           const size_t N = A->size1;
           size_t i, j, k;
 
           *signum = 1;
           gsl_permutation_init (p);
 
-          for (j = 0; j < N - 1; j++)
-          {
+          for (j = 0; j < N - 1; j++) {
             /* Find maximum in the j-th column */
 
             REAL ajj, max = fabsf (gsl_matrix_float_get (A, j, j));
             size_t i_pivot = j;
 
-            for (i = j + 1; i < N; i++)
-            {
+            for (i = j + 1; i < N; i++) {
               REAL aij = fabsf (gsl_matrix_float_get (A, i, j));
 
-              if (aij > max)
-              {
+              if (aij > max) {
                 max = aij;
                 i_pivot = i;
               }
             }
 
-            if (i_pivot != j)
-            {
+            if (i_pivot != j) {
               gsl_matrix_float_swap_rows (A, j, i_pivot);
               gsl_permutation_swap (p, j, i_pivot);
-              *signum = -(*signum);
+              *signum = - (*signum);
             }
 
             ajj = gsl_matrix_float_get (A, j, j);
 
-            if (ajj != 0.0)
-            {
-              for (i = j + 1; i < N; i++)
-              {
+            if (ajj != 0.0) {
+              for (i = j + 1; i < N; i++) {
                 REAL aij = gsl_matrix_float_get (A, i, j) / ajj;
                 gsl_matrix_float_set (A, i, j, aij);
 
-                for (k = j + 1; k < N; k++)
-                {
+                for (k = j + 1; k < N; k++) {
                   REAL aik = gsl_matrix_float_get (A, i, k);
                   REAL ajk = gsl_matrix_float_get (A, j, k);
                   gsl_matrix_float_set (A, i, k, aik - aij * ajk);
@@ -128,26 +121,21 @@ namespace MR {
         }
       }
 
-      int gsl_linalg_LU_solve (const gsl_matrix_float * LU, const gsl_permutation * p, const gsl_vector_float * b, gsl_vector_float * x)
+      int gsl_linalg_LU_solve (const gsl_matrix_float* LU, const gsl_permutation* p, const gsl_vector_float* b, gsl_vector_float* x)
       {
-        if (LU->size1 != LU->size2)
-        {
+        if (LU->size1 != LU->size2) {
           GSL_ERROR ("LU matrix must be square", GSL_ENOTSQR);
         }
-        else if (LU->size1 != p->size)
-        {
+        else if (LU->size1 != p->size) {
           GSL_ERROR ("permutation length must match matrix size", GSL_EBADLEN);
         }
-        else if (LU->size1 != b->size)
-        {
+        else if (LU->size1 != b->size) {
           GSL_ERROR ("matrix size must match b size", GSL_EBADLEN);
         }
-        else if (LU->size2 != x->size)
-        {
+        else if (LU->size2 != x->size) {
           GSL_ERROR ("matrix size must match solution size", GSL_EBADLEN);
         }
-        else
-        {
+        else {
           /* Copy x <- b */
 
           gsl_vector_float_memcpy (x, b);
@@ -161,22 +149,18 @@ namespace MR {
       }
 
 
-      int gsl_linalg_LU_svx (const gsl_matrix_float * LU, const gsl_permutation * p, gsl_vector_float * x)
+      int gsl_linalg_LU_svx (const gsl_matrix_float* LU, const gsl_permutation* p, gsl_vector_float* x)
       {
-        if (LU->size1 != LU->size2)
-        {
+        if (LU->size1 != LU->size2) {
           GSL_ERROR ("LU matrix must be square", GSL_ENOTSQR);
         }
-        else if (LU->size1 != p->size)
-        {
+        else if (LU->size1 != p->size) {
           GSL_ERROR ("permutation length must match matrix size", GSL_EBADLEN);
         }
-        else if (LU->size1 != x->size)
-        {
+        else if (LU->size1 != x->size) {
           GSL_ERROR ("matrix size must match solution/rhs size", GSL_EBADLEN);
         }
-        else
-        {
+        else {
           /* Apply permutation to RHS */
 
           gsl_permute_vector_float (p, x);
@@ -194,34 +178,27 @@ namespace MR {
       }
 
 
-      int gsl_linalg_LU_refine (const gsl_matrix_float * A, const gsl_matrix_float * LU, const gsl_permutation * p, const gsl_vector_float * b, gsl_vector_float * x, gsl_vector_float * residual)
+      int gsl_linalg_LU_refine (const gsl_matrix_float* A, const gsl_matrix_float* LU, const gsl_permutation* p, const gsl_vector_float* b, gsl_vector_float* x, gsl_vector_float* residual)
       {
-        if (A->size1 != A->size2)
-        {
+        if (A->size1 != A->size2) {
           GSL_ERROR ("matrix a must be square", GSL_ENOTSQR);
         }
-        if (LU->size1 != LU->size2)
-        {
+        if (LU->size1 != LU->size2) {
           GSL_ERROR ("LU matrix must be square", GSL_ENOTSQR);
         }
-        else if (A->size1 != LU->size2)
-        {
+        else if (A->size1 != LU->size2) {
           GSL_ERROR ("LU matrix must be decomposition of a", GSL_ENOTSQR);
         }
-        else if (LU->size1 != p->size)
-        {
+        else if (LU->size1 != p->size) {
           GSL_ERROR ("permutation length must match matrix size", GSL_EBADLEN);
         }
-        else if (LU->size1 != b->size)
-        {
+        else if (LU->size1 != b->size) {
           GSL_ERROR ("matrix size must match b size", GSL_EBADLEN);
         }
-        else if (LU->size1 != x->size)
-        {
+        else if (LU->size1 != x->size) {
           GSL_ERROR ("matrix size must match solution size", GSL_EBADLEN);
         }
-        else
-        {
+        else {
           /* Compute residual, residual = (A * x  - b) */
 
           gsl_vector_float_memcpy (residual, b);
@@ -236,7 +213,7 @@ namespace MR {
         }
       }
 
-      int gsl_linalg_LU_invert (const gsl_matrix_float * LU, const gsl_permutation * p, gsl_matrix_float * inverse)
+      int gsl_linalg_LU_invert (const gsl_matrix_float* LU, const gsl_permutation* p, gsl_matrix_float* inverse)
       {
         size_t i, n = LU->size1;
 
@@ -244,10 +221,9 @@ namespace MR {
 
         gsl_matrix_float_set_identity (inverse);
 
-        for (i = 0; i < n; i++)
-        {
+        for (i = 0; i < n; i++) {
           gsl_vector_float_view c = gsl_matrix_float_column (inverse, i);
-          int status_i = gsl_linalg_LU_svx (LU, p, &(c.vector));
+          int status_i = gsl_linalg_LU_svx (LU, p, & (c.vector));
 
           if (status_i)
             status = status_i;
@@ -256,14 +232,13 @@ namespace MR {
         return status;
       }
 
-      double gsl_linalg_LU_det (gsl_matrix_float * LU, int signum)
+      double gsl_linalg_LU_det (gsl_matrix_float* LU, int signum)
       {
         size_t i, n = LU->size1;
 
         double det = (double) signum;
 
-        for (i = 0; i < n; i++)
-        {
+        for (i = 0; i < n; i++) {
           det *= gsl_matrix_float_get (LU, i, i);
         }
 
@@ -271,14 +246,13 @@ namespace MR {
       }
 
 
-      double gsl_linalg_LU_lndet (gsl_matrix_float * LU)
+      double gsl_linalg_LU_lndet (gsl_matrix_float* LU)
       {
         size_t i, n = LU->size1;
 
         double lndet = 0.0;
 
-        for (i = 0; i < n; i++)
-        {
+        for (i = 0; i < n; i++) {
           lndet += log (fabsf (gsl_matrix_float_get (LU, i, i)));
         }
 
@@ -286,22 +260,19 @@ namespace MR {
       }
 
 
-      int gsl_linalg_LU_sgndet (gsl_matrix_float * LU, int signum)
+      int gsl_linalg_LU_sgndet (gsl_matrix_float* LU, int signum)
       {
         size_t i, n = LU->size1;
 
         int s = signum;
 
-        for (i = 0; i < n; i++)
-        {
+        for (i = 0; i < n; i++) {
           double u = gsl_matrix_float_get (LU, i, i);
 
-          if (u < 0)
-          {
+          if (u < 0) {
             s *= -1;
           }
-          else if (u == 0)
-          {
+          else if (u == 0) {
             s = 0;
             break;
           }

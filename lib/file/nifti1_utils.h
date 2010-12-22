@@ -25,10 +25,16 @@
 
 #include "file/nifti1.h"
 
-namespace MR {
-  namespace Image { class Header; }
-  namespace File {
-    namespace NIfTI {
+namespace MR
+{
+  namespace Image
+  {
+    class Header;
+  }
+  namespace File
+  {
+    namespace NIfTI
+    {
 
       void check (Image::Header& H, bool single_file);
       //! \todo add straight Analyse support

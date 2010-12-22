@@ -24,23 +24,26 @@
 #include "image/header.h"
 #include "dataset/stride.h"
 
-namespace MR {
-  namespace Image {
-    namespace Handler {
+namespace MR
+{
+  namespace Image
+  {
+    namespace Handler
+    {
 
-      void Base::prepare () 
+      void Base::prepare ()
       {
         using namespace DataSet::Stride;
-      
+
         if (addresses.size())
           return;
 
-        execute(); 
+        execute();
         stride_ = get (H);
         actualise (stride_, H);
         start_ = offset (stride_, H);
 
-        info ("image \"" + H.name() + "\" initialised with start = " + str(start_) + ", strides = " + str(stride_));
+        info ("image \"" + H.name() + "\" initialised with start = " + str (start_) + ", strides = " + str (stride_));
       }
 
     }

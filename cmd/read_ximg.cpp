@@ -23,7 +23,7 @@
 #include "app.h"
 #include "file/ximg.h"
 
-using namespace MR; 
+using namespace MR;
 
 SET_VERSION_DEFAULT;
 SET_AUTHOR (NULL);
@@ -38,8 +38,8 @@ DESCRIPTION = {
 ARGUMENTS = {
 
   Argument ("file", "the XIMG file to be scanned.")
-    .allow_multiple()
-    .type_file (),
+  .allow_multiple()
+  .type_file (),
 
   Argument ()
 };
@@ -57,9 +57,9 @@ EXECUTE {
       File::XImg reader (argument[n]);
       std::cout << reader << "\n";
     }
-    catch (...) { 
+    catch (...) {
       error ("error reading file \"" + argument[n] + "\"");
     }
   }
 }
-  
+

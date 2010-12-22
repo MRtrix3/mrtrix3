@@ -25,7 +25,7 @@
 #include "file/path.h"
 #include "file/dicom/quick_scan.h"
 
-using namespace MR; 
+using namespace MR;
 
 SET_VERSION_DEFAULT;
 SET_AUTHOR (NULL);
@@ -40,8 +40,8 @@ DESCRIPTION = {
 ARGUMENTS = {
 
   Argument ("file", "the DICOM file to be scanned.")
-    .allow_multiple()
-    .type_file (),
+  .allow_multiple()
+  .type_file (),
 
   Argument ()
 };
@@ -60,22 +60,26 @@ EXECUTE {
   bool print_DICOM_fields = false;
   bool print_CSA_fields = false;
 
-  if (get_options ("all").size()) 
+  if (get_options ("all").size())
     print_DICOM_fields = true;
 
-  if (get_options ("csa").size()) 
+  if (get_options ("csa").size())
     print_CSA_fields = true;
 
   for (size_t n = 0; n < argument.size();  n++) {
 
     if (Path::is_dir (argument[n])) {
       Path::Dir* dir;
-      try { dir = new Path::Dir (argument[n]); }
-      catch (...) { throw Exception ("error opening folder \"" + argument[n] 
-          + "\": " + strerror (errno)); }
-      
+      try {
+        dir = new Path::Dir (argument[n]);
+      }
+      catch (...) {
+        throw Exception ("error opening folder \"" + argument[n]
+                         + "\": " + strerror (errno));
+      }
+
       std::string entry;
-      while ((entry = dir->read_name()).size()) {
+      while ( (entry = dir->read_name()).size()) {
         if (reader.read (Path::join (argument[n], entry), print_DICOM_fields, print_CSA_fields))
           error ("error reading file \"" + reader.filename + "\"");
         else std::cout << reader << "\n";
@@ -88,4 +92,4 @@ EXECUTE {
   }
 
 }
-  
+

@@ -30,45 +30,63 @@
 
 #define MAX_FILES_PER_IMAGE 256U
 
-namespace MR {
-  namespace Image {
+namespace MR
+{
+  namespace Image
+  {
 
     class Header;
 
-    //! \addtogroup Image 
+    //! \addtogroup Image
     // @{
-    
+
     /*! Classes responsible for actual image loading & writing
      * These classes are designed to provide a consistent interface for image
      * loading & writing, so that various non-trivial types of image storage
      * can be accommodated. These include compressed files, and images stored
      * as mosaic (e.g. Siemens DICOM mosaics). */
-    namespace Handler {
+    namespace Handler
+    {
 
-      class Base {
+      class Base
+      {
         public:
           Base (Header& header, bool image_is_new) : H (header), is_new (image_is_new) { }
           virtual ~Base () { }
 
           void prepare ();
 
-          const size_t&  start () const { return (start_); }
-          const ssize_t& stride (size_t axis) const { return (stride_[axis]); }
+          const size_t&  start () const {
+            return (start_);
+          }
+          const ssize_t& stride (size_t axis) const {
+            return (stride_[axis]);
+          }
 
-          uint8_t* segment (size_t n) const { assert (n < addresses.size()); return (addresses[n]); }
-          size_t   nsegments () const { return (addresses.size()); }
-          size_t   segment_size () const { check(); return (segsize); }
+          uint8_t* segment (size_t n) const {
+            assert (n < addresses.size());
+            return (addresses[n]);
+          }
+          size_t   nsegments () const {
+            return (addresses.size());
+          }
+          size_t   segment_size () const {
+            check();
+            return (segsize);
+          }
 
         protected:
           Header& H;
           size_t segsize;
           size_t start_;
           std::vector<ssize_t> stride_;
-          std::vector<uint8_t*> addresses; 
+          std::vector<uint8_t*> addresses;
           bool is_new;
 
-          void check () const { assert (addresses.size()); }
-          virtual void execute () = 0; 
+          void check () const {
+            assert (addresses.size());
+          }
+          virtual void execute () = 0;
       };
 
     }

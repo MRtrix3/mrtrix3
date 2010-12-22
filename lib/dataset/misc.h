@@ -27,49 +27,61 @@
 #include "data_type.h"
 #include "math/complex.h"
 
-namespace MR {
-  namespace DataSet {
+namespace MR
+{
+  namespace DataSet
+  {
 
     //! \addtogroup DataSet
     // @{
 
     //! returns the number of voxel in the data set, or a relevant subvolume
-    template <class Set> inline size_t voxel_count (const Set& ds, size_t from_axis = 0, size_t to_axis = std::numeric_limits<size_t>::max()) 
-    { 
+    template <class Set> inline size_t voxel_count (const Set& ds, size_t from_axis = 0, size_t to_axis = std::numeric_limits<size_t>::max())
+    {
       if (to_axis > ds.ndim()) to_axis = ds.ndim();
       assert (from_axis < to_axis);
       size_t fp = 1;
-      for (size_t n = from_axis; n < to_axis; ++n) 
-        fp *= ds.dim(n);
-      return (fp); 
+      for (size_t n = from_axis; n < to_axis; ++n)
+        fp *= ds.dim (n);
+      return (fp);
     }
 
-    //! returns the number of voxel in the relevant subvolume of the data set 
-    template <class Set> inline size_t voxel_count (const Set& ds, const char* specifier) 
-    { 
+    //! returns the number of voxel in the relevant subvolume of the data set
+    template <class Set> inline size_t voxel_count (const Set& ds, const char* specifier)
+    {
       size_t fp = 1;
-      for (size_t n = 0; n < ds.ndim(); ++n) 
-        if (specifier[n] != ' ') fp *= ds.dim(n);
-      return (fp); 
+      for (size_t n = 0; n < ds.ndim(); ++n)
+        if (specifier[n] != ' ') fp *= ds.dim (n);
+      return (fp);
     }
 
-    //! returns the number of voxel in the relevant subvolume of the data set 
-    template <class Set> inline int64_t voxel_count (const Set& ds, const std::vector<size_t>& axes) 
-    { 
+    //! returns the number of voxel in the relevant subvolume of the data set
+    template <class Set> inline int64_t voxel_count (const Set& ds, const std::vector<size_t>& axes)
+    {
       int64_t fp = 1;
       for (size_t n = 0; n < axes.size(); ++n) {
         assert (axes[n] < ds.ndim());
-        fp *= ds.dim(axes[n]);
+        fp *= ds.dim (axes[n]);
       }
-      return (fp); 
+      return (fp);
     }
 
 
     //! \cond skip
-    namespace {
-      template <typename T> inline bool is_complex__ () { return (false); }
-      template <> inline bool is_complex__<cfloat> () { return (true); }
-      template <> inline bool is_complex__<cdouble> () { return (true); }
+    namespace
+    {
+      template <typename T> inline bool is_complex__ ()
+      {
+        return (false);
+      }
+      template <> inline bool is_complex__<cfloat> ()
+      {
+        return (true);
+      }
+      template <> inline bool is_complex__<cdouble> ()
+      {
+        return (true);
+      }
     }
     //! \endcond
 
@@ -77,46 +89,53 @@ namespace MR {
 
 
     //! return whether the Set contains complex data
-    template <class Set> inline bool is_complex (const Set& ds) { 
+    template <class Set> inline bool is_complex (const Set& ds)
+    {
       typedef typename Set::value_type T;
-      return (is_complex__<T> ()); 
+      return (is_complex__<T> ());
     }
 
-    template <class Set1, class Set2> inline bool dimensions_match (Set1& D1, Set2& D2) {
+    template <class Set1, class Set2> inline bool dimensions_match (Set1& D1, Set2& D2)
+    {
       if (D1.ndim() != D2.ndim()) return (false);
       for (size_t n = 0; n < D1.ndim(); ++n)
-        if (D1.dim(n) != D2.dim(n)) return (false);
+        if (D1.dim (n) != D2.dim (n)) return (false);
       return (true);
     }
 
-    template <class Set1, class Set2> inline bool dimensions_match (Set1& D1, Set2& D2, size_t from_axis, size_t to_axis) {
+    template <class Set1, class Set2> inline bool dimensions_match (Set1& D1, Set2& D2, size_t from_axis, size_t to_axis)
+    {
       assert (from_axis < to_axis);
       if (to_axis > D1.ndim() || to_axis > D2.ndim()) return (false);
       for (size_t n = from_axis; n < to_axis; ++n)
-        if (D1.dim(n) != D2.dim(n)) return (false);
+        if (D1.dim (n) != D2.dim (n)) return (false);
       return (true);
     }
 
-    template <class Set1, class Set2> inline bool dimensions_match (Set1& D1, Set2& D2, const std::vector<size_t>& axes) {
+    template <class Set1, class Set2> inline bool dimensions_match (Set1& D1, Set2& D2, const std::vector<size_t>& axes)
+    {
       for (size_t n = 0; n < axes.size(); ++n) {
         if (D1.ndim() <= axes[n] || D2.ndim() <= axes[n]) return (false);
-        if (D1.dim(axes[n]) != D2.dim(axes[n])) return (false);
+        if (D1.dim (axes[n]) != D2.dim (axes[n])) return (false);
       }
       return (true);
     }
 
-    template <class Set1, class Set2> inline void check_dimensions (Set1& D1, Set2& D2) {
-      if (!dimensions_match (D1, D2)) 
+    template <class Set1, class Set2> inline void check_dimensions (Set1& D1, Set2& D2)
+    {
+      if (!dimensions_match (D1, D2))
         throw Exception ("dimension mismatch between \"" + D1.name() + "\" and \"" + D2.name() + "\"");
     }
 
-    template <class Set1, class Set2> inline void check_dimensions (Set1& D1, Set2& D2, size_t from_axis, size_t to_axis) {
-      if (!dimensions_match (D1, D2, from_axis, to_axis)) 
+    template <class Set1, class Set2> inline void check_dimensions (Set1& D1, Set2& D2, size_t from_axis, size_t to_axis)
+    {
+      if (!dimensions_match (D1, D2, from_axis, to_axis))
         throw Exception ("dimension mismatch between \"" + D1.name() + "\" and \"" + D2.name() + "\"");
     }
 
-    template <class Set1, class Set2> inline void check_dimensions (Set1& D1, Set2& D2, const std::vector<size_t>& axes) {
-      if (!dimensions_match (D1, D2, axes)) 
+    template <class Set1, class Set2> inline void check_dimensions (Set1& D1, Set2& D2, const std::vector<size_t>& axes)
+    {
+      if (!dimensions_match (D1, D2, axes))
         throw Exception ("dimension mismatch between \"" + D1.name() + "\" and \"" + D2.name() + "\"");
     }
 

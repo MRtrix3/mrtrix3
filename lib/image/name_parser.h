@@ -26,23 +26,49 @@
 #include "ptr.h"
 #include "file/path.h"
 
-namespace MR {
-  namespace Image {
+namespace MR
+{
+  namespace Image
+  {
 
-    class NameParserItem {
+    class NameParserItem
+    {
       public:
         NameParserItem () : seq_length (0) { }
 
-        void                    set_str (const std::string& s) { clear (); str = s; }
-        void                    set_seq (const std::string& s) { clear (); if (s.size()) seq = parse_ints (s); seq_length = 1; }
-        void                    clear () { str.clear(); seq.clear(); seq_length = 0; }
+        void                    set_str (const std::string& s) {
+          clear ();
+          str = s;
+        }
+        void                    set_seq (const std::string& s) {
+          clear ();
+          if (s.size()) seq = parse_ints (s);
+          seq_length = 1;
+        }
+        void                    clear () {
+          str.clear();
+          seq.clear();
+          seq_length = 0;
+        }
 
-        std::string             string () const { return (str); }
-        const std::vector<int>& sequence () const { return (seq); }
-        std::vector<int>&       sequence () { return (seq); }
-        bool                    is_string () const { return (seq_length == 0); }
-        bool                    is_sequence () const { return (seq_length != 0); }
-        size_t                  size () const { return (seq_length ? seq_length : str.size()); }
+        std::string             string () const {
+          return (str);
+        }
+        const std::vector<int>& sequence () const {
+          return (seq);
+        }
+        std::vector<int>&       sequence () {
+          return (seq);
+        }
+        bool                    is_string () const {
+          return (seq_length == 0);
+        }
+        bool                    is_sequence () const {
+          return (seq_length != 0);
+        }
+        size_t                  size () const {
+          return (seq_length ? seq_length : str.size());
+        }
 
         void                    calc_padding (size_t maxval = 0);
 
@@ -59,16 +85,29 @@ namespace MR {
 
 
 
-    class NameParser {
+    class NameParser
+    {
       public:
-        NameParser () : folder (NULL) { } 
+        NameParser () : folder (NULL) { }
         void                       parse (const std::string& imagename, size_t max_num_sequences = std::numeric_limits<size_t>::max());
-        size_t                     num () const { return (array.size()); }
-        std::string                spec () const { return (specification); }
-        const NameParserItem&      operator[] (size_t i) const { return (array[i]); }
-        const std::vector<int>&    sequence (size_t index) const { return (array[seq_index[index]].sequence()); }
-        size_t                     ndim () const { return (seq_index.size()); }
-        size_t                     index_of_sequence (size_t number = 0) const { return (seq_index[number]); }
+        size_t                     num () const {
+          return (array.size());
+        }
+        std::string                spec () const {
+          return (specification);
+        }
+        const NameParserItem&      operator[] (size_t i) const {
+          return (array[i]);
+        }
+        const std::vector<int>&    sequence (size_t index) const {
+          return (array[seq_index[index]].sequence());
+        }
+        size_t                     ndim () const {
+          return (seq_index.size());
+        }
+        size_t                     index_of_sequence (size_t number = 0) const {
+          return (seq_index[number]);
+        }
 
         bool        match (const std::string& file_name, std::vector<int>& indices) const;
         void        calculate_padding (const std::vector<int>& maxvals);
@@ -105,7 +144,8 @@ namespace MR {
 
 
 
-    class ParsedName {
+    class ParsedName
+    {
       protected:
         std::vector<int>    indices;
         std::string         filename;
@@ -113,9 +153,15 @@ namespace MR {
       public:
         ParsedName (const std::string& name, const std::vector<int>& index) : indices (index), filename (name) { }
 
-        std::string name () const { return (filename); }
-        size_t      ndim () const { return (indices.size()); }
-        int         index (size_t num) const { return (indices[num]); }
+        std::string name () const {
+          return (filename);
+        }
+        size_t      ndim () const {
+          return (indices.size());
+        }
+        int         index (size_t num) const {
+          return (indices[num]);
+        }
 
         bool                 operator< (const ParsedName& pn) const;
         friend std::ostream& operator<< (std::ostream& stream, const ParsedName& pin);
@@ -125,7 +171,8 @@ namespace MR {
 
 
 
-    class ParsedNameList : public std::vector< RefPtr<ParsedName> > {
+    class ParsedNameList : public std::vector< RefPtr<ParsedName> >
+    {
       protected:
         void   count_dim (std::vector<int>& dim, size_t& current_entry, size_t current_dim) const;
         size_t max_name_size;
@@ -135,7 +182,9 @@ namespace MR {
         void             scan (NameParser& parser);
 
         std::vector<int> count () const;
-        size_t           biggest_filename_size () const { return (max_name_size); }
+        size_t           biggest_filename_size () const {
+          return (max_name_size);
+        }
     };
 
 

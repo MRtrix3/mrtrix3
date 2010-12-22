@@ -26,19 +26,22 @@
 #include "dataset/interp/base.h"
 #include "math/hermite.h"
 
-namespace MR {
-  namespace DataSet {
-    namespace Interp {
+namespace MR
+{
+  namespace DataSet
+  {
+    namespace Interp
+    {
 
       //! \addtogroup interp
       // @{
 
       //! This class provides access to the voxel intensities of a data set, using cubic spline interpolation.
-      /*! Interpolation is only performed along the first 3 (spatial) axes. 
+      /*! Interpolation is only performed along the first 3 (spatial) axes.
        * The (integer) position along the remaining axes should be set using the
        * template DataSet class.
        * The spatial coordinates can be set using the functions voxel(), image(),
-       * and scanner(). 
+       * and scanner().
        * For example:
        * \code
        * Image::Voxel<float> voxel (image);
@@ -55,7 +58,7 @@ namespace MR {
        *
        * The template \a voxel class must be usable with this type of syntax:
        * \code
-       * int xdim = voxel.dim(0);    // return the dimension 
+       * int xdim = voxel.dim(0);    // return the dimension
        * int ydim = voxel.dim(1);    // along the x, y & z dimensions
        * int zdim = voxel.dim(2);
        * float v[] = { voxel.vox(0), voxel.vox(1), voxel.vox(2) };  // return voxel dimensions
@@ -67,7 +70,7 @@ namespace MR {
        * \endcode
        */
 
-      template <class Set, typename T = float> class Cubic : public Base<Set,T> 
+      template <class Set, typename T = float> class Cubic : public Base<Set,T>
       {
         private:
           typedef class Base<Set> B;
@@ -77,15 +80,14 @@ namespace MR {
           typedef typename Set::value_type pos_type;
 
           //! construct an Interp object to obtain interpolated values using the
-          // parent DataSet class 
+          // parent DataSet class
           Cubic (Set& parent) : Base<Set> (parent) { }
 
           //! Set the current position to <b>voxel space</b> position \a pos
           /*! This will set the position from which the image intensity values will
            * be interpolated, assuming that \a pos provides the position as a
            * (floating-point) voxel coordinate within the dataset. */
-          bool voxel (const Point<pos_type>& pos)
-          {
+          bool voxel (const Point<pos_type>& pos) {
             Point<pos_type> f = B::set (pos);
             if (B::out_of_bounds) return (true);
             P = pos;
@@ -100,27 +102,30 @@ namespace MR {
            * coordinate relative to the axes of the dataset, in units of
            * millimeters. The origin is taken to be the centre of the voxel at [
            * 0 0 0 ]. */
-          bool image (const Point<pos_type>& pos) { return (voxel (B::image2voxel (pos))); }
+          bool image (const Point<pos_type>& pos) {
+            return (voxel (B::image2voxel (pos)));
+          }
           //! Set the current position to the <b>scanner space</b> position \a pos
           /*! This will set the position from which the image intensity values will
            * be interpolated, assuming that \a pos provides the position as a
            * scanner space coordinate, in units of millimeters. */
-          bool scanner (const Point<pos_type>& pos) { return (voxel (B::scanner2voxel (pos))); }
+          bool scanner (const Point<pos_type>& pos) {
+            return (voxel (B::scanner2voxel (pos)));
+          }
 
-          value_type value () const
-          {
+          value_type value () const {
             if (B::out_of_bounds) return (NAN);
 
-            ssize_t c[] = { Math::floor(P[0])-1, Math::floor(P[1])-1, Math::floor(P[2])-1 };
+            ssize_t c[] = { Math::floor (P[0])-1, Math::floor (P[1])-1, Math::floor (P[2])-1 };
             value_type r[4];
             for (ssize_t z = 0; z < 4; ++z) {
-              B::data[2] = check (c[2] + z, B::data.dim(2)-1);
+              B::data[2] = check (c[2] + z, B::data.dim (2)-1);
               value_type q[4];
               for (ssize_t y = 0; y < 4; ++y) {
-                B::data[1] = check (c[1] + y, B::data.dim(1)-1);
+                B::data[1] = check (c[1] + y, B::data.dim (1)-1);
                 value_type p[4];
                 for (ssize_t x = 0; x < 4; ++x) {
-                  B::data[0] = check (c[0] + x, B::data.dim(0)-1);
+                  B::data[0] = check (c[0] + x, B::data.dim (0)-1);
                   p[x] = B::data.value();
                 }
                 q[y] = Hx.value (p);
@@ -135,7 +140,7 @@ namespace MR {
           Math::Hermite<value_type> Hx, Hy, Hz;
           Point<pos_type> P;
 
-          ssize_t check (ssize_t x, ssize_t dim) const { 
+          ssize_t check (ssize_t x, ssize_t dim) const {
             if (x < 0) return (0);
             if (x > dim) return (dim);
             return (x);

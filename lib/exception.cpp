@@ -22,7 +22,8 @@
 
 #include "exception.h"
 
-namespace MR {
+namespace MR
+{
 
   void (*print) (const std::string& msg) = NULL;
   void (*error) (const std::string& msg) = NULL;

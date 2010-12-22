@@ -26,21 +26,24 @@
 #include <gsl/gsl_linalg.h>
 #include "math/matrix.h"
 
-namespace MR {
-  namespace Math {
-    namespace Cholesky {
+namespace MR
+{
+  namespace Math
+  {
+    namespace Cholesky
+    {
 
       //! \cond skip
 
       // float definitions of GSL functions:
-      int gsl_linalg_cholesky_decomp (gsl_matrix_float * A);
-      int gsl_linalg_cholesky_solve (const gsl_matrix_float * cholesky, const gsl_vector_float * b, gsl_vector_float * x);
-      int gsl_linalg_cholesky_svx (const gsl_matrix_float * cholesky, gsl_vector_float * x);
-      int gsl_linalg_cholesky_invert (gsl_matrix_float * cholesky);
+      int gsl_linalg_cholesky_decomp (gsl_matrix_float* A);
+      int gsl_linalg_cholesky_solve (const gsl_matrix_float* cholesky, const gsl_vector_float* b, gsl_vector_float* x);
+      int gsl_linalg_cholesky_svx (const gsl_matrix_float* cholesky, gsl_vector_float* x);
+      int gsl_linalg_cholesky_invert (gsl_matrix_float* cholesky);
 
       //! \endcond
 
-      /** @addtogroup linalg 
+      /** @addtogroup linalg
         @{ */
 
       /** @defgroup cholesky Cholesky decomposition
@@ -49,32 +52,39 @@ namespace MR {
 
       //! %Cholesky decomposition of \a A into lower triangular matrix
       /** \note the contents of \a A will be overwritten with its %Cholesky decomposition */
-      template <typename T> inline Matrix<T>& decomp (Matrix<T>& A) {
-       	gsl_linalg_cholesky_decomp (A.gsl()); 
-	return (A);
+      template <typename T> inline Matrix<T>& decomp (Matrix<T>& A)
+      {
+        gsl_linalg_cholesky_decomp (A.gsl());
+        return (A);
       }
 
-      //! solve A*x = b given its %Cholesky decomposition \a D 
-      template <typename T> inline Vector<T>& solve (Vector<T>& x, const Matrix<T>& D, const Vector<T>& b) {
+      //! solve A*x = b given its %Cholesky decomposition \a D
+      template <typename T> inline Vector<T>& solve (Vector<T>& x, const Matrix<T>& D, const Vector<T>& b)
+      {
         gsl_linalg_cholesky_solve (D.gsl(), b.gsl(), x.gsl());
         return (x);
       }
 
       //! solve A*x = b given its %Cholesky decomposition \a D, in place
       /** \note b is passed in as \a x */
-      template <typename T> inline Vector<T>& solve (Vector<T>& x, const Matrix<T>& D) {
+      template <typename T> inline Vector<T>& solve (Vector<T>& x, const Matrix<T>& D)
+      {
         gsl_linalg_cholesky_svx (D.gsl(), x.gsl());
         return (x);
       }
 
       //! invert A given its %Cholesky decomposition \a D, in place.
-      template <typename T> inline Matrix<T>& inv_from_decomp (Matrix<T>& D) {
-	gsl_linalg_cholesky_invert (D.gsl());
-	return (D);
+      template <typename T> inline Matrix<T>& inv_from_decomp (Matrix<T>& D)
+      {
+        gsl_linalg_cholesky_invert (D.gsl());
+        return (D);
       }
 
       //! invert \a A using %Cholesky decomposition, in place.
-      template <typename T> inline Matrix<T>& inv (Matrix<T>& A) { return (inv_from_decomp (decomp (A))); }
+      template <typename T> inline Matrix<T>& inv (Matrix<T>& A)
+      {
+        return (inv_from_decomp (decomp (A)));
+      }
 
       /** @} */
       /** @} */

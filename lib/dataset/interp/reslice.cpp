@@ -22,9 +22,12 @@
 
 #include "dataset/interp/reslice.h"
 
-namespace MR {
-  namespace DataSet {
-    namespace Interp {
+namespace MR
+{
+  namespace DataSet
+  {
+    namespace Interp
+    {
       const Math::Matrix<float> NoOp;
       const std::vector<int> AutoOverSample;
     }

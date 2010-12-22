@@ -27,8 +27,10 @@
 #include "dataset/position.h"
 #include "dataset/stride.h"
 
-namespace MR {
-  namespace DataSet {
+namespace MR
+{
+  namespace DataSet
+  {
 
     /** \addtogroup DataSet
       @{ */
@@ -88,7 +90,7 @@ namespace MR {
      *   print ("total = " + str (sum) + "\n");
      * }
      * \endcode
-     * 
+     *
      * \section progressloop Displaying progress status
      * The Loop object can also display its progress as it proceeds, using the
      * appropriate constructor. In the following example, the program will
@@ -96,8 +98,8 @@ namespace MR {
      * \code
      * float sum = 0.0;
      *
-     * Loop loop ("averaging..."); 
-     * for (loop.start (vox); loop.ok(); loop.next (vox)) 
+     * Loop loop ("averaging...");
+     * for (loop.start (vox); loop.ok(); loop.next (vox))
      *   sum += vox.value();
      *
      * float average = sum / float (DataSet::voxel_count (vox));
@@ -108,10 +110,10 @@ namespace MR {
      * myprogram: averaging... 100%
      * average = 23.42
      * \endcode
-     * 
+     *
      * \sa LoopInOrder
      */
-    class Loop 
+    class Loop
     {
       public:
         //! Constructor
@@ -120,7 +122,7 @@ namespace MR {
          * supplied to next(). If \a from_axis and \a to_axis are specified,
          * the Loop will iterate from axis \a from_axis up to but \b not
          * including axis \a to_axis. */
-        Loop (size_t from_axis = 0, size_t to_axis = std::numeric_limits<size_t>::max()) : 
+        Loop (size_t from_axis = 0, size_t to_axis = std::numeric_limits<size_t>::max()) :
           from_ (from_axis), to_ (to_axis), cont_ (true) { }
 
         //! Constructor with progress status
@@ -139,134 +141,141 @@ namespace MR {
          * if appropriate. Note that only those axes specified in the Loop
          * constructor will have their coordinates set to zero; the coordinates
          * of all other axes will be left untouched. */
-        template <class Set> 
-          inline void start (Set& set)
-          {
-            cont_ = true;
-            for (size_t n = from_; n < std::min (set.ndim(), to_); ++n)
-              set[n] = 0;
-            if (progress_)
-              progress_.set_max (voxel_count (set, from_, to_));
-          }
+        template <class Set>
+        inline void start (Set& set) {
+          cont_ = true;
+          for (size_t n = from_; n < std::min (set.ndim(), to_); ++n)
+            set[n] = 0;
+          if (progress_)
+            progress_.set_max (voxel_count (set, from_, to_));
+        }
         //! Start the loop to iterate over two DataSets
         /*! \copydetails Loop::start(Set&) */
-        template <class Set, class Set2> 
-          inline void start (Set& set, Set2& set2)
-          {
-            cont_ = true;
-            for (size_t n = from_; n < std::min (set.ndim(), to_); ++n) {
-              set[n] = 0;
-              set2[n] = 0;
-            }
-            if (progress_)
-              progress_.set_max (voxel_count (set, from_, to_));
+        template <class Set, class Set2>
+        inline void start (Set& set, Set2& set2) {
+          cont_ = true;
+          for (size_t n = from_; n < std::min (set.ndim(), to_); ++n) {
+            set[n] = 0;
+            set2[n] = 0;
           }
+          if (progress_)
+            progress_.set_max (voxel_count (set, from_, to_));
+        }
 
         //! Start the loop to iterate over three DataSets
         /*! \copydetails Loop::start(Set&) */
-        template <class Set, class Set2, class Set3> 
-          inline void start (Set& set, Set2& set2, Set3& set3) 
-          {
-            cont_ = true;
-            for (size_t n = from_; n < std::min (set.ndim(), to_); ++n) {
-              set[n] = 0;
-              set2[n] = 0;
-              set3[n] = 0;
-            }
-            if (progress_)
-              progress_.set_max (voxel_count (set, from_, to_));
+        template <class Set, class Set2, class Set3>
+        inline void start (Set& set, Set2& set2, Set3& set3) {
+          cont_ = true;
+          for (size_t n = from_; n < std::min (set.ndim(), to_); ++n) {
+            set[n] = 0;
+            set2[n] = 0;
+            set3[n] = 0;
           }
+          if (progress_)
+            progress_.set_max (voxel_count (set, from_, to_));
+        }
 
         //! Check whether the loop should continue iterating
         /*! \return true if the loop has not completed, false otherwise. */
-        bool ok () const { return (cont_); }
+        bool ok () const {
+          return (cont_);
+        }
 
         //! Proceed to next iteration for a single DataSet
         /*! Advance coordinates of all specified DataSets to the next position
          * to be processed, and update the progress status if appropriate. */
-        template <class Set> 
-          void next (Set& set)
-          { 
-            next_impl (from_, set);
-            ++progress_;
-          }
+        template <class Set>
+        void next (Set& set) {
+          next_impl (from_, set);
+          ++progress_;
+        }
 
         //! Proceed to next iteration for two DataSets
         /*! \copydetails Loop::next(Set&) */
-        template <class Set, class Set2> 
-          void next (Set& set, Set2& set2)
-          {
-            next_impl (from_, set, set2);
-            ++progress_;
-          }
+        template <class Set, class Set2>
+        void next (Set& set, Set2& set2) {
+          next_impl (from_, set, set2);
+          ++progress_;
+        }
 
         //! Proceed to next iteration for three DataSets
         /*! \copydetails Loop::next(Set&) */
-        template <class Set, class Set2, class Set3> 
-          void next (Set& set, Set2& set2, Set3& set3)
-          {
-            next_impl (from_, set, set2, set3);
-            ++progress_;
-          }
+        template <class Set, class Set2, class Set3>
+        void next (Set& set, Set2& set2, Set3& set3) {
+          next_impl (from_, set, set2, set3);
+          ++progress_;
+        }
 
       private:
         const size_t from_, to_;
         bool cont_;
         ProgressBar progress_;
 
-        template <class Set> 
-          void next_impl (size_t axis, Set& set)
-          { 
-            if (axis < std::min (to_,set.ndim())) {
-              if (set[axis] + 1 < set.dim(axis)) ++set[axis]; 
+        template <class Set>
+        void next_impl (size_t axis, Set& set) {
+          if (axis < std::min (to_,set.ndim())) {
+            if (set[axis] + 1 < set.dim (axis)) ++set[axis];
+            else {
+              if (axis+1 == std::min (to_,set.ndim())) {
+                cont_ = false;
+              }
               else {
-                if (axis+1 == std::min (to_,set.ndim())) {
-                  cont_ = false;
-                }
-                else {
-                  next_impl (axis+1, set);
-                  if (cont_) set[axis] = 0;
-                }
+                next_impl (axis+1, set);
+                if (cont_) set[axis] = 0;
               }
             }
-            else cont_ = false;
           }
+          else cont_ = false;
+        }
 
-        template <class Set, class Set2> 
-          void next_impl (size_t axis, Set& set, Set2& set2) 
-          { 
-            if (axis < std::min (to_,set.ndim())) {
-              if (set[axis] + 1 < set.dim(axis)) { ++set[axis]; ++set2[axis]; }
+        template <class Set, class Set2>
+        void next_impl (size_t axis, Set& set, Set2& set2) {
+          if (axis < std::min (to_,set.ndim())) {
+            if (set[axis] + 1 < set.dim (axis)) {
+              ++set[axis];
+              ++set2[axis];
+            }
+            else {
+              if (axis+1 == std::min (to_, set.ndim())) {
+                cont_ = false;
+              }
               else {
-                if (axis+1 == std::min (to_, set.ndim())) {
-                  cont_ = false;
-                }
-                else {
-                  next_impl (axis+1, set, set2);
-                  if (cont_) { set[axis] = 0; set2[axis] = 0; }
+                next_impl (axis+1, set, set2);
+                if (cont_) {
+                  set[axis] = 0;
+                  set2[axis] = 0;
                 }
               }
             }
-            else cont_ = false;
           }
+          else cont_ = false;
+        }
 
-        template <class Set, class Set2, class Set3> 
-          void next_impl (size_t axis, Set& set, Set2& set2, Set3& set3)
-          { 
-            if (axis < std::min (to_,set.ndim())) {
-              if (set[axis] + 1 < set.dim(axis)) { ++set[axis]; ++set2[axis]; ++set3[axis]; }
+        template <class Set, class Set2, class Set3>
+        void next_impl (size_t axis, Set& set, Set2& set2, Set3& set3) {
+          if (axis < std::min (to_,set.ndim())) {
+            if (set[axis] + 1 < set.dim (axis)) {
+              ++set[axis];
+              ++set2[axis];
+              ++set3[axis];
+            }
+            else {
+              if (axis+1 == std::min (to_, set.ndim())) {
+                cont_ = false;
+              }
               else {
-                if (axis+1 == std::min (to_, set.ndim())) {
-                  cont_ = false; 
-                }
-                else {
-                  next_impl (axis+1, set, set2, set3);
-                  if (cont_) { set[axis] = 0; set2[axis] = 0; set3[axis] = 0; }
+                next_impl (axis+1, set, set2, set3);
+                if (cont_) {
+                  set[axis] = 0;
+                  set2[axis] = 0;
+                  set3[axis] = 0;
                 }
               }
             }
-            else cont_ = false;
           }
+          else cont_ = false;
+        }
 
     };
 
@@ -290,7 +299,7 @@ namespace MR {
      * axis with the smallest absolute stride, since voxels along this axis are
      * most likely to be adjacent. This is most likely to optimise both
      * throughput to and from system RAM or disk (which are typically optimised
-     * for bursts of contiguous sections of memory), and CPU cache usage. 
+     * for bursts of contiguous sections of memory), and CPU cache usage.
      *
      * The LoopInOrder class is designed to facilitate this. In the following
      * example, the DataSet of interest is passed as an argument to the
@@ -328,7 +337,7 @@ namespace MR {
      *   print ("total = " + str (sum) + "\n");
      * }
      * \endcode
-     * 
+     *
      * \section arbitraryorderloop Arbitrary order loop
      * It is also possible to specify the looping order explictly, as in the
      * following example:
@@ -367,8 +376,8 @@ namespace MR {
      * \code
      * float sum = 0.0;
      *
-     * LoopInOrder loop (vox, "averaging..."); 
-     * for (loop.start (vox); loop.ok(); loop.next (vox)) 
+     * LoopInOrder loop (vox, "averaging...");
+     * for (loop.start (vox); loop.ok(); loop.next (vox))
      *   sum += vox.value();
      *
      * float average = sum / float (DataSet::voxel_count (vox));
@@ -379,7 +388,7 @@ namespace MR {
      * myprogram: averaging... 100%
      * average = 23.42
      * \endcode
-     * 
+     *
      * \sa Loop
      */
     class LoopInOrder
@@ -387,7 +396,7 @@ namespace MR {
       public:
         //! Constructor from axes indices
         /*! Construct a LoopInOrder object to iterate over the axes specified. */
-        LoopInOrder (const std::vector<size_t>& axes) : 
+        LoopInOrder (const std::vector<size_t>& axes) :
           axes_ (axes), cont_ (true) { }
 
         //! Construct from axes indices with progress status
@@ -403,8 +412,8 @@ namespace MR {
          * axes that will be looped over: the Loop will then iterate from axis
          * \a from_axis up to but \b not including axis \a to_axis. */
         template <class Set>
-          LoopInOrder (const Set& set, size_t from_axis = 0, size_t to_axis = std::numeric_limits<size_t>::max()) : 
-            axes_ (Stride::order (set, from_axis, to_axis)), cont_ (true) { }
+        LoopInOrder (const Set& set, size_t from_axis = 0, size_t to_axis = std::numeric_limits<size_t>::max()) :
+          axes_ (Stride::order (set, from_axis, to_axis)), cont_ (true) { }
 
         //! Constructor from DataSet strides with progress status
         /*! Construct a LoopInOrder object to iterate over the axes specified
@@ -414,8 +423,8 @@ namespace MR {
          * will be looped over: the Loop will then iterate from axis \a
          * from_axis up to but \b not including axis \a to_axis. */
         template <class Set>
-          LoopInOrder (const Set& set, const std::string& message, size_t from_axis = 0, size_t to_axis = std::numeric_limits<size_t>::max()) :
-            axes_ (Stride::order (set, from_axis, to_axis)), cont_ (true), progress_ (message, 1) { }
+        LoopInOrder (const Set& set, const std::string& message, size_t from_axis = 0, size_t to_axis = std::numeric_limits<size_t>::max()) :
+          axes_ (Stride::order (set, from_axis, to_axis)), cont_ (true), progress_ (message, 1) { }
 
         //! Start the loop to iterate over a single DataSet
         /*! Start the loop by resetting the appropriate coordinates of each of
@@ -423,128 +432,135 @@ namespace MR {
          * if appropriate. Note that only those axes specified in the
          * LoopInOrder constructor will have their coordinates set to zero; the
          * coordinates of all other axes will be left untouched. */
-        template <class Set> 
-          inline void start (Set& set)
-          {
-            cont_ = true;
-            for (size_t n = 0; n < axes_.size(); ++n)
-              set[axes_[n]] = 0;
-            if (progress_)
-              progress_.set_max (voxel_count (set, axes_));
-          }
+        template <class Set>
+        inline void start (Set& set) {
+          cont_ = true;
+          for (size_t n = 0; n < axes_.size(); ++n)
+            set[axes_[n]] = 0;
+          if (progress_)
+            progress_.set_max (voxel_count (set, axes_));
+        }
         //! Start the loop to iterate over two DataSets
         /*! \copydetails LoopInOrder::start(Set&) */
-        template <class Set, class Set2> 
-          inline void start (Set& set, Set2& set2)
-          {
-            cont_ = true;
-            for (size_t n = 0; n < axes_.size(); ++n) {
-              set[axes_[n]] = 0;
-              set2[axes_[n]] = 0;
-            }
-            if (progress_)
-              progress_.set_max (voxel_count (set, axes_));
+        template <class Set, class Set2>
+        inline void start (Set& set, Set2& set2) {
+          cont_ = true;
+          for (size_t n = 0; n < axes_.size(); ++n) {
+            set[axes_[n]] = 0;
+            set2[axes_[n]] = 0;
           }
+          if (progress_)
+            progress_.set_max (voxel_count (set, axes_));
+        }
 
         //! Start the loop to iterate over three DataSets
         /*! \copydetails LoopInOrder::start(Set&) */
-        template <class Set, class Set2, class Set3> 
-          inline void start (Set& set, Set2& set2, Set3& set3) 
-          {
-            cont_ = true;
-            for (size_t n = 0; n < axes_.size(); ++n) {
-              set[axes_[n]] = 0;
-              set2[axes_[n]] = 0;
-              set3[axes_[n]] = 0;
-            }
-            if (progress_)
-              progress_.set_max (voxel_count (set, axes_));
+        template <class Set, class Set2, class Set3>
+        inline void start (Set& set, Set2& set2, Set3& set3) {
+          cont_ = true;
+          for (size_t n = 0; n < axes_.size(); ++n) {
+            set[axes_[n]] = 0;
+            set2[axes_[n]] = 0;
+            set3[axes_[n]] = 0;
           }
+          if (progress_)
+            progress_.set_max (voxel_count (set, axes_));
+        }
 
         //! Check whether the loop should continue iterating
         /*! \return true if the loop has not completed, false otherwise. */
-        bool ok () const { return (cont_); }
+        bool ok () const {
+          return (cont_);
+        }
 
         //! Proceed to next iteration for a single DataSet
         /*! Advance coordinates of all specified DataSets to the next position
          * to be processed, and update the progress status if appropriate. */
-        template <class Set> 
-          void next (Set& set)
-          { 
-            next_impl (0, set);
-            ++progress_;
-          }
+        template <class Set>
+        void next (Set& set) {
+          next_impl (0, set);
+          ++progress_;
+        }
 
         //! Proceed to next iteration for two DataSets
         /*! \copydetails LoopInOrder::next(Set&) */
-        template <class Set, class Set2> 
-          void next (Set& set, Set2& set2)
-          {
-            next_impl (0, set, set2);
-            ++progress_;
-          }
+        template <class Set, class Set2>
+        void next (Set& set, Set2& set2) {
+          next_impl (0, set, set2);
+          ++progress_;
+        }
 
         //! Proceed to next iteration for three DataSets
         /*! \copydetails LoopInOrder::next(Set&) */
-        template <class Set, class Set2, class Set3> 
-          void next (Set& set, Set2& set2, Set3& set3)
-          {
-            next_impl (0, set, set2, set3);
-            ++progress_;
-          }
+        template <class Set, class Set2, class Set3>
+        void next (Set& set, Set2& set2, Set3& set3) {
+          next_impl (0, set, set2, set3);
+          ++progress_;
+        }
 
       private:
         const std::vector<size_t> axes_;
         bool cont_;
         ProgressBar progress_;
 
-        template <class Set> 
-          void next_impl (size_t axis, Set& set)
-          { 
-            size_t a = axes_[axis];
-            if (set[a] + 1 < set.dim(a)) ++set[a]; 
+        template <class Set>
+        void next_impl (size_t axis, Set& set) {
+          size_t a = axes_[axis];
+          if (set[a] + 1 < set.dim (a)) ++set[a];
+          else {
+            if (axis+1 == axes_.size()) {
+              cont_ = false;
+            }
             else {
-              if (axis+1 == axes_.size()) {
-                cont_ = false;
-              }
-              else {
-                next_impl (axis+1, set);
-                if (cont_) set[a] = 0;
-              }
+              next_impl (axis+1, set);
+              if (cont_) set[a] = 0;
             }
           }
+        }
 
-        template <class Set, class Set2> 
-          void next_impl (size_t axis, Set& set, Set2& set2) 
-          { 
-            size_t a = axes_[axis];
-            if (set[a] + 1 < set.dim(a)) { ++set[a]; ++set2[a]; }
+        template <class Set, class Set2>
+        void next_impl (size_t axis, Set& set, Set2& set2) {
+          size_t a = axes_[axis];
+          if (set[a] + 1 < set.dim (a)) {
+            ++set[a];
+            ++set2[a];
+          }
+          else {
+            if (axis+1 == axes_.size()) {
+              cont_ = false;
+            }
             else {
-              if (axis+1 == axes_.size()) {
-                cont_ = false;
-              }
-              else {
-                next_impl (axis+1, set, set2);
-                if (cont_) { set[a] = 0; set2[a] = 0; }
+              next_impl (axis+1, set, set2);
+              if (cont_) {
+                set[a] = 0;
+                set2[a] = 0;
               }
             }
           }
+        }
 
-        template <class Set, class Set2, class Set3> 
-          void next_impl (size_t axis, Set& set, Set2& set2, Set3& set3)
-          { 
-            size_t a = axes_[axis];
-            if (set[a] + 1 < set.dim(a)) { ++set[a]; ++set2[a]; ++set3[a]; }
+        template <class Set, class Set2, class Set3>
+        void next_impl (size_t axis, Set& set, Set2& set2, Set3& set3) {
+          size_t a = axes_[axis];
+          if (set[a] + 1 < set.dim (a)) {
+            ++set[a];
+            ++set2[a];
+            ++set3[a];
+          }
+          else {
+            if (axis+1 == axes_.size()) {
+              cont_ = false;
+            }
             else {
-              if (axis+1 == axes_.size()) {
-                cont_ = false; 
-              }
-              else {
-                next_impl (axis+1, set, set2, set3);
-                if (cont_) { set[a] = 0; set2[a] = 0; set3[a] = 0; }
+              next_impl (axis+1, set, set2, set3);
+              if (cont_) {
+                set[a] = 0;
+                set2[a] = 0;
+                set3[a] = 0;
               }
             }
           }
+        }
 
     };
 

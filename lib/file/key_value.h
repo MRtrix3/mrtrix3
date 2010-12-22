@@ -26,21 +26,34 @@
 #include <fstream>
 #include "mrtrix.h"
 
-namespace MR {
-  namespace File {
+namespace MR
+{
+  namespace File
+  {
 
-    class KeyValue {
+    class KeyValue
+    {
       public:
         KeyValue () { }
-        KeyValue (const std::string& file, const char* first_line = NULL) { open (file, first_line); }
+        KeyValue (const std::string& file, const char* first_line = NULL) {
+          open (file, first_line);
+        }
 
         void  open (const std::string& file, const char* first_line = NULL);
         bool  next ();
-        void  close () { in.close(); }
+        void  close () {
+          in.close();
+        }
 
-        const std::string& key () const throw ()   { return (K); }
-        const std::string& value () const throw () { return (V); }
-        const std::string& name () const throw ()  { return (filename); }
+        const std::string& key () const throw ()   {
+          return (K);
+        }
+        const std::string& value () const throw () {
+          return (V);
+        }
+        const std::string& name () const throw ()  {
+          return (filename);
+        }
 
       protected:
         std::string K, V, filename;

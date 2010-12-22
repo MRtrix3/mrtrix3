@@ -30,29 +30,46 @@
 #include "types.h"
 #include "file/entry.h"
 
-namespace MR {
-  namespace File {
+namespace MR
+{
+  namespace File
+  {
 
-    class MMap : protected Entry {
+    class MMap : protected Entry
+    {
       public:
-        MMap (const Entry& entry, bool read_write = false, int64_t mapped_size = -1) : 
-          Entry (entry), msize (mapped_size), readwrite (read_write) { map(); }
+        MMap (const Entry& entry, bool read_write = false, int64_t mapped_size = -1) :
+          Entry (entry), msize (mapped_size), readwrite (read_write) {
+          map();
+        }
         MMap (const std::string& fname, bool read_write = false, int64_t from = 0, int64_t mapped_size = -1) :
-          Entry (fname, from), msize (mapped_size), readwrite (read_write) { map(); }
+          Entry (fname, from), msize (mapped_size), readwrite (read_write) {
+          map();
+        }
         ~MMap ();
 
-        std::string     name () const        { return (Entry::name); }
-        int64_t         size () const        { return (msize); }
-        uint8_t*        address()            { return (addr + start); }
-        const uint8_t*  address() const      { return (addr + start); }
+        std::string     name () const        {
+          return (Entry::name);
+        }
+        int64_t         size () const        {
+          return (msize);
+        }
+        uint8_t*        address()            {
+          return (addr + start);
+        }
+        const uint8_t*  address() const      {
+          return (addr + start);
+        }
 
-        bool is_read_write () const           { return (readwrite); }
+        bool is_read_write () const           {
+          return (readwrite);
+        }
         bool changed () const;
 
         friend std::ostream& operator<< (std::ostream& stream, const MMap& m) {
           stream << "File::MMap { " << m.name() << " [" << m.fd << "], size: "
-            << m.size() << ", mapped " << ( m.readwrite ? "RW" : "RO" ) 
-            << " at " << (void*) m.address() << ", offset " << m.start << " }";
+                 << m.size() << ", mapped " << (m.readwrite ? "RW" : "RO")
+                 << " at " << (void*) m.address() << ", offset " << m.start << " }";
           return (stream);
         }
 
@@ -66,7 +83,9 @@ namespace MR {
         void map ();
 
       private:
-        MMap (const MMap& mmap) : Entry (mmap) { assert (0); }
+        MMap (const MMap& mmap) : Entry (mmap) {
+          assert (0);
+        }
     };
 
 

@@ -26,7 +26,8 @@
 #include <stdint.h>
 #include <complex>
 
-namespace MR {
+namespace MR
+{
 
   typedef float  float32;
   typedef double float64;

@@ -23,7 +23,7 @@
 #include "image/header.h"
 #include "app.h"
 
-using namespace MR; 
+using namespace MR;
 
 SET_VERSION_DEFAULT;
 SET_AUTHOR (NULL);
@@ -44,10 +44,10 @@ ARGUMENTS = {
 OPTIONS = {
 
   Option ("transform", "write transform matrix to file")
-    + Argument ("file").type_file (),
+  + Argument ("file").type_file (),
 
   Option ("gradient", "write DW gradient scheme to file")
-    + Argument ("file").type_file (),
+  + Argument ("file").type_file (),
 
   Option ()
 };
@@ -55,11 +55,11 @@ OPTIONS = {
 
 
 EXECUTE {
-  Image::Header header (argument[0]); 
+  Image::Header header (argument[0]);
 
   Options opt = get_options ("gradient");
   if (opt.size()) {
-    if (!header.DW_scheme().is_set()) 
+    if (!header.DW_scheme().is_set())
       error ("no gradient file found for image \"" + header.name() + "\"");
     header.DW_scheme().save (opt[0][0]);
     return;

@@ -23,8 +23,10 @@
 #include "app.h"
 #include "image/axis.h"
 
-namespace MR {
-  namespace Image {
+namespace MR
+{
+  namespace Image
+  {
 
     const char* Axis::left_to_right = "left->right";
     const char* Axis::posterior_to_anterior = "posterior->anterior";
@@ -50,8 +52,14 @@ namespace MR {
       try {
         while (str <= end) {
           bool pos = true;
-          if (specifier[str] == '+') { pos = true; str++; }
-          else if (specifier[str] == '-') { pos = false; str++; }
+          if (specifier[str] == '+') {
+            pos = true;
+            str++;
+          }
+          else if (specifier[str] == '-') {
+            pos = false;
+            str++;
+          }
           else if (!isdigit (specifier[str])) throw 0;
 
           lim = str;
@@ -65,9 +73,11 @@ namespace MR {
           current++;
         }
       }
-      catch (int) { throw Exception ("malformed axes specification \"" + specifier + "\""); }
+      catch (int) {
+        throw Exception ("malformed axes specification \"" + specifier + "\"");
+      }
 
-      if (current != ndim) 
+      if (current != ndim)
         throw Exception ("incorrect number of axes in axes specification \"" + specifier + "\"");
 
       check (parsed, ndim);
@@ -83,15 +93,15 @@ namespace MR {
 
     void Axis::check (const std::vector<ssize_t>& parsed, size_t ndim)
     {
-      if (parsed.size() != ndim) 
+      if (parsed.size() != ndim)
         throw Exception ("incorrect number of dimensions for axes specifier");
       for (size_t n = 0; n < parsed.size(); n++) {
-        if (!parsed[n] || size_t(abs(parsed[n])) > ndim) 
+        if (!parsed[n] || size_t (abs (parsed[n])) > ndim)
           throw Exception ("axis ordering " + str (parsed[n]) + " out of range");
 
-        for (size_t i = 0; i < n; i++) 
-          if (abs(parsed[i]) == abs(parsed[n])) 
-            throw Exception ("duplicate axis ordering (" + str (abs(parsed[n])) + ")");
+        for (size_t i = 0; i < n; i++)
+          if (abs (parsed[i]) == abs (parsed[n]))
+            throw Exception ("duplicate axis ordering (" + str (abs (parsed[n])) + ")");
       }
     }
 
@@ -106,8 +116,8 @@ namespace MR {
 
     std::ostream& operator<< (std::ostream& stream, const Axis& axis)
     {
-      stream << "[ dim: " << axis.dim << ", vox: " << axis.vox << ", stride: " << axis.stride 
-        << ", description: ";
+      stream << "[ dim: " << axis.dim << ", vox: " << axis.vox << ", stride: " << axis.stride
+             << ", description: ";
       if (axis.description.size()) stream << "\"" << axis.description << "\"";
       else stream << "(empty)";
       stream << ", units: ";

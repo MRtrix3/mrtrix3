@@ -34,16 +34,19 @@
 #include "image/name_parser.h"
 #include "image/format/list.h"
 
-namespace MR {
-  namespace Image {
-    namespace Format {
+namespace MR
+{
+  namespace Image
+  {
+    namespace Format
+    {
 
-      // extensions are: 
+      // extensions are:
       // mih: MRtrix Image Header
       // mif: MRtrix Image File
 
       bool MRtrix::read (Header& H) const
-      { 
+      {
         if (!Path::has_suffix (H.name(), ".mih") && !Path::has_suffix (H.name(), ".mif")) return (false);
 
         File::KeyValue kv (H.name(), "mrtrix image");
@@ -65,12 +68,12 @@ namespace MR {
           else if (key == "units") units = split (kv.value(), "\\");
           else if (key == "labels") labels = split (kv.value(), "\\");
           else if (key == "transform") {
-            std::vector<float> V (parse_floats (kv.value())); 
+            std::vector<float> V (parse_floats (kv.value()));
             transform.insert (transform.end(), V.begin(), V.end());
           }
-          else if (key == "dw_scheme") { 
+          else if (key == "dw_scheme") {
             std::vector<float> V (parse_floats (kv.value()));
-            dw_scheme.insert (dw_scheme.end(), V.begin(), V.end()); 
+            dw_scheme.insert (dw_scheme.end(), V.begin(), V.end());
           }
           else H[key] = kv.value();
         }
@@ -98,23 +101,24 @@ namespace MR {
         for (size_t i = 0; i < ax.size(); ++i)
           H.set_stride (i, ax[i]);
 
-        for (size_t n = 0; n < MIN (H.ndim(), labels.size()); ++n) 
+        for (size_t n = 0; n < MIN (H.ndim(), labels.size()); ++n)
           H.set_description (n, labels[n]);
-        for (size_t n = 0; n < MIN (H.ndim(), units.size()); ++n) 
+        for (size_t n = 0; n < MIN (H.ndim(), units.size()); ++n)
           H.set_units (n, units[n]);
 
         if (transform.size()) {
 
-          if (transform.size() < 9) 
+          if (transform.size() < 9)
             throw Exception ("invalid \"transform\" specification for MRtrix image \"" + H.name() + "\"");
 
           Math::Matrix<float>& T (H.get_transform());
           T.allocate (4,4);
           int count = 0;
-          for (int row = 0; row < 3; ++row) 
-            for (int col = 0; col < 4; ++col) 
-              T(row,col) = transform[count++];
-          T(3,0) = T(3,1) = T(3,2) = 0.0; T(3,3) = 1.0;
+          for (int row = 0; row < 3; ++row)
+            for (int col = 0; col < 4; ++col)
+              T (row,col) = transform[count++];
+          T (3,0) = T (3,1) = T (3,2) = 0.0;
+          T (3,3) = 1.0;
         }
 
 
@@ -122,22 +126,22 @@ namespace MR {
           if (dw_scheme.size() % 4) info ("WARNING: invalid \"dw_scheme\" specification for MRtrix image \"" + H.name() + "\" - ignored");
           else {
             Math::Matrix<float>& M (H.get_DW_scheme());
-            M.allocate (dw_scheme.size()/4, 4);
+            M.allocate (dw_scheme.size() /4, 4);
             int count = 0;
-            for (size_t row = 0; row < M.rows(); ++row) 
-              for (size_t col = 0; col < 4; ++col) 
-                M(row,col) = dw_scheme[count++];
+            for (size_t row = 0; row < M.rows(); ++row)
+              for (size_t col = 0; col < 4; ++col)
+                M (row,col) = dw_scheme[count++];
           }
         }
 
 
         if (scaling.size()) {
-          if (scaling.size() != 2) 
+          if (scaling.size() != 2)
             throw Exception ("invalid \"scaling\" specification for MRtrix image \"" + H.name() + "\"");
           H.set_scaling (scaling[1], scaling[0]);
         }
 
-        if (file.empty()) 
+        if (file.empty())
           throw Exception ("missing \"file\" specification for MRtrix image \"" + H.name() + "\"");
 
         std::istringstream files_stream (file);
@@ -145,16 +149,18 @@ namespace MR {
         files_stream >> fname;
         size_t offset = 0;
         if (files_stream.good()) {
-          try { files_stream >> offset; }
-          catch (...) { 
-            throw Exception ("invalid offset specified for file \"" + fname 
-                + "\" in MRtrix image header \"" + H.name() + "\"");
+          try {
+            files_stream >> offset;
+          }
+          catch (...) {
+            throw Exception ("invalid offset specified for file \"" + fname
+                             + "\" in MRtrix image header \"" + H.name() + "\"");
           }
         }
 
         if (fname == ".") {
           if (offset == 0)
-            throw Exception ("invalid offset specified for embedded MRtrix image \"" + H.name() + "\""); 
+            throw Exception ("invalid offset specified for embedded MRtrix image \"" + H.name() + "\"");
           fname = H.name();
         }
         else fname = Path::join (Path::dirname (H.name()), fname);
@@ -162,7 +168,7 @@ namespace MR {
         ParsedNameList list;
         std::vector<int> num = list.parse_scan_check (fname);
 
-        for (size_t n = 0; n < list.size(); ++n) 
+        for (size_t n = 0; n < list.size(); ++n)
           H.add_file (File::Entry (list[n]->name(), offset));
 
         return (true);
@@ -174,13 +180,13 @@ namespace MR {
 
       bool MRtrix::check (Header& H, size_t num_axes) const
       {
-        if (!Path::has_suffix (H.name(), ".mih") && 
-            !Path::has_suffix (H.name(), ".mif")) 
+        if (!Path::has_suffix (H.name(), ".mih") &&
+            !Path::has_suffix (H.name(), ".mif"))
           return (false);
 
         H.set_ndim (num_axes);
-        for (size_t i = 0; i < H.ndim(); i++) 
-          if (H.dim(i) < 1) 
+        for (size_t i = 0; i < H.ndim(); i++)
+          if (H.dim (i) < 1)
             H.set_dim (i, 1);
 
         return (true);
@@ -191,55 +197,55 @@ namespace MR {
 
       void MRtrix::create (Header& H) const
       {
-        if (!File::is_tempfile (H.name())) 
+        if (!File::is_tempfile (H.name()))
           File::create (H.name());
 
         std::ofstream out (H.name().c_str(), std::ios::out | std::ios::binary);
-        if (!out) 
-          throw Exception ("error creating file \"" + H.name() + "\":" + strerror(errno));
+        if (!out)
+          throw Exception ("error creating file \"" + H.name() + "\":" + strerror (errno));
 
         out << "mrtrix image\n";
-        out << "dim: " << H.dim(0);
+        out << "dim: " << H.dim (0);
         for (size_t n = 1; n < H.ndim(); ++n)
-          out << "," << H.dim(n);
+          out << "," << H.dim (n);
 
-        out << "\nvox: " << H.vox(0);
+        out << "\nvox: " << H.vox (0);
         for (size_t n = 1; n < H.ndim(); ++n)
-          out << "," << H.vox(n);
+          out << "," << H.vox (n);
 
-        out << "\nlayout: " << ( H.stride(0)>0 ? "+" : "-" ) << abs(H.stride(0))-1;
-        for (size_t n = 1; n < H.ndim(); ++n) 
-          out << "," << ( H.stride(n)>0 ? "+" : "-" ) << abs(H.stride(n))-1;
+        out << "\nlayout: " << (H.stride (0) >0 ? "+" : "-") << abs (H.stride (0))-1;
+        for (size_t n = 1; n < H.ndim(); ++n)
+          out << "," << (H.stride (n) >0 ? "+" : "-") << abs (H.stride (n))-1;
 
         out << "\ndatatype: " << H.datatype().specifier();
 
-        out << "\nlabels: " << H.description(0);
-        for (size_t n = 1; n < H.ndim(); n++) 
-          out << "\\" << H.description(n);
+        out << "\nlabels: " << H.description (0);
+        for (size_t n = 1; n < H.ndim(); n++)
+          out << "\\" << H.description (n);
 
-        out << "\nunits: " <<  H.units(0);
-        for (size_t n = 1; n < H.ndim(); n++) 
-          out << "\\" << H.units(n);
+        out << "\nunits: " <<  H.units (0);
+        for (size_t n = 1; n < H.ndim(); n++)
+          out << "\\" << H.units (n);
 
         for (std::map<std::string, std::string>::iterator i = H.begin(); i != H.end(); ++i)
           out << "\n" << i->first << ": " << i->second;
 
-        for (std::vector<std::string>::const_iterator i = H.comments().begin(); i != H.comments().end(); i++) 
+        for (std::vector<std::string>::const_iterator i = H.comments().begin(); i != H.comments().end(); i++)
           out << "\ncomments: " << *i;
 
 
         if (H.transform().is_set()) {
-          out << "\ntransform: " << H.transform()(0,0) << "," <<  H.transform()(0,1) << "," << H.transform()(0,2) << "," << H.transform()(0,3);
-          out << "\ntransform: " << H.transform()(1,0) << "," <<  H.transform()(1,1) << "," << H.transform()(1,2) << "," << H.transform()(1,3);
-          out << "\ntransform: " << H.transform()(2,0) << "," <<  H.transform()(2,1) << "," << H.transform()(2,2) << "," << H.transform()(2,3);
+          out << "\ntransform: " << H.transform() (0,0) << "," <<  H.transform() (0,1) << "," << H.transform() (0,2) << "," << H.transform() (0,3);
+          out << "\ntransform: " << H.transform() (1,0) << "," <<  H.transform() (1,1) << "," << H.transform() (1,2) << "," << H.transform() (1,3);
+          out << "\ntransform: " << H.transform() (2,0) << "," <<  H.transform() (2,1) << "," << H.transform() (2,2) << "," << H.transform() (2,3);
         }
 
-        if (H.data_offset() != 0.0 || H.data_scale() != 1.0) 
+        if (H.data_offset() != 0.0 || H.data_scale() != 1.0)
           out << "\nscaling: " << H.data_offset() << "," << H.data_scale();
 
         if (H.DW_scheme().is_set()) {
           for (size_t i = 0; i < H.DW_scheme().rows(); i++)
-            out << "\ndw_scheme: " << H.DW_scheme()(i,0) << "," << H.DW_scheme()(i,1) << "," << H.DW_scheme()(i,2) << "," << H.DW_scheme()(i,3);
+            out << "\ndw_scheme: " << H.DW_scheme() (i,0) << "," << H.DW_scheme() (i,1) << "," << H.DW_scheme() (i,2) << "," << H.DW_scheme() (i,3);
         }
 
         bool single_file = Path::has_suffix (H.name(), ".mif");

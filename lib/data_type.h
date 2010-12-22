@@ -29,29 +29,56 @@
 # undef Complex
 #endif
 
-namespace MR {
+namespace MR
+{
 
-  class DataType {
+  class DataType
+  {
     public:
       DataType () : dt (DataType::Native) { }
       DataType (uint8_t type) : dt (type) { }
       DataType (const DataType& DT) : dt (DT.dt) { }
-      uint8_t&       operator() () { return (dt); }
-      const uint8_t& operator() () const { return (dt); }
-      bool operator== (uint8_t type) const { return (dt == type); }
-      bool operator!= (uint8_t type) const { return (dt != type); }
-      bool operator== (const DataType DT) const { return (dt == DT.dt); }
-      bool operator!= (const DataType DT) const { return (dt != DT.dt); }
-      const DataType& operator= (const DataType DT) { dt = DT.dt; return (*this); }
+      uint8_t&       operator() () {
+        return (dt);
+      }
+      const uint8_t& operator() () const {
+        return (dt);
+      }
+      bool operator== (uint8_t type) const {
+        return (dt == type);
+      }
+      bool operator!= (uint8_t type) const {
+        return (dt != type);
+      }
+      bool operator== (const DataType DT) const {
+        return (dt == DT.dt);
+      }
+      bool operator!= (const DataType DT) const {
+        return (dt != DT.dt);
+      }
+      const DataType& operator= (const DataType DT) {
+        dt = DT.dt;
+        return (*this);
+      }
 
-      bool is (uint8_t type) const { return (dt == type); }
-      bool is_complex () const { return (dt & Complex); }
-      bool is_signed () const { return (dt & Signed); }
-      bool is_little_endian () const { return (dt & LittleEndian); }
-      bool is_big_endian () const { return (dt & BigEndian); }
+      bool is (uint8_t type) const {
+        return (dt == type);
+      }
+      bool is_complex () const {
+        return (dt & Complex);
+      }
+      bool is_signed () const {
+        return (dt & Signed);
+      }
+      bool is_little_endian () const {
+        return (dt & LittleEndian);
+      }
+      bool is_big_endian () const {
+        return (dt & BigEndian);
+      }
       void set_byte_order_native () {
-        if ( dt != Bit && dt != Int8 && dt != UInt8 ) {
-          if ( !is_little_endian() && !is_big_endian() ) {
+        if (dt != Bit && dt != Int8 && dt != UInt8) {
+          if (!is_little_endian() && !is_big_endian()) {
 #ifdef BYTE_ORDER_BIG_ENDIAN
             dt |= BigEndian;
 #else
@@ -63,17 +90,26 @@ namespace MR {
 
       void         parse (const std::string& spec);
       size_t       bits () const;
-      size_t       bytes () const { return ((bits()+7)/8); }
+      size_t       bytes () const {
+        return ( (bits() +7) /8);
+      }
       const char*  description () const;
       const char*  specifier () const;
 
-      void set_flag (uint8_t flag) { dt |= flag; }
-      void unset_flag (uint8_t flag) { dt &= ~flag; }
+      void set_flag (uint8_t flag) {
+        dt |= flag;
+      }
+      void unset_flag (uint8_t flag) {
+        dt &= ~flag;
+      }
 
-      template <typename T> 
-        static DataType from ();
+      template <typename T>
+      static DataType from ();
 
-      static DataType native (DataType dt) { dt.set_byte_order_native(); return (dt); }
+      static DataType native (DataType dt) {
+        dt.set_byte_order_native();
+        return (dt);
+      }
 
 
       static const uint8_t     Attributes    = 0xF0U;
@@ -114,30 +150,60 @@ namespace MR {
       static const uint8_t     CFloat64LE    = Complex | Float64 | LittleEndian;
       static const uint8_t     CFloat64BE    = Complex | Float64 | BigEndian;
 
-      static const uint8_t     Native        = Float32 | 
+      static const uint8_t     Native        = Float32 |
 #ifdef BYTE_ORDER_BIG_ENDIAN
-        BigEndian;
+          BigEndian;
 #else
-        LittleEndian;
+          LittleEndian;
 #endif
 
-        static const char* identifiers[];
+      static const char* identifiers[];
 
     protected:
       uint8_t dt;
 
   };
 
-  template <> inline DataType DataType::from<int8_t> () { return (DataType::Int8); }
-  template <> inline DataType DataType::from<uint8_t> () { return (DataType::UInt8); }
-  template <> inline DataType DataType::from<int16_t> () { return (DataType::native (DataType::Int16)); }
-  template <> inline DataType DataType::from<uint16_t> () { return (DataType::native (DataType::UInt16)); }
-  template <> inline DataType DataType::from<int32_t> () { return (DataType::native (DataType::Int32)); }
-  template <> inline DataType DataType::from<uint32_t> () { return (DataType::native (DataType::UInt32)); }
-  template <> inline DataType DataType::from<float> () { return (DataType::native (DataType::Float32)); }
-  template <> inline DataType DataType::from<double> () { return (DataType::native (DataType::Float64)); }
-  template <> inline DataType DataType::from<cfloat> () { return (DataType::native (DataType::CFloat32)); }
-  template <> inline DataType DataType::from<cdouble> () { return (DataType::native (DataType::CFloat64)); }
+  template <> inline DataType DataType::from<int8_t> ()
+  {
+    return (DataType::Int8);
+  }
+  template <> inline DataType DataType::from<uint8_t> ()
+  {
+    return (DataType::UInt8);
+  }
+  template <> inline DataType DataType::from<int16_t> ()
+  {
+    return (DataType::native (DataType::Int16));
+  }
+  template <> inline DataType DataType::from<uint16_t> ()
+  {
+    return (DataType::native (DataType::UInt16));
+  }
+  template <> inline DataType DataType::from<int32_t> ()
+  {
+    return (DataType::native (DataType::Int32));
+  }
+  template <> inline DataType DataType::from<uint32_t> ()
+  {
+    return (DataType::native (DataType::UInt32));
+  }
+  template <> inline DataType DataType::from<float> ()
+  {
+    return (DataType::native (DataType::Float32));
+  }
+  template <> inline DataType DataType::from<double> ()
+  {
+    return (DataType::native (DataType::Float64));
+  }
+  template <> inline DataType DataType::from<cfloat> ()
+  {
+    return (DataType::native (DataType::CFloat32));
+  }
+  template <> inline DataType DataType::from<cdouble> ()
+  {
+    return (DataType::native (DataType::CFloat64));
+  }
 
 }
 

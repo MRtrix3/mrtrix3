@@ -22,7 +22,8 @@
 
 #include "progressbar.h"
 
-namespace MR {
+namespace MR
+{
 
   bool ProgressBar::display = true;
   void (*ProgressBar::display_func) (ProgressInfo& p) = NULL;

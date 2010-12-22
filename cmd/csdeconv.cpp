@@ -44,17 +44,17 @@ DESCRIPTION = {
   "Note that the spherical harmonics equations used here differ slightly from those conventionally used, in that the (-1)^m factor has been omitted. This should be taken into account in all subsequent calculations.",
 
   "Each volume in the output image corresponds to a different spherical harmonic component, according to the following convention:\n"
-    "[0]     Y(0,0)\n"
-    "\n"
-    "[1] Im {Y(2,2)}\n"
-    "[2] Im {Y(2,1)}\n"
-    "[3]     Y(2,0)\n"
-    "[4] Re {Y(2,1)}\n"
-    "[5] Re {Y(2,2)}\n"
-    "\n"
-    "[6] Im {Y(4,4)}\n"
-    "[7] Im {Y(4,3)}\n"
-    "etc...\n",
+  "[0]     Y(0,0)\n"
+  "\n"
+  "[1] Im {Y(2,2)}\n"
+  "[2] Im {Y(2,1)}\n"
+  "[3]     Y(2,0)\n"
+  "[4] Re {Y(2,1)}\n"
+  "[5] Re {Y(2,2)}\n"
+  "\n"
+  "[6] Im {Y(4,4)}\n"
+  "[7] Im {Y(4,3)}\n"
+  "etc...\n",
 
   NULL
 };
@@ -69,56 +69,56 @@ ARGUMENTS = {
 
 OPTIONS = {
   Option ("grad",
-      "specify the diffusion-weighted gradient scheme used in the acquisition. "
-      "The program will normally attempt to use the encoding stored in the image "
-      "header. This should be supplied as a 4xN text file with each line is in "
-      "the format [ X Y Z b ], where [ X Y Z ] describe the direction of the "
-      "applied gradient, and b gives the b-value in units (1000 s/mm^2).")
-    + Argument ("encoding").type_file(),
+  "specify the diffusion-weighted gradient scheme used in the acquisition. "
+  "The program will normally attempt to use the encoding stored in the image "
+  "header. This should be supplied as a 4xN text file with each line is in "
+  "the format [ X Y Z b ], where [ X Y Z ] describe the direction of the "
+  "applied gradient, and b gives the b-value in units (1000 s/mm^2).")
+  + Argument ("encoding").type_file(),
 
   Option ("lmax",
-      "set the maximum harmonic order for the output series. By default, the "
-      "program will use the highest possible lmax given the number of "
-      "diffusion-weighted images.")
-    + Argument ("order").type_integer (2, 8, 30),
+  "set the maximum harmonic order for the output series. By default, the "
+  "program will use the highest possible lmax given the number of "
+  "diffusion-weighted images.")
+  + Argument ("order").type_integer (2, 8, 30),
 
-  Option ("mask", 
-      "only perform computation within the specified binary brain mask image.")
-    + Argument ("image").type_image_in(),
+  Option ("mask",
+  "only perform computation within the specified binary brain mask image.")
+  + Argument ("image").type_image_in(),
 
-  Option ("directions", 
-      "specify the directions over which to apply the non-negativity constraint "
-      "(by default, the built-in 300 direction set is used). These should be "
-      "supplied as a text file containing the [ el az ] pairs for the directions.")
-    + Argument ("file").type_file(),
+  Option ("directions",
+  "specify the directions over which to apply the non-negativity constraint "
+  "(by default, the built-in 300 direction set is used). These should be "
+  "supplied as a text file containing the [ el az ] pairs for the directions.")
+  + Argument ("file").type_file(),
 
-  Option ("filter", 
-      "the linear frequency filtering parameters used for the initial linear "
-      "spherical deconvolution step (default = [ 1 1 1 0 0 ]). These should be "
-      " supplied as a text file containing the filtering coefficients for each "
-      "even harmonic order.")
-    + Argument ("spec").type_file(),
+  Option ("filter",
+  "the linear frequency filtering parameters used for the initial linear "
+  "spherical deconvolution step (default = [ 1 1 1 0 0 ]). These should be "
+  " supplied as a text file containing the filtering coefficients for each "
+  "even harmonic order.")
+  + Argument ("spec").type_file(),
 
   Option ("normalise", "normalise the DW signal to the b=0 image"),
 
   Option ("neg_lambda",
-      "the regularisation parameter lambda that controls the strength of the "
-      "non-negativity constraint (default = 1.0).")
-    + Argument ("value").type_float (0.0, 1.0, 1.0e12),
+  "the regularisation parameter lambda that controls the strength of the "
+  "non-negativity constraint (default = 1.0).")
+  + Argument ("value").type_float (0.0, 1.0, 1.0e12),
 
   Option ("norm_lambda",
-      "the regularisation parameter lambda that controls the strength of the "
-      "constraint on the norm of the solution (default = 1.0).")
-    + Argument ("value").type_float (0.0, 1.0, 1.0e12),
+  "the regularisation parameter lambda that controls the strength of the "
+  "constraint on the norm of the solution (default = 1.0).")
+  + Argument ("value").type_float (0.0, 1.0, 1.0e12),
 
   Option ("threshold",
-      "the threshold below which the amplitude of the FOD is assumed to be zero, "
-      "expressed as a fraction of the mean value of the initial FOD (default = 0.0).")
-    + Argument ("value").type_float (-1.0, 0.0, 10.0),
+  "the threshold below which the amplitude of the FOD is assumed to be zero, "
+  "expressed as a fraction of the mean value of the initial FOD (default = 0.0).")
+  + Argument ("value").type_float (-1.0, 0.0, 10.0),
 
-  Option ("niter", 
-      "the maximum number of iterations to perform for each voxel (default = 50).")
-    + Argument ("number").type_integer (1, 50, 1000),
+  Option ("niter",
+  "the maximum number of iterations to perform for each voxel (default = 50).")
+  + Argument ("number").type_integer (1, 50, 1000),
 
   Option ()
 };
@@ -130,18 +130,26 @@ OPTIONS = {
 
 typedef float value_type;
 
-class Item {
+class Item
+{
   public:
     Math::Vector<value_type> data;
     ssize_t pos[3];
 };
 
-class Allocator {
+class Allocator
+{
   public:
     Allocator (size_t data_size) : N (data_size) { }
-    Item* alloc () { Item* item = new Item; item->data.allocate (N); return (item); }
+    Item* alloc () {
+      Item* item = new Item;
+      item->data.allocate (N);
+      return (item);
+    }
     void reset (Item* item) { }
-    void dealloc (Item* item) { delete item; }
+    void dealloc (Item* item) {
+      delete item;
+    }
   private:
     size_t N;
 };
@@ -153,14 +161,15 @@ typedef Thread::Queue<Item,Allocator> Queue;
 
 
 
-class DataLoader {
+class DataLoader
+{
   public:
     DataLoader (Queue& queue,
-        Image::Header& dwi_header,
-        Image::Header* mask_header,
-        const std::vector<int>& vec_bzeros,
-        const std::vector<int>& vec_dwis,
-        bool normalise_to_b0) :
+                Image::Header& dwi_header,
+                Image::Header* mask_header,
+                const std::vector<int>& vec_bzeros,
+                const std::vector<int>& vec_dwis,
+                bool normalise_to_b0) :
       writer (queue),
       dwi (dwi_header),
       mask (mask_header),
@@ -222,12 +231,13 @@ class DataLoader {
 
 
 
-class Processor {
+class Processor
+{
   public:
     Processor (Queue& queue,
-        Image::Header& header,
-        const DWI::CSDeconv<value_type>::Shared& shared,
-        int max_num_iterations) :
+               Image::Header& header,
+               const DWI::CSDeconv<value_type>::Shared& shared,
+               int max_num_iterations) :
       reader (queue), SH (header), sdeconv (shared), niter (max_num_iterations) { }
 
     void execute () {
@@ -238,15 +248,15 @@ class Processor {
         int n;
         for (n = 0; n < niter; n++) if (sdeconv.iterate()) break;
         if (n == niter)
-          info ("voxel [ " + str(item->pos[0]) + " " + str(item->pos[1]) + " " + str(item->pos[2]) +
-            " ] did not reach full convergence");
+          info ("voxel [ " + str (item->pos[0]) + " " + str (item->pos[1]) + " " + str (item->pos[2]) +
+                " ] did not reach full convergence");
 
         SH[0] = item->pos[0];
         SH[1] = item->pos[1];
         SH[2] = item->pos[2];
 
-        for (SH[3] = 0; SH[3] < SH.dim(3); ++SH[3])
-          SH.value() = sdeconv.FOD()[SH[3]];
+        for (SH[3] = 0; SH[3] < SH.dim (3); ++SH[3])
+          SH.value() = sdeconv.FOD() [SH[3]];
       }
     }
 
@@ -274,7 +284,7 @@ EXECUTE {
   Math::Matrix<value_type> grad;
 
   Options opt = get_options ("grad");
-  if (opt.size()) 
+  if (opt.size())
     grad.load (opt[0][0]);
   else {
     if (!dwi_header.DW_scheme().is_set())
@@ -285,47 +295,47 @@ EXECUTE {
   if (grad.rows() < 7 || grad.columns() != 4)
     throw Exception ("unexpected diffusion encoding matrix dimensions");
 
-  info ("found " + str(grad.rows()) + "x" + str(grad.columns()) + " diffusion-weighted encoding");
+  info ("found " + str (grad.rows()) + "x" + str (grad.columns()) + " diffusion-weighted encoding");
 
-  if (dwi_header.dim(3) != (int) grad.rows())
+  if (dwi_header.dim (3) != (int) grad.rows())
     throw Exception ("number of studies in base image does not match that in encoding file");
 
   DWI::normalise_grad (grad);
 
   std::vector<int> bzeros, dwis;
   DWI::guess_DW_directions (dwis, bzeros, grad);
-  info ("found " + str(dwis.size()) + " diffusion-weighted directions");
+  info ("found " + str (dwis.size()) + " diffusion-weighted directions");
 
   Math::Matrix<value_type> DW_dirs;
   DWI::gen_direction_matrix (DW_dirs, grad, dwis);
 
   opt = get_options ("lmax");
   int lmax = opt.size() ? opt[0][0] : Math::SH::LforN (dwis.size());
-  info ("calculating even spherical harmonic components up to order " + str(lmax));
+  info ("calculating even spherical harmonic components up to order " + str (lmax));
 
 
   info ("setting response function from file \"" + argument[1] + "\"");
   Math::Vector<value_type> response;
   response.load (argument[1]);
-  info ("setting response function using even SH coefficients: " + str(response));
+  info ("setting response function using even SH coefficients: " + str (response));
 
 
   opt = get_options ("filter");
   Math::Vector<value_type> filter;
-  if (opt.size()) 
+  if (opt.size())
     filter.load (opt[0][0]);
   else {
     filter.allocate (response.size());
     filter.zero();
     filter[0] = filter[1] = filter[2] = 1.0;
   }
-  info ("using initial filter coefficients: " + str(filter));
+  info ("using initial filter coefficients: " + str (filter));
 
 
 
   opt = get_options ("directions");
   Math::Matrix<value_type> HR_dirs;
-  if (opt.size()) 
+  if (opt.size())
     HR_dirs.load (opt[0][0]);
   else {
     HR_dirs.allocate (300,2);
@@ -345,26 +355,26 @@ EXECUTE {
   if (opt.size())
     mask_header = new Image::Header (opt[0][0]);
 
-  bool normalise = get_options("normalise").size();
+  bool normalise = get_options ("normalise").size();
 
-  opt = get_options("neg_lambda");
+  opt = get_options ("neg_lambda");
   value_type neg_lambda = 1.0;
-  if (opt.size()) 
+  if (opt.size())
     neg_lambda = opt[0][0];
 
-  opt = get_options("norm_lambda");
+  opt = get_options ("norm_lambda");
   value_type norm_lambda = 1.0;
-  if (opt.size()) 
+  if (opt.size())
     norm_lambda = opt[0][0];
 
-  opt = get_options("threshold");
+  opt = get_options ("threshold");
   value_type threshold = 0.1;
-  if (opt.size()) 
+  if (opt.size())
     threshold = opt[0][0];
 
-  opt = get_options("niter");
+  opt = get_options ("niter");
   int niter = 50;
-  if (opt.size()) 
+  if (opt.size())
     niter = opt[0][0];
 
 

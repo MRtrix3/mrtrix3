@@ -37,75 +37,77 @@
 
 #ifdef WINDOWS
 #define PATH_SEPARATOR "\\/"
-#else 
+#else
 #define PATH_SEPARATOR "/"
 #endif
 
 
-namespace MR {
-  namespace Path {
+namespace MR
+{
+  namespace Path
+  {
 
-    inline std::string basename (const std::string& name) 
+    inline std::string basename (const std::string& name)
     {
       size_t i = name.find_last_of (PATH_SEPARATOR);
       return (i == std::string::npos ? name : name.substr (i+1));
     }
 
 
-    inline std::string dirname (const std::string& name) 
+    inline std::string dirname (const std::string& name)
     {
       size_t i = name.find_last_of (PATH_SEPARATOR);
-      return (i == std::string::npos ? std::string("") : ( i ? name.substr (0,i) : std::string(PATH_SEPARATOR) ));
+      return (i == std::string::npos ? std::string ("") : (i ? name.substr (0,i) : std::string (PATH_SEPARATOR)));
     }
 
 
-    inline std::string join (const std::string& first, const std::string& second) 
+    inline std::string join (const std::string& first, const std::string& second)
     {
       return (first.empty() ?
-          second :
-          first + std::string(PATH_SEPARATOR)[0] + second); 
+              second :
+              first + std::string (PATH_SEPARATOR) [0] + second);
     }
 
 
-    inline bool exists (const std::string& path) 
-    { 
+    inline bool exists (const std::string& path)
+    {
       struct stat64 buf;
       if (!stat64 (path.c_str(), &buf)) return (true);
       if (errno == ENOENT) return (false);
-      throw Exception (strerror (errno)); 
+      throw Exception (strerror (errno));
       return (false);
     }
 
 
-    inline bool is_dir (const std::string& path) 
-    { 
-      struct stat64 buf;
-      if (!stat64 (path.c_str(), &buf)) return (S_ISDIR(buf.st_mode));
-      if (errno == ENOENT) return (false);
-      throw Exception (strerror (errno)); 
-      return (false);
-    }
-
-
-    inline bool is_file (const std::string& path) 
-    { 
-      struct stat64 buf;
-      if (!stat64 (path.c_str(), &buf)) return (S_ISREG(buf.st_mode));
-      if (errno == ENOENT) return (false);
-      throw Exception (strerror (errno)); 
-      return (false);
-    }
-
-    inline bool has_suffix (const std::string& name, const std::string& suffix) 
+    inline bool is_dir (const std::string& path)
     {
-      return (name.size() < suffix.size() ? 
-          false : 
-          name.substr (name.size()-suffix.size()) == suffix); 
+      struct stat64 buf;
+      if (!stat64 (path.c_str(), &buf)) return (S_ISDIR (buf.st_mode));
+      if (errno == ENOENT) return (false);
+      throw Exception (strerror (errno));
+      return (false);
     }
 
 
-    inline std::string cwd (size_t buf_size = 32) 
-    { 
+    inline bool is_file (const std::string& path)
+    {
+      struct stat64 buf;
+      if (!stat64 (path.c_str(), &buf)) return (S_ISREG (buf.st_mode));
+      if (errno == ENOENT) return (false);
+      throw Exception (strerror (errno));
+      return (false);
+    }
+
+    inline bool has_suffix (const std::string& name, const std::string& suffix)
+    {
+      return (name.size() < suffix.size() ?
+              false :
+              name.substr (name.size()-suffix.size()) == suffix);
+    }
+
+
+    inline std::string cwd (size_t buf_size = 32)
+    {
       char buf [buf_size];
       if (getcwd (buf, buf_size))
         return (buf);
@@ -114,36 +116,43 @@ namespace MR {
       return (cwd (buf_size * 2));
     }
 
-    inline std::string home () 
-    { 
+    inline std::string home ()
+    {
       const char* home = getenv ("HOME");
       if (!home) throw Exception ("HOME environment variable is not set!");
-      return (home); 
+      return (home);
     }
 
-    class Dir 
+    class Dir
     {
       public:
-        Dir (const std::string& name) : 
-          p (opendir (name.size() ? name.c_str() : ".")) { 
-            if (!p) 
-              throw Exception ("error opening folder " + name + ": " + strerror (errno));
-          }
-        ~Dir () { if (p) closedir (p); }
+        Dir (const std::string& name) :
+          p (opendir (name.size() ? name.c_str() : ".")) {
+          if (!p)
+            throw Exception ("error opening folder " + name + ": " + strerror (errno));
+        }
+        ~Dir () {
+          if (p) closedir (p);
+        }
 
-        std::string read_name () { 
-          std::string ret; 
-          struct dirent* entry = readdir(p); 
+        std::string read_name () {
+          std::string ret;
+          struct dirent* entry = readdir (p);
           if (entry) {
             ret = entry->d_name;
             if (ret == "." || ret == "..") ret = read_name();
           }
-          return (ret); 
+          return (ret);
         }
-        void rewind () { rewinddir (p); }
-        void close () { if (p) closedir (p); p = NULL; }
+        void rewind () {
+          rewinddir (p);
+        }
+        void close () {
+          if (p) closedir (p);
+          p = NULL;
+        }
 
-      protected: 
+      protected:
         DIR* p;
     };
 

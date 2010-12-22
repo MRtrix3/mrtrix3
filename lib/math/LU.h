@@ -27,26 +27,29 @@
 #include "math/matrix.h"
 #include "math/permutation.h"
 
-namespace MR {
-  namespace Math {
-    namespace LU {
+namespace MR
+{
+  namespace Math
+  {
+    namespace LU
+    {
 
       //! \cond skip
 
       // float definitions of GSL functions:
-      int gsl_linalg_LU_decomp (gsl_matrix_float * A, gsl_permutation * p, int *signum);
-      int gsl_linalg_LU_solve (const gsl_matrix_float * LU, const gsl_permutation * p, const gsl_vector_float * b, gsl_vector_float * x); 
-      int gsl_linalg_LU_svx (const gsl_matrix_float * LU, const gsl_permutation * p, gsl_vector_float * x); 
-      int gsl_linalg_LU_refine (const gsl_matrix_float * A, const gsl_matrix_float * LU, const gsl_permutation * p,
-          const gsl_vector_float * b, gsl_vector_float * x, gsl_vector_float * residual); 
-      int gsl_linalg_LU_invert (const gsl_matrix_float * LU, const gsl_permutation * p, gsl_matrix_float * inverse); 
-      double gsl_linalg_LU_det (gsl_matrix_float * LU, int signum);
-      double gsl_linalg_LU_lndet (gsl_matrix_float * LU);
-      int gsl_linalg_LU_sgndet (gsl_matrix_float * lu, int signum);
+      int gsl_linalg_LU_decomp (gsl_matrix_float* A, gsl_permutation* p, int* signum);
+      int gsl_linalg_LU_solve (const gsl_matrix_float* LU, const gsl_permutation* p, const gsl_vector_float* b, gsl_vector_float* x);
+      int gsl_linalg_LU_svx (const gsl_matrix_float* LU, const gsl_permutation* p, gsl_vector_float* x);
+      int gsl_linalg_LU_refine (const gsl_matrix_float* A, const gsl_matrix_float* LU, const gsl_permutation* p,
+                                const gsl_vector_float* b, gsl_vector_float* x, gsl_vector_float* residual);
+      int gsl_linalg_LU_invert (const gsl_matrix_float* LU, const gsl_permutation* p, gsl_matrix_float* inverse);
+      double gsl_linalg_LU_det (gsl_matrix_float* LU, int signum);
+      double gsl_linalg_LU_lndet (gsl_matrix_float* LU);
+      int gsl_linalg_LU_sgndet (gsl_matrix_float* lu, int signum);
 
       //! \endcond
 
-      /** @addtogroup linalg 
+      /** @addtogroup linalg
         @{ */
 
       /** @defgroup lu LU decomposition
@@ -55,20 +58,23 @@ namespace MR {
 
       //! %LU decomposition of A
       /** \note the contents of \a A will be overwritten with its %LU decomposition */
-      template <typename T> inline Matrix<T>& decomp (Matrix<T>& A, Permutation& p, int& signum) { 
+      template <typename T> inline Matrix<T>& decomp (Matrix<T>& A, Permutation& p, int& signum)
+      {
         gsl_linalg_LU_decomp (A.gsl(), p.gsl(), &signum);
-        return (A); 
+        return (A);
       }
 
       //! inverse of A given its %LU decomposition D,p
-      template <typename T> inline Matrix<T>& inv (Matrix<T>& I, const Matrix<T>D, const Permutation& p) { 
-	I.allocate (D); 
+      template <typename T> inline Matrix<T>& inv (Matrix<T>& I, const Matrix<T>D, const Permutation& p)
+      {
+        I.allocate (D);
         gsl_linalg_LU_invert (D.gsl(), p.gsl(), I.gsl());
-        return (I); 
+        return (I);
       }
 
       //! solve A*x = b given %LU decomposition D,p of A
-      template <typename T> inline Vector<T>& solve (Vector<T>& x, const Matrix<T>& D, const Permutation& p, const Vector<T>& b) {
+      template <typename T> inline Vector<T>& solve (Vector<T>& x, const Matrix<T>& D, const Permutation& p, const Vector<T>& b)
+      {
         x.allocate (D.rows());
         gsl_linalg_LU_solve (D.gsl(), p.gsl(), b.gsl(), x.gsl());
         return (x);
@@ -82,9 +88,10 @@ namespace MR {
       }
 
       //! inverse of A by %LU decomposition
-      template <typename T> inline Matrix<T>& inv (Matrix<T>& I, const Matrix<T>& A) { 
+      template <typename T> inline Matrix<T>& inv (Matrix<T>& I, const Matrix<T>& A)
+      {
         I.allocate (A);
-	Permutation p (A.rows());
+        Permutation p (A.rows());
         int signum;
         Matrix<T> D (A);
         decomp (D, p, signum);

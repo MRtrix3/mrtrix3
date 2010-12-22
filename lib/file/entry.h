@@ -27,10 +27,13 @@
 
 #include "types.h"
 
-namespace MR {
-  namespace File {
+namespace MR
+{
+  namespace File
+  {
 
-    class Entry {
+    class Entry
+    {
       public:
         Entry (const std::string& fname, int64_t offset = 0) :
           name (fname), start (offset) { }
@@ -40,7 +43,8 @@ namespace MR {
     };
 
 
-    inline std::ostream& operator<< (std::ostream& stream, const Entry& e) {
+    inline std::ostream& operator<< (std::ostream& stream, const Entry& e)
+    {
       stream << "File::Entry { \"" << e.name << "\", offset " << e.start << " }";
       return (stream);
     }

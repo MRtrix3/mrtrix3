@@ -28,30 +28,66 @@
 #include <gsl/gsl_matrix_complex_double.h>
 #include <gsl/gsl_matrix_complex_float.h>
 
-namespace MR {
+namespace MR
+{
 
-  namespace Math {
-    
+  namespace Math
+  {
+
     //! \cond skip
 
     template <typename T> class GSLVector;
-    template <> class GSLVector <cfloat> : public gsl_vector_complex_float { public: void set (cfloat* p) { data = (float*) p; } };
-    template <> class GSLVector <cdouble> : public gsl_vector_complex { public: void set (cdouble* p) { data = (double*) p; } };
+    template <> class GSLVector <cfloat> : public gsl_vector_complex_float
+    {
+      public:
+        void set (cfloat* p) {
+          data = (float*) p;
+        }
+    };
+    template <> class GSLVector <cdouble> : public gsl_vector_complex
+    {
+      public:
+        void set (cdouble* p) {
+          data = (double*) p;
+        }
+    };
 
     template <typename T> class GSLMatrix;
-    template <> class GSLMatrix <cfloat> : public gsl_matrix_complex_float { public: void set (cfloat* p) { data = (float*) p; } };
-    template <> class GSLMatrix <cdouble> : public gsl_matrix_complex { public: void set (cdouble* p) { data = (double*) p; } };
+    template <> class GSLMatrix <cfloat> : public gsl_matrix_complex_float
+    {
+      public:
+        void set (cfloat* p) {
+          data = (float*) p;
+        }
+    };
+    template <> class GSLMatrix <cdouble> : public gsl_matrix_complex
+    {
+      public:
+        void set (cdouble* p) {
+          data = (double*) p;
+        }
+    };
 
     template <typename T> class GSLBlock;
-    template <> class GSLBlock <cfloat> : public gsl_block_complex_float {
-      public: 
-        static gsl_block_complex_float* alloc (size_t n) { return (gsl_block_complex_float_alloc (n)); }
-        static void free (gsl_block_complex_float* p) { gsl_block_complex_float_free (p); }
+    template <> class GSLBlock <cfloat> : public gsl_block_complex_float
+    {
+      public:
+        static gsl_block_complex_float* alloc (size_t n) {
+          return (gsl_block_complex_float_alloc (n));
+        }
+        static void free (gsl_block_complex_float* p) {
+          gsl_block_complex_float_free (p);
+        }
     };
-    template <> class GSLBlock <cdouble> : public gsl_block_complex { 
-      public: 
-        static gsl_block_complex* alloc (size_t n) { return (gsl_block_complex_alloc (n)); }
-        static void free (gsl_block_complex* p) { gsl_block_complex_free (p); }
+    template <> class GSLBlock <cdouble> : public gsl_block_complex
+    {
+      public:
+        static gsl_block_complex* alloc (size_t n) {
+          return (gsl_block_complex_alloc (n));
+        }
+        static void free (gsl_block_complex* p) {
+          gsl_block_complex_free (p);
+        }
     };
 
     //! \endcond

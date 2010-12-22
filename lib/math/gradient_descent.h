@@ -27,36 +27,47 @@
 
 #include "math/vector.h"
 
-namespace MR {
-  namespace Math {
+namespace MR
+{
+  namespace Math
+  {
 
-    template <class F, typename T = float> class GradientDescent 
+    template <class F, typename T = float> class GradientDescent
     {
       public:
-        GradientDescent (F& function, T step_size_upfactor = 1.5, T step_size_downfactor = 0.1) : 
-          func (function), 
+        GradientDescent (F& function, T step_size_upfactor = 1.5, T step_size_downfactor = 0.1) :
+          func (function),
           step_up (step_size_upfactor),
           step_down (step_size_downfactor),
           x (func.size()),
           x2 (func.size()),
-          g (func.size()), 
+          g (func.size()),
           g2 (func.size()) { }
 
 
-        T                value () const throw ()     { return (f); }
-        const Vector<T>& state () const throw ()     { return (x); }
-        const Vector<T>& gradient () const throw ()  { return (g); }
+        T                value () const throw ()     {
+          return (f);
+        }
+        const Vector<T>& state () const throw ()     {
+          return (x);
+        }
+        const Vector<T>& gradient () const throw ()  {
+          return (g);
+        }
 
-        T   gradient_norm () const throw ()        { return (normg); }
-        int function_evaluations () const throw () { return (nfeval); }
+        T   gradient_norm () const throw ()        {
+          return (normg);
+        }
+        int function_evaluations () const throw () {
+          return (nfeval);
+        }
 
 
-        void run (const int max_iterations = 1000, const T grad_tolerance = 1e-4) 
-        {
+        void run (const int max_iterations = 1000, const T grad_tolerance = 1e-4) {
           init();
 #ifdef PRINT_STATE
           std::cout << f << " ";
-          for (int i = 0; i < func.size(); i++) 
+          for (int i = 0; i < func.size(); i++)
             std::cout << x[i] << " ";
           std::cout << "\n";
 #endif
@@ -67,38 +78,36 @@ namespace MR {
 
             T grad_norm = gradient_norm();
 
-            debug ("iteration " + str(niter) + ": f = " + str(f) + ", |g| = " + str(grad_norm));
+            debug ("iteration " + str (niter) + ": f = " + str (f) + ", |g| = " + str (grad_norm));
 #ifdef PRINT_STATE
             std::cout << f << " ";
-            for (int i = 0; i < func.size(); i++) 
+            for (int i = 0; i < func.size(); i++)
               std::cout << x[i] << " ";
             std::cout << "\n";
 #endif
 
-            if (grad_norm < gradient_tolerance) return; 
+            if (grad_norm < gradient_tolerance) return;
           }
           throw Exception ("failed to converge");
         }
 
 
-        void init ()
-        {
+        void init () {
           dt = func.init (x);
           nfeval = 0;
           f = evaluate_func (x, g);
           normg = norm (g);
           assert (finite (f));
           assert (finite (normg));
-        } 
+        }
 
 
-        bool iterate () 
-        { 
+        bool iterate () {
           assert (normg != 0.0);
           T step = dt / normg;
           T f2;
 
-          while (true) { 
+          while (true) {
             bool no_change = true;
             for (size_t n = 0; n < func.size(); n++) {
               x2[n] = x[n] - step * g[n];
@@ -129,7 +138,7 @@ namespace MR {
 
             dt *= step_down;
           }
-        } 
+        }
 
       protected:
         F& func;
@@ -138,10 +147,9 @@ namespace MR {
         T f, dt, normg;
         int nfeval;
 
-        T evaluate_func (const Vector<T>& newx, Vector<T>& newg) 
-        {
-          nfeval++; 
-          return (func (newx, newg)); 
+        T evaluate_func (const Vector<T>& newx, Vector<T>& newg) {
+          nfeval++;
+          return (func (newx, newg));
         }
     };
 

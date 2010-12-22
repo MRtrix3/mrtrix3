@@ -23,8 +23,10 @@
 #ifndef __dataset_value_h__
 #define __dataset_value_h__
 
-namespace MR {
-  namespace DataSet {
+namespace MR
+{
+  namespace DataSet
+  {
 
     //! \addtogroup DataSet
     // @{
@@ -35,7 +37,7 @@ namespace MR {
      * This class provides a means of returning a modifiable voxel value from a
      * class, when the process of modifying a value cannot be done by simply
      * returning a non-const reference. This is best illustrated with an
-     * example. 
+     * example.
      *
      * Consider a DataSet class that perform a validity check on each voxel
      * value as it is stored. For example, it might enforce a policy that
@@ -52,16 +54,16 @@ namespace MR {
      *       data = new float [N[0]*N[1]*N[2]);
      *     }
      *     ~MyDataSet () { delete [] data; }
-     * 
+     *
      *     typedef float value_type;
-     * 
+     *
      *     int     ndim () const           { return (3); }
      *     int     dim (int axis) const    { return (N[axis]); }
      *     int&    operator[] (int axis)   { return (X[axis]); }
      *
      *     // PROBLEM: can't check that the value is valid when it is modified!
      *     float&  value () { return (data[X[0]+N[0]*(X[1]+N[1]*X[2])]); }
-     * 
+     *
      *   private:
      *     float*  data
      *     int     N[3];
@@ -71,12 +73,12 @@ namespace MR {
      * While it is possible in the above example to modify the voxel values,
      * since they are returned by reference, it is also impossible to implement
      * clamping of the voxel values as they are modified. The DataSet::Value
-     * class provides a solution to this problem. 
-     * 
+     * class provides a solution to this problem.
+     *
      * To use the DataSet::Value interface, the DataSet class must implement a
      * get_value() and a set_value() method. While these can be declared
      * public, it is probably cleaner to make them private or protected, and to
-     * declare the DataSet::Value class as a friend. 
+     * declare the DataSet::Value class as a friend.
      * \code
      * class MyDataSet
      * {
@@ -88,16 +90,16 @@ namespace MR {
      *       data = new float [N[0]*N[1]*N[2]);
      *     }
      *     ~MyDataSet () { delete [] data; }
-     * 
+     *
      *     typedef float value_type;
-     * 
+     *
      *     int     ndim () const           { return (3); }
      *     int     dim (int axis) const    { return (N[axis]); }
      *     int&    operator[] (int axis)   { return (X[axis]); }
      *
      *     // FIX: return a DataSet::Value<MyDataSet> class:
      *     DataSet::Value<MyDataSet>  value () { return (DataSet::Value<MyDataSet> (*this); }
-     * 
+     *
      *   private:
      *     float*  data
      *     int     N[3];
@@ -130,10 +132,10 @@ namespace MR {
      * data[0] = X;
      * data[1] = Y;
      * data[2] = Z;
-     * 
+     *
      * // set the voxel value, clamped to the range [0.0 1.0]:
      * data.value() = 2.3;
-     * 
+     *
      * // other operators can also be used, for example:
      * data.value() += 10.0;
      * data.value() /= 5.0;
@@ -146,18 +148,44 @@ namespace MR {
      * symbols turned off). This is the default setting for the configure
      * script, unless the -debug option is supplied.
      */
-    template <class Set> class Value {
+    template <class Set> class Value
+    {
       public:
         typedef typename Set::value_type value_type;
 
         Value (Set& parent) : S (parent) { }
-        operator value_type () const { return (S.get_value()); }
-        value_type operator= (value_type value) { S.set_value (value); return (value); }
-        value_type operator= (const Value& V) { value_type value = V.S.get_value(); S.set_value (value); return (value); }
-        value_type operator+= (value_type value) { value += S.get_value(); S.set_value (value); return (value); }
-        value_type operator-= (value_type value) { value = S.get_value() - value; S.set_value (value); return (value); }
-        value_type operator*= (value_type value) { value *= S.get_value(); S.set_value (value); return (value); }
-        value_type operator/= (value_type value) { value = S.get_value() / value; S.set_value (value); return (value); }
+        operator value_type () const {
+          return (S.get_value());
+        }
+        value_type operator= (value_type value) {
+          S.set_value (value);
+          return (value);
+        }
+        value_type operator= (const Value& V) {
+          value_type value = V.S.get_value();
+          S.set_value (value);
+          return (value);
+        }
+        value_type operator+= (value_type value) {
+          value += S.get_value();
+          S.set_value (value);
+          return (value);
+        }
+        value_type operator-= (value_type value) {
+          value = S.get_value() - value;
+          S.set_value (value);
+          return (value);
+        }
+        value_type operator*= (value_type value) {
+          value *= S.get_value();
+          S.set_value (value);
+          return (value);
+        }
+        value_type operator/= (value_type value) {
+          value = S.get_value() / value;
+          S.set_value (value);
+          return (value);
+        }
       private:
         Set& S;
     };

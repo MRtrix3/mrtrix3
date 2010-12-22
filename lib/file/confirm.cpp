@@ -17,18 +17,21 @@
 
     You should have received a copy of the GNU General Public License
     along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
- 
+
 */
 
 #include "file/confirm.h"
 #include "mrtrix.h"
 
-namespace MR {
-  namespace File {
+namespace MR
+{
+  namespace File
+  {
 
     bool (*confirm) (const std::string& message) = NULL;
 
-    bool confirm_func_cmdline (const std::string& message) {
+    bool confirm_func_cmdline (const std::string& message)
+    {
       print (message + " ");
       std::string response;
       getline (std::cin, response);

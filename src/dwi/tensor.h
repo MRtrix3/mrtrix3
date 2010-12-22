@@ -26,26 +26,64 @@
 #include "math/matrix.h"
 #include "math/vector.h"
 
-namespace MR {
-  namespace DWI {
+namespace MR
+{
+  namespace DWI
+  {
 
-    inline float tensor2ADC (float *t) { return ((t[0]+t[1]+t[2])/3.0); }
-
-
-    inline float tensor2FA (float *t)
+    template <typename T> inline Math::Matrix<T> grad2bmatrix (Math::Matrix<T> &bmat, const Math::Matrix<T> &grad)
     {
-      float trace = tensor2ADC (t);
-      float a[] = { t[0]-trace, t[1]-trace, t[2]-trace };
-      trace = t[0]*t[0] + t[1]*t[1] + t[2]*t[2] + 2.0*( t[3]*t[3] + t[4]*t[4] + t[5]*t[5] );
-      return (trace ? sqrt(1.5*(a[0]*a[0]+a[1]*a[1]+a[2]*a[2] + 2.0*(t[3]*t[3]+t[4]*t[4]+t[5]*t[5])) / trace) : 0.0);
+      bmat.allocate (grad.rows(),7);
+      for (size_t i = 0; i < grad.rows(); ++i) {
+        bmat (i,0) = grad (i,3) * grad (i,0) *grad (i,0);
+        bmat (i,1) = grad (i,3) * grad (i,1) *grad (i,1);
+        bmat (i,2) = grad (i,3) * grad (i,2) *grad (i,2);
+        bmat (i,3) = grad (i,3) * 2*grad (i,0) *grad (i,1);
+        bmat (i,4) = grad (i,3) * 2*grad (i,0) *grad (i,2);
+        bmat (i,5) = grad (i,3) * 2*grad (i,1) *grad (i,2);
+        bmat (i,6) = -1.0;
+      }
+      return bmat;
     }
 
 
-    inline float tensor2RA (float *t)
+
+
+    template <typename T> inline void dwi2tensor (const Math::Matrix<T>& binv, T* d)
     {
-      float trace = tensor2ADC (t);
-      float a[] = { t[0]-trace, t[1]-trace, t[2]-trace };
-      return (trace ? sqrt((a[0]*a[0]+a[1]*a[1]+a[2]*a[2]+ 2.0*(t[3]*t[3]+t[4]*t[4]+t[5]*t[5]))/3.0) / trace : 0.0);
+      T logs[binv.columns()];
+      for (size_t i = 0; i < binv.columns(); ++i)
+        logs[i] = d[i] > T (0.0) ? -Math::log (d[i]) : T (0.0);
+      Math::Vector<T> logS (logs, binv.columns());
+      Math::Vector<T> DT (d, 7);
+      Math::mult (DT, binv, logS);
+    }
+
+
+    template <typename T> inline T tensor2ADC (T* t)
+    {
+      return (t[0]+t[1]+t[2]) /T (3.0);
+    }
+
+
+    template <typename T> inline T tensor2FA (T* t)
+    {
+      T trace = tensor2ADC (t);
+      T a[] = { t[0]-trace, t[1]-trace, t[2]-trace };
+      trace = t[0]*t[0] + t[1]*t[1] + t[2]*t[2] + T (2.0) * (t[3]*t[3] + t[4]*t[4] + t[5]*t[5]);
+      return trace ?
+             Math::sqrt (T (1.5) * (a[0]*a[0]+a[1]*a[1]+a[2]*a[2] + T (2.0) * (t[3]*t[3]+t[4]*t[4]+t[5]*t[5])) / trace) :
+             T (0.0);
+    }
+
+
+    template <typename T> inline T tensor2RA (T* t)
+    {
+      T trace = tensor2ADC (t);
+      T a[] = { t[0]-trace, t[1]-trace, t[2]-trace };
+      return trace ?
+             sqrt ( (a[0]*a[0]+a[1]*a[1]+a[2]*a[2]+ T (2.0) * (t[3]*t[3]+t[4]*t[4]+t[5]*t[5])) /T (3.0)) / trace :
+             T (0.0);
     }
 
   }

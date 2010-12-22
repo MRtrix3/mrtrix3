@@ -23,7 +23,7 @@
 #include "file/dicom/element.h"
 #include "app.h"
 
-using namespace MR; 
+using namespace MR;
 
 SET_VERSION_DEFAULT;
 SET_AUTHOR (NULL);
@@ -41,19 +41,23 @@ ARGUMENTS = {
 
 OPTIONS = { Option() };
 
-  
-
-
-using namespace std; 
-using namespace File::Dicom; 
 
 
 
-void make_valid (std::string& str, const std::string& alternate) {
-  if (str.empty()) { str = alternate; return; }
+using namespace std;
+using namespace File::Dicom;
+
+
+
+void make_valid (std::string& str, const std::string& alternate)
+{
+  if (str.empty()) {
+    str = alternate;
+    return;
+  }
   str = strip (str);
   std::string::size_type pos = 0;
-  while ((pos = str.find_first_of ("^/\\?*", pos)) != std::string::npos)
+  while ( (pos = str.find_first_of ("^/\\?*", pos)) != std::string::npos)
     str.replace (pos, 1, " ");
 }
 
@@ -63,26 +67,26 @@ EXECUTE {
   Element item;
   item.set (argument[0]);
 
-  std::string patient_name, patient_id, study_date, study_name, 
-    study_time, series_name, series_number, instance_number, SOP_instance_number;
+  std::string patient_name, patient_id, study_date, study_name,
+  study_time, series_name, series_number, instance_number, SOP_instance_number;
 
   while (item.read()) {
-    if      (item.is (0x0008U, 0x0020U)) study_date = item.get_string()[0];
-    else if (item.is (0x0008U, 0x0018U)) SOP_instance_number = item.get_string()[0];
-    else if (item.is (0x0008U, 0x0030U)) study_time = item.get_string()[0];
-    else if (item.is (0x0008U, 0x1030U)) study_name = item.get_string()[0];
-    else if (item.is (0x0008U, 0x103EU)) series_name = item.get_string()[0];
-    else if (item.is (0x0010U, 0x0010U)) patient_name = item.get_string()[0];
-    else if (item.is (0x0010U, 0x0020U)) patient_id = item.get_string()[0];
-    else if (item.is (0x0020U, 0x0011U)) series_number = MR::printf ("%03d", item.get_int()[0]);
-    else if (item.is (0x0020U, 0x0013U)) instance_number = MR::printf ("%05d", item.get_int()[0]);
+    if (item.is (0x0008U, 0x0020U)) study_date = item.get_string() [0];
+    else if (item.is (0x0008U, 0x0018U)) SOP_instance_number = item.get_string() [0];
+    else if (item.is (0x0008U, 0x0030U)) study_time = item.get_string() [0];
+    else if (item.is (0x0008U, 0x1030U)) study_name = item.get_string() [0];
+    else if (item.is (0x0008U, 0x103EU)) series_name = item.get_string() [0];
+    else if (item.is (0x0010U, 0x0010U)) patient_name = item.get_string() [0];
+    else if (item.is (0x0010U, 0x0020U)) patient_id = item.get_string() [0];
+    else if (item.is (0x0020U, 0x0011U)) series_number = MR::printf ("%03d", item.get_int() [0]);
+    else if (item.is (0x0020U, 0x0013U)) instance_number = MR::printf ("%05d", item.get_int() [0]);
   }
 
   if (study_date.empty()) study_date = "nodate";
-  else study_date =  study_date.substr(0,4) + "-" + study_date.substr(4,2) + "-" + study_date.substr(6,2);
+  else study_date =  study_date.substr (0,4) + "-" + study_date.substr (4,2) + "-" + study_date.substr (6,2);
 
   if (study_time.empty()) study_time = "notime";
-  else study_time = study_time.substr(0,2) + ":" + study_time.substr(2,2);
+  else study_time = study_time.substr (0,2) + ":" + study_time.substr (2,2);
 
   make_valid (patient_name, "noname");
   make_valid (patient_id, "-");
@@ -92,12 +96,12 @@ EXECUTE {
   make_valid (SOP_instance_number, "");
   make_valid (instance_number, SOP_instance_number);
 
-  if (instance_number.empty()) 
+  if (instance_number.empty())
     throw Exception ("no instance number");
 
-  print (study_date + " - " + patient_name + " (" + patient_id + ")/" 
-    + study_time + " - " + study_name + "/"
-    + series_number + " - " + series_name + "/"
-    + instance_number + ".dcm\n");
+  print (study_date + " - " + patient_name + " (" + patient_id + ")/"
+  + study_time + " - " + study_name + "/"
+  + series_number + " - " + series_name + "/"
+  + instance_number + ".dcm\n");
 }
 

@@ -23,26 +23,27 @@
 #error - this file is for documentation purposes only!
 #error - It should NOT be included in other code files.
 
-namespace MR {
+namespace MR
+{
 
-/*! \mainpage Overview
- * 
- * MRtrix was developed with simplicity and performance in mind, which has led
- * to a number of fundamental design decisions. The main concepts are explained
- * in the following pages:
- * 
- * - The build process is based on a Python script rather than Makefiles,
- * and all dependencies are resolved at build-time. This is explained in
- * \ref build_page.
- * - The basic steps for writing applications based on MRtrix are explained
- * in the section \ref command_howto.
- * - %Image data are accessed via objects that implement at least a subset of
- * the interface defined for the DataSet abstract class.
- * - Access to data stored in image files is done via the classes and
- * functions defined in the Image namespace. The corresponding headers are
- * stored in the \c lib/image/ directory.
- * 
- */
+  /*! \mainpage Overview
+   *
+   * MRtrix was developed with simplicity and performance in mind, which has led
+   * to a number of fundamental design decisions. The main concepts are explained
+   * in the following pages:
+   *
+   * - The build process is based on a Python script rather than Makefiles,
+   * and all dependencies are resolved at build-time. This is explained in
+   * \ref build_page.
+   * - The basic steps for writing applications based on MRtrix are explained
+   * in the section \ref command_howto.
+   * - %Image data are accessed via objects that implement at least a subset of
+   * the interface defined for the DataSet abstract class.
+   * - Access to data stored in image files is done via the classes and
+   * functions defined in the Image namespace. The corresponding headers are
+   * stored in the \c lib/image/ directory.
+   *
+   */
 
 }
 

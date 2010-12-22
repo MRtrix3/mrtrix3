@@ -23,22 +23,33 @@
 #include "args.h"
 #include "app.h"
 
-namespace MR {
+namespace MR
+{
 
 
   const char* argtype_description (ArgType type)
   {
     switch (type) {
-      case Integer:  return ("integer");
-      case Float:    return ("float");
-      case Text:     return ("string");
-      case ArgFile:  return ("file");
-      case ImageIn:  return ("image in");
-      case ImageOut: return ("image out");
-      case Choice:   return ("choice");
-      case IntSeq:   return ("int seq");
-      case FloatSeq: return ("float seq");
-      default:       return ("undefined");
+      case Integer:
+        return ("integer");
+      case Float:
+        return ("float");
+      case Text:
+        return ("string");
+      case ArgFile:
+        return ("file");
+      case ImageIn:
+        return ("image in");
+      case ImageOut:
+        return ("image out");
+      case Choice:
+        return ("choice");
+      case IntSeq:
+        return ("int seq");
+      case FloatSeq:
+        return ("float seq");
+      default:
+        return ("undefined");
     }
   }
 
@@ -54,24 +65,24 @@ namespace MR {
     std::cout << "ARGUMENT " << id << " " << (flags & Optional ? '1' : '0') << " " << (flags & AllowMultiple ? '1' : '0') << " ";
     switch (type) {
       case Integer:
-        std::cout << "INT " << defaults.i.min << " " << defaults.i.max << " " << defaults.i.def; 
+        std::cout << "INT " << defaults.i.min << " " << defaults.i.max << " " << defaults.i.def;
         break;
       case Float:
         std::cout << "FLOAT " << defaults.f.min << " " << defaults.f.max << " " << defaults.f.def;
         break;
       case Text:
-        std::cout << "TEXT"; 
+        std::cout << "TEXT";
         if (defaults.text)
           std::cout << " " << defaults.text;
         break;
       case ArgFile:
-        std::cout << "FILE"; 
+        std::cout << "FILE";
         break;
-      case Choice: 
-        std::cout << "CHOICE"; 
+      case Choice:
+        std::cout << "CHOICE";
         for (const char** p = defaults.choices.list; *p; ++p)
-          std::cout << " " << *p; 
-        std::cout << " " << defaults.choices.def; 
+          std::cout << " " << *p;
+        std::cout << " " << defaults.choices.def;
         break;
       case ImageIn:
         std::cout << "IMAGEIN";
@@ -100,112 +111,77 @@ namespace MR {
     std::cout << "OPTION " << id << " " << (flags & Optional ? '1' : '0') << " " << (flags & AllowMultiple ? '1' : '0') << "\n";
     std::cout << desc << "\n";
 
-    for (std::vector<Argument>::const_iterator i = args.begin(); i != args.end(); ++i) 
+    for (std::vector<Argument>::const_iterator i = args.begin(); i != args.end(); ++i)
       i->print_usage();
   }
 
-/*
-  const Argument Argument::End;
-  const Option   Option::End;
+  /*
+    const Argument Argument::End;
+    const Option   Option::End;
 
-  ArgBase::ArgBase (const Argument& arg, const char* string)
-  {
-    argtype = arg.type;
-    switch (argtype) {
-      case Integer: 
-        data.i = to<int> (string);
-        if (data.i < arg.extra_info.i.min || data.i > arg.extra_info.i.max) 
-          throw Exception ("value supplied for integer argument \"" + std::string (arg.sname) + "\" is out of bounds");
-        break;
-      case Float:
-        data.f = to<float> (string);
-        if (data.f < arg.extra_info.f.min || data.f > arg.extra_info.f.max) 
-          throw Exception ("value supplied for floating-point argument \"" + std::string (arg.sname) + "\" is out of bounds");
-        break;
-      case Text:
-      case ArgFile:
-      case IntSeq:
-      case FloatSeq:
-      case ImageIn:
-      case ImageOut:
-        data.string = string;
-        break;
-      case Choice:
-        data.i = -1;
-        for (size_t n = 0; arg.extra_info.choice[n]; n++) {
-          if (lowercase (string) == arg.extra_info.choice[n]) {
-            data.i = n;
-            break;
+    ArgBase::ArgBase (const Argument& arg, const char* string)
+    {
+      argtype = arg.type;
+      switch (argtype) {
+        case Integer:
+          data.i = to<int> (string);
+          if (data.i < arg.extra_info.i.min || data.i > arg.extra_info.i.max)
+            throw Exception ("value supplied for integer argument \"" + std::string (arg.sname) + "\" is out of bounds");
+          break;
+        case Float:
+          data.f = to<float> (string);
+          if (data.f < arg.extra_info.f.min || data.f > arg.extra_info.f.max)
+            throw Exception ("value supplied for floating-point argument \"" + std::string (arg.sname) + "\" is out of bounds");
+          break;
+        case Text:
+        case ArgFile:
+        case IntSeq:
+        case FloatSeq:
+        case ImageIn:
+        case ImageOut:
+          data.string = string;
+          break;
+        case Choice:
+          data.i = -1;
+          for (size_t n = 0; arg.extra_info.choice[n]; n++) {
+            if (lowercase (string) == arg.extra_info.choice[n]) {
+              data.i = n;
+              break;
+            }
           }
-        }
-        if (data.i < 0) 
-          throw Exception ("invalid selection supplied \"" + std::string (string) + "\" for argument \"" + arg.sname + "\"");
-        break;
-      default: throw Exception ("unkown argument type for argument \"" + std::string (arg.sname) + "\"");
+          if (data.i < 0)
+            throw Exception ("invalid selection supplied \"" + std::string (string) + "\" for argument \"" + arg.sname + "\"");
+          break;
+        default: throw Exception ("unkown argument type for argument \"" + std::string (arg.sname) + "\"");
+      }
     }
-  }
 
 
 
-  std::ostream& operator<< (std::ostream& stream, const ArgBase& arg)
-  {
-    switch (arg.type()) {
-      case Integer:  stream << "integer: " << arg.get_int(); break;
-      case Float:    stream << "float: " << arg.get_float(); break;
-      case Text:     stream << "string: \"" << arg.get_string() << "\""; break;
-      case ArgFile:  stream << "file: \"" << arg.get_string() << "\""; break;
-      case ImageIn:  stream << "image in: \"" << arg.get_string() << "\""; break;
-      case ImageOut: stream << "image out: \"" << arg.get_string() << "\""; break;
-      case Choice:   stream << "choice: " << arg.get_int(); break;
-      case IntSeq:   stream << "int seq: " << arg.get_string(); break;
-      case FloatSeq: stream << "float seq: " << arg.get_string(); break;
-      default:       stream << "undefined"; break;
+    std::ostream& operator<< (std::ostream& stream, const ArgBase& arg)
+    {
+      switch (arg.type()) {
+        case Integer:  stream << "integer: " << arg.get_int(); break;
+        case Float:    stream << "float: " << arg.get_float(); break;
+        case Text:     stream << "string: \"" << arg.get_string() << "\""; break;
+        case ArgFile:  stream << "file: \"" << arg.get_string() << "\""; break;
+        case ImageIn:  stream << "image in: \"" << arg.get_string() << "\""; break;
+        case ImageOut: stream << "image out: \"" << arg.get_string() << "\""; break;
+        case Choice:   stream << "choice: " << arg.get_int(); break;
+        case IntSeq:   stream << "int seq: " << arg.get_string(); break;
+        case FloatSeq: stream << "float seq: " << arg.get_string(); break;
+        default:       stream << "undefined"; break;
+      }
+      return (stream);
     }
-    return (stream);
-  }
 
 
 
-  std::ostream& operator<< (std::ostream& stream, const OptBase& opt)
-  {
-    stream << "-" << opt.name << " " << static_cast<std::vector<ArgBase> > (opt);
-    return (stream);
-  }
-
-
-
-
-
-
-
-
-  std::ostream& operator<< (std::ostream& stream, const Argument& arg)
-  {
-    stream << arg.sname << ": " << arg.lname 
-      << " (" << argument_type_description (arg.type); 
-    switch (arg.type) {
-      case Integer:
-        if (arg.extra_info.i.def != std::numeric_limits<int>::max()) stream << ", default=" << arg.extra_info.i.def;
-        stream << ", range: " << arg.extra_info.i.min << ":" << arg.extra_info.i.max;
-        break;
-      case Float:
-        if (!isnan (arg.extra_info.f.def)) stream << ", default=" << arg.extra_info.f.def;
-        stream << ", range: " << arg.extra_info.f.min << ":" << arg.extra_info.f.max;
-        break;
-      case Choice:
-        {
-          const char** p = arg.extra_info.choice;
-          stream << " from " << *p;
-          while (*(++p)) stream << "|" << *p; 
-        }
-        break;
-      default:
-        break;
+    std::ostream& operator<< (std::ostream& stream, const OptBase& opt)
+    {
+      stream << "-" << opt.name << " " << static_cast<std::vector<ArgBase> > (opt);
+      return (stream);
     }
-    stream << ") [" << ( arg.mandatory ? "mandatory" : "optional" ) << ","
-      << ( arg.allow_multiple ? "multiple" : "single" ) << "]\n    " << arg.desc;
-    return (stream);
-  }
 
 
 
@@ -213,17 +189,52 @@ namespace MR {
 
 
 
-  std::ostream& operator<< (std::ostream& stream, const Option& opt)
-  {
-    stream << opt.sname << ": " << opt.lname << " [" 
-      << ( opt.mandatory ? "mandatory" : "optional" ) << ","
-      << ( opt.allow_multiple ? "multiple" : "single" ) << "]\n  "
-      << opt.desc << "\n\n";
-    for (size_t n = 0; n < opt.size(); n++) 
-      stream << "[" << n << "] " << opt[n] << "\n\n";
-    return (stream);
-  }
-*/
+
+    std::ostream& operator<< (std::ostream& stream, const Argument& arg)
+    {
+      stream << arg.sname << ": " << arg.lname
+        << " (" << argument_type_description (arg.type);
+      switch (arg.type) {
+        case Integer:
+          if (arg.extra_info.i.def != std::numeric_limits<int>::max()) stream << ", default=" << arg.extra_info.i.def;
+          stream << ", range: " << arg.extra_info.i.min << ":" << arg.extra_info.i.max;
+          break;
+        case Float:
+          if (!isnan (arg.extra_info.f.def)) stream << ", default=" << arg.extra_info.f.def;
+          stream << ", range: " << arg.extra_info.f.min << ":" << arg.extra_info.f.max;
+          break;
+        case Choice:
+          {
+            const char** p = arg.extra_info.choice;
+            stream << " from " << *p;
+            while (*(++p)) stream << "|" << *p;
+          }
+          break;
+        default:
+          break;
+      }
+      stream << ") [" << ( arg.mandatory ? "mandatory" : "optional" ) << ","
+        << ( arg.allow_multiple ? "multiple" : "single" ) << "]\n    " << arg.desc;
+      return (stream);
+    }
+
+
+
+
+
+
+
+    std::ostream& operator<< (std::ostream& stream, const Option& opt)
+    {
+      stream << opt.sname << ": " << opt.lname << " ["
+        << ( opt.mandatory ? "mandatory" : "optional" ) << ","
+        << ( opt.allow_multiple ? "multiple" : "single" ) << "]\n  "
+        << opt.desc << "\n\n";
+      for (size_t n = 0; n < opt.size(); n++)
+        stream << "[" << n << "] " << opt[n] << "\n\n";
+      return (stream);
+    }
+  */
 }
 
 

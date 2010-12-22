@@ -25,8 +25,8 @@
 #include "image/voxel.h"
 #include "dataset/loop.h"
 
-using namespace std; 
-using namespace MR; 
+using namespace std;
+using namespace MR;
 
 SET_VERSION_DEFAULT;
 SET_AUTHOR (NULL);
@@ -39,42 +39,42 @@ DESCRIPTION = {
 
 ARGUMENTS = {
 
-  Argument ("image", 
-      "the input image from which statistics will be computed.")
-    .type_image_in (),
+  Argument ("image",
+  "the input image from which statistics will be computed.")
+  .type_image_in (),
 
   Argument ()
 };
 
 
-OPTIONS = { 
+OPTIONS = {
 
   Option ("mask",
-      "only perform computation within the specified binary brain mask image.")
-    + Argument ("image").type_image_in (),
+  "only perform computation within the specified binary brain mask image.")
+  + Argument ("image").type_image_in (),
 
   Option ("voxel",
-      "only perform computation within the specified voxel, supplied as a "
-      "comma-separated vector of 3 integer values (multiple voxels can be included).")
-    .allow_multiple()
-    + Argument ("pos").type_sequence_int (),
+  "only perform computation within the specified voxel, supplied as a "
+  "comma-separated vector of 3 integer values (multiple voxels can be included).")
+  .allow_multiple()
+  + Argument ("pos").type_sequence_int (),
 
-  Option ("histogram", 
-      "generate histogram of intensities and store in specified text file. Note "
-      "that the first line of the histogram gives the centre of the bins.")
-    + Argument ("file").type_file (),
+  Option ("histogram",
+  "generate histogram of intensities and store in specified text file. Note "
+  "that the first line of the histogram gives the centre of the bins.")
+  + Argument ("file").type_file (),
 
-  Option ("bins", 
-      "the number of bins to use to generate the histogram (default = 100).")
-    + Argument ("num").type_integer (2, 100, std::numeric_limits<int>::max()),
+  Option ("bins",
+  "the number of bins to use to generate the histogram (default = 100).")
+  + Argument ("num").type_integer (2, 100, std::numeric_limits<int>::max()),
 
   Option ("dump",
-      "dump the voxel intensities to a text file.")
-    + Argument ("file").type_file (),
+  "dump the voxel intensities to a text file.")
+  + Argument ("file").type_file (),
 
   Option ("position",
-      "dump the position of the voxels in the mask to a text file.")
-    + Argument ("file").type_file (),
+  "dump the position of the voxels in the mask to a text file.")
+  + Argument ("file").type_file (),
 
   Option ()
 };
@@ -83,56 +83,54 @@ OPTIONS = {
 typedef float value_type;
 
 
-class CalibrateHistogram {
+class CalibrateHistogram
+{
   public:
     CalibrateHistogram (int nbins) : min (INFINITY), max (-INFINITY), width (0.0), bins (nbins) { }
 
     value_type min, max, width;
     int bins;
 
-    void operator() (value_type val) 
-    {
+    void operator() (value_type val) {
       if (finite (val)) {
         if (val < min) min = val;
         if (val > max) max = val;
       }
     }
 
-    void init (std::ostream& stream) 
-    {
+    void init (std::ostream& stream) {
       width = (max - min) / float (bins+1);
       for (int i = 0; i < bins; i++)
-        stream << (min + width/2.0) + i*width << " ";
+        stream << (min + width/2.0) + i* width << " ";
       stream << "\n";
     }
 };
 
 
 
-class Stats 
+class Stats
 {
   public:
     Stats () : mean (0.0), std (0.0), min (INFINITY), max (-INFINITY), count (0), dump (NULL) { }
 
-    void generate_histogram (const CalibrateHistogram& cal)
-    {
+    void generate_histogram (const CalibrateHistogram& cal) {
       hmin = cal.min;
       hwidth = cal.width;
       hist.resize (cal.bins);
     }
 
-    void dump_to (std::ostream& stream) { dump = &stream; }
+    void dump_to (std::ostream& stream) {
+      dump = &stream;
+    }
 
-    void write_histogram (std::ostream& stream)
-    {
+    void write_histogram (std::ostream& stream) {
       for (size_t i = 0; i < hist.size(); ++i)
         stream << hist[i] << " ";
       stream << "\n";
     }
 
 
-    void operator() (value_type val) 
-    {
+    void operator() (value_type val) {
       if (finite (val)) {
         mean += val;
         std += val*val;
@@ -140,35 +138,34 @@ class Stats
         if (max < val) max = val;
         count++;
 
-        if (dump) 
+        if (dump)
           *dump << val << "\n";
-        
+
         if (hist.size()) {
-          int bin = int ((val-hmin) / hwidth);
-          if (bin < 0) 
+          int bin = int ( (val-hmin) / hwidth);
+          if (bin < 0)
             bin = 0;
-          else if (bin >= int(hist.size())) 
+          else if (bin >= int (hist.size()))
             bin = hist.size()-1;
           hist[bin]++;
         }
       }
     }
 
-    void print (Image::Voxel<value_type>& ima) 
-    {
-      if (count == 0) 
+    void print (Image::Voxel<value_type>& ima) {
+      if (count == 0)
         throw Exception ("no voxels in mask - aborting");
 
-      mean /= double(count);
-      std = sqrt(std/double(count) - mean*mean);
+      mean /= double (count);
+      std = sqrt (std/double (count) - mean*mean);
 
       std::string s = "[ ";
-      for (size_t n = 3; n < ima.ndim(); n++) 
-        s += str(ima[n]) + " ";
+      for (size_t n = 3; n < ima.ndim(); n++)
+        s += str (ima[n]) + " ";
       s += "] ";
 
-      MR::print (MR::printf ("%-15s %-11g %-11g %-11g %-11g %-11d\n", 
-            s.c_str(), mean, std, min, max, count));
+      MR::print (MR::printf ("%-15s %-11g %-11g %-11g %-11g %-11d\n",
+                             s.c_str(), mean, std, min, max, count));
     }
 
   private:
@@ -198,7 +195,7 @@ EXECUTE {
   Options opt = get_options ("histogram");
   if (opt.size()) {
     hist_stream = new std::ofstream (opt[0][0].c_str());
-    if (!*hist_stream) 
+    if (!*hist_stream)
       throw Exception ("error opening histogram file \"" + opt[0][0] + "\": " + strerror (errno));
   }
 
@@ -208,18 +205,18 @@ EXECUTE {
     nbins = opt[0][0];
   CalibrateHistogram calibrate (nbins);
 
-  
+
   opt = get_options ("dump");
   if (opt.size()) {
     dumpstream = new std::ofstream (opt[0][0].c_str());
-    if (!*dumpstream) 
+    if (!*dumpstream)
       throw Exception ("error opening dump file \"" + opt[0][0] + "\": " + strerror (errno));
   }
-  
+
   opt = get_options ("position");
   if (opt.size()) {
     position_stream = new std::ofstream (opt[0][0].c_str());
-    if (!*position_stream) 
+    if (!*position_stream)
       throw Exception ("error opening positions file \"" + opt[0][0] + "\": " + strerror (errno));
   }
 
@@ -234,9 +231,9 @@ EXECUTE {
 
     Image::Header mask_header (opt[0][0]);
 
-    if (mask_header.dim(0) != header.dim(0) || 
-        mask_header.dim(1) != header.dim(1) || 
-        mask_header.dim(2) != header.dim(2)) 
+    if (mask_header.dim (0) != header.dim (0) ||
+    mask_header.dim (1) != header.dim (1) ||
+    mask_header.dim (2) != header.dim (2))
       throw Exception ("dimensions of mask image do not match that of data image - aborting");
 
     Image::Voxel<value_type> mask (mask_header);
@@ -245,7 +242,7 @@ EXECUTE {
       ProgressBar progress ("calibrating histogram...", DataSet::voxel_count (vox));
       for (outer_loop.start (vox); outer_loop.ok(); outer_loop.next (vox)) {
         for (inner_loop.start (mask, vox); inner_loop.ok(); inner_loop.next (mask, vox)) {
-          if (mask.value() > 0.5) 
+          if (mask.value() > 0.5)
             calibrate (vox.value());
           ++progress;
         }
@@ -256,7 +253,7 @@ EXECUTE {
     for (outer_loop.start (vox); outer_loop.ok(); outer_loop.next (vox)) {
       Stats stats;
 
-      if (dumpstream) 
+      if (dumpstream)
         stats.dump_to (*dumpstream);
 
       if (hist_stream)
@@ -273,7 +270,7 @@ EXECUTE {
         }
       }
 
-      if (!header_shown) 
+      if (!header_shown)
         print (header_string);
       header_shown = true;
 
@@ -305,7 +302,7 @@ EXECUTE {
     for (outer_loop.start (vox); outer_loop.ok(); outer_loop.next (vox)) {
       Stats stats;
 
-      if (dumpstream) 
+      if (dumpstream)
         stats.dump_to (*dumpstream);
 
       if (hist_stream)
@@ -320,7 +317,7 @@ EXECUTE {
         }
       }
 
-      if (!header_shown) 
+      if (!header_shown)
         print (header_string);
       header_shown = true;
 
@@ -341,13 +338,13 @@ EXECUTE {
   std::vector<Point<ssize_t> > voxel (voxels.size());
   for (size_t i = 0; i < voxels.size(); ++i) {
     std::vector<int> x = parse_ints (voxels[i][0]);
-    if (x.size() != 3) 
+    if (x.size() != 3)
       throw Exception ("vector positions must be supplied as x,y,z");
-    if (x[0] < 0 || x[0] >= vox.dim(0) ||
-        x[1] < 0 || x[1] >= vox.dim(1) ||
-        x[2] < 0 || x[2] >= vox.dim(2)) 
-      throw Exception ("voxel at [ " + str(x[0]) + " " + str(x[1]) 
-          + " " + str(x[2]) + " ] is out of bounds");
+    if (x[0] < 0 || x[0] >= vox.dim (0) ||
+        x[1] < 0 || x[1] >= vox.dim (1) ||
+        x[2] < 0 || x[2] >= vox.dim (2))
+      throw Exception ("voxel at [ " + str (x[0]) + " " + str (x[1])
+                       + " " + str (x[2]) + " ] is out of bounds");
     voxel[i].set (x[0], x[1], x[2]);
   }
 
@@ -368,7 +365,7 @@ EXECUTE {
   for (outer_loop.start (vox); outer_loop.ok(); outer_loop.next (vox)) {
     Stats stats;
 
-    if (dumpstream) 
+    if (dumpstream)
       stats.dump_to (*dumpstream);
 
     if (hist_stream)
@@ -386,7 +383,7 @@ EXECUTE {
       }
     }
 
-    if (!header_shown) 
+    if (!header_shown)
       print (header_string);
     header_shown = true;
 

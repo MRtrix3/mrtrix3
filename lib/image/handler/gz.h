@@ -26,21 +26,28 @@
 #include "image/handler/base.h"
 #include "file/mmap.h"
 
-namespace MR {
-  namespace Image {
+namespace MR
+{
+  namespace Image
+  {
 
-    namespace Handler {
+    namespace Handler
+    {
 
-      class GZ : public Base {
+      class GZ : public Base
+      {
         public:
           GZ (Header& header, size_t file_header_size, bool image_is_new) :
-            Base (header, image_is_new), lead_in_size (file_header_size) 
-        { lead_in = file_header_size ? new uint8_t [file_header_size] : NULL ; }
+            Base (header, image_is_new), lead_in_size (file_header_size) {
+            lead_in = file_header_size ? new uint8_t [file_header_size] : NULL ;
+          }
 
           virtual ~GZ ();
           virtual void execute ();
 
-          uint8_t* header () { return (lead_in); }
+          uint8_t* header () {
+            return (lead_in);
+          }
 
         protected:
           int64_t  bytes_per_segment;

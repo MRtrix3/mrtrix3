@@ -25,21 +25,25 @@
 
 #include "ptr.h"
 
-namespace MR {
+namespace MR
+{
 
-  namespace Image { 
-    class Header; 
+  namespace Image
+  {
+    class Header;
   }
 
-  namespace File {
-    namespace Dicom {
+  namespace File
+  {
+    namespace Dicom
+    {
 
       class Series;
 
       /*! \todo add other DICOM header information to header as generic
        * key/value entries. */
       void dicom_to_mapper (MR::Image::Header& H, std::vector< RefPtr<Series> >& series);
-      
+
     }
   }
 }

@@ -27,11 +27,14 @@
 #include "image/handler/default.h"
 #include "dataset/misc.h"
 
-namespace MR {
-  namespace Image {
-    namespace Handler {
+namespace MR
+{
+  namespace Image
+  {
+    namespace Handler
+    {
 
-      Default::~Default () 
+      Default::~Default ()
       {
         if (files.empty() && addresses.size()) {
           assert (addresses[0]);
@@ -61,7 +64,7 @@ namespace MR {
 
         if (H.datatype().bits() == 1) {
           bytes_per_segment = segsize/8;
-          if (bytes_per_segment*8 < int64_t(segsize))
+          if (bytes_per_segment*8 < int64_t (segsize))
             ++bytes_per_segment;
         }
         else bytes_per_segment = H.datatype().bytes() * segsize;
@@ -77,14 +80,14 @@ namespace MR {
 
 
 
-      void Default::map_files () 
+      void Default::map_files ()
       {
         debug ("mapping image \"" + H.name() + "\"...");
         const std::vector<File::Entry>& Hfiles (H.get_files());
         files.resize (Hfiles.size());
         addresses.resize (files.size());
         for (size_t n = 0; n < Hfiles.size(); n++) {
-          files[n] = new File::MMap (Hfiles[n], H.readwrite(), bytes_per_segment); 
+          files[n] = new File::MMap (Hfiles[n], H.readwrite(), bytes_per_segment);
           addresses[n] = files[n]->address();
         }
       }
@@ -93,11 +96,11 @@ namespace MR {
 
 
 
-      void Default::copy_to_mem () 
+      void Default::copy_to_mem ()
       {
         debug ("loading image \"" + H.name() + "\"...");
         const std::vector<File::Entry>& Hfiles (H.get_files());
-        addresses.resize (Hfiles.size() > 1 && H.datatype().bits()*segsize != 8*size_t(bytes_per_segment) ? Hfiles.size() : 1 );
+        addresses.resize (Hfiles.size() > 1 && H.datatype().bits() *segsize != 8*size_t (bytes_per_segment) ? Hfiles.size() : 1);
         addresses[0] = new uint8_t [Hfiles.size() * bytes_per_segment];
         if (!addresses[0]) throw Exception ("failed to allocate memory for image \"" + H.name() + "\"");
 
@@ -108,8 +111,8 @@ namespace MR {
             memcpy (addresses[0] + n*bytes_per_segment, file.address(), bytes_per_segment);
           }
         }
-        
-        if (addresses.size() > 1) 
+
+        if (addresses.size() > 1)
           for (size_t n = 1; n < addresses.size(); n++)
             addresses[n] = addresses[0] + n*bytes_per_segment;
         else segsize = std::numeric_limits<size_t>::max();

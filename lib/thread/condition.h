@@ -25,10 +25,12 @@
 
 #include "thread/mutex.h"
 
-namespace MR {
-  namespace Thread {
+namespace MR
+{
+  namespace Thread
+  {
 
-    /** \addtogroup Thread 
+    /** \addtogroup Thread
      * @{ */
 
     //! Synchronise threads by waiting on a condition
@@ -68,19 +70,30 @@ namespace MR {
      *     } // Mutex must be released for other threads to run
      *   }
      * }
-     * \endcode 
+     * \endcode
      */
-    class Cond {
+    class Cond
+    {
       public:
-        Cond (Mutex& mutex) : _mutex (mutex) { pthread_cond_init (&_cond, NULL); }
-        ~Cond () { pthread_cond_destroy (&_cond); }
+        Cond (Mutex& mutex) : _mutex (mutex) {
+          pthread_cond_init (&_cond, NULL);
+        }
+        ~Cond () {
+          pthread_cond_destroy (&_cond);
+        }
 
         //! wait until condition is reached
-        void wait () { pthread_cond_wait (&_cond, &_mutex._mutex); }
+        void wait () {
+          pthread_cond_wait (&_cond, &_mutex._mutex);
+        }
         //! condition is reached: wake up at least one waiting thread
-        void signal () { pthread_cond_signal (&_cond); }
+        void signal () {
+          pthread_cond_signal (&_cond);
+        }
         //! condition is reached: wake up all waiting threads
-        void broadcast () { pthread_cond_broadcast (&_cond); }
+        void broadcast () {
+          pthread_cond_broadcast (&_cond);
+        }
 
       private:
         pthread_cond_t _cond;

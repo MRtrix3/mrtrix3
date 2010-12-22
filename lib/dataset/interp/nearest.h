@@ -25,19 +25,22 @@
 
 #include "dataset/interp/base.h"
 
-namespace MR {
-  namespace DataSet {
-    namespace Interp {
+namespace MR
+{
+  namespace DataSet
+  {
+    namespace Interp
+    {
 
       //! \addtogroup interp
       // @{
 
       //! This class provides access to the voxel intensities of a data set, using nearest-neighbour interpolation.
-      /*! Interpolation is only performed along the first 3 (spatial) axes. 
+      /*! Interpolation is only performed along the first 3 (spatial) axes.
        * The (integer) position along the remaining axes should be set using the
        * template DataSet class.
        * The spatial coordinates can be set using the functions voxel(), image(),
-       * and scanner(). 
+       * and scanner().
        * For example:
        * \code
        * Image::Voxel<float> voxel (image);
@@ -54,7 +57,7 @@ namespace MR {
        *
        * The template \a voxel class must be usable with this type of syntax:
        * \code
-       * int xdim = voxel.dim(0);    // return the dimension 
+       * int xdim = voxel.dim(0);    // return the dimension
        * int ydim = voxel.dim(1);    // along the x, y & z dimensions
        * int zdim = voxel.dim(2);
        * float v[] = { voxel.vox(0), voxel.vox(1), voxel.vox(2) };  // return voxel dimensions
@@ -66,7 +69,7 @@ namespace MR {
        * \endcode
        */
 
-      template <class Set, typename T = float> class Nearest : public Base<Set,T> 
+      template <class Set, typename T = float> class Nearest : public Base<Set,T>
       {
         private:
           typedef class Base<Set> B;
@@ -76,15 +79,14 @@ namespace MR {
           typedef typename B::pos_type pos_type;
 
           //! construct an Nearest object to obtain interpolated values using the
-          // parent DataSet class 
+          // parent DataSet class
           Nearest (Set& parent) : Base<Set> (parent) { }
 
           //! Set the current position to <b>voxel space</b> position \a pos
           /*! This will set the position from which the image intensity values will
            * be interpolated, assuming that \a pos provides the position as a
            * (floating-point) voxel coordinate within the dataset. */
-          bool voxel (const Point<pos_type>& pos)
-          {
+          bool voxel (const Point<pos_type>& pos) {
             Point<pos_type> f = B::set (pos);
             if (B::out_of_bounds) return (true);
             B::data[0] = Math::round<ssize_t> (pos[0]);
@@ -100,15 +102,18 @@ namespace MR {
            * coordinate relative to the axes of the dataset, in units of
            * millimeters. The origin is taken to be the centre of the voxel at [
            * 0 0 0 ]. */
-          bool image (const Point<pos_type>& pos) { return (voxel (B::image2voxel (pos))); }
+          bool image (const Point<pos_type>& pos) {
+            return (voxel (B::image2voxel (pos)));
+          }
           //! Set the current position to the <b>scanner space</b> position \a pos
           /*! This will set the position from which the image intensity values will
            * be interpolated, assuming that \a pos provides the position as a
            * scanner space coordinate, in units of millimeters. */
-          bool scanner (const Point<pos_type>& pos) { return (voxel (B::scanner2voxel (pos))); }
+          bool scanner (const Point<pos_type>& pos) {
+            return (voxel (B::scanner2voxel (pos)));
+          }
 
-          value_type value () const
-          {
+          value_type value () const {
             if (B::out_of_bounds) return (NAN);
             return (B::data.value());
           }

@@ -27,86 +27,121 @@
 #include "file/dicom/patient.h"
 #include "file/dicom/csa_entry.h"
 
-namespace MR {
-  namespace File {
-    namespace Dicom {
+namespace MR
+{
+  namespace File
+  {
+    namespace Dicom
+    {
 
       void Image::parse_item (Element& item, const std::string& dirname)
       {
         switch (item.group) {
-          case 0x0004U: 
+          case 0x0004U:
             if (item.element == 0x1500U) {
               assert (dirname.size());
               filename = dirname;
               std::vector<std::string> V (item.get_string());
-              for (size_t n = 0; n < V.size(); n++) 
+              for (size_t n = 0; n < V.size(); n++)
                 filename = Path::join (filename, V[n]);
             }
             break;
-          case 0x0008U: 
-            if (item.element == 0x0070U) manufacturer = item.get_string()[0];
+          case 0x0008U:
+            if (item.element == 0x0070U) manufacturer = item.get_string() [0];
             return;
-          case 0x0018U: 
+          case 0x0018U:
             switch (item.element) {
-              case 0x0050U: slice_thickness = item.get_float()[0]; return;
-              case 0x0088U: slice_spacing = item.get_float()[0]; return;
-              case 0x1310U: acq_dim[0] = std::max (item.get_uint()[0], item.get_uint()[1]);
-                            acq_dim[1] = std::max (item.get_uint()[2], item.get_uint()[3]);
+              case 0x0050U:
+                slice_thickness = item.get_float() [0];
+                return;
+              case 0x0088U:
+                slice_spacing = item.get_float() [0];
+                return;
+              case 0x1310U:
+                acq_dim[0] = std::max (item.get_uint() [0], item.get_uint() [1]);
+                acq_dim[1] = std::max (item.get_uint() [2], item.get_uint() [3]);
 
-                            return;
-              case 0x0024U: sequence_name = item.get_string()[0];
-                            if (!sequence_name.size()) return;
-                            {
-                              int c = sequence_name.size()-1;
-                              while (c >= 0 && isdigit (sequence_name[c])) c--;
-                              c++;
-                              sequence = to<size_t> (sequence_name.substr (c));
-                            }
-                            return;
-              case 0x9087U: bvalue = item.get_float()[0]; return;
-              case 0x9089U: G[0] = item.get_float()[0];
-                            G[1] = item.get_float()[1];
-                            G[2] = item.get_float()[2];
-                            return;
+                return;
+              case 0x0024U:
+                sequence_name = item.get_string() [0];
+                if (!sequence_name.size()) return;
+                {
+                  int c = sequence_name.size()-1;
+                  while (c >= 0 && isdigit (sequence_name[c])) c--;
+                  c++;
+                  sequence = to<size_t> (sequence_name.substr (c));
+                }
+                return;
+              case 0x9087U:
+                bvalue = item.get_float() [0];
+                return;
+              case 0x9089U:
+                G[0] = item.get_float() [0];
+                G[1] = item.get_float() [1];
+                G[2] = item.get_float() [2];
+                return;
 
             }
             return;
-          case 0x0019U: 
+          case 0x0019U:
             switch (item.element) { // GE DW encoding info:
-              case 0x10BBU: if (item.get_float().size()) G[0] = item.get_float()[0]; return;
-              case 0x10BCU: if (item.get_float().size()) G[1] = item.get_float()[0]; return;
-              case 0x10BDU: if (item.get_float().size()) G[2] = item.get_float()[0]; return;
-            }   
+              case 0x10BBU:
+                if (item.get_float().size()) G[0] = item.get_float() [0];
+                return;
+              case 0x10BCU:
+                if (item.get_float().size()) G[1] = item.get_float() [0];
+                return;
+              case 0x10BDU:
+                if (item.get_float().size()) G[2] = item.get_float() [0];
+                return;
+            }
             return;
-          case 0x0020U: 
+          case 0x0020U:
             switch (item.element) {
-              case 0x0012U: acq = item.get_uint()[0]; return;
-              case 0x0013U: instance = item.get_uint()[0]; return;
-              case 0x0032U: position_vector[0] = item.get_float()[0];
-                            position_vector[1] = item.get_float()[1];
-                            position_vector[2] = item.get_float()[2];
-                            return;
-              case 0x0037U: orientation_x[0] = item.get_float()[0];
-                            orientation_x[1] = item.get_float()[1];
-                            orientation_x[2] = item.get_float()[2];
-                            orientation_y[0] = item.get_float()[3];
-                            orientation_y[1] = item.get_float()[4];
-                            orientation_y[2] = item.get_float()[5];
-                            Math::normalise (orientation_x);
-                            Math::normalise (orientation_y);
-                            return;
+              case 0x0012U:
+                acq = item.get_uint() [0];
+                return;
+              case 0x0013U:
+                instance = item.get_uint() [0];
+                return;
+              case 0x0032U:
+                position_vector[0] = item.get_float() [0];
+                position_vector[1] = item.get_float() [1];
+                position_vector[2] = item.get_float() [2];
+                return;
+              case 0x0037U:
+                orientation_x[0] = item.get_float() [0];
+                orientation_x[1] = item.get_float() [1];
+                orientation_x[2] = item.get_float() [2];
+                orientation_y[0] = item.get_float() [3];
+                orientation_y[1] = item.get_float() [4];
+                orientation_y[2] = item.get_float() [5];
+                Math::normalise (orientation_x);
+                Math::normalise (orientation_y);
+                return;
             }
             return;
           case 0x0028U:
             switch (item.element) {
-              case 0x0010U: dim[1] = item.get_uint()[0]; return;
-              case 0x0011U: dim[0] = item.get_uint()[0]; return;
-              case 0x0030U: pixel_size[0] = item.get_float()[0];
-                            pixel_size[1] = item.get_float()[1]; 
-                            return;
-              case 0x0100U: bits_alloc = item.get_uint()[0]; return;
-              case 0x1052U: scale_intercept = item.get_float()[0]; return;
-              case 0x1053U: scale_slope = item.get_float()[0]; return;
+              case 0x0010U:
+                dim[1] = item.get_uint() [0];
+                return;
+              case 0x0011U:
+                dim[0] = item.get_uint() [0];
+                return;
+              case 0x0030U:
+                pixel_size[0] = item.get_float() [0];
+                pixel_size[1] = item.get_float() [1];
+                return;
+              case 0x0100U:
+                bits_alloc = item.get_uint() [0];
+                return;
+              case 0x1052U:
+                scale_intercept = item.get_float() [0];
+                return;
+              case 0x1053U:
+                scale_slope = item.get_float() [0];
+                return;
             }
             return;
           case 0x0029U:
@@ -116,20 +151,26 @@ namespace MR {
             }
             else return;
           case 0x0043U: // GEMS_PARMS_01 block
-            if (item.element == 0x1039U) if (item.get_int().size()) bvalue = item.get_int()[0];
+            if (item.element == 0x1039U) if (item.get_int().size()) bvalue = item.get_int() [0];
             return;
-          case 0x2001U: // Philips DW encoding info: 
-            if (item.element == 0x1003) bvalue = item.get_float()[0];
+          case 0x2001U: // Philips DW encoding info:
+            if (item.element == 0x1003) bvalue = item.get_float() [0];
             return;
-          case 0x2005U: // Philips DW encoding info: 
+          case 0x2005U: // Philips DW encoding info:
             switch (item.element) {
-              case 0x10B0U: G[0] = item.get_float()[0]; return;
-              case 0x10B1U: G[1] = item.get_float()[0]; return;
-              case 0x10B2U: G[2] = item.get_float()[0]; return;
+              case 0x10B0U:
+                G[0] = item.get_float() [0];
+                return;
+              case 0x10B1U:
+                G[1] = item.get_float() [0];
+                return;
+              case 0x10B2U:
+                G[2] = item.get_float() [0];
+                return;
             }
             return;
 
-          case 0x7FE0U: 
+          case 0x7FE0U:
             if (item.element == 0x0010U) {
               data = item.offset (item.data);
               data_size = item.size;
@@ -152,7 +193,7 @@ namespace MR {
         Element item;
         item.set (filename);
 
-        while (item.read()) 
+        while (item.read())
           if (item.item_number.size() == 0)
             parse_item (item);
 
@@ -166,8 +207,8 @@ namespace MR {
       bool Image::operator< (const Image& ima) const
       {
         if (acq != ima.acq) return (acq < ima.acq);
-        assert (!isnan(distance));
-        assert (!isnan(ima.distance));
+        assert (!isnan (distance));
+        assert (!isnan (ima.distance));
         if (distance != ima.distance) return (distance < ima.distance);
         if (sequence != ima.sequence) return (sequence < ima.sequence);
         if (instance != ima.instance) return (instance < ima.instance);
@@ -186,11 +227,11 @@ namespace MR {
         Element item;
         item.set (filename);
 
-        fprintf (stdout, 
-            "**********************************************************\n"\
-            "  %s\n" \
-            "**********************************************************\n", 
-            filename.c_str());
+        fprintf (stdout,
+                 "**********************************************************\n"\
+                 "  %s\n" \
+                 "**********************************************************\n",
+                 filename.c_str());
 
         while (item.read()) {
           if (dcm) item.print();
@@ -220,7 +261,7 @@ namespace MR {
         }
 
         if (G[0] && bvalue)
-          if (Math::abs(G[0]) > 1.0 && Math::abs(G[1]) > 1.0 && Math::abs(G[2]) > 1.0)
+          if (Math::abs (G[0]) > 1.0 && Math::abs (G[1]) > 1.0 && Math::abs (G[2]) > 1.0)
             bvalue = G[0] = G[1] = G[2] = 0.0;
       }
 
@@ -231,18 +272,18 @@ namespace MR {
 
       std::ostream& operator<< (std::ostream& stream, const Image& item)
       {
-        stream << "            " << ( item.instance == std::numeric_limits<size_t>::max() ? 0 : item.instance ) << "#" 
-          << ( item.acq == std::numeric_limits<size_t>::max() ? 0 : item.acq) << ":"
-          << ( item.sequence == std::numeric_limits<size_t>::max() ? 0 : item.sequence ) << " (" 
-          << ( item.sequence_name.size() ? item.sequence_name : "?" ) << "), "
-          << item.dim[0] << "x" << item.dim[1] << ", "
-          << item.pixel_size[0] << "x" << item.pixel_size[1] << " x " 
-          << item.slice_thickness << " mm, [ "
-          << item.position_vector[0] << " " << item.position_vector[1] << " " << item.position_vector[2] << " ] [ "
-          << item.orientation_x[0] << " " << item.orientation_x[1] << " " << item.orientation_x[2] << " ] [ "
-          << item.orientation_y[0] << " " << item.orientation_y[1] << " " << item.orientation_y[2] << " ] "
-          << ( item.filename.size() ? item.filename : "" ) << "\n";
-             
+        stream << "            " << (item.instance == std::numeric_limits<size_t>::max() ? 0 : item.instance) << "#"
+               << (item.acq == std::numeric_limits<size_t>::max() ? 0 : item.acq) << ":"
+               << (item.sequence == std::numeric_limits<size_t>::max() ? 0 : item.sequence) << " ("
+               << (item.sequence_name.size() ? item.sequence_name : "?") << "), "
+               << item.dim[0] << "x" << item.dim[1] << ", "
+               << item.pixel_size[0] << "x" << item.pixel_size[1] << " x "
+               << item.slice_thickness << " mm, [ "
+               << item.position_vector[0] << " " << item.position_vector[1] << " " << item.position_vector[2] << " ] [ "
+               << item.orientation_x[0] << " " << item.orientation_x[1] << " " << item.orientation_x[2] << " ] [ "
+               << item.orientation_y[0] << " " << item.orientation_y[1] << " " << item.orientation_y[2] << " ] "
+               << (item.filename.size() ? item.filename : "") << "\n";
+
         return (stream);
       }
 

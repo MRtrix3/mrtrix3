@@ -26,10 +26,13 @@
 #include "types.h"
 #include "mrtrix.h"
 
-namespace MR {
-  namespace Image {
+namespace MR
+{
+  namespace Image
+  {
 
-    class Axis {
+    class Axis
+    {
       public:
         Axis () : dim (1), vox (NAN), stride (0) { }
 
@@ -39,8 +42,12 @@ namespace MR {
         std::string description;
         std::string units;
 
-        bool  forward () const { return (stride > 0); }
-        ssize_t direction () const { return (stride > 0 ? 1 : -1); }
+        bool  forward () const {
+          return (stride > 0);
+        }
+        ssize_t direction () const {
+          return (stride > 0 ? 1 : -1);
+        }
 
         friend std::ostream& operator<< (std::ostream& stream, const Axis& axes);
 

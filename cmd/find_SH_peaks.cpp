@@ -44,12 +44,12 @@ DESCRIPTION = {
 
 ARGUMENTS = {
   Argument ("SH", "the input image of SH coefficients.")
-    .type_image_in (),
-  
-  Argument ("ouput", 
-      "the output image. Each volume corresponds to the x, y & z component "
-      "of each peak direction vector in turn.")
-    .type_image_out (),
+  .type_image_in (),
+
+  Argument ("ouput",
+  "the output image. Each volume corresponds to the x, y & z component "
+  "of each peak direction vector in turn.")
+  .type_image_out (),
 
   Argument ()
 };
@@ -57,32 +57,32 @@ ARGUMENTS = {
 
 OPTIONS = {
   Option ("num", "the number of peaks to extract (default is 3).")
-    + Argument ("peaks").type_integer (0, 3, std::numeric_limits<int>::max()),
+  + Argument ("peaks").type_integer (0, 3, std::numeric_limits<int>::max()),
 
-  Option ("direction", 
-      "the direction of a peak to estimate. The algorithm will attempt to "
-      "find the same number of peaks as have been specified using this option.")
-    .allow_multiple()
-    + Argument ("phi").type_float()
-    + Argument ("theta").type_float(),
+  Option ("direction",
+  "the direction of a peak to estimate. The algorithm will attempt to "
+  "find the same number of peaks as have been specified using this option.")
+  .allow_multiple()
+  + Argument ("phi").type_float()
+  + Argument ("theta").type_float(),
 
-  Option ("peaks", 
-      "the program will try to find the peaks that most closely match those "
-      "in the image provided.")
-    + Argument ("image").type_image_in(),
+  Option ("peaks",
+  "the program will try to find the peaks that most closely match those "
+  "in the image provided.")
+  + Argument ("image").type_image_in(),
 
-  Option ("threshold", 
-      "only peak amplitudes greater than the threshold will be considered.")
-    + Argument ("value").type_float(),
+  Option ("threshold",
+  "only peak amplitudes greater than the threshold will be considered.")
+  + Argument ("value").type_float(),
 
   Option ("seeds",
-      "specify a set of directions from which to start the multiple restarts of "
-      "the optimisation (by default, the built-in 60 direction set is used)")
-    + Argument ("file").type_file(),
+  "specify a set of directions from which to start the multiple restarts of "
+  "the optimisation (by default, the built-in 60 direction set is used)")
+  + Argument ("file").type_file(),
 
   Option ("mask",
-      "only perform computation within the specified binary brain mask image.")
-    + Argument ("image").type_image_in (),
+  "only perform computation within the specified binary brain mask image.")
+  + Argument ("image").type_image_in (),
 
   Option ()
 };
@@ -92,20 +92,24 @@ typedef float value_type;
 
 
 
-class Direction {
+class Direction
+{
   public:
     Direction () : a (NAN) { }
     Direction (const Direction& d) : a (d.a), v (d.v) { }
-    Direction (value_type phi, value_type theta) : a (1.0), v (cos(phi)*sin(theta), sin(phi)*sin(theta), cos(theta)) { }
+    Direction (value_type phi, value_type theta) : a (1.0), v (cos (phi) *sin (theta), sin (phi) *sin (theta), cos (theta)) { }
     value_type a;
     Point<value_type> v;
-    bool operator<(const Direction& d) const { return (a > d.a); }
+    bool operator< (const Direction& d) const {
+      return (a > d.a);
+    }
 };
 
 
 
 
-class Item {
+class Item
+{
   public:
     Math::Vector<value_type> data;
     ssize_t pos[3];
@@ -113,12 +117,19 @@ class Item {
 
 
 
-class ItemAllocator {
+class ItemAllocator
+{
   public:
     ItemAllocator (size_t data_size) : N (data_size) { }
-    Item* alloc () { Item* item = new Item; item->data.allocate (N); return (item); }
+    Item* alloc () {
+      Item* item = new Item;
+      item->data.allocate (N);
+      return (item);
+    }
     void reset (Item* item) { }
-    void dealloc (Item* item) { delete item; }
+    void dealloc (Item* item) {
+      delete item;
+    }
   private:
     size_t N;
 };
@@ -129,19 +140,19 @@ typedef Thread::Queue<Item,ItemAllocator> Queue;
 
 
 
-class DataLoader {
+class DataLoader
+{
   public:
     DataLoader (Queue& queue,
                 Image::Header& sh_header,
                 Image::Header* mask_header) :
-                writer (queue),
-                sh (sh_header),
-                mask (mask_header) { }
+      writer (queue),
+      sh (sh_header),
+      mask (mask_header) { }
 
-    void execute () 
-    {
+    void execute () {
       Queue::Writer::Item item (writer);
-      DataSet::Loop loop ("computing amplitudes...", 0, 3 );
+      DataSet::Loop loop ("computing amplitudes...", 0, 3);
       if (mask) {
         Image::Voxel<value_type> mask_vox (*mask);
         DataSet::check_dimensions (mask_vox, sh, 0, 3);
@@ -151,7 +162,7 @@ class DataLoader {
       }
       else {
         for (loop.start (sh); loop.ok(); loop.next (sh))
-          load(item);
+          load (item);
       }
     }
 
@@ -160,8 +171,7 @@ class DataLoader {
     Image::Voxel<value_type>  sh;
     Image::Header* mask;
 
-    void load (Queue::Writer::Item& item) 
-    {
+    void load (Queue::Writer::Item& item) {
       item->pos[0] = sh[0];
       item->pos[1] = sh[1];
       item->pos[2] = sh[2];
@@ -176,7 +186,8 @@ class DataLoader {
 
 
 
-class Processor {
+class Processor
+{
   public:
     Processor (Queue& queue,
                Image::Header& dirs_header,
@@ -185,14 +196,13 @@ class Processor {
                int npeaks,
                std::vector<Direction> true_peaks,
                value_type threshold,
-               Image::Header* ipeaks_header):
-               reader (queue), dirs_image (dirs_header), dirs(directions),
-               lmax (lmax), npeaks(npeaks),
-               true_peaks(true_peaks), threshold(threshold),
-               ipeaks(ipeaks_header) { }
+               Image::Header* ipeaks_header) :
+      reader (queue), dirs_image (dirs_header), dirs (directions),
+      lmax (lmax), npeaks (npeaks),
+      true_peaks (true_peaks), threshold (threshold),
+      ipeaks (ipeaks_header) { }
 
-    void execute () 
-    {
+    void execute () {
       Queue::Reader::Item item (reader);
 
       while (item.read()) {
@@ -203,8 +213,8 @@ class Processor {
         dirs_image[1] = item->pos[1];
         dirs_image[2] = item->pos[2];
 
-        if (check_input(item)) {
-          DataSet::Loop inner (3); 
+        if (check_input (item)) {
+          DataSet::Loop inner (3);
           for (inner.start (dirs_image); inner.ok(); inner.next (dirs_image))
             dirs_image.value() = NAN;
           continue;
@@ -213,7 +223,7 @@ class Processor {
         std::vector<Direction> all_peaks;
 
         for (size_t i = 0; i < dirs.rows(); i++) {
-          Direction p (dirs(i,0), dirs(i,1));
+          Direction p (dirs (i,0), dirs (i,1));
           p.a = Math::SH::get_peak (item->data.ptr(), lmax, p.v);
           if (finite (p.a)) {
             for (size_t j = 0; j < all_peaks.size(); j++) {
@@ -237,7 +247,7 @@ class Processor {
             ipeaks_vox[3] = 3*i;
             for (int n = 0; n < 3; n++) {
               p[n] = ipeaks_vox.value();
-              ipeaks_vox[3]++; 
+              ipeaks_vox[3]++;
             }
             p.normalise();
 
@@ -268,26 +278,28 @@ class Processor {
         int actual_npeaks = MIN (npeaks, (int) all_peaks.size());
         dirs_image[3] = 0;
         for (int n = 0; n < actual_npeaks; n++) {
-          dirs_image.value() = peaks_out[n].a*peaks_out[n].v[0]; dirs_image[3]++;
-          dirs_image.value() = peaks_out[n].a*peaks_out[n].v[1]; dirs_image[3]++;
-          dirs_image.value() = peaks_out[n].a*peaks_out[n].v[2]; dirs_image[3]++;
+          dirs_image.value() = peaks_out[n].a*peaks_out[n].v[0];
+          dirs_image[3]++;
+          dirs_image.value() = peaks_out[n].a*peaks_out[n].v[1];
+          dirs_image[3]++;
+          dirs_image.value() = peaks_out[n].a*peaks_out[n].v[2];
+          dirs_image[3]++;
         }
         for (; dirs_image[3] < 3*npeaks; dirs_image[3]++) dirs_image.value() = NAN;
 
       }
     }
 
- private:
-   Queue::Reader reader;
-   Image::Voxel<value_type> dirs_image;
-   Math::Matrix<value_type> dirs;
-   int lmax, npeaks;
-   std::vector<Direction> true_peaks;
-   value_type threshold;
-   Image::Header* ipeaks;
+  private:
+    Queue::Reader reader;
+    Image::Voxel<value_type> dirs_image;
+    Math::Matrix<value_type> dirs;
+    int lmax, npeaks;
+    std::vector<Direction> true_peaks;
+    value_type threshold;
+    Image::Header* ipeaks;
 
-   bool check_input (Queue::Reader::Item &item) 
-   {
+    bool check_input (Queue::Reader::Item& item) {
       if (ipeaks) {
         Image::Voxel<value_type> ipeaks_vox (*ipeaks);
         ipeaks_vox[0] = item->pos[0];
@@ -307,7 +319,7 @@ class Processor {
       }
 
       return (no_peaks);
-   }
+    }
 };
 
 
@@ -331,7 +343,7 @@ EXECUTE {
 
   opt = get_options ("seeds");
   Math::Matrix<value_type> dirs;
-  if (opt.size()) 
+  if (opt.size())
     dirs.load (opt[0][0]);
   else {
     dirs.allocate (60,2);
@@ -346,7 +358,7 @@ EXECUTE {
   opt = get_options ("direction");
   std::vector<Direction> true_peaks;
   for (size_t n = 0; n < opt.size(); ++n) {
-    Direction p (M_PI*to<float> (opt[n][0])/180.0, M_PI*float(opt[n][1])/180.0);
+    Direction p (M_PI*to<float> (opt[n][0]) /180.0, M_PI*float (opt[n][1]) /180.0);
     true_peaks.push_back (p);
   }
   if (true_peaks.size()) npeaks = true_peaks.size();
@@ -367,21 +379,21 @@ EXECUTE {
     if (opt.size())
       ipeaks_header = new Image::Header (opt[0][0]);
 
-    if (ipeaks_header->dim(0) != directions_header.dim(0) ||
-        ipeaks_header->dim(1) != directions_header.dim(1) ||
-        ipeaks_header->dim(2) != directions_header.dim(2))
-      throw Exception ("dimensions of peaks image \"" + ipeaks_header->name() + 
-          "\" do not match that of SH coefficients image \"" + directions_header.name() + "\"");
-    npeaks = ipeaks_header->dim(3) / 3;
+    if (ipeaks_header->dim (0) != directions_header.dim (0) ||
+    ipeaks_header->dim (1) != directions_header.dim (1) ||
+    ipeaks_header->dim (2) != directions_header.dim (2))
+      throw Exception ("dimensions of peaks image \"" + ipeaks_header->name() +
+      "\" do not match that of SH coefficients image \"" + directions_header.name() + "\"");
+    npeaks = ipeaks_header->dim (3) / 3;
   }
   directions_header.set_dim (3, 3 * npeaks);
 
   directions_header.create (argument[1]);
 
-  Queue queue ("find_SH_peaks queue", 100, ItemAllocator (sh_header.dim(3)));
+  Queue queue ("find_SH_peaks queue", 100, ItemAllocator (sh_header.dim (3)));
   DataLoader loader (queue, sh_header, mask_header.get());
-  Processor processor (queue, directions_header, dirs, Math::SH::LforN (sh_header.dim(3)), 
-      npeaks, true_peaks, threshold, ipeaks_header.get());
+  Processor processor (queue, directions_header, dirs, Math::SH::LforN (sh_header.dim (3)),
+  npeaks, true_peaks, threshold, ipeaks_header.get());
 
   Thread::Exec loader_thread (loader, "loader");
   Thread::Array<Processor> processor_list (processor);

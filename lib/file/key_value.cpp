@@ -24,8 +24,10 @@
 #include "file/key_value.h"
 
 
-namespace MR {
-  namespace File {
+namespace MR
+{
+  namespace File
+  {
 
     void KeyValue::open (const std::string& file, const char* first_line)
     {
@@ -33,7 +35,7 @@ namespace MR {
       debug ("reading key/value file \"" + file + "\"...");
 
       in.open (file.c_str(), std::ios::in | std::ios::binary);
-      if (!in) throw Exception ("failed to open key/value file \"" + file + "\": " + strerror(errno));
+      if (!in) throw Exception ("failed to open key/value file \"" + file + "\": " + strerror (errno));
       if (first_line) {
         std::string sbuf;
         getline (in, sbuf);

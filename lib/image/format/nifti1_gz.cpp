@@ -29,11 +29,14 @@
 #include "image/handler/gz.h"
 #include "image/format/list.h"
 
-namespace MR {
-  namespace Image {
-    namespace Format {
+namespace MR
+{
+  namespace Image
+  {
+    namespace Format
+    {
 
-      
+
       bool NIfTI_GZ::read (Header& H) const
       {
         if (!Path::has_suffix (H.name(), ".nii.gz")) return (false);
@@ -41,9 +44,9 @@ namespace MR {
         nifti_1_header NH;
 
         File::GZ zf (H.name(), "rb");
-        zf.read (reinterpret_cast<char*> (&NH), sizeof(nifti_1_header));
+        zf.read (reinterpret_cast<char*> (&NH), sizeof (nifti_1_header));
         zf.close();
-       
+
         size_t data_offset = File::NIfTI::read (H, NH);
 
         H.set_handler (new Handler::GZ (H, 0, false));
@@ -58,12 +61,12 @@ namespace MR {
 
       bool NIfTI_GZ::check (Header& H, size_t num_axes) const
       {
-        if (!Path::has_suffix (H.name(), ".nii.gz")) 
+        if (!Path::has_suffix (H.name(), ".nii.gz"))
           return (false);
 
-        if (num_axes < 3) 
+        if (num_axes < 3)
           throw Exception ("cannot create NIfTI-1.1 image with less than 3 dimensions");
-        
+
         if (num_axes > 8)
           throw Exception ("cannot create NIfTI-1.1 image with more than 8 dimensions");
 
@@ -79,11 +82,11 @@ namespace MR {
 
       void NIfTI_GZ::create (Header& H) const
       {
-        if (H.ndim() > 7) 
+        if (H.ndim() > 7)
           throw Exception ("NIfTI-1.1 format cannot support more than 7 dimensions for image \"" + H.name() + "\"");
 
         Handler::GZ* handler = new Handler::GZ (H, 352, true);
-      
+
         File::NIfTI::write (*reinterpret_cast<nifti_1_header*> (handler->header()), H, true);
 
         H.set_handler (handler);

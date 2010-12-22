@@ -28,11 +28,14 @@
 #include "image/handler/pipe.h"
 #include "dataset/misc.h"
 
-namespace MR {
-  namespace Image {
-    namespace Handler {
+namespace MR
+{
+  namespace Image
+  {
+    namespace Handler
+    {
 
-      Pipe::~Pipe () 
+      Pipe::~Pipe ()
       {
         if (file) {
           const std::vector<File::Entry>& Hfiles (H.get_files());
@@ -60,8 +63,8 @@ namespace MR {
         if (double (bytes_per_segment) >= double (std::numeric_limits<size_t>::max()))
           throw Exception ("image \"" + H.name() + "\" is larger than maximum accessible memory");
 
-        file = new File::MMap (Hfiles[0], H.readwrite(), bytes_per_segment); 
-        addresses.resize(1);
+        file = new File::MMap (Hfiles[0], H.readwrite(), bytes_per_segment);
+        addresses.resize (1);
         addresses[0] = file->address();
       }
 

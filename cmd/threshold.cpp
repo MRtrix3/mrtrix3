@@ -29,15 +29,15 @@
 #include "dataset/min_max.h"
 #include "dataset/histogram.h"
 
-using namespace MR; 
+using namespace MR;
 
 SET_VERSION_DEFAULT;
 SET_AUTHOR (NULL);
 SET_COPYRIGHT (NULL);
 
 DESCRIPTION = {
- "create bitwise image by thresholding image intensity.",
- "By default, the threshold level is determined using a histogram analysis to cut out the background. Otherwise, the threshold intensity can be specified using command line options. Note that only the first study is used for thresholding.",
+  "create bitwise image by thresholding image intensity.",
+  "By default, the threshold level is determined using a histogram analysis to cut out the background. Otherwise, the threshold intensity can be specified using command line options. Note that only the first study is used for thresholding.",
   NULL
 };
 
@@ -48,18 +48,18 @@ ARGUMENTS = {
 };
 
 
-OPTIONS = { 
+OPTIONS = {
   Option ("abs", "specify threshold value as absolute intensity.")
-    + Argument ("value").type_float(),
+  + Argument ("value").type_float(),
 
   Option ("percentile", "threshold the image at the ith percentile.")
-    + Argument ("value").type_float (0.0, 95.0, 100.0),
+  + Argument ("value").type_float (0.0, 95.0, 100.0),
 
   Option ("top", "provide a mask of the N top-valued voxels")
-    + Argument ("N").type_integer (0, 100, std::numeric_limits<int>::max()),
+  + Argument ("N").type_integer (0, 100, std::numeric_limits<int>::max()),
 
   Option ("bottom", "provide a mask of the N bottom-valued voxels")
-    + Argument ("N").type_integer (0, 100, std::numeric_limits<int>::max()),
+  + Argument ("N").type_integer (0, 100, std::numeric_limits<int>::max()),
 
   Option ("invert", "invert output binary mask."),
 
@@ -84,7 +84,7 @@ EXECUTE {
     ++nopt;
   }
 
-  opt = get_options ("percentile"); 
+  opt = get_options ("percentile");
   if (opt.size()) {
     percentile = opt[0][0];
     ++nopt;
@@ -105,8 +105,8 @@ EXECUTE {
   if (nopt > 1) throw Exception ("too many conflicting options");
 
 
-  bool invert = get_options("invert").size();
-  bool use_NaN = get_options("nan").size();
+  bool invert = get_options ("invert").size();
+  bool use_NaN = get_options ("nan").size();
 
   Image::Header header_in (argument[0]);
   assert (!header_in.is_complex());
@@ -141,13 +141,13 @@ EXECUTE {
 
     {
       DataSet::Loop loop ("thresholding \"" + shorten (in.name()) + "\" at " + (
-            isnan (percentile) ? 
-            ( str (topN ? topN : bottomN) + "th " + (topN ? "top" : "bottom" ) + " voxel" ) : 
-            (str (percentile*100.0) + "\% percentile") 
-            ) + "...");
+                            isnan (percentile) ?
+                            (str (topN ? topN : bottomN) + "th " + (topN ? "top" : "bottom") + " voxel") :
+                              (str (percentile*100.0) + "\% percentile")
+                            ) + "...");
 
       if (topN) {
-        for (loop.start (in); loop.ok(); loop.next (in)) { 
+        for (loop.start (in); loop.ok(); loop.next (in)) {
           float val = in.value();
           if (list.size() == topN) {
             if (val < list.begin()->first) continue;
@@ -159,7 +159,7 @@ EXECUTE {
         }
       }
       else {
-        for (loop.start (in); loop.ok(); loop.next (in)) { 
+        for (loop.start (in); loop.ok(); loop.next (in)) {
           float val = in.value();
           if (list.size() == bottomN) {
             std::multimap<float,std::vector<ssize_t> >::iterator i = list.end();
@@ -191,8 +191,8 @@ EXECUTE {
       val = hist.first_min();
     }
 
-    DataSet::Loop loop ("thresholding \"" + shorten (in.name()) + "\" at intensity " + str(val) + "...");
-    for (loop.start (out, in); loop.ok(); loop.next (out, in)) 
+    DataSet::Loop loop ("thresholding \"" + shorten (in.name()) + "\" at intensity " + str (val) + "...");
+    for (loop.start (out, in); loop.ok(); loop.next (out, in))
       out.value() = in.value() < val ? zero : one;
   }
 }

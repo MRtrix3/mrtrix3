@@ -26,7 +26,7 @@
 #include "thread/queue.h"
 #include "math/rng.h"
 
-using namespace MR; 
+using namespace MR;
 
 SET_VERSION_DEFAULT;
 SET_AUTHOR (NULL);
@@ -38,19 +38,29 @@ DESCRIPTION = {
 };
 
 
-ARGUMENTS = { Argument() }; 
+ARGUMENTS = { Argument() };
 OPTIONS = { Option() };
 
-class Item {
+class Item
+{
   public:
     float orig, processed;
 };
 
-class ItemAllocator {
+class ItemAllocator
+{
   public:
-    Item* alloc () { Item* p = new Item; p->orig = p->processed = NAN; return (p); }
-    void reset (Item* p) { p->orig = p->processed = NAN; }
-    void dealloc (Item* p) { delete p; }
+    Item* alloc () {
+      Item* p = new Item;
+      p->orig = p->processed = NAN;
+      return (p);
+    }
+    void reset (Item* p) {
+      p->orig = p->processed = NAN;
+    }
+    void dealloc (Item* p) {
+      delete p;
+    }
 };
 
 typedef Thread::Queue<Item,ItemAllocator> ItemQueue;
@@ -58,18 +68,21 @@ typedef Thread::Queue<float> FloatQueue;
 
 
 
-class Consumer {
+class Consumer
+{
   public:
     Consumer (ItemQueue& queue, const std::string& description = "unnamed") : reader (queue), desc (description) { }
-    const std::string& name () { return (desc); }
+    const std::string& name () {
+      return (desc);
+    }
     void execute () {
       size_t count = 0;
       ItemQueue::Reader::Item item (reader);
       while (item.read()) {
-        //std::cout << item->orig << " => " << item->processed << "\n"; 
+        //std::cout << item->orig << " => " << item->processed << "\n";
         ++count;
       }
-      print ("consumer count = " + str(count) + "\n");
+      print ("consumer count = " + str (count) + "\n");
     }
   private:
     ItemQueue::Reader reader;
@@ -78,11 +91,14 @@ class Consumer {
 
 
 
-class Processor {
+class Processor
+{
   public:
-    Processor (FloatQueue& queue_in, ItemQueue& queue_out, const std::string& description = "unnamed") : 
+    Processor (FloatQueue& queue_in, ItemQueue& queue_out, const std::string& description = "unnamed") :
       reader (queue_in), writer (queue_out), desc (description) { }
-    const std::string& name () { return (desc); }
+    const std::string& name () {
+      return (desc);
+    }
     void execute () {
       size_t count = 0;
       FloatQueue::Reader::Item in (reader);
@@ -90,11 +106,12 @@ class Processor {
       do {
         if (!in.read()) break;
         out->orig = *in;
-        out->processed = Math::pow2(out->orig);
+        out->processed = Math::pow2 (out->orig);
         ++count;
         //print ("[" + name() + "] " + str(out->orig) + " -> " + str(out->processed) + "\n");
-      } while (out.write()); 
-      print (name() + " count = " + str(count) + "\n");
+      }
+      while (out.write());
+      print (name() + " count = " + str (count) + "\n");
     }
   private:
     FloatQueue::Reader reader;
@@ -127,7 +144,8 @@ EXECUTE {
     *value = rng.uniform();
     ++count;
     ++progress;
-  } while (value.write() && count < N);
-  print ("producer count = " + str(count) + "\n");
+  }
+  while (value.write() && count < N);
+  print ("producer count = " + str (count) + "\n");
 }
 

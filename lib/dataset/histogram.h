@@ -25,24 +25,27 @@
 
 #include "dataset/min_max.h"
 
-namespace MR {
-  namespace DataSet {
+namespace MR
+{
+  namespace DataSet
+  {
 
-    template <class Set> class Histogram {
+    template <class Set> class Histogram
+    {
       public:
         typedef typename Set::value_type value_type;
 
         Histogram (Set& D, size_t num_buckets=100) {
-          if (num_buckets < 10) 
+          if (num_buckets < 10)
             throw Exception ("Error initialising histogram: number of buckets must be greater than 10");
 
-          info ("Initialising histogram with " + str(num_buckets) + " buckets...");
+          info ("Initialising histogram with " + str (num_buckets) + " buckets...");
           list.resize (num_buckets);
 
           value_type min, max;
           min_max (D, min, max);
 
-          value_type step = (max-min) / value_type(num_buckets);
+          value_type step = (max-min) / value_type (num_buckets);
 
           for (size_t n = 0; n < list.size(); n++)
             list[n].value = min + step * (n + 0.5);
@@ -50,8 +53,8 @@ namespace MR {
           LoopInOrder loop (D, "building histogram of \"" + shorten (D.name()) + "\"...");
           for (loop.start (D); loop.ok(); loop.next (D)) {
             value_type val = D.value();
-            if (finite (val) && val != 0.0) { 
-              size_t pos = size_t ((val-min)/step);
+            if (finite (val) && val != 0.0) {
+              size_t pos = size_t ( (val-min) /step);
               if (pos >= list.size()) pos = list.size()-1;
               list[pos].frequency++;
             }
@@ -59,11 +62,16 @@ namespace MR {
         }
 
 
-        size_t      frequency (size_t index) const    { return (list[index].frequency); }
-        value_type  value (size_t index) const        { return (list[index].value); }
-        size_t      num () const                      { return (list.size()); }
-        value_type  first_min () const
-        {
+        size_t      frequency (size_t index) const    {
+          return (list[index].frequency);
+        }
+        value_type  value (size_t index) const        {
+          return (list[index].value);
+        }
+        size_t      num () const                      {
+          return (list.size());
+        }
+        value_type  first_min () const {
           size_t p1 = 0;
           while (list[p1].frequency <= list[p1+1].frequency && p1+2 < list.size()) ++p1;
           for (size_t p = p1; p < list.size(); ++p) {
@@ -82,7 +90,8 @@ namespace MR {
         }
 
       protected:
-        class Entry {
+        class Entry
+        {
           public:
             Entry () : frequency (0), value (0.0) { }
             size_t  frequency;

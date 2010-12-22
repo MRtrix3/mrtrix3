@@ -31,11 +31,14 @@
 
 #define BYTES_PER_ZCALL 524288
 
-namespace MR {
-  namespace Image {
-    namespace Handler {
+namespace MR
+{
+  namespace Image
+  {
+    namespace Handler
+    {
 
-      GZ::~GZ () 
+      GZ::~GZ ()
       {
         if (addresses.size()) {
           assert (addresses[0]);
@@ -43,9 +46,9 @@ namespace MR {
 
           if (H.readwrite()) {
             ProgressBar progress ("compressing image \"" + H.name() + "\"...",
-                files.size() * bytes_per_segment / BYTES_PER_ZCALL);
+                                  files.size() * bytes_per_segment / BYTES_PER_ZCALL);
             for (size_t n = 0; n < files.size(); n++) {
-              assert (files[n].start == int64_t(lead_in_size));
+              assert (files[n].start == int64_t (lead_in_size));
               File::GZ zf (files[n].name, "wb");
               if (lead_in) zf.write (reinterpret_cast<const char*> (lead_in), lead_in_size);
               uint8_t* address = addresses[0] + n*bytes_per_segment;
@@ -79,14 +82,14 @@ namespace MR {
           throw Exception ("image \"" + H.name() + "\" is larger than maximum accessible memory");
 
         debug ("loading image \"" + H.name() + "\"...");
-        addresses.resize ( H.datatype().bits() == 1 && files.size() > 1 ? files.size() : 1 );
+        addresses.resize (H.datatype().bits() == 1 && files.size() > 1 ? files.size() : 1);
         addresses[0] = new uint8_t [files.size() * bytes_per_segment];
         if (!addresses[0]) throw Exception ("failed to allocate memory for image \"" + H.name() + "\"");
 
         if (is_new) memset (addresses[0], 0, files.size() * bytes_per_segment);
         else {
-          ProgressBar progress ("uncompressing image \"" + H.name() + "\"...", 
-              files.size() * bytes_per_segment / BYTES_PER_ZCALL);
+          ProgressBar progress ("uncompressing image \"" + H.name() + "\"...",
+                                files.size() * bytes_per_segment / BYTES_PER_ZCALL);
           for (size_t n = 0; n < files.size(); n++) {
             File::GZ zf (files[n].name, "rb");
             zf.seek (files[n].start);
@@ -101,8 +104,8 @@ namespace MR {
             zf.read (reinterpret_cast<char*> (address), last - address);
           }
         }
-        
-        if (addresses.size() > 1) 
+
+        if (addresses.size() > 1)
           for (size_t n = 1; n < addresses.size(); n++)
             addresses[n] = addresses[0] + n*bytes_per_segment;
         else segsize = std::numeric_limits<size_t>::max();

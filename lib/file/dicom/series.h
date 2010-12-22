@@ -27,23 +27,29 @@
 #include "progressbar.h"
 #include "file/dicom/image.h"
 
-namespace MR {
-  namespace File {
-    namespace Dicom {
+namespace MR
+{
+  namespace File
+  {
+    namespace Dicom
+    {
 
       class Study;
       class Image;
 
-      class Series : public std::vector< RefPtr <Image> > {
+      class Series : public std::vector< RefPtr <Image> >
+      {
         public:
           Series (
-              Study*             parent, 
-              const std::string& series_name, 
-              size_t             series_number,
-              const std::string& series_modality = "", 
-              const std::string& series_date = "", 
-              const std::string& series_time = "") :
-            study (parent), name (series_name), modality (series_modality), date (series_date), time (series_time) { number = series_number; }
+            Study*             parent,
+            const std::string& series_name,
+            size_t             series_number,
+            const std::string& series_modality = "",
+            const std::string& series_date = "",
+            const std::string& series_time = "") :
+            study (parent), name (series_name), modality (series_modality), date (series_date), time (series_time) {
+            number = series_number;
+          }
 
           Study*       study;
           std::string  name;
@@ -55,12 +61,14 @@ namespace MR {
           void read () {
             ProgressBar progress ("reading DICOM series \"" + name + "\"...", size());
             for (size_t i = 0; i < size(); i++) {
-              (*this)[i]->read();
+              (*this) [i]->read();
               ++progress;
             }
           }
 
-          void print_fields (bool dcm, bool csa) const { for (size_t i = 0; i < size(); i++) (*this)[i]->print_fields (dcm, csa); }
+          void print_fields (bool dcm, bool csa) const {
+            for (size_t i = 0; i < size(); i++) (*this) [i]->print_fields (dcm, csa);
+          }
 
           std::vector<int> count () const;
 

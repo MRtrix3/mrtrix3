@@ -26,12 +26,16 @@
 #include "image/handler/base.h"
 #include "file/mmap.h"
 
-namespace MR {
-  namespace Image {
+namespace MR
+{
+  namespace Image
+  {
 
-    namespace Handler {
+    namespace Handler
+    {
 
-      class Pipe : public Base {
+      class Pipe : public Base
+      {
         public:
           Pipe (Header& header, bool image_is_new) : Base (header, image_is_new) { }
           virtual ~Pipe ();

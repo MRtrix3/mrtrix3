@@ -27,21 +27,30 @@
 #include <gsl/gsl_fft_complex.h>
 #include "math/complex.h"
 
-namespace MR {
-  namespace Math {
+namespace MR
+{
+  namespace Math
+  {
 
-    class FFT {
+    class FFT
+    {
       public:
         FFT () : wavetable (NULL), workspace (NULL), length (0) { }
-        ~FFT () { 
-          if (wavetable) gsl_fft_complex_wavetable_free (wavetable); 
+        ~FFT () {
+          if (wavetable) gsl_fft_complex_wavetable_free (wavetable);
           if (workspace) gsl_fft_complex_workspace_free (workspace);
         }
 
         void fft (std::vector<cdouble>& array, bool inverse = false) {
           if (length != array.size()) {
-            if (wavetable) { gsl_fft_complex_wavetable_free (wavetable); wavetable = NULL; }
-            if (workspace) { gsl_fft_complex_workspace_free (workspace); workspace = NULL; }
+            if (wavetable) {
+              gsl_fft_complex_wavetable_free (wavetable);
+              wavetable = NULL;
+            }
+            if (workspace) {
+              gsl_fft_complex_workspace_free (workspace);
+              workspace = NULL;
+            }
 
             length = array.size();
 
@@ -52,7 +61,7 @@ namespace MR {
             else return;
           }
 
-          if ( inverse ? 
+          if (inverse ?
               gsl_fft_complex_forward (&array.front().real(), 1, array.size(), wavetable, workspace) :
               gsl_fft_complex_inverse (&array.front().real(), 1, array.size(), wavetable, workspace)
              ) throw Exception ("error computing FFT");

@@ -33,24 +33,28 @@
 #ifdef WINDOWS
 #define SYS_CONFIG_FILE "C:\\" CONFIG_FILE
 #define USER_CONFIG_FILE CONFIG_FILE
-#else 
+#else
 #define SYS_CONFIG_FILE "/etc/" CONFIG_FILE
 #define USER_CONFIG_FILE "." CONFIG_FILE
 #endif
 
 
 
-namespace MR {
-  namespace File {
+namespace MR
+{
+  namespace File
+  {
 
     std::map<std::string, std::string> Config::config;
 
     void Config::init ()
     {
       if (Path::is_file (SYS_CONFIG_FILE)) {
-        try { 
+        try {
           KeyValue kv (SYS_CONFIG_FILE);
-          while (kv.next()) { config[kv.key()] = kv.value(); }
+          while (kv.next()) {
+            config[kv.key()] = kv.value();
+          }
         }
         catch (...) { }
       }
@@ -59,7 +63,9 @@ namespace MR {
       if (Path::is_file (path)) {
         try {
           KeyValue kv (path);
-          while (kv.next()) { config[kv.key()] = kv.value(); }
+          while (kv.next()) {
+            config[kv.key()] = kv.value();
+          }
         }
         catch (...) { }
       }
@@ -67,9 +73,9 @@ namespace MR {
 
 
 
-    bool Config::get_bool (const std::string& key, bool default_value) 
+    bool Config::get_bool (const std::string& key, bool default_value)
     {
-      std::string value = get (key); 
+      std::string value = get (key);
       if (value.empty()) return (default_value);
       value = lowercase (value);
       if (value == "true") return (true);
@@ -79,26 +85,30 @@ namespace MR {
     }
 
 
-    int Config::get_int (const std::string& key, int default_value) 
+    int Config::get_int (const std::string& key, int default_value)
     {
-      std::string value = get (key); 
+      std::string value = get (key);
       if (value.empty()) return (default_value);
-      try { return (to<int> (value)); }
-      catch (...) { 
+      try {
+        return (to<int> (value));
+      }
+      catch (...) {
         error ("malformed integer entry \"" + value + "\" for key \"" + key + "\" in configuration file - ignored");
-        return (default_value); 
+        return (default_value);
       }
     }
 
 
-    float Config::get_float (const std::string& key, float default_value) 
+    float Config::get_float (const std::string& key, float default_value)
     {
-      std::string value = get (key); 
+      std::string value = get (key);
       if (value.empty()) return (default_value);
-      try { return (to<float> (value)); }
-      catch (...) { 
+      try {
+        return (to<float> (value));
+      }
+      catch (...) {
         error ("malformed floating-point entry \"" + value + "\" for key \"" + key + "\" in configuration file - ignored");
-        return (default_value); 
+        return (default_value);
       }
     }
 
