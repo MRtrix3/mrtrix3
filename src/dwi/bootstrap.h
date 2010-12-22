@@ -23,58 +23,103 @@
 #ifndef __dwi_bootstrap_h__
 #define __dwi_bootstrap_h__
 
-#include "math/SH.h"
-#include "dwi/gradient.h"
+#include "ptr.h"
+#include "dataset/position.h"
 
 
 namespace MR {
   namespace DWI {
 
-    template <class Set> class Bootstrap 
+
+    template <class Set, class Functor, size_t NUM_VOX_PER_CHUNK = 256> class Bootstrap 
     {
       public:
         typedef typename Set::value_type value_type;
 
-        Bootstrap (Set& DWI_dataset, const Math::Matrix<value_type>& DW_scheme, size_t l_max = 8) :
-          DWI (DWI_dataset),
-          grad (DW_scheme), 
-          lmax (l_max)
-      {
-        if (grad.rows() < 7 || grad.columns() != 4) 
-          throw Exception ("unexpected diffusion encoding matrix dimensions");
+        Bootstrap (Set& dataset, Functor& functor) :
+          S (dataset),
+          func (functor),
+          next_voxel (NULL),
+          last_voxel (NULL) {
+            assert (S.ndim() == 4);
+          }
 
-        info ("found " + str(grad.rows()) + "x" + str(grad.columns()) + " diffusion-weighted encoding");
+        const std::string& name () const { return S.name(); }
+        size_t ndim () const { return 4; }
+        int dim (size_t axis) const { return S.dim (axis); }
+        float vox (size_t axis) const { return S.vox (axis); }
+        const Math::Matrix<float>& transform () const { return S.transform(); }
+        ssize_t stride (size_t axis) const { return S.stride (axis); }
 
-        if (DWI.dim(3) != ssize_t (grad.rows())) 
-          throw Exception ("number of studies in base image does not match that in encoding file");
+        value_type value () { return get_voxel()[S[3]]; }
 
-        DWI::normalise_grad (grad);
-
-        std::vector<int> bzeros, dwis;
-        DWI::guess_DW_directions (dwis, bzeros, grad);
-
-        {
-          std::string msg ("found b=0 images in volumes [ ");
-          for (size_t n = 0; n < bzeros.size(); n++) msg += str(bzeros[n]) + " ";
-          msg += "]";
-          info (msg);
+        void get_values (value_type* buffer) { 
+          if (S[0] < 0 || S[0] >= dim(0) ||
+              S[1] < 0 || S[1] >= dim(1) ||
+              S[2] < 0 || S[2] >= dim(2)) 
+            memset (buffer, 0, dim(3)*sizeof(value_type));
+          else
+            memcpy (buffer, get_voxel(), dim(3)*sizeof(value_type)); 
         }
 
-        info ("found " + str(dwis.size()) + " diffusion-weighted directions");
+        DataSet::Position<Bootstrap<Set,Functor,NUM_VOX_PER_CHUNK> > operator[] (size_t axis ) 
+        {
+          return DataSet::Position<Bootstrap<Set,Functor,NUM_VOX_PER_CHUNK> > (*this, axis); 
+        } 
 
-        Math::Matrix<float> dirs;
-        DWI::gen_direction_matrix (dirs, grad, dwis);
-        Math::SH::Transform<float> SHT (dirs, lmax);
-
-        H.allocate (dwis.size(), dwis.size());
-        Math::mult (H, SHT.mat_SH2A(), SHT.mat_A2SH());
-      }
+        void clear () 
+        {
+          voxels.clear(); 
+          if (voxel_buffer.empty())
+            voxel_buffer.push_back (new value_type [NUM_VOX_PER_CHUNK * dim(3)]);
+          next_voxel = voxel_buffer[0];
+          last_voxel = next_voxel + NUM_VOX_PER_CHUNK * dim(3);
+          current_chunk = 0;
+        }
 
       protected:
-        Set& DWI;
-        const Math::Matrix<value_type>& DW_scheme;
-        const Math::Matrix<value_type> H;
+        Set& S;
+        Functor func;
+        std::map<Point<ssize_t>,value_type*> voxels;
+        VecPtr<value_type,true> voxel_buffer;
+        value_type* next_voxel;
+        value_type* last_voxel;
+        size_t current_chunk;
 
+        value_type* allocate_voxel () 
+        {
+          if (next_voxel == last_voxel) {
+            ++current_chunk;
+            if (current_chunk >= voxel_buffer.size()) 
+              voxel_buffer.push_back (new value_type [NUM_VOX_PER_CHUNK * dim(3)]);
+            assert (current_chunk < voxel_buffer.size());
+            next_voxel = voxel_buffer.back();
+            last_voxel = next_voxel + NUM_VOX_PER_CHUNK * dim(3);
+          }
+          value_type* retval = next_voxel;
+          next_voxel += dim(3);
+          return retval;
+        }
+
+        value_type* get_voxel ()
+        {
+          value_type*& data (voxels.insert (std::make_pair (Point<ssize_t> (S[0], S[1], S[2]), (float*)NULL)).first->second);
+          if (!data) {
+            data = allocate_voxel ();
+            ssize_t pos = S[3];
+            for (S[3] = 0; S[3] < S.dim(3); ++S[3])
+              data[S[3]] = S.value();
+            S[3] = pos;
+            func (data);
+          }
+          return data;
+        }
+
+        ssize_t get_pos (size_t axis) const { return S[axis]; }
+        void set_pos (size_t axis, ssize_t position) const { S[axis] = position; }
+        void move_pos (size_t axis, ssize_t increment) const { S[axis] += increment; }
+
+        friend class DataSet::Position<Bootstrap<Set,Functor,NUM_VOX_PER_CHUNK> >;
     };
 
   }
