@@ -135,6 +135,7 @@ namespace MR
         Loop (const std::string& message, size_t from_axis = 0, size_t to_axis = std::numeric_limits<size_t>::max()) :
           from_ (from_axis), to_ (to_axis), cont_ (true), progress_ (message, 1) { }
 
+
         //! Start the loop to iterate over a single DataSet
         /*! Start the loop by resetting the appropriate coordinates of each of
          * the specified DataSets to zero, and initialising the progress status
@@ -144,7 +145,7 @@ namespace MR
         template <class Set>
         inline void start (Set& set) {
           cont_ = true;
-          for (size_t n = from_; n < std::min (set.ndim(), to_); ++n)
+          for (size_t n = from_; n < max_axis(set); ++n)
             set[n] = 0;
           if (progress_)
             progress_.set_max (voxel_count (set, from_, to_));
@@ -154,7 +155,7 @@ namespace MR
         template <class Set, class Set2>
         inline void start (Set& set, Set2& set2) {
           cont_ = true;
-          for (size_t n = from_; n < std::min (set.ndim(), to_); ++n) {
+          for (size_t n = from_; n < max_axis(set); ++n) {
             set[n] = 0;
             set2[n] = 0;
           }
@@ -167,7 +168,7 @@ namespace MR
         template <class Set, class Set2, class Set3>
         inline void start (Set& set, Set2& set2, Set3& set3) {
           cont_ = true;
-          for (size_t n = from_; n < std::min (set.ndim(), to_); ++n) {
+          for (size_t n = from_; n < max_axis(set); ++n) {
             set[n] = 0;
             set2[n] = 0;
             set3[n] = 0;
@@ -207,17 +208,54 @@ namespace MR
           ++progress_;
         }
 
+        //! set position along relevant axes of \a target to that of \a reference
+        template <class Set, class Set2>
+        void set_position (const Set& reference, Set2& target) const {
+          for (size_t i = from_; i < max_axis (reference); ++i) {
+            const ssize_t x = reference[i];
+            target[i] = x;
+          }
+        }
+
+        //! set position along relevant axes of \a targets to that of \a reference
+        template <class Set, class Set2, class Set3>
+        void set_position (const Set& reference, Set2& target, Set3& target2) const {
+          for (size_t i = from_; i < max_axis(reference); ++i) {
+            const ssize_t x = reference[i];
+            target[i] = x;
+            target2[i] = x;
+          }
+        }
+
+        //! set position along relevant axes of \a targets to that of \a reference
+        template <class Set, class Set2, class Set3, class Set4>
+        void set_position (const Set& reference, Set2& target, Set3& target2, Set4& target3) const {
+          for (size_t i = from_; i < max_axis(reference); ++i) {
+            const ssize_t x = reference[i];
+            target[i] = x;
+            target2[i] = x;
+            target3[i] = x;
+          }
+        }
+
+
       private:
         const size_t from_, to_;
         bool cont_;
         ProgressBar progress_;
 
+
+        template <class Set>
+        size_t max_axis (const Set& set) const {
+          return std::min (set.ndim(), to_);
+        }
+
         template <class Set>
         void next_impl (size_t axis, Set& set) {
-          if (axis < std::min (to_,set.ndim())) {
+          if (axis < max_axis(set)) {
             if (set[axis] + 1 < set.dim (axis)) ++set[axis];
             else {
-              if (axis+1 == std::min (to_,set.ndim())) {
+              if (axis+1 == max_axis(set)) {
                 cont_ = false;
               }
               else {
@@ -231,13 +269,13 @@ namespace MR
 
         template <class Set, class Set2>
         void next_impl (size_t axis, Set& set, Set2& set2) {
-          if (axis < std::min (to_,set.ndim())) {
+          if (axis < max_axis(set)) {
             if (set[axis] + 1 < set.dim (axis)) {
               ++set[axis];
               ++set2[axis];
             }
             else {
-              if (axis+1 == std::min (to_, set.ndim())) {
+              if (axis+1 == max_axis(set)) {
                 cont_ = false;
               }
               else {
@@ -254,14 +292,14 @@ namespace MR
 
         template <class Set, class Set2, class Set3>
         void next_impl (size_t axis, Set& set, Set2& set2, Set3& set3) {
-          if (axis < std::min (to_,set.ndim())) {
+          if (axis < max_axis(set)) {
             if (set[axis] + 1 < set.dim (axis)) {
               ++set[axis];
               ++set2[axis];
               ++set3[axis];
             }
             else {
-              if (axis+1 == std::min (to_, set.ndim())) {
+              if (axis+1 == max_axis(set)) {
                 cont_ = false;
               }
               else {
@@ -496,6 +534,48 @@ namespace MR
         void next (Set& set, Set2& set2, Set3& set3) {
           next_impl (0, set, set2, set3);
           ++progress_;
+        }
+
+        //! set position along relevant axes of \a target to that of \a reference
+        template <class Set, class Set2>
+        void set_position (const Set& reference, Set2& target) const {
+          for (size_t i = 0; i < axes_.size(); ++i) {
+            const size_t a = axes_[i];
+            const ssize_t x = reference[a];
+            target[a] = x;
+          }
+        }
+
+        //! set position along relevant axes of \a targets to that of \a reference
+        template <class Set, class Set2, class Set3>
+        void set_position (const Set& reference, Set2& target, Set3& target2) const {
+          for (size_t i = 0; i < axes_.size(); ++i) {
+            const size_t a = axes_[i];
+            const ssize_t x = reference[a];
+            target[a] = x;
+            target2[a] = x;
+          }
+        }
+
+        //! set position along relevant axes of \a targets to that of \a reference
+        template <class Set, class Set2, class Set3, class Set4>
+        void set_position (const Set& reference, Set2& target, Set3& target2, Set4& target3) const {
+          for (size_t i = 0; i < axes_.size(); ++i) {
+            const size_t a = axes_[i];
+            const ssize_t x = reference[a];
+            target[a] = x;
+            target2[a] = x;
+            target3[a] = x;
+          }
+        }
+
+        template <class Set>
+        size_t max_axis (const Set& set) const {
+          size_t a = 0;
+          for (size_t i = 0; i < axes_.size(); ++i)
+            if (axes_[i] > a) 
+              a = axes_[i];
+          return a;
         }
 
       private:

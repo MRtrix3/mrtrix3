@@ -23,8 +23,8 @@
 #include "app.h"
 #include "debug.h"
 #include "image/voxel.h"
-#include "math/rng.h"
-#include "math/matrix.h"
+#include "thread/next.h"
+#include "thread/exec.h"
 
 using namespace MR;
 
@@ -37,7 +37,11 @@ DESCRIPTION = {
   NULL
 };
 
-ARGUMENTS = { Argument() };
+ARGUMENTS = {
+ Argument ("input", "input").type_image_in(),
+ Argument ("output", "output").type_image_out(),
+ Argument() 
+};
 
 OPTIONS = { Option() };
 
@@ -47,26 +51,38 @@ OPTIONS = { Option() };
 
 typedef float T;
 
+
+class Processor {
+  public:
+    Processor (Thread::Next<DataSet::Loop>& nextvoxel, Image::Header& input, Image::Header& output) :
+      next (nextvoxel), in (input), out (output) { }
+
+    void execute () {
+      DataSet::Loop loop (1,3);
+      while (next (in, out)) {
+        for (loop.start (in, out); loop.ok(); loop.next (in, out))
+          out.value() = Math::exp (-0.01*in.value());
+      }
+    }
+
+  private:
+    Thread::Next<DataSet::Loop>& next;
+    Image::Voxel<T> in, out;
+};
+
+
 EXECUTE {
 
-  using namespace Math;
-  Vector<T> V (10);
-  VAR (V);
-  V = 0.0;
-  VAR (V);
-  V.sub (3,5) = 1.0;
-  VAR (V);
-  V.sub (4,8) += 2.0;
-  VAR (V);
+  Image::Header in (argument[0]);
+  Image::Header out (in);
+  out.set_datatype (DataType::Float32);
+  out.create (argument[1]);
 
-  {
-    Vector<T> U = V.sub (5,10);
-    U += 5.0;
-    VAR (U);
-  }
-  VAR (V);
+  DataSet::Loop loop ("processing...", 0, 1);
+  Thread::Next<DataSet::Loop> next (loop, in);
 
-  V.sub (2,5) += V.sub (6,9);
-  VAR (V);
+  Processor processor (next, in, out);
+  Thread::Array<Processor> array (processor);
+  Thread::Exec threads (array);
 }
 
