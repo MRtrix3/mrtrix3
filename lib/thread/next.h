@@ -37,13 +37,64 @@ namespace MR
     /** \defgroup threadloop Multi-threaded looping helper class
       @{ */
 
+    //! a thread-safe class to fetch the next voxel within the specified mask
+    /*! Here is an example:
+    * \code
+    * class Processor {
+    *   public:
+    *     Processor (Thread::Next<>& nextvoxel, Image::Header& data) :
+    *       next (nextvoxel),
+    *       voxel (data) { }
+    *
+    *     // multi-threaded processing takes place here:
+    *     void execute () {
+    *       while (next (voxel)) {
+    *         // perform processing here, e.g.:
+    *         float val = voxel.value();
+    *         ...
+    *       }
+    *     }
+    *
+    *   private:
+    *     Thread::Next<>& next;
+    *     Image::Voxel<float> voxel;
+    * };
+    *
+    *
+    * // in invoking function:
+    *
+    * // the DataSet to be processed:
+    * Image::Header header ("datafile.mif");
+    *
+    * // the binary mask within which processing is to happen:
+    * Image::Header mask_header ("mask.mif");
+    * Image::Voxel<bool> mask (mask_header);
+    *
+    * // create a loop to iterate over the dataset:
+    * DataSet::Loop loop ("processing message...");
+    *
+    * // create a Thread::NextInMask object to loop in a thread-safe manner:
+    * Thread::NextInMask<DataSet::Loop> next (loop, mask);
+    *
+    * // create an instance of the processor,
+    * // passing the Thread::Next object by reference:
+    * Processor processor (next, header);
+    *
+    * // launch threads:
+    * Thread::Array<Processor> processor_array (processor);
+    * Thread::Exec threads (processor_array);
+    * \endcode
+    *
+    * \note the Thread::NextInMask object must be \em shared amongst the
+    * threads. In other words, ensure your functor objects keep a \em reference
+    * to the Thread::NextInMask object, not a copy of it.
+    */
     template <class Set, class Loop = DataSet::Loop> class NextInMask
     {
       public:
         //! Constructor
         /*! Construct an object to fetch the next coordinates at which the mask
-         * is greater than 0.5, using the Loop supplied, in a thread-safe
-         * manner. */
+         * is true, using the Loop supplied, in a thread-safe manner. */
         NextInMask (Loop& loop, const Set& mask) :
           loop_ (loop), mask_ (mask) {
           reset();
@@ -61,7 +112,7 @@ namespace MR
           Mutex::Lock lock (mutex_);
           while (loop_.ok()) {
             loop_.next (mask_);
-            if (mask_.value () > 0.5) {
+            if (mask_.value()) {
               loop_.set_position (mask_, pos);
               return true;
             }
@@ -76,7 +127,7 @@ namespace MR
           Mutex::Lock lock (mutex_);
           while (loop_.ok()) {
             loop_.next (mask_);
-            if (mask_.value () > 0.5) {
+            if (mask_.value()) {
               loop_.set_position (mask_, pos1, pos2);
               return true;
             }
@@ -91,7 +142,7 @@ namespace MR
           Mutex::Lock lock (mutex_);
           while (loop_.ok()) {
             loop_.next (mask_);
-            if (mask_.value () > 0.5) {
+            if (mask_.value()) {
               loop_.set_position (mask_, pos1, pos2, pos3);
               return true;
             }
@@ -156,6 +207,10 @@ namespace MR
     * Thread::Array<Processor> processor_array (processor);
     * Thread::Exec threads (processor_array);
     * \endcode
+    *
+    * \note the Thread::Next object must be \em shared amongst the threads. In
+    * other words, ensure your functor objects keep a \em reference to the
+    * Thread::Next object, not a copy of it.
     */
     template <class Loop = DataSet::Loop> class Next
     {

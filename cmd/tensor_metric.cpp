@@ -107,6 +107,84 @@ class ImagePair
     Image::Voxel<float> vox;
 };
 
+
+// FOR NEW THREADING API:
+template <class Iterator>
+class Processor
+{
+  public:
+    Processor (Iterator& nextvoxel, Image::Header& dt_header) :
+      next (nextvoxel), dt (dt_header), modulate (1) { }
+
+    void set_modulation (int mod) { modulate = mod; }
+
+    void set_values (const std::vector<int> values) {
+      vals = values;
+      for (size_t i = 0; i < vals.size(); i++)
+        vals[i] = 3-vals[i];
+    }
+
+    void compute_FA (const std::string& name) {
+      fa_header = new Image::Header (dt.header());
+      fa_header->set_ndim (3);
+      fa_header->set_datatype (DataType::Float32);
+      fa_header->create (name);
+      fa = new Image::Voxel<float> (*fa_header);
+    }
+
+    void compute_ADC (const std::string& name) {
+      adc_header = new Image::Header (dt.header());
+      adc_header->set_ndim (3);
+      adc_header->set_datatype (DataType::Float32);
+      adc_header->create (name);
+      adc = new Image::Voxel<float> (*adc_header);
+    }
+
+    void compute_EVALS (const std::string& name) {
+      eval_header = new Image::Header (dt.header());
+      eval_header->set_ndim (4);
+      eval_header->set_dim (3, vals.size());
+      eval_header->set_datatype (DataType::Float32);
+      eval_header->create (name);
+      eval = new Image::Voxel<float> (*eval_header);
+    }
+
+    void compute_EVEC (const std::string& name) {
+      evec_header = new Image::Header (dt.header());
+      evec_header->set_ndim (4);
+      evec_header->set_dim (3, 3*vals.size());
+      evec_header->set_datatype (DataType::Float32);
+      evec_header->create (name);
+      evec = new Image::Voxel<float> (*evec_header);
+    }
+
+    void init () { 
+      if (! (adc || fa || eval || evec))
+        throw Exception ("no output metric specified - aborting");
+
+      if (evec)
+        eigv = new Math::Eigen::SymmV<double> (3);
+      else
+        eig = new Math::Eigen::Symm<double> (3);
+    }
+
+    void execute () {
+      while (next (dt)) {
+      }
+    }
+
+  private:
+    Iterator& next;
+    Image::Voxel<float> dt;
+    RefPtr<Image::Header> fa_header, adc_header, evec_header, eval_header;
+    Ptr<Image::Voxel<float> > fa, adc, evec, eval;
+    Ptr<Math::Eigen::Symm<double> > eig;
+    Ptr<Math::Eigen::SymmV<double> > eigv;
+    std::vector<int> vals;
+    int modulate;
+};
+// TO HERE
+
 inline void set_zero (size_t axis, Ptr<ImagePair>& i0, Ptr<ImagePair>& i1, Ptr<ImagePair>& i2, Ptr<ImagePair>& i3, Ptr<ImagePair>& i4)
 {
   if (i0) i0->vox[axis] = 0;
