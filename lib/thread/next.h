@@ -25,6 +25,7 @@
 
 #include "thread/mutex.h"
 #include "dataset/loop.h"
+#include "dataset/iterator.h"
 
 namespace MR
 {
@@ -222,10 +223,8 @@ namespace MR
          * accessed in any way outside of the constructor. */
         template <class Set>
         Next (Loop& loop, const Set& set) :
-          loop_ (loop), dim_ (set.ndim()), pos_ (set.ndim()) {
-          for (size_t i = 0; i < dim_.size(); ++i)
-            dim_[i] = set.dim (i);
-          loop_.start (*this);
+          loop_ (loop), counter_ (set) {
+          loop_.start (counter_);
         }
 
         //! fetch the next coordinates to process
@@ -234,8 +233,8 @@ namespace MR
         bool operator () (Container& pos) {
           Mutex::Lock lock (mutex_);
           if (loop_.ok()) {
-            loop_.next (*this);
-            loop_.set_position (*this, pos);
+            loop_.next (counter_);
+            loop_.set_position (counter_, pos);
             return true;
           }
           return false;
@@ -247,8 +246,8 @@ namespace MR
         bool operator () (Container1& pos1, Container2& pos2) {
           Mutex::Lock lock (mutex_);
           if (loop_.ok()) {
-            loop_.next (*this);
-            loop_.set_position (*this, pos1, pos2);
+            loop_.next (counter_);
+            loop_.set_position (counter_, pos1, pos2);
             return true;
           }
           return false;
@@ -260,33 +259,16 @@ namespace MR
         bool operator () (Container1& pos1, Container2& pos2, Container3& pos3) {
           Mutex::Lock lock (mutex_);
           if (loop_.ok()) {
-            loop_.next (*this);
-            loop_.set_position (*this, pos1, pos2, pos3);
+            loop_.next (counter_);
+            loop_.set_position (counter_, pos1, pos2, pos3);
             return true;
           }
           return false;
         }
 
-
-        //! \cond skip
-        size_t ndim () const {
-          return dim_.size();
-        }
-        ssize_t dim (size_t axis) const {
-          return dim_[axis];
-        }
-
-        ssize_t& operator[] (size_t axis) {
-          return pos_[axis];
-        }
-        const ssize_t& operator[] (size_t axis) const {
-          return pos_[axis];
-        }
-        //! \endcond
-
       private:
         Loop& loop_;
-        std::vector<ssize_t> dim_, pos_;
+        DataSet::Iterator counter_;
         Mutex mutex_;
 
         Next (const Next& next) { assert (0); }
