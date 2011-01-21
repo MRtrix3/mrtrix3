@@ -51,12 +51,12 @@ namespace MR
         }
 
         template <class S>
-        value_type value (const S* vals) const {
+        S value (const S* vals) const {
           return (value (vals[0], vals[1], vals[2], vals[3]));
         }
 
         template <class S>
-        value_type value (const S& a, const S& b, const S& c, const S& d) const {
+        S value (const S& a, const S& b, const S& c, const S& d) const {
           return (w[0]*a + w[1]*b + w[2]*c + w[3]*d);
         }
 
