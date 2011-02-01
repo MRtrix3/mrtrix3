@@ -498,8 +498,8 @@ namespace MR
   App::ParsedArgument::operator float () const
   {
     const float retval = to<float> (p);
-    const float min = arg->defaults.i.min;
-    const float max = arg->defaults.i.max;
+    const float min = arg->defaults.f.min;
+    const float max = arg->defaults.f.max;
     if (retval < min || retval > max) {
       std::string msg ("value supplied for ");
       if (opt) msg += std::string ("option \"") + opt->id;
@@ -517,8 +517,8 @@ namespace MR
   App::ParsedArgument::operator double () const
   {
     const double retval = to<double> (p);
-    const double min = arg->defaults.i.min;
-    const double max = arg->defaults.i.max;
+    const double min = arg->defaults.f.min;
+    const double max = arg->defaults.f.max;
     if (retval < min || retval > max) {
       std::string msg ("value supplied for ");
       if (opt) msg += std::string ("option \"") + opt->id;
