@@ -362,26 +362,18 @@ template<> void TrackMapper<SetVoxelDir>::voxelise (SetVoxelDir& voxels, const s
   const std::vector< Point<float> >::const_iterator last = tck.end() - 1;
 
   VoxelDir vox;
-  VoxelDir current_vox (round (interp.scanner2voxel (*(tck.begin()))));
-  for (std::vector< Point<float> >::const_iterator i = tck.begin() + 1; i != last; ++i) {
+  for (std::vector< Point<float> >::const_iterator i = tck.begin(); i != last; ++i) {
     vox = round (interp.scanner2voxel (*i));
     if (check (vox, H)) {
-      if (vox != current_vox) {
-        current_vox.dir = (*(i+1) - *prev).normalise();
-        voxels.insert (current_vox);
-        prev = i-1;
-        current_vox = vox;
-      }
+      vox.dir = (*(i+1) - *prev).normalise();
+      voxels.insert (vox);
+      prev = i;
     }
   }
   vox = round (interp.scanner2voxel (*last));
   if (check (vox, H)) {
-    current_vox.dir = (*last - *prev).normalise();
-    voxels.insert (current_vox);
-    if (vox != current_vox) {
-      vox.dir = (*last - *(last - 1)).normalise();
-      voxels.insert (vox);
-    }
+    vox.dir = (*last - *prev).normalise();
+    voxels.insert (vox);
   }
 }
 
@@ -618,9 +610,9 @@ EXECUTE {
   opt = get_options ("template");
   if (opt.size()) {
     Image::Header template_header (opt[0][0]);
-    if (!voxel_size.empty())
-      oversample_header (template_header, voxel_size);
     header = template_header;
+    if (!voxel_size.empty())
+      oversample_header (header, voxel_size);
   }
   else {
     if (voxel_size.empty())
