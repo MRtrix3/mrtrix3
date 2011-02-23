@@ -55,7 +55,7 @@ namespace MR {
 
         if (dtype == DataType::Undefined) throw Exception ("no datatype specified for tracks file \"" + file + "\"");
         if (dtype != DataType::Float32LE && dtype != DataType::Float32BE && 
-            dtype != DataType::Float64BE && dtype != DataType::Float64BE)
+            dtype != DataType::Float64LE && dtype != DataType::Float64BE)
           throw Exception ("only supported datatype for tracks file are Float32LE, Float32BE, Float64LE & Float64BE (in tracks file \"" + file + "\")");
 
         if (data_file.empty()) throw Exception ("missing \"files\" specification for tracks file \"" + file + "\"");
