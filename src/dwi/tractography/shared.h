@@ -94,7 +94,7 @@ namespace MR {
             properties.set (min_dist, "min_dist");
             min_num_points = round (min_dist/step_size);
 
-            max_angle = 90.0 * step_size / vox();
+            max_angle = 60.0 * step_size / vox();
             properties.set (max_angle, "max_angle");
             info ("maximum deviation angle = " + str (max_angle) + "°");
 

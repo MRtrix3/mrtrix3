@@ -103,8 +103,8 @@ OPTIONS = {
   + Argument ("size").type_float (0.0, 0.0, INFINITY),
 
   Option ("angle",
-  "set the maximum angle between successive steps (default is 90° x stepsize / voxelsize).")
-  + Argument ("theta").type_float (0.0, 45.0, 90.0),
+  "set the maximum angle between successive steps (default is 60° x stepsize / voxelsize).")
+  + Argument ("theta").type_float (0.0, 60.0, 90.0),
 
   Option ("number",
   "set the desired number of tracks. The program will continue to "
