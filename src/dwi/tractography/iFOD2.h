@@ -53,7 +53,7 @@ namespace MR {
                 max_max_truncation (0.0),
                 num_proc (0) {
 
-                  set_step_size (1.0);
+                  set_step_size (0.5);
                   info ("minimum radius of curvature = " + str(step_size / max_angle) + " mm");
 
                   properties["method"] = "iFOD2";
