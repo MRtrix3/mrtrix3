@@ -51,7 +51,7 @@ namespace MR
           x[2] = c;
           x[3] = d;
         }
-        Quaternion (value_type angle, value_type* axis) {
+        Quaternion (value_type angle, const value_type* axis) {
           x[0] = cos (angle/2.0);
           x[1] = axis[0];
           x[2] = axis[1];

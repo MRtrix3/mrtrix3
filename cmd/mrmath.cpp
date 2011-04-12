@@ -152,34 +152,41 @@ class Source : public Functor
     }
 
     void get (const std::vector<ssize_t>& pos, std::vector<value_type>& values, size_t axis) {
-      if (V) { // from image:
-        assert (size_t (V->dim (axis)) == values.size());
+      if (!V) { // from constant:
+        for (size_t i = 0; i < values.size(); ++i)
+          values[i] = val;
+        return;
+      }
 
-        for (size_t i = 0; i < V->ndim(); ++i) // set position
-          if (i != axis)
-            (*V) [i] = V->dim (i) > 1 ? pos[i] : 0;
+      // from image:
+      assert (axis < V->ndim() ? ( size_t (V->dim (axis)) == values.size()) : true);
+      for (size_t i = 0; i < V->ndim(); ++i) // set position
+        if (i != axis)
+          (*V) [i] = V->dim (i) > 1 ? pos[i] : 0;
 
+      if (axis < V->ndim()) { 
         if (V->dim (axis) > 1) { // straight copy:
           for ( (*V) [axis] = 0; (*V) [axis] < V->dim (axis); ++ (*V) [axis])
             values[ (*V) [axis]] = V->value();
+          return;
         }
-        else { // broadcast:
-          (*V) [axis] = 0;
-          value_type x = V->value();
-          for (size_t i = 0; i < values.size(); ++i)
-            values[i] = x;
-        }
+        (*V) [axis] = 0;
       }
-      else // from constant:
-        for (size_t i = 0; i < values.size(); ++i)
-          values[i] = val;
+
+      // broadcast:
+      value_type x = V->value();
+      for (size_t i = 0; i < values.size(); ++i)
+        values[i] = x;
     }
 
     virtual size_t ndim () const {
       return (V ? V->ndim() : 0);
     }
     virtual ssize_t dim (size_t axis) const {
-      return (V ? V->dim (axis) : 0);
+      if (V)
+        if (axis < V->ndim())
+          return V->dim (axis);
+      return 1;
     }
     virtual const Image::Header* header () const {
       return (H.get());
@@ -221,8 +228,8 @@ class Binary : public Functor
       Functor (input1), in2 (input2) {
       size_t max_dim = std::max (in->ndim(), in2->ndim());
       for (size_t i = 0; i < max_dim; ++i) {
-        size_t d1 = i < in->ndim() ? in->dim (i) : 1;
-        size_t d2 = i < in2->ndim() ? in2->dim (i) : 1;
+        const size_t d1 = in->dim (i);
+        const size_t d2 = in2->dim (i);
         if (d1 != d2)
           if (d1 != 1 && d2 != 1)
             throw Exception ("dimension mismatch between inputs");
@@ -232,9 +239,7 @@ class Binary : public Functor
       return (std::max (in->ndim(), in2->ndim()));
     }
     virtual ssize_t dim (size_t axis) const {
-      ssize_t d1 = axis < in->ndim() ? in->dim (axis) : 1;
-      ssize_t d2 = axis < in2->ndim() ? in2->dim (axis) : 1;
-      return (std::max (d1, d2));
+      return (std::max (in->dim (axis), in2->dim (axis)));
     }
     virtual const Image::Header* header () const {
       return (in->header() ? in->header() : in2->header());
