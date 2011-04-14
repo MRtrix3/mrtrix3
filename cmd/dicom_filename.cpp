@@ -39,7 +39,13 @@ ARGUMENTS = {
   Argument()
 };
 
-OPTIONS = { Option() };
+OPTIONS = {
+  Option ("nospaces", "replace spaces with underscores"),
+
+  Option ("scannername", "add name of scanner model as the first level of the filename"),
+
+  Option() 
+};
 
 
 
@@ -67,7 +73,7 @@ EXECUTE {
   Element item;
   item.set (argument[0]);
 
-  std::string patient_name, patient_id, study_date, study_name,
+  std::string patient_name, patient_id, study_date, study_name, scanner_name,
   study_time, series_name, series_number, instance_number, SOP_instance_number;
 
   while (item.read()) {
@@ -76,6 +82,7 @@ EXECUTE {
     else if (item.is (0x0008U, 0x0030U)) study_time = item.get_string() [0];
     else if (item.is (0x0008U, 0x1030U)) study_name = item.get_string() [0];
     else if (item.is (0x0008U, 0x103EU)) series_name = item.get_string() [0];
+    else if (item.is (0x0008U, 0x1090U)) scanner_name = item.get_string() [0];
     else if (item.is (0x0010U, 0x0010U)) patient_name = item.get_string() [0];
     else if (item.is (0x0010U, 0x0020U)) patient_id = item.get_string() [0];
     else if (item.is (0x0020U, 0x0011U)) series_number = MR::printf ("%03d", item.get_int() [0]);
@@ -99,9 +106,17 @@ EXECUTE {
   if (instance_number.empty())
     throw Exception ("no instance number");
 
-  print (study_date + " - " + patient_name + " (" + patient_id + ")/"
-  + study_time + " - " + study_name + "/"
-  + series_number + " - " + series_name + "/"
-  + instance_number + ".dcm\n");
+  std::string output = study_date + " - " + patient_name + " (" + patient_id + ")/"
+    + study_time + " - " + study_name + "/"
+    + series_number + " - " + series_name + "/"
+    + instance_number + ".dcm\n";
+
+  if (get_options ("scannername").size())
+    output = scanner_name + "/" + output;
+
+  if (get_options ("nospaces").size())
+    replace (output, ' ', '_');
+
+  print (output);
 }
 
