@@ -26,8 +26,7 @@
 #include "progressbar.h"
 #include "image/voxel.h"
 #include "dataset/loop.h"
-#include "dataset/min_max.h"
-#include "dataset/histogram.h"
+#include "filter/histogram.h"
 
 using namespace MR;
 
@@ -187,7 +186,7 @@ EXECUTE {
   }
   else {
     if (isnan (val)) {
-      DataSet::Histogram<Image::Voxel<float> > hist (in);
+      Filter::Histogram<Image::Voxel<float> > hist (in);
       val = hist.first_min();
     }
 

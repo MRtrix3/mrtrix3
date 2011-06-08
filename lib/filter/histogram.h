@@ -23,11 +23,11 @@
 #ifndef __dataset_histogram_h__
 #define __dataset_histogram_h__
 
-#include "dataset/min_max.h"
+#include "filter/min_max.h"
 
 namespace MR
 {
-  namespace DataSet
+  namespace Filter
   {
 
     template <class Set> class Histogram
@@ -50,7 +50,7 @@ namespace MR
           for (size_t n = 0; n < list.size(); n++)
             list[n].value = min + step * (n + 0.5);
 
-          LoopInOrder loop (D, "building histogram of \"" + shorten (D.name()) + "\"...");
+          MR::DataSet::LoopInOrder loop (D, "building histogram of \"" + shorten (D.name()) + "\"...");
           for (loop.start (D); loop.ok(); loop.next (D)) {
             value_type val = D.value();
             if (finite (val) && val != 0.0) {

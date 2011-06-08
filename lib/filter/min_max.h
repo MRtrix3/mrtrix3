@@ -27,7 +27,7 @@
 
 namespace MR
 {
-  namespace DataSet
+  namespace Filter
   {
 
     template <class Set, typename T>
@@ -35,7 +35,7 @@ namespace MR
     {
       min = T (INFINITY);
       max = T (-INFINITY);
-      LoopInOrder loop (D, "finding min/max of \"" + shorten (D.name()) + "\"...");
+      MR::DataSet::LoopInOrder loop (D, "finding min/max of \"" + shorten (D.name()) + "\"...");
       for (loop.start (D); loop.ok(); loop.next (D)) {
         T val = D.value();
         if (finite (val)) {
