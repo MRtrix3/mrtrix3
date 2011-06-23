@@ -32,6 +32,10 @@ namespace MR
   namespace Math
   {
 
+		//! \addtogroup Optimisation
+		// @{
+
+		//! Computes the minimum of a function using a gradient decent approach.
     template <class F, typename T = float> class GradientDescent
     {
       public:
@@ -152,7 +156,7 @@ namespace MR
           return (func (newx, newg));
         }
     };
-
+    //! @}
   }
 }
 

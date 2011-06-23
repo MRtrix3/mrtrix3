@@ -159,7 +159,7 @@ namespace MR
 
       //! the type of data returned by the value() functions
       /*! DataSets can use a different data type to store the voxel intensities
-       * than what is provided by the value() interface. For instances, it is
+       * than what is provided by the value() interface. For instance, it is
        * not possible to know at compile-time what type of data may be
        * contained in an input data set supplied on the command-line. The
        * Image::Voxel class (a realisation of a DataSet) provides a uniform

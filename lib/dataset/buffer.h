@@ -27,7 +27,6 @@
 #include "dataset/value.h"
 #include "dataset/position.h"
 #include "dataset/stride.h"
-#include "dataset/copy.h"
 #include "dataset/transform.h"
 #include "image/header.h"
 #include "image/voxel.h"
@@ -144,6 +143,13 @@ namespace MR
               }
             }
 
+            Prototype (const Prototype& prot) :
+              data (prot.data),
+              axes_ (prot.axes_),
+              transform_ (prot.transform_),
+              name_ (prot.name_) {
+              init();
+            }
 
             value_type* data;
 
@@ -193,13 +199,6 @@ namespace MR
             RefPtr<value_type,true> block_;
             std::string name_;
 
-            Prototype (const Prototype& prot) :
-              data (prot.data),
-              axes_ (prot.axes_),
-              transform_ (prot.transform_),
-              name_ (prot.name_) {
-              init();
-            }
 
             template <class Set> Prototype (const Set& D, const std::string& id) :
               data (NULL),

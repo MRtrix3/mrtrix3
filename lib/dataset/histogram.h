@@ -23,11 +23,11 @@
 #ifndef __dataset_histogram_h__
 #define __dataset_histogram_h__
 
-#include "filter/min_max.h"
+#include "dataset/min_max.h"
 
 namespace MR
 {
-  namespace Filter
+  namespace DataSet
   {
 
     template <class Set> class Histogram

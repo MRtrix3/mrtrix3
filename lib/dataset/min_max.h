@@ -27,7 +27,7 @@
 
 namespace MR
 {
-  namespace Filter
+  namespace DataSet
   {
 
     template <class Set, typename T>
