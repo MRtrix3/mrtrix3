@@ -20,8 +20,8 @@
 
  */
 
-#ifndef __dataset_optimal_threshold_h__
-#define __dataset_optimal_threshold_h__
+#ifndef __filter_optimal_threshold_h__
+#define __filter_optimal_threshold_h__
 
 #include "filter/base.h"
 #include "dataset/loop.h"
@@ -70,7 +70,7 @@ namespace MR
 								voxel_count_ *= input_image_->dim(d);
 
 							double sum_sqr = 0, sum = 0;
-							MR::DataSet::LoopInOrder loop (*input_image_);
+							DataSet::LoopInOrder loop (*input_image_);
 							for (loop.start (*input_image_); loop.ok(); loop.next (*input_image_)) {
 								sum_sqr += (input_image_->value() * input_image_->value());
 								sum += input_image_->value();
@@ -89,7 +89,7 @@ namespace MR
 		/** \addtogroup Filters
 		@{ */
 
-		//! a function to compute the optimal threshold to mask a DataSet.
+		//! a filter to compute the optimal threshold to mask a DataSet.
 		/*! This function computes the optimal threshold to mask a DataSet using the parameter
 		 *  free approach defined in: Ridgway G et al. (2009) NeuroImage.44(1):99-111.
 		 *
