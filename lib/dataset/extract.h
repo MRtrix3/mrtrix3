@@ -31,9 +31,6 @@ namespace MR
   namespace DataSet
   {
 
-    //! \addtogroup DataSet
-    // @{
-
     template <class Set> class Extract
     {
       public:
@@ -116,7 +113,6 @@ namespace MR
         friend class Value<Extract<Set> >;
     };
 
-    //! @}
   }
 }
 

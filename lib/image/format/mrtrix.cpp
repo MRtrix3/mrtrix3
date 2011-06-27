@@ -165,11 +165,11 @@ namespace MR
         }
         else fname = Path::join (Path::dirname (H.name()), fname);
 
-        ParsedNameList list;
+        ParsedName::List list;
         std::vector<int> num = list.parse_scan_check (fname);
 
         for (size_t n = 0; n < list.size(); ++n)
-          H.add_file (File::Entry (list[n]->name(), offset));
+          H.add_file (File::Entry (list[n].name(), offset));
 
         return (true);
       }

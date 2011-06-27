@@ -31,9 +31,6 @@ namespace MR
   namespace DataSet
   {
 
-    //! \addtogroup DataSet
-    // @{
-
     namespace Transform
     {
 
@@ -132,7 +129,7 @@ namespace MR
 
 
     }
-    //! @}
+
   }
 }
 

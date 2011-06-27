@@ -20,8 +20,8 @@
 
 */
 
-#ifndef __thread_next_h__
-#define __thread_next_h__
+#ifndef __thread_iterator_h__
+#define __thread_iterator_h__
 
 #include "thread/mutex.h"
 #include "dataset/loop.h"
@@ -35,21 +35,21 @@ namespace MR
     /** \addtogroup Thread
       @{ */
 
-    /** \defgroup threadloop Multi-threaded looping helper class
+    /** \defgroup threadloop Multi-threaded iterator class
       @{ */
 
-    //! a thread-safe class to fetch the next voxel within the specified mask
+    //! a thread-safe class to iterate over voxels in a mask
     /*! Here is an example:
     * \code
     * class Processor {
     *   public:
-    *     Processor (Thread::Next<>& nextvoxel, Image::Header& data) :
-    *       next (nextvoxel),
+    *     Processor (Thread::MaskIterator<>& iterator, Image::Header& data) :
+    *       iterate (iterator),
     *       voxel (data) { }
     *
     *     // multi-threaded processing takes place here:
     *     void execute () {
-    *       while (next (voxel)) {
+    *       while (iterate (voxel)) {
     *         // perform processing here, e.g.:
     *         float val = voxel.value();
     *         ...
@@ -57,7 +57,7 @@ namespace MR
     *     }
     *
     *   private:
-    *     Thread::Next<>& next;
+    *     Thread::Iterator<>& iterate;
     *     Image::Voxel<float> voxel;
     * };
     *
@@ -74,29 +74,29 @@ namespace MR
     * // create a loop to iterate over the dataset:
     * DataSet::Loop loop ("processing message...");
     *
-    * // create a Thread::NextInMask object to loop in a thread-safe manner:
-    * Thread::NextInMask<DataSet::Loop> next (loop, mask);
+    * // create a Thread::MaskIterator object to loop in a thread-safe manner:
+    * Thread::MaskIterator<DataSet::Loop> iterate (loop, mask);
     *
     * // create an instance of the processor,
-    * // passing the Thread::Next object by reference:
-    * Processor processor (next, header);
+    * // passing the Thread::Iterator object by reference:
+    * Processor processor (iterate, header);
     *
     * // launch threads:
     * Thread::Array<Processor> processor_array (processor);
     * Thread::Exec threads (processor_array);
     * \endcode
     *
-    * \note the Thread::NextInMask object must be \em shared amongst the
+    * \note the Thread::MaskIterator object must be \em shared amongst the
     * threads. In other words, ensure your functor objects keep a \em reference
-    * to the Thread::NextInMask object, not a copy of it.
+    * to the Thread::MaskIterator object, not a copy of it.
     */
-    template <class Set, class Loop = DataSet::Loop> class NextInMask
+    template <class Set, class Loop = DataSet::Loop> class MaskIterator
     {
       public:
         //! Constructor
         /*! Construct an object to fetch the next coordinates at which the mask
          * is true, using the Loop supplied, in a thread-safe manner. */
-        NextInMask (Loop& loop, const Set& mask) :
+        MaskIterator (Loop& loop, const Set& mask) :
           loop_ (loop), mask_ (mask) {
           reset();
         }
@@ -156,8 +156,8 @@ namespace MR
         Set& mask_;
         Mutex mutex_;
 
-        NextInMask (const NextInMask& next) { assert (0); }
-        NextInMask& operator= (const NextInMask& next) { assert (0); return *this; }
+        MaskIterator (const MaskIterator& iterate) { assert (0); }
+        MaskIterator& operator= (const MaskIterator& iterate) { assert (0); return *this; }
     };
 
 
@@ -165,18 +165,18 @@ namespace MR
 
 
 
-    //! a thread-safe class to fetch the next voxel from a DataSet
+    //! a thread-safe class to iterate over voxels
     /*! Here is an example:
     * \code
     * class Processor {
     *   public:
-    *     Processor (Thread::Next<>& nextvoxel, Image::Header& data) :
-    *       next (nextvoxel),
+    *     Processor (Thread::Iterator<>& iterator, Image::Header& data) :
+    *       iterate (iterator),
     *       voxel (data) { }
     *
     *     // multi-threaded processing takes place here:
     *     void execute () {
-    *       while (next (voxel)) {
+    *       while (iterate (voxel)) {
     *         // perform processing here, e.g.:
     *         float val = voxel.value();
     *         ...
@@ -184,7 +184,7 @@ namespace MR
     *     }
     *
     *   private:
-    *     Thread::Next<>& next;
+    *     Thread::Iterator<>& iterate;
     *     Image::Voxel<float> voxel;
     * };
     *
@@ -197,23 +197,23 @@ namespace MR
     * // create a loop to iterate over the dataset:
     * DataSet::Loop loop ("processing message...");
     *
-    * // create a Thread::Next object to loop in a thread-safe manner:
-    * Thread::Next<DataSet::Loop> next (loop, header);
+    * // create a Thread::Iterator object to loop in a thread-safe manner:
+    * Thread::Iterator<DataSet::Loop> iterate (loop, header);
     *
     * // create an instance of the processor,
-    * // passing the Thread::Next object by reference:
-    * Processor processor (next, header);
+    * // passing the Thread::Iterator object by reference:
+    * Processor processor (iterate, header);
     *
     * // launch threads:
     * Thread::Array<Processor> processor_array (processor);
     * Thread::Exec threads (processor_array);
     * \endcode
     *
-    * \note the Thread::Next object must be \em shared amongst the threads. In
+    * \note the Thread::Iterator object must be \em shared amongst the threads. In
     * other words, ensure your functor objects keep a \em reference to the
-    * Thread::Next object, not a copy of it.
+    * Thread::Iterator object, not a copy of it.
     */
-    template <class Loop = DataSet::Loop> class Next
+    template <class Loop = DataSet::Loop> class Iterator
     {
       public:
         //! Constructor
@@ -222,7 +222,7 @@ namespace MR
          * used purely to provide the dimensions of the data - it will not be
          * accessed in any way outside of the constructor. */
         template <class Set>
-        Next (Loop& loop, const Set& set) :
+        Iterator (Loop& loop, const Set& set) :
           loop_ (loop), counter_ (set) {
           loop_.start (counter_);
         }
@@ -271,8 +271,8 @@ namespace MR
         DataSet::Iterator counter_;
         Mutex mutex_;
 
-        Next (const Next& next) { assert (0); }
-        Next& operator= (const Next& next) { assert (0); return *this; }
+        Iterator (const Iterator& iterate) { assert (0); }
+        Iterator& operator= (const Iterator& iterate) { assert (0); return *this; }
     };
 
 

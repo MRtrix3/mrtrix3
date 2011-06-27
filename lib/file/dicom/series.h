@@ -61,22 +61,24 @@ namespace MR
           void read () {
             ProgressBar progress ("reading DICOM series \"" + name + "\"...", size());
             for (size_t i = 0; i < size(); i++) {
-              (*this) [i]->read();
+              (*this)[i]->read();
               ++progress;
             }
           }
 
           void print_fields (bool dcm, bool csa) const {
-            for (size_t i = 0; i < size(); i++) (*this) [i]->print_fields (dcm, csa);
+            for (size_t i = 0; i < size(); i++) 
+              (*this)[i]->print_fields (dcm, csa);
           }
 
           std::vector<int> count () const;
 
-          bool operator< (const Series& s) const;
+          bool operator< (const Series& s) const {
+            return number < s.number;
+          }
 
           friend std::ostream& operator<< (std::ostream& stream, const Series& item);
       };
-
 
 
     }

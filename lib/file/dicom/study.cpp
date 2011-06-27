@@ -69,16 +69,6 @@ namespace MR
 
 
 
-
-
-
-
-
-
-
-
-
-
       std::ostream& operator<< (std::ostream& stream, const Study& item)
       {
         stream << MR::printf ("    %-30s %-16s %10s %8s\n",
@@ -87,8 +77,10 @@ namespace MR
                               format_date (item.date).c_str(),
                               format_time (item.time).c_str());
 
-        for (size_t n = 0; n < item.size(); n++) stream << (*item[n]);
-        return (stream);
+        for (size_t n = 0; n < item.size(); n++)
+          stream << (*item[n]);
+
+        return stream;
       }
 
 

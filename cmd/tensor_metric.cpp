@@ -26,6 +26,10 @@
 #include "math/matrix.h"
 #include "math/eigen.h"
 #include "dwi/tensor.h"
+#include "thread/iterator.h"
+#include "dataset/value.h"
+#include "dataset/position.h"
+
 
 using namespace MR;
 
@@ -98,13 +102,33 @@ class ImagePair
         Header (const std::string& name) : Image::Header (name) { }
     };
 
+    typedef float value_type;
+
     ImagePair (const Image::Header& header, const std::string& name, size_t nvols) :
       H (header, name, nvols), vox (H) { }
 
     ImagePair (const std::string& name) : H (name), vox (H) { }
 
     Header H;
-    Image::Voxel<float> vox;
+    Image::Voxel<value_type> vox;
+};
+
+class ImagePairPtr : public Ptr<ImagePair>
+{
+  public:
+    ImagePairPtr (ImagePair* pair) : Ptr<ImagePair> (pair) { }
+
+    typedef ImagePair::value_type value_type;
+
+    DataSet::Position<ImagePairPtr> operator[] (size_t axis) { return DataSet::Position<ImagePairPtr> (*this, axis); }
+    DataSet::Value<ImagePairPtr> value () { return DataSet::Value<ImagePairPtr> (*this); }
+
+    value_type get_value () { if (!(*this)) return 0; return (*this)->vox.value(); }
+    void set_value (value_type val) { if (!(*this)) return; (*this)->vox.value() = val; }
+
+    ssize_t get_pos (size_t axis) { if (!(*this)) return 0; return (*this)->vox[axis]; }
+    void set_pos (size_t axis, ssize_t pos) { if (!(*this)) return; (*this)->vox[axis] = pos; }
+    void move_pos (size_t axis, ssize_t inc) { if (!(*this)) return; (*this)->vox[axis] += inc; }
 };
 
 
@@ -115,6 +139,8 @@ class Processor
   public:
     Processor (Iterator& nextvoxel, Image::Header& dt_header) :
       next (nextvoxel), dt (dt_header), modulate (1) { }
+
+    typedef ImagePair::value_type value_type;
 
     void set_modulation (int mod) { modulate = mod; }
 
@@ -129,7 +155,7 @@ class Processor
       fa_header->set_ndim (3);
       fa_header->set_datatype (DataType::Float32);
       fa_header->create (name);
-      fa = new Image::Voxel<float> (*fa_header);
+      fa = new Image::Voxel<value_type> (*fa_header);
     }
 
     void compute_ADC (const std::string& name) {
@@ -137,7 +163,7 @@ class Processor
       adc_header->set_ndim (3);
       adc_header->set_datatype (DataType::Float32);
       adc_header->create (name);
-      adc = new Image::Voxel<float> (*adc_header);
+      adc = new Image::Voxel<value_type> (*adc_header);
     }
 
     void compute_EVALS (const std::string& name) {
@@ -146,7 +172,7 @@ class Processor
       eval_header->set_dim (3, vals.size());
       eval_header->set_datatype (DataType::Float32);
       eval_header->create (name);
-      eval = new Image::Voxel<float> (*eval_header);
+      eval = new Image::Voxel<value_type> (*eval_header);
     }
 
     void compute_EVEC (const std::string& name) {
@@ -155,7 +181,7 @@ class Processor
       evec_header->set_dim (3, 3*vals.size());
       evec_header->set_datatype (DataType::Float32);
       evec_header->create (name);
-      evec = new Image::Voxel<float> (*evec_header);
+      evec = new Image::Voxel<value_type> (*evec_header);
     }
 
     void init () { 
@@ -175,9 +201,9 @@ class Processor
 
   private:
     Iterator& next;
-    Image::Voxel<float> dt;
+    Image::Voxel<value_type> dt;
     RefPtr<Image::Header> fa_header, adc_header, evec_header, eval_header;
-    Ptr<Image::Voxel<float> > fa, adc, evec, eval;
+    Ptr<Image::Voxel<value_type> > fa, adc, evec, eval;
     Ptr<Math::Eigen::Symm<double> > eig;
     Ptr<Math::Eigen::SymmV<double> > eigv;
     std::vector<int> vals;

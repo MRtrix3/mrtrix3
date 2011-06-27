@@ -204,19 +204,6 @@ namespace MR
 
 
 
-      bool Image::operator< (const Image& ima) const
-      {
-        if (acq != ima.acq) return (acq < ima.acq);
-        assert (!isnan (distance));
-        assert (!isnan (ima.distance));
-        if (distance != ima.distance) return (distance < ima.distance);
-        if (sequence != ima.sequence) return (sequence < ima.sequence);
-        if (instance != ima.instance) return (instance < ima.instance);
-        return (false);
-      }
-
-
-
 
 
 

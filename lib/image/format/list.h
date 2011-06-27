@@ -39,18 +39,15 @@ namespace MR
   namespace Image
   {
 
-    //! \addtogroup Image
-    // @{
-
     /*! \todo add Image::Format::Folder class to handle both DICOM, GE I-dot
      * and potentially Siemens Numaris 3 images. */
 
+    //! Classes responsible for handling of specific image formats
     namespace Format
     {
 
-      /*! the interface for classes that support the various image formats.
-       *
-       * All image formats supported by %MRtrix are handled by a class derived
+      //! the interface for classes that support the various image formats.
+      /*! All image formats supported by %MRtrix are handled by a class derived
        * from the Image::Format::Base. An instance of each of these classes is
        * added to the list in the file list.cpp. */
       class Base
@@ -129,7 +126,6 @@ namespace MR
       extern Format::MRtrix mrtrix_handler;
       //! \endcond
     }
-    //! @}
   }
 }
 

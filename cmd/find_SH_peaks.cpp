@@ -391,9 +391,9 @@ EXECUTE {
   directions_header.create (argument[1]);
 
   Queue queue ("find_SH_peaks queue", 100, ItemAllocator (sh_header.dim (3)));
-  DataLoader loader (queue, sh_header, mask_header.get());
+  DataLoader loader (queue, sh_header, mask_header);
   Processor processor (queue, directions_header, dirs, Math::SH::LforN (sh_header.dim (3)),
-  npeaks, true_peaks, threshold, ipeaks_header.get());
+  npeaks, true_peaks, threshold, ipeaks_header);
 
   Thread::Exec loader_thread (loader, "loader");
   Thread::Array<Processor> processor_list (processor);

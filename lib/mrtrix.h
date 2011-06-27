@@ -78,9 +78,10 @@ namespace std
   template <class T> inline ostream& operator<< (ostream& stream, const vector<T>& V)
   {
     stream << "[ ";
-    for (size_t n = 0; n < V.size(); n++) stream << V[n] << " ";
+    for (size_t n = 0; n < V.size(); n++) 
+      stream << V[n] << " ";
     stream << "]";
-    return (stream);
+    return stream;
   }
 
 }
@@ -111,8 +112,10 @@ namespace MR
   inline std::istream& getline (std::istream& stream, std::string& string)
   {
     std::getline (stream, string);
-    if (string.size() > 0) if (string[string.size()-1] == 015) string.resize (string.size()-1);
-    return (stream);
+    if (string.size() > 0) 
+      if (string[string.size()-1] == 015) 
+        string.resize (string.size()-1);
+    return stream;
   }
 
 
@@ -123,7 +126,7 @@ namespace MR
     stream << value;
     if (stream.fail())
       throw Exception ("error converting value to string");
-    return (stream.str());
+    return stream.str();
   }
 
 
@@ -131,7 +134,8 @@ namespace MR
   {
     if (text.size() > longest)
       return (text.substr (0,prefix) + "..." + text.substr (text.size()-longest+prefix-3));
-    else return (text);
+    else 
+      return text;
   }
 
 
@@ -142,7 +146,7 @@ namespace MR
     stream >> value;
     if (stream.fail())
       throw Exception ("error converting string \"" + string + "\"");
-    return (value);
+    return value;
   }
 
 
@@ -156,16 +160,17 @@ namespace MR
     va_start (list, format);
     vsnprintf (buf, len, format, list);
     va_end (list);
-    return (buf);
+    return buf;
   }
 
 
   inline std::string strip (const std::string& string, const char* ws = " \t\n", bool left = true, bool right = true)
   {
     std::string::size_type start = (left ? string.find_first_not_of (ws) : 0);
-    if (start == std::string::npos) return ("");
-    std::string::size_type end   = (right ? string.find_last_not_of (ws) + 1 : std::string::npos);
-    return (string.substr (start, end - start));
+    if (start == std::string::npos) 
+      return "";
+    std::string::size_type end = (right ? string.find_last_not_of (ws) + 1 : std::string::npos);
+    return string.substr (start, end - start);
   }
 
 
@@ -179,14 +184,16 @@ namespace MR
 
   inline std::string& lowercase (std::string& string)
   {
-    for (std::string::iterator i = string.begin(); i != string.end(); ++i) *i = tolower (*i);
-    return (string);
+    for (std::string::iterator i = string.begin(); i != string.end(); ++i)
+      *i = tolower (*i);
+    return string;
   }
 
   inline std::string& uppercase (std::string& string)
   {
-    for (std::string::iterator i = string.begin(); i != string.end(); ++i) *i = toupper (*i);
-    return (string);
+    for (std::string::iterator i = string.begin(); i != string.end(); ++i)
+      *i = toupper (*i);
+    return string;
   }
 
   inline std::string lowercase (const std::string& string)
@@ -194,7 +201,7 @@ namespace MR
     std::string ret;
     ret.resize (string.size());
     transform (string.begin(), string.end(), ret.begin(), tolower);
-    return (ret);
+    return ret;
   }
 
   inline std::string uppercase (const std::string& string)
@@ -202,7 +209,7 @@ namespace MR
     std::string ret;
     ret.resize (string.size());
     transform (string.begin(), string.end(), ret.begin(), toupper);
-    return (ret);
+    return ret;
   }
 
   std::vector<std::string> split (
@@ -214,11 +221,12 @@ namespace MR
   inline std::string join (std::vector<std::string>& V, const std::string& delimiter)
   {
     std::string ret;
-    if (V.empty()) return (ret);
+    if (V.empty())
+      return ret;
     ret = V[0];
     for (std::vector<std::string>::iterator i = V.begin() +1; i != V.end(); ++i)
       ret += delimiter + *i;
-    return (ret);
+    return ret;
   }
 
   std::vector<float> parse_floats (const std::string& spec);
@@ -226,7 +234,7 @@ namespace MR
 
   inline int round (float x)
   {
-    return (int (x + (x > 0.0 ? 0.5 : -0.5)));
+    return int (x + (x > 0.0 ? 0.5 : -0.5));
   }
 
 
@@ -234,21 +242,21 @@ namespace MR
 
   template <class T> inline T maxvalue (const T& v0, const T& v1, const T& v2)
   {
-    return (v0 > v1 ? (v0 > v2 ? v0 : (v1 > v2 ? v1 : v2)) : (v1 > v2 ? v1 : (v0 > v2 ? v0 : v2)));
+    return v0 > v1 ? (v0 > v2 ? v0 : (v1 > v2 ? v1 : v2)) : (v1 > v2 ? v1 : (v0 > v2 ? v0 : v2));
   }
 
   template <class T> inline int maxindex (const T& v0, const T& v1, const T& v2)
   {
-    return (v0 > v1 ? (v0 > v2 ? 0 : (v1 > v2 ? 1 : 2)) : (v1 > v2 ? 1 : (v0 > v2 ? 0 : 2)));
+    return v0 > v1 ? (v0 > v2 ? 0 : (v1 > v2 ? 1 : 2)) : (v1 > v2 ? 1 : (v0 > v2 ? 0 : 2));
   }
 
   template <class T> inline T maxvalue (const T v[3])
   {
-    return (maxvalue (v[0], v[1], v[2]));
+    return maxvalue (v[0], v[1], v[2]);
   }
   template <class T> inline int maxindex (const T v[3])
   {
-    return (maxindex (v[0], v[1], v[2]));
+    return maxindex (v[0], v[1], v[2]);
   }
 
 
@@ -256,21 +264,21 @@ namespace MR
 
   template <class T> inline T minvalue (const T& v0, const T& v1, const T& v2)
   {
-    return (v0 < v1 ? (v0 < v2 ? v0 : (v1 < v2 ? v1 : v2)) : (v1 < v2 ? v1 : (v0 < v2 ? v0 : v2)));
+    return v0 < v1 ? (v0 < v2 ? v0 : (v1 < v2 ? v1 : v2)) : (v1 < v2 ? v1 : (v0 < v2 ? v0 : v2));
   }
 
   template <class T> inline int minindex (const T& v0, const T& v1, const T& v2)
   {
-    return (v0 < v1 ? (v0 < v2 ? 0 : (v1 < v2 ? 1 : 2)) : (v1 < v2 ? 1 : (v0 < v2 ? 0 : 2)));
+    return v0 < v1 ? (v0 < v2 ? 0 : (v1 < v2 ? 1 : 2)) : (v1 < v2 ? 1 : (v0 < v2 ? 0 : 2));
   }
 
   template <class T> inline T minvalue (const T v[3])
   {
-    return (minvalue (v[0], v[1], v[2]));
+    return minvalue (v[0], v[1], v[2]);
   }
   template <class T> inline int minindex (const T v[3])
   {
-    return (minindex (v[0], v[1], v[2]));
+    return minindex (v[0], v[1], v[2]);
   }
 
 
@@ -278,7 +286,8 @@ namespace MR
 
   template <class T> inline void set_all (std::vector<T>& V, const T& value)
   {
-    for (size_t n = 0; n < V.size(); n++) V[n] = value;
+    for (size_t n = 0; n < V.size(); n++) 
+      V[n] = value;
   }
 
 
@@ -289,11 +298,12 @@ namespace MR
     size_t axis = 0;
     while (axis < limits.size()) {
       pos[axis]++;
-      if (pos[axis] < limits[axis]) return (true);
+      if (pos[axis] < limits[axis]) 
+        return true;
       pos[axis] = 0;
       axis++;
     }
-    return (false);
+    return false;
   }
 
 

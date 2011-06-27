@@ -32,13 +32,6 @@ namespace MR
     {
 
 
-      bool Series::operator< (const Series& s) const
-      {
-        return (number < s.number);
-      }
-
-
-
       std::vector<int>  Series::count () const
       {
         std::vector<int> dim (3);
@@ -48,7 +41,7 @@ namespace MR
 
         if (size() == 0) return (dim);
 
-        const Image* first[] = { (*this) [0].get(), (*this) [0].get() };
+        const Image* first[] = { (*this)[0], (*this)[0] };
 
 
         for (size_t current_entry = 1; current_entry < size(); current_entry++) {
@@ -60,7 +53,7 @@ namespace MR
             if (dim[0] && dim[0] != current_dim[0])
               throw Exception ("mismatch between number of images along sequence dimension");
 
-            first[0] = first[1] = (*this) [current_entry].get();
+            first[0] = first[1] = (*this)[current_entry];
             dim[0] = current_dim[0];
             dim[1] = current_dim[1];
             current_dim[0] = current_dim[1] = 1;
@@ -70,7 +63,7 @@ namespace MR
             if (dim[0] && dim[0] != current_dim[0])
               throw Exception ("mismatch between number of images along sequence dimension");
 
-            first[0] = (*this) [current_entry].get();
+            first[0] = (*this)[current_entry];
             dim[0] = current_dim[0];
             current_dim[0] = 1;
             current_dim[1]++;
@@ -88,7 +81,7 @@ namespace MR
         dim[1] = current_dim[1];
         dim[2]++;
 
-        return (dim);
+        return dim;
       }
 
 
@@ -106,8 +99,9 @@ namespace MR
                               format_time (item.time).c_str(),
                               item.name.c_str());
 
-        for (size_t n = 0; n < item.size(); n++) stream << (*item[n]);
-        return (stream);
+        for (size_t n = 0; n < item.size(); n++)
+          stream << (*item[n]);
+        return stream;
       }
 
 

@@ -54,7 +54,7 @@ namespace MR
    *
    * The build scripts used to build MRtrix applications are designed to be
    * easy to use, with no input required from the user. This does mean that
-   * developers must follow a few rules of thumb when writing software for use
+   * developers must follow a few fixed rules when writing software for use
    * with MRtrix.
    * - To create a new executable, place the correspondingly named source file
    * in the \c cmd/ folder. For example, if a new application called \c myapp
@@ -133,16 +133,12 @@ namespace MR
    * corresponding target \c bin/my_application will be included in the default
    * target list.
    *
-   * \par Special targets
+   * \par Special target: \e clean
    *
-   * There are two targets that can be passed to the \c build script that have
-   * special meaning. These are:
-   * - \b clean: remove all system-generated files, including all object files (\c
-   *   *.o), all executables (i.e. all files in the \c bin/ folder), and the
-   *   MRtrix shared library.
-   * - \b reset: remove all system-generated files as above, and additionally
-   *   remove the configuration file produced by the \c configure script. This
-   *   should effectively reset the package to its initial state.
+   * The special target \c "clean" that can be passed to the \c build script to
+   * remove all system-generated files, including all object files (\c *.o),
+   * all executables (i.e. all files in the \c bin/ folder), and the MRtrix
+   * shared library.
    *
    * \par Resolving dependencies for executables
    *

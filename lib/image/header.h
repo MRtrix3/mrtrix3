@@ -35,19 +35,18 @@
 #include "file/mmap.h"
 #include "math/matrix.h"
 
-/*! \defgroup Image Image access
- * \brief Classes and functions providing access to image data. */
-
 namespace MR
 {
+  /*! \defgroup ImageAPI Image access
+   * \brief Classes and functions providing access to image data. */
+  // @{
+
+  //! functions and classes related to image data input/output 
   namespace Image
   {
 
-    //! \addtogroup Image
-    // @{
-
-    /*! A container for all the information related to an image
-     * This class contains all the information available about an image as it
+    //! A container for all the information related to an image
+    /*! This class contains all the information available about an image as it
      * is (or will be) stored on disk. It does not provide access to the voxel
      * data themselves. For this, please use the Image::Voxel class.
      *
@@ -297,7 +296,7 @@ namespace MR
           handler_ = handler;
         }
         Handler::Base* get_handler () {
-          return (handler_.get());
+          return (handler_);
         }
         void add_file (const File::Entry& entry) {
           files_.push_back (entry);
@@ -365,12 +364,8 @@ namespace MR
 
     };
 
-
-
-
-    //! @}
-
   }
+  //! @}
 }
 
 #endif

@@ -44,17 +44,20 @@ namespace MR
           match = true;
           if (patient_name == (*this) [n]->name) {
             if (patient_ID.size() && (*this) [n]->ID.size())
-              if (patient_ID != (*this) [n]->ID) match = false;
+              if (patient_ID != (*this) [n]->ID) 
+                match = false;
             if (match) {
               if (patient_DOB.size() && (*this) [n]->DOB.size())
-                if (patient_DOB != (*this) [n]->DOB) match = false;
+                if (patient_DOB != (*this) [n]->DOB)
+                  match = false;
             }
-            if (match) return ( (*this) [n]);
+            if (match)
+              return (*this) [n];
           }
         }
 
         push_back (RefPtr<Patient> (new Patient (patient_name, patient_ID, patient_DOB)));
-        return (back());
+        return back();
       }
 
 
@@ -109,7 +112,7 @@ namespace MR
 
         RefPtr<Image> image (new Image);
         image->filename = filename;
-        image->series = series.get();
+        image->series = series;
         image->sequence_name = reader.sequence;
         series->push_back (image);
       }
@@ -123,7 +126,8 @@ namespace MR
         ProgressBar progress ("scanning DICOM folder \"" + shorten (filename) + "\"");
         read_dir (filename, progress);
 
-        if (size() > 0) return;
+        if (size() > 0)
+          return;
 
         throw Exception ("no DICOM images found in \"" + filename + "\"");
       }
@@ -136,8 +140,9 @@ namespace MR
       std::ostream& operator<< (std::ostream& stream, const Tree& item)
       {
         stream << "FileSet " << item.description << ":\n";
-        for (size_t n = 0; n < item.size(); n++) stream << (*item[n]);
-        return (stream);
+        for (size_t n = 0; n < item.size(); n++)
+          stream << (*item[n]);
+        return stream;
       }
 
 

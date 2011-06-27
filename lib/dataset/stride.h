@@ -30,9 +30,6 @@ namespace MR
   namespace DataSet
   {
 
-    //! \addtogroup DataSet
-    // @{
-
     //! Functions to handle the memory layout of DataSet classes
     /*! Strides are typically supplied as a symbolic list of increments,
      * representing the layout of the data in memory. In this symbolic
@@ -271,7 +268,6 @@ namespace MR
 
     }
 
-    //! @}
   }
 }
 

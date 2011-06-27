@@ -23,6 +23,8 @@
 #ifndef __args_h__
 #define __args_h__
 
+#include <vector>
+#include <limits>
 #include "ptr.h"
 
 #ifdef None

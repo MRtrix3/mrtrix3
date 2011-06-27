@@ -32,9 +32,6 @@ namespace MR
   namespace DataSet
   {
 
-    //! \addtogroup DataSet
-    // @{
-
     template <class Set>
     class Subset
     {
@@ -138,7 +135,6 @@ namespace MR
         friend class Position<Subset<Set> >;
     };
 
-    //! @}
   }
 }
 

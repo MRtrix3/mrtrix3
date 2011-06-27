@@ -32,9 +32,6 @@ namespace MR
   namespace DataSet
   {
 
-    /** \addtogroup DataSet
-      @{ */
-
     /** \defgroup loop Looping functions
       @{ */
 
@@ -645,7 +642,6 @@ namespace MR
     };
 
 
-    //! @}
     //! @}
   }
 }

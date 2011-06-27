@@ -32,9 +32,6 @@ namespace MR
   namespace DataSet
   {
 
-    //! \addtogroup DataSet
-    // @{
-
     //! returns the number of voxel in the data set, or a relevant subvolume
     template <class Set> inline size_t voxel_count (const Set& ds, size_t from_axis = 0, size_t to_axis = std::numeric_limits<size_t>::max())
     {
@@ -140,7 +137,6 @@ namespace MR
     }
 
 
-    //! @}
   }
 }
 

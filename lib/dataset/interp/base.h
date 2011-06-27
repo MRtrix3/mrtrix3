@@ -31,9 +31,6 @@ namespace MR
   namespace DataSet
   {
 
-    /** \addtogroup DataSet
-     @{ */
-
     /** \defgroup interp Interpolation
      @{ */
 
@@ -166,7 +163,6 @@ namespace MR
       };
 
     }
-    //! @}
     //! @}
   }
 }

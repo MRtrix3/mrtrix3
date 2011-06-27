@@ -48,7 +48,7 @@ namespace MR
             for (size_t patient = 0; patient < size(); patient++) {
               Patient& pat (* ( (*this) [patient]));
               for (size_t study = 0; study < pat.size(); study++)
-                std::sort (pat[study]->begin(), pat[study]->end());
+                std::sort (pat[study]->begin(), pat[study]->end(), PtrComp());
             }
           }
 

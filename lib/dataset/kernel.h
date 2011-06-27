@@ -33,6 +33,7 @@
 
 namespace MR {
   namespace DataSet {
+
     namespace Kernel {
 
       template <typename T> 
@@ -74,7 +75,7 @@ namespace MR {
 
               T operator() (ssize_t i, ssize_t j, ssize_t k) const 
               { 
-                const T* slice = item->slice[k+offset[2]].get();
+                const T* slice = item->slice[k+offset[2]];
                 ssize_t index = jskip * (j+offset[1]) + i+offset[0];
                 return (slice[index]);
               }
@@ -169,12 +170,13 @@ namespace MR {
             {
               for (ssize_t i = 0; i < nslices-1; ++i) 
                 data[i] = data[i+1];
-              value_type* p = slice < src.dim(z) ? new value_type [src.dim(x)*src.dim(y)] : NULL;
-              data[nslices-1] = p;
-              if (p) {
+              RefPtr<value_type,true> a (new value_type [slice < src.dim(z) ? src.dim(x)*src.dim(y) : 0]);
+              data[nslices-1] = a;
+              if (a) {
                 const ssize_t pos[] = { src[0], src[1], src[2] };
                 DataSet::LoopInOrder loop (axes);
                 src[z] = slice;
+                value_type* p = a;
                 for (loop.start (src); loop.ok(); loop.next (src)) {
                   *p = src.value();
                   ++p;
@@ -276,6 +278,7 @@ namespace MR {
         }
 
     }
+
   }
 }
 

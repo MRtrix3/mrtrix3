@@ -235,7 +235,7 @@ namespace MR
 
               if (!data) {
                 block_ = __allocate<value_type> (voxel_count (*this));
-                data = block_.get();
+                data = block_;
               }
             }
 

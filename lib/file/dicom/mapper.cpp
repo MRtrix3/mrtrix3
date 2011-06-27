@@ -59,14 +59,14 @@ namespace MR
 
 
         size_t series_count = series[0]->size();
-        sort (series[0]->begin(), series[0]->end());
+        std::sort (series[0]->begin(), series[0]->end(), PtrComp());
         std::vector<int> dim = series[0]->count ();
 
         for (size_t s = 1; s < series.size(); s++) {
           if (series[s]->size() != series_count)
             throw Exception ("DICOM series selected do not have the same number of images");
 
-          sort (series[s]->begin(), series[s]->end());
+          std::sort (series[s]->begin(), series[s]->end(), PtrComp());
           std::vector<int> dim_tmp = series[s]->count();
           if (dim[0] != dim_tmp[0] || dim[1] != dim_tmp[1] || dim[2] != dim_tmp[2])
             error ("WARNING: DICOM series selected do not have the same dimensions");
@@ -245,7 +245,7 @@ namespace MR
           for (index[2] = 0; index[2] < dim[2]; index[2]++) {
             for (index[0] = 0; index[0] < dim[0]; index[0]++) {
               n = index[0] + dim[0]*dim[1]*index[2];
-              if (!isnan ( (*series[s]) [n]->bvalue)) DW_scheme.push_back ( (*series[s]) [n].get());
+              if (!isnan ( (*series[s]) [n]->bvalue)) DW_scheme.push_back ((*series[s])[n]);
               for (index[1] = 0; index[1] < dim[1]; index[1]++) {
                 n = index[0] + dim[0]* (index[1] + dim[1]*index[2]);
                 H.add_file (File::Entry ( (*series[s]) [n]->filename, (*series[s]) [n]->data));

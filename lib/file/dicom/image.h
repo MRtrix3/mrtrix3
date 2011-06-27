@@ -42,7 +42,21 @@ namespace MR
       {
 
         public:
-          Image (Series* parent = NULL);
+          Image (Series* parent = NULL) :
+            series (parent) {
+            acq_dim[0] = acq_dim[1] = dim[0] = dim[1] = instance = acq = sequence = std::numeric_limits<size_t>::max();
+            position_vector[0] = position_vector[1] = position_vector[2] = NAN;
+            orientation_x[0] = orientation_x[1] = orientation_x[2] = NAN;
+            orientation_y[0] = orientation_y[1] = orientation_y[2] = NAN;
+            orientation_z[0] = orientation_z[1] = orientation_z[2] = NAN;
+            distance = NAN;
+            pixel_size[0] = pixel_size[0] = slice_thickness = slice_spacing = NAN;
+            scale_intercept = 0.0;
+            scale_slope = 1.0;
+            bvalue = G[0] = G[1] = G[2] = NAN;
+            data = bits_alloc = images_in_mosaic = data_size = 0;
+            is_BE = false;
+          }
 
           std::string  filename;
           std::string  sequence_name;
@@ -61,78 +75,53 @@ namespace MR
           void parse_item (Element& item, const std::string& dirname = "");
           void decode_csa (const uint8_t* start, const uint8_t* end);
 
-          void calc_distance ();
-
-          bool operator< (const Image& ima) const;
+          bool operator< (const Image& ima) const {
+            if (acq != ima.acq) 
+              return acq < ima.acq;
+            assert (!isnan (distance));
+            assert (!isnan (ima.distance));
+            if (distance != ima.distance) 
+              return distance < ima.distance;
+            if (sequence != ima.sequence) 
+              return sequence < ima.sequence;
+            if (instance != ima.instance) 
+              return instance < ima.instance;
+            return false;
+          }
 
           void print_fields (bool dcm, bool csa) const;
+
+          void calc_distance () {
+            if (images_in_mosaic) {
+              float xinc = pixel_size[0] * float (dim[0] - acq_dim[0]) / 2.0;
+              float yinc = pixel_size[1] * float (dim[1] - acq_dim[1]) / 2.0;
+              for (size_t i = 0; i < 3; i++)
+                position_vector[i] += xinc * orientation_x[i] + yinc * orientation_y[i];
+
+              float normal[3];
+              Math::cross (normal, orientation_x, orientation_y);
+              if (Math::dot (normal, orientation_z) < 0.0) {
+                orientation_z[0] = -normal[0];
+                orientation_z[1] = -normal[1];
+                orientation_z[2] = -normal[2];
+              }
+              else {
+                orientation_z[0] = normal[0];
+                orientation_z[1] = normal[1];
+                orientation_z[2] = normal[2];
+              }
+
+            }
+            else Math::cross (orientation_z, orientation_x, orientation_y);
+
+            Math::normalise (orientation_z);
+            distance = Math::dot (orientation_z, position_vector);
+          }
+
+
       };
 
       std::ostream& operator<< (std::ostream& stream, const Image& item);
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-      inline Image::Image (Series* parent) :
-        series (parent)
-      {
-        acq_dim[0] = acq_dim[1] = dim[0] = dim[1] = instance = acq = sequence = std::numeric_limits<size_t>::max();
-        position_vector[0] = position_vector[1] = position_vector[2] = NAN;
-        orientation_x[0] = orientation_x[1] = orientation_x[2] = NAN;
-        orientation_y[0] = orientation_y[1] = orientation_y[2] = NAN;
-        orientation_z[0] = orientation_z[1] = orientation_z[2] = NAN;
-        distance = NAN;
-        pixel_size[0] = pixel_size[0] = slice_thickness = slice_spacing = NAN;
-        scale_intercept = 0.0;
-        scale_slope = 1.0;
-        bvalue = G[0] = G[1] = G[2] = NAN;
-        data = bits_alloc = images_in_mosaic = data_size = 0;
-        is_BE = false;
-      }
-
-
-
-
-
-
-
-      inline void Image::calc_distance ()
-      {
-        if (images_in_mosaic) {
-          float xinc = pixel_size[0] * float (dim[0] - acq_dim[0]) / 2.0;
-          float yinc = pixel_size[1] * float (dim[1] - acq_dim[1]) / 2.0;
-          for (size_t i = 0; i < 3; i++)
-            position_vector[i] += xinc * orientation_x[i] + yinc * orientation_y[i];
-
-          float normal[3];
-          Math::cross (normal, orientation_x, orientation_y);
-          if (Math::dot (normal, orientation_z) < 0.0) {
-            orientation_z[0] = -normal[0];
-            orientation_z[1] = -normal[1];
-            orientation_z[2] = -normal[2];
-          }
-          else {
-            orientation_z[0] = normal[0];
-            orientation_z[1] = normal[1];
-            orientation_z[2] = normal[2];
-          }
-
-        }
-        else Math::cross (orientation_z, orientation_x, orientation_y);
-
-        Math::normalise (orientation_z);
-        distance = Math::dot (orientation_z, position_vector);
-      }
 
 
     }

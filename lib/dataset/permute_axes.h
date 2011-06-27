@@ -31,9 +31,6 @@ namespace MR
   namespace DataSet
   {
 
-    //! \addtogroup DataSet
-    // @{
-
     template <class Set> class PermuteAxes
     {
       public:
@@ -110,7 +107,6 @@ next_axis:
         friend class Value<PermuteAxes<Set> >;
     };
 
-    //! @}
   }
 }
 

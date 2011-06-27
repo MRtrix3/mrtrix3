@@ -23,6 +23,7 @@
 #ifndef __app_h__
 #define __app_h__
 
+#include "mrtrix.h"
 #include "args.h"
 
 // TODO: are these really necessary?

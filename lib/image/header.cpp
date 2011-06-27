@@ -244,12 +244,12 @@ namespace MR
       try {
         info ("opening image \"" + image_name + "\"...");
 
-        ParsedNameList list;
+        ParsedName::List list;
         std::vector<int> num = list.parse_scan_check (image_name);
 
         const Format::Base** format_handler = Format::handlers;
-        std::vector< RefPtr<ParsedName> >::iterator item = list.begin();
-        name_ = (*item)->name();
+        size_t item = 0;
+        name_ = list[item].name();
 
         for (; *format_handler; format_handler++)
           if ( (*format_handler)->read (*this))
@@ -260,9 +260,9 @@ namespace MR
 
         format_ = (*format_handler)->description;
 
-        while (++item != list.end()) {
+        while (++item < list.size()) {
           Header header (*this);
-          header.name_ = (*item)->name();
+          header.name_ = list[item].name();
           if (! (*format_handler)->read (header))
             throw Exception ("image specifier contains mixed format files");
           merge (header);

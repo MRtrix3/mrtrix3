@@ -37,11 +37,8 @@ namespace MR
 
     class Header;
 
-    //! \addtogroup Image
-    // @{
-
-    /*! Classes responsible for actual image loading & writing
-     * These classes are designed to provide a consistent interface for image
+    //! Classes responsible for actual image loading & writing
+    /*! These classes are designed to provide a consistent interface for image
      * loading & writing, so that various non-trivial types of image storage
      * can be accommodated. These include compressed files, and images stored
      * as mosaic (e.g. Siemens DICOM mosaics). */
@@ -90,7 +87,6 @@ namespace MR
       };
 
     }
-    //! @}
   }
 }
 

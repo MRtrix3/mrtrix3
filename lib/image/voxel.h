@@ -87,9 +87,6 @@ namespace MR
     // \endcond
 
 
-    //! \addtogroup Image
-    // @{
-
     //! This class provides access to the voxel intensities of an image.
     /*! This class keeps a reference to an existing Image::Header, and provides
      * access to the corresponding image intensities. It implements all the
@@ -293,9 +290,6 @@ namespace MR
         friend class DataSet::Position<Voxel<T> >;
         friend class DataSet::Value<Voxel<T> >;
     };
-
-
-    //! @}
 
   }
 }

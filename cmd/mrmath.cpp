@@ -189,7 +189,7 @@ class Source : public Functor
       return 1;
     }
     virtual const Image::Header* header () const {
-      return (H.get());
+      return (H);
     }
   private:
     value_type val;

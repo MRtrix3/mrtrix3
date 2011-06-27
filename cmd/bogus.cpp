@@ -23,8 +23,9 @@
 #include "app.h"
 #include "debug.h"
 #include "image/voxel.h"
-#include "thread/next.h"
+#include "thread/iterator.h"
 #include "thread/exec.h"
+#include "ptr.h"
 
 using namespace MR;
 
@@ -51,10 +52,10 @@ OPTIONS = { Option() };
 
 typedef float T;
 
-
+/*
 class Processor {
   public:
-    Processor (Thread::Next<DataSet::Loop>& nextvoxel, Image::Header& input, Image::Header& output) :
+    Processor (Thread::Iterator<DataSet::Loop>& nextvoxel, Image::Header& input, Image::Header& output) :
       next (nextvoxel), in (input), out (output) { }
 
     void execute () {
@@ -66,23 +67,67 @@ class Processor {
     }
 
   private:
-    Thread::Next<DataSet::Loop>& next;
+    Thread::Iterator<DataSet::Loop>& next;
     Image::Voxel<T> in, out;
 };
 
+*/
+class S {
+  public:
+    int i;
+    float f;
+    std::string txt;
+};
 
 EXECUTE {
+  Ptr<T> p (new T (10.2));
+  VAR (*p);
+  VAR (p);
 
+  Ptr<T> a (new T (5.2));
+  VAR (*a);
+  VAR (a);
+
+  a = new T (1.5);
+  VAR (*a);
+  VAR (a);
+
+  VAR (a == p);
+
+  p = a;
+  VAR (*a);
+  VAR (a);
+  VAR (*p);
+  VAR (p);
+  VAR (a == p);
+  VAR (a != p);
+
+  VAR (a[0]);
+
+  Ptr<S> s (new S);
+  VAR (s);
+  VAR (s->i);
+
+  if (s) VAR ("s set");
+  if (!s) VAR ("s not set");
+
+  s = NULL;
+
+  if (s) VAR ("s set");
+  if (!s) VAR ("s not set");
+
+/*
   Image::Header in (argument[0]);
   Image::Header out (in);
   out.set_datatype (DataType::Float32);
   out.create (argument[1]);
 
   DataSet::Loop loop ("processing...", 0, 1);
-  Thread::Next<DataSet::Loop> next (loop, in);
+  Thread::Iterator<DataSet::Loop> next (loop, in);
 
   Processor processor (next, in, out);
   Thread::Array<Processor> array (processor);
   Thread::Exec threads (array);
+  */
 }
 

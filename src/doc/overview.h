@@ -38,7 +38,7 @@ namespace MR
    * - The basic steps for writing applications based on MRtrix are explained
    * in the section \ref command_howto.
    * - %Image data are accessed via objects that implement at least a subset of
-   * the interface defined for the DataSet abstract class.
+   * the DataSet interface.
    * - Access to data stored in image files is done via the classes and
    * functions defined in the Image namespace. The corresponding headers are
    * stored in the \c lib/image/ directory.

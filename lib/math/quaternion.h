@@ -82,7 +82,7 @@ namespace MR
           x[2] *= n;
           x[3] *= n;
         }
-        void          from_matrix (const value_type* matrix);
+        void          from_matrix (const T* matrix);
         void          to_matrix (value_type* matrix);
 
         const value_type&  operator[] (int index) const    {

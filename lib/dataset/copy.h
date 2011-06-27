@@ -31,9 +31,6 @@ namespace MR
   namespace DataSet
   {
 
-    //! \addtogroup DataSet
-    // @{
-
     template <class Set, class Set2>
     void copy (Set& destination, Set2& source, size_t from_axis = 0, size_t to_axis = std::numeric_limits<size_t>::max())
     {
@@ -61,7 +58,6 @@ namespace MR
         destination.value() = source.value();
     }
 
-    //! @}
   }
 }
 

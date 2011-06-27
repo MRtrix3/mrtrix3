@@ -59,10 +59,10 @@ namespace MR
             }
             int n = to<int> (buf) - 1;
             if (n > (int) tree.size()) fprintf (stderr, "invalid selection - try again\n");
-            else patient_p = tree[n].get();
+            else patient_p = tree[n];
           }
         }
-        else patient_p = tree[0].get();
+        else patient_p = tree[0];
 
 
 
@@ -96,10 +96,10 @@ namespace MR
             }
             int n = to<int> (buf) - 1;
             if (n > (int) patient.size()) fprintf (stderr, "invalid selection - try again\n");
-            else study_p = patient[n].get();
+            else study_p = patient[n];
           }
         }
-        else study_p = patient[0].get();
+        else study_p = patient[0];
 
 
 

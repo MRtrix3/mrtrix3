@@ -28,9 +28,6 @@ namespace MR
   namespace DataSet
   {
 
-    //! \addtogroup DataSet
-    // @{
-
     /*! \brief a class to simplify the implementation of DataSet classes with
      * non-trivial access to their data.
      *
@@ -47,7 +44,7 @@ namespace MR
      * class MyDataSet
      * {
      *   public:
-     *     MyDataSet (int xdim, int ydim, int zdim)
+     *     MyDataSet (ssize_t xdim, ssize_t ydim, ssize_t zdim)
      *     {
      *       N[0] = xdim; N[1] = ydim; N[2] = zdim;
      *       X[0] = X[1] = X[2] = 0;
@@ -57,17 +54,17 @@ namespace MR
      *
      *     typedef float value_type;
      *
-     *     int     ndim () const           { return (3); }
-     *     int     dim (int axis) const    { return (N[axis]); }
-     *     int&    operator[] (int axis)   { return (X[axis]); }
+     *     size_t     ndim () const           { return (3); }
+     *     ssize_t    dim (size_t axis) const    { return (N[axis]); }
+     *     ssize_t&   operator[] (size_t axis)   { return (X[axis]); }
      *
      *     // PROBLEM: can't check that the value is valid when it is modified!
      *     float&  value () { return (data[X[0]+N[0]*(X[1]+N[1]*X[2])]); }
      *
      *   private:
-     *     float*  data
-     *     int     N[3];
-     *     int     X[3];
+     *     float*   data
+     *     ssize_t  N[3];
+     *     ssize_t  X[3];
      * };
      * \endcode
      * While it is possible in the above example to modify the voxel values,
@@ -83,7 +80,7 @@ namespace MR
      * class MyDataSet
      * {
      *   public:
-     *     MyDataSet (int xdim, int ydim, int zdim)
+     *     MyDataSet (ssize_t xdim, ssize_t ydim, ssize_t zdim)
      *     {
      *       N[0] = xdim; N[1] = ydim; N[2] = zdim;
      *       X[0] = X[1] = X[2] = 0;
@@ -93,17 +90,17 @@ namespace MR
      *
      *     typedef float value_type;
      *
-     *     int     ndim () const           { return (3); }
-     *     int     dim (int axis) const    { return (N[axis]); }
-     *     int&    operator[] (int axis)   { return (X[axis]); }
+     *     size_t     ndim () const           { return (3); }
+     *     ssize_t    dim (size_t axis) const    { return (N[axis]); }
+     *     ssize_t&   operator[] (size_t axis)   { return (X[axis]); }
      *
      *     // FIX: return a DataSet::Value<MyDataSet> class:
      *     DataSet::Value<MyDataSet>  value () { return (DataSet::Value<MyDataSet> (*this); }
      *
      *   private:
-     *     float*  data
-     *     int     N[3];
-     *     int     X[3];
+     *     float*   data
+     *     ssize_t  N[3];
+     *     ssize_t  X[3];
      *
      *     // this function returns the voxel value, in a non-modifiable way:
      *     value_type get_value () const { return (data[X[0]+N[0]*(X[1]+N[1]*X[2])]); }
@@ -190,7 +187,6 @@ namespace MR
         Set& S;
     };
 
-    //! @}
   }
 }
 
