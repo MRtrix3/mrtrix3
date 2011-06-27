@@ -22,10 +22,9 @@
 
 #include "app.h"
 #include "debug.h"
-#include "image/voxel.h"
-#include "thread/iterator.h"
-#include "thread/exec.h"
-#include "ptr.h"
+#include "math/vector.h"
+#include "math/matrix.h"
+#include "math/complex.h"
 
 using namespace MR;
 
@@ -39,95 +38,28 @@ DESCRIPTION = {
 };
 
 ARGUMENTS = {
- Argument ("input", "input").type_image_in(),
- Argument ("output", "output").type_image_out(),
- Argument() 
+  Argument ("x", "input vector"),
+  Argument ("M", "input matrix"),
+  Argument() 
 };
 
 OPTIONS = { Option() };
 
-
-
-
-
-typedef float T;
-
-/*
-class Processor {
-  public:
-    Processor (Thread::Iterator<DataSet::Loop>& nextvoxel, Image::Header& input, Image::Header& output) :
-      next (nextvoxel), in (input), out (output) { }
-
-    void execute () {
-      DataSet::Loop loop (1,3);
-      while (next (in, out)) {
-        for (loop.start (in, out); loop.ok(); loop.next (in, out))
-          out.value() = Math::exp (-0.01*in.value());
-      }
-    }
-
-  private:
-    Thread::Iterator<DataSet::Loop>& next;
-    Image::Voxel<T> in, out;
-};
-
-*/
-class S {
-  public:
-    int i;
-    float f;
-    std::string txt;
-};
+typedef cfloat T;
 
 EXECUTE {
-  Ptr<T> p (new T (10.2));
-  VAR (*p);
-  VAR (p);
 
-  Ptr<T> a (new T (5.2));
-  VAR (*a);
-  VAR (a);
+  Math::Vector<T> x;
+  x.load (std::string (argument[0]));
+  VAR (x);
 
-  a = new T (1.5);
-  VAR (*a);
-  VAR (a);
+  Math::Matrix<T> M;
+  M.load (std::string (argument[1]));
+  VAR (M);
 
-  VAR (a == p);
+  Math::Vector<T> y;
 
-  p = a;
-  VAR (*a);
-  VAR (a);
-  VAR (*p);
-  VAR (p);
-  VAR (a == p);
-  VAR (a != p);
-
-  VAR (a[0]);
-
-  Ptr<S> s (new S);
-  VAR (s);
-  VAR (s->i);
-
-  if (s) VAR ("s set");
-  if (!s) VAR ("s not set");
-
-  s = NULL;
-
-  if (s) VAR ("s set");
-  if (!s) VAR ("s not set");
-
-/*
-  Image::Header in (argument[0]);
-  Image::Header out (in);
-  out.set_datatype (DataType::Float32);
-  out.create (argument[1]);
-
-  DataSet::Loop loop ("processing...", 0, 1);
-  Thread::Iterator<DataSet::Loop> next (loop, in);
-
-  Processor processor (next, in, out);
-  Thread::Array<Processor> array (processor);
-  Thread::Exec threads (array);
-  */
+  Math::mult (y, M, x);
+  VAR (y);
 }
 
