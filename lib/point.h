@@ -54,10 +54,10 @@ namespace MR
         return (! (isnan (p[0]) || isnan (p[1]) || isnan (p[2])));
       }
 
-      value_type*       get ()       {
+      operator value_type* () { 
         return (p);
       }
-      const value_type* get () const {
+      operator const value_type* () const {
         return (p);
       }
 

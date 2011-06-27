@@ -636,7 +636,8 @@ namespace MR
     }
 
     //! compute the cross product between two vectors
-    template <typename T> inline void cross (T* c, const T* x, const T* y, size_t c_stride = 1, size_t x_stride = 1, size_t y_stride = 1)
+    template <typename T> inline void cross (T* c, const T* x, const T* y, 
+        size_t c_stride = 1, size_t x_stride = 1, size_t y_stride = 1)
     {
       c[0] = x[x_stride]*y[2*y_stride] - x[2*x_stride]*y[y_stride];
       c[c_stride] = x[2*x_stride]*y[0] - x[0]*y[2*y_stride];
@@ -644,7 +645,7 @@ namespace MR
     }
 
     //! compute the cross product between two vectors
-    template <typename T> inline Vector<T>& cross (Vector<T> c, const Vector<T>& x, const Vector<T>& y)
+    template <typename T> inline Vector<T>& cross (Vector<T>& c, const Vector<T>& x, const Vector<T>& y)
     {
       cross (c.ptr(), x.ptr(), y.ptr(), c.stride(), x.stride(), y.stride());
       return c;
