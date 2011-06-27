@@ -31,6 +31,11 @@
 #include "math/math.h"
 #include "math/vector.h"
 
+#ifdef __math_complex_h__
+#include <gsl/gsl_matrix_complex_double.h>
+#include <gsl/gsl_matrix_complex_float.h>
+#endif
+
 //! \cond skip
 
 #define LOOP(op) for (size_t i = 0; i < size1; i++) { for (size_t j = 0; j < size2; j++) { op; } }
@@ -60,6 +65,25 @@ namespace MR
           data = p;
         }
     };
+
+#ifdef __math_complex_h__
+
+    template <> class GSLMatrix <cfloat> : public gsl_matrix_complex_float
+    {
+      public:
+        void set (cfloat* p) {
+          data = (float*) p;
+        }
+    };
+    template <> class GSLMatrix <cdouble> : public gsl_matrix_complex
+    {
+      public:
+        void set (cdouble* p) {
+          data = (double*) p;
+        }
+    };
+
+#endif
 
     //! \endcond
 
@@ -1026,6 +1050,54 @@ namespace MR
       }
 
     }
+
+#ifdef __math_complex_h__
+
+    // cdouble definitions:
+    
+    inline void gemm (CBLAS_TRANSPOSE op_A, CBLAS_TRANSPOSE op_B, cdouble alpha, const Matrix<cdouble>& A, const Matrix<cdouble>& B, cdouble beta, Matrix<cdouble>& C)
+    {
+      gsl_blas_zgemm (op_A, op_B, gsl(alpha), A.gsl(), B.gsl(), gsl(beta), C.gsl());
+    }
+
+    inline void gemv (CBLAS_TRANSPOSE op_A, cdouble alpha, const Matrix<cdouble>& A, const Vector<cdouble>& x, cdouble beta, Vector<cdouble>& y)
+    {
+      gsl_blas_zgemv (op_A, gsl(alpha), A.gsl(), x.gsl(), gsl(beta), y.gsl());
+    }
+
+    inline void symm (CBLAS_SIDE side, CBLAS_UPLO uplo, cdouble alpha, const Matrix<cdouble>& A, const Matrix<cdouble>& B, cdouble beta, Matrix<cdouble>& C)
+    {
+      gsl_blas_zsymm (side, uplo, gsl(alpha), A.gsl(), B.gsl(), gsl(beta), C.gsl());
+    }
+
+    inline void trsv (CBLAS_UPLO uplo, CBLAS_TRANSPOSE op_A, CBLAS_DIAG diag, const Matrix<cdouble>& A, Vector<cdouble>& x)
+    {
+      gsl_blas_ztrsv (uplo, op_A, diag, A.gsl(), x.gsl());
+    }
+
+    // float definitions:
+
+    inline void gemm (CBLAS_TRANSPOSE op_A, CBLAS_TRANSPOSE op_B, cfloat alpha, const Matrix<cfloat>& A, const Matrix<cfloat>& B, cfloat beta, Matrix<cfloat>& C)
+    {
+      gsl_blas_cgemm (op_A, op_B, gsl(alpha), A.gsl(), B.gsl(), gsl(beta), C.gsl());
+    }
+
+    inline void gemv (CBLAS_TRANSPOSE op_A, cfloat alpha, const Matrix<cfloat>& A, const Vector<cfloat>& x, cfloat beta, Vector<cfloat>& y)
+    {
+      gsl_blas_cgemv (op_A, gsl(alpha), A.gsl(), x.gsl(), gsl(beta), y.gsl());
+    }
+
+    inline void symm (CBLAS_SIDE side, CBLAS_UPLO uplo, cfloat alpha, const Matrix<cfloat>& A, const Matrix<cfloat>& B, cfloat beta, Matrix<cfloat>& C)
+    {
+      gsl_blas_csymm (side, uplo, gsl(alpha), A.gsl(), B.gsl(), gsl(beta), C.gsl());
+    }
+
+    inline void trsv (CBLAS_UPLO uplo, CBLAS_TRANSPOSE op_A, CBLAS_DIAG diag, const Matrix<cfloat>& A, Vector<cfloat>& x)
+    {
+      gsl_blas_ctrsv (uplo, op_A, diag, A.gsl(), x.gsl());
+    }
+
+#endif
 
     //! \endcond
 

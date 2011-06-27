@@ -22,9 +22,9 @@
 
 #include "app.h"
 #include "debug.h"
+#include "math/complex.h"
 #include "math/vector.h"
 #include "math/matrix.h"
-#include "math/complex.h"
 
 using namespace MR;
 
