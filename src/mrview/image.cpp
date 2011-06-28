@@ -85,10 +85,10 @@ namespace MR {
       shader.get_uniform ("scale") = 1.0f / display_range;
 
       glBegin (GL_QUADS);
-      glTexCoord2f (0.0, 0.0); p[x] = -0.5; p[y] = -0.5; q = interp.voxel2scanner (p); glVertex3fv (q.get());
-      glTexCoord2f (0.0, 1.0); p[x] = -0.5; p[y] = ydim; q = interp.voxel2scanner (p); glVertex3fv (q.get());
-      glTexCoord2f (1.0, 1.0); p[x] = xdim; p[y] = ydim; q = interp.voxel2scanner (p); glVertex3fv (q.get());
-      glTexCoord2f (1.0, 0.0); p[x] = xdim; p[y] = -0.5; q = interp.voxel2scanner (p); glVertex3fv (q.get());
+      glTexCoord2f (0.0, 0.0); p[x] = -0.5; p[y] = -0.5; q = interp.voxel2scanner (p); glVertex3fv (q);
+      glTexCoord2f (0.0, 1.0); p[x] = -0.5; p[y] = ydim; q = interp.voxel2scanner (p); glVertex3fv (q);
+      glTexCoord2f (1.0, 1.0); p[x] = xdim; p[y] = ydim; q = interp.voxel2scanner (p); glVertex3fv (q);
+      glTexCoord2f (1.0, 0.0); p[x] = xdim; p[y] = -0.5; q = interp.voxel2scanner (p); glVertex3fv (q);
       glEnd();
       shader.stop();
     }
@@ -126,10 +126,10 @@ namespace MR {
           tex[i][j] /= H.dim(j);
 
       glBegin (GL_QUADS);
-      glTexCoord3fv (tex[0].get()); glVertex3fv (pos[0].get());
-      glTexCoord3fv (tex[1].get()); glVertex3fv (pos[1].get());
-      glTexCoord3fv (tex[2].get()); glVertex3fv (pos[2].get());
-      glTexCoord3fv (tex[3].get()); glVertex3fv (pos[3].get());
+      glTexCoord3fv (tex[0]); glVertex3fv (pos[0]);
+      glTexCoord3fv (tex[1]); glVertex3fv (pos[1]);
+      glTexCoord3fv (tex[2]); glVertex3fv (pos[2]);
+      glTexCoord3fv (tex[3]); glVertex3fv (pos[3]);
       glEnd();
       shader.stop();
     }
@@ -215,7 +215,7 @@ namespace MR {
 
       ProgressBar progress ("loading image data...", vox.dim(z));
       for (vox[z] = 0; vox[z] < vox.dim(z); ++vox[z]) {
-        float* p = data.get();
+        float* p = data;
         for (vox[y] = 0; vox[y] < vox.dim(y); ++vox[y]) {
           for (vox[x] = 0; vox[x] < vox.dim(x); ++vox[x]) {
             float val = *p = vox.value();
@@ -229,7 +229,7 @@ namespace MR {
         glTexSubImage3D (GL_TEXTURE_3D, 0, 
             0, 0, vox[z], 
             vox.dim(0), vox.dim(1), 1,
-            GL_LUMINANCE, GL_FLOAT, data.get());
+            GL_LUMINANCE, GL_FLOAT, data);
         DEBUG_OPENGL;
         ++progress;
       }

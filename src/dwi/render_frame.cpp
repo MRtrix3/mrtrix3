@@ -320,7 +320,7 @@ namespace MR {
           v.normalise();
           if (angle > M_PI_2) angle = M_PI_2;
 
-          Math::Quaternion<float> rot (angle, v.get());
+          Math::Quaternion<float> rot (angle, v);
           orientation = rot * orientation;
           updateGL();
         } 

@@ -173,13 +173,12 @@ namespace MR {
               return true;
             Point<> x = screen_to_model_direction (Point<> (mouse_dpos().x(), mouse_dpos().y(), 0.0));
             Point<> z = screen_to_model_direction (Point<> (0.0, 0.0, 1.0));
-            Point<> v;
-            Math::cross (v.get(), x.get(), z.get());
+            Point<> v (x.cross (z));
             float angle = ROTATION_INC * Math::sqrt (float (Math::pow2(mouse_dpos().x()) + Math::pow2(mouse_dpos().y())));
             v.normalise();
             if (angle > M_PI_2) angle = M_PI_2;
 
-            Math::Quaternion<float> q = Math::Quaternion<float> (angle, v.get()) * orientation();
+            Math::Quaternion<float> q = Math::Quaternion<float> (angle, v) * orientation();
             q.normalise();
             set_orientation (q);
             updateGL();
