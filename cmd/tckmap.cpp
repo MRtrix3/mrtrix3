@@ -134,7 +134,7 @@ class VoxelDir : public Voxel
     VoxelDir (const Voxel& V) :
       dir (Point<float> (0.0, 0.0, 0.0))
     {
-      memcpy (p, V.get(), 3 * sizeof(size_t));
+      memcpy (p, V, 3 * sizeof(size_t));
     }
     Point<float> dir;
     VoxelDir& operator=  (const Voxel& V)         { Voxel::operator= (V); return (*this); }
@@ -295,10 +295,10 @@ template <typename Cont> class TrackMapper
     {
       std::vector<Point<float> > out;
       interp_prepare (tck);
-      R.init (tck[0].get(), tck[1].get(), tck[2].get());
+      R.init (tck[0], tck[1], tck[2]);
       for (size_t i = 3; i < tck.size(); ++i) {
         out.push_back (tck[i-2]);
-        R.increment (tck[i].get());
+        R.increment (tck[i]);
         R.interpolate (data);
         for (size_t row = 0; row != data.rows(); ++row)
           out.push_back (Point<float> (data(row,0), data(row,1), data(row,2)));
