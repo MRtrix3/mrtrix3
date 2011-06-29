@@ -43,6 +43,7 @@ namespace MR {
                 num_vec (source.dim(3)/3) {
 
                   set_step_size (0.1);
+                  max_angle *= vox() / step_size;
                   dot_threshold = Math::cos (max_angle);
 
                   properties["method"] = "VecStream";
@@ -74,7 +75,7 @@ namespace MR {
 
 
 
-          bool init () 
+          bool init ()
           { 
             if (!S.init_dir) 
               dir.set (rng.normal(), rng.normal(), rng.normal());
