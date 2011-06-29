@@ -301,10 +301,11 @@ end_init:
             public:
               Calibrate (iFOD2& method) : 
                 P (method),
-                fod (P.values, P.source.dim(3)) {
-                  Math::SH::delta (fod, Point<value_type> (0.0, 0.0, 1.0), P.S.lmax);
-                  init_log_prob = 0.5 * Math::log (Math::SH::value (P.values, Point<value_type> (0.0, 0.0, 1.0), P.S.lmax));
-                }
+                fod (P.source.dim(3))
+              {
+                Math::SH::delta (fod, Point<value_type> (0.0, 0.0, 1.0), P.S.lmax);
+                init_log_prob = 0.5 * Math::log (Math::SH::value (P.values, Point<value_type> (0.0, 0.0, 1.0), P.S.lmax));
+              }
 
               value_type operator() (value_type el) 
               {
