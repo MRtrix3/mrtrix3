@@ -49,12 +49,12 @@ DESCRIPTION = {
 ARGUMENTS = {
 
   Argument ("image",
-		"the input DWI image containing volumes that are both diffusion weighted and b=0")
-		.type_image_in (),
+    "the input DWI image containing volumes that are both diffusion weighted and b=0")
+    .type_image_in (),
 
-	Argument ("image",
-		"the output whole brain mask image")
-		.type_image_out (),
+  Argument ("image",
+    "the output whole brain mask image")
+    .type_image_out (),
 
   Argument ()
 };
@@ -62,13 +62,13 @@ ARGUMENTS = {
 
 OPTIONS = {
 
-	Option ("grad",
-	"specify the diffusion-weighted gradient scheme used in the acquisition. "
-	"The program will normally attempt to use the encoding stored in the image "
-	"header. This should be supplied as a 4xN text file with each line is in "
-	"the format [ X Y Z b ], where [ X Y Z ] describe the direction of the "
-	"applied gradient, and b gives the b-value in units (1000 s/mm^2).")
-	+ Argument ("encoding").type_file(),
+  Option ("grad",
+  "specify the diffusion-weighted gradient scheme used in the acquisition. "
+  "The program will normally attempt to use the encoding stored in the image "
+  "header. This should be supplied as a 4xN text file with each line is in "
+  "the format [ X Y Z b ], where [ X Y Z ] describe the direction of the "
+  "applied gradient, and b gives the b-value in units (1000 s/mm^2).")
+  + Argument ("encoding").type_file(),
 
   Option ()
 };
@@ -88,11 +88,11 @@ EXECUTE {
   Math::Matrix<value_type> grad;
   Options opt = get_options ("grad");
   if (opt.size())
-  	grad.load (opt[0][0]);
+    grad.load (opt[0][0]);
   else {
-  	if (!input_header.DW_scheme().is_set())
-  		throw Exception ("no diffusion encoding found in image \"" + input_header.name() + "\"");
-  	grad = input_header.DW_scheme();
+    if (!input_header.DW_scheme().is_set())
+      throw Exception ("no diffusion encoding found in image \"" + input_header.name() + "\"");
+    grad = input_header.DW_scheme();
   }
   std::vector<int> bzeros, dwis;
   DWI::guess_DW_directions (dwis, bzeros, grad);
@@ -102,21 +102,21 @@ EXECUTE {
   DataSet::Buffer<float> b0_mean(input_voxel, 3, "mean b0");
   DataSet::Buffer<float> dwi_mean(input_voxel, 3, "mean DWI");
   {
-		DataSet::Loop loop("computing mean dwi and mean b0 images...", 0, 3);
-		for (loop.start (input_voxel, b0_mean, dwi_mean); loop.ok(); loop.next (input_voxel, b0_mean, dwi_mean)) {
-			float mean = 0;
-			for (uint i = 0; i < dwis.size(); i++) {
-				input_voxel[3] = dwis[i];
-				mean += input_voxel.value();
-			}
-			dwi_mean.value() = mean / dwis.size();
-			mean = 0;
-			for (uint i = 0; i < bzeros.size(); i++) {
-				input_voxel[3] = bzeros[i];
-				mean += input_voxel.value();
-			}
-			b0_mean.value() = mean / bzeros.size();
-		}
+    DataSet::Loop loop("computing mean dwi and mean b0 images...", 0, 3);
+    for (loop.start (input_voxel, b0_mean, dwi_mean); loop.ok(); loop.next (input_voxel, b0_mean, dwi_mean)) {
+      float mean = 0;
+      for (uint i = 0; i < dwis.size(); i++) {
+        input_voxel[3] = dwis[i];
+        mean += input_voxel.value();
+      }
+      dwi_mean.value() = mean / dwis.size();
+      mean = 0;
+      for (uint i = 0; i < bzeros.size(); i++) {
+        input_voxel[3] = bzeros[i];
+        mean += input_voxel.value();
+      }
+      b0_mean.value() = mean / bzeros.size();
+    }
   }
 
   // Here we independently threshold the mean b=0 and dwi images
@@ -129,11 +129,11 @@ EXECUTE {
   dwi_threshold_filter.execute(dwi_mean_mask);
 
   {
-  	DataSet::Loop loop("combining optimal dwi and b0 masks...", 0, 3);
-		for (loop.start (b0_mean_mask, dwi_mean_mask); loop.ok(); loop.next (b0_mean_mask, dwi_mean_mask)) {
-			if (b0_mean_mask.value() > 0)
-				dwi_mean_mask.value() = 1;
-		}
+    DataSet::Loop loop("combining optimal dwi and b0 masks...", 0, 3);
+    for (loop.start (b0_mean_mask, dwi_mean_mask); loop.ok(); loop.next (b0_mean_mask, dwi_mean_mask)) {
+      if (b0_mean_mask.value() > 0)
+        dwi_mean_mask.value() = 1;
+    }
   }
 
   Filter::Median3DFilter<DataSet::Buffer<float>, Image::Voxel<float> > median_filter(dwi_mean_mask);

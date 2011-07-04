@@ -41,7 +41,7 @@ namespace MR
    * \brief Classes and functions providing access to image data. */
   // @{
 
-  //! functions and classes related to image data input/output 
+  //! functions and classes related to image data input/output
   namespace Image
   {
 
@@ -204,19 +204,19 @@ namespace MR
           DW_scheme_ = new_DW_scheme;
         }
 
-				//! override header parameters defined by a DataSet
-				/*! This will override the dimensions, voxel size, stride, and transform
-				 * parts of the Header according to those of the DataSet \a ds, leaving all
-				 * other parts of the Header unmodified. */
-				template <class DataSet> void set_params (const DataSet& ds) {
-					check_not_finalised();
-					set_transform (ds.transform());
-					set_ndim (ds.ndim());
-					for (size_t i = 0; i < ds.ndim(); i++) {
-						set_dim (i, ds.dim (i));
-						set_vox (i, ds.vox (i));
-					}
-				}
+        //! override header parameters defined by a DataSet
+        /*! This will override the dimensions, voxel size, stride, and transform
+         * parts of the Header according to those of the DataSet \a ds, leaving all
+         * other parts of the Header unmodified. */
+        template <class DataSet> void set_params (const DataSet& ds) {
+          check_not_finalised();
+          set_transform (ds.transform());
+          set_ndim (ds.ndim());
+          for (size_t i = 0; i < ds.ndim(); i++) {
+            set_dim (i, ds.dim (i));
+            set_vox (i, ds.vox (i));
+          }
+        }
 
         void add_comment (const std::string& text) {
           check_not_finalised();

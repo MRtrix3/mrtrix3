@@ -42,12 +42,12 @@ DESCRIPTION = {
 ARGUMENTS = {
 
   Argument ("image",
-		"the input image to be masked")
-		.type_image_in (),
+    "the input image to be masked")
+    .type_image_in (),
 
-	Argument ("image",
-		"the output mask image")
-		.type_image_out (),
+  Argument ("image",
+    "the output mask image")
+    .type_image_out (),
 
   Argument ()
 };

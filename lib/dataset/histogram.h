@@ -89,6 +89,20 @@ namespace MR
           return (list[m1].value);
         }
 
+        float entropy () const {
+          int totalFrequency = 0;
+          for (uint i = 0; i < list.size(); i++)
+            totalFrequency += list[i].frequency;
+          float imageEntropy = 0;
+
+          for (uint i = 0; i < list.size(); i++){
+            double probability = static_cast<double>(list[i].frequency) / static_cast<double>(totalFrequency);
+            if(probability > 0.99 / totalFrequency)
+                imageEntropy += -probability * log(probability);
+          }
+          return imageEntropy;
+        }
+
       protected:
         class Entry
         {
