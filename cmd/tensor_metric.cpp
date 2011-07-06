@@ -129,6 +129,7 @@ class ImagePairPtr : public Ptr<ImagePair>
     ssize_t get_pos (size_t axis) { if (!(*this)) return 0; return (*this)->vox[axis]; }
     void set_pos (size_t axis, ssize_t pos) { if (!(*this)) return; (*this)->vox[axis] = pos; }
     void move_pos (size_t axis, ssize_t inc) { if (!(*this)) return; (*this)->vox[axis] += inc; }
+    size_t ndim() {return (*this)->vox.ndim();}
 };
 
 
@@ -184,7 +185,7 @@ class Processor
       evec = new Image::Voxel<value_type> (*evec_header);
     }
 
-    void init () { 
+    void init () {
       if (! (adc || fa || eval || evec))
         throw Exception ("no output metric specified - aborting");
 

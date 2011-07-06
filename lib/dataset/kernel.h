@@ -36,8 +36,8 @@ namespace MR {
 
     namespace Kernel {
 
-      template <typename T> 
-        class Item 
+      template <typename T>
+        class Item
         {
           public:
             Item (size_t ndim, size_t nslices) : slice (nslices), pos (ndim) { }
@@ -47,10 +47,10 @@ namespace MR {
 
 
       template <typename T>
-        class Allocator 
+        class Allocator
         {
-          public: 
-            Allocator (size_t ndim, size_t nslices) : N (ndim), ns (nslices) { } 
+          public:
+            Allocator (size_t ndim, size_t nslices) : N (ndim), ns (nslices) { }
             Item<T>* alloc () { Item<T>* item = new Item<T> (N, ns); return (item); }
             void reset (Item<T>* item) { }
             void dealloc (Item<T>* item) { delete item; }
@@ -61,7 +61,7 @@ namespace MR {
 
       //! \cond skip
       namespace {
-        template <typename T> 
+        template <typename T>
           class DataPrivate
           {
             public:
@@ -73,8 +73,8 @@ namespace MR {
               ssize_t from[3], to[3], offset[3];
               const Item<T>* item;
 
-              T operator() (ssize_t i, ssize_t j, ssize_t k) const 
-              { 
+              T operator() (ssize_t i, ssize_t j, ssize_t k) const
+              {
                 const T* slice = item->slice[k+offset[2]];
                 ssize_t index = jskip * (j+offset[1]) + i+offset[0];
                 return (slice[index]);
@@ -84,7 +84,7 @@ namespace MR {
       //! \endcond
 
 
-      template <typename T> 
+      template <typename T>
         class Data
         {
           public:
@@ -101,27 +101,27 @@ namespace MR {
 
 
 
-      template <class Input,class Functor> 
-        class Loader 
+      template <class Input,class Functor>
+        class Loader
         {
           public:
             typedef typename Input::value_type value_type;
             typedef Thread::Queue<Item<value_type>,Allocator<value_type> > Queue;
 
             Loader (
-                Queue& queue, 
-                Input& input, 
-                const Functor& func, 
-                const std::vector<size_t>& axes, 
-                const std::string& progress_message) : 
-              writer (queue), 
+                Queue& queue,
+                Input& input,
+                const Functor& func,
+                const std::vector<size_t>& axes,
+                const std::string& progress_message) :
+              writer (queue),
               src (input),
               x (axes[0]), y (axes[1]), z(axes[2]),
               nslices (func.extent(z)),
               data (nslices),
-              prog_message (progress_message) { } 
+              prog_message (progress_message) { }
 
-            void execute () 
+            void execute ()
             {
               std::vector<size_t> axes (src.ndim()-1);
               axes[0] = y;
@@ -145,11 +145,11 @@ namespace MR {
                   get_slice (slice, slice_axes);
 
                 // set item:
-                for (ssize_t i = 0; i < nslices; ++i) 
+                for (ssize_t i = 0; i < nslices; ++i)
                   item->slice[i] = data[i];
 
                 // set item position:
-                for (size_t n = 0; n < src.ndim(); ++n) 
+                for (size_t n = 0; n < src.ndim(); ++n)
                   item->pos[n] = src[n];
 
                 // dispatch:
@@ -168,9 +168,9 @@ namespace MR {
 
             void get_slice (ssize_t& slice, const std::vector<size_t>& axes)
             {
-              for (ssize_t i = 0; i < nslices-1; ++i) 
+              for (ssize_t i = 0; i < nslices-1; ++i)
                 data[i] = data[i+1];
-              RefPtr<value_type,true> a (new value_type [slice < src.dim(z) ? src.dim(x)*src.dim(y) : 0]);
+              RefPtr<value_type,true> a (slice < src.dim(z) ? new value_type [src.dim(x)*src.dim(y)] : NULL);
               data[nslices-1] = a;
               if (a) {
                 const ssize_t pos[] = { src[0], src[1], src[2] };
@@ -193,24 +193,24 @@ namespace MR {
 
 
 
-      template <class Input, class Output, class Functor> 
-        class Processor 
+      template <class Input, class Output, class Functor>
+        class Processor
         {
           public:
             typedef typename Input::value_type value_type;
             typedef typename Loader<Input,Functor>::Queue Queue;
 
-            Processor (Queue& queue, Output& output, Functor functor, const size_t axes_ordering[3]) : 
+            Processor (Queue& queue, Output& output, Functor functor, const size_t axes_ordering[3]) :
               reader (queue), dest (output), axes (axes_ordering), func (functor) { }
 
-            void execute () 
+            void execute ()
             {
               typename Queue::Reader::Item item (reader);
               DataPrivate<value_type> kernel (axes, dest.dim(axes[0]));
-              const ssize_t extent[] = { 
-                (func.extent(axes[0])-1)/2, 
-                (func.extent(axes[1])-1)/2, 
-                (func.extent(axes[2])-1)/2 
+              const ssize_t extent[] = {
+                (func.extent(axes[0])-1)/2,
+                (func.extent(axes[1])-1)/2,
+                (func.extent(axes[2])-1)/2
               };
               kernel.offset[2] = extent[2];
 
@@ -222,14 +222,14 @@ namespace MR {
                 kernel.offset[1] = item->pos[axes[1]];
                 kernel.item = &(*item);
 
-                kernel.from[1] = get_from (dest[axes[1]], extent[1]); 
+                kernel.from[1] = get_from (dest[axes[1]], extent[1]);
                 kernel.to[1] = get_to (dest[axes[1]], extent[1], dest.dim(axes[1]));
-                kernel.from[2] = get_from (dest[axes[2]], extent[2]); 
+                kernel.from[2] = get_from (dest[axes[2]], extent[2]);
                 kernel.to[2] = get_to (dest[axes[2]], extent[2], dest.dim(axes[2]));
 
                 for (dest[axes[0]] = 0; dest[axes[0]] < dest.dim(axes[0]); ++dest[axes[0]]) {
                   kernel.offset[0] = dest[axes[0]];
-                  kernel.from[0] = get_from (dest[axes[0]], extent[0]); 
+                  kernel.from[0] = get_from (dest[axes[0]], extent[0]);
                   kernel.to[0] = get_to (dest[axes[0]], extent[0], dest.dim(axes[0]));
 
                   dest.value() = func (Data<value_type> (kernel));
@@ -243,13 +243,13 @@ namespace MR {
             const size_t* axes;
             Functor func;
 
-            ssize_t get_from (ssize_t pos, ssize_t offset) const 
-            { 
+            ssize_t get_from (ssize_t pos, ssize_t offset) const
+            {
               return (std::max (offset-pos, ssize_t(0))-offset);
             }
 
-            ssize_t get_to (ssize_t pos, ssize_t offset, ssize_t max) const 
-            { 
+            ssize_t get_to (ssize_t pos, ssize_t offset, ssize_t max) const
+            {
               return (offset+1 - std::max (offset - max+1 + pos, ssize_t(0)));
             }
         };
@@ -259,14 +259,14 @@ namespace MR {
 
 
 
-      template <class Input, class Output, class Functor> 
+      template <class Input, class Output, class Functor>
         inline void run (Output& output, Input& input, Functor functor, const std::string& progress_message)
         {
           std::vector<size_t> ax = DataSet::Stride::order (input, 0, 3);
           const size_t axes[] = { ax[0], ax[1], ax[2] };
           functor.prepare (input, axes[0], axes[1], axes[2]);
 
-          typename Loader<Input,Functor>::Queue queue 
+          typename Loader<Input,Functor>::Queue queue
             ("work queue", 100, Allocator<typename Input::value_type> (input.ndim(), functor.extent (axes[2])));
 
           Loader<Input,Functor> loader (queue, input, functor, ax, progress_message);

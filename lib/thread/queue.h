@@ -178,7 +178,7 @@ namespace MR
      *   intention to read or write with the queue \e before their thread is
      *   launched.
      * - The Thread::Queue::Writer::Item and Thread::Queue::Reader::Item
-     *   classes are designed to be instanciated within each functor's
+     *   classes are designed to be instantiated within each functor's
      *   execute() method. They must be constructed from a reference to a
      *   Thread::Queue::Writer or Thread::Queue::Reader respectively, ensuring
      *   no reads or write can take place without having registered with the

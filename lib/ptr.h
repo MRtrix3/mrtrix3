@@ -52,7 +52,7 @@ namespace MR
   //! A simple smart pointer implementation
   /*! A simple pointer class that will delete the object it points to when it
    * is destroyed. This is useful to ensure that allocated objects are
-   * destroyed without having to explicitly delete them before every possible 
+   * destroyed without having to explicitly delete them before every possible
    * exit point. It behaves in almost all other respects like a standard
    * pointer. For example:
    * \code
@@ -79,8 +79,8 @@ namespace MR
    * \code
    * Ptr<Object,true> array (new Object[10]);
    *
-   * array[2] = something;        
-   * call_by_reference (array[2]); 
+   * array[2] = something;
+   * call_by_reference (array[2]);
    * call_by_pointer (array + 2);
    * array = new Object [25];    // delete previous array and point to new one
    * \endcode
@@ -90,7 +90,7 @@ namespace MR
    * non-NULL). One exception to this is when handling arrays: in this case,
    * the pointer stored in the assigned Ptr will be NULL, and no deep copy will
    * occur. This is due to the fact that the size of the array is unknown, and
-   * a deep copy of the full array is therefore impossible. 
+   * a deep copy of the full array is therefore impossible.
    *
    * \sa RefPtr A reference-counting shared pointer
    * \sa VecPtr A %vector of pointers %to objects
@@ -109,7 +109,7 @@ namespace MR
 
       //! copy constructor
       /*! This will create a deep copy of the object pointed to by \a R, and
-       * point to this copy. 
+       * point to this copy.
        * \note the new object is created using the new operator in conjunction
        * with the object's copy constructor. In other words, the operation is
        * equivalent to:
@@ -125,7 +125,7 @@ namespace MR
        * unknown, making it impossible to create a copy of the full array. */
       Ptr (const Ptr& R) : ptr (!is_array && R ? new T (*R) : NULL) { };
 
-      //! Assignment (copy) operator 
+      //! Assignment (copy) operator
       /*! This will free the object currently managed (if any), and manage a
        * deep copy of the object pointer to by \a R instead.
        * \note the same limitations apply as for the copy constructor. */
@@ -152,7 +152,7 @@ namespace MR
         return ptr;
       }
       //! Return address of actual object
-      operator T* () const throw () { 
+      operator T* () const throw () {
         return ptr;
       }
       //! Return address of actual object, and stop managing the object.
@@ -170,9 +170,9 @@ namespace MR
       T* ptr;
 
       void dealloc () {
-        if (is_array) 
+        if (is_array)
           delete [] ptr;
-        else 
+        else
           delete ptr;
       }
   };
@@ -202,7 +202,7 @@ namespace MR
    *
    *   // deleting or reassigning either RefPtr at this point does not free the
    *   // object, since a reference to it still exists:
-   *   object = NULL;                    // original pointer is not freed 
+   *   object = NULL;                    // original pointer is not freed
    *
    *   if (error) throw Exception ("oops"); // pointer is freed in destructor
    *   ...
@@ -223,7 +223,7 @@ namespace MR
         *count = 1;
       }
       //! copy constructor
-      /*! The newly-created istance will point to the same location as the
+      /*! The newly-created instance will point to the same location as the
        * original. */
       RefPtr (const RefPtr& R) throw () : ptr (R.ptr), count (R.count) {
         ++*count;
@@ -244,7 +244,7 @@ namespace MR
        * longer referenced by any other RefPtr), and point to the same location
        * as \a R. */
       RefPtr& operator= (const RefPtr& R) {
-        if (this == &R) 
+        if (this == &R)
           return *this;
         if (*count == 1) {
           dealloc();
@@ -292,7 +292,7 @@ namespace MR
       }
       //! required to handle pointers to derived classes
       template <class U> RefPtr<U,is_array>& operator= (const RefPtr<U,is_array>& R) {
-        if (this == &R) 
+        if (this == &R)
           return *this;
         if (*count == 1) {
           dealloc();
@@ -307,9 +307,9 @@ namespace MR
 
       friend std::ostream& operator<< (std::ostream& stream, const RefPtr<T,is_array>& R) {
         stream << "(" << R.ptr << "): ";
-        if (R) 
+        if (R)
           stream << *R.ptr;
-        else 
+        else
           stream << "null";
         stream << " (" << *R.count << " refs, counter at " << R.count << ")";
         return stream;
@@ -334,7 +334,7 @@ namespace MR
 
   //! A managed vector of pointers
   /*! This class holds a dynamic array of pointers to objects and perform
-   * allocation and deallocation of the objects pointed to as needed. 
+   * allocation and deallocation of the objects pointed to as needed.
    * For example:
    * \code
    * void my_function () {
@@ -371,7 +371,7 @@ namespace MR
       typedef typename std::vector<T*>::const_reference const_reference;
 
       VecPtr () { }
-      //! create a list of NULL pointers of size \a num. 
+      //! create a list of NULL pointers of size \a num.
       VecPtr (size_t num) : V (num) {
         for (size_t i = 0; i < size(); ++i)
           V[i] = NULL;
@@ -397,10 +397,10 @@ namespace MR
 
       void resize (size_t new_size) {
         size_t old_size = size();
-        for (size_t i = new_size; i < old_size; ++i) 
+        for (size_t i = new_size; i < old_size; ++i)
           dealloc (V[i]);
         V.resize (new_size);
-        for (size_t i = old_size; i < new_size; ++i) 
+        for (size_t i = old_size; i < new_size; ++i)
           V[i] = NULL;
       }
 
@@ -457,7 +457,7 @@ namespace MR
         return V.erase (position);
       }
       iterator erase (iterator first, iterator last) {
-        for (iterator it = first; it != last; ++it) 
+        for (iterator it = first; it != last; ++it)
           dealloc (*it);
         return V.erase (first, last);
       }
@@ -467,7 +467,7 @@ namespace MR
       void dealloc (T* p) {
         if (is_array)
           delete [] p;
-        else 
+        else
           delete p;
       }
   };

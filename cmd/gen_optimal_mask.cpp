@@ -65,7 +65,7 @@ EXECUTE {
   Image::Voxel<value_type> input_voxel (input_header);
 
   Image::Header mask_header (input_header);
-  mask_header.set_datatype(DataType::Int8);
+  mask_header.set_datatype(DataType::Bit);
 
   Filter::OptimalThreshold<Image::Voxel<float>, Image::Voxel<int> > filter(input_voxel);
 

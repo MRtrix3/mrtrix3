@@ -76,20 +76,20 @@ namespace MR
                 x1 = estimate - g2 * (estimate - min_bound);
             }
 
-            DataType f1 = function_.evaluate_function(x1);
-            DataType f2 = function_.evaluate_function(x2);
+            DataType f1 = function_(x1);
+            DataType f2 = function_(x2);
 
             while (std::abs(x3 - x0) > tolerance * (std::abs(x1) + std::abs(x2))) {
               if (f2 < f1) {
                 x0 = x1;
                 x1 = x2;
                 x2 = g1 * x1 + g2 * x3;
-                f1 = f2, f2 = function_.evaluate_function(x2);
+                f1 = f2, f2 = function_(x2);
               } else {
                 x3 = x2;
                 x2 = x1;
                 x1 = g1 * x2 + g2 * x0;
-                f2 = f1, f1 = function_.evaluate_function(x1);
+                f2 = f1, f1 = function_(x1);
               }
               ++progress_;
             }

@@ -44,7 +44,7 @@ namespace MR
             init();
           }
 
-          double evaluate_function (double threshold) {
+          double operator()(double threshold) const{
             double sum = 0;
             double mean_xy = 0;
             DataSet::LoopInOrder loop (*input_image_);
