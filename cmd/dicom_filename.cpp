@@ -42,6 +42,9 @@ ARGUMENTS = {
 OPTIONS = {
   Option ("nospaces", "replace spaces with underscores"),
 
+  Option ("remove", "remove specified characters from filename")
+    + Argument ("characters"),
+
   Option ("scannername", "add name of scanner model as the first level of the filename"),
 
   Option() 
@@ -116,6 +119,13 @@ EXECUTE {
 
   if (get_options ("nospaces").size())
     replace (output, ' ', '_');
+
+  Options opt = get_options ("remove");
+  if (opt.size()) {
+    size_t pos = 0;
+    while ((pos = output.find_first_of(opt[0][0].c_str(), pos)) != string::npos)
+      output.erase (pos, 1);
+  }
 
   print (output);
 }
