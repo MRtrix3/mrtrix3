@@ -36,8 +36,12 @@ namespace MR {
         shader_program.attach (vertex_shader);
 
       std::string source =
-        "uniform float offset, scale, lower, upper;"
+        "uniform float offset, scale;"
         "uniform sampler";
+      if (flags & DiscardLower) 
+        source += "uniform float lower;";
+      if (flags & DiscardUpper)
+        source += "uniform float upper;";
       source += flags & Texture3D ? "3" : "2";
       source += "D tex; void main() {"
         "if (gl_TexCoord[0].s < 0.0 || gl_TexCoord[0].s > 1.0 ||"

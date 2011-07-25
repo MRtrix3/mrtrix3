@@ -33,6 +33,8 @@
 class QAction;
 
 namespace MR {
+  class ProgressBar;
+
   namespace Viewer {
 
     namespace Mode {
@@ -98,7 +100,9 @@ namespace MR {
         int interpolation;
         float value_min, value_max;
         float display_midpoint, display_range;
+        float windowing_scale_3D;
         uint32_t colourmap;
+        GLenum type, format, internal_format;
         std::vector<ssize_t> position;
 
         Shader shader2D, shader3D;
@@ -107,6 +111,10 @@ namespace MR {
         void update_texture3D ();
 
         bool volume_unchanged ();
+
+        template <typename T> void copy_texture_3D (GLenum format);
+        template <typename T> GLenum GLtype () const;
+        template <typename T> float scale_factor_3D () const;
 
         friend class Window;
     };

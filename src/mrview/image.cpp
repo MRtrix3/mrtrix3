@@ -23,6 +23,7 @@
 #include <QMenu>
 
 #include "progressbar.h"
+#include "dataset/stride.h"
 #include "mrview/image.h"
 #include "mrview/window.h"
 #include "mrview/mode/base.h"
@@ -106,8 +107,8 @@ namespace MR {
 
       shader.start();
 
-      shader.get_uniform ("offset") = display_midpoint - 0.5f * display_range;
-      shader.get_uniform ("scale") = 1.0f / display_range;
+      shader.get_uniform ("offset") = (display_midpoint - 0.5f * display_range) / windowing_scale_3D;
+      shader.get_uniform ("scale") = windowing_scale_3D / display_range;
 
       Point<> pos[4];
       pos[0] = mode.screen_to_model (QPoint (0, mode.height()));
@@ -116,10 +117,10 @@ namespace MR {
       pos[3] = mode.screen_to_model (QPoint (mode.width(), mode.height()));
 
       Point<> tex[4];
-      tex[0] = interp.scanner2voxel (pos[0]);
-      tex[1] = interp.scanner2voxel (pos[1]);
-      tex[2] = interp.scanner2voxel (pos[2]);
-      tex[3] = interp.scanner2voxel (pos[3]);
+      tex[0] = interp.scanner2voxel (pos[0]) + Point<> (0.5, 0.5, 0.5);
+      tex[1] = interp.scanner2voxel (pos[1]) + Point<> (0.5, 0.5, 0.5);
+      tex[2] = interp.scanner2voxel (pos[2]) + Point<> (0.5, 0.5, 0.5);
+      tex[3] = interp.scanner2voxel (pos[3]) + Point<> (0.5, 0.5, 0.5);
 
       for (size_t i = 0; i < 4; ++i)
         for (size_t j = 0; j < 3; ++j)
@@ -157,14 +158,18 @@ namespace MR {
       ssize_t xdim = H.dim(x), ydim = H.dim(y);
       float data [xdim*ydim];
 
+      type = GL_FLOAT;
+      format = GL_LUMINANCE;
+      internal_format = GL_LUMINANCE32F_ARB;
+
       if (position[projection] < 0 || position[projection] >= H.dim(projection)) {
         memset (data, 0, xdim*ydim*sizeof(float));
       }
       else {
         // copy data:
         vox[projection] = slice;
-        value_min = INFINITY;
-        value_max = -INFINITY;
+        value_min = std::numeric_limits<float>::infinity();
+        value_max = -std::numeric_limits<float>::infinity();
         for (vox[y] = 0; vox[y] < ydim; ++vox[y]) {
           for (vox[x] = 0; vox[x] < xdim; ++vox[x]) {
             float val = vox.value();
@@ -180,7 +185,7 @@ namespace MR {
           reset_windowing();
       }
 
-      glTexImage2D (GL_TEXTURE_2D, 0, GL_LUMINANCE32F_ARB, xdim, ydim, 0, GL_LUMINANCE, GL_FLOAT, data);
+      glTexImage2D (GL_TEXTURE_2D, 0, internal_format, xdim, ydim, 0, format, type, data);
     }
 
 
@@ -189,14 +194,42 @@ namespace MR {
 
     inline void Image::update_texture3D ()
     {
+
       if (!texture3D) { // allocate:
+        GLenum internal_format = GL_LUMINANCE32F_ARB;
+        switch (vox.datatype()()) {
+          case DataType::Bit: 
+          case DataType::UInt8:
+          case DataType::Int8:
+            internal_format = GL_LUMINANCE8;
+            break;
+          case DataType::UInt16LE:
+          case DataType::UInt16BE:
+          case DataType::Int16LE:
+          case DataType::Int16BE:
+            internal_format = GL_LUMINANCE16;
+            break;
+          case DataType::UInt32LE:
+          case DataType::UInt32BE:
+          case DataType::Int32LE:
+          case DataType::Int32BE:
+          case DataType::Float32LE:
+          case DataType::Float32BE:
+          case DataType::Float64LE:
+          case DataType::Float64BE:
+            internal_format = GL_LUMINANCE32F_ARB;
+            break;
+          default:
+            assert (0);
+        }
+
         glGenTextures (1, &texture3D);
         assert (texture3D);
         glBindTexture (GL_TEXTURE_3D, texture3D);
         glTexParameteri (GL_TEXTURE_3D, GL_TEXTURE_WRAP_S, GL_CLAMP);
         glTexParameteri (GL_TEXTURE_3D, GL_TEXTURE_WRAP_T, GL_CLAMP);
         glTexParameteri (GL_TEXTURE_3D, GL_TEXTURE_WRAP_R, GL_CLAMP);
-        glTexImage3D (GL_TEXTURE_3D, 0, GL_LUMINANCE32F_ARB, 
+        glTexImage3D (GL_TEXTURE_3D, 0, internal_format, 
             vox.dim(0), vox.dim(1), vox.dim(2), 
             0, GL_LUMINANCE, GL_FLOAT, NULL);
         DEBUG_OPENGL;
@@ -208,17 +241,72 @@ namespace MR {
 
       glBindTexture (GL_TEXTURE_3D, texture3D);
 
-      value_min = INFINITY;
-      value_max = -INFINITY;
-      const ssize_t x = 0, y = 1, z = 2;
-      Ptr<float,true> data (new float [vox.dim(x)*vox.dim(y)]);
+      GLenum format = GL_LUMINANCE;
+      value_min = std::numeric_limits<float>::infinity();
+      value_max = -std::numeric_limits<float>::infinity();
 
-      ProgressBar progress ("loading image data...", vox.dim(z));
-      for (vox[z] = 0; vox[z] < vox.dim(z); ++vox[z]) {
-        float* p = data;
-        for (vox[y] = 0; vox[y] < vox.dim(y); ++vox[y]) {
-          for (vox[x] = 0; vox[x] < vox.dim(x); ++vox[x]) {
-            float val = *p = vox.value();
+      switch (vox.datatype()()) {
+        case DataType::Bit: 
+        case DataType::UInt8:
+          copy_texture_3D<uint8_t> (format);
+          break;
+        case DataType::Int8:
+          copy_texture_3D<int8_t> (format);
+          break;
+        case DataType::UInt16LE:
+        case DataType::UInt16BE:
+          copy_texture_3D<uint16_t> (format);
+          break;
+        case DataType::Int16LE:
+        case DataType::Int16BE:
+          copy_texture_3D<int16_t> (format);
+          break;
+        case DataType::UInt32LE:
+        case DataType::UInt32BE:
+          copy_texture_3D<uint32_t> (format);
+          break;
+        case DataType::Int32LE:
+        case DataType::Int32BE:
+          copy_texture_3D<int32_t> (format);
+          break;
+        case DataType::Float32LE:
+        case DataType::Float32BE:
+        case DataType::Float64LE:
+        case DataType::Float64BE:
+          copy_texture_3D<float> (format);
+          break;
+        default:
+          assert (0);
+      }
+
+      if (isnan (display_midpoint) || isnan (display_range))
+        reset_windowing();
+    }
+
+    template <> inline GLenum Image::GLtype<int8_t> () const { return (GL_BYTE); }
+    template <> inline GLenum Image::GLtype<uint8_t> () const { return (GL_UNSIGNED_BYTE); }
+    template <> inline GLenum Image::GLtype<int16_t> () const { return (GL_SHORT); }
+    template <> inline GLenum Image::GLtype<uint16_t> () const { return (GL_UNSIGNED_SHORT); }
+    template <> inline GLenum Image::GLtype<int32_t> () const { return (GL_INT); }
+    template <> inline GLenum Image::GLtype<uint32_t> () const { return (GL_UNSIGNED_INT); }
+    template <> inline GLenum Image::GLtype<float> () const { return (GL_FLOAT); }
+
+    template <typename T> inline float Image::scale_factor_3D () const { return (std::numeric_limits<T>::max()); }
+    template <> inline float Image::scale_factor_3D<float> () const { return (1.0); }
+
+
+    template <typename T> inline void Image::copy_texture_3D (GLenum format) {
+
+      MR::Image::Voxel<T> V (vox);
+      GLenum type = GLtype<T>();
+      Ptr<T,true> data (new T [V.dim(0)*V.dim(1)]);
+
+      ProgressBar progress ("loading image data...", V.dim(2));
+      for (V[2] = 0; V[2] < V.dim(2); ++V[2]) {
+        T* p = data;
+        for (V[1] = 0; V[1] < V.dim(1); ++V[1]) {
+          for (V[0] = 0; V[0] < V.dim(0); ++V[0]) {
+            T val = *p = V.value();
             if (finite (val)) {
               if (val < value_min) value_min = val;
               if (val > value_max) value_max = val;
@@ -227,18 +315,15 @@ namespace MR {
           }
         }
         glTexSubImage3D (GL_TEXTURE_3D, 0, 
-            0, 0, vox[z], 
-            vox.dim(0), vox.dim(1), 1,
-            GL_LUMINANCE, GL_FLOAT, data);
+            0, 0, V[2],
+            V.dim(0), V.dim(1), 1,
+            format, type, data);
         DEBUG_OPENGL;
         ++progress;
       }
 
-      if (isnan (display_midpoint) || isnan (display_range))
-        reset_windowing();
+      windowing_scale_3D = scale_factor_3D<T>(); 
     }
-
-
 
 
 
