@@ -167,7 +167,7 @@ EXECUTE {
   opt = get_options ("coord");
   for (size_t n = 0; n < opt.size(); n++) {
     pos.resize (header_in.ndim());
-    int axis = opt[0][0];
+    int axis = opt[n][0];
     if (pos[axis].size())
       throw Exception ("\"coord\" option specified twice for axis " + str (axis));
     pos[axis] = opt[n][1];
