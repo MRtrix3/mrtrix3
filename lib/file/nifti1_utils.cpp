@@ -347,10 +347,10 @@ namespace MR
         // magic number:
         put<int32_t> (348, &NH.sizeof_hdr, is_BE);
 
-        strncpy ( (char*) &NH.datatype, "dsr      \0", 10);
         strncpy ( (char*) &NH.db_name, H.comments().size() ? H.comments() [0].c_str() : "untitled\0\0\0\0\0\0\0\0\0\0\0", 18);
         put<int32_t> (16384, &NH.extents, is_BE);
-        strncpy ( (char*) &NH.regular, "r\0", 2);
+        NH.regular = 'r';
+        NH.dim_info = 0;
 
         // data set dimensions:
         put<int16_t> (H.ndim(), &NH.dim[0], is_BE);
@@ -409,6 +409,7 @@ namespace MR
 
         put<int16_t> (dt, &NH.datatype, is_BE);
         put<int16_t> (H.datatype().bits(), &NH.bitpix, is_BE);
+        NH.pixdim[0] = 0;
 
         // voxel sizes:
         for (size_t i = 0; i < 3; i++)
