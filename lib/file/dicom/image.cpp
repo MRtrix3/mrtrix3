@@ -69,7 +69,7 @@ namespace MR
                   int c = sequence_name.size()-1;
                   while (c >= 0 && isdigit (sequence_name[c])) c--;
                   c++;
-                  sequence = to<size_t> (sequence_name.substr (c));
+                  sequence = c < sequence_name.size()-1 ? to<size_t> (sequence_name.substr (c)) : 0;
                 }
                 return;
               case 0x9087U:
