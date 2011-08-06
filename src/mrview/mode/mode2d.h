@@ -55,6 +55,8 @@ namespace MR {
         protected:
           QAction *axial_action, *sagittal_action, *coronal_action;
           Point<> lookat;
+
+          void set_cursor ();
       };
 
     }

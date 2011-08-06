@@ -47,9 +47,15 @@ namespace MR {
     {
       Q_OBJECT
 
+      private:
+        Ptr<MR::Image::Header> H;
+
       public:
-        Image (Window& parent, MR::Image::Header* header);
+        Image (Window& parent, MR::Image::Header* image_header);
         ~Image ();
+
+        MR::Image::Header& header () { assert (H); return (*H); }
+        const MR::Image::Header& header () const { assert (H); return (*H); }
 
         void reset_windowing ()
         { 
@@ -90,7 +96,7 @@ namespace MR {
           shader3D.set (Texture3D | colourmap);
         }
 
-        MR::Image::Header& H;
+
         MR::Image::Voxel<float> vox;
         MR::DataSet::Interp::Linear<MR::Image::Voxel<float> > interp;
 

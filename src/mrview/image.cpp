@@ -33,10 +33,10 @@
 namespace MR {
   namespace Viewer {
 
-    Image::Image (Window& parent, MR::Image::Header* header) :
-      QAction (shorten(header->name(), 20, 0).c_str(), &parent),
-      H (*header),
-      vox (H),
+    Image::Image (Window& parent, MR::Image::Header* image_header) :
+      QAction (shorten(image_header->name(), 20, 0).c_str(), &parent),
+      H (image_header),
+      vox (header()),
       interp (vox),
       window (parent),
       texture3D (0),
@@ -47,10 +47,10 @@ namespace MR {
       display_range (NAN),
       position (vox.ndim())
     {
-      assert (header);
+      assert (image_header);
       setCheckable (true);
-      setToolTip (header->name().c_str());
-      setStatusTip (header->name().c_str());
+      setToolTip (header().name().c_str());
+      setStatusTip (header().name().c_str());
       window.image_group->addAction (this);
       window.image_menu->addAction (this);
       texture2D[0] = texture2D[1] = texture2D[2] = 0;
@@ -75,7 +75,7 @@ namespace MR {
 
       int x, y;
       get_axes (projection, x, y);
-      float xdim = H.dim(x)-0.5, ydim = H.dim(y)-0.5;
+      float xdim = header().dim(x)-0.5, ydim = header().dim(y)-0.5;
 
       Point<> p, q;
       p[projection] = slice;
@@ -124,7 +124,7 @@ namespace MR {
 
       for (size_t i = 0; i < 4; ++i)
         for (size_t j = 0; j < 3; ++j)
-          tex[i][j] /= H.dim(j);
+          tex[i][j] /= header().dim(j);
 
       glBegin (GL_QUADS);
       glTexCoord3fv (tex[0]); glVertex3fv (pos[0]);
@@ -155,14 +155,14 @@ namespace MR {
 
       int x, y;
       get_axes (projection, x, y);
-      ssize_t xdim = H.dim(x), ydim = H.dim(y);
+      ssize_t xdim = header().dim(x), ydim = header().dim(y);
       float data [xdim*ydim];
 
       type = GL_FLOAT;
       format = GL_LUMINANCE;
       internal_format = GL_LUMINANCE32F_ARB;
 
-      if (position[projection] < 0 || position[projection] >= H.dim(projection)) {
+      if (position[projection] < 0 || position[projection] >= header().dim(projection)) {
         memset (data, 0, xdim*ydim*sizeof(float));
       }
       else {

@@ -38,6 +38,8 @@ namespace MR {
       static QCursor window;
       static QCursor crosshair;
       static QCursor zoom;
+      static QCursor inplane_rotate;
+      static QCursor throughplane_rotate;
 
   };
 }

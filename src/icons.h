@@ -11,8 +11,10 @@ namespace MR {
       int width, height;
 
     static const Icon pan_crosshair;
+    static const Icon inplane_rotate;
     static const Icon forward_backward;
     static const Icon mrtrix;
+    static const Icon throughplane_rotate;
     static const Icon pan;
     static const Icon window;
     static const Icon crosshair;

@@ -40,6 +40,8 @@ namespace MR {
   QCursor Cursor::window;
   QCursor Cursor::crosshair;
   QCursor Cursor::zoom;
+  QCursor Cursor::inplane_rotate;
+  QCursor Cursor::throughplane_rotate;
 
   Cursor::Cursor ()
   {
@@ -49,6 +51,8 @@ namespace MR {
     CREATE_CURSOR (window, 9, 8);
     CREATE_CURSOR (crosshair, 9, 8);
     CREATE_CURSOR (zoom, 9, 8);
+    CREATE_CURSOR (inplane_rotate, 9, 8);
+    CREATE_CURSOR (throughplane_rotate, 9, 8);
   }
 
 }

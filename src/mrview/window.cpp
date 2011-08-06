@@ -318,8 +318,8 @@ namespace MR {
         dialog.get_selection (selection);
         if (selection.size() != 1) return;
         try {
-          current_image()->H.create (selection[0]);
-          MR::Image::Voxel<float> dest (current_image()->H);
+          current_image()->header().create (selection[0]);
+          MR::Image::Voxel<float> dest (current_image()->header());
           DataSet::copy_with_progress (dest, current_image()->vox);
         }
         catch (Exception& E) {
@@ -355,7 +355,7 @@ namespace MR {
     void Window::image_properties_slot () 
     {
       assert (current_image()); 
-      Dialog::ImageProperties props (this, current_image()->H);
+      Dialog::ImageProperties props (this, current_image()->header());
       props.exec(); 
     }
 

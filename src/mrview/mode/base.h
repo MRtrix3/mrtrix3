@@ -33,6 +33,9 @@
 
 #include "mrview/window.h"
 
+
+#define EDGE_WIDTH 8
+
 namespace MR {
   namespace Viewer {
     namespace Mode {
@@ -207,10 +210,10 @@ namespace MR {
             currentPos = event->pos();
             if (buttons_ == Qt::NoButton) 
               edge_ = 
-                ( 10*currentPos.x() < width() ? LeftEdge : 0 ) |
-                ( 10*(width()-currentPos.x()) < width() ? RightEdge : 0 ) |
-                ( 10*currentPos.y() < height() ? TopEdge : 0 ) |
-                ( 10*(height()-currentPos.y()) < height() ? BottomEdge : 0 );
+                ( EDGE_WIDTH*currentPos.x() < width() ? LeftEdge : 0 ) |
+                ( EDGE_WIDTH*(width()-currentPos.x()) < width() ? RightEdge : 0 ) |
+                ( EDGE_WIDTH*currentPos.y() < height() ? TopEdge : 0 ) |
+                ( EDGE_WIDTH*(height()-currentPos.y()) < height() ? BottomEdge : 0 );
             if (mouse_move()) event->accept();
             else event->ignore();
           }

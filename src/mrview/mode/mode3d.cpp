@@ -23,7 +23,7 @@
 #include "mrview/mode/mode3d.h"
 #include "math/vector.h"
 
-#define ROTATION_INC 0.001
+#define ROTATION_INC 0.002
 
 namespace MR {
   namespace Viewer {
@@ -96,20 +96,45 @@ namespace MR {
 
 
 
+
+      void Mode3D::set_cursor () 
+      {
+        if (mouse_edge() == ( RightEdge | BottomEdge ))
+          glarea()->setCursor (Cursor::window);
+        else if (mouse_edge() == ( RightEdge | TopEdge )) 
+          glarea()->setCursor (Cursor::throughplane_rotate);
+        else if (mouse_edge() & RightEdge) 
+          glarea()->setCursor (Cursor::forward_backward);
+        else if (mouse_edge() & LeftEdge) 
+          glarea()->setCursor (Cursor::zoom);
+        else if (mouse_edge() & TopEdge) 
+          glarea()->setCursor (Cursor::inplane_rotate);
+        else
+          glarea()->setCursor (Cursor::crosshair);
+      }
+
+
+
+
+
+
       bool Mode3D::mouse_click ()
       { 
         if (mouse_modifiers() == Qt::NoModifier) {
 
           if (mouse_buttons() == Qt::LeftButton) {
+            glarea()->setCursor (Cursor::crosshair);
+            set_focus (screen_to_model (mouse_pos()));
+            updateGL();
+            return true;
+          }
+
+          else if (mouse_buttons() == Qt::RightButton) {
             if (!mouse_edge()) {
-              set_focus (screen_to_model (mouse_pos()));
-              updateGL();
+              glarea()->setCursor (Cursor::pan_crosshair);
               return true;
             }
           }
-
-          else if (mouse_buttons() == Qt::RightButton) 
-            glarea()->setCursor (Cursor::pan_crosshair);
         }
 
         return false; 
@@ -122,25 +147,53 @@ namespace MR {
       bool Mode3D::mouse_move () 
       {
         if (mouse_buttons() == Qt::NoButton) {
-          if (mouse_edge() == ( RightEdge | BottomEdge ))
-            glarea()->setCursor (Cursor::window);
-          else if (mouse_edge() & RightEdge) 
-            glarea()->setCursor (Cursor::forward_backward);
-          else if (mouse_edge() & LeftEdge) 
-            glarea()->setCursor (Cursor::zoom);
-          else if (mouse_edge() & TopEdge) 
-            glarea()->setCursor (Cursor::pan_crosshair);
-          else
-            glarea()->setCursor (Cursor::crosshair);
+          set_cursor();
           return false;
         }
+
 
         if (mouse_modifiers() == Qt::NoModifier) {
 
           if (mouse_buttons() == Qt::LeftButton) {
+            set_focus (screen_to_model());
+            updateGL();
+            return true;
+          }
+
+          if (mouse_buttons() == Qt::RightButton) {
 
             if (mouse_edge() == ( RightEdge | BottomEdge) ) {
               image()->adjust_windowing (mouse_dpos_static());
+              updateGL();
+              return true;
+            }
+
+            if (mouse_edge() == ( RightEdge | TopEdge ) ) {
+              QPoint dpos = mouse_dpos_static();
+              if (dpos.x() == 0 && dpos.y() == 0) 
+                return true;
+              Point<> x = screen_to_model_direction (Point<> (dpos.x(), dpos.y(), 0.0));
+              Point<> z = screen_to_model_direction (Point<> (0.0, 0.0, 1.0));
+              Point<> v (x.cross (z));
+              float angle = ROTATION_INC * Math::sqrt (float (Math::pow2(dpos.x()) + Math::pow2(dpos.y())));
+              v.normalise();
+              if (angle > M_PI_2) angle = M_PI_2;
+
+              Math::Quaternion<float> q = Math::Quaternion<float> (angle, v) * orientation();
+              q.normalise();
+              set_orientation (q);
+              updateGL();
+              return true;
+            }
+
+            if (mouse_edge() == TopEdge ) {
+              float angle = -ROTATION_INC * mouse_dpos().x();
+              Point<> v = screen_to_model_direction (Point<> (0.0, 0.0, 1.0));
+              v.normalise();
+
+              Math::Quaternion<float> q = Math::Quaternion<float> (angle, v) * orientation();
+              q.normalise();
+              set_orientation (q);
               updateGL();
               return true;
             }
@@ -157,30 +210,8 @@ namespace MR {
               return true;
             }
 
-            set_focus (screen_to_model());
-            updateGL();
-            return true;
-          }
 
-          if (mouse_buttons() == Qt::RightButton) {
             set_target (target() - screen_to_model_direction (Point<> (mouse_dpos().x(), mouse_dpos().y(), 0.0)));
-            updateGL();
-            return true;
-          }
-
-          if (mouse_buttons() == Qt::MidButton) {
-            if (mouse_dpos().x() == 0 && mouse_dpos().y() == 0) 
-              return true;
-            Point<> x = screen_to_model_direction (Point<> (mouse_dpos().x(), mouse_dpos().y(), 0.0));
-            Point<> z = screen_to_model_direction (Point<> (0.0, 0.0, 1.0));
-            Point<> v (x.cross (z));
-            float angle = ROTATION_INC * Math::sqrt (float (Math::pow2(mouse_dpos().x()) + Math::pow2(mouse_dpos().y())));
-            v.normalise();
-            if (angle > M_PI_2) angle = M_PI_2;
-
-            Math::Quaternion<float> q = Math::Quaternion<float> (angle, v) * orientation();
-            q.normalise();
-            set_orientation (q);
             updateGL();
             return true;
           }
@@ -196,14 +227,7 @@ namespace MR {
 
       bool Mode3D::mouse_release () 
       { 
-        if (mouse_edge() == ( RightEdge | BottomEdge)) 
-          glarea()->setCursor (Cursor::window);
-        else if (mouse_edge() & RightEdge) 
-          glarea()->setCursor (Cursor::forward_backward);
-        else if (mouse_edge() & LeftEdge) 
-          glarea()->setCursor (Cursor::zoom);
-        else 
-          glarea()->setCursor (Cursor::crosshair);
+        set_cursor();
         return true; 
       }
 

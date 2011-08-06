@@ -134,21 +134,40 @@ namespace MR {
 
 
 
+      void Mode2D::set_cursor () 
+      {
+        if (mouse_edge() == ( RightEdge | BottomEdge ))
+          glarea()->setCursor (Cursor::window);
+        else if (mouse_edge() & RightEdge) 
+          glarea()->setCursor (Cursor::forward_backward);
+        else if (mouse_edge() & LeftEdge) 
+          glarea()->setCursor (Cursor::zoom);
+        else
+          glarea()->setCursor (Cursor::crosshair);
+      }
+
+
+
+
 
       bool Mode2D::mouse_click ()
       { 
         if (mouse_modifiers() == Qt::NoModifier) {
 
           if (mouse_buttons() == Qt::LeftButton) {
+            glarea()->setCursor (Cursor::crosshair);
+            set_focus (screen_to_model (mouse_pos()));
+            updateGL();
+            return true;
+          }
+
+          if (mouse_buttons() == Qt::RightButton) {
             if (!mouse_edge()) {
-              set_focus (screen_to_model (mouse_pos()));
-              updateGL();
+              glarea()->setCursor (Cursor::pan_crosshair);
               return true;
             }
           }
 
-          else if (mouse_buttons() == Qt::RightButton) 
-            glarea()->setCursor (Cursor::pan_crosshair);
         }
 
         return false;
@@ -159,20 +178,20 @@ namespace MR {
       bool Mode2D::mouse_move () 
       {
         if (mouse_buttons() == Qt::NoButton) {
-          if (mouse_edge() == ( RightEdge | BottomEdge ))
-            glarea()->setCursor (Cursor::window);
-          else if (mouse_edge() & RightEdge) 
-            glarea()->setCursor (Cursor::forward_backward);
-          else if (mouse_edge() & LeftEdge) 
-            glarea()->setCursor (Cursor::zoom);
-          else
-            glarea()->setCursor (Cursor::crosshair);
+          set_cursor();
           return false;
         }
 
         if (mouse_modifiers() == Qt::NoModifier) {
 
           if (mouse_buttons() == Qt::LeftButton) {
+
+            set_focus (screen_to_model());
+            updateGL();
+            return true;
+          }
+
+          if (mouse_buttons() == Qt::RightButton) {
 
             if (mouse_edge() == ( RightEdge | BottomEdge) ) {
               image()->adjust_windowing (mouse_dpos_static());
@@ -192,12 +211,6 @@ namespace MR {
               return true;
             }
 
-            set_focus (screen_to_model());
-            updateGL();
-            return true;
-          }
-
-          if (mouse_buttons() == Qt::RightButton) {
             set_target (target() - screen_to_model_direction (Point<> (mouse_dpos().x(), mouse_dpos().y(), 0.0)));
             updateGL();
             return true;
@@ -213,14 +226,7 @@ namespace MR {
 
       bool Mode2D::mouse_release () 
       {
-        if (mouse_edge() == ( RightEdge | BottomEdge)) 
-          glarea()->setCursor (Cursor::window);
-        else if (mouse_edge() & RightEdge) 
-          glarea()->setCursor (Cursor::forward_backward);
-        else if (mouse_edge() & LeftEdge) 
-          glarea()->setCursor (Cursor::zoom);
-        else 
-          glarea()->setCursor (Cursor::crosshair);
+        set_cursor();
         return true; 
       }
 
@@ -263,9 +269,9 @@ namespace MR {
       { 
         if (!image()) return;
         float dim[] = {
-          image()->H.dim(0) * image()->H.vox(0), 
-          image()->H.dim(1) * image()->H.vox(1), 
-          image()->H.dim(2) * image()->H.vox(2)
+          image()->header().dim(0) * image()->header().vox(0), 
+          image()->header().dim(1) * image()->header().vox(1), 
+          image()->header().dim(2) * image()->header().vox(2)
         };
         if (dim[0] < dim[1] && dim[0] < dim[2])
           set_projection (0);
@@ -274,7 +280,7 @@ namespace MR {
         else 
           set_projection (2);
        
-        Point<> p (image()->H.dim(0)/2.0, image()->H.dim(1)/2.0, image()->H.dim(2)/2.0);
+        Point<> p (image()->header().dim(0)/2.0, image()->header().dim(1)/2.0, image()->header().dim(2)/2.0);
         set_focus (image()->interp.voxel2scanner (p));
 
         int x, y;
