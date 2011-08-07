@@ -36,8 +36,7 @@ namespace MR
       public:
         typedef T value_type;
         Quaternion () {
-          x[0] = 1.0;
-          x[1] = x[2] = x[3] = 0.0;
+          reset (); 
         }
         Quaternion (value_type t, value_type vx, value_type vy, value_type vz) {
           x[0] = t;
@@ -61,45 +60,52 @@ namespace MR
           x[2] *= norm;
           x[3] *= norm;
         }
-        Quaternion (const value_type* matrix)             {
+
+        Quaternion (const value_type* matrix) {
           from_matrix (matrix);
         }
 
-        operator bool () const   {
+        operator bool () const {
           return ! (isnan (x[0]) || isnan (x[1]) || isnan (x[2]) || isnan (x[3]));
         }
-        bool          operator! () const   {
+        bool operator! () const {
           return isnan (x[0]) || isnan (x[1]) || isnan (x[2]) || isnan (x[3]);
         }
 
-        void          invalidate ()  {
+        void invalidate ()  {
           x[0] = x[1] = x[2] = x[3] = NAN;
         }
-        void          normalise () {
+
+        void reset () { 
+          x[0] = 1.0;
+          x[1] = x[2] = x[3] = 0.0;
+        }
+
+        void normalise () {
           value_type n = 1.0 / sqrt (x[0]*x[0] + x[1]*x[1] + x[2]*x[2] + x[3]*x[3]);
           x[0] *= n;
           x[1] *= n;
           x[2] *= n;
           x[3] *= n;
         }
-        void          from_matrix (const T* matrix);
-        void          to_matrix (value_type* matrix);
+        void from_matrix (const T* matrix);
+        void to_matrix (value_type* matrix);
 
-        const value_type&  operator[] (int index) const    {
+        const value_type&  operator[] (int index) const {
           return x[index];
         }
-        value_type&        operator[] (int index)          {
+        value_type& operator[] (int index) {
           return x[index];
         }
 
-        bool          operator== (const Quaternion& y) const {
+        bool operator== (const Quaternion& y) const {
           return memcmp (x, y.x, 4*sizeof (value_type)) == 0;
         }
-        bool          operator!= (const Quaternion& y) const {
+        bool operator!= (const Quaternion& y) const {
           return memcmp (x, y.x, 4*sizeof (value_type));
         }
 
-        Quaternion    operator* (const Quaternion& y) const;
+        Quaternion operator* (const Quaternion& y) const;
         const Quaternion& operator*= (const Quaternion& y) {
           *this = (*this) * y;
           return *this;
