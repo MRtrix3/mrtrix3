@@ -29,7 +29,21 @@ namespace MR {
   namespace Viewer {
     namespace Mode {
 
-      Mode3D::Mode3D (Window& parent) : Base (parent) { }
+      namespace {
+        class OrientationLabel {
+          public:
+            OrientationLabel () { }
+            OrientationLabel (const Point<>& direction, const char textlabel) :
+              dir (direction), label (1, textlabel) { }
+            Point<> dir;
+            std::string label;
+            bool operator< (const OrientationLabel& R) const {
+              return dir.norm2() < R.dir.norm2();
+            }
+        };
+      }
+
+      Mode3D::Mode3D (Window& parent) : Mode2D (parent) { }
       Mode3D::~Mode3D () { }
 
       void Mode3D::paint () 
@@ -90,6 +104,27 @@ namespace MR {
         glDisable (GL_TEXTURE_3D);
 
         draw_focus();
+
+        if (show_orientation_action->isChecked()) {
+          glColor4f (1.0, 0.0, 0.0, 1.0);
+          std::vector<OrientationLabel> labels;
+          labels.push_back (OrientationLabel (model_to_screen_direction (Point<> (-1.0, 0.0, 0.0)), 'L'));
+          labels.push_back (OrientationLabel (model_to_screen_direction (Point<> (1.0, 0.0, 0.0)), 'R'));
+          labels.push_back (OrientationLabel (model_to_screen_direction (Point<> (0.0, -1.0, 0.0)), 'P'));
+          labels.push_back (OrientationLabel (model_to_screen_direction (Point<> (0.0, 1.0, 0.0)), 'A'));
+          labels.push_back (OrientationLabel (model_to_screen_direction (Point<> (0.0, 0.0, -1.0)), 'I'));
+          labels.push_back (OrientationLabel (model_to_screen_direction (Point<> (0.0, 0.0, 1.0)), 'S'));
+
+          std::sort (labels.begin(), labels.end());
+          for (size_t i = 2; i < labels.size(); ++i) {
+            float pos[] = { labels[i].dir[0], labels[i].dir[1] };
+            float dist = std::min (width()/Math::abs (pos[0]), height()/Math::abs (pos[1])) / 2.0;
+            int x = Math::round(width()/2.0 + pos[0]*dist); 
+            int y = Math::round(height()/2.0 + pos[1]*dist); 
+            renderTextInset (x, y, std::string (labels[i].label));
+          }
+
+        }
       }
 
 
@@ -199,7 +234,7 @@ namespace MR {
             }
 
             if (mouse_edge() & RightEdge) {
-              move_in_out (-0.001*mouse_dpos().y()*FOV());
+              move_in_out (-2e-6*mouse_dpos().y()*FOV());
               updateGL();
               return true;
             }
@@ -233,6 +268,16 @@ namespace MR {
 
 
       bool Mode3D::mouse_wheel (float delta, Qt::Orientation orientation) { return false; }
+
+
+
+      void Mode3D::reset () 
+      {
+        Math::Quaternion<float> Q;
+        set_orientation (Q);
+        Mode2D::reset();
+      }
+
 
     }
   }

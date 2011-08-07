@@ -36,13 +36,16 @@
 
 #define EDGE_WIDTH 8
 
-namespace MR {
-  namespace Viewer {
-    namespace Mode {
+namespace MR
+{
+  namespace Viewer
+  {
+    namespace Mode
+    {
 
       class Base : public QObject
       {
-        Q_OBJECT
+          Q_OBJECT
 
         public:
           Window& window;
@@ -67,97 +70,164 @@ namespace MR {
           static const int RightEdge = 1<<3;
 
 
-          const QPoint& mouse_pos () const { return (currentPos); }
-          QPoint mouse_dpos () const { return (currentPos - lastPos); }
-          QPoint mouse_dpos_static () const 
-          {
+          const QPoint& mouse_pos () const {
+            return currentPos;
+          }
+          QPoint mouse_dpos () const {
+            return currentPos - lastPos;
+          }
+          QPoint mouse_dpos_static () const {
             QCursor::setPos (reinterpret_cast<QWidget*> (window.glarea)->mapToGlobal (initialPos));
-            return (currentPos - initialPos); 
+            return currentPos - initialPos;
           }
-          Qt::MouseButtons mouse_buttons () const { return (buttons_); }
-          Qt::KeyboardModifiers mouse_modifiers () const { return (modifiers_); }
-          int mouse_edge () const { return (edge_); }
+          Qt::MouseButtons mouse_buttons () const {
+            return buttons_;
+          }
+          Qt::KeyboardModifiers mouse_modifiers () const {
+            return modifiers_;
+          }
+          int mouse_edge () const {
+            return edge_;
+          }
 
-          void add_action (QAction* action) { window.view_menu->insertAction (window.view_menu_mode_area, action); }
-          void add_action_common (QAction* action) { window.view_menu->insertAction (window.view_menu_mode_common_area, action); }
+          void add_action (QAction* action) {
+            window.view_menu->insertAction (window.view_menu_mode_area, action);
+          }
+          void add_action_common (QAction* action) {
+            window.view_menu->insertAction (window.view_menu_mode_common_area, action);
+          }
 
-          Point<> model_to_screen (const Point<>& pos) const
-          {
+          Point<> model_to_screen (const Point<>& pos) const {
             double wx, wy, wz;
             get_modelview_projection_viewport();
-            gluProject (pos[0], pos[1], pos[2], modelview_matrix, 
-                projection_matrix, viewport_matrix, &wx, &wy, &wz);
-            return (Point<> (wx, wy, wz));
+            gluProject (pos[0], pos[1], pos[2], modelview_matrix,
+                        projection_matrix, viewport_matrix, &wx, &wy, &wz);
+            return Point<> (wx, wy, wz);
           }
 
-          Point<> screen_to_model (const Point<>& pos) const 
-          {
+          Point<> model_to_screen_direction (const Point<>& pos) const {
+            return model_to_screen (pos) - model_to_screen (Point<> (0.0, 0.0, 0.0));
+          }
+
+          Point<> screen_to_model (const Point<>& pos) const {
             double wx, wy, wz;
             get_modelview_projection_viewport();
-            gluUnProject (pos[0], height()-pos[1], pos[2], modelview_matrix, 
-                projection_matrix, viewport_matrix, &wx, &wy, &wz);
-            return (Point<> (wx, wy, wz));
+            gluUnProject (pos[0], height()-pos[1], pos[2], modelview_matrix,
+                          projection_matrix, viewport_matrix, &wx, &wy, &wz);
+            return Point<> (wx, wy, wz);
           }
 
-          Point<> screen_to_model (const QPoint& pos) const
-          {
+          Point<> screen_to_model (const QPoint& pos) const {
             Point<> f (model_to_screen (focus()));
             f[0] = pos.x();
             f[1] = pos.y();
-            return (screen_to_model (f));
+            return screen_to_model (f);
           }
 
-          Point<> screen_to_model () const { return (screen_to_model (currentPos)); } 
+          Point<> screen_to_model () const {
+            return screen_to_model (currentPos);
+          }
 
-          Point<> screen_to_model_direction (const Point<>& pos) const
-          { return (screen_to_model (pos) - screen_to_model (Point<> (0.0, 0.0, 0.0))); } 
+          Point<> screen_to_model_direction (const Point<>& pos) const {
+            return screen_to_model (pos) - screen_to_model (Point<> (0.0, 0.0, 0.0));
+          }
 
 
-          const Image* image () const { return (window.current_image()); }
-          Image* image () { return (window.current_image()); }
+          const Image* image () const {
+            return window.current_image();
+          }
+          Image* image () {
+            return window.current_image();
+          }
 
-          const Math::Quaternion<float>& orientation () const { return (window.orient); }
-          float FOV () const { return (window.field_of_view); }
-          const Point<>& focus () const { return (window.focal_point); }
-          const Point<>& target () const { return (window.camera_target); }
-          int projection () const { return (window.proj); }
+          const Math::Quaternion<float>& orientation () const {
+            return window.orient;
+          }
+          float FOV () const {
+            return window.field_of_view;
+          }
+          const Point<>& focus () const {
+            return window.focal_point;
+          }
+          const Point<>& target () const {
+            return window.camera_target;
+          }
+          int projection () const {
+            return window.proj;
+          }
 
-          void set_focus (const Point<>& p) { window.focal_point = p; }
-          void set_target (const Point<>& p) { window.camera_target = p; }
-          void set_projection (int p) { window.proj = p; }
-          void set_orientation (const Math::Quaternion<float>& Q) { window.orient = Q; }
-          void set_FOV (float value) { window.field_of_view = value; }
-          void change_FOV_fine (float factor) { window.field_of_view *= Math::exp (0.005*factor); }
-          void change_FOV_scroll (float factor) { change_FOV_fine (20.0 * factor); }
+          void set_focus (const Point<>& p) {
+            window.focal_point = p;
+          }
+          void set_target (const Point<>& p) {
+            window.camera_target = p;
+          }
+          void set_projection (int p) {
+            window.proj = p;
+          }
+          void set_orientation (const Math::Quaternion<float>& Q) {
+            window.orient = Q;
+          }
+          void set_FOV (float value) {
+            window.field_of_view = value;
+          }
+          void change_FOV_fine (float factor) {
+            window.field_of_view *= Math::exp (0.005*factor);
+          }
+          void change_FOV_scroll (float factor) {
+            change_FOV_fine (20.0 * factor);
+          }
 
-          int width () const { get_modelview_projection_viewport(); return (viewport_matrix[2]); }
-          int height () const { get_modelview_projection_viewport(); return (viewport_matrix[3]); }
-          QWidget* glarea () const { return (reinterpret_cast <QWidget*>(window.glarea)); }
+          int width () const {
+            get_modelview_projection_viewport();
+            return viewport_matrix[2];
+          }
+          int height () const {
+            get_modelview_projection_viewport();
+            return viewport_matrix[3];
+          }
+          QGLWidget* glarea () const {
+            return reinterpret_cast <QGLWidget*> (window.glarea);
+          }
 
-          void renderText (int x, int y, const std::string& text)
-          { reinterpret_cast<QGLWidget*>(window.glarea)->renderText (x, height()-y, text.c_str(), font_); }
+          void renderText (int x, int y, const std::string& text) {
+            glarea()->renderText (x, height()-y, text.c_str(), font_);
+          }
 
-          void renderText (const std::string& text, int position, int line = 0)
-          {
+          void renderTextInset (int x, int y, const std::string& text, int inset = -1) {
+            QFontMetrics fm (font_);
+            QString s (text.c_str());
+            if (inset < 0) inset = fm.height() / 2;
+            if (x < inset) x = inset;
+            if (x + fm.width(s) + inset > width()) x = width() - fm.width(s) - inset;
+            if (y < inset) y = inset;
+            if (y + fm.height() + inset > height()) y = height() - fm.height() - inset;
+            y = height() - y;
+            glarea()->renderText (x, y, text.c_str(), font_);
+          }
+
+          void renderText (const std::string& text, int position, int line = 0) {
             QFontMetrics fm (font_);
             QString s (text.c_str());
             int x, y;
 
-            if (position & RightEdge) x = width() - fm.height()/2 - fm.width (s);
-            else if (position & LeftEdge) x = fm.height()/2;
+            if (position & RightEdge) x = width() - fm.height() /2 - fm.width (s);
+            else if (position & LeftEdge) x = fm.height() / 2;
             else x = (width() - fm.width (s)) / 2;
 
-            if (position & TopEdge) y = 2 * fm.height()/2 + line * fm.lineSpacing();
-            else if (position & BottomEdge) y = height() - fm.height()/2 - line * fm.lineSpacing();
+            if (position & TopEdge) y = 2 * fm.height() / 2 + line * fm.lineSpacing();
+            else if (position & BottomEdge) y = height() - fm.height() / 2 - line * fm.lineSpacing();
             else y = (height() + fm.height()) / 2 + line * fm.lineSpacing();
 
-            reinterpret_cast<QGLWidget*>(window.glarea)->renderText (x, y, text.c_str(), font_); 
+            glarea()->renderText (x, y, text.c_str(), font_);
           }
 
           void move_in_out (float distance);
 
 
-          bool in_paint () const { return (painting); }
+          bool in_paint () const {
+            return painting;
+          }
 
 
         public slots:
@@ -166,15 +236,14 @@ namespace MR {
           virtual void toggle_show_xyz ();
 
         protected:
-          QAction *reset_action, *show_focus_action;
-          QAction *show_image_info_action, *show_position_action, *show_orientation_action;
+          QAction* reset_action, *show_focus_action;
+          QAction* show_image_info_action, *show_position_action, *show_orientation_action;
 
-          void get_modelview_projection_viewport () const 
-          {
+          void get_modelview_projection_viewport () const {
             if (isnan (modelview_matrix[0])) {
-              glGetIntegerv (GL_VIEWPORT, viewport_matrix); 
+              glGetIntegerv (GL_VIEWPORT, viewport_matrix);
               glGetDoublev (GL_MODELVIEW_MATRIX, modelview_matrix);
-              glGetDoublev (GL_PROJECTION_MATRIX, projection_matrix); 
+              glGetDoublev (GL_PROJECTION_MATRIX, projection_matrix);
             }
           }
 
@@ -194,8 +263,7 @@ namespace MR {
 
           QFont font_;
 
-          void mousePressEvent (QMouseEvent* event)
-          {
+          void mousePressEvent (QMouseEvent* event) {
             if (buttons_ != Qt::NoButton) return;
             buttons_ = event->buttons();
             modifiers_ = event->modifiers();
@@ -204,47 +272,43 @@ namespace MR {
             else event->ignore();
           }
 
-          void mouseMoveEvent (QMouseEvent* event)
-          {
+          void mouseMoveEvent (QMouseEvent* event) {
             lastPos = currentPos;
             currentPos = event->pos();
-            if (buttons_ == Qt::NoButton) 
-              edge_ = 
-                ( EDGE_WIDTH*currentPos.x() < width() ? LeftEdge : 0 ) |
-                ( EDGE_WIDTH*(width()-currentPos.x()) < width() ? RightEdge : 0 ) |
-                ( EDGE_WIDTH*currentPos.y() < height() ? TopEdge : 0 ) |
-                ( EDGE_WIDTH*(height()-currentPos.y()) < height() ? BottomEdge : 0 );
+            if (buttons_ == Qt::NoButton)
+              edge_ =
+                (EDGE_WIDTH*currentPos.x() < width() ? LeftEdge : 0) |
+                (EDGE_WIDTH* (width()-currentPos.x()) < width() ? RightEdge : 0) |
+                (EDGE_WIDTH*currentPos.y() < height() ? TopEdge : 0) |
+                (EDGE_WIDTH* (height()-currentPos.y()) < height() ? BottomEdge : 0);
             if (mouse_move()) event->accept();
             else event->ignore();
           }
 
 
-          void mouseDoubleClickEvent (QMouseEvent* event) 
-          {
-            if (mouse_doubleclick()) 
+          void mouseDoubleClickEvent (QMouseEvent* event) {
+            if (mouse_doubleclick())
               event->accept();
             else
-              event->ignore(); 
+              event->ignore();
           }
 
-          void mouseReleaseEvent (QMouseEvent* event) 
-          {
+          void mouseReleaseEvent (QMouseEvent* event) {
             if (event->buttons() != Qt::NoButton) return;
-            if (mouse_release()) 
+            if (mouse_release())
               event->accept();
             else
-              event->ignore(); 
+              event->ignore();
 
             buttons_ = Qt::NoButton;
             modifiers_ = Qt::NoModifier;
           }
 
-          void wheelEvent (QWheelEvent* event)
-          {
+          void wheelEvent (QWheelEvent* event) {
             buttons_ = event->buttons();
             modifiers_ = event->modifiers();
             lastPos = currentPos = event->pos();
-            if (mouse_wheel (event->delta()/120.0, event->orientation())) event->accept();
+            if (mouse_wheel (event->delta() /120.0, event->orientation())) event->accept();
             else event->ignore();
           }
 

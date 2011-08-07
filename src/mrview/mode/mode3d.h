@@ -23,13 +23,13 @@
 #ifndef __viewer_mode_mode3d_h__
 #define __viewer_mode_mode3d_h__
 
-#include "mrview/mode/base.h"
+#include "mrview/mode/mode2d.h"
 
 namespace MR {
   namespace Viewer {
     namespace Mode {
 
-      class Mode3D : public Base 
+      class Mode3D : public Mode2D 
       {
         public:
           Mode3D (Window& parent);
@@ -41,6 +41,9 @@ namespace MR {
           virtual bool mouse_move ();
           virtual bool mouse_release ();
           virtual bool mouse_wheel (float delta, Qt::Orientation orientation);
+
+        public slots:
+          virtual void reset ();
 
         private:
           void set_cursor ();

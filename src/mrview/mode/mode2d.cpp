@@ -200,7 +200,7 @@ namespace MR {
             }
 
             if (mouse_edge() & RightEdge) {
-              move_in_out (-0.001*mouse_dpos().y()*FOV());
+              move_in_out (-2e-6*mouse_dpos().y()*FOV());
               updateGL();
               return true;
             }

@@ -44,17 +44,16 @@ namespace MR {
           virtual bool mouse_release ();
           virtual bool mouse_wheel (float delta, Qt::Orientation orientation);
 
-          void reset_view ();
+          virtual void reset_view ();
 
         public slots:
-          void axial ();
-          void sagittal ();
-          void coronal ();
-          void reset ();
+          virtual void axial ();
+          virtual void sagittal ();
+          virtual void coronal ();
+          virtual void reset ();
 
         protected:
           QAction *axial_action, *sagittal_action, *coronal_action;
-          Point<> lookat;
 
           void set_cursor ();
       };
