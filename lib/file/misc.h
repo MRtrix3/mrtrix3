@@ -28,9 +28,11 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 
+#include "debug.h"
 #include "mrtrix.h"
 #include "types.h"
 #include "file/path.h"
+#include "file/overwrite.h"
 
 #define TMPFILE_ROOT "mrtrix-tmp-"
 #define TMPFILE_ROOT_LEN 11
@@ -46,24 +48,38 @@ namespace MR
       inline char random_char ()
       {
         char c = rand () % 62;
-        if (c < 10) return (c+48);
-        if (c < 36) return (c+55);
-        return (c+61);
+        if (c < 10) return c+48;
+        if (c < 36) return c+55;
+        return c+61;
+      }
+
+      inline void do_create (const std::string& filename, int64_t size)
+      {
+        int fid = open64 (filename.c_str(), O_CREAT | O_RDWR | O_TRUNC, 0644);
+        if (fid < 0) 
+          throw Exception ("error creating file \"" + filename + "\": " + strerror (errno));
+
+        if (size) size = ftruncate64 (fid, size);
+        close (fid);
+        if (size) 
+          throw Exception ("WARNING: cannot resize file \"" + filename + "\": " + strerror (errno));
       }
     }
 
 
 
-    inline void create (const std::string& filename, int64_t size = 0)
-    {
-      int fid = open64 (filename.c_str(), O_CREAT | O_RDWR | O_EXCL, 0644);
-      if (fid < 0) throw Exception ("error creating file \"" + filename + "\": " + strerror (errno));
 
-      if (size) size = ftruncate64 (fid, size);
-      close (fid);
-      if (size) throw Exception ("WARNING: cannot resize file \"" + filename + "\": " + strerror (errno));
+    inline void create (ConfirmOverwrite& confirm_overwrite, const std::string& filename, int64_t size = 0)
+    {
+      confirm_overwrite (filename);
+      do_create (filename, size);
     }
 
+    inline void create (const std::string& filename, int64_t size = 0)
+    { 
+      ConfirmOverwrite::single_file (filename);
+      do_create (filename, size);
+    }
 
 
 
@@ -72,10 +88,12 @@ namespace MR
       debug ("resizing file \"" + filename + "\" to " + str (size) + "...");
 
       int fd = open64 (filename.c_str(), O_RDWR, 0644);
-      if (fd < 0) throw Exception ("error opening file \"" + filename + "\" for resizing: " + strerror (errno));
+      if (fd < 0)
+        throw Exception ("error opening file \"" + filename + "\" for resizing: " + strerror (errno));
       int status = ftruncate64 (fd, size);
       close (fd);
-      if (status) throw Exception ("cannot resize file \"" + filename + "\": " + strerror (errno));
+      if (status)
+        throw Exception ("cannot resize file \"" + filename + "\": " + strerror (errno));
     }
 
 
@@ -83,9 +101,9 @@ namespace MR
 
     inline bool is_tempfile (const std::string& name, const char* suffix = NULL)
     {
-      if (Path::basename (name).compare (0, TMPFILE_ROOT_LEN, TMPFILE_ROOT)) return (false);
-      if (suffix) if (!Path::has_suffix (name, suffix)) return (false);
-      return (true);
+      if (Path::basename (name).compare (0, TMPFILE_ROOT_LEN, TMPFILE_ROOT)) return false;
+      if (suffix) if (!Path::has_suffix (name, suffix)) return false;
+      return true;
     }
 
 
@@ -108,7 +126,7 @@ namespace MR
       int status = size ? ftruncate64 (fid, size) : 0;
       close (fid);
       if (status) throw Exception ("cannot resize file \"" + filename + "\": " + strerror (errno));
-      return (filename);
+      return filename;
     }
 
   }

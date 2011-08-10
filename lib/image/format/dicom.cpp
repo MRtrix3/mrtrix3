@@ -61,7 +61,7 @@ namespace MR
       {
         return (false);
       }
-      void DICOM::create (Header& H) const
+      void DICOM::create (Header& H, File::ConfirmOverwrite& confirm_overwrite) const
       {
         assert (0);
       }

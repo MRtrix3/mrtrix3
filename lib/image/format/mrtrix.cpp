@@ -47,7 +47,8 @@ namespace MR
 
       bool MRtrix::read (Header& H) const
       {
-        if (!Path::has_suffix (H.name(), ".mih") && !Path::has_suffix (H.name(), ".mif")) return (false);
+        if (!Path::has_suffix (H.name(), ".mih") && !Path::has_suffix (H.name(), ".mif")) 
+          return false;
 
         File::KeyValue kv (H.name(), "mrtrix image");
 
@@ -171,7 +172,7 @@ namespace MR
         for (size_t n = 0; n < list.size(); ++n)
           H.add_file (File::Entry (list[n].name(), offset));
 
-        return (true);
+        return true;
       }
 
 
@@ -182,23 +183,23 @@ namespace MR
       {
         if (!Path::has_suffix (H.name(), ".mih") &&
             !Path::has_suffix (H.name(), ".mif"))
-          return (false);
+          return false;
 
         H.set_ndim (num_axes);
         for (size_t i = 0; i < H.ndim(); i++)
           if (H.dim (i) < 1)
             H.set_dim (i, 1);
 
-        return (true);
+        return true;
       }
 
 
 
 
-      void MRtrix::create (Header& H) const
+      void MRtrix::create (Header& H, File::ConfirmOverwrite& confirm_overwrite) const
       {
         if (!File::is_tempfile (H.name()))
-          File::create (H.name());
+          File::create (confirm_overwrite, H.name());
 
         std::ofstream out (H.name().c_str(), std::ios::out | std::ios::binary);
         if (!out)

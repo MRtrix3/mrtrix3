@@ -131,10 +131,12 @@ namespace MR
 
 
 
-      void XDS::create (Header& H) const
+      void XDS::create (Header& H, File::ConfirmOverwrite& confirm_overwrite) const
       {
         std::string header_name (H.name());
         header_name.replace (header_name.size()-6, 6, "hdr");
+
+        confirm_overwrite (header_name);
 
         std::ofstream out (header_name.c_str());
         if (!out)
@@ -144,7 +146,7 @@ namespace MR
             << " " << (H.datatype().is_little_endian() ? 1 : 0) << "\n";
         out.close();
 
-        File::create (H.name(), H.footprint ("11 1"));
+        File::create (confirm_overwrite, H.name(), H.footprint ("11 1"));
         H.add_file (File::Entry (H.name()));
       }
 

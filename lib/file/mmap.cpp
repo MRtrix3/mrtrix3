@@ -49,8 +49,11 @@ namespace MR
 
       mtime = sbuf.st_mtime;
 
-      if (start + msize > sbuf.st_size) throw Exception ("file \"" + Entry::name + "\" is smaller than expected");
-      if (msize < 0) msize = sbuf.st_size - start;
+      if (start + msize > sbuf.st_size) 
+        throw Exception ("file \"" + Entry::name + "\" is smaller than expected");
+
+      if (msize < 0) 
+        msize = sbuf.st_size - start;
 
       if ( (fd = open64 (Entry::name.c_str(), (readwrite ? O_RDWR : O_RDONLY), 0644)) < 0)
         throw Exception ("error opening file \"" + Entry::name + "\": " + strerror (errno));

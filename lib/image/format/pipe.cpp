@@ -76,9 +76,9 @@ namespace MR
 
 
 
-      void Pipe::create (Header& H) const
+      void Pipe::create (Header& H, File::ConfirmOverwrite& confirm_overwrite) const
       {
-        mrtrix_handler.create (H);
+        mrtrix_handler.create (H, confirm_overwrite);
         H.set_handler (new Handler::Pipe (H, true));
       }
 

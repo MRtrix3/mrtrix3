@@ -72,30 +72,30 @@ namespace MR
     inline bool exists (const std::string& path)
     {
       struct stat64 buf;
-      if (!stat64 (path.c_str(), &buf)) return (true);
-      if (errno == ENOENT) return (false);
+      if (!stat64 (path.c_str(), &buf)) return true;
+      if (errno == ENOENT) return false;
       throw Exception (strerror (errno));
-      return (false);
+      return false;
     }
 
 
     inline bool is_dir (const std::string& path)
     {
       struct stat64 buf;
-      if (!stat64 (path.c_str(), &buf)) return (S_ISDIR (buf.st_mode));
-      if (errno == ENOENT) return (false);
+      if (!stat64 (path.c_str(), &buf)) return S_ISDIR (buf.st_mode);
+      if (errno == ENOENT) return false;
       throw Exception (strerror (errno));
-      return (false);
+      return false;
     }
 
 
     inline bool is_file (const std::string& path)
     {
       struct stat64 buf;
-      if (!stat64 (path.c_str(), &buf)) return (S_ISREG (buf.st_mode));
-      if (errno == ENOENT) return (false);
+      if (!stat64 (path.c_str(), &buf)) return S_ISREG (buf.st_mode);
+      if (errno == ENOENT) return false;
       throw Exception (strerror (errno));
-      return (false);
+      return false;
     }
 
     inline bool has_suffix (const std::string& name, const std::string& suffix)
@@ -110,17 +110,18 @@ namespace MR
     {
       char buf [buf_size];
       if (getcwd (buf, buf_size))
-        return (buf);
+        return buf;
       if (errno != ERANGE)
         throw Exception ("failed to get current working directory!");
-      return (cwd (buf_size * 2));
+      return cwd (buf_size * 2);
     }
 
     inline std::string home ()
     {
       const char* home = getenv ("HOME");
-      if (!home) throw Exception ("HOME environment variable is not set!");
-      return (home);
+      if (!home)
+        throw Exception ("HOME environment variable is not set!");
+      return home;
     }
 
     class Dir
@@ -142,7 +143,7 @@ namespace MR
             ret = entry->d_name;
             if (ret == "." || ret == "..") ret = read_name();
           }
-          return (ret);
+          return ret;
         }
         void rewind () {
           rewinddir (p);

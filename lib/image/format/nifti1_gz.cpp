@@ -80,7 +80,7 @@ namespace MR
 
 
 
-      void NIfTI_GZ::create (Header& H) const
+      void NIfTI_GZ::create (Header& H, File::ConfirmOverwrite& confirm_overwrite) const
       {
         if (H.ndim() > 7)
           throw Exception ("NIfTI-1.1 format cannot support more than 7 dimensions for image \"" + H.name() + "\"");
@@ -91,7 +91,7 @@ namespace MR
 
         H.set_handler (handler);
 
-        File::create (H.name());
+        File::create (confirm_overwrite, H.name());
         H.add_file (File::Entry (H.name(), 352));
       }
 

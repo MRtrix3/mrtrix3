@@ -48,21 +48,21 @@ namespace MR
         }
         ~MMap ();
 
-        std::string     name () const        {
-          return (Entry::name);
+        std::string name () const {
+          return Entry::name;
         }
-        int64_t         size () const        {
-          return (msize);
+        int64_t size () const {
+          return msize;
         }
-        uint8_t*        address()            {
-          return (addr + start);
+        uint8_t* address() {
+          return addr + start;
         }
-        const uint8_t*  address() const      {
-          return (addr + start);
+        const uint8_t* address() const {
+          return addr + start;
         }
 
-        bool is_read_write () const           {
-          return (readwrite);
+        bool is_read_write () const {
+          return readwrite;
         }
         bool changed () const;
 
@@ -70,7 +70,7 @@ namespace MR
           stream << "File::MMap { " << m.name() << " [" << m.fd << "], size: "
                  << m.size() << ", mapped " << (m.readwrite ? "RW" : "RO")
                  << " at " << (void*) m.address() << ", offset " << m.start << " }";
-          return (stream);
+          return stream;
         }
 
       protected:

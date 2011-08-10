@@ -77,7 +77,7 @@ namespace MR
 
 
 
-      void Analyse::create (Header& H) const
+      void Analyse::create (Header& H, File::ConfirmOverwrite& confirm_overwrite) const
       {
         if (H.ndim() > 7)
           throw Exception ("NIfTI-1.1 format cannot support more than 7 dimensions for image \"" + H.name() + "\"");
@@ -86,7 +86,7 @@ namespace MR
         File::NIfTI::write (NH, H, false);
 
         std::string hdr_name (H.name().substr (0, H.name().size()-4) + ".hdr");
-        File::create (hdr_name);
+        File::create (confirm_overwrite, hdr_name);
 
         std::ofstream out (hdr_name.c_str());
         if (!out)
@@ -94,7 +94,7 @@ namespace MR
         out.write ( (char*) &NH, 352);
         out.close();
 
-        File::create (H.name(), H.footprint());
+        File::create (confirm_overwrite, H.name(), H.footprint());
 
         H.add_file (File::Entry (H.name()));
       }

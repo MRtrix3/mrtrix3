@@ -333,7 +333,7 @@ namespace MR
         dtype_.set_byte_order_native();
         int a = 0;
         for (size_t n = 0; n < Pdim.size(); ++n) {
-          while (stride (a)) a++;
+          while (stride (a) && a < int(ndim())) a++;
           Pdim[n] = Hdim[a];
         }
         parser.calculate_padding (Pdim);
@@ -344,12 +344,14 @@ namespace MR
         if (image_name != "-")
           name_ = parser.name (num);
 
-        (*format_handler)->create (*this);
+        File::ConfirmOverwrite confirm_overwrite;
+        (*format_handler)->create (*this, confirm_overwrite);
 
         while (get_next (num, Pdim)) {
           header.name_ = parser.name (num);
-          (*format_handler)->create (header);
+          (*format_handler)->create (header, confirm_overwrite);
           merge (header);
+          header.files_.clear();
         }
 
         if (Pdim.size()) {

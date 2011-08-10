@@ -269,9 +269,9 @@ namespace MR
 
 
 
-      void MRI::create (Header& H) const
+      void MRI::create (Header& H, File::ConfirmOverwrite& confirm_overwrite) const
       {
-        File::create (H.name());
+        File::create (confirm_overwrite, H.name());
         std::ofstream out (H.name().c_str());
         if (!out)
           throw Exception ("error creating file \"" + H.name() + "\": " + strerror (errno));

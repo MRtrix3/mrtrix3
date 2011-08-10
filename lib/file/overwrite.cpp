@@ -1,7 +1,7 @@
 /*
     Copyright 2008 Brain Research Institute, Melbourne, Australia
 
-    Written by J-Donald Tournier, 24/07/09.
+    Written by J-Donald Tournier, 27/06/08.
 
     This file is part of MRtrix.
 
@@ -20,36 +20,33 @@
 
 */
 
-#ifndef __file_entry_h__
-#define __file_entry_h__
+#include <iostream>
 
-#include <string>
-
-#include "types.h"
+#include "app.h"
+#include "debug.h"
+#include "file/overwrite.h"
 
 namespace MR
 {
   namespace File
   {
 
-    class Entry
+    char confirm_overwrite_cmdline_func (const std::string& filename, bool yestoall)
     {
-      public:
-        Entry (const std::string& fname, int64_t offset = 0) :
-          name (fname), start (offset) { }
-
-        std::string name;
-        int64_t start;
-    };
-
-
-    inline std::ostream& operator<< (std::ostream& stream, const Entry& e)
-    {
-      stream << "File::Entry { \"" << e.name << "\", offset " << e.start << " }";
-      return stream;
+      std::cerr << App::name() << ": overwrite '" << filename << 
+        ( yestoall ? "' (Yes|yes to All|No) (y|a|N) ? " : "' (Yes|No) (y|N) ? " );
+      std::string response;
+      std::cin >> response;
+      if (response.empty()) return 'n';
+      return response[0];
     }
+
+
+    char (*confirm_overwrite_func) (const std::string& filename, bool yestoall) = confirm_overwrite_cmdline_func;
+
+
   }
 }
 
-#endif
+
 
