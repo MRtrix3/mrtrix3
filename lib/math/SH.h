@@ -213,7 +213,7 @@ namespace MR
         public:
           Rotate (Point<T>& axis, T angle, int l_max, const Math::Matrix<T>& directions) :
             lmax (l_max) {
-            Quaternion<T> Q (angle, axis.get());
+            Quaternion<T> Q (angle, axis);
             T rotation_data [9];
             Q.to_matrix (rotation_data);
             const Matrix<T> R (rotation_data, 3, 3);
@@ -227,8 +227,8 @@ namespace MR
               delta (V, dir, lmax);
 
               Point<T> dir_rot;
-              Vector<T> V_dir (dir.get(), 3);
-              Vector<T> V_dir_rot (dir_rot.get(), 3);
+              Vector<T> V_dir (dir, 3);
+              Vector<T> V_dir_rot (dir_rot, 3);
               mult (V_dir_rot, R, V_dir);
               Vector<T> V_rot (D_rot.column (i));
               delta (V_rot, dir_rot, lmax);
