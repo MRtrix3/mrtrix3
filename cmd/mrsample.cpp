@@ -26,6 +26,7 @@
 #include "dataset/interp/nearest.h"
 #include "dataset/interp/linear.h"
 #include "dataset/interp/cubic.h"
+#include "dataset/interp/sinc.h"
 #include "dataset/interp/reslice.h"
 
 using namespace std;
@@ -40,7 +41,7 @@ DESCRIPTION = {
   NULL
 };
 
-const char* interp_choices[] = { "nearest", "linear", "cubic", NULL };
+const char* interp_choices[] = { "nearest", "linear", "cubic", "sinc", NULL };
 
 ARGUMENTS = {
   Argument ("input", "the input image.").type_image_in (),
@@ -62,23 +63,22 @@ OPTIONS = {
 typedef float value_type;
 
 EXECUTE {
-  Image::Header input_header(argument[0]);
+  Image::Header input_header (argument[0]);
   assert (!input_header.is_complex());
 
-  float sample_factor;
-  sample_factor = argument[1];
+  const float sample_factor = argument[1];
 
   // TODO handle resample factors that are not neat multiples of 1
   Image::Header output_header (input_header);
   for (int n = 0; n < 3; n++){
-    output_header.set_dim(n, input_header.dim(n) * sample_factor);
-    output_header.set_vox(n, input_header.vox(n) / sample_factor);
+    output_header.set_dim (n, input_header.dim(n) * sample_factor);
+    output_header.set_vox (n, input_header.vox(n) / sample_factor);
   }
-  output_header.set_datatype(DataType::Float32);
+  output_header.set_datatype (DataType::Float32);
 
-  output_header.create(argument[2]);
+  output_header.create (argument[2]);
 
-  Image::Voxel<float> in (input_header);
+  Image::Voxel<float> in  (input_header);
   Image::Voxel<float> out (output_header);
 
   int interp = 2;
@@ -90,8 +90,9 @@ EXECUTE {
 
   switch (interp) {
     case 0: DataSet::Interp::reslice<DataSet::Interp::Nearest> (out, in, T); break;
-    case 1: DataSet::Interp::reslice<DataSet::Interp::Linear> (out, in, T); break;
-    case 2: DataSet::Interp::reslice<DataSet::Interp::Cubic> (out, in, T); break;
+    case 1: DataSet::Interp::reslice<DataSet::Interp::Linear>  (out, in, T); break;
+    case 2: DataSet::Interp::reslice<DataSet::Interp::Cubic>   (out, in, T); break;
+    case 3: DataSet::Interp::reslice<DataSet::Interp::Sinc>    (out, in, T); break;
     default: assert (0);
   }
 }

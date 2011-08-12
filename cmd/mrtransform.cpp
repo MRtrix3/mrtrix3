@@ -26,6 +26,7 @@
 #include "dataset/interp/nearest.h"
 #include "dataset/interp/linear.h"
 #include "dataset/interp/cubic.h"
+#include "dataset/interp/sinc.h"
 #include "dataset/interp/reslice.h"
 #include "dataset/misc.h"
 #include "dataset/loop.h"
@@ -52,7 +53,7 @@ ARGUMENTS = {
 };
 
 
-const char* interp_choices[] = { "nearest", "linear", "cubic", NULL };
+const char* interp_choices[] = { "nearest", "linear", "cubic", "sinc", NULL };
 
 OPTIONS = {
 
@@ -180,6 +181,9 @@ EXECUTE {
         break;
       case 2:
         DataSet::Interp::reslice<DataSet::Interp::Cubic> (out, in, T, oversample);
+        break;
+      case 3:
+        DataSet::Interp::reslice<DataSet::Interp::Sinc> (out, in, T, oversample);
         break;
       default:
         assert (0);
