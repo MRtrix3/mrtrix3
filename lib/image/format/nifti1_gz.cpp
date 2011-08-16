@@ -20,7 +20,7 @@
 
 */
 
-#include "file/misc.h"
+#include "file/utils.h"
 #include "file/path.h"
 #include "file/gz.h"
 #include "file/nifti1_utils.h"

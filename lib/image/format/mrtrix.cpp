@@ -25,7 +25,7 @@
 #include <fstream>
 
 #include "types.h"
-#include "file/misc.h"
+#include "file/utils.h"
 #include "file/entry.h"
 #include "file/path.h"
 #include "file/key_value.h"

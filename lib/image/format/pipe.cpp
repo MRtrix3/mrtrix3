@@ -20,7 +20,7 @@
 
 */
 
-#include "file/misc.h"
+#include "file/utils.h"
 #include "file/path.h"
 #include "image/header.h"
 #include "image/handler/pipe.h"

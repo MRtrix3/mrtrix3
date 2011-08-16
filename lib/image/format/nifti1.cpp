@@ -21,7 +21,7 @@
 */
 
 #include "file/path.h"
-#include "file/misc.h"
+#include "file/utils.h"
 #include "file/nifti1_utils.h"
 #include "dataset/misc.h"
 #include "image/header.h"

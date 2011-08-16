@@ -26,6 +26,7 @@
 #include <stdint.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <sys/sendfile.h>
 #include <fcntl.h>
 
 #include "debug.h"
@@ -53,16 +54,17 @@ namespace MR
         return c+61;
       }
 
-      inline void do_create (const std::string& filename, int64_t size)
+      inline int do_create (const std::string& filename, int64_t size)
       {
         int fid = open64 (filename.c_str(), O_CREAT | O_RDWR | O_TRUNC, 0644);
         if (fid < 0) 
           throw Exception ("error creating file \"" + filename + "\": " + strerror (errno));
 
         if (size) size = ftruncate64 (fid, size);
-        close (fid);
         if (size) 
           throw Exception ("WARNING: cannot resize file \"" + filename + "\": " + strerror (errno));
+
+        return fid;
       }
     }
 
@@ -72,13 +74,13 @@ namespace MR
     inline void create (ConfirmOverwrite& confirm_overwrite, const std::string& filename, int64_t size = 0)
     {
       confirm_overwrite (filename);
-      do_create (filename, size);
+      close (do_create (filename, size));
     }
 
     inline void create (const std::string& filename, int64_t size = 0)
     { 
       ConfirmOverwrite::single_file (filename);
-      do_create (filename, size);
+      close (do_create (filename, size));
     }
 
 
@@ -128,6 +130,39 @@ namespace MR
       if (status) throw Exception ("cannot resize file \"" + filename + "\": " + strerror (errno));
       return filename;
     }
+
+
+    inline void mkdir (const std::string& folder) 
+    {
+      if (::mkdir (folder.c_str(), 0777))
+        throw Exception ("error creating folder \"" + folder + "\": " + strerror (errno));
+    }
+    
+
+    inline void unlink (const std::string& file) 
+    {
+      if (::unlink (file.c_str()))
+        throw Exception ("error deleting file \"" + file + "\": " + strerror (errno));;
+    }
+
+    inline void rmdir (const std::string& folder, bool recursive = false)
+    {
+      if (recursive) {
+        Path::Dir dir (folder);
+        std::string entry;
+        while ((entry = dir.read_name()).size()) {
+          std::string path = Path::join (folder, entry);
+          if (Path::is_dir (path))
+            rmdir (path, true);
+          else 
+            unlink (path);
+        }
+      }
+      debug ("deleting folder \"" + folder + "\"...");
+      if (::rmdir (folder.c_str()))
+        throw Exception ("error deleting folder \"" + folder + "\": " + strerror (errno));
+    }
+
 
   }
 }

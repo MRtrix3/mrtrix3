@@ -63,9 +63,15 @@ namespace MR
 
     inline std::string join (const std::string& first, const std::string& second)
     {
-      return (first.empty() ?
-              second :
-              first + std::string (PATH_SEPARATOR) [0] + second);
+      if (first.empty()) 
+        return second;
+      if (first[first.size()-1] != PATH_SEPARATOR[0]
+#ifdef WINDOWS
+          && first[first.size()-1] != PATH_SEPARATOR[1]
+#endif
+          ) 
+        return first + PATH_SEPARATOR[0] + second;
+      return first + second;
     }
 
 

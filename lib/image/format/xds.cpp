@@ -22,7 +22,7 @@
 
 #include <fstream>
 
-#include "file/misc.h"
+#include "file/utils.h"
 #include "file/path.h"
 #include "file/entry.h"
 #include "dataset/misc.h"

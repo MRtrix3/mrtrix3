@@ -23,7 +23,7 @@
 
 #include "file/config.h"
 #include "file/path.h"
-#include "file/misc.h"
+#include "file/utils.h"
 #include "file/mmap.h"
 #include "dataset/misc.h"
 #include "image/format/list.h"
