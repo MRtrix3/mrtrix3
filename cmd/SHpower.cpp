@@ -27,31 +27,22 @@
 #include "math/SH.h"
 #include "dataset/loop.h"
 
-using namespace std;
+MRTRIX_APPLICATION
+
 using namespace MR;
+using namespace App;
 
-SET_VERSION_DEFAULT;
-SET_AUTHOR (NULL);
-SET_COPYRIGHT (NULL);
+void usage () {
+  DESCRIPTION 
+    + "compute the power contained within each harmonic degree.";
 
-DESCRIPTION = {
-  "compute the power contained within each harmonic degree.",
-  NULL
-};
-
-ARGUMENTS = {
-  Argument ("SH", "the input spherical harmonics coefficients image.").type_image_in (),
-  Argument ("power", "the ouput power image.").type_image_out (),
-  Argument ()
-};
+  ARGUMENTS 
+    + Argument ("SH", "the input spherical harmonics coefficients image.").type_image_in ()
+    + Argument ("power", "the ouput power image.").type_image_out ();
+}
 
 
-OPTIONS = {
-  Option ()
-};
-
-
-EXECUTE {
+void run () {
   Image::Header SH_header (argument[0]);
   Image::Header power_header (SH_header);
 

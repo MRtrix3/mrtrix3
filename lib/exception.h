@@ -48,20 +48,8 @@ namespace MR
         description.push_back (msg);
       }
 
-      void  display (int log_level = 1) const {
-        for (size_t n = 0; n < description.size(); ++n) {
-          switch (log_level) {
-            case 1:
-              error (description[n]);
-              break;
-            case 2:
-              info (description[n]);
-              break;
-            case 3:
-              debug (description[n]);
-              break;
-          }
-        }
+      void display (int log_level = 1) const {
+        display_func (*this, log_level);
       }
 
       size_t num () const {
@@ -71,10 +59,17 @@ namespace MR
         return (description[n]);
       }
 
-    private:
+      static void (*display_func) (const Exception& E, int log_level);
+
       std::vector<std::string> description;
   };
 
+
+  void display_exception_cmdline (const Exception& E, int log_level);
+  void cmdline_print (const std::string& msg);
+  void cmdline_error (const std::string& msg);
+  void cmdline_info (const std::string& msg);
+  void cmdline_debug (const std::string& msg);
 }
 
 #endif

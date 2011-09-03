@@ -478,6 +478,22 @@ namespace MR
 
 
 
+
+    void Header::set_datatype_from_command_line (DataType new_datatype)
+    {
+      using namespace App;
+      Options opt = get_options ("datatype");
+      if (opt.size())
+        set_datatype (opt[0][0]);
+      else {
+        if (new_datatype != DataType::Undefined)
+          set_datatype (new_datatype);
+      }
+    }
+
+
+
+
     std::ostream& operator<< (std::ostream& stream, const Header& H)
     {
       stream << H.description();

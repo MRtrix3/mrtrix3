@@ -20,15 +20,58 @@
 
 */
 
+#include "app.h"
 #include "exception.h"
 
 namespace MR
 {
 
-  void (*print) (const std::string& msg) = NULL;
-  void (*error) (const std::string& msg) = NULL;
-  void (*info) (const std::string& msg) = NULL;
-  void (*debug) (const std::string& msg) = NULL;
+
+  void display_exception_cmdline (const Exception& E, int log_level)
+  {
+    for (size_t n = 0; n < E.description.size(); ++n) {
+      switch (log_level) {
+        case 1:
+          error (E.description[n]);
+          break;
+        case 2:
+          info (E.description[n]);
+          break;
+        case 3:
+          debug (E.description[n]);
+          break;
+      }
+    }
+  }
+
+  void cmdline_print (const std::string& msg)
+  {
+    std::cout << msg;
+  }
+
+  void cmdline_error (const std::string& msg)
+  {
+    if (App::log_level) std::cerr << App::NAME << ": " << msg << "\n";
+  }
+
+  void cmdline_info (const std::string& msg)
+  {
+    if (App::log_level > 1) std::cerr << App::NAME << " [INFO]: " <<  msg << "\n";
+  }
+
+  void cmdline_debug (const std::string& msg)
+  {
+    if (App::log_level > 2) std::cerr << App::NAME << " [DEBUG]: " <<  msg << "\n";
+  }
+
+
+
+  void (*print) (const std::string& msg) = cmdline_print;
+  void (*error) (const std::string& msg) = cmdline_error;
+  void (*info) (const std::string& msg) = cmdline_info;
+  void (*debug) (const std::string& msg) = cmdline_debug;
+
+  void (*Exception::display_func) (const Exception& E, int log_level) = display_exception_cmdline;
 
 }
 

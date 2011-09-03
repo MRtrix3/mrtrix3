@@ -27,65 +27,56 @@
 #include "dataset/loop.h"
 #include "image/voxel.h"
 
+MRTRIX_APPLICATION
+
 #define DOT_THRESHOLD 0.99
 
-using namespace std;
 using namespace MR;
+using namespace App;
 
-SET_VERSION_DEFAULT;
-SET_AUTHOR (NULL);
-SET_COPYRIGHT (NULL);
+void usage ()
+{
+  DESCRIPTION
+  + "compute the amplitudes of a spherical harmonic function at each voxel, along the specified directions";
 
-DESCRIPTION = {
-  "compute the amplitudes of a spherical harmonic function at each voxel, along the specified directions",
-  NULL
-};
+  ARGUMENTS
+  + Argument ("SH", "the input image of SH coefficients.")
+  .type_image_in ()
 
+  + Argument ("ouput",
+              "the output image. Each volume corresponds to the x, y & z component "
+              "of each peak direction vector in turn.")
+  .type_image_out ();
 
-ARGUMENTS = {
-  Argument ("SH", "the input image of SH coefficients.")
-  .type_image_in (),
+  OPTIONS
+  + Option ("num", "the number of peaks to extract (default is 3).")
+  + Argument ("peaks").type_integer (0, 3, std::numeric_limits<int>::max())
 
-  Argument ("ouput",
-  "the output image. Each volume corresponds to the x, y & z component "
-  "of each peak direction vector in turn.")
-  .type_image_out (),
-
-  Argument ()
-};
-
-
-OPTIONS = {
-  Option ("num", "the number of peaks to extract (default is 3).")
-  + Argument ("peaks").type_integer (0, 3, std::numeric_limits<int>::max()),
-
-  Option ("direction",
-  "the direction of a peak to estimate. The algorithm will attempt to "
-  "find the same number of peaks as have been specified using this option.")
+  + Option ("direction",
+            "the direction of a peak to estimate. The algorithm will attempt to "
+            "find the same number of peaks as have been specified using this option.")
   .allow_multiple()
   + Argument ("phi").type_float()
-  + Argument ("theta").type_float(),
+  + Argument ("theta").type_float()
 
-  Option ("peaks",
-  "the program will try to find the peaks that most closely match those "
-  "in the image provided.")
-  + Argument ("image").type_image_in(),
+  + Option ("peaks",
+            "the program will try to find the peaks that most closely match those "
+            "in the image provided.")
+  + Argument ("image").type_image_in()
 
-  Option ("threshold",
-  "only peak amplitudes greater than the threshold will be considered.")
-  + Argument ("value").type_float(),
+  + Option ("threshold",
+            "only peak amplitudes greater than the threshold will be considered.")
+  + Argument ("value").type_float()
 
-  Option ("seeds",
-  "specify a set of directions from which to start the multiple restarts of "
-  "the optimisation (by default, the built-in 60 direction set is used)")
-  + Argument ("file").type_file(),
+  + Option ("seeds",
+            "specify a set of directions from which to start the multiple restarts of "
+            "the optimisation (by default, the built-in 60 direction set is used)")
+  + Argument ("file").type_file()
 
-  Option ("mask",
-  "only perform computation within the specified binary brain mask image.")
-  + Argument ("image").type_image_in (),
-
-  Option ()
-};
+  + Option ("mask",
+            "only perform computation within the specified binary brain mask image.")
+  + Argument ("image").type_image_in ();
+}
 
 
 typedef float value_type;
@@ -328,7 +319,8 @@ extern value_type default_directions [];
 
 
 
-EXECUTE {
+void run ()
+{
   Image::Header sh_header (argument[0]);
   assert (!sh_header.is_complex());
 
@@ -380,10 +372,10 @@ EXECUTE {
       ipeaks_header = new Image::Header (opt[0][0]);
 
     if (ipeaks_header->dim (0) != directions_header.dim (0) ||
-    ipeaks_header->dim (1) != directions_header.dim (1) ||
-    ipeaks_header->dim (2) != directions_header.dim (2))
+        ipeaks_header->dim (1) != directions_header.dim (1) ||
+        ipeaks_header->dim (2) != directions_header.dim (2))
       throw Exception ("dimensions of peaks image \"" + ipeaks_header->name() +
-      "\" do not match that of SH coefficients image \"" + directions_header.name() + "\"");
+                       "\" do not match that of SH coefficients image \"" + directions_header.name() + "\"");
     npeaks = ipeaks_header->dim (3) / 3;
   }
   directions_header.set_dim (3, 3 * npeaks);
@@ -393,7 +385,7 @@ EXECUTE {
   Queue queue ("find_SH_peaks queue", 100, ItemAllocator (sh_header.dim (3)));
   DataLoader loader (queue, sh_header, mask_header);
   Processor processor (queue, directions_header, dirs, Math::SH::LforN (sh_header.dim (3)),
-  npeaks, true_peaks, threshold, ipeaks_header);
+                       npeaks, true_peaks, threshold, ipeaks_header);
 
   Thread::Exec loader_thread (loader, "loader");
   Thread::Array<Processor> processor_list (processor);

@@ -32,50 +32,43 @@
 #include "dataset/loop.h"
 #include "dwi/gradient.h"
 
-using namespace std;
+MRTRIX_APPLICATION
+
 using namespace MR;
+using namespace App;
 
-SET_VERSION_DEFAULT;
-SET_AUTHOR (NULL);
-SET_COPYRIGHT (NULL);
+void usage () {
+  AUTHOR = "David Raffelt (draffelt@gmail.com)";
 
-DESCRIPTION = {
-  "Generates an whole brain mask from a DWI image."
+DESCRIPTION 
+  + "Generates an whole brain mask from a DWI image."
   "Both diffusion weighted and b=0 volumes are required to "
-  "obtain a mask that includes both brain tissue and CSF.",
-  NULL
-};
+  "obtain a mask that includes both brain tissue and CSF.";
 
-ARGUMENTS = {
-
-  Argument ("image",
+ARGUMENTS 
+   + Argument ("image",
     "the input DWI image containing volumes that are both diffusion weighted and b=0")
-    .type_image_in (),
+    .type_image_in ()
 
-  Argument ("image",
+   + Argument ("image",
     "the output whole brain mask image")
-    .type_image_out (),
+    .type_image_out ();
 
-  Argument ()
-};
+OPTIONS 
 
-
-OPTIONS = {
-
-  Option ("grad",
+  + Option ("grad",
   "specify the diffusion-weighted gradient scheme used in the acquisition. "
   "The program will normally attempt to use the encoding stored in the image "
   "header. This should be supplied as a 4xN text file with each line is in "
   "the format [ X Y Z b ], where [ X Y Z ] describe the direction of the "
   "applied gradient, and b gives the b-value in units (1000 s/mm^2).")
-  + Argument ("encoding").type_file(),
+  + Argument ("encoding").type_file();
+}
 
-  Option ()
-};
 
 typedef float value_type;
 
-EXECUTE {
+void run () {
   Image::Header input_header (argument[0]);
   assert (!input_header.is_complex());
   Image::Voxel<value_type> input_voxel (input_header);

@@ -20,40 +20,33 @@
 
 */
 
-#include "file/dicom/element.h"
 #include "app.h"
+#include "file/dicom/element.h"
+
+MRTRIX_APPLICATION
 
 using namespace MR;
+using namespace App;
 
-SET_VERSION_DEFAULT;
-SET_AUTHOR (NULL);
-SET_COPYRIGHT (NULL);
+void usage () {
+  DESCRIPTION 
+  + "read a DICOM file and output a suitable filename for its storage.";
 
-DESCRIPTION = {
-  "read a DICOM file and output a suitable filename for its storage.",
-  NULL
-};
+ARGUMENTS 
+  + Argument ("file", "the DICOM file to be scanned.").type_file ();
 
-ARGUMENTS = {
-  Argument ("file", "the DICOM file to be scanned.").type_file (),
-  Argument()
-};
+OPTIONS 
+  + Option ("nospaces", "replace spaces with underscores")
 
-OPTIONS = {
-  Option ("nospaces", "replace spaces with underscores"),
+  + Option ("remove", "remove specified characters from filename")
+    + Argument ("characters")
 
-  Option ("remove", "remove specified characters from filename")
-    + Argument ("characters"),
-
-  Option ("scannername", "add name of scanner model as the first level of the filename"),
-
-  Option() 
-};
+  + Option ("scannername", "add name of scanner model as the first level of the filename");
+}
 
 
 
 
-using namespace std;
 using namespace File::Dicom;
 
 
@@ -72,7 +65,7 @@ void make_valid (std::string& str, const std::string& alternate)
 
 
 
-EXECUTE {
+void run () {
   Element item;
   item.set (argument[0]);
 
@@ -123,7 +116,7 @@ EXECUTE {
   Options opt = get_options ("remove");
   if (opt.size()) {
     size_t pos = 0;
-    while ((pos = output.find_first_of(opt[0][0].c_str(), pos)) != string::npos)
+    while ((pos = output.find_first_of(opt[0][0].c_str(), pos)) != std::string::npos)
       output.erase (pos, 1);
   }
 

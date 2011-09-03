@@ -187,6 +187,11 @@ namespace MR
         void set_name (const std::string& new_name) {
           name_ = new_name;
         }
+        //! set the datatype based on the command-line option '-datatype'
+        /*! Used in conjunction with the DataType::Options() command-line
+         * OptionGroup. If the '-datatype' option has been specified on the
+         * command-line, set the datatype of the header appropriately. */
+        void set_datatype_from_command_line (DataType new_datatype = DataType::Undefined);
         void set_datatype (DataType new_datatype) {
           check_not_finalised();
           dtype_ = new_datatype;

@@ -25,36 +25,28 @@
 #include "file/path.h"
 #include "file/dicom/quick_scan.h"
 
+MRTRIX_APPLICATION
+
 using namespace MR;
+using namespace App;
 
-SET_VERSION_DEFAULT;
-SET_AUTHOR (NULL);
-SET_COPYRIGHT (NULL);
+void usage ()
+{
+  DESCRIPTION
+  + "output DICOM fields in human-readable format.";
 
-DESCRIPTION = {
-  "output DICOM fields in human-readable format.",
-  NULL
-};
+  ARGUMENTS
+  + Argument ("file", "the DICOM file to be scanned.")
+  .allow_multiple().type_file ();
 
-
-ARGUMENTS = {
-
-  Argument ("file", "the DICOM file to be scanned.")
-  .allow_multiple()
-  .type_file (),
-
-  Argument ()
-};
+  OPTIONS
+  + Option ("all", "print all DICOM fields.")
+  + Option ("csa", "print all Siemens CSA fields");
+}
 
 
-OPTIONS = {
-  Option ("all", "print all DICOM fields."),
-  Option ("csa", "print all Siemens CSA fields"),
-  Option ()
-};
-
-
-EXECUTE {
+void run ()
+{
   File::Dicom::QuickScan reader;
 
   bool print_DICOM_fields = false;

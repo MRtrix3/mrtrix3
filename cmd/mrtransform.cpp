@@ -32,69 +32,63 @@
 #include "dataset/loop.h"
 #include "dataset/copy.h"
 
+MRTRIX_APPLICATION
+
 using namespace MR;
-
-SET_VERSION_DEFAULT;
-SET_AUTHOR (NULL);
-SET_COPYRIGHT (NULL);
-
-DESCRIPTION = {
-  "apply spatial transformations or reslice images.",
-  "In most cases, this command will only modify the transform matrix, "
-  "without reslicing the image. Only the \"reslice\" option will "
-  "actually modify the image data.",
-  NULL
-};
-
-ARGUMENTS = {
-  Argument ("input", "input image to be transformed.").type_image_in (),
-  Argument ("output", "the output image.").type_image_out (),
-  Argument ()
-};
-
+using namespace App;
 
 const char* interp_choices[] = { "nearest", "linear", "cubic", "sinc", NULL };
 
-OPTIONS = {
+void usage ()
+{
+  DESCRIPTION
+  + "apply spatial transformations or reslice images."
+  + "In most cases, this command will only modify the transform matrix, "
+  "without reslicing the image. Only the \"reslice\" option will "
+  "actually modify the image data.";
 
-  Option ("transform", "specify the 4x4 transform to apply, in the form of a 4x4 ascii file.")
-  + Argument ("transform").type_file (),
+  ARGUMENTS
+  + Argument ("input", "input image to be transformed.").type_image_in ()
+  + Argument ("output", "the output image.").type_image_out ();
 
-  Option ("replace",
-  "replace the transform of the original image by that specified, "
-  "rather than applying it to the original image."),
+  OPTIONS
+  + Option ("transform", "specify the 4x4 transform to apply, in the form of a 4x4 ascii file.")
+  + Argument ("transform").type_file ()
 
-  Option ("inverse",
-  "invert the specified transform before using it."),
+  + Option ("replace",
+            "replace the transform of the original image by that specified, "
+            "rather than applying it to the original image.")
 
-  Option ("reslice",
-  "reslice the input image to match the specified template image.")
-  + Argument ("template").type_image_in (),
+  + Option ("inverse",
+            "invert the specified transform before using it.")
 
-  Option ("interp",
-  "set the interpolation method to use when reslicing (default: linear).")
-  + Argument ("method").type_choice (interp_choices),
+  + Option ("reslice",
+            "reslice the input image to match the specified template image.")
+  + Argument ("template").type_image_in ()
 
-  Option ("oversample",
-  "set the oversampling factor to use when reslicing (i.e. the "
-  "number of samples to take per voxel along each spatial dimension). "
-  "This should be supplied as a vector of 3 integers. By default, the "
-  "oversampling factor is determined based on the differences between "
-  "input and output voxel sizes.")
-  + Argument ("factors").type_sequence_int(),
+  + Option ("interp",
+            "set the interpolation method to use when reslicing (default: linear).")
+  + Argument ("method").type_choice (interp_choices)
 
-  Option ("datatype", "specify output image data type (default: same as input image).")
-  + Argument ("spec").type_choice (DataType::identifiers),
+  + Option ("oversample",
+            "set the oversampling factor to use when reslicing (i.e. the "
+            "number of samples to take per voxel along each spatial dimension). "
+            "This should be supplied as a vector of 3 integers. By default, the "
+            "oversampling factor is determined based on the differences between "
+            "input and output voxel sizes.")
+  + Argument ("factors").type_sequence_int()
 
-  Option ()
-};
-
-
-
-
+  + DataType::options ();
+}
 
 
-EXECUTE {
+
+
+
+
+
+void run ()
+{
   Math::Matrix<float> T;
 
   Options opt = get_options ("transform");
@@ -108,9 +102,7 @@ EXECUTE {
   Image::Header header_in (argument[0]);
   Image::Header header_out (header_in);
 
-  opt = get_options ("datatype");
-  if (opt.size())
-    header_out.set_datatype (opt[0][0]);
+  header_out.set_datatype_from_command_line ();
 
   bool inverse = get_options ("inverse").size();
   bool replace = get_options ("replace").size();

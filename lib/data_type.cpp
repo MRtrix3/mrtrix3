@@ -24,6 +24,8 @@
 
 */
 
+#include "app.h"
+#include "args.h"
 #include "data_type.h"
 
 namespace MR
@@ -74,8 +76,6 @@ namespace MR
     "cfloat32", "cfloat32le", "cfloat32be", "cfloat64", "cfloat64le", "cfloat64be",
     "int8", "uint8", "bit", NULL
   };
-
-
 
 
   void DataType::parse (const std::string& spec)
@@ -371,6 +371,25 @@ namespace MR
     return (NULL);
   }
 
+
+  void DataType::from_command_line () 
+  {
+    using namespace App;
+    Options opt = get_options ("datatype");
+    if (opt.size()) 
+      parse (opt[0][0]);
+    else 
+      dt = Undefined;
+  }
+
+
+  App::OptionGroup DataType::options ()
+  {
+    using namespace App;
+    return OptionGroup ("Data type options") 
+      + Option ("datatype", "specify output image data type.")
+      + Argument ("spec").type_choice (identifiers);
+  }
 
 }
 

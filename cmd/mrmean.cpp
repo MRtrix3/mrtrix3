@@ -25,28 +25,21 @@
 #include "image/buffer.h"
 #include "dataset/loop.h"
 
+MRTRIX_APPLICATION
+
 using namespace MR;
+using namespace App;
 
-SET_VERSION_DEFAULT;
-SET_AUTHOR (NULL);
-SET_COPYRIGHT (NULL);
+void usage ()
+{
+  DESCRIPTION
+  + "average image intensities along specified axis.";
 
-DESCRIPTION = {
-  "average image intensities along specified axis.",
-  NULL
-};
-
-ARGUMENTS = {
-  Argument ("input", "the input image.").type_image_in (),
-  Argument ("axis", "the axis along which to average.").type_integer (0),
-  Argument ("mean", "the output mean image.").type_image_out (),
-  Argument()
-};
-
-
-OPTIONS = {
-  Option()
-};
+  ARGUMENTS
+  + Argument ("input", "the input image.").type_image_in ()
+  + Argument ("axis", "the axis along which to average.").type_integer (0)
+  + Argument ("mean", "the output mean image.").type_image_out ();
+}
 
 
 
@@ -54,7 +47,8 @@ OPTIONS = {
 
 
 
-EXECUTE {
+void run ()
+{
   Image::Header header_in (argument[0]);
   size_t axis = argument[1];
 
@@ -64,9 +58,9 @@ EXECUTE {
 
   Image::Header header_out (header_in);
   header_out.set_datatype (DataType::Float32);
-  if (axis == header_in.ndim() - 1) 
+  if (axis == header_in.ndim() - 1)
     header_out.set_ndim (header_in.ndim()-1);
-  else 
+  else
     header_out.set_dim (axis, 1);
   header_out.create (argument[2]);
   Image::Voxel<float> out (header_out);
@@ -74,10 +68,10 @@ EXECUTE {
   DataSet::Loop inner (axis, axis+1);
   DataSet::LoopInOrder outer (header_out, "averaging...");
 
-  float N = header_in.dim(axis);
+  float N = header_in.dim (axis);
   for (outer.start (out, in); outer.ok(); outer.next (out, in)) {
     float mean = 0.0;
-    for (inner.start (in); inner.ok(); inner.next (in)) 
+    for (inner.start (in); inner.ok(); inner.next (in))
       mean += in.value();
     out.value() = mean / N;
   }

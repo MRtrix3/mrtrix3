@@ -49,7 +49,7 @@ namespace MR
     {
       if (App::log_level) {
         Mutex::Lock lock (mutex);
-        std::cerr << App::name() << ": " << msg << "\n";
+        std::cerr << App::NAME << ": " << msg << "\n";
       }
     }
 
@@ -57,7 +57,7 @@ namespace MR
     {
       if (App::log_level > 1) {
         Mutex::Lock lock (mutex);
-        std::cerr << App::name() << " [INFO]: " <<  msg << "\n";
+        std::cerr << App::NAME << " [INFO]: " <<  msg << "\n";
       }
     }
 
@@ -65,7 +65,7 @@ namespace MR
     {
       if (App::log_level > 2) {
         Mutex::Lock lock (mutex);
-        std::cerr << App::name() << " [DEBUG]: " <<  msg << "\n";
+        std::cerr << App::NAME << " [DEBUG]: " <<  msg << "\n";
       }
     }
 

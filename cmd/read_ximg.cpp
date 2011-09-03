@@ -23,36 +23,30 @@
 #include "app.h"
 #include "file/ximg.h"
 
+MRTRIX_APPLICATION
+
 using namespace MR;
+using namespace App;
 
-SET_VERSION_DEFAULT;
-SET_AUTHOR (NULL);
-SET_COPYRIGHT (NULL);
+void usage ()
+{
 
-DESCRIPTION = {
-  "output XIMG fields in human-readable format.",
-  NULL
-};
+  DESCRIPTION 
+    + "output XIMG fields in human-readable format.";
 
 
-ARGUMENTS = {
-
-  Argument ("file", "the XIMG file to be scanned.")
-  .allow_multiple()
-  .type_file (),
-
-  Argument ()
-};
+  ARGUMENTS
+    + Argument ("file",
+                "the XIMG file to be scanned.")
+    .allow_multiple().type_file ();
+}
 
 
-OPTIONS = {
-  Option ()
-};
 
 
-EXECUTE {
-
-  for (size_t n = 0; n < argument.size();  n++) {
+void run ()
+{
+  for (size_t n = 0; n < argument.size();  ++n) {
     try {
       File::XImg reader (argument[n]);
       std::cout << reader << "\n";

@@ -38,6 +38,8 @@ namespace MR
   {
     namespace SH
     {
+      
+      extern const char* encoding_description;
 
       inline size_t NforL (int lmax)
       {

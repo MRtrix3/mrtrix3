@@ -28,61 +28,59 @@
 #include "dataset/extract.h"
 #include "dataset/permute_axes.h"
 
+MRTRIX_APPLICATION
+
 using namespace MR;
+using namespace App;
 
-SET_VERSION_DEFAULT;
-SET_AUTHOR (NULL);
-SET_COPYRIGHT (NULL);
+void usage ()
+{
+  DESCRIPTION
+  + "perform conversion between different file types and optionally "
+  "extract a subset of the input image."
 
-DESCRIPTION = {
-  "perform conversion between different file types and optionally extract a subset of the input image.",
-  "If used correctly, this program can be a very useful workhorse. In addition to converting images between different formats, it can be used to extract specific studies from a data set, extract a specific region of interest, or flip the images.",
-  NULL
-};
+  + "If used correctly, this program can be a very useful workhorse. "
+  "In addition to converting images between different formats, it can "
+  "be used to extract specific studies from a data set, extract a "
+  "specific region of interest, or flip the images.";
 
-ARGUMENTS = {
-  Argument ("input", "the input image.").type_image_in (),
-  Argument ("ouput", "the output image.").type_image_out (),
-  Argument()
-};
+  ARGUMENTS
+  + Argument ("input", "the input image.").type_image_in ()
+  + Argument ("ouput", "the output image.").type_image_out ();
 
-
-OPTIONS = {
-  Option ("coord",
-  "extract data from the input image only at the coordinates specified.")
+  OPTIONS
+  + Option ("coord",
+            "extract data from the input image only at the coordinates specified.")
   .allow_multiple()
   + Argument ("axis").type_integer (0, 0, std::numeric_limits<int>::max())
-  + Argument ("coord").type_sequence_int(),
+  + Argument ("coord").type_sequence_int()
 
-  Option ("vox",
-  "change the voxel dimensions of the output image. The new sizes should "
-  "be provided as a comma-separated list of values. Only those values "
-  "specified will be changed. For example: 1,,3.5 will change the voxel "
-  "size along the x & z axes, and leave the y-axis voxel size unchanged.")
-  + Argument ("sizes").type_sequence_float(),
+  + Option ("vox",
+            "change the voxel dimensions of the output image. The new sizes should "
+            "be provided as a comma-separated list of values. Only those values "
+            "specified will be changed. For example: 1,,3.5 will change the voxel "
+            "size along the x & z axes, and leave the y-axis voxel size unchanged.")
+  + Argument ("sizes").type_sequence_float()
 
-  Option ("datatype", "specify output image data type.")
-  + Argument ("spec").type_choice (DataType::identifiers),
+  + Option ("stride",
+            "specify the strides of the output data in memory, as a comma-separated list. "
+            "The actual strides produced will depend on whether the output image "
+            "format can support it.")
+  + Argument ("spec")
 
-  Option ("stride",
-  "specify the strides of the output data in memory, as a comma-separated list. "
-  "The actual strides produced will depend on whether the output image "
-  "format can support it.")
-  + Argument ("spec"),
+  + Option ("axes",
+            "specify the axes from the input image that will be used to form the output "
+            "image. This allows the permutation, ommission, or addition of axes into the "
+            "output image. The axes should be supplied as a comma-separated list of axes. "
+            "Any ommitted axes must have dimension 1. Axes can be inserted by supplying "
+            "-1 at the corresponding position in the list.")
+  + Argument ("axes")
 
-  Option ("axes",
-  "specify the axes from the input image that will be used to form the output "
-  "image. This allows the permutation, ommission, or addition of axes into the "
-  "output image. The axes should be supplied as a comma-separated list of axes. "
-  "Any ommitted axes must have dimension 1. Axes can be inserted by supplying "
-  "-1 at the corresponding position in the list.")
-  + Argument ("axes"),
+  + Option ("prs",
+            "assume that the DW gradients are specified in the PRS frame (Siemens DICOM only).")
 
-  Option ("prs",
-  "assume that the DW gradients are specified in the PRS frame (Siemens DICOM only)."),
-
-  Option()
-};
+  + DataType::options();
+}
 
 
 
@@ -116,18 +114,16 @@ inline void set_header_out (
 
 
 
-EXECUTE {
+void run ()
+{
 
   Image::Header header_in (argument[0]);
   Image::Header header_out (header_in);
   header_out.reset_scaling();
 
+  header_out.set_datatype_from_command_line ();
 
-  Options opt = get_options ("datatype");
-  if (opt.size())
-    header_out.set_datatype (opt[0][0]);
-
-  opt = get_options ("vox");
+  Options opt = get_options ("vox");
   std::vector<float> vox;
   if (opt.size())
     vox = opt[0][0];
@@ -151,8 +147,8 @@ EXECUTE {
 
   opt = get_options ("prs");
   if (opt.size() &&
-  header_out.DW_scheme().rows() &&
-  header_out.DW_scheme().columns()) {
+      header_out.DW_scheme().rows() &&
+      header_out.DW_scheme().columns()) {
     Math::Matrix<float>& M (header_out.get_DW_scheme());
     for (size_t row = 0; row < M.rows(); ++row) {
       float tmp = M (row, 0);

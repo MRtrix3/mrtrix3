@@ -33,7 +33,7 @@ namespace MR
 
     char confirm_overwrite_cmdline_func (const std::string& filename, bool yestoall)
     {
-      std::cerr << App::name() << ": overwrite '" << filename << 
+      std::cerr << App::NAME << ": overwrite '" << filename << 
         ( yestoall ? "' (Yes|yes to All|No) (y|a|N) ? " : "' (Yes|No) (y|N) ? " );
       std::string response;
       std::cin >> response;

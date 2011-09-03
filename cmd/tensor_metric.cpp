@@ -30,59 +30,54 @@
 #include "dataset/value.h"
 #include "dataset/position.h"
 
+MRTRIX_APPLICATION
 
 using namespace MR;
-
-SET_VERSION_DEFAULT;
-SET_AUTHOR (NULL);
-SET_COPYRIGHT (NULL);
-
-DESCRIPTION = {
-  "generate maps of tensor-derived parameters.",
-  NULL
-};
-
-ARGUMENTS = {
-  Argument ("tensor", "the input diffusion tensor image.").type_image_in (),
-  Argument ()
-};
+using namespace App;
 
 const char* modulate_choices[] = { "none", "fa", "eval", NULL };
 
-OPTIONS = {
-  Option ("adc",
+void usage () {
+DESCRIPTION 
+  + "generate maps of tensor-derived parameters.";
+
+ARGUMENTS 
+  + Argument ("tensor", "the input diffusion tensor image.").type_image_in ();
+
+
+OPTIONS
+  + Option ("adc",
   "compute the mean apparent diffusion coefficient (ADC) of the diffusion tensor.")
-  + Argument ("image").type_image_out(),
+  + Argument ("image").type_image_out()
 
-  Option ("fa",
+  + Option ("fa",
   "compute the fractional anisotropy of the diffusion tensor.")
-  + Argument ("image").type_image_out(),
+  + Argument ("image").type_image_out()
 
-  Option ("num",
+  + Option ("num",
   "specify the desired eigenvalue/eigenvector(s). Note that several eigenvalues "
   "can be specified as a number sequence. For example, '1,3' specifies the "
   "major (1) and minor (3) eigenvalues/eigenvectors (default = 1).")
-  + Argument ("image"),
+  + Argument ("image")
 
-  Option ("vector",
+  + Option ("vector",
   "compute the selected eigenvector(s) of the diffusion tensor.")
-  + Argument ("image").type_image_out(),
+  + Argument ("image").type_image_out()
 
-  Option ("value",
+  + Option ("value",
   "compute the selected eigenvalue(s) of the diffusion tensor.")
-  + Argument ("image").type_image_out(),
+  + Argument ("image").type_image_out()
 
-  Option ("mask",
+  + Option ("mask",
   "only perform computation within the specified binary brain mask image.")
-  + Argument ("image").type_image_in(),
+  + Argument ("image").type_image_in()
 
-  Option ("modulate",
+  + Option ("modulate",
   "specify how to modulate the magnitude of the eigenvectors. Valid choices "
   "are: none, FA, eval (default = FA).")
-  + Argument ("spec").type_choice (modulate_choices),
+  + Argument ("spec").type_choice (modulate_choices);
+}
 
-  Option ()
-};
 
 
 class ImagePair
@@ -230,7 +225,7 @@ inline void increment (size_t axis, Ptr<ImagePair>& i0, Ptr<ImagePair>& i1, Ptr<
   if (i4) ++i4->vox[axis];
 }
 
-EXECUTE {
+void run () {
   Image::Header dt_header (argument[0]);
 
   if (dt_header.ndim() != 4)

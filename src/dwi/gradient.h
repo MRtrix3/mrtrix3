@@ -23,15 +23,22 @@
 #ifndef __dwi_gradient_h__
 #define __dwi_gradient_h__
 
-#include "math/matrix.h"
+#include "app.h"
 #include "point.h"
+#include "image/header.h"
+#include "math/matrix.h"
 
 namespace MR
 {
+  namespace App { class OptionGroup; }
+
   namespace DWI
   {
+    extern const App::OptionGroup GradOption;
 
-    template <typename T> Math::Matrix<T>& normalise_grad (Math::Matrix<T>& grad)
+
+    template <typename T> 
+      Math::Matrix<T>& normalise_grad (Math::Matrix<T>& grad)
     {
       if (grad.columns() != 4)
         throw Exception ("invalid gradient matrix dimensions");
@@ -45,7 +52,11 @@ namespace MR
     }
 
 
-    template <typename T> inline void guess_DW_directions (std::vector<int>& dwi, std::vector<int>& bzero, const Math::Matrix<T>& grad)
+    template <typename T> 
+      inline void guess_DW_directions (
+          std::vector<int>& dwi, 
+          std::vector<int>& bzero, 
+          const Math::Matrix<T>& grad)
     {
       if (grad.columns() != 4)
         throw Exception ("invalid gradient encoding matrix: expecting 4 columns.");
@@ -57,6 +68,8 @@ namespace MR
         else
           bzero.push_back (i);
       }
+      info ("found " + str (dwi.size()) + " diffusion-weighted directions, and " 
+          + str (bzero.size()) + " b=0 volumes");
     }
 
 
@@ -73,6 +86,36 @@ namespace MR
       return dirs;
     }
 
+
+    template <typename T> Math::Matrix<T> get_DW_scheme (const Image::Header& dwi_header)
+    {
+      using namespace App;
+      if (dwi_header.ndim() != 4)
+        throw Exception ("dwi image should contain 4 dimensions");
+
+      Math::Matrix<T> grad;
+
+      Options opt = get_options ("grad");
+      if (opt.size())
+        grad.load (opt[0][0]);
+      else {
+        if (!dwi_header.DW_scheme().is_set())
+          throw Exception ("no diffusion encoding found in image \"" + dwi_header.name() + "\"");
+        grad = dwi_header.DW_scheme();
+      }
+
+      if (grad.rows() < 7 || grad.columns() != 4)
+        throw Exception ("unexpected diffusion encoding matrix dimensions");
+
+      info ("found " + str (grad.rows()) + "x" + str (grad.columns()) + " diffusion-weighted encoding");
+
+      if (dwi_header.dim (3) != (int) grad.rows())
+        throw Exception ("number of studies in base image does not match that in encoding file");
+
+      DWI::normalise_grad (grad);
+
+      return grad;
+    }
 
   }
 }

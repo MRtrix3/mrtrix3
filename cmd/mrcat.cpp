@@ -25,47 +25,39 @@
 #include "dataset/loop.h"
 #include "progressbar.h"
 
-using namespace std;
+MRTRIX_APPLICATION
+
 using namespace MR;
+using namespace App;
 
-SET_VERSION_DEFAULT;
-SET_AUTHOR (NULL);
-SET_COPYRIGHT (NULL);
+void usage () {
+DESCRIPTION 
+  + "concatenate several images into one";
 
-DESCRIPTION = {
-  "concatenate several images into one",
-  NULL
-};
-
-ARGUMENTS = {
-  Argument ("image1", "the first input image.")
-  .type_image_in(),
-
-  Argument ("image2", "the second input image.")
+ARGUMENTS
+  + Argument ("image1", "the first input image.")
   .type_image_in()
-  .allow_multiple(),
 
-  Argument ("output", "the output image.")
-  .type_image_out (),
+  + Argument ("image2", "the second input image.")
+  .type_image_in()
+  .allow_multiple()
 
-  Argument ()
-};
+  + Argument ("output", "the output image.")
+  .type_image_out ();
 
-OPTIONS = {
-
-  Option ("axis",
+OPTIONS 
+  + Option ("axis",
   "specify axis along which concatenation should be performed. By default, "
   "the program will use the axis after the last non-singleton axis of any "
   "of the input images")
-  + Argument ("axis").type_integer (0, std::numeric_limits<int>::max(), std::numeric_limits<int>::max()),
+  + Argument ("axis").type_integer (0, std::numeric_limits<int>::max(), std::numeric_limits<int>::max());
+}
 
-  Option ()
-};
 
 typedef float value_type;
 
 
-EXECUTE {
+void run () {
   int axis = -1;
 
   Options opt = get_options ("axis");

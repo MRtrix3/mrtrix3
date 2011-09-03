@@ -26,20 +26,15 @@
 #include "thread/queue.h"
 #include "math/rng.h"
 
+MRTRIX_APPLICATION
+
 using namespace MR;
+using namespace App;
 
-SET_VERSION_DEFAULT;
-SET_AUTHOR (NULL);
-SET_COPYRIGHT (NULL);
-
-DESCRIPTION = {
-  "this is used to test stuff.",
-  NULL
-};
-
-
-ARGUMENTS = { Argument() };
-OPTIONS = { Option() };
+void usage () {
+  DESCRIPTION
+    + "this is used to test stuff.";
+}
 
 class Item
 {
@@ -119,7 +114,8 @@ class Processor
     std::string desc;
 };
 
-EXECUTE {
+
+void run () {
   FloatQueue queue1 ("first queue");
   ItemQueue queue2 ("second queue");
 

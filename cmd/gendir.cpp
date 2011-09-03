@@ -29,34 +29,26 @@
 #include "math/matrix.h"
 #include "math/rng.h"
 
-using namespace std;
+MRTRIX_APPLICATION
+
 using namespace MR;
+using namespace App;
 
-SET_VERSION_DEFAULT;
-SET_AUTHOR (NULL);
-SET_COPYRIGHT (NULL);
+void usage () {
+DESCRIPTION 
+  + "generate a set of directions evenly distributed over a hemisphere.";
 
-DESCRIPTION = {
-  "generate a set of directions evenly distributed over a hemisphere.",
-  NULL
-};
+ARGUMENTS 
+  + Argument ("ndir", "the number of directions to generate.").type_integer (6, 60, std::numeric_limits<int>::max())
+  + Argument ("dirs", "the text file to write the directions to, as [ az el ] pairs.").type_file();
 
-ARGUMENTS = {
-  Argument ("ndir", "the number of directions to generate.").type_integer (6, 60, std::numeric_limits<int>::max()),
-  Argument ("dirs", "the text file to write the directions to, as [ az el ] pairs.").type_file(),
-  Argument ()
-};
+OPTIONS 
+  + Option ("power", "specify exponent to use for repulsion power law.")
+  + Argument ("exp").type_integer (2, 128, std::numeric_limits<int>::max())
 
-OPTIONS = {
-  Option ("power", "specify exponent to use for repulsion power law.")
-  + Argument ("exp").type_integer (2, 128, std::numeric_limits<int>::max()),
-
-  Option ("niter", "specify the maximum number of iterations to perform.")
-  + Argument ("num").type_integer (1, 10000, 1000000),
-
-  Option ()
-};
-
+  + Option ("niter", "specify the maximum number of iterations to perform.")
+  + Argument ("num").type_integer (1, 10000, 1000000);
+}
 
 
 
@@ -101,7 +93,7 @@ void   energy_fdf (const gsl_vector* x, void* params, double* f, gsl_vector* df)
 void range (double& azimuth, double& elevation);
 
 
-EXECUTE {
+void run () {
   size_t niter = 10000;
   float target_power = 128.0;
 

@@ -20,41 +20,38 @@
 
 */
 
-#include "image/header.h"
 #include "app.h"
+#include "image/header.h"
+
+MRTRIX_APPLICATION
 
 using namespace MR;
+using namespace App;
 
-SET_VERSION_DEFAULT;
-SET_AUTHOR (NULL);
-SET_COPYRIGHT (NULL);
+void usage () {
 
-DESCRIPTION = {
-  "display header information, or extract specific information from the header",
-  NULL
-};
+  DESCRIPTION =
+    Description()
+    + "display header information, or extract specific information from the header";
 
-ARGUMENTS = {
-  Argument ("image", "the input image.").type_image_in (),
-  Argument ()
-};
+  ARGUMENTS =
+    ArgumentList() 
+    + Argument ("image", 
+        "the input image.").type_image_in ();
 
+  OPTIONS = 
+    OptionList() + OptionGroup()
 
+    + Option ("transform", "write transform matrix to file")
+    +   Argument ("file").type_file ()
 
-OPTIONS = {
+    + Option ("gradient", "write DW gradient scheme to file")
+    +   Argument ("file").type_file ();
 
-  Option ("transform", "write transform matrix to file")
-  + Argument ("file").type_file (),
-
-  Option ("gradient", "write DW gradient scheme to file")
-  + Argument ("file").type_file (),
-
-  Option ()
-};
+}
 
 
-
-EXECUTE {
+void run () {
   Image::Header header (argument[0]);
 
   Options opt = get_options ("gradient");

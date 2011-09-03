@@ -28,52 +28,48 @@
 #include "dataset/loop.h"
 #include "dataset/histogram.h"
 
+MRTRIX_APPLICATION
+
 using namespace MR;
+using namespace App;
 
-SET_VERSION_DEFAULT;
-SET_AUTHOR (NULL);
-SET_COPYRIGHT (NULL);
+void usage ()
+{
+  DESCRIPTION
+  + "create bitwise image by thresholding image intensity."
+  + "By default, the threshold level is determined using a "
+  "histogram analysis to cut out the background. Otherwise, "
+  "the threshold intensity can be specified using command "
+  "line options. Note that only the first study is used for "
+  "thresholding.";
 
-DESCRIPTION = {
-  "create bitwise image by thresholding image intensity.",
-  "By default, the threshold level is determined using a histogram analysis to cut out the background. Otherwise, the threshold intensity can be specified using command line options. Note that only the first study is used for thresholding.",
-  NULL
-};
-
-ARGUMENTS = {
-  Argument ("input", "the input image to be thresholded.").type_image_in (),
-  Argument ("output", "the output binary image mask.").type_image_out (),
-  Argument()
-};
+  ARGUMENTS
+  + Argument ("input", "the input image to be thresholded.").type_image_in ()
+  + Argument ("output", "the output binary image mask.").type_image_out ();
 
 
-OPTIONS = {
-  Option ("abs", "specify threshold value as absolute intensity.")
-  + Argument ("value").type_float(),
+  OPTIONS
+  + Option ("abs", "specify threshold value as absolute intensity.")
+  + Argument ("value").type_float()
 
-  Option ("percentile", "threshold the image at the ith percentile.")
-  + Argument ("value").type_float (0.0, 95.0, 100.0),
+  + Option ("percentile", "threshold the image at the ith percentile.")
+  + Argument ("value").type_float (0.0, 95.0, 100.0)
 
-  Option ("top", "provide a mask of the N top-valued voxels")
-  + Argument ("N").type_integer (0, 100, std::numeric_limits<int>::max()),
+  + Option ("top", "provide a mask of the N top-valued voxels")
+  + Argument ("N").type_integer (0, 100, std::numeric_limits<int>::max())
 
-  Option ("bottom", "provide a mask of the N bottom-valued voxels")
-  + Argument ("N").type_integer (0, 100, std::numeric_limits<int>::max()),
+  + Option ("bottom", "provide a mask of the N bottom-valued voxels")
+  + Argument ("N").type_integer (0, 100, std::numeric_limits<int>::max())
 
-  Option ("invert", "invert output binary mask."),
+  + Option ("invert", "invert output binary mask.")
 
-  Option ("nan", "replace all zero values with NaN."),
-
-  Option()
-};
+  + Option ("nan", "replace all zero values with NaN.");
+}
 
 
 
-
-
-
-
-EXECUTE {
+void run ()
+{
   float val (NAN), percentile (NAN);
   size_t topN (0), bottomN (0), nopt (0);
 

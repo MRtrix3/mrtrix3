@@ -23,6 +23,7 @@
 #ifndef __data_type_h__
 #define __data_type_h__
 
+#include "args.h"
 #include "mrtrix.h"
 
 #ifdef Complex
@@ -156,6 +157,8 @@ namespace MR
 #else
           LittleEndian;
 #endif
+      void from_command_line ();
+      static App::OptionGroup options ();
 
       static const char* identifiers[];
 
@@ -204,6 +207,7 @@ namespace MR
   {
     return (DataType::native (DataType::CFloat64));
   }
+
 
 }
 

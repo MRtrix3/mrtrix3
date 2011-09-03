@@ -29,40 +29,34 @@
 #include "dataset/interp/sinc.h"
 #include "dataset/interp/reslice.h"
 
-using namespace std;
+MRTRIX_APPLICATION
+
 using namespace MR;
-
-SET_VERSION_DEFAULT;
-SET_AUTHOR ("David Raffelt");
-SET_COPYRIGHT (NULL);
-
-DESCRIPTION = {
-  "Resample an image to a different resolution by a given sample factor.",
-  NULL
-};
+using namespace App;
 
 const char* interp_choices[] = { "nearest", "linear", "cubic", "sinc", NULL };
 
-ARGUMENTS = {
-  Argument ("input", "the input image.").type_image_in (),
+void usage ()
+{
+  AUTHOR = "David Raffelt (draffelt@gmail.com)";
 
-  Argument ("factor", "the sample factor").type_float(0.01, 2, 100),
+  DESCRIPTION
+  + "Resample an image to a different resolution by a given sample factor.";
 
-  Argument ("output", "the output image .").type_image_out (),
+ARGUMENTS 
+  + Argument ("input", "the input image.").type_image_in ()
+  + Argument ("factor", "the sample factor").type_float(0.01, 2, 100)
+  + Argument ("output", "the output image .").type_image_out ();
 
-  Argument()
-};
+OPTIONS 
+  + Option ("interp", "set the interpolation method when resampling (default: cubic).")
+  + Argument ("method", "the interpolation method.").type_choice (interp_choices);
+}
 
-OPTIONS = {
-  Option ("interp", "set the interpolation method when resampling (default: cubic).")
-          + (Argument ("method", "the interpolation method.").type_choice (interp_choices)),
-
-  Option()
-};
 
 typedef float value_type;
 
-EXECUTE {
+void run () {
   Image::Header input_header (argument[0]);
   assert (!input_header.is_complex());
 

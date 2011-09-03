@@ -24,36 +24,29 @@
 #include "image/voxel.h"
 #include "filter/median3D.h"
 
-using namespace std; 
+MRTRIX_APPLICATION
+
 using namespace MR; 
+using namespace App; 
 
-SET_VERSION_DEFAULT;
-SET_AUTHOR (NULL);
-SET_COPYRIGHT (NULL);
+void usage () {
+  DESCRIPTION
+    + "smooth images using median filtering.";
 
-DESCRIPTION = {
- "smooth images using median filtering.",
-  NULL
-};
+  ARGUMENTS 
+    + Argument ("input", "input image to be median-filtered.").type_image_in ()
+    + Argument ("output", "the output image.").type_image_out ();
 
-ARGUMENTS = {
-  Argument ("input", "input image to be median-filtered.").type_image_in (),
-  Argument ("output", "the output image.").type_image_out (),
-  Argument ()
-};
-
-OPTIONS = { 
-
-  Option ("extent", "specify extent of median filtering neighbourhood in voxels. "
-      "This can be specified either as a single value to be used for all 3 axes, "
-      "or as a comma-separated list of 3 values, one for each axis (default: 3x3x3).")
-    + Argument ("size").type_sequence_int(),
-
-  Option () 
-};
+  OPTIONS
+    + Option ("extent", "specify extent of median filtering neighbourhood in voxels. "
+        "This can be specified either as a single value to be used for all 3 axes, "
+        "or as a comma-separated list of 3 values, one for each axis (default: 3x3x3).")
+    + Argument ("size").type_sequence_int();
+}
 
 
-EXECUTE {
+
+void run () {
   std::vector<int> extent (1);
   extent[0] = 3;
   

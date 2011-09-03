@@ -26,53 +26,46 @@
 #include "filter/optimal_threshold.h"
 #include "ptr.h"
 
-using namespace std;
+MRTRIX_APPLICATION
+
 using namespace MR;
+using namespace App;
 
-SET_VERSION_DEFAULT;
-SET_AUTHOR (NULL);
-SET_COPYRIGHT (NULL);
+void usage ()
+{
+  AUTHOR = "David Raffelt (draffelt@gmail.com)";
 
-DESCRIPTION = {
-  "Generates an optimal mask based on the parameter free method defined in "
-  "Ridgway G et al. (2009) NeuroImage.44(1):99-111.",
-  NULL
-};
+  DESCRIPTION
+  + "Generates an optimal mask based on the parameter free method defined in "
+  "Ridgway G et al. (2009) NeuroImage.44(1):99-111.";
 
-ARGUMENTS = {
+  ARGUMENTS
+  + Argument ("image",
+              "the input image to be masked")
+  .type_image_in ()
 
-  Argument ("image",
-    "the input image to be masked")
-    .type_image_in (),
+  + Argument ("image",
+              "the output mask image")
+  .type_image_out ();
+}
 
-  Argument ("image",
-    "the output mask image")
-    .type_image_out (),
-
-  Argument ()
-};
-
-
-OPTIONS = {
-  Option ()
-};
 
 typedef float value_type;
 
-EXECUTE {
+void run () {
   Image::Header input_header (argument[0]);
   assert (!input_header.is_complex());
   Image::Voxel<value_type> input_voxel (input_header);
 
   Image::Header mask_header (input_header);
-  mask_header.set_datatype(DataType::Bit);
+  mask_header.set_datatype (DataType::Bit);
 
-  Filter::OptimalThreshold<Image::Voxel<float>, Image::Voxel<int> > filter(input_voxel);
+  Filter::OptimalThreshold<Image::Voxel<float>, Image::Voxel<int> > filter (input_voxel);
 
-  mask_header.set_params(filter.get_output_params());
-  mask_header.create(argument[1]);
+  mask_header.set_params (filter.get_output_params());
+  mask_header.create (argument[1]);
   Image::Voxel<int> mask_voxel (mask_header);
 
-  filter.execute(mask_voxel);
+  filter.execute (mask_voxel);
 }
 

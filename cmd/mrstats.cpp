@@ -25,59 +25,49 @@
 #include "image/voxel.h"
 #include "dataset/loop.h"
 
-using namespace std;
+MRTRIX_APPLICATION
+
 using namespace MR;
+using namespace App;
 
-SET_VERSION_DEFAULT;
-SET_AUTHOR (NULL);
-SET_COPYRIGHT (NULL);
+void usage () {
+DESCRIPTION
+  + "compute images statistics.";
 
-DESCRIPTION = {
-  "compute images statistics.",
-  NULL
-};
-
-ARGUMENTS = {
-
-  Argument ("image",
+ARGUMENTS 
+  + Argument ("image",
   "the input image from which statistics will be computed.")
-  .type_image_in (),
+  .type_image_in ();
 
-  Argument ()
-};
-
-
-OPTIONS = {
-
-  Option ("mask",
+OPTIONS
+  + Option ("mask",
   "only perform computation within the specified binary brain mask image.")
-  + Argument ("image").type_image_in (),
+  + Argument ("image").type_image_in ()
 
-  Option ("voxel",
+  + Option ("voxel",
   "only perform computation within the specified voxel, supplied as a "
   "comma-separated vector of 3 integer values (multiple voxels can be included).")
   .allow_multiple()
-  + Argument ("pos").type_sequence_int (),
+  + Argument ("pos").type_sequence_int ()
 
-  Option ("histogram",
+  + Option ("histogram",
   "generate histogram of intensities and store in specified text file. Note "
   "that the first line of the histogram gives the centre of the bins.")
-  + Argument ("file").type_file (),
+  + Argument ("file").type_file ()
 
-  Option ("bins",
+  + Option ("bins",
   "the number of bins to use to generate the histogram (default = 100).")
-  + Argument ("num").type_integer (2, 100, std::numeric_limits<int>::max()),
+  + Argument ("num").type_integer (2, 100, std::numeric_limits<int>::max())
 
-  Option ("dump",
+  + Option ("dump",
   "dump the voxel intensities to a text file.")
-  + Argument ("file").type_file (),
+  + Argument ("file").type_file ()
 
-  Option ("position",
+  + Option ("position",
   "dump the position of the voxels in the mask to a text file.")
-  + Argument ("file").type_file (),
+  + Argument ("file").type_file ();
 
-  Option ()
-};
+}
 
 
 typedef float value_type;
@@ -182,7 +172,7 @@ class Stats
 const char* header_string = "channel         mean        std. dev.   min         max         count\n";
 
 
-EXECUTE {
+void run () {
   Image::Header header (argument[0]);
   Image::Voxel<value_type> vox (header);
 
