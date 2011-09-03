@@ -24,87 +24,56 @@
 
 #include "app.h"
 #include "progressbar.h"
-#include "dialog/progress.h"
-#include "dialog/report_exception.h"
-#include "dialog/dicom.h"
-#include "mrview/window.h"
+#include "gui/init.h"
+#include "gui/mrview/window.h"
 
-using namespace MR; 
+MRTRIX_APPLICATION
 
-SET_VERSION_DEFAULT;
-SET_AUTHOR (NULL);
-SET_COPYRIGHT (NULL);
+using namespace MR;
+using namespace App;
 
-DESCRIPTION = {
-  "the MRtrix image viewer.",
-  NULL
-};
+void usage ()
+{
+  DESCRIPTION
+  + "the MRtrix image viewer.";
 
-ARGUMENTS = {
+  ARGUMENTS
+  + Argument ("image", "an image to be loaded.")
+  .optional()
+  .allow_multiple()
+  .type_image_in ();
 
-  Argument ("image", "an image to be loaded.")
-    .optional()
-    .allow_multiple()
-    .type_image_in (),
-
-  Argument()
-};
-
-OPTIONS = { Option() };
-
-
-
-
-class MyApp : public MR::App { 
-  public: 
-    MyApp (int argc, char** argv) : App (argc, argv, __command_description, __command_arguments, __command_options, 
-        __command_version, __command_author, __command_copyright), qapp (argc, argv) { 
-      ProgressBar::display_func = Dialog::ProgressBar::display;
-      ProgressBar::done_func = Dialog::ProgressBar::done;
-      MR::File::Dicom::select_func = Dialog::select_dicom;
-      parse_arguments(); 
-    }
-
-    void execute () 
-    { 
-      Viewer::Window window;
-      window.show();
-
-      if (argument.size()) {
-        VecPtr<MR::Image::Header> list;
-
-        for (size_t n = 0; n < argument.size(); ++n) {
-          try {
-            list.push_back (new Image::Header (argument[n]));
-          }
-          catch (Exception& e) {
-            Dialog::report_exception (e, &window);
-          }
-        }
-
-        if (list.size())
-          window.add_images (list);
-      }
-
-      if (qapp.exec()) 
-        throw Exception ("error running Qt application");
-    }
-
-  protected:
-    QApplication qapp;
-}; 
-
-
-
-
-int main (int argc, char* argv[]) 
-{ 
-  try { 
-    MyApp app (argc, argv);  
-    app.execute();
-  }
-  catch (Exception& E) { E.display(); return (1); }
-  catch (int ret) { return (ret); } 
-  return (0); 
+  GUI::init ();
 }
+
+
+
+
+void run ()
+{
+  GUI::MRView::Window window;
+  window.show();
+
+  if (argument.size()) {
+    VecPtr<MR::Image::Header> list;
+
+    for (size_t n = 0; n < argument.size(); ++n) {
+      try {
+        list.push_back (new Image::Header (argument[n]));
+      }
+      catch (Exception& e) {
+        e.display();
+      }
+    }
+
+    if (list.size())
+      window.add_images (list);
+  }
+
+  if (qApp->exec())
+    throw Exception ("error running Qt application");
+}
+
+
+
 

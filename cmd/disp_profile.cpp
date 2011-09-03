@@ -21,79 +21,50 @@
 */
 
 #include "app.h"
+#include "progressbar.h"
+#include "gui/init.h"
 #include "file/path.h"
 #include "math/SH.h"
-#include "dwi/render_window.h"
+#include "gui/dwi/render_window.h"
 
-using namespace std; 
-using namespace MR; 
+MRTRIX_APPLICATION
 
-SET_VERSION_DEFAULT;
-SET_AUTHOR (NULL);
-SET_COPYRIGHT (NULL);
+using namespace MR;
+using namespace App;
 
-DESCRIPTION = {
-  "view spherical harmonics surface plots.",
-  NULL
-};
+void usage ()
+{
+  DESCRIPTION
+  + "view spherical harmonics surface plots.";
 
-ARGUMENTS = {
+  ARGUMENTS
+  + Argument ("coefs",
+              "a text file containing the even spherical harmonics coefficients to display.")
+  .optional()
+  .type_file();
 
-  Argument ("coefs",
-      "a text file containing the even spherical harmonics coefficients to display.")
-    .optional()
-    .type_file(),
+  OPTIONS
+  + Option ("response",
+            "assume SH coefficients file only contains even, m=0 terms. Used to "
+            "display the response function as produced by estimate_response");
 
-  Argument()
-};
-
-OPTIONS = { 
-
-  Option ("response",
-      "assume SH coefficients file only contains even, m=0 terms. Used to "
-      "display the response function as produced by estimate_response"),
-
-  Option ()
-};
-
-
-
-
-class MyApp : public MR::App { 
-  public: 
-    MyApp (int argc, char** argv) : App (argc, argv, __command_description, __command_arguments, __command_options, 
-        __command_version, __command_author, __command_copyright), qapp (argc, argv) { parse_arguments(); }
-
-    void execute () 
-    { 
-      DWI::Window window (get_options("response").size());
-
-      if (argument.size()) 
-        window.set_values ((std::string) argument[0]);
-
-      window.show();
-
-      if (qapp.exec()) 
-        throw Exception ("error running Qt application");
-    }
-
-
-  protected:
-    QApplication qapp;
-}; 
-
-
-
-
-int main (int argc, char* argv[]) 
-{ 
-  try { 
-    MyApp app (argc, argv);  
-    app.execute();
-  }
-  catch (Exception& E) { E.display(); return (1); }
-  catch (int ret) { return (ret); } 
-  return (0); 
+  GUI::init();
 }
 
+
+
+
+
+void run ()
+{
+  GUI::DWI::Window window (get_options ("response").size());
+
+  if (argument.size())
+    window.set_values (std::string (argument[0]));
+
+  window.show();
+
+  if (qApp->exec())
+    throw Exception ("error running Qt application");
+}
 
