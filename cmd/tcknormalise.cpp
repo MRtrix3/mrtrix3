@@ -28,34 +28,31 @@
 #include "dwi/tractography/file.h"
 #include "dwi/tractography/properties.h"
 
-using namespace MR; 
-using namespace MR::DWI; 
-using namespace std; 
+using namespace MR;
+using namespace MR::DWI;
+using namespace App;
 
-SET_VERSION_DEFAULT;
-SET_AUTHOR (NULL);
-SET_COPYRIGHT (NULL);
+MRTRIX_APPLICATION
 
-DESCRIPTION = {
-  "apply a normalisation map to a tracks file.",
-  NULL
-};
+void usage ()
+{
+  DESCRIPTION
+  + "apply a normalisation map to a tracks file.";
 
-ARGUMENTS = {
-  Argument ("tracks", "the input track file.").type_file (),
-  Argument ("transform", "the image containing the transform.").type_image_in(),
-  Argument ("output", "the output fraction image").type_image_out(),
-  Argument ()
-};
-
-
-
-OPTIONS = { Option() };
+  ARGUMENTS
+  + Argument ("tracks", "the input track file.").type_file ()
+  + Argument ("transform", "the image containing the transform.").type_image_in()
+  + Argument ("output", "the output fraction image").type_image_out();
+}
 
 
 
 
-EXECUTE {
+
+
+
+void run ()
+{
   Tractography::Properties properties;
   Tractography::Reader<> file;
   file.open (argument[0], properties);
@@ -74,9 +71,12 @@ EXECUTE {
   while (file.next (tck)) {
     for (std::vector<Point<float> >::iterator i = tck.begin(); i != tck.end(); ++i) {
       interp.scanner (*i);
-      vox[3] = 0; (*i)[0] = interp.value();
-      vox[3] = 1; (*i)[1] = interp.value();
-      vox[3] = 2; (*i)[2] = interp.value();
+      vox[3] = 0;
+      (*i) [0] = interp.value();
+      vox[3] = 1;
+      (*i) [1] = interp.value();
+      vox[3] = 2;
+      (*i) [2] = interp.value();
     }
     writer.append (tck);
     writer.total_count++;

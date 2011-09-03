@@ -39,9 +39,10 @@
 #include "dwi/tractography/file.h"
 #include "dwi/tractography/properties.h"
 
-
+MRTRIX_APPLICATION
 
 using namespace MR;
+using namespace App;
 
 
 // TODO Consider generalising colour processing such that it can be used with any contrast mechanism
@@ -54,73 +55,64 @@ enum stat_t { SUM, MIN, MEAN, MEDIAN, MAX, GAUSSIAN };
 const char* statistics[] = { "sum", "min", "mean", "median", "max", "gaussian", NULL };
 
 
+void usage () {
+AUTHOR = "Robert E. Smith (r.smith@brain.org.au) and J-Donald Tournier (d.tournier@brain.org.au)";
 
-SET_VERSION_DEFAULT;
-SET_AUTHOR ("Robert E. Smith (r.smith@brain.org.au) and J-Donald Tournier (d.tournier@brain.org.au)");
-SET_COPYRIGHT (NULL);
+DESCRIPTION 
+  + "Use track data as a form of contrast for producing a high-resolution image.";
 
-DESCRIPTION = {
-  "Use track data as a form of contrast for producing a high-resolution image.",
-  NULL
-};
+ARGUMENTS 
+  + Argument ("tracks", "the input track file.").type_file ()
+  + Argument ("output", "the output track density image").type_image_out();
 
-ARGUMENTS = {
-  Argument ("tracks", "the input track file.").type_file (),
-  Argument ("output", "the output track density image").type_image_out(),
-  Argument ()
-};
-
-
-OPTIONS = {
-
-  Option ("template",
+OPTIONS
+  + Option ("template",
       "an image file to be used as a template for the output (the output image "
       "will have the same transform and field of view).")
-    + Argument ("image").type_image_in(),
+    + Argument ("image").type_image_in()
 
-  Option ("vox", 
+  + Option ("vox", 
       "provide either an isotropic voxel size (in mm), or comma-separated list "
       "of 3 voxel dimensions.")
-    + Argument ("size").type_sequence_float(),
+    + Argument ("size").type_sequence_float()
 
-  Option ("contrast",
+  + Option ("contrast",
       "define the desired form of contrast for the output image\n"
       "Options are: tdi, dectdi, endpoint, mean_dir, length, invlength, scalar_map, fod_amp, curvature (default: tdi)")
-    + Argument ("type").type_choice (contrasts),
+    + Argument ("type").type_choice (contrasts)
 
-  Option ("image",
+  + Option ("image",
       "provide the scalar image map for generating images with 'scalar_map' contrast, or the spherical harmonics image for 'fod_amp' contrast")
-    + Argument ("image").type_image_in(),
+    + Argument ("image").type_image_in()
 
-  Option ("stat_vox",
+  + Option ("stat_vox",
       "define the statistic for choosing the final voxel intensities for a given contrast "
       "type given the individual values from the tracks passing through each voxel\n"
       "Options are: sum, min, mean, max (default: sum)")
-    + Argument ("type").type_choice (statistics),
+    + Argument ("type").type_choice (statistics)
 
-  Option ("stat_tck",
+  + Option ("stat_tck",
       "define the statistic for choosing the contribution to be made by each streamline as a "
       "function of the samples taken along their lengths\n"
       "Only has an effect for 'scalar_map', 'fod_amp' and 'curvature' contrast types\n"
       "Options are: sum, min, mean, median, max, gaussian (default: mean)")
-    + Argument ("type").type_choice (statistics),
+    + Argument ("type").type_choice (statistics)
 
-  Option ("fwhm_tck",
+  + Option ("fwhm_tck",
       "when using gaussian-smoothed per-track statistic, specify the desired full-width "
       "half-maximum of the Gaussian kernel (in mm)")
-    + Argument ("value").type_float (1e-6, 10.0, 1e6),
+    + Argument ("value").type_float (1e-6, 10.0, 1e6)
 
-  Option ("datatype", 
+  + Option ("datatype", 
       "specify output image data type.")
-    + Argument ("spec").type_choice (DataType::identifiers),
+    + Argument ("spec").type_choice (DataType::identifiers)
 
-  Option ("resample", 
+  + Option ("resample", 
       "resample the tracks at regular intervals using Hermite interpolation\n"
       "(If omitted, an appropriate interpolation will be determined automatically)")
-    + Argument ("factor").type_integer (1, 1, std::numeric_limits<int>::max()),
+    + Argument ("factor").type_integer (1, 1, std::numeric_limits<int>::max());
+}
 
-  Option ()
-};
 
 
 
@@ -1148,7 +1140,7 @@ void oversample_header (Image::Header& header, const std::vector<float>& voxel_s
 
 
 
-EXECUTE {
+void run () {
 
   Tractography::Properties properties;
   Tractography::Reader<float> file;
@@ -1314,7 +1306,7 @@ EXECUTE {
   TrackQueue queue1 ("loaded tracks");
   TrackLoader loader (queue1, file, num_tracks);
 
-  std::string msg = MR::App::name() + ": Generating image with ";
+  std::string msg = MR::App::NAME + ": Generating image with ";
   switch (contrast) {
     case TDI:        msg += "density";          break;
     case DECTDI:     msg += "coloured density"; break;

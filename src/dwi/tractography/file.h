@@ -134,27 +134,35 @@ namespace MR {
               dtype.set_byte_order_native(); 
               if (dtype != DataType::Float32LE && dtype != DataType::Float32BE && 
                   dtype != DataType::Float64BE && dtype != DataType::Float64BE)
-                throw Exception ("only supported datatype for tracks file are Float32LE, Float32BE, Float64LE & Float64BE");
+                throw Exception ("only supported datatype for tracks file are "
+                    "Float32LE, Float32BE, Float64LE & Float64BE");
             }
 
           void create (const std::string& file, const Properties& properties)
           {
             out.open (file.c_str(), std::ios::out | std::ios::binary);
-            if (!out) throw Exception ("error creating tracks file \"" + file + "\": " + strerror (errno));
+            if (!out) 
+              throw Exception ("error creating tracks file \"" + file + "\": " + strerror (errno));
 
             out << "mrtrix tracks\nEND\n";
             for (Properties::const_iterator i = properties.begin(); i != properties.end(); ++i) 
               out << i->first << ": " << i->second << "\n";
 
-            for (std::vector<std::string>::const_iterator i = properties.comments.begin(); i != properties.comments.end(); ++i)
+            for (std::vector<std::string>::const_iterator i = properties.comments.begin(); 
+                i != properties.comments.end(); ++i)
               out << "comment: " << *i << "\n";
 
-            for (size_t n = 0; n < properties.seed.size(); ++n) out << "roi: seed " << properties.seed[n].parameters() << "\n";
-            for (size_t n = 0; n < properties.include.size(); ++n) out << "roi: include " << properties.include[n].parameters() << "\n";
-            for (size_t n = 0; n < properties.exclude.size(); ++n) out << "roi: exclude " << properties.exclude[n].parameters() << "\n";
-            for (size_t n = 0; n < properties.mask.size(); ++n) out << "roi: mask " << properties.mask[n].parameters() << "\n";
+            for (size_t n = 0; n < properties.seed.size(); ++n)
+              out << "roi: seed " << properties.seed[n].parameters() << "\n";
+            for (size_t n = 0; n < properties.include.size(); ++n)
+              out << "roi: include " << properties.include[n].parameters() << "\n";
+            for (size_t n = 0; n < properties.exclude.size(); ++n)
+              out << "roi: exclude " << properties.exclude[n].parameters() << "\n";
+            for (size_t n = 0; n < properties.mask.size(); ++n)
+              out << "roi: mask " << properties.mask[n].parameters() << "\n";
 
-            for (std::multimap<std::string,std::string>::const_iterator it = properties.roi.begin(); it != properties.roi.end(); ++it) 
+            for (std::multimap<std::string,std::string>::const_iterator 
+                it = properties.roi.begin(); it != properties.roi.end(); ++it) 
               out << "roi: " << it->first << " " << it->second << "\n";
 
             out << "datatype: " << dtype.specifier() << "\n";

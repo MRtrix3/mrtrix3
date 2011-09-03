@@ -29,50 +29,43 @@
 #include "math/rng.h"
 #include "dataset/loop.h"
 
+MRTRIX_APPLICATION
 
-using namespace MR; 
+using namespace MR;
+using namespace App;
 
-SET_VERSION_DEFAULT;
-SET_AUTHOR (NULL);
-SET_COPYRIGHT (NULL);
+void usage ()
+{
+  DESCRIPTION
+  + "sample simulated FOD field.";
 
-DESCRIPTION = {
-  "sample simulated FOD field.",
-  NULL
-};
+  ARGUMENTS
+  + Argument ("FOD", "the input image containing the SH coefficients of the simulated FOD field.").type_image_in()
+  + Argument ("sample", "the output image containing the directions sampled from the FOD field.").type_image_out();
 
-ARGUMENTS = {
-  Argument ("FOD", "the input image containing the SH coefficients of the simulated FOD field.").type_image_in(),
-  Argument ("sample", "the output image containing the directions sampled from the FOD field.").type_image_out(),
-  Argument ()
-};
+  OPTIONS
+  + Option ("cutoff",
+            "do not sample from regions of the FOD with amplitude "
+            "lower than this threshold (default: 0.1).")
+  + Argument ("value").type_float (0.0, 0.1, std::numeric_limits<float>::max())
 
-
-OPTIONS = {
-
-  Option ("cutoff", 
-      "do not sample from regions of the FOD with amplitude "
-      "lower than this threshold (default: 0.1).")
-    + Argument ("value").type_float (0.0, 0.1, std::numeric_limits<float>::max()),
-
-  Option ("ceiling", 
-      "use value supplied as ceiling for rejection sampling (default = 4.0)")
-    + Argument ("value").type_float (0.0, 4.0, std::numeric_limits<float>::max()),
-
-  Option ()
-};
+  + Option ("ceiling",
+            "use value supplied as ceiling for rejection sampling (default = 4.0)")
+  + Argument ("value").type_float (0.0, 4.0, std::numeric_limits<float>::max());
+}
 
 
 typedef float value_type;
 
 
-EXECUTE {
+void run ()
+{
   Image::Header header (argument[0]);
   if (header.ndim() != 4)
     throw Exception ("input FOD image should have 4 dimensions");
 
-  const int lmax = Math::SH::LforN (header.dim(3));
-  info ("assuming lmax = " + str(lmax));
+  const int lmax = Math::SH::LforN (header.dim (3));
+  info ("assuming lmax = " + str (lmax));
 
   Image::Header sample (header);
   sample.set_dim (3, 3);
@@ -97,12 +90,12 @@ EXECUTE {
   value_type maximum = 0.0;
   Math::RNG rng;
 
-  { 
+  {
     DataSet::Loop loop ("sampling FOD field...", 0, 3);
     DataSet::Loop inner (3);
     for (loop.start (in, out); loop.ok(); loop.next (in, out)) {
-      value_type val [in.dim(3)];
-      for (inner.start (in); inner.ok(); inner.next (in)) 
+      value_type val [in.dim (3)];
+      for (inner.start (in); inner.ok(); inner.next (in))
         val [in[3]] = in.value();
 
       Point<value_type> d;
@@ -130,6 +123,6 @@ EXECUTE {
   }
 
   if (maximum > ceiling)
-    print ("rejection sampling ceiling exceeded (max val = " + str(maximum) + ")\n");
+    print ("rejection sampling ceiling exceeded (max val = " + str (maximum) + ")\n");
 }
 

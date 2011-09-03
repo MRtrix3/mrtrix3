@@ -28,37 +28,29 @@
 #include "math/vector.h"
 #include "dataset/loop.h"
 
+MRTRIX_APPLICATION
 
 using namespace MR; 
+using namespace App; 
 
-SET_VERSION_DEFAULT;
-SET_AUTHOR (NULL);
-SET_COPYRIGHT (NULL);
+void usage () {
+  DESCRIPTION
+    + "generate simulated FOD field.";
 
-DESCRIPTION = {
-  "generate simulated FOD field.",
-  NULL
-};
+  ARGUMENTS
+    + Argument ("dim", "the image dimensions, as comma-separated 3-vector of ints.")
+    + Argument ("coefs", "even, m=0 SH coefficients of the profile for a fibre population oriented along the z-axis.").type_file()
+    + Argument ("FOD", "the output image containing the SH coefficients of the simulated FOD field.").type_image_out();
 
-ARGUMENTS = {
-  Argument ("dim", "the image dimensions, as comma-separated 3-vector of ints."),
-  Argument ("coefs", "even, m=0 SH coefficients of the profile for a fibre population oriented along the z-axis.").type_file(),
-  Argument ("FOD", "the output image containing the SH coefficients of the simulated FOD field.").type_image_out(),
-  Argument ()
-};
-
-
-OPTIONS = {
-
-  Option ("crossing", "Generate crossing fibre phantom rather than default curved phantom.")
+  OPTIONS
+    + Option ("crossing", "Generate crossing fibre phantom rather than default curved phantom.")
     + Argument ("angle").type_float (0.0, 90.0, 90.0)
-    + Argument ("width").type_float (0.0, 10.0, 100.0),
+    + Argument ("width").type_float (0.0, 10.0, 100.0)
 
-  Option ("lmax", "maximum harmonic degree (default: determined from coefficients provided).")
-    + Argument ("degree").type_integer (0, 8, 20),
+    + Option ("lmax", "maximum harmonic degree (default: determined from coefficients provided).")
+    + Argument ("degree").type_integer (0, 8, 20);
+}
 
-  Option ()
-};
 
 
 class Kernel {
@@ -120,7 +112,7 @@ class Kernel {
 };
 
 
-EXECUTE {
+void run () {
   std::vector<int> D = parse_ints (argument[0]); 
 
   if (D.size() != 3) 

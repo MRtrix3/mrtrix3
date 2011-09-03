@@ -53,12 +53,15 @@ namespace MR {
           else properties[key] = kv.value();
         }
 
-        if (dtype == DataType::Undefined) throw Exception ("no datatype specified for tracks file \"" + file + "\"");
+        if (dtype == DataType::Undefined) 
+          throw Exception ("no datatype specified for tracks file \"" + file + "\"");
         if (dtype != DataType::Float32LE && dtype != DataType::Float32BE && 
             dtype != DataType::Float64LE && dtype != DataType::Float64BE)
-          throw Exception ("only supported datatype for tracks file are Float32LE, Float32BE, Float64LE & Float64BE (in tracks file \"" + file + "\")");
+          throw Exception ("only supported datatype for tracks file are "
+              "Float32LE, Float32BE, Float64LE & Float64BE (in tracks file \"" + file + "\")");
 
-        if (data_file.empty()) throw Exception ("missing \"files\" specification for tracks file \"" + file + "\"");
+        if (data_file.empty()) 
+          throw Exception ("missing \"files\" specification for tracks file \"" + file + "\"");
 
         std::istringstream files_stream (data_file);
         std::string fname;
@@ -66,14 +69,20 @@ namespace MR {
         int64_t offset = 0;
         if (files_stream.good()) {
           try { files_stream >> offset; }
-          catch (...) { throw Exception ("invalid offset specified for file \"" + fname + "\" in tracks file \"" + file + "\""); }
+          catch (...) { 
+            throw Exception ("invalid offset specified for file \""
+                + fname + "\" in tracks file \"" + file + "\"");
+          }
         }
 
-        if (fname != ".") fname = Path::join (Path::dirname (file), fname);
-        else fname = file;
+        if (fname != ".") 
+          fname = Path::join (Path::dirname (file), fname);
+        else 
+          fname = file;
 
         in.open (fname.c_str(), std::ios::in | std::ios::binary);
-        if (!in) throw Exception ("error opening tracks data file \"" + fname + "\": " + strerror(errno));
+        if (!in) 
+          throw Exception ("error opening tracks data file \"" + fname + "\": " + strerror(errno));
         in.seekg (offset);
       }
 

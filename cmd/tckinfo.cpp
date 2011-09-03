@@ -27,43 +27,36 @@
 #include "dwi/tractography/file.h"
 #include "dwi/tractography/properties.h"
 
-using namespace MR; 
-using namespace MR::DWI; 
-using namespace std; 
+MRTRIX_APPLICATION
 
-SET_VERSION_DEFAULT;
-SET_AUTHOR (NULL);
-SET_COPYRIGHT (NULL);
+using namespace MR;
+using namespace MR::DWI;
+using namespace App;
 
-DESCRIPTION = {
-  "print out information about track file",
-  NULL
-};
+void usage ()
+{
+  DESCRIPTION
+  + "print out information about track file";
 
-ARGUMENTS = {
-  Argument ("tracks", "the input track file.")
-    .allow_multiple()
-    .type_file (),
+  ARGUMENTS
+  + Argument ("tracks", "the input track file.")
+  .allow_multiple()
+  .type_file ();
 
-  Argument ()
-};
-
-
-
-OPTIONS = {
-  Option ("ascii",
-      "save positions of each track in individual ascii files, with the "
-      "specified prefix.")
-    + Argument ("prefix"),
-  Option ()
-};
+  OPTIONS
+  + Option ("ascii",
+            "save positions of each track in individual ascii files, with the "
+            "specified prefix.")
+  + Argument ("prefix");
+}
 
 
 
 
-EXECUTE {
+void run ()
+{
 
-  Options opt = get_options ("ascii"); 
+  Options opt = get_options ("ascii");
   size_t count = 0;
 
   for (size_t i = 0; i < argument.size(); ++i) {
@@ -82,7 +75,7 @@ EXECUTE {
     if (properties.comments.size()) {
       std::cout << "    Comments:             ";
       for (std::vector<std::string>::iterator i = properties.comments.begin(); i != properties.comments.end(); ++i)
-        std::cout << ( i == properties.comments.begin() ? "" : "                       " ) << *i << "\n";
+        std::cout << (i == properties.comments.begin() ? "" : "                       ") << *i << "\n";
     }
 
     for (std::multimap<std::string,std::string>::const_iterator i = properties.roi.begin(); i != properties.roi.end(); ++i)
@@ -95,17 +88,17 @@ EXECUTE {
       while (file.next (tck)) {
         std::string filename (opt[0][0]);
         filename += "-000000.txt";
-        std::string num (str(count));
+        std::string num (str (count));
         filename.replace (filename.size()-4-num.size(), num.size(), num);
 
         std::ofstream out (filename.c_str());
         if (!out) throw Exception ("error opening ascii file \"" + filename + "\": " + strerror (errno));
 
         for (std::vector<Point<float> >::iterator i = tck.begin(); i != tck.end(); ++i)
-          out << (*i)[0] << " " << (*i)[1] << " " << (*i)[2] << "\n";
+          out << (*i) [0] << " " << (*i) [1] << " " << (*i) [2] << "\n";
 
         out.close();
-          
+
         count++;
         ++progress;
       }
