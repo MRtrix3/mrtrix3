@@ -45,7 +45,7 @@ void usage ()
 
 ARGUMENTS 
   + Argument ("input", "the input image.").type_image_in ()
-  + Argument ("factor", "the sample factor").type_float(0.01, 2, 100)
+  + Argument ("factor", "the sample factor").type_float (0.01, 2.0, 100.0)
   + Argument ("output", "the output image .").type_image_out ();
 
 OPTIONS 

@@ -37,44 +37,45 @@ using namespace App;
 
 const char* modulate_choices[] = { "none", "fa", "eval", NULL };
 
-void usage () {
-DESCRIPTION 
+void usage ()
+{
+  DESCRIPTION
   + "generate maps of tensor-derived parameters.";
 
-ARGUMENTS 
+  ARGUMENTS
   + Argument ("tensor", "the input diffusion tensor image.").type_image_in ();
 
 
-OPTIONS
+  OPTIONS
   + Option ("adc",
-  "compute the mean apparent diffusion coefficient (ADC) of the diffusion tensor.")
+            "compute the mean apparent diffusion coefficient (ADC) of the diffusion tensor.")
   + Argument ("image").type_image_out()
 
   + Option ("fa",
-  "compute the fractional anisotropy of the diffusion tensor.")
+            "compute the fractional anisotropy of the diffusion tensor.")
   + Argument ("image").type_image_out()
 
   + Option ("num",
-  "specify the desired eigenvalue/eigenvector(s). Note that several eigenvalues "
-  "can be specified as a number sequence. For example, '1,3' specifies the "
-  "major (1) and minor (3) eigenvalues/eigenvectors (default = 1).")
+            "specify the desired eigenvalue/eigenvector(s). Note that several eigenvalues "
+            "can be specified as a number sequence. For example, '1,3' specifies the "
+            "major (1) and minor (3) eigenvalues/eigenvectors (default = 1).")
   + Argument ("image")
 
   + Option ("vector",
-  "compute the selected eigenvector(s) of the diffusion tensor.")
+            "compute the selected eigenvector(s) of the diffusion tensor.")
   + Argument ("image").type_image_out()
 
   + Option ("value",
-  "compute the selected eigenvalue(s) of the diffusion tensor.")
+            "compute the selected eigenvalue(s) of the diffusion tensor.")
   + Argument ("image").type_image_out()
 
   + Option ("mask",
-  "only perform computation within the specified binary brain mask image.")
+            "only perform computation within the specified binary brain mask image.")
   + Argument ("image").type_image_in()
 
   + Option ("modulate",
-  "specify how to modulate the magnitude of the eigenvectors. Valid choices "
-  "are: none, FA, eval (default = FA).")
+            "specify how to modulate the magnitude of the eigenvectors. Valid choices "
+            "are: none, FA, eval (default = FA).")
   + Argument ("spec").type_choice (modulate_choices);
 }
 
@@ -115,16 +116,37 @@ class ImagePairPtr : public Ptr<ImagePair>
 
     typedef ImagePair::value_type value_type;
 
-    DataSet::Position<ImagePairPtr> operator[] (size_t axis) { return DataSet::Position<ImagePairPtr> (*this, axis); }
-    DataSet::Value<ImagePairPtr> value () { return DataSet::Value<ImagePairPtr> (*this); }
+    DataSet::Position<ImagePairPtr> operator[] (size_t axis) {
+      return DataSet::Position<ImagePairPtr> (*this, axis);
+    }
+    DataSet::Value<ImagePairPtr> value () {
+      return DataSet::Value<ImagePairPtr> (*this);
+    }
 
-    value_type get_value () { if (!(*this)) return 0; return (*this)->vox.value(); }
-    void set_value (value_type val) { if (!(*this)) return; (*this)->vox.value() = val; }
+    value_type get_value () {
+      if (! (*this)) return 0;
+      return (*this)->vox.value();
+    }
+    void set_value (value_type val) {
+      if (! (*this)) return;
+      (*this)->vox.value() = val;
+    }
 
-    ssize_t get_pos (size_t axis) { if (!(*this)) return 0; return (*this)->vox[axis]; }
-    void set_pos (size_t axis, ssize_t pos) { if (!(*this)) return; (*this)->vox[axis] = pos; }
-    void move_pos (size_t axis, ssize_t inc) { if (!(*this)) return; (*this)->vox[axis] += inc; }
-    size_t ndim() {return (*this)->vox.ndim();}
+    ssize_t get_pos (size_t axis) {
+      if (! (*this)) return 0;
+      return (*this)->vox[axis];
+    }
+    void set_pos (size_t axis, ssize_t pos) {
+      if (! (*this)) return;
+      (*this)->vox[axis] = pos;
+    }
+    void move_pos (size_t axis, ssize_t inc) {
+      if (! (*this)) return;
+      (*this)->vox[axis] += inc;
+    }
+    size_t ndim() {
+      return (*this)->vox.ndim();
+    }
 };
 
 
@@ -138,7 +160,9 @@ class Processor
 
     typedef ImagePair::value_type value_type;
 
-    void set_modulation (int mod) { modulate = mod; }
+    void set_modulation (int mod) {
+      modulate = mod;
+    }
 
     void set_values (const std::vector<int> values) {
       vals = values;
@@ -225,7 +249,8 @@ inline void increment (size_t axis, Ptr<ImagePair>& i0, Ptr<ImagePair>& i1, Ptr<
   if (i4) ++i4->vox[axis];
 }
 
-void run () {
+void run ()
+{
   Image::Header dt_header (argument[0]);
 
   if (dt_header.ndim() != 4)
@@ -270,8 +295,8 @@ void run () {
   if (opt.size()) {
     mask = new ImagePair (opt[0][0]);
     if (mask->H.dim (0) != dt_header.dim (0) ||
-    mask->H.dim (1) != dt_header.dim (1) ||
-    mask->H.dim (2) != dt_header.dim (2))
+        mask->H.dim (1) != dt_header.dim (1) ||
+        mask->H.dim (2) != dt_header.dim (2))
       throw Exception ("dimensions of mask image do not match that of tensor image - aborting");
   }
 
