@@ -36,6 +36,8 @@ MRTRIX_APPLICATION
 using namespace MR;
 using namespace App;
 
+const char* algorithms[] = { "ifod1", "ifod2", "fact", "wbfact", "vecstream", NULL };
+
 void usage ()
 {
   DESCRIPTION
@@ -52,8 +54,6 @@ void usage ()
               "the output file containing the tracks generated."
              ).type_file();
 
-
-  const char* algorithms[] = { "ifod1", "ifod2", "fact", "wbfact", "vecstream", NULL };
 
   OPTIONS
   + Option ("algorithm",
