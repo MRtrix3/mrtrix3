@@ -34,11 +34,10 @@ namespace MR
     {
       namespace Tool
       {
-
-        QWidget* ROI::create ()
-        {
-          return (new QLabel ("ROI analysis", this));
-        }
+        ROI::ROI (Window& parent) :
+          Base (parent) { 
+            setWidget (new QLabel ("ROI analysis", this));
+          }
 
         void ROI::slot ()
         {

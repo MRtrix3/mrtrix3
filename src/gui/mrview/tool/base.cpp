@@ -25,7 +25,6 @@
 
 #include "gui/mrview/window.h"
 #include "gui/mrview/tool/base.h"
-#include "gui/mrview/tool/list.h"
 
 namespace MR
 {
@@ -36,53 +35,8 @@ namespace MR
       namespace Tool
       {
 
-        Base::Base (const QString& name, const QString& description, Window& parent) :
-          QDockWidget (name, &parent), window (parent), widget (NULL)
-        {
-          toggleViewAction()->setStatusTip (description);
-          setAllowedAreas (Qt::LeftDockWidgetArea | Qt::RightDockWidgetArea);
-          setVisible (false);
-        }
+        Base::Base (Window& parent) : QDockWidget (&parent) { }
 
-        void Base::showEvent (QShowEvent* event)
-        {
-          if (!widget) {
-            widget = create ();
-            widget->setMinimumWidth (128);
-            setWidget (widget);
-          }
-          QDockWidget::showEvent (event);
-        }
-
-        Base* create (Window& parent, size_t index)
-        {
-          switch (index) {
-#include "gui/mrview/tool/list.h"
-            default:
-              assert (0);
-          };
-          return (NULL);
-        }
-
-        namespace
-        {
-          bool present (size_t index)
-          {
-            switch (index) {
-#include "gui/mrview/tool/list.h"
-              default:
-                return (false);
-            };
-            return (false);
-          }
-        }
-
-        size_t count ()
-        {
-          size_t n = 0;
-          while (present (n)) ++n;
-          return (n);
-        }
       }
     }
   }

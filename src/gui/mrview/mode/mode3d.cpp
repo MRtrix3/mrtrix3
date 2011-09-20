@@ -55,6 +55,7 @@ namespace MR
 
         void Mode3D::paint ()
         {
+          if (!focus()) reset_view();
           if (!target()) set_target (focus());
 
           // camera target:
@@ -241,7 +242,7 @@ namespace MR
               }
 
               if (mouse_edge() & RightEdge) {
-                move_in_out (-2e-6*mouse_dpos().y() *FOV());
+                move_in_out_FOV (mouse_dpos().y());
                 updateGL();
                 return true;
               }
@@ -274,11 +275,6 @@ namespace MR
         }
 
 
-        bool Mode3D::mouse_wheel (float delta, Qt::Orientation orientation)
-        {
-          return false;
-        }
-
 
 
         void Mode3D::reset ()
@@ -288,6 +284,12 @@ namespace MR
           Mode2D::reset();
         }
 
+
+        using namespace App;
+        const App::OptionGroup Mode3D::options = OptionGroup ("3D reslice mode") 
+          + Option ("view", "specify initial angle of view")
+          + Argument ("azimuth").type_float(-M_PI, 0.0, M_PI)
+          + Argument ("elevation").type_float(0.0, 0.0, M_PI);
 
       }
     }

@@ -22,7 +22,6 @@
 
 #include "gui/opengl/gl.h"
 #include "gui/mrview/mode/base.h"
-#include "gui/mrview/mode/list.h"
 
 namespace MR
 {
@@ -174,11 +173,12 @@ done_painting:
 
         void Base::move_in_out (float distance)
         {
-          if (!image()) return;
-          //Point<> D (0.0, 0.0, 0.0);
-          //D[projection()] = distance;
-          //Point<> move = image()->interp.voxel2scanner_dir (D);
-          Point<> move (screen_to_model_direction (Point<> (0.0, 0.0, distance)));
+          if (!image()) 
+            return;
+
+          Point<> move (screen_to_model_direction (Point<> (0.0, 0.0, 1.0)));
+          move.normalise();
+          move *= distance;
           set_target (target() + move);
           set_focus (focus() + move);
         }
@@ -247,38 +247,6 @@ done_painting:
               M[4*n+2] = -Q[4*n+2];  // z: -z
             }
           }
-        }
-
-
-
-        Base* create (Window& parent, size_t index)
-        {
-          switch (index) {
-#include "gui/mrview/mode/list.h"
-            default:
-              assert (0);
-          };
-          return (NULL);
-        }
-
-        const char* name (size_t index)
-        {
-          switch (index) {
-#include "gui/mrview/mode/list.h"
-            default:
-              return (NULL);
-          };
-          return (NULL);
-        }
-
-        const char* tooltip (size_t index)
-        {
-          switch (index) {
-#include "gui/mrview/mode/list.h"
-            default:
-              return (NULL);
-          };
-          return (NULL);
         }
 
       }

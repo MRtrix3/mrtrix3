@@ -205,7 +205,7 @@ namespace MR
               }
 
               if (mouse_edge() & RightEdge) {
-                move_in_out (-2e-6*mouse_dpos().y() *FOV());
+                move_in_out_FOV (mouse_dpos().y());
                 updateGL();
                 return true;
               }
@@ -252,7 +252,7 @@ namespace MR
             else if (mouse_modifiers() != Qt::NoModifier)
               return false;
 
-            move_in_out (delta);
+            move_in_out_FOV (delta);
             updateGL();
             return true;
           }

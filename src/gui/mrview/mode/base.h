@@ -25,6 +25,7 @@
 
 #include "gui/opengl/gl.h"
 
+#include <QAction>
 #include <QCursor>
 #include <QMouseEvent>
 #include <QMenu>
@@ -32,7 +33,6 @@
 #include <QFontMetrics>
 
 #include "gui/mrview/window.h"
-
 
 #define EDGE_WIDTH 8
 
@@ -225,6 +225,9 @@ namespace MR
             }
 
             void move_in_out (float distance);
+            void move_in_out_FOV (int increment) {
+              move_in_out (1e-3 * increment * FOV());
+            }
 
 
             bool in_paint () const {
@@ -310,22 +313,58 @@ namespace MR
               buttons_ = event->buttons();
               modifiers_ = event->modifiers();
               lastPos = currentPos = event->pos();
-              if (mouse_wheel (event->delta() /120.0, event->orientation())) event->accept();
-              else event->ignore();
+              if (mouse_wheel (event->delta() / 120.0, event->orientation())) 
+                event->accept();
+              else 
+                event->ignore();
             }
 
             friend class MR::GUI::MRView::Window;
         };
 
-        Base* create (Window& parent, size_t index);
-        const char* name (size_t index);
-        const char* tooltip (size_t index);
+
+
+
+        //! \cond skip
+        class __Action__ : public QAction
+        {
+          public:
+            __Action__ (QActionGroup* parent,
+                        const char* const name,
+                        const char* const description,
+                        int index) :
+              QAction (name, parent) {
+              setCheckable (true);
+              setShortcut (tr (std::string ("F"+str (index)).c_str()));
+              setStatusTip (tr (description));
+            }
+
+            virtual Base* create (Window& parent) const = 0;
+        };
+        //! \endcond
+
+
+
+        template <class T> class Action : public __Action__
+        {
+          public:
+            Action (QActionGroup* parent,
+                    const char* const name,
+                    const char* const description,
+                    int index) :
+              __Action__ (parent, name, description, index) { }
+
+            virtual Base* create (Window& parent) const {
+              return new T (parent);
+            }
+        };
 
 
       }
     }
   }
 }
+
 
 #endif
 

@@ -23,6 +23,7 @@
 #ifndef __gui_mrview_mode_mode3d_h__
 #define __gui_mrview_mode_mode3d_h__
 
+#include "app.h"
 #include "gui/mrview/mode/mode2d.h"
 
 namespace MR
@@ -45,7 +46,8 @@ namespace MR
             virtual bool mouse_click ();
             virtual bool mouse_move ();
             virtual bool mouse_release ();
-            virtual bool mouse_wheel (float delta, Qt::Orientation orientation);
+
+            static const App::OptionGroup options;
 
           public slots:
             virtual void reset ();

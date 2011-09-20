@@ -1,25 +1,3 @@
-/*
-   Copyright 2009 Brain Research Institute, Melbourne, Australia
-
-   Written by J-Donald Tournier, 13/11/09.
-
-   This file is part of MRtrix.
-
-   MRtrix is free software: you can redistribute it and/or modify
-   it under the terms of the GNU General Public License as published by
-   the Free Software Foundation, either version 3 of the License, or
-   (at your option) any later version.
-
-   MRtrix is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-   GNU General Public License for more details.
-
-   You should have received a copy of the GNU General Public License
-   along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
-
-*/
-
 #include "gui/opengl/gl.h"
 
 #include <QMessageBox>
@@ -40,7 +18,9 @@
 #include "gui/mrview/window.h"
 #include "gui/mrview/shader.h"
 #include "gui/mrview/mode/base.h"
+#include "gui/mrview/mode/list.h"
 #include "gui/mrview/tool/base.h"
+#include "gui/mrview/tool/list.h"
 
 
 namespace MR
@@ -49,6 +29,13 @@ namespace MR
   {
     namespace MRView
     {
+      using namespace App;
+
+      const OptionGroup Window::options = OptionGroup ("General options")
+        + Option ("mode", "select initial display mode")
+        + Argument ("name");
+
+
 
       class Window::GLArea : public QGLWidget
       {
@@ -187,22 +174,21 @@ namespace MR
 
         // View menu:
         view_menu = menuBar()->addMenu (tr ("&View"));
-        size_t num_modes;
-        for (num_modes = 0; Mode::name (num_modes); ++num_modes);
-        assert (num_modes > 1);
-        mode_actions = new QAction* [num_modes];
+
         mode_group = new QActionGroup (this);
         mode_group->setExclusive (true);
 
-        for (size_t n = 0; n < num_modes; ++n) {
-          mode_actions[n] = new QAction (tr (Mode::name (n)), this);
-          mode_actions[n]->setCheckable (num_modes > 1);
-          mode_actions[n]->setShortcut (tr (std::string ("F"+str (n+1)).c_str()));
-          mode_actions[n]->setStatusTip (tr (Mode::tooltip (n)));
-          mode_group->addAction (mode_actions[n]);
-          view_menu->addAction (mode_actions[n]);
+#undef MODE
+#define MODE(classname, name, description) \
+        view_menu->addAction (new Action<classname> (mode_group, #name, #description, n++));
+#define MODE_OPTION(classname, name, description) MODE(classname, name, description)
+        {
+          using namespace Mode;
+          size_t n = 1;
+#include "gui/mrview/mode/list.h"
         }
-        mode_actions[0]->setChecked (true);
+
+        mode_group->actions()[0]->setChecked (true);
         connect (mode_group, SIGNAL (triggered (QAction*)), this, SLOT (select_mode_slot (QAction*)));
         view_menu->addSeparator();
 
@@ -213,12 +199,19 @@ namespace MR
 
         // Tool menu:
         tool_menu = menuBar()->addMenu (tr ("&Tools"));
-        size_t num_tools = Tool::count();
-        for (size_t n = 0; n < num_tools; ++n) {
-          Tool::Base* tool = Tool::create (*this, n);
-          addDockWidget (Qt::RightDockWidgetArea, tool);
-          tool_menu->addAction (tool->toggleViewAction());
+        tool_group = new QActionGroup (this);
+        tool_group->setExclusive (false);
+
+#undef TOOL
+#define TOOL(classname, name, description) \
+        tool_menu->addAction (new Action<classname> (tool_group, #name, #description, n++));
+#define TOOL_OPTION(classname, name, description) TOOL(classname, name, description)
+        {
+          using namespace Tool;
+          size_t n = 1;
+#include "gui/mrview/tool/list.h"
         }
+        connect (tool_group, SIGNAL (triggered (QAction*)), this, SLOT (select_tool_slot (QAction*)));
 
         // Image menu:
 
@@ -303,8 +296,8 @@ namespace MR
 
       Window::~Window ()
       {
+        mode = NULL;
         delete glarea;
-        delete [] mode_actions;
         delete [] colourmap_actions;
       }
 
@@ -391,13 +384,25 @@ namespace MR
 
       void Window::select_mode_slot (QAction* action)
       {
-        delete mode;
-        size_t n = 0;
-        while (action != mode_actions[n]) {
-          assert (Mode::name (n) != NULL);
-          ++n;
+        mode = dynamic_cast<GUI::MRView::Mode::__Action__*> (action)->create (*this);
+        mode->updateGL();
+      }
+
+
+
+
+
+      void Window::select_tool_slot (QAction* action)
+      {
+        Tool::Base* tool = dynamic_cast<Tool::__Action__*>(action)->instance;
+        if (!tool) {
+          tool = dynamic_cast<Tool::__Action__*>(action)->create (*this);
+          addDockWidget (Qt::RightDockWidgetArea, tool);
+          tool->show();
+          connect (tool, SIGNAL (visibilityChanged (bool)), action, SLOT (setChecked (bool)));
         }
-        mode = Mode::create (*this, n);
+
+        tool->setVisible (action->isChecked());
         mode->updateGL();
       }
 
@@ -458,13 +463,9 @@ namespace MR
       void Window::image_next_slot ()
       {
         QAction* action = image_group->checkedAction();
-        QList<QAction*> list = image_group->actions();
-        for (int n = 0; n < list.size(); ++n) {
-          if (action == list[n]) {
-            image_select_slot (list[ (n+1) %list.size()]);
-            return;
-          }
-        }
+        int N = image_group->actions().size();
+        int n = image_group->actions().indexOf (action);
+        image_select_slot (image_group->actions()[(n+1)%N]);
       }
 
 
@@ -473,15 +474,22 @@ namespace MR
       void Window::image_previous_slot ()
       {
         QAction* action = image_group->checkedAction();
-        QList<QAction*> list = image_group->actions();
-        for (int n = 0; n < list.size(); ++n) {
-          if (action == list[n]) {
-            image_select_slot (list[ (n+list.size()-1) %list.size()]);
-            return;
-          }
-        }
+        int N = image_group->actions().size();
+        int n = image_group->actions().indexOf (action);
+        image_select_slot (image_group->actions()[(n+N-1)%N]);
       }
 
+
+
+      void Window::image_select_slot (QAction* action)
+      {
+        action->setChecked (true);
+        image_interpolate_action->setChecked (current_image()->interpolate());
+        colourmap_group->actions()[current_image()->colourmap_index()]->setChecked (true);
+        invert_scale_action->setChecked (current_image()->scale_inverted());
+        invert_colourmap_action->setChecked (current_image()->colourmap_inverted());
+        glarea->updateGL();
+      }
 
 
 
@@ -501,13 +509,6 @@ namespace MR
 
 
 
-
-      void Window::image_select_slot (QAction* action)
-      {
-        action->setChecked (true);
-        image_interpolate_action->setChecked (current_image()->interpolate());
-        glarea->updateGL();
-      }
 
 
       void Window::OpenGL_slot ()
@@ -574,7 +575,6 @@ namespace MR
 
 
 
-
       inline void Window::initGL ()
       {
         GL::init ();
@@ -595,7 +595,21 @@ namespace MR
         glClearColor (0.0, 0.0, 0.0, 0.0);
         glEnable (GL_DEPTH_TEST);
 
-        mode = Mode::create (*this, 0);
+        Options opt = get_options ("mode");
+        if (opt.size()) {
+          std::string name (lowercase (opt[0][0]));
+          for (int n = 0; n < mode_group->actions().size(); ++n) {
+            if (name == lowercase (mode_group->actions()[n]->text().toStdString())) {
+              mode = dynamic_cast<Mode::__Action__*> (mode_group->actions()[n])->create (*this);
+              goto mode_selected;
+            }
+          }
+          throw Exception ("unknown mode \"" + std::string (opt[0][0]) + "\"");
+        }
+        else 
+          mode = dynamic_cast<Mode::__Action__*> (mode_group->actions()[0])->create (*this);
+
+mode_selected:
         DEBUG_OPENGL;
       }
 

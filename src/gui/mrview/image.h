@@ -122,6 +122,18 @@ namespace MR
             shader3D.set (Texture3D | colourmap);
           }
 
+          bool scale_inverted () const { 
+            return colourmap & InvertScale;
+          }
+
+          bool colourmap_inverted () const {
+            return colourmap & InvertMap;
+          }
+
+          uint32_t colourmap_index () const {
+            return colourmap & ~(InvertMap | InvertScale);
+          }
+
 
           MR::Image::Voxel<float> vox;
           MR::DataSet::Interp::Linear<MR::Image::Voxel<float> > interp;

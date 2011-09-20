@@ -23,7 +23,10 @@
 #ifndef __gui_mrview_tool_base_h__
 #define __gui_mrview_tool_base_h__
 
+#include <QAction>
 #include <QDockWidget>
+
+#include "gui/mrview/window.h"
 
 namespace MR
 {
@@ -31,8 +34,6 @@ namespace MR
   {
     namespace MRView
     {
-      class Window;
-
       namespace Tool
       {
 
@@ -41,21 +42,55 @@ namespace MR
             Q_OBJECT
 
           public:
-            Base (const QString& name, const QString& description, Window& parent);
-            int minimumWidth () const;
+            Base (Window& parent);
 
-          protected:
-            void showEvent (QShowEvent* event);
-
-          private:
-            Window& window;
-            QWidget* widget;
-
-            virtual QWidget* create () = 0;
+            Window& window() {
+              return *dynamic_cast<Window*> (parentWidget());
+            }
         };
 
-        Base* create (Window& parent, size_t index);
-        size_t count ();
+
+
+
+
+
+        //! \cond skip
+        class __Action__ : public QAction
+        {
+          public:
+            __Action__ (QActionGroup* parent,
+                        const char* const name,
+                        const char* const description,
+                        int index) :
+              QAction (name, parent),
+              instance (NULL) {
+              setCheckable (true);
+              setShortcut (tr (std::string ("F"+str (index)).c_str()));
+              setStatusTip (tr (description));
+            }
+
+            virtual Base* create (Window& parent) = 0;
+            Base* instance;
+        };
+        //! \endcond
+
+
+
+        template <class T> class Action : public __Action__
+        {
+          public:
+            Action (QActionGroup* parent,
+                    const char* const name,
+                    const char* const description,
+                    int index) :
+              __Action__ (parent, name, description, index) { }
+
+            virtual Base* create (Window& parent) {
+              instance = new T (parent);
+              return instance;
+            }
+        };
+
 
       }
     }
