@@ -143,7 +143,7 @@ class DataLoader
 
     void execute () {
       Queue::Writer::Item item (writer);
-      DataSet::Loop loop ("computing amplitudes...", 0, 3);
+      DataSet::Loop loop ("estimating peak directions...", 0, 3);
       if (mask) {
         Image::Voxel<value_type> mask_vox (*mask);
         DataSet::check_dimensions (mask_vox, sh, 0, 3);

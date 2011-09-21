@@ -97,7 +97,8 @@ OPTIONS
   + Option ("std", "return return the standard deviation of the voxel values along the axes specified.").allow_multiple()
   + Argument ("axis")
 
-  + DataType::options();
+  + Option ("eq", "return 1 if current voxel value is equal to corresponding voxel value of 'source', 0 otherwise").allow_multiple()
+  + Argument ("source");
 }
 
 
@@ -341,7 +342,7 @@ DEF_BINARY (LessThan, val1 < val2);
 DEF_BINARY (GreaterThan, val1 > val2);
 DEF_BINARY (LessThanOrEqualTo, val1 <= val2);
 DEF_BINARY (GreaterThanOrEqualTo, val1 >= val2);
-
+DEF_BINARY (EqualTo, val1 == val2);
 
 
 
@@ -561,6 +562,10 @@ void run () {
     }
     if (*opt == "ge") {
       last = new GreaterThanOrEqualTo (last, new Source (opt->args[0]));
+      continue;
+    }
+    if (*opt == "eq") {
+      last = new EqualTo (last, new Source (opt->args[0]));
       continue;
     }
     if (*opt == "mean") {

@@ -63,14 +63,21 @@ void usage ()
 
   + Option ("invert", "invert output binary mask.")
 
-  + Option ("nan", "replace all zero values with NaN.");
-}
+  + Option ("toppercent", "provide a mask of the N%% top-valued voxels")
+  + Argument ("N").type_integer (0, 100, std::numeric_limits<int>::max())
 
+  + Option ("bottompercent", "provide a mask of the N%% bottom-valued voxels")
+  + Argument ("N").type_integer (0, 100, std::numeric_limits<int>::max())
+
+  + Option ("nan", "replace all zero values with NaN.")
+
+  + Option ("ignorezero", "ignore zero-values input voxels.");
+}
 
 
 void run ()
 {
-  float val (NAN), percentile (NAN);
+  float val (NAN), percentile (NAN), bottomNpercent (NAN), topNpercent (NAN);
   size_t topN (0), bottomN (0), nopt (0);
 
   Options opt = get_options ("abs");
@@ -97,11 +104,25 @@ void run ()
     ++nopt;
   }
 
-  if (nopt > 1) throw Exception ("too many conflicting options");
+  opt = get_options ("toppercent");
+  if (opt.size()) {
+    topNpercent = opt[0][0];
+    ++nopt;
+  }
+
+  opt = get_options ("bottompercent");
+  if (opt.size()) {
+    bottomNpercent = opt[0][0];
+    ++nopt;
+  }
+
+  if (nopt > 1)
+    throw Exception ("too many conflicting options");
 
 
   bool invert = get_options ("invert").size();
   bool use_NaN = get_options ("nan").size();
+  bool ignore_zeroes = get_options ("ignorezero").size();
 
   Image::Header header_in (argument[0]);
   assert (!header_in.is_complex());
@@ -131,6 +152,23 @@ void run ()
   float one  = 1.0;
   if (invert) std::swap (zero, one);
 
+  if (finite (topNpercent) || finite (bottomNpercent)) {
+    DataSet::LoopInOrder loop (in, "computing voxel count...");
+    size_t count = 0;
+    for (loop.start (in); loop.ok(); loop.next (in)) {
+      float val = in.value();
+      if (ignore_zeroes && val == 0.0) continue;
+      ++count;
+    }
+
+    if (finite (topNpercent)) 
+      topN = Math::round (0.01 * topNpercent * count);
+    else
+      bottomN = Math::round (0.01 * bottomNpercent * count);
+  }
+
+
+
   if (topN || bottomN) {
     std::multimap<float,std::vector<ssize_t> > list;
 
@@ -144,6 +182,7 @@ void run ()
       if (topN) {
         for (loop.start (in); loop.ok(); loop.next (in)) {
           float val = in.value();
+          if (ignore_zeroes && val == 0.0) continue;
           if (list.size() == topN) {
             if (val < list.begin()->first) continue;
             list.erase (list.begin());
@@ -156,6 +195,7 @@ void run ()
       else {
         for (loop.start (in); loop.ok(); loop.next (in)) {
           float val = in.value();
+          if (ignore_zeroes && val == 0.0) continue;
           if (list.size() == bottomN) {
             std::multimap<float,std::vector<ssize_t> >::iterator i = list.end();
             --i;

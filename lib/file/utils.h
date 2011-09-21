@@ -137,6 +137,13 @@ namespace MR
       if (::mkdir (folder.c_str(), 0777))
         throw Exception ("error creating folder \"" + folder + "\": " + strerror (errno));
     }
+
+    inline void symlink (const std::string& link_target, const std::string& link_name)
+    {
+      if (::symlink (link_target.c_str(), link_name.c_str()) < 0)
+        throw Exception ("error creating symbolic link \"" + link_name 
+            + "\" to \"" + link_target + "\": " + strerror (errno));
+    }
     
 
     inline void unlink (const std::string& file) 
