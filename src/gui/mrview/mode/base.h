@@ -335,7 +335,7 @@ namespace MR
                         int index) :
               QAction (name, parent) {
               setCheckable (true);
-              setShortcut (tr (std::string ("F"+str (index)).c_str()));
+              setShortcut (tr (std::string ("Shift+F"+str (index)).c_str()));
               setStatusTip (tr (description));
             }
 
