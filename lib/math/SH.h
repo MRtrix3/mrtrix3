@@ -135,22 +135,29 @@ namespace MR
 
 
 
-      template <typename T> inline T value (const T* val, const Point<T>& unit_dir, int lmax)
-      {
-        T value = 0.0;
-        T az = atan2 (unit_dir[1], unit_dir[0]);
-        T AL [lmax+1];
-        Legendre::Plm_sph (AL, lmax, 0, T (unit_dir[2]));
-        for (int l = 0; l <= lmax; l+=2) value += AL[l] * val[index (l,0)];
-        for (int m = 1; m <= lmax; m++) {
-          Legendre::Plm_sph (AL, lmax, m, T (unit_dir[2]));
-          T c = Math::cos (m*az);
-          T s = Math::sin (m*az);
-          for (int l = ( (m&1) ? m+1 : m); l <= lmax; l+=2)
-            value += AL[l] * (c * val[index (l,m)] + s * val[index (l,-m)]);
+      template <typename T, typename C> 
+        inline T value (const C& coefs, T cos_elevation, T azimuth, int lmax) 
+        {
+          T amplitude = 0.0;
+          T AL [lmax+1];
+          Legendre::Plm_sph (AL, lmax, 0, T (cos_elevation));
+          for (int l = 0; l <= lmax; l+=2) amplitude += AL[l] * coefs[index (l,0)];
+          for (int m = 1; m <= lmax; m++) {
+            Legendre::Plm_sph (AL, lmax, m, T (cos_elevation));
+            T c = Math::cos (m*azimuth);
+            T s = Math::sin (m*azimuth);
+            for (int l = ( (m&1) ? m+1 : m); l <= lmax; l+=2)
+              amplitude += AL[l] * (c * coefs[index (l,m)] + s * coefs[index (l,-m)]);
+          }
+          return amplitude;
         }
-        return value;
-      }
+
+
+      template <typename T, typename C> 
+        inline T value (const C& val, const Point<T>& unit_dir, int lmax)
+        {
+          return value (val, unit_dir[2], atan2 (unit_dir[1], unit_dir[0]), lmax);
+        }
 
 
       template <typename T> inline Math::Vector<T>& delta (Math::Vector<T>& D, const Point<T>& unit_dir, int lmax)
