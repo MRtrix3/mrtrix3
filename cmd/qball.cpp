@@ -269,15 +269,11 @@ void run ()
   info("setting maximum even spherical harmonic order to " + str(lmax));
 
   // Setup response function
-  Math::Matrix<value_type> dir(1,2);
-  dir(0,0) = 0;
-  dir(0,1) = M_PI_2;
-  Math::Matrix<value_type> SHT;
-  Math::SH::init_transform(SHT,dir,lmax);
   int num_RH = (lmax + 2)/2;
   Math::Vector<value_type> sigs(num_RH);
-  for (int l = 0; l <= lmax; l = l + 2)
-    sigs[l/2] = SHT(0, (l*(l-1))/2 + ceil((2*static_cast<float>(l)+1)/2) - 1);
+  value_type AL[lmax+1];
+  Math::Legendre::Plm_sph<value_type>(AL, lmax, 0, 0);
+  for (int l = 0; l <= lmax; l += 2) sigs[l/2] = AL[l];
   Math::Vector<value_type> response(num_RH);
   Math::SH::SH2RH(response, sigs);
 
