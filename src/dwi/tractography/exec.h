@@ -115,7 +115,7 @@ namespace MR {
             } while (item.write());
           }
 
-        private:
+        protected:
           const typename Method::Shared& S;
           Method method;
           Queue::Writer writer;
