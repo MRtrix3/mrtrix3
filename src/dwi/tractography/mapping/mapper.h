@@ -38,6 +38,7 @@
 
 #include "dwi/tractography/file.h"
 
+#include "dwi/tractography/mapping/common.h"
 #include "dwi/tractography/mapping/resampler.h"
 #include "dwi/tractography/mapping/twi_stats.h"
 #include "dwi/tractography/mapping/voxel.h"
@@ -59,66 +60,60 @@ namespace Mapping {
 
 
 
-enum contrast_t { TDI, DECTDI, ENDPOINT, MEAN_DIR, LENGTH, INVLENGTH, SCALAR_MAP, SCALAR_MAP_COUNT, FOD_AMP, CURVATURE };
-const char* contrasts[] = { "tdi", "dectdi", "endpoint", "mean_dir", "length", "invlength", "scalar_map", "scalar_map_count", "fod_amp", "curvature", NULL };
 
-
-typedef DataSet::Interp::Base<const Image::Header>  HeaderInterp;
-typedef Thread::Queue< std::vector< Point<float> > > TrackQueue;
+typedef DataSet::Interp::Base<const Image::Header> HeaderInterp;
 
 
 
-template <typename Cont>
-class TrackMapper
+
+template <class Cont>
+class TrackMapperBase
 {
+
   public:
-    TrackMapper (TrackQueue& input, Thread::Queue<Cont>& output, const Image::Header& output_header, const Math::Matrix<float>& interp_matrix, const float step, const contrast_t c, const stat_t s, const float denom = 0.0) :
-      contrast             (c),
-      track_statistic      (s),
-      step_size            (step),
-      reader               (input),
-      writer               (output),
-      H_out                (output_header),
-      interp_out           (H_out),
-      resample_matrix      (interp_matrix),
-      gaussian_denominator (denom),
-      os_factor            (interp_matrix.rows() + 1) { }
+    TrackMapperBase (TrackQueue& input, Thread::Queue<Cont>& output, const Image::Header& output_header, const Math::Matrix<float>& interp_matrix) :
+      reader     (input),
+      writer     (output),
+      R          (interp_matrix, 3),
+      H_out      (output_header),
+      interp_out (H_out),
+      os_factor  (interp_matrix.rows() + 1)
+    {
+      if (R.valid()) {
+        assert (interp_matrix.is_set());
+        assert (interp_matrix.rows());
+        data.allocate (interp_matrix.rows(), 3);
+      }
+    }
 
-    TrackMapper (const TrackMapper& that) :
-      contrast             (that.contrast),
-      track_statistic      (that.track_statistic),
-      step_size            (that.step_size),
-      reader               (that.reader),
-      writer               (that.writer),
-      H_out                (that.H_out),
-      interp_out           (H_out),
-      resample_matrix      (that.resample_matrix),
-      gaussian_denominator (that.gaussian_denominator),
-      os_factor            (that.os_factor) { }
+    TrackMapperBase (const TrackMapperBase& that) :
+      reader     (that.reader),
+      writer     (that.writer),
+      R          (that.R),
+      data       (that.data),
+      H_out      (that.H_out),
+      interp_out (H_out),
+      os_factor  (that.os_factor)
+    { }
 
-    virtual ~TrackMapper() { }
+    virtual ~TrackMapperBase() { }
+
 
     void execute ()
     {
       TrackQueue::Reader::Item in (reader);
       typename Thread::Queue<Cont>::Writer::Item out (writer);
-      Resampler<float> R (resample_matrix, 3);
-      Math::Matrix<float> data;
-      if (R.valid()) {
-        assert (resample_matrix.is_set());
-        assert (resample_matrix.rows());
-        data.allocate (resample_matrix.rows(), 3);
-      }
 
       while (in.read()) {
         out->clear();
+        out->index = in->index;
         // In the case of contrasts which vary along the track length, want to get the
         // statistical value along the fibre length BEFORE streamline interpolation
-        set_factor (*in, *out);
-        if (out->factor) { // Change here: only contribute to the image if factor is not 0 (so it doesn't affect sums / means)
+        if (preprocess (in->tck, *out)) {
           if (R.valid())
-            interp_track (*in, R, data);
-          voxelise (*out, *in);
+            interp_track (in->tck, data);
+          voxelise (in->tck, *out);
+          postprocess (in->tck, *out);
           if (!out.write())
             throw Exception ("error writing to write-back queue");
         }
@@ -126,24 +121,12 @@ class TrackMapper
     }
 
 
-  protected:
-    virtual void load_values (const std::vector< Point<float> >&, std::vector<float>&);
-    const contrast_t contrast;
-    const stat_t track_statistic;
-
-
   private:
-    const float step_size;
+
     TrackQueue::Reader reader;
     typename Thread::Queue<Cont>::Writer writer;
-    const Image::Header& H_out;
-    HeaderInterp interp_out;
-    const Math::Matrix<float>& resample_matrix;
-
-    // Members for when the contribution of a track is not a constant
-    const float gaussian_denominator;
-    const size_t os_factor;
-    std::vector<float> factors;
+    Resampler<float> R;
+    Math::Matrix<float> data;
 
 
     void interp_prepare (std::vector< Point<float> >& v)
@@ -160,10 +143,9 @@ class TrackMapper
 
     void interp_track (
         std::vector<Point<float> >& tck,
-        Resampler<float>& R,
         Math::Matrix<float>& data)
     {
-      std::vector<Point<float> > out;
+      std::vector< Point<float> > out;
       interp_prepare (tck);
       R.init (tck[0], tck[1], tck[2]);
       for (size_t i = 3; i < tck.size(); ++i) {
@@ -178,17 +160,194 @@ class TrackMapper
     }
 
 
-    void set_factor (const std::vector< Point<float> >&, Cont&);
-    void voxelise   (Cont&, const std::vector< Point<float> >&) const;
+  protected:
+    const Image::Header& H_out;
+    HeaderInterp interp_out;
+    const size_t os_factor;
+
+
+    virtual void voxelise    (const std::vector< Point<float> >&, Cont&) const { throw Exception ("Running empty virtual function TrackMapperBase::voxelise()"); }
+    virtual bool preprocess  (const std::vector< Point<float> >&, Cont&) const { return true; }
+    virtual void postprocess (const std::vector< Point<float> >&, Cont&) const { }
 
 
 };
 
 
 
+template <>
+void TrackMapperBase<SetVoxel>::voxelise (const std::vector< Point<float> >& tck, SetVoxel& voxels) const
+{
+
+  Voxel vox;
+  for (std::vector< Point<float> >::const_iterator i = tck.begin(); i != tck.end(); ++i) {
+    vox = round (interp_out.scanner2voxel (*i));
+    if (check (vox, H_out))
+      voxels.insert (vox);
+  }
+
+}
+
+
+template <>
+void TrackMapperBase<SetVoxelDir>::voxelise (const std::vector< Point<float> >& tck, SetVoxelDir& voxels) const
+{
+
+  std::vector< Point<float> >::const_iterator prev = tck.begin();
+  const std::vector< Point<float> >::const_iterator last = tck.end() - 1;
+
+  VoxelDir vox;
+  for (std::vector< Point<float> >::const_iterator i = tck.begin(); i != last; ++i) {
+    vox = round (interp_out.scanner2voxel (*i));
+    if (check (vox, H_out)) {
+      vox.dir = *(i+1) - *prev;
+      SetVoxelDir::iterator existing_vox = voxels.find (vox);
+      if (existing_vox == voxels.end()) {
+        voxels.insert (vox);
+      } else {
+        VoxelDir new_vox (*existing_vox);
+        new_vox.dir += vox.dir;
+        voxels.erase (existing_vox);
+        voxels.insert (new_vox);
+      }
+      prev = i;
+    }
+  }
+  vox = round (interp_out.scanner2voxel (*last));
+  if (check (vox, H_out)) {
+    vox.dir = *last - *prev;
+    SetVoxelDir::iterator existing_vox = voxels.find (vox);
+    if (existing_vox == voxels.end()) {
+      voxels.insert (vox);
+    } else {
+      VoxelDir new_vox (*existing_vox);
+      new_vox.dir += vox.dir;
+      voxels.erase (existing_vox);
+      voxels.insert (new_vox);
+    }
+  }
+
+}
+
+
+
+
+
 
 template <class Cont>
-void TrackMapper<Cont>::load_values (const std::vector< Point<float> >& tck, std::vector<float>& values)
+class TrackMapperTWI : public TrackMapperBase<Cont>
+{
+  public:
+    TrackMapperTWI (TrackQueue& input, Thread::Queue<Cont>& output, const Image::Header& output_header, const Math::Matrix<float>& interp_matrix, const float step, const contrast_t c, const stat_t s, const float denom = 0.0) :
+      TrackMapperBase<Cont> (input, output, output_header, interp_matrix),
+      contrast              (c),
+      track_statistic       (s),
+      step_size             (step),
+      gaussian_denominator  (denom) { }
+
+    TrackMapperTWI (const TrackMapperTWI& that) :
+      TrackMapperBase<Cont> (that),
+      contrast              (that.contrast),
+      track_statistic       (that.track_statistic),
+      step_size             (that.step_size),
+      gaussian_denominator  (that.gaussian_denominator) { }
+
+    virtual ~TrackMapperTWI() { }
+
+
+  protected:
+    virtual void load_values (const std::vector< Point<float> >&, std::vector<float>&);
+    const contrast_t contrast;
+    const stat_t track_statistic;
+
+
+  private:
+    const float step_size;
+
+    // Members for when the contribution of a track is not a constant
+    const float gaussian_denominator;
+    std::vector<float> factors;
+
+    void set_factor (const std::vector< Point<float> >&, Cont&);
+
+    // Call the inheited virtual function unless a specialisation for this class exists
+    void voxelise (const std::vector< Point<float> >& tck, Cont& voxels) const { TrackMapperBase<Cont>::voxelise (tck, voxels); }
+
+    // Overload virtual function
+    // Change here: only contribute to the image if factor is not 0 (so it doesn't affect sums / means)
+    bool preprocess (const std::vector< Point<float> >& tck, Cont& out) { set_factor (tck, out); return out->factor; }
+
+};
+
+
+template <>
+void TrackMapperTWI<SetVoxel>::voxelise (const std::vector< Point<float> >& tck, SetVoxel& voxels) const
+{
+
+  if (contrast == ENDPOINT) {
+
+    Voxel vox;
+    const size_t os_ratio = TrackMapperBase<SetVoxel>::os_factor;
+    for (size_t i = os_ratio; i != (2 * os_ratio) + 1; ++i) {
+      vox = round (interp_out.scanner2voxel (tck[1]));
+      if (check (vox, H_out))
+        voxels.insert (vox);
+    }
+    for (size_t i = tck.size() - os_ratio - 1; i != tck.size() - (2 * os_ratio) - 2; --i) {
+      vox = round (interp_out.scanner2voxel (tck[1]));
+      if (check (vox, H_out))
+        voxels.insert (vox);
+    }
+
+  } else {
+
+    TrackMapperBase<SetVoxel>::voxelise (tck, voxels);
+
+  }
+
+}
+
+
+
+template <>
+void TrackMapperTWI<SetVoxelFactor>::voxelise (const std::vector< Point<float> >& tck, SetVoxelFactor& voxels) const
+{
+
+  VoxelFactor vox;
+  for (size_t i = 0; i != tck.size(); ++i) {
+    vox = round (interp_out.scanner2voxel (tck[i]));
+    if (check (vox, H_out)) {
+
+      // Get a linearly-interpolated value from factors[] based upon factors[] being
+      //   generated with non-interpolated data, and index 'i' here representing interpolated data
+      const float ideal_index = float(i) / float(os_factor);
+      const size_t lower_index = MAX(floor (ideal_index), 0);
+      const size_t upper_index = MIN(ceil  (ideal_index), tck.size() - 1);
+      const float mu = ideal_index - lower_index;
+      const float factor = (mu * factors[upper_index]) + ((1.0 - mu) * factors[lower_index]);
+
+      // Change here from base classes: need to explicitly check whether this voxel has been visited
+      SetVoxelFactor::iterator v = voxels.find (vox);
+      if (v == voxels.end()) {
+        vox.set_factor (factor);
+        voxels.insert (vox);
+      } else {
+        vox = *v;
+        vox.add_contribution (factor);
+        voxels.erase (v);
+        voxels.insert (vox);
+      }
+
+    }
+  }
+
+}
+
+
+
+
+template <class Cont>
+void TrackMapperTWI<Cont>::load_values (const std::vector< Point<float> >& tck, std::vector<float>& values)
 {
 
   if (contrast != CURVATURE)
@@ -219,15 +378,6 @@ void TrackMapper<Cont>::load_values (const std::vector< Point<float> >& tck, std
     	tangents.push_back (Point<float> (0.0, 0.0, 0.0));
   }
 
-/*
-  // Need one value for each point along the curve
-  // Calculate for all but the first and last points, and just duplicate the first & last values
-  for (size_t i = 1; i != tangents.size() - 1; ++i)
-    values.push_back (0.5 * acos (tangents[i+1].dot (tangents[i-1])) / step_size);
-  values.push_back (values.back());
-  values.insert (values.begin(), values.front());
-*/
-
   // For those tangents which are invalid, fill with valid values from neighbours
   for (size_t i = 0; i != tangents.size(); ++i) {
     if (tangents[i] == Point<float> (0.0, 0.0, 0.0)) {
@@ -250,25 +400,11 @@ void TrackMapper<Cont>::load_values (const std::vector< Point<float> >& tck, std
     }
   }
 
-  //std::vector< Point<float> > principal_normal_vectors;
-  //principal_normal_vectors.reserve (tangents.size());
-
-  //for (size_t i = 0; i != tangents.size(); ++i) {
-  //  if (i == 0)
-  //    principal_normal_vectors.push_back (tangents[1] - tangents[0]);
-  //  else if (i == tangents.size() - 1)
-  //    principal_normal_vectors.push_back (tangents[i] - tangents[i-1]);
-  //  else
-  //    principal_normal_vectors.push_back ((tangents[i+1] - tangents[i-1]) * 0.5);
-  //}
-
   // Smooth both the tangent vectors and the principal normal vectors according to a Gaussuan kernel
   // Remember: tangent vectors are unit length, but for principal normal vectors length must be preserved!
 
   std::vector< Point<float> > smoothed_tangents;
   smoothed_tangents.reserve (tangents.size());
-  //std::vector< Point<float> > smoothed_normals;
-  //smoothed_normals.reserve (principal_normal_vectors.size());
 
   static const float gaussian_theta = CURVATURE_TRACK_SMOOTHING_FWHM / (2.0 * sqrt (2.0 * log (2.0)));
   static const float gaussian_denominator = 2.0 * gaussian_theta * gaussian_theta;
@@ -279,24 +415,17 @@ void TrackMapper<Cont>::load_values (const std::vector< Point<float> >& tck, std
     std::pair<float, Point<float> > this_normal (std::make_pair (0.0, Point<float>(0.0, 0.0, 0.0)));
 
     for (size_t j = 0; j != tck.size(); ++j) {
-
       const float distance = step_size * Math::abs ((int)i - (int)j);
       const float this_weight = exp (-distance * distance / gaussian_denominator);
       this_tangent += (tangents[j] * this_weight);
-      //this_normal.first += this_weight;
-      //this_normal.second += (principal_normal_vectors[j] * this_weight);
-
     }
 
     smoothed_tangents.push_back (this_tangent.normalise());
-    //smoothed_normals .push_back (this_normal.second * (1.0 / this_normal.first));
 
   }
 
   values.reserve (tck.size());
   for (size_t i = 0; i != tck.size(); ++i) {
-
-    // ... Maybe I don't need the principal normal vectors after all?
 
     // Risk of acos() returning NAN if the dot product is greater than 1.0
     float this_value;
@@ -319,7 +448,7 @@ void TrackMapper<Cont>::load_values (const std::vector< Point<float> >& tck, std
 
 
 template <>
-void TrackMapper<SetVoxel>::set_factor (const std::vector< Point<float> >& tck, SetVoxel& out)
+void TrackMapperTWI<SetVoxel>::set_factor (const std::vector< Point<float> >& tck, SetVoxel& out)
 {
 
   std::vector<float> values;
@@ -419,14 +548,16 @@ void TrackMapper<SetVoxel>::set_factor (const std::vector< Point<float> >& tck, 
 
 }
 
+
 template <>
-void TrackMapper<SetVoxelDir>::set_factor (const std::vector< Point<float> >& tck, SetVoxelDir& out)
+void TrackMapperTWI<SetVoxelDir>::set_factor (const std::vector< Point<float> >& tck, SetVoxelDir& out)
 {
   out.factor = 1.0;
 }
 
+
 template <>
-void TrackMapper<SetVoxelFactor>::set_factor (const std::vector< Point<float> >& tck, SetVoxelFactor& /* unused */)
+void TrackMapperTWI<SetVoxelFactor>::set_factor (const std::vector< Point<float> >& tck, SetVoxelFactor& /*unused*/)
 {
 
   // Firstly, get the interpolated value at each point
@@ -478,113 +609,17 @@ void TrackMapper<SetVoxelFactor>::set_factor (const std::vector< Point<float> >&
 
 
 
-
-
-
-template <>
-void TrackMapper<SetVoxel>::voxelise (SetVoxel& voxels, const std::vector< Point<float> >& tck) const
-{
-
-  Voxel vox;
-  if (contrast == ENDPOINT) {
-
-    static const size_t os_ratio = resample_matrix.rows() + 1;
-
-    for (size_t i = os_ratio; i != (2 * os_ratio) + 1; ++i) {
-      vox = round (interp_out.scanner2voxel (tck[1]));
-      if (check (vox, H_out))
-        voxels.insert (vox);
-    }
-    for (size_t i = tck.size() - os_ratio - 1; i != tck.size() - (2 * os_ratio) - 2; --i) {
-      vox = round (interp_out.scanner2voxel (tck[1]));
-      if (check (vox, H_out))
-        voxels.insert (vox);
-    }
-
-  } else {
-
-    for (std::vector< Point<float> >::const_iterator i = tck.begin(); i != tck.end(); ++i) {
-      vox = round (interp_out.scanner2voxel (*i));
-      if (check (vox, H_out))
-        voxels.insert (vox);
-    }
-
-  }
-
-}
-
-template <>
-void TrackMapper<SetVoxelDir>::voxelise (SetVoxelDir& voxels, const std::vector< Point<float> >& tck) const
-{
-
-  std::vector< Point<float> >::const_iterator prev = tck.begin();
-  const std::vector< Point<float> >::const_iterator last = tck.end() - 1;
-
-  VoxelDir vox;
-  for (std::vector< Point<float> >::const_iterator i = tck.begin(); i != last; ++i) {
-    vox = round (interp_out.scanner2voxel (*i));
-    if (check (vox, H_out)) {
-      vox.dir = (*(i+1) - *prev).normalise();
-      voxels.insert (vox);
-      prev = i;
-    }
-  }
-  vox = round (interp_out.scanner2voxel (*last));
-  if (check (vox, H_out)) {
-    vox.dir = (*last - *prev).normalise();
-    voxels.insert (vox);
-  }
-
-}
-
-
-template <>
-void TrackMapper<SetVoxelFactor>::voxelise (SetVoxelFactor& voxels, const std::vector< Point<float> >& tck) const
-{
-
-  VoxelFactor vox;
-  for (size_t i = 0; i != tck.size(); ++i) {
-    vox = round (interp_out.scanner2voxel (tck[i]));
-    if (check (vox, H_out)) {
-
-      // Get a linearly-interpolated value from factors[] based upon factors[] being
-      //   generated with non-interpolated data, and index 'i' here representing interpolated data
-      const float ideal_index = float(i) / float(os_factor);
-      const size_t lower_index = MAX(floor (ideal_index), 0);
-      const size_t upper_index = MIN(ceil  (ideal_index), tck.size() - 1);
-      const float mu = ideal_index - lower_index;
-      const float factor = (mu * factors[upper_index]) + ((1.0 - mu) * factors[lower_index]);
-
-      // Change here from base classes: need to explicitly check whether this voxel has been visited
-      SetVoxelFactor::iterator v = voxels.find (vox);
-      if (v == voxels.end()) {
-        vox.set_factor (factor);
-        voxels.insert (vox);
-      } else {
-        vox = *v;
-        vox.add_contribution (factor);
-        voxels.erase (v);
-        voxels.insert (vox);
-      }
-
-    }
-  }
-
-}
-
-
-
 template <class Cont>
-class TrackMapperImage : public TrackMapper<Cont>
+class TrackMapperTWIImage : public TrackMapperTWI<Cont>
 {
 
   public:
-    TrackMapperImage (TrackQueue& input, Thread::Queue<Cont>& output, const Image::Header& output_header, const Math::Matrix<float>& interp_matrix, const float step, const contrast_t c, const stat_t m, const float denom, Image::Header& input_header) :
-      TrackMapper<Cont> (input, output, output_header, interp_matrix, step, c, m, denom),
-      voxel             (input_header),
-      interp            (voxel),
-      lmax              (0),
-      sh_coeffs         (NULL)
+    TrackMapperTWIImage (TrackQueue& input, Thread::Queue<Cont>& output, const Image::Header& output_header, const Math::Matrix<float>& interp_matrix, const float step, const contrast_t c, const stat_t m, const float denom, Image::Header& input_header) :
+      TrackMapperTWI<Cont> (input, output, output_header, interp_matrix, step, c, m, denom),
+      voxel                (input_header),
+      interp               (voxel),
+      lmax                 (0),
+      sh_coeffs            (NULL)
       {
         if (c == FOD_AMP) {
           lmax = Math::SH::LforN (voxel.dim(3));
@@ -593,12 +628,12 @@ class TrackMapperImage : public TrackMapper<Cont>
         }
       }
 
-    TrackMapperImage (const TrackMapperImage& that) :
-      TrackMapper<Cont> (that),
-      voxel             (that.voxel),
-      interp            (voxel),
-      lmax              (that.lmax),
-      sh_coeffs         (NULL)
+    TrackMapperTWIImage (const TrackMapperTWIImage& that) :
+      TrackMapperTWI<Cont> (that),
+      voxel                (that.voxel),
+      interp               (voxel),
+      lmax                 (that.lmax),
+      sh_coeffs            (NULL)
     {
       if (that.sh_coeffs) {
         sh_coeffs = new float[voxel.dim(3)];
@@ -606,7 +641,7 @@ class TrackMapperImage : public TrackMapper<Cont>
       }
     }
 
-    ~TrackMapperImage() {
+    ~TrackMapperTWIImage() {
       if (sh_coeffs) {
         delete[] sh_coeffs;
         sh_coeffs = NULL;
@@ -628,17 +663,17 @@ class TrackMapperImage : public TrackMapper<Cont>
 
 
 template <class Cont>
-void TrackMapperImage<Cont>::load_values (const std::vector< Point<float> >& tck, std::vector<float>& values)
+void TrackMapperTWIImage<Cont>::load_values (const std::vector< Point<float> >& tck, std::vector<float>& values)
 {
 
   static const int fmri_contrast_extrap_points = Math::round (FMRI_CONTRAST_EXTRAP_LENGTH / FMRI_CONTRAST_STEP);
 
-  switch (TrackMapper<Cont>::contrast) {
+  switch (TrackMapperTWI<Cont>::contrast) {
 
     case SCALAR_MAP:
     case SCALAR_MAP_COUNT:
 
-      if (TrackMapper<Cont>::track_statistic == FMRI_MIN || TrackMapper<Cont>::track_statistic == FMRI_MEAN || TrackMapper<Cont>::track_statistic == FMRI_MAX) { // Only the track endpoints contribute
+      if (TrackMapperTWI<Cont>::track_statistic == FMRI_MIN || TrackMapperTWI<Cont>::track_statistic == FMRI_MEAN || TrackMapperTWI<Cont>::track_statistic == FMRI_MAX) { // Only the track endpoints contribute
 
         // Want to extrapolate the track forwards & backwards at either end by some distance, take the
         //   maximum scalar value

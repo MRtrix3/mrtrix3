@@ -28,6 +28,8 @@
 #include "thread/queue.h"
 #include "dwi/tractography/file.h"
 
+#include "dwi/tractography/mapping/common.h"
+
 
 namespace MR {
 namespace DWI {
@@ -35,22 +37,24 @@ namespace Tractography {
 namespace Mapping {
 
 
-template <class QueueType>
+
 class TrackLoader
 {
 
   public:
-    TrackLoader (QueueType& queue, DWI::Tractography::Reader<float>& file, const size_t count) :
+    TrackLoader (TrackQueue& queue, DWI::Tractography::Reader<float>& file, const size_t count) :
       writer (queue),
       reader (file),
       total_count (count) { }
 
     virtual void execute ()
     {
-      typename QueueType::Writer::Item item (writer);
+      TrackQueue::Writer::Item item (writer);
+      size_t counter = 0;
 
       ProgressBar progress ("mapping tracks to image...", total_count);
-      while (reader.next (*item)) {
+      while (reader.next (item->tck)) {
+        item->index = counter++;
         if (!item.write())
           throw Exception ("error writing to track-mapping queue");
         ++progress;
@@ -58,7 +62,7 @@ class TrackLoader
     }
 
   protected:
-    typename QueueType::Writer writer;
+    TrackQueue::Writer writer;
     DWI::Tractography::Reader<float>& reader;
     size_t total_count;
 

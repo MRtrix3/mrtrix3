@@ -128,9 +128,9 @@ class VoxelFactor : public Voxel
 
 
 
-class SetVoxel       : public std::set<Voxel>       { public: float factor; };
-class SetVoxelDir    : public std::set<VoxelDir>    { public: float factor; };
-class SetVoxelFactor : public std::set<VoxelFactor> { public: static const float factor; };
+class SetVoxel       : public std::set<Voxel>       { public: float factor; size_t index; };
+class SetVoxelDir    : public std::set<VoxelDir>    { public: float factor; size_t index; };
+class SetVoxelFactor : public std::set<VoxelFactor> { public: static const float factor; size_t index; };
 const float SetVoxelFactor::factor = 1.0;
 
 

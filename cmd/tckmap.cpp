@@ -37,6 +37,7 @@
 #include "dwi/tractography/file.h"
 #include "dwi/tractography/properties.h"
 
+#include "dwi/tractography/mapping/common.h"
 #include "dwi/tractography/mapping/loader.h"
 #include "dwi/tractography/mapping/mapper.h"
 #include "dwi/tractography/mapping/voxel.h"
@@ -64,6 +65,7 @@ using namespace MR::DWI::Tractography::Mapping;
 
 
 void usage () {
+
 AUTHOR = "Robert E. Smith (r.smith@brain.org.au) and J-Donald Tournier (d.tournier@brain.org.au)";
 
 DESCRIPTION 
@@ -358,7 +360,7 @@ void run () {
   Math::Matrix<float> interp_matrix (gen_interp_matrix<float> (resample_factor));
 
   TrackQueue queue1 ("loaded tracks");
-  TrackLoader<TrackQueue> loader (queue1, file, num_tracks);
+  TrackLoader loader (queue1, file, num_tracks);
 
   std::string msg = MR::App::NAME + ": Generating image with ";
   switch (contrast) {
@@ -430,11 +432,11 @@ void run () {
     if (stat_tck == GAUSSIAN) {
 
       Thread::Queue   <SetVoxelFactor> queue2 ("processed tracks");
-      TrackMapper     <SetVoxelFactor> mapper (queue1, queue2, header, interp_matrix, step_size, contrast, stat_tck, gaussian_denominator_tck);
+      TrackMapperTWI  <SetVoxelFactor> mapper (queue1, queue2, header, interp_matrix, step_size, contrast, stat_tck, gaussian_denominator_tck);
       MapWriterScalar <SetVoxelFactor> writer (queue2, header, stat_vox);
 
       Thread::Exec loader_thread (loader, "loader");
-      Thread::Array< TrackMapper<SetVoxelFactor> > mapper_list (mapper);
+      Thread::Array< TrackMapperTWI<SetVoxelFactor> > mapper_list (mapper);
       Thread::Exec mapper_threads (mapper_list, "mapper");
 
       writer.execute();
@@ -442,11 +444,11 @@ void run () {
     } else {
 
       Thread::Queue   <SetVoxel> queue2 ("processed tracks");
-      TrackMapper     <SetVoxel> mapper (queue1, queue2, header, interp_matrix, step_size, contrast, stat_tck);
+      TrackMapperTWI  <SetVoxel> mapper (queue1, queue2, header, interp_matrix, step_size, contrast, stat_tck);
       MapWriterScalar <SetVoxel> writer (queue2, header, stat_vox);
 
       Thread::Exec loader_thread (loader, "loader");
-      Thread::Array< TrackMapper<SetVoxel> > mapper_list (mapper);
+      Thread::Array< TrackMapperTWI<SetVoxel> > mapper_list (mapper);
       Thread::Exec mapper_threads (mapper_list, "mapper");
 
       writer.execute();
@@ -470,11 +472,11 @@ void run () {
     header.create (argument[1]);
 
     Thread::Queue   <SetVoxelDir> queue2 ("processed tracks");
-    TrackMapper     <SetVoxelDir> mapper (queue1, queue2, header, interp_matrix, step_size, contrast, stat_tck);
+    TrackMapperTWI  <SetVoxelDir> mapper (queue1, queue2, header, interp_matrix, step_size, contrast, stat_tck);
     MapWriterColour <SetVoxelDir> writer (queue2, header, stat_vox);
 
     Thread::Exec loader_thread (loader, "loader");
-    Thread::Array< TrackMapper<SetVoxelDir> > mapper_list (mapper);
+    Thread::Array< TrackMapperTWI<SetVoxelDir> > mapper_list (mapper);
     Thread::Exec mapper_threads (mapper_list, "mapper");
 
     writer.execute();
@@ -502,24 +504,24 @@ void run () {
 
     if (stat_tck == GAUSSIAN) {
 
-      Thread::Queue          <SetVoxelFactor> queue2 ("processed tracks");
-      TrackMapperImage       <SetVoxelFactor> mapper (queue1, queue2, header, interp_matrix, step_size, contrast, stat_tck, gaussian_denominator_tck, H_in);
-      MapWriterScalar        <SetVoxelFactor> writer (queue2, header, stat_vox);
+      Thread::Queue       <SetVoxelFactor> queue2 ("processed tracks");
+      TrackMapperTWIImage <SetVoxelFactor> mapper (queue1, queue2, header, interp_matrix, step_size, contrast, stat_tck, gaussian_denominator_tck, H_in);
+      MapWriterScalar     <SetVoxelFactor> writer (queue2, header, stat_vox);
 
       Thread::Exec loader_thread (loader, "loader");
-      Thread::Array< TrackMapperImage<SetVoxelFactor> > mapper_list (mapper);
+      Thread::Array< TrackMapperTWIImage<SetVoxelFactor> > mapper_list (mapper);
       Thread::Exec mapper_threads (mapper_list, "mapper");
 
       writer.execute();
 
     } else {
 
-      Thread::Queue    <SetVoxel> queue2 ("processed tracks");
-      TrackMapperImage <SetVoxel> mapper (queue1, queue2, header, interp_matrix, step_size, contrast, stat_tck, gaussian_denominator_tck, H_in);
-      MapWriterScalar  <SetVoxel> writer (queue2, header, stat_vox);
+      Thread::Queue       <SetVoxel> queue2 ("processed tracks");
+      TrackMapperTWIImage <SetVoxel> mapper (queue1, queue2, header, interp_matrix, step_size, contrast, stat_tck, gaussian_denominator_tck, H_in);
+      MapWriterScalar     <SetVoxel> writer (queue2, header, stat_vox);
 
       Thread::Exec loader_thread (loader, "loader");
-      Thread::Array< TrackMapperImage<SetVoxel> > mapper_list (mapper);
+      Thread::Array< TrackMapperTWIImage<SetVoxel> > mapper_list (mapper);
       Thread::Exec mapper_threads (mapper_list, "mapper");
 
       writer.execute();

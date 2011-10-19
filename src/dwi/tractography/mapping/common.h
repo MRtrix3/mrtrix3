@@ -20,8 +20,8 @@
 
 */
 
-#ifndef __dwi_tractography_mapping_twi_stat_h__
-#define __dwi_tractography_mapping_twi_stat_h__
+#ifndef __dwi_tractography_mapping_common_h__
+#define __dwi_tractography_mapping_common_h__
 
 
 namespace MR {
@@ -29,14 +29,13 @@ namespace DWI {
 namespace Tractography {
 namespace Mapping {
 
-
-enum contrast_t { TDI, DECTDI, ENDPOINT, MEAN_DIR, LENGTH, INVLENGTH, SCALAR_MAP, SCALAR_MAP_COUNT, FOD_AMP, CURVATURE };
-const char* contrasts[] = { "tdi", "dectdi", "endpoint", "mean_dir", "length", "invlength", "scalar_map", "scalar_map_count", "fod_amp", "curvature", NULL };
-
-
-enum stat_t { SUM, MIN, MEAN, MEDIAN, MAX, GAUSSIAN, FMRI_MIN, FMRI_MEAN, FMRI_MAX };
-const char* statistics[] = { "sum", "min", "mean", "median", "max", "gaussian", "fmri_min", "fmri_mean", "fmri_max", NULL };
-
+// Want to retain the index # of each track (not necessary for tckmap, but may be for other functions)
+class TrackAndIndex {
+  public:
+    std::vector< Point<float> > tck;
+    size_t index;
+};
+typedef Thread::Queue<TrackAndIndex> TrackQueue;
 
 }
 }

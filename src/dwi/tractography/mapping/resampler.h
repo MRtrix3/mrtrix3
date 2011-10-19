@@ -43,9 +43,14 @@ class Resampler
 
   public:
     Resampler (const Math::Matrix<T>& interp_matrix, const size_t c) :
-      M (interp_matrix),
+      M       (interp_matrix),
       columns (c),
-      data (4, c) { }
+      data    (4, c) { }
+
+    Resampler (const Resampler<T>& that) :
+      M       (that.M),
+      columns (that.columns),
+      data    (4, columns) { }
 
     ~Resampler() { }
 
@@ -79,7 +84,7 @@ class Resampler
 
   private:
     const Math::Matrix<T>& M;
-    size_t columns;
+    const size_t columns;
     Math::Matrix<T> data;
 
 };
