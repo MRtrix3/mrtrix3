@@ -154,9 +154,15 @@ namespace MR
 
 
       template <typename T, typename C> 
-        inline T value (const C& val, const Point<T>& unit_dir, int lmax)
+        inline T value (const C& coefs, const Point<T>& unit_dir, int lmax)
         {
-          return value (val, unit_dir[2], atan2 (unit_dir[1], unit_dir[0]), lmax);
+          return value (coefs, unit_dir[2], atan2 (unit_dir[1], unit_dir[0]), lmax);
+        }
+
+      template <typename T, typename C> 
+        inline T value (const C* coefs, const Point<T>& unit_dir, int lmax)
+        {
+          return value (coefs, unit_dir[2], atan2 (unit_dir[1], unit_dir[0]), lmax);
         }
 
 

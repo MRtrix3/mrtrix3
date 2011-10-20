@@ -20,7 +20,7 @@
 
 */
 
-#include <list>
+#include <map>
 
 #include "app.h"
 #include "progressbar.h"
@@ -181,7 +181,7 @@ void run ()
 
       if (topN) {
         for (loop.start (in); loop.ok(); loop.next (in)) {
-          float val = in.value();
+          const float val = in.value();
           if (ignore_zeroes && val == 0.0) continue;
           if (list.size() == topN) {
             if (val < list.begin()->first) continue;
@@ -194,7 +194,7 @@ void run ()
       }
       else {
         for (loop.start (in); loop.ok(); loop.next (in)) {
-          float val = in.value();
+          const float val = in.value();
           if (ignore_zeroes && val == 0.0) continue;
           if (list.size() == bottomN) {
             std::multimap<float,std::vector<ssize_t> >::iterator i = list.end();
