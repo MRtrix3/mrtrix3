@@ -167,7 +167,7 @@ class TrackMapperBase
 
 
     virtual void voxelise    (const std::vector< Point<float> >&, Cont&) const { throw Exception ("Running empty virtual function TrackMapperBase::voxelise()"); }
-    virtual bool preprocess  (const std::vector< Point<float> >&, Cont&) const { return true; }
+    virtual bool preprocess  (const std::vector< Point<float> >&, Cont&)       { return true; }
     virtual void postprocess (const std::vector< Point<float> >&, Cont&) const { }
 
 
@@ -275,7 +275,7 @@ class TrackMapperTWI : public TrackMapperBase<Cont>
 
     // Overload virtual function
     // Change here: only contribute to the image if factor is not 0 (so it doesn't affect sums / means)
-    bool preprocess (const std::vector< Point<float> >& tck, Cont& out) { set_factor (tck, out); return out->factor; }
+    bool preprocess (const std::vector< Point<float> >& tck, Cont& out) { set_factor (tck, out); return out.factor; }
 
 };
 
