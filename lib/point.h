@@ -46,6 +46,10 @@ namespace MR
       template <typename U> Point (const Point<U>& A) {
         set (A[0], A[1], A[2]);
       }
+      template <class U> Point (const U& A) {
+        assert (A.size() == 3);
+        set (A[0], A[1], A[2]);
+      }
 
       bool operator! () const {
         return (isnan (p[0]) || isnan (p[1]) || isnan (p[2]));
