@@ -37,7 +37,7 @@ namespace Tractography {
 namespace Mapping {
 
 
-template <typename T>
+template <class Datatype, typename T>
 class Resampler
 {
 
@@ -47,27 +47,61 @@ class Resampler
       columns (c),
       data    (4, c) { }
 
-    Resampler (const Resampler<T>& that) :
+    Resampler (const Resampler<Datatype, T>& that) :
       M       (that.M),
       columns (that.columns),
       data    (4, columns) { }
 
     ~Resampler() { }
 
+
     size_t get_columns () const { return (columns); }
     bool valid () const { return (M.is_set()); }
 
-    void init (const T* a, const T* b, const T* c)
+
+    void interpolate (std::vector<Datatype>& in)
     {
+      std::vector<Datatype> out;
+      Math::Matrix<T> temp (data.rows(), columns);
+      interp_prepare (in);
+      for (size_t i = 3; i < in.size(); ++i) {
+        out.push_back (in[i-2]);
+        increment (in[i]);
+        Math::mult (temp, M, data);
+        for (size_t row = 0; row != temp.rows(); ++row)
+          out.push_back (Datatype (temp.row (row)));
+      }
+      out.push_back (in[in.size() - 2]);
+      out.swap (in);
+    }
+
+
+
+  private:
+    const Math::Matrix<T>& M;
+    const size_t columns;
+    Math::Matrix<T> data;
+
+
+    void interp_prepare (std::vector<Datatype>& in)
+    {
+      const size_t s = in.size();
+      if (s > 2) {
+        in.insert    (in.begin(), in[ 0 ] + (float(2.0) * (in[ 0 ] - in[ 1 ])) - (in[ 1 ] - in[ 2 ]));
+        in.push_back (            in[ s ] + (float(2.0) * (in[ s ] - in[s-1])) - (in[s-1] - in[s-2]));
+      } else {
+        in.push_back (            in[1] + (in[1] - in[0]));
+        in.insert    (in.begin(), in[0] + (in[0] - in[1]));
+      }
       for (size_t i = 0; i != columns; ++i) {
         data(0,i) = 0.0;
-        data(1,i) = a[i];
-        data(2,i) = b[i];
-        data(3,i) = c[i];
+        data(1,i) = (in[0])[i];
+        data(2,i) = (in[1])[i];
+        data(3,i) = (in[2])[i];
       }
     }
 
-    void increment (const T* a)
+    void increment (const Datatype& a)
     {
       for (size_t i = 0; i != columns; ++i) {
         data(0,i) = data(1,i);
@@ -77,15 +111,6 @@ class Resampler
       }
     }
 
-    MR::Math::Matrix<T>& interpolate (Math::Matrix<T>& result) const 
-    {
-      return (Math::mult (result, M, data));
-    }
-
-  private:
-    const Math::Matrix<T>& M;
-    const size_t columns;
-    Math::Matrix<T> data;
 
 };
 

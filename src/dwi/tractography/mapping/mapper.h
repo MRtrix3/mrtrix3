@@ -79,18 +79,18 @@ class TrackMapperBase
       interp_out (H_out),
       os_factor  (interp_matrix.rows() + 1)
     {
-      if (R.valid()) {
-        assert (interp_matrix.is_set());
-        assert (interp_matrix.rows());
-        data.allocate (interp_matrix.rows(), 3);
-      }
+      //if (R.valid()) {
+        //assert (interp_matrix.is_set());
+        //assert (interp_matrix.rows());
+        //data.allocate (interp_matrix.rows(), 3);
+      //}
     }
 
     TrackMapperBase (const TrackMapperBase& that) :
       reader     (that.reader),
       writer     (that.writer),
       R          (that.R),
-      data       (that.data),
+      //data       (that.data),
       H_out      (that.H_out),
       interp_out (H_out),
       os_factor  (that.os_factor)
@@ -111,7 +111,8 @@ class TrackMapperBase
         // statistical value along the fibre length BEFORE streamline interpolation
         if (preprocess (in->tck, *out)) {
           if (R.valid())
-            interp_track (in->tck, data);
+            R.interpolate (in->tck);
+            //interp_track (in->tck, data);
           voxelise (in->tck, *out);
           postprocess (in->tck, *out);
           if (!out.write())
@@ -125,39 +126,8 @@ class TrackMapperBase
 
     TrackQueue::Reader reader;
     typename Thread::Queue<Cont>::Writer writer;
-    Resampler<float> R;
-    Math::Matrix<float> data;
-
-
-    void interp_prepare (std::vector< Point<float> >& v)
-    {
-      const size_t s = v.size();
-      if (s > 2) {
-        v.insert    (v.begin(), v[ 0 ] + (float(2.0) * (v[ 0 ] - v[ 1 ])) - (v[ 1 ] - v[ 2 ]));
-        v.push_back (           v[ s ] + (float(2.0) * (v[ s ] - v[s-1])) - (v[s-1] - v[s-2]));
-      } else {
-        v.push_back (           v[1] + (v[1] - v[0]));
-        v.insert    (v.begin(), v[0] + (v[0] - v[1]));
-      }
-    }
-
-    void interp_track (
-        std::vector<Point<float> >& tck,
-        Math::Matrix<float>& data)
-    {
-      std::vector< Point<float> > out;
-      interp_prepare (tck);
-      R.init (tck[0], tck[1], tck[2]);
-      for (size_t i = 3; i < tck.size(); ++i) {
-        out.push_back (tck[i-2]);
-        R.increment (tck[i]);
-        R.interpolate (data);
-        for (size_t row = 0; row != data.rows(); ++row)
-          out.push_back (Point<float> (data(row,0), data(row,1), data(row,2)));
-      }
-      out.push_back (tck[tck.size() - 2]);
-      out.swap (tck);
-    }
+    Resampler< Point<float>, float > R;
+    //Math::Matrix<float> data;
 
 
   protected:
