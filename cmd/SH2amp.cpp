@@ -54,7 +54,7 @@ void usage ()
 
   OPTIONS
     + Option ("gradient",
-              "assume input directions are supplied as a gradient encoding file"),
+              "assume input directions are supplied as a gradient encoding file")
     + Option ("nonnegative",
               "cap all negative amplitudes to zero");
 }
