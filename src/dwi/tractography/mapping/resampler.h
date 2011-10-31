@@ -55,6 +55,7 @@ class Resampler
     ~Resampler() { }
 
 
+    size_t get_os_ratio() const { return (M.rows() + 1); }
     size_t get_columns () const { return (columns); }
     bool valid () const { return (M.is_set()); }
 
@@ -62,7 +63,7 @@ class Resampler
     void interpolate (std::vector<Datatype>& in)
     {
       std::vector<Datatype> out;
-      Math::Matrix<T> temp (data.rows(), columns);
+      Math::Matrix<T> temp (M.rows(), columns);
       interp_prepare (in);
       for (size_t i = 3; i < in.size(); ++i) {
         out.push_back (in[i-2]);
