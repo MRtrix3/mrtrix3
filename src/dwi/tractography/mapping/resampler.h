@@ -62,18 +62,19 @@ class Resampler
 
     void interpolate (std::vector<Datatype>& in)
     {
-      std::vector<Datatype> out;
-      Math::Matrix<T> temp (M.rows(), columns);
-      interp_prepare (in);
-      for (size_t i = 3; i < in.size(); ++i) {
-        out.push_back (in[i-2]);
-        increment (in[i]);
-        Math::mult (temp, M, data);
-        for (size_t row = 0; row != temp.rows(); ++row)
-          out.push_back (Datatype (temp.row (row)));
+      if (interp_prepare (in)) {
+        std::vector<Datatype> out;
+        Math::Matrix<T> temp (M.rows(), columns);
+        for (size_t i = 3; i < in.size(); ++i) {
+          out.push_back (in[i-2]);
+          increment (in[i]);
+          Math::mult (temp, M, data);
+          for (size_t row = 0; row != temp.rows(); ++row)
+            out.push_back (Datatype (temp.row (row)));
+        }
+        out.push_back (in[in.size() - 2]);
+        out.swap (in);
       }
-      out.push_back (in[in.size() - 2]);
-      out.swap (in);
     }
 
 
@@ -84,15 +85,17 @@ class Resampler
     Math::Matrix<T> data;
 
 
-    void interp_prepare (std::vector<Datatype>& in)
+    bool interp_prepare (std::vector<Datatype>& in)
     {
       const size_t s = in.size();
       if (s > 2) {
         in.insert    (in.begin(), in[ 0 ] + (float(2.0) * (in[ 0 ] - in[ 1 ])) - (in[ 1 ] - in[ 2 ]));
         in.push_back (            in[ s ] + (float(2.0) * (in[ s ] - in[s-1])) - (in[s-1] - in[s-2]));
-      } else {
+      } else if (s == 2) {
         in.push_back (            in[1] + (in[1] - in[0]));
         in.insert    (in.begin(), in[0] + (in[0] - in[1]));
+      } else {
+        return false;
       }
       for (size_t i = 0; i != columns; ++i) {
         data(0,i) = 0.0;
@@ -100,6 +103,7 @@ class Resampler
         data(2,i) = (in[1])[i];
         data(3,i) = (in[2])[i];
       }
+      return true;
     }
 
     void increment (const Datatype& a)
