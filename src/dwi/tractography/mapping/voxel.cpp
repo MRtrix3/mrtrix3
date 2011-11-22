@@ -20,8 +20,8 @@
 
 */
 
-#ifndef __dwi_tractography_mapping_twi_stat_h__
-#define __dwi_tractography_mapping_twi_stat_h__
+
+#include "dwi/tractography/mapping/voxel.h"
 
 
 namespace MR {
@@ -30,15 +30,7 @@ namespace Tractography {
 namespace Mapping {
 
 
-enum contrast_t { TDI, DECTDI, ENDPOINT, MEAN_DIR, LENGTH, INVLENGTH, SCALAR_MAP, SCALAR_MAP_COUNT, FOD_AMP, CURVATURE };
-//const char** const contrasts;
-
-
-enum stat_t { SUM, MIN, MEAN, MEDIAN, MAX, GAUSSIAN, FMRI_MIN, FMRI_MEAN, FMRI_MAX };
-//const char** const statistics;
-
-extern const char* contrasts[];
-extern const char* statistics[];
+const float SetVoxelFactor::factor = 1.0;
 
 
 }
@@ -46,7 +38,6 @@ extern const char* statistics[];
 }
 }
 
-#endif
 
 
 

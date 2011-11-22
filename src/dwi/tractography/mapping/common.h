@@ -24,10 +24,18 @@
 #define __dwi_tractography_mapping_common_h__
 
 
+
+#include "point.h"
+
+#include "thread/queue.h"
+
+
+
 namespace MR {
 namespace DWI {
 namespace Tractography {
 namespace Mapping {
+
 
 // Want to retain the index # of each track (not necessary for tckmap, but may be for other functions)
 class TrackAndIndex {
@@ -35,7 +43,9 @@ class TrackAndIndex {
     std::vector< Point<float> > tck;
     size_t index;
 };
+
 typedef Thread::Queue<TrackAndIndex> TrackQueue;
+
 
 }
 }

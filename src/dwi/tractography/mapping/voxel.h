@@ -29,6 +29,8 @@
 
 #include "point.h"
 
+#include "image/header.h"
+
 
 namespace MR {
 namespace DWI {
@@ -39,27 +41,25 @@ namespace Mapping {
 
 class Voxel : public Point<int>
 {
-
   public:
     Voxel (const int x, const int y, const int z) { p[0] = x; p[1] = y; p[2] = z; }
     Voxel () { memset (p, 0x00, 3 * sizeof(int)); }
     bool operator< (const Voxel& V) const { return ((p[2] == V.p[2]) ? ((p[1] == V.p[1]) ? (p[0] < V.p[0]) : (p[1] < V.p[1])) : (p[2] < V.p[2])); }
-
 };
 
 
-Voxel round (const Point<float>& p) 
+inline Voxel round (const Point<float>& p)
 { 
   assert (finite (p[0]) && finite (p[1]) && finite (p[2]));
   return (Voxel (Math::round<int> (p[0]), Math::round<int> (p[1]), Math::round<int> (p[2])));
 }
 
-bool check (const Voxel& V, const Image::Header& H) 
+inline bool check (const Voxel& V, const Image::Header& H)
 {
   return (V[0] >= 0 && V[0] < H.dim(0) && V[1] >= 0 && V[1] < H.dim(1) && V[2] >= 0 && V[2] < H.dim(2));
 }
 
-Point<float> abs (const Point<float>& d)
+inline Point<float> abs (const Point<float>& d)
 {
   return (Point<float> (Math::abs(d[0]), Math::abs(d[1]), Math::abs(d[2])));
 }
@@ -120,6 +120,7 @@ class VoxelFactor : public Voxel
     VoxelFactor& operator= (const Voxel& V)             { Voxel::operator= (V); return (*this); }
     bool         operator< (const VoxelFactor& V) const { return Voxel::operator< (V); }
 
+
   private:
     float sum;
     size_t contributions;
@@ -131,7 +132,6 @@ class VoxelFactor : public Voxel
 class SetVoxel       : public std::set<Voxel>       { public: float factor; size_t index; };
 class SetVoxelDir    : public std::set<VoxelDir>    { public: float factor; size_t index; };
 class SetVoxelFactor : public std::set<VoxelFactor> { public: static const float factor; size_t index; };
-const float SetVoxelFactor::factor = 1.0;
 
 
 
