@@ -41,9 +41,18 @@ namespace MR {
           ROI (const Point<>& sphere_pos, float sphere_radius) : 
             pos (sphere_pos), rad (sphere_radius), rad2 (Math::pow2(rad)), vol (4.0*M_PI*Math::pow3(rad)/3.0) { }
 
-          ROI (Image::Header& mask_header) : rad (NAN), rad2(NAN), vol (0.0) { get_mask (mask_header); }
+          ROI (Image::Header& H) :
+            rad (NAN), rad2(NAN), vol (0.0)
+          {
+            if (H.datatype() == DataType::Bit)
+              get_mask (H);
+            else
+              get_image (H);
+          }
 
-          ROI (const std::string& spec) : rad (NAN), rad2 (NAN), vol (0.0) {
+          ROI (const std::string& spec) :
+            rad (NAN), rad2 (NAN), vol (0.0)
+          {
             try {
               std::vector<float> F (parse_floats (spec));
               if (F.size() != 4) throw 1;
@@ -53,24 +62,28 @@ namespace MR {
               vol = 4.0*M_PI*Math::pow3(rad)/3.0;
             }
             catch (...) { 
-              info ("error parsing spherical ROI specification \"" + spec + "\" - assuming mask image");
-              Image::Header mask_header (spec);
-              get_mask (mask_header);
+              info ("could not parse spherical ROI specification \"" + spec + "\" - assuming mask image");
+              Image::Header H (spec);
+              if (H.datatype() == DataType::Bit)
+                get_mask (H);
+              else
+                get_image (H);
             }
           }
 
-          std::string shape () const { return (mask ? "image" : "sphere"); }
+          std::string shape () const { return (mask ? "mask" : (image ? "image" : "sphere")); }
 
           std::string parameters () const {
-            return (mask ? mask->name() : str(pos[0]) + "," + str(pos[1]) + "," + str(pos[2]) + "," + str(rad)); 
+            return (mask ? mask->name() : (image ? image->name() : str(pos[0]) + "," + str(pos[1]) + "," + str(pos[2]) + "," + str(rad)));
           }
-
 
           float volume () const { return (vol); }
 
           bool contains (const Point<>& p) const
           {
+
             if (mask) {
+
               Point<> pix = mask->interp.scanner2voxel (p);
               ssize_t x[] = { 
                 Math::round (pix[0]),
@@ -83,14 +96,19 @@ namespace MR {
                 return (false);
               return (mask->value_at (x));
             }
-            else return ((pos-p).norm2() <= rad2);
+
+            if (image)
+              throw Exception ("cannot use non-binary image as a binary roi");
+
+            return ((pos-p).norm2() <= rad2);
+
           }
-
-
 
           Point<> sample (Math::RNG& rng) const 
           {
+
             Point<> p;
+
             if (mask) {
               ssize_t x[3];
               do {
@@ -102,10 +120,24 @@ namespace MR {
               return (mask->interp.voxel2scanner (p));
             }
 
+            if (image) {
+              DataSet::Buffer<float> seed ((DataSet::Buffer<float>&)*image);
+              DataSet::Interp::Linear< DataSet::Buffer<float> > interp (seed);
+              float sampler = 0.0;
+              do {
+                p[0] = rng.uniform() * image->dim(0);
+                p[1] = rng.uniform() * image->dim(1);
+                p[2] = rng.uniform() * image->dim(2);
+                sampler = rng.uniform() * image->max_value;
+              } while (interp.voxel (p) || interp.value() < MAX (sampler, std::numeric_limits<float>::epsilon()));
+              return (interp.voxel2scanner (p));
+            }
+
             do {
               p.set (2.0*rng.uniform()-1.0, 2.0*rng.uniform()-1.0, 2.0*rng.uniform()-1.0);
             } while (p.norm2() > 1.0);
             return (pos + rad*p);
+
           }
 
 
@@ -115,20 +147,37 @@ namespace MR {
             return (stream);
           }
 
+
+
         private:
+
           class Mask : public DataSet::Buffer<bool> {
             public:
               template <class Set> Mask (Set& D, const std::string& description) : 
-                DataSet::Buffer<bool> (D, 3, description), interp (*this) { 
+                DataSet::Buffer<bool> (D, 3, description), interp (*this) {
                   DataSet::copy (*this, D); }
-              DataSet::Interp::Linear<DataSet::Buffer<bool> > interp;
+              DataSet::Interp::Linear< DataSet::Buffer<bool> > interp;
+          };
+
+          class SeedImage : public DataSet::Buffer<float> {
+            public:
+              template <class Set> SeedImage (Set& D, const std::string& description, const float max) :
+                  DataSet::Buffer<float> (D, 3, description),
+                  max_value (max)
+              {
+                DataSet::copy (*this, D);
+              }
+              float max_value;
           };
 
           Point<>  pos;
           float  rad, rad2, vol;
           RefPtr<Mask> mask;
+          RefPtr<SeedImage> image;
 
-          void get_mask (Image::Header& mask_header);
+          void get_mask  (Image::Header&);
+          void get_image (Image::Header&);
+
       };
 
 

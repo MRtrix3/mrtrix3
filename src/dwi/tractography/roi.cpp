@@ -30,8 +30,11 @@ namespace MR {
   namespace DWI {
     namespace Tractography {
 
+
+
       void ROI::get_mask (Image::Header& mask_header) 
       {
+
         Image::Voxel<bool> vox (mask_header);
         size_t bottom[] = { std::numeric_limits<size_t>::max(), std::numeric_limits<size_t>::max(), std::numeric_limits<size_t>::max() };
         size_t top[] = { 0, 0, 0 };
@@ -54,12 +57,56 @@ namespace MR {
         top[1] = top[1] + 1 - bottom[1];
         top[2] = top[2] + 1 - bottom[2];
 
-        DataSet::Subset<Image::Voxel<bool> > sub (vox, 3, bottom, top);
+        DataSet::Subset< Image::Voxel<bool> > sub (vox, 3, bottom, top);
 
         mask = new Mask (sub, mask_header.name());
 
         vol = vox.vox(0) * vox.vox(1) * vox.vox(2) * count;
+
       }
+
+
+      void ROI::get_image (Image::Header& H)
+      {
+
+        Image::Voxel<float> vox (H);
+        size_t bottom[] = { std::numeric_limits<size_t>::max(), std::numeric_limits<size_t>::max(), std::numeric_limits<size_t>::max() };
+        size_t top[] = { 0, 0, 0 };
+        float sum = 0.0, max = 0.0;
+
+        DataSet::Loop loop (0,3);
+        for (loop.start (vox); loop.ok(); loop.next (vox)) {
+          if (vox.value() > 0.0) {
+            sum += vox.value();
+            max = MAX (max, vox.value());
+            if (size_t(vox[0]) < bottom[0]) bottom[0] = vox[0];
+            if (size_t(vox[0]) > top[0])    top[0]    = vox[0];
+            if (size_t(vox[1]) < bottom[1]) bottom[1] = vox[1];
+            if (size_t(vox[1]) > top[1])    top[1]    = vox[1];
+            if (size_t(vox[2]) < bottom[2]) bottom[2] = vox[2];
+            if (size_t(vox[2]) > top[2])    top[2]    = vox[2];
+          } else if (vox.value() < 0.0) {
+            throw Exception ("cannot have negative values in ROI");
+          }
+        }
+
+        bottom[0] = bottom[0] ? bottom[0] - 1 : bottom[0];
+        bottom[1] = bottom[1] ? bottom[1] - 1 : bottom[1];
+        bottom[2] = bottom[2] ? bottom[2] - 1 : bottom[2];
+
+        top[0] = MIN (size_t (H.dim (0) - 1), top[0] + 2 - bottom[0]);
+        top[1] = MIN (size_t (H.dim (1) - 1), top[1] + 2 - bottom[1]);
+        top[2] = MIN (size_t (H.dim (2) - 1), top[2] + 2 - bottom[2]);
+
+        DataSet::Subset< Image::Voxel<float> > sub (vox, 3, bottom, top);
+
+        image = new SeedImage (sub, H.name(), max);
+
+        vol = vox.vox(0) * vox.vox(1) * vox.vox(2) * sum;
+
+      }
+
+
 
     }
   }
