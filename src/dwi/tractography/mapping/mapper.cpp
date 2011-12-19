@@ -68,8 +68,8 @@ void TrackMapperBase<SetVoxelDir>::voxelise (const std::vector< Point<float> >& 
         voxels.erase (existing_vox);
         voxels.insert (new_vox);
       }
-      prev = i;
     }
+    prev = i;
   }
   vox = round (interp_out.scanner2voxel (*last));
   if (check (vox, H_out)) {
