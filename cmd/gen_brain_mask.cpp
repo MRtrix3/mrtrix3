@@ -55,14 +55,8 @@ ARGUMENTS
     .type_image_out ();
 
 OPTIONS 
+  + DWI::GradOption;
 
-  + Option ("grad",
-  "specify the diffusion-weighted gradient scheme used in the acquisition. "
-  "The program will normally attempt to use the encoding stored in the image "
-  "header. This should be supplied as a 4xN text file with each line is in "
-  "the format [ X Y Z b ], where [ X Y Z ] describe the direction of the "
-  "applied gradient, and b gives the b-value in units (1000 s/mm^2).")
-  + Argument ("encoding").type_file();
 }
 
 
@@ -78,16 +72,8 @@ void run () {
   mask_header.create(argument[1]);
   Image::Voxel<float> mask_voxel (mask_header);
 
-  Math::Matrix<value_type> grad;
-  Options opt = get_options ("grad");
-  if (opt.size())
-    grad.load (opt[0][0]);
-  else {
-    if (!input_header.DW_scheme().is_set())
-      throw Exception ("no diffusion encoding found in image \"" + input_header.name() + "\"");
-    grad = input_header.DW_scheme();
-  }
   std::vector<int> bzeros, dwis;
+  Math::Matrix<float> grad = DWI::get_DW_scheme<float> (input_header);
   DWI::guess_DW_directions (dwis, bzeros, grad);
   info ("found " + str(dwis.size()) + " diffusion-weighted directions");
 
