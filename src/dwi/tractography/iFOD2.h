@@ -151,7 +151,7 @@ namespace MR {
             return false;
 
 end_init:
-            half_log_prob0 = 0.5 * Math::log (half_log_prob0);
+            half_log_prob0_seed = half_log_prob0 = 0.5 * Math::log (half_log_prob0);
             return true;
           }   
 
@@ -201,9 +201,16 @@ end_init:
             return false;
           }
 
-        private:
+
+          void reverse_track()
+          {
+            half_log_prob0 = half_log_prob0_seed;
+          }
+
+
+          private:
           const Shared& S;
-          value_type calibrate_ratio, half_log_prob0, last_half_log_probN;
+          value_type calibrate_ratio, half_log_prob0, last_half_log_probN, half_log_prob0_seed;
           size_t mean_sample_num, num_sample_runs, num_truncations;
           value_type max_truncation;
           std::vector<Point<value_type> > calibrate_list;

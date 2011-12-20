@@ -109,6 +109,8 @@ namespace MR {
           }
 
 
+          virtual void reverse_track() { }
+
 
           static void init () { rng_seed = time (NULL); }
 

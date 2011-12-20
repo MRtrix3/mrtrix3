@@ -158,6 +158,7 @@ namespace MR {
               method.dir[1] = -seed_dir[1];
               method.dir[2] = -seed_dir[2];
               method.pos = tck.back();
+              Exec<Method>::method.reverse_track();
               while (iterate() && tck.size() < S.max_num_points) 
                 tck.push_back (method.pos);
             }
