@@ -134,6 +134,10 @@ namespace MR
         end = string.find_first_of (delimiters, start);
         V.push_back (string.substr (start, end-start));
         start = ignore_empty_fields ? string.find_first_not_of (delimiters, end+1) : end+1;
+        if (V.size()+1 >= num) {
+          V.push_back (string.substr (start));
+          break;
+        }
       }
       while (end < std::string::npos && V.size() < num);
       // should this change to:
@@ -142,7 +146,7 @@ namespace MR
     catch (...)  {
       throw Exception ("can't split string \"" + string + "\"");
     }
-    return (V);
+    return V;
   }
 
 

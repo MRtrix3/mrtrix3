@@ -30,87 +30,80 @@ namespace MR
   namespace Thread
   {
 
-    pthread_attr_t* Exec::default_attributes = NULL;
-    pthread_t Exec::main_thread;
-    Mutex Exec::mutex;
-
-    void (*Exec::previous_print) (const std::string& msg);
-    void (*Exec::previous_error) (const std::string& msg);
-    void (*Exec::previous_info) (const std::string& msg);
-    void (*Exec::previous_debug) (const std::string& msg);
-
-    void Exec::thread_print (const std::string& msg)
-    {
-      Mutex::Lock lock (mutex);
-      std::cout << msg;
-    }
-
-    void Exec::thread_error (const std::string& msg)
-    {
-      if (App::log_level) {
-        Mutex::Lock lock (mutex);
-        std::cerr << App::NAME << ": " << msg << "\n";
-      }
-    }
-
-    void Exec::thread_info (const std::string& msg)
-    {
-      if (App::log_level > 1) {
-        Mutex::Lock lock (mutex);
-        std::cerr << App::NAME << " [INFO]: " <<  msg << "\n";
-      }
-    }
-
-    void Exec::thread_debug (const std::string& msg)
-    {
-      if (App::log_level > 2) {
-        Mutex::Lock lock (mutex);
-        std::cerr << App::NAME << " [DEBUG]: " <<  msg << "\n";
-      }
-    }
-
-
-    void Exec::init ()
-    {
-      assert (!default_attributes);
-      responsible = true;
-      main_thread = pthread_self();
-
-      default_attributes = new pthread_attr_t;
-      pthread_attr_init (default_attributes);
-      pthread_attr_setdetachstate (default_attributes, PTHREAD_CREATE_JOINABLE);
-
-      previous_print = print;
-      previous_error = error;
-      previous_info = info;
-      previous_debug = debug;
-
-      print = thread_print;
-      error = thread_error;
-      info = thread_info;
-      debug = thread_debug;
-    }
-
-
-
-
-    void Exec::revert ()
-    {
-      pthread_attr_destroy (default_attributes);
-      delete default_attributes;
-      default_attributes = NULL;
-
-      print = previous_print;
-      error = previous_error;
-      info = previous_info;
-      debug = previous_debug;
-    }
-
     size_t available_cores ()
     {
       static const size_t number_of_threads = File::Config::get_int ("NumberOfThreads", 1);
       return (number_of_threads);
     }
+
+
+
+
+    Exec::Common::Common () :
+      refcount (0), attributes (new pthread_attr_t) {
+        debug ("initialising threads...");
+        pthread_attr_init (attributes);
+        pthread_attr_setdetachstate (attributes, PTHREAD_CREATE_JOINABLE);
+
+        previous_print = print;
+        previous_error = error;
+        previous_info = info;
+        previous_debug = debug;
+
+        print = thread_print;
+        error = thread_error;
+        info = thread_info;
+        debug = thread_debug;
+      }
+
+    Exec::Common::~Common () 
+    {
+      print = previous_print;
+      error = previous_error;
+      info = previous_info;
+      debug = previous_debug;
+
+      debug ("uninitialising threads...");
+
+      pthread_attr_destroy (attributes);
+      delete attributes;
+    }
+
+    void Exec::Common::thread_print (const std::string& msg)
+    {
+      Thread::Mutex::Lock lock (common->mutex);
+      std::cout << msg;
+    }
+
+    void Exec::Common::thread_error (const std::string& msg)
+    {
+      if (App::log_level) {
+        Thread::Mutex::Lock lock (common->mutex);
+        std::cerr << App::NAME << ": " << msg << "\n";
+      }
+    }
+
+    void Exec::Common::thread_info (const std::string& msg)
+    {
+      if (App::log_level > 1) {
+        Thread::Mutex::Lock lock (common->mutex);
+        std::cerr << App::NAME << " [INFO]: " <<  msg << "\n";
+      }
+    }
+
+    void Exec::Common::thread_debug (const std::string& msg)
+    {
+      if (App::log_level > 2) {
+        Thread::Mutex::Lock lock (common->mutex);
+        std::cerr << App::NAME << " [DEBUG]: " <<  msg << "\n";
+      }
+    }
+
+
+    Exec::Common* Exec::common = NULL;
+
+
+
 
   }
 }

@@ -108,71 +108,58 @@ class Item
 
 
 
-class ItemAllocator
-{
-  public:
-    ItemAllocator (size_t data_size) : N (data_size) { }
-    Item* alloc () {
-      Item* item = new Item;
-      item->data.allocate (N);
-      return (item);
-    }
-    void reset (Item* item) { }
-    void dealloc (Item* item) {
-      delete item;
-    }
-  private:
-    size_t N;
-};
-
-
-
-typedef Thread::Queue<Item,ItemAllocator> Queue;
-
 
 
 class DataLoader
 {
   public:
-    DataLoader (Queue& queue,
-                Image::Header& sh_header,
+    DataLoader (Image::Header& sh_header,
                 Image::Header* mask_header) :
-      writer (queue),
       sh (sh_header),
-      mask (mask_header) { }
+      loop ("estimating peak directions...", 0, 3) { 
+      if (mask_header) {
+        mask = new Image::Voxel<bool> (*mask_header);
+        DataSet::check_dimensions (*mask, sh, 0, 3);
+        loop.start (*mask, sh);
+      }
+      else 
+        loop.start (sh);
+      }
 
-    void execute () {
-      Queue::Writer::Item item (writer);
-      DataSet::Loop loop ("estimating peak directions...", 0, 3);
-      if (mask) {
-        Image::Voxel<value_type> mask_vox (*mask);
-        DataSet::check_dimensions (mask_vox, sh, 0, 3);
-        for (loop.start (mask_vox, sh); loop.ok(); loop.next (mask_vox, sh))
-          if (mask_vox.value() > 0.5)
-            load (item);
+    bool operator() (Item& item) {
+      if (loop.ok()) {
+        if (mask) {
+          while (!mask->value()) {
+            loop.next (*mask, sh);
+            if (!loop.ok())
+              return false;
+          }
+        }
+
+        item.pos[0] = sh[0];
+        item.pos[1] = sh[1];
+        item.pos[2] = sh[2];
+
+        item.data.allocate (sh.dim(3));
+
+        DataSet::Loop inner (3); // iterates over SH coefficients
+        for (inner.start (sh); inner.ok(); inner.next (sh))
+          item.data[sh[3]] = sh.value();
+
+        if (mask)
+          loop.next (*mask, sh);
+        else
+          loop.next (sh);
+
+        return true;
       }
-      else {
-        for (loop.start (sh); loop.ok(); loop.next (sh))
-          load (item);
-      }
+      return false;
     }
 
   private:
-    Queue::Writer writer;
     Image::Voxel<value_type>  sh;
-    Image::Header* mask;
-
-    void load (Queue::Writer::Item& item) {
-      item->pos[0] = sh[0];
-      item->pos[1] = sh[1];
-      item->pos[2] = sh[2];
-
-      DataSet::Loop inner (3); // iterates over SH coefficients
-      for (inner.start (sh); inner.ok(); inner.next (sh))
-        item->data[sh[3]] = sh.value();
-
-      if (!item.write()) throw Exception ("error writing to work queue");
-    }
+    Ptr<Image::Voxel<bool> > mask;
+    DataSet::Loop loop;
 };
 
 
@@ -180,109 +167,104 @@ class DataLoader
 class Processor
 {
   public:
-    Processor (Queue& queue,
-               Image::Header& dirs_header,
+    Processor (Image::Header& dirs_header,
                Math::Matrix<value_type>& directions,
                int lmax,
                int npeaks,
                std::vector<Direction> true_peaks,
                value_type threshold,
                Image::Header* ipeaks_header) :
-      reader (queue), dirs_image (dirs_header), dirs (directions),
+      dirs_image (dirs_header), dirs (directions),
       lmax (lmax), npeaks (npeaks),
       true_peaks (true_peaks), threshold (threshold),
       ipeaks (ipeaks_header) { }
 
-    void execute () {
-      Queue::Reader::Item item (reader);
+    bool operator() (const Item& item) {
+      Math::Vector<value_type> amplitudes;
+      std::vector<Direction> peaks_out (npeaks);
 
-      while (item.read()) {
-        Math::Vector<value_type> amplitudes;
-        std::vector<Direction> peaks_out (npeaks);
+      dirs_image[0] = item.pos[0];
+      dirs_image[1] = item.pos[1];
+      dirs_image[2] = item.pos[2];
 
-        dirs_image[0] = item->pos[0];
-        dirs_image[1] = item->pos[1];
-        dirs_image[2] = item->pos[2];
-
-        if (check_input (item)) {
-          DataSet::Loop inner (3);
-          for (inner.start (dirs_image); inner.ok(); inner.next (dirs_image))
-            dirs_image.value() = NAN;
-          continue;
-        }
-
-        std::vector<Direction> all_peaks;
-
-        for (size_t i = 0; i < dirs.rows(); i++) {
-          Direction p (dirs (i,0), dirs (i,1));
-          p.a = Math::SH::get_peak (item->data.ptr(), lmax, p.v);
-          if (finite (p.a)) {
-            for (size_t j = 0; j < all_peaks.size(); j++) {
-              if (Math::abs (p.v.dot (all_peaks[j].v)) > DOT_THRESHOLD) {
-                p.a = NAN;
-                break;
-              }
-            }
-          }
-          if (finite (p.a) && p.a >= threshold) all_peaks.push_back (p);
-        }
-
-        if (ipeaks) {
-          Image::Voxel<value_type> ipeaks_vox (*ipeaks);
-          ipeaks_vox[0] = item->pos[0];
-          ipeaks_vox[1] = item->pos[1];
-          ipeaks_vox[2] = item->pos[2];
-
-          for (int i = 0; i < npeaks; i++) {
-            Point<value_type> p;
-            ipeaks_vox[3] = 3*i;
-            for (int n = 0; n < 3; n++) {
-              p[n] = ipeaks_vox.value();
-              ipeaks_vox[3]++;
-            }
-            p.normalise();
-
-            value_type mdot = 0.0;
-            for (size_t n = 0; n < all_peaks.size(); n++) {
-              value_type f = Math::abs (p.dot (all_peaks[n].v));
-              if (f > mdot) {
-                mdot = f;
-                peaks_out[i] = all_peaks[n];
-              }
-            }
-          }
-        }
-        else if (true_peaks.size()) {
-          for (int i = 0; i < npeaks; i++) {
-            value_type mdot = 0.0;
-            for (size_t n = 0; n < all_peaks.size(); n++) {
-              value_type f = Math::abs (all_peaks[n].v.dot (true_peaks[i].v));
-              if (f > mdot) {
-                mdot = f;
-                peaks_out[i] = all_peaks[n];
-              }
-            }
-          }
-        }
-        else std::partial_sort_copy (all_peaks.begin(), all_peaks.end(), peaks_out.begin(), peaks_out.end());
-
-        int actual_npeaks = MIN (npeaks, (int) all_peaks.size());
-        dirs_image[3] = 0;
-        for (int n = 0; n < actual_npeaks; n++) {
-          dirs_image.value() = peaks_out[n].a*peaks_out[n].v[0];
-          dirs_image[3]++;
-          dirs_image.value() = peaks_out[n].a*peaks_out[n].v[1];
-          dirs_image[3]++;
-          dirs_image.value() = peaks_out[n].a*peaks_out[n].v[2];
-          dirs_image[3]++;
-        }
-        for (; dirs_image[3] < 3*npeaks; dirs_image[3]++) dirs_image.value() = NAN;
-
+      if (check_input (item)) {
+        DataSet::Loop inner (3);
+        for (inner.start (dirs_image); inner.ok(); inner.next (dirs_image))
+          dirs_image.value() = NAN;
+        return true;
       }
+
+      std::vector<Direction> all_peaks;
+
+      for (size_t i = 0; i < dirs.rows(); i++) {
+        Direction p (dirs (i,0), dirs (i,1));
+        p.a = Math::SH::get_peak (item.data.ptr(), lmax, p.v);
+        if (finite (p.a)) {
+          for (size_t j = 0; j < all_peaks.size(); j++) {
+            if (Math::abs (p.v.dot (all_peaks[j].v)) > DOT_THRESHOLD) {
+              p.a = NAN;
+              break;
+            }
+          }
+        }
+        if (finite (p.a) && p.a >= threshold) all_peaks.push_back (p);
+      }
+
+      if (ipeaks) {
+        Image::Voxel<value_type> ipeaks_vox (*ipeaks);
+        ipeaks_vox[0] = item.pos[0];
+        ipeaks_vox[1] = item.pos[1];
+        ipeaks_vox[2] = item.pos[2];
+
+        for (int i = 0; i < npeaks; i++) {
+          Point<value_type> p;
+          ipeaks_vox[3] = 3*i;
+          for (int n = 0; n < 3; n++) {
+            p[n] = ipeaks_vox.value();
+            ipeaks_vox[3]++;
+          }
+          p.normalise();
+
+          value_type mdot = 0.0;
+          for (size_t n = 0; n < all_peaks.size(); n++) {
+            value_type f = Math::abs (p.dot (all_peaks[n].v));
+            if (f > mdot) {
+              mdot = f;
+              peaks_out[i] = all_peaks[n];
+            }
+          }
+        }
+      }
+      else if (true_peaks.size()) {
+        for (int i = 0; i < npeaks; i++) {
+          value_type mdot = 0.0;
+          for (size_t n = 0; n < all_peaks.size(); n++) {
+            value_type f = Math::abs (all_peaks[n].v.dot (true_peaks[i].v));
+            if (f > mdot) {
+              mdot = f;
+              peaks_out[i] = all_peaks[n];
+            }
+          }
+        }
+      }
+      else std::partial_sort_copy (all_peaks.begin(), all_peaks.end(), peaks_out.begin(), peaks_out.end());
+
+      int actual_npeaks = MIN (npeaks, (int) all_peaks.size());
+      dirs_image[3] = 0;
+      for (int n = 0; n < actual_npeaks; n++) {
+        dirs_image.value() = peaks_out[n].a*peaks_out[n].v[0];
+        dirs_image[3]++;
+        dirs_image.value() = peaks_out[n].a*peaks_out[n].v[1];
+        dirs_image[3]++;
+        dirs_image.value() = peaks_out[n].a*peaks_out[n].v[2];
+        dirs_image[3]++;
+      }
+      for (; dirs_image[3] < 3*npeaks; dirs_image[3]++) dirs_image.value() = NAN;
+
+      return true;
     }
 
   private:
-    Queue::Reader reader;
     Image::Voxel<value_type> dirs_image;
     Math::Matrix<value_type> dirs;
     int lmax, npeaks;
@@ -290,23 +272,23 @@ class Processor
     value_type threshold;
     Image::Header* ipeaks;
 
-    bool check_input (Queue::Reader::Item& item) {
+    bool check_input (const Item& item) {
       if (ipeaks) {
         Image::Voxel<value_type> ipeaks_vox (*ipeaks);
-        ipeaks_vox[0] = item->pos[0];
-        ipeaks_vox[1] = item->pos[1];
-        ipeaks_vox[2] = item->pos[2];
+        ipeaks_vox[0] = item.pos[0];
+        ipeaks_vox[1] = item.pos[1];
+        ipeaks_vox[2] = item.pos[2];
         ipeaks_vox[3] = 0;
         if (isnan (ipeaks_vox.value()))
           return (true);
       }
 
       bool no_peaks = true;
-      for (size_t i = 0; i < item->data.size(); i++) {
-        if (isnan (item->data[i]))
+      for (size_t i = 0; i < item.data.size(); i++) {
+        if (isnan (item.data[i]))
           return (true);
         if (no_peaks)
-          if (i && item->data[i] != 0.0) no_peaks = false;
+          if (i && item.data[i] != 0.0) no_peaks = false;
       }
 
       return (no_peaks);
@@ -375,21 +357,18 @@ void run ()
         ipeaks_header->dim (1) != directions_header.dim (1) ||
         ipeaks_header->dim (2) != directions_header.dim (2))
       throw Exception ("dimensions of peaks image \"" + ipeaks_header->name() +
-                       "\" do not match that of SH coefficients image \"" + directions_header.name() + "\"");
+          "\" do not match that of SH coefficients image \"" + directions_header.name() + "\"");
     npeaks = ipeaks_header->dim (3) / 3;
   }
   directions_header.set_dim (3, 3 * npeaks);
 
   directions_header.create (argument[1]);
 
-  Queue queue ("find_SH_peaks queue", 100, ItemAllocator (sh_header.dim (3)));
-  DataLoader loader (queue, sh_header, mask_header);
-  Processor processor (queue, directions_header, dirs, Math::SH::LforN (sh_header.dim (3)),
-                       npeaks, true_peaks, threshold, ipeaks_header);
+  DataLoader loader (sh_header, mask_header);
+  Processor processor (directions_header, dirs, Math::SH::LforN (sh_header.dim (3)),
+      npeaks, true_peaks, threshold, ipeaks_header);
 
-  Thread::Exec loader_thread (loader, "loader");
-  Thread::Array<Processor> processor_list (processor);
-  Thread::Exec processor_threads (processor_list, "processor");
+  Thread::run_queue (loader, 1, Item(), processor, 0);
 }
 
 

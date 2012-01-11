@@ -234,7 +234,7 @@ namespace MR
 
         //! construct empty vector
         Vector () throw () {
-          GSLVector<T>::size = GSLVector<T>::stride = 1;
+          GSLVector<T>::size = GSLVector<T>::stride = 0;
           data = NULL;
           block = NULL;
           owner = 1;
@@ -278,7 +278,7 @@ namespace MR
 
         //! construct a vector by reading from the text file \a filename
         Vector (const std::string& file) {
-          GSLVector<T>::size = GSLVector<T>::stride = 1;
+          GSLVector<T>::size = GSLVector<T>::stride = 0;
           data = NULL;
           block = NULL;
           owner = 1;
@@ -352,7 +352,7 @@ namespace MR
             GSLVector<T>::size = nelements;
             return *this;
           }
-          if (nelements*stride() > (block ? block->size : 0)) {
+          if (!block || nelements*stride() > (block ? block->size : 0)) {
             Vector V (nelements);
             V.sub (0, size()) = *this;
             V.sub (size(), V.size()) = fill_value;

@@ -56,7 +56,7 @@ void usage ()
     + Option ("gradient",
               "assume input directions are supplied as a gradient encoding file")
     + Option ("nonnegative",
-              "cap all negative amplitudes to zero");
+              "cap all negative amplitudes to zero")
 }
 
 typedef float value_type;
@@ -69,18 +69,8 @@ class Item {
 };
 
 
-class ItemAllocator {
-  public:
-    ItemAllocator (size_t data_size) : N (data_size) { }
-    Item* alloc () { Item* item = new Item; item->data.allocate (N); return (item); }
-    void reset (Item* item) { }
-    void dealloc (Item* item) { delete item; }
-  private:
-    size_t N;
-};
 
-
-typedef Thread::Queue<Item,ItemAllocator> Queue;
+typedef Thread::Queue<Item> Queue;
 
 
 class DataLoader {
@@ -93,14 +83,15 @@ class DataLoader {
       Queue::Writer::Item item (writer);
 
       DataSet::Loop outer ("computing amplitudes...", 0, 3 );
+      DataSet::Loop inner (3);
+
       for (outer.start (sh_voxel); outer.ok(); outer.next (sh_voxel)) {
+        item->data.allocate (sh_voxel.dim(3));
         item->pos[0] = sh_voxel[0];
         item->pos[1] = sh_voxel[1];
         item->pos[2] = sh_voxel[2];
-        DataSet::Loop inner (3);
-        unsigned int c = 0;
         for (inner.start (sh_voxel); inner.ok(); inner.next (sh_voxel))
-          item->data[c++] = sh_voxel.value();
+          item->data[sh_voxel[3]] = sh_voxel.value();
         if (!item.write()) throw Exception ("error writing to work queue");
       }
     }
@@ -187,7 +178,7 @@ void run ()
   amp_header.set_stride (3, 1);
   amp_header.create(argument[2]);
 
-  Queue queue ("sh2amp queue", 100, ItemAllocator (sh_header.dim(3)));
+  Queue queue ("sh2amp queue");
   DataLoader loader (queue, sh_header);
   Processor processor (queue, amp_header, dirs, Math::SH::LforN(sh_header.dim(3)), get_options("nonnegative").size());
 

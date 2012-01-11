@@ -27,6 +27,7 @@
 
 #include "ptr.h"
 #include "thread/condition.h"
+#include "thread/exec.h"
 
 namespace MR
 {
@@ -35,81 +36,6 @@ namespace MR
 
     /** \addtogroup Thread
      * @{ */
-
-    //! The default allocator used in the Thread::Queue
-    /*! This is the default allocator used to allocate, deallocate and reset
-     * items for use in a Thread::Queue. To use non-default constructors,
-     * destructors, or to ensure items are reset to a default state before
-     * being re-used, a custom allocator class should be used. This is
-     * illustrated in the example below:
-     * \code
-     * // An item class that has a non-default constructor,
-     * // and a method to reset the item to a standard state:
-     * class Item {
-     *   public:
-     *     Item (size_t number_of_elements);
-     *     ~Item ();
-     *     void clear ();
-     *     ...
-     * };
-     *
-     *
-     *
-     * // An allocator class designed to operate with the Item:
-     * class ItemAllocator {
-     *   public:
-     *     ItemAllocator (size_t number_of_elements) : N (number_of_elements) { }
-     *     Item* alloc () { return (new Item (N)); }
-     *     void reset (Item* p) { p->clear(); }
-     *     void dealloc (Item* p) { delete p; }
-     *   private:
-     *     size_t N;
-     * };
-     *
-     *
-     * void my_function () {
-     *   // Supply this allocator to the Queue at construction:
-     *   Thread::Queue<Item,ItemAllocator> queue ("my queue", 100, ItemAllocator (number_required());
-     *
-     *   ...
-     *   // Set up Functors, threads, etc, and use as normal
-     *   ...
-     * }
-     * \endcode
-     *
-     * \note The allocator will be passed to the Queue by copy, using the copy
-     * constructor. If using a non-standard allocator, you need to ensure that
-     * the copy constructor is valid and will produce a functional allocator.
-     */
-    template <class T> class DefaultAllocator
-    {
-      public:
-        //! Allocate a new item
-        /*! Return a pointer to a newly allocated item of type \c T.
-         *
-         * By default, this simply returns a pointer to a new item constructed
-         * using the new() operator and the default constructor. */
-
-        T* alloc () {
-          return (new T);
-        }
-        //! reset the item for re-use
-        /*! This should ensure the item is returned to the expected state for
-         * re-use.
-         *
-         * By default, it does nothing. */
-        void reset (T* p) { }
-
-        //! Deallocate the item
-        /*! This should free all memory associated with the item.
-         *
-         * By default, it simply calls the delete() operator. */
-        void dealloc (T* p) {
-          delete p;
-        }
-    };
-
-
 
 
 
@@ -188,12 +114,9 @@ namespace MR
      *
      * The Queue class performs all memory management for the items in the
      * queue. For this reason, the items are accessed via the Writer::Item &
-     * Reader::Item classes, and constructed using the Allocator class passed
-     * as a template parameter for the queue. This allows items to be recycled
-     * once they have been processed, reducing overheads associated with memory
-     * allocation/deallocation. If you need the items to be constructed using a
-     * non-default constructor, then you will need to create your own
-     * allocator. See Thread::DefaultAllocator for details.
+     * Reader::Item classes. This allows items to be recycled once they have
+     * been processed, reducing overheads associated with memory
+     * allocation/deallocation. 
      *
      * \note It is important that all instances of Thread::Queue::Writer and
      * Thread::Queue::Reader are created \e before any of the threads are
@@ -313,7 +236,7 @@ namespace MR
      * pointers, and ensuring the Queue itself is responsible for all
      * allocation and deallocation of items as needed.
      */
-    template <class T, class Allocator = DefaultAllocator<T> > class Queue
+    template <class T> class Queue
     {
       public:
         //! Construct a Queue of items of type \c T
@@ -323,12 +246,8 @@ namespace MR
          * queue already contains this number of items, the thread will block until
          * at least one item has been popped.  By default, the buffer size is 100
          * items.
-         * \param alloc an allocator object, which can be supplied to handle
-         * non-standard item construction, destruction, or reset operation. See
-         * Thread::DefaultAllocator for details.
          */
-        Queue (const std::string& description = "unnamed", size_t buffer_size = 100, const Allocator& alloc = Allocator()) :
-          allocator (alloc),
+        Queue (const std::string& description = "unnamed", size_t buffer_size = 100) :
           more_data (mutex),
           more_space (mutex),
           buffer (new T* [buffer_size]),
@@ -358,7 +277,7 @@ namespace MR
             //! Register a Writer object with the queue
             /*! The Writer object will register itself with the queue as a
              * writer. */
-            Writer (Queue<T,Allocator>& queue) : Q (queue) {
+            Writer (Queue<T>& queue) : Q (queue) {
               Q.register_writer();
             }
             Writer (const Writer& W) : Q (W.Q) {
@@ -398,12 +317,12 @@ namespace MR
                   return (p);
                 }
               private:
-                Queue<T,Allocator>& Q;
+                Queue<T>& Q;
                 T* p;
             };
 
           private:
-            Queue<T,Allocator>& Q;
+            Queue<T>& Q;
         };
 
 
@@ -421,7 +340,7 @@ namespace MR
             //! Register a Reader object with the queue.
             /*! The Reader object will register itself with the queue as a
              * reader. */
-            Reader (Queue<T,Allocator>& queue) : Q (queue) {
+            Reader (Queue<T>& queue) : Q (queue) {
               Q.register_reader();
             }
             Reader (const Reader& reader) : Q (reader.Q) {
@@ -461,11 +380,11 @@ namespace MR
                   return (p);
                 }
               private:
-                Queue<T,Allocator>& Q;
+                Queue<T>& Q;
                 T* p;
             };
           private:
-            Queue<T,Allocator>& Q;
+            Queue<T>& Q;
         };
 
         //! Print out a status report for debugging purposes
@@ -478,7 +397,6 @@ namespace MR
 
 
       private:
-        Allocator allocator;
         Mutex mutex;
         Cond more_data, more_space;
         T** buffer;
@@ -537,7 +455,7 @@ namespace MR
 
         T* get_item () {
           Mutex::Lock lock (mutex);
-          T* item = allocator.alloc();
+          T* item = new T;
           items.push_back (item);
           return (item);
         }
@@ -550,7 +468,7 @@ namespace MR
           back = inc (back);
           more_data.signal();
           if (item_stack.empty()) {
-            item = allocator.alloc();
+            item = new T;
             items.push_back (item);
           }
           else {
@@ -562,10 +480,8 @@ namespace MR
 
         bool pop (T*& item) {
           Mutex::Lock lock (mutex);
-          if (item) {
-            allocator.reset (item);
+          if (item) 
             item_stack.push (item);
-          }
           item = NULL;
           while (empty() && writer_count) more_data.wait();
           if (empty() && !writer_count) return (false);
@@ -581,6 +497,623 @@ namespace MR
           return (p);
         }
     };
+
+
+     //! \cond skip
+
+     template <class Type, class Functor>
+       class __Source
+       {
+         public:
+           __Source (Queue<Type>& queue, Functor& functor) :
+             writer (queue), func (functor) { }
+
+           __Source (const __Source& S) :
+             writer (S.writer), funcp (new Functor (S.func)), func (*funcp) { }
+
+           void execute () {
+             typename Queue<Type>::Writer::Item out (writer);
+             do {
+               if (!func (*out))
+                 return;
+             }
+             while (out.write());
+           }
+
+         private:
+           typename Queue<Type>::Writer writer;
+           Ptr<Functor> funcp;
+           Functor& func;
+       };
+
+
+     template <class Type1, class Functor, class Type2>
+       class __Pipe
+       {
+         public:
+           __Pipe (Queue<Type1>& queue_in, Functor& functor, Queue<Type2>& queue_out) :
+             reader (queue_in), writer (queue_out), func (functor) { }
+
+           __Pipe (const __Pipe& P) :
+             reader (P.reader), writer (P.writer), funcp (new Functor (P.func)), func (*funcp) { }
+
+           void execute () {
+             typename Queue<Type1>::Reader::Item in (reader);
+             typename Queue<Type2>::Writer::Item out (writer);
+             do {
+               if (!in.read()) return;
+               if (!func (*in, *out))
+                 return;
+             }
+             while (out.write());
+           }
+
+         private:
+           typename Queue<Type1>::Reader reader;
+           typename Queue<Type2>::Writer writer;
+           Ptr<Functor> funcp;
+           Functor& func;
+       };
+
+
+
+     template <class Type, class Functor>
+       class __Sink
+       {
+         public:
+           __Sink (Queue<Type>& queue, Functor& functor) :
+             reader (queue), func (functor) { }
+           __Sink (const __Sink& S) :
+             reader (S.reader), funcp (new Functor (S.func)), func (*funcp) { }
+
+           void execute () {
+             typename Queue<Type>::Reader::Item in (reader);
+             while (in.read()) {
+               if (!func (*in))
+                 return;
+             }
+           }
+
+         private:
+           typename Queue<Type>::Reader reader;
+           Ptr<Functor> funcp;
+           Functor& func;
+       };
+
+
+
+
+     namespace Batch {
+
+       template <class Type, class Functor>
+         class __Source
+         {
+           public:
+             __Source (Queue<std::vector<Type> >& queue, Functor& functor, size_t batch_size = 128) :
+               writer (queue), func (functor), N (batch_size) { }
+
+             __Source (const __Source& S) :
+               writer (S.writer), funcp (new Functor (S.func)), func (*funcp), N (S.N) { }
+
+             void execute () {
+               typename Queue<std::vector<Type> >::Writer::Item out (writer);
+               size_t n;
+               do {
+                 out->resize (N);
+                 for (n = 0; n < N; ++n) {
+                   if (!func ((*out)[n])) {
+                     out->resize (n);
+                     break;
+                   }
+                 }
+                 if (!out.write()) 
+                   return;
+               } while (n == N);
+             }
+
+           private:
+             typename Queue<std::vector<Type> >::Writer writer;
+             Ptr<Functor> funcp;
+             Functor& func;
+             size_t N;
+         };
+
+
+       template <class Type1, class Functor, class Type2>
+         class __Pipe
+         {
+           public:
+             __Pipe (Queue<std::vector<Type1> >& queue_in,
+                 Functor& functor,
+                 Queue<std::vector<Type2> >& queue_out, size_t batch_size) :
+               reader (queue_in), writer (queue_out), func (functor), N (batch_size) { }
+
+             __Pipe (const __Pipe& P) :
+               reader (P.reader), writer (P.writer), funcp (new Functor (P.func)), func (*funcp), N (P.N) { }
+
+             void execute () {
+               typename Queue<std::vector<Type1> >::Reader::Item in (reader);
+               typename Queue<std::vector<Type2> >::Writer::Item out (writer);
+               out->resize (N);
+               if (!in.read()) return;
+               size_t n1 = 0, n2 = 0;
+               do {
+                 if (!func ((*in)[n1], (*out)[n2])) {
+                   if (n2) {
+                     out->resize (n2);
+                     out.write();
+                   }
+                   return;
+                 }
+                 ++n1;
+                 ++n2;
+                 if (n1 >= in->size()) {
+                   if (!in.read()) {
+                     if (n2) {
+                       out->resize (n2);
+                       out.write();
+                     }
+                     return;
+                   }
+                   n1 = 0;
+                 }
+                 if (n2 >= N) {
+                   out.write();
+                   out->resize (N);
+                   n2 = 0;
+                 }
+               } while (true);
+             }
+
+           private:
+             typename Queue<std::vector<Type1> >::Reader reader;
+             typename Queue<std::vector<Type2> >::Writer writer;
+             Ptr<Functor> funcp;
+             Functor& func;
+             size_t N;
+         };
+
+
+
+       template <class Type, class Functor>
+         class __Sink
+         {
+           public:
+             __Sink (Queue<std::vector<Type> >& queue, Functor& functor) :
+               reader (queue), func (functor) { }
+             __Sink (const __Sink& S) :
+               reader (S.reader), funcp (new Functor (S.func)), func (*funcp) { }
+
+             void execute () {
+               typename Queue<std::vector<Type> >::Reader::Item in (reader);
+               while (in.read()) {
+                 for (size_t n = 0; n < in->size(); ++n) 
+                   if (!func ((*in)[n])) 
+                     return;
+               }
+             }
+
+           private:
+             typename Queue<std::vector<Type> >::Reader reader;
+             Ptr<Functor> funcp;
+             Functor& func;
+         };
+
+
+    }
+
+
+    //! \endcond 
+
+
+     //! convenience function to set up and run a multi-threaded queue.
+     /*! This is a convenience function to simplify the process of setting up a
+      * multi-threaded processing chain that should meet most user's needs.
+      * This function sets up a simple chain consisting of one or more input
+      * (Source) functors feeding into a queue feeding into one or more output
+      * (Sink) functors.
+      * 
+      * The template types consist of the input & output functor classes, and
+      * the type of the item that will be passed through the queue from input
+      * to output. 
+      *
+      * The actual arguments correspond to an instance of both the input &
+      * output functors, the number of threads to use for each, and an item
+      * instance (provided purely to specify the type of object to pass
+      * through the queue).
+      *
+      * \note if the number of threads is set to zero, all available cores will
+      * be used, as given by the Thread::available_cores() function.
+      *
+      *
+      * \par Source: the input functor 
+      * The Source class must at least provide the method:
+      * \code 
+      * bool operator() (Type& item);
+      * \endcode
+      * This function prepares the \a item passed to it, and should return \c
+      * true if further items need to be prepared, or \c false to signal that
+      * no further items are to be sent through the queue (at which point the
+      * corresponding thread(s) will exit).
+      *
+      * If more than one thread are to be launched with this functor,
+      * additional instances of the input functor will be created using the
+      * Source class's copy constructor. In this case, care should be taken to
+      * ensure the copy constructor behaves appropriately.
+      *
+      * \par Sink: the output functor 
+      * The Sink class must at least provide the method:
+      * \code 
+      * bool operator() (const Type& item);
+      * \endcode
+      * This function processes the \a item passed to it, and should return \c
+      * true when ready to process further items, or \c false to signal the end
+      * of processing (at which point the corresponding thread(s) will exit).
+      *
+      * If more than one thread are to be launched with this functor,
+      * additional instances of the output functor will be created using the
+      * Sink class's copy constructor. In this case, care should be taken to
+      * ensure the copy constructor behaves appropriately.
+      *
+      * \par Example usage
+      * \code
+      * // The item type to be passed through the queue:
+      * class Item {
+      *   public:
+      *     size_t n;
+      * };
+      *
+      *
+      * // The Source class prepares each item to be sent through the queue:
+      * class Source {
+      *   public:
+      *     Source () : count (0) { }
+      *
+      *     // The kernel responsible for preparing each item to be sent.
+      *     // This simply generates 1000000 items with incrementing count.
+      *     bool operator() (Item& item) {
+      *       item.n = count++;
+      *       return count < 1000000;
+      *     }
+      *
+      *     size_t count;
+      *};
+      *
+      * // The Sink class processes each item received through the queue:
+      * class Sink {
+      *   public:
+      *     Sink () : count (0) { }
+      *
+      *     // The kernel responsible for processing each item received.
+      *     // This example simply adds up the counts of the items received.
+      *     bool operator() (const Item& item) {
+      *       count += item.n;
+      *       return true;
+      *     }
+      *
+      *     size_t count;
+      * };
+      *
+      * int main (...) 
+      * {
+      *   Source source;
+      *   Sink sink;
+      *
+      *   // Run one thread for the source and one thread for the sink:
+      *   run_queue (source, 1, Item(), sink, 1);
+      * }
+      * \endcode
+      * 
+      * \sa run_queue<Source,Type1,Pipe,Type2,Sink>
+      * \sa run_batched_queue<Source,Type,Sink>
+      * \sa run_batched_queue<Source,Type1,Pipe,Type2,Sink>
+      */
+    template <class Source, class Type, class Sink>
+      inline void run_queue (
+          Source& source, size_t nthreads_source,
+          const Type& item_type,
+          Sink& sink, size_t nthreads_sink)
+      {
+
+        Queue<Type> queue;
+        __Source<Type,Source> q_source (queue, source);
+        __Sink<Type,Sink> q_sink (queue, sink);
+
+        Array<__Source<Type,Source> > source_list (q_source, nthreads_source ? nthreads_source : available_cores());
+        Array<__Sink<Type,Sink> > sink_list (q_sink, nthreads_sink ? nthreads_sink : available_cores());
+
+        Exec source_threads (source_list, "source");
+        Exec sink_threads (sink_list, "sink");
+      }
+
+
+     //! convenience function to set up and run a multi-threaded queue.
+     /*! This is a convenience function to simplify the process of setting up a
+      * multi-threaded processing chain that should meet most user's needs. 
+      * This function sets up a three-step chain consisting of one or more input
+      * (Source) functors feeding into a queue feeding into one or more
+      * processing (Pipe) functors, themselves feeding into a second queue
+      * feeding into one or more output (Sink) functors.
+      * 
+      * The template types consist of the input, processing & output functor
+      * classes, and the types of the item that will be passed through each
+      * queue from input to processor, and from processor to output. 
+      *
+      * The actual arguments correspond to an instance of the input, processing &
+      * output functors, the number of threads to use for each, and item
+      * instances for both queues (provided purely to specify the type of
+      * object to pass through the queues).
+      *
+      * \note if the number of threads is set to zero, all available cores will
+      * be used, as given by the Thread::available_cores() function.
+      *
+      *
+      * \par Source: the input functor 
+      * The Source class must at least provide the method:
+      * \code 
+      * bool operator() (Type& item);
+      * \endcode
+      * This function prepares the \a item passed to it, and should return \c
+      * true if further items need to be prepared, or \c false to signal that
+      * no further items are to be sent through the queue (at which point the
+      * corresponding thread(s) will exit).
+      *
+      * If more than one thread are to be launched with this functor,
+      * additional instances of the input functor will be created using the
+      * Source class's copy constructor. In this case, care should be taken to
+      * ensure the copy constructor behaves appropriately.
+      *
+      * \par Pipe: the processing functor 
+      * The Pipe class must at least provide the method:
+      * \code 
+      * bool operator() (const Type1& item_in, Type2& item_out);
+      * \endcode
+      * This function processes the \a item_in passed to it, and prepares
+      * \a item_out for the next stage of the pipeline. It should return \c
+      * true when ready to process further items, or \c false to signal the end
+      * of processing (at which point the corresponding thread(s) will exit).
+      *
+      * If more than one thread are to be launched with this functor,
+      * additional instances of the processing functor will be created using the
+      * Pipe class's copy constructor. In this case, care should be taken to
+      * ensure the copy constructor behaves appropriately.
+      *
+      *
+      * \par Sink: the output functor 
+      * The Sink class must at least provide the method:
+      * \code 
+      * bool operator() (const Type& item);
+      * \endcode
+      * This function processes the \a item passed to it, and should return \c
+      * true when ready to process further items, or \c false to signal the end
+      * of processing (at which point the corresponding thread(s) will exit).
+      *
+      * If more than one thread are to be launched with this functor,
+      * additional instances of the ouptut functor will be created using the
+      * Sink class's copy constructor. In this case, care should be taken to
+      * ensure the copy constructor behaves appropriately.
+      *
+      * \par Example usage
+      * \code
+      * // The item type to be passed through the queue:
+      * class Item {
+      *   public:
+      *     size_t n;
+      * };
+      *
+      *
+      * // The Source class prepares each item to be sent through the queue:
+      * class Source {
+      *   public:
+      *     Source () : count (0) { }
+      *
+      *     // The kernel responsible for preparing each item to be sent.
+      *     // This simply generates 1000000 items with incrementing count.
+      *     bool operator() (Item& item) {
+      *       item.n = count++;
+      *       return count < 1000000;
+      *     }
+      *
+      *     size_t count;
+      *};
+      *
+      * // The Pipe class processes each input item received from the first
+      * // queue and prepares an output item to be sent through the second queue:
+      * class Pipe {
+      *   public: 
+      *     // The kernel responsible for processing each input item and
+      *     // preparing each corresponding output item:
+      *     // This example simply takes the remainder after division by 128.
+      *     bool operator() (const Item& in, Item& out) {
+      *       out.n = in.n % 128;
+      *       return true;
+      *     }
+      * };
+      * 
+      *
+      * // The Sink class processes each item received through the queue:
+      * class Sink {
+      *   public:
+      *     Sink () : count (0) { }
+      *
+      *     // The kernel responsible for processing each item received.
+      *     // This example simply adds up the counts of the items received.
+      *     bool operator() (const Item& item) {
+      *       count += item.n;
+      *       return true;
+      *     }
+      *
+      *     size_t count;
+      * };
+      *
+      * int main (...) 
+      * {
+      *   Source source;
+      *   Pipe pipe;
+      *   Sink sink;
+      *
+      *   // Run one thread for the source, all available cores for the
+      *   // pipe, and one thread for the sink.
+      *   // In this example, both queues will be passing through items of the
+      *   // same type. 
+      *   run_queue (source, 1, Item(), pipe, 0, Item(), sink, 1);
+      * }
+      * \endcode
+      * 
+      * \sa run_queue<Source,Type,Sink>
+      * \sa run_batched_queue<Source,Type,Sink>
+      * \sa run_batched_queue<Source,Type1,Pipe,Type2,Sink>
+      */
+    template <class Source, class Type1, class Pipe, class Type2, class Sink>
+      inline void run_queue (
+          Source& source, size_t nthreads_source, 
+          const Type1& item_type1, 
+          Pipe& pipe, size_t nthreads_pipe,
+          const Type2& item_type2, 
+          Sink& sink, size_t nthreads_sink)
+      {
+        Queue<Type1> queue1;
+        Queue<Type2> queue2;
+
+        __Source<Type1,Source> q_source (queue1, source);
+        __Pipe<Type1,Pipe,Type2> q_pipe (queue1, pipe, queue2);
+        __Sink<Type2,Sink> q_sink (queue2, sink);
+
+        Array<__Source<Type1,Source> > source_list (q_source, nthreads_source ? nthreads_source : available_cores());
+        Array<__Pipe<Type1,Pipe,Type2> > pipe_list (q_pipe, nthreads_pipe ? nthreads_pipe : available_cores());
+        Array<__Sink<Type2,Sink> > sink_list (q_sink, nthreads_sink ? nthreads_sink : available_cores());
+
+        Exec source_threads (source_list, "source");
+        Exec pipe_threads (pipe_list, "pipe");
+        Exec sink_threads (sink_list, "sink");
+      }
+
+
+
+
+
+
+     //! convenience function to set up and run a multi-threaded queue.
+     /*! This is a convenience function to simplify the process of setting up a
+      * multi-threaded processing chain that should meet most user's needs.
+      * This function sets up a simple chain consisting of one or more input
+      * (Source) functors feeding into a queue feeding into one or more output
+      * (Sink) functors. 
+      *
+      * It differs from Thread::run_queue<Source,Type,Sink> in that batches of
+      * items will be sent through the queue, rather than individual items.
+      * This is beneficial for applications where the work required to process
+      * each item is small, in which case the overhead of locking and unlocking
+      * the queue for multi-threading becomes the bottleneck. By batching sets
+      * of items together, the overhead of managing the queue can be reduced to
+      * negligible levels. 
+      *
+      * Usage is almost identical to Thread::run_queue<Source,Type,Sink>, apart
+      * from the call itself:
+      * \code
+      * int main (...) 
+      * {
+      *   Source source;
+      *   Sink sink;
+      *
+      *   // Run one thread for the source and one thread for the sink,
+      *   // with items sent in batches of 1024:
+      *   run_queue (source, 1, Item(), 1024, sink, 1);
+      * }
+      * \endcode
+      *
+      * \sa run_queue<Source,Type,Sink>
+      * \sa run_queue<Source,Type1,Pipe,Type2,Sink>
+      * \sa run_batched_queue<Source,Type1,Pipe,Type2,Sink>
+      */
+    template <class Source, class Type, class Sink>
+      inline void run_batched_queue (
+          Source& source, size_t nthreads_source, 
+          const Type& item_type, size_t batch_size,
+          Sink& sink, size_t nthreads_sink)
+      {
+
+        Queue<std::vector<Type> > queue;
+        Batch::__Source<Type,Source> q_source (queue, source, batch_size);
+        Batch::__Sink<Type,Sink> q_sink (queue, sink);
+
+        Array<Batch::__Source<Type,Source> > source_list (q_source, nthreads_source ? nthreads_source : available_cores());
+        Array<Batch::__Sink<Type,Sink> > sink_list (q_sink, nthreads_sink ? nthreads_sink : available_cores());
+
+        Exec source_threads (source_list, "source");
+        Exec sink_threads (sink_list, "sink");
+      }
+
+
+
+     //! convenience function to set up and run a multi-threaded queue.
+     /*! This is a convenience function to simplify the process of setting up a
+      * multi-threaded processing chain that should meet most user's needs. 
+      * This function sets up a three-step chain consisting of one or more input
+      * (Source) functors feeding into a queue feeding into one or more
+      * processing (Pipe) functors, themselves feeding into a second queue
+      * feeding into one or more output (Sink) functors.
+      *
+      * It differs from Thread::run_queue<Source,Type1,Pipe,Type2,Sink> in that
+      * batches of items will be sent through each queue, rather than
+      * individual items. This is beneficial for applications where the work
+      * required to process each item is small, in which case the overhead of
+      * locking and unlocking the queues for multi-threading becomes the
+      * bottleneck. By batching sets of items together, the overhead of
+      * managing the queues can be reduced to negligible levels. 
+      *
+      * Usage is almost identical to
+      * Thread::run_queue<Source,Type1,Pipe,Type2,Sink>, apart from the call
+      * itself: 
+      * \code
+      * int main (...) 
+      * {
+      *   Source source;
+      *   Pipe pipe;
+      *   Sink sink;
+      *
+      *   // run one thread for the source, all available cores for the
+      *   // pipe, and one thread for the sink.
+      *   // In this example, both queues will be passing through items of the
+      *   // same type, and items will be sent in batches of 1024 for both
+      *   // queues.
+      *   run_queue (
+      *     source, 1, 
+      *     Item(), 1024,
+      *     pipe, 0,
+      *     Item(), 1024, 
+      *     sink, 1);
+      * }
+      * \endcode
+      * 
+      * \sa run_queue<Source,Type,Sink>
+      * \sa run_batched_queue<Source,Type,Sink>
+      * \sa run_batched_queue<Source,Type1,Pipe,Type2,Sink>
+      */
+
+    template <class Source, class Type1, class Pipe, class Type2, class Sink>
+      inline void run_batched_queue (
+          Source& source, size_t nthreads_source, 
+          const Type1& item_type1, size_t batch_size1,
+          Pipe& pipe, size_t nthreads_pipe,
+          const Type2& item_type2, size_t batch_size2,
+          Sink& sink, size_t nthreads_sink)
+      {
+        Queue<std::vector<Type1> > queue1;
+        Queue<std::vector<Type2> > queue2;
+
+        Batch::__Source<Type1,Source> q_source (queue1, source, batch_size1);
+        Batch::__Pipe<Type1,Pipe,Type2> q_pipe (queue1, pipe, queue2, batch_size2);
+        Batch::__Sink<Type2,Sink> q_sink (queue2, sink);
+
+        Array<Batch::__Source<Type1,Source> > source_list (q_source, nthreads_source ? nthreads_source : available_cores());
+        Array<Batch::__Pipe<Type1,Pipe,Type2> > pipe_list (q_pipe, nthreads_pipe ? nthreads_pipe : available_cores());
+        Array<Batch::__Sink<Type2,Sink> > sink_list (q_sink, nthreads_sink ? nthreads_sink : available_cores());
+
+        Exec source_threads (source_list, "source");
+        Exec pipe_threads (pipe_list, "pipe");
+        Exec sink_threads (sink_list, "sink");
+      }
 
 
     /** @} */

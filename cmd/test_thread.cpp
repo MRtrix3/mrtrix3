@@ -1,147 +1,103 @@
-/*
-    Copyright 2008 Brain Research Institute, Melbourne, Australia
-
-    Written by J-Donald Tournier, 27/06/08.
-
-    This file is part of MRtrix.
-
-    MRtrix is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-
-    MRtrix is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
-
-*/
-
 #include "app.h"
+#include "timer.h"
+#include "file/config.h"
 #include "progressbar.h"
 #include "thread/exec.h"
 #include "thread/queue.h"
 #include "math/rng.h"
+
 
 MRTRIX_APPLICATION
 
 using namespace MR;
 using namespace App;
 
-void usage () {
+void usage ()
+{
   DESCRIPTION
-    + "this is used to test stuff.";
+  + "this is used to test stuff.";
 }
+
+
+
 
 class Item
 {
   public:
-    float orig, processed;
+    size_t n;
 };
 
-class ItemAllocator
+class Source
 {
   public:
-    Item* alloc () {
-      Item* p = new Item;
-      p->orig = p->processed = NAN;
-      return (p);
-    }
-    void reset (Item* p) {
-      p->orig = p->processed = NAN;
-    }
-    void dealloc (Item* p) {
-      delete p;
+    Source () : count (0), max_count (2000000) { }
+    size_t count, max_count;
+    bool operator() (Item& item) {
+      item.n = count++;
+      return count < max_count;
     }
 };
 
-typedef Thread::Queue<Item,ItemAllocator> ItemQueue;
-typedef Thread::Queue<float> FloatQueue;
 
-
-
-class Consumer
+class Process 
 {
   public:
-    Consumer (ItemQueue& queue, const std::string& description = "unnamed") : reader (queue), desc (description) { }
-    const std::string& name () {
-      return (desc);
+    bool operator() (const Item& in, Item& out) {
+      out.n = in.n % 128;
+      return true;
     }
-    void execute () {
-      size_t count = 0;
-      ItemQueue::Reader::Item item (reader);
-      while (item.read()) {
-        //std::cout << item->orig << " => " << item->processed << "\n";
-        ++count;
-      }
-      print ("consumer count = " + str (count) + "\n");
-    }
-  private:
-    ItemQueue::Reader reader;
-    std::string desc;
 };
 
-
-
-class Processor
+class Sink
 {
   public:
-    Processor (FloatQueue& queue_in, ItemQueue& queue_out, const std::string& description = "unnamed") :
-      reader (queue_in), writer (queue_out), desc (description) { }
-    const std::string& name () {
-      return (desc);
+    Sink () : count (0), total_count (0) { }
+    size_t count, total_count;
+    bool operator() (const Item& item) {
+      count += item.n;
+      ++total_count;
+      return true;
     }
-    void execute () {
-      size_t count = 0;
-      FloatQueue::Reader::Item in (reader);
-      ItemQueue::Writer::Item out (writer);
-      do {
-        if (!in.read()) break;
-        out->orig = *in;
-        out->processed = Math::pow2 (out->orig);
-        ++count;
-        //print ("[" + name() + "] " + str(out->orig) + " -> " + str(out->processed) + "\n");
-      }
-      while (out.write());
-      print (name() + " count = " + str (count) + "\n");
-    }
-  private:
-    FloatQueue::Reader reader;
-    ItemQueue::Writer writer;
-    std::string desc;
 };
 
 
-void run () {
-  FloatQueue queue1 ("first queue");
-  ItemQueue queue2 ("second queue");
 
-  Consumer consumer (queue2, "consumer");
-  Processor processor (queue1, queue2, "processor");
-  Thread::Array<Processor> transformer_list (processor);
+void run ()
+{
+  Source source;
+  Process process;
+  Sink sink;
 
-  Math::RNG rng;
-  FloatQueue::Writer writer (queue1);
 
-  queue1.status();
-  queue2.status();
+  Timer timer;
+  Thread::run_queue (
+      source, 1, 
+      Item(), 
+      process, 4, 
+      Item(),
+      sink, 1);
 
-  Thread::Exec consumer_thread (consumer, consumer.name());
-  Thread::Exec func_threads (transformer_list, processor.name());
+  double time_not_batched = timer.elapsed();
+  VAR (time_not_batched);
+  VAR (sink.count);
+  VAR (sink.total_count);
 
-  size_t count = 0;
-  const size_t N = 100000;
-  ProgressBar progress ("testing threads...", N);
-  FloatQueue::Writer::Item value (writer);
-  do {
-    *value = rng.uniform();
-    ++count;
-    ++progress;
-  }
-  while (value.write() && count < N);
-  print ("producer count = " + str (count) + "\n");
+  Source source2;
+  Sink sink2;
+  timer.start();
+
+  Thread::run_batched_queue (
+      source2, 1, 
+      Item(), 1024,
+      process, 4, 
+      Item(), 1024,
+      sink2, 1);
+
+  double time_batched = timer.elapsed();
+  VAR (time_batched);
+  VAR (timer.elapsed());
+  VAR (sink2.count);
+  VAR (sink2.total_count);
+
+  VAR (time_not_batched / time_batched);
 }
-

@@ -85,25 +85,8 @@ class Item
 };
 
 
-class Allocator
-{
-  public:
-    Allocator (size_t data_size) : N (data_size) { }
-    Item* alloc () {
-      Item* item = new Item;
-      item->data.allocate (N);
-      return (item);
-    }
-    void reset (Item* item) { }
-    void dealloc (Item* item) {
-      delete item;
-    }
-  private:
-    size_t N;
-};
 
-
-typedef Thread::Queue<Item,Allocator> Queue;
+typedef Thread::Queue<Item> Queue;
 
 
 class DataLoader
@@ -141,6 +124,7 @@ class DataLoader
     const std::vector<int>&  dwis;
 
     void load (Queue::Writer::Item& item) {
+      item->data.allocate (dwis.size());
       for (size_t n = 0; n < dwis.size(); n++) {
         dwi[3] = dwis[n];
         item->data[n] = dwi.value();
@@ -304,7 +288,7 @@ void run ()
   SH_header.set_stride (3, 1);
   SH_header.create(argument[1]);
 
-  Queue queue ("work queue", 100, Allocator (dwis.size()));
+  Queue queue ("work queue");
   DataLoader loader (queue, dwi_header, mask_header, dwis);
 
   Processor processor (queue, FRT_SHT.mat_A2SH(), HR_SHT, SH_header);

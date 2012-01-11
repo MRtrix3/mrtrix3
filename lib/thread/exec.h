@@ -78,10 +78,10 @@ namespace MR
       public:
         Array (Functor& functor, size_t num_threads = available_cores()) :
           first_functor (functor), functors (num_threads-1) {
-          assert (num_threads);
-          for (size_t i = 0; i < num_threads-1; i++)
-            functors[i] = new Functor (functor);
-        }
+            assert (num_threads);
+            for (size_t i = 0; i < num_threads-1; i++)
+              functors[i] = new Functor (functor);
+          }
       private:
         Functor& first_functor;
         VecPtr<Functor> functors;
@@ -135,23 +135,23 @@ namespace MR
         /*! A human-readable identifier can be supplied via the \a description
          * parameter. This is helping for debugging and error reporting. */
         template <class Functor> Exec (Functor& functor, const std::string& description = "unnamed") :
-          ID (1), name (description), responsible (false) {
-          if (!default_attributes) init();
-          info ("launching thread \"" + name + "\"...");
-          start (ID[0], functor);
-        }
+          ID (1), name (description) {
+            init();
+            info ("launching thread \"" + name + "\"...");
+            start (ID[0], functor);
+          }
 
         //! Start an array of new threads each runnning the execute() method of its \a functor
         /*! A human-readable identifier can be supplied via the \a description
          * parameter. This is helping for debugging and error reporting. */
         template <class Functor> Exec (Array<Functor>& functor, const std::string& description = "unnamed") :
-          ID (functor.functors.size() +1), name (description), responsible (false) {
-          if (!default_attributes) init();
-          info ("launching " + str (ID.size()) + " thread" + (ID.size() > 1 ? "s" : "") +  " \"" + name + "\"...");
-          start (ID[0], functor.first_functor);
-          for (size_t i = 1; i < ID.size(); ++i)
-            start (ID[i], *functor.functors[i-1]);
-        }
+          ID (functor.functors.size() +1), name (description) {
+            init();
+            info ("launching " + str (ID.size()) + " thread" + (ID.size() > 1 ? "s" : "") +  " \"" + name + "\"...");
+            start (ID[0], functor.first_functor);
+            for (size_t i = 1; i < ID.size(); ++i)
+              start (ID[i], *functor.functors[i-1]);
+          }
 
         //! Wait for the thread to terminate
         /*! The thread will terminate when the execute() method of the \a
@@ -165,16 +165,19 @@ namespace MR
             debug ("thread \"" + name + "\" [ID " + str (ID[i]) + "] completed OK");
           }
 
-          if (responsible) revert();
+          --common->refcount;
+          if (!common->refcount) {
+            delete common;
+            common = NULL;
+          }
         }
 
       private:
         std::vector<pthread_t> ID;
-        std::string name;
-        bool responsible;
+        const std::string name;
 
         template <class Functor> void start (pthread_t& id, Functor& functor) {
-          if (pthread_create (&id, default_attributes, static_exec<Functor>, static_cast<void*> (&functor)))
+          if (pthread_create (&id, common->attributes, static_exec<Functor>, static_cast<void*> (&functor)))
             throw Exception (std::string ("error launching thread \"" + name + "\": ") + strerror (errno));
           debug ("launched thread \"" + name + "\" [ID " + str (id) + "]");
         }
@@ -189,22 +192,33 @@ namespace MR
           return (NULL);
         }
 
-        void init ();
-        void revert ();
+        void init () {
+          if (!common) 
+            common = new Common;
+          ++common->refcount;
+        }
 
-        static pthread_attr_t* default_attributes;
-        static pthread_t main_thread;
+        class Common {
+          public:
+            Common();
+            ~Common();
 
-        static Mutex mutex;
-        static void thread_print (const std::string& msg);
-        static void thread_error (const std::string& msg);
-        static void thread_info (const std::string& msg);
-        static void thread_debug (const std::string& msg);
+            size_t refcount;
+            pthread_attr_t* attributes;
 
-        static void (*previous_print) (const std::string& msg);
-        static void (*previous_error) (const std::string& msg);
-        static void (*previous_info) (const std::string& msg);
-        static void (*previous_debug) (const std::string& msg);
+            Thread::Mutex mutex;
+            static void thread_print (const std::string& msg);
+            static void thread_error (const std::string& msg);
+            static void thread_info (const std::string& msg);
+            static void thread_debug (const std::string& msg);
+
+            void (*previous_print) (const std::string& msg);
+            void (*previous_error) (const std::string& msg);
+            void (*previous_info) (const std::string& msg);
+            void (*previous_debug) (const std::string& msg);
+        };
+        static Common* common;
+
     };
 
     /** @} */
