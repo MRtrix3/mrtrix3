@@ -54,6 +54,13 @@ namespace MR {
         public:
           typedef T value_type;
 
+          Reader () { }
+          Reader (const Reader& R) { assert (0); }
+
+          Reader (const std::string& file, Properties& properties) {
+            open (file, properties);
+          }
+
           bool next (std::vector<Point<value_type> >& tck)
           {
             tck.clear();
@@ -137,6 +144,12 @@ namespace MR {
                 throw Exception ("only supported datatype for tracks file are "
                     "Float32LE, Float32BE, Float64LE & Float64BE");
             }
+
+          Writer (const std::string& file, const Properties& properties) {
+            create (file, properties);
+          }
+
+          Writer (const Writer& W) { assert (0); }
 
           void create (const std::string& file, const Properties& properties)
           {
