@@ -41,9 +41,6 @@ namespace MR
     namespace MRView
     {
 
-      const uint32_t Texture2D = 0x00000000;
-      const uint32_t Texture3D = 0x80000000;
-
       const uint32_t InvertScale = 0x08000000;
       const uint32_t InvertMap = 0x10000000;
       const uint32_t DiscardLower = 0x20000000;

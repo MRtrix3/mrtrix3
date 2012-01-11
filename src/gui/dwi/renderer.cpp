@@ -261,10 +261,6 @@ namespace MR
             del += row_del[i] * SH[i];
           }
 
-          V.P[0] = r*row[0];
-          V.P[1] = r*row[1];
-          V.P[2] = r*row[2];
-
           bool atpole (row[0] == 0.0 && row[1] == 0.0);
           float az = atpole ? 0.0 : atan2 (row[1], row[0]);
 

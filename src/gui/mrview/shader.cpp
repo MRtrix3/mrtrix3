@@ -40,24 +40,16 @@ namespace MR
           shader_program.attach (vertex_shader);
 
         std::string source =
-          "uniform float offset, scale;"
-          "uniform sampler";
+          "uniform float offset, scale";
         if (flags & DiscardLower)
-          source += "uniform float lower;";
+          source += ", lower";
         if (flags & DiscardUpper)
-          source += "uniform float upper;";
-        source += flags & Texture3D ? "3" : "2";
-        source += "D tex; void main() {"
+          source += ", upper";
+        source += "; uniform sampler3D tex; void main() {"
                   "if (gl_TexCoord[0].s < 0.0 || gl_TexCoord[0].s > 1.0 ||"
-                  "    gl_TexCoord[0].t < 0.0 || gl_TexCoord[0].t > 1.0";
-        if (flags & Texture3D)
-          source += " || gl_TexCoord[0].p < 0.0 || gl_TexCoord[0].p > 1.0";
-        source +=  ") discard;"
-                   "vec4 color = texture";
-        source += flags & Texture3D ? "3" : "2";
-        source += "D (tex,gl_TexCoord[0].st";
-        if (flags & Texture3D) source += "p";
-        source += ");";
+                  "    gl_TexCoord[0].t < 0.0 || gl_TexCoord[0].t > 1.0 ||"
+                  "    gl_TexCoord[0].p < 0.0 || gl_TexCoord[0].p > 1.0) discard;"
+                  "vec4 color = texture3D (tex,gl_TexCoord[0].stp);";
 
         if (flags & DiscardLower)
           source += "if (color.r < lower) discard;";

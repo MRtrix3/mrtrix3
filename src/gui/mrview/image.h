@@ -88,10 +88,10 @@ namespace MR
           }
 
           void render2D (int projection, int slice) {
-            render2D (shader2D, projection, slice);
+            render2D (shader, projection, slice);
           }
           void render3D (const Mode::Base& mode) {
-            render3D (shader3D, mode);
+            render3D (shader, mode);
           }
 
           void render2D (Shader& shader, int projection, int slice);
@@ -118,8 +118,7 @@ namespace MR
             colourmap = index;
             if (invert_scale) colourmap |= InvertScale;
             if (invert_map) colourmap |= InvertMap;
-            shader2D.set (Texture2D | colourmap);
-            shader3D.set (Texture3D | colourmap);
+            shader.set (colourmap);
           }
 
           bool scale_inverted () const { 
@@ -149,7 +148,7 @@ namespace MR
           GLenum type, format, internal_format;
           std::vector<ssize_t> position;
 
-          Shader shader2D, shader3D;
+          Shader shader;
 
           void update_texture2D (int projection, int slice);
           void update_texture3D ();

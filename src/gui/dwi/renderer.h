@@ -49,7 +49,7 @@ namespace MR
           }
 
           bool ready () const {
-            return (shader_program);
+            return shader_program;
           }
           void init ();
           void set_values (const std::vector<float>& values) {
@@ -70,20 +70,20 @@ namespace MR
           void draw (bool use_normals, const float* colour = NULL);
 
           int get_LOD () const {
-            return (lod_computed);
+            return lod_computed;
           }
           int get_lmax () const {
-            return (lmax_computed);
+            return lmax_computed;
           }
           bool get_hide_neg_lobes () const {
-            return (hide_neg_lobes);
+            return hide_neg_lobes;
           }
 
           size_t size () const {
-            return (rows.size());
+            return rows.size();
           }
           bool empty () const {
-            return (rows.empty());
+            return rows.empty();
           }
 
         protected:
@@ -92,7 +92,6 @@ namespace MR
             public:
               GLfloat P[3];
               GLfloat N[3];
-              GLubyte C[3];
           };
 
           class Triangle
@@ -110,7 +109,7 @@ namespace MR
                 index[2] = i3;
               }
               GLuint& operator[] (int n) {
-                return (index[n]);
+                return index[n];
               }
             protected:
               GLuint  index[3];
@@ -150,13 +149,13 @@ namespace MR
           }
 
           GLfloat* get_r (GLfloat* row) {
-            return (row+3);
+            return row+3;
           }
           GLfloat* get_daz (GLfloat* row) {
-            return (row+3+nsh);
+            return row+3+nsh;
           }
           GLfloat* get_del (GLfloat* row) {
-            return (row+3+2*nsh);
+            return row+3+2*nsh;
           }
 
           GLfloat* push_back (GLfloat* p) {
@@ -165,7 +164,7 @@ namespace MR
             row[1] = p[1];
             row[2] = p[2];
             precompute_row (row);
-            return (row);
+            return row;
           }
 
           GLfloat* push_back (size_t i1, size_t i2) {
@@ -176,7 +175,7 @@ namespace MR
             row[1] = p1[1] + p2[1];
             row[2] = p1[2] + p2[2];
             precompute_row (row);
-            return (row);
+            return row;
           }
 
           std::vector<Vertex> vertices;

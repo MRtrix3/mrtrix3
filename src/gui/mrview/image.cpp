@@ -74,8 +74,8 @@ namespace MR
       {
         update_texture2D (projection, slice);
 
-        glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, interpolation);
-        glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, interpolation);
+        glTexParameteri (GL_TEXTURE_3D, GL_TEXTURE_MAG_FILTER, interpolation);
+        glTexParameteri (GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, interpolation);
 
         int x, y;
         get_axes (projection, x, y);
@@ -90,22 +90,22 @@ namespace MR
         shader.get_uniform ("scale") = 1.0f / display_range;
 
         glBegin (GL_QUADS);
-        glTexCoord2f (0.0, 0.0);
+        glTexCoord3f (0.0, 0.0, 0.0);
         p[x] = -0.5;
         p[y] = -0.5;
         q = interp.voxel2scanner (p);
         glVertex3fv (q);
-        glTexCoord2f (0.0, 1.0);
+        glTexCoord3f (0.0, 1.0, 0.0);
         p[x] = -0.5;
         p[y] = ydim;
         q = interp.voxel2scanner (p);
         glVertex3fv (q);
-        glTexCoord2f (1.0, 1.0);
+        glTexCoord3f (1.0, 1.0, 0.0);
         p[x] = xdim;
         p[y] = ydim;
         q = interp.voxel2scanner (p);
         glVertex3fv (q);
-        glTexCoord2f (1.0, 0.0);
+        glTexCoord3f (1.0, 0.0, 0.0);
         p[x] = xdim;
         p[y] = -0.5;
         q = interp.voxel2scanner (p);
@@ -167,10 +167,11 @@ namespace MR
         if (!texture2D[projection]) { // allocate:
           glGenTextures (1, &texture2D[projection]);
           assert (texture2D[projection]);
-          glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
-          glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
+          glTexParameteri (GL_TEXTURE_3D, GL_TEXTURE_WRAP_S, GL_CLAMP);
+          glTexParameteri (GL_TEXTURE_3D, GL_TEXTURE_WRAP_T, GL_CLAMP);
+          glTexParameteri (GL_TEXTURE_3D, GL_TEXTURE_WRAP_R, GL_CLAMP);
         }
-        glBindTexture (GL_TEXTURE_2D, texture2D[projection]);
+        glBindTexture (GL_TEXTURE_3D, texture2D[projection]);
 
         if (position[projection] == slice && volume_unchanged())
           return;
@@ -209,7 +210,7 @@ namespace MR
             reset_windowing();
         }
 
-        glTexImage2D (GL_TEXTURE_2D, 0, internal_format, xdim, ydim, 0, format, type, data);
+        glTexImage3D (GL_TEXTURE_3D, 0, internal_format, xdim, ydim, 1, 0, format, type, data);
       }
 
 
