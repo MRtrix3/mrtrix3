@@ -27,7 +27,6 @@
 #include "math/matrix.h"
 #include "math/eigen.h"
 #include "dwi/tensor.h"
-#include "thread/iterator.h"
 #include "dataset/value.h"
 #include "dataset/position.h"
 
