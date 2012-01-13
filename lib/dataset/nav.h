@@ -36,7 +36,7 @@ namespace Nav
 
 
 template <class Set, class Nav>
-void set_pos (Set& data, const Nav& pos)
+inline void set_pos (Set& data, const Nav& pos)
 {
     for (size_t axis = 0; axis != data.ndim(); ++axis)
       data[axis] = pos[axis];
@@ -44,7 +44,7 @@ void set_pos (Set& data, const Nav& pos)
 
 
 template <class Set, class Nav>
-void get_pos (const Set& data, Nav& pos)
+inline void get_pos (const Set& data, Nav& pos)
 {
     for (size_t axis = 0; axis != data.ndim(); ++axis)
       pos[axis] = data[axis];
@@ -52,7 +52,7 @@ void get_pos (const Set& data, Nav& pos)
 
 
 template <class Set, class Nav>
-void step_pos (Set& data, const Nav& pos)
+inline void step_pos (Set& data, const Nav& pos)
 {
     for (size_t axis = 0; axis != data.ndim(); ++axis)
       data[axis] += pos[axis];
@@ -60,7 +60,7 @@ void step_pos (Set& data, const Nav& pos)
 
 
 template <template <typename> class Set, class Value, class Nav>
-Value get_value_at_pos (Set<Value>& data, const Nav& pos)
+inline Value get_value_at_pos (Set<Value>& data, const Nav& pos)
 {
     for (size_t axis = 0; axis != data.ndim(); ++axis)
       data[axis] = pos[axis];
@@ -69,7 +69,7 @@ Value get_value_at_pos (Set<Value>& data, const Nav& pos)
 
 
 template <template <typename> class Set, class Value, class Nav>
-void set_value_at_pos (Set<Value>& data, const Nav& pos, const Value& value)
+inline void set_value_at_pos (Set<Value>& data, const Nav& pos, const Value& value)
 {
     for (size_t axis = 0; axis != data.ndim(); ++axis)
       data[axis] = pos[axis];
@@ -78,7 +78,7 @@ void set_value_at_pos (Set<Value>& data, const Nav& pos, const Value& value)
 
 
 template <class Set, class Nav>
-bool within_bounds (Set& data, const Nav& pos)
+inline bool within_bounds (Set& data, const Nav& pos)
 {
     for (size_t axis = 0; axis != data.ndim(); ++axis)
       if (pos[axis] < 0 || pos[axis] >= data.dim (axis))
