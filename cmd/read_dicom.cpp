@@ -45,6 +45,8 @@ void usage ()
 
   + Option ("csa", "print all Siemens CSA fields")
 
+  + Option ("force", "force full scan even if DICOM magic word is not present and file does not have .dcm extension.")
+
   + Option ("tag", "print field specified by the group & element tags supplied. "
       "Tags should be supplied as Hexadecimal (i.e. as they appear in the -all listing).")
   .allow_multiple()
@@ -69,6 +71,8 @@ inline uint16_t read_hex (const std::string& m)
 
 void run ()
 {
+  bool force_read = get_options ("force").size();
+
   Options opt = get_options("tag");
   if (opt.size()) {
     std::istringstream hex; 
@@ -80,7 +84,7 @@ void run ()
     }
 
     File::Dicom::Element item;
-    item.set (argument[0]);
+    item.set (argument[0], force_read);
     while (item.read()) {
       for (size_t n = 0; n < opt.size(); ++n) 
         if (item.is (tags[n].group, tags[n].element)) 
@@ -96,7 +100,7 @@ void run ()
 
   File::Dicom::QuickScan reader;
 
-  if (reader.read (argument[0], get_options ("all").size(), get_options ("csa").size()))
+  if (reader.read (argument[0], get_options ("all").size(), get_options ("csa").size(), force_read))
     throw Exception ("error reading file \"" + reader.filename + "\"");
 
   if (!get_options ("all").size() && !get_options ("csa").size()) 
