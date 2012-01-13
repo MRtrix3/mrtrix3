@@ -31,7 +31,7 @@ namespace MR
     namespace Dicom
     {
 
-      void Element::set (const std::string& filename, bool force_read)
+      void Element::set (const std::string& filename)
       {
         group = element = VR = 0;
         size = 0;
@@ -48,9 +48,8 @@ namespace MR
         if (memcmp (next + 128, "DICM", 4)) {
           is_explicit = false;
           debug ("DICOM magic number not found in file \"" + fmap->name() + "\" - trying truncated format");
-          if (!force_read) 
-            if (!Path::has_suffix (fmap->name(), ".dcm"))
-              throw Exception ("file \"" + fmap->name() + "\" does not have the DICOM magic number or the .dcm extension - assuming not DICOM");
+          if (!Path::has_suffix (fmap->name(), ".dcm"))
+            throw Exception ("file \"" + fmap->name() + "\" does not have the DICOM magic number or the .dcm extension - assuming not DICOM");
         }
         else next += 132;
 

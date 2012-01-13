@@ -23,6 +23,9 @@
 
 #include "app.h"
 #include "dataset/loop.h"
+#include "dataset/copy.h"
+#include "dataset/subset.h"
+#include "image/data.h"
 #include "image/voxel.h"
 
 
@@ -67,7 +70,8 @@ void run ()
 {
 
   Image::Header H_in (argument[0]);
-  Image::Voxel<float> v_in (H_in);
+  Image::Data<float> data_in (H_in);
+  Image::Data<float>::voxel_type voxel_in (data_in);
 
   int bounds[3][2] = { {0, H_in.dim (0) - 1}, {0, H_in.dim (1) - 1}, {0, H_in.dim (2) - 1} };
 
@@ -75,10 +79,10 @@ void run ()
   if (opt.size()) {
 
     Image::Header H_mask (opt[0][0]);
-    if (H_mask.dim (0) != H_in.dim (0) || H_mask.dim (1) != H_in.dim (1) || H_mask.dim (2) != H_in.dim (2))
-      throw Exception ("Can only crop using a mask image of the same dimensions as the input image");
+    DataSet::check_dimensions (H_in, H_mask, 0, 3);
 
-    Image::Voxel<bool> v_mask (H_mask);
+    Image::Data<bool> data_mask (H_mask);
+    Image::Data<bool>::voxel_type voxel_mask (data_mask);
 
     for (int axis = 0; axis != 3; ++axis) {
       bounds[axis][0] = H_in.dim (axis);
@@ -86,11 +90,11 @@ void run ()
     }
 
     DataSet::Loop loop_mask;
-    for (loop_mask.start (v_mask); loop_mask.ok(); loop_mask.next (v_mask)) {
-      if (v_mask.value()) {
+    for (loop_mask.start (voxel_mask); loop_mask.ok(); loop_mask.next (voxel_mask)) {
+      if (voxel_mask.value()) {
         for (int axis = 0; axis != 3; ++axis) {
-          bounds[axis][0] = MIN (bounds[axis][0], v_mask[axis]);
-          bounds[axis][1] = MAX (bounds[axis][1], v_mask[axis]);
+          bounds[axis][0] = std::min (bounds[axis][0], int (voxel_mask[axis]));
+          bounds[axis][1] = std::max (bounds[axis][1], int (voxel_mask[axis]));
         }
       }
     }
@@ -100,7 +104,7 @@ void run ()
         throw Exception ("mask image is empty; can't use to crop image");
       if (bounds[axis][0])
         --bounds[axis][0];
-      if (bounds[axis][1] < v_mask.dim (axis) - 1)
+      if (bounds[axis][1] < voxel_mask.dim (axis) - 1)
         ++bounds[axis][1];
     }
 
@@ -116,22 +120,18 @@ void run ()
     bounds[axis][1] = end;
   }
 
-  Image::Header H_out (H_in);
-  Math::Matrix<float> new_transform (H_in.transform());
-  for (int axis = 0; axis != 3; ++axis) {
-    H_out.set_dim (axis, 1 + bounds[axis][1] - bounds[axis][0]);
-    new_transform (axis, 3) += (new_transform (axis, 0) * bounds[0][0] * H_in.vox (0)) + (new_transform (axis, 1) * bounds[1][0] * H_in.vox (1)) + (new_transform (axis, 2) * bounds[2][0] * H_in.vox (2));
-  }
-  H_out.set_transform (new_transform);
-  H_out.create (argument[1]);
-  Image::Voxel<float> v_out (H_out);
 
-  DataSet::Loop loop_output ("cropping image...");
-  for (loop_output.start (v_out, v_in); loop_output.ok(); loop_output.next (v_out, v_in)) {
-    for (int axis = 0; axis != 3; ++axis)
-      v_in[axis] = v_out[axis] + bounds[axis][0];
-    v_out.value() = v_in.value();
-  }
+  size_t from[] = { bounds[0][0], bounds[1][0], bounds[2][0] };
+  size_t dim[] = { bounds[0][1]-from[0]+1, bounds[1][1]-from[1]+1, bounds[2][1]-from[2]+1 };
+
+  DataSet::Subset<Image::Data<float>::voxel_type> cropped (voxel_in, from, dim, "cropped dataset");
+
+  Image::Header H_out (H_in);
+  H_out = cropped;
+  H_out.create (argument[1]);
+  Image::Data<float> data_out (H_out);
+  Image::Data<float>::voxel_type voxel_out (data_out);
+  DataSet::copy_with_progress_message ("cropping image...", voxel_out, cropped);
 
 }
 

@@ -263,12 +263,12 @@ namespace MR
         out.close();
 
         if (single_file) {
-          File::resize (H.name(), offset + H.footprint());
+          File::resize (H.name(), offset + DataSet::footprint(H));
           H.add_file (File::Entry (H.name(), offset));
         }
         else {
           std::string data_file (H.name().substr (0, H.name().size()-4) + ".dat");
-          File::create (data_file, H.footprint());
+          File::create (data_file, DataSet::footprint(H));
           H.add_file (File::Entry (data_file));
         }
       }

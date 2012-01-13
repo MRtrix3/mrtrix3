@@ -38,43 +38,11 @@ namespace MR
     namespace Handler
     {
 
-      GZ::~GZ ()
-      {
-        if (addresses.size()) {
-          assert (addresses[0]);
-          const std::vector<File::Entry>& files (H.get_files());
-
-          if (H.readwrite()) {
-            ProgressBar progress ("compressing image \"" + H.name() + "\"...",
-                                  files.size() * bytes_per_segment / BYTES_PER_ZCALL);
-            for (size_t n = 0; n < files.size(); n++) {
-              assert (files[n].start == int64_t (lead_in_size));
-              File::GZ zf (files[n].name, "wb");
-              if (lead_in) zf.write (reinterpret_cast<const char*> (lead_in), lead_in_size);
-              uint8_t* address = addresses[0] + n*bytes_per_segment;
-              uint8_t* last = address + bytes_per_segment - BYTES_PER_ZCALL;
-              while (address < last) {
-                zf.write (reinterpret_cast<const char*> (address), BYTES_PER_ZCALL);
-                address += BYTES_PER_ZCALL;
-                ++progress;
-              }
-              last += BYTES_PER_ZCALL;
-              zf.write (reinterpret_cast<const char*> (address), last - address);
-            }
-          }
-
-          delete [] addresses[0];
-        }
-        delete [] lead_in;
-      }
-
-
-
-
-      void GZ::execute ()
+      void GZ::load ()
       {
         const std::vector<File::Entry>& files (H.get_files());
-        if (files.empty()) throw Exception ("no files specified in header for image \"" + H.name() + "\"");
+        if (files.empty()) 
+          throw Exception ("no files specified in header for image \"" + H.name() + "\"");
 
         segsize = DataSet::voxel_count (H) / files.size();
         bytes_per_segment = (H.datatype().bits() * segsize + 7) / 8;
@@ -84,9 +52,11 @@ namespace MR
         debug ("loading image \"" + H.name() + "\"...");
         addresses.resize (H.datatype().bits() == 1 && files.size() > 1 ? files.size() : 1);
         addresses[0] = new uint8_t [files.size() * bytes_per_segment];
-        if (!addresses[0]) throw Exception ("failed to allocate memory for image \"" + H.name() + "\"");
+        if (!addresses[0]) 
+          throw Exception ("failed to allocate memory for image \"" + H.name() + "\"");
 
-        if (is_new) memset (addresses[0], 0, files.size() * bytes_per_segment);
+        if (is_new) 
+          memset (addresses[0], 0, files.size() * bytes_per_segment);
         else {
           ProgressBar progress ("uncompressing image \"" + H.name() + "\"...",
                                 files.size() * bytes_per_segment / BYTES_PER_ZCALL);
@@ -108,8 +78,42 @@ namespace MR
         if (addresses.size() > 1)
           for (size_t n = 1; n < addresses.size(); n++)
             addresses[n] = addresses[0] + n*bytes_per_segment;
-        else segsize = std::numeric_limits<size_t>::max();
+        else 
+          segsize = std::numeric_limits<size_t>::max();
       }
+
+
+
+      void GZ::unload ()
+      {
+        if (addresses.size()) {
+          assert (addresses[0]);
+          const std::vector<File::Entry>& files (H.get_files());
+
+          if (H.readwrite()) {
+            ProgressBar progress ("compressing image \"" + H.name() + "\"...",
+                                  files.size() * bytes_per_segment / BYTES_PER_ZCALL);
+            for (size_t n = 0; n < files.size(); n++) {
+              assert (files[n].start == int64_t (lead_in_size));
+              File::GZ zf (files[n].name, "wb");
+              if (lead_in) 
+                zf.write (reinterpret_cast<const char*> (lead_in), lead_in_size);
+              uint8_t* address = addresses[0] + n*bytes_per_segment;
+              uint8_t* last = address + bytes_per_segment - BYTES_PER_ZCALL;
+              while (address < last) {
+                zf.write (reinterpret_cast<const char*> (address), BYTES_PER_ZCALL);
+                address += BYTES_PER_ZCALL;
+                ++progress;
+              }
+              last += BYTES_PER_ZCALL;
+              zf.write (reinterpret_cast<const char*> (address), last - address);
+            }
+          }
+
+        }
+      }
+
+
 
 
     }

@@ -34,27 +34,9 @@ namespace MR
     namespace Handler
     {
 
-      Default::~Default ()
-      {
-        if (files.empty() && addresses.size()) {
-          assert (addresses[0]);
-
-          if (H.readwrite()) {
-            const std::vector<File::Entry>& Hfiles (H.get_files());
-            for (size_t n = 0; n < Hfiles.size(); n++) {
-              File::MMap file (Hfiles[n], true, bytes_per_segment);
-              memcpy (file.address(), addresses[0] + n*bytes_per_segment, bytes_per_segment);
-            }
-          }
-
-          delete [] addresses[0];
-        }
-      }
 
 
-
-
-      void Default::execute ()
+      void Default::load ()
       {
         const std::vector<File::Entry>& Hfiles (H.get_files());
         if (Hfiles.empty())
@@ -77,6 +59,27 @@ namespace MR
       }
 
 
+
+
+      void Default::unload ()
+      {
+        if (files.empty() && addresses.size()) {
+          assert (addresses[0]);
+
+          if (H.readwrite()) {
+            const std::vector<File::Entry>& Hfiles (H.get_files());
+            for (size_t n = 0; n < Hfiles.size(); n++) {
+              File::MMap file (Hfiles[n], true, bytes_per_segment);
+              memcpy (file.address(), addresses[0] + n*bytes_per_segment, bytes_per_segment);
+            }
+          }
+        }
+        else {
+          for (size_t n = 0; n < addresses.size(); ++n)
+            addresses[n] = NULL;
+          files.clear();
+        }
+      }
 
 
 

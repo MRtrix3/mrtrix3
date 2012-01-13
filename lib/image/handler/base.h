@@ -28,6 +28,8 @@
 #include <unistd.h>
 #include <cassert>
 
+#include "ptr.h"
+
 #define MAX_FILES_PER_IMAGE 256U
 
 namespace MR
@@ -48,42 +50,35 @@ namespace MR
       class Base
       {
         public:
-          Base (Header& header, bool image_is_new) : H (header), is_new (image_is_new) { }
-          virtual ~Base () { }
+          Base (const Header& header, bool image_is_new) : H (header), is_new (image_is_new) { }
+          virtual ~Base ();
 
-          void prepare ();
-
-          const size_t&  start () const {
-            return (start_);
-          }
-          const ssize_t& stride (size_t axis) const {
-            return (stride_[axis]);
-          }
+          void open ();
+          void close ();
 
           uint8_t* segment (size_t n) const {
             assert (n < addresses.size());
-            return (addresses[n]);
+            return addresses[n];
           }
-          size_t   nsegments () const {
-            return (addresses.size());
+          size_t nsegments () const {
+            return addresses.size();
           }
-          size_t   segment_size () const {
+          size_t segment_size () const {
             check();
-            return (segsize);
+            return segsize;
           }
 
         protected:
-          Header& H;
+          const Header& H;
           size_t segsize;
-          size_t start_;
-          std::vector<ssize_t> stride_;
-          std::vector<uint8_t*> addresses;
+          VecPtr<uint8_t,true> addresses;
           bool is_new;
 
           void check () const {
             assert (addresses.size());
           }
-          virtual void execute () = 0;
+          virtual void load () = 0;
+          virtual void unload ();
       };
 
     }

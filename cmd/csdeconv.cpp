@@ -4,6 +4,7 @@
 #include "thread/exec.h"
 #include "thread/queue.h"
 #include "dataset/loop.h"
+#include "image/data.h"
 #include "image/voxel.h"
 #include "dwi/sdeconv/constrained.h"
 
@@ -66,19 +67,19 @@ class Item
 class DataLoader
 {
   public:
-    DataLoader (Image::Header& dwi_header,
-                Image::Header* mask_header,
+    DataLoader (Image::Data<value_type>& dwi_data,
+                Image::Data<bool>* mask_data,
                 const std::vector<int>& vec_bzeros,
                 const std::vector<int>& vec_dwis,
                 bool normalise_to_b0) :
-      dwi (dwi_header),
+      dwi (dwi_data),
       bzeros (vec_bzeros),
       dwis (vec_dwis),
       loop ("performing constrained spherical deconvolution...", 0, 3),
       normalise (normalise_to_b0) {
-        if (mask_header) {
-          mask = new Image::Voxel<bool> (*mask_header);
-          DataSet::check_dimensions (*mask, dwi, 0, 3);
+        if (mask_data) {
+          DataSet::check_dimensions (*mask_data, dwi, 0, 3);
+          mask = new Image::Data<bool>::voxel_type (*mask_data);
           loop.start (*mask, dwi);
         }
         else 
@@ -108,8 +109,8 @@ class DataLoader
     }
 
   private:
-    Image::Voxel<value_type>  dwi;
-    Ptr<Image::Voxel<bool> > mask;
+    Image::Data<value_type>::voxel_type dwi;
+    Ptr<Image::Data<bool>::voxel_type> mask;
     const std::vector<int>&  bzeros;
     const std::vector<int>&  dwis;
     DataSet::Loop loop;
@@ -147,9 +148,10 @@ class DataLoader
 class Processor
 {
   public:
-    Processor (Image::Header& header,
+    Processor (Image::Data<value_type>& SH_data,
                const DWI::CSDeconv<value_type>::Shared& shared) :
-      SH (header), sdeconv (shared) { }
+      SH (SH_data),
+      sdeconv (shared) { }
 
     bool operator() (const Item& item) {
       sdeconv.set (item.data);
@@ -174,7 +176,7 @@ class Processor
     }
 
   private:
-    Image::Voxel<value_type> SH;
+    Image::Data<value_type>::voxel_type SH;
     DWI::CSDeconv<value_type> sdeconv;
 };
 
@@ -189,10 +191,13 @@ void run ()
 {
   Image::Header dwi_header (argument[0]);
 
-  Image::Header* mask_header = NULL;
+  Ptr<Image::Header> mask_header;
+  Ptr<Image::Data<bool> > mask_data;
   Options opt = get_options ("mask");
-  if (opt.size())
+  if (opt.size()) {
     mask_header = new Image::Header (opt[0][0]);
+    mask_data = new Image::Data<bool> (*mask_header);
+  }
 
   DWI::CSDeconv<value_type>::Shared shared (dwi_header, argument[1]);
 
@@ -207,8 +212,11 @@ void run ()
   SH_header.set_stride (3, 1);
   SH_header.create (argument[2]);
 
-  DataLoader loader (dwi_header, mask_header, shared.bzeros, shared.dwis, normalise);
-  Processor processor (SH_header, shared);
+  Image::Data<value_type> dwi_data (dwi_header);
+  Image::Data<value_type> SH_data (SH_header);
+
+  DataLoader loader (dwi_data, mask_data, shared.bzeros, shared.dwis, normalise);
+  Processor processor (SH_data, shared);
 
   Thread::run_queue (loader, 1, Item(), processor, 0);
 }

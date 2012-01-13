@@ -25,6 +25,7 @@
 #include "thread/exec.h"
 #include "thread/queue.h"
 #include "dataset/loop.h"
+#include "image/data.h"
 #include "image/voxel.h"
 
 MRTRIX_APPLICATION
@@ -115,11 +116,13 @@ class DataLoader
   public:
     DataLoader (Image::Header& sh_header,
                 Image::Header* mask_header) :
-      sh (sh_header),
+      sh_data (sh_header),
+      sh (sh_data),
       loop ("estimating peak directions...", 0, 3) { 
       if (mask_header) {
-        mask = new Image::Voxel<bool> (*mask_header);
-        DataSet::check_dimensions (*mask, sh, 0, 3);
+        mask_data = new Image::Data<bool> (*mask_header);
+        DataSet::check_dimensions (*mask_data, sh, 0, 3);
+        mask = new Image::Data<bool>::voxel_type (*mask_data);
         loop.start (*mask, sh);
       }
       else 
@@ -157,8 +160,10 @@ class DataLoader
     }
 
   private:
-    Image::Voxel<value_type>  sh;
-    Ptr<Image::Voxel<bool> > mask;
+    Image::Data<value_type> sh_data;
+    Image::Data<value_type>::voxel_type  sh;
+    Ptr<Image::Data<bool> > mask_data;
+    Ptr<Image::Data<bool>::voxel_type> mask;
     DataSet::Loop loop;
 };
 
@@ -174,23 +179,27 @@ class Processor
                std::vector<Direction> true_peaks,
                value_type threshold,
                Image::Header* ipeaks_header) :
-      dirs_image (dirs_header), dirs (directions),
-      lmax (lmax), npeaks (npeaks),
-      true_peaks (true_peaks), threshold (threshold),
+      dirs_data (dirs_header), 
+      dirs_vox (dirs_data), 
+      dirs (directions),
+      lmax (lmax), 
+      npeaks (npeaks),
+      true_peaks (true_peaks), 
+      threshold (threshold),
       ipeaks (ipeaks_header) { }
 
     bool operator() (const Item& item) {
       Math::Vector<value_type> amplitudes;
       std::vector<Direction> peaks_out (npeaks);
 
-      dirs_image[0] = item.pos[0];
-      dirs_image[1] = item.pos[1];
-      dirs_image[2] = item.pos[2];
+      dirs_vox[0] = item.pos[0];
+      dirs_vox[1] = item.pos[1];
+      dirs_vox[2] = item.pos[2];
 
       if (check_input (item)) {
         DataSet::Loop inner (3);
-        for (inner.start (dirs_image); inner.ok(); inner.next (dirs_image))
-          dirs_image.value() = NAN;
+        for (inner.start (dirs_vox); inner.ok(); inner.next (dirs_vox))
+          dirs_vox.value() = NAN;
         return true;
       }
 
@@ -211,7 +220,8 @@ class Processor
       }
 
       if (ipeaks) {
-        Image::Voxel<value_type> ipeaks_vox (*ipeaks);
+        Image::Data<value_type> ipeaks_data (*ipeaks);
+        Image::Data<value_type>::voxel_type ipeaks_vox (ipeaks_data);
         ipeaks_vox[0] = item.pos[0];
         ipeaks_vox[1] = item.pos[1];
         ipeaks_vox[2] = item.pos[2];
@@ -250,22 +260,23 @@ class Processor
       else std::partial_sort_copy (all_peaks.begin(), all_peaks.end(), peaks_out.begin(), peaks_out.end());
 
       int actual_npeaks = MIN (npeaks, (int) all_peaks.size());
-      dirs_image[3] = 0;
+      dirs_vox[3] = 0;
       for (int n = 0; n < actual_npeaks; n++) {
-        dirs_image.value() = peaks_out[n].a*peaks_out[n].v[0];
-        dirs_image[3]++;
-        dirs_image.value() = peaks_out[n].a*peaks_out[n].v[1];
-        dirs_image[3]++;
-        dirs_image.value() = peaks_out[n].a*peaks_out[n].v[2];
-        dirs_image[3]++;
+        dirs_vox.value() = peaks_out[n].a*peaks_out[n].v[0];
+        dirs_vox[3]++;
+        dirs_vox.value() = peaks_out[n].a*peaks_out[n].v[1];
+        dirs_vox[3]++;
+        dirs_vox.value() = peaks_out[n].a*peaks_out[n].v[2];
+        dirs_vox[3]++;
       }
-      for (; dirs_image[3] < 3*npeaks; dirs_image[3]++) dirs_image.value() = NAN;
+      for (; dirs_vox[3] < 3*npeaks; dirs_vox[3]++) dirs_vox.value() = NAN;
 
       return true;
     }
 
   private:
-    Image::Voxel<value_type> dirs_image;
+    Image::Data<value_type> dirs_data;
+    Image::Data<value_type>::voxel_type dirs_vox;
     Math::Matrix<value_type> dirs;
     int lmax, npeaks;
     std::vector<Direction> true_peaks;
@@ -274,7 +285,8 @@ class Processor
 
     bool check_input (const Item& item) {
       if (ipeaks) {
-        Image::Voxel<value_type> ipeaks_vox (*ipeaks);
+        Image::Data<value_type> ipeaks_data (*ipeaks);
+        Image::Data<value_type>::voxel_type ipeaks_vox (ipeaks_data);
         ipeaks_vox[0] = item.pos[0];
         ipeaks_vox[1] = item.pos[1];
         ipeaks_vox[2] = item.pos[2];

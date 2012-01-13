@@ -146,7 +146,7 @@ namespace MR
             << " " << (H.datatype().is_little_endian() ? 1 : 0) << "\n";
         out.close();
 
-        File::create (confirm_overwrite, H.name(), H.footprint ("11 1"));
+        File::create (confirm_overwrite, H.name(), DataSet::footprint (H, "11 1"));
         H.add_file (File::Entry (H.name()));
       }
 

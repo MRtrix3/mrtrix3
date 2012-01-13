@@ -22,6 +22,7 @@
 
 #include "app.h"
 #include "progressbar.h"
+#include "image/data.h"
 #include "image/voxel.h"
 #include "dataset/interp/nearest.h"
 #include "dataset/interp/linear.h"
@@ -161,8 +162,11 @@ void run ()
 
     header_out.create (argument[1]);
 
-    Image::Voxel<float> in (header_in);
-    Image::Voxel<float> out (header_out);
+    Image::Data<float> data_in (header_in);
+    Image::Data<float>::voxel_type in (data_in);
+
+    Image::Data<float> data_out (header_out);
+    Image::Data<float>::voxel_type out (data_out);
 
     switch (interp) {
       case 0:
@@ -194,9 +198,13 @@ void run ()
       }
     }
 
+    Image::Data<float> data_in (header_in);
+    Image::Data<float>::voxel_type in (data_in);
+
     header_out.create (argument[1]);
-    Image::Voxel<float> in (header_in);
-    Image::Voxel<float> out (header_out);
+    Image::Data<float> data_out (header_out);
+    Image::Data<float>::voxel_type out (data_out);
+
     DataSet::copy_with_progress (out, in);
   }
 }

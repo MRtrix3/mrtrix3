@@ -25,6 +25,7 @@
 #include "thread/exec.h"
 #include "thread/queue.h"
 #include "dataset/loop.h"
+#include "image/data.h"
 #include "image/voxel.h"
 #include "dwi/gradient.h"
 
@@ -56,7 +57,7 @@ void usage ()
     + Option ("gradient",
               "assume input directions are supplied as a gradient encoding file")
     + Option ("nonnegative",
-              "cap all negative amplitudes to zero")
+              "cap all negative amplitudes to zero");
 }
 
 typedef float value_type;
@@ -76,8 +77,8 @@ typedef Thread::Queue<Item> Queue;
 class DataLoader {
   public:
   DataLoader (Queue& queue,
-              Image::Header& header) :
-              writer (queue), sh_voxel (header) { }
+              Image::Data<value_type>& SH_data) :
+              writer (queue), sh_voxel (SH_data) { }
 
     void execute () {
       Queue::Writer::Item item (writer);
@@ -98,19 +99,19 @@ class DataLoader {
 
   private:
     Queue::Writer writer;
-    Image::Voxel<value_type>  sh_voxel;
+    Image::Data<value_type>::voxel_type  sh_voxel;
 };
 
 
 class Processor {
   public:
     Processor (Queue& queue,
-               Image::Header& header,
+               Image::Data<value_type>& amp_data,
                Math::Matrix<value_type>& directions,
                int lmax,
                bool nonnegative) :
                reader (queue),
-               amp_voxel (header),
+               amp_voxel (amp_data),
                transformer (directions, lmax),
                nonnegative (nonnegative) { }
 
@@ -134,7 +135,7 @@ class Processor {
 
  private:
    Queue::Reader reader;
-   Image::Voxel<value_type> amp_voxel;
+   Image::Data<value_type>::voxel_type amp_voxel;
    Math::SH::Transform<value_type> transformer;
    bool nonnegative;
 };
@@ -178,9 +179,12 @@ void run ()
   amp_header.set_stride (3, 1);
   amp_header.create(argument[2]);
 
+  Image::Data<value_type> sh_data (sh_header);
+  Image::Data<value_type> amp_data (amp_header);
+
   Queue queue ("sh2amp queue");
-  DataLoader loader (queue, sh_header);
-  Processor processor (queue, amp_header, dirs, Math::SH::LforN(sh_header.dim(3)), get_options("nonnegative").size());
+  DataLoader loader (queue, sh_data);
+  Processor processor (queue, amp_data, dirs, Math::SH::LforN(sh_header.dim(3)), get_options("nonnegative").size());
 
   Thread::Exec loader_thread (loader, "loader");
   Thread::Array<Processor> processor_list (processor);

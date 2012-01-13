@@ -94,7 +94,7 @@ namespace MR
         out.write ( (char*) &NH, 352);
         out.close();
 
-        File::create (confirm_overwrite, H.name(), H.footprint());
+        File::create (confirm_overwrite, H.name(), DataSet::footprint(H));
 
         H.add_file (File::Entry (H.name()));
       }

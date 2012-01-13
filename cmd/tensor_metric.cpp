@@ -22,6 +22,7 @@
 
 #include "app.h"
 #include "progressbar.h"
+#include "image/data.h"
 #include "image/voxel.h"
 #include "math/matrix.h"
 #include "math/eigen.h"
@@ -101,12 +102,13 @@ class ImagePair
     typedef float value_type;
 
     ImagePair (const Image::Header& header, const std::string& name, size_t nvols) :
-      H (header, name, nvols), vox (H) { }
+      H (header, name, nvols), data (H), vox (data) { }
 
-    ImagePair (const std::string& name) : H (name), vox (H) { }
+    ImagePair (const std::string& name) : H (name), data (H), vox (data) { }
 
     Header H;
-    Image::Voxel<value_type> vox;
+    Image::Data<value_type> data;
+    Image::Data<value_type>::voxel_type vox;
 };
 
 class ImagePairPtr : public Ptr<ImagePair>
@@ -151,6 +153,7 @@ class ImagePairPtr : public Ptr<ImagePair>
 
 
 // FOR NEW THREADING API:
+/*
 template <class Iterator>
 class Processor
 {
@@ -229,6 +232,7 @@ class Processor
     std::vector<int> vals;
     int modulate;
 };
+*/
 // TO HERE
 
 inline void set_zero (size_t axis, Ptr<ImagePair>& i0, Ptr<ImagePair>& i1, Ptr<ImagePair>& i2, Ptr<ImagePair>& i3, Ptr<ImagePair>& i4)
@@ -324,7 +328,8 @@ void run ()
   else
     eig = new Math::Eigen::Symm<double> (3);
 
-  Image::Voxel<float> dt (dt_header);
+  Image::Data<float> dt_data (dt_header);
+  Image::Data<float>::voxel_type dt (dt_data);
 
   ProgressBar progress ("computing tensor metrics...", DataSet::voxel_count (dt, 0, 3));
 

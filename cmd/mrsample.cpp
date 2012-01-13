@@ -23,6 +23,7 @@
 #include "app.h"
 #include "progressbar.h"
 #include "image/voxel.h"
+#include "image/data.h"
 #include "dataset/interp/nearest.h"
 #include "dataset/interp/linear.h"
 #include "dataset/interp/cubic.h"
@@ -72,8 +73,11 @@ void run () {
 
   output_header.create (argument[2]);
 
-  Image::Voxel<float> in  (input_header);
-  Image::Voxel<float> out (output_header);
+  Image::Data<float> data_in  (input_header);
+  Image::Data<float>::voxel_type in  (data_in);
+
+  Image::Data<float> data_out (output_header);
+  Image::Data<float>::voxel_type out (data_out);
 
   int interp = 2;
   Options opt = get_options ("interp");

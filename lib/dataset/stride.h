@@ -74,7 +74,11 @@ namespace MR
           public:
             Compare (const Set& set) : S (set) { }
             bool operator() (const size_t a, const size_t b) const {
-              return (abs (S.stride (a)) < abs (S.stride (b)));
+              if (S.stride(a) == 0)
+                return false;
+              if (S.stride(b) == 0)
+                return true;
+              return abs (S.stride (a)) < abs (S.stride (b));
             }
           private:
             const Set& S;
@@ -85,13 +89,13 @@ namespace MR
           public:
             Wrapper (List& strides) : S (strides) { }
             size_t ndim () const {
-              return (S.size());
+              return S.size();
             }
             const ssize_t& stride (size_t axis) const {
-              return (S[axis]);
+              return S[axis];
             }
             ssize_t& stride (size_t axis) {
-              return (S[axis]);
+              return S[axis];
             }
           private:
             List& S;
@@ -104,7 +108,7 @@ namespace MR
               assert (ndim() == D.ndim());
             }
             ssize_t dim (size_t axis) const {
-              return (D.dim (axis));
+              return D.dim (axis);
             }
           private:
             const Set& D;
@@ -121,7 +125,7 @@ namespace MR
         List ret (set.ndim());
         for (size_t i = 0; i < set.ndim(); ++i)
           ret[i] = set.stride (i);
-        return (ret);
+        return ret;
       }
 
 
@@ -137,7 +141,7 @@ namespace MR
         for (size_t i = 0; i < ret.size(); ++i) ret[i] = i;
         Compare<Set> compare (set);
         std::sort (ret.begin(), ret.end(), compare);
-        return (ret);
+        return ret;
       }
 
       //! sort axes with respect to their absolute stride.
@@ -147,7 +151,7 @@ namespace MR
       template <> inline std::vector<size_t> order<List> (const List& strides)
       {
         const Wrapper wrapper (const_cast<List&> (strides));
-        return (order (wrapper));
+        return order (wrapper);
       }
 
       //! sort range of axes with respect to their absolute stride.
@@ -162,7 +166,7 @@ namespace MR
         for (size_t i = 0; i < ret.size(); ++i) ret[i] = from_axis+i;
         Compare<Set> compare (set);
         std::sort (ret.begin(), ret.end(), compare);
-        return (ret);
+        return ret;
       }
 
 
@@ -210,6 +214,7 @@ namespace MR
       //! convert strides from symbolic to actual strides
       template <class Set> void actualise (Set& set)
       {
+        sanitise (set);
         std::vector<size_t> x (order (set));
         ssize_t skip = 1;
         for (size_t i = 0; i < set.ndim(); ++i) {
@@ -220,12 +225,27 @@ namespace MR
       //! convert strides from symbolic to actual strides
       /*! convert strides from symbolic to actual strides, assuming the strides
        * in \a strides and DataSet dimensions of \a set. */
-      template <class Set> void actualise (List& strides, const Set& set)
+      template <class Set> inline void actualise (List& strides, const Set& set)
       {
         WrapperSet<Set> wrapper (strides, set);
         actualise (wrapper);
       }
 
+      //! get actual strides:
+      template <class Set> inline List get_actual (Set& set)
+      {
+        List strides (get (set));
+        actualise (strides, set);
+        return strides;
+      }
+
+      //! get actual strides:
+      template <class Set> inline List get_actual (const List& strides, const Set& set)
+      {
+        List out (strides);
+        actualise (out, set);
+        return out;
+      }
 
 
 
@@ -234,13 +254,30 @@ namespace MR
       {
         std::vector<size_t> p (order (set));
         for (ssize_t i = 0; i < ssize_t (p.size()); ++i)
-          set.stride (p[i]) = set.stride (p[i]) > 0 ? i+1 : - (i+1);
+          if (set.stride (p[i]) != 0)
+            set.stride (p[i]) = set.stride (p[i]) > 0 ? i+1 : - (i+1);
       }
       //! convert strides from actual to symbolic strides
       template <> inline void symbolise<List> (List& strides)
       {
         Wrapper wrapper (strides);
         symbolise (wrapper);
+      }
+
+      //! get symbolic strides:
+      template <class Set> inline List get_symbolic (const Set& set)
+      {
+        List strides (get (set));
+        symbolise (strides);
+        return strides;
+      }
+
+      //! get symbolic strides:
+      template <> inline List get_symbolic (const List& list)
+      {
+        List strides (list);
+        symbolise (strides);
+        return strides;
       }
 
 
@@ -253,7 +290,7 @@ namespace MR
         for (size_t i = 0; i < set.ndim(); ++i)
           if (set.stride (i) < 0)
             offset += size_t (-set.stride (i)) * (set.dim (i) - 1);
-        return (offset);
+        return offset;
       }
 
       //! calculate offset to start of data
@@ -263,9 +300,38 @@ namespace MR
       template <class Set> size_t offset (List& strides, const Set& set)
       {
         WrapperSet<Set> wrapper (strides, set);
-        return (offset (wrapper));
+        return offset (wrapper);
       }
 
+
+
+      //! produce strides from \c set that match those specified in \c desired 
+      /*! The strides in \c desired should be specified as symbolic strides,
+       * and any zero strides will be ignored and replaced with sensible values
+       * if needed.  Essentially, this function checks whether the symbolic
+       * strides in \c set already match those specified in \c desired. If so,
+       * these will be used as-is, otherwise a new set of strides based on \c
+       * desired will be produced. */
+      template <class Set> List get_nearest_match (const Set& set, const List& desired) 
+      {
+        List in (get_symbolic (set)), out (desired);
+        out.resize (in.size(), 0);
+        
+        bool strides_match = true;
+        for (size_t i = 0; i < out.size(); ++i) {
+          if (out[i]) {
+            if (Math::abs (out[i]) != Math::abs (in[i])) {
+              strides_match = false;
+              break;
+            }
+          }
+        }
+
+        if (strides_match) 
+          out = in;
+        
+        return out;
+      }
     }
 
   }

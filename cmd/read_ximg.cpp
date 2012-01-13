@@ -21,7 +21,7 @@
 */
 
 #include "app.h"
-#include "file/ximg.h"
+#include "file/ximg/image.h"
 
 MRTRIX_APPLICATION
 
@@ -41,19 +41,57 @@ void usage ()
     .allow_multiple().type_file ();
 }
 
+class Listing {
+  public:
+    typedef std::map<std::string, VecPtr<File::ImageSlice::Base> > ListType;
 
+    void read (const std::string& filename) 
+    {
+      try {
+        if (Path::is_dir (filename)) {
+          Path::Dir dir (filename);
+          std::string entry;
+          while ((entry = dir.read_name()).size()) 
+            read (Path::join (filename, entry));
+        }
+        else {
+          std::string key;
+          File::ImageSlice::Base* entry = try_read<File::ImageSlice::XIMG> (filename, key);
+          if (entry) {
+            if (list.find (key) == list.end()) 
+              list[key] = VecPtr<File::ImageSlice::Base>();
+            list[key].push_back (entry);
+          }
+        }
+      }
+      catch (Exception& E) {
+        E.display(2);
+      }
+    }
+
+    void print () const {
+      size_t n = 0;
+      for (ListType::const_iterator i = list.begin(); i != list.end(); ++i)
+        std::cout << "[" << n++ << "]: " << i->second.size() << " images \"" << i->first << "\"\n";
+    }
+
+  protected:
+    ListType list;
+
+    template <class R> File::ImageSlice::Base* try_read (const std::string& filename, std::string& key) const {
+      try { return R::read (filename, key); }
+      catch (Exception& E) { E.display (2); }
+      return NULL;
+    }
+};
 
 
 void run ()
 {
-  for (size_t n = 0; n < argument.size();  ++n) {
-    try {
-      File::XImg reader (argument[n]);
-      std::cout << reader << "\n";
-    }
-    catch (...) {
-      error ("error reading file \"" + argument[n] + "\"");
-    }
-  }
+  Listing list;
+  for (size_t n = 0; n < argument.size(); ++n) 
+    list.read (argument[n]);
+
+  list.print();
 }
 

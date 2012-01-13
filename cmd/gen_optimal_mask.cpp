@@ -22,6 +22,7 @@
 
 #include "app.h"
 #include "point.h"
+#include "image/data.h"
 #include "image/voxel.h"
 #include "filter/optimal_threshold.h"
 #include "ptr.h"
@@ -55,16 +56,18 @@ typedef float value_type;
 void run () {
   Image::Header input_header (argument[0]);
   assert (!input_header.is_complex());
-  Image::Voxel<value_type> input_voxel (input_header);
+  Image::Data<value_type> input_data (input_header);
+  Image::Data<value_type>::voxel_type input_voxel (input_data);
 
   Image::Header mask_header (input_header);
   mask_header.set_datatype (DataType::Bit);
 
-  Filter::OptimalThreshold<Image::Voxel<float>, Image::Voxel<int> > filter (input_voxel);
+  Filter::OptimalThreshold<Image::Data<float>::voxel_type, Image::Data<int>::voxel_type > filter (input_voxel);
 
   mask_header.set_params (filter.get_output_params());
   mask_header.create (argument[1]);
-  Image::Voxel<int> mask_voxel (mask_header);
+  Image::Data<int> mask_data (mask_header);
+  Image::Data<int>::voxel_type mask_voxel (mask_data);
 
   filter.execute (mask_voxel);
 }

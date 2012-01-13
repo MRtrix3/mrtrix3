@@ -21,6 +21,7 @@
 */
 
 #include "app.h"
+#include "image/data.h"
 #include "image/voxel.h"
 #include "dataset/loop.h"
 #include "progressbar.h"
@@ -119,13 +120,18 @@ void run () {
   }
 
   header_out.create (argument[num_images]);
-  Image::Voxel<value_type> out_vox (header_out);
+
+  Image::Data<value_type> data_out (header_out);
+  Image::Data<value_type>::voxel_type out_vox (data_out);
+
   ProgressBar progress ("concatenating...", DataSet::voxel_count (out_vox));
   int axis_offset = 0;
 
   for (int i = 0; i < num_images; i++) {
     DataSet::Loop loop;
-    Image::Voxel<value_type> in_vox (*in[i]);
+    Image::Data<value_type> in_data (*in[i]);
+    Image::Data<value_type>::voxel_type in_vox (in_data);
+
     for (loop.start (in_vox); loop.ok(); loop.next (in_vox)) {
       for (size_t dim = 0; dim < out_vox.ndim(); dim++) {
         if (static_cast<int> (dim) == axis)

@@ -22,6 +22,7 @@
 
 #include "app.h"
 #include "progressbar.h"
+#include "image/data.h"
 #include "image/voxel.h"
 #include "math/matrix.h"
 #include "math/SH.h"
@@ -114,8 +115,11 @@ void run ()
 
   SH_header.create (argument[1]);
 
-  Image::Voxel<float> dwi (dwi_header);
-  Image::Voxel<float> SH (SH_header);
+  Image::Data<float> dwi_data (dwi_header);
+  Image::Data<float>::voxel_type dwi (dwi_data);
+
+  Image::Data<float> SH_data (SH_header);
+  Image::Data<float>::voxel_type SH (SH_data);
 
 
   Math::Vector<float> res (lmax);

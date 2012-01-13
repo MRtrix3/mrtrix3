@@ -59,8 +59,8 @@ inline void step_pos (Set& data, const Nav& pos)
 }
 
 
-template <template <typename> class Set, class Value, class Nav>
-inline Value get_value_at_pos (Set<Value>& data, const Nav& pos)
+template <class Set, class Nav>
+inline typename Set::value_type get_value_at_pos (Set& data, const Nav& pos)
 {
     for (size_t axis = 0; axis != data.ndim(); ++axis)
       data[axis] = pos[axis];
@@ -68,8 +68,8 @@ inline Value get_value_at_pos (Set<Value>& data, const Nav& pos)
 }
 
 
-template <template <typename> class Set, class Value, class Nav>
-inline void set_value_at_pos (Set<Value>& data, const Nav& pos, const Value& value)
+template <class Set, class Nav>
+inline void set_value_at_pos (Set& data, const Nav& pos, const typename Set::value_type value)
 {
     for (size_t axis = 0; axis != data.ndim(); ++axis)
       data[axis] = pos[axis];

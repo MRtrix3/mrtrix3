@@ -31,20 +31,34 @@ namespace MR
     namespace Handler
     {
 
-      void Base::prepare ()
-      {
-        using namespace DataSet::Stride;
+      Base::~Base () 
+      { 
+        close();
+      }
 
+
+      void Base::open ()
+      {
         if (addresses.size())
           return;
 
-        execute();
-        stride_ = get (H);
-        actualise (stride_, H);
-        start_ = offset (stride_, H);
-
-        info ("image \"" + H.name() + "\" initialised with start = " + str (start_) + ", strides = " + str (stride_));
+        load();
+        info ("image \"" + H.name() + "\" loaded");
       }
+
+
+
+      void Base::close () 
+      {
+        if (addresses.empty())
+          return;
+
+        unload();
+        info ("image \"" + H.name() + "\" unloaded");
+        addresses.clear();
+      }
+
+      void Base::unload() { }
 
     }
   }

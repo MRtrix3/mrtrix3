@@ -25,7 +25,6 @@
 
 #include <cassert>
 #include <vector>
-#include "dataset/buffer.h"
 #include "ptr.h"
 
 namespace MR
@@ -83,15 +82,16 @@ namespace MR
 
         virtual void execute (OutputSet& output) = 0;
 
-        typename MR::DataSet::Buffer<value_type>::Prototype get_output_params() {
-          typename MR::DataSet::Buffer<value_type>::Prototype output_prototype(axes_.size());
+        Image::Header get_output_params() {
+          Image::Header output_prototype;
+          output_prototype.set_ndim (axes_.size());
           for (size_t n = 0; n < axes_.size(); ++n) {
-            output_prototype.dim(n) = axes_[n].dim;
-            output_prototype.vox(n) = axes_[n].vox;
-            output_prototype.stride(n) = axes_[n].stride;
+            output_prototype.set_dim (n, axes_[n].dim);
+            output_prototype.set_vox (n, axes_[n].vox);
+            output_prototype.set_stride (n, axes_[n].stride);
           }
-          output_prototype.transform() = transform_;
-          return (output_prototype);
+          output_prototype.set_transform (transform_);
+          return output_prototype;
         }
 
       protected:
@@ -109,7 +109,7 @@ namespace MR
         }
 
       private:
-        std::vector<typename DataSet::Buffer<value_type>::Axis> axes_;
+        std::vector<Image::Axis> axes_;
         Math::Matrix<float> transform_;
     };
 

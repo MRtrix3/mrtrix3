@@ -22,12 +22,13 @@
 
 #include "app.h"
 #include "point.h"
+#include "image/data.h"
+#include "image/scratch.h"
 #include "image/voxel.h"
 #include "filter/optimal_threshold.h"
 #include "filter/median3D.h"
 #include "ptr.h"
 #include "dataset/histogram.h"
-#include "dataset/buffer.h"
 #include "dataset/copy.h"
 #include "dataset/loop.h"
 #include "dwi/gradient.h"
@@ -65,21 +66,30 @@ typedef float value_type;
 void run () {
   Image::Header input_header (argument[0]);
   assert (!input_header.is_complex());
-  Image::Voxel<value_type> input_voxel (input_header);
+  Image::Data<value_type> input_data (input_header);
+  Image::Data<value_type>::voxel_type input_voxel (input_data);
 
   Image::Header mask_header (input_header);
   mask_header.set_ndim(3);
   mask_header.create(argument[1]);
-  Image::Voxel<float> mask_voxel (mask_header);
+  Image::Data<float> mask_data (mask_header);
+  Image::Data<float>::voxel_type mask_voxel (mask_data);
 
   std::vector<int> bzeros, dwis;
   Math::Matrix<float> grad = DWI::get_DW_scheme<float> (input_header);
   DWI::guess_DW_directions (dwis, bzeros, grad);
   info ("found " + str(dwis.size()) + " diffusion-weighted directions");
 
+  Image::Header scratch_header;
+  scratch_header = input_voxel;
+  scratch_header.set_ndim (3);
+
   // Compute the mean b=0 and mean DWI image
-  DataSet::Buffer<float> b0_mean(input_voxel, 3, "mean b0");
-  DataSet::Buffer<float> dwi_mean(input_voxel, 3, "mean DWI");
+  Image::Scratch<float> b0_mean_data (scratch_header, "mean b0");
+  Image::Scratch<float>::voxel_type b0_mean (b0_mean_data);
+
+  Image::Scratch<float> dwi_mean_data (scratch_header, "mean DWI");
+  Image::Scratch<float>::voxel_type dwi_mean (dwi_mean_data);
   {
     DataSet::Loop loop("computing mean dwi and mean b0 images...", 0, 3);
     for (loop.start (input_voxel, b0_mean, dwi_mean); loop.ok(); loop.next (input_voxel, b0_mean, dwi_mean)) {
@@ -99,13 +109,15 @@ void run () {
   }
 
   // Here we independently threshold the mean b=0 and dwi images
-  Filter::OptimalThreshold<DataSet::Buffer<float> , DataSet::Buffer<int> > b0_threshold_filter(b0_mean);
-  DataSet::Buffer<int> b0_mean_mask(b0_threshold_filter.get_output_params());
-  b0_threshold_filter.execute(b0_mean_mask);
+  Filter::OptimalThreshold<Image::Scratch<float>::voxel_type , Image::Scratch<int>::voxel_type > b0_threshold_filter (b0_mean);
+  Image::Scratch<int> b0_mean_mask_data (b0_threshold_filter.get_output_params());
+  Image::Scratch<int>::voxel_type b0_mean_mask (b0_mean_mask_data);
+  b0_threshold_filter.execute (b0_mean_mask);
 
-  Filter::OptimalThreshold<DataSet::Buffer<float> , DataSet::Buffer<float> > dwi_threshold_filter(dwi_mean);
-  DataSet::Buffer<float> dwi_mean_mask(dwi_threshold_filter.get_output_params());
-  dwi_threshold_filter.execute(dwi_mean_mask);
+  Filter::OptimalThreshold<Image::Scratch<float>::voxel_type , Image::Scratch<float>::voxel_type > dwi_threshold_filter (dwi_mean);
+  Image::Scratch<float> dwi_mean_mask_data (dwi_threshold_filter.get_output_params());
+  Image::Scratch<float>::voxel_type dwi_mean_mask (dwi_mean_mask_data);
+  dwi_threshold_filter.execute (dwi_mean_mask);
 
   {
     DataSet::Loop loop("combining optimal dwi and b0 masks...", 0, 3);
@@ -115,7 +127,7 @@ void run () {
     }
   }
 
-  Filter::Median3DFilter<DataSet::Buffer<float>, Image::Voxel<float> > median_filter(dwi_mean_mask);
-  median_filter.execute(mask_voxel);
+  Filter::Median3DFilter<Image::Scratch<float>::voxel_type, Image::Data<float>::voxel_type > median_filter (dwi_mean_mask);
+  median_filter.execute (mask_voxel);
 }
 

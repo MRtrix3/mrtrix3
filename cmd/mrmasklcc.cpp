@@ -24,11 +24,12 @@
 
 #include "app.h"
 
-#include "dataset/buffer.h"
 #include "dataset/copy.h"
 #include "dataset/loop.h"
 #include "image/header.h"
 #include "image/voxel.h"
+#include "image/data.h"
+#include "image/scratch.h"
 #include "filter/lcc.h"
 
 
@@ -59,12 +60,14 @@ void run ()
 {
 
   Image::Header H_in (argument[0]);
-  Image::Voxel<bool> v_in (H_in);
+  Image::Data<bool> data_in (H_in);
+  Image::Data<bool>::voxel_type voxel_in (data_in);
 
-  DataSet::Buffer<bool> largest_mask (H_in);
+  Image::Scratch<bool> largest_mask_data (H_in);
+  Image::Scratch<bool>::voxel_type largest_mask (largest_mask_data);
 
   {
-    Filter::LargestConnectedComponent<bool, Image::Voxel<bool>, DataSet::Buffer<bool> > lcc (v_in, "getting largest connected-component...");
+    Filter::LargestConnectedComponent<bool, Image::Data<bool>::voxel_type, Image::Scratch<bool>::voxel_type > lcc (voxel_in, "getting largest connected-component...");
     lcc.execute (largest_mask);
   }
 
@@ -74,9 +77,10 @@ void run ()
     for (loop.start (largest_mask); loop.ok(); loop.next (largest_mask))
       largest_mask.value() = !largest_mask.value();
 
-    DataSet::Buffer<bool> outside_mask (H_in);
+    Image::Scratch<bool> outside_mask_data (H_in);
+    Image::Scratch<bool>::voxel_type outside_mask (outside_mask_data);
 
-    Filter::LargestConnectedComponent<bool, DataSet::Buffer<bool>, DataSet::Buffer<bool> > lcc_fill (largest_mask, "filling gaps in mask...");
+    Filter::LargestConnectedComponent<bool, Image::Scratch<bool>::voxel_type, Image::Scratch<bool>::voxel_type > lcc_fill (largest_mask, "filling gaps in mask...");
     lcc_fill.execute (outside_mask);
     for (loop.start (outside_mask, largest_mask); loop.ok(); loop.next (outside_mask, largest_mask))
       largest_mask.value() = !outside_mask.value();
@@ -85,8 +89,9 @@ void run ()
 
   Image::Header H_out (H_in);
   H_out.create (argument[1]);
-  Image::Voxel<bool> v_out (H_out);
-  DataSet::copy (v_out, largest_mask);
+  Image::Data<bool> data_out (H_out);
+  Image::Data<bool>::voxel_type voxel_out (data_out);
+  DataSet::copy (voxel_out, largest_mask);
 
 }
 

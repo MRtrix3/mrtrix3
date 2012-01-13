@@ -35,19 +35,12 @@ namespace MR
     namespace Handler
     {
 
-      Mosaic::~Mosaic ()
-      {
-        if (addresses.size())
-          delete [] addresses[0];
-      }
 
-
-
-
-      void Mosaic::execute ()
+      void Mosaic::load ()
       {
         const std::vector<File::Entry>& files (H.get_files());
-        if (files.empty()) throw Exception ("no files specified in header for image \"" + H.name() + "\"");
+        if (files.empty()) 
+          throw Exception ("no files specified in header for image \"" + H.name() + "\"");
         assert (H.datatype().bits() > 1);
 
         segsize = H.dim (0) * H.dim (1) * H.dim (2);
@@ -60,7 +53,8 @@ namespace MR
         debug ("loading mosaic image \"" + H.name() + "\"...");
         addresses.resize (1);
         addresses[0] = new uint8_t [files.size() * bytes_per_segment];
-        if (!addresses[0]) throw Exception ("failed to allocate memory for image \"" + H.name() + "\"");
+        if (!addresses[0]) 
+          throw Exception ("failed to allocate memory for image \"" + H.name() + "\"");
 
         ProgressBar progress ("reformatting DICOM mosaic images...", slices*files.size());
         uint8_t* data = addresses[0];

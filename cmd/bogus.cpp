@@ -22,6 +22,9 @@
 
 #include "app.h"
 #include "debug.h"
+#include "image/data_preload.h"
+#include "image/scratch.h"
+#include "image/voxel.h"
 
 MRTRIX_APPLICATION
 
@@ -60,8 +63,7 @@ void usage () {
     + "some more details here.";
 
   ARGUMENTS
-    + Argument ("arg", "an argument")
-    + Argument ("sef", "some strange value").type_float (0.0, 1.0, 10.0);
+    + Argument ("input", "the input image.").type_image_in ();
 
   OPTIONS
     + Option ("poo", "its description")
@@ -77,17 +79,35 @@ void usage () {
 
 
 
-typedef cfloat T;
 
-void run ()
+void run () 
 {
-  Options opt = get_options ("poo");
-  if (opt.size()) {
-    VAR (int (opt[0][0]));
-    VAR (opt[0][1]);
-  }
 
-  VAR (argument[0]);
+  Image::Header header_in (argument[0]);
+
+  DataSet::Stride::List stride (header_in.ndim(), 0);
+  stride[2] = 1;
+
+  Image::DataPreload<float> data (header_in, stride);
+
+  VAR (header_in);
+  VAR (data);
+
+  Image::DataPreload<float>::voxel_type vox (data);
+  VAR (vox);
+
+  stride[3] = 1;
+  stride[0] = stride[1] = stride[2] = 0;
+  Image::Scratch<uint8_t> scratch (header_in, stride, "my scratch buffer");
+  VAR (scratch);
+
+  Image::Scratch<uint8_t>::voxel_type scratch_vox (scratch);
+  VAR (scratch_vox);
   
+  std::cout << "values: [ ";
+  for (size_t n = 0; n < DataSet::voxel_count (data); n += 10000)
+    std::cout << data.get(n) << " ";
+  std::cout << "]\n";
+
 }
 

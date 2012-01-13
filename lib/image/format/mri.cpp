@@ -335,7 +335,7 @@ namespace MR
         size_t data_offset = out.tellp();
         out.close();
 
-        File::resize (H.name(), data_offset + H.footprint());
+        File::resize (H.name(), data_offset + DataSet::footprint(H));
         H.add_file (File::Entry (H.name(), data_offset));
       }
 

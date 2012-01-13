@@ -81,7 +81,7 @@ namespace MR
         out.write ( (char*) &NH, 352);
         out.close();
 
-        File::resize (H.name(), 352 + H.footprint());
+        File::resize (H.name(), 352 + DataSet::footprint(H));
 
         H.add_file (File::Entry (H.name(), 352));
       }

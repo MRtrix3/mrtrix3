@@ -23,6 +23,7 @@
 #include "app.h"
 #include "dataset/kernel.h"
 #include "image/voxel.h"
+#include "image/data.h"
 
 MRTRIX_APPLICATION
 
@@ -160,8 +161,11 @@ void run () {
   Image::Header destination (source);
   destination.create (argument[1]);
 
-  Image::Voxel<float> src (source);
-  Image::Voxel<float> dest (destination);
+  Image::Data<float> src_data (source);
+  Image::Data<float>::voxel_type src (src_data);
+
+  Image::Data<float> dest_data (destination);
+  Image::Data<float>::voxel_type dest (dest_data);
 
   opt = get_options ("gaussian");
   if (opt.size()) {

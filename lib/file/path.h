@@ -147,7 +147,8 @@ namespace MR
           struct dirent* entry = readdir (p);
           if (entry) {
             ret = entry->d_name;
-            if (ret == "." || ret == "..") ret = read_name();
+            if (ret == "." || ret == "..") 
+              ret = read_name();
           }
           return ret;
         }

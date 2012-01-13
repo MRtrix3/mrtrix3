@@ -24,7 +24,7 @@
 #define __filter_lcc_h__
 
 #include "point.h"
-#include "dataset/buffer.h"
+#include "image/scratch.h"
 #include "dataset/copy.h"
 #include "dataset/nav.h"
 #include "filter/base.h"
@@ -52,7 +52,8 @@ namespace MR
       void execute (OutputSet& output) {
 
         // Force calling the templated constructor instead of the copy-constructor
-        DataSet::Buffer<bool> visited (in, "visited");
+        Image::Scratch<bool> visited_data (in.header(), "visited");
+        Image::Scratch<bool>::voxel_type visited (visited_data);
         size_t largest_mask_size = 0;
 
         Voxel seed (0, 0, 0);
@@ -72,7 +73,8 @@ namespace MR
               if (!DataSet::Nav::get_value_at_pos (visited, seed) && DataSet::Nav::get_value_at_pos (in, seed)) {
 
                 visited.value() = true;
-                DataSet::Buffer<value_type> local_mask (in, "local_mask");
+                Image::Scratch<value_type> local_mask_data (in.header(), "local_mask");
+                typename Image::Scratch<value_type>::voxel_type local_mask (local_mask_data);
                 DataSet::Nav::set_value_at_pos (local_mask, seed, (value_type)in.value());
                 size_t local_mask_size = 1;
 

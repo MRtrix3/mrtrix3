@@ -21,6 +21,7 @@
 */
 
 #include "app.h"
+#include "image/data.h"
 #include "image/voxel.h"
 #include "filter/median3D.h"
 
@@ -56,15 +57,17 @@ void run () {
     extent = parse_ints (opt[0][0]);
 
   Image::Header source (argument[0]);
-  Image::Voxel<float> src (source);
+  Image::Data<float> src_data (source);
+  Image::Data<float>::voxel_type src (src_data);
 
-  Filter::Median3DFilter<Image::Voxel<float>, Image::Voxel<float> > median_filter(src);
+  Filter::Median3DFilter<Image::Data<float>::voxel_type, Image::Data<float>::voxel_type > median_filter(src);
   median_filter.set_extent(extent);
 
   Image::Header destination (source);
   destination.create (argument[1]);
-  Image::Voxel<float> dest (destination);
+  Image::Data<float> dest_data (destination);
+  Image::Data<float>::voxel_type dest (dest_data);
 
-  median_filter.execute(dest);
+  median_filter.execute (dest);
 }
 

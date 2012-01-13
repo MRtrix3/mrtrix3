@@ -46,8 +46,6 @@ namespace MR
   };
 
 
-  const bool Array = true;
-
 
   //! A simple smart pointer implementation
   /*! A simple pointer class that will delete the object it points to when it
@@ -146,6 +144,11 @@ namespace MR
 
       T& operator*() const throw ()   {
         return *ptr;
+      }
+
+      T& operator[](size_t index) const throw ()   {
+        assert (is_array);
+        return ptr[index];
       }
 
       T* operator->() const throw ()  {
@@ -402,6 +405,12 @@ namespace MR
         V.resize (new_size);
         for (size_t i = old_size; i < new_size; ++i)
           V[i] = NULL;
+      }
+
+      void clear () {
+        for (size_t i = 0; i < size(); ++i)
+          dealloc (V[i]);
+        V.clear();
       }
 
       iterator begin() {

@@ -38,11 +38,13 @@ namespace MR
       {
         public:
           Pipe (Header& header, bool image_is_new) : Base (header, image_is_new) { }
-          virtual ~Pipe ();
-          virtual void execute ();
+          ~Pipe () { close(); }
 
         protected:
           Ptr<File::MMap> file;
+
+          virtual void load ();
+          virtual void unload ();
       };
 
     }

@@ -24,6 +24,7 @@
 
 #include "app.h"
 #include "progressbar.h"
+#include "image/data.h"
 #include "image/voxel.h"
 #include "dataset/loop.h"
 #include "dataset/histogram.h"
@@ -145,8 +146,11 @@ void run ()
 
   header_out.create (argument[1]);
 
-  Image::Voxel<float> in (header_in);
-  Image::Voxel<float> out (header_out);
+  Image::Data<float> data_in (header_in);
+  Image::Data<float>::voxel_type in (data_in);
+
+  Image::Data<float> data_out (header_out);
+  Image::Data<float>::voxel_type out (data_out);
 
   float zero = use_NaN ? NAN : 0.0;
   float one  = 1.0;
@@ -222,7 +226,7 @@ void run ()
   }
   else {
     if (isnan (val)) {
-      DataSet::Histogram<Image::Voxel<float> > hist (in);
+      DataSet::Histogram<Image::Data<float>::voxel_type> hist (in);
       val = hist.first_min();
     }
 

@@ -40,11 +40,12 @@ namespace MR
           Mosaic (Header& header, size_t mosaic_xdim, size_t mosaic_ydim, size_t slice_xdim, size_t slice_ydim, size_t nslices) :
             Base (header, false), m_xdim (mosaic_xdim), m_ydim (mosaic_ydim),
             xdim (slice_xdim), ydim (slice_ydim), slices (nslices) { }
-          virtual ~Mosaic ();
-          virtual void execute ();
+          ~Mosaic () { close(); }
 
         protected:
           size_t m_xdim, m_ydim, xdim, ydim, slices;
+
+          virtual void load ();
       };
 
     }

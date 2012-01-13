@@ -23,6 +23,7 @@
 #include "app.h"
 #include "point.h"
 #include "image/voxel.h"
+#include "image/data.h"
 #include "dataset/loop.h"
 
 MRTRIX_APPLICATION
@@ -142,7 +143,7 @@ class Stats
       }
     }
 
-    void print (Image::Voxel<value_type>& ima) {
+    template <class Set> void print (Set& ima) {
       if (count == 0)
         throw Exception ("no voxels in mask - aborting");
 
@@ -174,7 +175,8 @@ const char* header_string = "channel         mean        std. dev.   min        
 
 void run () {
   Image::Header header (argument[0]);
-  Image::Voxel<value_type> vox (header);
+  Image::Data<value_type> data (header);
+  Image::Data<value_type>::voxel_type vox (data);
 
   DataSet::Loop inner_loop (0, 3);
   DataSet::Loop outer_loop (3);
@@ -226,7 +228,8 @@ void run () {
     mask_header.dim (2) != header.dim (2))
       throw Exception ("dimensions of mask image do not match that of data image - aborting");
 
-    Image::Voxel<value_type> mask (mask_header);
+    Image::Data<value_type> mask_data (mask_header);
+    Image::Data<value_type>::voxel_type mask (mask_data);
 
     if (hist_stream) {
       ProgressBar progress ("calibrating histogram...", DataSet::voxel_count (vox));

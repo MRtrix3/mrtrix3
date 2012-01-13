@@ -22,6 +22,7 @@
 
 #include "app.h"
 #include "progressbar.h"
+#include "image/data.h"
 #include "image/voxel.h"
 #include "image/axis.h"
 #include "dataset/copy.h"
@@ -170,7 +171,8 @@ void run ()
   }
 
   assert (!header_in.is_complex());
-  Image::Voxel<float> in (header_in);
+  Image::Data<float> in_data (header_in);
+  Image::Data<float>::voxel_type in (in_data);
 
   if (pos.size()) {
 
@@ -182,13 +184,15 @@ void run ()
           pos[n][i] = i;
       }
     }
-    DataSet::Extract<Image::Voxel<float> > extract (in, pos);
+    DataSet::Extract<Image::Data<float>::voxel_type > extract (in, pos);
 
     set_header_out (header_out, extract, axes, vox, strides);
     header_out.create (argument[1]);
-    Image::Voxel<float> out (header_out);
+    Image::Data<float> data_out (header_out);
+    Image::Data<float>::voxel_type  out (data_out);
+
     if (axes.size()) {
-      DataSet::PermuteAxes<DataSet::Extract<Image::Voxel<float> > > perm (extract, axes);
+      DataSet::PermuteAxes<DataSet::Extract<Image::Data<float>::voxel_type > > perm (extract, axes);
       DataSet::copy_with_progress (out, perm);
     }
     else
@@ -198,9 +202,10 @@ void run ()
     // straight copy:
     set_header_out (header_out, in, axes, vox, strides);
     header_out.create (argument[1]);
-    Image::Voxel<float> out (header_out);
+    Image::Data<float> data_out (header_out);
+    Image::Data<float>::voxel_type out (data_out);
     if (axes.size()) {
-      DataSet::PermuteAxes<Image::Voxel<float> > perm (in, axes);
+      DataSet::PermuteAxes<Image::Data<float>::voxel_type > perm (in, axes);
       DataSet::copy_with_progress (out, perm);
     }
     else

@@ -27,6 +27,7 @@
 #include "thread/queue.h"
 #include "dataset/loop.h"
 #include "image/voxel.h"
+#include "image/data.h"
 #include "dwi/gradient.h"
 #include "math/SH.h"
 #include "math/legendre.h"
@@ -93,19 +94,19 @@ class DataLoader
 {
   public:
     DataLoader (Queue& queue,
-                Image::Header& dwi_header,
-                Image::Header* mask_header,
+                Image::Data<value_type>& dwi_data,
+                Image::Data<bool>* mask_data,
                 const std::vector<int>& vec_dwis) :
       writer (queue),
-      dwi (dwi_header),
-      mask (mask_header),
+      dwi (dwi_data),
+      mask (mask_data),
       dwis (vec_dwis) { }
 
     void execute () {
       Queue::Writer::Item item (writer);
       DataSet::Loop loop ("estimating dODFs using Q-ball imaging...", 0, 3);
       if (mask) {
-        Image::Voxel<value_type> mask_vox (*mask);
+        Image::Data<bool>::voxel_type mask_vox (*mask);
         DataSet::check_dimensions (mask_vox, dwi, 0, 3);
         for (loop.start (mask_vox, dwi); loop.ok(); loop.next (mask_vox, dwi))
           if (mask_vox.value() > 0.5)
@@ -119,8 +120,8 @@ class DataLoader
 
   private:
     Queue::Writer writer;
-    Image::Voxel<value_type>  dwi;
-    Image::Header* mask;
+    Image::Data<value_type>::voxel_type dwi;
+    Image::Data<bool>* mask;
     const std::vector<int>&  dwis;
 
     void load (Queue::Writer::Item& item) {
@@ -145,11 +146,11 @@ class Processor
     Processor (Queue& queue,
                Math::Matrix<value_type> FRT_transform,
                Math::Matrix<value_type> normalise_transform,
-               Image::Header& header) :
+               Image::Data<value_type>& SH_data) :
       reader (queue),
       FRT_SHT (FRT_transform),
       normalise_SHT (normalise_transform),
-      SH (header) { }
+      SH (SH_data) { }
 
     void execute () {
       Queue::Reader::Item item (reader);
@@ -184,7 +185,7 @@ class Processor
     Queue::Reader reader;
     Math::Matrix<value_type> FRT_SHT;
     Math::Matrix<value_type> normalise_SHT;
-    Image::Voxel<value_type> SH;
+    Image::Data<value_type>::voxel_type SH;
     int niter;
     int lmax;
 };
@@ -274,10 +275,13 @@ void run ()
   Math::SH::Transform<value_type> FRT_SHT(DW_dirs, lmax);
   FRT_SHT.set_filter(response);
 
-  Image::Header* mask_header = NULL;
+  Ptr<Image::Header> mask_header;
+  Ptr<Image::Data<bool> > mask_data;
   opt = get_options ("mask");
-  if (opt.size())
+  if (opt.size()) {
     mask_header = new Image::Header (opt[0][0]);
+    mask_data = new Image::Data<bool> (*mask_header);
+  }
 
   Image::Header SH_header (dwi_header);
   SH_header.set_dim (3, Math::SH::NforL (lmax));
@@ -286,12 +290,15 @@ void run ()
   SH_header.set_stride (1, 3);
   SH_header.set_stride (2, 4);
   SH_header.set_stride (3, 1);
-  SH_header.create(argument[1]);
+  SH_header.create (argument[1]);
+
+  Image::Data<value_type> dwi_data (dwi_header);
+  Image::Data<value_type> SH_data (SH_header);
 
   Queue queue ("work queue");
-  DataLoader loader (queue, dwi_header, mask_header, dwis);
+  DataLoader loader (queue, dwi_data, mask_data, dwis);
 
-  Processor processor (queue, FRT_SHT.mat_A2SH(), HR_SHT, SH_header);
+  Processor processor (queue, FRT_SHT.mat_A2SH(), HR_SHT, SH_data);
 
   Thread::Exec loader_thread (loader, "loader");
   Thread::Array<Processor> processor_list (processor);

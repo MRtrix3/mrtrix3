@@ -32,7 +32,7 @@ namespace MR
     namespace Dicom
     {
 
-      bool QuickScan::read (const std::string& file_name, bool print_DICOM_fields, bool print_CSA_fields, bool force_read)
+      bool QuickScan::read (const std::string& file_name, bool print_DICOM_fields, bool print_CSA_fields)
       {
         filename = file_name;
         modality.clear();
@@ -51,7 +51,7 @@ namespace MR
 
         Element item;
         try {
-          item.set (filename, force_read);
+          item.set (filename);
 
           while (item.read()) {
             if (item.is (0x0008U, 0x0020U)) study_date = item.get_string() [0];

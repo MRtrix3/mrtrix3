@@ -35,23 +35,8 @@ namespace MR
     namespace Handler
     {
 
-      Pipe::~Pipe ()
-      {
-        if (file) {
-          const std::vector<File::Entry>& Hfiles (H.get_files());
-          if (is_new) std::cout << Hfiles[0].name << "\n";
-          else {
-            file = NULL;
-            debug ("deleting piped image file \"" + Hfiles[0].name + "\"...");
-            unlink (Hfiles[0].name.c_str());
-          }
-        }
-      }
 
-
-
-
-      void Pipe::execute ()
+      void Pipe::load ()
       {
         const std::vector<File::Entry>& Hfiles (H.get_files());
         assert (Hfiles.size() == 1);
@@ -68,6 +53,21 @@ namespace MR
         addresses[0] = file->address();
       }
 
+
+      void Pipe::unload()
+      {
+        if (file) {
+          const std::vector<File::Entry>& Hfiles (H.get_files());
+          if (is_new) 
+            std::cout << Hfiles[0].name << "\n";
+          else {
+            file = NULL;
+            debug ("deleting piped image file \"" + Hfiles[0].name + "\"...");
+            unlink (Hfiles[0].name.c_str());
+          }
+          addresses[0] = NULL;
+        }
+      }
 
     }
   }

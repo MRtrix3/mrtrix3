@@ -23,6 +23,7 @@
 #include "app.h"
 #include "progressbar.h"
 #include "image/voxel.h"
+#include "image/data.h"
 #include "math/matrix.h"
 #include "math/SH.h"
 #include "dataset/loop.h"
@@ -58,8 +59,11 @@ void run () {
 
   power_header.create (argument[1]);
 
-  Image::Voxel<float> SH (SH_header);
-  Image::Voxel<float> P (power_header);
+  Image::Data<float> SH_data (SH_header);
+  Image::Data<float>::voxel_type SH (SH_data);
+
+  Image::Data<float> power_data (power_header);
+  Image::Data<float>::voxel_type P (power_data);
 
   DataSet::LoopInOrder loop (P, "calculating SH power...", 0, 3);
   for (loop.start (P, SH); loop.ok(); loop.next (P, SH)) {

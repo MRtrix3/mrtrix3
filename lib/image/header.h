@@ -85,7 +85,7 @@ namespace MR
           set_transform (H.transform());
           set_DW_scheme (H.DW_scheme());
           axes_ = H.axes_;
-          return (*this);
+          return *this;
         }
 
         //! assignment operator from DataSet
@@ -100,64 +100,68 @@ namespace MR
             set_dim (i, ds.dim (i));
             set_vox (i, ds.vox (i));
           }
-          return (*this);
+          return *this;
         }
 
         //! check whether Header is ready to access data
         bool operator! () const {
-          return (handler_);
+          return handler_;
+        }
+
+        const Header& header() const {
+          return *this;
         }
 
         const std::string& name () const {
-          return (name_);
+          return name_;
         }
         const std::vector<std::string>& comments () const {
-          return (comments_);
+          return comments_;
         }
         const char* format () const {
-          return (format_);
+          return format_;
         }
         bool readwrite () const {
-          return (readwrite_);
+          return readwrite_;
         }
         const DataType& datatype () const {
-          return (dtype_);
+          return dtype_;
         }
         bool is_complex () const {
-          return (dtype_.is_complex());
+          return dtype_.is_complex();
         }
 
         float data_offset () const {
-          return (offset_);
+          return offset_;
         }
         float data_scale () const {
-          return (scale_);
+          return scale_;
         }
 
         size_t ndim () const {
-          return (axes_.size());
+          return axes_.size();
         }
         int dim (size_t index) const {
-          return (axes_[index].dim);
+          return axes_[index].dim;
         }
         float vox (size_t index) const {
-          return (axes_[index].vox);
+          return axes_[index].vox;
         }
         ssize_t stride (size_t axis) const {
-          return (axes_[axis].stride);
+          return axes_[axis].stride;
         }
         const std::string& description (size_t axis) const {
-          return (axes_[axis].description);
+          return axes_[axis].description;
         }
         const std::string& units (size_t axis) const {
-          return (axes_[axis].units);
+          return axes_[axis].units;
         }
 
         const Math::Matrix<float>& DW_scheme () const {
-          return (DW_scheme_);
+          return DW_scheme_;
         }
         const Math::Matrix<float>& transform () const {
-          return (transform_);
+          return transform_;
         }
 
         std::string  description () const;
@@ -300,14 +304,14 @@ namespace MR
         void  set_handler (Handler::Base* handler) {
           handler_ = handler;
         }
-        Handler::Base* get_handler () {
-          return (handler_);
+        Handler::Base* get_handler () const {
+          return handler_;
         }
         void add_file (const File::Entry& entry) {
           files_.push_back (entry);
         }
         const std::vector<File::Entry>& get_files () const {
-          return (files_);
+          return files_;
         }
 
 
@@ -315,32 +319,22 @@ namespace MR
 
         template <typename T> static inline
         T scale_from_storage (T val, float scale_f, float offset_f) {
-          return (offset_f + scale_f * val);
+          return offset_f + scale_f * val;
         }
 
         template <typename T> static inline
         T scale_to_storage (T val, float scale_f, float offset_f) {
-          return ( (val - offset_f) / scale_f);
+          return (val - offset_f) / scale_f;
         }
 
         template <typename T>
         float scale_from_storage (T val) const {
-          return (scale_from_storage (val, scale_, offset_));
+          return scale_from_storage (val, scale_, offset_);
         }
 
         template <typename T>
         float scale_to_storage (T val) const   {
-          return (scale_to_storage (val, scale_, offset_));
-        }
-
-        //! returns the memory footprint of the Image
-        int64_t footprint (size_t from_dim = 0, size_t up_to_dim = std::numeric_limits<size_t>::max()) {
-          return (footprint_for_count (DataSet::voxel_count (*this, from_dim, up_to_dim)));
-        }
-
-        //! returns the memory footprint of a DataSet
-        int64_t footprint (const char* specifier) {
-          return (footprint_for_count (DataSet::voxel_count (*this, specifier)));
+          return scale_to_storage (val, scale_, offset_);
         }
 
         friend std::ostream& operator<< (std::ostream& stream, const Header& H);
@@ -361,10 +355,6 @@ namespace MR
         void merge (const Header& H);
         void check_not_finalised () const {
           assert (files_.empty() && !handler_);
-        }
-
-        int64_t footprint_for_count (int64_t count) {
-          return (dtype_ == DataType::Bit ? (count+7) /8 : count * dtype_.bytes());
         }
 
     };

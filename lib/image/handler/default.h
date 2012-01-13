@@ -39,12 +39,14 @@ namespace MR
       {
         public:
           Default (Header& header, bool image_is_new) : Base (header, image_is_new) { }
-          virtual ~Default ();
-          virtual void execute ();
+          ~Default () { close(); }
 
         protected:
           std::vector<RefPtr<File::MMap> > files;
           int64_t bytes_per_segment;
+
+          virtual void load ();
+          virtual void unload ();
 
           void map_files ();
           void copy_to_mem ();

@@ -41,18 +41,22 @@ namespace MR
             Base (header, image_is_new), lead_in_size (file_header_size) {
             lead_in = file_header_size ? new uint8_t [file_header_size] : NULL ;
           }
-
-          virtual ~GZ ();
-          virtual void execute ();
+          ~GZ () { 
+            delete [] lead_in;
+            close();
+          }
 
           uint8_t* header () {
-            return (lead_in);
+            return lead_in;
           }
 
         protected:
           int64_t  bytes_per_segment;
           uint8_t* lead_in;
           size_t   lead_in_size;
+
+          virtual void load ();
+          virtual void unload ();
       };
 
     }
