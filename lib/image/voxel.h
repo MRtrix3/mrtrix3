@@ -26,9 +26,9 @@
 #include "debug.h"
 #include "get_set.h"
 #include "image/header.h"
-#include "dataset/stride.h"
-#include "dataset/value.h"
-#include "dataset/position.h"
+#include "image/stride.h"
+#include "image/value.h"
+#include "image/position.h"
 
 namespace MR
 {
@@ -37,10 +37,10 @@ namespace MR
 
     template <class ArrayType> class Voxel {
       public:
-        Voxel (ArrayType& array) : 
-          data_ (array), 
-          stride_ (DataSet::Stride::get_actual (data_)),
-          start_ (DataSet::Stride::offset (*this)),
+        Voxel (ArrayType& array) :
+          data_ (array),
+          stride_ (Image::Stride::get_actual (data_)),
+          start_ (Image::Stride::offset (*this)),
           offset_ (start_),
           x (ndim(), 0) {
           info ("voxel accessor for image \"" + name() + "\" initialised with start = " + str (start_) + ", strides = " + str (stride_));
@@ -88,15 +88,15 @@ namespace MR
         //! reset all coordinates to zero.
         void reset () {
           offset_ = start_;
-          for (size_t i = 0; i < ndim(); i++) 
+          for (size_t i = 0; i < ndim(); i++)
             x[i] = 0;
         }
 
-        DataSet::Position<Voxel> operator[] (size_t axis) {
-          return DataSet::Position<Voxel> (*this, axis);
+        Image::Position<Voxel> operator[] (size_t axis) {
+          return Image::Position<Voxel> (*this, axis);
         }
-        DataSet::Value<Voxel> value () {
-          return DataSet::Value<Voxel> (*this);
+        Image::Value<Voxel> value () {
+          return Image::Value<Voxel> (*this);
         }
 
 
@@ -111,7 +111,7 @@ namespace MR
         ArrayType& data_;
         const std::vector<ssize_t> stride_;
         const size_t start_;
-        size_t offset_; 
+        size_t offset_;
         std::vector<ssize_t> x;
 
         value_type get_value () const {
@@ -134,8 +134,8 @@ namespace MR
           x[axis] += increment;
         }
 
-        friend class DataSet::Position<Voxel>;
-        friend class DataSet::Value<Voxel>;
+        friend class Image::Position<Voxel>;
+        friend class Image::Value<Voxel>;
     };
 
 

@@ -30,7 +30,7 @@
 #include "types.h"
 #include "data_type.h"
 #include "image/axis.h"
-#include "dataset/misc.h"
+#include "image/misc.h"
 #include "image/handler/base.h"
 #include "file/mmap.h"
 #include "math/matrix.h"

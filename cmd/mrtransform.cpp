@@ -24,14 +24,14 @@
 #include "progressbar.h"
 #include "image/data.h"
 #include "image/voxel.h"
-#include "dataset/interp/nearest.h"
-#include "dataset/interp/linear.h"
-#include "dataset/interp/cubic.h"
-#include "dataset/interp/sinc.h"
-#include "dataset/interp/reslice.h"
-#include "dataset/misc.h"
-#include "dataset/loop.h"
-#include "dataset/copy.h"
+#include "image/interp/nearest.h"
+#include "image/interp/linear.h"
+#include "image/interp/cubic.h"
+#include "image/interp/sinc.h"
+#include "image/interp/reslice.h"
+#include "image/misc.h"
+#include "image/loop.h"
+#include "image/copy.h"
 
 MRTRIX_APPLICATION
 
@@ -170,16 +170,16 @@ void run ()
 
     switch (interp) {
       case 0:
-        DataSet::Interp::reslice<DataSet::Interp::Nearest> (out, in, T, oversample);
+        Image::Interp::reslice<Image::Interp::Nearest> (out, in, T, oversample);
         break;
       case 1:
-        DataSet::Interp::reslice<DataSet::Interp::Linear> (out, in, T, oversample);
+        Image::Interp::reslice<Image::Interp::Linear> (out, in, T, oversample);
         break;
       case 2:
-        DataSet::Interp::reslice<DataSet::Interp::Cubic> (out, in, T, oversample);
+        Image::Interp::reslice<Image::Interp::Cubic> (out, in, T, oversample);
         break;
       case 3:
-        DataSet::Interp::reslice<DataSet::Interp::Sinc> (out, in, T, oversample);
+        Image::Interp::reslice<Image::Interp::Sinc> (out, in, T, oversample);
         break;
       default:
         assert (0);
@@ -205,7 +205,7 @@ void run ()
     Image::Data<float> data_out (header_out);
     Image::Data<float>::voxel_type out (data_out);
 
-    DataSet::copy_with_progress (out, in);
+    Image::copy_with_progress (out, in);
   }
 }
 

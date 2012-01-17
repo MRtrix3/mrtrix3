@@ -27,7 +27,7 @@
 #include "math/permutation.h"
 #include "math/quaternion.h"
 #include "image/header.h"
-#include "dataset/stride.h"
+#include "image/stride.h"
 
 namespace MR
 {
@@ -314,9 +314,9 @@ namespace MR
 
         // new transform handling code starts here
 
-        DataSet::Stride::List strides = DataSet::Stride::get (H);
+        Image::Stride::List strides = Image::Stride::get (H);
         strides.resize (3);
-        std::vector<size_t> perm = DataSet::Stride::order (strides);
+        std::vector<size_t> perm = Image::Stride::order (strides);
         bool flip[] = { strides[perm[0]] < 0, strides[perm[1]] < 0, strides[perm[2]] < 0 };
 
         Math::Matrix<float> M (H.transform());

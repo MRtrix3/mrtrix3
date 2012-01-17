@@ -24,8 +24,8 @@
 #include "image/voxel.h"
 #include "image/data.h"
 #include "math/rng.h"
-#include "dataset/loop.h"
-#include "dataset/stride.h"
+#include "image/loop.h"
+#include "image/stride.h"
 
 MRTRIX_APPLICATION
 
@@ -41,7 +41,7 @@ ARGUMENTS
   + Argument ("image", "the input image or intensity.")
   + Argument ("output", "the output image.").type_image_out ();
 
-OPTIONS 
+OPTIONS
   + Option ("abs", "take absolute value of current voxel value").allow_multiple()
   + Option ("neg", "take negative value of current voxel value").allow_multiple()
   + Option ("sqrt", "take square root of current voxel value").allow_multiple()
@@ -160,7 +160,7 @@ class Source : public Functor
         if (i != axis)
           (*V) [i] = V->dim (i) > 1 ? pos[i] : 0;
 
-      if (axis < V->ndim()) { 
+      if (axis < V->ndim()) {
         if (V->dim (axis) > 1) { // straight copy:
           for ( (*V) [axis] = 0; (*V) [axis] < V->dim (axis); ++ (*V) [axis])
             values[ (*V) [axis]] = V->value();
@@ -599,12 +599,12 @@ void run () {
 
   Image::Data<value_type> data_out (destination_header);
   Image::Data<value_type>::voxel_type out (data_out);
-  std::vector<size_t> axes = DataSet::Stride::order (out);
+  std::vector<size_t> axes = Image::Stride::order (out);
 
   Counter count (*last, out, axes[0]);
 
   axes.erase (axes.begin(), axes.begin() +1);
-  DataSet::LoopInOrder loop (axes, "performing mathematical operations...");
+  Image::LoopInOrder loop (axes, "performing mathematical operations...");
   for (loop.start (count, out); loop.ok(); loop.next (count, out))
     count.get (out);
 

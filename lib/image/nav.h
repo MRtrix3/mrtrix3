@@ -20,13 +20,13 @@
 
 */
 
-#ifndef __dataset_nav_h__
-#define __dataset_nav_h__
+#ifndef __image_nav_h__
+#define __image_nav_h__
 
 
 namespace MR
 {
-namespace DataSet
+namespace Image
 {
 namespace Nav
 {

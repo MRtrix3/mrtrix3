@@ -24,14 +24,14 @@
 #define __image_data_common_h__
 
 #include "image/header.h"
-#include "dataset/stride.h"
+#include "image/stride.h"
 
 namespace MR
 {
   namespace Image
   {
     //! \cond skip
-    
+
     template <class ArrayType> class Voxel;
 
     // \endcond
@@ -75,7 +75,7 @@ namespace MR
         }
 
       protected:
-        const Header&   H; 
+        const Header&   H;
     };
 
 

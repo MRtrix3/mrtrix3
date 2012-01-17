@@ -24,11 +24,11 @@
 #include "progressbar.h"
 #include "image/voxel.h"
 #include "image/data.h"
-#include "dataset/interp/nearest.h"
-#include "dataset/interp/linear.h"
-#include "dataset/interp/cubic.h"
-#include "dataset/interp/sinc.h"
-#include "dataset/interp/reslice.h"
+#include "image/interp/nearest.h"
+#include "image/interp/linear.h"
+#include "image/interp/cubic.h"
+#include "image/interp/sinc.h"
+#include "image/interp/reslice.h"
 
 MRTRIX_APPLICATION
 
@@ -44,12 +44,12 @@ void usage ()
   DESCRIPTION
   + "Resample an image to a different resolution by a given sample factor.";
 
-ARGUMENTS 
+ARGUMENTS
   + Argument ("input", "the input image.").type_image_in ()
   + Argument ("factor", "the sample factor").type_float (0.01, 2.0, 100.0)
   + Argument ("output", "the output image .").type_image_out ();
 
-OPTIONS 
+OPTIONS
   + Option ("interp", "set the interpolation method when resampling (default: cubic).")
   + Argument ("method", "the interpolation method.").type_choice (interp_choices);
 }
@@ -87,10 +87,10 @@ void run () {
   T.identity();
 
   switch (interp) {
-    case 0: DataSet::Interp::reslice<DataSet::Interp::Nearest> (out, in, T); break;
-    case 1: DataSet::Interp::reslice<DataSet::Interp::Linear>  (out, in, T); break;
-    case 2: DataSet::Interp::reslice<DataSet::Interp::Cubic>   (out, in, T); break;
-    case 3: DataSet::Interp::reslice<DataSet::Interp::Sinc>    (out, in, T); break;
+    case 0: Image::Interp::reslice<Image::Interp::Nearest> (out, in, T); break;
+    case 1: Image::Interp::reslice<Image::Interp::Linear>  (out, in, T); break;
+    case 2: Image::Interp::reslice<Image::Interp::Cubic>   (out, in, T); break;
+    case 3: Image::Interp::reslice<Image::Interp::Sinc>    (out, in, T); break;
     default: assert (0);
   }
 }

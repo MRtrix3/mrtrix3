@@ -25,7 +25,7 @@
 
 #include "debug.h"
 #include "image/data.h"
-#include "dataset/copy.h"
+#include "image/copy.h"
 
 namespace MR
 {
@@ -35,7 +35,7 @@ namespace MR
 
     //! This class provides access to the voxel intensities of an image.
     /*! This class keeps a reference to an existing Image::Header, and provides
-     * access to the corresponding image intensities. 
+     * access to the corresponding image intensities.
      * \todo Provide specialisations of get/set methods to handle conversions
      * between floating-point and integer types */
     template <typename T> class DataPreload : public DataCommon<T>
@@ -45,10 +45,10 @@ namespace MR
       public:
         //! construct a DataPreload object to access the data in the Image::Header \p parent
         DataPreload (const Header& parent) :
-          DataCommon<T> (parent), 
-          data (NULL), 
+          DataCommon<T> (parent),
+          data (NULL),
           handler (H.get_handler()),
-          stride_ (DataSet::Stride::get (H)) {
+          stride_ (Image::Stride::get (H)) {
             init (handler->nsegments() == 1 &&
               H.datatype() == DataType::from<value_type>());
           }
@@ -56,13 +56,13 @@ namespace MR
         //! construct a DataPreload object to access the data in the Image::Header \p parent
         /*! the resulting instance is guaranteed to have the strides specified.
          * Any zero strides will be ignored. */
-        DataPreload (const Header& parent, const DataSet::Stride::List& desired_strides) :
-          DataCommon<T> (parent), 
-          data (NULL), 
+        DataPreload (const Header& parent, const Image::Stride::List& desired_strides) :
+          DataCommon<T> (parent),
+          data (NULL),
           handler (H.get_handler()),
-          stride_ (DataSet::Stride::get_nearest_match (H, desired_strides)) {
+          stride_ (Image::Stride::get_nearest_match (H, desired_strides)) {
 
-            init (stride_ == DataSet::Stride::get (H) && 
+            init (stride_ == Image::Stride::get (H) &&
                 handler->nsegments() == 1 &&
               H.datatype() == DataType::from<value_type>());
           }
@@ -92,7 +92,7 @@ namespace MR
         }
 
         friend std::ostream& operator<< (std::ostream& stream, const DataPreload& V) {
-          stream << "preloaded data for image \"" << V.name() << "\": " + str (DataSet::voxel_count (V)) 
+          stream << "preloaded data for image \"" << V.name() << "\": " + str (Image::voxel_count (V))
             + " voxels in " + V.datatype().specifier() + " format, stored at address " + str (size_t (&(*V.data)));
           return stream;
         }
@@ -100,7 +100,7 @@ namespace MR
       private:
         value_type* data;
         Handler::Base* handler;
-        const DataSet::Stride::List stride_;
+        const Image::Stride::List stride_;
 
         void init (bool do_load) {
           assert (handler);
@@ -113,12 +113,12 @@ namespace MR
           }
 
           handler = NULL;
-          data = new T [DataSet::voxel_count(H)];
+          data = new T [Image::voxel_count(H)];
           info ("data for image \"" + H.name() + "\" will be loaded into memory");
           Data<T> filedata (H);
           typename Data<T>::voxel_type src (filedata);
           voxel_type dest (*this);
-          DataSet::copy_with_progress_message ("loading data for image \"" + H.name() + "\"...", dest, src);
+          Image::copy_with_progress_message ("loading data for image \"" + H.name() + "\"...", dest, src);
         }
 
     };

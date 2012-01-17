@@ -85,7 +85,7 @@ void run ()
 
   Image::Header header_in (argument[0]);
 
-  DataSet::Stride::List stride (header_in.ndim(), 0);
+  Image::Stride::List stride (header_in.ndim(), 0);
   stride[2] = 1;
 
   Image::DataPreload<float> data (header_in, stride);
@@ -105,7 +105,7 @@ void run ()
   VAR (scratch_vox);
   
   std::cout << "values: [ ";
-  for (size_t n = 0; n < DataSet::voxel_count (data); n += 10000)
+  for (size_t n = 0; n < Image::voxel_count (data); n += 10000)
     std::cout << data.get(n) << " ";
   std::cout << "]\n";
 

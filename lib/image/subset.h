@@ -20,16 +20,16 @@
 
 */
 
-#ifndef __dataset_subset_h__
-#define __dataset_subset_h__
+#ifndef __image_subset_h__
+#define __image_subset_h__
 
 #include "math/matrix.h"
-#include "dataset/value.h"
-#include "dataset/position.h"
+#include "image/value.h"
+#include "image/position.h"
 
 namespace MR
 {
-  namespace DataSet
+  namespace Image
   {
 
     template <class Set>

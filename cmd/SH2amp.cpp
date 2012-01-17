@@ -24,7 +24,7 @@
 #include "progressbar.h"
 #include "thread/exec.h"
 #include "thread/queue.h"
-#include "dataset/loop.h"
+#include "image/loop.h"
 #include "image/data.h"
 #include "image/voxel.h"
 #include "dwi/gradient.h"
@@ -83,8 +83,8 @@ class DataLoader {
     void execute () {
       Queue::Writer::Item item (writer);
 
-      DataSet::Loop outer ("computing amplitudes...", 0, 3 );
-      DataSet::Loop inner (3);
+      Image::Loop outer ("computing amplitudes...", 0, 3 );
+      Image::Loop inner (3);
 
       for (outer.start (sh_voxel); outer.ok(); outer.next (sh_voxel)) {
         item->data.allocate (sh_voxel.dim(3));

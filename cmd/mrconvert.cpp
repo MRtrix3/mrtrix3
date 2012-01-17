@@ -25,9 +25,9 @@
 #include "image/data.h"
 #include "image/voxel.h"
 #include "image/axis.h"
-#include "dataset/copy.h"
-#include "dataset/extract.h"
-#include "dataset/permute_axes.h"
+#include "image/copy.h"
+#include "image/extract.h"
+#include "image/permute_axes.h"
 
 MRTRIX_APPLICATION
 
@@ -184,7 +184,7 @@ void run ()
           pos[n][i] = i;
       }
     }
-    DataSet::Extract<Image::Data<float>::voxel_type > extract (in, pos);
+    Image::Extract<Image::Data<float>::voxel_type > extract (in, pos);
 
     set_header_out (header_out, extract, axes, vox, strides);
     header_out.create (argument[1]);
@@ -192,11 +192,11 @@ void run ()
     Image::Data<float>::voxel_type  out (data_out);
 
     if (axes.size()) {
-      DataSet::PermuteAxes<DataSet::Extract<Image::Data<float>::voxel_type > > perm (extract, axes);
-      DataSet::copy_with_progress (out, perm);
+      Image::PermuteAxes<Image::Extract<Image::Data<float>::voxel_type > > perm (extract, axes);
+      Image::copy_with_progress (out, perm);
     }
     else
-      DataSet::copy_with_progress (out, extract);
+      Image::copy_with_progress (out, extract);
   }
   else {
     // straight copy:
@@ -205,11 +205,11 @@ void run ()
     Image::Data<float> data_out (header_out);
     Image::Data<float>::voxel_type out (data_out);
     if (axes.size()) {
-      DataSet::PermuteAxes<Image::Data<float>::voxel_type > perm (in, axes);
-      DataSet::copy_with_progress (out, perm);
+      Image::PermuteAxes<Image::Data<float>::voxel_type > perm (in, axes);
+      Image::copy_with_progress (out, perm);
     }
     else
-      DataSet::copy_with_progress (out, in);
+      Image::copy_with_progress (out, in);
   }
 }
 

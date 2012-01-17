@@ -20,15 +20,15 @@
 
  */
 
-#ifndef __dataset_interp_base_h__
-#define __dataset_interp_base_h__
+#ifndef __image_interp_base_h__
+#define __image_interp_base_h__
 
 #include "point.h"
-#include "dataset/transform.h"
+#include "image/transform.h"
 
 namespace MR
 {
-  namespace DataSet
+  namespace Image
   {
 
     /** \defgroup interp Interpolation

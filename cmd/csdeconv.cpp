@@ -3,7 +3,7 @@
 #include "progressbar.h"
 #include "thread/exec.h"
 #include "thread/queue.h"
-#include "dataset/loop.h"
+#include "image/loop.h"
 #include "image/data.h"
 #include "image/voxel.h"
 #include "dwi/sdeconv/constrained.h"
@@ -15,7 +15,7 @@ MRTRIX_APPLICATION
 
 void usage ()
 {
-  DESCRIPTION 
+  DESCRIPTION
     + "perform non-negativity constrained spherical deconvolution."
 
     + "Note that this program makes use of implied symmetries in the diffusion "
@@ -32,15 +32,15 @@ void usage ()
 
     + Math::SH::encoding_description;
 
-  ARGUMENTS 
-    + Argument ("dwi", 
+  ARGUMENTS
+    + Argument ("dwi",
         "the input diffusion-weighted image.").type_image_in()
-    + Argument ("response", 
+    + Argument ("response",
         "the diffusion-weighted signal response function for a single fibre population.").type_file()
-    + Argument ("SH", 
+    + Argument ("SH",
         "the output spherical harmonics coefficients image.").type_image_out();
 
-  OPTIONS 
+  OPTIONS
     + DWI::GradOption
     + DWI::CSD_options;
 }
@@ -78,11 +78,11 @@ class DataLoader
       loop ("performing constrained spherical deconvolution...", 0, 3),
       normalise (normalise_to_b0) {
         if (mask_data) {
-          DataSet::check_dimensions (*mask_data, dwi, 0, 3);
+          Image::check_dimensions (*mask_data, dwi, 0, 3);
           mask = new Image::Data<bool>::voxel_type (*mask_data);
           loop.start (*mask, dwi);
         }
-        else 
+        else
           loop.start (dwi);
       }
 
@@ -113,7 +113,7 @@ class DataLoader
     Ptr<Image::Data<bool>::voxel_type> mask;
     const std::vector<int>&  bzeros;
     const std::vector<int>&  dwis;
-    DataSet::Loop loop;
+    Image::Loop loop;
     bool  normalise;
 
     void load (Item& item) {

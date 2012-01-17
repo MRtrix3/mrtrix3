@@ -24,8 +24,8 @@
 #define __filter_optimal_threshold_h__
 
 #include "filter/base.h"
-#include "dataset/loop.h"
-#include "dataset/min_max.h"
+#include "image/loop.h"
+#include "image/min_max.h"
 #include "data_type.h"
 #include "math/golden_section_search.h"
 
@@ -47,7 +47,7 @@ namespace MR
           double operator()(double threshold) const{
             double sum = 0;
             double mean_xy = 0;
-            DataSet::LoopInOrder loop (*input_image_);
+            Image::LoopInOrder loop (*input_image_);
             for (loop.start (*input_image_); loop.ok(); loop.next (*input_image_)) {
               if (input_image_->value() > threshold) {
                 sum += 1;
@@ -70,7 +70,7 @@ namespace MR
                 voxel_count_ *= input_image_->dim(d);
 
               double sum_sqr = 0, sum = 0;
-              DataSet::LoopInOrder loop (*input_image_);
+              Image::LoopInOrder loop (*input_image_);
               for (loop.start (*input_image_); loop.ok(); loop.next (*input_image_)) {
                 sum_sqr += (input_image_->value() * input_image_->value());
                 sum += input_image_->value();
@@ -122,7 +122,7 @@ namespace MR
 
       void execute (OutputSet& output) {
         double min, max;
-        DataSet::min_max(*input_image_, min, max);
+        Image::min_max(*input_image_, min, max);
 
         double optimal_threshold = 0;
         {
@@ -131,7 +131,7 @@ namespace MR
           optimal_threshold = golden_search.run(min + 0.001*(max-min), (min+max)/2.0 , max-0.001*(max-min));
         }
 
-        DataSet::LoopInOrder threshold_loop (*input_image_, "thresholding...");
+        Image::LoopInOrder threshold_loop (*input_image_, "thresholding...");
         for (threshold_loop.start (*input_image_,output); threshold_loop.ok(); threshold_loop.next (*input_image_,output)) {
           if (finite (input_image_->value()) && input_image_->value() > optimal_threshold)
             output.value() = 1;

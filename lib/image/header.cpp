@@ -22,8 +22,8 @@
 
 #include "app.h"
 #include "image/header.h"
-#include "dataset/stride.h"
-#include "dataset/transform.h"
+#include "image/stride.h"
+#include "image/transform.h"
 #include "math/matrix.h"
 #include "math/permutation.h"
 #include "image/axis.h"
@@ -95,8 +95,8 @@ namespace MR
 
       {
         AxesWrapper wrap (axes_);
-        DataSet::Stride::sanitise (wrap);
-        DataSet::Stride::symbolise (wrap);
+        Image::Stride::sanitise (wrap);
+        Image::Stride::symbolise (wrap);
       }
 
 
@@ -127,7 +127,7 @@ namespace MR
       }
 
       if (!transform().is_set())
-        DataSet::Transform::set_default (transform_, *this);
+        Image::Transform::set_default (transform_, *this);
 
       transform_ (3,0) = transform_ (3,1) = transform_ (3,2) = 0.0;
       transform_ (3,3) = 1.0;
@@ -433,8 +433,8 @@ namespace MR
               "  Data strides:      [ ";
 
 
-      std::vector<ssize_t> strides (DataSet::Stride::get (*this));
-      DataSet::Stride::symbolise (strides);
+      std::vector<ssize_t> strides (Image::Stride::get (*this));
+      Image::Stride::symbolise (strides);
       for (i = 0; i < ndim(); i++)
         desc += stride (i) ? str (strides[i]) + " " : "? ";
 

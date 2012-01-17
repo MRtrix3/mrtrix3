@@ -25,8 +25,8 @@
 
 #include "point.h"
 #include "image/scratch.h"
-#include "dataset/copy.h"
-#include "dataset/nav.h"
+#include "image/copy.h"
+#include "image/nav.h"
 #include "filter/base.h"
 
 
@@ -70,12 +70,12 @@ namespace MR
         for (seed[2] = 0; seed[2] != in.dim (2); ++seed[2]) {
           for (seed[1] = 0; seed[1] != in.dim (1); ++seed[1]) {
             for (seed[0] = 0; seed[0] != in.dim (0); ++seed[0]) {
-              if (!DataSet::Nav::get_value_at_pos (visited, seed) && DataSet::Nav::get_value_at_pos (in, seed)) {
+              if (!Image::Nav::get_value_at_pos (visited, seed) && Image::Nav::get_value_at_pos (in, seed)) {
 
                 visited.value() = true;
                 Image::Scratch<value_type> local_mask_data (in.header(), "local_mask");
                 typename Image::Scratch<value_type>::voxel_type local_mask (local_mask_data);
-                DataSet::Nav::set_value_at_pos (local_mask, seed, (value_type)in.value());
+                Image::Nav::set_value_at_pos (local_mask, seed, (value_type)in.value());
                 size_t local_mask_size = 1;
 
                 std::vector<Voxel> to_expand (1, seed);
@@ -88,10 +88,10 @@ namespace MR
                   for (std::vector<Voxel>::const_iterator step = adj_voxels.begin(); step != adj_voxels.end(); ++step) {
                     Voxel to_test (v);
                     to_test += *step;
-                    if (DataSet::Nav::within_bounds (visited, to_test) && !DataSet::Nav::get_value_at_pos (visited, to_test)) {
-                      if (DataSet::Nav::get_value_at_pos (in, to_test)) {
-                        DataSet::Nav::set_value_at_pos (visited, to_test, true);
-                        DataSet::Nav::set_value_at_pos (local_mask, to_test, (value_type)in.value());
+                    if (Image::Nav::within_bounds (visited, to_test) && !Image::Nav::get_value_at_pos (visited, to_test)) {
+                      if (Image::Nav::get_value_at_pos (in, to_test)) {
+                        Image::Nav::set_value_at_pos (visited, to_test, true);
+                        Image::Nav::set_value_at_pos (local_mask, to_test, (value_type)in.value());
                         ++local_mask_size;
                         to_expand.push_back (to_test);
                       }
@@ -102,7 +102,7 @@ namespace MR
 
                 if (local_mask_size > largest_mask_size) {
                   largest_mask_size = local_mask_size;
-                  DataSet::copy (output, local_mask);
+                  Image::copy (output, local_mask);
                 }
 
                 ++progress;

@@ -20,19 +20,19 @@
 
 */
 
-#ifndef __dataset_kernel_h__
-#define __dataset_kernel_h__
+#ifndef __image_kernel_h__
+#define __image_kernel_h__
 
 #include "ptr.h"
 #include "progressbar.h"
 #include "thread/exec.h"
 #include "thread/queue.h"
-#include "dataset/misc.h"
-#include "dataset/loop.h"
+#include "image/misc.h"
+#include "image/loop.h"
 
 
 namespace MR {
-  namespace DataSet {
+  namespace Image {
 
     namespace Kernel {
 
@@ -106,7 +106,7 @@ namespace MR {
               slice_offset ((nslices+1)/2),
               data (nslices),
               loop (get_axes (axes), progress_message),
-              slice_axes (2) { 
+              slice_axes (2) {
                 slice_axes[0] = x;
                 slice_axes[1] = y;
                 loop.start (src);
@@ -141,7 +141,7 @@ namespace MR {
             const ssize_t nslices;
             const ssize_t slice_offset;
             std::vector<RefPtr<value_type,true> > data;
-            DataSet::LoopInOrder loop;
+            Image::LoopInOrder loop;
             std::vector<size_t> slice_axes;
 
             std::vector<size_t> get_axes (const std::vector<size_t>& axes) const {
@@ -161,7 +161,7 @@ namespace MR {
               data[nslices-1] = a;
               if (a) {
                 const ssize_t pos[] = { src[0], src[1], src[2] };
-                DataSet::LoopInOrder loop (slice_axes);
+                Image::LoopInOrder loop (slice_axes);
                 src[z] = slice;
                 value_type* p = a;
                 for (loop.start (src); loop.ok(); loop.next (src)) {
@@ -188,9 +188,9 @@ namespace MR {
 
             Processor (Output& output, Functor functor, const size_t axes_ordering[3]) :
               dest (output),
-              axes (axes_ordering), 
+              axes (axes_ordering),
               func (functor),
-              kernel (axes, dest.dim(axes[0])) { 
+              kernel (axes, dest.dim(axes[0])) {
                 extent[0] = (func.extent(axes[0])-1)/2;
                 extent[1] = (func.extent(axes[1])-1)/2;
                 extent[2] = (func.extent(axes[2])-1)/2;
@@ -247,7 +247,7 @@ namespace MR {
       template <class Input, class Output, class Functor>
         inline void run (Output& output, Input& input, Functor functor, const std::string& progress_message)
         {
-          std::vector<size_t> ax = DataSet::Stride::order (input, 0, 3);
+          std::vector<size_t> ax = Image::Stride::order (input, 0, 3);
           const size_t axes[] = { ax[0], ax[1], ax[2] };
           functor.prepare (input, axes[0], axes[1], axes[2]);
 

@@ -20,15 +20,15 @@
 
  */
 
-#ifndef __dataset_interp_cubic_h__
-#define __dataset_interp_cubic_h__
+#ifndef __image_interp_cubic_h__
+#define __image_interp_cubic_h__
 
-#include "dataset/interp/base.h"
+#include "image/interp/base.h"
 #include "math/hermite.h"
 
 namespace MR
 {
-  namespace DataSet
+  namespace Image
   {
     namespace Interp
     {

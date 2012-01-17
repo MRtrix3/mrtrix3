@@ -20,15 +20,15 @@
 
 */
 
-#ifndef __dataset_permute_axes_h__
-#define __dataset_permute_axes_h__
+#ifndef __image_permute_axes_h__
+#define __image_permute_axes_h__
 
 #include "math/matrix.h"
-#include "dataset/value.h"
+#include "image/value.h"
 
 namespace MR
 {
-  namespace DataSet
+  namespace Image
   {
 
     template <class Set> class PermuteAxes

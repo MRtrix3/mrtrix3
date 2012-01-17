@@ -20,14 +20,14 @@
 
 */
 
-#ifndef __dataset_histogram_h__
-#define __dataset_histogram_h__
+#ifndef __image_histogram_h__
+#define __image_histogram_h__
 
-#include "dataset/min_max.h"
+#include "image/min_max.h"
 
 namespace MR
 {
-  namespace DataSet
+  namespace Image
   {
 
     template <class Set> class Histogram
@@ -50,7 +50,7 @@ namespace MR
           for (size_t n = 0; n < list.size(); n++)
             list[n].value = min + step * (n + 0.5);
 
-          MR::DataSet::LoopInOrder loop (D, "building histogram of \"" + shorten (D.name()) + "\"...");
+          MR::Image::LoopInOrder loop (D, "building histogram of \"" + shorten (D.name()) + "\"...");
           for (loop.start (D); loop.ok(); loop.next (D)) {
             value_type val = D.value();
             if (finite (val) && val != 0.0) {
@@ -73,22 +73,22 @@ namespace MR
         }
         value_type first_min () const {
           size_t p1 = 0;
-          while (list[p1].frequency <= list[p1+1].frequency && p1+2 < list.size()) 
+          while (list[p1].frequency <= list[p1+1].frequency && p1+2 < list.size())
             ++p1;
           for (size_t p = p1; p < list.size(); ++p) {
-            if (2*list[p].frequency < list[p1].frequency) 
+            if (2*list[p].frequency < list[p1].frequency)
               break;
-            if (list[p].frequency >= list[p1].frequency) 
+            if (list[p].frequency >= list[p1].frequency)
               p1 = p;
           }
 
           size_t m1 (p1+1);
-          while (list[m1].frequency >= list[m1+1].frequency && m1+2 < list.size()) 
+          while (list[m1].frequency >= list[m1+1].frequency && m1+2 < list.size())
             ++m1;
           for (size_t m = m1; m < list.size(); ++m) {
-            if (list[m].frequency > 2*list[m1].frequency) 
+            if (list[m].frequency > 2*list[m1].frequency)
               break;
-            if (list[m].frequency <= list[m1].frequency) 
+            if (list[m].frequency <= list[m1].frequency)
               m1 = m;
           }
 

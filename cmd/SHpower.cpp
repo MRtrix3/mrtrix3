@@ -26,7 +26,7 @@
 #include "image/data.h"
 #include "math/matrix.h"
 #include "math/SH.h"
-#include "dataset/loop.h"
+#include "image/loop.h"
 
 MRTRIX_APPLICATION
 
@@ -34,10 +34,10 @@ using namespace MR;
 using namespace App;
 
 void usage () {
-  DESCRIPTION 
+  DESCRIPTION
     + "compute the power contained within each harmonic degree.";
 
-  ARGUMENTS 
+  ARGUMENTS
     + Argument ("SH", "the input spherical harmonics coefficients image.").type_image_in ()
     + Argument ("power", "the ouput power image.").type_image_out ();
 }
@@ -65,7 +65,7 @@ void run () {
   Image::Data<float> power_data (power_header);
   Image::Data<float>::voxel_type P (power_data);
 
-  DataSet::LoopInOrder loop (P, "calculating SH power...", 0, 3);
+  Image::LoopInOrder loop (P, "calculating SH power...", 0, 3);
   for (loop.start (P, SH); loop.ok(); loop.next (P, SH)) {
     P[3] = 0;
     for (int l = 0; l <= lmax; l+=2) {

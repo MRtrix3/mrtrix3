@@ -23,7 +23,7 @@
 #ifndef __filter_median3D_h__
 #define __filter_median3D_h__
 
-#include "dataset/kernel.h"
+#include "image/kernel.h"
 #include "filter/base.h"
 
 namespace MR
@@ -60,7 +60,7 @@ namespace MR
           template <class Set>
             void prepare (Set& set, size_t x_axis, size_t y_axis, size_t z_axis) { }
 
-          T operator() (const DataSet::Kernel::Data<T>& kernel) const
+          T operator() (const Image::Kernel::Data<T>& kernel) const
           {
             size_t nc = 0;
             T cm = -INFINITY;
@@ -142,7 +142,7 @@ namespace MR
         }
 
         void execute (OutputSet& output) {
-          DataSet::Kernel::run (output, *input_image_, MedianFunctor<float>(extent_), "median filtering...");
+          Image::Kernel::run (output, *input_image_, MedianFunctor<float>(extent_), "median filtering...");
         }
 
     private:

@@ -20,14 +20,14 @@
 
  */
 
-#ifndef __dataset_interp_nearest_h__
-#define __dataset_interp_nearest_h__
+#ifndef __image_interp_linear_h__
+#define __image_interp_linear_h__
 
-#include "dataset/interp/base.h"
+#include "image/interp/base.h"
 
 namespace MR
 {
-  namespace DataSet
+  namespace Image
   {
     namespace Interp
     {
@@ -35,7 +35,7 @@ namespace MR
       //! \addtogroup interp
       // @{
 
-      //! This class provides access to the voxel intensities of a data set, using nearest-neighbour interpolation.
+      //! This class provides access to the voxel intensities of a data set, using tri-linear interpolation.
       /*! Interpolation is only performed along the first 3 (spatial) axes.
        * The (integer) position along the remaining axes should be set using the
        * template DataSet class.
@@ -45,8 +45,8 @@ namespace MR
        * \code
        * Image::Voxel<float> voxel (image);
        *
-       * // create an Interp::Nearest object using voxel as the parent data set:
-       * DataSet::Interp::Nearest<Image::Voxel<float> > interp (voxel);
+       * // create an Interp::Linear object using voxel as the parent data set:
+       * DataSet::Interp::Linear<Image::Voxel<float> > interp (voxel);
        *
        * // set the scanner-space position to [ 10.2 3.59 54.1 ]:
        * interp.scanner (10.2, 3.59, 54.1);
@@ -69,7 +69,7 @@ namespace MR
        * \endcode
        */
 
-      template <class Set, typename T = float> class Nearest : public Base<Set,T>
+      template <class Set, typename T = float> class Linear : public Base<Set,T>
       {
         private:
           typedef class Base<Set> B;
@@ -78,9 +78,9 @@ namespace MR
           typedef typename Set::value_type value_type;
           typedef typename B::pos_type pos_type;
 
-          //! construct an Nearest object to obtain interpolated values using the
+          //! construct an Linear object to obtain interpolated values using the
           // parent DataSet class
-          Nearest (Set& parent) : Base<Set> (parent) { }
+          Linear (Set& parent) : Base<Set> (parent) { }
 
           //! Set the current position to <b>voxel space</b> position \a pos
           /*! This will set the position from which the image intensity values will
@@ -89,12 +89,52 @@ namespace MR
           bool voxel (const Point<pos_type>& pos) {
             Point<pos_type> f = B::set (pos);
             if (B::out_of_bounds) return (true);
-            B::data[0] = Math::round<ssize_t> (pos[0]);
-            B::data[1] = Math::round<ssize_t> (pos[1]);
-            B::data[2] = Math::round<ssize_t> (pos[2]);
+
+            if (pos[0] < 0.0) {
+              f[0] = 0.0;
+              B::data[0] = 0;
+            }
+            else {
+              B::data[0] = Math::floor (pos[0]);
+              if (pos[0] > B::bounds[0]-0.5) f[0] = 0.0;
+            }
+            if (pos[1] < 0.0) {
+              f[1] = 0.0;
+              B::data[1] = 0;
+            }
+            else {
+              B::data[1] = Math::floor (pos[1]);
+              if (pos[1] > B::bounds[1]-0.5) f[1] = 0.0;
+            }
+
+            if (pos[2] < 0.0) {
+              f[2] = 0.0;
+              B::data[2] = 0;
+            }
+            else {
+              B::data[2] = Math::floor (pos[2]);
+              if (pos[2] > B::bounds[2]-0.5) f[2] = 0.0;
+            }
+
+            faaa = (1.0-f[0]) * (1.0-f[1]) * (1.0-f[2]);
+            if (faaa < 1e-6) faaa = 0.0;
+            faab = (1.0-f[0]) * (1.0-f[1]) *      f[2];
+            if (faab < 1e-6) faab = 0.0;
+            faba = (1.0-f[0]) *      f[1]  * (1.0-f[2]);
+            if (faba < 1e-6) faba = 0.0;
+            fabb = (1.0-f[0]) *      f[1]  *      f[2];
+            if (fabb < 1e-6) fabb = 0.0;
+            fbaa =      f[0]  * (1.0-f[1]) * (1.0-f[2]);
+            if (fbaa < 1e-6) fbaa = 0.0;
+            fbab =      f[0]  * (1.0-f[1])      * f[2];
+            if (fbab < 1e-6) fbab = 0.0;
+            fbba =      f[0]  *      f[1]  * (1.0-f[2]);
+            if (fbba < 1e-6) fbba = 0.0;
+            fbbb =      f[0]  *      f[1]  *      f[2];
+            if (fbbb < 1e-6) fbbb = 0.0;
+
             return (false);
           }
-
 
           //! Set the current position to <b>image space</b> position \a pos
           /*! This will set the position from which the image intensity values will
@@ -115,8 +155,30 @@ namespace MR
 
           value_type value () const {
             if (B::out_of_bounds) return (NAN);
-            return (B::data.value());
+            value_type val = 0.0;
+            if (faaa) val  = faaa * B::data.value();
+            B::data[2]++;
+            if (faab) val += faab * B::data.value();
+            B::data[1]++;
+            if (fabb) val += fabb * B::data.value();
+            B::data[2]--;
+            if (faba) val += faba * B::data.value();
+            B::data[0]++;
+            if (fbba) val += fbba * B::data.value();
+            B::data[1]--;
+            if (fbaa) val += fbaa * B::data.value();
+            B::data[2]++;
+            if (fbab) val += fbab * B::data.value();
+            B::data[1]++;
+            if (fbbb) val += fbbb * B::data.value();
+            B::data[0]--;
+            B::data[1]--;
+            B::data[2]--;
+            return (val);
           }
+
+        protected:
+          float  faaa, faab, faba, fabb, fbaa, fbab, fbba, fbbb;
       };
 
       //! @}
@@ -126,5 +188,4 @@ namespace MR
 }
 
 #endif
-
 

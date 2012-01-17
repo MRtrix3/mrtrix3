@@ -26,6 +26,8 @@
 #include <cassert>
 #include <vector>
 #include "ptr.h"
+#include "math/matrix.h"
+#include "image/header.h"
 
 namespace MR
 {

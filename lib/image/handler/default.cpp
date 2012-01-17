@@ -25,7 +25,7 @@
 #include "app.h"
 #include "image/header.h"
 #include "image/handler/default.h"
-#include "dataset/misc.h"
+#include "image/misc.h"
 
 namespace MR
 {
@@ -42,7 +42,7 @@ namespace MR
         if (Hfiles.empty())
           throw Exception ("no files specified in header for image \"" + H.name() + "\"");
 
-        segsize = DataSet::voxel_count (H) / Hfiles.size();
+        segsize = Image::voxel_count (H) / Hfiles.size();
 
         if (H.datatype().bits() == 1) {
           bytes_per_segment = segsize/8;

@@ -20,12 +20,12 @@
 
 */
 
-#ifndef __dataset_value_h__
-#define __dataset_value_h__
+#ifndef __image_value_h__
+#define __image_value_h__
 
 namespace MR
 {
-  namespace DataSet
+  namespace Image
   {
 
     /*! \brief a class to simplify the implementation of DataSet classes with

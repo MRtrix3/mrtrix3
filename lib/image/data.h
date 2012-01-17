@@ -27,17 +27,17 @@
 #include "get_set.h"
 #include "image/header.h"
 #include "image/data_common.h"
-#include "dataset/stride.h"
-#include "dataset/value.h"
-#include "dataset/position.h"
+#include "image/stride.h"
+#include "image/value.h"
+#include "image/position.h"
 
 namespace MR
 {
   namespace Image
   {
-   
+
     //! \cond skip
-    
+
     namespace
     {
       template <typename value_type, typename S> value_type __get (const void* data, size_t i)
@@ -91,9 +91,9 @@ namespace MR
 
 
 
-    //! The standard DataArray interface 
+    //! The standard DataArray interface
     /*! This class keeps a reference to an existing Image::Header, and provides
-     * access to the corresponding image intensities. 
+     * access to the corresponding image intensities.
      * \todo Provide specialisations of get/set methods to handle conversions
      * between floating-point and integer types */
     template <typename T> class Data : public DataCommon<T>
@@ -103,7 +103,7 @@ namespace MR
       public:
         //! construct a Data object to access the data in the Image::Header \p parent
         Data (const Header& parent) :
-          DataCommon<T> (parent), 
+          DataCommon<T> (parent),
           handler (*H.get_handler()) {
           assert (H.get_handler());
           handler.open();
@@ -124,11 +124,11 @@ namespace MR
         }
 
         friend std::ostream& operator<< (std::ostream& stream, const Data& V) {
-          stream << "data for image \"" << V.name() << "\": " + str (DataSet::voxel_count (V)) 
-            + " voxels in " + V.datatype().specifier() + " format, stored in " + str (V.handler.nsegments()) 
-            + " segments of size " + str (V.handler.segment_size()) 
+          stream << "data for image \"" << V.name() << "\": " + str (Image::voxel_count (V))
+            + " voxels in " + V.datatype().specifier() + " format, stored in " + str (V.handler.nsegments())
+            + " segments of size " + str (V.handler.segment_size())
             + ", at addresses [ ";
-          for (size_t n = 0; n < V.handler.nsegments(); ++n) 
+          for (size_t n = 0; n < V.handler.nsegments(); ++n)
             stream << str (size_t (V.handler.segment(n))) << " ";
           stream << "]";
           return stream;

@@ -28,9 +28,9 @@
 #include "filter/optimal_threshold.h"
 #include "filter/median3D.h"
 #include "ptr.h"
-#include "dataset/histogram.h"
-#include "dataset/copy.h"
-#include "dataset/loop.h"
+#include "image/histogram.h"
+#include "image/copy.h"
+#include "image/loop.h"
 #include "dwi/gradient.h"
 
 MRTRIX_APPLICATION
@@ -41,12 +41,12 @@ using namespace App;
 void usage () {
   AUTHOR = "David Raffelt (draffelt@gmail.com)";
 
-DESCRIPTION 
+DESCRIPTION
   + "Generates an whole brain mask from a DWI image."
   "Both diffusion weighted and b=0 volumes are required to "
   "obtain a mask that includes both brain tissue and CSF.";
 
-ARGUMENTS 
+ARGUMENTS
    + Argument ("image",
     "the input DWI image containing volumes that are both diffusion weighted and b=0")
     .type_image_in ()
@@ -55,7 +55,7 @@ ARGUMENTS
     "the output whole brain mask image")
     .type_image_out ();
 
-OPTIONS 
+OPTIONS
   + DWI::GradOption;
 
 }
@@ -91,7 +91,7 @@ void run () {
   Image::Scratch<float> dwi_mean_data (scratch_header, "mean DWI");
   Image::Scratch<float>::voxel_type dwi_mean (dwi_mean_data);
   {
-    DataSet::Loop loop("computing mean dwi and mean b0 images...", 0, 3);
+    Image::Loop loop("computing mean dwi and mean b0 images...", 0, 3);
     for (loop.start (input_voxel, b0_mean, dwi_mean); loop.ok(); loop.next (input_voxel, b0_mean, dwi_mean)) {
       float mean = 0;
       for (uint i = 0; i < dwis.size(); i++) {
@@ -120,7 +120,7 @@ void run () {
   dwi_threshold_filter.execute (dwi_mean_mask);
 
   {
-    DataSet::Loop loop("combining optimal dwi and b0 masks...", 0, 3);
+    Image::Loop loop("combining optimal dwi and b0 masks...", 0, 3);
     for (loop.start (b0_mean_mask, dwi_mean_mask); loop.ok(); loop.next (b0_mean_mask, dwi_mean_mask)) {
       if (b0_mean_mask.value() > 0)
         dwi_mean_mask.value() = 1;

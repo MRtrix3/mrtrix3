@@ -22,7 +22,7 @@
 
 #include "image/handler/base.h"
 #include "image/header.h"
-#include "dataset/stride.h"
+#include "image/stride.h"
 
 namespace MR
 {
@@ -31,8 +31,8 @@ namespace MR
     namespace Handler
     {
 
-      Base::~Base () 
-      { 
+      Base::~Base ()
+      {
         close();
       }
 
@@ -48,7 +48,7 @@ namespace MR
 
 
 
-      void Base::close () 
+      void Base::close ()
       {
         if (addresses.empty())
           return;

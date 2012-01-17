@@ -20,11 +20,11 @@
 
 */
 
-#include "dataset/interp/reslice.h"
+#include "image/interp/reslice.h"
 
 namespace MR
 {
-  namespace DataSet
+  namespace Image
   {
     namespace Interp
     {

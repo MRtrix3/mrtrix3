@@ -24,7 +24,7 @@
 #include "point.h"
 #include "image/voxel.h"
 #include "image/data.h"
-#include "dataset/loop.h"
+#include "image/loop.h"
 
 MRTRIX_APPLICATION
 
@@ -35,7 +35,7 @@ void usage () {
 DESCRIPTION
   + "compute images statistics.";
 
-ARGUMENTS 
+ARGUMENTS
   + Argument ("image",
   "the input image from which statistics will be computed.")
   .type_image_in ();
@@ -178,8 +178,8 @@ void run () {
   Image::Data<value_type> data (header);
   Image::Data<value_type>::voxel_type vox (data);
 
-  DataSet::Loop inner_loop (0, 3);
-  DataSet::Loop outer_loop (3);
+  Image::Loop inner_loop (0, 3);
+  Image::Loop outer_loop (3);
 
   bool header_shown (!App::log_level);
   Ptr<std::ostream> dumpstream, hist_stream, position_stream;
@@ -232,7 +232,7 @@ void run () {
     Image::Data<value_type>::voxel_type mask (mask_data);
 
     if (hist_stream) {
-      ProgressBar progress ("calibrating histogram...", DataSet::voxel_count (vox));
+      ProgressBar progress ("calibrating histogram...", Image::voxel_count (vox));
       for (outer_loop.start (vox); outer_loop.ok(); outer_loop.next (vox)) {
         for (inner_loop.start (mask, vox); inner_loop.ok(); inner_loop.next (mask, vox)) {
           if (mask.value() > 0.5)
@@ -282,7 +282,7 @@ void run () {
   if (!voxels.size()) { // whole data set:
 
     if (hist_stream) {
-      ProgressBar progress ("calibrating histogram...", DataSet::voxel_count (vox));
+      ProgressBar progress ("calibrating histogram...", Image::voxel_count (vox));
       for (outer_loop.start (vox); outer_loop.ok(); outer_loop.next (vox)) {
         for (inner_loop.start (vox); inner_loop.ok(); inner_loop.next (vox)) {
           calibrate (vox.value());

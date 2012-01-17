@@ -21,7 +21,7 @@
 */
 
 #include "app.h"
-#include "dataset/kernel.h"
+#include "image/kernel.h"
 #include "image/voxel.h"
 #include "image/data.h"
 
@@ -112,7 +112,7 @@ template <typename value_type> class GaussianFunctor
         coefs[2][i] /= total;
     }
 
-    value_type operator() (const DataSet::Kernel::Data<value_type>& kernel) const {
+    value_type operator() (const Image::Kernel::Data<value_type>& kernel) const {
       value_type retval = 0.0;
       for (ssize_t k = kernel.from (2); k < kernel.to (2); ++k) {
         value_type a = 0.0;
@@ -176,7 +176,7 @@ void run () {
     if (width.size() != 1 && width.size() != 3)
       throw Exception ("unexpected number of elements specified in Gaussian width");
 
-    DataSet::Kernel::run (dest, src, GaussianFunctor<float> (extent, width), "Gaussian smoothing...");
+    Image::Kernel::run (dest, src, GaussianFunctor<float> (extent, width), "Gaussian smoothing...");
   }
 
 }

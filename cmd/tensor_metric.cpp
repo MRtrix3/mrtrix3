@@ -27,8 +27,8 @@
 #include "math/matrix.h"
 #include "math/eigen.h"
 #include "dwi/tensor.h"
-#include "dataset/value.h"
-#include "dataset/position.h"
+#include "image/value.h"
+#include "image/position.h"
 
 MRTRIX_APPLICATION
 
@@ -117,11 +117,11 @@ class ImagePairPtr : public Ptr<ImagePair>
 
     typedef ImagePair::value_type value_type;
 
-    DataSet::Position<ImagePairPtr> operator[] (size_t axis) {
-      return DataSet::Position<ImagePairPtr> (*this, axis);
+    Image::Position<ImagePairPtr> operator[] (size_t axis) {
+      return Image::Position<ImagePairPtr> (*this, axis);
     }
-    DataSet::Value<ImagePairPtr> value () {
-      return DataSet::Value<ImagePairPtr> (*this);
+    Image::Value<ImagePairPtr> value () {
+      return Image::Value<ImagePairPtr> (*this);
     }
 
     value_type get_value () {
@@ -330,7 +330,7 @@ void run ()
   Image::Data<float> dt_data (dt_header);
   Image::Data<float>::voxel_type dt (dt_data);
 
-  ProgressBar progress ("computing tensor metrics...", DataSet::voxel_count (dt, 0, 3));
+  ProgressBar progress ("computing tensor metrics...", Image::voxel_count (dt, 0, 3));
 
   for (dt[2] = 0; dt[2] < dt.dim (2); dt[2]++) {
     set_zero (1, mask, fa, adc, eval, evec);

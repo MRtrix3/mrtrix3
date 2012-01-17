@@ -23,7 +23,7 @@
 #include "file/path.h"
 #include "file/utils.h"
 #include "file/nifti1_utils.h"
-#include "dataset/misc.h"
+#include "image/misc.h"
 #include "image/header.h"
 #include "image/format/list.h"
 
@@ -81,7 +81,7 @@ namespace MR
         out.write ( (char*) &NH, 352);
         out.close();
 
-        File::resize (H.name(), 352 + DataSet::footprint(H));
+        File::resize (H.name(), 352 + Image::footprint(H));
 
         H.add_file (File::Entry (H.name(), 352));
       }

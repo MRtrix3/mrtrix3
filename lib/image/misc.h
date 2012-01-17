@@ -20,15 +20,15 @@
 
 */
 
-#ifndef __dataset_misc_h__
-#define __dataset_misc_h__
+#ifndef __image_misc_h__
+#define __image_misc_h__
 
 #include "types.h"
 #include "data_type.h"
 
 namespace MR
 {
-  namespace DataSet
+  namespace Image
   {
 
     //! returns the number of voxel in the data set, or a relevant subvolume
@@ -68,12 +68,12 @@ namespace MR
 
     //! returns the memory footprint of a DataSet
     template <class Set> inline int64_t footprint (const Set& ds, size_t from_dim = 0, size_t up_to_dim = std::numeric_limits<size_t>::max()) {
-      return footprint (DataSet::voxel_count (ds, from_dim, up_to_dim), ds.datatype());
+      return footprint (Image::voxel_count (ds, from_dim, up_to_dim), ds.datatype());
     }
 
     //! returns the memory footprint of a DataSet
     template <class Set> inline int64_t footprint (const Set& ds, const char* specifier) {
-      return footprint (DataSet::voxel_count (ds, specifier), ds.datatype());
+      return footprint (Image::voxel_count (ds, specifier), ds.datatype());
     }
 
 

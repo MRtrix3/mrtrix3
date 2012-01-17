@@ -24,7 +24,7 @@
 #include "progressbar.h"
 #include "thread/exec.h"
 #include "thread/queue.h"
-#include "dataset/loop.h"
+#include "image/loop.h"
 #include "image/data.h"
 #include "image/voxel.h"
 
@@ -118,14 +118,14 @@ class DataLoader
                 Image::Header* mask_header) :
       sh_data (sh_header),
       sh (sh_data),
-      loop ("estimating peak directions...", 0, 3) { 
+      loop ("estimating peak directions...", 0, 3) {
       if (mask_header) {
         mask_data = new Image::Data<bool> (*mask_header);
-        DataSet::check_dimensions (*mask_data, sh, 0, 3);
+        Image::check_dimensions (*mask_data, sh, 0, 3);
         mask = new Image::Data<bool>::voxel_type (*mask_data);
         loop.start (*mask, sh);
       }
-      else 
+      else
         loop.start (sh);
       }
 
@@ -145,7 +145,7 @@ class DataLoader
 
         item.data.allocate (sh.dim(3));
 
-        DataSet::Loop inner (3); // iterates over SH coefficients
+        Image::Loop inner (3); // iterates over SH coefficients
         for (inner.start (sh); inner.ok(); inner.next (sh))
           item.data[sh[3]] = sh.value();
 
@@ -164,7 +164,7 @@ class DataLoader
     Image::Data<value_type>::voxel_type  sh;
     Ptr<Image::Data<bool> > mask_data;
     Ptr<Image::Data<bool>::voxel_type> mask;
-    DataSet::Loop loop;
+    Image::Loop loop;
 };
 
 
@@ -179,12 +179,12 @@ class Processor
                std::vector<Direction> true_peaks,
                value_type threshold,
                Image::Header* ipeaks_header) :
-      dirs_data (dirs_header), 
-      dirs_vox (dirs_data), 
+      dirs_data (dirs_header),
+      dirs_vox (dirs_data),
       dirs (directions),
-      lmax (lmax), 
+      lmax (lmax),
       npeaks (npeaks),
-      true_peaks (true_peaks), 
+      true_peaks (true_peaks),
       threshold (threshold),
       ipeaks (ipeaks_header) { }
 
@@ -197,7 +197,7 @@ class Processor
       dirs_vox[2] = item.pos[2];
 
       if (check_input (item)) {
-        DataSet::Loop inner (3);
+        Image::Loop inner (3);
         for (inner.start (dirs_vox); inner.ok(); inner.next (dirs_vox))
           dirs_vox.value() = NAN;
         return true;

@@ -20,14 +20,14 @@
 
 */
 
-#ifndef __dataset_min_max_h__
-#define __dataset_min_max_h__
+#ifndef __image_min_max_h__
+#define __image_min_max_h__
 
-#include "dataset/loop.h"
+#include "image/loop.h"
 
 namespace MR
 {
-  namespace DataSet
+  namespace Image
   {
 
     template <class Set, typename T>
@@ -35,7 +35,7 @@ namespace MR
     {
       min = T (INFINITY);
       max = T (-INFINITY);
-      MR::DataSet::LoopInOrder loop (D, "finding min/max of \"" + shorten (D.name()) + "\"...");
+      MR::Image::LoopInOrder loop (D, "finding min/max of \"" + shorten (D.name()) + "\"...");
       for (loop.start (D); loop.ok(); loop.next (D)) {
         T val = D.value();
         if (finite (val)) {

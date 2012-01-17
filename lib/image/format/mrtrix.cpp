@@ -29,7 +29,7 @@
 #include "file/entry.h"
 #include "file/path.h"
 #include "file/key_value.h"
-#include "dataset/misc.h"
+#include "image/misc.h"
 #include "image/header.h"
 #include "image/name_parser.h"
 #include "image/format/list.h"
@@ -47,7 +47,7 @@ namespace MR
 
       bool MRtrix::read (Header& H) const
       {
-        if (!Path::has_suffix (H.name(), ".mih") && !Path::has_suffix (H.name(), ".mif")) 
+        if (!Path::has_suffix (H.name(), ".mih") && !Path::has_suffix (H.name(), ".mif"))
           return false;
 
         File::KeyValue kv (H.name(), "mrtrix image");
@@ -263,12 +263,12 @@ namespace MR
         out.close();
 
         if (single_file) {
-          File::resize (H.name(), offset + DataSet::footprint(H));
+          File::resize (H.name(), offset + Image::footprint(H));
           H.add_file (File::Entry (H.name(), offset));
         }
         else {
           std::string data_file (H.name().substr (0, H.name().size()-4) + ".dat");
-          File::create (data_file, DataSet::footprint(H));
+          File::create (data_file, Image::footprint(H));
           H.add_file (File::Entry (data_file));
         }
       }

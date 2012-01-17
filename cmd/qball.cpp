@@ -25,7 +25,7 @@
 #include "progressbar.h"
 #include "thread/exec.h"
 #include "thread/queue.h"
-#include "dataset/loop.h"
+#include "image/loop.h"
 #include "image/voxel.h"
 #include "image/data.h"
 #include "dwi/gradient.h"
@@ -104,10 +104,10 @@ class DataLoader
 
     void execute () {
       Queue::Writer::Item item (writer);
-      DataSet::Loop loop ("estimating dODFs using Q-ball imaging...", 0, 3);
+      Image::Loop loop ("estimating dODFs using Q-ball imaging...", 0, 3);
       if (mask) {
         Image::Data<bool>::voxel_type mask_vox (*mask);
-        DataSet::check_dimensions (mask_vox, dwi, 0, 3);
+        Image::check_dimensions (mask_vox, dwi, 0, 3);
         for (loop.start (mask_vox, dwi); loop.ok(); loop.next (mask_vox, dwi))
           if (mask_vox.value() > 0.5)
             load (item);

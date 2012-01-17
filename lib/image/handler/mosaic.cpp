@@ -26,7 +26,7 @@
 #include "progressbar.h"
 #include "image/header.h"
 #include "image/handler/mosaic.h"
-#include "dataset/misc.h"
+#include "image/misc.h"
 
 namespace MR
 {
@@ -39,12 +39,12 @@ namespace MR
       void Mosaic::load ()
       {
         const std::vector<File::Entry>& files (H.get_files());
-        if (files.empty()) 
+        if (files.empty())
           throw Exception ("no files specified in header for image \"" + H.name() + "\"");
         assert (H.datatype().bits() > 1);
 
         segsize = H.dim (0) * H.dim (1) * H.dim (2);
-        assert (segsize * files.size() == DataSet::voxel_count (H));
+        assert (segsize * files.size() == Image::voxel_count (H));
 
         size_t bytes_per_segment = H.datatype().bytes() * segsize;
         if (files.size() * bytes_per_segment > std::numeric_limits<size_t>::max())
@@ -53,7 +53,7 @@ namespace MR
         debug ("loading mosaic image \"" + H.name() + "\"...");
         addresses.resize (1);
         addresses[0] = new uint8_t [files.size() * bytes_per_segment];
-        if (!addresses[0]) 
+        if (!addresses[0])
           throw Exception ("failed to allocate memory for image \"" + H.name() + "\"");
 
         ProgressBar progress ("reformatting DICOM mosaic images...", slices*files.size());

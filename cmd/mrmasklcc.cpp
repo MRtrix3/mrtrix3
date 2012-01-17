@@ -24,8 +24,8 @@
 
 #include "app.h"
 
-#include "dataset/copy.h"
-#include "dataset/loop.h"
+#include "image/copy.h"
+#include "image/loop.h"
 #include "image/header.h"
 #include "image/voxel.h"
 #include "image/data.h"
@@ -73,7 +73,7 @@ void run ()
 
   if (get_options ("fill").size()) {
 
-    DataSet::Loop loop;
+    Image::Loop loop;
     for (loop.start (largest_mask); loop.ok(); loop.next (largest_mask))
       largest_mask.value() = !largest_mask.value();
 
@@ -91,7 +91,7 @@ void run ()
   H_out.create (argument[1]);
   Image::Data<bool> data_out (H_out);
   Image::Data<bool>::voxel_type voxel_out (data_out);
-  DataSet::copy (voxel_out, largest_mask);
+  Image::copy (voxel_out, largest_mask);
 
 }
 

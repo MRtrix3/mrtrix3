@@ -27,7 +27,7 @@
 #include "math/matrix.h"
 #include "math/SH.h"
 #include "dwi/gradient.h"
-#include "dataset/loop.h"
+#include "image/loop.h"
 
 MRTRIX_APPLICATION
 
@@ -129,7 +129,7 @@ void run ()
   bool normalise = get_options ("normalise").size();
 
 
-  DataSet::LoopInOrder loop (SH, "converting DW images to SH coefficients...", 0, 3);
+  Image::LoopInOrder loop (SH, "converting DW images to SH coefficients...", 0, 3);
   for (loop.start (SH, dwi); loop.ok(); loop.next (SH, dwi)) {
 
     double norm = 0.0;

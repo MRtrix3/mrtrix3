@@ -25,7 +25,7 @@
 
 #include "debug.h"
 #include "image/data_common.h"
-#include "dataset/stride.h"
+#include "image/stride.h"
 
 namespace MR
 {
@@ -35,28 +35,28 @@ namespace MR
 
     //! This class provides access to the voxel intensities of an image.
     /*! This class keeps a reference to an existing Image::Header, and provides
-     * access to the corresponding image intensities. 
+     * access to the corresponding image intensities.
      * \todo Provide specialisations of get/set methods to handle conversions
      * between floating-point and integer types */
     template <typename T> class Scratch : public DataCommon<T>
     {
       using DataCommon<T>::H;
-      
+
       public:
         //! construct a Scratch object based on the Image::Header \p template
         Scratch (const Header& parent, const std::string& name = "unnamed") :
-          DataCommon<T> (parent), 
+          DataCommon<T> (parent),
           name_ (name),
-          stride_ (DataSet::Stride::get (H)),
-          data (new T [DataSet::voxel_count (H)]) {
+          stride_ (Image::Stride::get (H)),
+          data (new T [Image::voxel_count (H)]) {
         }
 
         //! construct a Scratch object based on the Image::Header \p template, with the strides specified
-        Scratch (const Header& parent, const DataSet::Stride::List& strides, const std::string& name = "unnamed") :
-          DataCommon<T> (parent), 
+        Scratch (const Header& parent, const Image::Stride::List& strides, const std::string& name = "unnamed") :
+          DataCommon<T> (parent),
           name_ (name),
-          stride_ (DataSet::Stride::get_actual (strides, H)),
-          data (new T [DataSet::voxel_count (H)]) {
+          stride_ (Image::Stride::get_actual (strides, H)),
+          data (new T [Image::voxel_count (H)]) {
         }
 
         typedef T value_type;
@@ -82,14 +82,14 @@ namespace MR
         }
 
         friend std::ostream& operator<< (std::ostream& stream, const Scratch& V) {
-          stream << "scratch image data \"" << V.name() << "\": " + str (DataSet::voxel_count (V)) 
+          stream << "scratch image data \"" << V.name() << "\": " + str (Image::voxel_count (V))
             + " voxels in " + V.datatype().specifier() + " format, stored at address " + str (size_t (&(*V.data)));
           return stream;
         }
 
       private:
         const std::string name_;
-        const DataSet::Stride::List stride_;
+        const Image::Stride::List stride_;
         value_type* data;
 
     };

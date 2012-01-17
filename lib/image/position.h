@@ -20,12 +20,12 @@
 
 */
 
-#ifndef __dataset_position_h__
-#define __dataset_position_h__
+#ifndef __image_position_h__
+#define __image_position_h__
 
 namespace MR
 {
-  namespace DataSet
+  namespace Image
   {
 
     /*! \brief a class to simplify the implementation of DataSet classes with
@@ -40,8 +40,8 @@ namespace MR
      * interest, by updating the offset every time the position along any axis
      * is modified (this is actually how most built-in DataSet instances
      * operate). This would require an additional operation to be performed
-     * on top of the assignment itself. In other words, 
-     * \code 
+     * on top of the assignment itself. In other words,
+     * \code
      * vox[1] = 12;
      * \endcode
      * cannot be done simply by returning a reference to the corresponding
@@ -113,8 +113,8 @@ namespace MR
      *     ssize_t    dim (size_t axis) const  { return N[axis]; }
      *
      *     // FIX: return a DataSet::Position<MyDataSet> class:
-     *     DataSet::Position<MyDataSet> operator[] (size_t axis) { 
-     *       return DataSet::Position<MyDataSet> (*this, axis); 
+     *     DataSet::Position<MyDataSet> operator[] (size_t axis) {
+     *       return DataSet::Position<MyDataSet> (*this, axis);
      *     }
      *
      *     float&  value () { return data[offset]; }
@@ -128,7 +128,7 @@ namespace MR
      *     ssize_t get_pos (size_t axis) const { return X[axis]; }
      *
      *     // this function sets the voxel position along the specified axis:
-     *     void set_pos (size_t axis, ssize_t pos) const { 
+     *     void set_pos (size_t axis, ssize_t pos) const {
      *       offset += S[axis] * (pos - X[axis]);
      *       X[axis] = pos;
      *     }
@@ -155,14 +155,14 @@ namespace MR
      * // the set_pos() function to be invoked each time:
      * // ensuring the offset is up to date:
      * data[0] = 10;
-     * 
-     * // setting the position also causes the get_pos() function to 
+     *
+     * // setting the position also causes the get_pos() function to
      * // be invoked, so that the new position can be returned.
      * // This allows chaining of the assignments, e.g.:
      * data[1] = data[2] = 20;
-     * 
+     *
      * // incrementing the position will cause the move_pos()
-     * // function to be invoked (and also the get_pos() function 
+     * // function to be invoked (and also the get_pos() function
      * // so that the new position can be returned):
      * data[0] += 10;
      *
@@ -170,7 +170,7 @@ namespace MR
      * // function to be invoked:
      * ssize_t xpos = data[0];
      *
-     * // this implies that the voxel position can be used 
+     * // this implies that the voxel position can be used
      * // in simple looping constructs:
      * float sum = 0.0
      * for (data[1] = 0; data[1] < data.dim(1); ++data[1])

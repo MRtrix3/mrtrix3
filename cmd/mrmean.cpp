@@ -25,7 +25,7 @@
 #include "image/voxel.h"
 #include "image/data.h"
 #include "image/scratch.h"
-#include "dataset/loop.h"
+#include "image/loop.h"
 
 MRTRIX_APPLICATION
 
@@ -71,8 +71,8 @@ void run ()
   Image::Scratch<float>::voxel_type in (data_in);
   Image::Data<float>::voxel_type out (data_out);
 
-  DataSet::Loop inner (axis, axis+1);
-  DataSet::LoopInOrder outer (header_out, "averaging...");
+  Image::Loop inner (axis, axis+1);
+  Image::LoopInOrder outer (header_out, "averaging...");
 
   float N = header_in.dim (axis);
   for (outer.start (out, in); outer.ok(); outer.next (out, in)) {

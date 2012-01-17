@@ -26,8 +26,8 @@
 #include "progressbar.h"
 #include "image/data.h"
 #include "image/voxel.h"
-#include "dataset/loop.h"
-#include "dataset/histogram.h"
+#include "image/loop.h"
+#include "image/histogram.h"
 
 MRTRIX_APPLICATION
 
@@ -128,16 +128,16 @@ void run ()
   Image::Header header_in (argument[0]);
   assert (!header_in.is_complex());
 
-  if (DataSet::voxel_count (header_in) < topN || DataSet::voxel_count (header_in) < bottomN)
+  if (Image::voxel_count (header_in) < topN || Image::voxel_count (header_in) < bottomN)
     throw Exception ("number of voxels at which to threshold exceeds number of voxels in image");
 
   if (finite (percentile)) {
     percentile /= 100.0;
     if (percentile < 0.5) {
-      bottomN = Math::round (DataSet::voxel_count (header_in) * percentile);
+      bottomN = Math::round (Image::voxel_count (header_in) * percentile);
       invert = !invert;
     }
-    else topN = Math::round (DataSet::voxel_count (header_in) * (1.0 - percentile));
+    else topN = Math::round (Image::voxel_count (header_in) * (1.0 - percentile));
   }
 
   Image::Header header_out (header_in);
@@ -157,7 +157,7 @@ void run ()
   if (invert) std::swap (zero, one);
 
   if (finite (topNpercent) || finite (bottomNpercent)) {
-    DataSet::LoopInOrder loop (in, "computing voxel count...");
+    Image::LoopInOrder loop (in, "computing voxel count...");
     size_t count = 0;
     for (loop.start (in); loop.ok(); loop.next (in)) {
       float val = in.value();
@@ -165,7 +165,7 @@ void run ()
       ++count;
     }
 
-    if (finite (topNpercent)) 
+    if (finite (topNpercent))
       topN = Math::round (0.01 * topNpercent * count);
     else
       bottomN = Math::round (0.01 * bottomNpercent * count);
@@ -177,7 +177,7 @@ void run ()
     std::multimap<float,std::vector<ssize_t> > list;
 
     {
-      DataSet::Loop loop ("thresholding \"" + shorten (in.name()) + "\" at " + (
+      Image::Loop loop ("thresholding \"" + shorten (in.name()) + "\" at " + (
                             isnan (percentile) ?
                             (str (topN ? topN : bottomN) + "th " + (topN ? "top" : "bottom") + " voxel") :
                               (str (percentile*100.0) + "\% percentile")
@@ -213,7 +213,7 @@ void run ()
       }
     }
 
-    DataSet::Loop loop;
+    Image::Loop loop;
     for (loop.start (out); loop.ok(); loop.next (out)) {
       out.value() = zero;
     }
@@ -226,11 +226,11 @@ void run ()
   }
   else {
     if (isnan (val)) {
-      DataSet::Histogram<Image::Data<float>::voxel_type> hist (in);
+      Image::Histogram<Image::Data<float>::voxel_type> hist (in);
       val = hist.first_min();
     }
 
-    DataSet::Loop loop ("thresholding \"" + shorten (in.name()) + "\" at intensity " + str (val) + "...");
+    Image::Loop loop ("thresholding \"" + shorten (in.name()) + "\" at intensity " + str (val) + "...");
     for (loop.start (out, in); loop.ok(); loop.next (out, in))
       out.value() = in.value() < val ? zero : one;
   }

@@ -1,7 +1,7 @@
 /*
-   Copyright 2011 Brain Research Institute, Melbourne, Australia
+   Copyright 2008 Brain Research Institute, Melbourne, Australia
 
-   Written by Robert E. Smith, 12/08/11.
+   Written by J-Donald Tournier, 27/06/08.
 
    This file is part of MRtrix.
 
@@ -20,19 +20,14 @@
 
  */
 
-#ifndef __dataset_interp_sinc_h__
-#define __dataset_interp_sinc_h__
+#ifndef __image_interp_nearest_h__
+#define __image_interp_nearest_h__
 
-#include "dataset/interp/base.h"
-#include "math/sinc.h"
-
-
-#define SINC_WINDOW_SIZE 7
-
+#include "image/interp/base.h"
 
 namespace MR
 {
-  namespace DataSet
+  namespace Image
   {
     namespace Interp
     {
@@ -40,7 +35,7 @@ namespace MR
       //! \addtogroup interp
       // @{
 
-      //! This class provides access to the voxel intensities of a data set, using sinc interpolation.
+      //! This class provides access to the voxel intensities of a data set, using nearest-neighbour interpolation.
       /*! Interpolation is only performed along the first 3 (spatial) axes.
        * The (integer) position along the remaining axes should be set using the
        * template DataSet class.
@@ -50,8 +45,8 @@ namespace MR
        * \code
        * Image::Voxel<float> voxel (image);
        *
-       * // create an Interp::Sinc object using voxel as the parent data set:
-       * DataSet::Interp::Sinc< Image::Voxel<float> > interp (voxel);
+       * // create an Interp::Nearest object using voxel as the parent data set:
+       * DataSet::Interp::Nearest<Image::Voxel<float> > interp (voxel);
        *
        * // set the scanner-space position to [ 10.2 3.59 54.1 ]:
        * interp.scanner (10.2, 3.59, 54.1);
@@ -74,44 +69,33 @@ namespace MR
        * \endcode
        */
 
-      template <class Set, typename T = float> class Sinc : public Base<Set,T>
+      template <class Set, typename T = float> class Nearest : public Base<Set,T>
       {
         private:
           typedef class Base<Set> B;
 
         public:
           typedef typename Set::value_type value_type;
-          typedef typename Set::value_type pos_type;
+          typedef typename B::pos_type pos_type;
 
-          //! construct an Interp object to obtain interpolated values using the
+          //! construct an Nearest object to obtain interpolated values using the
           // parent DataSet class
-          Sinc (Set& parent, const size_t w = SINC_WINDOW_SIZE) :
-            Base<Set> (parent),
-            window_size (w),
-            Sinc_x (w),
-            Sinc_y (w),
-            Sinc_z (w),
-            y_values (w, 0.0),
-            z_values (w, 0.0)
-            {
-              assert (w % 2);
-              B::out_of_bounds = false;
-            }
+          Nearest (Set& parent) : Base<Set> (parent) { }
 
           //! Set the current position to <b>voxel space</b> position \a pos
           /*! This will set the position from which the image intensity values will
            * be interpolated, assuming that \a pos provides the position as a
            * (floating-point) voxel coordinate within the dataset. */
           bool voxel (const Point<pos_type>& pos) {
-            if (!within_bounds (pos)) {
-              B::out_of_bounds = true;
-              return true;
-            }
-            Sinc_x.set (B::data, 0, pos[0]);
-            Sinc_y.set (B::data, 1, pos[1]);
-            Sinc_z.set (B::data, 2, pos[2]);
+            Point<pos_type> f = B::set (pos);
+            if (B::out_of_bounds) return (true);
+            B::data[0] = Math::round<ssize_t> (pos[0]);
+            B::data[1] = Math::round<ssize_t> (pos[1]);
+            B::data[2] = Math::round<ssize_t> (pos[2]);
             return (false);
           }
+
+
           //! Set the current position to <b>image space</b> position \a pos
           /*! This will set the position from which the image intensity values will
            * be interpolated, assuming that \a pos provides the position as a
@@ -129,33 +113,10 @@ namespace MR
             return (voxel (B::scanner2voxel (pos)));
           }
 
-          value_type value () {
-            for (size_t z = 0; z != window_size; ++z) {
-              B::data[2] = Sinc_z.index (z);
-              for (size_t y = 0; y != window_size; ++y) {
-                B::data[1] = Sinc_y.index (y);
-                y_values[y] = Sinc_x.value (B::data, 0);
-              }
-              z_values[z] = Sinc_y.value (y_values);
-            }
-            return (Sinc_z.value (z_values));
+          value_type value () const {
+            if (B::out_of_bounds) return (NAN);
+            return (B::data.value());
           }
-
-
-        protected:
-          const size_t window_size;
-          Math::Sinc<value_type> Sinc_x, Sinc_y, Sinc_z;
-          std::vector<value_type> y_values, z_values;
-
-          bool within_bounds (const Point<pos_type>& p) {
-            // Bounds testing is different for sinc interpolation than others
-            // Not only due to the width of the kernel, but also the mirroring of the image data beyond the FoV
-            static const int kernel_width = (window_size - 1) / 2;
-            return ((round (p[0]) > -B::data.dim(0) + kernel_width) && (round (p[0]) < (2 * B::data.dim(0)) - kernel_width)
-                 && (round (p[1]) > -B::data.dim(1) + kernel_width) && (round (p[1]) < (2 * B::data.dim(1)) - kernel_width)
-                 && (round (p[2]) > -B::data.dim(2) + kernel_width) && (round (p[2]) < (2 * B::data.dim(2)) - kernel_width));
-          }
-
       };
 
       //! @}

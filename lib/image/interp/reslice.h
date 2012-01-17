@@ -20,18 +20,18 @@
 
 */
 
-#ifndef __dataset_interp_reslice_h__
-#define __dataset_interp_reslice_h__
+#ifndef __image_interp_reslice_h__
+#define __image_interp_reslice_h__
 
-#include "dataset/transform.h"
-#include "dataset/value.h"
-#include "dataset/copy.h"
-#include "dataset/position.h"
-#include "dataset/interp/base.h"
+#include "image/transform.h"
+#include "image/value.h"
+#include "image/copy.h"
+#include "image/position.h"
+#include "image/interp/base.h"
 
 namespace MR
 {
-  namespace DataSet
+  namespace Image
   {
     namespace Interp
     {
@@ -110,8 +110,8 @@ namespace MR
             V[2] = reference.vox (2);
 
             Math::Matrix<pos_type> Mr, Mo;
-            DataSet::Transform::voxel2scanner (Mr, reference);
-            DataSet::Transform::voxel2scanner (Mo, original);
+            Image::Transform::voxel2scanner (Mr, reference);
+            Image::Transform::voxel2scanner (Mo, original);
 
             if (operation.is_set()) {
               Math::Matrix<T> Mt;
@@ -133,17 +133,17 @@ namespace MR
             }
             else {
               Point<value_type> y, x0, x1 (0.0,0.0,0.0);
-              DataSet::Transform::apply (x0, M, x1);
+              Image::Transform::apply (x0, M, x1);
               x1[0] = 1.0;
-              DataSet::Transform::apply (y, M, x1);
+              Image::Transform::apply (y, M, x1);
               OS[0] = Math::ceil (0.999 * (y-x0).norm());
               x1[0] = 0.0;
               x1[1] = 1.0;
-              DataSet::Transform::apply (y, M, x1);
+              Image::Transform::apply (y, M, x1);
               OS[1] = Math::ceil (0.999 * (y-x0).norm());
               x1[1] = 0.0;
               x1[2] = 1.0;
-              DataSet::Transform::apply (y, M, x1);
+              Image::Transform::apply (y, M, x1);
               OS[2] = Math::ceil (0.999 * (y-x0).norm());
             }
 
@@ -199,7 +199,7 @@ namespace MR
                   for (int x = 0; x < OS[0]; ++x) {
                     s[0] = d[0] + x*inc[0];
                     Point<pos_type> pos;
-                    DataSet::Transform::apply (pos, M, s);
+                    Image::Transform::apply (pos, M, s);
                     interp.voxel (pos);
                     if (!interp) continue;
                     else ret += interp.value();
@@ -275,7 +275,7 @@ namespace MR
         const std::vector<int>& oversampling = AutoOverSample)
       {
         Reslice<Interpolator,Set2,Set1,T> interp (source, destination, operation, oversampling);
-        DataSet::copy_with_progress (destination, interp);
+        Image::copy_with_progress (destination, interp);
       }
 
 

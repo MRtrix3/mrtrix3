@@ -20,14 +20,14 @@
 
 */
 
-#ifndef __dataset_stride_h__
-#define __dataset_stride_h__
+#ifndef __image_stride_h__
+#define __image_stride_h__
 
 #include "data_type.h"
 
 namespace MR
 {
-  namespace DataSet
+  namespace Image
   {
 
     //! Functions to handle the memory layout of DataSet classes
@@ -305,18 +305,18 @@ namespace MR
 
 
 
-      //! produce strides from \c set that match those specified in \c desired 
+      //! produce strides from \c set that match those specified in \c desired
       /*! The strides in \c desired should be specified as symbolic strides,
        * and any zero strides will be ignored and replaced with sensible values
        * if needed.  Essentially, this function checks whether the symbolic
        * strides in \c set already match those specified in \c desired. If so,
        * these will be used as-is, otherwise a new set of strides based on \c
        * desired will be produced. */
-      template <class Set> List get_nearest_match (const Set& set, const List& desired) 
+      template <class Set> List get_nearest_match (const Set& set, const List& desired)
       {
         List in (get_symbolic (set)), out (desired);
         out.resize (in.size(), 0);
-        
+
         bool strides_match = true;
         for (size_t i = 0; i < out.size(); ++i) {
           if (out[i]) {
@@ -327,9 +327,9 @@ namespace MR
           }
         }
 
-        if (strides_match) 
+        if (strides_match)
           out = in;
-        
+
         return out;
       }
     }

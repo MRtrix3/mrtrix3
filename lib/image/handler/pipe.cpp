@@ -26,7 +26,7 @@
 #include "app.h"
 #include "image/header.h"
 #include "image/handler/pipe.h"
-#include "dataset/misc.h"
+#include "image/misc.h"
 
 namespace MR
 {
@@ -42,7 +42,7 @@ namespace MR
         assert (Hfiles.size() == 1);
         debug ("mapping piped image \"" + Hfiles[0].name + "\"...");
 
-        segsize = DataSet::voxel_count (H) / Hfiles.size();
+        segsize = Image::voxel_count (H) / Hfiles.size();
         int64_t bytes_per_segment = (H.datatype().bits() * segsize + 7) / 8;
 
         if (double (bytes_per_segment) >= double (std::numeric_limits<size_t>::max()))
@@ -58,7 +58,7 @@ namespace MR
       {
         if (file) {
           const std::vector<File::Entry>& Hfiles (H.get_files());
-          if (is_new) 
+          if (is_new)
             std::cout << Hfiles[0].name << "\n";
           else {
             file = NULL;

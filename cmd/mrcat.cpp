@@ -23,7 +23,7 @@
 #include "app.h"
 #include "image/data.h"
 #include "image/voxel.h"
-#include "dataset/loop.h"
+#include "image/loop.h"
 #include "progressbar.h"
 
 MRTRIX_APPLICATION
@@ -32,7 +32,7 @@ using namespace MR;
 using namespace App;
 
 void usage () {
-DESCRIPTION 
+DESCRIPTION
   + "concatenate several images into one";
 
 ARGUMENTS
@@ -46,7 +46,7 @@ ARGUMENTS
   + Argument ("output", "the output image.")
   .type_image_out ();
 
-OPTIONS 
+OPTIONS
   + Option ("axis",
   "specify axis along which concatenation should be performed. By default, "
   "the program will use the axis after the last non-singleton axis of any "
@@ -124,11 +124,11 @@ void run () {
   Image::Data<value_type> data_out (header_out);
   Image::Data<value_type>::voxel_type out_vox (data_out);
 
-  ProgressBar progress ("concatenating...", DataSet::voxel_count (out_vox));
+  ProgressBar progress ("concatenating...", Image::voxel_count (out_vox));
   int axis_offset = 0;
 
   for (int i = 0; i < num_images; i++) {
-    DataSet::Loop loop;
+    Image::Loop loop;
     Image::Data<value_type> in_data (*in[i]);
     Image::Data<value_type>::voxel_type in_vox (in_data);
 

@@ -20,15 +20,15 @@
 
 */
 
-#ifndef __dataset_transform_h__
-#define __dataset_transform_h__
+#ifndef __image_transform_h__
+#define __image_transform_h__
 
 #include "math/matrix.h"
 #include "math/LU.h"
 
 namespace MR
 {
-  namespace DataSet
+  namespace Image
   {
 
     namespace Transform

@@ -20,16 +20,16 @@
 
 */
 
-#ifndef __dataset_loop_h__
-#define __dataset_loop_h__
+#ifndef __image_loop_h__
+#define __image_loop_h__
 
 #include "progressbar.h"
-#include "dataset/position.h"
-#include "dataset/stride.h"
+#include "image/position.h"
+#include "image/stride.h"
 
 namespace MR
 {
-  namespace DataSet
+  namespace Image
   {
 
     /** \defgroup loop Looping functions
@@ -570,7 +570,7 @@ namespace MR
         size_t max_axis (const Set& set) const {
           size_t a = 0;
           for (size_t i = 0; i < axes_.size(); ++i)
-            if (axes_[i] > a) 
+            if (axes_[i] > a)
               a = axes_[i];
           return a;
         }

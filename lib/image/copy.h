@@ -20,15 +20,15 @@
 
 */
 
-#ifndef __dataset_copy_h__
-#define __dataset_copy_h__
+#ifndef __image_copy_h__
+#define __image_copy_h__
 
 #include "debug.h"
-#include "dataset/loop.h"
+#include "image/loop.h"
 
 namespace MR
 {
-  namespace DataSet
+  namespace Image
   {
 
     template <class Set, class Set2>

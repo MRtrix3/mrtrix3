@@ -23,7 +23,7 @@
 #include "file/utils.h"
 #include "file/entry.h"
 #include "file/nifti1_utils.h"
-#include "dataset/misc.h"
+#include "image/misc.h"
 #include "image/header.h"
 #include "get_set.h"
 #include "image/format/list.h"
@@ -94,7 +94,7 @@ namespace MR
         out.write ( (char*) &NH, 352);
         out.close();
 
-        File::create (confirm_overwrite, H.name(), DataSet::footprint(H));
+        File::create (confirm_overwrite, H.name(), Image::footprint(H));
 
         H.add_file (File::Entry (H.name()));
       }
