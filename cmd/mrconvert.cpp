@@ -67,7 +67,7 @@ void usage ()
             "specify the strides of the output data in memory, as a comma-separated list. "
             "The actual strides produced will depend on whether the output image "
             "format can support it.")
-  + Argument ("spec")
+  + Argument ("spec").type_sequence_int()
 
   + Option ("axes",
             "specify the axes from the input image that will be used to form the output "
@@ -75,7 +75,7 @@ void usage ()
             "output image. The axes should be supplied as a comma-separated list of axes. "
             "Any ommitted axes must have dimension 1. Axes can be inserted by supplying "
             "-1 at the corresponding position in the list.")
-  + Argument ("axes")
+  + Argument ("axes").type_sequence_int()
 
   + Option ("prs",
             "assume that the DW gradients are specified in the PRS frame (Siemens DICOM only).")
