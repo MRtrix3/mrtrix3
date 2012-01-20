@@ -26,7 +26,7 @@
 #include "point.h"
 #include "dwi/tractography/method.h"
 #include "dwi/tractography/shared.h"
-#include "dataset/interp/nearest.h"
+#include "image/interp/nearest.h"
 
 
 namespace MR {
@@ -98,7 +98,7 @@ namespace MR {
 
         protected:
           const Shared& S;
-          DataSet::Interp::Nearest<StorageType> ninterp;
+          Image::Interp::Nearest<VoxelType> ninterp;
 
           value_type get_data (Point<value_type>& d) 
           {

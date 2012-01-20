@@ -23,7 +23,7 @@
 
 #include "app.h"
 #include "image/voxel.h"
-#include "dataset/interp/linear.h"
+#include "image/interp/linear.h"
 #include "dwi/tractography/exec.h"
 #include "dwi/tractography/iFOD1.h"
 #include "dwi/tractography/iFOD2.h"

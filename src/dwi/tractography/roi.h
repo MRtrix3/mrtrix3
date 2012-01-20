@@ -26,9 +26,11 @@
 #include "point.h"
 #include "ptr.h"
 #include "image/voxel.h"
-#include "dataset/interp/linear.h"
-#include "dataset/buffer.h"
-#include "dataset/copy.h"
+#include "image/interp/linear.h"
+#include "image/scratch.h"
+#include "image/copy.h"
+#include "image/data.h"
+#include "image/nav.h"
 #include "math/rng.h"
 
 
@@ -83,18 +85,14 @@ namespace MR {
           {
 
             if (mask) {
-
-              Point<> pix = mask->interp.scanner2voxel (p);
-              ssize_t x[] = { 
-                Math::round (pix[0]),
-                Math::round (pix[1]),
-                Math::round (pix[2])
-              };
-              if (x[0] < 0 || x[0] >= mask->dim(0) || 
-                  x[1] < 0 || x[1] >= mask->dim(1) || 
-                  x[2] < 0 || x[2] >= mask->dim(2)) 
-                return (false);
-              return (mask->value_at (x));
+              Mask::voxel_type voxel (*mask);
+              Point<> v = mask->interp.scanner2voxel (p);
+              voxel[0] = Math::round (v[0]);
+              voxel[1] = Math::round (v[1]);
+              voxel[2] = Math::round (v[2]);
+              if (!Image::Nav::within_bounds (voxel))
+                return false;
+              return (voxel.value());
             }
 
             if (image)
@@ -110,27 +108,27 @@ namespace MR {
             Point<> p;
 
             if (mask) {
-              ssize_t x[3];
+              Mask::voxel_type seed (*mask);
               do {
-                x[0] = rng.uniform_int (mask->dim(0));
-                x[1] = rng.uniform_int (mask->dim(1));
-                x[2] = rng.uniform_int (mask->dim(2));
-              } while (!mask->value_at (x));
-              p.set (x[0]+rng.uniform()-0.5, x[1]+rng.uniform()-0.5, x[2]+rng.uniform()-0.5);
+                seed[0] = rng.uniform_int (mask->dim(0));
+                seed[1] = rng.uniform_int (mask->dim(1));
+                seed[2] = rng.uniform_int (mask->dim(2));
+              } while (!seed.value());
+              p.set (seed[0]+rng.uniform()-0.5, seed[1]+rng.uniform()-0.5, seed[2]+rng.uniform()-0.5);
               return (mask->interp.voxel2scanner (p));
             }
 
             if (image) {
-              DataSet::Buffer<float> seed ((DataSet::Buffer<float>&)*image);
-              DataSet::Interp::Linear< DataSet::Buffer<float> > interp (seed);
+              SeedImage::voxel_type seed (*image);
               float sampler = 0.0;
               do {
-                p[0] = rng.uniform() * image->dim(0);
-                p[1] = rng.uniform() * image->dim(1);
-                p[2] = rng.uniform() * image->dim(2);
+                seed[0] = rng.uniform_int (image->dim(0));
+                seed[1] = rng.uniform_int (image->dim(1));
+                seed[2] = rng.uniform_int (image->dim(2));
                 sampler = rng.uniform() * image->max_value;
-              } while (interp.voxel (p) || interp.value() < MAX (sampler, std::numeric_limits<float>::epsilon()));
-              return (interp.voxel2scanner (p));
+              } while (seed.value() < MAX (sampler, std::numeric_limits<float>::epsilon()));
+              p.set (seed[0]+rng.uniform()-0.5, seed[1]+rng.uniform()-0.5, seed[2]+rng.uniform()-0.5);
+              return (mask->interp.voxel2scanner (p));
             }
 
             do {
@@ -151,22 +149,29 @@ namespace MR {
 
         private:
 
-          class Mask : public DataSet::Buffer<bool> {
+          class Mask : public Image::Scratch<bool> {
             public:
               template <class Set> Mask (Set& D, const std::string& description) : 
-                DataSet::Buffer<bool> (D, 3, description), interp (*this) {
-                  DataSet::copy (*this, D); }
-              DataSet::Interp::Linear< DataSet::Buffer<bool> > interp;
+                Image::Scratch<bool> (D.header(), description),
+                interp (*this)
+                {
+                  Image::Scratch<bool>::voxel_type this_vox (*this);
+                  Image::copy (this_vox, D);
+                }
+              Image::Interp::Base< Image::Scratch<bool> > interp;
           };
 
-          class SeedImage : public DataSet::Buffer<float> {
+          class SeedImage : public Image::Scratch<float> {
             public:
               template <class Set> SeedImage (Set& D, const std::string& description, const float max) :
-                  DataSet::Buffer<float> (D, 3, description),
+                  Image::Scratch<float> (D.header(), description),
+                  interp (*this),
                   max_value (max)
               {
-                DataSet::copy (*this, D);
+                Image::Scratch<float>::voxel_type this_vox (*this);
+                Image::copy (this_vox, D);
               }
+              Image::Interp::Base< Image::Scratch<float> > interp;
               float max_value;
           };
 

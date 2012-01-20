@@ -24,9 +24,10 @@
 #include "app.h"
 #include "point.h"
 #include "math/SH.h"
+#include "image/data.h"
 #include "image/voxel.h"
 #include "math/vector.h"
-#include "dataset/loop.h"
+#include "image/loop.h"
 
 MRTRIX_APPLICATION
 
@@ -74,7 +75,7 @@ class Kernel {
 
     size_t size () const { return (nSH); }
 
-    void operator () (Image::Voxel<float>& D) { 
+    void operator () (Image::Data<float>::voxel_type& D) {
       SH = 0.0;
       float xp = N*(D.dim(0)/2.0 - D[0]-1) + 0.5;
       float yp = N*(D[1]-0.5) + 0.5;
@@ -153,11 +154,11 @@ void run () {
   header.set_stride (2, 4);
   header.set_stride (3, 1);
 
-
   header.create (argument[2]);
-  Image::Voxel<float> vox (header);
+  Image::Data<float> source (header);
+  Image::Data<float>::voxel_type vox (source);
 
-  DataSet::Loop loop ("generating FOD field...", 0, 3);
+  Image::Loop loop ("generating FOD field...", 0, 3);
   for (loop.start (vox); loop.ok(); loop.next (vox)) 
     kernel (vox);
 }

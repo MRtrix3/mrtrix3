@@ -26,7 +26,7 @@
 #include "point.h"
 #include "math/rng.h"
 #include "image/voxel.h"
-#include "dataset/interp/linear.h"
+#include "image/interp/linear.h"
 #include "dwi/tractography/shared.h"
 
 namespace MR {
@@ -35,8 +35,8 @@ namespace MR {
 
       class MethodBase {
         public:
-          MethodBase (const SharedBase& shared) : 
-            source (shared.source), 
+          MethodBase (const SharedBase& shared) :
+            source (shared.source),
             interp (source), 
             rng (rng_seed++), 
             pos (0.0, 0.0, 0.0),
@@ -53,8 +53,8 @@ namespace MR {
 
           ~MethodBase () { delete [] values; }
 
-          StorageType source;
-          DataSet::Interp::Linear<StorageType> interp;
+          VoxelType source;
+          Image::Interp::Linear<VoxelType> interp;
           Math::RNG rng;
           Point<value_type> pos, dir;
           value_type* values;

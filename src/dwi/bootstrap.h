@@ -24,7 +24,7 @@
 #define __dwi_bootstrap_h__
 
 #include "ptr.h"
-#include "dataset/position.h"
+#include "image/position.h"
 
 
 namespace MR {
@@ -36,8 +36,8 @@ namespace MR {
       public:
         typedef typename Set::value_type value_type;
 
-        Bootstrap (Set& dataset, Functor& functor) :
-          S (dataset),
+        Bootstrap (Set& Image, Functor& functor) :
+          S (Image),
           func (functor),
           next_voxel (NULL),
           last_voxel (NULL) {
@@ -62,9 +62,9 @@ namespace MR {
             memcpy (buffer, get_voxel(), dim(3)*sizeof(value_type)); 
         }
 
-        DataSet::Position<Bootstrap<Set,Functor,NUM_VOX_PER_CHUNK> > operator[] (size_t axis ) 
+        Image::Position<Bootstrap<Set,Functor,NUM_VOX_PER_CHUNK> > operator[] (size_t axis )
         {
-          return DataSet::Position<Bootstrap<Set,Functor,NUM_VOX_PER_CHUNK> > (*this, axis); 
+          return Image::Position<Bootstrap<Set,Functor,NUM_VOX_PER_CHUNK> > (*this, axis);
         } 
 
         void clear () 
@@ -119,7 +119,7 @@ namespace MR {
         void set_pos (size_t axis, ssize_t position) const { S[axis] = position; }
         void move_pos (size_t axis, ssize_t increment) const { S[axis] += increment; }
 
-        friend class DataSet::Position<Bootstrap<Set,Functor,NUM_VOX_PER_CHUNK> >;
+        friend class Image::Position<Bootstrap<Set,Functor,NUM_VOX_PER_CHUNK> >;
     };
 
   }

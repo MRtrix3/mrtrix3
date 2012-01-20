@@ -24,8 +24,8 @@
 #define __dwi_tractography_shared_h__
 
 #include "point.h"
+#include "image/data_preload.h"
 #include "image/header.h"
-#include "image/buffer.h"
 #include "dwi/tractography/file.h"
 #include "dwi/tractography/roi.h"
 
@@ -36,14 +36,16 @@ namespace MR {
     namespace Tractography {
 
       typedef float value_type;
-      typedef Image::Buffer<value_type> StorageType;
+      typedef Image::DataPreload<value_type> StorageType;
+      typedef StorageType::voxel_type VoxelType;
 
       class SharedBase {
         public:
 
           SharedBase (Image::Header& source_header, DWI::Tractography::Properties& property_set) :
             H (source_header),
-            source (H, strides_by_volume(), 4),
+            source_data (H, strides_by_volume()),
+            source (source_data),
             properties (property_set), 
             max_num_tracks (1000),
             max_angle (NAN),
@@ -55,7 +57,7 @@ namespace MR {
               properties.set (unidirectional, "unidirectional");
               properties.set (max_num_tracks, "max_num_tracks");
 
-              properties["source"] = source.name();
+              properties["source"] = source_data.name();
 
               init_threshold = 2.0*threshold;
               properties.set (init_threshold, "init_threshold");
@@ -102,7 +104,8 @@ namespace MR {
           }
 
           Image::Header& H;
-          StorageType source;
+          StorageType source_data;
+          VoxelType source; // Provided for const method constructors only
           DWI::Tractography::Properties& properties;
           Point<value_type> init_dir;
           size_t max_num_tracks, max_num_attempts, min_num_points, max_num_points;

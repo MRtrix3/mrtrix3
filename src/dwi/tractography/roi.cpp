@@ -22,8 +22,8 @@
 
 
 #include "dwi/tractography/roi.h"
-#include "dataset/subset.h"
-#include "dataset/copy.h"
+#include "image/subset.h"
+#include "image/copy.h"
 
 
 namespace MR {
@@ -35,12 +35,13 @@ namespace MR {
       void ROI::get_mask (Image::Header& mask_header) 
       {
 
-        Image::Voxel<bool> vox (mask_header);
+        Image::Data<bool> mask_data (mask_header);
+        Image::Data<bool>::voxel_type vox (mask_data);
         size_t bottom[] = { std::numeric_limits<size_t>::max(), std::numeric_limits<size_t>::max(), std::numeric_limits<size_t>::max() };
         size_t top[] = { 0, 0, 0 };
         size_t count = 0;
 
-        DataSet::Loop loop (0,3);
+        Image::Loop loop (0,3);
         for (loop.start (vox); loop.ok(); loop.next (vox)) {
           if (vox.value()) {
             ++count;
@@ -57,7 +58,7 @@ namespace MR {
         top[1] = top[1] + 1 - bottom[1];
         top[2] = top[2] + 1 - bottom[2];
 
-        DataSet::Subset< Image::Voxel<bool> > sub (vox, 3, bottom, top);
+        Image::Subset< Image::Data<bool>::voxel_type > sub (vox, 3, bottom, top);
 
         mask = new Mask (sub, mask_header.name());
 
@@ -69,12 +70,13 @@ namespace MR {
       void ROI::get_image (Image::Header& H)
       {
 
-        Image::Voxel<float> vox (H);
+        Image::Data<float> data (H);
+        Image::Data<float>::voxel_type vox (data);
         size_t bottom[] = { std::numeric_limits<size_t>::max(), std::numeric_limits<size_t>::max(), std::numeric_limits<size_t>::max() };
         size_t top[] = { 0, 0, 0 };
         float sum = 0.0, max = 0.0;
 
-        DataSet::Loop loop (0,3);
+        Image::Loop loop (0,3);
         for (loop.start (vox); loop.ok(); loop.next (vox)) {
           if (vox.value() > 0.0) {
             sum += vox.value();
@@ -98,7 +100,7 @@ namespace MR {
         top[1] = MIN (size_t (H.dim (1) - 1), top[1] + 2 - bottom[1]);
         top[2] = MIN (size_t (H.dim (2) - 1), top[2] + 2 - bottom[2]);
 
-        DataSet::Subset< Image::Voxel<float> > sub (vox, 3, bottom, top);
+        Image::Subset< Image::Data<float>::voxel_type > sub (vox, 3, bottom, top);
 
         image = new SeedImage (sub, H.name(), max);
 

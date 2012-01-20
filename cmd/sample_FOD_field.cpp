@@ -24,10 +24,11 @@
 #include "app.h"
 #include "point.h"
 #include "math/SH.h"
+#include "image/data.h"
 #include "image/voxel.h"
 #include "math/vector.h"
 #include "math/rng.h"
-#include "dataset/loop.h"
+#include "image/loop.h"
 
 MRTRIX_APPLICATION
 
@@ -37,15 +38,15 @@ using namespace App;
 void usage ()
 {
   DESCRIPTION
-  + "sample simulated FOD field.";
+  + "sample_header simulated FOD field.";
 
   ARGUMENTS
   + Argument ("FOD", "the input image containing the SH coefficients of the simulated FOD field.").type_image_in()
-  + Argument ("sample", "the output image containing the directions sampled from the FOD field.").type_image_out();
+  + Argument ("sample_header", "the output image containing the directions sample_headerd from the FOD field.").type_image_out();
 
   OPTIONS
   + Option ("cutoff",
-            "do not sample from regions of the FOD with amplitude "
+            "do not sample_header from regions of the FOD with amplitude "
             "lower than this threshold (default: 0.1).")
   + Argument ("value").type_float (0.0, 0.1, std::numeric_limits<float>::max())
 
@@ -60,17 +61,22 @@ typedef float value_type;
 
 void run ()
 {
-  Image::Header header (argument[0]);
-  if (header.ndim() != 4)
+  Image::Header FOD_header (argument[0]);
+  if (FOD_header.ndim() != 4)
     throw Exception ("input FOD image should have 4 dimensions");
+  Image::Data<float> FOD_data (FOD_header);
 
-  const int lmax = Math::SH::LforN (header.dim (3));
+  const int lmax = Math::SH::LforN (FOD_header.dim (3));
   info ("assuming lmax = " + str (lmax));
 
-  Image::Header sample (header);
-  sample.set_dim (3, 3);
-  sample.set_datatype (DataType::Float32);
+  Image::Header sample_header (FOD_header);
+  sample_header.set_dim (3, 3);
+  sample_header.set_datatype (DataType::Float32);
+  sample_header.create (argument[1]);
+  Image::Data<value_type> sample_data (sample_header);
 
+  Image::Data<value_type>::voxel_type in (FOD_data);
+  Image::Data<value_type>::voxel_type out (sample_data);
 
   value_type threshold = 0.1;
   Options opt = get_options ("cutoff");
@@ -82,17 +88,12 @@ void run ()
   if (opt.size())
     ceiling = to<value_type> (opt[0][0]);
 
-  sample.create (argument[1]);
-
-  Image::Voxel<float> in (header);
-  Image::Voxel<float> out (sample);
-
   value_type maximum = 0.0;
   Math::RNG rng;
 
   {
-    DataSet::Loop loop ("sampling FOD field...", 0, 3);
-    DataSet::Loop inner (3);
+    Image::Loop loop ("sampling FOD field...", 0, 3);
+    Image::Loop inner (3);
     for (loop.start (in, out); loop.ok(); loop.next (in, out)) {
       value_type val [in.dim (3)];
       for (inner.start (in); inner.ok(); inner.next (in))

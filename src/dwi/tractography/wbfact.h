@@ -118,10 +118,10 @@ namespace MR {
               Math::Vector<value_type> residuals, log_signal;
           };
 
-          class Interp : public DataSet::Interp::Linear<Bootstrap<StorageType,WildBootstrap> > {
+          class Interp : public Image::Interp::Linear<Bootstrap<VoxelType,WildBootstrap> > {
             public:
-              Interp (Bootstrap<StorageType,WildBootstrap>& set) :
-                DataSet::Interp::Linear<Bootstrap<StorageType,WildBootstrap> > (set) { }
+              Interp (Bootstrap<VoxelType,WildBootstrap>& set) :
+                Image::Interp::Linear<Bootstrap<VoxelType,WildBootstrap> > (set) { }
 
               void get (
                 value_type* data,
@@ -183,7 +183,7 @@ namespace MR {
 
           const Shared& S;
           WildBootstrap wb_functor;
-          Bootstrap<StorageType,WildBootstrap> wb_set;
+          Bootstrap<VoxelType,WildBootstrap> wb_set;
           VecPtr<value_type,true> raw_signals;
 
           bool get_WB_data () {
@@ -209,7 +209,7 @@ namespace MR {
             --wb_set[1];
             --wb_set[2];
 
-            const DataSet::Interp::Linear<StorageType>* std_interp = &interp;
+            const Image::Interp::Linear<VoxelType>* std_interp = &interp;
             reinterpret_cast<const Interp*> (std_interp)->get (values, source.dim (3),
                 raw_signals[0], raw_signals[1], raw_signals[2], raw_signals[3],
                 raw_signals[4], raw_signals[5], raw_signals[6], raw_signals[7]);
