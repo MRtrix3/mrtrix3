@@ -61,8 +61,6 @@ using namespace MR::DWI::Tractography;
 using namespace MR::DWI::Tractography::Mapping;
 
 
-// TODO Consider generalising colour processing such that it can be used with any contrast mechanism
-
 
 void usage () {
 
@@ -88,7 +86,7 @@ OPTIONS
 
   + Option ("contrast",
       "define the desired form of contrast for the output image\n"
-      "Options are: tdi, dectdi, endpoint, mean_dir, length, invlength, scalar_map, scalar_map_count, fod_amp, curvature (default: tdi)")
+      "Options are: tdi, endpoint, length, invlength, scalar_map, scalar_map_count, fod_amp, curvature (default: tdi)")
     + Argument ("type").type_choice (contrasts)
 
   + Option ("image",
@@ -112,6 +110,8 @@ OPTIONS
       "when using gaussian-smoothed per-track statistic, specify the desired full-width "
       "half-maximum of the Gaussian kernel (in mm)")
     + Argument ("value").type_float (1e-6, 10.0, 1e6)
+
+  + Option ("colour", "perform track mapping in directionally-encoded colour space")
 
   + Option ("datatype", 
       "specify output image data type.")
@@ -194,6 +194,44 @@ void oversample_header (Image::Header& header, const std::vector<float>& voxel_s
 
 
 
+template <class Cont>
+MapWriterBase<Cont>* make_writer (Thread::Queue<Cont>& queue, Image::Header& H, const bool colour, const stat_t stat_vox)
+{
+  MapWriterBase<Cont>* writer = NULL;
+  if (colour) {
+    writer = new MapWriter<Point<float>, Cont> (queue, H, stat_vox);
+  } else {
+    const uint8_t dt = H.datatype() ();
+    if (dt & DataType::Signed) {
+      if ((dt & DataType::Type) == DataType::UInt8)
+        writer = new MapWriter<int8_t,   Cont> (queue, H, stat_vox);
+      else if ((dt & DataType::Type) == DataType::UInt16)
+        writer = new MapWriter<int16_t,  Cont> (queue, H, stat_vox);
+      else if ((dt & DataType::Type) == DataType::UInt32)
+        writer = new MapWriter<int32_t,  Cont> (queue, H, stat_vox);
+      else
+        throw Exception ("Unsupported data type in image header");
+    } else {
+      if ((dt & DataType::Type) == DataType::Bit)
+        writer = new MapWriter<bool,     Cont> (queue, H, stat_vox);
+      else if ((dt & DataType::Type) == DataType::UInt8)
+        writer = new MapWriter<uint8_t,  Cont> (queue, H, stat_vox);
+      else if ((dt & DataType::Type) == DataType::UInt16)
+        writer = new MapWriter<uint16_t, Cont> (queue, H, stat_vox);
+      else if ((dt & DataType::Type) == DataType::UInt32)
+        writer = new MapWriter<uint32_t, Cont> (queue, H, stat_vox);
+      else if ((dt & DataType::Type) == DataType::Float32)
+        writer = new MapWriter<float,    Cont> (queue, H, stat_vox);
+      else if ((dt & DataType::Type) == DataType::Float64)
+        writer = new MapWriter<double,   Cont> (queue, H, stat_vox);
+      else
+        throw Exception ("Unsupported data type in image header");
+    }
+  }
+  return writer;
+}
+
+
 
 void run () {
 
@@ -261,43 +299,37 @@ void run () {
     throw Exception ("If using Gaussian per-streamline statistic, need to provide a full-width half-maximum for the Gaussian kernel using the -fwhm option");
   }
 
+  opt = get_options ("colour");
+  const bool colour = opt.size();
+
+  if (colour) {
+    header.set_ndim (4);
+    header.set_dim (3, 3);
+    header.set_description (3, "directionally-encoded colour");
+  }
+
   // Deal with erroneous statistics & provide appropriate messages
   switch (contrast) {
 
     case TDI:
-      if (stat_vox != SUM)
-        info ("Cannot use voxel statistic other than 'sum' for TDI generation - ignoring");
-      stat_vox = SUM;
+      if (stat_vox != SUM && stat_vox != MEAN) {
+        info ("Cannot use voxel statistic other than 'sum' or 'mean' for TDI generation - ignoring");
+        stat_vox = SUM;
+      }
       if (stat_tck != MEAN)
         info ("Cannot use track statistic other than default for TDI generation - ignoring");
       stat_tck = MEAN;
       break;
 
-    case DECTDI:
-      if (stat_vox != SUM)
-        info ("Cannot use voxel statistic other than 'sum' for DECTDI generation - ignoring");
-      stat_vox = SUM;
-      if (stat_tck != MEAN)
-        info ("Cannot use track statistic other than default for DECTDI generation - ignoring");
-      stat_tck = MEAN;
-      break;
-
-      case ENDPOINT:
-      if (stat_vox != SUM)
-        info ("Cannot use voxel statistic other than 'sum' for endpoint map generation - ignoring");
-      stat_vox = SUM;
+    case ENDPOINT:
+      if (stat_vox != SUM && stat_vox != MEAN) {
+        info ("Cannot use voxel statistic other than 'sum' or 'mean' for endpoint map generation - ignoring");
+        stat_vox = SUM;
+      }
       if (stat_tck != MEAN)
         info ("Cannot use track statistic other than default for endpoint map generation - ignoring");
       stat_tck = MEAN;
       break;
-
-    case MEAN_DIR:
-      if (stat_vox != SUM && stat_vox != MEAN)
-        info ("Cannot use voxel statistic other than 'mean' for mean direction image - ignoring");
-      stat_vox = MEAN;
-      if (stat_tck != MEAN)
-        info ("Cannot use track statistic other than default for mean direction image - ignoring");
-      stat_tck = MEAN;
 
     case LENGTH:
       if (stat_tck != MEAN)
@@ -330,9 +362,19 @@ void run () {
 
   opt = get_options ("datatype");
   bool manual_datatype = false;
-  if (opt.size()) {
-    header.set_datatype (DataType::identifiers[int(opt[0][0])]);
+
+  if (colour) {
+    header.set_datatype (DataType::Float32);
     manual_datatype = true;
+  }
+
+  if (opt.size()) {
+    if (colour) {
+      info ("Can't manually set datatype for directionally-encoded colour processing - overriding to Float32");
+    } else {
+      header.set_datatype (DataType::identifiers[int(opt[0][0])]);
+      manual_datatype = true;
+    }
   }
 
   for (Tractography::Properties::iterator i = properties.begin(); i != properties.end(); ++i)
@@ -362,12 +404,10 @@ void run () {
   TrackQueue queue1 ("loaded tracks");
   TrackLoader loader (queue1, file, num_tracks);
 
-  std::string msg = MR::App::NAME + ": Generating image with ";
+  std::string msg = MR::App::NAME + ": Generating " + (colour ? "colour " : "") + "image with ";
   switch (contrast) {
     case TDI:              msg += "density";                    break;
-    case DECTDI:           msg += "coloured density";           break;
     case ENDPOINT:         msg += "endpoint density";           break;
-    case MEAN_DIR:         msg += "mean direction";             break;
     case LENGTH:           msg += "length";                     break;
     case INVLENGTH:        msg += "inverse length";             break;
     case SCALAR_MAP:       msg += "scalar map";                 break;
@@ -415,9 +455,7 @@ void run () {
 
     switch (contrast) {
       case TDI:              header.add_comment ("track density image"); break;
-      case DECTDI:           header.add_comment ("directionally-encoded colour track density image"); break;
       case ENDPOINT:         header.add_comment ("track endpoint density image"); break;
-      case MEAN_DIR:         header.add_comment ("mean direction coloured image"); break;
       case LENGTH:           header.add_comment ("track density image (weighted by track length)"); break;
       case INVLENGTH:        header.add_comment ("track density image (weighted by inverse track length)"); break;
       case SCALAR_MAP:       header.add_comment ("track-weighted image (using scalar image)"); break;
@@ -429,57 +467,33 @@ void run () {
 
     header.create (argument[1]);
 
-    if (stat_tck == GAUSSIAN) {
+    if (colour) {
 
-      Thread::Queue   <SetVoxelFactor> queue2 ("processed tracks");
-      TrackMapperTWI  <SetVoxelFactor> mapper (queue1, queue2, header, interp_matrix, step_size, contrast, stat_tck, gaussian_denominator_tck);
-      MapWriterScalar <SetVoxelFactor> writer (queue2, header, stat_vox);
+      Thread::Queue   <SetVoxelDir>  queue2 ("processed tracks");
+      TrackMapperTWI  <SetVoxelDir>  mapper (queue1, queue2, header, interp_matrix, step_size, contrast, stat_tck);
+      MapWriterBase   <SetVoxelDir>* writer (make_writer<SetVoxelDir> (queue2, header, colour, stat_vox));
 
       Thread::Exec loader_thread (loader, "loader");
-      Thread::Array< TrackMapperTWI<SetVoxelFactor> > mapper_list (mapper);
+      Thread::Array< TrackMapperTWI<SetVoxelDir> > mapper_list (mapper);
       Thread::Exec mapper_threads (mapper_list, "mapper");
 
-      writer.execute();
+      writer->execute();
+      delete writer;
 
     } else {
 
-      Thread::Queue   <SetVoxel> queue2 ("processed tracks");
-      TrackMapperTWI  <SetVoxel> mapper (queue1, queue2, header, interp_matrix, step_size, contrast, stat_tck);
-      MapWriterScalar <SetVoxel> writer (queue2, header, stat_vox);
+      Thread::Queue   <SetVoxel>  queue2 ("processed tracks");
+      TrackMapperTWI  <SetVoxel>  mapper (queue1, queue2, header, interp_matrix, step_size, contrast, stat_tck);
+      MapWriterBase   <SetVoxel>* writer (make_writer<SetVoxel> (queue2, header, colour, stat_vox));
 
       Thread::Exec loader_thread (loader, "loader");
       Thread::Array< TrackMapperTWI<SetVoxel> > mapper_list (mapper);
       Thread::Exec mapper_threads (mapper_list, "mapper");
 
-      writer.execute();
+      writer->execute();
+      delete writer;
 
     }
-
-  } else if (contrast == DECTDI || contrast == MEAN_DIR) {
-
-    if (!manual_datatype)
-      header.set_datatype (DataType::Float32);
-
-    header.set_ndim (4);
-    header.set_dim (3, 3);
-    header.set_stride (0, header.stride(0) + ( header.stride(0) > 0 ? 1 : -1));
-    header.set_stride (1, header.stride(1) + ( header.stride(1) > 0 ? 1 : -1));
-    header.set_stride (2, header.stride(2) + ( header.stride(2) > 0 ? 1 : -1));
-    header.set_stride (3, 1);
-    header.set_description (3, "direction");
-    header.add_comment ("coloured track density map");
-
-    header.create (argument[1]);
-
-    Thread::Queue   <SetVoxelDir> queue2 ("processed tracks");
-    TrackMapperTWI  <SetVoxelDir> mapper (queue1, queue2, header, interp_matrix, step_size, contrast, stat_tck);
-    MapWriterColour <SetVoxelDir> writer (queue2, header, stat_vox);
-
-    Thread::Exec loader_thread (loader, "loader");
-    Thread::Array< TrackMapperTWI<SetVoxelDir> > mapper_list (mapper);
-    Thread::Exec mapper_threads (mapper_list, "mapper");
-
-    writer.execute();
 
   } else if (contrast == SCALAR_MAP || contrast == SCALAR_MAP_COUNT || contrast == FOD_AMP) {
 
@@ -492,6 +506,7 @@ void run () {
     }
 
     Image::Header H_in (opt[0][0]);
+    Image::Data<float> image_in (H_in);
     if ((contrast == SCALAR_MAP || contrast == SCALAR_MAP_COUNT) && !(H_in.ndim() == 3 || (H_in.ndim() == 4 && H_in.dim(3) == 1)))
       throw Exception ("Use of 'scalar_map' contrast option requires a 3-dimensional image; your image is " + str(H_in.ndim()) + "D");
     if (contrast == FOD_AMP    &&   H_in.ndim() != 4)
@@ -502,29 +517,65 @@ void run () {
 
     header.create (argument[1]);
 
-    if (stat_tck == GAUSSIAN) {
+    if (colour) {
 
-      Thread::Queue       <SetVoxelFactor> queue2 ("processed tracks");
-      TrackMapperTWIImage <SetVoxelFactor> mapper (queue1, queue2, header, interp_matrix, step_size, contrast, stat_tck, gaussian_denominator_tck, H_in);
-      MapWriterScalar     <SetVoxelFactor> writer (queue2, header, stat_vox);
+      if (stat_tck == GAUSSIAN) {
 
-      Thread::Exec loader_thread (loader, "loader");
-      Thread::Array< TrackMapperTWIImage<SetVoxelFactor> > mapper_list (mapper);
-      Thread::Exec mapper_threads (mapper_list, "mapper");
+        Thread::Queue       <SetVoxelDirFactor>  queue2 ("processed tracks");
+        TrackMapperTWIImage <SetVoxelDirFactor>  mapper (queue1, queue2, header, interp_matrix, step_size, contrast, stat_tck, gaussian_denominator_tck, image_in);
+        MapWriterBase       <SetVoxelDirFactor>* writer (make_writer<SetVoxelDirFactor> (queue2, header, colour, stat_vox));
 
-      writer.execute();
+        Thread::Exec loader_thread (loader, "loader");
+        Thread::Array< TrackMapperTWIImage<SetVoxelDirFactor> > mapper_list (mapper);
+        Thread::Exec mapper_threads (mapper_list, "mapper");
+
+        writer->execute();
+        delete writer;
+
+      } else {
+
+        Thread::Queue       <SetVoxelDir>  queue2 ("processed tracks");
+        TrackMapperTWIImage <SetVoxelDir>  mapper (queue1, queue2, header, interp_matrix, step_size, contrast, stat_tck, gaussian_denominator_tck, image_in);
+        MapWriterBase       <SetVoxelDir>* writer (make_writer<SetVoxelDir> (queue2, header, colour, stat_vox));
+
+        Thread::Exec loader_thread (loader, "loader");
+        Thread::Array< TrackMapperTWIImage<SetVoxelDir> > mapper_list (mapper);
+        Thread::Exec mapper_threads (mapper_list, "mapper");
+
+        writer->execute();
+        delete writer;
+
+      }
 
     } else {
 
-      Thread::Queue       <SetVoxel> queue2 ("processed tracks");
-      TrackMapperTWIImage <SetVoxel> mapper (queue1, queue2, header, interp_matrix, step_size, contrast, stat_tck, gaussian_denominator_tck, H_in);
-      MapWriterScalar     <SetVoxel> writer (queue2, header, stat_vox);
+      if (stat_tck == GAUSSIAN) {
 
-      Thread::Exec loader_thread (loader, "loader");
-      Thread::Array< TrackMapperTWIImage<SetVoxel> > mapper_list (mapper);
-      Thread::Exec mapper_threads (mapper_list, "mapper");
+        Thread::Queue       <SetVoxelFactor>  queue2 ("processed tracks");
+        TrackMapperTWIImage <SetVoxelFactor>  mapper (queue1, queue2, header, interp_matrix, step_size, contrast, stat_tck, gaussian_denominator_tck, image_in);
+        MapWriterBase       <SetVoxelFactor>* writer (make_writer<SetVoxelFactor> (queue2, header, colour, stat_vox));
 
-      writer.execute();
+        Thread::Exec loader_thread (loader, "loader");
+        Thread::Array< TrackMapperTWIImage<SetVoxelFactor> > mapper_list (mapper);
+        Thread::Exec mapper_threads (mapper_list, "mapper");
+
+        writer->execute();
+        delete writer;
+
+      } else {
+
+        Thread::Queue       <SetVoxel>  queue2 ("processed tracks");
+        TrackMapperTWIImage <SetVoxel>  mapper (queue1, queue2, header, interp_matrix, step_size, contrast, stat_tck, gaussian_denominator_tck, image_in);
+        MapWriterBase       <SetVoxel>* writer (make_writer<SetVoxel> (queue2, header, colour, stat_vox));
+
+        Thread::Exec loader_thread (loader, "loader");
+        Thread::Array< TrackMapperTWIImage<SetVoxel> > mapper_list (mapper);
+        Thread::Exec mapper_threads (mapper_list, "mapper");
+
+        writer->execute();
+        delete writer;
+
+      }
 
     }
 
@@ -533,4 +584,5 @@ void run () {
   }
 
 }
+
 

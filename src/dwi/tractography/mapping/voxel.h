@@ -121,17 +121,48 @@ class VoxelFactor : public Voxel
     bool         operator< (const VoxelFactor& V) const { return Voxel::operator< (V); }
 
 
-  private:
+  protected:
     float sum;
     size_t contributions;
 
 };
 
 
+class VoxelDirFactor : public VoxelFactor
+{
 
-class SetVoxel       : public std::set<Voxel>       { public: float factor; size_t index; };
-class SetVoxelDir    : public std::set<VoxelDir>    { public: float factor; size_t index; };
-class SetVoxelFactor : public std::set<VoxelFactor> { public: static const float factor; size_t index; };
+  public:
+    VoxelDirFactor () :
+      dir (Point<float> (0.0, 0.0, 0.0))
+    {
+      memset (p, 0x00, 3 * sizeof(int));
+    }
+    VoxelDirFactor (const Voxel& V) :
+      dir (Point<float> (0.0, 0.0, 0.0))
+    {
+      memcpy (p, V, 3 * sizeof(int));
+    }
+    Point<float> dir;
+
+    VoxelDirFactor& operator= (const Voxel& V)                { Voxel::operator= (V); return (*this); }
+    bool            operator< (const VoxelDirFactor& V) const { return Voxel::operator< (V); }
+
+};
+
+
+
+class SetVoxelExtras
+{
+  public:
+    float factor; // For TWI, when contribution to the map is uniform along the length of the track
+    size_t index; // Index of the track
+};
+
+
+class SetVoxel          : public std::set<Voxel>         , public SetVoxelExtras { };
+class SetVoxelDir       : public std::set<VoxelDir>      , public SetVoxelExtras { };
+class SetVoxelFactor    : public std::set<VoxelFactor>   , public SetVoxelExtras { };
+class SetVoxelDirFactor : public std::set<VoxelDirFactor>, public SetVoxelExtras { };
 
 
 

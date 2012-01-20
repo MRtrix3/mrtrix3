@@ -30,7 +30,8 @@ namespace Tractography {
 namespace Mapping {
 
 
-const float SetVoxelFactor::factor = 1.0;
+//float SetVoxelFactor   ::factor = 1.0;
+//float SetVoxelDirFactor::factor = 1.0;
 
 
 }

@@ -34,7 +34,7 @@
 #include "math/SH.h"
 #include "thread/queue.h"
 
-#include "dataset/interp/linear.h"
+#include "image/interp/linear.h"
 
 #include "dwi/tractography/file.h"
 
@@ -61,7 +61,7 @@ namespace Mapping {
 
 
 
-typedef DataSet::Interp::Base<const Image::Header> HeaderInterp;
+typedef Image::Interp::Base<const Image::Header> HeaderInterp;
 
 
 
@@ -170,7 +170,11 @@ class TrackMapperTWI : public TrackMapperBase<Cont>
     const float gaussian_denominator;
     std::vector<float> factors;
 
+
     void set_factor (const std::vector< Point<float> >&, Cont&);
+
+    float get_factor_const     (const std::vector< Point<float> >&);
+    void  set_factors_nonconst (const std::vector< Point<float> >&);
 
     // Call the inheited virtual function unless a specialisation for this class exists
     void voxelise (const std::vector< Point<float> >& tck, Cont& voxels) const { TrackMapperBase<Cont>::voxelise (tck, voxels); }
@@ -181,12 +185,6 @@ class TrackMapperTWI : public TrackMapperBase<Cont>
 
 };
 
-template <> void TrackMapperTWI<SetVoxel>      ::voxelise (const std::vector< Point<float> >&, SetVoxel&)       const;
-template <> void TrackMapperTWI<SetVoxelFactor>::voxelise (const std::vector< Point<float> >&, SetVoxelFactor&) const;
-
-template <> void TrackMapperTWI<SetVoxel>      ::set_factor (const std::vector< Point<float> >&, SetVoxel&);
-template <> void TrackMapperTWI<SetVoxelDir>   ::set_factor (const std::vector< Point<float> >&, SetVoxelDir&);
-template <> void TrackMapperTWI<SetVoxelFactor>::set_factor (const std::vector< Point<float> >&, SetVoxelFactor&);
 
 
 
@@ -292,14 +290,19 @@ void TrackMapperTWI<Cont>::load_values (const std::vector< Point<float> >& tck, 
 
 
 
+
+
+
+
+
 template <class Cont>
 class TrackMapperTWIImage : public TrackMapperTWI<Cont>
 {
 
   public:
-    TrackMapperTWIImage (TrackQueue& input, Thread::Queue<Cont>& output, const Image::Header& output_header, const Math::Matrix<float>& interp_matrix, const float step, const contrast_t c, const stat_t m, const float denom, Image::Header& input_header) :
+    TrackMapperTWIImage (TrackQueue& input, Thread::Queue<Cont>& output, const Image::Header& output_header, const Math::Matrix<float>& interp_matrix, const float step, const contrast_t c, const stat_t m, const float denom, Image::Data<float>& input_image) :
       TrackMapperTWI<Cont> (input, output, output_header, interp_matrix, step, c, m, denom),
-      voxel                (input_header),
+      voxel                (input_image),
       interp               (voxel),
       lmax                 (0),
       sh_coeffs            (NULL)
@@ -333,8 +336,8 @@ class TrackMapperTWIImage : public TrackMapperTWI<Cont>
 
 
   private:
-    Image::Voxel<float> voxel;
-    DataSet::Interp::Linear< Image::Voxel<float> > interp;
+    Image::Data<float>::voxel_type voxel;
+    Image::Interp::Linear< Image::Data<float>::voxel_type > interp;
 
     size_t lmax;
     float* sh_coeffs;

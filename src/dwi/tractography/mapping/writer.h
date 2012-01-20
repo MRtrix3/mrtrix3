@@ -24,13 +24,18 @@
 #define __dwi_tractography_mapping_writer_h__
 
 
-#include "dataset/buffer.h"
-#include "dataset/loop.h"
+#include "image/scratch.h"
+#include "image/loop.h"
+#include "image/nav.h"
 #include "image/header.h"
 #include "thread/queue.h"
 
 #include "dwi/tractography/mapping/twi_stats.h"
 #include "dwi/tractography/mapping/voxel.h"
+
+
+
+#include <typeinfo>
 
 
 namespace MR {
@@ -43,13 +48,18 @@ template <typename Cont>
 class MapWriterBase
 {
 
+  typedef Image::Scratch<uint32_t> CountType;
+
   public:
     MapWriterBase (Thread::Queue<Cont>& queue, Image::Header& header, const stat_t s) :
       reader (queue),
       H (header),
       voxel_statistic (s),
-      counts ((s == MEAN) ? (new DataSet::Buffer<uint32_t>(header, 3, "counts")) : NULL)
+      counts_data ((s == MEAN) ? (new CountType (header, "counts")) : NULL),
+      counts (counts_data ? (new CountType::voxel_type (*counts_data)) : NULL)
     { }
+
+    virtual ~MapWriterBase() { }
 
     virtual void execute () = 0;
 
@@ -57,63 +67,75 @@ class MapWriterBase
     typename Thread::Queue<Cont>::Reader reader;
     Image::Header& H;
     const stat_t voxel_statistic;
-    Ptr< DataSet::Buffer<uint32_t> > counts;
+    Ptr<CountType> counts_data;
+    Ptr<CountType::voxel_type> counts;
 
 };
 
 
-template <typename Cont>
-class MapWriterScalar : public MapWriterBase<Cont>
+
+template <typename Cont> float get_factor (const Cont&, const typename Cont::const_iterator) { assert (0); return 0; }
+template <> float get_factor<SetVoxel>          (const SetVoxel&          set, const SetVoxel         ::const_iterator item) { return set.factor; }
+template <> float get_factor<SetVoxelDir>       (const SetVoxelDir&       set, const SetVoxelDir      ::const_iterator item) { return set.factor; }
+template <> float get_factor<SetVoxelFactor>    (const SetVoxelFactor&    set, const SetVoxelFactor   ::const_iterator item) { return item->get_factor(); }
+template <> float get_factor<SetVoxelDirFactor> (const SetVoxelDirFactor& set, const SetVoxelDirFactor::const_iterator item) { return item->get_factor(); }
+
+
+
+template <class value_type, typename Cont>
+class MapWriter : public MapWriterBase<Cont>
 {
   public:
-    MapWriterScalar (Thread::Queue<Cont>& queue, Image::Header& header, const stat_t voxel_statistic) :
+    MapWriter (Thread::Queue<Cont>& queue, Image::Header& header, const stat_t voxel_statistic) :
       MapWriterBase<Cont> (queue, header, voxel_statistic),
-      buffer (MapWriterBase<Cont>::H, 3, "buffer")
+      buffer_data (MapWriterBase<Cont>::H, "buffer"),
+      buffer (buffer_data)
     {
-    	DataSet::Loop loop;
-    	if (voxel_statistic == MIN) {
-    		for (loop.start (buffer); loop.ok(); loop.next (buffer))
-    			buffer.value() =  INFINITY;
-    	} else if (voxel_statistic == MAX) {
-    		for (loop.start (buffer); loop.ok(); loop.next (buffer))
-    			buffer.value() = -INFINITY;
-    	}
+      Image::Loop loop;
+      if (voxel_statistic == MIN) {
+        for (loop.start (buffer); loop.ok(); loop.next (buffer))
+          buffer.value() = std::numeric_limits<value_type>::max();
+      } else if (voxel_statistic == MAX) {
+        for (loop.start (buffer); loop.ok(); loop.next (buffer))
+          buffer.value() = std::numeric_limits<value_type>::min();
+      }
     }
 
-    ~MapWriterScalar ()
+    ~MapWriter ()
     {
-    	DataSet::Loop loop;
+      Image::Loop loop;
       switch (MapWriterBase<Cont>::voxel_statistic) {
 
         case SUM: break;
 
         case MIN:
-        	for (loop.start (buffer); loop.ok(); loop.next (buffer)) {
-        		if (buffer.value() ==  INFINITY)
-        		  buffer.value() = 0.0;
-        	}
-        	break;
+          for (loop.start (buffer); loop.ok(); loop.next (buffer)) {
+            if (buffer.value() == std::numeric_limits<value_type>::max())
+              buffer.value() = 0.0;
+          }
+          break;
 
         case MEAN:
-        	for (loop.start (buffer, *MapWriterBase<Cont>::counts); loop.ok(); loop.next (buffer, *MapWriterBase<Cont>::counts)) {
-        		if ((*MapWriterBase<Cont>::counts).value())
-        			buffer.value() /= float(MapWriterBase<Cont>::counts->value());
-        	}
-        	break;
+          for (loop.start (buffer, *MapWriterBase<Cont>::counts); loop.ok(); loop.next (buffer, *MapWriterBase<Cont>::counts)) {
+            if ((*MapWriterBase<Cont>::counts).value())
+              buffer.value() /= float(MapWriterBase<Cont>::counts->value());
+          }
+          break;
 
         case MAX:
-        	for (loop.start (buffer); loop.ok(); loop.next (buffer)) {
-        		if (buffer.value() == -INFINITY)
-        			buffer.value() = 0.0;
-        	}
-        	break;
+          for (loop.start (buffer); loop.ok(); loop.next (buffer)) {
+            if (buffer.value() == std::numeric_limits<value_type>::min())
+              buffer.value() = 0.0;
+          }
+          break;
 
         default:
-          throw Exception ("Unknown / unhandled voxel statistic in ~MapWriterScalar()");
+          throw Exception ("Unknown / unhandled voxel statistic in ~MapWriter()");
 
       }
-      Image::Voxel<float> vox (MapWriterBase<Cont>::H);
-      DataSet::LoopInOrder loopinorder (vox, "writing image to file...", 0, 3);
+      Image::Data<value_type> data (MapWriterBase<Cont>::H);
+      typename Image::Data<value_type>::voxel_type vox (data);
+      Image::LoopInOrder loopinorder (vox, "writing image to file...", 0, 3);
       for (loopinorder.start (vox, buffer); loopinorder.ok(); loopinorder.next (vox, buffer))
         vox.value() = buffer.value();
     }
@@ -124,24 +146,20 @@ class MapWriterScalar : public MapWriterBase<Cont>
       typename Thread::Queue<Cont>::Reader::Item item (MapWriterBase<Cont>::reader);
       while (item.read()) {
         for (typename Cont::const_iterator i = item->begin(); i != item->end(); ++i) {
-          buffer[0] = (*i)[0];
-          buffer[1] = (*i)[1];
-          buffer[2] = (*i)[2];
-          const float factor = get_factor (*item, i);
+          Image::Nav::set_pos (buffer, *i);
+          const value_type factor = get_factor (*item, i);
           switch (MapWriterBase<Cont>::voxel_statistic) {
-            case SUM:  buffer.value() += factor; break;
+            case SUM:  buffer.value() += factor;                     break;
             case MIN:  buffer.value() = MIN(buffer.value(), factor); break;
             case MAX:  buffer.value() = MAX(buffer.value(), factor); break;
             case MEAN:
               // Only increment counts[] if it is necessary to do so given the chosen statistic
               buffer.value() += factor;
-              (*MapWriterBase<Cont>::counts)[0] = (*i)[0];
-              (*MapWriterBase<Cont>::counts)[1] = (*i)[1];
-              (*MapWriterBase<Cont>::counts)[2] = (*i)[2];
+              Image::Nav::set_pos (*MapWriterBase<Cont>::counts, *i);
               (*MapWriterBase<Cont>::counts).value() += 1;
               break;
             default:
-              throw Exception ("Unknown / unhandled voxel statistic in MapWriterScalar::execute()");
+              throw Exception ("Unknown / unhandled voxel statistic in MapWriter::execute()");
           }
         }
       }
@@ -149,67 +167,244 @@ class MapWriterScalar : public MapWriterBase<Cont>
 
 
   private:
-    DataSet::Buffer<float> buffer;
-
-    float get_factor (const Cont&, const typename Cont::const_iterator) const;
-
+    Image::Scratch<value_type> buffer_data;
+    typename Image::Scratch<value_type>::voxel_type buffer;
 
 };
 
-template <> float MapWriterScalar<SetVoxel>      ::get_factor (const SetVoxel&       set, const SetVoxel      ::const_iterator item) const { return set.factor; }
-template <> float MapWriterScalar<SetVoxelFactor>::get_factor (const SetVoxelFactor& set, const SetVoxelFactor::const_iterator item) const { return item->get_factor(); }
 
 
-
-template <typename Cont>
-class MapWriterColour : public MapWriterBase<Cont>
+template <>
+MapWriter<Point<float>, SetVoxelDir>::MapWriter (Thread::Queue<SetVoxelDir>& queue, Image::Header& header, const stat_t voxel_statistic) :
+    MapWriterBase<SetVoxelDir> (queue, header, voxel_statistic),
+    buffer_data (MapWriterBase<SetVoxelDir>::H, "buffer"),
+    buffer (buffer_data)
 {
+  Image::Loop loop;
+  if (voxel_statistic == MIN) {
+    for (loop.start (buffer); loop.ok(); loop.next (buffer))
+      buffer.value() = Point<float> (std::numeric_limits<float>::max(), std::numeric_limits<float>::max(), std::numeric_limits<float>::max());
+  } else if (voxel_statistic == MAX) {
+    for (loop.start (buffer); loop.ok(); loop.next (buffer))
+      buffer.value() = Point<float> (0.0, 0.0, 0.0);
+  }
+}
 
-  public:
-    MapWriterColour (Thread::Queue<Cont>& queue, Image::Header& header, const stat_t voxel_statistic) :
-      MapWriterBase<Cont>(queue, header, voxel_statistic),
-      buffer (MapWriterBase<Cont>::H, 3, "directional_buffer")
-    {
-      if (voxel_statistic != SUM && voxel_statistic != MEAN)
-        throw Exception ("Attempting to create MapWriterColour with a voxel statistic other than sum or mean");
-    }
+template <>
+MapWriter<Point<float>, SetVoxelDir>::~MapWriter ()
+{
+  Image::Loop loop;
+  switch (MapWriterBase<SetVoxelDir>::voxel_statistic) {
 
-    ~MapWriterColour ()
-    {
-      Image::Voxel<float> vox (MapWriterBase<Cont>::H);
-      DataSet::LoopInOrder loop (vox, "writing image to file...", 0, 3);
-      for (loop.start (vox, buffer); loop.ok(); loop.next (vox, buffer)) {
-        Point<float> temp = buffer.value();
-        // Mean direction - no need to track the number of contribution
-        if ((MapWriterBase<Cont>::voxel_statistic == MEAN) && (temp != Point<float> (0.0, 0.0, 0.0)))
-          temp.normalise();
-        vox[3] = 0; vox.value() = temp[0];
-        vox[3] = 1; vox.value() = temp[1];
-        vox[3] = 2; vox.value() = temp[2];
+    case SUM: break;
+
+    case MIN:
+      for (loop.start (buffer); loop.ok(); loop.next (buffer)) {
+        const Point<float>& value (buffer.value());
+        if (value == Point<float> (std::numeric_limits<float>::max(), std::numeric_limits<float>::max(), std::numeric_limits<float>::max()))
+          buffer.value() = Point<float> (0.0, 0.0, 0.0);
       }
-    }
+      break;
 
-    void execute ()
-    {
-      typename Thread::Queue<Cont>::Reader::Item item (MapWriterBase<Cont>::reader);
-      while (item.read()) {
-        for (typename Cont::const_iterator i = item->begin(); i != item->end(); ++i) {
-          buffer[0] = (*i)[0];
-          buffer[1] = (*i)[1];
-          buffer[2] = (*i)[2];
-          // Voxel statistic for DECTDI is always sum
-          // This also means that there is no need to increment counts[]
-          // If this is being used for MEAN_DIR contrast, the direction can just be normalised; again, don't need counts
-          buffer.value() += abs (i->dir);
+    case MEAN:
+      for (loop.start (buffer); loop.ok(); loop.next (buffer)) {
+        const Point<float>& value (buffer.value());
+        if (value.norm2()) {
+          Point<float> norm_value (value);
+          norm_value.normalise();
+          buffer.value() = norm_value;
         }
       }
+      break;
+
+    case MAX: break;
+
+    default:
+      throw Exception ("Unknown / unhandled voxel statistic in ~MapWriter()");
+
+  }
+  Image::Data<float> data (MapWriterBase<SetVoxelDir>::H);
+  Image::Data<float>::voxel_type vox (data);
+  Image::LoopInOrder loopinorder (vox, "writing image to file...", 0, 3);
+  for (loopinorder.start (vox, buffer); loopinorder.ok(); loopinorder.next (vox, buffer)) {
+    const Point<float>& value (buffer.value());
+    vox[3] = 0; vox.value() = value[0];
+    vox[3] = 1; vox.value() = value[1];
+    vox[3] = 2; vox.value() = value[2];
+  }
+
+}
+
+
+
+template <>
+void MapWriter<Point<float>, SetVoxelDir>::execute ()
+{
+  Thread::Queue<SetVoxelDir>::Reader::Item item (MapWriterBase<SetVoxelDir>::reader);
+  while (item.read()) {
+    for (SetVoxelDir::const_iterator i = item->begin(); i != item->end(); ++i) {
+      Image::Nav::set_pos (buffer, *i);
+      const float factor = get_factor (*item, i);
+      const Point<float> scaled_dir = i->dir * factor;
+      const Point<float>& current_value = buffer.value();
+      switch (MapWriterBase<SetVoxelDir>::voxel_statistic) {
+        case SUM:
+          buffer.value() += scaled_dir;
+          break;
+        case MIN:
+          if (scaled_dir.norm2() < current_value.norm2())
+            buffer.value() = scaled_dir;
+          break;
+        case MAX:
+          if (scaled_dir.norm2() > current_value.norm2())
+            buffer.value() = scaled_dir;
+          break;
+        case MEAN:
+          buffer.value() += scaled_dir;
+          Image::Nav::set_pos (*MapWriterBase<SetVoxelDir>::counts, *i);
+          (*MapWriterBase<SetVoxelDir>::counts).value() += 1;
+          break;
+        default:
+          throw Exception ("Unknown / unhandled voxel statistic in MapWriter::execute()");
+      }
     }
+  }
+}
 
 
-  private:
-    DataSet::Buffer< Point<float> > buffer;
 
-};
+template <>
+MapWriter<Point<float>, SetVoxelDirFactor>::MapWriter (Thread::Queue<SetVoxelDirFactor>& queue, Image::Header& header, const stat_t voxel_statistic) :
+    MapWriterBase<SetVoxelDirFactor> (queue, header, voxel_statistic),
+    buffer_data (MapWriterBase<SetVoxelDirFactor>::H, "buffer"),
+    buffer (buffer_data)
+{
+  Image::Loop loop;
+  if (voxel_statistic == MIN) {
+    for (loop.start (buffer); loop.ok(); loop.next (buffer))
+      buffer.value() = Point<float> (std::numeric_limits<float>::max(), std::numeric_limits<float>::max(), std::numeric_limits<float>::max());
+  } else if (voxel_statistic == MAX) {
+    for (loop.start (buffer); loop.ok(); loop.next (buffer))
+      buffer.value() = Point<float> (0.0, 0.0, 0.0);
+  }
+}
+
+template <>
+MapWriter<Point<float>, SetVoxelDirFactor>::~MapWriter ()
+{
+  Image::Loop loop;
+  switch (MapWriterBase<SetVoxelDirFactor>::voxel_statistic) {
+
+    case SUM: break;
+
+    case MIN:
+      for (loop.start (buffer); loop.ok(); loop.next (buffer)) {
+        const Point<float>& value (buffer.value());
+        if (value == Point<float> (std::numeric_limits<float>::max(), std::numeric_limits<float>::max(), std::numeric_limits<float>::max()))
+          buffer.value() = Point<float> (0.0, 0.0, 0.0);
+      }
+      break;
+
+    case MEAN:
+      for (loop.start (buffer); loop.ok(); loop.next (buffer)) {
+        const Point<float>& value (buffer.value());
+        if (value.norm2()) {
+          Point<float> norm_value (value);
+          norm_value.normalise();
+          buffer.value() = norm_value;
+        }
+      }
+      break;
+
+    case MAX: break;
+
+    default:
+      throw Exception ("Unknown / unhandled voxel statistic in ~MapWriter()");
+
+  }
+  Image::Data<float> data (MapWriterBase<SetVoxelDirFactor>::H);
+  Image::Data<float>::voxel_type vox (data);
+  Image::LoopInOrder loopinorder (vox, "writing image to file...", 0, 3);
+  for (loopinorder.start (vox, buffer); loopinorder.ok(); loopinorder.next (vox, buffer)) {
+    const Point<float>& value (buffer.value());
+    vox[3] = 0; vox.value() = value[0];
+    vox[3] = 1; vox.value() = value[1];
+    vox[3] = 2; vox.value() = value[2];
+  }
+
+}
+
+
+template <>
+void MapWriter<Point<float>, SetVoxelDirFactor>::execute ()
+{
+  Thread::Queue<SetVoxelDirFactor>::Reader::Item item (MapWriterBase<SetVoxelDirFactor>::reader);
+  while (item.read()) {
+    for (SetVoxelDirFactor::const_iterator i = item->begin(); i != item->end(); ++i) {
+      Image::Nav::set_pos (buffer, *i);
+      const float factor = get_factor (*item, i);
+      const Point<float> scaled_dir = i->dir * factor;
+      const Point<float>& current_value = buffer.value();
+      switch (MapWriterBase<SetVoxelDirFactor>::voxel_statistic) {
+        case SUM:
+          buffer.value() += scaled_dir;
+          break;
+        case MIN:
+          if (scaled_dir.norm2() < current_value.norm2())
+            buffer.value() = scaled_dir;
+          break;
+        case MAX:
+          if (scaled_dir.norm2() > current_value.norm2())
+            buffer.value() = scaled_dir;
+          break;
+        case MEAN:
+          buffer.value() += scaled_dir;
+          Image::Nav::set_pos (*MapWriterBase<SetVoxelDirFactor>::counts, *i);
+          (*MapWriterBase<SetVoxelDirFactor>::counts).value() += 1;
+          break;
+        default:
+          throw Exception ("Unknown / unhandled voxel statistic in MapWriter::execute()");
+      }
+    }
+  }
+}
+
+template <>
+MapWriter<Point<float>, SetVoxel>::MapWriter (Thread::Queue<SetVoxel>& queue, Image::Header& header, const stat_t voxel_statistic) :
+  MapWriterBase<SetVoxel> (queue, header, voxel_statistic),
+  buffer_data (MapWriterBase<SetVoxel>::H, "buffer"),
+  buffer (buffer_data)
+{
+  throw Exception ("Invalid type requested: MR::DWI::Tractography::Mapping::MapWriter<Point<float>, SetVoxel>");
+}
+template <>
+MapWriter<Point<float>, SetVoxelFactor>::MapWriter (Thread::Queue<SetVoxelFactor>& queue, Image::Header& header, const stat_t voxel_statistic) :
+  MapWriterBase<SetVoxelFactor> (queue, header, voxel_statistic),
+  buffer_data (MapWriterBase<SetVoxelFactor>::H, "buffer"),
+  buffer (buffer_data)
+{
+  throw Exception ("Invalid type requested: MR::DWI::Tractography::Mapping::MapWriter<Point<float>, SetVoxelFactor>");
+}
+template <>
+MapWriter<Point<float>, SetVoxel>::~MapWriter ()
+{
+  throw Exception ("Invalid type requested: MR::DWI::Tractography::Mapping::MapWriter<Point<float>, SetVoxel>");
+}
+template <>
+MapWriter<Point<float>, SetVoxelFactor>::~MapWriter ()
+{
+  throw Exception ("Invalid type requested: MR::DWI::Tractography::Mapping::MapWriter<Point<float>, SetVoxelFactor>");
+}
+template <>
+void MapWriter<Point<float>, SetVoxel>::execute ()
+{
+  throw Exception ("Invalid type requested: MR::DWI::Tractography::Mapping::MapWriter<Point<float>, SetVoxel>");
+}
+template <>
+void MapWriter<Point<float>, SetVoxelFactor>::execute ()
+{
+  throw Exception ("Invalid type requested: MR::DWI::Tractography::Mapping::MapWriter<Point<float>, SetVoxelFactor>");
+}
 
 
 
