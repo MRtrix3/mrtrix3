@@ -25,6 +25,7 @@
 
 #include "math/matrix.h"
 #include "image/value.h"
+#include "image/voxel.h"
 #include "image/position.h"
 
 namespace MR
@@ -44,6 +45,7 @@ namespace MR
 
       public:
         typedef typename Set::value_type value_type;
+        typedef Image::Voxel<Subset> voxel_type;
 
         Subset (Set& original, const size_t* from, const size_t* dimensions, const std::string& description = "") :
           D (original),
@@ -92,6 +94,10 @@ namespace MR
 
         float   vox (size_t axis) const {
           return (D.vox (axis));
+        }
+
+        const Image::Header& header() const {
+          return (D.header());
         }
 
         const Math::Matrix<float>& transform () const {

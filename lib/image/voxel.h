@@ -95,6 +95,9 @@ namespace MR
         Image::Position<Voxel> operator[] (size_t axis) {
           return Image::Position<Voxel> (*this, axis);
         }
+        ssize_t operator[] (size_t axis) const {
+          return get_pos (axis);
+        }
         Image::Value<Voxel> value () {
           return Image::Value<Voxel> (*this);
         }

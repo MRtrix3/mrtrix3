@@ -78,10 +78,20 @@ inline void set_value_at_pos (Set& data, const Nav& pos, const typename Set::val
 
 
 template <class Set, class Nav>
-inline bool within_bounds (Set& data, const Nav& pos)
+inline bool within_bounds (const Set& data, const Nav& pos)
 {
     for (size_t axis = 0; axis != data.ndim(); ++axis)
       if (pos[axis] < 0 || pos[axis] >= data.dim (axis))
+        return false;
+    return true;
+}
+
+
+template <class Nav>
+inline bool within_bounds (const Nav& pos)
+{
+    for (size_t axis = 0; axis != pos.ndim(); ++axis)
+      if (pos[axis] < 0 || pos[axis] >= pos.dim (axis))
         return false;
     return true;
 }
