@@ -448,7 +448,8 @@ namespace MR
           T d2SH_dt2 = daz*daz*d2SH_daz2 + 2.0*daz*del*d2SH_deldaz + del*del*d2SH_del2;
           T dt = - dSH_dt / d2SH_dt2;
 
-          if (dt < 0.0 || dt > MAX_DIR_CHANGE) dt = MAX_DIR_CHANGE;
+          if (dt < 0.0) dt = -dt;
+          if (dt > MAX_DIR_CHANGE) dt = MAX_DIR_CHANGE;
 
           del *= dt;
           daz *= dt;
@@ -517,6 +518,7 @@ namespace MR
 
             T tmp2 = - ( (l+m) * (l-m+1) + (l-m) * (l+m+1)) * AL[index_mpos (l,m)];
             if (m == 1) tmp2 -= sqrt (T ( (l+m) * (l-m+1) * (l+m-1) * (l-m+2))) * AL[index_mpos (l,1)];
+            else tmp2 += sqrt (T ( (l+m) * (l-m+1) * (l+m-1) * (l-m+2))) * AL[index_mpos (l,m-2)];
             if (l > m+1) tmp2 += sqrt (T ( (l-m) * (l+m+1) * (l-m-1) * (l+m+2))) * AL[index_mpos (l,m+2)];
             tmp2 /= 4.0;
             d2SH_del2 += (vp*caz + vm*saz) * tmp2;
