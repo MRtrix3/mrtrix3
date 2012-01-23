@@ -112,6 +112,8 @@ ZLIB_LDFLAGS    Any flags required to link with the zlib compression library.
 
 CBLAS_LDFLAGS   Any flags required to link with an alternate cblas library.
 
+QMAKE           The command to run to invoke qmake. 
+
 PATH            Set the path to use during the configure process.
                 This may be useful to set the path to Qt4's qmake.
                 For example:
@@ -144,12 +146,12 @@ def report (message):
   config_report += message
   sys.stdout.write (message)
   sys.stdout.flush()
-  logfile.write (message)
+  logfile.write ('\nREPORT: ' + message.rstrip() + '\n')
 
 def error (message):
   global logfile
-  logfile.write ('\nERROR: ' + message + '\n\n')
-  sys.stderr.write ('\nERROR: ' + message + '\n\n')
+  logfile.write ('\nERROR: ' + message.rstrip() + '\n\n')
+  sys.stderr.write ('\nERROR: ' + message.rstrip() + '\n\n')
   sys.exit (1)
 
 
@@ -250,10 +252,29 @@ def fillin (template, keyvalue):
   return cmd
 
 
+
+def execute (cmd, exception, raise_on_non_zero_exit_code = True, cwd = None):
+  log ('EXEC <<\nCMD: ' + ' '.join(cmd) + '\n')
+  try: process = subprocess.Popen (cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, cwd=cwd)
+  except OSError: 
+    log ('command failed with stderr:\n' + process.stderr.read().rstrip() + '\n>>\n\n')
+    raise exception
+  status = process.wait()
+  log ('EXIT: ' + str(status) + '\n')
+  stdout = process.stdout.read().rstrip()
+  if len (stdout): log ('STDOUT:\n' + stdout + '\n')
+  stderr = process.stderr.read().rstrip()
+  if len (stderr): log ('STDERR:\n' + stderr + '\n')
+  log ('>>\n\n')
+  if raise_on_non_zero_exit_code and status != 0: raise exception
+  return (status, stdout, stderr)
+
+  
+
 def compile (source, compiler_flags = [], linker_flags = []):
   global cpp, ld
-  log ('\n** COMPILE **\n\nsource file:\n---\n' + source + '\n---\n\n')
   F = TempFile ('.cpp')
+  log ('\nCOMPILE ' + F.name + ':\n---\n' + source + '\n---\n')
   F.fid.write (source)
   F.fid.flush()
   obj = DeleteAfter (F.name[:-4] + '.o')
@@ -261,34 +282,18 @@ def compile (source, compiler_flags = [], linker_flags = []):
     'CFLAGS': compiler_flags,
     'SRC': F.name,
     'OBJECT': obj.name })
-  log ('executing "' + ' '.join(cmd) + '"...\n\n')
-  try: process = subprocess.Popen (cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-  except OSError: 
-    log ('failed with stderr:\n' + process.stderr.read())
-    raise CompileError
-  if process.wait() != 0:
-    log ('failed with stderr:\n' + process.stderr.read())
-    raise CompileError
+  execute (cmd, CompileError)
 
   out = DeleteAfter ('./a.out')
   cmd = fillin (ld, {
     'LDFLAGS': linker_flags,
     'OBJECTS': obj.name,
     'EXECUTABLE': out.name })
-  log ('executing "' + ' '.join(cmd) + '"...\n\n')
-  try: process = subprocess.Popen (cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-  except OSError: 
-    log ('failed with stderr:\n' + process.stderr.read())
-    raise LinkError
-  status = process.wait()
-  if status != 0: raise LinkError
+  execute (cmd, LinkError)
 
-  log ('executing command...\n\n')
-  process = subprocess.Popen ([ out.name ], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-  status = process.wait()
-  if status != 0: raise RuntimeError
+  ret = execute ([ out.name ], RuntimeError)
 
-  return process.stdout.read()
+  return ret[1]
 
 
 
@@ -306,9 +311,7 @@ if 'LDLIB' in os.environ.keys(): ld_lib = os.environ['LDLIB'].split()
 
 report ('Checking C++ compiler [' + cpp[0] + ']: ')
 try: 
-  process = subprocess.Popen ([ cpp[0], '-dumpversion' ], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-  process.wait()
-  compiler_version = process.stdout.read().strip()
+  compiler_version = execute ([ cpp[0], '-dumpversion' ], CompileError)[1]
   if len(compiler_version) == 0: report ('(no version information)')
   else: report (compiler_version)
 except:
@@ -566,7 +569,13 @@ For example:'
 
 report ('Checking whether GSL compiles with -DHAVE_INLINE: ')
 try:
-  gsl_version = compile ('#include <gsl/gsl_matrix.h>\nint main() { gsl_matrix* M = gsl_matrix_alloc (3,3); gsl_matrix_set(M,0,0,3.14); return (gsl_matrix_get(M,0,0) != 3.14); }', gsl_cflags + [ '-DHAVE_INLINE' ], gsl_ldflags)
+  gsl_version = compile ('''
+#include <gsl/gsl_matrix.h>
+int main() { 
+  gsl_matrix* M = gsl_matrix_alloc (3,3); 
+  gsl_matrix_set(M,0,0,3.14); 
+  return (gsl_matrix_get(M,0,0) != 3.14); 
+}''', gsl_cflags + [ '-DHAVE_INLINE' ], gsl_ldflags)
   gsl_cflags += [ '-DHAVE_INLINE' ]
   report ('yes\n')
 except:
@@ -620,13 +629,9 @@ if not noshared:
     'CFLAGS': cpp_flags,
     'SRC': F.name,
     'OBJECT': obj.name })
-  try: process = subprocess.Popen (cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-  except OSError:
+  try: execute (cmd, CompileError)
+  except CompileError:
     error ('''compiler not found!
-
-  an unexpected error occurred''')
-  if process.wait() != 0: 
-    error ('''compiler error!
 
   an unexpected error occurred''')
   
@@ -635,18 +640,11 @@ if not noshared:
     'LDLIB_FLAGS': ld_lib_flags,
     'OBJECTS': obj.name,
     'LIB': lib.name })
-  try: process = subprocess.Popen (cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-  except OSError: 
+  try: execute (cmd, LinkError)
+  except LinkError: 
     error ('''linker not found!
 
   Use the LDLIB environment variable to set the command-line
-  for shared library generation''')
-  status = process.wait()
-
-  if status != 0:
-    error ('''linker error!
-
-  Use the LDLIB_FLAGS environment variable to set the flags required
   for shared library generation''')
 
   report ('yes\n')
@@ -655,7 +653,7 @@ if not noshared:
 
 
 
-
+qmake = [ 'qmake' ]
 qt_cflags = []
 qt_ldflags = []
 
@@ -663,6 +661,8 @@ qt_ldflags = []
 if not nogui:
 
   report ('Checking for Qt: ')
+
+  if 'QMAKE' in os.environ.keys(): qmake = os.environ['QMAKE'].split()
 
   try:
     qt_dir = TempDir()
@@ -713,10 +713,12 @@ int main() { Foo f; }
     f.write (file)
     f.close();
 
-    log ('\nexecuting "qmake"...\n')
-    try: process = subprocess.Popen ([ 'qmake' ], cwd=qt_dir.name, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    except OSError: raise QMakeError
-    if process.wait() != 0: raise QMakeError
+    try: execute (qmake, QMakeError, cwd=qt_dir.name)
+    except QMakeError:
+      error ('''error issuing qmake command!
+
+  Use the QMAKE environment variable to set the correct qmake command for use with Qt4''')
+     
 
     qt_defines = [] 
     qt_includes = []
