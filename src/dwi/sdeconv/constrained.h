@@ -119,7 +119,7 @@ namespace MR
                 threshold = opt[0][0];
 
               opt = get_options ("niter");
-              int niter = 50;
+              niter = 50;
               if (opt.size())
                 niter = opt[0][0];
 
