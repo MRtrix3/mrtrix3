@@ -66,15 +66,15 @@ void run () {
     axis = opt[0][0];
 
   int num_images = argument.size()-1;
-  Ptr<Image::Header> in [num_images];
-  in[0] = new Image::Header (argument[0]);
-  Image::Header& header_in (*in[0]);
+  Ptr<Image::Data<value_type> > in [num_images];
+  in[0] = new Image::Data<value_type> (argument[0]);
+  Image::ConstHeader& header_in (*in[0]);
 
   int ndims = 0;
   int last_dim;
 
   for (int i = 1; i < num_images; i++) {
-    in[i] = new Image::Header (argument[i]);
+    in[i] = new Image::Data<value_type> (argument[i]);
     for (last_dim = in[i]->ndim()-1; in[i]->dim (last_dim) <= 1 && last_dim >= 0; last_dim--);
     if (last_dim > ndims)
       ndims = last_dim;
@@ -98,10 +98,8 @@ void run () {
     if (header_out.dim (i) <= 1) {
       for (int n = 0; n < num_images; n++) {
         if (in[n]->ndim() > i) {
-          header_out.set_dim (i, in[n]->dim (i));
-          header_out.set_vox (i, in[n]->vox (i));
-          header_out.set_description (i, in[n]->description (i));
-          header_out.set_units (i, in[n]->units (i));
+          header_out.dim(i) = in[n]->dim (i);
+          header_out.vox(i) = in[n]->vox (i);
           break;
         }
       }
@@ -112,16 +110,14 @@ void run () {
   {
     size_t axis_dim = 0;
     for (int n = 0; n < num_images; n++) {
-      if (in[n]->is_complex())
-        header_out.set_datatype (DataType::CFloat32);
+      if (in[n]->datatype().is_complex())
+        header_out.datatype() = DataType::CFloat32;
       axis_dim += in[n]->ndim() > size_t (axis) ? (in[n]->dim (axis) > 1 ? in[n]->dim (axis) : 1) : 1;
     }
-    header_out.set_dim (axis, axis_dim);
+    header_out.dim(axis) = axis_dim;
   }
 
-  header_out.create (argument[num_images]);
-
-  Image::Data<value_type> data_out (header_out);
+  Image::Data<value_type> data_out (header_out, argument[num_images]);
   Image::Data<value_type>::voxel_type out_vox (data_out);
 
   ProgressBar progress ("concatenating...", Image::voxel_count (out_vox));
@@ -129,8 +125,7 @@ void run () {
 
   for (int i = 0; i < num_images; i++) {
     Image::Loop loop;
-    Image::Data<value_type> in_data (*in[i]);
-    Image::Data<value_type>::voxel_type in_vox (in_data);
+    Image::Data<value_type>::voxel_type in_vox (*in[i]);
 
     for (loop.start (in_vox); loop.ok(); loop.next (in_vox)) {
       for (size_t dim = 0; dim < out_vox.ndim(); dim++) {

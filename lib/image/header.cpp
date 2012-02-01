@@ -22,14 +22,13 @@
 
 #include "app.h"
 #include "image/header.h"
+#include "image/misc.h"
 #include "image/stride.h"
-#include "image/transform.h"
-#include "math/matrix.h"
-#include "math/permutation.h"
-#include "image/axis.h"
+#include "image/handler/base.h"
 #include "image/name_parser.h"
 #include "image/format/list.h"
 #include "image/handler/default.h"
+#include "math/permutation.h"
 
 namespace MR
 {
@@ -38,23 +37,6 @@ namespace MR
 
     namespace
     {
-      class AxesWrapper
-      {
-        private:
-          std::vector<Axis>& A;
-        public:
-          AxesWrapper (std::vector<Axis>& axes) : A (axes) { }
-
-          size_t ndim () const {
-            return A.size();
-          }
-          const ssize_t& stride (int axis) const {
-            return A[axis].stride;
-          }
-          ssize_t& stride (int axis) {
-            return A[axis].stride;
-          }
-      };
 
       inline size_t not_any_of (size_t a, size_t b)
       {
@@ -84,113 +66,10 @@ namespace MR
 
 
 
-    void Header::sanitise ()
-    {
-      debug ("sanitising header...");
-
-      if (ndim() < 3) {
-        info ("image contains fewer than 3 dimensions - adding extra dimensions");
-        set_ndim (3);
-      }
-
-      {
-        AxesWrapper wrap (axes_);
-        Image::Stride::sanitise (wrap);
-        Image::Stride::symbolise (wrap);
-      }
-
-
-      if (!finite (vox (0)) || !finite (vox (1)) || !finite (vox (2))) {
-        error ("invalid voxel sizes - resetting to sane defaults");
-        set_vox (0, 1.0);
-        set_vox (1, 1.0);
-        set_vox (2, 1.0);
-      }
-
-      if (transform().is_set()) {
-        if (transform().rows() != 4 || transform().columns() != 4) {
-          transform_.clear();
-          error ("transform matrix is not 4x4 - resetting to sane defaults");
-        }
-        else {
-          for (size_t i = 0; i < 3; i++) {
-            for (size_t j = 0; j < 4; j++) {
-              if (!finite (transform_ (i,j))) {
-                transform_.clear();
-                error ("transform matrix contains invalid entries - resetting to sane defaults");
-                break;
-              }
-            }
-            if (!transform().is_set()) break;
-          }
-        }
-      }
-
-      if (!transform().is_set())
-        Image::Transform::set_default (transform_, *this);
-
-      transform_ (3,0) = transform_ (3,1) = transform_ (3,2) = 0.0;
-      transform_ (3,3) = 1.0;
-
-      Math::Permutation perm (3);
-      Math::absmax (transform_.row (0).sub (0,3), perm[0]);
-      Math::absmax (transform_.row (1).sub (0,3), perm[1]);
-      Math::absmax (transform_.row (2).sub (0,3), perm[2]);
-
-      disambiguate_permutation (perm);
-
-      assert (perm[0] != perm[1] && perm[1] != perm[2] && perm[2] != perm[0]);
-
-      bool flip [3];
-      flip[perm[0]] = transform_ (0,perm[0]) < 0.0;
-      flip[perm[1]] = transform_ (1,perm[1]) < 0.0;
-      flip[perm[2]] = transform_ (2,perm[2]) < 0.0;
-
-      if (perm[0] != 0 || perm[1] != 1 || perm[2] != 2 ||
-          flip[0] || flip[1] || flip[2]) {
-        // axes in transform need to be realigned to MRtrix coordinate system:
-        Math::Matrix<float> M (transform_);
-
-        Math::Vector<float> translation = M.column (3).sub (0,3);
-        for (size_t i = 0; i < 3; ++i) {
-          if (flip[i]) {
-            const float length = (dim (i)-1) * vox (i);
-            Math::Vector<float> axis = M.column (i);
-            for (size_t n = 0; n < 3; ++n) {
-              axis[n] = -axis[n];
-              translation[n] -= length*axis[n];
-            }
-          }
-        }
-
-        for (size_t i = 0; i < 3; ++i) {
-          Math::Vector<float> row = M.row (i).sub (0,3);
-          perm.apply (row);
-          if (flip[i])
-            axes_[i].stride = -axes_[i].stride;
-        }
-
-        transform_.swap (M);
-
-        Axis a[] = {
-          axes_[perm[0]],
-          axes_[perm[1]],
-          axes_[perm[2]]
-        };
-        axes_[0] = a[0];
-        axes_[1] = a[1];
-        axes_[2] = a[2];
-      }
-
-    }
-
-
-
 
     void Header::merge (const Header& H)
     {
-
-      if (dtype_ != H.dtype_)
+      if (datatype() != H.datatype())
         throw Exception ("data types differ between image files for \"" + name() + "\"");
 
       if (offset_ != H.offset_ || scale_ != H.scale_)
@@ -210,8 +89,11 @@ namespace MR
           error ("WARNING: voxel dimensions differ between image files for \"" + name() + "\"");
       }
 
-      for (std::vector<File::Entry>::const_iterator item = H.files_.begin(); item != H.files_.end(); ++item)
-        files_.push_back (*item);
+      if (!transform().is_set() && H.transform().is_set())
+        transform() = H.transform();
+
+      if (!DW_scheme().is_set() && H.DW_scheme().is_set())
+        DW_scheme() = H.DW_scheme();
 
       for (std::map<std::string, std::string>::const_iterator item = H.begin(); item != H.end(); ++item)
         if (std::find (begin(), end(), *item) == end())
@@ -219,13 +101,8 @@ namespace MR
 
       for (std::vector<std::string>::const_iterator item = H.comments_.begin(); item != H.comments_.end(); ++item)
         if (std::find (comments_.begin(), comments_.end(), *item) == comments_.end())
-          comments_.push_back (*item);
+          comments().push_back (*item);
 
-      if (!transform().is_set() && H.transform().is_set())
-        transform_ = H.transform();
-
-      if (!DW_scheme().is_set() && H.DW_scheme().is_set())
-        DW_scheme_ = H.DW_scheme();
     }
 
 
@@ -234,13 +111,12 @@ namespace MR
 
 
 
-    void Header::open (const std::string& image_name)
+    Handler::Base* Header::open (const std::string& image_name, bool readwrite)
     {
       if (image_name.empty())
         throw Exception ("no name supplied to open image!");
 
-      readwrite_ = false;
-
+      Ptr<Handler::Base> handler;
       try {
         info ("opening image \"" + image_name + "\"...");
 
@@ -249,23 +125,27 @@ namespace MR
 
         const Format::Base** format_handler = Format::handlers;
         size_t item = 0;
-        name_ = list[item].name();
+        name() = list[item].name();
 
         for (; *format_handler; format_handler++)
-          if ( (*format_handler)->read (*this))
+          if ( (handler = (*format_handler)->read (*this)) )
             break;
 
         if (!*format_handler)
           throw Exception ("unknown format for image \"" + name() + "\"");
+        assert (handler);
 
         format_ = (*format_handler)->description;
 
         while (++item < list.size()) {
           Header header (*this);
-          header.name_ = list[item].name();
-          if (! (*format_handler)->read (header))
+          Ptr<Handler::Base> H_handler;
+          header.name() = list[item].name();
+          if (!(H_handler = (*format_handler)->read (header)))
             throw Exception ("image specifier contains mixed format files");
+          assert (H_handler);
           merge (header);
+          handler->merge (*H_handler);
         }
 
         if (num.size()) {
@@ -273,38 +153,37 @@ namespace MR
           for (size_t i = 0; i < ndim(); i++)
             if (stride (i))
               ++n;
-          axes_.resize (n + num.size());
+          set_ndim (n + num.size());
 
-          for (std::vector<int>::const_iterator item = num.begin(); item != num.end(); ++item) {
+          for (size_t i = 0; i < num.size(); ++i) {
             while (stride (a)) ++a;
-            axes_[a].dim = *item;
-            axes_[a].stride = ++n;
+            dim(a) = num[i];
+            stride(a) = ++n;
           }
         }
 
-        sanitise();
-        if (!handler_)
-          handler_ = new Handler::Default (*this, false);
+        handler->set_readwrite (readwrite);
 
-        name_ = image_name;
+        sanitise();
+        name() = image_name;
       }
       catch (Exception& E) {
         throw Exception (E, "error opening image \"" + image_name + "\"");
       }
 
+      return handler.release();
     }
 
 
 
 
 
-    void Header::create (const std::string& image_name)
+    Handler::Base* Header::create (const std::string& image_name)
     {
       if (image_name.empty())
         throw Exception ("no name supplied to open image!");
 
-      readwrite_ = true;
-
+      Ptr<Handler::Base> handler;
       try {
         info ("creating image \"" + image_name + "\"...");
 
@@ -318,11 +197,11 @@ namespace MR
         for (size_t i = 0; i < ndim(); ++i)
           Hdim[i] = dim (i);
 
-        name_ = image_name;
+        name() = image_name;
 
         const Format::Base** format_handler = Format::handlers;
         for (; *format_handler; format_handler++)
-          if ( (*format_handler)->check (*this, ndim() - Pdim.size()))
+          if ((*format_handler)->check (*this, ndim() - Pdim.size()))
             break;
 
         if (!*format_handler)
@@ -330,10 +209,11 @@ namespace MR
 
         format_ = (*format_handler)->description;
 
-        dtype_.set_byte_order_native();
+        datatype().set_byte_order_native();
         int a = 0;
         for (size_t n = 0; n < Pdim.size(); ++n) {
-          while (stride (a) && a < int(ndim())) a++;
+          while (stride (a) && a < int(ndim())) 
+            a++;
           Pdim[n] = Hdim[a];
         }
         parser.calculate_padding (Pdim);
@@ -342,16 +222,19 @@ namespace MR
         std::vector<int> num (Pdim.size());
 
         if (image_name != "-")
-          name_ = parser.name (num);
+          name() = parser.name (num);
 
         File::ConfirmOverwrite confirm_overwrite;
-        (*format_handler)->create (*this, confirm_overwrite);
+        handler = (*format_handler)->create (*this, confirm_overwrite);
+
+        assert (handler);
 
         while (get_next (num, Pdim)) {
-          header.name_ = parser.name (num);
-          (*format_handler)->create (header, confirm_overwrite);
+          header.name() = parser.name (num);
+          Ptr<Handler::Base> H_handler ((*format_handler)->create (header, confirm_overwrite));
+          assert (H_handler);
           merge (header);
-          header.files_.clear();
+          handler->merge (*H_handler);
         }
 
         if (Pdim.size()) {
@@ -362,25 +245,26 @@ namespace MR
 
           set_ndim (n + Pdim.size());
 
-          for (std::vector<int>::const_iterator item = Pdim.begin(); item != Pdim.end(); ++item) {
-            while (stride (a)) ++a;
-            set_dim (a, *item);
-            set_stride (a, ++n);
+          for (size_t i = 0; i < Pdim.size(); ++i) {
+            while (stride (a)) 
+              ++a;
+            dim(a) = Pdim[i];
+            stride(a) = ++n;
           }
         }
 
-        sanitise();
-        if (!handler_)
-          handler_ = new Handler::Default (*this, false);
+        handler->set_image_is_new (true);
+        handler->set_readwrite (true);
 
-        name_ = image_name;
+        sanitise();
+        name() = image_name;
       }
       catch (Exception& E) {
         throw Exception (E, "error creating image \"" + image_name + "\"");
       }
 
+      return handler.release();
     }
-
 
 
 
@@ -408,42 +292,23 @@ namespace MR
         desc += str (dim (i));
       }
 
-
-
       desc += "\n  Voxel size:        ";
-
       for (i = 0; i < ndim(); i++) {
         if (i) desc += " x ";
         desc += isnan (vox (i)) ? "?" : str (vox (i));
       }
 
-
-
-
-      desc += "\n  Dimension labels:  ";
-
-      for (i = 0; i < ndim(); i++)
-        desc += (i ? "                     " : "") + str (i) + ". "
-                + (description (i).size() ? description (i) : "undefined") + " ("
-                + (units (i).size() ? units (i) : "?") + ")\n";
-
-
-
-      desc += std::string ("  Data type:         ") + (datatype().description() ? datatype().description() : "invalid") + "\n"
+      desc += std::string ("\n  Data type:         ") + (datatype().description() ? datatype().description() : "invalid") + "\n"
               "  Data strides:      [ ";
-
-
       std::vector<ssize_t> strides (Image::Stride::get (*this));
       Image::Stride::symbolise (strides);
       for (i = 0; i < ndim(); i++)
         desc += stride (i) ? str (strides[i]) + " " : "? ";
 
 
-
       desc += "]\n"
-              "  Data scaling:      offset = " + str (data_offset()) + ", multiplier = " + str (data_scale()) + "\n"
+              "  Intensity scaling: offset = " + str (intensity_offset()) + ", multiplier = " + str (intensity_scale()) + "\n"
               "  Comments:          " + (comments().size() ? comments() [0] : "(none)") + "\n";
-
 
 
       for (i = 1; i < comments().size(); i++)
@@ -479,26 +344,7 @@ namespace MR
 
 
 
-    void Header::set_datatype_from_command_line (DataType new_datatype)
-    {
-      using namespace App;
-      Options opt = get_options ("datatype");
-      if (opt.size())
-        set_datatype (opt[0][0]);
-      else {
-        if (new_datatype != DataType::Undefined)
-          set_datatype (new_datatype);
-      }
-    }
 
-
-
-
-    std::ostream& operator<< (std::ostream& stream, const Header& H)
-    {
-      stream << H.description();
-      return stream;
-    }
 
   }
 }

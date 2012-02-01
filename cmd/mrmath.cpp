@@ -137,13 +137,11 @@ class Source : public Functor
   public:
     Source (const std::string& text) : Functor (NULL) {
       try {
-        H = new Image::Header (text);
-        D = new Image::Data<value_type> (*H);
+        D = new Image::Data<value_type> (text);
         V = new Image::Data<value_type>::voxel_type (*D);
       }
       catch (Exception) {
         val = to<value_type> (text);
-        H = NULL;
       }
     }
 
@@ -185,11 +183,10 @@ class Source : public Functor
       return 1;
     }
     virtual const Image::Header* header () const {
-      return (H);
+      return D;
     }
   private:
     value_type val;
-    Ptr<Image::Header> H;
     Ptr<Image::Data<value_type> > D;
     Ptr<Image::Data<value_type>::voxel_type> V;
 };
@@ -586,18 +583,17 @@ void run () {
   const Image::Header* source_header = last->header();
   if (!source_header)
     throw Exception ("no source images found - aborting");
-  Image::Header destination_header = *source_header;
-  destination_header.reset_scaling();
+  Image::Header header = *source_header;
+  header.intensity_offset() = 0.0;
+  header.intensity_scale() = 1.0;
 
-  destination_header.set_ndim (last->ndim());
+  header.set_ndim (last->ndim());
   for (size_t i = 0; i < last->ndim(); ++i)
-    destination_header.set_dim (i, last->dim (i));
+    header.dim(i) = last->dim (i);
 
-  destination_header.set_datatype_from_command_line (DataType::Float32);
+  header.datatype() = DataType::from_command_line (DataType::Float32);
 
-  destination_header.create (argument[1]);
-
-  Image::Data<value_type> data_out (destination_header);
+  Image::Data<value_type> data_out (header, argument[1]);
   Image::Data<value_type>::voxel_type out (data_out);
   std::vector<size_t> axes = Image::Stride::order (out);
 

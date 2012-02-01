@@ -24,7 +24,7 @@
 #include "progressbar.h"
 #include "image/voxel.h"
 #include "image/data.h"
-#include "image/scratch.h"
+#include "image/data_preload.h"
 #include "image/loop.h"
 
 MRTRIX_APPLICATION
@@ -51,30 +51,27 @@ void usage ()
 
 void run ()
 {
-  Image::Header header_in (argument[0]);
   size_t axis = argument[1];
-
-  std::vector<ssize_t> strides (header_in.ndim(), 0);
+  std::vector<ssize_t> strides (axis+1, 0);
   strides[axis] = 1;
-  Image::Scratch<float> data_in (header_in, strides);
+  Image::DataPreload<float> data_in (argument[0], strides);
 
-  Image::Header header_out (header_in);
-  header_out.set_datatype (DataType::Float32);
-  if (axis == header_in.ndim() - 1)
-    header_out.set_ndim (header_in.ndim()-1);
+  Image::Header header_out (data_in);
+  header_out.datatype() = DataType::Float32;
+  if (axis == data_in.ndim() - 1)
+    header_out.set_ndim (data_in.ndim()-1);
   else
-    header_out.set_dim (axis, 1);
-  header_out.create (argument[2]);
+    header_out.dim(axis) = 1;
 
-  Image::Data<float> data_out (header_out);
+  Image::Data<float> data_out (header_out, argument[2]);
 
-  Image::Scratch<float>::voxel_type in (data_in);
+  Image::DataPreload<float>::voxel_type in (data_in);
   Image::Data<float>::voxel_type out (data_out);
 
   Image::Loop inner (axis, axis+1);
   Image::LoopInOrder outer (header_out, "averaging...");
 
-  float N = header_in.dim (axis);
+  float N = data_in.dim (axis);
   for (outer.start (out, in); outer.ok(); outer.next (out, in)) {
     float mean = 0.0;
     for (inner.start (in); inner.ok(); inner.next (in))

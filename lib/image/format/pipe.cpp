@@ -33,13 +33,14 @@ namespace MR
     namespace Format
     {
 
-      bool Pipe::read (Header& H) const
+      Handler::Base* Pipe::read (Header& H) const
       {
-        if (H.name() != "-") return (false);
+        if (H.name() != "-") 
+          return NULL;
 
         std::string name;
         getline (std::cin, name);
-        H.set_name (name);
+        H.name() = name;
 
         if (H.name().empty())
           throw Exception ("no filename supplied to standard input (broken pipe?)");
@@ -47,16 +48,9 @@ namespace MR
         if (!Path::has_suffix (H.name(), ".mif"))
           throw Exception ("MRtrix only supports the .mif format for command-line piping");
 
-        try {
-          if (mrtrix_handler.read (H)) {
-            H.set_handler (new Handler::Pipe (H, false));
-            return (true);
-          }
-        }
-        catch (Exception& E) {
-          throw Exception (E, "error reading image data from command-line pipe");
-        }
-        return (false);
+        Ptr<Handler::Base> original_handler (mrtrix_handler.read (H));
+        Ptr<Handler::Pipe> handler (new Handler::Pipe (*original_handler));
+        return handler.release();
       }
 
 
@@ -66,20 +60,21 @@ namespace MR
       bool Pipe::check (Header& H, size_t num_axes) const
       {
         if (H.name() != "-")
-          return (false);
+          return false;
 
-        H.set_name (File::create_tempfile (0, "mif"));
+        H.name() = File::create_tempfile (0, "mif");
 
-        return (mrtrix_handler.check (H, num_axes));
+        return mrtrix_handler.check (H, num_axes);
       }
 
 
 
 
-      void Pipe::create (Header& H, File::ConfirmOverwrite& confirm_overwrite) const
+      Handler::Base* Pipe::create (Header& H, File::ConfirmOverwrite& confirm_overwrite) const
       {
-        mrtrix_handler.create (H, confirm_overwrite);
-        H.set_handler (new Handler::Pipe (H, true));
+        Ptr<Handler::Base> original_handler (mrtrix_handler.create (H, confirm_overwrite));
+        Ptr<Handler::Pipe> handler (new Handler::Pipe (*original_handler));
+        return handler.release();
       }
 
 

@@ -505,7 +505,7 @@ namespace MR
         //! Check whether the loop should continue iterating
         /*! \return true if the loop has not completed, false otherwise. */
         bool ok () const {
-          return (cont_);
+          return cont_;
         }
 
         //! Proceed to next iteration for a single DataSet

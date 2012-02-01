@@ -38,11 +38,12 @@ namespace MR
       class Default : public Base
       {
         public:
-          Default (Header& header, bool image_is_new) : Base (header, image_is_new) { }
+          Default (const Image::Header& header) : 
+            Base (header) { }
           ~Default () { close(); }
 
         protected:
-          std::vector<RefPtr<File::MMap> > files;
+          std::vector<RefPtr<File::MMap> > mmaps;
           int64_t bytes_per_segment;
 
           virtual void load ();

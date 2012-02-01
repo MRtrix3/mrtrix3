@@ -38,8 +38,10 @@ namespace MR
       {
         public:
           Mosaic (Header& header, size_t mosaic_xdim, size_t mosaic_ydim, size_t slice_xdim, size_t slice_ydim, size_t nslices) :
-            Base (header, false), m_xdim (mosaic_xdim), m_ydim (mosaic_ydim),
-            xdim (slice_xdim), ydim (slice_ydim), slices (nslices) { }
+            Base (header), m_xdim (mosaic_xdim), m_ydim (mosaic_ydim),
+            xdim (slice_xdim), ydim (slice_ydim), slices (nslices) { 
+            segsize = header.dim(0) * header.dim(1) * header.dim(2);
+            }
           ~Mosaic () { close(); }
 
         protected:

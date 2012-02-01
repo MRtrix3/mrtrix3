@@ -26,7 +26,8 @@
 #include "debug.h"
 #include "get_set.h"
 #include "image/header.h"
-#include "image/data_common.h"
+#include "image/handler/base.h"
+#include "image/adapter/info.h"
 #include "image/stride.h"
 #include "image/value.h"
 #include "image/position.h"
@@ -37,6 +38,8 @@ namespace MR
   {
 
     //! \cond skip
+
+    template <class ArrayType> class Voxel;
 
     namespace
     {
@@ -91,57 +94,60 @@ namespace MR
 
 
 
-    //! The standard DataArray interface
-    /*! This class keeps a reference to an existing Image::Header, and provides
-     * access to the corresponding image intensities.
-     * \todo Provide specialisations of get/set methods to handle conversions
-     * between floating-point and integer types */
-    template <typename T> class Data : public DataCommon<T>
+    template <typename T> class Data : public ConstHeader
     {
-      using DataCommon<T>::H;
-
       public:
-        //! construct a Data object to access the data in the Image::Header \p parent
-        Data (const Header& parent) :
-          DataCommon<T> (parent),
-          handler (*H.get_handler()) {
-          assert (H.get_handler());
-          handler.open();
+        //! construct a Data object to access the data in the image specified
+        Data (const std::string& image_name, bool readwrite = false) {
+          handler = open (image_name, readwrite);
+          assert (handler);
+          handler->open();
+          set_get_put_functions ();
+        }
+
+        //! construct a Data object to create and access the image specified
+        Data (const Header& template_header, const std::string& image_name) :
+          ConstHeader (template_header) {
+          handler = create (image_name);
+          assert (handler);
+          handler->open();
           set_get_put_functions ();
         }
 
         typedef T value_type;
-        typedef Image::Voxel<Data> voxel_type;
+        typedef typename Image::Voxel<Data> voxel_type;
 
-        value_type get (size_t offset) const {
-          ssize_t nseg (offset / handler.segment_size());
-          return H.scale_from_storage (get_func (handler.segment (nseg), offset - nseg*handler.segment_size()));
+        value_type get_value (size_t offset) const {
+          ssize_t nseg (offset / handler->segment_size());
+          return scale_from_storage (get_func (handler->segment (nseg), offset - nseg*handler->segment_size()));
         }
 
-        void set (size_t offset, value_type val) {
-          ssize_t nseg (offset / handler.segment_size());
-          put_func (H.scale_to_storage (val), handler.segment (nseg), offset - nseg*handler.segment_size());
+        void set_value (size_t offset, value_type val) {
+          ssize_t nseg (offset / handler->segment_size());
+          put_func (scale_to_storage (val), handler->segment (nseg), offset - nseg*handler->segment_size());
         }
 
         friend std::ostream& operator<< (std::ostream& stream, const Data& V) {
           stream << "data for image \"" << V.name() << "\": " + str (Image::voxel_count (V))
-            + " voxels in " + V.datatype().specifier() + " format, stored in " + str (V.handler.nsegments())
-            + " segments of size " + str (V.handler.segment_size())
+            + " voxels in " + V.datatype().specifier() + " format, stored in " + str (V.handler->nsegments())
+            + " segments of size " + str (V.handler->segment_size())
             + ", at addresses [ ";
-          for (size_t n = 0; n < V.handler.nsegments(); ++n)
-            stream << str (size_t (V.handler.segment(n))) << " ";
+          for (size_t n = 0; n < V.handler->nsegments(); ++n)
+            stream << str ((void*) V.handler->segment(n)) << " ";
           stream << "]";
           return stream;
         }
 
-      private:
-        Handler::Base& handler;
+      protected:
+        Ptr<Handler::Base> handler;
 
         value_type (*get_func) (const void* data, size_t i);
         void (*put_func) (value_type val, void* data, size_t i);
 
+        Data (const Data& H) { assert (0); }
+
         void set_get_put_functions () {
-          switch (H.datatype() ()) {
+          switch (datatype() ()) {
             case DataType::Bit:
               get_func = &__get<value_type,bool>;
               put_func = &__put<value_type,bool>;
@@ -205,6 +211,14 @@ namespace MR
             default:
               throw Exception ("invalid data type in image header");
           }
+        }
+
+        value_type scale_from_storage (value_type val) const {
+          return intensity_offset() + intensity_scale() * val;
+        }
+
+        value_type scale_to_storage (value_type val) const   {
+          return (val - intensity_offset()) / intensity_scale();
         }
 
     };

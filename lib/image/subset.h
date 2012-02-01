@@ -27,6 +27,7 @@
 #include "image/value.h"
 #include "image/voxel.h"
 #include "image/position.h"
+#include "image/adapter/info.h"
 
 namespace MR
 {
@@ -34,7 +35,7 @@ namespace MR
   {
 
     template <class Set>
-    class Subset
+    class Subset : public Adapter::Info<Set>
     {
       private:
         class Axis
@@ -48,12 +49,12 @@ namespace MR
         typedef Image::Voxel<Subset> voxel_type;
 
         Subset (Set& original, const size_t* from, const size_t* dimensions, const std::string& description = "") :
-          D (original),
-          axes (D.ndim()),
-          descriptor (description.empty() ? D.name() + " [subset]" : description),
-          transform_matrix (D.transform()) {
+          Adapter::Info<Set> (original),
+          axes (parent.ndim()),
+          descriptor (description.empty() ? name() + " [subset]" : description),
+          transform_matrix (parent.transform()) {
           for (size_t n = 0; n < ndim(); ++n) {
-            assert (ssize_t (from[n] + dimensions[n]) <= D.dim (n));
+            assert (ssize_t (from[n] + dimensions[n]) <= ..dim (n));
             axes[n].from = from[n];
             axes[n].dim = dimensions[n];
           }
@@ -64,10 +65,10 @@ namespace MR
         }
 
         Subset (Set& original, size_t NDIM, const size_t* from, const size_t* dimensions, const std::string& description = "") :
-          D (original),
+          Adapter::Info<Set> (original),
           axes (NDIM),
-          descriptor (description.empty() ? D.name() + " [subset]" : description),
-          transform_matrix (D.transform()) {
+          descriptor (description.empty() ? name() + " [subset]" : description),
+          transform_matrix (parent.transform()) {
           for (size_t n = 0; n < ndim(); ++n) {
             assert (ssize_t (from[n] + dimensions[n]) <= D.dim (n));
             axes[n].from = from[n];
@@ -80,32 +81,21 @@ namespace MR
         }
 
         const std::string& name () const {
-          return (descriptor);
+          return descriptor;
         }
         size_t  ndim () const {
-          return (axes.size());
+          return axes.size();
         }
-        int     dim (size_t axis) const {
-          return (axes[axis].dim);
+        int dim (size_t axis) const {
+          return axes[axis].dim;
         }
-        ssize_t stride (size_t axis) const {
-          return (D.stride (axis));
-        }
-
-        float   vox (size_t axis) const {
-          return (D.vox (axis));
-        }
-
-        const Image::Header& header() const {
-          return (D.header());
-        }
-
         const Math::Matrix<float>& transform () const {
-          return (transform_matrix);
+          return transform_matrix;
         }
 
-        void    reset () {
-          for (size_t n = 0; n < ndim(); ++n) set_pos (n, 0);
+        void reset () {
+          for (size_t n = 0; n < ndim(); ++n) 
+            set_pos (n, 0);
         }
 
         Value<Subset<Set> > value () {
@@ -115,26 +105,31 @@ namespace MR
           return (Position<Subset<Set> > (*this, axis));
         }
 
-      private:
-        Set& D;
+        using Adapter::Info<Set>::parent;
+        using Adapter::Info<Set>::name;
+        using Adapter::Info<Set>::vox;
+        using Adapter::Info<Set>::stride;
+
+      protected:
         std::vector<Axis> axes;
         std::string descriptor;
         Math::Matrix<float> transform_matrix;
 
         value_type get_value () const {
-          return (D.value());
+          return parent.value();
         }
         void set_value (value_type val) {
-          D.value() = val;
+          parent.value() = val;
         }
+
         ssize_t get_pos (size_t axis) const {
-          return (D[axis]-axes[axis].from);
+          return (parent[axis]-axes[axis].from);
         }
         void set_pos (size_t axis, ssize_t position) const {
-          D[axis] = position + axes[axis].from;
+          parent[axis] = position + axes[axis].from;
         }
         void move_pos (size_t axis, ssize_t increment) const {
-          D[axis] += increment;
+          parent[axis] += increment;
         }
 
         friend class Value<Subset<Set> >;

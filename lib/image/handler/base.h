@@ -29,6 +29,8 @@
 #include <cassert>
 
 #include "ptr.h"
+#include "image/header.h"
+#include "file/entry.h"
 
 #define MAX_FILES_PER_IMAGE 256U
 
@@ -50,11 +52,24 @@ namespace MR
       class Base
       {
         public:
-          Base (const Header& header, bool image_is_new) : H (header), is_new (image_is_new) { }
+          Base (const Image::Header& header) : 
+            name (header.name()), 
+            datatype (header.datatype()),
+            segsize (Image::voxel_count (header)),
+            is_new (false),
+            writable (false) { }
+
           virtual ~Base ();
 
           void open ();
           void close ();
+
+          void set_readwrite (bool readwrite) {
+            writable = readwrite;
+          }
+          void set_image_is_new (bool image_is_new) {
+            is_new = image_is_new;
+          }
 
           uint8_t* segment (size_t n) const {
             assert (n < addresses.size());
@@ -68,11 +83,22 @@ namespace MR
             return segsize;
           }
 
+          std::vector<File::Entry> files;
+
+
+          void merge (const Base& B) {
+            assert (addresses.empty());
+            assert (datatype == B.datatype);
+            for (size_t n = 0; n < B.files.size(); ++n) 
+              files.push_back (B.files[n]);
+          }
+
         protected:
-          const Header& H;
+          const std::string name;
+          const DataType datatype;
           size_t segsize;
           VecPtr<uint8_t,true> addresses;
-          bool is_new;
+          bool is_new, writable;
 
           void check () const {
             assert (addresses.size());

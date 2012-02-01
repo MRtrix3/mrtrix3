@@ -21,8 +21,6 @@
  */
 
 #include "image/handler/base.h"
-#include "image/header.h"
-#include "image/stride.h"
 
 namespace MR
 {
@@ -43,7 +41,7 @@ namespace MR
           return;
 
         load();
-        info ("image \"" + H.name() + "\" loaded");
+        info ("image \"" + name + "\" loaded");
       }
 
 
@@ -54,7 +52,7 @@ namespace MR
           return;
 
         unload();
-        info ("image \"" + H.name() + "\" unloaded");
+        info ("image \"" + name + "\" unloaded");
         addresses.clear();
       }
 

@@ -21,6 +21,7 @@
 */
 
 #include "image/header.h"
+#include "image/handler/default.h"
 #include "image/handler/mosaic.h"
 #include "file/dicom/mapper.h"
 #include "file/dicom/image.h"
@@ -36,17 +37,18 @@ namespace MR
     namespace Dicom
     {
 
-      void dicom_to_mapper (MR::Image::Header& H, std::vector< RefPtr<Series> >& series)
+      MR::Image::Handler::Base* dicom_to_mapper (MR::Image::Header& H, std::vector< RefPtr<Series> >& series)
       {
         assert (series.size() > 0);
+        Ptr<MR::Image::Handler::Base> handler;
 
         Patient* patient (series[0]->study->patient);
         std::string sbuf = (patient->name.size() ? patient->name : "unnamed");
         sbuf += " " + format_ID (patient->ID);
         if (series[0]->modality.size()) sbuf += std::string (" [") + series[0]->modality + "]";
         if (series[0]->name.size()) sbuf += std::string (" ") + series[0]->name;
-        H.add_comment (sbuf);
-        H.set_name (sbuf);
+        H.comments().push_back (sbuf);
+        H.name() = sbuf;
 
         for (size_t s = 0; s < series.size(); s++) {
           try {
@@ -108,19 +110,19 @@ namespace MR
 
         if (series[0]->study->name.size()) {
           sbuf = "study: " + series[0]->study->name;
-          H.add_comment (sbuf);
+          H.comments().push_back (sbuf);
         }
 
         if (patient->DOB.size()) {
           sbuf = "DOB: " + format_date (patient->DOB);
-          H.add_comment (sbuf);
+          H.comments().push_back (sbuf);
         }
 
         if (series[0]->date.size()) {
           sbuf = "DOS: " + format_date (series[0]->date);
           if (series[0]->time.size())
             sbuf += " " + format_time (series[0]->time);
-          H.add_comment (sbuf);
+          H.comments().push_back (sbuf);
         }
 
         const Image& image (* (*series[0]) [0]);
@@ -138,67 +140,59 @@ namespace MR
 
         ssize_t current_axis = 0;
         if (image.data_size > expected_data_size) {
-          H.set_stride (3, 1);
-          H.set_dim (3, image.data_size / expected_data_size);
-          H.set_vox (3, NAN);
-          H.set_description (3, std::string());
-          H.set_units (3, std::string());
+          H.stride(3) = 1;
+          H.dim(3) = image.data_size / expected_data_size;
+          H.vox(3) = NAN;
           ++current_axis;
         }
 
-        H.set_stride (0, current_axis+1);
-        H.set_dim (0, image.dim[0]);
-        H.set_vox (0, image.pixel_size[0]);
-        H.set_description (0, "row");
-        H.set_units (0, MR::Image::Axis::millimeters);
+        H.stride(0) = current_axis+1;
+        H.dim(0) = image.dim[0];
+        H.vox(0) = image.pixel_size[0];
         ++current_axis;
 
-        H.set_stride (1, current_axis+1);
-        H.set_dim (1, image.dim[1]);
-        H.set_vox (1, image.pixel_size[1]);
-        H.set_description (1, "column");
-        H.set_units (1, MR::Image::Axis::millimeters);
+        H.stride(1) = current_axis+1;
+        H.dim(1) = image.dim[1];
+        H.vox(1) = image.pixel_size[1];
         ++current_axis;
 
-        H.set_stride (2, current_axis+1);
-        H.set_dim (2, dim[1]);
-        H.set_vox (2, slice_separation);
-        H.set_description (2, "slice");
-        H.set_units (2, MR::Image::Axis::millimeters);
+        H.stride(2) = current_axis+1;
+        H.dim(2) = dim[1];
+        H.vox(2) = slice_separation;
         ++current_axis;
 
         if (dim[0] > 1) {
-          H.set_stride (current_axis, current_axis+1);
-          H.set_dim (current_axis, dim[0]);
-          H.set_description (current_axis, "sequence");
+          H.stride(current_axis) = current_axis+1;
+          H.dim(current_axis) = dim[0];
           current_axis++;
         }
 
         if (dim[2] > 1) {
-          H.set_stride (current_axis, current_axis+1);
-          H.set_dim (current_axis, dim[2]);
-          H.set_description (current_axis, "acquisition");
+          H.stride(current_axis) = current_axis+1;
+          H.dim(current_axis) = dim[2];
           current_axis++;
         }
 
         if (series.size() > 1) {
-          H.set_stride (current_axis, current_axis+1);
-          H.set_dim (current_axis, series.size());
-          H.set_description (current_axis, "series");
+          H.stride(current_axis) = current_axis+1;
+          H.dim(current_axis) = series.size();
         }
 
         if (image.bits_alloc == 8)
-          H.set_datatype (DataType::UInt8);
+          H.datatype() = DataType::UInt8;
         else if (image.bits_alloc == 16) {
-          if (image.is_BE) H.set_datatype (DataType::UInt16 | DataType::BigEndian);
-          else H.set_datatype (DataType::UInt16 | DataType::LittleEndian);
+          if (image.is_BE) 
+            H.datatype() = DataType::UInt16 | DataType::BigEndian;
+          else 
+            H.datatype() = DataType::UInt16 | DataType::LittleEndian;
         }
         else throw Exception ("unexpected number of allocated bits per pixel ("
                                 + str (image.bits_alloc) + ") in file \"" + H.name() + "\"");
 
-        H.set_scaling (image.scale_slope, image.scale_intercept);
+        H.intensity_offset() = image.scale_intercept;
+        H.intensity_scale() = image.scale_slope;
 
-        Math::Matrix<float>& M (H.get_transform());
+        Math::Matrix<float>& M (H.transform());
         M.allocate (4,4);
 
         M (0,0) = -image.orientation_x[0];
@@ -231,12 +225,14 @@ namespace MR
                              + " ] does not fit into DICOM mosaic [ " + str (image.dim[0]) + " " + str (image.dim[1])
                              + " ] in image \"" + H.name() + "\"");
 
-          H.set_dim (0, image.acq_dim[0]);
-          H.set_dim (1, image.acq_dim[1]);
-          H.set_dim (2, image.images_in_mosaic);
+          H.dim(0) = image.acq_dim[0];
+          H.dim(1) = image.acq_dim[1];
+          H.dim(2) = image.images_in_mosaic;
 
-          H.set_handler (new MR::Image::Handler::Mosaic (H, image.dim[0], image.dim[1], H.dim (0), H.dim (1), H.dim (2)));
+          handler = new MR::Image::Handler::Mosaic (H, image.dim[0], image.dim[1], H.dim (0), H.dim (1), H.dim (2));
         }
+        else 
+          handler = new MR::Image::Handler::Default (H);
 
         std::vector<const Image*> DW_scheme;
 
@@ -248,7 +244,7 @@ namespace MR
               if (!isnan ( (*series[s]) [n]->bvalue)) DW_scheme.push_back ((*series[s])[n]);
               for (index[1] = 0; index[1] < dim[1]; index[1]++) {
                 n = index[0] + dim[0]* (index[1] + dim[1]*index[2]);
-                H.add_file (File::Entry ( (*series[s]) [n]->filename, (*series[s]) [n]->data));
+                handler->files.push_back (File::Entry ( (*series[s]) [n]->filename, (*series[s]) [n]->data));
               }
             }
           }
@@ -256,7 +252,7 @@ namespace MR
 
 
         if (DW_scheme.size()) {
-          Math::Matrix<float>& G (H.get_DW_scheme());
+          Math::Matrix<float>& G (H.DW_scheme());
           G.allocate (DW_scheme.size(), 4);
           bool is_not_GE = image.manufacturer.compare (0, 2, "GE");
           for (size_t s = 0; s < DW_scheme.size(); s++) {
@@ -281,6 +277,8 @@ namespace MR
             else G (s,0) = G (s,1) = G (s,2) = 0.0;
           }
         }
+
+        return handler.release();
       }
 
 

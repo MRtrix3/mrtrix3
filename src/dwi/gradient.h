@@ -70,14 +70,19 @@ namespace MR
         else
           bzero.push_back (i);
       }
-      info ("found " + str (dwi.size()) + " diffusion-weighted directions, and " 
+
+      info ("found " + str (dwi.size()) + " diffusion-weighted volumes and " 
           + str (bzero.size()) + " b=0 volumes");
     }
 
 
 
 
-    template <typename T> inline Math::Matrix<T>& gen_direction_matrix (Math::Matrix<T>& dirs, const Math::Matrix<T>& grad, const std::vector<int>& dwi)
+    template <typename T> 
+      inline Math::Matrix<T>& gen_direction_matrix (
+          Math::Matrix<T>& dirs, 
+          const Math::Matrix<T>& grad, 
+          const std::vector<int>& dwi)
     {
       dirs.allocate (dwi.size(),2);
       for (size_t i = 0; i < dwi.size(); i++) {

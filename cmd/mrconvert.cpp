@@ -93,42 +93,43 @@ inline void set_header_out (
   const std::vector<float>& vox,
   const std::vector<int>& strides)
 {
-  header_out.set_transform (S.transform());
+  header_out.transform() = S.transform();
 
   if (axes.size()) {
     header_out.set_ndim (axes.size());
     for (size_t n = 0; n < header_out.ndim(); ++n)
-      header_out.set_dim (n, axes[n]<0 ? 1 : S.dim (axes[n]));
+      header_out.dim(n) = axes[n]<0 ? 1 : S.dim (axes[n]);
   }
   else
     for (size_t n = 0; n < header_out.ndim(); ++n)
-      header_out.set_dim (n, S.dim (n));
+      header_out.dim(n) = S.dim (n);
 
   for (size_t n = 0; n < header_out.ndim(); ++n) {
     if (n < vox.size())
       if (std::isfinite (vox[n]))
-        header_out.set_vox (n, vox[n]);
+        header_out.vox(n) = vox[n];
     if (strides.size())
-      header_out.set_stride (n, (n < strides.size() ? strides[n] : 0));
+      header_out.stride(n) = (n < strides.size() ? strides[n] : 0);
   }
 }
 
 
+typedef float value_type;
 
 void run ()
 {
 
-  Image::Header header_in (argument[0]);
-  Image::Header header_out (header_in);
-  header_out.reset_scaling();
+  Image::Data<value_type> data_in (argument[0]);
+  Image::Header header_out (data_in);
+  header_out.intensity_offset() = 0.0;
+  header_out.intensity_scale() = 1.0;
 
-  header_out.set_datatype_from_command_line ();
+  header_out.datatype() = DataType::from_command_line();
 
   Options opt = get_options ("vox");
   std::vector<float> vox;
   if (opt.size())
     vox = opt[0][0];
-
 
   opt = get_options ("stride");
   std::vector<int> strides;
@@ -140,7 +141,7 @@ void run ()
   if (opt.size()) {
     axes = opt[0][0];
     for (size_t i = 0; i < axes.size(); ++i)
-      if (axes[i] >= static_cast<int> (header_in.ndim()))
+      if (axes[i] >= static_cast<int> (data_in.ndim()))
         throw Exception ("axis supplied to option -axes is out of bounds");
   }
 
@@ -150,7 +151,7 @@ void run ()
   if (opt.size() &&
       header_out.DW_scheme().rows() &&
       header_out.DW_scheme().columns()) {
-    Math::Matrix<float>& M (header_out.get_DW_scheme());
+    Math::Matrix<float>& M (header_out.DW_scheme());
     for (size_t row = 0; row < M.rows(); ++row) {
       float tmp = M (row, 0);
       M (row, 0) = M (row, 1);
@@ -163,23 +164,22 @@ void run ()
 
   opt = get_options ("coord");
   for (size_t n = 0; n < opt.size(); n++) {
-    pos.resize (header_in.ndim());
+    pos.resize (data_in.ndim());
     int axis = opt[n][0];
     if (pos[axis].size())
       throw Exception ("\"coord\" option specified twice for axis " + str (axis));
     pos[axis] = opt[n][1];
   }
 
-  assert (!header_in.is_complex());
-  Image::Data<float> in_data (header_in);
-  Image::Data<float>::voxel_type in (in_data);
+  assert (!data_in.datatype().is_complex());
+  Image::Data<float>::voxel_type in (data_in);
 
   if (pos.size()) {
 
     // extract specific coordinates:
-    for (size_t n = 0; n < header_in.ndim(); n++) {
+    for (size_t n = 0; n < data_in.ndim(); n++) {
       if (pos[n].empty()) {
-        pos[n].resize (header_in.dim (n));
+        pos[n].resize (data_in.dim (n));
         for (size_t i = 0; i < pos[n].size(); i++)
           pos[n][i] = i;
       }
@@ -187,8 +187,7 @@ void run ()
     Image::Extract<Image::Data<float>::voxel_type > extract (in, pos);
 
     set_header_out (header_out, extract, axes, vox, strides);
-    header_out.create (argument[1]);
-    Image::Data<float> data_out (header_out);
+    Image::Data<float> data_out (header_out, argument[1]);
     Image::Data<float>::voxel_type  out (data_out);
 
     if (axes.size()) {
@@ -201,8 +200,7 @@ void run ()
   else {
     // straight copy:
     set_header_out (header_out, in, axes, vox, strides);
-    header_out.create (argument[1]);
-    Image::Data<float> data_out (header_out);
+    Image::Data<float> data_out (header_out, argument[1]);
     Image::Data<float>::voxel_type out (data_out);
     if (axes.size()) {
       Image::PermuteAxes<Image::Data<float>::voxel_type > perm (in, axes);

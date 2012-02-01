@@ -63,7 +63,7 @@ namespace MR
         strncpy (db_name, NH.db_name, 18);
         if (db_name[0]) {
           db_name[18] = '\0';
-          H.add_comment (db_name);
+          H.comments().push_back (db_name);
         }
 
         // data set dimensions:
@@ -76,14 +76,14 @@ namespace MR
 
 
         for (int i = 0; i < ndim; i++) {
-          H.set_dim (i, get<int16_t> (&NH.dim[i+1], is_BE));
+          H.dim(i) = get<int16_t> (&NH.dim[i+1], is_BE);
           if (H.dim (i) < 0) {
             info ("dimension along axis " + str (i) + " specified as negative in NIfTI image \"" + H.name() + "\" - taking absolute value");
-            H.set_dim (i, abs (H.dim (i)));
+            H.dim(i) = abs (H.dim (i));
           }
           if (!H.dim (i))
-            H.set_dim (i, 1);
-          H.set_stride (i, i+1);
+            H.dim(i) = 1;
+          H.stride(i) = i+1;
         }
 
         // data type:
@@ -127,33 +127,38 @@ namespace MR
         }
 
         if (! (dtype.is (DataType::Bit) || dtype.is (DataType::UInt8) || dtype.is (DataType::Int8))) {
-          if (is_BE) dtype.set_flag (DataType::BigEndian);
-          else dtype.set_flag (DataType::LittleEndian);
+          if (is_BE)
+            dtype.set_flag (DataType::BigEndian);
+          else 
+            dtype.set_flag (DataType::LittleEndian);
         }
 
         if (get<int16_t> (&NH.bitpix, is_BE) != (int16_t) dtype.bits())
           error ("WARNING: bitpix field does not match data type in NIfTI image \"" + H.name() + "\" - ignored");
 
-        H.set_datatype (dtype);
+        H.datatype() = dtype;
 
         // voxel sizes:
         for (int i = 0; i < ndim; i++) {
-          H.set_vox (i, get<float32> (&NH.pixdim[i+1], is_BE));
+          H.vox(i) = get<float32> (&NH.pixdim[i+1], is_BE);
           if (H.vox (i) < 0.0) {
             info ("voxel size along axis " + str (i) + " specified as negative in NIfTI image \"" + H.name() + "\" - taking absolute value");
-            H.set_vox (i, Math::abs (H.vox (i)));
+            H.vox(i) = Math::abs (H.vox (i));
           }
         }
 
 
         // offset and scale:
-        float scale = get<float32> (&NH.scl_slope, is_BE);
-        if (finite (scale) && scale != 0.0) {
-          float offset = get<float32> (&NH.scl_inter, is_BE);
-          if (!finite (offset)) offset = 0.0;
-          H.set_scaling (scale, offset);
+        H.intensity_scale() = get<float32> (&NH.scl_slope, is_BE);
+        if (finite (H.intensity_scale()) && H.intensity_scale() != 0.0) {
+          H.intensity_offset() = get<float32> (&NH.scl_inter, is_BE);
+          if (!finite (H.intensity_offset())) 
+            H.intensity_offset() = 0.0;
         }
-        else H.set_scaling ();
+        else {
+          H.intensity_offset() = 0.0;
+          H.intensity_scale() = 1.0;
+        }
 
         size_t data_offset = (size_t) get<float32> (&NH.vox_offset, is_BE);
 
@@ -161,12 +166,12 @@ namespace MR
         strncpy (descrip, NH.descrip, 80);
         if (descrip[0]) {
           descrip[80] = '\0';
-          H.add_comment (descrip);
+          H.comments().push_back (descrip);
         }
 
         if (is_nifti) {
           if (get<int16_t> (&NH.sform_code, is_BE)) {
-            Math::Matrix<float>& M (H.get_transform());
+            Math::Matrix<float>& M (H.transform());
             M.allocate (4,4);
 
             M (0,0) = get<float32> (&NH.srow_x[0], is_BE);
@@ -188,9 +193,9 @@ namespace MR
             M (3,3) = 1.0;
 
             // get voxel sizes:
-            H.set_vox (0, Math::sqrt (Math::pow2 (M (0,0)) + Math::pow2 (M (1,0)) + Math::pow2 (M (2,0))));
-            H.set_vox (1, Math::sqrt (Math::pow2 (M (0,1)) + Math::pow2 (M (1,1)) + Math::pow2 (M (2,1))));
-            H.set_vox (2, Math::sqrt (Math::pow2 (M (0,2)) + Math::pow2 (M (1,2)) + Math::pow2 (M (2,2))));
+            H.vox(0) = Math::sqrt (Math::pow2 (M (0,0)) + Math::pow2 (M (1,0)) + Math::pow2 (M (2,0)));
+            H.vox(1) = Math::sqrt (Math::pow2 (M (0,1)) + Math::pow2 (M (1,1)) + Math::pow2 (M (2,1)));
+            H.vox(2) = Math::sqrt (Math::pow2 (M (0,2)) + Math::pow2 (M (1,2)) + Math::pow2 (M (2,2)));
 
             // normalize each transform axis:
             M (0,0) /= H.vox (0);
@@ -209,7 +214,7 @@ namespace MR
             Math::Quaternion<float> Q (get<float32> (&NH.quatern_b, is_BE), get<float32> (&NH.quatern_c, is_BE), get<float32> (&NH.quatern_d, is_BE));
             float transform[9];
             Q.to_matrix (transform);
-            Math::Matrix<float>& M (H.get_transform());
+            Math::Matrix<float>& M (H.transform());
             M.allocate (4,4);
 
             M (0,0) = transform[0];
@@ -241,8 +246,9 @@ namespace MR
           }
         }
         else {
-          H.get_transform().clear();
-          if (!File::Config::get_bool ("Analyse.LeftToRight", true)) H.set_stride (0, -H.stride (0));
+          H.transform().clear();
+          if (!File::Config::get_bool ("Analyse.LeftToRight", true)) 
+            H.stride(0) = -H.stride (0);
           if (!right_left_warning_issued) {
             info ("assuming Analyse images are encoded " + std::string (H.stride (0) >0 ? "left to right" : "right to left"));
             right_left_warning_issued = true;
@@ -262,7 +268,7 @@ namespace MR
       {
         for (size_t i = 0; i < H.ndim(); ++i)
           if (H.dim (i) < 1)
-            H.set_dim (i, 1);
+            H.dim(i) = 1;
 
         if (single_file) {
           ssize_t order[H.ndim()];
@@ -280,16 +286,16 @@ namespace MR
           assert (axis == H.ndim());
 
           for (i = 0; i < 3; ++i)
-            H.set_stride (i, order[i]);
+            H.stride(i) = order[i];
 
           for (; i < H.ndim(); ++i)
-            H.set_stride (i, abs (order[i]));
+            H.stride(i) = abs (order[i]);
         }
         else {
           for (size_t i = 0; i < H.ndim(); ++i)
-            H.set_stride (i, i+1);
+            H.stride(i) = i+1;
           if (File::Config::get_bool ("Analyse.LeftToRight", true))
-            H.set_stride (0, -H.stride (0));
+            H.stride(0) = -H.stride (0);
 
           if (!right_left_warning_issued) {
             info ("assuming Analyse images are encoded " + std::string (H.stride (0) >0 ? "left to right" : "right to left"));
@@ -420,8 +426,8 @@ namespace MR
         put<float32> (352.0, &NH.vox_offset, is_BE);
 
         // offset and scale:
-        put<float32> (H.data_scale(), &NH.scl_slope, is_BE);
-        put<float32> (H.data_offset(), &NH.scl_inter, is_BE);
+        put<float32> (H.intensity_scale(), &NH.scl_slope, is_BE);
+        put<float32> (H.intensity_offset(), &NH.scl_inter, is_BE);
 
         NH.xyzt_units = SPACE_TIME_TO_XYZT (NIFTI_UNITS_MM, NIFTI_UNITS_SEC);
 

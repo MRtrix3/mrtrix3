@@ -64,31 +64,27 @@ OPTIONS
 typedef float value_type;
 
 void run () {
-  Image::Header input_header (argument[0]);
-  assert (!input_header.is_complex());
-  Image::Data<value_type> input_data (input_header);
+  Image::Data<value_type> input_data (argument[0]);
+  assert (!input_data.datatype().is_complex());
   Image::Data<value_type>::voxel_type input_voxel (input_data);
 
-  Image::Header mask_header (input_header);
-  mask_header.set_ndim(3);
-  mask_header.create(argument[1]);
-  Image::Data<float> mask_data (mask_header);
+  Image::Header header (input_data);
+  header.set_ndim(3);
+  Image::Data<float> mask_data (header, argument[1]);
   Image::Data<float>::voxel_type mask_voxel (mask_data);
 
   std::vector<int> bzeros, dwis;
-  Math::Matrix<float> grad = DWI::get_DW_scheme<float> (input_header);
+  Math::Matrix<float> grad = DWI::get_DW_scheme<float> (input_data);
   DWI::guess_DW_directions (dwis, bzeros, grad);
-  info ("found " + str(dwis.size()) + " diffusion-weighted directions");
 
-  Image::Header scratch_header;
-  scratch_header = input_voxel;
-  scratch_header.set_ndim (3);
+  Image::Info info (input_data);
+  info.set_ndim (3);
 
   // Compute the mean b=0 and mean DWI image
-  Image::Scratch<float> b0_mean_data (scratch_header, "mean b0");
+  Image::Scratch<float> b0_mean_data (info, "mean b0");
   Image::Scratch<float>::voxel_type b0_mean (b0_mean_data);
 
-  Image::Scratch<float> dwi_mean_data (scratch_header, "mean DWI");
+  Image::Scratch<float> dwi_mean_data (info, "mean DWI");
   Image::Scratch<float>::voxel_type dwi_mean (dwi_mean_data);
   {
     Image::Loop loop("computing mean dwi and mean b0 images...", 0, 3);

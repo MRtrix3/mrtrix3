@@ -37,9 +37,10 @@ namespace MR
     {
 
 
-      bool NIfTI_GZ::read (Header& H) const
+      Handler::Base* NIfTI_GZ::read (Header& H) const
       {
-        if (!Path::has_suffix (H.name(), ".nii.gz")) return (false);
+        if (!Path::has_suffix (H.name(), ".nii.gz")) 
+          return NULL;
 
         nifti_1_header NH;
 
@@ -49,10 +50,10 @@ namespace MR
 
         size_t data_offset = File::NIfTI::read (H, NH);
 
-        H.set_handler (new Handler::GZ (H, 0, false));
-        H.add_file (File::Entry (H.name(), data_offset));
+        Ptr<Handler::Base> handler (new Handler::GZ (H, 0));
+        handler->files.push_back (File::Entry (H.name(), data_offset));
 
-        return (true);
+        return handler.release();
       }
 
 
@@ -62,7 +63,7 @@ namespace MR
       bool NIfTI_GZ::check (Header& H, size_t num_axes) const
       {
         if (!Path::has_suffix (H.name(), ".nii.gz"))
-          return (false);
+          return false;
 
         if (num_axes < 3)
           throw Exception ("cannot create NIfTI-1.1 image with less than 3 dimensions");
@@ -73,26 +74,26 @@ namespace MR
         H.set_ndim (num_axes);
         File::NIfTI::check (H, true);
 
-        return (true);
+        return true;
       }
 
 
 
 
 
-      void NIfTI_GZ::create (Header& H, File::ConfirmOverwrite& confirm_overwrite) const
+      Image::Handler::Base* NIfTI_GZ::create (Header& H, File::ConfirmOverwrite& confirm_overwrite) const
       {
         if (H.ndim() > 7)
           throw Exception ("NIfTI-1.1 format cannot support more than 7 dimensions for image \"" + H.name() + "\"");
 
-        Handler::GZ* handler = new Handler::GZ (H, 352, true);
+        Ptr<Handler::GZ> handler (new Handler::GZ (H, 352));
 
         File::NIfTI::write (*reinterpret_cast<nifti_1_header*> (handler->header()), H, true);
 
-        H.set_handler (handler);
-
         File::create (confirm_overwrite, H.name());
-        H.add_file (File::Entry (H.name(), 352));
+        handler->files.push_back (File::Entry (H.name(), 352));
+
+        return handler.release();
       }
 
     }

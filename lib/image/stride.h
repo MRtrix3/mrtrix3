@@ -128,6 +128,13 @@ namespace MR
         return ret;
       }
 
+      //! set the strides of \a set from a std::vector<ssize_t>
+      template <class Set> void set (Set& ds, const List& stride)
+      {
+        for (size_t i = 0; i < ds.ndim(); ++i)
+          ds.stride (i) = stride[i];
+      }
+
 
 
 
@@ -329,6 +336,8 @@ namespace MR
 
         if (strides_match)
           out = in;
+
+        sanitise (out);
 
         return out;
       }

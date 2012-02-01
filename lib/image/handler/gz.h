@@ -37,8 +37,8 @@ namespace MR
       class GZ : public Base
       {
         public:
-          GZ (Header& header, size_t file_header_size, bool image_is_new) :
-            Base (header, image_is_new), lead_in_size (file_header_size) {
+          GZ (Header& header, size_t file_header_size) :
+            Base (header), lead_in_size (file_header_size) {
             lead_in = file_header_size ? new uint8_t [file_header_size] : NULL ;
           }
           ~GZ () { 

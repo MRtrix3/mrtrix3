@@ -37,11 +37,11 @@ namespace MR
       class Pipe : public Base
       {
         public:
-          Pipe (Header& header, bool image_is_new) : Base (header, image_is_new) { }
+          Pipe (Base& handler) : Base (handler) { }
           ~Pipe () { close(); }
 
         protected:
-          Ptr<File::MMap> file;
+          Ptr<File::MMap> mmap;
 
           virtual void load ();
           virtual void unload ();

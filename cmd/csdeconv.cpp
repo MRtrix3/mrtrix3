@@ -189,31 +189,25 @@ class Processor
 
 void run ()
 {
-  Image::Header dwi_header (argument[0]);
+  Image::Data<value_type> dwi_data (argument[0]);
 
-  Ptr<Image::Header> mask_header;
-  Ptr<Image::Data<bool> > mask_data;
   Options opt = get_options ("mask");
-  if (opt.size()) {
-    mask_header = new Image::Header (opt[0][0]);
-    mask_data = new Image::Data<bool> (*mask_header);
-  }
+  Ptr<Image::Data<bool> > mask_data;
+  if (opt.size()) 
+    mask_data = new Image::Data<bool> (opt[0][0]);
 
-  DWI::CSDeconv<value_type>::Shared shared (dwi_header, argument[1]);
+  DWI::CSDeconv<value_type>::Shared shared (dwi_data, argument[1]);
 
   bool normalise = get_options ("normalise").size();
 
-  Image::Header SH_header (dwi_header);
-  SH_header.set_dim (3, shared.nSH());
-  SH_header.set_datatype (DataType::Float32);
-  SH_header.set_stride (0, 2);
-  SH_header.set_stride (1, 3);
-  SH_header.set_stride (2, 4);
-  SH_header.set_stride (3, 1);
-  SH_header.create (argument[2]);
-
-  Image::Data<value_type> dwi_data (dwi_header);
-  Image::Data<value_type> SH_data (SH_header);
+  Image::Header header (dwi_data);
+  header.dim(3) = shared.nSH();
+  header.datatype() = DataType::Float32;
+  header.stride(0) = 2;
+  header.stride(1) = 3;
+  header.stride(2) = 4;
+  header.stride(3) = 1;
+  Image::Data<value_type> SH_data (header, argument[2]);
 
   DataLoader loader (dwi_data, mask_data, shared.bzeros, shared.dwis, normalise);
   Processor processor (SH_data, shared);

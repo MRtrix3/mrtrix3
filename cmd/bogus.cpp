@@ -25,6 +25,7 @@
 #include "image/data_preload.h"
 #include "image/scratch.h"
 #include "image/voxel.h"
+#include "image/copy.h"
 
 MRTRIX_APPLICATION
 
@@ -63,7 +64,8 @@ void usage () {
     + "some more details here.";
 
   ARGUMENTS
-    + Argument ("input", "the input image.").type_image_in ();
+    + Argument ("input", "the input image.").type_image_in ()
+    + Argument ("output", "the output image.").type_image_out ();
 
   OPTIONS
     + Option ("poo", "its description")
@@ -82,32 +84,31 @@ void usage () {
 
 void run () 
 {
+  Image::Stride::List stride (3);
+  stride[0] = 1; stride[1] = 2; stride[2] = 3;
 
-  Image::Header header_in (argument[0]);
+  Image::Header header;
+  Image::DataPreload<float> data_in (argument[0], stride, header);
 
-  Image::Stride::List stride (header_in.ndim(), 0);
-  stride[2] = 1;
+  Image::DataPreload<float>::voxel_type vox_in (data_in);
 
-  Image::DataPreload<float> data (header_in, stride);
+  Image::Data<float> data_out (data_in, argument[1]);
+  header = data_out;
+  Image::Data<float>::voxel_type vox_out (data_out);
 
-  VAR (header_in);
-  VAR (data);
 
-  Image::DataPreload<float>::voxel_type vox (data);
-  VAR (vox);
+  Image::Info info (data_in);
+  info.name() = "my scratch buffer";
+  info.stride(1) = 1;
+  info.stride(0) = info.stride(2) = 0;
+  info.datatype() = DataType::UInt8;
 
-  stride[3] = 1;
-  stride[0] = stride[1] = stride[2] = 0;
-  Image::Scratch<uint8_t> scratch (header_in, stride, "my scratch buffer");
-  VAR (scratch);
+  Image::Scratch<float32> data_tmp (info);
+  Image::Scratch<float32>::voxel_type vox_tmp (data_tmp);
 
-  Image::Scratch<uint8_t>::voxel_type scratch_vox (scratch);
-  VAR (scratch_vox);
-  
-  std::cout << "values: [ ";
-  for (size_t n = 0; n < Image::voxel_count (data); n += 10000)
-    std::cout << data.get(n) << " ";
-  std::cout << "]\n";
+
+  Image::copy_with_progress (vox_tmp, vox_in);
+  Image::copy_with_progress (vox_out, vox_tmp);
 
 }
 

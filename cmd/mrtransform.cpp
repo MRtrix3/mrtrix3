@@ -84,7 +84,7 @@ void usage ()
 
 
 
-
+typedef float value_type;
 
 
 
@@ -100,10 +100,10 @@ void run ()
   }
 
 
-  Image::Header header_in (argument[0]);
-  Image::Header header_out (header_in);
+  Image::Data<value_type> data_in (argument[0]);
+  Image::Header header_out (data_in);
 
-  header_out.set_datatype_from_command_line ();
+  header_out.datatype() = DataType::from_command_line (header_out.datatype());
 
   bool inverse = get_options ("inverse").size();
   bool replace = get_options ("replace").size();
@@ -127,16 +127,16 @@ void run ()
   if (opt.size()) {
     Image::Header template_header (opt[0][0]);
 
-    header_out.set_dim (0, template_header.dim (0));
-    header_out.set_dim (1, template_header.dim (1));
-    header_out.set_dim (2, template_header.dim (2));
+    header_out.dim(0) = template_header.dim (0);
+    header_out.dim(1) = template_header.dim (1);
+    header_out.dim(2) = template_header.dim (2);
 
-    header_out.set_vox (0, template_header.vox (0));
-    header_out.set_vox (1, template_header.vox (1));
-    header_out.set_vox (2, template_header.vox (2));
+    header_out.vox(0) = template_header.vox (0);
+    header_out.vox(1) = template_header.vox (1);
+    header_out.vox(2) = template_header.vox (2);
 
-    header_out.set_transform (template_header.transform());
-    header_out.add_comment ("resliced to reference image \"" + template_header.name() + "\"");
+    header_out.transform() = template_header.transform();
+    header_out.comments().push_back ("resliced to reference image \"" + template_header.name() + "\"");
 
     int interp = 1;
     opt = get_options ("interp");
@@ -156,16 +156,14 @@ void run ()
     }
 
     if (replace) {
-      header_in.get_transform().swap (T);
+      // ugly hack, but if it works...
+      static_cast<Image::Info>(data_in).transform().swap (T);
       T.clear();
     }
 
-    header_out.create (argument[1]);
-
-    Image::Data<float> data_in (header_in);
     Image::Data<float>::voxel_type in (data_in);
 
-    Image::Data<float> data_out (header_out);
+    Image::Data<float> data_out (header_out, argument[1]);
     Image::Data<float>::voxel_type out (data_out);
 
     switch (interp) {
@@ -189,20 +187,18 @@ void run ()
   else {
     // straight copy:
     if (T.is_set()) {
-      header_out.add_comment ("transform modified");
+      header_out.comments().push_back ("transform modified");
       if (replace)
-        header_out.get_transform().swap (T);
+        header_out.transform().swap (T);
       else {
         Math::Matrix<float> M (header_out.transform());
-        Math::mult (header_out.get_transform(), T, M);
+        Math::mult (header_out.transform(), T, M);
       }
     }
 
-    Image::Data<float> data_in (header_in);
     Image::Data<float>::voxel_type in (data_in);
 
-    header_out.create (argument[1]);
-    Image::Data<float> data_out (header_out);
+    Image::Data<float> data_out (header_out, argument[1]);
     Image::Data<float>::voxel_type out (data_out);
 
     Image::copy_with_progress (out, in);

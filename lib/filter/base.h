@@ -84,15 +84,15 @@ namespace MR
 
         virtual void execute (OutputSet& output) = 0;
 
-        Image::Header get_output_params() {
-          Image::Header output_prototype;
+        Image::Info get_output_params() {
+          Image::Info output_prototype;
           output_prototype.set_ndim (axes_.size());
           for (size_t n = 0; n < axes_.size(); ++n) {
-            output_prototype.set_dim (n, axes_[n].dim);
-            output_prototype.set_vox (n, axes_[n].vox);
-            output_prototype.set_stride (n, axes_[n].stride);
+            output_prototype.dim(n) = axes_[n].dim;
+            output_prototype.vox(n) = axes_[n].vox;
+            output_prototype.stride(n) = axes_[n].stride;
           }
-          output_prototype.set_transform (transform_);
+          output_prototype.transform() = transform_;
           return output_prototype;
         }
 

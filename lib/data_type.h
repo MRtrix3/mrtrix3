@@ -89,10 +89,9 @@ namespace MR
         }
       }
 
-      void         parse (const std::string& spec);
-      size_t       bits () const;
-      size_t       bytes () const {
-        return ( (bits() +7) /8);
+      size_t bits () const;
+      size_t bytes () const {
+        return (bits() +7) /8;
       }
       const char*  description () const;
       const char*  specifier () const;
@@ -111,6 +110,8 @@ namespace MR
         dt.set_byte_order_native();
         return (dt);
       }
+      static DataType parse (const std::string& spec);
+      static DataType from_command_line (DataType default_datatype = Undefined);
 
 
       static const uint8_t     Attributes    = 0xF0U;
@@ -157,55 +158,63 @@ namespace MR
 #else
           LittleEndian;
 #endif
-      void from_command_line ();
       static App::OptionGroup options ();
 
       static const char* identifiers[];
+
+      friend std::ostream& operator<< (std::ostream& stream, const DataType& dt) {
+        stream << dt.specifier();
+        return stream;
+      }
 
     protected:
       uint8_t dt;
 
   };
 
+  template <> inline DataType DataType::from<bool> ()
+  {
+    return DataType::Bit;
+  }
   template <> inline DataType DataType::from<int8_t> ()
   {
-    return (DataType::Int8);
+    return DataType::Int8;
   }
   template <> inline DataType DataType::from<uint8_t> ()
   {
-    return (DataType::UInt8);
+    return DataType::UInt8;
   }
   template <> inline DataType DataType::from<int16_t> ()
   {
-    return (DataType::native (DataType::Int16));
+    return DataType::native (DataType::Int16);
   }
   template <> inline DataType DataType::from<uint16_t> ()
   {
-    return (DataType::native (DataType::UInt16));
+    return DataType::native (DataType::UInt16);
   }
   template <> inline DataType DataType::from<int32_t> ()
   {
-    return (DataType::native (DataType::Int32));
+    return DataType::native (DataType::Int32);
   }
   template <> inline DataType DataType::from<uint32_t> ()
   {
-    return (DataType::native (DataType::UInt32));
+    return DataType::native (DataType::UInt32);
   }
   template <> inline DataType DataType::from<float> ()
   {
-    return (DataType::native (DataType::Float32));
+    return DataType::native (DataType::Float32);
   }
   template <> inline DataType DataType::from<double> ()
   {
-    return (DataType::native (DataType::Float64));
+    return DataType::native (DataType::Float64);
   }
   template <> inline DataType DataType::from<cfloat> ()
   {
-    return (DataType::native (DataType::CFloat32));
+    return DataType::native (DataType::CFloat32);
   }
   template <> inline DataType DataType::from<cdouble> ()
   {
-    return (DataType::native (DataType::CFloat64));
+    return DataType::native (DataType::CFloat64);
   }
 
 

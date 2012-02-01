@@ -25,6 +25,7 @@
 #include "file/nifti1_utils.h"
 #include "image/misc.h"
 #include "image/header.h"
+#include "image/handler/default.h"
 #include "image/format/list.h"
 
 namespace MR
@@ -34,16 +35,18 @@ namespace MR
     namespace Format
     {
 
-      bool NIfTI::read (Header& H) const
+      Handler::Base* NIfTI::read (Header& H) const
       {
-        if (!Path::has_suffix (H.name(), ".nii")) return (false);
+        if (!Path::has_suffix (H.name(), ".nii")) 
+          return NULL;
 
         File::MMap fmap (H.name());
         size_t data_offset = File::NIfTI::read (H, * ( (const nifti_1_header*) fmap.address()));
 
-        H.add_file (File::Entry (H.name(), data_offset));
+        Ptr<Handler::Base> handler (new Handler::Default (H));
+        handler->files.push_back (File::Entry (H.name(), data_offset));
 
-        return (true);
+        return handler.release();
       }
 
 
@@ -66,7 +69,7 @@ namespace MR
 
 
 
-      void NIfTI::create (Header& H, File::ConfirmOverwrite& confirm_overwrite) const
+      Handler::Base* NIfTI::create (Header& H, File::ConfirmOverwrite& confirm_overwrite) const
       {
         if (H.ndim() > 7)
           throw Exception ("NIfTI-1.1 format cannot support more than 7 dimensions for image \"" + H.name() + "\"");
@@ -83,7 +86,10 @@ namespace MR
 
         File::resize (H.name(), 352 + Image::footprint(H));
 
-        H.add_file (File::Entry (H.name(), 352));
+        Ptr<Handler::Base> handler (new Handler::Default (H));
+        handler->files.push_back (File::Entry (H.name(), 352));
+
+        return handler.release();
       }
 
     }

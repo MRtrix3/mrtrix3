@@ -125,31 +125,27 @@ void run ()
   bool use_NaN = get_options ("nan").size();
   bool ignore_zeroes = get_options ("ignorezero").size();
 
-  Image::Header header_in (argument[0]);
-  assert (!header_in.is_complex());
+  Image::Data<float> data_in (argument[0]);
+  assert (!data_in.datatype().is_complex());
 
-  if (Image::voxel_count (header_in) < topN || Image::voxel_count (header_in) < bottomN)
+  if (Image::voxel_count (data_in) < topN || Image::voxel_count (data_in) < bottomN)
     throw Exception ("number of voxels at which to threshold exceeds number of voxels in image");
 
   if (finite (percentile)) {
     percentile /= 100.0;
     if (percentile < 0.5) {
-      bottomN = Math::round (Image::voxel_count (header_in) * percentile);
+      bottomN = Math::round (Image::voxel_count (data_in) * percentile);
       invert = !invert;
     }
-    else topN = Math::round (Image::voxel_count (header_in) * (1.0 - percentile));
+    else topN = Math::round (Image::voxel_count (data_in) * (1.0 - percentile));
   }
 
-  Image::Header header_out (header_in);
-  if (use_NaN) header_out.set_datatype (DataType::Float32);
-  else header_out.set_datatype (DataType::Bit);
+  Image::Header header_out (data_in);
+  header_out.datatype() = use_NaN ? DataType::Float32 : DataType::Bit;
 
-  header_out.create (argument[1]);
-
-  Image::Data<float> data_in (header_in);
   Image::Data<float>::voxel_type in (data_in);
 
-  Image::Data<float> data_out (header_out);
+  Image::Data<float> data_out (header_out, argument[1]);
   Image::Data<float>::voxel_type out (data_out);
 
   float zero = use_NaN ? NAN : 0.0;

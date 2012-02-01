@@ -114,13 +114,11 @@ class Item
 class DataLoader
 {
   public:
-    DataLoader (Image::Header& sh_header,
-                Image::Header* mask_header) :
-      sh_data (sh_header),
+    DataLoader (Image::Data<value_type>& sh_data,
+                Image::Data<bool>* mask_data) :
       sh (sh_data),
       loop ("estimating peak directions...", 0, 3) {
-      if (mask_header) {
-        mask_data = new Image::Data<bool> (*mask_header);
+      if (mask_data) {
         Image::check_dimensions (*mask_data, sh, 0, 3);
         mask = new Image::Data<bool>::voxel_type (*mask_data);
         loop.start (*mask, sh);
@@ -160,9 +158,7 @@ class DataLoader
     }
 
   private:
-    Image::Data<value_type> sh_data;
     Image::Data<value_type>::voxel_type  sh;
-    Ptr<Image::Data<bool> > mask_data;
     Ptr<Image::Data<bool>::voxel_type> mask;
     Image::Loop loop;
 };
@@ -172,25 +168,23 @@ class DataLoader
 class Processor
 {
   public:
-    Processor (Image::Header& dirs_header,
+    Processor (Image::Data<value_type>& dirs_data,
                Math::Matrix<value_type>& directions,
                int lmax,
                int npeaks,
                std::vector<Direction> true_peaks,
                value_type threshold,
-               Image::Header* ipeaks_header) :
-      dirs_data (dirs_header),
+               Image::Data<value_type>* ipeaks_data) :
       dirs_vox (dirs_data),
       dirs (directions),
       lmax (lmax),
       npeaks (npeaks),
       true_peaks (true_peaks),
       threshold (threshold),
-      ipeaks (ipeaks_header) { }
+      peaks_out (npeaks),
+      ipeaks_vox (ipeaks_data ? new Image::Data<value_type>::voxel_type (*ipeaks_data) : NULL) { }
 
     bool operator() (const Item& item) {
-      Math::Vector<value_type> amplitudes;
-      std::vector<Direction> peaks_out (npeaks);
 
       dirs_vox[0] = item.pos[0];
       dirs_vox[1] = item.pos[1];
@@ -216,22 +210,21 @@ class Processor
             }
           }
         }
-        if (finite (p.a) && p.a >= threshold) all_peaks.push_back (p);
+        if (finite (p.a) && p.a >= threshold) 
+          all_peaks.push_back (p);
       }
 
-      if (ipeaks) {
-        Image::Data<value_type> ipeaks_data (*ipeaks);
-        Image::Data<value_type>::voxel_type ipeaks_vox (ipeaks_data);
-        ipeaks_vox[0] = item.pos[0];
-        ipeaks_vox[1] = item.pos[1];
-        ipeaks_vox[2] = item.pos[2];
+      if (ipeaks_vox) {
+        (*ipeaks_vox)[0] = item.pos[0];
+        (*ipeaks_vox)[1] = item.pos[1];
+        (*ipeaks_vox)[2] = item.pos[2];
 
         for (int i = 0; i < npeaks; i++) {
           Point<value_type> p;
-          ipeaks_vox[3] = 3*i;
+          (*ipeaks_vox)[3] = 3*i;
           for (int n = 0; n < 3; n++) {
-            p[n] = ipeaks_vox.value();
-            ipeaks_vox[3]++;
+            p[n] = ipeaks_vox->value();
+            (*ipeaks_vox)[3]++;
           }
           p.normalise();
 
@@ -275,35 +268,34 @@ class Processor
     }
 
   private:
-    Image::Data<value_type> dirs_data;
     Image::Data<value_type>::voxel_type dirs_vox;
     Math::Matrix<value_type> dirs;
     int lmax, npeaks;
     std::vector<Direction> true_peaks;
     value_type threshold;
-    Image::Header* ipeaks;
+    std::vector<Direction> peaks_out;
+    Ptr<Image::Data<value_type>::voxel_type> ipeaks_vox;
 
     bool check_input (const Item& item) {
-      if (ipeaks) {
-        Image::Data<value_type> ipeaks_data (*ipeaks);
-        Image::Data<value_type>::voxel_type ipeaks_vox (ipeaks_data);
-        ipeaks_vox[0] = item.pos[0];
-        ipeaks_vox[1] = item.pos[1];
-        ipeaks_vox[2] = item.pos[2];
-        ipeaks_vox[3] = 0;
-        if (isnan (ipeaks_vox.value()))
-          return (true);
+      if (ipeaks_vox) {
+        (*ipeaks_vox)[0] = item.pos[0];
+        (*ipeaks_vox)[1] = item.pos[1];
+        (*ipeaks_vox)[2] = item.pos[2];
+        (*ipeaks_vox)[3] = 0;
+        if (isnan (ipeaks_vox->value()))
+          return true;
       }
 
       bool no_peaks = true;
       for (size_t i = 0; i < item.data.size(); i++) {
         if (isnan (item.data[i]))
-          return (true);
+          return true;
         if (no_peaks)
-          if (i && item.data[i] != 0.0) no_peaks = false;
+          if (i && item.data[i] != 0.0) 
+            no_peaks = false;
       }
 
-      return (no_peaks);
+      return no_peaks;
     }
 };
 
@@ -315,17 +307,18 @@ extern value_type default_directions [];
 
 void run ()
 {
-  Image::Header sh_header (argument[0]);
-  assert (!sh_header.is_complex());
+  Image::Data<value_type> SH_data (argument[0]);
+  if (SH_data.datatype().is_complex()) 
+    throw Exception ("cannot operate on complex data");
 
-  if (sh_header.ndim() != 4)
+  if (SH_data.ndim() != 4)
     throw Exception ("spherical harmonic image should contain 4 dimensions");
 
   Options opt = get_options ("mask");
 
-  Ptr<Image::Header> mask_header;
+  Ptr<Image::Data<bool> > mask_data;
   if (opt.size())
-    mask_header = new Image::Header (opt[0][0]);
+    mask_data = new Image::Data<bool> (opt[0][0]);
 
   opt = get_options ("seeds");
   Math::Matrix<value_type> dirs;
@@ -347,38 +340,34 @@ void run ()
     Direction p (M_PI*to<float> (opt[n][0]) /180.0, M_PI*float (opt[n][1]) /180.0);
     true_peaks.push_back (p);
   }
-  if (true_peaks.size()) npeaks = true_peaks.size();
+  if (true_peaks.size()) 
+    npeaks = true_peaks.size();
 
   opt = get_options ("threshold");
   value_type threshold = -INFINITY;
   if (opt.size())
     threshold = opt[0][0];
 
-  Image::Header directions_header (sh_header);
-  directions_header.set_datatype (DataType::Float32);
+  Image::Header header (SH_data);
+  header.datatype() = DataType::Float32;
 
   opt = get_options ("peaks");
-  Ptr<Image::Header> ipeaks_header;
+  Ptr<Image::Data<value_type> > ipeaks_data;
   if (opt.size()) {
     if (true_peaks.size())
       throw Exception ("you can't specify both a peaks file and orientations to be estimated at the same time");
     if (opt.size())
-      ipeaks_header = new Image::Header (opt[0][0]);
+      ipeaks_data = new Image::Data<value_type> (opt[0][0]);
 
-    if (ipeaks_header->dim (0) != directions_header.dim (0) ||
-        ipeaks_header->dim (1) != directions_header.dim (1) ||
-        ipeaks_header->dim (2) != directions_header.dim (2))
-      throw Exception ("dimensions of peaks image \"" + ipeaks_header->name() +
-          "\" do not match that of SH coefficients image \"" + directions_header.name() + "\"");
-    npeaks = ipeaks_header->dim (3) / 3;
+    Image::check_dimensions (header, *ipeaks_data, 0, 3);
+    npeaks = ipeaks_data->dim (3) / 3;
   }
-  directions_header.set_dim (3, 3 * npeaks);
+  header.dim(3) = 3 * npeaks;
+  Image::Data<value_type> peaks_data (header, argument[1]);
 
-  directions_header.create (argument[1]);
-
-  DataLoader loader (sh_header, mask_header);
-  Processor processor (directions_header, dirs, Math::SH::LforN (sh_header.dim (3)),
-      npeaks, true_peaks, threshold, ipeaks_header);
+  DataLoader loader (SH_data, mask_data);
+  Processor processor (peaks_data, dirs, Math::SH::LforN (SH_data.dim (3)),
+      npeaks, true_peaks, threshold, ipeaks_data);
 
   Thread::run_queue (loader, 1, Item(), processor, 0);
 }

@@ -44,25 +44,22 @@ void usage () {
 
 
 void run () {
-  Image::Header SH_header (argument[0]);
-  Image::Header power_header (SH_header);
+  Image::Data<float> SH_data (argument[0]);
+  Image::Header power_header (SH_data);
 
   if (power_header.ndim() != 4)
     throw Exception ("SH image should contain 4 dimensions");
 
 
-  int lmax = Math::SH::LforN (SH_header.dim (3));
+  int lmax = Math::SH::LforN (SH_data.dim (3));
   info ("calculating spherical harmonic power up to degree " + str (lmax));
 
-  power_header.set_dim (3, 1 + lmax/2);
-  power_header.set_datatype (DataType::Float32);
+  power_header.dim (3) = 1 + lmax/2;
+  power_header.datatype() = DataType::Float32;
 
-  power_header.create (argument[1]);
-
-  Image::Data<float> SH_data (SH_header);
   Image::Data<float>::voxel_type SH (SH_data);
 
-  Image::Data<float> power_data (power_header);
+  Image::Data<float> power_data (power_header, argument[1]);
   Image::Data<float>::voxel_type P (power_data);
 
   Image::LoopInOrder loop (P, "calculating SH power...", 0, 3);

@@ -31,6 +31,7 @@
 #include "file/dicom/tree.h"
 #include "image/format/list.h"
 #include "image/header.h"
+#include "image/handler/base.h"
 
 namespace MR
 {
@@ -39,9 +40,10 @@ namespace MR
     namespace Format
     {
 
-      bool DICOM::read (Header& H) const
+      Handler::Base* DICOM::read (Header& H) const
       {
-        if (!Path::is_dir (H.name())) return (false);
+        if (!Path::is_dir (H.name())) 
+          return NULL;
 
         File::Dicom::Tree dicom;
 
@@ -49,21 +51,22 @@ namespace MR
         dicom.sort();
 
         std::vector< RefPtr<File::Dicom::Series> > series = File::Dicom::select_func (dicom);
-        if (series.empty()) throw Exception ("no DICOM series selected");
+        if (series.empty()) 
+          throw Exception ("no DICOM series selected");
 
-        dicom_to_mapper (H, series);
-
-        return (true);
+        return dicom_to_mapper (H, series);
       }
 
 
       bool DICOM::check (Header& H, size_t num_axes) const
       {
-        return (false);
+        return false;
       }
-      void DICOM::create (Header& H, File::ConfirmOverwrite& confirm_overwrite) const
+
+      Handler::Base* DICOM::create (Header& H, File::ConfirmOverwrite& confirm_overwrite) const
       {
         assert (0);
+        return NULL;
       }
 
 

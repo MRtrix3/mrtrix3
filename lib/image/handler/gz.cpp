@@ -40,25 +40,24 @@ namespace MR
 
       void GZ::load ()
       {
-        const std::vector<File::Entry>& files (H.get_files());
         if (files.empty())
-          throw Exception ("no files specified in header for image \"" + H.name() + "\"");
+          throw Exception ("no files specified in header for image \"" + name + "\"");
 
-        segsize = Image::voxel_count (H) / files.size();
-        bytes_per_segment = (H.datatype().bits() * segsize + 7) / 8;
+        segsize /= files.size();
+        bytes_per_segment = (datatype.bits() * segsize + 7) / 8;
         if (files.size() * bytes_per_segment > std::numeric_limits<size_t>::max())
-          throw Exception ("image \"" + H.name() + "\" is larger than maximum accessible memory");
+          throw Exception ("image \"" + name + "\" is larger than maximum accessible memory");
 
-        debug ("loading image \"" + H.name() + "\"...");
-        addresses.resize (H.datatype().bits() == 1 && files.size() > 1 ? files.size() : 1);
+        debug ("loading image \"" + name + "\"...");
+        addresses.resize (datatype.bits() == 1 && files.size() > 1 ? files.size() : 1);
         addresses[0] = new uint8_t [files.size() * bytes_per_segment];
         if (!addresses[0])
-          throw Exception ("failed to allocate memory for image \"" + H.name() + "\"");
+          throw Exception ("failed to allocate memory for image \"" + name + "\"");
 
         if (is_new)
           memset (addresses[0], 0, files.size() * bytes_per_segment);
         else {
-          ProgressBar progress ("uncompressing image \"" + H.name() + "\"...",
+          ProgressBar progress ("uncompressing image \"" + name + "\"...",
                                 files.size() * bytes_per_segment / BYTES_PER_ZCALL);
           for (size_t n = 0; n < files.size(); n++) {
             File::GZ zf (files[n].name, "rb");
@@ -88,10 +87,9 @@ namespace MR
       {
         if (addresses.size()) {
           assert (addresses[0]);
-          const std::vector<File::Entry>& files (H.get_files());
 
-          if (H.readwrite()) {
-            ProgressBar progress ("compressing image \"" + H.name() + "\"...",
+          if (writable) {
+            ProgressBar progress ("compressing image \"" + name + "\"...",
                                   files.size() * bytes_per_segment / BYTES_PER_ZCALL);
             for (size_t n = 0; n < files.size(); n++) {
               assert (files[n].start == int64_t (lead_in_size));

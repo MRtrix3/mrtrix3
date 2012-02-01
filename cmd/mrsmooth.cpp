@@ -157,14 +157,10 @@ void run () {
   if (num_conflicting_options != 1)
     throw Exception ("a single type of smoothing must be supplied");
 
-  Image::Header source (argument[0]);
-  Image::Header destination (source);
-  destination.create (argument[1]);
+  Image::Data<float> src_data (argument[0]);
+  Image::Data<float> dest_data (src_data, argument[1]);
 
-  Image::Data<float> src_data (source);
   Image::Data<float>::voxel_type src (src_data);
-
-  Image::Data<float> dest_data (destination);
   Image::Data<float>::voxel_type dest (dest_data);
 
   opt = get_options ("gaussian");

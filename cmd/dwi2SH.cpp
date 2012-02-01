@@ -80,21 +80,12 @@ void usage ()
 
 void run ()
 {
-  Image::Header dwi_header (argument[0]);
+  Image::Data<float> dwi_data (argument[0]);
 
-  Math::Matrix<float> grad = DWI::get_DW_scheme<float> (dwi_header);
+  Math::Matrix<float> grad = DWI::get_DW_scheme<float> (dwi_data);
 
   std::vector<int> bzeros, dwis;
   DWI::guess_DW_directions (dwis, bzeros, grad);
-
-  {
-    std::string msg ("found b=0 images in volumes [ ");
-    for (size_t n = 0; n < bzeros.size(); n++) msg += str (bzeros[n]) + " ";
-    msg += "]";
-    info (msg);
-  }
-
-  info ("found " + str (dwis.size()) + " diffusion-weighted directions");
 
   Options opt = get_options ("lmax");
   int lmax = opt.size() ? opt[0][0] : Math::SH::LforN (dwis.size());
@@ -108,26 +99,18 @@ void run ()
   DWI::gen_direction_matrix (dirs, grad, dwis);
   Math::SH::Transform<float> SHT (dirs, lmax);
 
+  bool normalise = get_options ("normalise").size();
 
-  Image::Header SH_header (dwi_header);
-  SH_header.set_dim (3, Math::SH::NforL (lmax));
-  SH_header.set_datatype (DataType::Float32);
+  Image::Header header (dwi_data);
+  header.dim (3) = Math::SH::NforL (lmax);
+  header.datatype() = DataType::Float32;
+  Image::Data<float> SH_data (header, argument[1]);
 
-  SH_header.create (argument[1]);
-
-  Image::Data<float> dwi_data (dwi_header);
   Image::Data<float>::voxel_type dwi (dwi_data);
-
-  Image::Data<float> SH_data (SH_header);
   Image::Data<float>::voxel_type SH (SH_data);
-
 
   Math::Vector<float> res (lmax);
   Math::Vector<float> sigs (dwis.size());
-
-
-  bool normalise = get_options ("normalise").size();
-
 
   Image::LoopInOrder loop (SH, "converting DW images to SH coefficients...", 0, 3);
   for (loop.start (SH, dwi); loop.ok(); loop.next (SH, dwi)) {

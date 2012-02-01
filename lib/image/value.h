@@ -152,39 +152,46 @@ namespace MR
 
         Value (Set& parent) : S (parent) { }
         operator value_type () const {
-          return (S.get_value());
+          return get_value();
         }
         value_type operator= (value_type value) {
-          S.set_value (value);
-          return (value);
+          return set_value (value);
         }
         value_type operator= (const Value& V) {
-          value_type value = V.S.get_value();
-          S.set_value (value);
-          return (value);
+          value_type value = V.get_value();
+          return set_value (value);
         }
         value_type operator+= (value_type value) {
-          value += S.get_value();
-          S.set_value (value);
-          return (value);
+          value += get_value();
+          return set_value (value);
         }
         value_type operator-= (value_type value) {
-          value = S.get_value() - value;
-          S.set_value (value);
-          return (value);
+          value = get_value() - value;
+          return set_value (value);
         }
         value_type operator*= (value_type value) {
-          value *= S.get_value();
-          S.set_value (value);
-          return (value);
+          value *= get_value();
+          return set_value (value);
         }
         value_type operator/= (value_type value) {
-          value = S.get_value() / value;
-          S.set_value (value);
-          return (value);
+          value = get_value() / value;
+          return set_value (value);
+        }
+
+        friend std::ostream& operator<< (std::ostream& stream, const Value& V) {
+          stream << V.get_value();
+          return stream;
         }
       private:
         Set& S;
+
+        value_type get_value () const { 
+          return S.get_value();
+        }
+        value_type set_value (value_type value) {
+          S.set_value (value);
+          return value;
+        }
     };
 
   }

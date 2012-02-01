@@ -28,6 +28,7 @@
 #include "image/misc.h"
 #include "image/header.h"
 #include "image/format/list.h"
+#include "image/handler/default.h"
 #include "get_set.h"
 
 namespace MR
@@ -37,11 +38,11 @@ namespace MR
     namespace Format
     {
 
-      bool XDS::read (Header& H) const
+      Handler::Base* XDS::read (Header& H) const
       {
         if (!Path::has_suffix (H.name(), ".bfloat") &&
             !Path::has_suffix (H.name(), ".bshort"))
-          return (false);
+          return NULL;
 
         H.set_ndim (4);
         int BE;
@@ -54,31 +55,33 @@ namespace MR
           throw Exception ("error reading header file \"" + name + "\": " + strerror (errno));
         int dim[3];
         in >> dim[0] >> dim[1] >> dim[2] >> BE;
-        H.set_dim (0, dim[1]);
-        H.set_dim (1, dim[0]);
-        H.set_dim (2, dim[2]);
+        H.dim(0) = dim[1];
+        H.dim(1) = dim[0];
+        H.dim(2) = dim[2];
         in.close();
 
-        DataType dtype = (Path::has_suffix (H.name(), ".bfloat") ? DataType::Float32 : DataType::UInt16);
-        if (BE) dtype.set_flag (DataType::LittleEndian);
-        else dtype.set_flag (DataType::BigEndian);
-        H.set_datatype (dtype);
+        H.datatype() = (Path::has_suffix (H.name(), ".bfloat") ? DataType::Float32 : DataType::UInt16);
+        if (BE) 
+          H.datatype().set_flag (DataType::LittleEndian);
+        else 
+          H.datatype().set_flag (DataType::BigEndian);
 
-        H.set_dim (2, 1);
+        H.dim(2) = 1;
 
-        H.set_vox (0, 3.0);
-        H.set_vox (1, 3.0);
-        H.set_vox (2, 10.0);
-        H.set_vox (3, 1.0);
+        H.vox(0) = 3.0;
+        H.vox(1) = 3.0;
+        H.vox(2) = 10.0;
+        H.vox(3) = 1.0;
 
-        H.set_stride (0, -1);
-        H.set_stride (1, -2);
-        H.set_stride (2, 0);
-        H.set_stride (3, 3);
+        H.stride(0) = -1;
+        H.stride(1) = -2;
+        H.stride(2) = 0;
+        H.stride(3) = 3;
 
-        H.add_file (File::Entry (H.name()));
+        Ptr<Handler::Default> handler (new Handler::Default (H));
+        handler->files.push_back (File::Entry (H.name()));
 
-        return (true);
+        return handler.release();
       }
 
 
@@ -91,7 +94,7 @@ namespace MR
       {
         if (!Path::has_suffix (H.name(), ".bfloat") &&
             !Path::has_suffix (H.name(), ".bshort"))
-          return (false);
+          return false;
 
         if (num_axes > 4)
           throw Exception ("cannot create XDS image with more than 4 dimensions");
@@ -104,34 +107,34 @@ namespace MR
 
         H.set_ndim (4);
 
-        H.set_dim (2, 1);
+        H.dim(2) = 1;
         for (size_t n = 0; n < 4; ++n)
           if (H.dim (n) < 1)
-            H.set_dim (n, 1);
+            H.dim(n) = 1;
 
 
-        H.set_vox (0, 3.0);
-        H.set_vox (1, 3.0);
-        H.set_vox (2, 10.0);
-        H.set_vox (3, 1.0);
+        H.vox(0) = 3.0;
+        H.vox(1) = 3.0;
+        H.vox(2) = 10.0;
+        H.vox(3) = 1.0;
 
-        H.set_stride (0, -1);
-        H.set_stride (1, -2);
-        H.set_stride (2, 0);
-        H.set_stride (3, 3);
+        H.stride(0) = -1;
+        H.stride(1) = -2;
+        H.stride(2) = 0;
+        H.stride(3) = 3;
 
         DataType dtype (Path::has_suffix (H.name(), ".bfloat") ? DataType::Float32 : DataType::UInt16);
         if (H.datatype().is_big_endian()) dtype.set_flag (DataType::LittleEndian);
         else dtype.set_flag (DataType::BigEndian);
-        H.set_datatype (dtype);
+        H.datatype() = dtype;
 
-        return (true);
+        return true;
       }
 
 
 
 
-      void XDS::create (Header& H, File::ConfirmOverwrite& confirm_overwrite) const
+      Handler::Base* XDS::create (Header& H, File::ConfirmOverwrite& confirm_overwrite) const
       {
         std::string header_name (H.name());
         header_name.replace (header_name.size()-6, 6, "hdr");
@@ -146,8 +149,11 @@ namespace MR
             << " " << (H.datatype().is_little_endian() ? 1 : 0) << "\n";
         out.close();
 
+        Ptr<Handler::Default> handler (new Handler::Default (H));
         File::create (confirm_overwrite, H.name(), Image::footprint (H, "11 1"));
-        H.add_file (File::Entry (H.name()));
+        handler->files.push_back (File::Entry (H.name()));
+
+        return handler.release();
       }
 
     }

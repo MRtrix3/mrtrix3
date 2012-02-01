@@ -28,6 +28,7 @@
 #include "image/misc.h"
 #include "image/format/list.h"
 #include "image/header.h"
+#include "image/handler/default.h"
 #include "get_set.h"
 
 /*
@@ -158,10 +159,10 @@ namespace MR
 
 
 
-      bool MRI::read (Header& H) const
+      Handler::Base* MRI::read (Header& H) const
       {
         if (!Path::has_suffix (H.name(), ".mri"))
-          return (false);
+          return NULL;
 
         File::MMap fmap (H.name());
 
@@ -183,14 +184,14 @@ namespace MR
         while (current <= last) {
           switch (type (current, is_BE)) {
             case MRI_DATA:
-              H.set_datatype ( ( ( (const char*) data (current)) - 4) [0]);
+              H.datatype() =  ( ( (const char*) data (current)) - 4) [0];
               data_offset = current + 5 - (uint8_t*) fmap.address();
               break;
             case MRI_DIMENSIONS:
-              H.set_dim (0, get<uint32_t> (data (current), is_BE));
-              H.set_dim (1, get<uint32_t> (data (current) + sizeof (uint32_t), is_BE));
-              H.set_dim (2, get<uint32_t> (data (current) + 2*sizeof (uint32_t), is_BE));
-              H.set_dim (3, get<uint32_t> (data (current) + 3*sizeof (uint32_t), is_BE));
+              H.dim(0) = get<uint32_t> (data (current), is_BE);
+              H.dim(1) = get<uint32_t> (data (current) + sizeof (uint32_t), is_BE);
+              H.dim(2) = get<uint32_t> (data (current) + 2*sizeof (uint32_t), is_BE);
+              H.dim(3) = get<uint32_t> (data (current) + 3*sizeof (uint32_t), is_BE);
               break;
             case MRI_ORDER:
               c = (char*) data (current);
@@ -199,30 +200,30 @@ namespace MR
                 size_t ax = char2order (c[n], forward);
                 if (ax == std::numeric_limits<size_t>::max())
                   throw Exception ("invalid order specifier in MRI image \"" + H.name() + "\"");
-                H.set_stride (ax, n+1);
+                H.stride(ax) = n+1;
                 if (!forward)
-                  H.set_stride (ax, -H.stride (ax));
+                  H.stride(ax) = -H.stride (ax);
               }
               break;
             case MRI_VOXELSIZE:
-              H.set_vox (0, get<float32> (data (current), is_BE));
-              H.set_vox (1, get<float32> (data (current) + sizeof (float32), is_BE));
-              H.set_vox (2, get<float32> (data (current) + 2*sizeof (float32), is_BE));
+              H.vox(0) = get<float32> (data (current), is_BE);
+              H.vox(1) = get<float32> (data (current) + sizeof (float32), is_BE);
+              H.vox(2) = get<float32> (data (current) + 2*sizeof (float32), is_BE);
               break;
             case MRI_COMMENT:
-              H.add_comment (std::string ( (const char*) data (current), size (current, is_BE)));
+              H.comments().push_back (std::string ( (const char*) data (current), size (current, is_BE)));
               break;
             case MRI_TRANSFORM:
-              H.get_transform().allocate (4,4);
+              H.transform().allocate (4,4);
               for (size_t i = 0; i < 4; ++i)
                 for (size_t j = 0; j < 4; ++j)
-                  H.get_transform() (i,j) = get<float32> (data (current) + (i*4 + j) *sizeof (float32), is_BE);
+                  H.transform() (i,j) = get<float32> (data (current) + (i*4 + j) *sizeof (float32), is_BE);
               break;
             case MRI_DWSCHEME:
-              H.get_DW_scheme().allocate (size (current, is_BE) / (4*sizeof (float32)), 4);
+              H.DW_scheme().allocate (size (current, is_BE) / (4*sizeof (float32)), 4);
               for (size_t i = 0; i < H.DW_scheme().rows(); ++i)
                 for (size_t j = 0; j < 4; ++j)
-                  H.get_DW_scheme() (i,j) = get<float32> (data (current) + (i*4 + j) *sizeof (float32), is_BE);
+                  H.DW_scheme() (i,j) = get<float32> (data (current) + (i*4 + j) *sizeof (float32), is_BE);
               break;
             default:
               error ("unknown header entity (" + str (type (current, is_BE))
@@ -241,9 +242,10 @@ namespace MR
         if (!data_offset)
           throw Exception ("no data field found in MRI image \"" + H.name() + "\"");
 
-        H.add_file (File::Entry (H.name(), data_offset));
+        Ptr<Handler::Base> handler (new Handler::Default (H));
+        handler->files.push_back (File::Entry (H.name(), data_offset));
 
-        return (true);
+        return handler.release();
       }
 
 
@@ -253,14 +255,14 @@ namespace MR
       bool MRI::check (Header& H, size_t num_axes) const
       {
         if (!Path::has_suffix (H.name(), ".mri"))
-          return (false);
+          return false;
 
         if (H.ndim() > num_axes && num_axes != 4)
           throw Exception ("MRTools format can only support 4 dimensions");
 
         H.set_ndim (num_axes);
 
-        return (true);
+        return true;
       }
 
 
@@ -269,7 +271,7 @@ namespace MR
 
 
 
-      void MRI::create (Header& H, File::ConfirmOverwrite& confirm_overwrite) const
+      Handler::Base* MRI::create (Header& H, File::ConfirmOverwrite& confirm_overwrite) const
       {
         File::create (confirm_overwrite, H.name());
         std::ofstream out (H.name().c_str());
@@ -335,8 +337,11 @@ namespace MR
         size_t data_offset = out.tellp();
         out.close();
 
+        Ptr<Handler::Base> handler (new Handler::Default (H));
         File::resize (H.name(), data_offset + Image::footprint(H));
-        H.add_file (File::Entry (H.name(), data_offset));
+        handler->files.push_back (File::Entry (H.name(), data_offset));
+
+        return handler.release();
       }
 
     }

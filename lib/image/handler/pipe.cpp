@@ -38,32 +38,30 @@ namespace MR
 
       void Pipe::load ()
       {
-        const std::vector<File::Entry>& Hfiles (H.get_files());
-        assert (Hfiles.size() == 1);
-        debug ("mapping piped image \"" + Hfiles[0].name + "\"...");
+        assert (files.size() == 1);
+        debug ("mapping piped image \"" + files[0].name + "\"...");
 
-        segsize = Image::voxel_count (H) / Hfiles.size();
-        int64_t bytes_per_segment = (H.datatype().bits() * segsize + 7) / 8;
+        segsize /= files.size();
+        int64_t bytes_per_segment = (datatype.bits() * segsize + 7) / 8;
 
         if (double (bytes_per_segment) >= double (std::numeric_limits<size_t>::max()))
-          throw Exception ("image \"" + H.name() + "\" is larger than maximum accessible memory");
+          throw Exception ("image \"" + name + "\" is larger than maximum accessible memory");
 
-        file = new File::MMap (Hfiles[0], H.readwrite(), bytes_per_segment);
+        mmap = new File::MMap (files[0], writable, bytes_per_segment);
         addresses.resize (1);
-        addresses[0] = file->address();
+        addresses[0] = mmap->address();
       }
 
 
       void Pipe::unload()
       {
-        if (file) {
-          const std::vector<File::Entry>& Hfiles (H.get_files());
+        if (mmap) {
           if (is_new)
-            std::cout << Hfiles[0].name << "\n";
+            std::cout << files[0].name << "\n";
           else {
-            file = NULL;
-            debug ("deleting piped image file \"" + Hfiles[0].name + "\"...");
-            unlink (Hfiles[0].name.c_str());
+            mmap = NULL;
+            debug ("deleting piped image file \"" + files[0].name + "\"...");
+            unlink (files[0].name.c_str());
           }
           addresses[0] = NULL;
         }

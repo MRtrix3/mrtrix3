@@ -174,8 +174,7 @@ const char* header_string = "channel         mean        std. dev.   min        
 
 
 void run () {
-  Image::Header header (argument[0]);
-  Image::Data<value_type> data (header);
+  Image::Data<value_type> data (argument[0]);
   Image::Data<value_type>::voxel_type vox (data);
 
   Image::Loop inner_loop (0, 3);
@@ -221,21 +220,15 @@ void run () {
     if (voxels.size())
       throw Exception ("cannot use mask with -voxel option");
 
-    Image::Header mask_header (opt[0][0]);
-
-    if (mask_header.dim (0) != header.dim (0) ||
-    mask_header.dim (1) != header.dim (1) ||
-    mask_header.dim (2) != header.dim (2))
-      throw Exception ("dimensions of mask image do not match that of data image - aborting");
-
-    Image::Data<value_type> mask_data (mask_header);
-    Image::Data<value_type>::voxel_type mask (mask_data);
+    Image::Data<bool> mask_data (opt[0][0]);
+    check_dimensions (mask_data, data);
+    Image::Data<bool>::voxel_type mask (mask_data);
 
     if (hist_stream) {
       ProgressBar progress ("calibrating histogram...", Image::voxel_count (vox));
       for (outer_loop.start (vox); outer_loop.ok(); outer_loop.next (vox)) {
         for (inner_loop.start (mask, vox); inner_loop.ok(); inner_loop.next (mask, vox)) {
-          if (mask.value() > 0.5)
+          if (mask.value())
             calibrate (vox.value());
           ++progress;
         }
@@ -257,7 +250,7 @@ void run () {
           stats (vox.value());
           if (position_stream) {
             for (size_t i = 0; i < vox.ndim(); ++i)
-              *position_stream << vox[i] << " ";
+              *position_stream << int(vox[i]) << " ";
             *position_stream << "\n";
           }
         }

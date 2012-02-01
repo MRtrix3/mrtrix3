@@ -39,8 +39,6 @@ namespace MR
         int     dim;
         float   vox;
         ssize_t stride;
-        std::string description;
-        std::string units;
 
         bool  forward () const {
           return (stride > 0);
@@ -53,14 +51,6 @@ namespace MR
 
         static std::vector<ssize_t> parse (size_t ndim, const std::string& specifier);
         static void check (const std::vector<ssize_t>& parsed, size_t ndim);
-
-        static const char*  left_to_right;
-        static const char*  posterior_to_anterior;
-        static const char*  inferior_to_superior;
-        static const char*  time;
-        static const char*  real_imag;
-        static const char*  millimeters;
-        static const char*  milliseconds;
     };
 
     //! @}

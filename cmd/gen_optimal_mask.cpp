@@ -54,19 +54,17 @@ void usage ()
 typedef float value_type;
 
 void run () {
-  Image::Header input_header (argument[0]);
-  assert (!input_header.is_complex());
-  Image::Data<value_type> input_data (input_header);
+  Image::Data<value_type> input_data (argument[0]);
+  assert (!input_data.datatype().is_complex());
   Image::Data<value_type>::voxel_type input_voxel (input_data);
 
-  Image::Header mask_header (input_header);
-  mask_header.set_datatype (DataType::Bit);
+  Image::Header header (input_data);
 
   Filter::OptimalThreshold<Image::Data<float>::voxel_type, Image::Data<int>::voxel_type > filter (input_voxel);
 
-  mask_header.set_params (filter.get_output_params());
-  mask_header.create (argument[1]);
-  Image::Data<int> mask_data (mask_header);
+  header = filter.get_output_params();
+  header.datatype() = DataType::Bit;
+  Image::Data<int> mask_data (header, argument[1]);
   Image::Data<int>::voxel_type mask_voxel (mask_data);
 
   filter.execute (mask_voxel);

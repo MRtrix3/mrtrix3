@@ -193,9 +193,9 @@ class Processor
 
 void run ()
 {
-  Image::Header dwi_header (argument[0]);
+  Image::Data<value_type> dwi_data (argument[0]);
 
-  if (dwi_header.ndim() != 4)
+  if (dwi_data.ndim() != 4)
     throw Exception ("dwi image should contain 4 dimensions");
 
   Math::Matrix<value_type> grad;
@@ -203,9 +203,9 @@ void run ()
   if (opt.size())
     grad.load (opt[0][0]);
   else {
-    if (!dwi_header.DW_scheme().is_set())
-      throw Exception ("no diffusion encoding found in image \"" + dwi_header.name() + "\"");
-    grad = dwi_header.DW_scheme();
+    if (!dwi_data.DW_scheme().is_set())
+      throw Exception ("no diffusion encoding found in image \"" + dwi_data.name() + "\"");
+    grad = dwi_data.DW_scheme();
   }
 
   if (grad.rows() < 7 || grad.columns() != 4)
@@ -213,7 +213,7 @@ void run ()
 
   info ("found " + str (grad.rows()) + "x" + str (grad.columns()) + " diffusion-weighted encoding");
 
-  if (dwi_header.dim (3) != (int) grad.rows())
+  if (dwi_data.dim (3) != (int) grad.rows())
     throw Exception ("number of studies in base image does not match that in encoding file");
 
   DWI::normalise_grad (grad);
@@ -275,25 +275,20 @@ void run ()
   Math::SH::Transform<value_type> FRT_SHT(DW_dirs, lmax);
   FRT_SHT.set_filter(response);
 
-  Ptr<Image::Header> mask_header;
   Ptr<Image::Data<bool> > mask_data;
   opt = get_options ("mask");
-  if (opt.size()) {
-    mask_header = new Image::Header (opt[0][0]);
-    mask_data = new Image::Data<bool> (*mask_header);
-  }
+  if (opt.size()) 
+    mask_data = new Image::Data<bool> (opt[0][0]);
 
-  Image::Header SH_header (dwi_header);
-  SH_header.set_dim (3, Math::SH::NforL (lmax));
-  SH_header.set_datatype (DataType::Float32);
-  SH_header.set_stride (0, 2);
-  SH_header.set_stride (1, 3);
-  SH_header.set_stride (2, 4);
-  SH_header.set_stride (3, 1);
-  SH_header.create (argument[1]);
+  Image::Header SH_header (dwi_data);
+  SH_header.dim(3) = Math::SH::NforL (lmax);
+  SH_header.datatype() = DataType::Float32;
+  SH_header.stride(0) = 2;
+  SH_header.stride(1) = 3;
+  SH_header.stride(2) = 4;
+  SH_header.stride(3) = 1;
+  Image::Data<value_type> SH_data (SH_header, argument[1]);
 
-  Image::Data<value_type> dwi_data (dwi_header);
-  Image::Data<value_type> SH_data (SH_header);
 
   Queue queue ("work queue");
   DataLoader loader (queue, dwi_data, mask_data, dwis);

@@ -38,35 +38,32 @@ namespace MR
 
       void Mosaic::load ()
       {
-        const std::vector<File::Entry>& files (H.get_files());
         if (files.empty())
-          throw Exception ("no files specified in header for image \"" + H.name() + "\"");
-        assert (H.datatype().bits() > 1);
+          throw Exception ("no files specified in header for image \"" + name + "\"");
 
-        segsize = H.dim (0) * H.dim (1) * H.dim (2);
-        assert (segsize * files.size() == Image::voxel_count (H));
+        assert (datatype.bits() > 1);
 
-        size_t bytes_per_segment = H.datatype().bytes() * segsize;
+        size_t bytes_per_segment = datatype.bytes() * segsize;
         if (files.size() * bytes_per_segment > std::numeric_limits<size_t>::max())
-          throw Exception ("image \"" + H.name() + "\" is larger than maximum accessible memory");
+          throw Exception ("image \"" + name + "\" is larger than maximum accessible memory");
 
-        debug ("loading mosaic image \"" + H.name() + "\"...");
+        debug ("loading mosaic image \"" + name + "\"...");
         addresses.resize (1);
         addresses[0] = new uint8_t [files.size() * bytes_per_segment];
         if (!addresses[0])
-          throw Exception ("failed to allocate memory for image \"" + H.name() + "\"");
+          throw Exception ("failed to allocate memory for image \"" + name + "\"");
 
         ProgressBar progress ("reformatting DICOM mosaic images...", slices*files.size());
         uint8_t* data = addresses[0];
         for (size_t n = 0; n < files.size(); n++) {
-          File::MMap file (files[n], false, m_xdim * m_ydim * H.datatype().bytes());
+          File::MMap file (files[n], false, m_xdim * m_ydim * datatype.bytes());
           size_t nx = 0, ny = 0;
           for (size_t z = 0; z < slices; z++) {
             size_t ox = nx*xdim;
             size_t oy = ny*ydim;
             for (size_t y = 0; y < ydim; y++) {
-              memcpy (data, file.address() + H.datatype().bytes() * (ox + m_xdim* (y+oy)), xdim * H.datatype().bytes());
-              data += xdim * H.datatype().bytes();
+              memcpy (data, file.address() + datatype.bytes() * (ox + m_xdim* (y+oy)), xdim * datatype.bytes());
+              data += xdim * datatype.bytes();
             }
             nx++;
             if (nx >= m_xdim / xdim) {

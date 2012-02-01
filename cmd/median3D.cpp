@@ -56,16 +56,13 @@ void run () {
   if (opt.size())
     extent = parse_ints (opt[0][0]);
 
-  Image::Header source (argument[0]);
-  Image::Data<float> src_data (source);
+  Image::Data<float> src_data (argument[0]);
   Image::Data<float>::voxel_type src (src_data);
 
   Filter::Median3DFilter<Image::Data<float>::voxel_type, Image::Data<float>::voxel_type > median_filter(src);
   median_filter.set_extent(extent);
 
-  Image::Header destination (source);
-  destination.create (argument[1]);
-  Image::Data<float> dest_data (destination);
+  Image::Data<float> dest_data (src_data, argument[1]);
   Image::Data<float>::voxel_type dest (dest_data);
 
   median_filter.execute (dest);

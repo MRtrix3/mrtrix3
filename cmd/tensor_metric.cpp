@@ -80,34 +80,31 @@ void usage ()
 }
 
 
+typedef float value_type;
 
 class ImagePair
 {
   public:
-    class Header : public Image::Header
-    {
-      public:
-        Header (const Image::Header& header, const std::string& name, size_t nvols) :
-          Image::Header (header) {
-          set_datatype (DataType::Float32);
-          if (nvols) set_dim (3, nvols);
-          else set_ndim (3);
-          create (name);
-        }
-
-        Header (const std::string& name) : Image::Header (name) { }
-    };
-
-    typedef float value_type;
+    typedef ::value_type value_type;
 
     ImagePair (const Image::Header& header, const std::string& name, size_t nvols) :
-      H (header, name, nvols), data (H), vox (data) { }
+      data (param (header, nvols), name), 
+      vox (data) { }
 
-    ImagePair (const std::string& name) : H (name), data (H), vox (data) { }
+    ImagePair (const std::string& name) : 
+      data (name), 
+      vox (data) { }
 
-    Header H;
     Image::Data<value_type> data;
     Image::Data<value_type>::voxel_type vox;
+
+    static Image::Header param (const Image::Header& header, size_t nvols) {
+      Image::Header ret (header);
+      ret.datatype() = DataType::Float32;
+      if (nvols) ret.dim(3) = nvols;
+      else ret.set_ndim (3);
+      return ret;
+    }
 };
 
 class ImagePairPtr : public Ptr<ImagePair>
@@ -254,13 +251,13 @@ inline void increment (size_t axis, Ptr<ImagePair>& i0, Ptr<ImagePair>& i1, Ptr<
 
 void run ()
 {
-  Image::Header dt_header (argument[0]);
+  Image::Data<value_type> dt_data (argument[0]);
 
-  if (dt_header.ndim() != 4)
+  if (dt_data.ndim() != 4)
     throw Exception ("base image should contain 4 dimensions");
 
-  if (dt_header.dim (3) != 6)
-    throw Exception ("expecting dimension 3 of image \"" + dt_header.name() + "\" to be 6");
+  if (dt_data.dim (3) != 6)
+    throw Exception ("expecting dimension 3 of image \"" + dt_data.name() + "\" to be 6");
 
 
   std::vector<int> vals (1);
@@ -281,26 +278,23 @@ void run ()
 
   opt = get_options ("vector");
   if (opt.size())
-    evec = new ImagePair (dt_header, opt[0][0], 3*vals.size());
+    evec = new ImagePair (dt_data, opt[0][0], 3*vals.size());
 
   opt = get_options ("value");
   if (opt.size())
-    eval = new ImagePair (dt_header, opt[0][0], vals.size());
+    eval = new ImagePair (dt_data, opt[0][0], vals.size());
 
   opt = get_options ("adc");
   if (opt.size())
-    adc = new ImagePair (dt_header, opt[0][0], 0);
+    adc = new ImagePair (dt_data, opt[0][0], 0);
 
   opt = get_options ("fa");
-  if (opt.size()) fa = new ImagePair (dt_header, opt[0][0], 0);
+  if (opt.size()) fa = new ImagePair (dt_data, opt[0][0], 0);
 
   opt = get_options ("mask");
   if (opt.size()) {
     mask = new ImagePair (opt[0][0]);
-    if (mask->H.dim (0) != dt_header.dim (0) ||
-        mask->H.dim (1) != dt_header.dim (1) ||
-        mask->H.dim (2) != dt_header.dim (2))
-      throw Exception ("dimensions of mask image do not match that of tensor image - aborting");
+    Image::check_dimensions (mask->data, dt_data, 0, 3);
   }
 
   int modulate = 1;
@@ -327,7 +321,6 @@ void run ()
   else
     eig = new Math::Eigen::Symm<double> (3);
 
-  Image::Data<float> dt_data (dt_header);
   Image::Data<float>::voxel_type dt (dt_data);
 
   ProgressBar progress ("computing tensor metrics...", Image::voxel_count (dt, 0, 3));

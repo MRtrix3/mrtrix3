@@ -227,6 +227,10 @@ namespace MR
           S.set_pos (axis, ssize_t (position));
           return (ssize_t (position));
         }
+        friend std::ostream& operator<< (std::ostream& stream, const Position& p) {
+          stream << ssize_t (p);
+          return stream;
+        }
       private:
         Set& S;
         size_t axis;

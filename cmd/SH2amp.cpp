@@ -143,13 +143,13 @@ class Processor {
 
 void run ()
 {
-  Image::Header sh_header(argument[0]);
-  assert (!sh_header.is_complex());
+  Image::Data<value_type> sh_data (argument[0]);
+  assert (!sh_data.datatype().is_complex());
 
-  if (sh_header.ndim() != 4)
+  if (sh_data.ndim() != 4)
     throw Exception ("The input spherical harmonic image should contain 4 dimensions");
 
-  Image::Header amp_header (sh_header);
+  Image::Header amp_header (sh_data);
 
   Math::Matrix<value_type> dirs;
   bool gradients = get_options("gradient").size();
@@ -168,23 +168,21 @@ void run ()
       grad_dwis(i,2) = grad(dwis[i],2);
       grad_dwis(i,3) = grad(dwis[i],3);
     }
-    amp_header.set_DW_scheme(grad_dwis);
+    amp_header.DW_scheme() = grad_dwis;
   } else {
     dirs.load(argument[1]);
   }
-  amp_header.set_dim(3, dirs.rows());
-  amp_header.set_stride (0, 2);
-  amp_header.set_stride (1, 3);
-  amp_header.set_stride (2, 4);
-  amp_header.set_stride (3, 1);
-  amp_header.create(argument[2]);
+  amp_header.dim(3) = dirs.rows();
+  amp_header.stride(0) = 2;
+  amp_header.stride(1) = 3;
+  amp_header.stride(2) = 4;
+  amp_header.stride(3) = 1;
+  Image::Data<value_type> amp_data (amp_header, argument[2]);
 
-  Image::Data<value_type> sh_data (sh_header);
-  Image::Data<value_type> amp_data (amp_header);
 
   Queue queue ("sh2amp queue");
   DataLoader loader (queue, sh_data);
-  Processor processor (queue, amp_data, dirs, Math::SH::LforN(sh_header.dim(3)), get_options("nonnegative").size());
+  Processor processor (queue, amp_data, dirs, Math::SH::LforN(sh_data.dim(3)), get_options("nonnegative").size());
 
   Thread::Exec loader_thread (loader, "loader");
   Thread::Array<Processor> processor_list (processor);

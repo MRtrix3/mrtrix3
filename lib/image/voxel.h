@@ -92,11 +92,15 @@ namespace MR
             x[i] = 0;
         }
 
+        ssize_t operator[] (size_t axis) const {
+          return get_pos (axis);
+        }
         Image::Position<Voxel> operator[] (size_t axis) {
           return Image::Position<Voxel> (*this, axis);
         }
-        ssize_t operator[] (size_t axis) const {
-          return get_pos (axis);
+
+        value_type value () const {
+          return get_value ();
         }
         Image::Value<Voxel> value () {
           return Image::Value<Voxel> (*this);
@@ -104,9 +108,10 @@ namespace MR
 
 
         friend std::ostream& operator<< (std::ostream& stream, const Voxel& V) {
-          stream << "position for image \"" << V.name() << "\" = [ ";
-          for (size_t n = 0; n < V.ndim(); ++n) stream << const_cast<Voxel&> (V) [n] << " ";
-          stream << "]\n  current offset = " << V.offset_;
+          stream << "voxel for image \"" << V.name() << "\", position [ ";
+          for (size_t n = 0; n < V.ndim(); ++n) 
+            stream << V[n] << " ";
+          stream << "], current offset = " << V.offset_ << ", value = " << V.value();
           return stream;
         }
 
@@ -118,11 +123,11 @@ namespace MR
         std::vector<ssize_t> x;
 
         value_type get_value () const {
-          return data_.get (offset_);
+          return data_.get_value (offset_);
         }
 
         void set_value (value_type val) {
-          data_.set (offset_, val);
+          data_.set_value (offset_, val);
         }
 
         ssize_t get_pos (size_t axis) const {

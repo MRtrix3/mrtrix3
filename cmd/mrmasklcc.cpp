@@ -59,11 +59,10 @@ void usage ()
 void run ()
 {
 
-  Image::Header H_in (argument[0]);
-  Image::Data<bool> data_in (H_in);
+  Image::Data<bool> data_in (argument[0]);
   Image::Data<bool>::voxel_type voxel_in (data_in);
 
-  Image::Scratch<bool> largest_mask_data (H_in);
+  Image::Scratch<bool> largest_mask_data (data_in);
   Image::Scratch<bool>::voxel_type largest_mask (largest_mask_data);
 
   {
@@ -77,7 +76,7 @@ void run ()
     for (loop.start (largest_mask); loop.ok(); loop.next (largest_mask))
       largest_mask.value() = !largest_mask.value();
 
-    Image::Scratch<bool> outside_mask_data (H_in);
+    Image::Scratch<bool> outside_mask_data (data_in);
     Image::Scratch<bool>::voxel_type outside_mask (outside_mask_data);
 
     Filter::LargestConnectedComponent<bool, Image::Scratch<bool>::voxel_type, Image::Scratch<bool>::voxel_type > lcc_fill (largest_mask, "filling gaps in mask...");
@@ -87,9 +86,7 @@ void run ()
 
   }
 
-  Image::Header H_out (H_in);
-  H_out.create (argument[1]);
-  Image::Data<bool> data_out (H_out);
+  Image::Data<bool> data_out (data_in, argument[1]);
   Image::Data<bool>::voxel_type voxel_out (data_out);
   Image::copy (voxel_out, largest_mask);
 

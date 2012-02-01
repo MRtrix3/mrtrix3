@@ -58,25 +58,22 @@ OPTIONS
 typedef float value_type;
 
 void run () {
-  Image::Header input_header (argument[0]);
-  assert (!input_header.is_complex());
+  Image::Data<value_type> input_data (argument[0]);
+  assert (!input_data.datatype().is_complex());
 
   const float sample_factor = argument[1];
 
   // TODO handle resample factors that are not neat multiples of 1
-  Image::Header output_header (input_header);
+  Image::Header output_header (input_data);
   for (int n = 0; n < 3; n++){
-    output_header.set_dim (n, input_header.dim(n) * sample_factor);
-    output_header.set_vox (n, input_header.vox(n) / sample_factor);
+    output_header.dim(n) = input_data.dim(n) * sample_factor;
+    output_header.vox(n) = input_data.vox(n) / sample_factor;
   }
-  output_header.set_datatype (DataType::Float32);
+  output_header.datatype() = DataType::Float32;
 
-  output_header.create (argument[2]);
+  Image::Data<float>::voxel_type in  (input_data);
 
-  Image::Data<float> data_in  (input_header);
-  Image::Data<float>::voxel_type in  (data_in);
-
-  Image::Data<float> data_out (output_header);
+  Image::Data<float> data_out (output_header, argument[2]);
   Image::Data<float>::voxel_type out (data_out);
 
   int interp = 2;

@@ -28,17 +28,6 @@ namespace MR
   namespace Image
   {
 
-    const char* Axis::left_to_right = "left->right";
-    const char* Axis::posterior_to_anterior = "posterior->anterior";
-    const char* Axis::inferior_to_superior = "inferior->superior";
-    const char* Axis::time = "time";
-    const char* Axis::real_imag = "real-imaginary";
-    const char* Axis::millimeters = "mm";
-    const char* Axis::milliseconds = "ms";
-
-
-
-
 
     std::vector<ssize_t> Axis::parse (size_t ndim, const std::string& specifier)
     {
@@ -82,7 +71,7 @@ namespace MR
 
       check (parsed, ndim);
 
-      return (parsed);
+      return parsed;
     }
 
 
@@ -116,15 +105,8 @@ namespace MR
 
     std::ostream& operator<< (std::ostream& stream, const Axis& axis)
     {
-      stream << "[ dim: " << axis.dim << ", vox: " << axis.vox << ", stride: " << axis.stride
-             << ", description: ";
-      if (axis.description.size()) stream << "\"" << axis.description << "\"";
-      else stream << "(empty)";
-      stream << ", units: ";
-      if (axis.units.size()) stream << axis.units;
-      else stream << "(empty)";
-      stream << " ]";
-      return (stream);
+      stream << "[ dim: " << axis.dim << ", vox: " << axis.vox << ", stride: " << axis.stride << " ]";
+      return stream;
     }
 
 
