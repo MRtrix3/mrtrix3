@@ -141,6 +141,8 @@ namespace MR
       protected:
         Ptr<Handler::Base> handler;
 
+        template <class Set> Data& operator= (const Set& H) { assert (0); return *this; }
+
         value_type (*get_func) (const void* data, size_t i);
         void (*put_func) (value_type val, void* data, size_t i);
 

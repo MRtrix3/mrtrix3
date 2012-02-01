@@ -92,6 +92,8 @@ namespace MR
         value_type* data_;
         using Data<value_type>::handler;
 
+        template <class Set> DataPreload& operator= (const Set& H) { assert (0); return *this; }
+
         class DataWithStride : public Adapter::Data<DataPreload<value_type> > {
           public:
             DataWithStride (DataPreload<value_type>& data, const Stride::List& new_strides) : 

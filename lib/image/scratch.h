@@ -69,6 +69,8 @@ namespace MR
 
       protected:
         Ptr<value_type,true> data_;
+
+        template <class Set> Scratch& operator= (const Set& H) { assert (0); return *this; }
     };
 
 

@@ -225,10 +225,10 @@ namespace MR
 
       private:
         template <class Set> void operator= (const Set& set) { assert (0); }
-        void set_ndim (size_t n) { assert (0); }
-        void clear () { assert (0); }
-        void sanitise () { assert (0); }
-        void apply_intensity_scaling (float a, float b) { assert (0); }
+        using Header::set_ndim;
+        using Header::clear;
+        using Header::sanitise;
+        using Header::apply_intensity_scaling;
 
     };
 
