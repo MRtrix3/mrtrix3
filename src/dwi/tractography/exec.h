@@ -161,7 +161,7 @@ namespace MR {
 
           bool iterate () 
           {
-            if (!method.next()) 
+            if (!(S.rk4 ? method.next_rk4() : method.next()))
               return (false);
 
             if (S.properties.mask.size() && !S.properties.mask.contains (method.pos)) 

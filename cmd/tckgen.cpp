@@ -158,7 +158,10 @@ void usage ()
   + Option ("samples",
             "set the number of FOD samples to take per step for the 2nd order "
             "(iFOD2) method (Default: 4).")
-  + Argument ("number").type_integer (2, 4, 100);
+  + Argument ("number").type_integer (2, 4, 100)
+
+  + Option ("rk4", "use 4th-order Runge-Kutta interpolation");
+
 }
 
 
@@ -234,6 +237,9 @@ void run ()
 
   opt = get_options ("samples");
   if (opt.size()) properties["samples_per_step"] = std::string (opt[0][0]);
+
+  opt = get_options ("rk4");
+  if (opt.size()) properties["rk4"] = "1";
 
   Image::Header source (argument[0]);
 

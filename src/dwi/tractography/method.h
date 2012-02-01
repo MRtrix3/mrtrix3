@@ -41,7 +41,8 @@ namespace MR {
             rng (rng_seed++), 
             pos (0.0, 0.0, 0.0),
             dir (0.0, 0.0, 1.0),
-            values (new value_type [source.dim(3)]) { }
+            values (new value_type [source.dim(3)]),
+            step_size (shared.step_size) { }
 
           MethodBase (const MethodBase& base) : 
             source (base.source), 
@@ -49,7 +50,8 @@ namespace MR {
             rng (rng_seed++),
             pos (0.0, 0.0, 0.0),
             dir (0.0, 0.0, 1.0),
-            values (new value_type [source.dim(3)]) { }
+            values (new value_type [source.dim(3)]),
+            step_size (base.step_size) { }
 
           ~MethodBase () { delete [] values; }
 
@@ -58,6 +60,7 @@ namespace MR {
           Math::RNG rng;
           Point<value_type> pos, dir;
           value_type* values;
+          value_type step_size;
 
           bool get_data (const Point<value_type>& position) 
           {
@@ -110,6 +113,36 @@ namespace MR {
 
 
           virtual void reverse_track() { }
+
+
+          virtual bool next() = 0;
+
+          bool next_rk4()
+          {
+            const Point<value_type> init_pos (pos);
+            const Point<value_type> init_dir (dir);
+            if (!next())
+              return false;
+            const Point<value_type> dir_rk1 (dir);
+            pos = init_pos + (dir_rk1 * (0.5 * step_size));
+            dir = init_dir;
+            if (!next())
+              return false;
+            const Point<value_type> dir_rk2 (dir);
+            pos = init_pos + (dir_rk2 * (0.5 * step_size));
+            dir = init_dir;
+            if (!next())
+              return false;
+            const Point<value_type> dir_rk3 (dir);
+            pos = init_pos + (dir_rk3 * step_size);
+            dir = (dir_rk2 + dir_rk3).normalise();
+            if (!next())
+              return false;
+            const Point<value_type> dir_rk4 (dir);
+            dir = (dir_rk1 + (dir_rk2 * 2.0) + (dir_rk3 * 2.0) + dir_rk4).normalise();
+            pos = init_pos + (dir * step_size);
+            return true;
+          }
 
 
           static void init () { rng_seed = time (NULL); }

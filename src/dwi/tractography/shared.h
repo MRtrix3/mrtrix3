@@ -51,11 +51,13 @@ namespace MR {
             max_angle (NAN),
             step_size (NAN),
             threshold (0.1), 
-            unidirectional (false) {
+            unidirectional (false),
+            rk4 (false) {
 
               properties.set (threshold, "threshold");
               properties.set (unidirectional, "unidirectional");
               properties.set (max_num_tracks, "max_num_tracks");
+              properties.set (rk4, "rk4");
 
               properties["source"] = source_data.name();
 
@@ -100,6 +102,11 @@ namespace MR {
             properties.set (max_angle, "max_angle");
             info ("maximum deviation angle = " + str (max_angle) + "°");
 
+            // If using 4th-order Runge-Kutta, angle threshold for chosen method is applied over a length
+            //   which corresponds to half of the actual defined step size
+            if (rk4)
+              max_angle *= 0.5;
+
             max_angle *= M_PI / 180.0;
           }
 
@@ -111,6 +118,7 @@ namespace MR {
           size_t max_num_tracks, max_num_attempts, min_num_points, max_num_points;
           value_type max_angle, step_size, threshold, init_threshold;
           bool unidirectional;
+          bool rk4;
 
         private:
           static const std::vector<ssize_t>& strides_by_volume ();
