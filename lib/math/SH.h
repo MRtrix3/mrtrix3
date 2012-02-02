@@ -399,7 +399,7 @@ namespace MR
 
           void get (T* dest, const PrecomputedFraction<T>& f) const {
             for (int l = 0; l <= lmax; l+=2) {
-              for (int m = 0; m < l; m++) {
+              for (int m = 0; m <= l; m++) {
                 int i = index_mpos (l,m);
                 dest[i] = get (f,i);
               }
@@ -446,7 +446,7 @@ namespace MR
 
           T dSH_dt = daz*dSH_daz + del*dSH_del;
           T d2SH_dt2 = daz*daz*d2SH_daz2 + 2.0*daz*del*d2SH_deldaz + del*del*d2SH_del2;
-          T dt = - dSH_dt / d2SH_dt2;
+          T dt = d2SH_dt2 ? (-dSH_dt / d2SH_dt2) : 0.0;
 
           if (dt < 0.0) dt = -dt;
           if (dt > MAX_DIR_CHANGE) dt = MAX_DIR_CHANGE;
@@ -461,7 +461,7 @@ namespace MR
         }
 
         unit_init_dir.invalidate();
-        info ("failed to find SH peak!");
+        debug ("failed to find SH peak!");
         return NAN;
       }
 
