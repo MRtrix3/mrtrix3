@@ -140,7 +140,7 @@ namespace MR {
             count (0), total_count (0), dtype (DataType::from<value_type>()) {
               dtype.set_byte_order_native(); 
               if (dtype != DataType::Float32LE && dtype != DataType::Float32BE && 
-                  dtype != DataType::Float64BE && dtype != DataType::Float64BE)
+                  dtype != DataType::Float64LE && dtype != DataType::Float64BE)
                 throw Exception ("only supported datatype for tracks file are "
                     "Float32LE, Float32BE, Float64LE & Float64BE");
             }
