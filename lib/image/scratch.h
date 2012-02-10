@@ -37,13 +37,13 @@ namespace MR
     template <typename T> class Scratch : public ConstInfo
     {
       public:
-        Scratch (const Info& info) :
+        template <class Template> Scratch (const Template& info) :
           ConstInfo (info),
           data_ (new value_type [Image::voxel_count (*this)]) {
             datatype_ = DataType::from<value_type>();
         }
 
-        Scratch (const Info& info, const std::string& label) :
+        template <class Template> Scratch (const Template& info, const std::string& label) :
           ConstInfo (info),
           data_ (new value_type [Image::voxel_count (*this)]) {
             datatype_ = DataType::from<value_type>();

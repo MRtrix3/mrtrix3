@@ -250,7 +250,7 @@ void run () {
           stats (vox.value());
           if (position_stream) {
             for (size_t i = 0; i < vox.ndim(); ++i)
-              *position_stream << int(vox[i]) << " ";
+              *position_stream << vox[i] << " ";
             *position_stream << "\n";
           }
         }

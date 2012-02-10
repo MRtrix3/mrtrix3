@@ -64,56 +64,31 @@ namespace MR
      *
      * \endcode
      */
-    template <class InputSet, class OutputSet> class Base
+    class Base : public ConstInfo
     {
       public:
 
-        typedef typename OutputSet::value_type value_type;
+        template <class InputSet> 
+          Base (const InputSet& D) : 
+            ConstInfo (D) { }
 
-        Base (InputSet& D) :
-          axes_ (D.ndim()),
-          transform_ (D.transform()) {
-          for (size_t n = 0; n < D.ndim(); ++n) {
-            axes_[n].dim = D.dim (n);
-            axes_[n].vox = D.vox (n);
-            axes_[n].stride = D.stride (n);
-          }
-        }
+        virtual ~Base () { }
 
-        virtual ~Base () {}
-
-        virtual void execute (OutputSet& output) = 0;
-
-        Image::Info get_output_params() {
-          Image::Info output_prototype;
-          output_prototype.set_ndim (axes_.size());
-          for (size_t n = 0; n < axes_.size(); ++n) {
-            output_prototype.dim(n) = axes_[n].dim;
-            output_prototype.vox(n) = axes_[n].vox;
-            output_prototype.stride(n) = axes_[n].stride;
-          }
-          output_prototype.transform() = transform_;
-          return output_prototype;
+        template <class InputSet, class OutputSet> 
+          void operator() (const InputSet& input, OutputSet& output) { 
+          assert (0);
         }
-
-      protected:
-        void set_output_ndim (size_t ndim) {
-          axes_.resize(ndim);
-        }
-        void set_output_dim (size_t axis, int dim) {
-          axes_[axis].dim = dim;
-        }
-        void set_output_vox (size_t axis, float vox) {
-          axes_[axis].vox = vox;
-        }
-        void set_output_stride (size_t axis, ssize_t stride) {
-          axes_[axis].stride = stride;
-        }
-
-      private:
-        std::vector<Image::Axis> axes_;
-        Math::Matrix<float> transform_;
     };
+
+
+
+
+
+    Image::Voxel<> input;
+    MyFilter filter (input);
+
+    Image::Scratch<float> output (filter);
+    filter (input, output);
 
     //! @}
   }
