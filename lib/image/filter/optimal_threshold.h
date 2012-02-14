@@ -23,7 +23,7 @@
 #ifndef __filter_optimal_threshold_h__
 #define __filter_optimal_threshold_h__
 
-#include "filter/base.h"
+#include "image/filter/base.h"
 #include "image/loop.h"
 #include "image/min_max.h"
 #include "data_type.h"
@@ -31,14 +31,17 @@
 
 namespace MR
 {
-  namespace Filter
+  namespace Image
   {
-    namespace
+    namespace Filter
     {
+      namespace
+      {
 
-      template <class InputSet> class ImageCorrelationCostFunction {
+        template <class InputSet> class ImageCorrelationCostFunction {
 
         public:
+
           ImageCorrelationCostFunction (InputSet& DataSet) {
             input_image_ = &DataSet;
             init();
@@ -84,66 +87,66 @@ namespace MR
             double input_image_mean_;
             double input_image_stdev_;
         };
+      }
+
+      /** \addtogroup Filters
+      @{ */
+
+      //! a filter to compute the optimal threshold to mask a DataSet.
+      /*! This function computes the optimal threshold to mask a DataSet using the parameter
+       *  free approach defined in: Ridgway G et al. (2009) NeuroImage.44(1):99-111.
+       *
+       * Typical usage:
+       * \code
+       * Data<value_type> input_data (argument[0]);
+       * Data<value_type>::voxel_type input_voxel (input_data);
+       *
+       * Filter::OptimalThreshold filter (input_data);
+       * Header mask_header (input_data);
+       * mask_header.set_info (filter);
+       *
+       * Data<int> mask_data (mask_header, argument[1]);
+       * Data<int>::voxel_type mask_voxel (mask_data);
+       *
+       * filter(input_voxel, mask_voxel);
+       *
+       * \endcode
+       */
+      class OptimalThreshold : public Base
+      {
+
+      public:
+        template <class InputSet>
+          OptimalThreshold (const InputSet & DataSet) :
+            Base (DataSet) { }
+
+        template <class InputSet, class OutputSet>
+          void operator() (InputSet& input, OutputSet& output) {
+          axes_.resize (4);
+
+          double min, max;
+          Image::min_max(input, min, max);
+
+          double optimal_threshold = 0;
+          {
+            ImageCorrelationCostFunction<InputSet> cost_function(input);
+            Math::GoldenSectionSearch<ImageCorrelationCostFunction<InputSet>,double> golden_search(cost_function, "optimising threshold...");
+            optimal_threshold = golden_search.run(min + 0.001*(max-min), (min+max)/2.0 , max-0.001*(max-min));
+          }
+
+          Image::LoopInOrder threshold_loop (input, "thresholding...");
+          for (threshold_loop.start (input, output); threshold_loop.ok(); threshold_loop.next (input, output)) {
+            if (finite (input.value()) && input.value() > optimal_threshold)
+              output.value() = 1;
+          }
+        }
+
+      };
+      //! @}
     }
-
-    /** \addtogroup Filters
-    @{ */
-
-    //! a filter to compute the optimal threshold to mask a DataSet.
-    /*! This function computes the optimal threshold to mask a DataSet using the parameter
-     *  free approach defined in: Ridgway G et al. (2009) NeuroImage.44(1):99-111.
-     *
-     * Typical usage:
-     * \code
-     *
-     * Image::Header input_header (argument[0]);
-     * Image::Voxel<float> input_voxel (input_header);
-     *
-     * Image::Header mask_header (input_header);
-     * mask_header.set_datatype(DataType::Int8); // Set the output data type
-     *
-     * Filter::OptimalThreshold<Image::Voxel<float>, Image::Voxel<int> > opt_thres_filter(input_voxel);
-     * mask_header.set_params(opt_thres_filter.get_output_params();
-     * mask_header.create(argument[1]);
-     *
-     * Image::Voxel<int> mask_voxel (mask_header);
-     * opt_thres_filter.execute(input_voxel, mask_voxel);
-     * \endcode
-     */
-    template <class InputSet, class OutputSet> class OptimalThreshold :
-      public Base<InputSet, OutputSet>
-    {
-
-    public:
-      OptimalThreshold (InputSet& DataSet) :
-        Base<InputSet, OutputSet>(DataSet) {
-        input_image_ = &DataSet;
-      }
-
-      void execute (OutputSet& output) {
-        double min, max;
-        Image::min_max(*input_image_, min, max);
-
-        double optimal_threshold = 0;
-        {
-          ImageCorrelationCostFunction<InputSet> cost_function(*input_image_);
-          Math::GoldenSectionSearch<ImageCorrelationCostFunction<InputSet>,double> golden_search(cost_function, "optimising threshold...");
-          optimal_threshold = golden_search.run(min + 0.001*(max-min), (min+max)/2.0 , max-0.001*(max-min));
-        }
-
-        Image::LoopInOrder threshold_loop (*input_image_, "thresholding...");
-        for (threshold_loop.start (*input_image_,output); threshold_loop.ok(); threshold_loop.next (*input_image_,output)) {
-          if (finite (input_image_->value()) && input_image_->value() > optimal_threshold)
-            output.value() = 1;
-        }
-      }
-
-    private:
-      InputSet* input_image_;
-    };
-    //! @}
   }
 }
+
 
 
 

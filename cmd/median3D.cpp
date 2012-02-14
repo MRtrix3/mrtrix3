@@ -23,18 +23,19 @@
 #include "app.h"
 #include "image/data.h"
 #include "image/voxel.h"
-#include "filter/median3D.h"
+#include "image/filter/median3D.h"
 
 MRTRIX_APPLICATION
 
-using namespace MR; 
-using namespace App; 
+using namespace MR;
+using namespace App;
+using namespace Image;
 
 void usage () {
   DESCRIPTION
     + "smooth images using median filtering.";
 
-  ARGUMENTS 
+  ARGUMENTS
     + Argument ("input", "input image to be median-filtered.").type_image_in ()
     + Argument ("output", "the output image.").type_image_out ();
 
@@ -50,21 +51,23 @@ void usage () {
 void run () {
   std::vector<int> extent (1);
   extent[0] = 3;
-  
+
   Options opt = get_options ("extent");
 
   if (opt.size())
     extent = parse_ints (opt[0][0]);
 
-  Image::Data<float> src_data (argument[0]);
-  Image::Data<float>::voxel_type src (src_data);
+  Data<float> src_data (argument[0]);
+  Data<float>::voxel_type src (src_data);
 
-  Filter::Median3DFilter<Image::Data<float>::voxel_type, Image::Data<float>::voxel_type > median_filter(src);
+  Filter::Median3DFilter median_filter(src);
   median_filter.set_extent(extent);
 
-  Image::Data<float> dest_data (src_data, argument[1]);
-  Image::Data<float>::voxel_type dest (dest_data);
+  Header header (src_data);
+  header.set_info(median_filter);
+  Data<float> dest_data (header, argument[1]);
+  Data<float>::voxel_type dest (dest_data);
 
-  median_filter.execute (dest);
+  median_filter(src, dest);
 }
 

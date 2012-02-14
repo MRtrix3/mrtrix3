@@ -49,19 +49,25 @@ namespace MR
     class Header : public Info, public std::map<std::string, std::string>
     {
       public:
-        Header () : 
-          format_ (NULL), 
+        Header () :
+          format_ (NULL),
           offset_ (0.0),
           scale_ (1.0) { }
 
         //! constructor to open an image file.
         Header (const std::string& image_name) :
-          Info (), 
-          format_ (NULL), 
+          Info (),
+          format_ (NULL),
           offset_ (0.0),
-          scale_ (1.0) { 
+          scale_ (1.0) {
           open (image_name);
-          }
+        }
+
+        Header (ConstInfo & H) :
+          Info (H),
+          format_ (NULL),
+          offset_ (0.0),
+          scale_ (1.0) { }
 
         Header& operator= (const Header& H) {
           Info::operator= (H);
@@ -76,6 +82,10 @@ namespace MR
         Header& operator= (const Info& H) {
           Info::operator= (H);
           return *this;
+        }
+
+        void set_info(const Info& H) {
+          Info::operator= (H);
         }
 
         const std::vector<std::string>& comments () const {
@@ -163,7 +173,7 @@ namespace MR
         ConstHeader (const Header& H) : Header (H) { }
 
         //! constructor to open an image file.
-        ConstHeader (const std::string& image_name) : 
+        ConstHeader (const std::string& image_name) :
           Header (image_name) { }
 
         const std::string& name () const {
@@ -187,7 +197,7 @@ namespace MR
         }
 
         ssize_t stride (size_t axis) const {
-          return Header::stride (axis); 
+          return Header::stride (axis);
         }
 
         const Math::Matrix<float>& transform () const {
@@ -214,7 +224,7 @@ namespace MR
         }
 
         std::string description () const {
-          return Header::description(); 
+          return Header::description();
         }
 
         friend std::ostream& operator<< (std::ostream& stream, const ConstHeader& H)

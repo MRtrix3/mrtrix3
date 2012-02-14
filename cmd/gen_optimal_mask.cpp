@@ -24,13 +24,14 @@
 #include "point.h"
 #include "image/data.h"
 #include "image/voxel.h"
-#include "filter/optimal_threshold.h"
+#include "image/filter/optimal_threshold.h"
 #include "ptr.h"
 
 MRTRIX_APPLICATION
 
 using namespace MR;
 using namespace App;
+using namespace Image;
 
 void usage ()
 {
@@ -50,23 +51,20 @@ void usage ()
   .type_image_out ();
 }
 
-
 typedef float value_type;
 
 void run () {
-  Image::Data<value_type> input_data (argument[0]);
-  assert (!input_data.datatype().is_complex());
-  Image::Data<value_type>::voxel_type input_voxel (input_data);
+  Data<value_type> input_data (argument[0]);
+  Data<value_type>::voxel_type input_voxel (input_data);
 
-  Image::Header header (input_data);
+  Filter::OptimalThreshold filter (input_data);
+  Header mask_header (input_data);
+  mask_header.set_info(filter);
 
-  Filter::OptimalThreshold<Image::Data<float>::voxel_type, Image::Data<int>::voxel_type > filter (input_voxel);
+  Data<int> mask_data (mask_header, argument[1]);
+  Data<int>::voxel_type mask_voxel (mask_data);
 
-  header = filter.get_output_params();
-  header.datatype() = DataType::Bit;
-  Image::Data<int> mask_data (header, argument[1]);
-  Image::Data<int>::voxel_type mask_voxel (mask_data);
-
-  filter.execute (mask_voxel);
+  filter(input_voxel, mask_voxel);
 }
+
 

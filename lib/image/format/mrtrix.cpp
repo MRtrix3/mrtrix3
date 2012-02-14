@@ -80,30 +80,30 @@ namespace MR
           else H[key] = kv.value();
         }
 
-        if (dim.empty()) 
+        if (dim.empty())
           throw Exception ("missing \"dim\" specification for MRtrix image \"" + H.name() + "\"");
         H.set_ndim (dim.size());
         for (size_t n = 0; n < dim.size(); n++) {
-          if (dim[n] < 1) 
+          if (dim[n] < 1)
             throw Exception ("invalid dimensions for MRtrix image \"" + H.name() + "\"");
           H.dim(n) = dim[n];
         }
 
-        if (vox.empty()) 
+        if (vox.empty())
           throw Exception ("missing \"vox\" specification for MRtrix image \"" + H.name() + "\"");
         for (size_t n = 0; n < H.ndim(); n++) {
-          if (vox[n] < 0.0) 
+          if (vox[n] < 0.0)
             throw Exception ("invalid voxel size for MRtrix image \"" + H.name() + "\"");
           H.vox(n) = vox[n];
         }
 
 
-        if (dtype.empty()) 
+        if (dtype.empty())
           throw Exception ("missing \"datatype\" specification for MRtrix image \"" + H.name() + "\"");
         H.datatype() = DataType::parse (dtype);
 
 
-        if (layout.empty()) 
+        if (layout.empty())
           throw Exception ("missing \"layout\" specification for MRtrix image \"" + H.name() + "\"");
         std::vector<ssize_t> ax = Axis::parse (H.ndim(), layout);
         for (size_t i = 0; i < ax.size(); ++i)
@@ -125,12 +125,12 @@ namespace MR
 
 
         if (dw_scheme.size()) {
-          if (dw_scheme.size() % 4) 
+          if (dw_scheme.size() % 4)
             info ("WARNING: invalid \"dw_scheme\" specification for MRtrix image \"" + H.name() + "\" - ignored");
           else {
             H.DW_scheme().allocate (dw_scheme.size() /4, 4);
             int count = 0;
-            for (size_t row = 0; row < H.transform().rows(); ++row)
+            for (size_t row = 0; row < H.DW_scheme().rows(); ++row)
               for (size_t col = 0; col < 4; ++col)
                 H.DW_scheme()(row,col) = dw_scheme[count++];
           }

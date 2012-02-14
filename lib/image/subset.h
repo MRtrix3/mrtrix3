@@ -54,7 +54,7 @@ namespace MR
           descriptor (description.empty() ? name() + " [subset]" : description),
           transform_matrix (parent.transform()) {
           for (size_t n = 0; n < ndim(); ++n) {
-            assert (ssize_t (from[n] + dimensions[n]) <= ..dim (n));
+            assert (ssize_t (from[n] + dimensions[n]) <= original.dim (n));
             axes[n].from = from[n];
             axes[n].dim = dimensions[n];
           }
@@ -70,7 +70,7 @@ namespace MR
           descriptor (description.empty() ? name() + " [subset]" : description),
           transform_matrix (parent.transform()) {
           for (size_t n = 0; n < ndim(); ++n) {
-            assert (ssize_t (from[n] + dimensions[n]) <= D.dim (n));
+            assert (ssize_t (from[n] + dimensions[n]) <= original.dim (n));
             axes[n].from = from[n];
             axes[n].dim = dimensions[n];
           }
@@ -94,7 +94,7 @@ namespace MR
         }
 
         void reset () {
-          for (size_t n = 0; n < ndim(); ++n) 
+          for (size_t n = 0; n < ndim(); ++n)
             set_pos (n, 0);
         }
 
