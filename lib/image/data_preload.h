@@ -25,7 +25,7 @@
 
 #include "debug.h"
 #include "image/data.h"
-#include "image/copy.h"
+#include "image/threaded_copy.h"
 #include "image/adapter/data.h"
 
 namespace MR
@@ -141,7 +141,7 @@ namespace MR
           data_ = new value_type [Image::voxel_count (*this)];
           Data<value_type>& filedata (*this);
           typename Data<value_type>::voxel_type src (filedata);
-          Image::copy_with_progress_message ("loading data for image \"" + name() + "\"...", destination, src);
+          Image::threaded_copy_with_progress_message ("loading data for image \"" + name() + "\"...", destination, src);
 
           Info::datatype_ = DataType::from<value_type>();
           handler = NULL;

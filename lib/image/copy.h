@@ -44,9 +44,8 @@ namespace MR
     template <class Set, class Set2>
     void copy_with_progress (Set& destination, Set2& source, size_t from_axis = 0, size_t to_axis = std::numeric_limits<size_t>::max())
     {
-      LoopInOrder loop (source, "copying from \"" + shorten (source.name()) + "\" to \"" + shorten (destination.name()) + "\"...", from_axis, to_axis);
-      for (loop.start (destination, source); loop.ok(); loop.next (destination, source))
-        destination.value() = source.value();
+      copy_with_progress_message ("copying from \"" + shorten (source.name()) + "\" to \"" + shorten (destination.name()) + "\"...",
+         destination, source, from_axis, to_axis);
     }
 
 

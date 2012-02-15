@@ -21,9 +21,10 @@
 */
 
 #include "app.h"
-#include "image/data.h"
-#include "image/voxel.h"
-#include "image/filter/median3D.h"
+#include "image/data_preload.h"
+//#include "image/filter/median3D.h"
+#include "image/adapter/median3D.h"
+#include "image/threaded_copy.h"
 
 MRTRIX_APPLICATION
 
@@ -57,17 +58,12 @@ void run () {
   if (opt.size())
     extent = parse_ints (opt[0][0]);
 
-  Data<float> src_data (argument[0]);
-  Data<float>::voxel_type src (src_data);
+  DataPreload<float> src_data (argument[0]);
+  Image::Adapter::Median3D<DataPreload<float> > src (src_data, extent);
 
-  Filter::Median3DFilter median_filter(src);
-  median_filter.set_extent(extent);
-
-  Header header (src_data);
-  header.set_info(median_filter);
-  Data<float> dest_data (header, argument[1]);
+  Data<float> dest_data (src_data, argument[1]);
   Data<float>::voxel_type dest (dest_data);
 
-  median_filter(src, dest);
+  Image::threaded_copy_with_progress_message ("median filtering...", dest, src);
 }
 
