@@ -24,7 +24,7 @@
 
 #include "app.h"
 #include "progressbar.h"
-#include "image/data.h"
+#include "image/buffer.h"
 #include "image/voxel.h"
 #include "image/loop.h"
 #include "image/histogram.h"
@@ -125,7 +125,7 @@ void run ()
   bool use_NaN = get_options ("nan").size();
   bool ignore_zeroes = get_options ("ignorezero").size();
 
-  Image::Data<float> data_in (argument[0]);
+  Image::Buffer<float> data_in (argument[0]);
   assert (!data_in.datatype().is_complex());
 
   if (Image::voxel_count (data_in) < topN || Image::voxel_count (data_in) < bottomN)
@@ -143,10 +143,10 @@ void run ()
   Image::Header header_out (data_in);
   header_out.datatype() = use_NaN ? DataType::Float32 : DataType::Bit;
 
-  Image::Data<float>::voxel_type in (data_in);
+  Image::Buffer<float>::voxel_type in (data_in);
 
-  Image::Data<float> data_out (header_out, argument[1]);
-  Image::Data<float>::voxel_type out (data_out);
+  Image::Buffer<float> data_out (header_out, argument[1]);
+  Image::Buffer<float>::voxel_type out (data_out);
 
   float zero = use_NaN ? NAN : 0.0;
   float one  = 1.0;
@@ -222,7 +222,7 @@ void run ()
   }
   else {
     if (isnan (val)) {
-      Image::Histogram<Image::Data<float>::voxel_type> hist (in);
+      Image::Histogram<Image::Buffer<float>::voxel_type> hist (in);
       val = hist.first_min();
     }
 

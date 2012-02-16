@@ -130,7 +130,7 @@ namespace MR
         series_count = 3;
         size_t expected_data_size = image.dim[0] * image.dim[1] * (image.bits_alloc/8);
         if (image.data_size > expected_data_size) {
-          info ("data segment is larger than expected from image dimensions - interpreting as multi-channel data");
+          inform ("data segment is larger than expected from image dimensions - interpreting as multi-channel data");
           series_count++;
         }
         if (dim[0] > 1) series_count++;
@@ -216,7 +216,7 @@ namespace MR
         M (3,3) = 1.0;
 
         if (image.images_in_mosaic) {
-          info ("DICOM image \"" + H.name() + "\" is in mosaic format");
+          inform ("DICOM image \"" + H.name() + "\" is in mosaic format");
           if (H.dim (2) != 1)
             throw Exception ("DICOM mosaic contains multiple slices in image \"" + H.name() + "\"");
 

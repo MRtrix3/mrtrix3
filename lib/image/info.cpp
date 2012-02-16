@@ -63,7 +63,7 @@ namespace MR
     void Info::sanitise_voxel_sizes ()
     {
       if (ndim() < 3) {
-        info ("image contains fewer than 3 dimensions - adding extra dimensions");
+        inform ("image contains fewer than 3 dimensions - adding extra dimensions");
         set_ndim (3);
       }
 

@@ -43,29 +43,38 @@ namespace MR
         Info () { }
 
         //! copy constructor
-        template <class Set> Info (const Set& H) :
-          name_ (H.name()),
-          datatype_ (H.datatype()),
-          transform_ (H.transform()),
-          axes_ (H.ndim()) {
+        template <class InfoType> 
+          Info (const InfoType& H) :
+            name_ (H.name()),
+            datatype_ (H.datatype()),
+            transform_ (H.transform()),
+            axes_ (H.ndim()) {
+              for (size_t n = 0; n < ndim(); ++n) {
+                dim(n) = H.dim (n);
+                vox(n) = H.vox (n);
+                stride(n) = H.stride (n);
+              }
+            }
+
+        //! assignment operator
+        template <class InfoType> 
+          Info& operator= (const InfoType& H) {
+            name_ = H.name();
+            datatype_ = H.datatype();
+            transform_ = H.transform();
+            set_ndim (H.ndim());
             for (size_t n = 0; n < ndim(); ++n) {
               dim(n) = H.dim (n);
               vox(n) = H.vox (n);
               stride(n) = H.stride (n);
             }
+            return *this;
           }
 
-        //! assignment operator
-        template <class Set> Info& operator= (const Set& H) {
-          name_ = H.name();
-          datatype_ = H.datatype();
-          transform_ = H.transform();
-          set_ndim (H.ndim());
-          for (size_t n = 0; n < ndim(); ++n) {
-            dim(n) = H.dim (n);
-            vox(n) = H.vox (n);
-            stride(n) = H.stride (n);
-          }
+        const Info& info () const {
+          return *this;
+        }
+        Info& info () {
           return *this;
         }
 
@@ -168,9 +177,13 @@ namespace MR
         ConstInfo () { }
 
         //! copy constructor
-        template <class Set> ConstInfo (const Set& H) : 
-          Info (H) { }
+        template <class InfoType> 
+          ConstInfo (const InfoType& H) : 
+            Info (H) { }
 
+        const Info& info () const {
+          return *this;
+        }
         const std::string& name () const {
           return name_;
         }
@@ -193,7 +206,8 @@ namespace MR
           return transform_;
         }
       private: 
-        template <class Set> ConstInfo& operator= (const Set& H) { assert (0); return *this; }
+        template <class InfoType> 
+          ConstInfo& operator= (const InfoType& H) { assert (0); return *this; }
         using Info::set_ndim;
         using Info::clear;
         using Info::sanitise;

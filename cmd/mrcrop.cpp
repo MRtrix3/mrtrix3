@@ -24,8 +24,8 @@
 #include "app.h"
 #include "image/loop.h"
 #include "image/copy.h"
-#include "image/subset.h"
-#include "image/data.h"
+#include "image/adapter/subset.h"
+#include "image/buffer.h"
 #include "image/voxel.h"
 
 
@@ -69,17 +69,17 @@ void usage ()
 void run ()
 {
 
-  Image::Data<float> data_in (argument[0]);
-  Image::Data<float>::voxel_type voxel_in (data_in);
+  Image::Buffer<float> data_in (argument[0]);
+  Image::Buffer<float>::voxel_type voxel_in (data_in);
 
   int bounds[3][2] = { {0, data_in.dim (0) - 1}, {0, data_in.dim (1) - 1}, {0, data_in.dim (2) - 1} };
 
   Options opt = get_options ("mask");
   if (opt.size()) {
 
-    Image::Data<bool> data_mask (opt[0][0]);
+    Image::Buffer<bool> data_mask (opt[0][0]);
     Image::check_dimensions (data_in, data_mask, 0, 3);
-    Image::Data<bool>::voxel_type voxel_mask (data_mask);
+    Image::Buffer<bool>::voxel_type voxel_mask (data_mask);
 
     for (int axis = 0; axis != 3; ++axis) {
       bounds[axis][0] = data_in.dim (axis);
@@ -121,12 +121,12 @@ void run ()
   size_t from[] = { bounds[0][0], bounds[1][0], bounds[2][0] };
   size_t dim[] = { bounds[0][1]-from[0]+1, bounds[1][1]-from[1]+1, bounds[2][1]-from[2]+1 };
 
-  Image::Subset<Image::Data<float>::voxel_type> cropped (voxel_in, from, dim, "cropped dataset");
+  Image::Adapter::Subset<Image::Buffer<float>::voxel_type> cropped (voxel_in, from, dim, "cropped dataset");
 
   Image::Header H_out (data_in);
   H_out = cropped;
-  Image::Data<float> data_out (H_out, argument[1]);
-  Image::Data<float>::voxel_type voxel_out (data_out);
+  Image::Buffer<float> data_out (H_out, argument[1]);
+  Image::Buffer<float>::voxel_type voxel_out (data_out);
   Image::copy_with_progress_message ("cropping image...", voxel_out, cropped);
 
 }

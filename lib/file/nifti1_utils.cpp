@@ -78,7 +78,7 @@ namespace MR
         for (int i = 0; i < ndim; i++) {
           H.dim(i) = get<int16_t> (&NH.dim[i+1], is_BE);
           if (H.dim (i) < 0) {
-            info ("dimension along axis " + str (i) + " specified as negative in NIfTI image \"" + H.name() + "\" - taking absolute value");
+            inform ("dimension along axis " + str (i) + " specified as negative in NIfTI image \"" + H.name() + "\" - taking absolute value");
             H.dim(i) = abs (H.dim (i));
           }
           if (!H.dim (i))
@@ -142,7 +142,7 @@ namespace MR
         for (int i = 0; i < ndim; i++) {
           H.vox(i) = get<float32> (&NH.pixdim[i+1], is_BE);
           if (H.vox (i) < 0.0) {
-            info ("voxel size along axis " + str (i) + " specified as negative in NIfTI image \"" + H.name() + "\" - taking absolute value");
+            inform ("voxel size along axis " + str (i) + " specified as negative in NIfTI image \"" + H.name() + "\" - taking absolute value");
             H.vox(i) = Math::abs (H.vox (i));
           }
         }
@@ -250,7 +250,7 @@ namespace MR
           if (!File::Config::get_bool ("Analyse.LeftToRight", true)) 
             H.stride(0) = -H.stride (0);
           if (!right_left_warning_issued) {
-            info ("assuming Analyse images are encoded " + std::string (H.stride (0) >0 ? "left to right" : "right to left"));
+            inform ("assuming Analyse images are encoded " + std::string (H.stride (0) >0 ? "left to right" : "right to left"));
             right_left_warning_issued = true;
           }
         }
@@ -298,7 +298,7 @@ namespace MR
             H.stride(0) = -H.stride (0);
 
           if (!right_left_warning_issued) {
-            info ("assuming Analyse images are encoded " + std::string (H.stride (0) >0 ? "left to right" : "right to left"));
+            inform ("assuming Analyse images are encoded " + std::string (H.stride (0) >0 ? "left to right" : "right to left"));
             right_left_warning_issued = true;
           }
         }

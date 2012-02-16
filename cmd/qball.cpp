@@ -27,7 +27,7 @@
 #include "thread/queue.h"
 #include "image/loop.h"
 #include "image/voxel.h"
-#include "image/data.h"
+#include "image/buffer.h"
 #include "dwi/gradient.h"
 #include "math/SH.h"
 #include "math/legendre.h"
@@ -94,8 +94,8 @@ class DataLoader
 {
   public:
     DataLoader (Queue& queue,
-                Image::Data<value_type>& dwi_data,
-                Image::Data<bool>* mask_data,
+                Image::Buffer<value_type>& dwi_data,
+                Image::Buffer<bool>* mask_data,
                 const std::vector<int>& vec_dwis) :
       writer (queue),
       dwi (dwi_data),
@@ -106,7 +106,7 @@ class DataLoader
       Queue::Writer::Item item (writer);
       Image::Loop loop ("estimating dODFs using Q-ball imaging...", 0, 3);
       if (mask) {
-        Image::Data<bool>::voxel_type mask_vox (*mask);
+        Image::Buffer<bool>::voxel_type mask_vox (*mask);
         Image::check_dimensions (mask_vox, dwi, 0, 3);
         for (loop.start (mask_vox, dwi); loop.ok(); loop.next (mask_vox, dwi))
           if (mask_vox.value() > 0.5)
@@ -120,8 +120,8 @@ class DataLoader
 
   private:
     Queue::Writer writer;
-    Image::Data<value_type>::voxel_type dwi;
-    Image::Data<bool>* mask;
+    Image::Buffer<value_type>::voxel_type dwi;
+    Image::Buffer<bool>* mask;
     const std::vector<int>&  dwis;
 
     void load (Queue::Writer::Item& item) {
@@ -146,7 +146,7 @@ class Processor
     Processor (Queue& queue,
                Math::Matrix<value_type> FRT_transform,
                Math::Matrix<value_type> normalise_transform,
-               Image::Data<value_type>& SH_data) :
+               Image::Buffer<value_type>& SH_data) :
       reader (queue),
       FRT_SHT (FRT_transform),
       normalise_SHT (normalise_transform),
@@ -185,7 +185,7 @@ class Processor
     Queue::Reader reader;
     Math::Matrix<value_type> FRT_SHT;
     Math::Matrix<value_type> normalise_SHT;
-    Image::Data<value_type>::voxel_type SH;
+    Image::Buffer<value_type>::voxel_type SH;
     int niter;
     int lmax;
 };
@@ -193,7 +193,7 @@ class Processor
 
 void run ()
 {
-  Image::Data<value_type> dwi_data (argument[0]);
+  Image::Buffer<value_type> dwi_data (argument[0]);
 
   if (dwi_data.ndim() != 4)
     throw Exception ("dwi image should contain 4 dimensions");
@@ -211,7 +211,7 @@ void run ()
   if (grad.rows() < 7 || grad.columns() != 4)
     throw Exception ("unexpected diffusion encoding matrix dimensions");
 
-  info ("found " + str (grad.rows()) + "x" + str (grad.columns()) + " diffusion-weighted encoding");
+  inform ("found " + str (grad.rows()) + "x" + str (grad.columns()) + " diffusion-weighted encoding");
 
   if (dwi_data.dim (3) != (int) grad.rows())
     throw Exception ("number of studies in base image does not match that in encoding file");
@@ -220,14 +220,14 @@ void run ()
 
   std::vector<int> bzeros, dwis;
   DWI::guess_DW_directions (dwis, bzeros, grad);
-  info ("found " + str (dwis.size()) + " diffusion-weighted directions");
+  inform ("found " + str (dwis.size()) + " diffusion-weighted directions");
 
   Math::Matrix<value_type> DW_dirs;
   DWI::gen_direction_matrix (DW_dirs, grad, dwis);
 
   opt = get_options ("lmax");
   int lmax = opt.size() ? opt[0][0] : Math::SH::LforN (dwis.size());
-  info ("calculating even spherical harmonic components up to order " + str (lmax));
+  inform ("calculating even spherical harmonic components up to order " + str (lmax));
 
   Math::Matrix<value_type> HR_dirs;
   Math::Matrix<value_type> HR_SHT;
@@ -251,7 +251,7 @@ void run ()
     print("WARNING: not enough data for SH order " + str(lmax) + ", falling back to " + str(i));
     lmax = i;
   }
-  info("setting maximum even spherical harmonic order to " + str(lmax));
+  inform("setting maximum even spherical harmonic order to " + str(lmax));
 
   // Setup response function
   int num_RH = (lmax + 2)/2;
@@ -269,16 +269,16 @@ void run ()
     if (filter.size() <= response.size())
       throw Exception ("not enough filter coefficients supplied for lmax" + str(lmax));
     for (int i = 0; i <= lmax/2; i++) response[i] *= filter[i];
-    info ("using initial filter coefficients: " + str (filter));
+    inform ("using initial filter coefficients: " + str (filter));
   }
 
   Math::SH::Transform<value_type> FRT_SHT(DW_dirs, lmax);
   FRT_SHT.set_filter(response);
 
-  Ptr<Image::Data<bool> > mask_data;
+  Ptr<Image::Buffer<bool> > mask_data;
   opt = get_options ("mask");
   if (opt.size()) 
-    mask_data = new Image::Data<bool> (opt[0][0]);
+    mask_data = new Image::Buffer<bool> (opt[0][0]);
 
   Image::Header SH_header (dwi_data);
   SH_header.dim(3) = Math::SH::NforL (lmax);
@@ -287,7 +287,7 @@ void run ()
   SH_header.stride(1) = 3;
   SH_header.stride(2) = 4;
   SH_header.stride(3) = 1;
-  Image::Data<value_type> SH_data (SH_header, argument[1]);
+  Image::Buffer<value_type> SH_data (SH_header, argument[1]);
 
 
   Queue queue ("work queue");

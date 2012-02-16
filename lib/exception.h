@@ -34,7 +34,7 @@ namespace MR
 
   extern void (*print) (const std::string& msg);
   extern void (*error) (const std::string& msg);
-  extern void (*info) (const std::string& msg);
+  extern void (*inform) (const std::string& msg);
   extern void (*debug) (const std::string& msg);
 
   class Exception

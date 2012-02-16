@@ -131,7 +131,7 @@ void run () {
   {
     ProgressBar progress ("Optimising directions");
     for (power = -1.0; power >= -target_power/2.0; power *= 2.0) {
-      info ("setting power = " + str (-power*2.0));
+      inform ("setting power = " + str (-power*2.0));
       gsl_multimin_fdfminimizer_set (minimizer, &fdf, v.gsl(), 0.01, 1e-4);
 
       for (size_t iter = 0; iter < niter; iter++) {
@@ -139,11 +139,11 @@ void run () {
         int status = gsl_multimin_fdfminimizer_iterate (minimizer);
 
         if (iter%10 == 0)
-          info ("[ " + str (iter) + " ] (pow = " + str (-power*2.0) + ") E = " + str (minimizer->f)
+          inform ("[ " + str (iter) + " ] (pow = " + str (-power*2.0) + ") E = " + str (minimizer->f)
           + ", grad = " + str (gsl_blas_dnrm2 (minimizer->gradient)));
 
         if (status) {
-          info (std::string ("iteration stopped: ") + gsl_strerror (status));
+          inform (std::string ("iteration stopped: ") + gsl_strerror (status));
           break;
         }
 

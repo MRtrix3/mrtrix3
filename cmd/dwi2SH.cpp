@@ -22,7 +22,7 @@
 
 #include "app.h"
 #include "progressbar.h"
-#include "image/data.h"
+#include "image/buffer.h"
 #include "image/voxel.h"
 #include "math/matrix.h"
 #include "math/SH.h"
@@ -80,7 +80,7 @@ void usage ()
 
 void run ()
 {
-  Image::Data<float> dwi_data (argument[0]);
+  Image::Buffer<float> dwi_data (argument[0]);
 
   Math::Matrix<float> grad = DWI::get_DW_scheme<float> (dwi_data);
 
@@ -90,10 +90,10 @@ void run ()
   Options opt = get_options ("lmax");
   int lmax = opt.size() ? opt[0][0] : Math::SH::LforN (dwis.size());
   if (lmax > int (Math::SH::LforN (dwis.size()))) {
-    info ("warning: not enough data to estimate spherical harmonic components up to order " + str (lmax));
+    inform ("warning: not enough data to estimate spherical harmonic components up to order " + str (lmax));
     lmax = Math::SH::LforN (dwis.size());
   }
-  info ("calculating even spherical harmonic components up to order " + str (lmax));
+  inform ("calculating even spherical harmonic components up to order " + str (lmax));
 
   Math::Matrix<float> dirs;
   DWI::gen_direction_matrix (dirs, grad, dwis);
@@ -104,10 +104,10 @@ void run ()
   Image::Header header (dwi_data);
   header.dim (3) = Math::SH::NforL (lmax);
   header.datatype() = DataType::Float32;
-  Image::Data<float> SH_data (header, argument[1]);
+  Image::Buffer<float> SH_data (header, argument[1]);
 
-  Image::Data<float>::voxel_type dwi (dwi_data);
-  Image::Data<float>::voxel_type SH (SH_data);
+  Image::Buffer<float>::voxel_type dwi (dwi_data);
+  Image::Buffer<float>::voxel_type SH (SH_data);
 
   Math::Vector<float> res (lmax);
   Math::Vector<float> sigs (dwis.size());

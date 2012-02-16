@@ -23,7 +23,7 @@
 #include "app.h"
 #include "progressbar.h"
 #include "image/voxel.h"
-#include "image/data.h"
+#include "image/buffer.h"
 #include "image/interp/nearest.h"
 #include "image/interp/linear.h"
 #include "image/interp/cubic.h"
@@ -58,7 +58,7 @@ OPTIONS
 typedef float value_type;
 
 void run () {
-  Image::Data<value_type> input_data (argument[0]);
+  Image::Buffer<value_type> input_data (argument[0]);
   assert (!input_data.datatype().is_complex());
 
   const float sample_factor = argument[1];
@@ -71,10 +71,10 @@ void run () {
   }
   output_header.datatype() = DataType::Float32;
 
-  Image::Data<float>::voxel_type in  (input_data);
+  Image::Buffer<float>::voxel_type in  (input_data);
 
-  Image::Data<float> data_out (output_header, argument[2]);
-  Image::Data<float>::voxel_type out (data_out);
+  Image::Buffer<float> data_out (output_header, argument[2]);
+  Image::Buffer<float>::voxel_type out (data_out);
 
   int interp = 2;
   Options opt = get_options ("interp");

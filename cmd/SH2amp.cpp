@@ -25,7 +25,7 @@
 #include "thread/exec.h"
 #include "thread/queue.h"
 #include "image/loop.h"
-#include "image/data.h"
+#include "image/buffer.h"
 #include "image/voxel.h"
 #include "dwi/gradient.h"
 
@@ -77,7 +77,7 @@ typedef Thread::Queue<Item> Queue;
 class DataLoader {
   public:
   DataLoader (Queue& queue,
-              Image::Data<value_type>& SH_data) :
+              Image::Buffer<value_type>& SH_data) :
               writer (queue), sh_voxel (SH_data) { }
 
     void execute () {
@@ -99,14 +99,14 @@ class DataLoader {
 
   private:
     Queue::Writer writer;
-    Image::Data<value_type>::voxel_type  sh_voxel;
+    Image::Buffer<value_type>::voxel_type  sh_voxel;
 };
 
 
 class Processor {
   public:
     Processor (Queue& queue,
-               Image::Data<value_type>& amp_data,
+               Image::Buffer<value_type>& amp_data,
                Math::Matrix<value_type>& directions,
                int lmax,
                bool nonnegative) :
@@ -135,7 +135,7 @@ class Processor {
 
  private:
    Queue::Reader reader;
-   Image::Data<value_type>::voxel_type amp_voxel;
+   Image::Buffer<value_type>::voxel_type amp_voxel;
    Math::SH::Transform<value_type> transformer;
    bool nonnegative;
 };
@@ -143,7 +143,7 @@ class Processor {
 
 void run ()
 {
-  Image::Data<value_type> sh_data (argument[0]);
+  Image::Buffer<value_type> sh_data (argument[0]);
   assert (!sh_data.datatype().is_complex());
 
   if (sh_data.ndim() != 4)
@@ -177,7 +177,7 @@ void run ()
   amp_header.stride(1) = 3;
   amp_header.stride(2) = 4;
   amp_header.stride(3) = 1;
-  Image::Data<value_type> amp_data (amp_header, argument[2]);
+  Image::Buffer<value_type> amp_data (amp_header, argument[2]);
 
 
   Queue queue ("sh2amp queue");

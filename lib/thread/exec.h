@@ -137,7 +137,7 @@ namespace MR
         template <class Functor> Exec (Functor& functor, const std::string& description = "unnamed") :
           ID (1), name (description) {
             init();
-            info ("launching thread \"" + name + "\"...");
+            inform ("launching thread \"" + name + "\"...");
             start (ID[0], functor);
           }
 
@@ -147,7 +147,7 @@ namespace MR
         template <class Functor> Exec (Array<Functor>& functor, const std::string& description = "unnamed") :
           ID (functor.functors.size() +1), name (description) {
             init();
-            info ("launching " + str (ID.size()) + " thread" + (ID.size() > 1 ? "s" : "") +  " \"" + name + "\"...");
+            inform ("launching " + str (ID.size()) + " thread" + (ID.size() > 1 ? "s" : "") +  " \"" + name + "\"...");
             start (ID[0], functor.first_functor);
             for (size_t i = 1; i < ID.size(); ++i)
               start (ID[i], *functor.functors[i-1]);
@@ -209,12 +209,12 @@ namespace MR
             Thread::Mutex mutex;
             static void thread_print (const std::string& msg);
             static void thread_error (const std::string& msg);
-            static void thread_info (const std::string& msg);
+            static void thread_inform (const std::string& msg);
             static void thread_debug (const std::string& msg);
 
             void (*previous_print) (const std::string& msg);
             void (*previous_error) (const std::string& msg);
-            void (*previous_info) (const std::string& msg);
+            void (*previous_inform) (const std::string& msg);
             void (*previous_debug) (const std::string& msg);
         };
         static Common* common;

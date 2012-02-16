@@ -47,12 +47,12 @@ namespace MR
 
         previous_print = print;
         previous_error = error;
-        previous_info = info;
+        previous_inform = inform;
         previous_debug = debug;
 
         print = thread_print;
         error = thread_error;
-        info = thread_info;
+        inform = thread_inform;
         debug = thread_debug;
       }
 
@@ -60,7 +60,7 @@ namespace MR
     {
       print = previous_print;
       error = previous_error;
-      info = previous_info;
+      inform = previous_inform;
       debug = previous_debug;
 
       debug ("uninitialising threads...");
@@ -83,7 +83,7 @@ namespace MR
       }
     }
 
-    void Exec::Common::thread_info (const std::string& msg)
+    void Exec::Common::thread_inform (const std::string& msg)
     {
       if (App::log_level > 1) {
         Thread::Mutex::Lock lock (common->mutex);

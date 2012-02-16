@@ -22,7 +22,7 @@
 
 #include "app.h"
 #include "progressbar.h"
-#include "image/data.h"
+#include "image/buffer.h"
 #include "image/voxel.h"
 #include "image/axis.h"
 #include "image/copy.h"
@@ -85,10 +85,10 @@ void usage ()
 
 
 
-template <class Set>
+template <class InfoType>
 inline void set_header_out (
   Image::Header& header_out,
-  const Set& S,
+  const InfoType& S,
   const std::vector<int>& axes,
   const std::vector<float>& vox,
   const std::vector<int>& strides)
@@ -119,7 +119,7 @@ typedef float value_type;
 void run ()
 {
 
-  Image::Data<value_type> data_in (argument[0]);
+  Image::Buffer<value_type> data_in (argument[0]);
   Image::Header header_out (data_in);
   header_out.intensity_offset() = 0.0;
   header_out.intensity_scale() = 1.0;
@@ -172,7 +172,7 @@ void run ()
   }
 
   assert (!data_in.datatype().is_complex());
-  Image::Data<float>::voxel_type in (data_in);
+  Image::Buffer<float>::voxel_type in (data_in);
 
   if (pos.size()) {
 
@@ -184,14 +184,14 @@ void run ()
           pos[n][i] = i;
       }
     }
-    Image::Extract<Image::Data<float>::voxel_type > extract (in, pos);
+    Image::Extract<Image::Buffer<float>::voxel_type > extract (in, pos);
 
     set_header_out (header_out, extract, axes, vox, strides);
-    Image::Data<float> data_out (header_out, argument[1]);
-    Image::Data<float>::voxel_type  out (data_out);
+    Image::Buffer<float> data_out (header_out, argument[1]);
+    Image::Buffer<float>::voxel_type  out (data_out);
 
     if (axes.size()) {
-      Image::PermuteAxes<Image::Extract<Image::Data<float>::voxel_type > > perm (extract, axes);
+      Image::PermuteAxes<Image::Extract<Image::Buffer<float>::voxel_type > > perm (extract, axes);
       Image::copy_with_progress (out, perm);
     }
     else
@@ -200,10 +200,10 @@ void run ()
   else {
     // straight copy:
     set_header_out (header_out, in, axes, vox, strides);
-    Image::Data<float> data_out (header_out, argument[1]);
-    Image::Data<float>::voxel_type out (data_out);
+    Image::Buffer<float> data_out (header_out, argument[1]);
+    Image::Buffer<float>::voxel_type out (data_out);
     if (axes.size()) {
-      Image::PermuteAxes<Image::Data<float>::voxel_type > perm (in, axes);
+      Image::PermuteAxes<Image::Buffer<float>::voxel_type > perm (in, axes);
       Image::copy_with_progress (out, perm);
     }
     else

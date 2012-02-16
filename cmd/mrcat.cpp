@@ -21,7 +21,7 @@
 */
 
 #include "app.h"
-#include "image/data.h"
+#include "image/buffer.h"
 #include "image/voxel.h"
 #include "image/loop.h"
 #include "progressbar.h"
@@ -66,15 +66,15 @@ void run () {
     axis = opt[0][0];
 
   int num_images = argument.size()-1;
-  Ptr<Image::Data<value_type> > in [num_images];
-  in[0] = new Image::Data<value_type> (argument[0]);
+  Ptr<Image::Buffer<value_type> > in [num_images];
+  in[0] = new Image::Buffer<value_type> (argument[0]);
   Image::ConstHeader& header_in (*in[0]);
 
   int ndims = 0;
   int last_dim;
 
   for (int i = 1; i < num_images; i++) {
-    in[i] = new Image::Data<value_type> (argument[i]);
+    in[i] = new Image::Buffer<value_type> (argument[i]);
     for (last_dim = in[i]->ndim()-1; in[i]->dim (last_dim) <= 1 && last_dim >= 0; last_dim--);
     if (last_dim > ndims)
       ndims = last_dim;
@@ -117,15 +117,15 @@ void run () {
     header_out.dim(axis) = axis_dim;
   }
 
-  Image::Data<value_type> data_out (header_out, argument[num_images]);
-  Image::Data<value_type>::voxel_type out_vox (data_out);
+  Image::Buffer<value_type> data_out (header_out, argument[num_images]);
+  Image::Buffer<value_type>::voxel_type out_vox (data_out);
 
   ProgressBar progress ("concatenating...", Image::voxel_count (out_vox));
   int axis_offset = 0;
 
   for (int i = 0; i < num_images; i++) {
     Image::Loop loop;
-    Image::Data<value_type>::voxel_type in_vox (*in[i]);
+    Image::Buffer<value_type>::voxel_type in_vox (*in[i]);
 
     for (loop.start (in_vox); loop.ok(); loop.next (in_vox)) {
       for (size_t dim = 0; dim < out_vox.ndim(); dim++) {

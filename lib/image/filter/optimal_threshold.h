@@ -20,10 +20,9 @@
 
  */
 
-#ifndef __filter_optimal_threshold_h__
-#define __filter_optimal_threshold_h__
+#ifndef __image_filter_optimal_threshold_h__
+#define __image_filter_optimal_threshold_h__
 
-#include "image/filter/base.h"
 #include "image/loop.h"
 #include "image/min_max.h"
 #include "data_type.h"
@@ -38,59 +37,60 @@ namespace MR
       namespace
       {
 
-        template <class InputSet> class ImageCorrelationCostFunction {
+        template <class InputVoxelType> 
+          class ImageCorrelationCostFunction {
 
-        public:
+            public:
 
-          ImageCorrelationCostFunction (InputSet& DataSet) {
-            input_image_ = &DataSet;
-            init();
-          }
+              ImageCorrelationCostFunction (InputVoxelType& DataSet) :
+                input_image_ (DataSet) {
+                  init();
+                }
 
-          double operator()(double threshold) const{
-            double sum = 0;
-            double mean_xy = 0;
-            Image::LoopInOrder loop (*input_image_);
-            for (loop.start (*input_image_); loop.ok(); loop.next (*input_image_)) {
-              if (input_image_->value() > threshold) {
-                sum += 1;
-                mean_xy += (input_image_->value() * 1);
-              } else {
-                mean_xy += (input_image_->value() * 0);
+              double operator() (double threshold) const{
+                double sum = 0;
+                double mean_xy = 0;
+                Image::LoopInOrder loop (input_image_);
+                for (loop.start (input_image_); loop.ok(); loop.next (input_image_)) {
+                  if (input_image_.value() > threshold) {
+                    sum += 1;
+                    mean_xy += (input_image_.value() * 1);
+                  } else {
+                    mean_xy += (input_image_.value() * 0);
+                  }
+                }
+                mean_xy /= voxel_count_;
+                double covariance = mean_xy - (sum / voxel_count_) * input_image_mean_;
+                double mask_stdev = sqrt((sum - sum * sum / voxel_count_) / voxel_count_);
+                return -covariance / (input_image_stdev_ * mask_stdev);
               }
-            }
-            mean_xy /= voxel_count_;
-            double covariance = mean_xy - (sum / voxel_count_) * input_image_mean_;
-            double mask_stdev = sqrt((sum - sum * sum / voxel_count_) / voxel_count_);
-            return -covariance / (input_image_stdev_ * mask_stdev);
-          }
 
-          private:
-             // Here we pre-compute the input image mean and stdev
-            void init() {
-              voxel_count_ = 1;
-              for (uint d = 0; d < input_image_->ndim(); d++)
-                voxel_count_ *= input_image_->dim(d);
+            private:
+              // Here we pre-compute the input image mean and stdev
+              void init() {
+                voxel_count_ = 1;
+                for (size_t d = 0; d < input_image_.ndim(); d++)
+                  voxel_count_ *= input_image_.dim(d);
 
-              double sum_sqr = 0, sum = 0;
-              Image::LoopInOrder loop (*input_image_);
-              for (loop.start (*input_image_); loop.ok(); loop.next (*input_image_)) {
-                sum_sqr += (input_image_->value() * input_image_->value());
-                sum += input_image_->value();
+                double sum_sqr = 0, sum = 0;
+                Image::LoopInOrder loop (input_image_);
+                for (loop.start (input_image_); loop.ok(); loop.next (input_image_)) {
+                  sum_sqr += (input_image_.value() * input_image_.value());
+                  sum += input_image_.value();
+                }
+                input_image_mean_ = sum / voxel_count_;
+                input_image_stdev_ = sqrt((sum_sqr - sum * input_image_mean_) / voxel_count_);
               }
-              input_image_mean_ = sum / voxel_count_;
-              input_image_stdev_ = sqrt((sum_sqr - sum * input_image_mean_) / voxel_count_);
-            }
 
-            InputSet* input_image_;
-            uint voxel_count_;
-            double input_image_mean_;
-            double input_image_stdev_;
-        };
+              InputVoxelType& input_image_;
+              size_t voxel_count_;
+              double input_image_mean_;
+              double input_image_stdev_;
+          };
       }
 
       /** \addtogroup Filters
-      @{ */
+        @{ */
 
       //! a filter to compute the optimal threshold to mask a DataSet.
       /*! This function computes the optimal threshold to mask a DataSet using the parameter
@@ -112,34 +112,34 @@ namespace MR
        *
        * \endcode
        */
-      class OptimalThreshold : public Base
+      class OptimalThreshold : public ConstInfo
       {
 
-      public:
-        template <class InputSet>
-          OptimalThreshold (const InputSet & DataSet) :
-            Base (DataSet) { }
+        public:
+          template <class InputVoxelType>
+            OptimalThreshold (const InputVoxelType & DataSet) :
+              ConstInfo (DataSet) { }
 
-        template <class InputSet, class OutputSet>
-          void operator() (InputSet& input, OutputSet& output) {
-          axes_.resize (4);
+          template <class InputVoxelType, class OutputSet>
+            void operator() (InputVoxelType& input, OutputSet& output) {
+              axes_.resize (4);
 
-          double min, max;
-          Image::min_max(input, min, max);
+              double min, max;
+              Image::min_max(input, min, max);
 
-          double optimal_threshold = 0;
-          {
-            ImageCorrelationCostFunction<InputSet> cost_function(input);
-            Math::GoldenSectionSearch<ImageCorrelationCostFunction<InputSet>,double> golden_search(cost_function, "optimising threshold...");
-            optimal_threshold = golden_search.run(min + 0.001*(max-min), (min+max)/2.0 , max-0.001*(max-min));
-          }
+              double optimal_threshold = 0;
+              {
+                ImageCorrelationCostFunction<InputVoxelType> cost_function(input);
+                Math::GoldenSectionSearch<ImageCorrelationCostFunction<InputVoxelType>,double> golden_search(cost_function, "optimising threshold...");
+                optimal_threshold = golden_search.run(min + 0.001*(max-min), (min+max)/2.0 , max-0.001*(max-min));
+              }
 
-          Image::LoopInOrder threshold_loop (input, "thresholding...");
-          for (threshold_loop.start (input, output); threshold_loop.ok(); threshold_loop.next (input, output)) {
-            if (finite (input.value()) && input.value() > optimal_threshold)
-              output.value() = 1;
-          }
-        }
+              Image::LoopInOrder threshold_loop (input, "thresholding...");
+              for (threshold_loop.start (input, output); threshold_loop.ok(); threshold_loop.next (input, output)) {
+                if (finite (input.value()) && input.value() > optimal_threshold)
+                  output.value() = 1;
+              }
+            }
 
       };
       //! @}

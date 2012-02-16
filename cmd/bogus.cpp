@@ -22,8 +22,8 @@
 
 #include "app.h"
 #include "debug.h"
-#include "image/data_preload.h"
-#include "image/scratch.h"
+#include "image/buffer_preload.h"
+#include "image/buffer_scratch.h"
 #include "image/voxel.h"
 #include "image/copy.h"
 
@@ -88,13 +88,13 @@ void run ()
   stride[0] = 1; stride[1] = 2; stride[2] = 3;
 
   Image::Header header;
-  Image::DataPreload<float> data_in (argument[0], stride, header);
+  Image::BufferPreload<float> data_in (argument[0], stride, header);
 
-  Image::DataPreload<float>::voxel_type vox_in (data_in);
+  Image::BufferPreload<float>::voxel_type vox_in (data_in);
 
-  Image::Data<float> data_out (data_in, argument[1]);
+  Image::Buffer<float> data_out (data_in, argument[1]);
   header = data_out;
-  Image::Data<float>::voxel_type vox_out (data_out);
+  Image::Buffer<float>::voxel_type vox_out (data_out);
 
 
   Image::Info info (data_in);
@@ -103,8 +103,8 @@ void run ()
   info.stride(0) = info.stride(2) = 0;
   info.datatype() = DataType::UInt8;
 
-  Image::Scratch<float32> data_tmp (info);
-  Image::Scratch<float32>::voxel_type vox_tmp (data_tmp);
+  Image::BufferScratch<float32> data_tmp (info);
+  Image::BufferScratch<float32>::voxel_type vox_tmp (data_tmp);
 
 
   Image::copy_with_progress (vox_tmp, vox_in);

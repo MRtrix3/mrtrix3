@@ -23,7 +23,7 @@
 #include "app.h"
 #include "point.h"
 #include "image/voxel.h"
-#include "image/data.h"
+#include "image/buffer.h"
 #include "image/loop.h"
 
 MRTRIX_APPLICATION
@@ -174,8 +174,8 @@ const char* header_string = "channel         mean        std. dev.   min        
 
 
 void run () {
-  Image::Data<value_type> data (argument[0]);
-  Image::Data<value_type>::voxel_type vox (data);
+  Image::Buffer<value_type> data (argument[0]);
+  Image::Buffer<value_type>::voxel_type vox (data);
 
   Image::Loop inner_loop (0, 3);
   Image::Loop outer_loop (3);
@@ -220,9 +220,9 @@ void run () {
     if (voxels.size())
       throw Exception ("cannot use mask with -voxel option");
 
-    Image::Data<bool> mask_data (opt[0][0]);
+    Image::Buffer<bool> mask_data (opt[0][0]);
     check_dimensions (mask_data, data);
-    Image::Data<bool>::voxel_type mask (mask_data);
+    Image::Buffer<bool>::voxel_type mask (mask_data);
 
     if (hist_stream) {
       ProgressBar progress ("calibrating histogram...", Image::voxel_count (vox));

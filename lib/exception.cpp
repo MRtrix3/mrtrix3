@@ -35,7 +35,7 @@ namespace MR
           error (E.description[n]);
           break;
         case 2:
-          info (E.description[n]);
+          inform (E.description[n]);
           break;
         case 3:
           debug (E.description[n]);
@@ -68,7 +68,7 @@ namespace MR
 
   void (*print) (const std::string& msg) = cmdline_print;
   void (*error) (const std::string& msg) = cmdline_error;
-  void (*info) (const std::string& msg) = cmdline_info;
+  void (*inform) (const std::string& msg) = cmdline_info;
   void (*debug) (const std::string& msg) = cmdline_debug;
 
   void (*Exception::display_func) (const Exception& E, int log_level) = display_exception_cmdline;

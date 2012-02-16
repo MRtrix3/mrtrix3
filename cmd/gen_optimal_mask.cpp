@@ -22,7 +22,7 @@
 
 #include "app.h"
 #include "point.h"
-#include "image/data.h"
+#include "image/buffer.h"
 #include "image/voxel.h"
 #include "image/filter/optimal_threshold.h"
 #include "ptr.h"
@@ -54,15 +54,15 @@ void usage ()
 typedef float value_type;
 
 void run () {
-  Data<value_type> input_data (argument[0]);
-  Data<value_type>::voxel_type input_voxel (input_data);
+  Buffer<value_type> input_data (argument[0]);
+  Buffer<value_type>::voxel_type input_voxel (input_data);
 
   Filter::OptimalThreshold filter (input_data);
   Header mask_header (input_data);
-  mask_header.set_info(filter);
+  mask_header.info() = filter.info();
 
-  Data<int> mask_data (mask_header, argument[1]);
-  Data<int>::voxel_type mask_voxel (mask_data);
+  Buffer<int> mask_data (mask_header, argument[1]);
+  Buffer<int>::voxel_type mask_voxel (mask_data);
 
   filter(input_voxel, mask_voxel);
 }

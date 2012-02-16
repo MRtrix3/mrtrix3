@@ -20,13 +20,12 @@
 
 */
 
-#ifndef __image_data_preload_h__
-#define __image_data_preload_h__
+#ifndef __image_buffer_preload_h__
+#define __image_buffer_preload_h__
 
 #include "debug.h"
-#include "image/data.h"
+#include "image/buffer.h"
 #include "image/threaded_copy.h"
-#include "image/adapter/data.h"
 
 namespace MR
 {
@@ -34,42 +33,43 @@ namespace MR
   {
 
 
-    template <typename T> class DataPreload : public Data<T>
+    template <typename ValueType> 
+      class BufferPreload : public Buffer<ValueType>
     {
       public:
-        DataPreload (const std::string& image_name) :
-          Data<value_type> (image_name),
+        BufferPreload (const std::string& image_name) :
+          Buffer<value_type> (image_name),
           data_ (NULL) {
             init();
           }
 
-        DataPreload (const std::string& image_name, Header& original_header) :
-          Data<value_type> (image_name),
+        BufferPreload (const std::string& image_name, Header& original_header) :
+          Buffer<value_type> (image_name),
           data_ (NULL) {
             original_header = *this;
             init();
           }
 
-        DataPreload (const std::string& image_name, const Image::Stride::List& desired_strides) :
-          Data<value_type> (image_name),
+        BufferPreload (const std::string& image_name, const Image::Stride::List& desired_strides) :
+          Buffer<value_type> (image_name),
           data_ (NULL) {
             init (desired_strides);
           }
 
-        DataPreload (const std::string& image_name, const Image::Stride::List& desired_strides, Header& original_header) :
-          Data<value_type> (image_name),
+        BufferPreload (const std::string& image_name, const Image::Stride::List& desired_strides, Header& original_header) :
+          Buffer<value_type> (image_name),
           data_ (NULL) {
             original_header = *this;
             init (desired_strides);
           }
 
-        ~DataPreload () {
+        ~BufferPreload () {
           if (!handler)
             delete [] data_;
         }
 
-        typedef T value_type;
-        typedef Image::Voxel<DataPreload> voxel_type;
+        typedef ValueType value_type;
+        typedef Image::Voxel<BufferPreload> voxel_type;
 
         value_type get_value (size_t index) const {
           return data_[index];
@@ -79,32 +79,20 @@ namespace MR
           data_[index] = val;
         }
 
-        friend std::ostream& operator<< (std::ostream& stream, const DataPreload& V) {
+        friend std::ostream& operator<< (std::ostream& stream, const BufferPreload& V) {
           stream << "preloaded data for image \"" << V.name() << "\": " + str (Image::voxel_count (V))
             + " voxels in " + V.datatype().specifier() + " format, stored at address " + str ((void*) V.data_);
           return stream;
         }
 
-        using Data<value_type>::name;
-        using Data<value_type>::datatype;
+        using Buffer<value_type>::name;
+        using Buffer<value_type>::datatype;
 
       protected:
         value_type* data_;
-        using Data<value_type>::handler;
+        using Buffer<value_type>::handler;
 
-        template <class Set> DataPreload& operator= (const Set& H) { assert (0); return *this; }
-
-        class DataWithStride : public Adapter::Data<DataPreload<value_type> > {
-          public:
-            DataWithStride (DataPreload<value_type>& data, const Stride::List& new_strides) : 
-              Adapter::Data<DataPreload<value_type> > (data),
-              stride_ (new_strides) { }
-            int stride (size_t axis) const { 
-              return stride_[axis];
-            }
-          private:
-            Stride::List stride_;
-        };
+        template <class Set> BufferPreload& operator= (const Set& H) { assert (0); return *this; }
 
         void init (const Stride::List& desired_strides) {
           Stride::List new_strides = Image::Stride::get_nearest_match (static_cast<ConstHeader&> (*this), desired_strides);
@@ -114,9 +102,11 @@ namespace MR
             return;
           }
 
-          DataWithStride new_data (*this, new_strides);
-          Voxel<DataWithStride> dest_vox (new_data);
+          Stride::List old_strides = Stride::get (*this);
+          Stride::set (static_cast<Header&> (*this), new_strides);
+          voxel_type dest_vox (*this);
 
+          Stride::set (static_cast<Header&> (*this), old_strides);
           do_load (dest_vox);
           Stride::set (static_cast<Header&> (*this), new_strides);
         }
@@ -127,7 +117,7 @@ namespace MR
           assert (handler->nsegments());
 
           if (handler->nsegments() == 1 && datatype() == DataType::from<value_type>()) {
-            info ("data in \"" + name() + "\" already in required format - mapping as-is");
+            inform ("data in \"" + name() + "\" already in required format - mapping as-is");
             data_ = reinterpret_cast<value_type*> (handler->segment (0));
             return;
           }
@@ -136,16 +126,17 @@ namespace MR
           do_load (dest);
         }
 
-        template <class VoxType> void do_load (VoxType& destination) {
-          info ("data for image \"" + name() + "\" will be loaded into memory");
-          data_ = new value_type [Image::voxel_count (*this)];
-          Data<value_type>& filedata (*this);
-          typename Data<value_type>::voxel_type src (filedata);
-          Image::threaded_copy_with_progress_message ("loading data for image \"" + name() + "\"...", destination, src);
+        template <class VoxType> 
+          void do_load (VoxType& destination) {
+            inform ("data for image \"" + name() + "\" will be loaded into memory");
+            data_ = new value_type [Image::voxel_count (*this)];
+            Buffer<value_type>& filedata (*this);
+            typename Buffer<value_type>::voxel_type src (filedata);
+            Image::threaded_copy_with_progress_message ("loading data for image \"" + name() + "\"...", destination, src);
 
-          Info::datatype_ = DataType::from<value_type>();
-          handler = NULL;
-        }
+            Info::datatype_ = DataType::from<value_type>();
+            handler = NULL;
+          }
 
     };
 

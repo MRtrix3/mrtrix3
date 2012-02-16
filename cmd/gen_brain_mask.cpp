@@ -23,8 +23,8 @@
 #include "app.h"
 #include "point.h"
 #include "ptr.h"
-#include "image/data.h"
-#include "image/scratch.h"
+#include "image/buffer.h"
+#include "image/buffer_scratch.h"
 #include "image/voxel.h"
 #include "image/filter/optimal_threshold.h"
 #include "image/filter/median3D.h"
@@ -65,8 +65,8 @@ OPTIONS
 typedef float value_type;
 
 void run () {
-  Data<value_type> input_data (argument[0]);
-  Data<value_type>::voxel_type input_voxel (input_data);
+  Buffer<value_type> input_data (argument[0]);
+  Buffer<value_type>::voxel_type input_voxel (input_data);
 
   std::vector<int> bzeros, dwis;
   Math::Matrix<float> grad = DWI::get_DW_scheme<float> (input_data);
@@ -76,11 +76,11 @@ void run () {
   info.set_ndim (3);
 
   // Compute the mean b=0 and mean DWI image
-  Scratch<float> b0_mean_data (info, "mean b0");
-  Scratch<float>::voxel_type b0_mean_voxel (b0_mean_data);
+  BufferScratch<float> b0_mean_data (info, "mean b0");
+  BufferScratch<float>::voxel_type b0_mean_voxel (b0_mean_data);
 
-  Scratch<float> dwi_mean_data (info, "mean DWI");
-  Scratch<float>::voxel_type dwi_mean_voxel (dwi_mean_data);
+  BufferScratch<float> dwi_mean_data (info, "mean DWI");
+  BufferScratch<float>::voxel_type dwi_mean_voxel (dwi_mean_data);
   {
     Loop loop("computing mean dwi and mean b0 images...", 0, 3);
     for (loop.start (input_voxel, b0_mean_voxel, dwi_mean_voxel); loop.ok(); loop.next (input_voxel, b0_mean_voxel, dwi_mean_voxel)) {
@@ -101,13 +101,13 @@ void run () {
 
   // Here we independently threshold the mean b=0 and dwi images
   Filter::OptimalThreshold b0_threshold_filter (b0_mean_data);
-  Scratch<int> b0_mean_mask_data (b0_threshold_filter);
-  Scratch<int>::voxel_type b0_mean_mask_voxel (b0_mean_mask_data);
+  BufferScratch<int> b0_mean_mask_data (b0_threshold_filter);
+  BufferScratch<int>::voxel_type b0_mean_mask_voxel (b0_mean_mask_data);
   b0_threshold_filter (b0_mean_voxel, b0_mean_mask_voxel);
 
   Filter::OptimalThreshold dwi_threshold_filter (dwi_mean_data);
-  Scratch<float> dwi_mean_mask_data (dwi_threshold_filter);
-  Scratch<float>::voxel_type dwi_mean_mask_voxel (dwi_mean_mask_data);
+  BufferScratch<float> dwi_mean_mask_data (dwi_threshold_filter);
+  BufferScratch<float>::voxel_type dwi_mean_mask_voxel (dwi_mean_mask_data);
   dwi_threshold_filter (dwi_mean_voxel, dwi_mean_mask_voxel);
 
   {
@@ -117,13 +117,13 @@ void run () {
         dwi_mean_mask_voxel.value() = 1;
     }
   }
-  Filter::Median3DFilter median_filter (dwi_mean_mask_voxel);
+  Filter::Median3D median_filter (dwi_mean_mask_voxel);
 
   Header header (input_data);
-  header.set_info(median_filter);
+  header.info() = median_filter.info();
   header.datatype() = DataType::Int8;
-  Data<int> mask_data (header, argument[1]);
-  Data<int>::voxel_type mask_voxel (mask_data);
+  Buffer<int> mask_data (header, argument[1]);
+  Buffer<int>::voxel_type mask_voxel (mask_data);
   median_filter(dwi_mean_mask_voxel, mask_voxel);
 
   //TODO use connected components to fill holes and remove non-brain tissue

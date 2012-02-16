@@ -22,7 +22,7 @@
 
 #include "app.h"
 #include "progressbar.h"
-#include "image/data.h"
+#include "image/buffer.h"
 #include "image/voxel.h"
 #include "math/matrix.h"
 #include "math/eigen.h"
@@ -95,8 +95,8 @@ class ImagePair
       data (name), 
       vox (data) { }
 
-    Image::Data<value_type> data;
-    Image::Data<value_type>::voxel_type vox;
+    Image::Buffer<value_type> data;
+    Image::Buffer<value_type>::voxel_type vox;
 
     static Image::Header param (const Image::Header& header, size_t nvols) {
       Image::Header ret (header);
@@ -251,7 +251,7 @@ inline void increment (size_t axis, Ptr<ImagePair>& i0, Ptr<ImagePair>& i1, Ptr<
 
 void run ()
 {
-  Image::Data<value_type> dt_data (argument[0]);
+  Image::Buffer<value_type> dt_data (argument[0]);
 
   if (dt_data.ndim() != 4)
     throw Exception ("base image should contain 4 dimensions");
@@ -321,7 +321,7 @@ void run ()
   else
     eig = new Math::Eigen::Symm<double> (3);
 
-  Image::Data<float>::voxel_type dt (dt_data);
+  Image::Buffer<float>::voxel_type dt (dt_data);
 
   ProgressBar progress ("computing tensor metrics...", Image::voxel_count (dt, 0, 3));
 

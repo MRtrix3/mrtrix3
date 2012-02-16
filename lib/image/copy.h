@@ -31,8 +31,8 @@ namespace MR
   namespace Image
   {
 
-    template <class Set, class Set2>
-    void copy (Set& destination, Set2& source, size_t from_axis = 0, size_t to_axis = std::numeric_limits<size_t>::max())
+    template <class OutputVoxelType, class InputVoxelType>
+    void copy (OutputVoxelType& destination, InputVoxelType& source, size_t from_axis = 0, size_t to_axis = std::numeric_limits<size_t>::max())
     {
       LoopInOrder loop (source, from_axis, to_axis);
       for (loop.start (destination, source); loop.ok(); loop.next (destination, source))
@@ -41,16 +41,16 @@ namespace MR
 
 
 
-    template <class Set, class Set2>
-    void copy_with_progress (Set& destination, Set2& source, size_t from_axis = 0, size_t to_axis = std::numeric_limits<size_t>::max())
+    template <class OutputVoxelType, class InputVoxelType>
+    void copy_with_progress (OutputVoxelType& destination, InputVoxelType& source, size_t from_axis = 0, size_t to_axis = std::numeric_limits<size_t>::max())
     {
       copy_with_progress_message ("copying from \"" + shorten (source.name()) + "\" to \"" + shorten (destination.name()) + "\"...",
          destination, source, from_axis, to_axis);
     }
 
 
-    template <class Set, class Set2>
-    void copy_with_progress_message (const std::string& message, Set& destination, Set2& source, size_t from_axis = 0, size_t to_axis = std::numeric_limits<size_t>::max())
+    template <class OutputVoxelType, class InputVoxelType>
+    void copy_with_progress_message (const std::string& message, OutputVoxelType& destination, InputVoxelType& source, size_t from_axis = 0, size_t to_axis = std::numeric_limits<size_t>::max())
     {
       LoopInOrder loop (source, message, from_axis, to_axis);
       for (loop.start (destination, source); loop.ok(); loop.next (destination, source))

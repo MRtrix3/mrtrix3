@@ -63,12 +63,6 @@ namespace MR
           open (image_name);
         }
 
-        Header (ConstInfo & H) :
-          Info (H),
-          format_ (NULL),
-          offset_ (0.0),
-          scale_ (1.0) { }
-
         Header& operator= (const Header& H) {
           Info::operator= (H);
           comments_ = H.comments();
@@ -82,10 +76,6 @@ namespace MR
         Header& operator= (const Info& H) {
           Info::operator= (H);
           return *this;
-        }
-
-        void set_info(const Info& H) {
-          Info::operator= (H);
         }
 
         const std::vector<std::string>& comments () const {
@@ -175,6 +165,10 @@ namespace MR
         //! constructor to open an image file.
         ConstHeader (const std::string& image_name) :
           Header (image_name) { }
+
+        const Info& info () const {
+          return *this;
+        }
 
         const std::string& name () const {
           return Header::name();

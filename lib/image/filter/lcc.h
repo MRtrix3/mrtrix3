@@ -20,14 +20,13 @@
 
  */
 
-#ifndef __filter_lcc_h__
-#define __filter_lcc_h__
+#ifndef __image_filter_lcc_h__
+#define __image_filter_lcc_h__
 
 #include "point.h"
-#include "image/scratch.h"
+#include "image/buffer_scratch.h"
 #include "image/copy.h"
 #include "image/nav.h"
-#include "image/filter/base.h"
 
 
 namespace MR
@@ -37,38 +36,39 @@ namespace MR
     namespace Filter
     {
 
-      class LargestConnectedComponent : public Base
+      class LargestConnectedComponent : public ConstInfo
       {
 
         public:
-        template <class InputSet> LargestConnectedComponent (InputSet& DataSet, const std::string& message) :
-          Base(DataSet),
-          progress (message) { }
+        template <class InputVoxelType> 
+          LargestConnectedComponent (const InputVoxelType& in, const std::string& message) :
+            ConstInfo (in),
+            progress (message) { }
 
 
-        typedef Point<int> Voxel;
+        typedef Point<int> voxel_type;
 
 
-        template <class InputSet, class OutputSet>
-          void operator() (InputSet& input, OutputSet& output) {
+        template <class InputVoxelType, class OutputVoxelType>
+          void operator() (InputVoxelType& input, OutputVoxelType& output) {
 
-          typedef typename InputSet::value_type value_type;
+          typedef typename InputVoxelType::value_type value_type;
 
           // Force calling the templated constructor instead of the copy-constructor
-          Image::Scratch<bool> visited_data (input, "visited");
-          Image::Scratch<bool>::voxel_type visited (visited_data);
+          BufferScratch<bool> visited_data (input, "visited");
+          BufferScratch<bool>::voxel_type visited (visited_data);
           size_t largest_mask_size = 0;
 
-          Voxel seed (0, 0, 0);
+          voxel_type seed (0, 0, 0);
 
-          std::vector<Voxel> adj_voxels;
+          std::vector<voxel_type> adj_voxels;
           adj_voxels.reserve (6);
-          adj_voxels.push_back (Voxel (-1,  0,  0));
-          adj_voxels.push_back (Voxel (+1,  0,  0));
-          adj_voxels.push_back (Voxel ( 0, -1,  0));
-          adj_voxels.push_back (Voxel ( 0, +1,  0));
-          adj_voxels.push_back (Voxel ( 0,  0, -1));
-          adj_voxels.push_back (Voxel ( 0,  0, +1));
+          adj_voxels.push_back (voxel_type (-1,  0,  0));
+          adj_voxels.push_back (voxel_type (+1,  0,  0));
+          adj_voxels.push_back (voxel_type ( 0, -1,  0));
+          adj_voxels.push_back (voxel_type ( 0, +1,  0));
+          adj_voxels.push_back (voxel_type ( 0,  0, -1));
+          adj_voxels.push_back (voxel_type ( 0,  0, +1));
 
           for (seed[2] = 0; seed[2] != input.dim (2); ++seed[2]) {
             for (seed[1] = 0; seed[1] != input.dim (1); ++seed[1]) {
@@ -76,20 +76,20 @@ namespace MR
                 if (!Image::Nav::get_value_at_pos (visited, seed) && Image::Nav::get_value_at_pos (input, seed)) {
 
                   visited.value() = true;
-                  Image::Scratch<value_type> local_mask_data (input, "local_mask");
-                  typename Image::Scratch<value_type>::voxel_type local_mask (local_mask_data);
+                  BufferScratch<value_type> local_mask_data (input, "local_mask");
+                  typename BufferScratch<value_type>::voxel_type local_mask (local_mask_data);
                   Image::Nav::set_value_at_pos (local_mask, seed, (value_type)input.value());
                   size_t local_mask_size = 1;
 
-                  std::vector<Voxel> to_expand (1, seed);
+                  std::vector<voxel_type> to_expand (1, seed);
 
                   do {
 
-                    const Voxel v = to_expand.back();
+                    const voxel_type v = to_expand.back();
                     to_expand.pop_back();
 
-                    for (std::vector<Voxel>::const_iterator step = adj_voxels.begin(); step != adj_voxels.end(); ++step) {
-                      Voxel to_test (v);
+                    for (std::vector<voxel_type>::const_iterator step = adj_voxels.begin(); step != adj_voxels.end(); ++step) {
+                      voxel_type to_test (v);
                       to_test += *step;
                       if (Image::Nav::within_bounds (visited, to_test) && !Image::Nav::get_value_at_pos (visited, to_test)) {
                         if (Image::Nav::get_value_at_pos (input, to_test)) {

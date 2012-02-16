@@ -23,7 +23,7 @@
 #include "app.h"
 #include "progressbar.h"
 #include "image/voxel.h"
-#include "image/data.h"
+#include "image/buffer.h"
 #include "math/matrix.h"
 #include "math/SH.h"
 #include "image/loop.h"
@@ -44,7 +44,7 @@ void usage () {
 
 
 void run () {
-  Image::Data<float> SH_data (argument[0]);
+  Image::Buffer<float> SH_data (argument[0]);
   Image::Header power_header (SH_data);
 
   if (power_header.ndim() != 4)
@@ -52,15 +52,15 @@ void run () {
 
 
   int lmax = Math::SH::LforN (SH_data.dim (3));
-  info ("calculating spherical harmonic power up to degree " + str (lmax));
+  inform ("calculating spherical harmonic power up to degree " + str (lmax));
 
   power_header.dim (3) = 1 + lmax/2;
   power_header.datatype() = DataType::Float32;
 
-  Image::Data<float>::voxel_type SH (SH_data);
+  Image::Buffer<float>::voxel_type SH (SH_data);
 
-  Image::Data<float> power_data (power_header, argument[1]);
-  Image::Data<float>::voxel_type P (power_data);
+  Image::Buffer<float> power_data (power_header, argument[1]);
+  Image::Buffer<float>::voxel_type P (power_data);
 
   Image::LoopInOrder loop (P, "calculating SH power...", 0, 3);
   for (loop.start (P, SH); loop.ok(); loop.next (P, SH)) {

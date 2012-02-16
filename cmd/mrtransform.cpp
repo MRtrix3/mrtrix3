@@ -22,7 +22,7 @@
 
 #include "app.h"
 #include "progressbar.h"
-#include "image/data.h"
+#include "image/buffer.h"
 #include "image/voxel.h"
 #include "image/interp/nearest.h"
 #include "image/interp/linear.h"
@@ -100,7 +100,7 @@ void run ()
   }
 
 
-  Image::Data<value_type> data_in (argument[0]);
+  Image::Buffer<value_type> data_in (argument[0]);
   Image::Header header_out (data_in);
 
   header_out.datatype() = DataType::from_command_line (header_out.datatype());
@@ -125,7 +125,8 @@ void run ()
 
   opt = get_options ("reslice"); // need to reslice
   if (opt.size()) {
-    Image::Header template_header (opt[0][0]);
+    std::string name = opt[0][0];
+    Image::ConstHeader template_header (name);
 
     header_out.dim(0) = template_header.dim (0);
     header_out.dim(1) = template_header.dim (1);
@@ -156,15 +157,15 @@ void run ()
     }
 
     if (replace) {
-      // ugly hack, but if it works...
-      static_cast<Image::Info>(data_in).transform().swap (T);
+      Image::Info& info_in (data_in);
+      info_in.transform().swap (T);
       T.clear();
     }
 
-    Image::Data<float>::voxel_type in (data_in);
+    Image::Buffer<float>::voxel_type in (data_in);
 
-    Image::Data<float> data_out (header_out, argument[1]);
-    Image::Data<float>::voxel_type out (data_out);
+    Image::Buffer<float> data_out (header_out, argument[1]);
+    Image::Buffer<float>::voxel_type out (data_out);
 
     switch (interp) {
       case 0:
@@ -196,10 +197,10 @@ void run ()
       }
     }
 
-    Image::Data<float>::voxel_type in (data_in);
+    Image::Buffer<float>::voxel_type in (data_in);
 
-    Image::Data<float> data_out (header_out, argument[1]);
-    Image::Data<float>::voxel_type out (data_out);
+    Image::Buffer<float> data_out (header_out, argument[1]);
+    Image::Buffer<float>::voxel_type out (data_out);
 
     Image::copy_with_progress (out, in);
   }

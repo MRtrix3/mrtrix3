@@ -35,7 +35,8 @@ namespace MR
       debug ("reading key/value file \"" + file + "\"...");
 
       in.open (file.c_str(), std::ios::in | std::ios::binary);
-      if (!in) throw Exception ("failed to open key/value file \"" + file + "\": " + strerror (errno));
+      if (!in) 
+        throw Exception ("failed to open key/value file \"" + file + "\": " + strerror (errno));
       if (first_line) {
         std::string sbuf;
         getline (in, sbuf);
@@ -56,27 +57,31 @@ namespace MR
       while (in.good()) {
         std::string sbuf;
         getline (in, sbuf);
-        if (in.bad()) throw Exception ("error reading key/value file \"" + filename + "\": " + strerror (errno));
+        if (in.bad()) 
+          throw Exception ("error reading key/value file \"" + filename + "\": " + strerror (errno));
 
         sbuf = strip (sbuf.substr (0, sbuf.find_first_of ('#')));
         if (sbuf == "END") {
           in.setstate (std::ios::eofbit);
-          return (false);
+          return false;
         }
 
         if (sbuf.size()) {
           size_t colon = sbuf.find_first_of (':');
-          if (colon == std::string::npos) info ("WARNING: malformed key/value entry (\"" + sbuf + "\") in file \"" + filename + "\" - ignored");
+          if (colon == std::string::npos) 
+            inform ("WARNING: malformed key/value entry (\"" + sbuf + "\") in file \"" + filename + "\" - ignored");
           else {
             K = strip (sbuf.substr (0, colon));
             V = strip (sbuf.substr (colon+1));
-            if (K.empty() || V.empty()) info ("WARNING: malformed key/value entry (\"" + sbuf + "\") in file \"" + filename + "\" - ignored");
-            else return (true);
+            if (K.empty() || V.empty()) 
+              inform ("WARNING: malformed key/value entry (\"" + sbuf + "\") in file \"" + filename + "\" - ignored");
+            else 
+              return true;
           }
 
         }
       }
-      return (false);
+      return false;
     }
 
 

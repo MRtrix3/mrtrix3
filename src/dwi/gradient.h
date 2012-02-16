@@ -71,7 +71,7 @@ namespace MR
           bzero.push_back (i);
       }
 
-      info ("found " + str (dwi.size()) + " diffusion-weighted volumes and " 
+      inform ("found " + str (dwi.size()) + " diffusion-weighted volumes and " 
           + str (bzero.size()) + " b=0 volumes");
     }
 
@@ -124,7 +124,7 @@ namespace MR
       if (grad.rows() < 7 || grad.columns() != 4)
         throw Exception ("unexpected diffusion encoding matrix dimensions");
 
-      info ("found " + str (grad.rows()) + "x" + str (grad.columns()) + " diffusion-weighted encoding");
+      inform ("found " + str (grad.rows()) + "x" + str (grad.columns()) + " diffusion-weighted encoding");
 
       if (dwi_header.dim (3) != (int) grad.rows())
         throw Exception ("number of studies in base image does not match that in encoding file");

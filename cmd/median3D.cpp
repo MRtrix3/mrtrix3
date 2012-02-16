@@ -21,16 +21,15 @@
 */
 
 #include "app.h"
-#include "image/data_preload.h"
-//#include "image/filter/median3D.h"
-#include "image/adapter/median3D.h"
-#include "image/threaded_copy.h"
+#include "image/buffer.h"
+#include "image/buffer_preload.h"
+#include "image/voxel.h"
+#include "image/filter/median3D.h"
 
 MRTRIX_APPLICATION
 
 using namespace MR;
 using namespace App;
-using namespace Image;
 
 void usage () {
   DESCRIPTION
@@ -58,12 +57,18 @@ void run () {
   if (opt.size())
     extent = parse_ints (opt[0][0]);
 
-  DataPreload<float> src_data (argument[0]);
-  Image::Adapter::Median3D<DataPreload<float> > src (src_data, extent);
+  Image::BufferPreload<float> src_array (argument[0]);
+  Image::BufferPreload<float>::voxel_type src (src_array);
 
-  Data<float> dest_data (src_data, argument[1]);
-  Data<float>::voxel_type dest (dest_data);
+  Image::Filter::Median3D median_filter (src, extent);
 
-  Image::threaded_copy_with_progress_message ("median filtering...", dest, src);
+  Image::Header header (src_array);
+  header.info() = median_filter.info();
+  header.datatype() = src_array.datatype();
+
+  Image::Buffer<float> dest_array (header, argument[1]);
+  Image::Buffer<float>::voxel_type dest (dest_array);
+
+  median_filter (src, dest);
 }
 

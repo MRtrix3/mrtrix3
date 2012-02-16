@@ -23,7 +23,7 @@
 #ifndef __image_adapter_median3D_h__
 #define __image_adapter_median3D_h__
 
-#include "image/voxel.h"
+#include "image/adapter/voxel.h"
 
 namespace MR
 {
@@ -33,20 +33,20 @@ namespace MR
     {
 
 
-      template <class D> 
-        class Median3D : public Image::Voxel<D> {
+      template <class VoxelType> 
+        class Median3D : public Voxel<VoxelType> {
         public:
-          Median3D (D& parent) : 
-            Image::Voxel<D> (parent) {
+          Median3D (const VoxelType& parent) : 
+            Voxel<VoxelType> (parent) {
               set_extent (std::vector<int>(1,3));
             }
 
-          Median3D (D& parent, const std::vector<int>& extent) : 
-            Image::Voxel<D> (parent) {
+          Median3D (const VoxelType& parent, const std::vector<int>& extent) : 
+            Voxel<VoxelType> (parent) {
               set_extent (extent);
             }
 
-          typedef typename Image::Voxel<D>::value_type value_type;
+          typedef typename VoxelType::value_type value_type;
 
           void set_extent (const std::vector<int>& extent) {
             for (size_t i = 0; i < extent.size(); ++i)
@@ -95,7 +95,7 @@ namespace MR
                 (*this)[1] = j;
                 for (ssize_t i = from[0]; i < to[0]; ++i) {
                   (*this)[0] = i;
-                  const value_type val = Image::Voxel<D>::value();
+                  const value_type val = vox_.value();
                   if (nc < m) {
                     v[nc] = val;
                     if (v[nc] > cm) cm = val;
@@ -132,11 +132,12 @@ namespace MR
             return cm;
           }
 
-          using Image::Voxel<D>::name;
-          using Image::Voxel<D>::dim;
-          using Image::Voxel<D>::operator[];
+          using Voxel<VoxelType>::name;
+          using Voxel<VoxelType>::dim;
+          using Voxel<VoxelType>::operator[];
 
         protected:
+          using Voxel<VoxelType>::vox_;
           std::vector<int> extent_;
           std::vector<value_type> v;
         };

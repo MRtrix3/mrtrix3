@@ -20,8 +20,8 @@
 
 */
 
-#ifndef __image_data_h__
-#define __image_data_h__
+#ifndef __image_buffer_h__
+#define __image_buffer_h__
 
 #include "debug.h"
 #include "get_set.h"
@@ -39,7 +39,7 @@ namespace MR
 
     //! \cond skip
 
-    template <class ArrayType> class Voxel;
+    template <class BufferType> class Voxel;
 
     namespace
     {
@@ -94,28 +94,29 @@ namespace MR
 
 
 
-    template <typename T> class Data : public ConstHeader
+    template <typename ValueType> 
+      class Buffer : public ConstHeader
     {
       public:
-        //! construct a Data object to access the data in the image specified
-        Data (const std::string& image_name, bool readwrite = false) {
+        //! construct a Buffer object to access the data in the image specified
+        Buffer (const std::string& image_name, bool readwrite = false) {
           handler = open (image_name, readwrite);
           assert (handler);
           handler->open();
           set_get_put_functions ();
         }
 
-        //! construct a Data object to create and access the image specified
-        Data (const Header& template_header, const std::string& image_name) :
+        //! construct a Buffer object to create and access the image specified
+        Buffer (const Header& template_header, const std::string& image_name) :
           ConstHeader (template_header) {
-          handler = create (image_name);
-          assert (handler);
-          handler->open();
-          set_get_put_functions ();
-        }
+            handler = create (image_name);
+            assert (handler);
+            handler->open();
+            set_get_put_functions ();
+          }
 
-        typedef T value_type;
-        typedef typename Image::Voxel<Data> voxel_type;
+        typedef ValueType value_type;
+        typedef typename Image::Voxel<Buffer> voxel_type;
 
         value_type get_value (size_t offset) const {
           ssize_t nseg (offset / handler->segment_size());
@@ -127,7 +128,7 @@ namespace MR
           put_func (scale_to_storage (val), handler->segment (nseg), offset - nseg*handler->segment_size());
         }
 
-        friend std::ostream& operator<< (std::ostream& stream, const Data& V) {
+        friend std::ostream& operator<< (std::ostream& stream, const Buffer& V) {
           stream << "data for image \"" << V.name() << "\": " + str (Image::voxel_count (V))
             + " voxels in " + V.datatype().specifier() + " format, stored in " + str (V.handler->nsegments())
             + " segments of size " + str (V.handler->segment_size())
@@ -141,12 +142,12 @@ namespace MR
       protected:
         Ptr<Handler::Base> handler;
 
-        template <class Set> Data& operator= (const Set& H) { assert (0); return *this; }
+        template <class Set> Buffer& operator= (const Set& H) { assert (0); return *this; }
 
         value_type (*get_func) (const void* data, size_t i);
         void (*put_func) (value_type val, void* data, size_t i);
 
-        Data (const Data& H) { assert (0); }
+        Buffer (const Buffer& H) { assert (0); }
 
         void set_get_put_functions () {
           switch (datatype() ()) {

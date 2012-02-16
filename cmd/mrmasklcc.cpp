@@ -28,8 +28,8 @@
 #include "image/loop.h"
 #include "image/header.h"
 #include "image/voxel.h"
-#include "image/data.h"
-#include "image/scratch.h"
+#include "image/buffer.h"
+#include "image/buffer_scratch.h"
 #include "image/filter/lcc.h"
 
 
@@ -60,11 +60,11 @@ void usage ()
 void run ()
 {
 
-  Data<bool> data_in (argument[0]);
-  Data<bool>::voxel_type voxel_in (data_in);
+  Buffer<bool> data_in (argument[0]);
+  Buffer<bool>::voxel_type voxel_in (data_in);
 
-  Scratch<bool> largest_mask_data (data_in);
-  Scratch<bool>::voxel_type largest_mask (largest_mask_data);
+  BufferScratch<bool> largest_mask_data (data_in);
+  BufferScratch<bool>::voxel_type largest_mask (largest_mask_data);
 
   {
     Filter::LargestConnectedComponent lcc (voxel_in, "getting largest connected-component...");
@@ -77,8 +77,8 @@ void run ()
     for (loop.start (largest_mask); loop.ok(); loop.next (largest_mask))
       largest_mask.value() = !largest_mask.value();
 
-    Scratch<bool> outside_mask_data (data_in);
-    Scratch<bool>::voxel_type outside_mask (outside_mask_data);
+    BufferScratch<bool> outside_mask_data (data_in);
+    BufferScratch<bool>::voxel_type outside_mask (outside_mask_data);
 
     Filter::LargestConnectedComponent lcc_fill (largest_mask, "filling gaps in mask...");
     lcc_fill (largest_mask, outside_mask);
@@ -87,8 +87,8 @@ void run ()
 
   }
 
-  Data<bool> data_out (data_in, argument[1]);
-  Data<bool>::voxel_type voxel_out (data_out);
+  Buffer<bool> data_out (data_in, argument[1]);
+  Buffer<bool>::voxel_type voxel_out (data_out);
   copy (voxel_out, largest_mask);
 
 }

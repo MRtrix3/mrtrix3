@@ -25,7 +25,7 @@
 #include "thread/exec.h"
 #include "thread/queue.h"
 #include "image/loop.h"
-#include "image/data.h"
+#include "image/buffer.h"
 #include "image/voxel.h"
 
 MRTRIX_APPLICATION
@@ -114,13 +114,13 @@ class Item
 class DataLoader
 {
   public:
-    DataLoader (Image::Data<value_type>& sh_data,
-                Image::Data<bool>* mask_data) :
+    DataLoader (Image::Buffer<value_type>& sh_data,
+                Image::Buffer<bool>* mask_data) :
       sh (sh_data),
       loop ("estimating peak directions...", 0, 3) {
       if (mask_data) {
         Image::check_dimensions (*mask_data, sh, 0, 3);
-        mask = new Image::Data<bool>::voxel_type (*mask_data);
+        mask = new Image::Buffer<bool>::voxel_type (*mask_data);
         loop.start (*mask, sh);
       }
       else
@@ -158,8 +158,8 @@ class DataLoader
     }
 
   private:
-    Image::Data<value_type>::voxel_type  sh;
-    Ptr<Image::Data<bool>::voxel_type> mask;
+    Image::Buffer<value_type>::voxel_type  sh;
+    Ptr<Image::Buffer<bool>::voxel_type> mask;
     Image::Loop loop;
 };
 
@@ -168,13 +168,13 @@ class DataLoader
 class Processor
 {
   public:
-    Processor (Image::Data<value_type>& dirs_data,
+    Processor (Image::Buffer<value_type>& dirs_data,
                Math::Matrix<value_type>& directions,
                int lmax,
                int npeaks,
                std::vector<Direction> true_peaks,
                value_type threshold,
-               Image::Data<value_type>* ipeaks_data) :
+               Image::Buffer<value_type>* ipeaks_data) :
       dirs_vox (dirs_data),
       dirs (directions),
       lmax (lmax),
@@ -182,7 +182,7 @@ class Processor
       true_peaks (true_peaks),
       threshold (threshold),
       peaks_out (npeaks),
-      ipeaks_vox (ipeaks_data ? new Image::Data<value_type>::voxel_type (*ipeaks_data) : NULL) { }
+      ipeaks_vox (ipeaks_data ? new Image::Buffer<value_type>::voxel_type (*ipeaks_data) : NULL) { }
 
     bool operator() (const Item& item) {
 
@@ -268,13 +268,13 @@ class Processor
     }
 
   private:
-    Image::Data<value_type>::voxel_type dirs_vox;
+    Image::Buffer<value_type>::voxel_type dirs_vox;
     Math::Matrix<value_type> dirs;
     int lmax, npeaks;
     std::vector<Direction> true_peaks;
     value_type threshold;
     std::vector<Direction> peaks_out;
-    Ptr<Image::Data<value_type>::voxel_type> ipeaks_vox;
+    Ptr<Image::Buffer<value_type>::voxel_type> ipeaks_vox;
 
     bool check_input (const Item& item) {
       if (ipeaks_vox) {
@@ -307,7 +307,7 @@ extern value_type default_directions [];
 
 void run ()
 {
-  Image::Data<value_type> SH_data (argument[0]);
+  Image::Buffer<value_type> SH_data (argument[0]);
   if (SH_data.datatype().is_complex()) 
     throw Exception ("cannot operate on complex data");
 
@@ -316,9 +316,9 @@ void run ()
 
   Options opt = get_options ("mask");
 
-  Ptr<Image::Data<bool> > mask_data;
+  Ptr<Image::Buffer<bool> > mask_data;
   if (opt.size())
-    mask_data = new Image::Data<bool> (opt[0][0]);
+    mask_data = new Image::Buffer<bool> (opt[0][0]);
 
   opt = get_options ("seeds");
   Math::Matrix<value_type> dirs;
@@ -352,18 +352,18 @@ void run ()
   header.datatype() = DataType::Float32;
 
   opt = get_options ("peaks");
-  Ptr<Image::Data<value_type> > ipeaks_data;
+  Ptr<Image::Buffer<value_type> > ipeaks_data;
   if (opt.size()) {
     if (true_peaks.size())
       throw Exception ("you can't specify both a peaks file and orientations to be estimated at the same time");
     if (opt.size())
-      ipeaks_data = new Image::Data<value_type> (opt[0][0]);
+      ipeaks_data = new Image::Buffer<value_type> (opt[0][0]);
 
     Image::check_dimensions (header, *ipeaks_data, 0, 3);
     npeaks = ipeaks_data->dim (3) / 3;
   }
   header.dim(3) = 3 * npeaks;
-  Image::Data<value_type> peaks_data (header, argument[1]);
+  Image::Buffer<value_type> peaks_data (header, argument[1]);
 
   DataLoader loader (SH_data, mask_data);
   Processor processor (peaks_data, dirs, Math::SH::LforN (SH_data.dim (3)),

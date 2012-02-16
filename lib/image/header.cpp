@@ -118,7 +118,7 @@ namespace MR
 
       Ptr<Handler::Base> handler;
       try {
-        info ("opening image \"" + image_name + "\"...");
+        inform ("opening image \"" + image_name + "\"...");
 
         ParsedName::List list;
         std::vector<int> num = list.parse_scan_check (image_name);
@@ -185,7 +185,7 @@ namespace MR
 
       Ptr<Handler::Base> handler;
       try {
-        info ("creating image \"" + image_name + "\"...");
+        inform ("creating image \"" + image_name + "\"...");
 
         sanitise();
 

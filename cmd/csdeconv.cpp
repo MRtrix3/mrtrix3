@@ -4,7 +4,7 @@
 #include "thread/exec.h"
 #include "thread/queue.h"
 #include "image/loop.h"
-#include "image/data.h"
+#include "image/buffer.h"
 #include "image/voxel.h"
 #include "dwi/sdeconv/constrained.h"
 
@@ -67,8 +67,8 @@ class Item
 class DataLoader
 {
   public:
-    DataLoader (Image::Data<value_type>& dwi_data,
-                Image::Data<bool>* mask_data,
+    DataLoader (Image::Buffer<value_type>& dwi_data,
+                Image::Buffer<bool>* mask_data,
                 const std::vector<int>& vec_bzeros,
                 const std::vector<int>& vec_dwis,
                 bool normalise_to_b0) :
@@ -79,7 +79,7 @@ class DataLoader
       normalise (normalise_to_b0) {
         if (mask_data) {
           Image::check_dimensions (*mask_data, dwi, 0, 3);
-          mask = new Image::Data<bool>::voxel_type (*mask_data);
+          mask = new Image::Buffer<bool>::voxel_type (*mask_data);
           loop.start (*mask, dwi);
         }
         else
@@ -109,8 +109,8 @@ class DataLoader
     }
 
   private:
-    Image::Data<value_type>::voxel_type dwi;
-    Ptr<Image::Data<bool>::voxel_type> mask;
+    Image::Buffer<value_type>::voxel_type dwi;
+    Ptr<Image::Buffer<bool>::voxel_type> mask;
     const std::vector<int>&  bzeros;
     const std::vector<int>&  dwis;
     Image::Loop loop;
@@ -148,7 +148,7 @@ class DataLoader
 class Processor
 {
   public:
-    Processor (Image::Data<value_type>& SH_data,
+    Processor (Image::Buffer<value_type>& SH_data,
                const DWI::CSDeconv<value_type>::Shared& shared) :
       SH (SH_data),
       sdeconv (shared) { }
@@ -162,7 +162,7 @@ class Processor
           break;
 
       if (n == sdeconv.P.niter)
-        info ("voxel [ " + str (item.pos[0]) + " " + str (item.pos[1]) + " " + str (item.pos[2]) +
+        inform ("voxel [ " + str (item.pos[0]) + " " + str (item.pos[1]) + " " + str (item.pos[2]) +
             " ] did not reach full convergence");
 
       SH[0] = item.pos[0];
@@ -176,7 +176,7 @@ class Processor
     }
 
   private:
-    Image::Data<value_type>::voxel_type SH;
+    Image::Buffer<value_type>::voxel_type SH;
     DWI::CSDeconv<value_type> sdeconv;
 };
 
@@ -189,12 +189,12 @@ class Processor
 
 void run ()
 {
-  Image::Data<value_type> dwi_data (argument[0]);
+  Image::Buffer<value_type> dwi_data (argument[0]);
 
   Options opt = get_options ("mask");
-  Ptr<Image::Data<bool> > mask_data;
+  Ptr<Image::Buffer<bool> > mask_data;
   if (opt.size()) 
-    mask_data = new Image::Data<bool> (opt[0][0]);
+    mask_data = new Image::Buffer<bool> (opt[0][0]);
 
   DWI::CSDeconv<value_type>::Shared shared (dwi_data, argument[1]);
 
@@ -207,7 +207,7 @@ void run ()
   header.stride(1) = 3;
   header.stride(2) = 4;
   header.stride(3) = 1;
-  Image::Data<value_type> SH_data (header, argument[2]);
+  Image::Buffer<value_type> SH_data (header, argument[2]);
 
   DataLoader loader (dwi_data, mask_data, shared.bzeros, shared.dwis, normalise);
   Processor processor (SH_data, shared);

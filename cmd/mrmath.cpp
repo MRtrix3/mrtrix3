@@ -22,7 +22,7 @@
 
 #include "app.h"
 #include "image/voxel.h"
-#include "image/data.h"
+#include "image/buffer.h"
 #include "math/rng.h"
 #include "image/loop.h"
 #include "image/stride.h"
@@ -137,8 +137,8 @@ class Source : public Functor
   public:
     Source (const std::string& text) : Functor (NULL) {
       try {
-        D = new Image::Data<value_type> (text);
-        V = new Image::Data<value_type>::voxel_type (*D);
+        D = new Image::Buffer<value_type> (text);
+        V = new Image::Buffer<value_type>::voxel_type (*D);
       }
       catch (Exception) {
         val = to<value_type> (text);
@@ -187,8 +187,8 @@ class Source : public Functor
     }
   private:
     value_type val;
-    Ptr<Image::Data<value_type> > D;
-    Ptr<Image::Data<value_type>::voxel_type> V;
+    Ptr<Image::Buffer<value_type> > D;
+    Ptr<Image::Buffer<value_type>::voxel_type> V;
 };
 
 
@@ -593,8 +593,8 @@ void run () {
 
   header.datatype() = DataType::from_command_line (DataType::Float32);
 
-  Image::Data<value_type> data_out (header, argument[1]);
-  Image::Data<value_type>::voxel_type out (data_out);
+  Image::Buffer<value_type> data_out (header, argument[1]);
+  Image::Buffer<value_type>::voxel_type out (data_out);
   std::vector<size_t> axes = Image::Stride::order (out);
 
   Counter count (*last, out, axes[0]);

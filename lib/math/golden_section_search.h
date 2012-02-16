@@ -38,7 +38,7 @@ namespace MR
     /*! This class operates on generic 'cost function' classes that are required to
      *  implement an evaluate_function() method in the form of:
      *  \code
-     *  DataType evaluate_function(DataType input);
+     *  ValueType evaluate_function(ValueType input);
      *  \endcode
      *
      *  To begin optimisation run() is called that takes 4 arguments.
@@ -56,7 +56,7 @@ namespace MR
      *
      * \endcode
      */
-    template <class Function, typename DataType = float> class GoldenSectionSearch
+    template <class Function, typename ValueType = float> class GoldenSectionSearch
     {
 
       public:
@@ -64,9 +64,9 @@ namespace MR
 
         GoldenSectionSearch (Function& function) : function_(function) { }
 
-        DataType run (DataType min_bound, DataType estimate, DataType max_bound, double tolerance = 1E-5)	{
-            DataType g1 = 0.61803399, g2 = 1 - g1;
-            DataType x0 = min_bound, x1, x2, x3 = max_bound;
+        ValueType run (ValueType min_bound, ValueType estimate, ValueType max_bound, double tolerance = 1E-5)	{
+            ValueType g1 = 0.61803399, g2 = 1 - g1;
+            ValueType x0 = min_bound, x1, x2, x3 = max_bound;
 
             if (std::abs(max_bound - estimate) > std::abs(estimate - min_bound)) {
                 x1 = estimate;
@@ -76,8 +76,8 @@ namespace MR
                 x1 = estimate - g2 * (estimate - min_bound);
             }
 
-            DataType f1 = function_(x1);
-            DataType f2 = function_(x2);
+            ValueType f1 = function_(x1);
+            ValueType f2 = function_(x2);
 
             while (std::abs(x3 - x0) > tolerance * (std::abs(x1) + std::abs(x2))) {
               if (f2 < f1) {

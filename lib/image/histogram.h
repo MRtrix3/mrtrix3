@@ -39,7 +39,7 @@ namespace MR
           if (num_buckets < 10)
             throw Exception ("Error initialising histogram: number of buckets must be greater than 10");
 
-          info ("Initialising histogram with " + str (num_buckets) + " buckets...");
+          inform ("Initialising histogram with " + str (num_buckets) + " buckets...");
           list.resize (num_buckets);
 
           value_type min, max;

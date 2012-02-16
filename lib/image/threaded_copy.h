@@ -37,10 +37,10 @@ namespace MR
     //! \cond skip
     namespace {
 
-      template <class Dest, class Source> 
+      template <class OutputVoxelType, class InputVoxelType> 
         class __ThreadedCopyInfo {
           public:
-            __ThreadedCopyInfo (const std::string& message, const std::vector<size_t>& axes_out_of_thread, const std::vector<size_t>& axes_in_thread, Dest& destination, Source& source) :
+            __ThreadedCopyInfo (const std::string& message, const std::vector<size_t>& axes_out_of_thread, const std::vector<size_t>& axes_in_thread, OutputVoxelType& destination, InputVoxelType& source) :
               loop (axes_out_of_thread, message), 
               dummy (source),
               dest (destination),
@@ -49,7 +49,7 @@ namespace MR
                 loop.start (dummy);
               }
             
-            __ThreadedCopyInfo (const std::vector<size_t>& axes_out_of_thread, const std::vector<size_t>& axes_in_thread, Dest& destination, Source& source) :
+            __ThreadedCopyInfo (const std::vector<size_t>& axes_out_of_thread, const std::vector<size_t>& axes_in_thread, OutputVoxelType& destination, InputVoxelType& source) :
               loop (axes_out_of_thread), 
               dummy (source),
               dest (destination),
@@ -60,23 +60,25 @@ namespace MR
             
             LoopInOrder loop;
             Iterator dummy;
-            Dest& dest;
-            Source& src;
+            OutputVoxelType& dest;
+            InputVoxelType& src;
             const std::vector<size_t>& axes;
             Thread::Mutex mutex;
           private:
             __ThreadedCopyInfo (const __ThreadedCopyInfo& a) { assert (0); }
         };
 
-      template <class Dest, class Source> 
+
+
+      template <class OutputVoxelType, class InputVoxelType> 
         class __ThreadedCopyAssign {
           public:
-            __ThreadedCopyAssign (__ThreadedCopyInfo<Dest, Source>& common_info) :
+            __ThreadedCopyAssign (__ThreadedCopyInfo<OutputVoxelType, InputVoxelType>& common_info) :
               common (common_info) { }
 
             void execute () {
-              Dest dest (common.dest);
-              Source src (common.src);
+              OutputVoxelType dest (common.dest);
+              InputVoxelType src (common.src);
               LoopInOrder loop (common.axes);
 
               while (get (dest, src)) {
@@ -86,9 +88,9 @@ namespace MR
             }
 
           protected:
-            __ThreadedCopyInfo<Dest, Source>& common;
+            __ThreadedCopyInfo<OutputVoxelType, InputVoxelType>& common;
 
-            bool get (Dest& dest, Source& src) const {
+            bool get (OutputVoxelType& dest, InputVoxelType& src) const {
               Thread::Mutex::Lock lock (common.mutex);
               if (common.loop.ok()) {
                 common.loop.set_position (common.dummy, dest, src);
@@ -100,8 +102,8 @@ namespace MR
             }
         };
 
-      template <class Source> 
-        inline void __get_axes (const Source& source, size_t num_axes_in_thread, size_t from_axis, size_t to_axis, std::vector<size_t>& axes_out_of_thread, std::vector<size_t>& axes_in_thread) {
+      template <class InputVoxelType> 
+        inline void __get_axes (const InputVoxelType& source, size_t num_axes_in_thread, size_t from_axis, size_t to_axis, std::vector<size_t>& axes_out_of_thread, std::vector<size_t>& axes_in_thread) {
           axes_out_of_thread = Stride::order (source, from_axis, to_axis);
           assert (num_axes_in_thread < to_axis-from_axis);
           for (size_t n = 0; n < num_axes_in_thread; ++n) {
@@ -117,21 +119,21 @@ namespace MR
 
 
 
-    template <class Dest, class Source>
-      void threaded_copy (Dest& destination, Source& source, size_t num_axes_in_thread = 1, size_t from_axis = 0, size_t to_axis = std::numeric_limits<size_t>::max())
+    template <class OutputVoxelType, class InputVoxelType>
+      void threaded_copy (OutputVoxelType& destination, InputVoxelType& source, size_t num_axes_in_thread = 1, size_t from_axis = 0, size_t to_axis = std::numeric_limits<size_t>::max())
       {
         std::vector<size_t> axes_out_of_thread, axes_in_thread;
         __get_axes (source, num_axes_in_thread, from_axis, to_axis, axes_out_of_thread, axes_in_thread);
-        __ThreadedCopyInfo<Dest, Source> common (axes_out_of_thread, axes_in_thread, destination, source);
-        __ThreadedCopyAssign<Dest, Source> assign (common);
-        Thread::Array<__ThreadedCopyAssign<Dest, Source> > thread_list (assign);
+        __ThreadedCopyInfo<OutputVoxelType, InputVoxelType> common (axes_out_of_thread, axes_in_thread, destination, source);
+        __ThreadedCopyAssign<OutputVoxelType, InputVoxelType> assign (common);
+        Thread::Array<__ThreadedCopyAssign<OutputVoxelType, InputVoxelType> > thread_list (assign);
         Thread::Exec threads (thread_list, "copy thread");
       }
 
 
 
-    template <class Dest, class Source>
-      void threaded_copy_with_progress (Dest& destination, Source& source, size_t num_axes_in_thread = 1, size_t from_axis = 0, size_t to_axis = std::numeric_limits<size_t>::max())
+    template <class OutputVoxelType, class InputVoxelType>
+      void threaded_copy_with_progress (OutputVoxelType& destination, InputVoxelType& source, size_t num_axes_in_thread = 1, size_t from_axis = 0, size_t to_axis = std::numeric_limits<size_t>::max())
       {
         threaded_copy_with_progress_message ("copying from \"" + shorten (source.name()) + "\" to \"" + shorten (destination.name()) + "\"...",
             destination, source, num_axes_in_thread, from_axis, to_axis);
@@ -139,20 +141,20 @@ namespace MR
 
 
 
-    template <class Dest, class Source>
+    template <class OutputVoxelType, class InputVoxelType>
       void threaded_copy_with_progress_message (
           const std::string& message, 
-          Dest& destination, 
-          Source& source, 
+          OutputVoxelType& destination, 
+          InputVoxelType& source, 
           size_t num_axes_in_thread = 1, 
           size_t from_axis = 0, 
           size_t to_axis = std::numeric_limits<size_t>::max())
       {
         std::vector<size_t> axes_out_of_thread, axes_in_thread;
         __get_axes (source, num_axes_in_thread, from_axis, to_axis, axes_out_of_thread, axes_in_thread);
-        __ThreadedCopyInfo<Dest, Source> common (message, axes_out_of_thread, axes_in_thread, destination, source);
-        __ThreadedCopyAssign<Dest, Source> assign (common);
-        Thread::Array<__ThreadedCopyAssign<Dest, Source> > thread_list (assign);
+        __ThreadedCopyInfo<OutputVoxelType, InputVoxelType> common (message, axes_out_of_thread, axes_in_thread, destination, source);
+        __ThreadedCopyAssign<OutputVoxelType, InputVoxelType> assign (common);
+        Thread::Array<__ThreadedCopyAssign<OutputVoxelType, InputVoxelType> > thread_list (assign);
         Thread::Exec threads (thread_list, "copy thread");
       }
 

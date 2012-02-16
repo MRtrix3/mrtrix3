@@ -23,8 +23,8 @@
 #include "app.h"
 #include "progressbar.h"
 #include "image/voxel.h"
-#include "image/data.h"
-#include "image/data_preload.h"
+#include "image/buffer.h"
+#include "image/buffer_preload.h"
 #include "image/loop.h"
 
 MRTRIX_APPLICATION
@@ -54,7 +54,7 @@ void run ()
   size_t axis = argument[1];
   std::vector<ssize_t> strides (axis+1, 0);
   strides[axis] = 1;
-  Image::DataPreload<float> data_in (argument[0], strides);
+  Image::BufferPreload<float> data_in (argument[0], strides);
 
   Image::Header header_out (data_in);
   header_out.datatype() = DataType::Float32;
@@ -63,10 +63,10 @@ void run ()
   else
     header_out.dim(axis) = 1;
 
-  Image::Data<float> data_out (header_out, argument[2]);
+  Image::Buffer<float> data_out (header_out, argument[2]);
 
-  Image::DataPreload<float>::voxel_type in (data_in);
-  Image::Data<float>::voxel_type out (data_out);
+  Image::BufferPreload<float>::voxel_type in (data_in);
+  Image::Buffer<float>::voxel_type out (data_out);
 
   Image::Loop inner (axis, axis+1);
   Image::LoopInOrder outer (header_out, "averaging...");
