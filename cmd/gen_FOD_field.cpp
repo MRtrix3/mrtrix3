@@ -24,7 +24,7 @@
 #include "app.h"
 #include "point.h"
 #include "math/SH.h"
-#include "image/data.h"
+#include "image/buffer.h"
 #include "image/voxel.h"
 #include "math/vector.h"
 #include "image/loop.h"
@@ -75,7 +75,7 @@ class Kernel {
 
     size_t size () const { return (nSH); }
 
-    void operator () (Image::Data<float>::voxel_type& D) {
+    void operator () (Image::Buffer<float>::voxel_type& D) {
       SH = 0.0;
       float xp = N*(D.dim(0)/2.0 - D[0]-1) + 0.5;
       float yp = N*(D[1]-0.5) + 0.5;
@@ -142,21 +142,20 @@ void run () {
 
   Image::Header header;
   header.set_ndim (4);
-  header.set_dim (0, D[0]);
-  header.set_dim (1, D[1]);
-  header.set_dim (2, D[2]);
-  header.set_dim (3, kernel.size());
-  header.set_vox (0, 2.0);
-  header.set_vox (1, 2.0);
-  header.set_vox (2, 2.0);
-  header.set_stride (0, 2);
-  header.set_stride (1, 3);
-  header.set_stride (2, 4);
-  header.set_stride (3, 1);
+  header.dim(0) = D[0];
+  header.dim(1) = D[1];
+  header.dim(2) = D[2];
+  header.dim(3) = kernel.size();
 
-  header.create (argument[2]);
-  Image::Data<float> source (header);
-  Image::Data<float>::voxel_type vox (source);
+  header.vox(0) = header.vox(1) = header.vox(2) = 2.0;
+
+  header.stride(0) = 2;
+  header.stride(1) = 3;
+  header.stride(2) = 4;
+  header.stride(3) = 1;
+
+  Image::Buffer<float> source (header, argument[2]);
+  Image::Buffer<float>::voxel_type vox (source);
 
   Image::Loop loop ("generating FOD field...", 0, 3);
   for (loop.start (vox); loop.ok(); loop.next (vox)) 

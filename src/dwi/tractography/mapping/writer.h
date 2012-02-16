@@ -24,7 +24,7 @@
 #define __dwi_tractography_mapping_writer_h__
 
 
-#include "image/scratch.h"
+#include "image/buffer_scratch.h"
 #include "image/loop.h"
 #include "image/nav.h"
 #include "image/header.h"
@@ -48,7 +48,7 @@ template <typename Cont>
 class MapWriterBase
 {
 
-  typedef Image::Scratch<uint32_t> CountType;
+  typedef Image::BufferScratch<uint32_t> CountType;
 
   public:
     MapWriterBase (Thread::Queue<Cont>& queue, Image::Header& header, const stat_t s) :
@@ -133,8 +133,8 @@ class MapWriter : public MapWriterBase<Cont>
           throw Exception ("Unknown / unhandled voxel statistic in ~MapWriter()");
 
       }
-      Image::Data<value_type> data (MapWriterBase<Cont>::H);
-      typename Image::Data<value_type>::voxel_type vox (data);
+      Image::Buffer<value_type> data (MapWriterBase<Cont>::H);
+      typename Image::Buffer<value_type>::voxel_type vox (data);
       Image::LoopInOrder loopinorder (vox, "writing image to file...", 0, 3);
       for (loopinorder.start (vox, buffer); loopinorder.ok(); loopinorder.next (vox, buffer))
         vox.value() = buffer.value();
@@ -167,8 +167,8 @@ class MapWriter : public MapWriterBase<Cont>
 
 
   private:
-    Image::Scratch<value_type> buffer_data;
-    typename Image::Scratch<value_type>::voxel_type buffer;
+    Image::BufferScratch<value_type> buffer_data;
+    typename Image::BufferScratch<value_type>::voxel_type buffer;
 
 };
 
@@ -223,8 +223,8 @@ MapWriter<Point<float>, SetVoxelDir>::~MapWriter ()
       throw Exception ("Unknown / unhandled voxel statistic in ~MapWriter()");
 
   }
-  Image::Data<float> data (MapWriterBase<SetVoxelDir>::H);
-  Image::Data<float>::voxel_type vox (data);
+  Image::Buffer<float> data (MapWriterBase<SetVoxelDir>::H);
+  Image::Buffer<float>::voxel_type vox (data);
   Image::LoopInOrder loopinorder (vox, "writing image to file...", 0, 3);
   for (loopinorder.start (vox, buffer); loopinorder.ok(); loopinorder.next (vox, buffer)) {
     const Point<float>& value (buffer.value());
@@ -322,8 +322,8 @@ MapWriter<Point<float>, SetVoxelDirFactor>::~MapWriter ()
       throw Exception ("Unknown / unhandled voxel statistic in ~MapWriter()");
 
   }
-  Image::Data<float> data (MapWriterBase<SetVoxelDirFactor>::H);
-  Image::Data<float>::voxel_type vox (data);
+  Image::Buffer<float> data (MapWriterBase<SetVoxelDirFactor>::H);
+  Image::Buffer<float>::voxel_type vox (data);
   Image::LoopInOrder loopinorder (vox, "writing image to file...", 0, 3);
   for (loopinorder.start (vox, buffer); loopinorder.ok(); loopinorder.next (vox, buffer)) {
     const Point<float>& value (buffer.value());

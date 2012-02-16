@@ -34,22 +34,6 @@ namespace MR {
   namespace DWI {
     namespace Tractography {
 
-/*
-      class Allocator 
-      {
-        public:
-          Allocator (size_t number_of_elements) : N (number_of_elements) { }
-          Track* alloc () { Track* tck = new Track (); tck->reserve (N); return (tck); }
-          void reset (Track* tck) { tck->clear(); }
-          void dealloc (Track* tck) { delete tck; }
-        private:
-          size_t N;
-      };
-      typedef Thread::Queue<Track,Allocator> Queue;
-
-*/
-
-
 
       class WriteKernel 
       {
@@ -89,9 +73,9 @@ namespace MR {
 
       template <class Method> class Exec {
         public:
-          static void run (Image::Header& source, const std::string& destination, DWI::Tractography::Properties& properties)
+          static void run (const std::string& source_name, const std::string& destination, DWI::Tractography::Properties& properties)
           {
-            typename Method::Shared shared (source, properties);
+            typename Method::Shared shared (source_name, properties);
             MethodBase::init(); 
 
             WriteKernel writer (shared, destination, properties);

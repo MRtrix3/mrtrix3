@@ -27,9 +27,9 @@
 #include "ptr.h"
 #include "image/voxel.h"
 #include "image/interp/linear.h"
-#include "image/scratch.h"
+#include "image/buffer_scratch.h"
 #include "image/copy.h"
-#include "image/data.h"
+#include "image/buffer.h"
 #include "image/nav.h"
 #include "math/rng.h"
 
@@ -43,15 +43,6 @@ namespace MR {
           ROI (const Point<>& sphere_pos, float sphere_radius) : 
             pos (sphere_pos), rad (sphere_radius), rad2 (Math::pow2(rad)), vol (4.0*M_PI*Math::pow3(rad)/3.0) { }
 
-          ROI (Image::Header& H) :
-            rad (NAN), rad2(NAN), vol (0.0)
-          {
-            if (H.datatype() == DataType::Bit)
-              get_mask (H);
-            else
-              get_image (H);
-          }
-
           ROI (const std::string& spec) :
             rad (NAN), rad2 (NAN), vol (0.0)
           {
@@ -64,12 +55,8 @@ namespace MR {
               vol = 4.0*M_PI*Math::pow3(rad)/3.0;
             }
             catch (...) { 
-              info ("could not parse spherical ROI specification \"" + spec + "\" - assuming mask image");
-              Image::Header H (spec);
-              if (H.datatype() == DataType::Bit)
-                get_mask (H);
-              else
-                get_image (H);
+              inform ("could not parse spherical ROI specification \"" + spec + "\" - assuming mask image");
+              get_mask (spec);
             }
           }
 
@@ -149,29 +136,29 @@ namespace MR {
 
         private:
 
-          class Mask : public Image::Scratch<bool> {
+          class Mask : public Image::BufferScratch<bool> {
             public:
-              template <class Set> Mask (Set& D, const std::string& description) : 
-                Image::Scratch<bool> (D.header(), description),
-                interp (*this)
-                {
-                  Image::Scratch<bool>::voxel_type this_vox (*this);
-                  Image::copy (this_vox, D);
-                }
-              Image::Interp::Base< Image::Scratch<bool> > interp;
+              template <class InputVoxelType> 
+                Mask (InputVoxelType& D, const std::string& description) : 
+                  Image::BufferScratch<bool> (D, description),
+                  interp (*this) {
+                    Image::BufferScratch<bool>::voxel_type this_vox (*this);
+                    Image::copy (this_vox, D);
+                  }
+              Image::Interp::Base< Image::BufferScratch<bool> > interp;
           };
 
-          class SeedImage : public Image::Scratch<float> {
+          class SeedImage : public Image::BufferScratch<float> {
             public:
-              template <class Set> SeedImage (Set& D, const std::string& description, const float max) :
-                  Image::Scratch<float> (D.header(), description),
+              template <class InputVoxelType> 
+                SeedImage (InputVoxelType& D, const std::string& description, const float max) :
+                  Image::BufferScratch<float> (D, description),
                   interp (*this),
-                  max_value (max)
-              {
-                Image::Scratch<float>::voxel_type this_vox (*this);
-                Image::copy (this_vox, D);
-              }
-              Image::Interp::Base< Image::Scratch<float> > interp;
+                  max_value (max) {
+                    Image::BufferScratch<float>::voxel_type this_vox (*this);
+                    Image::copy (this_vox, D);
+                  }
+              Image::Interp::Base< Image::BufferScratch<float> > interp;
               float max_value;
           };
 
@@ -180,8 +167,7 @@ namespace MR {
           RefPtr<Mask> mask;
           RefPtr<SeedImage> image;
 
-          void get_mask  (Image::Header&);
-          void get_image (Image::Header&);
+          void get_mask  (const std::string& name);
 
       };
 

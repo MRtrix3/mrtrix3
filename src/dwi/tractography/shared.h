@@ -24,7 +24,7 @@
 #define __dwi_tractography_shared_h__
 
 #include "point.h"
-#include "image/data_preload.h"
+#include "image/buffer_preload.h"
 #include "image/header.h"
 #include "dwi/tractography/file.h"
 #include "dwi/tractography/roi.h"
@@ -36,15 +36,14 @@ namespace MR {
     namespace Tractography {
 
       typedef float value_type;
-      typedef Image::DataPreload<value_type> StorageType;
+      typedef Image::BufferPreload<value_type> StorageType;
       typedef StorageType::voxel_type VoxelType;
 
       class SharedBase {
         public:
 
-          SharedBase (Image::Header& source_header, DWI::Tractography::Properties& property_set) :
-            H (source_header),
-            source_data (H, strides_by_volume()),
+          SharedBase (const std::string& source_name, DWI::Tractography::Properties& property_set) :
+            source_data (source_name, strides_by_volume()),
             source (source_data),
             properties (property_set), 
             max_num_tracks (1000),
@@ -88,7 +87,7 @@ namespace MR {
           {
             step_size = stepsize * vox();
             properties.set (step_size, "step_size");
-            info ("step size = " + str (step_size) + " mm");
+            inform ("step size = " + str (step_size) + " mm");
 
             value_type max_dist = 100.0 * vox();
             properties.set (max_dist, "max_dist");
@@ -100,7 +99,7 @@ namespace MR {
 
             max_angle = 90.0 * step_size / vox();
             properties.set (max_angle, "max_angle");
-            info ("maximum deviation angle = " + str (max_angle) + "°");
+            inform ("maximum deviation angle = " + str (max_angle) + "°");
 
             // If using 4th-order Runge-Kutta, angle threshold for chosen method is applied over a length
             //   which corresponds to half of the actual defined step size
@@ -110,7 +109,6 @@ namespace MR {
             max_angle *= M_PI / 180.0;
           }
 
-          Image::Header& H;
           StorageType source_data;
           VoxelType source; // Provided for const method constructors only
           DWI::Tractography::Properties& properties;

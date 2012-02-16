@@ -38,8 +38,8 @@ namespace MR {
         public:
           class Shared : public SharedBase {
             public:
-              Shared (Image::Header& source, DWI::Tractography::Properties& property_set) :
-                SharedBase (source, property_set),
+              Shared (const std::string& source_name, DWI::Tractography::Properties& property_set) :
+                SharedBase (source_name, property_set),
                 num_vec (source.dim(3)/3) {
 
                   set_step_size (0.1);

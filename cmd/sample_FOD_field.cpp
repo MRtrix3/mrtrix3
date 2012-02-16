@@ -24,7 +24,7 @@
 #include "app.h"
 #include "point.h"
 #include "math/SH.h"
-#include "image/data.h"
+#include "image/buffer.h"
 #include "image/voxel.h"
 #include "math/vector.h"
 #include "math/rng.h"
@@ -61,22 +61,20 @@ typedef float value_type;
 
 void run ()
 {
-  Image::Header FOD_header (argument[0]);
-  if (FOD_header.ndim() != 4)
+  Image::Buffer<float> FOD_data (argument[0]);
+  if (FOD_data.ndim() != 4)
     throw Exception ("input FOD image should have 4 dimensions");
-  Image::Data<float> FOD_data (FOD_header);
 
-  const int lmax = Math::SH::LforN (FOD_header.dim (3));
-  info ("assuming lmax = " + str (lmax));
+  const int lmax = Math::SH::LforN (FOD_data.dim (3));
+  inform ("assuming lmax = " + str (lmax));
 
-  Image::Header sample_header (FOD_header);
-  sample_header.set_dim (3, 3);
-  sample_header.set_datatype (DataType::Float32);
-  sample_header.create (argument[1]);
-  Image::Data<value_type> sample_data (sample_header);
+  Image::Header sample_header (FOD_data);
+  sample_header.dim(3) = 3;
+  sample_header.datatype() = DataType::Float32;
+  Image::Buffer<value_type> sample_data (sample_header, argument[1]);
 
-  Image::Data<value_type>::voxel_type in (FOD_data);
-  Image::Data<value_type>::voxel_type out (sample_data);
+  Image::Buffer<value_type>::voxel_type in (FOD_data);
+  Image::Buffer<value_type>::voxel_type out (sample_data);
 
   value_type threshold = 0.1;
   Options opt = get_options ("cutoff");

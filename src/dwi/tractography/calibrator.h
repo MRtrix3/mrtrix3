@@ -96,7 +96,7 @@ namespace MR {
           method.calibrate_list = direction_grid (method.S.max_angle+theta_min, sqrt3*theta_min);
           method.calibrate_ratio = ratio;
 
-          info ("rejection sampling will use " + str (method.calibrate_list.size()) 
+          inform ("rejection sampling will use " + str (method.calibrate_list.size()) 
               + " directions with a ratio of " + str (method.calibrate_ratio) + " (predicted number of samples per step = " + str (N_min) + ")");
         }
 

@@ -25,7 +25,7 @@
 #include "app.h"
 #include "progressbar.h"
 #include "get_set.h"
-#include "image/data.h"
+#include "image/buffer.h"
 #include "image/voxel.h"
 #include "dwi/tractography/file.h"
 #include "dwi/tractography/properties.h"
@@ -59,16 +59,15 @@ void run ()
   Tractography::Reader<> file;
   file.open (argument[0], properties);
 
-  Image::Header header (argument[1]);
-  Image::Data<float> data (header);
-  Image::Data<float>::voxel_type vox (data);
+  Image::Buffer<float> data (argument[1]);
+  Image::Buffer<float>::voxel_type vox (data);
 
   Tractography::Writer<> writer;
   writer.create (argument[2], properties);
 
   std::vector<Point<float> > tck;
 
-  Image::Interp::Linear<Image::Data<float>::voxel_type> interp (vox);
+  Image::Interp::Linear<Image::Buffer<float>::voxel_type> interp (vox);
   ProgressBar progress ("normalising tracks...");
 
   while (file.next (tck)) {

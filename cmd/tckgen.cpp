@@ -241,23 +241,21 @@ void run ()
   opt = get_options ("rk4");
   if (opt.size()) properties["rk4"] = "1";
 
-  Image::Header source (argument[0]);
-
   switch (algorithm) {
     case 0:
-      Exec<iFOD1>::run (source, argument[1], properties);
+      Exec<iFOD1>::run (argument[0], argument[1], properties);
       break;
     case 1:
-      Exec<iFOD2>::run (source, argument[1], properties);
+      Exec<iFOD2>::run (argument[0], argument[1], properties);
       break;
     case 2:
-      Exec<FACT>::run (source, argument[1], properties);
+      Exec<FACT>::run (argument[0], argument[1], properties);
       break;
     case 3:
-      Exec<WBFACT>::run (source, argument[1], properties);
+      Exec<WBFACT>::run (argument[0], argument[1], properties);
       break;
     case 4:
-      Exec<VecStream>::run (source, argument[1], properties);
+      Exec<VecStream>::run (argument[0], argument[1], properties);
       break;
     default:
       assert (0);

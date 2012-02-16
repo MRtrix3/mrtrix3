@@ -39,11 +39,11 @@ namespace MR {
         public:
           class Shared : public SharedBase {
             public:
-              Shared (Image::Header& source, DWI::Tractography::Properties& property_set) :
-                SharedBase (source, property_set) {
+              Shared (const std::string& source_name, DWI::Tractography::Properties& property_set) :
+                SharedBase (source_name, property_set) {
 
                   set_step_size (0.1);
-                  info ("minimum radius of curvature = " + str(step_size / ( 2.0 * sin (max_angle / 2.0))) + " mm");
+                  inform ("minimum radius of curvature = " + str(step_size / ( 2.0 * sin (max_angle / 2.0))) + " mm");
 
                   properties["method"] = "FACT";
 
@@ -51,7 +51,7 @@ namespace MR {
                   if (properties.find ("DW_scheme") != properties.end())
                     grad.load (properties["DW_scheme"]);
                   else
-                    grad = source.DW_scheme();
+                    grad = source_data.DW_scheme();
 
                   if (grad.columns() != 4) 
                     throw Exception ("unexpected number of columns in gradient encoding (expected 4 columns)");

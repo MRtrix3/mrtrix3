@@ -35,8 +35,8 @@ namespace MR {
         public:
           class Shared : public FACT::Shared {
             public:
-              Shared (Image::Header& source, DWI::Tractography::Properties& property_set) :
-                FACT::Shared (source, property_set) {
+              Shared (const std::string& source_name, DWI::Tractography::Properties& property_set) :
+                FACT::Shared (source_name, property_set) {
 
                 properties["method"] = "WBFACT";
 

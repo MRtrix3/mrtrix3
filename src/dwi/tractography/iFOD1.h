@@ -38,8 +38,8 @@ namespace MR {
         public:
           class Shared : public SharedBase {
             public:
-              Shared (Image::Header& source, DWI::Tractography::Properties& property_set) :
-                SharedBase (source, property_set),
+              Shared (const std::string& source_name, DWI::Tractography::Properties& property_set) :
+                SharedBase (source_name, property_set),
                 lmax (Math::SH::LforN (source.dim(3))), 
                 max_trials (MAX_TRIALS),
                 sin_max_angle (Math::sin (max_angle)),
@@ -49,7 +49,7 @@ namespace MR {
                 num_proc (0) {
 
                   set_step_size (0.1);
-                  info ("minimum radius of curvature = " + str(step_size / ( 2.0 * sin (max_angle / 2.0))) + " mm");
+                  inform ("minimum radius of curvature = " + str(step_size / ( 2.0 * sin (max_angle / 2.0))) + " mm");
 
                   properties["method"] = "iFOD1";
                   properties.set (lmax, "lmax");
@@ -61,9 +61,9 @@ namespace MR {
 
               ~Shared ()
               {
-                info ("mean number of samples per step = " + str (mean_samples/double(num_proc))); 
-                info ("mean number of rejection sampling truncations per step = " + str (mean_num_truncations/double(num_proc))); 
-                info ("maximum truncation error = " + str (max_max_truncation)); 
+                inform ("mean number of samples per step = " + str (mean_samples/double(num_proc))); 
+                inform ("mean number of rejection sampling truncations per step = " + str (mean_num_truncations/double(num_proc))); 
+                inform ("maximum truncation error = " + str (max_max_truncation)); 
               }
 
               void update_stats (double mean_samples_per_run, double num_truncations, double max_truncation) const 

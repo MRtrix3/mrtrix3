@@ -300,7 +300,7 @@ class TrackMapperTWIImage : public TrackMapperTWI<Cont>
 {
 
   public:
-    TrackMapperTWIImage (TrackQueue& input, Thread::Queue<Cont>& output, const Image::Header& output_header, const Math::Matrix<float>& interp_matrix, const float step, const contrast_t c, const stat_t m, const float denom, Image::Data<float>& input_image) :
+    TrackMapperTWIImage (TrackQueue& input, Thread::Queue<Cont>& output, const Image::Header& output_header, const Math::Matrix<float>& interp_matrix, const float step, const contrast_t c, const stat_t m, const float denom, Image::Buffer<float>& input_image) :
       TrackMapperTWI<Cont> (input, output, output_header, interp_matrix, step, c, m, denom),
       voxel                (input_image),
       interp               (voxel),
@@ -336,8 +336,8 @@ class TrackMapperTWIImage : public TrackMapperTWI<Cont>
 
 
   private:
-    Image::Data<float>::voxel_type voxel;
-    Image::Interp::Linear< Image::Data<float>::voxel_type > interp;
+    Image::Buffer<float>::voxel_type voxel;
+    Image::Interp::Linear< Image::Buffer<float>::voxel_type > interp;
 
     size_t lmax;
     float* sh_coeffs;

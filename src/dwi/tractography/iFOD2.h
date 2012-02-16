@@ -42,8 +42,8 @@ namespace MR {
 
           class Shared : public SharedBase {
             public:
-              Shared (Image::Header& source, DWI::Tractography::Properties& property_set) :
-                SharedBase (source, property_set),
+              Shared (const std::string& source_name, DWI::Tractography::Properties& property_set) :
+                SharedBase (source_name, property_set),
                 lmax (Math::SH::LforN (source.dim(3))), 
                 num_samples (4),
                 max_trials (MAX_TRIALS),
@@ -57,7 +57,7 @@ namespace MR {
                     throw Exception ("4th-order Runge-Kutta interpolation not valid for iFOD2 algorithm");
 
                   set_step_size (0.5);
-                  info ("minimum radius of curvature = " + str(step_size / max_angle) + " mm");
+                  inform ("minimum radius of curvature = " + str(step_size / max_angle) + " mm");
 
                   properties["method"] = "iFOD2";
                   properties.set (lmax, "lmax");
@@ -75,9 +75,9 @@ namespace MR {
 
               ~Shared ()
               {
-                info ("mean number of samples per step = " + str (mean_samples/double(num_proc))); 
-                info ("mean number of rejection sampling truncations per step = " + str (mean_num_truncations/double(num_proc))); 
-                info ("maximum truncation error = " + str (max_max_truncation)); 
+                inform ("mean number of samples per step = " + str (mean_samples/double(num_proc))); 
+                inform ("mean number of rejection sampling truncations per step = " + str (mean_num_truncations/double(num_proc))); 
+                inform ("maximum truncation error = " + str (max_max_truncation)); 
               }
 
               void update_stats (double mean_samples_per_run, double num_truncations, double max_truncation) const 
