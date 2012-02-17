@@ -63,7 +63,7 @@ void run ()
   else
     header_out.dim(axis) = 1;
 
-  Image::Buffer<float> data_out (header_out, argument[2]);
+  Image::Buffer<float> data_out (argument[2], header_out);
 
   Image::BufferPreload<float>::voxel_type in (data_in);
   Image::Buffer<float>::voxel_type out (data_out);

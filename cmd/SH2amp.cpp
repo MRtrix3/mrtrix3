@@ -177,7 +177,7 @@ void run ()
   amp_header.stride(1) = 3;
   amp_header.stride(2) = 4;
   amp_header.stride(3) = 1;
-  Image::Buffer<value_type> amp_data (amp_header, argument[2]);
+  Image::Buffer<value_type> amp_data (argument[2], amp_header);
 
 
   Queue queue ("sh2amp queue");

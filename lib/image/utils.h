@@ -24,7 +24,7 @@
 #define __image_misc_h__
 
 #include "types.h"
-#include "data_type.h"
+#include "datatype.h"
 
 namespace MR
 {

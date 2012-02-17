@@ -145,7 +145,7 @@ void run ()
 
   Image::Buffer<float>::voxel_type in (data_in);
 
-  Image::Buffer<float> data_out (header_out, argument[1]);
+  Image::Buffer<float> data_out (argument[1], header_out);
   Image::Buffer<float>::voxel_type out (data_out);
 
   float zero = use_NaN ? NAN : 0.0;

@@ -26,7 +26,6 @@
 #include "debug.h"
 #include "get_set.h"
 #include "image/header.h"
-#include "image/handler/base.h"
 #include "image/adapter/info.h"
 #include "image/stride.h"
 #include "image/value.h"
@@ -99,19 +98,30 @@ namespace MR
     {
       public:
         //! construct a Buffer object to access the data in the image specified
-        Buffer (const std::string& image_name, bool readwrite = false) {
-          handler = open (image_name, readwrite);
-          assert (handler);
-          handler->open();
-          set_get_put_functions ();
-        }
+        Buffer (const std::string& image_name, bool readwrite = false) :
+          ConstHeader (image_name) {
+            assert (handler_);
+            handler_->set_readwrite (readwrite);
+            handler_->open();
+            set_get_put_functions ();
+          }
+
+        //! construct a Buffer object to access the data in \a header
+        Buffer (const Header& header, bool readwrite = false) :
+          ConstHeader (header) {
+            handler_ = header.handler_;
+            assert (handler_);
+            handler_->set_readwrite (readwrite);
+            handler_->open();
+            set_get_put_functions ();
+          }
 
         //! construct a Buffer object to create and access the image specified
-        Buffer (const Header& template_header, const std::string& image_name) :
+        Buffer (const std::string& image_name, const Header& template_header) :
           ConstHeader (template_header) {
-            handler = create (image_name);
-            assert (handler);
-            handler->open();
+            create (image_name);
+            assert (handler_);
+            handler_->open();
             set_get_put_functions ();
           }
 
@@ -119,30 +129,29 @@ namespace MR
         typedef typename Image::Voxel<Buffer> voxel_type;
 
         value_type get_value (size_t offset) const {
-          ssize_t nseg (offset / handler->segment_size());
-          return scale_from_storage (get_func (handler->segment (nseg), offset - nseg*handler->segment_size()));
+          ssize_t nseg (offset / handler_->segment_size());
+          return scale_from_storage (get_func (handler_->segment (nseg), offset - nseg*handler_->segment_size()));
         }
 
         void set_value (size_t offset, value_type val) {
-          ssize_t nseg (offset / handler->segment_size());
-          put_func (scale_to_storage (val), handler->segment (nseg), offset - nseg*handler->segment_size());
+          ssize_t nseg (offset / handler_->segment_size());
+          put_func (scale_to_storage (val), handler_->segment (nseg), offset - nseg*handler_->segment_size());
         }
 
         friend std::ostream& operator<< (std::ostream& stream, const Buffer& V) {
           stream << "data for image \"" << V.name() << "\": " + str (Image::voxel_count (V))
-            + " voxels in " + V.datatype().specifier() + " format, stored in " + str (V.handler->nsegments())
-            + " segments of size " + str (V.handler->segment_size())
+            + " voxels in " + V.datatype().specifier() + " format, stored in " + str (V.handler_->nsegments())
+            + " segments of size " + str (V.handler_->segment_size())
             + ", at addresses [ ";
-          for (size_t n = 0; n < V.handler->nsegments(); ++n)
-            stream << str ((void*) V.handler->segment(n)) << " ";
+          for (size_t n = 0; n < V.handler_->nsegments(); ++n)
+            stream << str ((void*) V.handler_->segment(n)) << " ";
           stream << "]";
           return stream;
         }
 
       protected:
-        Ptr<Handler::Base> handler;
-
-        template <class Set> Buffer& operator= (const Set& H) { assert (0); return *this; }
+        template <class Set> 
+          Buffer& operator= (const Set& H) { assert (0); return *this; }
 
         value_type (*get_func) (const void* data, size_t i);
         void (*put_func) (value_type val, void* data, size_t i);

@@ -26,7 +26,7 @@
 #include "progressbar.h"
 #include "image/header.h"
 #include "image/handler/gz.h"
-#include "image/misc.h"
+#include "image/utils.h"
 #include "file/gz.h"
 
 #define BYTES_PER_ZCALL 524288

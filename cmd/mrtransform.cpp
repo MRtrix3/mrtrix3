@@ -29,7 +29,7 @@
 #include "image/interp/cubic.h"
 #include "image/interp/sinc.h"
 #include "image/interp/reslice.h"
-#include "image/misc.h"
+#include "image/utils.h"
 #include "image/loop.h"
 #include "image/copy.h"
 
@@ -164,7 +164,7 @@ void run ()
 
     Image::Buffer<float>::voxel_type in (data_in);
 
-    Image::Buffer<float> data_out (header_out, argument[1]);
+    Image::Buffer<float> data_out (argument[1], header_out);
     Image::Buffer<float>::voxel_type out (data_out);
 
     switch (interp) {
@@ -199,10 +199,10 @@ void run ()
 
     Image::Buffer<float>::voxel_type in (data_in);
 
-    Image::Buffer<float> data_out (header_out, argument[1]);
+    Image::Buffer<float> data_out (argument[1], header_out);
     Image::Buffer<float>::voxel_type out (data_out);
 
-    Image::copy_with_progress (out, in);
+    Image::copy_with_progress (in, out);
   }
 }
 

@@ -22,7 +22,6 @@
 
 #include "app.h"
 #include "image/header.h"
-#include "image/misc.h"
 #include "image/stride.h"
 #include "image/handler/base.h"
 #include "image/name_parser.h"
@@ -111,12 +110,11 @@ namespace MR
 
 
 
-    Handler::Base* Header::open (const std::string& image_name, bool readwrite)
+    void Header::open (const std::string& image_name)
     {
       if (image_name.empty())
         throw Exception ("no name supplied to open image!");
 
-      Ptr<Handler::Base> handler;
       try {
         inform ("opening image \"" + image_name + "\"...");
 
@@ -128,12 +126,12 @@ namespace MR
         name() = list[item].name();
 
         for (; *format_handler; format_handler++)
-          if ( (handler = (*format_handler)->read (*this)) )
+          if ( (handler_ = (*format_handler)->read (*this)) )
             break;
 
         if (!*format_handler)
           throw Exception ("unknown format for image \"" + name() + "\"");
-        assert (handler);
+        assert (handler_);
 
         format_ = (*format_handler)->description;
 
@@ -145,7 +143,7 @@ namespace MR
             throw Exception ("image specifier contains mixed format files");
           assert (H_handler);
           merge (header);
-          handler->merge (*H_handler);
+          handler_->merge (*H_handler);
         }
 
         if (num.size()) {
@@ -162,28 +160,23 @@ namespace MR
           }
         }
 
-        handler->set_readwrite (readwrite);
-
         sanitise();
         name() = image_name;
       }
       catch (Exception& E) {
         throw Exception (E, "error opening image \"" + image_name + "\"");
       }
-
-      return handler.release();
     }
 
 
 
 
 
-    Handler::Base* Header::create (const std::string& image_name)
+    void Header::create (const std::string& image_name)
     {
       if (image_name.empty())
         throw Exception ("no name supplied to open image!");
 
-      Ptr<Handler::Base> handler;
       try {
         inform ("creating image \"" + image_name + "\"...");
 
@@ -225,16 +218,16 @@ namespace MR
           name() = parser.name (num);
 
         File::ConfirmOverwrite confirm_overwrite;
-        handler = (*format_handler)->create (*this, confirm_overwrite);
+        handler_ = (*format_handler)->create (*this, confirm_overwrite);
 
-        assert (handler);
+        assert (handler_);
 
         while (get_next (num, Pdim)) {
           header.name() = parser.name (num);
           Ptr<Handler::Base> H_handler ((*format_handler)->create (header, confirm_overwrite));
           assert (H_handler);
           merge (header);
-          handler->merge (*H_handler);
+          handler_->merge (*H_handler);
         }
 
         if (Pdim.size()) {
@@ -253,8 +246,8 @@ namespace MR
           }
         }
 
-        handler->set_image_is_new (true);
-        handler->set_readwrite (true);
+        handler_->set_image_is_new (true);
+        handler_->set_readwrite (true);
 
         sanitise();
         name() = image_name;
@@ -262,8 +255,6 @@ namespace MR
       catch (Exception& E) {
         throw Exception (E, "error creating image \"" + image_name + "\"");
       }
-
-      return handler.release();
     }
 
 

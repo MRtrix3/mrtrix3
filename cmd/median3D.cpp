@@ -66,7 +66,7 @@ void run () {
   header.info() = median_filter.info();
   header.datatype() = src_array.datatype();
 
-  Image::Buffer<float> dest_array (header, argument[1]);
+  Image::Buffer<float> dest_array (argument[1], header);
   Image::Buffer<float>::voxel_type dest (dest_array);
 
   median_filter (src, dest);

@@ -59,7 +59,7 @@ void run () {
 
   Image::Buffer<float>::voxel_type SH (SH_data);
 
-  Image::Buffer<float> power_data (power_header, argument[1]);
+  Image::Buffer<float> power_data (argument[1], power_header);
   Image::Buffer<float>::voxel_type P (power_data);
 
   Image::LoopInOrder loop (P, "calculating SH power...", 0, 3);

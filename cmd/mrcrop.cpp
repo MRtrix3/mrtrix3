@@ -124,10 +124,10 @@ void run ()
   Image::Adapter::Subset<Image::Buffer<float>::voxel_type> cropped (voxel_in, from, dim, "cropped dataset");
 
   Image::Header H_out (data_in);
-  H_out = cropped;
-  Image::Buffer<float> data_out (H_out, argument[1]);
+  H_out.info() = cropped.info();
+  Image::Buffer<float> data_out (argument[1], H_out);
   Image::Buffer<float>::voxel_type voxel_out (data_out);
-  Image::copy_with_progress_message ("cropping image...", voxel_out, cropped);
+  Image::copy_with_progress_message ("cropping image...", cropped, voxel_out);
 
 }
 

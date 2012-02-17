@@ -43,10 +43,15 @@ namespace MR
             init();
           }
 
-        BufferPreload (const std::string& image_name, Header& original_header) :
-          Buffer<value_type> (image_name),
+        BufferPreload (const Header& header) :
+          Buffer<value_type> (header), 
           data_ (NULL) {
-            original_header = *this;
+            init();
+          }
+
+        BufferPreload (const Buffer<ValueType>& buffer) :
+          Buffer<value_type> (buffer), 
+          data_ (NULL) {
             init();
           }
 
@@ -56,15 +61,8 @@ namespace MR
             init (desired_strides);
           }
 
-        BufferPreload (const std::string& image_name, const Image::Stride::List& desired_strides, Header& original_header) :
-          Buffer<value_type> (image_name),
-          data_ (NULL) {
-            original_header = *this;
-            init (desired_strides);
-          }
-
         ~BufferPreload () {
-          if (!handler)
+          if (!handler_)
             delete [] data_;
         }
 
@@ -90,7 +88,7 @@ namespace MR
 
       protected:
         value_type* data_;
-        using Buffer<value_type>::handler;
+        using Buffer<value_type>::handler_;
 
         template <class Set> BufferPreload& operator= (const Set& H) { assert (0); return *this; }
 
@@ -113,12 +111,12 @@ namespace MR
 
 
         void init () {
-          assert (handler);
-          assert (handler->nsegments());
+          assert (handler_);
+          assert (handler_->nsegments());
 
-          if (handler->nsegments() == 1 && datatype() == DataType::from<value_type>()) {
+          if (handler_->nsegments() == 1 && datatype() == DataType::from<value_type>()) {
             inform ("data in \"" + name() + "\" already in required format - mapping as-is");
-            data_ = reinterpret_cast<value_type*> (handler->segment (0));
+            data_ = reinterpret_cast<value_type*> (handler_->segment (0));
             return;
           }
 
@@ -132,10 +130,10 @@ namespace MR
             data_ = new value_type [Image::voxel_count (*this)];
             Buffer<value_type>& filedata (*this);
             typename Buffer<value_type>::voxel_type src (filedata);
-            Image::threaded_copy_with_progress_message ("loading data for image \"" + name() + "\"...", destination, src);
+            Image::threaded_copy_with_progress_message ("loading data for image \"" + name() + "\"...", src, destination);
 
             Info::datatype_ = DataType::from<value_type>();
-            handler = NULL;
+            handler_ = NULL;
           }
 
     };

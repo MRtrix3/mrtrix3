@@ -117,7 +117,7 @@ void run () {
     header_out.dim(axis) = axis_dim;
   }
 
-  Image::Buffer<value_type> data_out (header_out, argument[num_images]);
+  Image::Buffer<value_type> data_out (argument[num_images], header_out);
   Image::Buffer<value_type>::voxel_type out_vox (data_out);
 
   ProgressBar progress ("concatenating...", Image::voxel_count (out_vox));

@@ -28,7 +28,7 @@
 #include "debug.h"
 #include "point.h"
 #include "get_set.h"
-#include "data_type.h"
+#include "datatype.h"
 #include "file/path.h"
 #include "file/mmap.h"
 #include "file/entry.h"

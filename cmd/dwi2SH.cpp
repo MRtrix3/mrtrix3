@@ -104,7 +104,7 @@ void run ()
   Image::Header header (dwi_data);
   header.dim (3) = Math::SH::NforL (lmax);
   header.datatype() = DataType::Float32;
-  Image::Buffer<float> SH_data (header, argument[1]);
+  Image::Buffer<float> SH_data (argument[1], header);
 
   Image::Buffer<float>::voxel_type dwi (dwi_data);
   Image::Buffer<float>::voxel_type SH (SH_data);

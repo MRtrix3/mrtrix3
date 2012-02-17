@@ -25,7 +25,7 @@
 #include "app.h"
 #include "image/header.h"
 #include "image/handler/default.h"
-#include "image/misc.h"
+#include "image/utils.h"
 
 namespace MR
 {

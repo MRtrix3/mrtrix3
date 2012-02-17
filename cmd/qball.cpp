@@ -287,7 +287,7 @@ void run ()
   SH_header.stride(1) = 3;
   SH_header.stride(2) = 4;
   SH_header.stride(3) = 1;
-  Image::Buffer<value_type> SH_data (SH_header, argument[1]);
+  Image::Buffer<value_type> SH_data (argument[1], SH_header);
 
 
   Queue queue ("work queue");

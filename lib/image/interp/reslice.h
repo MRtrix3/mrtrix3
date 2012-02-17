@@ -275,7 +275,7 @@ namespace MR
         const std::vector<int>& oversampling = AutoOverSample)
       {
         Reslice<Interpolator,Set2,Set1,T> interp (source, destination, operation, oversampling);
-        Image::copy_with_progress (destination, interp);
+        Image::copy_with_progress (interp, destination);
       }
 
 

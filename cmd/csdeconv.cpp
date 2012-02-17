@@ -207,7 +207,7 @@ void run ()
   header.stride(1) = 3;
   header.stride(2) = 4;
   header.stride(3) = 1;
-  Image::Buffer<value_type> SH_data (header, argument[2]);
+  Image::Buffer<value_type> SH_data (argument[2], header);
 
   DataLoader loader (dwi_data, mask_data, shared.bzeros, shared.dwis, normalise);
   Processor processor (SH_data, shared);

@@ -61,7 +61,7 @@ void run () {
   Header mask_header (input_data);
   mask_header.info() = filter.info();
 
-  Buffer<int> mask_data (mask_header, argument[1]);
+  Buffer<int> mask_data (argument[1], mask_header);
   Buffer<int>::voxel_type mask_voxel (mask_data);
 
   filter(input_voxel, mask_voxel);

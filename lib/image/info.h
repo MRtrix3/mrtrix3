@@ -25,7 +25,7 @@
 
 #include "debug.h"
 #include "types.h"
-#include "data_type.h"
+#include "datatype.h"
 #include "image/axis.h"
 #include "math/matrix.h"
 

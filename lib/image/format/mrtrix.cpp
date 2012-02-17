@@ -29,7 +29,7 @@
 #include "file/entry.h"
 #include "file/path.h"
 #include "file/key_value.h"
-#include "image/misc.h"
+#include "image/utils.h"
 #include "image/header.h"
 #include "image/handler/default.h"
 #include "image/name_parser.h"

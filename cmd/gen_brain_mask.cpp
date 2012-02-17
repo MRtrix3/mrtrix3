@@ -122,7 +122,7 @@ void run () {
   Header header (input_data);
   header.info() = median_filter.info();
   header.datatype() = DataType::Int8;
-  Buffer<int> mask_data (header, argument[1]);
+  Buffer<int> mask_data (argument[1], header);
   Buffer<int>::voxel_type mask_voxel (mask_data);
   median_filter(dwi_mean_mask_voxel, mask_voxel);
 

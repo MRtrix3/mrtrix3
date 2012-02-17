@@ -25,7 +25,7 @@
 #include "file/utils.h"
 #include "file/path.h"
 #include "file/entry.h"
-#include "image/misc.h"
+#include "image/utils.h"
 #include "image/header.h"
 #include "image/format/list.h"
 #include "image/handler/default.h"

@@ -88,7 +88,7 @@ class ImagePair
     typedef ::value_type value_type;
 
     ImagePair (const Image::Header& header, const std::string& name, size_t nvols) :
-      data (param (header, nvols), name), 
+      data (name, param (header, nvols)), 
       vox (data) { }
 
     ImagePair (const std::string& name) : 

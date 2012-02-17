@@ -24,7 +24,7 @@
 #define __file_dicom_image_h__
 
 #include "ptr.h"
-#include "data_type.h"
+#include "datatype.h"
 #include "math/vector.h"
 #include "file/dicom/element.h"
 

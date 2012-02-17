@@ -593,7 +593,7 @@ void run () {
 
   header.datatype() = DataType::from_command_line (DataType::Float32);
 
-  Image::Buffer<value_type> data_out (header, argument[1]);
+  Image::Buffer<value_type> data_out (argument[1], header);
   Image::Buffer<value_type>::voxel_type out (data_out);
   std::vector<size_t> axes = Image::Stride::order (out);
 

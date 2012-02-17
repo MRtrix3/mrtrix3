@@ -87,13 +87,12 @@ void run ()
   Image::Stride::List stride (3);
   stride[0] = 1; stride[1] = 2; stride[2] = 3;
 
-  Image::Header header;
-  Image::BufferPreload<float> data_in (argument[0], stride, header);
+  Image::BufferPreload<float> data_in (argument[0], stride);
 
   Image::BufferPreload<float>::voxel_type vox_in (data_in);
 
-  Image::Buffer<float> data_out (data_in, argument[1]);
-  header = data_out;
+  Image::Buffer<float> data_out (argument[1], data_in);
+  Image::Header header (data_out);
   Image::Buffer<float>::voxel_type vox_out (data_out);
 
 
@@ -107,8 +106,8 @@ void run ()
   Image::BufferScratch<float32>::voxel_type vox_tmp (data_tmp);
 
 
-  Image::copy_with_progress (vox_tmp, vox_in);
-  Image::copy_with_progress (vox_out, vox_tmp);
+  Image::copy_with_progress (vox_in, vox_tmp);
+  Image::copy_with_progress (vox_tmp, vox_out);
 
 }
 

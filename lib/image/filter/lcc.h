@@ -105,7 +105,7 @@ namespace MR
 
                   if (local_mask_size > largest_mask_size) {
                     largest_mask_size = local_mask_size;
-                    Image::copy (output, local_mask);
+                    Image::copy (local_mask, output);
                   }
 
                   ++progress;

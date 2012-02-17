@@ -26,7 +26,7 @@
 #include "progressbar.h"
 #include "image/header.h"
 #include "image/handler/mosaic.h"
-#include "image/misc.h"
+#include "image/utils.h"
 
 namespace MR
 {

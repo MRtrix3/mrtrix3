@@ -31,29 +31,29 @@ namespace MR
   namespace Image
   {
 
-    template <class OutputVoxelType, class InputVoxelType>
-    void copy (OutputVoxelType& destination, InputVoxelType& source, size_t from_axis = 0, size_t to_axis = std::numeric_limits<size_t>::max())
+    template <class InputVoxelType, class OutputVoxelType>
+    void copy (InputVoxelType& source, OutputVoxelType& destination, size_t from_axis = 0, size_t to_axis = std::numeric_limits<size_t>::max())
     {
       LoopInOrder loop (source, from_axis, to_axis);
-      for (loop.start (destination, source); loop.ok(); loop.next (destination, source))
+      for (loop.start (source, destination); loop.ok(); loop.next (source, destination))
         destination.value() = source.value();
     }
 
 
 
-    template <class OutputVoxelType, class InputVoxelType>
-    void copy_with_progress (OutputVoxelType& destination, InputVoxelType& source, size_t from_axis = 0, size_t to_axis = std::numeric_limits<size_t>::max())
+    template <class InputVoxelType, class OutputVoxelType>
+    void copy_with_progress (InputVoxelType& source, OutputVoxelType& destination, size_t from_axis = 0, size_t to_axis = std::numeric_limits<size_t>::max())
     {
       copy_with_progress_message ("copying from \"" + shorten (source.name()) + "\" to \"" + shorten (destination.name()) + "\"...",
-         destination, source, from_axis, to_axis);
+         source, destination, from_axis, to_axis);
     }
 
 
-    template <class OutputVoxelType, class InputVoxelType>
-    void copy_with_progress_message (const std::string& message, OutputVoxelType& destination, InputVoxelType& source, size_t from_axis = 0, size_t to_axis = std::numeric_limits<size_t>::max())
+    template <class InputVoxelType, class OutputVoxelType>
+    void copy_with_progress_message (const std::string& message, InputVoxelType& source, OutputVoxelType& destination, size_t from_axis = 0, size_t to_axis = std::numeric_limits<size_t>::max())
     {
       LoopInOrder loop (source, message, from_axis, to_axis);
-      for (loop.start (destination, source); loop.ok(); loop.next (destination, source))
+      for (loop.start (source, destination); loop.ok(); loop.next (source, destination))
         destination.value() = source.value();
     }
 

@@ -26,7 +26,7 @@
 
 #include "app.h"
 #include "args.h"
-#include "data_type.h"
+#include "datatype.h"
 
 namespace MR
 {

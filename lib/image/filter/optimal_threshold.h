@@ -25,7 +25,7 @@
 
 #include "image/loop.h"
 #include "image/min_max.h"
-#include "data_type.h"
+//#include "datatype.h"
 #include "math/golden_section_search.h"
 
 namespace MR

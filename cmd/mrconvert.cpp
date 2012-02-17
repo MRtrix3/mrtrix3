@@ -187,27 +187,27 @@ void run ()
     Image::Extract<Image::Buffer<float>::voxel_type > extract (in, pos);
 
     set_header_out (header_out, extract, axes, vox, strides);
-    Image::Buffer<float> data_out (header_out, argument[1]);
+    Image::Buffer<float> data_out (argument[1], header_out);
     Image::Buffer<float>::voxel_type  out (data_out);
 
     if (axes.size()) {
       Image::PermuteAxes<Image::Extract<Image::Buffer<float>::voxel_type > > perm (extract, axes);
-      Image::copy_with_progress (out, perm);
+      Image::copy_with_progress (perm, out);
     }
     else
-      Image::copy_with_progress (out, extract);
+      Image::copy_with_progress (extract, out);
   }
   else {
     // straight copy:
     set_header_out (header_out, in, axes, vox, strides);
-    Image::Buffer<float> data_out (header_out, argument[1]);
+    Image::Buffer<float> data_out (argument[1], header_out);
     Image::Buffer<float>::voxel_type out (data_out);
     if (axes.size()) {
       Image::PermuteAxes<Image::Buffer<float>::voxel_type > perm (in, axes);
-      Image::copy_with_progress (out, perm);
+      Image::copy_with_progress (perm, out);
     }
     else
-      Image::copy_with_progress (out, in);
+      Image::copy_with_progress (in, out);
   }
 }
 

@@ -58,7 +58,7 @@ namespace MR
           template <class InputVoxelType, class OutputVoxelType>
             void operator() (InputVoxelType& in, OutputVoxelType& out) {
               Adapter::Median3D<InputVoxelType> median (in, extent_);
-              threaded_copy_with_progress_message ("median filtering...", out, median);
+              threaded_copy_with_progress_message ("median filtering...", median, out);
             }
 
       protected:

@@ -29,7 +29,7 @@
 #include <cassert>
 
 #include "ptr.h"
-#include "image/header.h"
+#include "datatype.h"
 #include "file/entry.h"
 
 #define MAX_FILES_PER_IMAGE 256U
@@ -52,13 +52,7 @@ namespace MR
       class Base
       {
         public:
-          Base (const Image::Header& header) : 
-            name (header.name()), 
-            datatype (header.datatype()),
-            segsize (Image::voxel_count (header)),
-            is_new (false),
-            writable (false) { }
-
+          Base (const Image::Header& header);
           virtual ~Base ();
 
           void open ();

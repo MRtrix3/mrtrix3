@@ -23,7 +23,7 @@
 #ifndef __image_stride_h__
 #define __image_stride_h__
 
-#include "data_type.h"
+#include "datatype.h"
 
 namespace MR
 {

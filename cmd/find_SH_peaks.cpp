@@ -363,7 +363,7 @@ void run ()
     npeaks = ipeaks_data->dim (3) / 3;
   }
   header.dim(3) = 3 * npeaks;
-  Image::Buffer<value_type> peaks_data (header, argument[1]);
+  Image::Buffer<value_type> peaks_data (argument[1], header);
 
   DataLoader loader (SH_data, mask_data);
   Processor processor (peaks_data, dirs, Math::SH::LforN (SH_data.dim (3)),

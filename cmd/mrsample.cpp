@@ -73,7 +73,7 @@ void run () {
 
   Image::Buffer<float>::voxel_type in  (input_data);
 
-  Image::Buffer<float> data_out (output_header, argument[2]);
+  Image::Buffer<float> data_out (argument[2], output_header);
   Image::Buffer<float>::voxel_type out (data_out);
 
   int interp = 2;

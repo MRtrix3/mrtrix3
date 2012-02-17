@@ -27,7 +27,7 @@
 #ifndef __file_dicom_csa_entry_h__
 #define __file_dicom_csa_entry_h__
 
-#include "data_type.h"
+#include "datatype.h"
 #include "get_set.h"
 #include "file/dicom/element.h"
 

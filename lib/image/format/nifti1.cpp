@@ -23,7 +23,7 @@
 #include "file/path.h"
 #include "file/utils.h"
 #include "file/nifti1_utils.h"
-#include "image/misc.h"
+#include "image/utils.h"
 #include "image/header.h"
 #include "image/handler/default.h"
 #include "image/format/list.h"

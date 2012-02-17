@@ -87,9 +87,9 @@ void run ()
 
   }
 
-  Buffer<bool> data_out (data_in, argument[1]);
+  Buffer<bool> data_out (argument[1], data_in);
   Buffer<bool>::voxel_type voxel_out (data_out);
-  copy (voxel_out, largest_mask);
+  copy (largest_mask, voxel_out);
 
 }
 

@@ -28,9 +28,10 @@
 #include "debug.h"
 #include "ptr.h"
 #include "types.h"
-#include "data_type.h"
+#include "datatype.h"
 #include "image/info.h"
-#include "image/misc.h"
+#include "image/handler/base.h"
+#include "image/utils.h"
 #include "file/mmap.h"
 #include "math/matrix.h"
 
@@ -43,7 +44,6 @@ namespace MR
   //! functions and classes related to image data input/output
   namespace Image
   {
-
     namespace Handler { class Base; }
 
     class Header : public Info, public std::map<std::string, std::string>
@@ -63,18 +63,26 @@ namespace MR
           open (image_name);
         }
 
+        //! copy constructor
+        /*! This copies everything over apart from the handler. */
+        Header (const Header& H) :
+          Info (H.info()),
+          std::map<std::string, std::string> (H),
+          format_ (H.format_),
+          DW_scheme_ (H.DW_scheme_),
+          offset_ (H.offset_),
+          scale_ (H.scale_),
+          comments_ (H.comments_) { }
+
         Header& operator= (const Header& H) {
           Info::operator= (H);
-          comments_ = H.comments();
-          format_ = H.format();
-          offset_ = H.intensity_offset();
-          scale_ = H.intensity_scale();
+          std::map<std::string, std::string>::operator= (H);
+          comments_ = H.comments_;
+          format_ = H.format_;
+          offset_ = H.offset_;
+          scale_ = H.scale_;
           DW_scheme_ = H.DW_scheme_;
-          return *this;
-        }
-
-        Header& operator= (const Info& H) {
-          Info::operator= (H);
+          handler_ = NULL;
           return *this;
         }
 
@@ -142,12 +150,11 @@ namespace MR
         Math::Matrix<float> DW_scheme_;
         float offset_, scale_;
         std::vector<std::string> comments_;
+        RefPtr<Handler::Base> handler_;
 
-        Handler::Base* open (const std::string& image_name, bool readwrite = false);
-        Handler::Base* create (const std::string& image_name);
+        void open (const std::string& image_name);
+        void create (const std::string& image_name);
         void merge (const Header& H);
-
-        template <class T> friend class Data;
     };
 
 
