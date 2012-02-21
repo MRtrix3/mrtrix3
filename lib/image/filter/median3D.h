@@ -41,16 +41,19 @@ namespace MR
       {
 
       public:
-          template <class InputVoxelType> 
+          template <class InputVoxelType>
             Median3D (const InputVoxelType& in) :
               ConstInfo (in),
               extent_ (1,3) { }
 
-          template <class InputVoxelType> 
+          template <class InputVoxelType>
             Median3D (const InputVoxelType& in, const std::vector<int>& extent) :
               ConstInfo (in),
               extent_ (extent) { }
 
+          //! Set the extent of median filtering neighbourhood in voxels.
+          //! This must be set as a single value for all three dimensions
+          //! or three values, one for each dimension. Default 3x3x3.
           void set_extent (const std::vector<int>& extent) {
             extent_ = extent;
           }

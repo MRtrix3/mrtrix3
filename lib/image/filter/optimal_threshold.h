@@ -25,7 +25,6 @@
 
 #include "image/loop.h"
 #include "image/min_max.h"
-//#include "datatype.h"
 #include "math/golden_section_search.h"
 
 namespace MR
@@ -37,7 +36,7 @@ namespace MR
       namespace
       {
 
-        template <class InputVoxelType> 
+        template <class InputVoxelType>
           class ImageCorrelationCostFunction {
 
             public:
@@ -103,7 +102,7 @@ namespace MR
        *
        * Filter::OptimalThreshold filter (input_data);
        * Header mask_header (input_data);
-       * mask_header.set_info (filter);
+       * mask_header.info() = filter.info();
        *
        * Data<int> mask_data (mask_header, argument[1]);
        * Data<int>::voxel_type mask_voxel (mask_data);

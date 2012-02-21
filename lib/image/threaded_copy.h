@@ -41,23 +41,23 @@ namespace MR
         class __ThreadedCopyInfo {
           public:
             __ThreadedCopyInfo (const std::string& message, const std::vector<size_t>& axes_out_of_thread, const std::vector<size_t>& axes_in_thread, InputVoxelType& source, OutputVoxelType& destination) :
-              loop (axes_out_of_thread, message), 
+              loop (axes_out_of_thread, message),
               dummy (source),
               src (source),
               dest (destination),
               axes (axes_in_thread) {
                 loop.start (dummy);
               }
-            
+
             __ThreadedCopyInfo (const std::vector<size_t>& axes_out_of_thread, const std::vector<size_t>& axes_in_thread, InputVoxelType& source, OutputVoxelType& destination) :
-              loop (axes_out_of_thread), 
+              loop (axes_out_of_thread),
               dummy (source),
               src (source),
               dest (destination),
               axes (axes_in_thread) {
                 loop.start (dummy);
               }
-            
+
             LoopInOrder loop;
             Iterator dummy;
             InputVoxelType& src;
@@ -97,12 +97,12 @@ namespace MR
                 common.loop.next (common.dummy);
                 return true;
               }
-              else 
+              else
                 return false;
             }
         };
 
-      template <class InputVoxelType> 
+      template <class InputVoxelType>
         inline void __get_axes (const InputVoxelType& source, size_t num_axes_in_thread, size_t from_axis, size_t to_axis, std::vector<size_t>& axes_out_of_thread, std::vector<size_t>& axes_in_thread) {
           axes_out_of_thread = Stride::order (source, from_axis, to_axis);
           assert (num_axes_in_thread < to_axis-from_axis);
@@ -113,7 +113,7 @@ namespace MR
         }
 
     }
-    
+
     //! \endcond
 
 
