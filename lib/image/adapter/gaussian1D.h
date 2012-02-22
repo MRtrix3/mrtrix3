@@ -57,15 +57,15 @@ namespace MR
             if (kernel.size() == 1)
               return vox_.value();
 
-            const ssize_t pos [3] = { (*this)[0], (*this)[1], (*this)[2] };
+            const ssize_t pos = (*this)[axis_];
             const int radius = floor(static_cast<float>(extent_)/2.0);
-            const int from = pos[axis_] < radius ? 0 : pos[axis_] - radius;
-            const int to = pos[axis_] >= (dim(axis_) - radius) ? dim(axis_) - 1 : pos[axis_] + radius;
+            const int from = pos < radius ? 0 : pos - radius;
+            const int to = pos >= (dim(axis_) - radius) ? dim(axis_) - 1 : pos + radius;
 
             value_type val = 0;
 
-            if (pos[axis_] < radius) {
-              size_t c = radius - pos[axis_];
+            if (pos < radius) {
+              size_t c = radius - pos;
               value_type av_weights = 0.0;
               for (ssize_t k = from; k <= to; ++k) {
                 av_weights += kernel[c];
@@ -73,7 +73,7 @@ namespace MR
                 val += vox_.value() * kernel[c++];
               }
               val /= av_weights;
-            } else if ((to - pos[axis_]) < radius){
+            } else if ((to - pos) < radius){
               size_t c = 0;
               value_type av_weights = 0.0;
               for (ssize_t k = from; k <= to; ++k) {
@@ -90,10 +90,7 @@ namespace MR
               }
             }
 
-            (*this)[0] = pos[0];
-            (*this)[1] = pos[1];
-            (*this)[2] = pos[2];
-
+            (*this)[axis_] = pos;
             return val;
           }
 

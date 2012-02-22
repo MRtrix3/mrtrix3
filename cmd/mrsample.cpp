@@ -39,7 +39,7 @@ const char* interp_choices[] = { "nearest", "linear", "cubic", "sinc", NULL };
 
 void usage ()
 {
-  AUTHOR = "David Raffelt (draffelt@gmail.com)";
+  AUTHOR = "David Raffelt (d.raffelt@brain.org.au)";
 
   DESCRIPTION
   + "Resample an image to a different resolution by a given sample factor.";

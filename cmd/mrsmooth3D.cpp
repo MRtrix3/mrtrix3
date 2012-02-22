@@ -94,7 +94,7 @@ void run () {
   header.info() = smooth_filter.info();
   header.datatype() = src_data.datatype();
 
-  Image::Buffer<float> dest_data (argument[1], src_data);
+  Image::Buffer<float> dest_data (argument[1], header);
   Image::Buffer<float>::voxel_type dest (dest_data);
 
   smooth_filter (src, dest);
