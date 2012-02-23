@@ -28,7 +28,7 @@
 #include "image/interp/linear.h"
 #include "image/interp/cubic.h"
 #include "image/interp/sinc.h"
-#include "image/interp/reslice.h"
+#include "image/filter/reslice.h"
 #include "image/utils.h"
 #include "image/loop.h"
 #include "image/copy.h"
@@ -169,17 +169,17 @@ void run ()
 
     switch (interp) {
       case 0:
-        Image::Interp::reslice<Image::Interp::Nearest> (in, out, operation, oversample);
+        Image::Filter::reslice<Image::Interp::Nearest> (in, out, operation, oversample);
         break;
       case 1:
-        Image::Interp::reslice<Image::Interp::Linear> (in, out, operation, oversample);
+        Image::Filter::reslice<Image::Interp::Linear> (in, out, operation, oversample);
         break;
       case 2:
-        Image::Interp::reslice<Image::Interp::Cubic> (in, out, operation, oversample);
+        Image::Filter::reslice<Image::Interp::Cubic> (in, out, operation, oversample);
         break;
       case 3:
         error ("FIXME: sinc interpolation needs a lot of work!");
-        Image::Interp::reslice<Image::Interp::Sinc> (in, out, operation, oversample);
+        Image::Filter::reslice<Image::Interp::Sinc> (in, out, operation, oversample);
         break;
       default:
         assert (0);

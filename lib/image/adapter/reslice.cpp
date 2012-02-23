@@ -20,13 +20,13 @@
 
 */
 
-#include "image/interp/reslice.h"
+#include "image/adapter/reslice.h"
 
 namespace MR
 {
   namespace Image
   {
-    namespace Interp
+    namespace Adapter
     {
       const Math::Matrix<float> NoOp;
       const std::vector<int> AutoOverSample;
