@@ -23,6 +23,8 @@
 #ifndef __image_adapter_voxel_h__
 #define __image_adapter_voxel_h__
 
+#include "datatype.h"
+#include "math/matrix.h"
 #include "image/value.h"
 #include "image/position.h"
 
@@ -40,41 +42,42 @@ namespace MR
         class Voxel {
           public:
             Voxel (const VoxelType& parent) :
-              vox_ (parent) {
+              parent_vox (parent) {
               }
 
             typedef typename VoxelType::value_type value_type;
+            typedef Voxel voxel_type;
 
             template <class U> 
               const Voxel& operator= (const U& V) {
-                return vox_ = V;
+                return parent_vox = V;
               }
 
             const Image::Info& info () const {
-              return vox_.info();
+              return parent_vox.info();
             }
 
             DataType datatype () const {
-              return vox_.datatype();
+              return parent_vox.datatype();
             }
             const Math::Matrix<float>& transform () const {
-              return vox_.transform();
+              return parent_vox.transform();
             }
 
             ssize_t stride (size_t axis) const {
-              return vox_ [axis];
+              return parent_vox [axis];
             }
             size_t  ndim () const {
-              return vox_.ndim();
+              return parent_vox.ndim();
             }
             ssize_t dim (size_t axis) const {
-              return vox_.dim (axis);
+              return parent_vox.dim (axis);
             }
             float   vox (size_t axis) const {
-              return vox_.vox (axis);
+              return parent_vox.vox (axis);
             }
             const std::string& name () const {
-              return vox_.name();
+              return parent_vox.name();
             }
 
 
@@ -102,24 +105,24 @@ namespace MR
             }
 
           protected:
-            VoxelType vox_;
+            VoxelType parent_vox;
 
             value_type get_value () const {
-              return vox_.value();
+              return parent_vox.value();
             }
 
             void set_value (value_type val) {
-              vox_.value() = val;
+              parent_vox.value() = val;
             }
 
             ssize_t get_pos (size_t axis) const {
-              return vox_[axis];
+              return parent_vox[axis];
             }
             void set_pos (size_t axis, ssize_t position) {
-              vox_[axis] = position;
+              parent_vox[axis] = position;
             }
             void move_pos (size_t axis, ssize_t increment) {
-              vox_[axis] += increment;
+              parent_vox[axis] += increment;
             }
 
             friend class Image::Position<Voxel>;

@@ -48,6 +48,7 @@ namespace MR
             }
 
           typedef typename BufferType::value_type value_type;
+          typedef Voxel voxel_type;
 
           const Info& info () const {
             return data_.info();

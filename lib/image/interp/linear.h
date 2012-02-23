@@ -69,51 +69,56 @@ namespace MR
        * \endcode
        */
 
-      template <class Set, typename T = float> class Linear : public Base<Set,T>
+      template <class VoxelType> 
+        class Linear : public Base<VoxelType>
       {
-        private:
-          typedef class Base<Set> B;
-
         public:
-          typedef typename Set::value_type value_type;
-          typedef typename B::pos_type pos_type;
+          typedef typename VoxelType::value_type value_type;
+
+          using Base<VoxelType>::set;
+          using Base<VoxelType>::dim;
+          using Base<VoxelType>::image2voxel;
+          using Base<VoxelType>::scanner2voxel;
+          using typename Base<VoxelType>::out_of_bounds;
+          using typename Base<VoxelType>::bounds;
 
           //! construct an Linear object to obtain interpolated values using the
           // parent DataSet class
-          Linear (Set& parent) : Base<Set> (parent) { }
+          Linear (const VoxelType& parent) : Base<VoxelType> (parent) { }
 
           //! Set the current position to <b>voxel space</b> position \a pos
           /*! This will set the position from which the image intensity values will
            * be interpolated, assuming that \a pos provides the position as a
            * (floating-point) voxel coordinate within the dataset. */
-          bool voxel (const Point<pos_type>& pos) {
-            Point<pos_type> f = B::set (pos);
-            if (B::out_of_bounds) return (true);
+          bool voxel (const Point<float>& pos) {
+            Point<float> f = set (pos);
+            if (out_of_bounds) 
+              return true;
 
             if (pos[0] < 0.0) {
               f[0] = 0.0;
-              B::data[0] = 0;
+              (*this)[0] = 0;
             }
             else {
-              B::data[0] = Math::floor (pos[0]);
-              if (pos[0] > B::bounds[0]-0.5) f[0] = 0.0;
+              (*this)[0] = Math::floor (pos[0]);
+              if (pos[0] > bounds[0]-0.5) f[0] = 0.0;
             }
             if (pos[1] < 0.0) {
               f[1] = 0.0;
-              B::data[1] = 0;
+              (*this)[1] = 0;
             }
             else {
-              B::data[1] = Math::floor (pos[1]);
-              if (pos[1] > B::bounds[1]-0.5) f[1] = 0.0;
+              (*this)[1] = Math::floor (pos[1]);
+              if (pos[1] > bounds[1]-0.5) f[1] = 0.0;
             }
 
             if (pos[2] < 0.0) {
               f[2] = 0.0;
-              B::data[2] = 0;
+              (*this)[2] = 0;
             }
             else {
-              B::data[2] = Math::floor (pos[2]);
-              if (pos[2] > B::bounds[2]-0.5) f[2] = 0.0;
+              (*this)[2] = Math::floor (pos[2]);
+              if (pos[2] > bounds[2]-0.5) f[2] = 0.0;
             }
 
             faaa = (1.0-f[0]) * (1.0-f[1]) * (1.0-f[2]);
@@ -133,7 +138,7 @@ namespace MR
             fbbb =      f[0]  *      f[1]  *      f[2];
             if (fbbb < 1e-6) fbbb = 0.0;
 
-            return (false);
+            return false;
           }
 
           //! Set the current position to <b>image space</b> position \a pos
@@ -142,39 +147,40 @@ namespace MR
            * coordinate relative to the axes of the dataset, in units of
            * millimeters. The origin is taken to be the centre of the voxel at [
            * 0 0 0 ]. */
-          bool image (const Point<pos_type>& pos) {
-            return (voxel (B::image2voxel (pos)));
+          bool image (const Point<float>& pos) {
+            return voxel (image2voxel (pos));
           }
           //! Set the current position to the <b>scanner space</b> position \a pos
           /*! This will set the position from which the image intensity values will
            * be interpolated, assuming that \a pos provides the position as a
            * scanner space coordinate, in units of millimeters. */
-          bool scanner (const Point<pos_type>& pos) {
-            return (voxel (B::scanner2voxel (pos)));
+          bool scanner (const Point<float>& pos) {
+            return voxel (scanner2voxel (pos));
           }
 
-          value_type value () const {
-            if (B::out_of_bounds) return (NAN);
+          value_type value () {
+            if (out_of_bounds) 
+              return NAN;
             value_type val = 0.0;
-            if (faaa) val  = faaa * B::data.value();
-            B::data[2]++;
-            if (faab) val += faab * B::data.value();
-            B::data[1]++;
-            if (fabb) val += fabb * B::data.value();
-            B::data[2]--;
-            if (faba) val += faba * B::data.value();
-            B::data[0]++;
-            if (fbba) val += fbba * B::data.value();
-            B::data[1]--;
-            if (fbaa) val += fbaa * B::data.value();
-            B::data[2]++;
-            if (fbab) val += fbab * B::data.value();
-            B::data[1]++;
-            if (fbbb) val += fbbb * B::data.value();
-            B::data[0]--;
-            B::data[1]--;
-            B::data[2]--;
-            return (val);
+            if (faaa) val  = faaa * VoxelType::value();
+            (*this)[2]++;
+            if (faab) val += faab * VoxelType::value();
+            (*this)[1]++;
+            if (fabb) val += fabb * VoxelType::value();
+            (*this)[2]--;
+            if (faba) val += faba * VoxelType::value();
+            (*this)[0]++;
+            if (fbba) val += fbba * VoxelType::value();
+            (*this)[1]--;
+            if (fbaa) val += fbaa * VoxelType::value();
+            (*this)[2]++;
+            if (fbab) val += fbab * VoxelType::value();
+            (*this)[1]++;
+            if (fbbb) val += fbbb * VoxelType::value();
+            (*this)[0]--;
+            (*this)[1]--;
+            (*this)[2]--;
+            return val;
           }
 
         protected:

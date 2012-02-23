@@ -121,7 +121,7 @@ void run ()
   size_t from[] = { bounds[0][0], bounds[1][0], bounds[2][0] };
   size_t dim[] = { bounds[0][1]-from[0]+1, bounds[1][1]-from[1]+1, bounds[2][1]-from[2]+1 };
 
-  Image::Adapter::Subset<Image::Buffer<float>::voxel_type> cropped (voxel_in, from, dim, "cropped dataset");
+  Image::Adapter::Subset<Image::Buffer<float>::voxel_type> cropped (voxel_in, from, dim);
 
   Image::Header H_out (data_in);
   H_out.info() = cropped.info();

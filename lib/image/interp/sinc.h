@@ -74,43 +74,46 @@ namespace MR
        * \endcode
        */
 
-      template <class Set, typename T = float> class Sinc : public Base<Set,T>
+      template <class VoxelType> class Sinc : public Base<VoxelType>
       {
-        private:
-          typedef class Base<Set> B;
-
         public:
-          typedef typename Set::value_type value_type;
-          typedef typename Set::value_type pos_type;
+          typedef typename VoxelType::value_type value_type;
+
+          using Base<VoxelType>::set;
+          using Base<VoxelType>::dim;
+          using Base<VoxelType>::image2voxel;
+          using Base<VoxelType>::scanner2voxel;
+          using typename Base<VoxelType>::out_of_bounds;
+          using typename Base<VoxelType>::bounds;
 
           //! construct an Interp object to obtain interpolated values using the
           // parent DataSet class
-          Sinc (Set& parent, const size_t w = SINC_WINDOW_SIZE) :
-            Base<Set> (parent),
-            window_size (w),
-            Sinc_x (w),
-            Sinc_y (w),
-            Sinc_z (w),
-            y_values (w, 0.0),
-            z_values (w, 0.0)
-            {
-              assert (w % 2);
-              B::out_of_bounds = false;
-            }
+          Sinc (const VoxelType& parent, const size_t w = SINC_WINDOW_SIZE) : 
+              Base<VoxelType> (parent),
+              window_size (w),
+              kernel_width ((window_size-1)/2),
+              Sinc_x (w),
+              Sinc_y (w),
+              Sinc_z (w),
+              y_values (w, 0.0),
+              z_values (w, 0.0) { 
+                assert (w % 2);
+                out_of_bounds = false;
+              }
 
           //! Set the current position to <b>voxel space</b> position \a pos
           /*! This will set the position from which the image intensity values will
            * be interpolated, assuming that \a pos provides the position as a
            * (floating-point) voxel coordinate within the dataset. */
-          bool voxel (const Point<pos_type>& pos) {
+          bool voxel (const Point<float>& pos) {
             if (!within_bounds (pos)) {
-              B::out_of_bounds = true;
+              out_of_bounds = true;
               return true;
             }
-            Sinc_x.set (B::data, 0, pos[0]);
-            Sinc_y.set (B::data, 1, pos[1]);
-            Sinc_z.set (B::data, 2, pos[2]);
-            return (false);
+            Sinc_x.set (*this, 0, pos[0]);
+            Sinc_y.set (*this, 1, pos[1]);
+            Sinc_z.set (*this, 2, pos[2]);
+            return false;
           }
           //! Set the current position to <b>image space</b> position \a pos
           /*! This will set the position from which the image intensity values will
@@ -118,42 +121,44 @@ namespace MR
            * coordinate relative to the axes of the dataset, in units of
            * millimeters. The origin is taken to be the centre of the voxel at [
            * 0 0 0 ]. */
-          bool image (const Point<pos_type>& pos) {
-            return (voxel (B::image2voxel (pos)));
+          bool image (const Point<float>& pos) {
+            return voxel (image2voxel (pos));
           }
           //! Set the current position to the <b>scanner space</b> position \a pos
           /*! This will set the position from which the image intensity values will
            * be interpolated, assuming that \a pos provides the position as a
            * scanner space coordinate, in units of millimeters. */
-          bool scanner (const Point<pos_type>& pos) {
-            return (voxel (B::scanner2voxel (pos)));
+          bool scanner (const Point<float>& pos) {
+            return voxel (scanner2voxel (pos));
           }
 
           value_type value () {
+            if (out_of_bounds) 
+              return NAN;
             for (size_t z = 0; z != window_size; ++z) {
-              B::data[2] = Sinc_z.index (z);
+              (*this)[2] = Sinc_z.index (z);
               for (size_t y = 0; y != window_size; ++y) {
-                B::data[1] = Sinc_y.index (y);
-                y_values[y] = Sinc_x.value (B::data, 0);
+                (*this)[1] = Sinc_y.index (y);
+                y_values[y] = Sinc_x.value (static_cast<VoxelType&>(*this), 0);
               }
               z_values[z] = Sinc_y.value (y_values);
             }
-            return (Sinc_z.value (z_values));
+            return Sinc_z.value (z_values);
           }
 
 
         protected:
           const size_t window_size;
+          const int kernel_width;
           Math::Sinc<value_type> Sinc_x, Sinc_y, Sinc_z;
           std::vector<value_type> y_values, z_values;
 
-          bool within_bounds (const Point<pos_type>& p) {
+          bool within_bounds (const Point<float>& p) {
             // Bounds testing is different for sinc interpolation than others
             // Not only due to the width of the kernel, but also the mirroring of the image data beyond the FoV
-            static const int kernel_width = (window_size - 1) / 2;
-            return ((round (p[0]) > -B::data.dim(0) + kernel_width) && (round (p[0]) < (2 * B::data.dim(0)) - kernel_width)
-                 && (round (p[1]) > -B::data.dim(1) + kernel_width) && (round (p[1]) < (2 * B::data.dim(1)) - kernel_width)
-                 && (round (p[2]) > -B::data.dim(2) + kernel_width) && (round (p[2]) < (2 * B::data.dim(2)) - kernel_width));
+            return (round (p[0]) > -dim(0) + kernel_width) && (round (p[0]) < (2 * dim(0)) - kernel_width)
+                 && (round (p[1]) > -dim(1) + kernel_width) && (round (p[1]) < (2 * dim(1)) - kernel_width)
+                 && (round (p[2]) > -dim(2) + kernel_width) && (round (p[2]) < (2 * dim(2)) - kernel_width);
           }
 
       };

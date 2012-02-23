@@ -49,18 +49,18 @@ namespace MR
             ssize_t val = 0.0;
 
             if (pos == 0) {
-              val = vox_.value();
+              val = parent_vox.value();
               (*this)[axis_] = pos + 1;
-              val = vox_.value() - val;
+              val = parent_vox.value() - val;
             } else if (pos == dim(axis_) - 1) {
-              val = vox_.value();
+              val = parent_vox.value();
               (*this)[axis_] = pos - 1;
-              val -= vox_.value();
+              val -= parent_vox.value();
             } else {
               (*this)[axis_] = pos + 1;
-              val = 0.5 * vox_.value();
+              val = 0.5 * parent_vox.value();
               (*this)[axis_] = pos - 1;
-              val -= 0.5 * vox_.value();
+              val -= 0.5 * parent_vox.value();
             }
             (*this)[axis_] = pos;
 
@@ -73,7 +73,7 @@ namespace MR
           using Voxel<VoxelType>::operator[];
 
         protected:
-          using Voxel<VoxelType>::vox_;
+          using Voxel<VoxelType>::parent_vox;
           size_t axis_;
         };
     }

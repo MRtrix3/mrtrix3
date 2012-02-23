@@ -34,11 +34,11 @@ namespace MR
   {
     namespace Adapter {
 
-      template <class Set> class Info 
+      template <class InfoType> class Info 
       {
         public:
 
-          Info (Set& parent_image) :
+          Info (InfoType& parent_image) :
             parent (parent_image) { }
 
           const std::string& name () const {
@@ -70,7 +70,7 @@ namespace MR
           }
 
         protected:
-          Set& parent;
+          InfoType& parent;
       };
 
     }

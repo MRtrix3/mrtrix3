@@ -23,9 +23,10 @@
 #ifndef __image_interp_reslice_h__
 #define __image_interp_reslice_h__
 
+#include "image/info.h"
 #include "image/transform.h"
 #include "image/value.h"
-#include "image/copy.h"
+#include "image/threaded_copy.h"
 #include "image/position.h"
 #include "image/interp/base.h"
 
@@ -85,65 +86,59 @@ namespace MR
        *
        * \sa DataSet::Interp::reslice()
        */
-      template <template <class Set, typename T> class Interpolator, class Set, class RefSet, typename T>
-      class Reslice
+      template <template <class VoxelType> class Interpolator, class VoxelType>
+        class Reslice : public ConstInfo
       {
         public:
-          typedef typename Set::value_type value_type;
-          typedef T pos_type;
+          typedef typename VoxelType::value_type value_type;
 
-          Reslice (Set& original, RefSet& reference,
-                   const Math::Matrix<pos_type>& operation = NoOp,
-                   const std::vector<int>& oversample = AutoOverSample,
-                   const std::string& description = "") :
-            D (original),
-            interp (D),
-            transform_matrix (reference.transform()),
-            descriptor (description.empty() ? D.name() + " [resliced]" : description) {
-            assert (reference.ndim() >= 3);
-            x[0] = x[1] = x[2] = 0;
-            N[0] = reference.dim (0);
-            N[1] = reference.dim (1);
-            N[2] = reference.dim (2);
-            V[0] = reference.vox (0);
-            V[1] = reference.vox (1);
-            V[2] = reference.vox (2);
+          using typename ConstInfo::name;
 
-            Math::Matrix<pos_type> Mr, Mo;
-            Image::Transform::voxel2scanner (Mr, reference);
-            Image::Transform::voxel2scanner (Mo, original);
+          template <class InfoType>
+            Reslice (const VoxelType& original, 
+                const InfoType& reference,
+                const Math::Matrix<float>& operation = NoOp,
+                const std::vector<int>& oversample = AutoOverSample) :
+              ConstInfo (reference),
+              interp (original) {
+                assert (ndim() >= 3);
+                x[0] = x[1] = x[2] = 0;
 
-            if (operation.is_set()) {
-              Math::Matrix<T> Mt;
-              Math::mult (Mt, operation, Mo);
-              Mo.swap (Mt);
-            }
+                Math::Matrix<float> Mr, Mo;
+                Image::Transform::voxel2scanner (Mr, reference);
+                Image::Transform::voxel2scanner (Mo, original);
 
-            Math::Matrix<pos_type> iMo;
-            Math::LU::inv (iMo, Mo);
-            Math::mult (M, iMo, Mr);
+                if (operation.is_set()) {
+                  Math::Matrix<float> Mt;
+                  Math::mult (Mt, operation, Mo);
+                  Mo.swap (Mt);
+                }
 
-            if (oversample.size()) {
-              assert (oversample.size() == 3);
-              if (oversample[0] < 1 || oversample[1] < 1 || oversample[2] < 1)
-                throw Exception ("oversample factors must be greater than zero");
-              OS[0] = oversample[0];
-              OS[1] = oversample[1];
-              OS[2] = oversample[2];
-            }
-            else {
-              Point<value_type> y, x0, x1 (0.0,0.0,0.0);
-              Image::Transform::apply (x0, M, x1);
-              x1[0] = 1.0;
-              Image::Transform::apply (y, M, x1);
-              OS[0] = Math::ceil (0.999 * (y-x0).norm());
-              x1[0] = 0.0;
-              x1[1] = 1.0;
-              Image::Transform::apply (y, M, x1);
-              OS[1] = Math::ceil (0.999 * (y-x0).norm());
-              x1[1] = 0.0;
-              x1[2] = 1.0;
-              Image::Transform::apply (y, M, x1);
+                Math::Matrix<float> iMo;
+                Math::LU::inv (iMo, Mo);
+                Math::mult (direct_transform, iMo, Mr);
+
+                if (oversample.size()) {
+                  assert (oversample.size() == 3);
+                  if (oversample[0] < 1 || oversample[1] < 1 || oversample[2] < 1)
+                    throw Exception ("oversample factors must be greater than zero");
+                  OS[0] = oversample[0];
+                  OS[1] = oversample[1];
+                  OS[2] = oversample[2];
+                }
+                else {
+                  Point<value_type> y, x0, x1 (0.0,0.0,0.0);
+                  Image::Transform::apply (x0, direct_transform, x1);
+                  x1[0] = 1.0;
+                  Image::Transform::apply (y, direct_transform, x1);
+                  OS[0] = Math::ceil (0.999 * (y-x0).norm());
+                  x1[0] = 0.0;
+                  x1[1] = 1.0;
+                  Image::Transform::apply (y, direct_transform, x1);
+                  OS[1] = Math::ceil (0.999 * (y-x0).norm());
+                  x1[1] = 0.0;
+                  x1[2] = 1.0;
+                  Image::Transform::apply (y, direct_transform, x1);
               OS[2] = Math::ceil (0.999 * (y-x0).norm());
             }
 
@@ -152,7 +147,7 @@ namespace MR
               oversampling = true;
               norm = 1.0;
               for (size_t i = 0; i < 3; ++i) {
-                inc[i] = 1.0/pos_type (OS[i]);
+                inc[i] = 1.0/float (OS[i]);
                 from[i] = 0.5* (inc[i]-1.0);
                 norm *= OS[i];
               }
@@ -162,91 +157,77 @@ namespace MR
           }
 
 
-          const std::string& name () const {
-            return (descriptor);
+          size_t ndim () const {
+            return interp.ndim();
           }
-          size_t  ndim () const {
-            return (D.ndim());
+          int dim (size_t axis) const {
+            return axis < 3 ? ConstInfo::dim (axis): interp.dim (axis);
           }
-          int     dim (size_t axis) const {
-            return (axis < 3 ? N[axis] : D.dim (axis));
-          }
-          ssize_t stride (size_t axis) const {
-            return (D.stride (axis));
-          }
-          float   vox (size_t axis) const {
-            return (axis < 3 ? V[axis] : D.vox (axis));
+          float vox (size_t axis) const {
+            return axis < 3 ? ConstInfo::vox (axis) : interp.vox (axis);
           }
 
-          const Math::Matrix<pos_type>& transform () const {
-            return (transform_matrix);
-          }
-
-          void    reset () {
+          void reset () {
             x[0] = x[1] = x[2] = 0;
-            for (size_t n = 3; n < D.ndim(); ++n) D[n] = 0;
+            for (size_t n = 3; n < interp.ndim(); ++n) 
+              interp[n] = 0;
           }
 
           value_type value () {
             if (oversampling) {
-              Point<pos_type> d (x[0]+from[0], x[1]+from[1], x[2]+from[2]);
+              Point<float> d (x[0]+from[0], x[1]+from[1], x[2]+from[2]);
               value_type ret = 0.0;
-              Point<pos_type> s;
+              Point<float> s;
               for (int z = 0; z < OS[2]; ++z) {
                 s[2] = d[2] + z*inc[2];
                 for (int y = 0; y < OS[1]; ++y) {
                   s[1] = d[1] + y*inc[1];
                   for (int x = 0; x < OS[0]; ++x) {
                     s[0] = d[0] + x*inc[0];
-                    Point<pos_type> pos;
-                    Image::Transform::apply (pos, M, s);
+                    Point<float> pos;
+                    Image::Transform::apply (pos, direct_transform, s);
                     interp.voxel (pos);
                     if (!interp) continue;
                     else ret += interp.value();
                   }
                 }
               }
-              return (ret * norm);
+              return ret * norm;
             }
             else {
-              Point<pos_type> pos;
-              Transform::apply (pos, M, x);
+              Point<float> pos;
+              Transform::apply (pos, direct_transform, x);
               interp.voxel (pos);
-              return (!interp ? 0.0 : interp.value());
+              return interp.value();
             }
           }
 
-          Position<Reslice<Interpolator,Set,RefSet,pos_type> > operator[] (size_t axis) {
-            return (Position<Reslice<Interpolator,Set,RefSet,pos_type> > (*this, axis));
+          Position<Reslice<Interpolator,VoxelType> > operator[] (size_t axis) {
+            return Position<Reslice<Interpolator,VoxelType> > (*this, axis);
           }
 
         private:
-          Set& D;
-          Interpolator<Set,pos_type> interp;
-          size_t N[3];
+          Interpolator<VoxelType> interp;
           ssize_t x[3];
           bool oversampling;
           int OS[3];
-          pos_type from[3], inc[3];
-          pos_type norm;
-
-          pos_type V[3];
-          Math::Matrix<pos_type> M, transform_matrix;
-          std::string descriptor;
+          float from[3], inc[3];
+          float norm;
+          Math::Matrix<float> direct_transform;
 
           ssize_t get_pos (size_t axis) const {
-            return (axis < 3 ? x[axis] : D[axis]);
+            return axis < 3 ? x[axis] : interp[axis];
           }
           void set_pos (size_t axis, ssize_t position) {
             if (axis < 3) x[axis] = position;
-            else D[axis] = position;
+            else interp[axis] = position;
           }
           void move_pos (size_t axis, ssize_t increment) {
             if (axis < 3) x[axis] += increment;
-            else D[axis] += increment;
+            else interp[axis] += increment;
           }
 
-          friend class Position<Reslice<Interpolator,Set,RefSet,pos_type> >;
+          friend class Position<Reslice<Interpolator,VoxelType> >;
       };
 
 
@@ -267,16 +248,16 @@ namespace MR
        * DataSet::Interp::reslice<DataSet::Interp::Linear> (destination, source);
        * \endcode
        */
-      template <template <class Set, typename T> class Interpolator, class Set1, class Set2, typename T>
-      void reslice (
-        Set1& destination,
-        Set2& source,
-        const Math::Matrix<T>& operation = NoOp,
-        const std::vector<int>& oversampling = AutoOverSample)
-      {
-        Reslice<Interpolator,Set2,Set1,T> interp (source, destination, operation, oversampling);
-        Image::copy_with_progress (interp, destination);
-      }
+      template <template <class VoxelType> class Interpolator, class VoxelTypeDestination, class VoxelTypeSource>
+        void reslice (
+            VoxelTypeSource& source,
+            VoxelTypeDestination& destination,
+            const Math::Matrix<float>& operation = NoOp,
+            const std::vector<int>& oversampling = AutoOverSample)
+        {
+          Reslice<Interpolator,VoxelTypeSource> interp (source, destination, operation, oversampling);
+          Image::threaded_copy_with_progress_message ("reslicing \"" + source.name() + "\"...", interp, destination, 2);
+        }
 
 
       //! @}

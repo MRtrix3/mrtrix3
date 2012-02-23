@@ -37,16 +37,11 @@ namespace MR
         Sinc (const size_t w) :
           window_size (w),
           max_offset_from_kernel_centre ((w-1) / 2),
-          indices (new size_t[w]),
-          weights (new value_type[w]),
+          indices (w),
+          weights (w),
           current_pos (NAN)
         {
           assert (w % 2);
-        }
-
-        ~Sinc() {
-          delete[] indices;
-          delete[] weights;
         }
 
         template <class Set>
@@ -68,7 +63,7 @@ namespace MR
             else
               indices[i] = voxel;
 
-            const value_type offset = position - (value_type)voxel;
+            const value_type offset = position - value_type (voxel);
 
             const value_type sinc           = offset ? Math::sin (M_PI * offset) / (M_PI * offset) : 1.0;
             const value_type hamming_factor = 0.5 * (1.0 + Math::cos (M_PI * offset / (max_offset_from_kernel_centre + 1)));
@@ -122,8 +117,8 @@ namespace MR
 
       private:
         const size_t window_size, max_offset_from_kernel_centre;
-        size_t*     indices;
-        value_type* weights;
+        std::vector<size_t> indices;
+        std::vector<value_type> weights;
         value_type  current_pos;
 
     };

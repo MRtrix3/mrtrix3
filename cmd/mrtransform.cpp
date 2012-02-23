@@ -90,12 +90,12 @@ typedef float value_type;
 
 void run ()
 {
-  Math::Matrix<float> T;
+  Math::Matrix<float> operation;
 
   Options opt = get_options ("transform");
   if (opt.size()) {
-    T.load (opt[0][0]);
-    if (T.rows() != 4 || T.columns() != 4)
+    operation.load (opt[0][0]);
+    if (operation.rows() != 4 || operation.columns() != 4)
       throw Exception ("transform matrix supplied in file \"" + opt[0][0] + "\" is not 4x4");
   }
 
@@ -109,16 +109,16 @@ void run ()
   bool replace = get_options ("replace").size();
 
   if (inverse) {
-    if (!T.is_set())
+    if (!operation.is_set())
       throw Exception ("no transform provided for option '-inverse' (specify using '-transform' option)");
     Math::Matrix<float> I;
-    Math::LU::inv (I, T);
-    T.swap (I);
+    Math::LU::inv (I, operation);
+    operation.swap (I);
   }
 
 
   if (replace)
-    if (!T.is_set())
+    if (!operation.is_set())
       throw Exception ("no transform provided for option '-replace' (specify using '-transform' option)");
 
 
@@ -158,8 +158,8 @@ void run ()
 
     if (replace) {
       Image::Info& info_in (data_in);
-      info_in.transform().swap (T);
-      T.clear();
+      info_in.transform().swap (operation);
+      operation.clear();
     }
 
     Image::Buffer<float>::voxel_type in (data_in);
@@ -169,16 +169,17 @@ void run ()
 
     switch (interp) {
       case 0:
-        Image::Interp::reslice<Image::Interp::Nearest> (out, in, T, oversample);
+        Image::Interp::reslice<Image::Interp::Nearest> (in, out, operation, oversample);
         break;
       case 1:
-        Image::Interp::reslice<Image::Interp::Linear> (out, in, T, oversample);
+        Image::Interp::reslice<Image::Interp::Linear> (in, out, operation, oversample);
         break;
       case 2:
-        Image::Interp::reslice<Image::Interp::Cubic> (out, in, T, oversample);
+        Image::Interp::reslice<Image::Interp::Cubic> (in, out, operation, oversample);
         break;
       case 3:
-        Image::Interp::reslice<Image::Interp::Sinc> (out, in, T, oversample);
+        error ("FIXME: sinc interpolation needs a lot of work!");
+        Image::Interp::reslice<Image::Interp::Sinc> (in, out, operation, oversample);
         break;
       default:
         assert (0);
@@ -187,13 +188,13 @@ void run ()
   }
   else {
     // straight copy:
-    if (T.is_set()) {
+    if (operation.is_set()) {
       header_out.comments().push_back ("transform modified");
       if (replace)
-        header_out.transform().swap (T);
+        header_out.transform().swap (operation);
       else {
         Math::Matrix<float> M (header_out.transform());
-        Math::mult (header_out.transform(), T, M);
+        Math::mult (header_out.transform(), operation, M);
       }
     }
 

@@ -47,6 +47,7 @@ namespace MR
             }
 
           typedef typename VoxelType::value_type value_type;
+          typedef Median3D voxel_type;
 
           void set_extent (const std::vector<int>& extent) {
             for (size_t i = 0; i < extent.size(); ++i)
@@ -95,7 +96,7 @@ namespace MR
                 (*this)[1] = j;
                 for (ssize_t i = from[0]; i < to[0]; ++i) {
                   (*this)[0] = i;
-                  const value_type val = vox_.value();
+                  const value_type val = parent_vox.value();
                   if (nc < m) {
                     v[nc] = val;
                     if (v[nc] > cm) cm = val;
@@ -137,7 +138,7 @@ namespace MR
           using Voxel<VoxelType>::operator[];
 
         protected:
-          using Voxel<VoxelType>::vox_;
+          using Voxel<VoxelType>::parent_vox;
           std::vector<int> extent_;
           std::vector<value_type> v;
         };

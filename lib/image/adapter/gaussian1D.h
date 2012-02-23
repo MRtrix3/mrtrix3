@@ -55,7 +55,7 @@ namespace MR
 
           value_type value () {
             if (kernel.size() == 1)
-              return vox_.value();
+              return parent_vox.value();
 
             const ssize_t pos = (*this)[axis_];
             const int radius = floor(static_cast<float>(extent_)/2.0);
@@ -70,7 +70,7 @@ namespace MR
               for (ssize_t k = from; k <= to; ++k) {
                 av_weights += kernel[c];
                 (*this)[axis_] = k;
-                val += vox_.value() * kernel[c++];
+                val += parent_vox.value() * kernel[c++];
               }
               val /= av_weights;
             } else if ((to - pos) < radius){
@@ -79,14 +79,14 @@ namespace MR
               for (ssize_t k = from; k <= to; ++k) {
                 av_weights += kernel[c];
                 (*this)[axis_] = k;
-                val += vox_.value() * kernel[c++];
+                val += parent_vox.value() * kernel[c++];
               }
               val /= av_weights;
             } else {
               size_t c = 0;
               for (ssize_t k = from; k <= to; ++k) {
                 (*this)[axis_] = k;
-                val += vox_.value() * kernel[c++];
+                val += parent_vox.value() * kernel[c++];
               }
             }
 
@@ -121,7 +121,7 @@ namespace MR
             }
           }
 
-          using Voxel<VoxelType>::vox_;
+          using Voxel<VoxelType>::parent_vox;
           float stdev_;
           size_t extent_;
           size_t axis_;

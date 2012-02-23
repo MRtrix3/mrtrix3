@@ -34,20 +34,20 @@ namespace MR
     namespace Transform
     {
 
-      template <class Set, typename T>
-      inline Math::Matrix<T>& set_default (Math::Matrix<T>& M, const Set& ds)
+      template <class InfoType, typename T>
+      inline Math::Matrix<T>& set_default (Math::Matrix<T>& M, const InfoType& ds)
       {
         M.allocate (4,4);
         M.identity();
         M (0,3) = -0.5 * (ds.dim (0)-1) * ds.vox (0);
         M (1,3) = -0.5 * (ds.dim (1)-1) * ds.vox (1);
         M (2,3) = -0.5 * (ds.dim (2)-1) * ds.vox (2);
-        return (M);
+        return M;
       }
 
 
-      template <class Set, typename T>
-      inline Math::Matrix<T>& voxel2image (Math::Matrix<T>& M, const Set& ds)
+      template <class InfoType, typename T>
+      inline Math::Matrix<T>& voxel2image (Math::Matrix<T>& M, const InfoType& ds)
       {
         M.allocate (4,4);
         M.zero();
@@ -55,12 +55,12 @@ namespace MR
         M (1,1) = ds.vox (1);
         M (2,2) = ds.vox (2);
         M (3,3) = 1.0;
-        return (M);
+        return M;
       }
 
 
-      template <class Set, typename T>
-      inline Math::Matrix<T>& image2voxel (Math::Matrix<T>& M, const Set& ds)
+      template <class InfoType, typename T>
+      inline Math::Matrix<T>& image2voxel (Math::Matrix<T>& M, const InfoType& ds)
       {
         M.allocate (4,4);
         M.zero();
@@ -68,20 +68,20 @@ namespace MR
         M (1,1) = 1.0/ds.vox (1);
         M (2,2) = 1.0/ds.vox (2);
         M (3,3) = 1.0;
-        return (M);
+        return M;
       }
 
 
-      template <class Set, typename T>
-      inline Math::Matrix<T>& image2scanner (Math::Matrix<T>& M, const Set& ds)
+      template <class InfoType, typename T>
+      inline Math::Matrix<T>& image2scanner (Math::Matrix<T>& M, const InfoType& ds)
       {
         M = ds.transform();
-        return (M);
+        return M;
       }
 
 
-      template <class Set, typename T>
-      inline Math::Matrix<T>& scanner2image (Math::Matrix<T>& M, const Set& ds)
+      template <class InfoType, typename T>
+      inline Math::Matrix<T>& scanner2image (Math::Matrix<T>& M, const InfoType& ds)
       {
         int signum;
         Math::Permutation p (4);
@@ -90,23 +90,23 @@ namespace MR
         Math::LU::inv (M, D, p);
         M (3,0) = M (3,1) = M (3,2) = 0.0;
         M (3,3) = 1.0;
-        return (M);
+        return M;
       }
 
 
-      template <class Set, typename T>
-      inline Math::Matrix<T>& voxel2scanner (Math::Matrix<T>& M, const Set& ds)
+      template <class InfoType, typename T>
+      inline Math::Matrix<T>& voxel2scanner (Math::Matrix<T>& M, const InfoType& ds)
       {
         M = ds.transform();
         for (size_t i = 0; i < 3; i++)
           for (size_t j = 0; j < 3; j++)
             M (i,j) *= ds.vox (j);
-        return (M);
+        return M;
       }
 
 
-      template <class Set, typename T>
-      inline Math::Matrix<T>& scanner2voxel (Math::Matrix<T>& M, const Set& ds)
+      template <class InfoType, typename T>
+      inline Math::Matrix<T>& scanner2voxel (Math::Matrix<T>& M, const InfoType& ds)
       {
         int signum;
         Math::Permutation p (4);
@@ -116,7 +116,7 @@ namespace MR
         Math::LU::inv (M, D, p);
         M (3,0) = M (3,1) = M (3,2) = 0.0;
         M (3,3) = 1.0;
-        return (M);
+        return M;
       }
 
       template <typename T, class P1, class P2>

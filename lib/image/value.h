@@ -23,6 +23,8 @@
 #ifndef __image_value_h__
 #define __image_value_h__
 
+#include <iostream>
+
 namespace MR
 {
   namespace Image
