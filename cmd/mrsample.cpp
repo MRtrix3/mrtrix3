@@ -28,7 +28,7 @@
 #include "image/interp/linear.h"
 #include "image/interp/cubic.h"
 #include "image/interp/sinc.h"
-#include "image/interp/reslice.h"
+#include "image/filter/reslice.h"
 
 MRTRIX_APPLICATION
 
@@ -84,10 +84,10 @@ void run () {
   T.identity();
 
   switch (interp) {
-    case 0: Image::Interp::reslice<Image::Interp::Nearest> (out, in, T); break;
-    case 1: Image::Interp::reslice<Image::Interp::Linear>  (out, in, T); break;
-    case 2: Image::Interp::reslice<Image::Interp::Cubic>   (out, in, T); break;
-    case 3: Image::Interp::reslice<Image::Interp::Sinc>    (out, in, T); break;
+    case 0: Image::Filter::reslice<Image::Interp::Nearest> (out, in, T); break;
+    case 1: Image::Filter::reslice<Image::Interp::Linear>  (out, in, T); break;
+    case 2: Image::Filter::reslice<Image::Interp::Cubic>   (out, in, T); break;
+    case 3: Image::Filter::reslice<Image::Interp::Sinc>    (out, in, T); break;
     default: assert (0);
   }
 }

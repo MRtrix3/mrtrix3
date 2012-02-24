@@ -39,8 +39,8 @@ namespace MR
     class Iterator
     {
       public:
-        template <class Set> 
-          Iterator (const Set& S) : 
+        template <class InfoType> 
+          Iterator (const InfoType& S) : 
             d (S.ndim()), 
             p (S.ndim(), 0) {
               for (size_t i = 0; i < S.ndim(); ++i)

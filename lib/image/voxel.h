@@ -78,23 +78,6 @@ namespace MR
           }
 
 
-          template <class U> 
-            const Voxel& operator= (const U& V) {
-              offset_ = start_;
-              for (size_t n = 0; n < ndim(); n++) {
-                x[n] = V[n];
-                offset_ += stride (n) * x[n];
-              }
-              return *this;
-            }
-
-          //! reset all coordinates to zero.
-          void reset () {
-            offset_ = start_;
-            for (size_t i = 0; i < ndim(); i++)
-              x[i] = 0;
-          }
-
           ssize_t operator[] (size_t axis) const {
             return get_pos (axis);
           }
@@ -108,7 +91,6 @@ namespace MR
           Image::Value<Voxel> value () {
             return Image::Value<Voxel> (*this);
           }
-
 
           friend std::ostream& operator<< (std::ostream& stream, const Voxel& V) {
             stream << "voxel for image \"" << V.name() << "\", position [ ";
@@ -149,6 +131,19 @@ namespace MR
           friend class Image::Value<Voxel>;
       };
 
+
+    template <class InputVoxelType, class OutputVoxelType> 
+      void voxel_assign (OutputVoxelType& out, const InputVoxelType& in) {
+        for (size_t n = 0; n < std::min (in.ndim(), out.ndim()); ++n) 
+          out[n] = in[n];
+      }
+
+    //! reset all coordinates to zero.
+    template <class VoxelType>
+      void voxel_reset (VoxelType& vox) {
+        for (size_t n = 0; n < vox.ndim(); ++n)
+          vox[n] = 0;
+      }
 
   }
 }

@@ -23,11 +23,7 @@
 #ifndef __image_threaded_copy_h__
 #define __image_threaded_copy_h__
 
-#include "debug.h"
-#include "image/loop.h"
-#include "image/iterator.h"
-#include "thread/mutex.h"
-#include "thread/exec.h"
+#include "image/threaded_loop.h"
 
 namespace MR
 {
@@ -37,71 +33,23 @@ namespace MR
     //! \cond skip
     namespace {
 
-      template <class InputVoxelType, class OutputVoxelType> 
-        class __ThreadedCopyInfo {
+      template <class InputVoxelType, class OutputVoxelType>
+        class __CopyKernel {
           public:
-            __ThreadedCopyInfo (const std::string& message, const std::vector<size_t>& axes_out_of_thread, const std::vector<size_t>& axes_in_thread, InputVoxelType& source, OutputVoxelType& destination) :
-              loop (axes_out_of_thread, message), 
-              dummy (source),
-              src (source),
-              dest (destination),
-              axes (axes_in_thread) {
-                loop.start (dummy);
-              }
-            
-            __ThreadedCopyInfo (const std::vector<size_t>& axes_out_of_thread, const std::vector<size_t>& axes_in_thread, InputVoxelType& source, OutputVoxelType& destination) :
-              loop (axes_out_of_thread), 
-              dummy (source),
-              src (source),
-              dest (destination),
-              axes (axes_in_thread) {
-                loop.start (dummy);
-              }
-            
-            LoopInOrder loop;
-            Iterator dummy;
-            InputVoxelType& src;
-            OutputVoxelType& dest;
-            const std::vector<size_t>& axes;
-            Thread::Mutex mutex;
-          private:
-            __ThreadedCopyInfo (const __ThreadedCopyInfo& a) { assert (0); }
-        };
+            __CopyKernel (InputVoxelType& input, OutputVoxelType output) :
+              in (input),
+              out (output) { }
 
-
-
-      template <class InputVoxelType, class OutputVoxelType> 
-        class __ThreadedCopyAssign {
-          public:
-            __ThreadedCopyAssign (__ThreadedCopyInfo<InputVoxelType, OutputVoxelType>& common_info) :
-              common (common_info) { }
-
-            void execute () {
-              InputVoxelType src (common.src);
-              OutputVoxelType dest (common.dest);
-              LoopInOrder loop (common.axes);
-
-              while (get (src, dest)) {
-                for (loop.start (src, dest); loop.ok(); loop.next (src, dest)) 
-                  dest.value() = src.value();
-              }
+            void operator () (const Iterator& pos) {
+              voxel_assign (in, pos);
+              voxel_assign (out, pos);
+              out.value() = in.value();
             }
 
           protected:
-            __ThreadedCopyInfo<InputVoxelType, OutputVoxelType>& common;
-
-            bool get (InputVoxelType& src, OutputVoxelType& dest) const {
-              Thread::Mutex::Lock lock (common.mutex);
-              if (common.loop.ok()) {
-                common.loop.set_position (common.dummy, dest, src);
-                common.loop.next (common.dummy);
-                return true;
-              }
-              else 
-                return false;
-            }
+            InputVoxelType in;
+            OutputVoxelType out;
         };
-
     }
     
     //! \endcond
@@ -112,19 +60,15 @@ namespace MR
     template <class InputVoxelType, class OutputVoxelType>
       void threaded_copy (InputVoxelType& source, OutputVoxelType& destination, const std::vector<size_t>& axes, size_t num_axes_in_thread = 1) 
       {
-        const std::vector<size_t> axes_out_of_thread (axes.begin()+num_axes_in_thread, axes.end());
-        const std::vector<size_t> axes_in_thread (axes.begin(), axes.begin()+num_axes_in_thread);
-        __ThreadedCopyInfo<InputVoxelType, OutputVoxelType> common (axes_out_of_thread, axes_in_thread, source, destination);
-        __ThreadedCopyAssign<InputVoxelType, OutputVoxelType> assign (common);
-        Thread::Array<__ThreadedCopyAssign<InputVoxelType, OutputVoxelType> > thread_list (assign);
-        Thread::Exec threads (thread_list, "copy thread");
+        __CopyKernel<InputVoxelType, OutputVoxelType> copy_kernel (source, destination);
+        threaded_loop (copy_kernel, source, axes, num_axes_in_thread);
       }
 
     template <class InputVoxelType, class OutputVoxelType>
       void threaded_copy (InputVoxelType& source, OutputVoxelType& destination, size_t num_axes_in_thread = 1, size_t from_axis = 0, size_t to_axis = std::numeric_limits<size_t>::max())
       {
-        const std::vector<size_t> axes = Stride::order (source, from_axis, to_axis);
-        threaded_copy (source, destination, axes, num_axes_in_thread);
+        __CopyKernel<InputVoxelType, OutputVoxelType> copy_kernel (source, destination);
+        threaded_loop (copy_kernel, source, num_axes_in_thread, from_axis, to_axis);
       }
 
 
@@ -138,12 +82,8 @@ namespace MR
           const std::vector<size_t>& axes,
           size_t num_axes_in_thread = 1)
       {
-        const std::vector<size_t> axes_out_of_thread (axes.begin()+num_axes_in_thread, axes.end());
-        const std::vector<size_t> axes_in_thread (axes.begin(), axes.begin()+num_axes_in_thread);
-        __ThreadedCopyInfo<InputVoxelType, OutputVoxelType> common (message, axes_out_of_thread, axes_in_thread, source, destination);
-        __ThreadedCopyAssign<InputVoxelType, OutputVoxelType> assign (common);
-        Thread::Array<__ThreadedCopyAssign<InputVoxelType, OutputVoxelType> > thread_list (assign);
-        Thread::Exec threads (thread_list, "copy thread");
+        __CopyKernel<InputVoxelType, OutputVoxelType> copy_kernel (source, destination);
+        threaded_loop_with_progress_message (message, copy_kernel, source, axes, num_axes_in_thread);
       }
 
     template <class InputVoxelType, class OutputVoxelType>
@@ -155,8 +95,8 @@ namespace MR
           size_t from_axis = 0, 
           size_t to_axis = std::numeric_limits<size_t>::max())
       {
-        const std::vector<size_t> axes = Stride::order (source, from_axis, to_axis);
-        threaded_copy_with_progress_message (message, source, destination, axes, num_axes_in_thread);
+        __CopyKernel<InputVoxelType, OutputVoxelType> copy_kernel (source, destination);
+        threaded_loop_with_progress_message (message, copy_kernel, source, num_axes_in_thread, from_axis, to_axis);
       }
 
 
