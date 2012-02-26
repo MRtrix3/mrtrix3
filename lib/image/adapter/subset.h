@@ -35,6 +35,11 @@ namespace MR
   {
     namespace Adapter {
 
+    // TODO Currently Subset relies on storing & using local members from_, dim_ and transform_
+    // If this class is used in a templated constructor for a DataSet-type class, it will
+    //   perform construction using the underlying ConstInfo, and these parameters will be ignored
+    // Must be an elegant way of handling this...
+
     template <class VoxelType>
       class Subset : public Voxel<VoxelType>
     {
@@ -48,17 +53,20 @@ namespace MR
         template <class VectorType>
           Subset (const VoxelType& original, const VectorType& from, const VectorType& dimensions) :
             Voxel<VoxelType> (original),
-            from_ (ndim()) {
-              for (size_t n = 0; n < ndim(); ++n) {
-                assert (ssize_t (from[n] + dimensions[n]) <= original.dim(n));
-                from_[n] = from[n];
-                dim_[n] = dimensions[n];
-              }
-
-              for (size_t j = 0; j < 3; ++j)
-                for (size_t i = 0; i < 3; ++i)
-                  transform_(i,3) += from[j] * vox(j) * transform_(i,j);
+            from_ (ndim()),
+            dim_  (ndim()),
+            transform_ (original.transform())
+          {
+            for (size_t n = 0; n < ndim(); ++n) {
+              assert (ssize_t (from[n] + dimensions[n]) <= original.dim(n));
+              from_[n] = from[n];
+              dim_[n] = dimensions[n];
             }
+
+            for (size_t j = 0; j < 3; ++j)
+              for (size_t i = 0; i < 3; ++i)
+                transform_(i,3) += from[j] * vox(j) * transform_(i,j);
+          }
 
         void reset () {
           for (size_t n = 0; n < ndim(); ++n)

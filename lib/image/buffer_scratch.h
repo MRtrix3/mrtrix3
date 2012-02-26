@@ -26,6 +26,7 @@
 #include "debug.h"
 #include "image/info.h"
 #include "image/stride.h"
+#include "image/voxel.h"
 #include "image/adapter/info.h"
 
 namespace MR

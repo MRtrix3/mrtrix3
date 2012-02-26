@@ -52,17 +52,18 @@ namespace MR
           // parent DataSet class
           Base (const InfoType& parent) :
             InfoType (parent), 
-            out_of_bounds (true) {
-              bounds[0] = dim(0) - 0.5;
-              bounds[1] = dim(1) - 0.5;
-              bounds[2] = dim(2) - 0.5;
+            out_of_bounds (true)
+          {
+            bounds[0] = dim(0) - 0.5;
+            bounds[1] = dim(1) - 0.5;
+            bounds[2] = dim(2) - 0.5;
 
-              Math::Matrix<float> M (4,4);
-              set_matrix (S2V, Transform::scanner2voxel (M, *this));
-              set_matrix (V2S, Transform::voxel2scanner (M, *this));
-              set_matrix (I2S, Transform::image2scanner (M, *this));
-              set_matrix (S2I, Transform::scanner2image (M, *this));
-            }
+            Math::Matrix<float> M (4,4);
+            set_matrix (S2V, Transform::scanner2voxel (M, *this));
+            set_matrix (V2S, Transform::voxel2scanner (M, *this));
+            set_matrix (I2S, Transform::image2scanner (M, *this));
+            set_matrix (S2I, Transform::scanner2image (M, *this));
+          }
 
           //! test whether current position is within bounds.
           /*! \return true if the current position is out of bounds, false otherwise */
