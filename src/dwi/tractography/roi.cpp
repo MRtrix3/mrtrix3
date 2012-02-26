@@ -64,7 +64,7 @@ namespace MR {
         top[1] = std::min (size_t (data.dim(1)-1), top[1]+2-bottom[1]);
         top[2] = std::min (size_t (data.dim(2)-1), top[2]+2-bottom[2]);
 
-        Image::Adapter::Subset< Image::Buffer<float>::voxel_type > sub (vox, 3, bottom, top);
+        Image::Adapter::Subset< Image::Buffer<float>::voxel_type > sub (vox, bottom, top);
         
         if (data.datatype() == DataType::Bit) 
           mask = new Mask (sub, data.name());

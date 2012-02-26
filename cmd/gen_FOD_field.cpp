@@ -154,7 +154,7 @@ void run () {
   header.stride(2) = 4;
   header.stride(3) = 1;
 
-  Image::Buffer<float> source (header, argument[2]);
+  Image::Buffer<float> source (argument[2], header);
   Image::Buffer<float>::voxel_type vox (source);
 
   Image::Loop loop ("generating FOD field...", 0, 3);

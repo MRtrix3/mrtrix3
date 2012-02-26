@@ -71,7 +71,7 @@ void run ()
   Image::Header sample_header (FOD_data);
   sample_header.dim(3) = 3;
   sample_header.datatype() = DataType::Float32;
-  Image::Buffer<value_type> sample_data (sample_header, argument[1]);
+  Image::Buffer<value_type> sample_data (argument[1], sample_header);
 
   Image::Buffer<value_type>::voxel_type in (FOD_data);
   Image::Buffer<value_type>::voxel_type out (sample_data);
