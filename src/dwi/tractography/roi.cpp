@@ -64,12 +64,19 @@ namespace MR {
         top[1] = std::min (size_t (data.dim(1)-1), top[1]+2-bottom[1]);
         top[2] = std::min (size_t (data.dim(2)-1), top[2]+2-bottom[2]);
 
+        Image::Info new_info (data);
+        for (size_t axis = 0; axis != 3; ++axis) {
+          new_info.dim(axis) = top[axis];
+          for (size_t i = 0; i < 3; ++i)
+            new_info.transform()(i,3) += bottom[axis] * new_info.vox(axis) * new_info.transform()(i,axis);
+        }
+
         Image::Adapter::Subset< Image::Buffer<float>::voxel_type > sub (vox, bottom, top);
         
         if (data.datatype() == DataType::Bit) 
-          mask = new Mask (sub, data.name());
+          mask = new Mask (sub, new_info, data.name());
         else
-          image = new SeedImage (sub, data.name(), max);
+          image = new SeedImage (sub, new_info, data.name(), max);
 
         vol = vox.vox(0) * vox.vox(1) * vox.vox(2) * sum;
 

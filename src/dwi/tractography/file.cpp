@@ -49,7 +49,7 @@ namespace MR {
           }
           else if (key == "comment") properties.comments.push_back (kv.value());
           else if (key == "file") data_file = kv.value();
-          else if (key == "datatype") dtype.parse (kv.value()); 
+          else if (key == "datatype") dtype = dtype.parse (kv.value());
           else properties[key] = kv.value();
         }
 

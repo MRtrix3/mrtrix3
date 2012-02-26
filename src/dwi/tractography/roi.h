@@ -115,7 +115,7 @@ namespace MR {
                 sampler = rng.uniform() * image->max_value;
               } while (seed.value() < MAX (sampler, std::numeric_limits<float>::epsilon()));
               p.set (seed[0]+rng.uniform()-0.5, seed[1]+rng.uniform()-0.5, seed[2]+rng.uniform()-0.5);
-              return (mask->interp.voxel2scanner (p));
+              return (image->interp.voxel2scanner (p));
             }
 
             do {
@@ -139,25 +139,27 @@ namespace MR {
           class Mask : public Image::BufferScratch<bool> {
             public:
               template <class InputVoxelType> 
-                Mask (InputVoxelType& D, const std::string& description) : 
-                  Image::BufferScratch<bool> (D, description),
-                  interp (*this) {
-                    Image::BufferScratch<bool>::voxel_type this_vox (*this);
-                    Image::copy (this_vox, D);
-                  }
+                Mask (InputVoxelType& D, const Image::Info& info, const std::string& description) :
+                  Image::BufferScratch<bool> (info, description),
+                  interp (*this)
+                {
+                  Image::BufferScratch<bool>::voxel_type this_vox (*this);
+                  Image::copy (D, this_vox);
+                }
               Image::Interp::Base< Image::BufferScratch<bool> > interp;
           };
 
           class SeedImage : public Image::BufferScratch<float> {
             public:
               template <class InputVoxelType> 
-                SeedImage (InputVoxelType& D, const std::string& description, const float max) :
-                  Image::BufferScratch<float> (D, description),
+                SeedImage (InputVoxelType& D, const Image::Info& info, const std::string& description, const float max) :
+                  Image::BufferScratch<float> (info, description),
                   interp (*this),
-                  max_value (max) {
-                    Image::BufferScratch<float>::voxel_type this_vox (*this);
-                    Image::copy (this_vox, D);
-                  }
+                  max_value (max)
+                {
+                  Image::BufferScratch<float>::voxel_type this_vox (*this);
+                  Image::copy (D, this_vox);
+                }
               Image::Interp::Base< Image::BufferScratch<float> > interp;
               float max_value;
           };
