@@ -20,15 +20,8 @@
 
 */
 
-#ifndef __dwi_tractography_mapping_loader_h__
-#define __dwi_tractography_mapping_loader_h__
 
-
-#include "progressbar.h"
-#include "thread/queue.h"
-#include "dwi/tractography/file.h"
-
-#include "dwi/tractography/mapping/common.h"
+#include "dwi/tractography/mapping/writer.h"
 
 
 namespace MR {
@@ -37,34 +30,11 @@ namespace Tractography {
 namespace Mapping {
 
 
+template <> float get_factor<SetVoxel>          (const SetVoxel&          set, const SetVoxel         ::const_iterator item) { return set.factor; }
+template <> float get_factor<SetVoxelDir>       (const SetVoxelDir&       set, const SetVoxelDir      ::const_iterator item) { return set.factor; }
+template <> float get_factor<SetVoxelFactor>    (const SetVoxelFactor&    set, const SetVoxelFactor   ::const_iterator item) { return item->get_factor(); }
+template <> float get_factor<SetVoxelDirFactor> (const SetVoxelDirFactor& set, const SetVoxelDirFactor::const_iterator item) { return item->get_factor(); }
 
-class TrackLoader
-{
-
-  public:
-    TrackLoader (DWI::Tractography::Reader<float>& file, const size_t count) :
-      reader (file),
-      counter (0),
-      total_count (count),
-      progress ("mapping tracks to image...", total_count)
-    { }
-
-    virtual bool operator() (TrackAndIndex& out)
-    {
-      if (!reader.next (out.tck))
-        return false;
-      out.index = counter++;
-      ++progress;
-      return true;
-    }
-
-  protected:
-    DWI::Tractography::Reader<float>& reader;
-    size_t counter;
-    size_t total_count;
-    ProgressBar progress;
-
-};
 
 
 }
@@ -72,7 +42,6 @@ class TrackLoader
 }
 }
 
-#endif
 
 
 

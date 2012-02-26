@@ -44,7 +44,7 @@ class TrackAndIndex {
     size_t index;
 };
 
-typedef Thread::Queue<TrackAndIndex> TrackQueue;
+//typedef Thread::Queue<TrackAndIndex> TrackQueue;
 
 
 }

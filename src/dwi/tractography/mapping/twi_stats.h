@@ -34,7 +34,7 @@ enum contrast_t { TDI, ENDPOINT, LENGTH, INVLENGTH, SCALAR_MAP, SCALAR_MAP_COUNT
 //const char** const contrasts;
 
 
-enum stat_t { SUM, MIN, MEAN, MEDIAN, MAX, GAUSSIAN, FMRI_MIN, FMRI_MEAN, FMRI_MAX };
+enum stat_t { SUM, MIN, MEAN, MEDIAN, MAX, GAUSSIAN, FMRI_MIN, FMRI_MEAN, FMRI_MAX, FMRI_PROD };
 //const char** const statistics;
 
 extern const char* contrasts[];

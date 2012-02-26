@@ -29,6 +29,7 @@
 
 #include "point.h"
 
+#include "image/buffer_preload.h"
 #include "image/header.h"
 #include "math/matrix.h"
 #include "math/SH.h"
@@ -71,17 +72,13 @@ class TrackMapperBase
 {
 
   public:
-    TrackMapperBase (TrackQueue& input, Thread::Queue<Cont>& output, const Image::Header& output_header, const Math::Matrix<float>& interp_matrix) :
-      reader     (input),
-      writer     (output),
+    TrackMapperBase (const Image::Header& output_header, const Math::Matrix<float>& interp_matrix) :
       R          (interp_matrix, 3),
       H_out      (output_header),
       interp_out (H_out),
       os_factor  (interp_matrix.rows() + 1) { }
 
     TrackMapperBase (const TrackMapperBase& that) :
-      reader     (that.reader),
-      writer     (that.writer),
       R          (that.R),
       H_out      (that.H_out),
       interp_out (H_out),
@@ -91,29 +88,21 @@ class TrackMapperBase
     virtual ~TrackMapperBase() { }
 
 
-    void execute ()
+    bool operator() (TrackAndIndex& in, Cont& out)
     {
-      TrackQueue::Reader::Item in (reader);
-      typename Thread::Queue<Cont>::Writer::Item out (writer);
-
-      while (in.read()) {
-        out->clear();
-        out->index = in->index;
-        if (preprocess (in->tck, *out)) {
-          if (R.valid())
-            R.interpolate (in->tck);
-          voxelise (in->tck, *out);
-          postprocess (in->tck, *out);
-          if (!out.write())
-            throw Exception ("error writing to write-back queue");
-        }
+      out.clear();
+      out.index = in.index;
+      if (preprocess (in.tck, out)) {
+        if (R.valid())
+          R.interpolate (in.tck);
+        voxelise (in.tck, out);
+        postprocess (in.tck, out);
       }
+      return true;
     }
 
 
   private:
-    TrackQueue::Reader reader;
-    typename Thread::Queue<Cont>::Writer writer;
     Resampler< Point<float>, float > R;
 
 
@@ -124,7 +113,7 @@ class TrackMapperBase
 
 
     virtual void voxelise    (const std::vector< Point<float> >&, Cont&) const { throw Exception ("Running empty virtual function TrackMapperBase::voxelise()"); }
-    virtual bool preprocess  (const std::vector< Point<float> >&, Cont&)       { return true; }
+    virtual bool preprocess  (const std::vector< Point<float> >& tck, Cont& out) { out.factor = 1.0; return true; }
     virtual void postprocess (const std::vector< Point<float> >&, Cont&) const { }
 
 
@@ -140,8 +129,8 @@ template <class Cont>
 class TrackMapperTWI : public TrackMapperBase<Cont>
 {
   public:
-    TrackMapperTWI (TrackQueue& input, Thread::Queue<Cont>& output, const Image::Header& output_header, const Math::Matrix<float>& interp_matrix, const float step, const contrast_t c, const stat_t s, const float denom = 0.0) :
-      TrackMapperBase<Cont> (input, output, output_header, interp_matrix),
+    TrackMapperTWI (const Image::Header& output_header, const Math::Matrix<float>& interp_matrix, const float step, const contrast_t c, const stat_t s, const float denom = 0.0) :
+      TrackMapperBase<Cont> (output_header, interp_matrix),
       contrast              (c),
       track_statistic       (s),
       step_size             (step),
@@ -193,7 +182,7 @@ void TrackMapperTWI<Cont>::load_values (const std::vector< Point<float> >& tck, 
 {
 
   if (contrast != CURVATURE)
-    throw Exception ("Function TrackMapper::load_values() only works with curvature contrast");
+    throw Exception ("Function TrackMapperTWI::load_values() only works with curvature contrast");
 
   std::vector< Point<float> > tangents;
   tangents.reserve (tck.size());
@@ -299,9 +288,11 @@ template <class Cont>
 class TrackMapperTWIImage : public TrackMapperTWI<Cont>
 {
 
+  typedef Image::BufferPreload<float>::voxel_type input_voxel_type;
+
   public:
-    TrackMapperTWIImage (TrackQueue& input, Thread::Queue<Cont>& output, const Image::Header& output_header, const Math::Matrix<float>& interp_matrix, const float step, const contrast_t c, const stat_t m, const float denom, Image::Buffer<float>& input_image) :
-      TrackMapperTWI<Cont> (input, output, output_header, interp_matrix, step, c, m, denom),
+    TrackMapperTWIImage (const Image::Header& output_header, const Math::Matrix<float>& interp_matrix, const float step, const contrast_t c, const stat_t m, const float denom, Image::BufferPreload<float>& input_image) :
+      TrackMapperTWI<Cont> (output_header, interp_matrix, step, c, m, denom),
       voxel                (input_image),
       interp               (voxel),
       lmax                 (0),
@@ -336,8 +327,8 @@ class TrackMapperTWIImage : public TrackMapperTWI<Cont>
 
 
   private:
-    Image::Buffer<float>::voxel_type voxel;
-    Image::Interp::Linear< Image::Buffer<float>::voxel_type > interp;
+    input_voxel_type voxel;
+    Image::Interp::Linear< input_voxel_type > interp;
 
     size_t lmax;
     float* sh_coeffs;
@@ -361,7 +352,7 @@ void TrackMapperTWIImage<Cont>::load_values (const std::vector< Point<float> >& 
     case SCALAR_MAP:
     case SCALAR_MAP_COUNT:
 
-      if (TrackMapperTWI<Cont>::track_statistic == FMRI_MIN || TrackMapperTWI<Cont>::track_statistic == FMRI_MEAN || TrackMapperTWI<Cont>::track_statistic == FMRI_MAX) { // Only the track endpoints contribute
+      if (TrackMapperTWI<Cont>::track_statistic == FMRI_MIN || TrackMapperTWI<Cont>::track_statistic == FMRI_MEAN || TrackMapperTWI<Cont>::track_statistic == FMRI_MAX || TrackMapperTWI<Cont>::track_statistic == FMRI_PROD) { // Only the track endpoints contribute
 
         // Want to extrapolate the track forwards & backwards at either end by some distance, take the
         //   maximum scalar value

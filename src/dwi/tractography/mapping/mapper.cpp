@@ -371,6 +371,10 @@ float TrackMapperTWI<Cont>::get_factor_const (const std::vector< Point<float> >&
           factor = MAX(values[0], values[1]);
           break;
 
+        case FMRI_PROD:
+          factor = values[0] * values[1];
+          break;
+
         default:
           throw Exception ("Undefined / unsupported track statistic in TrackMapperTWI::get_factor_const()");
 
