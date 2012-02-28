@@ -66,8 +66,8 @@ namespace MR {
           {
             interp.scanner (position); 
             if (!interp) return (false);
-            for (source[3] = 0; source[3] < source.dim(3); ++source[3]) 
-              values[source[3]] = interp.value();
+            for (interp[3] = 0; interp[3] < interp.dim(3); ++interp[3])
+              values[interp[3]] = interp.value();
             return (!isnan (values[0]));
           }
 
