@@ -27,8 +27,10 @@
 #include "image/filter/reslice.h"
 #include "image/interp/cubic.h"
 #include "image/interp/linear.h"
+#include "image/interp/nearest.h"
 #include "registration/linear_registration.h"
 #include "registration/metric/mean_squared_metric.h"
+#include "registration/transform/affine.h"
 #include "math/matrix.h"
 
 MRTRIX_APPLICATION
@@ -47,7 +49,7 @@ void usage ()
 
   ARGUMENTS
       + Argument ("moving", "moving image").type_image_in ()
-      + Argument ("target", "the target (or template) image").type_image_in ()
+      + Argument ("target", "the target (fixed or template) image").type_image_in ()
       + Argument ("transform", "the output text file containing the transformation as a 4x4 matrix").type_file ()
       + Argument ("output", "the transformed moving image").type_image_out ();
 
@@ -78,6 +80,7 @@ void run ()
 
   Image::BufferPreload<float> moving_data (argument[0]);
   Image::BufferPreload<float>::voxel_type moving_voxel (moving_data);
+  Image::Interp::Linear<Image::BufferPreload<float>::voxel_type > moving_interp (moving_voxel);
 
   Image::BufferPreload<float> target_data (argument[1]);
   Image::BufferPreload<float>::voxel_type target_voxel (target_data);
@@ -92,48 +95,48 @@ void run ()
         throw Exception ("the max number of iterations must be positive");
   }
 
-  Registration::LinearRegistration registration;
-  registration.set_max_iter (niter);
+  Registration::LinearRegistration registration (niter);
+  Registration::Metric::MeanSquared metric;
+  Registration::Transform::Affine<float> affine;
 
 
-  // Create transform class
-  // Initialise
-
-  // Create Interpolator
-
-  // Create metric class templated input and mask
-  // Set Masks
-  // Set Interpolator
-  // Set Transform
-
-  // Registration.Run()  //optimiser in built //
-
-  Registration::Metric::MeanSquaredMetric<Image::BufferPreload<float>::voxel_type,
-                                          Image::BufferPreload<bool>::voxel_type> metric;
-
+  Ptr<Image::BufferPreload<bool>::voxel_type> tmask_ptr;
   opt = get_options ("tmask");
   if (opt.size ()) {
     Image::BufferPreload<bool> tmask_data (opt[0][0]);
     Image::BufferPreload<bool>::voxel_type tmask_voxel (tmask_data);
-    metric.set_target_mask (&tmask_voxel);
+    tmask_ptr = &tmask_voxel;
   }
 
+  Ptr<Image::Interp::Nearest<Image::BufferPreload<bool>::voxel_type > > mmask_ptr;
   opt = get_options ("mmask");
   if (opt.size ()) {
     Image::BufferPreload<bool> mmask_data (opt[0][0]);
     Image::BufferPreload<bool>::voxel_type mmask_voxel (mmask_data);
-    metric.set_moving_mask (&mmask_voxel);
+    Image::Interp::Nearest<Image::BufferPreload<bool>::voxel_type> mmask_interp (mmask_voxel);
+    mmask_ptr = &mmask_interp;
   }
 
-  Math::Matrix<float> transform (4, 4);
-  registration.run (moving_voxel, target_voxel, moving_voxel, moving_voxel, transform);
-  transform.save (argument[2]);
+  if (mmask_ptr && tmask_ptr) {
+    registration.run_masked (metric, affine.get_parameter_vector(), moving_interp, target_voxel, &mmask_ptr, &tmask_ptr);
+  }
+  else if (tmask_ptr) {
+    registration.run_target_mask (metric, affine.get_parameter_vector(), moving_interp, target_voxel, &tmask_ptr);
+  }
+  else if (mmask_ptr) {
+    registration.run_moving_mask (metric, affine.get_parameter_vector(), moving_interp, target_voxel, &mmask_ptr);
+  }
+  else {
+    registration.run (metric, affine.get_parameter_vector(), moving_interp, target_voxel);
+  }
+
+  affine.get_transform().save (argument[2]);
 
   Image::Header output_header (moving_data);
   output_header.info () = target_data.info ();
   Image::Buffer<float> output_data (argument[3], output_header);
   Image::Buffer<float>::voxel_type output_voxel (output_data);
 
-  Image::Filter::reslice<Image::Interp::Cubic> (moving_voxel, output_voxel, transform);
+  Image::Filter::reslice<Image::Interp::Cubic> (moving_voxel, output_voxel, affine.get_transform());
 
 }

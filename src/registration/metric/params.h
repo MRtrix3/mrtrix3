@@ -20,8 +20,8 @@
 
  */
 
-#ifndef __registration_mean_squared_metric_h__
-#define __registration_mean_squared_metric_h__
+#ifndef __registration_metric_params_h__
+#define __registration_metric_params_h__
 
 namespace MR
 {
@@ -29,17 +29,27 @@ namespace MR
   {
     namespace Metric
     {
-      class MeanSquared {
-        public:
-          MeanSquared () { }
 
-          template <class Param>
-          float operator() (Param& param, Math::Vector<float>& gradient) {
-//              gradient += my_gradient_at_this_point();
-              return param.fixed_image.value() - param.moving_image.value();
-          }
+      template <class TransformType, class MovingImageInterpolatorType, class TargetImageVoxelType, class MovingMaskInterpolatorType, class TargetMaskVoxelType>
+      class Params {
+        public:
+
+          Params (TransformType& transform,
+                  MovingImageInterpolatorType& moving_image,
+                  TargetImageVoxelType& target_image) :
+                    transform (transform),
+                    moving_image (moving_image),
+                    target_image (target_image){ }
+
+          TransformType transform;
+          MovingImageInterpolatorType moving_image;
+          TargetImageVoxelType target_image;
+          Ptr<TargetMaskVoxelType> target_mask;
+          Ptr<MovingMaskInterpolatorType> moving_mask;
+          Point<float> point_in_moving;
       };
     }
   }
 }
+
 #endif
