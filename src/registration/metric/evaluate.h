@@ -34,35 +34,40 @@ namespace MR
       template <class MetricType, class ParamType>
         class Evaluate {
           public:
+
+            typedef typename ParamType::TransformParamType TransformParamType;
+
             Evaluate (const MetricType& metric, ParamType& parameters) :
               metric_ (metric),
-              param_ (parameters) { }
+              params_ (parameters) { }
 
 
             float operator() (const Math::Vector<float>& x, Math::Vector<float>& gradient) {
 
-              std::cout << "Evaluate operator " << gradient.size() <<  std::endl;
               double overall_cost_function = 0.0;
               gradient.zero();
+              params_.transformation.set_parameter_vector(x);
               std::cout << "Evaluate operator " <<  gradient  << std::endl;
-              ThreadKernel<MetricType, ParamType> kernel (metric_, param_, overall_cost_function, gradient);
-              std::cout << "Evaluate operator" << std::endl;
-              Image::threaded_loop (kernel, param_.target_image, 2, 0, 3);
+              ThreadKernel<MetricType, ParamType> kernel (metric_, params_, overall_cost_function, gradient);
+
+              Image::threaded_loop (kernel, params_.target_image, 2, 0, 3);
               std::cout << "Evaluate operator" << std::endl;
               return overall_cost_function;
             }
 
             size_t size() {
-              return param_.transform.size();
+              return params_.transformation.get_parameter_vector().size();
             }
 
-            float init (Math::Vector<float>& x) { // return initial step size
-              return 0.0;
+            float init (Math::Vector<TransformParamType>& x) {
+              for (size_t i = 0; i < size(); i++)
+                x[i] = params_.transformation.get_parameter_vector()[i];
+              return 0.01; // return init step size. TODO confirm this is appropriate;
             }
 
           protected:
               MetricType metric_;
-              ParamType param_;
+              ParamType params_;
       };
     }
   }

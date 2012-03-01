@@ -34,19 +34,20 @@ namespace MR
       class Params {
         public:
 
+          typedef typename TransformType::ParameterType TransformParamType;
+
           Params (TransformType& transform,
                   MovingImageInterpolatorType& moving_image,
                   TargetImageVoxelType& target_image) :
-                    transform (transform),
+                    transformation (transform),
                     moving_image (moving_image),
                     target_image (target_image){ }
 
-          TransformType transform;
+          TransformType transformation;
           MovingImageInterpolatorType moving_image;
           TargetImageVoxelType target_image;
           Ptr<TargetMaskVoxelType> target_mask;
           Ptr<MovingMaskInterpolatorType> moving_mask;
-          Point<float> point_in_moving;
       };
     }
   }

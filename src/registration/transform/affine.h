@@ -48,6 +48,9 @@ namespace MR
       template <typename T = float>
       class Affine  {
         public:
+
+          typedef T ParameterType;
+
           Affine () :
             param_vector_(12),
             matrix_(3,3),
@@ -55,12 +58,16 @@ namespace MR
             centre_(3),
             offset_(3){
             matrix_.identity();
+            translation_.zero();
+            centre_.zero();
+            offset_.zero();
           }
 
           template <class PointType>
           inline void transform (const PointType& in, PointType& out) {
-              Math::mult(out, matrix_, in);
-              out += offset_;
+              out[0] = matrix_(0,0)*in[0] + matrix_(0,1)*in[1] + matrix_(0,2)*in[2] + offset_[0];
+              out[1] = matrix_(1,0)*in[0] + matrix_(1,1)*in[1] + matrix_(1,2)*in[2] + offset_[1];
+              out[2] = matrix_(2,0)*in[0] + matrix_(2,1)*in[1] + matrix_(2,2)*in[2] + offset_[2];
           }
 
           template <class PointType>
@@ -99,8 +106,9 @@ namespace MR
             return transform;
           }
 
-          void set_parameter_vector (Math::Vector<T>& param_vector) {
-            param_vector_ = param_vector;
+          void set_parameter_vector (const Math::Vector<T>& param_vector) {
+            for (size_t i = 0; i < size(); i++)
+              param_vector_[i] = param_vector[i];
             size_t index = 0;
             for (size_t row = 0; row < 3; row++) {
               for (size_t col = 0; col < 3; col++)

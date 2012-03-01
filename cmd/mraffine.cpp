@@ -28,6 +28,7 @@
 #include "image/interp/cubic.h"
 #include "image/interp/linear.h"
 #include "image/interp/nearest.h"
+#include "image/transform.h"
 #include "registration/linear_registration.h"
 #include "registration/metric/mean_squared_metric.h"
 #include "registration/transform/affine.h"
@@ -97,38 +98,40 @@ void run ()
 
   Registration::LinearRegistration registration (niter);
   Registration::Metric::MeanSquared metric;
+  metric.set_moving_image(moving_data);
   Registration::Transform::Affine<float> affine;
 
+  typedef float mask_value_type;
 
-  Ptr<Image::BufferPreload<bool>::voxel_type> tmask_ptr;
+  Ptr<Image::BufferPreload<mask_value_type>::voxel_type> tmask_ptr;
   opt = get_options ("tmask");
   if (opt.size ()) {
-    Image::BufferPreload<bool> tmask_data (opt[0][0]);
-    Image::BufferPreload<bool>::voxel_type tmask_voxel (tmask_data);
+    Image::BufferPreload<mask_value_type> tmask_data (opt[0][0]);
+    Image::BufferPreload<mask_value_type>::voxel_type tmask_voxel (tmask_data);
     tmask_ptr = &tmask_voxel;
   }
 
-  Ptr<Image::Interp::Nearest<Image::BufferPreload<bool>::voxel_type > > mmask_ptr;
+  Ptr<Image::Interp::Nearest<Image::BufferPreload<mask_value_type>::voxel_type > > mmask_ptr;
   opt = get_options ("mmask");
   if (opt.size ()) {
-    Image::BufferPreload<bool> mmask_data (opt[0][0]);
-    Image::BufferPreload<bool>::voxel_type mmask_voxel (mmask_data);
-    Image::Interp::Nearest<Image::BufferPreload<bool>::voxel_type> mmask_interp (mmask_voxel);
+    Image::BufferPreload<mask_value_type> mmask_data (opt[0][0]);
+    Image::BufferPreload<mask_value_type>::voxel_type mmask_voxel (mmask_data);
+    Image::Interp::Nearest<Image::BufferPreload<mask_value_type>::voxel_type> mmask_interp (mmask_voxel);
     mmask_ptr = &mmask_interp;
   }
 
-  if (mmask_ptr && tmask_ptr) {
-    registration.run_masked (metric, affine.get_parameter_vector(), moving_interp, target_voxel, &mmask_ptr, &tmask_ptr);
-  }
-  else if (tmask_ptr) {
-    registration.run_target_mask (metric, affine.get_parameter_vector(), moving_interp, target_voxel, &tmask_ptr);
-  }
-  else if (mmask_ptr) {
-    registration.run_moving_mask (metric, affine.get_parameter_vector(), moving_interp, target_voxel, &mmask_ptr);
-  }
-  else {
-    registration.run (metric, affine.get_parameter_vector(), moving_interp, target_voxel);
-  }
+//  if (mmask_ptr && tmask_ptr) {
+    registration.run_masked (metric, affine, moving_interp, target_voxel, mmask_ptr, tmask_ptr);
+//  }
+//  else if (tmask_ptr) {
+//    registration.run_target_mask (metric, affine, moving_interp, target_voxel, &tmask_ptr);
+//  }
+//  else if (mmask_ptr) {
+//    registration.run_moving_mask (metric, affine, moving_interp, target_voxel, &mmask_ptr);
+//  }
+//  else {
+//    registration.run (metric, affine, moving_interp, target_voxel);
+//  }
 
   affine.get_transform().save (argument[2]);
 

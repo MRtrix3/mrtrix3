@@ -23,6 +23,13 @@
 #ifndef __registration_mean_squared_metric_h__
 #define __registration_mean_squared_metric_h__
 
+#include "image/filter/gradient3D.h"
+#include "image/filter/gaussian3D.h"
+#include "image/interp/nearest.h"
+#include "image/header.h"
+#include "image/voxel.h"
+#include "image/buffer_scratch.h"
+
 namespace MR
 {
   namespace Registration
@@ -31,13 +38,45 @@ namespace MR
     {
       class MeanSquared {
         public:
-          MeanSquared () { }
+          MeanSquared () :
+            gradient_interp_(NULL) { }
 
-          template <class Param>
-          float operator() (Param& param, Math::Vector<float>& gradient) {
+          template <class Params>
+          float operator() (Params& params, Math::Vector<float>& gradient) {
+              assert(gradient_interp_);
 //              gradient += my_gradient_at_this_point();
-              return param.fixed_image.value() - param.moving_image.value();
+              return params.target_image.value() - params.moving_image.value();
+
           }
+
+          template <class MovingDataType>
+          void set_moving_image (MovingDataType& moving_data) {
+
+            typedef typename MovingDataType::voxel_type MovingVoxelType;
+            MovingVoxelType moving_voxel(moving_data);
+
+            Image::Filter::Gaussian3D smooth_filter (moving_voxel);
+            Image::Filter::Gradient3D gradient_filter (moving_voxel);
+
+            Image::Header smooth_header(moving_data);
+            smooth_header.info() = smooth_filter.info();
+            Image::BufferScratch<float> smoothed_data (smooth_header);
+            Image::BufferScratch<float>::voxel_type smoothed_voxel (smoothed_data);
+
+            Image::Header gradient_header(moving_data);
+            gradient_header.info() = gradient_filter.info();
+            Image::BufferScratch<float> gradient_data (gradient_header);
+            Image::BufferScratch<float>::voxel_type gradient_voxel (gradient_data);
+
+            smooth_filter (moving_voxel, smoothed_voxel);
+            gradient_filter (smoothed_voxel, gradient_voxel);
+
+            gradient_interp_ = new Image::Interp::Nearest<Image::BufferScratch<float>::voxel_type > (gradient_voxel);
+          }
+
+        protected:
+
+          Ptr<Image::Interp::Nearest<Image::BufferScratch<float>::voxel_type> > gradient_interp_;
       };
     }
   }

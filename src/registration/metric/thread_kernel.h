@@ -23,8 +23,11 @@
 #ifndef __registration_metric_threadkernel_h__
 #define __registration_metric_threadkernel_h__
 
+#include "math/matrix.h"
 #include "image/voxel.h"
 #include "image/iterator.h"
+#include "image/transform.h"
+#include "point.h"
 
 namespace MR
 {
@@ -37,10 +40,28 @@ namespace MR
         public:
           ThreadKernel (const MetricType& metric, ParamType& parameters, double& overall_cost_function, Math::Vector<float>& overall_gradient) :
             metric_ (metric),
-            param_ (parameters),
+            params_ (parameters),
+            cost_function_ (0.0),
+            gradient_ (overall_gradient.size()),
             overall_cost_function_ (overall_cost_function),
             overall_gradient_ (overall_gradient) {
-            std::cout << "asdf2" << std::endl;
+            gradient_.zero();
+
+            Math::Matrix<float> v2s(4,4);
+            Image::Transform::voxel2scanner(v2s, params_.target_image);
+            v2s_[0][0] = v2s (0,0);
+            v2s_[0][1] = v2s (0,1);
+            v2s_[0][2] = v2s (0,2);
+            v2s_[0][3] = v2s (0,3);
+            v2s_[1][0] = v2s (1,0);
+            v2s_[1][1] = v2s (1,1);
+            v2s_[1][2] = v2s (1,2);
+            v2s_[1][3] = v2s (1,3);
+            v2s_[2][0] = v2s (2,0);
+            v2s_[2][1] = v2s (2,1);
+            v2s_[2][2] = v2s (2,2);
+            v2s_[2][3] = v2s (2,3);
+
           }
 
           ~ThreadKernel () {
@@ -50,30 +71,41 @@ namespace MR
 
           void operator() (const Image::Iterator& iter) {
 
-            std::cout << "voxel " << iter[0] << " " << iter[1] << " " <<  iter[2] << std::endl;
+            if (params_.target_mask) {
+              Image::voxel_assign (*params_.target_mask, iter);
+              if (!params_.target_mask->value())
+                return;
+            }
 
-//            if (param_.target_mask) {
-//                Image::voxel_assign (*param_.target_mask, iter);
-//                if (!param_.target_mask->value())
-//                return;
-//            }
-//            Math::Vector<float> point(3);
-//            Math::mult(point,param_.target_image.transform(), iter);
-//            std::cout << point << std::endl;
+            Point<float> moving_point;
+            params_.transformation.transform(voxel2scanner(iter), moving_point);
 
-//            Image::voxel_assign (*param_.fixed_image, iter);
-            // .... //
-//            cost_function_ += metric_ (param_, gradient_);
+            if (params_.moving_mask) {
+              params_.moving_mask->scanner(moving_point);
+              if (!params_.target_mask->value())
+                return;
+            }
+            params_.moving_image.scanner(moving_point);
+            cost_function_ += metric_ (params_, gradient_);
+          }
+
+          Point<float> voxel2scanner (const Image::Iterator& p) const {
+            return Point<float> (
+                v2s_[0][0]*p[0] + v2s_[0][1]*p[1] + v2s_[0][2]*p[2] + v2s_[0][3],
+                v2s_[1][0]*p[0] + v2s_[1][1]*p[1] + v2s_[1][2]*p[2] + v2s_[1][3],
+                v2s_[2][0]*p[0] + v2s_[2][1]*p[1] + v2s_[2][2]*p[2] + v2s_[2][3]);
           }
 
           protected:
-            MetricType metric_;
-            ParamType param_;
 
+            MetricType metric_;
+            ParamType params_;
+
+            float v2s_[3][4];
             double cost_function_;
             Math::Vector<float> gradient_;
-            double overall_cost_function_;
-            Math::Vector<float> overall_gradient_;
+            double& overall_cost_function_;
+            Math::Vector<float>& overall_gradient_;
       };
     }
   }

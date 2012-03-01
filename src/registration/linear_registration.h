@@ -52,42 +52,42 @@ namespace MR
         }
 
 
-        template <class MetricType, class TransformType, class MovingImageInterpolatorType, class TargetImageVoxelType>
-          void run (
-              MetricType& metric,
-              TransformType& transform,
-              MovingImageInterpolatorType& moving_image,
-              TargetImageVoxelType& target_image) {
-            typedef Image::BufferScratch<bool>::voxel_type BogusMaskType;
-            run_masked<MetricType, TransformType, MovingImageInterpolatorType, TargetImageVoxelType, BogusMaskType, BogusMaskType >
-              (metric, transform, moving_image, target_image, NULL, NULL);
-          }
-
-
-        template <class MetricType, class TransformType, class MovingImageInterpolatorType, class TargetImageVoxelType, class TargetMaskVoxelType>
-          void run_target_mask (
-              MetricType& metric,
-              TransformType& transform,
-              MovingImageInterpolatorType& moving_image,
-              TargetImageVoxelType& target_image,
-              TargetMaskVoxelType* target_mask) {
-            typedef Image::BufferScratch<bool>::voxel_type BogusMaskType;
-            run_masked<MetricType, TransformType, MovingImageInterpolatorType, TargetImageVoxelType, BogusMaskType, TargetMaskVoxelType >
-              (metric, transform, moving_image, target_image, NULL, target_mask);
-          }
-
-
-        template <class MetricType, class TransformType, class MovingImageInterpolatorType, class TargetImageVoxelType, class MovingMaskInterpolatorType>
-          void run_moving_mask (
-              MetricType& metric,
-              TransformType& transform,
-              MovingImageInterpolatorType& moving_image,
-              TargetImageVoxelType& target_image,
-              MovingMaskInterpolatorType* moving_mask) {
-            typedef Image::BufferScratch<bool>::voxel_type BogusMaskType;
-            run_masked<MetricType, TransformType, MovingImageInterpolatorType, TargetImageVoxelType, MovingMaskInterpolatorType, BogusMaskType >
-              (metric, transform, moving_image, target_image, moving_mask, NULL);
-          }
+//        template <class MetricType, class TransformType, class MovingImageInterpolatorType, class TargetImageVoxelType>
+//          void run (
+//              MetricType& metric,
+//              TransformType& transform,
+//              MovingImageInterpolatorType& moving_image,
+//              TargetImageVoxelType& target_image) {
+//            typedef Image::BufferScratch<bool>::voxel_type BogusMaskType;
+//            run_masked<MetricType, TransformType, MovingImageInterpolatorType, TargetImageVoxelType, BogusMaskType, BogusMaskType >
+//              (metric, transform, moving_image, target_image, NULL, NULL);
+//          }
+//
+//
+//        template <class MetricType, class TransformType, class MovingImageInterpolatorType, class TargetImageVoxelType, class TargetMaskVoxelType>
+//          void run_target_mask (
+//              MetricType& metric,
+//              TransformType& transform,
+//              MovingImageInterpolatorType& moving_image,
+//              TargetImageVoxelType& target_image,
+//              TargetMaskVoxelType* target_mask) {
+//            typedef Image::BufferScratch<bool>::voxel_type BogusMaskType;
+//            run_masked<MetricType, TransformType, MovingImageInterpolatorType, TargetImageVoxelType, BogusMaskType, TargetMaskVoxelType >
+//              (metric, transform, moving_image, target_image, NULL, target_mask);
+//          }
+//
+//
+//        template <class MetricType, class TransformType, class MovingImageInterpolatorType, class TargetImageVoxelType, class MovingMaskInterpolatorType>
+//          void run_moving_mask (
+//              MetricType& metric,
+//              TransformType& transform,
+//              MovingImageInterpolatorType& moving_image,
+//              TargetImageVoxelType& target_image,
+//              MovingMaskInterpolatorType* moving_mask) {
+//            typedef Image::BufferScratch<bool>::voxel_type BogusMaskType;
+//            run_masked<MetricType, TransformType, MovingImageInterpolatorType, TargetImageVoxelType, MovingMaskInterpolatorType, BogusMaskType >
+//              (metric, transform, moving_image, target_image, moving_mask, NULL);
+//          }
 
 
         template <class MetricType, class TransformType, class MovingImageInterpolatorType, class TargetImageVoxelType, class MovingMaskInterpolatorType, class TargetMaskVoxelType>
@@ -96,8 +96,8 @@ namespace MR
               TransformType& transform,
               MovingImageInterpolatorType& moving_image,
               TargetImageVoxelType& target_image,
-              MovingMaskInterpolatorType* moving_mask,
-              TargetMaskVoxelType* target_mask) {
+              Ptr<MovingMaskInterpolatorType> moving_mask,
+              Ptr<TargetMaskVoxelType> target_mask) {
 
             for (size_t iter = 0; iter < max_iter_.size(); iter++) {
 
@@ -106,10 +106,9 @@ namespace MR
               if (target_mask) parameters.target_mask = new TargetMaskVoxelType (*target_mask);
               if (moving_mask) parameters.moving_mask = new MovingMaskInterpolatorType (*moving_mask);
               Metric::Evaluate<MetricType, ParamType> evaluate (metric, parameters);
-              std::cout << evaluate.size() << " asdf size " << std::endl;
               Math::GradientDescent<Metric::Evaluate<MetricType, ParamType> > optim (evaluate);
 
-              optim.run (max_iter_[iter]);
+              optim.run();
             }
           }
 
