@@ -44,7 +44,7 @@ namespace MR
             start_ (Image::Stride::offset (*this)),
             offset_ (start_),
             x (ndim(), 0) {
-              inform ("voxel accessor for image \"" + name() + "\" initialised with start = " + str (start_) + ", strides = " + str (stride_));
+              debug ("voxel accessor for image \"" + name() + "\" initialised with start = " + str (start_) + ", strides = " + str (stride_));
             }
 
           typedef typename BufferType::value_type value_type;
