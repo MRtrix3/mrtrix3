@@ -32,7 +32,7 @@ namespace MR
 
     bool confirm_func_cmdline (const std::string& message)
     {
-      print (message + " ");
+      std::cerr << message << " ";
       std::string response;
       getline (std::cin, response);
       return (lowercase (response).compare (0, response.size(), "yes", response.size()) == 0);

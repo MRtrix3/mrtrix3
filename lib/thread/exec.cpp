@@ -71,15 +71,17 @@ namespace MR
 
     void Exec::Common::thread_print (const std::string& msg)
     {
-      Thread::Mutex::Lock lock (common->mutex);
-      std::cout << msg;
+      if (App::log_level) {
+        Thread::Mutex::Lock lock (common->mutex);
+        std::cerr << App::NAME << ": " << msg << "\n";
+      }
     }
 
     void Exec::Common::thread_error (const std::string& msg)
     {
       if (App::log_level) {
         Thread::Mutex::Lock lock (common->mutex);
-        std::cerr << App::NAME << ": " << msg << "\n";
+        std::cerr << App::NAME << " [ERROR]: " << msg << "\n";
       }
     }
 

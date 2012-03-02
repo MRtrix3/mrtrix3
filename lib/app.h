@@ -221,6 +221,25 @@ namespace MR
       return stream;
     }
 
+
+    class LogLevelLatch
+    {
+      public:
+        LogLevelLatch (const int new_level) :
+          prev_level (App::log_level)
+        {
+          App::log_level = new_level;
+        }
+
+        ~LogLevelLatch ()
+        {
+          App::log_level = prev_level;
+        }
+
+      private:
+        const int prev_level;
+    };
+
   }
 
   //! @}

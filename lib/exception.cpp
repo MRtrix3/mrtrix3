@@ -46,12 +46,12 @@ namespace MR
 
   void cmdline_print (const std::string& msg)
   {
-    std::cout << msg;
+    if (App::log_level) std::cerr << App::NAME << ": " << msg << "\n";
   }
 
   void cmdline_error (const std::string& msg)
   {
-    if (App::log_level) std::cerr << App::NAME << ": " << msg << "\n";
+    if (App::log_level) std::cerr << App::NAME << " [ERROR]: " << msg << "\n";
   }
 
   void cmdline_info (const std::string& msg)
