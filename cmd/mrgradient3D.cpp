@@ -46,47 +46,57 @@ void usage ()
 
   OPTIONS
   + Option ("stdev", "the standard deviation of the Gaussian kernel used to "
-            "smooth the input image. The image is smoothed to reduced large "
-            "spurious gradients caused by noise. Use this option to overide "
-            "the default stdev of 1mm. This can be specified either as a single "
+            "smooth the input image (in mm). The image is smoothed to reduced large "
+            "spurious gradients caused by noise. Use this option to override "
+            "the default stdev of 1 voxel. This can be specified either as a single "
             "value to be used for all 3 axes, or as a comma-separated list of "
             "3 values, one for each axis.")
-  + Argument ("sigma").type_sequence_float();
+  + Argument ("sigma").type_sequence_float()
+
+  + Option ("scanner", "compute the gradient with respect to the scanner coordinate "
+            "frame of reference.");
 }
 
 
 void run () {
 
-  std::vector<float> stdev (1);
-  stdev[0] = 1.0;
+
+  Image::BufferPreload<float> input_data (argument[0]);
+  Image::BufferPreload<float>::voxel_type input_voxel (input_data);
+
+  if (input_data.ndim() != 3)
+    throw Exception("input image must be 3D");
+
+  Image::Filter::Gaussian3D smooth_filter (input_voxel);
+
   Options opt = get_options ("stdev");
   if (opt.size()) {
-    stdev = parse_floats (opt[0][0]);
+  std::vector<float> stdev = parse_floats (opt[0][0]);
     for (size_t i = 0; i < stdev.size(); ++i)
       if (stdev[i] < 0.0)
         throw Exception ("the Gaussian stdev values cannot be negative");
     if (stdev.size() != 1 && stdev.size() != 3)
       throw Exception ("unexpected number of elements specified in Gaussian stdev");
+    smooth_filter.set_stdev(stdev);
   }
 
-  Image::BufferPreload<float> input_data (argument[0]);
-  Image::BufferPreload<float>::voxel_type input_voxel (input_data);
-
-  Image::Filter::Gaussian3D smooth_filter (input_voxel);
-  smooth_filter.set_stdev(stdev);
   Image::Filter::Gradient3D gradient_filter (input_voxel);
 
-  Image::Header scratch_header (input_data);
-  scratch_header.info() = smooth_filter.info();
-  scratch_header.datatype() = input_data.datatype();
+  opt = get_options("scanner");
+  if(opt.size()) {
+    gradient_filter.compute_wrt_scanner(true);
+  }
 
-  Image::BufferScratch<float> smoothed_data (scratch_header);
+  Image::Header smooth_header (input_data);
+  smooth_header.info() = smooth_filter.info();
+
+  Image::BufferScratch<float> smoothed_data (smooth_header);
   Image::BufferScratch<float>::voxel_type smoothed_voxel (smoothed_data);
 
-  Image::Header output_header (input_data);
-  output_header.info() = gradient_filter.info();
+  Image::Header gradient_header (input_data);
+  gradient_header.info() = gradient_filter.info();
 
-  Image::Buffer<float> gradient_data (argument[1], output_header);
+  Image::Buffer<float> gradient_data (argument[1], gradient_header);
   Image::Buffer<float>::voxel_type gradient_voxel (gradient_data);
 
   smooth_filter (input_voxel, smoothed_voxel);

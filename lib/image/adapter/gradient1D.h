@@ -44,9 +44,9 @@ namespace MR
             axis_ = axis;
           }
 
-          ssize_t value () {
+          float value () {
             const ssize_t pos = (*this)[axis_];
-            ssize_t val = 0.0;
+            float val = 0.0;
 
             if (pos == 0) {
               val = parent_vox.value();

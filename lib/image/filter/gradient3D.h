@@ -27,6 +27,8 @@
 #include "image/threaded_copy.h"
 #include "image/adapter/gradient1D.h"
 #include "image/buffer_scratch.h"
+#include "image/transform.h"
+#include "image/loop.h"
 
 namespace MR
 {
@@ -58,11 +60,11 @@ namespace MR
        */
       class Gradient3D : public ConstInfo
       {
-
-      public:
+        public:
           template <class InputVoxelType>
             Gradient3D (const InputVoxelType& in) :
-              ConstInfo (in) {
+              ConstInfo (in),
+              wrt_scanner_(false) {
               axes_.resize(4);
               axes_[3].dim = 3;
               axes_[0].stride = 2;
@@ -72,18 +74,48 @@ namespace MR
               datatype_ = DataType::Float32;
           }
 
+          void compute_wrt_scanner(bool wrt_scanner) {
+            wrt_scanner_ = wrt_scanner;
+          }
+
+
           template <class InputVoxelType, class OutputVoxelType>
             void operator() (InputVoxelType& in, OutputVoxelType& out) {
+
               Adapter::Gradient1D<InputVoxelType> gradient1D (in);
               out[3] = 0;
-              threaded_copy_with_progress_message ("Computing x-axis gradient...", gradient1D, out, 2, 0, 3);
+              threaded_copy_with_progress_message ("computing x-axis gradient...", gradient1D, out, 2, 0, 3);
               out[3] = 1;
               gradient1D.set_axis(1);
-              threaded_copy_with_progress_message ("Computing y-axis gradient...", gradient1D, out, 2, 0, 3);
+              threaded_copy_with_progress_message ("computing y-axis gradient...", gradient1D, out, 2, 0, 3);
               out[3] = 2;
               gradient1D.set_axis(2);
-              threaded_copy_with_progress_message ("Computing z-axis gradient...", gradient1D, out, 2, 0, 3);
+              threaded_copy_with_progress_message ("computing z-axis gradient...", gradient1D, out, 2, 0, 3);
+
+              if (wrt_scanner_) {
+                Math::Matrix<float> transform(4,4);
+                Image::Transform::image2scanner(transform, in);
+
+                Math::Vector<float> gradient(3);
+                Math::Vector<float> gradient_wrt_scanner(3);
+
+                Image::Loop loop("adjusting gradients wrt to scanner coords...", 0, 3);
+                for (loop.start(out); loop.ok(); loop.next(out)) {
+                  for (size_t dim = 0; dim < 3; dim++) {
+                    out[3] = dim;
+                    gradient[dim] = out.value();
+                  }
+                  Math::mult(gradient_wrt_scanner, transform.sub(0, 3, 0,3), gradient);
+                  for (size_t dim = 0; dim < 3; dim++) {
+                    out[3] = dim;
+                    out.value() = gradient_wrt_scanner[dim];
+                  }
+                }
+              }
             }
+
+        protected:
+          bool wrt_scanner_;
       };
       //! @}
     }

@@ -68,7 +68,11 @@ namespace MR
             Gaussian3D (const InputVoxelType& in) :
               ConstInfo (in),
               extent_ (3,0),
-              stdev_ (3,1) { }
+              stdev_ (3) {
+            stdev_[0] = in.vox(0);
+            stdev_[1] = in.vox(1);
+            stdev_[2] = in.vox(2);
+          }
 
           template <class InputVoxelType>
             Gaussian3D (const InputVoxelType& in,
@@ -96,7 +100,7 @@ namespace MR
 
           //! Set the standard deviation of the Gaussian defined in mm.
           //! This must be set as a single value for all three dimensions
-          //! or three values, one for each dimension. (Default: 1x1x1)
+          //! or three values, one for each dimension. (Default: 1voxel)
           void set_stdev (const std::vector<float>& stdev) {
             if (stdev.size() == 1) {
               stdev_[0] = stdev[0];
@@ -115,16 +119,16 @@ namespace MR
               Image::BufferScratch<value_type> x_scratch (out);
               typename Image::BufferScratch<value_type>::voxel_type x_voxel (x_scratch);
               Adapter::Gaussian1D<InputVoxelType> x_gaussian (in, stdev_[0], 0, extent_[0]);
-              threaded_copy_with_progress_message ("Smoothing x-axis...", x_gaussian, x_voxel);
+              threaded_copy_with_progress_message ("smoothing x-axis...", x_gaussian, x_voxel);
 
               typedef typename Image::BufferScratch<value_type>::voxel_type buffer_voxel_type;
               Adapter::Gaussian1D<buffer_voxel_type> y_gaussian (x_voxel, stdev_[1], 1, extent_[1]);
               Image::BufferScratch<value_type> y_scratch (out);
               typename Image::BufferScratch<value_type>::voxel_type y_voxel (y_scratch);
-              threaded_copy_with_progress_message ("Smoothing y-axis...", y_gaussian, y_voxel);
+              threaded_copy_with_progress_message ("smoothing y-axis...", y_gaussian, y_voxel);
 
               Adapter::Gaussian1D<buffer_voxel_type> z_gaussian (y_voxel, stdev_[2], 2, extent_[2]);
-              threaded_copy_with_progress_message ("Smoothing z-axis...", z_gaussian, out);
+              threaded_copy_with_progress_message ("smoothing z-axis...", z_gaussian, out);
             }
 
       protected:
