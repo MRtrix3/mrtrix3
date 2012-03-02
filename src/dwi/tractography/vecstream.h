@@ -42,6 +42,9 @@ namespace MR {
                 SharedBase (source_name, property_set),
                 num_vec (source.dim(3)/3) {
 
+                  if (rk4)
+                    throw Exception ("4th-order Runge-Kutta integration not valid for VecStream algorithm");
+
                   set_step_size (0.1);
                   max_angle *= vox() / step_size;
                   dot_threshold = Math::cos (max_angle);

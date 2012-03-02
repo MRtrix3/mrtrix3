@@ -43,7 +43,10 @@ namespace MR {
                 SharedBase (source_name, property_set) {
 
                   set_step_size (0.1);
-                  inform ("minimum radius of curvature = " + str(step_size / ( 2.0 * sin (max_angle / 2.0))) + " mm");
+                  if (rk4)
+                    inform ("minimum radius of curvature = " + str(step_size / (max_angle_rk4 / (0.5 * M_PI))) + " mm");
+                  else
+                    inform ("minimum radius of curvature = " + str(step_size / ( 2.0 * sin (max_angle / 2.0))) + " mm");
 
                   properties["method"] = "FACT";
 
@@ -62,12 +65,9 @@ namespace MR {
 
                   grad2bmatrix (bmat, grad);
                   Math::pinv (binv, bmat);
-
-                  cos_max_angle = Math::cos (max_angle);
                 }
 
               Math::Matrix<value_type> bmat, binv;
-              value_type cos_max_angle;
           };
 
 

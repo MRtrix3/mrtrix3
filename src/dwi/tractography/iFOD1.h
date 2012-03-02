@@ -49,7 +49,13 @@ namespace MR {
                 num_proc (0) {
 
                   set_step_size (0.1);
-                  inform ("minimum radius of curvature = " + str(step_size / ( 2.0 * sin (max_angle / 2.0))) + " mm");
+                  if (rk4) {
+                    max_angle = 0.5 * max_angle_rk4;
+                    inform ("minimum radius of curvature = " + str(step_size / (max_angle_rk4 / (0.5 * M_PI))) + " mm");
+                  } else {
+                    inform ("minimum radius of curvature = " + str(step_size / ( 2.0 * sin (max_angle / 2.0))) + " mm");
+                  }
+                  sin_max_angle = Math::sin (max_angle);
 
                   properties["method"] = "iFOD1";
                   properties.set (lmax, "lmax");

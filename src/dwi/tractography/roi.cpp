@@ -31,7 +31,7 @@ namespace MR {
     namespace Tractography {
 
 
-
+      // TODO This will crash if passed a 4D image, even if the 4th axis has dimension 1
       void ROI::get_mask (const std::string& name)
       {
         Image::Buffer<float> data (name);

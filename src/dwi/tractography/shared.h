@@ -48,6 +48,9 @@ namespace MR {
             properties (property_set), 
             max_num_tracks (1000),
             max_angle (NAN),
+            max_angle_rk4 (NAN),
+            cos_max_angle (NAN),
+            cos_max_angle_rk4 (NAN),
             step_size (NAN),
             threshold (0.1), 
             unidirectional (false),
@@ -100,13 +103,14 @@ namespace MR {
             max_angle = 90.0 * step_size / vox();
             properties.set (max_angle, "max_angle");
             inform ("maximum deviation angle = " + str (max_angle) + "°");
-
-            // If using 4th-order Runge-Kutta, angle threshold for chosen method is applied over a length
-            //   which corresponds to half of the actual defined step size
-            if (rk4)
-              max_angle *= 0.5;
-
             max_angle *= M_PI / 180.0;
+
+            if (rk4) {
+              max_angle_rk4 = max_angle;
+              cos_max_angle_rk4 = cos_max_angle;
+              max_angle = M_PI;
+              cos_max_angle = 0.0;
+            }
           }
 
           StorageType source_data;
@@ -114,7 +118,8 @@ namespace MR {
           DWI::Tractography::Properties& properties;
           Point<value_type> init_dir;
           size_t max_num_tracks, max_num_attempts, min_num_points, max_num_points;
-          value_type max_angle, step_size, threshold, init_threshold;
+          value_type max_angle, max_angle_rk4, cos_max_angle, cos_max_angle_rk4;
+          value_type step_size, threshold, init_threshold;
           bool unidirectional;
           bool rk4;
 

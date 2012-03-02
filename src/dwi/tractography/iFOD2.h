@@ -54,7 +54,7 @@ namespace MR {
                 num_proc (0) {
 
                   if (rk4)
-                    throw Exception ("4th-order Runge-Kutta interpolation not valid for iFOD2 algorithm");
+                    throw Exception ("4th-order Runge-Kutta integration not valid for iFOD2 algorithm");
 
                   set_step_size (0.5);
                   inform ("minimum radius of curvature = " + str(step_size / max_angle) + " mm");

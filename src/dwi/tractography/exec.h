@@ -145,7 +145,7 @@ namespace MR {
 
           bool iterate () 
           {
-            if (!(S.rk4 ? method.next_rk4() : method.next()))
+            if (!(S.rk4 ? next_rk4() : method.next()))
               return (false);
 
             if (S.properties.mask.size() && !S.properties.mask.contains (method.pos)) 
@@ -159,14 +159,43 @@ namespace MR {
             S.properties.include.contains (method.pos, track_included);
             return (true);
           };
+
+
+          bool next_rk4()
+          {
+            const Point<value_type> init_pos (method.pos);
+            const Point<value_type> init_dir (method.dir);
+            if (!method.next())
+              return false;
+            const Point<value_type> dir_rk1 (method.dir);
+            method.pos = init_pos + (dir_rk1 * (0.5 * S.step_size));
+            method.dir = init_dir;
+            if (!method.next())
+              return false;
+            const Point<value_type> dir_rk2 (method.dir);
+            method.pos = init_pos + (dir_rk2 * (0.5 * S.step_size));
+            method.dir = init_dir;
+            if (!method.next())
+              return false;
+            const Point<value_type> dir_rk3 (method.dir);
+            method.pos = init_pos + (dir_rk3 * S.step_size);
+            method.dir = (dir_rk2 + dir_rk3).normalise();
+            if (!method.next())
+              return false;
+            const Point<value_type> dir_rk4 (method.dir);
+            method.dir = (dir_rk1 + (dir_rk2 * 2.0) + (dir_rk3 * 2.0) + dir_rk4).normalise();
+            method.pos = init_pos + (method.dir * S.step_size);
+            const Point<value_type> final_pos (method.pos);
+            if (!method.next())
+              return false;
+            if (dir_rk1.dot (method.dir) < S.cos_max_angle_rk4)
+              return false;
+            method.pos = final_pos;
+            return true;
+          }
+
+
       };
-
-
-
-
-
-
-
 
     }
   }
