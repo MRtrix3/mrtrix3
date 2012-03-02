@@ -50,6 +50,7 @@ void usage ()
   + Argument ("source",
               "the image containing the source data. "
               "For iFOD1/2 and SD_STREAM, this should be the FOD file, expressed in spherical harmonics. "
+              "For FACT and WBFACT, this should be the DWI file. "
               "For VecStream, this should be the directions file."
              ).type_image_in()
 
