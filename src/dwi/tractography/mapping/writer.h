@@ -115,7 +115,9 @@ class MapWriter : public MapWriterBase<Cont>
 
     MapWriter (const MapWriter& that) :
       MapWriterBase<Cont> (that),
-      out ("", MapWriterBase<Cont>::H)
+      out ("", MapWriterBase<Cont>::H),
+      buffer (MapWriterBase<Cont>::H, ""),
+      v_buffer (buffer)
     {
       throw Exception ("Do not instantiate copy constructor for MapWriter");
     }

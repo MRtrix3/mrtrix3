@@ -84,8 +84,6 @@ void run ()
 
   load_streamline_properties (properties);
 
-  Image::Header source (argument[0]);
-
   switch (algorithm) {
     case 0:
       Exec<iFOD1>    ::run (argument[0], argument[1], properties);
