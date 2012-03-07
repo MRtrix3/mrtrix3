@@ -36,7 +36,7 @@ namespace MR
 		// @{
 
 		//! Computes the minimum of a function using a gradient decent approach.
-    template <class F, typename T = float> class GradientDescent
+    template <class F, typename T = float, bool verbose = false> class GradientDescent
     {
       public:
         GradientDescent (F& function, T step_size_upfactor = 1.5, T step_size_downfactor = 0.1) :
@@ -69,30 +69,24 @@ namespace MR
 
         void run (const int max_iterations = 1000, const T grad_tolerance = 1e-4) {
           init();
-#ifdef PRINT_STATE
-          std::cout << f << " ";
-          for (int i = 0; i < func.size(); i++)
-            std::cout << x[i] << " ";
-          std::cout << "\n";
-#endif
+
           T gradient_tolerance = grad_tolerance * gradient_norm();
 
           for (int niter = 0; niter < max_iterations; niter++) {
-            if (!iterate()) return;
-
+            bool retval = iterate();
             T grad_norm = gradient_norm();
-
-            debug ("iteration " + str (niter) + ": f = " + str (f) + ", |g| = " + str (grad_norm));
-#ifdef PRINT_STATE
-            std::cout << f << " ";
-            for (int i = 0; i < func.size(); i++)
-              std::cout << x[i] << " ";
+            error ("iteration " + str (niter) + ": f = " + str (f) + ", |g| = " + str (grad_norm));
+            for (size_t n = 0; n < x.size(); ++n)
+              std::cout << x[n] << " ";
             std::cout << "\n";
-#endif
 
-            if (grad_norm < gradient_tolerance) return;
+            if (!retval)
+              return;
+
+            if (grad_norm < gradient_tolerance)
+              return;
           }
-          throw Exception ("failed to converge");
+//          throw Exception ("failed to converge");
         }
 
 
@@ -115,9 +109,11 @@ namespace MR
             bool no_change = true;
             for (size_t n = 0; n < func.size(); n++) {
               x2[n] = x[n] - step * g[n];
-              if (x2[n] != x[n]) no_change = false;
+              if (x2[n] != x[n])
+                no_change = false;
             }
-            if (no_change) return (false);
+            if (no_change)
+              return false;
 
             f2 = evaluate_func (x2, g2);
 
@@ -127,14 +123,13 @@ namespace MR
               x.swap (x2);
               g.swap (g2);
               normg = norm (g);
-              return (true);
+              return true;
             }
-
             // quadratic minimum
 
-            T denom = 2.0 * (f2 - f + normg * step);
+            T denom = 2.0 * (f2 - f + normg*normg*step);
             if (denom) {
-              T step_mult = step * normg / denom;
+              T step_mult = step * normg * normg / denom;
               assert (step_mult > 0.0 && step_mult < 1.0);
               step *= step_mult;
             }
@@ -153,7 +148,10 @@ namespace MR
 
         T evaluate_func (const Vector<T>& newx, Vector<T>& newg) {
           nfeval++;
-          return (func (newx, newg));
+          T cost = func (newx, newg);
+          if (verbose)
+            error ("gradient descent evaluation " + str(nfeval) + ", cost function " +str (cost));
+          return cost;
         }
     };
     //! @}
