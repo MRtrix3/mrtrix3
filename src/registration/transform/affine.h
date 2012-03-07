@@ -52,29 +52,34 @@ namespace MR
           typedef T ParameterType;
 
           Affine () :
-            param_vector_(12),
             matrix_(3,3),
             translation_(3),
             centre_(3),
-            offset_(3){
+            offset_(3),
+            optimiser_weights_ (12){
             matrix_.identity();
             translation_.zero();
             centre_.zero();
             offset_.zero();
+            for (size_t i = 0; i < optimiser_weights_.size(); i++)
+              optimiser_weights_[i] = 1.0;
           }
 
           template <class PointType>
-          inline void transform (const PointType& in, PointType& out) {
+          inline void transform (const PointType& in, PointType& out) const {
               out[0] = matrix_(0,0)*in[0] + matrix_(0,1)*in[1] + matrix_(0,2)*in[2] + offset_[0];
               out[1] = matrix_(1,0)*in[0] + matrix_(1,1)*in[1] + matrix_(1,2)*in[2] + offset_[1];
               out[2] = matrix_(2,0)*in[0] + matrix_(2,1)*in[1] + matrix_(2,2)*in[2] + offset_[2];
           }
 
           template <class PointType>
-          inline void get_jacobian_with_respect_to_params (const PointType& p, Matrix<T>& jacobian) {
+          void get_jacobian_wrt_params (const PointType& p, Matrix<T>& jacobian) const {
             jacobian.resize(3,12);
             jacobian.zero();
-            Vector<T> v = p - centre_;
+            Vector<T> v (3);
+            v[0] = p[0] - centre_[0];
+            v[1] = p[1] - centre_[1];
+            v[2] = p[2] - centre_[2];
             size_t blockOffset = 0;
             for (size_t block = 0; block < 3; block++) {
               for (size_t dim = 0; dim < 3; dim++)
@@ -95,7 +100,7 @@ namespace MR
             compute_offset();
           }
 
-          Matrix<T> get_transform () {
+          Matrix<T> get_transform () const {
             Matrix<T> transform(4,4);
             transform.identity();
             for (size_t row = 0; row < 3; row++) {
@@ -107,8 +112,6 @@ namespace MR
           }
 
           void set_parameter_vector (const Math::Vector<T>& param_vector) {
-            for (size_t i = 0; i < size(); i++)
-              param_vector_[i] = param_vector[i];
             size_t index = 0;
             for (size_t row = 0; row < 3; row++) {
               for (size_t col = 0; col < 3; col++)
@@ -119,15 +122,16 @@ namespace MR
             compute_offset();
           }
 
-          Vector<T>& get_parameter_vector () {
+          Vector<T> get_parameter_vector () const {
+            Vector<T> param_vector(12);
             size_t index = 0;
             for (size_t row = 0; row < 3; row++) {
               for (size_t col = 0; col < 3; col++)
-                param_vector_[index++] = matrix_(row, col);
+                param_vector[index++] = matrix_(row, col);
             }
             for (size_t dim = 0; dim < 3; dim++)
-              param_vector_[index++] = translation_[dim];
-            return param_vector_;
+              param_vector[index++] = translation_[dim];
+            return param_vector;
           }
 
           void set_matrix (Matrix<T>& matrix) {
@@ -135,7 +139,7 @@ namespace MR
             compute_offset();
           }
 
-          Matrix<T>& get_matrix () {
+          Matrix<T>& get_matrix () const {
             return matrix_;
           }
 
@@ -144,7 +148,7 @@ namespace MR
             compute_offset();
           }
 
-          Vector<T>& get_translation () {
+          Vector<T>& get_translation () const {
             return translation_;
           }
 
@@ -153,9 +157,24 @@ namespace MR
             compute_offset();
           }
 
-          Vector<T>& get_centre () {
+          Vector<T>& get_centre () const {
             return centre_;
           }
+
+          size_t size() const {
+            return 12;
+          }
+
+          void set_optimiser_weights (Vector<T>& optimiser_weights) {
+            assert(size() == optimiser_weights.size());
+              optimiser_weights_ = optimiser_weights;
+          }
+
+          const Vector<T>& get_optimiser_weights () const {
+            return optimiser_weights_;
+          }
+
+        protected:
 
           void compute_offset () {
             for( size_t i = 0; i < 3; i++ ) {
@@ -165,16 +184,12 @@ namespace MR
             }
           }
 
-          size_t size() {
-            return param_vector_.size();
-          }
 
-        protected:
-          Vector<T> param_vector_;
           Matrix<T> matrix_;
           Vector<T> translation_;
           Vector<T> centre_;
           Vector<T> offset_;
+          Vector<T> optimiser_weights_; // To weight updates to matrix parameters differently to translation
 
       };
       //! @}

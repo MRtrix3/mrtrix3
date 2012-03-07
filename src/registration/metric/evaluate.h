@@ -42,16 +42,16 @@ namespace MR
               params_ (parameters) { }
 
 
-            float operator() (const Math::Vector<float>& x, Math::Vector<float>& gradient) {
+            double operator() (const Math::Vector<double>& x, Math::Vector<double>& gradient) {
 
               double overall_cost_function = 0.0;
               gradient.zero();
               params_.transformation.set_parameter_vector(x);
-              std::cout << "Evaluate operator " <<  gradient  << std::endl;
-              ThreadKernel<MetricType, ParamType> kernel (metric_, params_, overall_cost_function, gradient);
 
+              ThreadKernel<MetricType, ParamType> kernel (metric_, params_, overall_cost_function, gradient);
               Image::threaded_loop (kernel, params_.target_image, 2, 0, 3);
-              std::cout << "Evaluate operator" << std::endl;
+              gradient *= params_.transformation.get_optimiser_weights();
+
               return overall_cost_function;
             }
 
@@ -59,10 +59,9 @@ namespace MR
               return params_.transformation.get_parameter_vector().size();
             }
 
-            float init (Math::Vector<TransformParamType>& x) {
-              for (size_t i = 0; i < size(); i++)
-                x[i] = params_.transformation.get_parameter_vector()[i];
-              return 0.01; // return init step size. TODO confirm this is appropriate;
+            double init (Math::Vector<TransformParamType>& x) {
+              x = params_.transformation.get_parameter_vector();
+              return 1.0; // return init step size. TODO confirm this is appropriate;
             }
 
           protected:

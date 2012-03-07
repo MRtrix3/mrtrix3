@@ -38,30 +38,16 @@ namespace MR
       template <class MetricType, class ParamType>
       class ThreadKernel {
         public:
-          ThreadKernel (const MetricType& metric, ParamType& parameters, double& overall_cost_function, Math::Vector<float>& overall_gradient) :
+          ThreadKernel (const MetricType& metric, ParamType& parameters, double& overall_cost_function, Math::Vector<double>& overall_gradient) :
             metric_ (metric),
             params_ (parameters),
             cost_function_ (0.0),
             gradient_ (overall_gradient.size()),
             overall_cost_function_ (overall_cost_function),
-            overall_gradient_ (overall_gradient) {
+            overall_gradient_ (overall_gradient),
+            v2s_(4, 4){
             gradient_.zero();
-
-            Math::Matrix<float> v2s(4,4);
-            Image::Transform::voxel2scanner(v2s, params_.target_image);
-            v2s_[0][0] = v2s (0,0);
-            v2s_[0][1] = v2s (0,1);
-            v2s_[0][2] = v2s (0,2);
-            v2s_[0][3] = v2s (0,3);
-            v2s_[1][0] = v2s (1,0);
-            v2s_[1][1] = v2s (1,1);
-            v2s_[1][2] = v2s (1,2);
-            v2s_[1][3] = v2s (1,3);
-            v2s_[2][0] = v2s (2,0);
-            v2s_[2][1] = v2s (2,1);
-            v2s_[2][2] = v2s (2,2);
-            v2s_[2][3] = v2s (2,3);
-
+            Image::Transform::voxel2scanner(v2s_, params_.target_image);
           }
 
           ~ThreadKernel () {
@@ -77,23 +63,27 @@ namespace MR
                 return;
             }
 
+            Point<float> target_point = voxel2scanner(iter);
             Point<float> moving_point;
-            params_.transformation.transform(voxel2scanner(iter), moving_point);
+            params_.transformation.transform(target_point, moving_point);
 
             if (params_.moving_mask) {
               params_.moving_mask->scanner(moving_point);
-              if (!params_.target_mask->value())
+              if (!params_.moving_mask->value())
                 return;
             }
+            Image::voxel_assign (params_.target_image, iter);
             params_.moving_image.scanner(moving_point);
-            cost_function_ += metric_ (params_, gradient_);
+            if (!params_.moving_image)
+              return;
+            cost_function_ += metric_ (params_, target_point, moving_point, gradient_);
           }
 
           Point<float> voxel2scanner (const Image::Iterator& p) const {
             return Point<float> (
-                v2s_[0][0]*p[0] + v2s_[0][1]*p[1] + v2s_[0][2]*p[2] + v2s_[0][3],
-                v2s_[1][0]*p[0] + v2s_[1][1]*p[1] + v2s_[1][2]*p[2] + v2s_[1][3],
-                v2s_[2][0]*p[0] + v2s_[2][1]*p[1] + v2s_[2][2]*p[2] + v2s_[2][3]);
+              v2s_(0,0)*p[0] + v2s_(0,1)*p[1] + v2s_(0,2)*p[2] + v2s_(0,3),
+              v2s_(1,0)*p[0] + v2s_(1,1)*p[1] + v2s_(1,2)*p[2] + v2s_(1,3),
+              v2s_(2,0)*p[0] + v2s_(2,1)*p[1] + v2s_(2,2)*p[2] + v2s_(2,3));
           }
 
           protected:
@@ -101,11 +91,11 @@ namespace MR
             MetricType metric_;
             ParamType params_;
 
-            float v2s_[3][4];
             double cost_function_;
-            Math::Vector<float> gradient_;
+            Math::Vector<double> gradient_;
             double& overall_cost_function_;
-            Math::Vector<float>& overall_gradient_;
+            Math::Vector<double>& overall_gradient_;
+            Math::Matrix<float> v2s_;
       };
     }
   }
