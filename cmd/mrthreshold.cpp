@@ -28,6 +28,7 @@
 #include "image/voxel.h"
 #include "image/loop.h"
 #include "image/histogram.h"
+#include "image/filter/optimal_threshold.h"
 
 MRTRIX_APPLICATION
 
@@ -37,12 +38,11 @@ using namespace App;
 void usage ()
 {
   DESCRIPTION
-  + "create bitwise image by thresholding image intensity."
-  + "By default, the threshold level is determined using a "
-  "histogram analysis to cut out the background. Otherwise, "
-  "the threshold intensity can be specified using command "
-  "line options. Note that only the first study is used for "
-  "thresholding.";
+  + "create bitwise image by thresholding image intensity. By default, an "
+    "optimal threshold is determined using the parameter free method "
+    "described in Ridgway G et al. (2009) NeuroImage.44(1):99-111. "
+    "Alternatively the threshold can be defined manually by the user "
+    "or using a histogram-based analysis to cut out the background.";
 
   ARGUMENTS
   + Argument ("input", "the input image to be thresholded.").type_image_in ()
@@ -52,6 +52,9 @@ void usage ()
   OPTIONS
   + Option ("abs", "specify threshold value as absolute intensity.")
   + Argument ("value").type_float()
+
+  + Option ("histogram", "define the threshold by a histogram analysis to cut out the background. "
+                         "Note that only the first study is used for thresholding.")
 
   + Option ("percentile", "threshold the image at the ith percentile.")
   + Argument ("value").type_float (0.0, 95.0, 100.0)
@@ -79,11 +82,18 @@ void usage ()
 void run ()
 {
   float val (NAN), percentile (NAN), bottomNpercent (NAN), topNpercent (NAN);
+  bool use_histogram = false;
   size_t topN (0), bottomN (0), nopt (0);
 
   Options opt = get_options ("abs");
   if (opt.size()) {
     val = opt[0][0];
+    ++nopt;
+  }
+
+  opt = get_options ("histogram");
+  if (opt.size()) {
+    use_histogram = true;
     ++nopt;
   }
 
@@ -221,9 +231,14 @@ void run ()
     }
   }
   else {
-    if (isnan (val)) {
+    if (use_histogram) {
       Image::Histogram<Image::Buffer<float>::voxel_type> hist (in);
       val = hist.first_min();
+    } else if(isnan (val)) {
+      double min, max;
+      Image::min_max(in, min, max);
+      Image::Filter::ImageCorrelationCostFunction<Image::Buffer<float>::voxel_type> cost_function(in);
+      val = Math::golden_section_search(cost_function, "optimising threshold...", min + 0.001*(max-min), (min+max)/2.0 , max-0.001*(max-min));
     }
 
     Image::Loop loop ("thresholding \"" + shorten (in.name()) + "\" at intensity " + str (val) + "...");

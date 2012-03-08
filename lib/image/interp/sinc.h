@@ -79,7 +79,7 @@ namespace MR
         public:
           typedef typename VoxelType::value_type value_type;
 
-          using Base<VoxelType>::set;
+          using Base<VoxelType>::check_bounds;
           using Base<VoxelType>::dim;
           using Base<VoxelType>::image2voxel;
           using Base<VoxelType>::scanner2voxel;
@@ -88,7 +88,7 @@ namespace MR
 
           //! construct an Interp object to obtain interpolated values using the
           // parent DataSet class
-          Sinc (const VoxelType& parent, const size_t w = SINC_WINDOW_SIZE) : 
+          Sinc (const VoxelType& parent, const size_t w = SINC_WINDOW_SIZE) :
               Base<VoxelType> (parent),
               window_size (w),
               kernel_width ((window_size-1)/2),
@@ -96,7 +96,7 @@ namespace MR
               Sinc_y (w),
               Sinc_z (w),
               y_values (w, 0.0),
-              z_values (w, 0.0) { 
+              z_values (w, 0.0) {
                 assert (w % 2);
                 out_of_bounds = false;
               }
@@ -133,7 +133,7 @@ namespace MR
           }
 
           value_type value () {
-            if (out_of_bounds) 
+            if (out_of_bounds)
               return NAN;
             for (size_t z = 0; z != window_size; ++z) {
               (*this)[2] = Sinc_z.index (z);

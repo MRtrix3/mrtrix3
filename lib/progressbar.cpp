@@ -56,7 +56,7 @@ namespace MR
       if (p.as_percentage)
         fprintf (stderr, "\r%s: %s %3u%%\n", App::NAME.c_str(), p.text.c_str(), 100);
       else
-        fprintf (stderr, "\r%s: %s  - ok\n", App::NAME.c_str(), p.text.c_str());
+        fprintf (stderr, "\r%s: %s  - done\n", App::NAME.c_str(), p.text.c_str());
     }
   }
 

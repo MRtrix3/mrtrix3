@@ -35,7 +35,7 @@ namespace MR
   namespace Image
   {
 
-    template <class BufferType> 
+    template <class BufferType>
       class Voxel {
         public:
           Voxel (BufferType& array) :
@@ -94,7 +94,7 @@ namespace MR
 
           friend std::ostream& operator<< (std::ostream& stream, const Voxel& V) {
             stream << "voxel for image \"" << V.name() << "\", position [ ";
-            for (size_t n = 0; n < V.ndim(); ++n) 
+            for (size_t n = 0; n < V.ndim(); ++n)
               stream << V[n] << " ";
             stream << "], current offset = " << V.offset_ << ", value = " << V.value();
             return stream;
@@ -132,9 +132,10 @@ namespace MR
       };
 
 
-    template <class InputVoxelType, class OutputVoxelType> 
-      void voxel_assign (OutputVoxelType& out, const InputVoxelType& in) {
-        for (size_t n = 0; n < std::min (in.ndim(), out.ndim()); ++n) 
+    template <class InputVoxelType, class OutputVoxelType>
+      void voxel_assign (OutputVoxelType& out, const InputVoxelType& in, size_t from_axis = 0, size_t to_axis = std::numeric_limits<size_t>::max()) {
+        to_axis = std::min (to_axis, std::min (in.ndim(), out.ndim()));
+        for (size_t n = from_axis; n < to_axis; ++n)
           out[n] = in[n];
       }
 

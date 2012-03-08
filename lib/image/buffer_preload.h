@@ -33,7 +33,7 @@ namespace MR
   {
 
 
-    template <typename ValueType> 
+    template <typename ValueType>
       class BufferPreload : public Buffer<ValueType>
     {
       public:
@@ -44,13 +44,13 @@ namespace MR
           }
 
         BufferPreload (const Header& header) :
-          Buffer<value_type> (header), 
+          Buffer<value_type> (header),
           data_ (NULL) {
             init();
           }
 
         BufferPreload (const Buffer<ValueType>& buffer) :
-          Buffer<value_type> (buffer), 
+          Buffer<value_type> (buffer),
           data_ (NULL) {
             init();
           }
@@ -124,7 +124,7 @@ namespace MR
           do_load (dest);
         }
 
-        template <class VoxType> 
+        template <class VoxType>
           void do_load (VoxType& destination) {
             inform ("data for image \"" + name() + "\" will be loaded into memory");
             data_ = new value_type [Image::voxel_count (*this)];
@@ -138,7 +138,13 @@ namespace MR
 
     };
 
+      template <> inline bool BufferPreload<bool>::get_value (size_t index) const {
+        return get<bool> (data_, index);
+      }
 
+      template <> inline void BufferPreload<bool>::set_value (size_t index, bool val) const {
+        put<bool> (val, data_, index);
+      }
 
 
   }

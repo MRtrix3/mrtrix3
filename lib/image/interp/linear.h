@@ -69,13 +69,13 @@ namespace MR
        * \endcode
        */
 
-      template <class VoxelType> 
+      template <class VoxelType>
         class Linear : public Base<VoxelType>
       {
         public:
           typedef typename VoxelType::value_type value_type;
 
-          using Base<VoxelType>::set;
+          using Base<VoxelType>::check_bounds;
           using Base<VoxelType>::dim;
           using Base<VoxelType>::image2voxel;
           using Base<VoxelType>::scanner2voxel;
@@ -91,8 +91,8 @@ namespace MR
            * be interpolated, assuming that \a pos provides the position as a
            * (floating-point) voxel coordinate within the dataset. */
           bool voxel (const Point<float>& pos) {
-            Point<float> f = set (pos);
-            if (out_of_bounds) 
+            Point<float> f = check_bounds (pos);
+            if (out_of_bounds)
               return true;
 
             if (pos[0] < 0.0) {
@@ -159,7 +159,7 @@ namespace MR
           }
 
           value_type value () {
-            if (out_of_bounds) 
+            if (out_of_bounds)
               return NAN;
             value_type val = 0.0;
             if (faaa) val  = faaa * VoxelType::value();

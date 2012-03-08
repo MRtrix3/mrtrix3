@@ -64,7 +64,7 @@ namespace MR
           template <class InputVoxelType>
             Gradient3D (const InputVoxelType& in) :
               ConstInfo (in),
-              wrt_scanner_(false) {
+              wrt_scanner_(true) {
               axes_.resize(4);
               axes_[3].dim = 3;
               axes_[0].stride = 2;
@@ -84,22 +84,22 @@ namespace MR
 
               Adapter::Gradient1D<InputVoxelType> gradient1D (in);
               out[3] = 0;
-              threaded_copy_with_progress_message ("computing x-axis gradient...", gradient1D, out, 2, 0, 3);
+              threaded_copy (gradient1D, out, 2, 0, 3);
               out[3] = 1;
               gradient1D.set_axis(1);
-              threaded_copy_with_progress_message ("computing y-axis gradient...", gradient1D, out, 2, 0, 3);
+              threaded_copy (gradient1D, out, 2, 0, 3);
               out[3] = 2;
               gradient1D.set_axis(2);
-              threaded_copy_with_progress_message ("computing z-axis gradient...", gradient1D, out, 2, 0, 3);
+              threaded_copy (gradient1D, out, 2, 0, 3);
 
               if (wrt_scanner_) {
                 Math::Matrix<float> transform(4,4);
-                Image::Transform::image2scanner(transform, in);
+                Image::Transform::voxel2scanner(transform, in);
 
                 Math::Vector<float> gradient(3);
                 Math::Vector<float> gradient_wrt_scanner(3);
 
-                Image::Loop loop("adjusting gradients wrt to scanner coords...", 0, 3);
+                Image::Loop loop(0, 3);
                 for (loop.start(out); loop.ok(); loop.next(out)) {
                   for (size_t dim = 0; dim < 3; dim++) {
                     out[3] = dim;

@@ -39,7 +39,7 @@ namespace MR
 
       //! Base class for interpolator classes
 
-      template <class InfoType> 
+      template <class InfoType>
         class Base : public InfoType
       {
         public:
@@ -51,7 +51,7 @@ namespace MR
           //! construct an Base object to obtain interpolated values using the
           // parent DataSet class
           Base (const InfoType& parent) :
-            InfoType (parent), 
+            InfoType (parent),
             out_of_bounds (true)
           {
             bounds[0] = dim(0) - 0.5;
@@ -152,10 +152,10 @@ namespace MR
             M[2][3] = MV (2,3);
           }
 
-          Point<float> set (const Point<float>& pos) {
-            if (pos[0] < -0.5 || pos[0] > bounds[0] ||
-                pos[1] < -0.5 || pos[1] > bounds[1] ||
-                pos[2] < -0.5 || pos[2] > bounds[2]) {
+          Point<float> check_bounds (const Point<float>& pos) {
+            if (pos[0] <= -0.5 || pos[0] >= bounds[0] ||
+                pos[1] <= -0.5 || pos[1] >= bounds[1] ||
+                pos[2] <= -0.5 || pos[2] >= bounds[2]) {
               out_of_bounds = true;
               return Point<float> (NAN, NAN, NAN);
             }

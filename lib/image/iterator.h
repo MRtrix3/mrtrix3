@@ -39,9 +39,9 @@ namespace MR
     class Iterator
     {
       public:
-        template <class InfoType> 
-          Iterator (const InfoType& S) : 
-            d (S.ndim()), 
+        template <class InfoType>
+          Iterator (const InfoType& S) :
+            d (S.ndim()),
             p (S.ndim(), 0) {
               for (size_t i = 0; i < S.ndim(); ++i)
                 d[i] = S.dim(i);
@@ -52,6 +52,14 @@ namespace MR
 
         const ssize_t& operator[] (size_t axis) const { return p[axis]; }
         ssize_t& operator[] (size_t axis) { return p[axis]; }
+
+        friend std::ostream& operator<< (std::ostream& stream, const Iterator& V) {
+          stream << "iterator, position [ ";
+          for (size_t n = 0; n < V.ndim(); ++n)
+            stream << V[n] << " ";
+          stream << "]";
+          return stream;
+        }
 
       private:
         std::vector<ssize_t> d, p;

@@ -27,6 +27,7 @@
 #include "image/voxel.h"
 #include "image/filter/gaussian3D.h"
 #include "image/filter/gradient3D.h"
+#include "progressbar.h"
 
 MRTRIX_APPLICATION
 
@@ -68,17 +69,17 @@ void run () {
     throw Exception("input image must be 3D");
 
   Image::Filter::Gaussian3D smooth_filter (input_voxel);
-
+  std::vector<float> stdev(1, 1.0);
   Options opt = get_options ("stdev");
   if (opt.size()) {
-  std::vector<float> stdev = parse_floats (opt[0][0]);
+    stdev = parse_floats (opt[0][0]);
     for (size_t i = 0; i < stdev.size(); ++i)
       if (stdev[i] < 0.0)
         throw Exception ("the Gaussian stdev values cannot be negative");
     if (stdev.size() != 1 && stdev.size() != 3)
       throw Exception ("unexpected number of elements specified in Gaussian stdev");
-    smooth_filter.set_stdev(stdev);
   }
+  smooth_filter.set_stdev(stdev);
 
   Image::Filter::Gradient3D gradient_filter (input_voxel);
 
@@ -99,6 +100,7 @@ void run () {
   Image::Buffer<float> gradient_data (argument[1], gradient_header);
   Image::Buffer<float>::voxel_type gradient_voxel (gradient_data);
 
+  ProgressBar progress("computing image gradient...");
   smooth_filter (input_voxel, smoothed_voxel);
   gradient_filter (smoothed_voxel, gradient_voxel);
 }

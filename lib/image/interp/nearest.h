@@ -69,13 +69,13 @@ namespace MR
        * \endcode
        */
 
-      template <class VoxelType> 
+      template <class VoxelType>
         class Nearest : public Base<VoxelType>
       {
         public:
           typedef typename VoxelType::value_type value_type;
 
-          using Base<VoxelType>::set;
+          using Base<VoxelType>::check_bounds;
           using Base<VoxelType>::image2voxel;
           using Base<VoxelType>::scanner2voxel;
           using typename Base<VoxelType>::out_of_bounds;
@@ -90,8 +90,8 @@ namespace MR
            * be interpolated, assuming that \a pos provides the position as a
            * (floating-point) voxel coordinate within the dataset. */
           bool voxel (const Point<float>& pos) {
-            set (pos);
-            if (out_of_bounds) 
+            check_bounds (pos);
+            if (out_of_bounds)
               return true;
 
             (*this)[0] = Math::round<ssize_t> (pos[0]);
@@ -119,8 +119,10 @@ namespace MR
           }
 
           value_type value () const {
-            if (out_of_bounds) 
+            if (out_of_bounds) {
               return NAN;
+            }
+
             return VoxelType::value();
           }
       };

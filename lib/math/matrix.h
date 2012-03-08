@@ -314,6 +314,9 @@ namespace MR
             size1 = size2 = 0;
             return *this;
           }
+          if (nrows == size1 && ncolumns == ncolumns) {
+            return *this;
+          }
           if (!block) {
             allocate (nrows, ncolumns);
             operator= (fill_value);
@@ -1054,7 +1057,7 @@ namespace MR
 #ifdef __math_complex_h__
 
     // cdouble definitions:
-    
+
     inline void gemm (CBLAS_TRANSPOSE op_A, CBLAS_TRANSPOSE op_B, cdouble alpha, const Matrix<cdouble>& A, const Matrix<cdouble>& B, cdouble beta, Matrix<cdouble>& C)
     {
       gsl_blas_zgemm (op_A, op_B, gsl(alpha), A.gsl(), B.gsl(), gsl(beta), C.gsl());

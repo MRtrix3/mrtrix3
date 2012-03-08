@@ -25,6 +25,7 @@
 #include "image/buffer_preload.h"
 #include "image/voxel.h"
 #include "image/filter/gaussian3D.h"
+#include "progressbar.h"
 
 
 MRTRIX_APPLICATION
@@ -97,5 +98,6 @@ void run () {
   Image::Buffer<float> dest_data (argument[1], header);
   Image::Buffer<float>::voxel_type dest (dest_data);
 
+  ProgressBar progress("smoothing image...");
   smooth_filter (src, dest);
 }

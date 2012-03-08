@@ -30,77 +30,66 @@ namespace MR
 {
   namespace Math
   {
-
     /** \addtogroup Optimisation
     @{ */
 
     //! Computes the minimum of a 1D function using a golden section search.
-    /*! This class operates on generic 'cost function' classes that are required to
-     *  implement an evaluate_function() method in the form of:
-     *  \code
-     *  ValueType evaluate_function(ValueType input);
-     *  \endcode
+    /*! This function operates on a cost function class that must define a
+     *  operator() method. The method must take a single ValueType argument
+     *  x and return the cost of the function at x.
      *
-     *  To begin optimisation run() is called that takes 4 arguments.
      *  The min_bound and max_bound arguments define values that bracket the
      *  expected minimum. The estimate argument is the initial estimate of the
      *  minimum that is required to be larger than min_bound and smaller than max_bound.
-     *  The terminating condition is defined by the tolerance argument such that the
-     *  difference between the updated min and max bounds is smaller than the tolerance.
      *
      * Typical usage:
      * \code
      * CostFunction cost_function();
-     * Math::GoldenSectionSearch<CostFunction,float> golden_search(cost_function, "optimising...");
-     * float optimal_value = golden_search.run(min_bound, initial_estimate , max_bound);
+     * float optimal_value = Math::golden_section_search(cost_function, "optimising...", min_bound, initial_estimate , max_bound);
      *
      * \endcode
      */
-    template <class Function, typename ValueType = float> class GoldenSectionSearch
-    {
 
-      public:
-        GoldenSectionSearch (Function& function, const std::string& message) : function_(function), progress_(message) { }
+    template <class FunctionType, typename ValueType>
+      ValueType golden_section_search (FunctionType& function,
+                             const std::string& message,
+                            ValueType min_bound,
+                            ValueType init_estimate,
+                            ValueType max_bound,
+                            ValueType tolerance = 0.01)	{
 
-        GoldenSectionSearch (Function& function) : function_(function) { }
+     ProgressBar progress(message);
 
-        ValueType run (ValueType min_bound, ValueType estimate, ValueType max_bound, double tolerance = 1E-5)	{
-            ValueType g1 = 0.61803399, g2 = 1 - g1;
-            ValueType x0 = min_bound, x1, x2, x3 = max_bound;
+     const ValueType g1 = 0.61803399, g2 = 1 - g1;
+     ValueType x0 = min_bound, x1, x2, x3 = max_bound;
 
-            if (std::abs(max_bound - estimate) > std::abs(estimate - min_bound)) {
-                x1 = estimate;
-                x2 = estimate + g2 * (max_bound - estimate);
-            } else {
-                x2 = estimate;
-                x1 = estimate - g2 * (estimate - min_bound);
-            }
+      if (std::abs(max_bound - init_estimate) > std::abs(init_estimate - min_bound)) {
+        x1 = init_estimate;
+        x2 = init_estimate + g2 * (max_bound - init_estimate);
+      } else {
+        x2 = init_estimate;
+        x1 = init_estimate - g2 * (init_estimate - min_bound);
+      }
 
-            ValueType f1 = function_(x1);
-            ValueType f2 = function_(x2);
+     ValueType f1 = function(x1);
+     ValueType f2 = function(x2);
 
-            while (std::abs(x3 - x0) > tolerance * (std::abs(x1) + std::abs(x2))) {
-              if (f2 < f1) {
-                x0 = x1;
-                x1 = x2;
-                x2 = g1 * x1 + g2 * x3;
-                f1 = f2, f2 = function_(x2);
-              } else {
-                x3 = x2;
-                x2 = x1;
-                x1 = g1 * x2 + g2 * x0;
-                f2 = f1, f1 = function_(x1);
-              }
-              ++progress_;
-            }
-            return f1 < f2 ? x1 : x2;
+      while (tolerance * (std::abs(x1) + std::abs(x2)) < std::abs(x3 - x0)) {
+        if (f2 < f1) {
+          x0 = x1;
+          x1 = x2;
+          x2 = g1 * x1 + g2 * x3;
+          f1 = f2, f2 = function(x2);
+        } else {
+          x3 = x2;
+          x2 = x1;
+          x1 = g1 * x2 + g2 * x0;
+          f2 = f1, f1 = function(x1);
         }
-
-      private:
-        Function& function_;
-        ProgressBar progress_;
-    };
-    //! @}
+        ++progress;
+      }
+      return f1 < f2 ? x1 : x2;
+    }
   }
 }
 

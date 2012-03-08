@@ -75,7 +75,7 @@ namespace MR
         public:
           typedef typename VoxelType::value_type value_type;
 
-          using Base<VoxelType>::set;
+          using Base<VoxelType>::check_bounds;
           using Base<VoxelType>::dim;
           using Base<VoxelType>::image2voxel;
           using Base<VoxelType>::scanner2voxel;
@@ -91,7 +91,7 @@ namespace MR
            * be interpolated, assuming that \a pos provides the position as a
            * (floating-point) voxel coordinate within the dataset. */
           bool voxel (const Point<float>& pos) {
-            Point<float> f = set (pos);
+            Point<float> f = check_bounds (pos);
             if (out_of_bounds)
               return true;
             P = pos;
