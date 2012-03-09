@@ -69,22 +69,45 @@ namespace MR
       }
 
       // specialisation for conversion to bool
-      template <> bool __getLE<bool,float> (const void* data, size_t i)
-      {
-        return Math::round (MR::getLE<float> (data, i));
-      }
-      template <> bool __getBE<bool,float> (const void* data, size_t i)
-      {
-        return Math::round (MR::getBE<float> (data, i));
-      }
-      template <> bool __getLE<bool,double> (const void* data, size_t i)
-      {
-        return Math::round (MR::getLE<double> (data, i));
-      }
-      template <> bool __getBE<bool,double> (const void* data, size_t i)
-      {
-        return Math::round (MR::getBE<double> (data, i));
-      }
+      template <> bool __getLE<bool,float> (const void* data, size_t i) { return Math::round (MR::getLE<float> (data, i)); }
+      template <> bool __getBE<bool,float> (const void* data, size_t i) { return Math::round (MR::getBE<float> (data, i)); }
+      template <> bool __getLE<bool,double> (const void* data, size_t i) { return Math::round (MR::getLE<double> (data, i)); }
+      template <> bool __getBE<bool,double> (const void* data, size_t i) { return Math::round (MR::getBE<double> (data, i)); }
+
+      // specialisation for conversion between bool and complex types
+      template <> bool __getLE<bool,cfloat> (const void* data, size_t i) { return Math::round (std::abs (MR::getLE<cfloat> (data, i))); }
+      template <> bool __getBE<bool,cfloat> (const void* data, size_t i) { return Math::round (std::abs (MR::getBE<cfloat> (data, i))); }
+      template <> bool __getLE<bool,cdouble> (const void* data, size_t i) { return Math::round (std::abs (MR::getLE<cdouble> (data, i))); }
+      template <> bool __getBE<bool,cdouble> (const void* data, size_t i) { return Math::round (std::abs (MR::getBE<cdouble> (data, i))); }
+      template <> void __put<cfloat,bool> (cfloat val, void* data, size_t i) { return MR::put<bool> (Math::round (std::abs (val)), data, i); } 
+      template <> void __put<cdouble,bool> (cdouble val, void* data, size_t i) { return MR::put<bool> (Math::round (std::abs (val)), data, i); }
+
+      // specialisations for conversion between real types and complex types
+#define GET_COMPLEX(type) \
+      template <> type __getLE<type,cfloat> (const void* data, size_t i) { return std::abs (MR::getLE<cfloat> (data, i)); } \
+      template <> type __getBE<type,cfloat> (const void* data, size_t i) { return std::abs (MR::getBE<cfloat> (data, i)); } \
+      template <> type __getLE<type,cdouble> (const void* data, size_t i) { return std::abs (MR::getLE<cdouble> (data, i)); } \
+      template <> type __getBE<type,cdouble> (const void* data, size_t i) { return std::abs (MR::getBE<cdouble> (data, i)); } 
+
+#define GET_PUT_COMPLEX(type) \
+      GET_COMPLEX(type) \
+      template <> void __put<cfloat,type> (cfloat val, void* data, size_t i) { return MR::put<type> (std::abs (val), data, i); } \
+      template <> void __put<cdouble,type> (cdouble val, void* data, size_t i) { return MR::put<type> (std::abs (val), data, i); }
+#define GET_PUT_COMPLEX_BO(type) \
+      GET_COMPLEX(type) \
+      template <> void __putLE<cfloat,type> (cfloat val, void* data, size_t i) { return MR::putLE<type> (std::abs (val), data, i); } \
+      template <> void __putBE<cfloat,type> (cfloat val, void* data, size_t i) { return MR::putBE<type> (std::abs (val), data, i); } \
+      template <> void __putLE<cdouble,type> (cdouble val, void* data, size_t i) { return MR::putLE<type> (std::abs (val), data, i); } \
+      template <> void __putBE<cdouble,type> (cdouble val, void* data, size_t i) { return MR::putBE<type> (std::abs (val), data, i); }
+
+      GET_PUT_COMPLEX(int8_t);
+      GET_PUT_COMPLEX(uint8_t);
+      GET_PUT_COMPLEX_BO(int16_t);
+      GET_PUT_COMPLEX_BO(uint16_t);
+      GET_PUT_COMPLEX_BO(int32_t);
+      GET_PUT_COMPLEX_BO(uint32_t);
+      GET_PUT_COMPLEX_BO(float32);
+      GET_PUT_COMPLEX_BO(float64);
     }
 
     // \endcond
@@ -217,6 +240,22 @@ namespace MR
               put_func = &__putLE<value_type,double>;
               return;
             case DataType::Float64BE:
+              get_func = &__getBE<value_type,double>;
+              put_func = &__putBE<value_type,double>;
+              return;
+            case DataType::CFloat32LE:
+              get_func = &__getLE<value_type,float>;
+              put_func = &__putLE<value_type,float>;
+              return;
+            case DataType::CFloat32BE:
+              get_func = &__getBE<value_type,float>;
+              put_func = &__putBE<value_type,float>;
+              return;
+            case DataType::CFloat64LE:
+              get_func = &__getLE<value_type,double>;
+              put_func = &__putLE<value_type,double>;
+              return;
+            case DataType::CFloat64BE:
               get_func = &__getBE<value_type,double>;
               put_func = &__putBE<value_type,double>;
               return;

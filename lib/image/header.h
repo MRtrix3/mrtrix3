@@ -155,6 +155,8 @@ namespace MR
         void open (const std::string& image_name);
         void create (const std::string& image_name);
         void merge (const Header& H);
+
+        template <class ValueType> friend class Buffer;
     };
 
 

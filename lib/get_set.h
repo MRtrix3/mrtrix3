@@ -20,7 +20,8 @@
 
 
     31-10-2008 J-Donald Tournier <d.tournier@brain.org.au>
-    * replace get::T and put::T() methods with template get<T>() & put<T>() methods
+    * replace get::ValueType and put::ValueType() methods with template
+    * get<ValueType>() & put<ValueType>() methods
     * add get/put template specialisations for bool, int8 and uint8
     * remove obsolete ArrayXX classes
     * move MR::ByteOrder namespace & methods from lib/mrtrix.h to here
@@ -57,9 +58,9 @@ namespace MR
   {
     namespace
     {
-      template <typename T> inline void swap (T& a, T& b) throw ()
+      template <typename ValueType> inline void swap (ValueType& a, ValueType& b) throw ()
       {
-        T c (a);
+        ValueType c (a);
         a = b;
         b = c;
       }
@@ -157,6 +158,7 @@ namespace MR
     {
       return TO_BE (v);
     }
+
     inline float32 LE (float32 v)
     {
       return TO_LE (v);
@@ -174,63 +176,88 @@ namespace MR
       return TO_BE (v);
     }
 
-    template <typename T> inline T swap (const T value, bool is_big_endian)
+    inline cfloat LE (cfloat v)
+    {
+      TO_LE (v.real());
+      TO_LE (v.imag());
+      return v;
+    }
+    inline cfloat BE (cfloat v)
+    {
+      TO_BE (v.real());
+      TO_BE (v.imag());
+      return v;
+    }
+    inline cdouble LE (cdouble v)
+    {
+      TO_LE (v.real());
+      TO_LE (v.imag());
+      return v;
+    }
+    inline cdouble BE (cdouble v)
+    {
+      TO_BE (v.real());
+      TO_BE (v.imag());
+      return v;
+    }
+
+    template <typename ValueType> inline ValueType swap (const ValueType value, bool is_big_endian)
     {
       return is_big_endian ? BE (value) : LE (value);
     }
   }
 
 
-  template <typename T> inline T getLE (const void* address)
+  template <typename ValueType> inline ValueType getLE (const void* address)
   {
-    return ByteOrder::LE (*((T*) address));
+    return ByteOrder::LE (*((ValueType*) address));
   }
-  template <typename T> inline T getBE (const void* address)
+  template <typename ValueType> inline ValueType getBE (const void* address)
   {
-    return ByteOrder::BE (*((T*) address));
+    return ByteOrder::BE (*((ValueType*) address));
   }
-  template <typename T> inline T get (const void* address, bool is_big_endian = MRTRIX_IS_BIG_ENDIAN)
+  template <typename ValueType> inline ValueType get (const void* address, bool is_big_endian = MRTRIX_IS_BIG_ENDIAN)
   {
-    return ByteOrder::swap (*((T*) address), is_big_endian);
-  }
-
-  template <typename T> inline void putLE (const T value, void* address)
-  {
-    *((T*) address) = ByteOrder::LE (value);
-  }
-  template <typename T> inline void putBE (const T value, void* address)
-  {
-    *((T*) address) = ByteOrder::BE (value);
-  }
-  template <typename T> inline void put (const T value, void* address, bool is_big_endian = MRTRIX_IS_BIG_ENDIAN)
-  {
-    *((T*) address) = ByteOrder::swap (value, is_big_endian);
+    return ByteOrder::swap (*((ValueType*) address), is_big_endian);
   }
 
-  template <typename T> inline T getLE (const void* data, size_t i)
+  template <typename ValueType> inline void putLE (const ValueType value, void* address)
   {
-    return ByteOrder::LE (((T*) data)[i]);
+    *((ValueType*) address) = ByteOrder::LE (value);
   }
-  template <typename T> inline T getBE (const void* data, size_t i)
+  template <typename ValueType> inline void putBE (const ValueType value, void* address)
   {
-    return ByteOrder::BE (((T*) data)[i]);
+    *((ValueType*) address) = ByteOrder::BE (value);
   }
-  template <typename T> inline T get (const void* data, size_t i, bool is_big_endian = MRTRIX_IS_BIG_ENDIAN)
+  template <typename ValueType> inline void put (const ValueType value, void* address, bool is_big_endian = MRTRIX_IS_BIG_ENDIAN)
   {
-    return ByteOrder::swap (*((T*) data)[i], is_big_endian);
+    *((ValueType*) address) = ByteOrder::swap (value, is_big_endian);
   }
 
-  template <typename T> inline void putLE (const T value, void* data, size_t i)
+  template <typename ValueType> inline ValueType getLE (const void* data, size_t i)
   {
-    ((T*) data)[i] = ByteOrder::LE (value);
+    return ByteOrder::LE (((ValueType*) data)[i]);
   }
-  template <typename T> inline void putBE (const T value, void* data, size_t i)
+  template <typename ValueType> inline ValueType getBE (const void* data, size_t i)
   {
-    ((T*) data)[i] = ByteOrder::BE (value);
+    return ByteOrder::BE (((ValueType*) data)[i]);
   }
-  template <typename T> inline void put (const T value, void* data, size_t i, bool is_big_endian = MRTRIX_IS_BIG_ENDIAN)
+  template <typename ValueType> inline ValueType get (const void* data, size_t i, bool is_big_endian = MRTRIX_IS_BIG_ENDIAN)
   {
-    *((T*) data)[i] = ByteOrder::swap (value, is_big_endian);
+    return ByteOrder::swap (*((ValueType*) data)[i], is_big_endian);
+  }
+
+  template <typename ValueType> inline void putLE (const ValueType value, void* data, size_t i)
+  {
+    ((ValueType*) data)[i] = ByteOrder::LE (value);
+  }
+  template <typename ValueType> inline void putBE (const ValueType value, void* data, size_t i)
+  {
+    ((ValueType*) data)[i] = ByteOrder::BE (value);
+  }
+  template <typename ValueType> inline void put (const ValueType value, void* data, size_t i, bool is_big_endian = MRTRIX_IS_BIG_ENDIAN)
+  {
+    *((ValueType*) data)[i] = ByteOrder::swap (value, is_big_endian);
   }
 
 

@@ -65,7 +65,7 @@ namespace MR
             }
 
             ssize_t stride (size_t axis) const {
-              return parent_vox [axis];
+              return parent_vox.stride (axis);
             }
             size_t  ndim () const {
               return parent_vox.ndim();
@@ -100,7 +100,7 @@ namespace MR
               stream << "voxel for image \"" << V.name() << "\", position [ ";
               for (size_t n = 0; n < V.ndim(); ++n) 
                 stream << V[n] << " ";
-              stream << "], current offset = " << V.offset_ << ", value = " << V.value();
+              stream << "], value = " << V.value();
               return stream;
             }
 

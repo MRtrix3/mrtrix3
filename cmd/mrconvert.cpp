@@ -25,9 +25,9 @@
 #include "image/buffer.h"
 #include "image/voxel.h"
 #include "image/axis.h"
-#include "image/copy.h"
-#include "image/extract.h"
-#include "image/permute_axes.h"
+#include "image/threaded_copy.h"
+#include "image/adapter/extract.h"
+#include "image/adapter/permute_axes.h"
 
 MRTRIX_APPLICATION
 
@@ -85,73 +85,56 @@ void usage ()
 
 
 
+
+
+
 template <class InfoType>
-inline void set_header_out (
-  Image::Header& header_out,
-  const InfoType& S,
-  const std::vector<int>& axes,
-  const std::vector<float>& vox,
-  const std::vector<int>& strides)
-{
-  header_out.transform() = S.transform();
-
-  if (axes.size()) {
-    header_out.set_ndim (axes.size());
-    for (size_t n = 0; n < header_out.ndim(); ++n)
-      header_out.dim(n) = axes[n]<0 ? 1 : S.dim (axes[n]);
-  }
-  else
-    for (size_t n = 0; n < header_out.ndim(); ++n)
-      header_out.dim(n) = S.dim (n);
-
-  for (size_t n = 0; n < header_out.ndim(); ++n) {
-    if (n < vox.size())
-      if (std::isfinite (vox[n]))
-        header_out.vox(n) = vox[n];
-    if (strides.size())
-      header_out.stride(n) = (n < strides.size() ? strides[n] : 0);
-  }
-}
-
-
-typedef float value_type;
-
-void run ()
+inline std::vector<int> set_header (
+  Image::Header& header,
+  const InfoType& input)
 {
 
-  Image::Buffer<value_type> data_in (argument[0]);
-  Image::Header header_out (data_in);
-  header_out.intensity_offset() = 0.0;
-  header_out.intensity_scale() = 1.0;
+  header.intensity_offset() = 0.0;
+  header.intensity_scale() = 1.0;
 
-  header_out.datatype() = DataType::from_command_line();
 
-  Options opt = get_options ("vox");
-  std::vector<float> vox;
-  if (opt.size())
-    vox = opt[0][0];
-
-  opt = get_options ("stride");
-  std::vector<int> strides;
-  if (opt.size())
-    strides = opt[0][0];
-
-  opt = get_options ("axes");
+  Options opt = get_options ("axes");
   std::vector<int> axes;
   if (opt.size()) {
     axes = opt[0][0];
-    for (size_t i = 0; i < axes.size(); ++i)
-      if (axes[i] >= static_cast<int> (data_in.ndim()))
+    header.set_ndim (axes.size());
+    for (size_t i = 0; i < axes.size(); ++i) {
+      if (axes[i] >= static_cast<int> (input.ndim()))
         throw Exception ("axis supplied to option -axes is out of bounds");
+      header.dim(i) = axes[i] < 0 ? 1 : input.dim (axes[i]);
+    }
   }
 
+  opt = get_options ("vox");
+  if (opt.size()) {
+    std::vector<float> vox = opt[0][0];
+    if (vox.size() > header.ndim())
+      throw Exception ("too many axes supplied to -vox option");
+    for (size_t n = 0; n < vox.size(); ++n) {
+      if (std::isfinite (vox[n]))
+        header.vox(n) = vox[n];
+    }
+  }
 
+  opt = get_options ("stride");
+  if (opt.size()) {
+    std::vector<int> strides = opt[0][0];
+    if (strides.size() > header.ndim())
+      throw Exception ("too many axes supplied to -stride option");
+    for (size_t n = 0; n < strides.size(); ++n) 
+      header.stride(n) = strides[n];
+  }
 
   opt = get_options ("prs");
   if (opt.size() &&
-      header_out.DW_scheme().rows() &&
-      header_out.DW_scheme().columns()) {
-    Math::Matrix<float>& M (header_out.DW_scheme());
+      header.DW_scheme().rows() &&
+      header.DW_scheme().columns()) {
+    Math::Matrix<float>& M (header.DW_scheme());
     for (size_t row = 0; row < M.rows(); ++row) {
       float tmp = M (row, 0);
       M (row, 0) = M (row, 1);
@@ -160,55 +143,120 @@ void run ()
     }
   }
 
-  std::vector<std::vector<int> > pos;
+  return axes;
+}
 
-  opt = get_options ("coord");
-  for (size_t n = 0; n < opt.size(); n++) {
-    pos.resize (data_in.ndim());
-    int axis = opt[n][0];
-    if (pos[axis].size())
-      throw Exception ("\"coord\" option specified twice for axis " + str (axis));
-    pos[axis] = opt[n][1];
+
+
+  template <typename OutputValueType, class InputVoxelType>
+inline void copy_permute (InputVoxelType& in, Image::Header& header_out, const std::string& output_filename) 
+{
+  std::vector<int> axes = set_header (header_out, in);
+  Image::Buffer<OutputValueType> buffer_out (output_filename, header_out);
+  typename Image::Buffer<OutputValueType>::voxel_type out (buffer_out);
+
+  if (axes.size()) {
+    Image::Adapter::PermuteAxes<InputVoxelType> perm (in, axes);
+    Image::threaded_copy_with_progress (perm, out, 2);
   }
+  else
+    Image::threaded_copy_with_progress (in, out, 2);
+}
 
-  assert (!data_in.datatype().is_complex());
-  Image::Buffer<float>::voxel_type in (data_in);
 
-  if (pos.size()) {
 
-    // extract specific coordinates:
-    for (size_t n = 0; n < data_in.ndim(); n++) {
+
+
+
+template <typename ValueType, class FunctionType, class VoxelType>
+class VoxelValueModified : public Image::Adapter::Voxel<VoxelType> {
+  public:
+    VoxelValueModified (const VoxelType& parent, FunctionType function) : 
+      Image::Adapter::Voxel<VoxelType> (parent),
+      func (function) { }
+    typedef ValueType value_type;
+    value_type value () const { return func (this->parent_vox.value()); }
+    FunctionType func;
+};
+
+
+
+
+
+template <typename InputValueType, typename OutputValueType, class FunctionType>
+void copy_extract (const Image::Header& header_in, const std::string& output_filename, FunctionType function)
+{
+  if (header_in.datatype().is_complex() && !DataType::from<OutputValueType>().is_complex())
+    throw Exception ("datatype must be complex");
+
+  if (!header_in.datatype().is_complex() && DataType::from<OutputValueType>().is_complex())
+    throw Exception ("datatype must be real");
+
+  Image::Buffer<InputValueType> buffer_in (header_in);
+  Image::Header header_out (buffer_in);
+
+  typedef VoxelValueModified<OutputValueType, FunctionType, typename Image::Buffer<InputValueType>::voxel_type> InputVoxelType;
+  InputVoxelType in (buffer_in, function);
+
+  Options opt = get_options ("coord");
+  if (opt.size()) {
+    std::vector<std::vector<int> > pos (buffer_in.ndim());
+    for (size_t n = 0; n < opt.size(); n++) {
+      int axis = opt[n][0];
+      if (pos[axis].size())
+        throw Exception ("\"coord\" option specified twice for axis " + str (axis));
+      pos[axis] = opt[n][1];
+    }
+
+    for (size_t n = 0; n < buffer_in.ndim(); ++n) {
       if (pos[n].empty()) {
-        pos[n].resize (data_in.dim (n));
+        pos[n].resize (buffer_in.dim (n));
         for (size_t i = 0; i < pos[n].size(); i++)
           pos[n][i] = i;
       }
     }
-    Image::Extract<Image::Buffer<float>::voxel_type > extract (in, pos);
 
-    set_header_out (header_out, extract, axes, vox, strides);
-    Image::Buffer<float> data_out (argument[1], header_out);
-    Image::Buffer<float>::voxel_type  out (data_out);
+    Image::Adapter::Extract<InputVoxelType> extract (in, pos);
+    copy_permute<OutputValueType> (extract, header_out, output_filename);
+  }
+  else 
+    copy_permute<OutputValueType> (in, header_out, output_filename);
+  
+}
 
-    if (axes.size()) {
-      Image::PermuteAxes<Image::Extract<Image::Buffer<float>::voxel_type > > perm (extract, axes);
-      Image::copy_with_progress (perm, out);
-    }
-    else
-      Image::copy_with_progress (extract, out);
+typedef float RealValueType;
+typedef cfloat ComplexValueType;
+
+
+inline RealValueType func_no_op_real (RealValueType x) { return x; }
+inline ComplexValueType func_no_op_complex (ComplexValueType x) { return x; }
+inline RealValueType func_real (ComplexValueType x) { return x.real(); }
+inline RealValueType func_imag (ComplexValueType x) { return x.imag(); }
+inline RealValueType func_phase (ComplexValueType x) { return std::arg (x); }
+inline RealValueType func_abs (ComplexValueType x) { return std::abs (x); }
+
+
+
+void run ()
+{
+  Image::Header header_in (argument[0]);
+  bool is_complex = header_in.datatype().is_complex();
+  header_in.datatype() = DataType::from_command_line (header_in.datatype());
+
+  if (is_complex) {
+    if (get_options ("real").size()) 
+      copy_extract<ComplexValueType,RealValueType> (header_in, argument[1], func_real);
+    else if (get_options ("imag").size()) 
+      copy_extract<ComplexValueType,RealValueType> (header_in, argument[1], func_imag);
+    else if (get_options ("phase").size()) 
+      copy_extract<ComplexValueType,RealValueType> (header_in, argument[1], func_phase);
+    else if (get_options ("magnitude").size()) 
+      copy_extract<ComplexValueType,RealValueType> (header_in, argument[1], func_abs);
+    else 
+      copy_extract<ComplexValueType,ComplexValueType> (header_in, argument[1], func_no_op_complex);
   }
-  else {
-    // straight copy:
-    set_header_out (header_out, in, axes, vox, strides);
-    Image::Buffer<float> data_out (argument[1], header_out);
-    Image::Buffer<float>::voxel_type out (data_out);
-    if (axes.size()) {
-      Image::PermuteAxes<Image::Buffer<float>::voxel_type > perm (in, axes);
-      Image::copy_with_progress (perm, out);
-    }
-    else
-      Image::copy_with_progress (in, out);
-  }
+  else 
+    copy_extract<RealValueType,RealValueType> (header_in, argument[1], func_no_op_real);
 }
 
 

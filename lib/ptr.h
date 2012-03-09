@@ -146,11 +146,6 @@ namespace MR
         return *ptr;
       }
 
-      T& operator[](size_t index) const throw ()   {
-        assert (is_array);
-        return ptr[index];
-      }
-
       T* operator->() const throw ()  {
         return ptr;
       }
