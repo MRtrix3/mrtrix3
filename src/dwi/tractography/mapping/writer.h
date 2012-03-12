@@ -97,7 +97,7 @@ class MapWriter : public MapWriterBase<Cont>
   typedef typename Image::BufferScratch<value_type>::voxel_type buffer_voxel_type;
 
   public:
-    MapWriter (Image::Header& header, const std::string& name, const stat_t voxel_statistic) :
+    MapWriter (Image::Header& header, const std::string& name, const stat_t voxel_statistic = SUM) :
       MapWriterBase<Cont> (header, voxel_statistic),
       out    (name, header),
       buffer (header, "buffer"),
