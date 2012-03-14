@@ -103,6 +103,7 @@ inline std::vector<int> set_header (
   Image::Header& header,
   const InfoType& input)
 {
+  header.info() = input.info();
 
   header.intensity_offset() = 0.0;
   header.intensity_scale() = 1.0;
@@ -223,7 +224,7 @@ void copy_extract (const Image::Header& header_in, const std::string& output_fil
       int axis = opt[n][0];
       if (pos[axis].size())
         throw Exception ("\"coord\" option specified twice for axis " + str (axis));
-      pos[axis] = opt[n][1];
+      pos[axis] = parse_ints (opt[n][1], buffer_in.dim(axis)-1);
     }
 
     for (size_t n = 0; n < buffer_in.ndim(); ++n) {
