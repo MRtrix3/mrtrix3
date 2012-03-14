@@ -145,6 +145,10 @@ namespace MR
           return stream;
         }
 
+        RefPtr<Handler::Base> __get_handler () const {
+          return handler_;
+        }
+
       protected:
         const char* format_;
         Math::Matrix<float> DW_scheme_;

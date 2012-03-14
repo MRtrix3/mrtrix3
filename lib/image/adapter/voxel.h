@@ -97,7 +97,7 @@ namespace MR
 
 
             friend std::ostream& operator<< (std::ostream& stream, const Voxel& V) {
-              stream << "voxel for image \"" << V.name() << "\", position [ ";
+              stream << "voxel for image \"" << V.name() << "\", datatype " << V.datatype().specifier() << ", position [ ";
               for (size_t n = 0; n < V.ndim(); ++n) 
                 stream << V[n] << " ";
               stream << "], value = " << V.value();

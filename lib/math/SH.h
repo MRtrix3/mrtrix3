@@ -64,88 +64,89 @@ namespace MR
         return N ? 2 * floor<size_t> ( (sqrt (float (1+8*N))-3.0) /4.0) : 0;
       }
 
-      template <typename T> Math::Matrix<T>& init_transform (Math::Matrix<T>& SHT, const Math::Matrix<T>& dirs, int lmax)
-      {
-        if (dirs.columns() != 2) throw Exception ("direction matrix should have 2 columns: [ azimuth elevation ]");
-        SHT.allocate (dirs.rows(), NforL (lmax));
-        T AL [lmax+1];
-        for (size_t i = 0; i < dirs.rows(); i++) {
-          T x = cos (dirs (i,1));
-          Legendre::Plm_sph (AL, lmax, 0, x);
-          for (int l = 0; l <= lmax; l+=2) SHT (i,index (l,0)) = AL[l];
-          for (int m = 1; m <= lmax; m++) {
-            Legendre::Plm_sph (AL, lmax, m, x);
-            for (int l = ( (m&1) ? m+1 : m); l <= lmax; l+=2) {
-              SHT (i,index (l, m)) = AL[l]*cos (m*dirs (i,0));
-              SHT (i,index (l,-m)) = AL[l]*sin (m*dirs (i,0));
-            }
-          }
-        }
-        return SHT;
-      }
-
-
-      template <typename T> class Transform
-      {
-        public:
-          Transform (const Math::Matrix<T>& dirs, int lmax) {
-            init_transform (SHT, dirs, lmax);
-            iSHT.allocate (SHT.columns(), SHT.rows());
-            Math::pinv (iSHT, SHT);
-          }
-
-          void set_filter (const Math::Vector<T>& filter) {
-            int l = 0;
-            size_t nl = 1;
-            for (size_t n = 0; n < iSHT.rows(); n++) {
-              if (n >= nl) {
-                l++;
-                nl = NforL (2*l);
-              }
-              for (size_t i = 0; i < iSHT.columns(); i++) {
-                iSHT (n,i) *= filter[l];
-                SHT (i,n) = filter[l] == 0.0 ? 0.0 : SHT (i,n) /filter[l];
-              }
-            }
-          }
-          void A2SH (Math::Vector<T>& SH, const Math::Vector<T>& amplitudes)  {
-            Math::mult (SH, iSHT, amplitudes);
-          }
-          void SH2A (Math::Vector<T>& amplitudes, const Math::Vector<T>& SH)  {
-            Math::mult (amplitudes, SHT, SH);
-          }
-
-          size_t n_SH () const {
-            return SHT.columns();
-          }
-          size_t n_amp () const  {
-            return SHT.rows();
-          }
-
-          const Math::Matrix<T>& mat_A2SH () const {
-            return iSHT;
-          }
-          const Math::Matrix<T>& mat_SH2A () const {
-            return SHT;
-          }
-
-        protected:
-          Math::Matrix<T> SHT, iSHT;
-      };
-
-
-
-      template <typename T, typename C> 
-        inline T value (const C& coefs, T cos_elevation, T azimuth, int lmax) 
+      template <typename ValueType> 
+        Math::Matrix<ValueType>& init_transform (Math::Matrix<ValueType>& SHT, const Math::Matrix<ValueType>& dirs, int lmax)
         {
-          T amplitude = 0.0;
-          T AL [lmax+1];
-          Legendre::Plm_sph (AL, lmax, 0, T (cos_elevation));
+          if (dirs.columns() != 2) throw Exception ("direction matrix should have 2 columns: [ azimuth elevation ]");
+          SHT.allocate (dirs.rows(), NforL (lmax));
+          ValueType AL [lmax+1];
+          for (size_t i = 0; i < dirs.rows(); i++) {
+            ValueType x = cos (dirs (i,1));
+            Legendre::Plm_sph (AL, lmax, 0, x);
+            for (int l = 0; l <= lmax; l+=2) SHT (i,index (l,0)) = AL[l];
+            for (int m = 1; m <= lmax; m++) {
+              Legendre::Plm_sph (AL, lmax, m, x);
+              for (int l = ( (m&1) ? m+1 : m); l <= lmax; l+=2) {
+                SHT (i,index (l, m)) = AL[l]*cos (m*dirs (i,0));
+                SHT (i,index (l,-m)) = AL[l]*sin (m*dirs (i,0));
+              }
+            }
+          }
+          return SHT;
+        }
+
+
+      template <typename ValueType>
+        class Transform {
+          public:
+            Transform (const Math::Matrix<ValueType>& dirs, int lmax) {
+              init_transform (SHT, dirs, lmax);
+              iSHT.allocate (SHT.columns(), SHT.rows());
+              Math::pinv (iSHT, SHT);
+            }
+
+            void set_filter (const Math::Vector<ValueType>& filter) {
+              int l = 0;
+              size_t nl = 1;
+              for (size_t n = 0; n < iSHT.rows(); n++) {
+                if (n >= nl) {
+                  l++;
+                  nl = NforL (2*l);
+                }
+                for (size_t i = 0; i < iSHT.columns(); i++) {
+                  iSHT (n,i) *= filter[l];
+                  SHT (i,n) = filter[l] == 0.0 ? 0.0 : SHT (i,n) /filter[l];
+                }
+              }
+            }
+            void A2SH (Math::Vector<ValueType>& SH, const Math::Vector<ValueType>& amplitudes)  {
+              Math::mult (SH, iSHT, amplitudes);
+            }
+            void SH2A (Math::Vector<ValueType>& amplitudes, const Math::Vector<ValueType>& SH)  {
+              Math::mult (amplitudes, SHT, SH);
+            }
+
+            size_t n_SH () const {
+              return SHT.columns();
+            }
+            size_t n_amp () const  {
+              return SHT.rows();
+            }
+
+            const Math::Matrix<ValueType>& mat_A2SH () const {
+              return iSHT;
+            }
+            const Math::Matrix<ValueType>& mat_SH2A () const {
+              return SHT;
+            }
+
+          protected:
+            Math::Matrix<ValueType> SHT, iSHT;
+        };
+
+
+
+      template <typename ValueType, typename CoefType> 
+        inline ValueType value (const CoefType& coefs, ValueType cos_elevation, ValueType azimuth, int lmax) 
+        {
+          ValueType amplitude = 0.0;
+          ValueType AL [lmax+1];
+          Legendre::Plm_sph (AL, lmax, 0, ValueType (cos_elevation));
           for (int l = 0; l <= lmax; l+=2) amplitude += AL[l] * coefs[index (l,0)];
           for (int m = 1; m <= lmax; m++) {
-            Legendre::Plm_sph (AL, lmax, m, T (cos_elevation));
-            T c = Math::cos (m*azimuth);
-            T s = Math::sin (m*azimuth);
+            Legendre::Plm_sph (AL, lmax, m, ValueType (cos_elevation));
+            ValueType c = Math::cos (m*azimuth);
+            ValueType s = Math::sin (m*azimuth);
             for (int l = ( (m&1) ? m+1 : m); l <= lmax; l+=2)
               amplitude += AL[l] * (c * coefs[index (l,m)] + s * coefs[index (l,-m)]);
           }
@@ -153,210 +154,214 @@ namespace MR
         }
 
 
-      template <typename T, typename C> 
-        inline T value (const C& coefs, const Point<T>& unit_dir, int lmax)
+      template <typename ValueType, typename CoefType> 
+        inline ValueType value (const CoefType& coefs, const Point<ValueType>& unit_dir, int lmax)
         {
           return value (coefs, unit_dir[2], atan2 (unit_dir[1], unit_dir[0]), lmax);
         }
 
-      template <typename T, typename C> 
-        inline T value (const C* coefs, const Point<T>& unit_dir, int lmax)
+      template <typename ValueType, typename CoefType> 
+        inline ValueType value (const CoefType* coefs, const Point<ValueType>& unit_dir, int lmax)
         {
           return value (coefs, unit_dir[2], atan2 (unit_dir[1], unit_dir[0]), lmax);
         }
 
 
-      template <typename T> inline Math::Vector<T>& delta (Math::Vector<T>& D, const Point<T>& unit_dir, int lmax)
-      {
-        D.allocate (NforL (lmax));
-        T az = Math::atan2 (unit_dir[1], unit_dir[0]);
-        T AL [lmax+1];
-        Legendre::Plm_sph (AL, lmax, 0, T (unit_dir[2]));
-        for (int l = 0; l <= lmax; l+=2) D[index (l,0)] = AL[l];
-        for (int m = 1; m <= lmax; m++) {
-          Legendre::Plm_sph (AL, lmax, m, T (unit_dir[2]));
-          T c = Math::cos (m*az);
-          T s = Math::sin (m*az);
-          for (int l = ( (m&1) ? m+1 : m); l <= lmax; l+=2) {
-            D[index (l,m)]  = 2.0 * AL[l] * c;
-            D[index (l,-m)] = 2.0 * AL[l] * s;
+      template <typename ValueType> 
+        inline Math::Vector<ValueType>& delta (Math::Vector<ValueType>& delta_vec, const Point<ValueType>& unit_dir, int lmax)
+        {
+          delta_vec.allocate (NforL (lmax));
+          ValueType az = Math::atan2 (unit_dir[1], unit_dir[0]);
+          ValueType AL [lmax+1];
+          Legendre::Plm_sph (AL, lmax, 0, ValueType (unit_dir[2]));
+          for (int l = 0; l <= lmax; l+=2) 
+            delta_vec[index (l,0)] = AL[l];
+          for (int m = 1; m <= lmax; m++) {
+            Legendre::Plm_sph (AL, lmax, m, ValueType (unit_dir[2]));
+            ValueType c = Math::cos (m*az);
+            ValueType s = Math::sin (m*az);
+            for (int l = ( (m&1) ? m+1 : m); l <= lmax; l+=2) {
+              delta_vec[index (l,m)]  = 2.0 * AL[l] * c;
+              delta_vec[index (l,-m)] = 2.0 * AL[l] * s;
+            }
           }
+          return delta_vec;
         }
-        return D;
-      }
 
 
 
-      template <typename T> inline Math::Vector<T>& SH2RH (Math::Vector<T>& RH, const Math::Vector<T>& SH)
-      {
-        RH.allocate (SH.size());
-        int lmax = 2*SH.size() +1;
-        T AL [lmax+1];
-        Legendre::Plm_sph (AL, lmax, 0, T (1.0));
-        for (size_t l = 0; l < SH.size(); l++) RH[l] = SH[l]/ AL[2*l];
-        return RH;
-      }
-
-
-
-      template <typename T> inline Math::Vector<T>& sconv (Math::Vector<T>& C, const Math::Vector<T>& RH, const Math::Vector<T>& SH)
-      {
-        assert (SH.size() >= NforL (2* (RH.size()-1)));
-        C.allocate (NforL (2* (RH.size()-1)));
-        for (int i = 0; i < int (RH.size()); ++i) {
-          int l = 2*i;
-          for (int m = -l; m <= l; ++m)
-            C[index (l,m)] = RH[i] * SH[index (l,m)];
+      template <typename ValueType>
+        inline Math::Vector<ValueType>& SH2RH (Math::Vector<ValueType>& RH, const Math::Vector<ValueType>& SH)
+        {
+          RH.allocate (SH.size());
+          int lmax = 2*SH.size() +1;
+          ValueType AL [lmax+1];
+          Legendre::Plm_sph (AL, lmax, 0, ValueType (1.0));
+          for (size_t l = 0; l < SH.size(); l++) 
+            RH[l] = SH[l]/ AL[2*l];
+          return RH;
         }
-        return C;
-      }
 
 
-      template <typename T>
-      Point<T> S2C (T az, T el)
-      {
-        return Point<T> (
-                 sin (el) * cos (az),
-                 sin (el) * sin (az),
-                 cos (el));
-      }
 
-
-      template <typename T>
-      class Rotate
-      {
-        public:
-          Rotate (Point<T>& axis, T angle, int l_max, const Math::Matrix<T>& directions) :
-            lmax (l_max) {
-            Quaternion<T> Q (angle, axis);
-            T rotation_data [9];
-            Q.to_matrix (rotation_data);
-            const Matrix<T> R (rotation_data, 3, 3);
-            const size_t nSH = NforL (lmax);
-
-            Matrix<T> D (nSH, directions.rows());
-            Matrix<T> D_rot (nSH, directions.rows());
-            for (size_t i = 0; i < directions.rows(); ++i) {
-              Vector<T> V (D.column (i));
-              Point<T> dir = S2C (directions (i,0), directions (i,1));
-              delta (V, dir, lmax);
-
-              Point<T> dir_rot;
-              Vector<T> V_dir (dir, 3);
-              Vector<T> V_dir_rot (dir_rot, 3);
-              mult (V_dir_rot, R, V_dir);
-              Vector<T> V_rot (D_rot.column (i));
-              delta (V_rot, dir_rot, lmax);
-            }
-
-            size_t n = 1;
-            for (int l = 2; l <= lmax; l += 2) {
-              const size_t nSH_l = 2*l+1;
-              M.push_back (new Matrix<T> (nSH_l, nSH_l));
-              Matrix<T>& RH (*M.back());
-
-              const Matrix<T> d = D.sub (n, n+nSH_l, 0, D.columns());
-              const Matrix<T> d_rot = D_rot.sub (n, n+nSH_l, 0, D.columns());
-
-              Matrix<T> d_rot_x_d_T;
-              mult (d_rot_x_d_T, T (1.0), CblasNoTrans, d_rot, CblasTrans, d);
-
-              Matrix<T> d_x_d_T;
-              mult (d_x_d_T, T (1.0), CblasNoTrans, d, CblasTrans, d);
-
-              Matrix<T> d_x_d_T_inv;
-              LU::inv (d_x_d_T_inv, d_x_d_T);
-              mult (RH, d_rot_x_d_T, d_x_d_T_inv);
-
-              n += nSH_l;
-            }
+      template <typename ValueType> 
+        inline Math::Vector<ValueType>& sconv (Math::Vector<ValueType>& C, const Math::Vector<ValueType>& RH, const Math::Vector<ValueType>& SH)
+        {
+          assert (SH.size() >= NforL (2* (RH.size()-1)));
+          C.allocate (NforL (2* (RH.size()-1)));
+          for (int i = 0; i < int (RH.size()); ++i) {
+            int l = 2*i;
+            for (int m = -l; m <= l; ++m)
+              C[index (l,m)] = RH[i] * SH[index (l,m)];
           }
+          return C;
+        }
 
-          Math::Vector<T>& operator() (Math::Vector<T>& SH_rot, const Math::Vector<T>& SH) const {
-            SH_rot.allocate (SH);
-            SH_rot[0] = SH[0];
-            size_t n = 1;
-            for (size_t l = 0; l < M.size(); ++l) {
-              const size_t nSH_l = M[l]->rows();
-              Vector<T> R = SH_rot.sub (n, n+nSH_l);
-              const Vector<T> S = SH.sub (n, n+nSH_l);
-              mult (R, *M[l], S);
-              n += nSH_l;
+
+      template <typename ValueType>
+        Point<ValueType> S2C (ValueType az, ValueType el)
+        {
+          return Point<ValueType> (
+              sin (el) * cos (az),
+              sin (el) * sin (az),
+              cos (el));
+        }
+
+
+      template <typename ValueType>
+        class Rotate
+        {
+          public:
+            Rotate (Point<ValueType>& axis, ValueType angle, int l_max, const Math::Matrix<ValueType>& directions) :
+              lmax (l_max) {
+                Quaternion<ValueType> Q (angle, axis);
+                ValueType rotation_data [9];
+                Q.to_matrix (rotation_data);
+                const Matrix<ValueType> R (rotation_data, 3, 3);
+                const size_t nSH = NforL (lmax);
+
+                Matrix<ValueType> D (nSH, directions.rows());
+                Matrix<ValueType> D_rot (nSH, directions.rows());
+                for (size_t i = 0; i < directions.rows(); ++i) {
+                  Vector<ValueType> V (D.column (i));
+                  Point<ValueType> dir = S2C (directions (i,0), directions (i,1));
+                  delta (V, dir, lmax);
+
+                  Point<ValueType> dir_rot;
+                  Vector<ValueType> V_dir (dir, 3);
+                  Vector<ValueType> V_dir_rot (dir_rot, 3);
+                  mult (V_dir_rot, R, V_dir);
+                  Vector<ValueType> V_rot (D_rot.column (i));
+                  delta (V_rot, dir_rot, lmax);
+                }
+
+                size_t n = 1;
+                for (int l = 2; l <= lmax; l += 2) {
+                  const size_t nSH_l = 2*l+1;
+                  M.push_back (new Matrix<ValueType> (nSH_l, nSH_l));
+                  Matrix<ValueType>& RH (*M.back());
+
+                  const Matrix<ValueType> d = D.sub (n, n+nSH_l, 0, D.columns());
+                  const Matrix<ValueType> d_rot = D_rot.sub (n, n+nSH_l, 0, D.columns());
+
+                  Matrix<ValueType> d_rot_x_d_T;
+                  mult (d_rot_x_d_T, ValueType (1.0), CblasNoTrans, d_rot, CblasTrans, d);
+
+                  Matrix<ValueType> d_x_d_T;
+                  mult (d_x_d_T, ValueType (1.0), CblasNoTrans, d, CblasTrans, d);
+
+                  Matrix<ValueType> d_x_d_T_inv;
+                  LU::inv (d_x_d_T_inv, d_x_d_T);
+                  mult (RH, d_rot_x_d_T, d_x_d_T_inv);
+
+                  n += nSH_l;
+                }
+              }
+
+            Math::Vector<ValueType>& operator() (Math::Vector<ValueType>& SH_rot, const Math::Vector<ValueType>& SH) const {
+              SH_rot.allocate (SH);
+              SH_rot[0] = SH[0];
+              size_t n = 1;
+              for (size_t l = 0; l < M.size(); ++l) {
+                const size_t nSH_l = M[l]->rows();
+                Vector<ValueType> R = SH_rot.sub (n, n+nSH_l);
+                const Vector<ValueType> S = SH.sub (n, n+nSH_l);
+                mult (R, *M[l], S);
+                n += nSH_l;
+              }
+
+              return SH_rot;
             }
 
-            return SH_rot;
-          }
-
-        protected:
-          VecPtr<Matrix<T> > M;
-          int lmax;
-      };
+          protected:
+            VecPtr<Matrix<ValueType> > M;
+            int lmax;
+        };
 
 
 
 
-      template <typename T> inline Math::Vector<T>& FA2SH (Math::Vector<T>& SH, T FA, T ADC, T bvalue, int lmax, int precision = 100)
+      template <typename ValueType> 
+        inline Math::Vector<ValueType>& FA2SH (
+            Math::Vector<ValueType>& SH, ValueType FA, ValueType ADC, ValueType bvalue, int lmax, int precision = 100)
       {
-        T a = FA/sqrt (3.0 - 2.0*FA*FA);
-        T ev1 = ADC* (1.0+2.0*a), ev2 = ADC* (1.0-a);
+        ValueType a = FA/sqrt (3.0 - 2.0*FA*FA);
+        ValueType ev1 = ADC* (1.0+2.0*a), ev2 = ADC* (1.0-a);
 
-        Math::Vector<T> sigs (precision);
-        Math::Matrix<T> SHT (precision, lmax/2+1);
-        T AL [lmax+1];
+        Math::Vector<ValueType> sigs (precision);
+        Math::Matrix<ValueType> SHT (precision, lmax/2+1);
+        ValueType AL [lmax+1];
 
         for (int i = 0; i < precision; i++) {
-          T el = i*M_PI/ (2.0* (precision-1));
+          ValueType el = i*M_PI/ (2.0* (precision-1));
           sigs[i] = exp (-bvalue* (ev1*cos (el) *cos (el) + ev2*sin (el) *sin (el)));
           Legendre::Plm_sph (AL, lmax, 0, cos (el));
           for (int l = 0; l < lmax/2+1; l++) SHT (i,l) = AL[2*l];
         }
 
-        Math::Matrix<T> SHinv (SHT.columns(), SHT.rows());
+        Math::Matrix<ValueType> SHinv (SHT.columns(), SHT.rows());
         return Math::mult (SH, pinv (SHinv, SHT), sigs);
       }
 
 
 
 
-      template <typename T > class PrecomputedFraction
+      template <typename ValueType > class PrecomputedFraction
       {
         public:
-          PrecomputedFraction () : f1 (0.0), f2 (0.0), p1 (NULL), p2 (NULL) { }
-          T f1, f2, *p1, *p2;
+          PrecomputedFraction () : f1 (0.0), f2 (0.0) { }
+          ValueType f1, f2;
+          typename std::vector<ValueType>::const_iterator p1, p2;
       };
 
 
-      template <typename T> class PrecomputedAL
+      template <typename ValueType> class PrecomputedAL
       {
         public:
-          typedef T value_type;
+          typedef ValueType value_type;
 
           PrecomputedAL () : lmax (0), ndir (0), nAL (0), inc (0.0), AL (NULL) { }
           PrecomputedAL (int up_to_lmax, int num_dir = 512) : AL (NULL) {
             init (up_to_lmax, num_dir);
           }
-          ~PrecomputedAL () {
-            delete [] AL;
-          }
 
           bool operator! () const {
-            return !AL;
+            return AL.empty();
           }
           operator bool () const {
-            return AL;
+            return AL.size();
           }
 
           void init (int up_to_lmax, int num_dir = 512) {
-            delete [] AL;
             lmax = up_to_lmax;
             ndir = num_dir;
             nAL = NforL_mpos (lmax);
             inc = M_PI/ (ndir-1);
-            AL = new value_type [ndir*nAL];
+            AL.resize (ndir*nAL);
             value_type buf [lmax+1];
 
             for (int n = 0; n < ndir; n++) {
-              value_type* p = AL + n*nAL;
+              typename std::vector<value_type>::iterator p = AL.begin() + n*nAL;
               value_type cos_el = Math::cos (n*inc);
               for (int m = 0; m <= lmax; m++) {
                 Legendre::Plm_sph (buf, lmax, m, cos_el);
@@ -366,7 +371,7 @@ namespace MR
             }
           }
 
-          void set (PrecomputedFraction<T>& f, const T elevation) const {
+          void set (PrecomputedFraction<ValueType>& f, const ValueType elevation) const {
             f.f2 = elevation / inc;
             int i = int (f.f2);
             if (i < 0) {
@@ -384,20 +389,20 @@ namespace MR
               f.f1 = 1.0 - f.f2;
             }
 
-            f.p1 = AL + i*nAL;
+            f.p1 = AL.begin() + i*nAL;
             f.p2 = f.p1 + nAL;
           }
 
-          T get (const PrecomputedFraction<T>& f, int i) const {
-            T v = f.f1*f.p1[i];
+          ValueType get (const PrecomputedFraction<ValueType>& f, int i) const {
+            ValueType v = f.f1*f.p1[i];
             if (f.f2) v += f.f2*f.p2[i];
             return v;
           }
-          T get (const PrecomputedFraction<T>& f, int l, int m) const {
+          ValueType get (const PrecomputedFraction<ValueType>& f, int l, int m) const {
             return get (f, index_mpos (l,m));
           }
 
-          void get (T* dest, const PrecomputedFraction<T>& f) const {
+          void get (ValueType* dest, const PrecomputedFraction<ValueType>& f) const {
             for (int l = 0; l <= lmax; l+=2) {
               for (int m = 0; m <= l; m++) {
                 int i = index_mpos (l,m);
@@ -406,15 +411,17 @@ namespace MR
             }
           }
 
-          T value (const T* val, const Point<T>& unit_dir) const {
-            PrecomputedFraction<T> f;
+          template <class ValueContainer>
+          ValueType value (const ValueContainer& val, const Point<ValueType>& unit_dir) const {
+            PrecomputedFraction<ValueType> f;
             set (f, Math::acos (unit_dir[2]));
-            T az = Math::atan2 (unit_dir[1], unit_dir[0]);
-            T v = 0.0;
-            for (int l = 0; l <= lmax; l+=2) v += get (f,l,0) * val[index (l,0)];
+            ValueType az = Math::atan2 (unit_dir[1], unit_dir[0]);
+            ValueType v = 0.0;
+            for (int l = 0; l <= lmax; l+=2) 
+              v += get (f,l,0) * val[index (l,0)];
             for (int m = 1; m <= lmax; m++) {
-              T c = Math::cos (m*az);
-              T s = Math::sin (m*az);
+              ValueType c = Math::cos (m*az);
+              ValueType s = Math::sin (m*az);
               for (int l = ( (m&1) ? m+1 : m); l <= lmax; l+=2)
                 v += get (f,l,m) * (c * val[index (l,m)] + s * val[index (l,-m)]);
             }
@@ -423,7 +430,8 @@ namespace MR
 
         protected:
           int lmax, ndir, nAL;
-          T inc, *AL;
+          ValueType inc;
+          std::vector<ValueType> AL;
       };
 
 
@@ -431,114 +439,118 @@ namespace MR
 
 
 
-      template <typename T> inline T get_peak (const T* SH, int lmax, Point<T>& unit_init_dir, PrecomputedAL<T>* precomputer = NULL)
-      {
-        assert (unit_init_dir.valid());
-        for (int i = 0; i < 50; i++) {
-          T az = atan2 (unit_init_dir[1], unit_init_dir[0]);
-          T el = acos (unit_init_dir[2]);
-          T amplitude, dSH_del, dSH_daz, d2SH_del2, d2SH_deldaz, d2SH_daz2;
-          derivatives (SH, lmax, el, az, amplitude, dSH_del, dSH_daz, d2SH_del2, d2SH_deldaz, d2SH_daz2, precomputer);
+      template <typename ValueType> 
+        inline ValueType get_peak (const ValueType* SH, int lmax, Point<ValueType>& unit_init_dir, PrecomputedAL<ValueType>* precomputer = NULL)
+        {
+          assert (unit_init_dir.valid());
+          for (int i = 0; i < 50; i++) {
+            ValueType az = atan2 (unit_init_dir[1], unit_init_dir[0]);
+            ValueType el = acos (unit_init_dir[2]);
+            ValueType amplitude, dSH_del, dSH_daz, d2SH_del2, d2SH_deldaz, d2SH_daz2;
+            derivatives (SH, lmax, el, az, amplitude, dSH_del, dSH_daz, d2SH_del2, d2SH_deldaz, d2SH_daz2, precomputer);
 
-          T del = sqrt (dSH_del*dSH_del + dSH_daz*dSH_daz);
-          T daz = dSH_daz/del;
-          del = dSH_del/del;
+            ValueType del = sqrt (dSH_del*dSH_del + dSH_daz*dSH_daz);
+            ValueType daz = dSH_daz/del;
+            del = dSH_del/del;
 
-          T dSH_dt = daz*dSH_daz + del*dSH_del;
-          T d2SH_dt2 = daz*daz*d2SH_daz2 + 2.0*daz*del*d2SH_deldaz + del*del*d2SH_del2;
-          T dt = d2SH_dt2 ? (-dSH_dt / d2SH_dt2) : 0.0;
+            ValueType dSH_dt = daz*dSH_daz + del*dSH_del;
+            ValueType d2SH_dt2 = daz*daz*d2SH_daz2 + 2.0*daz*del*d2SH_deldaz + del*del*d2SH_del2;
+            ValueType dt = d2SH_dt2 ? (-dSH_dt / d2SH_dt2) : 0.0;
 
-          if (dt < 0.0) dt = -dt;
-          if (dt > MAX_DIR_CHANGE) dt = MAX_DIR_CHANGE;
+            if (dt < 0.0) dt = -dt;
+            if (dt > MAX_DIR_CHANGE) dt = MAX_DIR_CHANGE;
 
-          del *= dt;
-          daz *= dt;
+            del *= dt;
+            daz *= dt;
 
-          unit_init_dir += Point<T> (del*cos (az) *cos (el) - daz*sin (az), del*sin (az) *cos (el) + daz*cos (az), -del*sin (el));
-          unit_init_dir.normalise();
+            unit_init_dir += Point<ValueType> (del*cos (az) *cos (el) - daz*sin (az), del*sin (az) *cos (el) + daz*cos (az), -del*sin (el));
+            unit_init_dir.normalise();
 
-          if (dt < ANGLE_TOLERANCE) return amplitude;
-        }
-
-        unit_init_dir.invalidate();
-        debug ("failed to find SH peak!");
-        return NAN;
-      }
-
-
-
-
-
-
-
-      template <typename T> inline void derivatives (const T* SH, const int lmax, const T elevation, const T azimuth, T& amplitude,
-          T& dSH_del, T& dSH_daz, T& d2SH_del2, T& d2SH_deldaz, T& d2SH_daz2, PrecomputedAL<T>* precomputer)
-      {
-        T sel = sin (elevation);
-        T cel = cos (elevation);
-        bool atpole = sel < 1e-4;
-
-        dSH_del = dSH_daz = d2SH_del2 = d2SH_deldaz = d2SH_daz2 = 0.0;
-        T AL [NforL_mpos (lmax)];
-
-        if (precomputer) {
-          PrecomputedFraction<T> f;
-          precomputer->set (f, elevation);
-          precomputer->get (AL, f);
-        }
-        else {
-          T buf [lmax+1];
-          for (int m = 0; m <= lmax; m++) {
-            Legendre::Plm_sph (buf, lmax, m, cel);
-            for (int l = ( (m&1) ?m+1:m); l <= lmax; l+=2)
-              AL[index_mpos (l,m)] = buf[l];
+            if (dt < ANGLE_TOLERANCE) return amplitude;
           }
+
+          unit_init_dir.invalidate();
+          debug ("failed to find SH peak!");
+          return NAN;
         }
 
-        amplitude = SH[0] * AL[0];
-        for (int l = 2; l <= (int) lmax; l+=2) {
-          const T& v (SH[index (l,0)]);
-          amplitude += v * AL[index_mpos (l,0)];
-          dSH_del += v * sqrt (T (l* (l+1))) * AL[index_mpos (l,1)];
-          d2SH_del2 += v * (sqrt (T (l* (l+1) * (l-1) * (l+2))) * AL[index_mpos (l,2)] - l* (l+1) * AL[index_mpos (l,0)]) /2.0;
-        }
 
-        for (int m = 1; m <= lmax; m++) {
-          T caz = cos (m*azimuth);
-          T saz = sin (m*azimuth);
-          for (int l = ( (m&1) ? m+1 : m); l <= lmax; l+=2) {
-            const T& vp (SH[index (l,m)]);
-            const T& vm (SH[index (l,-m)]);
-            amplitude += (vp*caz + vm*saz) * AL[index_mpos (l,m)];
 
-            T tmp = sqrt (T ( (l+m) * (l-m+1))) * AL[index_mpos (l,m-1)];
-            if (l > m) tmp -= sqrt (T ( (l-m) * (l+m+1))) * AL[index_mpos (l,m+1)];
-            tmp /= -2.0;
-            dSH_del += (vp*caz + vm*saz) * tmp;
 
-            T tmp2 = - ( (l+m) * (l-m+1) + (l-m) * (l+m+1)) * AL[index_mpos (l,m)];
-            if (m == 1) tmp2 -= sqrt (T ( (l+m) * (l-m+1) * (l+m-1) * (l-m+2))) * AL[index_mpos (l,1)];
-            else tmp2 += sqrt (T ( (l+m) * (l-m+1) * (l+m-1) * (l-m+2))) * AL[index_mpos (l,m-2)];
-            if (l > m+1) tmp2 += sqrt (T ( (l-m) * (l+m+1) * (l-m-1) * (l+m+2))) * AL[index_mpos (l,m+2)];
-            tmp2 /= 4.0;
-            d2SH_del2 += (vp*caz + vm*saz) * tmp2;
 
-            if (atpole) dSH_daz += (vm*caz - vp*saz) * tmp;
-            else {
-              d2SH_deldaz += m * (vm*caz - vp*saz) * tmp;
-              dSH_daz += m * (vm*caz - vp*saz) * AL[index_mpos (l,m)];
-              d2SH_daz2 -= (vp*caz + vm*saz) * m*m * AL[index_mpos (l,m)];
+
+
+      template <typename ValueType> 
+        inline void derivatives (
+            const ValueType* SH, const int lmax, const ValueType elevation, const ValueType azimuth, ValueType& amplitude,
+            ValueType& dSH_del, ValueType& dSH_daz, ValueType& d2SH_del2, ValueType& d2SH_deldaz, 
+            ValueType& d2SH_daz2, PrecomputedAL<ValueType>* precomputer)
+        {
+          ValueType sel = sin (elevation);
+          ValueType cel = cos (elevation);
+          bool atpole = sel < 1e-4;
+
+          dSH_del = dSH_daz = d2SH_del2 = d2SH_deldaz = d2SH_daz2 = 0.0;
+          ValueType AL [NforL_mpos (lmax)];
+
+          if (precomputer) {
+            PrecomputedFraction<ValueType> f;
+            precomputer->set (f, elevation);
+            precomputer->get (AL, f);
+          }
+          else {
+            ValueType buf [lmax+1];
+            for (int m = 0; m <= lmax; m++) {
+              Legendre::Plm_sph (buf, lmax, m, cel);
+              for (int l = ( (m&1) ?m+1:m); l <= lmax; l+=2)
+                AL[index_mpos (l,m)] = buf[l];
             }
+          }
 
+          amplitude = SH[0] * AL[0];
+          for (int l = 2; l <= (int) lmax; l+=2) {
+            const ValueType& v (SH[index (l,0)]);
+            amplitude += v * AL[index_mpos (l,0)];
+            dSH_del += v * sqrt (ValueType (l* (l+1))) * AL[index_mpos (l,1)];
+            d2SH_del2 += v * (sqrt (ValueType (l* (l+1) * (l-1) * (l+2))) * AL[index_mpos (l,2)] - l* (l+1) * AL[index_mpos (l,0)]) /2.0;
+          }
+
+          for (int m = 1; m <= lmax; m++) {
+            ValueType caz = cos (m*azimuth);
+            ValueType saz = sin (m*azimuth);
+            for (int l = ( (m&1) ? m+1 : m); l <= lmax; l+=2) {
+              const ValueType& vp (SH[index (l,m)]);
+              const ValueType& vm (SH[index (l,-m)]);
+              amplitude += (vp*caz + vm*saz) * AL[index_mpos (l,m)];
+
+              ValueType tmp = sqrt (ValueType ( (l+m) * (l-m+1))) * AL[index_mpos (l,m-1)];
+              if (l > m) tmp -= sqrt (ValueType ( (l-m) * (l+m+1))) * AL[index_mpos (l,m+1)];
+              tmp /= -2.0;
+              dSH_del += (vp*caz + vm*saz) * tmp;
+
+              ValueType tmp2 = - ( (l+m) * (l-m+1) + (l-m) * (l+m+1)) * AL[index_mpos (l,m)];
+              if (m == 1) tmp2 -= sqrt (ValueType ( (l+m) * (l-m+1) * (l+m-1) * (l-m+2))) * AL[index_mpos (l,1)];
+              else tmp2 += sqrt (ValueType ( (l+m) * (l-m+1) * (l+m-1) * (l-m+2))) * AL[index_mpos (l,m-2)];
+              if (l > m+1) tmp2 += sqrt (ValueType ( (l-m) * (l+m+1) * (l-m-1) * (l+m+2))) * AL[index_mpos (l,m+2)];
+              tmp2 /= 4.0;
+              d2SH_del2 += (vp*caz + vm*saz) * tmp2;
+
+              if (atpole) dSH_daz += (vm*caz - vp*saz) * tmp;
+              else {
+                d2SH_deldaz += m * (vm*caz - vp*saz) * tmp;
+                dSH_daz += m * (vm*caz - vp*saz) * AL[index_mpos (l,m)];
+                d2SH_daz2 -= (vp*caz + vm*saz) * m*m * AL[index_mpos (l,m)];
+              }
+
+            }
+          }
+
+          if (!atpole) {
+            dSH_daz /= sel;
+            d2SH_deldaz /= sel;
+            d2SH_daz2 /= sel*sel;
           }
         }
-
-        if (!atpole) {
-          dSH_daz /= sel;
-          d2SH_deldaz /= sel;
-          d2SH_daz2 /= sel*sel;
-        }
-      }
 
 
     }

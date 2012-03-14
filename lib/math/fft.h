@@ -41,7 +41,7 @@ namespace MR
           if (workspace) gsl_fft_complex_workspace_free (workspace);
         }
 
-        void fft (std::vector<cdouble>& array, bool inverse = false) {
+        void operator() (std::vector<cdouble>& array, bool inverse = false) {
           if (length != array.size()) {
             if (wavetable) {
               gsl_fft_complex_wavetable_free (wavetable);
@@ -62,8 +62,8 @@ namespace MR
           }
 
           if (inverse ?
-              gsl_fft_complex_forward (&array.front().real(), 1, array.size(), wavetable, workspace) :
-              gsl_fft_complex_inverse (&array.front().real(), 1, array.size(), wavetable, workspace)
+              gsl_fft_complex_inverse (&array.front().real(), 1, array.size(), wavetable, workspace) :
+              gsl_fft_complex_forward (&array.front().real(), 1, array.size(), wavetable, workspace)
              ) throw Exception ("error computing FFT");
         }
 

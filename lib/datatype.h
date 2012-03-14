@@ -39,43 +39,46 @@ namespace MR
       DataType () : dt (DataType::Native) { }
       DataType (uint8_t type) : dt (type) { }
       DataType (const DataType& DT) : dt (DT.dt) { }
-      uint8_t&       operator() () {
-        return (dt);
+      bool undefined () const {
+        return dt == Undefined;
+      }
+      uint8_t& operator() () {
+        return dt;
       }
       const uint8_t& operator() () const {
-        return (dt);
+        return dt;
       }
       bool operator== (uint8_t type) const {
-        return (dt == type);
+        return dt == type;
       }
       bool operator!= (uint8_t type) const {
-        return (dt != type);
+        return dt != type;
       }
       bool operator== (const DataType DT) const {
-        return (dt == DT.dt);
+        return dt == DT.dt;
       }
       bool operator!= (const DataType DT) const {
-        return (dt != DT.dt);
+        return dt != DT.dt;
       }
       const DataType& operator= (const DataType DT) {
         dt = DT.dt;
-        return (*this);
+        return *this;
       }
 
       bool is (uint8_t type) const {
-        return (dt == type);
+        return dt == type;
       }
       bool is_complex () const {
-        return (dt & Complex);
+        return dt & Complex;
       }
       bool is_signed () const {
-        return (dt & Signed);
+        return dt & Signed;
       }
       bool is_little_endian () const {
-        return (dt & LittleEndian);
+        return dt & LittleEndian;
       }
       bool is_big_endian () const {
-        return (dt & BigEndian);
+        return dt & BigEndian;
       }
       void set_byte_order_native () {
         if (dt != Bit && dt != Int8 && dt != UInt8) {
@@ -108,7 +111,7 @@ namespace MR
 
       static DataType native (DataType dt) {
         dt.set_byte_order_native();
-        return (dt);
+        return dt;
       }
       static DataType parse (const std::string& spec);
       static DataType from_command_line (DataType default_datatype = Undefined);

@@ -132,7 +132,7 @@ namespace MR
         //! construct a Buffer object to access the data in \a header
         Buffer (const Header& header, bool readwrite = false) :
           ConstHeader (header) {
-            handler_ = header.handler_;
+            handler_ = header.__get_handler();
             assert (handler_);
             handler_->set_readwrite (readwrite);
             handler_->open();
@@ -244,20 +244,20 @@ namespace MR
               put_func = &__putBE<value_type,double>;
               return;
             case DataType::CFloat32LE:
-              get_func = &__getLE<value_type,float>;
-              put_func = &__putLE<value_type,float>;
+              get_func = &__getLE<value_type,cfloat>;
+              put_func = &__putLE<value_type,cfloat>;
               return;
             case DataType::CFloat32BE:
-              get_func = &__getBE<value_type,float>;
-              put_func = &__putBE<value_type,float>;
+              get_func = &__getBE<value_type,cfloat>;
+              put_func = &__putBE<value_type,cfloat>;
               return;
             case DataType::CFloat64LE:
-              get_func = &__getLE<value_type,double>;
-              put_func = &__putLE<value_type,double>;
+              get_func = &__getLE<value_type,cdouble>;
+              put_func = &__putLE<value_type,cdouble>;
               return;
             case DataType::CFloat64BE:
-              get_func = &__getBE<value_type,double>;
-              put_func = &__putBE<value_type,double>;
+              get_func = &__getBE<value_type,cdouble>;
+              put_func = &__putBE<value_type,cdouble>;
               return;
             default:
               throw Exception ("invalid data type in image header");

@@ -80,7 +80,17 @@ void usage ()
   + Option ("prs",
             "assume that the DW gradients are specified in the PRS frame (Siemens DICOM only).")
 
-  + DataType::options();
+  + DataType::options() 
+  
+  + OptionGroup ("for complex input images")
+  + Option ("real", 
+      "return the real part of each voxel value")
+  + Option ("imag", 
+      "return the imaginary part of each voxel value")
+  + Option ("phase", 
+      "return the phase of each voxel value")
+  + Option ("magnitude", 
+      "return the magnitude of each voxel value");
 }
 
 
@@ -186,17 +196,25 @@ class VoxelValueModified : public Image::Adapter::Voxel<VoxelType> {
 template <typename InputValueType, typename OutputValueType, class FunctionType>
 void copy_extract (const Image::Header& header_in, const std::string& output_filename, FunctionType function)
 {
-  if (header_in.datatype().is_complex() && !DataType::from<OutputValueType>().is_complex())
-    throw Exception ("datatype must be complex");
-
-  if (!header_in.datatype().is_complex() && DataType::from<OutputValueType>().is_complex())
-    throw Exception ("datatype must be real");
-
   Image::Buffer<InputValueType> buffer_in (header_in);
-  Image::Header header_out (buffer_in);
-
   typedef VoxelValueModified<OutputValueType, FunctionType, typename Image::Buffer<InputValueType>::voxel_type> InputVoxelType;
   InputVoxelType in (buffer_in, function);
+
+  Image::Header header_out (header_in);
+  DataType requested_datatype = DataType::from_command_line ();
+
+  if (requested_datatype.undefined()) 
+    header_out.datatype() = DataType::from<OutputValueType>();
+  else {
+    bool is_complex = requested_datatype.is_complex();
+    bool should_be_complex = DataType::from<OutputValueType>().is_complex();
+    if (is_complex && !should_be_complex)
+      throw Exception ("datatype must be real");
+    if (!is_complex && should_be_complex )
+      throw Exception ("datatype must be complex");
+    header_out.datatype() = requested_datatype;
+  }
+
 
   Options opt = get_options ("coord");
   if (opt.size()) {
@@ -240,10 +258,8 @@ inline RealValueType func_abs (ComplexValueType x) { return std::abs (x); }
 void run ()
 {
   Image::Header header_in (argument[0]);
-  bool is_complex = header_in.datatype().is_complex();
-  header_in.datatype() = DataType::from_command_line (header_in.datatype());
 
-  if (is_complex) {
+  if (header_in.datatype().is_complex()) {
     if (get_options ("real").size()) 
       copy_extract<ComplexValueType,RealValueType> (header_in, argument[1], func_real);
     else if (get_options ("imag").size()) 
@@ -258,5 +274,4 @@ void run ()
   else 
     copy_extract<RealValueType,RealValueType> (header_in, argument[1], func_no_op_real);
 }
-
 
