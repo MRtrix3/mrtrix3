@@ -23,7 +23,6 @@
 #ifndef __image_format_list_h__
 #define __image_format_list_h__
 
-#include "file/overwrite.h"
 #include "image/header.h"
 
 #define DECLARE_IMAGEFORMAT(format, desc) \
@@ -32,7 +31,7 @@
       format () : Base (desc) { } \
       virtual Handler::Base* read (Header& H) const; \
       virtual bool check (Header& H, size_t num_axes) const; \
-      virtual Handler::Base* create (Header& H, File::ConfirmOverwrite& confirm_overwrite) const; \
+      virtual Handler::Base* create (Header& H) const; \
   }
 
 namespace MR
@@ -95,7 +94,7 @@ namespace MR
            * beforehand.
            *
            * \note this function should throw an Exception in case of error. */
-          virtual Handler::Base* create (Header& H, File::ConfirmOverwrite& confirm_overwrite) const = 0;
+          virtual Handler::Base* create (Header& H) const = 0;
       };
 
       DECLARE_IMAGEFORMAT (Pipe, "Internal pipe");

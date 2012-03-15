@@ -271,9 +271,9 @@ namespace MR
 
 
 
-      Handler::Base* MRI::create (Header& H, File::ConfirmOverwrite& confirm_overwrite) const
+      Handler::Base* MRI::create (Header& H) const
       {
-        File::create (confirm_overwrite, H.name());
+        File::create (H.name());
         std::ofstream out (H.name().c_str());
         if (!out)
           throw Exception ("error creating file \"" + H.name() + "\": " + strerror (errno));

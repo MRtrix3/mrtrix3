@@ -134,12 +134,10 @@ namespace MR
 
 
 
-      Handler::Base* XDS::create (Header& H, File::ConfirmOverwrite& confirm_overwrite) const
+      Handler::Base* XDS::create (Header& H) const
       {
         std::string header_name (H.name());
         header_name.replace (header_name.size()-6, 6, "hdr");
-
-        confirm_overwrite (header_name);
 
         std::ofstream out (header_name.c_str());
         if (!out)
@@ -150,7 +148,7 @@ namespace MR
         out.close();
 
         Ptr<Handler::Default> handler (new Handler::Default (H));
-        File::create (confirm_overwrite, H.name(), Image::footprint (H, "11 1"));
+        File::create (H.name(), Image::footprint (H, "11 1"));
         handler->files.push_back (File::Entry (H.name()));
 
         return handler.release();

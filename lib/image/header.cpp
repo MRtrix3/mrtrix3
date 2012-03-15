@@ -217,14 +217,13 @@ namespace MR
         if (image_name != "-")
           name() = parser.name (num);
 
-        File::ConfirmOverwrite confirm_overwrite;
-        handler_ = (*format_handler)->create (*this, confirm_overwrite);
+        handler_ = (*format_handler)->create (*this);
 
         assert (handler_);
 
         while (get_next (num, Pdim)) {
           header.name() = parser.name (num);
-          Ptr<Handler::Base> H_handler ((*format_handler)->create (header, confirm_overwrite));
+          Ptr<Handler::Base> H_handler ((*format_handler)->create (header));
           assert (H_handler);
           merge (header);
           handler_->merge (*H_handler);

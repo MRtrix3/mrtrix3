@@ -199,10 +199,10 @@ namespace MR
 
 
 
-      Handler::Base* MRtrix::create (Header& H, File::ConfirmOverwrite& confirm_overwrite) const
+      Handler::Base* MRtrix::create (Header& H) const
       {
         if (!File::is_tempfile (H.name()))
-          File::create (confirm_overwrite, H.name());
+          File::create (H.name());
 
         std::ofstream out (H.name().c_str(), std::ios::out | std::ios::binary);
         if (!out)

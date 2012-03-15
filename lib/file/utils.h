@@ -30,10 +30,10 @@
 #include <fcntl.h>
 
 #include "debug.h"
+#include "app.h"
 #include "mrtrix.h"
 #include "types.h"
 #include "file/path.h"
-#include "file/overwrite.h"
 
 #define TMPFILE_ROOT "mrtrix-tmp-"
 #define TMPFILE_ROOT_LEN 11
@@ -54,33 +54,22 @@ namespace MR
         return c+61;
       }
 
-      inline int do_create (const std::string& filename, int64_t size)
-      {
-        int fid = open64 (filename.c_str(), O_CREAT | O_RDWR | O_TRUNC, 0644);
-        if (fid < 0) 
-          throw Exception ("error creating file \"" + filename + "\": " + strerror (errno));
-
-        if (size) size = ftruncate64 (fid, size);
-        if (size) 
-          throw Exception ("WARNING: cannot resize file \"" + filename + "\": " + strerror (errno));
-
-        return fid;
-      }
     }
 
 
 
-
-    inline void create (ConfirmOverwrite& confirm_overwrite, const std::string& filename, int64_t size = 0)
-    {
-      confirm_overwrite (filename);
-      close (do_create (filename, size));
-    }
 
     inline void create (const std::string& filename, int64_t size = 0)
     { 
-      ConfirmOverwrite::single_file (filename);
-      close (do_create (filename, size));
+      int fid = open64 (filename.c_str(), O_CREAT | O_RDWR | ( App::overwrite_files ? O_TRUNC : O_EXCL ), 0644);
+      if (fid < 0) 
+        throw Exception ("error creating file \"" + filename + "\": " + strerror (errno));
+
+      if (size) size = ftruncate64 (fid, size);
+      close (fid);
+
+      if (size) 
+        throw Exception ("WARNING: cannot resize file \"" + filename + "\": " + strerror (errno));
     }
 
 

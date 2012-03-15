@@ -41,6 +41,7 @@ namespace MR
                                      + Option ("info", "display information messages.")
                                      + Option ("quiet", "do not display information messages or progress status.")
                                      + Option ("debug", "display debugging messages.")
+                                     + Option ("force", "force overwrite of output files.")
                                      + Option ("help", "display this information page and exit.")
                                      + Option ("version", "display version information and exit.");
 
@@ -53,6 +54,7 @@ namespace MR
     size_t VERSION[] = { MRTRIX_MAJOR_VERSION, MRTRIX_MINOR_VERSION, MRTRIX_MICRO_VERSION };
 
     std::string NAME;
+    bool overwrite_files = false;
     std::vector<ParsedArgument> argument;
     std::vector<ParsedOption> option;
     int log_level = 1;
@@ -183,7 +185,7 @@ namespace MR
 
     void sort_arguments (int argc, const char* const* argv)
     {
-      for (int n = 1; n < argc; n++) {
+      for (int n = 1; n < argc; ++n) {
         const char* arg = argv[n];
         if (arg[0] == '-' && arg[1] && !isdigit (arg[1]) && arg[1] != '.') {
 
@@ -206,15 +208,19 @@ namespace MR
         if (log_level < 2)
           log_level = 2;
       }
-      else if (get_options ("debug").size())
+      if (get_options ("debug").size())
         log_level = 3;
-      else if (get_options ("quiet").size()) {
+      if (get_options ("quiet").size()) {
         log_level = 0;
         ProgressBar::display = false;
       }
-      else if (get_options ("help").size())
+      if (get_options ("force").size()) {
+        inform ("WARNING: existing destination files will be overwritten");
+        overwrite_files = true;
+      }
+      if (get_options ("help").size())
         print_help();
-      else if (get_options ("version").size())
+      if (get_options ("version").size())
         print_version();
     }
 

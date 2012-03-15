@@ -49,6 +49,7 @@ namespace MR
     extern size_t VERSION[3];
     extern int log_level;
     extern std::string NAME;
+    extern bool overwrite_files;
 
     extern int argc;
     extern char** argv;

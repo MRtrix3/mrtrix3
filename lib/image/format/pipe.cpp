@@ -70,9 +70,9 @@ namespace MR
 
 
 
-      Handler::Base* Pipe::create (Header& H, File::ConfirmOverwrite& confirm_overwrite) const
+      Handler::Base* Pipe::create (Header& H) const
       {
-        Ptr<Handler::Base> original_handler (mrtrix_handler.create (H, confirm_overwrite));
+        Ptr<Handler::Base> original_handler (mrtrix_handler.create (H));
         Ptr<Handler::Pipe> handler (new Handler::Pipe (*original_handler));
         return handler.release();
       }

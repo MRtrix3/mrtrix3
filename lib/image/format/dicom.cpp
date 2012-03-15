@@ -63,7 +63,7 @@ namespace MR
         return false;
       }
 
-      Handler::Base* DICOM::create (Header& H, File::ConfirmOverwrite& confirm_overwrite) const
+      Handler::Base* DICOM::create (Header& H) const
       {
         assert (0);
         return NULL;
