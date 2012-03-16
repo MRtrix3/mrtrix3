@@ -186,8 +186,6 @@ void TrackMapperTWI<SetVoxelDirFactor>::voxelise (const std::vector< Point<float
   Point<float> prev = tck.front();
   const Point<float>& last = tck[tck.size() - 1];
 
-  SetVoxelDirFactor temp_voxels;
-
   VoxelDirFactor vox;
   for (unsigned int i = 0; i != tck.size() - 1; ++i) {
     vox = round (interp_out.scanner2voxel (tck[i]));
@@ -202,16 +200,16 @@ void TrackMapperTWI<SetVoxelDirFactor>::voxelise (const std::vector< Point<float
       const float mu = ideal_index - lower_index;
       const float factor = (mu * factors[upper_index]) + ((1.0 - mu) * factors[lower_index]);
 
-      SetVoxelDirFactor::iterator existing_vox = temp_voxels.find (vox);
-      if (existing_vox == temp_voxels.end()) {
+      SetVoxelDirFactor::iterator existing_vox = voxels.find (vox);
+      if (existing_vox == voxels.end()) {
         vox.set_factor (factor);
-        temp_voxels.insert (vox);
+        voxels.insert (vox);
       } else {
         VoxelDirFactor new_vox (*existing_vox);
         new_vox.dir += vox.dir;
         new_vox.add_contribution (factor);
-        temp_voxels.erase (existing_vox);
-        temp_voxels.insert (new_vox);
+        voxels.erase (existing_vox);
+        voxels.insert (new_vox);
       }
     }
     prev = tck[i];
@@ -228,22 +226,17 @@ void TrackMapperTWI<SetVoxelDirFactor>::voxelise (const std::vector< Point<float
     const float mu = ideal_index - lower_index;
     const float factor = (mu * factors[upper_index]) + ((1.0 - mu) * factors[lower_index]);
 
-    SetVoxelDirFactor::iterator existing_vox = temp_voxels.find (vox);
-    if (existing_vox == temp_voxels.end()) {
+    SetVoxelDirFactor::iterator existing_vox = voxels.find (vox);
+    if (existing_vox == voxels.end()) {
       vox.set_factor (factor);
-      temp_voxels.insert (vox);
+      voxels.insert (vox);
     } else {
       VoxelDirFactor new_vox (*existing_vox);
       new_vox.dir += vox.dir;
       new_vox.add_contribution (factor);
-      temp_voxels.erase (existing_vox);
-      temp_voxels.insert (new_vox);
+      voxels.erase (existing_vox);
+      voxels.insert (new_vox);
     }
-  }
-  for (SetVoxelDirFactor::iterator i = temp_voxels.begin(); i != temp_voxels.end(); ++i) {
-    VoxelDirFactor new_vox (*i);
-    new_vox.dir.normalise();
-    voxels.insert (new_vox);
   }
 
 }

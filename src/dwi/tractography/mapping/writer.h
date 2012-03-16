@@ -278,7 +278,7 @@ class MapWriterColour : public MapWriterBase<Cont>
       for (typename Cont::const_iterator i = in.begin(); i != in.end(); ++i) {
         Image::Nav::set_pos (v_buffer, *i);
         const float factor = get_factor (in, i);
-        Point<float> scaled_dir = i->dir;
+        Point<float> scaled_dir (i->dir);
         scaled_dir.normalise();
         scaled_dir *= factor;
         const Point<float> current_value = get_value();
