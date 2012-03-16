@@ -75,13 +75,16 @@ namespace MR
           throw Exception ("NIfTI-1.1 format cannot support more than 7 dimensions for image \"" + H.name() + "\"");
 
         nifti_1_header NH;
+        nifti1_extender extender;
+        memset (extender.extension, 0x00, sizeof (nifti1_extender));
         File::NIfTI::write (NH, H, true);
 
         File::create (H.name());
 
         std::ofstream out (H.name().c_str());
         if (!out) throw Exception ("error opening file \"" + H.name() + "\" for writing: " + strerror (errno));
-        out.write ( (char*) &NH, 352);
+        out.write ( (char*) &NH, 348);
+        out.write (extender.extension, 4);
         out.close();
 
         File::resize (H.name(), 352 + Image::footprint(H));

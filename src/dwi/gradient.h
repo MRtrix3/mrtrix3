@@ -168,7 +168,7 @@ namespace MR
       if (bvals.columns() != bvecs.columns() || bvals.columns() != size_t(dwi_header.dim (3)))
         throw Exception ("bvals and bvecs files must have same number of diffusion directions as DW-image");
 
-      const Math::Matrix<float>& M (dwi_header.transform());
+      //const Math::Matrix<float>& M (dwi_header.transform());
 
       const Point<int> strides (dwi_header.stride (0), dwi_header.stride (1), dwi_header.stride (2));
 
