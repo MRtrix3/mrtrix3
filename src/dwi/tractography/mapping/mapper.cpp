@@ -77,8 +77,6 @@ void TrackMapperBase<SetVoxelDir>::voxelise (const std::vector< Point<float> >& 
   std::vector< Point<float> >::const_iterator prev = tck.begin();
   const std::vector< Point<float> >::const_iterator last = tck.end() - 1;
 
-  SetVoxelDir temp_voxels;
-
   VoxelDir vox;
   for (std::vector< Point<float> >::const_iterator i = tck.begin(); i != last; ++i) {
     vox = round (interp_out.scanner2voxel (*i));
@@ -86,14 +84,14 @@ void TrackMapperBase<SetVoxelDir>::voxelise (const std::vector< Point<float> >& 
       vox.dir = *(i+1) - *prev;
       for (unsigned int axis = 0; axis != 3; ++axis)
         vox.dir[axis] = Math::abs (vox.dir[axis]);
-      SetVoxelDir::iterator existing_vox = temp_voxels.find (vox);
-      if (existing_vox == temp_voxels.end()) {
-        temp_voxels.insert (vox);
+      SetVoxelDir::iterator existing_vox = voxels.find (vox);
+      if (existing_vox == voxels.end()) {
+        voxels.insert (vox);
       } else {
         VoxelDir new_vox (*existing_vox);
         new_vox.dir += vox.dir;
-        temp_voxels.erase (existing_vox);
-        temp_voxels.insert (new_vox);
+        voxels.erase (existing_vox);
+        voxels.insert (new_vox);
       }
     }
     prev = i;
@@ -103,21 +101,15 @@ void TrackMapperBase<SetVoxelDir>::voxelise (const std::vector< Point<float> >& 
     vox.dir = *last - *prev;
     for (unsigned int axis = 0; axis != 3; ++axis)
       vox.dir[axis] = Math::abs (vox.dir[axis]);
-    SetVoxelDir::iterator existing_vox = temp_voxels.find (vox);
-    if (existing_vox == temp_voxels.end()) {
-      temp_voxels.insert (vox);
+    SetVoxelDir::iterator existing_vox = voxels.find (vox);
+    if (existing_vox == voxels.end()) {
+      voxels.insert (vox);
     } else {
       VoxelDir new_vox (*existing_vox);
       new_vox.dir += vox.dir;
-      temp_voxels.erase (existing_vox);
-      temp_voxels.insert (new_vox);
+      voxels.erase (existing_vox);
+      voxels.insert (new_vox);
     }
-  }
-
-  for (SetVoxelDir::iterator i = temp_voxels.begin(); i != temp_voxels.end(); ++i) {
-    VoxelDir new_vox (*i);
-    new_vox.dir.normalise();
-    voxels.insert (new_vox);
   }
 
 }

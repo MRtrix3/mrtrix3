@@ -215,9 +215,9 @@ class MapWriterColour : public MapWriterBase<Cont>
       if (voxel_statistic == MIN) {
         for (loop.start (v_buffer); loop.ok(); loop.next (v_buffer))
           v_buffer.value() = std::numeric_limits<float>::max();
-      //} else if (voxel_statistic == MAX) {
-      //  for (loop.start (v_buffer); loop.ok(); loop.next (v_buffer))
-      //    v_buffer.value() = 0.0;
+      } else {
+        for (loop.start (v_buffer); loop.ok(); loop.next (v_buffer))
+          v_buffer.value() = 0.0;
       }
     }
 
@@ -278,7 +278,9 @@ class MapWriterColour : public MapWriterBase<Cont>
       for (typename Cont::const_iterator i = in.begin(); i != in.end(); ++i) {
         Image::Nav::set_pos (v_buffer, *i);
         const float factor = get_factor (in, i);
-        const Point<float> scaled_dir = i->dir * factor;
+        Point<float> scaled_dir = i->dir;
+        scaled_dir.normalise();
+        scaled_dir *= factor;
         const Point<float> current_value = get_value();
         switch (MapWriterBase<Cont>::voxel_statistic) {
         case SUM:
