@@ -110,6 +110,9 @@ class MapWriter : public MapWriterBase<Cont>
       } else if (voxel_statistic == MAX) {
         for (loop.start (v_buffer); loop.ok(); loop.next (v_buffer))
           v_buffer.value() = std::numeric_limits<value_type>::min();
+      } else {
+        for (loop.start (v_buffer); loop.ok(); loop.next (v_buffer))
+          v_buffer.value() = value_type (0);
       }
     }
 
@@ -124,6 +127,7 @@ class MapWriter : public MapWriterBase<Cont>
 
     ~MapWriter ()
     {
+
       Image::Loop loop;
       switch (MapWriterBase<Cont>::voxel_statistic) {
 
