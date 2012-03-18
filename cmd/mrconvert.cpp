@@ -28,7 +28,6 @@
 #include "image/threaded_copy.h"
 #include "image/adapter/extract.h"
 #include "image/adapter/permute_axes.h"
-
 #include "dwi/gradient.h"
 
 MRTRIX_APPLICATION
@@ -83,9 +82,9 @@ void usage ()
             "assume that the DW gradients are specified in the PRS frame (Siemens DICOM only).")
 
   + DataType::options() 
-  
-  + DWI::GradOption
 
+  + DWI::GradOption
+  
   + OptionGroup ("for complex input images")
   + Option ("real", 
       "return the real part of each voxel value")
@@ -102,53 +101,54 @@ void usage ()
 
 
 
+template <class InfoType>
 inline std::vector<int> set_header (
-  Image::Header& H_out,
-  const Image::Header& H_in)
+  Image::Header& header,
+  const InfoType& input)
 {
-  H_out.info() = H_in.info();
+  header.info() = input.info();
 
-  H_out.intensity_offset() = 0.0;
-  H_out.intensity_scale() = 1.0;
+  header.intensity_offset() = 0.0;
+  header.intensity_scale() = 1.0;
 
 
   Options opt = get_options ("axes");
   std::vector<int> axes;
   if (opt.size()) {
     axes = opt[0][0];
-    H_out.set_ndim (axes.size());
+    header.set_ndim (axes.size());
     for (size_t i = 0; i < axes.size(); ++i) {
-      if (axes[i] >= static_cast<int> (H_in.ndim()))
+      if (axes[i] >= static_cast<int> (input.ndim()))
         throw Exception ("axis supplied to option -axes is out of bounds");
-      H_out.dim(i) = axes[i] < 0 ? 1 : H_in.dim (axes[i]);
+      header.dim(i) = axes[i] < 0 ? 1 : input.dim (axes[i]);
     }
   }
 
   opt = get_options ("vox");
   if (opt.size()) {
     std::vector<float> vox = opt[0][0];
-    if (vox.size() > H_out.ndim())
+    if (vox.size() > header.ndim())
       throw Exception ("too many axes supplied to -vox option");
     for (size_t n = 0; n < vox.size(); ++n) {
       if (std::isfinite (vox[n]))
-        H_out.vox(n) = vox[n];
+        header.vox(n) = vox[n];
     }
   }
 
   opt = get_options ("stride");
   if (opt.size()) {
     std::vector<int> strides = opt[0][0];
-    if (strides.size() > H_out.ndim())
+    if (strides.size() > header.ndim())
       throw Exception ("too many axes supplied to -stride option");
     for (size_t n = 0; n < strides.size(); ++n) 
-      H_out.stride(n) = strides[n];
+      header.stride(n) = strides[n];
   }
 
   opt = get_options ("prs");
   if (opt.size() &&
-      H_out.DW_scheme().rows() &&
-      H_out.DW_scheme().columns()) {
-    Math::Matrix<float>& M (H_out.DW_scheme());
+      header.DW_scheme().rows() &&
+      header.DW_scheme().columns()) {
+    Math::Matrix<float>& M (header.DW_scheme());
     for (size_t row = 0; row < M.rows(); ++row) {
       float tmp = M (row, 0);
       M (row, 0) = M (row, 1);
@@ -157,22 +157,15 @@ inline std::vector<int> set_header (
     }
   }
 
-  try {
-    H_out.DW_scheme() = DWI::get_DW_scheme<float> (H_in);
-  }
-  catch (...) {
-    inform ("No valid diffusion encoding found; ignoring");
-  }
-
   return axes;
 }
 
 
 
   template <typename OutputValueType, class InputVoxelType>
-inline void copy_permute (const Image::Header& header_in, InputVoxelType& in, Image::Header& header_out, const std::string& output_filename)
+inline void copy_permute (InputVoxelType& in, Image::Header& header_out, const std::string& output_filename) 
 {
-  std::vector<int> axes = set_header (header_out, header_in);
+  std::vector<int> axes = set_header (header_out, in);
   Image::Buffer<OutputValueType> buffer_out (output_filename, header_out);
   typename Image::Buffer<OutputValueType>::voxel_type out (buffer_out);
 
@@ -226,6 +219,13 @@ void copy_extract (const Image::Header& header_in, const std::string& output_fil
     header_out.datatype() = requested_datatype;
   }
 
+  try {
+    header_out.DW_scheme() = DWI::get_DW_scheme<float> (header_in);
+  }
+  catch (...) {
+    inform ("no valid diffusion encoding found - ignoring");
+  }
+
 
   Options opt = get_options ("coord");
   if (opt.size()) {
@@ -246,10 +246,10 @@ void copy_extract (const Image::Header& header_in, const std::string& output_fil
     }
 
     Image::Adapter::Extract<InputVoxelType> extract (in, pos);
-    copy_permute<OutputValueType> (header_in, extract, header_out, output_filename);
+    copy_permute<OutputValueType> (extract, header_out, output_filename);
   }
   else 
-    copy_permute<OutputValueType> (header_in, in, header_out, output_filename);
+    copy_permute<OutputValueType> (in, header_out, output_filename);
   
 }
 

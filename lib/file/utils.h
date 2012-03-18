@@ -62,8 +62,12 @@ namespace MR
     inline void create (const std::string& filename, int64_t size = 0)
     { 
       int fid = open64 (filename.c_str(), O_CREAT | O_RDWR | ( App::overwrite_files ? O_TRUNC : O_EXCL ), 0644);
-      if (fid < 0) 
-        throw Exception ("error creating file \"" + filename + "\": " + strerror (errno));
+      if (fid < 0) {
+        std::string mesg ("error creating file \"" + filename + "\": " + strerror (errno));
+        if (errno == EEXIST) 
+          mesg += " (use -force option to force overwrite)";
+        throw Exception (mesg);
+      }
 
       if (size) size = ftruncate64 (fid, size);
       close (fid);

@@ -89,6 +89,7 @@ namespace MR
         Ptr<Handler::GZ> handler (new Handler::GZ (H, 352));
 
         File::NIfTI::write (*reinterpret_cast<nifti_1_header*> (handler->header()), H, true);
+        memset (handler->header()+sizeof(nifti_1_header), 0, sizeof(nifti1_extender));
 
         File::create (H.name());
         handler->files.push_back (File::Entry (H.name(), 352));

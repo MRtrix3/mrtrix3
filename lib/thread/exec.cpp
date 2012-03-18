@@ -30,21 +30,13 @@ namespace MR
   namespace Thread
   {
 
-    //size_t available_cores ()
-    //{
-    //  static const size_t number_of_threads = File::Config::get_int ("NumberOfThreads", 1);
-    //  return (number_of_threads);
-    //}
-
     size_t available_cores ()
     {
       static size_t number_of_threads = 0;
       if (number_of_threads)
         return number_of_threads;
-      number_of_threads = File::Config::get_int ("NumberOfThreads", 1);
       const App::Options opt = App::get_options ("nthreads");
-      if (opt.size())
-        number_of_threads = opt[0][0];
+      number_of_threads = opt.size() ? opt[0][0] : File::Config::get_int ("NumberOfThreads", 1);
       return number_of_threads;
     }
 

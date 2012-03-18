@@ -39,26 +39,26 @@ namespace MR
     extern const App::OptionGroup GradOption;
 
 
-    template <typename T> 
-      Math::Matrix<T>& normalise_grad (Math::Matrix<T>& grad)
+    template <typename ValueType> 
+      Math::Matrix<ValueType>& normalise_grad (Math::Matrix<ValueType>& grad)
     {
       if (grad.columns() != 4)
         throw Exception ("invalid gradient matrix dimensions");
       for (size_t i = 0; i < grad.rows(); i++) {
-        T norm = grad (i,3) ?
-                 T (1.0) /Math::norm (grad.row (i).sub (0,3)) :
-                 T (0.0);
+        ValueType norm = grad (i,3) ?
+                 ValueType (1.0) /Math::norm (grad.row (i).sub (0,3)) :
+                 ValueType (0.0);
         grad.row (i).sub (0,3) *= norm;
       }
       return (grad);
     }
 
 
-    template <typename T> 
+    template <typename ValueType> 
       inline void guess_DW_directions (
           std::vector<int>& dwi, 
           std::vector<int>& bzero, 
-          const Math::Matrix<T>& grad)
+          const Math::Matrix<ValueType>& grad)
     {
       if (grad.columns() != 4)
         throw Exception ("invalid gradient encoding matrix: expecting 4 columns.");
@@ -78,15 +78,15 @@ namespace MR
 
 
 
-    template <typename T> 
-      inline Math::Matrix<T>& gen_direction_matrix (
-          Math::Matrix<T>& dirs, 
-          const Math::Matrix<T>& grad, 
+    template <typename ValueType> 
+      inline Math::Matrix<ValueType>& gen_direction_matrix (
+          Math::Matrix<ValueType>& dirs, 
+          const Math::Matrix<ValueType>& grad, 
           const std::vector<int>& dwi)
     {
       dirs.allocate (dwi.size(),2);
       for (size_t i = 0; i < dwi.size(); i++) {
-        T n = Math::norm (grad.row (dwi[i]).sub (0,3));
+        ValueType n = Math::norm (grad.row (dwi[i]).sub (0,3));
         dirs (i,0) = Math::atan2 (grad (dwi[i],1), grad (dwi[i],0));
         dirs (i,1) = Math::acos (grad (dwi[i],2) /n);
       }
@@ -94,13 +94,14 @@ namespace MR
     }
 
 
-    template <typename T> Math::Matrix<T> get_DW_scheme (const Image::Header& dwi_header)
+    template <typename ValueType> 
+      Math::Matrix<ValueType> get_DW_scheme (const Image::Header& dwi_header)
     {
       using namespace App;
       if (dwi_header.ndim() != 4)
         throw Exception ("dwi image should contain 4 dimensions");
 
-      Math::Matrix<T> grad;
+      Math::Matrix<ValueType> grad;
 
       Options opt = get_options ("grad");
       if (opt.size()) {
@@ -136,7 +137,8 @@ namespace MR
 
 
 
-    template <typename T> void load_bvecs_bvals (const std::string dir_path, Math::Matrix<T>& grad, const Image::Header& dwi_header)
+    template <typename ValueType> 
+      void load_bvecs_bvals (const std::string dir_path, Math::Matrix<ValueType>& grad, const Image::Header& dwi_header)
     {
       std::string bvals_path = dir_path + "bvals";
       std::string bvecs_path = dir_path + "bvecs";
@@ -158,7 +160,7 @@ namespace MR
       else if (!found_bvals && !found_bvecs)
         throw Exception ("could not find either bvecs or bvals gradient files");
 
-      Math::Matrix<T> bvals, bvecs;
+      Math::Matrix<ValueType> bvals, bvecs;
       bvals.load (bvals_path);
       bvecs.load (bvecs_path);
 
@@ -167,8 +169,6 @@ namespace MR
 
       if (bvals.columns() != bvecs.columns() || bvals.columns() != size_t(dwi_header.dim (3)))
         throw Exception ("bvals and bvecs files must have same number of diffusion directions as DW-image");
-
-      //const Math::Matrix<float>& M (dwi_header.transform());
 
       const Point<int> strides (dwi_header.stride (0), dwi_header.stride (1), dwi_header.stride (2));
 
@@ -182,19 +182,7 @@ namespace MR
       grad.allocate (bvals.columns(), 4);
       for (size_t dir = 0; dir != bvals.columns(); ++dir) {
 
-        const Point<T> init_vector (bvecs (0, dir), bvecs (1, dir), bvecs (2, dir));
-
-        //const Point<T> reordered (init_vector[axis_reorder[0]] * (axis_flip[0] ? -1.0 : 1.0),
-        //                          init_vector[axis_reorder[1]] * (axis_flip[1] ? -1.0 : 1.0),
-        //                          init_vector[axis_reorder[2]] * (axis_flip[2] ? -1.0 : 1.0));
-
-        //const Point<T> rotated (reordered[0]*M(0,0) + reordered[1]*M(0,1) + reordered[2]*M(0,2),
-        //                        reordered[0]*M(1,0) + reordered[1]*M(1,1) + reordered[2]*M(1,2),
-        //                        reordered[0]*M(2,0) + reordered[1]*M(2,1) + reordered[2]*M(2,2));
-
-        //grad (dir, 0) = rotated[0];
-        //grad (dir, 1) = rotated[1];
-        //grad (dir, 2) = rotated[2];
+        const Point<ValueType> init_vector (bvecs (0, dir), bvecs (1, dir), bvecs (2, dir));
 
         grad (dir, 0) =  init_vector[1];
         grad (dir, 1) =  init_vector[0];

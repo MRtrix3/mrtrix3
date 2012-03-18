@@ -139,6 +139,14 @@ namespace MR
             set_get_put_functions ();
           }
 
+        //! construct a Buffer object to access the same data as a buffer (useful to access data using different data types).
+        template <typename OtherValueType>
+          Buffer (const Buffer<OtherValueType>& buffer) :
+            ConstHeader (buffer) {
+              handler_ = buffer.__get_handler();
+              set_get_put_functions ();
+            }
+
         //! construct a Buffer object to create and access the image specified
         Buffer (const std::string& image_name, const Header& template_header) :
           ConstHeader (template_header) {
@@ -178,8 +186,6 @@ namespace MR
 
         value_type (*get_func) (const void* data, size_t i);
         void (*put_func) (value_type val, void* data, size_t i);
-
-        Buffer (const Buffer& H) { assert (0); }
 
         void set_get_put_functions () {
           switch (datatype() ()) {
