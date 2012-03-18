@@ -43,6 +43,7 @@ namespace MR
           BufferScratch (const Template& info) :
             ConstInfo (info),
             data_ (new value_type [Image::voxel_count (*this)]) {
+              memset (data_, 0, Image::voxel_count (*this) * sizeof(ValueType));
               datatype_ = DataType::from<value_type>();
             }
 
@@ -50,6 +51,7 @@ namespace MR
           BufferScratch (const Template& info, const std::string& label) :
             ConstInfo (info),
             data_ (new value_type [Image::voxel_count (*this)]) {
+              memset (data_, 0, Image::voxel_count (*this) * sizeof(ValueType));
               datatype_ = DataType::from<value_type>();
               name_ = label;
             }
@@ -78,6 +80,14 @@ namespace MR
           BufferScratch& operator= (const Set& H) { assert (0); return *this; }
     };
 
+
+    template <> inline bool BufferScratch<bool>::get_value (size_t index) const {
+      return get<bool> (data_, index);
+    }
+
+    template <> inline void BufferScratch<bool>::set_value (size_t index, bool val) const {
+      put<bool> (val, data_, index);
+    }
 
 
 
