@@ -73,7 +73,7 @@ namespace MR
           return data_[index];
         }
 
-        void set_value (size_t index, value_type val) const {
+        void set_value (size_t index, value_type val) {
           data_[index] = val;
         }
 
@@ -142,7 +142,7 @@ namespace MR
       return get<bool> (data_, index);
     }
 
-    template <> inline void BufferPreload<bool>::set_value (size_t index, bool val) const {
+    template <> inline void BufferPreload<bool>::set_value (size_t index, bool val) {
       put<bool> (val, data_, index);
     }
 
