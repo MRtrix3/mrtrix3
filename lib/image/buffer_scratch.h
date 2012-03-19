@@ -85,7 +85,7 @@ namespace MR
       return get<bool> (data_, index);
     }
 
-    template <> inline void BufferScratch<bool>::set_value (size_t index, bool val) const {
+    template <> inline void BufferScratch<bool>::set_value (size_t index, bool val) {
       put<bool> (val, data_, index);
     }
 
