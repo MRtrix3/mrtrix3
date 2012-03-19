@@ -299,7 +299,8 @@ namespace MR
             assert (owner);
             GSLBlock<T>::free (block);
           }
-          GSLVector<T>::size = GSLVector<T>::stride = 0;
+          GSLVector<T>::size = 0;
+          GSLVector<T>::stride = 1;
           data = NULL;
           block = NULL;
           owner = 1;
@@ -585,13 +586,22 @@ namespace MR
         using GSLVector<T>::owner;
 
         void initialize (size_t nelements) {
-          block = GSLBlock<T>::alloc (nelements);
-          if (!block)
-            throw Exception ("Failed to allocate memory for Vector data");
-          GSLVector<T>::size = nelements;
-          GSLVector<T>::stride = 1;
-          data = block->data;
-          owner = 1;
+          if (nelements) {
+            block = GSLBlock<T>::alloc (nelements);
+            if (!block)
+              throw Exception ("Failed to allocate memory for Vector data");
+            GSLVector<T>::size = nelements;
+            GSLVector<T>::stride = 1;
+            data = block->data;
+            owner = 1;
+          } 
+          else {
+            GSLVector<T>::size = 0;
+            GSLVector<T>::stride = 1;
+            data = NULL;
+            block = NULL;
+            owner = 1;
+          }
         }
     };
 
