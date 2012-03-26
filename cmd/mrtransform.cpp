@@ -67,6 +67,14 @@ void usage ()
             "reslice the input image to match the specified template image.")
   + Argument ("template").type_image_in ()
 
+  + Option ("vox",
+            "reslice the input image to match the specified voxel sizes, "
+            "provided either as a single floating-point value to signify an "
+            "isotropic voxel, or a comma-separated list of 3 values, one for "
+            "each spatial axis. When the -reslice option has not also been "
+            "speficied, the input image is used as template.")
+  + Argument ("sizes").type_sequence_float ()
+
   + Option ("interp",
             "set the interpolation method to use when reslicing (default: linear).")
   + Argument ("method").type_choice (interp_choices)
@@ -123,21 +131,53 @@ void run ()
 
 
 
-  opt = get_options ("reslice"); // need to reslice
+  std::vector<float> new_voxel_sizes;
+  opt = get_options ("vox");
   if (opt.size()) {
-    std::string name = opt[0][0];
-    Image::ConstHeader template_header (name);
+    new_voxel_sizes = opt[0][0];
+    if (new_voxel_sizes.size() != 1 && new_voxel_sizes.size() != 3) 
+      throw Exception ("voxel sizes should be specified as a comma-separated list of 1 or 3 floating-point values");
+    for (size_t n = 0; n < new_voxel_sizes.size(); ++n)
+      if (new_voxel_sizes[n] < 0.0) 
+        throw Exception ("voxel size must be positive");
+    if (new_voxel_sizes.size() == 1) {
+      new_voxel_sizes.push_back (new_voxel_sizes[0]);
+      new_voxel_sizes.push_back (new_voxel_sizes[0]);
+    }
+  }
 
-    header_out.dim(0) = template_header.dim (0);
-    header_out.dim(1) = template_header.dim (1);
-    header_out.dim(2) = template_header.dim (2);
+  opt = get_options ("reslice"); // need to reslice
+  if (opt.size() || new_voxel_sizes.size()) {
+    if (opt.size()) {
+      std::string name = opt[0][0];
+      Image::ConstHeader template_header (name);
 
-    header_out.vox(0) = template_header.vox (0);
-    header_out.vox(1) = template_header.vox (1);
-    header_out.vox(2) = template_header.vox (2);
+      header_out.dim(0) = template_header.dim (0);
+      header_out.dim(1) = template_header.dim (1);
+      header_out.dim(2) = template_header.dim (2);
 
-    header_out.transform() = template_header.transform();
-    header_out.comments().push_back ("resliced to reference image \"" + template_header.name() + "\"");
+      header_out.vox(0) = template_header.vox (0);
+      header_out.vox(1) = template_header.vox (1);
+      header_out.vox(2) = template_header.vox (2);
+
+      header_out.transform() = template_header.transform();
+      header_out.comments().push_back ("resliced to reference image \"" + template_header.name() + "\"");
+    }
+
+    if (new_voxel_sizes.size()) {
+      float extent [] = { 
+        header_out.dim(0) * header_out.vox(0), 
+        header_out.dim(1) * header_out.vox(1), 
+        header_out.dim(2) * header_out.vox(2)
+      };
+      header_out.vox(0) = new_voxel_sizes[0];
+      header_out.vox(1) = new_voxel_sizes[1];
+      header_out.vox(2) = new_voxel_sizes[2];
+
+      header_out.dim(0) = Math::ceil (extent[0] / new_voxel_sizes[0]);
+      header_out.dim(1) = Math::ceil (extent[1] / new_voxel_sizes[1]);
+      header_out.dim(2) = Math::ceil (extent[2] / new_voxel_sizes[2]);
+    }
 
     int interp = 1;
     opt = get_options ("interp");
