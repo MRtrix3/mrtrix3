@@ -165,7 +165,9 @@ inline std::vector<int> set_header (
   template <typename OutputValueType, class InputVoxelType>
 inline void copy_permute (InputVoxelType& in, Image::Header& header_out, const std::string& output_filename) 
 {
+  DataType datatype = header_out.datatype();
   std::vector<int> axes = set_header (header_out, in);
+  header_out.datatype() = datatype;
   Image::Buffer<OutputValueType> buffer_out (output_filename, header_out);
   typename Image::Buffer<OutputValueType>::voxel_type out (buffer_out);
 
