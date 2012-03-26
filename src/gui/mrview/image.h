@@ -25,9 +25,10 @@
 
 #include <QAction>
 
+#include "image/buffer.h"
 #include "image/voxel.h"
 #include "math/quaternion.h"
-#include "dataset/interp/linear.h"
+#include "image/interp/linear.h"
 #include "gui/mrview/shader.h"
 
 class QAction;
@@ -52,20 +53,15 @@ namespace MR
       {
           Q_OBJECT
 
-        private:
-          Ptr<MR::Image::Header> H;
-
         public:
-          Image (Window& parent, MR::Image::Header* image_header);
+          Image (Window& parent, const MR::Image::Header& image_header);
           ~Image ();
 
           MR::Image::Header& header () {
-            assert (H);
-            return (*H);
+            return buffer;
           }
           const MR::Image::Header& header () const {
-            assert (H);
-            return (*H);
+            return buffer;
           }
 
           void reset_windowing () {
@@ -115,6 +111,10 @@ namespace MR
           }
 
           void set_colourmap (uint32_t index, bool invert_scale, bool invert_map) {
+            if (! (index < ColourMap::Special && colourmap < ColourMap::Special)) {
+              if (index < ColourMap::Special || colourmap < ColourMap::Special)
+                texture_mode_unchanged = false;
+            } 
             colourmap = index;
             if (invert_scale) colourmap |= InvertScale;
             if (invert_map) colourmap |= InvertMap;
@@ -130,13 +130,23 @@ namespace MR
           }
 
           uint32_t colourmap_index () const {
-            return colourmap & ~(InvertMap | InvertScale);
+            uint32_t cret = colourmap & ~(InvertMap | InvertScale);
+            if (cret >= ColourMap::Special)
+              cret -= ColourMap::Special - ColourMap::NumScalar;
+            return cret;
           }
 
+          typedef MR::Image::Buffer<cfloat> BufferType;
+          typedef BufferType::voxel_type VoxelType;
+          typedef MR::Image::Interp::Linear<VoxelType> InterpVoxelType;
 
-          MR::Image::Voxel<float> vox;
-          MR::DataSet::Interp::Linear<MR::Image::Voxel<float> > interp;
-
+        private:
+          BufferType buffer;
+        public:
+          InterpVoxelType interp;
+          VoxelType& voxel () { 
+            return interp;
+          }
         private:
           Window& window;
           GLuint texture2D[3], texture3D;
@@ -147,6 +157,7 @@ namespace MR
           uint32_t colourmap;
           GLenum type, format, internal_format;
           std::vector<ssize_t> position;
+          bool texture_mode_unchanged;
 
           Shader shader;
 

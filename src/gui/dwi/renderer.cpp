@@ -171,7 +171,7 @@ namespace MR
       {
         recompute = false;
         recalculate = true;
-        info ("updating SH renderer transform...");
+        inform ("updating SH renderer transform...");
         QApplication::setOverrideCursor (Qt::BusyCursor);
 
         nsh = Math::SH::NforL (lmax_computed);
@@ -240,7 +240,7 @@ namespace MR
       void Renderer::calculate ()
       {
         recalculate = false;
-        info ("updating values...");
+        inform ("updating values...");
 
         int actual_lmax = Math::SH::LforN (SH.size());
         if (actual_lmax > lmax_computed) actual_lmax = lmax_computed;

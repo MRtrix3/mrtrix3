@@ -107,22 +107,32 @@ namespace MR
             modelview_matrix[0] = NAN;
             paint();
             get_modelview_projection_viewport();
-
-            Point<> voxel (image()->interp.scanner2voxel (focus()));
             glColor4f (1.0, 1.0, 0.0, 1.0);
-            ssize_t vox [] = { Math::round<int> (voxel[0]), Math::round<int> (voxel[1]), Math::round<int> (voxel[2]) };
 
             if (show_position_action->isChecked()) {
+              Point<> voxel (image()->interp.scanner2voxel (focus()));
+              Image::VoxelType& imvox (image()->voxel());
+              ssize_t vox [] = { Math::round<int> (voxel[0]), Math::round<int> (voxel[1]), Math::round<int> (voxel[2]) };
+
+              std::string vox_str = printf ("voxel: [ %d %d %d ", vox[0], vox[1], vox[2]);
+              for (size_t n = 3; n < imvox.ndim(); ++n) 
+                vox_str += str(imvox[n]) + " ";
+              vox_str += "]";
+
               renderText (printf ("position: [ %.4g %.4g %.4g ] mm", focus() [0], focus() [1], focus() [2]), LeftEdge | BottomEdge);
-              renderText (printf ("voxel: [ %d %d %d ]", vox[0], vox[1], vox[2]), LeftEdge | BottomEdge, 1);
+              renderText (vox_str, LeftEdge | BottomEdge, 1);
               std::string value;
-              if (vox[0] >= 0 && vox[0] < image()->vox.dim (0) &&
-                  vox[1] >= 0 && vox[1] < image()->vox.dim (1) &&
-                  vox[2] >= 0 && vox[2] < image()->vox.dim (2)) {
-                image()->vox[0] = vox[0];
-                image()->vox[1] = vox[1];
-                image()->vox[2] = vox[2];
-                value = printf ("value: %.5g", float (image()->vox.value()));
+              if (vox[0] >= 0 && vox[0] < imvox.dim (0) &&
+                  vox[1] >= 0 && vox[1] < imvox.dim (1) &&
+                  vox[2] >= 0 && vox[2] < imvox.dim (2)) {
+                imvox[0] = vox[0];
+                imvox[1] = vox[1];
+                imvox[2] = vox[2];
+                cfloat val = imvox.value();
+                if (image()->header().datatype().is_complex()) 
+                  value = printf ("value: %.5g + %.5gi", val.real(), val.imag());
+                else
+                  value = printf ("value: %.5g", val.real());
               }
               else value = "value: ?";
               renderText (value, LeftEdge | BottomEdge, 2);

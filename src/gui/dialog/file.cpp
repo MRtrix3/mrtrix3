@@ -82,7 +82,7 @@ namespace MR
 
       int FolderModel::rowCount (const QModelIndex& parent) const
       {
-        return (list.size());
+        return list.size();
       }
 
       QVariant FolderModel::data (const QModelIndex& index, int role) const
@@ -90,13 +90,13 @@ namespace MR
         if (index.isValid())
           if (index.row() < list.size() && role == Qt::DisplayRole)
             return (list.at (index.row()));
-        return (QVariant());
+        return QVariant();
       }
 
       QVariant FolderModel::headerData (int section, Qt::Orientation orientation, int role) const
       {
         if (role != Qt::DisplayRole) return QVariant();
-        return (QString ("Folders"));
+        return QString ("Folders");
       }
 
 
@@ -109,7 +109,7 @@ namespace MR
       QVariant FileModel::headerData (int section, Qt::Orientation orientation, int role) const
       {
         if (role != Qt::DisplayRole) return QVariant();
-        return (QString ("Files"));
+        return QString ("Files");
       }
 
 

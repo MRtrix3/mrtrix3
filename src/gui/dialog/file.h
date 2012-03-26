@@ -137,8 +137,8 @@ namespace MR
 
           bool check_image (const std::string& path) {
             for (const char** ext = Image::Format::known_extensions; *ext; ext++)
-              if (Path::has_suffix (path, *ext)) return (true);
-            return (false);
+              if (Path::has_suffix (path, *ext)) return true;
+            return false;
           }
 
           static std::string cwd;

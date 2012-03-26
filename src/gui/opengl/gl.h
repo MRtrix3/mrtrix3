@@ -42,7 +42,7 @@ namespace MR
 }
 
 #define CHECK_GL_EXTENSION(name) \
-  if (GLEE_##name) info ("OpenGL extension GL_" #name " is supported"); \
+  if (GLEE_##name) inform ("OpenGL extension GL_" #name " is supported"); \
   else throw Exception ("OpenGL extension GL_" #name " is not supported!")
 
 #define DEBUG_OPENGL { GLenum error_code = glGetError(); \

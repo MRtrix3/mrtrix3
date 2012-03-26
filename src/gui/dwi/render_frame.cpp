@@ -96,7 +96,7 @@ namespace MR
         renderer.init();
         glEnable (GL_DEPTH_TEST);
         lighting->set();
-        info ("DWI renderer successfully initialised");
+        inform ("DWI renderer successfully initialised");
       }
 
 

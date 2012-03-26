@@ -10,7 +10,7 @@
 #include "app.h"
 #include "image/header.h"
 #include "image/voxel.h"
-#include "dataset/copy.h"
+#include "image/copy.h"
 #include "gui/icons.h"
 #include "gui/dialog/file.h"
 #include "gui/dialog/opengl.h"
@@ -225,6 +225,16 @@ namespace MR
         prev_image_action->setStatusTip (tr ("View the previous image in the list"));
         connect (prev_image_action, SIGNAL (triggered()), this, SLOT (image_previous_slot()));
 
+        next_image_volume_action = new QAction (tr ("Next volume"), this);
+        next_image_volume_action->setShortcut (tr ("Right"));
+        next_image_volume_action->setStatusTip (tr ("View the next volume image in the image"));
+        connect (next_image_volume_action, SIGNAL (triggered()), this, SLOT (image_next_volume_slot()));
+
+        prev_image_volume_action = new QAction (tr ("Previous volume"), this);
+        prev_image_volume_action->setShortcut (tr ("Left"));
+        prev_image_volume_action->setStatusTip (tr ("View the previous volume in the image"));
+        connect (prev_image_volume_action, SIGNAL (triggered()), this, SLOT (image_previous_volume_slot()));
+
         reset_windowing_action = new QAction (tr ("Reset &Windowing"), this);
         reset_windowing_action->setShortcut (tr ("Home"));
         reset_windowing_action->setStatusTip (tr ("Reset image brightness & contrast"));
@@ -244,6 +254,9 @@ namespace MR
         image_menu = menuBar()->addMenu (tr ("&Image"));
         image_menu->addAction (next_image_action);
         image_menu->addAction (prev_image_action);
+        image_menu->addSeparator();
+        image_menu->addAction (next_image_volume_action);
+        image_menu->addAction (prev_image_volume_action);
         image_menu->addSeparator();
         image_menu->addAction (reset_windowing_action);
         image_menu->addAction (image_interpolate_action);
@@ -322,7 +335,7 @@ namespace MR
       void Window::add_images (VecPtr<MR::Image::Header>& list)
       {
         for (size_t i = 0; i < list.size(); ++i) {
-          QAction* action = new Image (*this, list.release (i));
+          QAction* action = new Image (*this, *list[i]);
           image_group->addAction (action);
           if (!i) image_select_slot (action);
         }
@@ -339,9 +352,9 @@ namespace MR
           dialog.get_selection (selection);
           if (selection.size() != 1) return;
           try {
-            current_image()->header().create (selection[0]);
-            MR::Image::Voxel<float> dest (current_image()->header());
-            DataSet::copy_with_progress (dest, current_image()->vox);
+            MR::Image::Buffer<cfloat> dest (selection[0], current_image()->header());
+            MR::Image::Buffer<cfloat>::voxel_type vox (dest);
+            MR::Image::copy_with_progress (current_image()->voxel(), vox);
           }
           catch (Exception& E) {
             E.display();
@@ -481,6 +494,29 @@ namespace MR
 
 
 
+
+      void Window::image_next_volume_slot () 
+      {
+        assert (current_image());
+        ++current_image()->interp[3];
+        set_image_navigation_menu();
+        glarea->updateGL();
+      }
+
+
+
+
+      void Window::image_previous_volume_slot ()
+      {
+        assert (current_image());
+        --current_image()->interp[3];
+        set_image_navigation_menu();
+        glarea->updateGL();
+      }
+
+
+
+
       void Window::image_select_slot (QAction* action)
       {
         action->setChecked (true);
@@ -503,9 +539,27 @@ namespace MR
         save_action->setEnabled (N>0);
         close_action->setEnabled (N>0);
         properties_action->setEnabled (N>0);
+        set_image_navigation_menu();
         glarea->updateGL();
       }
 
+
+
+      inline void Window::set_image_navigation_menu ()
+      {
+        bool show_next (false), show_prev (false);
+        Image* image = current_image();
+        if (image) {
+          if (image->interp.ndim() > 3) {
+            if (image->interp[3] > 0) 
+              show_prev = true;
+            if (image->interp[3] < image->interp.dim(3)-1) 
+              show_next = true;
+          }
+        }
+        prev_image_volume_action->setEnabled (show_prev);
+        next_image_volume_action->setEnabled (show_next);
+      }
 
 
 
@@ -590,7 +644,7 @@ namespace MR
 
         GLint max_num;
         glGetIntegerv (GL_MAX_GEOMETRY_OUTPUT_VERTICES_ARB, &max_num);
-        info ("maximum number of vertices for geometry shader: " + str (max_num));
+        inform ("maximum number of vertices for geometry shader: " + str (max_num));
 
         glClearColor (0.0, 0.0, 0.0, 0.0);
         glEnable (GL_DEPTH_TEST);

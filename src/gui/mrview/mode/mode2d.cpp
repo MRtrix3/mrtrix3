@@ -54,6 +54,18 @@ namespace MR
           coronal_action->setStatusTip (tr ("Switch to coronal projection"));
           connect (coronal_action, SIGNAL (triggered()), this, SLOT (coronal()));
           add_action (coronal_action);
+
+          slice_next_action = new QAction (tr ("&Next slice"), this);
+          slice_next_action->setShortcut (tr ("Up"));
+          slice_next_action->setStatusTip (tr ("move one slice forward"));
+          connect (slice_next_action, SIGNAL (triggered()), this, SLOT (slice_next()));
+          add_action (slice_next_action);
+
+          slice_prev_action = new QAction (tr ("&Previous slice"), this);
+          slice_prev_action->setShortcut (tr ("Down"));
+          slice_prev_action->setStatusTip (tr ("move one slice backward"));
+          connect (slice_prev_action, SIGNAL (triggered()), this, SLOT (slice_prev()));
+          add_action (slice_prev_action);
         }
 
 
@@ -82,7 +94,7 @@ namespace MR
           // info for projection:
           int w = glarea()->width(), h = glarea()->height();
           float fov = FOV() / (float) (w+h);
-          float depth = image()->vox.dim (projection()) * image()->vox.vox (projection());
+          float depth = image()->interp.dim (projection()) * image()->interp.vox (projection());
 
           // set up projection & modelview matrices:
           glMatrixMode (GL_PROJECTION);
@@ -305,6 +317,26 @@ namespace MR
           set_FOV (std::max (dim[x], dim[y]));
 
           set_target (Point<>());
+        }
+
+
+
+        void Mode2D::slice_prev ()
+        {
+          if (!image()) return;
+          move_in_out (-image()->header().vox (projection()));
+          updateGL();
+        }
+
+
+
+
+
+        void Mode2D::slice_next ()
+        {
+          if (!image()) return;
+          move_in_out (image()->header().vox (projection()));
+          updateGL();
         }
 
 

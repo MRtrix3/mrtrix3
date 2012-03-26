@@ -32,9 +32,9 @@ namespace MR
 
       void init ()
       {
-        info ("GL renderer:  " + std::string ( (const char*) glGetString (GL_RENDERER)));
-        info ("GL version:   " + std::string ( (const char*) glGetString (GL_VERSION)));
-        info ("GL vendor:    " + std::string ( (const char*) glGetString (GL_VENDOR)));
+        inform ("GL renderer:  " + std::string ( (const char*) glGetString (GL_RENDERER)));
+        inform ("GL version:   " + std::string ( (const char*) glGetString (GL_VERSION)));
+        inform ("GL vendor:    " + std::string ( (const char*) glGetString (GL_VENDOR)));
       }
 
 

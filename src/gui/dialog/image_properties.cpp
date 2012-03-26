@@ -62,13 +62,6 @@ namespace MR
           text += " x " + str (H.vox (n));
         root->appendChild (new TreeItem ("Voxel size", text, root));
 
-        TreeItem* labels = new TreeItem ("Axes labels", std::string(), root);
-        root->appendChild (labels);
-        for (size_t n = 0; n < H.ndim(); ++n)
-          labels->appendChild (new TreeItem (std::string(),
-                                             (H.description (n).size() ? H.description (n) : "undefined") +
-                                             " (" + (H.units (n).size() ? H.units (n) : "?") + ")", labels));
-
         root->appendChild (new TreeItem ("Data type", H.datatype().description(), root));
 
         text = str (H.stride (0));
@@ -77,7 +70,7 @@ namespace MR
         root->appendChild (new TreeItem ("Strides", text, root));
 
         root->appendChild (new TreeItem ("Data scaling",
-                                         "offset: " + str (H.data_offset()) + ", multiplier = " + str (H.data_scale()), root));
+                                         "offset: " + str (H.intensity_offset()) + ", multiplier = " + str (H.intensity_scale()), root));
 
         if (H.transform().rows() != 4 || H.transform().columns() != 4) {
           root->appendChild (new TreeItem ("Transform", "(invalid)", root));

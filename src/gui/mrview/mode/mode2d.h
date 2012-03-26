@@ -55,10 +55,13 @@ namespace MR
             virtual void axial ();
             virtual void sagittal ();
             virtual void coronal ();
+            virtual void slice_prev ();
+            virtual void slice_next ();
             virtual void reset ();
 
           protected:
-            QAction* axial_action, *sagittal_action, *coronal_action;
+            QAction *axial_action, *sagittal_action, *coronal_action, *volume_next_action, *volume_previous_action;
+            QAction *slice_prev_action, *slice_next_action;
 
             void set_cursor ();
         };

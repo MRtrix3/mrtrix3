@@ -23,7 +23,7 @@
 #include <QMenu>
 
 #include "progressbar.h"
-#include "dataset/stride.h"
+#include "image/stride.h"
 #include "gui/mrview/image.h"
 #include "gui/mrview/window.h"
 #include "gui/mrview/mode/base.h"
@@ -37,11 +37,10 @@ namespace MR
     namespace MRView
     {
 
-      Image::Image (Window& parent, MR::Image::Header* image_header) :
-        QAction (shorten (image_header->name(), 20, 0).c_str(), &parent),
-        H (image_header),
-        vox (header()),
-        interp (vox),
+      Image::Image (Window& parent, const MR::Image::Header& image_header) :
+        QAction (shorten (image_header.name(), 20, 0).c_str(), &parent),
+        buffer (image_header),
+        interp (buffer),
         window (parent),
         texture3D (0),
         interpolation (GL_LINEAR),
@@ -49,9 +48,9 @@ namespace MR
         value_max (NAN),
         display_midpoint (NAN),
         display_range (NAN),
-        position (vox.ndim())
+        position (header().ndim()),
+        texture_mode_unchanged (false)
       {
-        assert (image_header);
         setCheckable (true);
         setToolTip (header().name().c_str());
         setStatusTip (header().name().c_str());
@@ -59,7 +58,7 @@ namespace MR
         window.image_menu->addAction (this);
         texture2D[0] = texture2D[1] = texture2D[2] = 0;
         position[0] = position[1] = position[2] = std::numeric_limits<ssize_t>::min();
-        set_colourmap (0, false, false);
+        set_colourmap (header().datatype().is_complex() ? ColourMap::Complex : ColourMap::Gray, false, false);
       }
 
       Image::~Image ()
@@ -173,45 +172,88 @@ namespace MR
         }
         glBindTexture (GL_TEXTURE_3D, texture2D[projection]);
 
-        if (position[projection] == slice && volume_unchanged())
+        if (position[projection] == slice && volume_unchanged() && texture_mode_unchanged)
           return;
 
         position[projection] = slice;
+        texture_mode_unchanged = true;
 
         int x, y;
         get_axes (projection, x, y);
         ssize_t xdim = header().dim (x), ydim = header().dim (y);
-        float data [xdim*ydim];
 
         type = GL_FLOAT;
-        format = GL_LUMINANCE;
-        internal_format = GL_LUMINANCE32F_ARB;
+        Ptr<float,true> data;
 
-        if (position[projection] < 0 || position[projection] >= header().dim (projection)) {
-          memset (data, 0, xdim*ydim*sizeof (float));
-        }
-        else {
-          // copy data:
-          vox[projection] = slice;
-          value_min = std::numeric_limits<float>::infinity();
-          value_max = -std::numeric_limits<float>::infinity();
-          for (vox[y] = 0; vox[y] < ydim; ++vox[y]) {
-            for (vox[x] = 0; vox[x] < xdim; ++vox[x]) {
-              float val = vox.value();
-              data[vox[x]+vox[y]*xdim] = val;
-              if (finite (val)) {
-                if (val < value_min) value_min = val;
-                if (val > value_max) value_max = val;
+        if (colourmap < ColourMap::Special) {
+          data = new float [xdim*ydim];
+          format = GL_LUMINANCE;
+          internal_format = GL_LUMINANCE32F_ARB;
+
+          if (position[projection] < 0 || position[projection] >= header().dim (projection)) {
+            memset (data, 0, xdim*ydim*sizeof (float));
+          }
+          else {
+            // copy data:
+            VoxelType& vox (voxel());
+            vox[projection] = slice;
+            value_min = std::numeric_limits<float>::infinity();
+            value_max = -std::numeric_limits<float>::infinity();
+            for (vox[y] = 0; vox[y] < ydim; ++vox[y]) {
+              for (vox[x] = 0; vox[x] < xdim; ++vox[x]) {
+                cfloat val = vox.value();
+                data[vox[x]+vox[y]*xdim] = val.real();
+                if (finite (val.real())) {
+                  if (val.real() < value_min) value_min = val.real();
+                  if (val.real() > value_max) value_max = val.real();
+                }
               }
             }
           }
 
-          if (isnan (display_midpoint) || isnan (display_range))
-            reset_windowing();
         }
+        else if (colourmap == ColourMap::Complex) {
+          data = new float [2*xdim*ydim];
+          format = GL_LUMINANCE_ALPHA;
+          internal_format = GL_LUMINANCE_ALPHA32F_ARB;
+
+          if (position[projection] < 0 || position[projection] >= header().dim (projection)) {
+            memset (data, 0, 2*xdim*ydim*sizeof (float));
+          }
+          else {
+            // copy data:
+            VoxelType& vox (voxel());
+            vox[projection] = slice;
+            value_min = std::numeric_limits<float>::infinity();
+            value_max = -std::numeric_limits<float>::infinity();
+            for (vox[y] = 0; vox[y] < ydim; ++vox[y]) {
+              for (vox[x] = 0; vox[x] < xdim; ++vox[x]) {
+                cfloat val = vox.value();
+                size_t idx = 2*(vox[x]+vox[y]*xdim);
+                data[idx] = val.real();
+                data[idx+1] = val.imag();
+                float mag = std::abs (val);
+                if (finite (mag)) {
+                  if (mag < value_min) value_min = mag;
+                  if (mag > value_max) value_max = mag;
+                }
+              }
+            }
+          }
+
+        }
+        else {
+          error ("attempt to use unsupported colourmap");
+          return;
+        }
+
+        if (isnan (display_midpoint) || isnan (display_range))
+          reset_windowing();
 
         glTexImage3D (GL_TEXTURE_3D, 0, internal_format, xdim, ydim, 1, 0, format, type, data);
       }
+
+
 
 
 
@@ -222,7 +264,7 @@ namespace MR
 
         if (!texture3D) { // allocate:
           GLenum internal_format = GL_LUMINANCE32F_ARB;
-          switch (vox.datatype() ()) {
+          switch (header().datatype() ()) {
             case DataType::Bit:
             case DataType::UInt8:
             case DataType::Int8:
@@ -255,8 +297,8 @@ namespace MR
           glTexParameteri (GL_TEXTURE_3D, GL_TEXTURE_WRAP_T, GL_CLAMP);
           glTexParameteri (GL_TEXTURE_3D, GL_TEXTURE_WRAP_R, GL_CLAMP);
           glTexImage3D (GL_TEXTURE_3D, 0, internal_format,
-                        vox.dim (0), vox.dim (1), vox.dim (2),
-                        0, GL_LUMINANCE, GL_FLOAT, NULL);
+              header().dim (0), header().dim (1), header().dim (2),
+              0, GL_LUMINANCE, GL_FLOAT, NULL);
           DEBUG_OPENGL;
         }
         else if (volume_unchanged()) {
@@ -270,7 +312,7 @@ namespace MR
         value_min = std::numeric_limits<float>::infinity();
         value_max = -std::numeric_limits<float>::infinity();
 
-        switch (vox.datatype() ()) {
+        switch (header().datatype() ()) {
           case DataType::Bit:
           case DataType::UInt8:
             copy_texture_3D<uint8_t> (format);
@@ -310,56 +352,57 @@ namespace MR
 
       template <> inline GLenum Image::GLtype<int8_t> () const
       {
-        return (GL_BYTE);
+        return GL_BYTE;
       }
       template <> inline GLenum Image::GLtype<uint8_t> () const
       {
-        return (GL_UNSIGNED_BYTE);
+        return GL_UNSIGNED_BYTE;
       }
       template <> inline GLenum Image::GLtype<int16_t> () const
       {
-        return (GL_SHORT);
+        return GL_SHORT;
       }
       template <> inline GLenum Image::GLtype<uint16_t> () const
       {
-        return (GL_UNSIGNED_SHORT);
+        return GL_UNSIGNED_SHORT;
       }
       template <> inline GLenum Image::GLtype<int32_t> () const
       {
-        return (GL_INT);
+        return GL_INT;
       }
       template <> inline GLenum Image::GLtype<uint32_t> () const
       {
-        return (GL_UNSIGNED_INT);
+        return GL_UNSIGNED_INT;
       }
       template <> inline GLenum Image::GLtype<float> () const
       {
-        return (GL_FLOAT);
+        return GL_FLOAT;
       }
 
-      template <typename T> inline float Image::scale_factor_3D () const
+      template <typename ValueType> inline float Image::scale_factor_3D () const
       {
-        return (std::numeric_limits<T>::max());
+        return std::numeric_limits<ValueType>::max();
       }
       template <> inline float Image::scale_factor_3D<float> () const
       {
-        return (1.0);
+        return 1.0;
       }
 
 
-      template <typename T> inline void Image::copy_texture_3D (GLenum format)
+      template <typename ValueType>
+        inline void Image::copy_texture_3D (GLenum format)
       {
-
-        MR::Image::Voxel<T> V (vox);
-        GLenum type = GLtype<T>();
-        Ptr<T,true> data (new T [V.dim (0) *V.dim (1)]);
+        MR::Image::Buffer<ValueType> buffer_tmp (buffer);
+        typename MR::Image::Buffer<ValueType>::voxel_type V (buffer_tmp);
+        GLenum type = GLtype<ValueType>();
+        Ptr<ValueType,true> data (new ValueType [V.dim (0) * V.dim (1)]);
 
         ProgressBar progress ("loading image data...", V.dim (2));
         for (V[2] = 0; V[2] < V.dim (2); ++V[2]) {
-          T* p = data;
+          ValueType* p = data;
           for (V[1] = 0; V[1] < V.dim (1); ++V[1]) {
             for (V[0] = 0; V[0] < V.dim (0); ++V[0]) {
-              T val = *p = V.value();
+              ValueType val = *p = V.value();
               if (finite (val)) {
                 if (val < value_min) value_min = val;
                 if (val > value_max) value_max = val;
@@ -368,24 +411,28 @@ namespace MR
             }
           }
           glTexSubImage3D (GL_TEXTURE_3D, 0,
-                           0, 0, V[2],
-                           V.dim (0), V.dim (1), 1,
-                           format, type, data);
+              0, 0, V[2],
+              V.dim (0), V.dim (1), 1,
+              format, type, data);
           DEBUG_OPENGL;
           ++progress;
         }
 
-        windowing_scale_3D = scale_factor_3D<T>();
+        windowing_scale_3D = scale_factor_3D<ValueType>();
       }
 
 
 
       inline bool Image::volume_unchanged ()
       {
-        for (size_t i = 3; i < vox.ndim(); ++i)
-          if (vox[i] != position[i])
-            return false;
-        return true;
+        bool is_unchanged = true;
+        for (size_t i = 3; i < interp.ndim(); ++i) {
+          if (interp[i] != position[i]) {
+            is_unchanged = false;
+            position[i] = interp[i];
+          }
+        }
+        return is_unchanged;
       }
 
 

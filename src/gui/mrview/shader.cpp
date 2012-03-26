@@ -20,6 +20,7 @@
 
 */
 
+#include "debug.h"
 #include "gui/mrview/shader.h"
 
 namespace MR
@@ -62,7 +63,15 @@ namespace MR
           if (colourmap == ColourMap::RGB)
             source += "gl_FragColor.rgb = scale * (abs(color.rgb) - offset);";
           else if (colourmap == ColourMap::Complex) {
-            assert (0);
+            source += 
+              "float mag = clamp (scale * (sqrt (color.r*color.r + color.a*color.a) - offset), 0.0, 1.0); "
+              "float phase = atan (color.a, color.g) / 2.094395102393195; "
+              "color.g = mag * (1.0 - abs (phase)); "
+              "phase += 1.0; if (phase > 1.5) phase -= 3.0; "
+              "color.r = mag * (1.0 - abs (phase)); "
+              "phase += 1.0; if (phase > 1.5) phase -= 3.0; "
+              "color.b = mag * (1.0 - abs (phase)); "
+              "gl_FragColor.rgb = color.rgb;";
           }
           else assert (0);
         }
