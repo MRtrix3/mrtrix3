@@ -56,7 +56,11 @@ namespace MR {
             }
             catch (...) { 
               inform ("could not parse spherical ROI specification \"" + spec + "\" - assuming mask image");
-              get_mask (spec);
+              Image::Header H (spec);
+              if (H.datatype() == DataType::Bit)
+                get_mask (spec);
+              else
+                get_image (spec);
             }
           }
 
@@ -170,6 +174,7 @@ namespace MR {
           RefPtr<SeedImage> image;
 
           void get_mask  (const std::string& name);
+          void get_image (const std::string& name);
 
       };
 
