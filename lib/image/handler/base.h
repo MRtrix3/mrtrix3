@@ -79,16 +79,20 @@ namespace MR
 
           std::vector<File::Entry> files;
 
+          void set_name (const std::string& image_name) {
+            name = image_name;
+          }
 
           void merge (const Base& B) {
             assert (addresses.empty());
             assert (datatype == B.datatype);
             for (size_t n = 0; n < B.files.size(); ++n) 
               files.push_back (B.files[n]);
+            segsize += B.segsize;
           }
 
         protected:
-          const std::string name;
+          std::string name;
           const DataType datatype;
           size_t segsize;
           VecPtr<uint8_t,true> addresses;

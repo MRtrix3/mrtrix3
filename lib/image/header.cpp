@@ -162,6 +162,7 @@ namespace MR
 
         sanitise();
         name() = image_name;
+        handler_->set_name (image_name);
       }
       catch (Exception& E) {
         throw Exception (E, "error opening image \"" + image_name + "\"");
@@ -245,11 +246,12 @@ namespace MR
           }
         }
 
+        name() = image_name;
+        handler_->set_name (image_name);
         handler_->set_image_is_new (true);
         handler_->set_readwrite (true);
 
         sanitise();
-        name() = image_name;
       }
       catch (Exception& E) {
         throw Exception (E, "error creating image \"" + image_name + "\"");
