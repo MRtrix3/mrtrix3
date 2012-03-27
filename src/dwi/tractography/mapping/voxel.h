@@ -64,23 +64,31 @@ inline Point<float> abs (const Point<float>& d)
   return (Point<float> (Math::abs(d[0]), Math::abs(d[1]), Math::abs(d[2])));
 }
 
-class VoxelDir : public Voxel 
+class VoxelDEC : public Voxel 
 {
 
   public:
-    VoxelDir () :
-      dir (Point<float> (0.0, 0.0, 0.0))
+    VoxelDEC () :
+      colour (Point<float> (0.0, 0.0, 0.0))
     {
       memset (p, 0x00, 3 * sizeof(int));
     }
-    VoxelDir (const Voxel& V) :
-      dir (Point<float> (0.0, 0.0, 0.0))
+    VoxelDEC (const Voxel& V) :
+      colour (Point<float> (0.0, 0.0, 0.0))
     {
       memcpy (p, V, 3 * sizeof(int));
     }
-    Point<float> dir;
-    VoxelDir& operator= (const Voxel& V)          { Voxel::operator= (V); return (*this); }
-    bool      operator< (const VoxelDir& V) const { return Voxel::operator< (V); }
+
+    VoxelDEC& operator=  (const Voxel& V)          { Voxel::operator= (V); return (*this); }
+    bool      operator== (const Voxel& V)    const { return Voxel::operator== (V); }
+    bool      operator<  (const VoxelDEC& V) const { return Voxel::operator< (V); }
+
+    void norm_dir() const { colour.normalise(); }
+    void add_dir (const Point<float>& i) const { colour[0] += Math::abs (i[0]); colour[1] += Math::abs (i[1]); colour[2] += Math::abs (i[2]); }
+    const Point<float>& get_dir() const { return colour; }
+
+  private:
+    mutable Point<float> colour;
 
 };
 
@@ -108,44 +116,80 @@ class VoxelFactor : public Voxel
       sum (v.sum),
       contributions (v.contributions) { }
 
-    void add_contribution (const float factor) {
+    void add_contribution (const float factor) const {
       sum += factor;
       ++contributions;
     }
 
-    void set_factor (const float i) { sum = i; contributions = 1; }
+    void set_factor (const float i) const { sum = i; contributions = 1; }
     float get_factor() const { return (sum / float(contributions)); }
     size_t get_contribution_count() const { return contributions; }
 
-    VoxelFactor& operator= (const Voxel& V)             { Voxel::operator= (V); return (*this); }
-    bool         operator< (const VoxelFactor& V) const { return Voxel::operator< (V); }
+    VoxelFactor& operator=  (const Voxel& V)             { Voxel::operator= (V); return (*this); }
+    bool         operator== (const Voxel& V)       const { return Voxel::operator== (V); }
+    bool         operator<  (const VoxelFactor& V) const { return Voxel::operator< (V); }
 
 
   protected:
-    float sum;
-    size_t contributions;
+    mutable float sum;
+    mutable size_t contributions;
 
 };
 
 
-class VoxelDirFactor : public VoxelFactor
+class VoxelDECFactor : public VoxelFactor
 {
 
   public:
-    VoxelDirFactor () :
-      dir (Point<float> (0.0, 0.0, 0.0))
+    VoxelDECFactor () :
+      colour (Point<float> (0.0, 0.0, 0.0))
     {
       memset (p, 0x00, 3 * sizeof(int));
     }
-    VoxelDirFactor (const Voxel& V) :
-      dir (Point<float> (0.0, 0.0, 0.0))
+    VoxelDECFactor (const Voxel& V) :
+      colour (Point<float> (0.0, 0.0, 0.0))
     {
       memcpy (p, V, 3 * sizeof(int));
     }
-    Point<float> dir;
 
-    VoxelDirFactor& operator= (const Voxel& V)                { Voxel::operator= (V); return (*this); }
-    bool            operator< (const VoxelDirFactor& V) const { return Voxel::operator< (V); }
+    VoxelDECFactor& operator=  (const Voxel& V)                { Voxel::operator= (V); return (*this); }
+    bool            operator== (const Voxel& V)          const { return Voxel::operator== (V); }
+    bool            operator<  (const VoxelDECFactor& V) const { return Voxel::operator< (V); }
+
+    void norm_dir() const { colour.normalise(); }
+    void add_dir (const Point<float>& i) const { colour[0] += Math::abs (i[0]); colour[1] += Math::abs (i[1]); colour[2] += Math::abs (i[2]); }
+    const Point<float>& get_dir() const { return colour; }
+
+  private:
+    mutable Point<float> colour;
+
+};
+
+
+// Unlike VoxelDEC, here the direction through the voxel is NOT constrained to the 3-axis positive octant
+class VoxelDir : public Voxel
+{
+
+  public:
+    VoxelDir () :
+      dir (0.0, 0.0, 0.0) { }
+
+    VoxelDir (const Voxel& V) :
+      dir (0.0, 0.0, 0.0)
+    {
+      memcpy (p, V, 3 * sizeof(int));
+    }
+
+    void add_dir (const Point<float>& i) const { dir += i; }
+    const Point<float>& get_dir() const { return dir; }
+
+    VoxelDir& operator=  (const Voxel& V)          { Voxel::operator= (V); return (*this); }
+    bool      operator== (const Voxel& V)    const { return Voxel::operator== (V); }
+    bool      operator<  (const VoxelDir& V) const { return Voxel::operator< (V); }
+
+
+  private:
+    mutable Point<float> dir;
 
 };
 
@@ -160,9 +204,10 @@ class SetVoxelExtras
 
 
 class SetVoxel          : public std::set<Voxel>         , public SetVoxelExtras { };
+class SetVoxelDEC       : public std::set<VoxelDEC>      , public SetVoxelExtras { };
 class SetVoxelDir       : public std::set<VoxelDir>      , public SetVoxelExtras { };
 class SetVoxelFactor    : public std::set<VoxelFactor>   , public SetVoxelExtras { };
-class SetVoxelDirFactor : public std::set<VoxelDirFactor>, public SetVoxelExtras { };
+class SetVoxelDECFactor : public std::set<VoxelDECFactor>, public SetVoxelExtras { };
 
 
 

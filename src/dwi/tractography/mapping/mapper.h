@@ -120,6 +120,7 @@ class TrackMapperBase
 };
 
 template <> void TrackMapperBase<SetVoxel>   ::voxelise (const std::vector< Point<float> >&, SetVoxel&)    const;
+template <> void TrackMapperBase<SetVoxelDEC>::voxelise (const std::vector< Point<float> >&, SetVoxelDEC&) const;
 template <> void TrackMapperBase<SetVoxelDir>::voxelise (const std::vector< Point<float> >&, SetVoxelDir&) const;
 
 

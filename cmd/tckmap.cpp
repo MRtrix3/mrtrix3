@@ -463,9 +463,9 @@ void run () {
     }
 
     if (colour) {
-      MapWriterColour<SetVoxelDir> writer (header, argument[1], stat_vox);
-      TrackMapperTWI <SetVoxelDir> mapper (header, interp_matrix, step_size, contrast, stat_tck);
-      Thread::run_queue (loader, 1, TrackAndIndex(), mapper, 0, SetVoxelDir(), writer, 1);
+      MapWriterColour<SetVoxelDEC> writer (header, argument[1], stat_vox);
+      TrackMapperTWI <SetVoxelDEC> mapper (header, interp_matrix, step_size, contrast, stat_tck);
+      Thread::run_queue (loader, 1, TrackAndIndex(), mapper, 0, SetVoxelDEC(), writer, 1);
     } else {
       Ptr< MapWriterBase<SetVoxel> > writer (make_writer<SetVoxel> (header, argument[1], stat_vox));
       TrackMapperTWI <SetVoxel> mapper (header, interp_matrix, step_size, contrast, stat_tck);
@@ -494,13 +494,13 @@ void run () {
     if (colour) {
 
       if (stat_tck == GAUSSIAN) {
-        MapWriterColour<SetVoxelDirFactor> writer (header, argument[1], stat_vox);
-        TrackMapperTWI <SetVoxelDirFactor> mapper (header, interp_matrix, step_size, contrast, stat_tck);
-        Thread::run_queue (loader, 1, TrackAndIndex(), mapper, 0, SetVoxelDirFactor(), writer, 1);
+        MapWriterColour<SetVoxelDECFactor> writer (header, argument[1], stat_vox);
+        TrackMapperTWI <SetVoxelDECFactor> mapper (header, interp_matrix, step_size, contrast, stat_tck);
+        Thread::run_queue (loader, 1, TrackAndIndex(), mapper, 0, SetVoxelDECFactor(), writer, 1);
       } else {
-        MapWriterColour<SetVoxelDir> writer (header, argument[1], stat_vox);
-        TrackMapperTWI <SetVoxelDir> mapper (header, interp_matrix, step_size, contrast, stat_tck);
-        Thread::run_queue (loader, 1, TrackAndIndex(), mapper, 0, SetVoxelDir(), writer, 1);
+        MapWriterColour<SetVoxelDEC> writer (header, argument[1], stat_vox);
+        TrackMapperTWI <SetVoxelDEC> mapper (header, interp_matrix, step_size, contrast, stat_tck);
+        Thread::run_queue (loader, 1, TrackAndIndex(), mapper, 0, SetVoxelDEC(), writer, 1);
       }
 
     } else {

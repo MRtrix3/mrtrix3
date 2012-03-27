@@ -71,71 +71,154 @@ void TrackMapperTWI<SetVoxel>::voxelise (const std::vector< Point<float> >& tck,
 
 
 template <>
-void TrackMapperBase<SetVoxelDir>::voxelise (const std::vector< Point<float> >& tck, SetVoxelDir& voxels) const
+void TrackMapperBase<SetVoxelDEC>::voxelise (const std::vector< Point<float> >& tck, SetVoxelDEC& voxels) const
 {
 
   std::vector< Point<float> >::const_iterator prev = tck.begin();
   const std::vector< Point<float> >::const_iterator last = tck.end() - 1;
 
-  VoxelDir vox;
+  VoxelDEC vox;
   for (std::vector< Point<float> >::const_iterator i = tck.begin(); i != last; ++i) {
     vox = round (interp_out.scanner2voxel (*i));
     if (check (vox, H_out)) {
-      vox.dir = *(i+1) - *prev;
-      for (unsigned int axis = 0; axis != 3; ++axis)
-        vox.dir[axis] = Math::abs (vox.dir[axis]);
-      SetVoxelDir::iterator existing_vox = voxels.find (vox);
+      SetVoxelDEC::iterator existing_vox = voxels.find (vox);
       if (existing_vox == voxels.end()) {
+        vox.add_dir (*(i+1) - *prev);
         voxels.insert (vox);
       } else {
-        VoxelDir new_vox (*existing_vox);
-        new_vox.dir += vox.dir;
-        voxels.erase (existing_vox);
-        voxels.insert (new_vox);
+        existing_vox->add_dir (*(i+1) - *prev);
       }
     }
     prev = i;
   }
+
   vox = round (interp_out.scanner2voxel (*last));
   if (check (vox, H_out)) {
-    vox.dir = *last - *prev;
-    for (unsigned int axis = 0; axis != 3; ++axis)
-      vox.dir[axis] = Math::abs (vox.dir[axis]);
-    SetVoxelDir::iterator existing_vox = voxels.find (vox);
+    SetVoxelDEC::iterator existing_vox = voxels.find (vox);
     if (existing_vox == voxels.end()) {
+      vox.add_dir (*last - *prev);
       voxels.insert (vox);
     } else {
-      VoxelDir new_vox (*existing_vox);
-      new_vox.dir += vox.dir;
-      voxels.erase (existing_vox);
-      voxels.insert (new_vox);
+      existing_vox->add_dir (*last - *prev);
     }
   }
+
+  for (SetVoxelDEC::iterator i = voxels.begin(); i != voxels.end(); ++i)
+    i->norm_dir();
 
 }
 
 
 template <>
-void TrackMapperTWI<SetVoxelDir>::voxelise (const std::vector< Point<float> >& tck, SetVoxelDir& voxels) const
+void TrackMapperTWI<SetVoxelDEC>::voxelise (const std::vector< Point<float> >& tck, SetVoxelDEC& voxels) const
 {
 
   if (contrast == ENDPOINT) {
 
-    VoxelDir vox = round (interp_out.scanner2voxel (tck.front()));
+    VoxelDEC vox = round (interp_out.scanner2voxel (tck.front()));
     if (check (vox, H_out)) {
-      vox.dir = tck[0] - tck[1];
+      vox.add_dir (tck[0] - tck[1]);
       voxels.insert (vox);
     }
 
     vox = round (interp_out.scanner2voxel (tck.back()));
     if (check (vox, H_out)) {
-      vox.dir = tck[tck.size() - 1] - tck[tck.size() - 2];
+      vox.add_dir (tck[tck.size() - 1] - tck[tck.size() - 2]);
       voxels.insert (vox);
     }
 
   } else {
 
-    TrackMapperBase<SetVoxelDir>::voxelise (tck, voxels);
+    TrackMapperBase<SetVoxelDEC>::voxelise (tck, voxels);
+
+  }
+
+}
+
+
+
+template <>
+void TrackMapperBase<SetVoxelDir>::voxelise (const std::vector< Point<float> >& tck, SetVoxelDir& voxels) const
+{
+
+  typedef Point<float> PointF;
+
+  static const float accuracy = Math::pow2 (0.005 * maxvalue (H_out.vox (0), H_out.vox (1), H_out.vox (2)));
+
+  Math::Hermite<float> hermite (0.1);
+
+  const PointF start_vector_offset = (tck.size() > 2) ? ((tck.front() - tck[1]) - (tck[1] - tck[2])) : PointF (0.0, 0.0, 0.0);
+  const PointF start_vector = (tck.front() - tck[1]) + start_vector_offset;
+  const PointF tck_proj_front = tck.front() + start_vector;
+
+  const unsigned int last_point = tck.size() - 1;
+
+  const PointF end_vector_offset = (tck.size() > 2) ? ((tck[last_point] - tck[last_point - 1]) - (tck[last_point - 1] - tck[last_point - 2])) : PointF (0.0, 0.0, 0.0);
+  const PointF end_vector = (tck[last_point] - tck[last_point - 1]) + end_vector_offset;
+  const PointF tck_proj_back = tck.back() + end_vector;
+
+  unsigned int p = 0;
+  PointF p_end = tck.front();
+  float mu = 0.0;
+  bool end_track = false;
+  Voxel next_voxel (round (interp_out.scanner2voxel (tck.front())));
+
+  while (!end_track) {
+
+    const PointF p_start (p_end);
+
+    const Voxel this_voxel = next_voxel;
+
+    while ((p != tck.size()) && (round (interp_out.scanner2voxel (tck[p])) == this_voxel)) {
+      ++p;
+      mu = 0.0;
+    }
+
+    if (p == tck.size()) {
+      p_end = tck.back();
+      end_track = true;
+    } else {
+
+      float mu_min = mu;
+      float mu_max = 1.0;
+      Voxel mu_voxel = this_voxel;
+
+      PointF p_mu = tck[p];
+
+      do {
+
+        p_end = p_mu;
+
+        mu = 0.5 * (mu_min + mu_max);
+        const PointF* p_one = (p == 1) ? &tck_proj_front : &tck[p - 2];
+        const PointF* p_four = (p == tck.size() - 1) ? &tck_proj_back : &tck[p + 1];
+
+        hermite.set (mu);
+        p_mu = hermite.value (*p_one, tck[p - 1], tck[p], *p_four);
+
+        mu_voxel = round (interp_out.scanner2voxel (p_mu));
+        if (mu_voxel == this_voxel) {
+          mu_min = mu;
+        } else {
+          mu_max = mu;
+          next_voxel = mu_voxel;
+        }
+
+      } while (dist2 (p_mu, p_end) > accuracy);
+
+    }
+
+    const PointF traversal_vector (p_end - p_start);
+    if (traversal_vector.norm2()) {
+      SetVoxelDir::iterator existing_vox = voxels.find (this_voxel);
+      if (existing_vox == voxels.end()) {
+        VoxelDir voxel_dir (this_voxel);
+        voxel_dir.add_dir (traversal_vector);
+        voxels.insert (voxel_dir);
+      } else {
+        existing_vox->add_dir (traversal_vector);
+      }
+    }
 
   }
 
@@ -180,19 +263,16 @@ void TrackMapperTWI<SetVoxelFactor>::voxelise (const std::vector< Point<float> >
 
 
 template <>
-void TrackMapperTWI<SetVoxelDirFactor>::voxelise (const std::vector< Point<float> >& tck, SetVoxelDirFactor& voxels) const
+void TrackMapperTWI<SetVoxelDECFactor>::voxelise (const std::vector< Point<float> >& tck, SetVoxelDECFactor& voxels) const
 {
 
   Point<float> prev = tck.front();
   const Point<float>& last = tck[tck.size() - 1];
 
-  VoxelDirFactor vox;
+  VoxelDECFactor vox;
   for (unsigned int i = 0; i != tck.size() - 1; ++i) {
     vox = round (interp_out.scanner2voxel (tck[i]));
     if (check (vox, H_out)) {
-      vox.dir = tck[i+1] - prev;
-      for (unsigned int axis = 0; axis != 3; ++axis)
-        vox.dir[axis] = Math::abs (vox.dir[axis]);
 
       const float ideal_index = float(i) / float(os_factor);
       const size_t lower_index = MAX(floor (ideal_index), 0);
@@ -200,25 +280,21 @@ void TrackMapperTWI<SetVoxelDirFactor>::voxelise (const std::vector< Point<float
       const float mu = ideal_index - lower_index;
       const float factor = (mu * factors[upper_index]) + ((1.0 - mu) * factors[lower_index]);
 
-      SetVoxelDirFactor::iterator existing_vox = voxels.find (vox);
+      SetVoxelDECFactor::iterator existing_vox = voxels.find (vox);
       if (existing_vox == voxels.end()) {
         vox.set_factor (factor);
+        vox.add_dir (tck[i+1] - prev);
         voxels.insert (vox);
       } else {
-        VoxelDirFactor new_vox (*existing_vox);
-        new_vox.dir += vox.dir;
-        new_vox.add_contribution (factor);
-        voxels.erase (existing_vox);
-        voxels.insert (new_vox);
+        existing_vox->add_dir (tck[i+1] - prev);
+        existing_vox->add_contribution (factor);
       }
     }
     prev = tck[i];
   }
+
   vox = round (interp_out.scanner2voxel (last));
   if (check (vox, H_out)) {
-    vox.dir = last - prev;
-    for (unsigned int axis = 0; axis != 3; ++axis)
-      vox.dir[axis] = Math::abs (vox.dir[axis]);
 
     const float ideal_index = float(tck.size() - 1) / float(os_factor);
     const size_t lower_index = MAX(floor (ideal_index), 0);
@@ -226,18 +302,19 @@ void TrackMapperTWI<SetVoxelDirFactor>::voxelise (const std::vector< Point<float
     const float mu = ideal_index - lower_index;
     const float factor = (mu * factors[upper_index]) + ((1.0 - mu) * factors[lower_index]);
 
-    SetVoxelDirFactor::iterator existing_vox = voxels.find (vox);
+    SetVoxelDECFactor::iterator existing_vox = voxels.find (vox);
     if (existing_vox == voxels.end()) {
+      vox.add_dir (last - prev);
       vox.set_factor (factor);
       voxels.insert (vox);
     } else {
-      VoxelDirFactor new_vox (*existing_vox);
-      new_vox.dir += vox.dir;
-      new_vox.add_contribution (factor);
-      voxels.erase (existing_vox);
-      voxels.insert (new_vox);
+      existing_vox->add_dir (last - prev);
+      existing_vox->add_contribution (factor);
     }
   }
+
+  for (SetVoxelDECFactor::iterator i = voxels.begin(); i != voxels.end(); ++i)
+    i->norm_dir();
 
 }
 
@@ -245,6 +322,10 @@ void TrackMapperTWI<SetVoxelDirFactor>::voxelise (const std::vector< Point<float
 
 
 template <> void TrackMapperTWI<SetVoxel>         ::set_factor (const std::vector< Point<float> >& tck, SetVoxel&          out)
+{
+  out.factor = get_factor_const (tck);
+}
+template <> void TrackMapperTWI<SetVoxelDEC>      ::set_factor (const std::vector< Point<float> >& tck, SetVoxelDEC&       out)
 {
   out.factor = get_factor_const (tck);
 }
@@ -263,7 +344,7 @@ template <> void TrackMapperTWI<SetVoxelFactor>   ::set_factor (const std::vecto
   }
   out.factor = 0.0;
 }
-template <> void TrackMapperTWI<SetVoxelDirFactor>::set_factor (const std::vector< Point<float> >& tck, SetVoxelDirFactor& out)
+template <> void TrackMapperTWI<SetVoxelDECFactor>::set_factor (const std::vector< Point<float> >& tck, SetVoxelDECFactor& out)
 {
   set_factors_nonconst (tck);
   for (std::vector<float>::const_iterator i = factors.begin(); i != factors.end(); ++i) {

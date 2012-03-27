@@ -83,9 +83,10 @@ class MapWriterBase
 
 template <typename Cont> float get_factor (const Cont&, const typename Cont::const_iterator) { assert (0); return 0; }
 template <> float get_factor<SetVoxel>          (const SetVoxel&         , const SetVoxel         ::const_iterator);
+template <> float get_factor<SetVoxelDEC>       (const SetVoxelDEC&      , const SetVoxelDEC      ::const_iterator);
 template <> float get_factor<SetVoxelDir>       (const SetVoxelDir&      , const SetVoxelDir      ::const_iterator);
 template <> float get_factor<SetVoxelFactor>    (const SetVoxelFactor&   , const SetVoxelFactor   ::const_iterator);
-template <> float get_factor<SetVoxelDirFactor> (const SetVoxelDirFactor&, const SetVoxelDirFactor::const_iterator);
+template <> float get_factor<SetVoxelDECFactor> (const SetVoxelDECFactor&, const SetVoxelDECFactor::const_iterator);
 
 
 
@@ -278,8 +279,7 @@ class MapWriterColour : public MapWriterBase<Cont>
       for (typename Cont::const_iterator i = in.begin(); i != in.end(); ++i) {
         Image::Nav::set_pos (v_buffer, *i);
         const float factor = get_factor (in, i);
-        Point<float> scaled_dir (i->dir);
-        scaled_dir.normalise();
+        Point<float> scaled_dir (i->get_dir());
         scaled_dir *= factor;
         const Point<float> current_value = get_value();
         switch (MapWriterBase<Cont>::voxel_statistic) {
