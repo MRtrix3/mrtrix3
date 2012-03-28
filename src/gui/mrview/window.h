@@ -65,6 +65,8 @@ namespace MR
           void image_previous_slot ();
           void image_next_volume_slot ();
           void image_previous_volume_slot ();
+          void image_next_volume_group_slot ();
+          void image_previous_volume_group_slot ();
           void image_reset_slot ();
           void image_interpolate_slot ();
           void image_select_slot (QAction* action);
@@ -92,7 +94,8 @@ namespace MR
           QAction *view_menu_mode_area, *view_menu_mode_common_area, *reset_windowing_action;
           QAction *image_interpolate_action, *full_screen_action;
           QAction **tool_actions, **colourmap_actions, *invert_colourmap_action, *invert_scale_action;
-          QAction *next_image_action, *prev_image_action, *next_image_volume_action, *prev_image_volume_action, *image_list_area;
+          QAction *next_image_action, *prev_image_action, *next_image_volume_action, *prev_image_volume_action;
+          QAction *next_image_volume_group_action, *prev_image_volume_group_action, *image_list_area;
           QAction *OpenGL_action, *about_action, *aboutQt_action;
           QActionGroup *mode_group, *tool_group, *image_group, *colourmap_group;
 

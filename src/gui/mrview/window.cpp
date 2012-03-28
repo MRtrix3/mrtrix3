@@ -227,13 +227,23 @@ namespace MR
 
         next_image_volume_action = new QAction (tr ("Next volume"), this);
         next_image_volume_action->setShortcut (tr ("Right"));
-        next_image_volume_action->setStatusTip (tr ("View the next volume image in the image"));
+        next_image_volume_action->setStatusTip (tr ("View the next volume in the image (4th dimension)"));
         connect (next_image_volume_action, SIGNAL (triggered()), this, SLOT (image_next_volume_slot()));
 
         prev_image_volume_action = new QAction (tr ("Previous volume"), this);
         prev_image_volume_action->setShortcut (tr ("Left"));
-        prev_image_volume_action->setStatusTip (tr ("View the previous volume in the image"));
+        prev_image_volume_action->setStatusTip (tr ("View the previous volume in the image (4th dimension)"));
         connect (prev_image_volume_action, SIGNAL (triggered()), this, SLOT (image_previous_volume_slot()));
+
+        next_image_volume_group_action = new QAction (tr ("Next volume group"), this);
+        next_image_volume_group_action->setShortcut (tr ("Shift+Right"));
+        next_image_volume_group_action->setStatusTip (tr ("View the next group of volumes in the image (5th dimension)"));
+        connect (next_image_volume_group_action, SIGNAL (triggered()), this, SLOT (image_next_volume_group_slot()));
+
+        prev_image_volume_group_action = new QAction (tr ("Previous volume group"), this);
+        prev_image_volume_group_action->setShortcut (tr ("Shift+Left"));
+        prev_image_volume_group_action->setStatusTip (tr ("View the previous group of volumes in the image (5th dimension)"));
+        connect (prev_image_volume_group_action, SIGNAL (triggered()), this, SLOT (image_previous_volume_group_slot()));
 
         reset_windowing_action = new QAction (tr ("Reset &Windowing"), this);
         reset_windowing_action->setShortcut (tr ("Home"));
@@ -255,12 +265,14 @@ namespace MR
         image_menu->addAction (next_image_action);
         image_menu->addAction (prev_image_action);
         image_menu->addSeparator();
-        image_menu->addAction (next_image_volume_action);
-        image_menu->addAction (prev_image_volume_action);
-        image_menu->addSeparator();
         image_menu->addAction (reset_windowing_action);
         image_menu->addAction (image_interpolate_action);
         colourmap_menu = image_menu->addMenu (tr ("&colourmap"));
+        image_menu->addSeparator();
+        image_menu->addAction (next_image_volume_action);
+        image_menu->addAction (prev_image_volume_action);
+        image_menu->addAction (next_image_volume_group_action);
+        image_menu->addAction (prev_image_volume_group_action);
         image_list_area = image_menu->addSeparator();
 
         // Colourmap menu:
@@ -517,6 +529,28 @@ namespace MR
 
 
 
+      void Window::image_next_volume_group_slot () 
+      {
+        assert (current_image());
+        ++current_image()->interp[4];
+        set_image_navigation_menu();
+        glarea->updateGL();
+      }
+
+
+
+
+      void Window::image_previous_volume_group_slot ()
+      {
+        assert (current_image());
+        --current_image()->interp[4];
+        set_image_navigation_menu();
+        glarea->updateGL();
+      }
+
+
+
+
       void Window::image_select_slot (QAction* action)
       {
         action->setChecked (true);
@@ -548,18 +582,28 @@ namespace MR
 
       inline void Window::set_image_navigation_menu ()
       {
-        bool show_next (false), show_prev (false);
+        bool show_next_volume (false), show_prev_volume (false);
+        bool show_next_volume_group (false), show_prev_volume_group (false);
         Image* image = current_image();
         if (image) {
           if (image->interp.ndim() > 3) {
             if (image->interp[3] > 0) 
-              show_prev = true;
+              show_prev_volume = true;
             if (image->interp[3] < image->interp.dim(3)-1) 
-              show_next = true;
+              show_next_volume = true;
+
+            if (image->interp.ndim() > 4) {
+              if (image->interp[4] > 0) 
+                show_prev_volume_group = true;
+              if (image->interp[4] < image->interp.dim(4)-1) 
+                show_next_volume_group = true;
+            }
           }
         }
-        prev_image_volume_action->setEnabled (show_prev);
-        next_image_volume_action->setEnabled (show_next);
+        prev_image_volume_action->setEnabled (show_prev_volume);
+        next_image_volume_action->setEnabled (show_next_volume);
+        prev_image_volume_group_action->setEnabled (show_prev_volume_group);
+        next_image_volume_group_action->setEnabled (show_next_volume_group);
       }
 
 
