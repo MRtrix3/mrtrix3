@@ -24,9 +24,10 @@
 #define __image_adapter_subset_h__
 
 #include "math/matrix.h"
+#include "image/info.h"
+#include "image/position.h"
 #include "image/value.h"
 #include "image/voxel.h"
-#include "image/position.h"
 #include "image/adapter/voxel.h"
 
 namespace MR
@@ -34,11 +35,6 @@ namespace MR
   namespace Image
   {
     namespace Adapter {
-
-    // TODO Currently Subset relies on storing & using local members from_, dim_ and transform_
-    // If this class is used in a templated constructor for a DataSet-type class, it will
-    //   perform construction using the underlying ConstInfo, and these parameters will be ignored
-    // Must be an elegant way of handling this...
 
     template <class VoxelType>
       class Subset : public Voxel<VoxelType>
@@ -54,19 +50,22 @@ namespace MR
           Subset (const VoxelType& original, const VectorType& from, const VectorType& dimensions) :
             Voxel<VoxelType> (original),
             from_ (ndim()),
-            dim_  (ndim()),
-            transform_ (original.transform())
+            info_ (original)
           {
             for (size_t n = 0; n < ndim(); ++n) {
               assert (ssize_t (from[n] + dimensions[n]) <= original.dim(n));
               from_[n] = from[n];
-              dim_[n] = dimensions[n];
+              info_.dim(n) = dimensions[n];
             }
 
             for (size_t j = 0; j < 3; ++j)
               for (size_t i = 0; i < 3; ++i)
-                transform_(i,3) += from[j] * vox(j) * transform_(i,j);
+                info_.transform()(i,3) += from[j] * vox(j) * info_.transform()(i,j);
           }
+
+        const Image::Info& info() const {
+          return info_;
+        }
 
         void reset () {
           for (size_t n = 0; n < ndim(); ++n)
@@ -74,10 +73,10 @@ namespace MR
         }
 
         ssize_t dim (size_t axis) const {
-          return dim_[axis];
+          return info_.dim (axis);
         }
         const Math::Matrix<float>& transform() const { 
-          return transform_;
+          return info_.transform();
         }
 
         Value<Subset<VoxelType> > value () {
@@ -90,8 +89,7 @@ namespace MR
       protected:
         using Voxel<VoxelType>::parent_vox;
         std::vector<ssize_t> from_;
-        std::vector<ssize_t> dim_;
-        Math::Matrix<float> transform_;
+        Image::Info info_;
 
         value_type get_value () const {
           return parent_vox.value();
