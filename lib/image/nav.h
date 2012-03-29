@@ -23,6 +23,8 @@
 #ifndef __image_nav_h__
 #define __image_nav_h__
 
+#include "point.h"
+
 
 namespace MR
 {
@@ -42,6 +44,13 @@ inline void set_pos (Set& data, const Nav& pos)
       data[axis] = pos[axis];
 }
 
+template <class Set, class Point_type>
+inline void set_pos (Set& data, const Point<Point_type>& pos)
+{
+    for (size_t axis = 0; axis != 3; ++axis)
+      data[axis] = pos[axis];
+}
+
 
 template <class Set, class Nav>
 inline void get_pos (const Set& data, Nav& pos)
@@ -50,19 +59,43 @@ inline void get_pos (const Set& data, Nav& pos)
       pos[axis] = data[axis];
 }
 
+template <class Set, class Point_type>
+inline void get_pos (Set& data, Point<Point_type>& pos)
+{
+    for (size_t axis = 0; axis != 3; ++axis)
+      pos[axis] = data[axis];
+}
+
 
 template <class Set, class Nav>
-inline void step_pos (Set& data, const Nav& pos)
+inline void step_pos (Set& data, const Nav& step)
 {
     for (size_t axis = 0; axis != data.ndim(); ++axis)
-      data[axis] += pos[axis];
+      data[axis] += step[axis];
 }
+
+
+template <class Set, class Point_type>
+inline void step_pos (Set& data, const Point<Point_type>& step)
+{
+    for (size_t axis = 0; axis != 3; ++axis)
+      data[axis] += step[axis];
+}
+
 
 
 template <class Set, class Nav>
 inline typename Set::value_type get_value_at_pos (Set& data, const Nav& pos)
 {
     for (size_t axis = 0; axis != data.ndim(); ++axis)
+      data[axis] = pos[axis];
+    return data.value();
+}
+
+template <class Set, class Point_type>
+inline typename Set::value_type get_value_at_pos (Set& data, const Point<Point_type>& pos)
+{
+    for (size_t axis = 0; axis != 3; ++axis)
       data[axis] = pos[axis];
     return data.value();
 }
@@ -76,11 +109,30 @@ inline void set_value_at_pos (Set& data, const Nav& pos, const typename Set::val
     data.value() = value;
 }
 
+template <class Set, class Point_type>
+inline void set_value_at_pos (Set& data, const Point<Point_type>& pos, const typename Set::value_type value)
+{
+    for (size_t axis = 0; axis != 3; ++axis)
+      data[axis] = pos[axis];
+    data.value() = value;
+}
+
+
 
 template <class Set, class Nav>
 inline bool within_bounds (const Set& data, const Nav& pos)
 {
     for (size_t axis = 0; axis != data.ndim(); ++axis)
+      if (pos[axis] < 0 || pos[axis] >= data.dim (axis))
+        return false;
+    return true;
+}
+
+
+template <class Set, class Point_type>
+inline bool within_bounds (const Set& data, const Point<Point_type>& pos)
+{
+    for (size_t axis = 0; axis != 3; ++axis)
       if (pos[axis] < 0 || pos[axis] >= data.dim (axis))
         return false;
     return true;

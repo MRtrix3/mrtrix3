@@ -31,7 +31,7 @@
 #include "dwi/gradient.h"
 #include "math/SH.h"
 #include "math/legendre.h"
-#include "math/directions.h"
+#include "math/hemisphere/predefined_dirs.h"
 
 using namespace MR;
 using namespace App;
@@ -239,7 +239,7 @@ void run ()
     if (opt.size())
       HR_dirs.load (opt[0][0]);
     else
-      Math::directions_300 (HR_dirs);
+      Math::Hemisphere::directions_300 (HR_dirs);
     Math::SH::init_transform (HR_SHT, HR_dirs, lmax);
   }
 

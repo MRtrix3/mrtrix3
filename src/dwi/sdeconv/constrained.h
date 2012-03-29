@@ -27,7 +27,7 @@
 #include "image/header.h"
 #include "dwi/gradient.h"
 #include "math/SH.h"
-#include "math/directions.h"
+#include "math/hemisphere/predefined_dirs.h"
 #include "math/least_squares.h"
 
 #define NORM_LAMBDA_MULTIPLIER 0.0002
@@ -101,7 +101,7 @@ namespace MR
               if (opt.size())
                 HR_dirs.load (opt[0][0]);
               else 
-                Math::directions_300 (HR_dirs);
+                Math::Hemisphere::directions_300 (HR_dirs);
 
               opt = get_options ("neg_lambda");
               value_type neg_lambda = 1.0;
