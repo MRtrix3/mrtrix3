@@ -63,6 +63,7 @@ class Directions {
     size_t size() const { return num_directions; }
 
     const std::vector< Point<float> >& get_dirs() const { return unit_vectors; }
+    const Math::Matrix<float> get_az_el_pairs() const { return az_el_pairs; }
     const Point<float>& operator[] (const size_t i) const { return unit_vectors[i]; }
 
 
