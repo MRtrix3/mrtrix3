@@ -51,6 +51,7 @@ class Directions {
   public:
 
     Directions (const std::string&);
+    Directions (const Directions&);
     ~Directions ();
 
     size_t                     get_num_dirs      ()                                   const { return num_directions; }
@@ -99,6 +100,7 @@ class Directions_FastLookup : public Directions {
   public:
 
     Directions_FastLookup (const std::string&);
+    Directions_FastLookup (const Directions_FastLookup&);
     ~Directions_FastLookup ();
 
     size_t select_direction (const Point<float>&) const;

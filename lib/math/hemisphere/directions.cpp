@@ -48,6 +48,17 @@ Directions::Directions (const std::string& path) :
 }
 
 
+Directions::Directions (const Directions& that) :
+    num_directions (that.num_directions),
+    az_el_pairs (that.az_el_pairs),
+    unit_vectors (that.unit_vectors),
+    adj_dirs (new std::vector<size_t>[num_directions])
+{
+  for (size_t i = 0; i != num_directions; ++i)
+    adj_dirs[i] = that.adj_dirs[i];
+}
+
+
 
 Directions::~Directions()
 {
@@ -250,6 +261,26 @@ Directions_FastLookup::Directions_FastLookup (const std::string& path) :
   }
 
 }
+
+
+Directions_FastLookup::Directions_FastLookup (const Directions_FastLookup& that) :
+    Directions (that),
+    grid_near_dirs (new size_t*[total_num_angle_grids]),
+    num_az_grids (that.num_az_grids),
+    num_el_grids (that.num_el_grids),
+    total_num_angle_grids (that.total_num_angle_grids),
+    az_grid_step (that.az_grid_step),
+    el_grid_step (that.el_grid_step),
+    az_begin (that.az_begin),
+    el_begin (that.el_begin)
+{
+  for (size_t i = 0; i != total_num_angle_grids; ++i) {
+    const size_t array_size = that.grid_near_dirs[i][0];
+    grid_near_dirs[i] = new size_t[array_size];
+    memcpy (grid_near_dirs[i], that.grid_near_dirs[i], array_size * sizeof (size_t));
+  }
+}
+
 
 
 Directions_FastLookup::~Directions_FastLookup ()
