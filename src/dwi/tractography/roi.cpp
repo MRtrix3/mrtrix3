@@ -66,9 +66,9 @@ namespace MR {
         if (bottom[1]) --bottom[1];
         if (bottom[2]) --bottom[2];
 
-        top[0] = std::min (size_t (data.dim(0)-1), top[0]+2-bottom[0]);
-        top[1] = std::min (size_t (data.dim(1)-1), top[1]+2-bottom[1]);
-        top[2] = std::min (size_t (data.dim(2)-1), top[2]+2-bottom[2]);
+        top[0] = std::min (size_t (data.dim(0)-bottom[0]), top[0]+2-bottom[0]);
+        top[1] = std::min (size_t (data.dim(1)-bottom[1]), top[1]+2-bottom[1]);
+        top[2] = std::min (size_t (data.dim(2)-bottom[2]), top[2]+2-bottom[2]);
 
         Image::Info new_info (data);
         for (size_t axis = 0; axis != 3; ++axis) {
@@ -115,9 +115,9 @@ namespace MR {
         if (bottom[1]) --bottom[1];
         if (bottom[2]) --bottom[2];
 
-        top[0] = std::min (size_t (data.dim(0)-1), top[0]+2-bottom[0]);
-        top[1] = std::min (size_t (data.dim(1)-1), top[1]+2-bottom[1]);
-        top[2] = std::min (size_t (data.dim(2)-1), top[2]+2-bottom[2]);
+        top[0] = std::min (size_t (data.dim(0)-bottom[0]), top[0]+2-bottom[0]);
+        top[1] = std::min (size_t (data.dim(1)-bottom[1]), top[1]+2-bottom[1]);
+        top[2] = std::min (size_t (data.dim(2)-bottom[2]), top[2]+2-bottom[2]);
 
         Image::Info new_info (data);
         for (size_t axis = 0; axis != 3; ++axis) {
