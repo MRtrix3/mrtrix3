@@ -155,7 +155,7 @@ namespace MR
 
           for (size_t i = 0; i < num.size(); ++i) {
             while (stride (a)) ++a;
-            dim(a) = num[i];
+            dim(a) = num[num.size()-1-i];
             stride(a) = ++n;
           }
         }
