@@ -432,6 +432,10 @@ namespace MR
             position[i] = interp[i];
           }
         }
+
+        if (!is_unchanged) 
+          position[0] = position[1] = position[2] = -1;
+
         return is_unchanged;
       }
 
