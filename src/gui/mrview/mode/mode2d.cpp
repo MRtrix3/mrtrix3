@@ -264,7 +264,7 @@ namespace MR
             else if (mouse_modifiers() != Qt::NoModifier)
               return false;
 
-            move_in_out_FOV (2.0*delta);
+            move_in_out (delta*image()->header().vox (projection()));
             updateGL();
             return true;
           }
