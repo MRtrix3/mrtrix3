@@ -39,33 +39,53 @@ namespace MR
 
 
     //! solve least-squares problem Mx = b
-    template <typename T> inline Vector<T>& solve_LS (Vector<T>& x, const Matrix<T>& M, const Vector<T>& b, Matrix<T>& work)
+    template <typename ValueType> inline Vector<ValueType>& solve_LS (Vector<ValueType>& x, const Matrix<ValueType>& M, const Vector<ValueType>& b, Matrix<ValueType>& work)
     {
-      rankN_update (work, M, CblasTrans);
+      rankN_update (work, M, CblasTrans, CblasLower);
       Cholesky::decomp (work);
-      mult (x, T (1.0), CblasTrans, M, b);
-      return (Cholesky::solve (x, work));
+      mult (x, ValueType (1.0), CblasTrans, M, b);
+      return Cholesky::solve (x, work);
     }
 
     //! compute Moore-Penrose pseudo-inverse of M given its transpose Mt
-    template <typename T> inline Matrix<T>& pinv (Matrix<T>& I, const Matrix<T>& Mt, Matrix<T>& work)
+    template <typename ValueType> inline Matrix<ValueType>& pinv (Matrix<ValueType>& I, const Matrix<ValueType>& Mt, Matrix<ValueType>& work)
     {
-      mult (work, T (0.0), T (1.0), CblasNoTrans, Mt, CblasTrans, Mt);
+      mult (work, ValueType (0.0), ValueType (1.0), CblasNoTrans, Mt, CblasTrans, Mt);
       Cholesky::inv (work);
-      return (mult (I, CblasLeft, T (0.0), T (1.0), CblasUpper, work, Mt));
+      return mult (I, CblasLeft, ValueType (0.0), ValueType (1.0), CblasUpper, work, Mt);
     }
 
     //! compute Moore-Penrose pseudo-inverse of M
-    template <typename T> inline Matrix<T>& pinv (Matrix<T>& I, const Matrix<T>& M)
+    template <typename ValueType> inline Matrix<ValueType>& pinv (Matrix<ValueType>& I, const Matrix<ValueType>& M)
     {
       I.allocate (M.columns(), M.rows());
-      Matrix<T> work (M.columns(), M.columns());
-      Matrix<T> Mt (M.columns(), M.rows());
-      return (pinv (I, transpose (Mt, M), work));
+      Matrix<ValueType> work (M.columns(), M.columns());
+      Matrix<ValueType> Mt (M.columns(), M.rows());
+      return pinv (I, transpose (Mt, M), work);
     }
 
     /** @} */
     /** @} */
+
+
+    //! \cond skip
+
+#ifdef __math_complex_h__
+
+    //! solve least-squares problem Mx = b
+    template <> inline Vector<cdouble>& solve_LS (Vector<cdouble>& x, const Matrix<cdouble>& M, const Vector<cdouble>& b, Matrix<cdouble>& work)
+    {
+      rankN_update (work, M, CblasConjTrans, CblasLower);
+      Cholesky::decomp (work);
+      mult (x, cdouble (1.0), CblasConjTrans, M, b);
+      return Cholesky::solve (x, work);
+    }
+
+#endif
+
+    //! \endcond
+
+
 
   }
 }
