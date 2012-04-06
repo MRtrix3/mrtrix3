@@ -55,14 +55,14 @@ namespace MR
       template <typename T> inline Matrix<T>& decomp (Matrix<T>& A)
       {
         gsl_linalg_cholesky_decomp (A.gsl());
-        return (A);
+        return A;
       }
 
       //! solve A*x = b given its %Cholesky decomposition \a D
       template <typename T> inline Vector<T>& solve (Vector<T>& x, const Matrix<T>& D, const Vector<T>& b)
       {
         gsl_linalg_cholesky_solve (D.gsl(), b.gsl(), x.gsl());
-        return (x);
+        return x;
       }
 
       //! solve A*x = b given its %Cholesky decomposition \a D, in place
@@ -70,24 +70,50 @@ namespace MR
       template <typename T> inline Vector<T>& solve (Vector<T>& x, const Matrix<T>& D)
       {
         gsl_linalg_cholesky_svx (D.gsl(), x.gsl());
-        return (x);
+        return x;
       }
 
       //! invert A given its %Cholesky decomposition \a D, in place.
       template <typename T> inline Matrix<T>& inv_from_decomp (Matrix<T>& D)
       {
         gsl_linalg_cholesky_invert (D.gsl());
-        return (D);
+        return D;
       }
 
       //! invert \a A using %Cholesky decomposition, in place.
       template <typename T> inline Matrix<T>& inv (Matrix<T>& A)
       {
-        return (inv_from_decomp (decomp (A)));
+        return inv_from_decomp (decomp (A));
       }
 
       /** @} */
       /** @} */
+
+
+#ifdef __math_complex_h__
+
+      //! \cond skip
+      template <> inline Matrix<cdouble>& decomp (Matrix<cdouble>& A)
+      {
+        gsl_linalg_complex_cholesky_decomp (A.gsl());
+        return A;
+      }
+
+      template <> inline Vector<cdouble>& solve (Vector<cdouble>& x, const Matrix<cdouble>& D, const Vector<cdouble>& b)
+      {
+        gsl_linalg_complex_cholesky_solve (D.gsl(), b.gsl(), x.gsl());
+        return x;
+      }
+
+      template <> inline Vector<cdouble>& solve (Vector<cdouble>& x, const Matrix<cdouble>& D)
+      {
+        gsl_linalg_complex_cholesky_svx (D.gsl(), x.gsl());
+        return x;
+      }
+
+      //! \endcond
+
+#endif
 
     }
   }

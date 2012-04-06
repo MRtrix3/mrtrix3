@@ -744,7 +744,7 @@ namespace MR
      */
     template <typename T> inline Vector<T>& mult (Vector<T>& y, T alpha, CBLAS_TRANSPOSE op_A, const Matrix<T>& A, const Vector<T>& x)
     {
-      y.allocate (A.rows());
+      y.allocate (op_A == CblasNoTrans ? A.rows() : A.columns());
       mult (y, T (0.0), alpha, op_A, A, x);
       return y;
     }
@@ -1078,6 +1078,11 @@ namespace MR
       gsl_blas_ztrsv (uplo, op_A, diag, A.gsl(), x.gsl());
     }
 
+    inline void syrk (CBLAS_UPLO uplo, CBLAS_TRANSPOSE op_A, cdouble alpha, const Matrix<cdouble>& A, cdouble beta, Matrix<cdouble>& C)
+    {
+      gsl_blas_zsyrk (uplo, op_A, gsl(alpha), A.gsl(), gsl(beta), C.gsl());
+    }
+
     // float definitions:
 
     inline void gemm (CBLAS_TRANSPOSE op_A, CBLAS_TRANSPOSE op_B, cfloat alpha, const Matrix<cfloat>& A, const Matrix<cfloat>& B, cfloat beta, Matrix<cfloat>& C)
@@ -1098,6 +1103,11 @@ namespace MR
     inline void trsv (CBLAS_UPLO uplo, CBLAS_TRANSPOSE op_A, CBLAS_DIAG diag, const Matrix<cfloat>& A, Vector<cfloat>& x)
     {
       gsl_blas_ctrsv (uplo, op_A, diag, A.gsl(), x.gsl());
+    }
+
+    inline void syrk (CBLAS_UPLO uplo, CBLAS_TRANSPOSE op_A, cfloat alpha, const Matrix<cfloat>& A, cfloat beta, Matrix<cfloat>& C)
+    {
+      gsl_blas_csyrk (uplo, op_A, gsl(alpha), A.gsl(), gsl(beta), C.gsl());
     }
 
 #endif
