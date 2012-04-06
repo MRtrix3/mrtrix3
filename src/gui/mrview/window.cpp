@@ -558,6 +558,7 @@ namespace MR
         colourmap_group->actions()[current_image()->colourmap_index()]->setChecked (true);
         invert_scale_action->setChecked (current_image()->scale_inverted());
         invert_colourmap_action->setChecked (current_image()->colourmap_inverted());
+        setWindowTitle (current_image()->interp.name().c_str());
         set_image_navigation_menu();
         glarea->updateGL();
       }
