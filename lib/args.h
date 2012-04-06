@@ -381,6 +381,10 @@ namespace MR
           return (*this);
         }
 
+        bool is (const std::string& name) const {
+          return name == id;
+        }
+
         void print () const;
         void print_usage () const;
     };

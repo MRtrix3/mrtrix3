@@ -28,7 +28,6 @@
 
 namespace MR
 {
-
   namespace Math
   {
 

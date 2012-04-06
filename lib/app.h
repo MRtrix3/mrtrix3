@@ -63,6 +63,7 @@ namespace MR
      * processing takes place. */
     void init (int argc, char** argv);
     void parse ();
+    const Option* match_option (const char* stub);
 
     class ParsedArgument;
 

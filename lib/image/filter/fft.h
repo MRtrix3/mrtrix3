@@ -80,8 +80,8 @@ namespace MR
           }
 
           __FFTKernel<ComplexVoxelType> fft_kernel (vox, axis, inverse);
-          threaded_loop_with_progress_message ("performing FFT of \"" + vox.name() + "\" along axis " + str(axis), 
-              fft_kernel, vox, axes, 1);
+          ThreadedLoop ("performing FFT of \"" + vox.name() + "\" along axis " + str(axis), vox, axes, 1)
+            .run (fft_kernel);
 
         }
       //! @}

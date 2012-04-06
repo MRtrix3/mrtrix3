@@ -23,8 +23,11 @@
 #include "app.h"
 #include "image/voxel.h"
 #include "image/buffer.h"
+#include "image/buffer_scratch.h"
 #include "math/rng.h"
 #include "image/loop.h"
+#include "image/threaded_loop.h"
+#include "image/threaded_copy.h"
 #include "image/stride.h"
 
 MRTRIX_APPLICATION
@@ -35,576 +38,860 @@ using namespace App;
 
 void usage () {
 DESCRIPTION
-  + "apply generic mathematical operations to images.";
+  + "apply generic voxel-wise mathematical operations to images."
+  
+  + "This command uses a stack-based syntax, with operators "
+  "(specified using options) operating on the top-most entries "
+  "(i.e. images or values) in the stack. Operands (values or "
+  "images) are pushed onto the stack in the order they appear "
+  "(as arguments) on the command-line, and operands (specified "
+  "as options) operate on and comsume the top-most entries in "
+  "the stack, and push their output as a new entry on the stack. "
+  "For example:"
+  
+  + "$ mrmath a.mif 2 -mult r.mif"
+  
+  + "performs the operation r = a x 2 for every voxel a,r in "
+  "images a.mif and r.mif respectively. Similarly:"
+  
+  + "$ mrmath a.mif -neg b.mif -div -exp 9.3 -mult r.mif"
+  
+  + "performs the operation r = 9.3*exp(-a/b), and:"
+  
+  + "$ mrmath a.mif b.mif -add c.mif d.mif -mult 4.2 -add -div r.mif"
+  
+  + "performs r = (a+b)/(c*d+4.2).";
 
 ARGUMENTS
-  + Argument ("image", "the input image or intensity.")
-  + Argument ("output", "the output image.").type_image_out ();
+  + Argument ("operand", "an input image or intensity.").allow_multiple();
 
 OPTIONS
-  + Option ("abs", "take absolute value of current voxel value").allow_multiple()
-  + Option ("neg", "take negative value of current voxel value").allow_multiple()
-  + Option ("sqrt", "take square root of current voxel value").allow_multiple()
-  + Option ("exp", "take e raised to the power of current voxel value").allow_multiple()
-  + Option ("log", "take natural logarithm of current voxel value").allow_multiple()
-  + Option ("cos", "take cosine of current voxel value").allow_multiple()
-  + Option ("sin", "take sine of current voxel value").allow_multiple()
-  + Option ("tan", "take tangent of current voxel value").allow_multiple()
-  + Option ("cosh", "take hyperbolic cosine of current voxel value").allow_multiple()
-  + Option ("sinh", "take hyperbolic sine of current voxel value").allow_multiple()
-  + Option ("tanh", "take hyperbolic tangent of current voxel value").allow_multiple()
-  + Option ("acos", "take inverse cosine of current voxel value").allow_multiple()
-  + Option ("asin", "take inverse sine of current voxel value").allow_multiple()
-  + Option ("atan", "take inverse tangent of current voxel value").allow_multiple()
-  + Option ("acosh", "take inverse hyperbolic cosine of current voxel value").allow_multiple()
-  + Option ("asinh", "take inverse hyperbolic sine of current voxel value").allow_multiple()
-  + Option ("atanh", "take inverse hyperbolic tangent of current voxel value").allow_multiple()
-  + Option ("round", "round current voxel value to nearest integer").allow_multiple()
-  + Option ("ceil", "round current voxel value up to smallest integer not less than current value").allow_multiple()
-  + Option ("floor", "round current voxel value down to largest integer not greater than current value").allow_multiple()
-  + Option ("add", "add to current voxel value the corresponding voxel value of 'source'").allow_multiple()
-  + Argument ("source")
+  + OptionGroup ("Unary operators")
 
-  + Option ("subtract", "subtract from current voxel value the corresponding voxel value of 'source'").allow_multiple()
-  + Argument ("source")
+  + Option ("abs", "absolute value").allow_multiple()
+  + Option ("neg", "negative value").allow_multiple()
+  + Option ("sqrt", "square root").allow_multiple()
+  + Option ("exp", "exponential function").allow_multiple()
+  + Option ("log", "natural logarithm").allow_multiple()
+  + Option ("log10", "common logarithm").allow_multiple()
+  + Option ("cos", "cosine").allow_multiple()
+  + Option ("sin", "sine").allow_multiple()
+  + Option ("tan", "tangent").allow_multiple()
+  + Option ("cosh", "hyperbolic cosine").allow_multiple()
+  + Option ("sinh", "hyperbolic sine").allow_multiple()
+  + Option ("tanh", "hyperbolic tangent").allow_multiple()
+  + Option ("acos", "inverse cosine").allow_multiple()
+  + Option ("asin", "inverse sine").allow_multiple()
+  + Option ("atan", "inverse tangent").allow_multiple()
+  + Option ("acosh", "inverse hyperbolic cosine").allow_multiple()
+  + Option ("asinh", "inverse hyperbolic sine").allow_multiple()
+  + Option ("atanh", "inverse hyperbolic tangent").allow_multiple()
+  + Option ("round", "round to nearest integer").allow_multiple()
+  + Option ("ceil", "round up to nearest integer").allow_multiple()
+  + Option ("floor", "round down to nearest integer").allow_multiple()
 
-  + Option ("multiply", "multiply current voxel value by corresponding voxel value of 'source'").allow_multiple()
-  + Argument ("source")
+  + Option ("real", "real part of complex number").allow_multiple()
+  + Option ("imag", "imaginary part of complex number").allow_multiple()
+  + Option ("phase", "phase of complex number").allow_multiple()
+  + Option ("conj", "complex conjugate").allow_multiple()
 
-  + Option ("divide", "divide current voxel value by corresponding voxel value of 'source'").allow_multiple()
-  + Argument ("source")
+  + OptionGroup ("Binary operators")
 
-  + Option ("min", "return smallest of current voxel value and corresponding voxel value of 'source'").allow_multiple()
-  + Argument ("source")
+  + Option ("add", "add values").allow_multiple()
+  + Option ("subtract", "subtract nth operand from (n-1)th").allow_multiple()
+  + Option ("multiply", "multiply values").allow_multiple()
+  + Option ("divide", "divide (n-1)th operand by nth").allow_multiple()
+  + Option ("pow", "raise (n-1)th operand to nth power").allow_multiple()
+  + Option ("min", "smallest of last two operands").allow_multiple()
+  + Option ("max", "greatest of last two operands").allow_multiple()
+  + Option ("lt", "true (1) if (n-1)th operand is smaller than nth, false (0) otherwise").allow_multiple()
+  + Option ("gt", "true (1) if (n-1)th operand is greater than nth, false (0) otherwise").allow_multiple()
+  + Option ("le", "true (1) if (n-1)th operand is smaller than or equal to nth, false (0) otherwise").allow_multiple()
+  + Option ("ge", "true (1) if (n-1)th operand is greater than or equal to nth, false (0) otherwise").allow_multiple()
+  + Option ("eq", "true (1) if last two operands are equal, false (0) otherwise").allow_multiple()
+  + Option ("neq", "true (1) if last two operands are not equal, false (0) otherwise").allow_multiple()
 
-  + Option ("max", "return greatest of current voxel value and corresponding voxel value of 'source'").allow_multiple()
-  + Argument ("source")
+  + Option ("complex", "create complex number using the last two operands as real,imaginary components").allow_multiple()
 
-  + Option ("lt", "return 1 if current voxel value is less than corresponding voxel value of 'source', 0 otherwise").allow_multiple()
-  + Argument ("source")
-
-  + Option ("gt", "return 1 if current voxel value is greater than corresponding voxel value of 'source', 0 otherwise").allow_multiple()
-  + Argument ("source")
-
-  + Option ("le", "return 1 if current voxel value is less than or equal to corresponding voxel value of 'source', 0 otherwise").allow_multiple()
-  + Argument ("source")
-
-  + Option ("ge", "return 1 if current voxel value is greater than or equal to corresponding voxel value of 'source', 0 otherwise").allow_multiple()
-  + Argument ("source")
-
-  + Option ("mean", "return return the arithmetic mean of the voxel values along the axes specified.").allow_multiple()
-  + Argument ("axis")
-
-  + Option ("std", "return return the standard deviation of the voxel values along the axes specified.").allow_multiple()
-  + Argument ("axis")
-
-  + Option ("eq", "return 1 if current voxel value is equal to corresponding voxel value of 'source', 0 otherwise").allow_multiple()
-  + Argument ("source");
+  + DataType::options();
 }
 
 
-typedef double value_type;
+typedef float real_type;
+typedef cfloat complex_type;
+
+typedef Image::Buffer<real_type>::voxel_type real_vox_type;
+typedef Image::Buffer<complex_type>::voxel_type complex_vox_type;
 
 
 
-// base class for each operation:
-class Functor
-{
+
+/**********************************************************************
+  STACK FRAMEWORK:
+ **********************************************************************/
+
+
+class Evaluator;
+
+
+class Chunk : public std::vector<complex_type> {
   public:
-    Functor (Functor* input) : in (input) { }
-    virtual ~Functor () { }
-    virtual void get (const std::vector<ssize_t>& pos, std::vector<value_type>& values, size_t axis) { }
-    virtual size_t ndim () const {
-      return (0);
-    }
-    virtual ssize_t dim (size_t axis) const {
-      return (0);
-    }
-    virtual const Image::Header* header () const {
-      return (NULL);
+    complex_type value;
+};
+
+
+class ThreadLocalStorageItem {
+  public:
+    Chunk chunk;
+    Ptr<complex_vox_type> vox;
+};
+
+class ThreadLocalStorage : public std::vector<ThreadLocalStorageItem> {
+  public:
+
+      void load (Chunk& chunk, Image::Buffer<complex_type>::voxel_type& vox) {
+        for (size_t n = 0; n < vox.ndim(); ++n)
+          if (vox.dim(n) > 1)
+            vox[n] = (*iter)[n];
+
+        size_t n = 0;
+        for (size_t y = 0; y < dim[1]; ++y) {
+          if (axes[1] < vox.ndim()) if (vox.dim(axes[1]) > 1) vox[axes[1]] = y;
+          for (size_t x = 0; x < dim[0]; ++x) {
+            if (axes[0] < vox.ndim()) if (vox.dim(axes[0]) > 1) vox[axes[0]] = x;
+            chunk[n++] = vox.value();
+          }
+        }
+      }
+
+    Chunk& next () {
+      ThreadLocalStorageItem& item ((*this)[current++]);
+      if (item.vox) load (item.chunk, *item.vox);
+      return item.chunk;
     }
 
-  protected:
-    Ptr<Functor> in;
+    void reset (const Image::Iterator& current_position) { current = 0; iter = &current_position; }
+
+    const Image::Iterator* iter;
+    std::vector<size_t> axes;
+    std::vector<size_t> dim;
+
+  private:
+    size_t current;
 };
 
 
 
 
-// data source: either a broadcastable constant, or an image:
-class Source : public Functor
-{
+
+
+class StackEntry {
   public:
-    Source (const std::string& text) : Functor (NULL) {
+
+    StackEntry (const char* entry) : 
+      arg (entry) { }
+
+    StackEntry (Evaluator* evaluator_p) : 
+      arg (NULL),
+      evaluator (evaluator_p) { }
+
+    void load () {
+      if (!arg) 
+        return;
       try {
-        D = new Image::Buffer<value_type> (text);
-        V = new Image::Buffer<value_type>::voxel_type (*D);
+        buffer = new Image::Buffer<complex_type> (arg);
       }
       catch (Exception) {
-        val = to<value_type> (text);
+        value = to<complex_type> (arg);
+      }
+      arg = NULL;
+    }
+
+    const char* arg;
+    RefPtr<Evaluator> evaluator;
+    RefPtr<Image::Buffer<complex_type> > buffer;
+    complex_type value;
+
+    bool is_complex () const;
+
+    Chunk& evaluate (ThreadLocalStorage& storage) const;
+};
+
+
+class Evaluator
+{
+  public: 
+    Evaluator (const std::string& name, bool complex_maps_to_real = false, bool real_maps_to_complex = false) : 
+      id (name),
+      ZtoR (complex_maps_to_real),
+      RtoZ (real_maps_to_complex) { }
+    const std::string id;
+    bool ZtoR, RtoZ;
+    std::vector<StackEntry> operands;
+
+    Chunk& evaluate (ThreadLocalStorage& storage) const {
+      Chunk& in1 (operands[0].evaluate (storage));
+      if (is_unary()) return evaluate (in1);
+      Chunk& in2 (operands[1].evaluate (storage));
+      return evaluate (in1, in2);
+    }
+    virtual Chunk& evaluate (Chunk& in) const { throw Exception ("operation \"" + id + "\" not supported!"); return in; }
+    virtual Chunk& evaluate (Chunk& a, Chunk& b) const { throw Exception ("operation \"" + id + "\" not supported!"); return a; }
+
+    virtual bool is_complex () const {
+      for (size_t n = 0; n < operands.size(); ++n) 
+        if (operands[n].is_complex())  
+          return !ZtoR;
+      return RtoZ;
+    }
+    bool is_unary () const { return operands.size() == 1; }
+
+};
+
+
+
+inline bool StackEntry::is_complex () const {
+  if (buffer) return buffer->datatype().is_complex();
+  if (evaluator) return evaluator->is_complex();
+  return value.imag() != 0.0;
+}
+
+
+
+inline Chunk& StackEntry::evaluate (ThreadLocalStorage& storage) const
+{
+  return evaluator ? evaluator->evaluate (storage) : storage.next();
+}
+
+
+
+
+/*
+void print_stack (const std::vector<StackEntry>& stack, const std::string& prefix = "  ") 
+{
+  for (size_t n = 0; n < stack.size(); ++n) {
+    std::cout << prefix << n << ": ";
+    if (stack[n].buffer) std::cout << "[IMA] " << stack[n].buffer->name();
+    else if (stack[n].evaluator) std::cout << "[EVAL] " << stack[n].evaluator->id;
+    else if (stack[n].arg) std::cout << "[ARG] " << stack[n].arg;
+    else std::cout << "[VAL] " << str(stack[n].value);
+    std::cout << " [" << ( stack[n].is_complex() ? "COMPLEX" : "REAL" ) << "]\n";
+    if (stack[n].evaluator) 
+      print_stack (stack[n].evaluator->operands, prefix + "  ");
+  }
+}
+*/
+
+
+template <class Operation>
+class UnaryEvaluator : public Evaluator 
+{
+  public:
+    UnaryEvaluator (const std::string& name, Operation operation, const StackEntry& operand) : 
+      Evaluator (name, operation.ZtoR, operation.RtoZ), 
+      op (operation) { 
+        operands.push_back (operand);
+      }
+
+    Operation op;
+
+    virtual Chunk& evaluate (Chunk& in) const { 
+      if (operands[0].is_complex()) 
+        for (size_t n = 0; n < in.size(); ++n)
+          in[n] = op.Z (in[n]);
+      else 
+        for (size_t n = 0; n < in.size(); ++n)
+          in[n] = op.R (in[n].real());
+
+      return in; 
+    }
+};
+
+
+
+
+
+
+template <class Operation>
+class BinaryEvaluator : public Evaluator 
+{
+  public:
+    BinaryEvaluator (const std::string& name, Operation operation, const StackEntry& operand1, const StackEntry& operand2) : 
+      Evaluator (name, operation.ZtoR, operation.RtoZ),
+      op (operation) { 
+        operands.push_back (operand1);
+        operands.push_back (operand2);
+      }
+
+    Operation op;
+
+    virtual Chunk& evaluate (Chunk& a, Chunk& b) const {
+      bool do_complex_op = operands[0].is_complex() || operands[1].is_complex();
+      if (a.size() && b.size()) {
+        if (do_complex_op)
+          for (size_t n = 0; n < a.size(); ++n)
+            a[n] = op.Z (a[n], b[n]);
+        else 
+          for (size_t n = 0; n < a.size(); ++n)
+            a[n] = op.R (a[n].real(), b[n].real());
+        return a;
+      }
+      else if (a.size()) {
+        if (do_complex_op)
+          for (size_t n = 0; n < a.size(); ++n)
+            a[n] = op.Z (a[n], b.value);
+        else 
+          for (size_t n = 0; n < a.size(); ++n)
+            a[n] = op.R (a[n].real(), b.value.real());
+        return a;
+      }
+      else {
+        if (do_complex_op)
+          for (size_t n = 0; n < a.size(); ++n)
+            b[n] = op.Z (a.value, b[n]);
+        else 
+          for (size_t n = 0; n < a.size(); ++n)
+            b[n] = op.R (a.value.real(), b[n].real());
+        return b;
       }
     }
 
-    void get (const std::vector<ssize_t>& pos, std::vector<value_type>& values, size_t axis) {
-      if (!V) { // from constant:
-        for (size_t i = 0; i < values.size(); ++i)
-          values[i] = val;
+};
+
+
+
+
+
+template <class Operation>
+void unary_operation (const std::string& operation_name, std::vector<StackEntry>& stack, Operation operation)
+{
+  if (stack.empty()) 
+    throw Exception ("no operand in stack for operation \"" + operation_name + "\"!");
+  StackEntry& a (stack[stack.size()-1]);
+  a.load();
+  if (a.evaluator || a.buffer) {
+    StackEntry entry (new UnaryEvaluator<Operation> (operation_name, operation, stack.back()));
+    stack.back() = entry;
+  }
+  else {
+    try {
+      a.value = ( a.value.imag() == 0.0 ? operation.R (a.value.real()) : operation.Z (a.value) );
+    }
+    catch (...) {
+      throw Exception ("operation \"" + operation_name + "\" not supported for data type supplied");
+    }
+  }
+};
+
+
+
+
+
+template <class Operation>
+void binary_operation (const std::string& operation_name, std::vector<StackEntry>& stack, Operation operation)
+{
+  if (stack.size() < 2) 
+    throw Exception ("not enough operands in stack for operation \"" + operation_name + "\"");
+  StackEntry& a (stack[stack.size()-2]);
+  StackEntry& b (stack[stack.size()-1]);
+  a.load();
+  b.load();
+  if (a.evaluator || a.buffer || b.evaluator || b.buffer) {
+    StackEntry entry (new BinaryEvaluator<Operation> (operation_name, operation, stack[stack.size()-2], stack[stack.size()-1]));
+    stack.pop_back();
+    stack.back() = entry;
+  }
+  else {
+    a.value = ( a.value.imag() == 0.0  && b.value.imag() == 0.0 ? 
+      operation.R (a.value.real(), b.value.real()) :
+      operation.Z (a.value, b.value) );
+    stack.pop_back();
+  }
+}
+
+
+
+
+
+/**********************************************************************
+   MULTI-THREADED RUNNING OF OPERATIONS:
+ **********************************************************************/
+
+
+void get_header (const StackEntry& entry, Image::Header& header) 
+{
+  if (entry.evaluator) {
+    for (size_t n = 0; n < entry.evaluator->operands.size(); ++n)
+      get_header (entry.evaluator->operands[n], header);
+    return;
+  }
+
+  if (!entry.buffer) 
+    return;
+
+  if (header.ndim() == 0) {
+    header = *entry.buffer;
+    return;
+  }
+
+  if (header.ndim() < entry.buffer->ndim()) 
+    header.set_ndim (entry.buffer->ndim());
+  for (size_t n = 0; n < std::min (header.ndim(), entry.buffer->ndim()); ++n) {
+    if (header.dim(n) > 1 && entry.buffer->dim(n) > 1 && header.dim(n) != entry.buffer->dim(n))
+      throw Exception ("dimensions of input images do not match - aborting");
+    header.dim(n) = std::max (header.dim(n), entry.buffer->dim(n));
+    if (!finite (header.vox(n))) 
+      header.vox(n) = entry.buffer->vox(n);
+  }
+
+}
+
+
+
+
+
+
+class ThreadFunctor {
+  public:
+    ThreadFunctor (
+        const Image::ThreadedLoop& threaded_loop,
+        const StackEntry& top_of_stack, 
+        Image::Buffer<complex_type>& output_image) :
+      top_entry (top_of_stack),
+      vox (output_image),
+      loop (threaded_loop.inner_axes()) {
+        storage.axes = loop.axes();
+        storage.dim.push_back (vox.dim(storage.axes[0]));
+        storage.dim.push_back (vox.dim(storage.axes[1]));
+        allocate_storage (top_entry);
+      }
+
+    void allocate_storage (const StackEntry& entry) {
+      if (entry.evaluator) {
+        for (size_t n = 0; n < entry.evaluator->operands.size(); ++n)
+          allocate_storage (entry.evaluator->operands[n]);
         return;
       }
 
-      // from image:
-      assert (axis < V->ndim() ? ( size_t (V->dim (axis)) == values.size()) : true);
-      for (size_t i = 0; i < V->ndim(); ++i) // set position
-        if (i != axis)
-          (*V) [i] = V->dim (i) > 1 ? pos[i] : 0;
-
-      if (axis < V->ndim()) {
-        if (V->dim (axis) > 1) { // straight copy:
-          for ( (*V) [axis] = 0; (*V) [axis] < V->dim (axis); ++ (*V) [axis])
-            values[ (*V) [axis]] = V->value();
-          return;
-        }
-        (*V) [axis] = 0;
+      storage.push_back (ThreadLocalStorageItem());
+      if (entry.buffer) {
+        storage.back().vox = new Image::Buffer<complex_type>::voxel_type (*entry.buffer);
+        storage.back().chunk.resize (vox.dim(storage.axes[0])*vox.dim(storage.axes[1]));
+        return;
       }
-
-      // broadcast:
-      value_type x = V->value();
-      for (size_t i = 0; i < values.size(); ++i)
-        values[i] = x;
+      else storage.back().chunk.value = entry.value;
     }
 
-    virtual size_t ndim () const {
-      return (V ? V->ndim() : 0);
+
+    void operator() (const Image::Iterator& iter) {
+      storage.reset (iter);
+      Image::voxel_assign (vox, iter);
+
+      Chunk& chunk = top_entry.evaluate (storage);
+
+      std::vector<complex_type>::const_iterator value (chunk.begin());
+      for (loop.start (vox); loop.ok(); loop.next (vox)) 
+        vox.value() = *(value++);
     }
-    virtual ssize_t dim (size_t axis) const {
-      if (V)
-        if (axis < V->ndim())
-          return V->dim (axis);
-      return 1;
-    }
-    virtual const Image::Header* header () const {
-      return D;
-    }
-  private:
-    value_type val;
-    Ptr<Image::Buffer<value_type> > D;
-    Ptr<Image::Buffer<value_type>::voxel_type> V;
+
+
+
+    const StackEntry& top_entry;
+    Image::Buffer<complex_type>::voxel_type vox;
+    Image::LoopInOrder loop;
+    ThreadLocalStorage storage;
 };
 
 
 
 
 
-
-// straight voxel-by-voxel operations from a single input:
-class Unary : public Functor
+void run_operations (const std::vector<StackEntry>& stack) 
 {
-  public:
-    Unary (Functor* input) : Functor (input) { }
-    virtual size_t ndim () const {
-      return (in->ndim());
-    }
-    virtual ssize_t dim (size_t axis) const {
-      return (in->dim (axis));
-    }
-    virtual const Image::Header* header () const {
-      return (in->header());
-    }
-};
+  if (!stack[1].arg)
+    throw Exception (std::string ("error opening output image \"") + stack[1].arg + "\"!");
 
+  Image::Header header;
+  get_header (stack[0], header);
 
-
-// straight voxel-by-voxel operations from two broadcast-matchable inputs:
-class Binary : public Functor
-{
-  public:
-    Binary (Functor* input1, Functor* input2) :
-      Functor (input1), in2 (input2) {
-      size_t max_dim = std::max (in->ndim(), in2->ndim());
-      for (size_t i = 0; i < max_dim; ++i) {
-        const size_t d1 = in->dim (i);
-        const size_t d2 = in2->dim (i);
-        if (d1 != d2)
-          if (d1 != 1 && d2 != 1)
-            throw Exception ("dimension mismatch between inputs");
-      }
-    }
-    virtual size_t ndim () const {
-      return (std::max (in->ndim(), in2->ndim()));
-    }
-    virtual ssize_t dim (size_t axis) const {
-      return (std::max (in->dim (axis), in2->dim (axis)));
-    }
-    virtual const Image::Header* header () const {
-      return (in->header() ? in->header() : in2->header());
-    }
-  protected:
-    Ptr<Functor> in2;
-    std::vector<value_type> values2;
-};
-
-
-
-// DataSet interface to be looped over - calls the functor chain as needed:
-class Counter
-{
-  public:
-    template <class Set>
-    Counter (Functor& input, Set& output, size_t inner_axis) :
-      in (input), N_ (output.ndim()), x_ (output.ndim()), axis (inner_axis) {
-      for (size_t n = 0; n < N_.size(); ++n) {
-        x_[n] = 0;
-        N_[n] = output.dim (n);
-      }
-      values.resize (N_[axis]);
-    }
-    size_t ndim () const {
-      return (N_.size());
-    }
-    ssize_t dim (size_t i) const {
-      return (N_[i]);
-    }
-    ssize_t& operator[] (size_t i) {
-      return (x_[i]);
-    }
-    template <class Set>
-    void get (Set& out) {
-      in.get (x_, values, axis);
-      for (out[axis] = 0; out[axis] < out.dim (axis); ++out[axis])
-        out.value() = values[out[axis]];
-    }
-  private:
-    Functor& in;
-    std::vector<ssize_t> N_, x_;
-    std::vector<value_type> values;
-    const size_t axis;
-};
-
-
-
-
-#define DEF_UNARY(name, operation) class name : public Unary { \
-    public: \
-      name (Functor* input) : Unary (input) { } \
-      virtual void get (const std::vector<ssize_t>& pos, std::vector<value_type>& values, size_t axis) { \
-        in->get (pos, values, axis); \
-        for (size_t n = 0; n < values.size(); ++n) { \
-          value_type& val = values[n]; \
-          values[n] = operation; \
-        } \
-      } \
+  if (stack[0].is_complex()) {
+    header.datatype() = DataType::from_command_line (DataType::CFloat32);
+    if (!header.datatype().is_complex())
+      throw Exception ("output datatype must be complex");
   }
+  else header.datatype() = DataType::from_command_line (DataType::Float32);
 
-#define DEF_BINARY(name, operation) class name : public Binary { \
-    public: \
-      name (Functor* input1, Functor* input2) : Binary (input1, input2) { } \
-      virtual void get (const std::vector<ssize_t>& pos, std::vector<value_type>& values, size_t axis) { \
-        values2.resize (values.size()); \
-        in->get (pos, values, axis); \
-        in2->get (pos, values2, axis); \
-        for (size_t n = 0; n < values.size(); ++n) { \
-          value_type& val1 = values[n]; \
-          value_type& val2 = values2[n]; \
-          values[n] = operation; \
-        } \
-      } \
-  }
+  Image::Buffer<complex_type> output (stack[1].arg, header);
 
-DEF_UNARY (Abs, Math::abs (val));
-DEF_UNARY (Neg, -val);
-DEF_UNARY (Sqrt, Math::sqrt (val));
-DEF_UNARY (Exp, Math::exp (val));
-DEF_UNARY (Log, Math::log (val));
-DEF_UNARY (Cos, Math::cos (val));
-DEF_UNARY (Sin, Math::sin (val));
-DEF_UNARY (Tan, Math::tan (val));
-DEF_UNARY (Cosh, Math::cosh (val));
-DEF_UNARY (Sinh, Math::sinh (val));
-DEF_UNARY (Tanh, Math::tanh (val));
-DEF_UNARY (Acos, Math::acos (val));
-DEF_UNARY (Asin, Math::asin (val));
-DEF_UNARY (Atan, Math::atan (val));
-DEF_UNARY (Acosh, Math::acosh (val));
-DEF_UNARY (Asinh, Math::asinh (val));
-DEF_UNARY (Atanh, Math::atanh (val));
-DEF_UNARY (Round, Math::round (val));
-DEF_UNARY (Ceil, Math::ceil (val));
-DEF_UNARY (Floor, Math::floor (val));
+  Image::ThreadedLoop loop ("evaluating mathematical operations...", output, 2);
 
-DEF_BINARY (Add, val1+val2);
-DEF_BINARY (Subtract, val1-val2);
-DEF_BINARY (Mult, val1* val2);
-DEF_BINARY (Divide, val1/val2);
-DEF_BINARY (Min, std::min (val1, val2));
-DEF_BINARY (Max, std::max (val1, val2));
-
-DEF_BINARY (LessThan, val1 < val2);
-DEF_BINARY (GreaterThan, val1 > val2);
-DEF_BINARY (LessThanOrEqualTo, val1 <= val2);
-DEF_BINARY (GreaterThanOrEqualTo, val1 >= val2);
-DEF_BINARY (EqualTo, val1 == val2);
+  ThreadFunctor functor (loop, stack[0], output);
+  loop.run_outer (functor);
+}
 
 
 
-// other less straightforward operations:
 
-class Mean : public Unary
-{
+
+
+
+/**********************************************************************
+        OPERATIONS BASIC FRAMEWORK:
+**********************************************************************/
+
+class OpBase {
   public:
-    Mean (Functor* input, const std::string& axes_specifier) :
-      Unary (input), ax (in->ndim(), false) {
-      norm = 1.0;
-      try {
-        axes_involved = parse_ints (axes_specifier);
-        if (axes_involved.size() > in->ndim()) throw 0;
-        for (size_t i = 0; i < axes_involved.size(); ++i) {
-          if (axes_involved[i] < 0 || axes_involved[i] >= int (in->ndim())) throw 0;
-          for (size_t j = 0; j < i; ++j)
-            if (axes_involved[i] == axes_involved[j]) throw 0;
-          ax[axes_involved[i]] = true;
-          norm *= in->dim (axes_involved[i]);
-        }
-      }
-      catch (...) {
-        throw Exception ("axes specification \"" + axes_specifier + "\" does not match image");
-      }
-      buf.resize (in->dim (axes_involved[0]));
-      norm = 1.0/norm;
-    }
-    virtual ssize_t dim (size_t axis) const {
-      return (ax[axis] ? 1 : in->dim (axis));
-    }
+    OpBase (bool complex_maps_to_real = false, bool real_map_to_complex = false) :
+      ZtoR (complex_maps_to_real),
+      RtoZ (real_map_to_complex) { }
+    const bool ZtoR, RtoZ;
+};
 
-    virtual void get (const std::vector<ssize_t>& pos, std::vector<value_type>& values, size_t axis) {
-      assert (values.size() == (ax[axis] ? 1 : size_t (in->dim (axis))));
-      std::vector<ssize_t> x = pos;
+class OpUnary : public OpBase {
+  public:
+    OpUnary (bool complex_maps_to_real = false, bool real_map_to_complex = false) :
+      OpBase (complex_maps_to_real, real_map_to_complex) { }
+    complex_type R (real_type v) const { throw Exception ("operation not supported!"); return v; }
+    complex_type Z (complex_type v) const { throw Exception ("operation not supported!"); return v; }
+};
 
-      for (x[axis] = 0; x[axis] < ssize_t (values.size()); ++x[axis]) {
-        value_type sum = 0.0;
-        do {
-          in->get (x, buf, axes_involved[0]);
-          for (size_t m = 0; m < buf.size(); ++m)
-            sum += buf[m];
-        }
-        while (next (x));
-        values[x[axis]] = norm * sum;
-      }
-    }
-  protected:
-    std::vector<bool> ax;
-    std::vector<int> axes_involved;
-    std::vector<value_type> buf;
-    value_type norm;
 
-    bool next (std::vector<ssize_t>& x, size_t n = 1) {
-      if (n >= axes_involved.size()) return (false);
-      x[axes_involved[n]]++;
-      if (x[axes_involved[n]] >= in->dim (axes_involved[n])) {
-        x[axes_involved[n]] = 0;
-        return (next (x, n+1));
-      }
-      return (true);
-    }
+class OpBinary : public OpBase {
+  public:
+    OpBinary (bool complex_maps_to_real = false, bool real_map_to_complex = false) :
+      OpBase (complex_maps_to_real, real_map_to_complex) { }
+    complex_type R (real_type a, real_type b) const { throw Exception ("operation not supported!"); return a; }
+    complex_type Z (complex_type a, complex_type b) const { throw Exception ("operation not supported!"); return a; }
 };
 
 
 
-class Std : public Mean
-{
+/**********************************************************************
+        UNARY OPERATIONS:
+**********************************************************************/
+
+class OpAbs : public OpUnary {
   public:
-    Std (Functor* input, const std::string& axes_specifier) :
-      Mean (input, axes_specifier) { }
+    OpAbs () : OpUnary (true) { }
+    complex_type R (real_type v) const { return Math::abs (v); }
+    complex_type Z (complex_type v) const { return std::abs (v); }
+};
 
-    virtual void get (const std::vector<ssize_t>& pos, std::vector<value_type>& values, size_t axis) {
-      assert (values.size() == (ax[axis] ? 1 : size_t (in->dim (axis))));
-      std::vector<ssize_t> x = pos;
+class OpNeg : public OpUnary {
+  public:
+    complex_type R (real_type v) const { return -v; }
+    complex_type Z (complex_type v) const { return -v; }
+};
 
-      for (x[axis] = 0; x[axis] < ssize_t (values.size()); ++x[axis]) {
-        value_type sum = 0.0, sum2 = 0.0;
-        do {
-          in->get (x, buf, axes_involved[0]);
-          for (size_t m = 0; m < buf.size(); ++m) {
-            sum += buf[m];
-            sum2 += Math::pow2 (buf[m]);
-          }
-        }
-        while (next (x));
-        values[x[axis]] = Math::sqrt (norm*sum2 - Math::pow2 (norm*sum));
-      }
-    }
+class OpSqrt : public OpUnary {
+  public:
+    complex_type R (real_type v) const { return Math::sqrt (v); }
+    complex_type Z (complex_type v) const { return std::sqrt (v); }
+};
+
+class OpExp : public OpUnary {
+  public:
+    complex_type R (real_type v) const { return Math::exp (v); }
+    complex_type Z (complex_type v) const { return std::exp (v); }
+};
+
+class OpLog : public OpUnary {
+  public:
+    complex_type R (real_type v) const { return Math::log (v); }
+    complex_type Z (complex_type v) const { return std::log (v); }
+};
+
+class OpLog10 : public OpUnary {
+  public:
+    complex_type R (real_type v) const { return Math::log10 (v); }
+    complex_type Z (complex_type v) const { return std::log10 (v); }
+};
+
+class OpCos : public OpUnary {
+  public:
+    complex_type R (real_type v) const { return Math::cos (v); }
+    complex_type Z (complex_type v) const { return std::cos (v); }
+};
+
+class OpSin : public OpUnary {
+  public:
+    complex_type R (real_type v) const { return Math::sin (v); }
+    complex_type Z (complex_type v) const { return std::sin (v); }
+};
+
+class OpTan : public OpUnary {
+  public:
+    complex_type R (real_type v) const { return Math::tan (v); }
+    complex_type Z (complex_type v) const { return std::tan (v); }
+};
+
+class OpCosh : public OpUnary {
+  public:
+    complex_type R (real_type v) const { return Math::cosh (v); }
+    complex_type Z (complex_type v) const { return std::cosh (v); }
+};
+
+class OpSinh : public OpUnary {
+  public:
+    complex_type R (real_type v) const { return Math::sinh (v); }
+    complex_type Z (complex_type v) const { return std::sinh (v); }
+};
+
+class OpTanh : public OpUnary {
+  public:
+    complex_type R (real_type v) const { return Math::tanh (v); }
+    complex_type Z (complex_type v) const { return std::tanh (v); }
+};
+
+class OpAcos : public OpUnary {
+  public:
+    complex_type R (real_type v) const { return Math::acos (v); }
+};
+
+class OpAsin : public OpUnary {
+  public:
+    complex_type R (real_type v) const { return Math::asin (v); }
+};
+
+class OpAtan : public OpUnary {
+  public:
+    complex_type R (real_type v) const { return Math::atan (v); }
+};
+
+class OpAcosh : public OpUnary {
+  public:
+    complex_type R (real_type v) const { return Math::acosh (v); }
+};
+
+class OpAsinh : public OpUnary {
+  public:
+    complex_type R (real_type v) const { return Math::asinh (v); }
+};
+
+class OpAtanh : public OpUnary {
+  public:
+    complex_type R (real_type v) const { return Math::atanh (v); }
+};
+
+
+class OpRound : public OpUnary {
+  public:
+    complex_type R (real_type v) const { return Math::round (v); }
+};
+
+class OpCeil : public OpUnary {
+  public:
+    complex_type R (real_type v) const { return Math::ceil (v); }
+};
+
+class OpFloor : public OpUnary {
+  public:
+    complex_type R (real_type v) const { return Math::floor (v); }
+};
+
+class OpReal : public OpUnary {
+  public:
+    OpReal () : OpUnary (true) { }
+    complex_type Z (complex_type v) const { return v.real(); }
+};
+
+class OpImag : public OpUnary {
+  public:
+    OpImag () : OpUnary (true) { }
+    complex_type Z (complex_type v) const { return v.imag(); }
+};
+
+class OpPhase : public OpUnary {
+  public:
+    OpPhase () : OpUnary (true) { }
+    complex_type Z (complex_type v) const { return std::arg (v); }
+};
+
+class OpConj : public OpUnary {
+  public:
+    complex_type Z (complex_type v) const { return std::conj (v); }
+};
+
+
+/**********************************************************************
+        BINARY OPERATIONS:
+**********************************************************************/
+
+class OpAdd : public OpBinary {
+  public:
+    complex_type R (real_type a, real_type b) const { return a+b; }
+    complex_type Z (complex_type a, complex_type b) const { return a+b; }
+};
+
+class OpSubtract : public OpBinary {
+  public:
+    complex_type R (real_type a, real_type b) const { return a-b; }
+    complex_type Z (complex_type a, complex_type b) const { return a-b; }
+};
+
+class OpMultiply : public OpBinary {
+  public:
+    complex_type R (real_type a, real_type b) const { return a*b; }
+    complex_type Z (complex_type a, complex_type b) const { return a*b; }
+};
+
+class OpDivide : public OpBinary {
+  public:
+    complex_type R (real_type a, real_type b) const { return a/b; }
+    complex_type Z (complex_type a, complex_type b) const { return a/b; }
+};
+
+class OpPow : public OpBinary {
+  public:
+    complex_type R (real_type a, real_type b) const { return Math::pow (a, b); }
+    complex_type Z (complex_type a, complex_type b) const { return std::pow (a, b); }
+};
+
+class OpMin : public OpBinary {
+  public:
+    complex_type R (real_type a, real_type b) const { return std::min (a, b); }
+};
+
+class OpMax : public OpBinary {
+  public:
+    complex_type R (real_type a, real_type b) const { return std::max (a, b); }
+};
+
+class OpLessThan : public OpBinary {
+  public:
+    complex_type R (real_type a, real_type b) const { return a < b; }
+};
+
+class OpGreaterThan : public OpBinary {
+  public:
+    complex_type R (real_type a, real_type b) const { return a > b; }
+};
+
+class OpLessThanOrEqual : public OpBinary {
+  public:
+    complex_type R (real_type a, real_type b) const { return a <= b; }
+};
+
+class OpGreaterThanOrEqual : public OpBinary {
+  public:
+    complex_type R (real_type a, real_type b) const { return a >= b; }
+};
+
+class OpEqual : public OpBinary {
+  public:
+    OpEqual () : OpBinary (true) { }
+    complex_type R (real_type a, real_type b) const { return a == b; }
+    complex_type Z (complex_type a, complex_type b) const { return a == b; }
+};
+
+class OpNotEqual : public OpBinary {
+  public:
+    OpNotEqual () : OpBinary (true) { }
+    complex_type R (real_type a, real_type b) const { return a != b; }
+    complex_type Z (complex_type a, complex_type b) const { return a != b; }
+};
+
+class OpComplex : public OpBinary {
+  public:
+    OpComplex () : OpBinary (false, true) { }
+    complex_type R (real_type a, real_type b) const { return complex_type (a, b); }
 };
 
 
 
 
+
+
+
+
+
+/**********************************************************************
+  MAIN BODY OF COMMAND:
+ **********************************************************************/
 
 void run () {
-  Functor* last = new Source (argument[0]);
+  std::vector<StackEntry> stack;
 
-  for (std::vector<App::ParsedOption>::const_iterator opt = option.begin();
-  opt != option.end(); ++opt) {
-    if (*opt == "datatype") continue;
-    if (*opt == "abs") {
-      last = new Abs (last);
-      continue;
+  for (int n = 1; n < App::argc; ++n) {
+
+    const Option* opt = match_option (App::argv[n]);
+    if (opt) {
+      if (opt->is ("abs")) unary_operation (opt->id, stack, OpAbs()); 
+      else if (opt->is ("neg")) unary_operation (opt->id, stack, OpNeg());
+      else if (opt->is ("sqrt")) unary_operation (opt->id, stack, OpSqrt());
+      else if (opt->is ("exp")) unary_operation (opt->id, stack, OpExp());
+      else if (opt->is ("log")) unary_operation (opt->id, stack, OpLog());
+      else if (opt->is ("log10")) unary_operation (opt->id, stack, OpLog10());
+
+      else if (opt->is ("cos")) unary_operation (opt->id, stack, OpCos());
+      else if (opt->is ("sin")) unary_operation (opt->id, stack, OpSin());
+      else if (opt->is ("tan")) unary_operation (opt->id, stack, OpTan());
+
+      else if (opt->is ("cosh")) unary_operation (opt->id, stack, OpCosh());
+      else if (opt->is ("sinh")) unary_operation (opt->id, stack, OpSinh());
+      else if (opt->is ("tanh")) unary_operation (opt->id, stack, OpTanh());
+
+      else if (opt->is ("acos")) unary_operation (opt->id, stack, OpAcos());
+      else if (opt->is ("asin")) unary_operation (opt->id, stack, OpAsin());
+      else if (opt->is ("atan")) unary_operation (opt->id, stack, OpAtan());
+
+      else if (opt->is ("acosh")) unary_operation (opt->id, stack, OpAcosh());
+      else if (opt->is ("asinh")) unary_operation (opt->id, stack, OpAsinh());
+      else if (opt->is ("atanh")) unary_operation (opt->id, stack, OpAtanh());
+
+      else if (opt->is ("round")) unary_operation (opt->id, stack, OpRound());
+      else if (opt->is ("ceil")) unary_operation (opt->id, stack, OpCeil());
+      else if (opt->is ("floor")) unary_operation (opt->id, stack, OpFloor());
+
+      else if (opt->is ("real")) unary_operation (opt->id, stack, OpReal());
+      else if (opt->is ("imag")) unary_operation (opt->id, stack, OpImag());
+      else if (opt->is ("phase")) unary_operation (opt->id, stack, OpPhase());
+      else if (opt->is ("conj")) unary_operation (opt->id, stack, OpConj());
+
+      else if (opt->is ("add")) binary_operation (opt->id, stack, OpAdd());
+      else if (opt->is ("subtract")) binary_operation (opt->id, stack, OpSubtract());
+      else if (opt->is ("multiply")) binary_operation (opt->id, stack, OpMultiply());
+      else if (opt->is ("divide")) binary_operation (opt->id, stack, OpDivide());
+      else if (opt->is ("pow")) binary_operation (opt->id, stack, OpPow());
+
+      else if (opt->is ("min")) binary_operation (opt->id, stack, OpMin());
+      else if (opt->is ("max")) binary_operation (opt->id, stack, OpMax());
+      else if (opt->is ("lt")) binary_operation (opt->id, stack, OpLessThan());
+      else if (opt->is ("gt")) binary_operation (opt->id, stack, OpGreaterThan());
+      else if (opt->is ("le")) binary_operation (opt->id, stack, OpLessThanOrEqual());
+      else if (opt->is ("ge")) binary_operation (opt->id, stack, OpGreaterThanOrEqual());
+      else if (opt->is ("eq")) binary_operation (opt->id, stack, OpEqual());
+      else if (opt->is ("neq")) binary_operation (opt->id, stack, OpNotEqual());
+
+      else if (opt->is ("complex")) binary_operation (opt->id, stack, OpComplex());
+
+      else if (opt->is ("datatype")) ++n;
+      else if (opt->is ("nthreads")) ++n;
+      else if (opt->is ("force") || opt->is ("info") || opt->is ("debug") || opt->is ("quiet"))
+        continue;
+
+      else error (std::string ("operation \"") + opt->id + "\" not yet implemented!");
+
     }
-    if (*opt == "neg") {
-      last = new Neg (last);
-      continue;
-    }
-    if (*opt == "sqrt") {
-      last = new Sqrt (last);
-      continue;
-    }
-    if (*opt == "exp") {
-      last = new Exp (last);
-      continue;
-    }
-    if (*opt == "log") {
-      last = new Log (last);
-      continue;
-    }
-    if (*opt == "cos") {
-      last = new Cos (last);
-      continue;
-    }
-    if (*opt == "sin") {
-      last = new Sin (last);
-      continue;
-    }
-    if (*opt == "tan") {
-      last = new Tan (last);
-      continue;
-    }
-    if (*opt == "cosh") {
-      last = new Cosh (last);
-      continue;
-    }
-    if (*opt == "sinh") {
-      last = new Sinh (last);
-      continue;
-    }
-    if (*opt == "tanh") {
-      last = new Tanh (last);
-      continue;
-    }
-    if (*opt == "acos") {
-      last = new Acos (last);
-      continue;
-    }
-    if (*opt == "asin") {
-      last = new Asin (last);
-      continue;
-    }
-    if (*opt == "atan") {
-      last = new Atan (last);
-      continue;
-    }
-    if (*opt == "acosh") {
-      last = new Acosh (last);
-      continue;
-    }
-    if (*opt == "asinh") {
-      last = new Asinh (last);
-      continue;
-    }
-    if (*opt == "atanh") {
-      last = new Atanh (last);
-      continue;
-    }
-    if (*opt == "round") {
-      last = new Round (last);
-      continue;
-    }
-    if (*opt == "ceil") {
-      last = new Ceil (last);
-      continue;
-    }
-    if (*opt == "floor") {
-      last = new Floor (last);
-      continue;
-    }
-    if (*opt == "add") {
-      last = new Add (last, new Source (opt->args[0]));
-      continue;
-    }
-    if (*opt == "subtract") {
-      last = new Subtract (last, new Source (opt->args[0]));
-      continue;
-    }
-    if (*opt == "multiply") {
-      last = new Mult (last, new Source (opt->args[0]));
-      continue;
-    }
-    if (*opt == "divide") {
-      last = new Divide (last, new Source (opt->args[0]));
-      continue;
-    }
-    if (*opt == "min") {
-      last = new Min (last, new Source (opt->args[0]));
-      continue;
-    }
-    if (*opt == "max") {
-      last = new Max (last, new Source (opt->args[0]));
-      continue;
-    }
-    if (*opt == "lt") {
-      last = new LessThan (last, new Source (opt->args[0]));
-      continue;
-    }
-    if (*opt == "gt") {
-      last = new GreaterThan (last, new Source (opt->args[0]));
-      continue;
-    }
-    if (*opt == "le") {
-      last = new LessThanOrEqualTo (last, new Source (opt->args[0]));
-      continue;
-    }
-    if (*opt == "ge") {
-      last = new GreaterThanOrEqualTo (last, new Source (opt->args[0]));
-      continue;
-    }
-    if (*opt == "eq") {
-      last = new EqualTo (last, new Source (opt->args[0]));
-      continue;
-    }
-    if (*opt == "mean") {
-      last = new Mean (last, opt->args[0]);
-      continue;
-    }
-    if (*opt == "std") {
-      last = new Std (last, opt->args[0]);
-      continue;
+    else {
+      stack.push_back (App::argv[n]);
     }
 
-    assert (0);
   }
 
-  const Image::Header* source_header = last->header();
-  if (!source_header)
-    throw Exception ("no source images found - aborting");
-  Image::Header header = *source_header;
-  header.intensity_offset() = 0.0;
-  header.intensity_scale() = 1.0;
+  if (stack.size() == 1) {
+    if (!stack[0].evaluator && !stack[0].buffer) 
+      print (str(stack[0].value));
+    return;
+  }
 
-  header.set_ndim (last->ndim());
-  for (size_t i = 0; i < last->ndim(); ++i)
-    header.dim(i) = last->dim (i);
+  if (stack.size() == 2) {
+    run_operations (stack);
+    return;
+  }
 
-  header.datatype() = DataType::from_command_line (DataType::Float32);
-
-  Image::Buffer<value_type> data_out (argument[1], header);
-  Image::Buffer<value_type>::voxel_type out (data_out);
-  std::vector<size_t> axes = Image::Stride::order (out);
-
-  Counter count (*last, out, axes[0]);
-
-  axes.erase (axes.begin(), axes.begin() +1);
-  Image::LoopInOrder loop (axes, "performing mathematical operations...");
-  for (loop.start (count, out); loop.ok(); loop.next (count, out))
-    count.get (out);
-
-  delete last;
+  throw Exception ("stack is not empty!");
 }
+
 
 

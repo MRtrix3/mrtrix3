@@ -75,30 +75,30 @@ namespace MR
       template <> bool __getBE<bool,double> (const void* data, size_t i) { return Math::round (MR::getBE<double> (data, i)); }
 
       // specialisation for conversion between bool and complex types
-      template <> bool __getLE<bool,cfloat> (const void* data, size_t i) { return Math::round (std::abs (MR::getLE<cfloat> (data, i))); }
-      template <> bool __getBE<bool,cfloat> (const void* data, size_t i) { return Math::round (std::abs (MR::getBE<cfloat> (data, i))); }
-      template <> bool __getLE<bool,cdouble> (const void* data, size_t i) { return Math::round (std::abs (MR::getLE<cdouble> (data, i))); }
-      template <> bool __getBE<bool,cdouble> (const void* data, size_t i) { return Math::round (std::abs (MR::getBE<cdouble> (data, i))); }
-      template <> void __put<cfloat,bool> (cfloat val, void* data, size_t i) { return MR::put<bool> (Math::round (std::abs (val)), data, i); } 
-      template <> void __put<cdouble,bool> (cdouble val, void* data, size_t i) { return MR::put<bool> (Math::round (std::abs (val)), data, i); }
+      template <> bool __getLE<bool,cfloat> (const void* data, size_t i) { return Math::round (MR::getLE<cfloat>(data, i).real()); }
+      template <> bool __getBE<bool,cfloat> (const void* data, size_t i) { return Math::round (MR::getBE<cfloat>(data, i).real()); }
+      template <> bool __getLE<bool,cdouble> (const void* data, size_t i) { return Math::round (MR::getLE<cdouble>(data, i).real()); }
+      template <> bool __getBE<bool,cdouble> (const void* data, size_t i) { return Math::round (MR::getBE<cdouble>(data, i).real()); }
+      template <> void __put<cfloat,bool> (cfloat val, void* data, size_t i) { return MR::put<bool> (Math::round (val.real()), data, i); } 
+      template <> void __put<cdouble,bool> (cdouble val, void* data, size_t i) { return MR::put<bool> (Math::round (val.real()), data, i); }
 
       // specialisations for conversion between real types and complex types
 #define GET_COMPLEX(type) \
-      template <> type __getLE<type,cfloat> (const void* data, size_t i) { return std::abs (MR::getLE<cfloat> (data, i)); } \
-      template <> type __getBE<type,cfloat> (const void* data, size_t i) { return std::abs (MR::getBE<cfloat> (data, i)); } \
-      template <> type __getLE<type,cdouble> (const void* data, size_t i) { return std::abs (MR::getLE<cdouble> (data, i)); } \
-      template <> type __getBE<type,cdouble> (const void* data, size_t i) { return std::abs (MR::getBE<cdouble> (data, i)); } 
+      template <> type __getLE<type,cfloat> (const void* data, size_t i) { return MR::getLE<cfloat>(data, i).real(); } \
+      template <> type __getBE<type,cfloat> (const void* data, size_t i) { return MR::getBE<cfloat>(data, i).real(); } \
+      template <> type __getLE<type,cdouble> (const void* data, size_t i) { return MR::getLE<cdouble>(data, i).real(); } \
+      template <> type __getBE<type,cdouble> (const void* data, size_t i) { return MR::getBE<cdouble>(data, i).real(); } 
 
 #define GET_PUT_COMPLEX(type) \
       GET_COMPLEX(type) \
-      template <> void __put<cfloat,type> (cfloat val, void* data, size_t i) { return MR::put<type> (std::abs (val), data, i); } \
-      template <> void __put<cdouble,type> (cdouble val, void* data, size_t i) { return MR::put<type> (std::abs (val), data, i); }
+      template <> void __put<cfloat,type> (cfloat val, void* data, size_t i) { return MR::put<type> (val.real(), data, i); } \
+      template <> void __put<cdouble,type> (cdouble val, void* data, size_t i) { return MR::put<type> (val.real(), data, i); }
 #define GET_PUT_COMPLEX_BO(type) \
       GET_COMPLEX(type) \
-      template <> void __putLE<cfloat,type> (cfloat val, void* data, size_t i) { return MR::putLE<type> (std::abs (val), data, i); } \
-      template <> void __putBE<cfloat,type> (cfloat val, void* data, size_t i) { return MR::putBE<type> (std::abs (val), data, i); } \
-      template <> void __putLE<cdouble,type> (cdouble val, void* data, size_t i) { return MR::putLE<type> (std::abs (val), data, i); } \
-      template <> void __putBE<cdouble,type> (cdouble val, void* data, size_t i) { return MR::putBE<type> (std::abs (val), data, i); }
+      template <> void __putLE<cfloat,type> (cfloat val, void* data, size_t i) { return MR::putLE<type> (val.real(), data, i); } \
+      template <> void __putBE<cfloat,type> (cfloat val, void* data, size_t i) { return MR::putBE<type> (val.real(), data, i); } \
+      template <> void __putLE<cdouble,type> (cdouble val, void* data, size_t i) { return MR::putLE<type> (val.real(), data, i); } \
+      template <> void __putBE<cdouble,type> (cdouble val, void* data, size_t i) { return MR::putBE<type> (val.real(), data, i); }
 
       GET_PUT_COMPLEX(int8_t);
       GET_PUT_COMPLEX(uint8_t);
@@ -271,11 +271,11 @@ namespace MR
         }
 
         value_type scale_from_storage (value_type val) const {
-          return intensity_offset() + intensity_scale() * val;
+          return value_type(intensity_offset()) + value_type(intensity_scale()) * val;
         }
 
         value_type scale_to_storage (value_type val) const   {
-          return (val - intensity_offset()) / intensity_scale();
+          return (val - value_type(intensity_offset())) / value_type(intensity_scale());
         }
 
     };

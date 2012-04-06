@@ -66,6 +66,7 @@ namespace MR
 
 
 
+
     namespace
     {
 
@@ -75,39 +76,6 @@ namespace MR
           if (stub.compare (0, stub.size(), group[i].id, stub.size()) == 0)
             candidates.push_back (&group[i]);
         }
-      }
-
-
-
-      const Option* match_option (const char* stub)
-      {
-        std::vector<const Option*> candidates;
-        std::string root (stub);
-
-        for (size_t i = 0; i < OPTIONS.size(); ++i)
-          get_matches (candidates, OPTIONS[i], root);
-        get_matches (candidates, __standard_options, root);
-
-        // no matches
-        if (candidates.size() == 0)
-          throw Exception (std::string ("unknown option \"-") + root + "\"");
-
-        // return match if unique:
-        if (candidates.size() == 1)
-          return candidates[0];
-
-        // return match if fully specified:
-        for (size_t i = 0; i < candidates.size(); ++i)
-          if (root == candidates[i]->id)
-            return candidates[i];
-
-        // report something useful:
-        root = "several matches possible for option \"-" + root + "\": \"-" + candidates[0]->id;
-
-        for (size_t i = 1; i < candidates.size(); ++i)
-          root += std::string (", \"-") + candidates[i]->id + "\"";
-
-        throw Exception (root);
       }
 
 
@@ -185,16 +153,50 @@ namespace MR
 
 
 
+    const Option* match_option (const char* arg)
+    {
+      if (arg[0] == '-' && arg[1] && !isdigit (arg[1]) && arg[1] != '.') {
+        while (*arg == '-') arg++;
+        std::vector<const Option*> candidates;
+        std::string root (arg);
+
+        for (size_t i = 0; i < OPTIONS.size(); ++i)
+          get_matches (candidates, OPTIONS[i], root);
+        get_matches (candidates, __standard_options, root);
+
+        // no matches
+        if (candidates.size() == 0)
+          throw Exception (std::string ("unknown option \"-") + root + "\"");
+
+        // return match if unique:
+        if (candidates.size() == 1)
+          return candidates[0];
+
+        // return match if fully specified:
+        for (size_t i = 0; i < candidates.size(); ++i)
+          if (root == candidates[i]->id)
+            return candidates[i];
+
+        // report something useful:
+        root = "several matches possible for option \"-" + root + "\": \"-" + candidates[0]->id;
+
+        for (size_t i = 1; i < candidates.size(); ++i)
+          root += std::string (", \"-") + candidates[i]->id + "\"";
+
+        throw Exception (root);
+      }
+
+      return NULL;
+    }
+
+
+
+
     void sort_arguments (int argc, const char* const* argv)
     {
       for (int n = 1; n < argc; ++n) {
-        const char* arg = argv[n];
-        if (arg[0] == '-' && arg[1] && !isdigit (arg[1]) && arg[1] != '.') {
-
-          while (*arg == '-') arg++;
-          const Option* opt = match_option (arg);
-
-
+        const Option* opt = match_option (argv[n]);
+        if (opt) {
           if (n + int (opt->size()) >= argc)
             throw Exception (std::string ("not enough parameters to option \"-") + opt->id + "\"");
 
@@ -339,7 +341,7 @@ namespace MR
       Options matches;
       for (size_t i = 0; i < option.size(); ++i) {
         assert (option[i].opt);
-        if (name == option[i].opt->id) {
+        if (option[i].opt->is (name)) {
           matches.opt = option[i].opt;
           matches.args.push_back (option[i].args);
         }

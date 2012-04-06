@@ -309,6 +309,97 @@ namespace MR
 
 
 
+
+/**********************************************************************
+   specialisations to convert complex numbers to/from text:
+**********************************************************************/
+
+
+  template <> inline std::string str<cfloat> (const cfloat& value)
+  {
+    std::ostringstream stream;
+    stream << value.real();
+    if (value.imag()) 
+      stream << std::showpos << value.imag() << "i";
+    if (stream.fail())
+      throw Exception ("error converting value to string");
+    return stream.str();
+  }
+
+
+  template <> inline cfloat to<cfloat> (const std::string& string)
+  {
+    std::istringstream stream (string);
+    cfloat value;
+    stream >> value.real();
+    if (stream.fail())
+      throw Exception ("error converting string \"" + string + "\"");
+    if (stream.eof())
+      return value;
+
+    if (stream.peek() == 'i') {
+      value.imag() = value.real();
+      value.real() = 0.0;
+      return value;
+    }
+
+    stream >> value.imag();
+    if (stream.fail()) {
+      value.imag() = 0.0;
+      return value;
+    }
+    else if (stream.peek() != 'i')
+      throw Exception ("error converting string \"" + string + "\"");
+    return value;
+  }
+
+
+
+
+  template <> inline std::string str<cdouble> (const cdouble& value)
+  {
+    std::ostringstream stream;
+    stream << value.real();
+    if (value.imag()) 
+      stream << std::showpos << value.imag() << "i";
+    if (stream.fail())
+      throw Exception ("error converting value to string");
+    return stream.str();
+  }
+
+
+  template <> inline cdouble to<cdouble> (const std::string& string)
+  {
+    std::istringstream stream (string);
+    cdouble value;
+    stream >> value.real();
+    if (stream.fail())
+      throw Exception ("error converting string \"" + string + "\"");
+    if (stream.eof())
+      return value;
+
+    if (stream.peek() == 'i') {
+      value.imag() = value.real();
+      value.real() = 0.0;
+      return value;
+    }
+
+    stream >> value.imag();
+    if (stream.fail()) {
+      value.imag() = 0.0;
+      return value;
+    }
+    else if (stream.peek() != 'i')
+      throw Exception ("error converting string \"" + string + "\"");
+    return value;
+  }
+
+
+
+
+
+
+
 }
 
 #endif

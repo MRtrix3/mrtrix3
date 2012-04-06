@@ -566,6 +566,8 @@ namespace MR
           }
         }
 
+        const std::vector<size_t>& axes () const { return axes_; }
+
         template <class Set>
         size_t max_axis (const Set& set) const {
           size_t a = 0;

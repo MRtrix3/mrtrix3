@@ -61,14 +61,14 @@ namespace MR
       void threaded_copy (InputVoxelType& source, OutputVoxelType& destination, const std::vector<size_t>& axes, size_t num_axes_in_thread = 1) 
       {
         __CopyKernel<InputVoxelType, OutputVoxelType> copy_kernel (source, destination);
-        threaded_loop (copy_kernel, source, axes, num_axes_in_thread);
+        ThreadedLoop (source, axes, num_axes_in_thread).run (copy_kernel);
       }
 
     template <class InputVoxelType, class OutputVoxelType>
       void threaded_copy (InputVoxelType& source, OutputVoxelType& destination, size_t num_axes_in_thread = 1, size_t from_axis = 0, size_t to_axis = std::numeric_limits<size_t>::max())
       {
         __CopyKernel<InputVoxelType, OutputVoxelType> copy_kernel (source, destination);
-        threaded_loop (copy_kernel, source, num_axes_in_thread, from_axis, to_axis);
+        ThreadedLoop (source, num_axes_in_thread, from_axis, to_axis).run (copy_kernel);
       }
 
 
@@ -83,7 +83,7 @@ namespace MR
           size_t num_axes_in_thread = 1)
       {
         __CopyKernel<InputVoxelType, OutputVoxelType> copy_kernel (source, destination);
-        threaded_loop_with_progress_message (message, copy_kernel, source, axes, num_axes_in_thread);
+        ThreadedLoop (message, source, axes, num_axes_in_thread).run (copy_kernel);
       }
 
     template <class InputVoxelType, class OutputVoxelType>
@@ -96,7 +96,7 @@ namespace MR
           size_t to_axis = std::numeric_limits<size_t>::max())
       {
         __CopyKernel<InputVoxelType, OutputVoxelType> copy_kernel (source, destination);
-        threaded_loop_with_progress_message (message, copy_kernel, source, num_axes_in_thread, from_axis, to_axis);
+        ThreadedLoop (message, source, num_axes_in_thread, from_axis, to_axis).run (copy_kernel);
       }
 
 

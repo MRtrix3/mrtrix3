@@ -33,95 +33,233 @@ namespace MR
 {
   namespace Image
   {
-    //! \cond skip
-    namespace {
+    class ThreadedLoop
+    {
+      public:
 
-      class __ThreadShared {
-        public:
-          template <class InfoType>
-            __ThreadShared (const std::vector<size_t>& axes_out_of_thread, const std::vector<size_t>& axes_in_thread, const InfoType& source) :
-              loop (axes_out_of_thread),
-              dummy (source),
-              axes (axes_in_thread) {
-                loop.start (dummy);
-              }
-
-          template <class InfoType>
-            __ThreadShared (const std::string& message, const std::vector<size_t>& axes_out_of_thread, const std::vector<size_t>& axes_in_thread, const InfoType& source) :
-              loop (axes_out_of_thread, message),
-              dummy (source),
-              axes (axes_in_thread) {
-                loop.start (dummy);
-              }
-
-          LoopInOrder loop;
-          Iterator dummy;
-          const std::vector<size_t>& axes;
-          Thread::Mutex mutex;
-      };
-
-
-      template <class Functor>
-        class __ThreadedLoop {
-          public:
-            __ThreadedLoop (const Functor& functor, __ThreadShared& shared_info) :
-              shared (shared_info),
-              func (functor) { }
-
-            void execute () {
-              LoopInOrder loop (shared.axes);
-              Iterator pos (shared.dummy);
-              while (get (pos)) 
-                for (loop.start (pos); loop.ok(); loop.next (pos)) 
-                  func (pos);
+        template <class InfoType>
+          ThreadedLoop (
+              const InfoType& source,
+              const std::vector<size_t>& axes_out_of_thread, 
+              const std::vector<size_t>& axes_in_thread) :
+            loop (axes_out_of_thread),
+            dummy (source),
+            axes (axes_in_thread) {
+              loop.start (dummy);
             }
 
+        template <class InfoType>
+          ThreadedLoop (
+              const InfoType& source,
+              const std::vector<size_t>& axes_in_loop, 
+              size_t num_axes_in_thread = 1) :
+            loop (__get_axes_out_of_thread (axes_in_loop, num_axes_in_thread)),
+            dummy (source),
+            axes (__get_axes_in_thread (axes_in_loop, num_axes_in_thread)) {
+              loop.start (dummy);
+            }
+
+        template <class InfoType>
+          ThreadedLoop (
+              const InfoType& source,
+              size_t num_axes_in_thread = 1, 
+              size_t from_axis = 0, 
+              size_t to_axis = std::numeric_limits<size_t>::max()) :
+            loop (__get_axes_out_of_thread (source, num_axes_in_thread, from_axis, to_axis)),
+            dummy (source),
+            axes (__get_axes_in_thread (source, num_axes_in_thread, from_axis, to_axis)) {
+              loop.start (dummy);
+            }
+
+        template <class InfoType>
+          ThreadedLoop (
+              const std::string& message, 
+              const InfoType& source,
+              const std::vector<size_t>& axes_out_of_thread, 
+              const std::vector<size_t>& axes_in_thread) :
+            loop (axes_out_of_thread, message),
+            dummy (source),
+            axes (axes_in_thread) {
+              loop.start (dummy);
+            }
+
+        template <class InfoType>
+          ThreadedLoop (
+              const std::string& message, 
+              const InfoType& source,
+              const std::vector<size_t>& axes_in_loop, 
+              size_t num_axes_in_thread = 1) :
+            loop (__get_axes_out_of_thread (axes_in_loop, num_axes_in_thread), message),
+            dummy (source),
+            axes (__get_axes_in_thread (axes_in_loop, num_axes_in_thread)) {
+              loop.start (dummy);
+            }
+
+        template <class InfoType>
+          ThreadedLoop (
+              const std::string& message, 
+              const InfoType& source,
+              size_t num_axes_in_thread = 1, 
+              size_t from_axis = 0, 
+              size_t to_axis = std::numeric_limits<size_t>::max()) :
+            loop (__get_axes_out_of_thread (source, num_axes_in_thread, from_axis, to_axis), message),
+            dummy (source),
+            axes (__get_axes_in_thread (source, num_axes_in_thread, from_axis, to_axis)) {
+              loop.start (dummy);
+            }
+
+        const std::vector<size_t>& outer_axes () const { return loop.axes(); }
+        const std::vector<size_t>& inner_axes () const { return axes; }
+        const Iterator& iterator () const { return dummy; }
+
+        bool next (Iterator& pos) {
+          Thread::Mutex::Lock lock (mutex);
+          if (loop.ok()) {
+            loop.set_position (dummy, pos);
+            loop.next (dummy);
+            return true;
+          }
+          else return false;
+        }
+
+        template <class Functor> void run_outer (Functor functor, const std::string& thread_label = "loop thread");
+        template <class Functor> void run (Functor functor, const std::string& thread_label = "loop thread");
+
+      protected:
+        LoopInOrder loop;
+        Iterator dummy;
+        const std::vector<size_t> axes;
+        Thread::Mutex mutex;
+
+        static std::vector<size_t> __get_axes_in_thread (
+            const std::vector<size_t>& axes_in_loop,
+            size_t num_axes_in_thread) {
+          return std::vector<size_t> (axes_in_loop.begin(), axes_in_loop.begin()+num_axes_in_thread);
+        }
+
+        static std::vector<size_t> __get_axes_out_of_thread (
+            const std::vector<size_t>& axes_in_loop,
+            size_t num_axes_in_thread) {
+          return std::vector<size_t> (axes_in_loop.begin()+num_axes_in_thread, axes_in_loop.end());
+        }
+
+        template <class InfoType>
+          static std::vector<size_t> __get_axes_in_thread (
+              const InfoType& source, 
+              size_t num_axes_in_thread, 
+              size_t from_axis, 
+              size_t to_axis) {
+            return __get_axes_in_thread (Stride::order (source, from_axis, to_axis), num_axes_in_thread);
+          }
+
+        template <class InfoType>
+          static std::vector<size_t> __get_axes_out_of_thread (
+              const InfoType& source, 
+              size_t num_axes_in_thread, 
+              size_t from_axis, 
+              size_t to_axis) {
+            return __get_axes_out_of_thread (Stride::order (source, from_axis, to_axis), num_axes_in_thread);
+          }
+
+    };
+
+
+    class ThreadedLoopKernelBase {
+      public:
+        ThreadedLoopKernelBase (ThreadedLoop& shared_info) :
+          shared (shared_info) { }
+
+      protected:
+        ThreadedLoop& shared;
+    };
+
+
+    template <class Functor>
+      class ThreadedLoopKernelOuter : public ThreadedLoopKernelBase {
+        public:
+          ThreadedLoopKernelOuter (ThreadedLoop& shared_info, const Functor& functor) :
+            ThreadedLoopKernelBase (shared_info),
+            func (functor) { }
+
+          void execute () {
+            LoopInOrder loop (shared.inner_axes());
+            Iterator pos (shared.iterator());
+            while (shared.next (pos)) 
+              func (pos);
+          }
 
         protected:
-            __ThreadShared& shared;
-            Functor func;
-
-            bool get (Iterator& pos) const {
-              Thread::Mutex::Lock lock (shared.mutex);
-              if (shared.loop.ok()) {
-                shared.loop.set_position (shared.dummy, pos);
-                shared.loop.next (shared.dummy);
-                return true;
-              }
-              else return false;
-            }
+          Functor func;
       };
 
 
+    template <class Functor>
+      class ThreadedLoopKernelFull : public ThreadedLoopKernelBase {
+        public:
+          ThreadedLoopKernelFull (ThreadedLoop& shared_info, const Functor& functor) :
+            ThreadedLoopKernelBase (shared_info),
+            func (functor) { }
+
+          void execute () {
+            LoopInOrder loop (shared.inner_axes());
+            Iterator pos (shared.iterator());
+            while (shared.next (pos)) 
+              for (loop.start (pos); loop.ok(); loop.next (pos)) 
+                func (pos);
+          }
+
+        protected:
+          Functor func;
+      };
+
+
+    template <class Functor> void ThreadedLoop::run_outer (Functor functor, const std::string& thread_label)
+    {
+      ThreadedLoopKernelOuter<Functor> loop_thread (*this, functor);
+      Thread::Array<ThreadedLoopKernelOuter<Functor> > thread_list (loop_thread);
+      Thread::Exec threads (thread_list, thread_label);
     }
 
-    //! \endcond
+
+
+
+    template <class Functor> void ThreadedLoop::run (Functor functor, const std::string& thread_label)
+    {
+      ThreadedLoopKernelFull<Functor> loop_thread (*this, functor);
+      Thread::Array<ThreadedLoopKernelFull<Functor> > thread_list (loop_thread);
+      Thread::Exec threads (thread_list, thread_label);
+    }
+
+  }
+}
 
 
 
 
-    template <class Functor, class InfoType>
-      void threaded_loop (const Functor& functor, const InfoType& source, const std::vector<size_t>& axes, size_t num_axes_in_thread = 1) 
-      {
-        const std::vector<size_t> axes_out_of_thread (axes.begin()+num_axes_in_thread, axes.end());
-        const std::vector<size_t> axes_in_thread (axes.begin(), axes.begin()+num_axes_in_thread);
-        __ThreadShared shared (axes_out_of_thread, axes_in_thread, source);
-        __ThreadedLoop<Functor> loop_thread (functor, shared);
-        Thread::Array<__ThreadedLoop<Functor> > thread_list (loop_thread);
-        Thread::Exec threads (thread_list, "loop thread");
-      }
+/*
+  template <class Functor, class InfoType>
+    void threaded_loop (const Functor& functor, const InfoType& source, const std::vector<size_t>& axes, size_t num_axes_in_thread = 1) 
+    {
+      using namespace ThreadedLoop;
+      const std::vector<size_t> axes_out_of_thread (axes.begin()+num_axes_in_thread, axes.end());
+      const std::vector<size_t> axes_in_thread (axes.begin(), axes.begin()+num_axes_in_thread);
+      Shared shared (axes_out_of_thread, axes_in_thread, source);
+      Kernel<Functor> loop_thread (functor, shared);
+      Thread::Array<Kernel<Functor> > thread_list (loop_thread);
+      Thread::Exec threads (thread_list, "loop thread");
+    }
 
-    template <class Functor, class InfoType>
-      void threaded_loop (const Functor& functor, const InfoType& source, size_t num_axes_in_thread = 1, size_t from_axis = 0, size_t to_axis = std::numeric_limits<size_t>::max())
-      {
-        const std::vector<size_t> axes = Stride::order (source, from_axis, to_axis);
-        threaded_loop (functor, source, axes, num_axes_in_thread);
-      }
+  template <class Functor, class InfoType>
+    void threaded_loop (const Functor& functor, const InfoType& source, size_t num_axes_in_thread = 1, size_t from_axis = 0, size_t to_axis = std::numeric_limits<size_t>::max())
+    {
+      const std::vector<size_t> axes = Stride::order (source, from_axis, to_axis);
+      threaded_loop (functor, source, axes, num_axes_in_thread);
+    }
 
 
 
 
-    template <class Functor, class InfoType>
+  template <class Functor, class InfoType>
       void threaded_loop_with_progress_message (
           const std::string& message, 
           const Functor& functor, 
@@ -129,11 +267,12 @@ namespace MR
           const std::vector<size_t>& axes,
           size_t num_axes_in_thread = 1)
       {
+        using namespace ThreadedLoop;
         const std::vector<size_t> axes_out_of_thread (axes.begin()+num_axes_in_thread, axes.end());
         const std::vector<size_t> axes_in_thread (axes.begin(), axes.begin()+num_axes_in_thread);
-        __ThreadShared shared (message, axes_out_of_thread, axes_in_thread, source);
-        __ThreadedLoop<Functor> loop_thread (functor, shared);
-        Thread::Array<__ThreadedLoop<Functor> > thread_list (loop_thread);
+        Shared shared (message, axes_out_of_thread, axes_in_thread, source);
+        Kernel<Functor> loop_thread (functor, shared);
+        Thread::Array<Kernel<Functor> > thread_list (loop_thread);
         Thread::Exec threads (thread_list, "loop thread");
       }
 
@@ -153,7 +292,7 @@ namespace MR
 
   }
 }
-
+*/
 #endif
 
 
