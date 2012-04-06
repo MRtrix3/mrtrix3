@@ -20,6 +20,8 @@
 
 */
 
+#include <iomanip>
+
 #include "app.h"
 #include "point.h"
 #include "image/voxel.h"
@@ -72,6 +74,7 @@ OPTIONS
 
 
 typedef float value_type;
+typedef cfloat complex_type;
 
 
 class CalibrateHistogram
@@ -102,7 +105,13 @@ class CalibrateHistogram
 class Stats
 {
   public:
-    Stats () : mean (0.0), std (0.0), min (INFINITY), max (-INFINITY), count (0), dump (NULL) { }
+    Stats () : 
+      mean (0.0, 0.0), 
+      std (0.0, 0.0),
+      min (INFINITY, INFINITY), 
+      max (-INFINITY, -INFINITY), 
+      count (0), 
+      dump (NULL) { }
 
     void generate_histogram (const CalibrateHistogram& cal) {
       hmin = cal.min;
@@ -121,19 +130,21 @@ class Stats
     }
 
 
-    void operator() (value_type val) {
-      if (finite (val)) {
+    void operator() (complex_type val) {
+      if (finite (val.real()) && finite (val.imag())) {
         mean += val;
-        std += val*val;
-        if (min > val) min = val;
-        if (max < val) max = val;
+        std += cdouble (val.real()*val.real(), val.imag()*val.imag());
+        if (min.real() > val.real()) min.real() = val.real();
+        if (min.imag() > val.imag()) min.imag() = val.imag();
+        if (max.real() < val.real()) max.real() = val.real();
+        if (max.imag() < val.imag()) max.imag() = val.imag();
         count++;
 
         if (dump)
-          *dump << val << "\n";
+          *dump << str(val) << "\n";
 
         if (hist.size()) {
-          int bin = int ( (val-hmin) / hwidth);
+          int bin = int ( (val.real()-hmin) / hwidth);
           if (bin < 0)
             bin = 0;
           else if (bin >= int (hist.size()))
@@ -143,25 +154,32 @@ class Stats
       }
     }
 
-    template <class Set> void print (Set& ima) {
+    template <class Set> void print (Set& ima, bool is_complex) {
       if (count == 0)
         throw Exception ("no voxels in mask - aborting");
 
       mean /= double (count);
-      std = sqrt (std/double (count) - mean*mean);
+      std.real() = sqrt (std.real()/double(count) - mean.real()*mean.real());
+      std.imag() = sqrt (std.imag()/double(count) - mean.imag()*mean.imag());
 
       std::string s = "[ ";
       for (size_t n = 3; n < ima.ndim(); n++)
         s += str (ima[n]) + " ";
       s += "] ";
 
-      MR::print (MR::printf ("%-15s %-11g %-11g %-11g %-11g %-11d\n",
-                             s.c_str(), mean, std, min, max, count));
+      int width = is_complex ? 24 : 12;
+      std::cout << std::setw(15) << std::right << s
+        << " " << std::setw(width) << std::right << str(mean)
+        << " " << std::setw(width) << std::right << ( count > 1 ? str(std) : "N/A" )
+        << " " << std::setw(width) << std::right << str(min)
+        << " " << std::setw(width) << std::right << str(max)
+        << " " << std::setw(12) << std::right << count << "\n";
+
     }
 
   private:
-    double mean, std;
-    value_type min, max;
+    cdouble mean, std;
+    complex_type min, max;
     size_t count;
     value_type hmin, hwidth;
     std::vector<size_t> hist;
@@ -170,12 +188,21 @@ class Stats
 
 
 
-const char* header_string = "channel         mean        std. dev.   min         max         count\n";
+void print_header (bool is_complex) 
+{
+  int width = is_complex ? 24 : 12;
+  std::cout << std::setw(15) << std::right << "channel"
+    << " " << std::setw(width) << std::right << "mean"
+    << " " << std::setw(width) << std::right << "std. dev."
+    << " " << std::setw(width) << std::right << "min"
+    << " " << std::setw(width) << std::right << "max"
+    << " " << std::setw(12) << std::right << "count\n";
+}
 
 
 void run () {
-  Image::Buffer<value_type> data (argument[0]);
-  Image::Buffer<value_type>::voxel_type vox (data);
+  Image::Buffer<complex_type> data (argument[0]);
+  Image::Buffer<complex_type>::voxel_type vox (data);
 
   Image::Loop inner_loop (0, 3);
   Image::Loop outer_loop (3);
@@ -185,6 +212,8 @@ void run () {
 
   Options opt = get_options ("histogram");
   if (opt.size()) {
+    if (data.datatype().is_complex()) 
+      throw Exception ("histogram generation not supported for complex data types");
     hist_stream = new std::ofstream (opt[0][0].c_str());
     if (!*hist_stream)
       throw Exception ("error opening histogram file \"" + opt[0][0] + "\": " + strerror (errno));
@@ -229,7 +258,7 @@ void run () {
       for (outer_loop.start (vox); outer_loop.ok(); outer_loop.next (vox)) {
         for (inner_loop.start (mask, vox); inner_loop.ok(); inner_loop.next (mask, vox)) {
           if (mask.value())
-            calibrate (vox.value());
+            calibrate (complex_type(vox.value()).real());
           ++progress;
         }
       }
@@ -257,10 +286,10 @@ void run () {
       }
 
       if (!header_shown)
-        print (header_string);
+        print_header (vox.datatype().is_complex());
       header_shown = true;
 
-      stats.print (vox);
+      stats.print (vox, vox.datatype().is_complex());
 
       if (hist_stream)
         stats.write_histogram (*hist_stream);
@@ -278,7 +307,7 @@ void run () {
       ProgressBar progress ("calibrating histogram...", Image::voxel_count (vox));
       for (outer_loop.start (vox); outer_loop.ok(); outer_loop.next (vox)) {
         for (inner_loop.start (vox); inner_loop.ok(); inner_loop.next (vox)) {
-          calibrate (vox.value());
+          calibrate (complex_type(vox.value()).real());
           ++progress;
         }
       }
@@ -304,10 +333,10 @@ void run () {
       }
 
       if (!header_shown)
-        print (header_string);
+        print_header (vox.datatype().is_complex());
       header_shown = true;
 
-      stats.print (vox);
+      stats.print (vox, vox.datatype().is_complex());
 
       if (hist_stream)
         stats.write_histogram (*hist_stream);
@@ -341,7 +370,7 @@ void run () {
         vox[0] = voxel[i][0];
         vox[1] = voxel[i][1];
         vox[2] = voxel[i][2];
-        calibrate (vox.value());
+        calibrate (complex_type(vox.value()).real());
         ++progress;
       }
     }
@@ -370,10 +399,10 @@ void run () {
     }
 
     if (!header_shown)
-      print (header_string);
+      print_header (vox.datatype().is_complex());
     header_shown = true;
 
-    stats.print (vox);
+    stats.print (vox, vox.datatype().is_complex());
 
     if (hist_stream)
       stats.write_histogram (*hist_stream);
