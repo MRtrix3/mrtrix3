@@ -45,7 +45,7 @@ namespace MR
 
     //! \cond skip
 
-    template <typename T> class GSLVector;
+    template <typename ValueType> class GSLVector;
     template <> class GSLVector <float> : public gsl_vector_float
     {
       public:
@@ -61,7 +61,7 @@ namespace MR
         }
     };
 
-    template <typename T> class GSLBlock;
+    template <typename ValueType> class GSLBlock;
 
     template <> class GSLBlock <float> : public gsl_block_float
     {
@@ -151,7 +151,7 @@ namespace MR
      * \code
      * using namespace Math;
      *
-     * Vector<T> V (10);
+     * Vector<ValueType> V (10);
      * // set all elements to zero:
      * V = 0.0;
      * // V is now [ 0 0 0 0 0 0 0 0 0 0 ]
@@ -165,7 +165,7 @@ namespace MR
      * // V is now [ 0 0 0 1 3 2 2 2 0 0 ]
      *
      * // get view of subvector from 6th to last element:
-     * Vector<T> U = V.sub (5,10);
+     * Vector<ValueType> U = V.sub (5,10);
      * // U is [ 2 2 2 0 0 ]
      *
      * // add 5 to U:
@@ -178,11 +178,11 @@ namespace MR
      * // V is now [ 0 0 7 8 8 7 7 7 5 5 ]
      * \endcode
      */
-    template <typename T> class Vector : protected GSLVector<T>
+    template <typename ValueType> class Vector : protected GSLVector<ValueType>
     {
       public:
         template <typename U> friend class Vector;
-        typedef T value_type;
+        typedef ValueType value_type;
 
         //! A class to reference existing Vector data
         /*! This class is used purely to access and modify the elements of
@@ -192,18 +192,18 @@ namespace MR
          * access to specific portions of the data (e.g. a row of a Matrix,
          * etc.).
          */
-        class View : public Vector<T>
+        class View : public Vector<ValueType>
         {
           public:
 
-            Vector<T>& operator= (T value) throw () {
-              return Vector<T>::operator= (value);
+            Vector<ValueType>& operator= (ValueType value) throw () {
+              return Vector<ValueType>::operator= (value);
             }
-            Vector<T>& operator= (const Vector<T>& V) {
-              return Vector<T>::operator= (V);
+            Vector<ValueType>& operator= (const Vector<ValueType>& V) {
+              return Vector<ValueType>::operator= (V);
             }
-            template <typename U> Vector<T>& operator= (const Vector<U>& V) {
-              return Vector<T>::operator= (V);
+            template <typename U> Vector<ValueType>& operator= (const Vector<U>& V) {
+              return Vector<ValueType>::operator= (V);
             }
 
           private:
@@ -213,28 +213,28 @@ namespace MR
             View (const View& V) {
               assert (0);
             }
-            View (const Vector<T>& V) {
+            View (const Vector<ValueType>& V) {
               assert (0);
             }
             template <typename U> View (const Vector<U>& V) {
               assert (0);
             }
 
-            View (T* vector_data, size_t nelements, size_t skip = 1) throw () {
-              GSLVector<T>::size = nelements;
-              GSLVector<T>::stride = skip;
-              GSLVector<T>::set (vector_data);
-              GSLVector<T>::block = NULL;
-              GSLVector<T>::owner = 0;
+            View (ValueType* vector_data, size_t nelements, size_t skip = 1) throw () {
+              GSLVector<ValueType>::size = nelements;
+              GSLVector<ValueType>::stride = skip;
+              GSLVector<ValueType>::set (vector_data);
+              GSLVector<ValueType>::block = NULL;
+              GSLVector<ValueType>::owner = 0;
             }
 
-            friend class Vector<T>;
-            friend class Matrix<T>;
+            friend class Vector<ValueType>;
+            friend class Matrix<ValueType>;
         };
 
         //! construct empty vector
         Vector () throw () {
-          GSLVector<T>::size = GSLVector<T>::stride = 0;
+          GSLVector<ValueType>::size = GSLVector<ValueType>::stride = 0;
           data = NULL;
           block = NULL;
           owner = 1;
@@ -242,8 +242,8 @@ namespace MR
 
         //! construct from View
         Vector (const View& V) {
-          GSLVector<T>::size = V.size();
-          GSLVector<T>::stride = V.stride();
+          GSLVector<ValueType>::size = V.size();
+          GSLVector<ValueType>::stride = V.stride();
           data = V.data;
           block = NULL;
           owner = 0;
@@ -268,9 +268,9 @@ namespace MR
         }
 
         //! construct from existing data array
-        Vector (T* vector_data, size_t nelements, size_t skip = 1) throw () {
-          GSLVector<T>::size = nelements;
-          GSLVector<T>::stride = skip;
+        Vector (ValueType* vector_data, size_t nelements, size_t skip = 1) throw () {
+          GSLVector<ValueType>::size = nelements;
+          GSLVector<ValueType>::stride = skip;
           set (vector_data);
           block = NULL;
           owner = 0;
@@ -278,7 +278,7 @@ namespace MR
 
         //! construct a vector by reading from the text file \a filename
         Vector (const std::string& file) {
-          GSLVector<T>::size = GSLVector<T>::stride = 0;
+          GSLVector<ValueType>::size = GSLVector<ValueType>::stride = 0;
           data = NULL;
           block = NULL;
           owner = 1;
@@ -289,7 +289,7 @@ namespace MR
         ~Vector () {
           if (block) {
             assert (owner);
-            GSLBlock<T>::free (block);
+            GSLBlock<ValueType>::free (block);
           }
         }
 
@@ -297,10 +297,10 @@ namespace MR
         Vector& clear () {
           if (block) {
             assert (owner);
-            GSLBlock<T>::free (block);
+            GSLBlock<ValueType>::free (block);
           }
-          GSLVector<T>::size = 0;
-          GSLVector<T>::stride = 1;
+          GSLVector<ValueType>::size = 0;
+          GSLVector<ValueType>::stride = 1;
           data = NULL;
           block = NULL;
           owner = 1;
@@ -324,17 +324,17 @@ namespace MR
             throw Exception ("attempt to allocate a view of a Vector!");
           if (block) {
             if (block->size < nelements) {
-              GSLBlock<T>::free (block);
+              GSLBlock<ValueType>::free (block);
               block = NULL;
             }
           }
           if (!block && nelements) {
-            block = GSLBlock<T>::alloc (nelements);
+            block = GSLBlock<ValueType>::alloc (nelements);
             if (!block)
               throw Exception ("Failed to allocate memory for Vector data");
           }
-          GSLVector<T>::size = nelements;
-          GSLVector<T>::stride = 1;
+          GSLVector<ValueType>::size = nelements;
+          GSLVector<ValueType>::stride = 1;
           owner = 1;
           data = block ? block->data : NULL;
           return *this;
@@ -350,7 +350,7 @@ namespace MR
           if (nelements == size())
             return *this;
           if (nelements < size()) {
-            GSLVector<T>::size = nelements;
+            GSLVector<ValueType>::size = nelements;
             return *this;
           }
           if (!block || nelements*stride() > (block ? block->size : 0)) {
@@ -360,7 +360,7 @@ namespace MR
             swap (V);
             return *this;
           }
-          GSLVector<T>::size = nelements;
+          GSLVector<ValueType>::size = nelements;
           return *this;
         }
 
@@ -388,11 +388,11 @@ namespace MR
 
 
         //! used to obtain a pointer to the underlying GSL structure
-        GSLVector<T>* gsl () {
+        GSLVector<ValueType>* gsl () {
           return this;
         }
         //! used to obtain a pointer to the underlying GSL structure
-        const GSLVector<T>* gsl () const {
+        const GSLVector<ValueType>* gsl () const {
           return this;
         }
 
@@ -402,36 +402,36 @@ namespace MR
         }
         //! returns number of elements of vector
         size_t size () const throw ()  {
-          return GSLVector<T>::size;
+          return GSLVector<ValueType>::size;
         }
 
         //! returns a reference to the element at \a i
-        T& operator[] (size_t i) throw ()          {
+        ValueType& operator[] (size_t i) throw ()          {
           return ptr() [i*stride()];
         }
 
         //! returns a reference to the element at \a i
-        const T& operator[] (size_t i) const throw ()    {
+        const ValueType& operator[] (size_t i) const throw ()    {
           return ptr() [i*stride()];
         }
 
         //! return a pointer to the underlying data
-        T* ptr () throw () {
-          return (T*) (data);
+        ValueType* ptr () throw () {
+          return (ValueType*) (data);
         }
 
         //! return a pointer to the underlying data
-        const T* ptr () const throw () {
-          return (const T*) (data);
+        const ValueType* ptr () const throw () {
+          return (const ValueType*) (data);
         }
 
         //! return the stride of the vector
         size_t stride () const throw () {
-          return GSLVector<T>::stride;
+          return GSLVector<ValueType>::stride;
         }
 
         //! assign the specified \a value to all elements of the vector
-        Vector& operator= (T value) throw () {
+        Vector& operator= (ValueType value) throw () {
           LOOP (operator[] (i) = value);
           return *this;
         }
@@ -466,22 +466,22 @@ namespace MR
         }
 
         //! add \a value to all elements of the vector
-        Vector& operator+= (T value) throw () {
+        Vector& operator+= (ValueType value) throw () {
           LOOP (operator[] (i) += value);
           return *this;
         }
         //! subtract \a value from all elements of the vector
-        Vector& operator-= (T value) throw () {
+        Vector& operator-= (ValueType value) throw () {
           LOOP (operator[] (i) -= value);
           return *this;
         }
         //! multiply all elements of the vector by \a value
-        Vector& operator*= (T value) throw () {
+        Vector& operator*= (ValueType value) throw () {
           LOOP (operator[] (i) *= value);
           return *this;
         }
         //! divide all elements of the vector by \a value
-        Vector& operator/= (T value) throw () {
+        Vector& operator/= (ValueType value) throw () {
           LOOP (operator[] (i) /= value);
           return *this;
         }
@@ -524,10 +524,10 @@ namespace MR
         Vector& view (const Vector& V) throw () {
           if (block) {
             assert (owner);
-            GSLBlock<T>::free (block);
+            GSLBlock<ValueType>::free (block);
           }
-          GSLVector<T>::size = V.size();
-          GSLVector<T>::stride = V.stride();
+          GSLVector<ValueType>::size = V.size();
+          GSLVector<ValueType>::stride = V.stride();
           data = V.data;
           block = NULL;
           owner = 0;
@@ -543,7 +543,7 @@ namespace MR
         //! return a subvector of the vector
         const View sub (size_t from, size_t to) const throw () {
           assert (from <= to && to <= size());
-          return View (const_cast<T*> (ptr()) + from*stride(), to-from, stride());
+          return View (const_cast<ValueType*> (ptr()) + from*stride(), to-from, stride());
         }
 
         //! return a subvector of the vector
@@ -560,17 +560,17 @@ namespace MR
 
         //! write the vector \a V to \a stream as text
         friend std::ostream& operator<< (std::ostream& stream, const Vector& V) {
-          for (size_t i = 0; i < V.size(); i++) stream << V[i] << " ";
+          for (size_t i = 0; i < V.size(); i++) stream << str(V[i]) << " ";
           return stream;
         }
 
         //! read the vector data from \a stream and assign to the vector \a V
         friend std::istream& operator>> (std::istream& stream, Vector& V) {
-          std::vector<T> vec;
+          std::vector<ValueType> vec;
+          std::string entry;
           while (true) {
-            T val;
-            stream >> val;
-            if (stream.good()) vec.push_back (val);
+            stream >> entry;
+            if (stream.good()) vec.push_back (to<ValueType> (entry));
             else break;
           }
 
@@ -581,23 +581,23 @@ namespace MR
         }
 
       protected:
-        using GSLVector<T>::data;
-        using GSLVector<T>::block;
-        using GSLVector<T>::owner;
+        using GSLVector<ValueType>::data;
+        using GSLVector<ValueType>::block;
+        using GSLVector<ValueType>::owner;
 
         void initialize (size_t nelements) {
           if (nelements) {
-            block = GSLBlock<T>::alloc (nelements);
+            block = GSLBlock<ValueType>::alloc (nelements);
             if (!block)
               throw Exception ("Failed to allocate memory for Vector data");
-            GSLVector<T>::size = nelements;
-            GSLVector<T>::stride = 1;
+            GSLVector<ValueType>::size = nelements;
+            GSLVector<ValueType>::stride = 1;
             data = block->data;
             owner = 1;
           } 
           else {
-            GSLVector<T>::size = 0;
-            GSLVector<T>::stride = 1;
+            GSLVector<ValueType>::size = 0;
+            GSLVector<ValueType>::stride = 1;
             data = NULL;
             block = NULL;
             owner = 1;
@@ -611,92 +611,92 @@ namespace MR
       @{ */
 
     //! compute the squared 2-norm of a vector
-    template <typename T> inline T norm2 (const T* V, size_t size = 3, size_t stride = 1)
+    template <typename ValueType> inline ValueType norm2 (const ValueType* V, size_t size = 3, size_t stride = 1)
     {
-      T n = 0.0;
+      ValueType n = 0.0;
       for (size_t i = 0; i < size; i++) n += pow2 (V[i*stride]);
       return n;
     }
 
     //! compute the squared 2-norm of a vector
-    template <typename T> inline T norm2 (const Vector<T>& V)
+    template <typename ValueType> inline ValueType norm2 (const Vector<ValueType>& V)
     {
       return norm2 (V.ptr(), V.size(), V.stride());
     }
 
     //! compute the 2-norm of a vector
-    template <typename T> inline T norm (const T* V, size_t size = 3, size_t stride = 1)
+    template <typename ValueType> inline ValueType norm (const ValueType* V, size_t size = 3, size_t stride = 1)
     {
       return sqrt (norm2 (V, size, stride));
     }
 
     //! compute the 2-norm of a vector
-    template <typename T> inline T norm (const Vector<T>& V)
+    template <typename ValueType> inline ValueType norm (const Vector<ValueType>& V)
     {
       return norm (V.ptr(), V.size(), V.stride());
     }
 
     //! compute the squared 2-norm of the difference between two vectors
-    template <typename T> inline T norm_diff2 (const T* x, const T* y, size_t size = 3, size_t x_stride = 1, size_t y_stride = 1)
+    template <typename ValueType> inline ValueType norm_diff2 (const ValueType* x, const ValueType* y, size_t size = 3, size_t x_stride = 1, size_t y_stride = 1)
     {
-      T n = 0.0;
+      ValueType n = 0.0;
       for (size_t i = 0; i < size; i++) n += pow2 (x[i*x_stride] - y[i*y_stride]);
       return n;
     }
 
     //! compute the squared 2-norm of the difference between two vectors
-    template <typename T> inline T norm_diff2 (const Vector<T>& x, const Vector<T>& y)
+    template <typename ValueType> inline ValueType norm_diff2 (const Vector<ValueType>& x, const Vector<ValueType>& y)
     {
       return norm_diff2 (x.ptr(), y.ptr(), x.size(), x.stride(), y.stride());
     }
 
     //! compute the mean of the elements of a vector
-    template <typename T> inline T mean (const T* V, size_t size = 3, size_t stride = 1)
+    template <typename ValueType> inline ValueType mean (const ValueType* V, size_t size = 3, size_t stride = 1)
     {
-      T n = 0.0;
+      ValueType n = 0.0;
       for (size_t i = 0; i < size; i++)
         n += V[i*stride];
       return n/size;
     }
 
     //! compute the mean of the elements of a vector
-    template <typename T> inline T mean (const Vector<T>& V)
+    template <typename ValueType> inline ValueType mean (const Vector<ValueType>& V)
     {
       return mean (V.ptr(), V.size(), V.stride());
     }
 
     //! normalise a vector to have unit 2-norm
-    template <typename T> inline void normalise (T* V, size_t size = 3, size_t stride = 1)
+    template <typename ValueType> inline void normalise (ValueType* V, size_t size = 3, size_t stride = 1)
     {
-      T n = norm (V, size, stride);
+      ValueType n = norm (V, size, stride);
       for (size_t i = 0; i < size; i++)
         V[i*stride] /= n;
     }
 
     //! normalise a vector to have unit 2-norm
-    template <typename T> inline Vector<T>& normalise (Vector<T>& V)
+    template <typename ValueType> inline Vector<ValueType>& normalise (Vector<ValueType>& V)
     {
       normalise (V.ptr(), V.size(), V.stride());
       return V;
     }
 
     //! compute the dot product between two vectors
-    template <typename T> inline T dot (const T* x, const T* y, size_t size = 3, size_t x_stride = 1, size_t y_stride = 1)
+    template <typename ValueType> inline ValueType dot (const ValueType* x, const ValueType* y, size_t size = 3, size_t x_stride = 1, size_t y_stride = 1)
     {
-      T retval = 0.0;
+      ValueType retval = 0.0;
       for (size_t i = 0; i < size; i++)
         retval += x[i*x_stride] * y[i*y_stride];
       return retval;
     }
 
     //! compute the dot product between two vectors
-    template <typename T> inline T dot (const Vector<T>& x, const Vector<T>& y)
+    template <typename ValueType> inline ValueType dot (const Vector<ValueType>& x, const Vector<ValueType>& y)
     {
       return dot (x.ptr(), y.ptr(), x.size(), x.stride(), y.stride());
     }
 
     //! compute the cross product between two vectors
-    template <typename T> inline void cross (T* c, const T* x, const T* y, 
+    template <typename ValueType> inline void cross (ValueType* c, const ValueType* x, const ValueType* y, 
         size_t c_stride = 1, size_t x_stride = 1, size_t y_stride = 1)
     {
       c[0] = x[x_stride]*y[2*y_stride] - x[2*x_stride]*y[y_stride];
@@ -705,7 +705,7 @@ namespace MR
     }
 
     //! compute the cross product between two vectors
-    template <typename T> inline Vector<T>& cross (Vector<T>& c, const Vector<T>& x, const Vector<T>& y)
+    template <typename ValueType> inline Vector<ValueType>& cross (Vector<ValueType>& c, const Vector<ValueType>& x, const Vector<ValueType>& y)
     {
       cross (c.ptr(), x.ptr(), y.ptr(), c.stride(), x.stride(), y.stride());
       return c;
@@ -713,9 +713,9 @@ namespace MR
 
 
     //! find the maximum value of any elements within a vector
-    template <typename T> inline T max (const Vector<T>& V, size_t& i)
+    template <typename ValueType> inline ValueType max (const Vector<ValueType>& V, size_t& i)
     {
-      T val (V[0]);
+      ValueType val (V[0]);
       i = 0;
       for (size_t j = 0; j < V.size(); j++) {
         if (val < V[j]) {
@@ -727,9 +727,9 @@ namespace MR
     }
 
     //! find the minimum value of any elements within a vector
-    template <typename T> inline T min (const Vector<T>& V, size_t& i)
+    template <typename ValueType> inline ValueType min (const Vector<ValueType>& V, size_t& i)
     {
-      T val (V[0]);
+      ValueType val (V[0]);
       i = 0;
       for (size_t j = 0; j < V.size(); j++) {
         if (val > V[j]) {
@@ -742,9 +742,9 @@ namespace MR
 
 
     //! find the maximum absolute value of any elements within a vector
-    template <typename T> inline T absmax (const Vector<T>& V, size_t& i)
+    template <typename ValueType> inline ValueType absmax (const Vector<ValueType>& V, size_t& i)
     {
-      T val (abs (V[0]));
+      ValueType val (abs (V[0]));
       i = 0;
       for (size_t j = 0; j < V.size(); j++) {
         if (val < abs (V[j])) {
