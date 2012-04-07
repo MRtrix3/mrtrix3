@@ -31,16 +31,12 @@ namespace MR {
     namespace Tractography {
 
 
-      // TODO This will crash if passed a 4D image, even if the 4th axis has dimension 1
-
-
-
       void ROI::get_image (const std::string& name)
       {
         Image::Buffer<float> data (name);
         Image::Buffer<float>::voxel_type vox (data);
-        size_t bottom[] = { std::numeric_limits<size_t>::max(), std::numeric_limits<size_t>::max(), std::numeric_limits<size_t>::max() };
-        size_t top[] = { 0, 0, 0 };
+        std::vector<size_t> bottom (vox.ndim(), 0), top (vox.ndim(), 0);
+        std::fill_n (bottom.begin(), 3, std::numeric_limits<size_t>::max());
         float sum = 0.0, max = 0.0;
 
         Image::Loop loop (0,3);
@@ -91,8 +87,8 @@ namespace MR {
       {
         Image::Buffer<bool> data (name);
         Image::Buffer<bool>::voxel_type vox (data);
-        size_t bottom[] = { std::numeric_limits<size_t>::max(), std::numeric_limits<size_t>::max(), std::numeric_limits<size_t>::max() };
-        size_t top[] = { 0, 0, 0 };
+        std::vector<size_t> bottom (vox.ndim(), 0), top (vox.ndim(), 0);
+        std::fill_n (bottom.begin(), 3, std::numeric_limits<size_t>::max());
         size_t sum = 0;
 
         Image::Loop loop (0,3);
