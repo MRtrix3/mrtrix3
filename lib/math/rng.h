@@ -41,11 +41,15 @@ namespace MR
       public:
         RNG ()            {
           generator = gsl_rng_alloc (gsl_rng_mt19937);
-          gsl_rng_set (generator, time (NULL));
+          set (time (NULL));
         }
         RNG (size_t seed) {
           generator = gsl_rng_alloc (gsl_rng_mt19937);
-          gsl_rng_set (generator, seed);
+          set (seed);
+        }
+        RNG (const RNG& rng) {
+          generator = gsl_rng_alloc (gsl_rng_mt19937);
+          set (rng.get()+1);
         }
         ~RNG ()           {
           gsl_rng_free (generator);
@@ -53,8 +57,13 @@ namespace MR
 
 
 
-        void set_seed (size_t seed) {
+        void set (size_t seed) {
           gsl_rng_set (generator, seed);
+          VAR (get());
+        }
+
+        size_t get () const {
+          return gsl_rng_get (generator);
         }
 
 
