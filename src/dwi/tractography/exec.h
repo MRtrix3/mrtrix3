@@ -76,7 +76,6 @@ namespace MR {
           static void run (const std::string& source_name, const std::string& destination, DWI::Tractography::Properties& properties)
           {
             typename Method::Shared shared (source_name, properties);
-            MethodBase::init(); 
 
             WriteKernel writer (shared, destination, properties);
             Exec<Method> tracker (shared);

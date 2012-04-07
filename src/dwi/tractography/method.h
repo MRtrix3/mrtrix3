@@ -38,7 +38,6 @@ namespace MR {
           MethodBase (const SharedBase& shared) :
             source (shared.source),
             interp (source), 
-            rng (rng_seed++), 
             pos (0.0, 0.0, 0.0),
             dir (0.0, 0.0, 1.0),
             values (new value_type [source.dim(3)]),
@@ -47,7 +46,7 @@ namespace MR {
           MethodBase (const MethodBase& base) : 
             source (base.source), 
             interp (source),
-            rng (rng_seed++),
+            rng (base.rng),
             pos (0.0, 0.0, 0.0),
             dir (0.0, 0.0, 1.0),
             values (new value_type [source.dim(3)]),
@@ -116,10 +115,6 @@ namespace MR {
           virtual bool next() = 0;
 
 
-          static void init () { rng_seed = time (NULL); }
-
-        private:
-          static size_t rng_seed;
       };
 
 
