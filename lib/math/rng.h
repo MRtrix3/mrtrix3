@@ -25,6 +25,7 @@
 
 #include <gsl/gsl_rng.h>
 #include <gsl/gsl_randist.h>
+#include <sys/time.h>
 
 #include "math/vector.h"
 
@@ -35,13 +36,12 @@ namespace MR
 
     class RNG
     {
-      protected:
-        gsl_rng* generator;
-
       public:
-        RNG ()            {
+        RNG () {
           generator = gsl_rng_alloc (gsl_rng_mt19937);
-          set (time (NULL));
+          struct timeval tv;
+          gettimeofday (&tv, NULL);
+          set (tv.tv_sec ^ tv.tv_usec);
         }
         RNG (size_t seed) {
           generator = gsl_rng_alloc (gsl_rng_mt19937);
@@ -59,7 +59,6 @@ namespace MR
 
         void set (size_t seed) {
           gsl_rng_set (generator, seed);
-          VAR (get());
         }
 
         size_t get () const {
@@ -92,6 +91,10 @@ namespace MR
         template <class T> void shuffle (std::vector<T>& V) {
           gsl_ran_shuffle (generator, &V[0], V.size(), sizeof (T));
         }
+
+
+      protected:
+        gsl_rng* generator;
     };
 
 
