@@ -129,10 +129,7 @@ namespace MR
                 imvox[1] = vox[1];
                 imvox[2] = vox[2];
                 cfloat val = imvox.value();
-                if (image()->header().datatype().is_complex()) 
-                  value = printf ("value: %.5g + %.5gi", val.real(), val.imag());
-                else
-                  value = printf ("value: %.5g", val.real());
+                value = "value: " + str (val);
               }
               else value = "value: ?";
               renderText (value, LeftEdge | BottomEdge, 2);
