@@ -134,7 +134,7 @@ namespace MR
         }
 
         if (get<int16_t> (&NH.bitpix, is_BE) != (int16_t) dtype.bits())
-          error ("WARNING: bitpix field does not match data type in NIfTI image \"" + H.name() + "\" - ignored");
+          warning ("bitpix field does not match data type in NIfTI image \"" + H.name() + "\" - ignored");
 
         H.datatype() = dtype;
 

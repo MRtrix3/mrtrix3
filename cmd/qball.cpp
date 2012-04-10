@@ -248,7 +248,7 @@ void run ()
   for (i = 0; Math::SH::NforL(i) < dwis.size(); i += 2);
   i -= 2;
   if (lmax > i) {
-    print("WARNING: not enough data for SH order " + str(lmax) + ", falling back to " + str(i));
+    warning ("not enough data for SH order " + str(lmax) + ", falling back to " + str(i));
     lmax = i;
   }
   inform("setting maximum even spherical harmonic order to " + str(lmax));

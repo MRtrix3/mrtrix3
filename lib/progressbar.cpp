@@ -60,7 +60,6 @@ namespace MR
     }
   }
 
-  bool ProgressBar::display = true;
   void (*ProgressBar::display_func) (ProgressInfo& p) = display_func_cmdline;
   void (*ProgressBar::done_func) (ProgressInfo& p) = done_func_cmdline;
 

@@ -143,8 +143,8 @@ namespace MR
           std::string name = tag_name();
           if (!name.size()) {
             if (group%2 == 0)
-              debug ("WARNING: unknown DICOM tag (" + str (group) + ", " + str (element)
-                     + ") with implicit encoding in file \"" + fmap->name() + "\"");
+              debug ("unknown DICOM tag (" + str (group) + ", " + str (element)
+                     + ") with implicit encoding in file \"" + fmap->name() + "\" - ignoring");
             VR = VR_UN;
           }
           else {

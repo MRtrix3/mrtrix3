@@ -881,7 +881,7 @@ void run () {
 
   if (stack.size() == 1) {
     if (!stack[0].evaluator && !stack[0].buffer) 
-      print (str(stack[0].value));
+      print (str(stack[0].value) + "\n");
     return;
   }
 

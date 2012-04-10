@@ -40,6 +40,8 @@ namespace MR
       return number_of_threads;
     }
 
+    void (*Exec::Common::previous_print_func) (const std::string& msg) = NULL;
+    void (*Exec::Common::previous_report_to_user_func) (const std::string& msg, int type) = NULL;
 
     Exec::Common::Common () :
       refcount (0), attributes (new pthread_attr_t) {
@@ -47,23 +49,17 @@ namespace MR
         pthread_attr_init (attributes);
         pthread_attr_setdetachstate (attributes, PTHREAD_CREATE_JOINABLE);
 
-        previous_print = print;
-        previous_error = error;
-        previous_inform = inform;
-        previous_debug = debug;
+        previous_print_func = print;
+        previous_report_to_user_func = report_to_user_func;
 
-        print = thread_print;
-        error = thread_error;
-        inform = thread_inform;
-        debug = thread_debug;
+        print = thread_print_func;
+        report_to_user_func = thread_report_to_user_func;
       }
 
     Exec::Common::~Common () 
     {
-      print = previous_print;
-      error = previous_error;
-      inform = previous_inform;
-      debug = previous_debug;
+      print = previous_print_func;
+      report_to_user_func = previous_report_to_user_func;
 
       debug ("uninitialising threads...");
 
@@ -71,36 +67,16 @@ namespace MR
       delete attributes;
     }
 
-    void Exec::Common::thread_print (const std::string& msg)
+    void Exec::Common::thread_print_func (const std::string& msg)
     {
-      if (App::log_level) {
-        Thread::Mutex::Lock lock (common->mutex);
-        std::cerr << App::NAME << ": " << msg << "\n";
-      }
+      Thread::Mutex::Lock lock (common->mutex);
+      previous_print_func (msg);
     }
 
-    void Exec::Common::thread_error (const std::string& msg)
+    void Exec::Common::thread_report_to_user_func (const std::string& msg, int type)
     {
-      if (App::log_level) {
-        Thread::Mutex::Lock lock (common->mutex);
-        std::cerr << App::NAME << " [ERROR]: " << msg << "\n";
-      }
-    }
-
-    void Exec::Common::thread_inform (const std::string& msg)
-    {
-      if (App::log_level > 1) {
-        Thread::Mutex::Lock lock (common->mutex);
-        std::cerr << App::NAME << " [INFO]: " <<  msg << "\n";
-      }
-    }
-
-    void Exec::Common::thread_debug (const std::string& msg)
-    {
-      if (App::log_level > 2) {
-        Thread::Mutex::Lock lock (common->mutex);
-        std::cerr << App::NAME << " [DEBUG]: " <<  msg << "\n";
-      }
+      Thread::Mutex::Lock lock (common->mutex);
+      previous_report_to_user_func (msg, type);
     }
 
 

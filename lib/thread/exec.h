@@ -207,15 +207,11 @@ namespace MR
             pthread_attr_t* attributes;
 
             Thread::Mutex mutex;
-            static void thread_print (const std::string& msg);
-            static void thread_error (const std::string& msg);
-            static void thread_inform (const std::string& msg);
-            static void thread_debug (const std::string& msg);
+            static void thread_print_func (const std::string& msg);
+            static void thread_report_to_user_func (const std::string& msg, int type);
 
-            void (*previous_print) (const std::string& msg);
-            void (*previous_error) (const std::string& msg);
-            void (*previous_inform) (const std::string& msg);
-            void (*previous_debug) (const std::string& msg);
+            static void (*previous_print_func) (const std::string& msg);
+            static void (*previous_report_to_user_func) (const std::string& msgi, int type);
         };
         static Common* common;
 

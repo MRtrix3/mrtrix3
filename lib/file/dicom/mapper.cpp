@@ -71,7 +71,7 @@ namespace MR
           std::sort (series[s]->begin(), series[s]->end(), PtrComp());
           std::vector<int> dim_tmp = series[s]->count();
           if (dim[0] != dim_tmp[0] || dim[1] != dim_tmp[1] || dim[2] != dim_tmp[2])
-            error ("WARNING: DICOM series selected do not have the same dimensions");
+            warning ("DICOM series selected do not have the same dimensions");
         }
 
 
@@ -101,10 +101,10 @@ namespace MR
         }
 
         if (slicesep_warning)
-          error ("WARNING: slice separation is not constant");
+          warning ("slice separation is not constant");
 
         if (Math::abs (slice_separation - slice_thickness) > 1e-4)
-          error ("WARNING: slice gap detected");
+          warning ("slice gap detected");
 
 
 

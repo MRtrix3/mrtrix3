@@ -94,18 +94,19 @@ namespace MR
        * Otherwise, the ProgressBar will display the percentage completed,
        * computed from the number of times the ProgressBar::operator++()
        * function was called relative to the value specified with \a target. */
-      ProgressBar (const std::string& text, size_t target = 0) :
+      ProgressBar (const std::string& text, size_t target = 0, int log_level = 1) :
         ProgressInfo (text, target),
-        show (display),
+        show (App::log_level >= log_level),
         current_val (0) {
-        if (show) {
+          if (!show) return;
+
           if (as_percentage)
             set_max (target);
           else
             next_val.d = BUSY_INTERVAL;
+
           display_func (*this);
         }
-      }
 
       ~ProgressBar () {
         if (show)
@@ -117,7 +118,7 @@ namespace MR
        * to the application.
         * \returns true if the progress will be shown, false otherwise. */
       operator bool () const {
-        return (show);
+        return show;
       }
 
       //! returns whether the progress will be shown
@@ -125,7 +126,7 @@ namespace MR
        * to the application.
        * \returns true if the progress will not be shown, false otherwise. */
       bool operator! () const {
-        return (!show);
+        return !show;
       }
 
       //! set the maximum target value of the ProgressBar
@@ -144,27 +145,27 @@ namespace MR
 
       //! increment the current value by one.
       void operator++ () {
-        if (show) {
-          if (as_percentage) {
-            ++current_val;
-            if (current_val >= next_val.i) {
-              value = next_val.i / multiplier;
-              next_val.i = (value+1) * multiplier;
-              while (next_val.i <= current_val)
-                ++next_val.i;
-              display_func (*this);
-            }
+        if (!show) return;
+
+        if (as_percentage) {
+          ++current_val;
+          if (current_val >= next_val.i) {
+            value = next_val.i / multiplier;
+            next_val.i = (value+1) * multiplier;
+            while (next_val.i <= current_val)
+              ++next_val.i;
+            display_func (*this);
           }
-          else {
-            double time = timer.elapsed();
-            if (time >= next_val.d) {
-              value = time / BUSY_INTERVAL;
-              do {
-                next_val.d += BUSY_INTERVAL;
-              }
-              while (next_val.d <= time);
-              display_func (*this);
+        }
+        else {
+          double time = timer.elapsed();
+          if (time >= next_val.d) {
+            value = time / BUSY_INTERVAL;
+            do {
+              next_val.d += BUSY_INTERVAL;
             }
+            while (next_val.d <= time);
+            display_func (*this);
           }
         }
       }
@@ -173,7 +174,6 @@ namespace MR
         ++ (*this);
       }
 
-      static bool display;
       static void (*display_func) (ProgressInfo& p);
       static void (*done_func) (ProgressInfo& p);
 

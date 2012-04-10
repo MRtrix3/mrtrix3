@@ -83,20 +83,12 @@ void usage ()
 
   + DataType::options() 
 
-  + DWI::GradOption
-  
-  + OptionGroup ("for complex input images")
-  + Option ("real", 
-      "return the real part of each voxel value")
-  + Option ("imag", 
-      "return the imaginary part of each voxel value")
-  + Option ("phase", 
-      "return the phase of each voxel value")
-  + Option ("magnitude", 
-      "return the magnitude of each voxel value");
+  + DWI::GradOption;
 }
 
 
+
+typedef cfloat complex_type;
 
 
 
@@ -162,14 +154,16 @@ inline std::vector<int> set_header (
 
 
 
-  template <typename OutputValueType, class InputVoxelType>
+
+
+template <class InputVoxelType>
 inline void copy_permute (InputVoxelType& in, Image::Header& header_out, const std::string& output_filename) 
 {
   DataType datatype = header_out.datatype();
   std::vector<int> axes = set_header (header_out, in);
   header_out.datatype() = datatype;
-  Image::Buffer<OutputValueType> buffer_out (output_filename, header_out);
-  typename Image::Buffer<OutputValueType>::voxel_type out (buffer_out);
+  Image::Buffer<complex_type> buffer_out (output_filename, header_out);
+  Image::Buffer<complex_type>::voxel_type out (buffer_out);
 
   if (axes.size()) {
     Image::Adapter::PermuteAxes<InputVoxelType> perm (in, axes);
@@ -184,42 +178,22 @@ inline void copy_permute (InputVoxelType& in, Image::Header& header_out, const s
 
 
 
-template <typename ValueType, class FunctionType, class VoxelType>
-class VoxelValueModified : public Image::Adapter::Voxel<VoxelType> {
-  public:
-    VoxelValueModified (const VoxelType& parent, FunctionType function) : 
-      Image::Adapter::Voxel<VoxelType> (parent),
-      func (function) { }
-    typedef ValueType value_type;
-    value_type value () const { return func (this->parent_vox.value()); }
-    FunctionType func;
-};
 
 
 
 
-
-template <typename InputValueType, typename OutputValueType, class FunctionType>
-void copy_extract (const Image::Header& header_in, const std::string& output_filename, FunctionType function)
+void run ()
 {
-  Image::Buffer<InputValueType> buffer_in (header_in);
-  typedef VoxelValueModified<OutputValueType, FunctionType, typename Image::Buffer<InputValueType>::voxel_type> InputVoxelType;
-  InputVoxelType in (buffer_in, function);
+  Image::Header header_in (argument[0]);
+
+  Image::Buffer<complex_type> buffer_in (header_in);
+  Image::Buffer<complex_type>::voxel_type in (buffer_in);
 
   Image::Header header_out (header_in);
-  DataType requested_datatype = DataType::from_command_line ();
+  header_out.datatype() = DataType::from_command_line (header_out.datatype());
 
-  if (requested_datatype.undefined()) 
-    header_out.datatype() = DataType::from<OutputValueType>();
-  else {
-    bool is_complex = requested_datatype.is_complex();
-    bool should_be_complex = DataType::from<OutputValueType>().is_complex();
-    if (is_complex && !should_be_complex)
-      throw Exception ("datatype must be real");
-    if (!is_complex && should_be_complex )
-      throw Exception ("datatype must be complex");
-    header_out.datatype() = requested_datatype;
-  }
+  if (header_in.datatype().is_complex() && !header_out.datatype().is_complex())
+    warning ("requested datatype is real but input datatype is complex - imaginary component will be ignored");
 
   try {
     header_out.DW_scheme() = DWI::get_DW_scheme<float> (header_in);
@@ -247,44 +221,11 @@ void copy_extract (const Image::Header& header_in, const std::string& output_fil
       }
     }
 
-    Image::Adapter::Extract<InputVoxelType> extract (in, pos);
-    copy_permute<OutputValueType> (extract, header_out, output_filename);
+    Image::Adapter::Extract<Image::Buffer<complex_type>::voxel_type> extract (in, pos);
+    copy_permute (extract, header_out, argument[1]);
   }
   else 
-    copy_permute<OutputValueType> (in, header_out, output_filename);
-  
-}
+    copy_permute (in, header_out, argument[1]);
 
-typedef float RealValueType;
-typedef cfloat ComplexValueType;
-
-
-inline RealValueType func_no_op_real (RealValueType x) { return x; }
-inline ComplexValueType func_no_op_complex (ComplexValueType x) { return x; }
-inline RealValueType func_real (ComplexValueType x) { return x.real(); }
-inline RealValueType func_imag (ComplexValueType x) { return x.imag(); }
-inline RealValueType func_phase (ComplexValueType x) { return std::arg (x); }
-inline RealValueType func_abs (ComplexValueType x) { return std::abs (x); }
-
-
-
-void run ()
-{
-  Image::Header header_in (argument[0]);
-
-  if (header_in.datatype().is_complex()) {
-    if (get_options ("real").size()) 
-      copy_extract<ComplexValueType,RealValueType> (header_in, argument[1], func_real);
-    else if (get_options ("imag").size()) 
-      copy_extract<ComplexValueType,RealValueType> (header_in, argument[1], func_imag);
-    else if (get_options ("phase").size()) 
-      copy_extract<ComplexValueType,RealValueType> (header_in, argument[1], func_phase);
-    else if (get_options ("magnitude").size()) 
-      copy_extract<ComplexValueType,RealValueType> (header_in, argument[1], func_abs);
-    else 
-      copy_extract<ComplexValueType,ComplexValueType> (header_in, argument[1], func_no_op_complex);
-  }
-  else 
-    copy_extract<RealValueType,RealValueType> (header_in, argument[1], func_no_op_real);
 }
 

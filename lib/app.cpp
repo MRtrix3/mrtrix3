@@ -214,12 +214,10 @@ namespace MR
       }
       if (get_options ("debug").size())
         log_level = 3;
-      if (get_options ("quiet").size()) {
+      if (get_options ("quiet").size()) 
         log_level = 0;
-        ProgressBar::display = false;
-      }
       if (get_options ("force").size()) {
-        inform ("WARNING: existing destination files will be overwritten");
+        warning ("existing output files will be overwritten");
         overwrite_files = true;
       }
       if (get_options ("help").size())

@@ -73,7 +73,7 @@ namespace MR
       close (fid);
 
       if (size) 
-        throw Exception ("WARNING: cannot resize file \"" + filename + "\": " + strerror (errno));
+        throw Exception ("cannot resize file \"" + filename + "\": " + strerror (errno));
     }
 
 
