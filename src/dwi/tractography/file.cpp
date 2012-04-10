@@ -44,7 +44,7 @@ namespace MR {
               properties.roi.insert (std::pair<std::string,std::string> (V[0], V[1]));
             }
             catch (...) {
-              error ("WARNING: invalid ROI specification in tracks file \"" + file + "\" - ignored");
+              warning ("invalid ROI specification in tracks file \"" + file + "\" - ignored");
             }
           }
           else if (key == "comment") properties.comments.push_back (kv.value());
