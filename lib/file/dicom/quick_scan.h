@@ -38,7 +38,7 @@ namespace MR
         public:
           /*! \todo could exclude Siemens MPR info images by splitting the
            * series based on entry (0x0008U, 0x0008U). */
-          bool read (const std::string& file_name, bool print_DICOM_fields = false, bool print_CSA_fields = false);
+          bool read (const std::string& file_name, bool print_DICOM_fields = false, bool print_CSA_fields = false, bool force_read = false);
 
           std::string      filename, modality;
           std::string      patient, patient_ID, patient_DOB;

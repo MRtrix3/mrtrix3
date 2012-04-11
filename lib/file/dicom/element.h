@@ -56,7 +56,7 @@ namespace MR
 
           std::vector<size_t>  item_number;
 
-          void set (const std::string& filename);
+          void set (const std::string& filename, bool force_read = false);
           bool read ();
 
           bool is (uint16_t Group, uint16_t Element) const {

@@ -80,7 +80,7 @@ void run ()
     }
 
     File::Dicom::Element item;
-    item.set (argument[0]);
+    item.set (argument[0], true);
     while (item.read()) {
       for (size_t n = 0; n < opt.size(); ++n) 
         if (item.is (tags[n].group, tags[n].element)) 
@@ -96,7 +96,7 @@ void run ()
 
   File::Dicom::QuickScan reader;
 
-  if (reader.read (argument[0], get_options ("all").size(), get_options ("csa").size()))
+  if (reader.read (argument[0], get_options ("all").size(), get_options ("csa").size(), true))
     throw Exception ("error reading file \"" + reader.filename + "\"");
 
   if (!get_options ("all").size() && !get_options ("csa").size()) 
