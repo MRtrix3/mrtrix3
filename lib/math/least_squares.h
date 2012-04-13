@@ -31,6 +31,14 @@ namespace MR
   namespace Math
   {
 
+    namespace {
+      template <typename ValueType> inline CBLAS_TRANSPOSE __transpose () { return CblasTrans; } 
+#ifdef __math_complex_h__
+      template <> inline CBLAS_TRANSPOSE __transpose<cfloat> () { return CblasConjTrans; }
+      template <> inline CBLAS_TRANSPOSE __transpose<cdouble> () { return CblasConjTrans; }
+#endif
+    }
+
     /** @addtogroup linalg
       @{ */
 
@@ -38,14 +46,37 @@ namespace MR
       @{ */
 
 
-    //! solve least-squares problem Mx = b
-    template <typename ValueType> inline Vector<ValueType>& solve_LS (Vector<ValueType>& x, const Matrix<ValueType>& M, const Vector<ValueType>& b, Matrix<ValueType>& work)
+    //! solve over-determined least-squares problem Mx = b
+    template <typename ValueType> 
+      inline Vector<ValueType>& solve_LS (Vector<ValueType>& x, const Matrix<ValueType>& M, const Vector<ValueType>& b, Matrix<ValueType>& work)
     {
-      rankN_update (work, M, CblasTrans, CblasLower);
+      work.allocate (M.columns(), M.columns());
+      rankN_update (work, M, __transpose<ValueType>(), CblasLower);
       Cholesky::decomp (work);
-      mult (x, ValueType (1.0), CblasTrans, M, b);
+      mult (x, ValueType (1.0), __transpose<ValueType>(), M, b);
       return Cholesky::solve (x, work);
     }
+
+
+
+    //! solve regularised least-squares problem |Mx-b|^2 + r|x|^2 
+    template <typename ValueType> 
+      inline Vector<ValueType>& solve_LS_reg (
+          Vector<ValueType>& x,
+          const Matrix<ValueType>& M,
+          const Vector<ValueType>& b,
+          double reg_weight, 
+          Matrix<ValueType>& work)
+    {
+      work.allocate (M.columns(), M.columns());
+      rankN_update (work, M, __transpose<ValueType>(), CblasLower);
+      work.diagonal() += ValueType (reg_weight);
+      Cholesky::decomp (work);
+      mult (x, ValueType (1.0), __transpose<ValueType>(), M, b);
+      return Cholesky::solve (x, work);
+    }
+
+
 
     //! compute Moore-Penrose pseudo-inverse of M given its transpose Mt
     template <typename ValueType> inline Matrix<ValueType>& pinv (Matrix<ValueType>& I, const Matrix<ValueType>& Mt, Matrix<ValueType>& work)
@@ -54,6 +85,9 @@ namespace MR
       Cholesky::inv (work);
       return mult (I, CblasLeft, ValueType (0.0), ValueType (1.0), CblasUpper, work, Mt);
     }
+
+
+
 
     //! compute Moore-Penrose pseudo-inverse of M
     template <typename ValueType> inline Matrix<ValueType>& pinv (Matrix<ValueType>& I, const Matrix<ValueType>& M)
@@ -68,22 +102,9 @@ namespace MR
     /** @} */
 
 
-    //! \cond skip
 
-#ifdef __math_complex_h__
 
-    //! solve least-squares problem Mx = b
-    template <> inline Vector<cdouble>& solve_LS (Vector<cdouble>& x, const Matrix<cdouble>& M, const Vector<cdouble>& b, Matrix<cdouble>& work)
-    {
-      rankN_update (work, M, CblasConjTrans, CblasLower);
-      Cholesky::decomp (work);
-      mult (x, cdouble (1.0), CblasConjTrans, M, b);
-      return Cholesky::solve (x, work);
-    }
 
-#endif
-
-    //! \endcond
 
 
 
