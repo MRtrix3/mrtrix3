@@ -76,6 +76,23 @@ namespace MR
       return Cholesky::solve (x, work);
     }
 
+    //! solve regularised least-squares problem |Mx-b|^2 + |diag(w).x|^2 
+    template <typename ValueType, typename RealValueType> 
+      inline Vector<ValueType>& solve_LS_reg (
+          Vector<ValueType>& x,
+          const Matrix<ValueType>& M,
+          const Vector<ValueType>& b,
+          const Vector<RealValueType>& weights,
+          Matrix<ValueType>& work)
+    {
+      work.allocate (M.columns(), M.columns());
+      rankN_update (work, M, __transpose<ValueType>(), CblasLower);
+      work.diagonal() += weights;
+      Cholesky::decomp (work);
+      mult (x, ValueType (1.0), __transpose<ValueType>(), M, b);
+      return Cholesky::solve (x, work);
+    }
+
 
 
     //! compute Moore-Penrose pseudo-inverse of M given its transpose Mt
