@@ -67,7 +67,7 @@ namespace MR
             for (int niter = 0; niter < max_iterations; niter++) {
               bool retval = iterate();
               value_type grad_norm = gradient_norm();
-              error ("iteration " + str (niter) + ": f = " + str (f) + ", |g| = " + str (grad_norm));
+              console ("iteration " + str (niter) + ": f = " + str (f) + ", |g| = " + str (grad_norm));
               for (size_t n = 0; n < x.size(); ++n)
                 std::cout << x[n] << " ";
               std::cout << "\n";
@@ -141,8 +141,10 @@ namespace MR
           value_type evaluate_func (const Vector<value_type>& newx, Vector<value_type>& newg) {
             nfeval++;
             value_type cost = func (newx, newg);
+            if (!finite (cost))
+              throw Exception ("cost function is NaN or Inf!");
             if (verbose)
-              error ("gradient descent evaluation " + str(nfeval) + ", cost function " +str (cost));
+              console ("gradient descent evaluation " + str(nfeval) + ", cost function " +str (cost));
             return cost;
           }
       };

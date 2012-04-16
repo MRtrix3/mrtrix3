@@ -451,6 +451,32 @@ namespace MR
         }
 
 
+        //! compare the value to the corresponding elements of the vector
+        bool operator!= (ValueType value) const throw () {
+          LOOP (if (operator[] (i) != value) return true);
+          return false;
+        }
+        //! compare the values in \a V to the corresponding elements of the vector
+        bool operator!= (const Vector& V) const throw () {
+          if (size() != V.size()) return true;
+          LOOP (if (operator[] (i) != V[i]) return true);
+          return false;
+        }
+        //! compare the values in \a V to the corresponding elements of the vector
+        template <typename U> bool operator!= (const Vector<U>& V) const throw () {
+          if (size() != V.size()) return true;
+          LOOP (if (operator[] (i) != V[i]) return true);
+          return false;
+        }
+
+        //! compare the value to the corresponding elements of the vector
+        bool operator== (ValueType value) const throw () { return !(*this != value); }
+        //! compare the values in \a V to the corresponding elements of the vector
+        bool operator== (const Vector& V) const throw () { return !(*this != V); }
+        //! compare the values in \a V to the corresponding elements of the vector
+        template <typename U> bool operator== (const Vector<U>& V) const { return !(*this != V); }
+
+
         //! set all elements of vector to zero
         Vector& zero () throw () {
           LOOP (operator[] (i) = 0.0);
