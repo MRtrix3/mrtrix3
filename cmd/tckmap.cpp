@@ -121,7 +121,10 @@ OPTIONS
   + Option ("resample", 
       "resample the tracks at regular intervals using Hermite interpolation\n"
       "(If omitted, an appropriate interpolation will be determined automatically)")
-    + Argument ("factor").type_integer (1, 1, std::numeric_limits<int>::max());
+    + Argument ("factor").type_integer (1, 1, std::numeric_limits<int>::max())
+
+  + Option ("dump",
+      "dump the scratch buffer contents directly to a .mih / .dat file pair, rather than memory-mapping the output file");
 }
 
 
@@ -196,32 +199,32 @@ void oversample_header (Image::Header& header, const std::vector<float>& voxel_s
 
 
 template <class Cont>
-MapWriterBase<Cont>* make_writer (Image::Header& H, const std::string& name, const stat_t stat_vox)
+MapWriterBase<Cont>* make_writer (Image::Header& H, const std::string& name, const bool dump, const stat_t stat_vox)
 {
     MapWriterBase<Cont>* writer = NULL;
     const uint8_t dt = H.datatype() ();
     if (dt & DataType::Signed) {
       if ((dt & DataType::Type) == DataType::UInt8)
-        writer = new MapWriter<int8_t,   Cont> (H, name, stat_vox);
+        writer = new MapWriter<int8_t,   Cont> (H, name, dump, stat_vox);
       else if ((dt & DataType::Type) == DataType::UInt16)
-        writer = new MapWriter<int16_t,  Cont> (H, name, stat_vox);
+        writer = new MapWriter<int16_t,  Cont> (H, name, dump, stat_vox);
       else if ((dt & DataType::Type) == DataType::UInt32)
-        writer = new MapWriter<int32_t,  Cont> (H, name, stat_vox);
+        writer = new MapWriter<int32_t,  Cont> (H, name, dump, stat_vox);
       else
         throw Exception ("Unsupported data type in image header");
     } else {
       if ((dt & DataType::Type) == DataType::Bit)
-        writer = new MapWriter<bool,     Cont> (H, name, stat_vox);
+        writer = new MapWriter<bool,     Cont> (H, name, dump, stat_vox);
       else if ((dt & DataType::Type) == DataType::UInt8)
-        writer = new MapWriter<uint8_t,  Cont> (H, name, stat_vox);
+        writer = new MapWriter<uint8_t,  Cont> (H, name, dump, stat_vox);
       else if ((dt & DataType::Type) == DataType::UInt16)
-        writer = new MapWriter<uint16_t, Cont> (H, name, stat_vox);
+        writer = new MapWriter<uint16_t, Cont> (H, name, dump, stat_vox);
       else if ((dt & DataType::Type) == DataType::UInt32)
-        writer = new MapWriter<uint32_t, Cont> (H, name, stat_vox);
+        writer = new MapWriter<uint32_t, Cont> (H, name, dump, stat_vox);
       else if ((dt & DataType::Type) == DataType::Float32)
-        writer = new MapWriter<float,    Cont> (H, name, stat_vox);
+        writer = new MapWriter<float,    Cont> (H, name, dump, stat_vox);
       else if ((dt & DataType::Type) == DataType::Float64)
-        writer = new MapWriter<double,   Cont> (H, name, stat_vox);
+        writer = new MapWriter<double,   Cont> (H, name, dump, stat_vox);
       else
         throw Exception ("Unsupported data type in image header");
     }
@@ -374,6 +377,8 @@ void run () {
     }
   }
 
+  header.datatype().set_byte_order_native();
+
   for (Tractography::Properties::iterator i = properties.begin(); i != properties.end(); ++i)
     header.comments().push_back (i->first + ": " + i->second);
   for (std::multimap<std::string,std::string>::const_iterator i = properties.roi.begin(); i != properties.roi.end(); ++i)
@@ -395,6 +400,8 @@ void run () {
     resample_factor = 1;
     inform ("track interpolation off; no track step size information in header");
   }
+
+  const bool dump = get_options ("dump").size();
 
   Math::Matrix<float> interp_matrix (gen_interp_matrix<float> (resample_factor));
 
@@ -443,12 +450,15 @@ void run () {
     msg += " per-track statistic";
   }
   std::cerr << msg << "\n";
+  std::cerr.flush();
 
   // Use a branching IF instead of a switch statement to permit scope
   if (contrast == TDI || contrast == ENDPOINT || contrast == LENGTH || contrast == INVLENGTH || contrast == CURVATURE) {
 
-    if (!manual_datatype)
+    if (!manual_datatype) {
       header.datatype() = (contrast == TDI || contrast == ENDPOINT) ? DataType::UInt32 : DataType::Float32;
+      header.datatype().set_byte_order_native();
+    }
 
     switch (contrast) {
       case TDI:              header.comments().push_back ("track density image"); break;
@@ -463,11 +473,11 @@ void run () {
     }
 
     if (colour) {
-      MapWriterColour<SetVoxelDEC> writer (header, argument[1], stat_vox);
+      MapWriterColour<SetVoxelDEC> writer (header, argument[1], dump, stat_vox);
       TrackMapperTWI <SetVoxelDEC> mapper (header, interp_matrix, step_size, contrast, stat_tck);
       Thread::run_queue (loader, 1, TrackAndIndex(), mapper, 0, SetVoxelDEC(), writer, 1);
     } else {
-      Ptr< MapWriterBase<SetVoxel> > writer (make_writer<SetVoxel> (header, argument[1], stat_vox));
+      Ptr< MapWriterBase<SetVoxel> > writer (make_writer<SetVoxel> (header, argument[1], dump, stat_vox));
       TrackMapperTWI <SetVoxel> mapper (header, interp_matrix, step_size, contrast, stat_tck);
       Thread::run_queue (loader, 1, TrackAndIndex(), mapper, 0, SetVoxel(), *writer, 1);
     }
@@ -494,11 +504,11 @@ void run () {
     if (colour) {
 
       if (stat_tck == GAUSSIAN) {
-        MapWriterColour<SetVoxelDECFactor> writer (header, argument[1], stat_vox);
+        MapWriterColour<SetVoxelDECFactor> writer (header, argument[1], dump, stat_vox);
         TrackMapperTWI <SetVoxelDECFactor> mapper (header, interp_matrix, step_size, contrast, stat_tck);
         Thread::run_queue (loader, 1, TrackAndIndex(), mapper, 0, SetVoxelDECFactor(), writer, 1);
       } else {
-        MapWriterColour<SetVoxelDEC> writer (header, argument[1], stat_vox);
+        MapWriterColour<SetVoxelDEC> writer (header, argument[1], dump, stat_vox);
         TrackMapperTWI <SetVoxelDEC> mapper (header, interp_matrix, step_size, contrast, stat_tck);
         Thread::run_queue (loader, 1, TrackAndIndex(), mapper, 0, SetVoxelDEC(), writer, 1);
       }
@@ -506,11 +516,11 @@ void run () {
     } else {
 
       if (stat_tck == GAUSSIAN) {
-        Ptr< MapWriterBase<SetVoxelFactor> > writer (make_writer<SetVoxelFactor> (header, argument[1], stat_vox));
+        Ptr< MapWriterBase<SetVoxelFactor> > writer (make_writer<SetVoxelFactor> (header, argument[1], dump, stat_vox));
         TrackMapperTWI <SetVoxelFactor> mapper (header, interp_matrix, step_size, contrast, stat_tck);
         Thread::run_queue (loader, 1, TrackAndIndex(), mapper, 0, SetVoxelFactor(), *writer, 1);
       } else {
-        Ptr< MapWriterBase<SetVoxel> > writer (make_writer<SetVoxel> (header, argument[1], stat_vox));
+        Ptr< MapWriterBase<SetVoxel> > writer (make_writer<SetVoxel> (header, argument[1], dump, stat_vox));
         TrackMapperTWI <SetVoxel> mapper (header, interp_matrix, step_size, contrast, stat_tck);
         Thread::run_queue (loader, 1, TrackAndIndex(), mapper, 0, SetVoxel(), *writer, 1);
       }

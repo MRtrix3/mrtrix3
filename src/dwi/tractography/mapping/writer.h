@@ -24,6 +24,8 @@
 #define __dwi_tractography_mapping_writer_h__
 
 
+#include "file/path.h"
+#include "file/utils.h"
 #include "image/buffer_scratch.h"
 #include "image/buffer.h"
 #include "image/loop.h"
@@ -45,6 +47,99 @@ namespace Tractography {
 namespace Mapping {
 
 
+
+// TODO Provide a class inheriting BufferScratch (needs to inherit in order to gain access to underlying data)
+// Have a public member function that performs a direct data dump of the RAM contents to a HDD file
+// Output file MUST be a .mih format
+// Use ostream function write()
+// Also, File::resize() to specify the total size of the file on HDD before commencing the dump
+// May be able to break up the output dump into 100 almost-equally-sized chunks, and provide a progress message
+
+template <typename value_type>
+class BufferScratchDump : public Image::BufferScratch<value_type>
+{
+
+  public:
+    template <class Template>
+    BufferScratchDump (const Template& info) :
+        Image::BufferScratch<value_type> (info) { }
+
+    template <class Template>
+    BufferScratchDump (const Template& info, const std::string& label) :
+        Image::BufferScratch<value_type> (info, label) { }
+
+    void dump_to_file (const std::string&, const Image::Header&) const;
+
+};
+
+
+
+template <typename value_type>
+void BufferScratchDump<value_type>::dump_to_file (const std::string& path, const Image::Header& H) const
+{
+
+  if (!Path::has_suffix (path, ".mih"))
+    throw Exception ("Can only perform direct dump to file for .mih files");
+
+  const std::string dat_path = Path::basename (path.substr (0, path.size()-4) + ".dat");
+  const int64_t dat_size = Image::footprint (*this);
+
+  std::ofstream out_mih (path.c_str(), std::ios::out | std::ios::binary);
+  if (!out_mih)
+    throw Exception ("error creating file \"" + H.name() + "\":" + strerror (errno));
+
+  out_mih << "mrtrix image\n";
+  out_mih << "dim: " << H.dim (0);
+  for (size_t n = 1; n < H.ndim(); ++n)
+    out_mih << "," << H.dim (n);
+
+  out_mih << "\nvox: " << H.vox (0);
+  for (size_t n = 1; n < H.ndim(); ++n)
+    out_mih << "," << H.vox (n);
+
+  out_mih << "\nlayout: " << ((H.stride (0) > 0) ? "+" : "-") << Math::abs (H.stride (0))-1;
+  for (size_t n = 1; n < H.ndim(); ++n)
+    out_mih << "," << ((H.stride (n) > 0) ? "+" : "-") << Math::abs (H.stride (n))-1;
+
+  out_mih << "\ndatatype: " << H.datatype().specifier();
+
+  for (std::map<std::string, std::string>::const_iterator i = H.begin(); i != H.end(); ++i)
+    out_mih << "\n" << i->first << ": " << i->second;
+
+  for (std::vector<std::string>::const_iterator i = H.comments().begin(); i != H.comments().end(); i++)
+    out_mih << "\ncomments: " << *i;
+
+
+  if (H.transform().is_set()) {
+    out_mih << "\ntransform: " << H.transform() (0,0) << "," <<  H.transform() (0,1) << "," << H.transform() (0,2) << "," << H.transform() (0,3);
+    out_mih << "\ntransform: " << H.transform() (1,0) << "," <<  H.transform() (1,1) << "," << H.transform() (1,2) << "," << H.transform() (1,3);
+    out_mih << "\ntransform: " << H.transform() (2,0) << "," <<  H.transform() (2,1) << "," << H.transform() (2,2) << "," << H.transform() (2,3);
+  }
+
+  if (H.intensity_offset() != 0.0 || H.intensity_scale() != 1.0)
+    out_mih << "\nscaling: " << H.intensity_offset() << "," << H.intensity_scale();
+
+  if (H.DW_scheme().is_set()) {
+    for (size_t i = 0; i < H.DW_scheme().rows(); i++)
+      out_mih << "\ndw_scheme: " << H.DW_scheme() (i,0) << "," << H.DW_scheme() (i,1) << "," << H.DW_scheme() (i,2) << "," << H.DW_scheme() (i,3);
+  }
+
+  out_mih << "\nfile: " << dat_path << "\n";
+  out_mih.close();
+
+  File::create (dat_path, dat_size);
+
+  std::ofstream out_dat;
+  out_dat.open (dat_path.c_str(), std::ios_base::out | std::ios_base::binary);
+  const value_type* data_ptr = Image::BufferScratch<value_type>::data_;
+  out_dat.write (reinterpret_cast<const char*>(data_ptr), dat_size);
+  out_dat.close();
+
+}
+
+
+
+
 template <typename Cont>
 class MapWriterBase
 {
@@ -52,8 +147,10 @@ class MapWriterBase
   typedef Image::BufferScratch<uint32_t>::voxel_type counts_voxel_type;
 
   public:
-    MapWriterBase (Image::Header& header, const stat_t s) :
+    MapWriterBase (Image::Header& header, const std::string& name, const bool dump, const stat_t s) :
       H (header),
+      output_image_name (name),
+      direct_dump (dump),
       voxel_statistic (s),
       counts ((s == MEAN) ? (new Image::BufferScratch<uint32_t>(header, "counts")) : NULL),
       v_counts (counts ? new counts_voxel_type (*counts) : NULL)
@@ -61,6 +158,8 @@ class MapWriterBase
 
     MapWriterBase (const MapWriterBase& that) :
       H (that.H),
+      output_image_name (that.output_image_name),
+      direct_dump (that.direct_dump),
       voxel_statistic (that.voxel_statistic)
     {
       throw Exception ("Do not instantiate copy constructor for MapWriterBase");
@@ -73,6 +172,8 @@ class MapWriterBase
 
   protected:
     Image::Header& H;
+    const std::string output_image_name;
+    const bool direct_dump;
     const stat_t voxel_statistic;
     Ptr< Image::BufferScratch<uint32_t> > counts;
     Ptr< counts_voxel_type > v_counts;
@@ -94,13 +195,14 @@ template <class value_type, typename Cont>
 class MapWriter : public MapWriterBase<Cont>
 {
 
+  typedef typename Image::Buffer<value_type> image_type;
   typedef typename Image::Buffer<value_type>::voxel_type image_voxel_type;
+  typedef typename Image::BufferScratch<value_type> buffer_type;
   typedef typename Image::BufferScratch<value_type>::voxel_type buffer_voxel_type;
 
   public:
-    MapWriter (Image::Header& header, const std::string& name, const stat_t voxel_statistic = SUM) :
-      MapWriterBase<Cont> (header, voxel_statistic),
-      out    (name, header),
+    MapWriter (Image::Header& header, const std::string& name, const bool direct_dump = false, const stat_t voxel_statistic = SUM) :
+      MapWriterBase<Cont> (header, name, direct_dump, voxel_statistic),
       buffer (header, "buffer"),
       v_buffer (buffer)
     {
@@ -119,7 +221,6 @@ class MapWriter : public MapWriterBase<Cont>
 
     MapWriter (const MapWriter& that) :
       MapWriterBase<Cont> (that),
-      out ("", MapWriterBase<Cont>::H),
       buffer (MapWriterBase<Cont>::H, ""),
       v_buffer (buffer)
     {
@@ -159,10 +260,18 @@ class MapWriter : public MapWriterBase<Cont>
           throw Exception ("Unknown / unhandled voxel statistic in ~MapWriter()");
 
       }
-      image_voxel_type v_out (out);
-      Image::LoopInOrder loopinorder (v_out, "writing image to file...", 0, 3);
-      for (loopinorder.start (v_out, v_buffer); loopinorder.ok(); loopinorder.next (v_out, v_buffer))
-        v_out.value() = v_buffer.value();
+
+      if (MapWriterBase<Cont>::direct_dump) {
+        fprintf (stderr, "%s: writing image to file... ", App::NAME.c_str());
+        buffer.dump_to_file (MapWriterBase<Cont>::output_image_name, MapWriterBase<Cont>::H);
+        fprintf (stderr, "done.\n");
+      } else {
+        image_type out (MapWriterBase<Cont>::output_image_name, MapWriterBase<Cont>::H);
+        image_voxel_type v_out (out);
+        Image::LoopInOrder loopinorder (v_out, "writing image to file...", 0, 3);
+        for (loopinorder.start (v_out, v_buffer); loopinorder.ok(); loopinorder.next (v_out, v_buffer))
+          v_out.value() = v_buffer.value();
+      }
     }
 
 
@@ -190,8 +299,7 @@ class MapWriter : public MapWriterBase<Cont>
 
 
   private:
-    Image::Buffer       <value_type> out;
-    Image::BufferScratch<value_type> buffer;
+    BufferScratchDump<value_type> buffer;
     buffer_voxel_type v_buffer;
 
 };
@@ -202,13 +310,14 @@ template <typename Cont>
 class MapWriterColour : public MapWriterBase<Cont>
 {
 
+  typedef typename Image::Buffer<float> image_type;
   typedef typename Image::Buffer<float>::voxel_type image_voxel_type;
+  typedef typename Image::BufferScratch<float> buffer_type;
   typedef typename Image::BufferScratch<float>::voxel_type buffer_voxel_type;
 
   public:
-    MapWriterColour (Image::Header& header, const std::string& name, const stat_t voxel_statistic) :
-      MapWriterBase<Cont> (header, voxel_statistic),
-      out (name, header),
+    MapWriterColour (Image::Header& header, const std::string& name, const bool direct_dump = false, const stat_t voxel_statistic = SUM) :
+      MapWriterBase<Cont> (header, name, direct_dump, voxel_statistic),
       buffer (header, "buffer"),
       v_buffer (buffer)
     {
@@ -224,7 +333,6 @@ class MapWriterColour : public MapWriterBase<Cont>
 
     MapWriterColour (const MapWriterColour& that) :
       MapWriterBase<Cont> (that),
-      out ("", MapWriterBase<Cont>::H),
       buffer (MapWriterBase<Cont>::H, "buffer"),
       v_buffer (buffer)
       {
@@ -263,13 +371,21 @@ class MapWriterColour : public MapWriterBase<Cont>
           throw Exception ("Unknown / unhandled voxel statistic in ~MapWriter()");
 
       }
-      image_voxel_type v_out (out);
-      Image::LoopInOrder loopinorder (v_out, "writing image to file...", 0, 3);
-      for (loopinorder.start (v_out, v_buffer); loopinorder.ok(); loopinorder.next (v_out, v_buffer)) {
-        Point<float> value (get_value());
-        v_out[3] = 0; v_out.value() = value[0];
-        v_out[3] = 1; v_out.value() = value[1];
-        v_out[3] = 2; v_out.value() = value[2];
+
+      if (MapWriterBase<Cont>::direct_dump) {
+        fprintf (stderr, "%s: writing image to file... ", App::NAME.c_str());
+        buffer.dump_to_file (MapWriterBase<Cont>::output_image_name, MapWriterBase<Cont>::H);
+        fprintf (stderr, "done.\n");
+      } else {
+        image_type out (MapWriterBase<Cont>::output_image_name, MapWriterBase<Cont>::H);
+        image_voxel_type v_out (out);
+        Image::LoopInOrder loopinorder (v_out, "writing image to file...", 0, 3);
+        for (loopinorder.start (v_out, v_buffer); loopinorder.ok(); loopinorder.next (v_out, v_buffer)) {
+          Point<float> value (get_value());
+          v_out[3] = 0; v_out.value() = value[0];
+          v_out[3] = 1; v_out.value() = value[1];
+          v_out[3] = 2; v_out.value() = value[2];
+        }
       }
     }
 
@@ -308,8 +424,7 @@ class MapWriterColour : public MapWriterBase<Cont>
 
 
   private:
-    Image::Buffer<float> out;
-    Image::BufferScratch<float> buffer;
+    BufferScratchDump<float> buffer;
     buffer_voxel_type v_buffer;
 
 
