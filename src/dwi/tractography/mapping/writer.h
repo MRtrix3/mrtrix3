@@ -48,13 +48,6 @@ namespace Mapping {
 
 
 
-// TODO Provide a class inheriting BufferScratch (needs to inherit in order to gain access to underlying data)
-// Have a public member function that performs a direct data dump of the RAM contents to a HDD file
-// Output file MUST be a .mih format
-// Use ostream function write()
-// Also, File::resize() to specify the total size of the file on HDD before commencing the dump
-// May be able to break up the output dump into 100 almost-equally-sized chunks, and provide a progress message
-
 template <typename value_type>
 class BufferScratchDump : public Image::BufferScratch<value_type>
 {
@@ -127,13 +120,14 @@ void BufferScratchDump<value_type>::dump_to_file (const std::string& path, const
   out_mih << "\nfile: " << dat_path << "\n";
   out_mih.close();
 
-  File::create (dat_path, dat_size);
-
   std::ofstream out_dat;
   out_dat.open (dat_path.c_str(), std::ios_base::out | std::ios_base::binary);
   const value_type* data_ptr = Image::BufferScratch<value_type>::data_;
   out_dat.write (reinterpret_cast<const char*>(data_ptr), dat_size);
   out_dat.close();
+
+  // If dat_size exceeds some threshold, ostream artificially increases the file size beyond that required at close()
+  File::resize (dat_path, dat_size);
 
 }
 
