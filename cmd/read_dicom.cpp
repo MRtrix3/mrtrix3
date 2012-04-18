@@ -71,7 +71,7 @@ void run ()
 {
   Options opt = get_options("tag");
   if (opt.size()) {
-    std::istringstream hex; 
+    std::istringstream hex;
 
     Tag tags[opt.size()];
     for (size_t n = 0; n < opt.size(); ++n) {
@@ -82,12 +82,12 @@ void run ()
     File::Dicom::Element item;
     item.set (argument[0], true);
     while (item.read()) {
-      for (size_t n = 0; n < opt.size(); ++n) 
-        if (item.is (tags[n].group, tags[n].element)) 
+      for (size_t n = 0; n < opt.size(); ++n)
+        if (item.is (tags[n].group, tags[n].element))
           tags[n].value = item.get_string()[0];
     }
 
-    for (size_t n = 0; n < opt.size(); ++n) 
+    for (size_t n = 0; n < opt.size(); ++n)
       std::cout << tags[n].value << "\n";
 
     return;
@@ -99,7 +99,7 @@ void run ()
   if (reader.read (argument[0], get_options ("all").size(), get_options ("csa").size(), true))
     throw Exception ("error reading file \"" + reader.filename + "\"");
 
-  if (!get_options ("all").size() && !get_options ("csa").size()) 
+  if (!get_options ("all").size() && !get_options ("csa").size())
     std::cout << reader;
 }
 
