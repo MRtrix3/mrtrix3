@@ -49,13 +49,7 @@ void usage ()
 
   OPTIONS
     + Option ("bzero", "output b=0 volumes instead of the diffusion weighted volumes.")
-    + Option ("grad", "specify the diffusion-weighted gradient "
-              "scheme used in the acquisition. The program will normally attempt to use the "
-              "encoding stored in image header.")
-    + Argument ("encoding", "the gradient encoding, supplied "
-                "as a 4xN text file with each line is in the format [ X Y Z b ], where [ X Y Z ] "
-                "describe the direction of the applied gradient, and b gives the b-value in units (1000 s/mm^2).").type_file();
-
+    + DWI::GradOption;
 }
 
 void run() {
