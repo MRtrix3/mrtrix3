@@ -157,15 +157,13 @@ namespace MR
 
         glDepthMask (GL_TRUE);
 
-        if (!isnan (l0_term)) {
+        if (finite (l0_term)) {
           glPushMatrix();
           glDisable (GL_BLEND);
 
           if (use_lighting) glEnable (GL_LIGHTING);
 
-          float s (scale);
-          if (normalise) s /= l0_term;
-          glScalef (s, s, s);
+          glScalef (scale, scale, scale);
 
           renderer.draw (use_lighting, color_by_dir ? NULL : lighting->object_color);
 
@@ -178,6 +176,7 @@ namespace MR
         glBlendFunc (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
         glEnable (GL_BLEND);
         glEnable (GL_LINE_SMOOTH);
+        glDisable (GL_MULTISAMPLE);
 
         if (show_axes) {
           glColor3f (1.0, 0.0, 0.0);
@@ -201,6 +200,7 @@ namespace MR
 
         glDisable (GL_BLEND);
         glDisable (GL_LINE_SMOOTH);
+        glEnable (GL_MULTISAMPLE);
 
 
 

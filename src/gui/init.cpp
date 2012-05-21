@@ -21,9 +21,11 @@
 */
 
 #include <QApplication>
+#include <QGLFormat>
 
 #include "app.h"
 #include "progressbar.h"
+#include "file/config.h"
 #include "gui/init.h"
 #include "gui/dialog/progress.h"
 #include "gui/dialog/report_exception.h"
@@ -37,6 +39,13 @@ namespace MR
     void init ()
     {
       new QApplication (App::argc, App::argv);
+
+      if (File::Config::get_int ("FSAA", 0)) {
+        QGLFormat f = QGLFormat::defaultFormat();
+        f.setSampleBuffers(true);
+        QGLFormat::setDefaultFormat(f);
+      }
+
 
       MR::ProgressBar::display_func = Dialog::ProgressBar::display;
       MR::ProgressBar::done_func = Dialog::ProgressBar::done;

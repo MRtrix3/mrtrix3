@@ -106,6 +106,8 @@ namespace MR
           {
             modelview_matrix[0] = NAN;
             paint();
+
+            glDisable (GL_MULTISAMPLE);
             get_modelview_projection_viewport();
             glColor4f (1.0, 1.0, 0.0, 1.0);
 

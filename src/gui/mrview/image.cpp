@@ -246,6 +246,8 @@ namespace MR
           error ("attempt to use unsupported colourmap");
           return;
         }
+        if ((value_max - value_min) < 2.0*std::numeric_limits<float>::epsilon()) 
+          value_min = value_max - 1.0;
 
         if (isnan (display_midpoint) || isnan (display_range))
           reset_windowing();

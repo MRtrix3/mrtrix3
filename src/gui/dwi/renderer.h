@@ -56,6 +56,11 @@ namespace MR
             SH = values;
             recalculate = true;
           }
+          void scale_values (float factor) {
+            for (size_t n = 0; n < SH.size(); ++n)
+              SH[n] *= factor;
+            recalculate = true;
+          }
           void set_hide_neg_lobes (bool hide) {
             hide_neg_lobes = hide;
           }
@@ -69,22 +74,13 @@ namespace MR
           }
           void draw (bool use_normals, const float* colour = NULL);
 
-          int get_LOD () const {
-            return lod_computed;
-          }
-          int get_lmax () const {
-            return lmax_computed;
-          }
-          bool get_hide_neg_lobes () const {
-            return hide_neg_lobes;
-          }
+          const std::vector<float>& get_values () const { return SH; }
+          int get_LOD () const { return lod_computed; }
+          int get_lmax () const { return lmax_computed; }
+          bool get_hide_neg_lobes () const { return hide_neg_lobes; }
 
-          size_t size () const {
-            return rows.size();
-          }
-          bool empty () const {
-            return rows.empty();
-          }
+          size_t size () const { return rows.size(); }
+          bool empty () const { return rows.empty(); }
 
         protected:
           class Vertex

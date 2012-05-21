@@ -43,11 +43,10 @@ namespace MR
           GLArea (Window& parent) :
             QGLWidget (QGLFormat (QGL::DoubleBuffer | QGL::DepthBuffer | QGL::StencilBuffer | QGL::Rgba), &parent),
             main (parent) {
-            setCursor (Cursor::crosshair);
-            setAutoBufferSwap (false);
-            setMouseTracking (true);
-            setAcceptDrops (true);
-          }
+              setCursor (Cursor::crosshair);
+              setMouseTracking (true);
+              setAcceptDrops (true);
+            }
 
           QSize minimumSizeHint () const {
             return QSize (512, 512);
@@ -649,27 +648,30 @@ namespace MR
 
       inline void Window::paintGL ()
       {
+        glEnable (GL_MULTISAMPLE);
         if (mode->in_paint())
           return;
 
         glDrawBuffer (GL_BACK);
         mode->paintGL();
 
+/*
         // blit back buffer to front buffer.
         // we avoid flipping to guarantee back buffer is unchanged and can be
         // re-used for incremental updates.
-        glReadBuffer (GL_BACK);
-        glDrawBuffer (GL_FRONT);
 
         glBindFramebuffer (GL_READ_FRAMEBUFFER, 0);
         glBindFramebuffer (GL_DRAW_FRAMEBUFFER, 0);
+
+        glReadBuffer (GL_BACK);
+        glDrawBuffer (GL_FRONT);
 
         glBlitFramebuffer (
           0, 0, width(), height(),
           0, 0, width(), height(),
           GL_COLOR_BUFFER_BIT, GL_NEAREST);
         glFlush();
-
+*/
         DEBUG_OPENGL;
       }
 
@@ -687,6 +689,7 @@ namespace MR
         CHECK_GL_EXTENSION (ARB_vertex_buffer_object);
         CHECK_GL_EXTENSION (ARB_pixel_buffer_object);
         CHECK_GL_EXTENSION (ARB_framebuffer_object);
+        CHECK_GL_EXTENSION (ARB_multisample);
 
         GLint max_num;
         glGetIntegerv (GL_MAX_GEOMETRY_OUTPUT_VERTICES_ARB, &max_num);

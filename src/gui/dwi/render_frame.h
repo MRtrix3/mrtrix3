@@ -55,67 +55,61 @@ namespace MR
 
           void set (const std::vector<float>& new_values) {
             l0_term = new_values[0];
-            if (!isnan (l0_term)) {
+            if (finite (l0_term)) {
               renderer.set_values (new_values);
+              if (normalise) 
+                renderer.scale_values (1.0 / l0_term);
             }
             updateGL();
           }
 
           void set_rotation (const GLdouble* rotation = NULL);
 
-          void set_show_axes (bool yesno = true)         {
+          void set_show_axes (bool yesno = true) {
             show_axes = yesno;
             updateGL();
           }
-          void set_hide_neg_lobes (bool yesno = true)    {
+          void set_hide_neg_lobes (bool yesno = true) {
             renderer.set_hide_neg_lobes (yesno);
             updateGL();
           }
-          void set_color_by_dir (bool yesno = true)      {
+          void set_color_by_dir (bool yesno = true) {
             color_by_dir = yesno;
             updateGL();
           }
-          void set_use_lighting (bool yesno = true)      {
+          void set_use_lighting (bool yesno = true) {
             use_lighting = yesno;
             updateGL();
           }
-          void set_normalise (bool yesno = true)         {
+          void set_normalise (bool yesno = true) {
             normalise = yesno;
+            if (finite (l0_term)) {
+              if (renderer.get_values()[0] != 0.0) {
+                if (normalise) 
+                  renderer.scale_values (1.0 / renderer.get_values()[0]);
+                else 
+                  renderer.scale_values (l0_term / renderer.get_values()[0]);
+              }
+            }
             updateGL();
           }
-          void set_LOD (int num)                         {
+          void set_LOD (int num) {
             renderer.set_LOD (num);
             updateGL();
           }
-          void set_lmax (int num)                        {
+          void set_lmax (int num) {
             renderer.set_lmax (num);
             updateGL();
           }
 
-          int  get_LOD () const                          {
-            return (renderer.get_LOD());
-          }
-          int  get_lmax () const                         {
-            return (renderer.get_lmax());
-          }
-          float get_scale () const                       {
-            return (scale);
-          }
-          bool get_show_axes () const                    {
-            return (show_axes);
-          }
-          bool get_hide_neg_lobes () const               {
-            return (renderer.get_hide_neg_lobes());
-          }
-          bool get_color_by_dir () const                 {
-            return (color_by_dir);
-          }
-          bool get_use_lighting () const                 {
-            return (use_lighting);
-          }
-          bool get_normalise () const                    {
-            return (normalise);
-          }
+          int  get_LOD () const { return renderer.get_LOD(); }
+          int  get_lmax () const { return renderer.get_lmax(); }
+          float get_scale () const { return scale; }
+          bool get_show_axes () const { return show_axes; }
+          bool get_hide_neg_lobes () const { return renderer.get_hide_neg_lobes(); }
+          bool get_color_by_dir () const { return color_by_dir; }
+          bool get_use_lighting () const { return use_lighting; }
+          bool get_normalise () const { return normalise; }
 
           void screenshot (int oversampling, const std::string& image_name);
 
@@ -132,7 +126,7 @@ namespace MR
           std::string screenshot_name;
           Ptr<QImage> pix;
           GLubyte* framebuffer;
-          int   OS, OS_x, OS_y;
+          int OS, OS_x, OS_y;
 
           Renderer renderer;
           std::vector<float> values;
