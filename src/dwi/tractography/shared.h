@@ -104,6 +104,7 @@ namespace MR {
             properties.set (max_angle, "max_angle");
             inform ("maximum deviation angle = " + str (max_angle) + "°");
             max_angle *= M_PI / 180.0;
+            cos_max_angle = Math::cos (max_angle);
 
             if (rk4) {
               max_angle_rk4 = max_angle;

@@ -160,7 +160,7 @@ namespace MR {
           };
 
 
-          bool next_rk4()
+          virtual bool next_rk4()
           {
             const Point<value_type> init_pos (method.pos);
             const Point<value_type> init_dir (method.dir);
@@ -185,11 +185,13 @@ namespace MR {
             method.dir = (dir_rk1 + (dir_rk2 * 2.0) + (dir_rk3 * 2.0) + dir_rk4).normalise();
             method.pos = init_pos + (method.dir * S.step_size);
             const Point<value_type> final_pos (method.pos);
+            const Point<value_type> final_dir (method.dir);
             if (!method.next())
               return false;
             if (dir_rk1.dot (method.dir) < S.cos_max_angle_rk4)
               return false;
             method.pos = final_pos;
+            method.dir = final_dir;
             return true;
           }
 
