@@ -24,6 +24,7 @@
 #define __registration_metric_evaluate_h__
 
 #include "registration/metric/thread_kernel.h"
+#include "image/threaded_loop.h"
 
 namespace MR
 {
@@ -36,6 +37,7 @@ namespace MR
           public:
 
             typedef typename ParamType::TransformParamType TransformParamType;
+            typedef double value_type;
 
             Evaluate (const MetricType& metric, ParamType& parameters) :
               metric_ (metric),
@@ -49,7 +51,8 @@ namespace MR
               params_.transformation.set_parameter_vector(x);
 
               ThreadKernel<MetricType, ParamType> kernel (metric_, params_, overall_cost_function, gradient);
-              Image::threaded_loop (kernel, params_.target_image, 2, 0, 3);
+              Image::ThreadedLoop threaded_loop (params_.target_image, 2, 0, 3);
+              threaded_loop.run(kernel);
               gradient *= params_.transformation.get_optimiser_weights();
 
               return overall_cost_function;

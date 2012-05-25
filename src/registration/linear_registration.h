@@ -106,7 +106,7 @@ namespace MR
               if (target_mask) parameters.target_mask = target_mask;
               if (moving_mask) parameters.moving_mask = moving_mask;
               Metric::Evaluate<MetricType, ParamType> evaluate (metric, parameters);
-              Math::GradientDescent<Metric::Evaluate<MetricType, ParamType>, double > optim (evaluate);
+              Math::GradientDescent<Metric::Evaluate<MetricType, ParamType> > optim (evaluate);
 
               optim.run(max_iter_[iter]);
               parameters.transformation.set_parameter_vector(optim.state());
