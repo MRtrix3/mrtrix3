@@ -91,7 +91,7 @@ namespace MR
 
 
     //! Execute the functor's execute method in a separate thread
-    /*! Lauch a thread by running the execute method of the object \a functor,
+    /*! Launch a thread by running the execute method of the object \a functor,
      * which should have the following prototype:
      * \code
      * class MyFunc {
@@ -193,7 +193,7 @@ namespace MR
         }
 
         void init () {
-          if (!common) 
+          if (!common)
             common = new Common;
           ++common->refcount;
         }

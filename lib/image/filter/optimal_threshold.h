@@ -26,6 +26,8 @@
 #include "image/loop.h"
 #include "image/min_max.h"
 #include "math/golden_section_search.h"
+#include "image/buffer_scratch.h"
+#include "ptr.h"
 
 namespace MR
 {
@@ -35,14 +37,40 @@ namespace MR
     {
 
 
-      template <class InputVoxelType>
+      template <class InputVoxelType, class MaskVoxelType>
       class ImageCorrelationCostFunction {
 
         public:
 
-          ImageCorrelationCostFunction (InputVoxelType& DataSet) :
+          ImageCorrelationCostFunction (InputVoxelType& DataSet, Ptr<MaskVoxelType>& mask) :
             input_image_ (DataSet) {
-            init();
+            double sum_sqr = 0, sum = 0;
+            Image::LoopInOrder loop (input_image_);
+            if (mask) {
+              mask_ptr = mask;
+              voxel_count_ = 0;
+              for (loop.start (input_image_); loop.ok(); loop.next (input_image_)) {
+                (*mask_ptr)[0] = input_image_[0];
+                (*mask_ptr)[1] = input_image_[1];
+                (*mask_ptr)[2] = input_image_[2];
+                if (mask_ptr->value()) {
+                  voxel_count_++;
+                  sum_sqr += (input_image_.value() * input_image_.value());
+                  sum += input_image_.value();
+                }
+              }
+            } else {
+              voxel_count_ = 1;
+              for (size_t d = 0; d < input_image_.ndim(); d++)
+                voxel_count_ *= input_image_.dim(d);
+              Image::LoopInOrder loop (input_image_);
+              for (loop.start (input_image_); loop.ok(); loop.next (input_image_)) {
+                sum_sqr += (input_image_.value() * input_image_.value());
+                sum += input_image_.value();
+              }
+              }
+            input_image_mean_ = sum / voxel_count_;
+            input_image_stdev_ = sqrt((sum_sqr - sum * input_image_mean_) / voxel_count_);
           }
 
           double operator() (double threshold) const{
@@ -79,6 +107,7 @@ namespace MR
           }
 
           InputVoxelType& input_image_;
+          Ptr<MaskVoxelType> mask_ptr;
           size_t voxel_count_;
           double input_image_mean_;
           double input_image_stdev_;
@@ -115,8 +144,16 @@ namespace MR
             OptimalThreshold (const InputVoxelType & DataSet) :
               ConstInfo (DataSet) { }
 
-          template <class InputVoxelType, class OutputSet>
-            void operator() (InputVoxelType& input, OutputSet& output) {
+
+          template <class InputVoxelType, class OutputVoxelType>
+            void operator() (InputVoxelType& input, OutputVoxelType& output) {
+              typedef Image::BufferScratch<bool>::voxel_type BogusMaskType;
+              Ptr<BogusMaskType > bogusMask;
+              operator() <InputVoxelType, OutputVoxelType, BogusMaskType > (input, output, bogusMask);
+          }
+
+          template <class InputVoxelType, class OutputVoxelType, class MaskVoxelType>
+            void operator() (InputVoxelType& input, OutputVoxelType& output, Ptr<MaskVoxelType>& mask_ptr) {
               axes_.resize (4);
 
               double min, max;
@@ -124,7 +161,7 @@ namespace MR
 
               double optimal_threshold = 0;
               {
-                ImageCorrelationCostFunction<InputVoxelType> cost_function(input);
+                ImageCorrelationCostFunction<InputVoxelType, MaskVoxelType > cost_function(input, mask_ptr);
                 optimal_threshold = Math::golden_section_search(cost_function, "optimising threshold...", min + 0.001*(max-min), (min+max)/2.0 , max-0.001*(max-min));
               }
 

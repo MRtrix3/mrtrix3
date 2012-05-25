@@ -75,7 +75,11 @@ void usage ()
 
   + Option ("nan", "replace all zero values with NaN.")
 
-  + Option ("ignorezero", "ignore zero-values input voxels.");
+  + Option ("ignorezero", "ignore zero-values input voxels.")
+
+  + Option ("mask",
+            "compute the optimal threshold based on voxel within a mask.")
+  + Argument ("image").type_image_in ();
 }
 
 
@@ -237,7 +241,14 @@ void run ()
     } else if(isnan (val)) {
       double min, max;
       Image::min_max(in, min, max);
-      Image::Filter::ImageCorrelationCostFunction<Image::Buffer<float>::voxel_type> cost_function(in);
+      Ptr<Image::Buffer<bool> > mask_data;
+      Ptr<Image::Buffer<bool>::voxel_type > mask_voxel;
+      opt = get_options ("mask");
+      if (opt.size()) {
+        mask_data = new Image::Buffer<bool> (opt[0][0]);
+        mask_voxel = new Image::Buffer<bool>::voxel_type (*mask_data);
+      }
+      Image::Filter::ImageCorrelationCostFunction<Image::Buffer<float>::voxel_type, Image::Buffer<bool>::voxel_type > cost_function(in, mask_voxel);
       val = Math::golden_section_search(cost_function, "optimising threshold...", min + 0.001*(max-min), (min+max)/2.0 , max-0.001*(max-min));
     }
 
