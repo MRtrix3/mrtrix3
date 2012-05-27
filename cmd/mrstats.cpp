@@ -257,14 +257,6 @@ void run () {
       throw Exception ("error opening positions file \"" + opt[0][0] + "\": " + strerror (errno));
   }
 
-  opt = get_options ("median");
-  bool compute_median = false;
-  if (opt.size()) {
-    if (data.datatype().is_complex())
-      throw Exception ("median not supported for complex data types");
-    compute_median = true;
-  }
-
   Options voxels = get_options ("voxel");
 
   opt = get_options ("mask");

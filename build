@@ -132,7 +132,7 @@ if ld_enabled:
 
   libname += '-' + major + '_' + minor + '_' + micro + config_suffix
 
-  ld_flags += [ '-l' + libname ]
+  ld_flags.insert(0, '-l' + libname)
   libname = lib_prefix + libname + lib_suffix
 
 obj_suffix = config_suffix + obj_suffix

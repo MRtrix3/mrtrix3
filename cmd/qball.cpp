@@ -96,11 +96,15 @@ class DataLoader
     DataLoader (Queue& queue,
                 Image::Buffer<value_type>& dwi_data,
                 Image::Buffer<bool>* mask_data,
-                const std::vector<int>& vec_dwis) :
+                const std::vector<int>& vec_bzeros,
+                const std::vector<int>& vec_dwis,
+                bool normalise_to_b0) :
       writer (queue),
       dwi (dwi_data),
       mask (mask_data),
-      dwis (vec_dwis) { }
+      bzeros (vec_bzeros),
+      dwis (vec_dwis),
+      normalise (normalise_to_b0) { }
 
     void execute () {
       Queue::Writer::Item item (writer);
@@ -122,15 +126,27 @@ class DataLoader
     Queue::Writer writer;
     Image::Buffer<value_type>::voxel_type dwi;
     Image::Buffer<bool>* mask;
+    const std::vector<int>&  bzeros;
     const std::vector<int>&  dwis;
+    bool normalise;
 
     void load (Queue::Writer::Item& item) {
+
+      value_type norm = 0.0;
+      if (normalise) {
+        for (size_t n = 0; n < bzeros.size(); n++) {
+          dwi[3] = bzeros[n];
+          norm += dwi.value ();
+        }
+        norm /= bzeros.size();
+      }
       item->data.allocate (dwis.size());
       for (size_t n = 0; n < dwis.size(); n++) {
         dwi[3] = dwis[n];
         item->data[n] = dwi.value();
         if (!finite (item->data[n])) return;
         if (item->data[n] < 0.0) item->data[n] = 0.0;
+        if (normalise) item->data[n] /= norm;
       }
       item->pos[0] = dwi[0];
       item->pos[1] = dwi[1];
@@ -291,7 +307,7 @@ void run ()
 
 
   Queue queue ("work queue");
-  DataLoader loader (queue, dwi_data, mask_data, dwis);
+  DataLoader loader (queue, dwi_data, mask_data, bzeros, dwis, normalise);
 
   Processor processor (queue, FRT_SHT.mat_A2SH(), HR_SHT, SH_data);
 

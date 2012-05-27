@@ -332,7 +332,7 @@ namespace MR
         }
 
         write_tag (out, MRI_DATA, 0, is_BE);
-        out.write ( (const char*) H.datatype() (), 1);
+        out.write ( (const char*) &H.datatype() (), 1);
 
         size_t data_offset = out.tellp();
         out.close();

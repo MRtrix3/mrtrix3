@@ -104,17 +104,14 @@ namespace MR
                 Math::Hemisphere::directions_300 (HR_dirs);
 
               opt = get_options ("neg_lambda");
-              value_type neg_lambda = 1.0;
               if (opt.size())
                 neg_lambda = opt[0][0];
 
               opt = get_options ("norm_lambda");
-              value_type norm_lambda = 1.0;
               if (opt.size())
                 norm_lambda = opt[0][0];
 
               opt = get_options ("threshold");
-              value_type threshold = 0.1;
               if (opt.size())
                 threshold = opt[0][0];
 
