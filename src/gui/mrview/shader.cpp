@@ -46,17 +46,12 @@ namespace MR
           source += ", lower";
         if (flags & DiscardUpper)
           source += ", upper";
+
         source += "; uniform sampler3D tex; void main() {"
                   "if (gl_TexCoord[0].s < 0.0 || gl_TexCoord[0].s > 1.0 ||"
                   "    gl_TexCoord[0].t < 0.0 || gl_TexCoord[0].t > 1.0 ||"
                   "    gl_TexCoord[0].p < 0.0 || gl_TexCoord[0].p > 1.0) discard;"
                   "vec4 color = texture3D (tex,gl_TexCoord[0].stp);";
-
-        if (flags & DiscardLower)
-          source += "if (color.r < lower) discard;";
-
-        if (flags & DiscardUpper)
-          source += "if (color.r > upper) discard;";
 
         uint32_t colourmap = flags & ColourMap::Mask;
         if (colourmap & ColourMap::MaskNonScalar) {
@@ -71,11 +66,19 @@ namespace MR
               "color.r = mag * (abs (phase)); "
               "phase += 1.0; if (phase > 1.5) phase -= 3.0; "
               "color.b = mag * (abs (phase)); "
-              "gl_FragColor.rgb = color.rgb;";
+              "gl_FragColor.rgb = color.rgb; "
+              "color.a = mag;";
           }
           else assert (0);
         }
         else { // scalar colourmaps:
+
+          if (flags & DiscardLower)
+            source += "if (color.r < lower) discard;";
+
+          if (flags & DiscardUpper)
+            source += "if (color.r > upper) discard;";
+
           source += "color.rgb = clamp (";
           if (flags & InvertScale) source += "1.0 -";
           source += " scale * (color.rgb - offset), 0.0, 1.0);";

@@ -111,9 +111,9 @@ namespace MR
           }
 
           void set_colourmap (uint32_t index, bool invert_scale, bool invert_map) {
-            if (! (index < ColourMap::Special && colourmap < ColourMap::Special)) {
-              if (index < ColourMap::Special || colourmap < ColourMap::Special)
-                texture_mode_unchanged = false;
+            if (index >= ColourMap::Special || colourmap >= ColourMap::Special) {
+              if (index != colourmap)
+                texture_mode_2D_unchanged = texture_mode_3D_unchanged = false;
             } 
             colourmap = index;
             if (invert_scale) colourmap |= InvertScale;
@@ -157,7 +157,7 @@ namespace MR
           uint32_t colourmap;
           GLenum type, format, internal_format;
           std::vector<ssize_t> position;
-          bool texture_mode_unchanged;
+          bool texture_mode_2D_unchanged, texture_mode_3D_unchanged;
 
           Shader shader;
 
@@ -167,6 +167,7 @@ namespace MR
           bool volume_unchanged ();
 
           template <typename T> void copy_texture_3D (GLenum format);
+          void copy_texture_3D_complex ();
           template <typename T> GLenum GLtype () const;
           template <typename T> float scale_factor_3D () const;
 
