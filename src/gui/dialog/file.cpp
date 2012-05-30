@@ -196,7 +196,8 @@ namespace MR
         files_view = new QTreeView;
         files_view->setModel (sorted_files);
         files_view->setRootIsDecorated (false);
-        files_view->setSortingEnabled (false);
+        files_view->setSortingEnabled (true);
+        files_view->sortByColumn (0, Qt::AscendingOrder);
         files_view->setWordWrap (false);
         files_view->setItemsExpandable (false);
         files_view->setSelectionMode (multiselection ? QAbstractItemView::ExtendedSelection : QAbstractItemView::SingleSelection);
