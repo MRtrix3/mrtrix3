@@ -30,9 +30,9 @@
 #include "exception.h"
 
 #define DEFINE_ELEMENTARY_FUNCTION(name) \
-  inline float name (const float val) throw () { return (::name##f (val)); } \
-  inline double name (const double val) throw () { return (::name (val)); } \
-  inline long double name (const long double val) throw () { return (::name##l (val)); }
+  inline float name (const float val) throw () { return ::name##f (val); } \
+  inline double name (const double val) throw () { return ::name (val); } \
+  inline long double name (const long double val) throw () { return ::name##l (val); }
 
 using std::isnan;
 using std::isinf;
@@ -47,39 +47,39 @@ namespace MR
 
     template <typename T> inline T pow2 (const T& v)
     {
-      return (v*v);
+      return v*v;
     }
     template <typename T> inline T pow3 (const T& v)
     {
-      return (pow2 (v) *v);
+      return pow2 (v) *v;
     }
     template <typename T> inline T pow4 (const T& v)
     {
-      return (pow2 (pow2 (v)));
+      return pow2 (pow2 (v));
     }
     template <typename T> inline T pow5 (const T& v)
     {
-      return (pow4 (v) *v);
+      return pow4 (v) *v;
     }
     template <typename T> inline T pow6 (const T& v)
     {
-      return (pow2 (pow3 (v)));
+      return pow2 (pow3 (v));
     }
     template <typename T> inline T pow7 (const T& v)
     {
-      return (pow6 (v) *v);
+      return pow6 (v) *v;
     }
     template <typename T> inline T pow8 (const T& v)
     {
-      return (pow2 (pow4 (v)));
+      return pow2 (pow4 (v));
     }
     template <typename T> inline T pow9 (const T& v)
     {
-      return (pow8 (v) *v);
+      return pow8 (v) *v;
     }
     template <typename T> inline T pow10 (const T& v)
     {
-      return (pow8 (v) *pow2 (v));
+      return pow8 (v) *pow2 (v);
     }
 
     DEFINE_ELEMENTARY_FUNCTION (exp);
@@ -111,7 +111,7 @@ namespace MR
      */
     template <typename I, typename T> inline I round (const T x) throw ()
     {
-      return (static_cast<I> (round (x)));
+      return static_cast<I> (round (x));
     }
     //! template function with cast to different type
     /** example:
@@ -122,7 +122,7 @@ namespace MR
      */
     template <typename I, typename T> inline I floor (const T x) throw ()
     {
-      return (static_cast<I> (floor (x)));
+      return static_cast<I> (floor (x));
     }
     //! template function with cast to different type
     /** example:
@@ -133,58 +133,70 @@ namespace MR
      */
     template <typename I, typename T> inline I ceil (const T x) throw ()
     {
-      return (static_cast<I> (ceil (x)));
+      return static_cast<I> (ceil (x));
     }
 
     inline int abs (const int val) throw ()
     {
-      return (::abs (val));
+      return ::abs (val);
     }
     inline long int abs (const long int val) throw ()
     {
-      return (::labs (val));
+      return ::labs (val);
     }
     inline long long int abs (const long long int val) throw ()
     {
-      return (::llabs (val));
+      return ::llabs (val);
+    }
+    inline unsigned int abs (const unsigned int val) throw ()
+    {
+      return ::abs (val);
+    }
+    inline long unsigned int abs (const long unsigned int val) throw ()
+    {
+      return ::labs (val);
+    }
+    inline long long unsigned int abs (const long long unsigned int val) throw ()
+    {
+      return ::llabs (val);
     }
     inline float abs (const float val) throw ()
     {
-      return (::fabsf (val));
+      return ::fabsf (val);
     }
     inline double abs (const double val) throw ()
     {
-      return (::fabs (val));
+      return ::fabs (val);
     }
     inline long double abs (const long double val) throw ()
     {
-      return (::fabsl (val));
+      return ::fabsl (val);
     }
 
     inline float pow (const float val, const float power) throw ()
     {
-      return (::powf (val, power));
+      return ::powf (val, power);
     }
     inline double pow (const double val, const double power) throw ()
     {
-      return (::pow (val, power));
+      return ::pow (val, power);
     }
     inline long double pow (const long double val, const long double power) throw ()
     {
-      return (::powl (val, power));
+      return ::powl (val, power);
     }
 
     inline float atan2 (const float y, const float x) throw ()
     {
-      return (::atan2f (y, x));
+      return ::atan2f (y, x);
     }
     inline double atan2 (const double y, const double x) throw ()
     {
-      return (::atan2 (y, x));
+      return ::atan2 (y, x);
     }
     inline long double atan2 (const long double y, const long double x) throw ()
     {
-      return (::atan2l (y, x));
+      return ::atan2l (y, x);
     }
 
     //! swap values in arrays
@@ -214,7 +226,7 @@ namespace MR
           cval = c;
           index = i;
         }
-      return (c);
+      return c;
     }
 
     //! find minimum value in array
@@ -232,7 +244,7 @@ namespace MR
           cval = c;
           index = i;
         }
-      return (c);
+      return c;
     }
 
     //! find maximum absolute value in array
@@ -250,7 +262,7 @@ namespace MR
           cval = c;
           index = i;
         }
-      return (c);
+      return c;
     }
 
 
