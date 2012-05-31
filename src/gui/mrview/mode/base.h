@@ -256,7 +256,6 @@ namespace MR
 
             void draw_focus () const;
 
-          private:
             mutable GLdouble modelview_matrix[16], projection_matrix[16];
             mutable GLint viewport_matrix[4];
 

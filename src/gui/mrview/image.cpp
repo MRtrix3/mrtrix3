@@ -558,9 +558,6 @@ namespace MR
           ++progress;
         }
 
-        VAR (value_min);
-        VAR (value_max);
-
         windowing_scale_3D = scale_factor_3D<float>();
       }
 

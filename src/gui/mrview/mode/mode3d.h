@@ -52,7 +52,7 @@ namespace MR
           public slots:
             virtual void reset ();
 
-          private:
+          protected:
             void set_cursor ();
         };
 

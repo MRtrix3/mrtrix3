@@ -161,23 +161,23 @@ done_painting:
 
         bool Base::mouse_click ()
         {
-          return (false);
+          return false;
         }
         bool Base::mouse_move ()
         {
-          return (false);
+          return false;
         }
         bool Base::mouse_doubleclick ()
         {
-          return (false);
+          return false;
         }
         bool Base::mouse_release ()
         {
-          return (false);
+          return false;
         }
         bool Base::mouse_wheel (float delta, Qt::Orientation orientation)
         {
-          return (false);
+          return false;
         }
 
         void Base::move_in_out (float distance)
