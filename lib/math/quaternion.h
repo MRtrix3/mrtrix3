@@ -36,7 +36,7 @@ namespace MR
       public:
         typedef T value_type;
         Quaternion () {
-          reset (); 
+          reset ();
         }
         Quaternion (value_type t, value_type vx, value_type vy, value_type vz) {
           x[0] = t;
@@ -76,7 +76,7 @@ namespace MR
           x[0] = x[1] = x[2] = x[3] = NAN;
         }
 
-        void reset () { 
+        void reset () {
           x[0] = 1.0;
           x[1] = x[2] = x[3] = 0.0;
         }
@@ -109,6 +109,46 @@ namespace MR
         const Quaternion& operator*= (const Quaternion& y) {
           *this = (*this) * y;
           return *this;
+        }
+
+        /**
+         * Spherical linear interpolation between the current quarterion and another
+         *
+         * @param  y the other quaternion to interpolate between
+         * @param  t the desired fraction of the angle to be interpolated, ranging from 0..1
+         * @return The interpolated quaternion
+         */
+        Quaternion slerp (Quaternion& y, float t) const
+        {
+          Quaternion q (1, 0, 0, 0);
+          double cosHalfTheta = x[0] * y[0] + x[1] * y[1] + x[2] * y[2] + x[3] * y[3];
+          if (abs(cosHalfTheta) >= 1.0){
+            q[0] = x[0];q[1] = x[1];q[2] = x[2];q[3] = x[3];
+            return q;
+          }
+
+          if (cosHalfTheta < 0) {
+            y[0] = -y[0]; y[1] = -y[1]; y[2] = -y[2]; y[3] = -y[3];
+            cosHalfTheta = -cosHalfTheta;
+          }
+
+          double halfTheta = acos(cosHalfTheta);
+          double sinHalfTheta = sqrt(1.0 - cosHalfTheta*cosHalfTheta);
+          if (fabs(sinHalfTheta) < 0.001){
+            q[0] = (x[0] * 0.5 + y[0] * 0.5);
+            q[1] = (x[1] * 0.5 + y[1] * 0.5);
+            q[2] = (x[2] * 0.5 + y[2] * 0.5);
+            q[3] = (x[3] * 0.5 + y[3] * 0.5);
+            return q;
+          }
+          double ratioA = sin((1 - t) * halfTheta) / sinHalfTheta;
+          double ratioB = sin(t * halfTheta) / sinHalfTheta;
+
+          q[0] = (x[0] * ratioA + y[0] * ratioB);
+          q[1] = (x[1] * ratioA + y[1] * ratioB);
+          q[2] = (x[2] * ratioA + y[2] * ratioB);
+          q[3] = (x[3] * ratioA + y[3] * ratioB);
+          return (q);
         }
 
       protected:
