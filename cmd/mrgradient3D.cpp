@@ -61,12 +61,8 @@ void usage ()
 
 void run () {
 
-
   Image::BufferPreload<float> input_data (argument[0]);
   Image::BufferPreload<float>::voxel_type input_voxel (input_data);
-
-  if (input_data.ndim() != 3)
-    throw Exception("input image must be 3D");
 
   Image::Filter::Gaussian3D smooth_filter (input_voxel);
   std::vector<float> stdev(1, 1.0);

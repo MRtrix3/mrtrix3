@@ -82,6 +82,10 @@ namespace MR
           template <class InputVoxelType, class OutputVoxelType>
             void operator() (InputVoxelType& in, OutputVoxelType& out) {
 
+
+              if (in.ndim() != 3)
+                throw Exception("input image must be 3D");
+
               Adapter::Gradient1D<InputVoxelType> gradient1D (in);
               out[3] = 0;
               threaded_copy (gradient1D, out, 2, 0, 3);

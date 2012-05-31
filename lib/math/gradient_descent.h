@@ -36,7 +36,7 @@ namespace MR
     // @{
 
     //! Computes the minimum of a function using a gradient descent approach.
-    template <class Function, bool verbose = false> 
+    template <class Function, bool verbose = false>
       class GradientDescent
       {
         public:
@@ -67,10 +67,12 @@ namespace MR
             for (int niter = 0; niter < max_iterations; niter++) {
               bool retval = iterate();
               value_type grad_norm = gradient_norm();
-              console ("iteration " + str (niter) + ": f = " + str (f) + ", |g| = " + str (grad_norm));
-              for (size_t n = 0; n < x.size(); ++n)
-                std::cout << x[n] << " ";
-              std::cout << "\n";
+              if (verbose) {
+                console ("iteration " + str (niter) + ": f = " + str (f) + ", |g| = " + str (grad_norm));
+                for (size_t n = 0; n < x.size(); ++n)
+                  std::cout << x[n] << " ";
+                std::cout << "\n";
+              }
 
               if (!retval)
                 return;
