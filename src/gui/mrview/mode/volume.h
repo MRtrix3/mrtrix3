@@ -20,13 +20,11 @@
 
 */
 
-#ifndef __gui_mrview_mode_mode3d_h__
-#define __gui_mrview_mode_mode3d_h__
+#ifndef __gui_mrview_mode_volume_h__
+#define __gui_mrview_mode_volume_h__
 
 #include "app.h"
-#include "gui/mrview/mode/mode2d.h"
-
-#define ROTATION_INC 0.002
+#include "gui/mrview/mode/mode3d.h"
 
 namespace MR
 {
@@ -37,26 +35,13 @@ namespace MR
       namespace Mode
       {
 
-        class Mode3D : public Mode2D
+        class Volume : public Mode3D
         {
           public:
-            Mode3D (Window& parent);
-            virtual ~Mode3D ();
+            Volume (Window& parent);
+            virtual ~Volume ();
 
             virtual void paint ();
-
-            virtual bool mouse_click ();
-            virtual bool mouse_move ();
-            virtual bool mouse_release ();
-
-            static const App::OptionGroup options;
-
-          public slots:
-            virtual void reset ();
-
-          protected:
-            void set_cursor ();
-            void draw_orientation_labels ();
         };
 
       }
@@ -65,6 +50,7 @@ namespace MR
 }
 
 #endif
+
 
 
 

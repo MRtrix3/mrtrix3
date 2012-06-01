@@ -86,12 +86,31 @@ namespace MR
           void render2D (int projection, int slice) {
             render2D (shader, projection, slice);
           }
+
+          void render3D_pre (Shader& custom_shader, const Mode::Base& mode);
+          void render3D_slice (const Mode::Base& mode, float offset);
+          void render3D_post (Shader& custom_shader) {
+            custom_shader.stop(); 
+          }
+          void render3D_post () {
+            shader.stop();
+          }
+
+          void render3D_pre (const Mode::Base& mode) {
+            render3D_pre (shader, mode);
+          }
           void render3D (const Mode::Base& mode) {
             render3D (shader, mode);
           }
 
           void render2D (Shader& shader, int projection, int slice);
-          void render3D (Shader& shader, const Mode::Base& mode);
+
+          void render3D (Shader& custom_shader, const Mode::Base& mode) {
+            render3D_pre (custom_shader, mode);
+            render3D_slice (mode, 0.0);
+            render3D_post (custom_shader);
+          }
+
 
           void get_axes (int projection, int& x, int& y) {
             if (projection) {
@@ -158,6 +177,7 @@ namespace MR
           GLenum type, format, internal_format;
           std::vector<ssize_t> position;
           bool texture_mode_2D_unchanged, texture_mode_3D_unchanged;
+          Point<> pos[4];
 
           Shader shader;
 

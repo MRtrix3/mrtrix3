@@ -56,7 +56,8 @@ namespace MR
         uint32_t colourmap = flags & ColourMap::Mask;
         if (colourmap & ColourMap::MaskNonScalar) {
           if (colourmap == ColourMap::RGB)
-            source += "gl_FragColor.rgb = scale * (abs(color.rgb) - offset);";
+            source += "gl_FragColor.rgb = scale * (abs(color.rgb) - offset); "
+              "gl_FragColor.a = max(gl_FragColor.r, max(gl_FragColor.g, gl_FragColor.b)); ";
           else if (colourmap == ColourMap::Complex) {
             source += 
               "float mag = clamp (scale * (sqrt (color.r*color.r + color.a*color.a) - offset), 0.0, 1.0); "
@@ -81,7 +82,8 @@ namespace MR
 
           source += "color.rgb = clamp (";
           if (flags & InvertScale) source += "1.0 -";
-          source += " scale * (color.rgb - offset), 0.0, 1.0);";
+          source += " scale * (color.rgb - offset), 0.0, 1.0);"
+            "gl_FragColor.a = color.r;";
           if (colourmap == ColourMap::Gray)
             source += "gl_FragColor.rgb = color.rgb;";
           else if (colourmap == ColourMap::Hot)
@@ -98,9 +100,7 @@ namespace MR
 
         if (flags & InvertMap)
           source += "gl_FragColor = 1.0 - gl_FragColor;";
-        source +=
-          "gl_FragColor.a = color.a;"
-          "}";
+        source += "}";
 
         fragment_shader.compile (source.c_str());
         shader_program.attach (fragment_shader);

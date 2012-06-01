@@ -78,10 +78,6 @@ namespace MR
             QPoint mouse_dpos () const {
               return currentPos - lastPos;
             }
-            QPoint mouse_dpos_static () const {
-              QCursor::setPos (reinterpret_cast<QWidget*> (window.glarea)->mapToGlobal (initialPos));
-              return currentPos - initialPos;
-            }
             Qt::MouseButtons mouse_buttons () const {
               return buttons_;
             }

@@ -23,8 +23,6 @@
 #include "math/vector.h"
 #include "gui/mrview/mode/mode3d.h"
 
-#define ROTATION_INC 0.002
-
 namespace MR
 {
   namespace GUI
@@ -112,7 +110,13 @@ namespace MR
           glDisable (GL_TEXTURE_3D);
 
           draw_focus();
+          draw_orientation_labels();
+        }
 
+
+
+        void Mode3D::draw_orientation_labels ()
+        {
           if (show_orientation_action->isChecked()) {
             glColor4f (1.0, 0.0, 0.0, 1.0);
             std::vector<OrientationLabel> labels;
@@ -134,9 +138,6 @@ namespace MR
 
           }
         }
-
-
-
 
 
 
@@ -206,16 +207,16 @@ namespace MR
             if (mouse_buttons() == Qt::RightButton) {
 
               if (mouse_edge() == (RightEdge | BottomEdge)) {
-                image()->adjust_windowing (mouse_dpos_static());
+                image()->adjust_windowing (mouse_dpos());
                 updateGL();
                 return true;
               }
 
               if (mouse_edge() == (RightEdge | TopEdge)) {
-                QPoint dpos = mouse_dpos_static();
+                QPoint dpos = mouse_dpos();
                 if (dpos.x() == 0 && dpos.y() == 0)
                   return true;
-                Point<> x = screen_to_model_direction (Point<> (dpos.x(), dpos.y(), 0.0));
+                Point<> x = screen_to_model_direction (Point<> (dpos.x(), -dpos.y(), 0.0));
                 Point<> z = screen_to_model_direction (Point<> (0.0, 0.0, 1.0));
                 Point<> v (x.cross (z));
                 float angle = ROTATION_INC * Math::sqrt (float (Math::pow2 (dpos.x()) + Math::pow2 (dpos.y())));

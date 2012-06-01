@@ -213,7 +213,7 @@ namespace MR
             if (mouse_buttons() == Qt::RightButton) {
 
               if (mouse_edge() == (RightEdge | BottomEdge)) {
-                image()->adjust_windowing (mouse_dpos_static());
+                image()->adjust_windowing (mouse_dpos());
                 updateGL();
                 return true;
               }

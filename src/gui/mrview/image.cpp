@@ -118,29 +118,46 @@ namespace MR
 
 
 
-      void Image::render3D (Shader& shader, const Mode::Base& mode)
+      void Image::render3D_pre (Shader& custom_shader, const Mode::Base& mode)
       {
         update_texture3D ();
 
         glTexParameteri (GL_TEXTURE_3D, GL_TEXTURE_MAG_FILTER, interpolation);
         glTexParameteri (GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, interpolation);
 
-        shader.start();
+        custom_shader.start();
 
-        shader.get_uniform ("offset") = (display_midpoint - 0.5f * display_range) / windowing_scale_3D;
-        shader.get_uniform ("scale") = windowing_scale_3D / display_range;
+        custom_shader.get_uniform ("offset") = (display_midpoint - 0.5f * display_range) / windowing_scale_3D;
+        custom_shader.get_uniform ("scale") = windowing_scale_3D / display_range;
 
-        Point<> pos[4];
         pos[0] = mode.screen_to_model (QPoint (0, mode.height()));
         pos[1] = mode.screen_to_model (QPoint (0, 0));
         pos[2] = mode.screen_to_model (QPoint (mode.width(), 0));
         pos[3] = mode.screen_to_model (QPoint (mode.width(), mode.height()));
+      }
+
+
+
+
+      void Image::render3D_slice (const Mode::Base& mode, float offset)
+      {
+        Point<> spos[4];
+
+        if (offset != 0.0) {
+          Point<> z = mode.screen_to_model_direction (Point<> (0.0, 0.0, 1.0));
+          z.normalise();
+          z *= offset;
+          spos[0] = pos[0] + z;
+          spos[1] = pos[1] + z;
+          spos[2] = pos[2] + z;
+          spos[3] = pos[3] + z;
+        }
 
         Point<> tex[4];
-        tex[0] = interp.scanner2voxel (pos[0]) + Point<> (0.5, 0.5, 0.5);
-        tex[1] = interp.scanner2voxel (pos[1]) + Point<> (0.5, 0.5, 0.5);
-        tex[2] = interp.scanner2voxel (pos[2]) + Point<> (0.5, 0.5, 0.5);
-        tex[3] = interp.scanner2voxel (pos[3]) + Point<> (0.5, 0.5, 0.5);
+        tex[0] = interp.scanner2voxel (spos[0]) + Point<> (0.5, 0.5, 0.5);
+        tex[1] = interp.scanner2voxel (spos[1]) + Point<> (0.5, 0.5, 0.5);
+        tex[2] = interp.scanner2voxel (spos[2]) + Point<> (0.5, 0.5, 0.5);
+        tex[3] = interp.scanner2voxel (spos[3]) + Point<> (0.5, 0.5, 0.5);
 
         for (size_t i = 0; i < 4; ++i)
           for (size_t j = 0; j < 3; ++j)
@@ -148,15 +165,14 @@ namespace MR
 
         glBegin (GL_QUADS);
         glTexCoord3fv (tex[0]);
-        glVertex3fv (pos[0]);
+        glVertex3fv (spos[0]);
         glTexCoord3fv (tex[1]);
-        glVertex3fv (pos[1]);
+        glVertex3fv (spos[1]);
         glTexCoord3fv (tex[2]);
-        glVertex3fv (pos[2]);
+        glVertex3fv (spos[2]);
         glTexCoord3fv (tex[3]);
-        glVertex3fv (pos[3]);
+        glVertex3fv (spos[3]);
         glEnd();
-        shader.stop();
       }
 
 
