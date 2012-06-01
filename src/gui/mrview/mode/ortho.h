@@ -57,7 +57,14 @@ namespace MR
 
           protected:
             void set_cursor ();
-            void draw_projection (int proj);
+            void draw_projection (int proj, float fovx, float fovy);
+
+            GLdouble gl_modelview[3][16], gl_projection[3][16];
+            GLint gl_viewport[3][4];
+            int current_projection;
+
+            void set_focus (const QPoint& pos);
+            void adjust_target (const QPoint& dpos);
         };
 
       }

@@ -106,6 +106,8 @@ namespace MR
           glMultMatrixf (M);
           glTranslatef (-F[0], -F[1], -F[2]);
 
+          update_modelview_projection_viewport();
+
           // set up OpenGL environment:
           glDisable (GL_BLEND);
           glEnable (GL_TEXTURE_2D);
@@ -228,7 +230,7 @@ namespace MR
                 return true;
               }
 
-              set_target (target() - screen_to_model_direction (Point<> (mouse_dpos().x(), mouse_dpos().y(), 0.0)));
+              set_target (target() - screen_to_model_direction (mouse_dpos()));
               updateGL();
               return true;
             }

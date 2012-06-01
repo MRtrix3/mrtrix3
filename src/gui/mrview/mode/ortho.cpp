@@ -36,7 +36,10 @@ namespace MR
       namespace Mode
       {
 
-        Ortho::Ortho (Window& parent) : Base (parent) { }
+        Ortho::Ortho (Window& parent) : 
+          Base (parent),
+          current_projection (-1) { }
+
         Ortho::~Ortho () { }
 
 
@@ -47,22 +50,22 @@ namespace MR
           if (!focus()) reset_view();
           if (!target()) set_target (focus());
 
-          get_modelview_projection_viewport();
-          glPushAttrib (GL_VIEWPORT_BIT);
+          GLint w = glarea()->width()/2;
+          GLint h = glarea()->height()/2;
+          float fov = FOV() / float(w+h);
+          float fovx = w * fov;
+          float fovy = h * fov;
 
-          GLint midx = viewport_matrix[0] + 0.5*(viewport_matrix[2]-viewport_matrix[0]);
-          GLint midy = viewport_matrix[1] + 0.5*(viewport_matrix[3]-viewport_matrix[1]);
+          glViewport (w, h, w, h);
+          draw_projection (0, fovx, fovy);
 
-          glViewport (midx, midy, midx, midy);
-          draw_projection (0);
+          glViewport (0, h, w, h);
+          draw_projection (1, fovx, fovy);
 
-          glViewport (viewport_matrix[0], midy, midx, midy);
-          draw_projection (1);
+          glViewport (0, 0, w, h);
+          draw_projection (2, fovx, fovy);
 
-          glViewport (viewport_matrix[0], viewport_matrix[1], midx, midy);
-          draw_projection (2);
-
-          glPopAttrib();
+          glViewport (0, 0, glarea()->width(), glarea()->height());
         }
 
 
@@ -72,20 +75,13 @@ namespace MR
 
 
 
-
-
-
-
-
-
-
-        void Ortho::draw_projection (int proj)
+        void Ortho::draw_projection (int proj, float fovx, float fovy)
         {
           // set up modelview matrix:
           const float* Q = image()->interp.image2scanner_matrix();
           float M[16];
 
-          adjust_projection_matrix (M, Q);
+          adjust_projection_matrix (M, Q, proj);
 
           // image slice:
           Point<> voxel (image()->interp.scanner2voxel (focus()));
@@ -97,19 +93,22 @@ namespace MR
           F = image()->interp.voxel2scanner (F);
 
           // info for projection:
-          int w = glarea()->width(), h = glarea()->height();
-          float fov = FOV() / (float) (w+h);
           float depth = image()->interp.dim (proj) * image()->interp.vox (proj);
 
           // set up projection & modelview matrices:
           glMatrixMode (GL_PROJECTION);
           glLoadIdentity ();
-          glOrtho (-w*fov, w*fov, -h*fov, h*fov, -depth, depth);
+          glOrtho (-fovx, fovx, -fovy, fovy, -depth, depth);
 
           glMatrixMode (GL_MODELVIEW);
           glLoadIdentity ();
           glMultMatrixf (M);
           glTranslatef (-F[0], -F[1], -F[2]);
+
+          update_modelview_projection_viewport();
+          memcpy (gl_viewport[proj], viewport_matrix, 4*sizeof(GLint));
+          memcpy (gl_modelview[proj], modelview_matrix, 16*sizeof(GLdouble));
+          memcpy (gl_projection[proj], projection_matrix, 16*sizeof(GLdouble));
 
           // set up OpenGL environment:
           glDisable (GL_BLEND);
@@ -170,29 +169,58 @@ namespace MR
 
 
 
+        void Ortho::set_focus (const QPoint& pos) {
+          if (current_projection < 0) return;
+          Base::set_focus (screen_to_model (pos, gl_viewport[current_projection], gl_modelview[current_projection], gl_projection[current_projection]));
+          updateGL();
+        }
+
+
+
+        void Ortho::adjust_target (const QPoint& dpos) {
+          if (current_projection < 0) return;
+          Point<> pos = screen_to_model_direction (dpos, gl_viewport[current_projection], gl_modelview[current_projection], gl_projection[current_projection]); 
+          set_target (target() - pos);
+          updateGL();
+        }
+
+
+
+
         bool Ortho::mouse_click ()
         {
-          /*
+          if (mouse_pos().x() < glarea()->width()/2) 
+            if (mouse_pos().y() < glarea()->height()/2) 
+              current_projection = 1;
+            else 
+              current_projection = 2;
+          else 
+            if (mouse_pos().y() < glarea()->height()/2)
+              current_projection = 0;
+            else 
+              current_projection = -1;
+
+
           if (mouse_modifiers() == Qt::NoModifier) {
 
             if (mouse_buttons() == Qt::LeftButton) {
               glarea()->setCursor (Cursor::crosshair);
-              set_focus (screen_to_model (mouse_pos()));
-              updateGL();
+              set_focus (mouse_pos());
               return true;
             }
 
             if (mouse_buttons() == Qt::RightButton) {
-              if (!mouse_edge()) {
+              if (!mouse_edge() && current_projection >= 0) {
                 glarea()->setCursor (Cursor::pan_crosshair);
                 return true;
               }
             }
 
           }
-*/
           return false;
         }
+
+
 
 
 
@@ -203,15 +231,11 @@ namespace MR
             return false;
           }
 
-          return false;
-          /*
 
           if (mouse_modifiers() == Qt::NoModifier) {
 
             if (mouse_buttons() == Qt::LeftButton) {
-
-              set_focus (screen_to_model());
-              updateGL();
+              set_focus (currentPos);
               return true;
             }
 
@@ -223,24 +247,16 @@ namespace MR
                 return true;
               }
 
-              if (mouse_edge() & RightEdge) {
-                move_in_out_FOV (-mouse_dpos().y());
-                updateGL();
-                return true;
-              }
-
               if (mouse_edge() & LeftEdge) {
                 change_FOV_fine (mouse_dpos().y());
                 updateGL();
                 return true;
               }
 
-              set_target (target() - screen_to_model_direction (Point<> (mouse_dpos().x(), mouse_dpos().y(), 0.0)));
-              updateGL();
+              adjust_target (mouse_dpos());
               return true;
             }
           }
-*/
 
           return false;
         }
@@ -251,6 +267,7 @@ namespace MR
         bool Ortho::mouse_release ()
         {
           set_cursor();
+          current_projection = -1;
           return true;
         }
 
@@ -285,7 +302,7 @@ namespace MR
           };
 
           Point<> p (image()->header().dim (0) /2.0, image()->header().dim (1) /2.0, image()->header().dim (2) /2.0);
-          set_focus (image()->interp.voxel2scanner (p));
+          Base::set_focus (image()->interp.voxel2scanner (p));
 
           set_FOV (std::max (dim[0], std::max (dim[1], dim[2])));
 

@@ -101,7 +101,6 @@ namespace MR
 
           void paintGL ();
           void initGL ();
-          void resizeGL (int width, int height);
           void mousePressEventGL (QMouseEvent* event);
           void mouseMoveEventGL (QMouseEvent* event);
           void mouseDoubleClickEventGL (QMouseEvent* event);

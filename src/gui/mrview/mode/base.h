@@ -34,7 +34,7 @@
 
 #include "gui/mrview/window.h"
 
-#define EDGE_WIDTH 8
+#define EDGE_WIDTH 6
 
 namespace MR
 {
@@ -99,40 +99,68 @@ namespace MR
               window.view_menu->insertAction (window.view_menu_mode_common_area, action);
             }
 
-            Point<> model_to_screen (const Point<>& pos) const {
+            Point<> model_to_screen (const Point<>& pos, const GLint* gl_viewport, const GLdouble* gl_modelview, const GLdouble* gl_projection) const {
               double wx, wy, wz;
-              get_modelview_projection_viewport();
-              gluProject (pos[0], pos[1], pos[2], modelview_matrix,
-                          projection_matrix, viewport_matrix, &wx, &wy, &wz);
+              gluProject (pos[0], pos[1], pos[2], gl_modelview,
+                          gl_projection, gl_viewport, &wx, &wy, &wz);
               return Point<> (wx, wy, wz);
+            }
+
+            Point<> model_to_screen (const Point<>& pos) const {
+              return model_to_screen (pos, viewport_matrix, modelview_matrix, projection_matrix);
+            }
+
+            Point<> model_to_screen_direction (const Point<>& pos, const GLint* gl_viewport, const GLdouble* gl_modelview, const GLdouble* gl_projection) const {
+              return model_to_screen (pos, gl_viewport, gl_modelview, gl_projection)  
+                - model_to_screen (Point<> (0.0, 0.0, 0.0), gl_viewport, gl_modelview, gl_projection);
             }
 
             Point<> model_to_screen_direction (const Point<>& pos) const {
-              return model_to_screen (pos) - model_to_screen (Point<> (0.0, 0.0, 0.0));
+              return model_to_screen_direction (pos, viewport_matrix, modelview_matrix, projection_matrix);
             }
 
-            Point<> screen_to_model (const Point<>& pos) const {
+            Point<> screen_to_model (const Point<>& pos, const GLint* gl_viewport, const GLdouble* gl_modelview, const GLdouble* gl_projection) const {
               double wx, wy, wz;
-              get_modelview_projection_viewport();
-              gluUnProject (pos[0], height()-pos[1], pos[2], modelview_matrix,
-                            projection_matrix, viewport_matrix, &wx, &wy, &wz);
+              gluUnProject (pos[0], pos[1], pos[2], gl_modelview,
+                            gl_projection, gl_viewport, &wx, &wy, &wz);
               return Point<> (wx, wy, wz);
             }
 
-            Point<> screen_to_model (const QPoint& pos) const {
-              Point<> f (model_to_screen (focus()));
+            Point<> screen_to_model (const Point<>& pos) const {
+              return screen_to_model (pos, viewport_matrix, modelview_matrix, projection_matrix);
+            }
+
+            Point<> screen_to_model (const QPoint& pos, const GLint* gl_viewport, const GLdouble* gl_modelview, const GLdouble* gl_projection) const {
+              Point<> f (model_to_screen (focus(), gl_viewport, gl_modelview, gl_projection));
               f[0] = pos.x();
-              f[1] = pos.y();
-              return screen_to_model (f);
+              f[1] = glarea()->height() - pos.y();
+              return screen_to_model (f, gl_viewport, gl_modelview, gl_projection);
+            }
+
+            Point<> screen_to_model (const QPoint& pos) const {
+              return screen_to_model (pos, viewport_matrix, modelview_matrix, projection_matrix);
             }
 
             Point<> screen_to_model () const {
               return screen_to_model (currentPos);
             }
 
+            Point<> screen_to_model_direction (const Point<>& pos, const GLint* gl_viewport, const GLdouble* gl_modelview, const GLdouble* gl_projection) const {
+              return screen_to_model (pos, gl_viewport, gl_modelview, gl_projection) - screen_to_model (Point<> (0.0, 0.0, 0.0), gl_viewport, gl_modelview, gl_projection);
+            }
+
             Point<> screen_to_model_direction (const Point<>& pos) const {
               return screen_to_model (pos) - screen_to_model (Point<> (0.0, 0.0, 0.0));
             }
+
+            Point<> screen_to_model_direction (const QPoint& pos, const GLint* gl_viewport, const GLdouble* gl_modelview, const GLdouble* gl_projection) const {
+              return screen_to_model (Point<> (pos.x(), -pos.y(), 0.0), gl_viewport, gl_modelview, gl_projection) - screen_to_model (Point<> (0.0, 0.0, 0.0), gl_viewport, gl_modelview, gl_projection);
+            }
+
+            Point<> screen_to_model_direction (const QPoint& pos) const {
+              return screen_to_model (Point<> (pos.x(), -pos.y(), 0.0)) - screen_to_model (Point<> (0.0, 0.0, 0.0));
+            }
+
 
 
             const Image* image () const {
@@ -181,11 +209,9 @@ namespace MR
             }
 
             int width () const {
-              get_modelview_projection_viewport();
               return viewport_matrix[2];
             }
             int height () const {
-              get_modelview_projection_viewport();
               return viewport_matrix[3];
             }
             QGLWidget* glarea () const {
@@ -193,7 +219,7 @@ namespace MR
             }
 
             void renderText (int x, int y, const std::string& text) {
-              glarea()->renderText (x, height()-y, text.c_str(), font_);
+              glarea()->renderText (x+viewport_matrix[0], glarea()->height()-y-viewport_matrix[1], text.c_str(), font_);
             }
 
             void renderTextInset (int x, int y, const std::string& text, int inset = -1) {
@@ -203,9 +229,8 @@ namespace MR
               if (x < inset) x = inset;
               if (x + fm.width (s) + inset > width()) x = width() - fm.width (s) - inset;
               if (y < inset) y = inset;
-              if (y + fm.height() + inset > height()) y = height() - fm.height() - inset;
-              y = height() - y;
-              glarea()->renderText (x, y, text.c_str(), font_);
+              if (y + fm.height() + inset > height()) y = height() - fm.height() / 2 - inset;
+              renderText (x, y, text);
             }
 
             void renderText (const std::string& text, int position, int line = 0) {
@@ -213,15 +238,15 @@ namespace MR
               QString s (text.c_str());
               int x, y;
 
-              if (position & RightEdge) x = width() - fm.height() /2 - fm.width (s);
+              if (position & RightEdge) x = width() - fm.height() / 2 - fm.width (s);
               else if (position & LeftEdge) x = fm.height() / 2;
               else x = (width() - fm.width (s)) / 2;
 
-              if (position & TopEdge) y = 2 * fm.height() / 2 + line * fm.lineSpacing();
-              else if (position & BottomEdge) y = height() - fm.height() / 2 - line * fm.lineSpacing();
-              else y = (height() + fm.height()) / 2 + line * fm.lineSpacing();
+              if (position & TopEdge) y = height() - fm.height() - line * fm.lineSpacing();
+              else if (position & BottomEdge) y = fm.height() / 2 + line * fm.lineSpacing();
+              else y = (height() + fm.height()) / 2 - line * fm.lineSpacing();
 
-              glarea()->renderText (x, y, text.c_str(), font_);
+              renderText (x, y, text);
             }
 
             void move_in_out (float distance);
@@ -244,15 +269,16 @@ namespace MR
             QAction* reset_action, *show_focus_action;
             QAction* show_image_info_action, *show_position_action, *show_orientation_action;
 
-            void get_modelview_projection_viewport () const {
-              if (isnan (modelview_matrix[0])) {
-                glGetIntegerv (GL_VIEWPORT, viewport_matrix);
-                glGetDoublev (GL_MODELVIEW_MATRIX, modelview_matrix);
-                glGetDoublev (GL_PROJECTION_MATRIX, projection_matrix);
-              }
+            void update_modelview_projection_viewport () const {
+              glGetIntegerv (GL_VIEWPORT, viewport_matrix);
+              glGetDoublev (GL_MODELVIEW_MATRIX, modelview_matrix);
+              glGetDoublev (GL_PROJECTION_MATRIX, projection_matrix);
             }
 
-            void adjust_projection_matrix (float* M, const float* Q) const;
+            void adjust_projection_matrix (float* M, const float* Q, int proj) const;
+            void adjust_projection_matrix (float* M, const float* Q) const { 
+              adjust_projection_matrix (M, Q, projection()); 
+            }
 
             void draw_focus () const;
 

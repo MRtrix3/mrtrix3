@@ -97,6 +97,9 @@ namespace MR
         {
           painting = true;
 
+          glViewport (0, 0, glarea()->width(), glarea()->height());
+          update_modelview_projection_viewport();
+
           glClear (GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
           if (!image()) {
             renderText (10, 10, "No image loaded");
@@ -104,11 +107,10 @@ namespace MR
           }
 
           {
-            modelview_matrix[0] = NAN;
             paint();
 
             glDisable (GL_MULTISAMPLE);
-            get_modelview_projection_viewport();
+            update_modelview_projection_viewport();
             glColor4f (1.0, 1.0, 0.0, 1.0);
 
             if (show_position_action->isChecked()) {
@@ -199,6 +201,8 @@ done_painting:
             glPushAttrib (GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
             glDepthMask (GL_FALSE);
             Point<> F = model_to_screen (focus());
+            F[0] -= viewport_matrix[0];
+            F[1] -= viewport_matrix[1];
 
             glMatrixMode (GL_PROJECTION);
             glPushMatrix ();
@@ -231,18 +235,18 @@ done_painting:
           }
         }
 
-        void Base::adjust_projection_matrix (float* M, const float* Q) const
+        void Base::adjust_projection_matrix (float* M, const float* Q, int proj) const
         {
           M[3] = M[7] = M[11] = M[12] = M[13] = M[14] = 0.0;
           M[15] = 1.0;
-          if (projection() == 0) { // sagittal
+          if (proj == 0) { // sagittal
             for (size_t n = 0; n < 3; n++) {
               M[4*n]   = -Q[4*n+1];  // x: -y
               M[4*n+1] =  Q[4*n+2];  // y: z
               M[4*n+2] = -Q[4*n];    // z: -x
             }
           }
-          else if (projection() == 1) { // coronal
+          else if (proj == 1) { // coronal
             for (size_t n = 0; n < 3; n++) {
               M[4*n]   = -Q[4*n];    // x: -x
               M[4*n+1] =  Q[4*n+2];  // y: z

@@ -92,10 +92,6 @@ namespace MR
           void paintGL () {
             main.paintGL();
           }
-          void resizeGL (int width, int height) {
-            main.resizeGL (width, height);
-          }
-
           void mousePressEvent (QMouseEvent* event) {
             main.mousePressEventGL (event);
           }
@@ -717,11 +713,6 @@ mode_selected:
       }
 
 
-
-      inline void Window::resizeGL (int width, int height)
-      {
-        glViewport (0, 0, width, height);
-      }
 
       inline void Window::mousePressEventGL (QMouseEvent* event)
       {
