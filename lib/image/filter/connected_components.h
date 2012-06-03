@@ -60,7 +60,8 @@ namespace MR
         Image::LoopInOrder loop(mask);
         for (loop.start(mask, neigh_mask_vox); loop.ok(); loop.next(mask, neigh_mask_vox)) {
           if (mask.value() > 0.5) {
-            neigh_mask_vox.value() = mask_indices.size(); // keep track of the index location for the second pass
+            // keep track of the index location for the second pass
+            neigh_mask_vox.value() = mask_indices.size();
             std::vector<int> index(4);
             for (size_t dim = 0; dim < mask.ndim(); dim++)
               index[dim] = mask[dim];
@@ -69,7 +70,6 @@ namespace MR
             neigh_mask_vox.value() = 0;
           }
         }
-
 
         // 2nd pass, define adjacencies
         MaskVoxelType mask_neigh (mask);
@@ -80,55 +80,47 @@ namespace MR
             mask_neigh[dim] = (*it)[dim];
 
           for (size_t dim = 0; dim < mask.ndim(); dim++) {
-//            std::cout << "Dimension " << dim << std::endl;
             if (!ignore_dim[dim]) {
               if (adjacency_matrices[dim].is_set()) {
-                for (int i = 0; i < mask.dim(dim); i++) {  // for each index along this dimension, check for neighbours
-                  if (adjacency_matrices[dim]((*it)[dim], i)) {  // do we have a neighbour
+                // for each index along this dimension, check for adjacency
+                for (int i = 0; i < mask.dim(dim); i++) {
+                  if (adjacency_matrices[dim]((*it)[dim], i)) {
                     mask_neigh[dim] = i;
                     if (mask_neigh.value() > 0.5) {
                       voxel_assign (neigh_mask_vox, mask_neigh);
-                      neighbour_ptrs.push_back (neigh_mask_vox.value()); // store the index to the neighbour
+                      neighbour_ptrs.push_back (neigh_mask_vox.value());
                     }
                   }
                 }
               // we treat this dimension as having normal contiguous neighbours
               } else {
-                if ((*it)[dim] - 1 > 0) { // boundary condition
+                if ((*it)[dim] > 0) {
                   mask_neigh[dim] = (*it)[dim] - 1;
                   if (mask_neigh.value() > 0.5) {
                     voxel_assign (neigh_mask_vox, mask_neigh);
-                    neighbour_ptrs.push_back (neigh_mask_vox.value()); // store the index to the neighbour
+                    neighbour_ptrs.push_back (neigh_mask_vox.value());
                   }
                 }
-                if ((*it)[dim] + 1 < mask.dim (dim) - 1) { // boundary condition
+                if ((*it)[dim] + 1 < mask.dim (dim)) {
                   mask_neigh[dim] = (*it)[dim] + 1;
                   if (mask_neigh.value() > 0.5) {
                     voxel_assign (neigh_mask_vox, mask_neigh);
-//                    std::cout << neigh_mask_vox << std::endl;
-                    neighbour_ptrs.push_back (neigh_mask_vox.value()); //  store the index to the neighbour
+                    neighbour_ptrs.push_back (neigh_mask_vox.value());
                   }
                 }
               }
             }
             mask_neigh[dim] = (*it)[dim];
           }
-//          std::cout << "position " << (*it) << std::endl;
-//          std::cout << neighbour_ptrs << std::endl;
           adjacent_indices.push_back (neighbour_ptrs);
         }
       }
-
 
       void agglomerate (int index,
                         std::vector<std::vector<uint32_t> > & adjacent_indices,
                         std::vector<uint32_t> & traversed,
                         uint32_t current_label,
                         uint32_t & counter) {
-//        std::cout << "index "  << index << std::endl;
-//        std::cout << adjacent_indices[index]  << std::endl;
-//        std::cout << "label " << current_label  << std::endl;
-//        std::cout << "counter " << counter  << std::endl;
         counter++;
         traversed[index] = current_label;
         for (size_t n = 0; n < adjacent_indices[index].size(); n++) {
@@ -136,7 +128,6 @@ namespace MR
             agglomerate (adjacent_indices[index][n], adjacent_indices, traversed, current_label, counter);
         }
       }
-
 
       void agglomerate (int index,
                         std::vector<std::vector<uint32_t> > & adjacent_indices,
@@ -226,16 +217,9 @@ namespace MR
 
           std::sort (clusters.begin(), clusters.end(), compare_clusters);
 
-//          for (unsigned int c = 0; c < clusters.size(); c++)
-//            std::cout << clusters[c].size << " " << clusters[c].label << std::endl;
-
-
           std::vector<int> label_lookup (clusters.size(), 0);
           for (unsigned int c = 0; c < clusters.size(); c++)
             label_lookup[clusters[c].label -1] = c + 1;
-
-//          for (unsigned int c = 0; c < label_lookup.size(); c++)
-//            std::cout << label_lookup[c] << std::endl;
 
           Image::LoopInOrder loop(out);
           for (loop.start(out); loop.ok(); loop.next(out))
@@ -257,7 +241,7 @@ namespace MR
           if (dim > this->ndim())
             throw Exception("The dimensions specified is larger than the number of input dimensions.");
           if ((int)adj_matrix.columns() != this->dim(dim) || (int)adj_matrix.rows() != this->dim(dim))
-            throw Exception("The input adjacency matrix size does not match the number of elements in this dimension");
+            throw Exception("The adjacency matrix size does not match the number of elements along dimension " + str(dim));
 
           adjacency_matrices_[dim] = adj_matrix;
         }
@@ -265,7 +249,6 @@ namespace MR
         protected:
           std::vector<Math::Matrix<float> > adjacency_matrices_;
           std::vector<bool> ignore_dim_;
-
       };
       //! @}
     }
