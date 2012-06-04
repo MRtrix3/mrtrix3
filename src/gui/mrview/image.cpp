@@ -143,14 +143,19 @@ namespace MR
       {
         Point<> spos[4];
 
+        spos[0] = pos[0];
+        spos[1] = pos[1];
+        spos[2] = pos[2];
+        spos[3] = pos[3];
+
         if (offset != 0.0) {
           Point<> z = mode.screen_to_model_direction (Point<> (0.0, 0.0, 1.0));
           z.normalise();
           z *= offset;
-          spos[0] = pos[0] + z;
-          spos[1] = pos[1] + z;
-          spos[2] = pos[2] + z;
-          spos[3] = pos[3] + z;
+          spos[0] += z;
+          spos[1] += z;
+          spos[2] += z;
+          spos[3] += z;
         }
 
         Point<> tex[4];
