@@ -40,8 +40,8 @@ namespace MR
     {
 
       struct cluster {
-          unsigned int label;
-          unsigned int size;
+          uint32_t label;
+          uint32_t size;
       };
 
       bool compare_clusters (cluster i, cluster j) { return (i.size > j.size); }
@@ -116,11 +116,14 @@ namespace MR
         }
       }
 
-      void agglomerate (int index,
+      inline void agglomerate (uint32_t index,
                         std::vector<std::vector<uint32_t> > & adjacent_indices,
                         std::vector<uint32_t> & traversed,
                         uint32_t current_label,
                         uint32_t & counter) {
+//        std::cout << "index " << index << std::endl;
+//        std::cout << "label " << current_label << std::endl;
+//        std::cout << "indices " << adjacent_indices << std::endl;
         counter++;
         traversed[index] = current_label;
         for (size_t n = 0; n < adjacent_indices[index].size(); n++) {
@@ -129,7 +132,7 @@ namespace MR
         }
       }
 
-      void agglomerate (int index,
+      inline void agglomerate (uint32_t index,
                         std::vector<std::vector<uint32_t> > & adjacent_indices,
                         std::vector<uint32_t> & traversed,
                         uint32_t current_label,
@@ -186,7 +189,7 @@ namespace MR
         template <class InputVoxelType>
         ConnectedComponents (const InputVoxelType& in) :
         ConstInfo (in) {
-          datatype_ = DataType::Int16;
+          datatype_ = DataType::UInt32;
           Math::Matrix<float> empty;
           adjacency_matrices_.resize(this->ndim(), empty);
           ignore_dim_.resize(this->ndim(), false);
@@ -198,13 +201,18 @@ namespace MR
           std::vector<std::vector<int> > mask_indices;
           std::vector<std::vector<uint32_t> > adjacent_indices;
           compute_adjacency (in, adjacency_matrices_, ignore_dim_, mask_indices, adjacent_indices);
-          std::cout << "number of voxels " << mask_indices.size() << std::endl;
-
           std::vector<uint32_t> traversed (mask_indices.size(), 0);  // keep track of the already labelled voxels
+
+          std::cout << "number of voxels " << mask_indices.size() << std::endl;
+          std::cout << "number of voxels " << adjacent_indices.size() << std::endl;
+          std::cout << "number of voxels " << traversed.size() << std::endl;
+
+          std::cout << "asdf " << traversed[343339] << std::endl;
+
 
           uint32_t current_label = 1;
           std::vector<cluster> clusters;
-          for (unsigned int i = 0; i < traversed.size(); i++) {
+          for (uint32_t i = 0; i < traversed.size(); i++) {
             if (!traversed[i]) {
               cluster c;
               c.label = current_label;
@@ -215,17 +223,20 @@ namespace MR
             }
           }
 
+          if (clusters.size() > std::numeric_limits<uint32_t>::max())
+            throw Exception ("The number of clusters is larger than can be labelled with an unsigned 32bit integer.");
+
           std::sort (clusters.begin(), clusters.end(), compare_clusters);
 
           std::vector<int> label_lookup (clusters.size(), 0);
-          for (unsigned int c = 0; c < clusters.size(); c++)
+          for (uint32_t c = 0; c < clusters.size(); c++)
             label_lookup[clusters[c].label -1] = c + 1;
 
           Image::LoopInOrder loop(out);
           for (loop.start(out); loop.ok(); loop.next(out))
             out.value() = 0;
 
-          for (unsigned int i = 0; i < traversed.size(); i++) {
+          for (uint32_t i = 0; i < traversed.size(); i++) {
             for (size_t dim = 0; dim < out.ndim(); dim++)
               out[dim] = mask_indices[i][dim];
             out.value() = label_lookup[traversed[i] - 1];

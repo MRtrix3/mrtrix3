@@ -115,6 +115,8 @@ void run ()
     const int end   = opt[i][2];
     bounds[axis][0] = start;
     bounds[axis][1] = end;
+    if (bounds[axis][0] < 0 || bounds[axis][1] >= data_in.dim(axis))
+      throw Exception ("Index supplied for axis " + str(axis) + " is out of bounds.");
   }
 
 
