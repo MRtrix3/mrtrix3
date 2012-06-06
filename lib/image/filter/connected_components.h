@@ -29,7 +29,7 @@
 #include "image/buffer_scratch.h"
 #include "math/matrix.h"
 
-
+#include <stack>
 #include <iostream>
 
 namespace MR
@@ -116,37 +116,72 @@ namespace MR
         }
       }
 
-      inline void agglomerate (uint32_t index,
-                        std::vector<std::vector<uint32_t> > & adjacent_indices,
-                        std::vector<uint32_t> & traversed,
-                        uint32_t current_label,
-                        uint32_t & counter) {
-//        std::cout << "index " << index << std::endl;
-//        std::cout << "label " << current_label << std::endl;
-//        std::cout << "indices " << adjacent_indices << std::endl;
-        counter++;
-        traversed[index] = current_label;
-        for (size_t n = 0; n < adjacent_indices[index].size(); n++) {
-          if (!traversed[adjacent_indices[index][n]])
-            agglomerate (adjacent_indices[index][n], adjacent_indices, traversed, current_label, counter);
+
+      inline bool next_neighbour(uint32_t & node,
+                                 std::vector<std::vector<uint32_t> > & adjacent_indices,
+                                 std::vector<uint32_t> & labels) {
+        for (size_t n = 0; n < adjacent_indices[node].size(); n++) {
+          if (labels[adjacent_indices[node][n]] == 0) { // if any adjacent nodes have not been visited
+            node = adjacent_indices[node][n];
+            return true;
+          }
+        }
+        return false;
+      }
+
+
+      // use a non-recursive depth first search to agglomerate adjacent voxels
+      inline void depth_first_search (uint32_t root,
+                                      std::vector<std::vector<uint32_t> > & adjacent_indices,
+                                      cluster & cluster,
+                                      std::vector<uint32_t> & labels) {
+        uint32_t node = root;
+        std::stack<uint32_t> the_stack;
+        while (true) {
+          labels[node] = cluster.label;
+          the_stack.push(node);
+          cluster.size++;
+          // if we have a neighbour that has not been visited
+          if (next_neighbour (node, adjacent_indices, labels)) {
+            continue;
+          } else {
+            // back track until we find a node with unvisited adjacent voxels
+            while (!next_neighbour (node, adjacent_indices, labels)) {
+              the_stack.pop();
+              node = the_stack.top();
+              if (node == root)
+                return;
+            }
+          }
         }
       }
 
-      inline void agglomerate (uint32_t index,
-                        std::vector<std::vector<uint32_t> > & adjacent_indices,
-                        std::vector<uint32_t> & traversed,
-                        uint32_t current_label,
-                        uint32_t & counter,
-                        std::vector<float> image_values,
-                        float threshold) {
-        counter++;
-        traversed[index] = current_label;
-        for (size_t n = 0; n < adjacent_indices[index].size(); n++) {
-          if (image_values[adjacent_indices[index][n]] > threshold)
-            if (!traversed[adjacent_indices[index][n]])
-              agglomerate (adjacent_indices[index][n], adjacent_indices, traversed, current_label, counter);
+
+      inline void agglomerate (std::vector<std::vector<uint32_t> > & adjacent_indices,
+                               std::vector<cluster> & clusters,
+                               std::vector<uint32_t> & labels) {
+
+        labels.resize (adjacent_indices.size(), 0);
+        uint32_t current_label = 1;
+
+        for (uint32_t i = 0; i < labels.size(); i++) {
+          // this node has not been already clustered
+          if (labels[i] == 0) {
+            cluster cluster;
+            cluster.label = current_label;
+            cluster.size = 0;
+            depth_first_search (i, adjacent_indices, cluster, labels);
+            clusters.push_back(cluster);
+            current_label++;
+          }
         }
+
+        if (clusters.size() > std::numeric_limits<uint32_t>::max())
+          throw Exception ("The number of clusters is larger than can be labelled with an unsigned 32bit integer.");
+
+        std::sort (clusters.begin(), clusters.end(), compare_clusters);
       }
+
 
 
 
@@ -201,32 +236,10 @@ namespace MR
           std::vector<std::vector<int> > mask_indices;
           std::vector<std::vector<uint32_t> > adjacent_indices;
           compute_adjacency (in, adjacency_matrices_, ignore_dim_, mask_indices, adjacent_indices);
-          std::vector<uint32_t> traversed (mask_indices.size(), 0);  // keep track of the already labelled voxels
 
-          std::cout << "number of voxels " << mask_indices.size() << std::endl;
-          std::cout << "number of voxels " << adjacent_indices.size() << std::endl;
-          std::cout << "number of voxels " << traversed.size() << std::endl;
-
-          std::cout << "asdf " << traversed[343339] << std::endl;
-
-
-          uint32_t current_label = 1;
           std::vector<cluster> clusters;
-          for (uint32_t i = 0; i < traversed.size(); i++) {
-            if (!traversed[i]) {
-              cluster c;
-              c.label = current_label;
-              c.size = 0;
-              agglomerate(i, adjacent_indices, traversed, current_label, c.size);
-              clusters.push_back(c);
-              current_label++;
-            }
-          }
-
-          if (clusters.size() > std::numeric_limits<uint32_t>::max())
-            throw Exception ("The number of clusters is larger than can be labelled with an unsigned 32bit integer.");
-
-          std::sort (clusters.begin(), clusters.end(), compare_clusters);
+          std::vector<uint32_t> labels;
+          agglomerate (adjacent_indices, clusters, labels);
 
           std::vector<int> label_lookup (clusters.size(), 0);
           for (uint32_t c = 0; c < clusters.size(); c++)
@@ -236,10 +249,10 @@ namespace MR
           for (loop.start(out); loop.ok(); loop.next(out))
             out.value() = 0;
 
-          for (uint32_t i = 0; i < traversed.size(); i++) {
+          for (uint32_t i = 0; i < adjacent_indices.size(); i++) {
             for (size_t dim = 0; dim < out.ndim(); dim++)
               out[dim] = mask_indices[i][dim];
-            out.value() = label_lookup[traversed[i] - 1];
+            out.value() = label_lookup[labels[i] - 1];
           }
           std::cout << "number of clusters " << clusters.size() << std::endl;
         }

@@ -72,7 +72,11 @@ void run ()
   Image::Buffer<float> data_in (argument[0]);
   Image::Buffer<float>::voxel_type voxel_in (data_in);
 
-  int bounds[3][2] = { {0, data_in.dim (0) - 1}, {0, data_in.dim (1) - 1}, {0, data_in.dim (2) - 1} };
+  std::vector<std::vector<int> > bounds(data_in.ndim(), std::vector<int> (2) );
+  for (size_t axis = 0; axis < data_in.ndim(); axis++) {
+    bounds[axis][0] = 0;
+    bounds[axis][1] = data_in.dim (axis) - 1;
+  }
 
   Options opt = get_options ("mask");
   if (opt.size()) {
@@ -81,22 +85,24 @@ void run ()
     Image::check_dimensions (data_in, data_mask, 0, 3);
     Image::Buffer<bool>::voxel_type voxel_mask (data_mask);
 
-    for (int axis = 0; axis != 3; ++axis) {
+    for (size_t axis = 0; axis != 3; ++axis) {
       bounds[axis][0] = data_in.dim (axis);
       bounds[axis][1] = 0;
     }
 
     Image::Loop loop_mask;
+    // Note that even though only 3 dimensions are cropped when using a mask, the bounds
+    // are computed by checking the extent for all dimensions (for example a 4D AFD mask)
     for (loop_mask.start (voxel_mask); loop_mask.ok(); loop_mask.next (voxel_mask)) {
       if (voxel_mask.value()) {
-        for (int axis = 0; axis != 3; ++axis) {
+        for (size_t axis = 0; axis != 3; ++axis) {
           bounds[axis][0] = std::min (bounds[axis][0], int (voxel_mask[axis]));
           bounds[axis][1] = std::max (bounds[axis][1], int (voxel_mask[axis]));
         }
       }
     }
 
-    for (int axis = 0; axis != 3; ++axis) {
+    for (size_t axis = 0; axis != 3; ++axis) {
       if (bounds[axis][0] > bounds[axis][1])
         throw Exception ("mask image is empty; can't use to crop image");
       if (bounds[axis][0])
@@ -119,11 +125,14 @@ void run ()
       throw Exception ("Index supplied for axis " + str(axis) + " is out of bounds.");
   }
 
+  std::vector<size_t> from(data_in.ndim());
+  std::vector<size_t> size(data_in.ndim());
+  for (size_t axis = 0; axis < data_in.ndim(); axis++) {
+    from[axis] = bounds[axis][0];
+    size[axis] = bounds[axis][1] - from[axis] + 1;
+  }
 
-  size_t from[] = { bounds[0][0], bounds[1][0], bounds[2][0] };
-  size_t dim[] = { bounds[0][1]-from[0]+1, bounds[1][1]-from[1]+1, bounds[2][1]-from[2]+1 };
-
-  Image::Adapter::Subset<Image::Buffer<float>::voxel_type> cropped (voxel_in, from, dim);
+  Image::Adapter::Subset<Image::Buffer<float>::voxel_type> cropped (voxel_in, from, size);
 
   Image::Header H_out (data_in);
   H_out.info() = cropped.info();
