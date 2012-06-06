@@ -44,7 +44,9 @@ namespace MR
           uint32_t size;
       };
 
-      bool compare_clusters (cluster i, cluster j) { return (i.size > j.size); }
+      bool compare_clusters (cluster i, cluster j) {
+        return (i.size > j.size);
+      }
 
       template <class MaskVoxelType>
       void compute_adjacency (MaskVoxelType & mask,
@@ -56,9 +58,9 @@ namespace MR
         Image::BufferScratch<uint32_t> neigh_mask (mask);
         Image::BufferScratch<uint32_t>::voxel_type neigh_mask_vox (neigh_mask);
 
-        // 1st pass, store mask values and their memory locations
+        // 1st pass, store mask image indices and their index in the array
         Image::LoopInOrder loop(mask);
-        for (loop.start(mask, neigh_mask_vox); loop.ok(); loop.next(mask, neigh_mask_vox)) {
+        for (loop.start (mask, neigh_mask_vox); loop.ok(); loop.next (mask, neigh_mask_vox)) {
           if (mask.value() > 0.5) {
             // keep track of the index location for the second pass
             neigh_mask_vox.value() = mask_indices.size();
@@ -71,7 +73,7 @@ namespace MR
           }
         }
 
-        // 2nd pass, define adjacencies
+        // 2nd pass, define adjacency
         MaskVoxelType mask_neigh (mask);
         std::vector<std::vector<int> >::iterator it;
         for (it = mask_indices.begin(); it != mask_indices.end(); ++it) {
@@ -82,7 +84,6 @@ namespace MR
           for (size_t dim = 0; dim < mask.ndim(); dim++) {
             if (!ignore_dim[dim]) {
               if (adjacency_matrices[dim].is_set()) {
-                // for each index along this dimension, check for adjacency
                 for (int i = 0; i < mask.dim(dim); i++) {
                   if (adjacency_matrices[dim]((*it)[dim], i)) {
                     mask_neigh[dim] = i;
@@ -120,8 +121,9 @@ namespace MR
       inline bool next_neighbour(uint32_t & node,
                                  std::vector<std::vector<uint32_t> > & adjacent_indices,
                                  std::vector<uint32_t> & labels) {
+
         for (size_t n = 0; n < adjacent_indices[node].size(); n++) {
-          if (labels[adjacent_indices[node][n]] == 0) { // if any adjacent nodes have not been visited
+          if (labels[adjacent_indices[node][n]] == 0) {
             node = adjacent_indices[node][n];
             return true;
           }
@@ -137,15 +139,14 @@ namespace MR
                                       std::vector<uint32_t> & labels) {
         uint32_t node = root;
         std::stack<uint32_t> the_stack;
+
         while (true) {
           labels[node] = cluster.label;
           the_stack.push(node);
           cluster.size++;
-          // if we have a neighbour that has not been visited
           if (next_neighbour (node, adjacent_indices, labels)) {
             continue;
           } else {
-            // back track until we find a node with unvisited adjacent voxels
             while (!next_neighbour (node, adjacent_indices, labels)) {
               the_stack.pop();
               node = the_stack.top();
@@ -171,7 +172,7 @@ namespace MR
             cluster.label = current_label;
             cluster.size = 0;
             depth_first_search (i, adjacent_indices, cluster, labels);
-            clusters.push_back(cluster);
+            clusters.push_back (cluster);
             current_label++;
           }
         }
@@ -228,7 +229,9 @@ namespace MR
           Math::Matrix<float> empty;
           adjacency_matrices_.resize(this->ndim(), empty);
           ignore_dim_.resize(this->ndim(), false);
+          largest_only_ = false;
         }
+
 
         template <class InputVoxelType, class OutputVoxelType>
         void operator() (InputVoxelType& in, OutputVoxelType& out) {
@@ -243,7 +246,7 @@ namespace MR
 
           std::vector<int> label_lookup (clusters.size(), 0);
           for (uint32_t c = 0; c < clusters.size(); c++)
-            label_lookup[clusters[c].label -1] = c + 1;
+            label_lookup[clusters[c].label - 1] = c + 1;
 
           Image::LoopInOrder loop(out);
           for (loop.start(out); loop.ok(); loop.next(out))
@@ -252,27 +255,40 @@ namespace MR
           for (uint32_t i = 0; i < adjacent_indices.size(); i++) {
             for (size_t dim = 0; dim < out.ndim(); dim++)
               out[dim] = mask_indices[i][dim];
-            out.value() = label_lookup[labels[i] - 1];
+            if (largest_only_) {
+              if (label_lookup[labels[i] - 1] == 1) {
+                out.value() = 1;
+              }
+            } else {
+              out.value() = label_lookup[labels[i] - 1];
+            }
           }
-          std::cout << "number of clusters " << clusters.size() << std::endl;
         }
+
 
         void set_ignore_dim (bool ignore, size_t dim) {
           ignore_dim_[dim] = ignore;
         }
 
-        void set_adjacency_matrix(Math::Matrix<float> & adj_matrix, size_t dim) {
+
+        void set_adjacency_matrix (Math::Matrix<float> adj_matrix, size_t dim) {
           if (dim > this->ndim())
             throw Exception("The dimensions specified is larger than the number of input dimensions.");
           if ((int)adj_matrix.columns() != this->dim(dim) || (int)adj_matrix.rows() != this->dim(dim))
             throw Exception("The adjacency matrix size does not match the number of elements along dimension " + str(dim));
-
           adjacency_matrices_[dim] = adj_matrix;
         }
+
+
+        void set_largest_only (bool largest_only) {
+          largest_only_ = largest_only;
+        }
+
 
         protected:
           std::vector<Math::Matrix<float> > adjacency_matrices_;
           std::vector<bool> ignore_dim_;
+          bool largest_only_;
       };
       //! @}
     }
