@@ -42,58 +42,75 @@ namespace MR
       {
         public:
           Renderer () :
-            lmax_computed (0), lod_computed (0), hide_neg_lobes (true), recalculate (true),
-            recompute (true), nsh (0), row_size (0) { }
-          ~Renderer () {
-            clear();
-          }
+            lmax_computed (0), lod_computed (0), hide_neg_lobes (true), recompute_amplitudes (true),
+            recompute_mesh (true) { }
 
           bool ready () const {
             return shader_program;
           }
           void init ();
           void set_values (const std::vector<float>& values) {
-            SH = values;
-            recalculate = true;
+            SH.allocate (values.size());
+            for (size_t n = 0; n < SH.size(); ++n)
+              SH[n] = values[n];
+            recompute_amplitudes = true;
           }
           void scale_values (float factor) {
             for (size_t n = 0; n < SH.size(); ++n)
               SH[n] *= factor;
-            recalculate = true;
+            recompute_amplitudes = true;
           }
           void set_hide_neg_lobes (bool hide) {
             hide_neg_lobes = hide;
           }
           void set_lmax (int lmax) {
-            if (lmax != lmax_computed) recompute = true;
+            if (lmax != lmax_computed) recompute_mesh = true;
             lmax_computed = lmax;
           }
           void set_LOD (int lod) {
-            if (lod != lod_computed) recompute = true;
+            if (lod != lod_computed) recompute_mesh = true;
             lod_computed = lod;
           }
           void draw (bool use_normals, const float* colour = NULL);
 
-          const std::vector<float>& get_values () const { return SH; }
+          const Math::Vector<float>& get_values () const { return SH; }
           int get_LOD () const { return lod_computed; }
           int get_lmax () const { return lmax_computed; }
           bool get_hide_neg_lobes () const { return hide_neg_lobes; }
 
-          size_t size () const { return rows.size(); }
-          bool empty () const { return rows.empty(); }
+          size_t size () const { return transform.rows(); }
+          bool empty () const { return transform.rows() == 0; }
 
         protected:
-          class Vertex
-          {
+
+          class Vertex {
             public:
-              GLfloat P[3];
-              GLfloat N[3];
+              Vertex () { }
+              Vertex (const float x[3]) { p[0] = x[0]; p[1] = x[1]; p[2] = x[2]; }
+              Vertex (const std::vector<Vertex>& vertices, size_t i1, size_t i2) {
+                p[0] = vertices[i1][0] + vertices[i2][0];
+                p[1] = vertices[i1][1] + vertices[i2][1];
+                p[2] = vertices[i1][2] + vertices[i2][2];
+                Math::normalise (p); 
+              }
+
+              float& operator[] (int n) { return p[n]; }
+              float operator[] (int n) const { return p[n]; }
+
+            private:
+              float p[3];
           };
+
 
           class Triangle
           {
             public:
               Triangle () { }
+              Triangle (const uint32_t x[3]) {
+                index[0] = x[0];
+                index[1] = x[1];
+                index[2] = x[2];
+              }
               Triangle (size_t i1, size_t i2, size_t i3) {
                 index[0] = i1;
                 index[1] = i2;
@@ -108,7 +125,7 @@ namespace MR
                 return index[n];
               }
             protected:
-              GLuint  index[3];
+              uint32_t  index[3];
           };
 
           class Edge
@@ -117,13 +134,13 @@ namespace MR
               Edge (const Edge& E) {
                 set (E.i1, E.i2);
               }
-              Edge (size_t a, size_t b) {
+              Edge (uint32_t a, uint32_t b) {
                 set (a,b);
               }
               bool operator< (const Edge& E) const {
                 return (i1 < E.i1 ? true : i2 < E.i2);
               }
-              void set (size_t a, size_t b) {
+              void set (uint32_t a, uint32_t b) {
                 if (a < b) {
                   i1 = a;
                   i2 = b;
@@ -133,17 +150,14 @@ namespace MR
                   i2 = a;
                 }
               }
-              size_t i1;
-              size_t i2;
+              uint32_t i1;
+              uint32_t i2;
           };
 
-          void calculate ();
-          void precompute ();
-          void clear () {
-            for (std::vector<GLfloat*>::iterator i = rows.begin(); i != rows.end(); ++i) delete [] *i;
-            rows.clear();
-          }
-
+          void compute_amplitudes ();
+          void compute_mesh ();
+          void compute_transform ();
+/*
           GLfloat* get_r (GLfloat* row) {
             return row+3;
           }
@@ -153,36 +167,16 @@ namespace MR
           GLfloat* get_del (GLfloat* row) {
             return row+3+2*nsh;
           }
-
-          GLfloat* push_back (GLfloat* p) {
-            GLfloat* row = new GLfloat [row_size];
-            row[0] = p[0];
-            row[1] = p[1];
-            row[2] = p[2];
-            precompute_row (row);
-            return row;
-          }
-
-          GLfloat* push_back (size_t i1, size_t i2) {
-            GLfloat* row = new GLfloat [row_size];
-            const GLfloat* p1 (rows[i1]);
-            const GLfloat* p2 (rows[i2]);
-            row[0] = p1[0] + p2[0];
-            row[1] = p1[1] + p2[1];
-            row[2] = p1[2] + p2[2];
-            precompute_row (row);
-            return row;
-          }
-
+*/
           std::vector<Vertex> vertices;
           std::vector<Triangle> indices;
-          std::vector<GLfloat*> rows;
+          std::vector<GLfloat> amplitudes_and_derivatives;
+          Math::Matrix<float> transform;
 
-          std::vector<float> SH;
+          Math::Vector<float> SH;
           int lmax_computed, lod_computed;
-          bool hide_neg_lobes, recalculate, recompute;
-          size_t  nsh, row_size;
-          void   precompute_row (GLfloat* row);
+          bool hide_neg_lobes, recompute_amplitudes, recompute_mesh;
+          //void   precompute_row (GLfloat row);
           GL::Shader::Vertex vertex_shader;
           GL::Shader::Fragment fragment_shader;
           GL::Shader::Program shader_program;

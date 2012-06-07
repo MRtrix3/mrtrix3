@@ -35,13 +35,13 @@
 namespace
 {
 
-  static GLfloat initial_vertices[NUM_VERTICES][3] = {
+  static float initial_vertices[NUM_VERTICES][3] = {
     {-X, 0.0, Z}, {X, 0.0, Z}, {0.0, Z, X}, {0.0, -Z, X},
     {Z, X, 0.0}, {-Z, X, 0.0}, {Z, -X, 0.0}, {-Z, -X, 0.0},
     {0.0, -Z, -X}
   };
 
-  static GLuint initial_indices[NUM_INDICES][3] = {
+  static uint32_t initial_indices[NUM_INDICES][3] = {
     {0,1,2}, {0,2,5}, {2,1,4}, {4,1,6},
     {8,6,3}, {8,3,7}, {7,3,0}, {0,3,1},
     {3,6,1}, {5,7,0}
@@ -59,21 +59,82 @@ namespace
     "void main () {"
     "  vec4 vertex = gl_Vertex;"
     "  normal = gl_Normal;"
-    "  direction = dot (vertex.xyz, normal);"
-    "  if (reverse != 0) {"
-    "     vertex.xyz = -vertex.xyz;"
-    "     normal = -normal;"
-    "  }"
+    "  direction = normal.x; "
     "  if (use_normals != 0) {"
+    "    bool atpole = ( vertex.x == 0.0 && vertex.y == 0.0 ); "
+    "    float az = atpole ? 0.0 : atan (vertex.y, vertex.x); "
+    "    float caz = cos (az), saz = sin (az), cel = vertex.z, sel = sqrt (1.0 - cel*cel); "
+    "    vec3 d1; "
+    "    if (atpole) "
+    "      d1 = vec3 (-normal.x*saz, normal.x*caz, normal.z); "
+    "    else "
+    "      d1 = vec3 (normal.z*caz*sel - normal.x*sel*saz, normal.z*saz*sel - normal.x*sel*caz, normal.z*cel); "
+    "    vec3 d2 = vec3 (-(normal.y+normal.x)*caz*sel, -(normal.y+normal.x)*saz*sel, -normal.y*cel + normal.x*sel); "
+    "    normal = cross (d1, d2); "
     "    normal = normalize (gl_NormalMatrix * normal);"
     "    lightDir = normalize (vec3 (gl_LightSource[0].position));"
     "    halfVector = normalize (gl_LightSource[0].halfVector.xyz);"
     "    ambient = gl_LightSource[0].ambient + gl_LightModel.ambient;"
     "  }"
-    "  if (color_by_direction != 0) { color.rgb = abs (normalize (vertex.xyz)); color.a = 1.0; }"
+    "  if (color_by_direction != 0) { color.rgb = abs (vertex.xyz); color.a = 1.0; }"
     "  else { color = gl_Color; }"
+    "  vertex.xyz *= direction; "
+    "  if (reverse != 0) "
+    "    vertex.xyz = -vertex.xyz; "
     "  gl_Position = gl_ModelViewProjectionMatrix * vertex;"
     "}";
+
+
+  //TODO: normals still all wrong!!!
+
+        /*
+        for (size_t n = 0; n < vertices.size(); n++) {
+          Vertex& V (vertices[n]);
+          GLfloat* row (rows[n]);
+          GLfloat* row_r (get_r (row));
+          GLfloat* row_daz (get_daz (row));
+          GLfloat* row_del (get_del (row));
+
+          float r (0.0), daz (0.0), del (0.0);
+
+          for (size_t i = 0; i < transform.columns(); i++) {
+            r += row_r[i] * SH[i];
+            daz += row_daz[i] * SH[i];
+            del += row_del[i] * SH[i];
+          }
+
+          bool atpole (row[0] == 0.0 && row[1] == 0.0);
+          float az = atpole ? 0.0 : atan2 (row[1], row[0]);
+
+          float caz = cos (az);
+          float saz = sin (az);
+          float cel = row[2];
+          float sel = sqrt (1.0 - Math::pow2 (cel));
+
+          V.P[0] = r*caz*sel;
+          V.P[1] = r*saz*sel;
+          V.P[2] = r*cel;
+
+          float d1[3], d2[3];
+
+          if (atpole) {
+            d1[0] =  -r*saz;
+            d1[1] =  r*caz;
+            d1[2] =  daz;
+          }
+          else {
+            d1[0] = daz*caz*sel-r*sel*saz;
+            d1[1] = daz*saz*sel+r*sel*caz;
+            d1[2] = daz*cel;
+          }
+
+          d2[0] = -del*caz*sel-r*caz*cel;
+          d2[1] = -del*saz*sel-r*saz*cel;
+          d2[2] = -del*cel+r*sel;
+
+          Math::cross (V.N, d1, d2);
+        }
+*/
 
   const char* fragment_shader_source =
     "uniform int use_normals, hide_neg_lobes;"
@@ -133,26 +194,27 @@ namespace MR
 
       void Renderer::draw (bool use_normals, const float* colour)
       {
-        if (recompute) {
-          precompute();
-        }
-        if (recalculate) {
-          calculate();
-        }
+        if (recompute_mesh) 
+          compute_mesh();
+
+        if (recompute_amplitudes) 
+          compute_amplitudes();
 
         glPushClientAttrib (GL_CLIENT_VERTEX_ARRAY_BIT);
         glEnableClientState (GL_VERTEX_ARRAY);
-        glVertexPointer (3, GL_FLOAT, sizeof (Vertex), &vertices[0].P);
-        if (colour) glColor3fv (colour);
+        glVertexPointer (3, GL_FLOAT, sizeof (Vertex), &vertices[0]);
+
+        glEnableClientState (GL_NORMAL_ARRAY);
+        glNormalPointer (GL_FLOAT, 0, &amplitudes_and_derivatives[0]);
+
+        if (colour) 
+          glColor3fv (colour);
 
         shader_program.start();
         shader_program.get_uniform ("color_by_direction") = colour ? 0 : 1;
         shader_program.get_uniform ("use_normals") = use_normals ? 1 : 0;
         shader_program.get_uniform ("hide_neg_lobes") = hide_neg_lobes ? 1 : 0;
         GL::Shader::Uniform reverse = shader_program.get_uniform ("reverse");
-
-        glEnableClientState (GL_NORMAL_ARRAY);
-        glNormalPointer (GL_FLOAT, sizeof (Vertex), &vertices[0].N);
 
         reverse = 0;
         glDrawElements (GL_TRIANGLES, 3*indices.size(), GL_UNSIGNED_INT, &indices[0]);
@@ -161,63 +223,58 @@ namespace MR
 
         shader_program.stop();
         glPopClientAttrib();
+
       }
 
 
 
 
 
-      void Renderer::precompute ()
+      void Renderer::compute_mesh ()
       {
-        recompute = false;
-        recalculate = true;
+        recompute_mesh = false;
+        recompute_amplitudes = true;
         inform ("updating SH renderer transform...");
         QApplication::setOverrideCursor (Qt::BusyCursor);
 
-        nsh = Math::SH::NforL (lmax_computed);
-        row_size = 3 + 3*nsh;
-
-        clear();
+        indices.clear();
+        vertices.clear();
 
         for (int n = 0; n < NUM_VERTICES; n++)
-          push_back (initial_vertices[n]);
+          vertices.push_back (initial_vertices[n]);
 
-        indices.resize (NUM_INDICES);
-        for (int n = 0; n < NUM_INDICES; n++) {
-          indices[n][0] = initial_indices[n][0];
-          indices[n][1] = initial_indices[n][1];
-          indices[n][2] = initial_indices[n][2];
-        }
+        for (int n = 0; n < NUM_INDICES; n++) 
+          indices.push_back (initial_indices[n]);
 
-        std::map<Edge,size_t> edges;
+        std::map<Edge,uint32_t> edges;
 
         for (int lod = 0; lod < lod_computed; lod++) {
-          size_t num = indices.size();
+          uint32_t num = indices.size();
           for (GLuint n = 0; n < num; n++) {
-            size_t index1, index2, index3;
+            uint32_t index1, index2, index3;
 
             Edge E (indices[n][0], indices[n][1]);
-            std::map<Edge,size_t>::const_iterator iter;
+            std::map<Edge,uint32_t>::const_iterator iter;
             if ( (iter = edges.find (E)) == edges.end()) {
-              index1 = rows.size();
+              index1 = vertices.size();
               edges[E] = index1;
-              push_back (indices[n][0], indices[n][1]);
+              vertices.push_back (Vertex (vertices, indices[n][0], indices[n][1]));
             }
             else index1 = iter->second;
 
             E.set (indices[n][1], indices[n][2]);
             if ( (iter = edges.find (E)) == edges.end()) {
-              index2 = rows.size();
+              index2 = vertices.size();
               edges[E] = index2;
-              push_back (indices[n][1], indices[n][2]);
+              vertices.push_back (Vertex (vertices, indices[n][1], indices[n][2]));
             }
             else index2 = iter->second;
 
             E.set (indices[n][2], indices[n][0]);
             if ( (iter = edges.find (E)) == edges.end()) {
-              index3 = rows.size();
+              index3 = vertices.size();
               edges[E] = index3;
-              push_back (indices[n][2], indices[n][0]);
+              vertices.push_back (Vertex (vertices, indices[n][2], indices[n][0]));
             }
             else index3 = iter->second;
 
@@ -228,7 +285,8 @@ namespace MR
           }
         }
 
-        vertices.resize (rows.size());
+        compute_transform ();
+
         QApplication::restoreOverrideCursor();
       }
 
@@ -236,62 +294,22 @@ namespace MR
 
 
 
-
-      void Renderer::calculate ()
+      void Renderer::compute_amplitudes ()
       {
-        recalculate = false;
+        recompute_amplitudes = false;
         inform ("updating values...");
 
         int actual_lmax = Math::SH::LforN (SH.size());
         if (actual_lmax > lmax_computed) actual_lmax = lmax_computed;
-        size_t nsh = Math::SH::NforL (actual_lmax);
+        size_t nSH = Math::SH::NforL (actual_lmax);
 
-        for (size_t n = 0; n < vertices.size(); n++) {
-          Vertex& V (vertices[n]);
-          GLfloat* row (rows[n]);
-          GLfloat* row_r (get_r (row));
-          GLfloat* row_daz (get_daz (row));
-          GLfloat* row_del (get_del (row));
+        amplitudes_and_derivatives.resize (transform.rows());
 
-          float r (0.0), daz (0.0), del (0.0);
+        Math::Matrix<float> M (transform.sub (0, transform.rows(), 0, nSH));
+        Math::Vector<float> S (SH.sub (0, nSH));
+        Math::Vector<float> A (&amplitudes_and_derivatives[0], transform.rows());
 
-          for (size_t i = 0; i < nsh; i++) {
-            r += row_r[i] * SH[i];
-            daz += row_daz[i] * SH[i];
-            del += row_del[i] * SH[i];
-          }
-
-          bool atpole (row[0] == 0.0 && row[1] == 0.0);
-          float az = atpole ? 0.0 : atan2 (row[1], row[0]);
-
-          float caz = cos (az);
-          float saz = sin (az);
-          float cel = row[2];
-          float sel = sqrt (1.0 - Math::pow2 (cel));
-
-          V.P[0] = r*caz*sel;
-          V.P[1] = r*saz*sel;
-          V.P[2] = r*cel;
-
-          float d1[3], d2[3];
-
-          if (atpole) {
-            d1[0] =  -r*saz;
-            d1[1] =  r*caz;
-            d1[2] =  daz;
-          }
-          else {
-            d1[0] = daz*caz*sel-r*sel*saz;
-            d1[1] = daz*saz*sel+r*sel*caz;
-            d1[2] = daz*cel;
-          }
-
-          d2[0] = -del*caz*sel-r*caz*cel;
-          d2[1] = -del*saz*sel-r*saz*cel;
-          d2[2] = -del*cel+r*sel;
-
-          Math::cross (V.N, d1, d2);
-        }
+        Math::mult (A, M, S);
 
       }
 
@@ -299,65 +317,82 @@ namespace MR
 
 
 
-      void Renderer::precompute_row (GLfloat* row)
+      void Renderer::compute_transform ()
       {
-        rows.push_back (row);
-        Math::normalise (row);
+        transform.allocate (3*vertices.size(), Math::SH::NforL (lmax_computed));
+        transform.zero();
 
+        for (size_t n = 0; n < vertices.size(); ++n) {
+/*
         GLfloat* r (get_r (row));
         GLfloat* daz (get_daz (row));
         GLfloat* del (get_del (row));
         memset (r, 0, 3*nsh*sizeof (GLfloat));
-
-        for (int l = 0; l <= lmax_computed; l+=2) {
-          for (int m = 0; m <= l; m++) {
-            const int idx (Math::SH::index (l,m));
-            r[idx] = Math::Legendre::Plm_sph<float> (l, m, row[2]);
-            if (m) r[idx-2*m] = r[idx];
-          }
-        }
-
-        bool atpole (row[0] == 0.0 && row[1] == 0.0);
-        float az = atpole ? 0.0 : atan2 (row[1], row[0]);
-
-        for (int l = 2; l <= lmax_computed; l+=2) {
-          const int idx (Math::SH::index (l,0));
-          del[idx] = r[idx+1] * sqrt (float (l* (l+1)));
-        }
-
-        for (int m = 1; m <= lmax_computed; m++) {
-          float caz = cos (m*az);
-          float saz = sin (m*az);
-          for (int l = 2* ( (m+1) /2); l <= lmax_computed; l+=2) {
-            const int idx (Math::SH::index (l,m));
-            del[idx] = - r[idx-1] * sqrt (float ( (l+m) * (l-m+1)));
-            if (l > m) del[idx] += r[idx+1] * sqrt (float ( (l-m) * (l+m+1)));
-            del[idx] /= 2.0;
-
-            const int idx2 (idx-2*m);
-            if (atpole) {
-              daz[idx] = - del[idx] * saz;
-              daz[idx2] = del[idx] * caz;
+*/
+          for (int l = 0; l <= lmax_computed; l+=2) {
+            for (int m = 0; m <= l; m++) {
+              const int idx (Math::SH::index (l,m));
+              transform (3*n, idx) = transform(3*n, idx-2*m) = Math::Legendre::Plm_sph<float> (l, m, vertices[n][2]);
             }
-            else {
-              GLfloat tmp (m * r[idx]);
-              daz[idx] = - tmp * saz;
-              daz[idx2] = tmp * caz;
+          }
+
+          bool atpole (vertices[n][0] == 0.0 && vertices[n][1] == 0.0);
+          float az = atpole ? 0.0 : atan2 (vertices[n][1], vertices[n][0]);
+
+          for (int l = 2; l <= lmax_computed; l+=2) {
+            const int idx (Math::SH::index (l,0));
+            //del[idx] = r[idx+1] * sqrt (float (l* (l+1)));
+            transform (3*n+1, idx) = transform (3*n, idx+1) * sqrt (float (l* (l+1)));
+          }
+
+          for (int m = 1; m <= lmax_computed; m++) {
+            float caz = cos (m*az);
+            float saz = sin (m*az);
+            for (int l = 2* ( (m+1) /2); l <= lmax_computed; l+=2) {
+              const int idx (Math::SH::index (l,m));
+              //del[idx] = - r[idx-1] * sqrt (float ( (l+m) * (l-m+1)));
+              transform (3*n+1, idx) = - transform (3*n, idx-1) * sqrt (float ( (l+m) * (l-m+1)));
+              if (l > m) 
+                transform (3*n+1,idx) += transform (3*n, idx+1) * sqrt (float ( (l-m) * (l+m+1)));
+              //del[idx] += r[idx+1] * sqrt (float ( (l-m) * (l+m+1)));
+              //del[idx] /= 2.0;
+              transform (3*n+1, idx) /= 2.0;
+
+              const int idx2 (idx-2*m);
+              if (atpole) {
+                //daz[idx] = - del[idx] * saz;
+                //daz[idx2] = del[idx] * caz;
+                transform (3*n+2, idx) = - transform (3*n+1, idx) * saz;
+                transform (3*n+2, idx2) = transform (3*n+1, idx) * caz;
+              }
+              else {
+                //float tmp (m * r[idx]);
+                float tmp (m * transform (3*n, idx));
+                //daz[idx] = - tmp * saz;
+                //daz[idx2] = tmp * caz;
+                transform (3*n+2, idx) = -tmp * saz;
+                transform (3*n+2, idx2) = tmp * caz;
+              }
+
+              //del[idx2] = del[idx] * saz;
+              transform (3*n+1, idx2) = transform (3*n+1, idx) * saz;
+              //del[idx] *= caz;
+              transform (3*n+1, idx) *= caz;
             }
-
-            del[idx2] = del[idx] * saz;
-            del[idx] *= caz;
           }
-        }
 
-        for (int m = 1; m <= lmax_computed; m++) {
-          float caz = cos (m*az);
-          float saz = sin (m*az);
-          for (int l = 2* ( (m+1) /2); l <= lmax_computed; l+=2) {
-            const int idx (Math::SH::index (l,m));
-            r[idx] *= caz;
-            r[idx-2*m] *= saz;
+          for (int m = 1; m <= lmax_computed; m++) {
+            float caz = cos (m*az);
+            float saz = sin (m*az);
+            for (int l = 2* ( (m+1) /2); l <= lmax_computed; l+=2) {
+              const int idx (Math::SH::index (l,m));
+              //r[idx] *= caz;
+              transform (3*n, idx) *= caz;
+              //r[idx-2*m] *= saz;
+              transform (3*n, idx-2*m) *= saz;
+            }
           }
+
         }
 
       }
