@@ -83,54 +83,28 @@ void usage ()
 void run ()
 {
   Image::Header input_header (argument[0]);
-
-  // Compute neighbouring directions based on angular threshold
-  float max_angle = 15;
-  Options opt = get_options ("angle");
-  if (opt.size())
-    max_angle = opt[0][0];
-
-  max_angle = max_angle * M_PI / 180.0;
-  Math::Matrix<float> dirs;
-  Math::Matrix<float> dirAdjacency;
-  opt = get_options("directions");
-
-  if (opt.size()) {
-    dirs.load (opt[0][0]);
-    Math::Matrix<float> vert (dirs.rows(), 3);
-    for (uint d = 0; d < dirs.rows(); d++) {
-      vert(d,0) = cos(dirs(d,0)) * sin(dirs(d,1));
-      vert(d,1) = sin(dirs(d,0)) * sin(dirs(d,1));
-      vert(d,2) = cos(dirs(d,1));
-    }
-
-    dirAdjacency.resize(dirs.rows(), dirs.rows(), 0.0);
-    dirAdjacency.zero();
-    for (uint m = 0; m < dirs.rows(); m++) {
-      for (uint n = m + 1; n < dirs.rows(); n++) {
-        float angle = Math::acos(Math::dot(vert.row(m), vert.row(n)));
-        if (angle > M_PI_2)
-          angle = M_PI - angle;
-        if (angle < max_angle) {
-          dirAdjacency (m,n) = 1;
-          dirAdjacency (n,m) = 1;
-        } else {
-          dirAdjacency (m,n) = 0;
-          dirAdjacency (n,m) = 0;
-        }
-      }
-    }
-  }
-
   Image::Buffer<float> input_data (input_header);
   Image::Buffer<float>::voxel_type input_voxel (input_data);
 
   Image::Filter::ConnectedComponents connected_filter(input_voxel);
   Image::Header header (input_data);
   header.info() = connected_filter.info();
+  Image::Buffer<int> output_data (argument[1], header);
+  Image::Buffer<int>::voxel_type output_vox (output_data);
 
-  if (dirAdjacency.is_set())
-    connected_filter.set_adjacency_matrix(dirAdjacency, 3);
+  Options opt = get_options ("angle");
+  float angular_threshold = 15;
+  if (opt.size())
+    angular_threshold = opt[0][0];
+
+  opt = get_options("directions");
+  Math::Matrix<float> dirs;
+  Math::Matrix<float> adjacency;
+  if (opt.size()) {
+    dirs.load (opt[0][0]);
+    Image::Filter::dir2adjacency(dirs, angular_threshold, adjacency);
+    connected_filter.set_adjacency_matrix(dirs, angular_threshold);
+  }
 
   opt = get_options ("ignore");
   std::vector<int> axes;
@@ -148,7 +122,7 @@ void run ()
     Math::Matrix<float> adjacency;
     adjacency.load (opt[i][1]);
     int axis = opt[i][0];
-    if (axis == 3 && dirAdjacency.is_set())
+    if (axis == 3 && dirs.is_set())
       throw Exception ("Conflicting options. Both directions and an adjacency "
                        "matrix cannot used to define the adjacency of axis 3");
     connected_filter.set_adjacency_matrix(adjacency, axis);
@@ -157,9 +131,6 @@ void run ()
   opt = get_options ("largest");
   if (opt.size())
     connected_filter.set_largest_only (true);
-
-  Image::Buffer<int> output_data (argument[1], header);
-  Image::Buffer<int>::voxel_type output_vox (output_data);
 
   connected_filter(input_voxel, output_vox);
 }

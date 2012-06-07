@@ -48,74 +48,122 @@ namespace MR
         return (i.size > j.size);
       }
 
-      template <class MaskVoxelType>
-      void compute_adjacency (MaskVoxelType & mask,
-                              std::vector<Math::Matrix<float> > & adjacency_matrices,
-                              std::vector<bool> & ignore_dim,
-                              std::vector<std::vector<int> > & mask_indices,
-                              std::vector<std::vector<uint32_t> > & adjacent_indices) {
+      void dir2adjacency (Math::Matrix<float> & dirs_el_az, float angular_threshold, Math::Matrix<float> & adjacency) {
 
-        Image::BufferScratch<uint32_t> neigh_mask (mask);
-        Image::BufferScratch<uint32_t>::voxel_type neigh_mask_vox (neigh_mask);
-
-        // 1st pass, store mask image indices and their index in the array
-        Image::LoopInOrder loop(mask);
-        for (loop.start (mask, neigh_mask_vox); loop.ok(); loop.next (mask, neigh_mask_vox)) {
-          if (mask.value() > 0.5) {
-            // keep track of the index location for the second pass
-            neigh_mask_vox.value() = mask_indices.size();
-            std::vector<int> index(4);
-            for (size_t dim = 0; dim < mask.ndim(); dim++)
-              index[dim] = mask[dim];
-            mask_indices.push_back (index);
-          } else {
-            neigh_mask_vox.value() = 0;
-          }
+        angular_threshold = angular_threshold * M_PI / 180.0;
+        Math::Matrix<float> dirAdjacency;
+        Math::Matrix<float> vert (dirs_el_az.rows(), 3);
+        for (uint d = 0; d < dirs_el_az.rows(); d++) {
+          vert(d,0) = cos(dirs_el_az(d,0)) * sin(dirs_el_az(d,1));
+          vert(d,1) = sin(dirs_el_az(d,0)) * sin(dirs_el_az(d,1));
+          vert(d,2) = cos(dirs_el_az(d,1));
         }
 
-        // 2nd pass, define adjacency
-        MaskVoxelType mask_neigh (mask);
-        std::vector<std::vector<int> >::iterator it;
-        for (it = mask_indices.begin(); it != mask_indices.end(); ++it) {
-          std::vector<uint32_t> neighbour_ptrs;
-          for (size_t dim = 0; dim < mask.ndim(); dim++)
-            mask_neigh[dim] = (*it)[dim];
-
-          for (size_t dim = 0; dim < mask.ndim(); dim++) {
-            if (!ignore_dim[dim]) {
-              if (adjacency_matrices[dim].is_set()) {
-                for (int i = 0; i < mask.dim(dim); i++) {
-                  if (adjacency_matrices[dim]((*it)[dim], i)) {
-                    mask_neigh[dim] = i;
-                    if (mask_neigh.value() > 0.5) {
-                      voxel_assign (neigh_mask_vox, mask_neigh);
-                      neighbour_ptrs.push_back (neigh_mask_vox.value());
-                    }
-                  }
-                }
-              // we treat this dimension as having normal contiguous neighbours
-              } else {
-                if ((*it)[dim] > 0) {
-                  mask_neigh[dim] = (*it)[dim] - 1;
-                  if (mask_neigh.value() > 0.5) {
-                    voxel_assign (neigh_mask_vox, mask_neigh);
-                    neighbour_ptrs.push_back (neigh_mask_vox.value());
-                  }
-                }
-                if ((*it)[dim] + 1 < mask.dim (dim)) {
-                  mask_neigh[dim] = (*it)[dim] + 1;
-                  if (mask_neigh.value() > 0.5) {
-                    voxel_assign (neigh_mask_vox, mask_neigh);
-                    neighbour_ptrs.push_back (neigh_mask_vox.value());
-                  }
-                }
-              }
+        dirAdjacency.resize(dirs_el_az.rows(), dirs_el_az.rows(), 0.0);
+        dirAdjacency.zero();
+        for (uint m = 0; m < dirs_el_az.rows(); m++) {
+          for (uint n = m + 1; n < dirs_el_az.rows(); n++) {
+            float angle = Math::acos(Math::dot(vert.row(m), vert.row(n)));
+            if (angle > M_PI_2)
+              angle = M_PI - angle;
+            if (angle < angular_threshold) {
+              dirAdjacency (m,n) = 1;
+              dirAdjacency (n,m) = 1;
+            } else {
+              dirAdjacency (m,n) = 0;
+              dirAdjacency (n,m) = 0;
             }
-            mask_neigh[dim] = (*it)[dim];
           }
-          adjacent_indices.push_back (neighbour_ptrs);
         }
       }
+
+      class AdjacencyBuilder {
+
+        public:
+
+          template <class MaskVoxeType>
+          AdjacencyBuilder () {
+            Math::Matrix<float> empty;
+            adjacency_matrices_.resize(this->ndim(), empty);
+            ignore_dim_.resize(this->ndim(), false);
+            largest_only_ = false;
+          }
+
+          template <class MaskVoxelType>
+          void compute_adjacency (MaskVoxelType & mask,
+                                  std::vector<Math::Matrix<float> > & adjacency_matrices,
+                                  std::vector<bool> & ignore_dim,
+                                  std::vector<std::vector<int> > & mask_indices,
+                                  std::vector<std::vector<uint32_t> > & adjacent_indices) {
+
+              Image::BufferScratch<uint32_t> neigh_mask (mask);
+              Image::BufferScratch<uint32_t>::voxel_type neigh_mask_vox (neigh_mask);
+
+              // 1st pass, store mask image indices and their index in the array
+              Image::LoopInOrder loop(mask);
+              for (loop.start (mask, neigh_mask_vox); loop.ok(); loop.next (mask, neigh_mask_vox)) {
+                if (mask.value() > 0.5) {
+                  // keep track of the index location for the second pass
+                  neigh_mask_vox.value() = mask_indices.size();
+                  std::vector<int> index(4);
+                  for (size_t dim = 0; dim < mask.ndim(); dim++)
+                    index[dim] = mask[dim];
+                  mask_indices.push_back (index);
+                } else {
+                  neigh_mask_vox.value() = 0;
+                }
+              }
+
+              // 2nd pass, define adjacency
+              MaskVoxelType mask_neigh (mask);
+              std::vector<std::vector<int> >::iterator it;
+              for (it = mask_indices.begin(); it != mask_indices.end(); ++it) {
+                std::vector<uint32_t> neighbour_ptrs;
+                for (size_t dim = 0; dim < mask.ndim(); dim++)
+                  mask_neigh[dim] = (*it)[dim];
+
+                for (size_t dim = 0; dim < mask.ndim(); dim++) {
+                  if (!ignore_dim[dim]) {
+                    if (adjacency_matrices[dim].is_set()) {
+                      for (int i = 0; i < mask.dim(dim); i++) {
+                        if (adjacency_matrices[dim]((*it)[dim], i)) {
+                          mask_neigh[dim] = i;
+                          if (mask_neigh.value() > 0.5) {
+                            voxel_assign (neigh_mask_vox, mask_neigh);
+                            neighbour_ptrs.push_back (neigh_mask_vox.value());
+                          }
+                        }
+                      }
+                      // we treat this dimension as having normal contiguous neighbours
+                    } else {
+                      if ((*it)[dim] > 0) {
+                        mask_neigh[dim] = (*it)[dim] - 1;
+                        if (mask_neigh.value() > 0.5) {
+                          voxel_assign (neigh_mask_vox, mask_neigh);
+                          neighbour_ptrs.push_back (neigh_mask_vox.value());
+                        }
+                      }
+                      if ((*it)[dim] + 1 < mask.dim (dim)) {
+                        mask_neigh[dim] = (*it)[dim] + 1;
+                        if (mask_neigh.value() > 0.5) {
+                          voxel_assign (neigh_mask_vox, mask_neigh);
+                          neighbour_ptrs.push_back (neigh_mask_vox.value());
+                        }
+                      }
+                    }
+                  }
+                  mask_neigh[dim] = (*it)[dim];
+                }
+                adjacent_indices.push_back (neighbour_ptrs);
+              }
+          }
+
+        protected:
+          std::vector<Math::Matrix<float> > adjacency_matrices_;
+          std::vector<bool> ignore_dim_;
+          bool largest_only_;
+
+      };
 
 
       inline bool next_neighbour(uint32_t & node,
@@ -129,7 +177,7 @@ namespace MR
           }
         }
         return false;
-      }
+      };
 
 
       // use a non-recursive depth first search to agglomerate adjacent voxels
@@ -273,6 +321,7 @@ namespace MR
 
 
         void set_adjacency_matrix (Math::Matrix<float> adj_matrix, size_t dim) {
+
           if (dim > this->ndim())
             throw Exception("The dimensions specified is larger than the number of input dimensions.");
           if ((int)adj_matrix.columns() != this->dim(dim) || (int)adj_matrix.rows() != this->dim(dim))
