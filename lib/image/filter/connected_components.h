@@ -39,197 +39,226 @@ namespace MR
     namespace Filter
     {
 
-      struct cluster {
-          uint32_t label;
-          uint32_t size;
+      struct cluster
+      {
+        uint32_t label;
+        uint32_t size;
       };
 
-      bool compare_clusters (cluster i, cluster j) {
+      inline bool compare_clusters (cluster i, cluster j)
+      {
         return (i.size > j.size);
       }
 
-      void dir2adjacency (Math::Matrix<float> & dirs_el_az, float angular_threshold, Math::Matrix<float> & adjacency) {
 
-        angular_threshold = angular_threshold * M_PI / 180.0;
-        Math::Matrix<float> dirAdjacency;
-        Math::Matrix<float> vert (dirs_el_az.rows(), 3);
-        for (uint d = 0; d < dirs_el_az.rows(); d++) {
-          vert(d,0) = cos(dirs_el_az(d,0)) * sin(dirs_el_az(d,1));
-          vert(d,1) = sin(dirs_el_az(d,0)) * sin(dirs_el_az(d,1));
-          vert(d,2) = cos(dirs_el_az(d,1));
+      template <class MaskVoxelType>
+        class Connector {
+
+      public:
+
+        Connector (MaskVoxelType & mask) : mask_(mask)
+        {
+          Math::Matrix<float> empty;
+          adjacency_matrices_.resize(mask->ndim(), empty);
+          ignore_dim_.resize(mask->ndim(), false);
         }
 
-        dirAdjacency.resize(dirs_el_az.rows(), dirs_el_az.rows(), 0.0);
-        dirAdjacency.zero();
-        for (uint m = 0; m < dirs_el_az.rows(); m++) {
-          for (uint n = m + 1; n < dirs_el_az.rows(); n++) {
-            float angle = Math::acos(Math::dot(vert.row(m), vert.row(n)));
-            if (angle > M_PI_2)
-              angle = M_PI - angle;
-            if (angle < angular_threshold) {
-              dirAdjacency (m,n) = 1;
-              dirAdjacency (n,m) = 1;
-            } else {
-              dirAdjacency (m,n) = 0;
-              dirAdjacency (n,m) = 0;
+
+        Connector (MaskVoxelType & mask,
+                    std::vector<Math::Matrix<float> > adjacency_matrices,
+                    std::vector<bool> ignore_dim) :
+                    mask_(mask),
+                    adjacency_matrices_(adjacency_matrices),
+                    ignore_dim_(ignore_dim) { }
+
+
+        void run (std::vector<std::vector<int> > & mask_indices,
+                   std::vector<cluster> & clusters,
+                   std::vector<uint32_t> & labels)
+        {
+          if (mask_indices.size() == 0) {
+            compute_adjacency (mask_indices);
+          }
+
+          labels.resize (adjacent_indices_.size(), 0);
+          uint32_t current_label = 1;
+
+          for (uint32_t i = 0; i < labels.size(); i++) {
+            // this node has not been already clustered
+            if (labels[i] == 0) {
+              cluster cluster;
+              cluster.label = current_label;
+              cluster.size = 0;
+              depth_first_search (i, cluster, labels);
+              clusters.push_back (cluster);
+              current_label++;
             }
           }
+
+          if (clusters.size() > std::numeric_limits<uint32_t>::max())
+            throw Exception ("The number of clusters is larger than can be labelled with an unsigned 32bit integer.");
+
+          std::sort (clusters.begin(), clusters.end(), compare_clusters);
         }
-      }
 
-      class AdjacencyBuilder {
 
-        public:
+        void set_directions (Math::Matrix<float> & dirs_el_az,
+                               float angular_threshold)
+        {
+          angular_threshold = angular_threshold * M_PI / 180.0;
+          Math::Matrix<float> dir_adjacency;
+          Math::Matrix<float> vert (dirs_el_az.rows(), 3);
 
-          template <class MaskVoxeType>
-          AdjacencyBuilder () {
-            Math::Matrix<float> empty;
-            adjacency_matrices_.resize(this->ndim(), empty);
-            ignore_dim_.resize(this->ndim(), false);
-            largest_only_ = false;
+          for (uint d = 0; d < dirs_el_az.rows(); d++) {
+            vert(d,0) = cos(dirs_el_az(d,0)) * sin(dirs_el_az(d,1));
+            vert(d,1) = sin(dirs_el_az(d,0)) * sin(dirs_el_az(d,1));
+            vert(d,2) = cos(dirs_el_az(d,1));
           }
 
-          template <class MaskVoxelType>
-          void compute_adjacency (MaskVoxelType & mask,
-                                  std::vector<Math::Matrix<float> > & adjacency_matrices,
-                                  std::vector<bool> & ignore_dim,
-                                  std::vector<std::vector<int> > & mask_indices,
-                                  std::vector<std::vector<uint32_t> > & adjacent_indices) {
-
-              Image::BufferScratch<uint32_t> neigh_mask (mask);
-              Image::BufferScratch<uint32_t>::voxel_type neigh_mask_vox (neigh_mask);
-
-              // 1st pass, store mask image indices and their index in the array
-              Image::LoopInOrder loop(mask);
-              for (loop.start (mask, neigh_mask_vox); loop.ok(); loop.next (mask, neigh_mask_vox)) {
-                if (mask.value() > 0.5) {
-                  // keep track of the index location for the second pass
-                  neigh_mask_vox.value() = mask_indices.size();
-                  std::vector<int> index(4);
-                  for (size_t dim = 0; dim < mask.ndim(); dim++)
-                    index[dim] = mask[dim];
-                  mask_indices.push_back (index);
-                } else {
-                  neigh_mask_vox.value() = 0;
-                }
+          dir_adjacency.resize(dirs_el_az.rows(), dirs_el_az.rows(), 0.0);
+          for (uint m = 0; m < dirs_el_az.rows(); m++) {
+            for (uint n = m + 1; n < dirs_el_az.rows(); n++) {
+              float angle = Math::acos(Math::dot(vert.row(m), vert.row(n)));
+              if (angle > M_PI_2)
+                angle = M_PI - angle;
+              if (angle < angular_threshold) {
+                dir_adjacency (m,n) = 1;
+                dir_adjacency (n,m) = 1;
+              } else {
+                dir_adjacency (m,n) = 0;
+                dir_adjacency (n,m) = 0;
               }
+            }
+          }
+          set_adjacency_matrix (dir_adjacency, 3);
+        }
 
-              // 2nd pass, define adjacency
-              MaskVoxelType mask_neigh (mask);
-              std::vector<std::vector<int> >::iterator it;
-              for (it = mask_indices.begin(); it != mask_indices.end(); ++it) {
-                std::vector<uint32_t> neighbour_ptrs;
-                for (size_t dim = 0; dim < mask.ndim(); dim++)
-                  mask_neigh[dim] = (*it)[dim];
 
-                for (size_t dim = 0; dim < mask.ndim(); dim++) {
-                  if (!ignore_dim[dim]) {
-                    if (adjacency_matrices[dim].is_set()) {
-                      for (int i = 0; i < mask.dim(dim); i++) {
-                        if (adjacency_matrices[dim]((*it)[dim], i)) {
-                          mask_neigh[dim] = i;
-                          if (mask_neigh.value() > 0.5) {
-                            voxel_assign (neigh_mask_vox, mask_neigh);
-                            neighbour_ptrs.push_back (neigh_mask_vox.value());
-                          }
-                        }
-                      }
-                      // we treat this dimension as having normal contiguous neighbours
-                    } else {
-                      if ((*it)[dim] > 0) {
-                        mask_neigh[dim] = (*it)[dim] - 1;
-                        if (mask_neigh.value() > 0.5) {
-                          voxel_assign (neigh_mask_vox, mask_neigh);
-                          neighbour_ptrs.push_back (neigh_mask_vox.value());
-                        }
-                      }
-                      if ((*it)[dim] + 1 < mask.dim (dim)) {
-                        mask_neigh[dim] = (*it)[dim] + 1;
-                        if (mask_neigh.value() > 0.5) {
-                          voxel_assign (neigh_mask_vox, mask_neigh);
-                          neighbour_ptrs.push_back (neigh_mask_vox.value());
-                        }
+        void set_adjacency_matrix (Math::Matrix<float> adj_matrix,
+                                      size_t dim)
+        {
+          if (dim > mask_.ndim())
+            throw Exception("The dimensions specified is larger than the number of input dimensions.");
+          adjacency_matrices_[dim] = adj_matrix;
+        }
+
+
+        void set_ignore_dim (bool ignore, size_t dim)
+        {
+          ignore_dim_[dim] = ignore;
+        }
+
+
+      protected:
+
+        void compute_adjacency (std::vector<std::vector<int> > & mask_indices)
+        {
+          Image::BufferScratch<uint32_t> neigh_mask (mask_);
+          Image::BufferScratch<uint32_t>::voxel_type neigh_mask_vox (neigh_mask);
+
+          // 1st pass, store mask image indices and their index in the array
+          Image::LoopInOrder loop(mask_);
+          for (loop.start (mask_, neigh_mask_vox); loop.ok(); loop.next (mask_, neigh_mask_vox)) {
+            if (mask_.value() > 0.5) {
+              // keep track of the index location for the second pass
+              neigh_mask_vox.value() = mask_indices.size();
+              std::vector<int> index(4);
+              for (size_t dim = 0; dim < mask_.ndim(); dim++)
+                index[dim] = mask_[dim];
+              mask_indices.push_back (index);
+            } else {
+              neigh_mask_vox.value() = 0;
+            }
+          }
+
+          // 2nd pass, define adjacency
+          MaskVoxelType mask_neigh (mask_);
+          std::vector<std::vector<int> >::iterator it;
+          for (it = mask_indices.begin(); it != mask_indices.end(); ++it) {
+            std::vector<uint32_t> neighbour_ptrs;
+            for (size_t dim = 0; dim < mask_.ndim(); dim++)
+              mask_neigh[dim] = (*it)[dim];
+
+            for (size_t dim = 0; dim < mask_.ndim(); dim++) {
+              if (!ignore_dim_[dim]) {
+                if (adjacency_matrices_[dim].is_set()) {
+                  for (int i = 0; i < mask_.dim(dim); i++) {
+                    if (adjacency_matrices_[dim]((*it)[dim], i)) {
+                      mask_neigh[dim] = i;
+                      if (mask_neigh.value() > 0.5) {
+                        voxel_assign (neigh_mask_vox, mask_neigh);
+                        neighbour_ptrs.push_back (neigh_mask_vox.value());
                       }
                     }
                   }
-                  mask_neigh[dim] = (*it)[dim];
+                  // we treat this dimension as having normal contiguous neighbours
+                } else {
+                  if ((*it)[dim] > 0) {
+                    mask_neigh[dim] = (*it)[dim] - 1;
+                    if (mask_neigh.value() > 0.5) {
+                      voxel_assign (neigh_mask_vox, mask_neigh);
+                      neighbour_ptrs.push_back (neigh_mask_vox.value());
+                    }
+                  }
+                  if ((*it)[dim] + 1 < mask_.dim (dim)) {
+                    mask_neigh[dim] = (*it)[dim] + 1;
+                    if (mask_neigh.value() > 0.5) {
+                      voxel_assign (neigh_mask_vox, mask_neigh);
+                      neighbour_ptrs.push_back (neigh_mask_vox.value());
+                    }
+                  }
                 }
-                adjacent_indices.push_back (neighbour_ptrs);
               }
-          }
-
-        protected:
-          std::vector<Math::Matrix<float> > adjacency_matrices_;
-          std::vector<bool> ignore_dim_;
-          bool largest_only_;
-
-      };
-
-
-      inline bool next_neighbour(uint32_t & node,
-                                 std::vector<std::vector<uint32_t> > & adjacent_indices,
-                                 std::vector<uint32_t> & labels) {
-
-        for (size_t n = 0; n < adjacent_indices[node].size(); n++) {
-          if (labels[adjacent_indices[node][n]] == 0) {
-            node = adjacent_indices[node][n];
-            return true;
+              mask_neigh[dim] = (*it)[dim];
+            }
+            adjacent_indices_.push_back (neighbour_ptrs);
           }
         }
-        return false;
-      };
+
+        bool next_neighbour(uint32_t & node,
+                                      std::vector<uint32_t> & labels)
+        {
+          for (size_t n = 0; n < adjacent_indices_[node].size(); n++) {
+            if (labels[adjacent_indices_[node][n]] == 0) {
+              node = adjacent_indices_[node][n];
+              return true;
+            }
+          }
+          return false;
+        };
 
 
-      // use a non-recursive depth first search to agglomerate adjacent voxels
-      inline void depth_first_search (uint32_t root,
-                                      std::vector<std::vector<uint32_t> > & adjacent_indices,
-                                      cluster & cluster,
-                                      std::vector<uint32_t> & labels) {
-        uint32_t node = root;
-        std::stack<uint32_t> stack;
+        // use a non-recursive depth first search to agglomerate adjacent voxels
+        void depth_first_search (uint32_t root,
+                                    cluster & cluster,
+                                    std::vector<uint32_t> & labels)
+        {
+          uint32_t node = root;
+          std::stack<uint32_t> stack;
 
-        while (true) {
-          labels[node] = cluster.label;
-          stack.push(node);
-          cluster.size++;
-          if (next_neighbour (node, adjacent_indices, labels)) {
-            continue;
-          } else {
-            while (!next_neighbour (node, adjacent_indices, labels)) {
-              node = stack.top();
-              if (node == root)
-                return;
-              stack.pop();
+          while (true) {
+            labels[node] = cluster.label;
+            stack.push(node);
+            cluster.size++;
+            if (next_neighbour (node, labels)) {
+              continue;
+            } else {
+              while (!next_neighbour (node, labels)) {
+                node = stack.top();
+                if (node == root)
+                  return;
+                stack.pop();
+              }
             }
           }
         }
-      }
 
 
-      inline void agglomerate (std::vector<std::vector<uint32_t> > & adjacent_indices,
-                               std::vector<cluster> & clusters,
-                               std::vector<uint32_t> & labels) {
-
-        labels.resize (adjacent_indices.size(), 0);
-        uint32_t current_label = 1;
-
-        for (uint32_t i = 0; i < labels.size(); i++) {
-          // this node has not been already clustered
-          if (labels[i] == 0) {
-            cluster cluster;
-            cluster.label = current_label;
-            cluster.size = 0;
-            depth_first_search (i, adjacent_indices, cluster, labels);
-            clusters.push_back (cluster);
-            current_label++;
-          }
-        }
-
-        if (clusters.size() > std::numeric_limits<uint32_t>::max())
-          throw Exception ("The number of clusters is larger than can be labelled with an unsigned 32bit integer.");
-
-        std::sort (clusters.begin(), clusters.end(), compare_clusters);
-      }
+        MaskVoxelType & mask_;
+        std::vector<std::vector<uint32_t> > adjacent_indices_;
+        std::vector<Math::Matrix<float> > adjacency_matrices_;
+        std::vector<bool> ignore_dim_;
+      };
 
 
 
@@ -285,13 +314,13 @@ namespace MR
         void operator() (InputVoxelType& in, OutputVoxelType& out) {
 
           std::vector<std::vector<int> > mask_indices;
-          std::vector<std::vector<uint32_t> > adjacent_indices;
-          compute_adjacency (in, adjacency_matrices_, ignore_dim_, mask_indices, adjacent_indices);
-
           std::vector<cluster> clusters;
           std::vector<uint32_t> labels;
 
-          agglomerate (adjacent_indices, clusters, labels);
+          Connector<InputVoxelType> connector (in, adjacency_matrices_, ignore_dim_);
+          if (directions_.is_set())
+            connector.set_directions (directions_, angular_threshold_);
+          connector.run (mask_indices, clusters, labels);
 
           std::vector<int> label_lookup (clusters.size(), 0);
           for (uint32_t c = 0; c < clusters.size(); c++)
@@ -301,7 +330,7 @@ namespace MR
           for (loop.start(out); loop.ok(); loop.next(out))
             out.value() = 0;
 
-          for (uint32_t i = 0; i < adjacent_indices.size(); i++) {
+          for (uint32_t i = 0; i < mask_indices.size(); i++) {
             for (size_t dim = 0; dim < out.ndim(); dim++)
               out[dim] = mask_indices[i][dim];
             if (largest_only_) {
@@ -320,12 +349,15 @@ namespace MR
         }
 
 
-        void set_adjacency_matrix (Math::Matrix<float> adj_matrix, size_t dim) {
+        void set_directions (Math::Matrix<float> & dirs_el_az,
+                               float angular_threshold)
+        {
+          directions_ = dirs_el_az;
+          angular_threshold_ = angular_threshold;
+        }
 
-          if (dim > this->ndim())
-            throw Exception("The dimensions specified is larger than the number of input dimensions.");
-          if ((int)adj_matrix.columns() != this->dim(dim) || (int)adj_matrix.rows() != this->dim(dim))
-            throw Exception("The adjacency matrix size does not match the number of elements along dimension " + str(dim));
+
+        void set_adjacency_matrix (Math::Matrix<float> adj_matrix, size_t dim) {
           adjacency_matrices_[dim] = adj_matrix;
         }
 
@@ -339,6 +371,8 @@ namespace MR
           std::vector<Math::Matrix<float> > adjacency_matrices_;
           std::vector<bool> ignore_dim_;
           bool largest_only_;
+          Math::Matrix<float> directions_;
+          float angular_threshold_;
       };
       //! @}
     }

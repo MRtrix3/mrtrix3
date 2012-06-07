@@ -102,8 +102,7 @@ void run ()
   Math::Matrix<float> adjacency;
   if (opt.size()) {
     dirs.load (opt[0][0]);
-    Image::Filter::dir2adjacency(dirs, angular_threshold, adjacency);
-    connected_filter.set_adjacency_matrix(dirs, angular_threshold);
+    connected_filter.set_directions(dirs, angular_threshold);
   }
 
   opt = get_options ("ignore");
