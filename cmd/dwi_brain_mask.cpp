@@ -28,6 +28,7 @@
 #include "image/voxel.h"
 #include "image/filter/optimal_threshold.h"
 #include "image/filter/median3D.h"
+#include "image/filter/connected_components.h"
 #include "image/histogram.h"
 #include "image/copy.h"
 #include "image/loop.h"
@@ -121,11 +122,27 @@ void run () {
 
   Header header (input_data);
   header.info() = median_filter.info();
-  header.datatype() = DataType::Int8;
-  Buffer<int> mask_data (argument[1], header);
-  Buffer<int>::voxel_type mask_voxel (mask_data);
-  median_filter(dwi_mean_mask_voxel, mask_voxel);
+  BufferScratch<int> temp_data (header);
+  BufferScratch<int>::voxel_type temp_voxel (temp_data);
+  median_filter (dwi_mean_mask_voxel, temp_voxel);
 
-  //TODO use connected components to fill holes and remove non-brain tissue
+  Image::Filter::ConnectedComponents connected_filter (temp_voxel);
+  connected_filter.set_largest_only(true);
+  connected_filter (temp_voxel, temp_voxel);
+
+  Loop loop_mask(0,3);
+  for (loop_mask.start (temp_voxel); loop_mask.ok(); loop_mask.next (temp_voxel))
+    temp_voxel.value() = !temp_voxel.value();
+
+  connected_filter (temp_voxel, temp_voxel);
+
+  Header output_header (input_data);
+  output_header.info() = connected_filter.info();
+  output_header.datatype() = DataType::Int8;
+  Buffer<int> mask_data (argument[1], output_header);
+  Buffer<int>::voxel_type mask_voxel (mask_data);
+
+  for (loop_mask.start (temp_voxel, mask_voxel); loop_mask.ok(); loop_mask.next (temp_voxel, mask_voxel))
+    mask_voxel.value() = !temp_voxel.value();
 }
 

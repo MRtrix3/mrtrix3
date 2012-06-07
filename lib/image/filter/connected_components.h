@@ -138,20 +138,20 @@ namespace MR
                                       cluster & cluster,
                                       std::vector<uint32_t> & labels) {
         uint32_t node = root;
-        std::stack<uint32_t> the_stack;
+        std::stack<uint32_t> stack;
 
         while (true) {
           labels[node] = cluster.label;
-          the_stack.push(node);
+          stack.push(node);
           cluster.size++;
           if (next_neighbour (node, adjacent_indices, labels)) {
             continue;
           } else {
             while (!next_neighbour (node, adjacent_indices, labels)) {
-              the_stack.pop();
-              node = the_stack.top();
+              node = stack.top();
               if (node == root)
                 return;
+              stack.pop();
             }
           }
         }
@@ -242,6 +242,7 @@ namespace MR
 
           std::vector<cluster> clusters;
           std::vector<uint32_t> labels;
+
           agglomerate (adjacent_indices, clusters, labels);
 
           std::vector<int> label_lookup (clusters.size(), 0);
