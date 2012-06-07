@@ -138,6 +138,7 @@ namespace MR
         class View : public Matrix<ValueType>
         {
           public:
+            View (const View& M) : Matrix<ValueType> (M) { }
 
             Matrix<ValueType>& operator= (ValueType value) throw () {
               return Matrix<ValueType>::operator= (value);
@@ -151,9 +152,6 @@ namespace MR
 
           private:
             View () {
-              assert (0);
-            }
-            View (const View& M) {
               assert (0);
             }
             View (const Matrix<ValueType>& M) {

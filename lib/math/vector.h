@@ -195,6 +195,7 @@ namespace MR
         class View : public Vector<ValueType>
         {
           public:
+            View (const View& V) : Vector<ValueType> (V) { }
 
             Vector<ValueType>& operator= (ValueType value) throw () {
               return Vector<ValueType>::operator= (value);
@@ -208,9 +209,6 @@ namespace MR
 
           private:
             View () {
-              assert (0);
-            }
-            View (const View& V) {
               assert (0);
             }
             View (const Vector<ValueType>& V) {
