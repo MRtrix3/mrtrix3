@@ -24,29 +24,22 @@
 #include "point.h"
 #include "ptr.h"
 #include "image/buffer.h"
-#include "image/buffer_scratch.h"
 #include "image/voxel.h"
-#include "image/filter/optimal_threshold.h"
-#include "image/filter/median3D.h"
-#include "image/filter/connected_components.h"
-#include "image/histogram.h"
-#include "image/copy.h"
-#include "image/loop.h"
-#include "dwi/gradient.h"
+#include "image/filter/dwi_brain_mask.h"
+
 
 MRTRIX_APPLICATION
 
 using namespace MR;
 using namespace App;
-using namespace Image;
 
 void usage () {
   AUTHOR = "David Raffelt (draffelt@gmail.com)";
 
 DESCRIPTION
   + "Generates an whole brain mask from a DWI image."
-  "Both diffusion weighted and b=0 volumes are required to "
-  "obtain a mask that includes both brain tissue and CSF.";
+    "Both diffusion weighted and b=0 volumes are required to "
+    "obtain a mask that includes both brain tissue and CSF.";
 
 ARGUMENTS
    + Argument ("image",
@@ -63,86 +56,24 @@ OPTIONS
 }
 
 
-typedef float value_type;
-
 void run () {
-  Buffer<value_type> input_data (argument[0]);
-  Buffer<value_type>::voxel_type input_voxel (input_data);
+  Image::Buffer<float> input_data (argument[0]);
+  Image::Buffer<float>::voxel_type input_voxel (input_data);
 
-  std::vector<int> bzeros, dwis;
   Math::Matrix<float> grad = DWI::get_DW_scheme<float> (input_data);
-  DWI::guess_DW_directions (dwis, bzeros, grad);
 
-  Image::Info info (input_data);
-  info.set_ndim (3);
+  Image::Filter::DWIBrainMask dwi_brain_mask_filter (input_voxel);
 
-  // Compute the mean b=0 and mean DWI image
-  BufferScratch<float> b0_mean_data (info, "mean b0");
-  BufferScratch<float>::voxel_type b0_mean_voxel (b0_mean_data);
+  Image::Header output_header (input_data);
+  output_header.info() = dwi_brain_mask_filter.info();
+  Image::Buffer<uint32_t> mask_data (argument[1], output_header);
+  Image::Buffer<uint32_t>::voxel_type mask_voxel (mask_data);
 
-  BufferScratch<float> dwi_mean_data (info, "mean DWI");
-  BufferScratch<float>::voxel_type dwi_mean_voxel (dwi_mean_data);
-  {
-    Loop loop("computing mean dwi and mean b0 images...", 0, 3);
-    for (loop.start (input_voxel, b0_mean_voxel, dwi_mean_voxel); loop.ok(); loop.next (input_voxel, b0_mean_voxel, dwi_mean_voxel)) {
-      float mean = 0;
-      for (uint i = 0; i < dwis.size(); i++) {
-        input_voxel[3] = dwis[i];
-        mean += input_voxel.value();
-      }
-      dwi_mean_voxel.value() = mean / dwis.size();
-      mean = 0;
-      for (uint i = 0; i < bzeros.size(); i++) {
-        input_voxel[3] = bzeros[i];
-        mean += input_voxel.value();
-      }
-      b0_mean_voxel.value() = mean / bzeros.size();
-    }
-  }
-
-  // Here we independently threshold the mean b=0 and dwi images
-  Filter::OptimalThreshold b0_threshold_filter (b0_mean_data);
-  BufferScratch<int> b0_mean_mask_data (b0_threshold_filter);
-  BufferScratch<int>::voxel_type b0_mean_mask_voxel (b0_mean_mask_data);
-  b0_threshold_filter (b0_mean_voxel, b0_mean_mask_voxel);
-
-  Filter::OptimalThreshold dwi_threshold_filter (dwi_mean_data);
-  BufferScratch<float> dwi_mean_mask_data (dwi_threshold_filter);
-  BufferScratch<float>::voxel_type dwi_mean_mask_voxel (dwi_mean_mask_data);
-  dwi_threshold_filter (dwi_mean_voxel, dwi_mean_mask_voxel);
-
-  {
-    Loop loop("combining optimal dwi and b0 masks...", 0, 3);
-    for (loop.start (b0_mean_voxel, b0_mean_mask_voxel, dwi_mean_mask_voxel); loop.ok(); loop.next (b0_mean_voxel, b0_mean_mask_voxel, dwi_mean_mask_voxel)) {
-      if (b0_mean_mask_voxel.value() > 0)
-        dwi_mean_mask_voxel.value() = 1;
-    }
-  }
-  Filter::Median3D median_filter (dwi_mean_mask_voxel);
-
-  Header header (input_data);
-  header.info() = median_filter.info();
-  BufferScratch<int> temp_data (header);
-  BufferScratch<int>::voxel_type temp_voxel (temp_data);
-  median_filter (dwi_mean_mask_voxel, temp_voxel);
-
-  Image::Filter::ConnectedComponents connected_filter (temp_voxel);
-  connected_filter.set_largest_only(true);
-  connected_filter (temp_voxel, temp_voxel);
-
-  Loop loop_mask(0,3);
-  for (loop_mask.start (temp_voxel); loop_mask.ok(); loop_mask.next (temp_voxel))
-    temp_voxel.value() = !temp_voxel.value();
-
-  connected_filter (temp_voxel, temp_voxel);
-
-  Header output_header (input_data);
-  output_header.info() = connected_filter.info();
-  output_header.datatype() = DataType::Int8;
-  Buffer<int> mask_data (argument[1], output_header);
-  Buffer<int>::voxel_type mask_voxel (mask_data);
-
-  for (loop_mask.start (temp_voxel, mask_voxel); loop_mask.ok(); loop_mask.next (temp_voxel, mask_voxel))
-    mask_voxel.value() = !temp_voxel.value();
+  dwi_brain_mask_filter (input_voxel, grad, mask_voxel);
 }
+
+
+
+
+
 
