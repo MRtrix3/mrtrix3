@@ -53,15 +53,15 @@ namespace MR
        *
        * Typical usage:
        * \code
-       * Data<value_type> input_data (argument[0]);
-       * Data<value_type>::voxel_type input_voxel (input_data);
+       * Buffer<value_type> input_data (argument[0]);
+       * Buffer<value_type>::voxel_type input_voxel (input_data);
        *
        * Filter::DWIBrainMask filter (input_data);
        * Header mask_header (input_data);
        * mask_header.info() = filter.info();
        *
-       * Data<int> mask_data (mask_header, argument[1]);
-       * Data<int>::voxel_type mask_voxel (mask_data);
+       * Buffer<int> mask_data (mask_header, argument[1]);
+       * Buffer<int>::voxel_type mask_voxel (mask_data);
        *
        * filter(input_voxel, mask_voxel);
        *
@@ -73,8 +73,8 @@ namespace MR
         public:
 
           template <class InputVoxelType>
-            DWIBrainMask (const InputVoxelType & DataSet) :
-              ConstInfo (DataSet) {
+            DWIBrainMask (const InputVoxelType & input) :
+              ConstInfo (input) {
             axes_.resize(3);
             datatype_ = DataType::Bit;
           }
@@ -143,7 +143,6 @@ namespace MR
               for (loop_mask.start (temp_voxel, output); loop_mask.ok(); loop_mask.next (temp_voxel, output))
                 output.value() = !temp_voxel.value();
           }
-
       };
       //! @}
     }

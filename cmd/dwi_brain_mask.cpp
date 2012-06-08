@@ -34,7 +34,7 @@ using namespace MR;
 using namespace App;
 
 void usage () {
-  AUTHOR = "David Raffelt (draffelt@gmail.com)";
+  AUTHOR = "David Raffelt (d.raffelt@brain.org.au)";
 
 DESCRIPTION
   + "Generates an whole brain mask from a DWI image."
@@ -52,7 +52,6 @@ ARGUMENTS
 
 OPTIONS
   + DWI::GradOption;
-
 }
 
 
@@ -71,9 +70,3 @@ void run () {
 
   dwi_brain_mask_filter (input_voxel, grad, mask_voxel);
 }
-
-
-
-
-
-

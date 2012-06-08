@@ -122,15 +122,15 @@ namespace MR
        *
        * Typical usage:
        * \code
-       * Data<value_type> input_data (argument[0]);
-       * Data<value_type>::voxel_type input_voxel (input_data);
+       * Buffer<value_type> input_data (argument[0]);
+       * Buffer<value_type>::voxel_type input_voxel (input_data);
        *
        * Filter::OptimalThreshold filter (input_data);
        * Header mask_header (input_data);
        * mask_header.info() = filter.info();
        *
-       * Data<int> mask_data (mask_header, argument[1]);
-       * Data<int>::voxel_type mask_voxel (mask_data);
+       * Buffer<int> mask_data (mask_header, argument[1]);
+       * Buffer<int>::voxel_type mask_voxel (mask_data);
        *
        * filter(input_voxel, mask_voxel);
        *
