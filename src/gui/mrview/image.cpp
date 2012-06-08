@@ -210,8 +210,8 @@ namespace MR
         if (colourmap < ColourMap::Special) {
 
           data = new float [xdim*ydim];
-          format = GL_LUMINANCE;
-          internal_format = GL_LUMINANCE32F_ARB;
+          format = GL_ALPHA;
+          internal_format = GL_ALPHA32F_ARB;
 
           if (position[projection] < 0 || position[projection] >= header().dim (projection)) {
             memset (data, 0, xdim*ydim*sizeof (float));
@@ -328,7 +328,7 @@ namespace MR
       inline void Image::update_texture3D ()
       {
 
-        if (colourmap < ColourMap::Special) format = GL_LUMINANCE;
+        if (colourmap < ColourMap::Special) format = GL_ALPHA;
         else if (colourmap == ColourMap::RGB) format = GL_RGB;
         else if (colourmap == ColourMap::Complex) format = GL_LUMINANCE_ALPHA;
         else error ("attempt to use unsupported colourmap");
@@ -341,7 +341,7 @@ namespace MR
             case DataType::Bit:
             case DataType::UInt8:
             case DataType::Int8:
-              if (colourmap < ColourMap::Special) internal_format = GL_LUMINANCE8;
+              if (colourmap < ColourMap::Special) internal_format = GL_ALPHA8;
               else if (colourmap == ColourMap::Complex) internal_format = GL_LUMINANCE8_ALPHA8;
               else if (colourmap == ColourMap::RGB) internal_format = GL_RGB8;
               else error ("attempt to use unsupported colourmap");
@@ -350,13 +350,13 @@ namespace MR
             case DataType::UInt16BE:
             case DataType::Int16LE:
             case DataType::Int16BE:
-              if (colourmap < ColourMap::Special) internal_format = GL_LUMINANCE16;
+              if (colourmap < ColourMap::Special) internal_format = GL_ALPHA16;
               else if (colourmap == ColourMap::Complex) internal_format = GL_LUMINANCE16_ALPHA16;
               else if (colourmap == ColourMap::RGB) internal_format = GL_RGB16;
               else error ("attempt to use unsupported colourmap");
               break;
             default:
-              if (colourmap < ColourMap::Special) internal_format = GL_LUMINANCE32F_ARB;
+              if (colourmap < ColourMap::Special) internal_format = GL_ALPHA32F_ARB;
               else if (colourmap == ColourMap::RGB) internal_format = GL_RGB32F;
               else if (colourmap == ColourMap::Complex) internal_format = GL_LUMINANCE_ALPHA32F_ARB;
               else error ("attempt to use unsupported colourmap");
@@ -477,7 +477,7 @@ namespace MR
         MR::Image::Buffer<ValueType> buffer_tmp (buffer);
         typename MR::Image::Buffer<ValueType>::voxel_type V (buffer_tmp);
         GLenum type = GLtype<ValueType>();
-        int N = ( format == GL_LUMINANCE ? 1 : 3 );
+        int N = ( format == GL_ALPHA ? 1 : 3 );
         Ptr<ValueType,true> data (new ValueType [N * V.dim (0) * V.dim (1)]);
 
         ProgressBar progress ("loading image data...", V.dim (2));
@@ -487,7 +487,7 @@ namespace MR
 
         for (V[2] = 0; V[2] < V.dim (2); ++V[2]) {
 
-          if (format == GL_LUMINANCE) {
+          if (format == GL_ALPHA) {
             ValueType* p = data;
 
             for (V[1] = 0; V[1] < V.dim (1); ++V[1]) {

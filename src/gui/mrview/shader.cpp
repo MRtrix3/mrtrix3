@@ -57,7 +57,7 @@ namespace MR
         if (colourmap & ColourMap::MaskNonScalar) {
           if (colourmap == ColourMap::RGB)
             source += "gl_FragColor.rgb = scale * (abs(color.rgb) - offset); "
-              "gl_FragColor.a = max(gl_FragColor.r, max(gl_FragColor.g, gl_FragColor.b)); ";
+              "gl_FragColor.a = length(gl_FragColor.rgb); ";
           else if (colourmap == ColourMap::Complex) {
             source += 
               "float mag = clamp (scale * (sqrt (color.r*color.r + color.a*color.a) - offset), 0.0, 1.0); "
@@ -68,38 +68,42 @@ namespace MR
               "phase += 1.0; if (phase > 1.5) phase -= 3.0; "
               "color.b = mag * (abs (phase)); "
               "gl_FragColor.rgb = color.rgb; "
-              "color.a = mag;";
+              "gl_FragColor.a = mag;";
           }
           else assert (0);
         }
         else { // scalar colourmaps:
 
           if (flags & DiscardLower)
-            source += "if (color.r < lower) discard;";
+            source += "if (color.a < lower) discard;";
 
           if (flags & DiscardUpper)
-            source += "if (color.r > upper) discard;";
+            source += "if (color.a > upper) discard;";
 
-          source += "color.rgb = clamp (";
+          //source += "gl_FragColor.a = clamp (50.0*color.a - 0.02, 0.0, 1.0); ";
+          source += "color.a = clamp (";
           if (flags & InvertScale) source += "1.0 -";
-          source += " scale * (color.rgb - offset), 0.0, 1.0);"
-            "gl_FragColor.a = color.r;";
+          source += " scale * (color.a - offset), 0.0, 1.0);";
+          source += "gl_FragColor.a = color.a; ";
+
           if (colourmap == ColourMap::Gray)
-            source += "gl_FragColor.rgb = color.rgb;";
+            source += "gl_FragColor.rgb = color.a;";
           else if (colourmap == ColourMap::Hot)
             source +=
-              "color.r = clamp (color.r, 0.0, 1.0);"
-              "gl_FragColor.r = 2.7213 * color.r;"
-              "gl_FragColor.g = 2.7213 * color.r - 1.0;"
-              "gl_FragColor.b = 3.7727 * color.r - 2.7727;";
+              "color.r = clamp (color.a, 0.0, 1.0);"
+              "gl_FragColor.r = 2.7213 * color.a;"
+              "gl_FragColor.g = 2.7213 * color.a - 1.0;"
+              "gl_FragColor.b = 3.7727 * color.a - 2.7727;";
           else if (colourmap == ColourMap::Jet)
             source +=
-              "gl_FragColor.rgb = 1.5 - 4.0 * abs (color.rgb - vec3(0.25, 0.5, 0.75));";
+              "gl_FragColor.rgb = 1.5 - 4.0 * abs (color.a - vec3(0.25, 0.5, 0.75));";
           else assert (0);
         }
 
         if (flags & InvertMap)
-          source += "gl_FragColor = 1.0 - gl_FragColor;";
+          source += "gl_FragColor.rgb = 1.0 - gl_FragColor.rgb;";
+
+        //source += "gl_FragColor.a = gl_FragColor.a; ";
         source += "}";
 
         fragment_shader.compile (source.c_str());

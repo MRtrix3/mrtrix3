@@ -55,11 +55,11 @@ namespace
     "uniform int color_by_direction, use_normals, reverse;"
     "varying vec4 color, ambient;"
     "varying vec3 normal, lightDir, halfVector;"
-    "varying float direction;"
+    "varying float amplitude;"
     "void main () {"
     "  vec4 vertex = gl_Vertex;"
     "  normal = gl_Normal;"
-    "  direction = normal.x; "
+    "  amplitude = normal.x; "
     "  if (use_normals != 0) {"
     "    bool atpole = ( vertex.x == 0.0 && vertex.y == 0.0 ); "
     "    float az = atpole ? 0.0 : atan (vertex.y, vertex.x); "
@@ -68,9 +68,11 @@ namespace
     "    if (atpole) "
     "      d1 = vec3 (-normal.x*saz, normal.x*caz, normal.z); "
     "    else "
-    "      d1 = vec3 (normal.z*caz*sel - normal.x*sel*saz, normal.z*saz*sel - normal.x*sel*caz, normal.z*cel); "
-    "    vec3 d2 = vec3 (-(normal.y+normal.x)*caz*sel, -(normal.y+normal.x)*saz*sel, -normal.y*cel + normal.x*sel); "
+    "      d1 = vec3 (normal.z*caz*sel - normal.x*sel*saz, normal.z*saz*sel + normal.x*sel*caz, normal.z*cel); "
+    "    vec3 d2 = vec3 (-normal.y*caz*sel - normal.x*caz*sel, -normal.y*saz*sel - normal.x*saz*cel, -normal.y*cel + normal.x*sel); "
     "    normal = cross (d1, d2); "
+    "    if (reverse != 0) "
+    "      normal = -normal; "
     "    normal = normalize (gl_NormalMatrix * normal);"
     "    lightDir = normalize (vec3 (gl_LightSource[0].position));"
     "    halfVector = normalize (gl_LightSource[0].halfVector.xyz);"
@@ -78,81 +80,30 @@ namespace
     "  }"
     "  if (color_by_direction != 0) { color.rgb = abs (vertex.xyz); color.a = 1.0; }"
     "  else { color = gl_Color; }"
-    "  vertex.xyz *= direction; "
+    "  vertex.xyz *= amplitude; "
     "  if (reverse != 0) "
     "    vertex.xyz = -vertex.xyz; "
     "  gl_Position = gl_ModelViewProjectionMatrix * vertex;"
     "}";
 
 
-  //TODO: normals still all wrong!!!
-
-        /*
-        for (size_t n = 0; n < vertices.size(); n++) {
-          Vertex& V (vertices[n]);
-          GLfloat* row (rows[n]);
-          GLfloat* row_r (get_r (row));
-          GLfloat* row_daz (get_daz (row));
-          GLfloat* row_del (get_del (row));
-
-          float r (0.0), daz (0.0), del (0.0);
-
-          for (size_t i = 0; i < transform.columns(); i++) {
-            r += row_r[i] * SH[i];
-            daz += row_daz[i] * SH[i];
-            del += row_del[i] * SH[i];
-          }
-
-          bool atpole (row[0] == 0.0 && row[1] == 0.0);
-          float az = atpole ? 0.0 : atan2 (row[1], row[0]);
-
-          float caz = cos (az);
-          float saz = sin (az);
-          float cel = row[2];
-          float sel = sqrt (1.0 - Math::pow2 (cel));
-
-          V.P[0] = r*caz*sel;
-          V.P[1] = r*saz*sel;
-          V.P[2] = r*cel;
-
-          float d1[3], d2[3];
-
-          if (atpole) {
-            d1[0] =  -r*saz;
-            d1[1] =  r*caz;
-            d1[2] =  daz;
-          }
-          else {
-            d1[0] = daz*caz*sel-r*sel*saz;
-            d1[1] = daz*saz*sel+r*sel*caz;
-            d1[2] = daz*cel;
-          }
-
-          d2[0] = -del*caz*sel-r*caz*cel;
-          d2[1] = -del*saz*sel-r*saz*cel;
-          d2[2] = -del*cel+r*sel;
-
-          Math::cross (V.N, d1, d2);
-        }
-*/
-
   const char* fragment_shader_source =
     "uniform int use_normals, hide_neg_lobes;"
     "varying vec4 color, diffuse, ambient;"
     "varying vec3 normal, lightDir, halfVector;"
-    "varying float direction;"
+    "varying float amplitude;"
     "void main() {"
     "  vec4 frag_color, actual_color;"
     "  vec3 n, halfV;"
     "  float NdotL, NdotHV;"
-    "  if (direction < 0.0) {"
+    "  if (amplitude < 0.0) {"
     "    if (hide_neg_lobes != 0) discard;"
     "    actual_color = vec4(1.0,1.0,1.0,1.0);"
     "  }"
     "  else actual_color = color;"
     "  n = normalize (normal);"
     "  if (use_normals != 0) {"
-    "    if (direction < 0.0) n = -n;"
+    "    if (amplitude < 0.0) n = -n;"
     "    NdotL = dot (n,lightDir);"
     "    frag_color = actual_color * ambient;"
     "    if (NdotL > 0.0) {"
