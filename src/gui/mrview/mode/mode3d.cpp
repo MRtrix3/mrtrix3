@@ -48,7 +48,15 @@ namespace MR
           };
         }
 
-        Mode3D::Mode3D (Window& parent) : Mode2D (parent) { }
+        Mode3D::Mode3D (Window& parent) : 
+          Mode2D (parent) { 
+            using namespace App;
+            Options opt = get_options ("view");
+            if (opt.size()) {
+              error ("TODO: apply view option");
+            }
+
+          }
         Mode3D::~Mode3D () { }
 
         void Mode3D::paint ()
@@ -208,6 +216,7 @@ namespace MR
 
               if (mouse_edge() == (RightEdge | BottomEdge)) {
                 image()->adjust_windowing (mouse_dpos());
+                window.scaling_updated();
                 updateGL();
                 return true;
               }
@@ -231,7 +240,7 @@ namespace MR
               }
 
               if (mouse_edge() == TopEdge) {
-                float angle = -ROTATION_INC * mouse_dpos().x();
+                float angle = ROTATION_INC * mouse_dpos().x();
                 Point<> v = screen_to_model_direction (Point<> (0.0, 0.0, 1.0));
                 v.normalise();
 

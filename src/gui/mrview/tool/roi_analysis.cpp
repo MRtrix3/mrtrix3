@@ -34,8 +34,8 @@ namespace MR
     {
       namespace Tool
       {
-        ROI::ROI (Window& parent) :
-          Base (parent) { 
+        ROI::ROI (Window& parent, const QString& name) :
+          Base (parent, name) { 
             setWidget (new QLabel ("ROI analysis", this));
           }
 

@@ -10,13 +10,16 @@
 
 /* Provide a corresponding line for each mode here:
 The first argument is the class name, as defined in the corresponding header.
-The second argument is the name of the mode as displayed to the user. 
-The third argument is a brief description of the mode, to be displayed in a tooltip. */
+The second argument is the identifier to select this mode with the -mode option.
+The third argument is the name of the mode as displayed in the menu. 
+The fourth argument is a brief description of the mode, to be displayed in a tooltip.
 
-MODE (Mode2D, 2D, display slices aligned with image axes)
-MODE_OPTION (Mode3D, 3D reslice, display slices at an arbitrary angle)
-MODE (Ortho, OrthoView, axial-coronal-sagittal display)
-MODE (Volume, Volume, volumetric render)
+Use the MODE_OPTION variant if your mode supplies its own command-line options. */
+
+MODE (Mode2D, 2D, 2D slice, display slices aligned with image axes)
+MODE_OPTION (Mode3D, 3D, 3D reslice, display slices at an arbitrary angle)
+MODE (Ortho, ortho, OrthoView, axial-coronal-sagittal display)
+MODE (Volume, volume, Volume, volumetric render)
 
 #endif
 

@@ -20,11 +20,15 @@
 
 */
 
-#include <QAction>
-#include <cassert>
+#ifndef __gui_mrview_tool_view_h__
+#define __gui_mrview_tool_view_h__
 
-#include "gui/mrview/window.h"
+#include <QVBoxLayout>
+
 #include "gui/mrview/tool/base.h"
+
+class QLineEdit;
+class QComboBox;
 
 namespace MR
 {
@@ -35,27 +39,39 @@ namespace MR
       namespace Tool
       {
 
-        Dock::Dock (Window& parent, const QString& name) : 
-          QDockWidget (name, &parent) {
-            setFeatures (QDockWidget::DockWidgetFloatable);
-          }
 
-        void Dock::showEvent (QShowEvent * event) {
-          widget()->show();
-        }
+        class View : public Base
+        {
+          Q_OBJECT
+          public:
+            View (Dock* parent);
 
-        void Dock::closeEvent (QCloseEvent * event) {
-          widget()->close();
-        }
+          protected:
+            virtual void showEvent (QShowEvent* event);
+            virtual void closeEvent (QCloseEvent* event);
 
-        void Dock::hideEvent (QCloseEvent * event) {
-          widget()->close();
-        }
+          private slots:
+            void onFocusChanged ();
+            void onSetFocus ();
+            void onProjectionChanged ();
+            void onSetProjection (int index);
+            void onSetScaling ();
+            void onScalingChanged ();
+
+          private:
+            QLineEdit *focus_x, *focus_y, *focus_z, *min_entry, *max_entry;
+            QComboBox *projection_combobox;
+
+        };
 
       }
     }
   }
 }
+
+#endif
+
+
 
 
 

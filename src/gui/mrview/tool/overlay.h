@@ -20,10 +20,9 @@
 
 */
 
-#include <QAction>
-#include <cassert>
+#ifndef __gui_mrview_tool_overlay_h__
+#define __gui_mrview_tool_overlay_h__
 
-#include "gui/mrview/window.h"
 #include "gui/mrview/tool/base.h"
 
 namespace MR
@@ -35,27 +34,25 @@ namespace MR
       namespace Tool
       {
 
-        Dock::Dock (Window& parent, const QString& name) : 
-          QDockWidget (name, &parent) {
-            setFeatures (QDockWidget::DockWidgetFloatable);
-          }
+        class Overlay : public Base
+        {
+            Q_OBJECT
 
-        void Dock::showEvent (QShowEvent * event) {
-          widget()->show();
-        }
+          public:
+            Overlay (Window& parent, const QString& name);
 
-        void Dock::closeEvent (QCloseEvent * event) {
-          widget()->close();
-        }
+          private slots:
+            void slot ();
 
-        void Dock::hideEvent (QCloseEvent * event) {
-          widget()->close();
-        }
+        };
 
       }
     }
   }
 }
+
+#endif
+
 
 
 

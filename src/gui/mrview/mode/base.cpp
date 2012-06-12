@@ -187,7 +187,7 @@ done_painting:
           if (!image()) 
             return;
 
-          Point<> move (screen_to_model_direction (Point<> (0.0, 0.0, 1.0)));
+          Point<> move (screen_to_model_direction (Point<> (0.0, 0.0, -1.0)));
           move.normalise();
           move *= distance;
           set_target (target() + move);
@@ -243,21 +243,21 @@ done_painting:
             for (size_t n = 0; n < 3; n++) {
               M[4*n]   = -Q[4*n+1];  // x: -y
               M[4*n+1] =  Q[4*n+2];  // y: z
-              M[4*n+2] = -Q[4*n];    // z: -x
+              M[4*n+2] =  Q[4*n];    // z: x
             }
           }
           else if (proj == 1) { // coronal
             for (size_t n = 0; n < 3; n++) {
               M[4*n]   = -Q[4*n];    // x: -x
               M[4*n+1] =  Q[4*n+2];  // y: z
-              M[4*n+2] =  Q[4*n+1];  // z: y
+              M[4*n+2] = -Q[4*n+1];  // z: -y
             }
           }
           else { // axial
             for (size_t n = 0; n < 3; n++) {
               M[4*n]   = -Q[4*n];    // x: -x
               M[4*n+1] =  Q[4*n+1];  // y: y
-              M[4*n+2] = -Q[4*n+2];  // z: -z
+              M[4*n+2] =  Q[4*n+2];  // z: z
             }
           }
         }

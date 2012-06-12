@@ -49,6 +49,7 @@ namespace MR
                 image()->interp.dim(2)*image()->interp.vox(2)));
 
 
+
           // set up projection & modelview matrices:
           glMatrixMode (GL_PROJECTION);
           glLoadIdentity ();
@@ -74,6 +75,7 @@ namespace MR
           float S[16];
           adjust_projection_matrix (S, T);
           glMultMatrixf (S);
+
 
           glTranslatef (-target() [0], -target() [1], -target() [2]);
           update_modelview_projection_viewport();

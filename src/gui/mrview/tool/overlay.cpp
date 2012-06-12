@@ -20,11 +20,11 @@
 
 */
 
-#include <QAction>
-#include <cassert>
+#include <QLabel>
 
+#include "mrtrix.h"
 #include "gui/mrview/window.h"
-#include "gui/mrview/tool/base.h"
+#include "gui/mrview/tool/overlay.h"
 
 namespace MR
 {
@@ -34,28 +34,23 @@ namespace MR
     {
       namespace Tool
       {
-
-        Dock::Dock (Window& parent, const QString& name) : 
-          QDockWidget (name, &parent) {
-            setFeatures (QDockWidget::DockWidgetFloatable);
+        Overlay::Overlay (Window& parent, const QString& name) :
+          Base (parent, name) { 
+            setWidget (new QLabel ("Overlay", this));
           }
 
-        void Dock::showEvent (QShowEvent * event) {
-          widget()->show();
+        void Overlay::slot ()
+        {
+          TEST;
         }
 
-        void Dock::closeEvent (QCloseEvent * event) {
-          widget()->close();
-        }
-
-        void Dock::hideEvent (QCloseEvent * event) {
-          widget()->close();
-        }
 
       }
     }
   }
 }
+
+
 
 
 

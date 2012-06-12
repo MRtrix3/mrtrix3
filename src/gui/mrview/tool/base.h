@@ -24,6 +24,7 @@
 #define __gui_mrview_tool_base_h__
 
 #include <QAction>
+#include <QFrame>
 #include <QDockWidget>
 
 #include "gui/mrview/window.h"
@@ -37,18 +38,28 @@ namespace MR
       namespace Tool
       {
 
-        class Base : public QDockWidget
+        class Dock : public QDockWidget
         {
-            Q_OBJECT
-
           public:
-            Base (Window& parent);
+            Dock (Window& parent, const QString& name);
 
-            Window& window() {
-              return *dynamic_cast<Window*> (parentWidget());
-            }
+          protected:
+            virtual void showEvent (QShowEvent * event);
+            virtual void closeEvent (QCloseEvent * event);
+            virtual void hideEvent (QCloseEvent * event);
         };
 
+        class Base : public QFrame {
+          public:
+            Base (Dock* parent) : QFrame (parent) { 
+              setFrameShadow (QFrame::Sunken); 
+              setFrameShape (QFrame::Panel);
+            }
+            Window& window() {
+              return *dynamic_cast<Window*> (parentWidget()->parentWidget());
+            }
+
+        };
 
 
 
@@ -65,12 +76,12 @@ namespace MR
               QAction (name, parent),
               instance (NULL) {
               setCheckable (true);
-              setShortcut (tr (std::string ("F"+str (index)).c_str()));
+              setShortcut (tr (std::string ("Shift+F" + str (index)).c_str()));
               setStatusTip (tr (description));
             }
 
-            virtual Base* create (Window& parent) = 0;
-            Base* instance;
+            virtual Dock* create (Window& parent) = 0;
+            Dock* instance;
         };
         //! \endcond
 
@@ -85,8 +96,9 @@ namespace MR
                     int index) :
               __Action__ (parent, name, description, index) { }
 
-            virtual Base* create (Window& parent) {
-              instance = new T (parent);
+            virtual Dock* create (Window& parent) {
+              instance = new Dock (parent, this->text());
+              instance->setWidget (new T (instance));
               return instance;
             }
         };

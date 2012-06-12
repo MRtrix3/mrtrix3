@@ -39,7 +39,7 @@ namespace MR
             Q_OBJECT
 
           public:
-            ROI (Window& parent);
+            ROI (Window& parent, const QString& name);
 
           private slots:
             void slot ();

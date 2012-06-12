@@ -31,10 +31,16 @@ namespace MR
     {
       using namespace App;
 
-      const OptionGroup Window::options = OptionGroup ("General options")
-        + Option ("mode", "select initial display mode")
-        + Argument ("name");
+#define MODE(classname, specifier, name, description) #specifier ", "
+#define MODE_OPTION(classname, specifier, name, description) MODE(classname, specifier, name, description)
 
+      const OptionGroup Window::options = OptionGroup ("General options")
+        + Option ("mode", "select initial display mode by its short ID. Valid mode IDs are: "
+#include "gui/mrview/mode/list.h"
+            )
+        + Argument ("name");
+#undef MODE
+#undef MODE_OPTION
 
 
       class Window::GLArea : public QGLWidget
@@ -46,6 +52,7 @@ namespace MR
               setCursor (Cursor::crosshair);
               setMouseTracking (true);
               setAcceptDrops (true);
+              setFocusPolicy (Qt::StrongFocus);
             }
 
           QSize minimumSizeHint () const {
@@ -173,15 +180,16 @@ namespace MR
         mode_group = new QActionGroup (this);
         mode_group->setExclusive (true);
 
-#undef MODE
-#define MODE(classname, name, description) \
+#define MODE(classname, specifier, name, description) \
         view_menu->addAction (new Action<classname> (mode_group, #name, #description, n++));
-#define MODE_OPTION(classname, name, description) MODE(classname, name, description)
+#define MODE_OPTION(classname, specifier, name, description) MODE(classname, specifier, name, description)
         {
           using namespace Mode;
           size_t n = 1;
 #include "gui/mrview/mode/list.h"
         }
+#undef MODE
+#undef MODE_OPTION
 
         mode_group->actions()[0]->setChecked (true);
         connect (mode_group, SIGNAL (triggered (QAction*)), this, SLOT (select_mode_slot (QAction*)));
@@ -359,9 +367,9 @@ namespace MR
           dialog.get_selection (selection);
           if (selection.size() != 1) return;
           try {
-            MR::Image::Buffer<cfloat> dest (selection[0], current_image()->header());
+            MR::Image::Buffer<cfloat> dest (selection[0], image()->header());
             MR::Image::Buffer<cfloat>::voxel_type vox (dest);
-            MR::Image::copy_with_progress (current_image()->voxel(), vox);
+            MR::Image::copy_with_progress (image()->voxel(), vox);
           }
           catch (Exception& E) {
             E.display();
@@ -374,19 +382,19 @@ namespace MR
 
       void Window::image_close_slot ()
       {
-        Image* image = current_image();
-        assert (image);
+        Image* imagep = image();
+        assert (imagep);
         QList<QAction*> list = image_group->actions();
         if (list.size() > 1) {
           for (int n = 0; n < list.size(); ++n) {
-            if (image == list[n]) {
+            if (imagep == list[n]) {
               image_select_slot (list[ (n+1) %list.size()]);
               break;
             }
           }
         }
-        image_group->removeAction (image);
-        delete image;
+        image_group->removeAction (imagep);
+        delete imagep;
         set_image_menu();
       }
 
@@ -395,8 +403,8 @@ namespace MR
 
       void Window::image_properties_slot ()
       {
-        assert (current_image());
-        Dialog::ImageProperties props (this, current_image()->header());
+        assert (image());
+        Dialog::ImageProperties props (this, image()->header());
         props.exec();
       }
 
@@ -414,7 +422,7 @@ namespace MR
 
       void Window::select_tool_slot (QAction* action)
       {
-        Tool::Base* tool = dynamic_cast<Tool::__Action__*>(action)->instance;
+        Tool::Dock* tool = dynamic_cast<Tool::__Action__*>(action)->instance;
         if (!tool) {
           tool = dynamic_cast<Tool::__Action__*>(action)->create (*this);
           addDockWidget (Qt::RightDockWidgetArea, tool);
@@ -422,7 +430,10 @@ namespace MR
           connect (tool, SIGNAL (visibilityChanged (bool)), action, SLOT (setChecked (bool)));
         }
 
-        tool->setVisible (action->isChecked());
+        if (action->isChecked())
+          tool->show();
+        else 
+          tool->close();
         mode->updateGL();
       }
 
@@ -431,13 +442,13 @@ namespace MR
 
       void Window::select_colourmap_slot ()
       {
-        Image* image = current_image();
-        if (image) {
+        Image* imagep = image();
+        if (imagep) {
           QAction* action = colourmap_group->checkedAction();
           size_t n = 0;
           while (action != colourmap_actions[n])
             ++n;
-          image->set_colourmap (
+          imagep->set_colourmap (
             ColourMap::from_menu (n),
             invert_scale_action->isChecked(),
             invert_colourmap_action->isChecked());
@@ -450,9 +461,9 @@ namespace MR
 
       void Window::image_reset_slot ()
       {
-        Image* image = current_image();
-        if (image) {
-          image->reset_windowing();
+        Image* imagep = image();
+        if (imagep) {
+          imagep->reset_windowing();
           mode->updateGL();
         }
       }
@@ -461,9 +472,9 @@ namespace MR
 
       void Window::image_interpolate_slot ()
       {
-        Image* image = current_image();
-        if (image) {
-          image->set_interpolate (image_interpolate_action->isChecked());
+        Image* imagep = image();
+        if (imagep) {
+          imagep->set_interpolate (image_interpolate_action->isChecked());
           mode->updateGL();
         }
       }
@@ -504,8 +515,8 @@ namespace MR
 
       void Window::image_next_volume_slot () 
       {
-        assert (current_image());
-        ++current_image()->interp[3];
+        assert (image());
+        ++image()->interp[3];
         set_image_navigation_menu();
         glarea->updateGL();
       }
@@ -515,8 +526,8 @@ namespace MR
 
       void Window::image_previous_volume_slot ()
       {
-        assert (current_image());
-        --current_image()->interp[3];
+        assert (image());
+        --image()->interp[3];
         set_image_navigation_menu();
         glarea->updateGL();
       }
@@ -526,8 +537,8 @@ namespace MR
 
       void Window::image_next_volume_group_slot () 
       {
-        assert (current_image());
-        ++current_image()->interp[4];
+        assert (image());
+        ++image()->interp[4];
         set_image_navigation_menu();
         glarea->updateGL();
       }
@@ -537,8 +548,8 @@ namespace MR
 
       void Window::image_previous_volume_group_slot ()
       {
-        assert (current_image());
-        --current_image()->interp[4];
+        assert (image());
+        --image()->interp[4];
         set_image_navigation_menu();
         glarea->updateGL();
       }
@@ -549,11 +560,11 @@ namespace MR
       void Window::image_select_slot (QAction* action)
       {
         action->setChecked (true);
-        image_interpolate_action->setChecked (current_image()->interpolate());
-        colourmap_group->actions()[current_image()->colourmap_index()]->setChecked (true);
-        invert_scale_action->setChecked (current_image()->scale_inverted());
-        invert_colourmap_action->setChecked (current_image()->colourmap_inverted());
-        setWindowTitle (current_image()->interp.name().c_str());
+        image_interpolate_action->setChecked (image()->interpolate());
+        colourmap_group->actions()[image()->colourmap_index()]->setChecked (true);
+        invert_scale_action->setChecked (image()->scale_inverted());
+        invert_colourmap_action->setChecked (image()->colourmap_inverted());
+        setWindowTitle (image()->interp.name().c_str());
         set_image_navigation_menu();
         glarea->updateGL();
       }
@@ -580,18 +591,18 @@ namespace MR
       {
         bool show_next_volume (false), show_prev_volume (false);
         bool show_next_volume_group (false), show_prev_volume_group (false);
-        Image* image = current_image();
-        if (image) {
-          if (image->interp.ndim() > 3) {
-            if (image->interp[3] > 0) 
+        Image* imagep = image();
+        if (imagep) {
+          if (imagep->interp.ndim() > 3) {
+            if (imagep->interp[3] > 0) 
               show_prev_volume = true;
-            if (image->interp[3] < image->interp.dim(3)-1) 
+            if (imagep->interp[3] < imagep->interp.dim(3)-1) 
               show_next_volume = true;
 
-            if (image->interp.ndim() > 4) {
-              if (image->interp[4] > 0) 
+            if (imagep->interp.ndim() > 4) {
+              if (imagep->interp[4] > 0) 
                 show_prev_volume_group = true;
-              if (image->interp[4] < image->interp.dim(4)-1) 
+              if (imagep->interp[4] < imagep->interp.dim(4)-1) 
                 show_next_volume_group = true;
             }
           }
@@ -696,9 +707,19 @@ namespace MR
 
         Options opt = get_options ("mode");
         if (opt.size()) {
-          std::string name (lowercase (opt[0][0]));
-          for (int n = 0; n < mode_group->actions().size(); ++n) {
-            if (name == lowercase (mode_group->actions()[n]->text().toStdString())) {
+#undef MODE
+#define MODE(classname, specifier, name, description) \
+   #specifier,
+#define MODE_OPTION(classname, specifier, name, description) MODE(classname, specifier, name, description)
+          const char* specifier_list[] = { 
+#include "gui/mrview/mode/list.h"
+            NULL
+          };
+#undef MODE
+#undef MODE_OPTION
+          std::string specifier (lowercase (opt[0][0]));
+          for (int n = 0; specifier_list[n]; ++n) {
+            if (specifier == lowercase (specifier_list[n])) {
               mode = dynamic_cast<Mode::__Action__*> (mode_group->actions()[n])->create (*this);
               goto mode_selected;
             }
@@ -717,35 +738,35 @@ mode_selected:
       inline void Window::mousePressEventGL (QMouseEvent* event)
       {
         assert (mode);
-        if (current_image())
+        if (image())
           mode->mousePressEvent (event);
       }
 
       inline void Window::mouseMoveEventGL (QMouseEvent* event)
       {
         assert (mode);
-        if (current_image())
+        if (image())
           mode->mouseMoveEvent (event);
       }
 
       inline void Window::mouseDoubleClickEventGL (QMouseEvent* event)
       {
         assert (mode);
-        if (current_image())
+        if (image())
           mode->mouseDoubleClickEvent (event);
       }
 
       inline void Window::mouseReleaseEventGL (QMouseEvent* event)
       {
         assert (mode);
-        if (current_image())
+        if (image())
           mode->mouseReleaseEvent (event);
       }
 
       inline void Window::wheelEventGL (QWheelEvent* event)
       {
         assert (mode);
-        if (current_image())
+        if (image())
           mode->wheelEvent (event);
       }
 

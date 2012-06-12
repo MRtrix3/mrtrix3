@@ -50,6 +50,74 @@ namespace MR
 
           static const App::OptionGroup options;
 
+
+          const Image* image () const { 
+            return static_cast<const Image*> (image_group->checkedAction());
+          }
+          const Point<>& focus () const {
+            return focal_point; 
+          }
+          const Point<>& target () const {
+            return camera_target; 
+          }
+          float FOV () const {
+            return field_of_view; 
+          }
+          int projection () const {
+            return proj; 
+          }
+          const Math::Quaternion<float>& orientation () const {
+            return orient; 
+          }
+
+          Image* image () {
+            return static_cast<Image*> (image_group->checkedAction());
+          }
+          void set_focus (const Point<>& p) {
+            focal_point = p; emit focusChanged(); 
+          }
+          void set_target (const Point<>& p) {
+            camera_target = p; emit targetChanged(); 
+          }
+          void set_FOV (float value) {
+            field_of_view = value; emit fieldOfViewChanged(); 
+          }
+          void set_projection (int p) {
+            proj = p; emit projectionChanged(); 
+          }
+          void set_orientation (const Math::Quaternion<float>& Q) {
+            orient = Q; emit orientationChanged(); 
+          }
+
+          void set_scaling (float min, float max) 
+          {
+            if (!image()) return;
+            image()->set_windowing (min, max);
+          }
+          void scaling_updated () {
+            emit scalingChanged();
+          }
+
+          void set_scaling_all (float min, float max) 
+          {
+            QList<QAction*> list = image_group->actions();
+            for (int n = 0; n < list.size(); ++n) 
+              static_cast<const Image*> (list[n])->set_windowing (min, max);
+          }
+
+          void updateGL ();
+
+        signals: 
+          void focusChanged ();
+          void targetChanged ();
+          void sliceChanged ();
+          void projectionChanged ();
+          void orientationChanged ();
+          void fieldOfViewChanged ();
+          void modeChanged ();
+          void imageChanged ();
+          void scalingChanged ();
+
         private slots:
           void image_open_slot ();
           void image_save_slot ();
@@ -109,9 +177,6 @@ namespace MR
 
           void set_image_menu ();
           void set_image_navigation_menu ();
-          Image* current_image () {
-            return (static_cast<Image*> (image_group->checkedAction()));
-          }
 
           friend class Image;
           friend class Mode::Base;

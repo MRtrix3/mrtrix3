@@ -64,11 +64,20 @@ namespace MR
             return buffer;
           }
 
-          void reset_windowing () {
-            display_range = value_max - value_min;
-            display_midpoint = 0.5 * (value_min + value_max);
+          float scaling_min () const {
+            return display_midpoint - 0.5f * display_range;
+          }
+          float scaling_max () const {
+            return display_midpoint + 0.5f * display_range;
           }
 
+          void set_windowing (float min, float max) {
+            display_range = max - min;
+            display_midpoint = 0.5 * (min + max);
+          }
+          void reset_windowing () {
+            set_windowing (value_min, value_max);
+          }
           void adjust_windowing (float brightness, float contrast) {
             display_midpoint -= 0.0005f * display_range * brightness;
             display_range *= Math::exp (0.002f * contrast);

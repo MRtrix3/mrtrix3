@@ -243,6 +243,7 @@ namespace MR
 
               if (mouse_edge() == (RightEdge | BottomEdge)) {
                 image()->adjust_windowing (mouse_dpos());
+                window.scaling_updated();
                 updateGL();
                 return true;
               }

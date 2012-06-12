@@ -159,46 +159,46 @@ namespace MR
 
 
 
-            const Image* image () const {
-              return window.current_image();
-            }
-            Image* image () {
-              return window.current_image();
-            }
-
-            const Math::Quaternion<float>& orientation () const {
-              return window.orient;
-            }
-            float FOV () const {
-              return window.field_of_view;
+            const Image* image () const { 
+              return window.image(); 
             }
             const Point<>& focus () const {
-              return window.focal_point;
+              return window.focus(); 
             }
             const Point<>& target () const {
-              return window.camera_target;
+              return window.target(); 
             }
-            int projection () const {
-              return window.proj;
+            float FOV () const { 
+              return window.FOV(); 
+            }
+            int projection () const { 
+              return window.projection(); 
+            }
+            const Math::Quaternion<float>& orientation () const {
+              return window.orientation(); 
             }
 
+            Image* image () {
+              return window.image(); 
+            }
             void set_focus (const Point<>& p) {
-              window.focal_point = p;
+              window.set_focus (p); 
             }
             void set_target (const Point<>& p) {
-              window.camera_target = p;
-            }
-            void set_projection (int p) {
-              window.proj = p;
-            }
-            void set_orientation (const Math::Quaternion<float>& Q) {
-              window.orient = Q;
+              window.set_target (p); 
             }
             void set_FOV (float value) {
-              window.field_of_view = value;
+              window.set_FOV (value); 
             }
+            void set_projection (int p) {
+              window.set_projection (p); 
+            }
+            void set_orientation (const Math::Quaternion<float>& Q) {
+              window.set_orientation (Q); 
+            }
+
             void change_FOV_fine (float factor) {
-              window.field_of_view *= Math::exp (0.005*factor);
+              window.set_FOV (FOV() * Math::exp (0.005*factor));
             }
             void change_FOV_scroll (float factor) {
               change_FOV_fine (20.0 * factor);
@@ -356,7 +356,7 @@ namespace MR
                         int index) :
               QAction (name, parent) {
               setCheckable (true);
-              setShortcut (tr (std::string ("Shift+F"+str (index)).c_str()));
+              setShortcut (tr (std::string ("F"+str (index)).c_str()));
               setStatusTip (tr (description));
             }
 
@@ -382,6 +382,12 @@ namespace MR
 
 
       }
+
+
+      inline void Window::updateGL () {
+        mode->updateGL();
+      }
+
     }
   }
 }

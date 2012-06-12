@@ -23,8 +23,8 @@ void usage ()
   .type_image_in ();
 
   using namespace GUI::MRView::Mode;
-#define MODE(classname, name, description)
-#define MODE_OPTION(classname, name, description) \
+#define MODE(classname, specifier, name, description)
+#define MODE_OPTION(classname, specifier, name, description) \
   + classname::options
 
   OPTIONS
