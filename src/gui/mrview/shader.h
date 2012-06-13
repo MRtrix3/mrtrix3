@@ -46,6 +46,7 @@ namespace MR
       const uint32_t DiscardLower = 0x20000000;
       const uint32_t DiscardUpper = 0x40000000;
       const uint32_t Transparency = 0x80000000;
+      const uint32_t Lighting = 0x01000000;
 
       namespace ColourMap
       {
@@ -148,6 +149,12 @@ namespace MR
           void set_use_transparency (bool value) {
             uint32_t cmap = flags_;
             set_bit (cmap, Transparency, value);
+            set (cmap);
+          }
+
+          void set_use_lighting (bool value) {
+            uint32_t cmap = flags_;
+            set_bit (cmap, Lighting, value);
             set (cmap);
           }
 

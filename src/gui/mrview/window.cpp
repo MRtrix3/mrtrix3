@@ -463,7 +463,7 @@ namespace MR
       void Window::invert_scaling_slot ()
       {
         if (image()) {
-          image()->set_invert_map (invert_scale_action->isChecked());
+          image()->set_invert_scale (invert_scale_action->isChecked());
           mode->updateGL();
         }
       }

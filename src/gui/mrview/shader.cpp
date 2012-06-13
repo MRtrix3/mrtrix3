@@ -30,6 +30,14 @@ namespace MR
     namespace MRView
     {
 
+      inline std::string amplitude (uint32_t flags) 
+      {
+        uint32_t colourmap = flags & ColourMap::Mask;
+        if (colourmap == ColourMap::RGB) return "length (color.rgb)";
+        if (colourmap == ColourMap::Complex) return "sqrt (color.r*color.r + color.a*color.a)";
+        return "color.a";
+      }
+
       void Shader::recompile ()
       {
         if (!vertex_shader)
@@ -39,6 +47,8 @@ namespace MR
           shader_program.detach (fragment_shader);
         else
           shader_program.attach (vertex_shader);
+
+        //flags_ |= Lighting;
 
         std::string source =
           "uniform float offset, scale";
@@ -52,17 +62,42 @@ namespace MR
         source += "; uniform sampler3D tex; void main() {"
                   "if (gl_TexCoord[0].s < 0.0 || gl_TexCoord[0].s > 1.0 ||"
                   "    gl_TexCoord[0].t < 0.0 || gl_TexCoord[0].t > 1.0 ||"
-                  "    gl_TexCoord[0].p < 0.0 || gl_TexCoord[0].p > 1.0) discard;"
-                  "vec4 color = texture3D (tex,gl_TexCoord[0].stp);";
+                  "    gl_TexCoord[0].p < 0.0 || gl_TexCoord[0].p > 1.0) discard; "
+                  " vec4 color; ";
+
+
+        if (flags_ & Lighting) 
+          source += "vec3 normal; "
+            "color = texture3D (tex, gl_TexCoord[0].stp+vec3(1.0e-4,0.0,0.0)); normal.x = " + amplitude (flags_) + "; "
+            "color = texture3D (tex, gl_TexCoord[0].stp+vec3(0.0,1.0e-4,0.0)); normal.y = " + amplitude (flags_) + "; "
+            "color = texture3D (tex, gl_TexCoord[0].stp+vec3(0.0,0.0,1.0e-4)); normal.z = " + amplitude (flags_) + "; ";
+
+        source +=
+          "color = texture3D (tex,gl_TexCoord[0].stp); "
+          "gl_FragColor.a = " + amplitude (flags_) + "; ";
+
+        if (flags_ & Lighting)
+          source += "normal.x -= gl_FragColor.a; "
+            "normal.y -= gl_FragColor.a; "
+            "normal.z -= gl_FragColor.a; "
+            "normal = normalize (normal); ";
+
+        if (flags_ & DiscardLower)
+          source += "if (gl_FragColor.a < lower) discard;";
+
+        if (flags_ & DiscardUpper)
+          source += "if (gl_FragColor.a > upper) discard;";
+
+        if (flags_ & Transparency) 
+          source += "if (gl_FragColor.a < alpha_offset) discard; "
+            "gl_FragColor.a = clamp ((gl_FragColor.a - alpha_offset) * alpha_scale, 0, alpha); ";
 
         uint32_t colourmap = flags_ & ColourMap::Mask;
         if (colourmap & ColourMap::MaskNonScalar) {
           if (colourmap == ColourMap::RGB)
-            source += "gl_FragColor.a = length(color.rgb); "
-              "gl_FragColor.rgb = scale * (abs(color.rgb) - offset);";
+            source += "gl_FragColor.rgb = scale * (abs(color.rgb) - offset);";
           else if (colourmap == ColourMap::Complex) {
             source += 
-              "gl_FragColor.a = sqrt (color.r*color.r + color.a*color.a); "
               "float mag = clamp (scale * (gl_FragColor.a - offset), 0.0, 1.0); "
               "float phase = atan (color.a, color.g) / 2.094395102393195; "
               "color.g = mag * (abs (phase)); "
@@ -76,14 +111,7 @@ namespace MR
         }
         else { // scalar colourmaps:
 
-          if (flags_ & DiscardLower)
-            source += "if (color.a < lower) discard;";
-
-          if (flags_ & DiscardUpper)
-            source += "if (color.a > upper) discard;";
-
-          source += "gl_FragColor.a = color.a; "
-            "color.a = clamp (";
+          source += "color.a = clamp (";
           if (flags_ & InvertScale) source += "1.0 -";
           source += " scale * (color.a - offset), 0.0, 1.0);";
 
@@ -104,8 +132,10 @@ namespace MR
         if (flags_ & InvertMap)
           source += "gl_FragColor.rgb = 1.0 - gl_FragColor.rgb;";
 
-        if (flags_ & Transparency)
-          source += "gl_FragColor.a = clamp ((gl_FragColor.a - alpha_offset) * alpha_scale, 0, alpha); ";
+        // TODO: lighting code in here:
+        if (flags_ & Lighting)
+          source += "gl_FragColor.rgb = abs(normal); ";
+
         source += "}";
 
         fragment_shader.compile (source.c_str());
