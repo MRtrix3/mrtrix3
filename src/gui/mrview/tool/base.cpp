@@ -35,11 +35,6 @@ namespace MR
       namespace Tool
       {
 
-        Dock::Dock (Window& parent, const QString& name) : 
-          QDockWidget (name, &parent) {
-            setFeatures (QDockWidget::DockWidgetFloatable);
-          }
-
         void Dock::showEvent (QShowEvent * event) {
           widget()->show();
         }

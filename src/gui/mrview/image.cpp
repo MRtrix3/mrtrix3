@@ -59,7 +59,7 @@ namespace MR
         window.image_menu->addAction (this);
         texture2D[0] = texture2D[1] = texture2D[2] = 0;
         position[0] = position[1] = position[2] = std::numeric_limits<ssize_t>::min();
-        set_colourmap (header().datatype().is_complex() ? ColourMap::Complex : ColourMap::Gray, false, false);
+        set_colourmap (header().datatype().is_complex() ? ColourMap::Complex : ColourMap::Gray);
       }
 
       Image::~Image ()
@@ -70,9 +70,9 @@ namespace MR
 
 
 
-      void Image::render2D (Shader& shader, int projection, int slice)
+      void Image::render2D (Shader& custom_shader, int projection, int slice)
       {
-        update_texture2D (projection, slice);
+        update_texture2D (custom_shader, projection, slice);
 
         glTexParameteri (GL_TEXTURE_3D, GL_TEXTURE_MAG_FILTER, interpolation);
         glTexParameteri (GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, interpolation);
@@ -84,10 +84,9 @@ namespace MR
         Point<> p, q;
         p[projection] = slice;
 
-        shader.start();
-
-        shader.get_uniform ("offset") = display_midpoint - 0.5f * display_range;
-        shader.get_uniform ("scale") = 1.0f / display_range;
+        custom_shader.start (display_midpoint, display_range, 
+            lessthan, greaterthan, 
+            transparent_intensity, opaque_intensity, alpha);
 
         glBegin (GL_QUADS);
         glTexCoord3f (0.0, 0.0, 0.0);
@@ -111,7 +110,7 @@ namespace MR
         q = interp.voxel2scanner (p);
         glVertex3fv (q);
         glEnd();
-        shader.stop();
+        custom_shader.stop();
       }
 
 
@@ -120,15 +119,14 @@ namespace MR
 
       void Image::render3D_pre (Shader& custom_shader, const Mode::Base& mode)
       {
-        update_texture3D ();
+        update_texture3D (custom_shader);
 
         glTexParameteri (GL_TEXTURE_3D, GL_TEXTURE_MAG_FILTER, interpolation);
         glTexParameteri (GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, interpolation);
 
-        custom_shader.start();
-
-        custom_shader.get_uniform ("offset") = (display_midpoint - 0.5f * display_range) / windowing_scale_3D;
-        custom_shader.get_uniform ("scale") = windowing_scale_3D / display_range;
+        custom_shader.start (display_midpoint/windowing_scale_3D, display_range/windowing_scale_3D, 
+            lessthan/windowing_scale_3D, greaterthan/windowing_scale_3D,
+            transparent_intensity/windowing_scale_3D, opaque_intensity/windowing_scale_3D, alpha);
 
         pos[0] = mode.screen_to_model (QPoint (0, mode.height()));
         pos[1] = mode.screen_to_model (QPoint (0, 0));
@@ -183,7 +181,7 @@ namespace MR
 
 
 
-      inline void Image::update_texture2D (int projection, int slice)
+      inline void Image::update_texture2D (const Shader& custom_shader, int projection, int slice)
       {
         if (!texture2D[projection]) { // allocate:
           glGenTextures (1, &texture2D[projection]);
@@ -207,7 +205,8 @@ namespace MR
         type = GL_FLOAT;
         Ptr<float,true> data;
 
-        if (colourmap < ColourMap::Special) {
+        uint32_t cmap = custom_shader.colourmap() & ColourMap::Mask;
+        if (cmap < ColourMap::Special) {
 
           data = new float [xdim*ydim];
           format = GL_ALPHA;
@@ -235,7 +234,7 @@ namespace MR
           }
 
         }
-        else if (colourmap == ColourMap::RGB) {
+        else if (cmap == ColourMap::RGB) {
 
           data = new float [3*xdim*ydim];
           format = GL_RGB;
@@ -275,7 +274,7 @@ namespace MR
           }
 
         }
-        else if (colourmap == ColourMap::Complex) {
+        else if (cmap == ColourMap::Complex) {
 
           data = new float [2*xdim*ydim];
           format = GL_LUMINANCE_ALPHA;
@@ -325,15 +324,16 @@ namespace MR
 
 
 
-      inline void Image::update_texture3D ()
+      inline void Image::update_texture3D (const Shader& custom_shader)
       {
+        uint32_t cmap = custom_shader.colourmap() & ColourMap::Mask;
 
-        if (colourmap < ColourMap::Special) format = GL_ALPHA;
-        else if (colourmap == ColourMap::RGB) format = GL_RGB;
-        else if (colourmap == ColourMap::Complex) format = GL_LUMINANCE_ALPHA;
+        if (cmap < ColourMap::Special) format = GL_ALPHA;
+        else if (cmap == ColourMap::RGB) format = GL_RGB;
+        else if (cmap == ColourMap::Complex) format = GL_LUMINANCE_ALPHA;
         else error ("attempt to use unsupported colourmap");
 
-        if (colourmap == ColourMap::Complex) 
+        if (cmap == ColourMap::Complex) 
           internal_format = GL_LUMINANCE_ALPHA32F_ARB;
         else {
 
@@ -341,24 +341,24 @@ namespace MR
             case DataType::Bit:
             case DataType::UInt8:
             case DataType::Int8:
-              if (colourmap < ColourMap::Special) internal_format = GL_ALPHA8;
-              else if (colourmap == ColourMap::Complex) internal_format = GL_LUMINANCE8_ALPHA8;
-              else if (colourmap == ColourMap::RGB) internal_format = GL_RGB8;
+              if (cmap < ColourMap::Special) internal_format = GL_ALPHA8;
+              else if (cmap == ColourMap::Complex) internal_format = GL_LUMINANCE8_ALPHA8;
+              else if (cmap == ColourMap::RGB) internal_format = GL_RGB8;
               else error ("attempt to use unsupported colourmap");
               break;
             case DataType::UInt16LE:
             case DataType::UInt16BE:
             case DataType::Int16LE:
             case DataType::Int16BE:
-              if (colourmap < ColourMap::Special) internal_format = GL_ALPHA16;
-              else if (colourmap == ColourMap::Complex) internal_format = GL_LUMINANCE16_ALPHA16;
-              else if (colourmap == ColourMap::RGB) internal_format = GL_RGB16;
+              if (cmap < ColourMap::Special) internal_format = GL_ALPHA16;
+              else if (cmap == ColourMap::Complex) internal_format = GL_LUMINANCE16_ALPHA16;
+              else if (cmap == ColourMap::RGB) internal_format = GL_RGB16;
               else error ("attempt to use unsupported colourmap");
               break;
             default:
-              if (colourmap < ColourMap::Special) internal_format = GL_ALPHA32F_ARB;
-              else if (colourmap == ColourMap::RGB) internal_format = GL_RGB32F;
-              else if (colourmap == ColourMap::Complex) internal_format = GL_LUMINANCE_ALPHA32F_ARB;
+              if (cmap < ColourMap::Special) internal_format = GL_ALPHA32F_ARB;
+              else if (cmap == ColourMap::RGB) internal_format = GL_RGB32F;
+              else if (cmap == ColourMap::Complex) internal_format = GL_LUMINANCE_ALPHA32F_ARB;
               else error ("attempt to use unsupported colourmap");
               break;
           }
@@ -390,7 +390,7 @@ namespace MR
         value_min = std::numeric_limits<float>::infinity();
         value_max = -std::numeric_limits<float>::infinity();
 
-        if (colourmap != ColourMap::Complex) {
+        if (cmap != ColourMap::Complex) {
           switch (header().datatype() ()) {
             case DataType::Bit:
             case DataType::UInt8:
@@ -600,7 +600,17 @@ namespace MR
         return is_unchanged;
       }
 
+      void Image::adjust_windowing (float brightness, float contrast) {
+        display_midpoint -= 0.0005f * display_range * brightness;
+        display_range *= Math::exp (0.002f * contrast);
+        window.scaling_updated();
+      }
 
+      void Image::set_windowing (float min, float max) {
+        display_range = max - min;
+        display_midpoint = 0.5 * (min + max);
+        window.scaling_updated();
+      }
 
     }
   }

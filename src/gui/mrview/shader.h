@@ -45,6 +45,7 @@ namespace MR
       const uint32_t InvertMap = 0x10000000;
       const uint32_t DiscardLower = 0x20000000;
       const uint32_t DiscardUpper = 0x40000000;
+      const uint32_t Transparency = 0x80000000;
 
       namespace ColourMap
       {
@@ -100,28 +101,103 @@ namespace MR
       class Shader
       {
         public:
+          Shader () : flags_ (ColourMap::Mask) { }
+
           bool operator! () const {
             return !shader_program;
           }
-          void set (uint32_t flags);
+          void set (uint32_t new_flags) {
+            if (new_flags != flags_) {
+              flags_ = new_flags;
+              recompile();
+            }
+          }
 
-          void start () {
+          void start (float display_midpoint, float display_range, float lessthan, float greaterthan,
+              float transparent_intensity, float opaque_intensity, float alpha) {
             shader_program.start();
+            shader_program.get_uniform ("offset") = display_midpoint - 0.5f * display_range;
+            shader_program.get_uniform ("scale") = 1.0f / display_range;
+            if (flags_ & DiscardLower) shader_program.get_uniform ("lower") = lessthan;
+            if (flags_ & DiscardUpper) shader_program.get_uniform ("upper") = greaterthan;
+            if (flags_ & Transparency) {
+              shader_program.get_uniform ("alpha_scale") = 1.0f / (opaque_intensity - transparent_intensity);
+              shader_program.get_uniform ("alpha_offset") = transparent_intensity;
+              shader_program.get_uniform ("alpha") = alpha;
+            }
           }
           void stop () {
             shader_program.stop();
           }
 
-          GL::Shader::Uniform get_uniform (const std::string& name) {
-            return shader_program.get_uniform (name);
+          uint32_t flags () const { return flags_; }
+
+          void set_colourmap (uint32_t index) {
+            uint32_t cmap = flags_ & ~(ColourMap::Mask);
+            cmap |= index;
+            set (cmap);
           }
 
+          void set_use_thresholds (bool lessthan, bool greaterthan) {
+            uint32_t cmap = flags_;
+            set_bit (cmap, DiscardLower, lessthan);
+            set_bit (cmap, DiscardUpper, greaterthan);
+            set (cmap);
+          }
+
+          void set_use_transparency (bool value) {
+            uint32_t cmap = flags_;
+            set_bit (cmap, Transparency, value);
+            set (cmap);
+          }
+
+          void set_invert_map (bool value) {
+            uint32_t cmap = flags_;
+            set_bit (cmap, InvertMap, value);
+            set (cmap);
+          }
+
+          void set_invert_scale (bool value) {
+            uint32_t cmap = flags_;
+            set_bit (cmap, InvertScale, value);
+            set (cmap);
+          }
+
+          uint32_t colourmap () const {
+            return flags_ & ColourMap::Mask;
+          }
+
+          bool scale_inverted () const { 
+            return flags_ & InvertScale;
+          }
+
+          bool colourmap_inverted () const {
+            return flags_ & InvertMap;
+          }
+
+          uint32_t colourmap_index () const {
+            uint32_t cret = flags_ & ColourMap::Mask;
+            if (cret >= ColourMap::Special)
+              cret -= ColourMap::Special - ColourMap::NumScalar;
+            return cret;
+          }
+
+
         protected:
+          uint32_t flags_;
+
           GL::Shader::Fragment fragment_shader;
           GL::Shader::Program shader_program;
 
           static GL::Shader::Vertex vertex_shader;
           static const char* vertex_shader_source;
+
+          void set_bit (uint32_t& field, uint32_t bit, bool value) {
+            if (value) field |= bit;
+            else field &= ~bit;
+          }
+
+          void recompile ();
       };
 
     }

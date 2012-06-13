@@ -30,7 +30,7 @@ namespace MR
     namespace MRView
     {
 
-      void Shader::set (uint32_t flags)
+      void Shader::recompile ()
       {
         if (!vertex_shader)
           vertex_shader.compile (vertex_shader_source);
@@ -42,10 +42,12 @@ namespace MR
 
         std::string source =
           "uniform float offset, scale";
-        if (flags & DiscardLower)
+        if (flags_ & DiscardLower)
           source += ", lower";
-        if (flags & DiscardUpper)
+        if (flags_ & DiscardUpper)
           source += ", upper";
+        if (flags_ & Transparency)
+          source += ", alpha_scale, alpha_offset, alpha";
 
         source += "; uniform sampler3D tex; void main() {"
                   "if (gl_TexCoord[0].s < 0.0 || gl_TexCoord[0].s > 1.0 ||"
@@ -53,38 +55,37 @@ namespace MR
                   "    gl_TexCoord[0].p < 0.0 || gl_TexCoord[0].p > 1.0) discard;"
                   "vec4 color = texture3D (tex,gl_TexCoord[0].stp);";
 
-        uint32_t colourmap = flags & ColourMap::Mask;
+        uint32_t colourmap = flags_ & ColourMap::Mask;
         if (colourmap & ColourMap::MaskNonScalar) {
           if (colourmap == ColourMap::RGB)
-            source += "gl_FragColor.rgb = scale * (abs(color.rgb) - offset); "
-              "gl_FragColor.a = length(gl_FragColor.rgb); ";
+            source += "gl_FragColor.a = length(color.rgb); "
+              "gl_FragColor.rgb = scale * (abs(color.rgb) - offset);";
           else if (colourmap == ColourMap::Complex) {
             source += 
-              "float mag = clamp (scale * (sqrt (color.r*color.r + color.a*color.a) - offset), 0.0, 1.0); "
+              "gl_FragColor.a = sqrt (color.r*color.r + color.a*color.a); "
+              "float mag = clamp (scale * (gl_FragColor.a - offset), 0.0, 1.0); "
               "float phase = atan (color.a, color.g) / 2.094395102393195; "
               "color.g = mag * (abs (phase)); "
               "phase += 1.0; if (phase > 1.5) phase -= 3.0; "
               "color.r = mag * (abs (phase)); "
               "phase += 1.0; if (phase > 1.5) phase -= 3.0; "
               "color.b = mag * (abs (phase)); "
-              "gl_FragColor.rgb = color.rgb; "
-              "gl_FragColor.a = mag;";
+              "gl_FragColor.rgb = color.rgb; ";
           }
           else assert (0);
         }
         else { // scalar colourmaps:
 
-          if (flags & DiscardLower)
+          if (flags_ & DiscardLower)
             source += "if (color.a < lower) discard;";
 
-          if (flags & DiscardUpper)
+          if (flags_ & DiscardUpper)
             source += "if (color.a > upper) discard;";
 
-          //source += "gl_FragColor.a = clamp (50.0*color.a - 0.02, 0.0, 1.0); ";
-          source += "color.a = clamp (";
-          if (flags & InvertScale) source += "1.0 -";
+          source += "gl_FragColor.a = color.a; "
+            "color.a = clamp (";
+          if (flags_ & InvertScale) source += "1.0 -";
           source += " scale * (color.a - offset), 0.0, 1.0);";
-          source += "gl_FragColor.a = color.a; ";
 
           if (colourmap == ColourMap::Gray)
             source += "gl_FragColor.rgb = color.a;";
@@ -100,10 +101,11 @@ namespace MR
           else assert (0);
         }
 
-        if (flags & InvertMap)
+        if (flags_ & InvertMap)
           source += "gl_FragColor.rgb = 1.0 - gl_FragColor.rgb;";
 
-        //source += "gl_FragColor.a = gl_FragColor.a; ";
+        if (flags_ & Transparency)
+          source += "gl_FragColor.a = clamp ((gl_FragColor.a - alpha_offset) * alpha_scale, 0, alpha); ";
         source += "}";
 
         fragment_shader.compile (source.c_str());

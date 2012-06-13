@@ -127,6 +127,8 @@ namespace MR
           void select_mode_slot (QAction* action);
           void select_tool_slot (QAction* action);
           void select_colourmap_slot ();
+          void invert_colourmap_slot ();
+          void invert_scaling_slot ();
           void full_screen_slot ();
 
           void image_next_slot ();

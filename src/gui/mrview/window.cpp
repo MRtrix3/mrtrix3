@@ -285,13 +285,13 @@ namespace MR
         invert_scale_action = new QAction (tr ("&Invert scaling"), this);
         invert_scale_action->setCheckable (true);
         invert_scale_action->setStatusTip (tr ("invert the current scaling"));
-        connect (invert_scale_action, SIGNAL (changed()), this, SLOT (select_colourmap_slot()));
+        connect (invert_scale_action, SIGNAL (changed()), this, SLOT (invert_scaling_slot()));
         colourmap_menu->addAction (invert_scale_action);
 
         invert_colourmap_action = new QAction (tr ("Invert &Colourmap"), this);
         invert_colourmap_action->setCheckable (true);
         invert_colourmap_action->setStatusTip (tr ("invert the current colourmap"));
-        connect (invert_colourmap_action, SIGNAL (changed()), this, SLOT (select_colourmap_slot()));
+        connect (invert_colourmap_action, SIGNAL (changed()), this, SLOT (invert_colourmap_slot()));
         colourmap_menu->addAction (invert_colourmap_action);
 
         menuBar()->addSeparator();
@@ -448,14 +448,25 @@ namespace MR
           size_t n = 0;
           while (action != colourmap_actions[n])
             ++n;
-          imagep->set_colourmap (
-            ColourMap::from_menu (n),
-            invert_scale_action->isChecked(),
-            invert_colourmap_action->isChecked());
+          imagep->set_colourmap (ColourMap::from_menu (n));
           mode->updateGL();
         }
       }
 
+      void Window::invert_colourmap_slot () 
+      {
+        if (image()) {
+          image()->set_invert_map (invert_colourmap_action->isChecked());
+          mode->updateGL();
+        }
+      }
+      void Window::invert_scaling_slot ()
+      {
+        if (image()) {
+          image()->set_invert_map (invert_scale_action->isChecked());
+          mode->updateGL();
+        }
+      }
 
 
 
@@ -662,11 +673,11 @@ namespace MR
         glDrawBuffer (GL_BACK);
         mode->paintGL();
 
-/*
         // blit back buffer to front buffer.
         // we avoid flipping to guarantee back buffer is unchanged and can be
         // re-used for incremental updates.
 
+/*
         glBindFramebuffer (GL_READ_FRAMEBUFFER, 0);
         glBindFramebuffer (GL_DRAW_FRAMEBUFFER, 0);
 

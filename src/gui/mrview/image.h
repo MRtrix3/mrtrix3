@@ -71,17 +71,12 @@ namespace MR
             return display_midpoint + 0.5f * display_range;
           }
 
-          void set_windowing (float min, float max) {
-            display_range = max - min;
-            display_midpoint = 0.5 * (min + max);
-          }
+          void set_windowing (float min, float max);
           void reset_windowing () {
             set_windowing (value_min, value_max);
           }
-          void adjust_windowing (float brightness, float contrast) {
-            display_midpoint -= 0.0005f * display_range * brightness;
-            display_range *= Math::exp (0.002f * contrast);
-          }
+
+          void adjust_windowing (float brightness, float contrast);
           void adjust_windowing (const QPoint& p) {
             adjust_windowing (p.x(), p.y());
           }
@@ -92,6 +87,7 @@ namespace MR
             return interpolation == GL_LINEAR;
           }
 
+          void render2D (Shader& custom_shader, int projection, int slice);
           void render2D (int projection, int slice) {
             render2D (shader, projection, slice);
           }
@@ -111,8 +107,6 @@ namespace MR
           void render3D (const Mode::Base& mode) {
             render3D (shader, mode);
           }
-
-          void render2D (Shader& shader, int projection, int slice);
 
           void render3D (Shader& custom_shader, const Mode::Base& mode) {
             render3D_pre (custom_shader, mode);
@@ -138,27 +132,43 @@ namespace MR
             }
           }
 
-          void set_colourmap (uint32_t index, bool invert_scale, bool invert_map) {
-            if (index >= ColourMap::Special || colourmap >= ColourMap::Special) {
-              if (index != colourmap)
+          void set_colourmap (uint32_t index) {
+            if (index >= ColourMap::Special || shader.colourmap() >= ColourMap::Special) {
+              if (index != shader.colourmap())
                 texture_mode_2D_unchanged = texture_mode_3D_unchanged = false;
             } 
-            colourmap = index;
-            if (invert_scale) colourmap |= InvertScale;
-            if (invert_map) colourmap |= InvertMap;
-            shader.set (colourmap);
+            shader.set_colourmap (index);
+          }
+          void set_invert_map (bool value) { 
+            shader.set_invert_map (value); 
+          }
+          void set_invert_scale (bool value) { 
+            shader.set_invert_scale (value); 
+          }
+
+          void set_thresholds (float less_than_value = NAN, float greater_than_value = NAN) {
+            lessthan = less_than_value;
+            greaterthan = greater_than_value;
+            shader.set_use_thresholds (finite (lessthan), finite (greaterthan));
+          }
+
+          void set_transparency (float transparent = NAN, float opaque = NAN, float alpha_value = 1.0) {
+            transparent_intensity = transparent;
+            opaque_intensity = opaque;
+            alpha = alpha_value;
+            shader.set_use_transparency (finite (transparent_intensity) && finite (opaque_intensity) && finite (alpha));
           }
 
           bool scale_inverted () const { 
-            return colourmap & InvertScale;
+            return shader.scale_inverted();
           }
 
           bool colourmap_inverted () const {
-            return colourmap & InvertMap;
+            return shader.colourmap_inverted();
           }
 
           uint32_t colourmap_index () const {
-            uint32_t cret = colourmap & ~(InvertMap | InvertScale);
+            uint32_t cret = shader.colourmap();
             if (cret >= ColourMap::Special)
               cret -= ColourMap::Special - ColourMap::NumScalar;
             return cret;
@@ -179,10 +189,10 @@ namespace MR
           Window& window;
           GLuint texture2D[3], texture3D;
           int interpolation;
-          float value_min, value_max;
+          float value_min, value_max, lessthan, greaterthan;
           float display_midpoint, display_range;
+          float transparent_intensity, opaque_intensity, alpha;
           float windowing_scale_3D;
-          uint32_t colourmap;
           GLenum type, format, internal_format;
           std::vector<ssize_t> position;
           bool texture_mode_2D_unchanged, texture_mode_3D_unchanged;
@@ -190,8 +200,8 @@ namespace MR
 
           Shader shader;
 
-          void update_texture2D (int projection, int slice);
-          void update_texture3D ();
+          void update_texture2D (const Shader& custom_shader, int projection, int slice);
+          void update_texture3D (const Shader& custom_shader);
 
           bool volume_unchanged ();
 

@@ -41,7 +41,7 @@ namespace MR
         class Dock : public QDockWidget
         {
           public:
-            Dock (Window& parent, const QString& name);
+            Dock (Window& parent, const QString& name) : QDockWidget (name, &parent) { }
 
           protected:
             virtual void showEvent (QShowEvent * event);

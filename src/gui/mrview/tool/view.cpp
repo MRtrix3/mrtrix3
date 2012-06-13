@@ -94,6 +94,49 @@ namespace MR
             layout->addWidget (max_entry, 1, 1);
 
 
+            threshold_box = new QGroupBox ("Thresholds");
+            threshold_box->setCheckable (true);
+            connect (threshold_box, SIGNAL (toggled(bool)), this, SLOT (onSetThreshold()));
+            layout = new QGridLayout;
+            main_box->addWidget (threshold_box);
+            threshold_box->setLayout (layout);
+
+            layout->addWidget (new QLabel (">"), 0, 0);
+            lessthan = new QLineEdit;
+            connect (lessthan, SIGNAL (editingFinished()), this, SLOT (onSetThreshold()));
+            layout->addWidget (lessthan, 0, 1);
+
+            layout->addWidget (new QLabel ("<"), 1, 0);
+            greaterthan = new QLineEdit;
+            connect (greaterthan, SIGNAL (editingFinished()), this, SLOT (onSetThreshold()));
+            layout->addWidget (greaterthan, 1, 1);
+
+
+
+            transparency_box = new QGroupBox ("Transparency");
+            transparency_box->setCheckable (true);
+            connect (transparency_box, SIGNAL (toggled(bool)), this, SLOT (onSetTransparency()));
+            layout = new QGridLayout;
+            main_box->addWidget (transparency_box);
+            transparency_box->setLayout (layout);
+
+            layout->addWidget (new QLabel ("transparent"), 0, 0);
+            transparent_intensity = new QLineEdit;
+            connect (transparent_intensity, SIGNAL (editingFinished()), this, SLOT (onSetTransparency()));
+            layout->addWidget (transparent_intensity, 0, 1);
+
+            layout->addWidget (new QLabel ("opaque"), 1, 0);
+            opaque_intensity = new QLineEdit;
+            connect (opaque_intensity, SIGNAL (editingFinished()), this, SLOT (onSetTransparency()));
+            layout->addWidget (opaque_intensity, 1, 1);
+
+            layout->addWidget (new QLabel ("alpha"), 2, 0);
+            opacity = new QSlider (Qt::Horizontal);
+            opacity->setRange (0, 255);
+            connect (opacity, SIGNAL (valueChanged(int)), this, SLOT (onSetTransparency()));
+            layout->addWidget (opacity, 2, 1);
+
+
             main_box->addStretch ();
         }
 
@@ -102,7 +145,9 @@ namespace MR
           connect (&window(), SIGNAL (focusChanged()), this, SLOT (onFocusChanged()));
           connect (&window(), SIGNAL (projectionChanged()), this, SLOT (onProjectionChanged()));
           connect (&window(), SIGNAL (scalingChanged()), this, SLOT (onScalingChanged()));
+          onProjectionChanged();
           onFocusChanged();
+          onScalingChanged();
         }
 
         void View::closeEvent (QCloseEvent* event) 
@@ -167,6 +212,42 @@ namespace MR
         }
 
 
+        void View::onSetThreshold ()
+        {
+          if (threshold_box->isChecked()) {
+            try { 
+              if (window().image()) {
+                float lt = lessthan->text().isEmpty() ? NAN : to<float> (lessthan->text().toStdString());
+                float gt = greaterthan->text().isEmpty() ? NAN : to<float> (greaterthan->text().toStdString());
+                window().image()->set_thresholds (lt, gt);
+              }
+            }
+            catch (Exception) { }
+          }
+          else 
+            window().image()->set_thresholds (NAN, NAN);
+          window().updateGL();
+        }
+
+
+        void View::onSetTransparency ()
+        {
+          if (transparency_box->isChecked()) {
+            try { 
+              if (window().image()) {
+                float transparent = to<float> (transparent_intensity->text().toStdString());
+                float opaque = to<float> (opaque_intensity->text().toStdString());
+                float alpha = float (opacity->value()) / 255.0;
+                VAR (alpha);
+                window().image()->set_transparency (transparent, opaque, alpha);
+              }
+            }
+            catch (Exception) { }
+          }
+          else 
+            window().image()->set_transparency ();
+          window().updateGL();
+        }
 
       }
     }

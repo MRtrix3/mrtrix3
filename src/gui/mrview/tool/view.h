@@ -29,6 +29,8 @@
 
 class QLineEdit;
 class QComboBox;
+class QSlider;
+class QGroupBox;
 
 namespace MR
 {
@@ -57,10 +59,15 @@ namespace MR
             void onSetProjection (int index);
             void onSetScaling ();
             void onScalingChanged ();
+            void onSetThreshold ();
+            void onSetTransparency ();
 
           private:
-            QLineEdit *focus_x, *focus_y, *focus_z, *min_entry, *max_entry;
+            QLineEdit *focus_x, *focus_y, *focus_z, *min_entry, *max_entry, *lessthan, *greaterthan;
+            QLineEdit *transparent_intensity, *opaque_intensity;
             QComboBox *projection_combobox;
+            QGroupBox *threshold_box, *transparency_box;
+            QSlider *opacity;
 
         };
 
