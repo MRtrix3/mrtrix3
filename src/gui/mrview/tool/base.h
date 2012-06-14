@@ -51,13 +51,13 @@ namespace MR
 
         class Base : public QFrame {
           public:
-            Base (Dock* parent) : QFrame (parent) { 
-              setFrameShadow (QFrame::Sunken); 
-              setFrameShape (QFrame::Panel);
+            Base (Dock* parent) : 
+              QFrame (parent),
+              window (*dynamic_cast<Window*> (parent->parentWidget())) { 
+              setFrameShadow (QFrame::Plain); 
+              setFrameShape (QFrame::NoFrame);
             }
-            Window& window() {
-              return *dynamic_cast<Window*> (parentWidget()->parentWidget());
-            }
+            Window& window;
 
         };
 
@@ -98,7 +98,12 @@ namespace MR
 
             virtual Dock* create (Window& parent) {
               instance = new Dock (parent, this->text());
-              instance->setWidget (new T (instance));
+              QScrollArea* scroll = new QScrollArea (instance);
+              scroll->setWidget (new T (instance));
+              scroll->setWidgetResizable (true);
+              scroll->setHorizontalScrollBarPolicy (Qt::ScrollBarAlwaysOff);
+              scroll->setMinimumWidth (scroll->widget()->minimumWidth());
+              instance->setWidget (scroll);
               return instance;
             }
         };
