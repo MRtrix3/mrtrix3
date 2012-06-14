@@ -40,18 +40,34 @@ namespace MR
 
       void Shader::recompile ()
       {
-        if (!vertex_shader)
-          vertex_shader.compile (vertex_shader_source);
-
-        if (shader_program)
+        if (shader_program) {
           shader_program.detach (fragment_shader);
-        else
-          shader_program.attach (vertex_shader);
+          shader_program.detach (vertex_shader);
+        } 
 
-        //flags_ |= Lighting;
+        // vertex shader:
+        std::string source;
+        if (Lighting) 
+          source += "varying vec4 ambient; "
+            "varying vec3 lightDir, halfVector; ";
+        source += "void main() { ";
+        if (Lighting) 
+            source +=
+              "lightDir = normalize (vec3 (gl_LightSource[0].position)); "
+              "halfVector = normalize (gl_LightSource[0].halfVector.xyz); "
+              "ambient = gl_LightSource[0].ambient + gl_LightModel.ambient; ";
+        source += 
+          "gl_TexCoord[0] = gl_MultiTexCoord0; "
+          "gl_Position = ftransform(); "
+          "}";
 
-        std::string source =
-          "uniform float offset, scale";
+
+        vertex_shader.compile (source);
+        shader_program.attach (vertex_shader);
+
+
+        // fragment shader:
+        source = "uniform float offset, scale";
         if (flags_ & DiscardLower)
           source += ", lower";
         if (flags_ & DiscardUpper)
@@ -59,28 +75,34 @@ namespace MR
         if (flags_ & Transparency)
           source += ", alpha_scale, alpha_offset, alpha";
 
-        source += "; uniform sampler3D tex; void main() {"
-                  "if (gl_TexCoord[0].s < 0.0 || gl_TexCoord[0].s > 1.0 ||"
-                  "    gl_TexCoord[0].t < 0.0 || gl_TexCoord[0].t > 1.0 ||"
-                  "    gl_TexCoord[0].p < 0.0 || gl_TexCoord[0].p > 1.0) discard; "
-                  " vec4 color; ";
+        source += "; uniform sampler3D tex; ";
+        if (flags_ & Lighting) 
+          source += 
+            "varying vec4 ambient; "
+            "varying vec3 lightDir, halfVector; ";
+
+        source += 
+          "void main() {"
+          "if (gl_TexCoord[0].s < 0.0 || gl_TexCoord[0].s > 1.0 ||"
+          "    gl_TexCoord[0].t < 0.0 || gl_TexCoord[0].t > 1.0 ||"
+          "    gl_TexCoord[0].p < 0.0 || gl_TexCoord[0].p > 1.0) discard; "
+          " vec4 color; ";
 
 
         if (flags_ & Lighting) 
-          source += "vec3 normal; "
-            "color = texture3D (tex, gl_TexCoord[0].stp+vec3(1.0e-4,0.0,0.0)); normal.x = " + amplitude (flags_) + "; "
-            "color = texture3D (tex, gl_TexCoord[0].stp+vec3(0.0,1.0e-4,0.0)); normal.y = " + amplitude (flags_) + "; "
-            "color = texture3D (tex, gl_TexCoord[0].stp+vec3(0.0,0.0,1.0e-4)); normal.z = " + amplitude (flags_) + "; ";
+          source += 
+            "vec3 normal; "
+            "color = texture3D (tex, gl_TexCoord[0].stp+vec3(2.0e-2,0.0,0.0)); normal.x = " + amplitude (flags_) + "; "
+            "color = texture3D (tex, gl_TexCoord[0].stp+vec3(-2.0e-2,0.0,0.0)); normal.x -= " + amplitude (flags_) + "; "
+            "color = texture3D (tex, gl_TexCoord[0].stp+vec3(0.0,2.0e-2,0.0)); normal.y = " + amplitude (flags_) + "; "
+            "color = texture3D (tex, gl_TexCoord[0].stp+vec3(0.0,-2.0e-2,0.0)); normal.y -= " + amplitude (flags_) + "; "
+            "color = texture3D (tex, gl_TexCoord[0].stp+vec3(0.0,0.0,2.0e-2)); normal.z = " + amplitude (flags_) + "; "
+            "color = texture3D (tex, gl_TexCoord[0].stp+vec3(0.0,0.0,-2.0e-2)); normal.z -= " + amplitude (flags_) + "; "
+            "normal = normalize (gl_NormalMatrix * normal); ";
 
         source +=
           "color = texture3D (tex,gl_TexCoord[0].stp); "
           "gl_FragColor.a = " + amplitude (flags_) + "; ";
-
-        if (flags_ & Lighting)
-          source += "normal.x -= gl_FragColor.a; "
-            "normal.y -= gl_FragColor.a; "
-            "normal.z -= gl_FragColor.a; "
-            "normal = normalize (normal); ";
 
         if (flags_ & DiscardLower)
           source += "if (gl_FragColor.a < lower) discard;";
@@ -133,8 +155,16 @@ namespace MR
           source += "gl_FragColor.rgb = 1.0 - gl_FragColor.rgb;";
 
         // TODO: lighting code in here:
-        if (flags_ & Lighting)
-          source += "gl_FragColor.rgb = abs(normal); ";
+        if (flags_ & Lighting) 
+          source += 
+            "  vec3 halfV; "
+            "  float NdotL, NdotHV; "
+            "  NdotL = dot (normal, lightDir); "
+            "  color.rgb = gl_FragColor.rgb * ambient.rgb; "
+            "  color.rgb += gl_LightSource[0].diffuse.rgb * NdotL * gl_FragColor.rgb; "
+            "  halfV = normalize (halfVector); "
+            "  NdotHV = max (dot (normal, halfV), 0.0); "
+            "  gl_FragColor.rgb = color.rgb + gl_FrontMaterial.specular.rgb * gl_LightSource[0].specular.rgb * pow (NdotHV, gl_FrontMaterial.shininess); ";
 
         source += "}";
 
@@ -144,13 +174,7 @@ namespace MR
         shader_program.link();
       }
 
-      GL::Shader::Vertex Shader::vertex_shader;
 
-      const char* Shader::vertex_shader_source =
-        "void main() {"
-        "  gl_TexCoord[0] = gl_MultiTexCoord0;"
-        "  gl_Position = ftransform();"
-        "}";
 
     }
   }

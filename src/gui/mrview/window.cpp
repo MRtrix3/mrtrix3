@@ -1,4 +1,5 @@
 #include "gui/opengl/gl.h"
+#include "gui/opengl/lighting.h"
 
 #include <QMessageBox>
 #include <QAction>
@@ -315,6 +316,9 @@ namespace MR
         help_menu->addAction (OpenGL_action);
         help_menu->addAction (about_action);
         help_menu->addAction (aboutQt_action);
+
+        lighting_ = new GL::Lighting (this);
+        connect (lighting_, SIGNAL (changed()), glarea, SLOT (updateGL()));
 
         set_image_menu ();
       }

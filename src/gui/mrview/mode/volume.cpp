@@ -20,6 +20,7 @@
 
 */
 
+#include "gui/opengl/lighting.h"
 #include "math/vector.h"
 #include "gui/mrview/mode/volume.h"
 
@@ -32,7 +33,9 @@ namespace MR
       namespace Mode
       {
 
-        Volume::Volume (Window& parent) : Mode3D (parent) { }
+        Volume::Volume (Window& parent) : 
+          Mode3D (parent) { 
+          }
 
         Volume::~Volume () { }
 
@@ -57,6 +60,7 @@ namespace MR
 
           glMatrixMode (GL_MODELVIEW);
           glLoadIdentity ();
+          window.lighting().set();
 
           Math::Quaternion<float> Q = orientation();
           if (!Q) {
@@ -90,6 +94,7 @@ namespace MR
 
           glEnable (GL_BLEND);
           glBlendFunc (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
 
           // render image:
           image()->render3D_pre (*this);

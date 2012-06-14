@@ -20,6 +20,10 @@ namespace MR
 {
   namespace GUI
   {
+    namespace GL {
+      class Lighting;
+    }
+
     namespace MRView
     {
 
@@ -107,6 +111,8 @@ namespace MR
 
           void updateGL ();
 
+          GL::Lighting& lighting () { return *lighting_; }
+
         signals: 
           void focusChanged ();
           void targetChanged ();
@@ -153,6 +159,7 @@ namespace MR
 
           GLArea* glarea;
           Ptr<Mode::Base> mode;
+          GL::Lighting* lighting_;
 
           Point<> focal_point, camera_target;
           Math::Quaternion<float> orient;

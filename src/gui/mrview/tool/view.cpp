@@ -29,6 +29,7 @@
 #include "gui/mrview/window.h"
 #include "gui/mrview/mode/base.h"
 #include "gui/mrview/tool/view.h"
+#include "gui/dialog/lighting.h"
 
 namespace MR
 {
@@ -41,7 +42,8 @@ namespace MR
 
 
         View::View (Dock* parent) : 
-          Base (parent) {
+          Base (parent),
+          lighting_dialog (NULL) {
             QVBoxLayout* main_box = new QVBoxLayout (this);
 
             projection_combobox = new QComboBox;
@@ -136,6 +138,18 @@ namespace MR
             connect (opacity, SIGNAL (valueChanged(int)), this, SLOT (onSetTransparency()));
             layout->addWidget (opacity, 2, 1);
 
+
+            lighting_box = new QGroupBox ("Lighting");
+            lighting_box->setCheckable (true);
+            lighting_box->setChecked (false);
+            connect (lighting_box, SIGNAL (toggled(bool)), this, SLOT (onUseLighting(bool)));
+            QVBoxLayout* vlayout = new QVBoxLayout;
+            main_box->addWidget (lighting_box);
+            lighting_box->setLayout (vlayout);
+
+            QPushButton* button = new QPushButton ("Settings...");
+            connect (button, SIGNAL (clicked()), this, SLOT (onAdvandedLighting()));
+            vlayout->addWidget (button);
 
             main_box->addStretch ();
         }
@@ -238,7 +252,6 @@ namespace MR
                 float transparent = to<float> (transparent_intensity->text().toStdString());
                 float opaque = to<float> (opaque_intensity->text().toStdString());
                 float alpha = float (opacity->value()) / 255.0;
-                VAR (alpha);
                 window().image()->set_transparency (transparent, opaque, alpha);
               }
             }
@@ -247,6 +260,23 @@ namespace MR
           else 
             window().image()->set_transparency ();
           window().updateGL();
+        }
+
+
+
+        void View::onUseLighting (bool on)
+        {
+          if (window().image())
+            window().image()->set_use_lighting (on);
+          window().updateGL();
+        }
+
+
+        void View::onAdvandedLighting ()
+        {
+          if (!lighting_dialog)
+            lighting_dialog = new Dialog::Lighting (this, "Advanced Lighting", window().lighting());
+          lighting_dialog->show();
         }
 
       }

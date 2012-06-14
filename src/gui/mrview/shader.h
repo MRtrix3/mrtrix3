@@ -182,6 +182,10 @@ namespace MR
             return flags_ & InvertMap;
           }
 
+          bool use_lighting () const {
+            return flags_ & Lighting;
+          }
+
           uint32_t colourmap_index () const {
             uint32_t cret = flags_ & ColourMap::Mask;
             if (cret >= ColourMap::Special)
@@ -194,9 +198,9 @@ namespace MR
           uint32_t flags_;
 
           GL::Shader::Fragment fragment_shader;
+          GL::Shader::Vertex vertex_shader;
           GL::Shader::Program shader_program;
 
-          static GL::Shader::Vertex vertex_shader;
           static const char* vertex_shader_source;
 
           void set_bit (uint32_t& field, uint32_t bit, bool value) {

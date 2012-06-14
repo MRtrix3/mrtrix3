@@ -128,6 +128,9 @@ namespace MR
             lessthan/windowing_scale_3D, greaterthan/windowing_scale_3D,
             transparent_intensity/windowing_scale_3D, opaque_intensity/windowing_scale_3D, alpha);
 
+        if (custom_shader.use_lighting())
+          glEnable (GL_LIGHTING);
+
         pos[0] = mode.screen_to_model (QPoint (0, mode.height()));
         pos[1] = mode.screen_to_model (QPoint (0, 0));
         pos[2] = mode.screen_to_model (QPoint (mode.width(), 0));

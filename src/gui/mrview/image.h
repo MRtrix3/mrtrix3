@@ -96,9 +96,11 @@ namespace MR
           void render3D_slice (const Mode::Base& mode, float offset);
           void render3D_post (Shader& custom_shader) {
             custom_shader.stop(); 
+            if (custom_shader.use_lighting())
+              glDisable (GL_LIGHTING);
           }
           void render3D_post () {
-            shader.stop();
+            render3D_post (shader);
           }
 
           void render3D_pre (const Mode::Base& mode) {
@@ -144,6 +146,9 @@ namespace MR
           }
           void set_invert_scale (bool value) { 
             shader.set_invert_scale (value); 
+          }
+          void set_use_lighting (bool value) { 
+            shader.set_use_lighting (value); 
           }
 
           void set_thresholds (float less_than_value = NAN, float greater_than_value = NAN) {

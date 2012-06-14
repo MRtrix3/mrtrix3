@@ -36,6 +36,12 @@ namespace MR
 {
   namespace GUI
   {
+    namespace Dialog
+    {
+      class Lighting;
+    }
+
+
     namespace MRView
     {
       namespace Tool
@@ -61,13 +67,16 @@ namespace MR
             void onScalingChanged ();
             void onSetThreshold ();
             void onSetTransparency ();
+            void onUseLighting (bool on);
+            void onAdvandedLighting ();
 
           private:
             QLineEdit *focus_x, *focus_y, *focus_z, *min_entry, *max_entry, *lessthan, *greaterthan;
             QLineEdit *transparent_intensity, *opaque_intensity;
             QComboBox *projection_combobox;
-            QGroupBox *threshold_box, *transparency_box;
+            QGroupBox *threshold_box, *transparency_box, *lighting_box;
             QSlider *opacity;
+            Dialog::Lighting* lighting_dialog;
 
         };
 
