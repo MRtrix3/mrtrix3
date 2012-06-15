@@ -134,37 +134,34 @@ class TrackMapperTWI : public TrackMapperBase<Cont>
       TrackMapperBase<Cont> (output_header, interp_matrix),
       contrast              (c),
       track_statistic       (s),
-      step_size             (step),
-      gaussian_denominator  (denom) { }
+      gaussian_denominator  (denom),
+      step_size             (step) { }
 
     TrackMapperTWI (const TrackMapperTWI& that) :
       TrackMapperBase<Cont> (that),
       contrast              (that.contrast),
       track_statistic       (that.track_statistic),
-      step_size             (that.step_size),
-      gaussian_denominator  (that.gaussian_denominator) { }
+      gaussian_denominator  (that.gaussian_denominator),
+      step_size             (that.step_size) { }
 
     virtual ~TrackMapperTWI() { }
 
 
   protected:
-    virtual void load_values (const std::vector< Point<float> >&, std::vector<float>&);
+    virtual void load_factors (const std::vector< Point<float> >&);
     const contrast_t contrast;
     const stat_t track_statistic;
+
+    // Members for when the contribution of a track is not constant along its length (i.e. Gaussian smoothed along the track)
+    const float gaussian_denominator;
+    std::vector<float> factors;
+    void gaussian_smooth_factors();
 
 
   private:
     const float step_size;
 
-    // Members for when the contribution of a track is not a constant
-    const float gaussian_denominator;
-    std::vector<float> factors;
-
-
     void set_factor (const std::vector< Point<float> >&, Cont&);
-
-    float get_factor_const     (const std::vector< Point<float> >&);
-    void  set_factors_nonconst (const std::vector< Point<float> >&);
 
     // Call the inheited virtual function unless a specialisation for this class exists
     void voxelise (const std::vector< Point<float> >& tck, Cont& voxels) const { TrackMapperBase<Cont>::voxelise (tck, voxels); }
@@ -179,11 +176,11 @@ class TrackMapperTWI : public TrackMapperBase<Cont>
 
 
 template <class Cont>
-void TrackMapperTWI<Cont>::load_values (const std::vector< Point<float> >& tck, std::vector<float>& values)
+void TrackMapperTWI<Cont>::load_factors (const std::vector< Point<float> >& tck)
 {
 
   if (contrast != CURVATURE)
-    throw Exception ("Function TrackMapperTWI::load_values() only works with curvature contrast");
+    throw Exception ("Function TrackMapperTWI::load_factors() only works with curvature contrast");
 
   std::vector< Point<float> > tangents;
   tangents.reserve (tck.size());
@@ -210,7 +207,7 @@ void TrackMapperTWI<Cont>::load_values (const std::vector< Point<float> >& tck, 
     	tangents.push_back (Point<float> (0.0, 0.0, 0.0));
   }
 
-  // For those tangents which are invalid, fill with valid values from neighbours
+  // For those tangents which are invalid, fill with valid factors from neighbours
   for (size_t i = 0; i != tangents.size(); ++i) {
     if (tangents[i] == Point<float> (0.0, 0.0, 0.0)) {
 
@@ -256,7 +253,6 @@ void TrackMapperTWI<Cont>::load_values (const std::vector< Point<float> >& tck, 
 
   }
 
-  values.reserve (tck.size());
   for (size_t i = 0; i != tck.size(); ++i) {
 
     // Risk of acos() returning NAN if the dot product is greater than 1.0
@@ -269,9 +265,9 @@ void TrackMapperTWI<Cont>::load_values (const std::vector< Point<float> >& tck, 
       this_value = acos (smoothed_tangents[i+1].dot (smoothed_tangents[i-1])) * 0.5 / step_size;
 
     if (isnan (this_value))
-      values.push_back (0.0);
+      factors.push_back (0.0);
     else
-      values.push_back (this_value);
+      factors.push_back (this_value);
 
   }
 
@@ -279,6 +275,167 @@ void TrackMapperTWI<Cont>::load_values (const std::vector< Point<float> >& tck, 
 
 
 
+
+
+template <class Cont>
+void TrackMapperTWI<Cont>::gaussian_smooth_factors ()
+{
+
+  std::vector<float> unsmoothed (factors);
+
+  for (size_t i = 0; i != unsmoothed.size(); ++i) {
+
+    double sum = 0.0, norm = 0.0;
+
+    if (finite (unsmoothed[i])) {
+      sum  = unsmoothed[i];
+      norm = 1.0; // Gaussian is unnormalised -> e^0 = 1
+    }
+
+    float distance = 0.0;
+    for (size_t j = i; j--; ) { // Decrement AFTER null test, so loop runs with j = 0
+      distance += step_size;
+      if (finite (unsmoothed[j])) {
+        const float this_weight = exp (-distance * distance / gaussian_denominator);
+        norm += this_weight;
+        sum  += this_weight * factors[j];
+      }
+    }
+    distance = 0.0;
+    for (size_t j = i + 1; j < unsmoothed.size(); ++j) {
+      distance += step_size;
+      if (finite (factors[j])) {
+        const float this_weight = exp (-distance * distance / gaussian_denominator);
+        norm += this_weight;
+        sum  += this_weight * factors[j];
+      }
+    }
+
+    if (norm)
+      factors[i] = sum / norm;
+    else
+      factors[i] = 0.0;
+
+  }
+
+}
+
+
+
+
+
+
+template <class Cont>
+void TrackMapperTWI<Cont>::set_factor (const std::vector< Point<float> >& tck, Cont& out)
+{
+
+  size_t count = 0;
+
+  switch (contrast) {
+
+    case TDI:       out.factor = 1.0; break;
+    case ENDPOINT:  out.factor = 1.0; break;
+    case LENGTH:    out.factor = (step_size * (tck.size() - 1)); break;
+    case INVLENGTH: out.factor = (step_size / (tck.size() - 1)); break;
+
+    case SCALAR_MAP:
+    case SCALAR_MAP_COUNT:
+    case FOD_AMP:
+    case CURVATURE:
+
+      factors.clear();
+      factors.reserve (tck.size());
+      load_factors (tck); // This should call the overloaded virtual function for TrackMapperImage
+
+      switch (track_statistic) {
+
+        case SUM:
+          for (std::vector<float>::const_iterator i = factors.begin(); i != factors.end(); ++i) {
+            if (finite (*i))
+              out.factor += *i;
+          }
+          break;
+
+        case MIN:
+          out.factor = INFINITY;
+          for (std::vector<float>::const_iterator i = factors.begin(); i != factors.end(); ++i) {
+            if (finite (*i))
+              out.factor = MIN (out.factor, *i);
+          }
+          break;
+
+        case MEAN:
+          for (std::vector<float>::const_iterator i = factors.begin(); i != factors.end(); ++i) {
+            if (finite (*i)) {
+              out.factor += *i;
+              ++count;
+            }
+          }
+          out.factor = (count ? (out.factor / float(count)) : 0.0);
+          break;
+
+        case MAX:
+          out.factor = -INFINITY;
+          for (std::vector<float>::const_iterator i = factors.begin(); i != factors.end(); ++i) {
+            if (finite (out.factor))
+              out.factor = MAX (out.factor, *i);
+          }
+          break;
+
+        case MEDIAN:
+          if (factors.empty()) {
+            out.factor = 0.0;
+          } else {
+            nth_element (factors.begin(), factors.begin() + (factors.size() / 2), factors.end());
+            out.factor = *(factors.begin() + (factors.size() / 2));
+          }
+          break;
+
+        case FMRI_MIN:
+          out.factor = MIN(factors[0], factors[1]);
+          break;
+
+        case FMRI_MEAN:
+          out.factor = 0.5 * (factors[0] + factors[1]);
+          break;
+
+        case FMRI_MAX:
+          out.factor = MAX(factors[0], factors[1]);
+          break;
+
+        case FMRI_PROD:
+          out.factor = factors[0] * factors[1];
+          break;
+
+        case GAUSSIAN:
+          gaussian_smooth_factors();
+          out.factor = 0.0;
+          for (std::vector<float>::const_iterator i = factors.begin(); i != factors.end(); ++i) {
+            if (*i) {
+              out.factor = 1.0;
+              break;
+            }
+          }
+          break;
+
+        default:
+          throw Exception ("Undefined / unsupported track statistic in TrackMapperTWI::get_factor()");
+
+      }
+      break;
+
+    default:
+      throw Exception ("Undefined / unsupported contrast mechanism in TrackMapperTWI::get_factor()");
+
+  }
+
+  if (contrast == SCALAR_MAP_COUNT)
+    out.factor = (out.factor ? 1.0 : 0.0);
+
+  if (!finite (out.factor))
+    out.factor = 0.0;
+
+}
 
 
 
@@ -335,7 +492,7 @@ class TrackMapperTWIImage : public TrackMapperTWI<Cont>
     float* sh_coeffs;
     Math::SH::PrecomputedAL<float> precomputer;
 
-    void load_values (const std::vector< Point<float> >&, std::vector<float>&);
+    void load_factors (const std::vector< Point<float> >&);
 
 };
 
@@ -343,7 +500,7 @@ class TrackMapperTWIImage : public TrackMapperTWI<Cont>
 
 
 template <class Cont>
-void TrackMapperTWIImage<Cont>::load_values (const std::vector< Point<float> >& tck, std::vector<float>& values)
+void TrackMapperTWIImage<Cont>::load_factors (const std::vector< Point<float> >& tck)
 {
 
   static const int fmri_contrast_extrap_points = Math::round (FMRI_CONTRAST_EXTRAP_LENGTH / FMRI_CONTRAST_STEP);
@@ -379,14 +536,14 @@ void TrackMapperTWIImage<Cont>::load_values (const std::vector< Point<float> >& 
               if (!interp.scanner (*p))
                 max_value = MAX (max_value, interp.value());
             }
-            values.push_back (max_value);
+            TrackMapperTWI<Cont>::factors.push_back (max_value);
 
           } else {
             // Could not compute a tangent; just take the value at the endpoint
             if (!interp.scanner (endpoint))
-              values.push_back (interp.value());
+              TrackMapperTWI<Cont>::factors.push_back (interp.value());
             else
-              values.push_back (NAN);
+              TrackMapperTWI<Cont>::factors.push_back (NAN);
           }
         }
 
@@ -394,9 +551,9 @@ void TrackMapperTWIImage<Cont>::load_values (const std::vector< Point<float> >& 
 
         for (std::vector< Point<float> >::const_iterator i = tck.begin(); i != tck.end(); ++i) {
           if (!interp.scanner (*i))
-            values.push_back (interp.value());
+            TrackMapperTWI<Cont>::factors.push_back (interp.value());
           else
-            values.push_back (NAN);
+            TrackMapperTWI<Cont>::factors.push_back (NAN);
         }
 
       }
@@ -410,15 +567,15 @@ void TrackMapperTWIImage<Cont>::load_values (const std::vector< Point<float> >& 
           for (voxel[3] = 0; voxel[3] != voxel.dim(3); ++voxel[3])
             sh_coeffs[voxel[3]] = interp.value();
           const Point<float> dir = (tck[(i == tck.size() - 1) ? i : i + 1] - tck[i ? i - 1 : 0]).normalise();
-          values.push_back (precomputer.value (sh_coeffs, dir));
+          TrackMapperTWI<Cont>::factors.push_back (precomputer.value (sh_coeffs, dir));
         } else {
-          values.push_back (NAN);
+          TrackMapperTWI<Cont>::factors.push_back (NAN);
         }
       }
       break;
 
     default:
-      throw Exception ("Undefined / unsupported contrast mechanism in TrackMapperImage::load_values()");
+      throw Exception ("Undefined / unsupported contrast mechanism in TrackMapperImage::load_TrackMapperTWI<Cont>::factors()");
 
   }
 

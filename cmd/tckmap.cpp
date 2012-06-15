@@ -108,8 +108,8 @@ OPTIONS
     + Argument ("type").type_choice (statistics)
 
   + Option ("fwhm_tck",
-      "when using gaussian-smoothed per-track statistic, specify the desired full-width "
-      "half-maximum of the Gaussian kernel (in mm)")
+      "when using gaussian-smoothed per-track statistic, specify the "
+      "desired full-width half-maximum of the Gaussian smoothing kernel (in mm)")
     + Argument ("value").type_float (1e-6, 10.0, 1e6)
 
   + Option ("colour", "perform track mapping in directionally-encoded colour space")
@@ -411,7 +411,7 @@ void run () {
 
   TrackLoader loader (file, num_tracks);
 
-  std::string msg = MR::App::NAME + ": Generating " + (colour ? "colour " : "") + "image with ";
+  std::string msg = str("Generating ") + (colour ? "colour " : "") + "image with ";
   switch (contrast) {
     case TDI:              msg += "density";                    break;
     case ENDPOINT:         msg += "endpoint density";           break;
@@ -453,27 +453,25 @@ void run () {
     }
     msg += " per-track statistic";
   }
-  std::cerr << msg << "\n";
-  std::cerr.flush();
+  inform (msg);
+
+  switch (contrast) {
+    case TDI:              header.comments().push_back ("track density image"); break;
+    case ENDPOINT:         header.comments().push_back ("track endpoint density image"); break;
+    case LENGTH:           header.comments().push_back ("track density image (weighted by track length)"); break;
+    case INVLENGTH:        header.comments().push_back ("track density image (weighted by inverse track length)"); break;
+    case SCALAR_MAP:       header.comments().push_back ("track-weighted image (using scalar image)"); break;
+    case SCALAR_MAP_COUNT: header.comments().push_back ("track density image (using scalar image thresholding)"); break;
+    case FOD_AMP:          header.comments().push_back ("track-weighted image (using FOD amplitude)"); break;
+    case CURVATURE:        header.comments().push_back ("track-weighted image (using track curvature)"); break;
+  }
 
   // Use a branching IF instead of a switch statement to permit scope
-  if (contrast == TDI || contrast == ENDPOINT || contrast == LENGTH || contrast == INVLENGTH || contrast == CURVATURE) {
+  if (contrast == TDI || contrast == ENDPOINT || contrast == LENGTH || contrast == INVLENGTH) {
 
     if (!manual_datatype) {
       header.datatype() = (contrast == TDI || contrast == ENDPOINT) ? DataType::UInt32 : DataType::Float32;
       header.datatype().set_byte_order_native();
-    }
-
-    switch (contrast) {
-      case TDI:              header.comments().push_back ("track density image"); break;
-      case ENDPOINT:         header.comments().push_back ("track endpoint density image"); break;
-      case LENGTH:           header.comments().push_back ("track density image (weighted by track length)"); break;
-      case INVLENGTH:        header.comments().push_back ("track density image (weighted by inverse track length)"); break;
-      case SCALAR_MAP:       header.comments().push_back ("track-weighted image (using scalar image)"); break;
-      case SCALAR_MAP_COUNT: header.comments().push_back ("track density image (using scalar image thresholding)"); break;
-      case FOD_AMP:          header.comments().push_back ("track-weighted image (using FOD amplitude)"); break;
-      case CURVATURE:        header.comments().push_back ("track-weighted image (using track curvature)"); break;
-      default:               break; // Just to shut up the compiler
     }
 
     if (colour) {
@@ -482,8 +480,25 @@ void run () {
       Thread::run_queue (loader, 1, TrackAndIndex(), mapper, 0, SetVoxelDEC(), writer, 1);
     } else {
       Ptr< MapWriterBase<SetVoxel> > writer (make_writer<SetVoxel> (header, argument[1], dump, stat_vox));
-      TrackMapperTWI <SetVoxel> mapper (header, interp_matrix, step_size, contrast, stat_tck);
+      TrackMapperTWI    <SetVoxel>   mapper (header, interp_matrix, step_size, contrast, stat_tck);
       Thread::run_queue (loader, 1, TrackAndIndex(), mapper, 0, SetVoxel(), *writer, 1);
+    }
+
+  } else if (contrast == CURVATURE) {
+
+    if (!manual_datatype) {
+      header.datatype() = DataType::Float32;
+      header.datatype().set_byte_order_native();
+    }
+
+    if (colour) {
+      MapWriterColour<SetVoxelDECFactor> writer (header, argument[1], dump, stat_vox);
+      TrackMapperTWI <SetVoxelDECFactor> mapper (header, interp_matrix, step_size, contrast, stat_tck, gaussian_denominator_tck); // Gaussian track statistic is valid for curvature contrast
+      Thread::run_queue (loader, 1, TrackAndIndex(), mapper, 0, SetVoxelDECFactor(), writer, 1);
+    } else {
+      Ptr< MapWriterBase<SetVoxelFactor> > writer (make_writer<SetVoxelFactor> (header, argument[1], dump, stat_vox));
+      TrackMapperTWI    <SetVoxelFactor>   mapper (header, interp_matrix, step_size, contrast, stat_tck, gaussian_denominator_tck);
+      Thread::run_queue (loader, 1, TrackAndIndex(), mapper, 0, SetVoxelFactor(), *writer, 1);
     }
 
   } else if (contrast == SCALAR_MAP || contrast == SCALAR_MAP_COUNT || contrast == FOD_AMP) {
@@ -508,24 +523,24 @@ void run () {
     if (colour) {
 
       if (stat_tck == GAUSSIAN) {
-        MapWriterColour<SetVoxelDECFactor> writer (header, argument[1], dump, stat_vox);
-        TrackMapperTWI <SetVoxelDECFactor> mapper (header, interp_matrix, step_size, contrast, stat_tck);
+        MapWriterColour     <SetVoxelDECFactor> writer (header, argument[1], dump, stat_vox);
+        TrackMapperTWIImage <SetVoxelDECFactor> mapper (header, interp_matrix, step_size, contrast, stat_tck, gaussian_denominator_tck, input_image);
         Thread::run_queue (loader, 1, TrackAndIndex(), mapper, 0, SetVoxelDECFactor(), writer, 1);
       } else {
-        MapWriterColour<SetVoxelDEC> writer (header, argument[1], dump, stat_vox);
-        TrackMapperTWI <SetVoxelDEC> mapper (header, interp_matrix, step_size, contrast, stat_tck);
+        MapWriterColour     <SetVoxelDEC> writer (header, argument[1], dump, stat_vox);
+        TrackMapperTWIImage <SetVoxelDEC> mapper (header, interp_matrix, step_size, contrast, stat_tck, 0.0, input_image);
         Thread::run_queue (loader, 1, TrackAndIndex(), mapper, 0, SetVoxelDEC(), writer, 1);
       }
 
     } else {
 
       if (stat_tck == GAUSSIAN) {
-        Ptr< MapWriterBase<SetVoxelFactor> > writer (make_writer<SetVoxelFactor> (header, argument[1], dump, stat_vox));
-        TrackMapperTWI <SetVoxelFactor> mapper (header, interp_matrix, step_size, contrast, stat_tck);
+        Ptr< MapWriterBase  <SetVoxelFactor> > writer (make_writer<SetVoxelFactor> (header, argument[1], dump, stat_vox));
+        TrackMapperTWIImage <SetVoxelFactor>   mapper (header, interp_matrix, step_size, contrast, stat_tck, gaussian_denominator_tck, input_image);
         Thread::run_queue (loader, 1, TrackAndIndex(), mapper, 0, SetVoxelFactor(), *writer, 1);
       } else {
-        Ptr< MapWriterBase<SetVoxel> > writer (make_writer<SetVoxel> (header, argument[1], dump, stat_vox));
-        TrackMapperTWI <SetVoxel> mapper (header, interp_matrix, step_size, contrast, stat_tck);
+        Ptr< MapWriterBase  <SetVoxel> > writer (make_writer<SetVoxel> (header, argument[1], dump, stat_vox));
+        TrackMapperTWIImage <SetVoxel>   mapper (header, interp_matrix, step_size, contrast, stat_tck, 0.0, input_image);
         Thread::run_queue (loader, 1, TrackAndIndex(), mapper, 0, SetVoxel(), *writer, 1);
       }
 
