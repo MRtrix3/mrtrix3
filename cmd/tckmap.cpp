@@ -409,8 +409,6 @@ void run () {
 
   Math::Matrix<float> interp_matrix (gen_interp_matrix<float> (resample_factor));
 
-  TrackLoader loader (file, num_tracks);
-
   std::string msg = str("Generating ") + (colour ? "colour " : "") + "image with ";
   switch (contrast) {
     case TDI:              msg += "density";                    break;
@@ -465,6 +463,8 @@ void run () {
     case FOD_AMP:          header.comments().push_back ("track-weighted image (using FOD amplitude)"); break;
     case CURVATURE:        header.comments().push_back ("track-weighted image (using track curvature)"); break;
   }
+
+  TrackLoader loader (file, num_tracks);
 
   // Use a branching IF instead of a switch statement to permit scope
   if (contrast == TDI || contrast == ENDPOINT || contrast == LENGTH || contrast == INVLENGTH) {
