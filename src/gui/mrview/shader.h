@@ -53,10 +53,11 @@ namespace MR
         const uint32_t Mask = 0x000000FF;
         const uint32_t MaskNonScalar = 0x00000080;
 
-        const size_t NumScalar = 3;
+        const size_t NumScalar = 4;
         const uint32_t Gray = 0x00000000;
         const uint32_t Hot = 0x00000001;
         const uint32_t Jet = 0x00000002;
+        const uint32_t DWI = 0x00000003;
 
         const size_t NumSpecial = 2;
         const uint32_t Special = 0x00000080;
@@ -73,6 +74,7 @@ namespace MR
           actions[n++] = new QAction ("Gray", window);
           actions[n++] = new QAction ("Hot", window);
           actions[n++] = new QAction ("Jet", window);
+          actions[n++] = new QAction ("DWI", window);
 
           actions[n++] = new QAction ("RGB", window);
           actions[n++] = new QAction ("Complex", window);

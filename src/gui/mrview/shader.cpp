@@ -56,6 +56,9 @@ namespace MR
               "lightDir = normalize (vec3 (gl_LightSource[0].position)); "
               "halfVector = normalize (gl_LightSource[0].halfVector.xyz); "
               "ambient = gl_LightSource[0].ambient + gl_LightModel.ambient; ";
+        if (colourmap() == ColourMap::DWI)
+          source += "gl_FrontColor = gl_Color; ";
+
         source += 
           "gl_TexCoord[0] = gl_MultiTexCoord0; "
           "gl_Position = ftransform(); "
@@ -148,6 +151,8 @@ namespace MR
           else if (colourmap == ColourMap::Jet)
             source +=
               "gl_FragColor.rgb = 1.5 - 4.0 * abs (color.a - vec3(0.25, 0.5, 0.75));";
+          else if (colourmap == ColourMap::DWI)
+            source += "gl_FragColor.rgb = gl_Color.rgb * color.a;";
           else assert (0);
         }
 

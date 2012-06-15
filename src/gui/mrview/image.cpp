@@ -84,6 +84,8 @@ namespace MR
         Point<> p, q;
         p[projection] = slice;
 
+        set_color (custom_shader);
+
         custom_shader.start (display_midpoint, display_range, 
             lessthan, greaterthan, 
             transparent_intensity, opaque_intensity, alpha);
@@ -135,6 +137,8 @@ namespace MR
         pos[1] = mode.screen_to_model (QPoint (0, 0));
         pos[2] = mode.screen_to_model (QPoint (mode.width(), 0));
         pos[3] = mode.screen_to_model (QPoint (mode.width(), mode.height()));
+
+        set_color (custom_shader);
       }
 
 

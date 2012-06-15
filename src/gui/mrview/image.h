@@ -210,6 +210,26 @@ namespace MR
 
           bool volume_unchanged ();
 
+          void set_color (const Shader& custom_shader) {
+            if (custom_shader.colourmap() == ColourMap::DWI) {
+              Point<> dir (1.0, 1.0, 1.0);
+              if (interp.ndim() > 3) {
+                size_t vol = interp[3];
+                Math::Matrix<float>& M = header().DW_scheme();
+                if (M.rows() > vol) {
+                  if (M(vol,3) > 0.0) {
+                    dir = Point<> (M(vol,0), M(vol,1), M(vol,2));
+                    dir.normalise();
+                    dir[0] = Math::abs (dir[0]);
+                    dir[1] = Math::abs (dir[1]);
+                    dir[2] = Math::abs (dir[2]);
+                  }
+                }
+              }
+              glColor3fv (dir);
+            }
+          }
+
           template <typename T> void copy_texture_3D (GLenum format);
           void copy_texture_3D_complex ();
           template <typename T> GLenum GLtype () const;
