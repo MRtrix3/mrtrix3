@@ -56,29 +56,27 @@ namespace MR
 
       public:
 
-        Connector (MaskVoxelType & mask) : mask_(mask)
-        {
+        Connector (MaskVoxelType & mask) : mask_(mask) {
           Math::Matrix<float> empty;
-          adjacency_matrices_.resize(mask->ndim(), empty);
-          ignore_dim_.resize(mask->ndim(), false);
+          adjacency_matrices_.resize(mask.ndim(), empty);
+          ignore_dim_.resize(mask.ndim(), false);
         }
 
 
         Connector (MaskVoxelType & mask,
-                    std::vector<Math::Matrix<float> > adjacency_matrices,
-                    std::vector<bool> ignore_dim) :
-                    mask_(mask),
-                    adjacency_matrices_(adjacency_matrices),
-                    ignore_dim_(ignore_dim) { }
+                   std::vector<Math::Matrix<float> > adjacency_matrices,
+                   std::vector<bool> ignore_dim) :
+                   mask_(mask),
+                   adjacency_matrices_(adjacency_matrices),
+                   ignore_dim_(ignore_dim) { }
 
 
         void run (std::vector<std::vector<int> > & mask_indices,
-                   std::vector<cluster> & clusters,
-                   std::vector<uint32_t> & labels)
-        {
-          if (mask_indices.size() == 0) {
+                  std::vector<cluster> & clusters,
+                  std::vector<uint32_t> & labels) {
+
+          if (mask_indices.size() == 0)
             compute_adjacency (mask_indices);
-          }
 
           labels.resize (adjacent_indices_.size(), 0);
           uint32_t current_label = 1;
@@ -98,26 +96,53 @@ namespace MR
           if (clusters.size() > std::numeric_limits<uint32_t>::max())
             throw Exception ("The number of clusters is larger than can be labelled with an unsigned 32bit integer.");
 
-          std::sort (clusters.begin(), clusters.end(), compare_clusters);
         }
 
 
-        void set_directions (Math::Matrix<float> & dirs_el_az,
-                               float angular_threshold)
-        {
-          angular_threshold = angular_threshold * M_PI / 180.0;
-          Math::Matrix<float> dir_adjacency;
-          Math::Matrix<float> vert (dirs_el_az.rows(), 3);
+        void run (std::vector<std::vector<int> > & mask_indices,
+                  std::vector<cluster> & clusters,
+                  std::vector<uint32_t> & labels,
+                  std::vector<float> & data,
+                  float threshold) {
 
-          for (uint d = 0; d < dirs_el_az.rows(); d++) {
-            vert(d,0) = cos(dirs_el_az(d,0)) * sin(dirs_el_az(d,1));
-            vert(d,1) = sin(dirs_el_az(d,0)) * sin(dirs_el_az(d,1));
-            vert(d,2) = cos(dirs_el_az(d,1));
+          if (mask_indices.size() == 0)
+            compute_adjacency (mask_indices);
+
+          labels.resize (adjacent_indices_.size(), 0);
+          uint32_t current_label = 1;
+
+          for (uint32_t i = 0; i < labels.size(); i++) {
+            // this node has not been already clustered
+            if (labels[i] == 0) {
+              cluster cluster;
+              cluster.label = current_label;
+              cluster.size = 0;
+              depth_first_search (i, cluster, labels, data, threshold);
+              clusters.push_back (cluster);
+              current_label++;
+            }
           }
 
-          dir_adjacency.resize(dirs_el_az.rows(), dirs_el_az.rows(), 0.0);
-          for (uint m = 0; m < dirs_el_az.rows(); m++) {
-            for (uint n = m + 1; n < dirs_el_az.rows(); n++) {
+          if (clusters.size() > std::numeric_limits<uint32_t>::max())
+            throw Exception ("The number of clusters is larger than can be labelled with an unsigned 32bit integer.");
+        }
+
+
+        void set_directions (Math::Matrix<float> & dirs_az_el, float angular_threshold) {
+
+          angular_threshold = angular_threshold * M_PI / 180.0;
+          Math::Matrix<float> dir_adjacency;
+          Math::Matrix<float> vert (dirs_az_el.rows(), 3);
+
+          for (uint d = 0; d < dirs_az_el.rows(); d++) {
+            vert(d,0) = sin(dirs_az_el(d,1)) * cos(dirs_az_el(d,0));
+            vert(d,1) = sin(dirs_az_el(d,1)) * sin(dirs_az_el(d,0));
+            vert(d,2) = cos(dirs_az_el(d,1));
+          }
+
+          dir_adjacency.resize(dirs_az_el.rows(), dirs_az_el.rows(), 0.0);
+          for (uint m = 0; m < dirs_az_el.rows(); m++) {
+            for (uint n = m + 1; n < dirs_az_el.rows(); n++) {
               float angle = Math::acos(Math::dot(vert.row(m), vert.row(n)));
               if (angle > M_PI_2)
                 angle = M_PI - angle;
@@ -134,25 +159,19 @@ namespace MR
         }
 
 
-        void set_adjacency_matrix (Math::Matrix<float> adj_matrix,
-                                      size_t dim)
-        {
+        void set_adjacency_matrix (Math::Matrix<float> adj_matrix, size_t dim) {
           if (dim > mask_.ndim())
             throw Exception("The dimensions specified is larger than the number of input dimensions.");
           adjacency_matrices_[dim] = adj_matrix;
         }
 
 
-        void set_ignore_dim (bool ignore, size_t dim)
-        {
+        void set_ignore_dim (bool ignore, size_t dim) {
           ignore_dim_[dim] = ignore;
         }
 
 
-      protected:
-
-        void compute_adjacency (std::vector<std::vector<int> > & mask_indices)
-        {
+        void compute_adjacency (std::vector<std::vector<int> > & mask_indices) {
           Image::BufferScratch<uint32_t> neigh_mask (mask_);
           Image::BufferScratch<uint32_t>::voxel_type neigh_mask_vox (neigh_mask);
 
@@ -215,9 +234,9 @@ namespace MR
           }
         }
 
-        bool next_neighbour(uint32_t & node,
-                                      std::vector<uint32_t> & labels)
-        {
+      protected:
+
+        bool next_neighbour(uint32_t & node, std::vector<uint32_t> & labels) {
           for (size_t n = 0; n < adjacent_indices_[node].size(); n++) {
             if (labels[adjacent_indices_[node][n]] == 0) {
               node = adjacent_indices_[node][n];
@@ -228,22 +247,59 @@ namespace MR
         };
 
 
+        bool next_neighbour(uint32_t & node,
+                            std::vector<uint32_t> & labels,
+                            std::vector<float> & data,
+                            float threshold) {
+          for (size_t n = 0; n < adjacent_indices_[node].size(); n++) {
+            if (labels[adjacent_indices_[node][n]] == 0 && data[adjacent_indices_[node][n]] > threshold) {
+              node = adjacent_indices_[node][n];
+              return true;
+            }
+          }
+          return false;
+        };
+
+
         // use a non-recursive depth first search to agglomerate adjacent voxels
         void depth_first_search (uint32_t root,
-                                    cluster & cluster,
-                                    std::vector<uint32_t> & labels)
-        {
+                                 cluster & cluster,
+                                 std::vector<uint32_t> & labels) {
           uint32_t node = root;
           std::stack<uint32_t> stack;
-
           while (true) {
             labels[node] = cluster.label;
-            stack.push(node);
+            stack.push (node);
             cluster.size++;
             if (next_neighbour (node, labels)) {
               continue;
             } else {
               while (!next_neighbour (node, labels)) {
+                node = stack.top();
+                if (node == root)
+                  return;
+                stack.pop();
+              }
+            }
+          }
+        }
+
+        // use a non-recursive depth first search to agglomerate adjacent voxels
+        void depth_first_search (uint32_t root,
+                                 cluster & cluster,
+                                 std::vector<uint32_t> & labels,
+                                 std::vector<float> & data,
+                                 float threshold) {
+          uint32_t node = root;
+          std::stack<uint32_t> stack;
+          while (true) {
+            labels[node] = cluster.label;
+            stack.push (node);
+            cluster.size++;
+            if (next_neighbour (node, labels, data, threshold)) {
+              continue;
+            } else {
+              while (!next_neighbour (node, labels, data, threshold)) {
                 node = stack.top();
                 if (node == root)
                   return;
@@ -321,6 +377,7 @@ namespace MR
           if (directions_.is_set())
             connector.set_directions (directions_, angular_threshold_);
           connector.run (mask_indices, clusters, labels);
+          std::sort (clusters.begin(), clusters.end(), compare_clusters);
 
           std::vector<int> label_lookup (clusters.size(), 0);
           for (uint32_t c = 0; c < clusters.size(); c++)
@@ -349,9 +406,7 @@ namespace MR
         }
 
 
-        void set_directions (Math::Matrix<float> & dirs_el_az,
-                               float angular_threshold)
-        {
+        void set_directions (Math::Matrix<float> & dirs_el_az, float angular_threshold) {
           directions_ = dirs_el_az;
           angular_threshold_ = angular_threshold;
         }

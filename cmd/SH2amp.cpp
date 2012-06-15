@@ -171,6 +171,15 @@ void run ()
     amp_header.DW_scheme() = grad_dwis;
   } else {
     dirs.load(argument[1]);
+    Math::Matrix<value_type> grad (dirs.rows(), 4);
+    for (unsigned int i = 0; i < grad.rows(); i++) {
+      grad(i,0) = sin(dirs(i,1)) * cos(dirs(i,0));
+      grad(i,1) = sin(dirs(i,1)) * sin(dirs(i,0));
+      grad(i,2) = cos(dirs(i,1));
+      grad(i,3) = 1;
+    }
+    std::cout << grad << std::endl;
+    amp_header.DW_scheme() = grad;
   }
   amp_header.dim(3) = dirs.rows();
   amp_header.stride(0) = 2;
