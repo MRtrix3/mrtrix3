@@ -285,7 +285,7 @@ void run () {
   if (stat_vox == MEDIAN)
     throw Exception ("Sorry, can't calculate median values for each voxel - would take too much memory");
 
-  float gaussian_fwhm_tck = 0.0, gaussian_denominator_tck = 0.0; // gaussian_theta = 0.0;
+  float gaussian_fwhm_tck = 0.0, gaussian_denominator_tck = 0.0;
   opt = get_options ("fwhm_tck");
   if (opt.size()) {
     if (stat_tck != GAUSSIAN) {
@@ -467,7 +467,7 @@ void run () {
   TrackLoader loader (file, num_tracks);
 
   // Use a branching IF instead of a switch statement to permit scope
-  if (contrast == TDI || contrast == ENDPOINT || contrast == LENGTH || contrast == INVLENGTH) {
+  if (contrast == TDI || contrast == ENDPOINT || contrast == LENGTH || contrast == INVLENGTH || (contrast == CURVATURE && stat_tck != GAUSSIAN)) {
 
     if (!manual_datatype) {
       header.datatype() = (contrast == TDI || contrast == ENDPOINT) ? DataType::UInt32 : DataType::Float32;
@@ -484,7 +484,7 @@ void run () {
       Thread::run_queue (loader, 1, TrackAndIndex(), mapper, 0, SetVoxel(), *writer, 1);
     }
 
-  } else if (contrast == CURVATURE) {
+  } else if (contrast == CURVATURE && stat_tck == GAUSSIAN) {
 
     if (!manual_datatype) {
       header.datatype() = DataType::Float32;
@@ -493,7 +493,7 @@ void run () {
 
     if (colour) {
       MapWriterColour<SetVoxelDECFactor> writer (header, argument[1], dump, stat_vox);
-      TrackMapperTWI <SetVoxelDECFactor> mapper (header, interp_matrix, step_size, contrast, stat_tck, gaussian_denominator_tck); // Gaussian track statistic is valid for curvature contrast
+      TrackMapperTWI <SetVoxelDECFactor> mapper (header, interp_matrix, step_size, contrast, stat_tck, gaussian_denominator_tck);
       Thread::run_queue (loader, 1, TrackAndIndex(), mapper, 0, SetVoxelDECFactor(), writer, 1);
     } else {
       Ptr< MapWriterBase<SetVoxelFactor> > writer (make_writer<SetVoxelFactor> (header, argument[1], dump, stat_vox));
