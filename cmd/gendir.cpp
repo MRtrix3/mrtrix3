@@ -35,19 +35,21 @@ using namespace MR;
 using namespace App;
 
 void usage () {
-DESCRIPTION 
+DESCRIPTION
   + "generate a set of directions evenly distributed over a hemisphere.";
 
-ARGUMENTS 
+ARGUMENTS
   + Argument ("ndir", "the number of directions to generate.").type_integer (6, 60, std::numeric_limits<int>::max())
   + Argument ("dirs", "the text file to write the directions to, as [ az el ] pairs.").type_file();
 
-OPTIONS 
+OPTIONS
   + Option ("power", "specify exponent to use for repulsion power law.")
   + Argument ("exp").type_integer (2, 128, std::numeric_limits<int>::max())
 
   + Option ("niter", "specify the maximum number of iterations to perform.")
-  + Argument ("num").type_integer (1, 10000, 1000000);
+  + Argument ("num").type_integer (1, 10000, 1000000)
+
+  + Option ("cartesian", "Output the directions in Cartesian coordinates [x y z] instead of [az el].");
 }
 
 
@@ -169,7 +171,18 @@ void run () {
 
   gsl_multimin_fdfminimizer_free (minimizer);
 
-  directions.save (argument[1]);
+  opt = get_options ("cartesian");
+  if (opt.size()) {
+    Math::Matrix<double> cartesian (directions.rows(), 3);
+    for (unsigned int i = 0; i < cartesian.rows(); i++) {
+      cartesian(i,0) = sin(directions(i,1)) * cos(directions(i,0));
+      cartesian(i,1) = sin(directions(i,1)) * sin(directions(i,0));
+      cartesian(i,2) = cos(directions(i,1));
+    }
+    cartesian.save (argument[1]);
+  } else {
+    directions.save (argument[1]);
+  }
 }
 
 
