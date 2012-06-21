@@ -20,6 +20,7 @@
 
 */
 
+#include "file/config.h"
 #include "gui/opengl/gl.h"
 #include "gui/mrview/mode/base.h"
 
@@ -36,7 +37,7 @@ namespace MR
           window (parent),
           painting (false)
         {
-          font_.setPointSize (0.9*font_.pointSize());
+          font_.setPointSize (MR::File::Config::get_int ("FontSize", 10));
 
           QAction* separator = new QAction (this);
           separator->setSeparator (true);

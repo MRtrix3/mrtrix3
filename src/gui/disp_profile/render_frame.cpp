@@ -31,7 +31,7 @@
 #include <fstream>
 
 #include "app.h"
-#include "gui/dwi/render_frame.h"
+#include "gui/disp_profile/render_frame.h"
 
 #define ROTATION_INC 0.004
 #define D2R 0.01745329252

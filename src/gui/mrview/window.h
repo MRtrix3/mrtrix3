@@ -135,6 +135,7 @@ namespace MR
           void select_colourmap_slot ();
           void invert_colourmap_slot ();
           void invert_scaling_slot ();
+          void show_crosshairs_slot ();
           void full_screen_slot ();
 
           void image_next_slot ();
@@ -167,9 +168,9 @@ namespace MR
           int proj;
 
           QMenu *file_menu, *view_menu, *tool_menu, *image_menu, *help_menu, *colourmap_menu;
-          QAction *open_action, *save_action, *close_action, *properties_action, *quit_action;
+          QAction *save_action, *close_action, *properties_action;
           QAction *view_menu_mode_area, *view_menu_mode_common_area, *reset_windowing_action;
-          QAction *image_interpolate_action, *full_screen_action;
+          QAction *image_interpolate_action, *full_screen_action, *show_crosshairs_action;
           QAction **tool_actions, **colourmap_actions, *invert_colourmap_action, *invert_scale_action;
           QAction *next_image_action, *prev_image_action, *next_image_volume_action, *prev_image_volume_action;
           QAction *next_image_volume_group_action, *prev_image_volume_group_action, *image_list_area;

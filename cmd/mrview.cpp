@@ -3,6 +3,7 @@
 #include "app.h"
 #include "progressbar.h"
 #include "gui/init.h"
+#include "gui/mrview_icons.h"
 #include "gui/mrview/window.h"
 #include "gui/mrview/mode/list.h"
 

@@ -25,7 +25,8 @@
 #include "gui/init.h"
 #include "file/path.h"
 #include "math/SH.h"
-#include "gui/dwi/render_window.h"
+#include "gui/disp_profile_icon.h"
+#include "gui/disp_profile/render_window.h"
 
 MRTRIX_APPLICATION
 

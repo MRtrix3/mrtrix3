@@ -25,8 +25,6 @@
 
 #include <QCursor>
 
-#include "gui/icons.h"
-
 namespace MR
 {
   namespace GUI
