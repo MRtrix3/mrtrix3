@@ -75,7 +75,7 @@ namespace MR
       catch (...) {
         close (fd);
         addr = NULL;
-        throw Exception ("memmory-mapping failed for file \"" + Entry::name + "\": " + strerror (errno));
+        throw Exception ("memory-mapping failed for file \"" + Entry::name + "\": " + strerror (errno));
       }
 
       debug ("file \"" + Entry::name + "\" mapped at " + str ( (void*) addr) + ", size " + str (msize)

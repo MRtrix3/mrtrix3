@@ -131,7 +131,9 @@ void Directions::load_predefined (const size_t i)
     case 60:   directions_60   (az_el_pairs); break;
     case 129:  directions_129  (az_el_pairs); break;
     case 300:  directions_300  (az_el_pairs); break;
-    case 457:  directions_457  (az_el_pairs); break;
+    case 321:  directions_321  (az_el_pairs); break;
+    case 469:  directions_469  (az_el_pairs); break;
+    case 513:  directions_513  (az_el_pairs); break;
     case 1281: directions_1281 (az_el_pairs); break;
     default: throw Exception ("No pre-defined data set of " + str (i) + " directions!");
   }
