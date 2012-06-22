@@ -37,7 +37,9 @@ namespace Hemisphere {
 extern const float directions_60_data[];
 extern const float directions_129_data[];
 extern const float directions_300_data[];
+extern const float directions_321_data[];
 extern const float directions_469_data[];
+extern const float directions_513_data[];
 extern const float directions_1281_data[];
 
 
@@ -88,6 +90,7 @@ template <typename T> Math::Matrix<T>& directions_513 (Math::Matrix<T>& dirs)
 }
 
 
+// 4th-order tessellation of an icosahedron
 template <typename T> Math::Matrix<T>& directions_1281 (Math::Matrix<T>& dirs)
 {
   dirs = Math::Matrix<float> (const_cast<float*> (directions_1281_data), 1281, 2);
