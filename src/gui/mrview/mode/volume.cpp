@@ -85,12 +85,10 @@ namespace MR
           update_modelview_projection_viewport();
 
           // set up OpenGL environment:
-          glEnable (GL_TEXTURE_3D);
-          glShadeModel (GL_FLAT);
+          //glEnable (GL_TEXTURE_3D);
           glDisable (GL_DEPTH_TEST);
-          glTexEnvf (GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
+          //glTexEnvf (GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
           glDepthMask (GL_FALSE);
-          glColorMask (GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
 
           glEnable (GL_BLEND);
           glBlendFunc (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);

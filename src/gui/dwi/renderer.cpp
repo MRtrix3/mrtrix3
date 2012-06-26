@@ -69,7 +69,7 @@ namespace
     "      d1 = vec3 (-normal.x*saz, normal.x*caz, normal.z); "
     "    else "
     "      d1 = vec3 (normal.z*caz*sel - normal.x*sel*saz, normal.z*saz*sel + normal.x*sel*caz, normal.z*cel); "
-    "    vec3 d2 = vec3 (-normal.y*caz*sel - normal.x*caz*sel, -normal.y*saz*sel - normal.x*saz*cel, -normal.y*cel + normal.x*sel); "
+    "    vec3 d2 = vec3 (-normal.y*caz*sel - normal.x*caz*cel, -normal.y*saz*sel - normal.x*saz*cel, -normal.y*cel + normal.x*sel); "
     "    normal = cross (d1, d2); "
     "    if (reverse != 0) "
     "      normal = -normal; "
@@ -261,7 +261,6 @@ namespace MR
         Math::Vector<float> A (&amplitudes_and_derivatives[0], transform.rows());
 
         Math::mult (A, M, S);
-
       }
 
 
@@ -270,6 +269,8 @@ namespace MR
 
       void Renderer::compute_transform ()
       {
+        // order is r, del, daz
+
         transform.allocate (3*vertices.size(), Math::SH::NforL (lmax_computed));
         transform.zero();
 
