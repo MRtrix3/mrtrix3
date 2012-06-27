@@ -112,8 +112,8 @@ namespace MR
           uint32_t current_label = 1;
 
           for (uint32_t i = 0; i < labels.size(); i++) {
-            // this node has not been already clustered
-            if (labels[i] == 0) {
+            // this node has not been already clustered and is above threshold
+            if (labels[i] == 0 && data[i] > threshold) {
               cluster cluster;
               cluster.label = current_label;
               cluster.size = 0;
@@ -155,6 +155,7 @@ namespace MR
               }
             }
           }
+
           set_adjacency_matrix (dir_adjacency, 3);
         }
 
@@ -274,12 +275,12 @@ namespace MR
             if (next_neighbour (node, labels)) {
               continue;
             } else {
-              while (!next_neighbour (node, labels)) {
+              do {
                 node = stack.top();
                 if (node == root)
                   return;
                 stack.pop();
-              }
+              } while (!next_neighbour (node, labels));
             }
           }
         }
@@ -299,12 +300,12 @@ namespace MR
             if (next_neighbour (node, labels, data, threshold)) {
               continue;
             } else {
-              while (!next_neighbour (node, labels, data, threshold)) {
+              do {
                 node = stack.top();
                 if (node == root)
                   return;
                 stack.pop();
-              }
+              } while (!next_neighbour (node, labels, data, threshold));
             }
           }
         }

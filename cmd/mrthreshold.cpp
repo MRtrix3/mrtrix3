@@ -78,7 +78,7 @@ void usage ()
   + Option ("ignorezero", "ignore zero-values input voxels.")
 
   + Option ("mask",
-            "compute the optimal threshold based on voxel within a mask.")
+            "compute the optimal threshold based on voxels within a mask.")
   + Argument ("image").type_image_in ();
 }
 

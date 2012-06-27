@@ -178,7 +178,6 @@ void run ()
       grad(i,2) = cos(dirs(i,1));
       grad(i,3) = 1;
     }
-    std::cout << grad << std::endl;
     amp_header.DW_scheme() = grad;
   }
   amp_header.dim(3) = dirs.rows();
