@@ -72,9 +72,6 @@ namespace MR
 
 
 
-
-
-
         void Ortho::draw_projection (int proj, float fovx, float fovy)
         {
           // set up modelview matrix:
@@ -126,7 +123,7 @@ namespace MR
 
           draw_focus();
 
-          if (show_orientation_action->isChecked()) {
+          if (window.show_orientation_labels()) {
             glColor4f (1.0, 0.0, 0.0, 1.0);
             switch (proj) {
               case 0:
@@ -155,140 +152,92 @@ namespace MR
 
 
 
-        void Ortho::set_cursor ()
+
+        void Ortho::reset_event ()
         {
-          if (mouse_edge() == (RightEdge | BottomEdge))
-            glarea()->setCursor (Cursor::window);
-          else if (mouse_edge() & LeftEdge)
-            glarea()->setCursor (Cursor::zoom);
-          else
-            glarea()->setCursor (Cursor::crosshair);
-        }
-
-
-
-
-
-        void Ortho::set_focus (const QPoint& pos) {
-          if (current_projection < 0) return;
-          Base::set_focus (screen_to_model (pos, gl_viewport[current_projection], gl_modelview[current_projection], gl_projection[current_projection]));
+          reset_view();
           updateGL();
         }
 
 
 
-        void Ortho::adjust_target (const QPoint& dpos) {
+        void Ortho::mouse_press_event ()
+        {
+          if (window.mouse_position().x() < width()/2) 
+            if (window.mouse_position().y() >= height()/2) 
+              current_projection = 1;
+            else 
+              current_projection = 2;
+          else 
+            if (window.mouse_position().y() >= height()/2)
+              current_projection = 0;
+            else 
+              current_projection = -1;
+        }
+
+
+
+
+        void Ortho::slice_move_event (int x) 
+        { 
           if (current_projection < 0) return;
-          Point<> pos = screen_to_model_direction (dpos, gl_viewport[current_projection], gl_modelview[current_projection], gl_projection[current_projection]); 
+          Point<> move = move_in_out_displacement (x * image()->header().vox (current_projection),
+              gl_viewport[current_projection], 
+              gl_modelview[current_projection], 
+              gl_projection[current_projection]); 
+          set_focus (focus() + move);
+          updateGL();
+        } 
+
+
+        void Ortho::set_focus_event ()
+        {
+          if (current_projection < 0) 
+            return;
+          Base::set_focus (screen_to_model (
+                window.mouse_position(), 
+                gl_viewport[current_projection], 
+                gl_modelview[current_projection], 
+                gl_projection[current_projection]));
+          updateGL();
+        }
+
+
+        void Ortho::contrast_event ()
+        {
+          image()->adjust_windowing (window.mouse_displacement());
+          window.scaling_updated();
+          updateGL();
+        }
+
+
+
+
+
+
+        void Ortho::pan_event () 
+        {
+          if (current_projection < 0) return;
+          Point<> pos = screen_to_model_direction (
+              window.mouse_displacement(), 
+              gl_viewport[current_projection], 
+              gl_modelview[current_projection], 
+              gl_projection[current_projection]); 
           set_target (target() - pos);
           updateGL();
         }
 
 
-
-
-        bool Ortho::mouse_click ()
-        {
-          if (mouse_pos().x() < glarea()->width()/2) 
-            if (mouse_pos().y() < glarea()->height()/2) 
-              current_projection = 1;
-            else 
-              current_projection = 2;
-          else 
-            if (mouse_pos().y() < glarea()->height()/2)
-              current_projection = 0;
-            else 
-              current_projection = -1;
-
-
-          if (mouse_modifiers() == Qt::NoModifier) {
-
-            if (mouse_buttons() == Qt::LeftButton) {
-              glarea()->setCursor (Cursor::crosshair);
-              set_focus (mouse_pos());
-              return true;
-            }
-
-            if (mouse_buttons() == Qt::RightButton) {
-              if (!mouse_edge() && current_projection >= 0) {
-                glarea()->setCursor (Cursor::pan_crosshair);
-                return true;
-              }
-            }
-
-          }
-          return false;
+        void Ortho::panthrough_event () 
+        { 
+          if (current_projection < 0) return;
+          Point<> move = move_in_out_displacement (window.mouse_displacement().y(),
+              gl_viewport[current_projection], 
+              gl_modelview[current_projection], 
+              gl_projection[current_projection]); 
+          set_focus (focus() + move);
+          updateGL();
         }
-
-
-
-
-
-        bool Ortho::mouse_move ()
-        {
-          if (mouse_buttons() == Qt::NoButton) {
-            set_cursor();
-            return false;
-          }
-
-
-          if (mouse_modifiers() == Qt::NoModifier) {
-
-            if (mouse_buttons() == Qt::LeftButton) {
-              set_focus (currentPos);
-              return true;
-            }
-
-            if (mouse_buttons() == Qt::RightButton) {
-
-              if (mouse_edge() == (RightEdge | BottomEdge)) {
-                image()->adjust_windowing (mouse_dpos());
-                window.scaling_updated();
-                updateGL();
-                return true;
-              }
-
-              if (mouse_edge() & LeftEdge) {
-                change_FOV_fine (mouse_dpos().y());
-                updateGL();
-                return true;
-              }
-
-              adjust_target (mouse_dpos());
-              return true;
-            }
-          }
-
-          return false;
-        }
-
-
-
-
-        bool Ortho::mouse_release ()
-        {
-          set_cursor();
-          current_projection = -1;
-          return true;
-        }
-
-
-
-
-        bool Ortho::mouse_wheel (float delta, Qt::Orientation orientation)
-        {
-          if (orientation == Qt::Vertical) {
-
-            if (mouse_modifiers() == Qt::ControlModifier) {
-              change_FOV_scroll (-delta);
-              updateGL();
-              return true;
-            }
-          }
-
-          return false; 
-        }
-
 
 
 
@@ -311,12 +260,6 @@ namespace MR
         }
 
 
-
-        void Ortho::reset ()
-        {
-          reset_view();
-          updateGL();
-        }
 
 
       }

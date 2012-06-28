@@ -45,26 +45,22 @@ namespace MR
 
             virtual void paint ();
 
-            virtual bool mouse_click ();
-            virtual bool mouse_move ();
-            virtual bool mouse_release ();
-            virtual bool mouse_wheel (float delta, Qt::Orientation orientation);
-
-            virtual void reset_view ();
-
-          public slots:
-            virtual void reset ();
+            virtual void reset_event ();
+            virtual void mouse_press_event ();
+            virtual void slice_move_event (int x);
+            virtual void set_focus_event ();
+            virtual void contrast_event ();
+            virtual void pan_event ();
+            virtual void panthrough_event ();
 
           protected:
-            void set_cursor ();
             void draw_projection (int proj, float fovx, float fovy);
 
             GLdouble gl_modelview[3][16], gl_projection[3][16];
             GLint gl_viewport[3][4];
             int current_projection;
 
-            void set_focus (const QPoint& pos);
-            void adjust_target (const QPoint& dpos);
+            void reset_view ();
         };
 
       }

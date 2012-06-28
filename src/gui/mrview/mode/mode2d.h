@@ -36,34 +36,21 @@ namespace MR
 
         class Mode2D : public Base
         {
-            Q_OBJECT
-
           public:
-            Mode2D (Window& parent);
+            Mode2D (Window& parent, int flags = FocusContrast | MoveTarget);
             virtual ~Mode2D ();
 
             virtual void paint ();
 
-            virtual bool mouse_click ();
-            virtual bool mouse_move ();
-            virtual bool mouse_release ();
-            virtual bool mouse_wheel (float delta, Qt::Orientation orientation);
-
-            virtual void reset_view ();
-
-          public slots:
-            virtual void axial ();
-            virtual void sagittal ();
-            virtual void coronal ();
-            virtual void slice_prev ();
-            virtual void slice_next ();
-            virtual void reset ();
+            virtual void reset_event ();
+            virtual void slice_move_event (int x);
+            virtual void set_focus_event ();
+            virtual void contrast_event ();
+            virtual void pan_event ();
+            virtual void panthrough_event ();
 
           protected:
-            QAction *axial_action, *sagittal_action, *coronal_action;
-            QAction *slice_prev_action, *slice_next_action;
-
-            void set_cursor ();
+            void reset_view ();
         };
 
       }

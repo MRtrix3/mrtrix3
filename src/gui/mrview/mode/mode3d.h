@@ -40,22 +40,23 @@ namespace MR
         class Mode3D : public Mode2D
         {
           public:
-            Mode3D (Window& parent);
+            Mode3D (Window& parent, int flags = FocusContrast | MoveTarget | TiltRotate);
             virtual ~Mode3D ();
 
             virtual void paint ();
 
-            virtual bool mouse_click ();
-            virtual bool mouse_move ();
-            virtual bool mouse_release ();
+            virtual void reset_event ();
+            virtual void slice_move_event (int x);
+            virtual void set_focus_event ();
+            virtual void contrast_event ();
+            virtual void pan_event ();
+            virtual void panthrough_event ();
+            virtual void tilt_event ();
+            virtual void rotate_event ();
 
             static const App::OptionGroup options;
 
-          public slots:
-            virtual void reset ();
-
           protected:
-            void set_cursor ();
             void draw_orientation_labels ();
         };
 

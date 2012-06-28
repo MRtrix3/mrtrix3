@@ -44,84 +44,83 @@ namespace MR
 #undef MODE_OPTION
 
 
-      class Window::GLArea : public QGLWidget
-      {
-        public:
-          GLArea (Window& parent) :
-            QGLWidget (QGLFormat (QGL::DoubleBuffer | QGL::DepthBuffer | QGL::StencilBuffer | QGL::Rgba), &parent),
-            main (parent) {
-              setCursor (Cursor::crosshair);
-              setMouseTracking (true);
-              setAcceptDrops (true);
-              setFocusPolicy (Qt::StrongFocus);
+
+
+      // GLArea definitions:
+
+      inline Window::GLArea::GLArea (Window& parent) :
+        QGLWidget (QGLFormat (QGL::DoubleBuffer | QGL::DepthBuffer | QGL::StencilBuffer | QGL::Rgba), &parent),
+        main (parent) {
+          setCursor (Cursor::crosshair);
+          setMouseTracking (true);
+          setAcceptDrops (true);
+          setFocusPolicy (Qt::StrongFocus);
+        }
+
+      QSize Window::GLArea::minimumSizeHint () const {
+        return QSize (512, 512);
+      }
+      QSize Window::GLArea::sizeHint () const {
+        return QSize (512, 512);
+      }
+
+      void Window::GLArea::dragEnterEvent (QDragEnterEvent* event) {
+        event->acceptProposedAction();
+      }
+      void Window::GLArea::dragMoveEvent (QDragMoveEvent* event) {
+        event->acceptProposedAction();
+      }
+      void Window::GLArea::dragLeaveEvent (QDragLeaveEvent* event) {
+        event->accept();
+      }
+      void Window::GLArea::dropEvent (QDropEvent* event) {
+        const QMimeData* mimeData = event->mimeData();
+        if (mimeData->hasUrls()) {
+          VecPtr<MR::Image::Header> list;
+          QList<QUrl> urlList = mimeData->urls();
+          for (int i = 0; i < urlList.size() && i < 32; ++i) {
+            try {
+              list.push_back (new MR::Image::Header (urlList.at (i).path().toAscii().constData()));
             }
-
-          QSize minimumSizeHint () const {
-            return QSize (512, 512);
-          }
-          QSize sizeHint () const {
-            return QSize (512, 512);
-          }
-
-        protected:
-          void dragEnterEvent (QDragEnterEvent* event) {
-            event->acceptProposedAction();
-          }
-          void dragMoveEvent (QDragMoveEvent* event) {
-            event->acceptProposedAction();
-          }
-          void dragLeaveEvent (QDragLeaveEvent* event) {
-            event->accept();
-          }
-          void dropEvent (QDropEvent* event) {
-            const QMimeData* mimeData = event->mimeData();
-            if (mimeData->hasUrls()) {
-              VecPtr<MR::Image::Header> list;
-              QList<QUrl> urlList = mimeData->urls();
-              for (int i = 0; i < urlList.size() && i < 32; ++i) {
-                try {
-                  list.push_back (new MR::Image::Header (urlList.at (i).path().toAscii().constData()));
-                }
-                catch (Exception& e) {
-                  e.display();
-                }
-              }
-              if (list.size())
-                main.add_images (list);
+            catch (Exception& e) {
+              e.display();
             }
           }
+          if (list.size())
+            main.add_images (list);
+        }
+      }
 
-        private:
-          Window& main;
-
-          void initializeGL () {
-            main.initGL();
-          }
-          void paintGL () {
-            main.paintGL();
-          }
-          void mousePressEvent (QMouseEvent* event) {
-            main.mousePressEventGL (event);
-          }
-          void mouseMoveEvent (QMouseEvent* event) {
-            main.mouseMoveEventGL (event);
-          }
-          void mouseDoubleClickEvent (QMouseEvent* event) {
-            main.mouseDoubleClickEventGL (event);
-          }
-          void mouseReleaseEvent (QMouseEvent* event) {
-            main.mouseReleaseEventGL (event);
-          }
-          void wheelEvent (QWheelEvent* event) {
-            main.wheelEventGL (event);
-          }
-      };
+      void Window::GLArea::initializeGL () {
+        main.initGL();
+      }
+      void Window::GLArea::paintGL () {
+        main.paintGL();
+      }
+      void Window::GLArea::mousePressEvent (QMouseEvent* event) {
+        main.mousePressEventGL (event);
+      }
+      void Window::GLArea::mouseMoveEvent (QMouseEvent* event) {
+        main.mouseMoveEventGL (event);
+      }
+      void Window::GLArea::mouseReleaseEvent (QMouseEvent* event) {
+        main.mouseReleaseEventGL (event);
+      }
+      void Window::GLArea::wheelEvent (QWheelEvent* event) {
+        main.wheelEventGL (event);
+      }
 
 
+
+
+      // Main Window class:
 
       Window::Window() :
         glarea (new GLArea (*this)),
         mode (NULL),
+        FocusModifier (Qt::MetaModifier),
+        MoveModifier (Qt::ControlModifier),
+        RotateModifier (Qt::ShiftModifier),
         orient (NAN, NAN, NAN, NAN),
         field_of_view (100.0),
         proj (2)
@@ -138,47 +137,170 @@ namespace MR
         QMenu* menu;
         QToolButton* button;
 
-        toolbar = addToolBar ("File");
+        // Main toolbar:
+
+        toolbar = addToolBar ("Main toolbar");
         action = toolbar->toggleViewAction ();
-        action->setShortcut (tr ("Ctrl+F"));
+        action->setShortcut (tr ("Ctrl+M"));
         addAction (action);
 
+        // Image menu:
 
-        action = toolbar->addAction (QIcon (":/open.svg"), 
-            tr ("Open an existing image\n\nShortcut: Ctrl+O"), 
-            this, SLOT (image_open_slot()));
+        menu = new QMenu (tr ("Start menu"), this);
+
+        action = menu->addAction (QIcon (":/open.svg"), 
+            tr ("Open..."), this, SLOT (image_open_slot()));
+        action->setToolTip (tr ("Open an existing image\n\nShortcut: Ctrl+O"));
         action->setShortcut (tr ("Ctrl+O"));
         addAction (action);
 
-        save_action = toolbar->addAction (QIcon (":/save.svg"), 
-            tr ("Save the current image\n\nShortcut: Ctrl+S"), 
-            this, SLOT (image_save_slot()));
+        save_action = menu->addAction (QIcon (":/save.svg"), 
+            tr ("Save..."), this, SLOT (image_save_slot()));
+        save_action->setToolTip (tr ("Save the current image\n\nShortcut: Ctrl+S"));
         save_action->setShortcut (tr ("Ctrl+S"));
         addAction (save_action);
 
-        close_action = toolbar->addAction (QIcon (":/close.svg"), 
-            tr ("Close the current image\n\nShortcut: Ctrl+W"), 
-            this, SLOT (image_close_slot()));
+        close_action = menu->addAction (QIcon (":/close.svg"), 
+            tr ("Close"), this, SLOT (image_close_slot()));
+        close_action->setToolTip (tr ("Close the current image\n\nShortcut: Ctrl+W"));
         close_action->setShortcut (tr ("Ctrl+W"));
         addAction (close_action);
 
-        toolbar->addSeparator();
+        menu->addSeparator();
 
-        action = toolbar->addAction (QIcon (":/quit.svg"), 
-            tr("Quit\n\nShortcut: Ctrl+Q"),
-            this, SLOT (close()));
+        properties_action = menu->addAction (QIcon (":/info.svg"), 
+            tr ("Properties..."), this, SLOT (image_properties_slot()));
+        properties_action->setShortcut (tr("Ctrl+P"));
+        properties_action->setToolTip (tr ("Display the properties of the current image\n\nShortcut: Ctrl+P"));
+        addAction (properties_action);
+
+        menu->addSeparator();
+
+        action = menu->addAction (QIcon (":/quit.svg"), 
+            tr ("Quit"), this, SLOT (close()));
+        action->setToolTip (tr("Quit\n\nShortcut: Ctrl+Q"));
         action->setShortcut (tr ("Ctrl+Q"));
         addAction (action);
 
-        // Display toolbar:
-        toolbar = addToolBar ("Display");
-        action = toolbar->toggleViewAction ();
-        action->setShortcut (tr ("Ctrl+D"));
-        addAction (action);
+
+        button = new QToolButton (this);
+        button->setToolTip (tr ("Start menu"));
+        button->setIcon (QIcon (":/start.svg"));
+        button->setPopupMode (QToolButton::InstantPopup);
+        button->setMenu (menu);
+        toolbar->addWidget (button);
+
+
+        // Image menu:
+
+        image_menu = new QMenu (tr ("Image menu"), this);
+
+        image_group = new QActionGroup (this);
+        image_group->setExclusive (true);
+        connect (image_group, SIGNAL (triggered (QAction*)), this, SLOT (image_select_slot (QAction*)));
+
+        next_image_action = image_menu->addAction (QIcon (":/next_image.svg"),
+            tr ("Next image"), this, SLOT (image_next_slot()));
+        next_image_action->setToolTip (tr ("View the next image in the list\n\nShortcut: Tab"));
+        next_image_action->setShortcut (tr ("Tab"));
+        addAction (next_image_action);
+
+        prev_image_action = image_menu->addAction (QIcon (":/previous_image.svg"),
+            tr ("Previous image"), this, SLOT (image_previous_slot()));
+        prev_image_action->setToolTip (tr ("View the previous image in the list\n\nShortcut: Shift+Tab"));
+        prev_image_action->setShortcut (tr ("Shift+Tab"));
+        addAction (prev_image_action);
+
+        image_menu->addSeparator();
+
+        next_slice_action = image_menu->addAction (QIcon (":/forwards.svg"),
+            tr ("Next slice"), this, SLOT (slice_next_slot()));
+        next_slice_action->setToolTip (tr ("Move to next image slice\n\nShortcut: Up"));
+        next_slice_action->setShortcut (tr ("Up"));
+        addAction (next_slice_action);
+
+        prev_slice_action = image_menu->addAction (QIcon (":/backwards.svg"),
+            tr ("Previous slice"), this, SLOT (slice_previous_slot()));
+        prev_slice_action->setToolTip (tr ("Move to previous image slice\n\nShortcut: Down"));
+        prev_slice_action->setShortcut (tr ("Down"));
+        addAction (prev_slice_action);
+
+        next_image_volume_action = image_menu->addAction (QIcon (":/next_volume.svg"), 
+            tr ("Next volume"), this, SLOT (image_next_volume_slot()));
+        next_image_volume_action->setToolTip (tr ("View the next volume in the image (4th dimension)\n\nShortcut: Right"));
+        next_image_volume_action->setShortcut (tr ("Right"));
+        addAction (next_image_volume_action);
+
+        prev_image_volume_action = image_menu->addAction (QIcon (":/previous_volume.svg"),
+            tr ("Previous volume"), this, SLOT (image_previous_volume_slot()));
+        prev_image_volume_action->setShortcut (tr ("Left"));
+        prev_image_volume_action->setToolTip (tr ("View the previous volume in the image (4th dimension)\n\nShortcut: Left"));
+        addAction (prev_image_volume_action);
+
+        next_image_volume_group_action = image_menu->addAction (QIcon (":/next_volume_group.svg"), 
+            tr ("Next volume group"), this, SLOT (image_next_volume_group_slot()));
+        next_image_volume_group_action->setToolTip (tr ("View the next group of volumes in the image (5th dimension)\n\nShortcut: Shift+Right"));
+        next_image_volume_group_action->setShortcut (tr ("Shift+Right"));
+        addAction (next_image_volume_group_action);
+
+        prev_image_volume_group_action = image_menu->addAction (QIcon (":/previous_volume_group.svg"),
+            tr("Previous volume group"), this, SLOT (image_previous_volume_group_slot()));
+        prev_image_volume_group_action->setToolTip (tr ("View the previous group of volumes in the image (5th dimension)\n\nShortcut: Shift+Left"));
+        prev_image_volume_group_action->setShortcut (tr ("Shift+Left"));
+        addAction (prev_image_volume_group_action);
+
+        image_list_area = image_menu->addSeparator();
+
+        button = new QToolButton (this);
+        button->setToolTip (tr ("Image menu"));
+        button->setIcon (QIcon (":/image.svg"));
+        button->setPopupMode (QToolButton::InstantPopup);
+        button->setMenu (image_menu);
+        toolbar->addWidget (button);
+
+
+        // Colourmap menu:
+
+        colourmap_menu = new QMenu (tr ("Colourmap menu"), this);
+
+        ColourMap::init (this, colourmap_group, colourmap_menu, colourmap_actions);
+        connect (colourmap_group, SIGNAL (triggered (QAction*)), this, SLOT (select_colourmap_slot()));
+
+        colourmap_menu->addSeparator();
+
+        invert_scale_action = colourmap_menu->addAction (tr ("&Invert scaling"), this, SLOT (invert_scaling_slot()));
+        invert_scale_action->setCheckable (true);
+        invert_scale_action->setStatusTip (tr ("invert the current scaling"));
+
+        invert_colourmap_action = colourmap_menu->addAction (tr ("Invert &Colourmap"), this, SLOT (invert_colourmap_slot()));
+        invert_colourmap_action->setCheckable (true);
+        invert_colourmap_action->setStatusTip (tr ("invert the current colourmap"));
+
+        colourmap_menu->addSeparator();
+
+        reset_windowing_action = colourmap_menu->addAction (QIcon (":/reset_contrast.svg"), 
+            tr ("Reset brightness/contrast"), this, SLOT (image_reset_slot()));
+        reset_windowing_action->setToolTip (tr ("Reset image brightness & contrast\n\nShortcut: Esc"));
+        reset_windowing_action->setShortcut (tr ("Esc"));
+        addAction (reset_windowing_action);
+
+        image_interpolate_action = colourmap_menu->addAction (tr ("&Interpolate"), this, SLOT (image_interpolate_slot()));
+        image_interpolate_action->setToolTip (tr ("Toggle between nearest-neighbour and linear interpolation\n\nShortcut: I"));
+        image_interpolate_action->setShortcut (tr ("I"));
+        image_interpolate_action->setCheckable (true);
+        image_interpolate_action->setChecked (true);
+
+        button = new QToolButton (this);
+        button->setToolTip (tr ("Colourmap menu"));
+        button->setIcon (QIcon (":/colourmap.svg"));
+        button->setPopupMode (QToolButton::InstantPopup);
+        button->setMenu (colourmap_menu);
+        toolbar->addWidget (button);
 
         // Mode menu:
         mode_group = new QActionGroup (this);
         mode_group->setExclusive (true);
+        connect (mode_group, SIGNAL (triggered (QAction*)), this, SLOT (select_mode_slot (QAction*)));
 
         menu = new QMenu ("Display mode", this);
 #define MODE(classname, specifier, name, description) \
@@ -191,17 +313,81 @@ namespace MR
         }
 #undef MODE
 #undef MODE_OPTION
+        mode_group->actions()[0]->setChecked (true);
+
+
+        menu->addSeparator();
+
+        projection_group = new QActionGroup (this);
+        projection_group->setExclusive (true);
+        connect (projection_group, SIGNAL (triggered (QAction*)), this, SLOT (select_projection_slot (QAction*)));
+
+        axial_action = menu->addAction (QIcon (":/axial.svg"), tr ("Axial"));
+        axial_action->setToolTip (tr ("Switch to axial projection\n\nShortcut: A"));
+        axial_action->setShortcut (tr ("A"));
+        axial_action->setCheckable (true);
+        projection_group->addAction (axial_action);
+
+        sagittal_action = menu->addAction (QIcon (":/sagittal.svg"), tr ("Sagittal"));
+        sagittal_action->setToolTip (tr ("Switch to sagittal projection\n\nShortcut: S"));
+        sagittal_action->setShortcut (tr ("S"));
+        sagittal_action->setCheckable (true);
+        projection_group->addAction (sagittal_action);
+
+        coronal_action = menu->addAction (QIcon (":/coronal.svg"), tr ("Coronal"));
+        coronal_action->setToolTip (tr ("Switch to coronal projection\n\nShortcut: C"));
+        coronal_action->setShortcut (tr ("C"));
+        coronal_action->setCheckable (true);
+        projection_group->addAction (coronal_action);
+
+        menu->addSeparator();
+
+        full_screen_action = menu->addAction (QIcon (":/fullscreen.svg"), 
+            tr ("Full screen"), this, SLOT (full_screen_slot()));
+        full_screen_action->setToolTip (tr ("Toggle full screen mode\n\nShortcut: F11"));
+        full_screen_action->setShortcut (tr ("F11"));
+        full_screen_action->setCheckable (true);
+        full_screen_action->setChecked (false);
+        addAction (full_screen_action);
+
+        show_crosshairs_action = menu->addAction (QIcon (":/crosshairs.svg"),
+            tr ("Show focus"), glarea, SLOT (updateGL()));
+        show_crosshairs_action->setToolTip (tr ("Show/hide focus crosshairs\n\nShortcut: F"));
+        show_crosshairs_action->setShortcut (tr("F"));
+        show_crosshairs_action->setCheckable (true);
+        show_crosshairs_action->setChecked (true);
+
+        show_comments_action = menu->addAction (tr ("Show comments"), glarea, SLOT (updateGL()));
+        show_comments_action->setToolTip (tr ("Show/hide image comments\n\nShortcut: H"));
+        show_comments_action->setShortcut (tr("H"));
+        show_comments_action->setCheckable (true);
+        show_comments_action->setChecked (true);
+
+        show_voxel_info_action = menu->addAction (tr ("Show voxel information"), glarea, SLOT (updateGL()));
+        show_voxel_info_action->setToolTip (tr ("Show/hide voxel position and intensity information\n\nShortcut: V"));
+        show_voxel_info_action->setShortcut (tr("V"));
+        show_voxel_info_action->setCheckable (true);
+        show_voxel_info_action->setChecked (true);
+
+        show_orientation_labels_action = menu->addAction (tr ("Show orientation labels"), glarea, SLOT (updateGL()));
+        show_orientation_labels_action->setToolTip (tr ("Show/hide image orientation lables\n\nShortcut: O"));
+        show_orientation_labels_action->setShortcut (tr("O"));
+        show_orientation_labels_action->setCheckable (true);
+        show_orientation_labels_action->setChecked (true);
+
+        action = menu->addAction (QIcon (":/reset_view.svg"), tr ("Reset view"), this, SLOT(reset_view_slot()));
+        action->setToolTip (tr ("Reset view parameters to defaults\n\nShortcut: R"));
+        action->setShortcut (tr ("R"));
+        addAction (action);
+
         button = new QToolButton (this);
-        button->setToolTip (tr ("Set display mode..."));
+        button->setToolTip (tr ("Display"));
         button->setIcon (QIcon (":/mode.svg"));
         button->setMenu (menu);
         button->setPopupMode (QToolButton::InstantPopup);
 
         action = toolbar->addWidget (button);
         addAction (action);
-
-        mode_group->actions()[0]->setChecked (true);
-        connect (mode_group, SIGNAL (triggered (QAction*)), this, SLOT (select_mode_slot (QAction*)));
 
 
         // Tool menu:
@@ -230,160 +416,69 @@ namespace MR
 
         connect (tool_group, SIGNAL (triggered (QAction*)), this, SLOT (select_tool_slot (QAction*)));
 
-        show_crosshairs_action = toolbar->addAction (QIcon (":/crosshairs.svg"),
-            tr ("Show/hide focus crosshairs\n\nShortcut: F"),
-            this, SLOT (show_crosshairs_slot()));
-        show_crosshairs_action->setCheckable (true);
-        show_crosshairs_action->setChecked (true);
-        show_crosshairs_action->setShortcut (tr("F"));
-        addAction (show_crosshairs_action);
+
+        toolbar->addSeparator();
+
+        // Mouse mode actions:
+
+        mode_action_group = new QActionGroup (this);
+        mode_action_group->setExclusive (true);
+        connect (mode_action_group, SIGNAL (triggered (QAction*)), this, SLOT (select_mouse_mode_slot (QAction*)));
+
+        action = toolbar->addAction (QIcon (":/select_contrast.svg"), tr ("Change focus / contrast"));
+        action->setToolTip (tr ("Left-click: set focus\nRight-click: change brightness/constrast\n\nShortcut: 1\n\nHold down Win key to use this mode\nregardless of currently selected mode"));
+        action->setShortcut (tr("1"));
+        action->setCheckable (true);
+        action->setChecked (true);
+        mode_action_group->addAction (action);
+
+        action = toolbar->addAction (QIcon (":/move.svg"), tr ("Move viewport"));
+        action->setToolTip (tr ("Left-click: move in-plane\nRight-click: move through-plane\n\nShortcut: 2\n\nHold down Ctrl key to use this mode\nregardless of currently selected mode"));
+        action->setShortcut (tr("2"));
+        action->setCheckable (true);
+        mode_action_group->addAction (action);
+
+        action = toolbar->addAction (QIcon (":/rotate.svg"), tr ("Move camera"));
+        action->setToolTip (tr ("Left-click: move camera in-plane\nRight-click: rotate camera about view axis\n\nShortcut: 2\n\nHold down Shift key to use this mode\nregardless of currently selected mode"));
+        action->setShortcut (tr("3"));
+        action->setCheckable (true);
+        mode_action_group->addAction (action);
+
+        extra_controls_action = toolbar->addAction (QIcon (":/controls.svg"),
+            tr ("Additional controls"), this, SLOT (mode_control_slot()));
+        extra_controls_action->setShortcut (tr("0"));
+        extra_controls_action->setToolTip (tr ("Adjust additional viewing parameters"));
+        extra_controls_action->setEnabled (false);
+
+        toolbar->addSeparator();
 
 
-        full_screen_action = toolbar->addAction (QIcon (":/fullscreen.svg"), 
-            tr ("Toggle full screen mode\n\nShortcut: F11"), 
-            this, SLOT (full_screen_slot()));
-        full_screen_action->setCheckable (true);
-        full_screen_action->setChecked (false);
-        full_screen_action->setShortcut (tr ("F11"));
-        addAction (full_screen_action);
+        // Help menu:
 
-        addToolBarBreak();
+        menu = new QMenu (tr ("Help"), this);
 
-
-
-        // Image toolbar:
-        toolbar = addToolBar ("Image");
-        action = toolbar->toggleViewAction ();
-        action->setShortcut (tr ("Ctrl+I"));
-        addAction (action);
-
-        // TODO: icons for next/previous image, interpolate, 
-        // image selection menu, colourmap selection menu
-
-        prev_image_action = toolbar->addAction (QIcon (":/previous.svg"),
-            tr ("View the previous image in the list\n\nShortcut: Shift+Tab"), 
-            this, SLOT (image_previous_slot()));
-        prev_image_action->setShortcut (tr ("Shift+Tab"));
-        addAction (prev_image_action);
-
-        next_image_action = toolbar->addAction (QIcon (":/next.svg"),
-            tr ("View the next image in the list\n\nShortcut: Tab"), 
-            this, SLOT (image_next_slot()));
-        next_image_action->setShortcut (tr ("Tab"));
-        addAction (next_image_action);
-
-        prev_image_volume_action = toolbar->addAction (QIcon (":/previous_volume.svg"),
-            tr ("View the previous volume in the image (4th dimension)\n\nShortcut: Left"),
-            this, SLOT (image_previous_volume_slot()));
-        prev_image_volume_action->setShortcut (tr ("Left"));
-        addAction (prev_image_volume_action);
-
-        next_image_volume_action = toolbar->addAction (QIcon (":/next_volume.svg"), 
-            tr ("View the next volume in the image (4th dimension)\n\nShortcut: Right"), 
-            this, SLOT (image_next_volume_slot()));
-        next_image_volume_action->setShortcut (tr ("Right"));
-        addAction (next_image_volume_action);
-
-        prev_image_volume_group_action = toolbar->addAction (QIcon (":/previous_volume_group.svg"),
-            tr ("View the previous group of volumes in the image (5th dimension)\n\nShortcut: Shift+Left"), 
-            this, SLOT (image_previous_volume_group_slot()));
-        prev_image_volume_group_action->setShortcut (tr ("Shift+Left"));
-        addAction (prev_image_volume_group_action);
-
-        next_image_volume_group_action = toolbar->addAction (QIcon (":/next_volume_group.svg"), 
-            tr ("View the next group of volumes in the image (5th dimension)\n\nShortcut: Shift+Right"), 
-            this, SLOT (image_next_volume_group_slot()));
-        next_image_volume_group_action->setShortcut (tr ("Shift+Right"));
-        addAction (next_image_volume_group_action);
-
-        reset_windowing_action = toolbar->addAction (QIcon (":/reset_contrast.svg"), 
-            tr ("Reset image brightness & contrast\n\nShortcut: Home"), 
-            this, SLOT (image_reset_slot()));
-        reset_windowing_action->setShortcut (tr ("Home"));
-        addAction (reset_windowing_action);
-
-        properties_action = toolbar->addAction (QIcon (":/info.svg"), 
-            tr ("Display the properties of the current image\n\nShortcut: Ctrl+P"),
-            this, SLOT (image_properties_slot()));
-        properties_action->setShortcut (tr("Ctrl+P"));
-        addAction (properties_action);
-
-
-
-
-        // Help toolbar:
-        toolbar = addToolBar ("Help");
-        action = toolbar->toggleViewAction ();
-        action->setShortcut (tr ("Ctrl+H"));
-        addAction (action);
-
-        toolbar->addAction (QIcon (":/opengl.svg"),
-            tr ("Display OpenGL information"),
+        action = menu->addAction (QIcon (":/opengl.svg"),
+            tr("OpenGL"),
             this, SLOT (OpenGL_slot()));
+        action->setToolTip (tr("Display OpenGL information"));
 
-        toolbar->addAction (QIcon (":/mrtrix.png"),
-          tr ("Display information about MRView"),
+        action = menu->addAction (QIcon (":/mrtrix.png"),
+          tr ("About"),
           this, SLOT (about_slot()));
+        action->setToolTip (tr ("Display information about MRView"));
 
-        toolbar->addAction (QIcon (":/Qt-logo.svg"), 
-            tr ("Display information about Qt"), 
+        action = menu->addAction (QIcon (":/Qt-logo.svg"), 
+            tr ("about Qt"), 
             this, SLOT (aboutQt_slot()));
+        action->setToolTip (tr ("Display information about Qt"));
 
+        button = new QToolButton (this);
+        button->setToolTip (tr ("Help"));
+        button->setIcon (QIcon (":/help.svg"));
+        button->setPopupMode (QToolButton::InstantPopup);
+        button->setMenu (menu);
+        toolbar->addWidget (button);
 
-
-
-        // View menu:
-        view_menu = menuBar()->addMenu (tr ("&View"));
-        view_menu->addSeparator();
-
-        view_menu_mode_area = view_menu->addSeparator();
-        view_menu_mode_common_area = view_menu->addSeparator();
-
-
-        // Tool menu:
-        // Image menu:
-        image_interpolate_action = new QAction (tr ("&Interpolate"), this);
-        image_interpolate_action->setShortcut (tr ("I"));
-        image_interpolate_action->setCheckable (true);
-        image_interpolate_action->setChecked (true);
-        image_interpolate_action->setStatusTip (tr ("Toggle between nearest-neighbour and linear interpolation"));
-        connect (image_interpolate_action, SIGNAL (triggered()), this, SLOT (image_interpolate_slot()));
-
-        image_group = new QActionGroup (this);
-        image_group->setExclusive (true);
-        connect (image_group, SIGNAL (triggered (QAction*)), this, SLOT (image_select_slot (QAction*)));
-
-        image_menu = menuBar()->addMenu (tr ("&Image"));
-        image_menu->addAction (next_image_action);
-        image_menu->addAction (prev_image_action);
-        image_menu->addSeparator();
-        image_menu->addAction (reset_windowing_action);
-        image_menu->addAction (image_interpolate_action);
-        colourmap_menu = image_menu->addMenu (tr ("&colourmap"));
-        image_menu->addSeparator();
-        image_menu->addAction (next_image_volume_action);
-        image_menu->addAction (prev_image_volume_action);
-        image_menu->addAction (next_image_volume_group_action);
-        image_menu->addAction (prev_image_volume_group_action);
-        image_list_area = image_menu->addSeparator();
-
-        // Colourmap menu:
-        ColourMap::init (this, colourmap_group, colourmap_menu, colourmap_actions);
-        connect (colourmap_group, SIGNAL (triggered (QAction*)), this, SLOT (select_colourmap_slot()));
-        colourmap_menu->addSeparator();
-        invert_scale_action = new QAction (tr ("&Invert scaling"), this);
-        invert_scale_action->setCheckable (true);
-        invert_scale_action->setStatusTip (tr ("invert the current scaling"));
-        connect (invert_scale_action, SIGNAL (changed()), this, SLOT (invert_scaling_slot()));
-        colourmap_menu->addAction (invert_scale_action);
-
-        invert_colourmap_action = new QAction (tr ("Invert &Colourmap"), this);
-        invert_colourmap_action->setCheckable (true);
-        invert_colourmap_action->setStatusTip (tr ("invert the current colourmap"));
-        connect (invert_colourmap_action, SIGNAL (changed()), this, SLOT (invert_colourmap_slot()));
-        colourmap_menu->addAction (invert_colourmap_action);
-
-        menuBar()->addSeparator();
 
 
         lighting_ = new GL::Lighting (this);
@@ -486,10 +581,15 @@ namespace MR
       void Window::select_mode_slot (QAction* action)
       {
         mode = dynamic_cast<GUI::MRView::Mode::__Action__*> (action)->create (*this);
-        mode->updateGL();
+        set_mode_actions();
+        glarea->updateGL();
       }
 
 
+      void Window::select_mouse_mode_slot (QAction* action)
+      {
+        set_cursor();
+      }
 
 
 
@@ -507,7 +607,7 @@ namespace MR
           tool->show();
         else 
           tool->close();
-        mode->updateGL();
+        glarea->updateGL();
       }
 
 
@@ -522,7 +622,7 @@ namespace MR
           while (action != colourmap_actions[n])
             ++n;
           imagep->set_colourmap (ColourMap::from_menu (n));
-          mode->updateGL();
+          glarea->updateGL();
         }
       }
 
@@ -530,14 +630,14 @@ namespace MR
       {
         if (image()) {
           image()->set_invert_map (invert_colourmap_action->isChecked());
-          mode->updateGL();
+          glarea->updateGL();
         }
       }
       void Window::invert_scaling_slot ()
       {
         if (image()) {
           image()->set_invert_scale (invert_scale_action->isChecked());
-          mode->updateGL();
+          glarea->updateGL();
         }
       }
 
@@ -548,7 +648,7 @@ namespace MR
         Image* imagep = image();
         if (imagep) {
           imagep->reset_windowing();
-          mode->updateGL();
+          glarea->updateGL();
         }
       }
 
@@ -559,7 +659,7 @@ namespace MR
         Image* imagep = image();
         if (imagep) {
           imagep->set_interpolate (image_interpolate_action->isChecked());
-          mode->updateGL();
+          glarea->updateGL();
         }
       }
 
@@ -572,12 +672,39 @@ namespace MR
           showNormal();
       }
 
-      void Window::show_crosshairs_slot ()
+      void Window::select_projection_slot (QAction* action)
+      {
+        if (action == axial_action) set_projection (2);
+        else if (action == sagittal_action) set_projection (0);
+        else if (action == coronal_action) set_projection (1);
+        else assert (0);
+        glarea->updateGL();
+      }
+
+
+      void Window::mode_control_slot ()
       {
         TEST;
       }
 
+      void Window::reset_view_slot ()
+      {
+        if (image())
+          mode->reset_event();
+      }
 
+
+      void Window::slice_next_slot () 
+      {
+        mode->slice_move_event (1);
+        updateGL();
+      }
+
+      void Window::slice_previous_slot () 
+      {
+        mode->slice_move_event (-1);
+        updateGL();
+      }
 
 
       void Window::image_next_slot ()
@@ -674,6 +801,44 @@ namespace MR
         glarea->updateGL();
       }
 
+      void Window::set_cursor (int action_mode, bool right_action)
+      {
+        if (action_mode == 1) {
+          if (right_action) glarea->setCursor (Cursor::window);
+          else glarea->setCursor (Cursor::crosshair);
+        }
+        else if (action_mode == 2) {
+          if (right_action) glarea->setCursor (Cursor::forward_backward);
+          else glarea->setCursor (Cursor::pan_crosshair);
+        }
+        else if (action_mode == 3) {
+          if (right_action) glarea->setCursor (Cursor::inplane_rotate);
+          else glarea->setCursor (Cursor::throughplane_rotate);
+        }
+      }
+
+
+      inline void Window::set_cursor ()
+      {
+        if (mode_action_group->checkedAction() == mode_action_group->actions()[0])
+          set_cursor (1);
+        else if (mode_action_group->checkedAction() == mode_action_group->actions()[1])
+          set_cursor (2);
+        else if (mode_action_group->checkedAction() == mode_action_group->actions()[2])
+          set_cursor (3);
+      }
+
+
+
+      inline void Window::set_mode_actions ()
+      {
+        mode_action_group->actions()[0]->setEnabled (mode->mouse_actions & Mode::FocusContrast);
+        mode_action_group->actions()[1]->setEnabled (mode->mouse_actions & Mode::MoveTarget);
+        mode_action_group->actions()[2]->setEnabled (mode->mouse_actions & Mode::TiltRotate);
+        extra_controls_action->setEnabled (mode->mouse_actions & Mode::ExtraControls);
+        if (!mode_action_group->checkedAction()->isEnabled())
+          mode_action_group->actions()[0]->setChecked (true);
+      }
 
 
       inline void Window::set_image_navigation_menu ()
@@ -751,23 +916,6 @@ namespace MR
         glDrawBuffer (GL_BACK);
         mode->paintGL();
 
-        // blit back buffer to front buffer.
-        // we avoid flipping to guarantee back buffer is unchanged and can be
-        // re-used for incremental updates.
-
-/*
-        glBindFramebuffer (GL_READ_FRAMEBUFFER, 0);
-        glBindFramebuffer (GL_DRAW_FRAMEBUFFER, 0);
-
-        glReadBuffer (GL_BACK);
-        glDrawBuffer (GL_FRONT);
-
-        glBlitFramebuffer (
-          0, 0, width(), height(),
-          0, 0, width(), height(),
-          GL_COLOR_BUFFER_BIT, GL_NEAREST);
-        glFlush();
-*/
         DEBUG_OPENGL;
       }
 
@@ -810,53 +958,218 @@ namespace MR
           for (int n = 0; specifier_list[n]; ++n) {
             if (specifier == lowercase (specifier_list[n])) {
               mode = dynamic_cast<Mode::__Action__*> (mode_group->actions()[n])->create (*this);
+              set_mode_actions();
               goto mode_selected;
             }
           }
           throw Exception ("unknown mode \"" + std::string (opt[0][0]) + "\"");
         }
-        else 
+        else {
           mode = dynamic_cast<Mode::__Action__*> (mode_group->actions()[0])->create (*this);
+          set_mode_actions();
+        }
 
 mode_selected:
         DEBUG_OPENGL;
       }
 
 
+      template <class Event> inline void Window::grab_mouse_state (Event* event)
+      {
+        buttons_ = event->buttons();
+        modifiers_ = event->modifiers();
+        mouse_displacement_ = QPoint (0,0);
+        mouse_position_ = event->pos();
+        mouse_position_.setY (glarea->height() - mouse_position_.y());
+      }
 
+      template <class Event> inline void Window::update_mouse_state (Event* event)
+      {
+        mouse_displacement_ = mouse_position_;
+        mouse_position_ = event->pos();
+        mouse_position_.setY (glarea->height() - mouse_position_.y());
+        mouse_displacement_ = mouse_position_ - mouse_displacement_;
+      }
+
+
+      inline int Window::get_modifier (Qt::KeyboardModifiers keys)
+      {
+        if (keys == Qt::NoModifier)
+          return 0;
+        if (keys == FocusModifier && ( mode->mouse_actions & Mode::FocusContrast )) 
+          return 1;
+        if (keys == MoveModifier && ( mode->mouse_actions & Mode::MoveTarget ))
+          return 2;
+        if (keys == RotateModifier && ( mode->mouse_actions & Mode::TiltRotate ))
+          return 3;
+        return 0;
+      }
+/*
+      inline void Window::KeyPressEventGL (QKeyEvent* event) 
+      {
+        if (mouse_action != NoAction) return;
+        int group = get_modifier (event->modifiers());
+        VAR (group);
+        if (group == 0) set_cursor();
+        else set_cursor (group);
+      }
+
+      inline void Window::KeyReleaseEventGL (QKeyEvent* event)
+      {
+        if (mouse_action != NoAction) return;
+        int group = get_modifier (event->modifiers());
+        VAR (group);
+        if (group == 0) set_cursor();
+        else set_cursor (group);
+      }
+*/
       inline void Window::mousePressEventGL (QMouseEvent* event)
       {
         assert (mode);
-        if (image())
-          mode->mousePressEvent (event);
+        if (!image()) 
+          return;
+
+        grab_mouse_state (event);
+        mode->mouse_press_event();
+
+        int group = get_modifier();
+        if (group == 0) {
+          while (mode_action_group->checkedAction() != mode_action_group->actions()[group])
+            ++group;
+          ++group;
+        }
+
+        if (buttons_ == Qt::MidButton) {
+          mouse_action = Pan;
+          set_cursor (2);
+        }
+        else if (group == 1) {
+          if (buttons_ == Qt::LeftButton) {
+            mouse_action = SetFocus;
+            set_cursor (1);
+            mode->set_focus_event();
+          }
+          else if (buttons_ == Qt::RightButton) {
+            mouse_action = Contrast;
+            set_cursor (1, true);
+          }
+          else return;
+        }
+        else if (group == 2) {
+          if (buttons_ == Qt::LeftButton) {
+            mouse_action = Pan;
+            set_cursor (2);
+          }
+          else if (buttons_ == Qt::RightButton) {
+            mouse_action = PanThrough;
+            set_cursor (2, true);
+          }
+          else return;
+        }
+        else if (group == 3) {
+          if (buttons_ == Qt::LeftButton) {
+            mouse_action = Tilt;
+            set_cursor (3);
+          }
+          else if (buttons_ == Qt::RightButton) {
+            mouse_action = Rotate;
+            set_cursor (3, true);
+          }
+          else return;
+        }
+        else return;
+
+        event->accept();
       }
+
+
 
       inline void Window::mouseMoveEventGL (QMouseEvent* event)
       {
         assert (mode);
-        if (image())
-          mode->mouseMoveEvent (event);
-      }
+        if (!image()) 
+          return;
+        if (mouse_action == NoAction)
+          return;
 
-      inline void Window::mouseDoubleClickEventGL (QMouseEvent* event)
-      {
-        assert (mode);
-        if (image())
-          mode->mouseDoubleClickEvent (event);
+        update_mouse_state (event);
+        switch (mouse_action) {
+          case SetFocus: mode->set_focus_event(); break;
+          case Contrast: mode->contrast_event(); break;
+          case Pan: mode->pan_event(); break;
+          case PanThrough: mode->panthrough_event(); break;
+          case Tilt: mode->tilt_event(); break;
+          case Rotate: mode->rotate_event(); break;
+          default: return;
+        }
+        event->accept();
       }
 
       inline void Window::mouseReleaseEventGL (QMouseEvent* event)
       {
         assert (mode);
-        if (image())
-          mode->mouseReleaseEvent (event);
+        mode->mouse_release_event();
+        set_cursor();
+        mouse_action = NoAction;
       }
 
       inline void Window::wheelEventGL (QWheelEvent* event)
       {
         assert (mode);
-        if (image())
-          mode->wheelEvent (event);
+        if (image()) {
+          grab_mouse_state (event);
+          mode->mouse_press_event();
+
+          if (event->orientation() == Qt::Vertical) {
+            if (buttons_ == Qt::NoButton) {
+
+              if (modifiers_ == Qt::ControlModifier) {
+                set_FOV (FOV() * Math::exp (-event->delta()/1200.0));
+                updateGL();
+                event->accept();
+                return;
+              }
+
+              int delta = event->delta() / 120.0;
+              if (modifiers_ == Qt::ShiftModifier) delta *= 10.0;
+              else if (modifiers_ != Qt::NoModifier) 
+                return;
+
+              mode->slice_move_event (delta);
+              event->accept();
+              updateGL();
+              return;
+            }
+
+            else if (buttons_ == Qt::RightButton && modifiers_ == Qt::NoModifier) {
+              int current = 0, num = 0;
+              for (int i = 0; i < mode_action_group->actions().size(); ++i) {
+                if (mode_action_group->actions()[current] != mode_action_group->checkedAction())
+                  current = num;
+                if (mode_action_group->actions()[i]->isEnabled())
+                  ++num;
+              }
+
+              current = (current + num + int(event->delta()/120.0)) % num;
+
+              num = 0;
+              for (int i = 0; i < mode_action_group->actions().size(); ++i) {
+                if (mode_action_group->actions()[i]->isEnabled()) {
+                  if (current == num) {
+                    mode_action_group->actions()[i]->setChecked (true);
+                    break;
+                  }
+                  ++num;
+                }
+              }
+              mouse_action = NoAction;
+              set_cursor();
+              return;
+            }
+
+          }
+        }
+
       }
 
 

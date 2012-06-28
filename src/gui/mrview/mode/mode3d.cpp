@@ -48,8 +48,8 @@ namespace MR
           };
         }
 
-        Mode3D::Mode3D (Window& parent) : 
-          Mode2D (parent) { 
+        Mode3D::Mode3D (Window& parent, int flags) : 
+          Mode2D (parent, flags) {
             using namespace App;
             Options opt = get_options ("view");
             if (opt.size()) {
@@ -57,7 +57,11 @@ namespace MR
             }
 
           }
+
+
         Mode3D::~Mode3D () { }
+
+
 
         void Mode3D::paint ()
         {
@@ -125,7 +129,7 @@ namespace MR
 
         void Mode3D::draw_orientation_labels ()
         {
-          if (show_orientation_action->isChecked()) {
+          if (window.show_orientation_labels()) {
             glColor4f (1.0, 0.0, 0.0, 1.0);
             std::vector<OrientationLabel> labels;
             labels.push_back (OrientationLabel (model_to_screen_direction (Point<> (-1.0, 0.0, 0.0)), 'L'));
@@ -149,150 +153,112 @@ namespace MR
 
 
 
-        void Mode3D::set_cursor ()
-        {
-          if (mouse_edge() == (RightEdge | BottomEdge))
-            glarea()->setCursor (Cursor::window);
-          else if (mouse_edge() == (RightEdge | TopEdge))
-            glarea()->setCursor (Cursor::throughplane_rotate);
-          else if (mouse_edge() & RightEdge)
-            glarea()->setCursor (Cursor::forward_backward);
-          else if (mouse_edge() & LeftEdge)
-            glarea()->setCursor (Cursor::zoom);
-          else if (mouse_edge() & TopEdge)
-            glarea()->setCursor (Cursor::inplane_rotate);
-          else
-            glarea()->setCursor (Cursor::crosshair);
-        }
 
 
 
-
-
-
-        bool Mode3D::mouse_click ()
-        {
-          if (mouse_modifiers() == Qt::NoModifier) {
-
-            if (mouse_buttons() == Qt::LeftButton) {
-              glarea()->setCursor (Cursor::crosshair);
-              set_focus (screen_to_model (mouse_pos()));
-              updateGL();
-              return true;
-            }
-
-            else if (mouse_buttons() == Qt::RightButton) {
-              if (!mouse_edge()) {
-                glarea()->setCursor (Cursor::pan_crosshair);
-                return true;
-              }
-            }
-          }
-
-          return false;
-        }
-
-
-
-
-
-        bool Mode3D::mouse_move ()
-        {
-          if (mouse_buttons() == Qt::NoButton) {
-            set_cursor();
-            return false;
-          }
-
-
-          if (mouse_modifiers() == Qt::NoModifier) {
-
-            if (mouse_buttons() == Qt::LeftButton) {
-              set_focus (screen_to_model());
-              updateGL();
-              return true;
-            }
-
-            if (mouse_buttons() == Qt::RightButton) {
-
-              if (mouse_edge() == (RightEdge | BottomEdge)) {
-                image()->adjust_windowing (mouse_dpos());
-                window.scaling_updated();
-                updateGL();
-                return true;
-              }
-
-              if (mouse_edge() == (RightEdge | TopEdge)) {
-                QPoint dpos = mouse_dpos();
-                if (dpos.x() == 0 && dpos.y() == 0)
-                  return true;
-                Point<> x = screen_to_model_direction (Point<> (dpos.x(), -dpos.y(), 0.0));
-                Point<> z = screen_to_model_direction (Point<> (0.0, 0.0, 1.0));
-                Point<> v (x.cross (z));
-                float angle = ROTATION_INC * Math::sqrt (float (Math::pow2 (dpos.x()) + Math::pow2 (dpos.y())));
-                v.normalise();
-                if (angle > M_PI_2) angle = M_PI_2;
-
-                Math::Quaternion<float> q = Math::Quaternion<float> (angle, v) * orientation();
-                q.normalise();
-                set_orientation (q);
-                updateGL();
-                return true;
-              }
-
-              if (mouse_edge() == TopEdge) {
-                float angle = ROTATION_INC * mouse_dpos().x();
-                Point<> v = screen_to_model_direction (Point<> (0.0, 0.0, 1.0));
-                v.normalise();
-
-                Math::Quaternion<float> q = Math::Quaternion<float> (angle, v) * orientation();
-                q.normalise();
-                set_orientation (q);
-                updateGL();
-                return true;
-              }
-
-              if (mouse_edge() & RightEdge) {
-                move_in_out_FOV (mouse_dpos().y());
-                updateGL();
-                return true;
-              }
-
-              if (mouse_edge() & LeftEdge) {
-                change_FOV_fine (mouse_dpos().y());
-                updateGL();
-                return true;
-              }
-
-
-              set_target (target() - screen_to_model_direction (mouse_dpos()));
-              updateGL();
-              return true;
-            }
-
-          }
-          return false;
-        }
-
-
-
-
-
-
-        bool Mode3D::mouse_release ()
-        {
-          set_cursor();
-          return true;
-        }
-
-
-
-
-        void Mode3D::reset ()
+        void Mode3D::reset_event ()
         {
           Math::Quaternion<float> Q;
           set_orientation (Q);
-          Mode2D::reset();
+          Mode2D::reset_view();
         }
+
+
+
+
+        void Mode3D::slice_move_event (int x) 
+        {
+          move_in_out (x * std::min (std::min (image()->header().vox(0), image()->header().vox(1)), image()->header().vox(2)));
+          updateGL();
+        }
+
+
+
+
+        void Mode3D::set_focus_event ()
+        {
+          set_focus (screen_to_model (window.mouse_position()));
+          updateGL();
+        }
+
+
+
+
+        void Mode3D::contrast_event ()
+        {
+          image()->adjust_windowing (window.mouse_displacement());
+          window.scaling_updated();
+          updateGL();
+        }
+
+
+
+        void Mode3D::pan_event ()
+        {
+          set_target (target() - screen_to_model_direction (window.mouse_displacement()));
+          updateGL();
+        }
+
+
+
+        void Mode3D::panthrough_event ()
+        {
+          move_in_out_FOV (window.mouse_displacement().y());
+          updateGL();
+        }
+
+
+
+
+        void Mode3D::tilt_event ()
+        {
+          QPoint dpos = window.mouse_displacement();
+          if (dpos.x() == 0 && dpos.y() == 0)
+            return;
+          Point<> x = screen_to_model_direction (Point<> (dpos.x(), dpos.y(), 0.0));
+          Point<> z = screen_to_model_direction (Point<> (0.0, 0.0, 1.0));
+          Point<> v (x.cross (z));
+          float angle = ROTATION_INC * Math::sqrt (float (Math::pow2 (dpos.x()) + Math::pow2 (dpos.y())));
+          v.normalise();
+          if (angle > M_PI_2) angle = M_PI_2;
+
+          Math::Quaternion<float> q = Math::Quaternion<float> (angle, v) * orientation();
+          q.normalise();
+          set_orientation (q);
+          updateGL();
+        }
+
+
+
+
+
+        void Mode3D::rotate_event ()
+        {
+          Point<> x1 (window.mouse_position().x() - width()/2,
+              window.mouse_position().y() - height()/2,
+              0.0);
+
+          if (x1.norm() < 16) 
+            return;
+
+          Point<> x0 (x1[0] - window.mouse_displacement().x(), 
+              x1[1] - window.mouse_displacement().y(),
+              0.0);
+
+          x1.normalise();
+          x0.normalise();
+
+          Point<> n = x1.cross (x0);
+
+          Point<> v = screen_to_model_direction (Point<> (0.0, 0.0, 1.0));
+          v.normalise();
+
+          Math::Quaternion<float> q = Math::Quaternion<float> (n[2], v) * orientation();
+          q.normalise();
+          set_orientation (q);
+          updateGL();
+        }
+
 
 
         using namespace App;

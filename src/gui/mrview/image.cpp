@@ -609,7 +609,7 @@ namespace MR
 
       void Image::adjust_windowing (float brightness, float contrast) {
         display_midpoint -= 0.0005f * display_range * brightness;
-        display_range *= Math::exp (0.002f * contrast);
+        display_range *= Math::exp (-0.002f * contrast);
         window.scaling_updated();
       }
 

@@ -34,7 +34,7 @@ namespace MR
       {
 
         Volume::Volume (Window& parent) : 
-          Mode3D (parent) { 
+          Mode3D (parent, FocusContrast | MoveTarget | TiltRotate | ExtraControls) { 
           }
 
         Volume::~Volume () { }

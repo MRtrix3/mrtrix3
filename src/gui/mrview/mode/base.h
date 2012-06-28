@@ -42,58 +42,43 @@ namespace MR
   {
     namespace MRView
     {
+
+      const int TopEdge = 0x00000001;
+      const int BottomEdge = 0x00000002;
+      const int LeftEdge = 0x00000004;
+      const int RightEdge = 0x00000008;
+
       namespace Mode
       {
 
+        const int FocusContrast = 0x00000001;
+        const int MoveTarget = 0x00000002;
+        const int TiltRotate = 0x00000004;
+        const int MoveSlice = 0x00000008;
+        const int ExtraControls = 0x00000010;
+
         class Base : public QObject
         {
-            Q_OBJECT
-
           public:
-            Window& window;
-
-
-            Base (Window& parent);
+            Base (Window& parent, int flags = FocusContrast | MoveTarget);
             virtual ~Base ();
 
-            virtual void paint ();
+            Window& window;
+            const int mouse_actions;
 
-            virtual bool mouse_click ();
-            virtual bool mouse_move ();
-            virtual bool mouse_doubleclick ();
-            virtual bool mouse_release ();
-            virtual bool mouse_wheel (float delta, Qt::Orientation orientation);
+            virtual void paint ();
+            virtual void mouse_press_event ();
+            virtual void mouse_release_event ();
+            virtual void reset_event ();
+            virtual void slice_move_event (int x);
+            virtual void set_focus_event ();
+            virtual void contrast_event ();
+            virtual void pan_event ();
+            virtual void panthrough_event ();
+            virtual void tilt_event ();
+            virtual void rotate_event ();
 
             void paintGL ();
-
-            static const int TopEdge = 1;
-            static const int BottomEdge = 1<<1;
-            static const int LeftEdge = 1<<2;
-            static const int RightEdge = 1<<3;
-
-
-            const QPoint& mouse_pos () const {
-              return currentPos;
-            }
-            QPoint mouse_dpos () const {
-              return currentPos - lastPos;
-            }
-            Qt::MouseButtons mouse_buttons () const {
-              return buttons_;
-            }
-            Qt::KeyboardModifiers mouse_modifiers () const {
-              return modifiers_;
-            }
-            int mouse_edge () const {
-              return edge_;
-            }
-
-            void add_action (QAction* action) {
-              window.view_menu->insertAction (window.view_menu_mode_area, action);
-            }
-            void add_action_common (QAction* action) {
-              window.view_menu->insertAction (window.view_menu_mode_common_area, action);
-            }
 
             Point<> model_to_screen (const Point<>& pos, const GLint* gl_viewport, const GLdouble* gl_modelview, const GLdouble* gl_projection) const {
               double wx, wy, wz;
@@ -129,7 +114,7 @@ namespace MR
             Point<> screen_to_model (const QPoint& pos, const GLint* gl_viewport, const GLdouble* gl_modelview, const GLdouble* gl_projection) const {
               Point<> f (model_to_screen (focus(), gl_viewport, gl_modelview, gl_projection));
               f[0] = pos.x();
-              f[1] = glarea()->height() - pos.y();
+              f[1] = pos.y();
               return screen_to_model (f, gl_viewport, gl_modelview, gl_projection);
             }
 
@@ -138,7 +123,7 @@ namespace MR
             }
 
             Point<> screen_to_model () const {
-              return screen_to_model (currentPos);
+              return screen_to_model (window.mouse_position());
             }
 
             Point<> screen_to_model_direction (const Point<>& pos, const GLint* gl_viewport, const GLdouble* gl_modelview, const GLdouble* gl_projection) const {
@@ -150,11 +135,11 @@ namespace MR
             }
 
             Point<> screen_to_model_direction (const QPoint& pos, const GLint* gl_viewport, const GLdouble* gl_modelview, const GLdouble* gl_projection) const {
-              return screen_to_model (Point<> (pos.x(), -pos.y(), 0.0), gl_viewport, gl_modelview, gl_projection) - screen_to_model (Point<> (0.0, 0.0, 0.0), gl_viewport, gl_modelview, gl_projection);
+              return screen_to_model (Point<> (pos.x(), pos.y(), 0.0), gl_viewport, gl_modelview, gl_projection) - screen_to_model (Point<> (0.0, 0.0, 0.0), gl_viewport, gl_modelview, gl_projection);
             }
 
             Point<> screen_to_model_direction (const QPoint& pos) const {
-              return screen_to_model (Point<> (pos.x(), -pos.y(), 0.0)) - screen_to_model (Point<> (0.0, 0.0, 0.0));
+              return screen_to_model (Point<> (pos.x(), pos.y(), 0.0)) - screen_to_model (Point<> (0.0, 0.0, 0.0));
             }
 
 
@@ -245,7 +230,27 @@ namespace MR
               renderText (x, y, text);
             }
 
-            void move_in_out (float distance);
+            Point<> move_in_out_displacement (float distance, const GLint* gl_viewport, 
+                const GLdouble* gl_modelview, const GLdouble* gl_projection) {
+              Point<> move (screen_to_model_direction (Point<> (0.0, 0.0, -1.0), gl_viewport, gl_modelview, gl_projection));
+              move.normalise();
+              move *= distance;
+              return move;
+            }
+
+            void move_in_out (float distance, const GLint* gl_viewport, const GLdouble* gl_modelview, const GLdouble* gl_projection) {
+              if (!image()) return;
+              Point<> move = move_in_out_displacement (distance, gl_viewport, gl_modelview, gl_projection);
+              set_target (target() + move);
+              set_focus (focus() + move);
+            }
+            void move_in_out_FOV (int increment, const GLint* gl_viewport, const GLdouble* gl_modelview, const GLdouble* gl_projection) {
+              move_in_out (1e-3 * increment * FOV(), gl_viewport, gl_modelview, gl_projection);
+            }
+
+            void move_in_out (float distance) {
+              move_in_out (distance, viewport_matrix, modelview_matrix, projection_matrix);
+            }
             void move_in_out_FOV (int increment) {
               move_in_out (1e-3 * increment * FOV());
             }
@@ -255,16 +260,12 @@ namespace MR
               return painting;
             }
 
+            void updateGL () {
+              window.updateGL();
+            }
 
-          public slots:
-            void updateGL ();
-            virtual void reset ();
-            virtual void toggle_show_xyz ();
 
           protected:
-            QAction* reset_action, *show_focus_action;
-            QAction* show_image_info_action, *show_position_action, *show_orientation_action;
-
             void update_modelview_projection_viewport () const {
               glGetIntegerv (GL_VIEWPORT, viewport_matrix);
               glGetDoublev (GL_MODELVIEW_MATRIX, modelview_matrix);
@@ -281,14 +282,10 @@ namespace MR
             mutable GLdouble modelview_matrix[16], projection_matrix[16];
             mutable GLint viewport_matrix[4];
 
-            QPoint currentPos, lastPos, initialPos;
-            Qt::MouseButtons buttons_;
-            Qt::KeyboardModifiers modifiers_;
-            int edge_;
             bool painting;
 
             QFont font_;
-
+/*
             void mousePressEvent (QMouseEvent* event) {
               if (buttons_ != Qt::NoButton) return;
               buttons_ = event->buttons();
@@ -339,8 +336,8 @@ namespace MR
               else 
                 event->ignore();
             }
-
             friend class MR::GUI::MRView::Window;
+*/
         };
 
 
@@ -383,10 +380,6 @@ namespace MR
 
       }
 
-
-      inline void Window::updateGL () {
-        mode->updateGL();
-      }
 
     }
   }

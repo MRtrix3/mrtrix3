@@ -35,39 +35,7 @@ namespace MR
       namespace Mode
       {
 
-        Mode2D::Mode2D (Window& parent) : Base (parent)
-        {
-          axial_action = new QAction (tr ("&Axial"), this);
-          axial_action->setShortcut (tr ("A"));
-          axial_action->setStatusTip (tr ("Switch to axial projection"));
-          connect (axial_action, SIGNAL (triggered()), this, SLOT (axial()));
-          add_action (axial_action);
-
-          sagittal_action = new QAction (tr ("&Sagittal"), this);
-          sagittal_action->setShortcut (tr ("S"));
-          sagittal_action->setStatusTip (tr ("Switch to sagittal projection"));
-          connect (sagittal_action, SIGNAL (triggered()), this, SLOT (sagittal()));
-          add_action (sagittal_action);
-
-          coronal_action = new QAction (tr ("&Coronal"), this);
-          coronal_action->setShortcut (tr ("C"));
-          coronal_action->setStatusTip (tr ("Switch to coronal projection"));
-          connect (coronal_action, SIGNAL (triggered()), this, SLOT (coronal()));
-          add_action (coronal_action);
-
-          slice_next_action = new QAction (tr ("&Next slice"), this);
-          slice_next_action->setShortcut (tr ("Up"));
-          slice_next_action->setStatusTip (tr ("move one slice forward"));
-          connect (slice_next_action, SIGNAL (triggered()), this, SLOT (slice_next()));
-          add_action (slice_next_action);
-
-          slice_prev_action = new QAction (tr ("&Previous slice"), this);
-          slice_prev_action->setShortcut (tr ("Down"));
-          slice_prev_action->setStatusTip (tr ("move one slice backward"));
-          connect (slice_prev_action, SIGNAL (triggered()), this, SLOT (slice_prev()));
-          add_action (slice_prev_action);
-        }
-
+        Mode2D::Mode2D (Window& parent, int flags) : Base (parent, flags) { }
 
         Mode2D::~Mode2D () { }
 
@@ -124,7 +92,7 @@ namespace MR
 
           draw_focus();
 
-          if (show_orientation_action->isChecked()) {
+          if (window.show_orientation_labels()) {
             glColor4f (1.0, 0.0, 0.0, 1.0);
             switch (projection()) {
               case 0:
@@ -151,149 +119,6 @@ namespace MR
           }
         }
 
-
-
-        void Mode2D::set_cursor ()
-        {
-          if (mouse_edge() == (RightEdge | BottomEdge))
-            glarea()->setCursor (Cursor::window);
-          else if (mouse_edge() & RightEdge)
-            glarea()->setCursor (Cursor::forward_backward);
-          else if (mouse_edge() & LeftEdge)
-            glarea()->setCursor (Cursor::zoom);
-          else
-            glarea()->setCursor (Cursor::crosshair);
-        }
-
-
-
-
-
-        bool Mode2D::mouse_click ()
-        {
-          if (mouse_modifiers() == Qt::NoModifier) {
-
-            if (mouse_buttons() == Qt::LeftButton) {
-              glarea()->setCursor (Cursor::crosshair);
-              set_focus (screen_to_model (mouse_pos()));
-              updateGL();
-              return true;
-            }
-
-            if (mouse_buttons() == Qt::RightButton) {
-              if (!mouse_edge()) {
-                glarea()->setCursor (Cursor::pan_crosshair);
-                return true;
-              }
-            }
-
-          }
-
-          return false;
-        }
-
-
-
-        bool Mode2D::mouse_move ()
-        {
-          if (mouse_buttons() == Qt::NoButton) {
-            set_cursor();
-            return false;
-          }
-
-          if (mouse_modifiers() == Qt::NoModifier) {
-
-            if (mouse_buttons() == Qt::LeftButton) {
-
-              set_focus (screen_to_model());
-              updateGL();
-              return true;
-            }
-
-            if (mouse_buttons() == Qt::RightButton) {
-
-              if (mouse_edge() == (RightEdge | BottomEdge)) {
-                image()->adjust_windowing (mouse_dpos());
-                window.scaling_updated();
-                updateGL();
-                return true;
-              }
-
-              if (mouse_edge() & RightEdge) {
-                move_in_out_FOV (-mouse_dpos().y());
-                updateGL();
-                return true;
-              }
-
-              if (mouse_edge() & LeftEdge) {
-                change_FOV_fine (mouse_dpos().y());
-                updateGL();
-                return true;
-              }
-
-              set_target (target() - screen_to_model_direction (mouse_dpos()));
-              updateGL();
-              return true;
-            }
-
-          }
-
-          return false;
-        }
-
-
-
-
-        bool Mode2D::mouse_release ()
-        {
-          set_cursor();
-          return true;
-        }
-
-
-
-
-        bool Mode2D::mouse_wheel (float delta, Qt::Orientation orientation)
-        {
-          if (orientation == Qt::Vertical) {
-
-            if (mouse_modifiers() == Qt::ControlModifier) {
-              change_FOV_scroll (-delta);
-              updateGL();
-              return true;
-            }
-
-            if (mouse_modifiers() == Qt::ShiftModifier) delta *= 10.0;
-            else if (mouse_modifiers() != Qt::NoModifier)
-              return false;
-
-            move_in_out (delta*image()->header().vox (projection()));
-            updateGL();
-            return true;
-          }
-          // TODO: use horizontal scroll to go through volumes.
-
-          return false;
-        }
-
-
-
-
-        void Mode2D::axial ()
-        {
-          set_projection (2);
-          updateGL();
-        }
-        void Mode2D::sagittal ()
-        {
-          set_projection (0);
-          updateGL();
-        }
-        void Mode2D::coronal ()
-        {
-          set_projection (1);
-          updateGL();
-        }
 
 
 
@@ -324,10 +149,10 @@ namespace MR
 
 
 
-        void Mode2D::slice_prev ()
+        void Mode2D::slice_move_event (int x)
         {
           if (!image()) return;
-          move_in_out (-image()->header().vox (projection()));
+          move_in_out (x * image()->header().vox (projection()));
           updateGL();
         }
 
@@ -335,19 +160,42 @@ namespace MR
 
 
 
-        void Mode2D::slice_next ()
-        {
-          if (!image()) return;
-          move_in_out (image()->header().vox (projection()));
-          updateGL();
-        }
 
-
-        void Mode2D::reset ()
+        void Mode2D::reset_event ()
         {
           reset_view();
           updateGL();
         }
+
+
+
+        void Mode2D::set_focus_event ()
+        {
+          set_focus (screen_to_model());
+          updateGL();
+        }
+
+
+        void Mode2D::contrast_event ()
+        {
+          image()->adjust_windowing (window.mouse_displacement());
+          window.scaling_updated();
+          updateGL();
+        }
+
+        void Mode2D::pan_event ()
+        {
+          set_target (target() - screen_to_model_direction (window.mouse_displacement()));
+          updateGL();
+        }
+
+
+        void Mode2D::panthrough_event ()
+        {
+          move_in_out_FOV (window.mouse_displacement().y());
+          updateGL();
+        }
+
 
       }
     }

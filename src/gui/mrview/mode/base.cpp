@@ -33,58 +33,12 @@ namespace MR
       namespace Mode
       {
 
-        Base::Base (Window& parent) :
+        Base::Base (Window& parent, int flags) :
           window (parent),
+          mouse_actions (flags),
           painting (false)
         {
           font_.setPointSize (MR::File::Config::get_int ("FontSize", 10));
-
-          QAction* separator = new QAction (this);
-          separator->setSeparator (true);
-          add_action_common (separator);
-
-          show_image_info_action = new QAction (tr ("Show &image info"), this);
-          show_image_info_action->setCheckable (true);
-          show_image_info_action->setShortcut (tr ("H"));
-          show_image_info_action->setStatusTip (tr ("Show image header information"));
-          show_image_info_action->setChecked (true);
-          connect (show_image_info_action, SIGNAL (triggered()), this, SLOT (toggle_show_xyz()));
-          add_action_common (show_image_info_action);
-
-          show_orientation_action = new QAction (tr ("Show &orientation"), this);
-          show_orientation_action->setCheckable (true);
-          show_orientation_action->setShortcut (tr ("O"));
-          show_orientation_action->setStatusTip (tr ("Show image orientation labels"));
-          show_orientation_action->setChecked (true);
-          connect (show_orientation_action, SIGNAL (triggered()), this, SLOT (toggle_show_xyz()));
-          add_action_common (show_orientation_action);
-
-          show_position_action = new QAction (tr ("Show &voxel"), this);
-          show_position_action->setCheckable (true);
-          show_position_action->setShortcut (tr ("V"));
-          show_position_action->setStatusTip (tr ("Show image voxel position and value"));
-          show_position_action->setChecked (true);
-          connect (show_position_action, SIGNAL (triggered()), this, SLOT (toggle_show_xyz()));
-          add_action_common (show_position_action);
-
-          separator = new QAction (this);
-          separator->setSeparator (true);
-          add_action_common (separator);
-
-          show_focus_action = new QAction (tr ("Show &focus"), this);
-          show_focus_action->setCheckable (true);
-          show_focus_action->setShortcut (tr ("F"));
-          show_focus_action->setStatusTip (tr ("Show focus with the crosshairs"));
-          show_focus_action->setChecked (true);
-          connect (show_focus_action, SIGNAL (triggered()), this, SLOT (toggle_show_xyz()));
-          add_action_common (show_focus_action);
-
-          reset_action = new QAction (tr ("Reset &view"), this);
-          reset_action->setShortcut (tr ("Crtl+R"));
-          reset_action->setStatusTip (tr ("Reset image projection & zoom"));
-          connect (reset_action, SIGNAL (triggered()), this, SLOT (reset()));
-          add_action_common (reset_action);
-
           modelview_matrix[0] = NAN;
         }
 
@@ -114,7 +68,7 @@ namespace MR
             update_modelview_projection_viewport();
             glColor4f (1.0, 1.0, 0.0, 1.0);
 
-            if (show_position_action->isChecked()) {
+            if (window.show_voxel_info()) {
               Point<> voxel (image()->interp.scanner2voxel (focus()));
               Image::VoxelType& imvox (image()->voxel());
               ssize_t vox [] = { Math::round<int> (voxel[0]), Math::round<int> (voxel[1]), Math::round<int> (voxel[2]) };
@@ -140,7 +94,7 @@ namespace MR
               renderText (value, LeftEdge | BottomEdge, 2);
             }
 
-            if (show_image_info_action->isChecked()) {
+            if (window.show_comments()) {
               for (size_t i = 0; i < image()->header().comments().size(); ++i)
                 renderText (image()->header().comments() [i], LeftEdge | TopEdge, i);
             }
@@ -152,53 +106,21 @@ done_painting:
 
 
         void Base::paint () { }
-        void Base::updateGL ()
-        {
-          reinterpret_cast<QGLWidget*> (window.glarea)->updateGL();
-        }
-        void Base::reset () { }
-        void Base::toggle_show_xyz ()
-        {
-          updateGL();
-        }
-
-        bool Base::mouse_click ()
-        {
-          return false;
-        }
-        bool Base::mouse_move ()
-        {
-          return false;
-        }
-        bool Base::mouse_doubleclick ()
-        {
-          return false;
-        }
-        bool Base::mouse_release ()
-        {
-          return false;
-        }
-        bool Base::mouse_wheel (float delta, Qt::Orientation orientation)
-        {
-          return false;
-        }
-
-        void Base::move_in_out (float distance)
-        {
-          if (!image()) 
-            return;
-
-          Point<> move (screen_to_model_direction (Point<> (0.0, 0.0, -1.0)));
-          move.normalise();
-          move *= distance;
-          set_target (target() + move);
-          set_focus (focus() + move);
-        }
+        void Base::reset_event () { }
+        void Base::mouse_press_event () { }
+        void Base::mouse_release_event () { }
+        void Base::slice_move_event (int x) { }
+        void Base::set_focus_event () { }
+        void Base::contrast_event () { }
+        void Base::pan_event () { }
+        void Base::panthrough_event () { }
+        void Base::tilt_event () { }
+        void Base::rotate_event () { }
 
         void Base::draw_focus () const
         {
           // draw focus:
-          if (show_focus_action->isChecked()) {
+          if (window.show_crosshairs()) {
             glPushAttrib (GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
             glDepthMask (GL_FALSE);
             Point<> F = model_to_screen (focus());
