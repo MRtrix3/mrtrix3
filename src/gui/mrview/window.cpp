@@ -58,7 +58,7 @@ namespace MR
         }
 
       QSize Window::GLArea::minimumSizeHint () const {
-        return QSize (512, 512);
+        return QSize (256, 256);
       }
       QSize Window::GLArea::sizeHint () const {
         return QSize (512, 512);
@@ -139,7 +139,18 @@ namespace MR
 
         // Main toolbar:
 
-        toolbar = addToolBar ("Main toolbar");
+        Qt::ToolBarArea toolbar_position = Qt::TopToolBarArea;
+        {
+          std::string toolbar_pos_spec = lowercase (MR::File::Config::get ("InitialToolBarPosition"));
+          if (toolbar_pos_spec == "bottom") toolbar_position = Qt::BottomToolBarArea;
+          else if (toolbar_pos_spec == "left") toolbar_position = Qt::LeftToolBarArea;
+          else if (toolbar_pos_spec == "right") toolbar_position = Qt::RightToolBarArea;
+          else if (toolbar_pos_spec != "top")
+            error ("invalid value for configuration entry \"InitialToolBarPosition\"");
+        }
+
+        toolbar = new QToolBar ("Main toolbar", this);
+        addToolBar (toolbar_position, toolbar);
         action = toolbar->toggleViewAction ();
         action->setShortcut (tr ("Ctrl+M"));
         addAction (action);
@@ -1170,7 +1181,7 @@ mode_selected:
                   ++num;
               }
 
-              current = (current + num + int(event->delta()/120.0)) % num;
+              current = (current + num - int(event->delta()/120.0)) % num;
 
               num = 0;
               for (int i = 0; i < mode_action_group->actions().size(); ++i) {
