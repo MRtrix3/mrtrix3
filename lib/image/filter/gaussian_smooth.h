@@ -20,13 +20,14 @@
 
  */
 
-#ifndef __image_filter_gaussian3D_h__
-#define __image_filter_gaussian3D_h__
+#ifndef __image_filter_gaussian_h__
+#define __image_filter_gaussian_h__
 
 #include "image/info.h"
 #include "image/threaded_copy.h"
 #include "image/adapter/gaussian1D.h"
 #include "image/buffer_scratch.h"
+#include "image/copy.h"
 
 namespace MR
 {
@@ -60,75 +61,78 @@ namespace MR
        *
        * \endcode
        */
-      class Gaussian3D : public ConstInfo
+      class GaussianSmooth : public ConstInfo
       {
 
       public:
           template <class InputVoxelType>
-            Gaussian3D (const InputVoxelType& in) :
+            GaussianSmooth (const InputVoxelType& in) :
               ConstInfo (in),
-              extent_ (3,0),
-              stdev_ (3) {
-            stdev_[0] = in.vox(0);
-            stdev_[1] = in.vox(1);
-            stdev_[2] = in.vox(2);
+              extent_ (in.ndim(), 0),
+              stdev_ (in.ndim(), 1) {
+            for (unsigned int i = 0; i < in.ndim(); i++)
+              stdev_[i] = in.vox(i);
           }
 
           template <class InputVoxelType>
-            Gaussian3D (const InputVoxelType& in,
+            GaussianSmooth (const InputVoxelType& in,
                         const std::vector<int>& extent,
                         const std::vector<float>& stdev) :
               ConstInfo (in),
-              extent_(3),
-              stdev_(3) {
-              set_extent (extent);
-              set_stdev (stdev);
+              extent_(in.ndim()),
+              stdev_(in.ndim()) {
+              set_extent(extent);
+              set_stdev(stdev);
           }
 
           //! Set the extent of smoothing kernel in voxels.
-          //! This must be set as a single value for all three dimensions
-          //! or three values, one for each dimension. (Default: 4 standard deviations)
+          //! This can be set as a single value for all dimensions
+          //! or separate values, one for each dimension. (Default: 4 standard deviations)
           void set_extent (const std::vector<int>& extent) {
-            if (extent.size() == 1) {
-              extent_[0] = extent[0];
-              extent_[1] = extent[0];
-              extent_[2] = extent[0];
-            } else {
+            if (extent.size() == 1)
+              for (unsigned int i = 0; i < this->ndim(); i++)
+                extent_[i] = extent[0];
+            else
               extent_ = extent;
-            }
           }
 
           //! Set the standard deviation of the Gaussian defined in mm.
-          //! This must be set as a single value for all three dimensions
-          //! or three values, one for each dimension. (Default: 1voxel)
+          //! This must be set as a single value to be used for the first 3 dimensions
+          //! or separate values, one for each dimension. (Default: 1 voxel)
           void set_stdev (const std::vector<float>& stdev) {
-            if (stdev.size() == 1) {
-              stdev_[0] = stdev[0];
-              stdev_[1] = stdev[0];
-              stdev_[2] = stdev[0];
-            } else {
+            if (stdev.size() == 1)
+              for (unsigned int i = 0; i < 3; i++)
+                stdev_[i] = stdev[0];
+            else
               stdev_ = stdev;
-            }
           }
 
           template <class InputVoxelType, class OutputVoxelType>
-            void operator() (InputVoxelType& in, OutputVoxelType& out) {
+            void operator() (InputVoxelType& input, OutputVoxelType& output) {
+              if (stdev_.size() != this->ndim())
+                throw Exception ("The number of stdev values supplied does not correspond to the number of dimensions");
 
-              typedef typename OutputVoxelType::value_type value_type;
+              if (extent_.size() != this->ndim())
+                throw Exception ("The number of extent values supplied does not correspond to the number of dimensions");
 
-              Image::BufferScratch<value_type> x_scratch (out);
-              typename Image::BufferScratch<value_type>::voxel_type x_voxel (x_scratch);
-              Adapter::Gaussian1D<InputVoxelType> x_gaussian (in, stdev_[0], 0, extent_[0]);
-              threaded_copy (x_gaussian, x_voxel);
+              RefPtr <BufferScratch<float> > in_data (new BufferScratch<float> (input));
+              RefPtr <BufferScratch<float>::voxel_type> in (new BufferScratch<float>::voxel_type (*in_data));
+              copy(input, *in);
 
-              typedef typename Image::BufferScratch<value_type>::voxel_type buffer_voxel_type;
-              Adapter::Gaussian1D<buffer_voxel_type> y_gaussian (x_voxel, stdev_[1], 1, extent_[1]);
-              Image::BufferScratch<value_type> y_scratch (out);
-              typename Image::BufferScratch<value_type>::voxel_type y_voxel (y_scratch);
-              threaded_copy (y_gaussian, y_voxel);
+              RefPtr <BufferScratch<float> > out_data;
+              RefPtr <BufferScratch<float>::voxel_type> out;
 
-              Adapter::Gaussian1D<buffer_voxel_type> z_gaussian (y_voxel, stdev_[2], 2, extent_[2]);
-              threaded_copy (z_gaussian, out);
+              for (size_t dim = 0; dim < this->ndim(); dim++) {
+                if (stdev_[dim] > 0) {
+                  out_data = new BufferScratch<float> (input);
+                  out = new BufferScratch<float>::voxel_type (*out_data);
+                  Adapter::Gaussian1D<BufferScratch<float>::voxel_type > gaussian (*in, stdev_[dim], dim, extent_[dim]);
+                  threaded_copy (gaussian, *out);
+                  in_data = out_data;
+                  in = out;
+                }
+              }
+              Image::copy(*in, output);
             }
 
       protected:

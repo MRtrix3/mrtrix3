@@ -25,7 +25,7 @@
 #include "image/buffer_preload.h"
 #include "image/buffer_scratch.h"
 #include "image/voxel.h"
-#include "image/filter/gaussian3D.h"
+#include "image/filter/gaussian_smooth.h"
 #include "image/filter/gradient3D.h"
 #include "progressbar.h"
 
@@ -64,7 +64,7 @@ void run () {
   Image::BufferPreload<float> input_data (argument[0]);
   Image::BufferPreload<float>::voxel_type input_voxel (input_data);
 
-  Image::Filter::Gaussian3D smooth_filter (input_voxel);
+  Image::Filter::GaussianSmooth smooth_filter (input_voxel);
   std::vector<float> stdev(1, 1.0);
   Options opt = get_options ("stdev");
   if (opt.size()) {

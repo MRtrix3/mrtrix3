@@ -24,7 +24,7 @@
 #include "image/buffer.h"
 #include "image/buffer_preload.h"
 #include "image/voxel.h"
-#include "image/filter/gaussian3D.h"
+#include "image/filter/gaussian_smooth.h"
 #include "progressbar.h"
 
 
@@ -36,23 +36,24 @@ using namespace App;
 void usage ()
 {
   DESCRIPTION
-  + "smooth images by a convolution with a Gaussian kernel. "
-    "If the input is a 4D image, each 3D volume is smoothed independently.";
+  + "smooth n-dimensional images by a convolution with a Gaussian kernel. "
+  + "Note that if the input volume is 4D, then by default each 3D volume is smoothed independently. However "
+    "this behaviour can be overridden by manually setting the stdev for all dimensions.";
 
   ARGUMENTS
   + Argument ("input", "input image to be smoothed.").type_image_in ()
   + Argument ("output", "the output image.").type_image_out ();
 
   OPTIONS
-  + Option ("stdev", "apply Gaussian smoothing with the specified standard deviation."
+  + Option ("stdev", "apply Gaussian smoothing with the specified standard deviation. "
             "The standard deviation is defined in mm (Default 1mm)."
-            "This can be specified either as a single value to be used for all 3 axes, "
-            "or as a comma-separated list of 3 values, one for each axis.")
+            "This can be specified either as a single value to be used for all axes, "
+            "or as a comma-separated list of the stdev for each axis.")
   + Argument ("sigma").type_sequence_float()
 
   + Option ("extent", "specify the extent (width) of kernel size in voxels. "
-            "This can be specified either as a single value to be used for all 3 axes, "
-            "or as a comma-separated list of 3 values, one for each axis."
+            "This can be specified either as a single value to be used for all axes, "
+            "or as a comma-separated list of the extent for each axis."
             "The default extent is 4 standard deviations.")
   + Argument ("size").type_sequence_int();
 }
@@ -60,16 +61,20 @@ void usage ()
 
 void run () {
 
-  std::vector<float> stdev (1);
-  stdev[0] = 1.0;
+  Image::BufferPreload<float> src_data (argument[0]);
+  Image::BufferPreload<float>::voxel_type src (src_data);
+
+  std::vector<float> stdev (src_data.ndim(), 1);
+  for (size_t dim = 3; dim < src_data.ndim(); dim++)
+    stdev[dim] = 0;
   Options opt = get_options ("stdev");
   if (opt.size()) {
     stdev = parse_floats (opt[0][0]);
     for (size_t i = 0; i < stdev.size(); ++i)
       if (stdev[i] < 0.0)
         throw Exception ("the Gaussian stdev values cannot be negative");
-    if (stdev.size() != 1 && stdev.size() != 3)
-      throw Exception ("unexpected number of elements specified in Gaussian stdev");
+    if (stdev.size() != 1 && stdev.size() != src_data.ndim())
+      throw Exception ("the number of stdev elements does not correspond to the number of image dimensions");
   }
 
   std::vector<int> extent (1);
@@ -77,19 +82,17 @@ void run () {
   opt = get_options ("extent");
   if (opt.size()) {
     extent = parse_ints (opt[0][0]);
-    if (extent.size() != 1 && extent.size() != 3)
-      throw Exception ("unexpected number of elements specified in extent");
+    if (extent.size() != 1 && extent.size() != src_data.ndim())
+      throw Exception ("the number of extent elements does not correspond to the number of image dimensions");
     for (size_t i = 0; i < extent.size(); ++i) {
-      if (! (extent[i] & int (1)))
+      if (!(extent[i] & int (1)))
         throw Exception ("expected odd number for extent");
       if (extent[i] < 0)
         throw Exception ("the kernel extent must be positive");
     }
   }
 
-  Image::BufferPreload<float> src_data (argument[0]);
-  Image::BufferPreload<float>::voxel_type src (src_data);
-  Image::Filter::Gaussian3D smooth_filter (src, extent, stdev);
+  Image::Filter::GaussianSmooth smooth_filter (src, extent, stdev);
 
   Image::Header header (src_data);
   header.info() = smooth_filter.info();

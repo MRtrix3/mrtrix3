@@ -39,13 +39,13 @@ namespace MR
     {
 
       void paragraph (
-          const std::string& header, 
+          const std::string& header,
           const std::string& text,
-          size_t header_indent, 
+          size_t header_indent,
           size_t indent)
       {
         std::string out = std::string (header_indent, ' ') + header + " ";
-        if (out.size() < indent) 
+        if (out.size() < indent)
           out.resize (indent, ' ');
 
         std::vector<std::string> paragraphs = split (text, "\n");
@@ -150,8 +150,8 @@ namespace MR
 
     void Argument::print_usage () const
     {
-      std::cout << "ARGUMENT " << id << " " 
-        << (flags & Optional ? '1' : '0') << " " 
+      std::cout << "ARGUMENT " << id << " "
+        << (flags & Optional ? '1' : '0') << " "
         << (flags & AllowMultiple ? '1' : '0') << " ";
 
       switch (type) {
@@ -191,7 +191,7 @@ namespace MR
           assert (0);
       }
       std::cout << "\n";
-      if (desc) 
+      if (desc)
         std::cout << desc << "\n";
     }
 
@@ -200,7 +200,7 @@ namespace MR
 
     void Option::print_usage () const
     {
-      std::cout << "OPTION " << id << " " 
+      std::cout << "OPTION " << id << " "
         << (flags & Optional ? '1' : '0') << " "
         << (flags & AllowMultiple ? '1' : '0') << "\n";
 
