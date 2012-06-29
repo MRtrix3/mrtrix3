@@ -160,7 +160,7 @@ namespace MR
         {
           Math::Quaternion<float> Q;
           set_orientation (Q);
-          Mode2D::reset_view();
+          Mode2D::reset_event();
         }
 
 

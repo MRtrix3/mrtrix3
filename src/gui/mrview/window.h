@@ -239,6 +239,8 @@ namespace MR
 
           void paintGL ();
           void initGL ();
+          void keyPressEvent (QKeyEvent* event);
+          void keyReleaseEvent (QKeyEvent* event);
           void mousePressEventGL (QMouseEvent* event);
           void mouseMoveEventGL (QMouseEvent* event);
           void mouseReleaseEventGL (QMouseEvent* event);

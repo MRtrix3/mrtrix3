@@ -142,11 +142,13 @@ namespace MR
         Qt::ToolBarArea toolbar_position = Qt::TopToolBarArea;
         {
           std::string toolbar_pos_spec = lowercase (MR::File::Config::get ("InitialToolBarPosition"));
-          if (toolbar_pos_spec == "bottom") toolbar_position = Qt::BottomToolBarArea;
-          else if (toolbar_pos_spec == "left") toolbar_position = Qt::LeftToolBarArea;
-          else if (toolbar_pos_spec == "right") toolbar_position = Qt::RightToolBarArea;
-          else if (toolbar_pos_spec != "top")
-            error ("invalid value for configuration entry \"InitialToolBarPosition\"");
+          if (toolbar_pos_spec.size()) {
+            if (toolbar_pos_spec == "bottom") toolbar_position = Qt::BottomToolBarArea;
+            else if (toolbar_pos_spec == "left") toolbar_position = Qt::LeftToolBarArea;
+            else if (toolbar_pos_spec == "right") toolbar_position = Qt::RightToolBarArea;
+            else if (toolbar_pos_spec != "top")
+              error ("invalid value for configuration entry \"InitialToolBarPosition\"");
+          }
         }
 
         toolbar = new QToolBar ("Main toolbar", this);
@@ -851,12 +853,17 @@ namespace MR
 
       inline void Window::set_cursor ()
       {
-        if (mode_action_group->checkedAction() == mode_action_group->actions()[0])
-          set_cursor (1);
-        else if (mode_action_group->checkedAction() == mode_action_group->actions()[1])
-          set_cursor (2);
-        else if (mode_action_group->checkedAction() == mode_action_group->actions()[2])
-          set_cursor (3);
+        int group = get_modifier ();
+        if (group) 
+          set_cursor (group);
+        else {
+          if (mode_action_group->checkedAction() == mode_action_group->actions()[0])
+            set_cursor (1);
+          else if (mode_action_group->checkedAction() == mode_action_group->actions()[1])
+            set_cursor (2);
+          else if (mode_action_group->checkedAction() == mode_action_group->actions()[2])
+            set_cursor (3);
+        }
       }
 
 
@@ -1035,25 +1042,25 @@ mode_selected:
           return 3;
         return 0;
       }
-/*
-      inline void Window::KeyPressEventGL (QKeyEvent* event) 
+
+      void Window::keyPressEvent (QKeyEvent* event) 
       {
         if (mouse_action != NoAction) return;
+        modifiers_ = event->modifiers();
         int group = get_modifier (event->modifiers());
-        VAR (group);
         if (group == 0) set_cursor();
         else set_cursor (group);
       }
 
-      inline void Window::KeyReleaseEventGL (QKeyEvent* event)
+      void Window::keyReleaseEvent (QKeyEvent* event)
       {
         if (mouse_action != NoAction) return;
+        modifiers_ = event->modifiers();
         int group = get_modifier (event->modifiers());
-        VAR (group);
         if (group == 0) set_cursor();
         else set_cursor (group);
       }
-*/
+
       inline void Window::mousePressEventGL (QMouseEvent* event)
       {
         assert (mode);
@@ -1140,8 +1147,9 @@ mode_selected:
       {
         assert (mode);
         mode->mouse_release_event();
-        set_cursor();
+        modifiers_ = event->modifiers();
         mouse_action = NoAction;
+        set_cursor();
       }
 
       inline void Window::wheelEventGL (QWheelEvent* event)
