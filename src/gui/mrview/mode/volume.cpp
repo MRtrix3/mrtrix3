@@ -47,10 +47,10 @@ namespace MR
           // info for projection:
           int w = glarea()->width(), h = glarea()->height();
           float fov = FOV() / (float) (w+h);
+
           float depth = std::max (image()->interp.dim(0)*image()->interp.vox(0),
               std::max (image()->interp.dim(1)*image()->interp.vox(1),
                 image()->interp.dim(2)*image()->interp.vox(2)));
-
 
 
           // set up projection & modelview matrices:
@@ -84,10 +84,52 @@ namespace MR
           glTranslatef (-target() [0], -target() [1], -target() [2]);
           update_modelview_projection_viewport();
 
+          // find min/max depth of texture:
+          Point<> z = screen_to_model_direction (Point<> (0.0, 0.0, 1.0));
+          z.normalise();
+          float d;
+          float mindepth = std::numeric_limits<float>::infinity();
+          float maxdepth = -std::numeric_limits<float>::infinity();
+
+          Point<> top (
+              image()->interp.dim(0)*image()->interp.vox(0)-0.5, 
+              image()->interp.dim(1)*image()->interp.vox(1)-0.5, 
+              image()->interp.dim(2)*image()->interp.vox(2)-0.5);
+
+          d = z.dot (image()->interp.voxel2scanner(Point<> (-0.5, -0.5, -0.5)));
+          if (d < mindepth) mindepth = d;
+          if (d > maxdepth) maxdepth = d;
+
+          d = z.dot (image()->interp.voxel2scanner(Point<> (top[0], -0.5, -0.5)));
+          if (d < mindepth) mindepth = d;
+          if (d > maxdepth) maxdepth = d;
+
+          d = z.dot (image()->interp.voxel2scanner(Point<> (-0.5, top[1], -0.5)));
+          if (d < mindepth) mindepth = d;
+          if (d > maxdepth) maxdepth = d;
+
+          d = z.dot (image()->interp.voxel2scanner(Point<> (-0.5, -0.5, top[2])));
+          if (d < mindepth) mindepth = d;
+          if (d > maxdepth) maxdepth = d;
+
+          d = z.dot (image()->interp.voxel2scanner(Point<> (top[0], top[1], -0.5)));
+          if (d < mindepth) mindepth = d;
+          if (d > maxdepth) maxdepth = d;
+
+          d = z.dot (image()->interp.voxel2scanner(Point<> (top[0], -0.5, top[2])));
+          if (d < mindepth) mindepth = d;
+          if (d > maxdepth) maxdepth = d;
+
+          d = z.dot (image()->interp.voxel2scanner(Point<> (-0.5, top[1], top[2])));
+          if (d < mindepth) mindepth = d;
+          if (d > maxdepth) maxdepth = d;
+
+          d = z.dot (image()->interp.voxel2scanner(Point<> (top[0], top[1], top[2])));
+          if (d < mindepth) mindepth = d;
+          if (d > maxdepth) maxdepth = d;
+
           // set up OpenGL environment:
-          //glEnable (GL_TEXTURE_3D);
           glDisable (GL_DEPTH_TEST);
-          //glTexEnvf (GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
           glDepthMask (GL_FALSE);
 
           glEnable (GL_BLEND);
@@ -97,7 +139,7 @@ namespace MR
           // render image:
           image()->render3D_pre (*this);
           float increment = std::min (image()->interp.vox(0), std::min (image()->interp.vox(1), image()->interp.vox(2)));
-          for (float offset = -depth; offset <= depth; offset += increment)
+          for (float offset = mindepth; offset <= maxdepth; offset += increment)
             image()->render3D_slice (*this, offset);
           image()->render3D_post();
 
