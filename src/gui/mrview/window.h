@@ -161,6 +161,7 @@ namespace MR
           void invert_colourmap_slot ();
           void invert_scaling_slot ();
           void full_screen_slot ();
+          void toggle_annotations_slot ();
 
           void slice_next_slot ();
           void slice_previous_slot ();
@@ -221,11 +222,11 @@ namespace MR
           Point<> focal_point, camera_target;
           Math::Quaternion<float> orient;
           float field_of_view;
-          int proj;
+          int proj, annotations;
 
           QMenu *image_menu, *colourmap_menu;
           QAction *save_action, *close_action, *properties_action;
-          QAction *reset_windowing_action;
+          QAction *reset_windowing_action, *toggle_annotations_action;
           QAction **tool_actions, **colourmap_actions, *invert_colourmap_action, *invert_scale_action;
           QAction *next_image_action, *prev_image_action, *next_image_volume_action, *prev_image_volume_action;
           QAction *next_slice_action, *prev_slice_action, *reset_view_action;

@@ -32,10 +32,8 @@ namespace MR
 
     QCursor Cursor::pan_crosshair;
     QCursor Cursor::forward_backward;
-    QCursor Cursor::pan;
     QCursor Cursor::window;
     QCursor Cursor::crosshair;
-    QCursor Cursor::zoom;
     QCursor Cursor::inplane_rotate;
     QCursor Cursor::throughplane_rotate;
 
@@ -43,20 +41,10 @@ namespace MR
     {
       pan_crosshair = QCursor (QPixmap (":/cursor_pan.svg"), 8, 8);
       forward_backward = QCursor (QPixmap (":/cursor_pan_through_plane.svg"), 8, 8);
-      pan = QCursor (QPixmap (":/pan.svg"), 8, 8);
       window = QCursor (QPixmap (":/cursor_brightness_contrast.svg"), 8, 8);
       crosshair = QCursor (QPixmap (":/cursor_crosshairs.svg"), 8, 8);
-      zoom = QCursor (QPixmap (":/cursor_zoom.svg"), 8, 8);
       inplane_rotate = QCursor (QPixmap (":/cursor_rotate_inplane.svg"), 8, 8);
       throughplane_rotate = QCursor (QPixmap (":/cursor_rotate_throughplane.svg"), 8, 8);
-      //CREATE_CURSOR (pan_crosshair, 9, 8);
-      //CREATE_CURSOR (forward_backward, 9, 8);
-      //CREATE_CURSOR (pan, 16, 16);
-      //CREATE_CURSOR (window, 9, 8);
-      //CREATE_CURSOR (crosshair, 9, 8);
-      //CREATE_CURSOR (zoom, 9, 8);
-      //CREATE_CURSOR (inplane_rotate, 9, 8);
-      //CREATE_CURSOR (throughplane_rotate, 9, 8);
     }
 
   }

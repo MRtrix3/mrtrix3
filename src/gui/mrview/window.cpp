@@ -148,37 +148,27 @@ namespace MR
 
         menu = new QMenu (tr ("Start menu"), this);
 
-        action = menu->addAction (QIcon (":/open.svg"), 
-            tr ("Open..."), this, SLOT (image_open_slot()));
-        action->setToolTip (tr ("Open an existing image\n\nShortcut: Ctrl+O"));
+        action = menu->addAction (tr ("Open..."), this, SLOT (image_open_slot()));
         action->setShortcut (tr ("Ctrl+O"));
         addAction (action);
 
-        save_action = menu->addAction (QIcon (":/save.svg"), 
-            tr ("Save..."), this, SLOT (image_save_slot()));
-        save_action->setToolTip (tr ("Save the current image\n\nShortcut: Ctrl+S"));
+        save_action = menu->addAction (tr ("Save..."), this, SLOT (image_save_slot()));
         save_action->setShortcut (tr ("Ctrl+S"));
         addAction (save_action);
 
-        close_action = menu->addAction (QIcon (":/close.svg"), 
-            tr ("Close"), this, SLOT (image_close_slot()));
-        close_action->setToolTip (tr ("Close the current image\n\nShortcut: Ctrl+W"));
+        close_action = menu->addAction (tr ("Close"), this, SLOT (image_close_slot()));
         close_action->setShortcut (tr ("Ctrl+W"));
         addAction (close_action);
 
         menu->addSeparator();
 
-        properties_action = menu->addAction (QIcon (":/info.svg"), 
-            tr ("Properties..."), this, SLOT (image_properties_slot()));
-        properties_action->setShortcut (tr("Ctrl+P"));
+        properties_action = menu->addAction (tr ("Properties..."), this, SLOT (image_properties_slot()));
         properties_action->setToolTip (tr ("Display the properties of the current image\n\nShortcut: Ctrl+P"));
         addAction (properties_action);
 
         menu->addSeparator();
 
-        action = menu->addAction (QIcon (":/quit.svg"), 
-            tr ("Quit"), this, SLOT (close()));
-        action->setToolTip (tr("Quit\n\nShortcut: Ctrl+Q"));
+        action = menu->addAction (tr ("Quit"), this, SLOT (close()));
         action->setShortcut (tr ("Ctrl+Q"));
         addAction (action);
 
@@ -199,55 +189,39 @@ namespace MR
         image_group->setExclusive (true);
         connect (image_group, SIGNAL (triggered (QAction*)), this, SLOT (image_select_slot (QAction*)));
 
-        next_image_action = image_menu->addAction (QIcon (":/next_image.svg"),
-            tr ("Next image"), this, SLOT (image_next_slot()));
-        next_image_action->setToolTip (tr ("View the next image in the list\n\nShortcut: Tab"));
-        next_image_action->setShortcut (tr ("Tab"));
-        addAction (next_image_action);
-
-        prev_image_action = image_menu->addAction (QIcon (":/previous_image.svg"),
-            tr ("Previous image"), this, SLOT (image_previous_slot()));
-        prev_image_action->setToolTip (tr ("View the previous image in the list\n\nShortcut: Shift+Tab"));
-        prev_image_action->setShortcut (tr ("Shift+Tab"));
-        addAction (prev_image_action);
-
-        image_menu->addSeparator();
-
-        next_slice_action = image_menu->addAction (QIcon (":/forwards.svg"),
-            tr ("Next slice"), this, SLOT (slice_next_slot()));
-        next_slice_action->setToolTip (tr ("Move to next image slice\n\nShortcut: Up"));
+        next_slice_action = image_menu->addAction (tr ("Next slice"), this, SLOT (slice_next_slot()));
         next_slice_action->setShortcut (tr ("Up"));
         addAction (next_slice_action);
 
-        prev_slice_action = image_menu->addAction (QIcon (":/backwards.svg"),
-            tr ("Previous slice"), this, SLOT (slice_previous_slot()));
-        prev_slice_action->setToolTip (tr ("Move to previous image slice\n\nShortcut: Down"));
+        prev_slice_action = image_menu->addAction (tr ("Previous slice"), this, SLOT (slice_previous_slot()));
         prev_slice_action->setShortcut (tr ("Down"));
         addAction (prev_slice_action);
 
-        next_image_volume_action = image_menu->addAction (QIcon (":/next_volume.svg"), 
-            tr ("Next volume"), this, SLOT (image_next_volume_slot()));
-        next_image_volume_action->setToolTip (tr ("View the next volume in the image (4th dimension)\n\nShortcut: Right"));
+        next_image_volume_action = image_menu->addAction (tr ("Next volume"), this, SLOT (image_next_volume_slot()));
         next_image_volume_action->setShortcut (tr ("Right"));
         addAction (next_image_volume_action);
 
-        prev_image_volume_action = image_menu->addAction (QIcon (":/previous_volume.svg"),
-            tr ("Previous volume"), this, SLOT (image_previous_volume_slot()));
+        prev_image_volume_action = image_menu->addAction (tr ("Previous volume"), this, SLOT (image_previous_volume_slot()));
         prev_image_volume_action->setShortcut (tr ("Left"));
-        prev_image_volume_action->setToolTip (tr ("View the previous volume in the image (4th dimension)\n\nShortcut: Left"));
         addAction (prev_image_volume_action);
 
-        next_image_volume_group_action = image_menu->addAction (QIcon (":/next_volume_group.svg"), 
-            tr ("Next volume group"), this, SLOT (image_next_volume_group_slot()));
-        next_image_volume_group_action->setToolTip (tr ("View the next group of volumes in the image (5th dimension)\n\nShortcut: Shift+Right"));
+        next_image_volume_group_action = image_menu->addAction (tr ("Next volume group"), this, SLOT (image_next_volume_group_slot()));
         next_image_volume_group_action->setShortcut (tr ("Shift+Right"));
         addAction (next_image_volume_group_action);
 
-        prev_image_volume_group_action = image_menu->addAction (QIcon (":/previous_volume_group.svg"),
-            tr("Previous volume group"), this, SLOT (image_previous_volume_group_slot()));
-        prev_image_volume_group_action->setToolTip (tr ("View the previous group of volumes in the image (5th dimension)\n\nShortcut: Shift+Left"));
+        prev_image_volume_group_action = image_menu->addAction (tr("Previous volume group"), this, SLOT (image_previous_volume_group_slot()));
         prev_image_volume_group_action->setShortcut (tr ("Shift+Left"));
         addAction (prev_image_volume_group_action);
+
+        image_menu->addSeparator();
+
+        next_image_action = image_menu->addAction (tr ("Next image"), this, SLOT (image_next_slot()));
+        next_image_action->setShortcut (tr ("Tab"));
+        addAction (next_image_action);
+
+        prev_image_action = image_menu->addAction (tr ("Previous image"), this, SLOT (image_previous_slot()));
+        prev_image_action->setShortcut (tr ("Shift+Tab"));
+        addAction (prev_image_action);
 
         image_list_area = image_menu->addSeparator();
 
@@ -268,27 +242,28 @@ namespace MR
 
         colourmap_menu->addSeparator();
 
-        invert_scale_action = colourmap_menu->addAction (tr ("&Invert scaling"), this, SLOT (invert_scaling_slot()));
+        invert_scale_action = colourmap_menu->addAction (tr ("Invert scaling"), this, SLOT (invert_scaling_slot()));
         invert_scale_action->setCheckable (true);
-        invert_scale_action->setStatusTip (tr ("invert the current scaling"));
+        invert_scale_action->setShortcut (tr("U"));
+        addAction (invert_scale_action);
 
-        invert_colourmap_action = colourmap_menu->addAction (tr ("Invert &Colourmap"), this, SLOT (invert_colourmap_slot()));
+
+        invert_colourmap_action = colourmap_menu->addAction (tr ("Invert Colourmap"), this, SLOT (invert_colourmap_slot()));
         invert_colourmap_action->setCheckable (true);
-        invert_colourmap_action->setStatusTip (tr ("invert the current colourmap"));
+        invert_colourmap_action->setShortcut (tr("Shift+U"));
+        addAction (invert_colourmap_action);
 
         colourmap_menu->addSeparator();
 
-        reset_windowing_action = colourmap_menu->addAction (QIcon (":/reset_contrast.svg"), 
-            tr ("Reset brightness/contrast"), this, SLOT (image_reset_slot()));
-        reset_windowing_action->setToolTip (tr ("Reset image brightness & contrast\n\nShortcut: Esc"));
+        reset_windowing_action = colourmap_menu->addAction (tr ("Reset brightness/contrast"), this, SLOT (image_reset_slot()));
         reset_windowing_action->setShortcut (tr ("Esc"));
         addAction (reset_windowing_action);
 
-        image_interpolate_action = colourmap_menu->addAction (tr ("&Interpolate"), this, SLOT (image_interpolate_slot()));
-        image_interpolate_action->setToolTip (tr ("Toggle between nearest-neighbour and linear interpolation\n\nShortcut: I"));
+        image_interpolate_action = colourmap_menu->addAction (tr ("Interpolate"), this, SLOT (image_interpolate_slot()));
         image_interpolate_action->setShortcut (tr ("I"));
         image_interpolate_action->setCheckable (true);
         image_interpolate_action->setChecked (true);
+        addAction (image_interpolate_action);
 
         button = new QToolButton (this);
         button->setToolTip (tr ("Colourmap menu"));
@@ -296,6 +271,9 @@ namespace MR
         button->setPopupMode (QToolButton::InstantPopup);
         button->setMenu (colourmap_menu);
         toolbar->addWidget (button);
+
+
+
 
         // Mode menu:
         mode_group = new QActionGroup (this);
@@ -314,6 +292,8 @@ namespace MR
 #undef MODE
 #undef MODE_OPTION
         mode_group->actions()[0]->setChecked (true);
+        for (int n = 0; n < mode_group->actions().size(); ++n)
+          addAction (mode_group->actions()[n]);
 
 
         menu->addSeparator();
@@ -322,61 +302,64 @@ namespace MR
         projection_group->setExclusive (true);
         connect (projection_group, SIGNAL (triggered (QAction*)), this, SLOT (select_projection_slot (QAction*)));
 
-        axial_action = menu->addAction (QIcon (":/axial.svg"), tr ("Axial"));
-        axial_action->setToolTip (tr ("Switch to axial projection\n\nShortcut: A"));
+        axial_action = menu->addAction (tr ("Axial"));
         axial_action->setShortcut (tr ("A"));
         axial_action->setCheckable (true);
         projection_group->addAction (axial_action);
+        addAction (axial_action);
 
-        sagittal_action = menu->addAction (QIcon (":/sagittal.svg"), tr ("Sagittal"));
-        sagittal_action->setToolTip (tr ("Switch to sagittal projection\n\nShortcut: S"));
+        sagittal_action = menu->addAction (tr ("Sagittal"));
         sagittal_action->setShortcut (tr ("S"));
         sagittal_action->setCheckable (true);
         projection_group->addAction (sagittal_action);
+        addAction (sagittal_action);
 
-        coronal_action = menu->addAction (QIcon (":/coronal.svg"), tr ("Coronal"));
-        coronal_action->setToolTip (tr ("Switch to coronal projection\n\nShortcut: C"));
+        coronal_action = menu->addAction (tr ("Coronal"));
         coronal_action->setShortcut (tr ("C"));
         coronal_action->setCheckable (true);
         projection_group->addAction (coronal_action);
+        addAction (coronal_action);
 
         menu->addSeparator();
 
-        full_screen_action = menu->addAction (QIcon (":/fullscreen.svg"), 
-            tr ("Full screen"), this, SLOT (full_screen_slot()));
-        full_screen_action->setToolTip (tr ("Toggle full screen mode\n\nShortcut: F11"));
-        full_screen_action->setShortcut (tr ("F11"));
-        full_screen_action->setCheckable (true);
-        full_screen_action->setChecked (false);
-        addAction (full_screen_action);
+        action = menu->addAction (tr ("Toggle all annotations"), this, SLOT (toggle_annotations_slot()));
+        action->setShortcut (tr("Space"));
+        addAction (action);
 
-        show_crosshairs_action = menu->addAction (QIcon (":/crosshairs.svg"),
-            tr ("Show focus"), glarea, SLOT (updateGL()));
-        show_crosshairs_action->setToolTip (tr ("Show/hide focus crosshairs\n\nShortcut: F"));
+        show_crosshairs_action = menu->addAction (tr ("Show focus"), glarea, SLOT (updateGL()));
         show_crosshairs_action->setShortcut (tr("F"));
         show_crosshairs_action->setCheckable (true);
         show_crosshairs_action->setChecked (true);
+        addAction (show_crosshairs_action);
 
         show_comments_action = menu->addAction (tr ("Show comments"), glarea, SLOT (updateGL()));
         show_comments_action->setToolTip (tr ("Show/hide image comments\n\nShortcut: H"));
         show_comments_action->setShortcut (tr("H"));
         show_comments_action->setCheckable (true);
         show_comments_action->setChecked (true);
+        addAction (show_comments_action);
 
         show_voxel_info_action = menu->addAction (tr ("Show voxel information"), glarea, SLOT (updateGL()));
-        show_voxel_info_action->setToolTip (tr ("Show/hide voxel position and intensity information\n\nShortcut: V"));
         show_voxel_info_action->setShortcut (tr("V"));
         show_voxel_info_action->setCheckable (true);
         show_voxel_info_action->setChecked (true);
+        addAction (show_voxel_info_action);
 
         show_orientation_labels_action = menu->addAction (tr ("Show orientation labels"), glarea, SLOT (updateGL()));
-        show_orientation_labels_action->setToolTip (tr ("Show/hide image orientation lables\n\nShortcut: O"));
         show_orientation_labels_action->setShortcut (tr("O"));
         show_orientation_labels_action->setCheckable (true);
         show_orientation_labels_action->setChecked (true);
+        addAction (show_orientation_labels_action);
 
-        action = menu->addAction (QIcon (":/reset_view.svg"), tr ("Reset view"), this, SLOT(reset_view_slot()));
-        action->setToolTip (tr ("Reset view parameters to defaults\n\nShortcut: R"));
+        menu->addSeparator();
+
+        full_screen_action = menu->addAction (tr ("Full screen"), this, SLOT (full_screen_slot()));
+        full_screen_action->setShortcut (tr ("F11"));
+        full_screen_action->setCheckable (true);
+        full_screen_action->setChecked (false);
+        addAction (full_screen_action);
+
+        action = menu->addAction (tr ("Reset view"), this, SLOT(reset_view_slot()));
         action->setShortcut (tr ("R"));
         addAction (action);
 
@@ -385,14 +368,15 @@ namespace MR
         button->setIcon (QIcon (":/mode.svg"));
         button->setMenu (menu);
         button->setPopupMode (QToolButton::InstantPopup);
+        toolbar->addWidget (button);
 
-        action = toolbar->addWidget (button);
-        addAction (action);
+
 
 
         // Tool menu:
         tool_group = new QActionGroup (this);
         tool_group->setExclusive (false);
+        connect (tool_group, SIGNAL (triggered (QAction*)), this, SLOT (select_tool_slot (QAction*)));
 
         menu = new QMenu (tr ("Tools"), this);
 #undef TOOL
@@ -404,20 +388,22 @@ namespace MR
           size_t n = 1;
 #include "gui/mrview/tool/list.h"
         }
+        for (int n = 0; n < tool_group->actions().size(); ++n)
+          addAction (tool_group->actions()[n]);
 
         button = new QToolButton (this);
         button->setToolTip (tr ("Select additional tools..."));
         button->setIcon (QIcon (":/tools.svg"));
         button->setMenu (menu);
         button->setPopupMode (QToolButton::InstantPopup);
+        toolbar->addWidget (button);
 
-        action = toolbar->addWidget (button);
-        addAction (action);
 
-        connect (tool_group, SIGNAL (triggered (QAction*)), this, SLOT (select_tool_slot (QAction*)));
 
 
         toolbar->addSeparator();
+
+
 
         // Mouse mode actions:
 
@@ -426,29 +412,48 @@ namespace MR
         connect (mode_action_group, SIGNAL (triggered (QAction*)), this, SLOT (select_mouse_mode_slot (QAction*)));
 
         action = toolbar->addAction (QIcon (":/select_contrast.svg"), tr ("Change focus / contrast"));
-        action->setToolTip (tr ("Left-click: set focus\nRight-click: change brightness/constrast\n\nShortcut: 1\n\nHold down Win key to use this mode\nregardless of currently selected mode"));
+        action->setToolTip (tr (
+              "Left-click: set focus\n"
+              "Right-click: change brightness/constrast\n\n"
+              "Shortcut: 1\n\n"
+              "Hold down Win key to use this mode\n"
+              "regardless of currently selected mode"));
         action->setShortcut (tr("1"));
         action->setCheckable (true);
         action->setChecked (true);
         mode_action_group->addAction (action);
 
         action = toolbar->addAction (QIcon (":/move.svg"), tr ("Move viewport"));
-        action->setToolTip (tr ("Left-click: move in-plane\nRight-click: move through-plane\n\nShortcut: 2\n\nHold down Ctrl key to use this mode\nregardless of currently selected mode"));
+        action->setToolTip (tr (
+              "Left-click: move in-plane\n"
+              "Right-click: move through-plane\n\n"
+              "Shortcut: 2\n\n"
+              "Hold down Ctrl key to use this mode\n"
+              "regardless of currently selected mode"));
         action->setShortcut (tr("2"));
         action->setCheckable (true);
         mode_action_group->addAction (action);
 
         action = toolbar->addAction (QIcon (":/rotate.svg"), tr ("Move camera"));
-        action->setToolTip (tr ("Left-click: move camera in-plane\nRight-click: rotate camera about view axis\n\nShortcut: 2\n\nHold down Shift key to use this mode\nregardless of currently selected mode"));
+        action->setToolTip (tr (
+              "Left-click: move camera in-plane\n"
+              "Right-click: rotate camera about view axis\n\n"
+              "Shortcut: 2\n\n"
+              "Hold down Shift key to use this mode\n"
+              "regardless of currently selected mode"));
         action->setShortcut (tr("3"));
         action->setCheckable (true);
         mode_action_group->addAction (action);
+
+        for (int n = 0; n < mode_action_group->actions().size(); ++n)
+          addAction (mode_action_group->actions()[n]);
 
         extra_controls_action = toolbar->addAction (QIcon (":/controls.svg"),
             tr ("Additional controls"), this, SLOT (mode_control_slot()));
         extra_controls_action->setShortcut (tr("0"));
         extra_controls_action->setToolTip (tr ("Adjust additional viewing parameters"));
         extra_controls_action->setEnabled (false);
+        addAction (extra_controls_action);
 
         toolbar->addSeparator();
 
@@ -457,20 +462,9 @@ namespace MR
 
         menu = new QMenu (tr ("Help"), this);
 
-        action = menu->addAction (QIcon (":/opengl.svg"),
-            tr("OpenGL"),
-            this, SLOT (OpenGL_slot()));
-        action->setToolTip (tr("Display OpenGL information"));
-
-        action = menu->addAction (QIcon (":/mrtrix.png"),
-          tr ("About"),
-          this, SLOT (about_slot()));
-        action->setToolTip (tr ("Display information about MRView"));
-
-        action = menu->addAction (QIcon (":/Qt-logo.svg"), 
-            tr ("about Qt"), 
-            this, SLOT (aboutQt_slot()));
-        action->setToolTip (tr ("Display information about Qt"));
+        menu->addAction (tr("OpenGL"), this, SLOT (OpenGL_slot()));
+        menu->addAction (tr ("About"), this, SLOT (about_slot()));
+        menu->addAction (tr ("about Qt"), this, SLOT (aboutQt_slot()));
 
         button = new QToolButton (this);
         button->setToolTip (tr ("Help"));
@@ -785,6 +779,32 @@ namespace MR
         glarea->updateGL();
       }
 
+
+      void Window::toggle_annotations_slot ()
+      {
+        int current_annotations = 0x00000000;
+        if (show_crosshairs()) current_annotations |= 0x00000001;
+        if (show_comments()) current_annotations |= 0x00000002;
+        if (show_voxel_info()) current_annotations |= 0x00000004;
+        if (show_orientation_labels()) current_annotations |= 0x00000008;
+
+        if (current_annotations) {
+          annotations = current_annotations;
+          show_crosshairs_action->setChecked (false);
+          show_comments_action->setChecked (false);
+          show_voxel_info_action->setChecked (false);
+          show_orientation_labels_action->setChecked (false);
+        }
+        else {
+          if (!annotations) 
+            annotations = 0xFFFFFFFF;
+          show_crosshairs_action->setChecked (annotations & 0x00000001);
+          show_comments_action->setChecked (annotations & 0x00000002);
+          show_voxel_info_action->setChecked (annotations & 0x00000004);
+          show_orientation_labels_action->setChecked (annotations & 0x00000008);
+        }
+        updateGL();
+      }
 
 
       inline void Window::set_image_menu ()

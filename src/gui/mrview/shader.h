@@ -64,7 +64,7 @@ namespace MR
         const uint32_t RGB = Special;
         const uint32_t Complex = Special+1;
 
-        inline void init (QObject* window, QActionGroup*& group, QMenu* menu, QAction** & actions)
+        inline void init (QWidget* window, QActionGroup*& group, QMenu* menu, QAction** & actions)
         {
           group = new QActionGroup (window);
           group->setExclusive (true);
@@ -91,6 +91,12 @@ namespace MR
             menu->addAction (actions[n]);
           }
           actions[0]->setChecked (true);
+
+          for (n = 0; n < NumScalar+NumSpecial; ++n) {
+            window->addAction (actions[n]);
+            actions[n]->setShortcut (QObject::tr (std::string ("Ctrl+" + str (n+1)).c_str()));
+          }
+
         }
 
         inline uint32_t from_menu (uint32_t num)
