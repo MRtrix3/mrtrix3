@@ -77,7 +77,11 @@ namespace MR
             std::vector<float> V (parse_floats (kv.value()));
             dw_scheme.insert (dw_scheme.end(), V.begin(), V.end());
           }
-          else H[key] = kv.value();
+          else {
+            if (H[key].size())
+              H[key] += '\n';
+            H[key] += kv.value();
+          }
         }
 
         if (dim.empty())
@@ -223,8 +227,12 @@ namespace MR
 
         out << "\ndatatype: " << H.datatype().specifier();
 
-        for (std::map<std::string, std::string>::iterator i = H.begin(); i != H.end(); ++i)
-          out << "\n" << i->first << ": " << i->second;
+        for (std::map<std::string, std::string>::iterator i = H.begin(); i != H.end(); ++i) {
+          std::vector<std::string > lines = split(i->second, "\n", true);
+          for (size_t l = 0; l < lines.size(); l++) {
+            out << "\n" << i->first << ": " << lines[l];
+          }
+        }
 
         for (std::vector<std::string>::const_iterator i = H.comments().begin(); i != H.comments().end(); i++)
           out << "\ncomments: " << *i;

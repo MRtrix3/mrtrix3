@@ -29,6 +29,8 @@
 #include "image/voxel.h"
 #include "dwi/gradient.h"
 
+#include <sstream>
+
 using namespace MR;
 using namespace App;
 
@@ -172,12 +174,15 @@ void run ()
   } else {
     dirs.load(argument[1]);
     Math::Matrix<value_type> grad (dirs.rows(), 4);
+    std::stringstream dir_stream;
     for (unsigned int i = 0; i < grad.rows(); i++) {
       grad(i,0) = sin(dirs(i,1)) * cos(dirs(i,0));
       grad(i,1) = sin(dirs(i,1)) * sin(dirs(i,0));
       grad(i,2) = cos(dirs(i,1));
       grad(i,3) = 1;
+      dir_stream << dirs(i,0) << " " << dirs(i,0) << '\n';
     }
+    amp_header.insert(std::pair<std::string, std::string> ("directions", dir_stream.str()));
     amp_header.DW_scheme() = grad;
   }
   amp_header.dim(3) = dirs.rows();
@@ -185,6 +190,7 @@ void run ()
   amp_header.stride(1) = 3;
   amp_header.stride(2) = 4;
   amp_header.stride(3) = 1;
+
   Image::Buffer<value_type> amp_data (argument[2], amp_header);
 
 

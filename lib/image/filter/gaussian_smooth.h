@@ -44,7 +44,7 @@ namespace MR
        * \code
        * Image::BufferPreload<float> src_data (argument[0]);
        * Image::BufferPreload<float>::voxel_type src (src_data);
-       * Image::Filter::Gaussian3D smooth_filter (src);
+       * Image::Filter::GaussianSmooth smooth_filter (src);
        *
        * std::vector<float> stdev (1);
        * stdev[0] = 2;

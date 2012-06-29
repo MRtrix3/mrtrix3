@@ -46,16 +46,25 @@ void usage ()
 
   OPTIONS
   + Option ("stdev", "apply Gaussian smoothing with the specified standard deviation. "
-            "The standard deviation is defined in mm (Default 1mm)."
+            "The standard deviation is defined in mm (Default 1mm). "
             "This can be specified either as a single value to be used for all axes, "
             "or as a comma-separated list of the stdev for each axis.")
   + Argument ("sigma").type_sequence_float()
 
   + Option ("extent", "specify the extent (width) of kernel size in voxels. "
             "This can be specified either as a single value to be used for all axes, "
-            "or as a comma-separated list of the extent for each axis."
+            "or as a comma-separated list of the extent for each axis. "
             "The default extent is 4 standard deviations.")
-  + Argument ("size").type_sequence_int();
+  + Argument ("size").type_sequence_int()
+
+  + Option ("anisotropic", "smooth each 3D volume of a 4D image using an anisotropic gaussian kernel "
+                           "oriented along a corresponding direction. Note that when this option is used "
+                           "the -stdev option defines the standard deviation along each eigenvector of the kernel."
+                           "This can be used to smooth AFD values sampled along a number of directions. "
+                           "The directions can be specified within the header of the input image, or by using the -directions option.")
+
+  + Option ("directions", "the directions for anisotropic smoothing.")
+  + Argument ("file", "a list of directions [az el] generated using the gendir command.").type_file();
 }
 
 
