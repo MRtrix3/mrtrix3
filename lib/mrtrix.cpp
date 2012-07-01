@@ -132,7 +132,6 @@ namespace MR
     try {
       do {
         end = string.find_first_of (delimiters, start);
-        if (end == std::string::npos) return V;
         V.push_back (string.substr (start, end-start));
         start = ignore_empty_fields ? string.find_first_not_of (delimiters, end+1) : end+1;
         if (V.size()+1 >= num) {

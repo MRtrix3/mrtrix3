@@ -27,6 +27,8 @@
 #include "image/filter/gaussian_smooth.h"
 #include "progressbar.h"
 
+#include <vector>
+
 
 MRTRIX_APPLICATION
 

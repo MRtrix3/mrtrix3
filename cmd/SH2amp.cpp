@@ -67,8 +67,8 @@ typedef float value_type;
 
 class Item {
   public:
-    Math::Vector<value_type> data;
-    ssize_t pos[3];
+    Math::Matrix<value_type> data;
+    ssize_t pos[2];
 };
 
 
@@ -84,18 +84,23 @@ class DataLoader {
 
     void execute () {
       Queue::Writer::Item item (writer);
+      std::vector<size_t> out_axes(2, 1);
+      out_axes[1] = 2;
+      Image::LoopInOrder outer_loop (out_axes, "computing amplitudes...");
+      Image::Loop row_loop (0,1);
+      Image::Loop sh_loop (3,4);
 
-      Image::Loop outer ("computing amplitudes...", 0, 3 );
-      Image::Loop inner (3);
-
-      for (outer.start (sh_voxel); outer.ok(); outer.next (sh_voxel)) {
-        item->data.allocate (sh_voxel.dim(3));
-        item->pos[0] = sh_voxel[0];
-        item->pos[1] = sh_voxel[1];
-        item->pos[2] = sh_voxel[2];
-        for (inner.start (sh_voxel); inner.ok(); inner.next (sh_voxel))
-          item->data[sh_voxel[3]] = sh_voxel.value();
-        if (!item.write()) throw Exception ("error writing to work queue");
+      for (outer_loop.start (sh_voxel); outer_loop.ok(); outer_loop.next (sh_voxel)) {
+        item->data.allocate (sh_voxel.dim(3), sh_voxel.dim(0));
+        item->pos[0] = sh_voxel[1];
+        item->pos[1] = sh_voxel[2];
+        for (row_loop.start (sh_voxel); row_loop.ok(); row_loop.next (sh_voxel)) {
+          for (sh_loop.start (sh_voxel); sh_loop.ok(); sh_loop.next (sh_voxel)) {
+            item->data(sh_voxel[3], sh_voxel[0]) = sh_voxel.value();
+          }
+        }
+        if (!item.write())
+          throw Exception ("error writing to work queue");
       }
     }
 
@@ -121,16 +126,18 @@ class Processor {
       Queue::Reader::Item item (reader);
 
       while ((item.read())) {
-        Math::Vector<value_type> amplitudes;
-        transformer.SH2A(amplitudes, item->data);
-
-        amp_voxel[0] = item->pos[0];
-        amp_voxel[1] = item->pos[1];
-        amp_voxel[2] = item->pos[2];
-        for (amp_voxel[3] = 0; amp_voxel[3] < amp_voxel.dim(3); ++amp_voxel[3]) {
-          if (nonnegative && amplitudes[amp_voxel[3]] < 0)
-            amplitudes[amp_voxel[3]] = 0.0;
-          amp_voxel.value() = amplitudes[amp_voxel[3]];
+        Math::Matrix<value_type> amplitudes;
+        Math::mult(amplitudes, transformer.mat_SH2A(), item->data);
+        amp_voxel[1] = item->pos[0];
+        amp_voxel[2] = item->pos[1];
+        Image::Loop row_loop (0,1);
+        Image::Loop amp_loop (3,4);
+        for (row_loop.start (amp_voxel); row_loop.ok(); row_loop.next (amp_voxel)) {
+          for (amp_loop.start (amp_voxel); amp_loop.ok(); amp_loop.next (amp_voxel)) {
+            if (nonnegative && amplitudes(amp_voxel[3], amp_voxel[2]) < 0)
+              amplitudes(amp_voxel[3], amp_voxel[2]) = 0.0;
+            amp_voxel.value() = amplitudes(amp_voxel[3], amp_voxel[0]);
+          }
         }
       }
     }
@@ -146,7 +153,6 @@ class Processor {
 void run ()
 {
   Image::Buffer<value_type> sh_data (argument[0]);
-  assert (!sh_data.datatype().is_complex());
 
   if (sh_data.ndim() != 4)
     throw Exception ("The input spherical harmonic image should contain 4 dimensions");
@@ -162,29 +168,16 @@ void run ()
     std::vector<int> bzeros, dwis;
     DWI::guess_DW_directions (dwis, bzeros, grad);
     DWI::gen_direction_matrix(dirs, grad, dwis);
-
-    Math::Matrix<value_type> grad_dwis(dwis.size(), 4);
-    for (unsigned int i = 0; i < dwis.size(); i++){
-      grad_dwis(i,0) = grad(dwis[i],0);
-      grad_dwis(i,1) = grad(dwis[i],1);
-      grad_dwis(i,2) = grad(dwis[i],2);
-      grad_dwis(i,3) = grad(dwis[i],3);
-    }
-    amp_header.DW_scheme() = grad_dwis;
   } else {
     dirs.load(argument[1]);
     Math::Matrix<value_type> grad (dirs.rows(), 4);
-    std::stringstream dir_stream;
-    for (unsigned int i = 0; i < grad.rows(); i++) {
-      grad(i,0) = sin(dirs(i,1)) * cos(dirs(i,0));
-      grad(i,1) = sin(dirs(i,1)) * sin(dirs(i,0));
-      grad(i,2) = cos(dirs(i,1));
-      grad(i,3) = 1;
-      dir_stream << dirs(i,0) << " " << dirs(i,0) << '\n';
-    }
-    amp_header.insert(std::pair<std::string, std::string> ("directions", dir_stream.str()));
-    amp_header.DW_scheme() = grad;
   }
+  std::stringstream dir_stream;
+  for (size_t d = 0; d < dirs.rows() - 1; ++d)
+    dir_stream << dirs(d,0) << "," << dirs(d,1) << "\n";
+  dir_stream << dirs(dirs.rows() - 1,0) << "," << dirs(dirs.rows() - 1,1);
+  amp_header.insert(std::pair<std::string, std::string> ("directions", dir_stream.str()));
+
   amp_header.dim(3) = dirs.rows();
   amp_header.stride(0) = 2;
   amp_header.stride(1) = 3;
@@ -192,7 +185,6 @@ void run ()
   amp_header.stride(3) = 1;
 
   Image::Buffer<value_type> amp_data (argument[2], amp_header);
-
 
   Queue queue ("sh2amp queue");
   DataLoader loader (queue, sh_data);
