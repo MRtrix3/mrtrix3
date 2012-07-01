@@ -42,12 +42,8 @@ namespace MR
     namespace MRView
     {
 
-      namespace Mode
-      {
-        class Base;
-      }
-
       class Window;
+      class Transform;
 
       class Image : public QAction
       {
@@ -92,8 +88,8 @@ namespace MR
             render2D (shader, projection, slice);
           }
 
-          void render3D_pre (Shader& custom_shader, const Mode::Base& mode);
-          void render3D_slice (const Mode::Base& mode, float offset);
+          void render3D_pre (Shader& custom_shader, const Transform& transform, float depth);
+          void render3D_slice (float offset);
           void render3D_post (Shader& custom_shader) {
             custom_shader.stop(); 
             if (custom_shader.use_lighting())
@@ -103,16 +99,16 @@ namespace MR
             render3D_post (shader);
           }
 
-          void render3D_pre (const Mode::Base& mode) {
-            render3D_pre (shader, mode);
+          void render3D_pre (const Transform& transform, float depth) {
+            render3D_pre (shader, transform, depth);
           }
-          void render3D (const Mode::Base& mode) {
-            render3D (shader, mode);
+          void render3D (const Transform& transform, float depth) {
+            render3D (shader, transform, depth);
           }
 
-          void render3D (Shader& custom_shader, const Mode::Base& mode) {
-            render3D_pre (custom_shader, mode);
-            render3D_slice (mode, 0.0);
+          void render3D (Shader& custom_shader, const Transform& transform, float depth) {
+            render3D_pre (custom_shader, transform, depth);
+            render3D_slice (0.0);
             render3D_post (custom_shader);
           }
 
@@ -201,7 +197,7 @@ namespace MR
           GLenum type, format, internal_format;
           std::vector<ssize_t> position;
           bool texture_mode_2D_unchanged, texture_mode_3D_unchanged;
-          Point<> pos[4];
+          Point<> pos[4], tex[4], z, im_z;
 
           Shader shader;
 

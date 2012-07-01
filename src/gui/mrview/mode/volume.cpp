@@ -82,19 +82,19 @@ namespace MR
 
 
           glTranslatef (-target() [0], -target() [1], -target() [2]);
-          update_modelview_projection_viewport();
+          transform.update();
 
           // find min/max depth of texture:
-          Point<> z = screen_to_model_direction (Point<> (0.0, 0.0, 1.0));
+          Point<> z = transform.screen_normal();
           z.normalise();
           float d;
           float mindepth = std::numeric_limits<float>::infinity();
           float maxdepth = -std::numeric_limits<float>::infinity();
 
           Point<> top (
-              image()->interp.dim(0)*image()->interp.vox(0)-0.5, 
-              image()->interp.dim(1)*image()->interp.vox(1)-0.5, 
-              image()->interp.dim(2)*image()->interp.vox(2)-0.5);
+              image()->interp.dim(0)-0.5, 
+              image()->interp.dim(1)-0.5, 
+              image()->interp.dim(2)-0.5);
 
           d = z.dot (image()->interp.voxel2scanner(Point<> (-0.5, -0.5, -0.5)));
           if (d < mindepth) mindepth = d;
@@ -128,6 +128,11 @@ namespace MR
           if (d < mindepth) mindepth = d;
           if (d > maxdepth) maxdepth = d;
 
+          d = z.dot (focus());
+          mindepth -= d;
+          maxdepth -= d;
+
+
           // set up OpenGL environment:
           glDisable (GL_DEPTH_TEST);
           glDepthMask (GL_FALSE);
@@ -137,16 +142,17 @@ namespace MR
 
 
           // render image:
-          image()->render3D_pre (*this);
+          image()->render3D_pre (transform, transform.depth_of (focus()));
           float increment = std::min (image()->interp.vox(0), std::min (image()->interp.vox(1), image()->interp.vox(2)));
           for (float offset = mindepth; offset <= maxdepth; offset += increment)
-            image()->render3D_slice (*this, offset);
+            image()->render3D_slice (offset);
           image()->render3D_post();
 
           glDisable (GL_TEXTURE_3D);
           glDisable (GL_BLEND);
 
-          draw_focus();
+          if (window.show_crosshairs()) 
+            transform.draw_focus (focus());
 
           draw_orientation_labels();
         }

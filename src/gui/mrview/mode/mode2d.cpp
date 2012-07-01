@@ -25,6 +25,7 @@
 #include "mrtrix.h"
 #include "gui/cursor.h"
 #include "gui/mrview/mode/mode2d.h"
+#include "gui/mrview/transform.h"
 
 namespace MR
 {
@@ -74,7 +75,7 @@ namespace MR
           glMultMatrixf (M);
           glTranslatef (-F[0], -F[1], -F[2]);
 
-          update_modelview_projection_viewport();
+          transform.update();
 
           // set up OpenGL environment:
           glDisable (GL_BLEND);
@@ -90,7 +91,8 @@ namespace MR
 
           glDisable (GL_TEXTURE_2D);
 
-          draw_focus();
+          if (window.show_crosshairs()) 
+            transform.draw_focus (focus());
 
           if (window.show_orientation_labels()) {
             glColor4f (1.0, 0.0, 0.0, 1.0);
@@ -171,7 +173,7 @@ namespace MR
 
         void Mode2D::set_focus_event ()
         {
-          set_focus (screen_to_model());
+          set_focus (transform.screen_to_model (window.mouse_position(), focus()));
           updateGL();
         }
 
@@ -185,7 +187,7 @@ namespace MR
 
         void Mode2D::pan_event ()
         {
-          set_target (target() - screen_to_model_direction (window.mouse_displacement()));
+          set_target (target() - transform.screen_to_model_direction (window.mouse_displacement()));
           updateGL();
         }
 

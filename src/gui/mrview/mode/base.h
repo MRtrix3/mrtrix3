@@ -33,6 +33,7 @@
 #include <QFontMetrics>
 
 #include "gui/mrview/window.h"
+#include "gui/mrview/transform.h"
 
 #define EDGE_WIDTH 6
 
@@ -64,6 +65,7 @@ namespace MR
             virtual ~Base ();
 
             Window& window;
+            Transform transform;
             const int mouse_actions;
 
             virtual void paint ();
@@ -79,70 +81,6 @@ namespace MR
             virtual void rotate_event ();
 
             void paintGL ();
-
-            Point<> model_to_screen (const Point<>& pos, const GLint* gl_viewport, const GLdouble* gl_modelview, const GLdouble* gl_projection) const {
-              double wx, wy, wz;
-              gluProject (pos[0], pos[1], pos[2], gl_modelview,
-                          gl_projection, gl_viewport, &wx, &wy, &wz);
-              return Point<> (wx, wy, wz);
-            }
-
-            Point<> model_to_screen (const Point<>& pos) const {
-              return model_to_screen (pos, viewport_matrix, modelview_matrix, projection_matrix);
-            }
-
-            Point<> model_to_screen_direction (const Point<>& pos, const GLint* gl_viewport, const GLdouble* gl_modelview, const GLdouble* gl_projection) const {
-              return model_to_screen (pos, gl_viewport, gl_modelview, gl_projection)  
-                - model_to_screen (Point<> (0.0, 0.0, 0.0), gl_viewport, gl_modelview, gl_projection);
-            }
-
-            Point<> model_to_screen_direction (const Point<>& pos) const {
-              return model_to_screen_direction (pos, viewport_matrix, modelview_matrix, projection_matrix);
-            }
-
-            Point<> screen_to_model (const Point<>& pos, const GLint* gl_viewport, const GLdouble* gl_modelview, const GLdouble* gl_projection) const {
-              double wx, wy, wz;
-              gluUnProject (pos[0], pos[1], pos[2], gl_modelview,
-                            gl_projection, gl_viewport, &wx, &wy, &wz);
-              return Point<> (wx, wy, wz);
-            }
-
-            Point<> screen_to_model (const Point<>& pos) const {
-              return screen_to_model (pos, viewport_matrix, modelview_matrix, projection_matrix);
-            }
-
-            Point<> screen_to_model (const QPoint& pos, const GLint* gl_viewport, const GLdouble* gl_modelview, const GLdouble* gl_projection) const {
-              Point<> f (model_to_screen (focus(), gl_viewport, gl_modelview, gl_projection));
-              f[0] = pos.x();
-              f[1] = pos.y();
-              return screen_to_model (f, gl_viewport, gl_modelview, gl_projection);
-            }
-
-            Point<> screen_to_model (const QPoint& pos) const {
-              return screen_to_model (pos, viewport_matrix, modelview_matrix, projection_matrix);
-            }
-
-            Point<> screen_to_model () const {
-              return screen_to_model (window.mouse_position());
-            }
-
-            Point<> screen_to_model_direction (const Point<>& pos, const GLint* gl_viewport, const GLdouble* gl_modelview, const GLdouble* gl_projection) const {
-              return screen_to_model (pos, gl_viewport, gl_modelview, gl_projection) - screen_to_model (Point<> (0.0, 0.0, 0.0), gl_viewport, gl_modelview, gl_projection);
-            }
-
-            Point<> screen_to_model_direction (const Point<>& pos) const {
-              return screen_to_model (pos) - screen_to_model (Point<> (0.0, 0.0, 0.0));
-            }
-
-            Point<> screen_to_model_direction (const QPoint& pos, const GLint* gl_viewport, const GLdouble* gl_modelview, const GLdouble* gl_projection) const {
-              return screen_to_model (Point<> (pos.x(), pos.y(), 0.0), gl_viewport, gl_modelview, gl_projection) - screen_to_model (Point<> (0.0, 0.0, 0.0), gl_viewport, gl_modelview, gl_projection);
-            }
-
-            Point<> screen_to_model_direction (const QPoint& pos) const {
-              return screen_to_model (Point<> (pos.x(), pos.y(), 0.0)) - screen_to_model (Point<> (0.0, 0.0, 0.0));
-            }
-
-
 
             const Image* image () const { 
               return window.image(); 
@@ -189,28 +127,27 @@ namespace MR
               change_FOV_fine (20.0 * factor);
             }
 
-            int width () const {
-              return viewport_matrix[2];
-            }
-            int height () const {
-              return viewport_matrix[3];
-            }
             QGLWidget* glarea () const {
               return reinterpret_cast <QGLWidget*> (window.glarea);
             }
 
             void renderText (int x, int y, const std::string& text) {
-              glarea()->renderText (x+viewport_matrix[0], glarea()->height()-y-viewport_matrix[1], text.c_str(), font_);
+              glarea()->renderText (x+transform.x_position(), glarea()->height()-y-transform.y_position(), text.c_str(), font_);
             }
 
             void renderTextInset (int x, int y, const std::string& text, int inset = -1) {
               QFontMetrics fm (font_);
               QString s (text.c_str());
-              if (inset < 0) inset = fm.height() / 2;
-              if (x < inset) x = inset;
-              if (x + fm.width (s) + inset > width()) x = width() - fm.width (s) - inset;
-              if (y < inset) y = inset;
-              if (y + fm.height() + inset > height()) y = height() - fm.height() / 2 - inset;
+              if (inset < 0) 
+                inset = fm.height() / 2;
+              if (x < inset) 
+                x = inset;
+              if (x + fm.width (s) + inset > transform.width()) 
+                x = transform.width() - fm.width (s) - inset;
+              if (y < inset) 
+                y = inset;
+              if (y + fm.height() + inset > transform.height())
+                y = transform.height() - fm.height() / 2 - inset;
               renderText (x, y, text);
             }
 
@@ -219,37 +156,36 @@ namespace MR
               QString s (text.c_str());
               int x, y;
 
-              if (position & RightEdge) x = width() - fm.height() / 2 - fm.width (s);
+              if (position & RightEdge) x = transform.width() - fm.height() / 2 - fm.width (s);
               else if (position & LeftEdge) x = fm.height() / 2;
-              else x = (width() - fm.width (s)) / 2;
+              else x = (transform.width() - fm.width (s)) / 2;
 
-              if (position & TopEdge) y = height() - fm.height() - line * fm.lineSpacing();
+              if (position & TopEdge) y = transform.height() - fm.height() - line * fm.lineSpacing();
               else if (position & BottomEdge) y = fm.height() / 2 + line * fm.lineSpacing();
-              else y = (height() + fm.height()) / 2 - line * fm.lineSpacing();
+              else y = (transform.height() + fm.height()) / 2 - line * fm.lineSpacing();
 
               renderText (x, y, text);
             }
 
-            Point<> move_in_out_displacement (float distance, const GLint* gl_viewport, 
-                const GLdouble* gl_modelview, const GLdouble* gl_projection) {
-              Point<> move (screen_to_model_direction (Point<> (0.0, 0.0, -1.0), gl_viewport, gl_modelview, gl_projection));
+            Point<> move_in_out_displacement (float distance, const Transform& with_transform) {
+              Point<> move (-with_transform.screen_normal());
               move.normalise();
               move *= distance;
               return move;
             }
 
-            void move_in_out (float distance, const GLint* gl_viewport, const GLdouble* gl_modelview, const GLdouble* gl_projection) {
+            void move_in_out (float distance, const Transform& with_transform) {
               if (!image()) return;
-              Point<> move = move_in_out_displacement (distance, gl_viewport, gl_modelview, gl_projection);
+              Point<> move = move_in_out_displacement (distance, with_transform);
               set_target (target() + move);
               set_focus (focus() + move);
             }
-            void move_in_out_FOV (int increment, const GLint* gl_viewport, const GLdouble* gl_modelview, const GLdouble* gl_projection) {
-              move_in_out (1e-3 * increment * FOV(), gl_viewport, gl_modelview, gl_projection);
+            void move_in_out_FOV (int increment, const Transform& with_transform) {
+              move_in_out (1e-3 * increment * FOV(), with_transform);
             }
 
             void move_in_out (float distance) {
-              move_in_out (distance, viewport_matrix, modelview_matrix, projection_matrix);
+              move_in_out (distance, transform);
             }
             void move_in_out_FOV (int increment) {
               move_in_out (1e-3 * increment * FOV());
@@ -266,78 +202,14 @@ namespace MR
 
 
           protected:
-            void update_modelview_projection_viewport () const {
-              glGetIntegerv (GL_VIEWPORT, viewport_matrix);
-              glGetDoublev (GL_MODELVIEW_MATRIX, modelview_matrix);
-              glGetDoublev (GL_PROJECTION_MATRIX, projection_matrix);
-            }
-
             void adjust_projection_matrix (float* M, const float* Q, int proj) const;
             void adjust_projection_matrix (float* M, const float* Q) const { 
               adjust_projection_matrix (M, Q, projection()); 
             }
 
-            void draw_focus () const;
-
-            mutable GLdouble modelview_matrix[16], projection_matrix[16];
-            mutable GLint viewport_matrix[4];
-
             bool painting;
 
             QFont font_;
-/*
-            void mousePressEvent (QMouseEvent* event) {
-              if (buttons_ != Qt::NoButton) return;
-              buttons_ = event->buttons();
-              modifiers_ = event->modifiers();
-              lastPos = currentPos = initialPos = event->pos();
-              if (mouse_click()) event->accept();
-              else event->ignore();
-            }
-
-            void mouseMoveEvent (QMouseEvent* event) {
-              lastPos = currentPos;
-              currentPos = event->pos();
-              if (buttons_ == Qt::NoButton)
-                edge_ =
-                  (EDGE_WIDTH*currentPos.x() < width() ? LeftEdge : 0) |
-                  (EDGE_WIDTH* (width()-currentPos.x()) < width() ? RightEdge : 0) |
-                  (EDGE_WIDTH*currentPos.y() < height() ? TopEdge : 0) |
-                  (EDGE_WIDTH* (height()-currentPos.y()) < height() ? BottomEdge : 0);
-              if (mouse_move()) event->accept();
-              else event->ignore();
-            }
-
-
-            void mouseDoubleClickEvent (QMouseEvent* event) {
-              if (mouse_doubleclick())
-                event->accept();
-              else
-                event->ignore();
-            }
-
-            void mouseReleaseEvent (QMouseEvent* event) {
-              if (event->buttons() != Qt::NoButton) return;
-              if (mouse_release())
-                event->accept();
-              else
-                event->ignore();
-
-              buttons_ = Qt::NoButton;
-              modifiers_ = Qt::NoModifier;
-            }
-
-            void wheelEvent (QWheelEvent* event) {
-              buttons_ = event->buttons();
-              modifiers_ = event->modifiers();
-              lastPos = currentPos = event->pos();
-              if (mouse_wheel (event->delta() / 120.0, event->orientation())) 
-                event->accept();
-              else 
-                event->ignore();
-            }
-            friend class MR::GUI::MRView::Window;
-*/
         };
 
 

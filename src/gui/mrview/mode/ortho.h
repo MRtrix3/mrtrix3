@@ -56,8 +56,7 @@ namespace MR
           protected:
             void draw_projection (int proj, float fovx, float fovy);
 
-            GLdouble gl_modelview[3][16], gl_projection[3][16];
-            GLint gl_viewport[3][4];
+            Transform transforms[3];
             int current_projection;
 
             void reset_view ();

@@ -39,7 +39,6 @@ namespace MR
           painting (false)
         {
           font_.setPointSize (MR::File::Config::get_int ("FontSize", 10));
-          modelview_matrix[0] = NAN;
         }
 
 
@@ -53,10 +52,10 @@ namespace MR
           painting = true;
 
           glViewport (0, 0, glarea()->width(), glarea()->height());
-          update_modelview_projection_viewport();
 
           glClear (GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
           if (!image()) {
+            transform.update();
             renderText (10, 10, "No image loaded");
             goto done_painting;
           }
@@ -65,7 +64,7 @@ namespace MR
             paint();
 
             glDisable (GL_MULTISAMPLE);
-            update_modelview_projection_viewport();
+            transform.update();
             glColor4f (1.0, 1.0, 0.0, 1.0);
 
             if (window.show_voxel_info()) {
@@ -116,47 +115,6 @@ done_painting:
         void Base::panthrough_event () { }
         void Base::tilt_event () { }
         void Base::rotate_event () { }
-
-        void Base::draw_focus () const
-        {
-          // draw focus:
-          if (window.show_crosshairs()) {
-            glPushAttrib (GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-            glDepthMask (GL_FALSE);
-            Point<> F = model_to_screen (focus());
-            F[0] -= viewport_matrix[0];
-            F[1] -= viewport_matrix[1];
-
-            glMatrixMode (GL_PROJECTION);
-            glPushMatrix ();
-            glLoadIdentity ();
-            glOrtho (0, width(), 0, height(), -1.0, 1.0);
-            glMatrixMode (GL_MODELVIEW);
-            glPushMatrix ();
-            glLoadIdentity ();
-
-            float alpha = 0.5;
-
-            glColor4f (1.0, 1.0, 0.0, alpha);
-            glLineWidth (1.0);
-            glEnable (GL_BLEND);
-            glBlendFunc (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
-            glBegin (GL_LINES);
-            glVertex2f (0.0, F[1]);
-            glVertex2f (width(), F[1]);
-            glVertex2f (F[0], 0.0);
-            glVertex2f (F[0], height());
-            glEnd ();
-
-            glDisable (GL_BLEND);
-            glPopMatrix ();
-            glMatrixMode (GL_PROJECTION);
-            glPopMatrix ();
-            glMatrixMode (GL_MODELVIEW);
-            glPopAttrib();
-          }
-        }
 
         void Base::adjust_projection_matrix (float* M, const float* Q, int proj) const
         {

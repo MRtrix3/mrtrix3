@@ -26,7 +26,7 @@
 #include "image/stride.h"
 #include "gui/mrview/image.h"
 #include "gui/mrview/window.h"
-#include "gui/mrview/mode/base.h"
+#include "gui/mrview/transform.h"
 
 
 
@@ -119,7 +119,7 @@ namespace MR
 
 
 
-      void Image::render3D_pre (Shader& custom_shader, const Mode::Base& mode)
+      void Image::render3D_pre (Shader& custom_shader, const Transform& transform, float depth)
       {
         update_texture3D (custom_shader);
 
@@ -133,10 +133,18 @@ namespace MR
         if (custom_shader.use_lighting())
           glEnable (GL_LIGHTING);
 
-        pos[0] = mode.screen_to_model (QPoint (0, mode.height()));
-        pos[1] = mode.screen_to_model (QPoint (0, 0));
-        pos[2] = mode.screen_to_model (QPoint (mode.width(), 0));
-        pos[3] = mode.screen_to_model (QPoint (mode.width(), mode.height()));
+        pos[0] = transform.screen_to_model (0.0, transform.height(), depth);
+        pos[1] = transform.screen_to_model (0.0, 0.0, depth);
+        pos[2] = transform.screen_to_model (transform.width(), 0.0, depth);
+        pos[3] = transform.screen_to_model (transform.width(), transform.height(), depth);
+
+        tex[0] = interp.scanner2voxel (pos[0]) + Point<> (0.5, 0.5, 0.5);
+        tex[1] = interp.scanner2voxel (pos[1]) + Point<> (0.5, 0.5, 0.5);
+        tex[2] = interp.scanner2voxel (pos[2]) + Point<> (0.5, 0.5, 0.5);
+        tex[3] = interp.scanner2voxel (pos[3]) + Point<> (0.5, 0.5, 0.5);
+
+        z = transform.screen_normal();
+        im_z = interp.scanner2voxel_dir (z);
 
         set_color (custom_shader);
       }
@@ -144,43 +152,45 @@ namespace MR
 
 
 
-      void Image::render3D_slice (const Mode::Base& mode, float offset)
+      void Image::render3D_slice (float offset)
       {
-        Point<> spos[4];
+        Point<> spos[4], stex[4];
 
-        spos[0] = pos[0];
-        spos[1] = pos[1];
-        spos[2] = pos[2];
-        spos[3] = pos[3];
-
-        if (offset != 0.0) {
-          Point<> z = mode.screen_to_model_direction (Point<> (0.0, 0.0, 1.0));
-          z.normalise();
-          z *= offset;
-          spos[0] += z;
-          spos[1] += z;
-          spos[2] += z;
-          spos[3] += z;
+        if (offset == 0.0) {
+          spos[0] = pos[0];
+          spos[1] = pos[1];
+          spos[2] = pos[2];
+          spos[3] = pos[3];
+          stex[0] = tex[0];
+          stex[1] = tex[1];
+          stex[2] = tex[2];
+          stex[3] = tex[3];
         }
-
-        Point<> tex[4];
-        tex[0] = interp.scanner2voxel (spos[0]) + Point<> (0.5, 0.5, 0.5);
-        tex[1] = interp.scanner2voxel (spos[1]) + Point<> (0.5, 0.5, 0.5);
-        tex[2] = interp.scanner2voxel (spos[2]) + Point<> (0.5, 0.5, 0.5);
-        tex[3] = interp.scanner2voxel (spos[3]) + Point<> (0.5, 0.5, 0.5);
+        else {
+          Point<> d = z * offset;
+          spos[0] = pos[0] + d;
+          spos[1] = pos[1] + d;
+          spos[2] = pos[2] + d;
+          spos[3] = pos[3] + d;
+          d = im_z * offset;
+          stex[0] = tex[0] + d;
+          stex[1] = tex[1] + d;
+          stex[2] = tex[2] + d;
+          stex[3] = tex[3] + d;
+        }
 
         for (size_t i = 0; i < 4; ++i)
           for (size_t j = 0; j < 3; ++j)
-            tex[i][j] /= header().dim (j);
+            stex[i][j] /= header().dim (j);
 
         glBegin (GL_QUADS);
-        glTexCoord3fv (tex[0]);
+        glTexCoord3fv (stex[0]);
         glVertex3fv (spos[0]);
-        glTexCoord3fv (tex[1]);
+        glTexCoord3fv (stex[1]);
         glVertex3fv (spos[1]);
-        glTexCoord3fv (tex[2]);
+        glTexCoord3fv (stex[2]);
         glVertex3fv (spos[2]);
-        glTexCoord3fv (tex[3]);
+        glTexCoord3fv (stex[3]);
         glVertex3fv (spos[3]);
         glEnd();
       }

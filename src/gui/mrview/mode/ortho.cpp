@@ -102,10 +102,7 @@ namespace MR
           glMultMatrixf (M);
           glTranslatef (-F[0], -F[1], -F[2]);
 
-          update_modelview_projection_viewport();
-          memcpy (gl_viewport[proj], viewport_matrix, 4*sizeof(GLint));
-          memcpy (gl_modelview[proj], modelview_matrix, 16*sizeof(GLdouble));
-          memcpy (gl_projection[proj], projection_matrix, 16*sizeof(GLdouble));
+          transforms[proj].update();
 
           // set up OpenGL environment:
           glDisable (GL_BLEND);
@@ -121,7 +118,8 @@ namespace MR
 
           glDisable (GL_TEXTURE_2D);
 
-          draw_focus();
+          if (window.show_crosshairs()) 
+            transforms[proj].draw_focus (focus());
 
           if (window.show_orientation_labels()) {
             glColor4f (1.0, 0.0, 0.0, 1.0);
@@ -163,13 +161,13 @@ namespace MR
 
         void Ortho::mouse_press_event ()
         {
-          if (window.mouse_position().x() < width()/2) 
-            if (window.mouse_position().y() >= height()/2) 
+          if (window.mouse_position().x() < glarea()->width()/2) 
+            if (window.mouse_position().y() >= glarea()->height()/2) 
               current_projection = 1;
             else 
               current_projection = 2;
           else 
-            if (window.mouse_position().y() >= height()/2)
+            if (window.mouse_position().y() >= glarea()->height()/2)
               current_projection = 0;
             else 
               current_projection = -1;
@@ -181,11 +179,7 @@ namespace MR
         void Ortho::slice_move_event (int x) 
         { 
           if (current_projection < 0) return;
-          Point<> move = move_in_out_displacement (x * image()->header().vox (current_projection),
-              gl_viewport[current_projection], 
-              gl_modelview[current_projection], 
-              gl_projection[current_projection]); 
-          set_focus (focus() + move);
+          set_focus (focus() + move_in_out_displacement (x * image()->header().vox (current_projection),transforms[current_projection]));
           updateGL();
         } 
 
@@ -194,11 +188,7 @@ namespace MR
         {
           if (current_projection < 0) 
             return;
-          Base::set_focus (screen_to_model (
-                window.mouse_position(), 
-                gl_viewport[current_projection], 
-                gl_modelview[current_projection], 
-                gl_projection[current_projection]));
+          Base::set_focus (transforms[current_projection].screen_to_model (window.mouse_position(), focus()));
           updateGL();
         }
 
@@ -218,12 +208,7 @@ namespace MR
         void Ortho::pan_event () 
         {
           if (current_projection < 0) return;
-          Point<> pos = screen_to_model_direction (
-              window.mouse_displacement(), 
-              gl_viewport[current_projection], 
-              gl_modelview[current_projection], 
-              gl_projection[current_projection]); 
-          set_target (target() - pos);
+          set_target (target() - transforms[current_projection].screen_to_model_direction (window.mouse_displacement()));
           updateGL();
         }
 
@@ -231,11 +216,7 @@ namespace MR
         void Ortho::panthrough_event () 
         { 
           if (current_projection < 0) return;
-          Point<> move = move_in_out_displacement (window.mouse_displacement().y(),
-              gl_viewport[current_projection], 
-              gl_modelview[current_projection], 
-              gl_projection[current_projection]); 
-          set_focus (focus() + move);
+          set_focus (focus() + move_in_out_displacement (window.mouse_displacement().y(), transforms[current_projection]));
           updateGL();
         }
 

@@ -246,11 +246,7 @@ namespace MR
           void mouseReleaseEventGL (QMouseEvent* event);
           void wheelEventGL (QWheelEvent* event);
 
-          int get_modifier (Qt::KeyboardModifiers keys);
-          int get_modifier () {
-            return get_modifier (modifiers_);
-          }
-          void set_cursor (int action_mode, bool right_action = false);
+          int get_mouse_mode ();
           void set_cursor ();
           void set_image_menu ();
           void set_mode_actions ();

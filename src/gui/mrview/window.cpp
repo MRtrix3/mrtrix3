@@ -834,35 +834,48 @@ namespace MR
         glarea->updateGL();
       }
 
-      void Window::set_cursor (int action_mode, bool right_action)
+      inline int Window::get_mouse_mode ()
       {
-        if (action_mode == 1) {
-          if (right_action) glarea->setCursor (Cursor::window);
-          else glarea->setCursor (Cursor::crosshair);
+        modifiers_ = QApplication::keyboardModifiers();
+
+        if (mouse_action == NoAction && modifiers_ != Qt::NoModifier) {
+          if (modifiers_ == FocusModifier && ( mode->mouse_actions & Mode::FocusContrast )) 
+            return 1;
+          else if (modifiers_ == MoveModifier && ( mode->mouse_actions & Mode::MoveTarget ))
+            return 2;
+          else if (modifiers_ == RotateModifier && ( mode->mouse_actions & Mode::TiltRotate ))
+            return 3;
+          else assert (0);
         }
-        else if (action_mode == 2) {
-          if (right_action) glarea->setCursor (Cursor::forward_backward);
-          else glarea->setCursor (Cursor::pan_crosshair);
-        }
-        else if (action_mode == 3) {
-          if (right_action) glarea->setCursor (Cursor::inplane_rotate);
-          else glarea->setCursor (Cursor::throughplane_rotate);
-        }
+
+        if (mouse_action == NoAction) 
+          return mode_action_group->actions().indexOf (mode_action_group->checkedAction()) + 1;
+
+        return 0;
       }
 
 
       inline void Window::set_cursor ()
       {
-        int group = get_modifier ();
-        if (group) 
-          set_cursor (group);
-        else {
-          if (mode_action_group->checkedAction() == mode_action_group->actions()[0])
-            set_cursor (1);
-          else if (mode_action_group->checkedAction() == mode_action_group->actions()[1])
-            set_cursor (2);
-          else if (mode_action_group->checkedAction() == mode_action_group->actions()[2])
-            set_cursor (3);
+        MouseAction cursor = mouse_action;
+
+        if (cursor == NoAction) {
+          switch (get_mouse_mode()) {
+            case 1: cursor = SetFocus; break;
+            case 2: cursor = Pan; break;
+            case 3: cursor = Tilt; break;
+            default: assert (0);
+          }
+        }
+
+        switch (cursor) {
+          case SetFocus: glarea->setCursor (Cursor::crosshair); break;
+          case Contrast: glarea->setCursor (Cursor::window); break;
+          case Pan: glarea->setCursor (Cursor::pan_crosshair); break;
+          case PanThrough: glarea->setCursor (Cursor::forward_backward); break;
+          case Tilt: glarea->setCursor (Cursor::throughplane_rotate); break;
+          case Rotate: glarea->setCursor (Cursor::inplane_rotate); break;
+          default: assert (0);
         }
       }
 
@@ -1030,93 +1043,51 @@ mode_selected:
       }
 
 
-      inline int Window::get_modifier (Qt::KeyboardModifiers keys)
-      {
-        if (keys == Qt::NoModifier)
-          return 0;
-        if (keys == FocusModifier && ( mode->mouse_actions & Mode::FocusContrast )) 
-          return 1;
-        if (keys == MoveModifier && ( mode->mouse_actions & Mode::MoveTarget ))
-          return 2;
-        if (keys == RotateModifier && ( mode->mouse_actions & Mode::TiltRotate ))
-          return 3;
-        return 0;
-      }
-
       void Window::keyPressEvent (QKeyEvent* event) 
       {
-        if (mouse_action != NoAction) return;
-        modifiers_ = event->modifiers();
-        int group = get_modifier (event->modifiers());
-        if (group == 0) set_cursor();
-        else set_cursor (group);
+        set_cursor();
       }
 
       void Window::keyReleaseEvent (QKeyEvent* event)
       {
-        if (mouse_action != NoAction) return;
-        modifiers_ = event->modifiers();
-        int group = get_modifier (event->modifiers());
-        if (group == 0) set_cursor();
-        else set_cursor (group);
+        set_cursor();
       }
 
       inline void Window::mousePressEventGL (QMouseEvent* event)
       {
         assert (mode);
-        if (!image()) 
-          return;
 
         grab_mouse_state (event);
-        mode->mouse_press_event();
+        if (image()) 
+          mode->mouse_press_event();
 
-        int group = get_modifier();
-        if (group == 0) {
-          while (mode_action_group->checkedAction() != mode_action_group->actions()[group])
-            ++group;
-          ++group;
-        }
+        int group = get_mouse_mode();
 
-        if (buttons_ == Qt::MidButton) {
+        if (buttons_ == Qt::MidButton) 
           mouse_action = Pan;
-          set_cursor (2);
-        }
         else if (group == 1) {
           if (buttons_ == Qt::LeftButton) {
             mouse_action = SetFocus;
-            set_cursor (1);
-            mode->set_focus_event();
+            if (image())
+              mode->set_focus_event();
           }
-          else if (buttons_ == Qt::RightButton) {
+          else if (buttons_ == Qt::RightButton) 
             mouse_action = Contrast;
-            set_cursor (1, true);
-          }
-          else return;
         }
         else if (group == 2) {
-          if (buttons_ == Qt::LeftButton) {
+          if (buttons_ == Qt::LeftButton) 
             mouse_action = Pan;
-            set_cursor (2);
-          }
-          else if (buttons_ == Qt::RightButton) {
+          else if (buttons_ == Qt::RightButton) 
             mouse_action = PanThrough;
-            set_cursor (2, true);
-          }
-          else return;
         }
         else if (group == 3) {
-          if (buttons_ == Qt::LeftButton) {
+          if (buttons_ == Qt::LeftButton) 
             mouse_action = Tilt;
-            set_cursor (3);
-          }
-          else if (buttons_ == Qt::RightButton) {
+          else if (buttons_ == Qt::RightButton) 
             mouse_action = Rotate;
-            set_cursor (3, true);
-          }
-          else return;
         }
-        else return;
 
+        set_cursor();
         event->accept();
       }
 
@@ -1125,9 +1096,9 @@ mode_selected:
       inline void Window::mouseMoveEventGL (QMouseEvent* event)
       {
         assert (mode);
-        if (!image()) 
-          return;
         if (mouse_action == NoAction)
+          return;
+        if (!image()) 
           return;
 
         update_mouse_state (event);
@@ -1147,7 +1118,6 @@ mode_selected:
       {
         assert (mode);
         mode->mouse_release_event();
-        modifiers_ = event->modifiers();
         mouse_action = NoAction;
         set_cursor();
       }
@@ -1155,11 +1125,13 @@ mode_selected:
       inline void Window::wheelEventGL (QWheelEvent* event)
       {
         assert (mode);
-        if (image()) {
+
+        if (event->orientation() == Qt::Vertical) {
+
+          if (image()) {
           grab_mouse_state (event);
           mode->mouse_press_event();
 
-          if (event->orientation() == Qt::Vertical) {
             if (buttons_ == Qt::NoButton) {
 
               if (modifiers_ == Qt::ControlModifier) {
@@ -1179,33 +1151,41 @@ mode_selected:
               updateGL();
               return;
             }
+          }
 
-            else if (buttons_ == Qt::RightButton && modifiers_ == Qt::NoModifier) {
-              int current = 0, num = 0;
-              for (int i = 0; i < mode_action_group->actions().size(); ++i) {
-                if (mode_action_group->actions()[current] != mode_action_group->checkedAction())
-                  current = num;
-                if (mode_action_group->actions()[i]->isEnabled())
-                  ++num;
-              }
-
-              current = (current + num - int(event->delta()/120.0)) % num;
-
-              num = 0;
-              for (int i = 0; i < mode_action_group->actions().size(); ++i) {
-                if (mode_action_group->actions()[i]->isEnabled()) {
-                  if (current == num) {
-                    mode_action_group->actions()[i]->setChecked (true);
-                    break;
-                  }
-                  ++num;
-                }
-              }
-              mouse_action = NoAction;
-              set_cursor();
-              return;
+          if (buttons_ == Qt::LeftButton && modifiers_ == Qt::NoModifier) {
+            int current = 0, num = 0;
+            for (int i = 0; i < mode_action_group->actions().size(); ++i) {
+              if (mode_action_group->actions()[current] != mode_action_group->checkedAction())
+                current = num;
+              if (mode_action_group->actions()[i]->isEnabled())
+                ++num;
             }
 
+            current = (current + num - int(event->delta()/120.0)) % num;
+
+            num = 0;
+            for (int i = 0; i < mode_action_group->actions().size(); ++i) {
+              if (mode_action_group->actions()[i]->isEnabled()) {
+                if (current == num) {
+                  mode_action_group->actions()[i]->setChecked (true);
+                  break;
+                }
+                ++num;
+              }
+            }
+            mouse_action = NoAction;
+            set_cursor();
+            return;
+          }
+
+          if (buttons_ == Qt::RightButton && modifiers_ == Qt::NoModifier) {
+            if (image_group->actions().size() > 1) {
+              QAction* action = image_group->checkedAction();
+              int N = image_group->actions().size();
+              int n = image_group->actions().indexOf (action);
+              image_select_slot (image_group->actions()[(n+N+int(event->delta()/120.0))%N]);
+            }
           }
         }
 
@@ -1215,8 +1195,8 @@ mode_selected:
 
 
 
-    }
   }
+}
 }
 
 
