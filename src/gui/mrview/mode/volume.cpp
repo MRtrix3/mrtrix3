@@ -152,7 +152,7 @@ namespace MR
           glDisable (GL_BLEND);
 
           if (window.show_crosshairs()) 
-            transform.draw_focus (focus());
+            transform.render_crosshairs (focus());
 
           draw_orientation_labels();
         }

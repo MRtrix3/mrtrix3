@@ -29,8 +29,6 @@
 #include <QCursor>
 #include <QMouseEvent>
 #include <QMenu>
-#include <QGLWidget>
-#include <QFontMetrics>
 
 #include "gui/mrview/window.h"
 #include "gui/mrview/transform.h"
@@ -43,11 +41,6 @@ namespace MR
   {
     namespace MRView
     {
-
-      const int TopEdge = 0x00000001;
-      const int BottomEdge = 0x00000002;
-      const int LeftEdge = 0x00000004;
-      const int RightEdge = 0x00000008;
 
       namespace Mode
       {
@@ -131,42 +124,6 @@ namespace MR
               return reinterpret_cast <QGLWidget*> (window.glarea);
             }
 
-            void renderText (int x, int y, const std::string& text) {
-              glarea()->renderText (x+transform.x_position(), glarea()->height()-y-transform.y_position(), text.c_str(), font_);
-            }
-
-            void renderTextInset (int x, int y, const std::string& text, int inset = -1) {
-              QFontMetrics fm (font_);
-              QString s (text.c_str());
-              if (inset < 0) 
-                inset = fm.height() / 2;
-              if (x < inset) 
-                x = inset;
-              if (x + fm.width (s) + inset > transform.width()) 
-                x = transform.width() - fm.width (s) - inset;
-              if (y < inset) 
-                y = inset;
-              if (y + fm.height() + inset > transform.height())
-                y = transform.height() - fm.height() / 2 - inset;
-              renderText (x, y, text);
-            }
-
-            void renderText (const std::string& text, int position, int line = 0) {
-              QFontMetrics fm (font_);
-              QString s (text.c_str());
-              int x, y;
-
-              if (position & RightEdge) x = transform.width() - fm.height() / 2 - fm.width (s);
-              else if (position & LeftEdge) x = fm.height() / 2;
-              else x = (transform.width() - fm.width (s)) / 2;
-
-              if (position & TopEdge) y = transform.height() - fm.height() - line * fm.lineSpacing();
-              else if (position & BottomEdge) y = fm.height() / 2 + line * fm.lineSpacing();
-              else y = (transform.height() + fm.height()) / 2 - line * fm.lineSpacing();
-
-              renderText (x, y, text);
-            }
-
             Point<> move_in_out_displacement (float distance, const Transform& with_transform) {
               Point<> move (-with_transform.screen_normal());
               move.normalise();
@@ -208,8 +165,6 @@ namespace MR
             }
 
             bool painting;
-
-            QFont font_;
         };
 
 

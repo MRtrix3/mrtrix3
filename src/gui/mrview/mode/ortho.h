@@ -56,7 +56,7 @@ namespace MR
           protected:
             void draw_projection (int proj, float fovx, float fovy);
 
-            Transform transforms[3];
+            std::vector<Transform> transforms;
             int current_projection;
 
             void reset_view ();

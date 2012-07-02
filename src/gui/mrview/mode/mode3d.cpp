@@ -122,7 +122,7 @@ namespace MR
           glDisable (GL_TEXTURE_3D);
 
           if (window.show_crosshairs()) 
-            transform.draw_focus (focus());
+            transform.render_crosshairs (focus());
 
           draw_orientation_labels();
         }
@@ -147,7 +147,7 @@ namespace MR
               float dist = std::min (transform.width()/Math::abs (pos[0]), transform.height()/Math::abs (pos[1])) / 2.0;
               int x = Math::round (transform.width() /2.0 + pos[0]*dist);
               int y = Math::round (transform.height() /2.0 + pos[1]*dist);
-              renderTextInset (x, y, std::string (labels[i].label));
+              transform.render_text_inset (x, y, std::string (labels[i].label));
             }
 
           }

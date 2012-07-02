@@ -38,7 +38,11 @@ namespace MR
 
         Ortho::Ortho (Window& parent) : 
           Base (parent),
-          current_projection (-1) { }
+          current_projection (-1) { 
+            transforms.push_back (transform);
+            transforms.push_back (transform);
+            transforms.push_back (transform);
+          }
 
         Ortho::~Ortho () { }
 
@@ -119,28 +123,28 @@ namespace MR
           glDisable (GL_TEXTURE_2D);
 
           if (window.show_crosshairs()) 
-            transforms[proj].draw_focus (focus());
+            transforms[proj].render_crosshairs (focus());
 
           if (window.show_orientation_labels()) {
             glColor4f (1.0, 0.0, 0.0, 1.0);
             switch (proj) {
               case 0:
-                renderText ("A", LeftEdge);
-                renderText ("S", TopEdge);
-                renderText ("P", RightEdge);
-                renderText ("I", BottomEdge);
+                transforms[proj].render_text ("A", LeftEdge);
+                transforms[proj].render_text ("S", TopEdge);
+                transforms[proj].render_text ("P", RightEdge);
+                transforms[proj].render_text ("I", BottomEdge);
                 break;
               case 1:
-                renderText ("R", LeftEdge);
-                renderText ("S", TopEdge);
-                renderText ("L", RightEdge);
-                renderText ("I", BottomEdge);
+                transforms[proj].render_text ("R", LeftEdge);
+                transforms[proj].render_text ("S", TopEdge);
+                transforms[proj].render_text ("L", RightEdge);
+                transforms[proj].render_text ("I", BottomEdge);
                 break;
               case 2:
-                renderText ("R", LeftEdge);
-                renderText ("A", TopEdge);
-                renderText ("L", RightEdge);
-                renderText ("P", BottomEdge);
+                transforms[proj].render_text ("R", LeftEdge);
+                transforms[proj].render_text ("A", TopEdge);
+                transforms[proj].render_text ("L", RightEdge);
+                transforms[proj].render_text ("P", BottomEdge);
                 break;
               default:
                 assert (0);

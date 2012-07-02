@@ -29,7 +29,7 @@ namespace MR
     namespace MRView
     {
 
-      void Transform::draw_focus (const Point<>& focus) const
+      void Transform::render_crosshairs (const Point<>& focus) const
       {
         glPushAttrib (GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         glDepthMask (GL_FALSE);

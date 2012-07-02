@@ -6,6 +6,8 @@
 #include "math/matrix.h"
 #include "math/LU.h"
 
+#include <QFontMetrics>
+
 namespace MR
 {
   namespace GUI
@@ -13,14 +15,27 @@ namespace MR
     namespace MRView
     {
 
+
+      const int TopEdge = 0x00000001;
+      const int BottomEdge = 0x00000002;
+      const int LeftEdge = 0x00000004;
+      const int RightEdge = 0x00000008;
+
+
+
       class Transform
       {
         public:
-          Transform () : M (4,4), invM (4,4) {
-            M.identity();
-            invM.identity();
-            viewport[0] = viewport[1] = viewport[2] = viewport[3] = 0;
-          }
+          Transform (QGLWidget* parent) : 
+            glarea (parent), 
+            M (4,4), 
+            invM (4,4) {
+              M.identity();
+              invM.identity();
+              viewport[0] = viewport[1] = viewport[2] = viewport[3] = 0;
+            }
+
+
           void update () {
             float modelview[16];
             float projection[16];
@@ -118,9 +133,47 @@ namespace MR
           }
 
 
-          void draw_focus (const Point<>& focus) const;
+          void render_crosshairs (const Point<>& focus) const;
+
+
+          void render_text (int x, int y, const std::string& text) {
+            glarea->renderText (x+x_position(), glarea->height()-y-y_position(), text.c_str(), glarea->font());
+          }
+
+          void render_text_inset (int x, int y, const std::string& text, int inset = -1) {
+            QFontMetrics fm (glarea->font());
+            QString s (text.c_str());
+            if (inset < 0) 
+              inset = fm.height() / 2;
+            if (x < inset) 
+              x = inset;
+            if (x + fm.width (s) + inset > width()) 
+              x = width() - fm.width (s) - inset;
+            if (y < inset) 
+              y = inset;
+            if (y + fm.height() + inset > height())
+              y = height() - fm.height() / 2 - inset;
+            render_text (x, y, text);
+          }
+
+          void render_text (const std::string& text, int position, int line = 0) {
+            QFontMetrics fm (glarea->fontMetrics());
+            QString s (text.c_str());
+            int x, y;
+
+            if (position & RightEdge) x = width() - fm.height() / 2 - fm.width (s);
+            else if (position & LeftEdge) x = fm.height() / 2;
+            else x = (width() - fm.width (s)) / 2;
+
+            if (position & TopEdge) y = height() - fm.height() - line * fm.lineSpacing();
+            else if (position & BottomEdge) y = fm.height() / 2 + line * fm.lineSpacing();
+            else y = (height() + fm.height()) / 2 - line * fm.lineSpacing();
+
+            render_text (x, y, text);
+          }
 
         protected:
+          QGLWidget* glarea;
           Math::Matrix<float> M, invM;
           GLint viewport[4];
       };

@@ -12,6 +12,8 @@
 #include "gui/cursor.h"
 #include "gui/mrview/image.h"
 
+#include <QGLWidget>
+
 class QMenu;
 class QAction;
 class QActionGroup;
@@ -194,6 +196,7 @@ namespace MR
               GLArea (Window& parent);
               QSize minimumSizeHint () const;
               QSize sizeHint () const;
+
             protected:
               void dragEnterEvent (QDragEnterEvent* event);
               void dragMoveEvent (QDragMoveEvent* event);

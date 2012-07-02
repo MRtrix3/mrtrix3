@@ -55,6 +55,9 @@ namespace MR
           setMouseTracking (true);
           setAcceptDrops (true);
           setFocusPolicy (Qt::StrongFocus);
+          QFont font_ = font();
+          font_.setPointSize (MR::File::Config::get_int ("FontSize", 10));
+          setFont (font_);
         }
 
       QSize Window::GLArea::minimumSizeHint () const {

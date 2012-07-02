@@ -92,28 +92,28 @@ namespace MR
           glDisable (GL_TEXTURE_2D);
 
           if (window.show_crosshairs()) 
-            transform.draw_focus (focus());
+            transform.render_crosshairs (focus());
 
           if (window.show_orientation_labels()) {
             glColor4f (1.0, 0.0, 0.0, 1.0);
             switch (projection()) {
               case 0:
-                renderText ("A", LeftEdge);
-                renderText ("S", TopEdge);
-                renderText ("P", RightEdge);
-                renderText ("I", BottomEdge);
+                transform.render_text ("A", LeftEdge);
+                transform.render_text ("S", TopEdge);
+                transform.render_text ("P", RightEdge);
+                transform.render_text ("I", BottomEdge);
                 break;
               case 1:
-                renderText ("R", LeftEdge);
-                renderText ("S", TopEdge);
-                renderText ("L", RightEdge);
-                renderText ("I", BottomEdge);
+                transform.render_text ("R", LeftEdge);
+                transform.render_text ("S", TopEdge);
+                transform.render_text ("L", RightEdge);
+                transform.render_text ("I", BottomEdge);
                 break;
               case 2:
-                renderText ("R", LeftEdge);
-                renderText ("A", TopEdge);
-                renderText ("L", RightEdge);
-                renderText ("P", BottomEdge);
+                transform.render_text ("R", LeftEdge);
+                transform.render_text ("A", TopEdge);
+                transform.render_text ("L", RightEdge);
+                transform.render_text ("P", BottomEdge);
                 break;
               default:
                 assert (0);
