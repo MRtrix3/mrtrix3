@@ -67,6 +67,13 @@ namespace MR
             return display_midpoint + 0.5f * display_range;
           }
 
+          float intensity_min () const {
+            return value_min;
+          }
+          float intensity_max () const {
+            return value_max;
+          }
+
           void set_windowing (float min, float max);
           void reset_windowing () {
             set_windowing (value_min, value_max);

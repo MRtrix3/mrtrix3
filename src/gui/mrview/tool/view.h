@@ -44,6 +44,8 @@ namespace MR
 
     namespace MRView
     {
+      class AdjustButton;
+
       namespace Tool
       {
 
@@ -59,6 +61,7 @@ namespace MR
             virtual void closeEvent (QCloseEvent* event);
 
           private slots:
+            void onImageChanged ();
             void onFocusChanged ();
             void onSetFocus ();
             void onProjectionChanged ();
@@ -71,12 +74,16 @@ namespace MR
             void onAdvandedLighting ();
 
           private:
-            QLineEdit *focus_x, *focus_y, *focus_z, *min_entry, *max_entry, *lessthan, *greaterthan;
-            QLineEdit *transparent_intensity, *opaque_intensity;
+            AdjustButton *max_entry, *min_entry;
+            AdjustButton *focus_x, *focus_y, *focus_z, *lessthan, *greaterthan;
+            AdjustButton *transparent_intensity, *opaque_intensity;
             QComboBox *projection_combobox;
             QGroupBox *threshold_box, *transparency_box, *lighting_box;
             QSlider *opacity;
             Dialog::Lighting* lighting_dialog;
+
+            void set_scaling_rate ();
+            void set_focus_rate ();
 
         };
 

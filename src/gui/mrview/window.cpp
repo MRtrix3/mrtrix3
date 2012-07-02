@@ -658,6 +658,7 @@ namespace MR
         Image* imagep = image();
         if (imagep) {
           imagep->reset_windowing();
+          scaling_updated();
           glarea->updateGL();
         }
       }
@@ -792,6 +793,7 @@ namespace MR
         invert_colourmap_action->setChecked (image()->colourmap_inverted());
         setWindowTitle (image()->interp.name().c_str());
         set_image_navigation_menu();
+        emit imageChanged();
         glarea->updateGL();
       }
 

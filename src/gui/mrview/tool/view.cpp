@@ -22,14 +22,13 @@
 
 #include <QLabel>
 #include <QGridLayout>
-#include <QLineEdit>
-#include <QDoubleValidator>
 
 #include "mrtrix.h"
 #include "gui/mrview/window.h"
 #include "gui/mrview/mode/base.h"
 #include "gui/mrview/tool/view.h"
 #include "gui/dialog/lighting.h"
+#include "gui/mrview/adjust_button.h"
 
 namespace MR
 {
@@ -58,24 +57,19 @@ namespace MR
             main_box->addWidget (group_box);
             group_box->setLayout (layout);
 
-            QDoubleValidator* validator = new QDoubleValidator (this);
-
             layout->addWidget (new QLabel ("x"), 0, 0);
-            focus_x = new QLineEdit;
-            focus_x->setValidator (validator);
-            connect (focus_x, SIGNAL (editingFinished()), this, SLOT (onSetFocus()));
+            focus_x = new AdjustButton (this);
+            connect (focus_x, SIGNAL (valueChanged()), this, SLOT (onSetFocus()));
             layout->addWidget (focus_x, 0, 1);
 
             layout->addWidget (new QLabel ("y"), 1, 0);
-            focus_y = new QLineEdit;
-            focus_y->setValidator (validator);
-            connect (focus_y, SIGNAL (editingFinished()), this, SLOT (onSetFocus()));
+            focus_y = new AdjustButton (this);
+            connect (focus_y, SIGNAL (valueChanged()), this, SLOT (onSetFocus()));
             layout->addWidget (focus_y, 1, 1);
 
             layout->addWidget (new QLabel ("z"), 2, 0);
-            focus_z = new QLineEdit;
-            focus_z->setValidator (validator);
-            connect (focus_z, SIGNAL (editingFinished()), this, SLOT (onSetFocus()));
+            focus_z = new AdjustButton (this);
+            connect (focus_z, SIGNAL (valueChanged()), this, SLOT (onSetFocus()));
             layout->addWidget (focus_z, 2, 1);
 
 
@@ -86,55 +80,62 @@ namespace MR
             group_box->setLayout (layout);
 
             layout->addWidget (new QLabel ("min"), 0, 0);
-            min_entry = new QLineEdit;
-            connect (min_entry, SIGNAL (editingFinished()), this, SLOT (onSetScaling()));
+            min_entry = new AdjustButton (this);
+            connect (min_entry, SIGNAL (valueChanged()), this, SLOT (onSetScaling()));
             layout->addWidget (min_entry, 0, 1);
 
             layout->addWidget (new QLabel ("max"), 1, 0);
-            max_entry = new QLineEdit;
-            connect (max_entry, SIGNAL (editingFinished()), this, SLOT (onSetScaling()));
+            max_entry = new AdjustButton (this);
+            connect (max_entry, SIGNAL (valueChanged()), this, SLOT (onSetScaling()));
             layout->addWidget (max_entry, 1, 1);
 
 
             threshold_box = new QGroupBox ("Thresholds");
             threshold_box->setCheckable (true);
+            threshold_box->setChecked (false);
             connect (threshold_box, SIGNAL (toggled(bool)), this, SLOT (onSetThreshold()));
             layout = new QGridLayout;
             main_box->addWidget (threshold_box);
             threshold_box->setLayout (layout);
 
             layout->addWidget (new QLabel (">"), 0, 0);
-            lessthan = new QLineEdit;
-            connect (lessthan, SIGNAL (editingFinished()), this, SLOT (onSetThreshold()));
+            lessthan = new AdjustButton (this);
+            lessthan->setValue (window.image() ? window.image()->intensity_min() : 0.0);
+            connect (lessthan, SIGNAL (valueChanged()), this, SLOT (onSetThreshold()));
             layout->addWidget (lessthan, 0, 1);
 
             layout->addWidget (new QLabel ("<"), 1, 0);
-            greaterthan = new QLineEdit;
-            connect (greaterthan, SIGNAL (editingFinished()), this, SLOT (onSetThreshold()));
+            greaterthan = new AdjustButton (this);
+            greaterthan->setValue (window.image() ? window.image()->intensity_max() : 1.0);
+            connect (greaterthan, SIGNAL (valueChanged()), this, SLOT (onSetThreshold()));
             layout->addWidget (greaterthan, 1, 1);
 
 
 
             transparency_box = new QGroupBox ("Transparency");
             transparency_box->setCheckable (true);
+            transparency_box->setChecked (false);
             connect (transparency_box, SIGNAL (toggled(bool)), this, SLOT (onSetTransparency()));
             layout = new QGridLayout;
             main_box->addWidget (transparency_box);
             transparency_box->setLayout (layout);
 
             layout->addWidget (new QLabel ("transparent"), 0, 0);
-            transparent_intensity = new QLineEdit;
-            connect (transparent_intensity, SIGNAL (editingFinished()), this, SLOT (onSetTransparency()));
+            transparent_intensity = new AdjustButton (this);
+            transparent_intensity->setValue (window.image() ? window.image()->intensity_min() : 0.0);
+            connect (transparent_intensity, SIGNAL (valueChanged()), this, SLOT (onSetTransparency()));
             layout->addWidget (transparent_intensity, 0, 1);
 
             layout->addWidget (new QLabel ("opaque"), 1, 0);
-            opaque_intensity = new QLineEdit;
-            connect (opaque_intensity, SIGNAL (editingFinished()), this, SLOT (onSetTransparency()));
+            opaque_intensity = new AdjustButton (this);
+            opaque_intensity->setValue (window.image() ? window.image()->intensity_max()/2.0 : 1.0);
+            connect (opaque_intensity, SIGNAL (valueChanged()), this, SLOT (onSetTransparency()));
             layout->addWidget (opaque_intensity, 1, 1);
 
             layout->addWidget (new QLabel ("alpha"), 2, 0);
             opacity = new QSlider (Qt::Horizontal);
             opacity->setRange (0, 255);
+            opacity->setValue (255);
             connect (opacity, SIGNAL (valueChanged(int)), this, SLOT (onSetTransparency()));
             layout->addWidget (opacity, 2, 1);
 
@@ -157,12 +158,14 @@ namespace MR
 
         void View::showEvent (QShowEvent* event) 
         {
+          connect (&window, SIGNAL (imageChanged()), this, SLOT (onImageChanged()));
           connect (&window, SIGNAL (focusChanged()), this, SLOT (onFocusChanged()));
           connect (&window, SIGNAL (projectionChanged()), this, SLOT (onProjectionChanged()));
           connect (&window, SIGNAL (scalingChanged()), this, SLOT (onScalingChanged()));
           onProjectionChanged();
           onFocusChanged();
           onScalingChanged();
+          onImageChanged();
         }
 
         void View::closeEvent (QCloseEvent* event) 
@@ -170,20 +173,23 @@ namespace MR
           window.disconnect (this);
         }
 
+        void View::onImageChanged () 
+        {
+          set_scaling_rate();
+          set_focus_rate();
+        }
+
         void View::onFocusChanged () 
         {
-          focus_x->setText (str(window.focus()[0]).c_str());
-          focus_y->setText (str(window.focus()[1]).c_str());
-          focus_z->setText (str(window.focus()[2]).c_str());
+          focus_x->setValue (window.focus()[0]);
+          focus_y->setValue (window.focus()[1]);
+          focus_z->setValue (window.focus()[2]);
         }
 
         void View::onSetFocus () 
         {
           try {
-            window.set_focus (Point<> (
-                  to<float> (focus_x->text().toStdString()), 
-                  to<float> (focus_y->text().toStdString()), 
-                  to<float> (focus_z->text().toStdString())));
+            window.set_focus (Point<> (focus_x->value(), focus_y->value(), focus_z->value()));
             window.updateGL();
           }
           catch (Exception) { }
@@ -203,16 +209,37 @@ namespace MR
         }
 
 
+        void View::set_scaling_rate () 
+        {
+          if (!window.image()) return;
+          float rate = 1e-3 * (window.image()->intensity_max() - window.image()->intensity_min());
+          min_entry->setRate (rate);
+          max_entry->setRate (rate);
+          lessthan->setRate (rate);
+          greaterthan->setRate (rate);
+          transparent_intensity->setRate (rate);
+          opaque_intensity->setRate (rate);
+        }
+
+        void View::set_focus_rate () 
+        {
+          if (!window.image()) return;
+          float rate = 1e-3 * (Math::pow ( 
+                window.image()->interp.dim(0)*window.image()->interp.vox(0) *
+                window.image()->interp.dim(0)*window.image()->interp.vox(0) *
+                window.image()->interp.dim(0)*window.image()->interp.vox(0),
+                float (1.0/3.0)));
+          focus_x->setRate (rate);
+          focus_y->setRate (rate);
+          focus_z->setRate (rate);
+        }
+
+
         void View::onSetScaling ()
         {
           if (window.image()) {
-            try {
-              window.image()->set_windowing (
-                  to<float> (min_entry->text().toStdString()), 
-                  to<float> (max_entry->text().toStdString()));
-              window.updateGL();
-            }
-            catch (Exception) { }
+            window.image()->set_windowing (min_entry->value(), max_entry->value());
+            window.updateGL();
           }
         }
 
@@ -221,8 +248,9 @@ namespace MR
         void View::onScalingChanged ()
         {
           if (window.image()) {
-            min_entry->setText (str (window.image()->scaling_min()).c_str());
-            max_entry->setText (str (window.image()->scaling_max()).c_str());
+            min_entry->setValue (window.image()->scaling_min());
+            max_entry->setValue (window.image()->scaling_max());
+            set_scaling_rate();
           }
         }
 
@@ -230,14 +258,8 @@ namespace MR
         void View::onSetThreshold ()
         {
           if (threshold_box->isChecked()) {
-            try { 
-              if (window.image()) {
-                float lt = lessthan->text().isEmpty() ? NAN : to<float> (lessthan->text().toStdString());
-                float gt = greaterthan->text().isEmpty() ? NAN : to<float> (greaterthan->text().toStdString());
-                window.image()->set_thresholds (lt, gt);
-              }
-            }
-            catch (Exception) { }
+            if (window.image()) 
+              window.image()->set_thresholds (lessthan->value(), greaterthan->value());
           }
           else 
             window.image()->set_thresholds (NAN, NAN);
@@ -248,15 +270,8 @@ namespace MR
         void View::onSetTransparency ()
         {
           if (transparency_box->isChecked()) {
-            try { 
-              if (window.image()) {
-                float transparent = to<float> (transparent_intensity->text().toStdString());
-                float opaque = to<float> (opaque_intensity->text().toStdString());
-                float alpha = float (opacity->value()) / 255.0;
-                window.image()->set_transparency (transparent, opaque, alpha);
-              }
-            }
-            catch (Exception) { }
+            if (window.image()) 
+              window.image()->set_transparency (transparent_intensity->value(), opaque_intensity->value(), float (opacity->value()) / 255.0);
           }
           else 
             window.image()->set_transparency ();

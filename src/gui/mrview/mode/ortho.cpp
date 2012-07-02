@@ -70,6 +70,24 @@ namespace MR
           draw_projection (2, fovx, fovy);
 
           glViewport (0, 0, glarea()->width(), glarea()->height());
+          glMatrixMode (GL_PROJECTION);
+          glLoadIdentity ();
+          glOrtho (0, glarea()->width(), 0, glarea()->height(), -1.0, 1.0);
+          glMatrixMode (GL_MODELVIEW);
+          glLoadIdentity ();
+          glDisable (GL_DEPTH_TEST);
+
+          glColor4f (0.1, 0.1, 0.1, 1.0);
+          glLineWidth (2.0);
+
+          glBegin (GL_LINES);
+          glVertex2f (glarea()->width()/2, 0.0);
+          glVertex2f (glarea()->width()/2, glarea()->height());
+          glVertex2f (0.0, glarea()->height()/2);
+          glVertex2f (glarea()->width(), glarea()->height()/2);
+          glEnd();
+
+          glEnable (GL_DEPTH_TEST);
         }
 
 
@@ -150,6 +168,7 @@ namespace MR
                 assert (0);
             }
           }
+
         }
 
 
