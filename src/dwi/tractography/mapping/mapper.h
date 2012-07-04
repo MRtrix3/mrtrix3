@@ -350,6 +350,7 @@ void TrackMapperTWI<Cont>::set_factor (const std::vector< Point<float> >& tck, C
       switch (track_statistic) {
 
         case SUM:
+          out.factor = 0.0;
           for (std::vector<float>::const_iterator i = factors.begin(); i != factors.end(); ++i) {
             if (finite (*i))
               out.factor += *i;
@@ -365,6 +366,7 @@ void TrackMapperTWI<Cont>::set_factor (const std::vector< Point<float> >& tck, C
           break;
 
         case MEAN:
+          out.factor = 0.0;
           for (std::vector<float>::const_iterator i = factors.begin(); i != factors.end(); ++i) {
             if (finite (*i)) {
               out.factor += *i;
