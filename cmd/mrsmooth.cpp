@@ -25,9 +25,9 @@
 #include "image/buffer_preload.h"
 #include "image/voxel.h"
 #include "image/filter/gaussian_smooth.h"
+#include "image/filter/anisotropic_smooth.h"
 #include "progressbar.h"
 
-#include <vector>
 
 
 MRTRIX_APPLICATION
@@ -72,7 +72,8 @@ void usage ()
 
 void run () {
 
-  Image::BufferPreload<float> src_data (argument[0]);
+  Image::Header header (argument[0]);
+  Image::BufferPreload<float> src_data (header);
   Image::BufferPreload<float>::voxel_type src (src_data);
 
   bool do_anisotropic = false;
@@ -80,21 +81,20 @@ void run () {
   if (opt.size())
     do_anisotropic = true;
 
-  std::vector<float> stdev (src_data.ndim(), 1);
-  for (size_t dim = 3; dim < src_data.ndim(); dim++)
-    stdev[dim] = 0;
+  std::vector<float> stdev;
+  if (do_anisotropic)
+    stdev.resize(2,0);
+  else
+    stdev.resize(3,0);
   opt = get_options ("stdev");
   if (opt.size()) {
     stdev = parse_floats (opt[0][0]);
     for (size_t i = 0; i < stdev.size(); ++i)
       if (stdev[i] < 0.0)
         throw Exception ("the Gaussian stdev values cannot be negative");
-    if (stdev.size() != 1 && stdev.size() != src_data.ndim())
-      throw Exception ("the number of stdev elements does not correspond to the number of image dimensions");
   }
 
-  std::vector<int> extent (1);
-  extent[0] = 0;
+  std::vector<int> extent (1,0);
   opt = get_options ("extent");
   if (opt.size()) {
     extent = parse_ints (opt[0][0]);
@@ -108,15 +108,42 @@ void run () {
     }
   }
 
-  Image::Filter::GaussianSmooth smooth_filter (src, extent, stdev);
-
-  Image::Header header (src_data);
-  header.info() = smooth_filter.info();
-  header.datatype() = src_data.datatype();
-
-  Image::Buffer<float> dest_data (argument[1], header);
-  Image::Buffer<float>::voxel_type dest (dest_data);
-
-  ProgressBar progress("smoothing image...");
-  smooth_filter (src, dest);
+  if (do_anisotropic) {
+    Math::Matrix<float> directions;;
+    opt = get_options ("directions");
+    if (opt.size()) {
+      directions.load(opt[0][0]);
+    } else {
+      if (!header["directions"].size())
+        throw Exception ("no mask directions have been specified.");
+      std::vector<float> dir_vector;
+      std::vector<std::string > lines = split (header["directions"], "\n", true);
+      for (size_t l = 0; l < lines.size(); l++) {
+        std::vector<float> v (parse_floats(lines[l]));
+        dir_vector.insert (dir_vector.end(), v.begin(), v.end());
+      }
+      directions.resize(dir_vector.size() / 2, 2);
+      for (size_t i = 0; i < dir_vector.size(); i += 2) {
+        directions(i / 2, 0) = dir_vector[i];
+        directions(i / 2, 1) = dir_vector[i + 1];
+      }
+    }
+    Image::Filter::AnisotropicSmooth smooth_filter (src, stdev, directions);
+    Image::Header header (src_data);
+    header.info() = smooth_filter.info();
+    header.datatype() = src_data.datatype();
+    Image::Buffer<float> dest_data (argument[1], header);
+    Image::Buffer<float>::voxel_type dest (dest_data);
+    ProgressBar progress("smoothing image...");
+    smooth_filter (src, dest);
+  } else {
+    Image::Filter::GaussianSmooth smooth_filter (src, extent, stdev);
+    Image::Header header (src_data);
+    header.info() = smooth_filter.info();
+    header.datatype() = src_data.datatype();
+    Image::Buffer<float> dest_data (argument[1], header);
+    Image::Buffer<float>::voxel_type dest (dest_data);
+    ProgressBar progress("smoothing image...");
+    smooth_filter (src, dest);
+  }
 }
