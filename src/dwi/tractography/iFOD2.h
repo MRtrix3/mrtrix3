@@ -47,7 +47,6 @@ namespace MR {
                 lmax (Math::SH::LforN (source.dim(3))), 
                 num_samples (4),
                 max_trials (MAX_TRIALS),
-                sin_max_angle (Math::sin (max_angle)),
                 mean_samples (0.0),
                 mean_num_truncations (0.0),
                 max_max_truncation (0.0),
@@ -57,6 +56,7 @@ namespace MR {
                     throw Exception ("4th-order Runge-Kutta integration not valid for iFOD2 algorithm");
 
                   set_step_size (0.5);
+                  sin_max_angle = Math::sin (max_angle);
                   inform ("minimum radius of curvature = " + str(step_size / max_angle) + " mm");
 
                   properties["method"] = "iFOD2";
@@ -193,7 +193,6 @@ end_init:
 
               if (rng.uniform() < val/max_val) {
                 dir = next_dir;
-                dir.normalise();
                 pos = next_pos;
                 mean_sample_num += n;
                 half_log_prob0 = last_half_log_probN;
@@ -253,7 +252,7 @@ end_init:
             for (size_t i = 0; i < S.num_samples; ++i) {
               value_type fod_amp = FOD (positions[i], tangents[i]);
               if (isnan (fod_amp) || fod_amp < S.threshold) 
-                return (NAN);
+                return NAN;
               fod_amp = Math::log (fod_amp);
               if (i < S.num_samples-1) log_prob += fod_amp;
               else {
@@ -291,7 +290,7 @@ end_init:
               *tangents = end_dir;
             }
             else { // straight on:
-              for (size_t i = 0; i <= S.num_samples; ++i) {
+              for (size_t i = 0; i < S.num_samples; ++i) {
                 value_type f = (i+1) * (S.step_size / S.num_samples);
                 *positions++ = pos + f * dir;
                 *tangents++ = dir;
