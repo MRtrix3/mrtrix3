@@ -35,11 +35,11 @@ namespace MR
   {
 
 
-    template <typename ValueType> 
+    template <typename ValueType>
       class BufferScratch : public ConstInfo
     {
       public:
-        template <class Template> 
+        template <class Template>
           BufferScratch (const Template& info) :
             ConstInfo (info),
             data_ (new value_type [Image::voxel_count (*this)]) {
@@ -47,7 +47,7 @@ namespace MR
               datatype_ = DataType::from<value_type>();
             }
 
-        template <class Template> 
+        template <class Template>
           BufferScratch (const Template& info, const std::string& label) :
             ConstInfo (info),
             data_ (new value_type [Image::voxel_count (*this)]) {
@@ -76,7 +76,7 @@ namespace MR
       protected:
         Ptr<value_type,true> data_;
 
-        template <class Set> 
+        template <class Set>
           BufferScratch& operator= (const Set& H) { assert (0); return *this; }
     };
 

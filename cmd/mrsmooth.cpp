@@ -75,10 +75,15 @@ void run () {
   Image::BufferPreload<float> src_data (argument[0]);
   Image::BufferPreload<float>::voxel_type src (src_data);
 
+  bool do_anisotropic = false;
+  Options opt = get_options ("anisotropic");
+  if (opt.size())
+    do_anisotropic = true;
+
   std::vector<float> stdev (src_data.ndim(), 1);
   for (size_t dim = 3; dim < src_data.ndim(); dim++)
     stdev[dim] = 0;
-  Options opt = get_options ("stdev");
+  opt = get_options ("stdev");
   if (opt.size()) {
     stdev = parse_floats (opt[0][0]);
     for (size_t i = 0; i < stdev.size(); ++i)
