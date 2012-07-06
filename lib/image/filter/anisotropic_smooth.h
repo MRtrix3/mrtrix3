@@ -55,11 +55,11 @@ namespace MR
                 }
 
               void operator () (const Iterator& pos) {
-                voxel_assign (out_, pos);
+                voxel_assign (out_, pos, 0, 3);
                 float val = 0;
                 Loop loop (0, 3);
                 for (loop.start(kernel_); loop.ok(); loop.next(kernel_)) {
-                  voxel_assign (in_, pos);
+                  voxel_assign (in_, pos, 0, 3);
                   in_[0] += kernel_[0] - radius_[0];
                   in_[1] += kernel_[1] - radius_[1];
                   in_[2] += kernel_[2] - radius_[2];
@@ -134,27 +134,24 @@ namespace MR
               kernel_header.set_ndim(3);
               kernel_header.datatype() = DataType::Float32;
               std::vector<float> radius(3);
-              radius[0] = ceil(stdev_[0] / input.vox(0));
-              radius[1] = ceil(stdev_[0] / input.vox(1));
-              radius[2] = ceil(stdev_[0] / input.vox(2));
+              radius[0] = ceil((2 * stdev_[0]) / input.vox(0));
+              radius[1] = ceil((2 * stdev_[0]) / input.vox(1));
+              radius[2] = ceil((2 * stdev_[0]) / input.vox(2));
               kernel_header.dim(0) = 2 * radius[0] + 1;
               kernel_header.dim(1) = 2 * radius[0] + 1;
               kernel_header.dim(2) = 2 * radius[0] + 1;
-              kernel_header.vox(0) = 1;
-              kernel_header.vox(1) = 1;
-              kernel_header.vox(2) = 1;
 
-              Image::Buffer<float> kernel_data ("kernel.mif", kernel_header);
-              Image::Buffer<float>::voxel_type kernel_vox (kernel_data);
+              Image::BufferScratch<float> kernel_data (kernel_header);
+              Image::BufferScratch<float>::voxel_type kernel_vox (kernel_data);
 
+              ProgressBar progress ("smoothing image...", num_volumes);
               for (unsigned int vol = 0; vol < num_volumes; ++vol) {
 
-                std::cout << vol << std::endl;
-                Math::Matrix<float> tensor (3, 3);
-                tensor.zero();
-                tensor(0,0) = stdev_[1];
-                tensor(1,1) = stdev_[1];
-                tensor(2,2) = stdev_[0];
+                Math::Matrix<float> covariance (3, 3);
+                covariance.zero();
+                covariance(0,0) = stdev_[1] * stdev_[1];
+                covariance(1,1) = stdev_[1] * stdev_[1];
+                covariance(2,2) = stdev_[0] * stdev_[0];
 
                 Math::Matrix<float> R_az (3, 3);
                 R_az.identity();
@@ -178,7 +175,7 @@ namespace MR
                 Math::Matrix<float> temp (3, 3);
                 Math::Matrix<float> temp2 (3, 3);
                 Math::mult(temp, R_el_t, R_az_t);
-                Math::mult(temp2, tensor, temp);
+                Math::mult(temp2, covariance, temp);
                 Math::mult(temp, R_el, temp2);
                 Math::mult(temp2, R_az, temp);
 
@@ -201,8 +198,10 @@ namespace MR
 
                 input[3] = vol;
                 output[3] = vol;
-                __AnisotropicCopyKernel <InputVoxelType, OutputVoxelType, Image::Buffer<float>::voxel_type> copy_kernel (input, output, kernel_vox);
-                ThreadedLoop (input, 1, 0, 2).run (copy_kernel);
+                __AnisotropicCopyKernel <InputVoxelType, OutputVoxelType, Image::BufferScratch<float>::voxel_type> copy_kernel (input, output, kernel_vox);
+                ThreadedLoop (input, 1, 0, 3).run (copy_kernel);
+
+                progress++;
               }
             }
 

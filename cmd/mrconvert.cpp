@@ -28,6 +28,7 @@
 #include "image/threaded_copy.h"
 #include "image/adapter/extract.h"
 #include "image/adapter/permute_axes.h"
+#include "image/stride.h"
 #include "dwi/gradient.h"
 
 MRTRIX_APPLICATION
@@ -64,12 +65,6 @@ void usage ()
             "size along the x & z axes, and leave the y-axis voxel size unchanged.")
   + Argument ("sizes").type_sequence_float()
 
-  + Option ("stride",
-            "specify the strides of the output data in memory, as a comma-separated list. "
-            "The actual strides produced will depend on whether the output image "
-            "format can support it.")
-  + Argument ("spec").type_sequence_int()
-
   + Option ("axes",
             "specify the axes from the input image that will be used to form the output "
             "image. This allows the permutation, ommission, or addition of axes into the "
@@ -81,7 +76,9 @@ void usage ()
   + Option ("prs",
             "assume that the DW gradients are specified in the PRS frame (Siemens DICOM only).")
 
-  + DataType::options() 
+  + Image::Stride::StrideOption
+
+  + DataType::options()
 
   + DWI::GradOption;
 }
@@ -132,7 +129,7 @@ inline std::vector<int> set_header (
     std::vector<int> strides = opt[0][0];
     if (strides.size() > header.ndim())
       throw Exception ("too many axes supplied to -stride option");
-    for (size_t n = 0; n < strides.size(); ++n) 
+    for (size_t n = 0; n < strides.size(); ++n)
       header.stride(n) = strides[n];
   }
 
@@ -157,7 +154,7 @@ inline std::vector<int> set_header (
 
 
 template <class InputVoxelType>
-inline void copy_permute (InputVoxelType& in, Image::Header& header_out, const std::string& output_filename) 
+inline void copy_permute (InputVoxelType& in, Image::Header& header_out, const std::string& output_filename)
 {
   DataType datatype = header_out.datatype();
   std::vector<int> axes = set_header (header_out, in);
@@ -224,7 +221,7 @@ void run ()
     Image::Adapter::Extract<Image::Buffer<complex_type>::voxel_type> extract (in, pos);
     copy_permute (extract, header_out, argument[1]);
   }
-  else 
+  else
     copy_permute (in, header_out, argument[1]);
 
 }

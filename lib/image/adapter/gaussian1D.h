@@ -38,55 +38,52 @@ namespace MR
           Gaussian1D (const VoxelType& parent,
                       float stdev = 1.0,
                       size_t axis = 0,
-                      size_t extent = 0) :
+                      size_t radius = 0) :
             Voxel<VoxelType> (parent),
             stdev_(stdev),
             axis_(axis) {
-
-            if (!extent) {
-              extent_ = 2 * ceil((4 * stdev_) / vox(axis_)) - 1;
-            } else {
-              extent_ = extent;
-            }
+            if (!radius)
+              radius_ = ceil(2.5 * stdev_ / vox(axis_));
+            else
+              radius_ = radius;
             compute_kernel();
           }
 
           typedef typename VoxelType::value_type value_type;
 
           value_type value () {
-            if (kernel.size() == 1)
+            if (!kernel_.size())
               return parent_vox.value();
 
             const ssize_t pos = (*this)[axis_];
-            const int radius = floor(static_cast<float>(extent_)/2.0);
-            const int from = pos < radius ? 0 : pos - radius;
-            const int to = pos >= (dim(axis_) - radius) ? dim(axis_) - 1 : pos + radius;
+            const int from = pos < radius_ ? 0 : pos - radius_;
+            const int to = pos >= (dim(axis_) - radius_) ? dim(axis_) - 1 : pos + radius_;
 
             value_type val = 0;
 
-            if (pos < radius) {
-              size_t c = radius - pos;
+            if (pos < radius_) {
+              size_t c = radius_ - pos;
               value_type av_weights = 0.0;
               for (ssize_t k = from; k <= to; ++k) {
-                av_weights += kernel[c];
+                av_weights += kernel_[c];
                 (*this)[axis_] = k;
-                val += parent_vox.value() * kernel[c++];
+                val += parent_vox.value() * kernel_[c++];
               }
               val /= av_weights;
-            } else if ((to - pos) < radius){
+            } else if ((to - pos) < radius_){
               size_t c = 0;
               value_type av_weights = 0.0;
               for (ssize_t k = from; k <= to; ++k) {
-                av_weights += kernel[c];
+                av_weights += kernel_[c];
                 (*this)[axis_] = k;
-                val += parent_vox.value() * kernel[c++];
+                val += parent_vox.value() * kernel_[c++];
               }
               val /= av_weights;
             } else {
               size_t c = 0;
               for (ssize_t k = from; k <= to; ++k) {
                 (*this)[axis_] = k;
-                val += parent_vox.value() * kernel[c++];
+                val += parent_vox.value() * kernel_[c++];
               }
             }
 
@@ -102,30 +99,25 @@ namespace MR
         protected:
 
           void compute_kernel() {
-            if ((extent_ <= 1) || stdev_ <= 0.0) {
-              kernel.resize(1);
+            if ((radius_ < 1) || stdev_ <= 0.0)
               return;
-            }
 
-            kernel.resize(extent_);
+            kernel_.resize(2 * radius_ + 1);
             float norm_factor = 0.0;
-            for (size_t c = 0; c < extent_; c++) {
-              kernel[c] = (1/(stdev_* sqrt(2*M_PI))) *
-                  exp(-((c-floor(static_cast<float>(extent_) / 2.0)) *
-                        (c-floor(static_cast<float>(extent_) / 2.0)) *
-                         vox(axis_) * vox(axis_)) / (2 * stdev_ * stdev_));
-              norm_factor += kernel[c];
+            for (size_t c = 0; c < kernel_.size(); ++c) {
+              kernel_[c] = exp(-((c-radius_) * (c-radius_) * vox(axis_) * vox(axis_))  / (2 * stdev_ * stdev_));
+              norm_factor += kernel_[c];
             }
-            for (size_t c = 0; c < extent_; c++) {
-              kernel[c] /= norm_factor;
+            for (size_t c = 0; c < kernel_.size(); c++) {
+              kernel_[c] /= norm_factor;
             }
           }
 
           using Voxel<VoxelType>::parent_vox;
           float stdev_;
-          size_t extent_;
+          ssize_t radius_;
           size_t axis_;
-          std::vector<value_type> kernel;
+          std::vector<value_type> kernel_;
         };
     }
   }

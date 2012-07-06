@@ -67,11 +67,11 @@ namespace MR
       public:
           template <class InputVoxelType>
             GaussianSmooth (const InputVoxelType& in) :
-              ConstInfo (in),
+                            ConstInfo (in),
               extent_ (in.ndim(), 0),
               stdev_ (in.ndim(), 1) {
-            for (unsigned int i = 0; i < in.ndim(); i++)
-              stdev_[i] = in.vox(i);
+              for (unsigned int i = 0; i < in.ndim(); i++)
+                stdev_[i] = in.vox(i);
           }
 
           template <class InputVoxelType>
@@ -127,7 +127,7 @@ namespace MR
                   out_data = new BufferScratch<float> (input);
                   out = new BufferScratch<float>::voxel_type (*out_data);
                   Adapter::Gaussian1D<BufferScratch<float>::voxel_type > gaussian (*in, stdev_[dim], dim, extent_[dim]);
-                  threaded_copy (gaussian, *out);
+                  threaded_copy_with_progress_message ("Smoothing axis " + str(dim) + "...", gaussian, *out);
                   in_data = out_data;
                   in = out;
                 }

@@ -56,7 +56,7 @@ void usage ()
   + Option ("extent", "specify the extent (width) of kernel size in voxels. "
             "This can be specified either as a single value to be used for all axes, "
             "or as a comma-separated list of the extent for each axis. "
-            "The default extent is 4 standard deviations.")
+            "The default extent is ceil(2.5 * stdev_ / voxel_size standard deviations.")
   + Argument ("size").type_sequence_int()
 
   + Option ("anisotropic", "smooth each 3D volume of a 4D image using an anisotropic gaussian kernel "
@@ -66,7 +66,9 @@ void usage ()
                            "The directions can be specified within the header of the input image, or by using the -directions option.")
 
   + Option ("directions", "the directions for anisotropic smoothing.")
-  + Argument ("file", "a list of directions [az el] generated using the gendir command.").type_file();
+  + Argument ("file", "a list of directions [az el] generated using the gendir command.").type_file()
+
+  + Image::Stride::StrideOption;
 }
 
 
@@ -82,10 +84,13 @@ void run () {
     do_anisotropic = true;
 
   std::vector<float> stdev;
-  if (do_anisotropic)
-    stdev.resize(2,0);
-  else
-    stdev.resize(3,0);
+  if (do_anisotropic) {
+    stdev.resize(2, 3.0 / 2.3548);
+    stdev[1] = 1.0 / 2.3548;
+  } else {
+    stdev.resize(1, 1);
+  }
+
   opt = get_options ("stdev");
   if (opt.size()) {
     stdev = parse_floats (opt[0][0]);
@@ -107,6 +112,18 @@ void run () {
         throw Exception ("the kernel extent must be positive");
     }
   }
+  std::vector<int> radius = extent;
+  for (size_t d = 0; d < radius.size(); ++d)
+    radius[d] = (radius[d] - 1) / 2;
+
+  opt = get_options ("stride");
+  std::vector<int> strides;
+  if (opt.size()) {
+    strides = opt[0][0];
+    if (strides.size() > header.ndim())
+      throw Exception ("too many axes supplied to -stride option");
+  }
+
 
   if (do_anisotropic) {
     Math::Matrix<float> directions;;
@@ -129,21 +146,23 @@ void run () {
       }
     }
     Image::Filter::AnisotropicSmooth smooth_filter (src, stdev, directions);
-    Image::Header header (src_data);
     header.info() = smooth_filter.info();
-    header.datatype() = src_data.datatype();
+    if (strides.size()) {
+      for (size_t n = 0; n < strides.size(); ++n)
+        header.stride(n) = strides[n];
+    }
     Image::Buffer<float> dest_data (argument[1], header);
     Image::Buffer<float>::voxel_type dest (dest_data);
-    ProgressBar progress("smoothing image...");
     smooth_filter (src, dest);
   } else {
-    Image::Filter::GaussianSmooth smooth_filter (src, extent, stdev);
-    Image::Header header (src_data);
+    Image::Filter::GaussianSmooth smooth_filter (src, radius, stdev);
     header.info() = smooth_filter.info();
-    header.datatype() = src_data.datatype();
+    if (strides.size()) {
+      for (size_t n = 0; n < strides.size(); ++n)
+        header.stride(n) = strides[n];
+    }
     Image::Buffer<float> dest_data (argument[1], header);
     Image::Buffer<float>::voxel_type dest (dest_data);
-    ProgressBar progress("smoothing image...");
     smooth_filter (src, dest);
   }
 }

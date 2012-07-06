@@ -36,7 +36,7 @@ namespace MR
       template <class InputVoxelType, class OutputVoxelType>
         class __CopyKernel {
           public:
-            __CopyKernel (InputVoxelType& input, OutputVoxelType output) :
+            __CopyKernel (InputVoxelType& input, OutputVoxelType& output) :
               in (input),
               out (output) { }
 
@@ -51,14 +51,14 @@ namespace MR
             OutputVoxelType out;
         };
     }
-    
+
     //! \endcond
 
 
 
 
     template <class InputVoxelType, class OutputVoxelType>
-      void threaded_copy (InputVoxelType& source, OutputVoxelType& destination, const std::vector<size_t>& axes, size_t num_axes_in_thread = 1) 
+      void threaded_copy (InputVoxelType& source, OutputVoxelType& destination, const std::vector<size_t>& axes, size_t num_axes_in_thread = 1)
       {
         __CopyKernel<InputVoxelType, OutputVoxelType> copy_kernel (source, destination);
         ThreadedLoop (source, axes, num_axes_in_thread).run (copy_kernel);
@@ -76,9 +76,9 @@ namespace MR
 
     template <class InputVoxelType, class OutputVoxelType>
       void threaded_copy_with_progress_message (
-          const std::string& message, 
-          InputVoxelType& source, 
-          OutputVoxelType& destination, 
+          const std::string& message,
+          InputVoxelType& source,
+          OutputVoxelType& destination,
           const std::vector<size_t>& axes,
           size_t num_axes_in_thread = 1)
       {
@@ -88,11 +88,11 @@ namespace MR
 
     template <class InputVoxelType, class OutputVoxelType>
       void threaded_copy_with_progress_message (
-          const std::string& message, 
-          InputVoxelType& source, 
-          OutputVoxelType& destination, 
-          size_t num_axes_in_thread = 1, 
-          size_t from_axis = 0, 
+          const std::string& message,
+          InputVoxelType& source,
+          OutputVoxelType& destination,
+          size_t num_axes_in_thread = 1,
+          size_t from_axis = 0,
           size_t to_axis = std::numeric_limits<size_t>::max())
       {
         __CopyKernel<InputVoxelType, OutputVoxelType> copy_kernel (source, destination);

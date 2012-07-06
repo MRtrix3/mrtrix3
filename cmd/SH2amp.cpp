@@ -58,8 +58,11 @@ void usage ()
   OPTIONS
     + Option ("gradient",
               "assume input directions are supplied as a gradient encoding file")
+
     + Option ("nonnegative",
-              "cap all negative amplitudes to zero");
+              "cap all negative amplitudes to zero")
+
+    + Image::Stride::StrideOption;
 }
 
 typedef float value_type;
@@ -179,10 +182,19 @@ void run ()
   amp_header.insert(std::pair<std::string, std::string> ("directions", dir_stream.str()));
 
   amp_header.dim(3) = dirs.rows();
-  amp_header.stride(0) = 2;
-  amp_header.stride(1) = 3;
-  amp_header.stride(2) = 4;
-  amp_header.stride(3) = 1;
+  Options opt = get_options ("stride");
+  if (opt.size()) {
+    std::vector<int> strides = opt[0][0];
+    if (strides.size() > amp_header.ndim())
+      throw Exception ("too many axes supplied to -stride option");
+    for (size_t n = 0; n < strides.size(); ++n)
+      amp_header.stride(n) = strides[n];
+  } else {
+    amp_header.stride(0) = 2;
+    amp_header.stride(1) = 3;
+    amp_header.stride(2) = 4;
+    amp_header.stride(3) = 1;
+  }
 
   Image::Buffer<value_type> amp_data (argument[2], amp_header);
 

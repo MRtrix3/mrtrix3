@@ -24,6 +24,7 @@
 #define __image_stride_h__
 
 #include "datatype.h"
+#include "math/math.h"
 
 namespace MR
 {
@@ -63,6 +64,8 @@ namespace MR
      * manipulate the strides and convert symbolic into actual strides. */
     namespace Stride
     {
+
+      extern const App::OptionGroup StrideOption;
 
       typedef std::vector<ssize_t> List;
 
