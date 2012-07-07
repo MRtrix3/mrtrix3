@@ -42,29 +42,29 @@ namespace MR
 
       namespace {
 
-        template <class InputVoxelType, class OutputVoxelType, class KernelVoxelType>
+        typedef struct {
+          int offset[3];
+          float weight;
+        } KernelWeight;
+
+        template <class InputVoxelType, class OutputVoxelType>
           class __AnisotropicCopyKernel {
             public:
-            __AnisotropicCopyKernel (InputVoxelType& input, OutputVoxelType& output, KernelVoxelType& kernel) :
+            __AnisotropicCopyKernel (InputVoxelType& input, OutputVoxelType& output, std::vector<KernelWeight> & kernel) :
                 in_ (input),
                 out_ (output),
-                kernel_ (kernel),
-                radius_ (3) {
-                  for (int d = 0; d < 3; ++d)
-                    radius_[d] = (kernel_.dim(d) - 1) / 2;
-                }
+                kernel_ (kernel) { }
 
               void operator () (const Iterator& pos) {
                 voxel_assign (out_, pos, 0, 3);
                 float val = 0;
-                Loop loop (0, 3);
-                for (loop.start(kernel_); loop.ok(); loop.next(kernel_)) {
+                for (size_t w = 0; w < kernel_.size(); ++w) {
                   voxel_assign (in_, pos, 0, 3);
-                  in_[0] += kernel_[0] - radius_[0];
-                  in_[1] += kernel_[1] - radius_[1];
-                  in_[2] += kernel_[2] - radius_[2];
+                  in_[0] += kernel_[w].offset[0];
+                  in_[1] += kernel_[w].offset[1];
+                  in_[2] += kernel_[w].offset[2];
                   if (Image::Nav::within_bounds(in_))
-                    val += kernel_.value() * in_.value();
+                    val += kernel_[w].weight * in_.value();
                 }
                 out_.value() = val;
               }
@@ -72,9 +72,8 @@ namespace MR
             protected:
               InputVoxelType in_;
               OutputVoxelType out_;
-              KernelVoxelType kernel_;
-              std::vector<int> radius_;
-          };
+              std::vector<KernelWeight> kernel_;
+        };
       }
 
 
@@ -84,9 +83,9 @@ namespace MR
       public:
           template <class InputVoxelType>
             AnisotropicSmooth (const InputVoxelType& in) :
-                               ConstInfo (in),
-                               stdev_ (2, 1),
-                               directions_ (0,0) {
+              ConstInfo (in),
+              stdev_ (2, 1),
+              directions_ (0,0) {
               stdev_[0] = 3;
               stdev_[1] = 1;
           }
@@ -95,9 +94,9 @@ namespace MR
             AnisotropicSmooth (const InputVoxelType& in,
                                const std::vector<float>& stdev,
                                const Math::Matrix<float>& directions) :
-                               ConstInfo (in),
-                               stdev_ (stdev),
-                               directions_ (directions) {
+              ConstInfo (in),
+              stdev_ (stdev),
+              directions_ (directions) {
               set_stdev (stdev);
           }
 
@@ -129,20 +128,10 @@ namespace MR
                 num_volumes = input.dim(3);
               }
 
-              Image::Header kernel_header;
-              kernel_header.set_ndim(3);
-              kernel_header.set_ndim(3);
-              kernel_header.datatype() = DataType::Float32;
-              std::vector<float> radius(3);
+              std::vector<int> radius(3);
               radius[0] = ceil((2 * stdev_[0]) / input.vox(0));
               radius[1] = ceil((2 * stdev_[0]) / input.vox(1));
               radius[2] = ceil((2 * stdev_[0]) / input.vox(2));
-              kernel_header.dim(0) = 2 * radius[0] + 1;
-              kernel_header.dim(1) = 2 * radius[0] + 1;
-              kernel_header.dim(2) = 2 * radius[0] + 1;
-
-              Image::BufferScratch<float> kernel_data (kernel_header);
-              Image::BufferScratch<float>::voxel_type kernel_vox (kernel_data);
 
               ProgressBar progress ("smoothing image...", num_volumes);
               for (unsigned int vol = 0; vol < num_volumes; ++vol) {
@@ -171,36 +160,47 @@ namespace MR
                 Math::Matrix<float> R_el_t (3, 3);
                 Math::transpose (R_az_t, R_az);
                 Math::transpose (R_el_t, R_el);
-
                 Math::Matrix<float> temp (3, 3);
                 Math::Matrix<float> temp2 (3, 3);
-                Math::mult(temp, R_el_t, R_az_t);
-                Math::mult(temp2, covariance, temp);
-                Math::mult(temp, R_el, temp2);
-                Math::mult(temp2, R_az, temp);
-
+                Math::mult (temp, R_el_t, R_az_t);
+                Math::mult (temp2, covariance, temp);
+                Math::mult (temp, R_el, temp2);
+                Math::mult (temp2, R_az, temp);
                 Math::pinv(temp, temp2);
 
-                float sum = 0.0;
-                Loop loop (0,3);
-                for (loop.start(kernel_vox); loop.ok(); loop.next(kernel_vox)) {
-                  Math::Vector<float> vec(3);
-                  vec[0] = (kernel_vox[0] - radius[0]) * input.vox(0);
-                  vec[1] = (kernel_vox[1] - radius[0]) * input.vox(1);
-                  vec[2] = (kernel_vox[2] - radius[0]) * input.vox(2);
-                  Math::Vector<float> temp_vec;
-                  Math::mult(temp_vec, temp, vec);
-                  kernel_vox.value() = exp (-0.5 * Math::dot(vec, temp_vec));
-                  sum += kernel_vox.value();
+                std::vector<KernelWeight> kernel;
+                float sum = 0;
+                int count = 0;
+                for (int x = -radius[0]; x <= radius[0]; x++) {
+                  for (int y = -radius[1]; y <= radius[1]; y++) {
+                    for (int z = -radius[2]; z <= radius[2]; z++) {
+                      Math::Vector<float> vec (3);
+                      vec[0] = x * input.vox(0);
+                      vec[1] = y * input.vox(1);
+                      vec[2] = z * input.vox(2);
+                      Math::Vector<float> temp_vec;
+                      Math::mult(temp_vec, temp, vec);
+                      float weight = exp (-0.5 * Math::dot (vec, temp_vec));
+                      if (weight > 0.01) {
+                        sum += weight;
+                        KernelWeight kernel_weight;
+                        kernel_weight.weight = weight;
+                        kernel_weight.offset[0] = x;
+                        kernel_weight.offset[1] = y;
+                        kernel_weight.offset[2] = z;
+                        kernel.push_back (kernel_weight);
+                        count++;
+                      }
+                    }
+                  }
                 }
-                for (loop.start(kernel_vox); loop.ok(); loop.next(kernel_vox))
-                  kernel_vox.value() /= sum;
+                for (size_t w = 0; w < kernel.size(); ++w)
+                  kernel[w].weight /= sum;
 
                 input[3] = vol;
                 output[3] = vol;
-                __AnisotropicCopyKernel <InputVoxelType, OutputVoxelType, Image::BufferScratch<float>::voxel_type> copy_kernel (input, output, kernel_vox);
+                __AnisotropicCopyKernel <InputVoxelType, OutputVoxelType> copy_kernel (input, output, kernel);
                 ThreadedLoop (input, 1, 0, 3).run (copy_kernel);
-
                 progress++;
               }
             }
