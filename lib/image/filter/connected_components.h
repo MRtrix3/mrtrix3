@@ -95,7 +95,6 @@ namespace MR
 
           if (clusters.size() > std::numeric_limits<uint32_t>::max())
             throw Exception ("The number of clusters is larger than can be labelled with an unsigned 32bit integer.");
-
         }
 
 
@@ -173,21 +172,21 @@ namespace MR
 
 
         void compute_adjacency (std::vector<std::vector<int> > & mask_indices) {
-          Image::BufferScratch<uint32_t> neigh_mask (mask_);
-          Image::BufferScratch<uint32_t>::voxel_type neigh_mask_vox (neigh_mask);
+          Image::BufferScratch<uint32_t> index_data (mask_);
+          Image::BufferScratch<uint32_t>::voxel_type index_image (index_data);
 
           // 1st pass, store mask image indices and their index in the array
-          Image::LoopInOrder loop(mask_);
-          for (loop.start (mask_, neigh_mask_vox); loop.ok(); loop.next (mask_, neigh_mask_vox)) {
+          Image::LoopInOrder loop (mask_);
+          for (loop.start (mask_, index_image); loop.ok(); loop.next (mask_, index_image)) {
             if (mask_.value() > 0.5) {
-              // keep track of the index location for the second pass
-              neigh_mask_vox.value() = mask_indices.size();
+              // For each voxel, store the index within mask_indices for 2nd pass
+              index_image.value() = mask_indices.size();
               std::vector<int> index(4);
               for (size_t dim = 0; dim < mask_.ndim(); dim++)
                 index[dim] = mask_[dim];
               mask_indices.push_back (index);
             } else {
-              neigh_mask_vox.value() = 0;
+              index_image.value() = 0;
             }
           }
 
@@ -195,7 +194,7 @@ namespace MR
           MaskVoxelType mask_neigh (mask_);
           std::vector<std::vector<int> >::iterator it;
           for (it = mask_indices.begin(); it != mask_indices.end(); ++it) {
-            std::vector<uint32_t> neighbour_ptrs;
+            std::vector<uint32_t> neighbour_indices;
             for (size_t dim = 0; dim < mask_.ndim(); dim++)
               mask_neigh[dim] = (*it)[dim];
 
@@ -206,32 +205,32 @@ namespace MR
                     if (adjacency_matrices_[dim]((*it)[dim], i)) {
                       mask_neigh[dim] = i;
                       if (mask_neigh.value() > 0.5) {
-                        voxel_assign (neigh_mask_vox, mask_neigh);
-                        neighbour_ptrs.push_back (neigh_mask_vox.value());
+                        voxel_assign (index_image, mask_neigh);
+                        neighbour_indices.push_back (index_image.value());
                       }
                     }
                   }
                   // we treat this dimension as having normal contiguous neighbours
                 } else {
-                  if ((*it)[dim] > 0) {
+                  if ((*it)[dim] > 0) {  // boundary check
                     mask_neigh[dim] = (*it)[dim] - 1;
                     if (mask_neigh.value() > 0.5) {
-                      voxel_assign (neigh_mask_vox, mask_neigh);
-                      neighbour_ptrs.push_back (neigh_mask_vox.value());
+                      voxel_assign (index_image, mask_neigh);
+                      neighbour_indices.push_back (index_image.value());
                     }
                   }
-                  if ((*it)[dim] + 1 < mask_.dim (dim)) {
+                  if ((*it)[dim] + 1 < mask_.dim (dim)) { // boundary check
                     mask_neigh[dim] = (*it)[dim] + 1;
                     if (mask_neigh.value() > 0.5) {
-                      voxel_assign (neigh_mask_vox, mask_neigh);
-                      neighbour_ptrs.push_back (neigh_mask_vox.value());
+                      voxel_assign (index_image, mask_neigh);
+                      neighbour_indices.push_back (index_image.value());
                     }
                   }
                 }
               }
               mask_neigh[dim] = (*it)[dim];
             }
-            adjacent_indices_.push_back (neighbour_ptrs);
+            adjacent_indices_.push_back (neighbour_indices);
           }
         }
 
@@ -280,6 +279,7 @@ namespace MR
                 if (node == root)
                   return;
                 stack.pop();
+                node = stack.top();
               } while (!next_neighbour (node, labels));
             }
           }
@@ -305,6 +305,7 @@ namespace MR
                 if (node == root)
                   return;
                 stack.pop();
+                node = stack.top();
               } while (!next_neighbour (node, labels, data, threshold));
             }
           }
