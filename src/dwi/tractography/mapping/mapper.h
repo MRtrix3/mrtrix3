@@ -72,17 +72,19 @@ class TrackMapperBase
 {
 
   public:
-    TrackMapperBase (const Image::Header& output_header, const Math::Matrix<float>& interp_matrix) :
+    TrackMapperBase (const Image::Header& output_header, const Math::Matrix<float>& interp_matrix, const bool mapzero = false) :
       R          (interp_matrix, 3),
       H_out      (output_header),
       interp_out (H_out),
-      os_factor  (interp_matrix.rows() + 1) { }
+      os_factor  (interp_matrix.rows() + 1),
+      map_zero   (mapzero) { }
 
     TrackMapperBase (const TrackMapperBase& that) :
       R          (that.R),
       H_out      (that.H_out),
       interp_out (H_out),
-      os_factor  (that.os_factor)
+      os_factor  (that.os_factor),
+      map_zero   (that.map_zero)
     { }
 
     virtual ~TrackMapperBase() { }
@@ -92,7 +94,7 @@ class TrackMapperBase
     {
       out.clear();
       out.index = in.index;
-      if (preprocess (in.tck, out)) {
+      if (preprocess (in.tck, out) || map_zero) {
         if (R.valid())
           R.interpolate (in.tck);
         voxelise (in.tck, out);
@@ -110,6 +112,7 @@ class TrackMapperBase
     const Image::Header& H_out;
     HeaderInterp interp_out;
     const size_t os_factor;
+    const bool map_zero;
 
 
     virtual void voxelise    (const std::vector< Point<float> >&, Cont&) const { throw Exception ("Running empty virtual function TrackMapperBase::voxelise()"); }
@@ -130,8 +133,8 @@ template <class Cont>
 class TrackMapperTWI : public TrackMapperBase<Cont>
 {
   public:
-    TrackMapperTWI (const Image::Header& output_header, const Math::Matrix<float>& interp_matrix, const float step, const contrast_t c, const stat_t s, const float denom = 0.0) :
-      TrackMapperBase<Cont> (output_header, interp_matrix),
+    TrackMapperTWI (const Image::Header& output_header, const Math::Matrix<float>& interp_matrix, const bool map_zero, const float step, const contrast_t c, const stat_t s, const float denom = 0.0) :
+      TrackMapperBase<Cont> (output_header, interp_matrix, map_zero),
       contrast              (c),
       track_statistic       (s),
       gaussian_denominator  (denom),
@@ -167,7 +170,6 @@ class TrackMapperTWI : public TrackMapperBase<Cont>
     void voxelise (const std::vector< Point<float> >& tck, Cont& voxels) const { TrackMapperBase<Cont>::voxelise (tck, voxels); }
 
     // Overload virtual function
-    // Change here: only contribute to the image if factor is not 0 (so it doesn't affect sums / means)
     bool preprocess (const std::vector< Point<float> >& tck, Cont& out) { set_factor (tck, out); return out.factor; }
 
 };
@@ -451,8 +453,8 @@ class TrackMapperTWIImage : public TrackMapperTWI<Cont>
   typedef Image::BufferPreload<float>::voxel_type input_voxel_type;
 
   public:
-    TrackMapperTWIImage (const Image::Header& output_header, const Math::Matrix<float>& interp_matrix, const float step, const contrast_t c, const stat_t m, const float denom, Image::BufferPreload<float>& input_image) :
-      TrackMapperTWI<Cont> (output_header, interp_matrix, step, c, m, denom),
+    TrackMapperTWIImage (const Image::Header& output_header, const Math::Matrix<float>& interp_matrix, const bool map_zero, const float step, const contrast_t c, const stat_t m, const float denom, Image::BufferPreload<float>& input_image) :
+      TrackMapperTWI<Cont> (output_header, interp_matrix, map_zero, step, c, m, denom),
       voxel                (input_image),
       interp               (voxel),
       lmax                 (0),
