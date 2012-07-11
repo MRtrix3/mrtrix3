@@ -66,6 +66,8 @@ bool FOD_FMLS::operator() (const SH_coefs& in, FOD_lobes& out) const {
   for (size_t i = 0; i != values.size(); ++i)
     data_in_order.insert (std::make_pair (values[i], i));
 
+  std::vector< std::pair<dir_t, uint8_t> > retrospective_assignments;
+
   for (map_type::const_iterator i = data_in_order.begin(); i != data_in_order.end(); ++i) {
 
     std::vector<lobe_t> adj_lobes;
@@ -89,18 +91,7 @@ bool FOD_FMLS::operator() (const SH_coefs& in, FOD_lobes& out) const {
 
     } else {
 
-      float min_lobe_peak = INFINITY, max_lobe_peak = 0.0;
-      lobe_t max_lobe_peak_index = 0;
-      for (lobe_t j = 0; j != adj_lobes.size(); ++j) {
-        const float this_abs_peak = Math::abs (out[adj_lobes[j]].get_peak_value());
-        if (this_abs_peak < min_lobe_peak)
-          min_lobe_peak = this_abs_peak;
-        if (this_abs_peak > max_lobe_peak) {
-          max_lobe_peak = this_abs_peak;
-          max_lobe_peak_index = adj_lobes[j];
-        }
-      }
-      if (min_lobe_peak / Math::abs (i->first) < ratio_to_peak_value) {
+      if (out[adj_lobes.back()].get_peak_value() / Math::abs (i->first) < ratio_to_peak_value) {
 
         for (size_t j = adj_lobes.size() - 1; j; --j) {
           out[adj_lobes.front()].merge (out[adj_lobes[j]]);
@@ -112,7 +103,7 @@ bool FOD_FMLS::operator() (const SH_coefs& in, FOD_lobes& out) const {
 
       } else {
 
-        out[max_lobe_peak_index].add (i->second, i->first);
+        retrospective_assignments.push_back (std::make_pair (i->second, adj_lobes.front()));
 
       }
 
@@ -120,6 +111,8 @@ bool FOD_FMLS::operator() (const SH_coefs& in, FOD_lobes& out) const {
 
   }
 
+  for (std::vector< std::pair<dir_t, uint8_t> >::const_iterator i = retrospective_assignments.begin(); i != retrospective_assignments.end(); ++i)
+    out[i->second].add (i->first, values[i->first]);
 
   float mean_neg_peak = 0.0, max_neg_integral = 0.0;
   uint8_t neg_lobe_count = 0;
