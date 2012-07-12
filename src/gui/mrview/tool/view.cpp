@@ -44,12 +44,12 @@ namespace MR
         {
           QVBoxLayout* main_box = new QVBoxLayout (this);
 
-          projection_combobox = new QComboBox;
-          projection_combobox->insertItem (0, "Sagittal");
-          projection_combobox->insertItem (1, "Coronal");
-          projection_combobox->insertItem (2, "Axial");
-          main_box->addWidget (projection_combobox);
-          connect (projection_combobox, SIGNAL (activated(int)), this, SLOT (onSetProjection(int)));
+          plane_combobox = new QComboBox;
+          plane_combobox->insertItem (0, "Sagittal");
+          plane_combobox->insertItem (1, "Coronal");
+          plane_combobox->insertItem (2, "Axial");
+          main_box->addWidget (plane_combobox);
+          connect (plane_combobox, SIGNAL (activated(int)), this, SLOT (onSetPlane(int)));
 
           QGroupBox* group_box = new QGroupBox ("Focus");
           QGridLayout* layout = new QGridLayout;
@@ -120,9 +120,9 @@ namespace MR
         {
           connect (&window, SIGNAL (imageChanged()), this, SLOT (onImageChanged()));
           connect (&window, SIGNAL (focusChanged()), this, SLOT (onFocusChanged()));
-          connect (&window, SIGNAL (projectionChanged()), this, SLOT (onProjectionChanged()));
+          connect (&window, SIGNAL (planeChanged()), this, SLOT (onPlaneChanged()));
           connect (&window, SIGNAL (scalingChanged()), this, SLOT (onScalingChanged()));
-          onProjectionChanged();
+          onPlaneChanged();
           onFocusChanged();
           onScalingChanged();
           onImageChanged();
@@ -156,15 +156,15 @@ namespace MR
         }
 
 
-        void View::onProjectionChanged () 
+        void View::onPlaneChanged () 
         {
-          projection_combobox->setCurrentIndex (window.projection());
+          plane_combobox->setCurrentIndex (window.plane());
         }
 
 
-        void View::onSetProjection (int index) 
+        void View::onSetPlane (int index) 
         {
-          window.set_projection (index);
+          window.set_plane (index);
           window.updateGL();
         }
 

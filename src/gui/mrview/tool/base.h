@@ -50,6 +50,8 @@ namespace MR
             virtual void hideEvent (QCloseEvent * event);
         };
 
+
+
         class Base : public QFrame {
           public:
             Base (Window& main_window, Dock* parent) : 
@@ -60,6 +62,7 @@ namespace MR
             }
             Window& window;
 
+            virtual void draw ();
         };
 
 

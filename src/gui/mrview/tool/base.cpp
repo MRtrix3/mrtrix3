@@ -47,6 +47,8 @@ namespace MR
           widget()->close();
         }
 
+        void Base::draw () { }
+
       }
     }
   }

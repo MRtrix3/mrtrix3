@@ -90,10 +90,10 @@ namespace MR
 
 
           glTranslatef (-target() [0], -target() [1], -target() [2]);
-          transform.update();
+          projection.update();
 
           // find min/max depth of texture:
-          Point<> z = transform.screen_normal();
+          Point<> z = projection.screen_normal();
           z.normalise();
           float d;
           float mindepth = std::numeric_limits<float>::infinity();
@@ -150,7 +150,7 @@ namespace MR
 
 
           // render image:
-          image()->render3D_pre (transform, transform.depth_of (focus()));
+          image()->render3D_pre (projection, projection.depth_of (focus()));
           float increment = std::min (image()->interp.vox(0), std::min (image()->interp.vox(1), image()->interp.vox(2)));
           for (float offset = mindepth; offset <= maxdepth; offset += increment)
             image()->render3D_slice (offset);
@@ -160,7 +160,7 @@ namespace MR
           glDisable (GL_BLEND);
 
           if (window.show_crosshairs()) 
-            transform.render_crosshairs (focus());
+            projection.render_crosshairs (focus());
 
           draw_orientation_labels();
         }

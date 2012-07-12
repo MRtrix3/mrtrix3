@@ -31,9 +31,7 @@
 #include <QMenu>
 
 #include "gui/mrview/window.h"
-#include "gui/mrview/transform.h"
-
-#define EDGE_WIDTH 6
+#include "gui/projection.h"
 
 namespace MR
 {
@@ -62,7 +60,7 @@ namespace MR
             virtual ~Base ();
 
             Window& window;
-            Transform transform;
+            Projection projection;
             const int mouse_actions;
 
             virtual void paint ();
@@ -92,8 +90,8 @@ namespace MR
             float FOV () const { 
               return window.FOV(); 
             }
-            int projection () const { 
-              return window.projection(); 
+            int plane () const { 
+              return window.plane(); 
             }
             const Math::Quaternion<float>& orientation () const {
               return window.orientation(); 
@@ -111,43 +109,36 @@ namespace MR
             void set_FOV (float value) {
               window.set_FOV (value); 
             }
-            void set_projection (int p) {
-              window.set_projection (p); 
+            void set_plane (int p) {
+              window.set_plane (p); 
             }
             void set_orientation (const Math::Quaternion<float>& Q) {
               window.set_orientation (Q); 
-            }
-
-            void change_FOV_fine (float factor) {
-              window.set_FOV (FOV() * Math::exp (0.005*factor));
-            }
-            void change_FOV_scroll (float factor) {
-              change_FOV_fine (20.0 * factor);
             }
 
             QGLWidget* glarea () const {
               return reinterpret_cast <QGLWidget*> (window.glarea);
             }
 
-            Point<> move_in_out_displacement (float distance, const Transform& with_transform) {
-              Point<> move (-with_transform.screen_normal());
+            Point<> move_in_out_displacement (float distance, const Projection& with_projection) {
+              Point<> move (-with_projection.screen_normal());
               move.normalise();
               move *= distance;
               return move;
             }
 
-            void move_in_out (float distance, const Transform& with_transform) {
+            void move_in_out (float distance, const Projection& with_projection) {
               if (!image()) return;
-              Point<> move = move_in_out_displacement (distance, with_transform);
+              Point<> move = move_in_out_displacement (distance, with_projection);
               set_target (target() + move);
               set_focus (focus() + move);
             }
-            void move_in_out_FOV (int increment, const Transform& with_transform) {
-              move_in_out (1e-3 * increment * FOV(), with_transform);
+            void move_in_out_FOV (int increment, const Projection& with_projection) {
+              move_in_out (1e-3 * increment * FOV(), with_projection);
             }
 
             void move_in_out (float distance) {
-              move_in_out (distance, transform);
+              move_in_out (distance, projection);
             }
             void move_in_out_FOV (int increment) {
               move_in_out (1e-3 * increment * FOV());
@@ -167,7 +158,7 @@ namespace MR
             void register_extra_controls (Tool::Dock* controls);
             void adjust_projection_matrix (float* M, const float* Q, int proj) const;
             void adjust_projection_matrix (float* M, const float* Q) const { 
-              adjust_projection_matrix (M, Q, projection()); 
+              adjust_projection_matrix (M, Q, plane()); 
             }
 
             bool painting;

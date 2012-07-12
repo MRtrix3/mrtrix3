@@ -39,7 +39,12 @@ namespace MR
             Q_OBJECT
 
           public:
-            Overlay (Window& parent, const QString& name);
+
+            Overlay (Dock* parent);
+
+          protected:
+            virtual void showEvent (QShowEvent* event);
+            virtual void closeEvent (QCloseEvent* event);
 
           private slots:
             void slot ();

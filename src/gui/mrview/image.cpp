@@ -26,7 +26,7 @@
 #include "image/stride.h"
 #include "gui/mrview/image.h"
 #include "gui/mrview/window.h"
-#include "gui/mrview/transform.h"
+#include "gui/projection.h"
 
 
 
@@ -70,19 +70,19 @@ namespace MR
 
 
 
-      void Image::render2D (Shader& custom_shader, int projection, int slice)
+      void Image::render2D (Shader& custom_shader, int plane, int slice)
       {
-        update_texture2D (custom_shader, projection, slice);
+        update_texture2D (custom_shader, plane, slice);
 
         glTexParameteri (GL_TEXTURE_3D, GL_TEXTURE_MAG_FILTER, interpolation);
         glTexParameteri (GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, interpolation);
 
         int x, y;
-        get_axes (projection, x, y);
+        get_axes (plane, x, y);
         float xdim = header().dim (x)-0.5, ydim = header().dim (y)-0.5;
 
         Point<> p, q;
-        p[projection] = slice;
+        p[plane] = slice;
 
         set_color (custom_shader);
 
@@ -119,7 +119,7 @@ namespace MR
 
 
 
-      void Image::render3D_pre (Shader& custom_shader, const Transform& transform, float depth)
+      void Image::render3D_pre (Shader& custom_shader, const Projection& transform, float depth)
       {
         update_texture3D (custom_shader);
 
@@ -198,25 +198,25 @@ namespace MR
 
 
 
-      inline void Image::update_texture2D (const Shader& custom_shader, int projection, int slice)
+      inline void Image::update_texture2D (const Shader& custom_shader, int plane, int slice)
       {
-        if (!texture2D[projection]) { // allocate:
-          glGenTextures (1, &texture2D[projection]);
-          assert (texture2D[projection]);
+        if (!texture2D[plane]) { // allocate:
+          glGenTextures (1, &texture2D[plane]);
+          assert (texture2D[plane]);
           glTexParameteri (GL_TEXTURE_3D, GL_TEXTURE_WRAP_S, GL_CLAMP);
           glTexParameteri (GL_TEXTURE_3D, GL_TEXTURE_WRAP_T, GL_CLAMP);
           glTexParameteri (GL_TEXTURE_3D, GL_TEXTURE_WRAP_R, GL_CLAMP);
         }
-        glBindTexture (GL_TEXTURE_3D, texture2D[projection]);
+        glBindTexture (GL_TEXTURE_3D, texture2D[plane]);
 
-        if (position[projection] == slice && volume_unchanged() && texture_mode_2D_unchanged)
+        if (position[plane] == slice && volume_unchanged() && texture_mode_2D_unchanged)
           return;
 
-        position[projection] = slice;
+        position[plane] = slice;
         texture_mode_2D_unchanged = true;
 
         int x, y;
-        get_axes (projection, x, y);
+        get_axes (plane, x, y);
         ssize_t xdim = header().dim (x), ydim = header().dim (y);
 
         type = GL_FLOAT;
@@ -229,13 +229,13 @@ namespace MR
           format = GL_ALPHA;
           internal_format = GL_ALPHA32F_ARB;
 
-          if (position[projection] < 0 || position[projection] >= header().dim (projection)) {
+          if (position[plane] < 0 || position[plane] >= header().dim (plane)) {
             memset (data, 0, xdim*ydim*sizeof (float));
           }
           else {
             // copy data:
             VoxelType& vox (voxel());
-            vox[projection] = slice;
+            vox[plane] = slice;
             value_min = std::numeric_limits<float>::infinity();
             value_max = -std::numeric_limits<float>::infinity();
             for (vox[y] = 0; vox[y] < ydim; ++vox[y]) {
@@ -258,10 +258,10 @@ namespace MR
           internal_format = GL_RGB32F;
 
           memset (data, 0, 3*xdim*ydim*sizeof (float));
-          if (position[projection] >= 0 && position[projection] < header().dim (projection)) {
+          if (position[plane] >= 0 && position[plane] < header().dim (plane)) {
             // copy data:
             VoxelType& vox (voxel());
-            vox[projection] = slice;
+            vox[plane] = slice;
             value_min = std::numeric_limits<float>::infinity();
             value_max = -std::numeric_limits<float>::infinity();
 
@@ -297,13 +297,13 @@ namespace MR
           format = GL_LUMINANCE_ALPHA;
           internal_format = GL_LUMINANCE_ALPHA32F_ARB;
 
-          if (position[projection] < 0 || position[projection] >= header().dim (projection)) {
+          if (position[plane] < 0 || position[plane] >= header().dim (plane)) {
             memset (data, 0, 2*xdim*ydim*sizeof (float));
           }
           else {
             // copy data:
             VoxelType& vox (voxel());
-            vox[projection] = slice;
+            vox[plane] = slice;
             value_min = std::numeric_limits<float>::infinity();
             value_max = -std::numeric_limits<float>::infinity();
             for (vox[y] = 0; vox[y] < ydim; ++vox[y]) {

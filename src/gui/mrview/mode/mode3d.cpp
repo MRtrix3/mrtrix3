@@ -103,7 +103,7 @@ namespace MR
           glMultMatrixf (S);
 
           glTranslatef (-target() [0], -target() [1], -target() [2]);
-          transform.update();
+          projection.update();
 
           // set up OpenGL environment:
           glDisable (GL_BLEND);
@@ -116,13 +116,13 @@ namespace MR
 
           // render image:
           DEBUG_OPENGL;
-          image()->render3D (transform, transform.depth_of (focus()));
+          image()->render3D (projection, projection.depth_of (focus()));
           DEBUG_OPENGL;
 
           glDisable (GL_TEXTURE_3D);
 
           if (window.show_crosshairs()) 
-            transform.render_crosshairs (focus());
+            projection.render_crosshairs (focus());
 
           draw_orientation_labels();
         }
@@ -134,20 +134,20 @@ namespace MR
           if (window.show_orientation_labels()) {
             glColor4f (1.0, 0.0, 0.0, 1.0);
             std::vector<OrientationLabel> labels;
-            labels.push_back (OrientationLabel (transform.model_to_screen_direction (Point<> (-1.0, 0.0, 0.0)), 'L'));
-            labels.push_back (OrientationLabel (transform.model_to_screen_direction (Point<> (1.0, 0.0, 0.0)), 'R'));
-            labels.push_back (OrientationLabel (transform.model_to_screen_direction (Point<> (0.0, -1.0, 0.0)), 'P'));
-            labels.push_back (OrientationLabel (transform.model_to_screen_direction (Point<> (0.0, 1.0, 0.0)), 'A'));
-            labels.push_back (OrientationLabel (transform.model_to_screen_direction (Point<> (0.0, 0.0, -1.0)), 'I'));
-            labels.push_back (OrientationLabel (transform.model_to_screen_direction (Point<> (0.0, 0.0, 1.0)), 'S'));
+            labels.push_back (OrientationLabel (projection.model_to_screen_direction (Point<> (-1.0, 0.0, 0.0)), 'L'));
+            labels.push_back (OrientationLabel (projection.model_to_screen_direction (Point<> (1.0, 0.0, 0.0)), 'R'));
+            labels.push_back (OrientationLabel (projection.model_to_screen_direction (Point<> (0.0, -1.0, 0.0)), 'P'));
+            labels.push_back (OrientationLabel (projection.model_to_screen_direction (Point<> (0.0, 1.0, 0.0)), 'A'));
+            labels.push_back (OrientationLabel (projection.model_to_screen_direction (Point<> (0.0, 0.0, -1.0)), 'I'));
+            labels.push_back (OrientationLabel (projection.model_to_screen_direction (Point<> (0.0, 0.0, 1.0)), 'S'));
 
             std::sort (labels.begin(), labels.end());
             for (size_t i = 2; i < labels.size(); ++i) {
               float pos[] = { labels[i].dir[0], labels[i].dir[1] };
-              float dist = std::min (transform.width()/Math::abs (pos[0]), transform.height()/Math::abs (pos[1])) / 2.0;
-              int x = Math::round (transform.width() /2.0 + pos[0]*dist);
-              int y = Math::round (transform.height() /2.0 + pos[1]*dist);
-              transform.render_text_inset (x, y, std::string (labels[i].label));
+              float dist = std::min (projection.width()/Math::abs (pos[0]), projection.height()/Math::abs (pos[1])) / 2.0;
+              int x = Math::round (projection.width() /2.0 + pos[0]*dist);
+              int y = Math::round (projection.height() /2.0 + pos[1]*dist);
+              projection.render_text_inset (x, y, std::string (labels[i].label));
             }
 
           }
@@ -179,7 +179,7 @@ namespace MR
 
         void Mode3D::set_focus_event ()
         {
-          set_focus (transform.screen_to_model (window.mouse_position(), focus()));
+          set_focus (projection.screen_to_model (window.mouse_position(), focus()));
           updateGL();
         }
 
@@ -197,7 +197,7 @@ namespace MR
 
         void Mode3D::pan_event ()
         {
-          set_target (target() - transform.screen_to_model_direction (window.mouse_displacement()));
+          set_target (target() - projection.screen_to_model_direction (window.mouse_displacement(), target()));
           updateGL();
         }
 
@@ -217,8 +217,8 @@ namespace MR
           QPoint dpos = window.mouse_displacement();
           if (dpos.x() == 0 && dpos.y() == 0)
             return;
-          Point<> x = transform.screen_to_model_direction (dpos);
-          Point<> z = transform.screen_normal();
+          Point<> x = projection.screen_to_model_direction (dpos, target());
+          Point<> z = projection.screen_normal();
           Point<> v (x.cross (z));
           float angle = ROTATION_INC * Math::sqrt (float (Math::pow2 (dpos.x()) + Math::pow2 (dpos.y())));
           v.normalise();
@@ -236,8 +236,8 @@ namespace MR
 
         void Mode3D::rotate_event ()
         {
-          Point<> x1 (window.mouse_position().x() - transform.width()/2,
-              window.mouse_position().y() - transform.height()/2,
+          Point<> x1 (window.mouse_position().x() - projection.width()/2,
+              window.mouse_position().y() - projection.height()/2,
               0.0);
 
           if (x1.norm() < 16) 
@@ -252,7 +252,7 @@ namespace MR
 
           Point<> n = x1.cross (x0);
 
-          Point<> v = transform.screen_normal();
+          Point<> v = projection.screen_normal();
           v.normalise();
 
           Math::Quaternion<float> q = Math::Quaternion<float> (n[2], v) * orientation();

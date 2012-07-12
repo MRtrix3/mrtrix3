@@ -39,11 +39,12 @@ namespace MR
 
   namespace GUI
   {
+    class Projection;
+
     namespace MRView
     {
 
       class Window;
-      class Transform;
 
       class Image : public QAction
       {
@@ -90,12 +91,12 @@ namespace MR
             return interpolation == GL_LINEAR;
           }
 
-          void render2D (Shader& custom_shader, int projection, int slice);
-          void render2D (int projection, int slice) {
-            render2D (shader, projection, slice);
+          void render2D (Shader& custom_shader, int plane, int slice);
+          void render2D (int plane, int slice) {
+            render2D (shader, plane, slice);
           }
 
-          void render3D_pre (Shader& custom_shader, const Transform& transform, float depth);
+          void render3D_pre (Shader& custom_shader, const Projection& transform, float depth);
           void render3D_slice (float offset);
           void render3D_post (Shader& custom_shader) {
             custom_shader.stop(); 
@@ -106,23 +107,23 @@ namespace MR
             render3D_post (shader);
           }
 
-          void render3D_pre (const Transform& transform, float depth) {
+          void render3D_pre (const Projection& transform, float depth) {
             render3D_pre (shader, transform, depth);
           }
-          void render3D (const Transform& transform, float depth) {
+          void render3D (const Projection& transform, float depth) {
             render3D (shader, transform, depth);
           }
 
-          void render3D (Shader& custom_shader, const Transform& transform, float depth) {
+          void render3D (Shader& custom_shader, const Projection& transform, float depth) {
             render3D_pre (custom_shader, transform, depth);
             render3D_slice (0.0);
             render3D_post (custom_shader);
           }
 
 
-          void get_axes (int projection, int& x, int& y) {
-            if (projection) {
-              if (projection == 1) {
+          void get_axes (int plane, int& x, int& y) {
+            if (plane) {
+              if (plane == 1) {
                 x = 0;
                 y = 2;
               }
@@ -220,7 +221,7 @@ namespace MR
 
           Shader shader;
 
-          void update_texture2D (const Shader& custom_shader, int projection, int slice);
+          void update_texture2D (const Shader& custom_shader, int plane, int slice);
           void update_texture3D (const Shader& custom_shader);
 
           bool volume_unchanged ();

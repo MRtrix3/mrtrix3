@@ -58,7 +58,7 @@ namespace MR
       RenderFrame::RenderFrame (QWidget* parent) :
         QGLWidget (QGLFormat (QGL::FormatOptions (QGL::DoubleBuffer | QGL::DepthBuffer | QGL::Rgba)), parent),
         view_angle (40.0), distance (0.3), line_width (1.0), scale (1.0), l0_term (NAN),
-        show_axes (true), color_by_dir (true), use_lighting (true),
+        show_axes (true), color_by_dir (true), use_lighting (true), projection (this),
         focus (0.0, 0.0, 0.0), framebuffer (NULL), OS (0), OS_x (0), OS_y (0)
       {
         lighting = new GL::Lighting (this);
@@ -153,9 +153,11 @@ namespace MR
         glTranslatef (focus[0], focus[1], focus[2]);
 
         glGetDoublev (GL_MODELVIEW_MATRIX, modelview);
-        glGetDoublev (GL_PROJECTION_MATRIX, projection);
+        glGetDoublev (GL_PROJECTION_MATRIX, projection_matrix);
 
         glDepthMask (GL_TRUE);
+
+        projection.update();
 
         if (finite (l0_term)) {
           glPushMatrix();
@@ -204,89 +206,9 @@ namespace MR
 
 
 
-
-
-
-
-
-        /*
-              float dist (1.0 / (distance * view_angle * D2R));
-              float ratio = float (width())/float (height());
-
-              float a (ratio < 1.0 ? view_angle/ratio : view_angle);
-              glMatrixMode (GL_PROJECTION);
-              glLoadIdentity ();
-              gluPerspective (a, ratio, ( dist-3.0 > 0.001 ? dist-3.0 : 0.001 ), dist+3.0);
-              glMatrixMode (GL_MODELVIEW);
-
-              glLoadIdentity ();
-              glTranslatef (0.0, 0.0, -dist);
-              if (rotation_matrix) {
-                glMultMatrixf (rotation_matrix);
-              }
-              else {
-                glRotatef (elevation, 1.0, 0.0, 0.0);
-                glRotatef (azimuth, 0.0, 0.0, 1.0);
-              }
-              glDepthMask (GL_TRUE);
-
-              if (values.size()) {
-                glPushMatrix();
-                glDisable (GL_BLEND);
-                if (lmax_or_lod_changed) { renderer.precompute (lmax, lod); values_changed = true; }
-                if (values_changed) renderer.calculate (values, lmax, hide_neg_lobes);
-
-                lmax_or_lod_changed = values_changed = false;
-
-                if (use_lighting) glEnable (GL_LIGHTING);
-                GLfloat v[] = { 0.9, 0.9, 0.9, 1.0 };
-                glMaterialfv (GL_BACK, GL_AMBIENT_AND_DIFFUSE, v);
-
-
-                float s (scale);
-                if (normalise) s /= values[0];
-                glScalef (s, s, s);
-
-                renderer.draw (use_lighting, color_by_dir ? NULL : color);
-
-                if (use_lighting) glDisable (GL_LIGHTING);
-
-                glPopMatrix();
-              }
-
-              glLineWidth (line_width);
-              glBlendFunc (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-              glEnable (GL_BLEND);
-              glEnable (GL_LINE_SMOOTH);
-
-              if (show_axes) {
-                glColor3f (1.0, 0.0, 0.0);
-                glBegin (GL_LINES);
-                glVertex3f (-1.0, -1.0, -1.0);
-                glVertex3f (1.0, -1.0, -1.0);
-                glEnd();
-
-                glColor3f (0.0, 1.0, 0.0);
-                glBegin (GL_LINES);
-                glVertex3f (-1.0, -1.0, -1.0);
-                glVertex3f (-1.0, 1.0, -1.0);
-                glEnd ();
-
-                glColor3f (0.0, 0.0, 1.0);
-                glBegin (GL_LINES);
-                glVertex3f (-1.0, -1.0, -1.0);
-                glVertex3f (-1.0, -1.0, 1.0);
-                glEnd ();
-              }
-
-              glDisable (GL_BLEND);
-              glDisable (GL_LINE_SMOOTH);
-        */
         if (OS > 0) snapshot();
 
-        GLenum error_code = glGetError();
-        if (error_code != GL_NO_ERROR)
-          error (std::string ("OpenGL Error: ") + (const char*) gluErrorString (error_code));
+        DEBUG_OPENGL;
 
       }
 
@@ -342,10 +264,7 @@ namespace MR
             updateGL();
           }
           else if (event->buttons() == Qt::MidButton) {
-            double wx, wy, wz;
-            gluProject (focus[0], focus[1], focus[2], modelview, projection, viewport, &wx, &wy, &wz);
-            gluUnProject (wx+dx, wy-dy, wz, modelview, projection, viewport, &wx, &wy, &wz);
-            focus.set (wx, wy, wz);
+            focus += projection.screen_to_model_direction (QPoint (dx, -dy), focus);
             updateGL();
           }
           else if (event->buttons() == Qt::RightButton) {

@@ -25,7 +25,6 @@
 #include "mrtrix.h"
 #include "gui/cursor.h"
 #include "gui/mrview/mode/mode2d.h"
-#include "gui/mrview/transform.h"
 
 namespace MR
 {
@@ -53,17 +52,17 @@ namespace MR
 
           // image slice:
           Point<> voxel (image()->interp.scanner2voxel (focus()));
-          int slice = Math::round (voxel[projection()]);
+          int slice = Math::round (voxel[plane()]);
 
           // camera target:
           Point<> F = image()->interp.scanner2voxel (target());
-          F[projection()] = slice;
+          F[plane()] = slice;
           F = image()->interp.voxel2scanner (F);
 
           // info for projection:
           int w = glarea()->width(), h = glarea()->height();
           float fov = FOV() / (float) (w+h);
-          float depth = image()->interp.dim (projection()) * image()->interp.vox (projection());
+          float depth = image()->interp.dim (plane()) * image()->interp.vox (plane());
 
           // set up projection & modelview matrices:
           glMatrixMode (GL_PROJECTION);
@@ -75,7 +74,7 @@ namespace MR
           glMultMatrixf (M);
           glTranslatef (-F[0], -F[1], -F[2]);
 
-          transform.update();
+          projection.update();
 
           // set up OpenGL environment:
           glDisable (GL_BLEND);
@@ -87,33 +86,33 @@ namespace MR
           glColorMask (GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
 
           // render image:
-          image()->render2D (projection(), slice);
+          image()->render2D (plane(), slice);
 
           glDisable (GL_TEXTURE_2D);
 
           if (window.show_crosshairs()) 
-            transform.render_crosshairs (focus());
+            projection.render_crosshairs (focus());
 
           if (window.show_orientation_labels()) {
             glColor4f (1.0, 0.0, 0.0, 1.0);
-            switch (projection()) {
+            switch (plane()) {
               case 0:
-                transform.render_text ("A", LeftEdge);
-                transform.render_text ("S", TopEdge);
-                transform.render_text ("P", RightEdge);
-                transform.render_text ("I", BottomEdge);
+                projection.render_text ("A", LeftEdge);
+                projection.render_text ("S", TopEdge);
+                projection.render_text ("P", RightEdge);
+                projection.render_text ("I", BottomEdge);
                 break;
               case 1:
-                transform.render_text ("R", LeftEdge);
-                transform.render_text ("S", TopEdge);
-                transform.render_text ("L", RightEdge);
-                transform.render_text ("I", BottomEdge);
+                projection.render_text ("R", LeftEdge);
+                projection.render_text ("S", TopEdge);
+                projection.render_text ("L", RightEdge);
+                projection.render_text ("I", BottomEdge);
                 break;
               case 2:
-                transform.render_text ("R", LeftEdge);
-                transform.render_text ("A", TopEdge);
-                transform.render_text ("L", RightEdge);
-                transform.render_text ("P", BottomEdge);
+                projection.render_text ("R", LeftEdge);
+                projection.render_text ("A", TopEdge);
+                projection.render_text ("L", RightEdge);
+                projection.render_text ("P", BottomEdge);
                 break;
               default:
                 assert (0);
@@ -133,17 +132,17 @@ namespace MR
             image()->header().dim (2)* image()->header().vox (2)
           };
           if (dim[0] < dim[1] && dim[0] < dim[2])
-            set_projection (0);
+            set_plane (0);
           else if (dim[1] < dim[0] && dim[1] < dim[2])
-            set_projection (1);
+            set_plane (1);
           else
-            set_projection (2);
+            set_plane (2);
 
           Point<> p (image()->header().dim (0) /2.0, image()->header().dim (1) /2.0, image()->header().dim (2) /2.0);
           set_focus (image()->interp.voxel2scanner (p));
 
           int x, y;
-          image()->get_axes (projection(), x, y);
+          image()->get_axes (plane(), x, y);
           set_FOV (std::max (dim[x], dim[y]));
 
           set_target (Point<>());
@@ -154,7 +153,7 @@ namespace MR
         void Mode2D::slice_move_event (int x)
         {
           if (!image()) return;
-          move_in_out (x * image()->header().vox (projection()));
+          move_in_out (x * image()->header().vox (plane()));
           updateGL();
         }
 
@@ -173,7 +172,7 @@ namespace MR
 
         void Mode2D::set_focus_event ()
         {
-          set_focus (transform.screen_to_model (window.mouse_position(), focus()));
+          set_focus (projection.screen_to_model (window.mouse_position(), focus()));
           updateGL();
         }
 
@@ -187,7 +186,7 @@ namespace MR
 
         void Mode2D::pan_event ()
         {
-          set_target (target() - transform.screen_to_model_direction (window.mouse_displacement()));
+          set_target (target() - projection.screen_to_model_direction (window.mouse_displacement(), 0.0f));
           updateGL();
         }
 

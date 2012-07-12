@@ -37,6 +37,19 @@ namespace MR
         inform ("GL vendor:    " + std::string ( (const char*) glGetString (GL_VENDOR)));
       }
 
+      const char* ErrorString (GLenum errorcode) 
+      {
+        switch (errorcode) {
+          case GL_INVALID_ENUM: return "invalid value for enumerated argument";
+          case GL_INVALID_VALUE: return "value out of range";
+          case GL_INVALID_OPERATION: return "operation not allowed given current state";
+          case GL_STACK_OVERFLOW: return "stack overflow";
+          case GL_STACK_UNDERFLOW: return "stack underflow";
+          case GL_OUT_OF_MEMORY: return "insufficient memory";
+          case GL_TABLE_TOO_LARGE: return "table exceeds maximum supported size";
+          default: return "unknown error";
+        }
+      }
 
     }
   }

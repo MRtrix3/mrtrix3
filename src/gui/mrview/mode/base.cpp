@@ -38,7 +38,7 @@ namespace MR
 
         Base::Base (Window& parent, int flags) :
           window (parent),
-          transform (window.glarea),
+          projection (window.glarea),
           mouse_actions (flags),
           painting (false) { }
 
@@ -56,8 +56,8 @@ namespace MR
 
           glClear (GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
           if (!image()) {
-            transform.update();
-            transform.render_text (10, 10, "No image loaded");
+            projection.update();
+            projection.render_text (10, 10, "No image loaded");
             goto done_painting;
           }
 
@@ -65,7 +65,7 @@ namespace MR
             paint();
 
             glDisable (GL_MULTISAMPLE);
-            transform.update();
+            projection.update();
             glColor4f (1.0, 1.0, 0.0, 1.0);
 
             if (window.show_voxel_info()) {
@@ -78,8 +78,8 @@ namespace MR
                 vox_str += str(imvox[n]) + " ";
               vox_str += "]";
 
-              transform.render_text (printf ("position: [ %.4g %.4g %.4g ] mm", focus() [0], focus() [1], focus() [2]), LeftEdge | BottomEdge);
-              transform.render_text (vox_str, LeftEdge | BottomEdge, 1);
+              projection.render_text (printf ("position: [ %.4g %.4g %.4g ] mm", focus() [0], focus() [1], focus() [2]), LeftEdge | BottomEdge);
+              projection.render_text (vox_str, LeftEdge | BottomEdge, 1);
               std::string value;
               if (vox[0] >= 0 && vox[0] < imvox.dim (0) &&
                   vox[1] >= 0 && vox[1] < imvox.dim (1) &&
@@ -91,12 +91,12 @@ namespace MR
                 value = "value: " + str (val);
               }
               else value = "value: ?";
-              transform.render_text (value, LeftEdge | BottomEdge, 2);
+              projection.render_text (value, LeftEdge | BottomEdge, 2);
             }
 
             if (window.show_comments()) {
               for (size_t i = 0; i < image()->header().comments().size(); ++i)
-                transform.render_text (image()->header().comments() [i], LeftEdge | TopEdge, i);
+                projection.render_text (image()->header().comments() [i], LeftEdge | TopEdge, i);
             }
           }
 

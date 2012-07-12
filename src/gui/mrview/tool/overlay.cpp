@@ -34,10 +34,20 @@ namespace MR
     {
       namespace Tool
       {
-        Overlay::Overlay (Window& parent, const QString& name) :
-          Base (parent, name) { 
-            setWidget (new QLabel ("Overlay", this));
+        Overlay::Overlay (Dock* parent) :
+          Base (parent) { 
+            QVBoxLayout* main_box = new QVBoxLayout (this);
           }
+
+        void Overlay::showEvent (QShowEvent* event) 
+        {
+          //connect (&window, SIGNAL (imageChanged()), this, SLOT (onImageChanged()));
+        }
+
+        void Overlay::closeEvent (QCloseEvent* event) 
+        {
+          //window.disconnect (this);
+        }
 
         void Overlay::slot ()
         {

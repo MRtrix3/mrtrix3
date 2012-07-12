@@ -34,6 +34,7 @@
 #include "math/quaternion.h"
 #include "gui/opengl/lighting.h"
 #include "gui/dwi/renderer.h"
+#include "gui/projection.h"
 
 #define MAX_LOD 8
 
@@ -118,8 +119,9 @@ namespace MR
           bool  show_axes, hide_neg_lobes, color_by_dir, use_lighting, normalise;
 
           QPoint last_pos;
-          GLdouble modelview[16], projection[16];
+          GLdouble modelview[16], projection_matrix[16];
           GLint viewport[4];
+          Projection projection;
           Math::Quaternion<float> orientation;
           Point<> focus;
 

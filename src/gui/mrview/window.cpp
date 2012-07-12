@@ -126,7 +126,7 @@ namespace MR
         RotateModifier (Qt::ShiftModifier),
         orient (NAN, NAN, NAN, NAN),
         field_of_view (100.0),
-        proj (2)
+        anatomical_plane (2)
       {
         setWindowTitle (tr ("MRView"));
         setWindowIcon (QPixmap (":/mrtrix.png"));
@@ -314,26 +314,26 @@ namespace MR
 
         menu->addSeparator();
 
-        projection_group = new QActionGroup (this);
-        projection_group->setExclusive (true);
-        connect (projection_group, SIGNAL (triggered (QAction*)), this, SLOT (select_projection_slot (QAction*)));
+        plane_group = new QActionGroup (this);
+        plane_group->setExclusive (true);
+        connect (plane_group, SIGNAL (triggered (QAction*)), this, SLOT (select_plane_slot (QAction*)));
 
         axial_action = menu->addAction (tr ("Axial"));
         axial_action->setShortcut (tr ("A"));
         axial_action->setCheckable (true);
-        projection_group->addAction (axial_action);
+        plane_group->addAction (axial_action);
         addAction (axial_action);
 
         sagittal_action = menu->addAction (tr ("Sagittal"));
         sagittal_action->setShortcut (tr ("S"));
         sagittal_action->setCheckable (true);
-        projection_group->addAction (sagittal_action);
+        plane_group->addAction (sagittal_action);
         addAction (sagittal_action);
 
         coronal_action = menu->addAction (tr ("Coronal"));
         coronal_action->setShortcut (tr ("C"));
         coronal_action->setCheckable (true);
-        projection_group->addAction (coronal_action);
+        plane_group->addAction (coronal_action);
         addAction (coronal_action);
 
         menu->addSeparator();
@@ -685,11 +685,11 @@ namespace MR
           showNormal();
       }
 
-      void Window::select_projection_slot (QAction* action)
+      void Window::select_plane_slot (QAction* action)
       {
-        if (action == axial_action) set_projection (2);
-        else if (action == sagittal_action) set_projection (0);
-        else if (action == coronal_action) set_projection (1);
+        if (action == axial_action) set_plane (2);
+        else if (action == sagittal_action) set_plane (0);
+        else if (action == coronal_action) set_plane (1);
         else assert (0);
         glarea->updateGL();
       }

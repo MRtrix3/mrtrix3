@@ -73,8 +73,8 @@ namespace MR
           float FOV () const {
             return field_of_view; 
           }
-          int projection () const {
-            return proj; 
+          int plane () const {
+            return anatomical_plane; 
           }
           const Math::Quaternion<float>& orientation () const {
             return orient; 
@@ -92,8 +92,8 @@ namespace MR
           void set_FOV (float value) {
             field_of_view = value; emit fieldOfViewChanged(); 
           }
-          void set_projection (int p) {
-            proj = p; emit projectionChanged(); 
+          void set_plane (int p) {
+            anatomical_plane = p; emit planeChanged(); 
           }
           void set_orientation (const Math::Quaternion<float>& Q) {
             orient = Q; emit orientationChanged(); 
@@ -141,7 +141,7 @@ namespace MR
           void focusChanged ();
           void targetChanged ();
           void sliceChanged ();
-          void projectionChanged ();
+          void planeChanged ();
           void orientationChanged ();
           void fieldOfViewChanged ();
           void modeChanged ();
@@ -157,7 +157,7 @@ namespace MR
           void select_mode_slot (QAction* action);
           void select_mouse_mode_slot (QAction* action);
           void select_tool_slot (QAction* action);
-          void select_projection_slot (QAction* action);
+          void select_plane_slot (QAction* action);
           void mode_control_slot ();
           void select_colourmap_slot ();
           void invert_colourmap_slot ();
@@ -225,7 +225,7 @@ namespace MR
           Point<> focal_point, camera_target;
           Math::Quaternion<float> orient;
           float field_of_view;
-          int proj, annotations;
+          int anatomical_plane, annotations;
 
           QMenu *image_menu, *colourmap_menu;
           QAction *save_action, *close_action, *properties_action;
@@ -238,7 +238,7 @@ namespace MR
           QAction *show_comments_action, *show_voxel_info_action, *show_orientation_labels_action, *show_crosshairs_action;
           QAction *image_interpolate_action, *full_screen_action;
           QAction *OpenGL_action, *about_action, *aboutQt_action;
-          QActionGroup *mode_group, *tool_group, *image_group, *colourmap_group, *mode_action_group, *projection_group;
+          QActionGroup *mode_group, *tool_group, *image_group, *colourmap_group, *mode_action_group, *plane_group;
 
           void paintGL ();
           void initGL ();

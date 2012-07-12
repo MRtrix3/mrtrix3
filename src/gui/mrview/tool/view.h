@@ -56,8 +56,8 @@ namespace MR
             void onImageChanged ();
             void onFocusChanged ();
             void onSetFocus ();
-            void onProjectionChanged ();
-            void onSetProjection (int index);
+            void onPlaneChanged ();
+            void onSetPlane (int index);
             void onSetScaling ();
             void onScalingChanged ();
 
@@ -65,7 +65,7 @@ namespace MR
             AdjustButton *focus_x, *focus_y, *focus_z; 
             AdjustButton *max_entry, *min_entry;
             // AdjustButton *lessthan, *greaterthan;
-            QComboBox *projection_combobox;
+            QComboBox *plane_combobox;
 
             void set_scaling_rate ();
             void set_focus_rate ();

@@ -37,6 +37,8 @@ namespace MR
 
       void init ();
 
+      const char* ErrorString (GLenum errorcode);
+
     }
   }
 }
@@ -47,7 +49,7 @@ namespace MR
 
 #define DEBUG_OPENGL { GLenum error_code = glGetError(); \
     if (error_code != GL_NO_ERROR) \
-      error (std::string ("OpenGL Error: ") + (const char*) gluErrorString (error_code) + " ["__FILE__":" + MR::str(__LINE__) + "]");\
+      error (std::string ("OpenGL Error: ") + (const char*) MR::GUI::GL::ErrorString (error_code) + " ["__FILE__":" + MR::str(__LINE__) + "]");\
   }
 
 #endif

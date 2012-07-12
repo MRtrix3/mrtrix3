@@ -38,10 +38,10 @@ namespace MR
 
         Ortho::Ortho (Window& parent) : 
           Base (parent),
-          current_projection (-1) { 
-            transforms.push_back (transform);
-            transforms.push_back (transform);
-            transforms.push_back (transform);
+          current_plane (-1) { 
+            projections.push_back (projection);
+            projections.push_back (projection);
+            projections.push_back (projection);
           }
 
         Ortho::~Ortho () { }
@@ -61,13 +61,13 @@ namespace MR
           float fovy = h * fov;
 
           glViewport (w, h, w, h);
-          draw_projection (0, fovx, fovy);
+          draw_plane (0, fovx, fovy);
 
           glViewport (0, h, w, h);
-          draw_projection (1, fovx, fovy);
+          draw_plane (1, fovx, fovy);
 
           glViewport (0, 0, w, h);
-          draw_projection (2, fovx, fovy);
+          draw_plane (2, fovx, fovy);
 
           glViewport (0, 0, glarea()->width(), glarea()->height());
           glMatrixMode (GL_PROJECTION);
@@ -94,25 +94,25 @@ namespace MR
 
 
 
-        void Ortho::draw_projection (int proj, float fovx, float fovy)
+        void Ortho::draw_plane (int axis, float fovx, float fovy)
         {
           // set up modelview matrix:
           const float* Q = image()->interp.image2scanner_matrix();
           float M[16];
 
-          adjust_projection_matrix (M, Q, proj);
+          adjust_projection_matrix (M, Q, axis);
 
           // image slice:
           Point<> voxel (image()->interp.scanner2voxel (focus()));
-          int slice = Math::round (voxel[proj]);
+          int slice = Math::round (voxel[axis]);
 
           // camera target:
           Point<> F = image()->interp.scanner2voxel (target());
-          F[proj] = slice;
+          F[axis] = slice;
           F = image()->interp.voxel2scanner (F);
 
           // info for projection:
-          float depth = image()->interp.dim (proj) * image()->interp.vox (proj);
+          float depth = image()->interp.dim (axis) * image()->interp.vox (axis);
 
           // set up projection & modelview matrices:
           glMatrixMode (GL_PROJECTION);
@@ -124,7 +124,7 @@ namespace MR
           glMultMatrixf (M);
           glTranslatef (-F[0], -F[1], -F[2]);
 
-          transforms[proj].update();
+          projections[axis].update();
 
           // set up OpenGL environment:
           glDisable (GL_BLEND);
@@ -136,33 +136,33 @@ namespace MR
           glColorMask (GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
 
           // render image:
-          image()->render2D (proj, slice);
+          image()->render2D (axis, slice);
 
           glDisable (GL_TEXTURE_2D);
 
           if (window.show_crosshairs()) 
-            transforms[proj].render_crosshairs (focus());
+            projections[axis].render_crosshairs (focus());
 
           if (window.show_orientation_labels()) {
             glColor4f (1.0, 0.0, 0.0, 1.0);
-            switch (proj) {
+            switch (axis) {
               case 0:
-                transforms[proj].render_text ("A", LeftEdge);
-                transforms[proj].render_text ("S", TopEdge);
-                transforms[proj].render_text ("P", RightEdge);
-                transforms[proj].render_text ("I", BottomEdge);
+                projections[axis].render_text ("A", LeftEdge);
+                projections[axis].render_text ("S", TopEdge);
+                projections[axis].render_text ("P", RightEdge);
+                projections[axis].render_text ("I", BottomEdge);
                 break;
               case 1:
-                transforms[proj].render_text ("R", LeftEdge);
-                transforms[proj].render_text ("S", TopEdge);
-                transforms[proj].render_text ("L", RightEdge);
-                transforms[proj].render_text ("I", BottomEdge);
+                projections[axis].render_text ("R", LeftEdge);
+                projections[axis].render_text ("S", TopEdge);
+                projections[axis].render_text ("L", RightEdge);
+                projections[axis].render_text ("I", BottomEdge);
                 break;
               case 2:
-                transforms[proj].render_text ("R", LeftEdge);
-                transforms[proj].render_text ("A", TopEdge);
-                transforms[proj].render_text ("L", RightEdge);
-                transforms[proj].render_text ("P", BottomEdge);
+                projections[axis].render_text ("R", LeftEdge);
+                projections[axis].render_text ("A", TopEdge);
+                projections[axis].render_text ("L", RightEdge);
+                projections[axis].render_text ("P", BottomEdge);
                 break;
               default:
                 assert (0);
@@ -186,14 +186,14 @@ namespace MR
         {
           if (window.mouse_position().x() < glarea()->width()/2) 
             if (window.mouse_position().y() >= glarea()->height()/2) 
-              current_projection = 1;
+              current_plane = 1;
             else 
-              current_projection = 2;
+              current_plane = 2;
           else 
             if (window.mouse_position().y() >= glarea()->height()/2)
-              current_projection = 0;
+              current_plane = 0;
             else 
-              current_projection = -1;
+              current_plane = -1;
         }
 
 
@@ -201,17 +201,17 @@ namespace MR
 
         void Ortho::slice_move_event (int x) 
         { 
-          if (current_projection < 0) return;
-          set_focus (focus() + move_in_out_displacement (x * image()->header().vox (current_projection),transforms[current_projection]));
+          if (current_plane < 0) return;
+          set_focus (focus() + move_in_out_displacement (x * image()->header().vox (current_plane),projections[current_plane]));
           updateGL();
         } 
 
 
         void Ortho::set_focus_event ()
         {
-          if (current_projection < 0) 
+          if (current_plane < 0) 
             return;
-          Base::set_focus (transforms[current_projection].screen_to_model (window.mouse_position(), focus()));
+          Base::set_focus (projections[current_plane].screen_to_model (window.mouse_position(), focus()));
           updateGL();
         }
 
@@ -230,16 +230,16 @@ namespace MR
 
         void Ortho::pan_event () 
         {
-          if (current_projection < 0) return;
-          set_target (target() - transforms[current_projection].screen_to_model_direction (window.mouse_displacement()));
+          if (current_plane < 0) return;
+          set_target (target() - projections[current_plane].screen_to_model_direction (window.mouse_displacement(), target()));
           updateGL();
         }
 
 
         void Ortho::panthrough_event () 
         { 
-          if (current_projection < 0) return;
-          set_focus (focus() + move_in_out_displacement (window.mouse_displacement().y(), transforms[current_projection]));
+          if (current_plane < 0) return;
+          set_focus (focus() + move_in_out_displacement (window.mouse_displacement().y(), projections[current_plane]));
           updateGL();
         }
 
