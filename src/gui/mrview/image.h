@@ -182,6 +182,18 @@ namespace MR
             return cret;
           }
 
+          float scaling_rate () const {
+            return 1e-3 * (value_max - value_min);
+          }
+          
+          float focus_rate () const {
+            return 1e-3 * (Math::pow ( 
+                  interp.dim(0)*interp.vox(0) *
+                  interp.dim(1)*interp.vox(1) *
+                  interp.dim(2)*interp.vox(2),
+                  float (1.0/3.0)));
+          }
+
           typedef MR::Image::Buffer<cfloat> BufferType;
           typedef BufferType::voxel_type VoxelType;
           typedef MR::Image::Interp::Linear<VoxelType> InterpVoxelType;

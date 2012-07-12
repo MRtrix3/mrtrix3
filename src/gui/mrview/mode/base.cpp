@@ -20,9 +20,12 @@
 
 */
 
+#include <QDockWidget>
+
 #include "file/config.h"
 #include "gui/opengl/gl.h"
 #include "gui/mrview/mode/base.h"
+#include "gui/mrview/tool/base.h"
 
 namespace MR
 {
@@ -113,6 +116,21 @@ done_painting:
         void Base::panthrough_event () { }
         void Base::tilt_event () { }
         void Base::rotate_event () { }
+
+        Tool::Dock* Base::get_extra_controls () { 
+          return NULL;
+        }
+
+
+
+        void Base::register_extra_controls (Tool::Dock* controls) 
+        {
+          window.addDockWidget (Qt::RightDockWidgetArea, controls);
+          controls->show();
+          connect (controls, SIGNAL (visibilityChanged (bool)), window.extra_controls_action, SLOT (setChecked (bool)));
+        }
+
+
 
         void Base::adjust_projection_matrix (float* M, const float* Q, int proj) const
         {

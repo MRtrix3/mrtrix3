@@ -27,20 +27,12 @@
 
 #include "gui/mrview/tool/base.h"
 
-class QLineEdit;
 class QComboBox;
-class QSlider;
-class QGroupBox;
 
 namespace MR
 {
   namespace GUI
   {
-    namespace Dialog
-    {
-      class Lighting;
-    }
-
 
     namespace MRView
     {
@@ -54,7 +46,7 @@ namespace MR
         {
           Q_OBJECT
           public:
-            View (Dock* parent);
+            View (Window& main_window, Dock* parent);
 
           protected:
             virtual void showEvent (QShowEvent* event);
@@ -68,19 +60,12 @@ namespace MR
             void onSetProjection (int index);
             void onSetScaling ();
             void onScalingChanged ();
-            void onSetThreshold ();
-            void onSetTransparency ();
-            void onUseLighting (bool on);
-            void onAdvandedLighting ();
 
           private:
+            AdjustButton *focus_x, *focus_y, *focus_z; 
             AdjustButton *max_entry, *min_entry;
-            AdjustButton *focus_x, *focus_y, *focus_z, *lessthan, *greaterthan;
-            AdjustButton *transparent_intensity, *opaque_intensity;
+            // AdjustButton *lessthan, *greaterthan;
             QComboBox *projection_combobox;
-            QGroupBox *threshold_box, *transparency_box, *lighting_box;
-            QSlider *opacity;
-            Dialog::Lighting* lighting_dialog;
 
             void set_scaling_rate ();
             void set_focus_rate ();

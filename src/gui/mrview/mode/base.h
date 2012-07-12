@@ -42,6 +42,10 @@ namespace MR
     namespace MRView
     {
 
+      namespace Tool {
+        class Dock;
+      }
+
       namespace Mode
       {
 
@@ -72,6 +76,7 @@ namespace MR
             virtual void panthrough_event ();
             virtual void tilt_event ();
             virtual void rotate_event ();
+            virtual Tool::Dock* get_extra_controls ();
 
             void paintGL ();
 
@@ -159,6 +164,7 @@ namespace MR
 
 
           protected:
+            void register_extra_controls (Tool::Dock* controls);
             void adjust_projection_matrix (float* M, const float* Q, int proj) const;
             void adjust_projection_matrix (float* M, const float* Q) const { 
               adjust_projection_matrix (M, Q, projection()); 

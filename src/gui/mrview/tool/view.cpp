@@ -27,7 +27,6 @@
 #include "gui/mrview/window.h"
 #include "gui/mrview/mode/base.h"
 #include "gui/mrview/tool/view.h"
-#include "gui/dialog/lighting.h"
 #include "gui/mrview/adjust_button.h"
 
 namespace MR
@@ -40,120 +39,81 @@ namespace MR
       {
 
 
-        View::View (Dock* parent) : 
-          Base (parent),
-          lighting_dialog (NULL) {
-            QVBoxLayout* main_box = new QVBoxLayout (this);
+        View::View (Window& main_window, Dock* parent) : 
+          Base (main_window, parent)
+        {
+          QVBoxLayout* main_box = new QVBoxLayout (this);
 
-            projection_combobox = new QComboBox;
-            projection_combobox->insertItem (0, "Sagittal");
-            projection_combobox->insertItem (1, "Coronal");
-            projection_combobox->insertItem (2, "Axial");
-            main_box->addWidget (projection_combobox);
-            connect (projection_combobox, SIGNAL (activated(int)), this, SLOT (onSetProjection(int)));
+          projection_combobox = new QComboBox;
+          projection_combobox->insertItem (0, "Sagittal");
+          projection_combobox->insertItem (1, "Coronal");
+          projection_combobox->insertItem (2, "Axial");
+          main_box->addWidget (projection_combobox);
+          connect (projection_combobox, SIGNAL (activated(int)), this, SLOT (onSetProjection(int)));
 
-            QGroupBox* group_box = new QGroupBox ("Focus");
-            QGridLayout* layout = new QGridLayout;
-            main_box->addWidget (group_box);
-            group_box->setLayout (layout);
+          QGroupBox* group_box = new QGroupBox ("Focus");
+          QGridLayout* layout = new QGridLayout;
+          layout->setContentsMargins (5, 5, 5, 5);
+          layout->setSpacing (5);
+          main_box->addWidget (group_box);
+          group_box->setLayout (layout);
 
-            layout->addWidget (new QLabel ("x"), 0, 0);
-            focus_x = new AdjustButton (this);
-            connect (focus_x, SIGNAL (valueChanged()), this, SLOT (onSetFocus()));
-            layout->addWidget (focus_x, 0, 1);
+          layout->addWidget (new QLabel ("x"), 0, 0);
+          focus_x = new AdjustButton (this);
+          connect (focus_x, SIGNAL (valueChanged()), this, SLOT (onSetFocus()));
+          layout->addWidget (focus_x, 0, 1);
 
-            layout->addWidget (new QLabel ("y"), 1, 0);
-            focus_y = new AdjustButton (this);
-            connect (focus_y, SIGNAL (valueChanged()), this, SLOT (onSetFocus()));
-            layout->addWidget (focus_y, 1, 1);
+          layout->addWidget (new QLabel ("y"), 1, 0);
+          focus_y = new AdjustButton (this);
+          connect (focus_y, SIGNAL (valueChanged()), this, SLOT (onSetFocus()));
+          layout->addWidget (focus_y, 1, 1);
 
-            layout->addWidget (new QLabel ("z"), 2, 0);
-            focus_z = new AdjustButton (this);
-            connect (focus_z, SIGNAL (valueChanged()), this, SLOT (onSetFocus()));
-            layout->addWidget (focus_z, 2, 1);
-
-
-
-            group_box = new QGroupBox ("Scaling");
-            layout = new QGridLayout;
-            main_box->addWidget (group_box);
-            group_box->setLayout (layout);
-
-            layout->addWidget (new QLabel ("min"), 0, 0);
-            min_entry = new AdjustButton (this);
-            connect (min_entry, SIGNAL (valueChanged()), this, SLOT (onSetScaling()));
-            layout->addWidget (min_entry, 0, 1);
-
-            layout->addWidget (new QLabel ("max"), 1, 0);
-            max_entry = new AdjustButton (this);
-            connect (max_entry, SIGNAL (valueChanged()), this, SLOT (onSetScaling()));
-            layout->addWidget (max_entry, 1, 1);
-
-
-            threshold_box = new QGroupBox ("Thresholds");
-            threshold_box->setCheckable (true);
-            threshold_box->setChecked (false);
-            connect (threshold_box, SIGNAL (toggled(bool)), this, SLOT (onSetThreshold()));
-            layout = new QGridLayout;
-            main_box->addWidget (threshold_box);
-            threshold_box->setLayout (layout);
-
-            layout->addWidget (new QLabel (">"), 0, 0);
-            lessthan = new AdjustButton (this);
-            lessthan->setValue (window.image() ? window.image()->intensity_min() : 0.0);
-            connect (lessthan, SIGNAL (valueChanged()), this, SLOT (onSetThreshold()));
-            layout->addWidget (lessthan, 0, 1);
-
-            layout->addWidget (new QLabel ("<"), 1, 0);
-            greaterthan = new AdjustButton (this);
-            greaterthan->setValue (window.image() ? window.image()->intensity_max() : 1.0);
-            connect (greaterthan, SIGNAL (valueChanged()), this, SLOT (onSetThreshold()));
-            layout->addWidget (greaterthan, 1, 1);
+          layout->addWidget (new QLabel ("z"), 2, 0);
+          focus_z = new AdjustButton (this);
+          connect (focus_z, SIGNAL (valueChanged()), this, SLOT (onSetFocus()));
+          layout->addWidget (focus_z, 2, 1);
 
 
 
-            transparency_box = new QGroupBox ("Transparency");
-            transparency_box->setCheckable (true);
-            transparency_box->setChecked (false);
-            connect (transparency_box, SIGNAL (toggled(bool)), this, SLOT (onSetTransparency()));
-            layout = new QGridLayout;
-            main_box->addWidget (transparency_box);
-            transparency_box->setLayout (layout);
+          group_box = new QGroupBox ("Scaling");
+          layout = new QGridLayout;
+          main_box->addWidget (group_box);
+          group_box->setLayout (layout);
 
-            layout->addWidget (new QLabel ("transparent"), 0, 0);
-            transparent_intensity = new AdjustButton (this);
-            transparent_intensity->setValue (window.image() ? window.image()->intensity_min() : 0.0);
-            connect (transparent_intensity, SIGNAL (valueChanged()), this, SLOT (onSetTransparency()));
-            layout->addWidget (transparent_intensity, 0, 1);
+          layout->addWidget (new QLabel ("min"), 0, 0);
+          min_entry = new AdjustButton (this);
+          connect (min_entry, SIGNAL (valueChanged()), this, SLOT (onSetScaling()));
+          layout->addWidget (min_entry, 0, 1);
 
-            layout->addWidget (new QLabel ("opaque"), 1, 0);
-            opaque_intensity = new AdjustButton (this);
-            opaque_intensity->setValue (window.image() ? window.image()->intensity_max()/2.0 : 1.0);
-            connect (opaque_intensity, SIGNAL (valueChanged()), this, SLOT (onSetTransparency()));
-            layout->addWidget (opaque_intensity, 1, 1);
+          layout->addWidget (new QLabel ("max"), 1, 0);
+          max_entry = new AdjustButton (this);
+          connect (max_entry, SIGNAL (valueChanged()), this, SLOT (onSetScaling()));
+          layout->addWidget (max_entry, 1, 1);
 
-            layout->addWidget (new QLabel ("alpha"), 2, 0);
-            opacity = new QSlider (Qt::Horizontal);
-            opacity->setRange (0, 255);
-            opacity->setValue (255);
-            connect (opacity, SIGNAL (valueChanged(int)), this, SLOT (onSetTransparency()));
-            layout->addWidget (opacity, 2, 1);
+          /*
+             threshold_box = new QGroupBox ("Thresholds");
+             threshold_box->setCheckable (true);
+             threshold_box->setChecked (false);
+             connect (threshold_box, SIGNAL (toggled(bool)), this, SLOT (onSetThreshold()));
+             layout = new QGridLayout;
+             main_box->addWidget (threshold_box);
+             threshold_box->setLayout (layout);
 
+             layout->addWidget (new QLabel (">"), 0, 0);
+             lessthan = new AdjustButton (this);
+             lessthan->setValue (window.image() ? window.image()->intensity_min() : 0.0);
+             connect (lessthan, SIGNAL (valueChanged()), this, SLOT (onSetThreshold()));
+             layout->addWidget (lessthan, 0, 1);
 
-            lighting_box = new QGroupBox ("Lighting");
-            lighting_box->setCheckable (true);
-            lighting_box->setChecked (false);
-            connect (lighting_box, SIGNAL (toggled(bool)), this, SLOT (onUseLighting(bool)));
-            QVBoxLayout* vlayout = new QVBoxLayout;
-            main_box->addWidget (lighting_box);
-            lighting_box->setLayout (vlayout);
+             layout->addWidget (new QLabel ("<"), 1, 0);
+             greaterthan = new AdjustButton (this);
+             greaterthan->setValue (window.image() ? window.image()->intensity_max() : 1.0);
+             connect (greaterthan, SIGNAL (valueChanged()), this, SLOT (onSetThreshold()));
+             layout->addWidget (greaterthan, 1, 1);
+           */
 
-            QPushButton* button = new QPushButton ("Settings...");
-            connect (button, SIGNAL (clicked()), this, SLOT (onAdvandedLighting()));
-            vlayout->addWidget (button);
-
-            main_box->addStretch ();
-            setMinimumSize (main_box->minimumSize());
+          main_box->addStretch ();
+          setMinimumSize (main_box->minimumSize());
         }
 
         void View::showEvent (QShowEvent* event) 
@@ -212,23 +172,15 @@ namespace MR
         void View::set_scaling_rate () 
         {
           if (!window.image()) return;
-          float rate = 1e-3 * (window.image()->intensity_max() - window.image()->intensity_min());
+          float rate = window.image()->scaling_rate();
           min_entry->setRate (rate);
           max_entry->setRate (rate);
-          lessthan->setRate (rate);
-          greaterthan->setRate (rate);
-          transparent_intensity->setRate (rate);
-          opaque_intensity->setRate (rate);
         }
 
         void View::set_focus_rate () 
         {
           if (!window.image()) return;
-          float rate = 1e-3 * (Math::pow ( 
-                window.image()->interp.dim(0)*window.image()->interp.vox(0) *
-                window.image()->interp.dim(0)*window.image()->interp.vox(0) *
-                window.image()->interp.dim(0)*window.image()->interp.vox(0),
-                float (1.0/3.0)));
+          float rate = window.image()->focus_rate();
           focus_x->setRate (rate);
           focus_y->setRate (rate);
           focus_z->setRate (rate);
@@ -252,47 +204,6 @@ namespace MR
             max_entry->setValue (window.image()->scaling_max());
             set_scaling_rate();
           }
-        }
-
-
-        void View::onSetThreshold ()
-        {
-          if (threshold_box->isChecked()) {
-            if (window.image()) 
-              window.image()->set_thresholds (lessthan->value(), greaterthan->value());
-          }
-          else 
-            window.image()->set_thresholds (NAN, NAN);
-          window.updateGL();
-        }
-
-
-        void View::onSetTransparency ()
-        {
-          if (transparency_box->isChecked()) {
-            if (window.image()) 
-              window.image()->set_transparency (transparent_intensity->value(), opaque_intensity->value(), float (opacity->value()) / 255.0);
-          }
-          else 
-            window.image()->set_transparency ();
-          window.updateGL();
-        }
-
-
-
-        void View::onUseLighting (bool on)
-        {
-          if (window.image())
-            window.image()->set_use_lighting (on);
-          window.updateGL();
-        }
-
-
-        void View::onAdvandedLighting ()
-        {
-          if (!lighting_dialog)
-            lighting_dialog = new Dialog::Lighting (this, "Advanced Lighting", window.lighting());
-          lighting_dialog->show();
         }
 
       }

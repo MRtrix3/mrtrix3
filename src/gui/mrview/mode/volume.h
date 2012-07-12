@@ -42,6 +42,10 @@ namespace MR
             virtual ~Volume ();
 
             virtual void paint ();
+            virtual Tool::Dock* get_extra_controls ();
+
+          protected:
+            Tool::Dock* extra_controls;
         };
 
       }

@@ -41,7 +41,8 @@ namespace MR
         class Dock : public QDockWidget
         {
           public:
-            Dock (Window& parent, const QString& name) : QDockWidget (name, &parent) { }
+            Dock (QWidget* parent, const QString& name) : 
+              QDockWidget (name, parent) { }
 
           protected:
             virtual void showEvent (QShowEvent * event);
@@ -51,9 +52,9 @@ namespace MR
 
         class Base : public QFrame {
           public:
-            Base (Dock* parent) : 
+            Base (Window& main_window, Dock* parent) : 
               QFrame (parent),
-              window (*dynamic_cast<Window*> (parent->parentWidget())) { 
+              window (main_window) { 
               setFrameShadow (QFrame::Plain); 
               setFrameShape (QFrame::NoFrame);
             }
@@ -80,11 +81,23 @@ namespace MR
               setStatusTip (tr (description));
             }
 
-            virtual Dock* create (Window& parent) = 0;
+            virtual Dock* create (Window& main_window) = 0;
             Dock* instance;
         };
         //! \endcond
 
+
+        template <class T> Dock* create (const QString& text, Window& main_window) 
+        {
+          Dock* instance = new Dock (&main_window, text);
+          QScrollArea* scroll = new QScrollArea (instance);
+          scroll->setWidget (new T (main_window, instance));
+          scroll->setWidgetResizable (true);
+          scroll->setHorizontalScrollBarPolicy (Qt::ScrollBarAlwaysOff);
+          scroll->setMinimumWidth (scroll->widget()->minimumWidth());
+          instance->setWidget (scroll);
+          return instance;
+        }
 
 
         template <class T> class Action : public __Action__
@@ -97,21 +110,17 @@ namespace MR
               __Action__ (parent, name, description, index) { }
 
             virtual Dock* create (Window& parent) {
-              instance = new Dock (parent, this->text());
-              QScrollArea* scroll = new QScrollArea (instance);
-              scroll->setWidget (new T (instance));
-              scroll->setWidgetResizable (true);
-              scroll->setHorizontalScrollBarPolicy (Qt::ScrollBarAlwaysOff);
-              scroll->setMinimumWidth (scroll->widget()->minimumWidth());
-              instance->setWidget (scroll);
+              instance = Tool::create<T> (this->text(), parent);
               return instance;
             }
         };
 
 
-      }
+
+
     }
   }
+}
 }
 
 #endif

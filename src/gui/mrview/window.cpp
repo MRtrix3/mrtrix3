@@ -232,11 +232,11 @@ namespace MR
         image_menu->addSeparator();
 
         next_image_action = image_menu->addAction (tr ("Next image"), this, SLOT (image_next_slot()));
-        next_image_action->setShortcut (tr ("Tab"));
+        next_image_action->setShortcut (tr ("PgDown"));
         addAction (next_image_action);
 
         prev_image_action = image_menu->addAction (tr ("Previous image"), this, SLOT (image_previous_slot()));
-        prev_image_action->setShortcut (tr ("Shift+Tab"));
+        prev_image_action->setShortcut (tr ("PgUp"));
         addAction (prev_image_action);
 
         image_list_area = image_menu->addSeparator();
@@ -468,6 +468,8 @@ namespace MR
             tr ("Additional controls"), this, SLOT (mode_control_slot()));
         extra_controls_action->setShortcut (tr("0"));
         extra_controls_action->setToolTip (tr ("Adjust additional viewing parameters"));
+        extra_controls_action->setCheckable (true);
+        extra_controls_action->setChecked (false);
         extra_controls_action->setEnabled (false);
         addAction (extra_controls_action);
 
@@ -695,7 +697,12 @@ namespace MR
 
       void Window::mode_control_slot ()
       {
-        TEST;
+        assert (mode->mouse_actions & Mode::ExtraControls);
+        Tool::Dock* extra_controls = mode->get_extra_controls();
+        if (extra_controls_action->isChecked())
+          extra_controls->show();
+        else 
+          extra_controls->close();
       }
 
       void Window::reset_view_slot ()
@@ -892,6 +899,8 @@ namespace MR
         mode_action_group->actions()[1]->setEnabled (mode->mouse_actions & Mode::MoveTarget);
         mode_action_group->actions()[2]->setEnabled (mode->mouse_actions & Mode::TiltRotate);
         extra_controls_action->setEnabled (mode->mouse_actions & Mode::ExtraControls);
+        if (! (mode->mouse_actions & Mode::ExtraControls) ) 
+          extra_controls_action->setChecked (false);
         if (!mode_action_group->checkedAction()->isEnabled())
           mode_action_group->actions()[0]->setChecked (true);
       }
