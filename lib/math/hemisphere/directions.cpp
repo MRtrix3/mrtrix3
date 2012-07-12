@@ -48,6 +48,18 @@ Directions::Directions (const std::string& path) :
 }
 
 
+Directions::Directions (const size_t d) :
+    num_directions (0),
+    adj_dirs (NULL),
+    dir_mask_bytes (0),
+    dir_mask_excess_bits (0),
+    dir_mask_excess_bits_mask (0)
+{
+  load_predefined (d);
+  initialise();
+}
+
+
 Directions::Directions (const Directions& that) :
     num_directions (that.num_directions),
     az_el_pairs (that.az_el_pairs),
@@ -194,74 +206,13 @@ void Directions::initialise()
 Directions_FastLookup::Directions_FastLookup (const std::string& path) :
     Directions (path)
 {
+  initialise();
+}
 
-  double adj_dot_product_sum = 0.0;
-  size_t adj_dot_product_count = 0;
-  for (size_t i = 0; i != num_directions; ++i) {
-    for (std::vector<size_t>::const_iterator j = adj_dirs[i].begin(); j != adj_dirs[i].end(); ++j) {
-      if (*j > i) {
-        adj_dot_product_sum += Math::abs (unit_vectors[i].dot (unit_vectors[*j]));
-        ++adj_dot_product_count;
-      }
-    }
-  }
-
-  const float min_dp = adj_dot_product_sum / double(adj_dot_product_count);
-  const float max_angle_step = acos (min_dp);
-
-  num_az_grids = ceil (2.0 * M_PI / max_angle_step) + 1;
-  num_el_grids = ceil (      M_PI / max_angle_step) + 1;
-  total_num_angle_grids = num_az_grids * num_el_grids;
-
-  az_grid_step = 2.0 * M_PI / float(num_az_grids - 1);
-  el_grid_step =       M_PI / float(num_el_grids - 1);
-
-  az_begin = -M_PI;
-  el_begin = 0.0;
-
-  grid_near_dirs = new size_t*[total_num_angle_grids];
-
-  unsigned int index = 0;
-
-  for (unsigned int azimuth_grid = 0; azimuth_grid != num_az_grids; ++azimuth_grid) {
-    const float azimuth = az_begin + (az_grid_step * (azimuth_grid - 0.5));
-
-    for (unsigned int elevation_grid = 0; elevation_grid != num_el_grids; ++elevation_grid, ++index) {
-      const float elevation = el_begin + (el_grid_step * (elevation_grid - 0.5));
-
-      std::vector<size_t> this_grid_dirs_list;
-
-      for (int azimuth_fine_grid = -2; azimuth_fine_grid != FINE_GRID_OVERSAMPLE_RATIO + 3; ++azimuth_fine_grid) {
-        const float azimuth_fine = azimuth + (azimuth_fine_grid * az_grid_step / float(FINE_GRID_OVERSAMPLE_RATIO));
-
-        for (int elevation_fine_grid = -2; elevation_fine_grid != FINE_GRID_OVERSAMPLE_RATIO + 3; ++elevation_fine_grid) {
-          const float elevation_fine = elevation + (elevation_fine_grid * el_grid_step / float(FINE_GRID_OVERSAMPLE_RATIO));
-
-          const Point<float> unit_vector (sin(elevation_fine) * cos(azimuth_fine), sin(elevation_fine) * sin(azimuth_fine), cos(elevation_fine));
-          const size_t nearest_dir = select_direction_slow (unit_vector);
-          bool value_present = false;
-          for (std::vector<size_t>::const_iterator i = this_grid_dirs_list.begin(); i != this_grid_dirs_list.end(); ++i) {
-            if (*i == nearest_dir) {
-              value_present = true;
-              break;
-            }
-          }
-          if (!value_present)
-            this_grid_dirs_list.push_back (nearest_dir);
-        }
-      }
-
-      sort (this_grid_dirs_list.begin(), this_grid_dirs_list.end());
-
-      size_t* this_array = new size_t[this_grid_dirs_list.size() + 1];
-      this_array[0] = this_grid_dirs_list.size() + 1;
-      for (unsigned int i = 0; i != this_grid_dirs_list.size(); ++i)
-        this_array[i+1] = this_grid_dirs_list[i];
-      grid_near_dirs[index] = this_array;
-
-    }
-  }
-
+Directions_FastLookup::Directions_FastLookup (const size_t d) :
+    Directions (d)
+{
+  initialise();
 }
 
 
@@ -338,6 +289,79 @@ size_t Directions_FastLookup::select_direction_slow (const Point<float>& p) cons
     }
   }
   return dir;
+
+}
+
+
+void Directions_FastLookup::initialise()
+{
+
+  double adj_dot_product_sum = 0.0;
+  size_t adj_dot_product_count = 0;
+  for (size_t i = 0; i != num_directions; ++i) {
+    for (std::vector<size_t>::const_iterator j = adj_dirs[i].begin(); j != adj_dirs[i].end(); ++j) {
+      if (*j > i) {
+        adj_dot_product_sum += Math::abs (unit_vectors[i].dot (unit_vectors[*j]));
+        ++adj_dot_product_count;
+      }
+    }
+  }
+
+  const float min_dp = adj_dot_product_sum / double(adj_dot_product_count);
+  const float max_angle_step = acos (min_dp);
+
+  num_az_grids = ceil (2.0 * M_PI / max_angle_step) + 1;
+  num_el_grids = ceil (      M_PI / max_angle_step) + 1;
+  total_num_angle_grids = num_az_grids * num_el_grids;
+
+  az_grid_step = 2.0 * M_PI / float(num_az_grids - 1);
+  el_grid_step =       M_PI / float(num_el_grids - 1);
+
+  az_begin = -M_PI;
+  el_begin = 0.0;
+
+  grid_near_dirs = new size_t*[total_num_angle_grids];
+
+  unsigned int index = 0;
+
+  for (unsigned int azimuth_grid = 0; azimuth_grid != num_az_grids; ++azimuth_grid) {
+    const float azimuth = az_begin + (az_grid_step * (azimuth_grid - 0.5));
+
+    for (unsigned int elevation_grid = 0; elevation_grid != num_el_grids; ++elevation_grid, ++index) {
+      const float elevation = el_begin + (el_grid_step * (elevation_grid - 0.5));
+
+      std::vector<size_t> this_grid_dirs_list;
+
+      for (int azimuth_fine_grid = -2; azimuth_fine_grid != FINE_GRID_OVERSAMPLE_RATIO + 3; ++azimuth_fine_grid) {
+        const float azimuth_fine = azimuth + (azimuth_fine_grid * az_grid_step / float(FINE_GRID_OVERSAMPLE_RATIO));
+
+        for (int elevation_fine_grid = -2; elevation_fine_grid != FINE_GRID_OVERSAMPLE_RATIO + 3; ++elevation_fine_grid) {
+          const float elevation_fine = elevation + (elevation_fine_grid * el_grid_step / float(FINE_GRID_OVERSAMPLE_RATIO));
+
+          const Point<float> unit_vector (sin(elevation_fine) * cos(azimuth_fine), sin(elevation_fine) * sin(azimuth_fine), cos(elevation_fine));
+          const size_t nearest_dir = select_direction_slow (unit_vector);
+          bool value_present = false;
+          for (std::vector<size_t>::const_iterator i = this_grid_dirs_list.begin(); i != this_grid_dirs_list.end(); ++i) {
+            if (*i == nearest_dir) {
+              value_present = true;
+              break;
+            }
+          }
+          if (!value_present)
+            this_grid_dirs_list.push_back (nearest_dir);
+        }
+      }
+
+      sort (this_grid_dirs_list.begin(), this_grid_dirs_list.end());
+
+      size_t* this_array = new size_t[this_grid_dirs_list.size() + 1];
+      this_array[0] = this_grid_dirs_list.size() + 1;
+      for (unsigned int i = 0; i != this_grid_dirs_list.size(); ++i)
+        this_array[i+1] = this_grid_dirs_list[i];
+      grid_near_dirs[index] = this_array;
+
+    }
+  }
 
 }
 

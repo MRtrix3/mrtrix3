@@ -51,6 +51,7 @@ class Directions {
   public:
 
     Directions (const std::string&);
+    Directions (const size_t); // Can pass a number as a string at the command-line for loading a pre-defined direction set
     Directions (const Directions&);
     ~Directions ();
 
@@ -101,6 +102,7 @@ class Directions_FastLookup : public Directions {
   public:
 
     Directions_FastLookup (const std::string&);
+    Directions_FastLookup (const size_t);
     Directions_FastLookup (const Directions_FastLookup&);
     ~Directions_FastLookup ();
 
@@ -117,6 +119,8 @@ class Directions_FastLookup : public Directions {
 
     Directions_FastLookup ();
     size_t select_direction_slow (const Point<float>&) const;
+
+    void initialise();
 
 };
 
