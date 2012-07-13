@@ -35,11 +35,11 @@ namespace MR
     /** \defgroup loop Looping functions
       @{ */
 
-    //! a class to loop over arbitrary numbers of axes of a DataSet
+    //! a class to loop over arbitrary numbers of axes of a VoxelType  
     /*! This class can be used to loop over any number of axes of one of more
-     * DataSets. Its use is best illustrated with the following examples.
+     * VoxelType classes. Its use is best illustrated with the following examples.
      *
-     * If \a vox in the following example is a 3D DataSet (i.e. vox.ndim() ==
+     * If \a vox in the following example is a 3D VoxelType (i.e. vox.ndim() ==
      * 3), then:
      * \code
      * float sum = 0.0;
@@ -55,18 +55,20 @@ namespace MR
      *     for (vox[0] = 0; vox[0] < vox.dim(0); ++vox[0])
      *       sum += vox.value();
      * \endcode
-     * This has the advantage that the dimensionality of the DataSet does not
-     * need to be known at compile-time. In other words, if the DataSet was
+     * This has the advantage that the dimensionality of the VoxelType does not
+     * need to be known at compile-time. In other words, if the VoxelType was
      * 4-dimensional, the first looping construct would correctly iterate over
      * all voxels, whereas the second one would only process the first 3D
      * volume.
      *
-     * \section multiloop Looping over multiple DataSets
-     * It is often required to loop over more than one DataSet of the same
-     * dimensions. This is done trivially by passing any additional DataSets to
-     * be looped over to both the start() and next() member functions. For
-     * example, this code snippet will copy the contents of the DataSet \a src
-     * into a DataSet \a dest, assumed to have the same dimensions as \a src:
+     * \section multiloop Looping over multiple VoxelType objects
+     *
+     * It is often required to loop over more than one VoxelType of the same
+     * dimensions. This is done trivially by passing any additional VoxelType
+     * objects to be looped over to both the start() and next() member
+     * functions. For example, this code snippet will copy the contents of the
+     * VoxelType \a src into a VoxelType \a dest, assumed to have the same
+     * dimensions as \a src:
      * \code
      * Loop loop;
      * for (loop.start (dest, src); loop.ok(); loop.next (dest, src))
@@ -76,7 +78,7 @@ namespace MR
      * \section restrictedloop Looping over a specific range of axes
      * It is also possible to explicitly specify the range of axes to be looped
      * over. In the following example, the program will loop over each 3D
-     * volume in the DataSet in turn:
+     * volume in the VoxelType in turn:
      * \code
      * Loop outer (3); // outer loop iterates over axes 3 and above
      * for (outer.start (vox); outer.ok(); outer.next (vox)) {
@@ -89,9 +91,10 @@ namespace MR
      * \endcode
      *
      * \section progressloop Displaying progress status
+     *
      * The Loop object can also display its progress as it proceeds, using the
      * appropriate constructor. In the following example, the program will
-     * display its progress as it averages a DataSet:
+     * display its progress as it averages a VoxelType:
      * \code
      * float sum = 0.0;
      *
@@ -99,7 +102,7 @@ namespace MR
      * for (loop.start (vox); loop.ok(); loop.next (vox))
      *   sum += vox.value();
      *
-     * float average = sum / float (DataSet::voxel_count (vox));
+     * float average = sum / float (Image::voxel_count (vox));
      * print ("average = " + str (average) + "\n");
      * \endcode
      * The output would look something like this:
@@ -115,7 +118,7 @@ namespace MR
       public:
         //! Constructor
         /*! Construct a Loop object to iterate over the axes specified. By
-         * default, the Loop will iterate over all axes of the first DataSet
+         * default, the Loop will iterate over all axes of the first VoxelType
          * supplied to next(). If \a from_axis and \a to_axis are specified,
          * the Loop will iterate from axis \a from_axis up to but \b not
          * including axis \a to_axis. */
@@ -125,7 +128,7 @@ namespace MR
         //! Constructor with progress status
         /*! Construct a Loop object to iterate over the axes specified and
          * display the progress status with the specified message. By default,
-         * the Loop will iterate over all axes of the first DataSet supplied to
+         * the Loop will iterate over all axes of the first VoxelType supplied to
          * next(). If \a from_axis and \a to_axis are specified, the Loop will
          * iterate from axis \a from_axis up to but \b not including axis \a
          * to_axis. */
@@ -133,9 +136,9 @@ namespace MR
           from_ (from_axis), to_ (to_axis), cont_ (true), progress_ (message, 1) { }
 
 
-        //! Start the loop to iterate over a single DataSet
+        //! Start the loop to iterate over a single VoxelType
         /*! Start the loop by resetting the appropriate coordinates of each of
-         * the specified DataSets to zero, and initialising the progress status
+         * the specified VoxelType objects to zero, and initialising the progress status
          * if appropriate. Note that only those axes specified in the Loop
          * constructor will have their coordinates set to zero; the coordinates
          * of all other axes will be left untouched. */
@@ -147,7 +150,7 @@ namespace MR
           if (progress_)
             progress_.set_max (voxel_count (set, from_, to_));
         }
-        //! Start the loop to iterate over two DataSets
+        //! Start the loop to iterate over two VoxelType objects
         /*! \copydetails Loop::start(Set&) */
         template <class Set, class Set2>
         inline void start (Set& set, Set2& set2) {
@@ -160,7 +163,7 @@ namespace MR
             progress_.set_max (voxel_count (set, from_, to_));
         }
 
-        //! Start the loop to iterate over three DataSets
+        //! Start the loop to iterate over three VoxelType objects
         /*! \copydetails Loop::start(Set&) */
         template <class Set, class Set2, class Set3>
         inline void start (Set& set, Set2& set2, Set3& set3) {
@@ -180,8 +183,8 @@ namespace MR
           return (cont_);
         }
 
-        //! Proceed to next iteration for a single DataSet
-        /*! Advance coordinates of all specified DataSets to the next position
+        //! Proceed to next iteration for a single VoxelType
+        /*! Advance coordinates of all specified VoxelType objects to the next position
          * to be processed, and update the progress status if appropriate. */
         template <class Set>
         void next (Set& set) {
@@ -189,7 +192,7 @@ namespace MR
           ++progress_;
         }
 
-        //! Proceed to next iteration for two DataSets
+        //! Proceed to next iteration for two VoxelType objects
         /*! \copydetails Loop::next(Set&) */
         template <class Set, class Set2>
         void next (Set& set, Set2& set2) {
@@ -197,7 +200,7 @@ namespace MR
           ++progress_;
         }
 
-        //! Proceed to next iteration for three DataSets
+        //! Proceed to next iteration for three VoxelType objects
         /*! \copydetails Loop::next(Set&) */
         template <class Set, class Set2, class Set3>
         void next (Set& set, Set2& set2, Set3& set3) {
@@ -321,9 +324,9 @@ namespace MR
 
 
 
-    //! a class to loop over arbitrary numbers and orders of axes of a DataSet
+    //! a class to loop over arbitrary numbers and orders of axes of a VoxelType
     /*! This class can be used to loop over any number of axes of one of more
-     * DataSets, in any specified order. Its use is essentially identical to
+     * VoxelType, in any specified order. Its use is essentially identical to
      * that of the Loop class, with the difference that axes can now be
      * iterated over in any arbitrary order. This is best illustrated with the
      * following examples.
@@ -337,10 +340,10 @@ namespace MR
      * for bursts of contiguous sections of memory), and CPU cache usage.
      *
      * The LoopInOrder class is designed to facilitate this. In the following
-     * example, the DataSet of interest is passed as an argument to the
+     * example, the VoxelType of interest is passed as an argument to the
      * constructor, so that its strides can be used to compute the nesting
      * order for the loops over the corresponding axes. Here, we assume that
-     * \a vox is a 3D DataSet (i.e. vox.ndim() == 3) with strides [ 2 -1 3 ]:
+     * \a vox is a 3D VoxelType (i.e. vox.ndim() == 3) with strides [ 2 -1 3 ]:
      * \code
      * float sum = 0.0;
      * LoopInOrder loop (vox);
@@ -359,7 +362,7 @@ namespace MR
      * \section restrictedorderloop Looping over a specific range of axes
      * It is also possible to explicitly specify the range of axes to be looped
      * over. In the following example, the program will loop over each 3D
-     * volume in the DataSet in turn using the Loop class, and use the
+     * volume in the VoxelType in turn using the Loop class, and use the
      * LoopInOrder class to iterate over the axes of each volume to ensure
      * efficient memory bandwidth use when each volume is being processed.
      * \code
@@ -388,26 +391,28 @@ namespace MR
      *   value = Math::exp (value - vox.value());
      * \endcode
      * This will iterate over the axes in the same order as the first example
-     * above, irrespective of the strides of the DataSet.
+     * above, irrespective of the strides of the VoxelType.
      *
-     * \section multiorderloop Looping over multiple DataSets:
+     * \section multiorderloop Looping over multiple VoxelType objects:
+     *
      * As with the Loop class, it is possible to loop over more than one
-     * DataSet of the same dimensions, by passing any additional DataSets to
-     * be looped over to both the start() and next() member functions. For
-     * example, this code snippet will copy the contents of the DataSet \a src
-     * into a DataSet \a dest (assumed to have the same dimensions as \a src),
-     * with the looping order optimised for the \a dest DataSet:
+     * VoxelType of the same dimensions, by passing any additional VoxelType
+     * objects to be looped over to both the start() and next() member
+     * functions. For example, this code snippet will copy the contents of
+     * the VoxelType \a src into a VoxelType \a dest (assumed to have the
+     * same dimensions as \a src), with the looping order optimised for
+     * the \a src VoxelType:
      * \code
-     * LoopInOrder loop (dest);
-     * for (loop.start (dest, src); loop.ok(); loop.next (dest, src))
-     *   dest.value() = vox.value();
+     * LoopInOrder loop (src);
+     * for (loop.start (src, dest); loop.ok(); loop.next (src, dest))
+     *   dest.value() = src.value();
      * \endcode
      *
      * \section progressloopinroder Displaying progress status
      * As in the Loop class, the LoopInOrder object can also display its
      * progress as it proceeds, using the appropriate constructor. In the
      * following example, the program will display its progress as it averages
-     * a DataSet:
+     * a VoxelType:
      * \code
      * float sum = 0.0;
      *
@@ -415,7 +420,7 @@ namespace MR
      * for (loop.start (vox); loop.ok(); loop.next (vox))
      *   sum += vox.value();
      *
-     * float average = sum / float (DataSet::voxel_count (vox));
+     * float average = sum / float (Image::voxel_count (vox));
      * print ("average = " + str (average) + "\n");
      * \endcode
      * The output would look something like this:
@@ -440,7 +445,7 @@ namespace MR
         LoopInOrder (const std::vector<size_t>& axes, const std::string& message) :
           axes_ (axes), cont_ (true), progress_ (message, 1) { }
 
-        //! Construct from DataSet strides
+        //! Construct from VoxelType strides
         /*! Construct a LoopInOrder object to iterate over the axes of \a set
          * in order of smallest stride first. If supplied, the optional
          * arguments \a from_axis and \a to_axis can be used to restrict those
@@ -450,7 +455,7 @@ namespace MR
         LoopInOrder (const Set& set, size_t from_axis = 0, size_t to_axis = std::numeric_limits<size_t>::max()) :
           axes_ (Stride::order (set, from_axis, to_axis)), cont_ (true) { }
 
-        //! Constructor from DataSet strides with progress status
+        //! Constructor from VoxelType strides with progress status
         /*! Construct a LoopInOrder object to iterate over the axes specified
          * in order of smallest stride first, and display the progress status
          * with the specified message. If supplied, the optional arguments \a
@@ -461,9 +466,9 @@ namespace MR
         LoopInOrder (const Set& set, const std::string& message, size_t from_axis = 0, size_t to_axis = std::numeric_limits<size_t>::max()) :
           axes_ (Stride::order (set, from_axis, to_axis)), cont_ (true), progress_ (message, 1) { }
 
-        //! Start the loop to iterate over a single DataSet
+        //! Start the loop to iterate over a single VoxelType
         /*! Start the loop by resetting the appropriate coordinates of each of
-         * the specified DataSets to zero, and initialising the progress status
+         * the specified VoxelType objects to zero, and initialising the progress status
          * if appropriate. Note that only those axes specified in the
          * LoopInOrder constructor will have their coordinates set to zero; the
          * coordinates of all other axes will be left untouched. */
@@ -475,7 +480,7 @@ namespace MR
           if (progress_)
             progress_.set_max (voxel_count (set, axes_));
         }
-        //! Start the loop to iterate over two DataSets
+        //! Start the loop to iterate over two VoxelType objects
         /*! \copydetails LoopInOrder::start(Set&) */
         template <class Set, class Set2>
         inline void start (Set& set, Set2& set2) {
@@ -488,7 +493,7 @@ namespace MR
             progress_.set_max (voxel_count (set, axes_));
         }
 
-        //! Start the loop to iterate over three DataSets
+        //! Start the loop to iterate over three VoxelType objects
         /*! \copydetails LoopInOrder::start(Set&) */
         template <class Set, class Set2, class Set3>
         inline void start (Set& set, Set2& set2, Set3& set3) {
@@ -508,8 +513,8 @@ namespace MR
           return cont_;
         }
 
-        //! Proceed to next iteration for a single DataSet
-        /*! Advance coordinates of all specified DataSets to the next position
+        //! Proceed to next iteration for a single VoxelType
+        /*! Advance coordinates of all specified VoxelType objects to the next position
          * to be processed, and update the progress status if appropriate. */
         template <class Set>
         void next (Set& set) {
@@ -517,7 +522,7 @@ namespace MR
           ++progress_;
         }
 
-        //! Proceed to next iteration for two DataSets
+        //! Proceed to next iteration for two VoxelType objects
         /*! \copydetails LoopInOrder::next(Set&) */
         template <class Set, class Set2>
         void next (Set& set, Set2& set2) {
@@ -525,7 +530,7 @@ namespace MR
           ++progress_;
         }
 
-        //! Proceed to next iteration for three DataSets
+        //! Proceed to next iteration for three VoxelType objects
         /*! \copydetails LoopInOrder::next(Set&) */
         template <class Set, class Set2, class Set3>
         void next (Set& set, Set2& set2, Set3& set3) {
