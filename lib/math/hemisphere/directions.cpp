@@ -162,7 +162,7 @@ void Directions::initialise()
     const float azimuth   = az_el_pairs(i, 0);
     const float elevation = az_el_pairs(i, 1);
     const float sin_elevation = Math::sin (elevation);
-    unit_vectors.push_back (Point<float> (Math::sin (azimuth) * sin_elevation, Math::cos (azimuth) * sin_elevation, Math::cos (elevation)));
+    unit_vectors.push_back (Point<float> (Math::cos (azimuth) * sin_elevation, Math::sin (azimuth) * sin_elevation, Math::cos (elevation)));
   }
 
   adj_dirs = new std::vector<size_t>[num_directions];
