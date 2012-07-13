@@ -82,6 +82,12 @@ class FOD_lobe {
       peak_value = value;
     }
 
+    void normalise_integral()
+    {
+      // 2pi == solid angle of hemisphere in steradians
+      integral *= 2.0 * M_PI / float(mask.size());
+    }
+
     void merge (const FOD_lobe& that)
     {
       assert (neg == that.neg);
