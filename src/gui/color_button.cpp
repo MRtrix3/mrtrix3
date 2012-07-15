@@ -77,7 +77,7 @@ void QColorButton::paintEvent (QPaintEvent *p)
     painter.fillRect (x+1, y+1, w-2, h-2, fillCol);
 
   if (hasFocus()) {
-    QRect focusRect = style()->subElementRect (QStyle::SE_PushButtonFocusRect, &option, this);
+    style()->subElementRect (QStyle::SE_PushButtonFocusRect, &option, this);
     style()->drawPrimitive (QStyle::PE_FrameFocusRect, &option, &painter, this);
   }
 }

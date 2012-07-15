@@ -108,11 +108,11 @@ namespace MR
             emit scalingChanged();
           }
 
-          void set_scaling_all (float min, float max) 
+          void set_scaling_all (float min, float max)
           {
             QList<QAction*> list = image_group->actions();
             for (int n = 0; n < list.size(); ++n) 
-              static_cast<const Image*> (list[n])->set_windowing (min, max);
+              static_cast<Image*> (list[n])->set_windowing (min, max);
           }
 
           bool show_crosshairs () const { 
