@@ -89,23 +89,21 @@ namespace MR
           "if (gl_TexCoord[0].s < 0.0 || gl_TexCoord[0].s > 1.0 ||"
           "    gl_TexCoord[0].t < 0.0 || gl_TexCoord[0].t > 1.0 ||"
           "    gl_TexCoord[0].p < 0.0 || gl_TexCoord[0].p > 1.0) discard; "
-          " vec4 color; ";
-
+          " vec4 color = texture3D (tex,gl_TexCoord[0].stp); "
+          "gl_FragColor.a = " + amplitude (flags_) + "; "
+          "if (isnan(gl_FragColor.a) || isinf(gl_FragColor.a)) discard; ";
 
         if (flags_ & Lighting) 
           source += 
-            "vec3 normal; "
+            "ambient = color; vec3 normal; "
             "color = texture3D (tex, gl_TexCoord[0].stp+vec3(2.0e-2,0.0,0.0)); normal.x = " + amplitude (flags_) + "; "
             "color = texture3D (tex, gl_TexCoord[0].stp+vec3(-2.0e-2,0.0,0.0)); normal.x -= " + amplitude (flags_) + "; "
             "color = texture3D (tex, gl_TexCoord[0].stp+vec3(0.0,2.0e-2,0.0)); normal.y = " + amplitude (flags_) + "; "
             "color = texture3D (tex, gl_TexCoord[0].stp+vec3(0.0,-2.0e-2,0.0)); normal.y -= " + amplitude (flags_) + "; "
             "color = texture3D (tex, gl_TexCoord[0].stp+vec3(0.0,0.0,2.0e-2)); normal.z = " + amplitude (flags_) + "; "
             "color = texture3D (tex, gl_TexCoord[0].stp+vec3(0.0,0.0,-2.0e-2)); normal.z -= " + amplitude (flags_) + "; "
-            "normal = normalize (gl_NormalMatrix * normal); ";
-
-        source +=
-          "color = texture3D (tex,gl_TexCoord[0].stp); "
-          "gl_FragColor.a = " + amplitude (flags_) + "; ";
+            "normal = normalize (gl_NormalMatrix * normal); "
+            "color = ambient; ";
 
         if (flags_ & DiscardLower)
           source += "if (gl_FragColor.a < lower) discard;";
