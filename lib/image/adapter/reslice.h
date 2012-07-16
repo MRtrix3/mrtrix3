@@ -42,13 +42,13 @@ namespace MR
       //! \addtogroup interp
       // @{
 
-      //! a DataSet providing interpolated values from another DataSet
-      /*! the Reslice class provides a DataSet interface to data interpolated
-       * using the specified Interpolator class from the DataSet \a original. The
-       * Reslice object will have the same dimensions, voxel sizes and
-       * transform as the \a reference DataSet. Any of the interpolator classes
-       * (currently Interp::Nearest, Interp::Linear, and Interp::Cubic) can be
-       * used.
+      //! a Image::Voxel providing interpolated values from another Image::Voxel
+      /*! the Reslice class provides a Image::Voxel interface to data
+       * interpolated using the specified Interpolator class from the
+       * Image::Voxel \a original. The Reslice object will have the same
+       * dimensions, voxel sizes and transform as the \a reference Image::Info.
+       * Any of the interpolator classes (currently Interp::Nearest,
+       * Interp::Linear, and Interp::Cubic) can be used.
        *
        * For example:
        * \code
@@ -58,14 +58,13 @@ namespace MR
        *
        * // create a Reslice object to regrid 'data' according to the
        * // dimensions, etc. of 'reference', using cubic interpolation:
-       * DataSet::Interp::Reslice<
-       *       DataSet::Interp::Cubic,
-       *       Image::Voxel<float>,
-       *       Image::Header>   regridder (data, reference);
+       * Image::Adapter::Reslice<
+       *       Image::Interp::Cubic,
+       *       Image::Voxel<float> >   regridder (data, reference);
        *
-       * // this class can be used like any other DataSet class, e.g.:
+       * // this class can be used like any other Image::Voxel class, e.g.:
        * Image::Voxel<float> output (...);
-       * DataSet::copy (output, regridder);
+       * Image::copy (output, regridder);
        * \endcode
        *
        * It is also possible to supply an additional transform to be applied to
@@ -83,7 +82,7 @@ namespace MR
        * over-sampling factor for each of the 3 imaging axes. Specifying the
        * vector [ 1 1 1 ] will therefore disable over-sampling.
        *
-       * \sa DataSet::Interp::reslice()
+       * \sa Image::Interp::reslice()
        */
       template <template <class VoxelType> class Interpolator, class VoxelType>
         class Reslice : public ConstInfo

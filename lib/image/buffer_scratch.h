@@ -43,21 +43,24 @@ namespace MR
           BufferScratch (const Template& info) :
             ConstInfo (info),
             data_ (new value_type [Image::voxel_count (*this)]) {
-              memset (data_, 0, Image::voxel_count (*this) * sizeof(ValueType));
-              datatype_ = DataType::from<value_type>();
+              zero();
             }
 
         template <class Template>
           BufferScratch (const Template& info, const std::string& label) :
             ConstInfo (info),
             data_ (new value_type [Image::voxel_count (*this)]) {
-              memset (data_, 0, Image::voxel_count (*this) * sizeof(ValueType));
+              zero();
               datatype_ = DataType::from<value_type>();
               name_ = label;
             }
 
         typedef ValueType value_type;
         typedef Image::Voxel<BufferScratch> voxel_type;
+
+        void zero () {
+          memset (data_, 0, Image::voxel_count (*this) * sizeof(ValueType));
+        }
 
         value_type get_value (size_t index) const {
           return data_[index];

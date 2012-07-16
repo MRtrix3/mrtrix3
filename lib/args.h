@@ -81,27 +81,22 @@ namespace MR
 
     //! A class to specify a command-line argument
     /*! Command-line arguments that are accepted by a particular command are
-     * specified as an array of Arguments objects, terminated with an empty
-     * Argument (constructed using default parameters). Please refer to \ref
+     * specified as a vector of Arguments objects. Please refer to \ref
      * command_line_parsing for more information.
      *
-     * The list of arguments is provided using the ARGUMENTS macro, like this:
+     * The list of arguments is provided by adding to the ARGUMENTS vector, like this:
      * \code
-     * ARGUMENTS = {
+     * ARGUMENTS 
+     *   + Argument ("input", "the input image")
+     *     .type_image_in()
      *
-     *   Argument ("input", "the input image")
-     *     .type_image_in(),
-     *
-     *   Argument ("parameter",
+     *   + Argument ("parameter",
      *        "the parameter to use during processing. Allowed values are "
      *        "between 0 and 10 (default = 1).")
-     *     .type_float (0.0, 1.0, 10.0),
+     *     .type_float (0.0, 1.0, 10.0)
      *
-     *   Argument ("output", "the output image")
-     *     .type_image_out(),
-     *
-     *   Argument () // don't forget to terminate with the default Argument
-     * };
+     *   + Argument ("output", "the output image")
+     *     .type_image_out();
      * \endcode
      * The example above specifies that the application expects exactly 3
      * arguments, with the first one being an existing image to be used as input,
@@ -157,15 +152,11 @@ namespace MR
         //! specifies that the argument is optional
         /*! For example:
          * \code
-         * ARGUMENTS = {
-         *
-         *   Argument ("input", "the input image")
+         * ARGUMENTS
+         *   + Argument ("input", "the input image")
          *     .type_image_in()
          *     .optional()
-         *     .allow_multiple(),
-         *
-         *   Argument ()
-         * };
+         *     .allow_multiple();
          * \endcode
          * \note Only one argument can be specified as optional and/or multiple.
          */
@@ -233,13 +224,9 @@ namespace MR
          * \code
          * const char* mode_list [] = { "standard", "pedantic", "approx", NULL };
          *
-         * ARGUMENTS = {
-         *
-         *   Argument ("mode", "the mode of operation")
-         *     .type_choice (mode_list, 0),
-         *
-         *   Argument ()
-         * };
+         * ARGUMENTS
+         *   + Argument ("mode", "the mode of operation")
+         *     .type_choice (mode_list, 0);
          * \endcode
          * \note Each string in the list must be supplied in \b lowercase. */
         Argument& type_choice (const char** choices, int default_index = -1) {
@@ -299,23 +286,22 @@ namespace MR
      *
      * The list of options is provided using the OPTIONS macro, like this:
      * \code
-     * OPTIONS = {
+     * OPTIONS
+     *   + Option ("exact", 
+     *        "do not use approximations when processing")
      *
-     *   Option ("exact", "do not use approximations when processing"),
-     *
-     *   Option ("mask",
+     *   + Option ("mask",
      *        "only perform processing within the voxels contained in "
      *        "the binary image specified")
-     *     + Argument ("image").type_image_in(),
+     *     + Argument ("image").type_image_in()
      *
-     *   Option ("regularisation", "set the regularisation term")
-     *     + Argument ("value").type_float (0.0, 1.0, 100.0),
+     *   + Option ("regularisation", 
+     *        "set the regularisation term")
+     *     + Argument ("value").type_float (0.0, 1.0, 100.0)
      *
-     *   Option ("dump", "dump all intermediate values to file")
-     *     + Argument ("file").type_file(),
-     *
-     *   Option () // don't forget to terminate with the default Option
-     * };
+     *   Option ("dump", 
+     *        "dump all intermediate values to file")
+     *     + Argument ("file").type_file();
      * \endcode
      * The example above specifies that the application accepts four options, in
      * addition to the standard ones (see \ref command_line_parsing for details).
@@ -355,19 +341,14 @@ namespace MR
         /*! An option specified as required must be supplied on the command line.
          * For example:
          * \code
-         * OPTIONS = {
-         *
-         *   Option ("roi",
+         * OPTIONS
+         *   + Option ("roi",
          *       "the region of interest over which to perform the processing. "
          *       "Mulitple such regions can be specified")
          *     .required()
          *     .allow_multiple()
-         *     + Argument ("image").type_image_in(),
-         *
-         *   Argument ()
-         * };
+         *     + Argument ("image").type_image_in();
          * \endcode
-         * \note Only one argument can be specified as optional and/or multiple.
          */
         Option& required () {
           flags &= ~Optional;

@@ -34,8 +34,8 @@ namespace MR
  in the \c cmd/ folder, named identically to the desired application name
  (with the .cpp suffix). The file should contain the following sections:
 
- The relevant \#include directives, generally at least the \c lib/app.h
- file:
+ First, the relevant headers should be \#include'd, typically at least the \c
+ lib/app.h file:
  \code
  #include "app.h"
  \endcode

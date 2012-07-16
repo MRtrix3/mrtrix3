@@ -36,7 +36,7 @@ namespace MR
       template <class InputVoxelType, class OutputVoxelType>
         class __CopyKernel {
           public:
-            __CopyKernel (InputVoxelType& input, OutputVoxelType& output) :
+            __CopyKernel (InputVoxelType& input, OutputVoxelType output) :
               in (input),
               out (output) { }
 
@@ -51,21 +51,21 @@ namespace MR
             OutputVoxelType out;
         };
     }
-
+    
     //! \endcond
 
 
 
 
     template <class InputVoxelType, class OutputVoxelType>
-      void threaded_copy (InputVoxelType& source, OutputVoxelType& destination, const std::vector<size_t>& axes, size_t num_axes_in_thread = 1)
+      inline void threaded_copy (InputVoxelType& source, OutputVoxelType& destination, const std::vector<size_t>& axes, size_t num_axes_in_thread = 1) 
       {
         __CopyKernel<InputVoxelType, OutputVoxelType> copy_kernel (source, destination);
         ThreadedLoop (source, axes, num_axes_in_thread).run (copy_kernel);
       }
 
     template <class InputVoxelType, class OutputVoxelType>
-      void threaded_copy (InputVoxelType& source, OutputVoxelType& destination, size_t num_axes_in_thread = 1, size_t from_axis = 0, size_t to_axis = std::numeric_limits<size_t>::max())
+      inline void threaded_copy (InputVoxelType& source, OutputVoxelType& destination, size_t num_axes_in_thread = 1, size_t from_axis = 0, size_t to_axis = std::numeric_limits<size_t>::max())
       {
         __CopyKernel<InputVoxelType, OutputVoxelType> copy_kernel (source, destination);
         ThreadedLoop (source, num_axes_in_thread, from_axis, to_axis).run (copy_kernel);
@@ -75,10 +75,10 @@ namespace MR
 
 
     template <class InputVoxelType, class OutputVoxelType>
-      void threaded_copy_with_progress_message (
-          const std::string& message,
-          InputVoxelType& source,
-          OutputVoxelType& destination,
+      inline void threaded_copy_with_progress_message (
+          const std::string& message, 
+          InputVoxelType& source, 
+          OutputVoxelType& destination, 
           const std::vector<size_t>& axes,
           size_t num_axes_in_thread = 1)
       {
@@ -87,12 +87,12 @@ namespace MR
       }
 
     template <class InputVoxelType, class OutputVoxelType>
-      void threaded_copy_with_progress_message (
-          const std::string& message,
-          InputVoxelType& source,
-          OutputVoxelType& destination,
-          size_t num_axes_in_thread = 1,
-          size_t from_axis = 0,
+      inline void threaded_copy_with_progress_message (
+          const std::string& message, 
+          InputVoxelType& source, 
+          OutputVoxelType& destination, 
+          size_t num_axes_in_thread = 1, 
+          size_t from_axis = 0, 
           size_t to_axis = std::numeric_limits<size_t>::max())
       {
         __CopyKernel<InputVoxelType, OutputVoxelType> copy_kernel (source, destination);
@@ -101,14 +101,14 @@ namespace MR
 
 
     template <class InputVoxelType, class OutputVoxelType>
-      void threaded_copy_with_progress (InputVoxelType& source, OutputVoxelType& destination, const std::vector<size_t>& axes, size_t num_axes_in_thread = 1)
+      inline void threaded_copy_with_progress (InputVoxelType& source, OutputVoxelType& destination, const std::vector<size_t>& axes, size_t num_axes_in_thread = 1)
       {
         threaded_copy_with_progress_message ("copying from \"" + shorten (source.name()) + "\" to \"" + shorten (destination.name()) + "\"...",
             source, destination, axes, num_axes_in_thread);
       }
 
     template <class InputVoxelType, class OutputVoxelType>
-      void threaded_copy_with_progress (InputVoxelType& source, OutputVoxelType& destination, size_t num_axes_in_thread = 1, size_t from_axis = 0, size_t to_axis = std::numeric_limits<size_t>::max())
+      inline void threaded_copy_with_progress (InputVoxelType& source, OutputVoxelType& destination, size_t num_axes_in_thread = 1, size_t from_axis = 0, size_t to_axis = std::numeric_limits<size_t>::max())
       {
         threaded_copy_with_progress_message ("copying from \"" + shorten (source.name()) + "\" to \"" + shorten (destination.name()) + "\"...",
             source, destination, num_axes_in_thread, from_axis, to_axis);

@@ -92,6 +92,14 @@ namespace MR
             return Image::Value<Voxel> (*this);
           }
 
+          bool valid (size_t from_axis = 0, size_t to_axis = std::numeric_limits<size_t>::max()) const {
+            to_axis = std::min (to_axis, ndim());
+            for (size_t n = from_axis; n < to_axis; ++n)
+              if (get_pos(n) < 0 || get_pos(n) >= dim(n))
+                return false;
+            return true;
+          }
+
           friend std::ostream& operator<< (std::ostream& stream, const Voxel& V) {
             stream << "voxel for image \"" << V.name() << "\", datatype " << V.datatype().specifier() << ", position [ ";
             for (size_t n = 0; n < V.ndim(); ++n)

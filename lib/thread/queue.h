@@ -286,7 +286,7 @@ namespace MR
 
             //! This class is used to write items to the queue
             /*! Items cannot be written directly onto a Thread::Queue queue. An
-             * object of this class must be instanciated and used to write to the
+             * object of this class must be instantiated and used to write to the
              * queue.
              *
              * See Thread::Queue for more information and an example. */
@@ -635,26 +635,16 @@ namespace MR
                typename Queue<std::vector<Type1> >::Reader::Item in (reader);
                typename Queue<std::vector<Type2> >::Writer::Item out (writer);
                out->resize (N);
-               if (!in.read()) return;
                size_t n1 = 0, n2 = 0;
+               if (!in.read()) goto flush;
+               if ((*in).empty()) goto flush;
                do {
-                 if (!func ((*in)[n1], (*out)[n2])) {
-                   if (n2) {
-                     out->resize (n2);
-                     out.write();
-                   }
-                   return;
-                 }
+                 if (!func ((*in)[n1], (*out)[n2])) goto flush;
                  ++n1;
                  ++n2;
                  if (n1 >= in->size()) {
-                   if (!in.read()) {
-                     if (n2) {
-                       out->resize (n2);
-                       out.write();
-                     }
-                     return;
-                   }
+                   if (!in.read()) goto flush;
+                   if ((*in).empty()) goto flush;
                    n1 = 0;
                  }
                  if (n2 >= N) {
@@ -663,6 +653,12 @@ namespace MR
                    n2 = 0;
                  }
                } while (true);
+
+flush:
+               if (n2) {
+                 out->resize (n2);
+                 out.write();
+               }
              }
 
            private:
@@ -972,8 +968,8 @@ namespace MR
           const Type2& item_type2, 
           Sink& sink, size_t nthreads_sink)
       {
-        Queue<Type1> queue1;
-        Queue<Type2> queue2;
+        Queue<Type1> queue1 ("queue1");
+        Queue<Type2> queue2 ("queue2");
 
         __Source<Type1,Source> q_source (queue1, source);
         __Pipe<Type1,Pipe,Type2> q_pipe (queue1, pipe, queue2);
@@ -1033,7 +1029,7 @@ namespace MR
           Sink& sink, size_t nthreads_sink)
       {
 
-        Queue<std::vector<Type> > queue;
+        Queue<std::vector<Type> > queue ("queue");
         Batch::__Source<Type,Source> q_source (queue, source, batch_size);
         Batch::__Sink<Type,Sink> q_sink (queue, sink);
 
@@ -1099,8 +1095,8 @@ namespace MR
           const Type2& item_type2, size_t batch_size2,
           Sink& sink, size_t nthreads_sink)
       {
-        Queue<std::vector<Type1> > queue1;
-        Queue<std::vector<Type2> > queue2;
+        Queue<std::vector<Type1> > queue1 ("queue1");
+        Queue<std::vector<Type2> > queue2 ("queue2");
 
         Batch::__Source<Type1,Source> q_source (queue1, source, batch_size1);
         Batch::__Pipe<Type1,Pipe,Type2> q_pipe (queue1, pipe, queue2, batch_size2);
