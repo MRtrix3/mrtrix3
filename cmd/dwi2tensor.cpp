@@ -192,11 +192,11 @@ class Cost
       value_type noise = Math::exp (noise_multiplier * x[7]);
       value_type E = NAN;
 
-      if (fitting_method == 2) // nonlinear
+      if (fitting_method == 1) // nonlinear
         E = Math::Gaussian::lnP (*S, A, noise, dP, dE[7]);
-      else if (fitting_method == 3) // sech
+      else if (fitting_method == 2) // sech
         E = Math::Sech::lnP (*S, A, noise, dP, dE[7]);
-      else if (fitting_method == 4) // rician
+      else if (fitting_method == 3) // rician
         E = Math::Rician::lnP (*S, A, noise, dP, dE[7]);
 
       assert (finite (E));
@@ -388,6 +388,7 @@ class DataLoader
 
     void load_row (Queue::Writer::Item& item)
     {
+      item->dwi.allocate (dwi.dim(0), dwi.dim(3));
       item->in_mask.clear();
       for (dwi[0] = 0; dwi[0] < dwi.dim(0); ++dwi[0])
         load (item, dwi[0]);
@@ -445,7 +446,7 @@ class Processor
         dt.resize (item->dwi.columns(), 7);
         loglinear (dt, *item->binv, item->dwi);
 
-        if (method > 1) {
+        if (method > 0) {
           cost.set_bmatrix (item->B, item->binv);
           for (size_t i = 0; i < item->dwi.rows(); ++i) {
             const Math::Vector<value_type> signal (item->dwi.row(i));
