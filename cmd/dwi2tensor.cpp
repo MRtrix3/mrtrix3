@@ -28,6 +28,7 @@
 #include "thread/queue.h"
 #include "image/voxel.h"
 #include "image/buffer.h"
+#include "image/buffer_preload.h"
 #include "math/rician.h"
 #include "math/gaussian.h"
 #include "math/sech.h"
@@ -297,7 +298,7 @@ class DataLoader
 {
   public:
     DataLoader (Queue& queue,
-        Image::Buffer<value_type>& dwi_data,
+        Image::BufferPreload<value_type>& dwi_data,
         Ptr<Image::Buffer<value_type>::voxel_type>& mask,
         const Math::Matrix<value_type>& bmatrix,
         const std::vector<int>& volumes_to_be_ignored,
@@ -340,7 +341,7 @@ class DataLoader
 
   private:
     Queue::Writer writer;
-    Image::Buffer<value_type>::voxel_type  dwi;
+    Image::BufferPreload<value_type>::voxel_type  dwi;
     Ptr<Image::Buffer<value_type>::voxel_type > mask;
     const Math::Matrix<value_type>& bmat;
     RefPtr<Math::Matrix<value_type> > B, binv;
@@ -502,10 +503,11 @@ class Processor
 void run()
 {
 
-  Image::Header dwi_header (argument[0]);
-  Image::Buffer<value_type> dwi_data (dwi_header);
+  std::vector<ssize_t> strides (4, 0);
+  strides[3] = 1;
+  Image::BufferPreload<value_type> dwi_data (argument[0], strides);
 
-  Image::Header dt_header (dwi_header);
+  Image::Header dt_header (dwi_data);
 
   if (dt_header.ndim() < 4)
     throw Exception ("dwi image should contain at least 4 dimensions");
@@ -553,7 +555,6 @@ void run()
 
   int method = 1;
   opt = get_options ("method");
-  std::cout << opt[0][0] << std::endl;
   if (opt.size()) method = opt[0][0];
 
   opt = get_options ("regularisation");
@@ -566,8 +567,8 @@ void run()
   if (opt.size()){
     mask_data = new Image::Buffer<value_type> (opt[0][0]);
     mask_voxel = new Image::Buffer<value_type>::voxel_type (*mask_data);
+    Image::check_dimensions (*mask_voxel, dt_header, 0, 3);
   }
-  Image::check_dimensions (*mask_voxel, dt_header, 0, 3);
 
   dt_header.set_ndim (4);
   dt_header.dim (3) = 6;
