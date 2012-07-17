@@ -110,7 +110,7 @@ void run ()
         dirs(i / 2, 1) = dir_vector[i + 1];
       }
     } else {
-      Math::Matrix<float> grad = DWI::get_DW_scheme<float> (amp_data);
+      Math::Matrix<float> grad = DWI::get_valid_DW_scheme<float> (amp_data);
       DWI::guess_DW_directions (dwis, bzeros, grad);
       DWI::gen_direction_matrix (dirs, grad, dwis);
     }

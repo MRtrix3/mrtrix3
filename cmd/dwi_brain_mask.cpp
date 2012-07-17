@@ -59,7 +59,7 @@ void run () {
   Image::Buffer<float> input_data (argument[0]);
   Image::Buffer<float>::voxel_type input_voxel (input_data);
 
-  Math::Matrix<float> grad = DWI::get_DW_scheme<float> (input_data);
+  Math::Matrix<float> grad = DWI::get_valid_DW_scheme<float> (input_data);
 
   Image::Filter::DWIBrainMask dwi_brain_mask_filter (input_voxel);
 

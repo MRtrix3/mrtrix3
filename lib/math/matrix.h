@@ -550,7 +550,7 @@ namespace MR
         const View sub (size_t from_row, size_t to_row, size_t from_column, size_t to_column) const throw () {
           assert (from_row <= to_row && to_row <= rows());
           assert (from_column <= to_column && to_column <= columns());
-          return View (ptr() + from_row*tda + from_column,
+          return View (const_cast<ValueType*> (ptr() + from_row*tda + from_column),
                        to_row-from_row, to_column-from_column, tda);
         }
 

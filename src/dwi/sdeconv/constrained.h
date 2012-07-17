@@ -69,7 +69,7 @@ namespace MR
 
             void init (const Image::Header& dwi_header, const std::string& response_file) {
               using namespace App;
-              Math::Matrix<value_type> grad = DWI::get_DW_scheme<value_type> (dwi_header);
+              Math::Matrix<value_type> grad = DWI::get_valid_DW_scheme<value_type> (dwi_header);
 
               DWI::guess_DW_directions (dwis, bzeros, grad);
 
