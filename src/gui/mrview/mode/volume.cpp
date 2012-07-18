@@ -38,7 +38,8 @@ namespace MR
       {
 
         Volume::Volume (Window& parent) : 
-          Mode3D (parent, FocusContrast | MoveTarget | TiltRotate | ExtraControls),
+          Mode3D (parent, FocusContrast | MoveTarget | TiltRotate | 
+              ExtraControls | ShaderTransparency | ShaderLighting),
           extra_controls (NULL) { 
           }
 
@@ -148,6 +149,17 @@ namespace MR
           glEnable (GL_BLEND);
           glBlendFunc (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
+          image()->update_texture3D();
+
+          if (isnan (image()->shader.transparent_intensity) || 
+              isnan (image()->shader.opaque_intensity)) {
+            float range = image()->intensity_max() - image()->intensity_min();
+            image()->shader.transparent_intensity = image()->intensity_min() + 0.025 * range;
+            image()->shader.opaque_intensity = image()->intensity_min() + 0.475 * range;
+            image()->shader.alpha = 1.0;
+          }
+
+          image()->shader.set_use_transparency (true);
 
           // render image:
           image()->render3D_pre (projection, projection.depth_of (focus()));
@@ -171,7 +183,7 @@ namespace MR
         Tool::Dock* Volume::get_extra_controls () 
         {
           if (!extra_controls) {
-            extra_controls = Tool::create<__ExtraControls> ("Controls for volume mode", window);
+            extra_controls = Tool::create<VolumeExtraControls> ("Controls for volume mode", window);
             register_extra_controls (extra_controls);
           }
           return extra_controls;

@@ -252,7 +252,7 @@ namespace MR
           int get_mouse_mode ();
           void set_cursor ();
           void set_image_menu ();
-          void set_mode_actions ();
+          void set_mode_features ();
           void set_image_navigation_menu ();
 
           template <class Event> void grab_mouse_state (Event* event);

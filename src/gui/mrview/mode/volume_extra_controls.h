@@ -28,7 +28,9 @@
 #include "gui/mrview/mode/volume.h"
 #include "gui/mrview/tool/base.h"
 #include "gui/mrview/adjust_button.h"
-#include "gui/dialog/lighting.h"
+
+class QCheckBox;
+class QSlider;
 
 namespace MR
 {
@@ -39,34 +41,27 @@ namespace MR
       namespace Mode
       {
 
-          class __ExtraControls : public Tool::Base 
+          class VolumeExtraControls : public Tool::Base 
           {
             Q_OBJECT
 
             public:
-              __ExtraControls (Window& main_window, Tool::Dock* parent);
+              VolumeExtraControls (Window& main_window, Tool::Dock* parent);
+
             protected:
               virtual void showEvent (QShowEvent* event);
               virtual void closeEvent (QCloseEvent* event);
 
             private slots:
+              void onImageChanged ();
               void onScalingChanged ();
               void onSetTransparency ();
               void onUseLighting (bool on);
-              void onAdvandedLighting ();
+
             private:
               AdjustButton *transparent_intensity, *opaque_intensity;
-              QComboBox *projection_combobox;
-              QGroupBox *transparency_box, *lighting_box;
+              QCheckBox *lighting_box;
               QSlider *opacity;
-              Dialog::Lighting* lighting_dialog;
-
-              void set_scaling_rate () {
-                if (!window.image()) return;
-                float rate = window.image()->scaling_rate();
-                transparent_intensity->setRate (rate);
-                opaque_intensity->setRate (rate);
-              }
           };
 
       }

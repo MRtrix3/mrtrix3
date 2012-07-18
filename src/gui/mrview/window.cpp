@@ -397,7 +397,7 @@ namespace MR
         menu = new QMenu (tr ("Tools"), this);
 #undef TOOL
 #define TOOL(classname, name, description) \
-        menu->addAction (new Action<classname> (tool_group, #name, #description, n++));
+        menu->addAction (new Action<Tool::classname> (tool_group, #name, #description, n++));
 #define TOOL_OPTION(classname, name, description) TOOL(classname, name, description)
         {
           using namespace Tool;
@@ -593,7 +593,7 @@ namespace MR
       void Window::select_mode_slot (QAction* action)
       {
         mode = dynamic_cast<GUI::MRView::Mode::__Action__*> (action)->create (*this);
-        set_mode_actions();
+        set_mode_features();
         glarea->updateGL();
       }
 
@@ -641,14 +641,14 @@ namespace MR
       void Window::invert_colourmap_slot () 
       {
         if (image()) {
-          image()->set_invert_map (invert_colourmap_action->isChecked());
+          image()->shader.set_invert_map (invert_colourmap_action->isChecked());
           glarea->updateGL();
         }
       }
       void Window::invert_scaling_slot ()
       {
         if (image()) {
-          image()->set_invert_scale (invert_scale_action->isChecked());
+          image()->shader.set_invert_scale (invert_scale_action->isChecked());
           glarea->updateGL();
         }
       }
@@ -697,7 +697,7 @@ namespace MR
 
       void Window::mode_control_slot ()
       {
-        assert (mode->mouse_actions & Mode::ExtraControls);
+        assert (mode->features & Mode::ExtraControls);
         Tool::Dock* extra_controls = mode->get_extra_controls();
         if (extra_controls_action->isChecked())
           extra_controls->show();
@@ -796,10 +796,14 @@ namespace MR
         action->setChecked (true);
         image_interpolate_action->setChecked (image()->interpolate());
         colourmap_group->actions()[image()->colourmap_index()]->setChecked (true);
-        invert_scale_action->setChecked (image()->scale_inverted());
-        invert_colourmap_action->setChecked (image()->colourmap_inverted());
+        invert_scale_action->setChecked (image()->shader.scale_inverted());
+        invert_colourmap_action->setChecked (image()->shader.colourmap_inverted());
         setWindowTitle (image()->interp.name().c_str());
         set_image_navigation_menu();
+        image()->shader.set_allowed_features (
+            mode->features & Mode::ShaderThreshold,
+            mode->features & Mode::ShaderTransparency,
+            mode->features & Mode::ShaderLighting);
         emit imageChanged();
         glarea->updateGL();
       }
@@ -851,11 +855,11 @@ namespace MR
         modifiers_ = QApplication::keyboardModifiers();
 
         if (mouse_action == NoAction && modifiers_ != Qt::NoModifier) {
-          if (modifiers_ == FocusModifier && ( mode->mouse_actions & Mode::FocusContrast )) 
+          if (modifiers_ == FocusModifier && ( mode->features & Mode::FocusContrast )) 
             return 1;
-          else if (modifiers_ == MoveModifier && ( mode->mouse_actions & Mode::MoveTarget ))
+          else if (modifiers_ == MoveModifier && ( mode->features & Mode::MoveTarget ))
             return 2;
-          else if (modifiers_ == RotateModifier && ( mode->mouse_actions & Mode::TiltRotate ))
+          else if (modifiers_ == RotateModifier && ( mode->features & Mode::TiltRotate ))
             return 3;
           else assert (0);
         }
@@ -893,16 +897,21 @@ namespace MR
 
 
 
-      inline void Window::set_mode_actions ()
+      inline void Window::set_mode_features ()
       {
-        mode_action_group->actions()[0]->setEnabled (mode->mouse_actions & Mode::FocusContrast);
-        mode_action_group->actions()[1]->setEnabled (mode->mouse_actions & Mode::MoveTarget);
-        mode_action_group->actions()[2]->setEnabled (mode->mouse_actions & Mode::TiltRotate);
-        extra_controls_action->setEnabled (mode->mouse_actions & Mode::ExtraControls);
-        if (! (mode->mouse_actions & Mode::ExtraControls) ) 
+        mode_action_group->actions()[0]->setEnabled (mode->features & Mode::FocusContrast);
+        mode_action_group->actions()[1]->setEnabled (mode->features & Mode::MoveTarget);
+        mode_action_group->actions()[2]->setEnabled (mode->features & Mode::TiltRotate);
+        extra_controls_action->setEnabled (mode->features & Mode::ExtraControls);
+        if (! (mode->features & Mode::ExtraControls) ) 
           extra_controls_action->setChecked (false);
         if (!mode_action_group->checkedAction()->isEnabled())
           mode_action_group->actions()[0]->setChecked (true);
+        if (image()) 
+          image()->shader.set_allowed_features (
+              mode->features & Mode::ShaderThreshold,
+              mode->features & Mode::ShaderTransparency,
+              mode->features & Mode::ShaderLighting);
       }
 
 
@@ -1023,7 +1032,7 @@ namespace MR
           for (int n = 0; specifier_list[n]; ++n) {
             if (specifier == lowercase (specifier_list[n])) {
               mode = dynamic_cast<Mode::__Action__*> (mode_group->actions()[n])->create (*this);
-              set_mode_actions();
+              set_mode_features();
               goto mode_selected;
             }
           }
@@ -1031,7 +1040,7 @@ namespace MR
         }
         else {
           mode = dynamic_cast<Mode::__Action__*> (mode_group->actions()[0])->create (*this);
-          set_mode_actions();
+          set_mode_features();
         }
 
 mode_selected:

@@ -37,13 +37,13 @@ namespace MR
     namespace Dialog
     {
 
-      class Lighting : public QDialog
+      class LightingSettings : public QFrame
       {
           Q_OBJECT
 
         public:
-          Lighting (QWidget* parent, const std::string& message, GL::Lighting& lighting);
-          ~Lighting () { }
+          LightingSettings (QWidget* parent, GL::Lighting& lighting, bool include_object_color);
+          ~LightingSettings () { }
 
         protected:
           GL::Lighting&  info;
@@ -58,6 +58,19 @@ namespace MR
           void specular_intensity_slot (int value);
           void shine_slot (int value);
           void light_position_slot ();
+      };
+
+
+
+
+
+
+      class Lighting : public QDialog
+      {
+        public:
+          Lighting (QWidget* parent, const std::string& message, GL::Lighting& lighting, bool include_object_color = true);
+
+          LightingSettings* settings;
       };
 
     }

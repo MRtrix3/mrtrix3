@@ -39,31 +39,23 @@ namespace MR
     namespace Dialog
     {
 
-      Lighting::Lighting (QWidget* parent, const std::string& message, GL::Lighting& lighting) :
-        QDialog (parent),
+      LightingSettings::LightingSettings (QWidget* parent, GL::Lighting& lighting, bool include_object_color) :
+        QFrame (parent),
         info (lighting)
       {
-        setWindowTitle (QString (message.c_str()));
-        setModal (false);
-        setSizeGripEnabled (true);
-
-        QPushButton* close_button = new QPushButton (style()->standardIcon (QStyle::SP_DialogCloseButton), tr ("&Close"));
-        connect (close_button, SIGNAL (clicked()), this, SLOT (close()));
-
-        QHBoxLayout* buttons_layout = new QHBoxLayout;
-        buttons_layout->addStretch (1);
-        buttons_layout->addWidget (close_button);
-
         QColor C;
         QGridLayout* grid_layout = new QGridLayout;
+        setLayout (grid_layout);
         QColorButton* cbutton;
         QSlider* slider;
 
-        C.setRgbF (info.object_color[0], info.object_color[1], info.object_color[2]);
-        cbutton = new QColorButton (C);
-        connect (cbutton, SIGNAL (changed (const QColor&)), this, SLOT (object_color_slot (const QColor&)));
-        grid_layout->addWidget (new QLabel ("Object Colour"), 0, 0);
-        grid_layout->addWidget (cbutton, 0, 1);
+        if (include_object_color) {
+          C.setRgbF (info.object_color[0], info.object_color[1], info.object_color[2]);
+          cbutton = new QColorButton (C);
+          connect (cbutton, SIGNAL (changed (const QColor&)), this, SLOT (object_color_slot (const QColor&)));
+          grid_layout->addWidget (new QLabel ("Object Colour"), 0, 0);
+          grid_layout->addWidget (cbutton, 0, 1);
+        }
 
         C.setRgbF (info.ambient_color[0], info.ambient_color[1], info.ambient_color[2]);
         cbutton = new QColorButton (C);
@@ -123,16 +115,9 @@ namespace MR
         grid_layout->setColumnStretch (0,0);
         grid_layout->setColumnStretch (1,1);
         grid_layout->setColumnMinimumWidth (1, 100);
-
-        QVBoxLayout* main_layout = new QVBoxLayout;
-        main_layout->addLayout (grid_layout);
-        main_layout->addStretch (1);
-        main_layout->addSpacing (12);
-        main_layout->addLayout (buttons_layout);
-        setLayout (main_layout);
       }
 
-      void Lighting::object_color_slot (const QColor& new_color)
+      void LightingSettings::object_color_slot (const QColor& new_color)
       {
         info.object_color[0] = new_color.redF();
         info.object_color[1] = new_color.greenF();
@@ -140,7 +125,7 @@ namespace MR
         info.update();
       }
 
-      void Lighting::ambient_color_slot (const QColor& new_color)
+      void LightingSettings::ambient_color_slot (const QColor& new_color)
       {
         info.ambient_color[0] = new_color.redF();
         info.ambient_color[1] = new_color.greenF();
@@ -148,7 +133,7 @@ namespace MR
         info.update();
       }
 
-      void Lighting::diffuse_color_slot (const QColor& new_color)
+      void LightingSettings::diffuse_color_slot (const QColor& new_color)
       {
         info.light_color[0] = new_color.redF();
         info.light_color[1] = new_color.greenF();
@@ -157,36 +142,63 @@ namespace MR
       }
 
 
-      void Lighting::ambient_intensity_slot (int value)
+      void LightingSettings::ambient_intensity_slot (int value)
       {
         info.ambient = float (value) /1000.0;
         info.update();
       }
-      void Lighting::diffuse_intensity_slot (int value)
+      void LightingSettings::diffuse_intensity_slot (int value)
       {
         info.diffuse = float (value) /1000.0;
         info.update();
       }
-      void Lighting::specular_intensity_slot (int value)
+      void LightingSettings::specular_intensity_slot (int value)
       {
         info.specular = float (value) /1000.0;
         info.update();
       }
-      void Lighting::shine_slot (int value)
+      void LightingSettings::shine_slot (int value)
       {
         info.shine = float (value) /10.0;
         info.update();
       }
 
-      void Lighting::light_position_slot ()
+      void LightingSettings::light_position_slot ()
       {
         float elevation = elevation_slider->value() * (M_PI/1000.0);
-        float azimuth = azimuth_slider->value() * (M_PI/1000.0);
+        float azimuth = -azimuth_slider->value() * (M_PI/1000.0);
         info.lightpos[2] = sin (elevation) * cos (azimuth);
         info.lightpos[0] = sin (elevation) * sin (azimuth);
         info.lightpos[1] = cos (elevation);
         info.update();
       }
+
+
+
+
+
+      Lighting::Lighting (QWidget* parent, const std::string& message, GL::Lighting& lighting, bool include_object_color) :
+        settings (new LightingSettings (this, lighting, include_object_color)) {
+          setWindowTitle (QString (message.c_str()));
+          setModal (false);
+          setSizeGripEnabled (true);
+
+          QPushButton* close_button = new QPushButton (style()->standardIcon (QStyle::SP_DialogCloseButton), tr ("&Close"));
+          connect (close_button, SIGNAL (clicked()), this, SLOT (close()));
+
+          QHBoxLayout* buttons_layout = new QHBoxLayout;
+          buttons_layout->addStretch (1);
+          buttons_layout->addWidget (close_button);
+
+          QVBoxLayout* main_layout = new QVBoxLayout;
+          main_layout->addWidget (settings);
+          main_layout->addStretch (1);
+          main_layout->addSpacing (12);
+          main_layout->addLayout (buttons_layout);
+          setLayout (main_layout);
+        }
+
+      
 
     }
   }

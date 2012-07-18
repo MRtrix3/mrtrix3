@@ -22,6 +22,9 @@ namespace MR
         public:
           AdjustButton (QWidget* parent, float change_rate = 1.0);
 
+          void clear () {
+            text.clear ();
+          }
           float value () const { 
             if (text.text().isEmpty()) 
               return NAN;
@@ -34,7 +37,10 @@ namespace MR
           }
 
           void setValue (float val) {
-            text.setText (str(val).c_str());
+            if (finite (val))
+              text.setText (str(val).c_str());
+            else 
+              text.clear();
           }
 
           void setRate (float new_rate) {

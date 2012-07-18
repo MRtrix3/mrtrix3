@@ -62,10 +62,10 @@ namespace MR
           }
 
           float scaling_min () const {
-            return display_midpoint - 0.5f * display_range;
+            return shader.display_midpoint - 0.5f * shader.display_range;
           }
           float scaling_max () const {
-            return display_midpoint + 0.5f * display_range;
+            return shader.display_midpoint + 0.5f * shader.display_range;
           }
 
           float intensity_min () const {
@@ -91,33 +91,23 @@ namespace MR
             return interpolation == GL_LINEAR;
           }
 
-          void render2D (Shader& custom_shader, int plane, int slice);
-          void render2D (int plane, int slice) {
-            render2D (shader, plane, slice);
-          }
+          void update_texture2D (int plane, int slice);
+          void update_texture3D ();
 
-          void render3D_pre (Shader& custom_shader, const Projection& transform, float depth);
+          void render2D (int plane, int slice);
+
+          void render3D_pre (const Projection& transform, float depth);
           void render3D_slice (float offset);
-          void render3D_post (Shader& custom_shader) {
-            custom_shader.stop(); 
-            if (custom_shader.use_lighting())
+          void render3D_post () {
+            shader.stop(); 
+            if (shader.use_lighting())
               glDisable (GL_LIGHTING);
           }
-          void render3D_post () {
-            render3D_post (shader);
-          }
 
-          void render3D_pre (const Projection& transform, float depth) {
-            render3D_pre (shader, transform, depth);
-          }
           void render3D (const Projection& transform, float depth) {
-            render3D (shader, transform, depth);
-          }
-
-          void render3D (Shader& custom_shader, const Projection& transform, float depth) {
-            render3D_pre (custom_shader, transform, depth);
+            render3D_pre (transform, depth);
             render3D_slice (0.0);
-            render3D_post (custom_shader);
+            render3D_post ();
           }
 
 
@@ -140,41 +130,14 @@ namespace MR
 
           void set_colourmap (uint32_t index) {
             if (index >= ColourMap::Special || shader.colourmap() >= ColourMap::Special) {
-              if (index != shader.colourmap())
-                texture_mode_2D_unchanged = texture_mode_3D_unchanged = false;
+              if (index != shader.colourmap()) {
+                position[0] = position[1] = position[2] = std::numeric_limits<ssize_t>::min();
+                texture_mode_3D_unchanged = false;
+              }
             } 
             shader.set_colourmap (index);
           }
-          void set_invert_map (bool value) { 
-            shader.set_invert_map (value); 
-          }
-          void set_invert_scale (bool value) { 
-            shader.set_invert_scale (value); 
-          }
-          void set_use_lighting (bool value) { 
-            shader.set_use_lighting (value); 
-          }
 
-          void set_thresholds (float less_than_value = NAN, float greater_than_value = NAN) {
-            lessthan = less_than_value;
-            greaterthan = greater_than_value;
-            shader.set_use_thresholds (finite (lessthan), finite (greaterthan));
-          }
-
-          void set_transparency (float transparent = NAN, float opaque = NAN, float alpha_value = 1.0) {
-            transparent_intensity = transparent;
-            opaque_intensity = opaque;
-            alpha = alpha_value;
-            shader.set_use_transparency (finite (transparent_intensity) && finite (opaque_intensity) && finite (alpha));
-          }
-
-          bool scale_inverted () const { 
-            return shader.scale_inverted();
-          }
-
-          bool colourmap_inverted () const {
-            return shader.colourmap_inverted();
-          }
 
           uint32_t colourmap_index () const {
             uint32_t cret = shader.colourmap();
@@ -199,35 +162,34 @@ namespace MR
           typedef BufferType::voxel_type VoxelType;
           typedef MR::Image::Interp::Linear<VoxelType> InterpVoxelType;
 
+
         private:
           BufferType buffer;
+
         public:
           InterpVoxelType interp;
+          Shader shader;
+
           VoxelType& voxel () { 
             return interp;
           }
+
         private:
           Window& window;
           GLuint texture2D[3], texture3D;
           int interpolation;
-          float value_min, value_max, lessthan, greaterthan;
-          float display_midpoint, display_range;
-          float transparent_intensity, opaque_intensity, alpha;
+          float value_min, value_max;
           float windowing_scale_3D;
           GLenum type, format, internal_format;
           std::vector<ssize_t> position;
-          bool texture_mode_2D_unchanged, texture_mode_3D_unchanged;
+          bool texture_mode_3D_unchanged;
           Point<> pos[4], tex[4], z, im_z;
 
-          Shader shader;
-
-          void update_texture2D (const Shader& custom_shader, int plane, int slice);
-          void update_texture3D (const Shader& custom_shader);
 
           bool volume_unchanged ();
 
-          void set_color (const Shader& custom_shader) {
-            if (custom_shader.colourmap() == ColourMap::DWI) {
+          void set_color () {
+            if (shader.colourmap() == ColourMap::DWI) {
               Point<> dir (1.0, 1.0, 1.0);
               if (interp.ndim() > 3) {
                 size_t vol = interp[3];

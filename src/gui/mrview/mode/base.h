@@ -52,6 +52,9 @@ namespace MR
         const int TiltRotate = 0x00000004;
         const int MoveSlice = 0x00000008;
         const int ExtraControls = 0x00000010;
+        const int ShaderThreshold = 0x10000000;
+        const int ShaderTransparency = 0x20000000;
+        const int ShaderLighting = 0x40000000;
 
         class Base : public QObject
         {
@@ -61,7 +64,7 @@ namespace MR
 
             Window& window;
             Projection projection;
-            const int mouse_actions;
+            const int features;
 
             virtual void paint ();
             virtual void mouse_press_event ();

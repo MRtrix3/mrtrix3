@@ -31,28 +31,22 @@ namespace MR
       namespace Mode
       {
 
-        __ExtraControls::__ExtraControls (Window& main_window, Tool::Dock* parent) :
-          Tool::Base (main_window, parent), 
-          lighting_dialog (NULL) {
+        VolumeExtraControls::VolumeExtraControls (Window& main_window, Tool::Dock* parent) :
+          Tool::Base (main_window, parent) {
             QVBoxLayout* main_box = new QVBoxLayout (this);
 
-            transparency_box = new QGroupBox ("Transparency");
-            transparency_box->setCheckable (true);
-            transparency_box->setChecked (false);
-            connect (transparency_box, SIGNAL (toggled(bool)), this, SLOT (onSetTransparency()));
+            QGroupBox* transparency_box = new QGroupBox ("Transparency");
             QGridLayout* layout = new QGridLayout;
             main_box->addWidget (transparency_box);
             transparency_box->setLayout (layout);
 
             layout->addWidget (new QLabel ("transparent"), 0, 0);
             transparent_intensity = new AdjustButton (this);
-            transparent_intensity->setValue (window.image() ? window.image()->intensity_min() : 0.0);
             connect (transparent_intensity, SIGNAL (valueChanged()), this, SLOT (onSetTransparency()));
             layout->addWidget (transparent_intensity, 0, 1);
 
             layout->addWidget (new QLabel ("opaque"), 1, 0);
             opaque_intensity = new AdjustButton (this);
-            opaque_intensity->setValue (window.image() ? window.image()->intensity_max()/2.0 : 1.0);
             connect (opaque_intensity, SIGNAL (valueChanged()), this, SLOT (onSetTransparency()));
             layout->addWidget (opaque_intensity, 1, 1);
 
@@ -64,71 +58,97 @@ namespace MR
             layout->addWidget (opacity, 2, 1);
 
 
-            lighting_box = new QGroupBox ("Lighting");
-            lighting_box->setCheckable (true);
-            lighting_box->setChecked (false);
+            lighting_box = new QCheckBox ("Lighting", this);
+            lighting_box->setChecked (true);
             connect (lighting_box, SIGNAL (toggled(bool)), this, SLOT (onUseLighting(bool)));
-            QVBoxLayout* vlayout = new QVBoxLayout;
             main_box->addWidget (lighting_box);
-            lighting_box->setLayout (vlayout);
-
-            QPushButton* button = new QPushButton ("Settings...");
-            connect (button, SIGNAL (clicked()), this, SLOT (onAdvandedLighting()));
-            vlayout->addWidget (button);
 
             main_box->addStretch ();
             setMinimumSize (main_box->minimumSize());
           }
 
 
-        void __ExtraControls::showEvent (QShowEvent* event) 
+        void VolumeExtraControls::showEvent (QShowEvent* event) 
         {
-          connect (&window, SIGNAL (imageChanged()), this, SLOT (onScalingChanged()));
+          connect (&window, SIGNAL (imageChanged()), this, SLOT (onImageChanged()));
           connect (&window, SIGNAL (scalingChanged()), this, SLOT (onScalingChanged()));
-          onScalingChanged();
+          onImageChanged();
         }
 
 
-        void __ExtraControls::closeEvent (QCloseEvent* event) { window.disconnect (this); }
+        void VolumeExtraControls::closeEvent (QCloseEvent* event) { window.disconnect (this); }
 
-
-
-        void __ExtraControls::onScalingChanged () 
+        void VolumeExtraControls::onScalingChanged ()
         {
-          set_scaling_rate(); 
+          if (!finite (transparent_intensity->value()) || 
+              !finite (opaque_intensity->value())) 
+            onImageChanged();
         }
 
 
-
-        void __ExtraControls::onSetTransparency () 
+        void VolumeExtraControls::onImageChanged () 
         {
-          if (transparency_box->isChecked()) {
-            if (window.image()) 
-              window.image()->set_transparency (transparent_intensity->value(), opaque_intensity->value(), float (opacity->value()) / 255.0);
+          if (!window.image()) {
+            transparent_intensity->clear();
+            opaque_intensity->clear();
+            lighting_box->setChecked (false);
+            setEnabled (false);
+            return;
           }
-          else 
-            window.image()->set_transparency ();
-          window.updateGL();
+
+          if (!finite (window.image()->shader.transparent_intensity) || 
+              !finite (window.image()->shader.opaque_intensity) || 
+              !finite (window.image()->shader.alpha) ) {
+            if (finite (window.image()->intensity_min()) && 
+                finite (window.image()->intensity_max())) {
+              window.image()->shader.transparent_intensity = window.image()->intensity_min();
+              window.image()->shader.opaque_intensity = window.image()->intensity_max();
+              window.image()->shader.alpha = opacity->value() / 255.0;
+            }
+            else {
+              transparent_intensity->clear();
+              opaque_intensity->clear();
+            }
+          }
+
+          if (finite (window.image()->shader.transparent_intensity) &&
+              finite (window.image()->shader.opaque_intensity) &&
+              finite (window.image()->shader.alpha) ) {
+            transparent_intensity->setValue (window.image()->shader.transparent_intensity);
+            opaque_intensity->setValue (window.image()->shader.opaque_intensity);
+            opacity->setValue (window.image()->shader.alpha * 255.0);
+            float rate = window.image() ? window.image()->scaling_rate() : 0.0;
+            transparent_intensity->setRate (rate);
+            opaque_intensity->setRate (rate);
+            onSetTransparency();
+          }
+
+          lighting_box->setChecked (window.image()->shader.lighting_enabled());
+          setEnabled (true);
         }
 
 
 
-        void __ExtraControls::onUseLighting (bool on) 
+
+        void VolumeExtraControls::onSetTransparency () 
+        {
+          if (window.image()) {
+            window.image()->shader.set_transparency (
+                transparent_intensity->value(), 
+                opaque_intensity->value(),
+                float (opacity->value()) / 255.0);
+            window.updateGL();
+          }
+        }
+
+
+
+        void VolumeExtraControls::onUseLighting (bool on) 
         {
           if (window.image())
-            window.image()->set_use_lighting (on);
+            window.image()->shader.set_use_lighting (on);
           window.updateGL();
         }
-
-
-
-        void __ExtraControls::onAdvandedLighting () 
-        {
-          if (!lighting_dialog)
-            lighting_dialog = new Dialog::Lighting (this, "Advanced Lighting", window.lighting());
-          lighting_dialog->show();
-        }
-
 
 
 

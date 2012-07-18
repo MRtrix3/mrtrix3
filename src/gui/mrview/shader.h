@@ -47,6 +47,10 @@ namespace MR
       const uint32_t DiscardUpper = 0x40000000;
       const uint32_t Transparency = 0x80000000;
       const uint32_t Lighting = 0x01000000;
+      const uint32_t DiscardLowerOn = 0x00100000;
+      const uint32_t DiscardUpperOn = 0x00200000;
+      const uint32_t TransparencyOn = 0x00400000;
+      const uint32_t LightingOn = 0x00800000;
 
       namespace ColourMap
       {
@@ -110,7 +114,19 @@ namespace MR
       class Shader
       {
         public:
-          Shader () : flags_ (ColourMap::Mask) { }
+          Shader () : 
+            lessthan (NAN),
+            greaterthan (NAN),
+            display_midpoint (NAN),
+            display_range (NAN),
+            transparent_intensity (NAN),
+            opaque_intensity (NAN),
+            alpha (NAN),
+            flags_ (ColourMap::Mask) { }
+
+          float lessthan, greaterthan;
+          float display_midpoint, display_range;
+          float transparent_intensity, opaque_intensity, alpha;
 
           bool operator! () const {
             return !shader_program;
@@ -122,24 +138,36 @@ namespace MR
             }
           }
 
-          void start (float display_midpoint, float display_range, float lessthan, float greaterthan,
-              float transparent_intensity, float opaque_intensity, float alpha) {
+          void start (float scaling = 1.0) {
             shader_program.start();
-            shader_program.get_uniform ("offset") = display_midpoint - 0.5f * display_range;
-            shader_program.get_uniform ("scale") = 1.0f / display_range;
-            if (flags_ & DiscardLower) shader_program.get_uniform ("lower") = lessthan;
-            if (flags_ & DiscardUpper) shader_program.get_uniform ("upper") = greaterthan;
+            shader_program.get_uniform ("offset") = (display_midpoint - 0.5f * display_range) / scaling;
+            shader_program.get_uniform ("scale") = scaling / display_range;
+            if (flags_ & DiscardLower) shader_program.get_uniform ("lower") = lessthan / scaling;
+            if (flags_ & DiscardUpper) shader_program.get_uniform ("upper") = greaterthan / scaling;
             if (flags_ & Transparency) {
-              shader_program.get_uniform ("alpha_scale") = 1.0f / (opaque_intensity - transparent_intensity);
-              shader_program.get_uniform ("alpha_offset") = transparent_intensity;
+              shader_program.get_uniform ("alpha_scale") = scaling / (opaque_intensity - transparent_intensity);
+              shader_program.get_uniform ("alpha_offset") = transparent_intensity / scaling;
               shader_program.get_uniform ("alpha") = alpha;
             }
           }
+
           void stop () {
             shader_program.stop();
           }
 
           uint32_t flags () const { return flags_; }
+
+          void set_allowed_features (bool thresholding, bool transparency, bool lighting) {
+            uint32_t cmap = flags_;
+            set_bit (cmap, DiscardLower, ( thresholding && discard_lower_enabled() && finite (lessthan) ));
+            set_bit (cmap, DiscardUpper, ( thresholding && discard_upper_enabled() && finite (greaterthan) ));
+            set_bit (cmap, Transparency, ( 
+                  transparency && transparency_enabled() && 
+                  finite (transparent_intensity) && finite (opaque_intensity) 
+                  && finite (alpha)));
+            set_bit (cmap, Lighting, ( lighting_enabled() && lighting ));
+            set (cmap);
+          }
 
           void set_colourmap (uint32_t index) {
             uint32_t cmap = flags_ & ~(ColourMap::Mask);
@@ -147,35 +175,49 @@ namespace MR
             set (cmap);
           }
 
-          void set_use_thresholds (bool lessthan, bool greaterthan) {
+          void set_use_discard_lower (bool yesno) {
+            set_bit (DiscardLower | DiscardLowerOn, ( yesno && finite (lessthan) ));
+          }
+
+          void set_use_discard_upper (bool yesno) {
+            set_bit (DiscardLower | DiscardLowerOn, ( yesno && finite (lessthan) ));
+          }
+
+          void set_use_thresholds (bool yesno) {
             uint32_t cmap = flags_;
-            set_bit (cmap, DiscardLower, lessthan);
-            set_bit (cmap, DiscardUpper, greaterthan);
+            set_bit (cmap, DiscardLower | DiscardLowerOn, ( yesno && finite (lessthan) ));
+            set_bit (cmap, DiscardLower | DiscardLowerOn, ( yesno && finite (lessthan) ));
             set (cmap);
           }
 
           void set_use_transparency (bool value) {
-            uint32_t cmap = flags_;
-            set_bit (cmap, Transparency, value);
-            set (cmap);
+            set_bit (Transparency | TransparencyOn, 
+                ( value && finite (transparent_intensity) && finite (opaque_intensity) && finite (alpha) ));
           }
 
           void set_use_lighting (bool value) {
-            uint32_t cmap = flags_;
-            set_bit (cmap, Lighting, value);
-            set (cmap);
+            set_bit (Lighting | LightingOn, value);
           }
 
           void set_invert_map (bool value) {
-            uint32_t cmap = flags_;
-            set_bit (cmap, InvertMap, value);
-            set (cmap);
+            set_bit (InvertMap, value);
           }
 
           void set_invert_scale (bool value) {
-            uint32_t cmap = flags_;
-            set_bit (cmap, InvertScale, value);
-            set (cmap);
+            set_bit (InvertScale, value);
+          }
+
+          void set_thresholds (float less_than_value = NAN, float greater_than_value = NAN) {
+            lessthan = less_than_value;
+            greaterthan = greater_than_value;
+            set_use_thresholds (true);
+          }
+
+          void set_transparency (float transparent = NAN, float opaque = NAN, float alpha_value = 1.0) {
+            transparent_intensity = transparent;
+            opaque_intensity = opaque;
+            alpha = alpha_value;
+            set_use_transparency (true);
           }
 
           uint32_t colourmap () const {
@@ -188,6 +230,34 @@ namespace MR
 
           bool colourmap_inverted () const {
             return flags_ & InvertMap;
+          }
+
+          bool discard_lower_enabled () const {
+            return flags_ & DiscardLowerOn;
+          }
+
+          bool discard_upper_enabled () const {
+            return flags_ & DiscardUpperOn;
+          }
+
+          bool transparency_enabled () const {
+            return flags_ & TransparencyOn;
+          }
+
+          bool lighting_enabled () const {
+            return flags_ & LightingOn;
+          }
+
+          bool use_discard_lower () const {
+            return flags_ & DiscardLower;
+          }
+
+          bool use_discard_upper () const {
+            return flags_ & DiscardUpper;
+          }
+
+          bool use_transparency () const {
+            return flags_ & Transparency;
           }
 
           bool use_lighting () const {
@@ -214,6 +284,12 @@ namespace MR
           void set_bit (uint32_t& field, uint32_t bit, bool value) {
             if (value) field |= bit;
             else field &= ~bit;
+          }
+
+          void set_bit (uint32_t bit, bool value) {
+            uint32_t cmap = flags_;
+            set_bit (cmap, bit, value);
+            set (cmap);
           }
 
           void recompile ();

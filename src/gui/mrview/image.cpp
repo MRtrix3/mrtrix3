@@ -46,10 +46,7 @@ namespace MR
         interpolation (GL_LINEAR),
         value_min (NAN),
         value_max (NAN),
-        display_midpoint (NAN),
-        display_range (NAN),
         position (header().ndim()),
-        texture_mode_2D_unchanged (false),
         texture_mode_3D_unchanged (false)
       {
         setCheckable (true);
@@ -70,9 +67,9 @@ namespace MR
 
 
 
-      void Image::render2D (Shader& custom_shader, int plane, int slice)
+      void Image::render2D (int plane, int slice)
       {
-        update_texture2D (custom_shader, plane, slice);
+        update_texture2D (plane, slice);
 
         glTexParameteri (GL_TEXTURE_3D, GL_TEXTURE_MAG_FILTER, interpolation);
         glTexParameteri (GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, interpolation);
@@ -84,11 +81,9 @@ namespace MR
         Point<> p, q;
         p[plane] = slice;
 
-        set_color (custom_shader);
+        set_color();
 
-        custom_shader.start (display_midpoint, display_range, 
-            lessthan, greaterthan, 
-            transparent_intensity, opaque_intensity, alpha);
+        shader.start();
 
         glBegin (GL_QUADS);
         glTexCoord3f (0.0, 0.0, 0.0);
@@ -112,25 +107,23 @@ namespace MR
         q = interp.voxel2scanner (p);
         glVertex3fv (q);
         glEnd();
-        custom_shader.stop();
+        shader.stop();
       }
 
 
 
 
 
-      void Image::render3D_pre (Shader& custom_shader, const Projection& transform, float depth)
+      void Image::render3D_pre (const Projection& transform, float depth)
       {
-        update_texture3D (custom_shader);
+        update_texture3D();
 
         glTexParameteri (GL_TEXTURE_3D, GL_TEXTURE_MAG_FILTER, interpolation);
         glTexParameteri (GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, interpolation);
 
-        custom_shader.start (display_midpoint/windowing_scale_3D, display_range/windowing_scale_3D, 
-            lessthan/windowing_scale_3D, greaterthan/windowing_scale_3D,
-            transparent_intensity/windowing_scale_3D, opaque_intensity/windowing_scale_3D, alpha);
+        shader.start (windowing_scale_3D);
 
-        if (custom_shader.use_lighting())
+        if (shader.use_lighting())
           glEnable (GL_LIGHTING);
 
         pos[0] = transform.screen_to_model (0.0, transform.height(), depth);
@@ -146,7 +139,7 @@ namespace MR
         z = transform.screen_normal();
         im_z = interp.scanner2voxel_dir (z);
 
-        set_color (custom_shader);
+        set_color();
       }
 
 
@@ -198,7 +191,7 @@ namespace MR
 
 
 
-      inline void Image::update_texture2D (const Shader& custom_shader, int plane, int slice)
+      inline void Image::update_texture2D (int plane, int slice)
       {
         if (!texture2D[plane]) { // allocate:
           glGenTextures (1, &texture2D[plane]);
@@ -210,11 +203,10 @@ namespace MR
         }
         glBindTexture (GL_TEXTURE_3D, texture2D[plane]);
 
-        if (position[plane] == slice && volume_unchanged() && texture_mode_2D_unchanged)
+        if (position[plane] == slice && volume_unchanged())
           return;
 
         position[plane] = slice;
-        texture_mode_2D_unchanged = true;
 
         int x, y;
         get_axes (plane, x, y);
@@ -223,7 +215,7 @@ namespace MR
         type = GL_FLOAT;
         Ptr<float,true> data;
 
-        uint32_t cmap = custom_shader.colourmap() & ColourMap::Mask;
+        uint32_t cmap = shader.colourmap() & ColourMap::Mask;
         if (cmap < ColourMap::Special) {
 
           data = new float [xdim*ydim];
@@ -330,7 +322,7 @@ namespace MR
         if ((value_max - value_min) < 2.0*std::numeric_limits<float>::epsilon()) 
           value_min = value_max - 1.0;
 
-        if (isnan (display_midpoint) || isnan (display_range))
+        if (isnan (shader.display_midpoint) || isnan (shader.display_range))
           reset_windowing();
 
         glTexImage3D (GL_TEXTURE_3D, 0, internal_format, xdim, ydim, 1, 0, format, type, data);
@@ -342,9 +334,9 @@ namespace MR
 
 
 
-      inline void Image::update_texture3D (const Shader& custom_shader)
+      inline void Image::update_texture3D ()
       {
-        uint32_t cmap = custom_shader.colourmap() & ColourMap::Mask;
+        uint32_t cmap = shader.colourmap() & ColourMap::Mask;
 
         if (cmap < ColourMap::Special) format = GL_ALPHA;
         else if (cmap == ColourMap::RGB) format = GL_RGB;
@@ -446,8 +438,9 @@ namespace MR
         else 
           copy_texture_3D_complex();
 
-        if (isnan (display_midpoint) || isnan (display_range))
+        if (isnan (shader.display_midpoint) || isnan (shader.display_range))
           reset_windowing();
+
       }
 
       template <> inline GLenum Image::GLtype<int8_t> () const
@@ -619,14 +612,14 @@ namespace MR
       }
 
       void Image::adjust_windowing (float brightness, float contrast) {
-        display_midpoint -= 0.0005f * display_range * brightness;
-        display_range *= Math::exp (-0.002f * contrast);
+        shader.display_midpoint -= 0.0005f * shader.display_range * brightness;
+        shader.display_range *= Math::exp (-0.002f * contrast);
         window.scaling_updated();
       }
 
       void Image::set_windowing (float min, float max) {
-        display_range = max - min;
-        display_midpoint = 0.5 * (min + max);
+        shader.display_range = max - min;
+        shader.display_midpoint = 0.5 * (min + max);
         window.scaling_updated();
       }
 

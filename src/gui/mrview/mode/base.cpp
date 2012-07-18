@@ -39,7 +39,7 @@ namespace MR
         Base::Base (Window& parent, int flags) :
           window (parent),
           projection (window.glarea),
-          mouse_actions (flags),
+          features (flags),
           painting (false) { }
 
 
