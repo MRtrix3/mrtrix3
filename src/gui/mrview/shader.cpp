@@ -47,11 +47,11 @@ namespace MR
 
         // vertex shader:
         std::string source;
-        if (Lighting) 
+        if (flags_ & Lighting) 
           source += "varying vec4 ambient; "
             "varying vec3 lightDir, halfVector; ";
         source += "void main() { ";
-        if (Lighting) 
+        if (flags_ & Lighting) 
             source +=
               "lightDir = normalize (vec3 (gl_LightSource[0].position)); "
               "halfVector = normalize (gl_LightSource[0].halfVector.xyz); "
@@ -95,7 +95,7 @@ namespace MR
 
         if (flags_ & Lighting) 
           source += 
-            "ambient = color; vec3 normal; "
+            "vec4 tmp = color; vec3 normal; "
             "color = texture3D (tex, gl_TexCoord[0].stp+vec3(2.0e-2,0.0,0.0)); normal.x = " + amplitude (flags_) + "; "
             "color = texture3D (tex, gl_TexCoord[0].stp+vec3(-2.0e-2,0.0,0.0)); normal.x -= " + amplitude (flags_) + "; "
             "color = texture3D (tex, gl_TexCoord[0].stp+vec3(0.0,2.0e-2,0.0)); normal.y = " + amplitude (flags_) + "; "
@@ -103,7 +103,7 @@ namespace MR
             "color = texture3D (tex, gl_TexCoord[0].stp+vec3(0.0,0.0,2.0e-2)); normal.z = " + amplitude (flags_) + "; "
             "color = texture3D (tex, gl_TexCoord[0].stp+vec3(0.0,0.0,-2.0e-2)); normal.z -= " + amplitude (flags_) + "; "
             "normal = normalize (gl_NormalMatrix * normal); "
-            "color = ambient; ";
+            "color = tmp; ";
 
         if (flags_ & DiscardLower)
           source += "if (gl_FragColor.a < lower) discard;";
