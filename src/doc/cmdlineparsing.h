@@ -29,107 +29,109 @@ namespace MR
   /*! \page command_line_parsing Command-line parsing
 
 
- \warning This section is out of date and needed to be revised
-
  \section command_line_overview Overview
 
- Command-line parsing in MRtrix is based on a set of fairly generic
- conventions. A command is expected to accept a certain number of arguments,
- and a certain number of options. These are specified in the code using the
- ARGUMENTS and OPTIONS macros. They are also used to generate the help page for
- the application, and it is therefore sensible to provide as much information
- in the description fields as neccessary for end-users to understand how to use
+ Command-line parsing in MRtrix is based on a set of fairly generic conventions
+ to maximise consistency for end-users, and convenience for developers. A
+ command is expected to accept a certain number of arguments, and a certain
+ number of options. These are specified in the code using the ARGUMENTS and
+ OPTIONS vectors. They are also used to generate the help page for the
+ application, and it is therefore sensible to provide as much information in
+ the description fields as neccessary for end-users to understand how to use
  the command.
 
- Arguments are supplied as a list of Argument objects, and by default each
- Argument is expected to have its value supplied on the command-line (although
- one argument can be made optional, or allowed to be supplied multiple times).
+ Arguments and options are specified within the usage() function of each
+ command (see \ref command_howto for details).  Arguments are supplied as a
+ vector of App::Argument objects, and by default each App::Argument is expected
+ to have its value supplied on the command-line (although one argument can be
+ made optional, or allowed to be supplied multiple times).
 
- Options are supplied as a list of Option objects, and by default are optional
- (although they can be specified as 'required'). By default, only one instance
- of each option is allowed, but this can also be changed.  Options may also
- accept additional arguments, which should be supplied immediately after the
- option itself.
+ Options are supplied as a vector of App::Option objects, and by default are
+ optional (although they can be specified as 'required'). By default, only one
+ instance of each option is allowed, but this can also be changed.  Options may
+ also accept additional arguments, which should be supplied immediately after
+ the option itself.
 
  Parsing of the command-line is done by first identifying any options supplied
  and inserting them into the option list, along with their corresponding
  arguments (if any). All remaining tokens are taken to be arguments, and
- inserted into the App::argument list. Checks are performed at this stage to
+ inserted into the \ref App::argument list. Checks are performed at this stage to
  ensure the number of arguments and options supplied is consistent with that
- specified in the application.
+ specified in the usage() function.
 
- The values of these arguments and options can be retrieved within the EXECUTE
- method using the App::argument list and the App::option list. Note that in
- practice, the App::get_options() method is a much more convenient way of
- querying the command-line options.
+ The values of these arguments and options can be retrieved within the
+ application using the \ref App::argument list and the \ref App::option list.
+ Note that in practice, the \ref App::get_options() method is a much more
+ convenient way of querying the command-line options.
 
- \section command_line_header Getting started
 
- To create a new command, a new file should be added to the cmd/ folder, with
- the same name as the intended command and the '.cpp' extension. The
- minimum contents of the file should be:
+ An overview of the basic contents of an application is given in \ref
+ command_howto. The description and syntax of the command should be fully
+ specified in the usage() function, and the various arguments and options can
+ then be retrieved and used in the application. Each of these aspects is
+ described below. 
+
+ \section command_line_usage Specifying the description and syntax
+
+ The role of the usage() function is to populate the App::DESCRIPTION,
+ App::ARGUMENTS, and App::OPTIONS vectors, and optionally the App::VERSION,
+ App::AUTHOR, and App::COPYRIGHT entries if default values are not suitable.
+ The example below illustrates a basic usage() function: 
  \code
  #include "app.h"
 
  using namespace MR;
+ using namespace App;
 
- SET_VERSION (0, 4, 3);
- SET_AUTHOR ("Joe Bloggs (j.bloggs@bogus.org)");
- SET_COPYRIGHT ("Copyright 1967 The Institute of Bogus Science");
+ void usage ()
+ {
+   VERSION[0] = 1; // these are optional,
+   VERSION[1] = 2; // and will default to the 
+   VERSION[2] = 3; // MRtrix core version if ommitted
 
- DESCRIPTION = {
-   "A brief description of the command",
-   NULL
- };
+   // optional, defaults to J-Donald Tournier
+   AUTHOR = "Joe Bloggs (j.bloggs@bogus.org)";
 
- ARGUMENTS = { Argument () };
+   // optional, defaults to the MRtrix GPL disclaimer
+   COPYRIGHT = "Copyright 1967 The Institute of Bogus Science"; 
 
- OPTIONS = { Option() };
+   DESCRIPTION 
+   + "A brief description of the command";
 
- EXECUTE { }
- \endcode
+   ARGUMENTS
+   + Argument ("input", "the input image").type_image_in();
 
- The final EXECUTE macro corresponds the main function, and is where
- processing actually takes place. Retrieval of the argument and option values
- is performed in the body of this function.
-
- The SET_VERSION, SET_AUTHOR and SET_COPYRIGHT macros are required, and
- should provide the corresponding information. As an alternative, it is also
- possible to use the default MRtrix values:
- \code
- SET_VERSION_DEFAULT;
- SET_AUTHOR (NULL);
- SET_COPYRIGHT (NULL);
- \endcode
-
- \subsection command_line_description Providing a description of the command
-
- The DESCRIPTION macro is used to specify a description of the command, which
- will be listed on its help page. It consists of a NULL-terminated array of
- character strings. Each string will correspond to a paragraph in the help
- page.
-
- \subsection command_line_arguments Specifying command-line arguments
-
- The ARGUMENTS macro is used to provide a list of the command-line arguments.
- This is provided as an array of Argument objects, terminated with a
- default-constructed Argument(). As a minimum, each Argument is constructed
- with its short-hand name (used in the syntax line), and its description:
- \code
- ARGUMENTS = {
-   Argument ("input", "a description of the input argument"),
-   Argument ()
+   OPTIONS
+   + Option ("myopt",
+       "my option to this command. Takes one additional float argument.")
+   +   Argument ("value");
  }
  \endcode
+
+
+ \subsection command_line_description The DESCRIPTION
+
+ As shown in the example, description entries are added to the DESCRIPTION
+ vector using the + operator, and consist of const char* strings. Each separate
+ string will be formatted into a distinct paragraph on the help page.
+
+
+\subsection command_line_arguments The ARGUMENTS
+
+As shown in the example, individual command-line arguments are added to the
+ARGUMENTS vector as App::Argument objects using the + operator.  As a minimum,
+each Argument is constructed with its short-hand name (used in the syntax
+line), and its description, which will appear in a separate listing after the
+  syntax line
 
  By default, an Argument is typed as a string. There are a number of other
  types that can be used, and each type will perform its own checks on the
  values provided by the user. For example:
  \code
- ARGUMENTS = {
-   Argument ("input", "a description of the input argument").type_integer (0, 8, 16),
-   Argument ()
- }
+ ARGUMENTS 
+ + Argument ("input", 
+     "a description of the input argument")
+     .type_integer (0, 8, 16);
  \endcode
 
  The type specifiers that can be used are:
@@ -162,16 +164,15 @@ namespace MR
 
  In certain cases, it is possible that none of these types are suitable. In
  these cases, the default type (type_text) should be used, and any custom
- casting and checking will need to be performed explicitly within the EXECUTE
- function.
+ casting and checking will need to be performed explicitly by the programmer.
 
  It is possible to specify at most one argument as being optional, by adding
  the 'optional' flag:
  \code
- ARGUMENTS = {
-   Argument ("input", "a description of the input argument").optional(),
-   Argument ()
- }
+ ARGUMENTS 
+ +  Argument ("input", 
+     "a description of the input argument")
+     .optional();
  \endcode
 
  Finally, at most one argument can be specified as repeatable (in other
@@ -179,70 +180,129 @@ namespace MR
  This is useful for example if the command can operate on multiple data sets
  sequentially:
  \code
- ARGUMENTS = {
-   Argument ("input", "a description of the input argument").allow_multiple(),
-   Argument ()
- }
+ ARGUMENTS
+ + Argument ("input", 
+     "a description of the input argument")
+     .allow_multiple();
  \endcode
 
 
- \subsection command_line_options Specifying command-line options
+ \subsection command_line_options The OPTIONS
 
- The OPTIONS macro is used to provide a list of the options understood by the
- program. This is supplied as a list of Option objects, terminated with a
- default-constructed Option(). As a minimum, each Option is constructed
- with its short-hand name (used on the command-line), and its description:
+ Individual command-line options are added to the OPTIONS vector as App::Option
+ objects using the + operator.  As a minimum, each Option is constructed with
+ its short-hand name (used on the command-line), and its description:
  \code
- OPTIONS = {
-   Option ("option", "a description of the option"),
-   Option ()
- }
+ OPTIONS
+ +  Option ("option", "a description of the option");
  \endcode
 
  Similarly to arguments, options can be specified as repeatable:
  \code
- OPTIONS = {
-   Option ("option", "a description of the option").allow_multiple(),
-   Option ()
- }
+ OPTIONS
+ + Option ("option", "a description of the option").allow_multiple();
  \endcode
 
  Options can also be specified as required (by default, options are
  optional):
  \code
- OPTIONS = {
-   Option ("option", "a description of the option").required(),
-   Option ()
- }
+ OPTIONS
+ + Option ("option", "a description of the option").required();
  \endcode
 
- To handle additional arguments to an Option, Arguments can be added to the
- option:
+ To handle additional arguments to an Option, arguments can be added to the
+ option as App::Argument objects, again using the + operator. Note that in this
+ case the description field of the argument is ignored, and so does not need
+ to be specified: These Arguments can be typed in the same way as regular
+ Arguments. For example:
  \code
- OPTIONS = {
-   Option ("option", "a description of the option")
+ OPTIONS 
+ + Option ("option", "a description of the option")
      + Argument ("value").type_integer ()
-     + Argument ("list").type_sequence_int (),
-   Option ()
+     + Argument ("list").type_sequence_int ();
+ \endcode
+
+
+ \subsection command_line_option_group Defining option groups
+
+ Option objects are actually inserted into App::OptionGroup objects; in the
+ example above, new Options were added to the default App::OptionGroup. It is
+ possible to create new option groups that will appear under their own heading
+ in the help page.  
+ \code
+ OPTIONS
+ +   Option ("normal", "a 'standard' option")
+
+ + OptionGroup ("My options")
+
+ +   Option ("check", 
+     "this option will now appear in the 'My options' section);
+ \endcode
+
+ This also makes it possible to define OptionGroup objects for commonly-used
+ functions elsewhere in the code, and simply add them into the application when
+ required. For example: 
+ \code
+ // funny_processing.h:
+ 
+ extern const OptionGroup funny_options;
+ \endcode
+ \code
+ // funny_processing.cpp:
+ 
+ const OptionGroup funny_options ("Funny options")
+ + Option ("joke", "a option that is now part of the funny options)
+ +   Argument ("name")
+
+ + Option ("prank", "another option");
+ \endcode
+ \code
+ // my_application.cpp:
+ 
+ void usage () 
+ { 
+   ...
+
+   OPTIONS
+   + Option ("normal", "a 'standard' option")
+
+   + funny_options; 
+ }
+ \endcode 
+
+ This is particularly useful since these options can then be handled by the
+ relevant functions or classes, without the developer of the application
+ needing to worry about them in any way. Following on from the example above,
+ the 'funny_processing' code might declare a function 'do_funny_processing()',
+ which could then retrieve any relevant parameters supplied by the user on the
+ command-line, with no interaction with the body of the application using that
+ function: 
+ \code 
+ // funny_processing.cpp:
+ 
+ void do_funny_processing () 
+ {
+   App::Options opt = App::get_options ("joke");
+   if (opt.size()) {
+     // do something else...
+   }
+
+   ...
  }
  \endcode
 
- Note that in this case there is no need to specify a description for these
- additional arguments, since any relevant documentation for that argument is
- expected to be provided in the description of its parent Option. These
- Arguments can be typed in the same way as regular Arguments.
 
  \section command_line_retrieve Retrieving command-line argument and option values
 
- Argument and option values can be retrieved within the body of the EXECUTE
- function. Arguments are provided via the \c argument vector, which is a
- std::vector<App::ParsedArgument>. As such, values can easily be obtained
- using its subscript operator. For types other than strings, values can be
- cast to the correct type by implicit type-casting (i.e. simply by using the
- argument in a context that requires the relevant type - e.g.  assignment).
- The following examples should clarify how this is done:
+ Argument and option values can be retrieved at any point within the application. 
+ Arguments are provided via the \ref App::argument vector, which is a
+ std::vector<App::ParsedArgument>. Their values can be retrieved using the
+ subscript operator, indexed by their position on the command-line.  For
+ convenience, values can be obtained directly by implicit type-casting (i.e.
+ simply by using the argument in a context that requires the relevant type -
+ e.g.  assignment).  The following examples should clarify how this is done:
  \code
- EXECUTE {
+ void run () {
    size_t numarg = argument.size(); // the number of arguments
 
    // retrieving values as a string:
@@ -266,12 +326,12 @@ namespace MR
  identical in use to a std::vector< std::vector<App::ParsedArgument> >: one
  vector of values for each matching option specified on the command-line (an
  option may be specified multiple times if it has been specified using
- allow_multiple).  The values are stored as App::ParsedArgument objects (as
- for the parsed arguments), and their values can therefore also be retrieved
- using implicit type-casting (see above). The example below should clarify
+ allow_multiple()).  The values are stored in the same way as the parsed
+ arguments, and their values can therefore also be retrieved using implicit
+ type-casting (see above). The example below should clarify
  this:
  \code
- EXECUTE {
+ void run () {
    Options opt = get_options ("option");
 
    if (opt.size()) { // check whether any such options have been supplied
@@ -296,12 +356,13 @@ namespace MR
  \endcode
 
  If for any reason the get_options() convenience function is not suitable,
- options can be accessed directly using the \c option variable, which is a
- std::vector of App::ParsedOption objects, one per option in the same order
+ options can be accessed directly using the \ref App::option variable, which is
+ a std::vector of App::ParsedOption objects, one per option in the same order
  as on the command-line. Note that in this case, option values will only be
  available as const char* string arrays, and no bounds checking will be
  performed. For further details, refer to the App::ParsedOption description
  page.
+
 
    */
 

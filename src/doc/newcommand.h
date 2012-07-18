@@ -26,7 +26,7 @@
 namespace MR
 {
 
- /*! \page command_howto How to create a new MRtrix command
+ /*! \page command_howto Creating a new MRtrix command
 
  \section command_layout The anatomy of a command
 

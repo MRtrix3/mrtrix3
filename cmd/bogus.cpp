@@ -64,8 +64,7 @@ void usage () {
     + "some more details here.";
 
   ARGUMENTS
-    + Argument ("input", "the input image.").type_image_in ()
-    + Argument ("output", "the output image.").type_image_out ();
+    + Argument ("input", "the input image.");
 
   OPTIONS
     + Option ("poo", "its description")
@@ -84,30 +83,9 @@ void usage () {
 
 void run () 
 {
-  Image::Stride::List stride (3);
-  stride[0] = 1; stride[1] = 2; stride[2] = 3;
-
-  Image::BufferPreload<float> data_in (argument[0], stride);
-
-  Image::BufferPreload<float>::voxel_type vox_in (data_in);
-
-  Image::Buffer<float> data_out (argument[1], data_in);
-  Image::Header header (data_out);
-  Image::Buffer<float>::voxel_type vox_out (data_out);
-
-
-  Image::Info info (data_in);
-  info.name() = "my scratch buffer";
-  info.stride(1) = 1;
-  info.stride(0) = info.stride(2) = 0;
-  info.datatype() = DataType::UInt8;
-
-  Image::BufferScratch<float32> data_tmp (info);
-  Image::BufferScratch<float32>::voxel_type vox_tmp (data_tmp);
-
-
-  Image::copy_with_progress (vox_in, vox_tmp);
-  Image::copy_with_progress (vox_tmp, vox_out);
+  std::vector<std::string> items = split (argument[0], ", \t\n", true);
+  for (size_t i = 0; i < items.size(); ++i)
+    VAR (items[i]);
 
 }
 

@@ -33,6 +33,11 @@ namespace MR
 {
   namespace Image
   {
+
+    /*! \addtogroup loop 
+     * \{ */
+
+    //! a class to loop over images in a multi-threaded fashion
     class ThreadedLoop
     {
       public:
@@ -213,6 +218,9 @@ namespace MR
       };
 
 
+    /*! \} */
+
+
     template <class Functor> void ThreadedLoop::run_outer (Functor functor, const std::string& thread_label)
     {
       ThreadedLoopKernelOuter<Functor> loop_thread (*this, functor);
@@ -229,6 +237,8 @@ namespace MR
       Thread::Array<ThreadedLoopKernelFull<Functor> > thread_list (loop_thread);
       Thread::Exec threads (thread_list, thread_label);
     }
+
+
 
   }
 }

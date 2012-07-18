@@ -198,6 +198,23 @@ namespace MR
     //! the list of options parsed from the command-line
     extern std::vector<ParsedOption> option;
 
+    //! return all command-line options matching \c name
+    /*! This returns a vector of vectors, where each top-level entry
+     * corresponds to a distinct instance of the option, and each entry within
+     * a top-level entry corresponds to a argument supplied to that option. 
+     * 
+     * Individual options can be retrieved easily using implicit type-casting.
+     * Any relevant range checks are performed at this point, based on the
+     * original App::Option specification. For example:
+     * \code
+     * Options opt = get_options ("myopt");
+     * if (opt.size()) {
+     *    std::string arg1 = opt[0][0]; 
+     *    int arg2 = opt[0][1];
+     *    float arg3 = opt[0][2];
+     *    std::vector<int> arg4 = opt[0][3];
+     * }
+     * \endcode */
     const Options get_options (const std::string& name);
 
 

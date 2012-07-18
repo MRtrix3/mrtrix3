@@ -158,7 +158,7 @@ namespace MR
 
       // account for the fact that bvecs are specified wrt original image axes,
       // which may have been re-ordered and/or inverted by MRtrix to match the
-      // expected scanner frame of reference:
+      // expected anatomical frame of reference:
       std::vector<size_t> order = Image::Stride::order (header, 0, 3);
       Math::Matrix<ValueType> G (bvecs.columns(), 3);
       for (size_t n = 0; n < G.rows(); ++n) {
