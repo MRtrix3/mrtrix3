@@ -50,9 +50,7 @@ namespace MR
               mask_ptr = mask;
               voxel_count_ = 0;
               for (loop.start (input_image_); loop.ok(); loop.next (input_image_)) {
-                (*mask_ptr)[0] = input_image_[0];
-                (*mask_ptr)[1] = input_image_[1];
-                (*mask_ptr)[2] = input_image_[2];
+                Image::voxel_assign(*mask_ptr, input_image_, 0, 3);
                 if (mask_ptr->value()) {
                   voxel_count_++;
                   sum_sqr += (input_image_.value() * input_image_.value());
@@ -77,10 +75,20 @@ namespace MR
             double sum = 0;
             double mean_xy = 0;
             Image::LoopInOrder loop (input_image_);
-            for (loop.start (input_image_); loop.ok(); loop.next (input_image_)) {
-              if (input_image_.value() > threshold) {
-                sum += 1;
-                mean_xy += (input_image_.value() * 1.0);
+            if (mask_ptr) {
+              for (loop.start (input_image_); loop.ok(); loop.next (input_image_)) {
+                Image::voxel_assign(*mask_ptr, input_image_, 0, 3);
+                if (mask_ptr->value() > 0 && input_image_.value() > threshold) {
+                  sum += 1;
+                  mean_xy += (input_image_.value() * 1.0);
+                }
+              }
+            } else {
+              for (loop.start (input_image_); loop.ok(); loop.next (input_image_)) {
+                if (input_image_.value() > threshold) {
+                  sum += 1;
+                  mean_xy += (input_image_.value() * 1.0);
+                }
               }
             }
             mean_xy /= voxel_count_;

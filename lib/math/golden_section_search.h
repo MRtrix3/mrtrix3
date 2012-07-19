@@ -52,11 +52,11 @@ namespace MR
 
     template <class FunctionType, typename ValueType>
       ValueType golden_section_search (FunctionType& function,
-                             const std::string& message,
-                            ValueType min_bound,
-                            ValueType init_estimate,
-                            ValueType max_bound,
-                            ValueType tolerance = 0.01)	{
+                                       const std::string& message,
+                                       ValueType min_bound,
+                                       ValueType init_estimate,
+                                       ValueType max_bound,
+                                       ValueType tolerance = 0.01)	{
 
      ProgressBar progress(message);
 

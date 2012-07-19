@@ -58,12 +58,6 @@ void usage ()
               "the labelled output image").type_image_out();
 
   OPTIONS
-  + Option ("adjacency", "specify a symmetric binary adjacency matrix to define neighbouring indices along the "
-            "defined axis. The matrix must be defined with a text file using spaces and lines "
-            "to separate elements and rows respectively").allow_multiple()
-  + Argument ("axis").type_integer ()
-  + Argument ("matrix").type_file ()
-
   + Option ("directions", "the list of directions associated with each 3D volume, generated using the gendir command")
   + Argument ("file").type_file ()
 
@@ -76,7 +70,10 @@ void usage ()
   + Argument ("axes").type_sequence_int()
 
   + Option ("largest",
-            "only retain the largest component");
+            "only retain the largest component")
+
+  + Option ("connectivity",
+            "use 26 neighbourhood connectivity (Default: 6)");
 }
 
 
@@ -110,26 +107,19 @@ void run ()
   if (opt.size()) {
     axes = opt[0][0];
     for (size_t i = 0; i < axes.size(); i++) {
-      if (axes[i] >= static_cast<int> (input_header.ndim()))
+      if (axes[i] >= static_cast<int> (input_header.ndim()) || axes[i] < 0)
         throw Exception ("axis supplied to option -ignore is out of bounds");
-    connected_filter.set_ignore_dim (true, axes[i]);
+      connected_filter.set_ignore_dim (true, axes[i]);
     }
-  }
-
-  opt = get_options ("adjacency");
-  for (size_t i = 0; i != opt.size(); ++i) {
-    Math::Matrix<float> adjacency;
-    adjacency.load (opt[i][1]);
-    int axis = opt[i][0];
-    if (axis == 3 && dirs.is_set())
-      throw Exception ("Conflicting options. Both directions and an adjacency "
-                       "matrix cannot used to define the adjacency of axis 3");
-    connected_filter.set_adjacency_matrix(adjacency, axis);
   }
 
   opt = get_options ("largest");
   if (opt.size())
     connected_filter.set_largest_only (true);
+
+  opt = get_options ("connectivity");
+  if (opt.size())
+    connected_filter.set_26_connectivity(true);
 
   connected_filter(input_voxel, output_vox);
 }

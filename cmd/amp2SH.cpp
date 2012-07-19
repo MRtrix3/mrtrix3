@@ -23,6 +23,7 @@
 #include "app.h"
 #include "progressbar.h"
 #include "image/buffer.h"
+#include "image/buffer_preload.h"
 #include "image/voxel.h"
 #include "math/matrix.h"
 #include "math/SH.h"
@@ -88,8 +89,10 @@ void usage ()
 
 void run ()
 {
-  Image::Header header (argument[0]);
-  Image::Buffer<float> amp_data (header);
+  std::vector<ssize_t> strides (4, 0);
+  strides[3] = 1;
+  Image::BufferPreload<float> amp_data (argument[0], strides);
+  Image::Header header (amp_data);
 
   std::vector<int> bzeros, dwis;
   Math::Matrix<float> dirs;
@@ -133,9 +136,22 @@ void run ()
 
   header.dim (3) = Math::SH::NforL (lmax);
   header.datatype() = DataType::Float32;
+  opt = get_options ("stride");
+  if (opt.size()) {
+    std::vector<int> strides = opt[0][0];
+    if (strides.size() > header.ndim())
+      throw Exception ("too many axes supplied to -stride option");
+    for (size_t n = 0; n < strides.size(); ++n)
+      header.stride(n) = strides[n];
+  } else {
+    header.stride(0) = 2;
+    header.stride(1) = 3;
+    header.stride(2) = 4;
+    header.stride(3) = 1;
+  }
   Image::Buffer<float> SH_data (argument[1], header);
 
-  Image::Buffer<float>::voxel_type amp_vox (amp_data);
+  Image::BufferPreload<float>::voxel_type amp_vox (amp_data);
   Image::Buffer<float>::voxel_type SH_vox (SH_data);
 
   Math::Vector<float> res (lmax);
