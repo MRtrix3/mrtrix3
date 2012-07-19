@@ -115,8 +115,14 @@ namespace MR
       do {
         for (int n = 0; n < 6; n++)
           filename[TMPFILE_ROOT_LEN+n] = random_char();
-      }
-      while ( (fid = open64 (filename.c_str(), O_CREAT | O_RDWR | O_EXCL, 0644)) < 0);
+        fid = open64 (filename.c_str(), O_CREAT | O_RDWR | O_EXCL, 0644);
+      } while (fid < 0 && errno == EEXIST);
+
+      if (fid < 0)
+        throw Exception (std::string ("error creating temporary file in current working directory: ") + strerror (errno));
+
+
+
 
       int status = size ? ftruncate64 (fid, size) : 0;
       close (fid);
@@ -127,7 +133,7 @@ namespace MR
 
     inline void mkdir (const std::string& folder) 
     {
-      if (::mkdir (folder.c_str(), 0777))
+      if (::mkdir (folder.c_str(), 0755))
         throw Exception ("error creating folder \"" + folder + "\": " + strerror (errno));
     }
 
