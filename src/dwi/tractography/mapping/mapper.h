@@ -568,9 +568,9 @@ void TrackMapperTWIImage<Cont>::load_factors (const std::vector< Point<float> >&
         const Point<float>& p = tck[i];
         if (!interp.scanner (p)) {
           // Get the interpolated spherical harmonics at this point
-          for (voxel[3] = 0; voxel[3] != voxel.dim(3); ++voxel[3])
-            sh_coeffs[voxel[3]] = interp.value();
-          const Point<float> dir = (tck[(i == tck.size() - 1) ? i : i + 1] - tck[i ? i - 1 : 0]).normalise();
+          for (interp[3] = 0; interp[3] != interp.dim(3); ++interp[3])
+            sh_coeffs[interp[3]] = interp.value();
+          const Point<float> dir = (tck[(i == tck.size()-1) ? i : (i+1)] - tck[i ? (i-1) : 0]).normalise();
           TrackMapperTWI<Cont>::factors.push_back (precomputer.value (sh_coeffs, dir));
         } else {
           TrackMapperTWI<Cont>::factors.push_back (NAN);
