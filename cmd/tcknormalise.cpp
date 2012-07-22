@@ -73,11 +73,11 @@ void run ()
   while (file.next (tck)) {
     for (std::vector<Point<float> >::iterator i = tck.begin(); i != tck.end(); ++i) {
       interp.scanner (*i);
-      vox[3] = 0;
+      interp[3] = 0;
       (*i) [0] = interp.value();
-      vox[3] = 1;
+      interp[3] = 1;
       (*i) [1] = interp.value();
-      vox[3] = 2;
+      interp[3] = 2;
       (*i) [2] = interp.value();
     }
     writer.append (tck);
