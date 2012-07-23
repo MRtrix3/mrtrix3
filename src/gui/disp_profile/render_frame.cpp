@@ -62,8 +62,6 @@ namespace MR
         focus (0.0, 0.0, 0.0), framebuffer (NULL), OS (0), OS_x (0), OS_y (0)
       {
         lighting = new GL::Lighting (this);
-        memset (modelview, 0, 16*sizeof (GLfloat));
-        modelview[0] = modelview[5] = modelview[10] = modelview[15] = 1.0;
         lighting->set_background = true;
         connect (lighting, SIGNAL (changed()), this, SLOT (updateGL()));
       }
@@ -104,7 +102,6 @@ namespace MR
       void RenderFrame::resizeGL (int w, int h)
       {
         glViewport (0, 0, w, h);
-        glGetIntegerv (GL_VIEWPORT, viewport);
       }
 
 
@@ -115,8 +112,8 @@ namespace MR
 
         float dist (1.0 / (distance * view_angle * D2R));
         float near = (dist-3.0 > 0.001 ? dist-3.0 : 0.001);
-        float horizontal = 2.0 * near * tan (0.5*view_angle*D2R) * float (viewport[2]) / float (viewport[2]+viewport[3]);
-        float vertical = 2.0 * near * tan (0.5*view_angle*D2R) * float (viewport[3]) / float (viewport[2]+viewport[3]);
+        float horizontal = 2.0 * near * tan (0.5*view_angle*D2R) * float (projection.width()) / float (projection.width()+projection.height());
+        float vertical = 2.0 * near * tan (0.5*view_angle*D2R) * float (projection.width()) / float (projection.width()+projection.height());
 
         glMatrixMode (GL_PROJECTION);
         glLoadIdentity ();
@@ -134,26 +131,15 @@ namespace MR
         glTranslatef (0.0, 0.0, -dist);
         float M[9];
         orientation.to_matrix (M);
-        modelview[0] = M[0];
-        modelview[1] = M[1];
-        modelview[2] = M[2];
-        modelview[3] = 0.0;
-        modelview[4] = M[3];
-        modelview[5] = M[4];
-        modelview[6] = M[5];
-        modelview[7] = 0.0;
-        modelview[8] = M[6];
-        modelview[9] = M[7];
-        modelview[10] = M[8];
-        modelview[11] = 0.0;
-        modelview[12] = modelview[13] = modelview[14] = 0.0;
-        modelview[15] = 1.0;
-        glMultMatrixd (modelview);
+        float T [] = {
+          M[0], M[1], M[2], 0.0,
+          M[3], M[4], M[5], 0.0,
+          M[6], M[7], M[8], 0.0,
+          0.0, 0.0, 0.0, 1.0
+        };
+        glMultMatrixf (T);
 
         glTranslatef (focus[0], focus[1], focus[2]);
-
-        glGetDoublev (GL_MODELVIEW_MATRIX, modelview);
-        glGetDoublev (GL_PROJECTION_MATRIX, projection_matrix);
 
         glDepthMask (GL_TRUE);
 
@@ -248,15 +234,11 @@ namespace MR
 
         if (event->modifiers() == Qt::NoModifier) {
           if (event->buttons() == Qt::LeftButton) {
-            float angle = 0.0;
-            Point<> x (
-              dx*modelview[0] - dy*modelview[1],
-              dx*modelview[4] - dy*modelview[5],
-              dx*modelview[8] - dy*modelview[9]);
-            Point<> z (modelview[2], modelview[6], modelview[10]);
+            Point<> x = projection.screen_to_model_direction (QPoint (-dx, dy), focus);
+            Point<> z = projection.screen_normal();
             Point<> v = x.cross (z);
-            angle = ROTATION_INC * v.norm();
             v.normalise();
+            float angle = ROTATION_INC * Math::sqrt (float (Math::pow2 (dx) + Math::pow2 (dy)));
             if (angle > M_PI_2) angle = M_PI_2;
 
             Math::Quaternion<float> rot (angle, v);
@@ -301,8 +283,8 @@ namespace MR
         screenshot_name = image_name;
         OS = oversampling;
         OS_x = OS_y = 0;
-        framebuffer = new GLubyte [3*viewport[2]*viewport[3]];
-        pix = new QImage (OS*viewport[2], OS*viewport[3], QImage::Format_RGB32);
+        framebuffer = new GLubyte [3*projection.width()*projection.height()];
+        pix = new QImage (OS*projection.width(), OS*projection.height(), QImage::Format_RGB32);
         updateGL();
       }
 
@@ -312,14 +294,14 @@ namespace MR
       {
         makeCurrent();
         glPixelStorei (GL_PACK_ALIGNMENT, 1);
-        glReadPixels (0, 0, viewport[2], viewport[3], GL_RGB, GL_UNSIGNED_BYTE, framebuffer);
+        glReadPixels (0, 0, projection.width(), projection.height(), GL_RGB, GL_UNSIGNED_BYTE, framebuffer);
 
-        int start_i = viewport[2]*OS_x;
-        int start_j = viewport[3]* (OS-OS_y-1);
-        for (int j = 0; j < viewport[3]; j++) {
-          int j2 = viewport[3]-j-1;
-          for (int i = 0; i < viewport[2]; i++) {
-            GLubyte* p = framebuffer + 3* (i+viewport[2]*j);
+        int start_i = projection.width()*OS_x;
+        int start_j = projection.height()* (OS-OS_y-1);
+        for (int j = 0; j < projection.height(); j++) {
+          int j2 = projection.height()-j-1;
+          for (int i = 0; i < projection.width(); i++) {
+            GLubyte* p = framebuffer + 3* (i+projection.width()*j);
             pix->setPixel (start_i + i, start_j + j2, qRgb (p[0], p[1], p[2]));
           }
         }

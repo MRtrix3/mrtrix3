@@ -96,12 +96,12 @@ namespace MR
         if (flags_ & Lighting) 
           source += 
             "vec4 tmp = color; vec3 normal; "
-            "color = texture3D (tex, gl_TexCoord[0].stp+vec3(2.0e-2,0.0,0.0)); normal.x = " + amplitude (flags_) + "; "
-            "color = texture3D (tex, gl_TexCoord[0].stp+vec3(-2.0e-2,0.0,0.0)); normal.x -= " + amplitude (flags_) + "; "
-            "color = texture3D (tex, gl_TexCoord[0].stp+vec3(0.0,2.0e-2,0.0)); normal.y = " + amplitude (flags_) + "; "
-            "color = texture3D (tex, gl_TexCoord[0].stp+vec3(0.0,-2.0e-2,0.0)); normal.y -= " + amplitude (flags_) + "; "
-            "color = texture3D (tex, gl_TexCoord[0].stp+vec3(0.0,0.0,2.0e-2)); normal.z = " + amplitude (flags_) + "; "
-            "color = texture3D (tex, gl_TexCoord[0].stp+vec3(0.0,0.0,-2.0e-2)); normal.z -= " + amplitude (flags_) + "; "
+            "color = texture3D (tex, gl_TexCoord[0].stp+vec3(-2.0e-2,0.0,0.0)); normal.x = " + amplitude (flags_) + "; "
+            "color = texture3D (tex, gl_TexCoord[0].stp+vec3(2.0e-2,0.0,0.0)); normal.x -= " + amplitude (flags_) + "; "
+            "color = texture3D (tex, gl_TexCoord[0].stp+vec3(0.0,-2.0e-2,0.0)); normal.y = " + amplitude (flags_) + "; "
+            "color = texture3D (tex, gl_TexCoord[0].stp+vec3(0.0,2.0e-2,0.0)); normal.y -= " + amplitude (flags_) + "; "
+            "color = texture3D (tex, gl_TexCoord[0].stp+vec3(0.0,0.0,-2.0e-2)); normal.z = " + amplitude (flags_) + "; "
+            "color = texture3D (tex, gl_TexCoord[0].stp+vec3(0.0,0.0,2.0e-2)); normal.z -= " + amplitude (flags_) + "; "
             "normal = normalize (gl_NormalMatrix * normal); "
             "color = tmp; ";
 

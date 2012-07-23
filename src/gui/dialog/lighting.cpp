@@ -166,10 +166,10 @@ namespace MR
       void LightingSettings::light_position_slot ()
       {
         float elevation = elevation_slider->value() * (M_PI/1000.0);
-        float azimuth = -azimuth_slider->value() * (M_PI/1000.0);
+        float azimuth = azimuth_slider->value() * (M_PI/1000.0);
         info.lightpos[2] = sin (elevation) * cos (azimuth);
         info.lightpos[0] = sin (elevation) * sin (azimuth);
-        info.lightpos[1] = cos (elevation);
+        info.lightpos[1] = -cos (elevation);
         info.update();
       }
 

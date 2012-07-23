@@ -69,7 +69,8 @@ namespace MR
 
           glMatrixMode (GL_MODELVIEW);
           glLoadIdentity ();
-          window.lighting().set();
+          if (image()->shader.use_lighting())
+            window.lighting().set();
 
           Math::Quaternion<float> Q = orientation();
           if (!Q) {
@@ -143,11 +144,10 @@ namespace MR
 
 
           // set up OpenGL environment:
-          glDisable (GL_DEPTH_TEST);
-          glDepthMask (GL_FALSE);
+          glEnable (GL_DEPTH_TEST);
 
-          glEnable (GL_BLEND);
-          glBlendFunc (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+          glDepthMask (GL_FALSE);
+          glDisable (GL_BLEND);
 
           image()->update_texture3D();
 
@@ -161,10 +161,13 @@ namespace MR
 
           image()->shader.set_use_transparency (true);
 
+          glEnable (GL_BLEND);
+          glBlendFunc (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
           // render image:
           image()->render3D_pre (projection, projection.depth_of (focus()));
           float increment = std::min (image()->interp.vox(0), std::min (image()->interp.vox(1), image()->interp.vox(2)));
-          for (float offset = mindepth; offset <= maxdepth; offset += increment)
+          for (float offset = maxdepth; offset >= mindepth; offset -= increment)
             image()->render3D_slice (offset);
           image()->render3D_post();
 

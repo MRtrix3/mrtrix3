@@ -220,7 +220,7 @@ namespace MR
           Point<> x = projection.screen_to_model_direction (dpos, target());
           Point<> z = projection.screen_normal();
           Point<> v (x.cross (z));
-          float angle = ROTATION_INC * Math::sqrt (float (Math::pow2 (dpos.x()) + Math::pow2 (dpos.y())));
+          float angle = -ROTATION_INC * Math::sqrt (float (Math::pow2 (dpos.x()) + Math::pow2 (dpos.y())));
           v.normalise();
           if (angle > M_PI_2) angle = M_PI_2;
 
@@ -243,8 +243,8 @@ namespace MR
           if (x1.norm() < 16) 
             return;
 
-          Point<> x0 (x1[0] - window.mouse_displacement().x(), 
-              x1[1] - window.mouse_displacement().y(),
+          Point<> x0 (window.mouse_displacement().x() - x1[0], 
+              window.mouse_displacement().y() - x1[1],
               0.0);
 
           x1.normalise();
