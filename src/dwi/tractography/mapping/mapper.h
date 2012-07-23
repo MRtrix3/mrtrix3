@@ -300,21 +300,21 @@ void TrackMapperTWI<Cont>::gaussian_smooth_factors ()
       if (finite (unsmoothed[j])) {
         const float this_weight = exp (-distance * distance / gaussian_denominator);
         norm += this_weight;
-        sum  += this_weight * factors[j];
+        sum  += this_weight * unsmoothed[j];
       }
     }
     distance = 0.0;
     for (size_t j = i + 1; j < unsmoothed.size(); ++j) {
       distance += step_size;
-      if (finite (factors[j])) {
+      if (finite (unsmoothed[j])) {
         const float this_weight = exp (-distance * distance / gaussian_denominator);
         norm += this_weight;
-        sum  += this_weight * factors[j];
+        sum  += this_weight * unsmoothed[j];
       }
     }
 
     if (norm)
-      factors[i] = sum / norm;
+      factors[i] = (sum / norm);
     else
       factors[i] = 0.0;
 
@@ -396,7 +396,7 @@ void TrackMapperTWI<Cont>::set_factor (const std::vector< Point<float> >& tck, C
           break;
 
         case FMRI_MIN:
-          out.factor = MIN(factors[0], factors[1]);
+          out.factor = (Math::abs(factors[0]) < Math::abs(factors[1])) ? factors[0] : factors[1];
           break;
 
         case FMRI_MEAN:
@@ -404,11 +404,14 @@ void TrackMapperTWI<Cont>::set_factor (const std::vector< Point<float> >& tck, C
           break;
 
         case FMRI_MAX:
-          out.factor = MAX(factors[0], factors[1]);
+          out.factor = (Math::abs(factors[0]) > Math::abs(factors[1])) ? factors[0] : factors[1];
           break;
 
         case FMRI_PROD:
-          out.factor = factors[0] * factors[1];
+          if ((factors[0] < 0.0 && factors[1] < 0.0) || (factors[0] > 0.0 && factors[1] > 0.0))
+            out.factor = factors[0] * factors[1];
+          else
+            out.factor = 0.0;
           break;
 
         case GAUSSIAN:
@@ -537,8 +540,11 @@ void TrackMapperTWIImage<Cont>::load_factors (const std::vector< Point<float> >&
 
             float max_value = 0.0;
             for (std::vector< Point<float> >::const_iterator p = to_test.begin(); p != to_test.end(); ++p) {
-              if (!interp.scanner (*p))
-                max_value = MAX (max_value, interp.value());
+              if (!interp.scanner (*p)) {
+                const float value = interp.value();
+                if (Math::abs (value) > Math::abs(max_value))
+                  max_value = value;
+              }
             }
             TrackMapperTWI<Cont>::factors.push_back (max_value);
 
