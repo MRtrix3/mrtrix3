@@ -67,7 +67,7 @@ namespace MR
 
           // Perform connected components on the mask.
           const std::vector<std::vector<int> > & run (std::vector<cluster> & clusters,
-                    std::vector<uint32_t> & labels) {
+                                                      std::vector<uint32_t> & labels) {
             if (!mask_indices_.size())
               compute_adjacency();
             labels.resize (adjacent_indices_.size(), 0);
@@ -92,8 +92,8 @@ namespace MR
           // Perform connected components on data with the defined threshold. Assumes adjacency is the same as the mask.
           void run (std::vector<cluster> & clusters,
                     std::vector<uint32_t> & labels,
-                    std::vector<float> & data,
-                    float threshold) {
+                    const std::vector<float> & data,
+                    const float threshold) {
             if (!mask_indices_.size())
               compute_adjacency();
             labels.resize (adjacent_indices_.size(), 0);
@@ -259,8 +259,8 @@ namespace MR
 
           bool next_neighbour(uint32_t & node,
                               std::vector<uint32_t> & labels,
-                              std::vector<float> & data,
-                              float threshold) {
+                              const std::vector<float> & data,
+                              const float threshold) {
             for (size_t n = 0; n < adjacent_indices_[node].size(); n++) {
               if (labels[adjacent_indices_[node][n]] == 0 && data[adjacent_indices_[node][n]] > threshold) {
                 node = adjacent_indices_[node][n];
@@ -298,8 +298,8 @@ namespace MR
           void depth_first_search (uint32_t root,
                                    cluster & cluster,
                                    std::vector<uint32_t> & labels,
-                                   std::vector<float> & data,
-                                   float threshold) {
+                                   const std::vector<float> & data,
+                                   const float threshold) {
             uint32_t node = root;
             std::stack<uint32_t> stack;
             while (true) {

@@ -24,6 +24,7 @@
 #include "point.h"
 #include "ptr.h"
 #include "image/buffer.h"
+#include "image/buffer_preload.h"
 #include "image/voxel.h"
 #include "image/filter/dwi_brain_mask.h"
 
@@ -56,8 +57,10 @@ OPTIONS
 
 
 void run () {
-  Image::Buffer<float> input_data (argument[0]);
-  Image::Buffer<float>::voxel_type input_voxel (input_data);
+  std::vector<ssize_t> strides (4, 0);
+  strides[3] = 1;
+  Image::BufferPreload<float> input_data (argument[0], strides);
+  Image::BufferPreload<float>::voxel_type input_voxel (input_data);
 
   Math::Matrix<float> grad = DWI::get_valid_DW_scheme<float> (input_data);
 

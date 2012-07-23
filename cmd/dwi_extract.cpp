@@ -26,6 +26,7 @@
 #include "dwi/gradient.h"
 #include "image/loop.h"
 #include "image/buffer.h"
+#include "image/buffer_preload.h"
 
 MRTRIX_APPLICATION
 
@@ -53,8 +54,10 @@ void usage ()
 }
 
 void run() {
-  Image::Buffer<float> data_in (argument[0]);
-  Image::Buffer<float>::voxel_type voxel_in (data_in);
+  std::vector<ssize_t> strides (4, 0);
+  strides[3] = 1;
+  Image::BufferPreload<float> data_in (argument[0], strides);
+  Image::BufferPreload<float>::voxel_type voxel_in (data_in);
 
   Math::Matrix<value_type> grad(data_in.dim(3), 4);
   Options opt = get_options ("grad");

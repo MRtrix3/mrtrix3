@@ -5,6 +5,7 @@
 #include "thread/queue.h"
 #include "image/loop.h"
 #include "image/buffer.h"
+#include "image/buffer_preload.h"
 #include "image/voxel.h"
 #include "dwi/sdeconv/constrained.h"
 
@@ -67,7 +68,7 @@ class Item
 class DataLoader
 {
   public:
-    DataLoader (Image::Buffer<value_type>& dwi_data,
+    DataLoader (Image::BufferPreload<value_type>& dwi_data,
                 Image::Buffer<bool>* mask_data,
                 const std::vector<int>& vec_bzeros,
                 const std::vector<int>& vec_dwis,
@@ -109,7 +110,7 @@ class DataLoader
     }
 
   private:
-    Image::Buffer<value_type>::voxel_type dwi;
+    Image::BufferPreload<value_type>::voxel_type dwi;
     Ptr<Image::Buffer<bool>::voxel_type> mask;
     const std::vector<int>&  bzeros;
     const std::vector<int>&  dwis;
@@ -189,11 +190,14 @@ class Processor
 
 void run ()
 {
-  Image::Buffer<value_type> dwi_data (argument[0]);
+
+  std::vector<ssize_t> strides (4, 0);
+   strides[3] = 1;
+   Image::BufferPreload<value_type> dwi_data (argument[0], strides);
 
   Options opt = get_options ("mask");
   Ptr<Image::Buffer<bool> > mask_data;
-  if (opt.size()) 
+  if (opt.size())
     mask_data = new Image::Buffer<bool> (opt[0][0]);
 
   DWI::CSDeconv<value_type>::Shared shared (dwi_data, argument[1]);

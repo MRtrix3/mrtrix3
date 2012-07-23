@@ -85,6 +85,7 @@ namespace MR
               std::vector<int> bzeros, dwis;
               DWI::guess_DW_directions (dwis, bzeros, grad);
 
+
               Info info (input);
               info.set_ndim (3);
               ProgressBar progress("computing dwi brain mask...");
@@ -109,7 +110,6 @@ namespace MR
                 }
                 b0_mean_voxel.value() = mean / bzeros.size();
               }
-
               // Here we independently threshold the mean b=0 and dwi images
               OptimalThreshold threshold_filter (b0_mean_data);
               BufferScratch<int> b0_mean_mask_data (threshold_filter);

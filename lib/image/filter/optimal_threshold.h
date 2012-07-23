@@ -76,11 +76,13 @@ namespace MR
             double mean_xy = 0;
             Image::LoopInOrder loop (input_image_);
             if (mask_ptr) {
-              for (loop.start (input_image_); loop.ok(); loop.next (input_image_)) {
-                Image::voxel_assign(*mask_ptr, input_image_, 0, 3);
-                if (mask_ptr->value() > 0 && input_image_.value() > threshold) {
-                  sum += 1;
-                  mean_xy += (input_image_.value() * 1.0);
+              for (loop.start (*mask_ptr); loop.ok(); loop.next (*mask_ptr)) {
+                if (mask_ptr->value() > 0 ) {
+                  Image::voxel_assign(input_image_, *mask_ptr, 0, 3);
+                  if (input_image_.value() > threshold) {
+                    sum += 1;
+                    mean_xy += (input_image_.value() * 1.0);
+                  }
                 }
               }
             } else {
