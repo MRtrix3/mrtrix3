@@ -83,7 +83,7 @@ void TrackMapperBase<SetVoxelDEC>::voxelise (const std::vector< Point<float> >& 
     if (check (vox, H_out)) {
       SetVoxelDEC::iterator existing_vox = voxels.find (vox);
       if (existing_vox == voxels.end()) {
-        vox.add_dir (*(i+1) - *prev);
+        vox.set_dir (*(i+1) - *prev);
         voxels.insert (vox);
       } else {
         existing_vox->add_dir (*(i+1) - *prev);

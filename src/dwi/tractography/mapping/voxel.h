@@ -84,6 +84,7 @@ class VoxelDEC : public Voxel
     bool      operator<  (const VoxelDEC& V) const { return Voxel::operator< (V); }
 
     void norm_dir() const { colour.normalise(); }
+    void set_dir (const Point<float>& i) { colour[0] = Math::abs (i[0]); colour[1] = Math::abs (i[1]); colour[2] = Math::abs (i[2]); }
     void add_dir (const Point<float>& i) const { colour[0] += Math::abs (i[0]); colour[1] += Math::abs (i[1]); colour[2] += Math::abs (i[2]); }
     const Point<float>& get_dir() const { return colour; }
 
