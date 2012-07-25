@@ -25,8 +25,9 @@
 #include "app.h"
 #include "progressbar.h"
 #include "get_set.h"
-#include "image/buffer.h"
+#include "image/buffer_preload.h"
 #include "image/voxel.h"
+#include "thread/queue.h"
 #include "dwi/tractography/file.h"
 #include "dwi/tractography/properties.h"
 
@@ -49,41 +50,94 @@ void usage ()
 
 
 
+typedef float value_type;
+typedef std::vector<Point<value_type> > TrackType;
+
+
+
+class Loader 
+{
+  public:
+    Loader (const std::string& file) {
+        reader.open (file, properties);
+      }
+
+    bool operator() (TrackType& item) {
+      return reader.next (item);
+    }
+
+    Tractography::Properties properties;
+  protected:
+    Tractography::Reader<value_type> reader;
+};
+
+
+
+class Warper
+{
+  public:
+    Warper (const Image::BufferPreload<value_type>::voxel_type& warp_voxel) :
+      interp (warp_voxel) { }
+
+    bool operator () (const TrackType& in, TrackType& out) {
+      out.resize (in.size());
+      for (size_t n = 0; n < in.size(); ++n) 
+        out[n] = pos(in[n]);
+      return true;
+    }
+
+    Point<value_type> pos (const Point<value_type>& x) {
+      Point<value_type> p;
+      if (!interp.scanner (x)) {
+        interp[3] = 0; p[0] = interp.value();
+        interp[3] = 1; p[1] = interp.value();
+        interp[3] = 2; p[2] = interp.value();
+      }
+      return p;
+    }
+
+
+  protected:
+    Image::Interp::Linear<Image::BufferPreload<value_type>::voxel_type> interp;
+};
+
+
+
+class Writer 
+{
+  public:
+    Writer (const std::string& file, const Tractography::Properties& properties) :
+      progress ("normalising tracks...") {
+        writer.create (file, properties);
+      }
+
+    bool operator() (const TrackType& item) {
+      writer.append (item);
+      writer.total_count++;
+      ++progress;
+      return true;
+    }
+
+  protected:
+    ProgressBar progress;
+    Tractography::Properties properties;
+    Tractography::Writer<value_type> writer;
+};
+
 
 
 
 
 void run ()
 {
-  Tractography::Properties properties;
-  Tractography::Reader<> file;
-  file.open (argument[0], properties);
+  Loader loader (argument[0]);
 
-  Image::Buffer<float> data (argument[1]);
-  Image::Buffer<float>::voxel_type vox (data);
+  Image::BufferPreload<value_type> data (argument[1]);
+  Image::BufferPreload<value_type>::voxel_type vox (data);
+  Warper warper (vox);
 
-  Tractography::Writer<> writer;
-  writer.create (argument[2], properties);
+  Writer writer (argument[2], loader.properties);
 
-  std::vector<Point<float> > tck;
-
-  Image::Interp::Linear<Image::Buffer<float>::voxel_type> interp (vox);
-  ProgressBar progress ("normalising tracks...");
-
-  while (file.next (tck)) {
-    for (std::vector<Point<float> >::iterator i = tck.begin(); i != tck.end(); ++i) {
-      interp.scanner (*i);
-      interp[3] = 0;
-      (*i) [0] = interp.value();
-      interp[3] = 1;
-      (*i) [1] = interp.value();
-      interp[3] = 2;
-      (*i) [2] = interp.value();
-    }
-    writer.append (tck);
-    writer.total_count++;
-    ++progress;
-  }
-
+  Thread::run_batched_queue (loader, 1, TrackType(), 1024, warper, 0, TrackType(), 1024, writer, 1);
 }
 
