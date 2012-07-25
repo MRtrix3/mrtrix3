@@ -137,7 +137,8 @@ namespace MR {
               method.dir[2] = -seed_dir[2];
               method.pos = tck.back();
               Exec<Method>::method.reverse_track();
-              while (iterate() && tck.size() < S.max_num_points) 
+              size_t max_num_points = S.max_num_points + tck.size();
+              while (iterate() && tck.size() < max_num_points) 
                 tck.push_back (method.pos);
             }
           }
