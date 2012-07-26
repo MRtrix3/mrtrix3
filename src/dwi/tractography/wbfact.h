@@ -54,28 +54,20 @@ namespace MR {
           WBFACT (const Shared& shared) :
             FACT (shared),
             S (shared),
-            wb_functor (S.Hat, rng),
-            wb_set (source, wb_functor) {
-            for (size_t i = 0; i < 8; ++i)
-              raw_signals.push_back (new value_type [source.dim (3)]);
-          }
+            source (Bootstrap<SourceBufferType::voxel_type,WildBootstrap> (S.source_voxel, WildBootstrap (S.Hat, rng))) { }
 
           WBFACT (const WBFACT& F) :
             FACT (F.S),
             S (F.S),
-            wb_functor (S.Hat, rng),
-            wb_set (source, wb_functor) {
-            for (size_t i = 0; i < 8; ++i)
-              raw_signals.push_back (new value_type [source.dim (3)]);
-          }
+            source (Bootstrap<SourceBufferType::voxel_type,WildBootstrap> (S.source_voxel, WildBootstrap (S.Hat, rng))) { }
 
 
 
 
           bool init () {
-            wb_set.clear();
+            source.clear();
 
-            if (!get_WB_data ())
+            if (!source.get (pos, values))
               return false;
 
             return do_init();
@@ -84,7 +76,7 @@ namespace MR {
 
 
           bool next () {
-            if (!get_WB_data ())
+            if (!source.get (pos, values))
               return false;
 
             return do_next();
@@ -118,104 +110,92 @@ namespace MR {
               Math::Vector<value_type> residuals, log_signal;
           };
 
-          class Interp : public Image::Interp::Linear<Bootstrap<VoxelType,WildBootstrap> > {
+          class Interp : public Interpolator<Bootstrap<SourceBufferType::voxel_type,WildBootstrap> >::type {
             public:
-              Interp (Bootstrap<VoxelType,WildBootstrap>& set) :
-                Image::Interp::Linear<Bootstrap<VoxelType,WildBootstrap> > (set) { }
-
-              void get (
-                value_type* data,
-                size_t num,
-                const value_type* aaa,
-                const value_type* aab,
-                const value_type* aba,
-                const value_type* abb,
-                const value_type* baa,
-                const value_type* bab,
-                const value_type* bba,
-                const value_type* bbb) const {
-                if (out_of_bounds) {
-                  for (size_t i = 0; i < num; ++i)
-                    data[i] = NAN;
-                  return;
+              Interp (const Bootstrap<SourceBufferType::voxel_type,WildBootstrap>& bootstrap_vox) :
+                Interpolator<Bootstrap<SourceBufferType::voxel_type,WildBootstrap> >::type (bootstrap_vox) { 
+                  for (size_t i = 0; i < 8; ++i)
+                    raw_signals.push_back (new value_type [dim (3)]);
                 }
 
-                memset (data, 0, num*sizeof (value_type));
+              VecPtr<value_type,true> raw_signals;
 
-                if (faaa)
-                  for (size_t i = 0; i < num; ++i)
-                    data[i] +=  faaa * aaa[i];
+              bool get (const Point<value_type>& pos, std::vector<value_type>& data) {
+                scanner (pos);
 
-                if (faab)
-                  for (size_t i = 0; i < num; ++i)
-                    data[i] +=  faab * aab[i];
+                if (out_of_bounds) {
+                  std::fill (data.begin(), data.end(), NAN);
+                  return false;
+                }
 
-                if (faba)
-                  for (size_t i = 0; i < num; ++i)
-                    data[i] +=  faba * aba[i];
+                std::fill (data.begin(), data.end(), 0.0);
 
-                if (fabb)
-                  for (size_t i = 0; i < num; ++i)
-                    data[i] +=  fabb * abb[i];
+                if (faaa) {
+                  get_values (raw_signals[0]); // aaa
+                  for (size_t i = 0; i < data.size(); ++i)
+                    data[i] +=  faaa * raw_signals[0][i];
+                }
 
-                if (fbaa)
-                  for (size_t i = 0; i < num; ++i)
-                    data[i] +=  fbaa * baa[i];
+                ++(*this)[2];
+                if (faab) {
+                  get_values (raw_signals[1]); // aab
+                  for (size_t i = 0; i < data.size(); ++i)
+                    data[i] +=  faab * raw_signals[1][i];
+                }
 
-                if (fbab)
-                  for (size_t i = 0; i < num; ++i)
-                    data[i] +=  fbab * bab[i];
+                ++(*this)[1];
+                if (fabb) {
+                  get_values (raw_signals[3]); // abb
+                  for (size_t i = 0; i < data.size(); ++i)
+                    data[i] +=  fabb * raw_signals[3][i];
+                }
 
-                if (fbba)
-                  for (size_t i = 0; i < num; ++i)
-                    data[i] +=  fbba * bba[i];
+                --(*this)[2];
+                if (faba) {
+                  get_values (raw_signals[2]); // aba
+                  for (size_t i = 0; i < data.size(); ++i)
+                    data[i] +=  faba * raw_signals[2][i];
+                }
 
-                if (fbbb)
-                  for (size_t i = 0; i < num; ++i)
-                    data[i] +=  fbbb * bbb[i];
+                ++(*this)[0];
+                if (fbba) {
+                  get_values (raw_signals[6]); // bba
+                  for (size_t i = 0; i < data.size(); ++i)
+                    data[i] +=  fbba * raw_signals[6][i];
+                }
 
+                --(*this)[1];
+                if (fbaa) {
+                  get_values (raw_signals[4]); // baa
+                  for (size_t i = 0; i < data.size(); ++i)
+                    data[i] +=  fbaa * raw_signals[4][i];
+                }
+
+                ++(*this)[2];
+                if (fbab) {
+                  get_values (raw_signals[5]); // bab
+                  for (size_t i = 0; i < data.size(); ++i)
+                    data[i] +=  fbab * raw_signals[5][i];
+                }
+
+                ++(*this)[1];
+                if (fbbb) {
+                  get_values (raw_signals[7]); // bbb
+                  for (size_t i = 0; i < data.size(); ++i)
+                    data[i] +=  fbbb * raw_signals[7][i];
+                }
+
+                --(*this)[0];
+                --(*this)[1];
+                --(*this)[2];
+
+                return !isnan (data[0]);
               }
           };
 
 
-
-
-
           const Shared& S;
-          WildBootstrap wb_functor;
-          Bootstrap<VoxelType,WildBootstrap> wb_set;
-          VecPtr<value_type,true> raw_signals;
-
-          bool get_WB_data () {
-            interp.scanner (pos);
-            if (!interp)
-              return false;
-            wb_set.get_values (raw_signals[0]); // aaa
-            ++wb_set[2];
-            wb_set.get_values (raw_signals[1]); // aab
-            ++wb_set[1];
-            wb_set.get_values (raw_signals[3]); // abb
-            --wb_set[2];
-            wb_set.get_values (raw_signals[2]); // aba
-            ++wb_set[0];
-            wb_set.get_values (raw_signals[6]); // bba
-            --wb_set[1];
-            wb_set.get_values (raw_signals[4]); // baa
-            ++wb_set[2];
-            wb_set.get_values (raw_signals[5]); // bab
-            ++wb_set[1];
-            wb_set.get_values (raw_signals[7]); // bbb
-            --wb_set[0];
-            --wb_set[1];
-            --wb_set[2];
-
-            const Image::Interp::Linear<VoxelType>* std_interp = &interp;
-            reinterpret_cast<const Interp*> (std_interp)->get (values, source.dim (3),
-                raw_signals[0], raw_signals[1], raw_signals[2], raw_signals[3],
-                raw_signals[4], raw_signals[5], raw_signals[6], raw_signals[7]);
-
-            return !isnan (values[0]);
-          }
+          Interp source;
 
       };
 

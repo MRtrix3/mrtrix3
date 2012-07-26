@@ -40,7 +40,7 @@ namespace MR {
             public:
               Shared (const std::string& source_name, DWI::Tractography::Properties& property_set) :
                 SharedBase (source_name, property_set),
-                lmax (Math::SH::LforN (source.dim(3))),
+                lmax (Math::SH::LforN (source_buffer.dim(3))),
                 precomputer (NULL)
               {
 
@@ -78,20 +78,19 @@ namespace MR {
 
           SDStream (const Shared& shared) :
             MethodBase (shared), 
-            S (shared) { }
+            S (shared),
+            source (S.source_voxel) { }
 
           SDStream (const SDStream& that) :
             MethodBase (that.S),
-            S (that.S) { }
-
-
-          ~SDStream () { }
+            S (that.S),
+            source (that.source) { }
 
 
 
           bool init ()
           { 
-            if (!get_data ())
+            if (!get_data (source))
               return (false);
 
             if (!S.init_dir)
@@ -110,7 +109,7 @@ namespace MR {
 
           bool next () 
           {
-            if (!get_data ())
+            if (!get_data (source))
               return (false);
 
             const Point<value_type> prev_dir (dir);
@@ -128,10 +127,11 @@ namespace MR {
 
         protected:
           const Shared& S;
+          Interpolator<SourceBufferType::voxel_type>::type source;
 
           value_type find_peak ()
           {
-            value_type FOD = Math::SH::get_peak (values, S.lmax, dir, S.precomputer);
+            value_type FOD = Math::SH::get_peak (&values[0], S.lmax, dir, S.precomputer);
             if (!finite (FOD) || FOD < S.threshold)
               FOD = 0.0;
             return FOD;

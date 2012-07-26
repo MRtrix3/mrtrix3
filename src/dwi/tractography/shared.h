@@ -1,24 +1,24 @@
 /*
-    Copyright 2009 Brain Research Institute, Melbourne, Australia
+   Copyright 2009 Brain Research Institute, Melbourne, Australia
 
-    Written by J-Donald Tournier, 25/10/09.
+   Written by J-Donald Tournier, 25/10/09.
 
-    This file is part of MRtrix.
+   This file is part of MRtrix.
 
-    MRtrix is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
+   MRtrix is free software: you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation, either version 3 of the License, or
+   (at your option) any later version.
 
-    MRtrix is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
+   MRtrix is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
 
-    You should have received a copy of the GNU General Public License
-    along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
+   You should have received a copy of the GNU General Public License
+   along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
 
-*/
+ */
 
 #ifndef __dwi_tractography_shared_h__
 #define __dwi_tractography_shared_h__
@@ -35,16 +35,31 @@ namespace MR {
   namespace DWI {
     namespace Tractography {
 
-      typedef float value_type;
-      typedef Image::BufferPreload<value_type> StorageType;
-      typedef StorageType::voxel_type VoxelType;
+      namespace {
+        std::vector<ssize_t> strides_by_volume () {
+          std::vector<ssize_t> S (4, 0);
+          S[3] = 1;
+          return S;
+        }
+
+      }
+
+      typedef Image::BufferPreload<float> SourceBufferType;
+      typedef SourceBufferType::value_type value_type;
+
+      template <class VoxelType>
+        class Interpolator {
+          public:
+            typedef Image::Interp::Linear<VoxelType> type;
+        };
+
 
       class SharedBase {
         public:
 
           SharedBase (const std::string& source_name, DWI::Tractography::Properties& property_set) :
-            source_data (source_name, strides_by_volume()),
-            source (source_data),
+            source_buffer (source_name, strides_by_volume()),
+            source_voxel (source_buffer),
             properties (property_set), 
             max_num_tracks (1000),
             max_angle (NAN),
@@ -61,7 +76,7 @@ namespace MR {
               properties.set (max_num_tracks, "max_num_tracks");
               properties.set (rk4, "rk4");
 
-              properties["source"] = source_data.name();
+              properties["source"] = source_buffer.name();
 
               init_threshold = 2.0*threshold;
               properties.set (init_threshold, "init_threshold");
@@ -83,7 +98,7 @@ namespace MR {
 
           value_type vox () const 
           {
-            return Math::pow (source.vox(0)*source.vox(1)*source.vox(2), value_type (1.0/3.0));
+            return Math::pow (source_buffer.vox(0)*source_buffer.vox(1)*source_buffer.vox(2), value_type (1.0/3.0));
           }
 
           void set_step_size (value_type stepsize) 
@@ -114,8 +129,8 @@ namespace MR {
             }
           }
 
-          StorageType source_data;
-          VoxelType source; // Provided for const method constructors only
+          SourceBufferType source_buffer;
+          SourceBufferType::voxel_type source_voxel;
           DWI::Tractography::Properties& properties;
           Point<value_type> init_dir;
           size_t max_num_tracks, max_num_attempts, min_num_points, max_num_points;
@@ -124,9 +139,8 @@ namespace MR {
           bool unidirectional;
           bool rk4;
 
-        private:
-          static const std::vector<ssize_t>& strides_by_volume ();
       };
+
 
     }
   }

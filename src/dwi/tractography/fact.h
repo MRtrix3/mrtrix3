@@ -54,7 +54,7 @@ namespace MR {
                   if (properties.find ("DW_scheme") != properties.end())
                     grad.load (properties["DW_scheme"]);
                   else
-                    grad = source_data.DW_scheme();
+                    grad = source_buffer.DW_scheme();
 
                   if (grad.columns() != 4) 
                     throw Exception ("unexpected number of columns in gradient encoding (expected 4 columns)");
@@ -78,6 +78,7 @@ namespace MR {
           FACT (const Shared& shared) : 
             MethodBase (shared), 
             S (shared),
+            source (S.source_voxel),
             eig (3),
             M (3,3),
             V (3,3),
@@ -89,7 +90,7 @@ namespace MR {
 
           bool init () 
           { 
-            if (!get_data ()) 
+            if (!get_data (source)) 
               return false;
 
             return do_init();
@@ -99,7 +100,7 @@ namespace MR {
 
           bool next () 
           {
-            if (!get_data ())
+            if (!get_data (source))
               return false;
 
             return do_next();
@@ -107,6 +108,7 @@ namespace MR {
 
         protected:
           const Shared& S;
+          Interpolator<SourceBufferType::voxel_type>::type source;
           Math::Eigen::SymmV<double> eig;
           Math::Matrix<double> M, V;
           Math::Vector<double> ev;
@@ -131,9 +133,9 @@ namespace MR {
 
           bool do_init ()
           {
-            dwi2tensor (S.binv, values);
+            dwi2tensor (S.binv, &values[0]);
 
-            if (tensor2FA (values) < S.init_threshold)
+            if (tensor2FA (&values[0]) < S.init_threshold)
               return false;
 
             get_EV();
@@ -144,9 +146,9 @@ namespace MR {
 
           bool do_next () 
           {
-            dwi2tensor (S.binv, values);
+            dwi2tensor (S.binv, &values[0]);
 
-            if (tensor2FA (values) < S.threshold)
+            if (tensor2FA (&values[0]) < S.threshold)
               return false;
 
             Point<value_type> prev_dir = dir;

@@ -33,89 +33,85 @@ namespace MR {
   namespace DWI {
     namespace Tractography {
 
-      class MethodBase {
-        public:
-          MethodBase (const SharedBase& shared) :
-            source (shared.source),
-            interp (source), 
-            pos (0.0, 0.0, 0.0),
-            dir (0.0, 0.0, 1.0),
-            values (new value_type [source.dim(3)]),
-            step_size (shared.step_size) { }
+        class MethodBase {
+          public:
+            MethodBase (const SharedBase& shared) :
+              pos (0.0, 0.0, 0.0),
+              dir (0.0, 0.0, 1.0),
+              values (shared.source_buffer.dim(3)),
+              step_size (shared.step_size) { }
 
-          MethodBase (const MethodBase& base) : 
-            source (base.source), 
-            interp (source),
-            rng (base.rng),
-            pos (0.0, 0.0, 0.0),
-            dir (0.0, 0.0, 1.0),
-            values (new value_type [source.dim(3)]),
-            step_size (base.step_size) { }
+            MethodBase (const MethodBase& base) : 
+              rng (base.rng),
+              pos (0.0, 0.0, 0.0),
+              dir (0.0, 0.0, 1.0),
+              values (base.values.size()),
+              step_size (base.step_size) { }
 
-          ~MethodBase () { delete [] values; }
+            Math::RNG rng;
+            Point<value_type> pos, dir;
+            std::vector<value_type> values;
+            value_type step_size;
 
-          VoxelType source;
-          Image::Interp::Linear<VoxelType> interp;
-          Math::RNG rng;
-          Point<value_type> pos, dir;
-          value_type* values;
-          value_type step_size;
+            template <class InterpolatorType> 
+              inline bool get_data (InterpolatorType& source, const Point<value_type>& position) 
+              {
+                source.scanner (position); 
+                if (!source) return (false);
+                for (source[3] = 0; source[3] < source.dim(3); ++source[3])
+                  values[source[3]] = source.value();
+                return (!isnan (values[0]));
+              }
 
-          bool get_data (const Point<value_type>& position) 
-          {
-            interp.scanner (position); 
-            if (!interp) return (false);
-            for (interp[3] = 0; interp[3] < interp.dim(3); ++interp[3])
-              values[interp[3]] = interp.value();
-            return (!isnan (values[0]));
-          }
+            template <class InterpolatorType> 
+              inline bool get_data (InterpolatorType& source) { 
+                return (get_data (source, pos)); 
+              }
 
-          bool get_data () { return (get_data (pos)); }
-
-          Point<value_type> random_direction (value_type max_angle, value_type sin_max_angle)
-          {
-            value_type phi = 2.0 * M_PI * rng.uniform();
-            value_type theta;
-            do { 
-              theta = max_angle * rng.uniform();
-            } while (sin_max_angle * rng.uniform() > sin (theta)); 
-            return (Point<value_type> (sin(theta)*cos(phi), sin(theta)*sin(phi), cos(theta)));
-          }
+            Point<value_type> random_direction (value_type max_angle, value_type sin_max_angle)
+            {
+              value_type phi = 2.0 * M_PI * rng.uniform();
+              value_type theta;
+              do { 
+                theta = max_angle * rng.uniform();
+              } while (sin_max_angle * rng.uniform() > sin (theta)); 
+              return (Point<value_type> (sin(theta)*cos(phi), sin(theta)*sin(phi), cos(theta)));
+            }
 
 
-          Point<value_type> rotate_direction (const Point<value_type>& reference, const Point<value_type>& direction) 
-          {
-            using namespace Math;
+            Point<value_type> rotate_direction (const Point<value_type>& reference, const Point<value_type>& direction) 
+            {
+              using namespace Math;
 
-            value_type n = sqrt (pow2(reference[0]) + pow2(reference[1]));
-            if (n == 0.0)
-              return (reference[2] < 0.0 ? -direction : direction);
+              value_type n = sqrt (pow2(reference[0]) + pow2(reference[1]));
+              if (n == 0.0)
+                return (reference[2] < 0.0 ? -direction : direction);
 
-            Point<value_type> m (reference[0]/n, reference[1]/n, 0.0);
-            Point<value_type> mp (reference[2]*m[0], reference[2]*m[1], -n);
+              Point<value_type> m (reference[0]/n, reference[1]/n, 0.0);
+              Point<value_type> mp (reference[2]*m[0], reference[2]*m[1], -n);
 
-            value_type alpha = direction[2];
-            value_type beta = direction[0]*m[0] + direction[1]*m[1];
+              value_type alpha = direction[2];
+              value_type beta = direction[0]*m[0] + direction[1]*m[1];
 
-            return (Point<value_type> (
-                  direction[0] + alpha * reference[0] + beta * (mp[0] - m[0]),
-                  direction[1] + alpha * reference[1] + beta * (mp[1] - m[1]),
-                  direction[2] + alpha * (reference[2]-1.0) + beta * (mp[2] - m[2])
-                  ));
-          }
-
-
-          Point<value_type> random_direction (const Point<value_type>& d, value_type max_angle, value_type sin_max_angle)
-          {
-            return (rotate_direction (d, random_direction (max_angle, sin_max_angle)));
-          }
+              return (Point<value_type> (
+                    direction[0] + alpha * reference[0] + beta * (mp[0] - m[0]),
+                    direction[1] + alpha * reference[1] + beta * (mp[1] - m[1]),
+                    direction[2] + alpha * (reference[2]-1.0) + beta * (mp[2] - m[2])
+                    ));
+            }
 
 
-          virtual void reverse_track() { }
-          virtual bool next() = 0;
+            Point<value_type> random_direction (const Point<value_type>& d, value_type max_angle, value_type sin_max_angle)
+            {
+              return (rotate_direction (d, random_direction (max_angle, sin_max_angle)));
+            }
 
 
-      };
+            virtual void reverse_track() { }
+            virtual bool next() = 0;
+
+
+        };
 
 
 

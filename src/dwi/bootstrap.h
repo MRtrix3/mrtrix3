@@ -25,46 +25,44 @@
 
 #include "ptr.h"
 #include "image/position.h"
+#include "image/adapter/voxel.h"
 
 
 namespace MR {
   namespace DWI {
 
 
-    template <class Set, class Functor, size_t NUM_VOX_PER_CHUNK = 256> class Bootstrap 
+    template <class VoxelType, class Functor, size_t NUM_VOX_PER_CHUNK = 256> 
+      class Bootstrap : public Image::Adapter::Voxel<VoxelType>
     {
       public:
-        typedef typename Set::value_type value_type;
+        typedef typename VoxelType::value_type value_type;
+        using Image::Adapter::Voxel<VoxelType>::dim;
+        using typename Image::Adapter::Voxel<VoxelType>::parent_vox;
 
-        Bootstrap (Set& Image, Functor& functor) :
-          S (Image),
+        Bootstrap (const VoxelType& Image, const Functor& functor) :
+          Image::Adapter::Voxel<VoxelType> (Image),
           func (functor),
           next_voxel (NULL),
           last_voxel (NULL) {
-            assert (S.ndim() == 4);
+            assert (ndim() == 4);
           }
 
-        const std::string& name () const { return S.name(); }
-        size_t ndim () const { return 4; }
-        int dim (size_t axis) const { return S.dim (axis); }
-        float vox (size_t axis) const { return S.vox (axis); }
-        const Math::Matrix<float>& transform () const { return S.transform(); }
-        ssize_t stride (size_t axis) const { return S.stride (axis); }
-
-        value_type value () { return get_voxel()[S[3]]; }
+        value_type value () { 
+          return get_voxel()[parent_vox[3]]; 
+        }
 
         void get_values (value_type* buffer) { 
-          if (S[0] < 0 || S[0] >= dim(0) ||
-              S[1] < 0 || S[1] >= dim(1) ||
-              S[2] < 0 || S[2] >= dim(2)) 
+          if (parent_vox[0] < 0 || parent_vox[0] >= dim(0) ||
+              parent_vox[1] < 0 || parent_vox[1] >= dim(1) ||
+              parent_vox[2] < 0 || parent_vox[2] >= dim(2)) 
             memset (buffer, 0, dim(3)*sizeof(value_type));
           else
             memcpy (buffer, get_voxel(), dim(3)*sizeof(value_type)); 
         }
 
-        Image::Position<Bootstrap<Set,Functor,NUM_VOX_PER_CHUNK> > operator[] (size_t axis )
-        {
-          return Image::Position<Bootstrap<Set,Functor,NUM_VOX_PER_CHUNK> > (*this, axis);
+        Image::Position<Bootstrap<VoxelType,Functor,NUM_VOX_PER_CHUNK> > operator[] (size_t axis ) {
+          return Image::Position<Bootstrap<VoxelType,Functor,NUM_VOX_PER_CHUNK> > (*this, axis);
         } 
 
         void clear () 
@@ -78,7 +76,6 @@ namespace MR {
         }
 
       protected:
-        Set& S;
         Functor func;
         std::map<Point<ssize_t>,value_type*> voxels;
         VecPtr<value_type,true> voxel_buffer;
@@ -103,23 +100,19 @@ namespace MR {
 
         value_type* get_voxel ()
         {
-          value_type*& data (voxels.insert (std::make_pair (Point<ssize_t> (S[0], S[1], S[2]), (float*)NULL)).first->second);
+          value_type*& data (voxels.insert (std::make_pair (Point<ssize_t> (parent_vox[0], parent_vox[1], parent_vox[2]), (float*)NULL)).first->second);
           if (!data) {
             data = allocate_voxel ();
-            ssize_t pos = S[3];
-            for (S[3] = 0; S[3] < S.dim(3); ++S[3])
-              data[S[3]] = S.value();
-            S[3] = pos;
+            ssize_t pos = parent_vox[3];
+            for (parent_vox[3] = 0; parent_vox[3] < dim(3); ++parent_vox[3])
+              data[parent_vox[3]] = parent_vox.value();
+            parent_vox[3] = pos;
             func (data);
           }
           return data;
         }
 
-        ssize_t get_pos (size_t axis) const { return S[axis]; }
-        void set_pos (size_t axis, ssize_t position) const { S[axis] = position; }
-        void move_pos (size_t axis, ssize_t increment) const { S[axis] += increment; }
-
-        friend class Image::Position<Bootstrap<Set,Functor,NUM_VOX_PER_CHUNK> >;
+        friend class Image::Position<Bootstrap<VoxelType,Functor,NUM_VOX_PER_CHUNK> >;
     };
 
   }

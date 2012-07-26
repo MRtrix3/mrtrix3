@@ -38,6 +38,7 @@ namespace MR {
       class WriteKernel 
       {
         public:
+
           WriteKernel (const SharedBase& shared, 
               const std::string& output_file, 
               DWI::Tractography::Properties& properties) :
@@ -73,6 +74,7 @@ namespace MR {
 
       template <class Method> class Exec {
         public:
+
           static void run (const std::string& source_name, const std::string& destination, DWI::Tractography::Properties& properties)
           {
             typename Method::Shared shared (source_name, properties);

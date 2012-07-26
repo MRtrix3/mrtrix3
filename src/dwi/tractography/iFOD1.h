@@ -40,7 +40,7 @@ namespace MR {
             public:
               Shared (const std::string& source_name, DWI::Tractography::Properties& property_set) :
                 SharedBase (source_name, property_set),
-                lmax (Math::SH::LforN (source.dim(3))), 
+                lmax (Math::SH::LforN (source_buffer.dim(3))), 
                 max_trials (MAX_TRIALS),
                 sin_max_angle (Math::sin (max_angle)),
                 mean_samples (0.0),
@@ -98,6 +98,7 @@ namespace MR {
           iFOD1 (const Shared& shared) : 
             MethodBase (shared), 
             S (shared),
+            source (S.source_voxel),
             mean_sample_num (0), 
             num_sample_runs (0),
             num_truncations (0),
@@ -117,7 +118,7 @@ namespace MR {
 
           bool init () 
           { 
-            if (!get_data ()) return (false);
+            if (!get_data (source)) return (false);
 
             if (!S.init_dir) {
               for (size_t n = 0; n < S.max_trials; n++) {
@@ -144,7 +145,7 @@ namespace MR {
 
           bool next () 
           {
-            if (!get_data ())
+            if (!get_data (source))
               return (false);
 
             value_type max_val = 0.0;
@@ -190,6 +191,7 @@ namespace MR {
 
         protected:
           const Shared& S;
+          Interpolator<SourceBufferType::voxel_type>::type source;
           value_type calibrate_ratio;
           size_t mean_sample_num, num_sample_runs, num_truncations;
           float max_truncation;
@@ -214,7 +216,7 @@ namespace MR {
             public:
               Calibrate (iFOD1& method) : 
                 P (method),
-                fod (P.values, P.source.dim(3))
+                fod (&P.values[0], P.source.dim(3))
               {
                 Math::SH::delta (fod, Point<value_type> (0.0, 0.0, 1.0), P.S.lmax);
               }
@@ -225,7 +227,7 @@ namespace MR {
               }
 
             private:
-              const iFOD1& P;
+              iFOD1& P;
               Math::Vector<value_type> fod;
           };
 

@@ -40,7 +40,7 @@ namespace MR {
             public:
               Shared (const std::string& source_name, DWI::Tractography::Properties& property_set) :
                 SharedBase (source_name, property_set),
-                num_vec (source.dim(3)/3) {
+                num_vec (source_buffer.dim(3)/3) {
 
                   if (rk4)
                     throw Exception ("4th-order Runge-Kutta integration not valid for VecStream algorithm");
@@ -66,15 +66,13 @@ namespace MR {
           VecStream (const Shared& shared) : 
             MethodBase (shared), 
             S (shared),
-            ninterp (source) { }
+            source (S.source_voxel) { }
 
           VecStream (const VecStream& vec) : 
             MethodBase (vec.S), 
             S (vec.S),
-            ninterp (source) { }
+            source (vec.source) { }
 
-
-          ~VecStream () { }
 
 
 
@@ -101,20 +99,20 @@ namespace MR {
 
         protected:
           const Shared& S;
-          Image::Interp::Nearest<VoxelType> ninterp;
+          Image::Interp::Nearest<SourceBufferType::voxel_type> source;
 
           value_type get_data (Point<value_type>& d) 
           {
-            ninterp.scanner (pos); 
-            if (!ninterp) return (false);
+            source.scanner (pos); 
+            if (!source) return (false);
             for (source[3] = 0; source[3] < source.dim(3); ++source[3]) 
-              values[source[3]] = ninterp.value();
+              values[source[3]] = source.value();
 
             int idx = -1;
             value_type max_abs_dot = 0.0, max_dot = 0.0, max_norm = 0.0;
             
             for (size_t n = 0; n < S.num_vec; ++n) {
-              value_type* m = values + 3*n;
+              value_type* m = &values[3*n];
               value_type norm = Math::norm(m,3);
               value_type dot = Math::dot (m, (value_type*) d, 3) / norm;
               value_type abs_dot = Math::abs (dot);

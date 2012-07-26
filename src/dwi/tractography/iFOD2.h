@@ -44,7 +44,7 @@ namespace MR {
             public:
               Shared (const std::string& source_name, DWI::Tractography::Properties& property_set) :
                 SharedBase (source_name, property_set),
-                lmax (Math::SH::LforN (source.dim(3))), 
+                lmax (Math::SH::LforN (source_buffer.dim(3))), 
                 num_samples (4),
                 max_trials (MAX_TRIALS),
                 mean_samples (0.0),
@@ -109,6 +109,7 @@ namespace MR {
           iFOD2 (const Shared& shared) :
             MethodBase (shared), 
             S (shared), 
+            source (S.source_voxel),
             mean_sample_num (0), 
             num_sample_runs (0),
             num_truncations (0),
@@ -130,7 +131,7 @@ namespace MR {
 
           bool init () 
           { 
-            if (!get_data ()) 
+            if (!get_data (source)) 
               return false;
 
             if (!S.init_dir) {
@@ -212,6 +213,7 @@ end_init:
 
           private:
           const Shared& S;
+          Interpolator<SourceBufferType::voxel_type>::type source;
           value_type calibrate_ratio, half_log_prob0, last_half_log_probN, half_log_prob0_seed;
           size_t mean_sample_num, num_sample_runs, num_truncations;
           value_type max_truncation;
@@ -227,7 +229,7 @@ end_init:
 
           value_type FOD (const Point<value_type>& position, const Point<value_type>& direction) 
           {
-            if (!get_data (position)) 
+            if (!get_data (source, position)) 
               return NAN;
             return FOD (direction);
           }
@@ -310,7 +312,7 @@ end_init:
             public:
               Calibrate (iFOD2& method) : 
                 P (method),
-                fod (P.values, P.source.dim(3))
+                fod (&P.values[0], P.source.dim(3))
               {
                 Math::SH::delta (fod, Point<value_type> (0.0, 0.0, 1.0), P.S.lmax);
                 init_log_prob = 0.5 * Math::log (Math::SH::value (P.values, Point<value_type> (0.0, 0.0, 1.0), P.S.lmax));
@@ -335,7 +337,7 @@ end_init:
               }
 
             private:
-              const iFOD2& P;
+              iFOD2& P;
               Math::Vector<value_type> fod;
               value_type init_log_prob;
           };
