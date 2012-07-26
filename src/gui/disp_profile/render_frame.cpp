@@ -112,8 +112,8 @@ namespace MR
 
         float dist (1.0 / (distance * view_angle * D2R));
         float near = (dist-3.0 > 0.001 ? dist-3.0 : 0.001);
-        float horizontal = 2.0 * near * tan (0.5*view_angle*D2R) * float (projection.width()) / float (projection.width()+projection.height());
-        float vertical = 2.0 * near * tan (0.5*view_angle*D2R) * float (projection.width()) / float (projection.width()+projection.height());
+        float horizontal = 2.0 * near * tan (0.5*view_angle*D2R) * float (width()) / float (width()+height());
+        float vertical = 2.0 * near * tan (0.5*view_angle*D2R) * float (height()) / float (width()+height());
 
         glMatrixMode (GL_PROJECTION);
         glLoadIdentity ();
