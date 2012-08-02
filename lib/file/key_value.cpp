@@ -68,13 +68,15 @@ namespace MR
 
         if (sbuf.size()) {
           size_t colon = sbuf.find_first_of (':');
-          if (colon == std::string::npos) 
-            warning ("malformed key/value entry (\"" + sbuf + "\") in file \"" + filename + "\" - ignored", 2);
+          if (colon == std::string::npos) {
+            inform ("malformed key/value entry (\"" + sbuf + "\") in file \"" + filename + "\" - ignored");
+          }
           else {
             K = strip (sbuf.substr (0, colon));
             V = strip (sbuf.substr (colon+1));
-            if (K.empty() || V.empty()) 
-              warning ("malformed key/value entry (\"" + sbuf + "\") in file \"" + filename + "\" - ignored", 2);
+            if (K.empty() || V.empty()) {
+              inform ("malformed key/value entry (\"" + sbuf + "\") in file \"" + filename + "\" - ignored");
+            }
             else 
               return true;
           }

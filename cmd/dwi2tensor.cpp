@@ -37,6 +37,8 @@
 #include "dwi/gradient.h"
 #include "dwi/tensor.h"
 
+#include "math/check_gradient.h"
+
 MRTRIX_APPLICATION
 
 using namespace std;
@@ -64,14 +66,6 @@ void usage ()
 
 
   OPTIONS
-    + Option ("grad",
-      "specify the diffusion-weighted gradient scheme used in the acquisition. "
-      "The program will normally attempt to use the encoding stored in image header. "
-      "This should be supplied as a 4xN text file with each line is in the format "
-      "[ X Y Z b ], where [ X Y Z ] describe the direction of the applied gradient, "
-      "and b gives the b-value in units (1000 s/mm^2).")
-    + Argument ("encoding").type_file ()
-
     + Option ("mask",
       "only perform computation within the specified binary brain mask image.")
     + Argument ("image").type_image_in ()
@@ -81,116 +75,90 @@ void usage ()
       "nonlinear, sech, rician. Default: non-linear)")
     + Argument ("name").type_choice (method_choices)
 
-    + Option ("ignoreslices",
-      "ignore the image slices specified when computing the tensor. "
-      "A single slice (z) coordinate should be supplied, followed by a list "
-      "of volume numbers to be ignored in the computation.")
-    .allow_multiple()
-    + Argument ("slice").type_integer ()
-    + Argument ("volumes").type_sequence_int ()
-
-    + Option ("ignorevolumes",
-      "ignore the image volumes specified when computing the tensor.")
-    .allow_multiple()
-    + Argument ("volumes").type_sequence_int ()
-
     + Option ("regularisation",
       "specify the strength of the regularisation term on the magnitude of the "
       "tensor elements (default = 5000). This only applies to the non-linear methods.")
-    + Argument ("term").type_float (0.0, 5000.0, 1e12);
+    + Argument ("term").type_float (0.0, 5000.0, 1e12)
+
+    + DWI::GradOption;
 
 
 }
 
 
 typedef float value_type;
+typedef double cost_value_type;
+typedef Image::BufferPreload<value_type> InputBufferType;
+typedef Image::Buffer<value_type> OutputBufferType;
+typedef Image::Buffer<bool> MaskBufferType;
 
 
 class Cost
 {
   public:
-    typedef float value_type;
+    typedef cost_value_type value_type;
 
-    Cost (const Math::Matrix<value_type>& bmatrix, int method, const value_type regularisation_term) :
+    Cost (const Math::Matrix<cost_value_type>& b_matrix, int method, const cost_value_type regularisation_term) :
+      bmatrix (b_matrix),
+      A (nm()),
+      dP (nm()),
       fitting_method (method),
       diag_bij (0.0),
       offdiag_bij (0.0),
-      regularisation (regularisation_term)
-    {
-      for (size_t i = 0; i < bmatrix.rows(); i++) {
-        size_t j = 0;
-        for (; j < 3; j++) diag_bij += Math::pow2 (bmatrix(i,j));
-        for (; j < 6; j++) offdiag_bij += Math::pow2 (bmatrix(i,j));
+      regularisation (regularisation_term) {
+        for (size_t i = 0; i < bmatrix.rows(); i++) {
+          size_t j = 0;
+          for (; j < 3; j++) 
+            diag_bij += Math::pow2 (bmatrix(i,j));
+          for (; j < 6; j++) 
+            offdiag_bij += Math::pow2 (bmatrix(i,j));
+        }
+        diag_bij = Math::sqrt (3.0*bmatrix.rows() / diag_bij);
+        offdiag_bij = Math::sqrt (3.0*bmatrix.rows() / offdiag_bij);
       }
-      diag_bij = Math::sqrt (3.0*bmatrix.rows() / diag_bij);
-      offdiag_bij = Math::sqrt (3.0*bmatrix.rows() / offdiag_bij);
-    }
 
-    size_t nm () const { return (B->rows()); }
-    size_t size () const { return (8); }
+    size_t nm () const { return bmatrix.rows(); }
+    size_t size () const { return 8; }
 
-    void set_bmatrix (const Math::Matrix<value_type>* bmatrix, const Math::Matrix<value_type>* binverse)
-    {
-      B = bmatrix;
-      binv = binverse;
-
-      A.allocate (nm());
-      dP.allocate (nm());
-    }
-
-    void set_voxel (const Math::Vector<value_type>* signals, const Math::Vector<value_type>* dt)
+    void set_voxel (const Math::Vector<cost_value_type>* signals, const Math::Vector<cost_value_type>* dt)
     {
       S = signals;
       dt_init = dt;
     }
 
-    value_type init (Math::Vector<value_type>& x)
+    cost_value_type init (Math::Vector<cost_value_type>& x)
     {
       for (size_t i = 0; i < 7; ++i)
         x[i] = (*dt_init)[i];
-
-      //std::cerr << "dt: "; for (int i = 0; i < 7; i++) std::cerr << x[i] << " "; std::cerr << "\n";
-      value_type lnM0_cond = exp(x[6]-4.0);
-      cond[0] = lnM0_cond * diag_bij / MAX (x[0], 1e-4);
-      cond[1] = lnM0_cond * diag_bij / MAX (x[1], 1e-4);
-      cond[2] = lnM0_cond * diag_bij / MAX (x[2], 1e-4);
-      noise_multiplier = lnM0_cond * 1000.0 / Math::exp (x[6]);
-      offdiag_multiplier = lnM0_cond * offdiag_bij;
-      //std::cerr << "cond: "; for (int i = 0; i < 3; i++) std::cerr << cond[i] << " "; std::cerr << noise_multiplier << " " << lnM0_cond << "\n";
-      x[0] = Math::log (MAX (x[0], 1e-7)) / cond[0];
-      x[1] = Math::log (MAX (x[1], 1e-7)) / cond[1];
-      x[2] = Math::log (MAX (x[2], 1e-7)) / cond[2];
-      x[3] /= offdiag_multiplier;
-      x[4] /= offdiag_multiplier;
-      x[5] /= offdiag_multiplier;
+      noise_multiplier = 1.5e3;
+      b0_multiplier = 1.0e2;
+      x[6] /= b0_multiplier;
       x[7] = 2.0 * (Math::log (noise_multiplier) - x[6])/noise_multiplier;
-      //std::cerr << "init[x]: "; for (int i = 0; i < 8; i++) std::cerr << x[i] << " "; std::cerr << "\n";
-      return (0.1);
+      return 0.01 * (x[0]+x[1]+x[2]);
     }
 
 
 
 
 
-    value_type operator() (const Math::Vector<value_type>& x, Math::Vector<value_type>& dE)
+    cost_value_type operator() (const Math::Vector<cost_value_type>& x, Math::Vector<cost_value_type>& dE)
     {
       for (size_t i = 0; i < nm(); i++) {
-        value_type v =
-          - (*B)(i,0) * Math::exp (cond[0] * x[0])
-          - (*B)(i,1) * Math::exp (cond[1] * x[1])
-          - (*B)(i,2) * Math::exp (cond[2] * x[2])
-          - offdiag_multiplier * (
-              (*B)(i,3) * x[3] +
-              (*B)(i,4) * x[4] +
-              (*B)(i,5) * x[5] )
-          + x[6];
+        cost_value_type v =
+          - bmatrix(i,0) * x[0]
+          - bmatrix(i,1) * x[1]
+          - bmatrix(i,2) * x[2]
+          - bmatrix(i,3) * x[3] 
+          - bmatrix(i,4) * x[4] 
+          - bmatrix(i,5) * x[5] 
+          + b0_multiplier * x[6];
 
         A[i] = Math::exp (v);
         assert (finite (A[i]));
       }
 
-      value_type noise = Math::exp (noise_multiplier * x[7]);
-      value_type E = NAN;
+      cost_value_type noise = Math::exp (noise_multiplier * x[7]);
+      cost_value_type E = NAN;
 
       if (fitting_method == 1) // nonlinear
         E = Math::Gaussian::lnP (*S, A, noise, dP, dE[7]);
@@ -201,65 +169,51 @@ class Cost
 
       assert (finite (E));
 
-      value_type reg = 0.0;
-      for (size_t i = 0; i < 3; i++)
-        reg += Math::pow2 (Math::exp (cond[i] * x[i]));
-
-      for (size_t i = 3; i < 6; i++)
-        reg += Math::pow2 (offdiag_multiplier * x[i]);
+      cost_value_type reg = 0.0;
+      for (size_t i = 0; i < 6; i++)
+        reg += Math::pow2 (x[i]);
 
       E += regularisation * reg;
 
-      value_type sum_Si = 0.0;
+      cost_value_type sum_Si = 0.0;
       for (size_t i = 0; i < nm(); i++) {
         A[i] *= dP[i];
         sum_Si += A[i];
       }
-      dE[6] = sum_Si;
+      dE[6] = sum_Si * b0_multiplier;
       dE[7] *= noise_multiplier * noise;
 
-      for (size_t j = 0; j < 3; j++) {
-        value_type v = 0.0;
-        for (size_t i = 0; i < nm(); i++) v -= (*B)(i,j) * A[i];
-        value_type dj = Math::exp (cond[j] * x[j]);
-        dE[j] = (2.0 * regularisation + cond[j] * v) * dj;
+      for (size_t j = 0; j < 6; j++) {
+        cost_value_type v = 0.0;
+        for (size_t i = 0; i < nm(); i++) 
+          v -= bmatrix(i,j) * A[i];
+        dE[j] = 2.0 * regularisation * x[j] + v;
       }
-
-      for (size_t j = 3; j < 6; j++) {
-        value_type v = 0.0;
-        for (size_t i = 0; i < nm(); i++)
-          v -= (*B)(i,j) * A[i];
-        dE[j] = offdiag_multiplier * (2.0 * regularisation * x[j] + v);
-      }
-      return (E);
+      return E;
     }
 
 
 
-    void get_values (Math::Vector<value_type>& x, const Math::Vector<value_type>& state) const
+    void get_values (Math::Vector<cost_value_type>& x, const Math::Vector<cost_value_type>& state) const
     {
-      for (int i = 0; i < 3; i++)
-        x[i] = Math::exp (cond[i] * state[i]);
-      for (int i = 3; i < 6; i++)
-        x[i] = offdiag_multiplier * state[i];
-      x[6] = Math::exp (state[6]);
+      for (int i = 0; i < 6; i++)
+        x[i] = state[i];
+      x[6] = Math::exp (b0_multiplier * state[6]);
     }
 
 
 
-    void print (const Math::Vector<value_type>& x) const
+    void print (const Math::Vector<cost_value_type>& x) const
     {
-      for (int i = 0; i < 3; i++)
-        std::cout << Math::exp (cond[i] * x[i]) << " ";
-      for (int i = 3; i < 6; i++)
-        std::cout << offdiag_multiplier * x[i] << " ";
-      std::cout << Math::exp (x[6]) << " " << 1.0/Math::sqrt (Math::exp (noise_multiplier * x[7])) << "\n";
+      for (int i = 0; i < 6; i++)
+        std::cout << x[i] << " ";
+      std::cout << Math::exp (b0_multiplier * x[6]) << " " << 1.0/Math::sqrt (Math::exp (noise_multiplier * x[7])) << "\n";
     }
 
-    void test (const Math::Vector<value_type>& x)
+    void test (const Math::Vector<cost_value_type>& x)
     {
-      Math::Vector<value_type> p (8), dE (8);
-      for (value_type dx = -0.1; dx < 0.1; dx += 0.001) {
+      Math::Vector<cost_value_type> p (8), dE (8);
+      for (cost_value_type dx = -0.1; dx < 0.1; dx += 0.001) {
         for (size_t i = 0; i < 8; i++) {
           p = x;
           p[i] = x[i] + dx;
@@ -270,150 +224,12 @@ class Cost
     }
 
   protected:
-    const Math::Matrix<value_type> *B, *binv;
-    const Math::Vector<value_type> *S, *dt_init;
-    Math::Vector<value_type> A, dP;
+    const Math::Matrix<cost_value_type>& bmatrix;
+    const Math::Vector<cost_value_type> *S, *dt_init;
+    Math::Vector<cost_value_type> A, dP;
     int fitting_method;
-    value_type diag_bij, offdiag_bij, offdiag_multiplier, noise_multiplier, regularisation;
-    value_type cond[3];
-};
-
-
-
-class Item
-{
-  public:
-    Math::Matrix<value_type> dwi;
-    RefPtr<Math::Matrix<value_type> > B, binv;
-    std::vector<bool> in_mask;
-    ssize_t y, z;
-};
-
-
-
-typedef Thread::Queue<Item> Queue;
-
-
-class DataLoader
-{
-  public:
-    DataLoader (Queue& queue,
-        Image::BufferPreload<value_type>& dwi_data,
-        Ptr<Image::Buffer<value_type>::voxel_type>& mask,
-        const Math::Matrix<value_type>& bmatrix,
-        const std::vector<int>& volumes_to_be_ignored,
-        const std::vector<std::vector<int> >& slices_to_be_ignored) :
-      writer (queue),
-      dwi (dwi_data),
-      mask (mask),
-      bmat (bmatrix),
-      islices (slices_to_be_ignored) {
-        for (int i = 0; i < dwi.dim(3); i++)
-          volumes.push_back (i);
-        for (size_t i = 0; i < volumes_to_be_ignored.size(); i++)
-          std::remove (volumes.begin(), volumes.end(), volumes_to_be_ignored[i]);
-      }
-
-    void execute ()
-    {
-      Queue::Writer::Item item (writer);
-      ProgressBar progress ("converting DW images to tensor image...", dwi.dim(1)*dwi.dim(2));
-      if (mask) {
-        for (dwi[2] = (*mask)[2] = 0; dwi[2] < dwi.dim(2); ++dwi[2], ++(*mask)[2]) {
-          prepare_slice();
-          for (dwi[1] = (*mask)[1] = 0; dwi[1] < dwi.dim(1); ++dwi[1], ++(*mask)[1]) {
-            load_row (*mask, item);
-            ++progress;
-          }
-        }
-      }
-      else {
-        for (dwi[2] = 0; dwi[2] < dwi.dim(2); ++dwi[2]) {
-          prepare_slice();
-          for (dwi[1] = 0; dwi[1] < dwi.dim(1); ++dwi[1]) {
-            load_row (item);
-            ++progress;
-          }
-        }
-      }
-    }
-
-
-  private:
-    Queue::Writer writer;
-    Image::BufferPreload<value_type>::voxel_type  dwi;
-    Ptr<Image::Buffer<value_type>::voxel_type > mask;
-    const Math::Matrix<value_type>& bmat;
-    RefPtr<Math::Matrix<value_type> > B, binv;
-    std::vector<size_t> volumes;
-    const std::vector<std::vector<int> > islices;
-
-    void prepare_slice ()
-    {
-      std::vector<size_t> svols (volumes);
-      const std::vector<int>& islc (islices[dwi[2]]);
-      for (size_t i = 0; i < islc.size(); i++)
-        std::remove (svols.begin(), svols.end(), islc[i]);
-
-      B = new Math::Matrix<value_type> (svols.size(), 7);
-      for (size_t i = 0; i < svols.size(); i++)
-        for (size_t j = 0; j < 7; j++)
-          (*B)(i,j) = bmat(svols[i],j);
-
-      binv = new Math::Matrix<value_type> (B->columns(), B->rows());
-      Math::pinv (*binv, *B);
-    }
-
-    void load_row (Image::Buffer<value_type>::voxel_type& mask, Queue::Writer::Item& item)
-    {
-      item->in_mask.resize (dwi.dim(0));
-      size_t nvox = 0;
-      for (mask[0] = 0; mask[0] < mask.dim(0); ++mask[0]) {
-        bool in_mask (mask.value() > 0.5);
-        item->in_mask[mask[0]] = in_mask;
-        if (in_mask) ++nvox;
-      }
-
-      if (nvox == 0) return;
-
-      item->dwi.allocate (nvox, B->rows());
-
-      size_t index = 0;
-      for (dwi[0] = 0; dwi[0] < dwi.dim(0); ++dwi[0])
-        if (item->in_mask[dwi[0]])
-          load (item, index++);
-
-      dispatch (item);
-    }
-
-    void load_row (Queue::Writer::Item& item)
-    {
-      item->dwi.allocate (dwi.dim(0), dwi.dim(3));
-      item->in_mask.clear();
-      for (dwi[0] = 0; dwi[0] < dwi.dim(0); ++dwi[0])
-        load (item, dwi[0]);
-      dispatch (item);
-    }
-
-    void load (Queue::Writer::Item& item, size_t index)
-    {
-      for (dwi[3] = 0; dwi[3] < dwi.dim(3); ++dwi[3]) {
-        float val = dwi.value();
-        if (val <= 0.0) val = 1.0;
-        item->dwi(index, dwi[3]) = val;
-      }
-    }
-
-    void dispatch (Queue::Writer::Item& item)
-    {
-      item->y = dwi[1];
-      item->z = dwi[2];
-      item->B = B;
-      item->binv = binv;
-
-      if (!item.write())
-        throw Exception ("error writing to work queue");
-    }
+    cost_value_type diag_bij, offdiag_bij, offdiag_multiplier, noise_multiplier, regularisation;
+    cost_value_type diag_cond, b0_multiplier;
 };
 
 
@@ -424,172 +240,201 @@ class DataLoader
 
 
 
-class Processor
+class Processor 
 {
   public:
-    Processor (Queue& queue, Image::Buffer<value_type> & data,
-        const Math::Matrix<value_type>& bmatrix,
-        int fitting_method, int max_num_iterations,
-        const value_type regularisation_term = 5000.0) :
-      reader (queue),
-      DT (data),
+    Processor (
+        InputBufferType::voxel_type& dwi_vox, 
+        OutputBufferType::voxel_type& dt_vox,
+        Ptr<MaskBufferType::voxel_type>& mask_vox,
+        const Math::Matrix<cost_value_type>& bmatrix,
+        const Math::Matrix<cost_value_type>& inverse_bmatrix,
+        int fitting_method, 
+        const cost_value_type regularisation_term,
+        ssize_t inner_axis,
+        ssize_t dwi_axis = 3) :
+      dwi (dwi_vox),
+      dt (dt_vox),
+      mask (mask_vox),
       cost (bmatrix, fitting_method, regularisation_term),
+      binv (inverse_bmatrix),
       method (fitting_method),
-      niter (max_num_iterations) { }
+      reg_norm (regularisation_term),
+      row_axis (inner_axis),
+      sig_axis (dwi_axis) { 
+      }
 
-    void execute ()
-    {
-      Queue::Reader::Item item (reader);
-      Math::Matrix<value_type> dt (DT.dim(0), 7);
 
-      while (item.read()) {
-        dt.resize (item->dwi.columns(), 7);
-        loglinear (dt, *item->binv, item->dwi);
 
-        if (method > 0) {
-          cost.set_bmatrix (item->B, item->binv);
-          for (size_t i = 0; i < item->dwi.rows(); ++i) {
-            const Math::Vector<value_type> signal (item->dwi.row(i));
-            Math::Vector<value_type> values (dt.row(i));
+    void operator () (const Image::Iterator& pos) {
+      if (!load_data (pos)) 
+        return;
 
-            cost.set_voxel (&signal, &values);
-            Math::GradientDescent<Cost> optim (cost);
-            try { optim.run (10000, 1e-8); }
-            catch (Exception) { }
-            cost.get_values (values, optim.state());
-          }
+      // compute tensors via log-linear least-squares:
+      Math::mult (tensors, cost_value_type(0.0), cost_value_type(1.0), CblasNoTrans, logsignals, CblasTrans, binv);
+
+      if (method > 0) 
+        solve_nonlinear();
+
+      write_back ();
+    }
+
+
+  protected:
+    InputBufferType::voxel_type dwi;
+    OutputBufferType::voxel_type dt;
+    Ptr<MaskBufferType::voxel_type> mask;
+    Math::Matrix<cost_value_type> signals, logsignals, tensors;
+    Cost cost;
+
+    const Math::Matrix<cost_value_type>& binv;
+
+    const int method;
+    const cost_value_type reg_norm;
+    const size_t row_axis, sig_axis;
+
+
+    bool load_data (const Image::Iterator& pos) {
+      Image::voxel_assign (dwi, pos);
+      Image::voxel_assign (dt, pos);
+
+      size_t nvox = dwi.dim (row_axis);
+      if (mask) {
+        size_t N = 0;
+        Image::voxel_assign (*mask, pos);
+        for ((*mask)[row_axis] = 0; (*mask)[row_axis] < mask->dim(row_axis); ++(*mask)[row_axis]) 
+          if (mask->value())
+            ++N;
+        nvox = N;
+      }
+      if (!nvox) 
+        return false;
+
+      signals.allocate (nvox, dwi.dim (sig_axis));
+      logsignals.allocate (nvox, dwi.dim (sig_axis));
+      tensors.allocate (nvox, 7);
+
+      size_t N = 0;
+      for (dwi[row_axis] = 0; dwi[row_axis] < dwi.dim(row_axis); ++dwi[row_axis]) {
+        if (mask) {
+          (*mask)[row_axis] = dwi[row_axis];
+          if (!mask->value()) continue;
+        }
+        for (dwi[sig_axis] = 0; dwi[sig_axis] < dwi.dim(sig_axis); ++dwi[sig_axis]) {
+          cost_value_type val = std::max (cost_value_type (dwi.value()), cost_value_type (1.0));
+          signals(N, dwi[sig_axis]) = val;
+          logsignals(N, dwi[sig_axis]) = -Math::log (val);
+        }
+        ++N;
+      }
+      return true;
+    }
+
+
+
+    void write_back () {
+      size_t N = 0;
+      for (dt[row_axis] = 0; dt[row_axis] < dt.dim(row_axis); ++dt[row_axis]) {
+        if (mask) {
+          (*mask)[row_axis] = dt[row_axis];
+          if (!mask->value()) continue;
+        }
+        for (dt[3] = 0; dt[3] < dt.dim(3); ++dt[3]) 
+          dt.value() = tensors (N, dt[3]);
+        ++N;
+      }
+
+    }
+
+
+    void solve_nonlinear () {
+      for (size_t i = 0; i < signals.rows(); ++i) {
+        const Math::Vector<cost_value_type> signal (signals.row(i));
+        Math::Vector<cost_value_type> values (tensors.row(i));
+
+        cost.set_voxel (&signal, &values);
+
+        Math::Vector<cost_value_type> x (cost.size());
+        cost.init (x);
+        Math::check_function_gradient (cost, x, 1e-10, true);
+
+        Math::GradientDescent<Cost,true> optim (cost);
+        try { optim.run (10000, 1e-8); }
+        catch (Exception& E) {
+          E.display();
         }
 
-        DT[1] = item->y;
-        DT[2] = item->z;
-        size_t index = 0;
-        for (DT[0] = 0; DT[0] < DT.dim(0); ++DT[0]) {
-          if (item->in_mask.size()) {
-            if (!item->in_mask[DT[0]]) {
-              for (DT[3] = 0; DT[3] < 6; ++DT[3])
-                DT.value() = 0.0;
-              continue;
-            }
-          }
+        //x = optim.state();
+        //Math::check_function_gradient (cost, x, 1e-10, true);
 
-          for (DT[3] = 0; DT[3] < 6; ++DT[3])
-            DT.value() = dt(index, DT[3]);
-
-          ++index;
-        }
-
+        cost.get_values (values, optim.state());
       }
     }
 
-  private:
-    Queue::Reader reader;
-    Image::Buffer<value_type>::voxel_type DT;
-    Cost cost;
-    int method, niter;
-
-    void loglinear (Math::Matrix<value_type>& x, const Math::Matrix<value_type>& binv, const Math::Matrix<value_type>& dwi) const
-    {
-      x.allocate (dwi.rows(), binv.rows());
-      Math::Matrix<value_type> log_dwi (dwi.rows(), dwi.columns());
-      for (size_t i = 0; i < dwi.rows(); i++)
-        for (size_t j = 0; j < dwi.columns(); j++)
-          log_dwi(i,j) = -Math::log (dwi(i,j));
-      Math::mult (x, value_type(0.0), value_type(1.0), CblasNoTrans, log_dwi, CblasTrans, binv);
-    }
 };
+
+
+
+
+
+
+
 
 
 
 
 void run()
 {
-
   std::vector<ssize_t> strides (4, 0);
   strides[3] = 1;
-  Image::BufferPreload<value_type> dwi_data (argument[0], strides);
+  InputBufferType dwi_buffer (argument[0], strides);
+  Math::Matrix<cost_value_type> grad = DWI::get_valid_DW_scheme<cost_value_type> (dwi_buffer);
 
-  Image::Header dt_header (dwi_data);
-
-  if (dt_header.ndim() < 4)
-    throw Exception ("dwi image should contain at least 4 dimensions");
-
-  size_t dwi_dim = 3;
-  while (dt_header.dim (dwi_dim) < 2) ++dwi_dim;
-  inform ("assuming DW images are stored along axis " + str (dwi_dim));
-
-  Math::Matrix<value_type> grad, bmat;
-
-  Options opt = get_options ("grad");
-  if (opt.size()) grad.load (opt[0][0]);
-  else {
-    if (!dt_header.DW_scheme().is_set())
-      throw Exception ("no diffusion encoding found in image \"" + dt_header.name() + "\"");
-    grad = dt_header.DW_scheme();
-  }
-
-  if (grad.rows() < 7 || grad.columns() != 4)
-    throw Exception ("unexpected diffusion encoding matrix dimensions");
-
-  inform ("found " + str(grad.rows()) + "x" + str(grad.columns()) + " diffusion-weighted encoding");
-
-  if (dt_header.dim(dwi_dim) != (int) grad.rows())
-    throw Exception ("number of studies in base image does not match that in encoding file");
+  size_t dwi_axis = 3;
+  while (dwi_buffer.dim (dwi_axis) < 2) ++dwi_axis;
+  inform ("assuming DW images are stored along axis " + str (dwi_axis));
 
   DWI::normalise_grad (grad);
-  DWI::grad2bmatrix (bmat, grad);
+  Math::Matrix<cost_value_type> bmatrix;
+  DWI::grad2bmatrix (bmatrix, grad);
 
-  std::vector<std::vector<int> > islc (dt_header.dim(2));
-  std::vector<int> ivol;
-
-  opt = get_options ("ignoreslices");
-  for (size_t n = 0; n < opt.size(); n++) {
-    int z = opt[n][0];
-    if (z >= (int) islc.size()) throw Exception ("slice number out of bounds");
-    islc[z] = opt[n][1];
-  }
-
-  opt = get_options ("ignorevolumes");
-  for (size_t n = 0; n < opt.size(); n++) {
-    std::vector<int> v = opt[n][0];
-    ivol.insert (ivol.end(), v.begin(), v.end());
-  }
+  Math::Matrix<cost_value_type> binv (bmatrix.columns(), bmatrix.rows());
+  Math::pinv (binv, bmatrix);
 
   int method = 1;
-  opt = get_options ("method");
+  Options opt = get_options ("method");
   if (opt.size()) method = opt[0][0];
 
   opt = get_options ("regularisation");
-  value_type regularisation = 5000.0;
+  cost_value_type regularisation = 5000.0;
   if (opt.size()) regularisation = opt[0][0];
 
   opt = get_options ("mask");
-  Ptr<Image::Buffer<value_type> > mask_data;
-  Ptr<Image::Buffer<value_type>::voxel_type> mask_voxel;
+  Ptr<MaskBufferType> mask_buffer;
+  Ptr<MaskBufferType::voxel_type> mask_vox;
   if (opt.size()){
-    mask_data = new Image::Buffer<value_type> (opt[0][0]);
-    mask_voxel = new Image::Buffer<value_type>::voxel_type (*mask_data);
-    Image::check_dimensions (*mask_voxel, dt_header, 0, 3);
+    mask_buffer = new MaskBufferType (opt[0][0]);
+    Image::check_dimensions (*mask_buffer, dwi_buffer, 0, 3);
+    mask_vox = new MaskBufferType::voxel_type (*mask_buffer);
   }
 
+
+  Image::Header dt_header (dwi_buffer);
   dt_header.set_ndim (4);
   dt_header.dim (3) = 6;
   dt_header.datatype() = DataType::Float32;
-  dt_header.stride(0) = 2;
-  dt_header.stride(1) = 3;
-  dt_header.stride(2) = 4;
+  dt_header.stride(0) = dt_header.stride(1) = dt_header.stride(2) = 0;
   dt_header.stride(3) = 1;
+  dt_header.DW_scheme() = grad;
 
-  dt_header.DW_scheme().clear();
+  OutputBufferType dt_buffer (argument[1], dt_header);
 
-  Image::Buffer<value_type> dt_data (argument[1], dt_header);
+  InputBufferType::voxel_type dwi_vox (dwi_buffer);
+  OutputBufferType::voxel_type dt_vox (dt_buffer);
 
-  Queue queue ("item queue");
+  Image::ThreadedLoop loop ("estimating tensor components...", dwi_vox, 1, 0, 3);
+  Processor processor (dwi_vox, dt_vox, mask_vox, bmatrix, binv, method, regularisation, loop.inner_axes()[0], dwi_axis);
 
-  DataLoader loader (queue, dwi_data, mask_voxel, bmat, ivol, islc);
-  Processor processor (queue, dt_data, bmat, method, 10000, regularisation);
-
-  Thread::Exec loader_thread (loader, "loader");
-  Thread::Array<Processor> processor_list (processor);
-  Thread::Exec processor_threads (processor_list, "processor");
+  loop.run_outer (processor);
 }
 

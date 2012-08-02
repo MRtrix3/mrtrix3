@@ -170,7 +170,8 @@ namespace MR
       // rotate gradients into scanner coordinate system:
       grad.allocate (G.rows(), 4);
       Math::Matrix<ValueType> grad_G = grad.sub (0, grad.rows(), 0, 3);
-      Math::mult (grad_G, ValueType(0.0), ValueType(1.0), CblasNoTrans, G, CblasTrans, header.transform().sub (0,3,0,3));
+      Math::Matrix<ValueType> rotation = header.transform().sub (0,3,0,3);
+      Math::mult (grad_G, ValueType(0.0), ValueType(1.0), CblasNoTrans, G, CblasTrans, rotation);
 
       grad.column(3) = bvals.row(0);
     }
@@ -195,6 +196,7 @@ namespace MR
     template <typename ValueType> 
       Math::Matrix<ValueType> get_DW_scheme (const Image::Header& header)
       {
+        debug ("searching for suitable gradient encoding...");
         using namespace App;
         Math::Matrix<ValueType> grad;
 
@@ -214,7 +216,7 @@ namespace MR
             load_bvecs_bvals (grad, header);
           } 
           catch (Exception& E) {
-            E.display();
+            E.display (3);
             throw Exception ("no diffusion encoding found in image \"" + header.name() + "\" or corresponding directory");
           }
         }

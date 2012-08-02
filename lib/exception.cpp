@@ -28,22 +28,8 @@ namespace MR
 
   void display_exception_cmdline (const Exception& E, int log_level)
   {
-    for (size_t n = 0; n < E.description.size(); ++n) {
-      switch (log_level) {
-        case 1:
-          error (E.description[n]);
-          break;
-        case 2:
-          warning (E.description[n]);
-          break;
-        case 3:
-          inform (E.description[n]);
-          break;
-        case 4:
-          debug (E.description[n]);
-          break;
-      }
-    }
+    for (size_t n = 0; n < E.description.size(); ++n) 
+      report_to_user_func (E.description[n], log_level);
   }
 
 

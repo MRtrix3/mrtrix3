@@ -51,28 +51,24 @@ namespace MR
 
 
 
+
+  //! display error, warning, debug, etc. message to user 
+  /*! types are: 0: error; 1: warning; 2: additional information; 3:
+   * debugging information; anything else: none. */
   extern void (*report_to_user_func) (const std::string& msg, int type);
 
-  //! display error, warning, debug, etc. message to user at specified log level
-  /*! types are: 0: error; 1: warning; 2: additional information; 3:
-   * debugging information; anything else: none.
-   *
-   * log-levels are: 0: errors only; 1: warnings & errors (default);
-   * 2: additional information, warnings & errors; 3 and above: all 
-   * messages, including debugging information. */
-  inline void report_to_user (const std::string& msg, int type, int log_level)
-  {
-    if (App::log_level >= log_level)
-      report_to_user_func (msg, type);
-  }
+#define CONSOLE(msg) report_to_user_func (msg, -1)
+#define ERROR(msg) if (App::log_level >= 0) report_to_user_func (msg, 0)
+#define WARN(msg) if (App::log_level >= 1) report_to_user_func (msg, 1)
+#define INFO(msg) if (App::log_level >= 2) report_to_user_func (msg, 2)
+#define DEBUG(msg) if (App::log_level >= 3) report_to_user_func (msg, 3)
 
 
-  inline void console (const std::string& msg, int log_level = 0) { report_to_user (msg, -1, log_level); }
-  inline void error (const std::string& msg, int log_level_offset = 0) { report_to_user (msg, 0, log_level_offset); }
-  inline void warning (const std::string& msg, int log_level_offset = 0) { report_to_user (msg, 1, 1+log_level_offset); }
-  inline void inform (const std::string& msg, int log_level_offset = 0) { report_to_user (msg, 2, 2+log_level_offset); }
-  inline void debug (const std::string& msg, int log_level_offset = 0) { report_to_user (msg, 3, 3+log_level_offset); }
-
+  inline void console (const std::string& msg) { CONSOLE(msg); }
+  inline void error (const std::string& msg) { ERROR(msg); }
+  inline void warning (const std::string& msg) { WARN(msg); }
+  inline void inform (const std::string& msg) { INFO(msg); }
+  inline void debug (const std::string& msg) { DEBUG(msg); }
 
 
 
@@ -87,15 +83,15 @@ namespace MR
         description.push_back (msg);
       }
 
-      void display (int log_level = 1) const {
+      void display (int log_level = 0) const {
         display_func (*this, log_level);
       }
 
       size_t num () const {
-        return (description.size());
+        return description.size();
       }
       const std::string& operator[] (size_t n) const {
-        return (description[n]);
+        return description[n];
       }
 
       static void (*display_func) (const Exception& E, int log_level);
@@ -107,6 +103,25 @@ namespace MR
   void display_exception_cmdline (const Exception& E, int log_level);
   void cmdline_print_func (const std::string& msg);
   void cmdline_report_to_user_func (const std::string& msg, int type);
+
+
+
+    class LogLevelLatch
+    {
+      public:
+        LogLevelLatch (const int new_level) :
+          prev_level (App::log_level) {
+            App::log_level = new_level;
+          }
+
+        ~LogLevelLatch () {
+          App::log_level = prev_level;
+        }
+
+      private:
+        const int prev_level;
+    };
+
 }
 
 #endif

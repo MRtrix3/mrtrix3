@@ -166,7 +166,7 @@ namespace MR
           int error_number;
           const char* s = gzerror (gz, &error_number);
           if (error_number == Z_ERRNO) s = strerror (errno);
-          return (s);
+          return s;
         }
     };
 

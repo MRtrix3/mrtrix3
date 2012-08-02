@@ -195,7 +195,8 @@ void run ()
   try {
     header_out.DW_scheme() = DWI::get_DW_scheme<float> (header_in);
   }
-  catch (...) {
+  catch (Exception& E) {
+    E.display (3);
     inform ("no valid diffusion encoding found - ignoring");
   }
 

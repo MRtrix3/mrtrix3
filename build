@@ -349,15 +349,14 @@ def execute (message, cmd):
 
   try: 
     process = subprocess.Popen (cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    if process.wait() != 0:
-      disp ('\nERROR: ' + message + '\n\n' + ' '.join(cmd) + '\n\nfailed with output\n\n' + process.stderr.read())
+    ( stdout, stderr ) = process.communicate()
+    if process.returncode != 0:
+      disp ('\nERROR: ' + message + '\n\n' + ' '.join(cmd) + '\n\nfailed with output\n\n' + stderr)
       return 1
-    out = process.stdout.read()
-    if len(out):
-      disp ('STDOUT: ' + message + '\n' + out)
-    out = process.stderr.read()
-    if len(out):
-      disp ('STDERR: ' + message + '\n' + out)
+    if len(stdout):
+      disp ('STDOUT: ' + message + '\n' + stdout)
+    if len(stderr):
+      disp ('STDERR: ' + message + '\n' + stderr)
 
   except OSError:
     disp (cmd[0] + ': command not found')
