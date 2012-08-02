@@ -35,7 +35,7 @@ namespace MR
 
     inline void copy (const std::string& source, const std::string& destination)
     {
-      debug ("copying file \"" + source + "\" to \"" + destination + "\"...");
+      DEBUG ("copying file \"" + source + "\" to \"" + destination + "\"...");
       MMap input (source);
       create (destination, input.size());
       MMap output (destination, true);

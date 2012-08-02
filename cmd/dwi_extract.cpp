@@ -69,7 +69,7 @@ void run() {
   }
   std::vector<int> bzeros, dwis;
   DWI::guess_DW_directions (dwis, bzeros, grad);
-  inform ("found " + str(dwis.size()) + " diffusion-weighted directions");
+  INFO ("found " + str(dwis.size()) + " diffusion-weighted directions");
 
   Image::Header header (data_in);
   opt = get_options ("bzero");

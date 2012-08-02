@@ -52,7 +52,7 @@ void run () {
 
 
   int lmax = Math::SH::LforN (SH_data.dim (3));
-  inform ("calculating spherical harmonic power up to degree " + str (lmax));
+  INFO ("calculating spherical harmonic power up to degree " + str (lmax));
 
   power_header.dim (3) = 1 + lmax/2;
   power_header.datatype() = DataType::Float32;

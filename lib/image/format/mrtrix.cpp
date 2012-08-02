@@ -130,7 +130,7 @@ namespace MR
 
         if (dw_scheme.size()) {
           if (dw_scheme.size() % 4) {
-            inform ("invalid \"dw_scheme\" specification for MRtrix image \"" + H.name() + "\" - ignored");
+            INFO ("invalid \"dw_scheme\" specification for MRtrix image \"" + H.name() + "\" - ignored");
           }
           else {
             H.DW_scheme().allocate (dw_scheme.size() /4, 4);

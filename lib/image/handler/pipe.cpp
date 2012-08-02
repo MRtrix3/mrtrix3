@@ -39,7 +39,7 @@ namespace MR
       void Pipe::load ()
       {
         assert (files.size() == 1);
-        debug ("mapping piped image \"" + files[0].name + "\"...");
+        DEBUG ("mapping piped image \"" + files[0].name + "\"...");
 
         segsize /= files.size();
         int64_t bytes_per_segment = (datatype.bits() * segsize + 7) / 8;
@@ -60,7 +60,7 @@ namespace MR
             std::cout << files[0].name << "\n";
           else {
             mmap = NULL;
-            debug ("deleting piped image file \"" + files[0].name + "\"...");
+            DEBUG ("deleting piped image file \"" + files[0].name + "\"...");
             unlink (files[0].name.c_str());
           }
           addresses[0] = NULL;

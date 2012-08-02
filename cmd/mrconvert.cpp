@@ -190,14 +190,14 @@ void run ()
   header_out.datatype() = DataType::from_command_line (header_out.datatype());
 
   if (header_in.datatype().is_complex() && !header_out.datatype().is_complex())
-    warning ("requested datatype is real but input datatype is complex - imaginary component will be ignored");
+    WARN ("requested datatype is real but input datatype is complex - imaginary component will be ignored");
 
   try {
     header_out.DW_scheme() = DWI::get_DW_scheme<float> (header_in);
   }
   catch (Exception& E) {
     E.display (3);
-    inform ("no valid diffusion encoding found - ignoring");
+    INFO ("no valid diffusion encoding found - ignoring");
   }
 
 

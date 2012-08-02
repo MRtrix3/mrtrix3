@@ -470,7 +470,7 @@ namespace MR
           }
 
           unit_init_dir.invalidate();
-          debug ("failed to find SH peak!");
+          DEBUG ("failed to find SH peak!");
           return NAN;
         }
 

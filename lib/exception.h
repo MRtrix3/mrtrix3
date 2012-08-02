@@ -64,12 +64,6 @@ namespace MR
 #define DEBUG(msg) if (App::log_level >= 3) report_to_user_func (msg, 3)
 
 
-  inline void console (const std::string& msg) { CONSOLE(msg); }
-  inline void error (const std::string& msg) { ERROR(msg); }
-  inline void warning (const std::string& msg) { WARN(msg); }
-  inline void inform (const std::string& msg) { INFO(msg); }
-  inline void debug (const std::string& msg) { DEBUG(msg); }
-
 
 
   class Exception

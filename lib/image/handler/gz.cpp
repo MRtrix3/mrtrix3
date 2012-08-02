@@ -48,7 +48,7 @@ namespace MR
         if (files.size() * bytes_per_segment > std::numeric_limits<size_t>::max())
           throw Exception ("image \"" + name + "\" is larger than maximum accessible memory");
 
-        debug ("loading image \"" + name + "\"...");
+        DEBUG ("loading image \"" + name + "\"...");
         addresses.resize (datatype.bits() == 1 && files.size() > 1 ? files.size() : 1);
         addresses[0] = new uint8_t [files.size() * bytes_per_segment];
         if (!addresses[0])

@@ -115,7 +115,7 @@ namespace MR
           assert (handler_->nsegments());
 
           if (handler_->nsegments() == 1 && datatype() == DataType::from<value_type>()) {
-            inform ("data in \"" + name() + "\" already in required format - mapping as-is");
+            INFO ("data in \"" + name() + "\" already in required format - mapping as-is");
             data_ = reinterpret_cast<value_type*> (handler_->segment (0));
             return;
           }
@@ -126,7 +126,7 @@ namespace MR
 
         template <class VoxType>
           void do_load (VoxType& destination) {
-            inform ("data for image \"" + name() + "\" will be loaded into memory");
+            INFO ("data for image \"" + name() + "\" will be loaded into memory");
             data_ = new value_type [Image::voxel_count (*this)];
             Buffer<value_type>& filedata (*this);
             typename Buffer<value_type>::voxel_type src (filedata);

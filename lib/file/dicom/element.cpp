@@ -47,7 +47,7 @@ namespace MR
 
         if (memcmp (next + 128, "DICM", 4)) {
           is_explicit = false;
-          debug ("DICOM magic number not found in file \"" + fmap->name() + "\" - trying truncated format");
+          DEBUG ("DICOM magic number not found in file \"" + fmap->name() + "\" - trying truncated format");
           if (!force_read)
             if (!Path::has_suffix (fmap->name(), ".dcm"))
               throw Exception ("file \"" + fmap->name() + "\" does not have the DICOM magic number or the .dcm extension - assuming not DICOM");
@@ -85,7 +85,7 @@ namespace MR
              (VR == VR_SS) | (VR == VR_ST) | (VR == VR_TM) | (VR == VR_UI) |
              (VR == VR_UL) | (VR == VR_US) | (VR == VR_UT)) return;
 
-        debug ("using implicit DICOM encoding");
+        DEBUG ("using implicit DICOM encoding");
         is_explicit = false;
       }
 
@@ -144,7 +144,7 @@ namespace MR
           std::string name = tag_name();
           if (!name.size()) {
             if (group%2 == 0)
-              debug ("unknown DICOM tag (" + str (group) + ", " + str (element)
+              DEBUG ("unknown DICOM tag (" + str (group) + ", " + str (element)
                      + ") with implicit encoding in file \"" + fmap->name() + "\" - ignoring");
             VR = VR_UN;
           }
@@ -212,7 +212,7 @@ namespace MR
                 else if (strncmp ( (const char*) data, "1.2.840.10008.1.2.1.99", size) == 0) {
                   throw Exception ("DICOM deflated explicit VR little endian transfer syntax not supported");
                 }
-                else error ("unknown DICOM transfer syntax: \"" + std::string ( (const char*) data, size)
+                else ERROR ("unknown DICOM transfer syntax: \"" + std::string ( (const char*) data, size)
                               + "\" in file \"" + fmap->name() + "\" - ignored");
                 break;
             }

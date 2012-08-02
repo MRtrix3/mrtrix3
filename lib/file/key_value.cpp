@@ -32,7 +32,7 @@ namespace MR
     void KeyValue::open (const std::string& file, const char* first_line)
     {
       filename.clear();
-      debug ("reading key/value file \"" + file + "\"...");
+      DEBUG ("reading key/value file \"" + file + "\"...");
 
       in.open (file.c_str(), std::ios::in | std::ios::binary);
       if (!in) 
@@ -69,13 +69,13 @@ namespace MR
         if (sbuf.size()) {
           size_t colon = sbuf.find_first_of (':');
           if (colon == std::string::npos) {
-            inform ("malformed key/value entry (\"" + sbuf + "\") in file \"" + filename + "\" - ignored");
+            INFO ("malformed key/value entry (\"" + sbuf + "\") in file \"" + filename + "\" - ignored");
           }
           else {
             K = strip (sbuf.substr (0, colon));
             V = strip (sbuf.substr (colon+1));
             if (K.empty() || V.empty()) {
-              inform ("malformed key/value entry (\"" + sbuf + "\") in file \"" + filename + "\" - ignored");
+              INFO ("malformed key/value entry (\"" + sbuf + "\") in file \"" + filename + "\" - ignored");
             }
             else 
               return true;

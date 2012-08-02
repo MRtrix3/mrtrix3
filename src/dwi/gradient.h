@@ -84,7 +84,7 @@ namespace MR
           bzero.push_back (i);
       }
 
-      inform ("found " + str (dwi.size()) + " diffusion-weighted volumes and " 
+      INFO ("found " + str (dwi.size()) + " diffusion-weighted volumes and " 
           + str (bzero.size()) + " b=0 volumes");
     }
 
@@ -196,7 +196,7 @@ namespace MR
     template <typename ValueType> 
       Math::Matrix<ValueType> get_DW_scheme (const Image::Header& header)
       {
-        debug ("searching for suitable gradient encoding...");
+        DEBUG ("searching for suitable gradient encoding...");
         using namespace App;
         Math::Matrix<ValueType> grad;
 
@@ -224,7 +224,7 @@ namespace MR
         if (grad.rows() < 7 || grad.columns() != 4)
           throw Exception ("unexpected diffusion encoding matrix dimensions");
 
-        inform ("found " + str (grad.rows()) + "x" + str (grad.columns()) + " diffusion-weighted encoding");
+        INFO ("found " + str (grad.rows()) + "x" + str (grad.columns()) + " diffusion-weighted encoding");
 
         DWI::normalise_grad (grad);
 

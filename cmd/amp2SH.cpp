@@ -123,10 +123,10 @@ void run ()
   opt = get_options ("lmax");
   int lmax = opt.size() ? opt[0][0] : Math::SH::LforN (dirs.rows());
   if (lmax > int (Math::SH::LforN (dirs.rows()))) {
-    inform ("warning: not enough data to estimate spherical harmonic components up to order " + str (lmax));
+    INFO ("warning: not enough data to estimate spherical harmonic components up to order " + str (lmax));
     lmax = Math::SH::LforN (dirs.rows());
   }
-  inform ("calculating even spherical harmonic components up to order " + str (lmax));
+  INFO ("calculating even spherical harmonic components up to order " + str (lmax));
 
   Math::SH::Transform<float> SHT (dirs, lmax);
 

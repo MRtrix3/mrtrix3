@@ -85,7 +85,7 @@ namespace MR
           throw Exception ("data strides differs image files for \"" + name() + "\"");
 
         if (finite(vox(n)) && finite(H.vox(n)) && vox (n) != H.vox (n))
-          warning ("voxel dimensions differ between image files for \"" + name() + "\"");
+          WARN ("voxel dimensions differ between image files for \"" + name() + "\"");
       }
 
       if (!transform().is_set() && H.transform().is_set())
@@ -116,7 +116,7 @@ namespace MR
         throw Exception ("no name supplied to open image!");
 
       try {
-        inform ("opening image \"" + image_name + "\"...");
+        INFO ("opening image \"" + image_name + "\"...");
 
         ParsedName::List list;
         std::vector<int> num = list.parse_scan_check (image_name);
@@ -179,7 +179,7 @@ namespace MR
         throw Exception ("no name supplied to open image!");
 
       try {
-        inform ("creating image \"" + image_name + "\"...");
+        INFO ("creating image \"" + image_name + "\"...");
 
         sanitise();
 

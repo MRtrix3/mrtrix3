@@ -80,7 +80,7 @@ namespace MR
 
     inline void resize (const std::string& filename, int64_t size)
     {
-      debug ("resizing file \"" + filename + "\" to " + str (size) + "...");
+      DEBUG ("resizing file \"" + filename + "\" to " + str (size) + "...");
 
       int fd = open64 (filename.c_str(), O_RDWR, 0644);
       if (fd < 0)
@@ -106,7 +106,7 @@ namespace MR
 
     inline std::string create_tempfile (int64_t size = 0, const char* suffix = NULL)
     {
-      debug ("creating temporary file of size " + str (size));
+      DEBUG ("creating temporary file of size " + str (size));
 
       std::string filename (TMPFILE_ROOT"XXXXXX.");
       if (suffix) filename += suffix;
@@ -164,7 +164,7 @@ namespace MR
             unlink (path);
         }
       }
-      debug ("deleting folder \"" + folder + "\"...");
+      DEBUG ("deleting folder \"" + folder + "\"...");
       if (::rmdir (folder.c_str()))
         throw Exception ("error deleting folder \"" + folder + "\": " + strerror (errno));
     }

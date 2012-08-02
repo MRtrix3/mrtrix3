@@ -226,7 +226,7 @@ namespace MR
                   H.DW_scheme() (i,j) = get<float32> (data (current) + (i*4 + j) *sizeof (float32), is_BE);
               break;
             default:
-              error ("unknown header entity (" + str (type (current, is_BE))
+              ERROR ("unknown header entity (" + str (type (current, is_BE))
                      + ", offset " + str (current - (uint8_t*) fmap.address())
                      + ") in image \"" + H.name() + "\" - ignored");
               break;

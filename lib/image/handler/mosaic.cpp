@@ -47,7 +47,7 @@ namespace MR
         if (files.size() * bytes_per_segment > std::numeric_limits<size_t>::max())
           throw Exception ("image \"" + name + "\" is larger than maximum accessible memory");
 
-        debug ("loading mosaic image \"" + name + "\"...");
+        DEBUG ("loading mosaic image \"" + name + "\"...");
         addresses.resize (1);
         addresses[0] = new uint8_t [files.size() * bytes_per_segment];
         if (!addresses[0])

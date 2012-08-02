@@ -62,7 +62,7 @@ namespace MR
 
             v.resize (extent_[0]*extent_[1]*extent_[2]);
 
-            debug ("median3D adapter for image \"" + name() + "\" initialised with extent " + str(extent_));
+            DEBUG ("median3D adapter for image \"" + name() + "\" initialised with extent " + str(extent_));
 
             for (size_t i = 0; i < 3; ++i)
               extent_[i] = (extent_[i]-1)/2;

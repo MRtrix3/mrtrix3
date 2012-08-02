@@ -208,7 +208,7 @@ namespace MR
    return 0;
  }
  catch (Exception& E) {
-   error ("error in processing - message was:");
+   ERROR ("error in processing - message was:");
    E.display();
    return 1;
  }

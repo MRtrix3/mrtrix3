@@ -71,7 +71,7 @@ namespace MR
           std::sort (series[s]->begin(), series[s]->end(), PtrComp());
           std::vector<int> dim_tmp = series[s]->count();
           if (dim[0] != dim_tmp[0] || dim[1] != dim_tmp[1] || dim[2] != dim_tmp[2])
-            warning ("DICOM series selected do not have the same dimensions");
+            WARN ("DICOM series selected do not have the same dimensions");
         }
 
 
@@ -101,10 +101,10 @@ namespace MR
         }
 
         if (slicesep_warning)
-          warning ("slice separation is not constant");
+          WARN ("slice separation is not constant");
 
         if (Math::abs (slice_separation - slice_thickness) > 1e-4)
-          warning ("slice gap detected");
+          WARN ("slice gap detected");
 
 
 
@@ -130,7 +130,7 @@ namespace MR
         series_count = 3;
         size_t expected_data_size = image.dim[0] * image.dim[1] * (image.bits_alloc/8);
         if (image.data_size > expected_data_size) {
-          inform ("data segment is larger than expected from image dimensions - interpreting as multi-channel data");
+          INFO ("data segment is larger than expected from image dimensions - interpreting as multi-channel data");
           series_count++;
         }
         if (dim[0] > 1) series_count++;
@@ -216,7 +216,7 @@ namespace MR
         M (3,3) = 1.0;
 
         if (image.images_in_mosaic) {
-          inform ("DICOM image \"" + H.name() + "\" is in mosaic format");
+          INFO ("DICOM image \"" + H.name() + "\" is in mosaic format");
           if (H.dim (2) != 1)
             throw Exception ("DICOM mosaic contains multiple slices in image \"" + H.name() + "\"");
 

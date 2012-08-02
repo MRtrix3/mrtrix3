@@ -78,12 +78,12 @@ namespace MR
 
               Options opt = get_options ("lmax");
               lmax = opt.size() ? opt[0][0] : Math::SH::LforN (dwis.size());
-              inform ("calculating even spherical harmonic components up to order " + str (lmax));
+              INFO ("calculating even spherical harmonic components up to order " + str (lmax));
 
-              inform ("setting response function from file \"" + response_file + "\"");
+              INFO ("setting response function from file \"" + response_file + "\"");
               Math::Vector<value_type> response;
               response.load (response_file);
-              inform ("setting response function using even SH coefficients: " + str (response));
+              INFO ("setting response function using even SH coefficients: " + str (response));
 
               opt = get_options ("filter");
               Math::Vector<value_type> filter;
@@ -94,7 +94,7 @@ namespace MR
                 filter.zero();
                 filter[0] = filter[1] = filter[2] = 1.0;
               }
-              inform ("using initial filter coefficients: " + str (filter));
+              INFO ("using initial filter coefficients: " + str (filter));
 
               opt = get_options ("directions");
               Math::Matrix<value_type> HR_dirs;
@@ -135,7 +135,7 @@ namespace MR
               int n = Math::SH::LforN (DW_dirs.rows());
               if (lmax_data > n) lmax_data = n;
               if (lmax_data > lmax) lmax_data = lmax;
-              inform ("calculating even spherical harmonic components up to order " + str (lmax_data) + " for initialisation");
+              INFO ("calculating even spherical harmonic components up to order " + str (lmax_data) + " for initialisation");
 
               if (init_filter.size() < size_t (lmax_data/2) +1)
                 throw Exception ("not enough initial filter coefficients supplied for lmax = " + str (lmax_data));
@@ -169,7 +169,7 @@ namespace MR
               Mt_M.allocate (M.columns(), M.columns());
               rankN_update (Mt_M, M, CblasTrans, CblasLower, value_type (1.0), value_type (0.0));
 
-              inform ("constrained spherical deconvolution initiated successfully");
+              INFO ("constrained spherical deconvolution initiated successfully");
             }
 
             size_t nSH () const {

@@ -217,7 +217,7 @@ namespace MR
       if (get_options ("quiet").size()) 
         log_level = 0;
       if (get_options ("force").size()) {
-        warning ("existing output files will be overwritten");
+        WARN ("existing output files will be overwritten");
         overwrite_files = true;
       }
       if (get_options ("help").size())

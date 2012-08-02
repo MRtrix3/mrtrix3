@@ -45,7 +45,7 @@ namespace MR
 
     Exec::Common::Common () :
       refcount (0), attributes (new pthread_attr_t) {
-        debug ("initialising threads...");
+        DEBUG ("initialising threads...");
         pthread_attr_init (attributes);
         pthread_attr_setdetachstate (attributes, PTHREAD_CREATE_JOINABLE);
 
@@ -61,7 +61,7 @@ namespace MR
       print = previous_print_func;
       report_to_user_func = previous_report_to_user_func;
 
-      debug ("uninitialising threads...");
+      DEBUG ("uninitialising threads...");
 
       pthread_attr_destroy (attributes);
       delete attributes;

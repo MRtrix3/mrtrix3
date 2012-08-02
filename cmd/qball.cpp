@@ -227,7 +227,7 @@ void run ()
   if (grad.rows() < 7 || grad.columns() != 4)
     throw Exception ("unexpected diffusion encoding matrix dimensions");
 
-  inform ("found " + str (grad.rows()) + "x" + str (grad.columns()) + " diffusion-weighted encoding");
+  INFO ("found " + str (grad.rows()) + "x" + str (grad.columns()) + " diffusion-weighted encoding");
 
   if (dwi_data.dim (3) != (int) grad.rows())
     throw Exception ("number of studies in base image does not match that in encoding file");
@@ -236,14 +236,14 @@ void run ()
 
   std::vector<int> bzeros, dwis;
   DWI::guess_DW_directions (dwis, bzeros, grad);
-  inform ("found " + str (dwis.size()) + " diffusion-weighted directions");
+  INFO ("found " + str (dwis.size()) + " diffusion-weighted directions");
 
   Math::Matrix<value_type> DW_dirs;
   DWI::gen_direction_matrix (DW_dirs, grad, dwis);
 
   opt = get_options ("lmax");
   int lmax = opt.size() ? opt[0][0] : Math::SH::LforN (dwis.size());
-  inform ("calculating even spherical harmonic components up to order " + str (lmax));
+  INFO ("calculating even spherical harmonic components up to order " + str (lmax));
 
   Math::Matrix<value_type> HR_dirs;
   Math::Matrix<value_type> HR_SHT;
@@ -264,10 +264,10 @@ void run ()
   for (i = 0; Math::SH::NforL(i) < dwis.size(); i += 2);
   i -= 2;
   if (lmax > i) {
-    warning ("not enough data for SH order " + str(lmax) + ", falling back to " + str(i));
+    WARN ("not enough data for SH order " + str(lmax) + ", falling back to " + str(i));
     lmax = i;
   }
-  inform("setting maximum even spherical harmonic order to " + str(lmax));
+  INFO("setting maximum even spherical harmonic order to " + str(lmax));
 
   // Setup response function
   int num_RH = (lmax + 2)/2;
@@ -285,7 +285,7 @@ void run ()
     if (filter.size() <= response.size())
       throw Exception ("not enough filter coefficients supplied for lmax" + str(lmax));
     for (int i = 0; i <= lmax/2; i++) response[i] *= filter[i];
-    inform ("using initial filter coefficients: " + str (filter));
+    INFO ("using initial filter coefficients: " + str (filter));
   }
 
   Math::SH::Transform<value_type> FRT_SHT(DW_dirs, lmax);

@@ -68,7 +68,7 @@ namespace MR
               bool retval = iterate();
               value_type grad_norm = gradient_norm();
               if (verbose) {
-                console ("iteration " + str (niter) + ": f = " + str (f) + ", |g| = " + str (grad_norm));
+                CONSOLE ("iteration " + str (niter) + ": f = " + str (f) + ", |g| = " + str (grad_norm));
                 for (size_t n = 0; n < x.size(); ++n)
                   std::cout << x[n] << " ";
                 std::cout << "\n";
@@ -146,7 +146,7 @@ namespace MR
             if (!finite (cost))
               throw Exception ("cost function is NaN or Inf!");
             if (verbose)
-              console ("gradient descent evaluation " + str(nfeval) + ", cost function " +str (cost));
+              CONSOLE ("gradient descent evaluation " + str(nfeval) + ", cost function " +str (cost));
             return cost;
           }
       };

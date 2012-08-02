@@ -97,12 +97,12 @@ namespace MR
       {
         QuickScan reader;
         if (reader.read (filename)) {
-          inform ("error reading file \"" + filename + "\" - assuming not DICOM");
+          INFO ("error reading file \"" + filename + "\" - assuming not DICOM");
           return;
         }
 
         if (! (reader.dim[0] && reader.dim[1] && reader.bits_alloc && reader.data)) {
-          inform ("DICOM file \"" + filename + "\" does not seem to contain image data - ignored");
+          INFO ("DICOM file \"" + filename + "\" does not seem to contain image data - ignored");
           return;
         }
 

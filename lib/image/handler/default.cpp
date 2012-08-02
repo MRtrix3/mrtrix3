@@ -83,7 +83,7 @@ namespace MR
 
       void Default::map_files ()
       {
-        debug ("mapping image \"" + name + "\"...");
+        DEBUG ("mapping image \"" + name + "\"...");
         mmaps.resize (files.size());
         addresses.resize (mmaps.size());
         for (size_t n = 0; n < files.size(); n++) {
@@ -98,7 +98,7 @@ namespace MR
 
       void Default::copy_to_mem ()
       {
-        debug ("loading image \"" + name + "\"...");
+        DEBUG ("loading image \"" + name + "\"...");
         addresses.resize (files.size() > 1 && datatype.bits() *segsize != 8*size_t (bytes_per_segment) ? files.size() : 1);
         addresses[0] = new uint8_t [files.size() * bytes_per_segment];
         if (!addresses[0]) 

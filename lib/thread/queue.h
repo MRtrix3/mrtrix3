@@ -425,7 +425,7 @@ namespace MR
           assert (writer_count);
           --writer_count;
           if (!writer_count) {
-            debug ("no writers left on queue \"" + name + "\"");
+            DEBUG ("no writers left on queue \"" + name + "\"");
             more_data.broadcast();
           }
         }
@@ -438,7 +438,7 @@ namespace MR
           assert (reader_count);
           --reader_count;
           if (!reader_count) {
-            debug ("no readers left on queue \"" + name + "\"");
+            DEBUG ("no readers left on queue \"" + name + "\"");
             more_space.broadcast();
           }
         }

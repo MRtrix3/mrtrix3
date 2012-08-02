@@ -163,7 +163,7 @@ class Processor
           break;
 
       if (n == sdeconv.P.niter)
-        inform ("voxel [ " + str (item.pos[0]) + " " + str (item.pos[1]) + " " + str (item.pos[2]) +
+        INFO ("voxel [ " + str (item.pos[0]) + " " + str (item.pos[1]) + " " + str (item.pos[2]) +
             " ] did not reach full convergence");
 
       SH[0] = item.pos[0];

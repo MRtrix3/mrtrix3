@@ -63,12 +63,12 @@ namespace MR
     void Info::sanitise_voxel_sizes ()
     {
       if (ndim() < 3) {
-        inform ("image contains fewer than 3 dimensions - adding extra dimensions");
+        INFO ("image contains fewer than 3 dimensions - adding extra dimensions");
         set_ndim (3);
       }
 
       if (!finite (vox (0)) || !finite (vox (1)) || !finite (vox (2))) {
-        error ("invalid voxel sizes - resetting to sane defaults");
+        ERROR ("invalid voxel sizes - resetting to sane defaults");
         vox(0) = vox(1) = vox(2) = 1.0;
       }
     }
@@ -79,14 +79,14 @@ namespace MR
       if (transform().is_set()) {
         if (transform().rows() != 4 || transform().columns() != 4) {
           transform_.clear();
-          error ("transform matrix is not 4x4 - resetting to sane defaults");
+          ERROR ("transform matrix is not 4x4 - resetting to sane defaults");
         }
         else {
           for (size_t i = 0; i < 3; i++) {
             for (size_t j = 0; j < 4; j++) {
               if (!finite (transform_ (i,j))) {
                 transform_.clear();
-                error ("transform matrix contains invalid entries - resetting to sane defaults");
+                ERROR ("transform matrix contains invalid entries - resetting to sane defaults");
                 break;
               }
             }

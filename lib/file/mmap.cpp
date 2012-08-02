@@ -41,7 +41,7 @@ namespace MR
 
     void MMap::map()
     {
-      debug ("memory-mapping file \"" + Entry::name + "\"...");
+      DEBUG ("memory-mapping file \"" + Entry::name + "\"...");
 
       struct stat64 sbuf;
       if (stat64 (Entry::name.c_str(), &sbuf))
@@ -78,7 +78,7 @@ namespace MR
         throw Exception ("memory-mapping failed for file \"" + Entry::name + "\": " + strerror (errno));
       }
 
-      debug ("file \"" + Entry::name + "\" mapped at " + str ( (void*) addr) + ", size " + str (msize)
+      DEBUG ("file \"" + Entry::name + "\" mapped at " + str ( (void*) addr) + ", size " + str (msize)
              + " (read-" + (readwrite ? "write" : "only") + ")");
     }
 
@@ -89,13 +89,13 @@ namespace MR
     MMap::~MMap()
     {
       if (!addr) return;
-      debug ("unmapping file \"" + Entry::name + "\"");
+      DEBUG ("unmapping file \"" + Entry::name + "\"");
 #ifdef WINDOWS
       if (!UnmapViewOfFile ( (LPVOID) addr))
 #else
       if (munmap (addr, msize))
 #endif
-        error ("error unmapping file \"" + Entry::name + "\": " + strerror (errno));
+        ERROR ("error unmapping file \"" + Entry::name + "\": " + strerror (errno));
       close (fd);
     }
 

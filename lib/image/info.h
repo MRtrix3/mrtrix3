@@ -135,7 +135,7 @@ namespace MR
         }
 
         void sanitise () {
-          debug ("sanitising image information...");
+          DEBUG ("sanitising image information...");
           sanitise_voxel_sizes ();
           sanitise_transform ();
           sanitise_strides ();

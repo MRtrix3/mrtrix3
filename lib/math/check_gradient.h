@@ -42,17 +42,17 @@ namespace MR {
         const size_t N = function.size();
         Math::Vector<value_type> g (N);
 
-        console ("checking gradient for cost function over " + str(N) +
+        CONSOLE ("checking gradient for cost function over " + str(N) +
             " parameters of type " + DataType::from<value_type>().specifier());
         value_type step_size = function.init (g);
-        console ("cost function suggests initial step size = " + str(step_size));
-        console ("cost function suggests initial position at [ " + str(g) + "]");
+        CONSOLE ("cost function suggests initial step size = " + str(step_size));
+        CONSOLE ("cost function suggests initial position at [ " + str(g) + "]");
 
-        console ("checking gradient at position [ " + str(x) + "]:");
+        CONSOLE ("checking gradient at position [ " + str(x) + "]:");
         Math::Vector<value_type> g0 (N);
         value_type f0 = function (x, g0);
-        console ("  cost function = " + str(f0));
-        console ("  gradient = [ " + str(g0) + "]");
+        CONSOLE ("  cost function = " + str(f0));
+        CONSOLE ("  gradient = [ " + str(g0) + "]");
 
         Math::Vector<value_type> g_fd (N), error (N);
         Math::Matrix<value_type> hessian;
@@ -76,11 +76,11 @@ namespace MR {
           error[n] = g0[n] ? Math::abs (g_fd[n]/g0[n] - 1.0) : 0.0;
         }
 
-        console ("gradient by central finite difference = [ " + str(g_fd) + "]");
-        console ("error in gradient = [ " + str(error) + "]");
+        CONSOLE ("gradient by central finite difference = [ " + str(g_fd) + "]");
+        CONSOLE ("error in gradient = [ " + str(error) + "]");
         size_t index;
         value_type max = Math::max (error, index);
-        console ("mean error = " + str(Math::mean(error)) + ", with greatest error = " + str(max) + " at index "+ str(index));
+        CONSOLE ("mean error = " + str(Math::mean(error)) + ", with greatest error = " + str(max) + " at index "+ str(index));
 
         if (show_hessian) {
           hessian /= 4.0*increment;
@@ -91,7 +91,7 @@ namespace MR {
             for (; i < N; ++i) 
               hessian(i,j) += hessian(j,i);
           }
-          console ("hessian = [ " + str(hessian) + "]");
+          CONSOLE ("hessian = [ " + str(hessian) + "]");
         }
       }
 
