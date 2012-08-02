@@ -32,12 +32,12 @@ namespace MR
 
       void init ()
       {
-        inform ("GL renderer:  " + std::string ( (const char*) glGetString (GL_RENDERER)));
-        inform ("GL version:   " + std::string ( (const char*) glGetString (GL_VERSION)));
-        inform ("GL vendor:    " + std::string ( (const char*) glGetString (GL_VENDOR)));
+        INFO ("GL renderer:  " + std::string ( (const char*) glGetString (GL_RENDERER)));
+        INFO ("GL version:   " + std::string ( (const char*) glGetString (GL_VERSION)));
+        INFO ("GL vendor:    " + std::string ( (const char*) glGetString (GL_VENDOR)));
         GLboolean retval;
         glGetBooleanv (GL_STEREO, &retval);
-        inform ("Stereo buffering: " + std::string ( retval ? "" : "not" ) + " supported");
+        INFO ("Stereo buffering: " + std::string ( retval ? "" : "not" ) + " supported");
       }
 
       const char* ErrorString (GLenum errorcode) 

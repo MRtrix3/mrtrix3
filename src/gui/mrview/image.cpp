@@ -316,7 +316,7 @@ namespace MR
 
         }
         else {
-          error ("attempt to use unsupported colourmap");
+          ERROR ("attempt to use unsupported colourmap");
           return;
         }
         if ((value_max - value_min) < 2.0*std::numeric_limits<float>::epsilon()) 
@@ -341,7 +341,7 @@ namespace MR
         if (cmap < ColourMap::Special) format = GL_ALPHA;
         else if (cmap == ColourMap::RGB) format = GL_RGB;
         else if (cmap == ColourMap::Complex) format = GL_LUMINANCE_ALPHA;
-        else error ("attempt to use unsupported colourmap");
+        else ERROR ("attempt to use unsupported colourmap");
 
         if (cmap == ColourMap::Complex) 
           internal_format = GL_LUMINANCE_ALPHA32F_ARB;
@@ -354,7 +354,7 @@ namespace MR
               if (cmap < ColourMap::Special) internal_format = GL_ALPHA8;
               else if (cmap == ColourMap::Complex) internal_format = GL_LUMINANCE8_ALPHA8;
               else if (cmap == ColourMap::RGB) internal_format = GL_RGB8;
-              else error ("attempt to use unsupported colourmap");
+              else ERROR ("attempt to use unsupported colourmap");
               break;
             case DataType::UInt16LE:
             case DataType::UInt16BE:
@@ -363,13 +363,13 @@ namespace MR
               if (cmap < ColourMap::Special) internal_format = GL_ALPHA16;
               else if (cmap == ColourMap::Complex) internal_format = GL_LUMINANCE16_ALPHA16;
               else if (cmap == ColourMap::RGB) internal_format = GL_RGB16;
-              else error ("attempt to use unsupported colourmap");
+              else ERROR ("attempt to use unsupported colourmap");
               break;
             default:
               if (cmap < ColourMap::Special) internal_format = GL_ALPHA32F_ARB;
               else if (cmap == ColourMap::RGB) internal_format = GL_RGB32F;
               else if (cmap == ColourMap::Complex) internal_format = GL_LUMINANCE_ALPHA32F_ARB;
-              else error ("attempt to use unsupported colourmap");
+              else ERROR ("attempt to use unsupported colourmap");
               break;
           }
         }

@@ -44,12 +44,13 @@ namespace MR
 }
 
 #define CHECK_GL_EXTENSION(name) \
-  if (GLEE_##name) inform ("OpenGL extension GL_" #name " is supported"); \
+  if (GLEE_##name) { INFO ("OpenGL extension GL_" #name " is supported"); } \
   else throw Exception ("OpenGL extension GL_" #name " is not supported!")
 
 #define DEBUG_OPENGL { GLenum error_code = glGetError(); \
-    if (error_code != GL_NO_ERROR) \
-      error (std::string ("OpenGL Error: ") + (const char*) MR::GUI::GL::ErrorString (error_code) + " ["__FILE__":" + MR::str(__LINE__) + "]");\
+    if (error_code != GL_NO_ERROR) { \
+      ERROR (std::string ("OpenGL Error: ") + (const char*) MR::GUI::GL::ErrorString (error_code) + " ["__FILE__":" + MR::str(__LINE__) + "]"); \
+    }\
   }
 
 #endif

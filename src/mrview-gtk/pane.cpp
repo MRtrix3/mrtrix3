@@ -31,7 +31,7 @@ namespace MR {
     {
       add_events (Gdk::BUTTON_MOTION_MASK | Gdk::BUTTON_PRESS_MASK | Gdk::BUTTON_RELEASE_MASK | Gdk::SCROLL_MASK);
       GdkGLConfig* glconfig = gdk_gl_config_new_by_mode (GdkGLConfigMode (GDK_GL_MODE_RGB | GDK_GL_MODE_DEPTH | GDK_GL_MODE_ALPHA | GDK_GL_MODE_DOUBLE));
-      if (!glconfig) { error ("failed to initialise OpenGL!"); return; }
+      if (!glconfig) { ERROR ("failed to initialise OpenGL!"); return; }
       gtk_widget_set_gl_capability (GTK_WIDGET (gobj()), glconfig, NULL, true, GDK_GL_RGBA_TYPE);
     }
 
@@ -79,7 +79,7 @@ namespace MR {
 
       GLenum error_code = glGetError();
       if (error_code != GL_NO_ERROR) 
-        error (std::string ("OpenGL Error: ") + (const char*) gluErrorString (error_code));
+        ERROR (std::string ("OpenGL Error: ") + (const char*) gluErrorString (error_code));
 
       swap();
       end();

@@ -54,7 +54,7 @@ namespace MR
                 std::string msg ("compiling OpenGL ");
                 msg += TYPE == GL_VERTEX_SHADER_ARB ? "vertex" : "fragment";
                 msg += " shader:\n" + source;
-                MR::debug (msg);
+                DEBUG (msg);
               }
               if (!index_) index_ = glCreateShaderObjectARB (TYPE);
               const char* p = source.c_str();
@@ -126,7 +126,7 @@ namespace MR
               glDetachObjectARB (index_, object.index_);
             }
             void link () {
-              MR::debug ("linking OpenGL shader program...");
+              DEBUG ("linking OpenGL shader program...");
               assert (index_);
               glLinkProgramARB (index_);
               GLint status;

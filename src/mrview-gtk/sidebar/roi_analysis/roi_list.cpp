@@ -229,7 +229,7 @@ namespace MR {
               obj->create (selection[0], header); 
               load (obj);
             }
-            catch (...) { error ("error creating mask image \"" + selection[0] + "\": " + Glib::strerror (errno)); }
+            catch (...) { ERROR ("error creating mask image \"" + selection[0] + "\": " + Glib::strerror (errno)); }
           }
         }
       }

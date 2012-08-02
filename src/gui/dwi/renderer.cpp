@@ -185,7 +185,7 @@ namespace MR
       {
         recompute_mesh = false;
         recompute_amplitudes = true;
-        inform ("updating SH renderer transform...");
+        INFO ("updating SH renderer transform...");
         QApplication::setOverrideCursor (Qt::BusyCursor);
 
         indices.clear();
@@ -248,7 +248,7 @@ namespace MR
       void Renderer::compute_amplitudes ()
       {
         recompute_amplitudes = false;
-        inform ("updating values...");
+        INFO ("updating values...");
 
         int actual_lmax = Math::SH::LforN (SH.size());
         if (actual_lmax > lmax_computed) actual_lmax = lmax_computed;

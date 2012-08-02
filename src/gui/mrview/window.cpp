@@ -150,7 +150,7 @@ namespace MR
             else if (toolbar_pos_spec == "left") toolbar_position = Qt::LeftToolBarArea;
             else if (toolbar_pos_spec == "right") toolbar_position = Qt::RightToolBarArea;
             else if (toolbar_pos_spec != "top")
-              error ("invalid value for configuration entry \"InitialToolBarPosition\"");
+              ERROR ("invalid value for configuration entry \"InitialToolBarPosition\"");
           }
         }
 
@@ -1011,7 +1011,7 @@ namespace MR
 
         GLint max_num;
         glGetIntegerv (GL_MAX_GEOMETRY_OUTPUT_VERTICES_ARB, &max_num);
-        inform ("maximum number of vertices for geometry shader: " + str (max_num));
+        INFO ("maximum number of vertices for geometry shader: " + str (max_num));
 
         glClearColor (0.0, 0.0, 0.0, 0.0);
         glEnable (GL_DEPTH_TEST);
