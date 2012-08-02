@@ -55,7 +55,7 @@ namespace MR {
               vol = 4.0*M_PI*Math::pow3(rad)/3.0;
             }
             catch (...) { 
-              inform ("could not parse spherical ROI specification \"" + spec + "\" - assuming mask image");
+              INFO ("could not parse spherical ROI specification \"" + spec + "\" - assuming mask image");
               Image::Header H (spec);
               if (H.datatype() == DataType::Bit)
                 get_mask (spec);

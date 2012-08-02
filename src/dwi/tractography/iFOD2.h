@@ -57,7 +57,7 @@ namespace MR {
 
                   set_step_size (0.5);
                   sin_max_angle = Math::sin (max_angle);
-                  inform ("minimum radius of curvature = " + str(step_size / max_angle) + " mm");
+                  INFO ("minimum radius of curvature = " + str(step_size / max_angle) + " mm");
 
                   properties["method"] = "iFOD2";
                   properties.set (lmax, "lmax");
@@ -75,9 +75,9 @@ namespace MR {
 
               ~Shared ()
               {
-                inform ("mean number of samples per step = " + str (mean_samples/double(num_proc))); 
-                inform ("mean number of rejection sampling truncations per step = " + str (mean_num_truncations/double(num_proc))); 
-                inform ("maximum truncation error = " + str (max_max_truncation)); 
+                INFO ("mean number of samples per step = " + str (mean_samples/double(num_proc))); 
+                INFO ("mean number of rejection sampling truncations per step = " + str (mean_num_truncations/double(num_proc))); 
+                INFO ("maximum truncation error = " + str (max_max_truncation)); 
               }
 
               void update_stats (double mean_samples_per_run, double num_truncations, double max_truncation) const 
@@ -186,7 +186,7 @@ end_init:
               value_type val = rand_path_prob (next_pos, next_dir);
 
               if (val > max_val) {
-                debug ("max_val exceeded!!! (val = " + str(val) + ", max_val = " + str (max_val) + ")");
+                DEBUG ("max_val exceeded!!! (val = " + str(val) + ", max_val = " + str (max_val) + ")");
                   ++num_truncations;
                   if (val/max_val > max_truncation)
                     max_truncation = val/max_val;

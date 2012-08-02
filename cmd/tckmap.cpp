@@ -189,7 +189,7 @@ void generate_header (Image::Header& header, Tractography::Reader<float>& file, 
 
 void oversample_header (Image::Header& header, const std::vector<float>& voxel_size) 
 {
-  inform ("oversampling header...");
+  INFO ("oversampling header...");
 
   for (size_t i = 0; i != 3; ++i) {
     header.transform()(i, 3) += 0.5 * (voxel_size[i] - header.vox(i));
@@ -256,7 +256,7 @@ void run () {
     throw Exception ("voxel size must either be a single isotropic value, or a list of 3 comma-separated voxel dimensions");
 
   if (!voxel_size.empty())
-    inform ("creating image with voxel dimensions [ " + str(voxel_size[0]) + " " + str(voxel_size[1]) + " " + str(voxel_size[2]) + " ]");
+    INFO ("creating image with voxel dimensions [ " + str(voxel_size[0]) + " " + str(voxel_size[1]) + " " + str(voxel_size[2]) + " ]");
 
   Image::Header header;
   opt = get_options ("template");
@@ -292,7 +292,7 @@ void run () {
   opt = get_options ("fwhm_tck");
   if (opt.size()) {
     if (stat_tck != GAUSSIAN) {
-      inform ("Overriding per-track statistic to Gaussian as a full-width half-maximum has been provided.");
+      INFO ("Overriding per-track statistic to Gaussian as a full-width half-maximum has been provided.");
       stat_tck = GAUSSIAN;
     }
     gaussian_fwhm_tck = opt[0][0];
@@ -323,33 +323,33 @@ void run () {
 
     case TDI:
       if (stat_vox != SUM && stat_vox != MEAN) {
-        inform ("Cannot use voxel statistic other than 'sum' or 'mean' for TDI generation - ignoring");
+        INFO ("Cannot use voxel statistic other than 'sum' or 'mean' for TDI generation - ignoring");
         stat_vox = SUM;
       }
       if (stat_tck != MEAN)
-        inform ("Cannot use track statistic other than default for TDI generation - ignoring");
+        INFO ("Cannot use track statistic other than default for TDI generation - ignoring");
       stat_tck = MEAN;
       break;
 
     case ENDPOINT:
       if (stat_vox != SUM && stat_vox != MEAN) {
-        inform ("Cannot use voxel statistic other than 'sum' or 'mean' for endpoint map generation - ignoring");
+        INFO ("Cannot use voxel statistic other than 'sum' or 'mean' for endpoint map generation - ignoring");
         stat_vox = SUM;
       }
       if (stat_tck != MEAN)
-        inform ("Cannot use track statistic other than default for endpoint map generation - ignoring");
+        INFO ("Cannot use track statistic other than default for endpoint map generation - ignoring");
       stat_tck = MEAN;
       break;
 
     case LENGTH:
       if (stat_tck != MEAN)
-        inform ("Cannot use track statistic other than default for length-weighted TDI generation - ignoring");
+        INFO ("Cannot use track statistic other than default for length-weighted TDI generation - ignoring");
       stat_tck = MEAN;
       break;
 
     case INVLENGTH:
       if (stat_tck != MEAN)
-        inform ("Cannot use track statistic other than default for inverse-length-weighted TDI generation - ignoring");
+        INFO ("Cannot use track statistic other than default for inverse-length-weighted TDI generation - ignoring");
       stat_tck = MEAN;
       break;
 
@@ -380,7 +380,7 @@ void run () {
 
   if (opt.size()) {
     if (colour) {
-      inform ("Can't manually set datatype for directionally-encoded colour processing - overriding to Float32");
+      INFO ("Can't manually set datatype for directionally-encoded colour processing - overriding to Float32");
     } else {
       header.datatype() = DataType::parse (opt[0][0]);
       manual_datatype = true;
@@ -400,15 +400,15 @@ void run () {
   opt = get_options ("resample");
   if (opt.size()) {
     resample_factor = opt[0][0];
-    inform ("track interpolation factor manually set to " + str(resample_factor));
+    INFO ("track interpolation factor manually set to " + str(resample_factor));
   }
   else if (step_size) {
     resample_factor = Math::ceil<size_t> (step_size / (minvalue (header.vox(0), header.vox(1), header.vox(2)) * MAX_VOXEL_STEP_RATIO));
-    inform ("track interpolation factor automatically set to " + str(resample_factor));
+    INFO ("track interpolation factor automatically set to " + str(resample_factor));
   }
   else {
     resample_factor = 1;
-    inform ("track interpolation off; no track step size information in header");
+    INFO ("track interpolation off; no track step size information in header");
   }
 
   const bool dump = get_options ("dump").size();
@@ -457,7 +457,7 @@ void run () {
     }
     msg += " per-track statistic";
   }
-  inform (msg);
+  INFO (msg);
 
   switch (contrast) {
     case TDI:              header.comments().push_back ("track density image"); break;

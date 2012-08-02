@@ -66,7 +66,7 @@ void run ()
     throw Exception ("input FOD image should have 4 dimensions");
 
   const int lmax = Math::SH::LforN (FOD_data.dim (3));
-  inform ("assuming lmax = " + str (lmax));
+  INFO ("assuming lmax = " + str (lmax));
 
   Image::Header sample_header (FOD_data);
   sample_header.dim(3) = 3;

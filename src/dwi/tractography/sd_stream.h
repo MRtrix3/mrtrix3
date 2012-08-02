@@ -47,10 +47,11 @@ namespace MR {
                   set_step_size (0.1);
                   dot_threshold = Math::cos (max_angle);
 
-                  if (rk4)
-                    inform ("minimum radius of curvature = " + str(step_size / (max_angle / (0.5 * M_PI))) + " mm");
+                  if (rk4) {
+                    INFO ("minimum radius of curvature = " + str(step_size / (max_angle / (0.5 * M_PI))) + " mm");
+                  }
                   else
-                    inform ("minimum radius of curvature = " + str(step_size / ( 2.0 * sin (max_angle / 2.0))) + " mm");
+                    INFO ("minimum radius of curvature = " + str(step_size / ( 2.0 * sin (max_angle / 2.0))) + " mm");
 
                   properties["method"] = "SDStream";
 

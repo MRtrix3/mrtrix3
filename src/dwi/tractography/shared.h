@@ -105,7 +105,7 @@ namespace MR {
           {
             step_size = stepsize * vox();
             properties.set (step_size, "step_size");
-            inform ("step size = " + str (step_size) + " mm");
+            INFO ("step size = " + str (step_size) + " mm");
 
             value_type max_dist = 100.0 * vox();
             properties.set (max_dist, "max_dist");
@@ -117,7 +117,7 @@ namespace MR {
 
             max_angle = 90.0 * step_size / vox();
             properties.set (max_angle, "max_angle");
-            inform ("maximum deviation angle = " + str (max_angle) + "°");
+            INFO ("maximum deviation angle = " + str (max_angle) + "°");
             max_angle *= M_PI / 180.0;
             cos_max_angle = Math::cos (max_angle);
 

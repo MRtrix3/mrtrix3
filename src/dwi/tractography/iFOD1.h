@@ -51,9 +51,9 @@ namespace MR {
                   set_step_size (0.1);
                   if (rk4) {
                     max_angle = 0.5 * max_angle_rk4;
-                    inform ("minimum radius of curvature = " + str(step_size / (max_angle_rk4 / (0.5 * M_PI))) + " mm");
+                    INFO ("minimum radius of curvature = " + str(step_size / (max_angle_rk4 / (0.5 * M_PI))) + " mm");
                   } else {
-                    inform ("minimum radius of curvature = " + str(step_size / ( 2.0 * sin (max_angle / 2.0))) + " mm");
+                    INFO ("minimum radius of curvature = " + str(step_size / ( 2.0 * sin (max_angle / 2.0))) + " mm");
                   }
                   sin_max_angle = Math::sin (max_angle);
 
@@ -67,9 +67,9 @@ namespace MR {
 
               ~Shared ()
               {
-                inform ("mean number of samples per step = " + str (mean_samples/double(num_proc))); 
-                inform ("mean number of rejection sampling truncations per step = " + str (mean_num_truncations/double(num_proc))); 
-                inform ("maximum truncation error = " + str (max_max_truncation)); 
+                INFO ("mean number of samples per step = " + str (mean_samples/double(num_proc))); 
+                INFO ("mean number of rejection sampling truncations per step = " + str (mean_num_truncations/double(num_proc))); 
+                INFO ("maximum truncation error = " + str (max_max_truncation)); 
               }
 
               void update_stats (double mean_samples_per_run, double num_truncations, double max_truncation) const 
@@ -169,7 +169,7 @@ namespace MR {
               if (val > S.threshold) {
 
                 if (val > max_val) {
-                  debug ("max_val exceeded!!! (val = " + str(val) + ", max_val = " + str (max_val) + ")");
+                  DEBUG ("max_val exceeded!!! (val = " + str(val) + ", max_val = " + str (max_val) + ")");
                   ++num_truncations;
                   if (val/max_val > max_truncation)
                     max_truncation = val/max_val;
