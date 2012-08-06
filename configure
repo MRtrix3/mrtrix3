@@ -260,8 +260,8 @@ def execute (cmd, exception, raise_on_non_zero_exit_code = True, cwd = None):
   try: 
     process = subprocess.Popen (cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, cwd=cwd)
     ( stdout, stderr ) = process.communicate()
-  except OSError: 
-    log ('command failed with stderr:\n' + stderr.rstrip() + '\n>>\n\n')
+  except OSError as error: 
+    log ('error invoking command "' + cmd[0] + '": ' + os.strerror (error.errno) + '\n>>\n\n')
     raise exception
   log ('EXIT: ' + str(process.returncode) + '\n')
   stdout = stdout.rstrip()
