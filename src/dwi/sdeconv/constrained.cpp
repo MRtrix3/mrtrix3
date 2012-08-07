@@ -32,8 +32,6 @@ namespace MR
                 "even harmonic order.")
       + Argument ("spec").type_file()
 
-      + Option ("normalise", "normalise the DW signal to the b=0 image")
-
       + Option ("neg_lambda",
                 "the regularisation parameter lambda that controls the strength of the "
                 "non-negativity constraint (default = 1.0).")
@@ -46,7 +44,7 @@ namespace MR
 
       + Option ("threshold",
                 "the threshold below which the amplitude of the FOD is assumed to be zero, "
-                "expressed as a fraction of the mean value of the initial FOD (default = 0.0).")
+                "expressed as an absolute amplitude (default = 0.0).")
       + Argument ("value").type_float (-1.0, 0.0, 10.0)
 
       + Option ("niter",

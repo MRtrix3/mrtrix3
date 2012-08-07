@@ -48,99 +48,11 @@ void usage ()
 
 
 
-
-
-
-
 typedef float value_type;
-
-class Item
-{
-  public:
-    Math::Vector<value_type> data;
-    ssize_t pos[3];
-};
-
-
-
-
-
-class DataLoader
-{
-  public:
-    DataLoader (Image::BufferPreload<value_type>& dwi_data,
-                Image::Buffer<bool>* mask_data,
-                const std::vector<int>& vec_bzeros,
-                const std::vector<int>& vec_dwis,
-                bool normalise_to_b0) :
-      dwi (dwi_data),
-      bzeros (vec_bzeros),
-      dwis (vec_dwis),
-      loop ("performing constrained spherical deconvolution...", 0, 3),
-      normalise (normalise_to_b0) {
-        if (mask_data) {
-          Image::check_dimensions (*mask_data, dwi, 0, 3);
-          mask = new Image::Buffer<bool>::voxel_type (*mask_data);
-          loop.start (*mask, dwi);
-        }
-        else
-          loop.start (dwi);
-      }
-
-    bool operator() (Item& item) {
-      if (loop.ok()) {
-        if (mask) {
-          while (!mask->value()) {
-            loop.next (*mask, dwi);
-            if (!loop.ok())
-              return false;
-          }
-        }
-
-        load (item);
-
-        if (mask)
-          loop.next (*mask, dwi);
-        else
-          loop.next (dwi);
-
-        return true;
-      }
-      return false;
-    }
-
-  private:
-    Image::BufferPreload<value_type>::voxel_type dwi;
-    Ptr<Image::Buffer<bool>::voxel_type> mask;
-    const std::vector<int>&  bzeros;
-    const std::vector<int>&  dwis;
-    Image::Loop loop;
-    bool  normalise;
-
-    void load (Item& item) {
-      value_type norm = 0.0;
-      if (normalise) {
-        for (size_t n = 0; n < bzeros.size(); n++) {
-          dwi[3] = bzeros[n];
-          norm += dwi.value ();
-        }
-        norm /= bzeros.size();
-      }
-
-      item.data.resize (dwis.size());
-      for (size_t n = 0; n < dwis.size(); n++) {
-        dwi[3] = dwis[n];
-        item.data[n] = dwi.value();
-        if (!finite (item.data[n])) return;
-        if (item.data[n] < 0.0) item.data[n] = 0.0;
-        if (normalise) item.data[n] /= norm;
-      }
-
-      item.pos[0] = dwi[0];
-      item.pos[1] = dwi[1];
-      item.pos[2] = dwi[2];
-    }
-};
+typedef double cost_value_type;
+typedef Image::BufferPreload<value_type> InputBufferType;
+typedef Image::Buffer<value_type> OutputBufferType;
+typedef Image::Buffer<bool> MaskBufferType;
 
 
 
@@ -149,38 +61,80 @@ class DataLoader
 class Processor
 {
   public:
-    Processor (Image::Buffer<value_type>& SH_data,
-               const DWI::CSDeconv<value_type>::Shared& shared) :
-      SH (SH_data),
-      sdeconv (shared) { }
+    Processor (InputBufferType::voxel_type& DWI_vox,
+        OutputBufferType::voxel_type& FOD_vox,
+        Ptr<MaskBufferType::voxel_type>& mask_vox,
+        const DWI::CSDeconv<value_type>::Shared& shared) :
+      dwi (DWI_vox),
+      fod (FOD_vox),
+      mask (mask_vox),
+      sdeconv (shared),
+      data (shared.dwis.size()) {
+        if (mask) 
+          Image::check_dimensions (*mask, dwi, 0, 3);
+      }
 
-    bool operator() (const Item& item) {
-      sdeconv.set (item.data);
+
+
+    void operator () (const Image::Iterator& pos) {
+      if (!load_data (pos)) 
+        return;
+
+      sdeconv.set (data);
 
       size_t n;
-      for (n = 0; n < sdeconv.P.niter; n++)
+      for (n = 0; n < sdeconv.shared.niter; n++)
         if (sdeconv.iterate())
           break;
 
-      if (n == sdeconv.P.niter)
-        INFO ("voxel [ " + str (item.pos[0]) + " " + str (item.pos[1]) + " " + str (item.pos[2]) +
+      if (n == sdeconv.shared.niter)
+        INFO ("voxel [ " + str (pos[0]) + " " + str (pos[1]) + " " + str (pos[2]) +
             " ] did not reach full convergence");
 
-      SH[0] = item.pos[0];
-      SH[1] = item.pos[1];
-      SH[2] = item.pos[2];
+      write_back (pos);
+    }
 
-      for (SH[3] = 0; SH[3] < SH.dim (3); ++SH[3])
-        SH.value() = sdeconv.FOD() [SH[3]];
+
+
+  private:
+    InputBufferType::voxel_type dwi;
+    OutputBufferType::voxel_type fod;
+    Ptr<MaskBufferType::voxel_type> mask;
+    DWI::CSDeconv<value_type> sdeconv;
+    Math::Vector<value_type> data;
+
+
+
+    bool load_data (const Image::Iterator& pos) {
+      if (mask) {
+        Image::voxel_assign (*mask, pos);
+        if (!mask->value())
+          return false;
+      }
+
+      Image::voxel_assign (dwi, pos);
+
+      for (size_t n = 0; n < sdeconv.shared.dwis.size(); n++) {
+        dwi[3] = sdeconv.shared.dwis[n];
+        data[n] = dwi.value();
+        if (!finite (data[n])) 
+          return false;
+        if (data[n] < 0.0) 
+          data[n] = 0.0;
+      }
 
       return true;
     }
 
-  private:
-    Image::Buffer<value_type>::voxel_type SH;
-    DWI::CSDeconv<value_type> sdeconv;
-};
 
+
+    void write_back (const Image::Iterator& pos) {
+      Image::voxel_assign (fod, pos);
+      for (fod[3] = 0; fod[3] < fod.dim (3); ++fod[3])
+        fod.value() = sdeconv.FOD() [fod[3]];
+    }
+
+};
 
 
 
@@ -192,30 +146,34 @@ void run ()
 {
 
   std::vector<ssize_t> strides (4, 0);
-   strides[3] = 1;
-   Image::BufferPreload<value_type> dwi_data (argument[0], strides);
+  strides[3] = 1;
+  InputBufferType dwi_buffer (argument[0], strides);
 
+  Ptr<MaskBufferType> mask_data;
+  Ptr<MaskBufferType::voxel_type> mask_vox;
   Options opt = get_options ("mask");
-  Ptr<Image::Buffer<bool> > mask_data;
-  if (opt.size())
-    mask_data = new Image::Buffer<bool> (opt[0][0]);
+  if (opt.size()) {
+    mask_data = new MaskBufferType (opt[0][0]);
+    mask_vox = new MaskBufferType::voxel_type (*mask_data);
+  }
 
-  DWI::CSDeconv<value_type>::Shared shared (dwi_data, argument[1]);
+  DWI::CSDeconv<value_type>::Shared shared (dwi_buffer, argument[1]);
 
-  bool normalise = get_options ("normalise").size();
 
-  Image::Header header (dwi_data);
+  Image::Header header (dwi_buffer);
   header.dim(3) = shared.nSH();
   header.datatype() = DataType::Float32;
   header.stride(0) = 2;
   header.stride(1) = 3;
   header.stride(2) = 4;
   header.stride(3) = 1;
-  Image::Buffer<value_type> SH_data (argument[2], header);
+  OutputBufferType FOD_buffer (argument[2], header);
 
-  DataLoader loader (dwi_data, mask_data, shared.bzeros, shared.dwis, normalise);
-  Processor processor (SH_data, shared);
+  InputBufferType::voxel_type dwi_vox (dwi_buffer);
+  OutputBufferType::voxel_type FOD_vox (FOD_buffer);
 
-  Thread::run_queue (loader, 1, Item(), processor, 0);
+  Processor processor (dwi_vox, FOD_vox, mask_vox, shared);
+  Image::ThreadedLoop loop ("performing constrained spherical deconvolution...", dwi_vox, 1, 0, 3);
+  loop.run (processor);
 }
 

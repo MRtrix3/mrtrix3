@@ -50,7 +50,7 @@ namespace MR
             Shared () : 
               neg_lambda (1.0),
               norm_lambda (1.0),
-              threshold (0.1) { }
+              threshold (0.0) { }
 
             Shared (const Math::Vector<value_type>& response,
                 const Math::Vector<value_type>& init_filter,
@@ -59,13 +59,13 @@ namespace MR
                 int l_max = 8) :
               neg_lambda (1.0),
               norm_lambda (1.0),
-              threshold (0.1) { init (response, init_filter, DW_dirs, HR_dirs); }
+              threshold (0.0) { init (response, init_filter, DW_dirs, HR_dirs); }
 
             Shared (const Image::Header& dwi_header, 
                 const std::string& response_file) :
               neg_lambda (1.0),
               norm_lambda (1.0),
-              threshold (0.1) { init (dwi_header, response_file); }
+              threshold (0.0) { init (dwi_header, response_file); }
 
             void init (const Image::Header& dwi_header, const std::string& response_file) {
               using namespace App;
@@ -131,7 +131,7 @@ namespace MR
                 const Math::Matrix<value_type>& HR_dirs,
                 int l_max = 8) {
               lmax = l_max;
-              int lmax_data = (response.size()-1) *2;
+              int lmax_data = 2*(response.size()-1);
               int n = Math::SH::LforN (DW_dirs.rows());
               if (lmax_data > n) lmax_data = n;
               if (lmax_data > lmax) lmax_data = lmax;
@@ -143,26 +143,46 @@ namespace MR
               Math::Vector<value_type> RH;
               Math::SH::SH2RH (RH, response);
 
+              // inverse sdeconv for initialisation:
               Math::Matrix<value_type> fconv;
               Math::SH::init_transform (fconv, DW_dirs, lmax_data);
               rconv.allocate (fconv.columns(), fconv.rows());
               Math::pinv (rconv, fconv);
-
               size_t l = 0, nl = 1;
-              for (size_t row = 0; row < rconv.rows(); row++) {
+              for (size_t row = 0; row < rconv.rows(); ++row) {
                 if (row >= nl) {
                   l++;
                   nl = Math::SH::NforL (2*l);
                 }
-                for (size_t col = 0; col < rconv.columns(); col++) {
+                for (size_t col = 0; col < rconv.columns(); col++) 
                   rconv (row, col) *= init_filter[l] / RH[l];
-                  fconv (col,row) *= RH[l];
-                }
               }
 
-              Math::SH::init_transform (HR_trans, HR_dirs, lmax);
-              HR_trans *= neg_lambda * value_type (fconv.rows()) * response[0] / value_type (HR_trans.rows());
+              // forward sconv for iteration, using all response function
+              // coefficients up to the requested lmax:
+              Math::SH::init_transform (fconv, DW_dirs, lmax);
+              l = 0;
+              nl = 1;
+              for (size_t col = 0; col < fconv.columns(); ++col) {
+                if (col >= nl) {
+                  l++;
+                  nl = Math::SH::NforL (2*l);
+                }
+                for (size_t row = 0; row < fconv.rows(); ++row) 
+                  fconv (row,col) *= RH[l];
+              }
 
+
+              // high-res sampling to apply constraint:
+              Math::SH::init_transform (HR_trans, HR_dirs, lmax);
+              value_type constraint_multiplier = neg_lambda * value_type (fconv.rows()) * response[0] / value_type (HR_trans.rows());
+              HR_trans *= constraint_multiplier;
+
+              // adjust threshold accordingly:
+              threshold *= constraint_multiplier;
+
+              // precompute as much as possible ahead of Cholesky decomp:
+              assert (fconv.columns() <= HR_trans.columns());
               M.allocate (DW_dirs.rows(), HR_trans.columns());
               M.sub (0,M.rows(),0,fconv.columns()) = fconv;
               M.sub (0,M.rows(),fconv.columns(),M.columns()) = 0.0;
@@ -184,48 +204,47 @@ namespace MR
         };
 
 
-        CSDeconv (const Shared& shared) :
-          P (shared),
-          work (P.Mt_M.rows(), P.Mt_M.columns()),
-          HR_T (P.HR_trans.rows(), P.HR_trans.columns()),
-          F (P.HR_trans.columns()),
-          init_F (P.rconv.rows()),
-          HR_amps (P.HR_trans.rows()),
-          Mt_b (P.HR_trans.columns()),
-          old_neg (P.HR_trans.rows()) {
-            norm_lambda = NORM_LAMBDA_MULTIPLIER * P.norm_lambda * P.Mt_M (0,0);
+        CSDeconv (const Shared& shared_data) :
+          shared (shared_data),
+          work (shared.Mt_M.rows(), shared.Mt_M.columns()),
+          HR_T (shared.HR_trans.rows(), shared.HR_trans.columns()),
+          F (shared.HR_trans.columns()),
+          init_F (shared.rconv.rows()),
+          HR_amps (shared.HR_trans.rows()),
+          Mt_b (shared.HR_trans.columns()),
+          old_neg (shared.HR_trans.rows()) {
+            norm_lambda = NORM_LAMBDA_MULTIPLIER * shared.norm_lambda * shared.Mt_M (0,0);
           }
 
         CSDeconv (const CSDeconv& c) :
-          P (c.P),
-          work (P.Mt_M.rows(), P.Mt_M.columns()),
-          HR_T (P.HR_trans.rows(), P.HR_trans.columns()),
-          F (P.HR_trans.columns()),
-          init_F (P.rconv.rows()),
-          HR_amps (P.HR_trans.rows()),
-          Mt_b (P.HR_trans.columns()),
-          old_neg (P.HR_trans.rows()) {
-            norm_lambda = NORM_LAMBDA_MULTIPLIER * P.norm_lambda * P.Mt_M (0,0);
+          shared (c.shared),
+          work (shared.Mt_M.rows(), shared.Mt_M.columns()),
+          HR_T (shared.HR_trans.rows(), shared.HR_trans.columns()),
+          F (shared.HR_trans.columns()),
+          init_F (shared.rconv.rows()),
+          HR_amps (shared.HR_trans.rows()),
+          Mt_b (shared.HR_trans.columns()),
+          old_neg (shared.HR_trans.rows()) {
+            norm_lambda = NORM_LAMBDA_MULTIPLIER * shared.norm_lambda * shared.Mt_M (0,0);
           }
 
         ~CSDeconv() { }
 
         void set (const Math::Vector<value_type>& DW_signals) {
-          Math::mult (init_F, P.rconv, DW_signals);
+          Math::mult (init_F, shared.rconv, DW_signals);
           F.sub (0, init_F.size()) = init_F;
           F.sub (init_F.size(), F.size()) = 0.0;
-          old_neg.assign (P.HR_trans.rows(), -1);
-          threshold = P.threshold * init_F[0] * P.HR_trans (0,0);
+          old_neg.assign (shared.HR_trans.rows(), -1);
           computed_once = false;
 
-          mult (Mt_b, value_type (0.0), value_type (1.0), CblasTrans, P.M, DW_signals);
+          mult (Mt_b, value_type (0.0), value_type (1.0), CblasTrans, shared.M, DW_signals);
         }
 
         bool iterate() {
           neg.clear();
-          Math::mult (HR_amps, P.HR_trans, F);
+          Math::mult (HR_amps, shared.HR_trans, F);
           for (size_t n = 0; n < HR_amps.size(); n++)
-            if (HR_amps[n] < threshold)
+            if (HR_amps[n] < shared.threshold)
               neg.push_back (n);
 
           if (computed_once && old_neg == neg)
@@ -234,14 +253,14 @@ namespace MR
 
           for (size_t i = 0; i < work.rows(); i++) {
             for (size_t j = 0; j < i; j++)
-              work (i,j) = P.Mt_M (i,j);
-            work (i,i) = P.Mt_M (i,i) + norm_lambda;
+              work (i,j) = shared.Mt_M (i,j);
+            work (i,i) = shared.Mt_M (i,i) + norm_lambda;
           }
 
           if (neg.size()) {
-            HR_T.allocate (neg.size(), P.HR_trans.columns());
+            HR_T.allocate (neg.size(), shared.HR_trans.columns());
             for (size_t i = 0; i < neg.size(); i++)
-              HR_T.row (i) = P.HR_trans.row (neg[i]);
+              HR_T.row (i) = shared.HR_trans.row (neg[i]);
             rankN_update (work, HR_T, CblasTrans, CblasLower, value_type (1.0), value_type (1.0));
           }
 
@@ -260,10 +279,10 @@ namespace MR
         }
 
 
-        const Shared& P;
+        const Shared& shared;
 
       protected:
-        value_type threshold, norm_lambda;
+        value_type norm_lambda;
         Math::Matrix<value_type> work, HR_T;
         Math::Vector<value_type> F, init_F, HR_amps, Mt_b;
         std::vector<int> neg, old_neg;
