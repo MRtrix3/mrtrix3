@@ -63,7 +63,7 @@ namespace MR
           if (!MR::Path::exists (filename))
             throw Exception ("cannot access file \"" + filename + "\": No such file or directory");
 
-          gz = gzopen64 (filename.c_str(), mode);
+          gz = gzopen (filename.c_str(), mode);
           if (!gz)
             throw Exception ("error opening file \"" + filename + "\": insufficient memory");
         }
@@ -86,12 +86,12 @@ namespace MR
         }
         int64_t tell () const {
           assert (gz);
-          return (gztell64 (gz));
+          return (gztell (gz));
         }
 
         void seek (int64_t offset) {
           assert (gz);
-          z_off_t pos = gzseek64 (gz, offset, SEEK_SET);
+          z_off_t pos = gzseek (gz, offset, SEEK_SET);
           if (pos < 0)
             throw Exception ("error seeking in file \"" + filename + "\": " + error());
         }
