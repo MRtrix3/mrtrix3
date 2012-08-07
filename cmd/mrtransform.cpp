@@ -135,10 +135,10 @@ void run ()
   opt = get_options ("vox");
   if (opt.size()) {
     new_voxel_sizes = opt[0][0];
-    if (new_voxel_sizes.size() != 1 && new_voxel_sizes.size() != 3) 
+    if (new_voxel_sizes.size() != 1 && new_voxel_sizes.size() != 3)
       throw Exception ("voxel sizes should be specified as a comma-separated list of 1 or 3 floating-point values");
     for (size_t n = 0; n < new_voxel_sizes.size(); ++n)
-      if (new_voxel_sizes[n] < 0.0) 
+      if (new_voxel_sizes[n] < 0.0)
         throw Exception ("voxel size must be positive");
     if (new_voxel_sizes.size() == 1) {
       new_voxel_sizes.push_back (new_voxel_sizes[0]);
@@ -165,9 +165,9 @@ void run ()
     }
 
     if (new_voxel_sizes.size()) {
-      float extent [] = { 
-        header_out.dim(0) * header_out.vox(0), 
-        header_out.dim(1) * header_out.vox(1), 
+      float extent [] = {
+        header_out.dim(0) * header_out.vox(0),
+        header_out.dim(1) * header_out.vox(1),
         header_out.dim(2) * header_out.vox(2)
       };
       header_out.vox(0) = new_voxel_sizes[0];
@@ -177,6 +177,9 @@ void run ()
       header_out.dim(0) = Math::ceil (extent[0] / new_voxel_sizes[0]);
       header_out.dim(1) = Math::ceil (extent[1] / new_voxel_sizes[1]);
       header_out.dim(2) = Math::ceil (extent[2] / new_voxel_sizes[2]);
+
+      for (size_t i = 0; i < 3; ++i)
+        header_out.transform()(i, 3) += 0.5 * (new_voxel_sizes[i] - data_in.vox(i));
     }
 
     int interp = 1;
