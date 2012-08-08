@@ -45,7 +45,7 @@ namespace MR {
           func (functor),
           next_voxel (NULL),
           last_voxel (NULL) {
-            assert (ndim() == 4);
+            assert (Image::Adapter::Voxel<VoxelType>::ndim() == 4);
           }
 
         value_type value () { 
