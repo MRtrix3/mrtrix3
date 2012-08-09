@@ -22,7 +22,7 @@ namespace MR
       + Option ("directions",
                 "specify the directions over which to apply the non-negativity constraint "
                 "(by default, the built-in 300 direction set is used). These should be "
-                "supplied as a text file containing the [ el az ] pairs for the directions.")
+                "supplied as a text file containing the [ az el ] pairs for the directions.")
       + Argument ("file").type_file()
 
       + Option ("filter",

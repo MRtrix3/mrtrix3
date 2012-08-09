@@ -120,6 +120,10 @@ namespace MR
               if (opt.size())
                 niter = opt[0][0];
 
+              // TODO: fix SH basis...
+              norm_lambda = 0.0;
+              WARN ("disabling norm regularisation due to the non-orthogonality of SH basis (needs fixing...)");
+
               init (response, filter, DW_dirs, HR_dirs, lmax);
             }
 
