@@ -32,7 +32,7 @@ namespace MR
   {
     namespace Filter
     {
-      
+
       //! convenience function to regrid one DataSet onto another.
       /*! This function resamples (regrids) the DataSet \a source onto the
        * DataSet& \a destination, using the Interp::Reslice class.

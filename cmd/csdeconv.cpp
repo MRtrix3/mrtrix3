@@ -43,7 +43,8 @@ void usage ()
 
   OPTIONS
     + DWI::GradOption
-    + DWI::CSD_options;
+    + DWI::CSD_options
+    + Image::Stride::StrideOption;
 }
 
 
@@ -70,14 +71,14 @@ class Processor
       mask (mask_vox),
       sdeconv (shared),
       data (shared.dwis.size()) {
-        if (mask) 
+        if (mask)
           Image::check_dimensions (*mask, dwi, 0, 3);
       }
 
 
 
     void operator () (const Image::Iterator& pos) {
-      if (!load_data (pos)) 
+      if (!load_data (pos))
         return;
 
       sdeconv.set (data);
@@ -117,9 +118,9 @@ class Processor
       for (size_t n = 0; n < sdeconv.shared.dwis.size(); n++) {
         dwi[3] = sdeconv.shared.dwis[n];
         data[n] = dwi.value();
-        if (!finite (data[n])) 
+        if (!finite (data[n]))
           return false;
-        if (data[n] < 0.0) 
+        if (data[n] < 0.0)
           data[n] = 0.0;
       }
 
@@ -163,10 +164,19 @@ void run ()
   Image::Header header (dwi_buffer);
   header.dim(3) = shared.nSH();
   header.datatype() = DataType::Float32;
-  header.stride(0) = 2;
-  header.stride(1) = 3;
-  header.stride(2) = 4;
-  header.stride(3) = 1;
+  opt = get_options ("stride");
+  if (opt.size()) {
+    std::vector<int> strides = opt[0][0];
+    if (strides.size() > header.ndim())
+      throw Exception ("too many axes supplied to -stride option");
+    for (size_t n = 0; n < strides.size(); ++n)
+      header.stride(n) = strides[n];
+  } else {
+    header.stride(0) = 2;
+    header.stride(1) = 3;
+    header.stride(2) = 4;
+    header.stride(3) = 1;
+  }
   OutputBufferType FOD_buffer (argument[2], header);
 
   InputBufferType::voxel_type dwi_vox (dwi_buffer);
