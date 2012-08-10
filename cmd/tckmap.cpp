@@ -67,10 +67,10 @@ void usage () {
 
 AUTHOR = "Robert E. Smith (r.smith@brain.org.au) and J-Donald Tournier (d.tournier@brain.org.au)";
 
-DESCRIPTION 
+DESCRIPTION
   + "Use track data as a form of contrast for producing a high-resolution image.";
 
-ARGUMENTS 
+ARGUMENTS
   + Argument ("tracks", "the input track file.").type_file ()
   + Argument ("output", "the output track density image").type_image_out();
 
@@ -80,7 +80,7 @@ OPTIONS
       "will have the same transform and field of view).")
     + Argument ("image").type_image_in()
 
-  + Option ("vox", 
+  + Option ("vox",
       "provide either an isotropic voxel size (in mm), or comma-separated list "
       "of 3 voxel dimensions.")
     + Argument ("size").type_sequence_float()
@@ -114,11 +114,11 @@ OPTIONS
 
   + Option ("colour", "perform track mapping in directionally-encoded colour space")
 
-  + Option ("datatype", 
+  + Option ("datatype",
       "specify output image data type.")
     + Argument ("spec").type_choice (DataType::identifiers)
 
-  + Option ("resample", 
+  + Option ("resample",
       "resample the tracks at regular intervals using Hermite interpolation\n"
       "(If omitted, an appropriate interpolation will be determined automatically)")
     + Argument ("factor").type_integer (1, 1, std::numeric_limits<int>::max())
@@ -133,7 +133,7 @@ OPTIONS
 
 
 
-void generate_header (Image::Header& header, Tractography::Reader<float>& file, const std::vector<float>& voxel_size) 
+void generate_header (Image::Header& header, Tractography::Reader<float>& file, const std::vector<float>& voxel_size)
 {
 
   std::vector<Point<float> > tck;
@@ -187,14 +187,16 @@ void generate_header (Image::Header& header, Tractography::Reader<float>& file, 
 
 
 
-void oversample_header (Image::Header& header, const std::vector<float>& voxel_size) 
+void oversample_header (Image::Header& header, const std::vector<float>& voxel_size)
 {
   INFO ("oversampling header...");
 
-  for (size_t i = 0; i != 3; ++i) {
-    header.transform()(i, 3) += 0.5 * (voxel_size[i] - header.vox(i));
-    header.dim(i) = Math::ceil(header.dim(i) * header.vox(i) / voxel_size[i]);
-    header.vox(i) = voxel_size[i];
+  Math::Matrix<float> transform (header.transform());
+  for (size_t j = 0; j != 3; ++j) {
+    for (size_t i = 0; i < 3; ++i)
+      header.transform()(i,3) += 0.5 * (voxel_size[j] - header.vox(j)) * transform(i,j);
+    header.dim(j) = Math::ceil(header.dim(j) * header.vox(j) / voxel_size[j]);
+    header.vox(j) = voxel_size[j];
   }
 }
 
@@ -362,7 +364,7 @@ void run () {
         throw Exception ("Sorry; can't use FMRI-based track statistics with FOD_AMP contrast");
 
     case CURVATURE:
-    	break;
+      break;
 
     default:
       throw Exception ("Undefined contrast mechanism");
