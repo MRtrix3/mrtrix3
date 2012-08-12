@@ -38,20 +38,23 @@ namespace MR
           Gaussian1D (const VoxelType& parent,
                       float stdev = 1.0,
                       size_t axis = 0,
-                      size_t radius = 0) :
+                      size_t extent = 0) :
             Voxel<VoxelType> (parent),
             stdev_(stdev),
             axis_(axis) {
-            if (!radius)
+            if (!extent)
               radius_ = ceil(2.5 * stdev_ / vox(axis_));
+            else if (extent == 1)
+              radius_ = 0;
             else
-              radius_ = radius;
+              radius_ = (extent - 1) / 2;
             compute_kernel();
           }
 
           typedef typename VoxelType::value_type value_type;
 
-          value_type value () {
+          value_type value ()
+          {
             if (!kernel_.size())
               return parent_vox.value();
 
@@ -98,10 +101,10 @@ namespace MR
 
         protected:
 
-          void compute_kernel() {
+          void compute_kernel()
+          {
             if ((radius_ < 1) || stdev_ <= 0.0)
               return;
-
             kernel_.resize(2 * radius_ + 1);
             float norm_factor = 0.0;
             for (size_t c = 0; c < kernel_.size(); ++c) {

@@ -67,28 +67,35 @@ namespace MR
       public:
           template <class InputVoxelType>
             GaussianSmooth (const InputVoxelType& in) :
-                            ConstInfo (in),
+              ConstInfo (in),
               extent_ (in.ndim(), 0),
-              stdev_ (in.ndim(), 1) {
+              stdev_ (in.ndim()) {
               for (unsigned int i = 0; i < in.ndim(); i++)
                 stdev_[i] = in.vox(i);
           }
 
           template <class InputVoxelType>
             GaussianSmooth (const InputVoxelType& in,
-                        const std::vector<int>& extent,
-                        const std::vector<float>& stdev) :
+                            const std::vector<float>& stdev) :
               ConstInfo (in),
-              extent_(in.ndim()),
-              stdev_(in.ndim()) {
-              set_extent(extent);
-              set_stdev(stdev);
+              extent_ (in.ndim(), 0),
+              stdev_ (in.ndim()) {
+              set_stdev (stdev);
           }
 
           //! Set the extent of smoothing kernel in voxels.
           //! This can be set as a single value for all dimensions
           //! or separate values, one for each dimension. (Default: 4 standard deviations)
-          void set_extent (const std::vector<int>& extent) {
+          void set_extent (const std::vector<int>& extent)
+          {
+            if (extent.size() != 1 && extent.size() != this->ndim())
+              throw Exception ("the number of extent elements does not correspond to the number of image dimensions");
+            for (size_t i = 0; i < extent.size(); ++i) {
+              if (!(extent[i] & int (1)))
+                throw Exception ("expected odd number for extent");
+              if (extent[i] < 0)
+                throw Exception ("the kernel extent must be positive");
+            }
             if (extent.size() == 1)
               for (unsigned int i = 0; i < this->ndim(); i++)
                 extent_[i] = extent[0];
@@ -99,22 +106,24 @@ namespace MR
           //! Set the standard deviation of the Gaussian defined in mm.
           //! This must be set as a single value to be used for the first 3 dimensions
           //! or separate values, one for each dimension. (Default: 1 voxel)
-          void set_stdev (const std::vector<float>& stdev) {
-            if (stdev.size() == 1)
+          void set_stdev (const std::vector<float>& stdev)
+          {
+            if (stdev.size() == 1) {
               for (unsigned int i = 0; i < 3; i++)
                 stdev_[i] = stdev[0];
-            else
+            } else {
+              if (stdev_.size() != this->ndim())
+                throw Exception ("The number of stdev values supplied does not correspond to the number of dimensions");
               stdev_ = stdev;
+            }
+            for (size_t i = 0; i < stdev_.size(); ++i)
+              if (stdev_[i] < 0.0)
+                throw Exception ("the Gaussian stdev values cannot be negative");
           }
 
           template <class InputVoxelType, class OutputVoxelType>
-            void operator() (InputVoxelType& input, OutputVoxelType& output) {
-              if (stdev_.size() != this->ndim())
-                throw Exception ("The number of stdev values supplied does not correspond to the number of dimensions");
-
-              if (extent_.size() != this->ndim())
-                throw Exception ("The number of extent values supplied does not correspond to the number of dimensions");
-
+            void operator() (InputVoxelType& input, OutputVoxelType& output)
+            {
               RefPtr <BufferScratch<float> > in_data (new BufferScratch<float> (input));
               RefPtr <BufferScratch<float>::voxel_type> in (new BufferScratch<float>::voxel_type (*in_data));
               copy(input, *in);

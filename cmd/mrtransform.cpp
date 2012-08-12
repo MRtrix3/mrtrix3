@@ -67,14 +67,6 @@ void usage ()
             "reslice the input image to match the specified template image.")
   + Argument ("template").type_image_in ()
 
-  + Option ("vox",
-            "reslice the input image to match the specified voxel sizes, "
-            "provided either as a single floating-point value to signify an "
-            "isotropic voxel, or a comma-separated list of 3 values, one for "
-            "each spatial axis. When the -reslice option has not also been "
-            "speficied, the input image is used as template.")
-  + Argument ("sizes").type_sequence_float ()
-
   + Option ("interp",
             "set the interpolation method to use when reslicing (default: linear).")
   + Argument ("method").type_choice (interp_choices)
@@ -129,107 +121,71 @@ void run ()
     if (!operation.is_set())
       throw Exception ("no transform provided for option '-replace' (specify using '-transform' option)");
 
-
-
-  std::vector<float> new_voxel_sizes;
-  opt = get_options ("vox");
-  if (opt.size()) {
-    new_voxel_sizes = opt[0][0];
-    if (new_voxel_sizes.size() != 1 && new_voxel_sizes.size() != 3)
-      throw Exception ("voxel sizes should be specified as a comma-separated list of 1 or 3 floating-point values");
-    for (size_t n = 0; n < new_voxel_sizes.size(); ++n)
-      if (new_voxel_sizes[n] < 0.0)
-        throw Exception ("voxel size must be positive");
-    if (new_voxel_sizes.size() == 1) {
-      new_voxel_sizes.push_back (new_voxel_sizes[0]);
-      new_voxel_sizes.push_back (new_voxel_sizes[0]);
-    }
-  }
-
   opt = get_options ("reslice"); // need to reslice
-  if (opt.size() || new_voxel_sizes.size()) {
-    if (opt.size()) {
-      std::string name = opt[0][0];
-      Image::ConstHeader template_header (name);
+  if (opt.size()) {
+    std::string name = opt[0][0];
+    Image::ConstHeader template_header (name);
 
-      header_out.dim(0) = template_header.dim (0);
-      header_out.dim(1) = template_header.dim (1);
-      header_out.dim(2) = template_header.dim (2);
+    header_out.dim(0) = template_header.dim (0);
+    header_out.dim(1) = template_header.dim (1);
+    header_out.dim(2) = template_header.dim (2);
 
-      header_out.vox(0) = template_header.vox (0);
-      header_out.vox(1) = template_header.vox (1);
-      header_out.vox(2) = template_header.vox (2);
+    header_out.vox(0) = template_header.vox (0);
+    header_out.vox(1) = template_header.vox (1);
+    header_out.vox(2) = template_header.vox (2);
 
-      header_out.transform() = template_header.transform();
-      header_out.comments().push_back ("resliced to reference image \"" + template_header.name() + "\"");
-    }
+    header_out.transform() = template_header.transform();
+    header_out.comments().push_back ("resliced to reference image \"" + template_header.name() + "\"");
 
-    if (new_voxel_sizes.size()) {
-      float extent [] = {
-        header_out.dim(0) * header_out.vox(0),
-        header_out.dim(1) * header_out.vox(1),
-        header_out.dim(2) * header_out.vox(2)
-      };
-      header_out.vox(0) = new_voxel_sizes[0];
-      header_out.vox(1) = new_voxel_sizes[1];
-      header_out.vox(2) = new_voxel_sizes[2];
 
-      header_out.dim(0) = Math::ceil (extent[0] / new_voxel_sizes[0]);
-      header_out.dim(1) = Math::ceil (extent[1] / new_voxel_sizes[1]);
-      header_out.dim(2) = Math::ceil (extent[2] / new_voxel_sizes[2]);
+  int interp = 1;
+  opt = get_options ("interp");
+  if (opt.size())
+    interp = opt[0][0];
 
-      for (size_t i = 0; i < 3; ++i)
-        header_out.transform()(i, 3) += 0.5 * (new_voxel_sizes[i] - data_in.vox(i));
-    }
+  std::vector<int> oversample;
+  opt = get_options ("oversample");
+  if (opt.size()) {
+    oversample = opt[0][0];
 
-    int interp = 1;
-    opt = get_options ("interp");
-    if (opt.size())
-      interp = opt[0][0];
+    if (oversample.size() != 3)
+      throw Exception ("option \"oversample\" expects a vector of 3 values");
 
-    std::vector<int> oversample;
-    opt = get_options ("oversample");
-    if (opt.size()) {
-      oversample = opt[0][0];
-
-      if (oversample.size() != 3)
-        throw Exception ("option \"oversample\" expects a vector of 3 values");
-
-      if (oversample[0] < 1 || oversample[1] < 1 || oversample[2] < 1)
-        throw Exception ("oversample factors must be greater than zero");
-    }
-
-    if (replace) {
-      Image::Info& info_in (data_in);
-      info_in.transform().swap (operation);
-      operation.clear();
-    }
-
-    Image::Buffer<float>::voxel_type in (data_in);
-
-    Image::Buffer<float> data_out (argument[1], header_out);
-    Image::Buffer<float>::voxel_type out (data_out);
-
-    switch (interp) {
-      case 0:
-        Image::Filter::reslice<Image::Interp::Nearest> (in, out, operation, oversample);
-        break;
-      case 1:
-        Image::Filter::reslice<Image::Interp::Linear> (in, out, operation, oversample);
-        break;
-      case 2:
-        Image::Filter::reslice<Image::Interp::Cubic> (in, out, operation, oversample);
-        break;
-      case 3:
-        ERROR ("FIXME: sinc interpolation needs a lot of work!");
-        Image::Filter::reslice<Image::Interp::Sinc> (in, out, operation, oversample);
-        break;
-      default:
-        assert (0);
-    }
-
+    if (oversample[0] < 1 || oversample[1] < 1 || oversample[2] < 1)
+      throw Exception ("oversample factors must be greater than zero");
   }
-  else {
+
+  if (replace) {
+    Image::Info& info_in (data_in);
+    info_in.transform().swap (operation);
+    operation.clear();
+  }
+
+  Image::Buffer<float>::voxel_type in (data_in);
+
+  Image::Buffer<float> data_out (argument[1], header_out);
+  Image::Buffer<float>::voxel_type out (data_out);
+
+  switch (interp) {
+    case 0:
+      Image::Filter::reslice<Image::Interp::Nearest> (in, out, operation, oversample);
+      break;
+    case 1:
+      Image::Filter::reslice<Image::Interp::Linear> (in, out, operation, oversample);
+      break;
+    case 2:
+      Image::Filter::reslice<Image::Interp::Cubic> (in, out, operation, oversample);
+      break;
+    case 3:
+      ERROR ("FIXME: sinc interpolation needs a lot of work!");
+      Image::Filter::reslice<Image::Interp::Sinc> (in, out, operation, oversample);
+      break;
+    default:
+      assert (0);
+      break;
+  }
+
+  } else {
     // straight copy:
     if (operation.is_set()) {
       header_out.comments().push_back ("transform modified");
