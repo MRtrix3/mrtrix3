@@ -179,7 +179,7 @@ namespace MR
 
               // high-res sampling to apply constraint:
               Math::SH::init_transform (HR_trans, HR_dirs, lmax);
-              value_type constraint_multiplier = neg_lambda * value_type (fconv.rows()) * response[0] / value_type (HR_trans.rows());
+              value_type constraint_multiplier = neg_lambda * 50.0 * response[0] / value_type (HR_trans.rows());
               HR_trans *= constraint_multiplier;
 
               // adjust threshold accordingly:
