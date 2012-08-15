@@ -358,7 +358,7 @@ class Processor
         cost.init (x);
         Math::check_function_gradient (cost, x, 1e-10, true);
 
-        Math::GradientDescent<Cost,true> optim (cost);
+        Math::GradientDescent<Cost> optim (cost);
         try { optim.run (10000, 1e-8); }
         catch (Exception& E) {
           E.display();
