@@ -42,7 +42,7 @@ namespace MR
         public:
           typedef typename Function::value_type value_type;
 
-          GradientDescent (Function& function, value_type step_size_upfactor = 1.5, value_type step_size_downfactor = 0.1) :
+          GradientDescent (Function& function, value_type step_size_upfactor = 3.0, value_type step_size_downfactor = 0.1) :
             func (function),
             step_up (step_size_upfactor),
             step_down (step_size_downfactor),
@@ -59,25 +59,22 @@ namespace MR
           value_type gradient_norm () const throw () { return normg; }
           int function_evaluations () const throw () { return nfeval; }
 
-          void run (const int max_iterations = 1000, const value_type grad_tolerance = 1e-4) {
+          void run (const int max_iterations = 1000, const value_type grad_tolerance = 1e-6) {
             init();
 
-            value_type gradient_tolerance = grad_tolerance * gradient_norm();
+            value_type gradient_tolerance = grad_tolerance * normg;
 
             for (int niter = 0; niter < max_iterations; niter++) {
               bool retval = iterate();
-              value_type grad_norm = gradient_norm();
               if (verbose) {
-                CONSOLE ("iteration " + str (niter) + ": f = " + str (f) + ", |g| = " + str (grad_norm));
-                for (size_t n = 0; n < x.size(); ++n)
-                  std::cout << x[n] << " ";
-                std::cout << "\n";
+                CONSOLE ("iteration " + str (niter) + ": f = " + str (f) + ", |g| = " + str (normg) + ":");
+                CONSOLE ("  x = [ " + str(x) + "]");
               }
 
               if (!retval)
                 return;
 
-              if (grad_norm < gradient_tolerance)
+              if (normg < gradient_tolerance)
                 return;
             }
             // throw Exception ("failed to converge");
@@ -89,6 +86,11 @@ namespace MR
             nfeval = 0;
             f = evaluate_func (x, g);
             normg = norm (g);
+            dt /= normg;
+            if (verbose) {
+              CONSOLE ("initialise: f = " + str (f) + ", |g| = " + str (normg) + ":");
+              CONSOLE ("  x = [ " + str(x) + "]");
+            }
             assert (finite (f));
             assert (finite (normg));
           }
@@ -96,13 +98,12 @@ namespace MR
 
           bool iterate () {
             assert (normg != 0.0);
-            value_type step = dt / normg;
             value_type f2;
 
             while (true) {
               bool no_change = true;
               for (size_t n = 0; n < func.size(); n++) {
-                x2[n] = x[n] - step * g[n];
+                x2[n] = x[n] - dt * g[n];
                 if (x2[n] != x[n])
                   no_change = false;
               }
@@ -111,25 +112,37 @@ namespace MR
 
               f2 = evaluate_func (x2, g2);
 
+              // quadratic minimum:
+              value_type denom = 2.0 * (normg*normg*dt + f2 - f);
+              value_type step = denom > 0.0 ? normg * normg * dt / denom : step_up;
+
+              if (step < step_down) step = step_down;
+              if (step > step_up) step = step_up;
+
               if (f2 < f) {
-                dt *= step_up;
+                dt *= step;
                 f = f2;
                 x.swap (x2);
                 g.swap (g2);
                 normg = norm (g);
                 return true;
               }
-              // quadratic minimum
 
-              value_type denom = 2.0 * (f2 - f + normg*normg*step);
+              if (step >= 1.0)
+                step = 0.5;
+              dt *= step;
+
+
+              /*
+              // quadratic minimum:
+              denom = 2.0 * (f2 - f + normg*normg*dt);
               if (denom) {
-                value_type step_mult = step * normg * normg / denom;
+                value_type step_mult = dt * normg * normg / denom;
                 assert (step_mult > 0.0 && step_mult < 1.0);
-                step *= step_mult;
+                dt *= step_mult;
               }
-              else step *= 2.0;
-
-              dt *= step_down;
+              else dt *= 2.0;
+              */
             }
           }
 
@@ -146,7 +159,7 @@ namespace MR
             if (!finite (cost))
               throw Exception ("cost function is NaN or Inf!");
             if (verbose)
-              CONSOLE ("gradient descent evaluation " + str(nfeval) + ", cost function " +str (cost));
+              CONSOLE ("      << eval " + str(nfeval) + ", f = " + str (cost) + " >>");
             return cost;
           }
       };
