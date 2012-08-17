@@ -73,12 +73,12 @@ namespace MR
           template <class MovingDataType>
           void set_moving_image (MovingDataType& moving_data) {
 
-            inform ("Computing moving gradient...");
+            INFORM ("Computing moving gradient...");
 
             typedef typename MovingDataType::voxel_type MovingVoxelType;
             MovingVoxelType moving_voxel(moving_data);
 
-            Image::Filter::Gaussian3D smooth_filter (moving_voxel);
+            Image::Filter::AnisotropicSmooth smooth_filter (moving_voxel);
             std::vector<float> stdev (1, 1.0);
             smooth_filter.set_stdev (stdev);
             Image::BufferScratch<float> smoothed_data (smooth_filter.info());

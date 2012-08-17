@@ -47,8 +47,14 @@ namespace MR
             max_iter_ (max_iter) { }
 
 
-        void set_max_iter (const std::vector<int>& max_iter) {
+        void set_max_iter (const std::vector<int>& max_iter)
+        {
           max_iter_ = max_iter;
+        }
+
+        void set_resolution (const std::vector<float>& resolution)
+        {
+          resolution_ = resolution;
         }
 
 
@@ -57,8 +63,8 @@ namespace MR
           MetricType& metric,
           TransformType& transform,
           MovingImageInterpolatorType& moving_image,
-          TargetImageVoxelType& target_image) {
-
+          TargetImageVoxelType& target_image)
+          {
             typedef Image::BufferScratch<bool>::voxel_type BogusMaskType;
             run_masked<MetricType, TransformType, MovingImageInterpolatorType, TargetImageVoxelType, BogusMaskType, BogusMaskType >
               (metric, transform, moving_image, target_image, NULL, NULL);
@@ -71,7 +77,8 @@ namespace MR
           TransformType& transform,
           MovingImageInterpolatorType& moving_image,
           TargetImageVoxelType& target_image,
-          Ptr<TargetMaskVoxelType>& target_mask) {
+          Ptr<TargetMaskVoxelType>& target_mask)
+          {
             typedef Image::BufferScratch<bool>::voxel_type BogusMaskType;
             run_masked<MetricType, TransformType, MovingImageInterpolatorType, TargetImageVoxelType, BogusMaskType, TargetMaskVoxelType >
               (metric, transform, moving_image, target_image, NULL, target_mask);
@@ -84,7 +91,8 @@ namespace MR
           TransformType& transform,
           MovingImageInterpolatorType& moving_image,
           TargetImageVoxelType& target_image,
-          Ptr<MovingMaskInterpolatorType>& moving_mask) {
+          Ptr<MovingMaskInterpolatorType>& moving_mask)
+          {
             typedef Image::BufferScratch<bool>::voxel_type BogusMaskType;
             run_masked<MetricType, TransformType, MovingImageInterpolatorType, TargetImageVoxelType, MovingMaskInterpolatorType, BogusMaskType >
               (metric, transform, moving_image, target_image, moving_mask, NULL);
@@ -98,8 +106,12 @@ namespace MR
           MovingImageInterpolatorType& moving_image,
           TargetImageVoxelType& target_image,
           Ptr<MovingMaskInterpolatorType>&  moving_mask,
-          Ptr<TargetMaskVoxelType>& target_mask) {
-            for (size_t iter = 0; iter < max_iter_.size(); iter++) {
+          Ptr<TargetMaskVoxelType>& target_mask)
+          {
+            if (max_iter_.size() == 1)
+              max_iter_.resize()
+
+            for (size_t level = 0; level < resolution_.size(); level++) {
               typedef Metric::Params<TransformType,
                                      MovingImageInterpolatorType,
                                      TargetImageVoxelType,
@@ -111,13 +123,14 @@ namespace MR
               Metric::Evaluate<MetricType, ParamType> evaluate (metric, parameters);
               Math::GradientDescent<Metric::Evaluate<MetricType, ParamType> > optim (evaluate);
 
-              optim.run(max_iter_[iter]);
+              optim.run(max_iter_[level]);
               parameters.transformation.set_parameter_vector(optim.state());
             }
           }
 
       protected:
         std::vector<int> max_iter_;
+        std::vector<float> resolution_;
     };
 
   }

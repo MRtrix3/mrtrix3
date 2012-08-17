@@ -46,12 +46,12 @@ namespace MR
        *
        */
       template <typename T = float>
-      class Affine  {
+      class Rigid  {
         public:
 
           typedef T ParameterType;
 
-          Affine () :
+          Rigid () :
             matrix_(3,3),
             translation_(3),
             centre_(3),

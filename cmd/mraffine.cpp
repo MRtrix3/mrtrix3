@@ -57,9 +57,12 @@ void usage ()
 
   OPTIONS
   + Option ("niter", "the maximum number of iterations. This can be specified either "
-      "as a single number for all down-sampling levels, or a single"
-      "value for each level.")
-      + Argument ("num").type_sequence_int ()
+      "as a single number for all multi-resolution levels, or a single value for each level. (Default: 300)")
+  + Argument ("num").type_sequence_int ()
+
+  + Option ("resolution", "setup the multi-resolution scheme by defining a scale factor for each level "
+                          "using comma separated values. Default: 0.25,0.5,1")
+  + Argument ("factor").type_sequence_float ()
 
   + Option ("transformation", "the transformation type. Valid choices are: affine and rigid."
       "(Default: affine)")
@@ -81,8 +84,7 @@ void run ()
   Image::BufferPreload<float> target_data (argument[1]);
   Image::BufferPreload<float>::voxel_type target_voxel (target_data);
 
-  std::vector<int> niter (1);
-  niter[0] = 300;
+  std::vector<int> niter (1, 300);
   Options opt = get_options ("niter");
   if (opt.size ()) {
     niter = parse_ints (opt[0][0]);
@@ -91,12 +93,21 @@ void run ()
         throw Exception ("the max number of iterations must be positive");
   }
 
-  Registration::LinearRegistration registration;
-  registration.set_max_iter(niter);
+  std::vector<float> resolution (3);
+  niter[0] = 0.25;
+  niter[1] = 0.5;
+  niter[2] = 1;
+  Options opt = get_options ("resolution");
+  if (opt.size ()) {
+    resolution = parse_floats (opt[0][0]);
+    for (size_t i = 0; i < resolution.size (); ++i)
+      if (resolution[i] < 0)
+        throw Exception ("the multi-resolution scale factor must be positive");
+  }
 
   Registration::Metric::MeanSquared metric;
   metric.set_moving_image(moving_voxel);
-  Registration::Transform::Affine<double> affine;
+  Registration::Transform::Rigid<double> affine;
 
   Math::Vector<double> optimiser_weights(12);
   for (size_t i = 0; i < 9; i++)
@@ -124,6 +135,10 @@ void run ()
     mmask_data = new Image::BufferPreload<mask_value_type> (opt[0][0]);
     mmask_voxel = new Image::Interp::Nearest<Image::BufferPreload<mask_value_type>::voxel_type>(*mmask_data);
   }
+
+  Registration::LinearRegistration registration;
+  registration.set_max_iter (niter);
+  registration.set_resolution (resolution);
 
   registration.run_masked (metric, affine, moving_interp, target_voxel, mmask_voxel, tmask_voxel);
 
