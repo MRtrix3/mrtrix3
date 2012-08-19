@@ -24,7 +24,7 @@
 #define __registration_mean_squared_metric_h__
 
 #include "image/filter/gradient3D.h"
-#include "image/filter/gaussian3D.h"
+#include "image/filter/gaussian_smooth.h"
 #include "image/interp/nearest.h"
 #include "image/header.h"
 #include "image/voxel.h"
@@ -73,17 +73,18 @@ namespace MR
           template <class MovingDataType>
           void set_moving_image (MovingDataType& moving_data) {
 
-            INFORM ("Computing moving gradient...");
+            INFO ("Computing moving gradient...");
 
             typedef typename MovingDataType::voxel_type MovingVoxelType;
             MovingVoxelType moving_voxel(moving_data);
 
-            Image::Filter::AnisotropicSmooth smooth_filter (moving_voxel);
-            std::vector<float> stdev (1, 1.0);
-            smooth_filter.set_stdev (stdev);
+            Image::Filter::GaussianSmooth smooth_filter (moving_voxel);
             Image::BufferScratch<float> smoothed_data (smooth_filter.info());
             Image::BufferScratch<float>::voxel_type smoothed_voxel (smoothed_data);
-            smooth_filter (moving_voxel, smoothed_voxel);
+            {
+              LogLevelLatch loglevel (0);
+              smooth_filter (moving_voxel, smoothed_voxel);
+            }
 
             Image::Filter::Gradient3D gradient_filter (smoothed_voxel);
             gradient_data_= new Image::BufferScratch<float> (gradient_filter.info());

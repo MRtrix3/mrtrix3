@@ -47,7 +47,7 @@ namespace MR
             overall_gradient_ (overall_gradient),
             v2s_(4, 4){
             gradient_.zero();
-            Image::Transform::voxel2scanner(v2s_, params_.target_image);
+            Image::Transform::voxel2scanner (v2s_, params_.target_image);
           }
 
           ~ThreadKernel () {
@@ -57,23 +57,23 @@ namespace MR
 
           void operator() (const Image::Iterator& iter) {
 
+            Point<float> target_point = voxel2scanner (iter);
             if (params_.target_mask) {
-              Image::voxel_assign (*params_.target_mask, iter);
+              params_.target_mask->scanner (target_point);
               if (!params_.target_mask->value())
                 return;
             }
 
-            Point<float> target_point = voxel2scanner(iter);
             Point<float> moving_point;
-            params_.transformation.transform(target_point, moving_point);
+            params_.transformation.transform (target_point, moving_point);
 
             if (params_.moving_mask) {
-              params_.moving_mask->scanner(moving_point);
+              params_.moving_mask->scanner (moving_point);
               if (!params_.moving_mask->value())
                 return;
             }
             Image::voxel_assign (params_.target_image, iter);
-            params_.moving_image.scanner(moving_point);
+            params_.moving_image.scanner (moving_point);
             if (!params_.moving_image)
               return;
             cost_function_ += metric_ (params_, target_point, moving_point, gradient_);

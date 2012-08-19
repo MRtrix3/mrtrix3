@@ -27,6 +27,9 @@
 #include "math/matrix.h"
 #include "image/voxel.h"
 #include "image/buffer_scratch.h"
+#include "image/filter/resize.h"
+#include "image/interp/linear.h"
+#include "image/interp/nearest.h"
 #include "registration/metric/params.h"
 #include "registration/metric/evaluate.h"
 #include "math/gradient_descent.h"
@@ -40,11 +43,17 @@ namespace MR
 
       public:
         LinearRegistration () :
-            max_iter_ (1, 300) { }
+          max_iter_ (1, 300),
+          resolution_ (2) {
+          resolution_[0] = 0.5;
+          resolution_[1] = 1;
+        }
 
 
-        LinearRegistration (const std::vector<int>& max_iter) :
-            max_iter_ (max_iter) { }
+        LinearRegistration (const std::vector<int>& max_iter,
+                            const std::vector<float>& resolution) :
+            max_iter_ (max_iter),
+            resolution_ (resolution) { }
 
 
         void set_max_iter (const std::vector<int>& max_iter)
@@ -58,73 +67,108 @@ namespace MR
         }
 
 
-        template <class MetricType, class TransformType, class MovingImageInterpolatorType, class TargetImageVoxelType>
+        template <class MetricType, class TransformType, class MovingImageVoxelType, class TargetImageVoxelType>
         void run (
           MetricType& metric,
           TransformType& transform,
-          MovingImageInterpolatorType& moving_image,
+          MovingImageVoxelType& moving_image,
           TargetImageVoxelType& target_image)
           {
             typedef Image::BufferScratch<bool>::voxel_type BogusMaskType;
-            run_masked<MetricType, TransformType, MovingImageInterpolatorType, TargetImageVoxelType, BogusMaskType, BogusMaskType >
+            run_masked<MetricType, TransformType, MovingImageVoxelType, TargetImageVoxelType, BogusMaskType, BogusMaskType >
               (metric, transform, moving_image, target_image, NULL, NULL);
           }
 
 
-        template <class MetricType, class TransformType, class MovingImageInterpolatorType, class TargetImageVoxelType, class TargetMaskVoxelType>
+        template <class MetricType, class TransformType, class MovingImageVoxelType, class TargetImageVoxelType, class TargetMaskVoxelType>
         void run_target_mask (
           MetricType& metric,
           TransformType& transform,
-          MovingImageInterpolatorType& moving_image,
+          MovingImageVoxelType& moving_image,
           TargetImageVoxelType& target_image,
           Ptr<TargetMaskVoxelType>& target_mask)
           {
             typedef Image::BufferScratch<bool>::voxel_type BogusMaskType;
-            run_masked<MetricType, TransformType, MovingImageInterpolatorType, TargetImageVoxelType, BogusMaskType, TargetMaskVoxelType >
+            run_masked<MetricType, TransformType, MovingImageVoxelType, TargetImageVoxelType, BogusMaskType, TargetMaskVoxelType >
               (metric, transform, moving_image, target_image, NULL, target_mask);
           }
 
 
-        template <class MetricType, class TransformType, class MovingImageInterpolatorType, class TargetImageVoxelType, class MovingMaskInterpolatorType>
+        template <class MetricType, class TransformType, class MovingImageVoxelType, class TargetImageVoxelType, class MovingMaskVoxelType>
         void run_moving_mask (
           MetricType& metric,
           TransformType& transform,
-          MovingImageInterpolatorType& moving_image,
+          MovingImageVoxelType& moving_image,
           TargetImageVoxelType& target_image,
-          Ptr<MovingMaskInterpolatorType>& moving_mask)
+          Ptr<MovingMaskVoxelType>& moving_mask)
           {
             typedef Image::BufferScratch<bool>::voxel_type BogusMaskType;
-            run_masked<MetricType, TransformType, MovingImageInterpolatorType, TargetImageVoxelType, MovingMaskInterpolatorType, BogusMaskType >
+            run_masked<MetricType, TransformType, MovingImageVoxelType, TargetImageVoxelType, MovingMaskVoxelType, BogusMaskType >
               (metric, transform, moving_image, target_image, moving_mask, NULL);
           }
 
 
-        template <class MetricType, class TransformType, class MovingImageInterpolatorType, class TargetImageVoxelType, class MovingMaskInterpolatorType, class TargetMaskVoxelType>
+        template <class MetricType, class TransformType, class MovingImageVoxelType, class TargetImageVoxelType, class MovingMaskVoxelType, class TargetMaskVoxelType>
         void run_masked (
           MetricType& metric,
           TransformType& transform,
-          MovingImageInterpolatorType& moving_image,
+          MovingImageVoxelType& moving_image,
           TargetImageVoxelType& target_image,
-          Ptr<MovingMaskInterpolatorType>&  moving_mask,
+          Ptr<MovingMaskVoxelType>&  moving_mask,
           Ptr<TargetMaskVoxelType>& target_mask)
           {
             if (max_iter_.size() == 1)
-              max_iter_.resize()
+              max_iter_.resize (resolution_.size(), max_iter_[0]);
+            else if (max_iter_.size() != resolution_.size())
+              throw Exception ("the max number of iterations needs to be defined for each multi-resolution level");
+            for (size_t level = 0; level < resolution_.size(); ++level) {
+              if (resolution_[level] <= 0 || resolution_[level] > 1)
+                throw Exception ("the scale factor for each multi-resolution level must be between 0 and 1");
+            }
+
+            typedef Image::Interp::Linear<Image::BufferScratch<float>::voxel_type > MovingImageInterpolatorType;
+
+            Image::Filter::Resize moving_resize_filter (moving_image);
+            Image::Filter::Resize target_resize_filter (target_image);
+
+            typedef Metric::Params<TransformType,
+                                    MovingImageInterpolatorType,
+                                    Image::BufferScratch<float>::voxel_type,
+                                    Image::Interp::Nearest<MovingMaskVoxelType >,
+                                    Image::Interp::Nearest<TargetMaskVoxelType > > ParamType;
 
             for (size_t level = 0; level < resolution_.size(); level++) {
-              typedef Metric::Params<TransformType,
-                                     MovingImageInterpolatorType,
-                                     TargetImageVoxelType,
-                                     MovingMaskInterpolatorType,
-                                     TargetMaskVoxelType> ParamType;
-              ParamType parameters (transform, moving_image, target_image);
-              if (target_mask) parameters.target_mask = target_mask;
-              if (moving_mask) parameters.moving_mask = moving_mask;
-              Metric::Evaluate<MetricType, ParamType> evaluate (metric, parameters);
-              Math::GradientDescent<Metric::Evaluate<MetricType, ParamType> > optim (evaluate);
+              CONSOLE ("multi-resolution level " + str(level + 1) + ", scale factor: " + str(resolution_[level]));
 
-              optim.run(max_iter_[level]);
-              parameters.transformation.set_parameter_vector(optim.state());
+              moving_resize_filter.set_scale_factor (resolution_[level]);
+              moving_resize_filter.set_interp_type(1);
+              Image::BufferScratch<float> moving (moving_resize_filter.info());
+              Image::BufferScratch<float>::voxel_type moving_vox (moving);
+              MovingImageInterpolatorType moving_interp (moving_vox);
+
+              target_resize_filter.set_scale_factor (resolution_[level]);
+              target_resize_filter.set_interp_type(1);
+              Image::BufferScratch<float> target (target_resize_filter.info());
+              Image::BufferScratch<float>::voxel_type target_vox (target);
+              {
+                LogLevelLatch log_level (0);
+                moving_resize_filter (moving_image, moving_vox);
+                target_resize_filter (target_image, target_vox);
+              }
+              metric.set_moving_image (moving_vox);
+              ParamType parameters (transform, moving_interp, target_vox);
+
+              if (target_mask) {
+                parameters.target_mask = new Image::Interp::Nearest<TargetMaskVoxelType> (*target_mask);
+              }
+              if (moving_mask)
+                parameters.moving_mask = new Image::Interp::Nearest<MovingMaskVoxelType> (*moving_mask);
+
+              Metric::Evaluate<MetricType, ParamType> evaluate (metric, parameters);
+              Math::GradientDescent<Metric::Evaluate<MetricType, ParamType> > optim (evaluate, true);
+
+              optim.run (max_iter_[level]);
+              parameters.transformation.set_parameter_vector (optim.state());
             }
           }
 

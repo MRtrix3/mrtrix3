@@ -26,8 +26,6 @@
 #include "image/voxel.h"
 #include "image/filter/reslice.h"
 #include "image/interp/cubic.h"
-#include "image/interp/linear.h"
-#include "image/interp/nearest.h"
 #include "image/transform.h"
 #include "registration/linear_registration.h"
 #include "registration/metric/mean_squared_metric.h"
@@ -61,7 +59,7 @@ void usage ()
   + Argument ("num").type_sequence_int ()
 
   + Option ("resolution", "setup the multi-resolution scheme by defining a scale factor for each level "
-                          "using comma separated values. Default: 0.25,0.5,1")
+                          "using comma separated values. Default: 0.5,1")
   + Argument ("factor").type_sequence_float ()
 
   + Option ("transformation", "the transformation type. Valid choices are: affine and rigid."
@@ -79,10 +77,13 @@ void run ()
 {
   Image::BufferPreload<float> moving_data (argument[0]);
   Image::BufferPreload<float>::voxel_type moving_voxel (moving_data);
-  Image::Interp::Linear<Image::BufferPreload<float>::voxel_type > moving_interp (moving_voxel);
 
   Image::BufferPreload<float> target_data (argument[1]);
   Image::BufferPreload<float>::voxel_type target_voxel (target_data);
+
+  Image::Header output_header (target_data);
+  Image::Buffer<float> output_data (argument[3], output_header);
+  Image::Buffer<float>::voxel_type output_voxel (output_data);
 
   std::vector<int> niter (1, 300);
   Options opt = get_options ("niter");
@@ -93,11 +94,10 @@ void run ()
         throw Exception ("the max number of iterations must be positive");
   }
 
-  std::vector<float> resolution (3);
-  niter[0] = 0.25;
-  niter[1] = 0.5;
-  niter[2] = 1;
-  Options opt = get_options ("resolution");
+  std::vector<float> resolution (2);
+  resolution[0] = 0.5;
+  resolution[1] = 1;
+  opt = get_options ("resolution");
   if (opt.size ()) {
     resolution = parse_floats (opt[0][0]);
     for (size_t i = 0; i < resolution.size (); ++i)
@@ -106,7 +106,6 @@ void run ()
   }
 
   Registration::Metric::MeanSquared metric;
-  metric.set_moving_image(moving_voxel);
   Registration::Transform::Rigid<double> affine;
 
   Math::Vector<double> optimiser_weights(12);
@@ -118,38 +117,31 @@ void run ()
 
   Registration::Transform::initialise_using_image_centres(moving_voxel, target_voxel, affine);
 
-  typedef bool mask_value_type;
-
-  Ptr<Image::BufferPreload<mask_value_type> > tmask_data;
-  Ptr<Image::BufferPreload<mask_value_type>::voxel_type> tmask_voxel;
+  Ptr<Image::BufferPreload<bool> > tmask_data;
+  Ptr<Image::BufferPreload<bool>::voxel_type> tmask_voxel;
   opt = get_options ("tmask");
   if (opt.size ()) {
-    tmask_data = new Image::BufferPreload<mask_value_type> (opt[0][0]);
-    tmask_voxel = new Image::BufferPreload<mask_value_type>::voxel_type (*tmask_data);
+    tmask_data = new Image::BufferPreload<bool> (opt[0][0]);
+    tmask_voxel = new Image::BufferPreload<bool>::voxel_type (*tmask_data);
   }
 
-  Ptr<Image::BufferPreload<mask_value_type> > mmask_data;
-  Ptr<Image::Interp::Nearest<Image::BufferPreload<mask_value_type>::voxel_type> > mmask_voxel;
+  Ptr<Image::BufferPreload<bool> > mmask_data;
+  Ptr<Image::BufferPreload<bool>::voxel_type> mmask_voxel;
   opt = get_options ("mmask");
   if (opt.size ()) {
-    mmask_data = new Image::BufferPreload<mask_value_type> (opt[0][0]);
-    mmask_voxel = new Image::Interp::Nearest<Image::BufferPreload<mask_value_type>::voxel_type>(*mmask_data);
+    mmask_data = new Image::BufferPreload<bool> (opt[0][0]);
+    mmask_voxel = new Image::BufferPreload<bool>::voxel_type (*mmask_data);
   }
 
   Registration::LinearRegistration registration;
   registration.set_max_iter (niter);
   registration.set_resolution (resolution);
 
-  registration.run_masked (metric, affine, moving_interp, target_voxel, mmask_voxel, tmask_voxel);
+  registration.run_masked (metric, affine, moving_voxel, target_voxel, mmask_voxel, tmask_voxel);
 
   affine.get_transform().save (argument[2]);
   Math::Matrix<double> inv;
   Math::LU::inv (inv, affine.get_transform());
-
-  Image::Header output_header (moving_data);
-  output_header.info () = target_data.info ();
-  Image::Buffer<float> output_data (argument[3], output_header);
-  Image::Buffer<float>::voxel_type output_voxel (output_data);
 
   Image::Filter::reslice<Image::Interp::Cubic> (moving_voxel, output_voxel, inv);
 }
