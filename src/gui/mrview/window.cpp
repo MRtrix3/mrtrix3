@@ -1001,7 +1001,6 @@ namespace MR
 
         CHECK_GL_EXTENSION (ARB_fragment_shader);
         CHECK_GL_EXTENSION (ARB_vertex_shader);
-        CHECK_GL_EXTENSION (ARB_geometry_shader4);
         CHECK_GL_EXTENSION (EXT_texture3D);
         CHECK_GL_EXTENSION (ARB_texture_non_power_of_two);
         CHECK_GL_EXTENSION (ARB_vertex_buffer_object);
