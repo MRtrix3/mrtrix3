@@ -94,6 +94,16 @@ namespace MR
               case 0x10BDU:
                 if (item.get_float().size()) G[2] = item.get_float() [0];
                 return;
+              case 0x100CU: //Siemens private DW encoding tags:
+                if (item.get_int().size()) bvalue = item.get_int()[0]; 
+                return;
+              case 0x100EU: 
+                if (item.get_float().size() == 3) {
+                  G[0] = item.get_float()[0];
+                  G[1] = item.get_float()[1];
+                  G[2] = item.get_float()[2];
+                }
+                return;
             }
             return;
           case 0x0020U:
