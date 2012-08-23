@@ -70,7 +70,7 @@ namespace MR
        */
 
       template <class VoxelType>
-        class Linear : public VoxelType, Transform
+        class Linear : public VoxelType, public Transform
       {
         public:
           typedef typename VoxelType::value_type value_type;

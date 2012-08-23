@@ -71,7 +71,7 @@ namespace MR
        * \endcode
        */
 
-      template <class VoxelType> class Cubic : public VoxelType, Transform
+      template <class VoxelType> class Cubic : public VoxelType, public Transform
       {
         public:
           typedef typename VoxelType::value_type value_type;

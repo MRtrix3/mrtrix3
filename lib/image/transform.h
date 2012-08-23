@@ -44,9 +44,9 @@ namespace MR
           bounds[0] = info.dim(0) - 0.5;
           bounds[1] = info.dim(1) - 0.5;
           bounds[2] = info.dim(2) - 0.5;
-          vox[0] = info.vox(0);
-          vox[1] = info.vox(1);
-          vox[2] = info.vox(2);
+          voxelsize[0] = info.vox(0);
+          voxelsize[1] = info.vox(1);
+          voxelsize[2] = info.vox(2);
 
           set_matrix (V2S, info.transform());
           for (size_t i = 0; i < 3; i++) {
@@ -90,11 +90,11 @@ namespace MR
         }
         //! Transform the position \p i from image-space to voxel-space \p v
         template <class P1, class P2> void image2voxel (const P1& i, P2& v) const {
-          v[0] = i[0]/vox[0]; v[1] = i[1]/vox[1]; v[2] = i[2]/vox[2];
+          v[0] = i[0]/voxelsize[0]; v[1] = i[1]/voxelsize[1]; v[2] = i[2]/voxelsize[2];
         }
         //! Transform the position \p v from voxel-space to image-space \p i
         template <class P1, class P2> void voxel2image (const P1& v, P2& i) const {
-          i[0] = v[0]*vox[0]; i[1] = v[1]*vox[1]; i[2] = v[2]*vox[2];
+          i[0] = v[0]*voxelsize[0]; i[1] = v[1]*voxelsize[1]; i[2] = v[2]*voxelsize[2];
         }
         //! Transform the position \p i from image-space to scanner-space \p s
         template <class P1, class P2> void image2scanner (const P1& i, P2& s) const {
@@ -123,11 +123,11 @@ namespace MR
         }
         //! Transform the position \p r from image-space to voxel-space
         template <class P1> Point<float> image2voxel (const P1& r) const {
-          return Point<float> (r[0]/vox[0], r[1]/vox[1], r[2]/vox[2]);
+          return Point<float> (r[0]/voxelsize[0], r[1]/voxelsize[1], r[2]/voxelsize[2]);
         }
         //! Transform the position \p r from voxel-space to image-space
         template <class P1> Point<float> voxel2image (const P1& r) const {
-          return Point<float> (r[0]*vox[0], r[1]*vox[1], r[2]*vox[2]);
+          return Point<float> (r[0]*voxelsize[0], r[1]*voxelsize[1], r[2]*voxelsize[2]);
         }
         //! Transform the position \p r from image-space to scanner-space
         template <class P1> Point<float> image2scanner (const P1& r) const {
@@ -146,6 +146,23 @@ namespace MR
           return transform_vector (V2S, r);
         }
 
+        const float* scanner2voxel_matrix () {
+          return *S2V;
+        }
+
+        const float* voxel2scanner_matrix () {
+          return *V2S;
+        }
+
+        const float* image2scanner_matrix () {
+          return *I2S;
+        }
+
+        const float* scanner2image_matrix () {
+          return *S2I;
+        }
+
+
         void scanner2voxel_matrix (Math::Matrix<float>& M) {
           get_matrix (M, S2V);
         }
@@ -157,17 +174,17 @@ namespace MR
         void voxel2image_matrix (Math::Matrix<float>& M) {
           M.allocate (4,4);
           M.identity();
-          M(0,0) = vox[0];
-          M(1,1) = vox[1];
-          M(2,2) = vox[2];
+          M(0,0) = voxelsize[0];
+          M(1,1) = voxelsize[1];
+          M(2,2) = voxelsize[2];
         }
 
         void image2voxel_matrix (Math::Matrix<float>& M) {
           M.allocate (4,4);
           M.identity();
-          M(0,0) = 1 / vox[0];
-          M(1,1) = 1 / vox[1];
-          M(2,2) = 1 / vox[2];
+          M(0,0) = 1 / voxelsize[0];
+          M(1,1) = 1 / voxelsize[1];
+          M(2,2) = 1 / voxelsize[2];
         }
 
         void image2scanner_matrix (Math::Matrix<float>& M) {
@@ -214,7 +231,7 @@ namespace MR
         }
 
       protected:
-        float  S2V[3][4], V2S[3][4], I2S[3][4], S2I[3][4], vox[3];
+        float  S2V[3][4], V2S[3][4], I2S[3][4], S2I[3][4], voxelsize[3];
         float  bounds[3];
         bool   out_of_bounds;
 

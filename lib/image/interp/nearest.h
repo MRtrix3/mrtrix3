@@ -71,7 +71,7 @@ namespace MR
        */
 
       template <class VoxelType>
-        class Nearest : public VoxelType, Transform
+        class Nearest : public VoxelType, public Transform
       {
         public:
           typedef typename VoxelType::value_type value_type;

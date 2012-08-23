@@ -810,17 +810,6 @@ use the MOC environment variable to specify the Qt4 moc command''')
 #include <QGLWidget>
 #include <iostream>
 
-const char *extensions[] = {
-  "GL_ARB_fragment_shader",
-  "GL_ARB_vertex_shader",
-  "GL_ARB_geometry_shader4", 
-  "GL_EXT_texture3D",
-  "GL_ARB_texture_float",
-  "GL_ARB_texture_non_power_of_two",
-  "GL_ARB_framebuffer_object",
-  NULL
-};
-
 class GLWidget : public QGLWidget {
   public:
     GLWidget (QWidget *parent = 0) : QGLWidget (parent) { }
@@ -828,26 +817,6 @@ class GLWidget : public QGLWidget {
   protected:
     void initializeGL () { 
       std::cout << glGetString (GL_VERSION) << "\\n";
-
-      size_t num = 0;
-      while (extensions[num]) ++num;
-      bool found[num];
-      for (size_t n = 0; n < num; ++n) found[n] = false;
-      
-      std::string ext ((const char*) glGetString (GL_EXTENSIONS));
-      std::string::size_type start = 0, end;
-      do {
-        end = ext.find_first_of (" \\n\\t", start);
-        std::string e (ext.substr (start, end-start));
-        for (size_t n = 0; n < num; ++n) 
-          if (e == extensions[n]) found[n] = true;
-        start = ext.find_first_not_of (" \\n\\t", end+1);
-      } while (start < std::string::npos);
-
-      std::cout << "    OpenGL extensions:\\n";
-      for (size_t n = 0; n < num; ++n) 
-        std::cout << "        " << extensions[n] << ": " << ( found[n] ? "supported" : "*** NOT SUPPORTED! ***" ) << "\\n";
-
       exit (0); 
     }
 
