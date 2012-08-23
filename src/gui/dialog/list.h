@@ -49,23 +49,24 @@ namespace MR
             childItems.append (child);
           }
           TreeItem* child (int row)  {
-            return (childItems.value (row));
+            return childItems.value (row);
           }
           int childCount () const  {
-            return (childItems.count());
+            return childItems.count();
           }
           int columnCount () const  {
-            return (itemData.count());
+            return itemData.count();
           }
           QVariant data (int column) const  {
-            return (itemData.value (column));
+            return itemData.value (column);
           }
           int row () const  {
-            if (parentItem) return (parentItem->childItems.indexOf (const_cast<TreeItem*> (this)));
-            return (0);
+            if (parentItem) 
+              return parentItem->childItems.indexOf (const_cast<TreeItem*> (this));
+            return 0;
           }
           TreeItem* parent ()  {
-            return (parentItem);
+            return parentItem;
           }
 
         private:
@@ -79,7 +80,6 @@ namespace MR
       {
         public:
           TreeModel (QObject* parent) : QAbstractItemModel (parent) {
-            QList<QVariant> rootData;
             rootItem = new TreeItem ("Parameter", "Value");
           }
           ~TreeModel () {

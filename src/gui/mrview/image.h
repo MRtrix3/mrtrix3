@@ -48,10 +48,12 @@ namespace MR
 
       class Image : public QAction
       {
-          Q_OBJECT
+        Q_OBJECT
 
         public:
+          Image (const MR::Image::Header& image_header);
           Image (Window& parent, const MR::Image::Header& image_header);
+
           ~Image ();
 
           MR::Image::Header& header () {
@@ -75,12 +77,11 @@ namespace MR
             return value_max;
           }
 
-          void set_windowing (float min, float max);
-          void reset_windowing () {
-            set_windowing (value_min, value_max);
+          void set_windowing (float min, float max) {
+            shader.display_range = max - min;
+            shader.display_midpoint = 0.5 * (min + max);
+            emit scalingChanged();
           }
-
-          void adjust_windowing (float brightness, float contrast);
           void adjust_windowing (const QPoint& p) {
             adjust_windowing (p.x(), p.y());
           }
@@ -89,6 +90,15 @@ namespace MR
           }
           bool interpolate () const {
             return interpolation == GL_LINEAR;
+          }
+          void reset_windowing () {
+            set_windowing (value_min, value_max);
+          }
+
+          void adjust_windowing (float brightness, float contrast) { 
+            shader.display_midpoint -= 0.0005f * shader.display_range * brightness;
+            shader.display_range *= Math::exp (-0.002f * contrast);
+            emit scalingChanged();
           }
 
           void update_texture2D (int plane, int slice);
@@ -162,6 +172,8 @@ namespace MR
           typedef BufferType::voxel_type VoxelType;
           typedef MR::Image::Interp::Linear<VoxelType> InterpVoxelType;
 
+        signals:
+          void scalingChanged ();
 
         private:
           BufferType buffer;
@@ -175,7 +187,6 @@ namespace MR
           }
 
         private:
-          Window& window;
           GLuint texture2D[3], texture3D;
           int interpolation;
           float value_min, value_max;
@@ -213,8 +224,8 @@ namespace MR
           template <typename T> GLenum GLtype () const;
           template <typename T> float scale_factor_3D () const;
 
-          friend class Window;
       };
+
 
     }
   }

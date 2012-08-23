@@ -25,6 +25,8 @@
 
 #include "gui/mrview/tool/base.h"
 
+class QStringListModel;
+
 namespace MR
 {
   namespace GUI
@@ -40,15 +42,15 @@ namespace MR
 
           public:
 
-            Overlay (Dock* parent);
-
-          protected:
-            virtual void showEvent (QShowEvent* event);
-            virtual void closeEvent (QCloseEvent* event);
+            Overlay (Window& main_window, Dock* parent);
 
           private slots:
-            void slot ();
+            void image_open_slot ();
+            void image_close_slot ();
 
+          protected:
+             class Model;
+             Model* image_list_model;
         };
 
       }

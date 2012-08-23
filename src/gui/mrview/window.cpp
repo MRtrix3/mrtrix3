@@ -653,6 +653,10 @@ namespace MR
         }
       }
 
+      void Window::on_scaling_changed () 
+      {
+        emit scalingChanged();
+      }
 
 
       void Window::image_reset_slot ()
@@ -660,7 +664,7 @@ namespace MR
         Image* imagep = image();
         if (imagep) {
           imagep->reset_windowing();
-          scaling_updated();
+          on_scaling_changed();
           glarea->updateGL();
         }
       }
@@ -998,19 +1002,6 @@ namespace MR
       inline void Window::initGL ()
       {
         GL::init ();
-
-        CHECK_GL_EXTENSION (ARB_fragment_shader);
-        CHECK_GL_EXTENSION (ARB_vertex_shader);
-        CHECK_GL_EXTENSION (EXT_texture3D);
-        CHECK_GL_EXTENSION (ARB_texture_non_power_of_two);
-        CHECK_GL_EXTENSION (ARB_vertex_buffer_object);
-        CHECK_GL_EXTENSION (ARB_pixel_buffer_object);
-        CHECK_GL_EXTENSION (ARB_framebuffer_object);
-        CHECK_GL_EXTENSION (ARB_multisample);
-
-        GLint max_num;
-        glGetIntegerv (GL_MAX_GEOMETRY_OUTPUT_VERTICES_ARB, &max_num);
-        INFO ("maximum number of vertices for geometry shader: " + str (max_num));
 
         glClearColor (0.0, 0.0, 0.0, 0.0);
         glEnable (GL_DEPTH_TEST);

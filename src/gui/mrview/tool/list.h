@@ -4,7 +4,7 @@
 #include "gui/mrview/tool/view.h"
 #include "gui/mrview/tool/lighting.h"
 //#include "gui/mrview/tool/roi_analysis.h"
-//#include "gui/mrview/tool/overlay.h"
+#include "gui/mrview/tool/overlay.h"
 
 #else
 
@@ -16,7 +16,7 @@ The third argument is the text to be shown in the menu tooltip. */
 TOOL(View, View options, Adjust view settings)
 TOOL(Lighting, Lighting options, Adjust lighting settings for those modes that support it)
 //TOOL(ROI, ROI analysis, Draw & analyse regions of interest)
-//TOOL(Overlay, Overlay, Overlay other images over the current image)
+TOOL(Overlay, Overlay, Overlay other images over the current image)
 
 #endif
 

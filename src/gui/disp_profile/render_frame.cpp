@@ -89,8 +89,6 @@ namespace MR
       void RenderFrame::initializeGL ()
       {
         GL::init();
-        CHECK_GL_EXTENSION (ARB_vertex_shader);
-        CHECK_GL_EXTENSION (ARB_fragment_shader);
         renderer.init();
         glEnable (GL_DEPTH_TEST);
         lighting->set();

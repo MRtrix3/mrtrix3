@@ -37,11 +37,10 @@ namespace MR
     namespace MRView
     {
 
-      Image::Image (Window& parent, const MR::Image::Header& image_header) :
-        QAction (shorten (image_header.name(), 20, 0).c_str(), &parent),
+      Image::Image (const MR::Image::Header& image_header) :
+        QAction (NULL),
         buffer (image_header),
         interp (buffer),
-        window (parent),
         texture3D (0),
         interpolation (GL_LINEAR),
         value_min (NAN),
@@ -49,15 +48,35 @@ namespace MR
         position (header().ndim()),
         texture_mode_3D_unchanged (false)
       {
+        texture2D[0] = texture2D[1] = texture2D[2] = 0;
+        position[0] = position[1] = position[2] = std::numeric_limits<ssize_t>::min();
+        set_colourmap (header().datatype().is_complex() ? ColourMap::Complex : ColourMap::Gray);
+      }
+
+
+
+      Image::Image (Window& window, const MR::Image::Header& image_header) :
+        QAction (shorten (image_header.name(), 20, 0).c_str(), &window),
+        buffer (image_header),
+        interp (buffer),
+        texture3D (0),
+        interpolation (GL_LINEAR),
+        value_min (NAN),
+        value_max (NAN),
+        position (header().ndim()),
+        texture_mode_3D_unchanged (false)
+      {
+        texture2D[0] = texture2D[1] = texture2D[2] = 0;
+        position[0] = position[1] = position[2] = std::numeric_limits<ssize_t>::min();
+        set_colourmap (header().datatype().is_complex() ? ColourMap::Complex : ColourMap::Gray);
         setCheckable (true);
         setToolTip (header().name().c_str());
         setStatusTip (header().name().c_str());
         window.image_group->addAction (this);
         window.image_menu->addAction (this);
-        texture2D[0] = texture2D[1] = texture2D[2] = 0;
-        position[0] = position[1] = position[2] = std::numeric_limits<ssize_t>::min();
-        set_colourmap (header().datatype().is_complex() ? ColourMap::Complex : ColourMap::Gray);
+        connect (this, SIGNAL(scalingChanged()), &window, SLOT(on_scaling_changed()));
       }
+
 
       Image::~Image ()
       {
@@ -611,17 +630,11 @@ namespace MR
         return is_unchanged;
       }
 
-      void Image::adjust_windowing (float brightness, float contrast) {
-        shader.display_midpoint -= 0.0005f * shader.display_range * brightness;
-        shader.display_range *= Math::exp (-0.002f * contrast);
-        window.scaling_updated();
-      }
 
-      void Image::set_windowing (float min, float max) {
-        shader.display_range = max - min;
-        shader.display_midpoint = 0.5 * (min + max);
-        window.scaling_updated();
-      }
+
+
+
+
 
     }
   }

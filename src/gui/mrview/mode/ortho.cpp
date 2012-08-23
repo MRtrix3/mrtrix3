@@ -219,7 +219,7 @@ namespace MR
         void Ortho::contrast_event ()
         {
           image()->adjust_windowing (window.mouse_displacement());
-          window.scaling_updated();
+          window.on_scaling_changed();
           updateGL();
         }
 

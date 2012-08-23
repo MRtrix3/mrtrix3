@@ -104,9 +104,6 @@ namespace MR
             if (!image()) return;
             image()->set_windowing (min, max);
           }
-          void scaling_updated () {
-            emit scalingChanged();
-          }
 
           void set_scaling_all (float min, float max)
           {
@@ -147,6 +144,9 @@ namespace MR
           void modeChanged ();
           void imageChanged ();
           void scalingChanged ();
+
+        public slots:
+          void on_scaling_changed ();
 
         private slots:
           void image_open_slot ();

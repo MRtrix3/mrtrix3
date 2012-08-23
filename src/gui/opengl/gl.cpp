@@ -35,6 +35,8 @@ namespace MR
         INFO ("GL renderer:  " + std::string ( (const char*) glGetString (GL_RENDERER)));
         INFO ("GL version:   " + std::string ( (const char*) glGetString (GL_VERSION)));
         INFO ("GL vendor:    " + std::string ( (const char*) glGetString (GL_VENDOR)));
+        if (!GLEE_VERSION_3_0)
+          throw Exception ("your OpenGL implementation is not sufficient to run MRView - need version 3.0 or higher");
         GLboolean retval;
         glGetBooleanv (GL_STEREO, &retval);
         INFO ("Stereo buffering: " + std::string ( retval ? "" : "not" ) + " supported");

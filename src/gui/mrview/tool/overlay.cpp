@@ -21,10 +21,13 @@
 */
 
 #include <QLabel>
+#include <QListView>
+#include <QStringListModel>
 
 #include "mrtrix.h"
 #include "gui/mrview/window.h"
 #include "gui/mrview/tool/overlay.h"
+#include "gui/dialog/file.h"
 
 namespace MR
 {
@@ -34,26 +37,110 @@ namespace MR
     {
       namespace Tool
       {
-        Overlay::Overlay (Dock* parent) :
-          Base (parent) { 
+
+
+        class Overlay::Model : public QAbstractItemModel
+        {
+          public:
+            Model (QObject* parent) : 
+              QAbstractItemModel (parent) { }
+
+            QVariant data (const QModelIndex& index, int role) const {
+              if (!index.isValid()) return QVariant();
+              if (role == Qt::CheckStateRole) return shown[index.row()] ? Qt::Checked : Qt::Unchecked;
+              if (role != Qt::DisplayRole) return QVariant();
+              return shorten (images[index.row()]->header().name(), 20, 0).c_str();
+            }
+            bool setData (const QModelIndex& index, const QVariant& value, int role) {
+              if (role == Qt::CheckStateRole) {
+                shown[index.row()] =  (value == Qt::Checked);
+                emit dataChanged(index, index);
+                return true;
+              }
+              return QAbstractItemModel::setData (index, value, role);
+            }
+
+            Qt::ItemFlags flags (const QModelIndex& index) const {
+              if (!index.isValid()) return 0;
+              return Qt::ItemIsEnabled | Qt::ItemIsSelectable | Qt::ItemIsUserCheckable;
+            }
+            QModelIndex index (int row, int column, const QModelIndex& parent = QModelIndex()) const { return createIndex (row, column); }
+            QModelIndex parent (const QModelIndex& index) const { return QModelIndex(); }
+            int rowCount (const QModelIndex& parent = QModelIndex()) const { return images.size(); }
+            int columnCount (const QModelIndex& parent = QModelIndex()) const { return 1; }
+
+            void add_images (VecPtr<MR::Image::Header>& list);
+            VecPtr<Image> images;
+            std::vector<bool> shown;
+        };
+
+
+        void Overlay::Model::add_images (VecPtr<MR::Image::Header>& list)
+        {
+          beginInsertRows (QModelIndex(), images.size(), images.size()+list.size());
+          for (size_t i = 0; i < list.size(); ++i) {
+            images.push_back (new Image (*list[i]));
+            //setData (createIndex (images.size()-1,0), Qt::Checked, Qt::CheckStateRole);
+          }
+          shown.resize (images.size(), true);
+          endInsertRows();
+        }
+
+
+
+
+
+
+        Overlay::Overlay (Window& main_window, Dock* parent) :
+          Base (main_window, parent) { 
             QVBoxLayout* main_box = new QVBoxLayout (this);
+            QHBoxLayout* layout = new QHBoxLayout;
+            layout->setContentsMargins (0, 0, 0, 0);
+            layout->setSpacing (0);
+
+            QPushButton* button = new QPushButton (this);
+            button->setToolTip (tr ("Open Image"));
+            button->setIcon (QIcon (":/open.svg"));
+            connect (button, SIGNAL (clicked()), this, SLOT (image_open_slot ()));
+            layout->addWidget (button, 1);
+
+            button = new QPushButton (this);
+            button->setToolTip (tr ("Close Image"));
+            button->setIcon (QIcon (":/close.svg"));
+            connect (button, SIGNAL (clicked()), this, SLOT (image_close_slot ()));
+            layout->addWidget (button, 1);
+
+            main_box->addLayout (layout, 0);
+
+            QListView *image_list = new QListView(this);
+            image_list->setSelectionMode (QAbstractItemView::SingleSelection);
+            image_list->setDragEnabled (true);
+            image_list->viewport()->setAcceptDrops (true);
+            image_list->setDropIndicatorShown (true);
+
+            image_list_model = new Model (this);
+            image_list->setModel (image_list_model);
+
+            main_box->addWidget (image_list, 1);
           }
 
-        void Overlay::showEvent (QShowEvent* event) 
+
+        void Overlay::image_open_slot ()
         {
-          //connect (&window, SIGNAL (imageChanged()), this, SLOT (onImageChanged()));
+          Dialog::File dialog (this, "Select overlay images to open", true, true);
+          if (dialog.exec()) {
+            VecPtr<MR::Image::Header> list;
+            dialog.get_images (list);
+            image_list_model->add_images (list);
+          }
         }
 
-        void Overlay::closeEvent (QCloseEvent* event) 
-        {
-          //window.disconnect (this);
-        }
 
-        void Overlay::slot ()
+
+        void Overlay::image_close_slot ()
         {
           TEST;
         }
-
 
       }
     }

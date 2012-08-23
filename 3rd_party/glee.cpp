@@ -40,7 +40,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "gui/opengl/glee.h"
+#include <glee.h>
 
 #if defined(__APPLE__) || defined(__APPLE_CC__)
 	#include <Carbon/Carbon.h>
