@@ -150,7 +150,7 @@ namespace MR {
                   Image::BufferScratch<bool>::voxel_type this_vox (*this);
                   Image::copy (D, this_vox);
                 }
-              Image::Interp::Base< Image::BufferScratch<bool> > interp;
+              Image::Transform interp;
           };
 
           class SeedImage : public Image::BufferScratch<float> {
@@ -164,7 +164,7 @@ namespace MR {
                   Image::BufferScratch<float>::voxel_type this_vox (*this);
                   Image::copy (D, this_vox);
                 }
-              Image::Interp::Base< Image::BufferScratch<float> > interp;
+              Image::Transform interp;
               float max_value;
           };
 

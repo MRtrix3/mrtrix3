@@ -62,7 +62,7 @@ namespace Mapping {
 
 
 
-typedef Image::Interp::Base<const Image::Header> HeaderInterp;
+typedef Image::Transform HeaderInterp;
 
 
 
