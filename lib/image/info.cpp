@@ -124,11 +124,11 @@ namespace MR
       flip[perm[0]] = transform_ (0,perm[0]) < 0.0;
       flip[perm[1]] = transform_ (1,perm[1]) < 0.0;
       flip[perm[2]] = transform_ (2,perm[2]) < 0.0;
-      
+
       // check if image is already near-axial, return if true:
       if (perm[0] == 0 && perm[1] == 1 && perm[2] == 2 &&
-          !flip[0] && !flip[1] && !flip[2]) 
-        return; 
+          !flip[0] && !flip[1] && !flip[2])
+        return;
 
       Math::Matrix<float> M (transform());
       Math::Vector<float> translation = M.column (3).sub (0,3);

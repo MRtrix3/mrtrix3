@@ -23,7 +23,8 @@
 #ifndef __image_interp_cubic_h__
 #define __image_interp_cubic_h__
 
-#include "image/interp/base.h"
+#include "image/info.h"
+#include "image/transform.h"
 #include "math/hermite.h"
 
 namespace MR
@@ -70,28 +71,32 @@ namespace MR
        * \endcode
        */
 
-      template <class VoxelType> class Cubic : public Base<VoxelType>
+      template <class VoxelType> class Cubic : public VoxelType, Transform
       {
         public:
           typedef typename VoxelType::value_type value_type;
 
-          using Base<VoxelType>::check_bounds;
-          using Base<VoxelType>::dim;
-          using Base<VoxelType>::image2voxel;
-          using Base<VoxelType>::scanner2voxel;
-          using typename Base<VoxelType>::out_of_bounds;
-          using typename Base<VoxelType>::bounds;
+          using Transform::set_to_nearest;
+          using VoxelType::dim;
+          using Transform::image2voxel;
+          using Transform::scanner2voxel;
+          using Transform::operator!;
+          using typename Transform::out_of_bounds;
+          using typename Transform::bounds;
 
           //! construct an Nearest object to obtain interpolated values using the
           // parent DataSet class
-          Cubic (const VoxelType& parent) : Base<VoxelType> (parent) { }
+          Cubic (const VoxelType& parent, value_type value_when_out_of_bounds = DataType::default_out_of_bounds_value<value_type>()) :
+            VoxelType(parent),
+            Transform (parent),
+            out_of_bounds_value (value_when_out_of_bounds) { }
 
           //! Set the current position to <b>voxel space</b> position \a pos
           /*! This will set the position from which the image intensity values will
            * be interpolated, assuming that \a pos provides the position as a
            * (floating-point) voxel coordinate within the dataset. */
           bool voxel (const Point<float>& pos) {
-            Point<float> f = check_bounds (pos);
+            Point<float> f = set_to_nearest (pos);
             if (out_of_bounds)
               return true;
             P = pos;
@@ -119,7 +124,7 @@ namespace MR
 
           value_type value () {
             if (out_of_bounds)
-              return NAN;
+              return out_of_bounds_value;
 
             ssize_t c[] = { Math::floor (P[0])-1, Math::floor (P[1])-1, Math::floor (P[2])-1 };
             value_type r[4];
@@ -140,6 +145,7 @@ namespace MR
             return Hz.value (r);
           }
 
+          const value_type out_of_bounds_value;
 
         protected:
           Math::Hermite<value_type> Hx, Hy, Hz;

@@ -23,7 +23,7 @@
 #ifndef __imaget_interp_sinc_h__
 #define __image_interp_sinc_h__
 
-#include "image/interp/base.h"
+#include "image/transform.h"
 #include "math/sinc.h"
 
 
@@ -74,22 +74,25 @@ namespace MR
        * \endcode
        */
 
-      template <class VoxelType> class Sinc : public Base<VoxelType>
+      template <class VoxelType> class Sinc : public VoxelType, Transform
       {
         public:
           typedef typename VoxelType::value_type value_type;
 
-          using Base<VoxelType>::check_bounds;
-          using Base<VoxelType>::dim;
-          using Base<VoxelType>::image2voxel;
-          using Base<VoxelType>::scanner2voxel;
-          using typename Base<VoxelType>::out_of_bounds;
-          using typename Base<VoxelType>::bounds;
+          using Transform::set_to_nearest;
+          using VoxelType::dim;
+          using Transform::image2voxel;
+          using Transform::scanner2voxel;
+          using Transform::operator!;
+          using typename Transform::out_of_bounds;
+          using typename Transform::bounds;
 
           //! construct an Interp object to obtain interpolated values using the
           // parent DataSet class
-          Sinc (const VoxelType& parent, const size_t w = SINC_WINDOW_SIZE) :
-              Base<VoxelType> (parent),
+          Sinc (const VoxelType& parent, value_type value_when_out_of_bounds = DataType::default_out_of_bounds_value<value_type>(), const size_t w = SINC_WINDOW_SIZE) :
+              VoxelType (parent),
+              Transform (parent),
+              out_of_bounds_value (value_when_out_of_bounds),
               window_size (w),
               kernel_width ((window_size-1)/2),
               Sinc_x (w),
@@ -134,7 +137,7 @@ namespace MR
 
           value_type value () {
             if (out_of_bounds)
-              return NAN;
+              return out_of_bounds_value;
             for (size_t z = 0; z != window_size; ++z) {
               (*this)[2] = Sinc_z.index (z);
               for (size_t y = 0; y != window_size; ++y) {
@@ -146,6 +149,7 @@ namespace MR
             return Sinc_z.value (z_values);
           }
 
+          const value_type out_of_bounds_value;
 
         protected:
           const size_t window_size;

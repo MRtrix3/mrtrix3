@@ -23,7 +23,8 @@
 #ifndef __image_interp_nearest_h__
 #define __image_interp_nearest_h__
 
-#include "image/interp/base.h"
+#include "image/transform.h"
+#include "datatype.h"
 
 namespace MR
 {
@@ -70,27 +71,31 @@ namespace MR
        */
 
       template <class VoxelType>
-        class Nearest : public Base<VoxelType>
+        class Nearest : public VoxelType, Transform
       {
         public:
           typedef typename VoxelType::value_type value_type;
 
-          using Base<VoxelType>::check_bounds;
-          using Base<VoxelType>::image2voxel;
-          using Base<VoxelType>::scanner2voxel;
-          using typename Base<VoxelType>::out_of_bounds;
-          using typename Base<VoxelType>::bounds;
+          using Transform::set_to_nearest;
+          using Transform::image2voxel;
+          using Transform::scanner2voxel;
+          using Transform::operator!;
+          using typename Transform::out_of_bounds;
+          using typename Transform::bounds;
 
           //! construct an Nearest object to obtain interpolated values using the
           // parent DataSet class
-          Nearest (const VoxelType& parent) : Base<VoxelType> (parent) { }
+          Nearest (const VoxelType& parent, value_type value_when_out_of_bounds = DataType::default_out_of_bounds_value<value_type>()) :
+            VoxelType (parent),
+            Transform (parent),
+            out_of_bounds_value (value_when_out_of_bounds) { }
 
           //! Set the current position to <b>voxel space</b> position \a pos
           /*! This will set the position from which the image intensity values will
            * be interpolated, assuming that \a pos provides the position as a
            * (floating-point) voxel coordinate within the dataset. */
           bool voxel (const Point<float>& pos) {
-            check_bounds (pos);
+            set_to_nearest (pos);
             if (out_of_bounds)
               return true;
 
@@ -120,11 +125,13 @@ namespace MR
 
           value_type value () const {
             if (out_of_bounds) {
-              return NAN;
+              return out_of_bounds_value;
             }
 
             return VoxelType::value();
           }
+
+          const value_type out_of_bounds_value;
       };
 
       //! @}

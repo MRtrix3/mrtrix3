@@ -27,7 +27,7 @@
 #include "image/transform.h"
 #include "image/value.h"
 #include "image/position.h"
-#include "image/interp/base.h"
+#include "image/transform.h"
 
 namespace MR
 {
@@ -93,18 +93,20 @@ namespace MR
           using typename ConstInfo::name;
 
           template <class InfoType>
-            Reslice (const VoxelType& original, 
-                const InfoType& reference,
-                const Math::Matrix<float>& operation = NoOp,
-                const std::vector<int>& oversample = AutoOverSample) :
+            Reslice (const VoxelType& original,
+                     const InfoType& reference,
+                     const Math::Matrix<float>& operation = NoOp,
+                     const std::vector<int>& oversample = AutoOverSample) :
               ConstInfo (reference),
-              interp (original) {
+              interp (original, 0) {
                 assert (ndim() >= 3);
                 x[0] = x[1] = x[2] = 0;
 
+                Image::Transform transform_reference (reference);
+                Image::Transform transform_original (original);
                 Math::Matrix<float> Mr, Mo;
-                Image::Transform::voxel2scanner (Mr, reference);
-                Image::Transform::voxel2scanner (Mo, original);
+                transform_reference.voxel2scanner_matrix (Mr);
+                transform_original.voxel2scanner_matrix (Mo);
 
                 if (operation.is_set()) {
                   Math::Matrix<float> Mt;
@@ -126,17 +128,17 @@ namespace MR
                 }
                 else {
                   Point<value_type> y, x0, x1 (0.0,0.0,0.0);
-                  Image::Transform::apply (x0, direct_transform, x1);
+                  Image::Transform::transform_position (x0, direct_transform, x1);
                   x1[0] = 1.0;
-                  Image::Transform::apply (y, direct_transform, x1);
+                  Image::Transform::transform_position (x0, direct_transform, x1);
                   OS[0] = Math::ceil (0.999 * (y-x0).norm());
                   x1[0] = 0.0;
                   x1[1] = 1.0;
-                  Image::Transform::apply (y, direct_transform, x1);
+                  Image::Transform::transform_position (x0, direct_transform, x1);
                   OS[1] = Math::ceil (0.999 * (y-x0).norm());
                   x1[1] = 0.0;
                   x1[2] = 1.0;
-                  Image::Transform::apply (y, direct_transform, x1);
+                  Image::Transform::transform_position (x0, direct_transform, x1);
               OS[2] = Math::ceil (0.999 * (y-x0).norm());
             }
 
@@ -167,7 +169,7 @@ namespace MR
 
           void reset () {
             x[0] = x[1] = x[2] = 0;
-            for (size_t n = 3; n < interp.ndim(); ++n) 
+            for (size_t n = 3; n < interp.ndim(); ++n)
               interp[n] = 0;
           }
 
@@ -183,7 +185,7 @@ namespace MR
                   for (int x = 0; x < OS[0]; ++x) {
                     s[0] = d[0] + x*inc[0];
                     Point<float> pos;
-                    Image::Transform::apply (pos, direct_transform, s);
+                    Image::Transform::transform_position (pos, direct_transform, s);
                     interp.voxel (pos);
                     if (!interp) continue;
                     else ret += interp.value();
@@ -194,7 +196,7 @@ namespace MR
             }
             else {
               Point<float> pos;
-              Transform::apply (pos, direct_transform, x);
+              Image::Transform::transform_position (pos, direct_transform, x);
               interp.voxel (pos);
               return interp.value();
             }

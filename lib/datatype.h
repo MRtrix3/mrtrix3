@@ -170,10 +170,32 @@ namespace MR
         return stream;
       }
 
+      template <typename ValueType> static inline ValueType default_out_of_bounds_value () {
+        return ValueType(0);
+      }
+
     protected:
       uint8_t dt;
 
   };
+
+  template <> inline float DataType::default_out_of_bounds_value ()
+  {
+    return NAN;
+  }
+  template <> inline double DataType::default_out_of_bounds_value ()
+  {
+    return NAN;
+  }
+  template <> inline cfloat DataType::default_out_of_bounds_value ()
+  {
+    return NAN;
+  }
+  template <> inline cdouble DataType::default_out_of_bounds_value ()
+  {
+    return NAN;
+  }
+
 
   template <> inline DataType DataType::from<bool> ()
   {
@@ -219,7 +241,6 @@ namespace MR
   {
     return DataType::native (DataType::CFloat64);
   }
-
 
 }
 

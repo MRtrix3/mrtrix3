@@ -97,8 +97,7 @@ namespace MR
               threaded_copy (gradient1D, out, 2, 0, 3);
 
               if (wrt_scanner_) {
-                Math::Matrix<float> transform(4,4);
-                Image::Transform::voxel2scanner(transform, in);
+                Image::Transform transform (in);
 
                 Math::Vector<float> gradient(3);
                 Math::Vector<float> gradient_wrt_scanner(3);
@@ -109,7 +108,7 @@ namespace MR
                     out[3] = dim;
                     gradient[dim] = out.value();
                   }
-                  Math::mult(gradient_wrt_scanner, transform.sub(0, 3, 0,3), gradient);
+                  transform.voxel2scanner_dir (gradient, gradient_wrt_scanner);
                   for (size_t dim = 0; dim < 3; dim++) {
                     out[3] = dim;
                     out.value() = gradient_wrt_scanner[dim];
