@@ -48,7 +48,7 @@ void usage ()
 
   OPTIONS
   + Option ("stdev", "apply Gaussian smoothing with the specified standard deviation. "
-            "The standard deviation is defined in mm (Default 1mm). "
+            "The standard deviation is defined in mm (Default 1 voxel). "
             "This can be specified either as a single value to be used for all axes, "
             "or as a comma-separated list of the stdev for each axis.")
   + Argument ("sigma").type_sequence_float()
@@ -91,7 +91,9 @@ void run () {
     stdev.resize(2, 3.0 / 2.3548);
     stdev[1] = 1.0 / 2.3548;
   } else {
-    stdev.resize(1, 1);
+    stdev.resize(3);
+    for (size_t dim = 0; dim < 3; dim++)
+      stdev[dim] = input_data.vox (dim);
   }
 
   opt = get_options ("stdev");

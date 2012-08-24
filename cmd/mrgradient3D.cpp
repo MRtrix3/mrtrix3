@@ -65,7 +65,7 @@ void run () {
   Image::BufferPreload<float>::voxel_type input_voxel (input_data);
 
   Image::Filter::GaussianSmooth smooth_filter (input_voxel);
-  std::vector<float> stdev(1, 1.0);
+  std::vector<float> stdev;
   Options opt = get_options ("stdev");
   if (opt.size()) {
     stdev = parse_floats (opt[0][0]);
@@ -74,6 +74,10 @@ void run () {
         throw Exception ("the Gaussian stdev values cannot be negative");
     if (stdev.size() != 1 && stdev.size() != 3)
       throw Exception ("unexpected number of elements specified in Gaussian stdev");
+  } else {
+    stdev.resize(3);
+    for (size_t dim = 0; dim < 3; dim++)
+      stdev[dim] = input_data.vox (dim);
   }
   smooth_filter.set_stdev(stdev);
 
@@ -81,7 +85,9 @@ void run () {
 
   opt = get_options("scanner");
   if(opt.size()) {
-    gradient_filter.compute_wrt_scanner(true);
+    gradient_filter.compute_wrt_scanner (true);
+  } else {
+    gradient_filter.compute_wrt_scanner (false);
   }
 
   Image::Header smooth_header (input_data);

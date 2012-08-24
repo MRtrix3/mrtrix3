@@ -90,7 +90,7 @@ namespace MR
 
             Math::Matrix<float> transform (this->transform());
             for (size_t j = 0; j < 3; ++j) {
-              if (voxel_size[j] <= 0)
+              if (voxel_size[j] <= 0.0)
                 throw Exception ("the voxel size must be larger than zero");
               this->dim(j) = Math::ceil (this->dim(j) * this->vox(j) / voxel_size[j]);
               for (size_t i = 0; i < 3; ++i)
@@ -100,7 +100,7 @@ namespace MR
           }
 
 
-          void set_resolution (const std::vector<int>& image_res)
+          void set_size (const std::vector<int>& image_res)
           {
             if (image_res.size() != 3)
               throw Exception ("the image resolution must be defined for 3 spatial dimensions");
@@ -126,7 +126,7 @@ namespace MR
               throw Exception ("a scale factor for each spatial dimension is required");
             std::vector<float> new_voxel_size (3);
             for (size_t d = 0; d < 3; ++d) {
-              if (scale[d] <= 0)
+              if (scale[d] <= 0.0)
                 throw Exception ("the scale factor must be larger than zero");
               new_voxel_size[d] = (this->dim(d) * this->vox(d)) / Math::ceil (this->dim(d) * scale[d]);
             }
@@ -144,18 +144,18 @@ namespace MR
             {
 
               bool do_smoothing = false;
-              std::vector<float> stdev(input.ndim(), 0);
+              std::vector<float> stdev (input.ndim(), 0.0);
               for (unsigned int d = 0; d < 3; ++d) {
                 float scale_factor = input.vox(d) / output.vox(d);
-                if (scale_factor < 1) {
+                if (scale_factor < 1.0) {
                   do_smoothing = true;
-                  stdev[d] = 1 / (2 * scale_factor);
+                  stdev[d] = 1.0 / (2.0 * scale_factor);
                 }
               }
 
               if (do_smoothing) {
                 Filter::GaussianSmooth smooth_filter (input);
-                smooth_filter.set_stdev(stdev);
+                smooth_filter.set_stdev (stdev);
                 BufferScratch<float> smoothed_data (input);
                 BufferScratch<float>::voxel_type smoothed_voxel (smoothed_data);
                 {

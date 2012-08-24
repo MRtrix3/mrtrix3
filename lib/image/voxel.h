@@ -29,6 +29,8 @@
 #include "image/stride.h"
 #include "image/value.h"
 #include "image/position.h"
+#include "image/threaded_copy.h"
+#include "image/buffer.h"
 
 namespace MR
 {
@@ -106,6 +108,22 @@ namespace MR
               stream << V[n] << " ";
             stream << "], current offset = " << V.offset_ << ", value = " << V.value();
             return stream;
+          }
+
+          void display () const {
+            std::string filename;
+            {
+              Voxel in (*this);
+              Image::Header header;
+              header.info() = info();
+              Image::Buffer<value_type> buffer_out ("-", header);
+              typename Image::Buffer<value_type>::voxel_type out (buffer_out);
+              Image::threaded_copy(in, out);
+              filename = buffer_out.__get_handler()->files[0].name;
+            }
+            CONSOLE ("displaying image " + filename);
+            if (system (("bash -c \"mrview " + filename + "\"").c_str()))
+              WARN (std::string("error invoking viewer: ") + strerror(errno));
           }
 
         protected:

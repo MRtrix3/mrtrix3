@@ -82,7 +82,6 @@ namespace MR
           template <class InputVoxelType, class OutputVoxelType>
             void operator() (InputVoxelType& in, OutputVoxelType& out) {
 
-
               if (in.ndim() != 3)
                 throw Exception("input image must be 3D");
 
@@ -90,25 +89,25 @@ namespace MR
               out[3] = 0;
               threaded_copy (gradient1D, out, 2, 0, 3);
               out[3] = 1;
-              gradient1D.set_axis(1);
+              gradient1D.set_axis (1);
               threaded_copy (gradient1D, out, 2, 0, 3);
               out[3] = 2;
-              gradient1D.set_axis(2);
+              gradient1D.set_axis (2);
               threaded_copy (gradient1D, out, 2, 0, 3);
 
               if (wrt_scanner_) {
                 Image::Transform transform (in);
 
-                Math::Vector<float> gradient(3);
-                Math::Vector<float> gradient_wrt_scanner(3);
+                Math::Vector<float> gradient (3);
+                Math::Vector<float> gradient_wrt_scanner (3);
 
-                Image::Loop loop(0, 3);
-                for (loop.start(out); loop.ok(); loop.next(out)) {
+                Image::Loop loop (0, 3);
+                for (loop.start (out); loop.ok(); loop.next (out)) {
                   for (size_t dim = 0; dim < 3; dim++) {
                     out[3] = dim;
-                    gradient[dim] = out.value();
+                    gradient[dim] = out.value() / in.vox(dim);
                   }
-                  transform.voxel2scanner_dir (gradient, gradient_wrt_scanner);
+                  transform.image2scanner_dir (gradient, gradient_wrt_scanner);
                   for (size_t dim = 0; dim < 3; dim++) {
                     out[3] = dim;
                     out.value() = gradient_wrt_scanner[dim];

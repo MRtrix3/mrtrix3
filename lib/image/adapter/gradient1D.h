@@ -58,9 +58,9 @@ namespace MR
               val -= parent_vox.value();
             } else {
               (*this)[axis_] = pos + 1;
-              val = 0.5 * parent_vox.value();
+              val = parent_vox.value();
               (*this)[axis_] = pos - 1;
-              val -= 0.5 * parent_vox.value();
+              val = 0.5 * (val - parent_vox.value());
             }
             (*this)[axis_] = pos;
 

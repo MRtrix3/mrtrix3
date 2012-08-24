@@ -112,6 +112,14 @@ namespace MR
         template <class P1, class P2> void voxel2scanner_dir (const P1& v, P2& s) const {
           transform_direction (s, V2S, v);
         }
+        //! Transform the orientation \p s from scanner-space to voxel-space \p v
+        template <class P1, class P2> void image2scanner_dir (const P1& i, P2& s) const {
+          transform_direction (s, I2S, i);
+        }
+        //! Transform the orientation \p v from voxel-space to scanner-space \p s
+        template <class P1, class P2> void scanner2image_dir (const P1& s, P2& i) const {
+          transform_direction (i, S2I, s);
+        }
 
         //! Transform the position \p r from scanner-space to voxel-space
         template <class P1> Point<float> scanner2voxel (const P1& r) const {
@@ -290,9 +298,9 @@ namespace MR
 
         template <class P1, class P2>
         static inline void transform_direction (P1& y, const float M[3][4], const P2& x) {
-          y = M[0][0]*x[0] + M[0][1]*x[1] + M[0][2]*x[2];
-          y = M[1][0]*x[0] + M[1][1]*x[1] + M[1][2]*x[2];
-          y = M[2][0]*x[0] + M[2][1]*x[1] + M[2][2]*x[2];
+          y[0] = M[0][0]*x[0] + M[0][1]*x[1] + M[0][2]*x[2];
+          y[1] = M[1][0]*x[0] + M[1][1]*x[1] + M[1][2]*x[2];
+          y[2] = M[2][0]*x[0] + M[2][1]*x[1] + M[2][2]*x[2];
         }
 
     };

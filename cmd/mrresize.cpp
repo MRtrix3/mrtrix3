@@ -45,9 +45,9 @@ void usage ()
   + Argument ("output", "the output image.").type_image_out ();
 
   OPTIONS
-  + Option ("resolution", "define the new image resolution for the output image. "
+  + Option ("size", "define the new image size for the output image. "
             "This should be specified as a comma-separated list.")
-  + Argument ("size").type_sequence_int()
+  + Argument ("dims").type_sequence_int()
 
   + Option ("voxel", "define the new voxel size for the output image. "
             "This can be specified either as a single value to be used for all dimensions, "
@@ -90,11 +90,11 @@ void run () {
     resize_filter.set_voxel_size(voxel_size);
   }
 
-  std::vector<int> image_res;
-  opt = get_options ("resolution");
+  std::vector<int> image_size;
+  opt = get_options ("size");
   if (opt.size()) {
-    image_res = parse_ints(opt[0][0]);
-    resize_filter.set_resolution (image_res);
+    image_size = parse_ints(opt[0][0]);
+    resize_filter.set_size (image_size);
   }
 
   int interp = 2;
@@ -104,9 +104,9 @@ void run () {
     resize_filter.set_interp_type (interp);
   }
 
-  if ( ((scale.size() > 0) + (voxel_size.size() > 0) + (image_res.size() > 0)) == 0)
+  if ( ((scale.size() > 0) + (voxel_size.size() > 0) + (image_size.size() > 0)) == 0)
     throw Exception ("please use either the -scale, -voxel, or -resolution option to resize the image");
-  if ( ((scale.size() > 0) + (voxel_size.size() > 0) + (image_res.size() > 0)) != 1)
+  if ( ((scale.size() > 0) + (voxel_size.size() > 0) + (image_size.size() > 0)) != 1)
     throw Exception ("only a single method can be used to resize the image (image resolution, voxel size or scale factor)");
 
   Image::Header header (input_data);
