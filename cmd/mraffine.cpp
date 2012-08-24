@@ -100,22 +100,14 @@ void run ()
   opt = get_options ("resolution");
   if (opt.size ()) {
     resolution = parse_floats (opt[0][0]);
-    for (size_t i = 0; i < resolution.size (); ++i)
+    for (size_t i = 0; i < resolution.size(); ++i)
       if (resolution[i] < 0)
         throw Exception ("the multi-resolution scale factor must be positive");
   }
 
   Registration::Metric::MeanSquared metric;
-  Registration::Transform::Rigid<double> affine;
-
-  Math::Vector<double> optimiser_weights(12);
-  for (size_t i = 0; i < 9; i++)
-    optimiser_weights[i] = 0.0003;
-  for (size_t i = 9; i < 12; i++)
-    optimiser_weights[i] = 1;
-  affine.set_optimiser_weights(optimiser_weights);
-
-  Registration::Transform::initialise_using_image_centres(moving_voxel, target_voxel, affine);
+  Registration::Transform::Affine<double> affine;
+  Registration::Transform::initialise_using_image_centres (moving_voxel, target_voxel, affine);
 
   Ptr<Image::BufferPreload<bool> > tmask_data;
   Ptr<Image::BufferPreload<bool>::voxel_type> tmask_voxel;

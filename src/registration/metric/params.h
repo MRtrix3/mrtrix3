@@ -40,14 +40,14 @@ namespace MR
                   MovingImageInterpolatorType& moving_image,
                   TargetImageVoxelType& target_image) :
                     transformation (transform),
-                    moving_image (moving_image),
+                    moving_image_interp (moving_image),
                     target_image (target_image){ }
 
           TransformType& transformation;
-          MovingImageInterpolatorType moving_image;
+          MovingImageInterpolatorType moving_image_interp;
           TargetImageVoxelType target_image;
-          Ptr<TargetMaskInterpolatorType> target_mask;
-          Ptr<MovingMaskInterpolatorType> moving_mask;
+          Ptr<TargetMaskInterpolatorType> target_mask_interp;
+          Ptr<MovingMaskInterpolatorType> moving_mask_interp;
       };
     }
   }

@@ -46,27 +46,29 @@ namespace MR
        *
        */
       template <typename T = float>
-      class Rigid  {
+      class Affine  {
         public:
 
           typedef T ParameterType;
 
-          Rigid () :
+          Affine () :
             matrix_(3,3),
             translation_(3),
             centre_(3),
             offset_(3),
-            optimiser_weights_ (12){
-            matrix_.identity();
-            translation_.zero();
-            centre_.zero();
-            offset_.zero();
-            for (size_t i = 0; i < optimiser_weights_.size(); i++)
-              optimiser_weights_[i] = 1.0;
+            optimiser_weights_ (12) {
+              matrix_.identity();
+              translation_.zero();
+              centre_.zero();
+              offset_.zero();
+              for (size_t i = 0; i < 9; i++)
+                optimiser_weights_[i] = 0.003;
+              for (size_t i = 9; i < 12; i++)
+                optimiser_weights_[i] = 1.0;
           }
 
           template <class PointType>
-          inline void transform (const PointType& in, PointType& out) const {
+          inline void transform (PointType& out, const PointType& in) const {
               out[0] = matrix_(0,0)*in[0] + matrix_(0,1)*in[1] + matrix_(0,2)*in[2] + offset_[0];
               out[1] = matrix_(1,0)*in[0] + matrix_(1,1)*in[1] + matrix_(1,2)*in[2] + offset_[1];
               out[2] = matrix_(2,0)*in[0] + matrix_(2,1)*in[1] + matrix_(2,2)*in[2] + offset_[2];
@@ -83,11 +85,11 @@ namespace MR
             size_t blockOffset = 0;
             for (size_t block = 0; block < 3; block++) {
               for (size_t dim = 0; dim < 3; dim++)
-                jacobian(block, blockOffset + dim) = v[dim];
+                jacobian (block, blockOffset + dim) = v[dim];
               blockOffset += 3;
             }
-            for(size_t dim = 0; dim < 3; dim++) {
-              jacobian(dim, blockOffset + dim) = 1.0;
+            for (size_t dim = 0; dim < 3; dim++) {
+              jacobian (dim, blockOffset + dim) = 1.0;
             }
           }
 

@@ -40,18 +40,23 @@ namespace MR
 
       /*! A 3D rigid transformation class for registration.
        *
-       * This class supports the ability to define the centre of rotation.
-       * This should be set prior to commencing registration based on the centre of the target image.
-       * The translation also should be initialised as moving image centre minus the target image centre.
+       * This class defines a rigid transform using 6 parameters. The first 3 parameters define rotation using a versor (unit quaternion),
+       * while the last 3 parameters define translation. Note that since the versor parameters do not define a vector space, any updates
+       * must be performed using a versor composition (not an addition). This can be achieved by passing the update_parameters method
+       * from this class as a function pointer to the gradient_decent run method.
+       *
+       * This class supports the ability to define the centre of rotation. This should be set prior to commencing registration based on
+       * the centre of the target image. The translation also should be initialised as moving image centre minus the target image centre.
+       * This can done automatically using functions available in  src/registration/transform/initialiser.h
        *
        */
       template <typename T = float>
-      class Rigid  {
+      class Affine  {
         public:
 
           typedef T ParameterType;
 
-          Rigid () :
+          Affine () :
             matrix_(3,3),
             translation_(3),
             centre_(3),

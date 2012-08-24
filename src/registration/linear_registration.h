@@ -34,6 +34,7 @@
 #include "registration/metric/evaluate.h"
 #include "math/gradient_descent.h"
 
+
 namespace MR
 {
   namespace Registration
@@ -128,44 +129,54 @@ namespace MR
 
             typedef Image::Interp::Linear<Image::BufferScratch<float>::voxel_type > MovingImageInterpolatorType;
 
-            Image::Filter::Resize moving_resize_filter (moving_image);
-            Image::Filter::Resize target_resize_filter (target_image);
-
             typedef Metric::Params<TransformType,
-                                    MovingImageInterpolatorType,
-                                    Image::BufferScratch<float>::voxel_type,
-                                    Image::Interp::Nearest<MovingMaskVoxelType >,
-                                    Image::Interp::Nearest<TargetMaskVoxelType > > ParamType;
+                                   MovingImageInterpolatorType,
+                                   Image::BufferScratch<float>::voxel_type,
+                                   Image::Interp::Nearest<MovingMaskVoxelType >,
+                                   Image::Interp::Nearest<TargetMaskVoxelType > > ParamType;
 
             for (size_t level = 0; level < resolution_.size(); level++) {
               CONSOLE ("multi-resolution level " + str(level + 1) + ", scale factor: " + str(resolution_[level]));
 
-              moving_resize_filter.set_scale_factor (resolution_[level]);
-              moving_resize_filter.set_interp_type(1);
-              Image::BufferScratch<float> moving (moving_resize_filter.info());
-              Image::BufferScratch<float>::voxel_type moving_vox (moving);
-              MovingImageInterpolatorType moving_interp (moving_vox);
-
-              target_resize_filter.set_scale_factor (resolution_[level]);
+              Image::Filter::Resize target_resize_filter (target_image);
               target_resize_filter.set_interp_type(1);
+              target_resize_filter.set_scale_factor (resolution_[level]);
               Image::BufferScratch<float> target (target_resize_filter.info());
               Image::BufferScratch<float>::voxel_type target_vox (target);
+              Image::BufferScratch<float> target_temp (target_resize_filter.info());
+              Image::BufferScratch<float>::voxel_type target_temp_vox (target_temp);
+              Image::Filter::GaussianSmooth target_smooth_filter (target_temp_vox);
+              Image::BufferScratch<float> target_smoothed (target_smooth_filter.info());
+              Image::BufferScratch<float>::voxel_type target_smoothed_vox (target_smoothed);
+
+              Image::Filter::Resize moving_resize_filter (moving_image);
+              moving_resize_filter.set_interp_type(1);
+              moving_resize_filter.set_scale_factor (resolution_[level]);
+              Image::BufferScratch<float> temp (moving_resize_filter.info());
+              Image::BufferScratch<float>::voxel_type moving_temp_vox (temp);
+              Image::Filter::GaussianSmooth moving_smooth_filter (moving_temp_vox);
+              Image::BufferScratch<float> moving_smoothed (moving_smooth_filter.info());
+              Image::BufferScratch<float>::voxel_type moving_smoothed_vox (moving_smoothed);
               {
                 LogLevelLatch log_level (0);
-                moving_resize_filter (moving_image, moving_vox);
-                target_resize_filter (target_image, target_vox);
+                target_resize_filter (target_image, target_temp_vox);
+                target_smooth_filter (target_temp_vox, target_smoothed_vox);
+                moving_resize_filter (moving_image, moving_temp_vox);
+                moving_smooth_filter (moving_temp_vox, moving_smoothed_vox);
               }
-              metric.set_moving_image (moving_vox);
-              ParamType parameters (transform, moving_interp, target_vox);
 
-              if (target_mask) {
-                parameters.target_mask = new Image::Interp::Nearest<TargetMaskVoxelType> (*target_mask);
-              }
+              MovingImageInterpolatorType moving_interp (moving_smoothed_vox);
+              metric.set_moving_image (moving_smoothed_vox);
+
+              ParamType parameters (transform, moving_interp, target_smoothed_vox);
+
+              if (target_mask)
+                parameters.target_mask_interp = new Image::Interp::Nearest<TargetMaskVoxelType> (*target_mask);
               if (moving_mask)
-                parameters.moving_mask = new Image::Interp::Nearest<MovingMaskVoxelType> (*moving_mask);
+                parameters.moving_mask_interp = new Image::Interp::Nearest<MovingMaskVoxelType> (*moving_mask);
 
               Metric::Evaluate<MetricType, ParamType> evaluate (metric, parameters);
-              Math::GradientDescent<Metric::Evaluate<MetricType, ParamType> > optim (evaluate, true);
+              Math::GradientDescent<Metric::Evaluate<MetricType, ParamType> > optim (evaluate);
 
               optim.run (max_iter_[level]);
               parameters.transformation.set_parameter_vector (optim.state());

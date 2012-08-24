@@ -25,7 +25,7 @@
 
 #include "image/filter/gradient3D.h"
 #include "image/filter/gaussian_smooth.h"
-#include "image/interp/nearest.h"
+#include "image/interp/linear.h"
 #include "image/header.h"
 #include "image/voxel.h"
 #include "image/buffer_scratch.h"
@@ -46,7 +46,6 @@ namespace MR
 
           template <class Params>
           double operator() (Params& params, Point<double> target_point, Point<double> moving_point, Math::Vector<double>& gradient) {
-
               params.transformation.get_jacobian_wrt_params(target_point, jacobian_);
               Math::Vector<double> moving_grad(3);
 
@@ -58,45 +57,31 @@ namespace MR
               ++(*gradient_interp_)[3];
               moving_grad[2] = gradient_interp_->value();
 
-              double diff = params.moving_image.value() - params.target_image.value();
+              double diff = params.moving_image_interp.value() - params.target_image.value();
 
               for (size_t par = 0; par < gradient.size(); par++) {
                 double sum = 0.0;
                 for( size_t dim = 0; dim < 3; dim++) {
-                  sum += 2.0 * diff *jacobian_(dim, par) * moving_grad[dim];
+                  sum += 2.0 * diff * jacobian_(dim, par) * moving_grad[dim];
                 }
                 gradient[par] += sum;
               }
               return diff * diff;
           }
 
-          template <class MovingDataType>
-          void set_moving_image (MovingDataType& moving_data) {
-
+          template <class MovingVoxelType>
+          void set_moving_image (MovingVoxelType& moving_voxel) {
             INFO ("Computing moving gradient...");
-
-            typedef typename MovingDataType::voxel_type MovingVoxelType;
-            MovingVoxelType moving_voxel(moving_data);
-
-            Image::Filter::GaussianSmooth smooth_filter (moving_voxel);
-            Image::BufferScratch<float> smoothed_data (smooth_filter.info());
-            Image::BufferScratch<float>::voxel_type smoothed_voxel (smoothed_data);
-            {
-              LogLevelLatch loglevel (0);
-              smooth_filter (moving_voxel, smoothed_voxel);
-            }
-
-            Image::Filter::Gradient3D gradient_filter (smoothed_voxel);
+            Image::Filter::Gradient3D gradient_filter (moving_voxel);
             gradient_data_= new Image::BufferScratch<float> (gradient_filter.info());
             Image::BufferScratch<float>::voxel_type gradient_voxel (*gradient_data_);
-            gradient_filter (smoothed_voxel, gradient_voxel);
-
-            gradient_interp_ = new Image::Interp::Nearest<Image::BufferScratch<float>::voxel_type > (gradient_voxel);
+            gradient_filter (moving_voxel, gradient_voxel);
+            gradient_interp_ = new Image::Interp::Linear<Image::BufferScratch<float>::voxel_type > (gradient_voxel);
           }
 
         protected:
           RefPtr<Image::BufferScratch<float> > gradient_data_;
-          Ptr<Image::Interp::Nearest<Image::BufferScratch<float>::voxel_type> > gradient_interp_;
+          Ptr<Image::Interp::Linear<Image::BufferScratch<float>::voxel_type> > gradient_interp_;
           Math::Matrix<double> jacobian_;
       };
     }

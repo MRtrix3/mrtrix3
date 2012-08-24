@@ -25,8 +25,10 @@
 #define __registration_transform_initialiser_h__
 
 #include "image/transform.h"
+#include "image/loop.h"
 #include "math/matrix.h"
 #include "math/vector.h"
+#include "point.h"
 
 namespace MR
 {
@@ -38,33 +40,39 @@ namespace MR
       template <class MovingVoxelType, class TargetVoxelType, class TransformType>
         void initialise_using_image_centres (const MovingVoxelType& moving, const TargetVoxelType& target, TransformType& transform) {
 
-          Math::Matrix<double> moving_transform(4,4);
-          Image::Transform::voxel2scanner(moving_transform, moving);
-          Math::Matrix<double> target_transform(4,4);
-          Image::Transform::voxel2scanner(target_transform, target);
-
           Point<double> moving_centre_voxel;
           moving_centre_voxel[0] = (static_cast<double>(moving.dim(0)) / 2.0) - 0.5;
           moving_centre_voxel[1] = (static_cast<double>(moving.dim(1)) / 2.0) - 0.5;
           moving_centre_voxel[2] = (static_cast<double>(moving.dim(2)) / 2.0) - 0.5;
-          Math::Vector<double> moving_centre_scanner(3);
-          Image::Transform::apply(moving_centre_scanner, moving_transform, moving_centre_voxel);
+          Image::Transform moving_transform (moving);
+          Math::Vector<double> moving_centre_scanner (3);
+          moving_transform.voxel2scanner (moving_centre_voxel, moving_centre_scanner);
 
           Point<double> target_centre_voxel;
           target_centre_voxel[0] = (static_cast<double>(target.dim(0)) / 2.0) - 0.5;
           target_centre_voxel[1] = (static_cast<double>(target.dim(1)) / 2.0) - 0.5;
           target_centre_voxel[2] = (static_cast<double>(target.dim(2)) / 2.0) - 0.5;
-          Math::Vector<double> target_centre_scanner(3);
-          Image::Transform::apply(target_centre_scanner, target_transform, target_centre_voxel);
+          Image::Transform target_transform (target);
+          Math::Vector<double> target_centre_scanner (3);
+          moving_transform.voxel2scanner (target_centre_voxel, target_centre_scanner);
 
-          transform.set_centre(target_centre_scanner);
+          transform.set_centre (target_centre_scanner);
           moving_centre_scanner -= target_centre_scanner;
-          transform.set_translation(moving_centre_scanner);
+          transform.set_translation (moving_centre_scanner);
         }
 
       template <class MovingVoxelType, class TargetVoxelType, class TransformType>
-        void initialise_using_image_mass (const MovingVoxelType& moving, const TargetVoxelType& target, TransformType& transform) {
-          throw Exception ("Not yet implemented");
+        void initialise_using_image_gravity (const MovingVoxelType& moving, const TargetVoxelType& target, TransformType& transform) {
+
+//          Image::LoopInOrder target_loop (target);
+//          Matrix<float> vox2scanner = ;
+//          Point scanner_coord;
+//
+//          for (target_loop.start(target); target_loop.ok(); target_loop.next(target)) {
+//            Image::Transform::voxel2scanner()
+//          }
+
+
       }
     }
   }
