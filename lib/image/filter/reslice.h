@@ -25,6 +25,7 @@
 
 #include "image/adapter/reslice.h"
 #include "image/threaded_copy.h"
+#include "datatype.h"
 
 namespace MR
 {
@@ -55,9 +56,10 @@ namespace MR
             VoxelTypeSource& source,
             VoxelTypeDestination& destination,
             const Math::Matrix<float>& operation = Adapter::NoOp,
-            const std::vector<int>& oversampling = Adapter::AutoOverSample)
+            const std::vector<int>& oversampling = Adapter::AutoOverSample,
+            const typename VoxelTypeDestination::value_type value_when_out_of_bounds = DataType::default_out_of_bounds_value<typename VoxelTypeDestination::value_type>())
         {
-          Adapter::Reslice<Interpolator,VoxelTypeSource> interp (source, destination, operation, oversampling);
+          Adapter::Reslice<Interpolator,VoxelTypeSource> interp (source, destination, operation, oversampling, value_when_out_of_bounds);
           Image::threaded_copy_with_progress_message ("reslicing \"" + source.name() + "\"...", interp, destination, 2);
         }
 

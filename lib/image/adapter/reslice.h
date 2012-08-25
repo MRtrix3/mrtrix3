@@ -96,9 +96,10 @@ namespace MR
             Reslice (const VoxelType& original,
                      const InfoType& reference,
                      const Math::Matrix<float>& operation = NoOp,
-                     const std::vector<int>& oversample = AutoOverSample) :
+                     const std::vector<int>& oversample = AutoOverSample,
+                     const value_type value_when_out_of_bounds = DataType::default_out_of_bounds_value<value_type>()) :
               ConstInfo (reference),
-              interp (original, 0) {
+              interp (original, value_when_out_of_bounds) {
                 assert (ndim() >= 3);
                 x[0] = x[1] = x[2] = 0;
 
@@ -106,17 +107,15 @@ namespace MR
                 Image::Transform transform_original (original);
                 Math::Matrix<float> Mr, Mo;
                 transform_reference.voxel2scanner_matrix (Mr);
-                transform_original.voxel2scanner_matrix (Mo);
+                transform_original.scanner2voxel_matrix (Mo);
 
                 if (operation.is_set()) {
                   Math::Matrix<float> Mt;
-                  Math::mult (Mt, operation, Mo);
+                  Math::mult (Mt, Mo, operation);
                   Mo.swap (Mt);
                 }
 
-                Math::Matrix<float> iMo;
-                Math::LU::inv (iMo, Mo);
-                Math::mult (direct_transform, iMo, Mr);
+                Math::mult (direct_transform, Mo, Mr);
 
                 if (oversample.size()) {
                   assert (oversample.size() == 3);

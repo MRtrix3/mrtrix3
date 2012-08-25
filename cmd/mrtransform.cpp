@@ -79,6 +79,9 @@ void usage ()
             "input and output voxel sizes.")
   + Argument ("factors").type_sequence_int()
 
+  + Option ("nan",
+            "Use NaN as the out of bounds value (Default: 0.0)")
+
   + DataType::options ();
 }
 
@@ -155,6 +158,11 @@ void run ()
       throw Exception ("oversample factors must be greater than zero");
   }
 
+  float out_of_bounds_value = 0.0;
+  opt = get_options ("nan");
+  if (opt.size())
+    out_of_bounds_value = NAN;
+
   if (replace) {
     Image::Info& info_in (data_in);
     info_in.transform().swap (operation);
@@ -168,17 +176,17 @@ void run ()
 
   switch (interp) {
     case 0:
-      Image::Filter::reslice<Image::Interp::Nearest> (in, out, operation, oversample);
+      Image::Filter::reslice<Image::Interp::Nearest> (in, out, operation, oversample, out_of_bounds_value);
       break;
     case 1:
-      Image::Filter::reslice<Image::Interp::Linear> (in, out, operation, oversample);
+      Image::Filter::reslice<Image::Interp::Linear> (in, out, operation, oversample, out_of_bounds_value);
       break;
     case 2:
-      Image::Filter::reslice<Image::Interp::Cubic> (in, out, operation, oversample);
+      Image::Filter::reslice<Image::Interp::Cubic> (in, out, operation, oversample, out_of_bounds_value);
       break;
     case 3:
       ERROR ("FIXME: sinc interpolation needs a lot of work!");
-      Image::Filter::reslice<Image::Interp::Sinc> (in, out, operation, oversample);
+      Image::Filter::reslice<Image::Interp::Sinc> (in, out, operation, oversample, out_of_bounds_value);
       break;
     default:
       assert (0);

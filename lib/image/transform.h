@@ -275,14 +275,16 @@ namespace MR
             return Point<float> (pos[0]-Math::floor (pos[0]), pos[1]-Math::floor (pos[1]), pos[2]-Math::floor (pos[2]));
         }
 
-        Point<float> transform_position (const float M[3][4], const Point<float>& p) const {
+        template <class P1>
+        Point<float> transform_position (const float M[3][4], const P1& p) const {
           return Point<float> (
             M[0][0]*p[0] + M[0][1]*p[1] + M[0][2]*p[2] + M[0][3],
             M[1][0]*p[0] + M[1][1]*p[1] + M[1][2]*p[2] + M[1][3],
             M[2][0]*p[0] + M[2][1]*p[1] + M[2][2]*p[2] + M[2][3]);
         }
 
-        Point<float> transform_vector (const float M[3][4], const Point<float>& p) const {
+        template <class P1>
+        Point<float> transform_vector (const float M[3][4], const P1& p) const {
           return Point<float> (
             M[0][0]*p[0] + M[0][1]*p[1] + M[0][2]*p[2],
             M[1][0]*p[0] + M[1][1]*p[1] + M[1][2]*p[2],
