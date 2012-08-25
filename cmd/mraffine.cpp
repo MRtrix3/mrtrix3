@@ -30,15 +30,18 @@
 #include "registration/linear_registration.h"
 #include "registration/metric/mean_squared_metric.h"
 #include "registration/transform/affine.h"
-#include "registration/transform/initialiser.h"
+#include "registration/transform/rigid.h"
 #include "math/vector.h"
 
 MRTRIX_APPLICATION
 
 using namespace MR;
 using namespace App;
+using namespace Registration;
 
-const char* transformations[] = { "affine", "rigid", NULL };
+const char* transformation_choices[] = { "affine", "rigid", NULL };
+
+const char* initialisation_choices[] = { "mass", "centre", "none",NULL };
 
 void usage ()
 {
@@ -58,19 +61,24 @@ void usage ()
       "as a single number for all multi-resolution levels, or a single value for each level. (Default: 300)")
   + Argument ("num").type_sequence_int ()
 
-  + Option ("resolution", "setup the multi-resolution scheme by defining a scale factor for each level "
-                          "using comma separated values. Default: 0.5,1")
+  + Option ("scale", "use a multi-resolution scheme by defining a scale factor for each level "
+                     "using comma separated values. For example to -scale 0.25,0.5,1. (Default: 0.5,1)")
   + Argument ("factor").type_sequence_float ()
 
   + Option ("transformation", "the transformation type. Valid choices are: affine and rigid."
       "(Default: affine)")
-      + Argument ("type").type_choice (transformations)
+      + Argument ("type").type_choice (transformation_choices)
 
   + Option ("tmask", "a mask to define the target image region to use for optimisation.")
       + Argument ("filename").type_image_in ()
 
   + Option ("mmask", "a mask to define the moving image region to use for optimisation.")
-      + Argument ("filename").type_image_in ();
+      + Argument ("filename").type_image_in ()
+
+  + Option ("init", "initialise the centre of rotation and initial translation. Valid choices are: mass "
+                    "(which uses the image center of mass), centre (geometric image centre) or none. "
+                    "The default is mass (which may not be suited for multi-modality registration).")
+      +Argument ("type").type_choice (initialisation_choices);
 }
 
 void run ()
@@ -94,20 +102,19 @@ void run ()
         throw Exception ("the max number of iterations must be positive");
   }
 
-  std::vector<float> resolution (2);
-  resolution[0] = 0.5;
-  resolution[1] = 1;
-  opt = get_options ("resolution");
+  std::vector<float> scale_factors (2);
+  scale_factors[0] = 0.5;
+  scale_factors[1] = 1;
+  opt = get_options ("scale");
   if (opt.size ()) {
-    resolution = parse_floats (opt[0][0]);
-    for (size_t i = 0; i < resolution.size(); ++i)
-      if (resolution[i] < 0)
+    scale_factors = parse_floats (opt[0][0]);
+    for (size_t i = 0; i < scale_factors.size(); ++i)
+      if (scale_factors[i] < 0)
         throw Exception ("the multi-resolution scale factor must be positive");
   }
 
-  Registration::Metric::MeanSquared metric;
-  Registration::Transform::Affine<double> affine;
-  Registration::Transform::initialise_using_image_centres (moving_voxel, target_voxel, affine);
+  Metric::MeanSquared metric;
+  Transform::Affine<double> affine;
 
   Ptr<Image::BufferPreload<bool> > tmask_data;
   Ptr<Image::BufferPreload<bool>::voxel_type> tmask_voxel;
@@ -125,9 +132,27 @@ void run ()
     mmask_voxel = new Image::BufferPreload<bool>::voxel_type (*mmask_data);
   }
 
-  Registration::LinearRegistration registration;
+  LinearRegistration registration;
   registration.set_max_iter (niter);
-  registration.set_resolution (resolution);
+  registration.set_scale_factor (scale_factors);
+
+  int init = 0;
+  opt = get_options ("init");
+  if (opt.size())
+    init = opt[0][0];
+  switch (init) {
+    case 0:
+      registration.set_init_type (Transform::Init::mass);
+      break;
+    case 1:
+      registration.set_init_type (Transform::Init::centre);
+      break;
+    case 2:
+      registration.set_init_type (Transform::Init::none);
+      break;
+    default:
+      break;
+  }
 
   registration.run_masked (metric, affine, moving_voxel, target_voxel, mmask_voxel, tmask_voxel);
 

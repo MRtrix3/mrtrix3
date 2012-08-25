@@ -141,8 +141,11 @@ namespace MR
             compute_offset();
           }
 
-          Matrix<T>& get_matrix () const {
-            return matrix_;
+          void get_matrix (Matrix<T>& matrix) const {
+            matrix.allocate(3, 3);
+            for (size_t i = 0; i < 3; i++)
+              for (size_t j = 0; j < 3; j++)
+                matrix(i, j) = matrix_(i, j);
           }
 
           void set_translation (Vector<T>& translation) {
@@ -150,8 +153,11 @@ namespace MR
             compute_offset();
           }
 
-          Vector<T>& get_translation () const {
-            return translation_;
+          void get_translation (Vector<T>& translation) const {
+            translation.allocate(3);
+            translation[0] = translation_[0];
+            translation[1] = translation_[1];
+            translation[2] = translation_[2];
           }
 
           void set_centre(Vector<T>& centre) {
@@ -159,8 +165,11 @@ namespace MR
             compute_offset();
           }
 
-          Vector<T>& get_centre () const {
-            return centre_;
+          void get_centre (Vector<T>& centre) const {
+            centre.allocate(3);
+            centre[0] = centre_[0];
+            centre[1] = centre_[1];
+            centre[2] = centre_[2];
           }
 
           size_t size() const {

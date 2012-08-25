@@ -24,7 +24,6 @@
 #define __registration_linear_registration_h__
 
 #include "ptr.h"
-#include "math/matrix.h"
 #include "image/voxel.h"
 #include "image/buffer_scratch.h"
 #include "image/filter/resize.h"
@@ -32,39 +31,47 @@
 #include "image/interp/nearest.h"
 #include "registration/metric/params.h"
 #include "registration/metric/evaluate.h"
+#include "registration/transform/initialiser.h"
+#include "math/matrix.h"
 #include "math/gradient_descent.h"
-
 
 namespace MR
 {
   namespace Registration
   {
+
     class LinearRegistration
     {
 
       public:
+
         LinearRegistration () :
           max_iter_ (1, 300),
-          resolution_ (2) {
-          resolution_[0] = 0.5;
-          resolution_[1] = 1;
+          scale_factor_ (2) {
+          scale_factor_[0] = 0.5;
+          scale_factor_[1] = 1;
         }
 
 
         LinearRegistration (const std::vector<int>& max_iter,
                             const std::vector<float>& resolution) :
             max_iter_ (max_iter),
-            resolution_ (resolution) { }
+            scale_factor_ (resolution),
+            init_type_ (Transform::Init::mass) { }
 
 
-        void set_max_iter (const std::vector<int>& max_iter)
-        {
+        void set_max_iter (const std::vector<int>& max_iter) {
           max_iter_ = max_iter;
         }
 
-        void set_resolution (const std::vector<float>& resolution)
-        {
-          resolution_ = resolution;
+
+        void set_scale_factor (const std::vector<float>& scale_factor) {
+          scale_factor_ = scale_factor;
+        }
+
+
+        void set_init_type (Transform::Init::InitType type) {
+          init_type_ = type;
         }
 
 
@@ -73,8 +80,7 @@ namespace MR
           MetricType& metric,
           TransformType& transform,
           MovingImageVoxelType& moving_image,
-          TargetImageVoxelType& target_image)
-          {
+          TargetImageVoxelType& target_image) {
             typedef Image::BufferScratch<bool>::voxel_type BogusMaskType;
             run_masked<MetricType, TransformType, MovingImageVoxelType, TargetImageVoxelType, BogusMaskType, BogusMaskType >
               (metric, transform, moving_image, target_image, NULL, NULL);
@@ -87,8 +93,7 @@ namespace MR
           TransformType& transform,
           MovingImageVoxelType& moving_image,
           TargetImageVoxelType& target_image,
-          Ptr<TargetMaskVoxelType>& target_mask)
-          {
+          Ptr<TargetMaskVoxelType>& target_mask) {
             typedef Image::BufferScratch<bool>::voxel_type BogusMaskType;
             run_masked<MetricType, TransformType, MovingImageVoxelType, TargetImageVoxelType, BogusMaskType, TargetMaskVoxelType >
               (metric, transform, moving_image, target_image, NULL, target_mask);
@@ -101,8 +106,7 @@ namespace MR
           TransformType& transform,
           MovingImageVoxelType& moving_image,
           TargetImageVoxelType& target_image,
-          Ptr<MovingMaskVoxelType>& moving_mask)
-          {
+          Ptr<MovingMaskVoxelType>& moving_mask) {
             typedef Image::BufferScratch<bool>::voxel_type BogusMaskType;
             run_masked<MetricType, TransformType, MovingImageVoxelType, TargetImageVoxelType, MovingMaskVoxelType, BogusMaskType >
               (metric, transform, moving_image, target_image, moving_mask, NULL);
@@ -116,31 +120,35 @@ namespace MR
           MovingImageVoxelType& moving_image,
           TargetImageVoxelType& target_image,
           Ptr<MovingMaskVoxelType>&  moving_mask,
-          Ptr<TargetMaskVoxelType>& target_mask)
-          {
+          Ptr<TargetMaskVoxelType>& target_mask) {
             if (max_iter_.size() == 1)
-              max_iter_.resize (resolution_.size(), max_iter_[0]);
-            else if (max_iter_.size() != resolution_.size())
+              max_iter_.resize (scale_factor_.size(), max_iter_[0]);
+            else if (max_iter_.size() != scale_factor_.size())
               throw Exception ("the max number of iterations needs to be defined for each multi-resolution level");
-            for (size_t level = 0; level < resolution_.size(); ++level) {
-              if (resolution_[level] <= 0 || resolution_[level] > 1)
+            for (size_t level = 0; level < scale_factor_.size(); ++level) {
+              if (scale_factor_[level] <= 0 || scale_factor_[level] > 1)
                 throw Exception ("the scale factor for each multi-resolution level must be between 0 and 1");
             }
+
+            if (init_type_ == Transform::Init::mass)
+              Transform::Init::initialise_using_image_mass (moving_image, target_image, transform);
+            else if (init_type_ == Transform::Init::centre)
+              Transform::Init::initialise_using_image_centres (moving_image, target_image, transform);
 
             typedef Image::Interp::Linear<Image::BufferScratch<float>::voxel_type > MovingImageInterpolatorType;
 
             typedef Metric::Params<TransformType,
-                                   MovingImageInterpolatorType,
-                                   Image::BufferScratch<float>::voxel_type,
-                                   Image::Interp::Nearest<MovingMaskVoxelType >,
-                                   Image::Interp::Nearest<TargetMaskVoxelType > > ParamType;
+                                    MovingImageInterpolatorType,
+                                    Image::BufferScratch<float>::voxel_type,
+                                    Image::Interp::Nearest<MovingMaskVoxelType >,
+                                    Image::Interp::Nearest<TargetMaskVoxelType > > ParamType;
 
-            for (size_t level = 0; level < resolution_.size(); level++) {
-              CONSOLE ("multi-resolution level " + str(level + 1) + ", scale factor: " + str(resolution_[level]));
+            for (size_t level = 0; level < scale_factor_.size(); level++) {
+              CONSOLE ("multi-resolution level " + str(level + 1) + ", scale factor: " + str(scale_factor_[level]));
 
               Image::Filter::Resize target_resize_filter (target_image);
               target_resize_filter.set_interp_type(1);
-              target_resize_filter.set_scale_factor (resolution_[level]);
+              target_resize_filter.set_scale_factor (scale_factor_[level]);
               Image::BufferScratch<float> target (target_resize_filter.info());
               Image::BufferScratch<float>::voxel_type target_vox (target);
               Image::BufferScratch<float> target_temp (target_resize_filter.info());
@@ -151,7 +159,7 @@ namespace MR
 
               Image::Filter::Resize moving_resize_filter (moving_image);
               moving_resize_filter.set_interp_type(1);
-              moving_resize_filter.set_scale_factor (resolution_[level]);
+              moving_resize_filter.set_scale_factor (scale_factor_[level]);
               Image::BufferScratch<float> temp (moving_resize_filter.info());
               Image::BufferScratch<float>::voxel_type moving_temp_vox (temp);
               Image::Filter::GaussianSmooth moving_smooth_filter (moving_temp_vox);
@@ -185,7 +193,8 @@ namespace MR
 
       protected:
         std::vector<int> max_iter_;
-        std::vector<float> resolution_;
+        std::vector<float> scale_factor_;
+        Transform::Init::InitType init_type_;
     };
 
   }
