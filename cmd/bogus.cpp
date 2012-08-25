@@ -22,10 +22,9 @@
 
 #include "app.h"
 #include "debug.h"
-#include "image/buffer_preload.h"
-#include "image/buffer_scratch.h"
-#include "image/voxel.h"
-#include "image/copy.h"
+#include "math/matrix.h"
+#include "math/gradient_descent.h"
+#include "math/check_gradient.h"
 
 MRTRIX_APPLICATION
 
@@ -33,59 +32,80 @@ using namespace MR;
 using namespace App;
 
 
-App::OptionGroup special_options () 
-{
-  using namespace App;
-  OptionGroup specific_options = OptionGroup ("My options")
-    + Option ("specific", "some description")
-    +  Argument ("arg")
-
-    + Option ("special", "more text")
-    +   Argument ("x").type_image_in()
-    +   Argument ("y").type_file();
-
-  return specific_options;
-}
-
-
 
 void usage () {
-
-  AUTHOR = "Joe Bloggs";
-
-  VERSION[0] = 1;
-  VERSION[1] = 4;
-  VERSION[2] = 3;
-
-  COPYRIGHT = "whatever you want";
 
   DESCRIPTION 
     + "this is used to test stuff. I need to write a lot of stuff here to pad this out and check that the wrapping functionality works as advertised... Seems to do an OK job so far. Wadaya reckon?"
     + "some more details here.";
-
-  ARGUMENTS
-    + Argument ("input", "the input image.");
-
-  OPTIONS
-    + Option ("poo", "its description")
-    + Argument ("arg1").type_integer (0,1,10)
-    + Argument ("arg2")
-
-    + Option ("crap", "another description")
-    + Argument ("stuff").type_float (-1.0, 0.0, 1.0)
-
-    + special_options();
 }
 
 
+typedef double value_type;
+
+class Cost {
+  public:
+    Cost () : M(3,2), b(3), y(3) {
+      M.zero();
+      M(0,0) = 1.0;
+      M(1,1) = 2.0;
+      M(2,1) = 5.0;
+      VAR (M);
+
+      b[0] = 2.0;
+      b[1] = -1.0;
+      b[2] = 5.0;
+
+
+      VAR (b);
+    }
+
+
+    typedef ::value_type value_type;
+
+    size_t size () const { return 2; }
+
+    value_type init (Math::Vector<value_type>& x) const {
+      x = 0.0;
+      return 1.0;
+    }
+
+    value_type operator() (const Math::Vector<value_type>& x, Math::Vector<value_type>& g) const {
+
+      Math::mult (y, M, x);
+      y -= b;
+      value_type cost = Math::norm2 (y);
+
+      Math::mult (g, value_type(0.0), value_type(2.0), CblasTrans, M, y);
+
+      return cost;
+    }
+
+  protected:
+    Math::Matrix<value_type> M;
+    Math::Vector<value_type> b;
+    mutable Math::Vector<value_type> y;
+};
 
 
 
 void run () 
 {
-  std::vector<std::string> items = split (argument[0], ", \t\n", true);
-  for (size_t i = 0; i < items.size(); ++i)
-    VAR (items[i]);
+  Cost cost;
+  Math::Vector<value_type> x (cost.size());
+  cost.init (x);
+  Math::check_function_gradient (cost, x, 1.0e-4, true);
+
+  Math::GradientDescent<Cost> optim (cost);
+
+  Math::Vector<value_type> preconditioner (2);
+  preconditioner[0] = 1.0;
+  preconditioner[1] = 1.0/29.0;
+
+  optim.precondition (preconditioner);
+  optim.run ();
+  VAR (optim.state());
+  VAR (optim.function_evaluations());
 
 }
 

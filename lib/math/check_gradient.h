@@ -73,7 +73,7 @@ namespace MR {
           if (show_hessian)
             hessian.column(n) -= g;
 
-          error[n] = g0[n] ? Math::abs (g_fd[n]/g0[n] - 1.0) : 0.0;
+          error[n] = g0[n] ? 0.5 * Math::abs(g_fd[n]-g0[n]) / (Math::abs(g_fd[n]) + Math::abs(g0[n])) : 0.0;
         }
 
         CONSOLE ("gradient by central finite difference = [ " + str(g_fd) + "]");
