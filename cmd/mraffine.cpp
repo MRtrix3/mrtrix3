@@ -27,6 +27,7 @@
 #include "image/filter/reslice.h"
 #include "image/interp/cubic.h"
 #include "image/transform.h"
+#include "image/adapter/reslice.h"
 #include "registration/linear_registration.h"
 #include "registration/metric/mean_squared_metric.h"
 #include "registration/transform/affine.h"
@@ -65,20 +66,20 @@ void usage ()
                      "using comma separated values. For example to -scale 0.25,0.5,1. (Default: 0.5,1)")
   + Argument ("factor").type_sequence_float ()
 
-  + Option ("transformation", "the transformation type. Valid choices are: affine and rigid."
+  + Option ("transform", "the transformation type. Valid choices are: affine and rigid."
       "(Default: affine)")
-      + Argument ("type").type_choice (transformation_choices)
+  + Argument ("type").type_choice (transformation_choices)
 
   + Option ("tmask", "a mask to define the target image region to use for optimisation.")
-      + Argument ("filename").type_image_in ()
+  + Argument ("filename").type_image_in ()
 
   + Option ("mmask", "a mask to define the moving image region to use for optimisation.")
-      + Argument ("filename").type_image_in ()
+  + Argument ("filename").type_image_in ()
 
   + Option ("init", "initialise the centre of rotation and initial translation. Valid choices are: mass "
                     "(which uses the image center of mass), centre (geometric image centre) or none. "
                     "The default is mass (which may not be suited for multi-modality registration).")
-      +Argument ("type").type_choice (initialisation_choices);
+  +Argument ("type").type_choice (initialisation_choices);
 }
 
 void run ()
@@ -112,9 +113,6 @@ void run ()
       if (scale_factors[i] < 0)
         throw Exception ("the multi-resolution scale factor must be positive");
   }
-
-  Metric::MeanSquared metric;
-  Transform::Affine<double> affine;
 
   Ptr<Image::BufferPreload<bool> > tmask_data;
   Ptr<Image::BufferPreload<bool>::voxel_type> tmask_voxel;
@@ -154,11 +152,26 @@ void run ()
       break;
   }
 
-  registration.run_masked (metric, affine, moving_voxel, target_voxel, mmask_voxel, tmask_voxel);
+  Metric::MeanSquared metric;
 
-  affine.get_transform().save (argument[2]);
-  Math::Matrix<double> inv;
-  Math::LU::inv (inv, affine.get_transform());
+  int transform_type = 0;
+  opt = get_options ("transform");
+  if (opt.size())
+    transform_type = opt[0][0];
 
-  Image::Filter::reslice<Image::Interp::Cubic> (moving_voxel, output_voxel, inv);
+  Math::Matrix <double> final_transform;
+  if (transform_type) {
+    Transform::Rigid<double> rigid;
+    registration.run_masked (metric, rigid, moving_voxel, target_voxel, mmask_voxel, tmask_voxel);
+    rigid.get_transform (final_transform);
+    final_transform.save (argument[2]);
+    Image::Filter::reslice<Image::Interp::Cubic> (moving_voxel, output_voxel, final_transform, Image::Adapter::AutoOverSample, 0.0);
+  } else {
+//    Transform::Affine<double> affine;
+//    registration.run_masked (metric, affine, moving_voxel, target_voxel, mmask_voxel, tmask_voxel);
+//    affine.get_transform (final_transform);
+//    final_transform.save (argument[2]);
+//    Image::Filter::reslice<Image::Interp::Cubic> (moving_voxel, output_voxel, final_transform, Image::Adapter::AutoOverSample, 0.0);
+  }
+
 }

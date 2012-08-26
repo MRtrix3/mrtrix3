@@ -34,6 +34,7 @@
 #include "registration/transform/initialiser.h"
 #include "math/matrix.h"
 #include "math/gradient_descent.h"
+#include "registration/transform/rigid.h"
 
 namespace MR
 {
@@ -47,33 +48,33 @@ namespace MR
 
         LinearRegistration () :
           max_iter_ (1, 300),
-          scale_factor_ (2) {
+          scale_factor_ (2),
+          init_type_ (Transform::Init::mass) {
           scale_factor_[0] = 0.5;
           scale_factor_[1] = 1;
         }
 
-
         LinearRegistration (const std::vector<int>& max_iter,
-                            const std::vector<float>& resolution) :
+                            const std::vector<float>& scale_factor) :
             max_iter_ (max_iter),
-            scale_factor_ (resolution),
+            scale_factor_ (scale_factor),
             init_type_ (Transform::Init::mass) { }
-
 
         void set_max_iter (const std::vector<int>& max_iter) {
           max_iter_ = max_iter;
         }
 
-
         void set_scale_factor (const std::vector<float>& scale_factor) {
           scale_factor_ = scale_factor;
         }
-
 
         void set_init_type (Transform::Init::InitType type) {
           init_type_ = type;
         }
 
+        void set_transform_type (Transform::Init::InitType type) {
+          init_type_ = type;
+        }
 
         template <class MetricType, class TransformType, class MovingImageVoxelType, class TargetImageVoxelType>
         void run (
@@ -85,7 +86,6 @@ namespace MR
             run_masked<MetricType, TransformType, MovingImageVoxelType, TargetImageVoxelType, BogusMaskType, BogusMaskType >
               (metric, transform, moving_image, target_image, NULL, NULL);
           }
-
 
         template <class MetricType, class TransformType, class MovingImageVoxelType, class TargetImageVoxelType, class TargetMaskVoxelType>
         void run_target_mask (
@@ -111,7 +111,6 @@ namespace MR
             run_masked<MetricType, TransformType, MovingImageVoxelType, TargetImageVoxelType, MovingMaskVoxelType, BogusMaskType >
               (metric, transform, moving_image, target_image, moving_mask, NULL);
           }
-
 
         template <class MetricType, class TransformType, class MovingImageVoxelType, class TargetImageVoxelType, class MovingMaskVoxelType, class TargetMaskVoxelType>
         void run_masked (
@@ -146,37 +145,25 @@ namespace MR
             for (size_t level = 0; level < scale_factor_.size(); level++) {
               CONSOLE ("multi-resolution level " + str(level + 1) + ", scale factor: " + str(scale_factor_[level]));
 
+              Image::Filter::Resize moving_resize_filter (moving_image);
               Image::Filter::Resize target_resize_filter (target_image);
-              target_resize_filter.set_interp_type(1);
+              moving_resize_filter.set_scale_factor (scale_factor_[level]);
+              moving_resize_filter.set_interp_type (1);
+              Image::BufferScratch<float> moving (moving_resize_filter.info());
+              Image::BufferScratch<float>::voxel_type moving_vox (moving);
+              MovingImageInterpolatorType moving_interp (moving_vox);
+
               target_resize_filter.set_scale_factor (scale_factor_[level]);
+              target_resize_filter.set_interp_type (1);
               Image::BufferScratch<float> target (target_resize_filter.info());
               Image::BufferScratch<float>::voxel_type target_vox (target);
-              Image::BufferScratch<float> target_temp (target_resize_filter.info());
-              Image::BufferScratch<float>::voxel_type target_temp_vox (target_temp);
-              Image::Filter::GaussianSmooth target_smooth_filter (target_temp_vox);
-              Image::BufferScratch<float> target_smoothed (target_smooth_filter.info());
-              Image::BufferScratch<float>::voxel_type target_smoothed_vox (target_smoothed);
-
-              Image::Filter::Resize moving_resize_filter (moving_image);
-              moving_resize_filter.set_interp_type(1);
-              moving_resize_filter.set_scale_factor (scale_factor_[level]);
-              Image::BufferScratch<float> temp (moving_resize_filter.info());
-              Image::BufferScratch<float>::voxel_type moving_temp_vox (temp);
-              Image::Filter::GaussianSmooth moving_smooth_filter (moving_temp_vox);
-              Image::BufferScratch<float> moving_smoothed (moving_smooth_filter.info());
-              Image::BufferScratch<float>::voxel_type moving_smoothed_vox (moving_smoothed);
               {
                 LogLevelLatch log_level (0);
-                target_resize_filter (target_image, target_temp_vox);
-                target_smooth_filter (target_temp_vox, target_smoothed_vox);
-                moving_resize_filter (moving_image, moving_temp_vox);
-                moving_smooth_filter (moving_temp_vox, moving_smoothed_vox);
+                moving_resize_filter (moving_image, moving_vox);
+                target_resize_filter (target_image, target_vox);
               }
-
-              MovingImageInterpolatorType moving_interp (moving_smoothed_vox);
-              metric.set_moving_image (moving_smoothed_vox);
-
-              ParamType parameters (transform, moving_interp, target_smoothed_vox);
+              metric.set_moving_image (moving_vox);
+              ParamType parameters (transform, moving_interp, target_vox);
 
               if (target_mask)
                 parameters.target_mask_interp = new Image::Interp::Nearest<TargetMaskVoxelType> (*target_mask);
@@ -184,8 +171,12 @@ namespace MR
                 parameters.moving_mask_interp = new Image::Interp::Nearest<MovingMaskVoxelType> (*moving_mask);
 
               Metric::Evaluate<MetricType, ParamType> evaluate (metric, parameters);
-              Math::GradientDescent<Metric::Evaluate<MetricType, ParamType> > optim (evaluate);
-
+              typedef Transform::VersorUpdate UpdateType;
+              UpdateType update;
+              Math::GradientDescent<Metric::Evaluate<MetricType, ParamType>, UpdateType > optim (evaluate, update);
+              Math::Vector<typename TransformType::ParameterType> optimiser_weights;
+              parameters.transformation.get_optimiser_weights (optimiser_weights);
+              optim.precondition (optimiser_weights);
               optim.run (max_iter_[level]);
               parameters.transformation.set_parameter_vector (optim.state());
             }
@@ -195,8 +186,8 @@ namespace MR
         std::vector<int> max_iter_;
         std::vector<float> scale_factor_;
         Transform::Init::InitType init_type_;
-    };
 
+    };
   }
 }
 

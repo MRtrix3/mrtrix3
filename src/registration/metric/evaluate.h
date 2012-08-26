@@ -53,17 +53,17 @@ namespace MR
               ThreadKernel<MetricType, ParamType> kernel (metric_, params_, overall_cost_function, gradient);
               Image::ThreadedLoop threaded_loop (params_.target_image, 2, 0, 3);
               threaded_loop.run (kernel);
-              gradient *= params_.transformation.get_optimiser_weights();
+//              gradient *= params_.transformation.get_optimiser_weights();
 
               return overall_cost_function;
             }
 
             size_t size() {
-              return params_.transformation.get_parameter_vector().size();
+              return params_.transformation.size();
             }
 
             double init (Math::Vector<TransformParamType>& x) {
-              x = params_.transformation.get_parameter_vector();
+              params_.transformation.get_parameter_vector (x);
               return 1.0; // return init step size. TODO confirm this is appropriate;
             }
 

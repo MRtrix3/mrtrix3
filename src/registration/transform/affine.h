@@ -45,11 +45,11 @@ namespace MR
        * The translation also should be initialised as moving image centre minus the target image centre.
        *
        */
-      template <typename T = float>
+      template <typename ValueType = float>
       class Affine  {
         public:
 
-          typedef T ParameterType;
+          typedef ValueType ParameterType;
 
           Affine () :
             matrix_(3,3),
@@ -75,10 +75,10 @@ namespace MR
           }
 
           template <class PointType>
-          void get_jacobian_wrt_params (const PointType& p, Matrix<T>& jacobian) const {
+          void get_jacobian_wrt_params (const PointType& p, Matrix<ValueType>& jacobian) const {
             jacobian.resize(3,12);
             jacobian.zero();
-            Vector<T> v (3);
+            Vector<ValueType> v (3);
             v[0] = p[0] - centre_[0];
             v[1] = p[1] - centre_[1];
             v[2] = p[2] - centre_[2];
@@ -93,27 +93,26 @@ namespace MR
             }
           }
 
-          void set_transform (Matrix<T>& transform) {
-            for (size_t row = 0; row < 3; row++) {
-              for (size_t col = 0; col < 3; col++)
-                matrix_(row, col) = transform(row, col);
-              translation_[row] = transform(row, 3);
-            }
-            compute_offset();
-          }
+//          void set_transform (Matrix<T>& transform) {
+//            for (size_t row = 0; row < 3; row++) {
+//              for (size_t col = 0; col < 3; col++)
+//                matrix_(row, col) = transform(row, col);
+//              translation_[row] = transform(row, 3);
+//            }
+//            compute_offset();
+//          }
 
-          Matrix<T> get_transform () const {
-            Matrix<T> transform(4,4);
+          void get_transform (Matrix<ValueType>& transform) const {
+            transform.allocate (4,4);
             transform.identity();
             for (size_t row = 0; row < 3; row++) {
               for (size_t col = 0; col < 3; col++)
                 transform(row,col) = matrix_(row,col);
               transform(row, 3) = offset_[row];
             }
-            return transform;
           }
 
-          void set_parameter_vector (const Math::Vector<T>& param_vector) {
+          void set_parameter_vector (const Math::Vector<ValueType>& param_vector) {
             size_t index = 0;
             for (size_t row = 0; row < 3; row++) {
               for (size_t col = 0; col < 3; col++)
@@ -124,8 +123,8 @@ namespace MR
             compute_offset();
           }
 
-          Vector<T> get_parameter_vector () const {
-            Vector<T> param_vector(12);
+          void get_parameter_vector (Vector<ValueType>& param_vector) const {
+            param_vector.allocate (12);
             size_t index = 0;
             for (size_t row = 0; row < 3; row++) {
               for (size_t col = 0; col < 3; col++)
@@ -133,39 +132,41 @@ namespace MR
             }
             for (size_t dim = 0; dim < 3; dim++)
               param_vector[index++] = translation_[dim];
-            return param_vector;
           }
 
-          void set_matrix (Matrix<T>& matrix) {
-            matrix_ = matrix;
+          void set_matrix (const Matrix<ValueType>& matrix) {
+            for (size_t row = 0; row < 3; row++) {
+              for (size_t col = 0; col < 3; col++)
+                 matrix_(row, col) = matrix (row, col);
+            }
             compute_offset();
           }
 
-          void get_matrix (Matrix<T>& matrix) const {
-            matrix.allocate(3, 3);
-            for (size_t i = 0; i < 3; i++)
-              for (size_t j = 0; j < 3; j++)
-                matrix(i, j) = matrix_(i, j);
+          void get_matrix (Matrix<ValueType>& matrix) const {
+            for (size_t row = 0; row < 3; row++) {
+              for (size_t col = 0; col < 3; col++)
+                 matrix(row, col) = matrix_(row, col);
+            }
           }
 
-          void set_translation (Vector<T>& translation) {
+          void set_translation (Vector<ValueType>& translation) {
             translation_ = translation;
             compute_offset();
           }
 
-          void get_translation (Vector<T>& translation) const {
+          void get_translation (Vector<ValueType>& translation) const {
             translation.allocate(3);
             translation[0] = translation_[0];
             translation[1] = translation_[1];
             translation[2] = translation_[2];
           }
 
-          void set_centre(Vector<T>& centre) {
+          void set_centre (Vector<ValueType>& centre) {
             centre_ = centre;
             compute_offset();
           }
 
-          void get_centre (Vector<T>& centre) const {
+          void get_centre (Vector<ValueType>& centre) const {
             centre.allocate(3);
             centre[0] = centre_[0];
             centre[1] = centre_[1];
@@ -176,13 +177,15 @@ namespace MR
             return 12;
           }
 
-          void set_optimiser_weights (Vector<T>& optimiser_weights) {
+          void set_optimiser_weights (Vector<ValueType>& optimiser_weights) {
             assert(size() == optimiser_weights.size());
               optimiser_weights_ = optimiser_weights;
           }
 
-          const Vector<T>& get_optimiser_weights () const {
-            return optimiser_weights_;
+          void get_optimiser_weights (Vector<ValueType>& optimiser_weights) const {
+            optimiser_weights.allocate (optimiser_weights_.size());
+            for (size_t i = 0; i < optimiser_weights_.size(); i++)
+              optimiser_weights[i] = optimiser_weights_[i];
           }
 
         protected:
@@ -196,11 +199,11 @@ namespace MR
           }
 
 
-          Matrix<T> matrix_;
-          Vector<T> translation_;
-          Vector<T> centre_;
-          Vector<T> offset_;
-          Vector<T> optimiser_weights_; // To weight updates to matrix parameters differently to translation
+          Matrix<ValueType> matrix_;
+          Vector<ValueType> translation_;
+          Vector<ValueType> centre_;
+          Vector<ValueType> offset_;
+          Vector<ValueType> optimiser_weights_;
 
       };
       //! @}
