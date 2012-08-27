@@ -64,8 +64,9 @@ namespace MR
             }
 
             Point<float> moving_point;
+            Math::Vector<double> param;
+            params_.transformation.get_parameter_vector(param);
             params_.transformation.transform (moving_point, target_point);
-
             if (params_.moving_mask_interp) {
               params_.moving_mask_interp->scanner (moving_point);
               if (!params_.moving_mask_interp->value())
@@ -73,7 +74,7 @@ namespace MR
             }
             Image::voxel_assign (params_.target_image, iter);
             params_.moving_image_interp.scanner (moving_point);
-            if (!params_.moving_image_interp)
+            if (params_.moving_image_interp.is_out_of_bounds())
               return;
             cost_function_ += metric_ (params_, target_point, moving_point, gradient_);
           }

@@ -34,7 +34,6 @@
 #include "registration/transform/initialiser.h"
 #include "math/matrix.h"
 #include "math/gradient_descent.h"
-#include "registration/transform/rigid.h"
 
 namespace MR
 {
@@ -137,10 +136,10 @@ namespace MR
             typedef Image::Interp::Linear<Image::BufferScratch<float>::voxel_type > MovingImageInterpolatorType;
 
             typedef Metric::Params<TransformType,
-                                    MovingImageInterpolatorType,
-                                    Image::BufferScratch<float>::voxel_type,
-                                    Image::Interp::Nearest<MovingMaskVoxelType >,
-                                    Image::Interp::Nearest<TargetMaskVoxelType > > ParamType;
+                                   MovingImageInterpolatorType,
+                                   Image::BufferScratch<float>::voxel_type,
+                                   Image::Interp::Nearest<MovingMaskVoxelType >,
+                                   Image::Interp::Nearest<TargetMaskVoxelType > > ParamType;
 
             for (size_t level = 0; level < scale_factor_.size(); level++) {
               CONSOLE ("multi-resolution level " + str(level + 1) + ", scale factor: " + str(scale_factor_[level]));
@@ -171,9 +170,8 @@ namespace MR
                 parameters.moving_mask_interp = new Image::Interp::Nearest<MovingMaskVoxelType> (*moving_mask);
 
               Metric::Evaluate<MetricType, ParamType> evaluate (metric, parameters);
-              typedef Transform::VersorUpdate UpdateType;
-              UpdateType update;
-              Math::GradientDescent<Metric::Evaluate<MetricType, ParamType>, UpdateType > optim (evaluate, update);
+              Math::GradientDescent<Metric::Evaluate<MetricType, ParamType>,
+                                    typename TransformType::UpdateType > optim (evaluate, *transform.get_gradient_decent_updator());
               Math::Vector<typename TransformType::ParameterType> optimiser_weights;
               parameters.transformation.get_optimiser_weights (optimiser_weights);
               optim.precondition (optimiser_weights);

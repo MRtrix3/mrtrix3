@@ -167,11 +167,12 @@ void run ()
     final_transform.save (argument[2]);
     Image::Filter::reslice<Image::Interp::Cubic> (moving_voxel, output_voxel, final_transform, Image::Adapter::AutoOverSample, 0.0);
   } else {
-//    Transform::Affine<double> affine;
-//    registration.run_masked (metric, affine, moving_voxel, target_voxel, mmask_voxel, tmask_voxel);
-//    affine.get_transform (final_transform);
-//    final_transform.save (argument[2]);
-//    Image::Filter::reslice<Image::Interp::Cubic> (moving_voxel, output_voxel, final_transform, Image::Adapter::AutoOverSample, 0.0);
+//    CONSOLE ("Performing affine registration");
+    Transform::Affine<double> affine;
+    registration.run_masked (metric, affine, moving_voxel, target_voxel, mmask_voxel, tmask_voxel);
+    affine.get_transform (final_transform);
+    final_transform.save (argument[2]);
+    Image::Filter::reslice<Image::Interp::Cubic> (moving_voxel, output_voxel, final_transform, Image::Adapter::AutoOverSample, 0.0);
   }
 
 }

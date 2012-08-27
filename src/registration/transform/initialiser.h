@@ -69,13 +69,14 @@ namespace MR
           }
 
         template <class MovingVoxelType,
-                   class TargetVoxelType,
-                   class TransformType>
+                  class TargetVoxelType,
+                  class TransformType>
           void initialise_using_image_mass (const MovingVoxelType& moving,
                                             const TargetVoxelType& target,
                                             TransformType& transform)
           {
             Math::Vector<typename TransformType::ParameterType > target_centre_of_mass (3);
+            target_centre_of_mass.zero();
             double target_mass = 0;
             MovingVoxelType target_voxel (target);
             Image::Transform target_transform (target_voxel);
@@ -89,6 +90,7 @@ namespace MR
             }
 
             Math::Vector<typename TransformType::ParameterType> moving_centre_of_mass (3);
+            moving_centre_of_mass.zero();
             double moving_mass = 0;
             Image::Transform moving_transform (moving);
             MovingVoxelType moving_voxel (moving);
@@ -100,7 +102,6 @@ namespace MR
                 moving_centre_of_mass[dim] += moving_scanner[dim] * moving_voxel.value();
               }
             }
-
             for (size_t dim = 0; dim < 3; dim++) {
               target_centre_of_mass[dim] /= target_mass;
               moving_centre_of_mass[dim] /= moving_mass;

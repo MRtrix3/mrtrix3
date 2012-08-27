@@ -48,13 +48,14 @@ namespace MR
 
               double overall_cost_function = 0.0;
               gradient.zero();
-              params_.transformation.set_parameter_vector(x);
-
-              ThreadKernel<MetricType, ParamType> kernel (metric_, params_, overall_cost_function, gradient);
-              Image::ThreadedLoop threaded_loop (params_.target_image, 2, 0, 3);
-              threaded_loop.run (kernel);
-//              gradient *= params_.transformation.get_optimiser_weights();
-
+              params_.transformation.set_parameter_vector (x);
+              Math::Vector<double> vec;
+              params_.transformation.get_parameter_vector (vec);
+              {
+                ThreadKernel<MetricType, ParamType> kernel (metric_, params_, overall_cost_function, gradient);
+                Image::ThreadedLoop threaded_loop (params_.target_image, 2, 0, 3);
+                threaded_loop.run (kernel);
+              }
               return overall_cost_function;
             }
 
