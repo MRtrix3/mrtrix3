@@ -180,12 +180,12 @@ extern "C" {
     short qform_code ;   /*!< NIFTI_XFORM_* code.   */  /*-- all ANALYZE 7.5 ---*/
     short sform_code ;   /*!< NIFTI_XFORM_* code.   */  /*   fields below here  */
     /*   are replaced       */
-    float quatern_b ;    /*!< Quaternion b param.   */
-    float quatern_c ;    /*!< Quaternion c param.   */
-    float quatern_d ;    /*!< Quaternion d param.   */
-    float qoffset_x ;    /*!< Quaternion x shift.   */
-    float qoffset_y ;    /*!< Quaternion y shift.   */
-    float qoffset_z ;    /*!< Quaternion z shift.   */
+    float quatern_b ;    /*!< Versor b param.   */
+    float quatern_c ;    /*!< Versor c param.   */
+    float quatern_d ;    /*!< Versor d param.   */
+    float qoffset_x ;    /*!< Versor x shift.   */
+    float qoffset_y ;    /*!< Versor y shift.   */
+    float qoffset_z ;    /*!< Versor z shift.   */
 
     float srow_x[4] ;    /*!< 1st row affine transform.   */
     float srow_y[4] ;    /*!< 2nd row affine transform.   */

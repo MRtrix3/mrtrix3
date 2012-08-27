@@ -25,7 +25,7 @@
 #include "file/nifti1_utils.h"
 #include "math/math.h"
 #include "math/permutation.h"
-#include "math/quaternion.h"
+#include "math/versor.h"
 #include "image/header.h"
 #include "image/stride.h"
 
@@ -129,7 +129,7 @@ namespace MR
         if (! (dtype.is (DataType::Bit) || dtype.is (DataType::UInt8) || dtype.is (DataType::Int8))) {
           if (is_BE)
             dtype.set_flag (DataType::BigEndian);
-          else 
+          else
             dtype.set_flag (DataType::LittleEndian);
         }
 
@@ -152,7 +152,7 @@ namespace MR
         H.intensity_scale() = get<float32> (&NH.scl_slope, is_BE);
         if (finite (H.intensity_scale()) && H.intensity_scale() != 0.0) {
           H.intensity_offset() = get<float32> (&NH.scl_inter, is_BE);
-          if (!finite (H.intensity_offset())) 
+          if (!finite (H.intensity_offset()))
             H.intensity_offset() = 0.0;
         }
         else {
@@ -211,43 +211,30 @@ namespace MR
             M (2,2) /= H.vox (2);
           }
           else if (get<int16_t> (&NH.qform_code, is_BE)) {
-            Math::Quaternion<float> Q (get<float32> (&NH.quatern_b, is_BE), get<float32> (&NH.quatern_c, is_BE), get<float32> (&NH.quatern_d, is_BE));
-            float transform[9];
-            Q.to_matrix (transform);
-            Math::Matrix<float>& M (H.transform());
-            M.allocate (4,4);
+            Math::Versor<float> Q (get<float32> (&NH.quatern_b, is_BE), get<float32> (&NH.quatern_c, is_BE), get<float32> (&NH.quatern_d, is_BE));
+            H.transform().allocate(4,4);
+            Q.to_matrix (H.transform());
 
-            M (0,0) = transform[0];
-            M (0,1) = transform[1];
-            M (0,2) = transform[2];
 
-            M (1,0) = transform[3];
-            M (1,1) = transform[4];
-            M (1,2) = transform[5];
+            H.transform()(0,3) = get<float32> (&NH.qoffset_x, is_BE);
+            H.transform()(1,3) = get<float32> (&NH.qoffset_y, is_BE);
+            H.transform()(2,3) = get<float32> (&NH.qoffset_z, is_BE);
 
-            M (2,0) = transform[6];
-            M (2,1) = transform[7];
-            M (2,2) = transform[8];
-
-            M (0,3) = get<float32> (&NH.qoffset_x, is_BE);
-            M (1,3) = get<float32> (&NH.qoffset_y, is_BE);
-            M (2,3) = get<float32> (&NH.qoffset_z, is_BE);
-
-            M (3,0) = M (3,1) = M (3,2) = 0.0;
-            M (3,3) = 1.0;
+            H.transform()(3,0) = H.transform()(3,1) = H.transform()(3,2) = 0.0;
+            H.transform()(3,3) = 1.0;
 
             // qfac:
             float qfac = get<float32> (&NH.pixdim[0], is_BE);
             if (qfac != 0.0) {
-              M (0,2) *= qfac;
-              M (1,2) *= qfac;
-              M (2,2) *= qfac;
+              H.transform()(0,2) *= qfac;
+              H.transform()(1,2) *= qfac;
+              H.transform()(2,2) *= qfac;
             }
           }
         }
         else {
           H.transform().clear();
-          if (!File::Config::get_bool ("Analyse.LeftToRight", true)) 
+          if (!File::Config::get_bool ("Analyse.LeftToRight", true))
             H.stride(0) = -H.stride (0);
           if (!right_left_warning_issued) {
             INFO ("assuming Analyse images are encoded " + std::string (H.stride (0) >0 ? "left to right" : "right to left"));

@@ -29,7 +29,7 @@
 
 #include "point.h"
 #include "math/legendre.h"
-#include "math/quaternion.h"
+#include "math/versor.h"
 #include "math/matrix.h"
 #include "math/least_squares.h"
 
@@ -42,7 +42,7 @@ namespace MR
   {
     namespace SH
     {
-      
+
       extern const char* encoding_description;
 
       inline size_t NforL (int lmax)
@@ -68,7 +68,7 @@ namespace MR
         return N ? 2 * floor<size_t> ( (sqrt (float (1+8*N))-3.0) /4.0) : 0;
       }
 
-      template <typename ValueType> 
+      template <typename ValueType>
         Math::Matrix<ValueType>& init_transform (Math::Matrix<ValueType>& SHT, const Math::Matrix<ValueType>& dirs, int lmax)
         {
           if (dirs.columns() != 2) throw Exception ("direction matrix should have 2 columns: [ azimuth elevation ]");
@@ -145,8 +145,8 @@ namespace MR
 
 
 
-      template <typename ValueType, typename CoefType> 
-        inline ValueType value (const CoefType& coefs, ValueType cos_elevation, ValueType azimuth, int lmax) 
+      template <typename ValueType, typename CoefType>
+        inline ValueType value (const CoefType& coefs, ValueType cos_elevation, ValueType azimuth, int lmax)
         {
           ValueType amplitude = 0.0;
           ValueType AL [lmax+1];
@@ -168,27 +168,27 @@ namespace MR
         }
 
 
-      template <typename ValueType, typename CoefType> 
+      template <typename ValueType, typename CoefType>
         inline ValueType value (const CoefType& coefs, const Point<ValueType>& unit_dir, int lmax)
         {
           return value (coefs, unit_dir[2], atan2 (unit_dir[1], unit_dir[0]), lmax);
         }
 
-      template <typename ValueType, typename CoefType> 
+      template <typename ValueType, typename CoefType>
         inline ValueType value (const CoefType* coefs, const Point<ValueType>& unit_dir, int lmax)
         {
           return value (coefs, unit_dir[2], atan2 (unit_dir[1], unit_dir[0]), lmax);
         }
 
 
-      template <typename ValueType> 
+      template <typename ValueType>
         inline Math::Vector<ValueType>& delta (Math::Vector<ValueType>& delta_vec, const Point<ValueType>& unit_dir, int lmax)
         {
           delta_vec.allocate (NforL (lmax));
           ValueType az = Math::atan2 (unit_dir[1], unit_dir[0]);
           ValueType AL [lmax+1];
           Legendre::Plm_sph (AL, lmax, 0, ValueType (unit_dir[2]));
-          for (int l = 0; l <= lmax; l+=2) 
+          for (int l = 0; l <= lmax; l+=2)
             delta_vec[index (l,0)] = AL[l];
           for (int m = 1; m <= lmax; m++) {
             Legendre::Plm_sph (AL, lmax, m, ValueType (unit_dir[2]));
@@ -216,14 +216,14 @@ namespace MR
           int lmax = 2*SH.size() +1;
           ValueType AL [lmax+1];
           Legendre::Plm_sph (AL, lmax, 0, ValueType (1.0));
-          for (size_t l = 0; l < SH.size(); l++) 
+          for (size_t l = 0; l < SH.size(); l++)
             RH[l] = SH[l]/ AL[2*l];
           return RH;
         }
 
 
 
-      template <typename ValueType> 
+      template <typename ValueType>
         inline Math::Vector<ValueType>& sconv (Math::Vector<ValueType>& C, const Math::Vector<ValueType>& RH, const Math::Vector<ValueType>& SH)
         {
           assert (SH.size() >= NforL (2* (RH.size()-1)));
@@ -253,7 +253,7 @@ namespace MR
           public:
             Rotate (Point<ValueType>& axis, ValueType angle, int l_max, const Math::Matrix<ValueType>& directions) :
               lmax (l_max) {
-                Quaternion<ValueType> Q (angle, axis);
+                Versor<ValueType> Q (angle, axis);
                 ValueType rotation_data [9];
                 Q.to_matrix (rotation_data);
                 const Matrix<ValueType> R (rotation_data, 3, 3);
@@ -320,7 +320,7 @@ namespace MR
 
 
 
-      template <typename ValueType> 
+      template <typename ValueType>
         inline Math::Vector<ValueType>& FA2SH (
             Math::Vector<ValueType>& SH, ValueType FA, ValueType ADC, ValueType bvalue, int lmax, int precision = 100)
       {
@@ -436,7 +436,7 @@ namespace MR
             set (f, Math::acos (unit_dir[2]));
             ValueType az = Math::atan2 (unit_dir[1], unit_dir[0]);
             ValueType v = 0.0;
-            for (int l = 0; l <= lmax; l+=2) 
+            for (int l = 0; l <= lmax; l+=2)
               v += get (f,l,0) * val[index (l,0)];
             for (int m = 1; m <= lmax; m++) {
               ValueType c = Math::cos (m*az);
@@ -458,7 +458,7 @@ namespace MR
 
 
 
-      template <typename ValueType> 
+      template <typename ValueType>
         inline ValueType get_peak (const ValueType* SH, int lmax, Point<ValueType>& unit_init_dir, PrecomputedAL<ValueType>* precomputer = NULL)
         {
           assert (unit_init_dir.valid());
@@ -499,10 +499,10 @@ namespace MR
 
 
 
-      template <typename ValueType> 
+      template <typename ValueType>
         inline void derivatives (
             const ValueType* SH, const int lmax, const ValueType elevation, const ValueType azimuth, ValueType& amplitude,
-            ValueType& dSH_del, ValueType& dSH_daz, ValueType& d2SH_del2, ValueType& d2SH_deldaz, 
+            ValueType& dSH_del, ValueType& dSH_daz, ValueType& d2SH_del2, ValueType& d2SH_deldaz,
             ValueType& d2SH_daz2, PrecomputedAL<ValueType>* precomputer)
         {
           ValueType sel = sin (elevation);
