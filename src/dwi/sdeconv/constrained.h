@@ -120,9 +120,9 @@ namespace MR
               if (opt.size())
                 niter = opt[0][0];
 
-              // TODO: fix SH basis...
-              norm_lambda = 0.0;
-              WARN ("disabling norm regularisation due to the non-orthogonality of SH basis (needs fixing...)");
+#ifndef USE_ORTHONORMAL_SH_BASIS
+              WARN ("norm regularisation requires use of orthonormal SH basis - compile with -DUSE_ORTHONORMAL_SH_BASIS");
+#endif
 
               init (response, filter, DW_dirs, HR_dirs, lmax);
             }
@@ -146,6 +146,7 @@ namespace MR
 
               Math::Vector<value_type> RH;
               Math::SH::SH2RH (RH, response);
+              RH.resize (1+lmax/2,0);
 
               // inverse sdeconv for initialisation:
               Math::Matrix<value_type> fconv;

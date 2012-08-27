@@ -23,6 +23,10 @@
 #ifndef __math_SH_h__
 #define __math_SH_h__
 
+#ifdef USE_ORTHONORMAL_SH_BASIS
+# warning using orthonormal SH basis
+#endif
+
 #include "point.h"
 #include "math/legendre.h"
 #include "math/quaternion.h"
@@ -77,8 +81,13 @@ namespace MR
             for (int m = 1; m <= lmax; m++) {
               Legendre::Plm_sph (AL, lmax, m, x);
               for (int l = ( (m&1) ? m+1 : m); l <= lmax; l+=2) {
+#ifdef USE_ORTHONORMAL_SH_BASIS
+                SHT (i,index (l, m)) = M_SQRT2 * AL[l]*cos (m*dirs (i,0));
+                SHT (i,index (l,-m)) = M_SQRT2 * AL[l]*sin (m*dirs (i,0));
+#else
                 SHT (i,index (l, m)) = AL[l]*cos (m*dirs (i,0));
                 SHT (i,index (l,-m)) = AL[l]*sin (m*dirs (i,0));
+#endif
               }
             }
           }
@@ -145,8 +154,13 @@ namespace MR
           for (int l = 0; l <= lmax; l+=2) amplitude += AL[l] * coefs[index (l,0)];
           for (int m = 1; m <= lmax; m++) {
             Legendre::Plm_sph (AL, lmax, m, ValueType (cos_elevation));
+#ifdef USE_ORTHONORMAL_SH_BASIS
+            ValueType c = M_SQRT2 * Math::cos (m*azimuth);
+            ValueType s = M_SQRT2 * Math::sin (m*azimuth);
+#else
             ValueType c = Math::cos (m*azimuth);
             ValueType s = Math::sin (m*azimuth);
+#endif
             for (int l = ( (m&1) ? m+1 : m); l <= lmax; l+=2)
               amplitude += AL[l] * (c * coefs[index (l,m)] + s * coefs[index (l,-m)]);
           }
@@ -178,11 +192,16 @@ namespace MR
             delta_vec[index (l,0)] = AL[l];
           for (int m = 1; m <= lmax; m++) {
             Legendre::Plm_sph (AL, lmax, m, ValueType (unit_dir[2]));
-            ValueType c = Math::cos (m*az);
-            ValueType s = Math::sin (m*az);
+#ifdef USE_ORTHONORMAL_SH_BASIS
+            ValueType c = 2.0 * Math::cos (m*az);
+            ValueType s = 2.0 * Math::sin (m*az);
+#else
+            ValueType c = M_SQRT2 * Math::cos (m*az);
+            ValueType s = M_SQRT2 * Math::sin (m*az);
+#endif
             for (int l = ( (m&1) ? m+1 : m); l <= lmax; l+=2) {
-              delta_vec[index (l,m)]  = 2.0 * AL[l] * c;
-              delta_vec[index (l,-m)] = 2.0 * AL[l] * s;
+              delta_vec[index (l,m)]  = AL[l] * c;
+              delta_vec[index (l,-m)] = AL[l] * s;
             }
           }
           return delta_vec;
@@ -516,8 +535,13 @@ namespace MR
           }
 
           for (int m = 1; m <= lmax; m++) {
+#ifdef USE_ORTHONORMAL_SH_BASIS
+            ValueType caz = M_SQRT2 * cos (m*azimuth);
+            ValueType saz = M_SQRT2 * sin (m*azimuth);
+#else
             ValueType caz = cos (m*azimuth);
             ValueType saz = sin (m*azimuth);
+#endif
             for (int l = ( (m&1) ? m+1 : m); l <= lmax; l+=2) {
               const ValueType& vp (SH[index (l,m)]);
               const ValueType& vm (SH[index (l,-m)]);
