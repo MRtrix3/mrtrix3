@@ -49,8 +49,6 @@ namespace MR
               double overall_cost_function = 0.0;
               gradient.zero();
               params_.transformation.set_parameter_vector (x);
-              Math::Vector<double> vec;
-              params_.transformation.get_parameter_vector (vec);
               {
                 ThreadKernel<MetricType, ParamType> kernel (metric_, params_, overall_cost_function, gradient);
                 Image::ThreadedLoop threaded_loop (params_.target_image, 2, 0, 3);
@@ -65,7 +63,7 @@ namespace MR
 
             double init (Math::Vector<TransformParamType>& x) {
               params_.transformation.get_parameter_vector (x);
-              return 1.0; // return init step size. TODO confirm this is appropriate;
+              return 1.0;
             }
 
           protected:

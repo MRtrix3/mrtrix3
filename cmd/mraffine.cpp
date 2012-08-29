@@ -40,7 +40,7 @@ using namespace MR;
 using namespace App;
 using namespace Registration;
 
-const char* transformation_choices[] = { "affine", "rigid", NULL };
+const char* transformation_choices[] = { "rigid", "affine", "both", NULL };
 
 const char* initialisation_choices[] = { "mass", "centre", "none",NULL };
 
@@ -58,19 +58,19 @@ void usage ()
       + Argument ("output", "the transformed moving image").type_image_out ();
 
   OPTIONS
-  + Option ("niter", "the maximum number of iterations. This can be specified either "
-      "as a single number for all multi-resolution levels, or a single value for each level. (Default: 300)")
-  + Argument ("num").type_sequence_int ()
-
   + Option ("scale", "use a multi-resolution scheme by defining a scale factor for each level "
                      "using comma separated values. For example to -scale 0.25,0.5,1. (Default: 0.5,1)")
   + Argument ("factor").type_sequence_float ()
 
-  + Option ("transform", "the transformation type. Valid choices are: affine and rigid."
-      "(Default: affine)")
+  + Option ("transform", "the transformation type. Valid choices are: rigid, affine or both (initialise affine "
+                         "using rigid result). (Default: affine)")
   + Argument ("type").type_choice (transformation_choices)
 
-  + Option ("tmask", "a mask to define the target image region to use for optimisation.")
+  + Option ("niter", "the maximum number of iterations. This can be specified either as a single number "
+                     "for all multi-resolution levels, or a single value for each level. (Default: 1000)")
+  + Argument ("num").type_sequence_int ()
+
+    + Option ("tmask", "a mask to define the target image region to use for optimisation.")
   + Argument ("filename").type_image_in ()
 
   + Option ("mmask", "a mask to define the moving image region to use for optimisation.")
@@ -94,7 +94,7 @@ void run ()
   Image::Buffer<float> output_data (argument[3], output_header);
   Image::Buffer<float>::voxel_type output_voxel (output_data);
 
-  std::vector<int> niter (1, 300);
+  std::vector<int> niter (1, 1000);
   Options opt = get_options ("niter");
   if (opt.size ()) {
     niter = parse_ints (opt[0][0]);
@@ -154,21 +154,38 @@ void run ()
 
   Metric::MeanSquared metric;
 
-  int transform_type = 0;
+  int transform_type = 1;
   opt = get_options ("transform");
   if (opt.size())
     transform_type = opt[0][0];
 
   Math::Matrix <double> final_transform;
-  if (transform_type) {
+  if (transform_type == 0) {
     Transform::Rigid<double> rigid;
+    CONSOLE ("running rigid body registration");
     registration.run_masked (metric, rigid, moving_voxel, target_voxel, mmask_voxel, tmask_voxel);
     rigid.get_transform (final_transform);
     final_transform.save (argument[2]);
     Image::Filter::reslice<Image::Interp::Cubic> (moving_voxel, output_voxel, final_transform, Image::Adapter::AutoOverSample, 0.0);
-  } else {
-//    CONSOLE ("Performing affine registration");
+  } else if (transform_type == 1) {
     Transform::Affine<double> affine;
+    CONSOLE ("running affine registration");
+    registration.run_masked (metric, affine, moving_voxel, target_voxel, mmask_voxel, tmask_voxel);
+    affine.get_transform (final_transform);
+    final_transform.save (argument[2]);
+    Image::Filter::reslice<Image::Interp::Cubic> (moving_voxel, output_voxel, final_transform, Image::Adapter::AutoOverSample, 0.0);
+  } else {
+    Transform::Rigid<double> rigid;
+    CONSOLE ("running rigid body registration");
+    registration.run_masked (metric, rigid, moving_voxel, target_voxel, mmask_voxel, tmask_voxel);
+    rigid.get_transform (final_transform);
+    Math::Vector<double> centre;
+    rigid.get_centre (centre);
+    Transform::Affine<double> affine;
+    affine.set_centre (centre);
+    affine.set_transform (final_transform);
+    registration.set_init_type (Transform::Init::none);
+    CONSOLE ("running affine registration");
     registration.run_masked (metric, affine, moving_voxel, target_voxel, mmask_voxel, tmask_voxel);
     affine.get_transform (final_transform);
     final_transform.save (argument[2]);

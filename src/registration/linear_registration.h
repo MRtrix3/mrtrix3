@@ -34,6 +34,7 @@
 #include "registration/transform/initialiser.h"
 #include "math/matrix.h"
 #include "math/gradient_descent.h"
+#include "math/check_gradient.h"
 
 namespace MR
 {
@@ -148,9 +149,11 @@ namespace MR
               Image::Filter::Resize target_resize_filter (target_image);
               moving_resize_filter.set_scale_factor (scale_factor_[level]);
               moving_resize_filter.set_interp_type (1);
-              Image::BufferScratch<float> moving (moving_resize_filter.info());
-              Image::BufferScratch<float>::voxel_type moving_vox (moving);
-              MovingImageInterpolatorType moving_interp (moving_vox);
+              Image::BufferScratch<float> moving_resized (moving_resize_filter.info());
+              Image::BufferScratch<float>::voxel_type moving_resized_vox (moving_resized);
+              Image::Filter::GaussianSmooth moving_smooth_filter (moving_resized_vox);
+              Image::BufferScratch<float> moving_resized_smoothed (moving_smooth_filter.info());
+              Image::BufferScratch<float>::voxel_type moving_resized_smoothed_vox (moving_resized_smoothed);
 
               target_resize_filter.set_scale_factor (scale_factor_[level]);
               target_resize_filter.set_interp_type (1);
@@ -158,10 +161,12 @@ namespace MR
               Image::BufferScratch<float>::voxel_type target_vox (target);
               {
                 LogLevelLatch log_level (0);
-                moving_resize_filter (moving_image, moving_vox);
+                moving_resize_filter (moving_image, moving_resized_vox);
+                moving_smooth_filter (moving_resized_vox, moving_resized_smoothed_vox);
                 target_resize_filter (target_image, target_vox);
               }
-              metric.set_moving_image (moving_vox);
+              MovingImageInterpolatorType moving_interp (moving_resized_smoothed_vox);
+              metric.set_moving_image (moving_resized_smoothed_vox);
               ParamType parameters (transform, moving_interp, target_vox);
 
               if (target_mask)
@@ -171,12 +176,17 @@ namespace MR
 
               Metric::Evaluate<MetricType, ParamType> evaluate (metric, parameters);
               Math::GradientDescent<Metric::Evaluate<MetricType, ParamType>,
-                                    typename TransformType::UpdateType > optim (evaluate, *transform.get_gradient_decent_updator());
+                                    typename TransformType::UpdateType > optim (evaluate, *transform.get_gradient_descent_updator());
               Math::Vector<typename TransformType::ParameterType> optimiser_weights;
               parameters.transformation.get_optimiser_weights (optimiser_weights);
+
               optim.precondition (optimiser_weights);
-              optim.run (max_iter_[level]);
+              optim.run (max_iter_[level], 1e-6);
               parameters.transformation.set_parameter_vector (optim.state());
+
+//              Math::Vector<double> params = optim.state();
+//              VAR(optim.function_evaluations());
+//              Math::check_function_gradient(evaluate, params, 0.000001, true);
             }
           }
 

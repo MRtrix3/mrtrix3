@@ -104,14 +104,14 @@ namespace MR
               param_vector[index++] = this->translation_[dim];
           }
 
-          UpdateType* get_gradient_decent_updator (){
-            return &gradient_decent_updator;
+          UpdateType* get_gradient_descent_updator (){
+            return &gradient_descent_updator;
           }
 
 
 
         protected:
-          UpdateType gradient_decent_updator;
+          UpdateType gradient_descent_updator;
       };
       //! @}
     }

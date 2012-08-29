@@ -74,7 +74,7 @@ namespace MR
             }
             Image::voxel_assign (params_.target_image, iter);
             params_.moving_image_interp.scanner (moving_point);
-            if (params_.moving_image_interp.is_out_of_bounds())
+            if (!params_.moving_image_interp)
               return;
             cost_function_ += metric_ (params_, target_point, moving_point, gradient_);
           }

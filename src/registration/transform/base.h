@@ -64,8 +64,8 @@ namespace MR
               offset_.zero();
           }
 
-          template <class PointType>
-          inline void transform (PointType& out, const PointType& in) const {
+          template <class OutPointType, class InPointType>
+          inline void transform (OutPointType& out, const InPointType& in) const {
             out[0] = matrix_(0,0)*in[0] + matrix_(0,1)*in[1] + matrix_(0,2)*in[2] + offset_[0];
             out[1] = matrix_(1,0)*in[0] + matrix_(1,1)*in[1] + matrix_(1,2)*in[2] + offset_[1];
             out[2] = matrix_(2,0)*in[0] + matrix_(2,1)*in[1] + matrix_(2,2)*in[2] + offset_[2];
@@ -99,6 +99,7 @@ namespace MR
           }
 
           void get_matrix (Matrix<ValueType>& matrix) const {
+            matrix.allocate(3,3);
             for (size_t row = 0; row < 3; row++) {
               for (size_t col = 0; col < 3; col++)
                  matrix(row, col) = matrix_(row, col);
@@ -142,6 +143,13 @@ namespace MR
             optimiser_weights.allocate (optimiser_weights_.size());
             for (size_t i = 0; i < optimiser_weights_.size(); i++)
               optimiser_weights[i] = optimiser_weights_[i];
+          }
+
+          void get_offset (Math::Vector<ValueType>& offset) const {
+            offset.allocate(3);
+            offset[0] = offset_[0];
+            offset[1] = offset_[1];
+            offset[2] = offset_[2];
           }
 
 

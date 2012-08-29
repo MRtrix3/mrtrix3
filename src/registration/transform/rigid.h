@@ -53,7 +53,7 @@ namespace MR
             axis[1] = g[1];
             axis[2] = g[2];
             Versor<ValueType> gradient_rotation;
-            gradient_rotation.set (axis, step_size * Math::norm (axis));
+            gradient_rotation.set (axis, -step_size * Math::norm (axis));
 
             Vector<ValueType> right_part (3);
             right_part[0] = x[0];
@@ -63,15 +63,14 @@ namespace MR
             Versor<ValueType> current_rotation;
             current_rotation.set (right_part);
 
-            Versor<ValueType> new_rotation;
-            new_rotation = current_rotation * gradient_rotation;
+            Versor<ValueType> new_rotation = current_rotation * gradient_rotation;
 
-            newx[0] = new_rotation[0];
-            newx[1] = new_rotation[1];
-            newx[2] = new_rotation[2];
-            newx[3] = x[3] + step_size * g[3];
-            newx[4] = x[4] + step_size * g[4];
-            newx[5] = x[5] + step_size * g[5];
+            newx[0] = new_rotation[1];
+            newx[1] = new_rotation[2];
+            newx[2] = new_rotation[3];
+            newx[3] = x[3] - step_size * g[3];
+            newx[4] = x[4] - step_size * g[4];
+            newx[5] = x[5] - step_size * g[5];
 
             bool changed = false;
             for (size_t n = 0; n < x.size(); ++n) {
@@ -107,7 +106,7 @@ namespace MR
 
           Rigid () : Base<ValueType> (6) {
             for (size_t i = 0; i < 3; i++)
-              this->optimiser_weights_[i] = 0.003;
+              this->optimiser_weights_[i] = 1.0;
             for (size_t i = 3; i < 6; i++)
               this->optimiser_weights_[i] = 1.0;
           }
@@ -131,11 +130,9 @@ namespace MR
             const double vyy = vy * vy;
             const double vzz = vz * vz;
             const double vww = vw * vw;
-
             const double vxy = vx * vy;
             const double vxz = vx * vz;
             const double vxw = vx * vw;
-
             const double vyz = vy * vz;
             const double vyw = vy * vw;
             const double vzw = vz * vw;
@@ -143,28 +140,31 @@ namespace MR
             jacobian(0,0) = 2.0 * ( ( vyw + vxz ) * py + ( vzw - vxy ) * pz ) / vw;
             jacobian(1,0) = 2.0 * ( ( vyw - vxz ) * px   - 2 * vxw   * py + ( vxx - vww ) * pz ) / vw;
             jacobian(2,0) = 2.0 * ( ( vzw + vxy ) * px + ( vww - vxx ) * py   - 2 * vxw   * pz ) / vw;
-
             jacobian(0,1) = 2.0 * ( -2 * vyw  * px + ( vxw + vyz ) * py + ( vww - vyy ) * pz ) / vw;
             jacobian(1,1) = 2.0 * ( ( vxw - vyz ) * px + ( vzw + vxy ) * pz ) / vw;
             jacobian(2,1) = 2.0 * ( ( vyy - vww ) * px + ( vzw - vxy ) * py   - 2 * vyw   * pz ) / vw;
-
             jacobian(0,2) = 2.0 * ( -2 * vzw  * px + ( vzz - vww ) * py + ( vxw - vyz ) * pz ) / vw;
             jacobian(1,2) = 2.0 * ( ( vww - vzz ) * px   - 2 * vzw   * py + ( vyw + vxz ) * pz ) / vw;
             jacobian(2,2) = 2.0 * ( ( vxw + vyz ) * px + ( vyw - vxz ) * py ) / vw;
-
             jacobian(0,3) = 1.0;
             jacobian(1,4) = 1.0;
             jacobian(2,5) = 1.0;
+          }
+
+          void set_rotation (const Math::Vector<ValueType>& axis, ValueType angle) {
+            versor_.set(axis, angle);
+            compute_matrix();
+            this->compute_offset();
           }
 
 
           void set_parameter_vector (const Math::Vector<ValueType>& param_vector) {
             Vector<ValueType> axis(3);
             double norm = param_vector[0] * param_vector[0];
-            axis[0] = param_vector[0];
             norm += param_vector[1] * param_vector[1];
-            axis[1] = param_vector[1];
             norm += param_vector[2] * param_vector[2];
+            axis[0] = param_vector[0];
+            axis[1] = param_vector[1];
             axis[2] = param_vector[2];
             if (norm > 0)
               norm = Math::sqrt (norm);
@@ -192,8 +192,8 @@ namespace MR
             param_vector[5] = this->translation_[2];
           }
 
-          UpdateType* get_gradient_decent_updator (){
-            return &gradient_decent_updator;
+          UpdateType* get_gradient_descent_updator (){
+            return &gradient_descent_updator;
           }
 
         protected:
@@ -203,7 +203,7 @@ namespace MR
           }
 
           Versor<ValueType> versor_;
-          UpdateType gradient_decent_updator;
+          UpdateType gradient_descent_updator;
       };
       //! @}
 

@@ -46,9 +46,9 @@ namespace MR
 
           template <class Params>
             double operator() (Params& params,
-                              Point<double> target_point,
-                              Point<double> moving_point,
-                              Math::Vector<double>& gradient) {
+                               Point<double> target_point,
+                               Point<double> moving_point,
+                               Math::Vector<double>& gradient) {
 
               params.transformation.get_jacobian_wrt_params (target_point, jacobian_);
               Math::Vector<double> moving_grad (3);
@@ -74,26 +74,13 @@ namespace MR
           }
 
           template <class MovingVoxelType>
-          void set_moving_image (const MovingVoxelType& moving_image) {
-
+          void set_moving_image (const MovingVoxelType& moving_voxel) {
             INFO ("Computing moving gradient...");
-
-            typedef typename MovingVoxelType::voxel_type MovingVoxelType;
-            MovingVoxelType moving_voxel (moving_image);
-
-            Image::Filter::GaussianSmooth smooth_filter (moving_voxel);
-            Image::BufferScratch<float> smoothed_data (smooth_filter.info());
-            Image::BufferScratch<float>::voxel_type smoothed_voxel (smoothed_data);
-            {
-              LogLevelLatch loglevel (0);
-              smooth_filter (moving_voxel, smoothed_voxel);
-            }
-
-            Image::Filter::Gradient3D gradient_filter (smoothed_voxel);
+            MovingVoxelType moving_voxel_copy (moving_voxel);
+            Image::Filter::Gradient3D gradient_filter (moving_voxel_copy);
             gradient_data_= new Image::BufferScratch<float> (gradient_filter.info());
             Image::BufferScratch<float>::voxel_type gradient_voxel (*gradient_data_);
-            gradient_filter (smoothed_voxel, gradient_voxel);
-
+            gradient_filter (moving_voxel_copy, gradient_voxel);
             gradient_interp_ = new Image::Interp::Linear<Image::BufferScratch<float>::voxel_type > (gradient_voxel);
           }
 
