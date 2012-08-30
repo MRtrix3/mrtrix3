@@ -23,7 +23,7 @@
 #ifndef __quaternion_h__
 #define __quaternion_h__
 
-#include "mrtrix.h"
+#include "math/matrix.h"
 
 namespace MR
 {
