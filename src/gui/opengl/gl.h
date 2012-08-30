@@ -27,7 +27,9 @@
 #include "glee.h"
 #include <QtOpenGL>
 #include "mrtrix.h"
-#include <glm/glm.hpp>
+
+
+//#define USE_OPENGL3
 
 namespace MR
 {

@@ -31,7 +31,7 @@
 #include <QGLWidget>
 
 #include "ptr.h"
-#include "math/quaternion.h"
+#include "math/versor.h"
 #include "gui/opengl/lighting.h"
 #include "gui/dwi/renderer.h"
 #include "gui/projection.h"
@@ -120,7 +120,7 @@ namespace MR
 
           QPoint last_pos;
           Projection projection;
-          Math::Quaternion<float> orientation;
+          Math::Versor<float> orientation;
           Point<> focus;
 
           std::string screenshot_name;

@@ -70,16 +70,11 @@ namespace MR
 
       void RenderFrame::set_rotation (const GLdouble* rotation)
       {
-        float M [9];
-        M[0] = rotation[0];
-        M[1] = rotation[1];
-        M[2] = rotation[2];
-        M[3] = rotation[4];
-        M[4] = rotation[5];
-        M[5] = rotation[6];
-        M[6] = rotation[8];
-        M[7] = rotation[9];
-        M[8] = rotation[10];
+        float p[9];
+        p[0] = rotation[0]; p[1] = rotation[1]; p[2] = rotation[2];
+        p[3] = rotation[4]; p[4] = rotation[5]; p[5] = rotation[6];
+        p[6] = rotation[8]; p[7] = rotation[9]; p[8] = rotation[10];
+        Math::Matrix<float> M (p, 3, 3);
         orientation.from_matrix (M);
         updateGL();
       }
@@ -127,14 +122,12 @@ namespace MR
         lighting->set();
 
         glTranslatef (0.0, 0.0, -dist);
-        float M[9];
+
+        float T[16];
+        Math::Matrix<float> M (T, 3, 3, 4);
         orientation.to_matrix (M);
-        float T [] = {
-          M[0], M[1], M[2], 0.0,
-          M[3], M[4], M[5], 0.0,
-          M[6], M[7], M[8], 0.0,
-          0.0, 0.0, 0.0, 1.0
-        };
+        T[3] = T[7] = T[11] = T[12] = T[13] = T[14] = 0.0;
+        T[15] = 1.0;
         glMultMatrixf (T);
 
         glTranslatef (focus[0], focus[1], focus[2]);
@@ -207,7 +200,7 @@ namespace MR
       {
         if (event->modifiers() == Qt::NoModifier) {
           if (event->buttons() == Qt::LeftButton) {
-            orientation = Math::Quaternion<float>();
+            orientation = Math::Versor<float>();
             updateGL();
           }
           else if (event->buttons() == Qt::MidButton) {
@@ -239,7 +232,7 @@ namespace MR
             float angle = ROTATION_INC * Math::sqrt (float (Math::pow2 (dx) + Math::pow2 (dy)));
             if (angle > M_PI_2) angle = M_PI_2;
 
-            Math::Quaternion<float> rot (angle, v);
+            Math::Versor<float> rot (angle, v);
             orientation = rot * orientation;
             updateGL();
           }

@@ -96,7 +96,7 @@ namespace MR
             int plane () const { 
               return window.plane(); 
             }
-            const Math::Quaternion<float>& orientation () const {
+            const Math::Versor<float>& orientation () const {
               return window.orientation(); 
             }
 
@@ -115,7 +115,7 @@ namespace MR
             void set_plane (int p) {
               window.set_plane (p); 
             }
-            void set_orientation (const Math::Quaternion<float>& Q) {
+            void set_orientation (const Math::Versor<float>& Q) {
               window.set_orientation (Q); 
             }
 

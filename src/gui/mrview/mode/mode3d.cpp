@@ -84,20 +84,17 @@ namespace MR
           glMatrixMode (GL_MODELVIEW);
           glLoadIdentity ();
 
-          Math::Quaternion<float> Q = orientation();
+          Math::Versor<float> Q = orientation();
           if (!Q) {
-            Q = Math::Quaternion<float> (1.0, 0.0, 0.0, 0.0);
+            Q = Math::Versor<float> (1.0, 0.0, 0.0, 0.0);
             set_orientation (Q);
           }
 
-          float M[9];
+          float T[16];
+          Math::Matrix<float> M (T, 3, 3, 4);
           Q.to_matrix (M);
-          float T [] = {
-            M[0], M[1], M[2], 0.0,
-            M[3], M[4], M[5], 0.0,
-            M[6], M[7], M[8], 0.0,
-            0.0, 0.0, 0.0, 1.0
-          };
+          T[3] = T[7] = T[11] = T[12] = T[13] = T[14] = 0.0;
+          T[15] = 1.0;
           float S[16];
           adjust_projection_matrix (S, T);
           glMultMatrixf (S);
@@ -160,7 +157,7 @@ namespace MR
 
         void Mode3D::reset_event ()
         {
-          Math::Quaternion<float> Q;
+          Math::Versor<float> Q;
           set_orientation (Q);
           Mode2D::reset_event();
         }
@@ -224,7 +221,7 @@ namespace MR
           v.normalise();
           if (angle > M_PI_2) angle = M_PI_2;
 
-          Math::Quaternion<float> q = Math::Quaternion<float> (angle, v) * orientation();
+          Math::Versor<float> q = Math::Versor<float> (angle, v) * orientation();
           q.normalise();
           set_orientation (q);
           updateGL();
@@ -255,7 +252,7 @@ namespace MR
           Point<> v = projection.screen_normal();
           v.normalise();
 
-          Math::Quaternion<float> q = Math::Quaternion<float> (n[2], v) * orientation();
+          Math::Versor<float> q = Math::Versor<float> (n[2], v) * orientation();
           q.normalise();
           set_orientation (q);
           updateGL();

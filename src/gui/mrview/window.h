@@ -8,7 +8,6 @@
 #endif
 
 #include "ptr.h"
-#include "math/quaternion.h"
 #include "gui/cursor.h"
 #include "gui/mrview/image.h"
 
@@ -76,7 +75,7 @@ namespace MR
           int plane () const {
             return anatomical_plane; 
           }
-          const Math::Quaternion<float>& orientation () const {
+          const Math::Versor<float>& orientation () const {
             return orient; 
           }
 
@@ -95,7 +94,7 @@ namespace MR
           void set_plane (int p) {
             anatomical_plane = p; emit planeChanged(); 
           }
-          void set_orientation (const Math::Quaternion<float>& Q) {
+          void set_orientation (const Math::Versor<float>& Q) {
             orient = Q; emit orientationChanged(); 
           }
 
@@ -223,7 +222,7 @@ namespace MR
           MouseAction mouse_action;
 
           Point<> focal_point, camera_target;
-          Math::Quaternion<float> orient;
+          Math::Versor<float> orient;
           float field_of_view;
           int anatomical_plane, annotations;
 

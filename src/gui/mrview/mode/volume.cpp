@@ -72,20 +72,17 @@ namespace MR
           if (image()->shader.use_lighting())
             window.lighting().set();
 
-          Math::Quaternion<float> Q = orientation();
+          Math::Versor<float> Q = orientation();
           if (!Q) {
-            Q = Math::Quaternion<float> (1.0, 0.0, 0.0, 0.0);
+            Q = Math::Versor<float> (1.0, 0.0, 0.0, 0.0);
             set_orientation (Q);
           }
 
-          float M[9];
+          float T[16];
+          Math::Matrix<float> M (T, 3, 3, 4);
           Q.to_matrix (M);
-          float T [] = {
-            M[0], M[1], M[2], 0.0,
-            M[3], M[4], M[5], 0.0,
-            M[6], M[7], M[8], 0.0,
-            0.0, 0.0, 0.0, 1.0
-          };
+          T[3] = T[7] = T[11] = T[12] = T[13] = T[14] = 0.0;
+          T[15] = 1.0;
           float S[16];
           adjust_projection_matrix (S, T);
           glMultMatrixf (S);

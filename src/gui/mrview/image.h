@@ -27,7 +27,7 @@
 
 #include "image/buffer.h"
 #include "image/voxel.h"
-#include "math/quaternion.h"
+#include "math/versor.h"
 #include "image/interp/linear.h"
 #include "gui/mrview/shader.h"
 
