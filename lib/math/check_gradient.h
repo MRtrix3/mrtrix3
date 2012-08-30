@@ -36,7 +36,8 @@ namespace MR {
           Function& function, 
           Math::Vector<typename Function::value_type>& x, 
           typename Function::value_type increment, 
-          bool show_hessian = false) 
+          bool show_hessian = false,
+          Math::Vector<typename Function::value_type> conditioner = Math::Vector<typename Function::value_type>()) 
       {
         typedef typename Function::value_type value_type;
         const size_t N = function.size();
@@ -52,35 +53,45 @@ namespace MR {
         Math::Vector<value_type> g0 (N);
         value_type f0 = function (x, g0);
         CONSOLE ("  cost function = " + str(f0));
-        CONSOLE ("  gradient = [ " + str(g0) + "]");
+        CONSOLE ("  gradient from cost function         = [ " + str(g0) + "]");
 
-        Math::Vector<value_type> g_fd (N), error (N);
+        Math::Vector<value_type> g_fd (N);
         Math::Matrix<value_type> hessian;
-        if (show_hessian)
+        if (show_hessian) {
           hessian.allocate (N, N);
+          if (conditioner.size()) 
+            for (size_t n = 0; n < N; ++n)
+              conditioner[n] = Math::sqrt(conditioner[n]);
+        }
 
         for (size_t n = 0; n < N; ++n) {
           value_type old_x = x[n];
-          x[n] += increment;
+          value_type inc = increment;
+          if (conditioner.size())
+            inc *= conditioner[n];
+
+          x[n] += inc;
           value_type f1 = function (x, g);
-          if (show_hessian)
+          if (show_hessian) {
+            if (conditioner.size())
+              g *= conditioner;
             hessian.column(n) = g;
+          }
 
-          x[n] = old_x-increment;
+          x[n] = old_x - inc;
           value_type f2 = function (x, g);
-          g_fd[n] = (f1-f2) / (2.0*increment);
+          g_fd[n] = (f1-f2) / (2.0*inc);
           x[n] = old_x;
-          if (show_hessian)
+          if (show_hessian) {
+            if (conditioner.size())
+              g *= conditioner;
             hessian.column(n) -= g;
+          }
 
-          error[n] = g0[n] ? 0.5 * Math::abs(g_fd[n]-g0[n]) / (Math::abs(g_fd[n]) + Math::abs(g0[n])) : 0.0;
         }
 
         CONSOLE ("gradient by central finite difference = [ " + str(g_fd) + "]");
-        CONSOLE ("error in gradient = [ " + str(error) + "]");
-        size_t index;
-        value_type max = Math::max (error, index);
-        CONSOLE ("mean error = " + str(Math::mean(error)) + ", with greatest error = " + str(max) + " at index "+ str(index));
+        CONSOLE ("normalised dot product = " + str(Math::dot (g_fd, g0) / Math::norm2 (g_fd)));
 
         if (show_hessian) {
           hessian /= 4.0*increment;

@@ -56,7 +56,6 @@ class Cost {
       b[1] = -1.0;
       b[2] = 5.0;
 
-
       VAR (b);
     }
 
@@ -67,7 +66,7 @@ class Cost {
 
     value_type init (Math::Vector<value_type>& x) const {
       x = 0.0;
-      return 1.0;
+      return 5.0;
     }
 
     value_type operator() (const Math::Vector<value_type>& x, Math::Vector<value_type>& g) const {
@@ -102,10 +101,15 @@ void run ()
   preconditioner[0] = 1.0;
   preconditioner[1] = 1.0/29.0;
 
+  Math::check_function_gradient (cost, x, 1.0e-4, true, preconditioner);
+
   optim.precondition (preconditioner);
   optim.run ();
   VAR (optim.state());
   VAR (optim.function_evaluations());
 
+  x = optim.state();
+  Math::check_function_gradient (cost, x, 1.0e-4, true);
+  Math::check_function_gradient (cost, x, 1.0e-4, true, preconditioner);
 }
 
