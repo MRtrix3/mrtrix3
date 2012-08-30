@@ -82,6 +82,32 @@ namespace MR
       };
 
 
+
+
+      class VersorUpdateTest {
+        public:
+          template <typename ValueType>
+          inline bool operator() (Math::Vector<ValueType>& newx,
+                                  const Math::Vector<ValueType>& x,
+                                  Math::Vector<ValueType>& g,
+                                  ValueType step_size) {
+            Math::Vector<ValueType> vx (x.sub(0,4));
+            Math::Vector<ValueType> vg (g.sub(0,4));
+
+            ValueType dp = Math::dot (vx, vg);
+            for (size_t n = 0; n < 4; ++n)
+              vg[n] -= dp * vx[n];
+
+            if (!Math::LinearUpdate() (newx, x, g, step_size))
+              return false;
+
+            Math::Vector<ValueType> v (newx.sub(0,4));
+            Math::normalise (v);
+            return newx != x;
+          }
+      };
+
+
       /** \addtogroup Transforms
       @{ */
 
@@ -205,6 +231,103 @@ namespace MR
           Versor<ValueType> versor_;
           UpdateType gradient_descent_updator;
       };
+
+
+
+
+      /*! A 3D rigid transformation class for registration.
+       *
+       * This class defines a rigid transform using 6 parameters. The first 3 parameters define rotation using a versor (unit quaternion),
+       * while the last 3 parameters define translation. Note that since the versor parameters do not define a vector space, any updates
+       * must be performed using a versor composition (not an addition). This can be achieved by passing the update_parameters method
+       * from this class as a function pointer to the gradient_decent run method.
+       *
+       * This class supports the ability to define the centre of rotation. This should be set prior to commencing registration based on
+       * the centre of the target image. The translation also should be initialised as moving image centre minus the target image centre.
+       * This can done automatically using functions available in  src/registration/transform/initialiser.h
+       *
+       */
+      template <typename ValueType = float>
+      class RigidTest : public Base<ValueType>  {
+        public:
+
+          typedef typename Base<ValueType>::ParameterType ParameterType;
+          typedef VersorUpdateTest UpdateType;
+
+          RigidTest () : Base<ValueType> (7) {
+            this->optimiser_weights_ = 1.0;
+          }
+
+          template <class PointType>
+          void get_jacobian_wrt_params (const PointType& p, Matrix<ValueType>& jacobian) const {
+
+            jacobian.resize(3,7);
+            jacobian.zero();
+            Vector<ValueType> v (3);
+            v[0] = p[0] - this->centre_[0];
+            v[1] = p[1] - this->centre_[1];
+            v[2] = p[2] - this->centre_[2];
+
+              // compute Jacobian with respect to quaternion parameters
+            jacobian(0,1) =  2.0 * ( versor_[1] * v[0] + versor_[2] * v[1] + versor_[3] * v[2]);
+            jacobian(0,2) =  2.0 * (-versor_[2] * v[0] + versor_[1] * v[1] + versor_[0] * v[2]);
+            jacobian(0,3) =  2.0 * (-versor_[3] * v[0] - versor_[0] * v[1] + versor_[1] * v[2]);
+            jacobian(0,0) = -2.0 * (-versor_[0] * v[0] + versor_[3] * v[1] - versor_[2] * v[2]);
+
+            jacobian(1,1) = -jacobian(0,2);
+            jacobian(1,2) =  jacobian(0,1);
+            jacobian(1,3) =  jacobian(0,0);
+            jacobian(1,0) = -jacobian(0,3);
+
+            jacobian(2,1) = -jacobian(0,3);
+            jacobian(2,2) = -jacobian(0,0);
+            jacobian(2,3) =  jacobian(0,1);
+            jacobian(2,0) =  jacobian(0,2);
+
+             // compute derivatives for the translation part
+            for (size_t dim = 0; dim < 3; ++dim)
+              jacobian(dim, 4+dim) = 1.0;
+          }
+
+          void set_rotation (const Math::Vector<ValueType>& axis, ValueType angle) {
+            versor_.set(axis, angle);
+            compute_matrix();
+            this->compute_offset();
+          }
+
+
+          void set_parameter_vector (const Math::Vector<ValueType>& param_vector) {
+            versor_ = Versor<ValueType> (param_vector.sub(0,4));
+            compute_matrix();
+            this->translation_ = param_vector.sub(4,7);
+            this->compute_offset();
+          }
+
+          void get_parameter_vector (Vector<ValueType>& param_vector) const {
+            param_vector.allocate (7);
+            param_vector[0] = versor_[0];
+            param_vector[1] = versor_[1];
+            param_vector[2] = versor_[2];
+            param_vector[3] = versor_[3];
+            param_vector[4] = this->translation_[0];
+            param_vector[5] = this->translation_[1];
+            param_vector[6] = this->translation_[2];
+          }
+
+          UpdateType* get_gradient_descent_updator (){
+            return &gradient_descent_updator;
+          }
+
+        protected:
+
+          void compute_matrix () {
+            versor_.to_matrix (this->matrix_);
+          }
+
+          Versor<ValueType> versor_;
+          UpdateType gradient_descent_updator;
+      };
+
       //! @}
 
     }

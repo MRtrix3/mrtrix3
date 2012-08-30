@@ -161,22 +161,27 @@ void run ()
 
   Math::Matrix <double> final_transform;
   if (transform_type == 0) {
+
     Transform::Rigid<double> rigid;
-    CONSOLE ("running rigid body registration");
+    CONSOLE ("running rigid registration");
     registration.run_masked (metric, rigid, moving_voxel, target_voxel, mmask_voxel, tmask_voxel);
     rigid.get_transform (final_transform);
     final_transform.save (argument[2]);
     Image::Filter::reslice<Image::Interp::Cubic> (moving_voxel, output_voxel, final_transform, Image::Adapter::AutoOverSample, 0.0);
+
   } else if (transform_type == 1) {
+
     Transform::Affine<double> affine;
     CONSOLE ("running affine registration");
     registration.run_masked (metric, affine, moving_voxel, target_voxel, mmask_voxel, tmask_voxel);
     affine.get_transform (final_transform);
     final_transform.save (argument[2]);
     Image::Filter::reslice<Image::Interp::Cubic> (moving_voxel, output_voxel, final_transform, Image::Adapter::AutoOverSample, 0.0);
+
   } else {
+
     Transform::Rigid<double> rigid;
-    CONSOLE ("running rigid body registration");
+    CONSOLE ("running rigid registration");
     registration.run_masked (metric, rigid, moving_voxel, target_voxel, mmask_voxel, tmask_voxel);
     rigid.get_transform (final_transform);
     Math::Vector<double> centre;

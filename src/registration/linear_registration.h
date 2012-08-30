@@ -181,12 +181,12 @@ namespace MR
               parameters.transformation.get_optimiser_weights (optimiser_weights);
 
               optim.precondition (optimiser_weights);
-              optim.run (max_iter_[level], 1e-6);
+              optim.run (max_iter_[level], 1.0e-4);
               parameters.transformation.set_parameter_vector (optim.state());
 
 //              Math::Vector<double> params = optim.state();
 //              VAR(optim.function_evaluations());
-//              Math::check_function_gradient(evaluate, params, 0.000001, true);
+//              Math::check_function_gradient(evaluate, params, 0.1, true, optimiser_weights);
             }
           }
 
