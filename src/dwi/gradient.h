@@ -101,9 +101,14 @@ namespace MR
     {
       dirs.allocate (dwi.size(),2);
       for (size_t i = 0; i < dwi.size(); i++) {
-        ValueType n = Math::norm (grad.row (dwi[i]).sub (0,3));
         dirs (i,0) = Math::atan2 (grad (dwi[i],1), grad (dwi[i],0));
-        dirs (i,1) = Math::acos (grad (dwi[i],2) /n);
+        ValueType z = grad (dwi[i],2) / Math::norm (grad.row (dwi[i]).sub (0,3));
+        if (z >= 1.0) 
+          dirs(i,1) = 0.0;
+        else if (z <= -1.0)
+          dirs (i,1) = M_PI;
+        else 
+          dirs (i,1) = Math::acos (z);
       }
       return dirs;
     }
