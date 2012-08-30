@@ -65,24 +65,26 @@ namespace MR {
           {
             tck.clear();
 
-            if (!in.is_open()) return (false);
+            if (!in.is_open()) 
+              return false;
             do {
               Point<value_type> p = get_next_point();
               if (isinf (p[0])) {
                 in.close();
-                return (false);
+                return false;
               }
               if (in.eof()) {
                 in.close();
-                return (true);
+                return false;
               }
 
-              if (isnan (p[0])) return (true);
+              if (isnan (p[0])) 
+                return true;
               tck.push_back (p);
             } while (in.good());
 
             in.close();
-            return (false);
+            return false;
           }
 
           void close () { in.close(); }
