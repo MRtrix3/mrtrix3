@@ -89,6 +89,9 @@ OPTIONS
   + Option ("round", "round to nearest integer").allow_multiple()
   + Option ("ceil", "round up to nearest integer").allow_multiple()
   + Option ("floor", "round down to nearest integer").allow_multiple()
+  + Option ("isnan", "true (1) is operand is not-a-number (NaN)").allow_multiple()
+  + Option ("isinf", "true (1) is operand is infinite (Inf)").allow_multiple()
+  + Option ("finite", "true (1) is operand is finite (i.e. not NaN or Inf)").allow_multiple()
 
   + Option ("real", "real part of complex number").allow_multiple()
   + Option ("imag", "imaginary part of complex number").allow_multiple()
@@ -112,6 +115,11 @@ OPTIONS
   + Option ("neq", "true (1) if last two operands are not equal, false (0) otherwise").allow_multiple()
 
   + Option ("complex", "create complex number using the last two operands as real,imaginary components").allow_multiple()
+
+  + OptionGroup ("Ternary operators")
+
+  + Option ("if", "if first operand is true (non-zero), return second operand, otherwise return third operand").allow_multiple()
+
 
   + DataType::options();
 }
@@ -202,7 +210,12 @@ class StackEntry {
         buffer = new Image::Buffer<complex_type> (arg);
       }
       catch (Exception) {
-        value = to<complex_type> (arg);
+        std::string a = lowercase (arg);
+        if      (a ==  "nan") value =  std::numeric_limits<real_type>::quiet_NaN();
+        else if (a == "-nan") value = -std::numeric_limits<real_type>::quiet_NaN();
+        else if (a ==  "inf") value =  std::numeric_limits<real_type>::infinity();
+        else if (a == "-inf") value = -std::numeric_limits<real_type>::infinity();
+        else                  value =  to<complex_type> (arg);
       }
       arg = NULL;
     }
@@ -221,22 +234,27 @@ class StackEntry {
 class Evaluator
 {
   public: 
-    Evaluator (const std::string& name, bool complex_maps_to_real = false, bool real_maps_to_complex = false) : 
+    Evaluator (const std::string& name, const char* format_string, bool complex_maps_to_real = false, bool real_maps_to_complex = false) : 
       id (name),
+      format (format_string),
       ZtoR (complex_maps_to_real),
       RtoZ (real_maps_to_complex) { }
     const std::string id;
+    const char* format;
     bool ZtoR, RtoZ;
     std::vector<StackEntry> operands;
 
     Chunk& evaluate (ThreadLocalStorage& storage) const {
       Chunk& in1 (operands[0].evaluate (storage));
-      if (is_unary()) return evaluate (in1);
+      if (num_args() == 1) return evaluate (in1);
       Chunk& in2 (operands[1].evaluate (storage));
-      return evaluate (in1, in2);
+      if (num_args() == 2) return evaluate (in1, in2);
+      Chunk& in3 (operands[2].evaluate (storage));
+      return evaluate (in1, in2, in3);
     }
     virtual Chunk& evaluate (Chunk& in) const { throw Exception ("operation \"" + id + "\" not supported!"); return in; }
     virtual Chunk& evaluate (Chunk& a, Chunk& b) const { throw Exception ("operation \"" + id + "\" not supported!"); return a; }
+    virtual Chunk& evaluate (Chunk& a, Chunk& b, Chunk& c) const { throw Exception ("operation \"" + id + "\" not supported!"); return a; }
 
     virtual bool is_complex () const {
       for (size_t n = 0; n < operands.size(); ++n) 
@@ -244,7 +262,7 @@ class Evaluator
           return !ZtoR;
       return RtoZ;
     }
-    bool is_unary () const { return operands.size() == 1; }
+    size_t num_args () const { return operands.size(); }
 
 };
 
@@ -270,12 +288,12 @@ inline Chunk& StackEntry::evaluate (ThreadLocalStorage& storage) const
 void print_stack (const std::vector<StackEntry>& stack, const std::string& prefix = "  ") 
 {
   for (size_t n = 0; n < stack.size(); ++n) {
-    std::cout << prefix << n << ": ";
-    if (stack[n].buffer) std::cout << "[IMA] " << stack[n].buffer->name();
-    else if (stack[n].evaluator) std::cout << "[EVAL] " << stack[n].evaluator->id;
-    else if (stack[n].arg) std::cout << "[ARG] " << stack[n].arg;
-    else std::cout << "[VAL] " << str(stack[n].value);
-    std::cout << " [" << ( stack[n].is_complex() ? "COMPLEX" : "REAL" ) << "]\n";
+    std::cerr << prefix << n << ": ";
+    if (stack[n].buffer) std::cerr << "[IMA] " << stack[n].buffer->name();
+    else if (stack[n].evaluator) std::cerr << "[EVAL] " << stack[n].evaluator->id;
+    else if (stack[n].arg) std::cerr << "[ARG] " << stack[n].arg;
+    else std::cerr << "[VAL] " << str(stack[n].value);
+    std::cerr << " [" << ( stack[n].is_complex() ? "COMPLEX" : "REAL" ) << "]\n";
     if (stack[n].evaluator) 
       print_stack (stack[n].evaluator->operands, prefix + "  ");
   }
@@ -283,12 +301,40 @@ void print_stack (const std::vector<StackEntry>& stack, const std::string& prefi
 */
 
 
+
+
+
+inline void replace (std::string& orig, const char* id, const std::string& value)
+{
+  size_t pos = orig.find (id);
+  orig.replace (pos, 2, value);
+}
+
+
+std::string operation_string (const StackEntry& entry) 
+{
+  std::string s;
+  if      (entry.buffer)    s += entry.buffer->name() + " ";
+  else if (entry.evaluator) s += entry.evaluator->id + " ";
+  else if (entry.arg)       s += std::string (entry.arg) + " ";
+  else                      s += str(entry.value) + " ";
+  if (entry.evaluator) {
+    s += "( ";
+    for (size_t n = 0; n < entry.evaluator->operands.size(); ++n) 
+      s += operation_string (entry.evaluator->operands[n]);
+    s += ") ";
+  }
+  return s;
+}
+
+
+
 template <class Operation>
 class UnaryEvaluator : public Evaluator 
 {
   public:
     UnaryEvaluator (const std::string& name, Operation operation, const StackEntry& operand) : 
-      Evaluator (name, operation.ZtoR, operation.RtoZ), 
+      Evaluator (name, operation.format, operation.ZtoR, operation.RtoZ), 
       op (operation) { 
         operands.push_back (operand);
       }
@@ -317,7 +363,7 @@ class BinaryEvaluator : public Evaluator
 {
   public:
     BinaryEvaluator (const std::string& name, Operation operation, const StackEntry& operand1, const StackEntry& operand2) : 
-      Evaluator (name, operation.ZtoR, operation.RtoZ),
+      Evaluator (name, operation.format, operation.ZtoR, operation.RtoZ),
       op (operation) { 
         operands.push_back (operand1);
         operands.push_back (operand2);
@@ -326,34 +372,57 @@ class BinaryEvaluator : public Evaluator
     Operation op;
 
     virtual Chunk& evaluate (Chunk& a, Chunk& b) const {
-      bool do_complex_op = operands[0].is_complex() || operands[1].is_complex();
-      if (a.size() && b.size()) {
-        if (do_complex_op)
-          for (size_t n = 0; n < a.size(); ++n)
-            a[n] = op.Z (a[n], b[n]);
-        else 
-          for (size_t n = 0; n < a.size(); ++n)
-            a[n] = op.R (a[n].real(), b[n].real());
-        return a;
-      }
-      else if (a.size()) {
-        if (do_complex_op)
-          for (size_t n = 0; n < a.size(); ++n)
-            a[n] = op.Z (a[n], b.value);
-        else 
-          for (size_t n = 0; n < a.size(); ++n)
-            a[n] = op.R (a[n].real(), b.value.real());
-        return a;
+      Chunk& out (a.size() ? a : b);
+      if (operands[0].is_complex() || operands[1].is_complex()) {
+        for (size_t n = 0; n < a.size(); ++n) 
+          out[n] = op.Z (
+              a.size() ? a[n] : a.value, 
+              b.size() ? b[n] : b.value );
       }
       else {
-        if (do_complex_op)
-          for (size_t n = 0; n < a.size(); ++n)
-            b[n] = op.Z (a.value, b[n]);
-        else 
-          for (size_t n = 0; n < a.size(); ++n)
-            b[n] = op.R (a.value.real(), b[n].real());
-        return b;
+        for (size_t n = 0; n < a.size(); ++n) 
+          out[n] = op.R (
+              a.size() ? a[n].real() : a.value.real(), 
+              b.size() ? b[n].real() : b.value.real() );
       }
+      return out;
+    }
+
+};
+
+
+
+template <class Operation>
+class TernaryEvaluator : public Evaluator 
+{
+  public:
+    TernaryEvaluator (const std::string& name, Operation operation, const StackEntry& operand1, const StackEntry& operand2, const StackEntry& operand3) : 
+      Evaluator (name, operation.format, operation.ZtoR, operation.RtoZ),
+      op (operation) { 
+        operands.push_back (operand1);
+        operands.push_back (operand2);
+        operands.push_back (operand3);
+      }
+
+    Operation op;
+
+    virtual Chunk& evaluate (Chunk& a, Chunk& b, Chunk& c) const {
+      Chunk& out (a.size() ? a : (b.size() ? b : c));
+      if (operands[0].is_complex() || operands[1].is_complex() || operands[2].is_complex()) {
+        for (size_t n = 0; n < a.size(); ++n) 
+          out[n] = op.Z (
+              a.size() ? a[n] : a.value,
+              b.size() ? b[n] : b.value,
+              c.size() ? c[n] : c.value );
+      }
+      else {
+        for (size_t n = 0; n < a.size(); ++n) 
+          out[n] = op.R (
+              a.size() ? a[n].real() : a.value.real(), 
+              b.size() ? b[n].real() : b.value.real(), 
+              c.size() ? c[n].real() : c.value.real() );
+      }
+      return out;
     }
 
 };
@@ -405,6 +474,35 @@ void binary_operation (const std::string& operation_name, std::vector<StackEntry
     a.value = ( a.value.imag() == 0.0  && b.value.imag() == 0.0 ? 
       operation.R (a.value.real(), b.value.real()) :
       operation.Z (a.value, b.value) );
+    stack.pop_back();
+  }
+}
+
+
+
+
+template <class Operation>
+void ternary_operation (const std::string& operation_name, std::vector<StackEntry>& stack, Operation operation)
+{
+  if (stack.size() < 3) 
+    throw Exception ("not enough operands in stack for operation \"" + operation_name + "\"");
+  StackEntry& a (stack[stack.size()-3]);
+  StackEntry& b (stack[stack.size()-2]);
+  StackEntry& c (stack[stack.size()-1]);
+  a.load();
+  b.load();
+  c.load();
+  if (a.evaluator || a.buffer || b.evaluator || b.buffer || c.evaluator || c.buffer) {
+    StackEntry entry (new TernaryEvaluator<Operation> (operation_name, operation, stack[stack.size()-3], stack[stack.size()-2], stack[stack.size()-1]));
+    stack.pop_back();
+    stack.pop_back();
+    stack.back() = entry;
+  }
+  else {
+    a.value = ( a.value.imag() == 0.0  && b.value.imag() == 0.0  && c.value.imag() == 0.0 ? 
+      operation.R (a.value.real(), b.value.real(), c.value.real()) :
+      operation.Z (a.value, b.value, c.value) );
+    stack.pop_back();
     stack.pop_back();
   }
 }
@@ -541,16 +639,18 @@ void run_operations (const std::vector<StackEntry>& stack)
 
 class OpBase {
   public:
-    OpBase (bool complex_maps_to_real = false, bool real_map_to_complex = false) :
+    OpBase (const char* format_string, bool complex_maps_to_real = false, bool real_map_to_complex = false) :
+      format (format_string),
       ZtoR (complex_maps_to_real),
       RtoZ (real_map_to_complex) { }
+    const char* format;
     const bool ZtoR, RtoZ;
 };
 
 class OpUnary : public OpBase {
   public:
-    OpUnary (bool complex_maps_to_real = false, bool real_map_to_complex = false) :
-      OpBase (complex_maps_to_real, real_map_to_complex) { }
+    OpUnary (const char* format_string, bool complex_maps_to_real = false, bool real_map_to_complex = false) :
+      OpBase (format_string, complex_maps_to_real, real_map_to_complex) { }
     complex_type R (real_type v) const { throw Exception ("operation not supported!"); return v; }
     complex_type Z (complex_type v) const { throw Exception ("operation not supported!"); return v; }
 };
@@ -558,10 +658,18 @@ class OpUnary : public OpBase {
 
 class OpBinary : public OpBase {
   public:
-    OpBinary (bool complex_maps_to_real = false, bool real_map_to_complex = false) :
-      OpBase (complex_maps_to_real, real_map_to_complex) { }
+    OpBinary (const char* format_string, bool complex_maps_to_real = false, bool real_map_to_complex = false) :
+      OpBase (format_string, complex_maps_to_real, real_map_to_complex) { }
     complex_type R (real_type a, real_type b) const { throw Exception ("operation not supported!"); return a; }
     complex_type Z (complex_type a, complex_type b) const { throw Exception ("operation not supported!"); return a; }
+};
+
+class OpTernary : public OpBase {
+  public:
+    OpTernary (const char* format_string, bool complex_maps_to_real = false, bool real_map_to_complex = false) :
+      OpBase (format_string, complex_maps_to_real, real_map_to_complex) { }
+    complex_type R (real_type a, real_type b, real_type c) const { throw Exception ("operation not supported!"); return a; }
+    complex_type Z (complex_type a, complex_type b, complex_type c) const { throw Exception ("operation not supported!"); return a; }
 };
 
 
@@ -572,144 +680,186 @@ class OpBinary : public OpBase {
 
 class OpAbs : public OpUnary {
   public:
-    OpAbs () : OpUnary (true) { }
+    OpAbs () : OpUnary ("|%1|", true) { }
     complex_type R (real_type v) const { return Math::abs (v); }
     complex_type Z (complex_type v) const { return std::abs (v); }
 };
 
 class OpNeg : public OpUnary {
   public:
+    OpNeg () : OpUnary ("-%1") { }
     complex_type R (real_type v) const { return -v; }
     complex_type Z (complex_type v) const { return -v; }
 };
 
 class OpSqrt : public OpUnary {
   public:
+    OpSqrt () : OpUnary ("sqrt(%1)") { } 
     complex_type R (real_type v) const { return Math::sqrt (v); }
     complex_type Z (complex_type v) const { return std::sqrt (v); }
 };
 
 class OpExp : public OpUnary {
   public:
+    OpExp () : OpUnary ("exp(%1)") { }
     complex_type R (real_type v) const { return Math::exp (v); }
     complex_type Z (complex_type v) const { return std::exp (v); }
 };
 
 class OpLog : public OpUnary {
   public:
+    OpLog () : OpUnary ("log(%1)") { }
     complex_type R (real_type v) const { return Math::log (v); }
     complex_type Z (complex_type v) const { return std::log (v); }
 };
 
 class OpLog10 : public OpUnary {
   public:
+    OpLog10 () : OpUnary ("log10(%1)") { }
     complex_type R (real_type v) const { return Math::log10 (v); }
     complex_type Z (complex_type v) const { return std::log10 (v); }
 };
 
 class OpCos : public OpUnary {
   public:
+    OpCos () : OpUnary ("cos(%1)") { } 
     complex_type R (real_type v) const { return Math::cos (v); }
     complex_type Z (complex_type v) const { return std::cos (v); }
 };
 
 class OpSin : public OpUnary {
   public:
+    OpSin () : OpUnary ("sin(%1)") { } 
     complex_type R (real_type v) const { return Math::sin (v); }
     complex_type Z (complex_type v) const { return std::sin (v); }
 };
 
 class OpTan : public OpUnary {
   public:
+    OpTan () : OpUnary ("tan(%1)") { }
     complex_type R (real_type v) const { return Math::tan (v); }
     complex_type Z (complex_type v) const { return std::tan (v); }
 };
 
 class OpCosh : public OpUnary {
   public:
+    OpCosh () : OpUnary ("cosh(%1)") { }
     complex_type R (real_type v) const { return Math::cosh (v); }
     complex_type Z (complex_type v) const { return std::cosh (v); }
 };
 
 class OpSinh : public OpUnary {
   public:
+    OpSinh () : OpUnary ("sinh(%1)") { }
     complex_type R (real_type v) const { return Math::sinh (v); }
     complex_type Z (complex_type v) const { return std::sinh (v); }
 };
 
 class OpTanh : public OpUnary {
   public:
+    OpTanh () : OpUnary ("tanh(%1)") { } 
     complex_type R (real_type v) const { return Math::tanh (v); }
     complex_type Z (complex_type v) const { return std::tanh (v); }
 };
 
 class OpAcos : public OpUnary {
   public:
+    OpAcos () : OpUnary ("acos(%1)") { }
     complex_type R (real_type v) const { return Math::acos (v); }
 };
 
 class OpAsin : public OpUnary {
   public:
+    OpAsin () : OpUnary ("asin(%1)") { } 
     complex_type R (real_type v) const { return Math::asin (v); }
 };
 
 class OpAtan : public OpUnary {
   public:
+    OpAtan () : OpUnary ("atan(%1)") { }
     complex_type R (real_type v) const { return Math::atan (v); }
 };
 
 class OpAcosh : public OpUnary {
   public:
+    OpAcosh () : OpUnary ("acosh(%1)") { } 
     complex_type R (real_type v) const { return Math::acosh (v); }
 };
 
 class OpAsinh : public OpUnary {
   public:
+    OpAsinh () : OpUnary ("asinh(%1)") { }
     complex_type R (real_type v) const { return Math::asinh (v); }
 };
 
 class OpAtanh : public OpUnary {
   public:
+    OpAtanh () : OpUnary ("atanh(%1)") { }
     complex_type R (real_type v) const { return Math::atanh (v); }
 };
 
 
 class OpRound : public OpUnary {
   public:
+    OpRound () : OpUnary ("round(%1)") { } 
     complex_type R (real_type v) const { return Math::round (v); }
 };
 
 class OpCeil : public OpUnary {
   public:
+    OpCeil () : OpUnary ("ceil(%1)") { } 
     complex_type R (real_type v) const { return Math::ceil (v); }
 };
 
 class OpFloor : public OpUnary {
   public:
+    OpFloor () : OpUnary ("floor(%1)") { }
     complex_type R (real_type v) const { return Math::floor (v); }
 };
 
 class OpReal : public OpUnary {
   public:
-    OpReal () : OpUnary (true) { }
+    OpReal () : OpUnary ("real(%1)", true) { }
     complex_type Z (complex_type v) const { return v.real(); }
 };
 
 class OpImag : public OpUnary {
   public:
-    OpImag () : OpUnary (true) { }
+    OpImag () : OpUnary ("imag(%1)", true) { }
     complex_type Z (complex_type v) const { return v.imag(); }
 };
 
 class OpPhase : public OpUnary {
   public:
-    OpPhase () : OpUnary (true) { }
+    OpPhase () : OpUnary ("phase(%1)", true) { }
     complex_type Z (complex_type v) const { return std::arg (v); }
 };
 
 class OpConj : public OpUnary {
   public:
+    OpConj () : OpUnary ("conj(%1)") { } 
     complex_type Z (complex_type v) const { return std::conj (v); }
+};
+
+class OpIsNaN : public OpUnary {
+  public:
+    OpIsNaN () : OpUnary ("isnan(%1)", true, false) { }
+    complex_type R (real_type v) const { return isnan (v) != 0; }
+    complex_type Z (complex_type v) const { return isnan (v.real()) != 0 || isnan (v.imag()) != 0; }
+};
+
+class OpIsInf : public OpUnary {
+  public:
+    OpIsInf () : OpUnary ("isinf(%1)", true, false) { }
+    complex_type R (real_type v) const { return isinf (v) != 0; }
+    complex_type Z (complex_type v) const { return isinf (v.real()) != 0 || isinf (v.imag()) != 0; }
+};
+
+class OpFinite : public OpUnary {
+  public:
+    OpFinite () : OpUnary ("finite(%1)", true, false) { }
+    complex_type R (real_type v) const { return finite (v) != 0; }
+    complex_type Z (complex_type v) const { return finite (v.real()) != 0|| finite (v.imag()) != 0; }
 };
 
 
@@ -719,81 +869,92 @@ class OpConj : public OpUnary {
 
 class OpAdd : public OpBinary {
   public:
+    OpAdd () : OpBinary ("%1 + %2") { } 
     complex_type R (real_type a, real_type b) const { return a+b; }
     complex_type Z (complex_type a, complex_type b) const { return a+b; }
 };
 
 class OpSubtract : public OpBinary {
   public:
+    OpSubtract () : OpBinary ("%1 - %2") { } 
     complex_type R (real_type a, real_type b) const { return a-b; }
     complex_type Z (complex_type a, complex_type b) const { return a-b; }
 };
 
 class OpMultiply : public OpBinary {
   public:
+    OpMultiply () : OpBinary ("%1 * %2") { }
     complex_type R (real_type a, real_type b) const { return a*b; }
     complex_type Z (complex_type a, complex_type b) const { return a*b; }
 };
 
 class OpDivide : public OpBinary {
   public:
+    OpDivide () : OpBinary ("%1 / %2") { } 
     complex_type R (real_type a, real_type b) const { return a/b; }
     complex_type Z (complex_type a, complex_type b) const { return a/b; }
 };
 
 class OpPow : public OpBinary {
   public:
+    OpPow () : OpBinary ("%1^%2") { }
     complex_type R (real_type a, real_type b) const { return Math::pow (a, b); }
     complex_type Z (complex_type a, complex_type b) const { return std::pow (a, b); }
 };
 
 class OpMin : public OpBinary {
   public:
+    OpMin () : OpBinary ("min (%1, %2)") { }
     complex_type R (real_type a, real_type b) const { return std::min (a, b); }
 };
 
 class OpMax : public OpBinary {
   public:
+    OpMax () : OpBinary ("max (%1, %2)") { } 
     complex_type R (real_type a, real_type b) const { return std::max (a, b); }
 };
 
 class OpLessThan : public OpBinary {
   public:
+    OpLessThan () : OpBinary ("%1 < %2") { }
     complex_type R (real_type a, real_type b) const { return a < b; }
 };
 
 class OpGreaterThan : public OpBinary {
   public:
+    OpGreaterThan () : OpBinary ("%1 > %2") { } 
     complex_type R (real_type a, real_type b) const { return a > b; }
 };
 
 class OpLessThanOrEqual : public OpBinary {
   public:
+    OpLessThanOrEqual () : OpBinary ("%1 <= %2") { }
     complex_type R (real_type a, real_type b) const { return a <= b; }
 };
 
 class OpGreaterThanOrEqual : public OpBinary {
   public:
+    OpGreaterThanOrEqual () : OpBinary ("%1 >= %2") { } 
     complex_type R (real_type a, real_type b) const { return a >= b; }
 };
 
 class OpEqual : public OpBinary {
   public:
-    OpEqual () : OpBinary (true) { }
+    OpEqual () : OpBinary ("%1 == %2", true) { }
     complex_type R (real_type a, real_type b) const { return a == b; }
     complex_type Z (complex_type a, complex_type b) const { return a == b; }
 };
 
 class OpNotEqual : public OpBinary {
   public:
-    OpNotEqual () : OpBinary (true) { }
+    OpNotEqual () : OpBinary ("%1 != %2", true) { }
     complex_type R (real_type a, real_type b) const { return a != b; }
     complex_type Z (complex_type a, complex_type b) const { return a != b; }
 };
 
 class OpComplex : public OpBinary {
   public:
-    OpComplex () : OpBinary (false, true) { }
+    OpComplex () : OpBinary ("(%1 + %2 i)", false, true) { }
     complex_type R (real_type a, real_type b) const { return complex_type (a, b); }
 };
 
@@ -802,6 +963,17 @@ class OpComplex : public OpBinary {
 
 
 
+
+/**********************************************************************
+        TERNARY OPERATIONS:
+**********************************************************************/
+
+class OpIf : public OpTernary {
+  public:
+    OpIf () : OpTernary ("if (%1) %2 else %3") { }
+    complex_type R (real_type a, real_type b, real_type c) const { return a ? b : c; }
+    complex_type Z (complex_type a, complex_type b, complex_type c) const { return a.real() ? b : c; }
+};
 
 
 
@@ -848,6 +1020,10 @@ void run () {
       else if (opt->is ("phase")) unary_operation (opt->id, stack, OpPhase());
       else if (opt->is ("conj")) unary_operation (opt->id, stack, OpConj());
 
+      else if (opt->is ("isnan")) unary_operation (opt->id, stack, OpIsNaN());
+      else if (opt->is ("isinf")) unary_operation (opt->id, stack, OpIsInf());
+      else if (opt->is ("finite")) unary_operation (opt->id, stack, OpFinite());
+
       else if (opt->is ("add")) binary_operation (opt->id, stack, OpAdd());
       else if (opt->is ("subtract")) binary_operation (opt->id, stack, OpSubtract());
       else if (opt->is ("multiply")) binary_operation (opt->id, stack, OpMultiply());
@@ -865,6 +1041,8 @@ void run () {
 
       else if (opt->is ("complex")) binary_operation (opt->id, stack, OpComplex());
 
+      else if (opt->is ("if")) ternary_operation (opt->id, stack, OpIf());
+
       else if (opt->is ("datatype")) ++n;
       else if (opt->is ("nthreads")) ++n;
       else if (opt->is ("force") || opt->is ("info") || opt->is ("debug") || opt->is ("quiet"))
@@ -878,6 +1056,10 @@ void run () {
     }
 
   }
+
+  //print_stack( stack);
+
+  VAR (operation_string (stack[0])); 
 
   if (stack.size() == 1) {
     if (!stack[0].evaluator && !stack[0].buffer) 

@@ -136,7 +136,7 @@ inline std::vector<int> set_header (
   opt = get_options ("prs");
   if (opt.size() &&
       header.DW_scheme().rows() &&
-      header.DW_scheme().columns()) {
+      header.DW_scheme().columns() == 4) {
     Math::Matrix<float>& M (header.DW_scheme());
     for (size_t row = 0; row < M.rows(); ++row) {
       float tmp = M (row, 0);
@@ -192,16 +192,12 @@ void run ()
   if (header_in.datatype().is_complex() && !header_out.datatype().is_complex())
     WARN ("requested datatype is real but input datatype is complex - imaginary component will be ignored");
 
-  try {
+  Options opt = get_options ("grad");
+  if (opt.size()) 
     header_out.DW_scheme() = DWI::get_DW_scheme<float> (header_in);
-  }
-  catch (Exception& E) {
-    E.display (3);
-    INFO ("no valid diffusion encoding found - ignoring");
-  }
 
 
-  Options opt = get_options ("coord");
+  opt = get_options ("coord");
   if (opt.size()) {
     std::vector<std::vector<int> > pos (buffer_in.ndim());
     for (size_t n = 0; n < opt.size(); n++) {
