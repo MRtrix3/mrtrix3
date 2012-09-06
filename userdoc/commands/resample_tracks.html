@@ -1,0 +1,91 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html;charset=iso-8859-1">
+  <title>MRtrix 0.2.11 documentation</title>
+  <link rel="stylesheet" href="../stylesheet.css" type="text/css" media=screen>
+</head>
+
+<body>
+
+<table class=nav>
+  <tr>
+    <td><a href="read_ximg.html"><img src="../left.png"></a></td>
+    <td><a href="index.html"><img src="../up.png"></a></td>
+    <td><a href="../index.html"><img src="../home.png"></a></td>
+    <th>resample_tracks</th>
+    <td><a href="sample_tracks.html"><img src="../right.png"></a></td>
+  </tr>
+</table>
+
+<h2>Description</h2>
+<p>
+Resample tracks so they all have the same number of samples, spaced at constant intervals within the range specified.
+</p>
+<p>
+Use the -extent option to specify the range within which the resampling should take place. For highly curved tracks, you may need to also use the -direction option to ensure the resampling is done correctly. In this case, the start direction specifies the plane through the start point from which the resampling will take place, and the end direction specifies the plane through the end point where the resampling will stop. In both cases, the direction vector should point in the direction of increasing sample point index.
+</p>
+<p class=indented><strong>syntax:</strong> &nbsp; &nbsp; resample_tracks [ options ] tracks output </p>
+<h2>Arguments</h2>
+<table class=args>
+<tr><td><b>tracks</b></td>
+<td>the input track file.</td></tr>
+<tr><td><b>output</b></td>
+<td>the output track file</td></tr>
+</table>
+<h2>Options</h2>
+<table class=args>
+<tr><td nowrap><b>-extent</b>&nbsp;<i>start</i>&nbsp;<i>end</i></td>
+<td>specify the start and end of the resampling range (default is 0,0,-50 to 0,0,50).
+<table class=opts>
+<tr><td><i>start</i></td>
+<td>a point lying within the start of the resampling range.</td></tr>
+<tr><td><i>end</i></td>
+<td>a point lying within the end of the resampling range.</td></tr>
+</table></td></tr>
+<tr><td nowrap><b>-direction</b>&nbsp;<i>start</i>&nbsp;<i>end</i></td>
+<td>specify the direction of the resampling range at the start and end points (default is the vector pointing from the start point to the end point for both start and end directions).
+<table class=opts>
+<tr><td><i>start</i></td>
+<td>a vector pointing along the direction of the resampling at the start of the range.</td></tr>
+<tr><td><i>end</i></td>
+<td>a vector pointing along the direction of the resampling at the end of the range.</td></tr>
+</table></td></tr>
+<tr><td nowrap><b>-waypoint</b>&nbsp;<i>point</i></td>
+<td>specify a way point for curved resampling. The resampling will be performed along an arc of a circle through all start, end and way points.
+<table class=opts>
+<tr><td><i>point</i></td>
+<td>a piont lying along the curved path to be resampled.</td></tr>
+</table></td></tr>
+<tr><td nowrap><b>-warp</b>&nbsp;<i>image</i></td>
+<td>specify an image containing the warp field to the space in which the resampling is to take place.
+<table class=opts>
+<tr><td><i>image</i></td>
+<td>the warp image.</td></tr>
+</table></td></tr>
+<tr><td nowrap><b>-num</b>&nbsp;<i>nsamples</i></td>
+<td>specify the number of samples to take along each track (default: 100).
+<table class=opts>
+<tr><td><i>nsamples</i></td>
+<td>the number of samples.</td></tr>
+</table></td></tr>
+<tr><td nowrap><b>-info</b></td>
+<td>display information messages.</td></tr>
+<tr><td nowrap><b>-quiet</b></td>
+<td>do not display information messages or progress status.</td></tr>
+<tr><td nowrap><b>-debug</b></td>
+<td>display debugging messages.</td></tr>
+<tr><td nowrap><b>-help</b></td>
+<td>display this information page and exit.</td></tr>
+<tr><td nowrap><b>-version</b></td>
+<td>display version information and exit.</td></tr>
+</table>
+
+<p class=footer>
+Donald Tournier<br>
+MRtrix version 0.2.11<br>
+Last updated 2011-06-23
+</p>
+
+</body>
+</html>

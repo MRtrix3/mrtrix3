@@ -1,0 +1,86 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html;charset=iso-8859-1">
+  <title>MRtrix 0.2.11 documentation</title>
+  <link rel="stylesheet" href="../stylesheet.css" type="text/css" media=screen>
+</head>
+
+<body>
+
+<table class=nav>
+  <tr>
+    <td><a href="track_info.html"><img src="../left.png"></a></td>
+    <td><a href="index.html"><img src="../up.png"></a></td>
+    <td><a href="../index.html"><img src="../home.png"></a></td>
+    <th>tracks2prob</th>
+    <td><a href="tracks2vtk.html"><img src="../right.png"></a></td>
+  </tr>
+</table>
+
+<h2>Description</h2>
+<p>
+convert a tracks file into a map of the fraction of tracks to enter each voxel.
+</p>
+<p class=indented><strong>syntax:</strong> &nbsp; &nbsp; tracks2prob [ options ] tracks output </p>
+<h2>Arguments</h2>
+<table class=args>
+<tr><td><b>tracks</b></td>
+<td>the input track file.</td></tr>
+<tr><td><b>output</b></td>
+<td>the output fraction image</td></tr>
+</table>
+<h2>Options</h2>
+<table class=args>
+<tr><td nowrap><b>-template</b>&nbsp;<i>image</i></td>
+<td>an image file to be used as a template for the output (the output image wil have the same transform and field of view).
+<table class=opts>
+<tr><td><i>image</i></td>
+<td>the input template image</td></tr>
+</table></td></tr>
+<tr><td nowrap><b>-vox</b>&nbsp;<i>size</i></td>
+<td>provide either an isotropic voxel size, or comma-separated list of 3 voxel dimensions.
+<table class=opts>
+<tr><td><i>size</i></td>
+<td>the voxel size (in mm).</td></tr>
+</table></td></tr>
+<tr><td nowrap><b>-colour</b></td>
+<td>add colour to the output image according to the direction of the tracks.</td></tr>
+<tr><td nowrap><b>-fraction</b></td>
+<td>produce an image of the fraction of fibres through each voxel (as a proportion of the total number in the file), rather than the count.</td></tr>
+<tr><td nowrap><b>-totalcount</b></td>
+<td>when using the -fraction option, compute fractions as proportion of total_count header entry rather than number of tracks in the file. This total_count corresponds to the total number of streamlines actually generated rather than those that were eventually selected.</td></tr>
+<tr><td nowrap><b>-lstdi</b></td>
+<td>scale the contribution of each track to the density image by the inverse of the streamline length</td></tr>
+<tr><td nowrap><b>-datatype</b>&nbsp;<i>spec</i></td>
+<td>specify output image data type.
+<table class=opts>
+<tr><td><i>spec</i></td>
+<td>the data type specifier.</td></tr>
+</table></td></tr>
+<tr><td nowrap><b>-resample</b>&nbsp;<i>factor</i></td>
+<td>resample the tracks at regular intervals using Hermite interpolation. If omitted, the program will select an appropriate interpolation factor automatically.
+<table class=opts>
+<tr><td><i>factor</i></td>
+<td>the factor by which to resample.</td></tr>
+</table></td></tr>
+<tr><td nowrap><b>-info</b></td>
+<td>display information messages.</td></tr>
+<tr><td nowrap><b>-quiet</b></td>
+<td>do not display information messages or progress status.</td></tr>
+<tr><td nowrap><b>-debug</b></td>
+<td>display debugging messages.</td></tr>
+<tr><td nowrap><b>-help</b></td>
+<td>display this information page and exit.</td></tr>
+<tr><td nowrap><b>-version</b></td>
+<td>display version information and exit.</td></tr>
+</table>
+
+<p class=footer>
+Donald Tournier<br>
+MRtrix version 0.2.11<br>
+Last updated 2012-05-22
+</p>
+
+</body>
+</html>

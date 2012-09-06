@@ -1,0 +1,133 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html;charset=iso-8859-1">
+<title>MRtrix 0.2.11 documentation</title>
+<link rel="stylesheet" href="../stylesheet.css" type="text/css" media=screen>
+</head>
+
+<body>
+
+<table class=nav>
+  <tr>
+    <td><a href="windows.html"><img src="../left.png"></a></td>
+    <td><a href="index.html"><img src="../up.png"></a></td>
+    <td><a href="../index.html"><img src="../home.png"></a></td>
+    <th>Mac OS X</th>
+    <td><a href="../general/index.html"><img src="../right.png"></a></td>
+  </tr>
+</table>
+
+<p>
+The main difficulty in installing MRtrix on MacOS X is to install the 
+dependencies. There are three reported ways to do this, <a href=http://www.macports.org/>MacPorts</a>, <a 
+href="http://mxcl.github.com/homebrew/">Homebrew</a>, and <a 
+href="http://www.finkproject.org/">
+Fink</a>. At this point, it seems MacPorts is the simplest and quickest method,
+as it only requires a minimal amount of local compilation - most of the
+required packages are simply downloaded ready-compiled. 
+</p>
+<p>
+These approaches are described below, along with instructions common to all of
+them.
+</p>
+
+<h2><a name='dependencies'>Installing dependencies</a></h2>
+
+<p>
+The first step is to install Xcode and X11. These can both be found on the OS X 
+install DVD. The MRtrix-specific dependencies can then be installed using one 
+of the following three approaches:
+</p>
+
+<h3>MacPorts (recommended)</h3>
+<p>
+Thanks to Craig Stark for providing these instructions.
+</p>
+
+<dl>
+<dt>Install MacPorts</dt>
+<dd>follow instructions on <a 
+href="http://www.macports.org/install.php">
+http://www.macports.org/install.php</a>.</dd>
+<dt>Get and build the dependencies</dt>
+<dd><pre>
+$ port install glib2 glibmm libpng gtk2 gtkmm gtkglext gsl
+</pre></dd>
+</dl>
+
+<h3>Homebrew</h3>
+<p>
+Thanks to Jon Clayden for providing these instructions.
+</p>
+
+<dl>
+<dt>Install Homebrew</dt>
+<dd>follow instructions on <a 
+href="https://github.com/mxcl/homebrew/wiki/installation">
+https://github.com/mxcl/homebrew/wiki/installation</a>.</dd>
+<dt>Get and build the dependencies</dt>
+<dd><pre>
+$ brew install python glib gtk+ glibmm gtkmm gtkglext gsl
+</pre></dd>
+</dl>
+
+<h3>Fink</h3>
+<p>
+Thanks to Michael Zeineh for providing these instructions.
+</p>
+
+<dl>
+<dt>Install Fink</dt>
+<dd>follow instructions on <a href="http://www.finkproject.org/download/">
+http://www.finkproject.org/download/</a></dd>
+<dt>Install the dependencies</dt>
+<dd><pre>
+$ fink install python glib gtk+ glibmm2.4 gtkmm2.4 gtkglext1 gsl
+</pre>
+If this fails, try to repeat this last step until it works.
+</dd>
+</dl>
+
+<h2><a name='compile'>Compile MRtrix</a></h2>
+<p>
+At this point, you should be able to compile MRtrix using the following 
+commands, as per the <a href="unix.html#compile">Unix installation 
+instructions</a>:
+<pre>
+$ cd mrtrix-0.2.10
+$ ./build
+</pre>
+If this completes successfully, you can now install the executables into a more 
+easily accessible location. This can be done using the following command (as 
+    root):
+<pre>
+# ./build install
+</pre>
+
+
+<h3>Final configuration</h3>
+<p>
+Assuming you have managed to install MRtrix correctly, you should also consider 
+setting a few configurations parameters, as per the <a 
+href=unix.html#config>Unix instructions</a>.
+
+<table class=nav>
+  <tr>
+    <td><a href="windows.html"><img src="../left.png"></a></td>
+    <td><a href="index.html"><img src="../up.png"></a></td>
+    <td><a href="../index.html"><img src="../home.png"></a></td>
+    <th><a href='#top'>top</a></th>
+    <td><a href="../general/index.html"><img src="../right.png"></a></td>
+  </tr>
+</table>
+
+<p class=footer>
+Donald Tournier<br>
+MRtrix version 0.2.11<br>
+Last updated 2011-12-22
+</p>
+
+
+</body>
+</html>

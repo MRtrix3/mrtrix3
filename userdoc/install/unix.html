@@ -1,0 +1,284 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html;charset=iso-8859-1">
+<title>MRtrix 0.2.11 documentation</title>
+<link rel="stylesheet" href="../stylesheet.css" type="text/css" media=screen>
+</head>
+
+<body>
+
+<table class=nav>
+  <tr>
+    <td><a href="index.html"><img src="../left.png"></a></td>
+    <td><a href="index.html"><img src="../up.png"></a></td>
+    <td><a href="../index.html"><img src="../home.png"></a></td>
+    <th>Unix/Linux</th>
+    <td><a href="windows.html"><img src="../right.png"></a></td>
+  </tr>
+</table>
+
+
+<p>
+MRtrix is now available as a package on Debian and Ubuntu systems using the <a 
+href="http://neuro.debian.net/">NeuroDebian repository</a>. This provides a 
+simple and effective way of installing MRtrix, along with numerous other 
+related packages. For more information, refer to the instructions on the <a 
+href="http://neuro.debian.net/">NeuroDebian repository</a>. Note that there is 
+no guarantee that the version available on this repository is the most up to 
+date.
+</p>
+<p>
+The rest of this page provides instructions for installing MRtrix from source. 
+MRtrix depends on a number of other packages.  Most, if not all of these 
+packages should be available on any recent Linux distribution via the 
+appropriate package manager.  MRtrix has been written and tested on Ubuntu 
+Linux versions 7.10 (Gutsy) through to 10.10 (Maverick). On all these 
+distributions, all dependencies are available via the Synaptic Package Manager.
+</p>
+
+<h2><a name='quickinstall'>Quick install</a></h2>
+<p>
+On Ubuntu systems (and most likely Debian too), the following instructions 
+should work with no modifications:
+<h3>First-time installations: installing dependencies</h3>
+The first time you install MRtrix, you will need to also install a number of
+required packages. The following step installs these dependencies on Ubuntu
+systems - for other distributions, you'll need to use the equivalent commands
+as appropriate (see below).  You will only need to perform this step the first
+time you install MRtrix:
+<pre>
+$ sudo apt-get install g++ python libglib2.0-dev libgtk2.0-dev libglibmm-2.4-dev libgtkmm-2.4-dev libgtkglext1-dev libgsl0-dev libgl1-mesa-dev libglu1-mesa-dev
+</pre>
+<h3>Installing MRtrix</h3>
+Once the dependencies have been installed, the following steps will need to be
+performed for every install or update of MRtrix:
+<pre>
+$ tar xfj mrtrix-0.2.X.tar.bz2
+$ cd mrtrix-0.2.X
+$ ./build
+$ sudo ./build install
+</pre>
+<p>
+On other distributions, different steps may be required to install the required 
+dependencies, and/or to install the compiled executables. These steps are 
+outlined in detail below.
+
+
+<h2><a name='builddeps'>Required dependencies</a></h2>
+<p>
+Before any of the programs included in the MRtrix packages can be used, they 
+need to be <em>compiled</em> (i.e. translated into machine code suitable for 
+your specific computer platform).  This will generate the required 
+<em>executables</em> and dynamic library. Certain packages and dependencies are 
+needed for this step. A subset of these packages will also be required to run 
+the executables. These packages are:
+</p>
+<h3>Needed for the compilation step (build):</h3>
+<dl>
+  <dt>g++ - the GNU C++ compiler (version &gt; 4.0.0 recommended)</dt>
+  <dd>available from <a href="http://gcc.gnu.org/">http://gcc.gnu.org/</a></dd>
+  <dt>python (version &gt; 2.5 recommended)</dt>
+  <dd>available from <a href="http://www.python.org/">http://www.python.org/</a></dd>
+  <dt>development packages for the run-time dependencies</dt>
+  <dd>as listed below</dd>
+</dl>
+On Ubuntu, these packages can be installed using the Synaptic Package Manager, 
+and can be found under the names 'g++' and 'python'.
+
+<h3>Also needed at run-time:</h3>
+The developement version of these packages is required for the compilation 
+step, while the run-time versions are needed at run-time:
+<dl>
+  <dt>glib (version &gt; 2.16)</dt>
+  <dt>gtk+ (version &gt; 2.12)</dt>
+  <dd>both available from <a href="http://www.gtk.org/">http://www.gtk.org/</a></dd>
+  <dt>glibmm (version &gt; 2.16)</dt>
+  <dt>gtkmm (version &gt; 2.12)</dt>
+  <dd>both available from <a href="http://www.gtkmm.org/">http://www.gtkmm.org/</a></dd>
+  <dt>gtkglext (version &gt; 1.0)</dt>
+  <dd>available from <a href="http://www.k-3d.org/gtkglext/Main_Page">http://www.k-3d.org/gtkglext/Main_Page</a></dd>
+  <dt>GSL (GNU Scientific Library; version &gt; 1.8)</dt>
+  <dd>available from <a href="http://www.gnu.org/software/gsl/">http://www.gnu.org/software/gsl/</a></dd>
+  <dt>a working OpenGL implementation (version &gt; 1.2)</dt>
+  <dd>for best results on Linux, we recommend the use of an nVidia&reg; graphics card together with the nVidia&reg; proprietory drivers. 
+  These drivers may be available via the distribution package manager (this is the case with Ubuntu Linux). 
+  If not, they can be downloaded from <a href="http://www.nvidia.com/">http://www.nvidia.com/</a></dd>
+</dl>
+<p>
+On Ubuntu, these packages can be installed using the Synaptic Package Manager, 
+and can be found under the names 'libglib2.0-dev', 'libgtk2.0-dev',
+'libglibmm-2.4-dev', 'libgtkmm-2.4-dev', 'libgtkglext1-dev', 'libgsl0-dev',
+  'libgl1-mesa-dev' (for a generic OpenGL implementation - the nVidia&reg; 
+driver already includes the required development files), and
+  'libglu1-mesa-dev'.
+
+
+
+<p class=sep><a href="#top">top</a></p>
+
+<h2><a name='compile'>The compilation step</a></h2>
+<p>
+Once all dependencies are installed, MRtrix can be compiled by issuing the 
+commands (modify as appropriate):
+</p>
+<pre>
+$ <b>tar xjf mrtrix-0.2.X.tar.bz2</b>
+$ <b>cd mrtrix-0.2.X/</b>
+$ <b>./build</b>
+</pre>
+<p>
+If this completes with no errors, all executables should be located in the <kbd>bin/</kbd> folder, 
+and the <kbd>libmrtrix-0_2_X.so</kbd> dynamic library should be located in the <kbd>lib/</kbd> folder.
+</p>
+<p>
+If any errors do occur, you may need to modify the configuration file.
+The relevant file will be located in the <kbd>sysconf/</kbd> folder,
+will have a <kbd>*.py</kbd> suffix, and will be named according to the target platform.
+Unfortunately a full discussion of the various options that can be modified is beyond the scope of this document.
+</p>
+
+<p class=sep><a href="#top">top</a></p>
+
+<h2><a name='install'>Installation of executables</a></h2>
+<p>
+Once all executables and the dynamic library have been successfully created, 
+they can be made available for use.  The recommended installation procedure is 
+as follows (note that this can be tailored to your needs).  The following 
+commands will typically need to be issued from the <em>root</em> account.  If 
+you do not have root or administrative access to your system, you can simply 
+install the files to a location that you have write permissions for (i.e.  
+anywhere in your home folder), in which case the following commands can be 
+issued from your own account.
+</p>
+<p>
+<b>Note:</b> on Ubuntu and other systems without a <em>root</em> account, 
+simply type <kbd>sudo</kbd> as the first word on the command line 
+(see <a href="https://help.ubuntu.com/community/RootSudo">this page</a> for details).
+</p>
+
+<p>
+The simplest way to perform this step is to use the special <kbd>install</kbd> 
+target (as root if the destination is not user-writable):
+<pre>
+# <b>./build install</b>
+</pre>
+By default, this will copy the executables and dynamic library to the folder 
+<kbd>/opt/mrtrix</kbd>. To ensure these are in the system path, it will also
+create symbolic links to them in the folders <kbd>/usr/bin</kbd> (for the
+executables) and <kbd>/usr/lib</kbd> (for the dynamic library). Finally , it
+will also create a default system-wide configuration file in
+<kbd>/etc/mrtrix.conf</kbd>, to enable multi-threading on all cores as detected
+by the build script.
+</p>
+<p>
+If the files need to be installed to a different folder,
+a different prefix can be specified as an additional parameter:
+<pre>
+# <b>./build install=/usr/local</b>
+</pre>
+<p>
+When installing to a location that is not in the path (such as the 
+<kbd>/opt</kbd> folder), the simplest way to make the executables available is 
+to create symbolic links to the executables in a standard location such as 
+<kbd>/usr/bin</kbd> or <kbd>/usr/local/bin</kbd>.  By default, the install step 
+will create symbolic links in the <kbd>/usr/bin</kbd> and <kbd>/usr/lib</kbd> 
+for the executables and dynamic library respectively.  This can be disabled by 
+specifying an empty path to the linkto special target:
+<pre>
+# <b>./build install linkto=</b>
+</pre>
+A different location can also be specified by passing a suitable prefix as an 
+additional parameter. For example:
+<pre>
+# <b>./build install=/usr/local/mrtrix linkto=/usr/local</b>
+</pre>
+will copy the executables and dynamic library in 
+<kbd>/usr/local/mrtrix/bin</kbd> and <kbd>/usr/local/mrtrix/lib</kbd> 
+respectively, and then create symbolic links to these in the corresponding 
+<kbd>/usr/local/bin</kbd> and <kbd>/usr/local/lib</kbd> folders.
+
+
+<h3>If the executables are not in the path:</h3>
+<p>
+In some cases, it may not be possible to install the executables (or symbolic 
+links to them) into a location that is in the default path. This can happen for 
+instance if installing into a user account. In these case, the location of the 
+executables needs to be added to the PATH environment variable, and the 
+location of the dynamic library needs to be added to the LD_LIBRARY_PATH 
+environment variable (alternatively, it may also be possible to add the latter 
+to the dynamic loader's search path, although this is system-specific).
+<p>
+This can typically be done by adding a couple of lines to the relevant startup 
+script.  Unfortunately, each Unix variant may use a different procedure for 
+this. For single user accounrs, it should be sufficient to add these lines to 
+the <kbd>~/.bashrc</kbd> file:
+<pre>
+PATH=/home/user/mrtrix/bin:$PATH
+LD_LIBRARY_PATH=/home/user/mrtrix/lib
+</pre>
+For C shell users (csh or tcsh), the following lines should be added to the 
+<kbd>~/.cshrc</kbd>:
+<pre>
+setenv PATH /opt/mrtrix/bin:$PATH
+setenv LD_LIBRARY_PATH /opt/mrtrix/lib/
+</pre>
+
+<p class=sep><a href="#top">top</a></p>
+
+
+<h2><a name='config'>Final configuration</a></h2>
+<p>
+Once the software is up and running, is it worth taking the time to perform a few simple configurations steps.
+The following important application behaviours can be modified by setting the relevant variables 
+in the <a href='../appendix/config.html'>configuration file</a> (described in more detail
+in the <a href='../appendix/config.html'>Appendix</a>).
+Note that if the configuration file does not exist, or if the variables are not set, 
+default values will be used instead.
+</p>
+<dl>
+  <dt>Enable multi-threading</dt>
+  <dd>If MRtrix is installed on a multi-processor or multi-core system, some of the more CPU intensive
+  tasks can take advantage of this by performing the processing in parallel across some or all of the CPU cores.
+  Currently, the <a href='../tractography/preprocess.html#csd'>CSD computation</a> and
+  <a href='../tractography/tracking.html'>tractography</a> programs are both ready 
+  for multi-threading, and will therefore take substantially less time if multi-threading is enabled.
+  This is done by adding the following line to your <a href='../appendix/config.html'>configuration file</a>:
+  <pre>NumberOfThreads: 4</pre> with the number set appropriately for your
+  system. Note that a default configuration file with this parameter already
+  set to the appropriate value should already exist if the software
+  was installed using the <kbd>./build install</kbd> command (see above).</dd>
+
+  <dt>Left-right convention for Analyse images</dt>
+  <dd>There is some ambiguity in the Analyse format as to whether images are stored in left to right order
+  or in the reverse order. This can lead to a great deal of confusion, and for this reason, it is not recommended 
+  to use the Analyse format if it can be avoided. For those cases when you need to use this format, 
+  the left-right ordering convention can be set by adding this line to your <a href='../appendix/config.html'>configuration file</a>:
+  <pre>Analyse.LeftToRight: false</pre>
+  By default, Analyse images are assumed to be stored left to right.</dd>
+</dl>
+
+
+
+
+
+<table class=nav>
+  <tr>
+    <td><a href="index.html"><img src="../left.png"></a></td>
+    <td><a href="index.html"><img src="../up.png"></a></td>
+    <td><a href="../index.html"><img src="../home.png"></a></td>
+    <th><a href='#top'>top</a></th>
+    <td><a href="windows.html"><img src="../right.png"></a></td>
+  </tr>
+</table>
+
+
+<p class=footer>
+Donald Tournier<br>
+MRtrix version 0.2.11<br>
+Last updated 2012-02-10
+</p>
+
+
+</body>
+</html>

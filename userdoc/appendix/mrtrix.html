@@ -1,0 +1,178 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html;charset=iso-8859-1">
+<title>MRtrix 0.2.11 documentation</title>
+<link rel="stylesheet" href="../stylesheet.css" type="text/css" media=screen>
+</head>
+
+<body>
+
+<table class=nav>
+  <tr>
+    <td><a href="config.html"><img src="../left.png"></a></td>
+    <td><a href="../index.html"><img src="../home.png"></a></td>
+    <th>The MRtrix file formats</th>
+    <td><a href="refs.html"><img src="../right.png"></a></td>
+  </tr>
+</table>
+
+<h2><a name='images'>Image formats (.mif / .mih)</a></h2>
+<p>
+These MRtrix-specific image formats are closely related. They consist of a
+text header, with data stored in binary format, either within the same file
+(.mif) or as one or more separate files (.mih). In both cases, the header
+structure is the same, as detailed below. These file formats were devised to
+address a number of limitations inherent in currently available formats. In
+particular:
+<ul>
+<li><b>simplicity:</b> as detailed below, the header format is deliberately kept very
+simple and human-readable, making it easy to debug and edit manually if needed.</li>
+<li><b>extendability:</b> any information can be stored in the header, and will simply
+be ignored by the application if not recognised.</li>
+<li><b>arbitrary data organisation:</b> voxel values can be stored in any
+order, making it simple to ensure for example that all FOD coefficients for a
+given voxel are stored contiguously on file.</li>
+</ul>
+</p>
+<p>
+Note that MRtrix now includes MatLab<sup>&reg;</sup> functions to read and write MRtrix image
+files, and to load MRtrix tracks files. These are located in the
+<kbd>matlab</kbd> subfolder.
+</p>
+
+<h3>Header structure</h3>
+<p>
+The header is the first (and possibly only) data stored in the file, as
+ASCII-encoded text (although other encodings such as UTF8 may work equally
+well). Lines should be separated by unix-style newlines (line-feed, '\n', ASCII
+0x0A), although MRtrix will also accept DOS-type newlines. 
+</p>
+<p>
+The first line should read only 'mrtrix image' to indicate that this is an
+image in MRtrix format. The last line of the header should read only 'END' to
+signal the end of the header, after which all data will be considered as
+binary.
+</p>
+<p>
+All following lines are in the format 'key: value', with the value entry extending
+up to the end of the line. All whitespace characters before and after the value
+entry are ignored. Some keys are required to read the images, others are
+optional, and any key not recognised by MRtrix will simply be ignored.
+Recognised keys are listed below, along with the expected format of the
+corresponding values.
+<dl>
+<dt>dim</dt>
+<dd><strong>[required]</strong> the image dimensions, supplied as a
+comma-separated list of integers. The number of entries in the specifies the
+dimensionality of the image (currently limited to 16 dimensions). For example:
+<kbd>dim: 192,256,256</kbd> specifies a 192&times;256&times;256 image.</dd>
+
+<dt>vox</dt>
+<dd><strong>[required]</strong> the voxel size along each dimension, as a
+comma-separated list of floating-point values. The number of entries should
+match that given in the <kbd>dim</kbd> entry. For example: <kbd>vox:
+0.9,0.898438,0.898438</kbd>.</dd>
+
+<dt>layout</dt>
+<dd><strong>[required]</strong> specifies the organisation of the data
+on file. In simplest terms, it provides a way of specifying the strides
+required to navigate the data file, in combination with the <kbd>dim</kbd>
+entry. It is given as a comma-separated list of signed integers, with the sign
+providing the direction of data traversal with respect to voxel coordinates,
+and the value providing a way of specifying the order of increasing stride.<br>
+For example, assuming an image with <kbd>dim: 192,256,256</kbd>, the entry
+<kbd>layout: +2,-0,-1</kbd> is interpreted as: the shortest stride is along the
+y-axis (second entry), then the z-axis (third entry), and then along the
+x-axis. Voxels are stored in the order left to right (positive stride) along
+the x-axis; anterior to posterior along the y-axis (negative stride); and
+superior to inferior (negative stride) along the z-axis. Given the image
+dimensions, the final strides are therefore 256&times;256=65536 for adjacent
+voxels along the x-axis, -1 for the y-axis, and -256 for the z-axis.  This also
+implies that the voxel at coordinate [ 0 0 0 ] is located 65536 voxel values
+into the data portion of the file.</dd>
+
+<dt>datatype</dt>
+<dd><strong>[required]</strong> the datatype used to store individual
+voxel values. Valid data types are listed in <a
+href=../general/formats.html#datatypes>this section</a>. For example:
+<kbd>datatype:  UInt16LE</kbd></dd>
+
+<dt>file</dt>
+<dd><strong>[required]</strong> speficies where the binary image
+data are stored, in the format <em>file: filename offset</em>, with the offset
+provided in bytes from the beginning of the file. For example: <kbd>file:
+image.dat 0</kbd>.<br>
+For the single-file format (.mif), the filename should consists of a single
+full-stop ('.') to indicate the current file, and the offset should correspond
+to a point in the file after the END statement of the header.<br>
+For the separate header/data format (.mih), the filename should refer to an
+existing file in the same folder as the header (.mih) file.  Multiple such
+entries can be supplied if the data are stored across several files. </dd>
+
+<dt>transform</dt>
+<dd><em>[optional]</em> used to supply the 4&times;4 transformation matrix specifying the orientation of the axes with respect to real space. This is supplied as a comma-separated list of floating-point values, and only the first 12 such values will be used to fill the first 3 rows of the transform matrix. Multiple such entries can be provided to fill the matrix; for example, MRtrix will normally produce 3 lines for the transform, with one row of 4 values per entry:<br>
+<pre>
+transform: 0.997986,-0.0541156,-0.033109,-74.0329
+transform: 0.0540858,0.998535,-0.00179436,-100.645
+transform: 0.0331575,2.34007e-08,0.99945,-125.84
+</pre>
+
+<dt>labels</dt>
+<dd><em>[optional]</em> used to specify the meaning of the axes, provided as a
+list of descriptions separated by backslashes. For example:
+<kbd>left-&gt;right\posterior-&gt;anterior\inferior-&gt;superior</kbd></dd>
+
+<dt>units</dt>
+<dd><em>[optional]</em> used to specify the units for each axis, provided as a
+list of descriptions separated by backslashes. For example: <kbd>units:
+mm\mm\mm</kbd></dd>
+
+<dt>comments</dt>
+<dd><em>[optional]</em> used to add generic comments to the header. Multiple
+such entries can be provided. For example: <kbd>comment: some
+information</kbd></dd>
+</dl>
+
+
+<h2><a name='tracks'>Tracks file format (.tck)</a></h2>
+<p>
+The format for track files is similar to that for MRtrix-format images. It
+consists of a text header in the same key: value format, ending with a single
+'END' statement, and followed by binary data. 
+</p>
+<p>
+The first line of the header should read "mrtrix tracks" to indicate that the
+file contains tracks in MRtrix format. Further key: value pairs typically
+provide information about the parameters used to produce the tracks, and for
+the most part are not required to read the data. 
+The only required keys are the following:
+<dl>
+<dt>file</dt>
+<dd> a <em>file: . offset</em> entry is required to specify the byte offset
+from the beginning of the file to the start of the binary track data. At this
+stage, only the single-file format is supported - in other words the filename
+part must be specified as '.' (see <a href=#images'>above</a> for
+details).</dd>
+
+<dt>datatype</dt>
+<dd>specifies the datatype (and byte order). At this points only the Float32
+data type is supported, either as little-endian (LE) or big-endian (BE).</dd>
+</dl>
+
+<p>
+The binary track data themselves are stored as triplets of floating-point
+values (at this stage in 32 bit floating-point format), one per vertex along
+the track. Tracks are separated using a triplet of NaN values. Finally, a
+triplet of Inf values is used to indicate the end of the file. 
+</p>
+
+<p class=footer>
+Donald Tournier<br>
+MRtrix version 0.2.11<br>
+Last updated 2012-01-05
+</p>
+
+
+</body>
+</html>

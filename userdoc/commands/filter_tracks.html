@@ -1,0 +1,74 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html;charset=iso-8859-1">
+  <title>MRtrix 0.2.11 documentation</title>
+  <link rel="stylesheet" href="../stylesheet.css" type="text/css" media=screen>
+</head>
+
+<body>
+
+<table class=nav>
+  <tr>
+    <td><a href="estimate_response.html"><img src="../left.png"></a></td>
+    <td><a href="index.html"><img src="../up.png"></a></td>
+    <td><a href="../index.html"><img src="../home.png"></a></td>
+    <th>filter_tracks</th>
+    <td><a href="find_SH_peaks.html"><img src="../right.png"></a></td>
+  </tr>
+</table>
+
+<h2>Description</h2>
+<p>
+Use regions-of-interest to select a sub-set of tracks from a given track file.
+</p>
+<p>
+ 
+</p>
+<p>
+Each region-of-interest should be either the path to a binary mask image, or a comma-separated list of 4 floating-point values, specifying the [x,y,z] coordinates of the centre and radius of a spherical ROI.
+</p>
+<p class=indented><strong>syntax:</strong> &nbsp; &nbsp; filter_tracks [ options ] input output </p>
+<h2>Arguments</h2>
+<table class=args>
+<tr><td><b>input</b></td>
+<td>the input file containing the tracks to be filtered.</td></tr>
+<tr><td><b>output</b></td>
+<td>the output file containing the tracks selected.</td></tr>
+</table>
+<h2>Options</h2>
+<table class=args>
+<tr><td nowrap><b>-include</b>&nbsp;<i>spec</i></td>
+<td>specify an inclusion region of interest. Tracks that enter ALL such inclusion ROI will be included.
+<table class=opts>
+<tr><td><i>spec</i></td>
+<td>specifies the parameters necessary to define the ROI.</td></tr>
+</table></td></tr>
+<tr><td nowrap><b>-exclude</b>&nbsp;<i>spec</i></td>
+<td>specify an exclusion region of interest. Tracks that enter ANY such exclusion ROI will NOT be included.
+<table class=opts>
+<tr><td><i>spec</i></td>
+<td>specifies the parameters necessary to define the ROI.</td></tr>
+</table></td></tr>
+<tr><td nowrap><b>-nomaskinterp</b></td>
+<td>do NOT perform tri-linear interpolation of mask images.</td></tr>
+<tr><td nowrap><b>-info</b></td>
+<td>display information messages.</td></tr>
+<tr><td nowrap><b>-quiet</b></td>
+<td>do not display information messages or progress status.</td></tr>
+<tr><td nowrap><b>-debug</b></td>
+<td>display debugging messages.</td></tr>
+<tr><td nowrap><b>-help</b></td>
+<td>display this information page and exit.</td></tr>
+<tr><td nowrap><b>-version</b></td>
+<td>display version information and exit.</td></tr>
+</table>
+
+<p class=footer>
+Donald Tournier<br>
+MRtrix version 0.2.11<br>
+Last updated 2011-09-20
+</p>
+
+</body>
+</html>
