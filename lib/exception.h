@@ -57,7 +57,7 @@ namespace MR
    * debugging information; anything else: none. */
   extern void (*report_to_user_func) (const std::string& msg, int type);
 
-#define CONSOLE(msg) report_to_user_func (msg, -1)
+#define CONSOLE(msg) if (App::log_level >= 1) report_to_user_func (msg, -1)
 #define ERROR(msg) if (App::log_level >= 0) report_to_user_func (msg, 0)
 #define WARN(msg) if (App::log_level >= 1) report_to_user_func (msg, 1)
 #define INFO(msg) if (App::log_level >= 2) report_to_user_func (msg, 2)
