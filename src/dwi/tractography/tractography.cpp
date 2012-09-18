@@ -19,6 +19,7 @@ namespace MR
             "to a binary mask image, or a comma-separated list of 4 floating-point "
             "values, specifying the [x,y,z] coordinates of the centre and radius "
             "of a spherical ROI.")
+          .required()
           .allow_multiple()
           + Argument ("spec")
 

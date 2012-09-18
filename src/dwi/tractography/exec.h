@@ -30,6 +30,8 @@
 #include "dwi/tractography/shared.h"
 #include "dwi/tractography/method.h"
 
+#define UPDATE_INTERVAL 0.05
+
 namespace MR {
   namespace DWI {
     namespace Tractography {
@@ -42,21 +44,26 @@ namespace MR {
           WriteKernel (const SharedBase& shared, 
               const std::string& output_file, 
               DWI::Tractography::Properties& properties) :
-            S (shared) { 
+            S (shared),
+            next_time (timer.elapsed()) { 
               writer.create (output_file, properties); 
             }
 
           ~WriteKernel () 
           { 
-            fprintf (stderr, "\r%8zu generated, %8zu selected    [100%%]\n", writer.total_count, writer.count);
+            if (App::log_level > 0) 
+              fprintf (stderr, "\r%8zu generated, %8zu selected    [100%%]\n", writer.total_count, writer.count);
             writer.close(); 
           }
 
           bool operator() (const std::vector<Point<value_type> >& tck) {
             if (writer.count < S.max_num_tracks && writer.total_count < S.max_num_attempts) {
               writer.append (tck);
-              fprintf (stderr, "\r%8zu generated, %8zu selected    [%3d%%]", 
-                  writer.total_count, writer.count, int((100.0*writer.count)/float(S.max_num_tracks)));
+              if (App::log_level > 0 && timer.elapsed() >= next_time) {
+                next_time += UPDATE_INTERVAL;
+                fprintf (stderr, "\r%8zu generated, %8zu selected    [%3d%%]", 
+                    writer.total_count, writer.count, int((100.0*writer.count)/float(S.max_num_tracks)));
+              }
               return true;
             }
             return false;
@@ -65,6 +72,8 @@ namespace MR {
         private:
           const SharedBase& S;
           Writer<value_type> writer;
+          Timer timer;
+          double next_time;
       };
 
 
