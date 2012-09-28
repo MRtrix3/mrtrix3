@@ -55,6 +55,9 @@ namespace MR
           const Info& info () const {
             return data_.info();
           }
+          const BufferType& buffer () const {
+            return data_;
+          }
 
           DataType datatype () const {
             return data_.datatype();

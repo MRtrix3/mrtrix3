@@ -65,9 +65,13 @@ namespace MR
     namespace Stride
     {
 
+      typedef std::vector<ssize_t> List;
+
       extern const App::OptionGroup StrideOption;
 
-      typedef std::vector<ssize_t> List;
+      template <class InfoType> 
+        void set_from_command_line (InfoType& info, const List& default_strides = List()); 
+
 
       //! \cond skip
       namespace
