@@ -117,6 +117,31 @@ void run () {
     header_out.dim(axis) = axis_dim;
   }
 
+
+  if (axis > 2) { // concatenate DW schemes
+    size_t nrows = 0;
+    for (int n = 0; n < num_images; ++n) {
+      if (in[n]->DW_scheme().rows() == 0 ||  
+          in[n]->DW_scheme().columns() != 4) {
+        nrows = 0;
+        break;
+      }   
+      nrows += in[n]->DW_scheme().rows();
+    }   
+
+    if (nrows) {
+      header_out.DW_scheme().allocate (nrows, 4); 
+      int row = 0;
+      for (int n = 0; n < num_images; ++n) 
+        for (size_t i = 0; i < in[n]->DW_scheme().rows(); ++i, ++row)
+          for (size_t j = 0; j < 4; ++j) 
+            header_out.DW_scheme()(row,j) = in[n]->DW_scheme()(i,j);
+    }   
+  }
+
+
+
+
   Image::Buffer<value_type> data_out (argument[num_images], header_out);
   Image::Buffer<value_type>::voxel_type out_vox (data_out);
 
