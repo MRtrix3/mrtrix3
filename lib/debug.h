@@ -36,5 +36,7 @@
 #define VAR(variable) std::cerr << MR::App::NAME << ": " << #variable << " = " << (variable) \
                                 << " (in " << __func__ << "() from " << __FILE__  << ": " << __LINE__ << ")\n"
 
+#define PAUSE { std::cerr << "paused at line " << __LINE__ << " in " << __func__ << "() from "__FILE__" ..."; std::string __n__; std::getline (std::cin, __n__); }
+
 #endif
 
