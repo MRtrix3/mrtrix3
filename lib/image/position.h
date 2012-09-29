@@ -231,7 +231,7 @@ namespace MR
           stream << ssize_t (p);
           return stream;
         }
-      private:
+      protected:
         Set& S;
         size_t axis;
     };

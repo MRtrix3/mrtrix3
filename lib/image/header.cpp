@@ -125,9 +125,10 @@ namespace MR
         size_t item = 0;
         name() = list[item].name();
 
-        for (; *format_handler; format_handler++)
+        for (; *format_handler; format_handler++) {
           if ( (handler_ = (*format_handler)->read (*this)) )
             break;
+        }
 
         if (!*format_handler)
           throw Exception ("unknown format for image \"" + name() + "\"");

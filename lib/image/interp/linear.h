@@ -24,6 +24,7 @@
 #define __image_interp_linear_h__
 
 #include "image/transform.h"
+#include "datatype.h"
 
 namespace MR
 {

@@ -105,6 +105,8 @@ namespace MR
       DECLARE_IMAGEFORMAT (Analyse, "AnalyseAVW / NIfTI-1.1");
       DECLARE_IMAGEFORMAT (MRI, "MRTools (legacy format)");
       DECLARE_IMAGEFORMAT (XDS, "XDS");
+      DECLARE_IMAGEFORMAT (MGH, "MGH");
+      DECLARE_IMAGEFORMAT (MGZ, "MGZ (compressed MGH)");
 
       /*! a list of all extensions for image formats that %MRtrix can handle. */
       extern const char* known_extensions[];

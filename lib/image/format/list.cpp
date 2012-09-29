@@ -39,6 +39,8 @@ namespace MR
       Format::Analyse    analyse_handler;
       Format::XDS        xds_handler;
       Format::DICOM      dicom_handler;
+      Format::MGH        mgh_handler;
+      Format::MGZ        mgz_handler;
 
       const Base* handlers[] = {
         &pipe_handler,
@@ -49,6 +51,8 @@ namespace MR
         &analyse_handler,
         &mri_handler,
         &xds_handler,
+        &mgh_handler,
+        &mgz_handler,
         NULL
       };
 
@@ -63,6 +67,9 @@ namespace MR
         ".bfloat",
         ".bshort",
         ".mri",
+        ".mgh",
+        ".mgz",
+        ".mgh.gz",
         NULL
       };
 

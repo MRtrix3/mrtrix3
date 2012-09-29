@@ -86,6 +86,14 @@ namespace MR
           return *this;
         }
 
+        const Info& info() const {
+          return (*this);
+        }
+
+        Info& info() {
+          return (*this);
+        }
+
         const std::vector<std::string>& comments () const {
           return comments_;
         }
