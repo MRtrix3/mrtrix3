@@ -25,6 +25,7 @@
 #include "file/mgh_utils.h"
 #include "image/header.h"
 #include "image/stride.h"
+#include "math/vector.h"
 
 namespace MR
 {
@@ -51,6 +52,10 @@ namespace MR
         H.dim (2) = get<int32_t> (&MGHH.depth, is_BE);
         if (ndim == 4)
           H.dim (3) = get<int32_t> (&MGHH.nframes, is_BE);
+
+        H.vox (0) = get<float> (&MGHH.spacing_x, is_BE);
+        H.vox (1) = get<float> (&MGHH.spacing_y, is_BE);
+        H.vox (2) = get<float> (&MGHH.spacing_z, is_BE);
 
         for (size_t i = 0; i != ndim; ++i)
           H.stride (i) = i + 1;
@@ -81,20 +86,20 @@ namespace MR
         const int16_t RAS = get<int16_t> (&MGHH.goodRASFlag, is_BE);
         if (RAS) {
 
-          // TODO c_* appear to be offsets, but in RAS space instead of XYZ
-          // Therefore need to convert...
-          M (0,0) = get <float> (&MGHH.x_r, is_BE); M (0,1) = get <float> (&MGHH.x_a, is_BE); M (0,2) = get <float> (&MGHH.x_s, is_BE); M (0,3) = 0.0;
-          M (1,0) = get <float> (&MGHH.y_r, is_BE); M (1,1) = get <float> (&MGHH.y_a, is_BE); M (1,2) = get <float> (&MGHH.y_s, is_BE); M (1,3) = 0.0;
-          M (2,0) = get <float> (&MGHH.z_r, is_BE); M (2,1) = get <float> (&MGHH.z_a, is_BE); M (2,2) = get <float> (&MGHH.z_s, is_BE); M (2,3) = 0.0;
-          M (3,0) = 0.0;                            M (3,1) = 0.0;                            M (3,2) = 0.0;                            M (3,3) = 1.0;
+          M (0,0) = get <float> (&MGHH.x_r, is_BE); M (0,1) = get <float> (&MGHH.y_r, is_BE); M (0,2) = get <float> (&MGHH.z_r, is_BE);
+          M (1,0) = get <float> (&MGHH.x_a, is_BE); M (1,1) = get <float> (&MGHH.y_a, is_BE); M (1,2) = get <float> (&MGHH.z_a, is_BE);
+          M (2,0) = get <float> (&MGHH.x_s, is_BE); M (2,1) = get <float> (&MGHH.y_s, is_BE); M (2,2) = get <float> (&MGHH.z_s, is_BE);
 
-          H.vox(0) = Math::sqrt (Math::pow2 (M (0,0)) + Math::pow2 (M (1,0)) + Math::pow2 (M (2,0)));
-          H.vox(1) = Math::sqrt (Math::pow2 (M (0,1)) + Math::pow2 (M (1,1)) + Math::pow2 (M (2,1)));
-          H.vox(2) = Math::sqrt (Math::pow2 (M (0,2)) + Math::pow2 (M (1,2)) + Math::pow2 (M (2,2)));
+          M (0,3) = get <float> (&MGHH.c_r, is_BE);
+          M (1,3) = get <float> (&MGHH.c_a, is_BE);
+          M (2,3) = get <float> (&MGHH.c_s, is_BE);
+          for (size_t i = 0; i < 3; ++i) {
+            for (size_t j = 0; j < 3; ++j)
+              M (i,3) -= 0.5 * H.dim(j) * H.vox(j) * M(i,j);
+          }
 
-          M (0,0) /= H.vox (0); M (1,0) /= H.vox (0); M (2,0) /= H.vox (0);
-          M (0,1) /= H.vox (1); M (1,1) /= H.vox (1); M (2,1) /= H.vox (1);
-          M (0,2) /= H.vox (2); M (1,2) /= H.vox (2); M (2,2) /= H.vox (2);
+          M (3,0) = M (3,1) = M (3,2) = 0.0;
+          M (3,3) = 1.0;
 
         } else {
 
@@ -203,15 +208,25 @@ namespace MR
 
         put<int32_t> (0, &MGHH.dof, is_BE);
         put<int16_t> (1, &MGHH.goodRASFlag, is_BE);
-        put<float> (1, &MGHH.spacing_x, is_BE);
-        put<float> (1, &MGHH.spacing_y, is_BE);
-        put<float> (1, &MGHH.spacing_z, is_BE);
+        put<float> (H.vox (0), &MGHH.spacing_x, is_BE);
+        put<float> (H.vox (1), &MGHH.spacing_y, is_BE);
+        put<float> (H.vox (2), &MGHH.spacing_z, is_BE);
 
         const Math::Matrix<float>& M (H.transform());
-        put<float> (M (0,0) * H.vox(0), &MGHH.x_r, is_BE); put<float> (M (0,1) * H.vox(0), &MGHH.x_a, is_BE); put<float> (M (0,2) * H.vox(0), &MGHH.x_s, is_BE);
-        put<float> (M (1,0) * H.vox(1), &MGHH.y_r, is_BE); put<float> (M (1,1) * H.vox(1), &MGHH.y_a, is_BE); put<float> (M (1,2) * H.vox(1), &MGHH.y_s, is_BE);
-        put<float> (M (2,0) * H.vox(2), &MGHH.z_r, is_BE); put<float> (M (2,1) * H.vox(2), &MGHH.z_a, is_BE); put<float> (M (2,2) * H.vox(2), &MGHH.z_s, is_BE);
-        put<float> (0.0, &MGHH.c_r, is_BE); put<float> (0.0, &MGHH.c_a, is_BE); put<float> (0.0, &MGHH.c_s, is_BE);
+        put<float> (M (0,0), &MGHH.x_r, is_BE); put<float> (M (0,1), &MGHH.y_r, is_BE); put<float> (M (0,2), &MGHH.z_r, is_BE);
+        put<float> (M (1,0), &MGHH.x_a, is_BE); put<float> (M (1,1), &MGHH.y_a, is_BE); put<float> (M (1,2), &MGHH.z_a, is_BE);
+        put<float> (M (2,0), &MGHH.x_s, is_BE); put<float> (M (2,1), &MGHH.y_s, is_BE); put<float> (M (2,2), &MGHH.z_s, is_BE);
+
+        for (size_t i = 0; i != 3; ++i) {
+          float offset = M (i, 3);
+          for (size_t j = 0; j != 3; ++j)
+            offset += 0.5 * H.dim(j) * H.vox(j) * M (i,j);
+          switch (i) {
+            case 0: put<float> (offset, &MGHH.c_r, is_BE); break;
+            case 1: put<float> (offset, &MGHH.c_a, is_BE); break;
+            case 2: put<float> (offset, &MGHH.c_s, is_BE); break;
+          }
+        }
 
       }
 

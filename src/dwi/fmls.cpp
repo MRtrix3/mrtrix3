@@ -141,6 +141,7 @@ bool FOD_FMLS::operator() (const SH_coefs& in, FOD_lobes& out) const {
         i->revise_peak (dirs.get_dir (peak_bin), i->get_peak_value());
       i->normalise_integral();
       ++i;
+
     }
 
   }
