@@ -359,8 +359,8 @@ namespace MR
         public:
           typedef ValueType value_type;
 
-          PrecomputedAL () : lmax (0), ndir (0), nAL (0), inc (0.0), AL (NULL) { }
-          PrecomputedAL (int up_to_lmax, int num_dir = 512) : AL (NULL) {
+          PrecomputedAL () : lmax (0), ndir (0), nAL (0), inc (0.0) { }
+          PrecomputedAL (int up_to_lmax, int num_dir = 512) {
             init (up_to_lmax, num_dir);
           }
 
