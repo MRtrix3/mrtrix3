@@ -31,6 +31,7 @@
 #include "file/key_value.h"
 #include "image/utils.h"
 #include "image/header.h"
+#include "image/stride.h"
 #include "image/handler/default.h"
 #include "image/name_parser.h"
 #include "image/format/list.h"
@@ -222,9 +223,12 @@ namespace MR
         for (size_t n = 1; n < H.ndim(); ++n)
           out << "," << H.vox (n);
 
-        out << "\nlayout: " << (H.stride (0) >0 ? "+" : "-") << abs (H.stride (0))-1;
+        Stride::List stride = Stride::get (H);
+        Stride::symbolise (stride);
+
+        out << "\nlayout: " << (stride[0] >0 ? "+" : "-") << abs (stride[0])-1;
         for (size_t n = 1; n < H.ndim(); ++n)
-          out << "," << (H.stride (n) >0 ? "+" : "-") << abs (H.stride (n))-1;
+          out << "," << (stride[n] >0 ? "+" : "-") << abs (stride[n])-1;
 
         out << "\ndatatype: " << H.datatype().specifier();
 

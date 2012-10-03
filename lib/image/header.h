@@ -64,14 +64,15 @@ namespace MR
         }
 
         //! copy constructor
-        /*! This copies everything over apart from the handler. */
+        /*! This copies everything over apart from the handler and the
+         * intensity scaling. */
         Header (const Header& H) :
           Info (H.info()),
           std::map<std::string, std::string> (H),
           format_ (H.format_),
           DW_scheme_ (H.DW_scheme_),
-          offset_ (H.offset_),
-          scale_ (H.scale_),
+          offset_ (0.0),
+          scale_ (1.0),
           comments_ (H.comments_) { }
 
         Header& operator= (const Header& H) {
@@ -79,8 +80,8 @@ namespace MR
           std::map<std::string, std::string>::operator= (H);
           comments_ = H.comments_;
           format_ = H.format_;
-          offset_ = H.offset_;
-          scale_ = H.scale_;
+          offset_ = 0.0;
+          scale_ = 1.0;
           DW_scheme_ = H.DW_scheme_;
           handler_ = NULL;
           return *this;
@@ -123,6 +124,16 @@ namespace MR
         void apply_intensity_scaling (float scaling, float bias = 0.0) {
           scale_ *= scaling;
           offset_ = scaling * offset_ + bias;
+        }
+        void set_intensity_scaling (float scaling = 1.0, float bias = 0.0) {
+          scale_ = scaling;
+          offset_ = bias;
+        }
+        void set_intensity_scaling (const Header& H) {
+          set_intensity_scaling (H.intensity_scale(), H.intensity_offset());
+        }
+        void reset_intensity_scaling () {
+          set_intensity_scaling ();
         }
 
 
