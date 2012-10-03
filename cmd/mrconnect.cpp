@@ -80,14 +80,14 @@ void usage ()
 void run ()
 {
   Image::Header input_header (argument[0]);
-  Image::Buffer<float> input_data (input_header);
-  Image::Buffer<float>::voxel_type input_voxel (input_data);
+  Image::Buffer<bool> input_data (input_header);
+  Image::Buffer<bool>::voxel_type input_voxel (input_data);
 
   Image::Filter::ConnectedComponents connected_filter(input_voxel);
   Image::Header header (input_data);
   header.info() = connected_filter.info();
-  Image::Buffer<int> output_data (argument[1], header);
-  Image::Buffer<int>::voxel_type output_vox (output_data);
+  Image::Buffer<bool> output_data (argument[1], header);
+  Image::Buffer<bool>::voxel_type output_vox (output_data);
 
   Options opt = get_options ("angle");
   float angular_threshold = 15;

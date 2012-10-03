@@ -116,7 +116,7 @@ namespace MR
         template <class P1, class P2> void image2scanner_dir (const P1& i, P2& s) const {
           transform_direction (s, I2S, i);
         }
-        //! Transform the orientation \p v from voxel-space to scanner-space \p s
+        //! Transform the orientation \p v from scanner-space to image-space \p s
         template <class P1, class P2> void scanner2image_dir (const P1& s, P2& i) const {
           transform_direction (i, S2I, s);
         }

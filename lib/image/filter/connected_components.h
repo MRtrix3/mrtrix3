@@ -158,7 +158,7 @@ namespace MR
             // 1st pass, store mask image indices and their index in the array
             Image::LoopInOrder loop (mask_);
             for (loop.start (mask_, index_image); loop.ok(); loop.next (mask_, index_image)) {
-              if (mask_.value() > 0.5) {
+              if (mask_.value() >= 0.5) {
                 // For each voxel, store the index within mask_indices for 2nd pass
                 index_image.value() = mask_indices_.size();
                 std::vector<int> index(4);
@@ -176,7 +176,7 @@ namespace MR
                 for (int z = -1; z <= 1; z++) {
                   if (x != 0 || y != 0 || z != 0) {
                     int temp = abs(x) + abs(y) + abs(z);
-                    if (!do_26_connectivity_ && temp > 1 )
+                    if (!do_26_connectivity_ && temp > 1)
                       continue;
                     if (abs(x) && ignore_dim_[0])
                       continue;
@@ -204,7 +204,7 @@ namespace MR
                 for (size_t dim = 0; dim < 3; dim++)
                   mask_neigh[dim] = (*it)[dim] + neighbour_offsets[n][dim];
                 if (Image::Nav::within_bounds(mask_neigh)) {
-                  if (mask_neigh.value() > 0.5) {
+                  if (mask_neigh.value() >= 0.5) {
                     voxel_assign (index_image, mask_neigh);
                     neighbour_indices.push_back (index_image.value());
                   }

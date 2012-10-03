@@ -44,6 +44,7 @@ namespace MR
           x[1] = vx;
           x[2] = vy;
           x[3] = vz;
+          normalise();
         }
 
         Versor (value_type b, value_type c, value_type d) {
@@ -68,6 +69,24 @@ namespace MR
           from_matrix (matrix);
         }
 
+        Versor (const Vector<value_type>& param) {
+          if (param.size() == 3) {
+            x[0] = sqrt (1.0 - Math::norm2 (param));
+            x[1] = param[0];
+            x[2] = param[1];
+            x[3] = param[2];
+          }
+          else if (param.size() == 4) {
+            x[0] = param[0];
+            x[1] = param[1];
+            x[2] = param[2];
+            x[3] = param[3];
+            normalise();
+          }
+          else
+            throw Exception ("unexpected Vector size in Versor initialiser!");
+        }
+
         operator bool () const {
           return ! (isnan (x[0]) || isnan (x[1]) || isnan (x[2]) || isnan (x[3]));
         }
@@ -85,11 +104,7 @@ namespace MR
         }
 
         void normalise () {
-          value_type n = 1.0 / sqrt (x[0]*x[0] + x[1]*x[1] + x[2]*x[2] + x[3]*x[3]);
-          x[0] *= n;
-          x[1] *= n;
-          x[2] *= n;
-          x[3] *= n;
+          Math::normalise (x, 4);
         }
 
         void from_matrix (const Math::Matrix<value_type>& matrix);
