@@ -129,7 +129,7 @@ bool FOD_FMLS::operator() (const SH_coefs& in, FOD_lobes& out) const {
 
   for (std::vector<FOD_lobe>::iterator i = out.begin(); i != out.end();) { // Empty increment
 
-    if (i->is_negative() || i->get_peak_value() < MIN(min_peak_amp, peak_value_threshold) || i->get_integral() < min_integral) {
+    if (i->is_negative() || i->get_peak_value() < MAX(min_peak_amp, peak_value_threshold) || i->get_integral() < min_integral) {
       i = out.erase (i);
     } else {
       const dir_t peak_bin (i->get_peak_dir_bin());
