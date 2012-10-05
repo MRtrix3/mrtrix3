@@ -50,8 +50,8 @@ class Directions {
 
   public:
 
-    Directions (const std::string&);
-    Directions (const size_t); // Can pass a number as a string at the command-line for loading a pre-defined direction set
+    explicit Directions (const std::string&);
+    explicit Directions (const size_t); // Can pass a number as a string at the command-line for loading a pre-defined direction set
     Directions (const Directions&);
     ~Directions ();
 
