@@ -31,58 +31,6 @@ namespace MR {
     namespace Tractography {
 
 
-      void ROI::get_image (const std::string& name)
-      {
-        Image::Buffer<float> data (name);
-        Image::Buffer<float>::voxel_type vox (data);
-        std::vector<size_t> bottom (vox.ndim(), 0), top (vox.ndim(), 0);
-        std::fill_n (bottom.begin(), 3, std::numeric_limits<size_t>::max());
-        float sum = 0.0, max = 0.0;
-
-        Image::Loop loop (0,3);
-        for (loop.start (vox); loop.ok(); loop.next (vox)) {
-          if (vox.value() > 0.0) {
-            sum += vox.value();
-            max = std::max (max, float (vox.value()));
-            if (size_t(vox[0]) < bottom[0]) bottom[0] = vox[0];
-            if (size_t(vox[0]) > top[0])    top[0]    = vox[0];
-            if (size_t(vox[1]) < bottom[1]) bottom[1] = vox[1];
-            if (size_t(vox[1]) > top[1])    top[1]    = vox[1];
-            if (size_t(vox[2]) < bottom[2]) bottom[2] = vox[2];
-            if (size_t(vox[2]) > top[2])    top[2]    = vox[2];
-          }
-          else if (vox.value() < 0.0)
-            throw Exception ("cannot have negative values in ROI");
-        }
-
-        if (!sum)
-          throw Exception ("Cannot use image " + name + " as ROI - image is empty");
-
-        if (bottom[0]) --bottom[0];
-        if (bottom[1]) --bottom[1];
-        if (bottom[2]) --bottom[2];
-
-        top[0] = std::min (size_t (data.dim(0)-bottom[0]), top[0]+2-bottom[0]);
-        top[1] = std::min (size_t (data.dim(1)-bottom[1]), top[1]+2-bottom[1]);
-        top[2] = std::min (size_t (data.dim(2)-bottom[2]), top[2]+2-bottom[2]);
-
-        Image::Info new_info (data);
-        for (size_t axis = 0; axis != 3; ++axis) {
-          new_info.dim(axis) = top[axis];
-          for (size_t i = 0; i < 3; ++i)
-            new_info.transform()(i,3) += bottom[axis] * new_info.vox(axis) * new_info.transform()(i,axis);
-        }
-
-        Image::Adapter::Subset< Image::Buffer<float>::voxel_type > sub (vox, bottom, top);
-
-        image = new SeedImage (sub, new_info, data.name(), max);
-
-        vol = vox.vox(0) * vox.vox(1) * vox.vox(2) * sum;
-
-      }
-
-
-
       void ROI::get_mask (const std::string& name)
       {
         Image::Buffer<bool> data (name);

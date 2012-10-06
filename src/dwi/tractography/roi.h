@@ -55,19 +55,15 @@ namespace MR {
               vol = 4.0*M_PI*Math::pow3(rad)/3.0;
             }
             catch (...) { 
-              INFO ("could not parse spherical ROI specification \"" + spec + "\" - assuming mask image");
-              Image::Header H (spec);
-              if (H.datatype() == DataType::Bit)
-                get_mask (spec);
-              else
-                get_image (spec);
+              DEBUG ("could not parse spherical ROI specification \"" + spec + "\" - assuming mask image");
+              get_mask (spec);
             }
           }
 
-          std::string shape () const { return (mask ? "mask" : (image ? "image" : "sphere")); }
+          std::string shape () const { return (mask ? "image" : "sphere"); }
 
           std::string parameters () const {
-            return (mask ? mask->name() : (image ? image->name() : str(pos[0]) + "," + str(pos[1]) + "," + str(pos[2]) + "," + str(rad)));
+            return (mask ? mask->name() : str(pos[0]) + "," + str(pos[1]) + "," + str(pos[2]) + "," + str(rad));
           }
 
           float volume () const { return (vol); }
@@ -85,9 +81,6 @@ namespace MR {
                 return false;
               return (voxel.value());
             }
-
-            if (image)
-              throw Exception ("cannot use non-binary image as a binary roi");
 
             return ((pos-p).norm2() <= rad2);
 
@@ -107,19 +100,6 @@ namespace MR {
               } while (!seed.value());
               p.set (seed[0]+rng.uniform()-0.5, seed[1]+rng.uniform()-0.5, seed[2]+rng.uniform()-0.5);
               return (mask->interp.voxel2scanner (p));
-            }
-
-            if (image) {
-              SeedImage::voxel_type seed (*image);
-              float sampler = 0.0;
-              do {
-                seed[0] = rng.uniform_int (image->dim(0));
-                seed[1] = rng.uniform_int (image->dim(1));
-                seed[2] = rng.uniform_int (image->dim(2));
-                sampler = rng.uniform() * image->max_value;
-              } while (seed.value() < MAX (sampler, std::numeric_limits<float>::epsilon()));
-              p.set (seed[0]+rng.uniform()-0.5, seed[1]+rng.uniform()-0.5, seed[2]+rng.uniform()-0.5);
-              return (image->interp.voxel2scanner (p));
             }
 
             do {
@@ -153,28 +133,11 @@ namespace MR {
               Image::Transform interp;
           };
 
-          class SeedImage : public Image::BufferScratch<float> {
-            public:
-              template <class InputVoxelType> 
-                SeedImage (InputVoxelType& D, const Image::Info& info, const std::string& description, const float max) :
-                  Image::BufferScratch<float> (info, description),
-                  interp (*this),
-                  max_value (max)
-                {
-                  Image::BufferScratch<float>::voxel_type this_vox (*this);
-                  Image::copy (D, this_vox);
-                }
-              Image::Transform interp;
-              float max_value;
-          };
-
           Point<>  pos;
           float  rad, rad2, vol;
           RefPtr<Mask> mask;
-          RefPtr<SeedImage> image;
 
           void get_mask  (const std::string& name);
-          void get_image (const std::string& name);
 
       };
 
