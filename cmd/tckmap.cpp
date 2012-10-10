@@ -87,7 +87,7 @@ OPTIONS
 
   + Option ("contrast",
       "define the desired form of contrast for the output image\n"
-      "Options are: tdi, endpoint, length, invlength, scalar_map, scalar_map_count, fod_amp, curvature (default: tdi)")
+      "Options are: tdi, precise_tdi, endpoint, length, invlength, scalar_map, scalar_map_count, fod_amp, curvature (default: tdi)")
     + Argument ("type").type_choice (contrasts)
 
   + Option ("image",
@@ -333,6 +333,16 @@ void run () {
       stat_tck = MEAN;
       break;
 
+    case PRECISE_TDI:
+      if (stat_vox != SUM) {
+        INFO ("Cannot use voxel statistic other than 'sum' for precise TDI generation - ignoring");
+        stat_vox = SUM;
+      }
+      if (stat_tck != MEAN)
+        INFO ("Cannot use track statistic other than default for precise TDI generation - ignoring");
+      stat_tck = MEAN;
+      break;
+
     case ENDPOINT:
       if (stat_vox != SUM && stat_vox != MEAN) {
         INFO ("Cannot use voxel statistic other than 'sum' or 'mean' for endpoint map generation - ignoring");
@@ -420,6 +430,7 @@ void run () {
   std::string msg = str("Generating ") + (colour ? "colour " : "") + "image with ";
   switch (contrast) {
     case TDI:              msg += "density";                    break;
+    case PRECISE_TDI:      msg += "density (precise)";          break;
     case ENDPOINT:         msg += "endpoint density";           break;
     case LENGTH:           msg += "length";                     break;
     case INVLENGTH:        msg += "inverse length";             break;
@@ -463,6 +474,7 @@ void run () {
 
   switch (contrast) {
     case TDI:              header.comments().push_back ("track density image"); break;
+    case PRECISE_TDI:      header.comments().push_back ("track density image (precise calculation)"); break;
     case ENDPOINT:         header.comments().push_back ("track endpoint density image"); break;
     case LENGTH:           header.comments().push_back ("track density image (weighted by track length)"); break;
     case INVLENGTH:        header.comments().push_back ("track density image (weighted by inverse track length)"); break;
@@ -490,6 +502,23 @@ void run () {
       Ptr< MapWriterBase<SetVoxel> > writer (make_writer<SetVoxel> (header, argument[1], dump, stat_vox));
       TrackMapperTWI    <SetVoxel>   mapper (header, interp_matrix, map_zero, step_size, contrast, stat_tck);
       Thread::run_queue (loader, 1, TrackAndIndex(), mapper, 0, SetVoxel(), *writer, 1);
+    }
+
+  } else if (contrast == PRECISE_TDI) {
+
+    if (!manual_datatype) {
+      header.datatype() = DataType::Float32;
+      header.datatype().set_byte_order_native();
+    }
+
+    if (colour) {
+      MapWriterColour<SetVoxelDir> writer (header, argument[1], dump, stat_vox);
+      TrackMapperTWI <SetVoxelDir> mapper (header, interp_matrix, map_zero, step_size, contrast, stat_tck);
+      Thread::run_queue (loader, 1, TrackAndIndex(), mapper, 0, SetVoxelDir(), writer, 1);
+    } else {
+      MapWriter      <float, SetVoxelDir> writer (header, argument[1], dump, stat_vox);
+      TrackMapperTWI <       SetVoxelDir> mapper (header, interp_matrix, map_zero, step_size, contrast, stat_tck);
+      Thread::run_queue (loader, 1, TrackAndIndex(), mapper, 0, SetVoxelDir(), writer, 1);
     }
 
   } else if (contrast == CURVATURE && stat_tck == GAUSSIAN) {

@@ -38,6 +38,45 @@ template <> float get_factor<SetVoxelDECFactor> (const SetVoxelDECFactor& set, c
 
 
 
+
+template <>
+bool MapWriter<float, SetVoxelDir>::operator () (const SetVoxelDir& in)
+{
+  for (SetVoxelDir::const_iterator i = in.begin(); i != in.end(); ++i) {
+    Image::Nav::set_pos (v_buffer, *i);
+    const float factor = i->get_dir().norm();
+    switch (MapWriterBase<SetVoxelDir>::voxel_statistic) {
+    case SUM:  v_buffer.value() += factor;                       break;
+    case MIN:  v_buffer.value() = MIN(v_buffer.value(), factor); break;
+    case MAX:  v_buffer.value() = MAX(v_buffer.value(), factor); break;
+    case MEAN:
+      // Only increment counts[] if it is necessary to do so given the chosen statistic
+      v_buffer.value() += factor;
+      Image::Nav::set_pos (*v_counts, *i);
+      (*v_counts).value() += 1;
+      break;
+    default:
+      throw Exception ("Unknown / unhandled voxel statistic in MapWriter::execute()");
+    }
+  }
+  return true;
+}
+
+
+template <>
+bool MapWriterColour<SetVoxelDir>::operator () (const SetVoxelDir& in)
+{
+  for (SetVoxelDir::const_iterator i = in.begin(); i != in.end(); ++i) {
+    Image::Nav::set_pos (v_buffer, *i);
+    const Point<float> tangent (i->get_dir());
+    const Point<float> pos_tangent (Math::abs (tangent[0]), Math::abs (tangent[1]), Math::abs (tangent[2]));
+    const Point<float> current_value = get_value();
+    set_value (current_value + pos_tangent);
+  }
+  return true;
+}
+
+
 }
 }
 }

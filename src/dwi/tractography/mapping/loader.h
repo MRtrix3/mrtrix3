@@ -46,15 +46,18 @@ class TrackLoader
       reader (file),
       counter (0),
       total_count (count),
-      progress ("mapping tracks to image...", total_count)
+      progress (new ProgressBar ("mapping tracks to image...", total_count))
     { }
 
     virtual bool operator() (TrackAndIndex& out)
     {
-      if (!reader.next (out.tck))
+      if (!reader.next (out.tck)) {
+        delete progress;
+        progress = NULL;
         return false;
+      }
       out.index = counter++;
-      ++progress;
+      ++(*progress);
       return true;
     }
 
@@ -62,7 +65,7 @@ class TrackLoader
     DWI::Tractography::Reader<float>& reader;
     size_t counter;
     size_t total_count;
-    ProgressBar progress;
+    ProgressBar* progress;
 
 };
 

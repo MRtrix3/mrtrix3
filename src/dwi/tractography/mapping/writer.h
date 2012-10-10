@@ -299,6 +299,9 @@ class MapWriter : public MapWriterBase<Cont>
 };
 
 
+template <> bool MapWriter<float, SetVoxelDir>::operator () (const SetVoxelDir& in);
+
+
 
 template <typename Cont>
 class MapWriterColour : public MapWriterBase<Cont>
@@ -389,23 +392,23 @@ class MapWriterColour : public MapWriterBase<Cont>
       for (typename Cont::const_iterator i = in.begin(); i != in.end(); ++i) {
         Image::Nav::set_pos (v_buffer, *i);
         const float factor = get_factor (in, i);
-        Point<float> scaled_dir (i->get_dir());
-        scaled_dir *= factor;
+        Point<float> scaled_colour (i->get_colour());
+        scaled_colour *= factor;
         const Point<float> current_value = get_value();
         switch (MapWriterBase<Cont>::voxel_statistic) {
         case SUM:
-          set_value (current_value + scaled_dir);
+          set_value (current_value + scaled_colour);
           break;
         case MIN:
-          if (scaled_dir.norm2() < current_value.norm2())
-            set_value (scaled_dir);
+          if (scaled_colour.norm2() < current_value.norm2())
+            set_value (scaled_colour);
           break;
         case MAX:
-          if (scaled_dir.norm2() > current_value.norm2())
-            set_value (scaled_dir);
+          if (scaled_colour.norm2() > current_value.norm2())
+            set_value (scaled_colour);
           break;
         case MEAN:
-          set_value (current_value + scaled_dir);
+          set_value (current_value + scaled_colour);
           Image::Nav::set_pos (*MapWriterBase<Cont>::v_counts, *i);
           (*MapWriterBase<Cont>::v_counts).value() += 1;
           break;
@@ -442,6 +445,10 @@ class MapWriterColour : public MapWriterBase<Cont>
 
 };
 
+
+// If using precise mapping, need to explicitly map to positive octant
+// Only sum is supported, no factor provided
+template <> bool MapWriterColour<SetVoxelDir>::operator () (const SetVoxelDir&);
 
 
 

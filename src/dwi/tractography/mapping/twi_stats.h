@@ -30,7 +30,7 @@ namespace Tractography {
 namespace Mapping {
 
 
-enum contrast_t { TDI, ENDPOINT, LENGTH, INVLENGTH, SCALAR_MAP, SCALAR_MAP_COUNT, FOD_AMP, CURVATURE };
+enum contrast_t { TDI, PRECISE_TDI, ENDPOINT, LENGTH, INVLENGTH, SCALAR_MAP, SCALAR_MAP_COUNT, FOD_AMP, CURVATURE };
 //const char** const contrasts;
 
 

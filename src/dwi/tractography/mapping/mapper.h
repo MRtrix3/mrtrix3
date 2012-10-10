@@ -335,10 +335,11 @@ void TrackMapperTWI<Cont>::set_factor (const std::vector< Point<float> >& tck, C
 
   switch (contrast) {
 
-    case TDI:       out.factor = 1.0; break;
-    case ENDPOINT:  out.factor = 1.0; break;
-    case LENGTH:    out.factor = (step_size * (tck.size() - 1)); break;
-    case INVLENGTH: out.factor = (step_size / (tck.size() - 1)); break;
+    case TDI:         out.factor = 1.0; break;
+    case PRECISE_TDI: out.factor = 1.0; break;
+    case ENDPOINT:    out.factor = 1.0; break;
+    case LENGTH:      out.factor = (step_size * (tck.size() - 1)); break;
+    case INVLENGTH:   out.factor = (step_size / (tck.size() - 1)); break;
 
     case SCALAR_MAP:
     case SCALAR_MAP_COUNT:
