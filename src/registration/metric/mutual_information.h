@@ -20,10 +20,9 @@
 
  */
 
-#ifndef __registration_metric_mean_squared_h__
-#define __registration_metric_mean_squared_h__
+#ifndef __registration_metric_mututual_information_h__
+#define __registration_metric_mututual_information_h__
 
-#include "registration/metric/base.h"
 #include "point.h"
 #include "math/vector.h"
 
@@ -33,8 +32,10 @@ namespace MR
   {
     namespace Metric
     {
-      class MeanSquared : public Base {
+      class MutualInformation : public Base {
         public:
+
+          typedef double value_type;
 
           template <class Params>
             double operator() (Params& params,
@@ -42,21 +43,44 @@ namespace MR
                                Point<double> moving_point,
                                Math::Vector<double>& gradient) {
 
-              params.transformation.get_jacobian_wrt_params (target_point, this->jacobian_);
-              Math::Vector<double> moving_grad (3);
-              this->get_moving_gradient(moving_point, moving_grad);
+              params.transformation.get_jacobian_wrt_params (target_point, jacobian_);
 
-              double diff = params.moving_image_interp.value() - params.target_image.value();
+              value_type diff = params.moving_image_interp.value() - params.target_image.value();
 
               for (size_t par = 0; par < gradient.size(); par++) {
-                double sum = 0.0;
+                value_type sum = 0.0;
                 for( size_t dim = 0; dim < 3; dim++) {
-                  sum += 2.0 * diff * this->jacobian_(dim, par) * moving_grad[dim];
+                  sum += 2.0 * diff * jacobian_(dim, par) * moving_grad[dim];
                 }
                 gradient[par] += sum;
               }
               return diff * diff;
           }
+
+        protected:
+
+          value_type evaluate_cubic_bspline_kernel (value_type val) {
+            const value_type abs_val = Math::abs(val);
+            if (abs_val  < 1.0) {
+              const value_type sqr_val = abs_val * abs_val;
+              return (4.0 - 6.0 * sqr_val + 3.0 * sqr_val * abs_val) / 6.0;
+            } else if (abs_val < 2.0) {
+              const value_type sqr_val = abs_val * abs_val;
+              return (8.0 - 12.0 * abs_val + 6.0 * sqr_val - sqr_val * abs_val) / 6.0;
+            } else {
+              return 0.0;
+            }
+          }
+
+          size_t m_NumberOfHistogramBins;
+          double  m_MovingImageNormalizedMin;
+          double  m_FixedImageNormalizedMin;
+          double  m_FixedImageTrueMin;
+          double  m_FixedImageTrueMax;
+          double  m_MovingImageTrueMin;
+          double  m_MovingImageTrueMax;
+          double  m_FixedImageBinSize;
+          double  m_MovingImageBinSize;
 
       };
     }
