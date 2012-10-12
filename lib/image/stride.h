@@ -348,8 +348,22 @@ namespace MR
 
         return out;
       }
-    }
 
+
+
+      //! convenience function for use with Image::BufferPreload
+      /*! when passed as the second argument to the Image::BufferPreload
+       * constructor, ensures the specified axis will be contiguous in RAM. */
+      inline List contiguous_along_axis (size_t axis) 
+      {
+        List strides (axis+1,0);
+        strides[axis] = 1;
+        return strides;
+      }
+
+
+
+    }
   }
 }
 
