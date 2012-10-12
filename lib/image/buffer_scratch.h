@@ -43,6 +43,7 @@ namespace MR
           BufferScratch (const Template& info) :
             ConstInfo (info),
             data_ (new value_type [Image::voxel_count (*this)]) {
+              Info::datatype_ = DataType::from<value_type>();
               zero();
             }
 
@@ -68,6 +69,10 @@ namespace MR
 
         void set_value (size_t index, value_type val) {
           data_[index] = val;
+        }
+
+        value_type* address (size_t index) const {
+          return &data_[index];
         }
 
         friend std::ostream& operator<< (std::ostream& stream, const BufferScratch& V) {

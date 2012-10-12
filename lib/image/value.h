@@ -180,6 +180,13 @@ namespace MR
           return set_value (value);
         }
 
+        //! return RAM address of current voxel
+        /*! \note this will only work with Image::BufferPreload and
+         * Image::BufferScratch. */
+        value_type* address () { 
+          return S.address();
+        }
+
         friend std::ostream& operator<< (std::ostream& stream, const Value& V) {
           stream << V.get_value();
           return stream;

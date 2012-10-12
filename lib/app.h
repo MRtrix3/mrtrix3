@@ -114,6 +114,9 @@ namespace MR
           return p;
         }
         operator int () const;
+        operator ssize_t () const {
+          return operator int ();
+        }
         operator size_t () const {
           return operator int ();
         }

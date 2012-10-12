@@ -107,7 +107,7 @@ namespace MR
       }
 
       template <typename T>
-      static DataType from ();
+        static DataType from ();
 
       static DataType native (DataType dt) {
         dt.set_byte_order_native();

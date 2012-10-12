@@ -97,6 +97,13 @@ namespace MR
             return Image::Value<Voxel> (*this);
           }
 
+          //! return RAM address of current voxel
+          /*! \note this will only work with Image::BufferPreload and
+           * Image::BufferScratch. */
+          value_type* address () const {
+            return data_.address (offset_);
+          }
+
           bool valid (size_t from_axis = 0, size_t to_axis = std::numeric_limits<size_t>::max()) const {
             to_axis = std::min (to_axis, ndim());
             for (size_t n = from_axis; n < to_axis; ++n)

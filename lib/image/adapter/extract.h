@@ -33,6 +33,106 @@ namespace MR
     namespace Adapter
     {
 
+      template <class VoxelType> class Extract1D : public Voxel<VoxelType>
+      {
+        public:
+          using Voxel<VoxelType>::ndim;
+          using Voxel<VoxelType>::vox;
+          using typename Voxel<VoxelType>::parent_vox;
+          typedef typename VoxelType::value_type value_type;
+
+          Extract1D (const VoxelType& original, const size_t axis, const std::vector<int>& indices) :
+              Voxel<VoxelType> (original),
+              extract_axis (axis),
+              indices (indices),
+              trans (original.transform()) {
+                reset();
+
+                if (extract_axis < 3) {
+                  Math::Vector<float> a (4), b (4);
+                  a = 0.0;
+                  a[extract_axis] = indices[0] * vox (extract_axis);
+                  a[3] = 1.0;
+                  Math::mult (b, trans, a);
+                  trans.column (3) = b;
+                }
+              }
+
+          int dim (size_t axis) const {
+            return ( axis == extract_axis ? indices.size() : Voxel<VoxelType>::dim (axis) );
+          }
+
+          const Math::Matrix<float>& transform () const {
+            return trans;
+          }
+
+          Image::Info info () const { 
+            return Image::Info (*this);
+          };
+
+          void reset () {
+            for (size_t n = 0; n < ndim(); ++n) 
+              parent_vox[n] = ( n == extract_axis ? indices[0] : 0 );
+            current_pos = 0;
+          }
+
+          Position<Extract1D<VoxelType> > operator[] (size_t axis) {
+            return Position<Extract1D<VoxelType> > (*this, axis);
+          }
+
+          int operator[] (size_t axis) const {
+            return get_pos (axis);
+          }
+
+          friend std::ostream& operator<< (std::ostream& stream, const Extract1D& V) {
+            stream << "Extract1D voxel adapter for image \"" << V.name() << "\", datatype " << V.datatype().specifier() << ", position [ ";
+            for (size_t n = 0; n < V.ndim(); ++n) 
+              stream << V[n] << " ";
+            stream << "], value = " << V.value();
+            return stream;
+          }
+
+        private:
+          size_t extract_axis;
+          const std::vector<int> indices;
+          Math::Matrix<float> trans;
+          int current_pos;
+
+          int get_pos (size_t axis) const {
+            return ( axis == extract_axis ? current_pos : parent_vox[axis] );
+          }
+
+          void set_pos (size_t axis, int position) {
+            if (axis == extract_axis) {
+              parent_vox[axis] = indices[position];
+              current_pos = position;
+            }
+            else 
+              parent_vox[axis] = position;
+          }
+
+          void move_pos (size_t axis, int increment) {
+            if (axis == extract_axis) {
+              int prev_pos = indices[current_pos];
+              current_pos += increment;
+              parent_vox[axis] += current_pos < int(indices.size()) ? indices[current_pos] - prev_pos : 0;
+            }
+            else 
+              parent_vox[axis] += increment;
+          }
+
+          friend class Position<Extract1D<VoxelType> >;
+      };
+
+
+
+
+
+
+
+
+
+
       template <class VoxelType> class Extract : public Voxel<VoxelType>
       {
         public:
@@ -41,28 +141,28 @@ namespace MR
           using typename Voxel<VoxelType>::parent_vox;
           typedef typename VoxelType::value_type value_type;
 
-          Extract (const VoxelType& original, const std::vector<std::vector<int> >& positions) :
+          Extract (const VoxelType& original, const std::vector<std::vector<int> >& indices) :
             Voxel<VoxelType> (original),
-            pos_ (ndim()), 
-            indices_ (positions),
-            transform_ (original.transform()) {
+            current_pos (ndim()), 
+            indices (indices),
+            trans (original.transform()) {
               reset();
 
               Math::Vector<float> a (4), b (4);
-              a[0] = indices_[0][0] * vox (0);
-              a[1] = indices_[1][0] * vox (1);
-              a[2] = indices_[2][0] * vox (2);
+              a[0] = indices[0][0] * vox (0);
+              a[1] = indices[1][0] * vox (1);
+              a[2] = indices[2][0] * vox (2);
               a[3] = 1.0;
-              Math::mult (b, transform_, a);
-              transform_.column (3) = b;
+              Math::mult (b, trans, a);
+              trans.column (3) = b;
             }
 
           int dim (size_t axis) const {
-            return indices_[axis].size();
+            return indices[axis].size();
           }
 
           const Math::Matrix<float>& transform () const {
-            return transform_;
+            return trans;
           }
 
           Image::Info info () const { 
@@ -71,8 +171,8 @@ namespace MR
 
           void reset () {
             for (size_t n = 0; n < ndim(); ++n) {
-              pos_[n] = 0;
-              parent_vox[n] = indices_[n][0];
+              current_pos[n] = 0;
+              parent_vox[n] = indices[n][0];
             }
           }
 
@@ -81,22 +181,22 @@ namespace MR
           }
 
         private:
-          std::vector<size_t> pos_;
-          const std::vector<std::vector<int> > indices_;
-          Math::Matrix<float> transform_;
+          std::vector<size_t> current_pos;
+          const std::vector<std::vector<int> > indices;
+          Math::Matrix<float> trans;
 
-          ssize_t get_pos (size_t axis) const {
-            return pos_[axis];
+          int get_pos (size_t axis) const {
+            return current_pos[axis];
           }
-          void set_pos (size_t axis, ssize_t position) {
-            pos_[axis] = position;
-            parent_vox[axis] = indices_[axis][position];
+          void set_pos (size_t axis, int position) {
+            current_pos[axis] = position;
+            parent_vox[axis] = indices[axis][position];
           }
 
-          void move_pos (size_t axis, ssize_t increment) {
-            int prev = pos_[axis];
-            pos_[axis] += increment;
-            parent_vox[axis] += indices_[axis][pos_[axis]] - indices_[axis][prev];
+          void move_pos (size_t axis, int increment) {
+            int prev = current_pos[axis];
+            current_pos[axis] += increment;
+            parent_vox[axis] += indices[axis][current_pos[axis]] - indices[axis][prev];
           }
 
           friend class Position<Extract<VoxelType> >;

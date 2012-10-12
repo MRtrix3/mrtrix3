@@ -57,6 +57,10 @@ namespace MR
               return parent_vox.info();
             }
 
+            const Image::Info& buffer () const {
+              return parent_vox.buffer();
+            }
+
             DataType datatype () const {
               return parent_vox.datatype();
             }

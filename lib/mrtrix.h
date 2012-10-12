@@ -120,9 +120,11 @@ namespace MR
 
 
 
-  template <class T> inline std::string str (const T& value)
+  template <class T> inline std::string str (const T& value, int precision = 0)
   {
     std::ostringstream stream;
+    if (precision > 0)
+      stream.precision (precision);
     stream << value;
     if (stream.fail())
       throw Exception ("error converting value to string");
@@ -315,9 +317,11 @@ namespace MR
 **********************************************************************/
 
 
-  template <> inline std::string str<cfloat> (const cfloat& value)
+  template <> inline std::string str<cfloat> (const cfloat& value, int precision)
   {
     std::ostringstream stream;
+    if (precision > 0) 
+      stream.precision (precision);
     stream << value.real();
     if (value.imag()) 
       stream << std::showpos << value.imag() << "i";
@@ -356,9 +360,11 @@ namespace MR
 
 
 
-  template <> inline std::string str<cdouble> (const cdouble& value)
+  template <> inline std::string str<cdouble> (const cdouble& value, int precision)
   {
     std::ostringstream stream;
+    if (precision > 0) 
+      stream.precision (precision);
     stream << value.real();
     if (value.imag()) 
       stream << std::showpos << value.imag() << "i";

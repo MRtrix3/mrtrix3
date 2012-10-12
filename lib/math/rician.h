@@ -42,6 +42,24 @@ namespace MR
       }
 
 
+      template <typename T> inline T lnP (const T measured, T actual, const T one_over_noise_squared, T& dP_dactual)
+      {
+        assert (measured >= 0.0);
+        assert (one_over_noise_squared > 0.0);
+
+        actual = abs (actual);
+        T nm = one_over_noise_squared * measured;
+        T nms = nm * actual;
+        T F0 = Bessel::I0_scaled (nms);
+        T m_a = measured - actual;
+        T nm_a = one_over_noise_squared * m_a;
+        T F1_F0 = (Bessel::I1_scaled (nms) - F0) / F0;
+        assert (nms >= 0.0); // (nms < 0.0) F1_F0 = -F1_F0;
+        dP_dactual = -nm_a - nm * F1_F0;
+        return (0.5 * nm_a * m_a - log (nm * F0));
+      }
+
+
 
 
       template <typename T> inline T lnP (const T measured, const T actual, const T one_over_noise_squared, T& dP_dactual, T& dP_dN)

@@ -77,6 +77,11 @@ namespace MR
           data_[index] = val;
         }
 
+        value_type* address (size_t index) const {
+          return &data_[index];
+        }
+
+
         friend std::ostream& operator<< (std::ostream& stream, const BufferPreload& V) {
           stream << "preloaded data for image \"" << V.name() << "\": " + str (Image::voxel_count (V))
             + " voxels in " + V.datatype().specifier() + " format, stored at address " + str ((void*) V.data_);

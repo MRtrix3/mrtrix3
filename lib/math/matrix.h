@@ -18,7 +18,7 @@
    You should have received a copy of the GNU General Public License
    along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
 
-*/
+ */
 
 #ifndef __math_matrix_h__
 #define __math_matrix_h__
@@ -121,7 +121,8 @@ namespace MR
      * // every other element (i.e. stride 2).
      * \endcode
      */
-    template <typename ValueType> class Matrix : protected GSLMatrix<ValueType>
+    template <typename ValueType> 
+      class Matrix : protected GSLMatrix<ValueType>
     {
       public:
         template <typename U> friend class Matrix;
@@ -136,41 +137,41 @@ namespace MR
          * specific portions of the data (i.e. a subset of a Matrix).
          */
         class View : public Matrix<ValueType>
-        {
-          public:
-            View (const View& M) : Matrix<ValueType> (M) { }
+      {
+        public:
+          View (const View& M) : Matrix<ValueType> (M) { }
 
-            Matrix<ValueType>& operator= (ValueType value) throw () {
-              return Matrix<ValueType>::operator= (value);
-            }
-            Matrix<ValueType>& operator= (const Matrix<ValueType>& M) throw () {
-              return Matrix<ValueType>::operator= (M);
-            }
-            template <typename U> Matrix<ValueType>& operator= (const Matrix<U>& M) throw () {
-              return Matrix<ValueType>::operator= (M);
-            }
+          Matrix<ValueType>& operator= (ValueType value) throw () {
+            return Matrix<ValueType>::operator= (value);
+          }
+          Matrix<ValueType>& operator= (const Matrix<ValueType>& M) throw () {
+            return Matrix<ValueType>::operator= (M);
+          }
+          template <typename U> Matrix<ValueType>& operator= (const Matrix<U>& M) throw () {
+            return Matrix<ValueType>::operator= (M);
+          }
 
-          private:
-            View () {
-              assert (0);
-            }
-            View (const Matrix<ValueType>& M) {
-              assert (0);
-            }
-            template <typename U> View (const Matrix<U>& M) {
-              assert (0);
-            }
-            View (ValueType* data, size_t nrows, size_t ncolumns, size_t row_skip) throw () {
-              Matrix<ValueType>::size1 = nrows;
-              Matrix<ValueType>::size2 = ncolumns;
-              Matrix<ValueType>::tda = row_skip;
-              Matrix<ValueType>::set (data);
-              Matrix<ValueType>::block = NULL;
-              Matrix<ValueType>::owner = 0;
-            }
+        private:
+          View () {
+            assert (0);
+          }
+          View (const Matrix<ValueType>& M) {
+            assert (0);
+          }
+          template <typename U> View (const Matrix<U>& M) {
+            assert (0);
+          }
+          View (ValueType* data, size_t nrows, size_t ncolumns, size_t row_skip) throw () {
+            Matrix<ValueType>::size1 = nrows;
+            Matrix<ValueType>::size2 = ncolumns;
+            Matrix<ValueType>::tda = row_skip;
+            Matrix<ValueType>::set (data);
+            Matrix<ValueType>::block = NULL;
+            Matrix<ValueType>::owner = 0;
+          }
 
-            friend class Matrix<ValueType>;
-        };
+          friend class Matrix<ValueType>;
+      };
 
         //! construct empty matrix
         Matrix () throw () {
@@ -543,7 +544,7 @@ namespace MR
           assert (from_row <= to_row && to_row <= rows());
           assert (from_column <= to_column && to_column <= columns());
           return View (ptr() + from_row*tda + from_column,
-                       to_row-from_row, to_column-from_column, tda);
+              to_row-from_row, to_column-from_column, tda);
         }
 
         //! return a Matrix::View corresponding to a submatrix of the matrix
@@ -551,7 +552,7 @@ namespace MR
           assert (from_row <= to_row && to_row <= rows());
           assert (from_column <= to_column && to_column <= columns());
           return View (const_cast<ValueType*> (ptr() + from_row*tda + from_column),
-                       to_row-from_row, to_column-from_column, tda);
+              to_row-from_row, to_column-from_column, tda);
         }
 
         //! return a Vector::View corresponding to a row of the matrix
@@ -597,9 +598,9 @@ namespace MR
           if (offset == 0) return diagonal();
           if (offset < 0)
             return VectorView (ptr()-tda*offset,
-                               MIN (size1+offset,size2+offset), tda+1);
+                MIN (size1+offset,size2+offset), tda+1);
           return VectorView (ptr() +offset,
-                             MIN (size1-offset,size2-offset), tda+1);
+              MIN (size1-offset,size2-offset), tda+1);
         }
 
         //! return a Vector::View corresponding to a diagonal of the matrix
@@ -610,9 +611,9 @@ namespace MR
           if (offset == 0) return (diagonal());
           if (offset < 0)
             return VectorView (const_cast<ValueType*> (ptr()-tda*offset),
-                               MIN (size1+offset,size2+offset), tda+1);
+                MIN (size1+offset,size2+offset), tda+1);
           return VectorView (const_cast<ValueType*> (ptr() +offset),
-                             MIN (size1-offset,size2-offset), tda+1);
+              MIN (size1-offset,size2-offset), tda+1);
         }
 
         //! swap two rows of the matrix
@@ -632,7 +633,7 @@ namespace MR
         friend std::ostream& operator<< (std::ostream& stream, const Matrix& M) {
           for (size_t i = 0; i < M.rows(); i++) {
             for (size_t j = 0; j < M.columns(); j++)
-              stream << str(M(i,j)) << " ";
+              stream << str(M(i,j), 10) << " ";
             stream << "\n";
           }
           return stream;
@@ -721,11 +722,12 @@ namespace MR
      * \param x a Vector
      * \return a reference to the target vector \a y
      */
-    template <typename ValueType> inline Vector<ValueType>& mult (Vector<ValueType>& y, ValueType beta, ValueType alpha, CBLAS_TRANSPOSE op_A, const Matrix<ValueType>& A, const Vector<ValueType>& x)
-    {
-      gemv (op_A, alpha, A, x, beta, y);
-      return y;
-    }
+    template <typename ValueType> 
+      inline Vector<ValueType>& mult (Vector<ValueType>& y, ValueType beta, ValueType alpha, CBLAS_TRANSPOSE op_A, const Matrix<ValueType>& A, const Vector<ValueType>& x)
+      {
+        gemv (op_A, alpha, A, x, beta, y);
+        return y;
+      }
 
     //! Computes the matrix-vector product \a y = \a alpha \a op_A (\a A) \a x, allocating storage for \a y
     /** \param y the target vector
@@ -739,12 +741,13 @@ namespace MR
      * \note this version will perform the appropriate allocation for \a y.
      * \return a reference to the target vector \a y
      */
-    template <typename ValueType> inline Vector<ValueType>& mult (Vector<ValueType>& y, ValueType alpha, CBLAS_TRANSPOSE op_A, const Matrix<ValueType>& A, const Vector<ValueType>& x)
-    {
-      y.allocate (op_A == CblasNoTrans ? A.rows() : A.columns());
-      mult (y, ValueType (0.0), alpha, op_A, A, x);
-      return y;
-    }
+    template <typename ValueType> 
+      inline Vector<ValueType>& mult (Vector<ValueType>& y, ValueType alpha, CBLAS_TRANSPOSE op_A, const Matrix<ValueType>& A, const Vector<ValueType>& x)
+      {
+        y.allocate (op_A == CblasNoTrans ? A.rows() : A.columns());
+        mult (y, ValueType (0.0), alpha, op_A, A, x);
+        return y;
+      }
 
     //! Computes the matrix-vector product \a y = \a A \a x
     /** \param y the target vector
@@ -752,10 +755,11 @@ namespace MR
      * \param x a Vector
      * \return a reference to the target vector \a y
      */
-    template <typename ValueType> inline Vector<ValueType>& mult (Vector<ValueType>& y, const Matrix<ValueType>& A, const Vector<ValueType>& x)
-    {
-      return mult (y, ValueType (1.0), CblasNoTrans, A, x);
-    }
+    template <typename ValueType> 
+      inline Vector<ValueType>& mult (Vector<ValueType>& y, const Matrix<ValueType>& A, const Vector<ValueType>& x)
+      {
+        return mult (y, ValueType (1.0), CblasNoTrans, A, x);
+      }
 
     /** @} */
 
@@ -781,11 +785,12 @@ namespace MR
      * \param B a Matrix
      * \return a reference to the target matrix \a C
      */
-    template <typename ValueType> inline Matrix<ValueType>& mult (Matrix<ValueType>& C, ValueType beta, ValueType alpha, CBLAS_TRANSPOSE op_A, const Matrix<ValueType>& A, CBLAS_TRANSPOSE op_B, const Matrix<ValueType>& B)
-    {
-      gemm (op_A, op_B, alpha, A, B, beta, C);
-      return C;
-    }
+    template <typename ValueType> 
+      inline Matrix<ValueType>& mult (Matrix<ValueType>& C, ValueType beta, ValueType alpha, CBLAS_TRANSPOSE op_A, const Matrix<ValueType>& A, CBLAS_TRANSPOSE op_B, const Matrix<ValueType>& B)
+      {
+        gemm (op_A, op_B, alpha, A, B, beta, C);
+        return C;
+      }
 
     //! computes the general matrix-matrix multiplication \a C = \a alpha \a op_A (\a A) \a op_A (\a B), allocating storage for \a C
     /** \param C the target matrix
@@ -803,12 +808,13 @@ namespace MR
      * \note this version will perform the appropriate allocation for \a C
      * \return a reference to the target matrix \a C
      */
-    template <typename ValueType> inline Matrix<ValueType>& mult (Matrix<ValueType>& C, ValueType alpha, CBLAS_TRANSPOSE op_A, const Matrix<ValueType>& A, CBLAS_TRANSPOSE op_B, const Matrix<ValueType>& B)
-    {
-      C.allocate (op_A == CblasNoTrans ? A.rows() : A.columns(), op_B == CblasNoTrans ? B.columns() : B.rows());
-      mult (C, ValueType (0.0), alpha, op_A, A, op_B, B);
-      return C;
-    }
+    template <typename ValueType> 
+      inline Matrix<ValueType>& mult (Matrix<ValueType>& C, ValueType alpha, CBLAS_TRANSPOSE op_A, const Matrix<ValueType>& A, CBLAS_TRANSPOSE op_B, const Matrix<ValueType>& B)
+      {
+        C.allocate (op_A == CblasNoTrans ? A.rows() : A.columns(), op_B == CblasNoTrans ? B.columns() : B.rows());
+        mult (C, ValueType (0.0), alpha, op_A, A, op_B, B);
+        return C;
+      }
 
     //! computes the simplified general matrix-matrix multiplication \a C = \a A \a B
     /** \param C the target matrix
@@ -816,10 +822,11 @@ namespace MR
      * \param B a Matrix
      * \return a reference to the target matrix \a C
      */
-    template <typename ValueType> inline Matrix<ValueType>& mult (Matrix<ValueType>& C, const Matrix<ValueType>& A, const Matrix<ValueType>& B)
-    {
-      return mult (C, ValueType (1.0), CblasNoTrans, A, CblasNoTrans, B);
-    }
+    template <typename ValueType> 
+      inline Matrix<ValueType>& mult (Matrix<ValueType>& C, const Matrix<ValueType>& A, const Matrix<ValueType>& B)
+      {
+        return mult (C, ValueType (1.0), CblasNoTrans, A, CblasNoTrans, B);
+      }
 
     /** @} */
 
@@ -847,11 +854,12 @@ namespace MR
      * \param B a Matrix
      * \return a reference to the target matrix \a C
      */
-    template <typename ValueType> inline Matrix<ValueType>& mult (Matrix<ValueType>& C, CBLAS_SIDE side, ValueType beta, ValueType alpha, CBLAS_UPLO uplo, const Matrix<ValueType>& A, const Matrix<ValueType>& B)
-    {
-      symm (side, uplo, alpha, A, B, beta, C);
-      return C;
-    }
+    template <typename ValueType> 
+      inline Matrix<ValueType>& mult (Matrix<ValueType>& C, CBLAS_SIDE side, ValueType beta, ValueType alpha, CBLAS_UPLO uplo, const Matrix<ValueType>& A, const Matrix<ValueType>& B)
+      {
+        symm (side, uplo, alpha, A, B, beta, C);
+        return C;
+      }
 
     //! computes \a C = \a alpha \a A \a B or \a C = \a alpha \a B \a A, where \a A is symmetric, and allocates storage for \a C
     /** Computes the symmetric matrix-matrix product \a C = \a alpha \a A \a B
@@ -869,12 +877,13 @@ namespace MR
      * \note this version will perform the appropriate allocation for \a C
      * \return a reference to the target matrix \a C
      */
-    template <typename ValueType> inline Matrix<ValueType>& mult (Matrix<ValueType>& C, CBLAS_SIDE side, ValueType alpha, CBLAS_UPLO uplo, const Matrix<ValueType>& A, const Matrix<ValueType>& B)
-    {
-      C.allocate (A);
-      symm (side, uplo, alpha, A, B, ValueType (0.0), C);
-      return C;
-    }
+    template <typename ValueType> 
+      inline Matrix<ValueType>& mult (Matrix<ValueType>& C, CBLAS_SIDE side, ValueType alpha, CBLAS_UPLO uplo, const Matrix<ValueType>& A, const Matrix<ValueType>& B)
+      {
+        C.allocate (A);
+        symm (side, uplo, alpha, A, B, ValueType (0.0), C);
+        return C;
+      }
 
     /** @} */
 
@@ -895,11 +904,12 @@ namespace MR
      *    - CblasNonUnit: diagonal elements of \a A are used
      * \return a reference to the target vector \a x
      */
-    template <typename ValueType> inline Vector<ValueType>& solve_triangular (Vector<ValueType>& x, const Matrix<ValueType>& A, CBLAS_UPLO uplo = CblasUpper, CBLAS_TRANSPOSE op_A = CblasNoTrans, CBLAS_DIAG diag = CblasNonUnit)
-    {
-      trsv (uplo, op_A, diag, A, x);
-      return x;
-    }
+    template <typename ValueType> 
+      inline Vector<ValueType>& solve_triangular (Vector<ValueType>& x, const Matrix<ValueType>& A, CBLAS_UPLO uplo = CblasUpper, CBLAS_TRANSPOSE op_A = CblasNoTrans, CBLAS_DIAG diag = CblasNonUnit)
+      {
+        trsv (uplo, op_A, diag, A, x);
+        return x;
+      }
 
     //! rank-1 update: \a A = \a alpha \a x \a y^ValueType + \a A
     /** \param A the target matrix.
@@ -908,11 +918,12 @@ namespace MR
      * \param alpha used to scale the product
      * \return a reference to the target matrix \a A
      */
-    template <typename ValueType> inline Matrix<ValueType>& rank1_update (Matrix<ValueType>& A, const Vector<ValueType>& x, const Vector<ValueType>& y, ValueType alpha = 1.0)
-    {
-      ger (alpha, x, y, A);
-      return A;
-    }
+    template <typename ValueType> 
+      inline Matrix<ValueType>& rank1_update (Matrix<ValueType>& A, const Vector<ValueType>& x, const Vector<ValueType>& y, ValueType alpha = 1.0)
+      {
+        ger (alpha, x, y, A);
+        return A;
+      }
 
     //! symmetric rank-1 update: \a A = \a alpha \a x \a x^ValueType + \a A, for symmetric \a A
     /** \param A the symmetric target matrix.
@@ -923,11 +934,12 @@ namespace MR
      *    - CblasLower: lower triangle and diagonal of A
      * \return a reference to the target matrix \a A
      */
-    template <typename ValueType> inline Matrix<ValueType>& sym_rank1_update (Matrix<ValueType>& A, const Vector<ValueType>& x, ValueType alpha = 1.0, CBLAS_UPLO uplo = CblasUpper)
-    {
-      syr (uplo, alpha, x, A);
-      return A;
-    }
+    template <typename ValueType> 
+      inline Matrix<ValueType>& sym_rank1_update (Matrix<ValueType>& A, const Vector<ValueType>& x, ValueType alpha = 1.0, CBLAS_UPLO uplo = CblasUpper)
+      {
+        syr (uplo, alpha, x, A);
+        return A;
+      }
 
     //! symmetric rank-N update: \a C = \a alpha \a op_A(\a A) op_A(\a A)^T + \a beta C, for symmetric \a A
     /** \param C the target matrix. If \a beta is non-zero, \a C should be symmetric
@@ -943,11 +955,12 @@ namespace MR
      * \param beta used to add a multiple of \a C to the final product
      * \return a reference to the target matrix \a C
      */
-    template <typename ValueType> inline Matrix<ValueType>& rankN_update (Matrix<ValueType>& C, const Matrix<ValueType>& A, CBLAS_TRANSPOSE op_A = CblasNoTrans, CBLAS_UPLO uplo = CblasUpper, ValueType alpha = 1.0, ValueType beta = 0.0)
-    {
-      syrk (uplo, op_A, alpha, A, beta, C);
-      return C;
-    }
+    template <typename ValueType> 
+      inline Matrix<ValueType>& rankN_update (Matrix<ValueType>& C, const Matrix<ValueType>& A, CBLAS_TRANSPOSE op_A = CblasNoTrans, CBLAS_UPLO uplo = CblasUpper, ValueType alpha = 1.0, ValueType beta = 0.0)
+      {
+        syrk (uplo, op_A, alpha, A, beta, C);
+        return C;
+      }
 
     //! compute transpose \a A = \a B^ValueType
     /** \param A the target matrix.
@@ -955,14 +968,15 @@ namespace MR
      * \return a reference to the target matrix \a A
      * \note this version will perform the appropriate allocation for \a A
      */
-    template <typename ValueType> inline Matrix<ValueType>& transpose (Matrix<ValueType>& A, const Matrix<ValueType>& B)
-    {
-      A.allocate (B.columns(), B.rows());
-      for (size_t i = 0; i < B.rows(); i++)
-        for (size_t j = 0; j < B.columns(); j++)
-          A (j,i) = B (i,j);
-      return A;
-    }
+    template <typename ValueType> 
+      inline Matrix<ValueType>& transpose (Matrix<ValueType>& A, const Matrix<ValueType>& B)
+      {
+        A.allocate (B.columns(), B.rows());
+        for (size_t i = 0; i < B.rows(); i++)
+          for (size_t j = 0; j < B.columns(); j++)
+            A (j,i) = B (i,j);
+        return A;
+      }
     /** @} */
 
 

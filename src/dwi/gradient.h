@@ -30,6 +30,7 @@
 #include "image/header.h"
 #include "image/stride.h"
 #include "math/LU.h"
+#include "math/SH.h"
 #include "math/matrix.h"
 
 namespace MR
@@ -262,6 +263,77 @@ namespace MR
         Math::Matrix<ValueType> grad = get_DW_scheme<ValueType> (header);
         check_DW_scheme (header, grad);
         return grad;
+      }
+
+
+    //! \brief get the matrix mapping SH coefficients to directions
+    /*! Computes the matrix mapping SH coefficients to the directions specified
+     * in the DW_scheme of \a header, up to a given lmax. By default, this is
+     * read from the -lmax command-line option (if \a lmax_from_command_line is
+     * true), or otherwise computed from the number of DW directions in the
+     * DW_scheme, up to a maximum value of \a max_lmax (defaults to 8). If \a
+     * lmax is specified, this is the value used, unless overriden by the
+     * command-line (if \a lmax_from_command_line is true).
+     *
+     * Note that this uses get_valid_DW_scheme() to get the DW_scheme, so will
+     * check for the -grad option as required. */
+    template <typename ValueType>
+      inline Math::Matrix<ValueType> get_SH2amp_mapping (
+          const Image::Header& header, 
+          Math::Matrix<ValueType>& grad,
+          Math::Matrix<ValueType>& directions,
+          std::vector<int>& dwis, 
+          std::vector<int>& bzeros, 
+          bool lmax_from_command_line = true, 
+          int lmax = -1, 
+          int max_lmax = 8, 
+          ValueType bvalue_threshold = NAN)
+      {
+        grad = get_valid_DW_scheme<ValueType> (header);
+        normalise_grad (grad);
+
+        guess_DW_directions (dwis, bzeros, grad, bvalue_threshold);
+
+        if (lmax_from_command_line) {
+          App::Options opt = App::get_options ("lmax");
+          if (opt.size()) {
+            lmax = to<int> (opt[0][0]);
+            int lmax_from_DW = Math::SH::LforN (dwis.size());
+            if (lmax > lmax_from_DW) {
+              WARN ("not enough directions in DW scheme for lmax = " + str(lmax) + " - dropping down to " + str(lmax_from_DW));
+              lmax = lmax_from_DW;
+            }
+          }
+        }
+
+        if (lmax < 0) {
+          lmax = Math::SH::LforN (dwis.size());
+          if (lmax > max_lmax)
+            lmax = max_lmax;
+        }
+
+        INFO ("computing SH transform using lmax = " + str (lmax));
+
+        gen_direction_matrix (directions, grad, dwis);
+
+        Math::Matrix<ValueType> SH;
+        Math::SH::init_transform (SH, directions, lmax);
+
+        return SH;
+      }
+
+
+    template <typename ValueType>
+      inline Math::Matrix<ValueType> get_SH2amp_mapping (
+          const Image::Header& header, 
+          bool lmax_from_command_line = true, 
+          int lmax = -1, 
+          int max_lmax = 8, 
+          ValueType bvalue_threshold = NAN)
+      {
+        std::vector<int> dwis, bzeros;
+        Math::Matrix<ValueType> grad, directions;
+        return get_SH2amp_mapping (header, grad, directions, dwis, bzeros, lmax_from_command_line, lmax, max_lmax, bvalue_threshold);
       }
 
 

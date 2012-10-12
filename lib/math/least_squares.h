@@ -96,24 +96,46 @@ namespace MR
 
 
     //! compute Moore-Penrose pseudo-inverse of M given its transpose Mt
-    template <typename ValueType> inline Matrix<ValueType>& pinv (Matrix<ValueType>& I, const Matrix<ValueType>& Mt, Matrix<ValueType>& work)
-    {
-      mult (work, ValueType (0.0), ValueType (1.0), CblasNoTrans, Mt, CblasTrans, Mt);
-      Cholesky::inv (work);
-      return mult (I, CblasLeft, ValueType (0.0), ValueType (1.0), CblasUpper, work, Mt);
-    }
+    template <typename ValueType> 
+      inline Matrix<ValueType>& pinv (Matrix<ValueType>& I, const Matrix<ValueType>& Mt, Matrix<ValueType>& work)
+      {
+        Mt.save ("Mt.txt");
+        if (Mt.rows() < Mt.columns()) 
+          mult (work, ValueType (0.0), ValueType (1.0), CblasNoTrans, Mt, CblasTrans, Mt);
+        else 
+          mult (work, ValueType (0.0), ValueType (1.0), CblasTrans, Mt, CblasNoTrans, Mt);
+        work.save ("work.txt");
+        Cholesky::inv (work);
+        if (Mt.rows() < Mt.columns()) 
+          return mult (I, CblasLeft, ValueType (0.0), ValueType (1.0), CblasUpper, work, Mt);
+        else 
+          return mult (I, CblasRight, ValueType (0.0), ValueType (1.0), CblasUpper, Mt, work);
+      }
 
 
 
 
     //! compute Moore-Penrose pseudo-inverse of M
-    template <typename ValueType> inline Matrix<ValueType>& pinv (Matrix<ValueType>& I, const Matrix<ValueType>& M)
-    {
+    template <typename ValueType> 
+      inline Matrix<ValueType>& pinv (Matrix<ValueType>& I, const Matrix<ValueType>& M)
+      {
       I.allocate (M.columns(), M.rows());
-      Matrix<ValueType> work (M.columns(), M.columns());
+      size_t n = std::min (M.rows(), M.columns());
+      Matrix<ValueType> work (n,n);
       Matrix<ValueType> Mt (M.columns(), M.rows());
       return pinv (I, transpose (Mt, M), work);
     }
+
+
+    //! return Moore-Penrose pseudo-inverse of M
+    template <typename ValueType>
+      Math::Matrix<ValueType> pinv (const Math::Matrix<ValueType>& M)
+      {
+        M.save ("M.txt");
+        Matrix<ValueType> I;
+        pinv (I, M);
+        return I;
+      }
 
     /** @} */
     /** @} */

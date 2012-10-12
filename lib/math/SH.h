@@ -96,27 +96,64 @@ namespace MR
 
 
       template <typename ValueType>
+        Math::Matrix<ValueType> init_transform (const Math::Matrix<ValueType>& dirs, int lmax)
+        {
+          Math::Matrix<ValueType> SHT;
+          init_transform (SHT, dirs, lmax);
+          return SHT;
+        }
+
+
+
+
+      template <typename ValueType>
+        void scale_degrees_forward (Math::Matrix<ValueType>& SH2amp_mapping, const Math::Vector<ValueType>& coefs) 
+        {
+          size_t l = 0, nl = 1;
+          for (size_t col = 0; col < SH2amp_mapping.columns(); ++col) {
+            if (col >= nl) {
+              l++;
+              nl = Math::SH::NforL (2*l);
+            }
+            SH2amp_mapping.column(col) *= coefs[l];
+          }
+        }
+
+
+
+      template <typename ValueType>
+        void scale_degrees_inverse (Math::Matrix<ValueType>& amp2SH_mapping, const Math::Vector<ValueType>& coefs) 
+        {
+          size_t l = 0, nl = 1;
+          for (size_t row = 0; row < amp2SH_mapping.rows(); ++row) {
+            if (row >= nl) {
+              l++;
+              nl = Math::SH::NforL (2*l);
+            }
+            amp2SH_mapping.row(row) *= coefs[l];
+          }
+        }
+
+      template <typename ValueType>
+        Math::Vector<ValueType> invert (const Math::Vector<ValueType>& coefs)
+        {
+          Math::Vector<ValueType> ret (coefs.size());
+          for (size_t n = 0; n < coefs.size(); ++n)
+            ret[n] = ( coefs[n] ? 1.0 / coefs[n] : 0.0 );
+          return ret;
+        }
+
+
+      template <typename ValueType>
         class Transform {
           public:
-            Transform (const Math::Matrix<ValueType>& dirs, int lmax) {
-              init_transform (SHT, dirs, lmax);
-              iSHT.allocate (SHT.columns(), SHT.rows());
-              Math::pinv (iSHT, SHT);
-            }
+            Transform (const Math::Matrix<ValueType>& dirs, int lmax) :
+              SHT (init_transform (dirs, lmax)), 
+              iSHT (Math::pinv (SHT)) { }
 
             void set_filter (const Math::Vector<ValueType>& filter) {
-              int l = 0;
-              size_t nl = 1;
-              for (size_t n = 0; n < iSHT.rows(); n++) {
-                if (n >= nl) {
-                  l++;
-                  nl = NforL (2*l);
-                }
-                for (size_t i = 0; i < iSHT.columns(); i++) {
-                  iSHT (n,i) *= filter[l];
-                  SHT (i,n) = filter[l] == 0.0 ? 0.0 : SHT (i,n) /filter[l];
-                }
-              }
+              scale_degrees_forward (SHT, invert (filter));
+              scale_degrees_inverse (iSHT, filter);
             }
             void A2SH (Math::Vector<ValueType>& SH, const Math::Vector<ValueType>& amplitudes)  {
               Math::mult (SH, iSHT, amplitudes);
@@ -213,6 +250,18 @@ namespace MR
         inline Math::Vector<ValueType>& SH2RH (Math::Vector<ValueType>& RH, const Math::Vector<ValueType>& SH)
         {
           RH.allocate (SH.size());
+          int lmax = 2*SH.size() +1;
+          ValueType AL [lmax+1];
+          Legendre::Plm_sph (AL, lmax, 0, ValueType (1.0));
+          for (size_t l = 0; l < SH.size(); l++)
+            RH[l] = SH[l]/ AL[2*l];
+          return RH;
+        }
+
+      template <typename ValueType>
+        inline Math::Vector<ValueType> SH2RH (const Math::Vector<ValueType>& SH)
+        {
+          Math::Vector<ValueType> RH (SH.size());
           int lmax = 2*SH.size() +1;
           ValueType AL [lmax+1];
           Legendre::Plm_sph (AL, lmax, 0, ValueType (1.0));

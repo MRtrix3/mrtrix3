@@ -60,15 +60,17 @@ namespace MR
     template <class InputVoxelType, class OutputVoxelType>
       inline void threaded_copy (InputVoxelType& source, OutputVoxelType& destination, const std::vector<size_t>& axes, size_t num_axes_in_thread = 1) 
       {
+        Thread::SetNumberOfThreads num (4*Thread::number_of_threads());
         __CopyKernel<InputVoxelType, OutputVoxelType> copy_kernel (source, destination);
-        ThreadedLoop (source, axes, num_axes_in_thread).run (copy_kernel);
+        ThreadedLoop (source, axes, num_axes_in_thread).run (copy_kernel, "copy thread");
       }
 
     template <class InputVoxelType, class OutputVoxelType>
       inline void threaded_copy (InputVoxelType& source, OutputVoxelType& destination, size_t num_axes_in_thread = 1, size_t from_axis = 0, size_t to_axis = std::numeric_limits<size_t>::max())
       {
+        Thread::SetNumberOfThreads num (4*Thread::number_of_threads());
         __CopyKernel<InputVoxelType, OutputVoxelType> copy_kernel (source, destination);
-        ThreadedLoop (source, num_axes_in_thread, from_axis, to_axis).run (copy_kernel);
+        ThreadedLoop (source, num_axes_in_thread, from_axis, to_axis).run (copy_kernel, "copy thread");
       }
 
 
@@ -82,8 +84,9 @@ namespace MR
           const std::vector<size_t>& axes,
           size_t num_axes_in_thread = 1)
       {
+        Thread::SetNumberOfThreads num (4*Thread::number_of_threads());
         __CopyKernel<InputVoxelType, OutputVoxelType> copy_kernel (source, destination);
-        ThreadedLoop (message, source, axes, num_axes_in_thread).run (copy_kernel);
+        ThreadedLoop (message, source, axes, num_axes_in_thread).run (copy_kernel, "copy thread");
       }
 
     template <class InputVoxelType, class OutputVoxelType>
@@ -95,8 +98,9 @@ namespace MR
           size_t from_axis = 0, 
           size_t to_axis = std::numeric_limits<size_t>::max())
       {
+        Thread::SetNumberOfThreads num (4*Thread::number_of_threads());
         __CopyKernel<InputVoxelType, OutputVoxelType> copy_kernel (source, destination);
-        ThreadedLoop (message, source, num_axes_in_thread, from_axis, to_axis).run (copy_kernel);
+        ThreadedLoop (message, source, num_axes_in_thread, from_axis, to_axis).run (copy_kernel, "copy thread");
       }
 
 

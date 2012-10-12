@@ -30,15 +30,26 @@ namespace MR
   namespace Thread
   {
 
-    size_t available_cores ()
-    {
-      static size_t number_of_threads = 0;
-      if (number_of_threads)
-        return number_of_threads;
-      const App::Options opt = App::get_options ("nthreads");
-      number_of_threads = opt.size() ? opt[0][0] : File::Config::get_int ("NumberOfThreads", 1);
-      return number_of_threads;
+    namespace {
+
+      size_t __number_of_threads = 0;
+      
     }
+
+    size_t number_of_threads ()
+    {
+      if (__number_of_threads)
+        return __number_of_threads;
+      const App::Options opt = App::get_options ("nthreads");
+      __number_of_threads = opt.size() ? opt[0][0] : File::Config::get_int ("NumberOfThreads", 1);
+      return __number_of_threads;
+    }
+
+
+
+    SetNumberOfThreads::SetNumberOfThreads (size_t number) : previous_number (__number_of_threads) { __number_of_threads = number; }
+    SetNumberOfThreads::~SetNumberOfThreads () { __number_of_threads = previous_number; }
+
 
     void (*Exec::Common::previous_print_func) (const std::string& msg) = NULL;
     void (*Exec::Common::previous_report_to_user_func) (const std::string& msg, int type) = NULL;

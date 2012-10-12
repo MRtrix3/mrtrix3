@@ -45,14 +45,25 @@ namespace MR
 
     /*! the number of cores to use for multi-threading, as specified in the
      * variable NumberOfThreads in the MRtrix configuration file */
-    size_t available_cores ();
+    size_t number_of_threads ();
+
+    //! temporarily change number of cores, until class goes out of scope
+    class SetNumberOfThreads {
+      public:
+        SetNumberOfThreads (size_t number);
+        ~SetNumberOfThreads ();
+      private:
+        size_t previous_number;
+    };
+
+
 
     //! Create an array of duplicate functors to execute in parallel
     /*! Use this class to hold an array of duplicates of the supplied functor,
      * so that they can be executed in parallel using the Thread::Exec class.
      * Note that the original functor will be used, and as many copies will be
      * created as needed to make up a total of \a num_threads. By default, \a
-     * num_threads is given by Thread::available_cores().
+     * num_threads is given by Thread::number_of_threads().
      *
      * \note Each Functor copy will be created using its copy constructor using
      * the original \a functor as the original. It is essential therefore that
@@ -64,7 +75,7 @@ namespace MR
      *   // Create master copy of functor:
      *   MyThread my_thread (param);
      *
-     *   // Duplicate as needed up to a maximum of Thread::available_cores() threads.
+     *   // Duplicate as needed up to a maximum of Thread::number_of_threads() threads.
      *   // Each copy is created using the copy constructor:
      *   Thread::Array<MyThread> list (my_thread);
      *
@@ -76,7 +87,7 @@ namespace MR
     template <class Functor> class Array
     {
       public:
-        Array (Functor& functor, size_t num_threads = available_cores()) :
+        Array (Functor& functor, size_t num_threads = number_of_threads()) :
           first_functor (functor), functors (num_threads-1) {
             assert (num_threads);
             for (size_t i = 0; i < num_threads-1; i++)
@@ -137,7 +148,7 @@ namespace MR
         template <class Functor> Exec (Functor& functor, const std::string& description = "unnamed") :
           ID (1), name (description) {
             init();
-            INFO ("launching thread \"" + name + "\"...");
+            DEBUG ("launching thread \"" + name + "\"...");
             start (ID[0], functor);
           }
 
@@ -147,7 +158,7 @@ namespace MR
         template <class Functor> Exec (Array<Functor>& functor, const std::string& description = "unnamed") :
           ID (functor.functors.size() +1), name (description) {
             init();
-            INFO ("launching " + str (ID.size()) + " thread" + (ID.size() > 1 ? "s" : "") +  " \"" + name + "\"...");
+            DEBUG ("launching " + str (ID.size()) + " thread" + (ID.size() > 1 ? "s" : "") +  " \"" + name + "\"...");
             start (ID[0], functor.first_functor);
             for (size_t i = 1; i < ID.size(); ++i)
               start (ID[i], *functor.functors[i-1]);

@@ -149,7 +149,7 @@ namespace MR
           for (size_t n = 0; n < A.ndim(); ++n) stream << A.vox(n) << " ";
           stream << "], stride: [";
           for (size_t n = 0; n < A.ndim(); ++n) stream << A.stride(n) << " ";
-          stream << "]";
+          stream << "], datatype: " << A.datatype().specifier();
           return stream;
         }
 

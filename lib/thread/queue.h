@@ -719,7 +719,7 @@ flush:
       * through the queue).
       *
       * \note if the number of threads is set to zero, all available cores will
-      * be used, as given by the Thread::available_cores() function.
+      * be used, as given by the Thread::number_of_threads() function.
       *
       *
       * \par Source: the input functor 
@@ -815,8 +815,8 @@ flush:
         __Source<Type,Source> q_source (queue, source);
         __Sink<Type,Sink> q_sink (queue, sink);
 
-        Array<__Source<Type,Source> > source_list (q_source, nthreads_source ? nthreads_source : available_cores());
-        Array<__Sink<Type,Sink> > sink_list (q_sink, nthreads_sink ? nthreads_sink : available_cores());
+        Array<__Source<Type,Source> > source_list (q_source, nthreads_source ? nthreads_source : number_of_threads());
+        Array<__Sink<Type,Sink> > sink_list (q_sink, nthreads_sink ? nthreads_sink : number_of_threads());
 
         Exec source_threads (source_list, "source");
         Exec sink_threads (sink_list, "sink");
@@ -841,7 +841,7 @@ flush:
       * object to pass through the queues).
       *
       * \note if the number of threads is set to zero, all available cores will
-      * be used, as given by the Thread::available_cores() function.
+      * be used, as given by the Thread::number_of_threads() function.
       *
       *
       * \par Source: the input functor 
@@ -975,9 +975,9 @@ flush:
         __Pipe<Type1,Pipe,Type2> q_pipe (queue1, pipe, queue2);
         __Sink<Type2,Sink> q_sink (queue2, sink);
 
-        Array<__Source<Type1,Source> > source_list (q_source, nthreads_source ? nthreads_source : available_cores());
-        Array<__Pipe<Type1,Pipe,Type2> > pipe_list (q_pipe, nthreads_pipe ? nthreads_pipe : available_cores());
-        Array<__Sink<Type2,Sink> > sink_list (q_sink, nthreads_sink ? nthreads_sink : available_cores());
+        Array<__Source<Type1,Source> > source_list (q_source, nthreads_source ? nthreads_source : number_of_threads());
+        Array<__Pipe<Type1,Pipe,Type2> > pipe_list (q_pipe, nthreads_pipe ? nthreads_pipe : number_of_threads());
+        Array<__Sink<Type2,Sink> > sink_list (q_sink, nthreads_sink ? nthreads_sink : number_of_threads());
 
         Exec source_threads (source_list, "source");
         Exec pipe_threads (pipe_list, "pipe");
@@ -1033,8 +1033,8 @@ flush:
         Batch::__Source<Type,Source> q_source (queue, source, batch_size);
         Batch::__Sink<Type,Sink> q_sink (queue, sink);
 
-        Array<Batch::__Source<Type,Source> > source_list (q_source, nthreads_source ? nthreads_source : available_cores());
-        Array<Batch::__Sink<Type,Sink> > sink_list (q_sink, nthreads_sink ? nthreads_sink : available_cores());
+        Array<Batch::__Source<Type,Source> > source_list (q_source, nthreads_source ? nthreads_source : number_of_threads());
+        Array<Batch::__Sink<Type,Sink> > sink_list (q_sink, nthreads_sink ? nthreads_sink : number_of_threads());
 
         Exec source_threads (source_list, "source");
         Exec sink_threads (sink_list, "sink");
@@ -1102,9 +1102,9 @@ flush:
         Batch::__Pipe<Type1,Pipe,Type2> q_pipe (queue1, pipe, queue2, batch_size2);
         Batch::__Sink<Type2,Sink> q_sink (queue2, sink);
 
-        Array<Batch::__Source<Type1,Source> > source_list (q_source, nthreads_source ? nthreads_source : available_cores());
-        Array<Batch::__Pipe<Type1,Pipe,Type2> > pipe_list (q_pipe, nthreads_pipe ? nthreads_pipe : available_cores());
-        Array<Batch::__Sink<Type2,Sink> > sink_list (q_sink, nthreads_sink ? nthreads_sink : available_cores());
+        Array<Batch::__Source<Type1,Source> > source_list (q_source, nthreads_source ? nthreads_source : number_of_threads());
+        Array<Batch::__Pipe<Type1,Pipe,Type2> > pipe_list (q_pipe, nthreads_pipe ? nthreads_pipe : number_of_threads());
+        Array<Batch::__Sink<Type2,Sink> > sink_list (q_sink, nthreads_sink ? nthreads_sink : number_of_threads());
 
         Exec source_threads (source_list, "source");
         Exec pipe_threads (pipe_list, "pipe");
