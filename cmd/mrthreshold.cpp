@@ -196,19 +196,22 @@ void run ()
       if (topN) {
         for (loop.start (in); loop.ok(); loop.next (in)) {
           const float val = in.value();
+          if (!finite (val)) continue;
           if (ignore_zeroes && val == 0.0) continue;
           if (list.size() == topN) {
             if (val < list.begin()->first) continue;
             list.erase (list.begin());
           }
           std::vector<ssize_t> pos (in.ndim());
-          for (size_t n = 0; n < in.ndim(); ++n) pos[n] = in[n];
+          for (size_t n = 0; n < in.ndim(); ++n) 
+            pos[n] = in[n];
           list.insert (std::pair<float,std::vector<ssize_t> > (val, pos));
         }
       }
       else {
         for (loop.start (in); loop.ok(); loop.next (in)) {
           const float val = in.value();
+          if (!finite (val)) continue;
           if (ignore_zeroes && val == 0.0) continue;
           if (list.size() == bottomN) {
             std::multimap<float,std::vector<ssize_t> >::iterator i = list.end();
@@ -217,7 +220,8 @@ void run ()
             list.erase (i);
           }
           std::vector<ssize_t> pos (in.ndim());
-          for (size_t n = 0; n < in.ndim(); ++n) pos[n] = in[n];
+          for (size_t n = 0; n < in.ndim(); ++n) 
+            pos[n] = in[n];
           list.insert (std::pair<float,std::vector<ssize_t> > (val, pos));
         }
       }
@@ -238,7 +242,8 @@ void run ()
     if (use_histogram) {
       Image::Histogram<Image::Buffer<float>::voxel_type> hist (in);
       val = hist.first_min();
-    } else if(isnan (val)) {
+    } 
+    else if (isnan (val)) {
       double min, max;
       Image::min_max(in, min, max);
       Ptr<Image::Buffer<bool> > mask_data;
