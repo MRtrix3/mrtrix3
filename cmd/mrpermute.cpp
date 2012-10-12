@@ -198,7 +198,7 @@ void run() {
     Math::SH::init_transform (SHT, directions, Math::SH::LforN (first_header.dim(3)));
     {
       ProgressBar progress("loading FOD images and computing AFD...", subjects.size());
-      for (uint subject = 0; subject < subjects.size(); subject++) {
+      for (size_t subject = 0; subject < subjects.size(); subject++) {
         LogLevelLatch log_level (0);
         Image::Stride::List strides(4, 0);
         strides[3] = 1;
@@ -212,7 +212,7 @@ void run() {
             fod_voxel[0] = (*it)[0];
             fod_voxel[1] = (*it)[1];
             fod_voxel[2] = (*it)[2];
-            for (uint sh = 0; sh < fod_voxel.dim(3); sh++) {
+            for (size_t sh = 0; sh < fod_voxel.dim(3); sh++) {
               fod_voxel[3] = sh;
               fod[sh] = fod_voxel.value();
             }
@@ -227,7 +227,7 @@ void run() {
   else {
 
     ProgressBar progress("loading images...", subjects.size());
-    for (uint subject = 0; subject < subjects.size(); subject++) {
+    for (size_t subject = 0; subject < subjects.size(); subject++) {
       LogLevelLatch log_level (0);
       Image::BufferPreload<float> fod_data (subjects[subject], Image::Stride::contiguous_along_axis (3));
       Image::check_dimensions (fod_data, mask_vox, 0, 3);

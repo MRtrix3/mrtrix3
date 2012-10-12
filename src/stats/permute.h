@@ -119,7 +119,8 @@ namespace MR
           E (E),
           H (H) { }
 
-        bool operator() (const Item& item) {
+        bool operator() (const Item& item) 
+        {
           std::vector<value_type> stats (afd.rows(), 0.0);
           std::vector<value_type> tfce_stats (afd.rows(), 0.0);
           value_type max_stat = 0.0, min_stat = 0.0;
@@ -155,7 +156,7 @@ namespace MR
 
             for (size_t i = 0; i < afd.rows(); ++i) 
               if (labels[i])
-                tfce_stats[i] += pow (clusters[labels[i] - 1].size, E) * pow (threshold, H);
+                tfce_stats[i] += pow (clusters[labels[i]-1].size, E) * pow (threshold, H);
           }
 
           value_type max_tfce_stat = 0.0;
