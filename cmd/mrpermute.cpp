@@ -212,7 +212,7 @@ void run() {
             fod_voxel[0] = (*it)[0];
             fod_voxel[1] = (*it)[1];
             fod_voxel[2] = (*it)[2];
-            for (size_t sh = 0; sh < fod_voxel.dim(3); sh++) {
+            for (int sh = 0; sh < fod_voxel.dim(3); sh++) {
               fod_voxel[3] = sh;
               fod[sh] = fod_voxel.value();
             }

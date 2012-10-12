@@ -195,6 +195,7 @@ namespace MR
           value_type contrast_dot_beta = Math::dot (contrast_matrix.row(0), beta);
 
           Math::mult (residuals, design, beta);
+          residuals -= values;
           Math::mult (beta, inv_Mt_M, contrast_matrix.row(0));
           value_type var_E = Math::norm2 (residuals) * Math::dot (contrast_matrix.row(0), beta);
 
