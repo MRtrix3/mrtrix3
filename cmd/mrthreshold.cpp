@@ -85,13 +85,13 @@ void usage ()
 
 void run ()
 {
-  float val (NAN), percentile (NAN), bottomNpercent (NAN), topNpercent (NAN);
+  float threshold_value (NAN), percentile (NAN), bottomNpercent (NAN), topNpercent (NAN);
   bool use_histogram = false;
   size_t topN (0), bottomN (0), nopt (0);
 
   Options opt = get_options ("abs");
   if (opt.size()) {
-    val = opt[0][0];
+    threshold_value = opt[0][0];
     ++nopt;
   }
 
@@ -241,9 +241,9 @@ void run ()
   else {
     if (use_histogram) {
       Image::Histogram<Image::Buffer<float>::voxel_type> hist (in);
-      val = hist.first_min();
+      threshold_value = hist.first_min();
     } 
-    else if (isnan (val)) {
+    else if (isnan (threshold_value)) {
       double min, max;
       Image::min_max(in, min, max);
       Ptr<Image::Buffer<bool> > mask_data;
@@ -254,11 +254,14 @@ void run ()
         mask_voxel = new Image::Buffer<bool>::voxel_type (*mask_data);
       }
       Image::Filter::ImageCorrelationCostFunction<Image::Buffer<float>::voxel_type, Image::Buffer<bool>::voxel_type > cost_function(in, mask_voxel);
-      val = Math::golden_section_search(cost_function, "optimising threshold...", min + 0.001*(max-min), (min+max)/2.0 , max-0.001*(max-min));
+      threshold_value = Math::golden_section_search(cost_function, "optimising threshold...", min + 0.001*(max-min), (min+max)/2.0 , max-0.001*(max-min));
     }
 
-    Image::Loop loop ("thresholding \"" + shorten (in.name()) + "\" at intensity " + str (val) + "...");
-    for (loop.start (out, in); loop.ok(); loop.next (out, in))
-      out.value() = in.value() < val ? zero : one;
+    Image::Loop loop ("thresholding \"" + shorten (in.name()) + "\" at intensity " + str (threshold_value) + "...");
+    for (loop.start (out, in); loop.ok(); loop.next (out, in)) {
+      float val = in.value();
+      if (!finite (val)) continue;
+      out.value() = val < threshold_value ? zero : one;
+    }
   }
 }
