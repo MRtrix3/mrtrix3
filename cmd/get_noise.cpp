@@ -24,10 +24,13 @@
 #include "image/buffer_preload.h"
 #include "image/voxel.h"
 #include "image/threaded_loop.h"
+#include "image/adapter/extract.h"
 #include "dwi/gradient.h"
 #include "math/matrix.h"
 #include "math/least_squares.h"
 #include "math/SH.h"
+
+#include "dwi/noise_estimator.h"
 
 using namespace MR;
 using namespace App;
@@ -62,102 +65,29 @@ void usage ()
 }
 
 
-
-
-
 typedef float value_type;
-typedef Image::Buffer<value_type> InputBufferType; 
-typedef Image::Buffer<value_type> OutputBufferType; 
-
-class NoiseEstimator {
-  public:
-    NoiseEstimator (InputBufferType::voxel_type& dwi, OutputBufferType::voxel_type& noise, int axis) :
-      dwi (dwi),
-      noise (noise),
-      axis (axis) {
-        Math::Matrix<value_type> grad = DWI::get_valid_DW_scheme<value_type> (dwi.buffer());
-        DWI::normalise_grad (grad);
-        DWI::guess_DW_directions (dwis, bzeros, grad);
-
-        App::Options opt = App::get_options ("lmax");
-        int lmax = opt.size() ? to<int> (opt[0][0]) : Math::SH::LforN (dwis.size());
-        if (lmax > 8)
-          lmax = 8;
-
-        Math::Matrix<value_type> dirs;
-        DWI::gen_direction_matrix (dirs, grad, dwis);
-
-        Math::Matrix<value_type> SH;
-        Math::SH::init_transform (SH, dirs, lmax);
-
-        Math::Matrix<value_type> iSH (SH.columns(), SH.rows());
-        Math::pinv (iSH, SH);
-
-        H.allocate (dwis.size(), dwis.size());
-        Math::mult (H, SH, iSH);
-
-        S.allocate (H.columns(), dwi.dim(axis));
-        R.allocate (S);
-
-        leverage.allocate (H.rows());
-        for (size_t n = 0; n < leverage.size(); ++n) 
-          leverage[n] = H(n,n) < 1.0 ? 1.0 / Math::sqrt (1.0 - H(n,n)) : 1.0;
-      }
-
-    void operator () (const Image::Iterator& pos) {
-      Image::voxel_assign (dwi, pos);
-      for (dwi[axis] = 0; dwi[axis] < dwi.dim(axis); ++dwi[axis]) {
-        for (size_t n = 0; n < dwis.size(); ++n) {
-          dwi[3] = dwis[n];
-          S(n,dwi[axis]) = dwi.value();
-        }
-      }
-
-      // S.save ("S.txt");
-      // H.save ("H.txt");
-      Math::mult (R, CblasLeft, value_type(0.0), value_type(1.0), CblasUpper, H, S);
-      // R.save ("R.txt");
-
-      // PAUSE;
-
-      Image::voxel_assign (noise, pos);
-      for (noise[axis] = 0; noise[axis] < noise.dim(axis); ++noise[axis]) {
-        value_type MSE = 0.0;
-        for (size_t n = 0; n < R.rows(); ++n) 
-          MSE += Math::pow2 ((S(n,noise[axis]) - R(n,noise[axis])) * leverage[n]);
-        MSE /= R.rows();
-        noise.value() = Math::sqrt (MSE);
-      }
-    }
-
-  protected:
-    InputBufferType::voxel_type dwi;
-    OutputBufferType::voxel_type noise;
-    Math::Matrix<value_type> H, S, R;
-    Math::Vector<value_type> leverage;
-    int axis;
-    std::vector<int> dwis, bzeros;
-};
-
-
-
 
 void run ()
 {
-  InputBufferType dwi_buffer (argument[0]);
+  Image::Buffer<value_type> dwi_buffer (argument[0]);
+  DWI::NoiseEstimator estimator (dwi_buffer);
 
   Image::Header header (dwi_buffer);
-  header.set_ndim (3);
+  header.info() =  estimator.info();
   header.datatype() = DataType::Float32;
-  OutputBufferType noise_buffer (argument[1], header);
+  Image::Buffer<value_type> noise_buffer (argument[1], header);
 
-  InputBufferType::voxel_type dwi (dwi_buffer);
-  OutputBufferType::voxel_type noise (noise_buffer);
+  std::vector<int> dwis, bzeros;
+  DWI::guess_DW_directions (dwis, bzeros, dwi_buffer.DW_scheme());
+  Math::Matrix<value_type> mapping = DWI::get_SH2amp_mapping<value_type> (dwi_buffer);
 
-  Image::ThreadedLoop loop ("estimating noise level...", dwi, 1, 0, 3);
-  NoiseEstimator estimator (dwi, noise, loop.inner_axes()[0]);
+  Image::Buffer<value_type>::voxel_type dwi_voxel (dwi_buffer);
+  Image::Adapter::Extract1D<Image::Buffer<value_type>::voxel_type> dwi (dwi_voxel, 3, dwis);
+  Image::Buffer<value_type>::voxel_type noise (noise_buffer);
 
-  loop.run_outer (estimator);
+  VAR (dwi.info());
+
+  estimator (dwi, noise, mapping);
 }
 
 
