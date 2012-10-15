@@ -33,23 +33,11 @@ namespace MR
     //! \cond skip
     namespace {
 
-      template <class InputVoxelType, class OutputVoxelType>
-        class __CopyKernel {
-          public:
-            __CopyKernel (InputVoxelType& input, OutputVoxelType output) :
-              in (input),
-              out (output) { }
+      template <class OutputVoxelType, class InputVoxelType>
+        inline void __copy_functor (typename OutputVoxelType::value_type& out, typename InputVoxelType::value_type& in) {
+          out = in;
+        }
 
-            void operator () (const Iterator& pos) {
-              voxel_assign (in, pos);
-              voxel_assign (out, pos);
-              out.value() = in.value();
-            }
-
-          protected:
-            InputVoxelType in;
-            OutputVoxelType out;
-        };
     }
     
     //! \endcond
@@ -61,16 +49,16 @@ namespace MR
       inline void threaded_copy (InputVoxelType& source, OutputVoxelType& destination, const std::vector<size_t>& axes, size_t num_axes_in_thread = 1) 
       {
         Thread::SetNumberOfThreads num (4*Thread::number_of_threads());
-        __CopyKernel<InputVoxelType, OutputVoxelType> copy_kernel (source, destination);
-        ThreadedLoop (source, axes, num_axes_in_thread).run (copy_kernel, "copy thread");
+        ThreadedLoop (source, axes, num_axes_in_thread)
+          .foreach (1, __copy_functor<OutputVoxelType, InputVoxelType>, destination, source);
       }
 
     template <class InputVoxelType, class OutputVoxelType>
       inline void threaded_copy (InputVoxelType& source, OutputVoxelType& destination, size_t num_axes_in_thread = 1, size_t from_axis = 0, size_t to_axis = std::numeric_limits<size_t>::max())
       {
         Thread::SetNumberOfThreads num (4*Thread::number_of_threads());
-        __CopyKernel<InputVoxelType, OutputVoxelType> copy_kernel (source, destination);
-        ThreadedLoop (source, num_axes_in_thread, from_axis, to_axis).run (copy_kernel, "copy thread");
+        ThreadedLoop (source, num_axes_in_thread, from_axis, to_axis)
+          .foreach (1, __copy_functor<OutputVoxelType, InputVoxelType>, destination, source);
       }
 
 
@@ -85,8 +73,8 @@ namespace MR
           size_t num_axes_in_thread = 1)
       {
         Thread::SetNumberOfThreads num (4*Thread::number_of_threads());
-        __CopyKernel<InputVoxelType, OutputVoxelType> copy_kernel (source, destination);
-        ThreadedLoop (message, source, axes, num_axes_in_thread).run (copy_kernel, "copy thread");
+        ThreadedLoop (message, source, axes, num_axes_in_thread)
+          .foreach (1, __copy_functor<OutputVoxelType, InputVoxelType>, destination, source);
       }
 
     template <class InputVoxelType, class OutputVoxelType>
@@ -99,8 +87,8 @@ namespace MR
           size_t to_axis = std::numeric_limits<size_t>::max())
       {
         Thread::SetNumberOfThreads num (4*Thread::number_of_threads());
-        __CopyKernel<InputVoxelType, OutputVoxelType> copy_kernel (source, destination);
-        ThreadedLoop (message, source, num_axes_in_thread, from_axis, to_axis).run (copy_kernel, "copy thread");
+        ThreadedLoop (message, source, num_axes_in_thread, from_axis, to_axis)
+          .foreach (1, __copy_functor<OutputVoxelType, InputVoxelType>, destination, source);
       }
 
 

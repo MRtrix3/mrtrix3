@@ -172,10 +172,10 @@ namespace MR
               interp[n] = 0;
           }
 
-          value_type value () {
+          value_type& value () {
             if (oversampling) {
               Point<float> d (x[0]+from[0], x[1]+from[1], x[2]+from[2]);
-              value_type ret = 0.0;
+              result = 0.0;
               Point<float> s;
               for (int z = 0; z < OS[2]; ++z) {
                 s[2] = d[2] + z*inc[2];
@@ -187,18 +187,19 @@ namespace MR
                     Image::Transform::transform_position (pos, direct_transform, s);
                     interp.voxel (pos);
                     if (!interp) continue;
-                    else ret += interp.value();
+                    else result += interp.value();
                   }
                 }
               }
-              return ret * norm;
+              result *= norm;
             }
             else {
               Point<float> pos;
               Image::Transform::transform_position (pos, direct_transform, x);
               interp.voxel (pos);
-              return interp.value();
+              result = interp.value();
             }
+            return result;
           }
 
           Position<Reslice<Interpolator,VoxelType> > operator[] (size_t axis) {
@@ -213,6 +214,7 @@ namespace MR
           float from[3], inc[3];
           float norm;
           Math::Matrix<float> direct_transform;
+          value_type result;
 
           ssize_t get_pos (size_t axis) const {
             return axis < 3 ? x[axis] : interp[axis];

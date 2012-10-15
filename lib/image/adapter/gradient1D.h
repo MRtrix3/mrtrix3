@@ -40,31 +40,33 @@ namespace MR
             Voxel<VoxelType> (parent),
             axis_(axis) { }
 
+          typedef typename VoxelType::value_type value_type;
+
           void set_axis(size_t axis) {
             axis_ = axis;
           }
 
-          float value () {
+          float& value () {
             const ssize_t pos = (*this)[axis_];
-            float val = 0.0;
+            result = 0.0;
 
             if (pos == 0) {
-              val = parent_vox.value();
+              result = parent_vox.value();
               (*this)[axis_] = pos + 1;
-              val = parent_vox.value() - val;
+              result = parent_vox.value() - result;
             } else if (pos == dim(axis_) - 1) {
-              val = parent_vox.value();
+              result = parent_vox.value();
               (*this)[axis_] = pos - 1;
-              val -= parent_vox.value();
+              result -= parent_vox.value();
             } else {
               (*this)[axis_] = pos + 1;
-              val = parent_vox.value();
+              result = parent_vox.value();
               (*this)[axis_] = pos - 1;
-              val = 0.5 * (val - parent_vox.value());
+              result = 0.5 * (result - parent_vox.value());
             }
             (*this)[axis_] = pos;
 
-            return val;
+            return result;
           }
 
           using Voxel<VoxelType>::name;
@@ -75,6 +77,7 @@ namespace MR
         protected:
           using Voxel<VoxelType>::parent_vox;
           size_t axis_;
+          value_type result;
         };
     }
   }

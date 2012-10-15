@@ -70,7 +70,7 @@ namespace MR
 
 
 
-          value_type value () {
+          value_type& value () {
 
             const ssize_t old_pos [3] = { (*this)[0], (*this)[1], (*this)[2] };
             const ssize_t from[3] = {
@@ -88,7 +88,7 @@ namespace MR
             const size_t m = n/2 + 1;
 
             size_t nc = 0;
-            value_type cm = -INFINITY;
+            result = -INFINITY;
 
             for (ssize_t k = from[2]; k < to[2]; ++k) {
               (*this)[2] = k;
@@ -99,38 +99,38 @@ namespace MR
                   const value_type val = parent_vox.value();
                   if (nc < m) {
                     v[nc] = val;
-                    if (v[nc] > cm) cm = val;
+                    if (v[nc] > result) result = val;
                     ++nc;
                   }
-                  else if (val < cm) {
+                  else if (val < result) {
                     size_t x;
-                    for (x = 0; v[x] != cm; ++x);
+                    for (x = 0; v[x] != result; ++x);
                     v[x] = val;
-                    cm = -INFINITY;
+                    result = -INFINITY;
                     for (x = 0; x < m; x++)
-                      if (v[x] > cm) cm = v[x];
+                      if (v[x] > result) result = v[x];
                   }
                 }
               }
             }
 
             if ((n+1) & 1) {
-              value_type t = cm = -INFINITY;
+              value_type t = result = -INFINITY;
               for (size_t i = 0; i < m; ++i) {
-                if (v[i] > cm) {
-                  t = cm;
-                  cm = v[i];
+                if (v[i] > result) {
+                  t = result;
+                  result = v[i];
                 }
                 else if (v[i] > t) t = v[i];
               }
-              cm = (cm+t)/2.0;
+              result = (result+t)/2.0;
             }
 
             (*this)[0] = old_pos[0];
             (*this)[1] = old_pos[1];
             (*this)[2] = old_pos[2];
 
-            return cm;
+            return result;
           }
 
           using Voxel<VoxelType>::name;
@@ -141,6 +141,7 @@ namespace MR
           using Voxel<VoxelType>::parent_vox;
           std::vector<int> extent_;
           std::vector<value_type> v;
+          value_type result;
         };
 
     }

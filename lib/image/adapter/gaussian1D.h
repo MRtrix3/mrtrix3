@@ -53,16 +53,18 @@ namespace MR
 
           typedef typename VoxelType::value_type value_type;
 
-          value_type value ()
+          value_type& value ()
           {
-            if (!kernel_.size())
-              return parent_vox.value();
+            if (!kernel_.size()) {
+              result = parent_vox.value();
+              return result;
+            }
 
             const ssize_t pos = (*this)[axis_];
             const int from = pos < radius_ ? 0 : pos - radius_;
             const int to = pos >= (dim(axis_) - radius_) ? dim(axis_) - 1 : pos + radius_;
 
-            value_type val = 0;
+            result = 0.0;
 
             if (pos < radius_) {
               size_t c = radius_ - pos;
@@ -70,28 +72,28 @@ namespace MR
               for (ssize_t k = from; k <= to; ++k) {
                 av_weights += kernel_[c];
                 (*this)[axis_] = k;
-                val += parent_vox.value() * kernel_[c++];
+                result += parent_vox.value() * kernel_[c++];
               }
-              val /= av_weights;
+              result /= av_weights;
             } else if ((to - pos) < radius_){
               size_t c = 0;
               value_type av_weights = 0.0;
               for (ssize_t k = from; k <= to; ++k) {
                 av_weights += kernel_[c];
                 (*this)[axis_] = k;
-                val += parent_vox.value() * kernel_[c++];
+                result += parent_vox.value() * kernel_[c++];
               }
-              val /= av_weights;
+              result /= av_weights;
             } else {
               size_t c = 0;
               for (ssize_t k = from; k <= to; ++k) {
                 (*this)[axis_] = k;
-                val += parent_vox.value() * kernel_[c++];
+                result += parent_vox.value() * kernel_[c++];
               }
             }
 
             (*this)[axis_] = pos;
-            return val;
+            return result;
           }
 
           using Voxel<VoxelType>::name;
@@ -121,6 +123,7 @@ namespace MR
           ssize_t radius_;
           size_t axis_;
           std::vector<value_type> kernel_;
+          value_type result;
         };
     }
   }
