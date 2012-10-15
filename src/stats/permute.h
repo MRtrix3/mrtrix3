@@ -48,7 +48,7 @@ namespace MR
           progress ("running " + str(num_perms) + " permutations...", num_perms) { }
 
         bool operator() (Item& item) {
-          if (current_perm >= num_perms) 
+          if (current_perm >= num_perms)
             return false;
 
           item.index = current_perm;
@@ -104,22 +104,25 @@ namespace MR
         Processor (Ptr<Image::Filter::Connector<Image::Buffer<value_type>::voxel_type> > connector,
                    Math::Vector<value_type>& perm_distribution_pos, Math::Vector<value_type>& perm_distribution_neg,
                    const Math::Matrix<value_type>& afd,
-                   std::vector<value_type>& tfce_output_pos, std::vector<value_type>& tfce_output_neg,
                    const Math::Matrix<value_type>& design_matrix, const Math::Matrix<value_type>& contrast_matrix,
-                   value_type dh, value_type E, value_type H) :
+                   value_type dh, value_type E, value_type H,
+                   std::vector<value_type>& tfce_output_pos, std::vector<value_type>& tfce_output_neg,
+                   std::vector<value_type>& tvalue_output_pos, std::vector<value_type>& tvalue_output_neg) :
           connector(connector),
           perm_distribution_pos (perm_distribution_pos),
           perm_distribution_neg (perm_distribution_neg),
           afd (afd),
-          tfce_output_pos (tfce_output_pos),
-          tfce_output_neg (tfce_output_neg),
-          design_matrix (design_matrix), 
+          design_matrix (design_matrix),
           contrast_matrix (contrast_matrix),
           dh (dh),
           E (E),
-          H (H) { }
+          H (H),
+          tfce_output_pos (tfce_output_pos),
+          tfce_output_neg (tfce_output_neg),
+          tvalue_output_pos (tvalue_output_pos),
+          tvalue_output_neg (tvalue_output_neg){ }
 
-        bool operator() (const Item& item) 
+        bool operator() (const Item& item)
         {
           std::vector<value_type> stats (afd.rows(), 0.0);
           std::vector<value_type> tfce_stats (afd.rows(), 0.0);
@@ -127,48 +130,51 @@ namespace MR
 
           compute_tstatistics (item.labelling, stats, max_stat, min_stat);
           value_type max_tfce_stat = tfce_integration (max_stat, stats, tfce_stats);
-          if (item.index == 0)
+          if (item.index == 0) {
+            tvalue_output_pos = stats;
             tfce_output_pos = tfce_stats;
-          else
+          } else {
             perm_distribution_pos[item.index - 1] = max_tfce_stat;
+          }
 
           for (size_t i = 0; i < afd.rows(); ++i) {
             stats[i] = -stats[i];
             tfce_stats[i] = 0.0;
           }
           max_tfce_stat = tfce_integration (-min_stat, stats, tfce_stats);
-          if (item.index == 0)
+          if (item.index == 0) {
+            tvalue_output_neg = stats;
             tfce_output_neg = tfce_stats;
-          else
+          } else {
             perm_distribution_neg[item.index - 1] = max_tfce_stat;
-
+          }
           return true;
         }
 
       private:
 
-        value_type tfce_integration (const value_type max_stat, const std::vector<value_type>& stats, std::vector<value_type>& tfce_stats) 
+        value_type tfce_integration (const value_type max_stat, const std::vector<value_type>& stats, std::vector<value_type>& tfce_stats)
         {
           for (value_type threshold = dh; threshold < max_stat; threshold += dh) {
             std::vector<Image::Filter::cluster> clusters;
             std::vector<uint32_t> labels (afd.rows(), 0);
             connector->run (clusters, labels, stats, threshold);
 
-            for (size_t i = 0; i < afd.rows(); ++i) 
+            for (size_t i = 0; i < afd.rows(); ++i)
               if (labels[i])
                 tfce_stats[i] += pow (clusters[labels[i]-1].size, E) * pow (threshold, H);
           }
 
           value_type max_tfce_stat = 0.0;
-          for (size_t i = 0; i < afd.rows(); i++) 
+          for (size_t i = 0; i < afd.rows(); i++)
             if (tfce_stats[i] > max_tfce_stat)
               max_tfce_stat = tfce_stats[i];
-          
+
           return max_tfce_stat;
         }
 
         // Compute the test statistic along each voxel/direction
-        void compute_tstatistics (const std::vector<size_t>& perms, std::vector<value_type>& stats, value_type& max_stat, value_type& min_stat) 
+        void compute_tstatistics (const std::vector<size_t>& perms, std::vector<value_type>& stats, value_type& max_stat, value_type& min_stat)
         {
           Math::Matrix<value_type> design (design_matrix);
 
@@ -189,7 +195,7 @@ namespace MR
         }
 
 
-        value_type compute_tstatistic (const Math::Vector<value_type>& values, const Math::Matrix<value_type>& design) 
+        value_type compute_tstatistic (const Math::Vector<value_type>& values, const Math::Matrix<value_type>& design)
         {
           Math::mult (beta, pinv_M, values);
           value_type contrast_dot_beta = Math::dot (contrast_matrix.row(0), beta);
@@ -205,10 +211,10 @@ namespace MR
         Ptr<Image::Filter::Connector<Image::Buffer<value_type>::voxel_type> > connector;
         Math::Vector<value_type>& perm_distribution_pos, perm_distribution_neg;
         const Math::Matrix<value_type>& afd;
-        std::vector<value_type>& tfce_output_pos, tfce_output_neg;
         const Math::Matrix<value_type>& design_matrix;
         const Math::Matrix<value_type>& contrast_matrix;
         value_type dh, E, H;
+        std::vector<value_type>& tfce_output_pos, tfce_output_neg, tvalue_output_pos, tvalue_output_neg;
         Math::Matrix<value_type> Mt_M, inv_Mt_M, pinv_M;
         Math::Vector<value_type> beta, residuals;
     };
@@ -239,8 +245,8 @@ namespace MR
               }
             }
             p_voxel.value() = pvalue;
-          } 
-          else 
+          }
+          else
             p_voxel.value() = 0.0;
         }
       }

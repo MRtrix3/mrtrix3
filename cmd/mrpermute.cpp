@@ -122,7 +122,7 @@ void run() {
     std::string filename = argument[0];
     std::ifstream ifs (filename.c_str());
     std::string temp;
-    while (getline (ifs, temp)) 
+    while (getline (ifs, temp))
       subjects.push_back (temp);
   }
 
@@ -139,7 +139,7 @@ void run() {
 
   if (contrast.columns() > design.columns())
     throw Exception ("too many contrasts for design matrix");
-  contrast.resize (design.columns(), contrast.rows());
+  contrast.resize (contrast.rows(), design.columns());
 
 
   // Load Mask
@@ -152,7 +152,7 @@ void run() {
 
   if (do_afd) {
     opt = get_options ("directions");
-    if (opt.size()) 
+    if (opt.size())
       directions.load(opt[0][0]);
     else {
       if (!header["directions"].size())
@@ -223,7 +223,7 @@ void run() {
       }
     }
 
-  } 
+  }
   else {
 
     ProgressBar progress("loading images...", subjects.size());
@@ -248,27 +248,41 @@ void run() {
   Math::Vector<float> perm_distribution_neg (num_perms - 1);
   std::vector<float> tfce_output_pos (num_vox, 0.0);
   std::vector<float> tfce_output_neg (num_vox, 0.0);
+  std::vector<float> tvalue_output_pos (num_vox, 0.0);
+  std::vector<float> tvalue_output_neg (num_vox, 0.0);
 
   {
     Stats::DataLoader loader (num_perms, subjects.size());
-    Stats::Processor processor (connector, perm_distribution_pos, perm_distribution_neg, data, tfce_output_pos, tfce_output_neg, design, contrast, dh, E, H);
+    Stats::Processor processor (connector, perm_distribution_pos, perm_distribution_neg, data, design, contrast, dh, E, H,
+                                tfce_output_pos, tfce_output_neg, tvalue_output_pos, tvalue_output_neg);
     Thread::run_queue (loader, 1, MR::Stats::Item(), processor, 0);
   }
 
   std::cout << "Generating output..." << std::flush;
 
   header.datatype() = DataType::Float32;
-  std::string prefix (argument[3]);
+  std::string prefix (argument[4]);
 
-  std::string tvalue_filename_pos = prefix + "_tfce_pos.mif";
-  Image::Buffer<float> tfce_data_pos (tvalue_filename_pos, header);
+  std::string tfce_filename_pos = prefix + "_tfce_pos.mif";
+  Image::Buffer<float> tfce_data_pos (tfce_filename_pos, header);
   Image::Buffer<float>::voxel_type tfce_voxel_pos (tfce_data_pos);
-  std::string tvalue_filename_neg = prefix + "_tfce_neg.mif";
-  Image::Buffer<float> tfce_data_neg (tvalue_filename_neg, header);
+  std::string tfce_filename_neg = prefix + "_tfce_neg.mif";
+  Image::Buffer<float> tfce_data_neg (tfce_filename_neg, header);
   Image::Buffer<float>::voxel_type tfce_voxel_neg (tfce_data_neg);
+  std::string tvalue_filename_pos = prefix + "_tvalue_pos.mif";
+  Image::Buffer<float> tvalue_data_pos (tvalue_filename_pos, header);
+  Image::Buffer<float>::voxel_type tvalue_voxel_pos (tfce_data_pos);
+  std::string tvalue_filename_neg = prefix + "_tvalue_neg.mif";
+  Image::Buffer<float> tvalue_data_neg (tvalue_filename_neg, header);
+  Image::Buffer<float>::voxel_type tvalue_voxel_neg (tfce_data_neg);
 
-  Image::LoopInOrder loop(tfce_voxel_pos);
-  for (loop.start(tfce_voxel_pos, tfce_voxel_neg); loop.ok(); loop.next(tfce_voxel_pos, tfce_voxel_neg)) {
+  Image::LoopInOrder loop_tvalue (tvalue_voxel_pos);
+  for (loop_tvalue.start(tvalue_voxel_pos, tvalue_voxel_neg); loop_tvalue.ok(); loop_tvalue.next(tvalue_voxel_pos, tvalue_voxel_neg)) {
+    tvalue_voxel_pos.value() = 0.0;
+    tvalue_voxel_neg.value() = 0.0;
+  }
+  Image::LoopInOrder loop_tfce (tfce_voxel_pos);
+  for (loop_tfce.start(tfce_voxel_pos, tfce_voxel_neg); loop_tfce.ok(); loop_tfce.next(tfce_voxel_pos, tfce_voxel_neg)) {
     tfce_voxel_pos.value() = 0.0;
     tfce_voxel_neg.value() = 0.0;
   }
