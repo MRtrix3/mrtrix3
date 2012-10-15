@@ -73,7 +73,7 @@ void usage ()
   + Option ("bottompercent", "provide a mask of the N%% bottom-valued voxels")
   + Argument ("N").type_integer (0, 100, std::numeric_limits<int>::max())
 
-  + Option ("nan", "replace all zero values with NaN.")
+  + Option ("nan", "use NaN as the output zero value.")
 
   + Option ("ignorezero", "ignore zero-values input voxels.")
 
@@ -203,7 +203,7 @@ void run ()
             list.erase (list.begin());
           }
           std::vector<ssize_t> pos (in.ndim());
-          for (size_t n = 0; n < in.ndim(); ++n) 
+          for (size_t n = 0; n < in.ndim(); ++n)
             pos[n] = in[n];
           list.insert (std::pair<float,std::vector<ssize_t> > (val, pos));
         }
@@ -220,7 +220,7 @@ void run ()
             list.erase (i);
           }
           std::vector<ssize_t> pos (in.ndim());
-          for (size_t n = 0; n < in.ndim(); ++n) 
+          for (size_t n = 0; n < in.ndim(); ++n)
             pos[n] = in[n];
           list.insert (std::pair<float,std::vector<ssize_t> > (val, pos));
         }
@@ -242,7 +242,7 @@ void run ()
     if (use_histogram) {
       Image::Histogram<Image::Buffer<float>::voxel_type> hist (in);
       threshold_value = hist.first_min();
-    } 
+    }
     else if (isnan (threshold_value)) {
       double min, max;
       Image::min_max(in, min, max);
@@ -256,12 +256,12 @@ void run ()
       Image::Filter::ImageCorrelationCostFunction<Image::Buffer<float>::voxel_type, Image::Buffer<bool>::voxel_type > cost_function(in, mask_voxel);
       threshold_value = Math::golden_section_search(cost_function, "optimising threshold...", min + 0.001*(max-min), (min+max)/2.0 , max-0.001*(max-min));
     }
-
+    VAR (one);
+    VAR (zero);
     Image::Loop loop ("thresholding \"" + shorten (in.name()) + "\" at intensity " + str (threshold_value) + "...");
     for (loop.start (out, in); loop.ok(); loop.next (out, in)) {
       float val = in.value();
-      if (!finite (val)) continue;
-      out.value() = val < threshold_value ? zero : one;
+      out.value() = ( !finite (val) || val < threshold_value ) ? zero : one;
     }
   }
 }
