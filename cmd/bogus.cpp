@@ -22,9 +22,9 @@
 
 #include "app.h"
 #include "debug.h"
-#include "math/matrix.h"
-#include "math/gradient_descent.h"
-#include "math/check_gradient.h"
+#include "image/buffer.h"
+#include "image/voxel.h"
+#include "image/threaded_copy.h"
 
 MRTRIX_APPLICATION
 
@@ -38,78 +38,24 @@ void usage () {
   DESCRIPTION 
     + "this is used to test stuff. I need to write a lot of stuff here to pad this out and check that the wrapping functionality works as advertised... Seems to do an OK job so far. Wadaya reckon?"
     + "some more details here.";
+
+  ARGUMENTS
+    + Argument ("in", "in").type_image_in()
+    + Argument ("out", "out").type_image_out();
 }
 
 
-typedef double value_type;
-
-class Cost {
-  public:
-    Cost () : M(3,2), b(3), y(3) {
-      M.zero();
-      M(0,0) = 1.0;
-      M(1,1) = 2.0;
-      M(2,1) = 5.0;
-      VAR (M);
-
-      b[0] = 2.0;
-      b[1] = -1.0;
-      b[2] = 5.0;
-
-      VAR (b);
-    }
-
-
-    typedef ::value_type value_type;
-
-    size_t size () const { return 2; }
-
-    value_type init (Math::Vector<value_type>& x) const {
-      x = 0.0;
-      return 5.0;
-    }
-
-    value_type operator() (const Math::Vector<value_type>& x, Math::Vector<value_type>& g) const {
-
-      Math::mult (y, M, x);
-      y -= b;
-      value_type cost = Math::norm2 (y);
-
-      Math::mult (g, value_type(0.0), value_type(2.0), CblasTrans, M, y);
-
-      return cost;
-    }
-
-  protected:
-    Math::Matrix<value_type> M;
-    Math::Vector<value_type> b;
-    mutable Math::Vector<value_type> y;
-};
-
+typedef float value_type;
 
 
 void run () 
 {
-  Cost cost;
-  Math::Vector<value_type> x (cost.size());
-  cost.init (x);
-  Math::check_function_gradient (cost, x, 1.0e-4, true);
+  Image::Buffer<value_type> buf_in (argument[0]);
+  Image::Buffer<value_type> buf_out (argument[1], buf_in);
 
-  Math::GradientDescent<Cost> optim (cost);
+  Image::Buffer<value_type>::voxel_type in (buf_in);
+  Image::Buffer<value_type>::voxel_type out (buf_out);
 
-  Math::Vector<value_type> preconditioner (2);
-  preconditioner[0] = 1.0;
-  preconditioner[1] = 1.0/29.0;
-
-  Math::check_function_gradient (cost, x, 1.0e-4, true, preconditioner);
-
-  optim.precondition (preconditioner);
-  optim.run ();
-  VAR (optim.state());
-  VAR (optim.function_evaluations());
-
-  x = optim.state();
-  Math::check_function_gradient (cost, x, 1.0e-4, true);
-  Math::check_function_gradient (cost, x, 1.0e-4, true, preconditioner);
+  Image::threaded_copy_with_progress (in, out);
 }
 

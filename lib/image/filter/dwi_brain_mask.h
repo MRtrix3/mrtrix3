@@ -79,8 +79,10 @@ namespace MR
             datatype_ = DataType::Bit;
           }
 
+
           template <class InputVoxelType, class OutputVoxelType>
-            void operator() (InputVoxelType& input, Math::Matrix<float> & grad, OutputVoxelType& output) {
+            void operator() (InputVoxelType& input, Math::Matrix<float>& grad, OutputVoxelType& output) {
+              typedef typename InputVoxelType::value_type value_type;
 
               std::vector<int> bzeros, dwis;
               DWI::guess_DW_directions (dwis, bzeros, grad);
@@ -90,14 +92,14 @@ namespace MR
               info.set_ndim (3);
               ProgressBar progress("computing dwi brain mask...");
               // Compute the mean b=0 and mean DWI image
-              BufferScratch<float> b0_mean_data (info, "mean b0");
-              BufferScratch<float>::voxel_type b0_mean_voxel (b0_mean_data);
+              BufferScratch<value_type> b0_mean_data (info, "mean b0");
+              typename BufferScratch<value_type>::voxel_type b0_mean_voxel (b0_mean_data);
 
-              BufferScratch<float> dwi_mean_data (info, "mean DWI");
-              BufferScratch<float>::voxel_type dwi_mean_voxel (dwi_mean_data);
+              BufferScratch<value_type> dwi_mean_data (info, "mean DWI");
+              typename BufferScratch<value_type>::voxel_type dwi_mean_voxel (dwi_mean_data);
               Loop loop(0, 3);
               for (loop.start (input, b0_mean_voxel, dwi_mean_voxel); loop.ok(); loop.next (input, b0_mean_voxel, dwi_mean_voxel)) {
-                float mean = 0;
+                value_type mean = 0;
                 for (uint i = 0; i < dwis.size(); i++) {
                   input[3] = dwis[i];
                   mean += input.value();
@@ -116,18 +118,20 @@ namespace MR
               BufferScratch<int>::voxel_type b0_mean_mask_voxel (b0_mean_mask_data);
               threshold_filter (b0_mean_voxel, b0_mean_mask_voxel);
 
-              BufferScratch<float> dwi_mean_mask_data (threshold_filter);
-              BufferScratch<float>::voxel_type dwi_mean_mask_voxel (dwi_mean_mask_data);
+              BufferScratch<value_type> dwi_mean_mask_data (threshold_filter);
+              typename BufferScratch<value_type>::voxel_type dwi_mean_mask_voxel (dwi_mean_mask_data);
               threshold_filter (dwi_mean_voxel, dwi_mean_mask_voxel);
 
-              for (loop.start (b0_mean_voxel, b0_mean_mask_voxel, dwi_mean_mask_voxel); loop.ok(); loop.next (b0_mean_voxel, b0_mean_mask_voxel, dwi_mean_mask_voxel)) {
+              for (loop.start (b0_mean_voxel, b0_mean_mask_voxel, dwi_mean_mask_voxel); 
+                  loop.ok(); 
+                  loop.next (b0_mean_voxel, b0_mean_mask_voxel, dwi_mean_mask_voxel)) {
                 if (b0_mean_mask_voxel.value() > 0)
-                  dwi_mean_mask_voxel.value() = 1;
+                  dwi_mean_mask_voxel.value() = 1.0;
               }
               Median3D median_filter (dwi_mean_mask_voxel);
 
-              BufferScratch<int> temp_data (info, "temp image");
-              BufferScratch<int>::voxel_type temp_voxel (temp_data);
+              BufferScratch<value_type> temp_data (info, "temp image");
+              typename BufferScratch<value_type>::voxel_type temp_voxel (temp_data);
               median_filter (dwi_mean_mask_voxel, temp_voxel);
 
               ConnectedComponents connected_filter (temp_voxel);

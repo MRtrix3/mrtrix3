@@ -181,6 +181,36 @@ namespace MR
      * MyFunctor myfunc (vox, loop.inner_axes());
      * loop.run_outer (myfunc);
      * \endcode
+     * Obviously, any number of VoxelType objects can be involved in the
+     * computation, as long as they are members of the functor. For example, to
+     * restrict the computation above to a binary mask:
+     * \code
+     * MyFunctor {
+     *   public:
+     *     MyFunctor (ImageVoxelType& vox, MaskVoxelType& mask, const std::vector<size_t>& inner_axes) :
+     *         vox (vox),
+     *         mask (mask),
+     *         loop (inner_axes) { }
+     *     void operator() (const Image::Iterator& pos) {
+     *       Image::voxel_assign (mask, pos);
+     *       Image::voxel_assign (vox, pos);
+     *       for (loop.start (mask, vox); loop.ok(); loop.next (mask, vox))
+     *         vox.value() = mask.value() ? Math::exp (vox.value()) : NAN;
+     *     }
+     *   protected:
+     *     ImageVoxelType vox;
+     *     MaskVoxelType mask;
+     *     Image::LoopInOrder loop;
+     * };
+     *
+     * ...
+     *
+     * MyVoxelType vox;
+     * MyMaskVoxelType mask;
+     * Image::ThreadedLoop loop (vox);
+     * MyFunctor myfunc (vox, mask, loop.inner_axes());
+     * loop.run_outer (myfunc);
+     * \endcode
      *
      *
      * \par The run() method
@@ -218,16 +248,25 @@ namespace MR
      * These functions require a function or class as an argument that defines
      * the operation to be performed. When passing a class, the operator()
      * method will be invoked. The number of arguments of this function should
-     * match the number of VoxelType objects supplied. Any number of the
-     * arguments can be specified as outputs; in this case, the outputs should
-     * appear first in the list of arguments, and be passed by reference.
+     * match the number of VoxelType objects supplied to foreach(). 
      *
      * The foreach() functions take the following arguments:
+     * - \a ninputs: the number of arguments to be used as inputs of the
+     * function; the values passed to the function or functor will be read from
+     * the corresponding VoxelType objects before invoking the function or
+     * functor. The first \a ninputs VoxelType arguments will be assumed to
+     * correspond to inputs. Specifying which values are inputs means non-input
+     * values won't be loaded, which improves performance. 
      * - \a noutputs: the number of arguments to be used as outputs of the
      * function; the values as modified by the function or functor will be
-     * written to the corresponding VoxelType objects for each voxel.
+     * written to the corresponding VoxelType objects for each voxel. The last
+     * \a noutputs VoxelType arguments will be assumed to correspond to
+     * outputs, and should be passed to the function or functor by reference.
+     * Note that arguments are allowed to be both inputs and outputs; in this
+     * case, \a ninputs + \a noutputs should be greater than the number of
+     * VoxelType arguments.
      * - \a functor: the function or functor defining the operation itself.
-     * - \a VoxelTypeN: the VoxelType objects whose voxel values are to be
+     * - \a voxN: the VoxelType objects whose voxel values are to be
      * used as inputs/outputs; their number and order should match that of
      * the function or functor.
      *
@@ -238,18 +277,18 @@ namespace MR
      *
      * ...
      *
-     * Image::ThreadedLoop ("adding...", vox).foreach (1, myfunc, vox);
+     * Image::ThreadedLoop ("computing exponential in-place...", vox).foreach (1, 1, myfunc, vox);
      * \endcode
      * 
      * As a further example, the following snippet performs the addition of \a
      * vox1 and \a vox2, this time storing the results in \a vox_out, with no
      * progress display, and looping according to the strides in \a vox1: 
      * \code
-     * void myadd (float& out, float in1, float in2) { out = in1 + in2; }
+     * void myadd (float in1, float in2, float& out) { out = in1 + in2; }
      *
      * ...
      *
-     * Image::ThreadedLoop (vox1).foreach (1, myadd, vox_out, vox1, vox2);
+     * Image::ThreadedLoop (vox1).foreach (1, 2, myadd, vox1, vox2, vox_out);
      * \endcode 
      * 
      * This example uses a functor to computes the root-mean-square of \a vox,
@@ -275,7 +314,7 @@ namespace MR
      * ...
      *
      * double SoS = 0.0;
-     * Image::ThreadedLoop ("computing RMS of \"" + vox.name() + "\"...", vox).foreach (0, RMS(SoS), vox);
+     * Image::ThreadedLoop ("computing RMS of \"" + vox.name() + "\"...", vox).foreach (0, 1, RMS(SoS), vox);
      * double rms = Math::sqrt (SoS / Image::voxel_count (vox));
      * \endcode
      *
@@ -406,13 +445,13 @@ namespace MR
 
 
         template <class Functor, class VoxelType1> 
-          void foreach (int noutputs, Functor functor, VoxelType1& vox1);
+          void foreach (int ninputs, int noutputs, Functor functor, VoxelType1& vox1);
 
         template <class Functor, class VoxelType1, class VoxelType2> 
-          void foreach (int noutputs, Functor functor, VoxelType1& vox1, VoxelType2& vox2);
+          void foreach (int ninputs, int noutputs, Functor functor, VoxelType1& vox1, VoxelType2& vox2);
 
         template <class Functor, class VoxelType1, class VoxelType2, class VoxelType3> 
-          void foreach (int noutputs, Functor functor, VoxelType1& vox1, VoxelType2& vox2, VoxelType3& vox3);
+          void foreach (int ninputs, int noutputs, Functor functor, VoxelType1& vox1, VoxelType2& vox2, VoxelType3& vox3);
 
       protected:
         LoopInOrder loop;
@@ -505,8 +544,10 @@ namespace MR
     template <class Functor, class VoxelType1>
       class ThreadedLoopKernelForEach1 : public ThreadedLoopKernelBase {
         public:
-          ThreadedLoopKernelForEach1 (ThreadedLoop& shared_info, int noutputs, const Functor& functor, VoxelType1& vox1) :
+          ThreadedLoopKernelForEach1 (ThreadedLoop& shared_info, int ninputs, int noutputs, 
+              const Functor& functor, VoxelType1& vox1) :
             ThreadedLoopKernelBase (shared_info),
+            ninputs (ninputs),
             noutputs (noutputs),
             func (functor),
             vox1 (vox1) { }
@@ -514,10 +555,12 @@ namespace MR
           void execute () {
             LoopInOrder loop (shared.inner_axes());
             Iterator pos (shared.iterator());
+            typename VoxelType1::value_type val = NAN;
             while (shared.next (pos)) {
               voxel_assign (vox1, pos);
               for (loop.start (vox1); loop.ok(); loop.next (vox1)) {
-                typename VoxelType1::value_type val = vox1.value();
+                if (ninputs) 
+                  val = vox1.value();
                 func (val);
                 if (noutputs) 
                   vox1.value() = val;
@@ -526,6 +569,7 @@ namespace MR
           }
 
         protected:
+          const int ninputs;
           const int noutputs;
           Functor func;
           VoxelType1 vox1;
@@ -536,9 +580,10 @@ namespace MR
     template <class Functor, class VoxelType1, class VoxelType2>
       class ThreadedLoopKernelForEach2 : public ThreadedLoopKernelBase {
         public:
-          ThreadedLoopKernelForEach2 (ThreadedLoop& shared_info, int noutputs, 
+          ThreadedLoopKernelForEach2 (ThreadedLoop& shared_info, int ninputs, int noutputs, 
               const Functor& functor, VoxelType1& vox1, VoxelType2& vox2) :
             ThreadedLoopKernelBase (shared_info),
+            ninputs (ninputs),
             noutputs (noutputs),
             func (functor),
             vox1 (vox1),
@@ -547,23 +592,29 @@ namespace MR
           void execute () {
             LoopInOrder loop (shared.inner_axes());
             Iterator pos (shared.iterator());
+            typename VoxelType1::value_type val1 = NAN;
+            typename VoxelType2::value_type val2 = NAN;
             while (shared.next (pos)) {
               voxel_assign (vox1, pos);
               voxel_assign (vox2, pos);
               for (loop.start (vox1, vox2); loop.ok(); loop.next (vox1, vox2)) {
-                typename VoxelType1::value_type val1 = vox1.value();
-                typename VoxelType2::value_type val2 = vox2.value();
+                if (ninputs) {
+                  val1 = vox1.value();
+                  if (ninputs > 1) 
+                    val2 = vox2.value();
+                }
                 func (val1, val2);
                 if (noutputs) {
-                  vox1.value() = val1;
+                  vox2.value() = val2;
                   if (noutputs > 1)
-                    vox2.value() = val2;
+                    vox1.value() = val1;
                 }
               }
             }
           }
 
         protected:
+          const int ninputs;
           const int noutputs;
           Functor func;
           VoxelType1 vox1;
@@ -574,9 +625,10 @@ namespace MR
     template <class Functor, class VoxelType1, class VoxelType2, class VoxelType3>
       class ThreadedLoopKernelForEach3 : public ThreadedLoopKernelBase {
         public:
-          ThreadedLoopKernelForEach3 (ThreadedLoop& shared_info, int noutputs, 
+          ThreadedLoopKernelForEach3 (ThreadedLoop& shared_info, int ninputs, int noutputs, 
               const Functor& functor, VoxelType1& vox1, VoxelType2& vox2, VoxelType3& vox3) :
             ThreadedLoopKernelBase (shared_info),
+            ninputs (ninputs),
             noutputs (noutputs),
             func (functor),
             vox1 (vox1),
@@ -586,21 +638,29 @@ namespace MR
           void execute () {
             LoopInOrder loop (shared.inner_axes());
             Iterator pos (shared.iterator());
+            typename VoxelType1::value_type val1 = NAN;
+            typename VoxelType2::value_type val2 = NAN;
+            typename VoxelType3::value_type val3 = NAN;
             while (shared.next (pos)) {
               voxel_assign (vox1, pos);
               voxel_assign (vox2, pos);
               voxel_assign (vox3, pos);
               for (loop.start (vox1, vox2, vox3); loop.ok(); loop.next (vox1, vox2, vox3)) {
-                typename VoxelType1::value_type val1 = vox1.value();
-                typename VoxelType2::value_type val2 = vox2.value();
-                typename VoxelType3::value_type val3 = vox3.value();
+                if (ninputs) {
+                  val1 = vox1.value();
+                  if (ninputs > 1) {
+                    val2 = vox2.value();
+                    if (ninputs > 3) 
+                      val3 = vox3.value();
+                  }
+                }
                 func (val1, val2, val3);
                 if (noutputs) {
-                  vox1.value() = val1;
+                  vox3.value() = val3;
                   if (noutputs > 1) {
                     vox2.value() = val2;
                     if (noutputs > 2) 
-                      vox3.value() = val3;
+                      vox1.value() = val1;
                   }
                 }
               }
@@ -608,6 +668,7 @@ namespace MR
           }
 
         protected:
+          const int ninputs;
           const int noutputs;
           Functor func;
           VoxelType1 vox1;
@@ -649,26 +710,32 @@ namespace MR
 
 
     template <class Functor, class VoxelType1> 
-      inline void ThreadedLoop::foreach (int noutputs, Functor functor, VoxelType1& vox1)
+      inline void ThreadedLoop::foreach (int ninputs, int noutputs, Functor functor, VoxelType1& vox1)
       {
-        ThreadedLoopKernelForEach1<Functor, VoxelType1> loop_thread (*this, noutputs, functor, vox1);
-        Thread::Array<ThreadedLoopKernelForEach1<Functor, VoxelType1> > thread_list (loop_thread);
+        ThreadedLoopKernelForEach1<Functor, VoxelType1> 
+          loop_thread (*this, ninputs, noutputs, functor, vox1);
+        Thread::Array<ThreadedLoopKernelForEach1<Functor, VoxelType1> > 
+          thread_list (loop_thread);
         Thread::Exec threads (thread_list, "foreach thread");
       }
 
     template <class Functor, class VoxelType1, class VoxelType2> 
-      inline void ThreadedLoop::foreach (int noutputs, Functor functor, VoxelType1& vox1, VoxelType2& vox2)
+      inline void ThreadedLoop::foreach (int ninputs, int noutputs, Functor functor, VoxelType1& vox1, VoxelType2& vox2)
       {
-        ThreadedLoopKernelForEach2<Functor, VoxelType1, VoxelType2> loop_thread (*this, noutputs, functor, vox1, vox2);
-        Thread::Array<ThreadedLoopKernelForEach2<Functor, VoxelType1, VoxelType2> > thread_list (loop_thread);
+        ThreadedLoopKernelForEach2<Functor, VoxelType1, VoxelType2> 
+          loop_thread (*this, ninputs, noutputs, functor, vox1, vox2);
+        Thread::Array<ThreadedLoopKernelForEach2<Functor, VoxelType1, VoxelType2> > 
+          thread_list (loop_thread);
         Thread::Exec threads (thread_list, "foreach thread");
       }
 
     template <class Functor, class VoxelType1, class VoxelType2, class VoxelType3> 
-      inline void ThreadedLoop::foreach (int noutputs, Functor functor, VoxelType1& vox1, VoxelType2& vox2, VoxelType3& vox3)
+      inline void ThreadedLoop::foreach (int ninputs, int noutputs, Functor functor, VoxelType1& vox1, VoxelType2& vox2, VoxelType3& vox3)
       {
-        ThreadedLoopKernelForEach3<Functor, VoxelType1, VoxelType2, VoxelType3> loop_thread (*this, noutputs, functor, vox1, vox2, vox3);
-        Thread::Array<ThreadedLoopKernelForEach3<Functor, VoxelType1, VoxelType2, VoxelType3> > thread_list (loop_thread);
+        ThreadedLoopKernelForEach3<Functor, VoxelType1, VoxelType2, VoxelType3>
+          loop_thread (*this, ninputs, noutputs, functor, vox1, vox2, vox3);
+        Thread::Array<ThreadedLoopKernelForEach3<Functor, VoxelType1, VoxelType2, VoxelType3> >
+          thread_list (loop_thread);
         Thread::Exec threads (thread_list, "foreach thread");
       }
 
