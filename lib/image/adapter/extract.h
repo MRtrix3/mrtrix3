@@ -98,7 +98,7 @@ namespace MR
           Math::Matrix<float> trans;
           int current_pos;
 
-          int get_pos (size_t axis) const {
+          int get_pos (size_t axis) {
             return ( axis == extract_axis ? current_pos : parent_vox[axis] );
           }
 

@@ -33,7 +33,8 @@ namespace MR
     namespace Adapter
     {
 
-      template <class VoxelType> class PermuteAxes : public Voxel<VoxelType>
+      template <class VoxelType> 
+        class PermuteAxes : public Voxel<VoxelType>
       {
         public:
           using Voxel<VoxelType>::dim;
@@ -82,7 +83,7 @@ next_axis:
         private:
           const std::vector<int> axes_;
 
-          ssize_t get_pos (size_t axis) const {
+          ssize_t get_pos (size_t axis) {
             return axes_[axis] < 0 ? 0 : parent_vox[axes_[axis]];
           }
           void set_pos (size_t axis, ssize_t position) {

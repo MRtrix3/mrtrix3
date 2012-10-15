@@ -73,6 +73,9 @@ void usage ()
             "-1 at the corresponding position in the list.")
   + Argument ("axes").type_sequence_int()
 
+  + Option ("zero",
+            "replace non-finite values with zeros.")
+
   + Option ("prs",
             "assume that the DW gradients are specified in the PRS frame (Siemens DICOM only).")
 
@@ -152,10 +155,17 @@ inline std::vector<int> set_header (
 
 
 
+inline void zero_non_finite (complex_type& out, complex_type in) 
+{
+  out.real() = finite (in.real()) ? in.real() : 0.0;
+  out.imag() = finite (in.imag()) ? in.imag() : 0.0;
+}
 
 template <class InputVoxelType>
 inline void copy_permute (InputVoxelType& in, Image::Header& header_out, const std::string& output_filename)
 {
+  bool replace_nans = App::get_options ("zero").size();
+
   DataType datatype = header_out.datatype();
   std::vector<int> axes = set_header (header_out, in);
   header_out.datatype() = datatype;
@@ -164,10 +174,20 @@ inline void copy_permute (InputVoxelType& in, Image::Header& header_out, const s
 
   if (axes.size()) {
     Image::Adapter::PermuteAxes<InputVoxelType> perm (in, axes);
-    Image::threaded_copy_with_progress (perm, out, 2);
+
+    if (replace_nans)
+      Image::ThreadedLoop ("copying from \"" + shorten (perm.name()) + "\" to \"" + shorten (out.name()) + "\"...", perm, 2)
+        .foreach (1, zero_non_finite, out, perm);
+    else 
+      Image::threaded_copy_with_progress (perm, out, 2);
   }
-  else
-    Image::threaded_copy_with_progress (in, out, 2);
+  else {
+    if (replace_nans)
+      Image::ThreadedLoop ("copying from \"" + shorten (in.name()) + "\" to \"" + shorten (out.name()) + "\"...", in, 2)
+        .foreach (1, zero_non_finite, out, in);
+    else
+      Image::threaded_copy_with_progress (in, out, 2);
+  }
 }
 
 
