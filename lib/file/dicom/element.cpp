@@ -31,7 +31,7 @@ namespace MR
     namespace Dicom
     {
 
-      void Element::set (const std::string& filename, bool force_read)
+      void Element::set (const std::string& filename, bool force_read, bool read_write)
       {
         group = element = VR = 0;
         size = 0;
@@ -40,7 +40,7 @@ namespace MR
         end_seq.clear();
         item_number.clear();
 
-        fmap = new File::MMap (filename);
+        fmap = new File::MMap (filename, read_write);
         if (fmap->size() < 256) throw Exception ("\"" + fmap->name() + "\" is too small to be a valid DICOM file");
 
         next = (uint8_t*) fmap->address();
