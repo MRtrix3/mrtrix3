@@ -22,6 +22,15 @@
 #ifndef __stats_permute_h__
 #define __stats_permute_h__
 
+#include <gsl/gsl_linalg.h>
+
+#include "math/vector.h"
+#include "math/matrix.h"
+#include "thread/exec.h"
+#include "thread/queue.h"
+#include "progressbar.h"
+#include "image/filter/connected_components.h"
+
 namespace MR
 {
   namespace Stats
@@ -35,13 +44,47 @@ namespace MR
     };
 
 
+
+
+
+    inline void SVD_invert (Math::Matrix<double>& I, const Math::Matrix<double>& M) 
+    {
+      size_t N = std::min (M.rows(), M.columns());
+      Math::Matrix<double> U (M), V (N,N);
+      Math::Vector<double> S (N), work (N);
+      gsl_linalg_SV_decomp (U.gsl(), V.gsl(), S.gsl(), work.gsl());
+
+      for (size_t n = 0; n < N; ++n) {
+        double sv = S[n] < 1.0e-10 ? 0.0 : 1.0/S[n];
+        for (size_t r = 0; r < N; ++r)
+          V(r,n) *= sv;
+      }
+
+      Math::mult (I, 1.0, CblasNoTrans, V, CblasTrans, U);
+    }
+
+
+    inline size_t rank (const Math::Matrix<double>& M)
+    {
+      size_t N = std::min (M.rows(), M.columns());
+      Math::Matrix<double> U (M), V (N,N);
+      Math::Vector<double> S (N), work (N);
+      gsl_linalg_SV_decomp (U.gsl(), V.gsl(), S.gsl(), work.gsl());
+      for (size_t n = 0; n < N; ++n) 
+        if (S[n] < 1.0e-10)
+          return n+1;
+      return N;
+    }
+
+
+
     typedef Thread::Queue<Item> Queue;
     typedef float value_type;
 
-    class DataLoader
+    class PermutationGenerator
     {
       public:
-        DataLoader (size_t num_perms, size_t num_subjects) :
+        PermutationGenerator (size_t num_perms, size_t num_subjects) :
           num_perms (num_perms),
           num_subjects (num_subjects),
           current_perm (0),
@@ -58,7 +101,10 @@ namespace MR
           if (current_perm) {
             do {
               std::random_shuffle (item.labelling.begin(), item.labelling.end());
+              // TODO: check that permutation is distinct from original
             } while (is_duplicate_permutation (item.labelling, previous_perms));
+            // TODO: check whether we need to check for duplicate 
+            // i.e. can we sample with replacement?
           }
           previous_perms.push_back (item.labelling);
           ++current_perm;
@@ -107,7 +153,7 @@ namespace MR
                    const Math::Matrix<value_type>& design_matrix, const Math::Matrix<value_type>& contrast_matrix,
                    value_type dh, value_type E, value_type H,
                    std::vector<value_type>& tfce_output_pos, std::vector<value_type>& tfce_output_neg,
-                   std::vector<value_type>& tvalue_output_pos, std::vector<value_type>& tvalue_output_neg) :
+                   std::vector<value_type>& tvalue_output) :
           connector(connector),
           perm_distribution_pos (perm_distribution_pos),
           perm_distribution_neg (perm_distribution_neg),
@@ -119,8 +165,55 @@ namespace MR
           H (H),
           tfce_output_pos (tfce_output_pos),
           tfce_output_neg (tfce_output_neg),
-          tvalue_output_pos (tvalue_output_pos),
-          tvalue_output_neg (tvalue_output_neg){ }
+          tvalue_output (tvalue_output) {
+            // make sure contrast is a column vector:
+            Math::Matrix<double> c = contrast_matrix;
+            if (c.columns() > 1 && c.rows() > 1) 
+              throw Exception ("too many columns in contrast matrix: this implementation currently only supports univariate GLM");
+            if (c.columns() > 1)
+              c = Math::transpose (c);
+            
+            // form X_0:
+            Math::Matrix<double> T (c.rows(), c.rows());
+            T.identity();
+            Math::Matrix<double> pinv_c;
+            SVD_invert (pinv_c, c);
+            Math::mult (T , 1.0, -1.0, CblasNoTrans, c, CblasNoTrans, pinv_c);
+
+            Math::Matrix<double> X0, X = design_matrix;
+            Math::mult (X0, X, T );
+
+            // form R_0:
+            Math::Matrix<double> d_R0 (X0.rows(), X0.rows());
+            d_R0.identity();
+            Math::Matrix<double> pinv_X0;
+            SVD_invert (pinv_X0, X0);
+            Math::mult (d_R0, 1.0, -1.0, CblasNoTrans, X0, CblasNoTrans, pinv_X0);
+
+            // form X_1^*:
+            Math::Matrix<double> X1;
+            Math::mult (T, 1.0, CblasNoTrans, X, CblasTrans, pinv_c);
+            Math::mult (X1, d_R0, T);
+            Math::Matrix<double> pinv_X1;
+            SVD_invert (pinv_X1, X1);
+
+            // form M:
+            Math::Matrix<double> d_M (X1.rows()+1, X1.rows());
+            d_M.sub(0,1,0,d_M.columns()) = pinv_X1;
+            Math::Matrix<double> R1 = d_M.sub(1,d_M.rows(),0,d_M.columns());
+            R1.identity();
+            Math::mult (R1, 1.0, -1.0, CblasNoTrans, X1, CblasNoTrans, pinv_X1);
+
+            // precompute kappa:
+            Math::mult (T, 1.0, CblasTrans, X1, CblasNoTrans, X1);
+            kappa = Math::sqrt (T(0,0) * (X.rows() - rank(X)));
+
+
+            // store using request value type:
+            R0 = d_R0;
+            M = d_M;
+
+          }
 
         bool operator() (const Item& item)
         {
@@ -129,25 +222,25 @@ namespace MR
           value_type max_stat = 0.0, min_stat = 0.0;
 
           compute_tstatistics (item.labelling, stats, max_stat, min_stat);
+          if (item.index == 0) 
+            tvalue_output = stats;
+
           value_type max_tfce_stat = tfce_integration (max_stat, stats, tfce_stats);
-          if (item.index == 0) {
-            tvalue_output_pos = stats;
+          if (item.index == 0) 
             tfce_output_pos = tfce_stats;
-          } else {
+          else 
             perm_distribution_pos[item.index - 1] = max_tfce_stat;
-          }
 
           for (size_t i = 0; i < afd.rows(); ++i) {
             stats[i] = -stats[i];
             tfce_stats[i] = 0.0;
           }
           max_tfce_stat = tfce_integration (-min_stat, stats, tfce_stats);
-          if (item.index == 0) {
-            tvalue_output_neg = stats;
+          if (item.index == 0) 
             tfce_output_neg = tfce_stats;
-          } else {
+          else
             perm_distribution_neg[item.index - 1] = max_tfce_stat;
-          }
+
           return true;
         }
 
@@ -176,17 +269,14 @@ namespace MR
         // Compute the test statistic along each voxel/direction
         void compute_tstatistics (const std::vector<size_t>& perms, std::vector<value_type>& stats, value_type& max_stat, value_type& min_stat)
         {
-          Math::Matrix<value_type> design (design_matrix);
+          Math::Matrix<value_type> Mp, SR0 (R0.rows(), R0.columns());
+          for (size_t i = 0; i < R0.columns(); ++i)
+            SR0.row(i) = R0.row (perms[i]); // TODO: check whether we should permute rows or columns
 
-          for (size_t i = 0; i < design.rows(); ++i)
-            design(i,0) = design_matrix (perms[i], 0);
-
-          Math::mult (Mt_M, value_type(1.0), CblasTrans, design, CblasNoTrans, design);
-          Math::LU::inv (inv_Mt_M, Mt_M);
-          Math::mult (pinv_M, value_type(1.0), CblasNoTrans, inv_Mt_M, CblasTrans, design);
+          Math::mult (Mp, M, SR0);
 
           for (size_t i = 0; i < afd.rows(); ++i) {
-            stats[i] = compute_tstatistic (afd.row(i), design);
+            stats[i] = compute_tstatistic (afd.row(i), Mp);
             if (stats[i] > max_stat)
               max_stat = stats[i];
             if (stats[i] < min_stat)
@@ -195,17 +285,10 @@ namespace MR
         }
 
 
-        value_type compute_tstatistic (const Math::Vector<value_type>& values, const Math::Matrix<value_type>& design)
+        value_type compute_tstatistic (const Math::Vector<value_type>& values, const Math::Matrix<value_type>& Mp)
         {
-          Math::mult (beta, pinv_M, values);
-          value_type contrast_dot_beta = Math::dot (contrast_matrix.row(0), beta);
-
-          Math::mult (residuals, design, beta);
-          residuals -= values;
-          Math::mult (beta, inv_Mt_M, contrast_matrix.row(0));
-          value_type var_E = Math::norm2 (residuals) * Math::dot (contrast_matrix.row(0), beta);
-
-          return contrast_dot_beta / Math::sqrt (var_E);
+          Math::mult (e, Mp, values);
+          return kappa * e[0] / Math::norm (e.sub(1,e.size()));
         }
 
         Ptr<Image::Filter::Connector<Image::Buffer<value_type>::voxel_type> > connector;
@@ -213,10 +296,12 @@ namespace MR
         const Math::Matrix<value_type>& afd;
         const Math::Matrix<value_type>& design_matrix;
         const Math::Matrix<value_type>& contrast_matrix;
-        value_type dh, E, H;
-        std::vector<value_type>& tfce_output_pos, tfce_output_neg, tvalue_output_pos, tvalue_output_neg;
-        Math::Matrix<value_type> Mt_M, inv_Mt_M, pinv_M;
-        Math::Vector<value_type> beta, residuals;
+        value_type dh, E, H, kappa;
+        Math::Matrix<value_type> M, R0;
+        Math::Vector<value_type> e;
+        std::vector<value_type>& tfce_output_pos;
+        std::vector<value_type>& tfce_output_neg;
+        std::vector<value_type>& tvalue_output;
     };
 
 

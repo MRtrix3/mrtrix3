@@ -18,18 +18,13 @@
     You should have received a copy of the GNU General Public License
     along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
  */
+
 #include "app.h"
-#include "progressbar.h"
-#include "thread/exec.h"
-#include "thread/queue.h"
 #include "image/loop.h"
 #include "image/voxel.h"
 #include "image/buffer.h"
 #include "image/buffer_preload.h"
-#include "image/filter/connected_components.h"
 #include "math/SH.h"
-#include "math/vector.h"
-#include "math/matrix.h"
 #include "math/hemisphere/directions.h"
 #include "timer.h"
 #include "stats/permute.h"
@@ -90,21 +85,23 @@ void usage ()
 }
 
 
+typedef Stats::value_type value_type;
+
 
 void run() {
 
   Options opt = get_options ("dh");
-  float dh = 0.1;
+  value_type dh = 0.1;
   if (opt.size())
     dh = opt[0][0];
 
   opt = get_options ("tfce_h");
-  float H = 2.0;
+  value_type H = 2.0;
   if (opt.size())
     H = opt[0][0];
 
   opt = get_options ("tfce_e");
-  float E = 0.5;
+  value_type E = 0.5;
   if (opt.size())
     E = opt[0][0];
 
@@ -144,11 +141,11 @@ void run() {
 
   // Load Mask
   Image::Header header (argument[3]);
-  Image::Buffer<float> mask_data (header);
-  Image::Buffer<float>::voxel_type mask_vox (mask_data);
+  Image::Buffer<value_type> mask_data (header);
+  Image::Buffer<value_type>::voxel_type mask_vox (mask_data);
 
-  Math::Matrix<float> directions;
-  float angular_threshold = 12;
+  Math::Matrix<value_type> directions;
+  value_type angular_threshold = 12;
 
   if (do_afd) {
     opt = get_options ("directions");
@@ -157,7 +154,7 @@ void run() {
     else {
       if (!header["directions"].size())
         throw Exception ("no mask directions have been specified.");
-      std::vector<float> dir_vector;
+      std::vector<value_type> dir_vector;
       std::vector<std::string> lines = split (header["directions"], "\n", true);
       for (size_t l = 0; l < lines.size(); l++) {
         std::vector<float> v = parse_floats (lines[l]);
@@ -179,20 +176,20 @@ void run() {
 
 
   print ("Precomputing voxel adjacency from mask...");
-  Ptr<Image::Filter::Connector<Image::Buffer<float>::voxel_type> > connector (new Image::Filter::Connector<Image::Buffer<float>::voxel_type> (mask_vox, do_26_connectivity));
+  Ptr<Image::Filter::Connector<Image::Buffer<value_type>::voxel_type> > connector (new Image::Filter::Connector<Image::Buffer<value_type>::voxel_type> (mask_vox, do_26_connectivity));
   if (do_afd)
     connector->set_directions (directions, angular_threshold);
   std::vector<std::vector<int> > mask_indices = connector->precompute_adjacency ();
   print (" done\n");
 
-  size_t num_vox = mask_indices.size();
+  const size_t num_vox = mask_indices.size();
   Math::Matrix<Stats::value_type> data (num_vox, subjects.size());
 
 
   // Load images
   if (do_afd) {
 
-    Math::Matrix<float> SHT;
+    Math::Matrix<value_type> SHT;
     Image::Header first_header (subjects[0]);
     Image::check_dimensions(header, first_header, 0, 3);
     Math::SH::init_transform (SHT, directions, Math::SH::LforN (first_header.dim(3)));
@@ -202,11 +199,11 @@ void run() {
         LogLevelLatch log_level (0);
         Image::Stride::List strides(4, 0);
         strides[3] = 1;
-        Image::BufferPreload<float> fod_data (subjects[subject], strides);
-        Image::BufferPreload<float>::voxel_type fod_voxel (fod_data);
+        Image::BufferPreload<value_type> fod_data (subjects[subject], strides);
+        Image::BufferPreload<value_type>::voxel_type fod_voxel (fod_data);
         int index = 0;
         std::vector<std::vector<int> >::iterator it;
-        Math::Vector<float> fod (fod_voxel.dim(3));
+        Math::Vector<value_type> fod (fod_voxel.dim(3));
         for (it = mask_indices.begin(); it != mask_indices.end(); ++it) {
           if (fod_voxel[0] != (*it)[0] || fod_voxel[1] != (*it)[1] || fod_voxel[2] != (*it)[2]) {
             fod_voxel[0] = (*it)[0];
@@ -229,9 +226,9 @@ void run() {
     ProgressBar progress("loading images...", subjects.size());
     for (size_t subject = 0; subject < subjects.size(); subject++) {
       LogLevelLatch log_level (0);
-      Image::BufferPreload<float> fod_data (subjects[subject], Image::Stride::contiguous_along_axis (3));
+      Image::BufferPreload<value_type> fod_data (subjects[subject], Image::Stride::contiguous_along_axis (3));
       Image::check_dimensions (fod_data, mask_vox, 0, 3);
-      Image::BufferPreload<float>::voxel_type input_vox (fod_data);
+      Image::BufferPreload<value_type>::voxel_type input_vox (fod_data);
       int index = 0;
       std::vector<std::vector<int> >::iterator it;
       for (it = mask_indices.begin(); it != mask_indices.end(); ++it) {
@@ -244,18 +241,17 @@ void run() {
     }
   }
 
-  Math::Vector<float> perm_distribution_pos (num_perms - 1);
-  Math::Vector<float> perm_distribution_neg (num_perms - 1);
-  std::vector<float> tfce_output_pos (num_vox, 0.0);
-  std::vector<float> tfce_output_neg (num_vox, 0.0);
-  std::vector<float> tvalue_output_pos (num_vox, 0.0);
-  std::vector<float> tvalue_output_neg (num_vox, 0.0);
+  Math::Vector<value_type> perm_distribution_pos (num_perms - 1);
+  Math::Vector<value_type> perm_distribution_neg (num_perms - 1);
+  std::vector<value_type> tfce_output_pos (num_vox, 0.0);
+  std::vector<value_type> tfce_output_neg (num_vox, 0.0);
+  std::vector<value_type> tvalue_output (num_vox, 0.0);
 
   {
-    Stats::DataLoader loader (num_perms, subjects.size());
+    Stats::PermutationGenerator permute (num_perms, subjects.size());
     Stats::Processor processor (connector, perm_distribution_pos, perm_distribution_neg, data, design, contrast, dh, E, H,
-                                tfce_output_pos, tfce_output_neg, tvalue_output_pos, tvalue_output_neg);
-    Thread::run_queue (loader, 1, MR::Stats::Item(), processor, 0);
+                                tfce_output_pos, tfce_output_neg, tvalue_output);
+    Thread::run_queue (permute, 1, MR::Stats::Item(), processor, 0);
   }
 
   std::cout << "Generating output..." << std::flush;
@@ -264,33 +260,28 @@ void run() {
   std::string prefix (argument[4]);
 
   std::string tfce_filename_pos = prefix + "_tfce_pos.mif";
-  Image::Buffer<float> tfce_data_pos (tfce_filename_pos, header);
-  Image::Buffer<float>::voxel_type tfce_voxel_pos (tfce_data_pos);
+  Image::Buffer<value_type> tfce_data_pos (tfce_filename_pos, header);
+  Image::Buffer<value_type>::voxel_type tfce_voxel_pos (tfce_data_pos);
   std::string tfce_filename_neg = prefix + "_tfce_neg.mif";
-  Image::Buffer<float> tfce_data_neg (tfce_filename_neg, header);
-  Image::Buffer<float>::voxel_type tfce_voxel_neg (tfce_data_neg);
-  std::string tvalue_filename_pos = prefix + "_tvalue_pos.mif";
-  Image::Buffer<float> tvalue_data_pos (tvalue_filename_pos, header);
-  Image::Buffer<float>::voxel_type tvalue_voxel_pos (tfce_data_pos);
-  std::string tvalue_filename_neg = prefix + "_tvalue_neg.mif";
-  Image::Buffer<float> tvalue_data_neg (tvalue_filename_neg, header);
-  Image::Buffer<float>::voxel_type tvalue_voxel_neg (tfce_data_neg);
+  Image::Buffer<value_type> tfce_data_neg (tfce_filename_neg, header);
+  Image::Buffer<value_type>::voxel_type tfce_voxel_neg (tfce_data_neg);
+  std::string tvalue_filename = prefix + "_tvalue.mif";
+  Image::Buffer<value_type> tvalue_data (tvalue_filename, header);
+  Image::Buffer<value_type>::voxel_type tvalue_voxel (tvalue_data);
 
-  Image::LoopInOrder loop_tvalue (tvalue_voxel_pos);
-  for (loop_tvalue.start(tvalue_voxel_pos, tvalue_voxel_neg); loop_tvalue.ok(); loop_tvalue.next(tvalue_voxel_pos, tvalue_voxel_neg)) {
-    tvalue_voxel_pos.value() = 0.0;
-    tvalue_voxel_neg.value() = 0.0;
-  }
-  Image::LoopInOrder loop_tfce (tfce_voxel_pos);
-  for (loop_tfce.start(tfce_voxel_pos, tfce_voxel_neg); loop_tfce.ok(); loop_tfce.next(tfce_voxel_pos, tfce_voxel_neg)) {
-    tfce_voxel_pos.value() = 0.0;
-    tfce_voxel_neg.value() = 0.0;
-  }
+  // Image::LoopInOrder loop_tvalue (tvalue_voxel);
+  // for (loop_tvalue.start(tvalue_voxel); loop_tvalue.ok(); loop_tvalue.next(tvalue_voxel, tvalue_voxel)) {
+    // tvalue_voxel.value() = 0.0;
+  // }
+  // Image::LoopInOrder loop_tfce (tfce_voxel_pos);
+  // for (loop_tfce.start(tfce_voxel_pos, tfce_voxel_neg); loop_tfce.ok(); loop_tfce.next(tfce_voxel_pos, tfce_voxel_neg)) {
+    // tfce_voxel_pos.value() = 0.0;
+    // tfce_voxel_neg.value() = 0.0;
+  // }
   for (size_t i = 0; i < num_vox; i++) {
-    for (size_t dim = 0; dim < tfce_voxel_pos.ndim(); dim++) {
-      tfce_voxel_neg[dim] = mask_indices[i][dim];
-      tfce_voxel_pos[dim] = mask_indices[i][dim];
-    }
+    for (size_t dim = 0; dim < tfce_voxel_pos.ndim(); dim++) 
+      tvalue_voxel[dim] = tfce_voxel_pos[dim] = tfce_voxel_neg[dim] = mask_indices[i][dim];
+    tvalue_voxel.value() = tvalue_output[i];
     tfce_voxel_pos.value() = tfce_output_pos[i];
     tfce_voxel_neg.value() = tfce_output_neg[i];
   }
@@ -300,13 +291,13 @@ void run() {
   perm_distribution_neg.save (perm_filename_neg);
 
   std::string pvalue_filename_pos = prefix + "_pvalue_pos.mif";
-  Image::Buffer<float> pvalue_data_pos (pvalue_filename_pos, header);
-  Image::Buffer<float>::voxel_type pvalue_voxel_pos (pvalue_data_pos);
+  Image::Buffer<value_type> pvalue_data_pos (pvalue_filename_pos, header);
+  Image::Buffer<value_type>::voxel_type pvalue_voxel_pos (pvalue_data_pos);
   Stats::statistic2pvalue (perm_distribution_pos, tfce_voxel_pos, pvalue_voxel_pos);
 
   std::string pvalue_filename_neg = prefix + "_pvalue_neg.mif";
-  Image::Buffer<float> pvalue_data_neg (pvalue_filename_neg, header);
-  Image::Buffer<float>::voxel_type pvalue_voxel_neg (pvalue_data_neg);
+  Image::Buffer<value_type> pvalue_data_neg (pvalue_filename_neg, header);
+  Image::Buffer<value_type>::voxel_type pvalue_voxel_neg (pvalue_data_neg);
   Stats::statistic2pvalue (perm_distribution_neg, tfce_voxel_neg, pvalue_voxel_neg);
 
   std::cout << " done" << std::endl;
