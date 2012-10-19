@@ -977,6 +977,19 @@ namespace MR
             A (j,i) = B (i,j);
         return A;
       }
+
+
+
+    //! compute transpose \a A = \a B^ValueType
+    /** \param B a Matrix to be transposed
+     * \return the transposed matrix 
+     */
+    template <typename ValueType> 
+      inline Matrix<ValueType> transpose (const Matrix<ValueType>& B)
+      {
+        Math::Matrix<ValueType> A;
+        return transpose (A, B);
+      }
     /** @} */
 
 
