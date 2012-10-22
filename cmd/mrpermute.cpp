@@ -138,7 +138,6 @@ void run() {
     throw Exception ("too many contrasts for design matrix");
   contrast.resize (contrast.rows(), design.columns());
 
-
   // Load Mask
   Image::Header header (argument[3]);
   Image::Buffer<value_type> mask_data (header);
@@ -255,7 +254,6 @@ void run() {
     Thread::run_queue (permute, 1, MR::Stats::Item(), processor, 0);
   }
 
-  std::cout << "Generating output..." << std::flush;
 
   header.datatype() = DataType::Float32;
   std::string prefix (argument[4]);
@@ -270,36 +268,28 @@ void run() {
   Image::Buffer<value_type> tvalue_data (tvalue_filename, header);
   Image::Buffer<value_type>::voxel_type tvalue_voxel (tvalue_data);
 
-  // Image::LoopInOrder loop_tvalue (tvalue_voxel);
-  // for (loop_tvalue.start(tvalue_voxel); loop_tvalue.ok(); loop_tvalue.next(tvalue_voxel, tvalue_voxel)) {
-    // tvalue_voxel.value() = 0.0;
-  // }
-  // Image::LoopInOrder loop_tfce (tfce_voxel_pos);
-  // for (loop_tfce.start(tfce_voxel_pos, tfce_voxel_neg); loop_tfce.ok(); loop_tfce.next(tfce_voxel_pos, tfce_voxel_neg)) {
-    // tfce_voxel_pos.value() = 0.0;
-    // tfce_voxel_neg.value() = 0.0;
-  // }
-  for (size_t i = 0; i < num_vox; i++) {
-    for (size_t dim = 0; dim < tfce_voxel_pos.ndim(); dim++)
-      tvalue_voxel[dim] = tfce_voxel_pos[dim] = tfce_voxel_neg[dim] = mask_indices[i][dim];
-    tvalue_voxel.value() = tvalue_output[i];
-    tfce_voxel_pos.value() = tfce_output_pos[i];
-    tfce_voxel_neg.value() = tfce_output_neg[i];
+  {
+    ProgressBar progress ("generating output...");
+    for (size_t i = 0; i < num_vox; i++) {
+      for (size_t dim = 0; dim < tfce_voxel_pos.ndim(); dim++)
+        tvalue_voxel[dim] = tfce_voxel_pos[dim] = tfce_voxel_neg[dim] = mask_indices[i][dim];
+      tvalue_voxel.value() = tvalue_output[i];
+      tfce_voxel_pos.value() = tfce_output_pos[i];
+      tfce_voxel_neg.value() = tfce_output_neg[i];
+    }
+    std::string perm_filename_pos = prefix + "_permutation_pos.txt";
+    std::string perm_filename_neg = prefix + "_permutation_neg.txt";
+    perm_distribution_pos.save (perm_filename_pos);
+    perm_distribution_neg.save (perm_filename_neg);
+
+    std::string pvalue_filename_pos = prefix + "_pvalue_pos.mif";
+    Image::Buffer<value_type> pvalue_data_pos (pvalue_filename_pos, header);
+    Image::Buffer<value_type>::voxel_type pvalue_voxel_pos (pvalue_data_pos);
+    Stats::statistic2pvalue (perm_distribution_pos, tfce_voxel_pos, pvalue_voxel_pos);
+
+    std::string pvalue_filename_neg = prefix + "_pvalue_neg.mif";
+    Image::Buffer<value_type> pvalue_data_neg (pvalue_filename_neg, header);
+    Image::Buffer<value_type>::voxel_type pvalue_voxel_neg (pvalue_data_neg);
+    Stats::statistic2pvalue (perm_distribution_neg, tfce_voxel_neg, pvalue_voxel_neg);
   }
-  std::string perm_filename_pos = prefix + "_permutation_pos.txt";
-  std::string perm_filename_neg = prefix + "_permutation_neg.txt";
-  perm_distribution_pos.save (perm_filename_pos);
-  perm_distribution_neg.save (perm_filename_neg);
-
-  std::string pvalue_filename_pos = prefix + "_pvalue_pos.mif";
-  Image::Buffer<value_type> pvalue_data_pos (pvalue_filename_pos, header);
-  Image::Buffer<value_type>::voxel_type pvalue_voxel_pos (pvalue_data_pos);
-  Stats::statistic2pvalue (perm_distribution_pos, tfce_voxel_pos, pvalue_voxel_pos);
-
-  std::string pvalue_filename_neg = prefix + "_pvalue_neg.mif";
-  Image::Buffer<value_type> pvalue_data_neg (pvalue_filename_neg, header);
-  Image::Buffer<value_type>::voxel_type pvalue_voxel_neg (pvalue_data_neg);
-  Stats::statistic2pvalue (perm_distribution_neg, tfce_voxel_neg, pvalue_voxel_neg);
-
-  std::cout << " done" << std::endl;
 }

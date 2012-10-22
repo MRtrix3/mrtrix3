@@ -145,7 +145,9 @@ namespace MR
                         value_type dh, value_type E, value_type H):
                         connector (connector), dh (dh), E (E), H (H) {}
 
-        value_type integrate (const value_type max_stat, const std::vector<value_type>& stats, std::vector<value_type>& tfce_stats)
+        value_type integrate (const value_type max_stat,
+                              const std::vector<value_type>& stats,
+                              std::vector<value_type>& tfce_stats)
         {
           for (value_type threshold = dh; threshold < max_stat; threshold += dh) {
             std::vector<Image::Filter::cluster> clusters;
@@ -171,22 +173,35 @@ namespace MR
     };
 
 
+    struct connectivity
+    {
+      value_type value;
+      connectivity(): value (0.0) {}
+    };
+
+
+    // TODO: speed up processing by threading permutations within voxel loop
     class TFTEIntegrator {
       public:
-        TFTEIntegrator (Ptr<Image::Filter::Connector<Image::Buffer<value_type>::voxel_type> > connector,
+        TFTEIntegrator (std::vector<std::map<int32_t, connectivity> >& connectivity_map,
                         value_type dh, value_type E, value_type H):
-                        connector (connector), dh (dh), E (E), H (H) {}
+                          connectivity_map (connectivity_map), dh (dh), E (E), H (H) {}
 
-        value_type integrate (const value_type max_stat, const std::vector<value_type>& stats, std::vector<value_type>& tfce_stats)
+        value_type integrate (const value_type max_stat,
+                              const std::vector<value_type>& stats,
+                              std::vector<value_type>& tfce_stats)
         {
           for (value_type threshold = dh; threshold < max_stat; threshold += dh) {
-            std::vector<Image::Filter::cluster> clusters;
-            std::vector<uint32_t> labels (stats.size(), 0);
-            connector->run (clusters, labels, stats, threshold);
-
-            for (size_t i = 0; i < stats.size(); ++i)
-              if (labels[i])
-                tfce_stats[i] += pow (clusters[labels[i]-1].size, E) * pow (threshold, H);
+            // For each lobe
+            for (size_t lobe = 0; lobe < connectivity_map.size(); ++lobe) {
+              float extent = 0.0;
+              // For each neighbour
+              std::map<int32_t, connectivity>::iterator connected_lobe = connectivity_map[lobe].begin();
+              for (;connected_lobe != connectivity_map[lobe].end(); ++connected_lobe)
+                if (stats[connected_lobe->first] > threshold)
+                  extent += connected_lobe->second.value;
+              tfce_stats[lobe] += pow (extent, E) * pow (threshold, H);
+            }
           }
 
           value_type max_tfce_stat = 0.0;
@@ -198,23 +213,23 @@ namespace MR
         }
 
       protected:
-        Ptr<Image::Filter::Connector<Image::Buffer<value_type>::voxel_type> > connector;
+        std::vector<std::map<int32_t, connectivity> >& connectivity_map;
         value_type dh, E, H;
     };
 
 
 
-    template <class IntegratorType>
+    template <class TFCEIntegratorType>
     class Processor
     {
       public:
-        Processor (IntegratorType& integrator,
+        Processor (TFCEIntegratorType& integrator,
                    Math::Vector<value_type>& perm_distribution_pos, Math::Vector<value_type>& perm_distribution_neg,
                    const Math::Matrix<value_type>& afd,
                    const Math::Matrix<value_type>& design_matrix, const Math::Matrix<value_type>& contrast_matrix,
                    std::vector<value_type>& tfce_output_pos, std::vector<value_type>& tfce_output_neg,
                    std::vector<value_type>& tvalue_output) :
-          integrator (integrator),
+          tfce_integrator (integrator),
           perm_distribution_pos (perm_distribution_pos),
           perm_distribution_neg (perm_distribution_neg),
           afd (afd),
@@ -265,7 +280,6 @@ namespace MR
             Math::mult (T, 1.0, CblasTrans, X1, CblasNoTrans, X1);
             kappa = Math::sqrt (T(0,0) * (X.rows() - rank(X)));
 
-
             // store using request value type:
             R0 = d_R0;
             M = d_M;
@@ -282,7 +296,7 @@ namespace MR
           if (item.index == 0)
             tvalue_output = stats;
 
-          value_type max_tfce_stat = integrator.integrate (max_stat, stats, tfce_stats);
+          value_type max_tfce_stat = tfce_integrator.integrate (max_stat, stats, tfce_stats);
           if (item.index == 0)
             tfce_output_pos = tfce_stats;
           else
@@ -292,7 +306,7 @@ namespace MR
             stats[i] = -stats[i];
             tfce_stats[i] = 0.0;
           }
-          max_tfce_stat = integrator.integrate (-min_stat, stats, tfce_stats);
+          max_tfce_stat = tfce_integrator.integrate (-min_stat, stats, tfce_stats);
           if (item.index == 0)
             tfce_output_neg = tfce_stats;
           else
@@ -304,7 +318,10 @@ namespace MR
       private:
 
         // Compute the test statistic along each voxel/direction
-        void compute_tstatistics (const std::vector<size_t>& perms, std::vector<value_type>& stats, value_type& max_stat, value_type& min_stat)
+        void compute_tstatistics (const std::vector<size_t>& perms,
+                                  std::vector<value_type>& stats,
+                                  value_type& max_stat,
+                                  value_type& min_stat)
         {
           Math::Matrix<value_type> Mp, SR0 (R0.rows(), R0.columns());
           for (size_t i = 0; i < R0.columns(); ++i)
@@ -328,7 +345,7 @@ namespace MR
           return kappa * e[0] / Math::norm (e.sub(1,e.size()));
         }
 
-        IntegratorType& integrator;
+        TFCEIntegratorType& tfce_integrator;
         Math::Vector<value_type>& perm_distribution_pos, perm_distribution_neg;
         const Math::Matrix<value_type>& afd;
         const Math::Matrix<value_type>& design_matrix;
