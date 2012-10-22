@@ -249,7 +249,8 @@ void run() {
 
   {
     Stats::PermutationGenerator permute (num_perms, subjects.size());
-    Stats::Processor processor (connector, perm_distribution_pos, perm_distribution_neg, data, design, contrast, dh, E, H,
+    Stats::TFCEIntegrator integrator (connector, dh, E, H);
+    Stats::Processor<Stats::TFCEIntegrator> processor (integrator, perm_distribution_pos, perm_distribution_neg, data, design, contrast,
                                 tfce_output_pos, tfce_output_neg, tvalue_output);
     Thread::run_queue (permute, 1, MR::Stats::Item(), processor, 0);
   }
@@ -279,7 +280,7 @@ void run() {
     // tfce_voxel_neg.value() = 0.0;
   // }
   for (size_t i = 0; i < num_vox; i++) {
-    for (size_t dim = 0; dim < tfce_voxel_pos.ndim(); dim++) 
+    for (size_t dim = 0; dim < tfce_voxel_pos.ndim(); dim++)
       tvalue_voxel[dim] = tfce_voxel_pos[dim] = tfce_voxel_neg[dim] = mask_indices[i][dim];
     tvalue_voxel.value() = tvalue_output[i];
     tfce_voxel_pos.value() = tfce_output_pos[i];

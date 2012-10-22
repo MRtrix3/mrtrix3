@@ -47,7 +47,7 @@ namespace MR
 
 
 
-    inline void SVD_invert (Math::Matrix<double>& I, const Math::Matrix<double>& M) 
+    inline void SVD_invert (Math::Matrix<double>& I, const Math::Matrix<double>& M)
     {
       size_t N = std::min (M.rows(), M.columns());
       Math::Matrix<double> U (M), V (N,N);
@@ -70,7 +70,7 @@ namespace MR
       Math::Matrix<double> U (M), V (N,N);
       Math::Vector<double> S (N), work (N);
       gsl_linalg_SV_decomp (U.gsl(), V.gsl(), S.gsl(), work.gsl());
-      for (size_t n = 0; n < N; ++n) 
+      for (size_t n = 0; n < N; ++n)
         if (S[n] < 1.0e-10)
           return n+1;
       return N;
@@ -103,7 +103,7 @@ namespace MR
               std::random_shuffle (item.labelling.begin(), item.labelling.end());
               // TODO: check that permutation is distinct from original
             } while (is_duplicate_permutation (item.labelling, previous_perms));
-            // TODO: check whether we need to check for duplicate 
+            // TODO: check whether we need to check for duplicate
             // i.e. can we sample with replacement?
           }
           previous_perms.push_back (item.labelling);
@@ -139,40 +139,97 @@ namespace MR
 
 
 
+    class TFCEIntegrator {
+      public:
+        TFCEIntegrator (Ptr<Image::Filter::Connector<Image::Buffer<value_type>::voxel_type> > connector,
+                        value_type dh, value_type E, value_type H):
+                        connector (connector), dh (dh), E (E), H (H) {}
+
+        value_type integrate (const value_type max_stat, const std::vector<value_type>& stats, std::vector<value_type>& tfce_stats)
+        {
+          for (value_type threshold = dh; threshold < max_stat; threshold += dh) {
+            std::vector<Image::Filter::cluster> clusters;
+            std::vector<uint32_t> labels (stats.size(), 0);
+            connector->run (clusters, labels, stats, threshold);
+
+            for (size_t i = 0; i < stats.size(); ++i)
+              if (labels[i])
+                tfce_stats[i] += pow (clusters[labels[i]-1].size, E) * pow (threshold, H);
+          }
+
+          value_type max_tfce_stat = 0.0;
+          for (size_t i = 0; i < stats.size(); i++)
+            if (tfce_stats[i] > max_tfce_stat)
+              max_tfce_stat = tfce_stats[i];
+
+          return max_tfce_stat;
+        }
+
+      protected:
+        Ptr<Image::Filter::Connector<Image::Buffer<value_type>::voxel_type> > connector;
+        value_type dh, E, H;
+    };
+
+
+    class TFTEIntegrator {
+      public:
+        TFTEIntegrator (Ptr<Image::Filter::Connector<Image::Buffer<value_type>::voxel_type> > connector,
+                        value_type dh, value_type E, value_type H):
+                        connector (connector), dh (dh), E (E), H (H) {}
+
+        value_type integrate (const value_type max_stat, const std::vector<value_type>& stats, std::vector<value_type>& tfce_stats)
+        {
+          for (value_type threshold = dh; threshold < max_stat; threshold += dh) {
+            std::vector<Image::Filter::cluster> clusters;
+            std::vector<uint32_t> labels (stats.size(), 0);
+            connector->run (clusters, labels, stats, threshold);
+
+            for (size_t i = 0; i < stats.size(); ++i)
+              if (labels[i])
+                tfce_stats[i] += pow (clusters[labels[i]-1].size, E) * pow (threshold, H);
+          }
+
+          value_type max_tfce_stat = 0.0;
+          for (size_t i = 0; i < stats.size(); i++)
+            if (tfce_stats[i] > max_tfce_stat)
+              max_tfce_stat = tfce_stats[i];
+
+          return max_tfce_stat;
+        }
+
+      protected:
+        Ptr<Image::Filter::Connector<Image::Buffer<value_type>::voxel_type> > connector;
+        value_type dh, E, H;
+    };
 
 
 
-
-
+    template <class IntegratorType>
     class Processor
     {
       public:
-        Processor (Ptr<Image::Filter::Connector<Image::Buffer<value_type>::voxel_type> > connector,
+        Processor (IntegratorType& integrator,
                    Math::Vector<value_type>& perm_distribution_pos, Math::Vector<value_type>& perm_distribution_neg,
                    const Math::Matrix<value_type>& afd,
                    const Math::Matrix<value_type>& design_matrix, const Math::Matrix<value_type>& contrast_matrix,
-                   value_type dh, value_type E, value_type H,
                    std::vector<value_type>& tfce_output_pos, std::vector<value_type>& tfce_output_neg,
                    std::vector<value_type>& tvalue_output) :
-          connector(connector),
+          integrator (integrator),
           perm_distribution_pos (perm_distribution_pos),
           perm_distribution_neg (perm_distribution_neg),
           afd (afd),
           design_matrix (design_matrix),
           contrast_matrix (contrast_matrix),
-          dh (dh),
-          E (E),
-          H (H),
           tfce_output_pos (tfce_output_pos),
           tfce_output_neg (tfce_output_neg),
           tvalue_output (tvalue_output) {
             // make sure contrast is a column vector:
             Math::Matrix<double> c = contrast_matrix;
-            if (c.columns() > 1 && c.rows() > 1) 
+            if (c.columns() > 1 && c.rows() > 1)
               throw Exception ("too many columns in contrast matrix: this implementation currently only supports univariate GLM");
             if (c.columns() > 1)
               c = Math::transpose (c);
-            
+
             // form X_0:
             Math::Matrix<double> T (c.rows(), c.rows());
             T.identity();
@@ -222,21 +279,21 @@ namespace MR
           value_type max_stat = 0.0, min_stat = 0.0;
 
           compute_tstatistics (item.labelling, stats, max_stat, min_stat);
-          if (item.index == 0) 
+          if (item.index == 0)
             tvalue_output = stats;
 
-          value_type max_tfce_stat = tfce_integration (max_stat, stats, tfce_stats);
-          if (item.index == 0) 
+          value_type max_tfce_stat = integrator.integrate (max_stat, stats, tfce_stats);
+          if (item.index == 0)
             tfce_output_pos = tfce_stats;
-          else 
+          else
             perm_distribution_pos[item.index - 1] = max_tfce_stat;
 
           for (size_t i = 0; i < afd.rows(); ++i) {
             stats[i] = -stats[i];
             tfce_stats[i] = 0.0;
           }
-          max_tfce_stat = tfce_integration (-min_stat, stats, tfce_stats);
-          if (item.index == 0) 
+          max_tfce_stat = integrator.integrate (-min_stat, stats, tfce_stats);
+          if (item.index == 0)
             tfce_output_neg = tfce_stats;
           else
             perm_distribution_neg[item.index - 1] = max_tfce_stat;
@@ -245,26 +302,6 @@ namespace MR
         }
 
       private:
-
-        value_type tfce_integration (const value_type max_stat, const std::vector<value_type>& stats, std::vector<value_type>& tfce_stats)
-        {
-          for (value_type threshold = dh; threshold < max_stat; threshold += dh) {
-            std::vector<Image::Filter::cluster> clusters;
-            std::vector<uint32_t> labels (afd.rows(), 0);
-            connector->run (clusters, labels, stats, threshold);
-
-            for (size_t i = 0; i < afd.rows(); ++i)
-              if (labels[i])
-                tfce_stats[i] += pow (clusters[labels[i]-1].size, E) * pow (threshold, H);
-          }
-
-          value_type max_tfce_stat = 0.0;
-          for (size_t i = 0; i < afd.rows(); i++)
-            if (tfce_stats[i] > max_tfce_stat)
-              max_tfce_stat = tfce_stats[i];
-
-          return max_tfce_stat;
-        }
 
         // Compute the test statistic along each voxel/direction
         void compute_tstatistics (const std::vector<size_t>& perms, std::vector<value_type>& stats, value_type& max_stat, value_type& min_stat)
@@ -291,12 +328,12 @@ namespace MR
           return kappa * e[0] / Math::norm (e.sub(1,e.size()));
         }
 
-        Ptr<Image::Filter::Connector<Image::Buffer<value_type>::voxel_type> > connector;
+        IntegratorType& integrator;
         Math::Vector<value_type>& perm_distribution_pos, perm_distribution_neg;
         const Math::Matrix<value_type>& afd;
         const Math::Matrix<value_type>& design_matrix;
         const Math::Matrix<value_type>& contrast_matrix;
-        value_type dh, E, H, kappa;
+        value_type kappa;
         Math::Matrix<value_type> M, R0;
         Math::Vector<value_type> e;
         std::vector<value_type>& tfce_output_pos;
