@@ -36,16 +36,25 @@ namespace MR
   namespace Stats
   {
 
-    class Item
+    typedef float value_type;
+
+    inline bool is_duplicate_vector (const std::vector<size_t>& v1, const std::vector<size_t>& v2)
     {
-      public:
-        std::vector<size_t> labelling;
-        size_t index;
-    };
+      for (size_t i = 0; i < v1.size(); i++) {
+        if (v1[i] != v2[i])
+          return false;
+      }
+      return true;
+    }
 
-
-
-
+    inline bool is_duplicate_permutation (const std::vector<size_t>& perm, const std::vector<std::vector<size_t> >& previous_permutations)
+    {
+      for (unsigned int p = 0; p < previous_permutations.size(); p++) {
+        if (is_duplicate_vector (perm, previous_permutations[p]))
+          return true;
+      }
+      return false;
+    }
 
     inline void SVD_invert (Math::Matrix<double>& I, const Math::Matrix<double>& M)
     {
@@ -76,252 +85,75 @@ namespace MR
       return N;
     }
 
-
-
-    typedef Thread::Queue<Item> Queue;
-    typedef float value_type;
-
-    class PermutationGenerator
+    class TFCEProcessorBase
     {
       public:
-        PermutationGenerator (size_t num_perms, size_t num_subjects) :
-          num_perms (num_perms),
-          num_subjects (num_subjects),
-          current_perm (0),
-          progress ("running " + str(num_perms) + " permutations...", num_perms) { }
+        TFCEProcessorBase (Math::Vector<value_type>& perm_distribution_pos, Math::Vector<value_type>& perm_distribution_neg,
+                           const Math::Matrix<value_type>& afd,
+                           const Math::Matrix<value_type>& design_matrix, const Math::Matrix<value_type>& contrast_matrix,
+                           value_type dh, value_type E, value_type H,
+                           std::vector<value_type>& tfce_output_pos, std::vector<value_type>& tfce_output_neg,
+                           std::vector<value_type>& tvalue_output) :
+                             perm_distribution_pos (perm_distribution_pos),
+                             perm_distribution_neg (perm_distribution_neg),
+                             afd (afd),
+                             dh (dh),
+                             E (E),
+                             H (H),
+                             tfce_output_pos (tfce_output_pos),
+                             tfce_output_neg (tfce_output_neg),
+                             tvalue_output (tvalue_output) {
+          // make sure contrast is a column vector:
+          Math::Matrix<double> c = contrast_matrix;
+          if (c.columns() > 1 && c.rows() > 1)
+            throw Exception ("too many columns in contrast matrix: this implementation currently only supports univariate GLM");
+          if (c.columns() > 1)
+            c = Math::transpose (c);
 
-        bool operator() (Item& item) {
-          if (current_perm >= num_perms)
-            return false;
+          // form X_0:
+          Math::Matrix<double> T (c.rows(), c.rows());
+          T.identity();
+          Math::Matrix<double> pinv_c;
+          SVD_invert (pinv_c, c);
+          Math::mult (T , 1.0, -1.0, CblasNoTrans, c, CblasNoTrans, pinv_c);
 
-          item.index = current_perm;
-          for (size_t i = 0; i < num_subjects; ++i)
-            item.labelling.push_back(i);
+          Math::Matrix<double> X0, X = design_matrix;
+          Math::mult (X0, X, T );
 
-          if (current_perm) {
-            do {
-              std::random_shuffle (item.labelling.begin(), item.labelling.end());
-              // TODO: check that permutation is distinct from original
-            } while (is_duplicate_permutation (item.labelling, previous_perms));
-            // TODO: check whether we need to check for duplicate
-            // i.e. can we sample with replacement?
-          }
-          previous_perms.push_back (item.labelling);
-          ++current_perm;
-          ++progress;
+          // form R_0:
+          Math::Matrix<double> d_R0 (X0.rows(), X0.rows());
+          d_R0.identity();
+          Math::Matrix<double> pinv_X0;
+          SVD_invert (pinv_X0, X0);
+          Math::mult (d_R0, 1.0, -1.0, CblasNoTrans, X0, CblasNoTrans, pinv_X0);
 
-          return true;
-        }
+          // form X_1^*:
+          Math::Matrix<double> X1;
+          Math::mult (T, 1.0, CblasNoTrans, X, CblasTrans, pinv_c);
+          Math::mult (X1, d_R0, T);
+          Math::Matrix<double> pinv_X1;
+          SVD_invert (pinv_X1, X1);
 
-      private:
+          // form M:
+          Math::Matrix<double> d_M (X1.rows()+1, X1.rows());
+          d_M.sub(0,1,0,d_M.columns()) = pinv_X1;
+          Math::Matrix<double> R1 = d_M.sub(1,d_M.rows(),0,d_M.columns());
+          R1.identity();
+          Math::mult (R1, 1.0, -1.0, CblasNoTrans, X1, CblasNoTrans, pinv_X1);
 
-        bool is_duplicate_vector (std::vector<size_t> & v1, std::vector<size_t> & v2) {
-          for (size_t i = 0; i < v1.size(); i++) {
-            if (v1[i] != v2[i])
-              return false;
-          }
-          return true;
-        }
-
-        bool is_duplicate_permutation (std::vector<size_t> & perm, std::vector<std::vector<size_t> > & previous_permutations) {
-          for (unsigned int p = 0; p < previous_permutations.size(); p++) {
-            if (is_duplicate_vector (perm, previous_permutations[p]))
-              return true;
-          }
-          return false;
-        }
-
-        std::vector <std::vector<size_t> > previous_perms;
-        size_t num_perms, num_subjects, current_perm;
-        ProgressBar progress;
-    };
+          // precompute kappa:
+          Math::mult (T, 1.0, CblasTrans, X1, CblasNoTrans, X1);
+          kappa = Math::sqrt (T(0,0) * (X.rows() - rank(X)));
 
 
-
-
-    class TFCEIntegrator {
-      public:
-        TFCEIntegrator (Ptr<Image::Filter::Connector<Image::Buffer<value_type>::voxel_type> > connector,
-                        value_type dh, value_type E, value_type H):
-                        connector (connector), dh (dh), E (E), H (H) {}
-
-        value_type integrate (const value_type max_stat,
-                              const std::vector<value_type>& stats,
-                              std::vector<value_type>& tfce_stats)
-        {
-          for (value_type threshold = dh; threshold < max_stat; threshold += dh) {
-            std::vector<Image::Filter::cluster> clusters;
-            std::vector<uint32_t> labels (stats.size(), 0);
-            connector->run (clusters, labels, stats, threshold);
-
-            for (size_t i = 0; i < stats.size(); ++i)
-              if (labels[i])
-                tfce_stats[i] += pow (clusters[labels[i]-1].size, E) * pow (threshold, H);
-          }
-
-          value_type max_tfce_stat = 0.0;
-          for (size_t i = 0; i < stats.size(); i++)
-            if (tfce_stats[i] > max_tfce_stat)
-              max_tfce_stat = tfce_stats[i];
-
-          return max_tfce_stat;
+          // store using request value type:
+          R0 = d_R0;
+          M = d_M;
         }
 
       protected:
-        Ptr<Image::Filter::Connector<Image::Buffer<value_type>::voxel_type> > connector;
-        value_type dh, E, H;
-    };
-
-
-    struct connectivity
-    {
-      value_type value;
-      connectivity(): value (0.0) {}
-    };
-
-
-    // TODO: speed up processing by threading permutations within voxel loop
-    class TFTEIntegrator {
-      public:
-        TFTEIntegrator (std::vector<std::map<int32_t, connectivity> >& connectivity_map,
-                        value_type dh, value_type E, value_type H):
-                          connectivity_map (connectivity_map), dh (dh), E (E), H (H) {}
-
-        value_type integrate (const value_type max_stat,
-                              const std::vector<value_type>& stats,
-                              std::vector<value_type>& tfce_stats)
-        {
-          for (value_type threshold = dh; threshold < max_stat; threshold += dh) {
-            // For each lobe
-            for (size_t lobe = 0; lobe < connectivity_map.size(); ++lobe) {
-              float extent = 0.0;
-              // For each neighbour
-              std::map<int32_t, connectivity>::iterator connected_lobe = connectivity_map[lobe].begin();
-              for (;connected_lobe != connectivity_map[lobe].end(); ++connected_lobe)
-                if (stats[connected_lobe->first] > threshold)
-                  extent += connected_lobe->second.value;
-              tfce_stats[lobe] += pow (extent, E) * pow (threshold, H);
-            }
-          }
-
-          value_type max_tfce_stat = 0.0;
-          for (size_t i = 0; i < stats.size(); i++)
-            if (tfce_stats[i] > max_tfce_stat)
-              max_tfce_stat = tfce_stats[i];
-
-          return max_tfce_stat;
-        }
-
-      protected:
-        std::vector<std::map<int32_t, connectivity> >& connectivity_map;
-        value_type dh, E, H;
-    };
-
-
-
-    template <class TFCEIntegratorType>
-    class Processor
-    {
-      public:
-        Processor (TFCEIntegratorType& integrator,
-                   Math::Vector<value_type>& perm_distribution_pos, Math::Vector<value_type>& perm_distribution_neg,
-                   const Math::Matrix<value_type>& afd,
-                   const Math::Matrix<value_type>& design_matrix, const Math::Matrix<value_type>& contrast_matrix,
-                   std::vector<value_type>& tfce_output_pos, std::vector<value_type>& tfce_output_neg,
-                   std::vector<value_type>& tvalue_output) :
-          tfce_integrator (integrator),
-          perm_distribution_pos (perm_distribution_pos),
-          perm_distribution_neg (perm_distribution_neg),
-          afd (afd),
-          design_matrix (design_matrix),
-          contrast_matrix (contrast_matrix),
-          tfce_output_pos (tfce_output_pos),
-          tfce_output_neg (tfce_output_neg),
-          tvalue_output (tvalue_output) {
-            // make sure contrast is a column vector:
-            Math::Matrix<double> c = contrast_matrix;
-            if (c.columns() > 1 && c.rows() > 1)
-              throw Exception ("too many columns in contrast matrix: this implementation currently only supports univariate GLM");
-            if (c.columns() > 1)
-              c = Math::transpose (c);
-
-            // form X_0:
-            Math::Matrix<double> T (c.rows(), c.rows());
-            T.identity();
-            Math::Matrix<double> pinv_c;
-            SVD_invert (pinv_c, c);
-            Math::mult (T , 1.0, -1.0, CblasNoTrans, c, CblasNoTrans, pinv_c);
-
-            Math::Matrix<double> X0, X = design_matrix;
-            Math::mult (X0, X, T );
-
-            // form R_0:
-            Math::Matrix<double> d_R0 (X0.rows(), X0.rows());
-            d_R0.identity();
-            Math::Matrix<double> pinv_X0;
-            SVD_invert (pinv_X0, X0);
-            Math::mult (d_R0, 1.0, -1.0, CblasNoTrans, X0, CblasNoTrans, pinv_X0);
-
-            // form X_1^*:
-            Math::Matrix<double> X1;
-            Math::mult (T, 1.0, CblasNoTrans, X, CblasTrans, pinv_c);
-            Math::mult (X1, d_R0, T);
-            Math::Matrix<double> pinv_X1;
-            SVD_invert (pinv_X1, X1);
-
-            // form M:
-            Math::Matrix<double> d_M (X1.rows()+1, X1.rows());
-            d_M.sub(0,1,0,d_M.columns()) = pinv_X1;
-            Math::Matrix<double> R1 = d_M.sub(1,d_M.rows(),0,d_M.columns());
-            R1.identity();
-            Math::mult (R1, 1.0, -1.0, CblasNoTrans, X1, CblasNoTrans, pinv_X1);
-
-            // precompute kappa:
-            Math::mult (T, 1.0, CblasTrans, X1, CblasNoTrans, X1);
-            kappa = Math::sqrt (T(0,0) * (X.rows() - rank(X)));
-
-            // store using request value type:
-            R0 = d_R0;
-            M = d_M;
-
-          }
-
-        bool operator() (const Item& item)
-        {
-          std::vector<value_type> stats (afd.rows(), 0.0);
-          std::vector<value_type> tfce_stats (afd.rows(), 0.0);
-          value_type max_stat = 0.0, min_stat = 0.0;
-
-          compute_tstatistics (item.labelling, stats, max_stat, min_stat);
-          if (item.index == 0)
-            tvalue_output = stats;
-
-          value_type max_tfce_stat = tfce_integrator.integrate (max_stat, stats, tfce_stats);
-          if (item.index == 0)
-            tfce_output_pos = tfce_stats;
-          else
-            perm_distribution_pos[item.index - 1] = max_tfce_stat;
-
-          for (size_t i = 0; i < afd.rows(); ++i) {
-            stats[i] = -stats[i];
-            tfce_stats[i] = 0.0;
-          }
-          max_tfce_stat = tfce_integrator.integrate (-min_stat, stats, tfce_stats);
-          if (item.index == 0)
-            tfce_output_neg = tfce_stats;
-          else
-            perm_distribution_neg[item.index - 1] = max_tfce_stat;
-
-          return true;
-        }
-
-      private:
-
         // Compute the test statistic along each voxel/direction
-        void compute_tstatistics (const std::vector<size_t>& perms,
-                                  std::vector<value_type>& stats,
-                                  value_type& max_stat,
-                                  value_type& min_stat)
+        void compute_tstatistics (const std::vector<size_t>& perms, std::vector<value_type>& stats, value_type& max_stat, value_type& min_stat)
         {
           Math::Matrix<value_type> Mp, SR0 (R0.rows(), R0.columns());
           for (size_t i = 0; i < R0.columns(); ++i)
@@ -345,12 +177,10 @@ namespace MR
           return kappa * e[0] / Math::norm (e.sub(1,e.size()));
         }
 
-        TFCEIntegratorType& tfce_integrator;
+
         Math::Vector<value_type>& perm_distribution_pos, perm_distribution_neg;
         const Math::Matrix<value_type>& afd;
-        const Math::Matrix<value_type>& design_matrix;
-        const Math::Matrix<value_type>& contrast_matrix;
-        value_type kappa;
+        value_type dh, E, H, kappa;
         Math::Matrix<value_type> M, R0;
         Math::Vector<value_type> e;
         std::vector<value_type>& tfce_output_pos;
@@ -359,13 +189,8 @@ namespace MR
     };
 
 
-
-
-
-
-
     template <class StatVoxelType, class PvalueVoxelType>
-      void statistic2pvalue (Math::Vector<value_type> & perm_dist, StatVoxelType stat_voxel, PvalueVoxelType p_voxel) {
+      void statistic2pvalue (const Math::Vector<value_type>& perm_dist, StatVoxelType stat_voxel, PvalueVoxelType p_voxel) {
 
         std::vector <value_type> permutations (perm_dist.size(), 0);
         for (size_t i = 0; i < perm_dist.size(); i++)
@@ -389,7 +214,6 @@ namespace MR
             p_voxel.value() = 0.0;
         }
       }
-
   }
 }
 

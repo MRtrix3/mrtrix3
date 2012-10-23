@@ -46,13 +46,14 @@ using namespace App;
 using namespace std;
 using namespace MR::DWI::Tractography::Mapping;
 
+typedef float value_type;
 
 // TODO combine this with Rob's SIFT code once committed into main repository
 template <class FODImageType, class MaskImageType>
-class SH_Queue_Writer  {
-
+class SHQueueWriter
+{
   public:
-    SH_Queue_Writer (FODImageType& fod_image, MaskImageType& mask_data) :
+    SHQueueWriter (FODImageType& fod_image, MaskImageType& mask_data) :
       fod_image_ (fod_image),
       mask_ (mask_data),
       loop_ (0, 3),
@@ -94,43 +95,128 @@ class SH_Queue_Writer  {
 };
 
 
-class GroupAvLobeProcessor {
+class LobeItem
+{
+  public:
+    size_t index;
+};
 
+
+struct connectivity
+{
+    value_type value;
+    connectivity(): value (0.0) {}
+};
+
+class LobeQueueWriter
+{
+  public:
+    LobeQueueWriter (size_t num_lobes, size_t num_perms) :
+                     current_index (0),
+                     num_lobes (num_lobes),
+                     progress ("running " + str(num_perms) + " permutations...", num_perms) { }
+
+    bool operator() (LobeItem& item)
+    {
+      if (current_index >= num_lobes)
+        return false;
+      item.index = current_index++;
+      ++progress;
+      return true;
+    }
+
+  private:
+    size_t current_index;
+    size_t num_lobes;
+    ProgressBar progress;
+};
+
+
+class TFCEProcessorConnectivityCluster : public MR::Stats::TFCEProcessorBase
+{
+  public:
+    TFCEProcessorConnectivityCluster (std::vector<std::map<int32_t, connectivity> >& connectivity_map,
+                                      Math::Vector<value_type>& perm_distribution_pos, Math::Vector<value_type>& perm_distribution_neg,
+                                      const Math::Matrix<value_type>& afd,
+                                      const Math::Matrix<value_type>& design_matrix, const Math::Matrix<value_type>& contrast_matrix,
+                                      value_type dh, value_type E, value_type H,
+                                      std::vector<value_type>& tfce_output_pos, std::vector<value_type>& tfce_output_neg,
+                                      std::vector<value_type>& tvalue_output) :
+                                        TFCEProcessorBase (perm_distribution_pos, perm_distribution_neg, afd, design_matrix, contrast_matrix,
+                                                           dh, E, H, tfce_output_pos, tfce_output_neg, tvalue_output),
+                                                           connectivity_map (connectivity_map) {}
+
+    bool operator() (const LobeItem& item)
+    {
+      //HERE
+      return true;
+    }
+
+  private:
+
+    value_type tfce_integration (const value_type max_stat, const std::vector<value_type>& stats, std::vector<value_type>& tfce_stats)
+    {
+      for (value_type threshold = dh; threshold < max_stat; threshold += dh) {
+        for (size_t lobe = 0; lobe < connectivity_map.size(); ++lobe) {
+          float extent = 0.0;
+          std::map<int32_t, connectivity>::iterator connected_lobe = connectivity_map[lobe].begin();
+          for (;connected_lobe != connectivity_map[lobe].end(); ++connected_lobe)
+            if (stats[connected_lobe->first] > threshold)
+              extent += connected_lobe->second.value;
+          tfce_stats[lobe] += pow (extent, E) * pow (threshold, H);
+        }
+      }
+
+      value_type max_tfce_stat = 0.0;
+      for (size_t i = 0; i < stats.size(); i++)
+        if (tfce_stats[i] > max_tfce_stat)
+          max_tfce_stat = tfce_stats[i];
+
+      return max_tfce_stat;
+    }
+
+    std::vector<std::map<int32_t, connectivity> >& connectivity_map;
+};
+
+
+
+class GroupAvLobeProcessor
+{
   public:
     GroupAvLobeProcessor (Image::BufferScratch<int32_t>& FOD_lobe_indexer,
                           vector<Point<float> >& FOD_lobe_directions,
                           vector<Point<float> >& index2scanner_pos) :
-                          FOD_lobe_indexer_ (FOD_lobe_indexer) ,
-                          FOD_lobe_directions_ (FOD_lobe_directions),
+                          FOD_lobe_indexer (FOD_lobe_indexer) ,
+                          FOD_lobe_directions (FOD_lobe_directions),
                           index2scanner_pos (index2scanner_pos),
-                          image_transform_ (FOD_lobe_indexer){}
+                          image_transform (FOD_lobe_indexer){}
 
     bool operator () (DWI::FOD_lobes& in) {
       if (in.empty())
          return true;
-      FOD_lobe_indexer_[0] = in.vox[0];
-      FOD_lobe_indexer_[1] = in.vox[1];
-      FOD_lobe_indexer_[2] = in.vox[2];
-      FOD_lobe_indexer_[3] = 0;
-      FOD_lobe_indexer_.value() = FOD_lobe_directions_.size();
+      FOD_lobe_indexer[0] = in.vox[0];
+      FOD_lobe_indexer[1] = in.vox[1];
+      FOD_lobe_indexer[2] = in.vox[2];
+      FOD_lobe_indexer[3] = 0;
+      FOD_lobe_indexer.value() = FOD_lobe_directions.size();
       int32_t lobe_count = 0;
       for (vector<DWI::FOD_lobe>::const_iterator i = in.begin(); i != in.end(); ++i, ++lobe_count) {
-        FOD_lobe_directions_.push_back (i->get_peak_dir());
+        FOD_lobe_directions.push_back (i->get_peak_dir());
         Point<float> pos;
-        image_transform_.voxel2scanner(FOD_lobe_indexer_, pos);
+        image_transform.voxel2scanner (FOD_lobe_indexer, pos);
         index2scanner_pos.push_back (pos);
       }
-      FOD_lobe_indexer_[3] = 1;
-      FOD_lobe_indexer_.value() = lobe_count;
+      FOD_lobe_indexer[3] = 1;
+      FOD_lobe_indexer.value() = lobe_count;
       return true;
     }
 
 
   private:
-    Image::BufferScratch<int32_t>::voxel_type FOD_lobe_indexer_;
-    vector<Point<float> >& FOD_lobe_directions_;
+    Image::BufferScratch<int32_t>::voxel_type FOD_lobe_indexer;
+    vector<Point<float> >& FOD_lobe_directions;
     vector<Point<float> >& index2scanner_pos;
-    Image::Transform image_transform_;
+    Image::Transform image_transform;
 };
 
 
@@ -141,37 +227,39 @@ class SubjectLobeProcessor {
                           const vector<Point<float> >& FOD_lobe_directions,
                           vector<float>& subject_lobe_integrals,
                           float angular_threshold) :
-                          FOD_lobe_indexer_ (FOD_lobe_indexer) ,
-                          average_lobe_directions_ (FOD_lobe_directions),
-                          subject_lobe_integrals_ (subject_lobe_integrals){
-      angular_threshold_dp_ = cos (angular_threshold * (M_PI/180.0));
+                          FOD_lobe_indexer (FOD_lobe_indexer),
+                          average_lobe_directions (FOD_lobe_directions),
+                          subject_lobe_integrals (subject_lobe_integrals)
+    {
+      angular_threshold_dp = cos (angular_threshold * (M_PI/180.0));
     }
 
-    bool operator () (DWI::FOD_lobes& in) {
+    bool operator () (DWI::FOD_lobes& in)
+    {
       if (in.empty())
         return true;
 
-      FOD_lobe_indexer_[0] = in.vox[0];
-      FOD_lobe_indexer_[1] = in.vox[1];
-      FOD_lobe_indexer_[2] = in.vox[2];
-      FOD_lobe_indexer_[3] = 0;
-      int32_t voxel_index = FOD_lobe_indexer_.value();
-      FOD_lobe_indexer_[3] = 1;
-      int32_t number_lobes = FOD_lobe_indexer_.value();
+      FOD_lobe_indexer[0] = in.vox[0];
+      FOD_lobe_indexer[1] = in.vox[1];
+      FOD_lobe_indexer[2] = in.vox[2];
+      FOD_lobe_indexer[3] = 0;
+      int32_t voxel_index = FOD_lobe_indexer.value();
+      FOD_lobe_indexer[3] = 1;
+      int32_t number_lobes = FOD_lobe_indexer.value();
 
       // for each lobe in the average, find the corresponding lobe in this subject voxel
       for (int32_t i = voxel_index; i < voxel_index + number_lobes; ++i) {
         float largest_dp = 0.0;
         int largest_index = -1;
         for (size_t j = 0; j < in.size(); ++j) {
-          float dp = Math::abs(average_lobe_directions_[i].dot(in[j].get_peak_dir()));
+          float dp = Math::abs (average_lobe_directions[i].dot(in[j].get_peak_dir()));
           if (dp > largest_dp) {
             largest_dp = dp;
             largest_index = j;
           }
         }
-        if (largest_dp > angular_threshold_dp_) {
-          subject_lobe_integrals_[i] = in[largest_index].get_integral();
+        if (largest_dp > angular_threshold_dp) {
+          subject_lobe_integrals[i] = in[largest_index].get_integral();
         }
       }
 
@@ -180,10 +268,10 @@ class SubjectLobeProcessor {
 
 
   private:
-    Image::BufferScratch<int32_t>::voxel_type FOD_lobe_indexer_;
-    const vector<Point<float> >& average_lobe_directions_;
-    vector<float>& subject_lobe_integrals_;
-    float angular_threshold_dp_;
+    Image::BufferScratch<int32_t>::voxel_type FOD_lobe_indexer;
+    const vector<Point<float> >& average_lobe_directions;
+    vector<float>& subject_lobe_integrals;
+    float angular_threshold_dp;
 };
 
 
@@ -194,49 +282,49 @@ class TractProcessor {
     TractProcessor (Image::BufferScratch<int32_t>& FOD_lobe_indexer,
                     vector<Point<float> >& FOD_lobe_directions,
                     vector<uint16_t>& lobe_TDI,
-                    vector<map<int32_t, Stats::connectivity> >& lobe_connectivity,
+                    vector<map<int32_t, connectivity> >& lobe_connectivity,
                     float angular_threshold):
-                    FOD_lobe_indexer_ (FOD_lobe_indexer) ,
-                    FOD_lobe_directions_ (FOD_lobe_directions),
-                    lobe_TDI_ (lobe_TDI),
-                    lobe_connectivity_ (lobe_connectivity) {
-      angular_threshold_dp_ = cos (angular_threshold * (M_PI/180.0));
+                    FOD_lobe_indexer (FOD_lobe_indexer) ,
+                    FOD_lobe_directions (FOD_lobe_directions),
+                    lobe_TDI (lobe_TDI),
+                    lobe_connectivity (lobe_connectivity) {
+      angular_threshold_dp = cos (angular_threshold * (M_PI/180.0));
     }
 
-    bool operator () (SetVoxelDir& in) {
+    bool operator () (SetVoxelDir& in)
+    {
       // For each voxel tract tangent, assign to a lobe
       vector<int32_t> tract_lobe_indices;
-
       for (SetVoxelDir::const_iterator i = in.begin(); i != in.end(); ++i) {
-        Image::Nav::set_pos (FOD_lobe_indexer_, *i);
-        FOD_lobe_indexer_[3] = 0;
-        int32_t first_index = FOD_lobe_indexer_.value();
+        Image::Nav::set_pos (FOD_lobe_indexer, *i);
+        FOD_lobe_indexer[3] = 0;
+        int32_t first_index = FOD_lobe_indexer.value();
 
         if (first_index >= 0) {
-          FOD_lobe_indexer_[3] = 1;
-          int32_t last_index = first_index + FOD_lobe_indexer_.value();
+          FOD_lobe_indexer[3] = 1;
+          int32_t last_index = first_index + FOD_lobe_indexer.value();
           int32_t closest_lobe_index = -1;
           float largest_dp = 0.0;
           Point<float> dir (i->get_dir());
           dir.normalise();
           for (int32_t j = first_index; j < last_index; j++) {
-            float dp = Math::abs (dir.dot(FOD_lobe_directions_[j]));
+            float dp = Math::abs (dir.dot (FOD_lobe_directions[j]));
             if (dp > largest_dp) {
               largest_dp = dp;
               closest_lobe_index = j;
             }
           }
-          if (largest_dp > angular_threshold_dp_) {
+          if (largest_dp > angular_threshold_dp) {
             tract_lobe_indices.push_back (closest_lobe_index);
-            lobe_TDI_[closest_lobe_index]++;
+            lobe_TDI[closest_lobe_index]++;
           }
         }
       }
 
       for (size_t i = 0; i < tract_lobe_indices.size(); i++) {
         for (size_t j = i + 1; j < tract_lobe_indices.size(); j++) {
-          lobe_connectivity_[tract_lobe_indices[i]][tract_lobe_indices[j]].value++;
-          lobe_connectivity_[tract_lobe_indices[j]][tract_lobe_indices[i]].value++;
+          lobe_connectivity[tract_lobe_indices[i]][tract_lobe_indices[j]].value++;
+          lobe_connectivity[tract_lobe_indices[j]][tract_lobe_indices[i]].value++;
         }
       }
 
@@ -245,11 +333,11 @@ class TractProcessor {
 
 
   private:
-    Image::BufferScratch<int32_t>::voxel_type FOD_lobe_indexer_;
-    vector<Point<float> >& FOD_lobe_directions_;
-    vector<uint16_t>& lobe_TDI_;
-    vector<map<int32_t, Stats::connectivity> >& lobe_connectivity_;
-    float angular_threshold_dp_;
+    Image::BufferScratch<int32_t>::voxel_type FOD_lobe_indexer;
+    vector<Point<float> >& FOD_lobe_directions;
+    vector<uint16_t>& lobe_TDI;
+    vector<map<int32_t, connectivity> >& lobe_connectivity;
+    float angular_threshold_dp;
 };
 
 
@@ -389,7 +477,7 @@ void run() {
     Image::Buffer<value_type> av_fod_buffer (argument[3]);
     Image::Buffer<bool> brain_mask_buffer (argument[4]);
     Image::check_dimensions (av_fod_buffer, brain_mask_buffer, 0, 3);
-    SH_Queue_Writer<Image::Buffer<value_type>, Image::Buffer<bool> > writer (av_fod_buffer, brain_mask_buffer);
+    SHQueueWriter<Image::Buffer<value_type>, Image::Buffer<bool> > writer (av_fod_buffer, brain_mask_buffer);
     DWI::FOD_FMLS fmls (dirs, Math::SH::LforN (av_fod_buffer.dim(3)));
     fmls.set_peak_value_threshold (GROUP_AVERAGE_FOD_THRESHOLD);
     GroupAvLobeProcessor lobe_processor (FOD_lobe_indexer, FOD_lobe_directions, lobe_positions);
@@ -427,7 +515,7 @@ void run() {
   DWI::Tractography::Mapping::TrackLoader loader (file, num_tracks);
   DWI::Tractography::Mapping::TrackMapperBase<SetVoxelDir> mapper (header, dummy_matrix);
   vector<uint16_t> lobe_TDI (num_lobes, 0.0);
-  vector<map<int32_t, Stats::connectivity> > lobe_connectivity (num_lobes);
+  vector<map<int32_t, connectivity> > lobe_connectivity (num_lobes);
   TractProcessor tract_processor (FOD_lobe_indexer, FOD_lobe_directions, lobe_TDI, lobe_connectivity, 30);
   Thread::run_queue (loader, 1, DWI::Tractography::Mapping::TrackAndIndex(), mapper, 1, SetVoxelDir(), tract_processor, 1);
 
@@ -441,7 +529,7 @@ void run() {
     gaussian_const1 = 1.0 / (std_dev *  Math::sqrt (2.0 * M_PI));
   }
   for (unsigned int lobe = 0; lobe < num_lobes; ++lobe) {
-    map<int32_t, Stats::connectivity>::iterator it = lobe_connectivity[lobe].begin();
+    map<int32_t, connectivity>::iterator it = lobe_connectivity[lobe].begin();
     while (it != lobe_connectivity[lobe].end()) {
       value_type connectivity = it->second.value / value_type (lobe_TDI[lobe]);
       if (connectivity < connectivity_threshold)  {
@@ -460,9 +548,9 @@ void run() {
       }
     }
     // Make sure the lobe is fully connected to itself and give it a smoothing weight
-    Stats::connectivity self_connectivity;
+    connectivity self_connectivity;
     self_connectivity.value = 1.0;
-    lobe_connectivity[lobe].insert (pair<int32_t, Stats::connectivity> (lobe, self_connectivity));
+    lobe_connectivity[lobe].insert (pair<int32_t, connectivity> (lobe, self_connectivity));
     lobe_smoothing_weights[lobe].insert (pair<int32_t, value_type> (lobe, gaussian_const1));
   }
 
@@ -480,7 +568,7 @@ void run() {
   subject_FOD_lobe_integrals.resize (subjects.size(), num_lobes, 0.0);
   for (size_t subject = 0; subject < subjects.size(); subject++) {
     Image::Buffer<value_type> fod_buffer (subjects[subject]);
-    SH_Queue_Writer<Image::Buffer<value_type>, Image::BufferScratch<bool> > writer (fod_buffer, lobe_mask);
+    SHQueueWriter<Image::Buffer<value_type>, Image::BufferScratch<bool> > writer (fod_buffer, lobe_mask);
     DWI::FOD_FMLS fmls (dirs, Math::SH::LforN (fod_buffer.dim(3)));
     fmls.set_peak_value_threshold (SUBJECT_FOD_THRESHOLD);
     vector<value_type> temp_lobe_integrals (num_lobes, 0.0);
@@ -505,12 +593,13 @@ void run() {
   std::vector<value_type> tvalue_output (num_lobes, 0.0);
 
   {
-    Stats::PermutationGenerator permute (num_perms, subjects.size());
-    Stats::TFTEIntegrator integrator (lobe_connectivity, dh, E, H);
-    Stats::Processor<Stats::TFTEIntegrator> processor (integrator, perm_distribution_pos, perm_distribution_neg, subject_FOD_lobe_integrals, design,
-                                                       contrast, tfce_output_pos, tfce_output_neg, tvalue_output);
-    Thread::run_queue (permute, 1, MR::Stats::Item(), processor, 0);
+    LobeQueueWriter permute (num_perms, subjects.size());
+    TFCEProcessorConnectivityCluster processor (lobe_connectivity, perm_distribution_pos, perm_distribution_neg, subject_FOD_lobe_integrals, design, contrast, dh, E, H,
+                                                tfce_output_pos, tfce_output_neg, tvalue_output);
+    Thread::run_queue (permute, 1, LobeItem(), processor, 0);
   }
+
+
 }
 
   // Output data
