@@ -53,23 +53,17 @@ namespace MR
       }
 
 
-      template <class MaskVoxelType>
-        class Connector {
+      class Connector {
 
         public:
-          Connector (MaskVoxelType & mask,
-                     bool do_26_connectivity) :
-            mask_(mask),
+          Connector (bool do_26_connectivity) :
             do_26_connectivity_ (do_26_connectivity) {
-            ignore_dim_.resize (mask.ndim(), false);
           }
 
 
           // Perform connected components on the mask.
           const std::vector<std::vector<int> > & run (std::vector<cluster> & clusters,
-                                                      std::vector<uint32_t> & labels) {
-            if (!mask_indices_.size())
-              compute_adjacency();
+                                                      std::vector<uint32_t> & labels) const {
             labels.resize (adjacent_indices_.size(), 0);
             uint32_t current_label = 1;
             for (uint32_t i = 0; i < labels.size(); i++) {
@@ -93,9 +87,7 @@ namespace MR
           void run (std::vector<cluster> & clusters,
                     std::vector<uint32_t> & labels,
                     const std::vector<float> & data,
-                    const float threshold) {
-            if (!mask_indices_.size())
-              compute_adjacency();
+                    const float threshold) const {
             labels.resize (adjacent_indices_.size(), 0);
             uint32_t current_label = 1;
             for (uint32_t i = 0; i < labels.size(); i++) {
@@ -144,26 +136,20 @@ namespace MR
             ignore_dim_[dim] = ignore;
           }
 
-
-          const std::vector<std::vector<int> > & precompute_adjacency () {
-            compute_adjacency();
-            return mask_indices_;
-          }
-
-        protected:
-
-          void compute_adjacency () {
-            Image::BufferScratch<uint32_t> index_data (mask_);
+          template <class MaskVoxelType>
+          const std::vector<std::vector<int> > & precompute_adjacency (MaskVoxelType & mask) {
+            ignore_dim_.resize (mask.ndim(), false);
+            Image::BufferScratch<uint32_t> index_data (mask);
             Image::BufferScratch<uint32_t>::voxel_type index_image (index_data);
             // 1st pass, store mask image indices and their index in the array
-            Image::LoopInOrder loop (mask_);
-            for (loop.start (mask_, index_image); loop.ok(); loop.next (mask_, index_image)) {
-              if (mask_.value() >= 0.5) {
+            Image::LoopInOrder loop (mask);
+            for (loop.start (mask, index_image); loop.ok(); loop.next (mask, index_image)) {
+              if (mask.value() >= 0.5) {
                 // For each voxel, store the index within mask_indices for 2nd pass
                 index_image.value() = mask_indices_.size();
                 std::vector<int> index(4);
-                for (size_t dim = 0; dim < mask_.ndim(); dim++)
-                  index[dim] = mask_[dim];
+                for (size_t dim = 0; dim < mask.ndim(); dim++)
+                  index[dim] = mask[dim];
                 mask_indices_.push_back (index);
               } else {
                 index_image.value() = 0;
@@ -194,11 +180,11 @@ namespace MR
               }
             }
             // 2nd pass, define adjacency
-            MaskVoxelType mask_neigh (mask_);
+            MaskVoxelType mask_neigh (mask);
             std::vector<std::vector<int> >::iterator it;
             for (it = mask_indices_.begin(); it != mask_indices_.end(); ++it) {
               std::vector<uint32_t> neighbour_indices;
-              if (mask_.ndim() == 4)
+              if (mask.ndim() == 4)
                 mask_neigh[3] = (*it)[3];
               for (size_t n = 0; n < neighbour_offsets.size(); ++n) {
                 for (size_t dim = 0; dim < 3; dim++)
@@ -211,11 +197,11 @@ namespace MR
                 }
               }
               // here we handle the 4th dimension
-              if (mask_.ndim() == 4 && !ignore_dim_[3]) {
+              if (mask.ndim() == 4 && !ignore_dim_[3]) {
                 for (size_t dim = 0; dim < 3; dim++)
                   mask_neigh[dim] = (*it)[dim];
                 if (dir_adjacency_matrix_.is_set()) {
-                  for (int i = 0; i < mask_.dim(3); i++) {
+                  for (int i = 0; i < mask.dim(3); i++) {
                     if (dir_adjacency_matrix_((*it)[3], i)) {
                       mask_neigh[3] = i;
                       if (mask_neigh.value() > 0.5) {
@@ -232,7 +218,7 @@ namespace MR
                       neighbour_indices.push_back (index_image.value());
                     }
                   }
-                  if ((*it)[3] + 1 < mask_.dim (3)) { // boundary check
+                  if ((*it)[3] + 1 < mask.dim (3)) { // boundary check
                     mask_neigh[3] = (*it)[3] + 1;
                     if (mask_neigh.value() > 0.5) {
                       voxel_assign (index_image, mask_neigh);
@@ -243,10 +229,11 @@ namespace MR
               }
               adjacent_indices_.push_back(neighbour_indices);
             }
+            return mask_indices_;
           }
 
 
-          bool next_neighbour(uint32_t & node, std::vector<uint32_t> & labels) {
+          bool next_neighbour(uint32_t & node, std::vector<uint32_t> & labels) const {
             for (size_t n = 0; n < adjacent_indices_[node].size(); n++) {
               if (labels[adjacent_indices_[node][n]] == 0) {
                 node = adjacent_indices_[node][n];
@@ -260,7 +247,7 @@ namespace MR
           bool next_neighbour(uint32_t & node,
                               std::vector<uint32_t> & labels,
                               const std::vector<float> & data,
-                              const float threshold) {
+                              const float threshold) const {
             for (size_t n = 0; n < adjacent_indices_[node].size(); n++) {
               if (labels[adjacent_indices_[node][n]] == 0 && data[adjacent_indices_[node][n]] > threshold) {
                 node = adjacent_indices_[node][n];
@@ -274,7 +261,7 @@ namespace MR
           // use a non-recursive depth first search to agglomerate adjacent voxels
           void depth_first_search (uint32_t root,
                                    cluster & cluster,
-                                   std::vector<uint32_t> & labels) {
+                                   std::vector<uint32_t> & labels) const {
             uint32_t node = root;
             std::stack<uint32_t> stack;
             while (true) {
@@ -299,7 +286,7 @@ namespace MR
                                    cluster & cluster,
                                    std::vector<uint32_t> & labels,
                                    const std::vector<float> & data,
-                                   const float threshold) {
+                                   const float threshold) const {
             uint32_t node = root;
             std::stack<uint32_t> stack;
             while (true) {
@@ -320,7 +307,6 @@ namespace MR
           }
 
 
-          MaskVoxelType & mask_;
           std::vector<std::vector<int> > mask_indices_;
           std::vector<std::vector<uint32_t> > adjacent_indices_;
           Math::Matrix<float> dir_adjacency_matrix_;
@@ -382,12 +368,13 @@ namespace MR
           std::vector<cluster> clusters;
           std::vector<uint32_t> labels;
 
-          Connector<InputVoxelType> connector (in, do_26_connectivity_);
+          Connector connector (do_26_connectivity_);
           for (size_t dim = 0; dim < in.ndim(); ++dim) {
             connector.set_ignore_dim (ignore_dim_[dim], dim);
           }
           if (directions_.is_set())
             connector.set_directions (directions_, angular_threshold_);
+          connector.precompute_adjacency(in);
           std::vector<std::vector<int> > mask_indices = connector.run (clusters, labels);
           std::sort (clusters.begin(), clusters.end(), compare_clusters);
 

@@ -58,6 +58,10 @@ bool FOD_FMLS::operator() (const SH_coefs& in, FOD_lobes& out) const {
   out.clear();
   out.vox = in.vox;
 
+  if (in[0] <= 0.0) {
+    return true;
+  }
+
   Math::Vector<float> values (dirs.get_num_dirs());
   transform->SH2A (values, in);
 
@@ -141,9 +145,7 @@ bool FOD_FMLS::operator() (const SH_coefs& in, FOD_lobes& out) const {
         i->revise_peak (dirs.get_dir (peak_bin), i->get_peak_value());
       i->normalise_integral();
       ++i;
-
     }
-
   }
 
   return true;
