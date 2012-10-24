@@ -98,31 +98,6 @@ class SHQueueWriter
 
 
 
-class LobeQueueWriter
-{
-  public:
-    LobeQueueWriter (size_t num_lobes, size_t num_perms) :
-                     current_index (0),
-                     num_lobes (num_lobes),
-                     progress ("running " + str(num_perms) + " permutations...", num_perms) { }
-
-    bool operator() (Stats::TFCE::LobeItem& item)
-    {
-      if (current_index >= num_lobes)
-        return false;
-      item.index = current_index++;
-      ++progress;
-      return true;
-    }
-
-  private:
-    size_t current_index;
-    size_t num_lobes;
-    ProgressBar progress;
-};
-
-
-
 class GroupAvLobeProcessor
 {
   public:
@@ -536,11 +511,14 @@ void run() {
   std::vector<value_type> tvalue_output (num_lobes, 0.0);
 
   {
-    LobeQueueWriter permute (num_perms, subjects.size());
     Math::Stats::GLMTTest glm (subject_FOD_lobe_integrals, design, contrast);
-    Stats::TFCE::ConnectivityCluster<Math::Stats::GLMTTest> processor (glm, perm_distribution_pos, perm_distribution_neg, dh, E, H,
-                                                                       tfce_output_pos, tfce_output_neg, tvalue_output, lobe_connectivity);
-    Thread::run_queue (permute, 1, Stats::TFCE::LobeItem(), processor, 0);
+    Stats::TFCE::QueueLoader loader (num_perms, subjects.size());
+    Stats::TFCE::TFCEConnectivity tfce_integrator (lobe_connectivity, dh, E, H);
+    Stats::TFCE::ThreadKernel<Math::Stats::GLMTTest,
+                              Stats::TFCE::TFCEConnectivity> processor (glm, tfce_integrator,
+                                                                        perm_distribution_pos, perm_distribution_neg,
+                                                                        tfce_output_pos, tfce_output_neg, tvalue_output);
+    Thread::run_queue (loader, 1, Stats::TFCE::PermutationItem(), processor, 0);
   }
 
 

@@ -248,13 +248,15 @@ void run() {
   std::vector<value_type> tfce_output_neg (num_vox, 0.0);
   std::vector<value_type> tvalue_output (num_vox, 0.0);
 
-
   {
     Math::Stats::GLMTTest glm (data, design, contrast);
-    Stats::TFCE::PermutationQueueLoader permute (num_perms, subjects.size());
-    Stats::TFCE::SpatialCluster<Math::Stats::GLMTTest> processor (glm, perm_distribution_pos, perm_distribution_neg, dh, E, H,
-                                                       tfce_output_pos, tfce_output_neg, tvalue_output, connector);
-    Thread::run_queue (permute, 1, Stats::TFCE::PermutationItem(), processor, 0);
+    Stats::TFCE::QueueLoader loader (num_perms, subjects.size());
+    Stats::TFCE::TFCESpatial tfce_integrator (connector, dh, E, H);
+    Stats::TFCE::ThreadKernel<Math::Stats::GLMTTest,
+                              Stats::TFCE::TFCESpatial> processor (glm, tfce_integrator,
+                                                                   perm_distribution_pos, perm_distribution_neg,
+                                                                   tfce_output_pos, tfce_output_neg, tvalue_output);
+    Thread::run_queue (loader, 1, Stats::TFCE::PermutationItem(), processor, 0);
   }
 
 
