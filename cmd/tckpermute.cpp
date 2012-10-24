@@ -33,7 +33,9 @@
 #include "math/matrix.h"
 #include "math/hemisphere/directions.h"
 #include "timer.h"
-#include "stats/permute.h"
+#include "math/stats/permutation.h"
+#include "math/stats/glm.h"
+#include "stats/tfce.h"
 #include "dwi/fmls.h"
 #include "dwi/tractography/file.h"
 #include "dwi/tractography/mapping/mapper.h"
@@ -95,18 +97,6 @@ class SHQueueWriter
 };
 
 
-class LobeItem
-{
-  public:
-    size_t index;
-};
-
-
-struct connectivity
-{
-    value_type value;
-    connectivity(): value (0.0) {}
-};
 
 class LobeQueueWriter
 {
@@ -116,7 +106,7 @@ class LobeQueueWriter
                      num_lobes (num_lobes),
                      progress ("running " + str(num_perms) + " permutations...", num_perms) { }
 
-    bool operator() (LobeItem& item)
+    bool operator() (Stats::TFCE::LobeItem& item)
     {
       if (current_index >= num_lobes)
         return false;
@@ -129,53 +119,6 @@ class LobeQueueWriter
     size_t current_index;
     size_t num_lobes;
     ProgressBar progress;
-};
-
-
-class TFCEProcessorConnectivityCluster : public MR::Stats::TFCEProcessorBase
-{
-  public:
-    TFCEProcessorConnectivityCluster (std::vector<std::map<int32_t, connectivity> >& connectivity_map,
-                                      Math::Vector<value_type>& perm_distribution_pos, Math::Vector<value_type>& perm_distribution_neg,
-                                      const Math::Matrix<value_type>& afd,
-                                      const Math::Matrix<value_type>& design_matrix, const Math::Matrix<value_type>& contrast_matrix,
-                                      value_type dh, value_type E, value_type H,
-                                      std::vector<value_type>& tfce_output_pos, std::vector<value_type>& tfce_output_neg,
-                                      std::vector<value_type>& tvalue_output) :
-                                        TFCEProcessorBase (perm_distribution_pos, perm_distribution_neg, afd, design_matrix, contrast_matrix,
-                                                           dh, E, H, tfce_output_pos, tfce_output_neg, tvalue_output),
-                                                           connectivity_map (connectivity_map) {}
-
-    bool operator() (const LobeItem& item)
-    {
-      //HERE
-      return true;
-    }
-
-  private:
-
-    value_type tfce_integration (const value_type max_stat, const std::vector<value_type>& stats, std::vector<value_type>& tfce_stats)
-    {
-      for (value_type threshold = dh; threshold < max_stat; threshold += dh) {
-        for (size_t lobe = 0; lobe < connectivity_map.size(); ++lobe) {
-          float extent = 0.0;
-          std::map<int32_t, connectivity>::iterator connected_lobe = connectivity_map[lobe].begin();
-          for (;connected_lobe != connectivity_map[lobe].end(); ++connected_lobe)
-            if (stats[connected_lobe->first] > threshold)
-              extent += connected_lobe->second.value;
-          tfce_stats[lobe] += pow (extent, E) * pow (threshold, H);
-        }
-      }
-
-      value_type max_tfce_stat = 0.0;
-      for (size_t i = 0; i < stats.size(); i++)
-        if (tfce_stats[i] > max_tfce_stat)
-          max_tfce_stat = tfce_stats[i];
-
-      return max_tfce_stat;
-    }
-
-    std::vector<std::map<int32_t, connectivity> >& connectivity_map;
 };
 
 
@@ -282,7 +225,7 @@ class TractProcessor {
     TractProcessor (Image::BufferScratch<int32_t>& FOD_lobe_indexer,
                     vector<Point<float> >& FOD_lobe_directions,
                     vector<uint16_t>& lobe_TDI,
-                    vector<map<int32_t, connectivity> >& lobe_connectivity,
+                    vector<map<int32_t, Stats::TFCE::connectivity> >& lobe_connectivity,
                     float angular_threshold):
                     FOD_lobe_indexer (FOD_lobe_indexer) ,
                     FOD_lobe_directions (FOD_lobe_directions),
@@ -336,7 +279,7 @@ class TractProcessor {
     Image::BufferScratch<int32_t>::voxel_type FOD_lobe_indexer;
     vector<Point<float> >& FOD_lobe_directions;
     vector<uint16_t>& lobe_TDI;
-    vector<map<int32_t, connectivity> >& lobe_connectivity;
+    vector<map<int32_t, Stats::TFCE::connectivity> >& lobe_connectivity;
     float angular_threshold_dp;
 };
 
@@ -397,7 +340,7 @@ void usage ()
 #define GROUP_AVERAGE_FOD_THRESHOLD 0.15
 #define SUBJECT_FOD_THRESHOLD 0.15
 
-typedef Stats::value_type value_type;
+typedef Stats::TFCE::value_type value_type;
 
 void run() {
 
@@ -447,14 +390,14 @@ void run() {
    }
 
    // Load design matrix:
-   Math::Matrix<Stats::value_type> design;
+   Math::Matrix<value_type> design;
    design.load (argument[1]);
 
    if (design.rows() != subjects.size())
      throw Exception ("number of subjects does not match number of rows in design matrix");
 
    // Load contrast matrix:
-   Math::Matrix<Stats::value_type> contrast;
+   Math::Matrix<value_type> contrast;
    contrast.load (argument[2]);
 
    if (contrast.columns() > design.columns())
@@ -515,7 +458,7 @@ void run() {
   DWI::Tractography::Mapping::TrackLoader loader (file, num_tracks);
   DWI::Tractography::Mapping::TrackMapperBase<SetVoxelDir> mapper (header, dummy_matrix);
   vector<uint16_t> lobe_TDI (num_lobes, 0.0);
-  vector<map<int32_t, connectivity> > lobe_connectivity (num_lobes);
+  vector<map<int32_t, Stats::TFCE::connectivity> > lobe_connectivity (num_lobes);
   TractProcessor tract_processor (FOD_lobe_indexer, FOD_lobe_directions, lobe_TDI, lobe_connectivity, 30);
   Thread::run_queue (loader, 1, DWI::Tractography::Mapping::TrackAndIndex(), mapper, 1, SetVoxelDir(), tract_processor, 1);
 
@@ -529,7 +472,7 @@ void run() {
     gaussian_const1 = 1.0 / (std_dev *  Math::sqrt (2.0 * M_PI));
   }
   for (unsigned int lobe = 0; lobe < num_lobes; ++lobe) {
-    map<int32_t, connectivity>::iterator it = lobe_connectivity[lobe].begin();
+    map<int32_t, Stats::TFCE::connectivity>::iterator it = lobe_connectivity[lobe].begin();
     while (it != lobe_connectivity[lobe].end()) {
       value_type connectivity = it->second.value / value_type (lobe_TDI[lobe]);
       if (connectivity < connectivity_threshold)  {
@@ -548,9 +491,9 @@ void run() {
       }
     }
     // Make sure the lobe is fully connected to itself and give it a smoothing weight
-    connectivity self_connectivity;
+    Stats::TFCE::connectivity self_connectivity;
     self_connectivity.value = 1.0;
-    lobe_connectivity[lobe].insert (pair<int32_t, connectivity> (lobe, self_connectivity));
+    lobe_connectivity[lobe].insert (pair<int32_t, Stats::TFCE::connectivity> (lobe, self_connectivity));
     lobe_smoothing_weights[lobe].insert (pair<int32_t, value_type> (lobe, gaussian_const1));
   }
 
@@ -594,9 +537,10 @@ void run() {
 
   {
     LobeQueueWriter permute (num_perms, subjects.size());
-    TFCEProcessorConnectivityCluster processor (lobe_connectivity, perm_distribution_pos, perm_distribution_neg, subject_FOD_lobe_integrals, design, contrast, dh, E, H,
-                                                tfce_output_pos, tfce_output_neg, tvalue_output);
-    Thread::run_queue (permute, 1, LobeItem(), processor, 0);
+    Math::Stats::GLMTTest glm (subject_FOD_lobe_integrals, design, contrast);
+    Stats::TFCE::ConnectivityCluster<Math::Stats::GLMTTest> processor (glm, perm_distribution_pos, perm_distribution_neg, dh, E, H,
+                                                                       tfce_output_pos, tfce_output_neg, tvalue_output, lobe_connectivity);
+    Thread::run_queue (permute, 1, Stats::TFCE::LobeItem(), processor, 0);
   }
 
 

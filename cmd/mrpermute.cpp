@@ -27,130 +27,14 @@
 #include "math/SH.h"
 #include "math/hemisphere/directions.h"
 #include "timer.h"
-#include "stats/permute.h"
+#include "math/stats/permutation.h"
+#include "math/stats/glm.h"
+#include "stats/tfce.h"
 
 MRTRIX_APPLICATION
 
 using namespace MR;
 using namespace App;
-
-class PermutationItem
-{
-  public:
-    std::vector<size_t> labelling;
-    size_t index;
-};
-
-typedef Thread::Queue<PermutationItem> Queue;
-typedef float value_type;
-
-class PermutationQueueLoader
-{
- public:
-   PermutationQueueLoader (size_t num_perms, size_t num_subjects) :
-     num_perms (num_perms),
-     num_subjects (num_subjects),
-     current_perm (0),
-     progress ("running " + str(num_perms) + " permutations...", num_perms) { }
-
-   bool operator() (PermutationItem& item) {
-     if (current_perm >= num_perms)
-       return false;
-
-     item.index = current_perm;
-     for (size_t i = 0; i < num_subjects; ++i)
-       item.labelling.push_back(i);
-
-     if (current_perm) {
-       do {
-         std::random_shuffle (item.labelling.begin(), item.labelling.end());
-         // TODO: check that permutation is distinct from original
-       } while (MR::Stats::is_duplicate_permutation (item.labelling, previous_perms));
-       // TODO: check whether we need to check for duplicate
-       // i.e. can we sample with replacement?
-     }
-     previous_perms.push_back (item.labelling);
-     ++current_perm;
-     ++progress;
-
-     return true;
-   }
-
- private:
-
-   std::vector <std::vector<size_t> > previous_perms;
-   size_t num_perms, num_subjects, current_perm;
-   ProgressBar progress;
-};
-
-class TFCEProcessorSpatialCluster : public MR::Stats::TFCEProcessorBase
-{
-  public:
-    TFCEProcessorSpatialCluster (Ptr<Image::Filter::Connector<Image::Buffer<value_type>::voxel_type> > connector,
-                                 Math::Vector<value_type>& perm_distribution_pos, Math::Vector<value_type>& perm_distribution_neg,
-                                 const Math::Matrix<value_type>& afd,
-                                 const Math::Matrix<value_type>& design_matrix, const Math::Matrix<value_type>& contrast_matrix,
-                                 value_type dh, value_type E, value_type H,
-                                 std::vector<value_type>& tfce_output_pos, std::vector<value_type>& tfce_output_neg,
-                                 std::vector<value_type>& tvalue_output) :
-                                   TFCEProcessorBase (perm_distribution_pos, perm_distribution_neg, afd, design_matrix, contrast_matrix,
-                                                      dh, E, H, tfce_output_pos, tfce_output_neg, tvalue_output),
-                                                      connector (connector) {}
-
-    bool operator() (const PermutationItem& item)
-    {
-      std::vector<value_type> stats (afd.rows(), 0.0);
-      std::vector<value_type> tfce_stats (afd.rows(), 0.0);
-      value_type max_stat = 0.0, min_stat = 0.0;
-
-      compute_tstatistics (item.labelling, stats, max_stat, min_stat);
-      if (item.index == 0)
-        tvalue_output = stats;
-
-      value_type max_tfce_stat = tfce_integration (max_stat, stats, tfce_stats);
-      if (item.index == 0)
-        tfce_output_pos = tfce_stats;
-      else
-        perm_distribution_pos[item.index - 1] = max_tfce_stat;
-
-      for (size_t i = 0; i < afd.rows(); ++i) {
-        stats[i] = -stats[i];
-        tfce_stats[i] = 0.0;
-      }
-      max_tfce_stat = tfce_integration (-min_stat, stats, tfce_stats);
-      if (item.index == 0)
-        tfce_output_neg = tfce_stats;
-      else
-        perm_distribution_neg[item.index - 1] = max_tfce_stat;
-
-      return true;
-    }
-
-  private:
-
-    value_type tfce_integration (const value_type max_stat, const std::vector<value_type>& stats, std::vector<value_type>& tfce_stats)
-    {
-      for (value_type threshold = dh; threshold < max_stat; threshold += dh) {
-        std::vector<Image::Filter::cluster> clusters;
-        std::vector<uint32_t> labels (afd.rows(), 0);
-        connector->run (clusters, labels, stats, threshold);
-
-        for (size_t i = 0; i < afd.rows(); ++i)
-          if (labels[i])
-            tfce_stats[i] += pow (clusters[labels[i]-1].size, E) * pow (threshold, H);
-      }
-
-      value_type max_tfce_stat = 0.0;
-      for (size_t i = 0; i < afd.rows(); i++)
-        if (tfce_stats[i] > max_tfce_stat)
-          max_tfce_stat = tfce_stats[i];
-
-      return max_tfce_stat;
-    }
-
-    Ptr<Image::Filter::Connector<Image::Buffer<value_type>::voxel_type> > connector;
-};
-
 
 
 void usage ()
@@ -203,7 +87,7 @@ void usage ()
 }
 
 
-typedef Stats::value_type value_type;
+typedef Stats::TFCE::value_type value_type;
 
 
 void run() {
@@ -242,14 +126,14 @@ void run() {
   }
 
   // Load design matrix:
-  Math::Matrix<Stats::value_type> design;
+  Math::Matrix<value_type> design;
   design.load (argument[1]);
 
   if (design.rows() != subjects.size())
     throw Exception ("number of subjects does not match number of rows in design matrix");
 
   // Load contrast matrix:
-  Math::Matrix<Stats::value_type> contrast;
+  Math::Matrix<value_type> contrast;
   contrast.load (argument[2]);
 
   if (contrast.columns() > design.columns())
@@ -293,14 +177,14 @@ void run() {
 
 
   print ("Precomputing voxel adjacency from mask...");
-  Ptr<Image::Filter::Connector<Image::Buffer<value_type>::voxel_type> > connector (new Image::Filter::Connector<Image::Buffer<value_type>::voxel_type> (mask_vox, do_26_connectivity));
+  Image::Filter::Connector connector (do_26_connectivity);
   if (do_afd)
-    connector->set_directions (directions, angular_threshold);
-  std::vector<std::vector<int> > mask_indices = connector->precompute_adjacency ();
+    connector.set_directions (directions, angular_threshold);
+  std::vector<std::vector<int> > mask_indices = connector.precompute_adjacency (mask_vox);
   print (" done\n");
 
   const size_t num_vox = mask_indices.size();
-  Math::Matrix<Stats::value_type> data (num_vox, subjects.size());
+  Math::Matrix<value_type> data (num_vox, subjects.size());
 
 
   // Load images
@@ -331,7 +215,7 @@ void run() {
               fod[sh] = fod_voxel.value();
             }
           }
-          data(index++, subject) = Math::dot (SHT.row ((*it)[3]), fod);
+          data (index++, subject) = Math::dot (SHT.row ((*it)[3]), fod);
         }
         progress++;
       }
@@ -366,10 +250,11 @@ void run() {
 
 
   {
-    PermutationQueueLoader permute (num_perms, subjects.size());
-    TFCEProcessorSpatialCluster processor (connector, perm_distribution_pos, perm_distribution_neg, data, design, contrast, dh, E, H,
-                                                  tfce_output_pos, tfce_output_neg, tvalue_output);
-    Thread::run_queue (permute, 1, PermutationItem(), processor, 0);
+    Math::Stats::GLMTTest glm (data, design, contrast);
+    Stats::TFCE::PermutationQueueLoader permute (num_perms, subjects.size());
+    Stats::TFCE::SpatialCluster<Math::Stats::GLMTTest> processor (glm, perm_distribution_pos, perm_distribution_neg, dh, E, H,
+                                                       tfce_output_pos, tfce_output_neg, tvalue_output, connector);
+    Thread::run_queue (permute, 1, Stats::TFCE::PermutationItem(), processor, 0);
   }
 
 
@@ -403,11 +288,11 @@ void run() {
     std::string pvalue_filename_pos = prefix + "_pvalue_pos.mif";
     Image::Buffer<value_type> pvalue_data_pos (pvalue_filename_pos, header);
     Image::Buffer<value_type>::voxel_type pvalue_voxel_pos (pvalue_data_pos);
-    Stats::statistic2pvalue (perm_distribution_pos, tfce_voxel_pos, pvalue_voxel_pos);
+    Math::Stats::statistic2pvalue (perm_distribution_pos, tfce_voxel_pos, pvalue_voxel_pos);
 
     std::string pvalue_filename_neg = prefix + "_pvalue_neg.mif";
     Image::Buffer<value_type> pvalue_data_neg (pvalue_filename_neg, header);
     Image::Buffer<value_type>::voxel_type pvalue_voxel_neg (pvalue_data_neg);
-    Stats::statistic2pvalue (perm_distribution_neg, tfce_voxel_neg, pvalue_voxel_neg);
+    Math::Stats::statistic2pvalue (perm_distribution_neg, tfce_voxel_neg, pvalue_voxel_neg);
   }
 }
