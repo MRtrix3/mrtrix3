@@ -103,6 +103,10 @@ namespace MR
               extent_ = extent;
           }
 
+          void set_stdev (float stdev) {
+            set_stdev (std::vector<float> (3, stdev));
+          }
+
           //! Set the standard deviation of the Gaussian defined in mm.
           //! This must be set as a single value to be used for the first 3 dimensions
           //! or separate values, one for each dimension. (Default: 1 voxel)

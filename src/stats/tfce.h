@@ -48,10 +48,10 @@ namespace MR
       typedef Thread::Queue<PermutationItem> Queue;
       typedef float value_type;
 
-      class PermutationQueueLoader
+      class QueueLoader
       {
        public:
-         PermutationQueueLoader (size_t num_perms, size_t num_subjects) :
+         QueueLoader (size_t num_perms, size_t num_subjects) :
            current_perm (0),
            progress ("running " + str(num_perms) + " permutations...", num_perms) {
            Math::Stats::generate_permutations (num_perms, num_subjects, permutations);
@@ -60,12 +60,10 @@ namespace MR
          bool operator() (PermutationItem& item) {
            if (current_perm >= permutations.size())
              return false;
-
            item.index = current_perm;
            item.labelling = permutations[current_perm];
            ++current_perm;
            ++progress;
-
            return true;
          }
 
@@ -76,138 +74,54 @@ namespace MR
          ProgressBar progress;
       };
 
-
-
-      template <class StatsType>
-        class Base {
-          public:
-            Base (StatsType& stats_calculator,
-                  Math::Vector<value_type>& perm_distribution_pos, Math::Vector<value_type>& perm_distribution_neg,
-                  value_type dh, value_type E, value_type H,
-                  std::vector<value_type>& tfce_output_pos, std::vector<value_type>& tfce_output_neg,
-                  std::vector<value_type>& tvalue_output) :
-                    stats_calculator (stats_calculator),
-                    perm_distribution_pos (perm_distribution_pos), perm_distribution_neg (perm_distribution_neg),
-                    dh (dh), E (E), H (H),
-                    tfce_output_pos (tfce_output_pos), tfce_output_neg (tfce_output_neg), tvalue_output (tvalue_output) {
-          }
-
-          protected:
-            StatsType& stats_calculator;
-            Math::Vector<value_type>& perm_distribution_pos,  perm_distribution_neg;
-            value_type dh, E, H;
-            std::vector<value_type>& tfce_output_pos, tfce_output_neg, tvalue_output;
-
-      };
-
-      template <class StatsType>
-      class SpatialCluster : public Base<StatsType>
-      {
+      class TFCESpatial {
         public:
-          SpatialCluster (StatsType& stats_calculator,
-                          Math::Vector<value_type>& perm_distribution_pos, Math::Vector<value_type>& perm_distribution_neg,
-                          value_type dh, value_type E, value_type H,
-                          std::vector<value_type>& tfce_output_pos, std::vector<value_type>& tfce_output_neg,
-                          std::vector<value_type>& tvalue_output,
-                          const Image::Filter::Connector& connector) :
-                            Base<StatsType> (stats_calculator, perm_distribution_pos, perm_distribution_neg,
-                            dh, E, H, tfce_output_pos, tfce_output_neg, tvalue_output), connector (connector) {}
+          TFCESpatial (const Image::Filter::Connector& connector, value_type dh, value_type E, value_type H) :
+                      connector (connector), dh (dh), E (E), H (H) {}
 
-          bool operator() (const PermutationItem& item)
+          value_type operator() (const value_type max_stat, const std::vector<value_type>& stats, std::vector<value_type>& tfce_stats)
           {
-            value_type max_stat = 0.0, min_stat = 0.0;
+           for (value_type threshold = this->dh; threshold < max_stat; threshold += this->dh) {
+             std::vector<Image::Filter::cluster> clusters;
+             std::vector<uint32_t> labels (tfce_stats.size(), 0);
+             connector.run (clusters, labels, stats, threshold);
+             for (size_t i = 0; i < tfce_stats.size(); ++i)
+               if (labels[i])
+                 tfce_stats[i] += pow (clusters[labels[i]-1].size, this->E) * pow (threshold, this->H);
+           }
 
-            std::vector<value_type> stats;
-            this->stats_calculator (item.labelling, stats, max_stat, min_stat);
-            if (item.index == 0)
-              this->tvalue_output = stats;
+           value_type max_tfce_stat = 0.0;
+           for (size_t i = 0; i < tfce_stats.size(); i++)
+             if (tfce_stats[i] > max_tfce_stat)
+               max_tfce_stat = tfce_stats[i];
 
-            std::vector<value_type> tfce_stats (stats.size(), 0.0);
-            value_type max_tfce_stat = tfce_integration (max_stat, stats, tfce_stats);
-            if (item.index == 0)
-              this->tfce_output_pos = tfce_stats;
-            else
-              this->perm_distribution_pos[item.index - 1] = max_tfce_stat;
-
-            for (size_t i = 0; i < stats.size(); ++i) {
-              stats[i] = -stats[i];
-              tfce_stats[i] = 0.0;
-            }
-            max_tfce_stat = tfce_integration (-min_stat, stats, tfce_stats);
-            if (item.index == 0)
-              this->tfce_output_neg = tfce_stats;
-            else
-              this->perm_distribution_neg[item.index - 1] = max_tfce_stat;
-
-            return true;
+           return max_tfce_stat;
           }
 
-        private:
-
-          value_type tfce_integration (const value_type max_stat, const std::vector<value_type>& stats, std::vector<value_type>& tfce_stats)
-          {
-            for (value_type threshold = this->dh; threshold < max_stat; threshold += this->dh) {
-              std::vector<Image::Filter::cluster> clusters;
-              std::vector<uint32_t> labels (tfce_stats.size(), 0);
-              connector.run (clusters, labels, stats, threshold);
-
-              for (size_t i = 0; i < tfce_stats.size(); ++i)
-                if (labels[i])
-                  tfce_stats[i] += pow (clusters[labels[i]-1].size, this->E) * pow (threshold, this->H);
-            }
-
-            value_type max_tfce_stat = 0.0;
-            for (size_t i = 0; i < tfce_stats.size(); i++)
-              if (tfce_stats[i] > max_tfce_stat)
-                max_tfce_stat = tfce_stats[i];
-
-            return max_tfce_stat;
-          }
-
+        protected:
           const Image::Filter::Connector& connector;
-      };
-
-
-      class LobeItem
-      {
-        public:
-          size_t index;
+          value_type dh, E, H;
       };
 
 
       struct connectivity
       {
-          value_type value;
-          connectivity(): value (0.0) {}
+        value_type value;
+        connectivity(): value (0.0) {}
       };
 
-      template <class StatsType>
-        class ConnectivityCluster : public Base<StatsType>
-        {
-         public:
-          ConnectivityCluster (StatsType& stats_calculator,
-                               Math::Vector<value_type>& perm_distribution_pos, Math::Vector<value_type>& perm_distribution_neg,
-                               value_type dh, value_type E, value_type H,
-                               std::vector<value_type>& tfce_output_pos, std::vector<value_type>& tfce_output_neg,
-                               std::vector<value_type>& tvalue_output,
-                               std::vector<std::map<int32_t, connectivity> >& connectivity_map) :
-                                 Base<StatsType> (stats_calculator, perm_distribution_pos, perm_distribution_neg,
-                                 dh, E, H, tfce_output_pos, tfce_output_neg, tvalue_output), connectivity_map (connectivity_map) {}
 
-          bool operator() (const LobeItem& item)
-          {
-            //HERE
-            return true;
-          }
+      class TFCEConnectivity {
+        public:
+          TFCEConnectivity (const std::vector<std::map<int32_t, connectivity> >& connectivity_map, value_type dh, value_type E, value_type H) :
+                            connectivity_map (connectivity_map), dh (dh), E (E), H (H) {}
 
-        private:
-
-          value_type tfce_integration (const value_type max_stat, const std::vector<value_type>& stats, std::vector<value_type>& tfce_stats)
+          value_type operator() (const value_type max_stat, const std::vector<value_type>& stats, std::vector<value_type>& tfce_stats)
           {
             for (value_type threshold = this->dh; threshold < max_stat; threshold +=  this->dh) {
               for (size_t lobe = 0; lobe < connectivity_map.size(); ++lobe) {
-                float extent = 0.0;
-                std::map<int32_t, connectivity>::iterator connected_lobe = connectivity_map[lobe].begin();
+                value_type extent = 0.0;
+                std::map<int32_t, connectivity>::const_iterator connected_lobe = connectivity_map[lobe].begin();
                 for (;connected_lobe != connectivity_map[lobe].end(); ++connected_lobe)
                   if (stats[connected_lobe->first] > threshold)
                     extent += connected_lobe->second.value;
@@ -223,7 +137,60 @@ namespace MR
             return max_tfce_stat;
           }
 
-          std::vector<std::map<int32_t, connectivity> >& connectivity_map;
+        protected:
+          const std::vector<std::map<int32_t, connectivity> >& connectivity_map;
+          value_type dh, E, H;
+      };
+
+
+      template <class StatsType, class TFCEType>
+        class ThreadKernel {
+          public:
+            ThreadKernel (StatsType& stats_calculator,
+                          TFCEType& tfce_integrator,
+                          Math::Vector<value_type>& perm_distribution_pos, Math::Vector<value_type>& perm_distribution_neg,
+                          std::vector<value_type>& tfce_output_pos, std::vector<value_type>& tfce_output_neg,
+                          std::vector<value_type>& tvalue_output) :
+                            stats_calculator (stats_calculator), tfce_integrator (tfce_integrator),
+                            perm_distribution_pos (perm_distribution_pos), perm_distribution_neg (perm_distribution_neg),
+                            dh (dh), E (E), H (H),
+                            tfce_output_pos (tfce_output_pos), tfce_output_neg (tfce_output_neg), tvalue_output (tvalue_output) {}
+
+          bool operator() (const PermutationItem& item)
+          {
+            value_type max_stat = 0.0, min_stat = 0.0;
+
+            std::vector<value_type> stats;
+            stats_calculator (item.labelling, stats, max_stat, min_stat);
+            if (item.index == 0)
+              tvalue_output = stats;
+
+            std::vector<value_type> tfce_stats (stats.size(), 0.0);
+            value_type max_tfce_stat = tfce_integrator (max_stat, stats, tfce_stats);
+            if (item.index == 0)
+              tfce_output_pos = tfce_stats;
+            else
+              perm_distribution_pos[item.index - 1] = max_tfce_stat;
+
+            for (size_t i = 0; i < stats.size(); ++i) {
+              stats[i] = -stats[i];
+              tfce_stats[i] = 0.0;
+            }
+            max_tfce_stat = tfce_integrator (-min_stat, stats, tfce_stats);
+            if (item.index == 0)
+              tfce_output_neg = tfce_stats;
+            else
+              perm_distribution_neg[item.index - 1] = max_tfce_stat;
+
+            return true;
+          }
+
+          protected:
+            StatsType& stats_calculator;
+            TFCEType& tfce_integrator;
+            Math::Vector<value_type>& perm_distribution_pos,  perm_distribution_neg;
+            value_type dh, E, H;
+            std::vector<value_type>& tfce_output_pos, tfce_output_neg, tvalue_output;
       };
     }
   }
