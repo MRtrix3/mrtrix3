@@ -57,8 +57,7 @@ void usage ()
                       "Note that a 4D mask must be supplied for AFD analysis to "
                       "also define orientations of interest.").type_image_in()
 
-  + Argument ("output", "the root directory and filename prefix "
-              "for all output.").type_text();
+  + Argument ("output", "the filename prefix for all output.").type_text();
 
 
   OPTIONS

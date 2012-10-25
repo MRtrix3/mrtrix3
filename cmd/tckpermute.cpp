@@ -28,6 +28,7 @@
 #include "image/buffer_preload.h"
 #include "image/transform.h"
 #include "image/filter/connected_components.h"
+#include "image/interp/nearest.h"
 #include "math/SH.h"
 #include "math/vector.h"
 #include "math/matrix.h"
@@ -40,6 +41,7 @@
 #include "dwi/tractography/file.h"
 #include "dwi/tractography/mapping/mapper.h"
 #include "dwi/tractography/mapping/loader.h"
+#include "dwi/tractography/mapping/writer.h"
 
 MRTRIX_APPLICATION
 
@@ -202,8 +204,8 @@ class TractProcessor {
                     vector<uint16_t>& lobe_TDI,
                     vector<map<int32_t, Stats::TFCE::connectivity> >& lobe_connectivity,
                     float angular_threshold):
-                    FOD_lobe_indexer (FOD_lobe_indexer) ,
-                    FOD_lobe_directions (FOD_lobe_directions),
+                    lobe_indexer (FOD_lobe_indexer) ,
+                    lobe_directions (FOD_lobe_directions),
                     lobe_TDI (lobe_TDI),
                     lobe_connectivity (lobe_connectivity) {
       angular_threshold_dp = cos (angular_threshold * (M_PI/180.0));
@@ -214,19 +216,19 @@ class TractProcessor {
       // For each voxel tract tangent, assign to a lobe
       vector<int32_t> tract_lobe_indices;
       for (SetVoxelDir::const_iterator i = in.begin(); i != in.end(); ++i) {
-        Image::Nav::set_pos (FOD_lobe_indexer, *i);
-        FOD_lobe_indexer[3] = 0;
-        int32_t first_index = FOD_lobe_indexer.value();
+        Image::Nav::set_pos (lobe_indexer, *i);
+        lobe_indexer[3] = 0;
+        int32_t first_index = lobe_indexer.value();
 
         if (first_index >= 0) {
-          FOD_lobe_indexer[3] = 1;
-          int32_t last_index = first_index + FOD_lobe_indexer.value();
+          lobe_indexer[3] = 1;
+          int32_t last_index = first_index + lobe_indexer.value();
           int32_t closest_lobe_index = -1;
           float largest_dp = 0.0;
           Point<float> dir (i->get_dir());
           dir.normalise();
           for (int32_t j = first_index; j < last_index; j++) {
-            float dp = Math::abs (dir.dot (FOD_lobe_directions[j]));
+            float dp = Math::abs (dir.dot (lobe_directions[j]));
             if (dp > largest_dp) {
               largest_dp = dp;
               closest_lobe_index = j;
@@ -251,11 +253,80 @@ class TractProcessor {
 
 
   private:
-    Image::BufferScratch<int32_t>::voxel_type FOD_lobe_indexer;
-    vector<Point<float> >& FOD_lobe_directions;
+    Image::BufferScratch<int32_t>::voxel_type lobe_indexer;
+    vector<Point<float> >& lobe_directions;
     vector<uint16_t>& lobe_TDI;
     vector<map<int32_t, Stats::TFCE::connectivity> >& lobe_connectivity;
     float angular_threshold_dp;
+};
+
+
+class TrackStatItem {
+  public:
+    vector<Point<float> > tck;
+    vector<float> values;
+};
+
+
+class Track2StatMapper {
+
+  public:
+    Track2StatMapper (Image::BufferScratch<int32_t>& lobe_indexer,
+                      const vector<Point<float> >& lobe_directions,
+                      float angular_threshold,
+                      const vector<float>& statistic,
+                      Image::Interp::Nearest<Image::BufferScratch<int32_t>::voxel_type> interp ) :
+                        lobe_indexer_vox (lobe_indexer),
+                        lobe_directions (lobe_directions),
+                        statistic (statistic),
+                        interp (lobe_indexer_vox) {
+      angular_threshold_dp = cos (angular_threshold * (M_PI/180.0));
+    }
+
+  bool operator () (const vector<Point<float> >& tck, TrackStatItem& ouput)
+  {
+    ouput.values.resize (tck.size());
+    ouput.tck.resize (tck.size());
+    Point<float> tangent;
+    ouput.tck[0] = tck[0];
+    for (size_t p = 1; p < tck.size(); ++p) {
+      interp.scanner (tck[p]);
+      ouput.tck[0] = tck[0];
+      lobe_indexer_vox[3] = 0;
+      int32_t first_index = lobe_indexer_vox.value();
+
+      // TODO smooth stats to remove NN effect
+      if (first_index >= 0) {
+        lobe_indexer_vox[3] = 1;
+        int32_t last_index = first_index + lobe_indexer_vox.value();
+        int32_t closest_lobe_index = -1;
+        float largest_dp = 0.0;
+        tangent = tck[p] - tck[p-1];
+        tangent.normalise();
+        for (int32_t j = first_index; j < last_index; j++) {
+          float dp = Math::abs (tangent.dot (lobe_directions[j]));
+          if (dp > largest_dp) {
+            largest_dp = dp;
+            closest_lobe_index = j;
+          }
+        }
+        if (largest_dp > angular_threshold_dp)
+          ouput.values[p] = statistic[closest_lobe_index];
+        else
+          ouput.values[p] = 0.0;
+      }
+    }
+    ouput.values[0] = ouput.values[1];
+    return true;
+  }
+
+
+  private:
+    Image::BufferScratch<int32_t>::voxel_type lobe_indexer_vox;
+    const vector<Point<float> >& lobe_directions;
+    float angular_threshold_dp;
+    const vector<float>& statistic;
+    Image::Interp::Nearest<Image::BufferScratch<int32_t>::voxel_type> interp;
 };
 
 
@@ -283,8 +354,7 @@ void usage ()
   + Argument ("tracks", "the tracks used to define orientations of "
                         "interest and spatial neighbourhoods.").type_file()
 
-  + Argument ("output", "the root directory and filename prefix "
-              "for all output.").type_text();
+  + Argument ("output", "the filename prefix for all output.").type_text();
 
 
   OPTIONS
@@ -307,13 +377,17 @@ void usage ()
   + Argument ("threshold").type_float (0.001, 0.01, 1.0)
 
   + Option ("smooth", "smooth the AFD integral along the fibre tracts using a Gaussian kernel with the supplied FWHM (default: 5mm)")
-  + Argument ("FWHM").type_float (0.0, 5.0, 200.0);
+  + Argument ("FWHM").type_float (0.0, 5.0, 200.0)
+
+  + Option ("num_vis_tracks", "the number of tracks to use when generating output for visualisation. "
+                              "These tracts are obtained by truncating the input tracks (default: 100000")
+  + Argument ("num").type_integer (1, 100000, INT_MAX);
 
 }
 
 
 #define GROUP_AVERAGE_FOD_THRESHOLD 0.15
-#define SUBJECT_FOD_THRESHOLD 0.15
+#define SUBJECT_FOD_THRESHOLD 0.05
 
 typedef Stats::TFCE::value_type value_type;
 
@@ -354,6 +428,11 @@ void run() {
   if (opt.size())
     std_dev = value_type(opt[0][0]) / 2.3548;
 
+  opt = get_options ("num_vis_tracks");
+  size_t num_vis_tracks = 100000;
+  if (opt.size())
+    num_vis_tracks = opt[0][0];
+
   // Read filenames
    std::vector<std::string> subjects;
    {
@@ -380,12 +459,12 @@ void run() {
    contrast.resize (contrast.rows(), design.columns());
 
   // Compute FOD lobes on average FOD image
-  vector<Point<value_type> > FOD_lobe_directions;
+  vector<Point<value_type> > lobe_directions;
   Math::Hemisphere::Directions dirs (1281);
   Image::Header index_header (argument[3]);
   index_header.dim(3) = 2;
-  Image::BufferScratch<int32_t> FOD_lobe_indexer (index_header);
-  Image::BufferScratch<int32_t>::voxel_type lobe_indexer_vox (FOD_lobe_indexer);
+  Image::BufferScratch<int32_t> lobe_indexer (index_header);
+  Image::BufferScratch<int32_t>::voxel_type lobe_indexer_vox (lobe_indexer);
   vector<Point<value_type> > lobe_positions;
   Image::LoopInOrder loop4D (lobe_indexer_vox);
   for (loop4D.start (lobe_indexer_vox); loop4D.ok(); loop4D.next (lobe_indexer_vox))
@@ -398,12 +477,12 @@ void run() {
     SHQueueWriter<Image::Buffer<value_type>, Image::Buffer<bool> > writer (av_fod_buffer, brain_mask_buffer);
     DWI::FOD_FMLS fmls (dirs, Math::SH::LforN (av_fod_buffer.dim(3)));
     fmls.set_peak_value_threshold (GROUP_AVERAGE_FOD_THRESHOLD);
-    GroupAvLobeProcessor lobe_processor (FOD_lobe_indexer, FOD_lobe_directions, lobe_positions);
+    GroupAvLobeProcessor lobe_processor (lobe_indexer, lobe_directions, lobe_positions);
     Thread::run_queue (writer, 1, DWI::SH_coefs(), fmls, 0, DWI::FOD_lobes(), lobe_processor, 1);
   }
 
   // Compute 3D analysis mask based on lobes in average FOD image
-  uint32_t num_lobes = FOD_lobe_directions.size();
+  uint32_t num_lobes = lobe_directions.size();
   CONSOLE ("Number of lobes: " + str(num_lobes));
   Image::Header header (argument[3]);
   Image::BufferScratch<bool> lobe_mask (header);
@@ -419,23 +498,30 @@ void run() {
     }
   }
 
-  // Read in tracts, and computer whole-brain lobe-lobe connectivity
-  DWI::Tractography::Reader<value_type> file;
-  DWI::Tractography::Properties properties;
-  file.open (argument[5], properties);
-
-  const int num_tracks = properties["count"].empty() ? 0 : to<int> (properties["count"]);
-  if (!num_tracks)
-    throw Exception ("Error with track count in input file");
-
-  typedef DWI::Tractography::Mapping::SetVoxelDir SetVoxelDir;
-  Math::Matrix<value_type> dummy_matrix;
-  DWI::Tractography::Mapping::TrackLoader loader (file, num_tracks);
-  DWI::Tractography::Mapping::TrackMapperBase<SetVoxelDir> mapper (header, dummy_matrix);
-  vector<uint16_t> lobe_TDI (num_lobes, 0.0);
   vector<map<int32_t, Stats::TFCE::connectivity> > lobe_connectivity (num_lobes);
-  TractProcessor tract_processor (FOD_lobe_indexer, FOD_lobe_directions, lobe_TDI, lobe_connectivity, 30);
-  Thread::run_queue (loader, 1, DWI::Tractography::Mapping::TrackAndIndex(), mapper, 1, SetVoxelDir(), tract_processor, 1);
+  vector<uint16_t> lobe_TDI (num_lobes, 0.0);
+  {
+    // Read in tracts, and computer whole-brain lobe-lobe connectivity
+    DWI::Tractography::Reader<value_type> file;
+    DWI::Tractography::Properties properties;
+    file.open (argument[5], properties);
+
+    const size_t num_tracks = properties["count"].empty() ? 0 : to<int> (properties["count"]);
+    if (!num_tracks)
+      throw Exception ("error with track count in input file");
+    if (num_vis_tracks > num_tracks) {
+      WARN("the number of visualisation tracts is larger than the total available. Setting num_vis_tracks to " + str(num_tracks));
+      num_vis_tracks = num_tracks;
+    }
+
+    typedef DWI::Tractography::Mapping::SetVoxelDir SetVoxelDir;
+    Math::Matrix<value_type> dummy_matrix;
+    DWI::Tractography::Mapping::TrackLoader loader (file, num_tracks);
+    DWI::Tractography::Mapping::TrackMapperBase<SetVoxelDir> mapper (header, dummy_matrix);
+    TractProcessor tract_processor (lobe_indexer, lobe_directions, lobe_TDI, lobe_connectivity, 30);
+    Thread::run_queue (loader, 1, DWI::Tractography::Mapping::TrackAndIndex(), mapper, 1, SetVoxelDir(), tract_processor, 1);
+    file.close();
+  }
 
   // Normalise connectivity matrix and threshold, pre-compute lobe-lobe weights for smoothing.
   vector<map<int32_t, value_type> > lobe_smoothing_weights (num_lobes);
@@ -490,7 +576,7 @@ void run() {
     DWI::FOD_FMLS fmls (dirs, Math::SH::LforN (fod_buffer.dim(3)));
     fmls.set_peak_value_threshold (SUBJECT_FOD_THRESHOLD);
     vector<value_type> temp_lobe_integrals (num_lobes, 0.0);
-    SubjectLobeProcessor lobe_processor (FOD_lobe_indexer, FOD_lobe_directions, temp_lobe_integrals, angular_threshold);
+    SubjectLobeProcessor lobe_processor (lobe_indexer, lobe_directions, temp_lobe_integrals, angular_threshold);
     Thread::run_queue (writer, 1, DWI::SH_coefs(), fmls, 0, DWI::FOD_lobes(), lobe_processor, 1);
 
     // Smooth the data based on connectivity
@@ -518,8 +604,64 @@ void run() {
         tfce_output_pos, tfce_output_neg, tvalue_output);
   }
 
+  {
+    // Generate output
+    DWI::Tractography::Reader<value_type> file;
+    DWI::Tractography::Properties properties;
+    file.open (argument[5], properties);
+    std::string prefix = argument[6];
+    DWI::Tractography::Writer<float> writer;
+    writer.create (prefix,  properties);
+    std::vector<Point<float> > tck;
+    Point<float> tangent;
+    ProgressBar progress ("generating output tracks and associated statistics...", num_vis_tracks);
+
+    while (file.next (tck) && writer.total_count < num_vis_tracks) {
+      writer.append (tck);
+      writer.total_count++;
+
+//      std::vector<float> values (1, 0.0);
+//      for (size_t p = 1; p < tck.size(); ++p) {
+//        interp.scanner (tck[p]);
+//        lobe_indexer_vox[3] = 0;
+//        int32_t first_index = lobe_indexer_vox.value();
+//
+//        if (first_index >= 0) {
+//          lobe_indexer_vox[3] = 1;
+//          int32_t last_index = first_index + lobe_indexer_vox.value();
+//          int32_t closest_lobe_index = -1;
+//          float largest_dp = 0.0;
+//          tangent = tck[p] - tck[p-1];
+//          tangent.normalise();
+//          for (int32_t j = first_index; j < last_index; j++) {
+//            float dp = Math::abs (tangent.dot (lobe_directions[j]));
+//            if (dp > largest_dp) {
+//              largest_dp = dp;
+//              closest_lobe_index = j;
+//            }
+//          }
+//          if (largest_dp > angular_threshold)
+//            values.push_back (tvalue_output[closest_lobe_index]);
+//          else
+//            values.push_back (0.0);
+//        }
+//      }
+      progress++;
+    }
+    file.close();
+    writer.close();
+  }
 
 }
+
+
+inline Voxel round (const Point<float>& p)
+{
+  assert (finite (p[0]) && finite (p[1]) && finite (p[2]));
+  return (Voxel (Math::round<int> (p[0]), Math::round<int> (p[1]), Math::round<int> (p[2])));
+}
+
+
 
   // Output data
 //  header.datatype() = DataType::Float32;
