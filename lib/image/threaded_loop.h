@@ -480,7 +480,7 @@ namespace MR
           void execute () {
             LoopInOrder loop (shared.inner_axes());
             Iterator pos (shared.iterator());
-            typename VoxelType1::value_type val1 = NAN;
+            typename VoxelType1::value_type val1 = 0;
             while (shared.next (pos)) {
               voxel_assign (vox1, pos);
               for (loop.start (vox1); loop.ok(); loop.next (vox1)) {
@@ -514,8 +514,8 @@ namespace MR
           void execute () {
             LoopInOrder loop (shared.inner_axes());
             Iterator pos (shared.iterator());
-            typename VoxelType1::value_type val1 = NAN;
-            typename VoxelType2::value_type val2 = NAN;
+            typename VoxelType1::value_type val1 = 0;
+            typename VoxelType2::value_type val2 = 0;
             while (shared.next (pos)) {
               voxel_assign (vox1, pos);
               voxel_assign (vox2, pos);
@@ -553,9 +553,9 @@ namespace MR
           void execute () {
             LoopInOrder loop (shared.inner_axes());
             Iterator pos (shared.iterator());
-            typename VoxelType1::value_type val1 = NAN;
-            typename VoxelType2::value_type val2 = NAN;
-            typename VoxelType3::value_type val3 = NAN;
+            typename VoxelType1::value_type val1 = 0;
+            typename VoxelType2::value_type val2 = 0;
+            typename VoxelType3::value_type val3 = 0;
             while (shared.next (pos)) {
               voxel_assign (vox1, pos);
               voxel_assign (vox2, pos);

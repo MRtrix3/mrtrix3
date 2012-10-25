@@ -125,7 +125,7 @@ namespace MR
               for (loop.start (b0_mean_voxel, b0_mean_mask_voxel, dwi_mean_mask_voxel); 
                   loop.ok(); 
                   loop.next (b0_mean_voxel, b0_mean_mask_voxel, dwi_mean_mask_voxel)) {
-                if (b0_mean_mask_voxel.value() > 0)
+                if (b0_mean_mask_voxel.value() > 0.0)
                   dwi_mean_mask_voxel.value() = 1.0;
               }
               Median3D median_filter (dwi_mean_mask_voxel);
@@ -135,7 +135,7 @@ namespace MR
               median_filter (dwi_mean_mask_voxel, temp_voxel);
 
               ConnectedComponents connected_filter (temp_voxel);
-              connected_filter.set_largest_only(true);
+              connected_filter.set_largest_only (true);
               connected_filter (temp_voxel, temp_voxel);
 
               Loop loop_mask(0,3);

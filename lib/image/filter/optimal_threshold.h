@@ -36,92 +36,170 @@ namespace MR
     namespace Filter
     {
 
+      //! \cond skip
+      namespace {
+
+        template <typename ValueType>
+          class MeanStdFunctor {
+            public:
+              MeanStdFunctor (double& overall_sum, double& overall_sum_sqr) : 
+                overall_sum (overall_sum), overall_sum_sqr (overall_sum_sqr),
+                sum (0.0), sum_sqr (0.0) { }
+
+              ~MeanStdFunctor () {
+                overall_sum += sum;
+                overall_sum_sqr += sum_sqr;
+              }
+
+              void operator() (ValueType in) {
+                sum += in;
+                sum_sqr += Math::pow2 (in);
+              }
+
+              double& overall_sum;
+              double& overall_sum_sqr;
+              double sum, sum_sqr;
+          };
+
+        template <typename ValueType, typename MaskValueType>
+          class MeanStdFunctorMask {
+            public:
+              MeanStdFunctorMask (double& overall_sum, double& overall_sum_sqr, size_t& overall_count) : 
+                overall_sum (overall_sum), overall_sum_sqr (overall_sum_sqr), overall_count (overall_count),
+                sum (0.0), sum_sqr (0.0), count (0) { }
+
+              ~MeanStdFunctorMask () {
+                overall_sum += sum;
+                overall_sum_sqr += sum_sqr;
+                overall_count += count;
+              }
+
+              void operator() (ValueType in, MaskValueType mask) {
+                if (mask) {
+                  sum += in;
+                  sum_sqr += Math::pow2 (in);
+                }
+              }
+
+              double& overall_sum;
+              double& overall_sum_sqr;
+              size_t& overall_count;
+              double sum, sum_sqr;
+              size_t count;
+          };
+
+        template <typename ValueType>
+          class CorrelationFunctor {
+            public:
+              CorrelationFunctor (ValueType threshold, double& overall_sum, double& overall_mean_xy) : 
+                threshold (threshold), overall_sum (overall_sum), overall_mean_xy (overall_mean_xy),
+                sum (0), mean_xy (0.0) { }
+
+              ~CorrelationFunctor () {
+                overall_sum += sum;
+                overall_mean_xy += mean_xy;
+              }
+
+              void operator() (ValueType in) {
+                if (in > threshold) {
+                  sum += 1;
+                  mean_xy += in;
+                }
+              }
+
+              const ValueType threshold;
+              double& overall_sum;
+              double& overall_mean_xy;
+              double sum;
+              double mean_xy;
+          };
+
+
+        template <typename ValueType, typename MaskValueType>
+          class CorrelationFunctorMask {
+            public:
+              CorrelationFunctorMask (ValueType threshold, double& overall_sum, double& overall_mean_xy) : 
+                threshold (threshold), overall_sum (overall_sum), overall_mean_xy (overall_mean_xy),
+                sum (0), mean_xy (0.0) { }
+
+              ~CorrelationFunctorMask () {
+                overall_sum += sum;
+                overall_mean_xy += mean_xy;
+              }
+
+              void operator() (ValueType in, MaskValueType mask) {
+                if (mask && in > threshold) {
+                  sum += 1;
+                  mean_xy += in;
+                }
+              }
+
+              const ValueType threshold;
+              double& overall_sum;
+              double& overall_mean_xy;
+              double sum;
+              double mean_xy;
+          };
+
+
+      }
+      //! \endcond
+
 
       template <class InputVoxelType, class MaskVoxelType>
-      class ImageCorrelationCostFunction {
+        class ImageCorrelationCostFunction {
 
-        public:
+          public:
+            typedef typename InputVoxelType::value_type value_type;
+            typedef typename MaskVoxelType::value_type mask_value_type;
 
-          ImageCorrelationCostFunction (InputVoxelType& DataSet, Ptr<MaskVoxelType>& mask) :
-            input_image_ (DataSet) {
-            double sum_sqr = 0, sum = 0;
-            Image::LoopInOrder loop (input_image_);
-            if (mask) {
-              mask_ptr = mask;
-              voxel_count_ = 0;
-              for (loop.start (input_image_); loop.ok(); loop.next (input_image_)) {
-                Image::voxel_assign(*mask_ptr, input_image_, 0, 3);
-                if (mask_ptr->value()) {
-                  voxel_count_++;
-                  sum_sqr += (input_image_.value() * input_image_.value());
-                  sum += input_image_.value();
-                }
-              }
-            } else {
-              voxel_count_ = 1;
-              for (size_t d = 0; d < input_image_.ndim(); d++)
-                voxel_count_ *= input_image_.dim(d);
-              Image::LoopInOrder loop (input_image_);
-              for (loop.start (input_image_); loop.ok(); loop.next (input_image_)) {
-                sum_sqr += (input_image_.value() * input_image_.value());
-                sum += input_image_.value();
-              }
-              }
-            input_image_mean_ = sum / voxel_count_;
-            input_image_stdev_ = sqrt((sum_sqr - sum * input_image_mean_) / voxel_count_);
-          }
+            ImageCorrelationCostFunction (InputVoxelType& input, MaskVoxelType* mask = NULL) :
+              input (input),
+              mask (mask) {
+                double sum_sqr = 0.0, sum = 0.0;
+                count = 0;
 
-          double operator() (double threshold) const{
-            double sum = 0;
-            double mean_xy = 0;
-            Image::LoopInOrder loop (input_image_);
-            if (mask_ptr) {
-              for (loop.start (*mask_ptr); loop.ok(); loop.next (*mask_ptr)) {
-                if (mask_ptr->value() > 0 ) {
-                  Image::voxel_assign(input_image_, *mask_ptr, 0, 3);
-                  if (input_image_.value() > threshold) {
-                    sum += 1;
-                    mean_xy += (input_image_.value() * 1.0);
-                  }
+                Image::ThreadedLoop loop (input);
+                if (mask) 
+                  loop.foreach (MeanStdFunctorMask<value_type, mask_value_type> (sum, sum_sqr, count), 
+                      input, Input,
+                      *mask, Input);
+                else {
+                  loop.foreach (MeanStdFunctor<value_type> (sum, sum_sqr), 
+                      input, Input);
+                  count = Image::voxel_count (input);
                 }
+
+                input_image_mean = sum / count;
+                input_image_stdev = sqrt ((sum_sqr - sum * input_image_mean) / count);
               }
-            } else {
-              for (loop.start (input_image_); loop.ok(); loop.next (input_image_)) {
-                if (input_image_.value() > threshold) {
-                  sum += 1;
-                  mean_xy += (input_image_.value() * 1.0);
-                }
-              }
+
+            value_type operator() (value_type threshold) const {
+              double sum = 0;
+              double mean_xy = 0.0;
+
+              Image::ThreadedLoop loop (input);
+              if (mask) 
+                  loop.foreach (CorrelationFunctorMask<value_type, mask_value_type> (threshold, sum, mean_xy), 
+                      input, Input,
+                      *mask, Input);
+              else
+                loop.foreach (CorrelationFunctor<value_type> (threshold, sum, mean_xy), 
+                    input, Input);
+
+              mean_xy /= count;
+              double covariance = mean_xy - (sum / count) * input_image_mean;
+              double mask_stdev = sqrt ((sum - double (sum * sum) / count) / count);
+              return -covariance / (input_image_stdev * mask_stdev);
             }
-            mean_xy /= voxel_count_;
-            double covariance = mean_xy - (sum / voxel_count_) * input_image_mean_;
-            double mask_stdev = sqrt((sum - sum * sum / voxel_count_) / voxel_count_);
-            return -covariance / (input_image_stdev_ * mask_stdev);
-          }
 
-        private:
-          // Here we pre-compute the input image mean and stdev
-          void init() {
-            voxel_count_ = 1;
-            for (size_t d = 0; d < input_image_.ndim(); d++)
-              voxel_count_ *= input_image_.dim(d);
-
-            double sum_sqr = 0, sum = 0;
-            Image::LoopInOrder loop (input_image_);
-            for (loop.start (input_image_); loop.ok(); loop.next (input_image_)) {
-              sum_sqr += (input_image_.value() * input_image_.value());
-              sum += input_image_.value();
-            }
-            input_image_mean_ = sum / voxel_count_;
-            input_image_stdev_ = sqrt((sum_sqr - sum * input_image_mean_) / voxel_count_);
-          }
-
-          InputVoxelType& input_image_;
-          Ptr<MaskVoxelType> mask_ptr;
-          size_t voxel_count_;
-          double input_image_mean_;
-          double input_image_stdev_;
-      };
+          private:
+            InputVoxelType& input;
+            MaskVoxelType* mask;
+            size_t count;
+            double input_image_mean;
+            double input_image_stdev;
+        };
 
       /** \addtogroup Filters
         @{ */
@@ -148,37 +226,39 @@ namespace MR
        */
       class OptimalThreshold : public ConstInfo
       {
-
         public:
-          template <class InputVoxelType>
-            OptimalThreshold (const InputVoxelType & DataSet) :
-              ConstInfo (DataSet) { }
+          template <class InfoType>
+            OptimalThreshold (const InfoType& info) :
+              ConstInfo (info) { }
 
 
           template <class InputVoxelType, class OutputVoxelType>
             void operator() (InputVoxelType& input, OutputVoxelType& output) {
               typedef Image::BufferScratch<bool>::voxel_type BogusMaskType;
-              Ptr<BogusMaskType > bogusMask;
-              operator() <InputVoxelType, OutputVoxelType, BogusMaskType > (input, output, bogusMask);
-          }
+              operator() <InputVoxelType, OutputVoxelType, BogusMaskType> (input, output);
+            }
 
           template <class InputVoxelType, class OutputVoxelType, class MaskVoxelType>
-            void operator() (InputVoxelType& input, OutputVoxelType& output, Ptr<MaskVoxelType>& mask_ptr) {
+            void operator() (InputVoxelType& input, OutputVoxelType& output, MaskVoxelType* mask = NULL) 
+            {
+              typedef typename InputVoxelType::value_type input_value_type;
+
               axes_.resize (4);
 
-              double min, max;
-              Image::min_max(input, min, max);
+              input_value_type min, max;
+              Image::min_max (input, min, max);
 
-              double optimal_threshold = 0;
+              input_value_type optimal_threshold = 0.0;
               {
-                ImageCorrelationCostFunction<InputVoxelType, MaskVoxelType > cost_function(input, mask_ptr);
-                optimal_threshold = Math::golden_section_search(cost_function, "optimising threshold...", min + 0.001*(max-min), (min+max)/2.0 , max-0.001*(max-min));
+                ImageCorrelationCostFunction<InputVoxelType, MaskVoxelType> cost_function (input, mask);
+                optimal_threshold = Math::golden_section_search (cost_function, "optimising threshold...", 
+                    min + 0.01*(max-min), (min+max)/2.0 , max-0.01*(max-min));
               }
 
               Image::LoopInOrder threshold_loop (input, "thresholding...");
               for (threshold_loop.start (input, output); threshold_loop.ok(); threshold_loop.next (input, output)) {
-                if (finite (input.value()) && input.value() > optimal_threshold)
-                  output.value() = 1;
+                input_value_type val = input.value();
+                output.value() = ( finite (val) && val > optimal_threshold ) ? 1 : 0;
               }
             }
       };

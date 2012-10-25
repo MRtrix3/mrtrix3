@@ -244,8 +244,8 @@ void run ()
       threshold_value = hist.first_min();
     }
     else if (isnan (threshold_value)) {
-      double min, max;
-      Image::min_max(in, min, max);
+      float min, max;
+      Image::min_max (in, min, max);
       Ptr<Image::Buffer<bool> > mask_data;
       Ptr<Image::Buffer<bool>::voxel_type > mask_voxel;
       opt = get_options ("mask");
@@ -253,11 +253,14 @@ void run ()
         mask_data = new Image::Buffer<bool> (opt[0][0]);
         mask_voxel = new Image::Buffer<bool>::voxel_type (*mask_data);
       }
-      Image::Filter::ImageCorrelationCostFunction<Image::Buffer<float>::voxel_type, Image::Buffer<bool>::voxel_type > cost_function(in, mask_voxel);
-      threshold_value = Math::golden_section_search(cost_function, "optimising threshold...", min + 0.001*(max-min), (min+max)/2.0 , max-0.001*(max-min));
+      Image::Filter::ImageCorrelationCostFunction<
+        Image::Buffer<float>::voxel_type, 
+        Image::Buffer<bool>::voxel_type >
+          cost_function(in, mask_voxel);
+      threshold_value = Math::golden_section_search (cost_function, "optimising threshold...", 
+          min + 0.001*(max-min), (min+max)/2.0 , max-0.001*(max-min));
     }
-    VAR (one);
-    VAR (zero);
+
     Image::Loop loop ("thresholding \"" + shorten (in.name()) + "\" at intensity " + str (threshold_value) + "...");
     for (loop.start (out, in); loop.ok(); loop.next (out, in)) {
       float val = in.value();

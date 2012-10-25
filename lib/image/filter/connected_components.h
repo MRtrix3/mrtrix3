@@ -369,12 +369,11 @@ namespace MR
           std::vector<uint32_t> labels;
 
           Connector connector (do_26_connectivity_);
-          for (size_t dim = 0; dim < in.ndim(); ++dim) {
-            connector.set_ignore_dim (ignore_dim_[dim], dim);
-          }
           if (directions_.is_set())
             connector.set_directions (directions_, angular_threshold_);
           connector.precompute_adjacency(in);
+          for (size_t dim = 0; dim < in.ndim(); ++dim) 
+            connector.set_ignore_dim (ignore_dim_[dim], dim);
           std::vector<std::vector<int> > mask_indices = connector.run (clusters, labels);
           std::sort (clusters.begin(), clusters.end(), compare_clusters);
 
