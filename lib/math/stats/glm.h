@@ -121,7 +121,7 @@ namespace MR
           }
 
           // Compute the test statistic
-          void operator() (const std::vector<size_t>& perm_labelling, std::vector<value_type>& stats, value_type& max_stat, value_type& min_stat)
+          void operator() (const std::vector<size_t>& perm_labelling, std::vector<value_type>& stats, value_type& max_stat, value_type& min_stat) const
           {
             stats.resize (data.rows(), 0.0);
             Math::Matrix<value_type> Mp, SR0 (R0.rows(), R0.columns());
@@ -141,8 +141,9 @@ namespace MR
 
 
         protected:
-          value_type compute_tstatistic (const Math::Vector<value_type>& values, const Math::Matrix<value_type>& Mp)
+          value_type compute_tstatistic (const Math::Vector<value_type>& values, const Math::Matrix<value_type>& Mp) const
           {
+            Math::Vector<value_type> e;
             Math::mult (e, Mp, values);
             return kappa * e[0] / Math::norm (e.sub(1,e.size()));
           }
@@ -150,7 +151,7 @@ namespace MR
           const Math::Matrix<value_type>& data;
           value_type kappa;
           Math::Matrix<value_type> M, R0;
-          Math::Vector<value_type> e;
+
       };
 
     }
