@@ -512,13 +512,10 @@ void run() {
 
   {
     Math::Stats::GLMTTest glm (subject_FOD_lobe_integrals, design, contrast);
-    Stats::TFCE::QueueLoader loader (num_perms, subjects.size());
-    Stats::TFCE::TFCEConnectivity tfce_integrator (lobe_connectivity, dh, E, H);
-    Stats::TFCE::ThreadKernel<Math::Stats::GLMTTest,
-                              Stats::TFCE::TFCEConnectivity> processor (glm, tfce_integrator,
-                                                                        perm_distribution_pos, perm_distribution_neg,
-                                                                        tfce_output_pos, tfce_output_neg, tvalue_output);
-    Thread::run_queue (loader, 1, Stats::TFCE::PermutationItem(), processor, 0);
+    Stats::TFCE::Connectivity tfce_integrator (lobe_connectivity, dh, E, H);
+    Stats::TFCE::run (glm, tfce_integrator, num_perms,
+        perm_distribution_pos, perm_distribution_neg,
+        tfce_output_pos, tfce_output_neg, tvalue_output);
   }
 
 

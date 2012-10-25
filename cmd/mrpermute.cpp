@@ -20,6 +20,7 @@
  */
 
 #include "app.h"
+#include "file/path.h"
 #include "image/loop.h"
 #include "image/voxel.h"
 #include "image/buffer.h"
@@ -118,11 +119,11 @@ void run() {
   // Read filenames
   std::vector<std::string> subjects;
   {
-    std::string filename = argument[0];
-    std::ifstream ifs (filename.c_str());
+    std::string folder = Path::dirname (argument[0]);
+    std::ifstream ifs (argument[0].c_str());
     std::string temp;
     while (getline (ifs, temp))
-      subjects.push_back (temp);
+      subjects.push_back (Path::join (folder, temp));
   }
 
   // Load design matrix:
@@ -242,36 +243,37 @@ void run() {
     }
   }
 
+  header.datatype() = DataType::Float32;
+  std::string prefix (argument[4]);
+
+  Image::Buffer<value_type> tfce_data_pos (prefix + "_tfce_pos.mif", header);
+  Image::Buffer<value_type> tfce_data_neg (prefix + "_tfce_neg.mif", header);
+  Image::Buffer<value_type> tvalue_data (prefix + "_tvalue.mif", header);
+  Image::Buffer<value_type> pvalue_data_pos (prefix + "_pvalue_pos.mif", header);
+  Image::Buffer<value_type> pvalue_data_neg (prefix + "_pvalue_neg.mif", header);
+
   Math::Vector<value_type> perm_distribution_pos (num_perms - 1);
   Math::Vector<value_type> perm_distribution_neg (num_perms - 1);
   std::vector<value_type> tfce_output_pos (num_vox, 0.0);
   std::vector<value_type> tfce_output_neg (num_vox, 0.0);
   std::vector<value_type> tvalue_output (num_vox, 0.0);
 
-  {
+  { // Do permutation testing:
     Math::Stats::GLMTTest glm (data, design, contrast);
-    Stats::TFCE::QueueLoader loader (num_perms, subjects.size());
-    Stats::TFCE::TFCESpatial tfce_integrator (connector, dh, E, H);
-    Stats::TFCE::ThreadKernel<Math::Stats::GLMTTest,
-                              Stats::TFCE::TFCESpatial> processor (glm, tfce_integrator,
-                                                                   perm_distribution_pos, perm_distribution_neg,
-                                                                   tfce_output_pos, tfce_output_neg, tvalue_output);
-    Thread::run_queue (loader, 1, Stats::TFCE::PermutationItem(), processor, 0);
+    Stats::TFCE::Spatial tfce_integrator (connector, dh, E, H);
+    Stats::TFCE::run (glm, tfce_integrator, num_perms, 
+        perm_distribution_pos, perm_distribution_neg,
+        tfce_output_pos, tfce_output_neg, tvalue_output);
   }
 
+  perm_distribution_pos.save (prefix + "_permutation_pos.txt");
+  perm_distribution_neg.save (prefix + "_permutation_neg.txt");
 
-  header.datatype() = DataType::Float32;
-  std::string prefix (argument[4]);
-
-  std::string tfce_filename_pos = prefix + "_tfce_pos.mif";
-  Image::Buffer<value_type> tfce_data_pos (tfce_filename_pos, header);
   Image::Buffer<value_type>::voxel_type tfce_voxel_pos (tfce_data_pos);
-  std::string tfce_filename_neg = prefix + "_tfce_neg.mif";
-  Image::Buffer<value_type> tfce_data_neg (tfce_filename_neg, header);
   Image::Buffer<value_type>::voxel_type tfce_voxel_neg (tfce_data_neg);
-  std::string tvalue_filename = prefix + "_tvalue.mif";
-  Image::Buffer<value_type> tvalue_data (tvalue_filename, header);
   Image::Buffer<value_type>::voxel_type tvalue_voxel (tvalue_data);
+  Image::Buffer<value_type>::voxel_type pvalue_voxel_pos (pvalue_data_pos);
+  Image::Buffer<value_type>::voxel_type pvalue_voxel_neg (pvalue_data_neg);
 
   {
     ProgressBar progress ("generating output...");
@@ -282,19 +284,8 @@ void run() {
       tfce_voxel_pos.value() = tfce_output_pos[i];
       tfce_voxel_neg.value() = tfce_output_neg[i];
     }
-    std::string perm_filename_pos = prefix + "_permutation_pos.txt";
-    std::string perm_filename_neg = prefix + "_permutation_neg.txt";
-    perm_distribution_pos.save (perm_filename_pos);
-    perm_distribution_neg.save (perm_filename_neg);
 
-    std::string pvalue_filename_pos = prefix + "_pvalue_pos.mif";
-    Image::Buffer<value_type> pvalue_data_pos (pvalue_filename_pos, header);
-    Image::Buffer<value_type>::voxel_type pvalue_voxel_pos (pvalue_data_pos);
     Math::Stats::statistic2pvalue (perm_distribution_pos, tfce_voxel_pos, pvalue_voxel_pos);
-
-    std::string pvalue_filename_neg = prefix + "_pvalue_neg.mif";
-    Image::Buffer<value_type> pvalue_data_neg (pvalue_filename_neg, header);
-    Image::Buffer<value_type>::voxel_type pvalue_voxel_neg (pvalue_data_neg);
     Math::Stats::statistic2pvalue (perm_distribution_neg, tfce_voxel_neg, pvalue_voxel_neg);
   }
 }
