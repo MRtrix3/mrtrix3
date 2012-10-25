@@ -67,11 +67,7 @@ void run ()
 
   size_t N = argument[1];
 
-  std::stringstream str (properties.begin()->second);
-  size_t track_count;
-  str >> track_count;
-
-  if (skip + N > track_count)
+  if (skip + N > properties["count"].empty() ? 0 : to<int> (properties["count"]))
     throw Exception ("the number of truncated tracks plus the number of skipped tracks is larger than the total");
 
   Tractography::Writer<float> writer;
