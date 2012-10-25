@@ -177,14 +177,18 @@ inline void copy_permute (InputVoxelType& in, Image::Header& header_out, const s
 
     if (replace_nans)
       Image::ThreadedLoop ("copying from \"" + shorten (perm.name()) + "\" to \"" + shorten (out.name()) + "\"...", perm, 2)
-        .foreach (1, 1, zero_non_finite, perm, out);
+        .foreach (zero_non_finite, 
+            perm, Input,
+            out, Output);
     else 
       Image::threaded_copy_with_progress (perm, out, 2);
   }
   else {
     if (replace_nans)
       Image::ThreadedLoop ("copying from \"" + shorten (in.name()) + "\" to \"" + shorten (out.name()) + "\"...", in, 2)
-        .foreach (1, 1, zero_non_finite, in, out);
+        .foreach (zero_non_finite, 
+            in, Input,
+            out, Output);
     else
       Image::threaded_copy_with_progress (in, out, 2);
   }
