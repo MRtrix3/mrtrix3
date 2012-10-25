@@ -313,7 +313,7 @@ namespace MR
             size1 = size2 = 0;
             return *this;
           }
-          if (nrows == size1 && ncolumns == ncolumns) {
+          if (nrows == size1 && ncolumns == size2) {
             return *this;
           }
           if (!block) {
