@@ -26,6 +26,8 @@
 #include "math/vector.h"
 #include "math/matrix.h"
 
+#define GLM_BATCH_SIZE 1024
+
 namespace MR
 {
   namespace Math
@@ -124,34 +126,31 @@ namespace MR
           void operator() (const std::vector<size_t>& perm_labelling, std::vector<value_type>& stats, value_type& max_stat, value_type& min_stat) const
           {
             stats.resize (data.rows(), 0.0);
-            Math::Matrix<value_type> Mp, SR0 (R0.rows(), R0.columns());
+            Math::Matrix<value_type> e, Mp, SR0 (R0.rows(), R0.columns());
             for (size_t i = 0; i < R0.columns(); ++i)
               SR0.row(i) = R0.row (perm_labelling[i]); // TODO: check whether we should permute rows or columns
 
             Math::mult (Mp, M, SR0);
 
-            for (size_t i = 0; i < data.rows(); ++i) {
-              stats[i] = compute_tstatistic (data.row(i), Mp);
-              if (stats[i] > max_stat)
-                max_stat = stats[i];
-              if (stats[i] < min_stat)
-                min_stat = stats[i];
+            for (size_t i = 0; i < data.rows(); i += GLM_BATCH_SIZE) {
+              Math::mult (e, value_type(1.0), CblasNoTrans, data.sub(i, std::min (i+GLM_BATCH_SIZE, data.rows()), 0, data.columns()), CblasTrans, Mp);
+              for (size_t n = 0; n < e.rows(); ++n) {
+                value_type val = kappa * e(n,0) / Math::norm (e.row(n).sub(1,e.columns()));
+                if (val > max_stat)
+                  max_stat = val;
+                if (val < min_stat)
+                  min_stat = val;
+                stats[i+n] = val;
+              }
             }
           }
 
+          size_t num_samples () const { return data.columns(); }
 
         protected:
-          value_type compute_tstatistic (const Math::Vector<value_type>& values, const Math::Matrix<value_type>& Mp) const
-          {
-            Math::Vector<value_type> e;
-            Math::mult (e, Mp, values);
-            return kappa * e[0] / Math::norm (e.sub(1,e.size()));
-          }
-
           const Math::Matrix<value_type>& data;
           value_type kappa;
           Math::Matrix<value_type> M, R0;
-
       };
 
     }

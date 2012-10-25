@@ -54,9 +54,9 @@ namespace MR
         permutations.clear();
         std::vector<size_t> default_labelling (num_subjects);
         for (size_t i = 0; i < num_subjects; ++i)
-          default_labelling.push_back(i);
+          default_labelling[i] = i; 
         permutations.push_back (default_labelling);
-        for (size_t p = 0; p  < num_perms; ++p) {
+        for (size_t p = 1; p < num_perms; ++p) {
           std::vector<size_t> permuted_labelling (default_labelling);
           do {
             std::random_shuffle (permuted_labelling.begin(), permuted_labelling.end());
