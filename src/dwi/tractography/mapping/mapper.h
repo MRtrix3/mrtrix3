@@ -196,7 +196,7 @@ void TrackMapperTWI<Cont>::load_factors (const std::vector< Point<float> >& tck)
   // Average principal normal vectors using a gaussian kernel, re-determine the curvature
 
   for (size_t i = 0; i != tck.size(); ++i) {
-  	Point<float> this_tangent;
+    Point<float> this_tangent;
     if (i == 0)
       this_tangent = ((tck[1]   - tck[0]  ).normalise());
     else if (i == tck.size() - 1)
@@ -204,9 +204,9 @@ void TrackMapperTWI<Cont>::load_factors (const std::vector< Point<float> >& tck)
     else
       this_tangent = ((tck[i+1] - tck[i-1]).normalise());
     if (this_tangent.valid())
-    	tangents.push_back (this_tangent);
+      tangents.push_back (this_tangent);
     else
-    	tangents.push_back (Point<float> (0.0, 0.0, 0.0));
+      tangents.push_back (Point<float> (0.0, 0.0, 0.0));
   }
 
   // For those tangents which are invalid, fill with valid factors from neighbours
@@ -295,7 +295,7 @@ void TrackMapperTWI<Cont>::gaussian_smooth_factors ()
     }
 
     float distance = 0.0;
-    for (size_t j = i; j--; ) { // Decrement AFTER null test, so loop runs with j = 0
+    for (size_t j = i; j--; ) { // Decrement AFTER null test, so loop_ runs with j = 0
       distance += step_size;
       if (finite (unsmoothed[j])) {
         const float this_weight = exp (-distance * distance / gaussian_denominator);
