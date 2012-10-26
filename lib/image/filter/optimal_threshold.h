@@ -27,6 +27,7 @@
 #include "image/min_max.h"
 #include "math/golden_section_search.h"
 #include "image/buffer_scratch.h"
+#include "image/adapter/replicate.h"
 #include "ptr.h"
 
 namespace MR
@@ -78,6 +79,7 @@ namespace MR
                 if (mask) {
                   sum += in;
                   sum_sqr += Math::pow2 (in);
+                  ++count;
                 }
               }
 
@@ -160,10 +162,13 @@ namespace MR
                 count = 0;
 
                 Image::ThreadedLoop loop (input);
-                if (mask) 
+                if (mask) {
+                  Adapter::Replicate<MaskVoxelType> replicated_mask (*mask, input);
                   loop.foreach (MeanStdFunctorMask<value_type, mask_value_type> (sum, sum_sqr, count), 
                       input, Input,
-                      *mask, Input);
+                      replicated_mask, Input);
+                  VAR (count);
+                }
                 else {
                   loop.foreach (MeanStdFunctor<value_type> (sum, sum_sqr), 
                       input, Input);
@@ -179,10 +184,12 @@ namespace MR
               double mean_xy = 0.0;
 
               Image::ThreadedLoop loop (input);
-              if (mask) 
+              if (mask) {
+                  Adapter::Replicate<MaskVoxelType> replicated_mask (*mask, input);
                   loop.foreach (CorrelationFunctorMask<value_type, mask_value_type> (threshold, sum, mean_xy), 
                       input, Input,
-                      *mask, Input);
+                      replicated_mask, Input);
+              }
               else
                 loop.foreach (CorrelationFunctor<value_type> (threshold, sum, mean_xy), 
                     input, Input);
@@ -200,6 +207,35 @@ namespace MR
             double input_image_mean;
             double input_image_stdev;
         };
+
+
+      template <class InputVoxelType, class MaskVoxelType> 
+        typename InputVoxelType::value_type estimate_optimal_threshold (InputVoxelType& input, MaskVoxelType* mask)
+        {
+          typedef typename InputVoxelType::value_type input_value_type;
+
+          input_value_type min, max;
+          Image::min_max (input, min, max);
+
+          input_value_type optimal_threshold = 0.0;
+          {
+            ImageCorrelationCostFunction<InputVoxelType, MaskVoxelType> cost_function (input, mask);
+            optimal_threshold = Math::golden_section_search (cost_function, "optimising threshold...", 
+                min + 0.001*(max-min), (min+max)/2.0 , max-0.001*(max-min));
+          }
+
+          return optimal_threshold;
+        }
+
+
+
+
+      template <class InputVoxelType> 
+        inline typename InputVoxelType::value_type estimate_optimal_threshold (InputVoxelType& input)
+        {
+          typedef Image::BufferScratch<bool>::voxel_type BogusMaskType;
+          return estimate_optimal_threshold (input, (BogusMaskType*) NULL);
+        }
 
       /** \addtogroup Filters
         @{ */
@@ -241,20 +277,10 @@ namespace MR
           template <class InputVoxelType, class OutputVoxelType, class MaskVoxelType>
             void operator() (InputVoxelType& input, OutputVoxelType& output, MaskVoxelType* mask = NULL) 
             {
-              typedef typename InputVoxelType::value_type input_value_type;
-
               axes_.resize (4);
-
-              input_value_type min, max;
-              Image::min_max (input, min, max);
-
-              input_value_type optimal_threshold = 0.0;
-              {
-                ImageCorrelationCostFunction<InputVoxelType, MaskVoxelType> cost_function (input, mask);
-                optimal_threshold = Math::golden_section_search (cost_function, "optimising threshold...", 
-                    min + 0.01*(max-min), (min+max)/2.0 , max-0.01*(max-min));
-              }
-
+              typedef typename InputVoxelType::value_type input_value_type;
+              input_value_type optimal_threshold = estimate_optimal_threshold (input, mask);
+              
               Image::LoopInOrder threshold_loop (input, "thresholding...");
               for (threshold_loop.start (input, output); threshold_loop.ok(); threshold_loop.next (input, output)) {
                 input_value_type val = input.value();

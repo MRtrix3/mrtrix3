@@ -25,6 +25,7 @@
 #include "image/buffer.h"
 #include "image/voxel.h"
 #include "image/threaded_copy.h"
+#include "image/adapter/replicate.h"
 
 MRTRIX_APPLICATION
 
@@ -40,6 +41,7 @@ void usage () {
     + "some more details here.";
 
   ARGUMENTS
+    + Argument ("mask", "mask").type_image_in()
     + Argument ("in", "in").type_image_in()
     + Argument ("out", "out").type_image_out();
 }
@@ -50,12 +52,18 @@ typedef float value_type;
 
 void run () 
 {
-  Image::Buffer<value_type> buf_in (argument[0]);
-  Image::Buffer<value_type> buf_out (argument[1], buf_in);
+  Image::Buffer<value_type> buf_mask (argument[0]);
+  Image::Buffer<value_type> buf_ref (argument[1]);
 
-  Image::Buffer<value_type>::voxel_type in (buf_in);
-  Image::Buffer<value_type>::voxel_type out (buf_out);
+  Image::Buffer<value_type>::voxel_type vox_mask (buf_mask);
+  Image::Buffer<value_type>::voxel_type vox_ref (buf_ref);
+  Image::Adapter::Replicate<Image::Buffer<value_type>::voxel_type> replicated_mask (vox_mask, vox_ref);
 
-  Image::threaded_copy_with_progress (in, out);
+  Image::Header header = buf_mask;
+  header.info() = replicated_mask.info();
+  Image::Buffer<value_type> buf_out (argument[2], header);
+  Image::Buffer<value_type>::voxel_type vox_out (buf_out);
+
+  Image::threaded_copy_with_progress (replicated_mask, vox_out);
 }
 

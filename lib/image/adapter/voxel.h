@@ -84,6 +84,9 @@ namespace MR
               return parent_vox.name();
             }
 
+            void reset () {
+              parent_vox.reset();
+            }
 
             ssize_t operator[] (size_t axis) const {
               return get_pos (axis);
