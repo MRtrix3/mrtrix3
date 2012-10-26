@@ -602,6 +602,7 @@ void run() {
   subject_FOD_lobe_integrals.resize (subjects.size(), num_lobes, 0.0);
   for (size_t subject = 0; subject < subjects.size(); subject++) {
     Image::Buffer<value_type> fod_buffer (subjects[subject]);
+    Image::check_dimensions(fod_buffer, lobe_mask, 0, 3);
     SHQueueWriter<Image::Buffer<value_type>, Image::BufferScratch<bool> > writer (fod_buffer, lobe_mask);
     DWI::FOD_FMLS fmls (dirs, Math::SH::LforN (fod_buffer.dim(3)));
     fmls.set_peak_value_threshold (SUBJECT_FOD_THRESHOLD);

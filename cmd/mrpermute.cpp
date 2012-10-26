@@ -175,8 +175,7 @@ void run() {
       angular_threshold = opt[0][0];
   }
 
-  std::vector<bool> dims_to_ignore (mask_vox.ndim(), false);
-  Image::Filter::Connector connector (do_26_connectivity, dims_to_ignore);
+  Image::Filter::Connector connector (do_26_connectivity);
   if (do_afd)
     connector.set_directions (directions, angular_threshold);
   std::vector<std::vector<int> > mask_indices = connector.precompute_adjacency (mask_vox);
