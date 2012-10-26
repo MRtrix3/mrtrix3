@@ -77,12 +77,11 @@ void run ()
 
   ProgressBar progress ("truncating tracks...", N);
   size_t index = 0;
-  while (file.next (tck) && writer.total_count < N) {
+  while (file.next (tck) && writer.count < N) {
     index++;
     if (index < skip)
       continue;
     writer.append (tck);
-    writer.total_count++;
     progress++;
   }
   file.close();
