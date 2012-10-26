@@ -44,6 +44,9 @@ void usage ()
   .type_file ();
 
   OPTIONS
+  + Option ("count",
+            "count number of tracks in file explicitly, ignoring the header")
+
   + Option ("ascii",
             "save positions of each track in individual ascii files, with the "
             "specified prefix.")
@@ -57,7 +60,7 @@ void run ()
 {
 
   Options opt = get_options ("ascii");
-  size_t count = 0;
+  bool actual_count = get_options ("count").size();
 
   for (size_t i = 0; i < argument.size(); ++i) {
     Tractography::Properties properties;
@@ -66,6 +69,7 @@ void run ()
 
     std::cout << "***********************************\n";
     std::cout << "  Tracks file: \"" << argument[i] << "\"\n";
+
     for (Tractography::Properties::iterator i = properties.begin(); i != properties.end(); ++i) {
       std::string S (i->first + ':');
       S.resize (22, ' ');
@@ -82,9 +86,23 @@ void run ()
       std::cout << "    ROI:                  " << i->first << " " << i->second << "\n";
 
 
+    if (actual_count) {
+      std::vector<Point<float> > tck;
+      size_t count = 0;
+      {
+        ProgressBar progress ("counting tracks in file... ");
+        while (file.next (tck)) {
+          ++count;
+          ++progress;
+        }
+      }
+      std::cout << "actual count in file: " << count << "\n";
+    }
+
     if (opt.size()) {
       ProgressBar progress ("writing track data to ascii files");
       std::vector<Point<float> > tck;
+      size_t count = 0;
       while (file.next (tck)) {
         std::string filename (opt[0][0]);
         filename += "-000000.txt";
