@@ -56,9 +56,10 @@ namespace MR
       class Connector {
 
         public:
-          Connector (bool do_26_connectivity) :
-            do_26_connectivity_ (do_26_connectivity) {
-          }
+          Connector (bool do_26_connectivity, const std::vector<bool>& dims_to_ignore) :
+            do_26_connectivity_ (do_26_connectivity),
+            ignore_dim_ (dims_to_ignore) {
+            }
 
 
           // Perform connected components on the mask.
@@ -132,13 +133,8 @@ namespace MR
           }
 
 
-          void set_ignore_dim (bool ignore, size_t dim) {
-            ignore_dim_[dim] = ignore;
-          }
-
           template <class MaskVoxelType>
           const std::vector<std::vector<int> > & precompute_adjacency (MaskVoxelType & mask) {
-            ignore_dim_.resize (mask.ndim(), false);
             Image::BufferScratch<uint32_t> index_data (mask);
             Image::BufferScratch<uint32_t>::voxel_type index_image (index_data);
             // 1st pass, store mask image indices and their index in the array
@@ -307,11 +303,11 @@ namespace MR
           }
 
 
+          bool do_26_connectivity_;
+          const std::vector<bool> ignore_dim_;
           std::vector<std::vector<int> > mask_indices_;
           std::vector<std::vector<uint32_t> > adjacent_indices_;
           Math::Matrix<float> dir_adjacency_matrix_;
-          std::vector<bool> ignore_dim_;
-          bool do_26_connectivity_;
       };
 
 
@@ -368,12 +364,10 @@ namespace MR
           std::vector<cluster> clusters;
           std::vector<uint32_t> labels;
 
-          Connector connector (do_26_connectivity_);
+          Connector connector (do_26_connectivity_, ignore_dim_);
           if (directions_.is_set())
             connector.set_directions (directions_, angular_threshold_);
           connector.precompute_adjacency(in);
-          for (size_t dim = 0; dim < in.ndim(); ++dim) 
-            connector.set_ignore_dim (ignore_dim_[dim], dim);
           std::vector<std::vector<int> > mask_indices = connector.run (clusters, labels);
           std::sort (clusters.begin(), clusters.end(), compare_clusters);
 
@@ -399,9 +393,8 @@ namespace MR
         }
 
 
-        void set_ignore_dim (bool ignore, size_t dim) {
+        void set_ignore_dim (size_t dim, bool ignore) {
           ignore_dim_[dim] = ignore;
-
         }
 
 
@@ -421,7 +414,7 @@ namespace MR
 
 
         protected:
-          std::vector<int> ignore_dim_;
+          std::vector<bool> ignore_dim_;
           bool largest_only_;
           Math::Matrix<float> directions_;
           float angular_threshold_;
