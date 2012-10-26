@@ -287,7 +287,7 @@ class Track2StatProcessor {
     output.tck = input.tck;
     output.values.resize (input.tck.size());
     Point<float> tangent;
-    for (size_t p = 1; p < input.tck.size(); ++p) {
+    for (size_t p = 1; p < input.tck.size() - 1; ++p) {
       interp.scanner (input.tck[p]);
       lobe_indexer_vox[3] = 0;
       int32_t first_index = lobe_indexer_vox.value();
@@ -298,7 +298,7 @@ class Track2StatProcessor {
         int32_t last_index = first_index + lobe_indexer_vox.value();
         int32_t closest_lobe_index = -1;
         float largest_dp = 0.0;
-        tangent = input.tck[p] - input.tck[p-1];
+        tangent = input.tck[p+1] - input.tck[p-1];
         tangent.normalise();
         for (int32_t j = first_index; j < last_index; j++) {
           float dp = Math::abs (tangent.dot (lobe_directions[j]));
@@ -314,6 +314,7 @@ class Track2StatProcessor {
       }
     }
     output.values[0] = output.values[1];
+    output.values[input.tck.size() - 1] = output.values[input.tck.size() - 2];
     return true;
   }
 
