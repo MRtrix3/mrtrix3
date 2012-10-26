@@ -56,10 +56,8 @@ namespace MR
       class Connector {
 
         public:
-          Connector (bool do_26_connectivity, const std::vector<bool>& dims_to_ignore) :
-            do_26_connectivity_ (do_26_connectivity),
-            ignore_dim_ (dims_to_ignore) {
-            }
+          Connector (bool do_26_connectivity) :
+            do_26_connectivity_ (do_26_connectivity) {}
 
 
           // Perform connected components on the mask.
@@ -132,9 +130,15 @@ namespace MR
             }
           }
 
+          void set_dim_to_ignore (std::vector<bool>& dim_to_ignore) {
+        	  dim_to_ignore_ = dim_to_ignore;
+          }
+
 
           template <class MaskVoxelType>
           const std::vector<std::vector<int> > & precompute_adjacency (MaskVoxelType & mask) {
+            if (!dim_to_ignore_.size())
+              dim_to_ignore_.resize(mask.ndim(), false);
             Image::BufferScratch<uint32_t> index_data (mask);
             Image::BufferScratch<uint32_t>::voxel_type index_image (index_data);
             // 1st pass, store mask image indices and their index in the array
@@ -160,11 +164,11 @@ namespace MR
                     int temp = abs(x) + abs(y) + abs(z);
                     if (!do_26_connectivity_ && temp > 1)
                       continue;
-                    if (abs(x) && ignore_dim_[0])
+                    if (abs(x) && dim_to_ignore_[0])
                       continue;
-                    if (abs(y) && ignore_dim_[1])
+                    if (abs(y) && dim_to_ignore_[1])
                       continue;
-                    if (abs(z) && ignore_dim_[2])
+                    if (abs(z) && dim_to_ignore_[2])
                       continue;
                     std::vector<int> offset(3);
                     offset[0] = x;
@@ -193,7 +197,7 @@ namespace MR
                 }
               }
               // here we handle the 4th dimension
-              if (mask.ndim() == 4 && !ignore_dim_[3]) {
+              if (mask.ndim() == 4 && !dim_to_ignore_[3]) {
                 for (size_t dim = 0; dim < 3; dim++)
                   mask_neigh[dim] = (*it)[dim];
                 if (dir_adjacency_matrix_.is_set()) {
@@ -304,7 +308,7 @@ namespace MR
 
 
           bool do_26_connectivity_;
-          const std::vector<bool> ignore_dim_;
+          std::vector<bool> dim_to_ignore_;
           std::vector<std::vector<int> > mask_indices_;
           std::vector<std::vector<uint32_t> > adjacent_indices_;
           Math::Matrix<float> dir_adjacency_matrix_;
@@ -353,7 +357,7 @@ namespace MR
         ConnectedComponents (const InputVoxelType& in) :
         ConstInfo (in) {
           datatype_ = DataType::UInt32;
-          ignore_dim_.resize(this->ndim(), false);
+          dim_to_ignore_.resize(this->ndim(), false);
           largest_only_ = false;
           do_26_connectivity_ = false;
         }
@@ -364,7 +368,9 @@ namespace MR
           std::vector<cluster> clusters;
           std::vector<uint32_t> labels;
 
-          Connector connector (do_26_connectivity_, ignore_dim_);
+          Connector connector (do_26_connectivity_);
+          if (dim_to_ignore_.size())
+            connector.set_dim_to_ignore(dim_to_ignore_);
           if (directions_.is_set())
             connector.set_directions (directions_, angular_threshold_);
           connector.precompute_adjacency(in);
@@ -394,7 +400,7 @@ namespace MR
 
 
         void set_ignore_dim (size_t dim, bool ignore) {
-          ignore_dim_[dim] = ignore;
+          dim_to_ignore_[dim] = ignore;
         }
 
 
@@ -414,7 +420,7 @@ namespace MR
 
 
         protected:
-          std::vector<bool> ignore_dim_;
+          std::vector<bool> dim_to_ignore_;
           bool largest_only_;
           Math::Matrix<float> directions_;
           float angular_threshold_;
