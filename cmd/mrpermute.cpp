@@ -175,13 +175,11 @@ void run() {
       angular_threshold = opt[0][0];
   }
 
-
-  print ("Precomputing voxel adjacency from mask...");
-  Image::Filter::Connector connector (do_26_connectivity);
+  std::vector<bool> dims_to_ignore (mask_vox.ndim(), false);
+  Image::Filter::Connector connector (do_26_connectivity, dims_to_ignore);
   if (do_afd)
     connector.set_directions (directions, angular_threshold);
   std::vector<std::vector<int> > mask_indices = connector.precompute_adjacency (mask_vox);
-  print (" done\n");
 
   const size_t num_vox = mask_indices.size();
   Math::Matrix<value_type> data (num_vox, subjects.size());
@@ -260,7 +258,7 @@ void run() {
   { // Do permutation testing:
     Math::Stats::GLMTTest glm (data, design, contrast);
     Stats::TFCE::Spatial tfce_integrator (connector, dh, E, H);
-    Stats::TFCE::run (glm, tfce_integrator, num_perms, 
+    Stats::TFCE::run (glm, tfce_integrator, num_perms,
         perm_distribution_pos, perm_distribution_neg,
         tfce_output_pos, tfce_output_neg, tvalue_output);
   }
