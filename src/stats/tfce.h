@@ -47,13 +47,13 @@ namespace MR
 
           value_type operator() (const value_type max_stat, const std::vector<value_type>& stats, std::vector<value_type>& tfce_stats) const
           {
-           for (value_type threshold = this->dh; threshold < max_stat; threshold += this->dh) {
+           for (value_type h = this->dh; h < max_stat; h += this->dh) {
              std::vector<Image::Filter::cluster> clusters;
              std::vector<uint32_t> labels (tfce_stats.size(), 0);
-             connector.run (clusters, labels, stats, threshold);
+             connector.run (clusters, labels, stats, h);
              for (size_t i = 0; i < tfce_stats.size(); ++i)
                if (labels[i])
-                 tfce_stats[i] += pow (clusters[labels[i]-1].size, this->E) * pow (threshold, this->H);
+                 tfce_stats[i] += pow (clusters[labels[i]-1].size, this->E) * pow (h, this->H);
            }
 
            value_type max_tfce_stat = 0.0;
@@ -90,22 +90,19 @@ namespace MR
 
           value_type operator() (const value_type max_stat, const std::vector<value_type>& stats, std::vector<value_type>& tfce_stats) const
           {
-            for (value_type threshold = this->dh; threshold < max_stat; threshold +=  this->dh) {
-              for (size_t lobe = 0; lobe < connectivity_map.size(); ++lobe) {
-                value_type extent = 0.0;
-                std::map<int32_t, connectivity>::const_iterator connected_lobe = connectivity_map[lobe].begin();
-                for (;connected_lobe != connectivity_map[lobe].end(); ++connected_lobe)
-                  if (stats[connected_lobe->first] > threshold)
-                    extent += connected_lobe->second.value;
-                tfce_stats[lobe] += pow (extent,  this->E) * pow (threshold,  this->H);
-              }
-            }
-
             value_type max_tfce_stat = 0.0;
-            for (size_t i = 0; i < stats.size(); i++)
-              if (tfce_stats[i] > max_tfce_stat)
-                max_tfce_stat = tfce_stats[i];
-
+            for (size_t lobe = 0; lobe < connectivity_map.size(); ++lobe) {
+              std::map<int32_t, connectivity>::const_iterator connected_lobe;
+              for (value_type h = this->dh; h < stats[lobe]; h +=  this->dh) {
+                value_type extent = 0.0;
+                for (connected_lobe = connectivity_map[lobe].begin(); connected_lobe != connectivity_map[lobe].end(); ++connected_lobe)
+                  if (stats[connected_lobe->first] > h)
+                    extent += connected_lobe->second.value;
+                tfce_stats[lobe] += pow (extent,  this->E) * pow (h,  this->H);
+              }
+              if (tfce_stats[lobe] > max_tfce_stat)
+                max_tfce_stat = tfce_stats[lobe];
+            }
             return max_tfce_stat;
           }
 

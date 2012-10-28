@@ -67,31 +67,28 @@ namespace MR
 
       typedef float value_type;
 
-      template <class StatVoxelType, class PvalueVoxelType>
-        void statistic2pvalue (const Math::Vector<value_type>& perm_dist, StatVoxelType stat_voxel, PvalueVoxelType p_voxel)
-        {
-          std::vector <value_type> permutations (perm_dist.size(), 0);
-          for (size_t i = 0; i < perm_dist.size(); i++)
-            permutations[i] = perm_dist[i];
-          std::sort (permutations.begin(), permutations.end());
-
-          Image::LoopInOrder outer (p_voxel);
-          for (outer.start (p_voxel, stat_voxel); outer.ok(); outer.next (p_voxel, stat_voxel)) {
-            value_type tvalue = stat_voxel.value();
-            if (tvalue > 0.0) {
-              value_type pvalue = 1.0;
-              for (size_t i = 0; i < permutations.size(); ++i) {
-                if (tvalue < permutations[i]) {
-                  pvalue = value_type(i) / value_type(permutations.size());
-                  break;
-                }
+      inline void statistic2pvalue (const Math::Vector<value_type>& perm_dist, const std::vector<value_type>& stats, std::vector<value_type>& pvalues)
+      {
+        std::vector <value_type> permutations (perm_dist.size(), 0);
+        for (size_t i = 0; i < perm_dist.size(); i++)
+          permutations[i] = perm_dist[i];
+        std::sort (permutations.begin(), permutations.end());
+        pvalues.resize (stats.size());
+        for (size_t i = 0; i < stats.size(); ++i) {
+          if (stats[i] > 0.0) {
+            value_type pvalue = 1.0;
+            for (size_t j = 0; j < permutations.size(); ++j) {
+              if (stats[i] < permutations[j]) {
+                pvalue = value_type (j) / value_type (permutations.size());
+                break;
               }
-              p_voxel.value() = pvalue;
             }
-            else
-              p_voxel.value() = 0.0;
+            pvalues[i] = pvalue;
           }
+          else
+            pvalues[i] = 0.0;
         }
+      }
     }
   }
 }
