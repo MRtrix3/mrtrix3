@@ -252,6 +252,8 @@ void run() {
   Math::Vector<value_type> perm_distribution_neg (num_perms - 1);
   std::vector<value_type> tfce_output_pos (num_vox, 0.0);
   std::vector<value_type> tfce_output_neg (num_vox, 0.0);
+  std::vector<value_type> pvalue_output_pos (num_vox, 0.0);
+  std::vector<value_type> pvalue_output_neg (num_vox, 0.0);
   std::vector<value_type> tvalue_output (num_vox, 0.0);
 
   { // Do permutation testing:
@@ -262,8 +264,10 @@ void run() {
         tfce_output_pos, tfce_output_neg, tvalue_output);
   }
 
-  perm_distribution_pos.save (prefix + "_permutation_pos.txt");
-  perm_distribution_neg.save (prefix + "_permutation_neg.txt");
+  perm_distribution_pos.save (prefix + "_perm_dist_pos.txt");
+  perm_distribution_neg.save (prefix + "_perm_dist_neg.txt");
+  Math::Stats::statistic2pvalue (perm_distribution_pos, tfce_output_pos, pvalue_output_pos);
+  Math::Stats::statistic2pvalue (perm_distribution_neg, tfce_output_neg, pvalue_output_neg);
 
   Image::Buffer<value_type>::voxel_type tfce_voxel_pos (tfce_data_pos);
   Image::Buffer<value_type>::voxel_type tfce_voxel_neg (tfce_data_neg);
@@ -275,13 +279,14 @@ void run() {
     ProgressBar progress ("generating output...");
     for (size_t i = 0; i < num_vox; i++) {
       for (size_t dim = 0; dim < tfce_voxel_pos.ndim(); dim++)
-        tvalue_voxel[dim] = tfce_voxel_pos[dim] = tfce_voxel_neg[dim] = mask_indices[i][dim];
+        tvalue_voxel[dim] = tfce_voxel_pos[dim] = tfce_voxel_neg[dim] = pvalue_voxel_pos[dim] = pvalue_voxel_neg[dim] = mask_indices[i][dim];
       tvalue_voxel.value() = tvalue_output[i];
       tfce_voxel_pos.value() = tfce_output_pos[i];
       tfce_voxel_neg.value() = tfce_output_neg[i];
+      pvalue_voxel_pos.value() = pvalue_output_pos[i];
+      pvalue_voxel_neg.value() = pvalue_output_neg[i];
     }
 
-    Math::Stats::statistic2pvalue (perm_distribution_pos, tfce_voxel_pos, pvalue_voxel_pos);
-    Math::Stats::statistic2pvalue (perm_distribution_neg, tfce_voxel_neg, pvalue_voxel_neg);
+
   }
 }

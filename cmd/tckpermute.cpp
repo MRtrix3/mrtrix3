@@ -264,7 +264,11 @@ class TractProcessor {
 class TrackStatItem {
   public:
     vector<Point<float> > tck;
-    vector<float> values;
+    vector<float> tvalue;
+    vector<float> tfce_pos;
+    vector<float> tfce_neg;
+    vector<float> pvalue_pos;
+    vector<float> pvalue_neg;
 };
 
 
@@ -274,10 +278,18 @@ class Track2StatProcessor {
     Track2StatProcessor (Image::BufferScratch<int32_t>& lobe_indexer,
                          const vector<Point<float> >& lobe_directions,
                          float angular_threshold,
-                         const vector<float>& statistic) :
+                         const vector<float>& tvalue,
+                         const vector<float>& tfce_pos,
+                         const vector<float>& tfce_neg,
+                         const vector<float>& pvalue_pos,
+                         const vector<float>& pvalue_neg) :
                            lobe_indexer_vox (lobe_indexer),
                            lobe_directions (lobe_directions),
-                           statistic (statistic),
+                           tvalue (tvalue),
+                           tfce_pos (tfce_pos),
+                           tfce_neg (tfce_neg),
+                           pvalue_pos (pvalue_pos),
+                           pvalue_neg (pvalue_neg),
                            interp (lobe_indexer_vox) {
       angular_threshold_dp = cos (angular_threshold * (M_PI/180.0));
     }
@@ -285,20 +297,28 @@ class Track2StatProcessor {
   bool operator () (DWI::Tractography::Mapping::TrackAndIndex& input, TrackStatItem& output)
   {
     output.tck = input.tck;
-    output.values.resize (input.tck.size());
+    output.tvalue.resize (input.tck.size());
+    output.tfce_pos.resize (input.tck.size());
+    output.tfce_neg.resize (input.tck.size());
+    output.pvalue_pos.resize (input.tck.size());
+    output.pvalue_neg.resize (input.tck.size());
     Point<float> tangent;
-    for (size_t p = 1; p < input.tck.size() - 1; ++p) {
+    for (size_t p = 0; p < input.tck.size(); ++p) {
       interp.scanner (input.tck[p]);
-      lobe_indexer_vox[3] = 0;
-      int32_t first_index = lobe_indexer_vox.value();
+      interp[3] = 0;
+      int32_t first_index = interp.value();
 
-      // TODO smooth stats to remove NN effect
       if (first_index >= 0) {
-        lobe_indexer_vox[3] = 1;
-        int32_t last_index = first_index + lobe_indexer_vox.value();
+        interp[3] = 1;
+        int32_t last_index = first_index + interp.value();
         int32_t closest_lobe_index = -1;
         float largest_dp = 0.0;
-        tangent = input.tck[p+1] - input.tck[p-1];
+        if (p == 0)
+          tangent = input.tck[p+1] - input.tck[p];
+        else if (p == input.tck.size() - 1)
+          tangent = input.tck[p+1] - input.tck[p-1];
+        else
+          tangent = input.tck[p] - input.tck[p-1];
         tangent.normalise();
         for (int32_t j = first_index; j < last_index; j++) {
           float dp = Math::abs (tangent.dot (lobe_directions[j]));
@@ -307,14 +327,21 @@ class Track2StatProcessor {
             closest_lobe_index = j;
           }
         }
-        if (largest_dp > angular_threshold_dp)
-          output.values[p] = statistic[closest_lobe_index];
-        else
-          output.values[p] = 0.0;
+        if (largest_dp > angular_threshold_dp) {
+          output.tvalue[p] = tvalue[closest_lobe_index];
+          output.tfce_pos[p] = tfce_pos[closest_lobe_index];
+          output.tfce_neg[p] = tfce_neg[closest_lobe_index];
+          output.pvalue_pos[p] = pvalue_pos[closest_lobe_index];
+          output.pvalue_neg[p] = pvalue_neg[closest_lobe_index];
+        } else {
+          output.tvalue[p] = 0.0;
+          output.tfce_pos[p] = 0.0;
+          output.tfce_neg[p] = 0.0;
+          output.pvalue_pos[p] = 0.0;
+          output.pvalue_neg[p] = 0.0;
+        }
       }
     }
-    output.values[0] = output.values[1];
-    output.values[input.tck.size() - 1] = output.values[input.tck.size() - 2];
     return true;
   }
 
@@ -323,44 +350,70 @@ class Track2StatProcessor {
     Image::BufferScratch<int32_t>::voxel_type lobe_indexer_vox;
     const vector<Point<float> >& lobe_directions;
     float angular_threshold_dp;
-    const vector<float>& statistic;
+    const vector<float>& tvalue;
+    const vector<float>& tfce_pos;
+    const vector<float>& tfce_neg;
+    const vector<float>& pvalue_pos;
+    const vector<float>& pvalue_neg;
     Image::Interp::Nearest<Image::BufferScratch<int32_t>::voxel_type> interp;
 };
 
+
+
 class Track2StatWriter {
   public:
-    Track2StatWriter (DWI::Tractography::Writer<float>& tck_writer,
-                      DWI::Tractography::Writer<float>& stat_writer) :
-                      tck_writer (tck_writer), stat_writer (stat_writer) { }
+    Track2StatWriter (std::string prefix,
+                      DWI::Tractography::Properties& tck_properties) :
+                      tck_writer (prefix + "_tracks.tck", tck_properties),
+                      tvalue_writer (prefix + "_tvalues.tck", tck_properties),
+                      tfce_pos_writer (prefix + "_tfce_pos.tck", tck_properties),
+                      tfce_neg_writer (prefix + "_tfce_neg.tck", tck_properties),
+                      pvalue_pos_writer (prefix + "_pvalue_pos.tck", tck_properties),
+                      pvalue_neg_writer (prefix + "_pvalue_neg.tck", tck_properties) { }
 
     bool operator() (TrackStatItem& output) {
       if (output.tck.empty())
         return true;
       tck_writer.append (output.tck);
-      tck_writer.total_count++;
-      std::vector<Point<float> > scalars;
-      for (size_t i = 0; i < output.values.size(); i += 3) {
-        Point<float> point;
-        point[0] = output.values[i];
-        if (i + 1 < output.values.size())
-          point[1] = output.values[i + 1];
-        else
-          point[1] = NAN;
-        if (i + 2 < output.values.size())
-          point[2] = output.values[i + 2];
-        else
-          point[2] = NAN;
-        scalars.push_back(point);
-      }
-      stat_writer.append (scalars);
-      stat_writer.total_count++;
+      std::cout << output.tvalue << std::endl;
+      write_scalars (output.tvalue, tvalue_writer);
+      write_scalars (output.tfce_pos, tfce_pos_writer);
+      write_scalars (output.tfce_neg, tfce_neg_writer);
+      write_scalars (output.pvalue_pos, pvalue_pos_writer);
+      write_scalars (output.pvalue_neg, pvalue_neg_writer);
       return true;
     }
 
   private:
-    DWI::Tractography::Writer<float>& tck_writer;
-    DWI::Tractography::Writer<float>& stat_writer;
+
+    void write_scalars (std::vector<value_type>& values, DWI::Tractography::Writer<value_type>& writer) {
+      std::vector<Point<float> > scalars;
+      for (size_t i = 0; i < values.size(); i += 3) {
+        Point<float> point;
+        point[0] = values[i];
+        if (i + 1 < values.size())
+          point[1] = values[i + 1];
+        else
+          point[1] = NAN;
+        if (i + 2 < values.size())
+          point[2] = values[i + 2];
+        else
+          point[2] = NAN;
+        scalars.push_back(point);
+      }
+      writer.append (scalars);
+    }
+
+    DWI::Tractography::Writer<value_type> tck_writer;
+    DWI::Tractography::Writer<value_type> tvalue_writer;
+    DWI::Tractography::Writer<value_type> tfce_pos_writer;
+    DWI::Tractography::Writer<value_type> tfce_neg_writer;
+    DWI::Tractography::Writer<value_type> pvalue_pos_writer;
+    DWI::Tractography::Writer<value_type> pvalue_neg_writer;
 };
+
+
+
 
 void usage ()
 {
@@ -515,11 +568,13 @@ void run() {
     Thread::run_queue (writer, 1, DWI::SH_coefs(), fmls, 0, DWI::FOD_lobes(), lobe_processor, 1);
   }
 
+
   // Compute 3D analysis mask based on lobes in average FOD image
   uint32_t num_lobes = lobe_directions.size();
-  CONSOLE ("Number of lobes: " + str(num_lobes));
-  Image::Header header (argument[3]);
-  Image::BufferScratch<bool> lobe_mask (header);
+  CONSOLE ("number of lobes: " + str(num_lobes));
+  Image::Header header3D (argument[3]);
+  header3D.set_ndim(3);
+  Image::BufferScratch<bool> lobe_mask (header3D);
   Image::BufferScratch<bool>::voxel_type lobe_mask_vox (lobe_mask);
   Image::Loop loop (0, 3);
   for (loop.start (lobe_indexer_vox, lobe_mask_vox); loop.ok(); loop.next (lobe_indexer_vox, lobe_mask_vox)) {
@@ -547,11 +602,13 @@ void run() {
     typedef DWI::Tractography::Mapping::SetVoxelDir SetVoxelDir;
     Math::Matrix<value_type> dummy_matrix;
     DWI::Tractography::Mapping::TrackLoader loader (track_file, num_tracks, "pre-computing lobe-lobe connectivity...");
+    Image::Header header (argument[3]);
     DWI::Tractography::Mapping::TrackMapperBase<SetVoxelDir> mapper (header, dummy_matrix);
     TractProcessor tract_processor (lobe_indexer, lobe_directions, lobe_TDI, lobe_connectivity, 30);
     Thread::run_queue (loader, 1, DWI::Tractography::Mapping::TrackAndIndex(), mapper, 1, SetVoxelDir(), tract_processor, 1);
   }
   track_file.close();
+
 
   // Normalise connectivity matrix and threshold, pre-compute lobe-lobe weights for smoothing.
   vector<map<int32_t, value_type> > lobe_smoothing_weights (num_lobes);
@@ -598,29 +655,34 @@ void run() {
       it->second *= norm_factor;
   }
 
-  Math::Matrix<value_type> subject_FOD_lobe_integrals;
-  subject_FOD_lobe_integrals.resize (subjects.size(), num_lobes, 0.0);
-  for (size_t subject = 0; subject < subjects.size(); subject++) {
-    Image::Buffer<value_type> fod_buffer (subjects[subject]);
-    Image::check_dimensions(fod_buffer, lobe_mask, 0, 3);
-    SHQueueWriter<Image::Buffer<value_type>, Image::BufferScratch<bool> > writer (fod_buffer, lobe_mask);
-    DWI::FOD_FMLS fmls (dirs, Math::SH::LforN (fod_buffer.dim(3)));
-    fmls.set_peak_value_threshold (SUBJECT_FOD_THRESHOLD);
-    vector<value_type> temp_lobe_integrals (num_lobes, 0.0);
-    SubjectLobeProcessor lobe_processor (lobe_indexer, lobe_directions, temp_lobe_integrals, angular_threshold);
-    Thread::run_queue (writer, 1, DWI::SH_coefs(), fmls, 0, DWI::FOD_lobes(), lobe_processor, 1);
+  Math::Matrix<value_type> subject_lobe_integrals;
+  subject_lobe_integrals.resize (num_lobes, subjects.size(), 0.0);
 
-    // Smooth the data based on connectivity
-    ProgressBar progress ("smoothing along tracks...", num_lobes);
-    for (size_t lobe = 0; lobe < num_lobes; ++lobe) {
-      value_type value = 0.0;
-      map<int32_t, value_type>::iterator it = lobe_smoothing_weights[lobe].begin();
-      for (; it != lobe_smoothing_weights[lobe].end(); ++it)
-        value += temp_lobe_integrals[it->first] * it->second;
-      subject_FOD_lobe_integrals (subject, lobe) = value;
+  {
+    ProgressBar progress ("loading subject data and computing FOD integrals...", subjects.size());
+    for (size_t subject = 0; subject < subjects.size(); subject++) {
+      LogLevelLatch log_level (0);
+      Image::Buffer<value_type> fod_buffer (subjects[subject]);
+      Image::check_dimensions(fod_buffer, lobe_mask, 0, 3);
+      SHQueueWriter<Image::Buffer<value_type>, Image::BufferScratch<bool> > writer2 (fod_buffer, lobe_mask);
+      DWI::FOD_FMLS fmls (dirs, Math::SH::LforN (fod_buffer.dim(3)));
+      fmls.set_peak_value_threshold (SUBJECT_FOD_THRESHOLD);
+      vector<value_type> temp_lobe_integrals (num_lobes, 0.0);
+      SubjectLobeProcessor lobe_processor (lobe_indexer, lobe_directions, temp_lobe_integrals, angular_threshold);
+      Thread::run_queue (writer2, 1, DWI::SH_coefs(), fmls, 0, DWI::FOD_lobes(), lobe_processor, 1);
+
+      // Smooth the data based on connectivity
+      for (size_t lobe = 0; lobe < num_lobes; ++lobe) {
+        value_type value = 0.0;
+        map<int32_t, value_type>::iterator it = lobe_smoothing_weights[lobe].begin();
+        for (; it != lobe_smoothing_weights[lobe].end(); ++it)
+          value += temp_lobe_integrals[it->first] * it->second;
+        subject_lobe_integrals (lobe, subject) = value;
+      }
       progress++;
     }
   }
+
 
   // Run permutation test
   Math::Vector<value_type> perm_distribution_pos (num_perms - 1);
@@ -628,79 +690,43 @@ void run() {
   std::vector<value_type> tfce_output_pos (num_lobes, 0.0);
   std::vector<value_type> tfce_output_neg (num_lobes, 0.0);
   std::vector<value_type> tvalue_output (num_lobes, 0.0);
+  std::vector<value_type> pvalue_output_pos (num_lobes, 0.0);
+  std::vector<value_type> pvalue_output_neg (num_lobes, 0.0);
 
   {
-    Math::Stats::GLMTTest glm (subject_FOD_lobe_integrals, design, contrast);
+    Math::Stats::GLMTTest glm (subject_lobe_integrals, design, contrast);
     Stats::TFCE::Connectivity tfce_integrator (lobe_connectivity, dh, E, H);
     Stats::TFCE::run (glm, tfce_integrator, num_perms,
-        perm_distribution_pos, perm_distribution_neg,
-        tfce_output_pos, tfce_output_neg, tvalue_output);
+                      perm_distribution_pos, perm_distribution_neg,
+                      tfce_output_pos, tfce_output_neg, tvalue_output);
   }
-  TEST;
+
+  float max = 0.0;
+  for (size_t i = 0; i < tvalue_output.size(); ++i) {
+    if (tvalue_output[i] > max)
+      max = tvalue_output[i];
+  }
+  CONSOLE("max t: " + str(max));
+
+
+  std::string prefix = argument[6];
+  perm_distribution_pos.save (prefix + "_perm_dist_pos.txt");
+  perm_distribution_neg.save (prefix + "_perm_dist_neg.txt");
+  Math::Stats::statistic2pvalue (perm_distribution_pos, tfce_output_pos, pvalue_output_pos);
+  Math::Stats::statistic2pvalue (perm_distribution_neg, tfce_output_neg, pvalue_output_neg);
+
 
   // Generate output
   DWI::Tractography::Reader<value_type> tracks_file;
   DWI::Tractography::Properties tck_properties;
   tracks_file.open (argument[5], tck_properties);
-  std::string prefix = argument[6];
-  DWI::Tractography::Writer<float> tck_writer;
-  tck_writer.create (prefix + "_vis_tracks.tck", properties);
-  DWI::Tractography::Writer<float> stat_writer;
-  stat_writer.create (prefix + "_tck_tvalue.tck", properties);
-
   DWI::Tractography::Mapping::TrackLoader loader (tracks_file, num_vis_tracks, "generating output tracks and associated statistics...");
-  Track2StatProcessor processor (lobe_indexer, lobe_directions, angular_threshold, tvalue_output);
-  Track2StatWriter writer (tck_writer, stat_writer);
+  Track2StatProcessor processor (lobe_indexer, lobe_directions, angular_threshold, tvalue_output, tfce_output_pos, tfce_output_neg, pvalue_output_pos, pvalue_output_neg);
+  Track2StatWriter writer (prefix, tck_properties);
   Thread::run_queue (loader, 1, DWI::Tractography::Mapping::TrackAndIndex(), processor, 0, TrackStatItem(), writer, 1);
-
   tracks_file.close();
-  tck_writer.close();
-  stat_writer.close();
 
 }
-
-
-
-
-  // Output data
-//  header.datatype() = DataType::Float32;
-//  std::string prefix (argument[6]);
-//
-//  std::string tfce_filename_pos = prefix + "_tfce_pos.mif";
-//  Image::Buffer<value_type> tfce_data_pos (tfce_filename_pos, header);
-//  Image::Buffer<value_type>::voxel_type tfce_voxel_pos (tfce_data_pos);
-//  std::string tfce_filename_neg = prefix + "_tfce_neg.mif";
-//  Image::Buffer<value_type> tfce_data_neg (tfce_filename_neg, header);
-//  Image::Buffer<value_type>::voxel_type tfce_voxel_neg (tfce_data_neg);
-//  std::string tvalue_filename = prefix + "_tvalue.mif";
-//  Image::Buffer<value_type> tvalue_data (tvalue_filename, header);
-//  Image::Buffer<value_type>::voxel_type tvalue_voxel (tvalue_data);
-//
-//  {
-//    ProgressBar progress ("generating output...");
-//    for (size_t i = 0; i < num_lobes; i++) {
-//      for (size_t dim = 0; dim < tfce_voxel_pos.ndim(); dim++)
-//        tvalue_voxel[dim] = tfce_voxel_pos[dim] = tfce_voxel_neg[dim] = mask_indices[i][dim];
-//      tvalue_voxel.value() = tvalue_output[i];
-//      tfce_voxel_pos.value() = tfce_output_pos[i];
-//      tfce_voxel_neg.value() = tfce_output_neg[i];
-//    }
-//    std::string perm_filename_pos = prefix + "_permutation_pos.txt";
-//    std::string perm_filename_neg = prefix + "_permutation_neg.txt";
-//    perm_distribution_pos.save (perm_filename_pos);
-//    perm_distribution_neg.save (perm_filename_neg);
-//
-//    std::string pvalue_filename_pos = prefix + "_pvalue_pos.mif";
-//    Image::Buffer<value_type> pvalue_data_pos (pvalue_filename_pos, header);
-//    Image::Buffer<value_type>::voxel_type pvalue_voxel_pos (pvalue_data_pos);
-//    Stats::statistic2pvalue (perm_distribution_pos, tfce_voxel_pos, pvalue_voxel_pos);
-//
-//    std::string pvalue_filename_neg = prefix + "_pvalue_neg.mif";
-//    Image::Buffer<value_type> pvalue_data_neg (pvalue_filename_neg, header);
-//    Image::Buffer<value_type>::voxel_type pvalue_voxel_neg (pvalue_data_neg);
-//    Stats::statistic2pvalue (perm_distribution_neg, tfce_voxel_neg, pvalue_voxel_neg);
-//  }
-
 
 
   /**
