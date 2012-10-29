@@ -195,9 +195,7 @@ void run() {
       ProgressBar progress("loading FOD images and computing AFD...", subjects.size());
       for (size_t subject = 0; subject < subjects.size(); subject++) {
         LogLevelLatch log_level (0);
-        Image::Stride::List strides(4, 0);
-        strides[3] = 1;
-        Image::BufferPreload<value_type> fod_data (subjects[subject], strides);
+        Image::BufferPreload<value_type> fod_data (subjects[subject], Image::Stride::contiguous_along_axis (3));
         Image::BufferPreload<value_type>::voxel_type fod_voxel (fod_data);
         int index = 0;
         std::vector<std::vector<int> >::iterator it;
