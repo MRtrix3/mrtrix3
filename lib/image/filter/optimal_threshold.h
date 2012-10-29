@@ -167,7 +167,6 @@ namespace MR
                   loop.foreach (MeanStdFunctorMask<value_type, mask_value_type> (sum, sum_sqr, count), 
                       input, Input,
                       replicated_mask, Input);
-                  VAR (count);
                 }
                 else {
                   loop.foreach (MeanStdFunctor<value_type> (sum, sum_sqr), 

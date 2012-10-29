@@ -38,7 +38,7 @@ namespace MR
       typedef float value_type;
 
 
-      inline void SVD_invert (Math::Matrix<double>& I, const Math::Matrix<double>& M)
+      inline void SVD_invert (Math::Matrix<double>& I, const Math::Matrix<double>& M, double precision = 1.0e-10)
       {
         size_t N = std::min (M.rows(), M.columns());
         Math::Matrix<double> U (M), V (N,N);
@@ -46,7 +46,7 @@ namespace MR
         gsl_linalg_SV_decomp (U.gsl(), V.gsl(), S.gsl(), work.gsl());
 
         for (size_t n = 0; n < N; ++n) {
-          double sv = S[n] < 1.0e-10 ? 0.0 : 1.0/S[n];
+          double sv = S[n] < precision ? 0.0 : 1.0/S[n];
           for (size_t r = 0; r < N; ++r)
             V(r,n) *= sv;
         }
@@ -67,75 +67,113 @@ namespace MR
         return N;
       }
 
+
+
+      namespace GLM {
+
+        //! scale contrasts for use in t-test
+        /*! Note each row of the contrast matrix will be treated as an
+         * independent contrast. */
+        template <typename ValueType> 
+          inline Math::Matrix<ValueType> scale_contrasts (const Math::Matrix<ValueType>& contrasts, const Math::Matrix<ValueType>& design, size_t degrees_of_freedom)
+          {
+            Math::Matrix<ValueType> XtX;
+            Math::mult (XtX, ValueType(1.0), CblasTrans, design, CblasNoTrans, design);
+            {
+              Math::Matrix<double> d_XtX = XtX;
+              Math::Matrix<double> d_pinv_XtX;
+              SVD_invert (d_pinv_XtX, d_XtX);
+              XtX = d_pinv_XtX;
+            }
+
+            // make sure contrast is a column vector:
+            Math::Matrix<ValueType> scaled_contrasts (contrasts);
+            if (scaled_contrasts.columns() > 1 && scaled_contrasts.rows() > 1)
+              throw Exception ("too many columns in contrast matrix: this implementation currently only supports univariate GLM");
+            if (scaled_contrasts.rows() > 1)
+              scaled_contrasts = Math::transpose (scaled_contrasts);
+            scaled_contrasts.resize (scaled_contrasts.rows(), design.columns());
+
+            for (size_t n = 0; n < contrasts.rows(); ++n) {
+              Math::Vector<ValueType> pinv_XtX_c;
+              Math::mult (pinv_XtX_c, XtX, contrasts.row(n));
+              scaled_contrasts.row(n) *= Math::sqrt (ValueType(degrees_of_freedom) / Math::dot (contrasts.row(n), pinv_XtX_c));
+            }
+
+            return scaled_contrasts;
+          }
+
+
+
+        //! generic GLM t-test
+        /*! note that the data, effects, and residual matrices are transposed.
+         * This is to take advantage of the GSL's convention of storing
+         * matrices in column-major format. 
+         *
+         * Note also that the constrast matrix should already have been scaled
+         * using the GLM::scale_contrasts() function. */
+        template <typename ValueType> 
+          inline void ttest (
+              Math::Matrix<ValueType>& tvalues,
+              const Math::Matrix<ValueType>& design, 
+              const Math::Matrix<ValueType>& pinv_design, 
+              const Math::Matrix<ValueType>& measurements, 
+              const Math::Matrix<ValueType>& scaled_contrasts,
+              Math::Matrix<ValueType>& effects,
+              Math::Matrix<ValueType>& residuals) 
+          { 
+            Math::mult (effects, ValueType(1.0), CblasNoTrans, measurements, CblasTrans, pinv_design);
+            Math::mult (residuals, ValueType(-1.0), CblasNoTrans, effects, CblasTrans, design);
+            residuals += measurements;
+            Math::mult (tvalues, ValueType(1.0), CblasNoTrans, effects, CblasTrans, scaled_contrasts);
+            for (size_t n = 0; n < tvalues.rows(); ++n)
+              tvalues.row(n) /= Math::norm (residuals.row(n));
+          }
+
+      }
+
+
+
+
+
+
+
+
       class GLMTTest
       {
         public:
           GLMTTest (const Math::Matrix<value_type>& data,
                     const Math::Matrix<value_type>& design_matrix,
-                    const Math::Matrix<value_type>& contrast_matrix) : data (data)
+                    const Math::Matrix<value_type>& contrast_matrix) : 
+            data (data),
+            X (design_matrix),
+            scaled_contrasts (GLM::scale_contrasts (contrast_matrix, X, X.rows()-rank(X)))
           {
-            // make sure contrast is a column vector:
-            Math::Matrix<double> c = contrast_matrix;
-            if (c.columns() > 1 && c.rows() > 1)
-              throw Exception ("too many columns in contrast matrix: this implementation currently only supports univariate GLM");
-            if (c.columns() > 1)
-              c = Math::transpose (c);
-
-            // form X_0:
-            Math::Matrix<double> T (c.rows(), c.rows());
-            T.identity();
-            Math::Matrix<double> pinv_c;
-            SVD_invert (pinv_c, c);
-            Math::mult (T , 1.0, -1.0, CblasNoTrans, c, CblasNoTrans, pinv_c);
-
-            Math::Matrix<double> X0, X = design_matrix;
-            Math::mult (X0, X, T );
-
-            // form R_0:
-            Math::Matrix<double> d_R0 (X0.rows(), X0.rows());
-            d_R0.identity();
-            Math::Matrix<double> pinv_X0;
-            SVD_invert (pinv_X0, X0);
-            Math::mult (d_R0, 1.0, -1.0, CblasNoTrans, X0, CblasNoTrans, pinv_X0);
-
-            // form X_1^*:
-            Math::Matrix<double> X1;
-            Math::mult (T, 1.0, CblasNoTrans, X, CblasTrans, pinv_c);
-            Math::mult (X1, d_R0, T);
-            Math::Matrix<double> pinv_X1;
-            SVD_invert (pinv_X1, X1);
-
-            // form M:
-            Math::Matrix<double> d_M (X1.rows()+1, X1.rows());
-            d_M.sub(0,1,0,d_M.columns()) = pinv_X1;
-            Math::Matrix<double> R1 = d_M.sub(1,d_M.rows(),0,d_M.columns());
-            R1.identity();
-            Math::mult (R1, 1.0, -1.0, CblasNoTrans, X1, CblasNoTrans, pinv_X1);
-
-            // precompute kappa:
-            Math::mult (T, 1.0, CblasTrans, X1, CblasNoTrans, X1);
-            kappa = Math::sqrt (T(0,0) * (X.rows() - rank(X)));
-
-
-            // store using request value type:
-            R0 = d_R0;
-            M = d_M;
+            Math::Matrix<double> d_pinvX, d_X (X);
+            SVD_invert (d_pinvX, d_X);
+            pinvX = d_pinvX;
           }
 
           // Compute the test statistic
           void operator() (const std::vector<size_t>& perm_labelling, std::vector<value_type>& stats, value_type& max_stat, value_type& min_stat) const
           {
             stats.resize (data.rows(), 0.0);
-            Math::Matrix<value_type> e, Mp, SR0 (R0.rows(), R0.columns());
-            for (size_t i = 0; i < R0.columns(); ++i)
-              SR0.row(i) = R0.row (perm_labelling[i]); // TODO: check whether we should permute rows or columns
+            Math::Matrix<value_type> tvalues, effects, residuals, SX, pinvSX;
 
-            Math::mult (Mp, M, SR0);
+            SX.allocate (X);
+            pinvSX.allocate (pinvX);
+            for (size_t i = 0; i < X.rows(); ++i) {
+              // TODO: check whether we should permute rows or columns
+              SX.row(i) = X.row (perm_labelling[i]); 
+              pinvSX.column(i) = pinvX.column (perm_labelling[i]);
+            }
+
 
             for (size_t i = 0; i < data.rows(); i += GLM_BATCH_SIZE) {
-              Math::mult (e, value_type(1.0), CblasNoTrans, data.sub(i, std::min (i+GLM_BATCH_SIZE, data.rows()), 0, data.columns()), CblasTrans, Mp);
-              for (size_t n = 0; n < e.rows(); ++n) {
-                value_type val = kappa * e(n,0) / Math::norm (e.row(n).sub(1,e.columns()));
+              GLM::ttest (tvalues, SX, pinvSX, data.sub(i, std::min (i+GLM_BATCH_SIZE, data.rows()), 0, data.columns()), 
+                  scaled_contrasts, effects, residuals);
+              for (size_t n = 0; n < tvalues.rows(); ++n) {
+                value_type val = tvalues(n,0);
                 if (val > max_stat)
                   max_stat = val;
                 if (val < min_stat)
@@ -149,8 +187,7 @@ namespace MR
 
         protected:
           const Math::Matrix<value_type>& data;
-          value_type kappa;
-          Math::Matrix<value_type> M, R0;
+          Math::Matrix<value_type> X, pinvX, scaled_contrasts;
       };
 
     }

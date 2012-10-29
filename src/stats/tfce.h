@@ -128,7 +128,8 @@ namespace MR
             size_t next () {
               Thread::Mutex::Lock lock (permutation_mutex);
               size_t index = current_permutation++;
-              ++progress;
+              if (index < permutations.size()) 
+                ++progress;
               return index;
             }
             const std::vector<size_t>& permutation (size_t index) const { 
