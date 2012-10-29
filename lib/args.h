@@ -115,7 +115,7 @@ namespace MR
         /*! this is used to construct a command-line argument object, with a name
          * and description. If default arguments are used, the object corresponds
          * to the end-of-list specifier, as detailed in \ref command_line_parsing. */
-        Argument (const char* name = NULL, const char* description = NULL) :
+        Argument (const char* name = NULL, std::string description = std::string()) :
           id (name), desc (description), type (Text), flags (None) {
             defaults.text = NULL;
           }
@@ -123,7 +123,7 @@ namespace MR
         //! the argument name
         const char* id;
         //! the argument description
-        const char* desc;
+        std::string desc;
         //! the argument type
         ArgType  type;
         //! the argument flags (AllowMultiple and/or Optional)
@@ -317,9 +317,9 @@ namespace MR
      */
     class Option : public std::vector<Argument> {
       public:
-        Option () : id (NULL), desc (NULL), flags (Optional) { }
+        Option () : id (NULL), flags (Optional) { }
 
-        Option (const char* name, const char* description) :
+        Option (const char* name, const std::string& description) :
           id (name), desc (description), flags (Optional) { }
 
         Option& operator+ (const Argument& arg) {
@@ -333,7 +333,7 @@ namespace MR
         //! the option name
         const char* id;
         //! the option description
-        const char* desc;
+        std::string desc;
         //! option flags (AllowMultiple and/or Optional)
         ArgFlags flags;
 

@@ -231,6 +231,17 @@ namespace MR
     return ret;
   }
 
+  inline std::string join (const char* const* null_terminated_array, const std::string& delimiter)
+  {
+    std::string ret;
+    if (!null_terminated_array)
+      return ret;
+    ret = null_terminated_array[0];
+    for (const char* const* p = null_terminated_array+1; *p; ++p) 
+      ret += delimiter + *p;
+    return ret;
+  }
+
   std::vector<float> parse_floats (const std::string& spec);
   std::vector<int>   parse_ints (const std::string& spec, int last = std::numeric_limits<int>::max());
 

@@ -191,7 +191,7 @@ namespace MR
           assert (0);
       }
       std::cout << "\n";
-      if (desc)
+      if (desc.size())
         std::cout << desc << "\n";
     }
 
@@ -204,7 +204,7 @@ namespace MR
         << (flags & Optional ? '1' : '0') << " "
         << (flags & AllowMultiple ? '1' : '0') << "\n";
 
-      if (desc)
+      if (desc.size())
         std::cout << desc << "\n";
 
       for (size_t i = 0; i < size(); ++i)

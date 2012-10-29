@@ -31,8 +31,13 @@
  * \brief functions to provide support for multi-threading
  *
  * These functions and class provide a simple interface for multi-threading in
- * MRtrix applications. Most applications will probably find that the
- * Thread::Queue and Thread::Exec classes are sufficient for their needs.
+ * MRtrix applications. Most of the low-level funtionality is a thin wrapper on
+ * top to POSIX threads. There are two classes that are MRtrix-specific: the
+ * Thread::Queue (and associated functions), and the Image::ThreadedLoop. These
+ * two classes provide simple and convenient ways of multi-threading, and
+ * should be sufficient for the vast majority of applications.
+ *
+ * \sa Image::ThreadedLoop
  */
 
 namespace MR

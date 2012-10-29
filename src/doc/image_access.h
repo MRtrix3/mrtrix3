@@ -182,12 +182,12 @@ namespace MR
     
     MRtrix provides a set of flexible looping functions and classes that
     support looping over an arbitrary numbers of dimensions, in any order
-    desired, using the Image::Loop class. This can also be done in a
-    multi-threaded context using the Image::ThreadedLoop class, at the cost of
-    a slight (but worthwhile) increase in code complexity. These enable
-    applications to be written that make no assumptions about the
-    dimensionality of the input data - they will work whether the data are 3D
-    or 5D. 
+    desired, using the Image::Loop and Image::LoopInOrder classes. This can
+    also be done in a multi-threaded context using the Image::ThreadedLoop
+    class, at the cost of a slight (but worthwhile) increase in code
+    complexity. These enable applications to be written that make no
+    assumptions about the dimensionality of the input data - they will work
+    whether the data are 3D or 5D. 
 
     \section image_example An example application
     

@@ -37,7 +37,9 @@ namespace MR
 
     //! a class to loop over arbitrary numbers of axes of a VoxelType  
     /*! This class can be used to loop over any number of axes of one of more
-     * VoxelType classes. Its use is best illustrated with the following examples.
+     * VoxelType classes, within the same thread of execution (for
+     * multi-threaded applications, see Image::ThreadedLoop). Its use is best
+     * illustrated with the following examples.
      *
      * If \a vox in the following example is a 3D VoxelType (i.e. vox.ndim() ==
      * 3), then:
@@ -111,7 +113,8 @@ namespace MR
      * average = 23.42
      * \endcode
      *
-     * \sa LoopInOrder
+     * \sa Image::LoopInOrder
+     * \sa Image::ThreadedLoop
      */
     class Loop
     {
@@ -326,10 +329,11 @@ namespace MR
 
     //! a class to loop over arbitrary numbers and orders of axes of a VoxelType
     /*! This class can be used to loop over any number of axes of one of more
-     * VoxelType, in any specified order. Its use is essentially identical to
-     * that of the Loop class, with the difference that axes can now be
-     * iterated over in any arbitrary order. This is best illustrated with the
-     * following examples.
+     * VoxelType, in any specified order, within the same thread of execution
+     * (for multi-threaded applications, see Image::ThreadedLoop). Its use is
+     * essentially identical to that of the Loop class, with the difference
+     * that axes can now be iterated over in any arbitrary order. This is best
+     * illustrated with the following examples.
      *
      * \section strideorderloop Looping with smallest stride first
      * The looping strategy most likely to make most efficient use of the
@@ -429,7 +433,8 @@ namespace MR
      * average = 23.42
      * \endcode
      *
-     * \sa Loop
+     * \sa Image::Loop
+     * \sa Image::ThreadedLoop
      */
     class LoopInOrder
     {

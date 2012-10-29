@@ -46,6 +46,10 @@ namespace MR
     in the section \ref command_howto.
     - The concepts behind accessing and processing %Image data are outlined in \ref 
     image_access.
+    - There are a number of convenience classes to simplify development of
+    multi-threaded applications, in particular the Image::ThreadedLoop and
+    Thread::Queue classes. These are outlined in the section \ref
+    multithreading
 
    */
 

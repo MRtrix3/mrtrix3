@@ -44,8 +44,10 @@ namespace MR
 
     //! a class to loop over images in a multi-threaded fashion
     /*! This class allows arbitrary looping operations to be performed in
-     * parallel, using a versatile multi-threading framework. It can be used to
-     * code up complex operations with relatively little effort.
+     * parallel, using a versatile multi-threading framework. It builds on the
+     * single-threaded imaging looping classes, Image::Loop and
+     * Image::LoopInOrder, and can be used to code up complex operations with
+     * relatively little effort.
      *
      * The Image::ThreadedLoop class is generally used by first initialising
      * the class to determine the order of traversal, which axes will be looped
@@ -226,7 +228,7 @@ namespace MR
      *     RMS (double& grand_SoS) : SoS (0.0), grand_SoS (grand_SoS) { }
      *     ~RMS () { grand_SoS += SoS; }
      *
-     *     // accumulate the thread-local sum_of_squares:
+     *     // accumulate the thread-local sum-of-squares:
      *     void operator() (float in) { SoS += Math::pow2 (in); } 
      *
      *   protected:
@@ -272,6 +274,9 @@ namespace MR
      * are needed; they will then be taken from the list of axes to be looped
      * over. It is also possible to provide the list of inners axes and outer
      * axes as separate std::vector<size_t> arguments.
+     *
+     * \sa Image::Loop
+     * \sa Image::ThreadedLoop
      */
     class ThreadedLoop
     {
@@ -313,11 +318,11 @@ namespace MR
 
         template <class InfoType>
           ThreadedLoop (
-              const std::string& message,
+              const std::string& progress_message,
               const InfoType& source,
               const std::vector<size_t>& axes_out_of_thread,
               const std::vector<size_t>& axes_in_thread) :
-            loop (axes_out_of_thread, message),
+            loop (axes_out_of_thread, progress_message),
             dummy (source),
             axes (axes_in_thread) {
               loop.start (dummy);
@@ -325,11 +330,11 @@ namespace MR
 
         template <class InfoType>
           ThreadedLoop (
-              const std::string& message,
+              const std::string& progress_message,
               const InfoType& source,
               const std::vector<size_t>& axes_in_loop,
               size_t num_inner_axes = 1) :
-            loop (__get_axes_out_of_thread (axes_in_loop, num_inner_axes), message),
+            loop (__get_axes_out_of_thread (axes_in_loop, num_inner_axes), progress_message),
             dummy (source),
             axes (__get_axes_in_thread (axes_in_loop, num_inner_axes)) {
               loop.start (dummy);
@@ -337,12 +342,12 @@ namespace MR
 
         template <class InfoType>
           ThreadedLoop (
-              const std::string& message,
+              const std::string& progress_message,
               const InfoType& source,
               size_t num_inner_axes = 1,
               size_t from_axis = 0,
               size_t to_axis = std::numeric_limits<size_t>::max()) :
-            loop (__get_axes_out_of_thread (source, num_inner_axes, from_axis, to_axis), message),
+            loop (__get_axes_out_of_thread (source, num_inner_axes, from_axis, to_axis), progress_message),
             dummy (source),
             axes (__get_axes_in_thread (source, num_inner_axes, from_axis, to_axis)) {
               loop.start (dummy);
@@ -435,7 +440,6 @@ namespace MR
             func (functor) { }
 
           void execute () {
-            LoopInOrder loop (shared.inner_axes());
             Iterator pos (shared.iterator());
             while (shared.next (pos))
               func (pos);
