@@ -66,7 +66,11 @@ void usage ()
   + Option ("nperms", "the number of permutations (default = 5000).")
   +   Argument ("num").type_integer (1, 5000, 100000)
 
-  + Option ("dh", "the height increment used in the TFCE integration (default = 0.1)")
+  + Option ("threshold", "the cluster-forming threshold to use for a standard cluster-based analysis. "
+      "This disables TFCE, which is the default otherwise.")
+  +   Argument ("value").type_float (1.0e-6, 3.0, 1.0e6)
+
+  + Option ("tfce_dh", "the height increment used in the TFCE integration (default = 0.1)")
   +   Argument ("value").type_float (0.001, 0.1, 100000)
 
   + Option ("tfce_e", "TFCE height parameter (default = 2)")
@@ -92,20 +96,25 @@ typedef Stats::TFCE::value_type value_type;
 
 void run() {
 
-  Options opt = get_options ("dh");
-  value_type dh = 0.1;
+  Options opt = get_options ("threshold");
+  value_type cluster_forming_threshold = NAN;
   if (opt.size())
-    dh = opt[0][0];
+    cluster_forming_threshold = opt[0][0];
+
+  opt = get_options ("tfce_dh");
+  value_type tfce_dh = 0.1;
+  if (opt.size())
+    tfce_dh = opt[0][0];
 
   opt = get_options ("tfce_h");
-  value_type H = 2.0;
+  value_type tfce_H = 2.0;
   if (opt.size())
-    H = opt[0][0];
+    tfce_H = opt[0][0];
 
   opt = get_options ("tfce_e");
-  value_type E = 0.5;
+  value_type tfce_E = 0.5;
   if (opt.size())
-    E = opt[0][0];
+    tfce_E = opt[0][0];
 
   opt = get_options ("nperms");
   int num_perms = 5000;
@@ -256,10 +265,18 @@ void run() {
 
   { // Do permutation testing:
     Math::Stats::GLMTTest glm (data, design, contrast);
-    Stats::TFCE::Spatial tfce_integrator (connector, dh, E, H);
-    Stats::TFCE::run (glm, tfce_integrator, num_perms,
-        perm_distribution_pos, perm_distribution_neg,
-        tfce_output_pos, tfce_output_neg, tvalue_output);
+    if (finite (cluster_forming_threshold)) {
+      Stats::TFCE::ClusterSize cluster_size_test (connector, cluster_forming_threshold);
+      Stats::TFCE::run (glm, cluster_size_test, num_perms,
+          perm_distribution_pos, perm_distribution_neg,
+          tfce_output_pos, tfce_output_neg, tvalue_output);
+    }
+    else { // TFCE
+      Stats::TFCE::Spatial tfce_integrator (connector, tfce_dh, tfce_E, tfce_H);
+      Stats::TFCE::run (glm, tfce_integrator, num_perms,
+          perm_distribution_pos, perm_distribution_neg,
+          tfce_output_pos, tfce_output_neg, tvalue_output);
+    }
   }
 
   perm_distribution_pos.save (prefix + "_perm_dist_pos.txt");
