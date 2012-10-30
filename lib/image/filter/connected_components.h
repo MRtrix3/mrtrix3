@@ -40,14 +40,20 @@ namespace MR
     namespace Filter
     {
 
-      struct cluster
+      class cluster
       {
-        uint32_t label;
-        uint32_t size;
+        public:
+          uint32_t label;
+          uint32_t size;
+
+          bool operator< (const cluster& j) {
+            return size < j.size;
+          }
+
       };
 
 
-      inline bool compare_clusters (cluster i, cluster j)
+      inline bool compare_clusters (const cluster& i, const cluster& j)
       {
         return (i.size > j.size);
       }
