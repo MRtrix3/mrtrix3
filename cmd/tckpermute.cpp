@@ -316,9 +316,9 @@ class Track2StatProcessor {
         if (p == 0)
           tangent = input.tck[p+1] - input.tck[p];
         else if (p == input.tck.size() - 1)
-          tangent = input.tck[p+1] - input.tck[p-1];
-        else
           tangent = input.tck[p] - input.tck[p-1];
+        else
+          tangent = input.tck[p+1] - input.tck[p-1];
         tangent.normalise();
         for (int32_t j = first_index; j < last_index; j++) {
           float dp = Math::abs (tangent.dot (lobe_directions[j]));
@@ -340,6 +340,12 @@ class Track2StatProcessor {
           output.pvalue_pos[p] = 0.0;
           output.pvalue_neg[p] = 0.0;
         }
+      } else {
+        output.tvalue[p] = 0.0;
+        output.tfce_pos[p] = 0.0;
+        output.tfce_neg[p] = 0.0;
+        output.pvalue_pos[p] = 0.0;
+        output.pvalue_neg[p] = 0.0;
       }
     }
     return true;
@@ -362,20 +368,23 @@ class Track2StatProcessor {
 
 class Track2StatWriter {
   public:
-    Track2StatWriter (std::string prefix,
-                      DWI::Tractography::Properties& tck_properties) :
-                      tck_writer (prefix + "_tracks.tck", tck_properties),
-                      tvalue_writer (prefix + "_tvalues.tck", tck_properties),
-                      tfce_pos_writer (prefix + "_tfce_pos.tck", tck_properties),
-                      tfce_neg_writer (prefix + "_tfce_neg.tck", tck_properties),
-                      pvalue_pos_writer (prefix + "_pvalue_pos.tck", tck_properties),
-                      pvalue_neg_writer (prefix + "_pvalue_neg.tck", tck_properties) { }
+    Track2StatWriter (DWI::Tractography::Writer<value_type>& tck_writer,
+                      DWI::Tractography::Writer<value_type>& tvalue_writer,
+                      DWI::Tractography::Writer<value_type>& tfce_pos_writer,
+                      DWI::Tractography::Writer<value_type>& tfce_neg_writer,
+                      DWI::Tractography::Writer<value_type>& pvalue_pos_writer,
+                      DWI::Tractography::Writer<value_type>& pvalue_neg_writer) :
+                      tck_writer (tck_writer),
+                      tvalue_writer (tvalue_writer),
+                      tfce_pos_writer (tfce_pos_writer),
+                      tfce_neg_writer (tfce_neg_writer),
+                      pvalue_pos_writer (pvalue_pos_writer),
+                      pvalue_neg_writer (pvalue_neg_writer) { }
 
     bool operator() (TrackStatItem& output) {
       if (output.tck.empty())
         return true;
       tck_writer.append (output.tck);
-      std::cout << output.tvalue << std::endl;
       write_scalars (output.tvalue, tvalue_writer);
       write_scalars (output.tfce_pos, tfce_pos_writer);
       write_scalars (output.tfce_neg, tfce_neg_writer);
@@ -404,12 +413,12 @@ class Track2StatWriter {
       writer.append (scalars);
     }
 
-    DWI::Tractography::Writer<value_type> tck_writer;
-    DWI::Tractography::Writer<value_type> tvalue_writer;
-    DWI::Tractography::Writer<value_type> tfce_pos_writer;
-    DWI::Tractography::Writer<value_type> tfce_neg_writer;
-    DWI::Tractography::Writer<value_type> pvalue_pos_writer;
-    DWI::Tractography::Writer<value_type> pvalue_neg_writer;
+    DWI::Tractography::Writer<value_type>& tck_writer;
+    DWI::Tractography::Writer<value_type>& tvalue_writer;
+    DWI::Tractography::Writer<value_type>& tfce_pos_writer;
+    DWI::Tractography::Writer<value_type>& tfce_neg_writer;
+    DWI::Tractography::Writer<value_type>& pvalue_pos_writer;
+    DWI::Tractography::Writer<value_type>& pvalue_neg_writer;
 };
 
 
@@ -449,9 +458,12 @@ void usage ()
   + Argument ("value").type_float (0.001, 0.1, 100000)
 
   + Option ("tfce_e", "TFCE height parameter (default = 0.5)")
-  + Argument ("value").type_float (0.001, 2.0, 100000)
+  + Argument ("value").type_float (0.001, 0.5, 100000)
 
   + Option ("tfce_h", "TFCE extent parameter (default = 2)")
+  + Argument ("value").type_float (0.001, 2.0, 100000)
+
+  + Option ("tfce_c", "TFCE connectivity parameter (default = 0.5)")
   + Argument ("value").type_float (0.001, 0.5, 100000)
 
   + Option ("angle", "the max angle threshold for computing inter-subject FOD peak correspondence")
@@ -470,8 +482,8 @@ void usage ()
 }
 
 
-#define GROUP_AVERAGE_FOD_THRESHOLD 0.15
-#define SUBJECT_FOD_THRESHOLD 0.05
+#define GROUP_AVERAGE_FOD_THRESHOLD 0.12
+#define SUBJECT_FOD_THRESHOLD 0.04
 
 typedef Stats::TFCE::value_type value_type;
 
@@ -492,12 +504,17 @@ void run() {
   if (opt.size())
     E = opt[0][0];
 
+  opt = get_options ("tfce_c");
+  value_type C = 0.5;
+  if (opt.size())
+    C = opt[0][0];
+
   opt = get_options ("nperms");
   int num_perms = 5000;
   if (opt.size())
     num_perms = opt[0][0];
 
-  value_type angular_threshold = 20.0;
+  value_type angular_threshold = 30.0;
   opt = get_options ("angle");
   if (opt.size())
     angular_threshold = opt[0][0];
@@ -587,6 +604,25 @@ void run() {
     }
   }
 
+  /****************************************************************
+  * Check number of lobes per voxel
+  *****************************************************************/
+  {
+    Image::Buffer<float> fibre_count_buffer ("template_fibre_count.mif", header3D);
+    Image::Buffer<float>::voxel_type fibre_count_buffer_vox (fibre_count_buffer);
+    Image::Loop loop(0, 3);
+    for (loop.start (lobe_indexer_vox, fibre_count_buffer_vox); loop.ok(); loop.next (lobe_indexer_vox, fibre_count_buffer_vox)) {
+      lobe_indexer_vox[3] = 0;
+      int32_t lobe_index = lobe_indexer_vox.value();
+      if (lobe_index >= 0) {
+        lobe_indexer_vox[3] = 1;
+        fibre_count_buffer_vox.value() = lobe_indexer_vox.value();
+      }
+    }
+  }
+
+
+
   vector<map<int32_t, Stats::TFCE::connectivity> > lobe_connectivity (num_lobes);
   vector<uint16_t> lobe_TDI (num_lobes, 0.0);
   {
@@ -634,7 +670,7 @@ void run() {
           if (weight > 0.005)
             lobe_smoothing_weights[lobe].insert (pair<int32_t, value_type> (it->first, weight));
         }
-        it->second.value = connectivity;
+        it->second.value = Math::pow (connectivity, C);
         ++it;
       }
     }
@@ -657,7 +693,6 @@ void run() {
 
   Math::Matrix<value_type> subject_lobe_integrals;
   subject_lobe_integrals.resize (num_lobes, subjects.size(), 0.0);
-
   {
     ProgressBar progress ("loading subject data and computing FOD integrals...", subjects.size());
     for (size_t subject = 0; subject < subjects.size(); subject++) {
@@ -702,12 +737,34 @@ void run() {
   }
 
   float max = 0.0;
+  Math::Vector<float> test_vec (tvalue_output.size());
   for (size_t i = 0; i < tvalue_output.size(); ++i) {
+    test_vec[i] = tvalue_output[i];
     if (tvalue_output[i] > max)
       max = tvalue_output[i];
   }
   CONSOLE("max t: " + str(max));
 
+  /****************************************************************
+  * Check t-values
+  *****************************************************************/
+  Image::Buffer<float> tvalue_buffer ("tmax.mif", header3D);
+  Image::Buffer<float>::voxel_type tvalue_buffer_vox (tvalue_buffer);
+  Image::Loop subject_loop(0, 3);
+  for (subject_loop.start (lobe_indexer_vox, tvalue_buffer_vox); subject_loop.ok(); subject_loop.next (lobe_indexer_vox, tvalue_buffer_vox)) {
+    lobe_indexer_vox[3] = 0;
+    int32_t lobe_index = lobe_indexer_vox.value();
+    if (lobe_index >= 0) {
+      lobe_indexer_vox[3] = 1;
+      int num_lobes =  lobe_indexer_vox.value();
+      float max_t = 0.0;
+      for (int i = lobe_index; i < lobe_index + num_lobes; i++) {
+        if (tvalue_output[i] > max_t);
+          max_t = tvalue_output[i];
+      }
+      tvalue_buffer_vox.value() = max_t;
+    }
+  }
 
   std::string prefix = argument[6];
   perm_distribution_pos.save (prefix + "_perm_dist_pos.txt");
@@ -715,17 +772,27 @@ void run() {
   Math::Stats::statistic2pvalue (perm_distribution_pos, tfce_output_pos, pvalue_output_pos);
   Math::Stats::statistic2pvalue (perm_distribution_neg, tfce_output_neg, pvalue_output_neg);
 
-
   // Generate output
-  DWI::Tractography::Reader<value_type> tracks_file;
   DWI::Tractography::Properties tck_properties;
+  DWI::Tractography::Reader<value_type> tracks_file;
   tracks_file.open (argument[5], tck_properties);
+  DWI::Tractography::Writer<value_type> tck_writer (prefix + "_tck.tck", tck_properties);
+  DWI::Tractography::Writer<value_type> tvalue_writer (prefix + "_tck.tval", tck_properties);
+  DWI::Tractography::Writer<value_type> tfce_pos_writer (prefix + "_tck.tfcep", tck_properties);
+  DWI::Tractography::Writer<value_type> tfce_neg_writer (prefix + "_tck.tfcen", tck_properties);
+  DWI::Tractography::Writer<value_type> pvalue_pos_writer (prefix + "_tck.pvalp", tck_properties);
+  DWI::Tractography::Writer<value_type> pvalue_neg_writer (prefix + "_tck.pvaln", tck_properties);
   DWI::Tractography::Mapping::TrackLoader loader (tracks_file, num_vis_tracks, "generating output tracks and associated statistics...");
   Track2StatProcessor processor (lobe_indexer, lobe_directions, angular_threshold, tvalue_output, tfce_output_pos, tfce_output_neg, pvalue_output_pos, pvalue_output_neg);
-  Track2StatWriter writer (prefix, tck_properties);
+  Track2StatWriter writer (tck_writer, tvalue_writer, tfce_pos_writer, tfce_neg_writer, pvalue_pos_writer, pvalue_neg_writer);
   Thread::run_queue (loader, 1, DWI::Tractography::Mapping::TrackAndIndex(), processor, 0, TrackStatItem(), writer, 1);
   tracks_file.close();
-
+  tck_writer.close();
+  tvalue_writer.close();
+  tfce_pos_writer.close();
+  tfce_neg_writer.close();
+  pvalue_pos_writer.close();
+  pvalue_neg_writer.close();
 }
 
 
