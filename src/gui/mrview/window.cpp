@@ -8,6 +8,11 @@
 #include <QDockWidget>
 #include <QGLWidget>
 
+// necessary to avoid conflict with Qt4's foreach macro:
+#ifdef foreach
+# undef foreach
+#endif
+
 #include "app.h"
 #include "file/config.h"
 #include "image/header.h"

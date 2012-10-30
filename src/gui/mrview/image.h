@@ -25,6 +25,11 @@
 
 #include <QAction>
 
+// necessary to avoid conflict with Qt4's foreach macro:
+#ifdef foreach
+# undef foreach
+#endif
+
 #include "image/buffer.h"
 #include "image/voxel.h"
 #include "math/versor.h"
