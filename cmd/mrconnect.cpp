@@ -90,7 +90,7 @@ void run ()
   Image::Buffer<bool>::voxel_type output_vox (output_data);
 
   Options opt = get_options ("angle");
-  float angular_threshold = 15;
+  float angular_threshold = 15.0;
   if (opt.size())
     angular_threshold = opt[0][0];
 

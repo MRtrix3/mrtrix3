@@ -143,6 +143,8 @@ namespace MR
 
           template <class MaskVoxelType>
           const std::vector<std::vector<int> > & precompute_adjacency (MaskVoxelType & mask) {
+
+            ProgressBar progress ("Precomputing voxel adjacency from mask...");
             if (!dim_to_ignore_.size())
               dim_to_ignore_.resize(mask.ndim(), false);
             Image::BufferScratch<uint32_t> index_data (mask);
@@ -150,10 +152,11 @@ namespace MR
             // 1st pass, store mask image indices and their index in the array
             Image::LoopInOrder loop (mask);
             for (loop.start (mask, index_image); loop.ok(); loop.next (mask, index_image)) {
+              progress++;
               if (mask.value() >= 0.5) {
                 // For each voxel, store the index within mask_indices for 2nd pass
                 index_image.value() = mask_indices_.size();
-                std::vector<int> index(4);
+                std::vector<int> index (4);
                 for (size_t dim = 0; dim < mask.ndim(); dim++)
                   index[dim] = mask[dim];
                 mask_indices_.push_back (index);
@@ -189,6 +192,7 @@ namespace MR
             MaskVoxelType mask_neigh (mask);
             std::vector<std::vector<int> >::iterator it;
             for (it = mask_indices_.begin(); it != mask_indices_.end(); ++it) {
+              progress++;
               std::vector<uint32_t> neighbour_indices;
               if (mask.ndim() == 4)
                 mask_neigh[3] = (*it)[3];
@@ -360,8 +364,7 @@ namespace MR
         public:
 
         template <class InputVoxelType>
-        ConnectedComponents (const InputVoxelType& in) :
-        ConstInfo (in) {
+        ConnectedComponents (const InputVoxelType& in) : ConstInfo (in), angular_threshold_(15.0) {
           datatype_ = DataType::UInt32;
           dim_to_ignore_.resize(this->ndim(), false);
           largest_only_ = false;
@@ -379,7 +382,10 @@ namespace MR
             connector.set_dim_to_ignore(dim_to_ignore_);
           if (directions_.is_set())
             connector.set_directions (directions_, angular_threshold_);
-          connector.precompute_adjacency(in);
+          {
+            LogLevelLatch level(0);
+            connector.precompute_adjacency(in);
+          }
           std::vector<std::vector<int> > mask_indices = connector.run (clusters, labels);
           std::sort (clusters.begin(), clusters.end(), compare_clusters);
 
