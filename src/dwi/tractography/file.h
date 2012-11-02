@@ -215,13 +215,6 @@ namespace MR {
           }
 
 
-          ~Writer ()
-          {
-            out.seekp (count_offset);
-            out << count << "\ntotal_count: " << total_count << "\nEND\n";
-            out.close();
-          }
-
           void close ()
           {
             out.seekp (count_offset);
