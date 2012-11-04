@@ -779,6 +779,28 @@ namespace MR
       return val;
     }
 
+    //! find the maximum value of any elements within a vector
+    template <typename ValueType> inline ValueType max (const Vector<ValueType>& V)
+    {
+      size_t i;
+      return max (V, i);
+    }
+
+    //! find the minimum value of any elements within a vector
+    template <typename ValueType> inline ValueType min (const Vector<ValueType>& V)
+    {
+      size_t i;
+      return min (V, i);
+    }
+
+
+    //! find the maximum absolute value of any elements within a vector
+    template <typename ValueType> inline ValueType absmax (const Vector<ValueType>& V)
+    {
+      size_t i;
+      return absmax (V, i);
+    }
+
     /** @} */
 
     /** @} */

@@ -133,7 +133,7 @@ namespace MR
         union {
           const char* text;
           struct {
-            const char** list;
+            const char* const* list;
             int def;
           } choices;
           struct {
@@ -229,7 +229,7 @@ namespace MR
          *     .type_choice (mode_list, 0);
          * \endcode
          * \note Each string in the list must be supplied in \b lowercase. */
-        Argument& type_choice (const char** choices, int default_index = -1) {
+        Argument& type_choice (const char* const* choices, int default_index = -1) {
           type = Choice;
           defaults.choices.list = choices;
           defaults.choices.def = default_index;

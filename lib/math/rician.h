@@ -38,7 +38,7 @@ namespace MR
       {
         T nm = one_over_noise_squared * measured;
         T s = abs (actual);
-        return (0.5 * one_over_noise_squared * pow2 (measured - s) - log (nm * Bessel::I0_scaled (nm * s)));
+        return 0.5 * one_over_noise_squared * pow2 (measured - s) - log (nm * Bessel::I0_scaled (nm * s));
       }
 
 
@@ -56,7 +56,7 @@ namespace MR
         T F1_F0 = (Bessel::I1_scaled (nms) - F0) / F0;
         assert (nms >= 0.0); // (nms < 0.0) F1_F0 = -F1_F0;
         dP_dactual = -nm_a - nm * F1_F0;
-        return (0.5 * nm_a * m_a - log (nm * F0));
+        return 0.5 * nm_a * m_a - log (nm * F0);
       }
 
 
@@ -79,7 +79,7 @@ namespace MR
         dP_dactual = -nm_a - nm * F1_F0;
         actual_pos *= measured * F1_F0;
         dP_dN = 0.5 * pow2 (m_a) - 1.0/one_over_noise_squared + (actual_is_positive ? -actual_pos : actual_pos);
-        return (0.5 * nm_a * m_a - log (nm * F0));
+        return 0.5 * nm_a * m_a - log (nm * F0);
       }
 
 
@@ -109,9 +109,37 @@ namespace MR
           lnP += 0.5 * nm_a * m_a - log (nm * F0);
         }
 
-        return (lnP);
+        return lnP;
       }
 
+
+
+      template <typename T> inline T lnP (const Vector<T>& measured, const Vector<T>& actual, const T one_over_noise_squared, Vector<T>& dP_dactual)
+      {
+        assert (one_over_noise_squared > 0.0);
+        assert (measured.size() == actual.size());
+        assert (measured.size() == dP_dactual.size());
+
+        T lnP = 0.0;
+
+        for (size_t i = 0; i < measured.size(); i++) {
+          assert (measured[i] > 0.0);
+
+          T actual_pos = abs (actual[i]);
+          T nm = one_over_noise_squared * measured[i];
+          T nms = nm * actual_pos;
+          T F0 = Bessel::I0_scaled (nms);
+          T m_a = measured[i] - actual_pos;
+          T nm_a = one_over_noise_squared * m_a;
+          T F1_F0 = (Bessel::I1_scaled (nms) - F0) / F0;
+          dP_dactual[i] = -nm_a - nm * F1_F0;
+          if (actual[i] < 0.0) dP_dactual[i] = -dP_dactual[i];
+          lnP += 0.5 * nm_a * m_a - log (nm * F0);
+          assert (finite (lnP));
+        }
+
+        return lnP;
+      }
 
 
       template <typename T> inline T lnP (const Vector<T>& measured, const Vector<T>& actual, const T one_over_noise_squared, Vector<T>& dP_dactual, T& dP_dN)
@@ -141,7 +169,7 @@ namespace MR
           assert (finite (lnP));
         }
 
-        return (lnP);
+        return lnP;
       }
 
     }

@@ -107,6 +107,9 @@ namespace MR
       Point operator* (value_type M) const {
         return (Point (p[0]*M, p[1]*M, p[2]*M));
       }
+      Point operator/ (value_type M) const {
+        return (Point (p[0]/M, p[1]/M, p[2]/M));
+      }
 
       template <typename U> Point& operator= (const Point<U>& A)   {
         set (A[0], A[1], A[2]);

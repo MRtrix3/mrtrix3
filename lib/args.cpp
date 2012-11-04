@@ -171,7 +171,7 @@ namespace MR
           break;
         case Choice:
           std::cout << "CHOICE";
-          for (const char** p = defaults.choices.list; *p; ++p)
+          for (const char* const* p = defaults.choices.list; *p; ++p)
             std::cout << " " << *p;
           std::cout << " " << defaults.choices.def;
           break;

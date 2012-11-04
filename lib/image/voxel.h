@@ -120,17 +120,20 @@ namespace MR
             return stream;
           }
 
+          std::string save (const std::string& filename) const 
+          {
+            Voxel in (*this);
+            Image::Header header;
+            header.info() = info();
+            Image::Buffer<value_type> buffer_out (filename, header);
+            typename Image::Buffer<value_type>::voxel_type out (buffer_out);
+            Image::threaded_copy(in, out);
+            return buffer_out.__get_handler()->files[0].name;
+          }
+
+
           void display () const {
-            std::string filename;
-            {
-              Voxel in (*this);
-              Image::Header header;
-              header.info() = info();
-              Image::Buffer<value_type> buffer_out ("-", header);
-              typename Image::Buffer<value_type>::voxel_type out (buffer_out);
-              Image::threaded_copy(in, out);
-              filename = buffer_out.__get_handler()->files[0].name;
-            }
+            std::string filename = save ("-");
             CONSOLE ("displaying image " + filename);
             if (system (("bash -c \"mrview " + filename + "\"").c_str()))
               WARN (std::string("error invoking viewer: ") + strerror(errno));
