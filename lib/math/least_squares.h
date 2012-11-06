@@ -99,12 +99,10 @@ namespace MR
     template <typename ValueType> 
       inline Matrix<ValueType>& pinv (Matrix<ValueType>& I, const Matrix<ValueType>& Mt, Matrix<ValueType>& work)
       {
-        Mt.save ("Mt.txt");
         if (Mt.rows() < Mt.columns()) 
           mult (work, ValueType (0.0), ValueType (1.0), CblasNoTrans, Mt, CblasTrans, Mt);
         else 
           mult (work, ValueType (0.0), ValueType (1.0), CblasTrans, Mt, CblasNoTrans, Mt);
-        work.save ("work.txt");
         Cholesky::inv (work);
         if (Mt.rows() < Mt.columns()) 
           return mult (I, CblasLeft, ValueType (0.0), ValueType (1.0), CblasUpper, work, Mt);
@@ -131,7 +129,6 @@ namespace MR
     template <typename ValueType>
       Math::Matrix<ValueType> pinv (const Math::Matrix<ValueType>& M)
       {
-        M.save ("M.txt");
         Matrix<ValueType> I;
         pinv (I, M);
         return I;
