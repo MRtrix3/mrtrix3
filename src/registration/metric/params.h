@@ -30,7 +30,7 @@ namespace MR
     namespace Metric
     {
 
-      template <class TransformType, class MovingImageInterpolatorType, class TargetImageVoxelType, class MovingMaskInterpolatorType, class TargetMaskInterpolatorType>
+      template <class TransformType, class MovingImageInterpolatorType, class TemplateImageVoxelType, class MovingMaskInterpolatorType, class TemplateMaskInterpolatorType>
       class Params {
         public:
 
@@ -38,15 +38,15 @@ namespace MR
 
           Params (TransformType& transform,
                   MovingImageInterpolatorType& moving_image,
-                  TargetImageVoxelType& target_image) :
+                  TemplateImageVoxelType& template_image) :
                     transformation (transform),
                     moving_image_interp (moving_image),
-                    target_image (target_image){ }
+                    template_image (template_image){ }
 
           TransformType& transformation;
           MovingImageInterpolatorType moving_image_interp;
-          TargetImageVoxelType target_image;
-          Ptr<TargetMaskInterpolatorType> target_mask_interp;
+          TemplateImageVoxelType template_image;
+          Ptr<TemplateMaskInterpolatorType> template_mask_interp;
           Ptr<MovingMaskInterpolatorType> moving_mask_interp;
       };
     }

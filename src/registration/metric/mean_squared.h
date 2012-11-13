@@ -46,7 +46,7 @@ namespace MR
               Math::Vector<double> moving_grad (3);
               this->get_moving_gradient(moving_point, moving_grad);
 
-              double diff = params.moving_image_interp.value() - params.target_image.value();
+              double diff = params.moving_image_interp.value() - params.template_image.value();
 
               for (size_t par = 0; par < gradient.size(); par++) {
                 double sum = 0.0;

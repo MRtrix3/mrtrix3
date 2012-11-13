@@ -45,7 +45,7 @@ namespace MR
             gradient_ (overall_gradient.size()),
             overall_cost_function_ (overall_cost_function),
             overall_gradient_ (overall_gradient),
-            transform_ (params_.target_image) {
+            transform_ (params_.template_image) {
               gradient_.zero();
           }
 
@@ -56,27 +56,27 @@ namespace MR
 
           void operator() (const Image::Iterator& iter) {
 
-            Point<float> target_point = transform_.voxel2scanner (iter);
-            if (params_.target_mask_interp) {
-              params_.target_mask_interp->scanner (target_point);
-              if (!params_.target_mask_interp->value())
+            Point<float> template_point = transform_.voxel2scanner (iter);
+            if (params_.template_mask_interp) {
+              params_.template_mask_interp->scanner (template_point);
+              if (!params_.template_mask_interp->value())
                 return;
             }
 
             Point<float> moving_point;
             Math::Vector<double> param;
             params_.transformation.get_parameter_vector(param);
-            params_.transformation.transform (moving_point, target_point);
+            params_.transformation.transform (moving_point, template_point);
             if (params_.moving_mask_interp) {
               params_.moving_mask_interp->scanner (moving_point);
               if (!params_.moving_mask_interp->value())
                 return;
             }
-            Image::voxel_assign (params_.target_image, iter);
+            Image::voxel_assign (params_.template_image, iter);
             params_.moving_image_interp.scanner (moving_point);
             if (!params_.moving_image_interp)
               return;
-            cost_function_ += metric_ (params_, target_point, moving_point, gradient_);
+            cost_function_ += metric_ (params_, template_point, moving_point, gradient_);
           }
 
           protected:

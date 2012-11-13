@@ -51,7 +51,7 @@ namespace MR
               params_.transformation.set_parameter_vector (x);
               {
                 ThreadKernel<MetricType, ParamType> kernel (metric_, params_, overall_cost_function, gradient);
-                Image::ThreadedLoop threaded_loop (params_.target_image, 2, 0, 3);
+                Image::ThreadedLoop threaded_loop (params_.template_image, 2, 0, 3);
                 threaded_loop.run (kernel);
               }
               return overall_cost_function;

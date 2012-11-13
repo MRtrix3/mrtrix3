@@ -22,14 +22,15 @@
 
 #include "app.h"
 #include "image/buffer.h"
+#include "image/buffer_scratch.h"
 #include "image/buffer_preload.h"
 #include "image/voxel.h"
 #include "image/filter/reslice.h"
 #include "image/interp/cubic.h"
 #include "image/transform.h"
 #include "image/adapter/reslice.h"
-#include "registration/linear_registration.h"
-#include "registration/metric/mean_squared_metric.h"
+#include "registration/linear.h"
+#include "registration/metric/mean_squared.h"
 #include "registration/transform/affine.h"
 #include "registration/transform/rigid.h"
 #include "math/hemisphere/predefined_dirs.h"
@@ -41,7 +42,6 @@ MRTRIX_APPLICATION
 
 using namespace MR;
 using namespace App;
-using namespace Registration;
 
 const char* transformation_choices[] = { "rigid", "affine", "syn", NULL };
 
@@ -150,6 +150,30 @@ void usage ()
 
 typedef float value_type;
 
+void load_image (std::string filename, size_t num_vols, Ptr<Image::BufferScratch<value_type> >& image_buffer) {
+  Image::Buffer<value_type> buffer (filename);
+  Image::Buffer<value_type>::voxel_type vox (buffer);
+  Image::Header header (filename);
+  Image::Info info (header);
+  if (num_vols > 1) {
+    info.dim(3) = num_vols;
+    info.stride(0) = 2;
+    info.stride(1) = 3;
+    info.stride(2) = 4;
+    info.stride(3) = 1;
+  }
+  image_buffer = new Image::BufferScratch<value_type> (info);
+  Image::BufferScratch<value_type>::voxel_type image_vox (*image_buffer);
+  Image::LoopInOrder loop (vox, 0, 3);
+  for (loop.start (vox, image_vox); loop.ok(); loop.next (vox, image_vox)) {
+    for (size_t vol = 0; vol < num_vols; ++vol) {
+      vox[3] = image_vox[3] = vol;
+      image_vox.value() = vox.value();
+    }
+  }
+}
+
+
 void run ()
 {
 
@@ -158,67 +182,44 @@ void run ()
   const Image::Header template_header (argument[2]);
 
   Image::check_dimensions (moving_header, template_header);
-  Ptr<Image::BufferScratch<value_type> > moving_buffer_ptr;
-  Ptr<Image::BufferScratch<value_type>::voxel_type> moving_vox_ptr;
-  Ptr<Image::BufferScratch<value_type> > template_buffer_ptr;
-  Ptr<Image::BufferScratch<value_type>::voxel_type> template_vox_ptr;
+  Ptr<Image::BufferScratch<value_type> > moving_image_ptr;
+  Ptr<Image::BufferScratch<value_type> > template_image_ptr;
 
-  bool do_reorientation = false;
-  if (template_header.ndim() == 4) {
-    if (template_header.dim(3) == 6 ||
-        template_header.dim(3) == 15 ||
-        template_header.dim(3) == 28 ||
-        template_header.dim(3) == 45 ||
-        template_header.dim(3) == 66 ||
-        template_header.dim(3) == 91 ||
-        template_header.dim(3) == 120) {
+  Options opt = get_options ("do_reorientation");
+  bool do_reorientation = true;
+  if (opt.size())
+    do_reorientation = false;
 
-      // Only load as many SH coefficients as required
-      do_reorientation = true;
-      int lmax = 4;
-      Options opt = get_options ("lmax");
-      if (opt.size()) {
-        lmax = opt[0][0];
-        if (lmax % 2)
-          throw Exception ("the input lmax must be even");
-      }
-      int num_SH = Math::SH::NforL (lmax);
-      if (num_SH > template_header.dim(3))
-          throw Exception ("not enough SH coefficients within input image for desired lmax");
-
-      Image::Buffer<value_type> moving_buffer (argument[0]);
-      Image::Buffer<value_type>::voxel_type moving_vox (moving_buffer);
-      Image::Buffer<value_type> template_buffer (argument[1]);
-      Image::Buffer<value_type>::voxel_type template_vox (template_buffer);
-
-      Image::Info moving_info (argument[0]);
-      moving_info.dim (3) = num_SH;
-      moving_info.stride(0) = 2;
-      moving_info.stride(1) = 3;
-      moving_info.stride(2) = 4;
-      moving_info.stride(3) = 1;
-      moving_buffer_ptr = new Image::BufferScratch<value_type> (moving_info);
-      //HERE!!
-//      Image::LoopInOrder (moving_vox_ptr)
-
+  if (template_header.ndim() > 3) {
+    value_type val = (Math::sqrt (float (1 + 8 * template_header.dim(3))) - 3.0) / 4.0;
+    if (!(val - (int)val) && do_reorientation) {
+        CONSOLE ("SH series detected, performing FOD registration");
+        // Only load as many SH coefficients as required
+        int lmax = 4;
+        Options opt = get_options ("lmax");
+        if (opt.size()) {
+          lmax = opt[0][0];
+          if (lmax % 2)
+            throw Exception ("the input lmax must be even");
+        }
+        int num_SH = Math::SH::NforL (lmax);
+        if (num_SH > template_header.dim(3))
+            throw Exception ("not enough SH coefficients within input image for desired lmax");
+        load_image(argument[0], num_SH, moving_image_ptr);
+        load_image(argument[2], num_SH, template_image_ptr);
+    } else {
+      load_image (argument[0], moving_header.dim(3), moving_image_ptr);
+      load_image (argument[2], template_header.dim(3), template_image_ptr);
     }
   } else {
+    load_image (argument[0], 1, moving_image_ptr);
+    load_image (argument[2], 1, template_image_ptr);
   }
 
-
-
-
-//  Image::BufferPreload<value_type> template_data (argument[2]);
-//  Image::BufferPreload<value_type>::voxel_type template_vox (template_data);
-
-
-  Options opt = get_options ("transformed");
+  opt = get_options ("transformed");
   Ptr<Image::Buffer<value_type> > transformed_buffer;
-  Ptr<Image::Buffer<value_type>::voxel_type > transformed_voxel;
-  if (opt.size()) {
-    transformed_buffer = new Image::Buffer<value_type> (argument[3], template_data);
-    transformed_voxel = new Image::Buffer<value_type>::voxel_type (*transformed_buffer);
-  }
+  if (opt.size())
+    transformed_buffer = new Image::Buffer<value_type> (argument[3], template_header);
 
   opt = get_options ("warp");
   Image::Header warp_header (argument[2]);
@@ -229,11 +230,8 @@ void run ()
   warp_header.stride(2) = 4;
   warp_header.stride(3) = 1;
   Ptr<Image::Buffer<value_type> > warp_buffer;
-  Ptr<Image::Buffer<value_type>::voxel_type > warp_voxel;
-  if (opt.size()) {
+  if (opt.size())
     warp_buffer = new Image::Buffer<value_type> (argument[3], warp_header);
-    warp_voxel = new Image::Buffer<value_type>::voxel_type (*warp_buffer);
-  }
 
   opt = get_options ("scale");
   std::vector<value_type> scale_factors (2);
@@ -247,7 +245,7 @@ void run ()
   }
 
   opt = get_options ("init");
-  const int init = 0;
+  int init = 0;
   if (opt.size())
     init = opt[0][0];
 
@@ -261,30 +259,20 @@ void run ()
   if (opt.size())
     init_affine.load (opt[0][0]);
 
-  // TODO think about interpolation and preload strides
   opt = get_options ("init_warp");
   Ptr<Image::Buffer<value_type> > init_warp_buffer;
-  Ptr<Image::Buffer<value_type>::voxel_type > init_warp_voxel;
-  if (opt.size()) {
-    init_warp_buffer = new Ptr<Image::Buffer<value_type> > (opt[0][0]);
-    init_warp_voxel = new Ptr<Image::Buffer<value_type> >::voxel_type (*init_warp_buffer);
-  }
+  if (opt.size())
+    init_warp_buffer = new Image::Buffer<value_type> (opt[0][0]);
 
   opt = get_options ("tmask");
-  Ptr<Image::BufferPreload<bool> > tmask_data;
-  Ptr<Image::BufferPreload<bool>::voxel_type> tmask_voxel;
-  if (opt.size ()) {
-    tmask_data = new Image::BufferPreload<bool> (opt[0][0]);
-    tmask_voxel = new Image::BufferPreload<bool>::voxel_type (*tmask_data);
-  }
+  Ptr<Image::BufferPreload<bool> > tmask_image;
+  if (opt.size ())
+    tmask_image = new Image::BufferPreload<bool> (opt[0][0]);
 
   opt = get_options ("mmask");
-  Ptr<Image::BufferPreload<bool> > mmask_data;
-  Ptr<Image::BufferPreload<bool>::voxel_type> mmask_voxel;
-  if (opt.size ()) {
-    mmask_data = new Image::BufferPreload<bool> (opt[0][0]);
-    mmask_voxel = new Image::BufferPreload<bool>::voxel_type (*mmask_data);
-  }
+  Ptr<Image::BufferPreload<bool> > mmask_image;
+  if (opt.size ())
+    mmask_image = new Image::BufferPreload<bool> (opt[0][0]);
 
   opt = get_options ("rigid_niter");
   std::vector<int> rigid_niter (1, 1000);
@@ -314,85 +302,69 @@ void run ()
   }
 
   opt = get_options ("smooth_grad");
-  value_type smooth_grad =  template_vox.vox(0) + template_vox.vox(1) + template_vox.vox(2);
+  value_type smooth_grad =  template_header.vox(0) + template_header.vox(1) + template_header.vox(2);
   if (opt.size())
     smooth_grad = opt[0][0];
 
   opt = get_options ("smooth_disp");
-  value_type smooth_disp =  (template_vox.vox(0) + template_vox.vox(1) + template_vox.vox(2)) / 3.0;
+  value_type smooth_disp =  (template_header.vox(0) + template_header.vox(1) + template_header.vox(2)) / 3.0;
   if (opt.size())
     smooth_disp = opt[0][0];
 
   opt = get_options ("directions");
   Math::Matrix<value_type> directions;
-  Math::Hemisphere::Directions directions_60 (directions);
+  Math::Hemisphere::directions_60 (directions);
   if (opt.size())
     directions.load(opt[0][0]);
 
-
-
-  LinearRegistration registration;
-  registration.set_max_iter (niter);
+  Registration::Linear registration;
   registration.set_scale_factor (scale_factors);
 
 
   switch (init) {
     case 0:
-      registration.set_init_type (Transform::Init::mass);
+      registration.set_init_type (Registration::Transform::Init::mass);
       break;
     case 1:
-      registration.set_init_type (Transform::Init::centre);
+      registration.set_init_type (Registration::Transform::Init::centre);
       break;
     case 2:
-      registration.set_init_type (Transform::Init::none);
+      registration.set_init_type (Registration::Transform::Init::none);
       break;
     default:
       break;
   }
 
-  Metric::MeanSquared metric;
+  opt = get_options ("only");
+  bool only = opt.size() ? true : false;
 
-  int transform_type = 1;
-  opt = get_options ("transform");
-  if (opt.size())
-    transform_type = opt[0][0];
+  Registration::Metric::MeanSquared metric;
 
-  Math::Matrix <double> final_transform;
-  if (transform_type == 0) {
+  Math::Matrix <double> final_rigid_transform;
+  Math::Matrix <double> final_affine_transform;
+  if (registration_type == 0) {
 
-    Transform::Rigid<double> rigid;
+    Registration::Transform::Rigid<double> rigid;
     CONSOLE ("running rigid registration");
-    registration.run_masked (metric, rigid, moving_vox, template_vox, mmask_voxel, tmask_voxel);
-    rigid.get_transform (final_transform);
-    final_transform.save (argument[2]);
-    Image::Filter::reslice<Image::Interp::Cubic> (moving_vox, output_voxel, final_transform, Image::Adapter::AutoOverSample, 0.0);
+    registration.run_masked (metric, rigid, *moving_image_ptr, *template_image_ptr, mmask_image, tmask_image);
+    rigid.get_transform (final_rigid_transform);
 
-  } else if (transform_type == 1) {
+  } else if (registration_type == 1) {
 
-    Transform::Affine<double> affine;
+    Registration::Transform::Affine<double> affine;
+    if (!only) {
+      Registration::Transform::Rigid<double> rigid;
+      CONSOLE ("running rigid registration");
+      registration.run_masked (metric, rigid, *moving_image_ptr, *template_image_ptr, mmask_image, tmask_image);
+      rigid.get_transform (final_rigid_transform);
+      Math::Vector<double> centre;
+      rigid.get_centre (centre);
+      affine.set_centre (centre);
+      affine.set_transform (final_rigid_transform);
+      registration.set_init_type (Registration::Transform::Init::none);
+    }
     CONSOLE ("running affine registration");
-    registration.run_masked (metric, affine, moving_vox, template_vox, mmask_voxel, tmask_voxel);
-    affine.get_transform (final_transform);
-    final_transform.save (argument[2]);
-    Image::Filter::reslice<Image::Interp::Cubic> (moving_vox, output_voxel, final_transform, Image::Adapter::AutoOverSample, 0.0);
-
-  } else {
-
-    Transform::Rigid<double> rigid;
-    CONSOLE ("running rigid registration");
-    registration.run_masked (metric, rigid, moving_vox, template_vox, mmask_voxel, tmask_voxel);
-    rigid.get_transform (final_transform);
-    Math::Vector<double> centre;
-    rigid.get_centre (centre);
-    Transform::Affine<double> affine;
-    affine.set_centre (centre);
-    affine.set_transform (final_transform);
-    registration.set_init_type (Transform::Init::none);
-    CONSOLE ("running affine registration");
-    registration.run_masked (metric, affine, moving_vox, template_vox, mmask_voxel, tmask_voxel);
-    affine.get_transform (final_transform);
-    final_transform.save (argument[2]);
-    Image::Filter::reslice<Image::Interp::Cubic> (moving_vox, output_voxel, final_transform, Image::Adapter::AutoOverSample, 0.0);
+    registration.run_masked (metric, affine, *moving_image_ptr, *template_image_ptr, mmask_image, tmask_image);
+    affine.get_transform (final_affine_transform);
   }
-
 }
