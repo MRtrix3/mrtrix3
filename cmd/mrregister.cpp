@@ -37,6 +37,7 @@
 #include "math/vector.h"
 #include "math/matrix.h"
 #include "math/SH.h"
+#include "math/LU.h"
 
 MRTRIX_APPLICATION
 
@@ -111,15 +112,15 @@ void usage ()
   + Option ("mmask", "a mask to define the moving image region to use for optimisation.")
     + Argument ("filename").type_image_in ()
 
-  + Option ("rigid_niter", "the maximum number of iterations. This can be specified either as a single number "
+  + Option ("niter_rigid", "the maximum number of iterations. This can be specified either as a single number "
                            "for all multi-resolution levels, or a single value for each level. (Default: 1000)")
     + Argument ("num").type_sequence_int ()
 
-  + Option ("affine_niter", "the maximum number of iterations. This can be specified either as a single number "
+  + Option ("niter_affine", "the maximum number of iterations. This can be specified either as a single number "
                            "for all multi-resolution levels, or a single value for each level. (Default: 1000)")
     + Argument ("num").type_sequence_int ()
 
-  + Option ("syn_niter", "the maximum number of iterations. This can be specified either as a single number "
+  + Option ("niter_syn", "the maximum number of iterations. This can be specified either as a single number "
                            "for all multi-resolution levels, or a single value for each level. (Default: 1000)")
     + Argument ("num").type_sequence_int ()
 
@@ -164,12 +165,16 @@ void load_image (std::string filename, size_t num_vols, Ptr<Image::BufferScratch
   }
   image_buffer = new Image::BufferScratch<value_type> (info);
   Image::BufferScratch<value_type>::voxel_type image_vox (*image_buffer);
-  Image::LoopInOrder loop (vox, 0, 3);
-  for (loop.start (vox, image_vox); loop.ok(); loop.next (vox, image_vox)) {
-    for (size_t vol = 0; vol < num_vols; ++vol) {
-      vox[3] = image_vox[3] = vol;
-      image_vox.value() = vox.value();
+  if (num_vols > 1) {
+    Image::LoopInOrder loop (vox, 0, 3);
+    for (loop.start (vox, image_vox); loop.ok(); loop.next (vox, image_vox)) {
+      for (size_t vol = 0; vol < num_vols; ++vol) {
+        vox[3] = image_vox[3] = vol;
+        image_vox.value() = vox.value();
+      }
     }
+  } else {
+    Image::threaded_copy (vox, image_vox);
   }
 }
 
@@ -178,7 +183,6 @@ void run ()
 {
 
   const Image::Header moving_header (argument[0]);
-  const int registration_type = argument[1];
   const Image::Header template_header (argument[2]);
 
   Image::check_dimensions (moving_header, template_header);
@@ -212,6 +216,7 @@ void run ()
       load_image (argument[2], template_header.dim(3), template_image_ptr);
     }
   } else {
+    do_reorientation = false;
     load_image (argument[0], 1, moving_image_ptr);
     load_image (argument[2], 1, template_image_ptr);
   }
@@ -219,7 +224,59 @@ void run ()
   opt = get_options ("transformed");
   Ptr<Image::Buffer<value_type> > transformed_buffer;
   if (opt.size())
-    transformed_buffer = new Image::Buffer<value_type> (argument[3], template_header);
+    transformed_buffer = new Image::Buffer<value_type> (opt[0][0], template_header);
+
+  const int registration_type = argument[1];
+  opt = get_options ("only");
+  bool only = opt.size() ? true : false;
+
+  opt = get_options ("separate");
+  bool separate_transforms = opt.size() ? true : false;
+
+  if (separate_transforms && only)
+    throw Exception ("conflicting options detected (-only & -separate)");
+
+  bool do_rigid  = false;
+  bool do_affine = false;
+  bool do_syn = false;
+  switch (registration_type) {
+    case 0:
+      do_rigid = true;
+      break;
+    case 1:
+      do_affine = true;
+      if (!only)
+        do_rigid = true;
+      break;
+    case 2:
+      do_syn = true;
+      if (!only)
+        do_rigid = true;
+        do_affine = true;
+        break;
+    default:
+      break;
+  }
+
+  opt = get_options ("rigid");
+  bool output_rigid = false;
+  std::string rigid_filename;
+  if (opt.size()) {
+    output_rigid = true;
+    rigid_filename = std::string(opt[0][0]);
+    if (!do_rigid)
+      throw Exception ("rigid transformation output requested when no rigid registration is to be performed.");
+  }
+
+  opt = get_options ("affine");
+   bool output_affine = false;
+   std::string affine_filename;
+   if (opt.size()) {
+     output_affine = true;
+     affine_filename = std::string(opt[0][0]);
+     if (!do_affine)
+       throw Exception ("affine transformation output requested when no affine registration is to be performed.");
+   }
 
   opt = get_options ("warp");
   Image::Header warp_header (argument[2]);
@@ -230,11 +287,17 @@ void run ()
   warp_header.stride(2) = 4;
   warp_header.stride(3) = 1;
   Ptr<Image::Buffer<value_type> > warp_buffer;
-  if (opt.size())
+  bool output_syn = false;
+  if (opt.size()) {
     warp_buffer = new Image::Buffer<value_type> (argument[3], warp_header);
+    output_syn = true;
+    if (!do_syn)
+      throw Exception ("syn transformation output requested when no syn registration is to be performed.");
+  }
+
 
   opt = get_options ("scale");
-  std::vector<value_type> scale_factors (2);
+  std::vector<value_type> scale_factors(2);
   scale_factors[0] = 0.5;
   scale_factors[1] = 1;
   if (opt.size ()) {
@@ -274,31 +337,39 @@ void run ()
   if (opt.size ())
     mmask_image = new Image::BufferPreload<bool> (opt[0][0]);
 
-  opt = get_options ("rigid_niter");
-  std::vector<int> rigid_niter (1, 1000);
+  opt = get_options ("niter_rigid");
+  std::vector<int> niter_rigid (1, 1000);
+
   if (opt.size ()) {
-    rigid_niter = parse_ints (opt[0][0]);
-    for (size_t i = 0; i < rigid_niter.size (); ++i)
-      if (rigid_niter[i] < 0)
+    niter_rigid = parse_ints (opt[0][0]);
+    for (size_t i = 0; i < niter_rigid.size (); ++i)
+      if (niter_rigid[i] < 0)
         throw Exception ("the number of rigid iterations must be positive");
+    if (!do_rigid)
+      throw Exception ("the number of rigid iterations have been input when no rigid registration is to be performed");
   }
 
-  opt = get_options ("affine_niter");
-  std::vector<int> affine_niter (1, 1000);
+  opt = get_options ("niter_affine");
+  std::vector<int> niter_affine (1, 1000);
   if (opt.size ()) {
-    affine_niter = parse_ints (opt[0][0]);
-    for (size_t i = 0; i < affine_niter.size (); ++i)
-      if (affine_niter[i] < 0)
+    niter_affine = parse_ints (opt[0][0]);
+    for (size_t i = 0; i < niter_affine.size (); ++i)
+      if (niter_affine[i] < 0)
         throw Exception ("the number of affine iterations must be positive");
+    if (!do_affine)
+      throw Exception ("the number of affine iterations have been input when no affine registration is to be performed");
   }
 
-  opt = get_options ("syn_niter");
-  std::vector<int> syn_niter (1, 1000);
+  opt = get_options ("niter_syn");
+  std::vector<int> niter_syn (1, 1000);
   if (opt.size ()) {
-    syn_niter = parse_ints (opt[0][0]);
-    for (size_t i = 0; i < syn_niter.size (); ++i)
-      if (syn_niter[i] < 0)
+    if (!do_syn)
+    niter_syn = parse_ints (opt[0][0]);
+    for (size_t i = 0; i < niter_syn.size (); ++i)
+      if (niter_syn[i] < 0)
         throw Exception ("the number of syn iterations must be positive");
+    if (!do_syn)
+      throw Exception ("the number of syn iterations have been input when no syn registration is to be performed");
   }
 
   opt = get_options ("smooth_grad");
@@ -335,17 +406,16 @@ void run ()
       break;
   }
 
-  opt = get_options ("only");
-  bool only = opt.size() ? true : false;
-
   Registration::Metric::MeanSquared metric;
 
   Math::Matrix <double> final_rigid_transform;
   Math::Matrix <double> final_affine_transform;
+
   if (registration_type == 0) {
 
-    Registration::Transform::Rigid<double> rigid;
     CONSOLE ("running rigid registration");
+    Registration::Transform::Rigid<double> rigid;
+    registration.set_max_iter (niter_rigid);
     registration.run_masked (metric, rigid, *moving_image_ptr, *template_image_ptr, mmask_image, tmask_image);
     rigid.get_transform (final_rigid_transform);
 
@@ -353,8 +423,9 @@ void run ()
 
     Registration::Transform::Affine<double> affine;
     if (!only) {
-      Registration::Transform::Rigid<double> rigid;
       CONSOLE ("running rigid registration");
+      Registration::Transform::Rigid<double> rigid;
+      registration.set_max_iter (niter_rigid);
       registration.run_masked (metric, rigid, *moving_image_ptr, *template_image_ptr, mmask_image, tmask_image);
       rigid.get_transform (final_rigid_transform);
       Math::Vector<double> centre;
@@ -364,7 +435,51 @@ void run ()
       registration.set_init_type (Registration::Transform::Init::none);
     }
     CONSOLE ("running affine registration");
+    registration.set_max_iter (niter_affine);
     registration.run_masked (metric, affine, *moving_image_ptr, *template_image_ptr, mmask_image, tmask_image);
     affine.get_transform (final_affine_transform);
+
+  } else {
+    CONSOLE ("running syn registration");
+  }
+
+  if (transformed_buffer) {
+    Image::Buffer<value_type>::voxel_type transformed_vox (*transformed_buffer);
+    Image::Buffer<value_type> moving_buffer (moving_header);
+    Image::Buffer<value_type>::voxel_type moving_vox (moving_buffer);
+    if (do_syn) {
+      if (do_reorientation) {
+        CONSOLE ("REORIENTATION NOT YET IMPLEMENTED");
+      } else {
+        CONSOLE ("WARPING NOT YET IMPLEMENTED");
+      }
+    } else if (do_affine) {
+      if (do_reorientation) {
+        CONSOLE ("REORIENTATION NOT YET IMPLEMENTED");
+      } else {
+        Image::Filter::reslice<Image::Interp::Cubic> (moving_vox, transformed_vox, final_affine_transform, Image::Adapter::AutoOverSample, 0.0);
+      }
+    } else {
+      if (do_reorientation) {
+        CONSOLE ("REORIENTATION NOT YET IMPLEMENTED");
+      } else {
+        Image::Filter::reslice<Image::Interp::Cubic> (moving_vox, transformed_vox, final_rigid_transform, Image::Adapter::AutoOverSample, 0.0);
+      }
+    }
+  }
+
+  if (output_rigid)
+    final_rigid_transform.save (rigid_filename);
+
+  if (output_affine) {
+    if (separate_transforms) {  // TODO check this
+      Matrix<double> affine_only;
+      Matrix<double> rigid_inv;
+      Math::LU::inv (rigid_inv, final_rigid_transform);
+      Math::mult (affine_only, final_affine_transform, rigid_inv);
+      affine_only.save (affine_filename);
+    } else {
+      final_affine_transform.save (affine_filename);
+    }
   }
 }
