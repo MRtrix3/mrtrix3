@@ -64,8 +64,8 @@ void usage ()
         "and SyN registration will be initialised with the result of an affine. To register using ONLY the selected transformation "
         "type, use the -only option."
 
-      + "By default the output transformation will be composed with those of lower degrees of freedom. To output each "
-        "transformation separately use the -separate option.";
+      + "By default the output syn warp will be composed with the linear transformation. To output the warp "
+        "as a separate transformation use the -separate option.";
 
   ARGUMENTS
       + Argument ("moving", "moving image").type_image_in ()
@@ -391,7 +391,6 @@ void run ()
   Registration::Linear registration;
   registration.set_scale_factor (scale_factors);
 
-
   switch (init) {
     case 0:
       registration.set_init_type (Registration::Transform::Init::mass);
@@ -428,10 +427,9 @@ void run ()
       registration.set_max_iter (niter_rigid);
       registration.run_masked (metric, rigid, *moving_image_ptr, *template_image_ptr, mmask_image, tmask_image);
       rigid.get_transform (final_rigid_transform);
-      Math::Vector<double> centre;
-      rigid.get_centre (centre);
-      affine.set_centre (centre);
-      affine.set_transform (final_rigid_transform);
+      affine.set_centre (rigid.get_centre());
+      affine.set_translation (rigid.get_translation());
+      affine.set_matrix (rigid.get_matrix());
       registration.set_init_type (Registration::Transform::Init::none);
     }
     CONSOLE ("running affine registration");
@@ -471,15 +469,6 @@ void run ()
   if (output_rigid)
     final_rigid_transform.save (rigid_filename);
 
-  if (output_affine) {
-    if (separate_transforms) {  // TODO check this
-      Matrix<double> affine_only;
-      Matrix<double> rigid_inv;
-      Math::LU::inv (rigid_inv, final_rigid_transform);
-      Math::mult (affine_only, final_affine_transform, rigid_inv);
-      affine_only.save (affine_filename);
-    } else {
-      final_affine_transform.save (affine_filename);
-    }
-  }
+  if (output_affine)
+    final_affine_transform.save (affine_filename);
 }
