@@ -65,7 +65,7 @@ namespace MR
 
             Point<float> moving_point;
             Math::Vector<double> param;
-            params_.transformation.get_parameter_vector(param);
+            params_.transformation.get_parameter_vector (param);
             params_.transformation.transform (moving_point, template_point);
             if (params_.moving_mask_interp) {
               params_.moving_mask_interp->scanner (moving_point);

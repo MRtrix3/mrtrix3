@@ -407,26 +407,28 @@ void run ()
 
   Registration::Metric::MeanSquared metric;
 
-  Math::Matrix <double> final_rigid_transform;
-  Math::Matrix <double> final_affine_transform;
+//  Math::Matrix <double> final_rigid_transform;
+//  Math::Matrix <double> final_affine_transform;
+  Registration::Transform::Rigid<double> rigid;
+  Registration::Transform::Affine<double> affine;
 
   if (registration_type == 0) {
 
     CONSOLE ("running rigid registration");
-    Registration::Transform::Rigid<double> rigid;
     registration.set_max_iter (niter_rigid);
     registration.run_masked (metric, rigid, *moving_image_ptr, *template_image_ptr, mmask_image, tmask_image);
-    rigid.get_transform (final_rigid_transform);
+    if (output_rigid)
+      rigid.get_transform().save (rigid_filename);
 
   } else if (registration_type == 1) {
 
-    Registration::Transform::Affine<double> affine;
     if (!only) {
       CONSOLE ("running rigid registration");
       Registration::Transform::Rigid<double> rigid;
       registration.set_max_iter (niter_rigid);
       registration.run_masked (metric, rigid, *moving_image_ptr, *template_image_ptr, mmask_image, tmask_image);
-      rigid.get_transform (final_rigid_transform);
+      if (output_rigid)
+        rigid.get_transform().save (rigid_filename);
       affine.set_centre (rigid.get_centre());
       affine.set_translation (rigid.get_translation());
       affine.set_matrix (rigid.get_matrix());
@@ -435,7 +437,8 @@ void run ()
     CONSOLE ("running affine registration");
     registration.set_max_iter (niter_affine);
     registration.run_masked (metric, affine, *moving_image_ptr, *template_image_ptr, mmask_image, tmask_image);
-    affine.get_transform (final_affine_transform);
+    if (output_affine)
+      affine.get_transform().save (affine_filename);
 
   } else {
     CONSOLE ("running syn registration");
@@ -455,20 +458,17 @@ void run ()
       if (do_reorientation) {
         CONSOLE ("REORIENTATION NOT YET IMPLEMENTED");
       } else {
-        Image::Filter::reslice<Image::Interp::Cubic> (moving_vox, transformed_vox, final_affine_transform, Image::Adapter::AutoOverSample, 0.0);
+        Image::Filter::reslice<Image::Interp::Cubic> (moving_vox, transformed_vox, affine.get_transform(), Image::Adapter::AutoOverSample, 0.0);
       }
     } else {
       if (do_reorientation) {
         CONSOLE ("REORIENTATION NOT YET IMPLEMENTED");
       } else {
-        Image::Filter::reslice<Image::Interp::Cubic> (moving_vox, transformed_vox, final_rigid_transform, Image::Adapter::AutoOverSample, 0.0);
+        Image::Filter::reslice<Image::Interp::Cubic> (moving_vox, transformed_vox, rigid.get_transform(), Image::Adapter::AutoOverSample, 0.0);
       }
     }
   }
 
-  if (output_rigid)
-    final_rigid_transform.save (rigid_filename);
 
-  if (output_affine)
-    final_affine_transform.save (affine_filename);
+
 }

@@ -77,7 +77,6 @@ namespace MR
                 matrix_(row, col) = transform(row, col);
               translation_[row] = transform(row, 3);
             }
-            compute_offset();
           }
 
           void get_transform (Matrix<ValueType>& transform) const {
@@ -90,6 +89,17 @@ namespace MR
             }
           }
 
+          const Matrix<ValueType> get_transform () const {
+            Matrix<ValueType> transform(4,4);
+            transform.identity();
+            for (size_t row = 0; row < 3; row++) {
+              for (size_t col = 0; col < 3; col++)
+                transform(row,col) = matrix_(row,col);
+              transform(row, 3) = offset_[row];
+            }
+            return transform;
+          }
+
           void set_matrix (const Matrix<ValueType>& matrix) {
             for (size_t row = 0; row < 3; row++) {
               for (size_t col = 0; col < 3; col++)
@@ -98,36 +108,26 @@ namespace MR
             compute_offset();
           }
 
-          void get_matrix (Matrix<ValueType>& matrix) const {
-            matrix.allocate(3,3);
-            for (size_t row = 0; row < 3; row++) {
-              for (size_t col = 0; col < 3; col++)
-                 matrix(row, col) = matrix_(row, col);
-            }
+          const Matrix<ValueType> get_matrix () const {
+            return matrix_;
           }
 
-          void set_translation (Vector<ValueType>& translation) {
+          void set_translation (const Vector<ValueType>& translation) {
             translation_ = translation;
             compute_offset();
           }
 
-          void get_translation (Vector<ValueType>& translation) const {
-            translation.allocate(3);
-            translation[0] = translation_[0];
-            translation[1] = translation_[1];
-            translation[2] = translation_[2];
+          const Vector<ValueType> get_translation() const {
+            return translation_;
           }
 
-          void set_centre (Vector<ValueType>& centre) {
+          void set_centre (const Vector<ValueType>& centre) {
             centre_ = centre;
             compute_offset();
           }
 
-          void get_centre (Vector<ValueType>& centre) const {
-            centre.allocate(3);
-            centre[0] = centre_[0];
-            centre[1] = centre_[1];
-            centre[2] = centre_[2];
+          const Vector<ValueType> get_centre() const {
+            return centre_;
           }
 
           size_t size() const {
@@ -150,6 +150,12 @@ namespace MR
             offset[0] = offset_[0];
             offset[1] = offset_[1];
             offset[2] = offset_[2];
+          }
+
+          void set_offset (const Math::Vector<ValueType>& offset) {
+            offset_[0] = offset[0];
+            offset_[1] = offset[1];
+            offset_[2] = offset[2];
           }
 
 
