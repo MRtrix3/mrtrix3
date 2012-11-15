@@ -77,6 +77,7 @@ namespace MR
                 matrix_(row, col) = transform(row, col);
               translation_[row] = transform(row, 3);
             }
+            compute_offset();
           }
 
           void get_transform (Matrix<ValueType>& transform) const {
