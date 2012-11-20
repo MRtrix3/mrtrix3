@@ -117,13 +117,13 @@ namespace MR
        * inverter (warp_vox, inv_warp);
        * \endcode
        */
-      class DeformationFieldInverter : public ConstInfo
+      class WarpInverter : public ConstInfo
       {
 
         public:
 
           template <class DFVoxelType>
-            DeformationFieldInverter (const DFVoxelType& in) :
+            WarpInverter (const DFVoxelType& in) :
               ConstInfo (in),
               max_iter (50),
               error_tolerance (0.01),
