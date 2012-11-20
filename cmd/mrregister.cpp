@@ -86,7 +86,7 @@ void usage ()
 
   + Option ("warp", "the output non-linear transformation defined as a deformation field "
                     "(each voxel defines the corresponding image coordinates wrt to template space)")
-    + Argument ("image").type_image_out ()
+    + Argument ("forward_warp inverse_warp").type_image_out ().allow_multiple ()
 
   + Option ("scale", "use a multi-resolution scheme by defining a scale factor for each level "
                      "using comma separated values (Default: 0.5,1)")
@@ -104,7 +104,7 @@ void usage ()
     + Argument ("file").type_file ()
 
   + Option ("init_warp", "initialise the syn registration with the supplied warp")
-      + Argument ("image").type_image_in ()
+      + Argument ("forward_warp inverse_warp").type_image_in ().allow_multiple ()
 
   + Option ("tmask", "a mask to define the target image region to use for optimisation.")
     + Argument ("filename").type_image_in ()
@@ -146,7 +146,7 @@ void usage ()
 
   + Option ("only", "only perform the chosen registration type (i.e. do not initialise using transformations of lower degrees of freedom.")
 
-  + Option ("separate", "output transforms thar are not composed with transformations of lower degrees of freedom.");
+  + Option ("separate", "ensure output warps are not composed with linear transformation.");
 }
 
 typedef float value_type;
@@ -406,9 +406,6 @@ void run ()
   }
 
   Registration::Metric::MeanSquared metric;
-
-//  Math::Matrix <double> final_rigid_transform;
-//  Math::Matrix <double> final_affine_transform;
   Registration::Transform::Rigid<double> rigid;
   Registration::Transform::Affine<double> affine;
 

@@ -158,8 +158,8 @@ void run() {
         stats[p] = interp.value();
       }
     }
-    write_scalars(stats, tck_writer);
     progress++;
+    write_scalars(stats, tck_writer);
   }
   tck_reader.close();
   tck_writer.close();

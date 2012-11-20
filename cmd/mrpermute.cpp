@@ -240,7 +240,7 @@ void run() {
         input_vox[0] = (*it)[0];
         input_vox[1] = (*it)[1];
         input_vox[2] = (*it)[2];
-        data(index++, subject) = input_vox.value();
+        data (index++, subject) = input_vox.value();
       }
       progress++;
     }
