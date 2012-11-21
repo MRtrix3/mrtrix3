@@ -24,7 +24,7 @@
 #include "image/buffer.h"
 #include "image/loop.h"
 #include "image/transform.h"
-#include "registration/transform/warpinverter.h"
+#include "image/registration/transform/warp_inverter.h"
 
 MRTRIX_APPLICATION
 
@@ -56,7 +56,7 @@ void run ()
   Image::BufferScratch<float>::voxel_type deformation_vox (deformation);
   Image::Registration::displacement2deformation (displacement_vox, deformation_vox);
 
-  Image::Registration::WarpInverter inverter (deformation_vox);
+  Image::Registration::Transform::WarpInverter inverter (deformation_vox);
 
   Image::Header header (displacement);
   header.info() = inverter.info();

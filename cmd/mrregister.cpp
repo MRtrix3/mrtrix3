@@ -29,10 +29,10 @@
 #include "image/interp/cubic.h"
 #include "image/transform.h"
 #include "image/adapter/reslice.h"
-#include "registration/linear.h"
-#include "registration/metric/mean_squared.h"
-#include "registration/transform/affine.h"
-#include "registration/transform/rigid.h"
+#include "image/registration/linear.h"
+#include "image/registration/metric/mean_squared.h"
+#include "image/registration/transform/affine.h"
+#include "image/registration/transform/rigid.h"
 #include "math/hemisphere/predefined_dirs.h"
 #include "math/vector.h"
 #include "math/matrix.h"
@@ -388,26 +388,26 @@ void run ()
   if (opt.size())
     directions.load(opt[0][0]);
 
-  Registration::Linear registration;
+  Image::Registration::Linear registration;
   registration.set_scale_factor (scale_factors);
 
   switch (init) {
     case 0:
-      registration.set_init_type (Registration::Transform::Init::mass);
+      registration.set_init_type (Image::Registration::Transform::Init::mass);
       break;
     case 1:
-      registration.set_init_type (Registration::Transform::Init::centre);
+      registration.set_init_type (Image::Registration::Transform::Init::centre);
       break;
     case 2:
-      registration.set_init_type (Registration::Transform::Init::none);
+      registration.set_init_type (Image::Registration::Transform::Init::none);
       break;
     default:
       break;
   }
 
-  Registration::Metric::MeanSquared metric;
-  Registration::Transform::Rigid<double> rigid;
-  Registration::Transform::Affine<double> affine;
+  Image::Registration::Metric::MeanSquared metric;
+  Image::Registration::Transform::Rigid<double> rigid;
+  Image::Registration::Transform::Affine<double> affine;
 
   if (registration_type == 0) {
 
@@ -421,7 +421,7 @@ void run ()
 
     if (!only) {
       CONSOLE ("running rigid registration");
-      Registration::Transform::Rigid<double> rigid;
+      Image::Registration::Transform::Rigid<double> rigid;
       registration.set_max_iter (niter_rigid);
       registration.run_masked (metric, rigid, *moving_image_ptr, *template_image_ptr, mmask_image, tmask_image);
       if (output_rigid)
@@ -429,7 +429,7 @@ void run ()
       affine.set_centre (rigid.get_centre());
       affine.set_translation (rigid.get_translation());
       affine.set_matrix (rigid.get_matrix());
-      registration.set_init_type (Registration::Transform::Init::none);
+      registration.set_init_type (Image::Registration::Transform::Init::none);
     }
     CONSOLE ("running affine registration");
     registration.set_max_iter (niter_affine);
