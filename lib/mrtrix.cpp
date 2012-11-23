@@ -50,7 +50,7 @@ namespace MR
       do {
         end = spec.find_first_of (',', start);
         std::string sub (spec.substr (start, end-start));
-        float num = sub == "nan" ? NAN : to<float> (spec.substr (start, end-start));
+        float num = ( sub.empty() || sub == "nan" ) ? NAN : to<float> (spec.substr (start, end-start));
         V.push_back (num);
         start = end+1;
       }

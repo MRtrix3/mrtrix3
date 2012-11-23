@@ -77,8 +77,8 @@ namespace MR
 
     inline bool exists (const std::string& path)
     {
-      struct stat64 buf;
-      if (!stat64 (path.c_str(), &buf)) return true;
+      struct stat buf;
+      if (!stat (path.c_str(), &buf)) return true;
       if (errno == ENOENT) return false;
       throw Exception (strerror (errno));
       return false;
@@ -87,8 +87,8 @@ namespace MR
 
     inline bool is_dir (const std::string& path)
     {
-      struct stat64 buf;
-      if (!stat64 (path.c_str(), &buf)) return S_ISDIR (buf.st_mode);
+      struct stat buf;
+      if (!stat (path.c_str(), &buf)) return S_ISDIR (buf.st_mode);
       if (errno == ENOENT) return false;
       throw Exception (strerror (errno));
       return false;
@@ -97,8 +97,8 @@ namespace MR
 
     inline bool is_file (const std::string& path)
     {
-      struct stat64 buf;
-      if (!stat64 (path.c_str(), &buf)) return S_ISREG (buf.st_mode);
+      struct stat buf;
+      if (!stat (path.c_str(), &buf)) return S_ISREG (buf.st_mode);
       if (errno == ENOENT) return false;
       throw Exception (strerror (errno));
       return false;

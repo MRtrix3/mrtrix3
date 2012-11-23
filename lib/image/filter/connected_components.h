@@ -114,14 +114,14 @@ namespace MR
           void set_directions (Math::Matrix<float> & dirs_az_el, float angular_threshold) {
             angular_threshold = angular_threshold * M_PI / 180.0;
             Math::Matrix<float> vert (dirs_az_el.rows(), 3);
-            for (uint d = 0; d < dirs_az_el.rows(); d++) {
+            for (size_t d = 0; d < dirs_az_el.rows(); d++) {
               vert(d,0) = sin(dirs_az_el(d,1)) * cos(dirs_az_el(d,0));
               vert(d,1) = sin(dirs_az_el(d,1)) * sin(dirs_az_el(d,0));
               vert(d,2) = cos(dirs_az_el(d,1));
             }
             dir_adjacency_matrix_.resize(dirs_az_el.rows(), dirs_az_el.rows(), 0.0);
-            for (uint m = 0; m < dirs_az_el.rows(); m++) {
-              for (uint n = m + 1; n < dirs_az_el.rows(); n++) {
+            for (size_t m = 0; m < dirs_az_el.rows(); m++) {
+              for (size_t n = m + 1; n < dirs_az_el.rows(); n++) {
                 float angle = Math::acos(Math::dot(vert.row(m), vert.row(n)));
                 if (angle > M_PI_2)
                   angle = M_PI - angle;

@@ -137,7 +137,7 @@ namespace MR
             typename Buffer<value_type>::voxel_type src (filedata);
             Image::threaded_copy_with_progress_message ("loading data for image \"" + name() + "\"...", src, destination);
 
-            Info::datatype_ = DataType::from<value_type>();
+            this->Info::datatype_ = DataType::from<value_type>();
             handler_ = NULL;
           }
 

@@ -324,7 +324,7 @@ Use CXX environment variable to set path to compiler, as follows:
      CXX=/usr/bin/g++-4.2 ./configure.py''')
 
 try:
-  compile ('int main() { return (0); }')
+  compile ('int main() { return (0); }', cpp_flags, ld_flags)
   report (' - tested ok\n')
 except CompileError:
   error ('''compiler error!
@@ -387,7 +387,7 @@ int main() {
   std::cout << sizeof(void*); 
   return (0);
 }
-'''))
+''', cpp_flags, ld_flags))
   report (str(8*pointer_size) + ' bit\n')
   if pointer_size == 8: cpp_flags += [ '-DWORD64' ]
   elif pointer_size != 4: 
@@ -416,7 +416,7 @@ int main() {
   std::tr1::unordered_map<int,int> map; 
   return (map.size());
 }
-''')
+''', cpp_flags, ld_flags)
   report ('present\n')
   cpp_flags += [ '-DUSE_TR1' ]
 except:
@@ -434,7 +434,7 @@ int main() {
   int64_t t = 0; 
   return (t); 
 }
-''')
+''', cpp_flags, ld_flags)
   report ('yes\n')
 except:
   report ('no\n')
@@ -459,7 +459,7 @@ int main() {
   std::cout << zlibVersion(); 
   return (0);
 }
-''', zlib_cflags, zlib_ldflags)
+''', cpp_flags + zlib_cflags, ld_flags + zlib_ldflags)
   report (zlib_version + '\n')
 except CompileError:
   error ('''compiler error!
@@ -509,7 +509,7 @@ int main() {
   pthread_exit (NULL); 
   return (0); 
 }
-''', thread_cflags, thread_ldflags)
+''', cpp_flags + thread_cflags, ld_flags + thread_ldflags)
   report ('yes\n')
 except CompileError:
   error ('''compiler error!
@@ -552,7 +552,7 @@ int main() {
   gsl_matrix* M = gsl_matrix_alloc (3,3); 
   return (M->size1 != 3);
 }
-''', gsl_cflags, gsl_ldflags)
+''', cpp_flags + gsl_cflags, ld_flags + gsl_ldflags)
   report (gsl_version + '\n')
 except CompileError:
   error ('''compiler error!
@@ -578,7 +578,7 @@ int main() {
   gsl_matrix* M = gsl_matrix_alloc (3,3); 
   gsl_matrix_set(M,0,0,3.14); 
   return (gsl_matrix_get(M,0,0) != 3.14); 
-}''', gsl_cflags + [ '-DHAVE_INLINE' ], gsl_ldflags)
+}''', cpp_flags + gsl_cflags + [ '-DHAVE_INLINE' ], ld_flags + gsl_ldflags)
   gsl_cflags += [ '-DHAVE_INLINE' ]
   report ('yes\n')
 except:
@@ -606,7 +606,7 @@ int main() {
   gsl_matrix* M = gsl_matrix_alloc (3,3); 
   return (M->size1 != 3);
 }
-''', gsl_cflags, flags)
+''', cpp_flags + gsl_cflags, ld_flags + flags)
     report ('yes\n')
     gsl_ldflags = flags
   except:
@@ -760,19 +760,19 @@ int main() { Foo f; }
     except OSError: raise QMOCError
     if process.wait() != 0: raise QMOCError
 
-    cmd = [ 'g++', '-c' ] + qt_cflags + [ 'qt.cpp', '-o', 'qt.o' ]
+    cmd = [ 'g++', '-c' ] + cpp_flags + qt_cflags + [ 'qt.cpp', '-o', 'qt.o' ]
     log ('\nexecuting "' + ' ' .join(cmd) + '"...\n')
     try: process = subprocess.Popen (cmd, cwd=qt_dir.name, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     except OSError: raise CompileError
     if process.wait() != 0: raise CompileError
 
-    cmd = [ 'g++', '-c' ] + qt_cflags + [ 'qt_moc.cpp', '-o', 'qt_moc.o' ]
+    cmd = [ 'g++', '-c' ] + cpp_flags + qt_cflags + [ 'qt_moc.cpp', '-o', 'qt_moc.o' ]
     log ('\nexecuting "' + ' ' .join(cmd) + '"...\n')
     try: process = subprocess.Popen (cmd , cwd=qt_dir.name, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     except OSError: raise CompileError
     if process.wait() != 0: raise CompileError
 
-    cmd = [ 'g++' ] + [ 'qt_moc.o', 'qt.o', '-o', 'qt' ] + qt_ldflags
+    cmd = [ 'g++' ] + ld_flags + [ 'qt_moc.o', 'qt.o', '-o', 'qt' ] + qt_ldflags
     log ('\nexecuting "' + ' ' .join(cmd) + '"...\n')
     try: process = subprocess.Popen (cmd , cwd=qt_dir.name, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     except OSError: raise LinkError
@@ -830,7 +830,7 @@ int main (int argc, char *argv[]) {
   window.show();
   return app.exec();
 }
-''', qt_cflags, qt_ldflags)
+''', cpp_flags + qt_cflags, ld_flags + qt_ldflags)
     report (gl_test.strip() + '\n')
     if 'NOT SUPPORTED' in gl_test:
       report ('''

@@ -26,7 +26,6 @@
 #include <stdint.h>
 #include <sys/types.h>
 #include <sys/stat.h>
-#include <sys/sendfile.h>
 #include <fcntl.h>
 
 #include "debug.h"
@@ -61,7 +60,7 @@ namespace MR
 
     inline void create (const std::string& filename, int64_t size = 0)
     { 
-      int fid = open64 (filename.c_str(), O_CREAT | O_RDWR | ( App::overwrite_files ? O_TRUNC : O_EXCL ), 0644);
+      int fid = open (filename.c_str(), O_CREAT | O_RDWR | ( App::overwrite_files ? O_TRUNC : O_EXCL ), 0644);
       if (fid < 0) {
         std::string mesg ("error creating file \"" + filename + "\": " + strerror (errno));
         if (errno == EEXIST) 
@@ -69,7 +68,7 @@ namespace MR
         throw Exception (mesg);
       }
 
-      if (size) size = ftruncate64 (fid, size);
+      if (size) size = ftruncate (fid, size);
       close (fid);
 
       if (size) 
@@ -82,10 +81,10 @@ namespace MR
     {
       DEBUG ("resizing file \"" + filename + "\" to " + str (size) + "...");
 
-      int fd = open64 (filename.c_str(), O_RDWR, 0644);
+      int fd = open (filename.c_str(), O_RDWR, 0644);
       if (fd < 0)
         throw Exception ("error opening file \"" + filename + "\" for resizing: " + strerror (errno));
-      int status = ftruncate64 (fd, size);
+      int status = ftruncate (fd, size);
       close (fd);
       if (status)
         throw Exception ("cannot resize file \"" + filename + "\": " + strerror (errno));
@@ -115,7 +114,7 @@ namespace MR
       do {
         for (int n = 0; n < 6; n++)
           filename[TMPFILE_ROOT_LEN+n] = random_char();
-        fid = open64 (filename.c_str(), O_CREAT | O_RDWR | O_EXCL, 0644);
+        fid = open (filename.c_str(), O_CREAT | O_RDWR | O_EXCL, 0644);
       } while (fid < 0 && errno == EEXIST);
 
       if (fid < 0)
@@ -124,7 +123,7 @@ namespace MR
 
 
 
-      int status = size ? ftruncate64 (fid, size) : 0;
+      int status = size ? ftruncate (fid, size) : 0;
       close (fid);
       if (status) throw Exception ("cannot resize file \"" + filename + "\": " + strerror (errno));
       return filename;

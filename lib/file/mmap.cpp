@@ -43,8 +43,8 @@ namespace MR
     {
       DEBUG ("memory-mapping file \"" + Entry::name + "\"...");
 
-      struct stat64 sbuf;
-      if (stat64 (Entry::name.c_str(), &sbuf))
+      struct stat sbuf;
+      if (stat (Entry::name.c_str(), &sbuf))
         throw Exception ("cannot stat file \"" + Entry::name + "\": " + strerror (errno));
 
       mtime = sbuf.st_mtime;
@@ -55,7 +55,7 @@ namespace MR
       if (msize < 0) 
         msize = sbuf.st_size - start;
 
-      if ( (fd = open64 (Entry::name.c_str(), (readwrite ? O_RDWR : O_RDONLY), 0644)) < 0)
+      if ( (fd = open (Entry::name.c_str(), (readwrite ? O_RDWR : O_RDONLY), 0644)) < 0)
         throw Exception ("error opening file \"" + Entry::name + "\": " + strerror (errno));
 
       try {
@@ -67,7 +67,7 @@ namespace MR
         if (!addr) throw 0;
         CloseHandle (handle);
 #else
-        addr = static_cast<uint8_t*> (mmap64 ( (char*) 0, start + msize,
+        addr = static_cast<uint8_t*> (mmap ( (char*) 0, start + msize,
                                                (readwrite ? PROT_READ | PROT_WRITE : PROT_READ), MAP_SHARED, fd, 0));
         if (addr == MAP_FAILED) throw 0;
 #endif
@@ -107,8 +107,8 @@ namespace MR
     bool MMap::changed () const
     {
       assert (fd >= 0);
-      struct stat64 sbuf;
-      if (fstat64 (fd, &sbuf)) return (false);
+      struct stat sbuf;
+      if (fstat (fd, &sbuf)) return (false);
       if (int64_t (msize) != sbuf.st_size) return (true);
       if (mtime != sbuf.st_mtime) return (true);
       return (false);
