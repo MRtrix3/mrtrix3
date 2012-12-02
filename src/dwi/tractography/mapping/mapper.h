@@ -31,9 +31,12 @@
 
 #include "image/buffer_preload.h"
 #include "image/header.h"
+#include "image/transform.h"
 #include "math/matrix.h"
 #include "math/SH.h"
 #include "thread/queue.h"
+
+#include "math/hemisphere/directions.h"
 
 #include "image/interp/linear.h"
 
@@ -66,28 +69,31 @@ typedef Image::Transform HeaderInterp;
 
 
 
-
 template <class Cont>
 class TrackMapperBase
 {
 
   public:
-    TrackMapperBase (const Image::Header& output_header, const Math::Matrix<float>& interp_matrix, const bool mapzero = false) :
-      R          (interp_matrix, 3),
+    TrackMapperBase (const Image::Header& output_header, const bool mapzero = false) :
       H_out      (output_header),
-      interp_out (H_out),
-      os_factor  (interp_matrix.rows() + 1),
+      transform  (H_out),
       map_zero   (mapzero) { }
 
     TrackMapperBase (const TrackMapperBase& that) :
-      R          (that.R),
+      R          (that.R ? new Resampler< Point<float>, float > (*that.R) : NULL),
       H_out      (that.H_out),
-      interp_out (H_out),
-      os_factor  (that.os_factor),
+      transform  (H_out),
       map_zero   (that.map_zero)
     { }
 
     virtual ~TrackMapperBase() { }
+
+
+    void set_interp (const Math::Matrix<float>& interp_matrix)
+    {
+      if (interp_matrix.is_set())
+        R = new Resampler< Point<float>, float > (interp_matrix, 3);
+    }
 
 
     bool operator() (TrackAndIndex& in, Cont& out)
@@ -95,23 +101,23 @@ class TrackMapperBase
       out.clear();
       out.index = in.index;
       if (preprocess (in.tck, out) || map_zero) {
-        if (R.valid())
-          R.interpolate (in.tck);
+        if (R)
+          R->interpolate (in.tck);
         voxelise (in.tck, out);
         postprocess (in.tck, out);
       }
       return true;
     }
 
+    size_t os_factor() const { return R ? R->get_os_ratio() : 1; }
 
   private:
-    Resampler< Point<float>, float > R;
+    Ptr< Resampler< Point<float>, float > > R;
 
 
   protected:
     const Image::Header& H_out;
-    HeaderInterp interp_out;
-    const size_t os_factor;
+    Image::Transform transform;
     const bool map_zero;
 
 
@@ -129,12 +135,31 @@ template <> void TrackMapperBase<SetVoxelDir>::voxelise (const std::vector< Poin
 
 
 
+
+class TrackMapperDixel : public TrackMapperBase<SetDixel>
+{
+  public:
+    TrackMapperDixel (const Image::Header& output_header, const bool map_zero, const Math::Hemisphere::Directions_FastLookup& directions) :
+      TrackMapperBase<SetDixel> (output_header, map_zero),
+      dirs (directions) { }
+
+  protected:
+    const Math::Hemisphere::Directions_FastLookup& dirs;
+
+  private:
+    void voxelise (const std::vector< Point<float> >&, SetDixel&) const;
+
+};
+
+
+
+
 template <class Cont>
 class TrackMapperTWI : public TrackMapperBase<Cont>
 {
   public:
-    TrackMapperTWI (const Image::Header& output_header, const Math::Matrix<float>& interp_matrix, const bool map_zero, const float step, const contrast_t c, const stat_t s, const float denom = 0.0) :
-      TrackMapperBase<Cont> (output_header, interp_matrix, map_zero),
+    TrackMapperTWI (const Image::Header& output_header, const bool map_zero, const float step, const contrast_t c, const stat_t s, const float denom = 0.0) :
+      TrackMapperBase<Cont> (output_header, map_zero),
       contrast              (c),
       track_statistic       (s),
       gaussian_denominator  (denom),
@@ -457,8 +482,8 @@ class TrackMapperTWIImage : public TrackMapperTWI<Cont>
   typedef Image::BufferPreload<float>::voxel_type input_voxel_type;
 
   public:
-    TrackMapperTWIImage (const Image::Header& output_header, const Math::Matrix<float>& interp_matrix, const bool map_zero, const float step, const contrast_t c, const stat_t m, const float denom, Image::BufferPreload<float>& input_image) :
-      TrackMapperTWI<Cont> (output_header, interp_matrix, map_zero, step, c, m, denom),
+    TrackMapperTWIImage (const Image::Header& output_header, const bool map_zero, const float step, const contrast_t c, const stat_t m, const float denom, Image::BufferPreload<float>& input_image) :
+      TrackMapperTWI<Cont> (output_header, map_zero, step, c, m, denom),
       voxel                (input_image),
       interp               (voxel),
       lmax                 (0),

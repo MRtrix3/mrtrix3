@@ -74,10 +74,8 @@ class VoxelDEC : public Voxel
       memset (p, 0x00, 3 * sizeof(int));
     }
     VoxelDEC (const Voxel& V) :
-      colour (Point<float> (0.0, 0.0, 0.0))
-    {
-      memcpy (p, V, 3 * sizeof(int));
-    }
+      Voxel (V),
+      colour (Point<float> (0.0, 0.0, 0.0)) { }
 
     VoxelDEC& operator=  (const Voxel& V)          { Voxel::operator= (V); return (*this); }
     bool      operator== (const Voxel& V)    const { return Voxel::operator== (V); }
@@ -148,10 +146,8 @@ class VoxelDECFactor : public VoxelFactor
       memset (p, 0x00, 3 * sizeof(int));
     }
     VoxelDECFactor (const Voxel& V) :
-      colour (Point<float> (0.0, 0.0, 0.0))
-    {
-      memcpy (p, V, 3 * sizeof(int));
-    }
+      VoxelFactor (V),
+      colour (Point<float> (0.0, 0.0, 0.0)) { }
 
     VoxelDECFactor& operator=  (const Voxel& V)                { Voxel::operator= (V); return (*this); }
     bool            operator== (const Voxel& V)          const { return Voxel::operator== (V); }
@@ -177,10 +173,8 @@ class VoxelDir : public Voxel
       dir (0.0, 0.0, 0.0) { }
 
     VoxelDir (const Voxel& V) :
-      dir (0.0, 0.0, 0.0)
-    {
-      memcpy (p, V, 3 * sizeof(int));
-    }
+      Voxel (V),
+      dir (0.0, 0.0, 0.0) { }
 
     void add_dir (const Point<float>& i) const { dir += i; }
     const Point<float>& get_dir() const { return dir; }
@@ -192,6 +186,50 @@ class VoxelDir : public Voxel
 
   private:
     mutable Point<float> dir;
+
+};
+
+
+
+// New Voxel-derived class; assumes tangent has been mapped to a hemisphere basis direction set
+class Dixel : public Voxel
+{
+
+  public:
+    Dixel () :
+      dir (invalid),
+      value (0.0) { }
+
+    Dixel (const Voxel& V) :
+      Voxel (V),
+      dir (invalid),
+      value (0.0) { }
+
+    Dixel (const Voxel& V, const size_t b) :
+      Voxel (V),
+      dir (b),
+      value (0.0) { }
+
+    Dixel (const Voxel& V, const size_t b, const float v) :
+      Voxel (V),
+      dir (b),
+      value (v) { }
+
+    void set_dir   (const size_t b) { dir = b; }
+    void set_value (const float v) const { value = v; }
+
+    bool   valid()     const { return (dir != invalid); }
+    size_t get_dir()   const { return dir; }
+    float  get_value() const { return value; }
+
+    bool operator== (const Dixel& V) const { return (Voxel::operator== (V) ? (dir == V.dir) : false); }
+    bool operator<  (const Dixel& V) const { return (operator== (V)        ? (dir <  V.dir) : Voxel::operator< (V)); }
+
+  private:
+    size_t dir;
+    mutable float value;
+
+    static const size_t invalid;
 
 };
 
@@ -210,6 +248,7 @@ class SetVoxelDEC       : public std::set<VoxelDEC>      , public SetVoxelExtras
 class SetVoxelDir       : public std::set<VoxelDir>      , public SetVoxelExtras { };
 class SetVoxelFactor    : public std::set<VoxelFactor>   , public SetVoxelExtras { };
 class SetVoxelDECFactor : public std::set<VoxelDECFactor>, public SetVoxelExtras { };
+class SetDixel          : public std::set<Dixel>         , public SetVoxelExtras { };
 
 
 

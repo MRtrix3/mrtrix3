@@ -30,8 +30,7 @@ namespace Tractography {
 namespace Mapping {
 
 
-//float SetVoxelFactor   ::factor = 1.0;
-//float SetVoxelDECFactor::factor = 1.0;
+const size_t Dixel::invalid = std::numeric_limits<size_t>::max();
 
 
 }
