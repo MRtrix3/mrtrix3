@@ -30,6 +30,7 @@
 #include "image/transform.h"
 #include "image/adapter/reslice.h"
 #include "image/registration/linear.h"
+#include "image/registration/nonlinear.h"
 #include "image/registration/metric/mean_squared.h"
 #include "image/registration/transform/affine.h"
 #include "image/registration/transform/rigid.h"
@@ -465,7 +466,6 @@ void run ()
       }
     }
   }
-
 
 
 }

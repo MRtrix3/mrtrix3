@@ -50,7 +50,77 @@ using namespace App;
 using namespace std;
 using namespace MR::DWI::Tractography::Mapping;
 
-typedef float value_type;
+#define GROUP_AVERAGE_FOD_THRESHOLD 0.12
+#define SUBJECT_FOD_THRESHOLD 0.04
+
+typedef Stats::TFCE::value_type value_type;
+
+
+void usage ()
+{
+  AUTHOR = "David Raffelt (d.raffelt@brain.org.au)";
+
+  DESCRIPTION
+  + "Statistical analysis of bundle-specific DWI indices using threshold-free cluster "
+    "enhancement and a whole-brain tractogram for defining a probabilistic neighbourhood";
+
+
+  ARGUMENTS
+  + Argument ("fods", "a text file listing the file names of the input FOD images").type_file()
+
+  + Argument ("modfods", "a text file listing the file names of the input MODULATED FOD images").type_file()
+
+  + Argument ("design", "the design matrix").type_file()
+
+  + Argument ("contrast", "the contrast matrix").type_file()
+
+  + Argument ("group", "the group average FOD image (ideally at lmax=8).").type_image_in()
+
+  + Argument ("mask", "a 3D mask to define which voxels to include in the analysis").type_image_in()
+
+  + Argument ("tracks", "the tracks used to define orientations of "
+                        "interest and spatial neighbourhoods.").type_file()
+
+  + Argument ("output", "the filename prefix for all output.").type_text();
+
+
+  OPTIONS
+
+  + Option ("only", "")
+
+  + Option ("nperms", "the number of permutations (default = 5000).")
+  + Argument ("num").type_integer (1, 5000, 100000)
+
+  + Option ("dh", "the height increment used in the TFCE integration (default = 0.1)")
+  + Argument ("value").type_float (0.001, 0.1, 100000)
+
+  + Option ("tfce_e", "TFCE height parameter (default = 1.0)")
+  + Argument ("value").type_float (0.001, 0.5, 100000)
+
+  + Option ("tfce_h", "TFCE extent parameter (default = 2.0)")
+  + Argument ("value").type_float (0.001, 2.0, 100000)
+
+  + Option ("tfce_c", "TFCE connectivity parameter (default = 0.5)")
+  + Argument ("value").type_float (0.001, 0.5, 100000)
+
+  + Option ("angle", "the max angle threshold for computing inter-subject FOD peak correspondence")
+  + Argument ("value").type_float (0.001, 30, 90)
+
+  + Option ("connectivity", "a threshold to define the required fraction of shared connections to be included in the neighbourhood (default: 1%)")
+  + Argument ("threshold").type_float (0.001, 0.01, 1.0)
+
+  + Option ("smooth", "smooth the AFD integral along the fibre tracts using a Gaussian kernel with the supplied FWHM (default: 5mm)")
+  + Argument ("FWHM").type_float (0.0, 5.0, 200.0)
+
+  + Option ("num_vis_tracks", "the number of tracks to use when generating output for visualisation. "
+                              "These tracts are obtained by truncating the input tracks (default: 100000")
+  + Argument ("num").type_integer (1, 100000, INT_MAX)
+
+  + Option ("check", "output an image to check the number of lobes per voxel identified in the template")
+  + Argument ("image").type_image_out ();
+}
+
+
 
 // TODO combine this with Rob's SIFT code once committed into main repository
 template <class FODImageType, class MaskImageType>
@@ -277,7 +347,7 @@ class Track2StatProcessor {
   public:
     Track2StatProcessor (Image::BufferScratch<int32_t>& lobe_indexer,
                          const vector<Point<float> >& lobe_directions,
-                         float angular_threshold,
+                         const float angular_threshold,
                          const vector<float>& tvalue,
                          const vector<float>& tfce_pos,
                          const vector<float>& tfce_neg,
@@ -395,8 +465,8 @@ class Track2StatWriter {
 
   private:
 
-    void write_scalars (std::vector<value_type>& values, DWI::Tractography::Writer<value_type>& writer) {
-      std::vector<Point<float> > scalars;
+    void write_scalars (vector<value_type>& values, DWI::Tractography::Writer<value_type>& writer) {
+      vector<Point<float> > scalars;
       for (size_t i = 0; i < values.size(); i += 3) {
         Point<float> point;
         point[0] = values[i];
@@ -422,70 +492,101 @@ class Track2StatWriter {
 };
 
 
+// Run permutation test and output results
+void do_glm_and_output (const Math::Matrix<value_type>& data,
+                        const Math::Matrix<value_type>& design,
+                        const Math::Matrix<value_type>& contrast,
+                        const value_type dh,
+                        const value_type E,
+                        const value_type H,
+                        const int num_perms,
+                        const vector<map<int32_t, Stats::TFCE::connectivity> >& lobe_connectivity,
+                        const string track_filename,
+                        Image::BufferScratch<int32_t>& lobe_indexer,
+                        const vector<Point<value_type> >& lobe_directions,
+                        const float angular_threshold,
+                        const int num_vis_tracks,
+                        string output_prefix) {
 
+  int num_lobes = lobe_directions.size();
+  Math::Vector<value_type> perm_distribution_pos (num_perms - 1);
+  Math::Vector<value_type> perm_distribution_neg (num_perms - 1);
+  vector<value_type> tfce_output_pos (num_lobes, 0.0);
+  vector<value_type> tfce_output_neg (num_lobes, 0.0);
+  vector<value_type> tvalue_output (num_lobes, 0.0);
+  vector<value_type> pvalue_output_pos (num_lobes, 0.0);
+  vector<value_type> pvalue_output_neg (num_lobes, 0.0);
 
-void usage ()
-{
-  AUTHOR = "David Raffelt (d.raffelt@brain.org.au)";
+    Math::Stats::GLMTTest glm (data, design, contrast);
+  {
+    Stats::TFCE::Connectivity tfce_integrator (lobe_connectivity, dh, E, H);
+    Stats::TFCE::run (glm, tfce_integrator, num_perms,
+                      perm_distribution_pos, perm_distribution_neg,
+                      tfce_output_pos, tfce_output_neg, tvalue_output);
+  }
 
-  DESCRIPTION
-  + "Statistical analysis of bundle-specific DWI indices using threshold-free cluster "
-    "enhancement and a whole-brain tractogram for defining a probabilistic neighbourhood";
+  perm_distribution_pos.save (output_prefix + "_perm_dist_pos.txt");
+  perm_distribution_neg.save (output_prefix + "_perm_dist_neg.txt");
+  Math::Stats::statistic2pvalue (perm_distribution_pos, tfce_output_pos, pvalue_output_pos);
+  Math::Stats::statistic2pvalue (perm_distribution_neg, tfce_output_neg, pvalue_output_neg);
 
-
-  ARGUMENTS
-  + Argument ("input", "a text file containing the file names of the input images").type_file()
-
-  + Argument ("design", "the design matrix").type_file()
-
-  + Argument ("contrast", "the contrast matrix").type_file()
-
-  + Argument ("group", "the group average FOD image (ideally at lmax=8).").type_image_in()
-
-  + Argument ("mask", "a 3D mask to define which voxels to include in the analysis").type_image_in()
-
-  + Argument ("tracks", "the tracks used to define orientations of "
-                        "interest and spatial neighbourhoods.").type_file()
-
-  + Argument ("output", "the filename prefix for all output.").type_text();
-
-
-  OPTIONS
-  + Option ("nperms", "the number of permutations (default = 5000).")
-  + Argument ("num").type_integer (1, 5000, 100000)
-
-  + Option ("dh", "the height increment used in the TFCE integration (default = 0.1)")
-  + Argument ("value").type_float (0.001, 0.1, 100000)
-
-  + Option ("tfce_e", "TFCE height parameter (default = 0.5)")
-  + Argument ("value").type_float (0.001, 0.5, 100000)
-
-  + Option ("tfce_h", "TFCE extent parameter (default = 2)")
-  + Argument ("value").type_float (0.001, 2.0, 100000)
-
-  + Option ("tfce_c", "TFCE connectivity parameter (default = 0.5)")
-  + Argument ("value").type_float (0.001, 0.5, 100000)
-
-  + Option ("angle", "the max angle threshold for computing inter-subject FOD peak correspondence")
-  + Argument ("value").type_float (0.001, 30, 90)
-
-  + Option ("connectivity", "a threshold to define the required fraction of shared connections to be included in the neighbourhood (default: 1%)")
-  + Argument ("threshold").type_float (0.001, 0.01, 1.0)
-
-  + Option ("smooth", "smooth the AFD integral along the fibre tracts using a Gaussian kernel with the supplied FWHM (default: 5mm)")
-  + Argument ("FWHM").type_float (0.0, 5.0, 200.0)
-
-  + Option ("num_vis_tracks", "the number of tracks to use when generating output for visualisation. "
-                              "These tracts are obtained by truncating the input tracks (default: 100000")
-  + Argument ("num").type_integer (1, 100000, INT_MAX);
-
+  // Generate output
+  DWI::Tractography::Properties tck_properties;
+  DWI::Tractography::Reader<value_type> tracks_file;
+  tracks_file.open (track_filename, tck_properties);
+  DWI::Tractography::Writer<value_type> tck_writer (output_prefix + "_tck.tck", tck_properties);
+  DWI::Tractography::Writer<value_type> tvalue_writer (output_prefix + "_tck.tval", tck_properties);
+  DWI::Tractography::Writer<value_type> tfce_pos_writer (output_prefix + "_tck.tfcep", tck_properties);
+  DWI::Tractography::Writer<value_type> tfce_neg_writer (output_prefix + "_tck.tfcen", tck_properties);
+  DWI::Tractography::Writer<value_type> pvalue_pos_writer (output_prefix + "_tck.pvalp", tck_properties);
+  DWI::Tractography::Writer<value_type> pvalue_neg_writer (output_prefix + "_tck.pvaln", tck_properties);
+  DWI::Tractography::Mapping::TrackLoader loader (tracks_file, num_vis_tracks, "generating output tracks and associated statistics...");
+  Track2StatProcessor processor (lobe_indexer, lobe_directions, angular_threshold, tvalue_output, tfce_output_pos, tfce_output_neg, pvalue_output_pos, pvalue_output_neg);
+  Track2StatWriter writer (tck_writer, tvalue_writer, tfce_pos_writer, tfce_neg_writer, pvalue_pos_writer, pvalue_neg_writer);
+  Thread::run_queue (loader, 1, DWI::Tractography::Mapping::TrackAndIndex(), processor, 0, TrackStatItem(), writer, 1);
+  tracks_file.close();
+  tck_writer.close();
+  tvalue_writer.close();
+  tfce_pos_writer.close();
+  tfce_neg_writer.close();
+  pvalue_pos_writer.close();
+  pvalue_neg_writer.close();
 }
 
 
-#define GROUP_AVERAGE_FOD_THRESHOLD 0.12
-#define SUBJECT_FOD_THRESHOLD 0.04
+void load_data_and_compute_integrals (const vector<string>& filename_list,
+                                      Image::BufferScratch<bool>& lobe_mask,
+                                      Image::BufferScratch<int32_t>& lobe_indexer,
+                                      const vector<Point<value_type> >& lobe_directions,
+                                      const value_type angular_threshold,
+                                      const vector<map<int32_t, value_type> >& lobe_smoothing_weights,
+                                      Math::Matrix<value_type>& fod_lobe_integrals) {
 
-typedef Stats::TFCE::value_type value_type;
+  fod_lobe_integrals.resize (lobe_directions.size(), filename_list.size(), 0.0);
+  ProgressBar progress ("loading FOD images and computing integrals...", filename_list.size());
+  Math::Hemisphere::Directions dirs (1281);
+  for (size_t subject = 0; subject < filename_list.size(); subject++) {
+    LogLevelLatch log_level (0);
+    Image::Buffer<value_type> fod_buffer (filename_list[subject]);
+    Image::check_dimensions (fod_buffer, lobe_mask, 0, 3);
+    SHQueueWriter<Image::Buffer<value_type>, Image::BufferScratch<bool> > writer2 (fod_buffer, lobe_mask);
+    DWI::FOD_FMLS fmls (dirs, Math::SH::LforN (fod_buffer.dim(3)));
+    fmls.set_peak_value_threshold (SUBJECT_FOD_THRESHOLD);
+    vector<value_type> temp_lobe_integrals (lobe_directions.size(), 0.0);
+    SubjectLobeProcessor lobe_processor (lobe_indexer, lobe_directions, temp_lobe_integrals, angular_threshold);
+    Thread::run_queue (writer2, 1, DWI::SH_coefs(), fmls, 0, DWI::FOD_lobes(), lobe_processor, 1);
+
+    // Smooth the data based on connectivity
+    for (size_t lobe = 0; lobe < lobe_directions.size(); ++lobe) {
+      value_type value = 0.0;
+      map<int32_t, value_type>::const_iterator it = lobe_smoothing_weights[lobe].begin();
+      for (; it != lobe_smoothing_weights[lobe].end(); ++it)
+        value += temp_lobe_integrals[it->first] * it->second;
+      fod_lobe_integrals (lobe, subject) = value;
+    }
+    progress++;
+  }
+}
 
 void run() {
 
@@ -495,19 +596,19 @@ void run() {
     dh = opt[0][0];
 
   opt = get_options ("tfce_h");
-  value_type H = 2.0;
+  value_type tfce_H = 2.0;
   if (opt.size())
-    H = opt[0][0];
+    tfce_H = opt[0][0];
 
   opt = get_options ("tfce_e");
-  value_type E = 0.5;
+  value_type tfce_E = 1.0;
   if (opt.size())
-    E = opt[0][0];
+    tfce_E = opt[0][0];
 
   opt = get_options ("tfce_c");
-  value_type C = 0.5;
+  value_type tfce_C = 0.5;
   if (opt.size())
-    C = opt[0][0];
+    tfce_C = opt[0][0];
 
   opt = get_options ("nperms");
   int num_perms = 5000;
@@ -535,24 +636,35 @@ void run() {
     num_vis_tracks = opt[0][0];
 
   // Read filenames
-  std::vector<std::string> subjects;
+  vector<string> fod_filenames;
   {
-    std::string folder = Path::dirname (argument[0]);
-    std::ifstream ifs (argument[0].c_str());
-    std::string temp;
+    string folder = Path::dirname (argument[0]);
+    ifstream ifs (argument[0].c_str());
+    string temp;
     while (getline (ifs, temp))
-      subjects.push_back (Path::join (folder, temp));
+      fod_filenames.push_back (Path::join (folder, temp));
   }
-   // Load design matrix:
-  Math::Matrix<value_type> design;
-  design.load (argument[1]);
+  vector<string> mod_fod_filenames;
+  {
+    string folder = Path::dirname (argument[1]);
+    ifstream ifs (argument[1].c_str());
+    string temp;
+    while (getline (ifs, temp))
+      mod_fod_filenames.push_back (Path::join (folder, temp));
+  }
 
-  if (design.rows() != subjects.size())
+  if (mod_fod_filenames.size() != fod_filenames.size())
+    throw Exception ("the number of fod and modulated fod images in the file lists is not the same");
+
+  // Load design matrix:
+  Math::Matrix<value_type> design;
+  design.load (argument[2]);
+  if (design.rows() != fod_filenames.size())
     throw Exception ("number of subjects does not match number of rows in design matrix");
 
   // Load contrast matrix:
   Math::Matrix<value_type> contrast;
-  contrast.load (argument[2]);
+  contrast.load (argument[3]);
 
   if (contrast.columns() > design.columns())
    throw Exception ("too many contrasts for design matrix");
@@ -560,12 +672,12 @@ void run() {
 
   DWI::Tractography::Reader<value_type> track_file;
   DWI::Tractography::Properties properties;
-  track_file.open (argument[5], properties);
+  track_file.open (argument[6], properties);
 
   // Compute FOD lobes on average FOD image
   vector<Point<value_type> > lobe_directions;
   Math::Hemisphere::Directions dirs (1281);
-  Image::Header index_header (argument[3]);
+  Image::Header index_header (argument[4]);
   index_header.dim(3) = 2;
   Image::BufferScratch<int32_t> lobe_indexer (index_header);
   Image::BufferScratch<int32_t>::voxel_type lobe_indexer_vox (lobe_indexer);
@@ -575,8 +687,8 @@ void run() {
     lobe_indexer_vox.value() = -1;
 
   {
-    Image::Buffer<value_type> av_fod_buffer (argument[3]);
-    Image::Buffer<bool> brain_mask_buffer (argument[4]);
+    Image::Buffer<value_type> av_fod_buffer (argument[4]);
+    Image::Buffer<bool> brain_mask_buffer (argument[5]);
     Image::check_dimensions (av_fod_buffer, brain_mask_buffer, 0, 3);
     SHQueueWriter<Image::Buffer<value_type>, Image::Buffer<bool> > writer (av_fod_buffer, brain_mask_buffer);
     DWI::FOD_FMLS fmls (dirs, Math::SH::LforN (av_fod_buffer.dim(3)));
@@ -589,7 +701,7 @@ void run() {
   // Compute 3D analysis mask based on lobes in average FOD image
   uint32_t num_lobes = lobe_directions.size();
   CONSOLE ("number of lobes: " + str(num_lobes));
-  Image::Header header3D (argument[3]);
+  Image::Header header3D (argument[4]);
   header3D.set_ndim(3);
   Image::BufferScratch<bool> lobe_mask (header3D);
   Image::BufferScratch<bool>::voxel_type lobe_mask_vox (lobe_mask);
@@ -604,11 +716,11 @@ void run() {
     }
   }
 
-  /****************************************************************
-  * Check number of lobes per voxel
-  *****************************************************************/
-  {
-    Image::Buffer<float> fibre_count_buffer ("template_fibre_count.mif", header3D);
+
+  // Check number of lobes per voxel
+  opt = get_options ("check");
+  if (opt.size()) {
+    Image::Buffer<float> fibre_count_buffer (opt[0][0], header3D);
     Image::Buffer<float>::voxel_type fibre_count_buffer_vox (fibre_count_buffer);
     Image::Loop loop(0, 3);
     for (loop.start (lobe_indexer_vox, fibre_count_buffer_vox); loop.ok(); loop.next (lobe_indexer_vox, fibre_count_buffer_vox)) {
@@ -620,8 +732,6 @@ void run() {
       }
     }
   }
-
-
 
   vector<map<int32_t, Stats::TFCE::connectivity> > lobe_connectivity (num_lobes);
   vector<uint16_t> lobe_TDI (num_lobes, 0.0);
@@ -638,7 +748,7 @@ void run() {
     typedef DWI::Tractography::Mapping::SetVoxelDir SetVoxelDir;
     Math::Matrix<value_type> dummy_matrix;
     DWI::Tractography::Mapping::TrackLoader loader (track_file, num_tracks, "pre-computing lobe-lobe connectivity...");
-    Image::Header header (argument[3]);
+    Image::Header header (argument[4]);
     DWI::Tractography::Mapping::TrackMapperBase<SetVoxelDir> mapper (header, dummy_matrix);
     TractProcessor tract_processor (lobe_indexer, lobe_directions, lobe_TDI, lobe_connectivity, 30);
     Thread::run_queue (loader, 1, DWI::Tractography::Mapping::TrackAndIndex(), mapper, 1, SetVoxelDir(), tract_processor, 1);
@@ -670,7 +780,7 @@ void run() {
           if (weight > 0.005)
             lobe_smoothing_weights[lobe].insert (pair<int32_t, value_type> (it->first, weight));
         }
-        it->second.value = Math::pow (connectivity, C);
+        it->second.value = Math::pow (connectivity, tfce_C);
         ++it;
       }
     }
@@ -691,305 +801,26 @@ void run() {
       it->second *= norm_factor;
   }
 
-  Math::Matrix<value_type> subject_lobe_integrals;
-  subject_lobe_integrals.resize (num_lobes, subjects.size(), 0.0);
-  {
-    ProgressBar progress ("loading subject data and computing FOD integrals...", subjects.size());
-    for (size_t subject = 0; subject < subjects.size(); subject++) {
-      LogLevelLatch log_level (0);
-      Image::Buffer<value_type> fod_buffer (subjects[subject]);
-      Image::check_dimensions(fod_buffer, lobe_mask, 0, 3);
-      SHQueueWriter<Image::Buffer<value_type>, Image::BufferScratch<bool> > writer2 (fod_buffer, lobe_mask);
-      DWI::FOD_FMLS fmls (dirs, Math::SH::LforN (fod_buffer.dim(3)));
-      fmls.set_peak_value_threshold (SUBJECT_FOD_THRESHOLD);
-      vector<value_type> temp_lobe_integrals (num_lobes, 0.0);
-      SubjectLobeProcessor lobe_processor (lobe_indexer, lobe_directions, temp_lobe_integrals, angular_threshold);
-      Thread::run_queue (writer2, 1, DWI::SH_coefs(), fmls, 0, DWI::FOD_lobes(), lobe_processor, 1);
+  // Load subject data and compute FOD integrals within the mask
+  Math::Matrix<value_type> fod_lobe_integrals;
+  Math::Matrix<value_type> mod_fod_lobe_integrals;
+  load_data_and_compute_integrals (fod_filenames, lobe_mask, lobe_indexer, lobe_directions, angular_threshold, lobe_smoothing_weights, fod_lobe_integrals);
+  load_data_and_compute_integrals (mod_fod_filenames, lobe_mask, lobe_indexer, lobe_directions, angular_threshold, lobe_smoothing_weights, mod_fod_lobe_integrals);
+  Math::Matrix<value_type> modulation_only (num_lobes, fod_filenames.size());
 
-      // Smooth the data based on connectivity
-      for (size_t lobe = 0; lobe < num_lobes; ++lobe) {
-        value_type value = 0.0;
-        map<int32_t, value_type>::iterator it = lobe_smoothing_weights[lobe].begin();
-        for (; it != lobe_smoothing_weights[lobe].end(); ++it)
-          value += temp_lobe_integrals[it->first] * it->second;
-        subject_lobe_integrals (lobe, subject) = value;
-      }
-      progress++;
-    }
-  }
+  // Extract the amount of AFD contributed by modulation
+  for (size_t l = 0; l < num_lobes; ++l)
+    for (size_t s = 0; s < fod_filenames.size(); ++s)
+      modulation_only(l,s) = mod_fod_lobe_integrals(l,s) - fod_lobe_integrals (l,s);
 
+  string output_prefix = argument[7];
+  string track_filename = argument[6];
 
-  // Run permutation test
-  Math::Vector<value_type> perm_distribution_pos (num_perms - 1);
-  Math::Vector<value_type> perm_distribution_neg (num_perms - 1);
-  std::vector<value_type> tfce_output_pos (num_lobes, 0.0);
-  std::vector<value_type> tfce_output_neg (num_lobes, 0.0);
-  std::vector<value_type> tvalue_output (num_lobes, 0.0);
-  std::vector<value_type> pvalue_output_pos (num_lobes, 0.0);
-  std::vector<value_type> pvalue_output_neg (num_lobes, 0.0);
+  // FOD information only
+  do_glm_and_output (fod_lobe_integrals, design, contrast, dh, tfce_E, tfce_H, num_perms, lobe_connectivity, track_filename, lobe_indexer, lobe_directions, angular_threshold, num_vis_tracks, output_prefix + "_fod");
+  // Modulated FODs
+  do_glm_and_output (mod_fod_lobe_integrals, design, contrast, dh, tfce_E, tfce_H, num_perms, lobe_connectivity, track_filename, lobe_indexer, lobe_directions, angular_threshold, num_vis_tracks, output_prefix + "_fod_mod");
+  // Modulation information only
+  do_glm_and_output (modulation_only, design, contrast, dh, tfce_E, tfce_H, num_perms, lobe_connectivity, track_filename, lobe_indexer, lobe_directions, angular_threshold, num_vis_tracks, output_prefix + "_mod");
 
-  {
-    Math::Stats::GLMTTest glm (subject_lobe_integrals, design, contrast);
-    Stats::TFCE::Connectivity tfce_integrator (lobe_connectivity, dh, E, H);
-    Stats::TFCE::run (glm, tfce_integrator, num_perms,
-                      perm_distribution_pos, perm_distribution_neg,
-                      tfce_output_pos, tfce_output_neg, tvalue_output);
-  }
-
-  float max = 0.0;
-  Math::Vector<float> test_vec (tvalue_output.size());
-  for (size_t i = 0; i < tvalue_output.size(); ++i) {
-    test_vec[i] = tvalue_output[i];
-    if (tvalue_output[i] > max)
-      max = tvalue_output[i];
-  }
-  CONSOLE("max t: " + str(max));
-
-  /****************************************************************
-  * Check t-values
-  *****************************************************************/
-  Image::Buffer<float> tvalue_buffer ("tmax.mif", header3D);
-  Image::Buffer<float>::voxel_type tvalue_buffer_vox (tvalue_buffer);
-  Image::Loop subject_loop(0, 3);
-  for (subject_loop.start (lobe_indexer_vox, tvalue_buffer_vox); subject_loop.ok(); subject_loop.next (lobe_indexer_vox, tvalue_buffer_vox)) {
-    lobe_indexer_vox[3] = 0;
-    int32_t lobe_index = lobe_indexer_vox.value();
-    if (lobe_index >= 0) {
-      lobe_indexer_vox[3] = 1;
-      int num_lobes =  lobe_indexer_vox.value();
-      float max_t = 0.0;
-      for (int i = lobe_index; i < lobe_index + num_lobes; i++) {
-        if (tvalue_output[i] > max_t);
-          max_t = tvalue_output[i];
-      }
-      tvalue_buffer_vox.value() = max_t;
-    }
-  }
-
-  std::string prefix = argument[6];
-  perm_distribution_pos.save (prefix + "_perm_dist_pos.txt");
-  perm_distribution_neg.save (prefix + "_perm_dist_neg.txt");
-  Math::Stats::statistic2pvalue (perm_distribution_pos, tfce_output_pos, pvalue_output_pos);
-  Math::Stats::statistic2pvalue (perm_distribution_neg, tfce_output_neg, pvalue_output_neg);
-
-  // Generate output
-  DWI::Tractography::Properties tck_properties;
-  DWI::Tractography::Reader<value_type> tracks_file;
-  tracks_file.open (argument[5], tck_properties);
-  DWI::Tractography::Writer<value_type> tck_writer (prefix + "_tck.tck", tck_properties);
-  DWI::Tractography::Writer<value_type> tvalue_writer (prefix + "_tck.tval", tck_properties);
-  DWI::Tractography::Writer<value_type> tfce_pos_writer (prefix + "_tck.tfcep", tck_properties);
-  DWI::Tractography::Writer<value_type> tfce_neg_writer (prefix + "_tck.tfcen", tck_properties);
-  DWI::Tractography::Writer<value_type> pvalue_pos_writer (prefix + "_tck.pvalp", tck_properties);
-  DWI::Tractography::Writer<value_type> pvalue_neg_writer (prefix + "_tck.pvaln", tck_properties);
-  DWI::Tractography::Mapping::TrackLoader loader (tracks_file, num_vis_tracks, "generating output tracks and associated statistics...");
-  Track2StatProcessor processor (lobe_indexer, lobe_directions, angular_threshold, tvalue_output, tfce_output_pos, tfce_output_neg, pvalue_output_pos, pvalue_output_neg);
-  Track2StatWriter writer (tck_writer, tvalue_writer, tfce_pos_writer, tfce_neg_writer, pvalue_pos_writer, pvalue_neg_writer);
-  Thread::run_queue (loader, 1, DWI::Tractography::Mapping::TrackAndIndex(), processor, 0, TrackStatItem(), writer, 1);
-  tracks_file.close();
-  tck_writer.close();
-  tvalue_writer.close();
-  tfce_pos_writer.close();
-  tfce_neg_writer.close();
-  pvalue_pos_writer.close();
-  pvalue_neg_writer.close();
 }
-
-
-  /**
-//   * load average FOD image.
-//   * Compute FOD lobes on average image using low FOD threshold -> default set
-     * Load tracks
-     * Allocate lobe tract count array
-     * For each tract
-     *   get set of dixels
-     *   for each dixel
-     *     assign to lobe with angular threshold
-     *   for each pair of lobes increment map
-     *   increment lobe tract count
-     *
-     * normalise connectivity matrix and threshold at 1%
-     * pre-compute smoothing weights for each lobe
-     * For each subject
-     *   load FOD image
-     *   compute lobes
-     *   for each voxel
-     *     assign to default set using angular threshold
-     *   smooth data
-     *
-     * For all lobes in default set
-     *     for each permutation
-     *       compute t-values
-     *       keep max_tfce
-     *     assign to permutation distribution
-     *
-     *
-     *
-     *
-     */
-
-
-  /****************************************************************
-  * test lobe connectivity for single lobe
-  *****************************************************************/
-//  FOD_lobe_indexer_vox[0] = 44;
-//  FOD_lobe_indexer_vox[1] = 55;
-//  FOD_lobe_indexer_vox[2] = 39;
-//  FOD_lobe_indexer_vox[3] = 0;
-//  int32_t lobe_index = FOD_lobe_indexer_vox.value()  ;
-//  VAR(lobe_index);
-//cout << lobe_connectivity[lobe_index].size() << endl;
-
-//  cout << FOD_lobe_directions[lobe_index] << endl;
-//  cout << lobe_TDI[lobe_index] << endl;
-
-//  Image::Header temp_header (argument[4]);
-//  temp_header.set_ndim (3);
-//  Image::Buffer<float> temp ("tractTDI_norm.mif", temp_header);
-//  Image::Buffer<float>::voxel_type temp_vox (temp);
-//  Image::Loop loop2 (0, 3);
-//
-//  map<int32_t, shared_tract_count>::iterator it;
-//  for (loop2.start (FOD_lobe_indexer_vox, temp_vox); loop2.ok(); loop2.next (FOD_lobe_indexer_vox, temp_vox)) {
-//    FOD_lobe_indexer_vox[3] = 0;
-//    int32_t index = FOD_lobe_indexer_vox.value();
-//    if (index >= 0) {
-//      FOD_lobe_indexer_vox[3] = 1;
-//      int32_t num_lobes = FOD_lobe_indexer_vox.value();
-//      float connectivity = 0.0;
-//      for (int l = index; l < num_lobes + index; ++l) {
-//        it = lobe_connectivity[lobe_index].find(l);
-//        if (it != lobe_connectivity[lobe_index].end())
-//          connectivity += it->second.count;
-//      }
-//      temp_vox.value() = connectivity ; /// float(lobe_TDI[lobe_index]);
-//    } else {
-//      temp_vox.value() = 0.0;
-//    }
-//  }
-//  cout << lobe_connectivity[lobe_index].size() << endl;
-
-
-  /****************************************************************
-  * Check subject lobe fibre count
-  *****************************************************************/
-//  Image::BufferScratch<int> sub_fibre_count_buffer (header);
-//  Image::BufferScratch<int>::voxel_type sub_fibre_count_vox (sub_fibre_count_buffer);
-//  Image::Loop subject_loop(0, 3);
-//  for (subject_loop.start (FOD_lobe_indexer_vox, sub_fibre_count_vox); subject_loop.ok(); subject_loop.next (FOD_lobe_indexer_vox, sub_fibre_count_vox)) {
-//    FOD_lobe_indexer_vox[3] = 0;
-//    int32_t lobe_index = FOD_lobe_indexer_vox.value();
-//    if (lobe_index >= 0) {
-//      FOD_lobe_indexer_vox[3] = 1;
-//      int num_lobes =  FOD_lobe_indexer_vox.value();
-//      int num_sub_lobes = 0;
-//      for (int i = lobe_index; i < lobe_index + num_lobes; i++) {
-//        if (subject_FOD_lobe_integrals[subject][i] > 0.0)
-//          num_sub_lobes++;
-//      }
-//      sub_fibre_count_vox.value() = num_sub_lobes;
-//    }
-//  }
-//  Image::Buffer<int> fibre_count ("fibre_count" + str(subject) + ".mif", header);
-//  Image::Buffer<int>::voxel_type fibre_vox (fibre_count);
-//  Image::copy (sub_fibre_count_vox, fibre_vox);
-
-
-  //  Image::Header temp_header (argument[4]);
-  //  temp_header.set_ndim (3);
-  //  Image::BufferScratch<float> temp (temp_header);
-  //  Image::BufferScratch<float>::voxel_type temp_vox (temp);
-  //  Image::Loop loop2 (0, 3);
-  //  FOD_lobe_indexer_vox[3] = 1;
-  //
-  //  for (loop2.start (FOD_lobe_indexer_vox, temp_vox); loop2.ok(); loop2.next (lobe_indexer_vox, temp_vox)) {
-  //    FOD_lobe_indexer_vox[3] = 0;
-  //    float average = 0.0;
-  //    int32_t index = FOD_lobe_indexer_vox.value();
-  //    if (index >= 0) {
-  //      lobe_indexer_vox[3] = 1;
-  //      int32_t num_lobes = FOD_lobe_indexer_vox.value();
-  //      for (int l = index; l < num_lobes + index; ++l) {
-  //        for (int s = 0; s < num_subjects; ++s) {
-  //          if (subject_FOD_lobe_integrals[s][l] > 0) {
-  //            average += 1.0;
-  //          }
-  //        }
-  //      }
-  //
-  //      temp_vox.value() = average / (float(num_subjects) * float(num_lobes));
-  //    } else {
-  //      temp_vox.value() = 0.0;
-  //    }
-  //  }
-
-//
-//   /****************************
-//   * check smoothing weights
-//   *****************************/
-//     FOD_lobe_indexer_vox[0] = 44;
-//     FOD_lobe_indexer_vox[1] = 55;
-//     FOD_lobe_indexer_vox[2] = 39;
-//     FOD_lobe_indexer_vox[3] = 0;
-//     int32_t lobe_index = FOD_lobe_indexer_vox.value()  ;
-//     VAR(lobe_index);
-//
-//     Image::Header temp_header (argument[4]);
-//     temp_header.set_ndim (3);
-//     Image::Buffer<float> temp ("testSmoothing.mif", temp_header);
-//     Image::Buffer<float>::voxel_type temp_vox (temp);
-//     Image::Loop loop2 (0, 3);
-//
-//     map<int32_t, float>::iterator it;
-//     for (loop2.start (FOD_lobe_indexer_vox, temp_vox); loop2.ok(); loop2.next (FOD_lobe_indexer_vox, temp_vox)) {
-//       FOD_lobe_indexer_vox[3] = 0;
-//       int32_t index = FOD_lobe_indexer_vox.value();
-//       if (index >= 0) {
-//         FOD_lobe_indexer_vox[3] = 1;
-//         int32_t num_lobes = FOD_lobe_indexer_vox.value();
-//         float weight = 0.0;
-//         for (int l = index; l < num_lobes + index; ++l) {
-//           it = lobe_smoothing_weights[lobe_index].find(l);
-//           if (it != lobe_smoothing_weights[lobe_index].end())
-//             weight += it->second;
-//         }
-//         temp_vox.value() = weight ; /// float(lobe_TDI[lobe_index]);
-//       } else {
-//         temp_vox.value() = 0.0;
-//       }
-//     }
-
-  /***********************************
-   * test smoothing
-   ***********************************/
-//   FOD_lobe_indexer_vox[0] = 44;
-//   FOD_lobe_indexer_vox[1] = 55;
-//   FOD_lobe_indexer_vox[2] = 39;
-//   FOD_lobe_indexer_vox[3] = 0;
-//   int32_t lobe_index = FOD_lobe_indexer_vox.value()  ;
-//
-//   Image::Header temp_header (argument[4]);
-//   temp_header.set_ndim (3);
-//   Image::Buffer<float> temp ("afdSmoothed.mif", temp_header);
-//   Image::Buffer<float>::voxel_type temp_vox (temp);
-//   Image::Loop loop2 (0, 3);
-//
-//   map<int32_t, shared_tract_count>::iterator it;
-//   for (loop2.start (FOD_lobe_indexer_vox, temp_vox); loop2.ok(); loop2.next (FOD_lobe_indexer_vox, temp_vox)) {
-//     FOD_lobe_indexer_vox[3] = 0;
-//     int32_t index = FOD_lobe_indexer_vox.value();
-//     if (index >= 0) {
-//       FOD_lobe_indexer_vox[3] = 1;
-//       int32_t num_lobes = FOD_lobe_indexer_vox.value();
-//       float afd = 0.0;
-//       for (int l = index; l < num_lobes + index; ++l) {
-////         it = lobe_connectivity[lobe_index].find(l);
-////         if (it != lobe_connectivity[lobe_index].end())
-//         afd += subject_FOD_lobe_integrals[0][l];
-//       }
-//       temp_vox.value() = afd ; /// float(lobe_TDI[lobe_index]);
-//     } else {
-//       temp_vox.value() = 0.0;
-//     }
-//   }
-
