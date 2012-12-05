@@ -74,7 +74,7 @@ void usage ()
 
   + Argument ("contrast", "the contrast matrix").type_file()
 
-  + Argument ("group", "the group average FOD image (ideally at lmax=8).").type_image_in()
+  + Argument ("group", "the group average FOD image.").type_image_in()
 
   + Argument ("mask", "a 3D mask to define which voxels to include in the analysis").type_image_in()
 
@@ -86,7 +86,7 @@ void usage ()
 
   OPTIONS
 
-  + Option ("only", "")
+  + Option ("notest", "don't perform permutation testing and only output population statistics (effect size, stdev etc)")
 
   + Option ("nperms", "the number of permutations (default = 5000).")
   + Argument ("num").type_integer (1, 5000, 100000)
@@ -116,7 +116,7 @@ void usage ()
                               "These tracts are obtained by truncating the input tracks (default: 100000")
   + Argument ("num").type_integer (1, 100000, INT_MAX)
 
-  + Option ("check", "output an image to check the number of lobes per voxel identified in the template")
+  + Option ("check", "output a 3D image to check the number of lobes per voxel identified in the template")
   + Argument ("image").type_image_out ();
 }
 
@@ -174,8 +174,8 @@ class GroupAvLobeProcessor
 {
   public:
     GroupAvLobeProcessor (Image::BufferScratch<int32_t>& FOD_lobe_indexer,
-                          vector<Point<float> >& FOD_lobe_directions,
-                          vector<Point<float> >& index2scanner_pos) :
+                          vector<Point<value_type> >& FOD_lobe_directions,
+                          vector<Point<value_type> >& index2scanner_pos) :
                           FOD_lobe_indexer (FOD_lobe_indexer) ,
                           FOD_lobe_directions (FOD_lobe_directions),
                           index2scanner_pos (index2scanner_pos),
@@ -192,7 +192,7 @@ class GroupAvLobeProcessor
       int32_t lobe_count = 0;
       for (vector<DWI::FOD_lobe>::const_iterator i = in.begin(); i != in.end(); ++i, ++lobe_count) {
         FOD_lobe_directions.push_back (i->get_peak_dir());
-        Point<float> pos;
+        Point<value_type> pos;
         image_transform.voxel2scanner (FOD_lobe_indexer, pos);
         index2scanner_pos.push_back (pos);
       }
@@ -204,8 +204,8 @@ class GroupAvLobeProcessor
 
   private:
     Image::BufferScratch<int32_t>::voxel_type FOD_lobe_indexer;
-    vector<Point<float> >& FOD_lobe_directions;
-    vector<Point<float> >& index2scanner_pos;
+    vector<Point<value_type> >& FOD_lobe_directions;
+    vector<Point<value_type> >& index2scanner_pos;
     Image::Transform image_transform;
 };
 
@@ -214,9 +214,9 @@ class SubjectLobeProcessor {
 
   public:
     SubjectLobeProcessor (Image::BufferScratch<int32_t>& FOD_lobe_indexer,
-                          const vector<Point<float> >& FOD_lobe_directions,
-                          vector<float>& subject_lobe_integrals,
-                          float angular_threshold) :
+                          const vector<Point<value_type> >& FOD_lobe_directions,
+                          vector<value_type>& subject_lobe_integrals,
+                          value_type angular_threshold) :
                           FOD_lobe_indexer (FOD_lobe_indexer),
                           average_lobe_directions (FOD_lobe_directions),
                           subject_lobe_integrals (subject_lobe_integrals)
@@ -239,10 +239,10 @@ class SubjectLobeProcessor {
 
       // for each lobe in the average, find the corresponding lobe in this subject voxel
       for (int32_t i = voxel_index; i < voxel_index + number_lobes; ++i) {
-        float largest_dp = 0.0;
+        value_type largest_dp = 0.0;
         int largest_index = -1;
         for (size_t j = 0; j < in.size(); ++j) {
-          float dp = Math::abs (average_lobe_directions[i].dot(in[j].get_peak_dir()));
+          value_type dp = Math::abs (average_lobe_directions[i].dot(in[j].get_peak_dir()));
           if (dp > largest_dp) {
             largest_dp = dp;
             largest_index = j;
@@ -259,9 +259,9 @@ class SubjectLobeProcessor {
 
   private:
     Image::BufferScratch<int32_t>::voxel_type FOD_lobe_indexer;
-    const vector<Point<float> >& average_lobe_directions;
-    vector<float>& subject_lobe_integrals;
-    float angular_threshold_dp;
+    const vector<Point<value_type> >& average_lobe_directions;
+    vector<value_type>& subject_lobe_integrals;
+    value_type angular_threshold_dp;
 };
 
 
@@ -270,10 +270,10 @@ class TractProcessor {
 
   public:
     TractProcessor (Image::BufferScratch<int32_t>& FOD_lobe_indexer,
-                    vector<Point<float> >& FOD_lobe_directions,
+                    const vector<Point<value_type> >& FOD_lobe_directions,
                     vector<uint16_t>& lobe_TDI,
                     vector<map<int32_t, Stats::TFCE::connectivity> >& lobe_connectivity,
-                    float angular_threshold):
+                    value_type angular_threshold):
                     lobe_indexer (FOD_lobe_indexer) ,
                     lobe_directions (FOD_lobe_directions),
                     lobe_TDI (lobe_TDI),
@@ -294,11 +294,11 @@ class TractProcessor {
           lobe_indexer[3] = 1;
           int32_t last_index = first_index + lobe_indexer.value();
           int32_t closest_lobe_index = -1;
-          float largest_dp = 0.0;
-          Point<float> dir (i->get_dir());
+          value_type largest_dp = 0.0;
+          Point<value_type> dir (i->get_dir());
           dir.normalise();
           for (int32_t j = first_index; j < last_index; j++) {
-            float dp = Math::abs (dir.dot (lobe_directions[j]));
+            value_type dp = Math::abs (dir.dot (lobe_directions[j]));
             if (dp > largest_dp) {
               largest_dp = dp;
               closest_lobe_index = j;
@@ -321,60 +321,45 @@ class TractProcessor {
       return true;
     }
 
-
   private:
     Image::BufferScratch<int32_t>::voxel_type lobe_indexer;
-    vector<Point<float> >& lobe_directions;
+    const vector<Point<value_type> >& lobe_directions;
     vector<uint16_t>& lobe_TDI;
     vector<map<int32_t, Stats::TFCE::connectivity> >& lobe_connectivity;
-    float angular_threshold_dp;
+    value_type angular_threshold_dp;
 };
 
 
-class TrackStatItem {
-  public:
-    vector<Point<float> > tck;
-    vector<float> tvalue;
-    vector<float> tfce_pos;
-    vector<float> tfce_neg;
-    vector<float> pvalue_pos;
-    vector<float> pvalue_neg;
-};
+/**
+ * Processes each track in the tractogram (most likely a subset of all tracks since we need less
+ * tracks for display than for estimating lobe-lobe connectivity) and computes the FOD lobe
+ * indexes for each track point. Indices are stored for later use when outputting various
+ * track-point statistics. This function also writes out the tractogram subset.
+ */
+void compute_track_indices (const string& input_track_filename,
+                            Image::BufferScratch<int32_t>& lobe_indexer,
+                            const vector<Point<value_type> >& lobe_directions,
+                            const value_type angular_threshold,
+                            const int num_vis_tracks,
+                            const string& output_track_filename,
+                            vector<vector<int32_t> >& track_indices) {
 
+  Image::Interp::Nearest<Image::BufferScratch<int32_t>::voxel_type> interp (lobe_indexer);
+  float angular_threshold_dp = cos (angular_threshold * (M_PI/180.0));
+  DWI::Tractography::Properties tck_properties;
+  DWI::Tractography::Reader<value_type> tck_reader;
+  tck_reader.open (input_track_filename, tck_properties);
+  DWI::Tractography::Writer<value_type> tck_writer (output_track_filename, tck_properties);
+  vector<Point<value_type> > tck;
+  int counter = 0;
 
-class Track2StatProcessor {
+  while (!tck_reader.next (tck) && counter < num_vis_tracks) {
 
-  public:
-    Track2StatProcessor (Image::BufferScratch<int32_t>& lobe_indexer,
-                         const vector<Point<float> >& lobe_directions,
-                         const float angular_threshold,
-                         const vector<float>& tvalue,
-                         const vector<float>& tfce_pos,
-                         const vector<float>& tfce_neg,
-                         const vector<float>& pvalue_pos,
-                         const vector<float>& pvalue_neg) :
-                           lobe_indexer_vox (lobe_indexer),
-                           lobe_directions (lobe_directions),
-                           tvalue (tvalue),
-                           tfce_pos (tfce_pos),
-                           tfce_neg (tfce_neg),
-                           pvalue_pos (pvalue_pos),
-                           pvalue_neg (pvalue_neg),
-                           interp (lobe_indexer_vox) {
-      angular_threshold_dp = cos (angular_threshold * (M_PI/180.0));
-    }
-
-  bool operator () (DWI::Tractography::Mapping::TrackAndIndex& input, TrackStatItem& output)
-  {
-    output.tck = input.tck;
-    output.tvalue.resize (input.tck.size());
-    output.tfce_pos.resize (input.tck.size());
-    output.tfce_neg.resize (input.tck.size());
-    output.pvalue_pos.resize (input.tck.size());
-    output.pvalue_neg.resize (input.tck.size());
-    Point<float> tangent;
-    for (size_t p = 0; p < input.tck.size(); ++p) {
-      interp.scanner (input.tck[p]);
+    tck_writer.append (tck);
+    vector<int32_t> indices (tck.size(), std::numeric_limits<int32_t>::max());
+    Point<value_type> tangent;
+    for (size_t p = 0; p < tck.size(); ++p) {
+      interp.scanner (tck[p]);
       interp[3] = 0;
       int32_t first_index = interp.value();
 
@@ -382,117 +367,74 @@ class Track2StatProcessor {
         interp[3] = 1;
         int32_t last_index = first_index + interp.value();
         int32_t closest_lobe_index = -1;
-        float largest_dp = 0.0;
+        value_type largest_dp = 0.0;
         if (p == 0)
-          tangent = input.tck[p+1] - input.tck[p];
-        else if (p == input.tck.size() - 1)
-          tangent = input.tck[p] - input.tck[p-1];
+          tangent = tck[p+1] - tck[p];
+        else if (p == tck.size() - 1)
+          tangent = tck[p] - tck[p-1];
         else
-          tangent = input.tck[p+1] - input.tck[p-1];
+          tangent = tck[p+1] - tck[p-1];
         tangent.normalise();
         for (int32_t j = first_index; j < last_index; j++) {
-          float dp = Math::abs (tangent.dot (lobe_directions[j]));
+          value_type dp = Math::abs (tangent.dot (lobe_directions[j]));
           if (dp > largest_dp) {
             largest_dp = dp;
             closest_lobe_index = j;
           }
         }
-        if (largest_dp > angular_threshold_dp) {
-          output.tvalue[p] = tvalue[closest_lobe_index];
-          output.tfce_pos[p] = tfce_pos[closest_lobe_index];
-          output.tfce_neg[p] = tfce_neg[closest_lobe_index];
-          output.pvalue_pos[p] = pvalue_pos[closest_lobe_index];
-          output.pvalue_neg[p] = pvalue_neg[closest_lobe_index];
-        } else {
-          output.tvalue[p] = 0.0;
-          output.tfce_pos[p] = 0.0;
-          output.tfce_neg[p] = 0.0;
-          output.pvalue_pos[p] = 0.0;
-          output.pvalue_neg[p] = 0.0;
-        }
-      } else {
-        output.tvalue[p] = 0.0;
-        output.tfce_pos[p] = 0.0;
-        output.tfce_neg[p] = 0.0;
-        output.pvalue_pos[p] = 0.0;
-        output.pvalue_neg[p] = 0.0;
+        if (largest_dp > angular_threshold_dp)
+          indices[p] = closest_lobe_index;
       }
     }
-    return true;
+    track_indices.push_back (indices);
+    counter++;
   }
+  tck_writer.close();
+}
 
 
-  private:
-    Image::BufferScratch<int32_t>::voxel_type lobe_indexer_vox;
-    const vector<Point<float> >& lobe_directions;
-    float angular_threshold_dp;
-    const vector<float>& tvalue;
-    const vector<float>& tfce_pos;
-    const vector<float>& tfce_neg;
-    const vector<float>& pvalue_pos;
-    const vector<float>& pvalue_neg;
-    Image::Interp::Nearest<Image::BufferScratch<int32_t>::voxel_type> interp;
-};
+/**
+ * Write out scalar values associated with a track file. Currently scalars are stored
+ * within a tractography file, however a specific reader and writer will be implemented in the future
+ */
+void write_track_stats (const string& filename,
+                        const vector<value_type>& data,
+                        const vector<vector<int32_t> >& track_point_indices) {
 
+  DWI::Tractography::Properties properties;
+  DWI::Tractography::Writer<value_type> writer (filename, properties);
 
-
-class Track2StatWriter {
-  public:
-    Track2StatWriter (DWI::Tractography::Writer<value_type>& tck_writer,
-                      DWI::Tractography::Writer<value_type>& tvalue_writer,
-                      DWI::Tractography::Writer<value_type>& tfce_pos_writer,
-                      DWI::Tractography::Writer<value_type>& tfce_neg_writer,
-                      DWI::Tractography::Writer<value_type>& pvalue_pos_writer,
-                      DWI::Tractography::Writer<value_type>& pvalue_neg_writer) :
-                      tck_writer (tck_writer),
-                      tvalue_writer (tvalue_writer),
-                      tfce_pos_writer (tfce_pos_writer),
-                      tfce_neg_writer (tfce_neg_writer),
-                      pvalue_pos_writer (pvalue_pos_writer),
-                      pvalue_neg_writer (pvalue_neg_writer) { }
-
-    bool operator() (TrackStatItem& output) {
-      if (output.tck.empty())
-        return true;
-      tck_writer.append (output.tck);
-      write_scalars (output.tvalue, tvalue_writer);
-      write_scalars (output.tfce_pos, tfce_pos_writer);
-      write_scalars (output.tfce_neg, tfce_neg_writer);
-      write_scalars (output.pvalue_pos, pvalue_pos_writer);
-      write_scalars (output.pvalue_neg, pvalue_neg_writer);
-      return true;
+  for (size_t t = 0; t < track_point_indices.size(); ++t) {
+    vector<value_type > scalars (track_point_indices.size());
+    for (size_t p = 0; p < track_point_indices[t].size(); ++p) {
+      if (track_point_indices[t][p] == std::numeric_limits<int32_t>::max())
+        scalars[p] = 0.0;
+      else
+        scalars[p] = data [track_point_indices[t][p]];
     }
 
-  private:
-
-    void write_scalars (vector<value_type>& values, DWI::Tractography::Writer<value_type>& writer) {
-      vector<Point<float> > scalars;
-      for (size_t i = 0; i < values.size(); i += 3) {
-        Point<float> point;
-        point[0] = values[i];
-        if (i + 1 < values.size())
-          point[1] = values[i + 1];
-        else
-          point[1] = NAN;
-        if (i + 2 < values.size())
-          point[2] = values[i + 2];
-        else
-          point[2] = NAN;
-        scalars.push_back(point);
-      }
-      writer.append (scalars);
+    vector<Point<value_type> > tck_scalars;
+    for (size_t i = 0; i < scalars.size(); i += 3) {
+      Point<value_type> point;
+      point[0] = scalars[i];
+      if (i + 1 < scalars.size())
+        point[1] = scalars[i + 1];
+      else
+        point[1] = NAN;
+      if (i + 2 < scalars.size())
+        point[2] = scalars[i + 2];
+      else
+        point[2] = NAN;
+      tck_scalars.push_back(point);
     }
-
-    DWI::Tractography::Writer<value_type>& tck_writer;
-    DWI::Tractography::Writer<value_type>& tvalue_writer;
-    DWI::Tractography::Writer<value_type>& tfce_pos_writer;
-    DWI::Tractography::Writer<value_type>& tfce_neg_writer;
-    DWI::Tractography::Writer<value_type>& pvalue_pos_writer;
-    DWI::Tractography::Writer<value_type>& pvalue_neg_writer;
-};
+    writer.append (tck_scalars);
+  }
+}
 
 
-// Run permutation test and output results
+/**
+ * Run permutation test and output results
+ */
 void do_glm_and_output (const Math::Matrix<value_type>& data,
                         const Math::Matrix<value_type>& design,
                         const Math::Matrix<value_type>& contrast,
@@ -501,11 +443,9 @@ void do_glm_and_output (const Math::Matrix<value_type>& data,
                         const value_type H,
                         const int num_perms,
                         const vector<map<int32_t, Stats::TFCE::connectivity> >& lobe_connectivity,
-                        const string track_filename,
                         Image::BufferScratch<int32_t>& lobe_indexer,
                         const vector<Point<value_type> >& lobe_directions,
-                        const float angular_threshold,
-                        const int num_vis_tracks,
+                        const vector<vector<int32_t> >& track_point_indices,
                         string output_prefix) {
 
   int num_lobes = lobe_directions.size();
@@ -525,32 +465,17 @@ void do_glm_and_output (const Math::Matrix<value_type>& data,
                       tfce_output_pos, tfce_output_neg, tvalue_output);
   }
 
+  // Generate output
   perm_distribution_pos.save (output_prefix + "_perm_dist_pos.txt");
   perm_distribution_neg.save (output_prefix + "_perm_dist_neg.txt");
   Math::Stats::statistic2pvalue (perm_distribution_pos, tfce_output_pos, pvalue_output_pos);
   Math::Stats::statistic2pvalue (perm_distribution_neg, tfce_output_neg, pvalue_output_neg);
 
-  // Generate output
-  DWI::Tractography::Properties tck_properties;
-  DWI::Tractography::Reader<value_type> tracks_file;
-  tracks_file.open (track_filename, tck_properties);
-  DWI::Tractography::Writer<value_type> tck_writer (output_prefix + "_tck.tck", tck_properties);
-  DWI::Tractography::Writer<value_type> tvalue_writer (output_prefix + "_tck.tval", tck_properties);
-  DWI::Tractography::Writer<value_type> tfce_pos_writer (output_prefix + "_tck.tfcep", tck_properties);
-  DWI::Tractography::Writer<value_type> tfce_neg_writer (output_prefix + "_tck.tfcen", tck_properties);
-  DWI::Tractography::Writer<value_type> pvalue_pos_writer (output_prefix + "_tck.pvalp", tck_properties);
-  DWI::Tractography::Writer<value_type> pvalue_neg_writer (output_prefix + "_tck.pvaln", tck_properties);
-  DWI::Tractography::Mapping::TrackLoader loader (tracks_file, num_vis_tracks, "generating output tracks and associated statistics...");
-  Track2StatProcessor processor (lobe_indexer, lobe_directions, angular_threshold, tvalue_output, tfce_output_pos, tfce_output_neg, pvalue_output_pos, pvalue_output_neg);
-  Track2StatWriter writer (tck_writer, tvalue_writer, tfce_pos_writer, tfce_neg_writer, pvalue_pos_writer, pvalue_neg_writer);
-  Thread::run_queue (loader, 1, DWI::Tractography::Mapping::TrackAndIndex(), processor, 0, TrackStatItem(), writer, 1);
-  tracks_file.close();
-  tck_writer.close();
-  tvalue_writer.close();
-  tfce_pos_writer.close();
-  tfce_neg_writer.close();
-  pvalue_pos_writer.close();
-  pvalue_neg_writer.close();
+  write_track_stats (output_prefix + "_tfce_pos.tck", tfce_output_pos, track_point_indices);
+  write_track_stats (output_prefix + "_tfce_neg.tck", tfce_output_neg, track_point_indices);
+  write_track_stats (output_prefix + "_tvalue.tck", tvalue_output, track_point_indices);
+  write_track_stats (output_prefix + "_pvalue_pos.tck", pvalue_output_pos, track_point_indices);
+  write_track_stats (output_prefix + "_pvalue_neg.tck", pvalue_output_neg, track_point_indices);
 }
 
 
@@ -565,7 +490,9 @@ void load_data_and_compute_integrals (const vector<string>& filename_list,
   fod_lobe_integrals.resize (lobe_directions.size(), filename_list.size(), 0.0);
   ProgressBar progress ("loading FOD images and computing integrals...", filename_list.size());
   Math::Hemisphere::Directions dirs (1281);
+
   for (size_t subject = 0; subject < filename_list.size(); subject++) {
+
     LogLevelLatch log_level (0);
     Image::Buffer<value_type> fod_buffer (filename_list[subject]);
     Image::check_dimensions (fod_buffer, lobe_mask, 0, 3);
@@ -720,8 +647,8 @@ void run() {
   // Check number of lobes per voxel
   opt = get_options ("check");
   if (opt.size()) {
-    Image::Buffer<float> fibre_count_buffer (opt[0][0], header3D);
-    Image::Buffer<float>::voxel_type fibre_count_buffer_vox (fibre_count_buffer);
+    Image::Buffer<value_type> fibre_count_buffer (opt[0][0], header3D);
+    Image::Buffer<value_type>::voxel_type fibre_count_buffer_vox (fibre_count_buffer);
     Image::Loop loop(0, 3);
     for (loop.start (lobe_indexer_vox, fibre_count_buffer_vox); loop.ok(); loop.next (lobe_indexer_vox, fibre_count_buffer_vox)) {
       lobe_indexer_vox[3] = 0;
@@ -811,16 +738,38 @@ void run() {
   // Extract the amount of AFD contributed by modulation
   for (size_t l = 0; l < num_lobes; ++l)
     for (size_t s = 0; s < fod_filenames.size(); ++s)
-      modulation_only(l,s) = mod_fod_lobe_integrals(l,s) - fod_lobe_integrals (l,s);
+      modulation_only(l,s) = mod_fod_lobe_integrals(l,s) - fod_lobe_integrals(l,s);
 
   string output_prefix = argument[7];
   string track_filename = argument[6];
 
-  // FOD information only
-  do_glm_and_output (fod_lobe_integrals, design, contrast, dh, tfce_E, tfce_H, num_perms, lobe_connectivity, track_filename, lobe_indexer, lobe_directions, angular_threshold, num_vis_tracks, output_prefix + "_fod");
-  // Modulated FODs
-  do_glm_and_output (mod_fod_lobe_integrals, design, contrast, dh, tfce_E, tfce_H, num_perms, lobe_connectivity, track_filename, lobe_indexer, lobe_directions, angular_threshold, num_vis_tracks, output_prefix + "_fod_mod");
-  // Modulation information only
-  do_glm_and_output (modulation_only, design, contrast, dh, tfce_E, tfce_H, num_perms, lobe_connectivity, track_filename, lobe_indexer, lobe_directions, angular_threshold, num_vis_tracks, output_prefix + "_mod");
+  vector<vector<int32_t> > track_point_indices;
+  compute_track_indices (track_filename, lobe_indexer, lobe_directions, angular_threshold, num_vis_tracks, output_prefix + "_tracks.tck", track_point_indices);
+
+  // Compute population statistics
+  vector<value_type> group_difference_fod (num_lobes);
+  vector<value_type> stdev (num_lobes);
+  vector<value_type> std_effect (num_lobes);
+  vector<value_type> group_difference_mod (num_lobes);
+  vector<value_type> perc_modulation (num_lobes);
+
+//  for (size_t l = 0; l < num_lobes; ++l) {
+//    for (size_t )
+//    float group1_mean = 0.0;
+//    float group2_mean = 0.0;
+//
+//  }
+
+  // Perform permutation testing
+  opt = get_options("notest");
+  if (!opt.size()) {
+    // FOD information only
+    do_glm_and_output (fod_lobe_integrals, design, contrast, dh, tfce_E, tfce_H, num_perms, lobe_connectivity, lobe_indexer, lobe_directions, track_point_indices, output_prefix + "_fod");
+    // Modulated FODs
+    do_glm_and_output (mod_fod_lobe_integrals, design, contrast, dh, tfce_E, tfce_H, num_perms, lobe_connectivity, lobe_indexer, lobe_directions, track_point_indices, output_prefix + "_fod_mod");
+    // Modulation information only
+    do_glm_and_output (modulation_only, design, contrast, dh, tfce_E, tfce_H, num_perms, lobe_connectivity, lobe_indexer, lobe_directions, track_point_indices, output_prefix + "_mod");
+  }
+
 
 }
