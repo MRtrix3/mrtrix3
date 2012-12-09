@@ -67,6 +67,16 @@ class FOD_lobe {
       mask[seed] = true;
     }
 
+    // This is used for creating a `null lobe' i.e. an FOD lobe with zero size, containing all directions not
+    //   assigned to any other lobe in the voxel
+    FOD_lobe (const Math::Hemisphere::Dir_mask& i) :
+      mask (i),
+      peak_dir_bin (i.size()),
+      peak_value (0.0),
+      integral (0.0),
+      neg (false) { }
+
+
 
     void add (const dir_t bin, const float value)
     {
@@ -123,6 +133,7 @@ class FOD_lobe {
 class FOD_lobes : public std::vector<FOD_lobe> {
   public:
     Point<int> vox;
+    std::vector<uint8_t> lut;
 };
 
 
@@ -151,6 +162,12 @@ class FOD_FMLS {
     void  set_ratio_to_peak_value              (const float i)       { ratio_to_peak_value = i; }
     float get_peak_value_threshold             ()              const { return peak_value_threshold; }
     void  set_peak_value_threshold             (const float i)       { peak_value_threshold = i; }
+    bool  get_create_null_lobe                 ()              const { return create_null_lobe; }
+    void  set_create_null_lobe                 (const bool  i)       { create_null_lobe = i; verify_settings(); }
+    bool  get_create_lookup_table              ()              const { return create_lookup_table; }
+    void  set_create_lookup_table              (const bool  i)       { create_lookup_table = i; verify_settings(); }
+    bool  get_dilate_lookup_table              ()              const { return dilate_lookup_table; }
+    void  set_dilate_lookup_table              (const bool  i)       { dilate_lookup_table = i; verify_settings(); }
 
 
   private:
@@ -166,6 +183,18 @@ class FOD_FMLS {
     float ratio_to_negative_lobe_mean_peak; // Peak value of positive lobe must be at least this ratio larger than the mean negative lobe peak
     float ratio_to_peak_value; // Determines whether two lobes get agglomerated into one, depending on the FOD amplitude at the current point and how it compares to the peak amplitudes of the lobes to which it could be assigned
     float peak_value_threshold; // Absolute threshold for the peak amplitude of the lobe
+    bool  create_null_lobe; // If this is set, an additional lobe will be created after segmentation with zero size, containing all directions not assigned to any other lobe
+    bool  create_lookup_table; // If this is set, an additional lobe will be created after segmentation with zero size, containing all directions not assigned to any other lobe
+    bool  dilate_lookup_table; // If this is set, the lookup table created for each voxel will be dilated so that all directions correspond to the nearest positive non-zero FOD lobe
+
+
+    void verify_settings() const
+    {
+      if (create_null_lobe && dilate_lookup_table)
+        throw Exception ("For FOD segmentation, options 'create_null_lobe' and 'dilate_lookup_table' are mutually exclusive");
+      if (!create_lookup_table && dilate_lookup_table)
+        throw Exception ("For FOD segmentation, 'create_lookup_table' must be set in order for lookup tables to be dilated ('dilate_lookup_table')");
+    }
 
 };
 

@@ -41,7 +41,10 @@ FOD_FMLS::FOD_FMLS (const Math::Hemisphere::Directions& directions, const size_t
       ratio_to_negative_lobe_integral  (RATIO_TO_NEGATIVE_LOBE_INTEGRAL_DEFAULT),
       ratio_to_negative_lobe_mean_peak (RATIO_TO_NEGATIVE_LOBE_MEAN_PEAK_DEFAULT),
       ratio_to_peak_value              (RATIO_TO_PEAK_VALUE_DEFAULT),
-      peak_value_threshold             (PEAK_VALUE_THRESHOLD) { }
+      peak_value_threshold             (PEAK_VALUE_THRESHOLD),
+      create_null_lobe                 (false),
+      create_lookup_table              (true),
+      dilate_lookup_table              (false) { }
 
 
 
@@ -58,9 +61,8 @@ bool FOD_FMLS::operator() (const SH_coefs& in, FOD_lobes& out) const {
   out.clear();
   out.vox = in.vox;
 
-  if (in[0] <= 0.0) {
+  if (in[0] <= 0.0)
     return true;
-  }
 
   Math::Vector<float> values (dirs.get_num_dirs());
   transform->SH2A (values, in);
@@ -146,6 +148,74 @@ bool FOD_FMLS::operator() (const SH_coefs& in, FOD_lobes& out) const {
       i->normalise_integral();
       ++i;
     }
+  }
+
+  if (create_lookup_table) {
+
+    out.lut.assign (dirs.get_num_dirs(), out.size());
+
+    size_t index = 0;
+    for (std::vector<FOD_lobe>::iterator i = out.begin(); i != out.end(); ++i, ++index) {
+      const Dir_mask& this_mask (i->get_mask());
+      for (size_t d = 0; d != dirs.get_num_dirs(); ++d) {
+        if (this_mask[d])
+          out.lut[d] = index;
+      }
+    }
+
+    if (dilate_lookup_table && out.size()) {
+
+      Math::Hemisphere::Dir_mask processed (dirs);
+      for (std::vector<FOD_lobe>::iterator i = out.begin(); i != out.end(); ++i)
+        processed |= i->get_mask();
+
+      std::vector<uint8_t> new_assignments [dirs.get_num_dirs()];
+      while (!processed.full()) {
+
+        for (dir_t dir = 0; dir != dirs.get_num_dirs(); ++dir) {
+          if (!processed[dir]) {
+            for (std::vector<size_t>::const_iterator neighbour = dirs.get_adj_dirs (dir).begin(); neighbour != dirs.get_adj_dirs (dir).end(); ++neighbour) {
+              if (processed[*neighbour])
+                new_assignments[dir].push_back (out.lut[*neighbour]);
+            }
+          }
+        }
+        for (dir_t dir = 0; dir != dirs.get_num_dirs(); ++dir) {
+          if (new_assignments[dir].size() == 1) {
+
+            out.lut[dir] = new_assignments[dir].front();
+            processed[dir] = true;
+            new_assignments[dir].clear();
+
+          } else if (new_assignments[dir].size() > 1) {
+
+            uint8_t best_lobe = 0;
+            float max_integral = 0.0;
+            for (std::vector<uint8_t>::const_iterator lobe_no = new_assignments[dir].begin(); lobe_no != new_assignments[dir].end(); ++lobe_no) {
+              if (out[*lobe_no].get_integral() > max_integral) {
+                best_lobe = *lobe_no;
+                max_integral = out[*lobe_no].get_integral();
+              }
+            }
+            out.lut[dir] = best_lobe;
+            processed[dir] = true;
+            new_assignments[dir].clear();
+
+          }
+        }
+
+      }
+
+    }
+
+  }
+
+  if (create_null_lobe) {
+    Dir_mask null_mask (dirs);
+    for (std::vector<FOD_lobe>::iterator i = out.begin(); i != out.end(); ++i)
+      null_mask |= i->get_mask();
+    null_mask = ~null_mask;
+    out.push_back (FOD_lobe (null_mask));
   }
 
   return true;
