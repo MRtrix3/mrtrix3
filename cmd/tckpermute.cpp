@@ -515,6 +515,13 @@ void load_data_and_compute_integrals (const vector<string>& filename_list,
   }
 }
 
+
+void matrix2vector (const Math::Matrix<value_type>& matrix, std::vector<value_type>& vector) {
+  for (size_t i = 0; i < vector.size(); ++i)
+    vector[i] = matrix(i, 0);
+}
+
+
 void run() {
 
   Options opt = get_options ("dh");
@@ -552,10 +559,10 @@ void run() {
   if (opt.size())
     connectivity_threshold = opt[0][0];
 
-  value_type std_dev = 5.0 / 2.3548;
+  value_type smooth_std_dev = 5.0 / 2.3548;
   opt = get_options ("smooth");
   if (opt.size())
-    std_dev = value_type(opt[0][0]) / 2.3548;
+    smooth_std_dev = value_type(opt[0][0]) / 2.3548;
 
   opt = get_options ("num_vis_tracks");
   size_t num_vis_tracks = 100000;
@@ -686,11 +693,11 @@ void run() {
   // Normalise connectivity matrix and threshold, pre-compute lobe-lobe weights for smoothing.
   vector<map<int32_t, value_type> > lobe_smoothing_weights (num_lobes);
   bool do_smoothing;
-  const value_type gaussian_const2 = 2.0 * std_dev * std_dev;
+  const value_type gaussian_const2 = 2.0 * smooth_std_dev * smooth_std_dev;
   value_type gaussian_const1 = 1.0;
-  if (std_dev > 0.0) {
+  if (smooth_std_dev > 0.0) {
     do_smoothing = true;
-    gaussian_const1 = 1.0 / (std_dev *  Math::sqrt (2.0 * M_PI));
+    gaussian_const1 = 1.0 / (smooth_std_dev *  Math::sqrt (2.0 * M_PI));
   }
   for (unsigned int lobe = 0; lobe < num_lobes; ++lobe) {
     map<int32_t, Stats::TFCE::connectivity>::iterator it = lobe_connectivity[lobe].begin();
@@ -746,19 +753,19 @@ void run() {
   vector<vector<int32_t> > track_point_indices;
   compute_track_indices (track_filename, lobe_indexer, lobe_directions, angular_threshold, num_vis_tracks, output_prefix + "_tracks.tck", track_point_indices);
 
-  // Compute population statistics
-  vector<value_type> group_difference_fod (num_lobes);
-  vector<value_type> stdev (num_lobes);
-  vector<value_type> std_effect (num_lobes);
-  vector<value_type> group_difference_mod (num_lobes);
-  vector<value_type> perc_modulation (num_lobes);
 
-//  for (size_t l = 0; l < num_lobes; ++l) {
-//    for (size_t )
-//    float group1_mean = 0.0;
-//    float group2_mean = 0.0;
-//
-//  }
+  // Compute and output population statistics
+  Math::Matrix<float> std_effect_size_matrix;
+  Math::Stats::GLM::std_effect_size (mod_fod_lobe_integrals, design, contrast, std_effect_size_matrix);
+  vector<value_type> std_effect_size (num_lobes);
+  matrix2vector (std_effect_size_matrix, std_effect_size);
+  write_track_stats (output_prefix + "_fod_effect_size.tck", std_effect_size, track_point_indices);
+
+  Math::Matrix<float> std_dev_matrix;
+  Math::Stats::GLM::std_effect_size (mod_fod_lobe_integrals, design, contrast, std_dev_matrix);
+  vector<value_type> std_dev (num_lobes);
+  matrix2vector (std_dev_matrix, std_dev);
+  write_track_stats (output_prefix + "_fod_std_dev.tck", std_dev, track_point_indices);
 
   // Perform permutation testing
   opt = get_options("notest");

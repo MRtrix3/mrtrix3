@@ -47,15 +47,15 @@ void usage ()
 
 
   ARGUMENTS
-  + Argument ("input", "a text file containing the file names of the input images").type_file()
+  + Argument ("input", "a text file containing the file names of the input images, one file per line").type_file()
 
-  + Argument ("design", "the design matrix").type_file()
+  + Argument ("design", "the design matrix, rows should correspond with images in the input image text file").type_file()
 
-  + Argument ("contrast", "the contrast matrix").type_file()
+  + Argument ("contrast", "the contrast matrix, only specify one contrast as it will automatically compute the opposite contrast.").type_file()
 
   + Argument ("mask", "a mask used to define voxels included in the analysis. "
-                      "Note that a 4D mask must be supplied for AFD analysis to "
-                      "also define orientations of interest.").type_image_in()
+                      "Note that a 4D mask must be supplied for AFD analysis - "
+                      "computed by doing an SH2amp on the group average CSD8 image then mrthreshold").type_image_in()
 
   + Argument ("output", "the filename prefix for all output.").type_text();
 
@@ -301,7 +301,5 @@ void run() {
       pvalue_voxel_pos.value() = pvalue_output_pos[i];
       pvalue_voxel_neg.value() = pvalue_output_neg[i];
     }
-
-
   }
 }
