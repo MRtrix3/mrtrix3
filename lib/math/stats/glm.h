@@ -110,7 +110,7 @@ namespace MR
          * This is to take advantage of the GSL's convention of storing
          * matrices in column-major format. 
          *
-         * Note also that the constrast matrix should already have been scaled
+         * Note also that the contrast matrix should already have been scaled
          * using the GLM::scale_contrasts() function. */
         template <typename ValueType> 
           inline void ttest (
@@ -119,45 +119,113 @@ namespace MR
               const Math::Matrix<ValueType>& pinv_design, 
               const Math::Matrix<ValueType>& measurements, 
               const Math::Matrix<ValueType>& scaled_contrasts,
-              Math::Matrix<ValueType>& effects,
+              Math::Matrix<ValueType>& betas,
               Math::Matrix<ValueType>& residuals) 
           { 
-            Math::mult (effects, ValueType(1.0), CblasNoTrans, measurements, CblasTrans, pinv_design);
-            Math::mult (residuals, ValueType(-1.0), CblasNoTrans, effects, CblasTrans, design);
+            Math::mult (betas, ValueType(1.0), CblasNoTrans, measurements, CblasTrans, pinv_design);
+            Math::mult (residuals, ValueType(-1.0), CblasNoTrans, betas, CblasTrans, design);
             residuals += measurements;
-            Math::mult (tvalues, ValueType(1.0), CblasNoTrans, effects, CblasTrans, scaled_contrasts);
+            Math::mult (tvalues, ValueType(1.0), CblasNoTrans, betas, CblasTrans, scaled_contrasts);
             for (size_t n = 0; n < tvalues.rows(); ++n)
               tvalues.row(n) /= Math::norm (residuals.row(n));
           }
 
+
+          template <typename ValueType>
+            inline void solve_betas (const Math::Matrix<ValueType>& measurements,
+                                     const Math::Matrix<ValueType>& design,
+                                     Math::Matrix<ValueType>& betas) {
+            Math::Matrix<double> d_pinvX, d_X (design);
+            SVD_invert (d_pinvX, d_X);
+            Math::Matrix<ValueType> pinvX = d_pinvX;
+            Math::mult (betas, ValueType(1.0), CblasNoTrans, measurements, CblasTrans, pinvX);
+          }
+
+          /** \addtogroup Statistics
+          @{ */
+          /*! Compute cohen's d, the standardised effect size between two means
+          * @param measurements a matrix storing the measured data for each subject in a column
+          * @param design the design matrix (unlike other packages a column of ones is NOT automatically added for correlation analysis)
+          * @param contrast a matrix defining the group difference
+          * @param cohens_d the matrix containing the output standardised effect size
+          */
+          template <typename ValueType>
+            inline void cohens_d (const Math::Matrix<ValueType>& measurements,
+                                  const Math::Matrix<ValueType>& design,
+                                  const Math::Matrix<ValueType>& contrast,
+                                  Math::Matrix<ValueType>& cohens_d) {
+              Math::Matrix<ValueType> betas;
+              GLM::solve_betas (measurements, design, betas);
+              Math::Matrix<ValueType> residuals;
+              Math::mult (residuals, ValueType(-1.0), CblasNoTrans, betas, CblasTrans, design);
+              residuals += measurements;
+              residuals.pow(2.0);
+              Math::Matrix<ValueType> one_over_dof (measurements.columns(), 1);
+              one_over_dof = 1.0 / ValueType(design.rows()-rank(design));
+              Math::Matrix<ValueType> stdev;
+              Math::mult (stdev, residuals, one_over_dof);
+              stdev.sqrt();
+              Math::mult (cohens_d, ValueType(1.0), CblasNoTrans, betas, CblasTrans, contrast);
+              cohens_d /= stdev;
+          }
+
+
+          /*! Compute the pooled standard deviation
+          * @param measurements a matrix storing the measured data for each subject in a column
+          * @param design the design matrix (unlike other packages a column of ones is NOT automatically added for correlation analysis)
+          * @param stdev the matrix containing the output standard deviation size
+          */
+          template <typename ValueType>
+            inline void stdev (const Math::Matrix<ValueType>& measurements,
+                               const Math::Matrix<ValueType>& design,
+                               Math::Matrix<ValueType>& stdev) {
+              Math::Matrix<ValueType> betas;
+              GLM::solve_betas (measurements, design, betas);
+              Math::Matrix<ValueType> residuals;
+              Math::mult (residuals, ValueType(-1.0), CblasNoTrans, betas, CblasTrans, design);
+              residuals += measurements;
+              residuals.pow(2.0);
+              Math::Matrix<ValueType> one_over_dof (measurements.columns(), 1);
+              one_over_dof = 1.0 / ValueType(design.rows()-rank(design));
+              Math::mult (stdev, residuals, one_over_dof);
+              stdev.sqrt();
+          }
+          //! @}
       }
 
-
-
-
-
-
-
+      /** \addtogroup Statistics
+      @{ */
+      /*! A class to compute t-statistics using a General Linear Model. */
       class GLMTTest
       {
         public:
-          GLMTTest (const Math::Matrix<value_type>& data,
-                    const Math::Matrix<value_type>& design_matrix,
-                    const Math::Matrix<value_type>& contrast_matrix) : 
-            data (data),
-            X (design_matrix),
-            scaled_contrasts (GLM::scale_contrasts (contrast_matrix, X, X.rows()-rank(X)))
+          /*!
+          * @param measurements a matrix storing the measured data for each subject in a column
+          * @param design the design matrix (unlike other packages a column of ones is NOT automatically added for correlation analysis)
+          * @param contrast a matrix containing the contrast of interest. Note that the opposite contrast will automatically be computed at the same time.
+          */
+          GLMTTest (const Math::Matrix<value_type>& measurements,
+                    const Math::Matrix<value_type>& design,
+                    const Math::Matrix<value_type>& contrast) : 
+            y (measurements),
+            X (design),
+            scaled_contrasts (GLM::scale_contrasts (contrast, X, X.rows()-rank(X)))
           {
             Math::Matrix<double> d_pinvX, d_X (X);
             SVD_invert (d_pinvX, d_X);
             pinvX = d_pinvX;
           }
 
-          // Compute the test statistic
+          /*! Compute the t-statistics
+          * @param perm_labelling a vector to shuffle the rows in the design matrix (for permutation testing)
+          * @param stats the vector containing the output t-statistics
+          * @param max_stat the maximum t-statistic
+          * @param min_stat the minimum t-statistic
+          */
           void operator() (const std::vector<size_t>& perm_labelling, std::vector<value_type>& stats, value_type& max_stat, value_type& min_stat) const
           {
-            stats.resize (data.rows(), 0.0);
-            Math::Matrix<value_type> tvalues, effects, residuals, SX, pinvSX;
+            stats.resize (y.rows(), 0.0);
+            Math::Matrix<value_type> tvalues, betas, residuals, SX, pinvSX;
 
             SX.allocate (X);
             pinvSX.allocate (pinvX);
@@ -168,9 +236,9 @@ namespace MR
             }
 
 
-            for (size_t i = 0; i < data.rows(); i += GLM_BATCH_SIZE) {
-              GLM::ttest (tvalues, SX, pinvSX, data.sub(i, std::min (i+GLM_BATCH_SIZE, data.rows()), 0, data.columns()), 
-                  scaled_contrasts, effects, residuals);
+            for (size_t i = 0; i < y.rows(); i += GLM_BATCH_SIZE) {
+              GLM::ttest (tvalues, SX, pinvSX, y.sub(i, std::min (i+GLM_BATCH_SIZE, y.rows()), 0, y.columns()),
+                  scaled_contrasts, betas, residuals);
               for (size_t n = 0; n < tvalues.rows(); ++n) {
                 value_type val = tvalues(n,0);
                 if (val > max_stat)
@@ -182,12 +250,13 @@ namespace MR
             }
           }
 
-          size_t num_samples () const { return data.columns(); }
+          size_t num_samples () const { return y.columns(); }
 
         protected:
-          const Math::Matrix<value_type>& data;
+          const Math::Matrix<value_type>& y;
           Math::Matrix<value_type> X, pinvX, scaled_contrasts;
       };
+      //! @}
 
     }
   }

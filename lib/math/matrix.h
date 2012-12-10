@@ -511,6 +511,18 @@ namespace MR
           return *this;
         }
 
+        //! exponentiate each element of the matrix by \a power
+        Matrix& pow (ValueType power) throw () {
+          LOOP (operator() (i,j) = Math::pow (operator() (i,j), power));
+          return *this;
+        }
+
+        //! square each element of the matrix
+        Matrix& sqrt () throw () {
+          LOOP (operator() (i,j) = Math::sqrt (operator() (i,j)));
+          return *this;
+        }
+
         //! check whether Matrix is a view of other data
         /*! If a matrix is a view, it will not be capable of any form of data
          * re-allocation. */

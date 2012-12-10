@@ -78,8 +78,8 @@ void usage ()
 void run () {
 
   Image::Header header (argument[0]);
-  Image::Buffer<float> input_data (header);
-  Image::Buffer<float>::voxel_type input_vox (input_data);
+  Image::BufferPreload<float> input_data (header);
+  Image::BufferPreload<float>::voxel_type input_vox (input_data);
 
   bool do_anisotropic = false;
   Options opt = get_options ("anisotropic");
