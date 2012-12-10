@@ -141,6 +141,27 @@ namespace MR
             Math::mult (betas, ValueType(1.0), CblasNoTrans, measurements, CblasTrans, pinvX);
           }
 
+
+
+          /** \addtogroup Statistics
+          @{ */
+          /*! Compute the effect of interest
+          * @param measurements a matrix storing the measured data for each subject in a column
+          * @param design the design matrix (unlike other packages a column of ones is NOT automatically added for correlation analysis)
+          * @param contrast a matrix defining the group difference
+          * @param effect the matrix containing the output effect
+          */
+          template <typename ValueType>
+            inline void effect (const Math::Matrix<ValueType>& measurements,
+                                  const Math::Matrix<ValueType>& design,
+                                  const Math::Matrix<ValueType>& contrast,
+                                  Math::Matrix<ValueType>& effect) {
+              Math::Matrix<ValueType> betas;
+              GLM::solve_betas (measurements, design, betas);
+              Math::mult (effect, ValueType(1.0), CblasNoTrans, betas, CblasTrans, contrast);
+          }
+
+
           /** \addtogroup Statistics
           @{ */
           /*! Compute cohen's d, the standardised effect size between two means
@@ -150,7 +171,7 @@ namespace MR
           * @param cohens_d the matrix containing the output standardised effect size
           */
           template <typename ValueType>
-            inline void cohens_d (const Math::Matrix<ValueType>& measurements,
+            inline void std_effect_size (const Math::Matrix<ValueType>& measurements,
                                   const Math::Matrix<ValueType>& design,
                                   const Math::Matrix<ValueType>& contrast,
                                   Math::Matrix<ValueType>& cohens_d) {
@@ -168,6 +189,7 @@ namespace MR
               Math::mult (cohens_d, ValueType(1.0), CblasNoTrans, betas, CblasTrans, contrast);
               cohens_d /= stdev;
           }
+
 
 
           /*! Compute the pooled standard deviation
