@@ -98,7 +98,7 @@ void run() {
     for (outer.start (voxel_out, voxel_in); outer.ok(); outer.next (voxel_out, voxel_in)) {
       for (size_t i = 0; i < bzeros.size(); i++) {
         voxel_in[3] = bzeros[i];
-        if (bzeros.size())
+        if (bzeros.size() > 1)
           voxel_out[3] = i;
         voxel_out.value() = voxel_in.value();
       }
@@ -107,7 +107,7 @@ void run() {
     for (outer.start (voxel_out, voxel_in); outer.ok(); outer.next (voxel_out, voxel_in)) {
       for (size_t i = 0; i < dwis.size(); i++) {
         voxel_in[3] = dwis[i];
-        if (dwis.size())
+        if (dwis.size() > 1)
           voxel_out[3] = i;
         voxel_out.value() = voxel_in.value();
       }
