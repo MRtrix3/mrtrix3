@@ -632,6 +632,13 @@ void run() {
   }
 
 
+  string output_prefix = argument[7];
+  string track_filename = argument[6];
+
+  vector<vector<int32_t> > track_point_indices;
+  compute_track_indices (track_filename, lobe_indexer, lobe_directions, angular_threshold, num_vis_tracks, output_prefix + "_tracks.tck", track_point_indices);
+
+
   // Compute 3D analysis mask based on lobes in average FOD image
   uint32_t num_lobes = lobe_directions.size();
   CONSOLE ("number of lobes: " + str(num_lobes));
@@ -745,12 +752,6 @@ void run() {
   for (size_t l = 0; l < num_lobes; ++l)
     for (size_t s = 0; s < fod_filenames.size(); ++s)
       modulation_only(l,s) = mod_fod_lobe_integrals(l,s) - fod_lobe_integrals(l,s);
-
-  string output_prefix = argument[7];
-  string track_filename = argument[6];
-
-  vector<vector<int32_t> > track_point_indices;
-  compute_track_indices (track_filename, lobe_indexer, lobe_directions, angular_threshold, num_vis_tracks, output_prefix + "_tracks.tck", track_point_indices);
 
 
   // Compute and output population statistics
