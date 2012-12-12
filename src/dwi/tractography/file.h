@@ -147,8 +147,10 @@ namespace MR {
                     "Float32LE, Float32BE, Float64LE & Float64BE");
             }
 
-          Writer (const std::string& file, const Properties& properties) {
-            create (file, properties);
+          Writer (const std::string& file, const Properties& properties) :
+            count (0), total_count (0), dtype (DataType::from<value_type>()) {
+              Writer();
+              create (file, properties);
           }
 
           Writer (const Writer& W) { assert (0); }
