@@ -100,6 +100,8 @@ class TrackMapperBase
     {
       out.clear();
       out.index = in.index;
+      if (in.tck.empty())
+        return true;
       if (preprocess (in.tck, out) || map_zero) {
         if (R)
           R->interpolate (in.tck);
