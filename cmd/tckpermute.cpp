@@ -745,12 +745,12 @@ void run() {
   Math::Matrix<value_type> mod_fod_lobe_integrals;
   load_data_and_compute_integrals (fod_filenames, lobe_mask, lobe_indexer, lobe_directions, angular_threshold, lobe_smoothing_weights, fod_lobe_integrals);
   load_data_and_compute_integrals (mod_fod_filenames, lobe_mask, lobe_indexer, lobe_directions, angular_threshold, lobe_smoothing_weights, mod_fod_lobe_integrals);
-  Math::Matrix<value_type> modulation_only (num_lobes, fod_filenames.size());
+  Math::Matrix<value_type> log_mod_scale_factor (num_lobes, fod_filenames.size());
 
   // Extract the amount of AFD contributed by modulation
   for (size_t l = 0; l < num_lobes; ++l)
     for (size_t s = 0; s < fod_filenames.size(); ++s)
-      modulation_only(l,s) = mod_fod_lobe_integrals(l,s) - fod_lobe_integrals(l,s);
+      log_mod_scale_factor(l,s) = Math::log (mod_fod_lobe_integrals(l,s) / fod_lobe_integrals(l,s));
 
   // Compute and output population statistics
   Math::Matrix<float> std_effect_size_matrix;
@@ -770,10 +770,10 @@ void run() {
   Math::Stats::GLM::stdev (mod_fod_lobe_integrals, design, std_dev_matrix);
   write_track_stats (output_prefix + "_mod_fod_std_dev.tck", std_dev, track_point_indices);
 
-  Math::Stats::GLM::std_effect_size (modulation_only, design, contrast, std_effect_size_matrix);
+  Math::Stats::GLM::std_effect_size (log_mod_scale_factor, design, contrast, std_effect_size_matrix);
   matrix2vector (std_effect_size_matrix, std_effect_size);
   write_track_stats (output_prefix + "_mod_effect_size.tck", std_effect_size, track_point_indices);
-  Math::Stats::GLM::stdev (modulation_only, design, std_dev_matrix);
+  Math::Stats::GLM::stdev (log_mod_scale_factor, design, std_dev_matrix);
   matrix2vector (std_dev_matrix, std_dev);
   write_track_stats (output_prefix + "_mod_std_dev.tck", std_dev, track_point_indices);
 
@@ -785,6 +785,6 @@ void run() {
     // Modulated FODs
     do_glm_and_output (mod_fod_lobe_integrals, design, contrast, dh, tfce_E, tfce_H, num_perms, lobe_connectivity, lobe_indexer, lobe_directions, track_point_indices, output_prefix + "_fod_mod");
     // Modulation information only
-    do_glm_and_output (modulation_only, design, contrast, dh, tfce_E, tfce_H, num_perms, lobe_connectivity, lobe_indexer, lobe_directions, track_point_indices, output_prefix + "_mod");
+    do_glm_and_output (log_mod_scale_factor, design, contrast, dh, tfce_E, tfce_H, num_perms, lobe_connectivity, lobe_indexer, lobe_directions, track_point_indices, output_prefix + "_mod");
   }
 }
