@@ -353,7 +353,7 @@ void compute_track_indices (const string& input_track_filename,
   vector<Point<value_type> > tck;
   int counter = 0;
 
-  while (!tck_reader.next (tck) && counter < num_vis_tracks) {
+  while (tck_reader.next (tck) && counter < num_vis_tracks) {
 
     tck_writer.append (tck);
     vector<int32_t> indices (tck.size(), std::numeric_limits<int32_t>::max());
@@ -390,6 +390,7 @@ void compute_track_indices (const string& input_track_filename,
     counter++;
   }
   tck_writer.close();
+  tck_reader.close();
 }
 
 
@@ -401,11 +402,11 @@ void write_track_stats (const string& filename,
                         const vector<value_type>& data,
                         const vector<vector<int32_t> >& track_point_indices) {
 
-  DWI::Tractography::Properties properties;
-  DWI::Tractography::Writer<value_type> writer (filename, properties);
+  DWI::Tractography::Properties tck_properties;
+  DWI::Tractography::Writer<value_type> writer (filename, tck_properties);
 
   for (size_t t = 0; t < track_point_indices.size(); ++t) {
-    vector<value_type > scalars (track_point_indices.size());
+    vector<value_type > scalars (track_point_indices[t].size());
     for (size_t p = 0; p < track_point_indices[t].size(); ++p) {
       if (track_point_indices[t][p] == std::numeric_limits<int32_t>::max())
         scalars[p] = 0.0;
@@ -429,6 +430,7 @@ void write_track_stats (const string& filename,
     }
     writer.append (tck_scalars);
   }
+  writer.close();
 }
 
 
@@ -604,10 +606,6 @@ void run() {
    throw Exception ("too many contrasts for design matrix");
    contrast.resize (contrast.rows(), design.columns());
 
-  DWI::Tractography::Reader<value_type> track_file;
-  DWI::Tractography::Properties properties;
-  track_file.open (argument[6], properties);
-
   // Compute FOD lobes on average FOD image
   vector<Point<value_type> > lobe_directions;
   Math::Hemisphere::Directions dirs (1281);
@@ -631,17 +629,10 @@ void run() {
     Thread::run_queue (writer, 1, DWI::SH_coefs(), fmls, 0, DWI::FOD_lobes(), lobe_processor, 1);
   }
 
-
-  string output_prefix = argument[7];
-  string track_filename = argument[6];
-
-  vector<vector<int32_t> > track_point_indices;
-  compute_track_indices (track_filename, lobe_indexer, lobe_directions, angular_threshold, num_vis_tracks, output_prefix + "_tracks.tck", track_point_indices);
-
-
-  // Compute 3D analysis mask based on lobes in average FOD image
   uint32_t num_lobes = lobe_directions.size();
   CONSOLE ("number of lobes: " + str(num_lobes));
+
+  // Compute 3D analysis mask based on lobes in average FOD image
   Image::Header header3D (argument[4]);
   header3D.set_ndim(3);
   Image::BufferScratch<bool> lobe_mask (header3D);
@@ -676,6 +667,12 @@ void run() {
 
   vector<map<int32_t, Stats::TFCE::connectivity> > lobe_connectivity (num_lobes);
   vector<uint16_t> lobe_TDI (num_lobes, 0.0);
+  vector<vector<int32_t> > track_point_indices;
+  string track_filename = argument[6];
+  string output_prefix = argument[7];
+  DWI::Tractography::Reader<value_type> track_file;
+  DWI::Tractography::Properties properties;
+  track_file.open (track_filename, properties);
   {
     // Read in tracts, and computer whole-brain lobe-lobe connectivity
     const size_t num_tracks = properties["count"].empty() ? 0 : to<int> (properties["count"]);
@@ -685,6 +682,8 @@ void run() {
       WARN("the number of visualisation tracts is larger than the total available. Setting num_vis_tracks to " + str(num_tracks));
       num_vis_tracks = num_tracks;
     }
+
+    compute_track_indices (track_filename, lobe_indexer, lobe_directions, angular_threshold, num_vis_tracks, output_prefix + "_tracks.tck", track_point_indices);
 
     typedef DWI::Tractography::Mapping::SetVoxelDir SetVoxelDir;
     DWI::Tractography::Mapping::TrackLoader loader (track_file, num_tracks, "pre-computing lobe-lobe connectivity...");
@@ -753,19 +752,30 @@ void run() {
     for (size_t s = 0; s < fod_filenames.size(); ++s)
       modulation_only(l,s) = mod_fod_lobe_integrals(l,s) - fod_lobe_integrals(l,s);
 
-
   // Compute and output population statistics
   Math::Matrix<float> std_effect_size_matrix;
-  Math::Stats::GLM::std_effect_size (mod_fod_lobe_integrals, design, contrast, std_effect_size_matrix);
+  Math::Stats::GLM::std_effect_size (fod_lobe_integrals, design, contrast, std_effect_size_matrix);
   vector<value_type> std_effect_size (num_lobes);
   matrix2vector (std_effect_size_matrix, std_effect_size);
   write_track_stats (output_prefix + "_fod_effect_size.tck", std_effect_size, track_point_indices);
-
   Math::Matrix<float> std_dev_matrix;
-  Math::Stats::GLM::std_effect_size (mod_fod_lobe_integrals, design, contrast, std_dev_matrix);
+  Math::Stats::GLM::stdev (fod_lobe_integrals, design, std_dev_matrix);
   vector<value_type> std_dev (num_lobes);
   matrix2vector (std_dev_matrix, std_dev);
   write_track_stats (output_prefix + "_fod_std_dev.tck", std_dev, track_point_indices);
+
+  Math::Stats::GLM::std_effect_size (mod_fod_lobe_integrals, design, contrast, std_effect_size_matrix);
+  matrix2vector (std_effect_size_matrix, std_effect_size);
+  write_track_stats (output_prefix + "_mod_fod_effect_size.tck", std_effect_size, track_point_indices);
+  Math::Stats::GLM::stdev (mod_fod_lobe_integrals, design, std_dev_matrix);
+  write_track_stats (output_prefix + "_mod_fod_std_dev.tck", std_dev, track_point_indices);
+
+  Math::Stats::GLM::std_effect_size (modulation_only, design, contrast, std_effect_size_matrix);
+  matrix2vector (std_effect_size_matrix, std_effect_size);
+  write_track_stats (output_prefix + "_mod_effect_size.tck", std_effect_size, track_point_indices);
+  Math::Stats::GLM::stdev (modulation_only, design, std_dev_matrix);
+  matrix2vector (std_dev_matrix, std_dev);
+  write_track_stats (output_prefix + "_mod_std_dev.tck", std_dev, track_point_indices);
 
   // Perform permutation testing
   opt = get_options("notest");
@@ -777,6 +787,4 @@ void run() {
     // Modulation information only
     do_glm_and_output (modulation_only, design, contrast, dh, tfce_E, tfce_H, num_perms, lobe_connectivity, lobe_indexer, lobe_directions, track_point_indices, output_prefix + "_mod");
   }
-
-
 }
