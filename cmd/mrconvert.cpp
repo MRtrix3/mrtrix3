@@ -177,7 +177,7 @@ inline void copy_permute (InputVoxelType& in, Image::Header& header_out, const s
 
     if (replace_nans)
       Image::ThreadedLoop ("copying from \"" + shorten (perm.name()) + "\" to \"" + shorten (out.name()) + "\"...", perm, 2)
-        .foreach (zero_non_finite, 
+        .run_foreach (zero_non_finite, 
             perm, Input,
             out, Output);
     else 
@@ -186,7 +186,7 @@ inline void copy_permute (InputVoxelType& in, Image::Header& header_out, const s
   else {
     if (replace_nans)
       Image::ThreadedLoop ("copying from \"" + shorten (in.name()) + "\" to \"" + shorten (out.name()) + "\"...", in, 2)
-        .foreach (zero_non_finite, 
+        .run_foreach (zero_non_finite, 
             in, Input,
             out, Output);
     else

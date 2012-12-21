@@ -162,7 +162,7 @@ namespace MR
      * \endcode
      *
      *
-     * \par The foreach() methods
+     * \par The run_foreach() methods
      *
      * These convenience functions can be used for any per-voxel operation, and
      * simplify the code further by taking a simple function, or a functor if
@@ -171,9 +171,9 @@ namespace MR
      * the operation to be performed. When passing a class, the operator()
      * method will be invoked. The number and order of arguments of this
      * function should match the number of VoxelType objects supplied to
-     * foreach(). 
+     * run_foreach(). 
      *
-     * The foreach() functions take the following arguments:
+     * The run_foreach() functions take the following arguments:
      * - \a functor: the function or functor defining the operation itself.
      * - \a voxN: the VoxelType objects whose voxel values are to be
      * used as inputs/outputs; their number and order should match that of
@@ -197,7 +197,7 @@ namespace MR
      * ...
      *
      * Image::ThreadedLoop ("computing exponential in-place...", vox)
-     *    .foreach (myfunc, vox, Input | output);
+     *    .run_foreach (myfunc, vox, Input | output);
      * \endcode
      * 
      * As a further example, the following snippet performs the addition of \a
@@ -209,7 +209,7 @@ namespace MR
      * ...
      *
      * Image::ThreadedLoop (vox1)
-     *     .foreach (myadd, 
+     *     .run_foreach (myadd, 
      *               vox_out, Output, 
      *               vox1, Input, 
      *               vox2, Input);
@@ -240,7 +240,7 @@ namespace MR
      *
      * double SoS = 0.0;
      * Image::ThreadedLoop ("computing RMS of \"" + vox.name() + "\"...", vox)
-     *     .foreach (RMS(SoS), vox, Input);
+     *     .run_foreach (RMS(SoS), vox, Input);
      *
      * double rms = Math::sqrt (SoS / Image::voxel_count (vox));
      * \endcode
@@ -375,13 +375,13 @@ namespace MR
 
 
         template <class Functor, class VoxelType1> 
-          void foreach (Functor functor, VoxelType1& vox1, int flags1);
+          void run_foreach (Functor functor, VoxelType1& vox1, int flags1);
 
         template <class Functor, class VoxelType1, class VoxelType2> 
-          void foreach (Functor functor, VoxelType1& vox1, int flags1, VoxelType2& vox2, int flags2);
+          void run_foreach (Functor functor, VoxelType1& vox1, int flags1, VoxelType2& vox2, int flags2);
 
         template <class Functor, class VoxelType1, class VoxelType2, class VoxelType3> 
-          void foreach (Functor functor, VoxelType1& vox1, int flags1, VoxelType2& vox2, int flags2, VoxelType3& vox3, int flags3);
+          void run_foreach (Functor functor, VoxelType1& vox1, int flags1, VoxelType2& vox2, int flags2, VoxelType3& vox3, int flags3);
 
       protected:
         LoopInOrder loop;
@@ -618,33 +618,33 @@ namespace MR
 
 
     template <class Functor, class VoxelType1> 
-      inline void ThreadedLoop::foreach (Functor functor, VoxelType1& vox1, int flags1)
+      inline void ThreadedLoop::run_foreach (Functor functor, VoxelType1& vox1, int flags1)
       {
         ThreadedLoopKernelForEach1<Functor, VoxelType1> 
           loop_thread (*this, functor, vox1, flags1);
         Thread::Array<ThreadedLoopKernelForEach1<Functor, VoxelType1> > 
           thread_list (loop_thread);
-        Thread::Exec threads (thread_list, "foreach thread");
+        Thread::Exec threads (thread_list, "run_foreach thread");
       }
 
     template <class Functor, class VoxelType1, class VoxelType2> 
-      inline void ThreadedLoop::foreach (Functor functor, VoxelType1& vox1, int flags1, VoxelType2& vox2, int flags2)
+      inline void ThreadedLoop::run_foreach (Functor functor, VoxelType1& vox1, int flags1, VoxelType2& vox2, int flags2)
       {
         ThreadedLoopKernelForEach2<Functor, VoxelType1, VoxelType2> 
           loop_thread (*this, functor, vox1, flags1, vox2, flags2);
         Thread::Array<ThreadedLoopKernelForEach2<Functor, VoxelType1, VoxelType2> > 
           thread_list (loop_thread);
-        Thread::Exec threads (thread_list, "foreach thread");
+        Thread::Exec threads (thread_list, "run_foreach thread");
       }
 
     template <class Functor, class VoxelType1, class VoxelType2, class VoxelType3> 
-      inline void ThreadedLoop::foreach (Functor functor, VoxelType1& vox1, int flags1, VoxelType2& vox2, int flags2, VoxelType3& vox3, int flags3)
+      inline void ThreadedLoop::run_foreach (Functor functor, VoxelType1& vox1, int flags1, VoxelType2& vox2, int flags2, VoxelType3& vox3, int flags3)
       {
         ThreadedLoopKernelForEach3<Functor, VoxelType1, VoxelType2, VoxelType3>
           loop_thread (*this, functor, vox1, flags1, vox2, flags2, vox3, flags3);
         Thread::Array<ThreadedLoopKernelForEach3<Functor, VoxelType1, VoxelType2, VoxelType3> >
           thread_list (loop_thread);
-        Thread::Exec threads (thread_list, "foreach thread");
+        Thread::Exec threads (thread_list, "run_foreach thread");
       }
 
 

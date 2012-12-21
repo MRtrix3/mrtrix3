@@ -164,12 +164,12 @@ namespace MR
                 Image::ThreadedLoop loop (input);
                 if (mask) {
                   Adapter::Replicate<MaskVoxelType> replicated_mask (*mask, input);
-                  loop.foreach (MeanStdFunctorMask<value_type, mask_value_type> (sum, sum_sqr, count), 
+                  loop.run_foreach (MeanStdFunctorMask<value_type, mask_value_type> (sum, sum_sqr, count), 
                       input, Input,
                       replicated_mask, Input);
                 }
                 else {
-                  loop.foreach (MeanStdFunctor<value_type> (sum, sum_sqr), 
+                  loop.run_foreach (MeanStdFunctor<value_type> (sum, sum_sqr), 
                       input, Input);
                   count = Image::voxel_count (input);
                 }
@@ -185,12 +185,12 @@ namespace MR
               Image::ThreadedLoop loop (input);
               if (mask) {
                   Adapter::Replicate<MaskVoxelType> replicated_mask (*mask, input);
-                  loop.foreach (CorrelationFunctorMask<value_type, mask_value_type> (threshold, sum, mean_xy), 
+                  loop.run_foreach (CorrelationFunctorMask<value_type, mask_value_type> (threshold, sum, mean_xy), 
                       input, Input,
                       replicated_mask, Input);
               }
               else
-                loop.foreach (CorrelationFunctor<value_type> (threshold, sum, mean_xy), 
+                loop.run_foreach (CorrelationFunctor<value_type> (threshold, sum, mean_xy), 
                     input, Input);
 
               mean_xy /= count;

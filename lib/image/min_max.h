@@ -69,7 +69,7 @@ namespace MR
           size_t to_axis = std::numeric_limits<size_t>::max())
     {
       Image::ThreadedLoop ("finding min/max of \"" + shorten (in.name()) + "\"...", in)
-        .foreach (__MinMax<typename InputVoxelType::value_type> (min, max), in, Input);
+        .run_foreach (__MinMax<typename InputVoxelType::value_type> (min, max), in, Input);
     }
 
   }
