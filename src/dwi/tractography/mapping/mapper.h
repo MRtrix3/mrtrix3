@@ -36,7 +36,7 @@
 #include "math/SH.h"
 #include "thread/queue.h"
 
-#include "math/hemisphere/directions.h"
+#include "dwi/directions/set.h"
 
 #include "image/interp/linear.h"
 
@@ -141,12 +141,12 @@ template <> void TrackMapperBase<SetVoxelDir>::voxelise (const std::vector< Poin
 class TrackMapperDixel : public TrackMapperBase<SetDixel>
 {
   public:
-    TrackMapperDixel (const Image::Header& output_header, const bool map_zero, const Math::Hemisphere::Directions_FastLookup& directions) :
+    TrackMapperDixel (const Image::Header& output_header, const bool map_zero, const DWI::Directions::FastLookupSet& directions) :
       TrackMapperBase<SetDixel> (output_header, map_zero),
       dirs (directions) { }
 
   protected:
-    const Math::Hemisphere::Directions_FastLookup& dirs;
+    const DWI::Directions::FastLookupSet& dirs;
 
   private:
     void voxelise (const std::vector< Point<float> >&, SetDixel&) const;
