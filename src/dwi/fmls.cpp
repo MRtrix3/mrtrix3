@@ -33,18 +33,29 @@ namespace DWI {
 
 
 
-FOD_FMLS::FOD_FMLS (const Math::Hemisphere::Directions& directions, const size_t l) :
+FOD_FMLS::FOD_FMLS (const DWI::Directions::Set& directions, const size_t l) :
       dirs                             (directions),
       lmax                             (l),
-      transform                        (new Math::SH::Transform<float> (dirs.get_az_el_pairs(), lmax)),
-      precomputer                      (new Math::SH::PrecomputedAL<float> (lmax, 2 * dirs.get_num_dirs())),
+      transform                        (NULL),
+      precomputer                      (new Math::SH::PrecomputedAL<float> (lmax, 2 * dirs.size())),
       ratio_to_negative_lobe_integral  (RATIO_TO_NEGATIVE_LOBE_INTEGRAL_DEFAULT),
       ratio_to_negative_lobe_mean_peak (RATIO_TO_NEGATIVE_LOBE_MEAN_PEAK_DEFAULT),
       ratio_to_peak_value              (RATIO_TO_PEAK_VALUE_DEFAULT),
       peak_value_threshold             (PEAK_VALUE_THRESHOLD),
       create_null_lobe                 (false),
       create_lookup_table              (true),
-      dilate_lookup_table              (false) { }
+      dilate_lookup_table              (false)
+{
+
+  Math::Matrix<float> az_el_pairs (dirs.size(), 2);
+  for (size_t row = 0; row != dirs.size(); ++row) {
+    const Point<float> d (dirs.get_dir (row));
+    az_el_pairs (row, 0) = Math::atan2 (d[1], d[0]);
+    az_el_pairs (row, 1) = Math::acos  (d[2]);
+  }
+  transform = new Math::SH::Transform<float> (az_el_pairs, lmax);
+
+}
 
 
 
@@ -64,7 +75,7 @@ bool FOD_FMLS::operator() (const SH_coefs& in, FOD_lobes& out) const {
   if (in[0] <= 0.0)
     return true;
 
-  Math::Vector<float> values (dirs.get_num_dirs());
+  Math::Vector<float> values (dirs.size());
   transform->SH2A (values, in);
 
   typedef std::multimap<float, dir_t, Max_abs> map_type;
@@ -143,8 +154,6 @@ bool FOD_FMLS::operator() (const SH_coefs& in, FOD_lobes& out) const {
       float new_peak_value = Math::SH::get_peak (in.ptr(), lmax, newton_peak, &(*precomputer));
       if (new_peak_value > i->get_peak_value() && newton_peak.valid())
         i->revise_peak (newton_peak, new_peak_value);
-      else
-        i->revise_peak (dirs.get_dir (peak_bin), i->get_peak_value());
       i->normalise_integral();
       ++i;
     }
@@ -152,12 +161,12 @@ bool FOD_FMLS::operator() (const SH_coefs& in, FOD_lobes& out) const {
 
   if (create_lookup_table) {
 
-    out.lut.assign (dirs.get_num_dirs(), out.size());
+    out.lut.assign (dirs.size(), out.size());
 
     size_t index = 0;
     for (std::vector<FOD_lobe>::iterator i = out.begin(); i != out.end(); ++i, ++index) {
-      const Dir_mask& this_mask (i->get_mask());
-      for (size_t d = 0; d != dirs.get_num_dirs(); ++d) {
+      const Mask& this_mask (i->get_mask());
+      for (size_t d = 0; d != dirs.size(); ++d) {
         if (this_mask[d])
           out.lut[d] = index;
       }
@@ -165,14 +174,14 @@ bool FOD_FMLS::operator() (const SH_coefs& in, FOD_lobes& out) const {
 
     if (dilate_lookup_table && out.size()) {
 
-      Math::Hemisphere::Dir_mask processed (dirs);
+      Mask processed (dirs);
       for (std::vector<FOD_lobe>::iterator i = out.begin(); i != out.end(); ++i)
         processed |= i->get_mask();
 
-      std::vector<uint8_t> new_assignments [dirs.get_num_dirs()];
+      std::vector<uint8_t> new_assignments [dirs.size()];
       while (!processed.full()) {
 
-        for (dir_t dir = 0; dir != dirs.get_num_dirs(); ++dir) {
+        for (dir_t dir = 0; dir != dirs.size(); ++dir) {
           if (!processed[dir]) {
             for (std::vector<size_t>::const_iterator neighbour = dirs.get_adj_dirs (dir).begin(); neighbour != dirs.get_adj_dirs (dir).end(); ++neighbour) {
               if (processed[*neighbour])
@@ -180,7 +189,7 @@ bool FOD_FMLS::operator() (const SH_coefs& in, FOD_lobes& out) const {
             }
           }
         }
-        for (dir_t dir = 0; dir != dirs.get_num_dirs(); ++dir) {
+        for (dir_t dir = 0; dir != dirs.size(); ++dir) {
           if (new_assignments[dir].size() == 1) {
 
             out.lut[dir] = new_assignments[dir].front();
@@ -211,7 +220,7 @@ bool FOD_FMLS::operator() (const SH_coefs& in, FOD_lobes& out) const {
   }
 
   if (create_null_lobe) {
-    Dir_mask null_mask (dirs);
+    Mask null_mask (dirs);
     for (std::vector<FOD_lobe>::iterator i = out.begin(); i != out.end(); ++i)
       null_mask |= i->get_mask();
     null_mask = ~null_mask;

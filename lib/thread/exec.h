@@ -24,6 +24,7 @@
 #define __mrtrix_thread_exec_h__
 
 #include "exception.h"
+#include "ptr.h"
 #include "file/config.h"
 #include "thread/mutex.h"
 

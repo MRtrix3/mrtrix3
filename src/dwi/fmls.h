@@ -30,8 +30,8 @@
 #include "math/SH.h"
 #include "math/vector.h"
 #include "point.h"
-#include "math/hemisphere/directions.h"
-#include "math/hemisphere/dir_mask.h"
+#include "dwi/directions/set.h"
+#include "dwi/directions/mask.h"
 
 
 #include <map>
@@ -47,7 +47,7 @@ namespace MR {
 namespace DWI {
 
 
-using Math::Hemisphere::Dir_mask;
+using DWI::Directions::Mask;
 
 typedef Point<float> PointF;
 typedef uint16_t dir_t;
@@ -57,10 +57,11 @@ typedef uint16_t dir_t;
 class FOD_lobe {
 
   public:
-    FOD_lobe (const Math::Hemisphere::Directions& dirs, const dir_t seed, const float value) :
+    FOD_lobe (const DWI::Directions::Set& dirs, const dir_t seed, const float value) :
       mask (dirs),
       peak_dir_bin (seed),
       peak_value (Math::abs (value)),
+      peak_dir (dirs.get_dir (seed)),
       integral (value),
       neg (value <= 0.0)
     {
@@ -69,7 +70,7 @@ class FOD_lobe {
 
     // This is used for creating a `null lobe' i.e. an FOD lobe with zero size, containing all directions not
     //   assigned to any other lobe in the voxel
-    FOD_lobe (const Math::Hemisphere::Dir_mask& i) :
+    FOD_lobe (const Mask& i) :
       mask (i),
       peak_dir_bin (i.size()),
       peak_value (0.0),
@@ -110,7 +111,7 @@ class FOD_lobe {
       integral += that.integral;
     }
 
-    const Dir_mask& get_mask() const { return mask; }
+    const Mask& get_mask() const { return mask; }
     dir_t get_peak_dir_bin() const { return peak_dir_bin; }
     float get_peak_value() const { return peak_value; }
     const Point<float>& get_peak_dir() const { return peak_dir; }
@@ -119,7 +120,7 @@ class FOD_lobe {
 
 
   private:
-    Dir_mask mask;
+    Mask mask;
     dir_t peak_dir_bin;
     float peak_value;
     Point<float> peak_dir;
@@ -149,7 +150,7 @@ class FOD_FMLS {
     typedef uint8_t lobe_t;
 
   public:
-    FOD_FMLS (const Math::Hemisphere::Directions&, const size_t);
+    FOD_FMLS (const DWI::Directions::Set&, const size_t);
 
     bool operator() (const SH_coefs&, FOD_lobes&) const;
 
@@ -172,7 +173,7 @@ class FOD_FMLS {
 
   private:
 
-    const Math::Hemisphere::Directions& dirs;
+    const DWI::Directions::Set& dirs;
 
     const size_t lmax;
 
