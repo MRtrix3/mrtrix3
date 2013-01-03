@@ -269,7 +269,7 @@ namespace MR
         Vector (ValueType* vector_data, size_t nelements, size_t skip = 1) throw () {
           GSLVector<ValueType>::size = nelements;
           GSLVector<ValueType>::stride = skip;
-          set (vector_data);
+          GSLVector<ValueType>::set (vector_data);
           block = NULL;
           owner = 0;
         }
