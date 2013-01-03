@@ -49,6 +49,7 @@ class TrackLoader
       progress (new ProgressBar (msg, tracks_to_load))
     { }
 
+    virtual ~TrackLoader() { }
     virtual bool operator() (TrackAndIndex& out)
     {
       if (!reader.next (out.tck) || counter >= tracks_to_load) {

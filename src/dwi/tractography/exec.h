@@ -172,7 +172,7 @@ namespace MR {
           };
 
 
-          virtual bool next_rk4()
+          bool next_rk4()
           {
             const Point<value_type> init_pos (method.pos);
             const Point<value_type> init_dir (method.dir);

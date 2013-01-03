@@ -38,7 +38,7 @@ namespace MR {
       public:
         typedef typename VoxelType::value_type value_type;
         using Image::Adapter::Voxel<VoxelType>::dim;
-        using typename Image::Adapter::Voxel<VoxelType>::parent_vox;
+        using Image::Adapter::Voxel<VoxelType>::parent_vox;
 
         Bootstrap (const VoxelType& Image, const Functor& functor) :
           Image::Adapter::Voxel<VoxelType> (Image),
