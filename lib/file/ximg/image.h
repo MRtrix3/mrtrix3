@@ -46,6 +46,7 @@ namespace MR
         public:
           Base (const std::string& filename, int64_t offset) : 
             Entry (filename, offset) { }
+          virtual ~Base() { }
           virtual bool operator< (const Base& x) const {
             return name.compare (x.name) < 0;
           }
