@@ -38,7 +38,7 @@ namespace MR
       {
         public:
           using Voxel<VoxelType>::dim;
-          using typename Voxel<VoxelType>::parent_vox;
+          using Voxel<VoxelType>::parent_vox;
           typedef typename VoxelType::value_type value_type;
 
           PermuteAxes (const VoxelType& original, const std::vector<int>& axes) :

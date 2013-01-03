@@ -239,6 +239,7 @@ class Evaluator
       format (format_string),
       ZtoR (complex_maps_to_real),
       RtoZ (real_maps_to_complex) { }
+    virtual ~Evaluator() { }
     const std::string id;
     const char* format;
     bool ZtoR, RtoZ;

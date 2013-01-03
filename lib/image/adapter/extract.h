@@ -38,7 +38,7 @@ namespace MR
         public:
           using Voxel<VoxelType>::ndim;
           using Voxel<VoxelType>::vox;
-          using typename Voxel<VoxelType>::parent_vox;
+          using Voxel<VoxelType>::parent_vox;
           typedef typename VoxelType::value_type value_type;
 
           Extract1D (const VoxelType& original, const size_t axis, const std::vector<int>& indices) :
@@ -138,7 +138,7 @@ namespace MR
         public:
           using Voxel<VoxelType>::ndim;
           using Voxel<VoxelType>::vox;
-          using typename Voxel<VoxelType>::parent_vox;
+          using Voxel<VoxelType>::parent_vox;
           typedef typename VoxelType::value_type value_type;
 
           Extract (const VoxelType& original, const std::vector<std::vector<int> >& indices) :
