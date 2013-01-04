@@ -47,7 +47,9 @@ namespace MR
 
             QVariant data (const QModelIndex& index, int role) const {
               if (!index.isValid()) return QVariant();
-              if (role == Qt::CheckStateRole) return shown[index.row()] ? Qt::Checked : Qt::Unchecked;
+              if (role == Qt::CheckStateRole) {
+                return shown[index.row()] ? Qt::Checked : Qt::Unchecked;
+              }
               if (role != Qt::DisplayRole) return QVariant();
               return shorten (images[index.row()]->header().name(), 20, 0).c_str();
             }
@@ -70,6 +72,7 @@ namespace MR
             int columnCount (const QModelIndex& parent = QModelIndex()) const { return 1; }
 
             void add_images (VecPtr<MR::Image::Header>& list);
+            void remove_images (QModelIndexList& indexes);
             VecPtr<Image> images;
             std::vector<bool> shown;
         };
@@ -86,7 +89,13 @@ namespace MR
           endInsertRows();
         }
 
-
+        void Overlay::Model::remove_images (QModelIndexList& indexes)
+        {
+          beginRemoveRows (QModelIndex(), indexes.first().row(), indexes.first().row());
+          images.erase (images.begin() + indexes.first().row());
+          shown.resize (images.size(), true);
+          endRemoveRows();
+        }
 
 
 
@@ -112,16 +121,16 @@ namespace MR
 
             main_box->addLayout (layout, 0);
 
-            QListView *image_list = new QListView(this);
-            image_list->setSelectionMode (QAbstractItemView::SingleSelection);
-            image_list->setDragEnabled (true);
-            image_list->viewport()->setAcceptDrops (true);
-            image_list->setDropIndicatorShown (true);
+            image_list_view = new QListView(this);
+            image_list_view->setSelectionMode (QAbstractItemView::MultiSelection);
+            image_list_view->setDragEnabled (true);
+            image_list_view->viewport()->setAcceptDrops (true);
+            image_list_view->setDropIndicatorShown (true);
 
             image_list_model = new Model (this);
-            image_list->setModel (image_list_model);
+            image_list_view->setModel (image_list_model);
 
-            main_box->addWidget (image_list, 1);
+            main_box->addWidget (image_list_view, 1);
           }
 
 
@@ -139,7 +148,8 @@ namespace MR
 
         void Overlay::image_close_slot ()
         {
-          TEST;
+          QModelIndexList indexes = image_list_view->selectionModel()->selectedIndexes();
+          image_list_model->remove_images (indexes);
         }
 
       }

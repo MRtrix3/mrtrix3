@@ -51,7 +51,7 @@ namespace MR
           protected:
              class Model;
              Model* tractogram_list_model;
-             QListView* tractogram_list_view;  //TODO destructor??
+             QListView* tractogram_list_view;
         };
 
       }

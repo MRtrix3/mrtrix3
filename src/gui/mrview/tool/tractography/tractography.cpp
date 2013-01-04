@@ -43,12 +43,14 @@ namespace MR
         class Tractography::Model : public QAbstractItemModel
         {
           public:
-            Model (QObject* parent) : 
+            Model (QObject* parent) :
               QAbstractItemModel (parent) { }
 
             QVariant data (const QModelIndex& index, int role) const {
               if (!index.isValid()) return QVariant();
-              if (role == Qt::CheckStateRole) return shown[index.row()] ? Qt::Checked : Qt::Unchecked;
+              if (role == Qt::CheckStateRole) {
+                return shown[index.row()] ? Qt::Checked : Qt::Unchecked;
+              }
               if (role != Qt::DisplayRole) return QVariant();
               return shorten (tractograms[index.row()]->get_filename(), 20, 0).c_str();
             }
@@ -67,6 +69,7 @@ namespace MR
             }
             QModelIndex index (int row, int column, const QModelIndex& parent = QModelIndex()) const { return createIndex (row, column); }
             QModelIndex parent (const QModelIndex& index) const { return QModelIndex(); }
+
             int rowCount (const QModelIndex& parent = QModelIndex()) const { return tractograms.size(); }
             int columnCount (const QModelIndex& parent = QModelIndex()) const { return 1; }
 
@@ -80,19 +83,21 @@ namespace MR
         void Tractography::Model::add_tractograms (std::vector<std::string>& list)
         {
           beginInsertRows (QModelIndex(), tractograms.size(), tractograms.size() + list.size());
-          for (size_t i = 0; i < list.size(); ++i) {
+          for (size_t i = 0; i < list.size(); ++i)
             tractograms.push_back (new Tractogram (list[i]));
-          }
           shown.resize (tractograms.size(), true);
           endInsertRows();
         }
 
-        void Tractography::Model::remove_tractograms (QModelIndexList& indexes) {
-          beginRemoveRows(QModelIndex(), tractograms.size(), tractograms.size() - indexes.size());
-          removeRow(indexes.first().row());
-          tractograms.erase(tractograms.begin() + indexes.first().row());
-          shown.resize (tractograms.size(), true);
-          endRemoveRows();
+        void Tractography::Model::remove_tractograms (QModelIndexList& indexes)
+        {
+          // TODO fix problem with multiple selection remove
+          for (int i = 0; i < indexes.size(); ++i) {
+            beginRemoveRows (QModelIndex(), indexes.at(i).row(), indexes.at(i).row());
+            tractograms.erase (tractograms.begin() + indexes.first().row());
+            shown.resize (tractograms.size(), true);
+            endRemoveRows();
+          }
         }
 
 
@@ -119,8 +124,8 @@ namespace MR
 
             main_box->addLayout (layout, 0);
 
-            tractogram_list_view = new QListView(this);
-            tractogram_list_view->setSelectionMode (QAbstractItemView::SingleSelection);
+            tractogram_list_view = new QListView (this);
+            tractogram_list_view->setSelectionMode (QAbstractItemView::MultiSelection);
             tractogram_list_view->setDragEnabled (true);
             tractogram_list_view->viewport()->setAcceptDrops (true);
             tractogram_list_view->setDropIndicatorShown (true);

@@ -51,6 +51,7 @@ namespace MR
           protected:
              class Model;
              Model* image_list_model;
+             QListView* image_list_view;
         };
 
       }
