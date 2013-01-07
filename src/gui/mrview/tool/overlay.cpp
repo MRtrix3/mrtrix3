@@ -72,7 +72,7 @@ namespace MR
             int columnCount (const QModelIndex& parent = QModelIndex()) const { return 1; }
 
             void add_images (VecPtr<MR::Image::Header>& list);
-            void remove_images (QModelIndexList& indexes);
+            void remove_image (QModelIndex& index);
             VecPtr<Image> images;
             std::vector<bool> shown;
         };
@@ -89,10 +89,10 @@ namespace MR
           endInsertRows();
         }
 
-        void Overlay::Model::remove_images (QModelIndexList& indexes)
+        void Overlay::Model::remove_image (QModelIndex& index)
         {
-          beginRemoveRows (QModelIndex(), indexes.first().row(), indexes.first().row());
-          images.erase (images.begin() + indexes.first().row());
+          beginRemoveRows (QModelIndex(), index.row(), index.row());
+          images.erase (images.begin() + index.row());
           shown.resize (images.size(), true);
           endRemoveRows();
         }
@@ -149,7 +149,10 @@ namespace MR
         void Overlay::image_close_slot ()
         {
           QModelIndexList indexes = image_list_view->selectionModel()->selectedIndexes();
-          image_list_model->remove_images (indexes);
+          while (indexes.size()) {
+            image_list_model->remove_image (indexes.first());
+            indexes = image_list_view->selectionModel()->selectedIndexes();
+          }
         }
 
       }

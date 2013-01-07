@@ -39,7 +39,9 @@ namespace MR
         QFrame (parent),
         text (this),
         button (this),
-        rate (change_rate) {
+        rate (change_rate),
+        min (-std::numeric_limits<float>::max()),
+        max (std::numeric_limits<float>::max()) {
           text.setValidator (new QDoubleValidator (this));
 
           button.setToolTip (tr ("Click & drag to adjust"));

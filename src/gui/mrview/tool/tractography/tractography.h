@@ -47,6 +47,9 @@ namespace MR
           private slots:
             void tractogram_open_slot ();
             void tractogram_close_slot ();
+            void opacity_slot (int opacity);
+            void line_thickness_slot (int thickness);
+            void on_slab_thickness_change();
 
           protected:
              class Model;

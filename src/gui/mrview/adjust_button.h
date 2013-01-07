@@ -37,14 +37,29 @@ namespace MR
           }
 
           void setValue (float val) {
-            if (finite (val))
-              text.setText (str(val).c_str());
-            else 
+            if (finite (val)) {
+              if (val > max)
+                text.setText (str(max).c_str());
+              else if (val < min)
+                text.setText (str(min).c_str());
+              else
+                text.setText (str(val).c_str());
+            }
+            else {
               text.clear();
+            }
           }
 
           void setRate (float new_rate) {
             rate = new_rate;
+          }
+
+          void setMin (float val) {
+            min = val;
+          }
+
+          void setMax (float val) {
+            max = val;
           }
 
         signals:
@@ -57,6 +72,8 @@ namespace MR
           QLineEdit text;
           QToolButton button;
           float rate;
+          float min;
+          float max;
           int previous_y;
 
           bool eventFilter (QObject *obj, QEvent *event);

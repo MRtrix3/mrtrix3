@@ -29,6 +29,7 @@
 #include "gui/mrview/tool/tractography/tractography.h"
 #include "gui/mrview/tool/tractography/tractogram.h"
 #include "gui/dialog/file.h"
+#include "gui/mrview/adjust_button.h"
 
 namespace MR
 {
@@ -74,7 +75,7 @@ namespace MR
             int columnCount (const QModelIndex& parent = QModelIndex()) const { return 1; }
 
             void add_tractograms (std::vector<std::string>& filenames);
-            void remove_tractograms (QModelIndexList& indexes);
+            void remove_tractogram (QModelIndex& index);
             VecPtr<Tractogram> tractograms;
             std::vector<bool> shown;
         };
@@ -89,15 +90,12 @@ namespace MR
           endInsertRows();
         }
 
-        void Tractography::Model::remove_tractograms (QModelIndexList& indexes)
+        void Tractography::Model::remove_tractogram (QModelIndex& index)
         {
-          // TODO fix problem with multiple selection remove
-          for (int i = 0; i < indexes.size(); ++i) {
-            beginRemoveRows (QModelIndex(), indexes.at(i).row(), indexes.at(i).row());
-            tractograms.erase (tractograms.begin() + indexes.first().row());
-            shown.resize (tractograms.size(), true);
-            endRemoveRows();
-          }
+          beginRemoveRows (QModelIndex(), index.row(), index.row());
+          tractograms.erase (tractograms.begin() + index.row());
+          shown.resize (tractograms.size(), true);
+          endRemoveRows();
         }
 
 
@@ -134,6 +132,43 @@ namespace MR
             tractogram_list_view->setModel (tractogram_list_model);
 
             main_box->addWidget (tractogram_list_view, 1);
+
+            QGridLayout* default_opt_grid = new QGridLayout;
+
+            QWidget::setStyleSheet("QSlider { margin: 5 0 5 0px;  }"
+                                   "QGroupBox { padding:7 3 0 0px; margin: 10 0 5 0px; border: 1px solid gray; border-radius: 4px}"
+                                   "QGroupBox::title { subcontrol-position: top left; top:-8px; left:5px}");
+
+            QGroupBox* slab_group_box = new QGroupBox (tr("crop to slab"));
+            slab_group_box->setCheckable (true);
+            slab_group_box->setChecked (true);
+            default_opt_grid->addWidget (slab_group_box, 0, 0, 1, 2);
+
+            QGridLayout* slab_layout = new QGridLayout;
+            slab_group_box->setLayout(slab_layout);
+            slab_layout->addWidget (new QLabel ("thickness (mm)"), 0, 0);
+            AdjustButton* slab_entry = new AdjustButton (this, 0.1);
+            slab_entry->setValue (5.0);
+            slab_entry->setMin(0.0);
+            connect (slab_entry, SIGNAL (valueChanged()), this, SLOT (on_slab_thickness_change()));
+            slab_layout->addWidget (slab_entry, 0, 1);
+
+            QSlider* slider;
+            slider = new QSlider (Qt::Horizontal);
+            slider->setRange (0,100);
+            slider->setSliderPosition (int (100));
+            connect (slider, SIGNAL (valueChanged (int)), this, SLOT (opacity_slot (int)));
+            default_opt_grid->addWidget (new QLabel ("opacity"), 1, 0);
+            default_opt_grid->addWidget (slider, 1, 1);
+
+            slider = new QSlider (Qt::Horizontal);
+            slider->setRange (0,100);
+            slider->setSliderPosition (int (100));
+            connect (slider, SIGNAL (valueChanged (int)), this, SLOT (line_thickness_slot (int)));
+            default_opt_grid->addWidget (new QLabel ("line thickness"), 2, 0);
+            default_opt_grid->addWidget (slider, 2, 1);
+
+            main_box->addLayout (default_opt_grid, 0);
           }
 
 
@@ -151,7 +186,21 @@ namespace MR
         void Tractography::tractogram_close_slot ()
         {
           QModelIndexList indexes = tractogram_list_view->selectionModel()->selectedIndexes();
-          tractogram_list_model->remove_tractograms (indexes);
+          while (indexes.size()) {
+            tractogram_list_model->remove_tractogram (indexes.first());
+            indexes = tractogram_list_view->selectionModel()->selectedIndexes();
+          }
+        }
+
+        void Tractography::opacity_slot (int opacity) {
+          CONSOLE(str(opacity));
+        }
+
+        void Tractography::line_thickness_slot (int thickness) {
+          CONSOLE(str(thickness));
+        }
+
+        void Tractography::on_slab_thickness_change() {
         }
 
       }
