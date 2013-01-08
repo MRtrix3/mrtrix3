@@ -42,17 +42,17 @@ class TrackLoader
 {
 
   public:
-    TrackLoader (DWI::Tractography::Reader<float>& file, const size_t tracks_to_load, std::string msg = "mapping tracks to image...") :
+    TrackLoader (Tractography::Reader<float>& file, const size_t to_load = 0, const std::string& msg = "mapping tracks to image...") :
       reader (file),
       counter (0),
-      tracks_to_load (tracks_to_load),
+      tracks_to_load (to_load),
       progress (new ProgressBar (msg, tracks_to_load))
     { }
 
     virtual ~TrackLoader() { }
     virtual bool operator() (TrackAndIndex& out)
     {
-      if (!reader.next (out.tck) || counter >= tracks_to_load) {
+      if (!reader.next (out.tck) || (tracks_to_load && (counter >= tracks_to_load))) {
         delete progress;
         progress = NULL;
         return false;
@@ -63,7 +63,7 @@ class TrackLoader
     }
 
   protected:
-    DWI::Tractography::Reader<float>& reader;
+    Tractography::Reader<float>& reader;
     size_t counter;
     size_t tracks_to_load;
     ProgressBar* progress;

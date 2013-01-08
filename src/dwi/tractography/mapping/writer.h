@@ -206,7 +206,7 @@ class MapWriter : public MapWriterBase<Cont>
           v_buffer.value() = std::numeric_limits<value_type>::max();
       } else if (voxel_statistic == MAX) {
         for (loop.start (v_buffer); loop.ok(); loop.next (v_buffer))
-          v_buffer.value() = std::numeric_limits<value_type>::min();
+          v_buffer.value() = -std::numeric_limits<value_type>::max();
       } else {
         for (loop.start (v_buffer); loop.ok(); loop.next (v_buffer))
           v_buffer.value() = value_type (0);
@@ -245,7 +245,7 @@ class MapWriter : public MapWriterBase<Cont>
 
         case MAX:
           for (loop.start (v_buffer); loop.ok(); loop.next (v_buffer)) {
-            if (v_buffer.value() == std::numeric_limits<value_type>::min())
+            if (v_buffer.value() == -std::numeric_limits<value_type>::max())
               v_buffer.value() = 0.0;
           }
           break;
