@@ -364,7 +364,7 @@ elif system == 'windows':
   lib_suffix = '.dll'
 elif system == 'darwin':
   cpp_flags += [ '-DMACOSX', '-fPIC' ]
-  ld_flags += [ '-dynamiclib' ]
+  ld_lib_flags += [ '-dynamiclib' ]
   lib_suffix = '.dylib'
 
 
