@@ -568,7 +568,7 @@ and include any required libraries'
 For example:'
      GSL_LDFLAGS="-L/usr/local/lib -lgsl -lgslcblas" ./configure.py''')
 
-
+ld_lib_flags += gsl_ldflags
 
 report ('Checking whether GSL compiles with -DHAVE_INLINE: ')
 try:
