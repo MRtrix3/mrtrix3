@@ -27,7 +27,7 @@
 #include "mrtrix.h"
 #include "gui/mrview/window.h"
 #include "gui/mrview/tool/tractography/tractography.h"
-#include "gui/mrview/tool/tractography/tractogram.h"
+#include "gui/mrview/tractogram.h"
 #include "gui/dialog/file.h"
 #include "gui/mrview/adjust_button.h"
 
@@ -169,8 +169,13 @@ namespace MR
             default_opt_grid->addWidget (slider, 2, 1);
 
             main_box->addLayout (default_opt_grid, 0);
-          }
+        }
 
+
+        Tractography::~Tractography () {
+          delete tractogram_list_model;
+          delete tractogram_list_view;
+        }
 
         void Tractography::tractogram_open_slot ()
         {

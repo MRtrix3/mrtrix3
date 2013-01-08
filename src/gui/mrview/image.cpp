@@ -38,15 +38,11 @@ namespace MR
     {
 
       Image::Image (const MR::Image::Header& image_header) :
-        QAction (NULL),
+        Displayable (image_header.name()),
         buffer (image_header),
         interp (buffer),
         texture3D (0),
-        interpolation (GL_LINEAR),
-        value_min (NAN),
-        value_max (NAN),
-        position (header().ndim()),
-        texture_mode_3D_unchanged (false)
+        position (header().ndim())
       {
         texture2D[0] = texture2D[1] = texture2D[2] = 0;
         position[0] = position[1] = position[2] = std::numeric_limits<ssize_t>::min();
@@ -56,15 +52,11 @@ namespace MR
 
 
       Image::Image (Window& window, const MR::Image::Header& image_header) :
-        QAction (shorten (image_header.name(), 20, 0).c_str(), &window),
+        Displayable (window, image_header.name()),
         buffer (image_header),
         interp (buffer),
         texture3D (0),
-        interpolation (GL_LINEAR),
-        value_min (NAN),
-        value_max (NAN),
-        position (header().ndim()),
-        texture_mode_3D_unchanged (false)
+        position (image_header.ndim())
       {
         texture2D[0] = texture2D[1] = texture2D[2] = 0;
         position[0] = position[1] = position[2] = std::numeric_limits<ssize_t>::min();
@@ -629,11 +621,6 @@ namespace MR
 
         return is_unchanged;
       }
-
-
-
-
-
 
 
     }

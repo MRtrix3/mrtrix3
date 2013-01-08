@@ -24,7 +24,7 @@
 
 #include "progressbar.h"
 #include "image/stride.h"
-#include "gui/mrview/tool/tractography/tractogram.h"
+#include "gui/mrview/tractogram.h"
 #include "gui/mrview/window.h"
 #include "gui/projection.h"
 
@@ -40,11 +40,8 @@ namespace MR
       {
 
         Tractogram::Tractogram (const std::string& filename) :
-          QAction (NULL),
-          filename (filename),
-          interpolation (GL_LINEAR),
-          value_min (NAN),
-          value_max (NAN)
+          Displayable (filename),
+          filename (filename)
         {
           file.open (filename, properties);
         }
@@ -52,11 +49,8 @@ namespace MR
 
 
         Tractogram::Tractogram (Window& window, const std::string& filename) :
-          QAction (shorten (filename, 20, 0).c_str(), &window),
-          filename (filename),
-          interpolation (GL_LINEAR),
-          value_min (NAN),
-          value_max (NAN)
+          Displayable (window, filename),
+          filename (filename)
         {
           file.open (filename, properties);
         }

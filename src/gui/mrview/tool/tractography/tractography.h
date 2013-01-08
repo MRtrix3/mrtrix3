@@ -44,6 +44,8 @@ namespace MR
 
             Tractography (Window& main_window, Dock* parent);
 
+            ~Tractography ();
+
           private slots:
             void tractogram_open_slot ();
             void tractogram_close_slot ();

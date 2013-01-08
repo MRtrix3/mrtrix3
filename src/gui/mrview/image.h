@@ -25,13 +25,13 @@
 
 #include <QAction>
 
+#include "gui/mrview/displayable.h"
 #include "image/buffer.h"
 #include "image/voxel.h"
 #include "math/versor.h"
 #include "image/interp/linear.h"
 #include "gui/mrview/shader.h"
 
-class QAction;
 
 namespace MR
 {
@@ -46,7 +46,7 @@ namespace MR
 
       class Window;
 
-      class Image : public QAction
+      class Image : public Displayable
       {
         Q_OBJECT
 
@@ -61,44 +61,6 @@ namespace MR
           }
           const MR::Image::Header& header () const {
             return buffer;
-          }
-
-          float scaling_min () const {
-            return shader.display_midpoint - 0.5f * shader.display_range;
-          }
-          float scaling_max () const {
-            return shader.display_midpoint + 0.5f * shader.display_range;
-          }
-
-          float intensity_min () const {
-            return value_min;
-          }
-          float intensity_max () const {
-            return value_max;
-          }
-
-          void set_windowing (float min, float max) {
-            shader.display_range = max - min;
-            shader.display_midpoint = 0.5 * (min + max);
-            emit scalingChanged();
-          }
-          void adjust_windowing (const QPoint& p) {
-            adjust_windowing (p.x(), p.y());
-          }
-          void set_interpolate (bool linear) {
-            interpolation = linear ? GL_LINEAR : GL_NEAREST;
-          }
-          bool interpolate () const {
-            return interpolation == GL_LINEAR;
-          }
-          void reset_windowing () {
-            set_windowing (value_min, value_max);
-          }
-
-          void adjust_windowing (float brightness, float contrast) { 
-            shader.display_midpoint -= 0.0005f * shader.display_range * brightness;
-            shader.display_range *= Math::exp (-0.002f * contrast);
-            emit scalingChanged();
           }
 
           void update_texture2D (int plane, int slice);
@@ -138,23 +100,6 @@ namespace MR
             }
           }
 
-          void set_colourmap (uint32_t index) {
-            if (index >= ColourMap::Special || shader.colourmap() >= ColourMap::Special) {
-              if (index != shader.colourmap()) {
-                position[0] = position[1] = position[2] = std::numeric_limits<ssize_t>::min();
-                texture_mode_3D_unchanged = false;
-              }
-            } 
-            shader.set_colourmap (index);
-          }
-
-
-          uint32_t colourmap_index () const {
-            uint32_t cret = shader.colourmap();
-            if (cret >= ColourMap::Special)
-              cret -= ColourMap::Special - ColourMap::NumScalar;
-            return cret;
-          }
 
           float scaling_rate () const {
             return 1e-3 * (value_max - value_min);
@@ -172,15 +117,12 @@ namespace MR
           typedef BufferType::voxel_type VoxelType;
           typedef MR::Image::Interp::Linear<VoxelType> InterpVoxelType;
 
-        signals:
-          void scalingChanged ();
 
         private:
           BufferType buffer;
 
         public:
           InterpVoxelType interp;
-          Shader shader;
 
           VoxelType& voxel () { 
             return interp;
@@ -188,12 +130,10 @@ namespace MR
 
         private:
           GLuint texture2D[3], texture3D;
-          int interpolation;
-          float value_min, value_max;
           float windowing_scale_3D;
           GLenum type, format, internal_format;
           std::vector<ssize_t> position;
-          bool texture_mode_3D_unchanged;
+
           Point<> pos[4], tex[4], z, im_z;
 
 

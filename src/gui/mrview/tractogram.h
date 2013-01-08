@@ -31,6 +31,7 @@
 # undef foreach
 #endif
 
+#include "gui/mrview/displayable.h"
 #include "image/buffer.h"
 #include "image/voxel.h"
 #include "math/versor.h"
@@ -39,7 +40,6 @@
 #include "dwi/tractography/properties.h"
 #include "dwi/tractography/file.h"
 
-class QAction;
 
 namespace MR
 {
@@ -56,7 +56,7 @@ namespace MR
       namespace Tool
       {
 
-        class Tractogram : public QAction
+        class Tractogram : public Displayable
         {
           Q_OBJECT
 
@@ -147,8 +147,6 @@ namespace MR
 
           private:
             std::string filename;
-            int interpolation;
-            float value_min, value_max;
             std::vector<GLuint> vertex_buffers;
             DWI::Tractography::Reader<float> file;
             DWI::Tractography::Properties properties;
