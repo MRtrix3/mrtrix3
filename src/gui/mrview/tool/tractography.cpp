@@ -26,7 +26,7 @@
 
 #include "mrtrix.h"
 #include "gui/mrview/window.h"
-#include "gui/mrview/tool/tractography/tractography.h"
+#include "gui/mrview/tool/tractography.h"
 #include "gui/mrview/tractogram.h"
 #include "gui/dialog/file.h"
 #include "gui/mrview/adjust_button.h"

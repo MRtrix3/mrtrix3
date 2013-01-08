@@ -47,7 +47,6 @@ namespace MR
         }
 
 
-
         Tractogram::Tractogram (Window& window, const std::string& filename) :
           Displayable (window, filename),
           filename (filename)
@@ -58,11 +57,8 @@ namespace MR
 
         Tractogram::~Tractogram ()
         {
-  //        glDeleteTextures (3, texture2D);
-  //        glDeleteTextures (1, &texture3D);
           file.close();
         }
-
 
 
         void Tractogram::render ()
@@ -70,7 +66,6 @@ namespace MR
 
 
         }
-
 
 
         void load_tracks() {
@@ -82,7 +77,6 @@ namespace MR
 //
 //
 //          }
-
         }
 
       }

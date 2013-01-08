@@ -5,7 +5,7 @@
 #include "gui/mrview/tool/lighting.h"
 //#include "gui/mrview/tool/roi_analysis.h"
 #include "gui/mrview/tool/overlay.h"
-#include "gui/mrview/tool/tractography/tractography.h"
+#include "gui/mrview/tool/tractography.h"
 
 #else
 

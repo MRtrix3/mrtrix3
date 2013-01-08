@@ -32,10 +32,6 @@
 #endif
 
 #include "gui/mrview/displayable.h"
-#include "image/buffer.h"
-#include "image/voxel.h"
-#include "math/versor.h"
-#include "image/interp/linear.h"
 #include "gui/mrview/shader.h"
 #include "dwi/tractography/properties.h"
 #include "dwi/tractography/file.h"
@@ -69,81 +65,15 @@ namespace MR
             std::string& get_filename () {
               return filename;
             }
+
             const std::string& get_filename () const {
               return filename;
             }
 
-            float scaling_min () const {
-              return shader.display_midpoint - 0.5f * shader.display_range;
-            }
-            float scaling_max () const {
-              return shader.display_midpoint + 0.5f * shader.display_range;
-            }
-
-            float intensity_min () const {
-              return value_min;
-            }
-            float intensity_max () const {
-              return value_max;
-            }
-
-            void set_windowing (float min, float max) {
-              shader.display_range = max - min;
-              shader.display_midpoint = 0.5 * (min + max);
-              emit scalingChanged();
-            }
-            void adjust_windowing (const QPoint& p) {
-              adjust_windowing (p.x(), p.y());
-            }
-            void set_interpolate (bool linear) {
-              interpolation = linear ? GL_LINEAR : GL_NEAREST;
-            }
-            bool interpolate () const {
-              return interpolation == GL_LINEAR;
-            }
-            void reset_windowing () {
-              set_windowing (value_min, value_max);
-            }
-
-            void adjust_windowing (float brightness, float contrast) {
-              shader.display_midpoint -= 0.0005f * shader.display_range * brightness;
-              shader.display_range *= Math::exp (-0.002f * contrast);
-              emit scalingChanged();
-            }
-
-
             void render ();
-
-
-            void set_colourmap (uint32_t index) {
-//              if (index >= ColourMap::Special || shader.colourmap() >= ColourMap::Special) {
-//                if (index != shader.colourmap()) {
-//                  position[0] = position[1] = position[2] = std::numeric_limits<ssize_t>::min();
-//                  texture_mode_3D_unchanged = false;
-//                }
-//              }
-//              shader.set_colourmap (index);
-            }
-
-
-            uint32_t colourmap_index () const {
-              uint32_t cret = shader.colourmap();
-              if (cret >= ColourMap::Special)
-                cret -= ColourMap::Special - ColourMap::NumScalar;
-              return cret;
-            }
-
-//            float scaling_rate () const {
-//              return 1e-3 * (value_max - value_min);
-//            }
-
 
           signals:
             void scalingChanged ();
-
-          public:
-            Shader shader;
-
 
           private:
             std::string filename;
