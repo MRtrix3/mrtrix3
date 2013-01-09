@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python2
 
 import platform, sys, os, time, threading, subprocess, copy
 
