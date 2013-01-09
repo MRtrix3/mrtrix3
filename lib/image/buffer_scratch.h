@@ -86,6 +86,8 @@ namespace MR
 
         template <class Set>
           BufferScratch& operator= (const Set& H) { assert (0); return *this; }
+
+        BufferScratch (const BufferScratch& that) { assert (0); }
     };
 
 

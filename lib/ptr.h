@@ -117,11 +117,13 @@ namespace MR
        * Ptr<T> p2 (new T (*p)); // copy constructor
        * \endcode
        * \warning if operating on arrays (i.e. the \a is_array template
-       * parameter is \c true), this operation will simply delete the object
-       * currently pointed to by the Ptr<T>, and leave a NULL pointer; no deep copy
-       * will take place. This is due to the fact that the size of the array is
-       * unknown, making it impossible to create a copy of the full array. */
-      Ptr (const Ptr& R) : ptr (!is_array && R ? new T (*R) : NULL) { };
+       * parameter is \c true), this operation will throw an exception. This
+       * is due to the fact that the size of the array is unknown, making it
+       * impossible to create a copy of the full array. */
+      Ptr (const Ptr& R) : ptr (!is_array && R ? new T (*R) : NULL) {
+        if (is_array && R)
+          throw Exception ("FIXME: cannot copy-construct Ptr<T,true> class from allocated array");
+      };
 
       //! Assignment (copy) operator
       /*! This will free the object currently managed (if any), and manage a
@@ -129,7 +131,9 @@ namespace MR
        * \note the same limitations apply as for the copy constructor. */
       Ptr& operator= (const Ptr& R) {
         dealloc();
-        ptr = (!is_array && R ? new T (*R) : NULL);
+        if (is_array && R)
+          throw Exception ("FIXME: cannot assign Ptr<T,true> class from allocated array");
+        ptr = (R ? new T (*R) : NULL);
         return *this;
       }
 

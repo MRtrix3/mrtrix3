@@ -139,13 +139,22 @@ namespace MR
             set_get_put_functions ();
           }
 
-        //! construct a Buffer object to access the same data as a buffer (useful to access data using different data types).
+        //! construct a Buffer object to access the same data as a buffer using a different data type.
         template <typename OtherValueType>
           Buffer (const Buffer<OtherValueType>& buffer) :
             ConstHeader (buffer) {
               handler_ = buffer.__get_handler();
+              assert (handler_);
               set_get_put_functions ();
             }
+
+        //! construct a Buffer object to access the same data as another buffer.
+        Buffer (const Buffer<ValueType>& that) :
+          ConstHeader (that) {
+            handler_ = that.__get_handler();
+            assert (handler_);
+            set_get_put_functions ();
+          }
 
         //! construct a Buffer object to create and access the image specified
         Buffer (const std::string& image_name, const Header& template_header) :
