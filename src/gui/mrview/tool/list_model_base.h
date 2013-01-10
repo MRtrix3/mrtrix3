@@ -49,7 +49,7 @@ namespace MR
                 return shown[index.row()] ? Qt::Checked : Qt::Unchecked;
               }
               if (role != Qt::DisplayRole) return QVariant();
-              return shorten (tractograms[index.row()]->get_filename(), 20, 0).c_str();
+              return shorten (items[index.row()]->get_filename(), 20, 0).c_str();
             }
             bool setData (const QModelIndex& index, const QVariant& value, int role) {
               if (role == Qt::CheckStateRole) {
@@ -67,11 +67,16 @@ namespace MR
             QModelIndex index (int row, int column, const QModelIndex& parent = QModelIndex()) const { return createIndex (row, column); }
             QModelIndex parent (const QModelIndex& index) const { return QModelIndex(); }
 
-            int rowCount (const QModelIndex& parent = QModelIndex()) const { return tractograms.size(); }
+            int rowCount (const QModelIndex& parent = QModelIndex()) const { return items.size(); }
             int columnCount (const QModelIndex& parent = QModelIndex()) const { return 1; }
 
-            void add_tractograms (std::vector<std::string>& filenames);
-            void remove_tractogram (QModelIndex& index);
+            void remove_item (QModelIndex& index) {
+              beginRemoveRows (QModelIndex(), index.row(), index.row());
+              items.erase (items.begin() + index.row());
+              shown.resize (items.size(), true);
+              endRemoveRows();
+            }
+
             VecPtr<Displayable> items;
             std::vector<bool> shown;
         };

@@ -43,7 +43,8 @@ namespace MR
         interpolation (GL_LINEAR),
         value_min (NAN),
         value_max (NAN),
-        texture_mode_3D_unchanged (false){}
+        texture_mode_3D_unchanged (false),
+        filename (filename) {}
 
 
       Displayable::Displayable (Window& window, const std::string& filename) :
@@ -51,8 +52,9 @@ namespace MR
         interpolation (GL_LINEAR),
         value_min (NAN),
         value_max (NAN),
-        texture_mode_3D_unchanged (false){
-        connect (this, SIGNAL(scalingChanged()), &window, SLOT(on_scaling_changed()));
+        texture_mode_3D_unchanged (false),
+        filename (filename) {
+          connect (this, SIGNAL(scalingChanged()), &window, SLOT(on_scaling_changed()));
       }
 
 

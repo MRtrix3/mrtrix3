@@ -53,6 +53,10 @@ namespace MR
 
           ~Displayable ();
 
+          const std::string& get_filename () const {
+            return filename;
+          }
+
           float scaling_min () const {
             return shader.display_midpoint - 0.5f * shader.display_range;
           }
@@ -118,6 +122,7 @@ namespace MR
 
 
         protected:
+          const std::string filename;
           int interpolation;
           float value_min, value_max;
           bool texture_mode_3D_unchanged;

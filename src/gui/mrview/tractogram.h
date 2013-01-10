@@ -62,14 +62,6 @@ namespace MR
 
             ~Tractogram ();
 
-            std::string& get_filename () {
-              return filename;
-            }
-
-            const std::string& get_filename () const {
-              return filename;
-            }
-
             void render ();
 
           signals:

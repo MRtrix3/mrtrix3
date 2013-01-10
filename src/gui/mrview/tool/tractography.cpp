@@ -1,7 +1,7 @@
 /*
    Copyright 2009 Brain Research Institute, Melbourne, Australia
 
-   Written by J-Donald Tournier, 13/11/09.
+   Written by J-Donald Tournier and David Raffelt, 13/11/09.
 
    This file is part of MRtrix.
 
@@ -30,6 +30,7 @@
 #include "gui/mrview/tractogram.h"
 #include "gui/dialog/file.h"
 #include "gui/mrview/adjust_button.h"
+#include "gui/mrview/tool/list_model_base.h"
 
 namespace MR
 {
@@ -41,62 +42,25 @@ namespace MR
       {
 
 
-        class Tractography::Model : public QAbstractItemModel
+        class Tractography::Model : public ListModelBase
         {
           public:
             Model (QObject* parent) :
-              QAbstractItemModel (parent) { }
+              ListModelBase (parent) { }
 
-            QVariant data (const QModelIndex& index, int role) const {
-              if (!index.isValid()) return QVariant();
-              if (role == Qt::CheckStateRole) {
-                return shown[index.row()] ? Qt::Checked : Qt::Unchecked;
-              }
-              if (role != Qt::DisplayRole) return QVariant();
-              return shorten (tractograms[index.row()]->get_filename(), 20, 0).c_str();
-            }
-            bool setData (const QModelIndex& index, const QVariant& value, int role) {
-              if (role == Qt::CheckStateRole) {
-                shown[index.row()] =  (value == Qt::Checked);
-                emit dataChanged(index, index);
-                return true;
-              }
-              return QAbstractItemModel::setData (index, value, role);
-            }
-
-            Qt::ItemFlags flags (const QModelIndex& index) const {
-              if (!index.isValid()) return 0;
-              return Qt::ItemIsEnabled | Qt::ItemIsSelectable | Qt::ItemIsUserCheckable;
-            }
-            QModelIndex index (int row, int column, const QModelIndex& parent = QModelIndex()) const { return createIndex (row, column); }
-            QModelIndex parent (const QModelIndex& index) const { return QModelIndex(); }
-
-            int rowCount (const QModelIndex& parent = QModelIndex()) const { return tractograms.size(); }
-            int columnCount (const QModelIndex& parent = QModelIndex()) const { return 1; }
-
-            void add_tractograms (std::vector<std::string>& filenames);
-            void remove_tractogram (QModelIndex& index);
-            VecPtr<Tractogram> tractograms;
-            std::vector<bool> shown;
+            void add_items (std::vector<std::string>& filenames);
         };
 
 
-        void Tractography::Model::add_tractograms (std::vector<std::string>& list)
+        void Tractography::Model::add_items (std::vector<std::string>& list)
         {
-          beginInsertRows (QModelIndex(), tractograms.size(), tractograms.size() + list.size());
+          beginInsertRows (QModelIndex(), items.size(), items.size() + list.size());
           for (size_t i = 0; i < list.size(); ++i)
-            tractograms.push_back (new Tractogram (list[i]));
-          shown.resize (tractograms.size(), true);
+            items.push_back (new Tractogram (list[i]));
+          shown.resize (items.size(), true);
           endInsertRows();
         }
 
-        void Tractography::Model::remove_tractogram (QModelIndex& index)
-        {
-          beginRemoveRows (QModelIndex(), index.row(), index.row());
-          tractograms.erase (tractograms.begin() + index.row());
-          shown.resize (tractograms.size(), true);
-          endRemoveRows();
-        }
 
 
 
@@ -183,7 +147,7 @@ namespace MR
           if (dialog.exec()) {
             std::vector<std::string> list;
             dialog.get_selection (list);
-            tractogram_list_model->add_tractograms (list);
+            tractogram_list_model->add_items (list);
           }
         }
 
@@ -192,7 +156,7 @@ namespace MR
         {
           QModelIndexList indexes = tractogram_list_view->selectionModel()->selectedIndexes();
           while (indexes.size()) {
-            tractogram_list_model->remove_tractogram (indexes.first());
+            tractogram_list_model->remove_item (indexes.first());
             indexes = tractogram_list_view->selectionModel()->selectedIndexes();
           }
         }
