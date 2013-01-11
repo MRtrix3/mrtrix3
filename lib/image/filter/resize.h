@@ -154,7 +154,7 @@ namespace MR
               }
 
               if (do_smoothing) {
-                Filter::GaussianSmooth smooth_filter (input);
+                Filter::GaussianSmooth<> smooth_filter (input);
                 smooth_filter.set_stdev (stdev);
                 BufferScratch<float> smoothed_data (input);
                 BufferScratch<float>::voxel_type smoothed_voxel (smoothed_data);

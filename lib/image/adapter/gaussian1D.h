@@ -72,7 +72,7 @@ namespace MR
               for (ssize_t k = from; k <= to; ++k) {
                 av_weights += kernel_[c];
                 (*this)[axis_] = k;
-                result += parent_vox.value() * kernel_[c++];
+                result += value_type (parent_vox.value()) * kernel_[c++];
               }
               result /= av_weights;
             } else if ((to - pos) < radius_){
@@ -81,14 +81,14 @@ namespace MR
               for (ssize_t k = from; k <= to; ++k) {
                 av_weights += kernel_[c];
                 (*this)[axis_] = k;
-                result += parent_vox.value() * kernel_[c++];
+                result += value_type (parent_vox.value()) * kernel_[c++];
               }
               result /= av_weights;
             } else {
               size_t c = 0;
               for (ssize_t k = from; k <= to; ++k) {
                 (*this)[axis_] = k;
-                result += parent_vox.value() * kernel_[c++];
+                result += value_type (parent_vox.value()) * kernel_[c++];
               }
             }
 
@@ -122,7 +122,7 @@ namespace MR
           float stdev_;
           ssize_t radius_;
           size_t axis_;
-          std::vector<value_type> kernel_;
+          std::vector<float> kernel_;
           value_type result;
         };
     }

@@ -23,6 +23,7 @@
 #ifndef __image_adapter_median3D_h__
 #define __image_adapter_median3D_h__
 
+#include "math/median.h"
 #include "image/adapter/voxel.h"
 
 namespace MR
@@ -60,8 +61,6 @@ namespace MR
             else 
               extent_ = extent;
 
-            v.resize (extent_[0]*extent_[1]*extent_[2]);
-
             DEBUG ("median3D adapter for image \"" + name() + "\" initialised with extent " + str(extent_));
 
             for (size_t i = 0; i < 3; ++i)
@@ -84,47 +83,13 @@ namespace MR
               (*this)[2] >= dim(2)-extent_[2] ? dim(2) : (*this)[2]+extent_[2]+1
             };
 
-            const size_t n = (to[0]-from[0])*(to[1]-from[1])*(to[2]-from[2]);
-            const size_t m = n/2 + 1;
+            median.reset ((to[0]-from[0])*(to[1]-from[1])*(to[2]-from[2]));
 
-            size_t nc = 0;
-            result = -INFINITY;
-
-            for (ssize_t k = from[2]; k < to[2]; ++k) {
-              (*this)[2] = k;
-              for (ssize_t j = from[1]; j < to[1]; ++j) {
-                (*this)[1] = j;
-                for (ssize_t i = from[0]; i < to[0]; ++i) {
-                  (*this)[0] = i;
-                  const value_type val = parent_vox.value();
-                  if (nc < m) {
-                    v[nc] = val;
-                    if (v[nc] > result) result = val;
-                    ++nc;
-                  }
-                  else if (val < result) {
-                    size_t x;
-                    for (x = 0; v[x] != result; ++x);
-                    v[x] = val;
-                    result = -INFINITY;
-                    for (x = 0; x < m; x++)
-                      if (v[x] > result) result = v[x];
-                  }
-                }
-              }
-            }
-
-            if ((n+1) & 1) {
-              value_type t = result = -INFINITY;
-              for (size_t i = 0; i < m; ++i) {
-                if (v[i] > result) {
-                  t = result;
-                  result = v[i];
-                }
-                else if (v[i] > t) t = v[i];
-              }
-              result = (result+t)/2.0;
-            }
+            for ((*this)[2] = from[2]; (*this)[2] < to[2]; ++(*this)[2]) 
+              for ((*this)[1] = from[1]; (*this)[1] < to[1]; ++(*this)[1]) 
+                for ((*this)[0] = from[0]; (*this)[0] < to[0]; ++(*this)[0]) 
+                  median += parent_vox.value();
+            result = median.value();
 
             (*this)[0] = old_pos[0];
             (*this)[1] = old_pos[1];
@@ -140,7 +105,7 @@ namespace MR
         protected:
           using Voxel<VoxelType>::parent_vox;
           std::vector<int> extent_;
-          std::vector<value_type> v;
+          Math::Median<value_type> median;
           value_type result;
         };
 

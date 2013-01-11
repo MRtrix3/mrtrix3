@@ -142,7 +142,7 @@ void run () {
 
   } else {
 
-    Image::Filter::GaussianSmooth smooth_filter (input_vox, stdev);
+    Image::Filter::GaussianSmooth<> smooth_filter (input_vox, stdev);
     opt = get_options ("extent");
     if (opt.size())
       smooth_filter.set_extent(parse_ints (opt[0][0]));

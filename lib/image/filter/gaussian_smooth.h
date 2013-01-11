@@ -61,27 +61,30 @@ namespace MR
        *
        * \endcode
        */
-      class GaussianSmooth : public ConstInfo
+      template <typename ValueType = float>
+        class GaussianSmooth : public ConstInfo
       {
 
-      public:
+        public:
+          typedef ValueType value_type;
+
           template <class InputVoxelType>
             GaussianSmooth (const InputVoxelType& in) :
               ConstInfo (in),
               extent_ (in.ndim(), 0),
               stdev_ (in.ndim()) {
-              for (unsigned int i = 0; i < in.ndim(); i++)
-                stdev_[i] = in.vox(i);
-          }
+                for (unsigned int i = 0; i < in.ndim(); i++)
+                  stdev_[i] = in.vox(i);
+              }
 
           template <class InputVoxelType>
             GaussianSmooth (const InputVoxelType& in,
-                            const std::vector<float>& stdev) :
+                const std::vector<float>& stdev) :
               ConstInfo (in),
               extent_ (in.ndim(), 0),
               stdev_ (in.ndim()) {
-              set_stdev (stdev);
-          }
+                set_stdev (stdev);
+              }
 
           //! Set the extent of smoothing kernel in voxels.
           //! This can be set as a single value for all dimensions
@@ -126,29 +129,28 @@ namespace MR
           }
 
           template <class InputVoxelType, class OutputVoxelType>
-            void operator() (InputVoxelType& input, OutputVoxelType& output)
-            {
-              RefPtr <BufferScratch<float> > in_data (new BufferScratch<float> (input));
-              RefPtr <BufferScratch<float>::voxel_type> in (new BufferScratch<float>::voxel_type (*in_data));
-              copy(input, *in);
+            void operator() (InputVoxelType& input, OutputVoxelType& output) {
+              RefPtr <BufferScratch<value_type> > in_data (new BufferScratch<value_type> (input));
+              RefPtr <typename BufferScratch<value_type>::voxel_type> in (new typename BufferScratch<value_type>::voxel_type (*in_data));
+              threaded_copy (input, *in);
 
-              RefPtr <BufferScratch<float> > out_data;
-              RefPtr <BufferScratch<float>::voxel_type> out;
+              RefPtr <BufferScratch<value_type> > out_data;
+              RefPtr <typename BufferScratch<value_type>::voxel_type> out;
 
               for (size_t dim = 0; dim < this->ndim(); dim++) {
                 if (stdev_[dim] > 0) {
-                  out_data = new BufferScratch<float> (input);
-                  out = new BufferScratch<float>::voxel_type (*out_data);
-                  Adapter::Gaussian1D<BufferScratch<float>::voxel_type > gaussian (*in, stdev_[dim], dim, extent_[dim]);
+                  out_data = new BufferScratch<value_type> (input);
+                  out = new typename BufferScratch<value_type>::voxel_type (*out_data);
+                  Adapter::Gaussian1D<typename BufferScratch<value_type>::voxel_type > gaussian (*in, stdev_[dim], dim, extent_[dim]);
                   threaded_copy_with_progress_message ("Smoothing axis " + str(dim) + "...", gaussian, *out);
                   in_data = out_data;
                   in = out;
                 }
               }
-              Image::copy(*in, output);
+              threaded_copy (*in, output);
             }
 
-      protected:
+        protected:
           std::vector<int> extent_;
           std::vector<float> stdev_;
       };

@@ -162,8 +162,6 @@ namespace MR
           }
 
 
-          /** \addtogroup Statistics
-          @{ */
           /*! Compute cohen's d, the standardised effect size between two means
           * @param measurements a matrix storing the measured data for each subject in a column
           * @param design the design matrix (unlike other packages a column of ones is NOT automatically added for correlation analysis)

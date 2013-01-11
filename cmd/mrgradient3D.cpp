@@ -64,7 +64,7 @@ void run () {
   Image::BufferPreload<float> input_data (argument[0]);
   Image::BufferPreload<float>::voxel_type input_voxel (input_data);
 
-  Image::Filter::GaussianSmooth smooth_filter (input_voxel);
+  Image::Filter::GaussianSmooth<> smooth_filter (input_voxel);
   std::vector<float> stdev;
   Options opt = get_options ("stdev");
   if (opt.size()) {
