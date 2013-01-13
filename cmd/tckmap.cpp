@@ -104,7 +104,7 @@ OPTIONS
       "define the statistic for choosing the contribution to be made by each streamline as a "
       "function of the samples taken along their lengths\n"
       "Only has an effect for 'scalar_map', 'fod_amp' and 'curvature' contrast types\n"
-      "Options are: sum, min, mean, median, max, gaussian, fmri_min, fmri_mean, fmri_max, fmri_prod (default: mean)")
+      "Options are: sum, min, mean, median, max, gaussian, gm_min, gm_mean, gm_max, gm_prod (default: mean)")
     + Argument ("type").type_choice (statistics)
 
   + Option ("fwhm_tck",
@@ -370,8 +370,8 @@ void run () {
       break;
 
     case FOD_AMP:
-      if (stat_tck == FMRI_MIN || stat_tck == FMRI_MEAN || stat_tck == FMRI_MAX || stat_tck == FMRI_PROD)
-        throw Exception ("Sorry; can't use FMRI-based track statistics with FOD_AMP contrast");
+      if (stat_tck == GM_MIN || stat_tck == GM_MEAN || stat_tck == GM_MAX || stat_tck == GM_PROD)
+        throw Exception ("Sorry; can't use GM-based track statistics with FOD_AMP contrast");
 
     case CURVATURE:
       break;
@@ -462,10 +462,10 @@ void run () {
       case MEDIAN:    msg += "median";  break;
       case MAX:       msg += "maximum"; break;
       case GAUSSIAN:  msg += "gaussian (FWHM " + str (gaussian_fwhm_tck) + "mm)"; break;
-      case FMRI_MIN:  msg += "fMRI (minimum)"; break;
-      case FMRI_MEAN: msg += "fMRI (mean)"; break;
-      case FMRI_MAX:  msg += "fMRI (maximum)"; break;
-      case FMRI_PROD: msg += "fMRI (product)"; break;
+      case GM_MIN:    msg += "GM-mapped (minimum)"; break;
+      case GM_MEAN:   msg += "GM-mapped (mean)"; break;
+      case GM_MAX:    msg += "GM-mapped (maximum)"; break;
+      case GM_PROD:   msg += "GM-mapped (product)"; break;
       default:        msg += "ERROR";   break;
     }
     msg += " per-track statistic";

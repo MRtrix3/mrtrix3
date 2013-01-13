@@ -423,25 +423,6 @@ void TrackMapperTWI<Cont>::set_factor (const std::vector< Point<float> >& tck, C
           }
           break;
 
-        case FMRI_MIN:
-          out.factor = (Math::abs(factors[0]) < Math::abs(factors[1])) ? factors[0] : factors[1];
-          break;
-
-        case FMRI_MEAN:
-          out.factor = 0.5 * (factors[0] + factors[1]);
-          break;
-
-        case FMRI_MAX:
-          out.factor = (Math::abs(factors[0]) > Math::abs(factors[1])) ? factors[0] : factors[1];
-          break;
-
-        case FMRI_PROD:
-          if ((factors[0] < 0.0 && factors[1] < 0.0) || (factors[0] > 0.0 && factors[1] > 0.0))
-            out.factor = factors[0] * factors[1];
-          else
-            out.factor = 0.0;
-          break;
-
         case GAUSSIAN:
           gaussian_smooth_factors();
           out.factor = 0.0;
@@ -453,14 +434,36 @@ void TrackMapperTWI<Cont>::set_factor (const std::vector< Point<float> >& tck, C
           }
           break;
 
+        case GM_MIN:
+          out.factor = (Math::abs(factors[0]) < Math::abs(factors[1])) ? factors[0] : factors[1];
+          break;
+
+        case GM_MEAN:
+          out.factor = 0.5 * (factors[0] + factors[1]);
+          break;
+
+        case GM_MAX:
+          out.factor = (Math::abs(factors[0]) > Math::abs(factors[1])) ? factors[0] : factors[1];
+          break;
+
+        case GM_PROD:
+          if ((factors[0] < 0.0 && factors[1] < 0.0) || (factors[0] > 0.0 && factors[1] > 0.0))
+            out.factor = factors[0] * factors[1];
+          else
+            out.factor = 0.0;
+          break;
+
+        case GM_BOTH:
+          throw Exception ("FIXME: TrackMapperTWI does not support statistic GM_BOTH");
+
         default:
-          throw Exception ("Undefined / unsupported track statistic in TrackMapperTWI::get_factor()");
+          throw Exception ("FIXME: Undefined / unsupported track statistic in TrackMapperTWI::get_factor()");
 
       }
       break;
 
     default:
-      throw Exception ("Undefined / unsupported contrast mechanism in TrackMapperTWI::get_factor()");
+      throw Exception ("FIXME: Undefined / unsupported contrast mechanism in TrackMapperTWI::get_factor()");
 
   }
 
@@ -544,8 +547,7 @@ void TrackMapperTWIImage<Cont>::load_factors (const std::vector< Point<float> >&
 
     case SCALAR_MAP:
     case SCALAR_MAP_COUNT:
-
-      if (TrackMapperTWI<Cont>::track_statistic == FMRI_MIN || TrackMapperTWI<Cont>::track_statistic == FMRI_MEAN || TrackMapperTWI<Cont>::track_statistic == FMRI_MAX || TrackMapperTWI<Cont>::track_statistic == FMRI_PROD) { // Only the track endpoints contribute
+      if (TrackMapperTWI<Cont>::track_statistic == GM_MIN || TrackMapperTWI<Cont>::track_statistic == GM_MEAN || TrackMapperTWI<Cont>::track_statistic == GM_MAX || TrackMapperTWI<Cont>::track_statistic == GM_PROD) { // Only the track endpoints contribute
 
         // Want to extrapolate the track forwards & backwards at either end by some distance, take the
         //   maximum scalar value
@@ -613,7 +615,7 @@ void TrackMapperTWIImage<Cont>::load_factors (const std::vector< Point<float> >&
       break;
 
     default:
-      throw Exception ("Undefined / unsupported contrast mechanism in TrackMapperImage::load_TrackMapperTWI<Cont>::factors()");
+      throw Exception ("FIXME: Undefined / unsupported contrast mechanism in TrackMapperTWIImage::load_factors()");
 
   }
 

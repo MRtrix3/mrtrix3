@@ -43,6 +43,7 @@ class Voxel : public Point<int>
 {
   public:
     Voxel (const int x, const int y, const int z) { p[0] = x; p[1] = y; p[2] = z; }
+    Voxel (const Point<int>& that) : Point<int> (that) { }
     Voxel () { memset (p, 0x00, 3 * sizeof(int)); }
     bool operator< (const Voxel& V) const { return ((p[2] == V.p[2]) ? ((p[1] == V.p[1]) ? (p[0] < V.p[0]) : (p[1] < V.p[1])) : (p[2] < V.p[2])); }
 };
@@ -109,6 +110,12 @@ class VoxelFactor : public Voxel
       Voxel (v),
       sum (0.0),
       contributions (0) { }
+
+    template <class Init>
+    VoxelFactor (const Init& v, const float f) :
+      Voxel (v),
+      sum (f),
+      contributions (1) { }
 
     VoxelFactor (const VoxelFactor& v) :
       Voxel (v),
