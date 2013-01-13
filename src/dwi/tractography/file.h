@@ -184,6 +184,7 @@ namespace MR {
 
             out << "datatype: " << dtype.specifier() << "\n";
             int64_t data_offset = int64_t(out.tellp()) + 65;
+            data_offset += (4 - (data_offset % 4)) % 4;
             out << "file: . " << data_offset << "\n";
             out << "count: ";
             count_offset = out.tellp();
