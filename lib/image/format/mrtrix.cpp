@@ -262,8 +262,8 @@ namespace MR
         int64_t offset = 0;
         out << "\nfile: ";
         if (single_file) {
-          offset = out.tellp();
-          offset += 14;
+          offset = out.tellp() + int64_t(14);
+          offset += ((4 - (offset % 4)) % 4);
           out << ". " << offset << "\nEND\n";
         }
         else out << Path::basename (H.name().substr (0, H.name().size()-4) + ".dat") << "\n";
