@@ -40,6 +40,7 @@ namespace MR
         class ListModelBase : public QAbstractItemModel
         {
           public:
+
             ListModelBase (QObject* parent) :
               QAbstractItemModel (parent) { }
 
@@ -51,10 +52,11 @@ namespace MR
               if (role != Qt::DisplayRole) return QVariant();
               return shorten (items[index.row()]->get_filename(), 20, 0).c_str();
             }
+
             bool setData (const QModelIndex& index, const QVariant& value, int role) {
               if (role == Qt::CheckStateRole) {
                 shown[index.row()] =  (value == Qt::Checked);
-                emit dataChanged(index, index);
+                emit dataChanged (index, index);
                 return true;
               }
               return QAbstractItemModel::setData (index, value, role);
@@ -64,10 +66,13 @@ namespace MR
               if (!index.isValid()) return 0;
               return Qt::ItemIsEnabled | Qt::ItemIsSelectable | Qt::ItemIsUserCheckable;
             }
+
             QModelIndex index (int row, int column, const QModelIndex& parent = QModelIndex()) const { return createIndex (row, column); }
+
             QModelIndex parent (const QModelIndex& index) const { return QModelIndex(); }
 
             int rowCount (const QModelIndex& parent = QModelIndex()) const { return items.size(); }
+
             int columnCount (const QModelIndex& parent = QModelIndex()) const { return 1; }
 
             void remove_item (QModelIndex& index) {

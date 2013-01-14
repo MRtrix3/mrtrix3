@@ -47,7 +47,9 @@ namespace MR
           widget()->close();
         }
 
-        void Base::draw () { }
+        void Base::draw2D (const Projection& transform) { }
+
+        void Base::draw3D (const Projection& transform) { }
 
       }
     }

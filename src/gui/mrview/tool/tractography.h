@@ -24,6 +24,7 @@
 #define __gui_mrview_tool_tractography_h__
 
 #include "gui/mrview/tool/base.h"
+#include "gui/projection.h"
 
 class QStringListModel;
 
@@ -44,7 +45,10 @@ namespace MR
 
             Tractography (Window& main_window, Dock* parent);
 
-            ~Tractography ();
+            void draw2D (const Projection& transform);
+            void draw3D (const Projection& transform);
+
+            int get_line_thickness ();
 
           private slots:
             void tractogram_open_slot ();
@@ -52,11 +56,13 @@ namespace MR
             void opacity_slot (int opacity);
             void line_thickness_slot (int thickness);
             void on_slab_thickness_change();
+            void toggle_shown (const QModelIndex& index);
 
           protected:
              class Model;
              Model* tractogram_list_model;
              QListView* tractogram_list_view;
+             int line_thickness;
         };
 
       }

@@ -614,7 +614,6 @@ namespace MR
           tool->show();
           connect (tool, SIGNAL (visibilityChanged (bool)), action, SLOT (setChecked (bool)));
         }
-
         if (action->isChecked())
           tool->show();
         else 

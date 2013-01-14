@@ -105,7 +105,6 @@ namespace MR
             shader.set_colourmap (index);
           }
 
-
           uint32_t colourmap_index () const {
             uint32_t cret = shader.colourmap();
             if (cret >= ColourMap::Special)
@@ -122,10 +121,10 @@ namespace MR
 
 
         protected:
-          const std::string filename;
           int interpolation;
           float value_min, value_max;
           bool texture_mode_3D_unchanged;
+          const std::string filename;
 
       };
 

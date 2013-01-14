@@ -140,6 +140,8 @@ namespace MR
 
           glDisable (GL_TEXTURE_2D);
 
+          render_tools2D (projections[axis]);
+
           if (window.show_crosshairs()) 
             projections[axis].render_crosshairs (focus());
 

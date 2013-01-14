@@ -16,6 +16,7 @@
 class QMenu;
 class QAction;
 class QActionGroup;
+class Qlist;
 
 namespace MR
 {
@@ -62,6 +63,13 @@ namespace MR
 
           const Image* image () const { 
             return static_cast<const Image*> (image_group->checkedAction());
+          }
+          QActionGroup* tools () const {
+            return tool_group;
+          }
+
+          QAction* get_current_mode () const {
+            return mode_group->checkedAction();
           }
           const Point<>& focus () const {
             return focal_point; 

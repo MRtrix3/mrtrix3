@@ -48,15 +48,16 @@ namespace MR
             Model (QObject* parent) :
               ListModelBase (parent) { }
 
-            void add_items (std::vector<std::string>& filenames);
+            void add_items (std::vector<std::string>& filenames, Tractography& tractography_tool);
         };
 
 
-        void Tractography::Model::add_items (std::vector<std::string>& list)
+        void Tractography::Model::add_items (std::vector<std::string>& list,
+                                               Tractography& tractography_tool)
         {
           beginInsertRows (QModelIndex(), items.size(), items.size() + list.size());
           for (size_t i = 0; i < list.size(); ++i)
-            items.push_back (new Tractogram (list[i]));
+            items.push_back (new Tractogram (list[i], tractography_tool));
           shown.resize (items.size(), true);
           endInsertRows();
         }
@@ -66,7 +67,8 @@ namespace MR
 
 
         Tractography::Tractography (Window& main_window, Dock* parent) :
-          Base (main_window, parent) { 
+          Base (main_window, parent),
+          line_thickness (1.0) {
             QVBoxLayout* main_box = new QVBoxLayout (this);
             QHBoxLayout* layout = new QHBoxLayout;
             layout->setContentsMargins (0, 0, 0, 0);
@@ -95,6 +97,8 @@ namespace MR
             tractogram_list_model = new Model (this);
             tractogram_list_view->setModel (tractogram_list_model);
 
+            connect (tractogram_list_view, SIGNAL (clicked (const QModelIndex&)), this, SLOT (toggle_shown (const QModelIndex&)));
+
             main_box->addWidget (tractogram_list_view, 1);
 
             QGridLayout* default_opt_grid = new QGridLayout;
@@ -119,15 +123,15 @@ namespace MR
 
             QSlider* slider;
             slider = new QSlider (Qt::Horizontal);
-            slider->setRange (0,100);
-            slider->setSliderPosition (int (100));
+            slider->setRange (0,1000);
+            slider->setSliderPosition (int (1000));
             connect (slider, SIGNAL (valueChanged (int)), this, SLOT (opacity_slot (int)));
             default_opt_grid->addWidget (new QLabel ("opacity"), 1, 0);
             default_opt_grid->addWidget (slider, 1, 1);
 
             slider = new QSlider (Qt::Horizontal);
-            slider->setRange (0,100);
-            slider->setSliderPosition (int (100));
+            slider->setRange (1,9);
+            slider->setSliderPosition (int (1));
             connect (slider, SIGNAL (valueChanged (int)), this, SLOT (line_thickness_slot (int)));
             default_opt_grid->addWidget (new QLabel ("line thickness"), 2, 0);
             default_opt_grid->addWidget (slider, 2, 1);
@@ -135,10 +139,19 @@ namespace MR
             main_box->addLayout (default_opt_grid, 0);
         }
 
+        void Tractography::draw2D (const Projection& transform) {
+          for (int i = 0; i < tractogram_list_model->rowCount(); ++i) {
+            if (tractogram_list_model->shown[i])
+              dynamic_cast<Tractogram*>(tractogram_list_model->items[i])->render2D (transform);
+          }
+        }
 
-        Tractography::~Tractography () {
-          delete tractogram_list_model;
-          delete tractogram_list_view;
+        void Tractography::draw3D (const Projection& transform) {
+          TEST;
+        }
+
+        int Tractography::get_line_thickness () {
+          return line_thickness;
         }
 
         void Tractography::tractogram_open_slot ()
@@ -147,10 +160,9 @@ namespace MR
           if (dialog.exec()) {
             std::vector<std::string> list;
             dialog.get_selection (list);
-            tractogram_list_model->add_items (list);
+            tractogram_list_model->add_items (list, *this);
           }
         }
-
 
         void Tractography::tractogram_close_slot ()
         {
@@ -159,6 +171,7 @@ namespace MR
             tractogram_list_model->remove_item (indexes.first());
             indexes = tractogram_list_view->selectionModel()->selectedIndexes();
           }
+          window.updateGL();
         }
 
         void Tractography::opacity_slot (int opacity) {
@@ -166,10 +179,15 @@ namespace MR
         }
 
         void Tractography::line_thickness_slot (int thickness) {
-          CONSOLE(str(thickness));
+          line_thickness = thickness;
+          window.updateGL();
         }
 
         void Tractography::on_slab_thickness_change() {
+        }
+
+        void Tractography::toggle_shown(const QModelIndex& index) {
+          window.updateGL();
         }
 
       }

@@ -28,6 +28,7 @@
 #include <QDockWidget>
 
 #include "gui/mrview/window.h"
+#include "gui/projection.h"
 
 namespace MR
 {
@@ -41,8 +42,10 @@ namespace MR
         class Dock : public QDockWidget
         {
           public:
-            Dock (QWidget* parent, const QString& name) : 
-              QDockWidget (name, parent) { }
+            Dock (QWidget* parent, const QString& name) :
+              QDockWidget (name, parent), tool (NULL) { }
+
+            Base* tool;
 
           protected:
             virtual void showEvent (QShowEvent * event);
@@ -62,7 +65,8 @@ namespace MR
             }
             Window& window;
 
-            virtual void draw ();
+            virtual void draw2D (const Projection& transform);
+            virtual void draw3D (const Projection& transform);
         };
 
 
@@ -90,11 +94,12 @@ namespace MR
         //! \endcond
 
 
-        template <class T> Dock* create (const QString& text, Window& main_window) 
+        template <class T> Dock* create (const QString& text, Window& main_window)
         {
           Dock* instance = new Dock (&main_window, text);
           QScrollArea* scroll = new QScrollArea (instance);
-          scroll->setWidget (new T (main_window, instance));
+          instance->tool = new T (main_window, instance);
+          scroll->setWidget (instance->tool);
           scroll->setWidgetResizable (true);
           scroll->setHorizontalScrollBarPolicy (Qt::ScrollBarAlwaysOff);
           scroll->setMinimumWidth (scroll->widget()->minimumWidth());

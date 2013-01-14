@@ -25,7 +25,6 @@
 #include "file/config.h"
 #include "gui/opengl/gl.h"
 #include "gui/mrview/mode/base.h"
-#include "gui/mrview/tool/base.h"
 
 namespace MR
 {

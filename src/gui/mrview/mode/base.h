@@ -32,6 +32,7 @@
 
 #include "gui/mrview/window.h"
 #include "gui/projection.h"
+#include "gui/mrview/tool/base.h"
 
 namespace MR
 {
@@ -145,6 +146,15 @@ namespace MR
             }
             void move_in_out_FOV (int increment) {
               move_in_out (1e-3 * increment * FOV());
+            }
+
+            void render_tools2D (const Projection& with_projection) {
+              QList<QAction*> tools = window.tools()->actions();
+              for (int i = 0; i < tools.size(); ++i) {
+                Tool::Dock* dock = dynamic_cast<Tool::__Action__*>(tools[i])->instance;
+                if (dock)
+                  dock->tool->draw2D (with_projection);
+              }
             }
 
 

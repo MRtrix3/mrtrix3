@@ -7,6 +7,7 @@
 #include "math/LU.h"
 
 #include <QFontMetrics>
+#include <QGLWidget>
 
 #ifdef USE_OPENGL3
 #include <glm/gtc/matrix_transform.hpp>
@@ -368,6 +369,10 @@ namespace MR
           else y = (height() + fm.height()) / 2 - line * fm.lineSpacing();
 
           render_text (x, y, text);
+        }
+
+        const Math::Matrix<float>& get_MVP () const {
+          return M;
         }
 
       protected:
