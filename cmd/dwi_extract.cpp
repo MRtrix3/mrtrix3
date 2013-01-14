@@ -59,20 +59,13 @@ void run() {
   Image::BufferPreload<float> data_in (argument[0], strides);
   Image::BufferPreload<float>::voxel_type voxel_in (data_in);
 
-  Math::Matrix<value_type> grad(data_in.dim(3), 4);
-  Options opt = get_options ("grad");
-  if (opt.size()) grad.load (opt[0][0]);
-  else {
-    if (!data_in.DW_scheme().is_set())
-      throw Exception ("no diffusion encoding found in image \"" + data_in.name() + "\"");
-    grad = data_in.DW_scheme();
-  }
+  Math::Matrix<value_type> grad (DWI::get_DW_scheme<float> (data_in));
   std::vector<int> bzeros, dwis;
   DWI::guess_DW_directions (dwis, bzeros, grad);
   INFO ("found " + str(dwis.size()) + " diffusion-weighted directions");
 
   Image::Header header (data_in);
-  opt = get_options ("bzero");
+  Options opt = get_options ("bzero");
   if (opt.size()) {
     if (!bzeros.size())
       throw Exception ("no b=0 images found in image \"" + data_in.name() + "\"");
