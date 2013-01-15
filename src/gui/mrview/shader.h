@@ -124,6 +124,8 @@ namespace MR
             alpha (NAN),
             flags_ (ColourMap::Mask) { }
 
+          virtual ~Shader() {}
+
           float lessthan, greaterthan;
           float display_midpoint, display_range;
           float transparent_intensity, opaque_intensity, alpha;
@@ -153,6 +155,10 @@ namespace MR
 
           void stop () {
             shader_program.stop();
+          }
+
+          GLuint get_uniform (const std::string& name) {
+            return glGetUniformLocation (shader_program, name.c_str());
           }
 
           uint32_t flags () const { return flags_; }
@@ -292,7 +298,7 @@ namespace MR
             set (cmap);
           }
 
-          void recompile ();
+          virtual void recompile ();
       };
 
     }

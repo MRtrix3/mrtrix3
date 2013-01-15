@@ -44,7 +44,7 @@ namespace MR
         value_min (NAN),
         value_max (NAN),
         texture_mode_3D_unchanged (false),
-        filename (filename) {}
+        filename (filename) { }
 
 
       Displayable::Displayable (Window& window, const std::string& filename) :

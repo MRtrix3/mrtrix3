@@ -26,10 +26,9 @@
 
 #include "mrtrix.h"
 #include "gui/mrview/window.h"
-#include "gui/mrview/tool/tractography.h"
-#include "gui/mrview/tractogram.h"
+#include "gui/mrview/tool/tractography/tractography.h"
+#include "gui/mrview/tool/tractography/tractogram.h"
 #include "gui/dialog/file.h"
-#include "gui/mrview/adjust_button.h"
 #include "gui/mrview/tool/list_model_base.h"
 
 namespace MR
@@ -48,27 +47,36 @@ namespace MR
             Model (QObject* parent) :
               ListModelBase (parent) { }
 
-            void add_items (std::vector<std::string>& filenames, Tractography& tractography_tool);
+            void add_items (std::vector<std::string>& filenames,
+                             Window& main_window,
+                             Tractography& tractography_tool) {
+              beginInsertRows (QModelIndex(), items.size(), items.size() + filenames.size());
+              for (size_t i = 0; i < filenames.size(); ++i)
+                items.push_back (new Tractogram (main_window, tractography_tool, filenames[i]));
+              shown.resize (items.size(), true);
+              endInsertRows();
+            }
         };
-
-
-        void Tractography::Model::add_items (std::vector<std::string>& list,
-                                               Tractography& tractography_tool)
-        {
-          beginInsertRows (QModelIndex(), items.size(), items.size() + list.size());
-          for (size_t i = 0; i < list.size(); ++i)
-            items.push_back (new Tractogram (list[i], tractography_tool));
-          shown.resize (items.size(), true);
-          endInsertRows();
-        }
-
-
 
 
 
         Tractography::Tractography (Window& main_window, Dock* parent) :
           Base (main_window, parent),
-          line_thickness (1.0) {
+          line_thickness (1.0),
+          crop_to_slab (true),
+          shader_update (false) {
+
+            float voxel_size;
+            if (main_window.image()) {
+              voxel_size = (main_window.image()->voxel().vox(0) +
+                            main_window.image()->voxel().vox(1) +
+                            main_window.image()->voxel().vox(2)) / 3;
+            } else {
+              voxel_size = 2.5;
+            }
+
+            slab_thickness  = 2 * voxel_size;
+
             QVBoxLayout* main_box = new QVBoxLayout (this);
             QHBoxLayout* layout = new QHBoxLayout;
             layout->setContentsMargins (0, 0, 0, 0);
@@ -112,12 +120,14 @@ namespace MR
             slab_group_box->setChecked (true);
             default_opt_grid->addWidget (slab_group_box, 0, 0, 1, 2);
 
+            connect (slab_group_box, SIGNAL (clicked (bool)), this, SLOT (on_crop_to_slab_change (bool)));
+
             QGridLayout* slab_layout = new QGridLayout;
             slab_group_box->setLayout(slab_layout);
             slab_layout->addWidget (new QLabel ("thickness (mm)"), 0, 0);
-            AdjustButton* slab_entry = new AdjustButton (this, 0.1);
-            slab_entry->setValue (5.0);
-            slab_entry->setMin(0.0);
+            slab_entry = new AdjustButton (this, 0.1);
+            slab_entry->setValue (slab_thickness);
+            slab_entry->setMin (0.0);
             connect (slab_entry, SIGNAL (valueChanged()), this, SLOT (on_slab_thickness_change()));
             slab_layout->addWidget (slab_entry, 0, 1);
 
@@ -147,11 +157,6 @@ namespace MR
         }
 
         void Tractography::draw3D (const Projection& transform) {
-          TEST;
-        }
-
-        int Tractography::get_line_thickness () {
-          return line_thickness;
         }
 
         void Tractography::tractogram_open_slot ()
@@ -160,7 +165,7 @@ namespace MR
           if (dialog.exec()) {
             std::vector<std::string> list;
             dialog.get_selection (list);
-            tractogram_list_model->add_items (list, *this);
+            tractogram_list_model->add_items (list, window,  *this);
           }
         }
 
@@ -174,6 +179,22 @@ namespace MR
           window.updateGL();
         }
 
+        void Tractography::toggle_shown (const QModelIndex& index) {
+          window.updateGL();
+        }
+
+        void Tractography::on_crop_to_slab_change (bool checked) {
+          crop_to_slab = checked;
+          shader_update = true;
+          window.updateGL();
+          shader_update = false;
+        }
+
+        void Tractography::on_slab_thickness_change() {
+          slab_thickness = slab_entry->value();
+          window.updateGL();
+        }
+
         void Tractography::opacity_slot (int opacity) {
           CONSOLE(str(opacity));
         }
@@ -183,12 +204,7 @@ namespace MR
           window.updateGL();
         }
 
-        void Tractography::on_slab_thickness_change() {
-        }
 
-        void Tractography::toggle_shown(const QModelIndex& index) {
-          window.updateGL();
-        }
 
       }
     }

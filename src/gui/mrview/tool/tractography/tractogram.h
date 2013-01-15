@@ -32,11 +32,12 @@
 #endif
 
 #include "gui/mrview/displayable.h"
-#include "gui/mrview/shader.h"
 #include "dwi/tractography/properties.h"
 #include "dwi/tractography/file.h"
 #include "gui/opengl/shader.h"
-#include "gui/mrview/tool/tractography.h"
+#include "gui/mrview/tool/tractography/tractography.h"
+#include "gui/mrview/tool/tractography/shader.h"
+
 
 namespace MR
 {
@@ -58,8 +59,7 @@ namespace MR
           Q_OBJECT
 
           public:
-//            Tractogram (const std::string& filename);
-            Tractogram (const std::string& filename, Tractography& parent);
+            Tractogram (Window& parent, Tractography& tool, const std::string& filename);
 
             ~Tractogram ();
 
@@ -71,7 +71,8 @@ namespace MR
             void scalingChanged ();
 
           private:
-            Tractography& parent_tool_window;
+            Window& window;
+            Tractography& tool;
             std::string filename;
             std::vector<GLuint> vertex_buffers;
             DWI::Tractography::Reader<float> file;
@@ -79,10 +80,10 @@ namespace MR
             std::vector<std::vector<GLint> > track_starts;
             std::vector<std::vector<GLint> > track_sizes;
             std::vector<size_t> num_tracks_per_buffer;
-            GL::Shader::Program shader;
             GLuint VertexArrayID;
             bool use_default_line_thickness;
-            float line_thickness;
+            int line_thickness;
+            Shader shader;
 
             void set_color () {
             }

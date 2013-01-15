@@ -113,6 +113,10 @@ namespace MR
             ~Program () {
               if (index_) glDeleteObjectARB (index_);
             }
+            void clear () {
+              if (index_) glDeleteObjectARB (index_);
+              index_ = 0;
+            }
             operator GLhandleARB () const {
               return (index_);
             }
