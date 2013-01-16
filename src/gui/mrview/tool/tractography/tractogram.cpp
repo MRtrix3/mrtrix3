@@ -99,6 +99,24 @@ namespace MR
             glUniform1f (slab_widthID, tool.get_slab_thickness());
           }
 
+          GLuint alphaID = shader.get_uniform ("alpha");
+          glUniform1f (alphaID, tool.get_opacity());
+
+          if (tool.get_opacity() < 1.0) {
+            glEnable (GL_BLEND);
+            glDisable (GL_DEPTH_TEST);
+            glDepthMask (GL_FALSE);
+            glBlendEquation (GL_FUNC_ADD);
+            glBlendFunc (GL_CONSTANT_ALPHA, GL_ONE);
+            glBlendColor (1.0, 1.0, 1.0, tool.get_opacity());
+          }
+
+          if (use_default_line_thickness)
+            glLineWidth (tool.get_line_thickness());
+          else
+            glLineWidth (line_thickness);
+
+
           for (size_t buf = 0; buf < vertex_buffers.size(); ++buf) {
             glEnableVertexAttribArray (0);
             glBindBuffer (GL_ARRAY_BUFFER, vertex_buffers[buf]);
@@ -110,16 +128,13 @@ namespace MR
             glEnableVertexAttribArray (2);
             glVertexAttribPointer (2, 3, GL_FLOAT, GL_FALSE, 0, (void*)(6*sizeof(float)));
 
-            if (use_default_line_thickness)
-              glLineWidth (tool.get_line_thickness());
-            else
-              glLineWidth (line_thickness);
-
             glMultiDrawArrays (GL_LINE_STRIP, &track_starts[buf][0], &track_sizes[buf][0], num_tracks_per_buffer[buf]);
           }
 
+          glDisable (GL_BLEND);
+          glEnable (GL_DEPTH_TEST);
+          glDepthMask (GL_TRUE);
           shader.stop();
-          DEBUG_OPENGL;
         }
 
         void Tractogram::render3D ()

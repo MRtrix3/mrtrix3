@@ -46,8 +46,9 @@ namespace MR
               "layout(location = 0) in vec3 vertexPosition_modelspace;\n"
               "layout(location = 1) in vec3 previousVertex;\n "
               "layout(location = 2) in vec3 nextVertex;\n "
-              "out vec3 fragmentColor;\n"
-              "uniform mat4 MVP;\n";
+              "out vec4 fragmentColor;\n"
+              "uniform mat4 MVP;\n"
+              "uniform float alpha;\n";
 
           if (do_crop_to_slab) {
             vertex_shader_code +=
@@ -58,15 +59,20 @@ namespace MR
           }
 
           vertex_shader_code +=
-              "void main(){\n"
+              "void main() {\n"
+              "  vec3 temp_colour;"
               "  gl_Position =  MVP * vec4(vertexPosition_modelspace,1);\n"
               "  if (isnan(previousVertex.x))\n"
-              "    fragmentColor = nextVertex - vertexPosition_modelspace;\n"
+              "    temp_colour = nextVertex - vertexPosition_modelspace;\n"
               "  else if (isnan(nextVertex.x))\n"
-              "    fragmentColor = vertexPosition_modelspace - previousVertex;\n"
+              "    temp_colour = vertexPosition_modelspace - previousVertex;\n"
               "  else\n"
-              "    fragmentColor = nextVertex - previousVertex;\n"
-              "  fragmentColor = normalize (abs(fragmentColor));\n";
+              "    temp_colour = nextVertex - previousVertex;\n"
+              "  temp_colour = normalize (abs(temp_colour));\n"
+              "  fragmentColor[0] = temp_colour[0]; \n"
+              "  fragmentColor[1] = temp_colour[1]; \n"
+              "  fragmentColor[2] = temp_colour[2];"
+              "  fragmentColor[3] = alpha; \n";
 
           if (do_crop_to_slab) {
             vertex_shader_code +=
@@ -76,10 +82,10 @@ namespace MR
 
           std::string fragment_shader_code =
               "#version 330 core\n"
-              "in vec3 fragmentColor;\n"
+              "in vec4 fragmentColor;\n"
               "in vec4 gl_FragCoord;"
               "in float include; \n"
-              "out vec3 color;\n"
+              "out vec4 color;\n"
               "void main(){\n"
               "  color = fragmentColor;\n";
 

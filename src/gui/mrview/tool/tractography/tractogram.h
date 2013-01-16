@@ -82,7 +82,7 @@ namespace MR
             std::vector<size_t> num_tracks_per_buffer;
             GLuint VertexArrayID;
             bool use_default_line_thickness;
-            int line_thickness;
+            float line_thickness;
             Shader shader;
 
             void set_color () {

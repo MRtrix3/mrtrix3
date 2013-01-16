@@ -64,7 +64,8 @@ namespace MR
           Base (main_window, parent),
           line_thickness (1.0),
           crop_to_slab (true),
-          shader_update (false) {
+          shader_update (false),
+          line_opacity (1.0) {
 
             float voxel_size;
             if (main_window.image()) {
@@ -133,15 +134,15 @@ namespace MR
 
             QSlider* slider;
             slider = new QSlider (Qt::Horizontal);
-            slider->setRange (0,1000);
+            slider->setRange (1,1000);
             slider->setSliderPosition (int (1000));
             connect (slider, SIGNAL (valueChanged (int)), this, SLOT (opacity_slot (int)));
             default_opt_grid->addWidget (new QLabel ("opacity"), 1, 0);
             default_opt_grid->addWidget (slider, 1, 1);
 
             slider = new QSlider (Qt::Horizontal);
-            slider->setRange (1,9);
-            slider->setSliderPosition (int (1));
+            slider->setRange (100,1000);
+            slider->setSliderPosition (float (100.0));
             connect (slider, SIGNAL (valueChanged (int)), this, SLOT (line_thickness_slot (int)));
             default_opt_grid->addWidget (new QLabel ("line thickness"), 2, 0);
             default_opt_grid->addWidget (slider, 2, 1);
@@ -149,12 +150,15 @@ namespace MR
             main_box->addLayout (default_opt_grid, 0);
         }
 
+        Tractography::~Tractography () {}
+
         void Tractography::draw2D (const Projection& transform) {
           for (int i = 0; i < tractogram_list_model->rowCount(); ++i) {
             if (tractogram_list_model->shown[i])
               dynamic_cast<Tractogram*>(tractogram_list_model->items[i])->render2D (transform);
           }
         }
+
 
         void Tractography::draw3D (const Projection& transform) {
         }
@@ -196,14 +200,14 @@ namespace MR
         }
 
         void Tractography::opacity_slot (int opacity) {
-          CONSOLE(str(opacity));
-        }
-
-        void Tractography::line_thickness_slot (int thickness) {
-          line_thickness = thickness;
+          line_opacity = Math::pow2(static_cast<float>(opacity)) / 1e6;
           window.updateGL();
         }
 
+        void Tractography::line_thickness_slot (int thickness) {
+          line_thickness = static_cast<float>(thickness) / 100.0;
+          window.updateGL();
+        }
 
 
       }
