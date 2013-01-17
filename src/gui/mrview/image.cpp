@@ -317,13 +317,13 @@ namespace MR
                 data[idx] = val.real();
                 data[idx+1] = val.imag();
                 float mag = std::abs (val);
-                if (finite (mag)) {
-                  if (mag < value_min) value_min = mag;
-                  if (mag > value_max) value_max = mag;
-                }
+                if (finite (mag)) 
+                  if (mag > value_max) 
+                    value_max = mag;
               }
             }
           }
+          value_min = 0.0;
 
         }
         else {
