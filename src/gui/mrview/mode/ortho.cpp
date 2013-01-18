@@ -145,31 +145,31 @@ namespace MR
           if (window.show_crosshairs()) 
             projections[axis].render_crosshairs (focus());
 
-          if (window.show_orientation_labels()) {
-            glColor4f (1.0, 0.0, 0.0, 1.0);
-            switch (axis) {
-              case 0:
-                projections[axis].render_text ("A", LeftEdge);
-                projections[axis].render_text ("S", TopEdge);
-                projections[axis].render_text ("P", RightEdge);
-                projections[axis].render_text ("I", BottomEdge);
-                break;
-              case 1:
-                projections[axis].render_text ("R", LeftEdge);
-                projections[axis].render_text ("S", TopEdge);
-                projections[axis].render_text ("L", RightEdge);
-                projections[axis].render_text ("I", BottomEdge);
-                break;
-              case 2:
-                projections[axis].render_text ("R", LeftEdge);
-                projections[axis].render_text ("A", TopEdge);
-                projections[axis].render_text ("L", RightEdge);
-                projections[axis].render_text ("P", BottomEdge);
-                break;
-              default:
-                assert (0);
-            }
-          }
+//          if (window.show_orientation_labels()) {
+//            glColor4f (1.0, 0.0, 0.0, 1.0);
+//            switch (axis) {
+//              case 0:
+//                projections[axis].render_text ("A", LeftEdge);
+//                projections[axis].render_text ("S", TopEdge);
+//                projections[axis].render_text ("P", RightEdge);
+//                projections[axis].render_text ("I", BottomEdge);
+//                break;
+//              case 1:
+//                projections[axis].render_text ("R", LeftEdge);
+//                projections[axis].render_text ("S", TopEdge);
+//                projections[axis].render_text ("L", RightEdge);
+//                projections[axis].render_text ("I", BottomEdge);
+//                break;
+//              case 2:
+//                projections[axis].render_text ("R", LeftEdge);
+//                projections[axis].render_text ("A", TopEdge);
+//                projections[axis].render_text ("L", RightEdge);
+//                projections[axis].render_text ("P", BottomEdge);
+//                break;
+//              default:
+//                assert (0);
+//            }
+//          }
 
         }
 

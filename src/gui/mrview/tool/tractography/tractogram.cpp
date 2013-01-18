@@ -29,7 +29,7 @@
 #include "gui/projection.h"
 #include <stdio.h>
 
-const size_t MAX_BUFFER_SIZE = 349525;  // number of points to fill 4MB
+const size_t MAX_BUFFER_SIZE = 2796200;  // number of points to fill 32MB
 
 namespace MR
 {
@@ -49,34 +49,28 @@ namespace MR
           use_default_line_thickness (true),
           line_thickness (1.0)
         {
-          file.open (filename, properties);
           load_tracks();
         }
 
 
         Tractogram::~Tractogram ()
         {
-          file.close();
+          glDeleteBuffers (vertex_buffers.size(), &vertex_buffers[0]);
         }
 
 
         void Tractogram::render2D (const Projection& transform)
         {
 
+          if (tool.do_crop_to_slab() && tool.get_slab_thickness() <= 0.0)
+            return;
+
           if (tool.do_shader_update() || !shader)
             shader.set_crop_to_slab (tool.do_crop_to_slab());  // recompile
 
-          if (!VertexArrayID)
-            glGenVertexArrays (1, &VertexArrayID);
-
-          glBindVertexArray (VertexArrayID);
-
-          glEnable (GL_DEPTH_TEST);
-          glDepthMask (GL_TRUE);
-
           shader.start();
-          GLuint MatrixID = shader.get_uniform ("MVP");
 
+          GLuint MatrixID = shader.get_uniform ("MVP");
           const Math::Matrix<float>& M (transform.get_MVP());
           GLfloat MVP[] = {
               M(0,0), M(1,0), M(2,0), M(3,0),
@@ -87,10 +81,6 @@ namespace MR
           glUniformMatrix4fv (MatrixID, 1, GL_FALSE, MVP);
 
           if (tool.do_crop_to_slab()) {
-            if (tool.get_slab_thickness() < 0.000001) {
-              shader.stop();
-              return;
-            }
             GLuint screen_normalID = shader.get_uniform ("screen_normal");
             GLuint crop_varID = shader.get_uniform ("crop_var");
             GLuint slab_widthID = shader.get_uniform ("slab_width");
@@ -99,16 +89,18 @@ namespace MR
             glUniform1f (slab_widthID, tool.get_slab_thickness());
           }
 
-          GLuint alphaID = shader.get_uniform ("alpha");
-          glUniform1f (alphaID, tool.get_opacity());
-
+          glShadeModel(GL_SMOOTH);
           if (tool.get_opacity() < 1.0) {
             glEnable (GL_BLEND);
             glDisable (GL_DEPTH_TEST);
+            glHint(GL_LINE_SMOOTH_HINT, GL_NICEST);
             glDepthMask (GL_FALSE);
             glBlendEquation (GL_FUNC_ADD);
             glBlendFunc (GL_CONSTANT_ALPHA, GL_ONE);
             glBlendColor (1.0, 1.0, 1.0, tool.get_opacity());
+          } else {
+            glEnable (GL_DEPTH_TEST);
+            glDepthMask (GL_TRUE);
           }
 
           if (use_default_line_thickness)
@@ -116,24 +108,26 @@ namespace MR
           else
             glLineWidth (line_thickness);
 
+          if (!VertexArrayID)
+            glGenVertexArrays (1, &VertexArrayID);
 
+          glBindVertexArray (VertexArrayID);
           for (size_t buf = 0; buf < vertex_buffers.size(); ++buf) {
             glEnableVertexAttribArray (0);
             glBindBuffer (GL_ARRAY_BUFFER, vertex_buffers[buf]);
             glVertexAttribPointer (0, 3, GL_FLOAT, GL_FALSE, 0, (void*)(3*sizeof(float)));
-
             glEnableVertexAttribArray (1);
             glVertexAttribPointer (1, 3, GL_FLOAT, GL_FALSE, 0, (void*)0);
-
             glEnableVertexAttribArray (2);
             glVertexAttribPointer (2, 3, GL_FLOAT, GL_FALSE, 0, (void*)(6*sizeof(float)));
-
             glMultiDrawArrays (GL_LINE_STRIP, &track_starts[buf][0], &track_sizes[buf][0], num_tracks_per_buffer[buf]);
           }
 
-          glDisable (GL_BLEND);
-          glEnable (GL_DEPTH_TEST);
-          glDepthMask (GL_TRUE);
+          if (tool.get_opacity() < 1.0) {
+            glDisable (GL_BLEND);
+            glEnable (GL_DEPTH_TEST);
+            glDepthMask (GL_TRUE);
+          }
           shader.stop();
         }
 
@@ -145,6 +139,7 @@ namespace MR
 
         void Tractogram::load_tracks()
         {
+          file.open (filename, properties);
           std::vector<Point<float> > tck;
           std::vector<Point<float> > buffer;
           std::vector<GLint> starts;
@@ -174,15 +169,18 @@ namespace MR
               sizes.clear();
             }
           }
-          buffer.push_back (Point<float>());
-          GLuint vertexbuffer;
-          glGenBuffers (1, &vertexbuffer);
-          glBindBuffer (GL_ARRAY_BUFFER, vertexbuffer);
-          glBufferData (GL_ARRAY_BUFFER, buffer.size() * sizeof(Point<float>), &buffer[0][0], GL_STATIC_DRAW);
-          vertex_buffers.push_back (vertexbuffer);
-          track_starts.push_back (starts);
-          track_sizes.push_back (sizes);
-          num_tracks_per_buffer.push_back (tck_count);
+          if (buffer.size()) {
+            buffer.push_back (Point<float>());
+            GLuint vertexbuffer;
+            glGenBuffers (1, &vertexbuffer);
+            glBindBuffer (GL_ARRAY_BUFFER, vertexbuffer);
+            glBufferData (GL_ARRAY_BUFFER, buffer.size() * sizeof(Point<float>), &buffer[0][0], GL_STATIC_DRAW);
+            vertex_buffers.push_back (vertexbuffer);
+            track_starts.push_back (starts);
+            track_sizes.push_back (sizes);
+            num_tracks_per_buffer.push_back (tck_count);
+          }
+          file.close();
         }
 
       }
