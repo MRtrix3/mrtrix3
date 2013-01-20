@@ -183,7 +183,7 @@ bool FOD_FMLS::operator() (const SH_coefs& in, FOD_lobes& out) const {
 
         for (dir_t dir = 0; dir != dirs.size(); ++dir) {
           if (!processed[dir]) {
-            for (std::vector<size_t>::const_iterator neighbour = dirs.get_adj_dirs (dir).begin(); neighbour != dirs.get_adj_dirs (dir).end(); ++neighbour) {
+            for (std::vector<dir_t>::const_iterator neighbour = dirs.get_adj_dirs (dir).begin(); neighbour != dirs.get_adj_dirs (dir).end(); ++neighbour) {
               if (processed[*neighbour])
                 new_assignments[dir].push_back (out.lut[*neighbour]);
             }

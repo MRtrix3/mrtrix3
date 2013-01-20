@@ -50,7 +50,7 @@ namespace DWI {
 using DWI::Directions::Mask;
 
 typedef Point<float> PointF;
-typedef uint16_t dir_t;
+using Directions::dir_t;
 
 
 

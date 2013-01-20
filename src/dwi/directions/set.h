@@ -46,49 +46,53 @@ namespace MR {
 
 
 
+      typedef unsigned int dir_t;
+
+
+
       class Set {
 
         public:
 
           explicit Set (const std::string& path) :
-            dir_mask_bytes (0),
-            dir_mask_excess_bits (0),
-            dir_mask_excess_bits_mask (0) {
-              Math::Matrix<float> az_el_pairs;
-              try {
-                az_el_pairs.load (path);
-              } catch (...) {
-                load_predefined (az_el_pairs, to<size_t>(path));
-              }
+              dir_mask_bytes (0),
+              dir_mask_excess_bits (0),
+              dir_mask_excess_bits_mask (0)
+          {
+            Math::Matrix<float> az_el_pairs;
+            az_el_pairs.load (path);
 
-              if (az_el_pairs.columns() != 2)
-                throw Exception ("Text file \"" + path + "\"does not contain directions as azimuth-elevation pairs");
+            if (az_el_pairs.columns() != 2)
+              throw Exception ("Text file \"" + path + "\"does not contain directions as azimuth-elevation pairs");
 
-              initialise (az_el_pairs);
-            }
+            initialise (az_el_pairs);
+          }
 
-          explicit Set (const size_t d) : // Can pass a number as a string at the command-line for loading a pre-defined direction set
-            dir_mask_bytes (0),
-            dir_mask_excess_bits (0),
-            dir_mask_excess_bits_mask (0) {
-              Math::Matrix<float> az_el_pairs;
-              load_predefined (az_el_pairs, d);
-              initialise (az_el_pairs);
-            }
+          explicit Set (const size_t d) :
+              dir_mask_bytes (0),
+              dir_mask_excess_bits (0),
+              dir_mask_excess_bits_mask (0)
+          {
+            Math::Matrix<float> az_el_pairs;
+            load_predefined (az_el_pairs, d);
+            initialise (az_el_pairs);
+          }
+
+          virtual ~Set();
 
           size_t size () const { return unit_vectors.size(); }
           const Point<float>& get_dir (const size_t i) const { return unit_vectors[i]; }
-          const std::vector<size_t>& get_adj_dirs (const size_t i) const { return adj_dirs[i]; }
+          const std::vector<dir_t>& get_adj_dirs (const size_t i) const { return adj_dirs[i]; }
 
-          bool dirs_are_adjacent (const size_t one, const size_t two) const {
-            for (std::vector<size_t>::const_iterator i = adj_dirs[one].begin(); i != adj_dirs[one].end(); ++i) {
+          bool dirs_are_adjacent (const dir_t one, const dir_t two) const {
+            for (std::vector<dir_t>::const_iterator i = adj_dirs[one].begin(); i != adj_dirs[one].end(); ++i) {
               if (*i == two)
                 return true;
             }
             return false;
           }
 
-          size_t get_min_linkage (const size_t one, const size_t two) const;
+          dir_t get_min_linkage (const dir_t one, const dir_t two) const;
 
           const std::vector< Point<float> >& get_dirs() const { return unit_vectors; }
           const Point<float>& operator[] (const size_t i) const { return unit_vectors[i]; }
@@ -97,7 +101,8 @@ namespace MR {
         protected:
 
           std::vector< Point<float> > unit_vectors;
-          std::vector< std::vector<size_t> > adj_dirs; // Note: not self-inclusive
+          std::vector<dir_t>* adj_dirs; // Note: not self-inclusive
+
 
         private:
 
@@ -115,10 +120,6 @@ namespace MR {
 
 
 
-      // When mapping each azimuth/elevation grid block to the possible nearest directions within that grid location,
-      //   oversample both azimuth & elevation by this amount within the grid, and perform a full check against
-      //   all possible directions to see which is nearest.
-#define FINE_GRID_OVERSAMPLE_RATIO 8
 
 
       class FastLookupSet : public Set {
@@ -126,33 +127,40 @@ namespace MR {
         public:
 
           FastLookupSet (const std::string& path) : 
-            Set (path) { 
-              initialise(); 
-            }
+              Set (path)
+          {
+            initialise();
+          }
 
           FastLookupSet (const size_t d) :
-            Set (d) {
-              initialise();
-            }
+              Set (d)
+          {
+            initialise();
+          }
 
           FastLookupSet (const FastLookupSet&);
           ~FastLookupSet ();
 
-          size_t select_direction (const Point<float>&) const;
+          dir_t select_direction (const Point<float>&) const;
 
 
 
         private:
 
-          size_t** grid_near_dirs;
+          std::vector<dir_t>* grid_lookup;
           unsigned int num_az_grids, num_el_grids, total_num_angle_grids;
           float az_grid_step, el_grid_step;
           float az_begin, el_begin;
 
           FastLookupSet ();
-          size_t select_direction_slow (const Point<float>&) const;
+
+          dir_t select_direction_slow (const Point<float>&) const;
 
           void initialise();
+
+          size_t dir2gridindex (const Point<float>&) const;
+
+          void test_lookup() const;
 
       };
 
