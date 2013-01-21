@@ -20,8 +20,8 @@
 
 */
 
-#ifndef __gui_lighting_h__
-#define __gui_lighting_h__
+#ifndef __gui_opengl_lighting_h__
+#define __gui_opengl_lighting_h__
 
 #include <QObject>
 

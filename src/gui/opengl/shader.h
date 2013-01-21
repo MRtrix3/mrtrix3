@@ -35,7 +35,7 @@ namespace MR
       namespace Shader
       {
 
-        void print_log (const std::string& type, GLhandleARB obj);
+        void print_log (bool is_program, const std::string& type_name, GLuint index);
 
         class Program;
 
@@ -44,57 +44,57 @@ namespace MR
           public:
             Object () : index_ (0) { }
             ~Object () {
-              if (index_) glDeleteObjectARB (index_);
+              if (index_) glDeleteShader (index_);
             }
-            operator GLhandleARB () const {
+            operator GLuint () const {
               return (index_);
             }
             void compile (const std::string& source) {
               if (App::log_level > 2) {
                 std::string msg ("compiling OpenGL ");
-                msg += TYPE == GL_VERTEX_SHADER_ARB ? "vertex" : "fragment";
+                msg += TYPE == GL_VERTEX_SHADER ? "vertex" : "fragment";
                 msg += " shader:\n" + source;
                 DEBUG (msg);
               }
-              if (!index_) index_ = glCreateShaderObjectARB (TYPE);
+              if (!index_) index_ = glCreateShader (TYPE);
               const char* p = source.c_str();
-              glShaderSourceARB (index_, 1, &p, NULL);
-              glCompileShaderARB (index_);
+              glShaderSource (index_, 1, &p, NULL);
+              glCompileShader (index_);
               GLint status;
-              glGetObjectParameterivARB (index_, GL_OBJECT_COMPILE_STATUS_ARB, &status);
+              glGetShaderiv (index_, GL_COMPILE_STATUS, &status);
               if (status == 0) {
                 debug();
                 throw Exception (std::string ("error compiling ") +
-                                 (TYPE == GL_VERTEX_SHADER_ARB ? "vertex shader" : "fragment shader"));
+                                 (TYPE == GL_VERTEX_SHADER ? "vertex shader" : "fragment shader"));
               }
 
 
             }
             void debug () {
               assert (index_);
-              print_log (
-                (TYPE == GL_VERTEX_SHADER_ARB ? "vertex shader" : "fragment shader"),
+              print_log (false,
+                (TYPE == GL_VERTEX_SHADER ? "vertex shader" : "fragment shader"),
                 index_);
             }
 
           protected:
-            GLhandleARB index_;
+            GLuint index_;
             friend class Program;
         };
 
-        typedef Object<GL_VERTEX_SHADER_ARB> Vertex;
-        typedef Object<GL_FRAGMENT_SHADER_ARB> Fragment;
+        typedef Object<GL_VERTEX_SHADER> Vertex;
+        typedef Object<GL_FRAGMENT_SHADER> Fragment;
 
 
         class Uniform
         {
           public:
             float operator= (float value) {
-              glUniform1fARB (index_, value);
+              glUniform1f (index_, value);
               return (value);
             }
             int operator= (int value) {
-              glUniform1iARB (index_, value);
+              glUniform1i (index_, value);
               return (value);
             }
 
@@ -111,30 +111,30 @@ namespace MR
           public:
             Program () : index_ (0) { }
             ~Program () {
-              if (index_) glDeleteObjectARB (index_);
+              if (index_) glDeleteProgram (index_);
             }
             void clear () {
-              if (index_) glDeleteObjectARB (index_);
+              if (index_) glDeleteProgram (index_);
               index_ = 0;
             }
-            operator GLhandleARB () const {
+            operator GLuint () const {
               return (index_);
             }
             template <GLint TYPE> void attach (const Object<TYPE>& object) {
-              if (!index_) index_ = glCreateProgramObjectARB();
-              glAttachObjectARB (index_, object.index_);
+              if (!index_) index_ = glCreateProgram();
+              glAttachShader (index_, object.index_);
             }
             template <GLint TYPE> void detach (const Object<TYPE>& object) {
               assert (index_);
               assert (object.index_);
-              glDetachObjectARB (index_, object.index_);
+              glDetachShader (index_, object.index_);
             }
             void link () {
               DEBUG ("linking OpenGL shader program...");
               assert (index_);
-              glLinkProgramARB (index_);
+              glLinkProgram (index_);
               GLint status;
-              glGetObjectParameterivARB (index_, GL_OBJECT_LINK_STATUS_ARB, &status);
+              glGetProgramiv (index_, GL_LINK_STATUS, &status);
               if (status == 0) {
                 debug();
                 throw Exception (std::string ("error linking shader program"));
@@ -142,22 +142,22 @@ namespace MR
             }
             void start () {
               assert (index_);
-              glUseProgramObjectARB (index_);
+              glUseProgram (index_);
             }
             static void stop () {
-              glUseProgramObjectARB (0);
+              glUseProgram (0);
             }
 
             Uniform get_uniform (const std::string& name) {
-              return (Uniform (glGetUniformLocationARB (index_, name.c_str())));
+              return (Uniform (glGetUniformLocation (index_, name.c_str())));
             }
             void debug () {
               assert (index_);
-              print_log ("shader program", index_);
+              print_log (true, "shader program", index_);
             }
 
           protected:
-            GLhandleARB index_;
+            GLuint index_;
         };
 
       }

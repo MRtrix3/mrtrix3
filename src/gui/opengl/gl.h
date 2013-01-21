@@ -20,8 +20,8 @@
 
 */
 
-#ifndef __gui_open_gl_h__
-#define __gui_open_gl_h__
+#ifndef __gui_opengl_gl_h__
+#define __gui_opengl_gl_h__
 
 #include <QtGui>
 #include "glee.h"

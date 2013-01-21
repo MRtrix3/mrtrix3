@@ -31,17 +31,27 @@ namespace MR
       namespace Shader
       {
 
-        void print_log (const std::string& type, GLhandleARB obj)
+        void print_log (bool is_program, const std::string& type_name, GLuint index)
         {
           int length = 0;
           int chars = 0;
           char* log;
 
-          glGetObjectParameterivARB (obj, GL_OBJECT_INFO_LOG_LENGTH_ARB, &length);
+          if (is_program) 
+            glGetProgramiv (index, GL_INFO_LOG_LENGTH, &length);
+          else 
+            glGetShaderiv (index, GL_INFO_LOG_LENGTH, &length);
+
           if (length > 0) {
             log = new char [length];
-            glGetInfoLogARB (obj, length, &chars, log);
-            if (strlen (log)) MR::print ("GLSL log [" + type + "]: " + log + "\n");
+            if (is_program)
+              glGetProgramInfoLog (index, length, &chars, log);
+            else 
+              glGetShaderInfoLog (index, length, &chars, log);
+
+            if (strlen (log)) 
+              MR::print ("GLSL log [" + type_name + "]: " + log + "\n");
+
             delete [] log;
           }
         }
