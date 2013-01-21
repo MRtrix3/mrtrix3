@@ -369,7 +369,7 @@ void run ()
   Processor processor (peaks_data, dirs, Math::SH::LforN (SH_data.dim (3)),
       npeaks, true_peaks, threshold, ipeaks_data);
 
-  Thread::run_queue (loader, 1, Item(), processor, 0);
+  Thread::run_queue_threaded_sink (loader, Item(), processor);
 }
 
 

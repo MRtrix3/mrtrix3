@@ -70,12 +70,7 @@ void run ()
 
 
   Timer timer;
-  Thread::run_queue (
-      source, 1, 
-      Item(), 
-      process, 4, 
-      Item(),
-      sink, 1);
+  Thread::run_queue_threaded_pipe (source, Item(), process, Item(), sink);
 
   double time_not_batched = timer.elapsed();
   VAR (time_not_batched);
@@ -86,12 +81,7 @@ void run ()
   Sink sink2;
   timer.start();
 
-  Thread::run_batched_queue (
-      source2, 1, 
-      Item(), 1024,
-      process, 4, 
-      Item(), 1024,
-      sink2, 1);
+  Thread::run_batched_queue_threaded_pipe (source2, Item(), 1024, process, Item(), 1024, sink2);
 
   double time_batched = timer.elapsed();
   VAR (time_batched);

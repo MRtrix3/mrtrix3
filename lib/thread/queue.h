@@ -702,24 +702,42 @@ flush:
     //! \endcond 
 
 
-     //! convenience function to set up and run a multi-threaded queue.
-     /*! This is a convenience function to simplify the process of setting up a
+
+
+
+    //! convenience functions to set up and run multi-threaded queues.
+     /*! This set of convenience functions simplify the process of setting up a
       * multi-threaded processing chain that should meet most user's needs.
-      * This function sets up a simple chain consisting of one or more input
-      * (Source) functors feeding into a queue feeding into one or more output
-      * (Sink) functors.
+      * The differences between the three functions are as follows:
+      * - run_queue_threaded_source(): Multiple 'source' threads feed data
+      *     onto the queue, which are received by a single 'sink' thread.
+      * - run_queue_threaded_sink(): A single 'source' thread feeds data
+      *     onto the queue, which are then received and processed by multiple
+      *     'sink' threads.
+      * - run_queue_threaded_pipe(); A 'source' thread places data onto a
+      *     queue. These data are processed by multiple 'pipe' threads,
+      *     which place the processed data onto a second queue. A single
+      *     'sink' thread then reads the data from this second queue.
       * 
-      * The template types consist of the input & output functor classes, and
-      * the type of the item that will be passed through the queue from input
-      * to output. 
+      * The template types consist of the functor classes, and
+      * the type(s) of the item(s) that will be passed through the queue(s).
+      * Note that in the case of run_queue_threaded_pipe(), there are two
+      * queues involved, and these queues may have different types.
       *
-      * The actual arguments correspond to an instance of both the input &
-      * output functors, the number of threads to use for each, and an item
-      * instance (provided purely to specify the type of object to pass
-      * through the queue).
+      * The actual arguments correspond to an instance of both the source &
+      * sink functors (as well as the pipe functor if run_queue_threaded_pipe()
+      * is used), and an item instance for each queue (provided purely to specify
+      * the type of object to pass through the queue(s)).
       *
-      * \note if the number of threads is set to zero, all available cores will
-      * be used, as given by the Thread::number_of_threads() function.
+      * Where more than one thread is to be used for a functor, additional
+      * instances of the functor will be created using the relevant class's
+      * copy constructor. Therefore, care should be taken to ensure that the
+      * copy constructor behaves appropriately.
+      *
+      * For the functor that is being multi-threaded, the number of threads
+      * instantiated will depend on the "NumberOfThreads" entry in the MRtrix
+      * confugration file, or can be set at the command-line using the
+      * -nthreads option.
       *
       *
       * \par Source: the input functor 
@@ -731,11 +749,6 @@ flush:
       * true if further items need to be prepared, or \c false to signal that
       * no further items are to be sent through the queue (at which point the
       * corresponding thread(s) will exit).
-      *
-      * If more than one thread are to be launched with this functor,
-      * additional instances of the input functor will be created using the
-      * Source class's copy constructor. In this case, care should be taken to
-      * ensure the copy constructor behaves appropriately.
       *
       * \par Sink: the output functor 
       * The Sink class must at least provide the method:
@@ -746,120 +759,7 @@ flush:
       * true when ready to process further items, or \c false to signal the end
       * of processing (at which point the corresponding thread(s) will exit).
       *
-      * If more than one thread are to be launched with this functor,
-      * additional instances of the output functor will be created using the
-      * Sink class's copy constructor. In this case, care should be taken to
-      * ensure the copy constructor behaves appropriately.
-      *
-      * \par Example usage
-      * \code
-      * // The item type to be passed through the queue:
-      * class Item {
-      *   public:
-      *     size_t n;
-      * };
-      *
-      *
-      * // The Source class prepares each item to be sent through the queue:
-      * class Source {
-      *   public:
-      *     Source () : count (0) { }
-      *
-      *     // The kernel responsible for preparing each item to be sent.
-      *     // This simply generates 1000000 items with incrementing count.
-      *     bool operator() (Item& item) {
-      *       item.n = count++;
-      *       return count < 1000000;
-      *     }
-      *
-      *     size_t count;
-      *};
-      *
-      * // The Sink class processes each item received through the queue:
-      * class Sink {
-      *   public:
-      *     Sink () : count (0) { }
-      *
-      *     // The kernel responsible for processing each item received.
-      *     // This example simply adds up the counts of the items received.
-      *     bool operator() (const Item& item) {
-      *       count += item.n;
-      *       return true;
-      *     }
-      *
-      *     size_t count;
-      * };
-      *
-      * int main (...) 
-      * {
-      *   Source source;
-      *   Sink sink;
-      *
-      *   // Run one thread for the source and one thread for the sink:
-      *   run_queue (source, 1, Item(), sink, 1);
-      * }
-      * \endcode
-      * 
-      * \sa run_queue<Source,Type1,Pipe,Type2,Sink>
-      * \sa run_batched_queue<Source,Type,Sink>
-      * \sa run_batched_queue<Source,Type1,Pipe,Type2,Sink>
-      */
-    template <class Source, class Type, class Sink>
-      inline void run_queue (
-          Source& source, size_t nthreads_source,
-          const Type& item_type,
-          Sink& sink, size_t nthreads_sink)
-      {
-
-        Queue<Type> queue;
-        __Source<Type,Source> q_source (queue, source);
-        __Sink<Type,Sink> q_sink (queue, sink);
-
-        Array<__Source<Type,Source> > source_list (q_source, nthreads_source ? nthreads_source : number_of_threads());
-        Array<__Sink<Type,Sink> > sink_list (q_sink, nthreads_sink ? nthreads_sink : number_of_threads());
-
-        Exec source_threads (source_list, "source");
-        Exec sink_threads (sink_list, "sink");
-      }
-
-
-     //! convenience function to set up and run a multi-threaded queue.
-     /*! This is a convenience function to simplify the process of setting up a
-      * multi-threaded processing chain that should meet most user's needs. 
-      * This function sets up a three-step chain consisting of one or more input
-      * (Source) functors feeding into a queue feeding into one or more
-      * processing (Pipe) functors, themselves feeding into a second queue
-      * feeding into one or more output (Sink) functors.
-      * 
-      * The template types consist of the input, processing & output functor
-      * classes, and the types of the item that will be passed through each
-      * queue from input to processor, and from processor to output. 
-      *
-      * The actual arguments correspond to an instance of the input, processing &
-      * output functors, the number of threads to use for each, and item
-      * instances for both queues (provided purely to specify the type of
-      * object to pass through the queues).
-      *
-      * \note if the number of threads is set to zero, all available cores will
-      * be used, as given by the Thread::number_of_threads() function.
-      *
-      *
-      * \par Source: the input functor 
-      * The Source class must at least provide the method:
-      * \code 
-      * bool operator() (Type& item);
-      * \endcode
-      * This function prepares the \a item passed to it, and should return \c
-      * true if further items need to be prepared, or \c false to signal that
-      * no further items are to be sent through the queue (at which point the
-      * corresponding thread(s) will exit).
-      *
-      * If more than one thread are to be launched with this functor,
-      * additional instances of the input functor will be created using the
-      * Source class's copy constructor. In this case, care should be taken to
-      * ensure the copy constructor behaves appropriately.
-      *
-      * \par Pipe: the processing functor 
+      * \par Pipe: the processing functor (for run_queue_threaded_pipe() only)
       * The Pipe class must at least provide the method:
       * \code 
       * bool operator() (const Type1& item_in, Type2& item_out);
@@ -869,25 +769,6 @@ flush:
       * true when ready to process further items, or \c false to signal the end
       * of processing (at which point the corresponding thread(s) will exit).
       *
-      * If more than one thread are to be launched with this functor,
-      * additional instances of the processing functor will be created using the
-      * Pipe class's copy constructor. In this case, care should be taken to
-      * ensure the copy constructor behaves appropriately.
-      *
-      *
-      * \par Sink: the output functor 
-      * The Sink class must at least provide the method:
-      * \code 
-      * bool operator() (const Type& item);
-      * \endcode
-      * This function processes the \a item passed to it, and should return \c
-      * true when ready to process further items, or \c false to signal the end
-      * of processing (at which point the corresponding thread(s) will exit).
-      *
-      * If more than one thread are to be launched with this functor,
-      * additional instances of the ouptut functor will be created using the
-      * Sink class's copy constructor. In this case, care should be taken to
-      * ensure the copy constructor behaves appropriately.
       *
       * \par Example usage
       * \code
@@ -913,19 +794,19 @@ flush:
       *     size_t count;
       *};
       *
-      * // The Pipe class processes each input item received from the first
-      * // queue and prepares an output item to be sent through the second queue:
+      * // The Pipe class processes data from one queue and places the result
+      * //   onto another:
       * class Pipe {
-      *   public: 
-      *     // The kernel responsible for processing each input item and
-      *     // preparing each corresponding output item:
-      *     // This example simply takes the remainder after division by 128.
-      *     bool operator() (const Item& in, Item& out) {
-      *       out.n = in.n % 128;
+      *   public:
+      *     Pipe () { }
+      *
+      *     // The kernel responsible for processing the data.
+      *     // This simply doubles each value received.
+      *     bool operator() (const Item& item_in, Item& item_out) {
+      *       item_out.n = 2 * item_in.n;
       *       return true;
       *     }
-      * };
-      * 
+      *};
       *
       * // The Sink class processes each item received through the queue:
       * class Sink {
@@ -948,40 +829,66 @@ flush:
       *   Pipe pipe;
       *   Sink sink;
       *
-      *   // Run one thread for the source, all available cores for the
-      *   // pipe, and one thread for the sink.
-      *   // In this example, both queues will be passing through items of the
-      *   // same type. 
-      *   run_queue (source, 1, Item(), pipe, 0, Item(), sink, 1);
+      *   // Run many threads for the source and one thread for the sink:
+      *   run_queue_threaded_source (source, Item(), sink);
+      *
+      *   // Run one thread for the source and many threads for the sink:
+      *   run_queue_threaded_sink   (source, Item(), sink);
+      *
+      *   // Run one source thread, one sink thread and many pipe threads:
+      *   run_queue_threaded_pipe   (source, Item(), pipe, Item(), sink);
+      *
       * }
       * \endcode
       * 
-      * \sa run_queue<Source,Type,Sink>
-      * \sa run_batched_queue<Source,Type,Sink>
-      * \sa run_batched_queue<Source,Type1,Pipe,Type2,Sink>
+      * \sa run_batched_queue_threaded_source<Source,Type,Sink>
+      * \sa run_batched_queue_threaded_sink<Source,Type,Sink>
+      * \sa run_batched_queue_threaded_pipe<Source,Type1,Pipe,Type2,Sink>
       */
+
+    template <class Source, class Type, class Sink>
+      inline void run_queue_threaded_source (Source& source, const Type& item_type, Sink& sink)
+      {
+        Queue<Type> queue;
+        __Source<Type,Source> q_source (queue, source);
+        __Sink<Type,Sink>     q_sink   (queue, sink);
+
+        Array<__Source<Type,Source> > source_list (q_source);
+
+        Exec source_threads (source_list, "sources");
+        Exec sink_thread    (q_sink, "sink");
+      }
+
+
+    template <class Source, class Type, class Sink>
+      inline void run_queue_threaded_sink (Source& source, const Type& item_type, Sink& sink)
+      {
+        Queue<Type> queue;
+        __Source<Type,Source> q_source (queue, source);
+        __Sink<Type,Sink>     q_sink   (queue, sink);
+
+        Array<__Sink<Type,Sink> > sink_list (q_sink);
+
+        Exec source_thread (q_source, "source");
+        Exec sink_threads  (sink_list, "sinks");
+      }
+
+
     template <class Source, class Type1, class Pipe, class Type2, class Sink>
-      inline void run_queue (
-          Source& source, size_t nthreads_source, 
-          const Type1& item_type1, 
-          Pipe& pipe, size_t nthreads_pipe,
-          const Type2& item_type2, 
-          Sink& sink, size_t nthreads_sink)
+      inline void run_queue_threaded_pipe (Source& source, const Type1& item_type1, Pipe& pipe, const Type2& item_type2, Sink& sink)
       {
         Queue<Type1> queue1 ("queue1");
         Queue<Type2> queue2 ("queue2");
 
-        __Source<Type1,Source> q_source (queue1, source);
-        __Pipe<Type1,Pipe,Type2> q_pipe (queue1, pipe, queue2);
-        __Sink<Type2,Sink> q_sink (queue2, sink);
+        __Source<Type1,Source>   q_source (queue1, source);
+        __Pipe<Type1,Pipe,Type2> q_pipe   (queue1, pipe, queue2);
+        __Sink<Type2,Sink>       q_sink   (queue2, sink);
 
-        Array<__Source<Type1,Source> > source_list (q_source, nthreads_source ? nthreads_source : number_of_threads());
-        Array<__Pipe<Type1,Pipe,Type2> > pipe_list (q_pipe, nthreads_pipe ? nthreads_pipe : number_of_threads());
-        Array<__Sink<Type2,Sink> > sink_list (q_sink, nthreads_sink ? nthreads_sink : number_of_threads());
+        Array<__Pipe<Type1,Pipe,Type2> > pipe_list (q_pipe);
 
-        Exec source_threads (source_list, "source");
-        Exec pipe_threads (pipe_list, "pipe");
-        Exec sink_threads (sink_list, "sink");
+        Exec source_thread (q_source,  "source");
+        Exec pipe_threads  (pipe_list, "pipes");
+        Exec sink_threads  (q_sink,    "sink");
       }
 
 
@@ -989,22 +896,24 @@ flush:
 
 
 
-     //! convenience function to set up and run a multi-threaded queue.
-     /*! This is a convenience function to simplify the process of setting up a
-      * multi-threaded processing chain that should meet most user's needs.
-      * This function sets up a simple chain consisting of one or more input
-      * (Source) functors feeding into a queue feeding into one or more output
-      * (Sink) functors. 
+     //! convenience functions to set up and run multi-threaded batched queues.
+     /*! This set of convenience functions to simplify the process of setting
+      * up a multi-threaded processing chain that should meet most user's needs.
       *
-      * It differs from Thread::run_queue<Source,Type,Sink> in that batches of
-      * items will be sent through the queue, rather than individual items.
-      * This is beneficial for applications where the work required to process
-      * each item is small, in which case the overhead of locking and unlocking
-      * the queue for multi-threading becomes the bottleneck. By batching sets
-      * of items together, the overhead of managing the queue can be reduced to
-      * negligible levels. 
+      * They differ from Thread::run_queue_threaded_source<Source,Type,Sink>(),
+      * Thread::run_queue_threaded_sink<Source,Type,Sink>() and
+      * Thread::run_queue_threaded_pipe<Source,Type1,Pipe,Type2,Sink>() in that
+      * batches of items will be sent through the queue, rather than individual
+      * items. This is beneficial for applications where the work required to
+      * process each item is small, in which case the overhead of locking and
+      * unlocking the queue for multi-threading becomes the bottleneck. By
+      * batching sets of items together, the overhead of managing the queue can
+      * be reduced to negligible levels.
       *
-      * Usage is almost identical to Thread::run_queue<Source,Type,Sink>, apart
+      * Usage is almost identical to
+      * Thread::run_queue_threaded_source<Source,Type,Sink>,
+      * Thread::run_queue_threaded_sink<Source,Type,Sink> and
+      * Thread::run_queue_threaded_pipe<Source,Type1,Pipe,Type2,Sink>, apart
       * from the call itself:
       * \code
       * int main (...) 
@@ -1012,103 +921,77 @@ flush:
       *   Source source;
       *   Sink sink;
       *
-      *   // Run one thread for the source and one thread for the sink,
+      *   // Run many threads for the source and one thread for the sink,
       *   // with items sent in batches of 1024:
-      *   run_queue (source, 1, Item(), 1024, sink, 1);
+      *   run_batched_queue_threaded_source (source, Item(), 1024, sink);
+      *
+      *   // Run one thread for the source and many threads for the sink,
+      *   // with items sent in batches of 100:
+      *   run_batched_queue_threaded_sink (source, Item(), 100, sink);
+      *
+      *  // Run one source thread, one sink thread and many pipe threads,
+      *  // with items sent to the pipe threads in batches of 16 but
+      *  // processed data sent to the sink one-at-a-time:
+      *   run_batched_queue_threaded_pipe (source, Item(), 16, pipe, Item(), 1, sink);
+      *
       * }
       * \endcode
       *
-      * \sa run_queue<Source,Type,Sink>
-      * \sa run_queue<Source,Type1,Pipe,Type2,Sink>
-      * \sa run_batched_queue<Source,Type1,Pipe,Type2,Sink>
+      * \sa run_queue_threaded_source<Source,Type,Sink>
+      * \sa run_queue_threaded_sink<Source,Type,Sink>
+      * \sa run_queue_threaded_pipe<Source,Type1,Pipe,Type2,Sink>
       */
-    template <class Source, class Type, class Sink>
-      inline void run_batched_queue (
-          Source& source, size_t nthreads_source, 
-          const Type& item_type, size_t batch_size,
-          Sink& sink, size_t nthreads_sink)
+
+     template <class Source, class Type, class Sink>
+      inline void run_batched_queue_threaded_source (Source& source, const Type& item_type, size_t batch_size, Sink& sink)
       {
 
         Queue<std::vector<Type> > queue ("queue");
         Batch::__Source<Type,Source> q_source (queue, source, batch_size);
-        Batch::__Sink<Type,Sink> q_sink (queue, sink);
+        Batch::__Sink  <Type,Sink>   q_sink   (queue, sink);
 
-        Array<Batch::__Source<Type,Source> > source_list (q_source, nthreads_source ? nthreads_source : number_of_threads());
-        Array<Batch::__Sink<Type,Sink> > sink_list (q_sink, nthreads_sink ? nthreads_sink : number_of_threads());
+        Array<Batch::__Source<Type,Source> > source_list (q_source);
 
-        Exec source_threads (source_list, "source");
-        Exec sink_threads (sink_list, "sink");
+        Exec source_threads (source_list, "sources");
+        Exec sink_thread    (q_sink, "sink");
       }
 
 
+     template <class Source, class Type, class Sink>
+      inline void run_batched_queue_threaded_sink (Source& source, const Type& item_type, size_t batch_size,Sink& sink)
+      {
 
-     //! convenience function to set up and run a multi-threaded queue.
-     /*! This is a convenience function to simplify the process of setting up a
-      * multi-threaded processing chain that should meet most user's needs. 
-      * This function sets up a three-step chain consisting of one or more input
-      * (Source) functors feeding into a queue feeding into one or more
-      * processing (Pipe) functors, themselves feeding into a second queue
-      * feeding into one or more output (Sink) functors.
-      *
-      * It differs from Thread::run_queue<Source,Type1,Pipe,Type2,Sink> in that
-      * batches of items will be sent through each queue, rather than
-      * individual items. This is beneficial for applications where the work
-      * required to process each item is small, in which case the overhead of
-      * locking and unlocking the queues for multi-threading becomes the
-      * bottleneck. By batching sets of items together, the overhead of
-      * managing the queues can be reduced to negligible levels. 
-      *
-      * Usage is almost identical to
-      * Thread::run_queue<Source,Type1,Pipe,Type2,Sink>, apart from the call
-      * itself: 
-      * \code
-      * int main (...) 
-      * {
-      *   Source source;
-      *   Pipe pipe;
-      *   Sink sink;
-      *
-      *   // run one thread for the source, all available cores for the
-      *   // pipe, and one thread for the sink.
-      *   // In this example, both queues will be passing through items of the
-      *   // same type, and items will be sent in batches of 1024 for both
-      *   // queues.
-      *   run_queue (
-      *     source, 1, 
-      *     Item(), 1024,
-      *     pipe, 0,
-      *     Item(), 1024, 
-      *     sink, 1);
-      * }
-      * \endcode
-      * 
-      * \sa run_queue<Source,Type,Sink>
-      * \sa run_batched_queue<Source,Type,Sink>
-      * \sa run_batched_queue<Source,Type1,Pipe,Type2,Sink>
-      */
+        Queue<std::vector<Type> > queue ("queue");
+        Batch::__Source<Type,Source> q_source (queue, source, batch_size);
+        Batch::__Sink  <Type,Sink>   q_sink   (queue, sink);
 
-    template <class Source, class Type1, class Pipe, class Type2, class Sink>
-      inline void run_batched_queue (
-          Source& source, size_t nthreads_source, 
+        Array<Batch::__Sink<Type,Sink> > sink_list (q_sink);
+
+        Exec source_thread (q_source, "source");
+        Exec sink_threads  (sink_list, "sinks");
+      }
+
+
+     template <class Source, class Type1, class Pipe, class Type2, class Sink>
+      inline void run_batched_queue_threaded_pipe (
+          Source& source,
           const Type1& item_type1, size_t batch_size1,
-          Pipe& pipe, size_t nthreads_pipe,
+          Pipe& pipe,
           const Type2& item_type2, size_t batch_size2,
-          Sink& sink, size_t nthreads_sink)
+          Sink& sink)
       {
         Queue<std::vector<Type1> > queue1 ("queue1");
         Queue<std::vector<Type2> > queue2 ("queue2");
 
-        Batch::__Source<Type1,Source> q_source (queue1, source, batch_size1);
-        Batch::__Pipe<Type1,Pipe,Type2> q_pipe (queue1, pipe, queue2, batch_size2);
-        Batch::__Sink<Type2,Sink> q_sink (queue2, sink);
+        Batch::__Source<Type1,Source>   q_source (queue1, source, batch_size1);
+        Batch::__Pipe<Type1,Pipe,Type2> q_pipe   (queue1, pipe, queue2, batch_size2);
+        Batch::__Sink<Type2,Sink>       q_sink   (queue2, sink);
 
-        Array<Batch::__Source<Type1,Source> > source_list (q_source, nthreads_source ? nthreads_source : number_of_threads());
-        Array<Batch::__Pipe<Type1,Pipe,Type2> > pipe_list (q_pipe, nthreads_pipe ? nthreads_pipe : number_of_threads());
-        Array<Batch::__Sink<Type2,Sink> > sink_list (q_sink, nthreads_sink ? nthreads_sink : number_of_threads());
+        Array<Batch::__Pipe<Type1,Pipe,Type2> > pipe_list (q_pipe);
 
-        Exec source_threads (source_list, "source");
-        Exec pipe_threads (pipe_list, "pipe");
-        Exec sink_threads (sink_list, "sink");
+        Exec source_thread (q_source, "source");
+        Exec pipe_threads  (pipe_list, "pipes");
+        Exec sink_thread   (q_sink, "sink");
       }
 
 
