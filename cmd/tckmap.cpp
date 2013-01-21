@@ -498,12 +498,12 @@ void run () {
       MapWriterColour<SetVoxelDEC> writer (header, argument[1], dump, stat_vox);
       TrackMapperTWI <SetVoxelDEC> mapper (header, map_zero, step_size, contrast, stat_tck);
       mapper.set_interp (interp_matrix);
-      Thread::run_queue (loader, 1, TrackAndIndex(), mapper, 0, SetVoxelDEC(), writer, 1);
+      Thread::run_queue_threaded_pipe (loader, TrackAndIndex(), mapper, SetVoxelDEC(), writer);
     } else {
       Ptr< MapWriterBase<SetVoxel> > writer (make_writer<SetVoxel> (header, argument[1], dump, stat_vox));
       TrackMapperTWI    <SetVoxel>   mapper (header, map_zero, step_size, contrast, stat_tck);
       mapper.set_interp (interp_matrix);
-      Thread::run_queue (loader, 1, TrackAndIndex(), mapper, 0, SetVoxel(), *writer, 1);
+      Thread::run_queue_threaded_pipe (loader, TrackAndIndex(), mapper, SetVoxel(), *writer);
     }
 
   } else if (contrast == PRECISE_TDI) {
@@ -517,12 +517,12 @@ void run () {
       MapWriterColour<SetVoxelDir> writer (header, argument[1], dump, stat_vox);
       TrackMapperTWI <SetVoxelDir> mapper (header, map_zero, step_size, contrast, stat_tck);
       mapper.set_interp (interp_matrix);
-      Thread::run_queue (loader, 1, TrackAndIndex(), mapper, 0, SetVoxelDir(), writer, 1);
+      Thread::run_queue_threaded_pipe (loader, TrackAndIndex(), mapper, SetVoxelDir(), writer);
     } else {
       MapWriter      <float, SetVoxelDir> writer (header, argument[1], dump, stat_vox);
       TrackMapperTWI <       SetVoxelDir> mapper (header, map_zero, step_size, contrast, stat_tck);
       mapper.set_interp (interp_matrix);
-      Thread::run_queue (loader, 1, TrackAndIndex(), mapper, 0, SetVoxelDir(), writer, 1);
+      Thread::run_queue_threaded_pipe (loader, TrackAndIndex(), mapper, SetVoxelDir(), writer);
     }
 
   } else if (contrast == CURVATURE && stat_tck == GAUSSIAN) {
@@ -536,12 +536,12 @@ void run () {
       MapWriterColour<SetVoxelDECFactor> writer (header, argument[1], dump, stat_vox);
       TrackMapperTWI <SetVoxelDECFactor> mapper (header, map_zero, step_size, contrast, stat_tck, gaussian_denominator_tck);
       mapper.set_interp (interp_matrix);
-      Thread::run_queue (loader, 1, TrackAndIndex(), mapper, 0, SetVoxelDECFactor(), writer, 1);
+      Thread::run_queue_threaded_pipe (loader, TrackAndIndex(), mapper, SetVoxelDECFactor(), writer);
     } else {
       Ptr< MapWriterBase<SetVoxelFactor> > writer (make_writer<SetVoxelFactor> (header, argument[1], dump, stat_vox));
       TrackMapperTWI    <SetVoxelFactor>   mapper (header, map_zero, step_size, contrast, stat_tck, gaussian_denominator_tck);
       mapper.set_interp (interp_matrix);
-      Thread::run_queue (loader, 1, TrackAndIndex(), mapper, 0, SetVoxelFactor(), *writer, 1);
+      Thread::run_queue_threaded_pipe (loader, TrackAndIndex(), mapper, SetVoxelFactor(), *writer);
     }
 
   } else if (contrast == SCALAR_MAP || contrast == SCALAR_MAP_COUNT || contrast == FOD_AMP) {
@@ -569,12 +569,12 @@ void run () {
         MapWriterColour     <SetVoxelDECFactor> writer (header, argument[1], dump, stat_vox);
         TrackMapperTWIImage <SetVoxelDECFactor> mapper (header, map_zero, step_size, contrast, stat_tck, gaussian_denominator_tck, input_image);
         mapper.set_interp (interp_matrix);
-        Thread::run_queue (loader, 1, TrackAndIndex(), mapper, 0, SetVoxelDECFactor(), writer, 1);
+        Thread::run_queue_threaded_pipe (loader, TrackAndIndex(), mapper, SetVoxelDECFactor(), writer);
       } else {
         MapWriterColour     <SetVoxelDEC> writer (header, argument[1], dump, stat_vox);
         TrackMapperTWIImage <SetVoxelDEC> mapper (header, map_zero, step_size, contrast, stat_tck, 0.0, input_image);
         mapper.set_interp (interp_matrix);
-        Thread::run_queue (loader, 1, TrackAndIndex(), mapper, 0, SetVoxelDEC(), writer, 1);
+        Thread::run_queue_threaded_pipe (loader, TrackAndIndex(), mapper, SetVoxelDEC(), writer);
       }
 
     } else {
@@ -583,12 +583,12 @@ void run () {
         Ptr< MapWriterBase  <SetVoxelFactor> > writer (make_writer<SetVoxelFactor> (header, argument[1], dump, stat_vox));
         TrackMapperTWIImage <SetVoxelFactor>   mapper (header, map_zero, step_size, contrast, stat_tck, gaussian_denominator_tck, input_image);
         mapper.set_interp (interp_matrix);
-        Thread::run_queue (loader, 1, TrackAndIndex(), mapper, 0, SetVoxelFactor(), *writer, 1);
+        Thread::run_queue_threaded_pipe (loader, TrackAndIndex(), mapper, SetVoxelFactor(), *writer);
       } else {
         Ptr< MapWriterBase  <SetVoxel> > writer (make_writer<SetVoxel> (header, argument[1], dump, stat_vox));
         TrackMapperTWIImage <SetVoxel>   mapper (header, map_zero, step_size, contrast, stat_tck, 0.0, input_image);
         mapper.set_interp (interp_matrix);
-        Thread::run_queue (loader, 1, TrackAndIndex(), mapper, 0, SetVoxel(), *writer, 1);
+        Thread::run_queue_threaded_pipe (loader, TrackAndIndex(), mapper, SetVoxel(), *writer);
       }
 
     }

@@ -91,7 +91,7 @@ namespace MR {
             WriteKernel writer (shared, destination, properties);
             Exec<Method> tracker (shared);
             
-            Thread::run_queue (tracker, 0, std::vector<Point<value_type> >(), writer, 1);
+            Thread::run_queue_threaded_source (tracker, std::vector<Point<value_type> >(), writer);
           }
 
 

@@ -138,6 +138,6 @@ void run ()
 
   Writer writer (argument[2], loader.properties);
 
-  Thread::run_batched_queue (loader, 1, TrackType(), 1024, warper, 0, TrackType(), 1024, writer, 1);
+  Thread::run_batched_queue_threaded_pipe (loader, TrackType(), 1024, warper, TrackType(), 1024, writer);
 }
 
