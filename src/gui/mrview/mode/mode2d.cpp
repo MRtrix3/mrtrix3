@@ -95,31 +95,32 @@ namespace MR
           if (window.show_crosshairs()) 
             projection.render_crosshairs (focus());
 
-//          if (window.show_orientation_labels()) {
-//            glColor4f (1.0, 0.0, 0.0, 1.0);
-//            switch (plane()) {
-//              case 0:
-//                projection.render_text ("A", LeftEdge);
-//                projection.render_text ("S", TopEdge);
-//                projection.render_text ("P", RightEdge);
-//                projection.render_text ("I", BottomEdge);
-//                break;
-//              case 1:
-//                projection.render_text ("R", LeftEdge);
-//                projection.render_text ("S", TopEdge);
-//                projection.render_text ("L", RightEdge);
-//                projection.render_text ("I", BottomEdge);
-//                break;
-//              case 2:
-//                projection.render_text ("R", LeftEdge);
-//                projection.render_text ("A", TopEdge);
-//                projection.render_text ("L", RightEdge);
-//                projection.render_text ("P", BottomEdge);
-//                break;
-//              default:
-//                assert (0);
-//            }
-//          }
+          if (window.show_orientation_labels()) {
+            projection.setup_render_text (1.0, 0.0, 0.0);
+            switch (plane()) {
+              case 0:
+                projection.render_text ("A", LeftEdge);
+                projection.render_text ("S", TopEdge);
+                projection.render_text ("P", RightEdge);
+                projection.render_text ("I", BottomEdge);
+                break;
+              case 1:
+                projection.render_text ("R", LeftEdge);
+                projection.render_text ("S", TopEdge);
+                projection.render_text ("L", RightEdge);
+                projection.render_text ("I", BottomEdge);
+                break;
+              case 2:
+                projection.render_text ("R", LeftEdge);
+                projection.render_text ("A", TopEdge);
+                projection.render_text ("L", RightEdge);
+                projection.render_text ("P", BottomEdge);
+                break;
+              default:
+                assert (0);
+            }
+            projection.done_render_text();
+          }
         }
 
 

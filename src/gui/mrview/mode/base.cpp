@@ -37,7 +37,7 @@ namespace MR
 
         Base::Base (Window& parent, int flags) :
           window (parent),
-          projection (window.glarea),
+          projection (window.glarea, *window.font),
           features (flags),
           painting (false) { }
 
@@ -56,7 +56,9 @@ namespace MR
           glClear (GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
           if (!image()) {
             projection.update();
-//            projection.render_text (10, 10, "No image loaded");
+            projection.setup_render_text();
+            projection.render_text (10, 10, "No image loaded");
+            projection.done_render_text();
             goto done_painting;
           }
 
@@ -67,36 +69,39 @@ namespace MR
             projection.update();
             glColor4f (1.0, 1.0, 0.0, 1.0);
 
-//            if (window.show_voxel_info()) {
-//              Point<> voxel (image()->interp.scanner2voxel (focus()));
-//              Image::VoxelType& imvox (image()->voxel());
-//              ssize_t vox [] = { Math::round<int> (voxel[0]), Math::round<int> (voxel[1]), Math::round<int> (voxel[2]) };
-//
-//              std::string vox_str = printf ("voxel: [ %d %d %d ", vox[0], vox[1], vox[2]);
-//              for (size_t n = 3; n < imvox.ndim(); ++n)
-//                vox_str += str(imvox[n]) + " ";
-//              vox_str += "]";
-//
-//              projection.render_text (printf ("position: [ %.4g %.4g %.4g ] mm", focus() [0], focus() [1], focus() [2]), LeftEdge | BottomEdge);
-//              projection.render_text (vox_str, LeftEdge | BottomEdge, 1);
-//              std::string value;
-//              if (vox[0] >= 0 && vox[0] < imvox.dim (0) &&
-//                  vox[1] >= 0 && vox[1] < imvox.dim (1) &&
-//                  vox[2] >= 0 && vox[2] < imvox.dim (2)) {
-//                imvox[0] = vox[0];
-//                imvox[1] = vox[1];
-//                imvox[2] = vox[2];
-//                cfloat val = imvox.value();
-//                value = "value: " + str (val);
-//              }
-//              else value = "value: ?";
-//              projection.render_text (value, LeftEdge | BottomEdge, 2);
-//            }
-//
-//            if (window.show_comments()) {
-//              for (size_t i = 0; i < image()->header().comments().size(); ++i)
-//                projection.render_text (image()->header().comments() [i], LeftEdge | TopEdge, i);
-//            }
+            projection.setup_render_text();
+            if (window.show_voxel_info()) {
+              Point<> voxel (image()->interp.scanner2voxel (focus()));
+              Image::VoxelType& imvox (image()->voxel());
+              ssize_t vox [] = { Math::round<int> (voxel[0]), Math::round<int> (voxel[1]), Math::round<int> (voxel[2]) };
+
+              std::string vox_str = printf ("voxel: [ %d %d %d ", vox[0], vox[1], vox[2]);
+              for (size_t n = 3; n < imvox.ndim(); ++n)
+                vox_str += str(imvox[n]) + " ";
+              vox_str += "]";
+
+              projection.render_text (printf ("position: [ %.4g %.4g %.4g ] mm", focus() [0], focus() [1], focus() [2]), LeftEdge | BottomEdge);
+              projection.render_text (vox_str, LeftEdge | BottomEdge, 1);
+              std::string value;
+              if (vox[0] >= 0 && vox[0] < imvox.dim (0) &&
+                  vox[1] >= 0 && vox[1] < imvox.dim (1) &&
+                  vox[2] >= 0 && vox[2] < imvox.dim (2)) {
+                imvox[0] = vox[0];
+                imvox[1] = vox[1];
+                imvox[2] = vox[2];
+                cfloat val = imvox.value();
+                value = "value: " + str (val);
+              }
+              else value = "value: ?";
+              projection.render_text (value, LeftEdge | BottomEdge, 2);
+            }
+
+            if (window.show_comments()) {
+              for (size_t i = 0; i < image()->header().comments().size(); ++i)
+                projection.render_text (image()->header().comments() [i], LeftEdge | TopEdge, i);
+            }
+
+            projection.done_render_text();
           }
 
 done_painting:

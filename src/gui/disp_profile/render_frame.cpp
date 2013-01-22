@@ -58,7 +58,7 @@ namespace MR
       RenderFrame::RenderFrame (QWidget* parent) :
         QGLWidget (QGLFormat (QGL::FormatOptions (QGL::DoubleBuffer | QGL::DepthBuffer | QGL::Rgba)), parent),
         view_angle (40.0), distance (0.3), line_width (1.0), scale (1.0), l0_term (NAN),
-        show_axes (true), color_by_dir (true), use_lighting (true), projection (this),
+        show_axes (true), color_by_dir (true), use_lighting (true), font (parent->font()), projection (this, font),
         focus (0.0, 0.0, 0.0), framebuffer (NULL), OS (0), OS_x (0), OS_y (0)
       {
         lighting = new GL::Lighting (this);

@@ -95,6 +95,7 @@ namespace MR
       }
 
       void Window::GLArea::initializeGL () {
+        main.font = new GL::Font (font());
         main.initGL();
       }
       void Window::GLArea::paintGL () {
@@ -124,6 +125,7 @@ namespace MR
         FocusModifier (Qt::MetaModifier),
         MoveModifier (Qt::ControlModifier),
         RotateModifier (Qt::ShiftModifier),
+        mouse_action (NoAction),
         orient (NAN, NAN, NAN, NAN),
         field_of_view (100.0),
         anatomical_plane (2)
@@ -864,7 +866,6 @@ namespace MR
             return 2;
           else if (modifiers_ == RotateModifier && ( mode->features & Mode::TiltRotate ))
             return 3;
-          else assert (0);
         }
 
         if (mouse_action == NoAction) 

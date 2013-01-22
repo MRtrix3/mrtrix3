@@ -140,6 +140,7 @@ namespace MR
             labels.push_back (OrientationLabel (projection.model_to_screen_direction (Point<> (0.0, 0.0, -1.0)), 'I'));
             labels.push_back (OrientationLabel (projection.model_to_screen_direction (Point<> (0.0, 0.0, 1.0)), 'S'));
 
+            projection.setup_render_text (1.0, 0.0, 0.0);
             std::sort (labels.begin(), labels.end());
             for (size_t i = 2; i < labels.size(); ++i) {
               float pos[] = { labels[i].dir[0], labels[i].dir[1] };
@@ -148,6 +149,7 @@ namespace MR
               int y = Math::round (projection.height() /2.0 + pos[1]*dist);
               projection.render_text_inset (x, y, std::string (labels[i].label));
             }
+            projection.done_render_text();
 
           }
         }

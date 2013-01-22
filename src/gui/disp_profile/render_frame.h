@@ -28,6 +28,7 @@
 #define __gui_dwi_render_frame_h__
 
 #include "gui/opengl/gl.h"
+#include "gui/opengl/font.h"
 #include <QGLWidget>
 
 #include "ptr.h"
@@ -119,6 +120,7 @@ namespace MR
           bool  show_axes, hide_neg_lobes, color_by_dir, use_lighting, normalise;
 
           QPoint last_pos;
+          GL::Font font;
           Projection projection;
           Math::Versor<float> orientation;
           Point<> focus;

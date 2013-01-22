@@ -10,6 +10,7 @@
 #include "ptr.h"
 #include "gui/cursor.h"
 #include "gui/mrview/image.h"
+#include "gui/opengl/font.h"
 
 #include <QGLWidget>
 
@@ -225,6 +226,7 @@ namespace MR
           GLArea* glarea;
           Ptr<Mode::Base> mode;
           GL::Lighting* lighting_;
+          Ptr<GL::Font> font;
 
           const Qt::KeyboardModifiers FocusModifier, MoveModifier, RotateModifier;
           MouseAction mouse_action;

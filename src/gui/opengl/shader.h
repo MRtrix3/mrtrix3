@@ -43,6 +43,7 @@ namespace MR
         {
           public:
             Object () : index_ (0) { }
+            Object (const std::string& source) : index_ (0) { compile (source); }
             ~Object () {
               if (index_) glDeleteShader (index_);
             }
@@ -140,7 +141,7 @@ namespace MR
                 throw Exception (std::string ("error linking shader program"));
               }
             }
-            void start () {
+            void start () const {
               assert (index_);
               glUseProgram (index_);
             }
@@ -148,10 +149,10 @@ namespace MR
               glUseProgram (0);
             }
 
-            Uniform get_uniform (const std::string& name) {
+            Uniform get_uniform (const std::string& name) const {
               return (Uniform (glGetUniformLocation (index_, name.c_str())));
             }
-            void debug () {
+            void debug () const {
               assert (index_);
               print_log (true, "shader program", index_);
             }
