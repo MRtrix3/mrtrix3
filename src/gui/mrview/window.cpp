@@ -64,9 +64,15 @@ namespace MR
         return QSize (256, 256);
       }
       QSize Window::GLArea::sizeHint () const {
-        return QSize (512, 512);
+        std::string init_size_string = lowercase (MR::File::Config::get ("MRviewInitWindowSize"));
+        std::vector<int> init_window_size;
+        if (init_size_string.length())
+          init_window_size = parse_ints(init_size_string);
+        if (init_window_size.size() == 2)
+          return QSize (init_window_size[0], init_window_size[1]);
+        else
+          return QSize (512, 512);
       }
-
       void Window::GLArea::dragEnterEvent (QDragEnterEvent* event) {
         event->acceptProposedAction();
       }
