@@ -53,17 +53,17 @@ namespace MR
 
         vertex_buffer_ID[0] = vertex_buffer_ID[1] = 0;
 
-        font_height = metric.height() + 4;
-        const float max_font_width = metric.maxWidth() + 4;
+        font_height = metric.height() + 2;
+        const float max_font_width = metric.maxWidth() + 2;
 
         int tex_width = 0;
         for (int c = first_char; c <= last_char; ++c) 
-          tex_width += metric.width (c) + 4;
+          tex_width += metric.width (c) + 2;
 
         QImage pixmap (max_font_width, font_height, QImage::Format_ARGB32);
         const GLubyte* pix_data = pixmap.bits();
 
-        GLubyte tex_data [2 * tex_width * font_height];
+        float tex_data [2 * tex_width * font_height];
 
         QPainter painter (&pixmap);
         painter.setFont (font);
@@ -76,21 +76,21 @@ namespace MR
         int current_x = 0;
         for (int c = first_char; c <= last_char; ++c) {
           pixmap.fill (0);
-          painter.drawText (2, metric.ascent() + 2, QString(c));
+          painter.drawText (1, metric.ascent() + 1, QString(c));
 
           font_width[c] = metric.width (c);
-          const int current_font_width = font_width[c] + 4;
+          const int current_font_width = font_width[c] + 2;
 
           // blur along x:
           for (int row = 0; row < font_height; ++row) {
             for (int col = 0; col < current_font_width; ++col) {
               const int tex_idx = 2 * (current_x + col + row*tex_width);
               const int pix_idx = 4 * (col + row*max_font_width);
-              float val = 0.0;
-              for (int x = -2; x <= 2; ++x)
+              float val = 0.0f;
+              for (int x = -1; x <= 1; ++x)
                 if (col+x >= 0 && col+x < current_font_width) 
-                  val += 0.5 * Math::exp (-x*x/4.0) * pix_data[pix_idx+4*x];
-              tex_data[tex_idx] = GLubyte (std::min (val, 255.0f));
+                  val += Math::exp (-x*x/2.0f) * pix_data[pix_idx+4*x];
+              tex_data[tex_idx] = val;
             }
           }
 
@@ -98,11 +98,12 @@ namespace MR
           for (int row = 0; row < font_height; ++row) {
             for (int col = 0; col < current_font_width; ++col) {
               const int tex_idx = 2 * (current_x + col + row*tex_width);
-              float val = 0.0;
-              for (int x = -2; x <= 2; ++x) 
+              const int pix_idx = 4 * (col + row*max_font_width);
+              float val = 0.0f;
+              for (int x = -1; x <= 1; ++x) 
                 if (row+x >= 0 && row+x < font_height) 
-                  val += 0.5 * Math::exp (-x*x/4.0) * tex_data[tex_idx+2*tex_width*x];
-              tex_data[tex_idx+1] = GLubyte (std::min (val, 255.0f));
+                  val += Math::exp (-x*x/2.0) * tex_data[tex_idx+2*tex_width*x];
+              tex_data[tex_idx+1] = pix_data[pix_idx] ? 1.0f : 0.005f*val;
             }
           }
 
@@ -111,7 +112,7 @@ namespace MR
             for (int col = 0; col < current_font_width; ++col) {
               const int tex_idx = 2 * (current_x + col + row*tex_width);
               const int pix_idx = 4 * (col + row*max_font_width);
-              tex_data[tex_idx] = pix_data[pix_idx];
+              tex_data[tex_idx] = pix_data[pix_idx] / 255.0f;
             }
           }
 
@@ -139,7 +140,7 @@ namespace MR
         glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
         glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
         glTexImage2D (GL_TEXTURE_2D, 0, GL_LUMINANCE_ALPHA, tex_width, font_height, 
-            0, GL_LUMINANCE_ALPHA, GL_UNSIGNED_BYTE, tex_data);
+            0, GL_LUMINANCE_ALPHA, GL_FLOAT, tex_data);
 
         glGenBuffers (2, vertex_buffer_ID);
 
@@ -185,16 +186,16 @@ namespace MR
           GLfloat screen_pos [8*text.size()];
           GLfloat tex_pos [8*text.size()];
 
-          x -= 2;
-          y -= 2;
+          x -= 1;
+          y -= 1;
 
           for (size_t n = 0; n < text.size(); ++n) {
             const int c = text[n];
             GLfloat* pos = &screen_pos[8*n];
             pos[0] = x; pos[1] = y;
             pos[2] = x; pos[3] = y + font_height;
-            pos[4] = x+font_width[c]+4; pos[5] = y + font_height;
-            pos[6] = x+font_width[c]+4; pos[7] = y;
+            pos[4] = x+font_width[c]+2; pos[5] = y + font_height;
+            pos[6] = x+font_width[c]+2; pos[7] = y;
 
             GLfloat* tex = &tex_pos[8*n];
             tex[0] = font_tex_pos[c]; tex[1] = 1.0;
