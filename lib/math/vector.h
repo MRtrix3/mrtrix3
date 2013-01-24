@@ -46,6 +46,7 @@ namespace MR
     //! \cond skip
 
     template <typename ValueType> class GSLVector;
+
     template <> class GSLVector <float> : public gsl_vector_float
     {
       public:

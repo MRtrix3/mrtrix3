@@ -109,6 +109,9 @@ namespace MR
 
 
 
+  //! read a line from the stream
+  /*! a replacement for the standard getline() function that will read to the
+    end of the line and grow the string accordingly.  */
   inline std::istream& getline (std::istream& stream, std::string& string)
   {
     std::getline (stream, string);

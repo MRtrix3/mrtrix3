@@ -69,7 +69,7 @@ namespace MR
      * from, in the form of an Image::Iterator class.
      *
      *
-     * \par The run_outer() method
+     * ### The run_outer() method
      *
      * The most general of these methods is the run_outer() method, which launches a
      * set of threads that will each iteratively invokes the functor, providing
@@ -81,7 +81,7 @@ namespace MR
      * only; this can be done in a much simpler way using the convenience
      * functions below.
      * \code
-     * MyFunctor {
+     * class MyFunctor {
      *   public:
      *     MyFunctor (ImageVoxelType& vox, const std::vector<size_t>& inner_axes) :
      *         vox (vox),
@@ -100,14 +100,14 @@ namespace MR
      *
      * MyVoxelType vox;
      * Image::ThreadedLoop loop (vox);
-     * MyFunctor myfunc (vox, loop.inner_axes());
+     * class MyFunctor myfunc (vox, loop.inner_axes());
      * loop.run_outer (myfunc);
      * \endcode
      * Obviously, any number of VoxelType objects can be involved in the
      * computation, as long as they are members of the functor. For example, to
      * restrict the computation above to a binary mask:
      * \code
-     * MyFunctor {
+     * class MyFunctor {
      *   public:
      *     MyFunctor (ImageVoxelType& vox, MaskVoxelType& mask, const std::vector<size_t>& inner_axes) :
      *         vox (vox),
@@ -135,7 +135,7 @@ namespace MR
      * \endcode
      *
      *
-     * \par The run() method
+     * ### The run() method
      *
      * The run() method is a convenience function that reduces the amount of
      * code required for most simple operations. Essentially, it takes a
@@ -144,7 +144,7 @@ namespace MR
      * Image::Iterator each time. Using this method, the operation above can be
      * coded as:
      * \code
-     * MyFunctor {
+     * class MyFunctor {
      *   public:
      *     MyFunctor (ImageVoxelType& vox) : vox (vox) { }
      *     void operator() (const Image::Iterator& pos) {
@@ -162,7 +162,7 @@ namespace MR
      * \endcode
      *
      *
-     * \par The run_foreach() methods
+     * ### The run_foreach() methods
      *
      * These convenience functions can be used for any per-voxel operation, and
      * simplify the code further by taking a simple function, or a functor if
@@ -246,7 +246,7 @@ namespace MR
      * \endcode
      *
      *
-     * \par Constructors
+     * ### Constructors
      *
      * The Image::ThreadedLoop constructors can be used to set up any
      * reasonable multi-threaded looping structure. The various relevant
@@ -383,6 +383,12 @@ namespace MR
         template <class Functor, class VoxelType1, class VoxelType2, class VoxelType3> 
           void run_foreach (Functor functor, VoxelType1& vox1, int flags1, VoxelType2& vox2, int flags2, VoxelType3& vox3, int flags3);
 
+        template <class VoxelType>
+          void set_outer_pos (VoxelType& vox, const Iterator& pos) const {
+            for (size_t n = 0; n < loop.axes().size(); ++n)
+              vox[loop.axes()[n]] = pos[loop.axes()[n]];
+          }
+
       protected:
         LoopInOrder loop;
         Iterator dummy;
@@ -486,7 +492,7 @@ namespace MR
             Iterator pos (shared.iterator());
             typename VoxelType1::value_type val1 = 0;
             while (shared.next (pos)) {
-              voxel_assign (vox1, pos);
+              shared.set_outer_pos (vox1, pos);
               for (loop.start (vox1); loop.ok(); loop.next (vox1)) {
                 if (flags1 & Input) val1 = vox1.value();
                 func (val1);
@@ -521,8 +527,8 @@ namespace MR
             typename VoxelType1::value_type val1 = 0;
             typename VoxelType2::value_type val2 = 0;
             while (shared.next (pos)) {
-              voxel_assign (vox1, pos);
-              voxel_assign (vox2, pos);
+              shared.set_outer_pos (vox1, pos);
+              shared.set_outer_pos (vox2, pos);
               for (loop.start (vox1, vox2); loop.ok(); loop.next (vox1, vox2)) {
                 if (flags1 & Input) val1 = vox1.value();
                 if (flags2 & Input) val2 = vox2.value();
@@ -561,9 +567,9 @@ namespace MR
             typename VoxelType2::value_type val2 = 0;
             typename VoxelType3::value_type val3 = 0;
             while (shared.next (pos)) {
-              voxel_assign (vox1, pos);
-              voxel_assign (vox2, pos);
-              voxel_assign (vox3, pos);
+              shared.set_outer_pos (vox1, pos);
+              shared.set_outer_pos (vox2, pos);
+              shared.set_outer_pos (vox3, pos);
               for (loop.start (vox1, vox2, vox3); loop.ok(); loop.next (vox1, vox2, vox3)) {
                 if (flags1 & Input) val1 = vox1.value();
                 if (flags2 & Input) val2 = vox2.value();

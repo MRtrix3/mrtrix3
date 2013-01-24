@@ -167,6 +167,8 @@ namespace MR
           int x = current;
           while (isdigit (file_name[current]))
             current++;
+          if (x == current) 
+            return false;
           x = to<int> (file_name.substr (x, current-x));
           if (!in_seq (array[i].sequence(), x)) 
             return false;
