@@ -245,7 +245,10 @@ void run () {
   file.open (argument[0], properties);
 
   const size_t num_tracks = properties["count"]    .empty() ? 0   : to<size_t> (properties["count"]);
-  const float  step_size  = properties["step_size"].empty() ? 1.0 : to<float>  (properties["step_size"]);
+
+  float step_size = properties["step_size"].empty() ? 1.0 : to<float>  (properties["step_size"]);
+  if (properties.find ("samples_per_step") != properties.end())
+    step_size /= (to<int>(properties["samples_per_step"]) - 1);
 
   std::vector<float> voxel_size;
   Options opt = get_options("vox");

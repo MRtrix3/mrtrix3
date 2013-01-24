@@ -25,20 +25,27 @@
 
 #include <map>
 #include "dwi/tractography/roi.h"
+#include "dwi/tractography/seeding/list.h"
 
-namespace MR {
-  namespace DWI {
-    namespace Tractography {
+
+namespace MR
+{
+  namespace DWI
+  {
+    namespace Tractography
+    {
+
 
       class Properties : public std::map<std::string, std::string> {
         public:
-          ROISet seed, include, exclude, mask;
-          std::vector<std::string>  comments;
+          ROISet include, exclude, mask;
+          Seeding::List seeds;
+          std::vector<std::string> comments;
           std::multimap<std::string, std::string> roi;
 
           void  clear () { 
             std::map<std::string, std::string>::clear(); 
-            seed.clear();
+            seeds.clear();
             include.clear();
             exclude.clear();
             mask.clear();
@@ -60,12 +67,18 @@ namespace MR {
 
       inline std::ostream& operator<< (std::ostream& stream, const Properties& P)
       {
-        stream << "seed: " << P.seed << ", include: " << P.include << ", exclude: " << P.exclude << ", mask: " << P.mask << ", dict: ";
-        for (std::map<std::string, std::string>::const_iterator i = P.begin(); i != P.end(); ++i) stream << "[ " << i->first << ": " << i->second << " ], ";
+        stream << "seeds: " << P.seeds;
+        stream << "include: " << P.include << ", exclude: " << P.exclude << ", mask: " << P.mask << ", dict: ";
+        for (std::map<std::string, std::string>::const_iterator i = P.begin(); i != P.end(); ++i)
+          stream << "[ " << i->first << ": " << i->second << " ], ";
         stream << "comments: ";
-        for (std::vector<std::string>::const_iterator i = P.comments.begin(); i != P.comments.end(); ++i) stream << "\"" << *i << "\", ";
+        for (std::vector<std::string>::const_iterator i = P.comments.begin(); i != P.comments.end(); ++i)
+          stream << "\"" << *i << "\", ";
         return (stream);
       }
+
+
+
 
     }
   }

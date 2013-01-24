@@ -31,12 +31,16 @@
 #include "file/key_value.h"
 #include "dwi/tractography/properties.h"
 
-namespace MR {
-  namespace DWI {
-    namespace Tractography {
+
+namespace MR
+{
+  namespace DWI
+  {
+    namespace Tractography
+    {
 
       //! \cond skip
-      class __ReaderBase__ 
+      class __ReaderBase__
       {
         public:
           void open (const std::string& file, Properties& properties);
@@ -55,7 +59,6 @@ namespace MR {
           typedef T value_type;
 
           Reader () { }
-          Reader (const Reader& R) { assert (0); }
 
           Reader (const std::string& file, Properties& properties) {
             open (file, properties);
@@ -128,17 +131,19 @@ namespace MR {
             return (Point<value_type>());
           }
 
+          Reader (const Reader& R) { assert (0); }
+
       };
 
 
 
 
-      template <typename T = float> class Writer 
+      template <typename T = float> class Writer
       {
         public:
           typedef T value_type;
 
-          Writer () : 
+          Writer () :
             count (0), total_count (0), dtype (DataType::from<value_type>()) {
               dtype.set_byte_order_native(); 
               if (dtype != DataType::Float32LE && dtype != DataType::Float32BE && 
@@ -147,13 +152,17 @@ namespace MR {
                     "Float32LE, Float32BE, Float64LE & Float64BE");
             }
 
-          Writer (const std::string& file, const Properties& properties) :
-            count (0), total_count (0), dtype (DataType::from<value_type>()) {
-              Writer();
-              create (file, properties);
+          Writer (const std::string& file, const Properties& properties) {
+            create (file, properties);
           }
 
-          Writer (const Writer& W) { assert (0); }
+          ~Writer()
+          {
+            out.seekp (count_offset);
+            out << count << "\ntotal_count: " << total_count << "\nEND\n";
+            out.close();
+          }
+
 
           void create (const std::string& file, const Properties& properties)
           {
@@ -162,15 +171,17 @@ namespace MR {
               throw Exception ("error creating tracks file \"" + file + "\": " + strerror (errno));
 
             out << "mrtrix tracks\nEND\n";
-            for (Properties::const_iterator i = properties.begin(); i != properties.end(); ++i) 
-              out << i->first << ": " << i->second << "\n";
+            for (Properties::const_iterator i = properties.begin(); i != properties.end(); ++i) {
+              if ((i->first != "count") && (i->first != "total_count"))
+                out << i->first << ": " << i->second << "\n";
+            }
 
             for (std::vector<std::string>::const_iterator i = properties.comments.begin(); 
                 i != properties.comments.end(); ++i)
               out << "comment: " << *i << "\n";
 
-            for (size_t n = 0; n < properties.seed.size(); ++n)
-              out << "roi: seed " << properties.seed[n].parameters() << "\n";
+            for (size_t n = 0; n < properties.seeds.num_seeds(); ++n)
+              out << "roi: seed " << properties.seeds[n]->get_name() << "\n";
             for (size_t n = 0; n < properties.include.size(); ++n)
               out << "roi: include " << properties.include[n].parameters() << "\n";
             for (size_t n = 0; n < properties.exclude.size(); ++n)
@@ -218,14 +229,8 @@ namespace MR {
           }
 
 
-          void close ()
-          {
-            out.seekp (count_offset);
-            out << count << "\ntotal_count: " << total_count << "\nEND\n";
-            out.close();
-          }
-
           size_t count, total_count;
+
 
         protected:
           std::ofstream  out;
@@ -240,6 +245,9 @@ namespace MR {
             else { x[0] = BE(p[0]); x[1] = BE(p[1]); x[2] = BE(p[2]); }
             out.write ((const char*) x, 3*sizeof(value_type));
           }
+
+          Writer (const Writer& W) { assert (0); }
+
       };
 
 

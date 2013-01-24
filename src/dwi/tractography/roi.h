@@ -20,43 +20,67 @@
 
 */
 
+
+
 #ifndef __dwi_tractography_roi_h__
 #define __dwi_tractography_roi_h__
 
 #include "point.h"
 #include "ptr.h"
+
 #include "image/voxel.h"
 #include "image/interp/linear.h"
 #include "image/buffer_scratch.h"
 #include "image/copy.h"
 #include "image/buffer.h"
 #include "image/nav.h"
+
 #include "math/rng.h"
 
 
-namespace MR {
-  namespace DWI {
-    namespace Tractography {
+namespace MR
+{
+  namespace DWI
+  {
+    namespace Tractography
+    {
+
+
+      class Mask : public Image::BufferScratch<bool> {
+        public:
+          template <class InputVoxelType>
+          Mask (InputVoxelType& D, const Image::Info& info, const std::string& description) :
+              Image::BufferScratch<bool> (info, description),
+              transform (this->info())
+          {
+            Image::BufferScratch<bool>::voxel_type this_vox (*this);
+            Image::copy (D, this_vox);
+          }
+          Image::Transform transform;
+      };
+
+      Mask* get_mask (const std::string& name);
+
+
 
       class ROI {
         public:
-          ROI (const Point<>& sphere_pos, float sphere_radius) : 
-            pos (sphere_pos), rad (sphere_radius), rad2 (Math::pow2(rad)), vol (4.0*M_PI*Math::pow3(rad)/3.0) { }
+          ROI (const Point<>& sphere_pos, float sphere_radius) :
+            pos (sphere_pos), rad (sphere_radius), rad2 (Math::pow2 (rad)) { }
 
           ROI (const std::string& spec) :
-            rad (NAN), rad2 (NAN), vol (0.0)
+            rad (NAN), rad2 (NAN)
           {
             try {
               std::vector<float> F (parse_floats (spec));
               if (F.size() != 4) throw 1;
               pos.set (F[0], F[1], F[2]);
               rad = F[3];
-              rad2 = Math::pow2(rad);
-              vol = 4.0*M_PI*Math::pow3(rad)/3.0;
+              rad2 = Math::pow2 (rad);
             }
             catch (...) { 
               DEBUG ("could not parse spherical ROI specification \"" + spec + "\" - assuming mask image");
-              get_mask (spec);
+              mask = get_mask (spec);
             }
           }
 
@@ -66,14 +90,12 @@ namespace MR {
             return (mask ? mask->name() : str(pos[0]) + "," + str(pos[1]) + "," + str(pos[2]) + "," + str(rad));
           }
 
-          float volume () const { return (vol); }
-
           bool contains (const Point<>& p) const
           {
 
             if (mask) {
               Mask::voxel_type voxel (*mask);
-              Point<> v = mask->interp.scanner2voxel (p);
+              Point<> v = mask->transform.scanner2voxel (p);
               voxel[0] = Math::round (v[0]);
               voxel[1] = Math::round (v[1]);
               voxel[2] = Math::round (v[2]);
@@ -86,31 +108,7 @@ namespace MR {
 
           }
 
-          Point<> sample (Math::RNG& rng) const 
-          {
-
-            Point<> p;
-
-            if (mask) {
-              Mask::voxel_type seed (*mask);
-              do {
-                seed[0] = rng.uniform_int (mask->dim(0));
-                seed[1] = rng.uniform_int (mask->dim(1));
-                seed[2] = rng.uniform_int (mask->dim(2));
-              } while (!seed.value());
-              p.set (seed[0]+rng.uniform()-0.5, seed[1]+rng.uniform()-0.5, seed[2]+rng.uniform()-0.5);
-              return (mask->interp.voxel2scanner (p));
-            }
-
-            do {
-              p.set (2.0*rng.uniform()-1.0, 2.0*rng.uniform()-1.0, 2.0*rng.uniform()-1.0);
-            } while (p.norm2() > 1.0);
-            return (pos + rad*p);
-
-          }
-
-
-          friend inline std::ostream& operator<< (std::ostream& stream, const ROI& roi) 
+          friend inline std::ostream& operator<< (std::ostream& stream, const ROI& roi)
           {
             stream << roi.shape() << " (" << roi.parameters() << ")";
             return (stream);
@@ -119,25 +117,9 @@ namespace MR {
 
 
         private:
-
-          class Mask : public Image::BufferScratch<bool> {
-            public:
-              template <class InputVoxelType> 
-                Mask (InputVoxelType& D, const Image::Info& info, const std::string& description) :
-                  Image::BufferScratch<bool> (info, description),
-                  interp (*this)
-                {
-                  Image::BufferScratch<bool>::voxel_type this_vox (*this);
-                  Image::copy (D, this_vox);
-                }
-              Image::Transform interp;
-          };
-
-          Point<>  pos;
-          float  rad, rad2, vol;
+          Point<> pos;
+          float rad, rad2, vol;
           RefPtr<Mask> mask;
-
-          void get_mask  (const std::string& name);
 
       };
 
@@ -147,14 +129,12 @@ namespace MR {
 
       class ROISet {
         public:
-          ROISet () : total_volume (0.0) { }
+          ROISet () { }
 
           void clear () { R.clear(); }
           size_t size () const { return (R.size()); }
           const ROI& operator[] (size_t i) const { return (R[i]); }
-          void add (const ROI& roi) { R.push_back (roi); total_volume += roi.volume(); }
-
-          float volume () const { return (total_volume); }
+          void add (const ROI& roi) { R.push_back (roi); }
 
           bool contains (const Point<>& p) {
             for (size_t n = 0; n < R.size(); ++n)
@@ -167,16 +147,6 @@ namespace MR {
               if (R[n].contains (p)) retval[n] = true;
           }
 
-          Point<> sample (Math::RNG& rng) {
-            float seed_selection = 0.0;
-            float seed_selector = total_volume * rng.uniform();
-            for (std::vector<ROI>::const_iterator i = R.begin(); i != R.end(); ++i) { 
-              seed_selection += i->volume(); 
-              if (seed_selector < seed_selection) return (i->sample (rng));
-            }
-            return (sample (rng));
-          }
-
           friend inline std::ostream& operator<< (std::ostream& stream, const ROISet& R) {
             std::vector<ROI>::const_iterator i = R.R.begin();
             stream << *i;
@@ -187,7 +157,6 @@ namespace MR {
 
         private:
           std::vector<ROI> R;
-          float total_volume;
       };
 
 

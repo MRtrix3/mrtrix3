@@ -75,5 +75,4 @@ void run ()
     catch (Exception) { }
   }
 
-  writer.close ();
 }

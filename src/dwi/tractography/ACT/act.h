@@ -20,16 +20,23 @@
 
 */
 
-#ifndef __dwi_tractography_tractography_h__
-#define __dwi_tractography_tractography_h__
+#ifndef __dwi_tractography_act_act_h__
+#define __dwi_tractography_act_act_h__
 
 #include "app.h"
 #include "point.h"
 
-#include "dwi/tractography/properties.h"
+
+// Actually think it's preferable to not use these
+#define ACT_WM_INT_REQ 0.0
+#define ACT_WM_ABS_REQ 0.0
+
+#define GMWMI_ACCURACY 0.01 // Absolute value of tissue proportion difference
+
 
 namespace MR
 {
+
   namespace App { class OptionGroup; }
 
   namespace DWI
@@ -38,10 +45,16 @@ namespace MR
     namespace Tractography
     {
 
-      extern const App::OptionGroup TrackOption;
+      class Properties;
 
-      void load_streamline_properties (Properties&);
+      namespace ACT
+      {
 
+        extern const App::OptionGroup ACTOption;
+
+        void load_act_properties (Properties& properties);
+
+      }
     }
   }
 }

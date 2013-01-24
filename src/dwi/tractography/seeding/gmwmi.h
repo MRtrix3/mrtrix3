@@ -1,7 +1,7 @@
 /*
-    Copyright 2008 Brain Research Institute, Melbourne, Australia
+    Copyright 2011 Brain Research Institute, Melbourne, Australia
 
-    Written by Robert E. Smith, 02/02/12.
+    Written by Robert E. Smith, 2012.
 
     This file is part of MRtrix.
 
@@ -18,30 +18,57 @@
     You should have received a copy of the GNU General Public License
     along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
 
-*/
+ */
 
-#ifndef __dwi_tractography_tractography_h__
-#define __dwi_tractography_tractography_h__
+#ifndef __dwi_tractography_seeding_gmwmi_h__
+#define __dwi_tractography_seeding_gmwmi_h__
 
-#include "app.h"
-#include "point.h"
 
-#include "dwi/tractography/properties.h"
+#include "dwi/tractography/ACT/gmwmi.h"
+
+#include "dwi/tractography/seeding/basic.h"
+
+
+#define GMWMI_SEED_ATTEMPTS 10000
+
+
+
 
 namespace MR
 {
-  namespace App { class OptionGroup; }
-
   namespace DWI
   {
-
     namespace Tractography
     {
 
-      extern const App::OptionGroup TrackOption;
+      namespace ACT { class GMWMI_finder; }
 
-      void load_streamline_properties (Properties&);
+      namespace Seeding
+      {
 
+
+
+
+      class GMWMI : public Base
+      {
+
+        public:
+        GMWMI (const std::string&, const Math::RNG&, const std::string&);
+
+        bool get_seed (Point<float>&);
+
+
+        private:
+        Default init_seeder;
+        Image::Buffer<float> anat_data;
+        ACT::GMWMI_finder interface;
+
+      };
+
+
+
+
+      }
     }
   }
 }

@@ -1,0 +1,116 @@
+#!/bin/bash
+
+# Script that receives as argument a T1-weighted image, and outputs a four-tissue-type (4TT) segmented image
+# in a format appropriate for ACT
+# Also erases any and all working files/folders created
+
+set -e
+
+if [ -z "$FSLDIR" ]; then
+  echo "Environment variable $FSLDIR is not set; please run appropriate FSL configuration script"
+  return 0
+fi 
+
+if [ command -v bet >/dev/null 2>&1 ]; then
+  if [ command -v fsl_5.0-bet >/dev/null 2>&1 ]; then
+    echo "Could not find FSL program bet in path; make sure FSL is installed"
+    return 0
+  else
+    BET_CMD="fsl_5.0-bet"
+  fi
+else
+  BET_CMD="bet"
+fi
+
+if [ command -v fast >/dev/null 2>&1 ]; then
+  if [ command -v fsl_5.0-fast >/dev/null 2>&1 ]; then
+    echo "Could not find FSL program fast in path; make sure FSL is installed"
+    return 0
+  else
+    FAST_CMD="fsl_5.0-fast"
+  fi
+else
+  FAST_CMD="fast"
+fi
+
+if [ command -v run-first-all >/dev/null 2>&1 ]; then
+  if [ command -v fsl_5.0-run-first-all >/dev/null 2>&1 ]; then
+    echo "Could not find FSL program first (run-first-all) in path; make sure FSL is installed"
+    return 0
+  else
+    FIRST_CMD="fsl_5.0-run-first-all"
+  fi
+else
+  FIRST_CMD="run-first-all"
+fi
+
+FIRST_ATLAS_PATH="$FSLDIR/data/first/models_336_bin/"
+
+if [ ! -d "$FIRST_ATLAS_PATH" ]; then
+  echo "Atlases required for FSL's FIRST program not installed, please run:"
+  echo "sudo apt-get install fsl-first-data"
+  return 0
+fi 
+
+
+EXPECTED_ARGS=2
+if [ $# -ne $EXPECTED_ARGS ]
+then
+  echo "Usage: act_anat_prepare {input image} {output image}"
+  return 0
+fi
+
+
+
+# Generate a random string, and use it to create a new temporary directory
+TEMP_DIR_PREFIX="act_anat_prepare_TEMP_"
+RANDOM_STRING=`tr -dc "[:alpha:]" < /dev/urandom | head -c 8`
+TEMP_DIR="$TEMP_DIR_PREFIX$RANDOM_STRING/"
+while [ -d $TEMP_DIR ]; do
+  RANDOM_STRING=`tr -dc "[:alpha:]" < /dev/urandom | head -c 8`
+  TEMP_DIR="$TEMP_DIR_PREFIX$RANDOM_STRING/"
+done
+
+
+SGM_STRUCTURES=("L_Accu" "R_Accu" "L_Caud" "R_Caud" "L_Pall" "R_Pall" "L_Puta" "R_Puta" "L_Thal" "R_Thal")
+
+
+mkdir $TEMP_DIR
+
+# Start by cropping the image and putting it in the correct format for FSL
+mrcrop $1 - -axis 2 64 255 -quiet | mrconvert - $TEMP_DIR/T1.nii -stride +0,+1,+2 -quiet
+cd $TEMP_DIR
+# BET
+$BET_CMD T1.nii T1_bet.nii -f 0.25 -R
+# FAST
+$FAST_CMD T1_bet.nii
+# FIRST
+mkdir FIRST/
+cd FIRST/
+# Produce a string of structure names to pass to FIRST
+declare -a sgm_cat=()
+for i in ${SGM_STRUCTURES[*]}; do
+  sgm_cat=${sgm_cat}${i}','
+done
+sgm_cat=${sgm_cat%','}
+$FIRST_CMD -s ${sgm_cat} -i ../T1.nii -o first > /dev/null 2>&1
+# Convert FIRST meshes to partial volume images
+mkdir pves/
+for i in ${SGM_STRUCTURES[*]}; do
+  mesh2pve first-${i}_first.vtk ../T1.nii pves/${i}.nii
+done
+mradd pves/* - -quiet | mrmath - 1.0 -min pves/all.nii -quiet
+# Combine
+cd ../
+mrmake4tt T1_bet_pve_* FIRST/pves/all.nii ../$2 -quiet
+# Don't leave a trace
+rm -f FIRST/pves/*.*
+rm -f FIRST/first.logs/*.*
+rmdir FIRST/*/
+rm -f FIRST/*.*
+rmdir FIRST/
+rm -f *.*
+cd ../
+rmdir $TEMP_DIR
+
+

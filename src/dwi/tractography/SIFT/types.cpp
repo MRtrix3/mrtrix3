@@ -1,7 +1,7 @@
 /*
-    Copyright 2008 Brain Research Institute, Melbourne, Australia
+    Copyright 2011 Brain Research Institute, Melbourne, Australia
 
-    Written by Robert E. Smith, 02/02/12.
+    Written by Robert Smith, 2011.
 
     This file is part of MRtrix.
 
@@ -18,33 +18,34 @@
     You should have received a copy of the GNU General Public License
     along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
 
-*/
+ */
 
-#ifndef __dwi_tractography_tractography_h__
-#define __dwi_tractography_tractography_h__
 
-#include "app.h"
-#include "point.h"
 
-#include "dwi/tractography/properties.h"
+#include "dwi/tractography/SIFT/types.h"
+
+
+
+
 
 namespace MR
 {
-  namespace App { class OptionGroup; }
-
   namespace DWI
   {
-
     namespace Tractography
     {
+      namespace SIFT
+      {
 
-      extern const App::OptionGroup TrackOption;
 
-      void load_streamline_properties (Properties&);
 
+        float Track_lobe_contribution::scale_to_storage = 0.0;
+        float Track_lobe_contribution::scale_from_storage = 0.0;
+
+
+      }
     }
   }
 }
 
-#endif
 

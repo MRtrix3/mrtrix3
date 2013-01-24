@@ -6,7 +6,6 @@ namespace MR
 {
   namespace DWI
   {
-
     namespace Tractography
     {
 
@@ -14,42 +13,34 @@ namespace MR
 
       const OptionGroup TrackOption = OptionGroup ("Streamlines tractography options")
 
-      + Option ("seed",
-            "specify the seed region of interest. This should be either the path "
-            "to a binary mask image, or a comma-separated list of 4 floating-point "
-            "values, specifying the [x,y,z] coordinates of the centre and radius "
-            "of a spherical ROI.")
-          .required()
-          .allow_multiple()
-          + Argument ("spec")
-
       + Option ("include",
-            "specify an inclusion region of interest, in the same format as the "
-            "seed region. Only tracks that enter all such inclusion ROI will be "
-            "produced.")
+            "specify an inclusion region of interest, as either a binary mask image, "
+            "or as a sphere using 4 comma-separared values (x,y,z,radius). Streamlines "
+            "must traverse ALL inclusion regions to be accepted.")
           .allow_multiple()
           + Argument ("spec")
 
       + Option ("exclude",
-            "specify an exclusion region of interest, in the same format as the "
-            "seed region. Only tracks that enter any such exclusion ROI will be "
-            "discarded.")
+            "specify an exclusion region of interest, as either a binary mask image, "
+            "or as a sphere using 4 comma-separared values (x,y,z,radius). Streamlines "
+            "that enter ANY exclude region will be discarded.")
           .allow_multiple()
           + Argument ("spec")
 
       + Option ("mask",
-            "specify a mask region of interest, in the same format as the seed "
-            "region. Tracks will be terminated when they leave any such ROI.")
+            "specify an inclusion region of interest, as either a binary mask image, "
+            "or as a sphere using 4 comma-separared values (x,y,z,radius). If defined, "
+            "streamlines will be terminated as soon as they no longer lie within a mask.")
           .allow_multiple()
           + Argument ("spec")
 
       + Option ("grad",
             "specify the diffusion encoding scheme (may be required for FACT "
-            "and RSFACT, ignored otherwise)")
+            "and WBFACT, ignored otherwise)")
           + Argument ("file")
 
       + Option ("step",
-            "set the step size of the algorithm in mm (default for iFOD1: 0.1 x voxelsize; for iFOD2: 0.5 x voxelsize).")
+            "set the step size of the algorithm in mm (default is 0.1 x voxelsize; for iFOD2: 0.5 x voxelsize).")
           + Argument ("size").type_float (0.0, 0.0, INFINITY)
 
       + Option ("angle",
@@ -59,9 +50,8 @@ namespace MR
       + Option ("number",
             "set the desired number of tracks. The program will continue to "
             "generate tracks until this number of tracks have been selected "
-            "and written to the output file (default is 100 for *_STREAM methods, "
-            "1000 for *_PROB methods).")
-          + Argument ("tracks").type_integer (1, 1, std::numeric_limits<int>::max())
+            "and written to the output file.")
+          + Argument ("tracks").type_integer (0, 0, std::numeric_limits<int>::max())
 
       + Option ("maxnum",
             "set the maximum number of tracks to generate. The program will "
@@ -114,7 +104,8 @@ namespace MR
             "(iFOD2) method (Default: 4).")
           + Argument ("number").type_integer (2, 4, 100)
 
-      + Option ("rk4", "use 4th-order Runge-Kutta integration");
+      + Option ("rk4", "use 4th-order Runge-Kutta integration "
+                       "(slower, but eliminates curvature overshoot in 1st-order deterministic methods)");
 
 
 
@@ -123,11 +114,7 @@ namespace MR
 
         using namespace MR::App;
 
-        Options opt = get_options ("seed");
-        for (size_t i = 0; i < opt.size(); ++i)
-          properties.seed.add (ROI (opt[i][0]));
-
-        opt = get_options ("include");
+        Options opt = get_options ("include");
         for (size_t i = 0; i < opt.size(); ++i)
           properties.include.add (ROI (opt[i][0]));
 

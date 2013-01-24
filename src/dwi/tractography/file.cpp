@@ -28,6 +28,7 @@ namespace MR {
   namespace DWI {
     namespace Tractography {
 
+
       void __ReaderBase__::open (const std::string& file, Properties& properties)
       {
         properties.clear();
