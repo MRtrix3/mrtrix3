@@ -71,7 +71,7 @@ namespace MR
             if (lod != lod_computed) recompute_mesh = true;
             lod_computed = lod;
           }
-          void draw (bool use_normals, const float* colour = NULL);
+          void draw (float scale, bool use_normals, const float* colour = NULL);
 
           const Math::Vector<float>& get_values () const { return SH; }
           int get_LOD () const { return lod_computed; }
@@ -177,8 +177,6 @@ namespace MR
           int lmax_computed, lod_computed;
           bool hide_neg_lobes, recompute_amplitudes, recompute_mesh;
           //void   precompute_row (GLfloat row);
-          GL::Shader::Vertex vertex_shader;
-          GL::Shader::Fragment fragment_shader;
           GL::Shader::Program shader_program;
       };
 

@@ -52,70 +52,71 @@ namespace
 namespace
 {
   const char* vertex_shader_source =
-    "uniform int color_by_direction, use_normals, reverse;"
-    "varying vec4 color, ambient;"
-    "varying vec3 normal, lightDir, halfVector;"
-    "varying float amplitude;"
-    "void main () {"
-    "  vec4 vertex = gl_Vertex;"
-    "  normal = gl_Normal;"
-    "  amplitude = normal.x; "
-    "  if (use_normals != 0) {"
-    "    bool atpole = ( vertex.x == 0.0 && vertex.y == 0.0 ); "
-    "    float az = atpole ? 0.0 : atan (vertex.y, vertex.x); "
-    "    float caz = cos (az), saz = sin (az), cel = vertex.z, sel = sqrt (1.0 - cel*cel); "
-    "    vec3 d1; "
-    "    if (atpole) "
-    "      d1 = vec3 (-normal.x*saz, normal.x*caz, normal.z); "
-    "    else "
-    "      d1 = vec3 (normal.z*caz*sel - normal.x*sel*saz, normal.z*saz*sel + normal.x*sel*caz, normal.z*cel); "
-    "    vec3 d2 = vec3 (-normal.y*caz*sel - normal.x*caz*cel, -normal.y*saz*sel - normal.x*saz*cel, -normal.y*cel + normal.x*sel); "
-    "    normal = cross (d1, d2); "
-    "    if (reverse != 0) "
-    "      normal = -normal; "
-    "    normal = normalize (gl_NormalMatrix * normal);"
-    "    lightDir = normalize (vec3 (gl_LightSource[0].position));"
-    "    halfVector = normalize (gl_LightSource[0].halfVector.xyz);"
-    "    ambient = gl_LightSource[0].ambient + gl_LightModel.ambient;"
-    "  }"
-    "  if (color_by_direction != 0) { color.rgb = abs (vertex.xyz); color.a = 1.0; }"
-    "  else { color = gl_Color; }"
-    "  vertex.xyz *= amplitude; "
-    "  if (reverse != 0) "
-    "    vertex.xyz = -vertex.xyz; "
-    "  gl_Position = gl_ModelViewProjectionMatrix * vertex;"
-    "}";
+    "uniform int color_by_direction, use_normals, reverse;\n"
+    "uniform float scale;\n"
+    "varying vec4 color, ambient;\n"
+    "varying vec3 normal, lightDir, halfVector;\n"
+    "varying float amplitude;\n"
+    "void main () {\n"
+    "  vec4 vertex = gl_Vertex;\n"
+    "  normal = gl_Normal;\n"
+    "  amplitude = normal.x;\n"
+    "  if (use_normals != 0) {\n"
+    "    bool atpole = ( vertex.x == 0.0 && vertex.y == 0.0 );\n"
+    "    float az = atpole ? 0.0 : atan (vertex.y, vertex.x);\n"
+    "    float caz = cos (az), saz = sin (az), cel = vertex.z, sel = sqrt (1.0 - cel*cel);\n"
+    "    vec3 d1;\n"
+    "    if (atpole)\n"
+    "      d1 = vec3 (-normal.x*saz, normal.x*caz, normal.z);\n"
+    "    else\n"
+    "      d1 = vec3 (normal.z*caz*sel - normal.x*sel*saz, normal.z*saz*sel + normal.x*sel*caz, normal.z*cel);\n"
+    "    vec3 d2 = vec3 (-normal.y*caz*sel - normal.x*caz*cel, -normal.y*saz*sel - normal.x*saz*cel, -normal.y*cel + normal.x*sel);\n"
+    "    normal = cross (d1, d2);\n"
+    "    if (reverse != 0)\n"
+    "      normal = -normal;\n"
+    "    normal = normalize (gl_NormalMatrix * normal);\n"
+    "    lightDir = normalize (vec3 (gl_LightSource[0].position));\n"
+    "    halfVector = normalize (gl_LightSource[0].halfVector.xyz);\n"
+    "    ambient = gl_LightSource[0].ambient + gl_LightModel.ambient;\n"
+    "  }\n"
+    "  if (color_by_direction != 0) { color.rgb = abs (vertex.xyz); color.a = 1.0; }\n"
+    "  else { color = gl_Color; }\n"
+    "  vertex.xyz *= amplitude * scale;\n"
+    "  if (reverse != 0)\n"
+    "    vertex.xyz = -vertex.xyz;\n"
+    "  gl_Position = gl_ModelViewProjectionMatrix * vertex;\n"
+    "}\n";
 
 
   const char* fragment_shader_source =
-    "uniform int use_normals, hide_neg_lobes;"
-    "varying vec4 color, diffuse, ambient;"
-    "varying vec3 normal, lightDir, halfVector;"
-    "varying float amplitude;"
-    "void main() {"
-    "  vec4 frag_color, actual_color;"
-    "  vec3 n, halfV;"
-    "  float NdotL, NdotHV;"
-    "  if (amplitude < 0.0) {"
-    "    if (hide_neg_lobes != 0) discard;"
-    "    actual_color = vec4(1.0,1.0,1.0,1.0);"
-    "  }"
-    "  else actual_color = color;"
-    "  n = normalize (normal);"
-    "  if (use_normals != 0) {"
-    "    if (amplitude < 0.0) n = -n;"
-    "    NdotL = dot (n,lightDir);"
-    "    frag_color = actual_color * ambient;"
-    "    if (NdotL > 0.0) {"
-    "      frag_color += gl_LightSource[0].diffuse * NdotL * actual_color;"
-    "      halfV = normalize(halfVector);"
-    "      NdotHV = max(dot(n,halfV),0.0);"
-    "      frag_color += gl_FrontMaterial.specular * gl_LightSource[0].specular * pow (NdotHV, gl_FrontMaterial.shininess);"
-    "    }"
-    "  }"
-    "  else frag_color = actual_color;"
-    "  gl_FragColor = frag_color;"
-    "}";
+    "uniform int use_normals, hide_neg_lobes;\n"
+    "varying vec4 color, diffuse, ambient;\n"
+    "varying vec3 normal, lightDir, halfVector;\n"
+    "varying float amplitude;\n"
+    "void main() {\n"
+    "  vec4 frag_color, actual_color;\n"
+    "  vec3 n, halfV;\n"
+    "  float NdotL, NdotHV;\n"
+    "  if (amplitude < 0.0) {\n"
+    "    if (hide_neg_lobes != 0) discard;\n"
+    "    actual_color = vec4(1.0,1.0,1.0,1.0);\n"
+    "  }\n"
+    "  else actual_color = color;\n"
+    "  n = normalize (normal);\n"
+    "  if (use_normals != 0) {\n"
+    "    if (amplitude < 0.0) n = -n;\n"
+    "    NdotL = dot (n,lightDir);\n"
+    "    frag_color = actual_color * ambient;\n"
+    "    if (NdotL > 0.0) {\n"
+    "      frag_color += gl_LightSource[0].diffuse * NdotL * actual_color;\n"
+    "      halfV = normalize(halfVector);\n"
+    "      NdotHV = max(dot(n,halfV),0.0);\n"
+    "      frag_color += gl_FrontMaterial.specular * gl_LightSource[0].specular * pow (NdotHV, gl_FrontMaterial.shininess);\n"
+    "    }\n"
+    "  }\n"
+    "  else frag_color = actual_color;\n"
+    "  gl_FragColor = frag_color;\n"
+    "}\n";
 
 }
 
@@ -129,8 +130,8 @@ namespace MR
 
       void Renderer::init ()
       {
-        vertex_shader.compile (vertex_shader_source);
-        fragment_shader.compile (fragment_shader_source);
+        GL::Shader::Vertex vertex_shader (vertex_shader_source);
+        GL::Shader::Fragment fragment_shader (fragment_shader_source);
         shader_program.attach (vertex_shader);
         shader_program.attach (fragment_shader);
         shader_program.link();
@@ -143,7 +144,7 @@ namespace MR
 
 
 
-      void Renderer::draw (bool use_normals, const float* colour)
+      void Renderer::draw (float scale, bool use_normals, const float* colour)
       {
         if (recompute_mesh) 
           compute_mesh();
@@ -162,6 +163,7 @@ namespace MR
           glColor3fv (colour);
 
         shader_program.start();
+        glUniform1f (glGetUniformLocation (shader_program, "scale"), scale);
         shader_program.get_uniform ("color_by_direction") = colour ? 0 : 1;
         shader_program.get_uniform ("use_normals") = use_normals ? 1 : 0;
         shader_program.get_uniform ("hide_neg_lobes") = hide_neg_lobes ? 1 : 0;

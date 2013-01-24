@@ -37,7 +37,7 @@ namespace MR
 
         Base::Base (Window& parent, int flags) :
           window (parent),
-          projection (window.glarea, *window.font),
+          projection (window.glarea, window.font),
           features (flags),
           painting (false) { }
 
@@ -51,11 +51,10 @@ namespace MR
         {
           painting = true;
 
-          glViewport (0, 0, glarea()->width(), glarea()->height());
+          projection.set_viewport (0, 0, glarea()->width(), glarea()->height());
 
           glClear (GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
           if (!image()) {
-            projection.update();
             projection.setup_render_text();
             projection.render_text (10, 10, "No image loaded");
             projection.done_render_text();
@@ -66,7 +65,6 @@ namespace MR
             paint();
 
             glDisable (GL_MULTISAMPLE);
-            projection.update();
             glColor4f (1.0, 1.0, 0.0, 1.0);
 
             projection.setup_render_text();
@@ -136,31 +134,33 @@ done_painting:
 
 
 
-        void Base::adjust_projection_matrix (float* M, const float* Q, int proj) const
+        GL::mat4 Base::adjust_projection_matrix (const GL::mat4& Q, int proj) const
         {
-          M[3] = M[7] = M[11] = M[12] = M[13] = M[14] = 0.0;
-          M[15] = 1.0;
+          GL::mat4 M;
+          M(3,0) = M(3,1) = M(3,2) = M(0,3) = M(1,3) = M(2,3) = 0.0f;
+          M(3,3) = 1.0f;
           if (proj == 0) { // sagittal
             for (size_t n = 0; n < 3; n++) {
-              M[4*n]   = -Q[4*n+1];  // x: -y
-              M[4*n+1] =  Q[4*n+2];  // y: z
-              M[4*n+2] = -Q[4*n];    // z: -x
+              M(0,n) = -Q(1,n);  // x: -y
+              M(1,n) =  Q(2,n);  // y: z
+              M(2,n) = -Q(0,n);  // z: -x
             }
           }
           else if (proj == 1) { // coronal
             for (size_t n = 0; n < 3; n++) {
-              M[4*n]   = -Q[4*n];    // x: -x
-              M[4*n+1] =  Q[4*n+2];  // y: z
-              M[4*n+2] =  Q[4*n+1];  // z: y
+              M(0,n) = -Q(0,n);  // x: -x
+              M(1,n) =  Q(2,n);  // y: z
+              M(2,n) =  Q(1,n);  // z: y
             }
           }
           else { // axial
             for (size_t n = 0; n < 3; n++) {
-              M[4*n]   = -Q[4*n];    // x: -x
-              M[4*n+1] =  Q[4*n+1];  // y: y
-              M[4*n+2] = -Q[4*n+2];  // z: -z
+              M(0,n) = -Q(0,n);  // x: -x
+              M(1,n) =  Q(1,n);  // y: y
+              M(2,n) = -Q(2,n);  // z: -z
             }
           }
+          return M;
         }
 
       }

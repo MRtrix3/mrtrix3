@@ -71,14 +71,7 @@ namespace MR
           shader.start();
 
           GLuint MatrixID = shader.get_uniform ("MVP");
-          const Math::Matrix<float>& M (transform.get_MVP());
-          GLfloat MVP[] = {
-              M(0,0), M(1,0), M(2,0), M(3,0),
-              M(0,1), M(1,1), M(2,1), M(3,1),
-              M(0,2), M(1,2), M(2,2), M(3,2),
-              M(0,3), M(1,3), M(2,3), M(3,3)
-          };
-          glUniformMatrix4fv (MatrixID, 1, GL_FALSE, MVP);
+          glUniformMatrix4fv (MatrixID, 1, GL_FALSE, transform.modelview_projection());
 
           if (tool.do_crop_to_slab()) {
             GLuint screen_normalID = shader.get_uniform ("screen_normal");

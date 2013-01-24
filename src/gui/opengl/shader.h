@@ -63,7 +63,7 @@ namespace MR
               glCompileShader (index_);
               GLint status;
               glGetShaderiv (index_, GL_COMPILE_STATUS, &status);
-              if (status == 0) {
+              if (status == GL_FALSE) {
                 debug();
                 throw Exception (std::string ("error compiling ") +
                                  (TYPE == GL_VERTEX_SHADER ? "vertex shader" : "fragment shader"));
@@ -136,7 +136,7 @@ namespace MR
               glLinkProgram (index_);
               GLint status;
               glGetProgramiv (index_, GL_LINK_STATUS, &status);
-              if (status == 0) {
+              if (status == GL_FALSE) {
                 debug();
                 throw Exception (std::string ("error linking shader program"));
               }

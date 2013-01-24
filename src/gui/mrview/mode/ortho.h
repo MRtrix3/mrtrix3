@@ -54,7 +54,7 @@ namespace MR
             virtual void panthrough_event ();
 
           protected:
-            void draw_plane (int axis, float fovx, float fovy);
+            void draw_plane (int axis, int w, int h, float fovx, float fovy);
 
             std::vector<Projection> projections;
             int current_plane;

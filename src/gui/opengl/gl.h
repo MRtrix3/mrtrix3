@@ -24,8 +24,8 @@
 #define __gui_opengl_gl_h__
 
 #include <QtGui>
+
 #include "glee.h"
-//#include <QtOpenGL>
 #include "mrtrix.h"
 
 

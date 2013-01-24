@@ -44,12 +44,6 @@ namespace MR
           if (!focus()) reset_view();
           if (!target()) set_target (focus());
 
-          // set up modelview matrix:
-          const float* Q = image()->interp.image2scanner_matrix();
-          float M[16];
-
-          adjust_projection_matrix (M, Q);
-
           // image slice:
           Point<> voxel (image()->interp.scanner2voxel (focus()));
           int slice = Math::round (voxel[plane()]);
@@ -65,16 +59,9 @@ namespace MR
           float depth = image()->interp.dim (plane()) * image()->interp.vox (plane());
 
           // set up projection & modelview matrices:
-          glMatrixMode (GL_PROJECTION);
-          glLoadIdentity ();
-          glOrtho (-w*fov, w*fov, -h*fov, h*fov, -depth, depth);
-
-          glMatrixMode (GL_MODELVIEW);
-          glLoadIdentity ();
-          glMultMatrixf (M);
-          glTranslatef (-F[0], -F[1], -F[2]);
-
-          projection.update();
+          GL::mat4 P = GL::ortho (-w*fov, w*fov, -h*fov, h*fov, -depth, depth);
+          GL::mat4 MV = adjust_projection_matrix (image()->interp.image2scanner_matrix()) * GL::translate (-F[0], -F[1], -F[2]);
+          projection.set (MV, P);
 
           // set up OpenGL environment:
           glDisable (GL_BLEND);

@@ -1,17 +1,14 @@
-#ifndef __gui_mrview_transform_h__
-#define __gui_mrview_transform_h__
+#ifndef __gui_projection_h__
+#define __gui_projection_h__
 
 #include "gui/opengl/gl.h"
 #include "gui/opengl/font.h"
+#include "gui/opengl/transformation.h"
 #include "point.h"
 #include "math/matrix.h"
 #include "math/LU.h"
 
 #include <QGLWidget>
-
-#ifdef USE_OPENGL3
-#include <glm/gtc/matrix_transform.hpp>
-#endif
 
 namespace MR
 {
@@ -24,35 +21,37 @@ namespace MR
     const int RightEdge = 0x00000008;
 
 
-
-
     class Projection
     {
       public:
         Projection (QGLWidget* parent, const GL::Font& font) : 
           glarea (parent), 
-          font (font),
-          M (4,4), 
-          invM (4,4) {
-            M.identity();
-            invM.identity();
-            viewport[0] = viewport[1] = viewport[2] = viewport[3] = 0;
-          }
+          font (font) { }
+
+        void set_viewport (int x, int y, int w, int h) {
+          viewport[0] = x;
+          viewport[1] = y;
+          viewport[2] = w;
+          viewport[3] = h;
+          glViewport (x, y, w, h);
+        }
 
 
-        void update () {
-          float modelview[16];
-          float projection[16];
 
-          glGetIntegerv (GL_VIEWPORT, viewport);
-          glGetFloatv (GL_MODELVIEW_MATRIX, modelview);
-          glGetFloatv (GL_PROJECTION_MATRIX, projection);
+        void set (const GL::mat4& modelview, const GL::mat4& projection) {
+          MV = modelview;
+          P = projection;
+          MVP = P * MV;
 
-          Math::Matrix<float> MV (modelview, 4, 4);
-          Math::Matrix<float> P (projection, 4, 4);
+          iMV = GL::inv (MV);
+          iP = GL::inv (P);
+          iMVP = iMV * iP;
 
-          Math::mult (M, 1.0f, CblasTrans, P, CblasTrans, MV);
-          Math::LU::inv (invM, M);
+          // TODO: remove these lines for OpenGL3
+          glMatrixMode (GL_PROJECTION);
+          glLoadMatrixf (P);
+          glMatrixMode (GL_MODELVIEW);
+          glLoadMatrixf (MV);
         }
 
         GLint x_position () const {
@@ -72,42 +71,42 @@ namespace MR
         }
 
         float depth_of (const Point<>& x) const {
-          float d = M(2,0)*x[0] + M(2,1)*x[1] + M(2,2)*x[2] + M(2,3);
-          if (M(3,2)) d /= M(3,0)*x[0] + M(3,1)*x[1] + M(3,2)*x[2] + M(3,3);
+          float d = MVP(2,0)*x[0] + MVP(2,1)*x[1] + MVP(2,2)*x[2] + MVP(2,3);
+          if (MVP(3,2)) d /= MVP(3,0)*x[0] + MVP(3,1)*x[1] + MVP(3,2)*x[2] + MVP(3,3);
           return d;
         }
 
         Point<> model_to_screen (const Point<>& x) const {
           Point<> S (
-              M(0,0)*x[0] + M(0,1)*x[1] + M(0,2)*x[2] + M(0,3),
-              M(1,0)*x[0] + M(1,1)*x[1] + M(1,2)*x[2] + M(1,3),
-              M(2,0)*x[0] + M(2,1)*x[1] + M(2,2)*x[2] + M(2,3));
-          if (M(3,2))
-            S /= M(3,0)*x[0] + M(3,1)*x[1] + M(3,2)*x[2] + M(3,3);
-          S[0] = viewport[0] + 0.5*viewport[2]*(1.0+S[0]); 
-          S[1] = viewport[1] + 0.5*viewport[3]*(1.0+S[1]); 
+              MVP(0,0)*x[0] + MVP(0,1)*x[1] + MVP(0,2)*x[2] + MVP(0,3),
+              MVP(1,0)*x[0] + MVP(1,1)*x[1] + MVP(1,2)*x[2] + MVP(1,3),
+              MVP(2,0)*x[0] + MVP(2,1)*x[1] + MVP(2,2)*x[2] + MVP(2,3));
+          if (MVP(3,2))
+            S /= MVP(3,0)*x[0] + MVP(3,1)*x[1] + MVP(3,2)*x[2] + MVP(3,3);
+          S[0] = viewport[0] + 0.5f*viewport[2]*(1.0f+S[0]); 
+          S[1] = viewport[1] + 0.5f*viewport[3]*(1.0f+S[1]); 
           return S;
         }
 
         Point<> model_to_screen_direction (const Point<>& dir) const {
           Point<> S (
-              M(0,0)*dir[0] + M(0,1)*dir[1] + M(0,2)*dir[2],
-              M(1,0)*dir[0] + M(1,1)*dir[1] + M(1,2)*dir[2],
-              M(2,0)*dir[0] + M(2,1)*dir[1] + M(2,2)*dir[2]);
-          S[0] *= 0.5*viewport[2];
-          S[1] *= 0.5*viewport[3];
+              MVP(0,0)*dir[0] + MVP(0,1)*dir[1] + MVP(0,2)*dir[2],
+              MVP(1,0)*dir[0] + MVP(1,1)*dir[1] + MVP(1,2)*dir[2],
+              MVP(2,0)*dir[0] + MVP(2,1)*dir[1] + MVP(2,2)*dir[2]);
+          S[0] *= 0.5f*viewport[2];
+          S[1] *= 0.5f*viewport[3];
           return S;
         }
 
         Point<> screen_to_model (float x, float y, float depth) const {
-          x = 2.0*(x-viewport[0])/viewport[2] - 1.0;
-          y = 2.0*(y-viewport[1])/viewport[3] - 1.0;
+          x = 2.0f*(x-viewport[0])/viewport[2] - 1.0f;
+          y = 2.0f*(y-viewport[1])/viewport[3] - 1.0f;
           Point<> S (
-              invM(0,0)*x + invM(0,1)*y + invM(0,2)*depth + invM(0,3),
-              invM(1,0)*x + invM(1,1)*y + invM(1,2)*depth + invM(1,3),
-              invM(2,0)*x + invM(2,1)*y + invM(2,2)*depth + invM(2,3));
-          if (M(3,2)) 
-            S /= invM(3,0)*x + invM(3,1)*y + invM(3,2)*depth + invM(3,3);
+              iMVP(0,0)*x + iMVP(0,1)*y + iMVP(0,2)*depth + iMVP(0,3),
+              iMVP(1,0)*x + iMVP(1,1)*y + iMVP(1,2)*depth + iMVP(1,3),
+              iMVP(2,0)*x + iMVP(2,1)*y + iMVP(2,2)*depth + iMVP(2,3));
+          if (MVP(3,2)) 
+            S /= iMVP(3,0)*x + iMVP(3,1)*y + iMVP(3,2)*depth + iMVP(3,3);
           return S;
         }
 
@@ -132,15 +131,15 @@ namespace MR
         }
 
         Point<> screen_normal () const {
-          return Point<> (invM(0,2), invM(1,2), invM(2,2)).normalise();
+          return Point<> (iMVP(0,2), iMVP(1,2), iMVP(2,2)).normalise();
         }
 
         Point<> screen_to_model_direction (float x, float y, float depth) const {
-          x *= 2.0/viewport[2];
-          y *= 2.0/viewport[3];
-          Point<> S (invM(0,0)*x + invM(0,1)*y, invM(1,0)*x + invM(1,1)*y, invM(2,0)*x + invM(2,1)*y);
-          if (M(3,2)) 
-            S /= invM(3,2)*depth + invM(3,3);
+          x *= 2.0f/viewport[2];
+          y *= 2.0f/viewport[3];
+          Point<> S (iMVP(0,0)*x + iMVP(0,1)*y, iMVP(1,0)*x + iMVP(1,1)*y, iMVP(2,0)*x + iMVP(2,1)*y);
+          if (MVP(3,2)) 
+            S /= iMVP(3,2)*depth + iMVP(3,3);
           return S;
         }
 
@@ -202,14 +201,17 @@ namespace MR
           render_text (x, y, text);
         }
 
-        const Math::Matrix<float>& get_MVP () const {
-          return M;
-        }
+        const GL::mat4& modelview_projection () const { return MVP; }
+        const GL::mat4& modelview_projection_inverse () const { return iMVP; }
+        const GL::mat4& modelview () const { return MV; }
+        const GL::mat4& modelview_inverse () const { return iMV; }
+        const GL::mat4& projection () const { return P; }
+        const GL::mat4& projection_inverse () const { return iP; }
 
       protected:
         QGLWidget* glarea;
         const GL::Font& font;
-        Math::Matrix<float> M, invM;
+        GL::mat4 MV, iMV, P, iP, MVP, iMVP;
         GLint viewport[4];
     };
 

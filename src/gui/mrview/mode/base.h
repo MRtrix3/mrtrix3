@@ -24,6 +24,7 @@
 #define __gui_mrview_mode_base_h__
 
 #include "gui/opengl/gl.h"
+#include "gui/opengl/transformation.h"
 
 #include <QAction>
 #include <QCursor>
@@ -169,9 +170,9 @@ namespace MR
 
           protected:
             void register_extra_controls (Tool::Dock* controls);
-            void adjust_projection_matrix (float* M, const float* Q, int proj) const;
-            void adjust_projection_matrix (float* M, const float* Q) const { 
-              adjust_projection_matrix (M, Q, plane()); 
+            GL::mat4 adjust_projection_matrix (const GL::mat4& Q, int proj) const;
+            GL::mat4 adjust_projection_matrix (const GL::mat4& Q) const { 
+              return adjust_projection_matrix (Q, plane()); 
             }
 
             bool painting;

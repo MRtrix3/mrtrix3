@@ -68,21 +68,11 @@ namespace MR
           if (!focus()) reset_view();
           if (!target()) set_target (focus());
 
-          // camera target:
-          //Point<> F = target();
-
           // info for projection:
           int w = glarea()->width(), h = glarea()->height();
           float fov = FOV() / (float) (w+h);
           float depth = 100.0;
 
-          // set up projection & modelview matrices:
-          glMatrixMode (GL_PROJECTION);
-          glLoadIdentity ();
-          glOrtho (-w*fov, w*fov, -h*fov, h*fov, -depth, depth);
-
-          glMatrixMode (GL_MODELVIEW);
-          glLoadIdentity ();
 
           Math::Versor<float> Q = orientation();
           if (!Q) {
@@ -90,17 +80,10 @@ namespace MR
             set_orientation (Q);
           }
 
-          float T[16];
-          Math::Matrix<float> M (T, 3, 3, 4);
-          Q.to_matrix (M);
-          T[3] = T[7] = T[11] = T[12] = T[13] = T[14] = 0.0;
-          T[15] = 1.0;
-          float S[16];
-          adjust_projection_matrix (S, T);
-          glMultMatrixf (S);
-
-          glTranslatef (-target() [0], -target() [1], -target() [2]);
-          projection.update();
+          // set up projection & modelview matrices:
+          GL::mat4 P = GL::ortho (-w*fov, w*fov, -h*fov, h*fov, -depth, depth);
+          GL::mat4 MV = adjust_projection_matrix (Q) * GL::translate (-target()[0], -target()[1], -target()[2]);
+          projection.set (MV, P);
 
           // set up OpenGL environment:
           glDisable (GL_BLEND);

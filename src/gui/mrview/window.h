@@ -226,7 +226,7 @@ namespace MR
           GLArea* glarea;
           Ptr<Mode::Base> mode;
           GL::Lighting* lighting_;
-          Ptr<GL::Font> font;
+          GL::Font font;
 
           const Qt::KeyboardModifiers FocusModifier, MoveModifier, RotateModifier;
           MouseAction mouse_action;

@@ -15,7 +15,7 @@ namespace MR
       namespace {
 
         const char* vertex_shader_source = 
-          "#version 330 core \n "
+          "#version 330 core \n"
           "layout(location = 0) in vec2 pos;\n"
           "layout(location = 1) in vec2 font_pos;\n"
           "uniform float scale_x;\n"
@@ -43,10 +43,7 @@ namespace MR
 
 
 
-      Font::Font (const QFont& font) :
-        metric (font),
-        tex_ID (0),
-        vertex_array_object_ID (0)
+      void Font::initialise () 
       {
         const int first_char = ' ', last_char = '~', default_char = '?';
         INFO ("loading font into OpenGL texture...");
@@ -183,6 +180,11 @@ namespace MR
 
         void Font::render (const std::string& text, int x, int y) const
         {
+          assert (tex_ID);
+          assert (vertex_buffer_ID[0]);
+          assert (vertex_buffer_ID[1]);
+          assert (vertex_array_object_ID);
+
           GLfloat screen_pos [8*text.size()];
           GLfloat tex_pos [8*text.size()];
 

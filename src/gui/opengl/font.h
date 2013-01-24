@@ -37,12 +37,19 @@ namespace MR
 
       class Font {
         public:
-          Font (const QFont& font);
+          Font (const QFont& font) :
+            metric (font),
+            font (font),
+            tex_ID (0),
+            vertex_array_object_ID (0) { } 
           ~Font ();
+
+          void initialise ();
 
           const QFontMetrics metric;
 
         void setupGL (int width, int height, float red, float green, float blue) const {
+          assert (program);
           glDisable (GL_DEPTH_TEST);
           glDepthMask (GL_FALSE);
           glEnable (GL_BLEND);
@@ -65,6 +72,7 @@ namespace MR
         void render (const std::string& text, int x, int y) const;
 
         protected:
+          const QFont& font;
           GLuint tex_ID, vertex_buffer_ID[2], vertex_array_object_ID;
           GL::Shader::Program program;
           int font_width[256], font_height;

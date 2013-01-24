@@ -101,7 +101,6 @@ namespace MR
       }
 
       void Window::GLArea::initializeGL () {
-        main.font = new GL::Font (font());
         main.initGL();
       }
       void Window::GLArea::paintGL () {
@@ -128,6 +127,7 @@ namespace MR
       Window::Window() :
         glarea (new GLArea (*this)),
         mode (NULL),
+        font (glarea->font()),
         FocusModifier (Qt::MetaModifier),
         MoveModifier (Qt::ControlModifier),
         RotateModifier (Qt::ShiftModifier),
@@ -1008,6 +1008,8 @@ namespace MR
       inline void Window::initGL ()
       {
         GL::init ();
+
+        font.initialise();
 
         glClearColor (0.0, 0.0, 0.0, 0.0);
         glEnable (GL_DEPTH_TEST);

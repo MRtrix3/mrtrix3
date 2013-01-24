@@ -58,23 +58,17 @@ namespace MR
           float fovx = w * fov;
           float fovy = h * fov;
 
-          glViewport (w, h, w, h);
-          draw_plane (0, fovx, fovy);
+          draw_plane (0, w, h, fovx, fovy);
+          draw_plane (1, w, h, fovx, fovy);
+          draw_plane (2, w, h, fovx, fovy);
 
-          glViewport (0, h, w, h);
-          draw_plane (1, fovx, fovy);
+          projection.set_viewport (0, 0, glarea()->width(), glarea()->height());
 
-          glViewport (0, 0, w, h);
-          draw_plane (2, fovx, fovy);
+          GL::mat4 MV = GL::identity();
+          GL::mat4 P = GL::ortho (0, glarea()->width(), 0, glarea()->height(), -1.0, 1.0);
+          projection.set (MV, P);
 
-          glViewport (0, 0, glarea()->width(), glarea()->height());
-          glMatrixMode (GL_PROJECTION);
-          glLoadIdentity ();
-          glOrtho (0, glarea()->width(), 0, glarea()->height(), -1.0, 1.0);
-          glMatrixMode (GL_MODELVIEW);
-          glLoadIdentity ();
           glDisable (GL_DEPTH_TEST);
-
           glColor4f (0.1, 0.1, 0.1, 1.0);
           glLineWidth (2.0);
 
@@ -92,14 +86,8 @@ namespace MR
 
 
 
-        void Ortho::draw_plane (int axis, float fovx, float fovy)
+        void Ortho::draw_plane (int axis, int w, int h, float fovx, float fovy)
         {
-          // set up modelview matrix:
-          const float* Q = image()->interp.image2scanner_matrix();
-          float M[16];
-
-          adjust_projection_matrix (M, Q, axis);
-
           // image slice:
           Point<> voxel (image()->interp.scanner2voxel (focus()));
           int slice = Math::round (voxel[axis]);
@@ -112,17 +100,16 @@ namespace MR
           // info for projection:
           float depth = image()->interp.dim (axis) * image()->interp.vox (axis);
 
-          // set up projection & modelview matrices:
-          glMatrixMode (GL_PROJECTION);
-          glLoadIdentity ();
-          glOrtho (-fovx, fovx, -fovy, fovy, -depth, depth);
+          switch (axis) {
+            case 0: projections[axis].set_viewport (w, h, w, h); break;
+            case 1: projections[axis].set_viewport (0, h, w, h); break;
+            case 2: projections[axis].set_viewport (0, 0, w, h); break;
+          }
 
-          glMatrixMode (GL_MODELVIEW);
-          glLoadIdentity ();
-          glMultMatrixf (M);
-          glTranslatef (-F[0], -F[1], -F[2]);
-
-          projections[axis].update();
+          // set up modelview and projection matrices:
+          GL::mat4 MV = adjust_projection_matrix (image()->interp.image2scanner_matrix(), axis) * GL::translate (-F[0], -F[1], -F[2]);
+          GL::mat4 P = GL::ortho (-fovx, fovx, -fovy, fovy, -depth, depth);
+          projections[axis].set (MV, P);
 
           // set up OpenGL environment:
           glDisable (GL_BLEND);

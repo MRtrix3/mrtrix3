@@ -94,7 +94,7 @@ namespace MR
 
       void RenderFrame::resizeGL (int w, int h)
       {
-        glViewport (0, 0, w, h);
+        projection.set_viewport (0, 0, w, h);
       }
 
 
@@ -103,52 +103,43 @@ namespace MR
       {
         glClear (GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        float dist (1.0 / (distance * view_angle * D2R));
-        float near = (dist-3.0 > 0.001 ? dist-3.0 : 0.001);
-        float horizontal = 2.0 * near * tan (0.5*view_angle*D2R) * float (width()) / float (width()+height());
-        float vertical = 2.0 * near * tan (0.5*view_angle*D2R) * float (height()) / float (width()+height());
+        float dist (1.0f / (distance * view_angle * D2R));
+        float near = (dist-3.0f > 0.001f ? dist-3.0f : 0.001f);
+        float horizontal = 2.0f * near * tan (0.5f*view_angle*D2R) * float (width()) / float (width()+height());
+        float vertical = 2.0f * near * tan (0.5f*view_angle*D2R) * float (height()) / float (width()+height());
 
-        glMatrixMode (GL_PROJECTION);
-        glLoadIdentity ();
+        GL::mat4 P;
         if (OS > 0) {
-          float incx = 2.0*horizontal/float (OS);
-          float incy = 2.0*vertical/float (OS);
-          glFrustum (-horizontal+OS_x*incx, -horizontal+ (1+OS_x) *incx, -vertical+OS_y*incy, -vertical+ (1+OS_y) *incy, near, dist+3.0);
+          float incx = 2.0f * horizontal / float (OS);
+          float incy = 2.0f * vertical / float (OS);
+          P = GL::frustum (-horizontal+OS_x*incx, -horizontal+ (1+OS_x) *incx, -vertical+OS_y*incy, -vertical+ (1+OS_y) *incy, near, dist+3.0);
         }
-        else glFrustum (-horizontal, horizontal, -vertical, vertical, near, dist+3.0);
-        glMatrixMode (GL_MODELVIEW);
+        else {
+          P = GL::frustum (-horizontal, horizontal, -vertical, vertical, near, dist+3.0);
+        }
 
-        glLoadIdentity ();
-        lighting->set();
 
-        glTranslatef (0.0, 0.0, -dist);
 
         float T[16];
         Math::Matrix<float> M (T, 3, 3, 4);
         orientation.to_matrix (M);
         T[3] = T[7] = T[11] = T[12] = T[13] = T[14] = 0.0;
         T[15] = 1.0;
-        glMultMatrixf (T);
 
-        glTranslatef (focus[0], focus[1], focus[2]);
+        GL::mat4 MV = GL::translate (0.0, 0.0, -dist) * T * GL::translate (focus[0], focus[1], focus[2]);
+        projection.set (MV, P);
+        lighting->set();
 
         glDepthMask (GL_TRUE);
 
-        projection.update();
-
         if (finite (l0_term)) {
-          glPushMatrix();
           glDisable (GL_BLEND);
 
           if (use_lighting) glEnable (GL_LIGHTING);
 
-          glScalef (scale, scale, scale);
-
-          renderer.draw (use_lighting, color_by_dir ? NULL : lighting->object_color);
+          renderer.draw (scale, use_lighting, color_by_dir ? NULL : lighting->object_color);
 
           if (use_lighting) glDisable (GL_LIGHTING);
-
-          glPopMatrix();
         }
 
         glLineWidth (line_width);
