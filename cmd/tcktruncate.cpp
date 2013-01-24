@@ -85,6 +85,5 @@ void run ()
     progress++;
   }
   file.close();
-  writer.close();
 
 }
