@@ -58,6 +58,8 @@ namespace MR
 
             std::vector<Projection> projections;
             int current_plane;
+            GLuint vertex_buffer_ID, vertex_array_object_ID;
+            GL::Shader::Program frame_program;
 
             void reset_view ();
         };

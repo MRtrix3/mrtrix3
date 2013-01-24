@@ -77,7 +77,6 @@ namespace MR
           std::string fragment_shader_code =
               "#version 330 core\n"
               "in vec3 fragmentColor;\n"
-              "in vec4 gl_FragCoord;"
               "in float include; \n"
               "out vec3 color;\n"
               "void main(){\n";

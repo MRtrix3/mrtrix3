@@ -145,6 +145,7 @@ namespace MR
 
           glEnable (GL_BLEND);
           glBlendFunc (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+          glBlendEquation (GL_FUNC_ADD);
 
           // render image:
           image()->render3D_pre (projection, projection.depth_of (focus()));

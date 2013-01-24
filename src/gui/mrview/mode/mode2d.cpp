@@ -73,7 +73,7 @@ namespace MR
           glColorMask (GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
 
           // render image:
-          image()->render2D (plane(), slice);
+          image()->render2D (projection, plane(), slice);
 
           glDisable (GL_TEXTURE_2D);
 

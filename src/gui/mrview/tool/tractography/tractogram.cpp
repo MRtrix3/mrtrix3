@@ -68,18 +68,15 @@ namespace MR
           if (tool.do_shader_update() || !shader)
             shader.set_crop_to_slab (tool.do_crop_to_slab());  // recompile
 
-          shader.start();
-
-          GLuint MatrixID = shader.get_uniform ("MVP");
-          glUniformMatrix4fv (MatrixID, 1, GL_FALSE, transform.modelview_projection());
+          shader.start (transform);
 
           if (tool.do_crop_to_slab()) {
-            GLuint screen_normalID = shader.get_uniform ("screen_normal");
-            GLuint crop_varID = shader.get_uniform ("crop_var");
-            GLuint slab_widthID = shader.get_uniform ("slab_width");
-            glUniform3f (screen_normalID, transform.screen_normal()[0], transform.screen_normal()[1], transform.screen_normal()[2]);
-            glUniform1f (crop_varID, window.focus().dot(transform.screen_normal()) - tool.get_slab_thickness() / 2);
-            glUniform1f (slab_widthID, tool.get_slab_thickness());
+            glUniform3f (shader.get_uniform ("screen_normal"), 
+                transform.screen_normal()[0], transform.screen_normal()[1], transform.screen_normal()[2]);
+            glUniform1f (shader.get_uniform ("crop_var"),
+                window.focus().dot(transform.screen_normal()) - tool.get_slab_thickness() / 2);
+            glUniform1f (shader.get_uniform ("slab_width"), 
+                tool.get_slab_thickness());
           }
 
           glShadeModel(GL_SMOOTH);

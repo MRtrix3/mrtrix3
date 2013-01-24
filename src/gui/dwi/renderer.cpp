@@ -164,14 +164,14 @@ namespace MR
 
         shader_program.start();
         glUniform1f (glGetUniformLocation (shader_program, "scale"), scale);
-        shader_program.get_uniform ("color_by_direction") = colour ? 0 : 1;
-        shader_program.get_uniform ("use_normals") = use_normals ? 1 : 0;
-        shader_program.get_uniform ("hide_neg_lobes") = hide_neg_lobes ? 1 : 0;
-        GL::Shader::Uniform reverse = shader_program.get_uniform ("reverse");
+        glUniform1i (glGetUniformLocation (shader_program, "color_by_direction"), colour ? 0 : 1);
+        glUniform1i (glGetUniformLocation (shader_program, "use_normals"), use_normals ? 1 : 0);
+        glUniform1i (glGetUniformLocation (shader_program, "hide_neg_lobes"), hide_neg_lobes ? 1 : 0);
+        GLuint reverse = glGetUniformLocation (shader_program, "reverse");
 
-        reverse = 0;
+        glUniform1i (reverse, 0);
         glDrawElements (GL_TRIANGLES, 3*indices.size(), GL_UNSIGNED_INT, &indices[0]);
-        reverse = 1;
+        glUniform1i (reverse, 1);
         glDrawElements (GL_TRIANGLES, 3*indices.size(), GL_UNSIGNED_INT, &indices[0]);
 
         shader_program.stop();

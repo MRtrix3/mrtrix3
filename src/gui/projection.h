@@ -26,7 +26,11 @@ namespace MR
       public:
         Projection (QGLWidget* parent, const GL::Font& font) : 
           glarea (parent), 
-          font (font) { }
+          font (font),
+          vertex_buffer_ID (0),
+          vertex_array_object_ID (0) { }
+
+        ~Projection();
 
         void set_viewport (int x, int y, int w, int h) {
           viewport[0] = x;
@@ -160,7 +164,7 @@ namespace MR
         }
 
 
-        void render_crosshairs (const Point<>& focus) const;
+        void render_crosshairs (const Point<>& focus);
 
         void setup_render_text (float red = 1.0, float green = 1.0, float blue = 0.0) const { 
           font.setupGL (width(), height(), red, green, blue); 
@@ -213,6 +217,8 @@ namespace MR
         const GL::Font& font;
         GL::mat4 MV, iMV, P, iP, MVP, iMVP;
         GLint viewport[4];
+        GLuint vertex_buffer_ID, vertex_array_object_ID;
+        GL::Shader::Program crosshairs_program;
     };
 
 

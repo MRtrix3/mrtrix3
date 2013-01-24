@@ -27,42 +27,75 @@ namespace MR
   namespace GUI
   {
 
-    void Projection::render_crosshairs (const Point<>& focus) const
+    void Projection::render_crosshairs (const Point<>& focus)
     {
-      glPushAttrib (GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-      glDepthMask (GL_FALSE);
+      if (!vertex_buffer_ID || !vertex_array_object_ID) {
+        glGenBuffers (1, &vertex_buffer_ID);
+        glGenVertexArrays (1, &vertex_array_object_ID);
+
+        glBindBuffer (GL_ARRAY_BUFFER, vertex_buffer_ID);
+        glBindVertexArray (vertex_array_object_ID);
+
+        glEnableVertexAttribArray (0);
+        glVertexAttribPointer (0, 2, GL_FLOAT, GL_FALSE, 0, (void*)0);
+      }
+      else {
+        glBindBuffer (GL_ARRAY_BUFFER, vertex_buffer_ID);
+        glBindVertexArray (vertex_array_object_ID);
+      }
+
+      if (!crosshairs_program) {
+        GL::Shader::Vertex vertex_shader (
+            "#version 330 core\n"
+            "layout(location=0) in vec2 pos;\n"
+            "void main () {\n"
+            "  gl_Position = vec4 (pos, 0.0, 1.0);\n"
+            "}\n");
+        GL::Shader::Fragment fragment_shader (
+            "#version 330 core\n"
+            "out vec4 color;\n"
+            "void main () {\n"
+            "  color = vec4 (1.0, 1.0, 0.0, 0.5);\n"
+            "}\n");
+        crosshairs_program.attach (vertex_shader);
+        crosshairs_program.attach (fragment_shader);
+        crosshairs_program.link();
+      }
+
       Point<> F = model_to_screen (focus);
       F[0] -= x_position();
       F[1] -= y_position();
+      
+      F[0] = 2.0f * F[0] / width() - 1.0f;
+      F[1] = 2.0f * F[1] / height() - 1.0f;
 
-      glMatrixMode (GL_PROJECTION);
-      glPushMatrix ();
-      glLoadIdentity ();
-      glOrtho (0, width(), 0, height(), -1.0, 1.0);
-      glMatrixMode (GL_MODELVIEW);
-      glPushMatrix ();
-      glLoadIdentity ();
+      GLfloat data [] = {
+        F[0], -1.0f,
+        F[0], 1.0f,
+        -1.0f, F[1],
+        1.0f, F[1]
+      };
+      glBufferData (GL_ARRAY_BUFFER, sizeof(data), data, GL_STATIC_DRAW);
 
-      float alpha = 0.5;
-
-      glColor4f (1.0, 1.0, 0.0, alpha);
+      glDepthMask (GL_FALSE);
       glLineWidth (1.0);
       glEnable (GL_BLEND);
       glBlendFunc (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-      glBegin (GL_LINES);
-      glVertex2f (0.0, F[1]);
-      glVertex2f (width(), F[1]);
-      glVertex2f (F[0], 0.0);
-      glVertex2f (F[0], height());
-      glEnd ();
+      crosshairs_program.start();
+      glDrawArrays (GL_LINES, 0, 4);
+      crosshairs_program.stop();
+    }
 
-      glDisable (GL_BLEND);
-      glPopMatrix ();
-      glMatrixMode (GL_PROJECTION);
-      glPopMatrix ();
-      glMatrixMode (GL_MODELVIEW);
-      glPopAttrib();
+
+
+
+    Projection::~Projection () 
+    {
+      if (vertex_buffer_ID)
+        glDeleteBuffers (1, &vertex_buffer_ID);
+      if (vertex_array_object_ID)
+        glDeleteVertexArrays (1, &vertex_array_object_ID);
     }
 
   }

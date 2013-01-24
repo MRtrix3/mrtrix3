@@ -41,10 +41,12 @@ namespace MR
         Displayable (image_header.name()),
         buffer (image_header),
         interp (buffer),
-        texture3D (0),
-        position (header().ndim())
+        texture3D_ID (0),
+        position (header().ndim()),
+        vertex_buffer_ID (0),
+        vertex_array_object_ID (0)
       {
-        texture2D[0] = texture2D[1] = texture2D[2] = 0;
+        texture2D_ID[0] = texture2D_ID[1] = texture2D_ID[2] = 0;
         position[0] = position[1] = position[2] = std::numeric_limits<ssize_t>::min();
         set_colourmap (header().datatype().is_complex() ? ColourMap::Complex : ColourMap::Gray);
       }
@@ -55,10 +57,12 @@ namespace MR
         Displayable (window, image_header.name()),
         buffer (image_header),
         interp (buffer),
-        texture3D (0),
-        position (image_header.ndim())
+        texture3D_ID (0),
+        position (image_header.ndim()),
+        vertex_buffer_ID (0),
+        vertex_array_object_ID (0)
       {
-        texture2D[0] = texture2D[1] = texture2D[2] = 0;
+        texture2D_ID[0] = texture2D_ID[1] = texture2D_ID[2] = 0;
         position[0] = position[1] = position[2] = std::numeric_limits<ssize_t>::min();
         set_colourmap (header().datatype().is_complex() ? ColourMap::Complex : ColourMap::Gray);
         setCheckable (true);
@@ -72,13 +76,51 @@ namespace MR
 
       Image::~Image ()
       {
-        glDeleteTextures (3, texture2D);
-        glDeleteTextures (1, &texture3D);
+        if (texture2D_ID[0]) 
+          glDeleteTextures (3, texture2D_ID);
+        if (texture3D_ID)
+          glDeleteTextures (1, &texture3D_ID);
+        if (vertex_buffer_ID)
+          glDeleteBuffers (1, &vertex_buffer_ID);
+        if (vertex_array_object_ID)
+          glDeleteVertexArrays (1, &vertex_array_object_ID);
       }
 
 
 
-      void Image::render2D (int plane, int slice)
+
+      inline void Image::draw_vertices (const Point<float>* vertices)
+      {
+        if (!vertex_buffer_ID || !vertex_array_object_ID) {
+          assert (vertex_buffer_ID == 0);
+          assert (vertex_array_object_ID == 0);
+
+          glGenBuffers (1, &vertex_buffer_ID);
+          glGenVertexArrays (1, &vertex_array_object_ID);
+
+          glBindBuffer (GL_ARRAY_BUFFER, vertex_buffer_ID);
+          glBindVertexArray (vertex_array_object_ID);
+
+          glEnableVertexAttribArray (0);
+          glVertexAttribPointer (0, 3, GL_FLOAT, GL_FALSE, 2*sizeof(Point<float>), (void*)0);
+
+          glEnableVertexAttribArray (1);
+          glVertexAttribPointer (1, 3, GL_FLOAT, GL_FALSE, 2*sizeof(Point<float>), (void*)(sizeof(Point<float>)));
+        }
+        else {
+          glBindBuffer (GL_ARRAY_BUFFER, vertex_buffer_ID);
+          glBindVertexArray (vertex_array_object_ID);
+        }
+
+        glBufferData (GL_ARRAY_BUFFER, 8*sizeof(Point<float>), &vertices[0][0], GL_STREAM_DRAW);
+        glDrawArrays (GL_QUADS, 0, 4);
+      }
+
+
+
+
+
+      void Image::render2D (const Projection& projection, int plane, int slice)
       {
         update_texture2D (plane, slice);
 
@@ -92,32 +134,30 @@ namespace MR
         Point<> p, q;
         p[plane] = slice;
 
-        set_color();
-
-        shader.start();
-
-        glBegin (GL_QUADS);
-        glTexCoord3f (0.0, 0.0, 0.0);
+        Point<float> vertices[8];
         p[x] = -0.5;
         p[y] = -0.5;
-        q = interp.voxel2scanner (p);
-        glVertex3fv (q);
-        glTexCoord3f (0.0, 1.0, 0.0);
+        vertices[0] = interp.voxel2scanner (p);
+        vertices[1].set (0.0, 0.0, 0.0);
+
         p[x] = -0.5;
         p[y] = ydim;
-        q = interp.voxel2scanner (p);
-        glVertex3fv (q);
-        glTexCoord3f (1.0, 1.0, 0.0);
+        vertices[2] = interp.voxel2scanner (p);
+        vertices[3].set (0.0, 1.0, 0.0);
+
         p[x] = xdim;
         p[y] = ydim;
-        q = interp.voxel2scanner (p);
-        glVertex3fv (q);
-        glTexCoord3f (1.0, 0.0, 0.0);
+        vertices[4] = interp.voxel2scanner (p);
+        vertices[5].set (1.0, 1.0, 0.0);
+
         p[x] = xdim;
         p[y] = -0.5;
-        q = interp.voxel2scanner (p);
-        glVertex3fv (q);
-        glEnd();
+        vertices[6] = interp.voxel2scanner (p);
+        vertices[7].set (1.0, 0.0, 0.0);
+
+
+        shader.start (projection);
+        draw_vertices (vertices);
         shader.stop();
       }
 
@@ -125,32 +165,30 @@ namespace MR
 
 
 
-      void Image::render3D_pre (const Projection& transform, float depth)
+      void Image::render3D_pre (const Projection& projection, float depth)
       {
         update_texture3D();
 
         glTexParameteri (GL_TEXTURE_3D, GL_TEXTURE_MAG_FILTER, interpolation);
         glTexParameteri (GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, interpolation);
 
-        shader.start (windowing_scale_3D);
+        shader.start (projection, windowing_scale_3D);
 
         if (shader.use_lighting())
           glEnable (GL_LIGHTING);
 
-        pos[0] = transform.screen_to_model (0.0, transform.height(), depth);
-        pos[1] = transform.screen_to_model (0.0, 0.0, depth);
-        pos[2] = transform.screen_to_model (transform.width(), 0.0, depth);
-        pos[3] = transform.screen_to_model (transform.width(), transform.height(), depth);
+        pos[0] = projection.screen_to_model (0.0, projection.height(), depth);
+        pos[1] = projection.screen_to_model (0.0, 0.0, depth);
+        pos[2] = projection.screen_to_model (projection.width(), 0.0, depth);
+        pos[3] = projection.screen_to_model (projection.width(), projection.height(), depth);
 
         tex[0] = interp.scanner2voxel (pos[0]) + Point<> (0.5, 0.5, 0.5);
         tex[1] = interp.scanner2voxel (pos[1]) + Point<> (0.5, 0.5, 0.5);
         tex[2] = interp.scanner2voxel (pos[2]) + Point<> (0.5, 0.5, 0.5);
         tex[3] = interp.scanner2voxel (pos[3]) + Point<> (0.5, 0.5, 0.5);
 
-        z = transform.screen_normal();
+        z = projection.screen_normal();
         im_z = interp.scanner2voxel_dir (z);
-
-        set_color();
       }
 
 
@@ -158,45 +196,36 @@ namespace MR
 
       void Image::render3D_slice (float offset)
       {
-        Point<> spos[4], stex[4];
+        Point<> vertices[8];
 
         if (offset == 0.0) {
-          spos[0] = pos[0];
-          spos[1] = pos[1];
-          spos[2] = pos[2];
-          spos[3] = pos[3];
-          stex[0] = tex[0];
-          stex[1] = tex[1];
-          stex[2] = tex[2];
-          stex[3] = tex[3];
+          vertices[0] = pos[0];
+          vertices[2] = pos[1];
+          vertices[4] = pos[2];
+          vertices[6] = pos[3];
+          vertices[1] = tex[0];
+          vertices[3] = tex[1];
+          vertices[5] = tex[2];
+          vertices[7] = tex[3];
         }
         else {
           Point<> d = z * offset;
-          spos[0] = pos[0] + d;
-          spos[1] = pos[1] + d;
-          spos[2] = pos[2] + d;
-          spos[3] = pos[3] + d;
+          vertices[0] = pos[0] + d;
+          vertices[2] = pos[1] + d;
+          vertices[4] = pos[2] + d;
+          vertices[6] = pos[3] + d;
           d = im_z * offset;
-          stex[0] = tex[0] + d;
-          stex[1] = tex[1] + d;
-          stex[2] = tex[2] + d;
-          stex[3] = tex[3] + d;
+          vertices[1] = tex[0] + d;
+          vertices[3] = tex[1] + d;
+          vertices[5] = tex[2] + d;
+          vertices[7] = tex[3] + d;
         }
 
         for (size_t i = 0; i < 4; ++i)
           for (size_t j = 0; j < 3; ++j)
-            stex[i][j] /= header().dim (j);
+            vertices[2*i+1][j] /= header().dim (j);
 
-        glBegin (GL_QUADS);
-        glTexCoord3fv (stex[0]);
-        glVertex3fv (spos[0]);
-        glTexCoord3fv (stex[1]);
-        glVertex3fv (spos[1]);
-        glTexCoord3fv (stex[2]);
-        glVertex3fv (spos[2]);
-        glTexCoord3fv (stex[3]);
-        glVertex3fv (spos[3]);
-        glEnd();
+        draw_vertices (vertices);
       }
 
 
@@ -204,15 +233,15 @@ namespace MR
 
       inline void Image::update_texture2D (int plane, int slice)
       {
-        if (!texture2D[plane]) { // allocate:
-          glGenTextures (1, &texture2D[plane]);
-          assert (texture2D[plane]);
-          glBindTexture (GL_TEXTURE_3D, texture2D[plane]);
+        if (!texture2D_ID[plane]) { // allocate:
+          glGenTextures (1, &texture2D_ID[plane]);
+          assert (texture2D_ID[plane]);
+          glBindTexture (GL_TEXTURE_3D, texture2D_ID[plane]);
           glTexParameteri (GL_TEXTURE_3D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
           glTexParameteri (GL_TEXTURE_3D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
           glTexParameteri (GL_TEXTURE_3D, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
         }
-        glBindTexture (GL_TEXTURE_3D, texture2D[plane]);
+        glBindTexture (GL_TEXTURE_3D, texture2D_ID[plane]);
 
         if (position[plane] == slice && volume_unchanged())
           return;
@@ -386,14 +415,14 @@ namespace MR
         }
 
         if (volume_unchanged() && texture_mode_3D_unchanged) {
-          glBindTexture (GL_TEXTURE_3D, texture3D);
+          glBindTexture (GL_TEXTURE_3D, texture3D_ID);
           return;
         }
 
-        if (!texture3D) { // allocate:
-          glGenTextures (1, &texture3D);
-          assert (texture3D);
-          glBindTexture (GL_TEXTURE_3D, texture3D);
+        if (!texture3D_ID) { // allocate:
+          glGenTextures (1, &texture3D_ID);
+          assert (texture3D_ID);
+          glBindTexture (GL_TEXTURE_3D, texture3D_ID);
           glTexParameteri (GL_TEXTURE_3D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
           glTexParameteri (GL_TEXTURE_3D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
           glTexParameteri (GL_TEXTURE_3D, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
@@ -402,7 +431,7 @@ namespace MR
 
         texture_mode_3D_unchanged = true;
 
-        glBindTexture (GL_TEXTURE_3D, texture3D);
+        glBindTexture (GL_TEXTURE_3D, texture3D_ID);
 
         glTexImage3D (GL_TEXTURE_3D, 0, internal_format,
             header().dim (0), header().dim (1), header().dim (2),

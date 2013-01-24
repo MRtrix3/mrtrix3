@@ -56,11 +56,11 @@ namespace MR
           glBlendEquation (GL_FUNC_ADD);
           glBlendFunc (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
           program.start();
-          program.get_uniform ("scale_x") = float (2.0 / width);
-          program.get_uniform ("scale_y") = float (2.0 / height);
-          program.get_uniform ("red") = red;
-          program.get_uniform ("green") = green;
-          program.get_uniform ("blue") = blue;
+          glUniform1f (glGetUniformLocation (program, "scale_x"), 2.0 / width);
+          glUniform1f (glGetUniformLocation (program, "scale_y"), 2.0 / height);
+          glUniform1f (glGetUniformLocation (program, "red"), red);
+          glUniform1f (glGetUniformLocation (program, "green"), green);
+          glUniform1f (glGetUniformLocation (program, "blue"), blue);
         }
 
         void resetGL () const {

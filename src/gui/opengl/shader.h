@@ -87,25 +87,6 @@ namespace MR
         typedef Object<GL_FRAGMENT_SHADER> Fragment;
 
 
-        class Uniform
-        {
-          public:
-            float operator= (float value) {
-              glUniform1f (index_, value);
-              return (value);
-            }
-            int operator= (int value) {
-              glUniform1i (index_, value);
-              return (value);
-            }
-
-          protected:
-            GLint index_;
-            Uniform (GLint index) : index_ (index) { }
-            friend class Program;
-        };
-
-
 
         class Program
         {
@@ -149,9 +130,6 @@ namespace MR
               glUseProgram (0);
             }
 
-            Uniform get_uniform (const std::string& name) const {
-              return (Uniform (glGetUniformLocation (index_, name.c_str())));
-            }
             void debug () const {
               assert (index_);
               print_log (true, "shader program", index_);

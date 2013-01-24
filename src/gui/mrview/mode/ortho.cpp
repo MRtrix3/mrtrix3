@@ -39,10 +39,17 @@ namespace MR
         Ortho::Ortho (Window& parent) : 
           Base (parent),
           projections (3, projection),
-          current_plane (-1) {
+          current_plane (-1),
+          vertex_buffer_ID (0),
+          vertex_array_object_ID (0) {
           }
 
-        Ortho::~Ortho () { }
+        Ortho::~Ortho () { 
+          if (vertex_buffer_ID)
+            glDeleteBuffers (1, &vertex_buffer_ID);
+          if (vertex_array_object_ID)
+            glDeleteVertexArrays (1, &vertex_array_object_ID);
+        }
 
 
 
@@ -72,12 +79,48 @@ namespace MR
           glColor4f (0.1, 0.1, 0.1, 1.0);
           glLineWidth (2.0);
 
-          glBegin (GL_LINES);
-          glVertex2f (glarea()->width()/2, 0.0);
-          glVertex2f (glarea()->width()/2, glarea()->height());
-          glVertex2f (0.0, glarea()->height()/2);
-          glVertex2f (glarea()->width(), glarea()->height()/2);
-          glEnd();
+          if (!vertex_buffer_ID || !vertex_array_object_ID) {
+            glGenBuffers (1, &vertex_buffer_ID);
+            glGenVertexArrays (1, &vertex_array_object_ID);
+
+            glBindBuffer (GL_ARRAY_BUFFER, vertex_buffer_ID);
+            glBindVertexArray (vertex_array_object_ID);
+
+            glEnableVertexAttribArray (0);
+            glVertexAttribPointer (0, 2, GL_FLOAT, GL_FALSE, 0, (void*)0);
+
+            GLfloat data [] = {
+              -1.0f, 0.0f,
+              1.0f, 0.0f,
+              0.0f, -1.0f,
+              0.0f, 1.0f
+            };
+            glBufferData (GL_ARRAY_BUFFER, sizeof(data), data, GL_STATIC_DRAW);
+          }
+          else 
+            glBindVertexArray (vertex_array_object_ID);
+
+          if (!frame_program) {
+            GL::Shader::Vertex vertex_shader (
+                "#version 330 core\n"
+                "layout(location=0) in vec2 pos;\n"
+                "void main () {\n"
+                "  gl_Position = vec4 (pos, 0.0, 1.0);\n"
+                "}\n");
+            GL::Shader::Fragment fragment_shader (
+                "#version 330 core\n"
+                "out vec3 color;\n"
+                "void main () {\n"
+                "  color = vec3 (0.1);\n"
+                "}\n");
+            frame_program.attach (vertex_shader);
+            frame_program.attach (fragment_shader);
+            frame_program.link();
+          }
+
+          frame_program.start();
+          glDrawArrays (GL_LINES, 0, 4);
+          frame_program.stop();
 
           glEnable (GL_DEPTH_TEST);
         }
@@ -121,7 +164,7 @@ namespace MR
           glColorMask (GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
 
           // render image:
-          image()->render2D (axis, slice);
+          image()->render2D (projections[axis], axis, slice);
 
           glDisable (GL_TEXTURE_2D);
 

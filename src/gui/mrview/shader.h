@@ -29,6 +29,7 @@
 
 #include "gui/opengl/gl.h"
 #include "gui/opengl/shader.h"
+#include "gui/projection.h"
 
 #ifdef Complex
 # undef Complex
@@ -57,11 +58,10 @@ namespace MR
         const uint32_t Mask = 0x000000FF;
         const uint32_t MaskNonScalar = 0x00000080;
 
-        const size_t NumScalar = 4;
+        const size_t NumScalar = 3;
         const uint32_t Gray = 0x00000000;
         const uint32_t Hot = 0x00000001;
         const uint32_t Jet = 0x00000002;
-        const uint32_t DWI = 0x00000003;
 
         const size_t NumSpecial = 2;
         const uint32_t Special = 0x00000080;
@@ -78,7 +78,6 @@ namespace MR
           actions[n++] = new QAction ("Gray", window);
           actions[n++] = new QAction ("Hot", window);
           actions[n++] = new QAction ("Jet", window);
-          actions[n++] = new QAction ("DWI", window);
 
           actions[n++] = new QAction ("RGB", window);
           actions[n++] = new QAction ("Complex", window);
@@ -140,16 +139,19 @@ namespace MR
             }
           }
 
-          void start (float scaling = 1.0) {
+          void start (const Projection& projection, float scaling = 1.0) {
             shader_program.start();
-            shader_program.get_uniform ("offset") = (display_midpoint - 0.5f * display_range) / scaling;
-            shader_program.get_uniform ("scale") = scaling / display_range;
-            if (flags_ & DiscardLower) shader_program.get_uniform ("lower") = lessthan / scaling;
-            if (flags_ & DiscardUpper) shader_program.get_uniform ("upper") = greaterthan / scaling;
+            glUniformMatrix4fv (glGetUniformLocation (shader_program, "MVP"), 1, GL_FALSE, projection.modelview_projection());
+            glUniform1f (glGetUniformLocation (shader_program, "offset"), (display_midpoint - 0.5f * display_range) / scaling);
+            glUniform1f (glGetUniformLocation (shader_program, "scale"), scaling / display_range);
+            if (flags_ & DiscardLower) 
+              glUniform1f (glGetUniformLocation (shader_program, "lower"), lessthan / scaling);
+            if (flags_ & DiscardUpper) 
+              glUniform1f (glGetUniformLocation (shader_program, "upper"), greaterthan / scaling);
             if (flags_ & Transparency) {
-              shader_program.get_uniform ("alpha_scale") = scaling / (opaque_intensity - transparent_intensity);
-              shader_program.get_uniform ("alpha_offset") = transparent_intensity / scaling;
-              shader_program.get_uniform ("alpha") = alpha;
+              glUniform1f (glGetUniformLocation (shader_program, "alpha_scale"), scaling / (opaque_intensity - transparent_intensity));
+              glUniform1f (glGetUniformLocation (shader_program, "alpha_offset"), transparent_intensity / scaling);
+              glUniform1f (glGetUniformLocation (shader_program, "alpha"), alpha);
             }
           }
 

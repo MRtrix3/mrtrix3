@@ -34,7 +34,7 @@ namespace MR
       {
         uint32_t colourmap = flags & ColourMap::Mask;
         if (colourmap == ColourMap::RGB) return "length (color.rgb)";
-        if (colourmap == ColourMap::Complex) return "sqrt (color.r*color.r + color.a*color.a)";
+        if (colourmap == ColourMap::Complex) return "length (color.ra)";
         return "color.a";
       }
 
@@ -46,23 +46,16 @@ namespace MR
         } 
 
         // vertex shader:
-        std::string source;
-        if (flags_ & Lighting) 
-          source += "varying vec4 ambient; "
-            "varying vec3 lightDir, halfVector; ";
-        source += "void main() { ";
-        if (flags_ & Lighting) 
-            source +=
-              "lightDir = normalize (vec3 (gl_LightSource[0].position)); "
-              "halfVector = normalize (gl_LightSource[0].halfVector.xyz); "
-              "ambient = gl_LightSource[0].ambient + gl_LightModel.ambient; ";
-        if (colourmap() == ColourMap::DWI)
-          source += "gl_FrontColor = gl_Color; ";
-
-        source += 
-          "gl_TexCoord[0] = gl_MultiTexCoord0; "
-          "gl_Position = ftransform(); "
-          "}";
+        std::string source = 
+          "#version 330 core\n"
+          "layout(location = 0) in vec3 vertpos;\n"
+          "layout(location = 1) in vec3 texpos;\n"
+          "uniform mat4 MVP;\n"
+          "out vec3 texcoord;\n"
+          "void main() {\n"
+          "  gl_Position =  MVP * vec4 (vertpos,1);\n"
+          "  texcoord = texpos;\n"
+          "}\n";
 
 
         vertex_shader.compile (source);
@@ -70,7 +63,9 @@ namespace MR
 
 
         // fragment shader:
-        source = "uniform float offset, scale";
+        source = 
+          "#version 330 core\n"
+          "uniform float offset, scale";
         if (flags_ & DiscardLower)
           source += ", lower";
         if (flags_ & DiscardUpper)
@@ -78,21 +73,24 @@ namespace MR
         if (flags_ & Transparency)
           source += ", alpha_scale, alpha_offset, alpha";
 
-        source += "; uniform sampler3D tex; ";
+        source += 
+          ";\nuniform sampler3D tex;\n"
+          "in vec3 texcoord;\n"
+          "out vec4 color;\n";
         if (flags_ & Lighting) 
           source += 
-            "varying vec4 ambient; "
-            "varying vec3 lightDir, halfVector; ";
+            "uniform float ambient;\n"
+            "uniform vec3 lightDir;\n";
 
         source += 
-          "void main() {"
-          "if (gl_TexCoord[0].s < 0.0 || gl_TexCoord[0].s > 1.0 ||"
-          "    gl_TexCoord[0].t < 0.0 || gl_TexCoord[0].t > 1.0 ||"
-          "    gl_TexCoord[0].p < 0.0 || gl_TexCoord[0].p > 1.0) discard; "
-          " vec4 color = texture3D (tex,gl_TexCoord[0].stp); "
-          "gl_FragColor.a = " + amplitude (flags_) + "; "
-          "if (isnan(gl_FragColor.a) || isinf(gl_FragColor.a)) discard; ";
-
+          "void main() {\n"
+          "  if (texcoord.s < 0.0 || texcoord.s > 1.0 ||\n"
+          "      texcoord.t < 0.0 || texcoord.t > 1.0 ||\n"
+          "      texcoord.p < 0.0 || texcoord.p > 1.0) discard;\n"
+          "  color = texture (tex, texcoord.stp);\n"
+          "  color.a = " + amplitude (flags_) + ";\n"
+          "  if (isnan(color.a) || isinf(color.a)) discard;\n";
+/*
         if (flags_ & Lighting) 
           source += 
             "vec4 tmp = color; vec3 normal; "
@@ -104,31 +102,30 @@ namespace MR
             "color = texture3D (tex, gl_TexCoord[0].stp+vec3(0.0,0.0,2.0e-2)); normal.z -= " + amplitude (flags_) + "; "
             "normal = normalize (gl_NormalMatrix * normal); "
             "color = tmp; ";
-
+*/
         if (flags_ & DiscardLower)
-          source += "if (gl_FragColor.a < lower) discard;";
+          source += "if (color.a < lower) discard;";
 
         if (flags_ & DiscardUpper)
-          source += "if (gl_FragColor.a > upper) discard;";
+          source += "if (color.a > upper) discard;";
 
         if (flags_ & Transparency) 
-          source += "if (gl_FragColor.a < alpha_offset) discard; "
-            "gl_FragColor.a = clamp ((gl_FragColor.a - alpha_offset) * alpha_scale, 0, alpha); ";
+          source += "if (color.a < alpha_offset) discard; "
+            "float alpha = clamp ((color.a - alpha_offset) * alpha_scale, 0, alpha); ";
 
         uint32_t colourmap = flags_ & ColourMap::Mask;
         if (colourmap & ColourMap::MaskNonScalar) {
           if (colourmap == ColourMap::RGB)
-            source += "gl_FragColor.rgb = scale * (abs(color.rgb) - offset);";
+            source += "color.rgb = scale * (abs(color.rgb) - offset);\n";
           else if (colourmap == ColourMap::Complex) {
             source += 
-              "float mag = clamp (scale * (gl_FragColor.a - offset), 0.0, 1.0); "
-              "float phase = atan (color.a, color.g) / 2.094395102393195; "
-              "color.g = mag * (abs (phase)); "
-              "phase += 1.0; if (phase > 1.5) phase -= 3.0; "
-              "color.r = mag * (abs (phase)); "
-              "phase += 1.0; if (phase > 1.5) phase -= 3.0; "
-              "color.b = mag * (abs (phase)); "
-              "gl_FragColor.rgb = color.rgb; ";
+              "float mag = clamp (scale * (color.a - offset), 0.0, 1.0);\n"
+              "float phase = atan (color.a, color.g) / 2.094395102393195;\n"
+              "color.g = mag * (abs (phase));\n"
+              "phase += 1.0; if (phase > 1.5) phase -= 3.0;\n"
+              "color.r = mag * (abs (phase));\n"
+              "phase += 1.0; if (phase > 1.5) phase -= 3.0;\n"
+              "color.b = mag * (abs (phase));\n";
           }
           else assert (0);
         }
@@ -136,40 +133,39 @@ namespace MR
 
           source += "color.a = clamp (";
           if (flags_ & InvertScale) source += "1.0 -";
-          source += " scale * (color.a - offset), 0.0, 1.0);";
+          source += " scale * (color.a - offset), 0.0, 1.0);\n";
 
           if (colourmap == ColourMap::Gray)
-            source += "gl_FragColor.rgb = color.a;";
+            source += "color.rgb = vec3(color.a);\n";
           else if (colourmap == ColourMap::Hot)
             source +=
-              "color.r = clamp (color.a, 0.0, 1.0);"
-              "gl_FragColor.r = 2.7213 * color.a;"
-              "gl_FragColor.g = 2.7213 * color.a - 1.0;"
-              "gl_FragColor.b = 3.7727 * color.a - 2.7727;";
+              "color.r = 2.7213 * color.a;\n"
+              "color.g = 2.7213 * color.a - 1.0;\n"
+              "color.b = 3.7727 * color.a - 2.7727;\n";
           else if (colourmap == ColourMap::Jet)
             source +=
-              "gl_FragColor.rgb = 1.5 - 4.0 * abs (color.a - vec3(0.25, 0.5, 0.75));";
-          else if (colourmap == ColourMap::DWI)
-            source += "gl_FragColor.rgb = gl_Color.rgb * color.a;";
+              "color.rgb = 1.5 - 4.0 * abs (color.a - vec3(0.25, 0.5, 0.75));\n";
           else assert (0);
         }
 
         if (flags_ & InvertMap)
-          source += "gl_FragColor.rgb = 1.0 - gl_FragColor.rgb;";
-
+          source += "color.rgb = 1.0 - color.rgb;";
+/*
         // TODO: lighting code in here:
         if (flags_ & Lighting) 
           source += 
-            "  vec3 halfV; "
-            "  float NdotL, NdotHV; "
-            "  NdotL = dot (normal, lightDir); "
-            "  color.rgb = gl_FragColor.rgb * ambient.rgb; "
-            "  color.rgb += gl_LightSource[0].diffuse.rgb * NdotL * gl_FragColor.rgb; "
-            "  halfV = normalize (halfVector); "
-            "  NdotHV = max (dot (normal, halfV), 0.0); "
-            "  gl_FragColor.rgb = color.rgb + gl_FrontMaterial.specular.rgb * gl_LightSource[0].specular.rgb * pow (NdotHV, gl_FrontMaterial.shininess); ";
-
-        source += "}";
+            "  vec3 halfV;\n"
+            "  float NdotL, NdotHV;\n"
+            "  NdotL = dot (normal, lightDir);\n"
+            "  color.rgb = gl_FragColor.rgb * ambient.rgb;\n"
+            "  color.rgb += gl_LightSource[0].diffuse.rgb * NdotL * gl_FragColor.rgb;\n"
+            "  halfV = normalize (halfVector);\n"
+            "  NdotHV = max (dot (normal, halfV), 0.0);\n"
+            "  gl_FragColor.rgb = color.rgb + gl_FrontMaterial.specular.rgb * gl_LightSource[0].specular.rgb * pow (NdotHV, gl_FrontMaterial.shininess);\n";
+*/
+        if (flags_ & Transparency) 
+          source += "color.a = alpha;\n";
+        source += "}\n";
 
         fragment_shader.compile (source.c_str());
         shader_program.attach (fragment_shader);
