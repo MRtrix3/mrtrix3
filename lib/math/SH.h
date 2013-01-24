@@ -626,6 +626,72 @@ namespace MR
         }
 
 
+
+      template <typename ValueType> class aPSF
+      {
+        public:
+          aPSF (const size_t _lmax) :
+            lmax (_lmax),
+            N    (Math::SH::NforL (lmax))
+          {
+            switch (lmax) {
+              case 2:
+                RH.allocate (2);
+                RH[0] = ValueType(1.0040911);
+                RH[1] = ValueType(0.9852451);
+                break;
+              case 4:
+                RH.allocate (3);
+                RH[0] = ValueType(1.0228266);
+                RH[1] = ValueType(0.9794163);
+                RH[2] = ValueType(0.6336874);
+                break;
+              case 6:
+                RH.allocate (4);
+                RH[0] = ValueType(1.0317389);
+                RH[1] = ValueType(0.9838425);
+                RH[2] = ValueType(0.6271851);
+                RH[3] = ValueType(0.2485668);
+                break;
+              case 8:
+                RH.allocate (5);
+                RH[0] = ValueType(1.04341398);
+                RH[1] = ValueType(0.97096530);
+                RH[2] = ValueType(0.67339320);
+                RH[3] = ValueType(0.35029476);
+                RH[4] = ValueType(0.12145668);
+                break;
+              case 10:
+                RH.allocate (6);
+                RH[0] = ValueType(1.04457094);
+                RH[1] = ValueType(0.96687914);
+                RH[2] = ValueType(0.73278211);
+                RH[3] = ValueType(0.46071924);
+                RH[4] = ValueType(0.22854642);
+                RH[5] = ValueType(0.07630424);
+                break;
+              default:
+                throw Exception ("No aPSF RH data for lmax " + str(lmax));
+            }
+          }
+
+
+          Math::Vector<ValueType>& operator() (Math::Vector<ValueType>& SH, const Point<ValueType>& dir) const
+          {
+            Math::Vector<ValueType> delta;
+            Math::SH::delta (delta, dir, lmax);
+            Math::SH::sconv (SH, RH, delta);
+            return SH;
+          }
+
+
+        private:
+          const size_t lmax, N;
+          Math::Vector<ValueType> RH;
+
+      };
+
+
     }
   }
 }
