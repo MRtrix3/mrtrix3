@@ -64,7 +64,7 @@ namespace MR
             open (file, properties);
           }
 
-          bool next (std::vector<Point<value_type> >& tck)
+          bool next (std::vector< Point<value_type> >& tck)
           {
             tck.clear();
 
@@ -88,6 +88,11 @@ namespace MR
 
             in.close();
             return false;
+          }
+
+          bool operator() (std::vector< Point<value_type> >& tck)
+          {
+            return next (tck);
           }
 
           void close () { in.close(); }
@@ -162,7 +167,7 @@ namespace MR
           }
 
 
-          void append (const std::vector<Point<value_type> >& tck)
+          void append (const std::vector< Point<value_type> >& tck)
           {
             if (tck.size()) {
               int64_t current (out.tellp());
@@ -181,6 +186,12 @@ namespace MR
               count++;
             }
             total_count++;
+          }
+
+          bool operator() (const std::vector< Point<value_type> >& tck)
+          {
+            append (tck);
+            return true;
           }
 
 
