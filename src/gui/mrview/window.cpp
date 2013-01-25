@@ -44,6 +44,16 @@ namespace MR
 #undef MODE_OPTION
 
 
+      namespace {
+
+        uint get_modifier (const std::string& key, Qt::KeyboardModifiers default_value) {
+          std::string value = MR::File::Config::get (key);
+          if (value.empty()) 
+            return default_value;
+          return QKeySequence((value + "+A").c_str()) - 'A';
+        }
+
+      }
 
 
       // GLArea definitions:
@@ -64,7 +74,7 @@ namespace MR
         return QSize (256, 256);
       }
       QSize Window::GLArea::sizeHint () const {
-        std::string init_size_string = lowercase (MR::File::Config::get ("MRviewInitWindowSize"));
+        std::string init_size_string = lowercase (MR::File::Config::get ("MRViewInitWindowSize"));
         std::vector<int> init_window_size;
         if (init_size_string.length())
           init_window_size = parse_ints(init_size_string);
@@ -128,9 +138,9 @@ namespace MR
         glarea (new GLArea (*this)),
         mode (NULL),
         font (glarea->font()),
-        FocusModifier (Qt::MetaModifier),
-        MoveModifier (Qt::ControlModifier),
-        RotateModifier (Qt::ShiftModifier),
+        FocusModifier (get_modifier ("MRViewFocusModifierKey", Qt::MetaModifier)),
+        MoveModifier (get_modifier ("MRViewMoveModifierKey", Qt::ControlModifier)),
+        RotateModifier (get_modifier ("MRViewRotateModifierKey", Qt::ShiftModifier)),
         mouse_action (NoAction),
         orient (NAN, NAN, NAN, NAN),
         field_of_view (100.0),
@@ -968,14 +978,14 @@ namespace MR
       {
         std::string message = printf ("<h1>MRView</h1>The MRtrix viewer, version %zu.%zu.%zu<br>"
                                       "<em>%d bit %s version, built " __DATE__ "</em><p>"
-                                      "Author: %s<p><em>%s</em>",
+                                      "<h4>Authors:</h4>%s<p><em>%s</em>",
                                       App::VERSION[0], App::VERSION[1], App::VERSION[2], int (8*sizeof (size_t)),
 #ifdef NDEBUG
                                       "release"
 #else
                                       "debug"
 #endif
-                                      , App::AUTHOR, App::COPYRIGHT);
+                                      , MR::join (MR::split (App::AUTHOR, ",;&\n", true), "<br>").c_str(), App::COPYRIGHT);
 
         QMessageBox::about (this, tr ("About MRView"), message.c_str());
       }

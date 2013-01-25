@@ -88,8 +88,8 @@ namespace MR
           "      texcoord.t < 0.0 || texcoord.t > 1.0 ||\n"
           "      texcoord.p < 0.0 || texcoord.p > 1.0) discard;\n"
           "  color = texture (tex, texcoord.stp);\n"
-          "  color.a = " + amplitude (flags_) + ";\n"
-          "  if (isnan(color.a) || isinf(color.a)) discard;\n";
+          "  float amplitude = " + amplitude (flags_) + ";\n"
+          "  if (isnan(amplitude) || isinf(amplitude)) discard;\n";
 /*
         if (flags_ & Lighting) 
           source += 
@@ -104,14 +104,14 @@ namespace MR
             "color = tmp; ";
 */
         if (flags_ & DiscardLower)
-          source += "if (color.a < lower) discard;";
+          source += "if (amplitude < lower) discard;";
 
         if (flags_ & DiscardUpper)
-          source += "if (color.a > upper) discard;";
+          source += "if (amplitude > upper) discard;";
 
         if (flags_ & Transparency) 
-          source += "if (color.a < alpha_offset) discard; "
-            "float alpha = clamp ((color.a - alpha_offset) * alpha_scale, 0, alpha); ";
+          source += "if (amplitude < alpha_offset) discard; "
+            "float alpha = clamp ((amplitude - alpha_offset) * alpha_scale, 0, alpha); ";
 
         uint32_t colourmap = flags_ & ColourMap::Mask;
         if (colourmap & ColourMap::MaskNonScalar) {
@@ -119,32 +119,32 @@ namespace MR
             source += "color.rgb = scale * (abs(color.rgb) - offset);\n";
           else if (colourmap == ColourMap::Complex) {
             source += 
-              "float mag = clamp (scale * (color.a - offset), 0.0, 1.0);\n"
-              "float phase = atan (color.a, color.g) / 2.094395102393195;\n"
-              "color.g = mag * (abs (phase));\n"
-              "phase += 1.0; if (phase > 1.5) phase -= 3.0;\n"
-              "color.r = mag * (abs (phase));\n"
-              "phase += 1.0; if (phase > 1.5) phase -= 3.0;\n"
-              "color.b = mag * (abs (phase));\n";
+              "float mag = clamp (scale * (amplitude - offset), 0.0, 1.0);\n"
+              "float phase = atan (color.a, color.g) / 3.141592653589793;\n"
+              "color.g = mag * abs(phase);\n"
+              "phase += 0.666666666666667; if (phase > 1.0) phase -= 2.0;\n"
+              "color.r = mag * abs(phase);\n"
+              "phase += 0.666666666666667; if (phase > 1.0) phase -= 2.0;\n"
+              "color.b = mag * abs(phase);\n";
           }
           else assert (0);
         }
         else { // scalar colourmaps:
 
-          source += "color.a = clamp (";
+          source += "amplitude = clamp (";
           if (flags_ & InvertScale) source += "1.0 -";
-          source += " scale * (color.a - offset), 0.0, 1.0);\n";
+          source += " scale * (amplitude - offset), 0.0, 1.0);\n";
 
           if (colourmap == ColourMap::Gray)
-            source += "color.rgb = vec3(color.a);\n";
+            source += "color.rgb = vec3(amplitude);\n";
           else if (colourmap == ColourMap::Hot)
             source +=
-              "color.r = 2.7213 * color.a;\n"
-              "color.g = 2.7213 * color.a - 1.0;\n"
-              "color.b = 3.7727 * color.a - 2.7727;\n";
+              "color.r = 2.7213 * amplitude;\n"
+              "color.g = 2.7213 * amplitude - 1.0;\n"
+              "color.b = 3.7727 * amplitude - 2.7727;\n";
           else if (colourmap == ColourMap::Jet)
             source +=
-              "color.rgb = 1.5 - 4.0 * abs (color.a - vec3(0.25, 0.5, 0.75));\n";
+              "color.rgb = 1.5 - 4.0 * abs (amplitude - vec3(0.25, 0.5, 0.75));\n";
           else assert (0);
         }
 

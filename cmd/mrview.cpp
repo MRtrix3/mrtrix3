@@ -14,6 +14,8 @@ using namespace App;
 
 void usage ()
 {
+  AUTHOR = "J-Donald Tournier (d.tournier@brain.org.au) & Dave Raffelt (d.raffelt@brain.org.au)"; 
+
   DESCRIPTION
   + "the MRtrix image viewer.";
 
