@@ -121,7 +121,11 @@ namespace MR
                 niter = opt[0][0];
 
 #ifndef USE_ORTHONORMAL_SH_BASIS
-              WARN ("norm regularisation requires use of orthonormal SH basis - compile with -DUSE_ORTHONORMAL_SH_BASIS");
+              if (norm_lambda) {
+                WARN ("norm regularisation requires use of orthonormal SH basis - compile with -DUSE_ORTHONORMAL_SH_BASIS");
+                WARN ("(norm_lambda reset to 0.0 for this execution)");
+                norm_lambda = 0.0;
+              }
 #endif
 
               init (response, filter, DW_dirs, HR_dirs, lmax);
