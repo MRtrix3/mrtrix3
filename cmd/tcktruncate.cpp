@@ -24,9 +24,11 @@
 #include <fstream>
 
 #include "app.h"
+#include "bitset.h"
 #include "progressbar.h"
 #include "dwi/tractography/file.h"
 #include "dwi/tractography/properties.h"
+#include "math/rng.h"
 
 MRTRIX_APPLICATION
 
@@ -41,14 +43,16 @@ void usage ()
 
   ARGUMENTS
   + Argument ("tracks", "the input track file.").type_file ()
-  + Argument ("N", "the number of tracks to include").type_integer(1,1,INT_MAX)
+  + Argument ("N",      "the number of tracks to include").type_integer (1, 1, INT_MAX)
   + Argument ("output", "the output track file");
 
 
   OPTIONS
-  + Option ("skip",
-            "skip a number of tracts from the start of file before truncating")
-  + Argument ("number").type_integer(0,1,INT_MAX);
+  + Option ("skip", "skip a number of tracks from the start of file before truncating")
+    + Argument ("number").type_integer (0, 1, INT_MAX)
+
+  + Option ("randomise", "select a random subset of tracks instead of a contiguous block");
+
 }
 
 
@@ -61,29 +65,74 @@ void run ()
   size_t skip = 0;
   if (opt.size())
     skip = opt[0][0];
+
   Tractography::Properties properties;
   Tractography::Reader<float> file;
   file.open (argument[0], properties);
 
-  size_t N = argument[1];
+  const size_t N = argument[1];
 
-  if (skip + N > properties["count"].empty() ? 0 : to<int> (properties["count"]))
-    throw Exception ("the number of truncated tracks plus the number of skipped tracks is larger than the total");
+  const size_t count = properties["count"].empty() ? 0 : to<int> (properties["count"]);
+
+  if (count && (skip + N > count))
+    throw Exception ("the number of requested tracks plus the number of skipped tracks exceeds the total number of tracks in the file");
 
   Tractography::Writer<float> writer;
-  writer.create (argument[2],  properties);
+  writer.create (argument[2], properties);
 
   std::vector<Point<float> > tck;
-
-  ProgressBar progress ("truncating tracks...", N);
   size_t index = 0;
-  while (file.next (tck) && writer.count < N) {
-    index++;
-    if (index < skip)
-      continue;
-    writer.append (tck);
-    progress++;
+
+  opt = get_options ("randomise");
+  if (opt.size()) {
+
+    if (!count)
+      throw Exception ("cannot get random truncation of file \"" + str(argument[0]) + "\", as 'count' field is invalid; first run tckcountfix command on this file");
+
+    BitSet selection (count);
+    {
+      ProgressBar progress ("selecting random subset of tracks...", N);
+      Math::RNG rng;
+      size_t tracks_selected = 0;
+      do {
+        const size_t index = rng.uniform_int (count - skip) + skip;
+        if (!selection[index]) {
+          selection[index] = true;
+          ++tracks_selected;
+        }
+      } while (tracks_selected < N);
+    }
+    {
+      ProgressBar progress ("writing selected tracks to file...", count);
+      while (file.next (tck)) {
+        if (!selection[index++])
+          tck.clear();
+        writer.append (tck);
+        progress++;
+      }
+    }
+    if (index != count)
+      WARN ("'count' field in file \"" + str(argument[0]) + "\" is malformed; recommend applying tckcountfix command");
+
+  } else {
+
+    {
+      ProgressBar progress ("truncating tracks...", N + skip);
+      while (file.next (tck) && writer.count < N) {
+        if (index++ < skip)
+          tck.clear();
+        writer.append (tck);
+        progress++;
+      }
+      tck.clear();
+      while (++index < count)
+        writer.append (tck);
+      file.close();
+    }
+
   }
-  file.close();
+
+  if (writer.count != N)
+    WARN ("number of tracks in output file (" + str(writer.count) + ") is less than requested (" + str(N) + "); recommend running tckcountfix command on file \"" + str(argument[0]) + "\"");
 
 }
