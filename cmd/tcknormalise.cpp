@@ -107,9 +107,8 @@ class Writer
 {
   public:
     Writer (const std::string& file, const Tractography::Properties& properties) :
-      progress ("normalising tracks...") {
-        writer.create (file, properties);
-      }
+      progress ("normalising tracks..."),
+      writer (file, properties) { }
 
     bool operator() (const TrackType& item) {
       writer.append (item);

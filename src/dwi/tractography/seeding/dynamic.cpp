@@ -73,12 +73,15 @@ namespace MR
 
 
       Dynamic::Dynamic (const std::string& in, Image::Buffer<float>& fod_data, const Math::RNG& rng, const DWI::Directions::FastLookupSet& dirs) :
-        Base (in, rng, "dynamic"),
-        Mapping::FOD_TD_diff_map<FOD_TD_seed> (fod_data, dirs),
-        total_samples (0),
-        total_seeds   (0),
-        transform (Mapping::FOD_TD_diff_map<FOD_TD_seed>::info())
-        {
+            Base (in, rng, "dynamic"),
+            Mapping::FOD_TD_diff_map<FOD_TD_seed> (fod_data, dirs),
+            total_samples (0),
+            total_seeds   (0),
+            transform (Mapping::FOD_TD_diff_map<FOD_TD_seed>::info())
+#ifdef DYNAMIC_SEED_DEBUGGING
+          , seed_output ("seeds.tck", Tractography::Properties())
+#endif
+      {
         App::Options opt = App::get_options ("act");
         if (opt.size())
           act = new Dynamic_ACT_additions (opt[0][0]);
@@ -95,11 +98,7 @@ namespace MR
         // Prevent divide-by-zero at commencement
         Mapping::FOD_TD_diff_map<FOD_TD_seed>::TD_sum = DYNAMIC_SEED_INITIAL_TD_SUM;
 
-#ifdef DYNAMIC_SEED_DEBUGGING
-        seed_output.create ("seeds.tck", Tractography::Properties());
-#endif
-
-        }
+      }
 
 
       Dynamic::~Dynamic()

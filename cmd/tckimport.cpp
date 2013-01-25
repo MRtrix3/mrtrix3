@@ -55,8 +55,7 @@ void run ()
 
   DWI::Tractography::Properties properties;
 
-  DWI::Tractography::Writer<> writer;
-  writer.create (argument.back(), properties);
+  DWI::Tractography::Writer<> writer (argument.back(), properties);
 
   for (size_t n = 0; n < argument.size()-1; n++) {
     Math::Matrix<float> M;

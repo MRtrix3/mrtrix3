@@ -77,8 +77,7 @@ void run ()
   if (count && (skip + N > count))
     throw Exception ("the number of requested tracks plus the number of skipped tracks exceeds the total number of tracks in the file");
 
-  Tractography::Writer<float> writer;
-  writer.create (argument[2], properties);
+  Tractography::Writer<float> writer (argument[2], properties);
 
   std::vector<Point<float> > tck;
   size_t index = 0;

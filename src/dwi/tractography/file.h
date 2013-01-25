@@ -143,16 +143,14 @@ namespace MR
         public:
           typedef T value_type;
 
-          Writer () :
-            count (0), total_count (0), dtype (DataType::from<value_type>()) {
-              dtype.set_byte_order_native(); 
-              if (dtype != DataType::Float32LE && dtype != DataType::Float32BE && 
-                  dtype != DataType::Float64LE && dtype != DataType::Float64BE)
+          Writer (const std::string& file, const Properties& properties) :
+            count (0), total_count (0), dtype (DataType::from<value_type>())
+          {
+            dtype.set_byte_order_native();
+            if (dtype != DataType::Float32LE && dtype != DataType::Float32BE &&
+                dtype != DataType::Float64LE && dtype != DataType::Float64BE)
                 throw Exception ("only supported datatype for tracks file are "
                     "Float32LE, Float32BE, Float64LE & Float64BE");
-            }
-
-          Writer (const std::string& file, const Properties& properties) {
             create (file, properties);
           }
 
@@ -162,6 +160,37 @@ namespace MR
             out << count << "\ntotal_count: " << total_count << "\nEND\n";
             out.close();
           }
+
+
+          void append (const std::vector<Point<value_type> >& tck)
+          {
+            if (tck.size()) {
+              int64_t current (out.tellp());
+              current -= sizeof (Point<value_type>);
+              if (tck.size()) {
+                for (typename std::vector<Point<value_type> >::const_iterator i = tck.begin()+1; i != tck.end(); ++i)
+                  write_next_point (*i);
+                write_next_point (Point<value_type> (NAN, NAN, NAN));
+              }
+              write_next_point (Point<value_type> (INFINITY, INFINITY, INFINITY));
+              int64_t end (out.tellp());
+              out.seekp (current);
+              write_next_point (tck.size() ? tck[0] : Point<value_type> (NAN, NAN, NAN));
+              out.seekp (end);
+
+              count++;
+            }
+            total_count++;
+          }
+
+
+          size_t count, total_count;
+
+
+        protected:
+          std::ofstream  out;
+          DataType dtype;
+          int64_t  count_offset;
 
 
           void create (const std::string& file, const Properties& properties)
@@ -207,36 +236,6 @@ namespace MR
           }
 
 
-          void append (const std::vector<Point<value_type> >& tck)
-          {
-            if (tck.size()) {
-              int64_t current (out.tellp());
-              current -= sizeof (Point<value_type>); 
-              if (tck.size()) {
-                for (typename std::vector<Point<value_type> >::const_iterator i = tck.begin()+1; i != tck.end(); ++i) 
-                  write_next_point (*i);
-                write_next_point (Point<value_type> (NAN, NAN, NAN));
-              }
-              write_next_point (Point<value_type> (INFINITY, INFINITY, INFINITY));
-              int64_t end (out.tellp());
-              out.seekp (current);
-              write_next_point (tck.size() ? tck[0] : Point<value_type> (NAN, NAN, NAN));
-              out.seekp (end);
-
-              count++;
-            }
-            total_count++;
-          }
-
-
-          size_t count, total_count;
-
-
-        protected:
-          std::ofstream  out;
-          DataType dtype;
-          int64_t  count_offset;
-
           void write_next_point (const Point<value_type>& p) 
           {
             using namespace ByteOrder;
@@ -246,9 +245,13 @@ namespace MR
             out.write ((const char*) x, 3*sizeof(value_type));
           }
 
+
           Writer (const Writer& W) { assert (0); }
 
       };
+
+
+
 
 
     }

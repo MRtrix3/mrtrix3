@@ -403,8 +403,7 @@ namespace MR
         reader.open (input_path, p);
         // "count" and "total_count" should be dealt with by the writer
         p["SIFT_mu"] = str (mu());
-        Tractography::Writer<float> writer;
-        writer.create (output_path, p);
+        Tractography::Writer<float> writer (output_path, p);
         track_t tck_counter = 0;
         std::vector< Point<float> > tck;
         ProgressBar progress ("Writing filtered tracks output file...", contributions.size());
@@ -772,8 +771,7 @@ namespace MR
         Tractography::Properties p;
         reader.open (input_path, p);
         p["total_count"] = contributions.size();
-        Tractography::Writer<float> writer;
-        writer.create (output_path, p);
+        Tractography::Writer<float> writer (output_path, p);
         std::vector< Point<float> > tck;
         ProgressBar progress ("Writing non-contributing streamlines output file...", contributions.size());
         track_t tck_counter = 0;
