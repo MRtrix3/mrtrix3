@@ -1,7 +1,7 @@
 /*
     Copyright 2008 Brain Research Institute, Melbourne, Australia
 
-    Written by J-Donald Tournier, 11/05/09.
+    Written by Robert E. Smith, 25/01/13.
 
 
     This file is part of MRtrix.
@@ -81,8 +81,13 @@ void run ()
   // Read the actual number of streamlines in the file
   std::vector< Point<float> > tck;
   size_t count = 0;
-  while (reader.next (tck))
-    ++count;
+  {
+    ProgressBar progress ("evaluating actual streamline data count...");
+    while (reader.next (tck)) {
+      ++count;
+      ++progress;
+    }
+  }
   reader.close();
   DEBUG ("Actual number of streamlines read is " + str(count));
 

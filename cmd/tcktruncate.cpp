@@ -1,7 +1,7 @@
 /*
     Copyright 2008 Brain Research Institute, Melbourne, Australia
 
-    Written by J-Donald Tournier, 11/05/09.
+    Written by David A. Raffelt and Robert E. Smith, 25/01/13.
 
 
     This file is part of MRtrix.
