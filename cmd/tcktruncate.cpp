@@ -87,7 +87,7 @@ void run ()
   if (opt.size()) {
 
     if (!count)
-      throw Exception ("cannot get random truncation of file \"" + str(argument[0]) + "\", as 'count' field is invalid; first run tckcountfix command on this file");
+      throw Exception ("cannot get random truncation of file \"" + str(argument[0]) + "\", as 'count' field is invalid; first run tckfixcount command on this file");
 
     BitSet selection (count);
     {
@@ -112,7 +112,7 @@ void run ()
       }
     }
     if (index != count)
-      WARN ("'count' field in file \"" + str(argument[0]) + "\" is malformed; recommend applying tckcountfix command");
+      WARN ("'count' field in file \"" + str(argument[0]) + "\" is malformed; recommend applying tckfixcount command");
 
   } else {
 
@@ -133,6 +133,6 @@ void run ()
   }
 
   if (writer.count != N)
-    WARN ("number of tracks in output file (" + str(writer.count) + ") is less than requested (" + str(N) + "); recommend running tckcountfix command on file \"" + str(argument[0]) + "\"");
+    WARN ("number of tracks in output file (" + str(writer.count) + ") is less than requested (" + str(N) + "); recommend running tckfixcount command on file \"" + str(argument[0]) + "\"");
 
 }
