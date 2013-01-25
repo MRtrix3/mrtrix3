@@ -65,6 +65,7 @@ namespace MR
             void on_crop_to_slab_change (bool checked);
             void opacity_slot (int opacity);
             void line_thickness_slot (int thickness);
+            void show_right_click_menu (const QPoint& pos);
 
           protected:
              class Model;

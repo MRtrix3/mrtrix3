@@ -45,7 +45,6 @@ namespace MR
           window (window),
           tool (tool),
           filename (filename),
-          VertexArrayID (0),
           use_default_line_thickness (true),
           line_thickness (1.0)
         {
@@ -56,6 +55,7 @@ namespace MR
         Tractogram::~Tractogram ()
         {
           glDeleteBuffers (vertex_buffers.size(), &vertex_buffers[0]);
+          glDeleteVertexArrays (vertex_array_objects.size(), &vertex_array_objects[0]);
         }
 
 
@@ -83,7 +83,6 @@ namespace MR
           if (tool.get_opacity() < 1.0) {
             glEnable (GL_BLEND);
             glDisable (GL_DEPTH_TEST);
-            glHint(GL_LINE_SMOOTH_HINT, GL_NICEST);
             glDepthMask (GL_FALSE);
             glBlendEquation (GL_FUNC_ADD);
             glBlendFunc (GL_CONSTANT_ALPHA, GL_ONE);
@@ -98,18 +97,8 @@ namespace MR
           else
             glLineWidth (line_thickness);
 
-          if (!VertexArrayID)
-            glGenVertexArrays (1, &VertexArrayID);
-
-          glBindVertexArray (VertexArrayID);
           for (size_t buf = 0; buf < vertex_buffers.size(); ++buf) {
-            glEnableVertexAttribArray (0);
-            glBindBuffer (GL_ARRAY_BUFFER, vertex_buffers[buf]);
-            glVertexAttribPointer (0, 3, GL_FLOAT, GL_FALSE, 0, (void*)(3*sizeof(float)));
-            glEnableVertexAttribArray (1);
-            glVertexAttribPointer (1, 3, GL_FLOAT, GL_FALSE, 0, (void*)0);
-            glEnableVertexAttribArray (2);
-            glVertexAttribPointer (2, 3, GL_FLOAT, GL_FALSE, 0, (void*)(6*sizeof(float)));
+            glBindVertexArray (vertex_array_objects[buf]);
             glMultiDrawArrays (GL_LINE_STRIP, &track_starts[buf][0], &track_sizes[buf][0], num_tracks_per_buffer[buf]);
           }
 
@@ -142,34 +131,11 @@ namespace MR
             buffer.insert (buffer.end(), tck.begin(), tck.end());
             sizes.push_back(tck.size());
             tck_count++;
-
-            if (buffer.size() >= MAX_BUFFER_SIZE) {
-              buffer.push_back (Point<float>());
-              GLuint vertexbuffer;
-              glGenBuffers (1, &vertexbuffer);
-              glBindBuffer (GL_ARRAY_BUFFER, vertexbuffer);
-              glBufferData (GL_ARRAY_BUFFER, buffer.size() * sizeof(Point<float>), &buffer[0][0], GL_STATIC_DRAW);
-              vertex_buffers.push_back (vertexbuffer);
-              track_starts.push_back (starts);
-              track_sizes.push_back (sizes);
-              num_tracks_per_buffer.push_back (tck_count);
-              tck_count = 0;
-              buffer.clear();
-              starts.clear();
-              sizes.clear();
-            }
+            if (buffer.size() >= MAX_BUFFER_SIZE)
+              load_data_into_GPU_buffer (buffer, starts, sizes, tck_count);
           }
-          if (buffer.size()) {
-            buffer.push_back (Point<float>());
-            GLuint vertexbuffer;
-            glGenBuffers (1, &vertexbuffer);
-            glBindBuffer (GL_ARRAY_BUFFER, vertexbuffer);
-            glBufferData (GL_ARRAY_BUFFER, buffer.size() * sizeof(Point<float>), &buffer[0][0], GL_STATIC_DRAW);
-            vertex_buffers.push_back (vertexbuffer);
-            track_starts.push_back (starts);
-            track_sizes.push_back (sizes);
-            num_tracks_per_buffer.push_back (tck_count);
-          }
+          if (buffer.size())
+            load_data_into_GPU_buffer (buffer, starts, sizes, tck_count);
           file.close();
         }
 

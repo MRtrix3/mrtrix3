@@ -108,6 +108,12 @@ namespace MR
 
             connect (tractogram_list_view, SIGNAL (clicked (const QModelIndex&)), this, SLOT (toggle_shown (const QModelIndex&)));
 
+
+//            tractogram_list_view->setContextMenuPolicy(Qt::CustomContextMenu);
+//            connect(tractogram_list_view, SIGNAL(customContextMenuRequested(const QPoint&)),
+//                this, SLOT(show_right_click_menu (const QPoint&)));
+
+
             main_box->addWidget (tractogram_list_view, 1);
 
             QGridLayout* default_opt_grid = new QGridLayout;
@@ -184,7 +190,9 @@ namespace MR
         }
 
         void Tractography::toggle_shown (const QModelIndex& index) {
+          shader_update = true;
           window.updateGL();
+          shader_update = false;
         }
 
         void Tractography::on_crop_to_slab_change (bool checked) {
@@ -207,6 +215,29 @@ namespace MR
         void Tractography::line_thickness_slot (int thickness) {
           line_thickness = static_cast<float>(thickness) / 100.0;
           window.updateGL();
+        }
+
+        void Tractography::show_right_click_menu (const QPoint& pos) // this is a slot
+        {
+          TEST;
+          // for most widgets
+//          QPoint globalPos = myWidget->mapToGlobal(pos);
+//          // for QAbstractScrollArea and derived classes you would use:
+//          QPoint globalPos = myWidget->viewport()->mapToGlobal(pos);
+//
+//          QMenu myMenu;
+//          myMenu.addAction("Menu Item 1");
+//          // ...
+//
+//          QAction* selectedItem = myMenu.exec(globalPos);
+//          if (selectedItem)
+//          {
+//              // something was chosen, do stuff
+//          }
+//          else
+//          {
+//              // nothing was chosen
+//          }
         }
 
 

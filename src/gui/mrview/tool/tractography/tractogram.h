@@ -75,17 +75,48 @@ namespace MR
             Tractography& tool;
             std::string filename;
             std::vector<GLuint> vertex_buffers;
+            std::vector<GLuint> vertex_array_objects;
             DWI::Tractography::Reader<float> file;
             DWI::Tractography::Properties properties;
             std::vector<std::vector<GLint> > track_starts;
             std::vector<std::vector<GLint> > track_sizes;
             std::vector<size_t> num_tracks_per_buffer;
-            GLuint VertexArrayID;
             bool use_default_line_thickness;
             float line_thickness;
             Shader shader;
 
             void set_color () {
+            }
+
+            inline void load_data_into_GPU_buffer (std::vector<Point<float> >& buffer,
+                                                   std::vector<GLint>& starts,
+                                                   std::vector<GLint>& sizes,
+                                                   size_t& tck_count) {
+              buffer.push_back (Point<float>());
+              GLuint vertexbuffer;
+              glGenBuffers (1, &vertexbuffer);
+              glBindBuffer (GL_ARRAY_BUFFER, vertexbuffer);
+              glBufferData (GL_ARRAY_BUFFER, buffer.size() * sizeof(Point<float>), &buffer[0][0], GL_STATIC_DRAW);
+
+              GLuint vertex_array_object;
+              glGenVertexArrays (1, &vertex_array_object);
+              glBindVertexArray (vertex_array_object);
+              glEnableVertexAttribArray (0);
+              glVertexAttribPointer (0, 3, GL_FLOAT, GL_FALSE, 0, (void*)(3*sizeof(float)));
+              glEnableVertexAttribArray (1);
+              glVertexAttribPointer (1, 3, GL_FLOAT, GL_FALSE, 0, (void*)0);
+              glEnableVertexAttribArray (2);
+              glVertexAttribPointer (2, 3, GL_FLOAT, GL_FALSE, 0, (void*)(6*sizeof(float)));
+
+              vertex_array_objects.push_back(vertex_array_object);
+              vertex_buffers.push_back (vertexbuffer);
+              track_starts.push_back (starts);
+              track_sizes.push_back (sizes);
+              num_tracks_per_buffer.push_back (tck_count);
+              buffer.clear();
+              starts.clear();
+              sizes.clear();
+              tck_count = 0;
             }
 
             void load_tracks();
