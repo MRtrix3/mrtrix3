@@ -120,12 +120,11 @@ namespace MR
           else if (colourmap == ColourMap::Complex) {
             source += 
               "float mag = clamp (scale * (amplitude - offset), 0.0, 1.0);\n"
-              "float phase = atan (color.a, color.g) / 3.141592653589793;\n"
-              "color.g = mag * abs(phase);\n"
-              "phase += 0.666666666666667; if (phase > 1.0) phase -= 2.0;\n"
-              "color.r = mag * abs(phase);\n"
-              "phase += 0.666666666666667; if (phase > 1.0) phase -= 2.0;\n"
-              "color.b = mag * abs(phase);\n";
+              "float phase = atan (color.a, color.g) * 0.954929658551372;\n"
+              "color.rgb = phase + vec3 (-2.0, 0.0, 2.0);\n"
+              "if (phase > 2.0) color.b -= 6.0;\n"
+              "if (phase < -2.0) color.r += 6.0;\n"
+              "color.rgb = mag * (2.0 - abs (color.rgb));\n";
           }
           else assert (0);
         }
