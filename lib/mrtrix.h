@@ -223,13 +223,13 @@ namespace MR
     bool ignore_empty_fields = false,
     size_t num = std::numeric_limits<size_t>::max());
 
-  inline std::string join (std::vector<std::string>& V, const std::string& delimiter)
+  inline std::string join (const std::vector<std::string>& V, const std::string& delimiter)
   {
     std::string ret;
     if (V.empty())
       return ret;
     ret = V[0];
-    for (std::vector<std::string>::iterator i = V.begin() +1; i != V.end(); ++i)
+    for (std::vector<std::string>::const_iterator i = V.begin() +1; i != V.end(); ++i)
       ret += delimiter + *i;
     return ret;
   }
