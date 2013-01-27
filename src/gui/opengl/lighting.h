@@ -49,11 +49,11 @@ namespace MR
             load_defaults();
           }
 
-          float ambient, diffuse, specular, shine, ambient_color[3];
-          float light_color[3], object_color[3], lightpos[4], background_color[3];
+          float ambient, diffuse, specular, shine;
+          float light_color[3], object_color[3], lightpos[3], background_color[3];
           bool set_background;
 
-          void  set ();
+          void  set () const;
           void  load_defaults ();
           void  update () {
             emit changed();

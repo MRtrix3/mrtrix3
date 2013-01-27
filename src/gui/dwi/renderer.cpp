@@ -25,6 +25,8 @@
 
 #include "math/legendre.h"
 #include "gui/dwi/renderer.h"
+#include "gui/projection.h"
+#include "gui/opengl/lighting.h"
 
 #define X .525731112119133606
 #define Z .850650808352039932
@@ -41,7 +43,7 @@ namespace
     {0.0, -Z, -X}
   };
 
-  static uint32_t initial_indices[NUM_INDICES][3] = {
+  static GLuint initial_indices[NUM_INDICES][3] = {
     {0,1,2}, {0,2,5}, {2,1,4}, {4,1,6},
     {8,6,3}, {8,3,7}, {7,3,0}, {0,3,1},
     {3,6,1}, {5,7,0}
@@ -52,70 +54,67 @@ namespace
 namespace
 {
   const char* vertex_shader_source =
-    "uniform int color_by_direction, use_normals, reverse;\n"
+    "#version 330 core\n"
+    "layout(location = 0) in vec3 vertex;\n"
+    "layout(location = 1) in vec3 r_del_daz;\n"
+    "uniform int color_by_direction, use_lighting, reverse;\n"
     "uniform float scale;\n"
-    "varying vec4 color, ambient;\n"
-    "varying vec3 normal, lightDir, halfVector;\n"
-    "varying float amplitude;\n"
+    "uniform vec3 constant_color;\n"
+    "uniform mat4 MV, MVP;\n"
+    "out vec3 position, color, normal;\n"
+    "out float amplitude;\n"
     "void main () {\n"
-    "  vec4 vertex = gl_Vertex;\n"
-    "  normal = gl_Normal;\n"
-    "  amplitude = normal.x;\n"
-    "  if (use_normals != 0) {\n"
+    "  amplitude = r_del_daz[0];\n"
+    "  if (use_lighting != 0) {\n"
     "    bool atpole = ( vertex.x == 0.0 && vertex.y == 0.0 );\n"
     "    float az = atpole ? 0.0 : atan (vertex.y, vertex.x);\n"
     "    float caz = cos (az), saz = sin (az), cel = vertex.z, sel = sqrt (1.0 - cel*cel);\n"
     "    vec3 d1;\n"
     "    if (atpole)\n"
-    "      d1 = vec3 (-normal.x*saz, normal.x*caz, normal.z);\n"
+    "      d1 = vec3 (-r_del_daz[0]*saz, r_del_daz[0]*caz, r_del_daz[2]);\n"
     "    else\n"
-    "      d1 = vec3 (normal.z*caz*sel - normal.x*sel*saz, normal.z*saz*sel + normal.x*sel*caz, normal.z*cel);\n"
-    "    vec3 d2 = vec3 (-normal.y*caz*sel - normal.x*caz*cel, -normal.y*saz*sel - normal.x*saz*cel, -normal.y*cel + normal.x*sel);\n"
+    "      d1 = vec3 (r_del_daz[2]*caz*sel - r_del_daz[0]*sel*saz, r_del_daz[2]*saz*sel + r_del_daz[0]*sel*caz, r_del_daz[2]*cel);\n"
+    "    vec3 d2 = vec3 (-r_del_daz[1]*caz*sel - r_del_daz[0]*caz*cel,\n"
+    "                    -r_del_daz[1]*saz*sel - r_del_daz[0]*saz*cel,\n"
+    "                    -r_del_daz[1]*cel     + r_del_daz[0]*sel);\n"
     "    normal = cross (d1, d2);\n"
     "    if (reverse != 0)\n"
     "      normal = -normal;\n"
-    "    normal = normalize (gl_NormalMatrix * normal);\n"
-    "    lightDir = normalize (vec3 (gl_LightSource[0].position));\n"
-    "    halfVector = normalize (gl_LightSource[0].halfVector.xyz);\n"
-    "    ambient = gl_LightSource[0].ambient + gl_LightModel.ambient;\n"
+    "    normal = normalize (mat3(MV) * normal);\n"
     "  }\n"
-    "  if (color_by_direction != 0) { color.rgb = abs (vertex.xyz); color.a = 1.0; }\n"
-    "  else { color = gl_Color; }\n"
-    "  vertex.xyz *= amplitude * scale;\n"
+    "  if (color_by_direction != 0)\n"
+    "     color = abs (vertex.xyz);\n"
+    "  else\n"
+    "     color = constant_color;\n"
+    "  vec3 pos = vertex * amplitude * scale;\n"
     "  if (reverse != 0)\n"
-    "    vertex.xyz = -vertex.xyz;\n"
-    "  gl_Position = gl_ModelViewProjectionMatrix * vertex;\n"
+    "    pos = -pos;\n"
+    "  position = -(MV * vec4(pos,1.0)).xyz;\n"
+    "  gl_Position = MVP * vec4 (pos, 1.0);\n"
     "}\n";
 
 
   const char* fragment_shader_source =
-    "uniform int use_normals, hide_neg_lobes;\n"
-    "varying vec4 color, diffuse, ambient;\n"
-    "varying vec3 normal, lightDir, halfVector;\n"
-    "varying float amplitude;\n"
+    "#version 330 core\n"
+    "uniform int use_lighting, hide_neg_lobes;\n"
+    "uniform float ambient, diffuse, specular, shine;\n"
+    "uniform vec3 light_pos;\n"
+    "in vec3 position, color, normal;\n"
+    "in float amplitude;\n"
+    "out vec3 final_color;\n"
     "void main() {\n"
-    "  vec4 frag_color, actual_color;\n"
-    "  vec3 n, halfV;\n"
-    "  float NdotL, NdotHV;\n"
     "  if (amplitude < 0.0) {\n"
     "    if (hide_neg_lobes != 0) discard;\n"
-    "    actual_color = vec4(1.0,1.0,1.0,1.0);\n"
+    "    final_color = vec3(1.0,1.0,1.0);\n"
     "  }\n"
-    "  else actual_color = color;\n"
-    "  n = normalize (normal);\n"
-    "  if (use_normals != 0) {\n"
-    "    if (amplitude < 0.0) n = -n;\n"
-    "    NdotL = dot (n,lightDir);\n"
-    "    frag_color = actual_color * ambient;\n"
-    "    if (NdotL > 0.0) {\n"
-    "      frag_color += gl_LightSource[0].diffuse * NdotL * actual_color;\n"
-    "      halfV = normalize(halfVector);\n"
-    "      NdotHV = max(dot(n,halfV),0.0);\n"
-    "      frag_color += gl_FrontMaterial.specular * gl_LightSource[0].specular * pow (NdotHV, gl_FrontMaterial.shininess);\n"
-    "    }\n"
+    "  else final_color = color;\n"
+    "  if (use_lighting != 0) {\n"
+    "    vec3 norm = normalize (normal);\n"
+    "    if (amplitude < 0.0)\n"
+    "      norm = -norm;\n"
+    "    final_color *= ambient + diffuse * clamp (dot (norm, light_pos), 0, 1);\n"
+    "    final_color += specular * pow (clamp (dot (reflect (-light_pos, norm), normalize(position)), 0, 1), shine);\n"
     "  }\n"
-    "  else frag_color = actual_color;\n"
-    "  gl_FragColor = frag_color;\n"
     "}\n";
 
 }
@@ -128,6 +127,79 @@ namespace MR
     namespace DWI
     {
 
+
+      namespace {
+
+        class Triangle
+        {
+          public:
+            Triangle () { }
+            Triangle (const GLuint x[3]) {
+              index[0] = x[0];
+              index[1] = x[1];
+              index[2] = x[2];
+            }
+            Triangle (size_t i1, size_t i2, size_t i3) {
+              index[0] = i1;
+              index[1] = i2;
+              index[2] = i3;
+            }
+            void set (size_t i1, size_t i2, size_t i3) {
+              index[0] = i1;
+              index[1] = i2;
+              index[2] = i3;
+            }
+            GLuint& operator[] (int n) {
+              return index[n];
+            }
+          protected:
+            GLuint  index[3];
+        };
+
+        class Edge
+        {
+          public:
+            Edge (const Edge& E) {
+              set (E.i1, E.i2);
+            }
+            Edge (GLuint a, GLuint b) {
+              set (a,b);
+            }
+            bool operator< (const Edge& E) const {
+              return (i1 < E.i1 ? true : i2 < E.i2);
+            }
+            void set (GLuint a, GLuint b) {
+              if (a < b) {
+                i1 = a;
+                i2 = b;
+              }
+              else {
+                i1 = b;
+                i2 = a;
+              }
+            }
+            GLuint i1;
+            GLuint i2;
+        };
+
+
+      }
+
+
+      Renderer::~Renderer () 
+      {
+        if (vertex_buffer_ID)
+          glDeleteBuffers (1, &vertex_buffer_ID);
+        if (surface_buffer_ID)
+          glDeleteBuffers (1, &surface_buffer_ID);
+        if (index_buffer_ID)
+          glDeleteBuffers (1, &index_buffer_ID);
+        if (vertex_array_object_ID)
+          glDeleteVertexArrays (1, &vertex_array_object_ID);
+      }
+
+
+
       void Renderer::init ()
       {
         GL::Shader::Vertex vertex_shader (vertex_shader_source);
@@ -135,6 +207,22 @@ namespace MR
         shader_program.attach (vertex_shader);
         shader_program.attach (fragment_shader);
         shader_program.link();
+
+        glGenBuffers (1, &vertex_buffer_ID);
+        glGenBuffers (1, &surface_buffer_ID);
+        glGenBuffers (1, &index_buffer_ID);
+        glGenVertexArrays (1, &vertex_array_object_ID);
+        glBindVertexArray (vertex_array_object_ID);
+
+        glBindBuffer (GL_ARRAY_BUFFER, vertex_buffer_ID);
+        glEnableVertexAttribArray (0);
+        glVertexAttribPointer (0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)0);
+
+        glBindBuffer (GL_ARRAY_BUFFER, surface_buffer_ID);
+        glEnableVertexAttribArray (1);
+        glVertexAttribPointer (1, 3, GL_FLOAT, GL_FALSE, 3*sizeof(GLfloat), (void*)0);
+
+        glBindBuffer (GL_ELEMENT_ARRAY_BUFFER, index_buffer_ID);
       }
 
 
@@ -144,7 +232,8 @@ namespace MR
 
 
 
-      void Renderer::draw (float scale, bool use_normals, const float* colour)
+      void Renderer::draw (const Projection& projection, const GL::Lighting& lighting, float scale, 
+          bool use_lighting, bool color_by_direction, bool hide_neg_lobes)
       {
         if (recompute_mesh) 
           compute_mesh();
@@ -152,31 +241,28 @@ namespace MR
         if (recompute_amplitudes) 
           compute_amplitudes();
 
-        glPushClientAttrib (GL_CLIENT_VERTEX_ARRAY_BIT);
-        glEnableClientState (GL_VERTEX_ARRAY);
-        glVertexPointer (3, GL_FLOAT, sizeof (Vertex), &vertices[0]);
-
-        glEnableClientState (GL_NORMAL_ARRAY);
-        glNormalPointer (GL_FLOAT, 0, &amplitudes_and_derivatives[0]);
-
-        if (colour) 
-          glColor3fv (colour);
-
         shader_program.start();
+
+        glUniformMatrix4fv (glGetUniformLocation (shader_program, "MV"), 1, GL_FALSE, projection.modelview());
+        glUniformMatrix4fv (glGetUniformLocation (shader_program, "MVP"), 1, GL_FALSE, projection.modelview_projection());
+        glUniform3fv (glGetUniformLocation (shader_program, "light_pos"), 1, lighting.lightpos);
+        glUniform1f (glGetUniformLocation (shader_program, "ambient"), lighting.ambient);
+        glUniform1f (glGetUniformLocation (shader_program, "diffuse"), lighting.diffuse);
+        glUniform1f (glGetUniformLocation (shader_program, "specular"), lighting.specular);
+        glUniform1f (glGetUniformLocation (shader_program, "shine"), lighting.shine);
         glUniform1f (glGetUniformLocation (shader_program, "scale"), scale);
-        glUniform1i (glGetUniformLocation (shader_program, "color_by_direction"), colour ? 0 : 1);
-        glUniform1i (glGetUniformLocation (shader_program, "use_normals"), use_normals ? 1 : 0);
-        glUniform1i (glGetUniformLocation (shader_program, "hide_neg_lobes"), hide_neg_lobes ? 1 : 0);
+        glUniform1i (glGetUniformLocation (shader_program, "color_by_direction"), color_by_direction);
+        glUniform1i (glGetUniformLocation (shader_program, "use_lighting"), use_lighting);
+        glUniform1i (glGetUniformLocation (shader_program, "hide_neg_lobes"), hide_neg_lobes);
+        glUniform3fv (glGetUniformLocation (shader_program, "constant_color"), 1, lighting.object_color);
         GLuint reverse = glGetUniformLocation (shader_program, "reverse");
 
         glUniform1i (reverse, 0);
-        glDrawElements (GL_TRIANGLES, 3*indices.size(), GL_UNSIGNED_INT, &indices[0]);
+        glDrawElements (GL_TRIANGLES, num_indices, GL_UNSIGNED_INT, (void*)0);
         glUniform1i (reverse, 1);
-        glDrawElements (GL_TRIANGLES, 3*indices.size(), GL_UNSIGNED_INT, &indices[0]);
+        glDrawElements (GL_TRIANGLES, num_indices, GL_UNSIGNED_INT, (void*)0);
 
         shader_program.stop();
-        glPopClientAttrib();
-
       }
 
 
@@ -190,8 +276,8 @@ namespace MR
         INFO ("updating SH renderer transform...");
         QApplication::setOverrideCursor (Qt::BusyCursor);
 
-        indices.clear();
-        vertices.clear();
+        std::vector<Vertex> vertices;
+        std::vector<Triangle> indices;
 
         for (int n = 0; n < NUM_VERTICES; n++)
           vertices.push_back (initial_vertices[n]);
@@ -199,15 +285,15 @@ namespace MR
         for (int n = 0; n < NUM_INDICES; n++) 
           indices.push_back (initial_indices[n]);
 
-        std::map<Edge,uint32_t> edges;
+        std::map<Edge,GLuint> edges;
 
         for (int lod = 0; lod < lod_computed; lod++) {
-          uint32_t num = indices.size();
+          GLuint num = indices.size();
           for (GLuint n = 0; n < num; n++) {
-            uint32_t index1, index2, index3;
+            GLuint index1, index2, index3;
 
             Edge E (indices[n][0], indices[n][1]);
-            std::map<Edge,uint32_t>::const_iterator iter;
+            std::map<Edge,GLuint>::const_iterator iter;
             if ( (iter = edges.find (E)) == edges.end()) {
               index1 = vertices.size();
               edges[E] = index1;
@@ -238,7 +324,14 @@ namespace MR
           }
         }
 
-        compute_transform ();
+        compute_transform (vertices);
+
+        glBindBuffer (GL_ARRAY_BUFFER, vertex_buffer_ID);
+        glBufferData (GL_ARRAY_BUFFER, vertices.size()*sizeof(Vertex), &vertices[0][0], GL_STATIC_DRAW);
+
+        num_indices = 3*indices.size();
+        glBindBuffer (GL_ELEMENT_ARRAY_BUFFER, index_buffer_ID);
+        glBufferData (GL_ELEMENT_ARRAY_BUFFER, indices.size()*sizeof(Triangle), &indices[0], GL_STATIC_DRAW);
 
         QApplication::restoreOverrideCursor();
       }
@@ -256,20 +349,21 @@ namespace MR
         if (actual_lmax > lmax_computed) actual_lmax = lmax_computed;
         size_t nSH = Math::SH::NforL (actual_lmax);
 
-        amplitudes_and_derivatives.resize (transform.rows());
-
         Math::Matrix<float> M (transform.sub (0, transform.rows(), 0, nSH));
         Math::Vector<float> S (SH.sub (0, nSH));
-        Math::Vector<float> A (&amplitudes_and_derivatives[0], transform.rows());
+        Math::Vector<float> A (transform.rows());
 
         Math::mult (A, M, S);
+
+        glBindBuffer (GL_ARRAY_BUFFER, surface_buffer_ID);
+        glBufferData (GL_ARRAY_BUFFER, A.size()*sizeof(float), &A[0], GL_STATIC_DRAW);
       }
 
 
 
 
 
-      void Renderer::compute_transform ()
+      void Renderer::compute_transform (const std::vector<Vertex>& vertices)
       {
         // order is r, del, daz
 
@@ -277,12 +371,6 @@ namespace MR
         transform.zero();
 
         for (size_t n = 0; n < vertices.size(); ++n) {
-/*
-        GLfloat* r (get_r (row));
-        GLfloat* daz (get_daz (row));
-        GLfloat* del (get_del (row));
-        memset (r, 0, 3*nsh*sizeof (GLfloat));
-*/
           for (int l = 0; l <= lmax_computed; l+=2) {
             for (int m = 0; m <= l; m++) {
               const int idx (Math::SH::index (l,m));
@@ -295,7 +383,6 @@ namespace MR
 
           for (int l = 2; l <= lmax_computed; l+=2) {
             const int idx (Math::SH::index (l,0));
-            //del[idx] = r[idx+1] * sqrt (float (l* (l+1)));
             transform (3*n+1, idx) = transform (3*n, idx+1) * sqrt (float (l* (l+1)));
           }
 
@@ -304,33 +391,23 @@ namespace MR
             float saz = sin (m*az);
             for (int l = 2* ( (m+1) /2); l <= lmax_computed; l+=2) {
               const int idx (Math::SH::index (l,m));
-              //del[idx] = - r[idx-1] * sqrt (float ( (l+m) * (l-m+1)));
               transform (3*n+1, idx) = - transform (3*n, idx-1) * sqrt (float ( (l+m) * (l-m+1)));
               if (l > m) 
                 transform (3*n+1,idx) += transform (3*n, idx+1) * sqrt (float ( (l-m) * (l+m+1)));
-              //del[idx] += r[idx+1] * sqrt (float ( (l-m) * (l+m+1)));
-              //del[idx] /= 2.0;
               transform (3*n+1, idx) /= 2.0;
 
               const int idx2 (idx-2*m);
               if (atpole) {
-                //daz[idx] = - del[idx] * saz;
-                //daz[idx2] = del[idx] * caz;
                 transform (3*n+2, idx) = - transform (3*n+1, idx) * saz;
                 transform (3*n+2, idx2) = transform (3*n+1, idx) * caz;
               }
               else {
-                //float tmp (m * r[idx]);
                 float tmp (m * transform (3*n, idx));
-                //daz[idx] = - tmp * saz;
-                //daz[idx2] = tmp * caz;
                 transform (3*n+2, idx) = -tmp * saz;
                 transform (3*n+2, idx2) = tmp * caz;
               }
 
-              //del[idx2] = del[idx] * saz;
               transform (3*n+1, idx2) = transform (3*n+1, idx) * saz;
-              //del[idx] *= caz;
               transform (3*n+1, idx) *= caz;
             }
           }
@@ -340,9 +417,7 @@ namespace MR
             float saz = sin (m*az);
             for (int l = 2* ( (m+1) /2); l <= lmax_computed; l+=2) {
               const int idx (Math::SH::index (l,m));
-              //r[idx] *= caz;
               transform (3*n, idx) *= caz;
-              //r[idx-2*m] *= saz;
               transform (3*n, idx-2*m) *= saz;
             }
           }

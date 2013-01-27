@@ -51,8 +51,6 @@ namespace MR
 
         protected slots:
           void object_color_slot (const QColor& new_color);
-          void ambient_color_slot (const QColor& new_color);
-          void diffuse_color_slot (const QColor& new_color);
           void ambient_intensity_slot (int value);
           void diffuse_intensity_slot (int value);
           void specular_intensity_slot (int value);

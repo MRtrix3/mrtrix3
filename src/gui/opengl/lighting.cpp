@@ -21,6 +21,7 @@
 */
 
 #include "file/config.h"
+#include "math/vector.h"
 #include "gui/opengl/lighting.h"
 
 namespace MR
@@ -57,58 +58,19 @@ namespace MR
 
       void Lighting::load_defaults ()
       {
-        load_default_color ("OrientationPlot.BackgroundColor", background_color, 1.0, 1.0, 1.0);
-        load_default_color ("OrientationPlot.AmbientColour", ambient_color, 1.0, 1.0, 1.0);
-        load_default_color ("OrientationPlot.LightColour", light_color, 1.0, 1.0, 1.0);
-        load_default_color ("OrientationPlot.ObjectColour", object_color, 1.0, 1.0, 1.0);
-        load_default_color ("OrientationPlot.LightPosition", lightpos, 1.0, 1.0, 3.0);
-        lightpos[3] = 0.0;
+        load_default_color ("BackgroundColor", background_color, 1.0, 1.0, 1.0);
+        load_default_color ("ObjectColor", object_color, 1.0, 1.0, 0.0);
+        load_default_color ("LightPosition", lightpos, 1.0, 1.0, 3.0);
 
-        ambient = File::Config::get_float ("OrientationPlot.AmbientIntensity", 0.4);
-        diffuse = File::Config::get_float ("OrientationPlot.DiffuseIntensity", 0.7);
-        specular = File::Config::get_float ("OrientationPlot.SpecularIntensity", 0.3);
-        shine = File::Config::get_float ("OrientationPlot.SpecularExponent", 5.0);
+        Math::normalise (lightpos, 3);
+
+        ambient = File::Config::get_float ("AmbientIntensity", 0.4);
+        diffuse = File::Config::get_float ("DiffuseIntensity", 0.7);
+        specular = File::Config::get_float ("SpecularIntensity", 0.4);
+        shine = File::Config::get_float ("SpecularExponent", 8.0);
       }
 
 
-
-
-      void Lighting::set ()
-      {
-        if (set_background) glClearColor (background_color[0], background_color[1], background_color[2], 0.0);
-
-        glLightModeli (GL_LIGHT_MODEL_TWO_SIDE, GL_TRUE);
-        glShadeModel (GL_SMOOTH);
-        glEnable (GL_LIGHT0);
-        glEnable (GL_NORMALIZE);
-
-        GLfloat v[] = { ambient_color[0]* ambient, ambient_color[1]* ambient, ambient_color[2]* ambient, 1.0 };
-        glLightModelfv (GL_LIGHT_MODEL_AMBIENT, v);
-
-        v[0] = 1.0;
-        v[1] = 1.0;
-        v[2] = 1.0;
-        glMaterialfv (GL_FRONT_AND_BACK, GL_SPECULAR, v);
-        glMaterialf (GL_FRONT_AND_BACK, GL_SHININESS, shine);
-
-        glLightfv (GL_LIGHT0, GL_POSITION, lightpos);
-
-        v[0] = light_color[0] * diffuse;
-        v[1] = light_color[1] * diffuse;
-        v[2] = light_color[2] * diffuse;
-        glLightfv (GL_LIGHT0, GL_DIFFUSE, v);
-
-        v[0] = light_color[0] * specular;
-        v[1] = light_color[1] * specular;
-        v[2] = light_color[2] * specular;
-        glLightfv (GL_LIGHT0, GL_SPECULAR, v);
-
-        v[0] = v[1] = v[2] = 0.0;
-        glLightfv (GL_LIGHT0, GL_AMBIENT, v);
-
-        v[0] = v[1] = v[2] = 0.9;
-        glMaterialfv (GL_BACK, GL_AMBIENT_AND_DIFFUSE, v);
-      }
 
     }
   }

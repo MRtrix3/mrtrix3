@@ -62,9 +62,6 @@ namespace MR
                 image()->interp.dim(2)*image()->interp.vox(2)));
 
 
-          if (image()->shader.use_lighting())
-            window.lighting().set();
-
           Math::Versor<float> Q = orientation();
           if (!Q) {
             Q = Math::Versor<float> (1.0, 0.0, 0.0, 0.0);

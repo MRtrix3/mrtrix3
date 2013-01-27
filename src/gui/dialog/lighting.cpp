@@ -57,60 +57,47 @@ namespace MR
           grid_layout->addWidget (cbutton, 0, 1);
         }
 
-        C.setRgbF (info.ambient_color[0], info.ambient_color[1], info.ambient_color[2]);
-        cbutton = new QColorButton (C);
-        connect (cbutton, SIGNAL (changed (const QColor&)), this, SLOT (ambient_color_slot (const QColor&)));
-        grid_layout->addWidget (new QLabel ("Ambient Colour"), 1, 0);
-        grid_layout->addWidget (cbutton, 1, 1);
-
-        C.setRgbF (info.light_color[0], info.light_color[1], info.light_color[2]);
-        cbutton = new QColorButton (C);
-        connect (cbutton, SIGNAL (changed (const QColor&)), this, SLOT (diffuse_color_slot (const QColor&)));
-        grid_layout->addWidget (new QLabel ("Light Colour"), 2, 0);
-        grid_layout->addWidget (cbutton, 2, 1);
-
-
         slider = new QSlider (Qt::Horizontal);
         slider->setRange (0,1000);
         slider->setSliderPosition (int (info.ambient * 1000.0));
         connect (slider, SIGNAL (valueChanged (int)), this, SLOT (ambient_intensity_slot (int)));
-        grid_layout->addWidget (new QLabel ("Ambient intensity"), 3, 0);
-        grid_layout->addWidget (slider, 3, 1);
+        grid_layout->addWidget (new QLabel ("Ambient intensity"), 1, 0);
+        grid_layout->addWidget (slider, 1, 1);
 
         slider = new QSlider (Qt::Horizontal);
         slider->setRange (0,1000);
         slider->setSliderPosition (int (info.diffuse * 1000.0));
         connect (slider, SIGNAL (valueChanged (int)), this, SLOT (diffuse_intensity_slot (int)));
-        grid_layout->addWidget (new QLabel ("Diffuse intensity"), 4, 0);
-        grid_layout->addWidget (slider, 4, 1);
+        grid_layout->addWidget (new QLabel ("Diffuse intensity"), 2, 0);
+        grid_layout->addWidget (slider, 2, 1);
 
         slider = new QSlider (Qt::Horizontal);
         slider->setRange (0,1000);
         slider->setSliderPosition (int (info.specular * 1000.0));
         connect (slider, SIGNAL (valueChanged (int)), this, SLOT (specular_intensity_slot (int)));
-        grid_layout->addWidget (new QLabel ("Specular intensity"), 5, 0);
-        grid_layout->addWidget (slider, 5, 1);
+        grid_layout->addWidget (new QLabel ("Specular intensity"), 3, 0);
+        grid_layout->addWidget (slider, 3, 1);
 
         slider = new QSlider (Qt::Horizontal);
         slider->setRange (10,1000);
         slider->setSliderPosition (int (info.shine * 10.0));
         connect (slider, SIGNAL (valueChanged (int)), this, SLOT (shine_slot (int)));
-        grid_layout->addWidget (new QLabel ("Specular exponent"), 6, 0);
-        grid_layout->addWidget (slider, 6, 1);
+        grid_layout->addWidget (new QLabel ("Specular exponent"), 4, 0);
+        grid_layout->addWidget (slider, 4, 1);
 
         elevation_slider = new QSlider (Qt::Horizontal);
         elevation_slider->setRange (0,1000);
-        elevation_slider->setSliderPosition (int ( (1000.0/M_PI) *acos (info.lightpos[1]/Math::norm (info.lightpos))));
+        elevation_slider->setSliderPosition (int ( (1000.0/M_PI) *acos (-info.lightpos[1]/Math::norm (info.lightpos))));
         connect (elevation_slider, SIGNAL (valueChanged (int)), this, SLOT (light_position_slot()));
-        grid_layout->addWidget (new QLabel ("Light elevation"), 7, 0);
-        grid_layout->addWidget (elevation_slider, 7, 1);
+        grid_layout->addWidget (new QLabel ("Light elevation"), 5, 0);
+        grid_layout->addWidget (elevation_slider, 5, 1);
 
         azimuth_slider = new QSlider (Qt::Horizontal);
         azimuth_slider->setRange (-1000,1000);
         azimuth_slider->setSliderPosition (int ( (1000.0/M_PI) *atan2 (info.lightpos[0], info.lightpos[2])));
         connect (azimuth_slider, SIGNAL (valueChanged (int)), this, SLOT (light_position_slot()));
-        grid_layout->addWidget (new QLabel ("Light azimuth"), 8, 0);
-        grid_layout->addWidget (azimuth_slider, 8, 1);
+        grid_layout->addWidget (new QLabel ("Light azimuth"), 6, 0);
+        grid_layout->addWidget (azimuth_slider, 6, 1);
 
         grid_layout->setColumnStretch (0,0);
         grid_layout->setColumnStretch (1,1);
@@ -124,23 +111,6 @@ namespace MR
         info.object_color[2] = new_color.blueF();
         info.update();
       }
-
-      void LightingSettings::ambient_color_slot (const QColor& new_color)
-      {
-        info.ambient_color[0] = new_color.redF();
-        info.ambient_color[1] = new_color.greenF();
-        info.ambient_color[2] = new_color.blueF();
-        info.update();
-      }
-
-      void LightingSettings::diffuse_color_slot (const QColor& new_color)
-      {
-        info.light_color[0] = new_color.redF();
-        info.light_color[1] = new_color.greenF();
-        info.light_color[2] = new_color.blueF();
-        info.update();
-      }
-
 
       void LightingSettings::ambient_intensity_slot (int value)
       {

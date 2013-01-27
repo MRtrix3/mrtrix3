@@ -72,7 +72,7 @@ namespace MR
             updateGL();
           }
           void set_hide_neg_lobes (bool yesno = true) {
-            renderer.set_hide_neg_lobes (yesno);
+            hide_neg_lobes = yesno;
             updateGL();
           }
           void set_color_by_dir (bool yesno = true) {
@@ -108,7 +108,7 @@ namespace MR
           int  get_lmax () const { return renderer.get_lmax(); }
           float get_scale () const { return scale; }
           bool get_show_axes () const { return show_axes; }
-          bool get_hide_neg_lobes () const { return renderer.get_hide_neg_lobes(); }
+          bool get_hide_neg_lobes () const { return hide_neg_lobes; }
           bool get_color_by_dir () const { return color_by_dir; }
           bool get_use_lighting () const { return use_lighting; }
           bool get_normalise () const { return normalise; }

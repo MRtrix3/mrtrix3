@@ -58,7 +58,7 @@ namespace MR
       RenderFrame::RenderFrame (QWidget* parent) :
         QGLWidget (QGLFormat (QGL::FormatOptions (QGL::DoubleBuffer | QGL::DepthBuffer | QGL::Rgba)), parent),
         view_angle (40.0), distance (0.3), line_width (1.0), scale (1.0), l0_term (NAN),
-        show_axes (true), color_by_dir (true), use_lighting (true), font (parent->font()), projection (this, font),
+        show_axes (true), hide_neg_lobes (true), color_by_dir (true), use_lighting (true), font (parent->font()), projection (this, font),
         focus (0.0, 0.0, 0.0), framebuffer (NULL), OS (0), OS_x (0), OS_y (0)
       {
         lighting = new GL::Lighting (this);
@@ -85,8 +85,8 @@ namespace MR
       {
         GL::init();
         renderer.init();
+        glClearColor (lighting->background_color[0], lighting->background_color[1], lighting->background_color[2], 0.0);
         glEnable (GL_DEPTH_TEST);
-        lighting->set();
         INFO ("DWI renderer successfully initialised");
       }
 
@@ -128,18 +128,14 @@ namespace MR
 
         GL::mat4 MV = GL::translate (0.0, 0.0, -dist) * T * GL::translate (focus[0], focus[1], focus[2]);
         projection.set (MV, P);
-        lighting->set();
 
         glDepthMask (GL_TRUE);
 
         if (finite (l0_term)) {
           glDisable (GL_BLEND);
 
-          if (use_lighting) glEnable (GL_LIGHTING);
+          renderer.draw (projection, *lighting, scale, use_lighting, color_by_dir, hide_neg_lobes);
 
-          renderer.draw (scale, use_lighting, color_by_dir ? NULL : lighting->object_color);
-
-          if (use_lighting) glDisable (GL_LIGHTING);
         }
 
         glLineWidth (line_width);
