@@ -56,13 +56,10 @@ namespace MR
 
           GL::Lighting* lighting;
 
-          void set (const std::vector<float>& new_values) {
-            l0_term = new_values[0];
-            if (finite (l0_term)) {
-              renderer.set_values (new_values);
-              if (normalise) 
-                renderer.scale_values (1.0 / l0_term);
-            }
+          void set (const Math::Vector<float>& new_values) {
+            values = new_values;
+            if (finite (values[0])) 
+              renderer.set_values (values);
             updateGL();
           }
 
@@ -86,14 +83,6 @@ namespace MR
           }
           void set_normalise (bool yesno = true) {
             normalise = yesno;
-            if (finite (l0_term)) {
-              if (renderer.get_values()[0] != 0.0) {
-                if (normalise) 
-                  renderer.scale_values (1.0 / renderer.get_values()[0]);
-                else 
-                  renderer.scale_values (l0_term / renderer.get_values()[0]);
-              }
-            }
             updateGL();
           }
           void set_LOD (int num) {
@@ -117,8 +106,9 @@ namespace MR
           void screenshot (int oversampling, const std::string& image_name);
 
         protected:
-          float view_angle, distance, line_width, scale, l0_term;
+          float view_angle, distance, line_width, scale;
           bool  show_axes, hide_neg_lobes, color_by_dir, use_lighting, normalise;
+          Math::Vector<float> SH;
 
           QPoint last_pos;
           GL::Font font;
@@ -135,7 +125,7 @@ namespace MR
           GL::Shader::Program axes_shader;
 
           Renderer renderer;
-          std::vector<float> values;
+          Math::Vector<float> values;
 
           void initializeGL ();
           void resizeGL (int w, int h);

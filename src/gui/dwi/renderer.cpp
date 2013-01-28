@@ -59,7 +59,7 @@ namespace
     "layout(location = 1) in vec3 r_del_daz;\n"
     "uniform int color_by_direction, use_lighting, reverse;\n"
     "uniform float scale;\n"
-    "uniform vec3 constant_color;\n"
+    "uniform vec3 constant_color, origin;\n"
     "uniform mat4 MV, MVP;\n"
     "out vec3 position, color, normal;\n"
     "out float amplitude;\n"
@@ -89,8 +89,8 @@ namespace
     "  vec3 pos = vertex * amplitude * scale;\n"
     "  if (reverse != 0)\n"
     "    pos = -pos;\n"
-    "  position = -(MV * vec4(pos,1.0)).xyz;\n"
-    "  gl_Position = MVP * vec4 (pos, 1.0);\n"
+    "  position = -(MV * vec4 (pos, 1.0)).xyz;\n"
+    "  gl_Position = MVP * vec4 (pos + origin, 1.0);\n"
     "}\n";
 
 
@@ -229,18 +229,9 @@ namespace MR
 
 
 
-
-
-
-      void Renderer::draw (const Projection& projection, const GL::Lighting& lighting, float scale, 
+      void Renderer::setupGL (const Projection& projection, const GL::Lighting& lighting, float scale, 
           bool use_lighting, bool color_by_direction, bool hide_neg_lobes)
       {
-        if (recompute_mesh) 
-          compute_mesh();
-
-        if (recompute_amplitudes) 
-          compute_amplitudes();
-
         glBindVertexArray (vertex_array_object_ID);
         shader_program.start();
 
@@ -256,15 +247,11 @@ namespace MR
         glUniform1i (glGetUniformLocation (shader_program, "use_lighting"), use_lighting);
         glUniform1i (glGetUniformLocation (shader_program, "hide_neg_lobes"), hide_neg_lobes);
         glUniform3fv (glGetUniformLocation (shader_program, "constant_color"), 1, lighting.object_color);
-        GLuint reverse = glGetUniformLocation (shader_program, "reverse");
-
-        glUniform1i (reverse, 0);
-        glDrawElements (GL_TRIANGLES, num_indices, GL_UNSIGNED_INT, (void*)0);
-        glUniform1i (reverse, 1);
-        glDrawElements (GL_TRIANGLES, num_indices, GL_UNSIGNED_INT, (void*)0);
-
-        shader_program.stop();
+        reverse_ID = glGetUniformLocation (shader_program, "reverse");
+        origin_ID = glGetUniformLocation (shader_program, "origin");
       }
+
+
 
 
 

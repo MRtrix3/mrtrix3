@@ -60,15 +60,8 @@ namespace MR
             return shader_program;
           }
           void init ();
-          void set_values (const std::vector<float>& values) {
-            SH.allocate (values.size());
-            for (size_t n = 0; n < SH.size(); ++n)
-              SH[n] = values[n];
-            recompute_amplitudes = true;
-          }
-          void scale_values (float factor) {
-            for (size_t n = 0; n < SH.size(); ++n)
-              SH[n] *= factor;
+          void set_values (const Math::Vector<float>& values) {
+            SH = values;
             recompute_amplitudes = true;
           }
           void set_lmax (int lmax) {
@@ -79,8 +72,29 @@ namespace MR
             if (lod != lod_computed) recompute_mesh = true;
             lod_computed = lod;
           }
-          void draw (const Projection& projection, const GL::Lighting& lighting, float scale, 
+          void setupGL (const Projection& projection, const GL::Lighting& lighting, float scale, 
               bool use_lighting, bool color_by_direction, bool hide_neg_lobes);
+          void draw (float* origin, int n = 0) {
+            glUniform3fv (origin_ID, 1, origin);
+            glUniform1i (reverse_ID, 0);
+            glDrawElements (GL_TRIANGLES, num_indices, GL_UNSIGNED_INT, (void*)0);
+            glUniform1i (reverse_ID, 1);
+            glDrawElements (GL_TRIANGLES, num_indices, GL_UNSIGNED_INT, (void*)0);
+          }
+          void doneGL () {
+            shader_program.stop();
+          }
+          
+          void draw (const Projection& projection, const GL::Lighting& lighting, float* origin, float scale, 
+              bool use_lighting, bool color_by_direction, bool hide_neg_lobes) {
+            if (recompute_mesh) compute_mesh(); 
+            if (recompute_amplitudes) compute_amplitudes(); 
+            setupGL (projection, lighting, scale, use_lighting, color_by_direction, hide_neg_lobes);
+            draw (origin);
+            doneGL();
+          }
+
+
 
           const Math::Vector<float>& get_values () const { return SH; }
           int get_LOD () const { return lod_computed; }
@@ -120,7 +134,7 @@ namespace MR
           int lmax_computed, lod_computed;
           bool recompute_amplitudes, recompute_mesh;
           GL::Shader::Program shader_program;
-          GLuint vertex_buffer_ID, surface_buffer_ID, index_buffer_ID, vertex_array_object_ID;
+          GLuint vertex_buffer_ID, surface_buffer_ID, index_buffer_ID, vertex_array_object_ID, reverse_ID, origin_ID;
       };
 
 

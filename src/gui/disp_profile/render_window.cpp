@@ -338,20 +338,19 @@ namespace MR
       void Window::set_values (int row)
       {
         current = row;
-        if (current < 0) current = 0;
-        else if (current >= int (values.rows())) current = int (values.rows())-1;
+        if (current < 0) 
+          current = 0;
+        else if (current >= int (values.rows())) 
+          current = int (values.rows())-1;
 
-        std::vector<float> val;
+        Math::Vector<float> val;
         if (is_response) {
-          val.resize (Math::SH::NforL (2* (values.columns()-1)), 0);
+          val.resize (Math::SH::NforL (2* (values.columns()-1)), 0.0);
           for (size_t n = 0; n < values.columns(); n++)
             val[Math::SH::index (2*n,0)] = values (current,n);
         }
-        else {
-          val.resize (values.columns());
-          for (size_t n = 0; n < values.columns(); n++)
-            val[n] = values (current,n);
-        }
+        else 
+          val = values.row (current);
 
         render_frame->set (val);
         std::string title (name);

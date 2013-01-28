@@ -57,7 +57,7 @@ namespace MR
 
       RenderFrame::RenderFrame (QWidget* parent) :
         QGLWidget (QGLFormat (QGL::FormatOptions (QGL::DoubleBuffer | QGL::DepthBuffer | QGL::Rgba)), parent),
-        view_angle (40.0), distance (0.3), line_width (1.0), scale (1.0), l0_term (NAN),
+        view_angle (40.0), distance (0.3), line_width (1.0), scale (1.0), 
         show_axes (true), hide_neg_lobes (true), color_by_dir (true), use_lighting (true), font (parent->font()), projection (this, font),
         focus (0.0, 0.0, 0.0), framebuffer (NULL), OS (0), OS_x (0), OS_y (0), vertex_buffer_ID (0), vertex_array_object_ID (0)
       {
@@ -121,10 +121,11 @@ namespace MR
             "layout(location = 0) in vec3 vertex_in;\n"
             "layout(location = 1) in vec3 color_in;\n"
             "uniform mat4 MVP;\n"
+            "uniform vec3 origin;\n"
             "out vec3 color;\n"
             "void main () {\n"
             "  color = color_in;\n"
-            "  gl_Position = MVP * vec4(vertex_in, 1.0);\n"
+            "  gl_Position = MVP * vec4(vertex_in + origin, 1.0);\n"
             "}\n");
 
         GL::Shader::Fragment fragment_shader (
@@ -178,16 +179,21 @@ namespace MR
         T[3] = T[7] = T[11] = T[12] = T[13] = T[14] = 0.0;
         T[15] = 1.0;
 
-        GL::mat4 MV = GL::translate (0.0, 0.0, -dist) * T * GL::translate (focus[0], focus[1], focus[2]);
+        GL::mat4 MV = GL::translate (0.0, 0.0, -dist) * T;
         projection.set (MV, P);
 
         glDepthMask (GL_TRUE);
 
-        if (finite (l0_term)) {
-          glDisable (GL_BLEND);
+        if (values.size()) {
+          if (finite (values[0])) {
+            glDisable (GL_BLEND);
 
-          renderer.draw (projection, *lighting, scale, use_lighting, color_by_dir, hide_neg_lobes);
+            float final_scale = scale;
+            if (normalise && finite (values[0]) && values[0] != 0.0)
+              final_scale /= values[0];
 
+            renderer.draw (projection, *lighting, focus, final_scale, use_lighting, color_by_dir, hide_neg_lobes);
+          }
         }
 
         if (show_axes) {
@@ -197,6 +203,7 @@ namespace MR
           glEnable (GL_LINE_SMOOTH);
 
           axes_shader.start();
+          glUniform3fv (glGetUniformLocation (axes_shader, "origin"), 1, focus);
           glUniformMatrix4fv (glGetUniformLocation (axes_shader, "MVP"), 1, GL_FALSE, projection.modelview_projection());
           glBindVertexArray (vertex_array_object_ID);
           glDrawArrays (GL_LINES, 0, 6);
