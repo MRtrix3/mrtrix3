@@ -42,6 +42,9 @@
 
 
 #include "types.h"
+#ifdef WINDOWS
+typedef unsigned int uint;
+#endif
 #include "exception.h"
 
 #define MRTRIX_MAJOR_VERSION 0

@@ -318,7 +318,9 @@ namespace MR
       NAME = Path::basename (argv[0]);
 #ifdef WINDOWS
       if (Path::has_suffix (NAME, ".exe"))
+        #ifndef WINDOWS // error: 'erase' was not declared in this scope
         erase (NAME.size()-4);
+        #endif
 #endif
 
       srand (time (NULL));
