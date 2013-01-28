@@ -241,6 +241,7 @@ namespace MR
         if (recompute_amplitudes) 
           compute_amplitudes();
 
+        glBindVertexArray (vertex_array_object_ID);
         shader_program.start();
 
         glUniformMatrix4fv (glGetUniformLocation (shader_program, "MV"), 1, GL_FALSE, projection.modelview());

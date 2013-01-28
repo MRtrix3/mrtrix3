@@ -31,7 +31,7 @@
 #include <fstream>
 
 #include "app.h"
-#include "gui/disp_profile/render_frame.h"
+#include "gui/dwi/render_frame.h"
 
 #define ROTATION_INC 0.004
 #define D2R 0.01745329252
@@ -59,13 +59,21 @@ namespace MR
         QGLWidget (QGLFormat (QGL::FormatOptions (QGL::DoubleBuffer | QGL::DepthBuffer | QGL::Rgba)), parent),
         view_angle (40.0), distance (0.3), line_width (1.0), scale (1.0), l0_term (NAN),
         show_axes (true), hide_neg_lobes (true), color_by_dir (true), use_lighting (true), font (parent->font()), projection (this, font),
-        focus (0.0, 0.0, 0.0), framebuffer (NULL), OS (0), OS_x (0), OS_y (0)
+        focus (0.0, 0.0, 0.0), framebuffer (NULL), OS (0), OS_x (0), OS_y (0), vertex_buffer_ID (0), vertex_array_object_ID (0)
       {
         lighting = new GL::Lighting (this);
         lighting->set_background = true;
         connect (lighting, SIGNAL (changed()), this, SLOT (updateGL()));
       }
 
+
+      RenderFrame::~RenderFrame ()
+      {
+        if (vertex_buffer_ID)
+          glDeleteBuffers (1, &vertex_buffer_ID);
+        if (vertex_array_object_ID)
+          glDeleteVertexArrays (1, &vertex_array_object_ID);
+      }
 
 
       void RenderFrame::set_rotation (const GLdouble* rotation)
@@ -87,6 +95,50 @@ namespace MR
         renderer.init();
         glClearColor (lighting->background_color[0], lighting->background_color[1], lighting->background_color[2], 0.0);
         glEnable (GL_DEPTH_TEST);
+
+        glGenBuffers (1, &vertex_buffer_ID);
+        glGenVertexArrays (1, &vertex_array_object_ID);
+        glBindBuffer (GL_ARRAY_BUFFER, vertex_buffer_ID);
+        glBindVertexArray (vertex_array_object_ID);
+        glEnableVertexAttribArray (0);
+        glVertexAttribPointer (0, 3, GL_FLOAT, GL_FALSE, 6*sizeof(GLfloat), (void*)0);
+
+        glEnableVertexAttribArray (1);
+        glVertexAttribPointer (1, 3, GL_FLOAT, GL_FALSE, 6*sizeof(GLfloat), (void*) (3*sizeof(GLfloat)));
+
+        GLfloat axis_data[] = {
+          -1.0, -1.0, -1.0,   1.0, 0.0, 0.0,
+           1.0, -1.0, -1.0,   1.0, 0.0, 0.0,
+          -1.0, -1.0, -1.0,   0.0, 1.0, 0.0,
+          -1.0,  1.0, -1.0,   0.0, 1.0, 0.0,
+          -1.0, -1.0, -1.0,   0.0, 0.0, 1.0,
+          -1.0, -1.0,  1.0,   0.0, 0.0, 1.0
+        };
+        glBufferData (GL_ARRAY_BUFFER, sizeof(axis_data), axis_data, GL_STATIC_DRAW);
+
+        GL::Shader::Vertex vertex_shader (
+            "#version 330 core\n"
+            "layout(location = 0) in vec3 vertex_in;\n"
+            "layout(location = 1) in vec3 color_in;\n"
+            "uniform mat4 MVP;\n"
+            "out vec3 color;\n"
+            "void main () {\n"
+            "  color = color_in;\n"
+            "  gl_Position = MVP * vec4(vertex_in, 1.0);\n"
+            "}\n");
+
+        GL::Shader::Fragment fragment_shader (
+            "#version 330 core\n"
+            "in vec3 color;\n"
+            "out vec4 color_out;\n"
+            "void main () {\n"
+            "  color_out = vec4 (color, 1.0);\n"
+            "}\n");
+
+        axes_shader.attach (vertex_shader);
+        axes_shader.attach (fragment_shader);
+        axes_shader.link();
+
         INFO ("DWI renderer successfully initialised");
       }
 
@@ -138,37 +190,21 @@ namespace MR
 
         }
 
-        glLineWidth (line_width);
-        glBlendFunc (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-        glEnable (GL_BLEND);
-        glEnable (GL_LINE_SMOOTH);
-        glDisable (GL_MULTISAMPLE);
-
         if (show_axes) {
-          glColor3f (1.0, 0.0, 0.0);
-          glBegin (GL_LINES);
-          glVertex3f (-1.0, -1.0, -1.0);
-          glVertex3f (1.0, -1.0, -1.0);
-          glEnd();
+          glLineWidth (line_width);
+          glBlendFunc (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+          glEnable (GL_BLEND);
+          glEnable (GL_LINE_SMOOTH);
 
-          glColor3f (0.0, 1.0, 0.0);
-          glBegin (GL_LINES);
-          glVertex3f (-1.0, -1.0, -1.0);
-          glVertex3f (-1.0, 1.0, -1.0);
-          glEnd ();
+          axes_shader.start();
+          glUniformMatrix4fv (glGetUniformLocation (axes_shader, "MVP"), 1, GL_FALSE, projection.modelview_projection());
+          glBindVertexArray (vertex_array_object_ID);
+          glDrawArrays (GL_LINES, 0, 6);
+          axes_shader.stop();
 
-          glColor3f (0.0, 0.0, 1.0);
-          glBegin (GL_LINES);
-          glVertex3f (-1.0, -1.0, -1.0);
-          glVertex3f (-1.0, -1.0, 1.0);
-          glEnd ();
+          glDisable (GL_BLEND);
+          glDisable (GL_LINE_SMOOTH);
         }
-
-        glDisable (GL_BLEND);
-        glDisable (GL_LINE_SMOOTH);
-        glEnable (GL_MULTISAMPLE);
-
-
 
         if (OS > 0) snapshot();
 

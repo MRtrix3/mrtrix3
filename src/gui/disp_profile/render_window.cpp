@@ -22,7 +22,7 @@
 
 #include "app.h"
 #include "gui/disp_profile/render_window.h"
-#include "gui/disp_profile/render_frame.h"
+#include "gui/dwi/render_frame.h"
 #include "gui/dialog/lighting.h"
 #include "gui/dialog/file.h"
 
