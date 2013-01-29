@@ -21,7 +21,9 @@
 */
 
 #include <QApplication>
+#pragma push_macro("ERROR")
 #include <QGLFormat>
+#pragma pop_macro("ERROR")
 
 #include "app.h"
 #include "progressbar.h"

@@ -157,18 +157,18 @@ namespace MR
         glClear (GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         float dist (1.0f / (distance * view_angle * D2R));
-        float near = (dist-3.0f > 0.001f ? dist-3.0f : 0.001f);
-        float horizontal = 2.0f * near * tan (0.5f*view_angle*D2R) * float (width()) / float (width()+height());
-        float vertical = 2.0f * near * tan (0.5f*view_angle*D2R) * float (height()) / float (width()+height());
+        float near_ = (dist-3.0f > 0.001f ? dist-3.0f : 0.001f);
+        float horizontal = 2.0f * near_ * tan (0.5f*view_angle*D2R) * float (width()) / float (width()+height());
+        float vertical = 2.0f * near_ * tan (0.5f*view_angle*D2R) * float (height()) / float (width()+height());
 
         GL::mat4 P;
         if (OS > 0) {
           float incx = 2.0f * horizontal / float (OS);
           float incy = 2.0f * vertical / float (OS);
-          P = GL::frustum (-horizontal+OS_x*incx, -horizontal+ (1+OS_x) *incx, -vertical+OS_y*incy, -vertical+ (1+OS_y) *incy, near, dist+3.0);
+          P = GL::frustum (-horizontal+OS_x*incx, -horizontal+ (1+OS_x) *incx, -vertical+OS_y*incy, -vertical+ (1+OS_y) *incy, near_, dist+3.0);
         }
         else {
-          P = GL::frustum (-horizontal, horizontal, -vertical, vertical, near, dist+3.0);
+          P = GL::frustum (-horizontal, horizontal, -vertical, vertical, near_, dist+3.0);
         }
 
 
