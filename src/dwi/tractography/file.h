@@ -28,6 +28,7 @@
 
 #include "types.h"
 #include "point.h"
+#include "timer.h"
 #include "file/key_value.h"
 #include "dwi/tractography/properties.h"
 
@@ -211,6 +212,7 @@ namespace MR
               throw Exception ("error creating tracks file \"" + file + "\": " + strerror (errno));
 
             out << "mrtrix tracks\nEND\n";
+            out << "timestamp: " << Timer::current_time() << "\n";
             for (Properties::const_iterator i = properties.begin(); i != properties.end(); ++i) {
               if ((i->first != "count") && (i->first != "total_count"))
                 out << i->first << ": " << i->second << "\n";
