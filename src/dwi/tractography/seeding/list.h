@@ -67,7 +67,7 @@ namespace MR
 
 
           size_t num_seeds() const { return seeders.size(); }
-          const Base* const operator[] (const size_t n) const { return seeders[n]; }
+          const Base* operator[] (const size_t n) const { return seeders[n]; }
           bool is_finite() const { return total_count; }
           uint32_t get_total_count() const { return total_count; }
           const Math::RNG& get_rng() const { return rng; }
