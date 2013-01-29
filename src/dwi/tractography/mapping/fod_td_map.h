@@ -145,6 +145,7 @@ namespace MR
 
         double mu() const { return FOD_sum / TD_sum; }
 
+        using FOD_TD_map<Lobe>::begin;
 
         protected:
         using FOD_map<Lobe>::accessor;
