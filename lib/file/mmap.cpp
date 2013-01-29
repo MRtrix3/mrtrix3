@@ -25,7 +25,9 @@
 #include <zlib.h>
 
 #ifdef WINDOWS
+#pragma push_macro("ERROR")
 #include <windows.h>
+#pragma pop_macro("ERROR")
 #else
 #include <sys/mman.h>
 #endif
