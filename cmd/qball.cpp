@@ -179,13 +179,14 @@ class Processor
           Math::Vector<value_type> HR_amps;
           Math::mult(HR_amps, normalise_SHT, qball_SH);
           value_type min = INFINITY, max = -INFINITY;
-          for (uint d = 0; d < HR_amps.size(); d++) {
+          for (size_t d = 0; d < HR_amps.size(); d++) {
             if (min > HR_amps[d]) min = HR_amps[d];
             if (max < HR_amps[d]) max = HR_amps[d];
           }
           max = 1.0/(max-min);
           qball_SH[0] -= min/Math::Legendre::Plm_sph(0, 0, 0.0);
-          for (uint i = 0; i < qball_SH.size(); i++) qball_SH[i] *= max;
+          for (size_t i = 0; i < qball_SH.size(); i++) 
+            qball_SH[i] *= max;
         }
 
         SH[0] = item->pos[0];

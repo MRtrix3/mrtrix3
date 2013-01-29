@@ -132,24 +132,13 @@ namespace MR
 
     inline void mkdir (const std::string& folder) 
     {
-      #ifdef WINDOWS
-      if (::mkdir (folder.c_str()))
+      if (::mkdir (folder.c_str()
+#ifndef WINDOWS
+            , 0755
+#endif
+            ))
         throw Exception ("error creating folder \"" + folder + "\": " + strerror (errno));
-      #else
-      if (::mkdir (folder.c_str(), 0755))
-        throw Exception ("error creating folder \"" + folder + "\": " + strerror (errno));
-      #endif
     }
-
-    inline void symlink (const std::string& link_target, const std::string& link_name)
-    {
-      #ifndef WINDOWS // error: '::symlink' has not been declared
-      if (::symlink (link_target.c_str(), link_name.c_str()) < 0)
-        throw Exception ("error creating symbolic link \"" + link_name 
-            + "\" to \"" + link_target + "\": " + strerror (errno));
-      #endif
-    }
-    
 
     inline void unlink (const std::string& file) 
     {

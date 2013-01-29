@@ -100,13 +100,13 @@ namespace MR
               Loop loop(0, 3);
               for (loop.start (input, b0_mean_voxel, dwi_mean_voxel); loop.ok(); loop.next (input, b0_mean_voxel, dwi_mean_voxel)) {
                 value_type mean = 0;
-                for (uint i = 0; i < dwis.size(); i++) {
+                for (size_t i = 0; i < dwis.size(); i++) {
                   input[3] = dwis[i];
                   mean += input.value();
                 }
                 dwi_mean_voxel.value() = mean / dwis.size();
                 mean = 0;
-                for (uint i = 0; i < bzeros.size(); i++) {
+                for (size_t i = 0; i < bzeros.size(); i++) {
                   input[3] = bzeros[i];
                   mean += input.value();
                 }

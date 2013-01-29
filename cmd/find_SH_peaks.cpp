@@ -282,10 +282,8 @@ class Processor
         (*ipeaks_vox)[1] = item.pos[1];
         (*ipeaks_vox)[2] = item.pos[2];
         (*ipeaks_vox)[3] = 0;
-        #ifndef WINDOWS // error: no matching function for call to 'isnan(MR::Image::Value<MR::Image::Voxel<MR::Image::Buffer<float> > >)'
-        if (isnan (ipeaks_vox->value()))
+        if (isnan (value_type (ipeaks_vox->value())))
           return true;
-        #endif
       }
 
       bool no_peaks = true;
