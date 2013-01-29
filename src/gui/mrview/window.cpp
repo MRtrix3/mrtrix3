@@ -46,7 +46,7 @@ namespace MR
 
       namespace {
 
-        uint get_modifier (const std::string& key, Qt::KeyboardModifiers default_value) {
+        int get_modifier (const std::string& key, Qt::KeyboardModifiers default_value) {
           std::string value = MR::File::Config::get (key);
           if (value.empty()) 
             return default_value;
