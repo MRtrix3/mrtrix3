@@ -852,7 +852,12 @@ WARNING: not all required OpenGL extensions are supported (see above).
          this system.
 ''')
   except:
-    error ('OpenGL implementation not found!')
+    report ('''not found
+
+WARNING: no OpenGL implementation found.
+         Some of the graphical user interface components may not be stable on
+         this system.
+''')
 
 
 
