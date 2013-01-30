@@ -66,7 +66,8 @@ namespace MR
             transparent_intensity (NAN),
             opaque_intensity (NAN),
             alpha (NAN),
-            flags_ (0x00000000) { }
+            flags_ (0x00000000),
+            colourmap_index (0) { }
 
           virtual ~Shader() {}
 
@@ -85,6 +86,8 @@ namespace MR
           }
 
           void start (const Projection& projection, float scaling = 1.0) {
+            if (!shader_program)
+              recompile();
             shader_program.start();
             glUniformMatrix4fv (glGetUniformLocation (shader_program, "MVP"), 1, GL_FALSE, projection.modelview_projection());
             glUniform1f (glGetUniformLocation (shader_program, "offset"), (display_midpoint - 0.5f * display_range) / scaling);

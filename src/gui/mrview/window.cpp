@@ -46,13 +46,31 @@ namespace MR
 
       namespace {
 
-        int get_modifier (const std::string& key, Qt::KeyboardModifiers default_value) {
-          std::string value = MR::File::Config::get (key);
+        Qt::KeyboardModifiers get_modifier (const char* key, Qt::KeyboardModifiers default_key) {
+          std::string value = lowercase (MR::File::Config::get (key));
           if (value.empty()) 
-            return default_value;
-          return QKeySequence((value + "+A").c_str()) - 'A';
+            return default_key;
+
+          if (value == "shift") return Qt::ShiftModifier;
+          if (value == "ctrl") return Qt::ControlModifier;
+          if (value == "alt") return Qt::AltModifier;
+          if (value == "meta" || value == "win") return Qt::MetaModifier;
+
+          throw Exception ("no such modifier \"" + value + "\" (parsed from config file)");
+          return Qt::NoModifier;
         }
 
+      }
+
+      std::string get_modifier (Qt::KeyboardModifiers key) {
+        switch (key) {
+          case Qt::ShiftModifier: return "Shift";
+          case Qt::ControlModifier: return "Ctrl";
+          case Qt::AltModifier: return "Alt";
+          case Qt::MetaModifier: return "Win";
+          default: assert (0);
+        }
+        return "Invalid";
       }
 
 
@@ -178,7 +196,7 @@ namespace MR
         action->setShortcut (tr ("Ctrl+M"));
         addAction (action);
 
-        // Image menu:
+        // Start menu:
 
         menu = new QMenu (tr ("Start menu"), this);
 
@@ -193,12 +211,6 @@ namespace MR
         close_action = menu->addAction (tr ("Close"), this, SLOT (image_close_slot()));
         close_action->setShortcut (tr ("Ctrl+W"));
         addAction (close_action);
-
-        menu->addSeparator();
-
-        properties_action = menu->addAction (tr ("Properties..."), this, SLOT (image_properties_slot()));
-        properties_action->setToolTip (tr ("Display the properties of the current image\n\nShortcut: Ctrl+P"));
-        addAction (properties_action);
 
         menu->addSeparator();
 
@@ -222,6 +234,12 @@ namespace MR
         image_group = new QActionGroup (this);
         image_group->setExclusive (true);
         connect (image_group, SIGNAL (triggered (QAction*)), this, SLOT (image_select_slot (QAction*)));
+
+        properties_action = image_menu->addAction (tr ("Properties..."), this, SLOT (image_properties_slot()));
+        properties_action->setToolTip (tr ("Display the properties of the current image\n\nShortcut: Ctrl+P"));
+        addAction (properties_action);
+
+        image_menu->addSeparator();
 
         next_slice_action = image_menu->addAction (tr ("Next slice"), this, SLOT (slice_next_slot()));
         next_slice_action->setShortcut (tr ("Up"));
@@ -441,40 +459,42 @@ namespace MR
 
         // Mouse mode actions:
 
+
         mode_action_group = new QActionGroup (this);
         mode_action_group->setExclusive (true);
         connect (mode_action_group, SIGNAL (triggered (QAction*)), this, SLOT (select_mouse_mode_slot (QAction*)));
 
+        std::string modifier;
         action = toolbar->addAction (QIcon (":/select_contrast.svg"), tr ("Change focus / contrast"));
-        action->setToolTip (tr (
-              "Left-click: set focus\n"
-              "Right-click: change brightness/constrast\n\n"
-              "Shortcut: 1\n\n"
-              "Hold down Win key to use this mode\n"
-              "regardless of currently selected mode"));
+        action->setToolTip (tr ((
+                "Left-click: set focus\n"
+                "Right-click: change brightness/constrast\n\n"
+                "Shortcut: 1\n\n"
+                "Hold down " + get_modifier (FocusModifier) + " key to use this mode\n"
+                "regardless of currently selected mode").c_str()));
         action->setShortcut (tr("1"));
         action->setCheckable (true);
         action->setChecked (true);
         mode_action_group->addAction (action);
 
         action = toolbar->addAction (QIcon (":/move.svg"), tr ("Move viewport"));
-        action->setToolTip (tr (
-              "Left-click: move in-plane\n"
-              "Right-click: move through-plane\n\n"
-              "Shortcut: 2\n\n"
-              "Hold down Ctrl key to use this mode\n"
-              "regardless of currently selected mode"));
+        action->setToolTip (tr ((
+                "Left-click: move in-plane\n"
+                "Right-click: move through-plane\n\n"
+                "Shortcut: 2\n\n"
+                "Hold down " + get_modifier (MoveModifier) + " key to use this mode\n"
+                "regardless of currently selected mode").c_str()));
         action->setShortcut (tr("2"));
         action->setCheckable (true);
         mode_action_group->addAction (action);
 
         action = toolbar->addAction (QIcon (":/rotate.svg"), tr ("Move camera"));
-        action->setToolTip (tr (
-              "Left-click: move camera in-plane\n"
-              "Right-click: rotate camera about view axis\n\n"
-              "Shortcut: 2\n\n"
-              "Hold down Shift key to use this mode\n"
-              "regardless of currently selected mode"));
+        action->setToolTip (tr ((
+                "Left-click: move camera in-plane\n"
+                "Right-click: rotate camera about view axis\n\n"
+                "Shortcut: 2\n\n"
+                "Hold down " + get_modifier (RotateModifier) + " key to use this mode\n"
+                "regardless of currently selected mode").c_str()));
         action->setShortcut (tr("3"));
         action->setCheckable (true);
         mode_action_group->addAction (action);
