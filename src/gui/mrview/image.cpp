@@ -262,6 +262,7 @@ namespace MR
           glTexParameteri (GL_TEXTURE_3D, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
         }
         glBindTexture (GL_TEXTURE_3D, texture2D_ID[plane]);
+        glPixelStorei (GL_UNPACK_ALIGNMENT, 1);
 
         if (position[plane] == slice && volume_unchanged())
           return;
@@ -400,39 +401,51 @@ namespace MR
         else if (cmap_name == "Complex") format = GL_RG;
         else format = GL_RED;
 
-        if (cmap_name == "Complex")
+        GLenum type;
+
+        if (cmap_name == "Complex") {
           internal_format = GL_RG32F;
+          type = GL_FLOAT;
+        }
         else {
 
           switch (header().datatype() ()) {
             case DataType::Bit:
             case DataType::Int8:
-              internal_format = ( format == GL_RED ? GL_R8I : GL_RGB8I );
+              internal_format = ( format == GL_RED ? GL_R16F : GL_RGB16F );
+              type = GL_BYTE;
               break;
             case DataType::UInt8:
-              internal_format = ( format == GL_RED ? GL_R8UI : GL_RGB8UI );
+              internal_format = ( format == GL_RED ? GL_R16F : GL_RGB16F );
+              type = GL_UNSIGNED_BYTE;
               break;
             case DataType::UInt16LE:
             case DataType::UInt16BE:
-              internal_format = ( format == GL_RED ? GL_R16UI : GL_RGB16UI );
+              internal_format = ( format == GL_RED ? GL_R16F : GL_RGB16F );
+              type = GL_UNSIGNED_SHORT;
               break;
             case DataType::Int16LE:
             case DataType::Int16BE:
-              internal_format = ( format == GL_RED ? GL_R16I : GL_RGB16I );
+              internal_format = ( format == GL_RED ? GL_R16F : GL_RGB16F );
+              type = GL_SHORT;
               break;
             case DataType::UInt32LE:
             case DataType::UInt32BE:
-              internal_format = ( format == GL_RED ? GL_R32UI : GL_RGB32UI );
+              internal_format = ( format == GL_RED ? GL_R32F : GL_RGB32F );
+              type = GL_UNSIGNED_INT;
               break;
             case DataType::Int32LE:
             case DataType::Int32BE:
-              internal_format = ( format == GL_RED ? GL_R32I : GL_RGB32I );
+              internal_format = ( format == GL_RED ? GL_R32F : GL_RGB32F );
+              type = GL_INT;
               break;
             default:
               internal_format = ( format == GL_RED ? GL_R32F : GL_RGB32F );
+              type = GL_FLOAT;
               break;
           }
         }
+
 
         if (volume_unchanged() && texture_mode_3D_unchanged) {
           glBindTexture (GL_TEXTURE_3D, texture3D_ID);
@@ -452,10 +465,13 @@ namespace MR
         texture_mode_3D_unchanged = true;
 
         glBindTexture (GL_TEXTURE_3D, texture3D_ID);
+        glPixelStorei (GL_UNPACK_ALIGNMENT, 1);
 
+        DEBUG_OPENGL;
         glTexImage3D (GL_TEXTURE_3D, 0, internal_format,
-            header().dim (0), header().dim (1), header().dim (2),
-            0, format, GL_FLOAT, NULL);
+            header().dim(0), header().dim(1), header().dim(2),
+            0, format, type, NULL);
+        DEBUG_OPENGL;
 
         value_min = std::numeric_limits<float>::infinity();
         value_max = -std::numeric_limits<float>::infinity();
@@ -533,7 +549,7 @@ namespace MR
       }
       template <> inline float Image::scale_factor_3D<float> () const
       {
-        return 1.0;
+        return 1.0f;
       }
 
 
@@ -544,20 +560,20 @@ namespace MR
         typename MR::Image::Buffer<ValueType>::voxel_type V (buffer_tmp);
         GLenum type = GLtype<ValueType>();
         int N = ( format == GL_RED ? 1 : 3 );
-        Ptr<ValueType,true> data (new ValueType [N * V.dim (0) * V.dim (1)]);
+        Ptr<ValueType,true> data (new ValueType [N * V.dim(0) * V.dim(1)]);
 
-        ProgressBar progress ("loading image data...", V.dim (2));
+        ProgressBar progress ("loading image data...", V.dim(2));
 
         for (size_t n = 3; n < V.ndim(); ++n) 
           V[n] = interp[n];
 
-        for (V[2] = 0; V[2] < V.dim (2); ++V[2]) {
+        for (V[2] = 0; V[2] < V.dim(2); ++V[2]) {
 
           if (format == GL_RED) {
             ValueType* p = data;
 
-            for (V[1] = 0; V[1] < V.dim (1); ++V[1]) {
-              for (V[0] = 0; V[0] < V.dim (0); ++V[0]) {
+            for (V[1] = 0; V[1] < V.dim(1); ++V[1]) {
+              for (V[0] = 0; V[0] < V.dim(0); ++V[0]) {
                 ValueType val = *p = V.value();
                 if (finite (val)) {
                   if (val < value_min) value_min = val;
@@ -600,11 +616,12 @@ namespace MR
 
           glTexSubImage3D (GL_TEXTURE_3D, 0,
               0, 0, V[2],
-              V.dim (0), V.dim (1), 1,
+              V.dim(0), V.dim(1), 1,
               format, type, data);
-          DEBUG_OPENGL;
+
           ++progress;
         }
+        DEBUG_OPENGL;
 
         windowing_scale_3D = scale_factor_3D<ValueType>();
       }
