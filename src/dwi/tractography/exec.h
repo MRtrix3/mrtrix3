@@ -249,7 +249,7 @@ namespace MR
                   break;
               }
               if (!method.pos.valid()) {
-                ERROR ("Failed to find suitable seed point after " + str (MAX_NUM_SEED_ATTEMPTS) + " attempts - aborting");
+                FAIL ("Failed to find suitable seed point after " + str (MAX_NUM_SEED_ATTEMPTS) + " attempts - aborting");
                 return false;
               }
 
