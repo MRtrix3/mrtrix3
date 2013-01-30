@@ -261,7 +261,7 @@ class Entry:
     src_file = self.name[:-len('_moc'+cpp_suffix)] + h_suffix
     self.deps = set([ src_file ])
     self.deps = self.deps.union (list_headers (src_file))
-    self.cmd = [ 'moc-qt4' ]
+    self.cmd = [ moc ]
     self.cmd += [ src_file, '-o', self.name ]
 
     

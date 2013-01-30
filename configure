@@ -114,7 +114,7 @@ CBLAS_LDFLAGS   Any flags required to link with an alternate cblas library.
 
 QMAKE           The command to run to invoke qmake. 
 
-MOC             The command to invoke Qt4's meta-object compile (default: moc-qt4)
+MOC             The command to invoke Qt4's meta-object compile (default: moc)
 
 PATH            Set the path to use during the configure process.
                 This may be useful to set the path to Qt4's qmake.
@@ -667,7 +667,7 @@ if not noshared:
 
 
 qmake = [ 'qmake' ]
-moc = 'moc-qt4' 
+moc = 'moc' 
 qt_cflags = []
 qt_ldflags = []
 
@@ -925,6 +925,7 @@ commit ('thread_cflags', thread_cflags)
 commit ('thread_ldflags', thread_ldflags)
 commit ('gsl_cflags', gsl_cflags)
 commit ('gsl_ldflags', gsl_ldflags)
+commit ('moc', moc)
 commit ('qt_cflags', qt_cflags)
 commit ('qt_ldflags', qt_ldflags)
 
