@@ -644,7 +644,7 @@ def clean_cmd ():
     for root, dirs, files in os.walk (dev_dir, topdown=False):
       for entry in files:
         os.remove (os.path.join (root, entry))
-    for entry in dirs:
+      for entry in dirs:
         os.rmdir (os.path.join (root, entry))
     os.rmdir (dev_dir)
 
