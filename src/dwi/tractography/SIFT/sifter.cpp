@@ -398,9 +398,8 @@ namespace MR
 
       void SIFTer::output_filtered_tracks (const std::string& input_path, const std::string& output_path) const
       {
-        Tractography::Reader<float> reader;
         Tractography::Properties p;
-        reader.open (input_path, p);
+        Tractography::Reader<float> reader (input_path, p);
         // "count" and "total_count" should be dealt with by the writer
         p["SIFT_mu"] = str (mu());
         Tractography::Writer<float> writer (output_path, p);
@@ -767,9 +766,8 @@ namespace MR
 
       void SIFTer::output_non_contributing_streamlines (const std::string& input_path, const std::string& output_path) const
       {
-        Tractography::Reader<float> reader;
         Tractography::Properties p;
-        reader.open (input_path, p);
+        Tractography::Reader<float> reader (input_path, p);
         p["total_count"] = contributions.size();
         Tractography::Writer<float> writer (output_path, p);
         std::vector< Point<float> > tck;

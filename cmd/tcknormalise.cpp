@@ -58,9 +58,7 @@ typedef std::vector<Point<value_type> > TrackType;
 class Loader 
 {
   public:
-    Loader (const std::string& file) {
-        reader.open (file, properties);
-      }
+    Loader (const std::string& file) : reader (file, properties) {}
 
     bool operator() (TrackType& item) {
       return reader.next (item);

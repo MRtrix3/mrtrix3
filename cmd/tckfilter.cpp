@@ -192,9 +192,8 @@ class Writer : public Tractography::Writer<float>
 void run ()
 {
 
-  Tractography::Reader<float> reader;
   Tractography::Properties properties;
-  reader.open (argument[0], properties);
+  Tractography::Reader<float> reader (argument[0], properties);
 
   Options opt = get_options ("include");
   for (size_t i = 0; i < opt.size(); ++i)

@@ -21,7 +21,7 @@
 */
 
 #include "file/path.h"
-#include "dwi/tractography/file.h"
+#include "dwi/tractography/file_base.h"
 
 
 namespace MR {
@@ -29,12 +29,13 @@ namespace MR {
     namespace Tractography {
 
 
-      void __ReaderBase__::open (const std::string& file, Properties& properties)
+      void __ReaderBase__::open (const std::string& file, const std::string& type, Properties& properties)
       {
         properties.clear();
         dtype = DataType::Undefined;
 
-        File::KeyValue kv (file, "mrtrix tracks");
+        const std::string firstline ("mrtrix " + type);
+        File::KeyValue kv (file, firstline.c_str());
         std::string data_file;
 
         while (kv.next()) {
@@ -45,12 +46,13 @@ namespace MR {
               properties.roi.insert (std::pair<std::string,std::string> (V[0], V[1]));
             }
             catch (...) {
-              WARN ("invalid ROI specification in tracks file \"" + file + "\" - ignored");
+              WARN ("invalid ROI specification in " + type  + " file \"" + file + "\" - ignored");
             }
           }
           else if (key == "comment") properties.comments.push_back (kv.value());
           else if (key == "file") data_file = kv.value();
           else if (key == "datatype") dtype = DataType::parse (kv.value());
+          else if (key == "timestamp") properties.timestamp = atof(kv.value().c_str());
           else properties[key] = kv.value();
         }
 
@@ -59,10 +61,10 @@ namespace MR {
         if (dtype != DataType::Float32LE && dtype != DataType::Float32BE && 
             dtype != DataType::Float64LE && dtype != DataType::Float64BE)
           throw Exception ("only supported datatype for tracks file are "
-              "Float32LE, Float32BE, Float64LE & Float64BE (in tracks file \"" + file + "\")");
+              "Float32LE, Float32BE, Float64LE & Float64BE (in " + type  + " file \"" + file + "\")");
 
         if (data_file.empty()) 
-          throw Exception ("missing \"files\" specification for tracks file \"" + file + "\"");
+          throw Exception ("missing \"files\" specification for " + type  + " file \"" + file + "\"");
 
         std::istringstream files_stream (data_file);
         std::string fname;
@@ -72,7 +74,7 @@ namespace MR {
           try { files_stream >> offset; }
           catch (...) { 
             throw Exception ("invalid offset specified for file \""
-                + fname + "\" in tracks file \"" + file + "\"");
+                + fname + "\" in " + type  + " file \"" + file + "\"");
           }
         }
 
@@ -83,11 +85,9 @@ namespace MR {
 
         in.open (fname.c_str(), std::ios::in | std::ios::binary);
         if (!in) 
-          throw Exception ("error opening tracks data file \"" + fname + "\": " + strerror(errno));
+          throw Exception ("error opening " + type  + " data file \"" + fname + "\": " + strerror(errno));
         in.seekg (offset);
       }
-
-
 
     }
   }

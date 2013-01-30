@@ -67,8 +67,7 @@ void run ()
   const std::string path = argument[0];
 
   Tractography::Properties properties;
-  Tractography::Reader<float> reader;
-  reader.open (path, properties);
+  Tractography::Reader<float> reader (path, properties);
 
   size_t init_count = 0;
   if (properties.find ("count") == properties.end()) {

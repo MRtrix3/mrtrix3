@@ -67,8 +67,7 @@ void run ()
     skip = opt[0][0];
 
   Tractography::Properties properties;
-  Tractography::Reader<float> file;
-  file.open (argument[0], properties);
+  Tractography::Reader<float> file (argument[0], properties);
 
   const size_t N = argument[1];
 

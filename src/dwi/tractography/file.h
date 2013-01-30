@@ -28,8 +28,8 @@
 
 #include "types.h"
 #include "point.h"
-#include "timer.h"
 #include "file/key_value.h"
+#include "dwi/tractography/file_base.h"
 #include "dwi/tractography/properties.h"
 
 
@@ -40,36 +40,20 @@ namespace MR
     namespace Tractography
     {
 
-      //! \cond skip
-      class __ReaderBase__
-      {
-        public:
-          void open (const std::string& file, Properties& properties);
-        protected:
-          std::ifstream  in;
-          DataType  dtype;
-          size_t  count;
-      };
-      //! \endcond
-
-
-
       template <typename T = float> class Reader : public __ReaderBase__
       {
         public:
           typedef T value_type;
 
-          Reader () { }
-
           Reader (const std::string& file, Properties& properties) {
-            open (file, properties);
+            open (file, "tracks", properties);
           }
 
           bool next (std::vector< Point<value_type> >& tck)
           {
             tck.clear();
 
-            if (!in.is_open()) 
+            if (!in.is_open())
               return false;
             do {
               Point<value_type> p = get_next_point();
@@ -82,7 +66,7 @@ namespace MR
                 return false;
               }
 
-              if (isnan (p[0])) 
+              if (isnan (p[0]))
                 return true;
               tck.push_back (p);
             } while (in.good());
@@ -96,12 +80,11 @@ namespace MR
             return next (tck);
           }
 
-          void close () { in.close(); }
+
 
         protected:
           using __ReaderBase__::in;
           using __ReaderBase__::dtype;
-          using __ReaderBase__::count;
 
           Point<value_type> get_next_point ()
           { 
@@ -133,6 +116,7 @@ namespace MR
                 }
               default:
                 assert (0);
+                break;
             }
             return (Point<value_type>());
           }
@@ -144,29 +128,20 @@ namespace MR
 
 
 
-      template <typename T = float> class Writer
+      template <typename T = float> class Writer : public __WriterBase__ <T>
       {
         public:
           typedef T value_type;
+          using __WriterBase__<T>::count;
+          using __WriterBase__<T>::total_count;
+          using __WriterBase__<T>::out;
+          using __WriterBase__<T>::dtype;
+          using __WriterBase__<T>::create;
 
-          Writer (const std::string& file, const Properties& properties) :
-            count (0), total_count (0), dtype (DataType::from<value_type>())
+          Writer (const std::string& file, const Properties& properties)
           {
-            dtype.set_byte_order_native();
-            if (dtype != DataType::Float32LE && dtype != DataType::Float32BE &&
-                dtype != DataType::Float64LE && dtype != DataType::Float64BE)
-                throw Exception ("only supported datatype for tracks file are "
-                    "Float32LE, Float32BE, Float64LE & Float64BE");
-            create (file, properties);
+            create_header (file, properties);
           }
-
-          ~Writer()
-          {
-            out.seekp (count_offset);
-            out << count << "\ntotal_count: " << total_count << "\nEND\n";
-            out.close();
-          }
-
 
           void append (const std::vector< Point<value_type> >& tck)
           {
@@ -196,58 +171,12 @@ namespace MR
           }
 
 
-          size_t count, total_count;
-
-
         protected:
-          std::ofstream  out;
-          DataType dtype;
-          int64_t  count_offset;
-
-
-          void create (const std::string& file, const Properties& properties)
+          void create_header (const std::string& file, const Properties& properties)
           {
-            out.open (file.c_str(), std::ios::out | std::ios::binary);
-            if (!out) 
-              throw Exception ("error creating tracks file \"" + file + "\": " + strerror (errno));
-
-            out << "mrtrix tracks\nEND\n";
-            out << "timestamp: " << Timer::current_time() << "\n";
-            for (Properties::const_iterator i = properties.begin(); i != properties.end(); ++i) {
-              if ((i->first != "count") && (i->first != "total_count"))
-                out << i->first << ": " << i->second << "\n";
-            }
-
-            for (std::vector<std::string>::const_iterator i = properties.comments.begin(); 
-                i != properties.comments.end(); ++i)
-              out << "comment: " << *i << "\n";
-
-            for (size_t n = 0; n < properties.seeds.num_seeds(); ++n)
-              out << "roi: seed " << properties.seeds[n]->get_name() << "\n";
-            for (size_t n = 0; n < properties.include.size(); ++n)
-              out << "roi: include " << properties.include[n].parameters() << "\n";
-            for (size_t n = 0; n < properties.exclude.size(); ++n)
-              out << "roi: exclude " << properties.exclude[n].parameters() << "\n";
-            for (size_t n = 0; n < properties.mask.size(); ++n)
-              out << "roi: mask " << properties.mask[n].parameters() << "\n";
-
-            for (std::multimap<std::string,std::string>::const_iterator 
-                it = properties.roi.begin(); it != properties.roi.end(); ++it) 
-              out << "roi: " << it->first << " " << it->second << "\n";
-
-            out << "datatype: " << dtype.specifier() << "\n";
-            int64_t data_offset = int64_t(out.tellp()) + 65;
-            data_offset += (4 - (data_offset % 4)) % 4;
-            out << "file: . " << data_offset << "\n";
-            out << "count: ";
-            count_offset = out.tellp();
-            out << "\nEND\n";
-            out.seekp (0);
-            out << "mrtrix tracks    ";
-            out.seekp (data_offset);
+            create (file, properties);
             write_next_point (Point<value_type> (INFINITY, INFINITY, INFINITY));
           }
-
 
           void write_next_point (const Point<value_type>& p) 
           {
@@ -258,14 +187,9 @@ namespace MR
             out.write ((const char*) x, 3*sizeof(value_type));
           }
 
-
           Writer (const Writer& W) { assert (0); }
 
       };
-
-
-
-
 
     }
   }

@@ -56,15 +56,13 @@ void run ()
 
   const size_t in_count = argument.size() - 1;
 
-  Tractography::Reader<float> reader;
   Tractography::Properties mean_properties;
   size_t count = 0, total_count = 0;
 
   for (size_t file_index = 0; file_index != in_count; ++file_index) {
 
     Properties p;
-    reader.open (argument[file_index], p);
-    reader.close();
+    Tractography::Reader<float> reader (argument[file_index], p);
 
     for (std::vector<std::string>::const_iterator i = p.comments.begin(); i != p.comments.end(); ++i) {
       bool present = false;
@@ -114,7 +112,7 @@ void run ()
   for (size_t file_index = 0; file_index != in_count; ++file_index) {
     DEBUG ("current value of writer.count: " + str(writer.count));
     Properties p;
-    reader.open (argument[file_index], p);
+    Tractography::Reader<float> reader (argument[file_index], p);
     size_t this_count = 0;
     while (reader.next (tck)) {
       writer.append (tck);

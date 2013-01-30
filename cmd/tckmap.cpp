@@ -133,8 +133,11 @@ OPTIONS
 
 
 
-void generate_header (Image::Header& header, Tractography::Reader<float>& file, const std::vector<float>& voxel_size)
+void generate_header (Image::Header& header, const std::vector<float>& voxel_size, const std::string& filename)
 {
+
+  Tractography::Properties properties;
+  Tractography::Reader<float> file (argument[0], properties);
 
   std::vector<Point<float> > tck;
   size_t track_counter = 0;
@@ -180,7 +183,7 @@ void generate_header (Image::Header& header, Tractography::Reader<float>& file, 
   M(0,3) = min_values[0];
   M(1,3) = min_values[1];
   M(2,3) = min_values[2];
-
+  file.close();
 }
 
 
@@ -241,8 +244,7 @@ MapWriterBase<Cont>* make_writer (Image::Header& H, const std::string& name, con
 void run () {
 
   Tractography::Properties properties;
-  Tractography::Reader<float> file;
-  file.open (argument[0], properties);
+  Tractography::Reader<float> file (argument[0], properties);
 
   const size_t num_tracks = properties["count"]    .empty() ? 0   : to<size_t> (properties["count"]);
 
@@ -274,9 +276,7 @@ void run () {
   else {
     if (voxel_size.empty())
       throw Exception ("please specify either a template image or the desired voxel size");
-    generate_header (header, file, voxel_size);
-    file.close();
-    file.open (argument[0], properties);
+    generate_header (header, voxel_size, argument[0]);
   }
 
   header.set_ndim (3);
