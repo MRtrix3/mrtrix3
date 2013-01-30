@@ -33,7 +33,6 @@
 
 #include "gui/mrview/displayable.h"
 #include "dwi/tractography/properties.h"
-#include "dwi/tractography/file.h"
 #include "gui/opengl/shader.h"
 #include "gui/mrview/tool/tractography/tractography.h"
 #include "gui/mrview/tool/tractography/shader.h"
@@ -76,7 +75,6 @@ namespace MR
             std::string filename;
             std::vector<GLuint> vertex_buffers;
             std::vector<GLuint> vertex_array_objects;
-            DWI::Tractography::Reader<float> file;
             DWI::Tractography::Properties properties;
             std::vector<std::vector<GLint> > track_starts;
             std::vector<std::vector<GLint> > track_sizes;

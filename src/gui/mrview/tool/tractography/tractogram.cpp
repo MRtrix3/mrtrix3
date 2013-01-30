@@ -21,13 +21,15 @@
 */
 
 #include <QMenu>
+#include <stdio.h>
 
 #include "progressbar.h"
 #include "image/stride.h"
 #include "gui/mrview/tool/tractography/tractogram.h"
 #include "gui/mrview/window.h"
 #include "gui/projection.h"
-#include <stdio.h>
+#include "dwi/tractography/file.h"
+
 
 const size_t MAX_BUFFER_SIZE = 2796200;  // number of points to fill 32MB
 
@@ -118,7 +120,7 @@ namespace MR
 
         void Tractogram::load_tracks()
         {
-          file.open (filename, properties);
+          DWI::Tractography::Reader<float> file (filename, properties);
           std::vector<Point<float> > tck;
           std::vector<Point<float> > buffer;
           std::vector<GLint> starts;
