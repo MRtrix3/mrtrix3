@@ -441,7 +441,7 @@ void run () {
     case SCALAR_MAP_COUNT: msg += "scalar-map-thresholded tdi"; break;
     case FOD_AMP:          msg += "FOD amplitude";              break;
     case CURVATURE:        msg += "curvature";                  break;
-    default:               msg += "FAIL";                      break;
+    default:               msg += "ERROR";                      break;
   }
   msg += " contrast";
   if (contrast == SCALAR_MAP || contrast == SCALAR_MAP_COUNT || contrast == FOD_AMP || contrast == CURVATURE)
@@ -453,7 +453,7 @@ void run () {
     case MIN:    msg += "minimum"; break;
     case MEAN:   msg += "mean";    break;
     case MAX:    msg += "maximum"; break;
-    default:     msg += "FAIL";   break;
+    default:     msg += "ERROR";   break;
   }
   msg += " per-voxel statistic";
   if (contrast == SCALAR_MAP || contrast == SCALAR_MAP_COUNT || contrast == FOD_AMP || contrast == CURVATURE) {
@@ -469,7 +469,7 @@ void run () {
       case GM_MEAN:   msg += "GM-mapped (mean)"; break;
       case GM_MAX:    msg += "GM-mapped (maximum)"; break;
       case GM_PROD:   msg += "GM-mapped (product)"; break;
-      default:        msg += "FAIL";   break;
+      default:        msg += "ERROR";   break;
     }
     msg += " per-track statistic";
   }
