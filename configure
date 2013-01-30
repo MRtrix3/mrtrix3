@@ -230,8 +230,13 @@ class TempDir:
   def __exit__(self, type, value, traceback):
     try:
       for entry in os.listdir (self.name):
-        os.remove (os.path.join (self.name, entry))
+        fname = os.path.join (self.name, entry)
+        if os.path.isdir (fname):
+          os.rmdir (fname)
+        else:
+          os.unlink (fname)
       os.rmdir (self.name)
+      
     except OSError:
       log ('error deleting temporary folder "' + self.name + '"')
 
@@ -289,6 +294,7 @@ def compile (source, compiler_flags = [], linker_flags = []):
     log ('\nCOMPILE ' + F.name + ':\n---\n' + source + '\n---\n')
     F.fid.write (source)
     F.fid.flush()
+    F.fid.close()
     with DeleteAfter (F.name[:-4] + '.o') as obj:
       cmd = fillin (cpp, {
         'CFLAGS': compiler_flags,
