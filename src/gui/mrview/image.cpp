@@ -48,7 +48,7 @@ namespace MR
       {
         texture2D_ID[0] = texture2D_ID[1] = texture2D_ID[2] = 0;
         position[0] = position[1] = position[2] = std::numeric_limits<ssize_t>::min();
-        set_colourmap (header().datatype().is_complex() ? ColourMap::Complex : ColourMap::Gray);
+        set_colourmap (guess_colourmap ());
       }
 
 
@@ -64,7 +64,7 @@ namespace MR
       {
         texture2D_ID[0] = texture2D_ID[1] = texture2D_ID[2] = 0;
         position[0] = position[1] = position[2] = std::numeric_limits<ssize_t>::min();
-        set_colourmap (header().datatype().is_complex() ? ColourMap::Complex : ColourMap::Gray);
+        set_colourmap (guess_colourmap ());
         setCheckable (true);
         setToolTip (header().name().c_str());
         setStatusTip (header().name().c_str());
@@ -85,6 +85,26 @@ namespace MR
         if (vertex_array_object_ID)
           glDeleteVertexArrays (1, &vertex_array_object_ID);
       }
+
+
+
+            
+      size_t Image::guess_colourmap () const 
+      {
+        std::string map = "Gray";
+        if (header().datatype().is_complex()) 
+          map = "Complex";
+        else if (header().ndim() == 4) {
+          if (header().dim(3) == 3)
+            map = "RGB";
+        }
+        for (size_t n = 0; ColourMap::maps[n].name; ++n) 
+          if (ColourMap::maps[n].name == map) 
+            return n;
+        return 0;
+      }
+
+
 
 
 
@@ -255,36 +275,9 @@ namespace MR
         type = GL_FLOAT;
         Ptr<float,true> data;
 
-        uint32_t cmap = shader.colourmap() & ColourMap::Mask;
-        if (cmap < ColourMap::Special) {
+        std::string cmap_name = ColourMap::maps[shader.colourmap()].name;
 
-          data = new float [xdim*ydim];
-          format = GL_ALPHA;
-          internal_format = GL_ALPHA32F_ARB;
-
-          if (position[plane] < 0 || position[plane] >= header().dim (plane)) {
-            memset (data, 0, xdim*ydim*sizeof (float));
-          }
-          else {
-            // copy data:
-            VoxelType& vox (voxel());
-            vox[plane] = slice;
-            value_min = std::numeric_limits<float>::infinity();
-            value_max = -std::numeric_limits<float>::infinity();
-            for (vox[y] = 0; vox[y] < ydim; ++vox[y]) {
-              for (vox[x] = 0; vox[x] < xdim; ++vox[x]) {
-                cfloat val = vox.value();
-                data[vox[x]+vox[y]*xdim] = val.real();
-                if (finite (val.real())) {
-                  if (val.real() < value_min) value_min = val.real();
-                  if (val.real() > value_max) value_max = val.real();
-                }
-              }
-            }
-          }
-
-        }
-        else if (cmap == ColourMap::RGB) {
+        if (cmap_name == "RGB") {
 
           data = new float [3*xdim*ydim];
           format = GL_RGB;
@@ -324,11 +317,11 @@ namespace MR
           }
 
         }
-        else if (cmap == ColourMap::Complex) {
+        else if (cmap_name == "Complex") {
 
           data = new float [2*xdim*ydim];
-          format = GL_LUMINANCE_ALPHA;
-          internal_format = GL_LUMINANCE_ALPHA32F_ARB;
+          format = GL_RG;
+          internal_format = GL_RG32F;
 
           if (position[plane] < 0 || position[plane] >= header().dim (plane)) {
             memset (data, 0, 2*xdim*ydim*sizeof (float));
@@ -356,9 +349,34 @@ namespace MR
 
         }
         else {
-          FAIL ("attempt to use unsupported colourmap");
-          return;
+
+          data = new float [xdim*ydim];
+          format = GL_RED;
+          internal_format = GL_R32F;
+
+          if (position[plane] < 0 || position[plane] >= header().dim (plane)) {
+            memset (data, 0, xdim*ydim*sizeof (float));
+          }
+          else {
+            // copy data:
+            VoxelType& vox (voxel());
+            vox[plane] = slice;
+            value_min = std::numeric_limits<float>::infinity();
+            value_max = -std::numeric_limits<float>::infinity();
+            for (vox[y] = 0; vox[y] < ydim; ++vox[y]) {
+              for (vox[x] = 0; vox[x] < xdim; ++vox[x]) {
+                cfloat val = vox.value();
+                data[vox[x]+vox[y]*xdim] = val.real();
+                if (finite (val.real())) {
+                  if (val.real() < value_min) value_min = val.real();
+                  if (val.real() > value_max) value_max = val.real();
+                }
+              }
+            }
+          }
+
         }
+
         if ((value_max - value_min) < 2.0*std::numeric_limits<float>::epsilon()) 
           value_min = value_max - 1.0;
 
@@ -376,40 +394,42 @@ namespace MR
 
       inline void Image::update_texture3D ()
       {
-        uint32_t cmap = shader.colourmap() & ColourMap::Mask;
+        std::string cmap_name = ColourMap::maps[shader.colourmap()].name;
 
-        if (cmap < ColourMap::Special) format = GL_ALPHA;
-        else if (cmap == ColourMap::RGB) format = GL_RGB;
-        else if (cmap == ColourMap::Complex) format = GL_LUMINANCE_ALPHA;
-        else FAIL ("attempt to use unsupported colourmap");
+        if (cmap_name == "RGB") format = GL_RGB;
+        else if (cmap_name == "Complex") format = GL_RG;
+        else format = GL_RED;
 
-        if (cmap == ColourMap::Complex) 
-          internal_format = GL_LUMINANCE_ALPHA32F_ARB;
+        if (cmap_name == "Complex")
+          internal_format = GL_RG32F;
         else {
 
           switch (header().datatype() ()) {
             case DataType::Bit:
-            case DataType::UInt8:
             case DataType::Int8:
-              if (cmap < ColourMap::Special) internal_format = GL_ALPHA8;
-              else if (cmap == ColourMap::Complex) internal_format = GL_LUMINANCE8_ALPHA8;
-              else if (cmap == ColourMap::RGB) internal_format = GL_RGB8;
-              else FAIL ("attempt to use unsupported colourmap");
+              internal_format = ( format == GL_RED ? GL_R8I : GL_RGB8I );
+              break;
+            case DataType::UInt8:
+              internal_format = ( format == GL_RED ? GL_R8UI : GL_RGB8UI );
               break;
             case DataType::UInt16LE:
             case DataType::UInt16BE:
+              internal_format = ( format == GL_RED ? GL_R16UI : GL_RGB16UI );
+              break;
             case DataType::Int16LE:
             case DataType::Int16BE:
-              if (cmap < ColourMap::Special) internal_format = GL_ALPHA16;
-              else if (cmap == ColourMap::Complex) internal_format = GL_LUMINANCE16_ALPHA16;
-              else if (cmap == ColourMap::RGB) internal_format = GL_RGB16;
-              else FAIL ("attempt to use unsupported colourmap");
+              internal_format = ( format == GL_RED ? GL_R16I : GL_RGB16I );
+              break;
+            case DataType::UInt32LE:
+            case DataType::UInt32BE:
+              internal_format = ( format == GL_RED ? GL_R32UI : GL_RGB32UI );
+              break;
+            case DataType::Int32LE:
+            case DataType::Int32BE:
+              internal_format = ( format == GL_RED ? GL_R32I : GL_RGB32I );
               break;
             default:
-              if (cmap < ColourMap::Special) internal_format = GL_ALPHA32F_ARB;
-              else if (cmap == ColourMap::RGB) internal_format = GL_RGB32F;
-              else if (cmap == ColourMap::Complex) internal_format = GL_LUMINANCE_ALPHA32F_ARB;
-              else FAIL ("attempt to use unsupported colourmap");
+              internal_format = ( format == GL_RED ? GL_R32F : GL_RGB32F );
               break;
           }
         }
@@ -440,7 +460,7 @@ namespace MR
         value_min = std::numeric_limits<float>::infinity();
         value_max = -std::numeric_limits<float>::infinity();
 
-        if (cmap != ColourMap::Complex) {
+        if (format != GL_RG) {
           switch (header().datatype() ()) {
             case DataType::Bit:
             case DataType::UInt8:
@@ -465,14 +485,9 @@ namespace MR
             case DataType::Int32BE:
               copy_texture_3D<int32_t> (format);
               break;
-            case DataType::Float32LE:
-            case DataType::Float32BE:
-            case DataType::Float64LE:
-            case DataType::Float64BE:
+            default:
               copy_texture_3D<float> (format);
               break;
-            default:
-              assert (0);
           }
         }
         else 
@@ -528,7 +543,7 @@ namespace MR
         MR::Image::Buffer<ValueType> buffer_tmp (buffer);
         typename MR::Image::Buffer<ValueType>::voxel_type V (buffer_tmp);
         GLenum type = GLtype<ValueType>();
-        int N = ( format == GL_ALPHA ? 1 : 3 );
+        int N = ( format == GL_RED ? 1 : 3 );
         Ptr<ValueType,true> data (new ValueType [N * V.dim (0) * V.dim (1)]);
 
         ProgressBar progress ("loading image data...", V.dim (2));
@@ -538,7 +553,7 @@ namespace MR
 
         for (V[2] = 0; V[2] < V.dim (2); ++V[2]) {
 
-          if (format == GL_ALPHA) {
+          if (format == GL_RED) {
             ValueType* p = data;
 
             for (V[1] = 0; V[1] < V.dim (1); ++V[1]) {
@@ -625,7 +640,7 @@ namespace MR
           glTexSubImage3D (GL_TEXTURE_3D, 0,
               0, 0, V[2],
               V.dim (0), V.dim (1), 1,
-              GL_LUMINANCE_ALPHA, GL_FLOAT, data);
+              GL_RG, GL_FLOAT, data);
           DEBUG_OPENGL;
           ++progress;
         }

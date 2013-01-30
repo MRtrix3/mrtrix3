@@ -95,8 +95,8 @@ namespace MR
             emit scalingChanged();
           }
 
-          void set_colourmap (uint32_t index) {
-            if (index >= ColourMap::Special || shader.colourmap() >= ColourMap::Special) {
+          void set_colourmap (size_t index) {
+            if (ColourMap::maps[index].special || ColourMap::maps[shader.colourmap()].special) {
               if (index != shader.colourmap()) {
 //                position[0] = position[1] = position[2] = std::numeric_limits<ssize_t>::min(); TODO
                 texture_mode_3D_unchanged = false;
@@ -104,12 +104,9 @@ namespace MR
             }
             shader.set_colourmap (index);
           }
-
-          uint32_t colourmap_index () const {
-            uint32_t cret = shader.colourmap();
-            if (cret >= ColourMap::Special)
-              cret -= ColourMap::Special - ColourMap::NumScalar;
-            return cret;
+          
+          size_t colourmap () const {
+            return shader.colourmap();
           }
 
 

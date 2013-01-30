@@ -271,7 +271,7 @@ namespace MR
 
         colourmap_menu = new QMenu (tr ("Colourmap menu"), this);
 
-        ColourMap::init (this, colourmap_group, colourmap_menu, colourmap_actions);
+        ColourMap::create_menu (this, colourmap_group, colourmap_menu, colourmap_actions, true);
         connect (colourmap_group, SIGNAL (triggered (QAction*)), this, SLOT (select_colourmap_slot()));
 
         colourmap_menu->addSeparator();
@@ -650,7 +650,7 @@ namespace MR
           size_t n = 0;
           while (action != colourmap_actions[n])
             ++n;
-          imagep->set_colourmap (ColourMap::from_menu (n));
+          imagep->set_colourmap (n);
           glarea->updateGL();
         }
       }
@@ -816,7 +816,8 @@ namespace MR
       {
         action->setChecked (true);
         image_interpolate_action->setChecked (image()->interpolate());
-        colourmap_group->actions()[image()->colourmap_index()]->setChecked (true);
+        size_t cmap_index = image()->colourmap();
+        colourmap_group->actions()[cmap_index]->setChecked (true);
         invert_scale_action->setChecked (image()->shader.scale_inverted());
         invert_colourmap_action->setChecked (image()->shader.colourmap_inverted());
         setWindowTitle (image()->interp.name().c_str());

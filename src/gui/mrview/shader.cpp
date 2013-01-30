@@ -30,23 +30,13 @@ namespace MR
     namespace MRView
     {
 
-      inline std::string amplitude (uint32_t flags) 
-      {
-        uint32_t colourmap = flags & ColourMap::Mask;
-        if (colourmap == ColourMap::RGB) return "length (color.rgb)";
-        if (colourmap == ColourMap::Complex) return "length (color.ra)";
-        return "color.a";
-      }
-
       void Shader::recompile ()
       {
-        if (shader_program) {
-          shader_program.detach (fragment_shader);
-          shader_program.detach (vertex_shader);
-        } 
+        if (shader_program) 
+          shader_program.clear();
 
         // vertex shader:
-        std::string source = 
+        GL::Shader::Vertex vertex_shader (
           "#version 330 core\n"
           "layout(location = 0) in vec3 vertpos;\n"
           "layout(location = 1) in vec3 texpos;\n"
@@ -55,15 +45,12 @@ namespace MR
           "void main() {\n"
           "  gl_Position =  MVP * vec4 (vertpos,1);\n"
           "  texcoord = texpos;\n"
-          "}\n";
+          "}\n");
 
-
-        vertex_shader.compile (source);
-        shader_program.attach (vertex_shader);
 
 
         // fragment shader:
-        source = 
+        std::string source = 
           "#version 330 core\n"
           "uniform float offset, scale";
         if (flags_ & DiscardLower)
@@ -77,10 +64,11 @@ namespace MR
           ";\nuniform sampler3D tex;\n"
           "in vec3 texcoord;\n"
           "out vec4 color;\n";
-        if (flags_ & Lighting) 
-          source += 
-            "uniform float ambient;\n"
-            "uniform vec3 lightDir;\n";
+
+        // if (flags_ & Lighting) 
+          // source += 
+            // "uniform float ambient;\n"
+            // "uniform vec3 lightDir;\n";
 
         source += 
           "void main() {\n"
@@ -88,7 +76,7 @@ namespace MR
           "      texcoord.t < 0.0 || texcoord.t > 1.0 ||\n"
           "      texcoord.p < 0.0 || texcoord.p > 1.0) discard;\n"
           "  color = texture (tex, texcoord.stp);\n"
-          "  float amplitude = " + amplitude (flags_) + ";\n"
+          "  float amplitude = " + std::string (ColourMap::maps[colourmap_index].amplitude) + ";\n"
           "  if (isnan(amplitude) || isinf(amplitude)) discard;\n";
 /*
         if (flags_ & Lighting) 
@@ -103,6 +91,7 @@ namespace MR
             "normal = normalize (gl_NormalMatrix * normal); "
             "color = tmp; ";
 */
+
         if (flags_ & DiscardLower)
           source += "if (amplitude < lower) discard;";
 
@@ -113,62 +102,27 @@ namespace MR
           source += "if (amplitude < alpha_offset) discard; "
             "float alpha = clamp ((amplitude - alpha_offset) * alpha_scale, 0, alpha); ";
 
-        uint32_t colourmap = flags_ & ColourMap::Mask;
-        if (colourmap & ColourMap::MaskNonScalar) {
-          if (colourmap == ColourMap::RGB)
-            source += "color.rgb = scale * (abs(color.rgb) - offset);\n";
-          else if (colourmap == ColourMap::Complex) {
-            source += 
-              "float mag = clamp (scale * (amplitude - offset), 0.0, 1.0);\n"
-              "float phase = atan (color.a, color.g) * 0.954929658551372;\n"
-              "color.rgb = phase + vec3 (-2.0, 0.0, 2.0);\n"
-              "if (phase > 2.0) color.b -= 6.0;\n"
-              "if (phase < -2.0) color.r += 6.0;\n"
-              "color.rgb = mag * (2.0 - abs (color.rgb));\n";
-          }
-          else assert (0);
-        }
-        else { // scalar colourmaps:
-
+        if (!ColourMap::maps[colourmap_index].special) {
           source += "amplitude = clamp (";
           if (flags_ & InvertScale) source += "1.0 -";
           source += " scale * (amplitude - offset), 0.0, 1.0);\n";
-
-          if (colourmap == ColourMap::Gray)
-            source += "color.rgb = vec3(amplitude);\n";
-          else if (colourmap == ColourMap::Hot)
-            source +=
-              "color.r = 2.7213 * amplitude;\n"
-              "color.g = 2.7213 * amplitude - 1.0;\n"
-              "color.b = 3.7727 * amplitude - 2.7727;\n";
-          else if (colourmap == ColourMap::Jet)
-            source +=
-              "color.rgb = 1.5 - 4.0 * abs (amplitude - vec3(0.25, 0.5, 0.75));\n";
-          else assert (0);
         }
+
+        source += ColourMap::maps[colourmap_index].mapping;
 
         if (flags_ & InvertMap)
           source += "color.rgb = 1.0 - color.rgb;";
-/*
-        // TODO: lighting code in here:
-        if (flags_ & Lighting) 
-          source += 
-            "  vec3 halfV;\n"
-            "  float NdotL, NdotHV;\n"
-            "  NdotL = dot (normal, lightDir);\n"
-            "  color.rgb = gl_FragColor.rgb * ambient.rgb;\n"
-            "  color.rgb += gl_LightSource[0].diffuse.rgb * NdotL * gl_FragColor.rgb;\n"
-            "  halfV = normalize (halfVector);\n"
-            "  NdotHV = max (dot (normal, halfV), 0.0);\n"
-            "  gl_FragColor.rgb = color.rgb + gl_FrontMaterial.specular.rgb * gl_LightSource[0].specular.rgb * pow (NdotHV, gl_FrontMaterial.shininess);\n";
-*/
+
         if (flags_ & Transparency) 
           source += "color.a = alpha;\n";
         source += "}\n";
 
-        fragment_shader.compile (source.c_str());
-        shader_program.attach (fragment_shader);
 
+
+        GL::Shader::Fragment fragment_shader (source.c_str());
+
+        shader_program.attach (vertex_shader);
+        shader_program.attach (fragment_shader);
         shader_program.link();
       }
 

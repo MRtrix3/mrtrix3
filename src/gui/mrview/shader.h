@@ -30,6 +30,7 @@
 #include "gui/opengl/gl.h"
 #include "gui/opengl/shader.h"
 #include "gui/projection.h"
+#include "gui/mrview/colourmap.h"
 
 #ifdef Complex
 # undef Complex
@@ -53,62 +54,6 @@ namespace MR
       const uint32_t TransparencyOn = 0x00400000;
       const uint32_t LightingOn = 0x00800000;
 
-      namespace ColourMap
-      {
-        const uint32_t Mask = 0x000000FF;
-        const uint32_t MaskNonScalar = 0x00000080;
-
-        const size_t NumScalar = 3;
-        const uint32_t Gray = 0x00000000;
-        const uint32_t Hot = 0x00000001;
-        const uint32_t Jet = 0x00000002;
-
-        const size_t NumSpecial = 2;
-        const uint32_t Special = 0x00000080;
-        const uint32_t RGB = Special;
-        const uint32_t Complex = Special+1;
-
-        inline void init (QWidget* window, QActionGroup*& group, QMenu* menu, QAction** & actions)
-        {
-          group = new QActionGroup (window);
-          group->setExclusive (true);
-          actions = new QAction* [NumScalar+NumSpecial];
-
-          size_t n = 0;
-          actions[n++] = new QAction ("Gray", window);
-          actions[n++] = new QAction ("Hot", window);
-          actions[n++] = new QAction ("Jet", window);
-
-          actions[n++] = new QAction ("RGB", window);
-          actions[n++] = new QAction ("Complex", window);
-
-          for (n = 0; n < NumScalar; ++n) {
-            actions[n]->setCheckable (true);
-            group->addAction (actions[n]);
-            menu->addAction (actions[n]);
-          }
-          menu->addSeparator();
-          for (; n < NumScalar+NumSpecial; ++n) {
-            actions[n]->setCheckable (true);
-            group->addAction (actions[n]);
-            menu->addAction (actions[n]);
-          }
-          actions[0]->setChecked (true);
-
-          for (n = 0; n < NumScalar+NumSpecial; ++n) {
-            window->addAction (actions[n]);
-            actions[n]->setShortcut (QObject::tr (std::string ("Ctrl+" + str (n+1)).c_str()));
-          }
-
-        }
-
-        inline uint32_t from_menu (uint32_t num)
-        {
-          if (num < NumScalar) return num;
-          return num-NumScalar+Special;
-        }
-
-      }
 
       class Shader
       {
@@ -121,7 +66,7 @@ namespace MR
             transparent_intensity (NAN),
             opaque_intensity (NAN),
             alpha (NAN),
-            flags_ (ColourMap::Mask) { }
+            flags_ (0x00000000) { }
 
           virtual ~Shader() {}
 
@@ -177,10 +122,11 @@ namespace MR
             set (cmap);
           }
 
-          void set_colourmap (uint32_t index) {
-            uint32_t cmap = flags_ & ~(ColourMap::Mask);
-            cmap |= index;
-            set (cmap);
+          void set_colourmap (size_t index) {
+            if (index != colourmap_index) {
+              colourmap_index = index;
+              recompile();
+            }
           }
 
           void set_use_discard_lower (bool yesno) {
@@ -228,8 +174,8 @@ namespace MR
             set_use_transparency (true);
           }
 
-          uint32_t colourmap () const {
-            return flags_ & ColourMap::Mask;
+          size_t colourmap () const {
+            return colourmap_index;
           }
 
           bool scale_inverted () const { 
@@ -272,19 +218,11 @@ namespace MR
             return flags_ & Lighting;
           }
 
-          uint32_t colourmap_index () const {
-            uint32_t cret = flags_ & ColourMap::Mask;
-            if (cret >= ColourMap::Special)
-              cret -= ColourMap::Special - ColourMap::NumScalar;
-            return cret;
-          }
-
 
         protected:
           uint32_t flags_;
+          size_t colourmap_index;
 
-          GL::Shader::Fragment fragment_shader;
-          GL::Shader::Vertex vertex_shader;
           GL::Shader::Program shader_program;
 
           static const char* vertex_shader_source;

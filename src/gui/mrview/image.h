@@ -63,6 +63,8 @@ namespace MR
             return buffer;
           }
 
+          size_t guess_colourmap () const;
+
           void update_texture2D (int plane, int slice);
           void update_texture3D ();
 

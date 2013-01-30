@@ -29,17 +29,14 @@ namespace MR
   {
     namespace MRView
     {
-
       namespace Tool
       {
 
         void Shader::recompile ()
         {
 
-          if (shader_program) {
-            shader_program.detach (fragment_shader);
-            shader_program.detach (vertex_shader);
-          }
+          if (shader_program) 
+            shader_program.clear();
 
           std::string vertex_shader_code =
               "#version 330 core \n "
@@ -72,7 +69,9 @@ namespace MR
             vertex_shader_code +=
                 "  include = (dot(vertexPosition_modelspace, screen_normal) - crop_var) / slab_width;\n";
           }
-          vertex_shader_code += "}";
+          vertex_shader_code += "}\n";
+
+
 
           std::string fragment_shader_code =
               "#version 330 core\n"
@@ -88,11 +87,13 @@ namespace MR
 
           fragment_shader_code +=
               " color = normalize(fragmentColor);\n"
-              "}";
+              "}\n";
 
-          vertex_shader.compile (vertex_shader_code);
+
+
+          GL::Shader::Vertex vertex_shader (vertex_shader_code);
+          GL::Shader::Fragment fragment_shader (fragment_shader_code);
           shader_program.attach (vertex_shader);
-          fragment_shader.compile (fragment_shader_code);
           shader_program.attach (fragment_shader);
           shader_program.link();
 
