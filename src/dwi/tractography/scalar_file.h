@@ -125,7 +125,7 @@ namespace MR
       };
 
 
-      template <typename T = float> class ScalarWriter : public __WriterBase__
+      template <typename T = float> class ScalarWriter : public __WriterBase__<T>
       {
         public:
           typedef T value_type;
@@ -137,7 +137,8 @@ namespace MR
 
           ScalarWriter (const std::string& file, const Properties& properties)
           {
-            create_header (file, properties);
+            create (file, properties, "track scalars");
+            write_next_point (value_type (INFINITY));
           }
 
 
@@ -169,27 +170,15 @@ namespace MR
           }
 
 
-          size_t count, total_count;
-
 
         protected:
-          std::ofstream  out;
-          DataType dtype;
-          int64_t  count_offset;
-
-          void create_header (const std::string& file, const Properties& properties)
-          {
-            create (file, properties);
-            write_next_point (value_type (INFINITY));
-          }
-
           void write_next_point (const value_type& val)
           {
             using namespace ByteOrder;
             value_type x;
             if (dtype.is_little_endian()) { x = LE(val); }
             else { x = BE(val);}
-            out.write ((const char*) x, sizeof(value_type));
+            out.write ((const char*) &x, sizeof(value_type));
           }
 
 

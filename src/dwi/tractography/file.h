@@ -140,7 +140,8 @@ namespace MR
 
           Writer (const std::string& file, const Properties& properties)
           {
-            create_header (file, properties);
+            create (file, properties, "tracks");
+            write_next_point (Point<value_type> (INFINITY, INFINITY, INFINITY));
           }
 
           void append (const std::vector< Point<value_type> >& tck)
@@ -172,11 +173,6 @@ namespace MR
 
 
         protected:
-          void create_header (const std::string& file, const Properties& properties)
-          {
-            create (file, properties);
-            write_next_point (Point<value_type> (INFINITY, INFINITY, INFINITY));
-          }
 
           void write_next_point (const Point<value_type>& p) 
           {

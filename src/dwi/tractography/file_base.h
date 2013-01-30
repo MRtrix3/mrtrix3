@@ -24,6 +24,7 @@
 #define __dwi_tractography_file_base_h__
 
 #include <fstream>
+#include <iomanip>
 #include <map>
 
 #include "types.h"
@@ -49,8 +50,11 @@ namespace MR
           }
 
           void open (const std::string& file, const std::string& firstline, Properties& properties);
+
           void close () { in.close(); }
+
         protected:
+
           std::ifstream  in;
           DataType  dtype;
       };
@@ -81,13 +85,13 @@ namespace MR
             out.close();
           }
 
-          void create (const std::string& file, const Properties& properties)
-          {
+          void create (const std::string& file, const Properties& properties, const std::string& type) {
             out.open (file.c_str(), std::ios::out | std::ios::binary);
+            out.precision(30);
             if (!out)
-              throw Exception ("error creating tracks file \"" + file + "\": " + strerror (errno));
+              throw Exception ("error creating " + type + " file \"" + file + "\": " + strerror (errno));
 
-            out << "mrtrix tracks\nEND\n";
+            out << "mrtrix " + type + "\nEND\n";
             out << "timestamp: " << properties.timestamp << "\n";
             for (Properties::const_iterator i = properties.begin(); i != properties.end(); ++i) {
               if ((i->first != "count") && (i->first != "total_count"))
@@ -119,7 +123,7 @@ namespace MR
             count_offset = out.tellp();
             out << "\nEND\n";
             out.seekp (0);
-            out << "mrtrix tracks    ";
+            out << "mrtrix " + type + "    ";
             out.seekp (data_offset);
           }
 

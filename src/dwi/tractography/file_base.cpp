@@ -20,9 +20,9 @@
 
 */
 
-#include "file/path.h"
-#include "dwi/tractography/file_base.h"
 
+#include "dwi/tractography/file_base.h"
+#include "file/path.h"
 
 namespace MR {
   namespace DWI {
@@ -56,14 +56,14 @@ namespace MR {
           else properties[key] = kv.value();
         }
 
-        if (dtype == DataType::Undefined) 
+        if (dtype == DataType::Undefined)
           throw Exception ("no datatype specified for tracks file \"" + file + "\"");
-        if (dtype != DataType::Float32LE && dtype != DataType::Float32BE && 
+        if (dtype != DataType::Float32LE && dtype != DataType::Float32BE &&
             dtype != DataType::Float64LE && dtype != DataType::Float64BE)
           throw Exception ("only supported datatype for tracks file are "
               "Float32LE, Float32BE, Float64LE & Float64BE (in " + type  + " file \"" + file + "\")");
 
-        if (data_file.empty()) 
+        if (data_file.empty())
           throw Exception ("missing \"files\" specification for " + type  + " file \"" + file + "\"");
 
         std::istringstream files_stream (data_file);
@@ -72,19 +72,19 @@ namespace MR {
         int64_t offset = 0;
         if (files_stream.good()) {
           try { files_stream >> offset; }
-          catch (...) { 
+          catch (...) {
             throw Exception ("invalid offset specified for file \""
                 + fname + "\" in " + type  + " file \"" + file + "\"");
           }
         }
 
-        if (fname != ".") 
+        if (fname != ".")
           fname = Path::join (Path::dirname (file), fname);
-        else 
+        else
           fname = file;
 
         in.open (fname.c_str(), std::ios::in | std::ios::binary);
-        if (!in) 
+        if (!in)
           throw Exception ("error opening " + type  + " data file \"" + fname + "\": " + strerror(errno));
         in.seekg (offset);
       }

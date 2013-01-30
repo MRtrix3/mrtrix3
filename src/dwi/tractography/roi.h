@@ -118,7 +118,7 @@ namespace MR
 
         private:
           Point<> pos;
-          float rad, rad2, vol;
+          float rad, rad2;
           RefPtr<Mask> mask;
 
       };
@@ -148,6 +148,7 @@ namespace MR
           }
 
           friend inline std::ostream& operator<< (std::ostream& stream, const ROISet& R) {
+            if (R.R.empty()) return (stream);
             std::vector<ROI>::const_iterator i = R.R.begin();
             stream << *i;
             ++i;
