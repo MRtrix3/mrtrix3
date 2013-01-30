@@ -176,7 +176,7 @@ cpp_flags = [ '-Wno-unused-parameter' ]
 ld = 'g++ OBJECTS LDFLAGS -o EXECUTABLE'.split()
 ld_flags = []
 
-ld_lib = 'g++ -shared LDLIB_FLAGS OBJECTS -o LIB'.split()
+ld_lib = 'g++ -shared OBJECTS LDLIB_FLAGS -o LIB'.split()
 ld_lib_flags = []
 
 thread_cflags = []
