@@ -1,6 +1,6 @@
 #!/usr/bin/python2
 
-import subprocess, sys, tempfile, os, platform, tempfile, shutil
+import subprocess, sys, os, platform, tempfile, shutil
 
 debug = False
 profile = False
@@ -171,7 +171,7 @@ report ('\n\n')
 global cpp, cpp_cmd, ld, ld_cmd
 
 cpp = 'g++ -c CFLAGS SRC -o OBJECT'.split()
-cpp_flags = [ '-fPIC', '-Wno-unused-parameter' ]
+cpp_flags = [ '-Wno-unused-parameter' ]
 
 ld = 'g++ OBJECTS LDFLAGS -o EXECUTABLE'.split()
 ld_flags = []
@@ -356,9 +356,10 @@ lib_prefix = 'lib'
 system = platform.system().lower()
 report ('Detecting OS: ' + system + '\n')
 if system == 'linux':
+  cpp_flags += [ '-fPIC' ]
   lib_suffix = '.so'
 elif system == 'windows':
-  cpp_flags += [ '-DWINDOWS', '-mno-cygwin', '-mms-bitfields' ]
+  cpp_flags += [ '-DWINDOWS', '-mms-bitfields' ]
   exe_suffix = '.exe'
   lib_prefix = ''
   lib_suffix = '.dll'
@@ -730,8 +731,11 @@ int main() { Foo f; }
     qt_cflags = []
     qt_libs = []
     qt_ldflags = []
+    qt_makefile = 'Makefile'
+    if system == 'windows':
+      qt_makefile = 'Makefile.Release'
 
-    for line in open (os.path.join (qt_dir.name, 'Makefile')):
+    for line in open (os.path.join (qt_dir.name, qt_makefile)):
       line = line.strip()
       if line.startswith ('DEFINES'):
         qt_defines = line[line.find('=')+1:].strip().split()
@@ -747,12 +751,12 @@ int main() { Foo f; }
     qt = qt_cflags + qt_defines + qt_includes
     qt_cflags = []
     for entry in qt:
-      if entry[0] != '$' and not entry == '-I.': qt_cflags += [ entry ]
+      if entry[0] != '$' and not entry == '-I.': qt_cflags += [ entry.replace('\"','') ]
 
     qt = qt_ldflags + qt_libs
     qt_ldflags = []
     for entry in qt:
-      if entry[0] != '$': qt_ldflags += [ entry ]
+      if entry[0] != '$': qt_ldflags += [ entry.replace('\"','') ]
 
     cmd = [ moc, 'qt.h', '-o', 'qt_moc.cpp' ]
     log ('\nexecuting "' + ' ' .join(cmd) + '"...\n')
