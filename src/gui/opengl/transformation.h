@@ -135,36 +135,36 @@ namespace MR
 
 
 
-      inline mat4 ortho (float left, float right, float bottom, float top, float near_, float far_) 
+      inline mat4 ortho (float L, float R, float B, float T, float N, float F) 
       {
         mat4 m;
         m.zero();
-        m(0,0) = 2.0f/(right-left);
-        m(1,1) = 2.0f/(top-bottom);
-        m(2,2) = 2.0f/(near_-far_);
+        m(0,0) = 2.0f/(R-L);
+        m(1,1) = 2.0f/(T-B);
+        m(2,2) = 2.0f/(N-F);
         m(3,3) = 1.0f;
 
-        m(0,3) = (right+left)/(right-left);
-        m(1,3) = (top+bottom)/(top-bottom);
-        m(2,3) = (far_+near_)/(far_-near_);
+        m(0,3) = (R+L)/(R-L);
+        m(1,3) = (T+B)/(T-B);
+        m(2,3) = (F+N)/(F-N);
 
         return m;
       }
 
 
 
-      inline mat4 frustum (float left, float right, float bottom, float top, float near_, float far_) 
+      inline mat4 frustum (float L, float R, float B, float T, float N, float F) 
       {
         mat4 m;
         m.zero();
 
-        m(0,0) = 2.0f*near_/(right-left);
-        m(1,1) = 2.0f*near_/(top-bottom);
-        m(0,2) = (right+left)/(right-left);
-        m(1,2) = (top+bottom)/(top-bottom);
-        m(2,2) = (far_+near_)/(near_-far_);
+        m(0,0) = 2.0f*N/(R-L);
+        m(1,1) = 2.0f*N/(T-B);
+        m(0,2) = (R+L)/(R-L);
+        m(1,2) = (T+B)/(T-B);
+        m(2,2) = (F+N)/(N-F);
         m(3,2) = -1.0f;
-        m(2,3) = 2.0f*far_*near_/(near_-far_);
+        m(2,3) = 2.0f*F*N/(N-F);
 
         return m;
       }

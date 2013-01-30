@@ -29,8 +29,6 @@
 #include "mrtrix.h"
 
 
-//#define USE_OPENGL3
-
 namespace MR
 {
   namespace GUI
@@ -48,7 +46,7 @@ namespace MR
 
 #define DEBUG_OPENGL { GLenum error_code = glGetError(); \
     if (error_code != GL_NO_ERROR) { \
-      ERROR (std::string ("OpenGL Error: ") + (const char*) MR::GUI::GL::ErrorString (error_code) + " ["__FILE__":" + MR::str(__LINE__) + "]"); \
+      FAIL (std::string ("OpenGL Error: ") + (const char*) MR::GUI::GL::ErrorString (error_code) + " ["__FILE__":" + MR::str(__LINE__) + "]"); \
     }\
   }
 

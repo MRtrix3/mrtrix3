@@ -168,7 +168,7 @@ namespace MR
             else if (toolbar_pos_spec == "left") toolbar_position = Qt::LeftToolBarArea;
             else if (toolbar_pos_spec == "right") toolbar_position = Qt::RightToolBarArea;
             else if (toolbar_pos_spec != "top")
-              ERROR ("invalid value for configuration entry \"InitialToolBarPosition\"");
+              FAIL ("invalid value for configuration entry \"InitialToolBarPosition\"");
           }
         }
 

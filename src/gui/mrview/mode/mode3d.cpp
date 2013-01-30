@@ -53,7 +53,7 @@ namespace MR
             using namespace App;
             Options opt = get_options ("view");
             if (opt.size()) {
-              ERROR ("TODO: apply view option");
+              FAIL ("TODO: apply view option");
             }
 
           }
