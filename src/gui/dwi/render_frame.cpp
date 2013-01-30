@@ -58,6 +58,7 @@ namespace MR
       RenderFrame::RenderFrame (QWidget* parent) :
         QGLWidget (QGLFormat (QGL::FormatOptions (QGL::DoubleBuffer | QGL::DepthBuffer | QGL::Rgba)), parent),
         view_angle (40.0), distance (0.3), line_width (1.0), scale (1.0), 
+        lmax_computed (0), lod_computed (0), recompute_mesh (true), recompute_amplitudes (true), 
         show_axes (true), hide_neg_lobes (true), color_by_dir (true), use_lighting (true), font (parent->font()), projection (this, font),
         focus (0.0, 0.0, 0.0), framebuffer (NULL), OS (0), OS_x (0), OS_y (0), vertex_buffer_ID (0), vertex_array_object_ID (0)
       {
@@ -92,7 +93,7 @@ namespace MR
       void RenderFrame::initializeGL ()
       {
         GL::init();
-        renderer.init();
+        renderer.initGL();
         glClearColor (lighting->background_color[0], lighting->background_color[1], lighting->background_color[2], 0.0);
         glEnable (GL_DEPTH_TEST);
 
@@ -192,7 +193,22 @@ namespace MR
             if (normalise && finite (values[0]) && values[0] != 0.0)
               final_scale /= values[0];
 
-            renderer.draw (projection, *lighting, focus, final_scale, use_lighting, color_by_dir, hide_neg_lobes);
+            renderer.start (projection, *lighting, final_scale, use_lighting, color_by_dir, hide_neg_lobes);
+
+            if (recompute_mesh) {
+              renderer.update_mesh (lod_computed, lmax_computed);
+              recompute_mesh = false;
+            }
+
+            if (recompute_amplitudes) {
+              Math::Vector<float> r_del_daz;
+              renderer.compute_r_del_daz (r_del_daz, values.sub (0, Math::SH::NforL (lmax_computed)));
+              renderer.set_data (r_del_daz);
+              recompute_amplitudes = false;
+            }
+
+            renderer.draw (focus);
+            renderer.stop();
           }
         }
 

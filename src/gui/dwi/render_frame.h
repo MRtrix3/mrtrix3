@@ -58,8 +58,7 @@ namespace MR
 
           void set (const Math::Vector<float>& new_values) {
             values = new_values;
-            if (finite (values[0])) 
-              renderer.set_values (values);
+            recompute_amplitudes = true;
             updateGL();
           }
 
@@ -85,17 +84,21 @@ namespace MR
             normalise = yesno;
             updateGL();
           }
-          void set_LOD (int num) {
-            renderer.set_LOD (num);
+          void set_lmax (int lmax) {
+            if (lmax != lmax_computed) 
+              recompute_mesh = recompute_amplitudes = true;
+            lmax_computed = lmax;
             updateGL();
           }
-          void set_lmax (int num) {
-            renderer.set_lmax (num);
+          void set_LOD (int lod) {
+            if (lod != lod_computed) 
+              recompute_mesh = recompute_amplitudes = true;
+            lod_computed = lod;
             updateGL();
           }
 
-          int  get_LOD () const { return renderer.get_LOD(); }
-          int  get_lmax () const { return renderer.get_lmax(); }
+          int  get_LOD () const { return lod_computed; }
+          int  get_lmax () const { return lmax_computed; }
           float get_scale () const { return scale; }
           bool get_show_axes () const { return show_axes; }
           bool get_hide_neg_lobes () const { return hide_neg_lobes; }
@@ -107,8 +110,8 @@ namespace MR
 
         protected:
           float view_angle, distance, line_width, scale;
-          bool  show_axes, hide_neg_lobes, color_by_dir, use_lighting, normalise;
-          Math::Vector<float> SH;
+          int lmax_computed, lod_computed;
+          bool  recompute_mesh, recompute_amplitudes, show_axes, hide_neg_lobes, color_by_dir, use_lighting, normalise;
 
           QPoint last_pos;
           GL::Font font;

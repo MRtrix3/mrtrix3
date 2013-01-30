@@ -200,7 +200,7 @@ namespace MR
 
 
 
-      void Renderer::init ()
+      void Renderer::initGL ()
       {
         GL::Shader::Vertex vertex_shader (vertex_shader_source);
         GL::Shader::Fragment fragment_shader (fragment_shader_source);
@@ -229,8 +229,8 @@ namespace MR
 
 
 
-      void Renderer::setupGL (const Projection& projection, const GL::Lighting& lighting, float scale, 
-          bool use_lighting, bool color_by_direction, bool hide_neg_lobes)
+      void Renderer::start (const Projection& projection, const GL::Lighting& lighting, float scale, 
+          bool use_lighting, bool color_by_direction, bool hide_neg_lobes) const
       {
         glBindVertexArray (vertex_array_object_ID);
         shader_program.start();
@@ -257,10 +257,8 @@ namespace MR
 
 
 
-      void Renderer::compute_mesh ()
+      void Renderer::update_mesh (int LOD, int lmax)
       {
-        recompute_mesh = false;
-        recompute_amplitudes = true;
         INFO ("updating SH renderer transform...");
         QApplication::setOverrideCursor (Qt::BusyCursor);
 
@@ -275,7 +273,7 @@ namespace MR
 
         std::map<Edge,GLuint> edges;
 
-        for (int lod = 0; lod < lod_computed; lod++) {
+        for (int lod = 0; lod < LOD; lod++) {
           GLuint num = indices.size();
           for (GLuint n = 0; n < num; n++) {
             GLuint index1, index2, index3;
@@ -312,7 +310,7 @@ namespace MR
           }
         }
 
-        compute_transform (vertices);
+        update_transform (vertices, lmax);
 
         glBindBuffer (GL_ARRAY_BUFFER, vertex_buffer_ID);
         glBufferData (GL_ARRAY_BUFFER, vertices.size()*sizeof(Vertex), &vertices[0][0], GL_STATIC_DRAW);
@@ -328,38 +326,18 @@ namespace MR
 
 
 
-      void Renderer::compute_amplitudes ()
-      {
-        recompute_amplitudes = false;
-        INFO ("updating values...");
-
-        int actual_lmax = Math::SH::LforN (SH.size());
-        if (actual_lmax > lmax_computed) actual_lmax = lmax_computed;
-        size_t nSH = Math::SH::NforL (actual_lmax);
-
-        Math::Matrix<float> M (transform.sub (0, transform.rows(), 0, nSH));
-        Math::Vector<float> S (SH.sub (0, nSH));
-        Math::Vector<float> A (transform.rows());
-
-        Math::mult (A, M, S);
-
-        glBindBuffer (GL_ARRAY_BUFFER, surface_buffer_ID);
-        glBufferData (GL_ARRAY_BUFFER, A.size()*sizeof(float), &A[0], GL_STATIC_DRAW);
-      }
 
 
 
-
-
-      void Renderer::compute_transform (const std::vector<Vertex>& vertices)
+      void Renderer::update_transform (const std::vector<Vertex>& vertices, int lmax)
       {
         // order is r, del, daz
 
-        transform.allocate (3*vertices.size(), Math::SH::NforL (lmax_computed));
+        transform.allocate (3*vertices.size(), Math::SH::NforL (lmax));
         transform.zero();
 
         for (size_t n = 0; n < vertices.size(); ++n) {
-          for (int l = 0; l <= lmax_computed; l+=2) {
+          for (int l = 0; l <= lmax; l+=2) {
             for (int m = 0; m <= l; m++) {
               const int idx (Math::SH::index (l,m));
               transform (3*n, idx) = transform(3*n, idx-2*m) = Math::Legendre::Plm_sph<float> (l, m, vertices[n][2]);
@@ -369,15 +347,15 @@ namespace MR
           bool atpole (vertices[n][0] == 0.0 && vertices[n][1] == 0.0);
           float az = atpole ? 0.0 : atan2 (vertices[n][1], vertices[n][0]);
 
-          for (int l = 2; l <= lmax_computed; l+=2) {
+          for (int l = 2; l <= lmax; l+=2) {
             const int idx (Math::SH::index (l,0));
             transform (3*n+1, idx) = transform (3*n, idx+1) * sqrt (float (l* (l+1)));
           }
 
-          for (int m = 1; m <= lmax_computed; m++) {
+          for (int m = 1; m <= lmax; m++) {
             float caz = cos (m*az);
             float saz = sin (m*az);
-            for (int l = 2* ( (m+1) /2); l <= lmax_computed; l+=2) {
+            for (int l = 2* ( (m+1) /2); l <= lmax; l+=2) {
               const int idx (Math::SH::index (l,m));
               transform (3*n+1, idx) = - transform (3*n, idx-1) * sqrt (float ( (l+m) * (l-m+1)));
               if (l > m) 
@@ -400,10 +378,10 @@ namespace MR
             }
           }
 
-          for (int m = 1; m <= lmax_computed; m++) {
+          for (int m = 1; m <= lmax; m++) {
             float caz = cos (m*az);
             float saz = sin (m*az);
-            for (int l = 2* ( (m+1) /2); l <= lmax_computed; l+=2) {
+            for (int l = 2* ( (m+1) /2); l <= lmax; l+=2) {
               const int idx (Math::SH::index (l,m));
               transform (3*n, idx) *= caz;
               transform (3*n, idx-2*m) *= saz;

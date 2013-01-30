@@ -50,91 +50,82 @@ namespace MR
       {
         public:
           Renderer () :
-            num_indices (0), lmax_computed (0), lod_computed (0), recompute_amplitudes (true),
-            recompute_mesh (true), vertex_buffer_ID (0), surface_buffer_ID (0), 
-            index_buffer_ID (0), vertex_array_object_ID (0) { }
+            num_indices (0), 
+            vertex_buffer_ID (0), 
+            surface_buffer_ID (0), 
+            index_buffer_ID (0),
+            vertex_array_object_ID (0) { }
 
           ~Renderer ();
 
           bool ready () const {
             return shader_program;
           }
-          void init ();
-          void set_values (const Math::Vector<float>& values) {
-            SH = values;
-            recompute_amplitudes = true;
+
+          void initGL ();
+
+          void update_mesh (int LOD, int lmax);
+
+          void compute_r_del_daz (Math::Matrix<float>& r_del_daz, const Math::Matrix<float>& SH) const {
+            if (!SH.rows() || !SH.columns()) return;
+            Math::mult (r_del_daz, 1.0f, CblasNoTrans, SH, CblasTrans, transform);
           }
-          void set_lmax (int lmax) {
-            if (lmax != lmax_computed) recompute_mesh = true;
-            lmax_computed = lmax;
+
+          void compute_r_del_daz (Math::Vector<float>& r_del_daz, const Math::Vector<float>& SH) const {
+            if (!SH.size()) return;
+            Math::mult (r_del_daz, transform, SH);
           }
-          void set_LOD (int lod) {
-            if (lod != lod_computed) recompute_mesh = true;
-            lod_computed = lod;
+
+
+          void start (const Projection& projection, const GL::Lighting& lighting, float scale, 
+              bool use_lighting, bool color_by_direction, bool hide_neg_lobes) const;
+
+          void set_data (const Math::Vector<float>& r_del_daz, int buffer_ID = 0) const {
+            assert (r_del_daz.stride() == 1);
+            glBindBuffer (GL_ARRAY_BUFFER, surface_buffer_ID);
+            glBufferData (GL_ARRAY_BUFFER, r_del_daz.size()*sizeof(float), &r_del_daz[0], GL_STREAM_DRAW);
+            glVertexAttribPointer (1, 3, GL_FLOAT, GL_FALSE, 3*sizeof(GLfloat), (void*)0);
           }
-          void setupGL (const Projection& projection, const GL::Lighting& lighting, float scale, 
-              bool use_lighting, bool color_by_direction, bool hide_neg_lobes);
-          void draw (float* origin, int n = 0) {
+
+          void draw (float* origin, int buffer_ID = 0) const {
             glUniform3fv (origin_ID, 1, origin);
             glUniform1i (reverse_ID, 0);
             glDrawElements (GL_TRIANGLES, num_indices, GL_UNSIGNED_INT, (void*)0);
             glUniform1i (reverse_ID, 1);
             glDrawElements (GL_TRIANGLES, num_indices, GL_UNSIGNED_INT, (void*)0);
           }
-          void doneGL () {
+          void stop () const {
             shader_program.stop();
           }
-          
-          void draw (const Projection& projection, const GL::Lighting& lighting, float* origin, float scale, 
-              bool use_lighting, bool color_by_direction, bool hide_neg_lobes) {
-            if (recompute_mesh) compute_mesh(); 
-            if (recompute_amplitudes) compute_amplitudes(); 
-            setupGL (projection, lighting, scale, use_lighting, color_by_direction, hide_neg_lobes);
-            draw (origin);
-            doneGL();
-          }
-
-
-
-          const Math::Vector<float>& get_values () const { return SH; }
-          int get_LOD () const { return lod_computed; }
-          int get_lmax () const { return lmax_computed; }
-
-          size_t size () const { return transform.rows(); }
-          bool empty () const { return transform.rows() == 0; }
 
         protected:
 
-        class Vertex {
-          public:
-            Vertex () { }
-            Vertex (const float x[3]) { p[0] = x[0]; p[1] = x[1]; p[2] = x[2]; }
-            Vertex (const std::vector<Vertex>& vertices, size_t i1, size_t i2) {
-              p[0] = vertices[i1][0] + vertices[i2][0];
-              p[1] = vertices[i1][1] + vertices[i2][1];
-              p[2] = vertices[i1][2] + vertices[i2][2];
-              Math::normalise (p); 
-            }
+          class Vertex {
+            public:
+              Vertex () { }
+              Vertex (const float x[3]) { p[0] = x[0]; p[1] = x[1]; p[2] = x[2]; }
+              Vertex (const std::vector<Vertex>& vertices, size_t i1, size_t i2) {
+                p[0] = vertices[i1][0] + vertices[i2][0];
+                p[1] = vertices[i1][1] + vertices[i2][1];
+                p[2] = vertices[i1][2] + vertices[i2][2];
+                Math::normalise (p); 
+              }
 
-            float& operator[] (int n) { return p[n]; }
-            float operator[] (int n) const { return p[n]; }
+              float& operator[] (int n) { return p[n]; }
+              float operator[] (int n) const { return p[n]; }
 
-          private:
-            float p[3];
-        };
+            private:
+              float p[3];
+          };
 
-          void compute_amplitudes ();
-          void compute_mesh ();
-          void compute_transform (const std::vector<Vertex>& vertices);
+          void update_transform (const std::vector<Vertex>& vertices, int lmax);
 
           Math::Matrix<float> transform;
 
-          Math::Vector<float> SH;
           size_t num_indices;
-          int lmax_computed, lod_computed;
-          bool recompute_amplitudes, recompute_mesh;
           GL::Shader::Program shader_program;
-          GLuint vertex_buffer_ID, surface_buffer_ID, index_buffer_ID, vertex_array_object_ID, reverse_ID, origin_ID;
+          GLuint vertex_buffer_ID, surface_buffer_ID, index_buffer_ID, vertex_array_object_ID;
+          mutable GLuint reverse_ID, origin_ID;
       };
 
 
