@@ -25,9 +25,7 @@
 #include <zlib.h>
 
 #ifdef WINDOWS
-#pragma push_macro("ERROR")
 #include <windows.h>
-#pragma pop_macro("ERROR")
 #else
 #include <sys/mman.h>
 #endif
@@ -97,7 +95,7 @@ namespace MR
 #else
       if (munmap (addr, msize))
 #endif
-        ERROR ("error unmapping file \"" + Entry::name + "\": " + strerror (errno));
+        FAIL ("error unmapping file \"" + Entry::name + "\": " + strerror (errno));
       close (fd);
     }
 

@@ -1058,7 +1058,7 @@ void run () {
       else if (opt->is ("force") || opt->is ("info") || opt->is ("debug") || opt->is ("quiet"))
         continue;
 
-      else ERROR (std::string ("operation \"") + opt->id + "\" not yet implemented!");
+      else FAIL (std::string ("operation \"") + opt->id + "\" not yet implemented!");
 
     }
     else {

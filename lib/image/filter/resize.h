@@ -173,7 +173,7 @@ namespace MR
                   reslice <Image::Interp::Cubic> (smoothed_voxel, output);
                   break;
                 case 3:
-                  ERROR ("FIXME: sinc interpolation needs a lot of work!");
+                  FAIL ("FIXME: sinc interpolation needs a lot of work!");
                   reslice <Image::Interp::Sinc> (smoothed_voxel, output);
                   break;
                 default:
@@ -192,7 +192,7 @@ namespace MR
                     reslice <Image::Interp::Cubic> (input, output);
                     break;
                   case 3:
-                    ERROR ("FIXME: sinc interpolation needs a lot of work!");
+                    FAIL ("FIXME: sinc interpolation needs a lot of work!");
                     reslice <Image::Interp::Sinc> (input, output);
                     break;
                   default:

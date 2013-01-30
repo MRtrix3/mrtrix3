@@ -57,7 +57,7 @@ void run () {
   Options opt = get_options ("gradient");
   if (opt.size()) {
     if (!header.DW_scheme().is_set())
-      ERROR ("no gradient file found for image \"" + header.name() + "\"");
+      FAIL ("no gradient file found for image \"" + header.name() + "\"");
     header.DW_scheme().save (opt[0][0]);
     return;
   }

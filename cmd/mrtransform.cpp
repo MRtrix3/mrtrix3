@@ -185,7 +185,7 @@ void run ()
       Image::Filter::reslice<Image::Interp::Cubic> (in, out, operation, oversample, out_of_bounds_value);
       break;
     case 3:
-      ERROR ("FIXME: sinc interpolation needs a lot of work!");
+      FAIL ("FIXME: sinc interpolation needs a lot of work!");
       Image::Filter::reslice<Image::Interp::Sinc> (in, out, operation, oversample, out_of_bounds_value);
       break;
     default:
