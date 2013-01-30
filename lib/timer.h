@@ -43,14 +43,14 @@ namespace MR
         return (current_time()-from);
       }
 
-    protected:
-      double from;
-
-      double current_time () {
+      static double current_time () {
         struct timeval tv;
         gettimeofday (&tv, NULL);
         return (tv.tv_sec + 1.0e-6*float (tv.tv_usec));
       }
+
+    protected:
+      double from;
   };
 
 }
