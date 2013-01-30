@@ -196,7 +196,10 @@ class TempFile:
     [ fid, self.name ] = tempfile.mkstemp (suffix)
     self.fid = os.fdopen (fid, 'w')
 
-  def __del__ (self):
+  def __enter__ (self):
+    return self
+
+  def __exit__(self, type, value, traceback):
     try:
       os.unlink (self.name)
     except OSError:
@@ -207,7 +210,10 @@ class DeleteAfter:
   def __init__ (self, name):
     self.name = name
 
-  def __del__ (self):
+  def __enter__ (self):
+    return self
+
+  def __exit__(self, type, value, traceback):
     try:
       os.unlink (self.name)
     except OSError:
@@ -218,7 +224,10 @@ class TempDir:
   def __init__ (self):
     self.name = tempfile.mkdtemp ();
 
-  def __del__ (self):
+  def __enter__ (self):
+    return self
+
+  def __exit__(self, type, value, traceback):
     try:
       for entry in os.listdir (self.name):
         os.remove (os.path.join (self.name, entry))
@@ -276,27 +285,27 @@ def execute (cmd, exception, raise_on_non_zero_exit_code = True, cwd = None):
 
 def compile (source, compiler_flags = [], linker_flags = []):
   global cpp, ld
-  F = TempFile ('.cpp')
-  log ('\nCOMPILE ' + F.name + ':\n---\n' + source + '\n---\n')
-  F.fid.write (source)
-  F.fid.flush()
-  obj = DeleteAfter (F.name[:-4] + '.o')
-  cmd = fillin (cpp, {
-    'CFLAGS': compiler_flags,
-    'SRC': F.name,
-    'OBJECT': obj.name })
-  execute (cmd, CompileError)
+  with TempFile ('.cpp') as F:
+    log ('\nCOMPILE ' + F.name + ':\n---\n' + source + '\n---\n')
+    F.fid.write (source)
+    F.fid.flush()
+    with DeleteAfter (F.name[:-4] + '.o') as obj:
+      cmd = fillin (cpp, {
+        'CFLAGS': compiler_flags,
+        'SRC': F.name,
+        'OBJECT': obj.name })
+      execute (cmd, CompileError)
 
-  out = DeleteAfter ('./a.out')
-  cmd = fillin (ld, {
-    'LDFLAGS': linker_flags,
-    'OBJECTS': obj.name,
-    'EXECUTABLE': out.name })
-  execute (cmd, LinkError)
+      with DeleteAfter ('./a.out') as out:
+        cmd = fillin (ld, {
+          'LDFLAGS': linker_flags,
+          'OBJECTS': obj.name,
+          'EXECUTABLE': out.name })
+        execute (cmd, LinkError)
 
-  ret = execute ([ out.name ], RuntimeError)
+        ret = execute ([ out.name ], RuntimeError)
 
-  return ret[1]
+    return ret[1]
 
 
 
@@ -625,33 +634,33 @@ variable is correct.''')
 if not noshared:
   report ('Checking shared library generation: ')
 
-  F = TempFile ('.cpp')
-  F.fid.write ('int bogus() { return (1); }')
-  F.fid.flush()
-  obj = DeleteAfter (F.name[:-4] + '.o')
-  cmd = fillin (cpp, {
-    'CFLAGS': cpp_flags,
-    'SRC': F.name,
-    'OBJECT': obj.name })
-  try: execute (cmd, CompileError)
-  except CompileError:
-    error ('''compiler not found!
+  with TempFile ('.cpp') as F:
+    F.fid.write ('int bogus() { return (1); }')
+    F.fid.flush()
+    with DeleteAfter (F.name[:-4] + '.o') as obj:
+      cmd = fillin (cpp, {
+        'CFLAGS': cpp_flags,
+        'SRC': F.name,
+        'OBJECT': obj.name })
+      try: execute (cmd, CompileError)
+      except CompileError:
+        error ('''compiler not found!
 
   an unexpected error occurred''')
   
-  lib = DeleteAfter (lib_prefix + 'test' + lib_suffix)
-  cmd = fillin (ld_lib, {
-    'LDLIB_FLAGS': ld_lib_flags,
-    'OBJECTS': obj.name,
-    'LIB': lib.name })
-  try: execute (cmd, LinkError)
-  except LinkError: 
-    error ('''linker not found!
+      with DeleteAfter (lib_prefix + 'test' + lib_suffix) as lib:
+        cmd = fillin (ld_lib, {
+          'LDLIB_FLAGS': ld_lib_flags,
+          'OBJECTS': obj.name,
+          'LIB': lib.name })
+        try: execute (cmd, LinkError)
+        except LinkError: 
+          error ('''linker not found!
 
   Use the LDLIB environment variable to set the command-line
   for shared library generation''')
 
-  report ('yes\n')
+        report ('yes\n')
 
 
 
@@ -671,8 +680,8 @@ if not nogui:
   if 'MOC' in os.environ.keys(): moc = os.environ['MOC']
 
   try:
-    qt_dir = TempDir()
-    file = '''#include <QObject>
+    with TempDir() as qt_dir:
+      file = '''#include <QObject>
 
 class Foo: public QObject {
   Q_OBJECT;
@@ -687,13 +696,13 @@ class Foo: public QObject {
     int value_;
 };
 '''
-    log ('\nsource file "qt.h":\n---\n' + file + '---\n')
+      log ('\nsource file "qt.h":\n---\n' + file + '---\n')
+  
+      f=open (os.path.join (qt_dir.name, 'qt.h'), 'w')
+      f.write (file)
+      f.close();
 
-    f=open (os.path.join (qt_dir.name, 'qt.h'), 'w')
-    f.write (file)
-    f.close();
-
-    file = '''#include <iostream>
+      file = '''#include <iostream>
 #include "qt.h"
 
 Foo::Foo() : value_ (42) { connect (this, SIGNAL(valueChanged(int)), this, SLOT(setValue(int))); }
@@ -705,88 +714,88 @@ void Foo::setValue (int value) { value_ = value; }
 int main() { Foo f; }
 '''
 
-    log ('\nsource file "qt.cpp":\n---\n' + file + '---\n')
-    f=open (os.path.join (qt_dir.name, 'qt.cpp'), 'w')
-    f.write (file)
-    f.close();
+      log ('\nsource file "qt.cpp":\n---\n' + file + '---\n')
+      f=open (os.path.join (qt_dir.name, 'qt.cpp'), 'w')
+      f.write (file)
+      f.close();
 
-    file = 'CONFIG += qt'
-    if debug: file += ' debug'
-    file += '\nQT += opengl\nHEADERS += qt.h\nSOURCES += qt.cpp\n'
+      file = 'CONFIG += qt'
+      if debug: file += ' debug'
+      file += '\nQT += opengl\nHEADERS += qt.h\nSOURCES += qt.cpp\n'
 
-    log ('\nproject file "qt.pro":\n---\n' + file + '---\n')
-    f=open (os.path.join (qt_dir.name, 'qt.pro'), 'w')
-    f.write (file)
-    f.close();
+      log ('\nproject file "qt.pro":\n---\n' + file + '---\n')
+      f=open (os.path.join (qt_dir.name, 'qt.pro'), 'w')
+      f.write (file)
+      f.close();
 
-    try: execute (qmake, QMakeError, cwd=qt_dir.name)
-    except QMakeError:
-      error ('''error issuing qmake command!
+      try: execute (qmake, QMakeError, cwd=qt_dir.name)
+      except QMakeError:
+        error ('''error issuing qmake command!
 
   Use the QMAKE environment variable to set the correct qmake command for use with Qt4''')
      
 
-    qt_defines = [] 
-    qt_includes = []
-    qt_cflags = []
-    qt_libs = []
-    qt_ldflags = []
-    qt_makefile = 'Makefile'
-    if system == 'windows':
-      qt_makefile = 'Makefile.Release'
+      qt_defines = [] 
+      qt_includes = []
+      qt_cflags = []
+      qt_libs = []
+      qt_ldflags = []
+      qt_makefile = 'Makefile'
+      if system == 'windows':
+        qt_makefile = 'Makefile.Release'
 
-    for line in open (os.path.join (qt_dir.name, qt_makefile)):
-      line = line.strip()
-      if line.startswith ('DEFINES'):
-        qt_defines = line[line.find('=')+1:].strip().split()
-      elif line.startswith ('CXXFLAGS'):
-        qt_cflags = line[line.find('=')+1:].strip().split()
-      elif line.startswith ('INCPATH'):
-        qt_includes = line[line.find('=')+1:].strip().split()
-      elif line.startswith ('LIBS'):
-        qt_libs = line[line.find('=')+1:].strip().split()
-      elif line.startswith ('LFLAGS'):
-        qt_ldflags = line[line.find('=')+1:].strip().split()
+      for line in open (os.path.join (qt_dir.name, qt_makefile)):
+        line = line.strip()
+        if line.startswith ('DEFINES'):
+          qt_defines = line[line.find('=')+1:].strip().split()
+        elif line.startswith ('CXXFLAGS'):
+          qt_cflags = line[line.find('=')+1:].strip().split()
+        elif line.startswith ('INCPATH'):
+          qt_includes = line[line.find('=')+1:].strip().split()
+        elif line.startswith ('LIBS'):
+          qt_libs = line[line.find('=')+1:].strip().split()
+        elif line.startswith ('LFLAGS'):
+          qt_ldflags = line[line.find('=')+1:].strip().split()
 
-    qt = qt_cflags + qt_defines + qt_includes
-    qt_cflags = []
-    for entry in qt:
-      if entry[0] != '$' and not entry == '-I.': qt_cflags += [ entry.replace('\"','') ]
+      qt = qt_cflags + qt_defines + qt_includes
+      qt_cflags = []
+      for entry in qt:
+        if entry[0] != '$' and not entry == '-I.': qt_cflags += [ entry.replace('\"','') ]
 
-    qt = qt_ldflags + qt_libs
-    qt_ldflags = []
-    for entry in qt:
-      if entry[0] != '$': qt_ldflags += [ entry.replace('\"','') ]
+      qt = qt_ldflags + qt_libs
+      qt_ldflags = []
+      for entry in qt:
+        if entry[0] != '$': qt_ldflags += [ entry.replace('\"','') ]
+  
+      cmd = [ moc, 'qt.h', '-o', 'qt_moc.cpp' ]
+      log ('\nexecuting "' + ' ' .join(cmd) + '"...\n')
+      try: process = subprocess.Popen (cmd, cwd=qt_dir.name, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+      except OSError: raise QMOCError
+      if process.wait() != 0: raise QMOCError
 
-    cmd = [ moc, 'qt.h', '-o', 'qt_moc.cpp' ]
-    log ('\nexecuting "' + ' ' .join(cmd) + '"...\n')
-    try: process = subprocess.Popen (cmd, cwd=qt_dir.name, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    except OSError: raise QMOCError
-    if process.wait() != 0: raise QMOCError
+      cmd = [ 'g++', '-c' ] + cpp_flags + qt_cflags + [ 'qt.cpp', '-o', 'qt.o' ]
+      log ('\nexecuting "' + ' ' .join(cmd) + '"...\n')
+      try: process = subprocess.Popen (cmd, cwd=qt_dir.name, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+      except OSError: raise CompileError
+      if process.wait() != 0: raise CompileError
 
-    cmd = [ 'g++', '-c' ] + cpp_flags + qt_cflags + [ 'qt.cpp', '-o', 'qt.o' ]
-    log ('\nexecuting "' + ' ' .join(cmd) + '"...\n')
-    try: process = subprocess.Popen (cmd, cwd=qt_dir.name, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    except OSError: raise CompileError
-    if process.wait() != 0: raise CompileError
+      cmd = [ 'g++', '-c' ] + cpp_flags + qt_cflags + [ 'qt_moc.cpp', '-o', 'qt_moc.o' ]
+      log ('\nexecuting "' + ' ' .join(cmd) + '"...\n')
+      try: process = subprocess.Popen (cmd , cwd=qt_dir.name, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+      except OSError: raise CompileError
+      if process.wait() != 0: raise CompileError
 
-    cmd = [ 'g++', '-c' ] + cpp_flags + qt_cflags + [ 'qt_moc.cpp', '-o', 'qt_moc.o' ]
-    log ('\nexecuting "' + ' ' .join(cmd) + '"...\n')
-    try: process = subprocess.Popen (cmd , cwd=qt_dir.name, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    except OSError: raise CompileError
-    if process.wait() != 0: raise CompileError
+      cmd = [ 'g++' ] + ld_flags + [ 'qt_moc.o', 'qt.o', '-o', 'qt' ] + qt_ldflags
+      log ('\nexecuting "' + ' ' .join(cmd) + '"...\n')
+      try: process = subprocess.Popen (cmd , cwd=qt_dir.name, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+      except OSError: raise LinkError
+      if process.wait() != 0: raise LinkError
 
-    cmd = [ 'g++' ] + ld_flags + [ 'qt_moc.o', 'qt.o', '-o', 'qt' ] + qt_ldflags
-    log ('\nexecuting "' + ' ' .join(cmd) + '"...\n')
-    try: process = subprocess.Popen (cmd , cwd=qt_dir.name, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    except OSError: raise LinkError
-    if process.wait() != 0: raise LinkError
-
-    cmd = os.path.join(qt_dir.name, 'qt')
-    log ('\nexecuting "' + cmd + '"...\n')
-    process = subprocess.Popen (cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    if process.wait() != 0: raise LinkError
-    report (process.stdout.read().strip() + '\n')
+      cmd = os.path.join(qt_dir.name, 'qt')
+      log ('\nexecuting "' + cmd + '"...\n')
+      process = subprocess.Popen (cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+      if process.wait() != 0: raise LinkError
+      report (process.stdout.read().strip() + '\n')
 
     
   except QMakeError:
