@@ -536,6 +536,17 @@ namespace MR
         connect (lighting_, SIGNAL (changed()), glarea, SLOT (updateGL()));
 
         set_image_menu ();
+
+        std::string cbar_pos = lowercase (MR::File::Config::get ("MRViewColourBarPosition"));
+        if (cbar_pos.size()) {
+          if (cbar_pos == "hidden") set_colourbar_position (0);
+          else if (cbar_pos == "bottomleft") set_colourbar_position (1);
+          else if (cbar_pos == "bottomright") set_colourbar_position (2);
+          else if (cbar_pos == "topleft") set_colourbar_position (3);
+          else if (cbar_pos == "topright") set_colourbar_position (4);
+          else 
+            WARN ("invalid specifier \"" + cbar_pos + "\" for config file entry \"MRViewColourBarPosition\"");
+        }
       }
 
 

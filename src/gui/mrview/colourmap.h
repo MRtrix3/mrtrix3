@@ -105,10 +105,7 @@ namespace MR
 
         class Renderer {
           public:
-            Renderer () : 
-              VB (0), VAO (0), current_index (0),
-              width (20.0f), height (100.0f), offset (20.0f), text_offset (10.0f) { } 
-
+            Renderer();
             ~Renderer();
 
             void render (const Projection& projection, const Displayable& object, int position);
@@ -117,7 +114,7 @@ namespace MR
             GLuint VB, VAO;
             GL::Shader::Program frame_program, program;
             size_t current_index;
-            const GLfloat width, height, offset, text_offset;
+            const GLfloat width, height, inset, text_offset;
 
             void setup (size_t index);
         };

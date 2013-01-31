@@ -148,6 +148,7 @@ namespace MR
           onFocusChanged();
           onScalingChanged();
           onImageChanged();
+          colourbar_combobox->setCurrentIndex (window.colourbar_position());
         }
 
 

@@ -20,6 +20,7 @@
 
  */
 
+#include "file/config.h"
 #include "gui/opengl/font.h"
 #include "gui/mrview/colourmap.h"
 #include "gui/mrview/displayable.h"
@@ -99,6 +100,15 @@ namespace MR
 
 
 
+
+        Renderer::Renderer () : 
+          VB (0), 
+          VAO (0), 
+          current_index (0),
+          width (MR::File::Config::get_float ("MRViewColourBarWidth", 20.0f)), 
+          height (MR::File::Config::get_float ("MRViewColourBarHeight", 100.0f)), 
+          inset (MR::File::Config::get_float ("MRViewColourBarInset", 20.0f)), 
+          text_offset (MR::File::Config::get_float ("MRViewColourBarTextOffset", 10.0f)) { } 
 
 
 
@@ -195,15 +205,15 @@ namespace MR
             width, height, 1.0f,
             width, 0.0f,  0.0f
           };
-          float x_offset = offset;
-          float y_offset = offset;
+          float x_offset = inset;
+          float y_offset = inset;
           int halign = -1;
           if (position == 2 || position == 4) {
-            x_offset = projection.width() - width - offset;
+            x_offset = projection.width() - width - inset;
             halign = 1;
           }
           if (position == 3 || position == 4) 
-            y_offset = projection.height() - height - offset;
+            y_offset = projection.height() - height - inset;
 
           data[0] += x_offset; data[1] += y_offset;
           data[3] += x_offset; data[4] += y_offset;
