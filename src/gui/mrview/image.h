@@ -63,7 +63,6 @@ namespace MR
             return buffer;
           }
 
-          size_t guess_colourmap () const;
 
           void update_texture2D (int plane, int slice);
           void update_texture3D ();
@@ -141,6 +140,7 @@ namespace MR
 
 
           bool volume_unchanged ();
+          size_t guess_colourmap () const;
 
           void draw_vertices (const Point<float>* vertices);
 

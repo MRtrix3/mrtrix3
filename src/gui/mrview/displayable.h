@@ -51,7 +51,7 @@ namespace MR
           Displayable (const std::string& filename);
           Displayable (Window& window, const std::string& filename);
 
-          ~Displayable ();
+          virtual ~Displayable ();
 
           const std::string& get_filename () const {
             return filename;

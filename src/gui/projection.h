@@ -27,8 +27,8 @@ namespace MR
         Projection (QGLWidget* parent, const GL::Font& font) : 
           glarea (parent), 
           font (font),
-          vertex_buffer_ID (0),
-          vertex_array_object_ID (0) { }
+          crosshairs_VB (0),
+          crosshairs_VAO (0) { }
 
         ~Projection();
 
@@ -171,11 +171,22 @@ namespace MR
         }
         void done_render_text () const { font.resetGL(); }
 
-        void render_text (int x, int y, const std::string& text) {
+        void render_text (int x, int y, const std::string& text) const {
           font.render (text, x, y);
         }
 
-        void render_text_inset (int x, int y, const std::string& text, int inset = -1) {
+        void render_text_align (int x, int y, const std::string& text, int halign = 0, int valign = 0) const {
+          QString s (text.c_str());
+          int w = font.metric.width (s);
+          int h = font.metric.height();
+          if (halign == 0) x -= w/2;
+          else if (halign > 0) x -= w;
+          if (valign == 0) y -= h/2;
+          else if (valign > 0) y -= h;
+          font.render (text, x, y);
+        }
+
+        void render_text_inset (int x, int y, const std::string& text, int inset = -1) const {
           QString s (text.c_str());
           if (inset < 0) 
             inset = font.metric.height() / 2;
@@ -190,7 +201,7 @@ namespace MR
           render_text (x, y, text);
         }
 
-        void render_text (const std::string& text, int position, int line = 0) {
+        void render_text (const std::string& text, int position, int line = 0) const {
           QString s (text.c_str());
           int x, y;
 
@@ -205,6 +216,7 @@ namespace MR
           render_text (x, y, text);
         }
 
+
         const GL::mat4& modelview_projection () const { return MVP; }
         const GL::mat4& modelview_projection_inverse () const { return iMVP; }
         const GL::mat4& modelview () const { return MV; }
@@ -217,7 +229,7 @@ namespace MR
         const GL::Font& font;
         GL::mat4 MV, iMV, P, iP, MVP, iMVP;
         GLint viewport[4];
-        GLuint vertex_buffer_ID, vertex_array_object_ID;
+        GLuint crosshairs_VB, crosshairs_VAO;
         GL::Shader::Program crosshairs_program;
     };
 

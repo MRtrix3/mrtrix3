@@ -33,6 +33,8 @@ namespace MR
   {
     namespace MRView
     {
+      class Displayable;
+
       namespace ColourMap
       {
 
@@ -91,13 +93,35 @@ namespace MR
 
         void create_menu (QWidget* parent, QActionGroup*& group, QMenu* menu, QAction** & actions, bool create_shortcuts = false);
 
-
         inline size_t from_menu (size_t n)
         {
           if (maps[n].special)
             --n;
           return n;
         }
+
+
+
+
+        class Renderer {
+          public:
+            Renderer () : 
+              VB (0), VAO (0), current_index (0),
+              width (20.0f), height (100.0f), offset (20.0f), text_offset (10.0f) { } 
+
+            ~Renderer();
+
+            void render (const Projection& projection, const Displayable& object, int position);
+
+          protected:
+            GLuint VB, VAO;
+            GL::Shader::Program frame_program, program;
+            size_t current_index;
+            const GLfloat width, height, offset, text_offset;
+
+            void setup (size_t index);
+        };
+
 
 
       }

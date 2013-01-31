@@ -162,7 +162,8 @@ namespace MR
         mouse_action (NoAction),
         orient (NAN, NAN, NAN, NAN),
         field_of_view (100.0),
-        anatomical_plane (2)
+        anatomical_plane (2),
+        colourbar_position_index (0)
       {
         setWindowTitle (tr ("MRView"));
         setWindowIcon (QPixmap (":/mrtrix.png"));

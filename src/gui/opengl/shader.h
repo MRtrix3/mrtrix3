@@ -136,6 +136,13 @@ namespace MR
               print_log (true, "shader program", index_);
             }
 
+            Program& operator= (Program& P) {
+              clear();
+              index_ = P.index_;
+              P.index_ = 0;
+              return *this;
+            }
+
           protected:
             GLuint index_;
         };

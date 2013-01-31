@@ -90,6 +90,24 @@ namespace MR
           connect (max_entry, SIGNAL (valueChanged()), this, SLOT (onSetScaling()));
           layout->addWidget (max_entry, 1, 1);
 
+
+          group_box = new QGroupBox ("Colour bar");
+          layout = new QGridLayout;
+          layout->setContentsMargins (5, 5, 5, 5);
+          layout->setSpacing (5);
+          main_box->addWidget (group_box);
+          group_box->setLayout (layout);
+
+          colourbar_combobox = new QComboBox;
+          colourbar_combobox->insertItem (0, "None");
+          colourbar_combobox->insertItem (1, "Bottom Left");
+          colourbar_combobox->insertItem (2, "Bottom Right");
+          colourbar_combobox->insertItem (3, "Top Left");
+          colourbar_combobox->insertItem (4, "Top Right");
+          layout->addWidget (colourbar_combobox, 0, 0);
+          connect (colourbar_combobox, SIGNAL (activated(int)), this, SLOT (onSetColourBar(int)));
+
+
           /*
              threshold_box = new QGroupBox ("Thresholds");
              threshold_box->setCheckable (true);
@@ -116,6 +134,10 @@ namespace MR
           setMinimumSize (main_box->minimumSize());
         }
 
+
+
+
+
         void View::showEvent (QShowEvent* event) 
         {
           connect (&window, SIGNAL (imageChanged()), this, SLOT (onImageChanged()));
@@ -128,10 +150,17 @@ namespace MR
           onImageChanged();
         }
 
+
+
+
+
         void View::closeEvent (QCloseEvent* event) 
         {
           window.disconnect (this);
         }
+
+
+
 
         void View::onImageChanged () 
         {
@@ -139,12 +168,18 @@ namespace MR
           set_focus_rate();
         }
 
+
+
+
         void View::onFocusChanged () 
         {
           focus_x->setValue (window.focus()[0]);
           focus_y->setValue (window.focus()[1]);
           focus_z->setValue (window.focus()[2]);
         }
+
+
+
 
         void View::onSetFocus () 
         {
@@ -156,10 +191,15 @@ namespace MR
         }
 
 
+
+
+
         void View::onPlaneChanged () 
         {
           plane_combobox->setCurrentIndex (window.plane());
         }
+
+
 
 
         void View::onSetPlane (int index) 
@@ -167,6 +207,8 @@ namespace MR
           window.set_plane (index);
           window.updateGL();
         }
+
+
 
 
         void View::set_scaling_rate () 
@@ -177,6 +219,9 @@ namespace MR
           max_entry->setRate (rate);
         }
 
+
+
+
         void View::set_focus_rate () 
         {
           if (!window.image()) return;
@@ -185,6 +230,9 @@ namespace MR
           focus_y->setRate (rate);
           focus_z->setRate (rate);
         }
+
+
+
 
 
         void View::onSetScaling ()
@@ -205,6 +253,19 @@ namespace MR
             set_scaling_rate();
           }
         }
+
+
+
+
+
+        void View::onSetColourBar (int index)
+        {
+          window.set_colourbar_position (index);
+          window.updateGL();
+        }
+
+
+
 
       }
     }

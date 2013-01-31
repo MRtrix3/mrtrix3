@@ -39,7 +39,7 @@ namespace MR
           window (parent),
           projection (window.glarea, window.font),
           features (flags),
-          painting (false) { }
+          painting (false) { } 
 
 
         Base::~Base ()
@@ -100,6 +100,9 @@ namespace MR
             }
 
             projection.done_render_text();
+
+            if (window.colourbar_position()) 
+              window.render_colourbar (projection, *image(), window.colourbar_position());
           }
 
 done_painting:

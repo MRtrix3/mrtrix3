@@ -11,6 +11,7 @@
 #include "gui/cursor.h"
 #include "gui/mrview/image.h"
 #include "gui/opengl/font.h"
+#include "gui/mrview/colourmap.h"
 
 #include <QGLWidget>
 
@@ -69,8 +70,8 @@ namespace MR
             return tool_group;
           }
 
-          QAction* get_current_mode () const {
-            return mode_group->checkedAction();
+          Mode::Base* get_current_mode () const {
+            return mode;
           }
           const Point<>& focus () const {
             return focal_point; 
@@ -107,17 +108,19 @@ namespace MR
             orient = Q; emit orientationChanged(); 
           }
 
-          void set_scaling (float min, float max) 
-          {
+          void set_scaling (float min, float max) {
             if (!image()) return;
             image()->set_windowing (min, max);
           }
 
-          void set_scaling_all (float min, float max)
-          {
+          void set_scaling_all (float min, float max) {
             QList<QAction*> list = image_group->actions();
             for (int n = 0; n < list.size(); ++n) 
               static_cast<Image*> (list[n])->set_windowing (min, max);
+          }
+
+          void set_colourbar_position (int index) {
+            colourbar_position_index = index;
           }
 
           bool show_crosshairs () const { 
@@ -134,6 +137,10 @@ namespace MR
 
           bool show_orientation_labels () const { 
             return show_orientation_labels_action->isChecked();
+          }
+
+          int colourbar_position () const {
+            return colourbar_position_index;
           }
 
           void updateGL () {
@@ -234,7 +241,7 @@ namespace MR
           Point<> focal_point, camera_target;
           Math::Versor<float> orient;
           float field_of_view;
-          int anatomical_plane, annotations;
+          int anatomical_plane, annotations, colourbar_position_index;
 
           QMenu *image_menu, *colourmap_menu;
           QAction *save_action, *close_action, *properties_action;
@@ -248,6 +255,7 @@ namespace MR
           QAction *image_interpolate_action, *full_screen_action;
           QAction *OpenGL_action, *about_action, *aboutQt_action;
           QActionGroup *mode_group, *tool_group, *image_group, *colourmap_group, *mode_action_group, *plane_group;
+          ColourMap::Renderer colourbar_renderer;
 
           void paintGL ();
           void initGL ();
@@ -263,6 +271,9 @@ namespace MR
           void set_image_menu ();
           void set_mode_features ();
           void set_image_navigation_menu ();
+          void render_colourbar (const Projection& projection, const Displayable& object, int position) { 
+            colourbar_renderer.render (projection, object, position);
+          }
 
           template <class Event> void grab_mouse_state (Event* event);
           template <class Event> void update_mouse_state (Event* event);

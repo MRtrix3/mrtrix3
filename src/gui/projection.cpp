@@ -21,27 +21,43 @@
  */
 
 #include "gui/projection.h"
+#include "gui/mrview/colourmap.h"
 
 namespace MR
 {
   namespace GUI
   {
 
+
+    Projection::~Projection () 
+    {
+      if (crosshairs_VB)
+        glDeleteBuffers (1, &crosshairs_VB);
+      if (crosshairs_VAO)
+        glDeleteVertexArrays (1, &crosshairs_VAO);
+    }
+
+
+
+
+
+
+
     void Projection::render_crosshairs (const Point<>& focus)
     {
-      if (!vertex_buffer_ID || !vertex_array_object_ID) {
-        glGenBuffers (1, &vertex_buffer_ID);
-        glGenVertexArrays (1, &vertex_array_object_ID);
+      if (!crosshairs_VB || !crosshairs_VAO) {
+        glGenBuffers (1, &crosshairs_VB);
+        glGenVertexArrays (1, &crosshairs_VAO);
 
-        glBindBuffer (GL_ARRAY_BUFFER, vertex_buffer_ID);
-        glBindVertexArray (vertex_array_object_ID);
+        glBindBuffer (GL_ARRAY_BUFFER, crosshairs_VB);
+        glBindVertexArray (crosshairs_VAO);
 
         glEnableVertexAttribArray (0);
         glVertexAttribPointer (0, 2, GL_FLOAT, GL_FALSE, 0, (void*)0);
       }
       else {
-        glBindBuffer (GL_ARRAY_BUFFER, vertex_buffer_ID);
-        glBindVertexArray (vertex_array_object_ID);
+        glBindBuffer (GL_ARRAY_BUFFER, crosshairs_VB);
+        glBindVertexArray (crosshairs_VAO);
       }
 
       if (!crosshairs_program) {
@@ -88,13 +104,8 @@ namespace MR
 
 
 
-    Projection::~Projection () 
-    {
-      if (vertex_buffer_ID)
-        glDeleteBuffers (1, &vertex_buffer_ID);
-      if (vertex_array_object_ID)
-        glDeleteVertexArrays (1, &vertex_array_object_ID);
-    }
+
+
 
   }
 }
