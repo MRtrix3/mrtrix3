@@ -51,14 +51,15 @@ namespace MR
               return (index_);
             }
             void compile (const std::string& source) {
+              std::string code = "#version 330 core\n" + source;
               if (App::log_level > 2) {
                 std::string msg ("compiling OpenGL ");
                 msg += TYPE == GL_VERTEX_SHADER ? "vertex" : "fragment";
-                msg += " shader:\n" + source;
+                msg += " shader:\n" + code;
                 DEBUG (msg);
               }
               if (!index_) index_ = glCreateShader (TYPE);
-              const char* p = source.c_str();
+              const char* p = code.c_str();
               glShaderSource (index_, 1, &p, NULL);
               glCompileShader (index_);
               GLint status;

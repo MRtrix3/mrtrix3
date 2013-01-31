@@ -118,7 +118,6 @@ namespace MR
         glBufferData (GL_ARRAY_BUFFER, sizeof(axis_data), axis_data, GL_STATIC_DRAW);
 
         GL::Shader::Vertex vertex_shader (
-            "#version 330 core\n"
             "layout(location = 0) in vec3 vertex_in;\n"
             "layout(location = 1) in vec3 color_in;\n"
             "uniform mat4 MVP;\n"
@@ -130,7 +129,6 @@ namespace MR
             "}\n");
 
         GL::Shader::Fragment fragment_shader (
-            "#version 330 core\n"
             "in vec3 color;\n"
             "out vec4 color_out;\n"
             "void main () {\n"

@@ -102,13 +102,11 @@ namespace MR
 
           if (!frame_program) {
             GL::Shader::Vertex vertex_shader (
-                "#version 330 core\n"
                 "layout(location=0) in vec2 pos;\n"
                 "void main () {\n"
                 "  gl_Position = vec4 (pos, 0.0, 1.0);\n"
                 "}\n");
             GL::Shader::Fragment fragment_shader (
-                "#version 330 core\n"
                 "out vec3 color;\n"
                 "void main () {\n"
                 "  color = vec3 (0.1);\n"

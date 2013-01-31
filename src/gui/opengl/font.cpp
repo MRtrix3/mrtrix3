@@ -15,7 +15,6 @@ namespace MR
       namespace {
 
         const char* vertex_shader_source = 
-          "#version 330 core \n"
           "layout(location = 0) in vec2 pos;\n"
           "layout(location = 1) in vec2 font_pos;\n"
           "uniform float scale_x;\n"
@@ -27,7 +26,6 @@ namespace MR
           "}\n";
           
         const char* fragment_shader_source = 
-          "#version 330 core \n "
           "in vec2 tex_coord;\n"
           "uniform sampler2D sampler;\n"
           "uniform float red, green, blue;\n"

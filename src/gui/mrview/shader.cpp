@@ -37,7 +37,6 @@ namespace MR
 
         // vertex shader:
         GL::Shader::Vertex vertex_shader (
-          "#version 330 core\n"
           "layout(location = 0) in vec3 vertpos;\n"
           "layout(location = 1) in vec3 texpos;\n"
           "uniform mat4 MVP;\n"
@@ -51,7 +50,6 @@ namespace MR
 
         // fragment shader:
         std::string source = 
-          "#version 330 core\n"
           "uniform float offset, scale";
         if (flags_ & DiscardLower)
           source += ", lower";
@@ -65,11 +63,6 @@ namespace MR
           "in vec3 texcoord;\n"
           "out vec4 color;\n";
 
-        // if (flags_ & Lighting) 
-          // source += 
-            // "uniform float ambient;\n"
-            // "uniform vec3 lightDir;\n";
-
         source += 
           "void main() {\n"
           "  if (texcoord.s < 0.0 || texcoord.s > 1.0 ||\n"
@@ -78,19 +71,6 @@ namespace MR
           "  color = texture (tex, texcoord.stp);\n"
           "  float amplitude = " + std::string (ColourMap::maps[colourmap_index].amplitude) + ";\n"
           "  if (isnan(amplitude) || isinf(amplitude)) discard;\n";
-/*
-        if (flags_ & Lighting) 
-          source += 
-            "vec4 tmp = color; vec3 normal; "
-            "color = texture3D (tex, gl_TexCoord[0].stp+vec3(-2.0e-2,0.0,0.0)); normal.x = " + amplitude (flags_) + "; "
-            "color = texture3D (tex, gl_TexCoord[0].stp+vec3(2.0e-2,0.0,0.0)); normal.x -= " + amplitude (flags_) + "; "
-            "color = texture3D (tex, gl_TexCoord[0].stp+vec3(0.0,-2.0e-2,0.0)); normal.y = " + amplitude (flags_) + "; "
-            "color = texture3D (tex, gl_TexCoord[0].stp+vec3(0.0,2.0e-2,0.0)); normal.y -= " + amplitude (flags_) + "; "
-            "color = texture3D (tex, gl_TexCoord[0].stp+vec3(0.0,0.0,-2.0e-2)); normal.z = " + amplitude (flags_) + "; "
-            "color = texture3D (tex, gl_TexCoord[0].stp+vec3(0.0,0.0,2.0e-2)); normal.z -= " + amplitude (flags_) + "; "
-            "normal = normalize (gl_NormalMatrix * normal); "
-            "color = tmp; ";
-*/
 
         if (flags_ & DiscardLower)
           source += "if (amplitude < lower) discard;";

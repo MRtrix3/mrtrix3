@@ -39,7 +39,6 @@ namespace MR
             shader_program.clear();
 
           std::string vertex_shader_code =
-              "#version 330 core \n "
               "layout(location = 0) in vec3 vertexPosition_modelspace;\n"
               "layout(location = 1) in vec3 previousVertex;\n "
               "layout(location = 2) in vec3 nextVertex;\n "
@@ -74,7 +73,6 @@ namespace MR
 
 
           std::string fragment_shader_code =
-              "#version 330 core\n"
               "in vec3 fragmentColor;\n"
               "in float include; \n"
               "out vec3 color;\n"

@@ -54,7 +54,6 @@ namespace
 namespace
 {
   const char* vertex_shader_source =
-    "#version 330 core\n"
     "layout(location = 0) in vec3 vertex;\n"
     "layout(location = 1) in vec3 r_del_daz;\n"
     "uniform int color_by_direction, use_lighting, reverse;\n"
@@ -95,7 +94,6 @@ namespace
 
 
   const char* fragment_shader_source =
-    "#version 330 core\n"
     "uniform int use_lighting, hide_neg_lobes;\n"
     "uniform float ambient, diffuse, specular, shine;\n"
     "uniform vec3 light_pos;\n"
