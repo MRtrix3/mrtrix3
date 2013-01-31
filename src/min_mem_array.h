@@ -79,7 +79,7 @@ class Min_mem_array {
       memcpy (d, that.d, n * sizeof (T));
     }
 
-    ~Min_mem_array()
+    virtual ~Min_mem_array()
     {
       delete[] d;
       d = NULL;
