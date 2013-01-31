@@ -21,7 +21,6 @@
  */
 
 #include "gui/projection.h"
-#include "gui/mrview/colourmap.h"
 
 namespace MR
 {
