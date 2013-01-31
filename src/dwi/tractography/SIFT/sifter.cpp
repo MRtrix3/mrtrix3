@@ -94,10 +94,10 @@ namespace MR
 
         contributions.assign (num_tracks, NULL);
 
-        Tractography::Mapping::TrackLoader loader (file, num_tracks);
-        Tractography::Mapping::TrackMapperDixel mapper (H, true, dirs);
+        Mapping::TrackLoader loader (file, num_tracks);
+        Mapping::TrackMapperDixel mapper (H, true, dirs);
         MappedTrackReceiver receiver (*this);
-        Thread::run_queue_threaded_pipe (loader, Mapping::TrackAndIndex(), mapper, SetDixel(), receiver);
+        Thread::run_batched_queue_custom_threading (loader, 1, Mapping::TrackAndIndex(), 100, mapper, 0, SetDixel(), 100, receiver, 0);
 
         tck_file_path = path;
       }
