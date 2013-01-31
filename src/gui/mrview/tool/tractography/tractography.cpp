@@ -107,12 +107,12 @@ namespace MR
             tractogram_list_model = new Model (this);
             tractogram_list_view->setModel (tractogram_list_model);
 
-            connect (tractogram_list_view, SIGNAL (clicked (const QModelIndex&)), this, SLOT (toggle_shown (const QModelIndex&)));
+            connect (tractogram_list_view, SIGNAL (clicked (const QModelIndex&)), this, SLOT (toggle_shown_slot (const QModelIndex&)));
 
 
             tractogram_list_view->setContextMenuPolicy(Qt::CustomContextMenu);
             connect(tractogram_list_view, SIGNAL(customContextMenuRequested(const QPoint&)),
-                this, SLOT(show_right_click_menu (const QPoint&)));
+                this, SLOT(right_click_menu_slot (const QPoint&)));
 
 
             main_box->addWidget (tractogram_list_view, 1);
@@ -128,7 +128,7 @@ namespace MR
             slab_group_box->setChecked (true);
             default_opt_grid->addWidget (slab_group_box, 0, 0, 1, 2);
 
-            connect (slab_group_box, SIGNAL (clicked (bool)), this, SLOT (on_crop_to_slab_change (bool)));
+            connect (slab_group_box, SIGNAL (clicked (bool)), this, SLOT (on_crop_to_slab_slot (bool)));
 
             QGridLayout* slab_layout = new QGridLayout;
             slab_group_box->setLayout(slab_layout);
@@ -136,7 +136,7 @@ namespace MR
             slab_entry = new AdjustButton (this, 0.1);
             slab_entry->setValue (slab_thickness);
             slab_entry->setMin (0.0);
-            connect (slab_entry, SIGNAL (valueChanged()), this, SLOT (on_slab_thickness_change()));
+            connect (slab_entry, SIGNAL (valueChanged()), this, SLOT (on_slab_thickness_slot()));
             slab_layout->addWidget (slab_entry, 0, 1);
 
             QSlider* slider;
@@ -155,6 +155,23 @@ namespace MR
             default_opt_grid->addWidget (slider, 2, 1);
 
             main_box->addLayout (default_opt_grid, 0);
+
+            QAction* action;
+            track_option_menu = new QMenu();
+            action = new QAction("&Colour by direction", this);
+            connect(action, SIGNAL(triggered()), this, SLOT(colour_track_by_direction_slot()));
+            track_option_menu->addAction(action);
+            action = new QAction("&Randomise colour", this);
+            connect(action, SIGNAL(triggered()), this, SLOT(randomise_track_colour_slot()));
+            track_option_menu->addAction(action);
+            action = new QAction("&Set colour", this);
+            connect(action, SIGNAL(triggered()), this, SLOT(set_track_colour_slot()));
+            track_option_menu->addAction(action);
+            action = new QAction("&Colour by scalar file     ", this);
+            connect(action, SIGNAL(triggered()), this, SLOT(colour_by_scalar_file_slot()));
+            track_option_menu->addAction(action);
+
+
         }
 
         Tractography::~Tractography () {}
@@ -190,20 +207,20 @@ namespace MR
           window.updateGL();
         }
 
-        void Tractography::toggle_shown (const QModelIndex& index) {
+        void Tractography::toggle_shown_slot (const QModelIndex& index) {
           shader_update = true;
           window.updateGL();
           shader_update = false;
         }
 
-        void Tractography::on_crop_to_slab_change (bool checked) {
+        void Tractography::on_crop_to_slab_slot (bool checked) {
           crop_to_slab = checked;
           shader_update = true;
           window.updateGL();
           shader_update = false;
         }
 
-        void Tractography::on_slab_thickness_change() {
+        void Tractography::on_slab_thickness_slot() {
           slab_thickness = slab_entry->value();
           window.updateGL();
         }
@@ -218,7 +235,7 @@ namespace MR
           window.updateGL();
         }
 
-        void Tractography::show_right_click_menu (const QPoint& pos)
+        void Tractography::right_click_menu_slot (const QPoint& pos)
         {
 
           QModelIndex index = tractogram_list_view->indexAt (pos);
@@ -227,13 +244,8 @@ namespace MR
             QPoint globalPos = tractogram_list_view->mapToGlobal( pos);
             tractogram_list_view->selectionModel()->select(index, QItemSelectionModel::Select);
 
-            QMenu track_option_menu;
-            track_option_menu.addAction("Colour by direction");
-            track_option_menu.addAction("Randomise colour");
-            track_option_menu.addAction("Set colour");
-            track_option_menu.addAction("Colour by scalar file     ");
 
-            QAction* selectedItem = track_option_menu.exec(globalPos);
+            QAction* selectedItem = track_option_menu->exec(globalPos);
             if (selectedItem)
             {
             }
@@ -241,6 +253,30 @@ namespace MR
             {
             }
           }
+        }
+
+        void Tractography::colour_track_by_direction_slot() {
+          TEST;
+        }
+
+        void Tractography::set_track_colour_slot() {
+          QColor color;
+          color = QColorDialog::getColor(Qt::green, this, "Select Color", QColorDialog::DontUseNativeDialog);
+
+          if (color.isValid()) {
+            QModelIndexList indexes = tractogram_list_view->selectionModel()->selectedIndexes();
+            for (int i = 0; i < indexes.size(); ++i) {
+//              tractogram_list_model->items[indexes[i].row()]
+            }
+          }
+        }
+
+        void Tractography::randomise_track_colour_slot() {
+          TEST;
+        }
+
+        void Tractography::colour_by_scalar_file_slot() {
+          TEST;
         }
 
 

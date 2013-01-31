@@ -60,18 +60,23 @@ namespace MR
           private slots:
             void tractogram_open_slot ();
             void tractogram_close_slot ();
-            void toggle_shown (const QModelIndex& index);
-            void on_slab_thickness_change();
-            void on_crop_to_slab_change (bool checked);
+            void toggle_shown_slot (const QModelIndex& index);
+            void on_slab_thickness_slot();
+            void on_crop_to_slab_slot (bool checked);
             void opacity_slot (int opacity);
             void line_thickness_slot (int thickness);
-            void show_right_click_menu (const QPoint& pos);
+            void right_click_menu_slot (const QPoint& pos);
+            void colour_track_by_direction_slot ();
+            void set_track_colour_slot ();
+            void randomise_track_colour_slot ();
+            void colour_by_scalar_file_slot ();
 
           protected:
              class Model;
              Model* tractogram_list_model;
              QListView* tractogram_list_view;
              AdjustButton* slab_entry;
+             QMenu* track_option_menu;
              float line_thickness;
              bool crop_to_slab;
              float slab_thickness;
