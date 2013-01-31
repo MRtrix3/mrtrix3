@@ -23,6 +23,7 @@
 #include <QLabel>
 #include <QListView>
 #include <QStringListModel>
+#include <QColorDialog>
 
 #include "mrtrix.h"
 #include "gui/mrview/window.h"
@@ -109,9 +110,9 @@ namespace MR
             connect (tractogram_list_view, SIGNAL (clicked (const QModelIndex&)), this, SLOT (toggle_shown (const QModelIndex&)));
 
 
-//            tractogram_list_view->setContextMenuPolicy(Qt::CustomContextMenu);
-//            connect(tractogram_list_view, SIGNAL(customContextMenuRequested(const QPoint&)),
-//                this, SLOT(show_right_click_menu (const QPoint&)));
+            tractogram_list_view->setContextMenuPolicy(Qt::CustomContextMenu);
+            connect(tractogram_list_view, SIGNAL(customContextMenuRequested(const QPoint&)),
+                this, SLOT(show_right_click_menu (const QPoint&)));
 
 
             main_box->addWidget (tractogram_list_view, 1);
@@ -217,27 +218,29 @@ namespace MR
           window.updateGL();
         }
 
-        void Tractography::show_right_click_menu (const QPoint& pos) // this is a slot
+        void Tractography::show_right_click_menu (const QPoint& pos)
         {
-          TEST;
-          // for most widgets
-//          QPoint globalPos = myWidget->mapToGlobal(pos);
-//          // for QAbstractScrollArea and derived classes you would use:
-//          QPoint globalPos = myWidget->viewport()->mapToGlobal(pos);
-//
-//          QMenu myMenu;
-//          myMenu.addAction("Menu Item 1");
-//          // ...
-//
-//          QAction* selectedItem = myMenu.exec(globalPos);
-//          if (selectedItem)
-//          {
-//              // something was chosen, do stuff
-//          }
-//          else
-//          {
-//              // nothing was chosen
-//          }
+
+          QModelIndex index = tractogram_list_view->indexAt (pos);
+
+          if (index.isValid()) {
+            QPoint globalPos = tractogram_list_view->mapToGlobal( pos);
+            tractogram_list_view->selectionModel()->select(index, QItemSelectionModel::Select);
+
+            QMenu track_option_menu;
+            track_option_menu.addAction("Colour by direction");
+            track_option_menu.addAction("Randomise colour");
+            track_option_menu.addAction("Set colour");
+            track_option_menu.addAction("Colour by scalar file     ");
+
+            QAction* selectedItem = track_option_menu.exec(globalPos);
+            if (selectedItem)
+            {
+            }
+            else
+            {
+            }
+          }
         }
 
 
