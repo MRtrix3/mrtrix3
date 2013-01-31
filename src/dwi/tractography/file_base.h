@@ -87,11 +87,13 @@ namespace MR
 
           void create (const std::string& file, const Properties& properties, const std::string& type) {
             out.open (file.c_str(), std::ios::out | std::ios::binary);
-            out.precision(30);
+
             if (!out)
               throw Exception ("error creating " + type + " file \"" + file + "\": " + strerror (errno));
 
             out << "mrtrix " + type + "\nEND\n";
+
+            out.precision (properties.timestamp_precision);
             out << "timestamp: " << properties.timestamp << "\n";
             for (Properties::const_iterator i = properties.begin(); i != properties.end(); ++i) {
               if ((i->first != "count") && (i->first != "total_count"))

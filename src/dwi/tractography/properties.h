@@ -40,7 +40,7 @@ namespace MR
       class Properties : public std::map<std::string, std::string> {
         public:
 
-          Properties () {
+          Properties () : timestamp_precision (20) {
             timestamp = Timer::current_time();
           }
 
@@ -49,6 +49,8 @@ namespace MR
           Seeding::List seeds;
           std::vector<std::string> comments;
           std::multimap<std::string, std::string> roi;
+          const size_t timestamp_precision;
+
 
           void  clear () { 
             timestamp = 0.0;

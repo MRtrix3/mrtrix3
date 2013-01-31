@@ -1,7 +1,7 @@
 /*
     Copyright 2008 Brain Research Institute, Melbourne, Australia
 
-    Written by J-Donald Tournier, 27/06/08.
+    Written by David Raffelt 31/01/2013
 
     This file is part of MRtrix.
 
@@ -22,11 +22,11 @@
 
 #include <fstream>
 
+
 #include "app.h"
 #include "progressbar.h"
-#include "dwi/tractography/file.h"
+#include "dwi/tractography/scalar_file.h"
 #include "dwi/tractography/properties.h"
-
 MRTRIX_APPLICATION
 
 using namespace MR;
@@ -36,10 +36,10 @@ using namespace App;
 void usage ()
 {
   DESCRIPTION
-  + "print out information about track file";
+  + "print out information about track scalar file";
 
   ARGUMENTS
-  + Argument ("tracks", "the input track file.")
+  + Argument ("tracks", "the input track scalar file.")
   .allow_multiple()
   .type_file ();
 
@@ -48,7 +48,7 @@ void usage ()
             "count number of tracks in file explicitly, ignoring the header")
 
   + Option ("ascii",
-            "save positions of each track in individual ascii files, with the "
+            "save values of each track scalar file in individual ascii files, with the "
             "specified prefix.")
   + Argument ("prefix");
 }
@@ -64,10 +64,10 @@ void run ()
 
   for (size_t i = 0; i < argument.size(); ++i) {
     Tractography::Properties properties;
-    Tractography::Reader<float> file (argument[i], properties);
+    Tractography::ScalarReader<float> file (argument[i], properties);
 
     std::cout << "***********************************\n";
-    std::cout << "  Tracks file: \"" << argument[i] << "\"\n";
+    std::cout << "  Track scalar file: \"" << argument[i] << "\"\n";
 
     for (Tractography::Properties::iterator i = properties.begin(); i != properties.end(); ++i) {
       std::string S (i->first + ':');
@@ -90,8 +90,9 @@ void run ()
       std::cout << "    ROI:                  " << i->first << " " << i->second << "\n";
 
 
+
     if (actual_count) {
-      std::vector<Point<float> > tck;
+      std::vector<float > tck;
       size_t count = 0;
       {
         ProgressBar progress ("counting tracks in file... ");
@@ -104,8 +105,8 @@ void run ()
     }
 
     if (opt.size()) {
-      ProgressBar progress ("writing track data to ascii files");
-      std::vector<Point<float> > tck;
+      ProgressBar progress ("writing track scalar data to ascii files");
+      std::vector<float> tck;
       size_t count = 0;
       while (file.next (tck)) {
         std::string filename (opt[0][0]);
@@ -116,8 +117,8 @@ void run ()
         std::ofstream out (filename.c_str());
         if (!out) throw Exception ("error opening ascii file \"" + filename + "\": " + strerror (errno));
 
-        for (std::vector<Point<float> >::iterator i = tck.begin(); i != tck.end(); ++i)
-          out << (*i) [0] << " " << (*i) [1] << " " << (*i) [2] << "\n";
+        for (std::vector<float>::iterator i = tck.begin(); i != tck.end(); ++i)
+          out << (*i) << "\n";
 
         out.close();
 
