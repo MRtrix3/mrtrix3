@@ -844,6 +844,8 @@ flush:
       * \sa run_batched_queue_threaded_source<Source,Type,Sink>
       * \sa run_batched_queue_threaded_sink<Source,Type,Sink>
       * \sa run_batched_queue_threaded_pipe<Source,Type1,Pipe,Type2,Sink>
+      * \sa run_queue_custom_threading<Source,Type,Sink>
+      * \sa run_queue_custom_threading<Source,Type1,Pipe,Type2,Sink>
       */
 
     template <class Source, class Type, class Sink>
@@ -929,9 +931,9 @@ flush:
       *   // with items sent in batches of 100:
       *   run_batched_queue_threaded_sink (source, Item(), 100, sink);
       *
-      *  // Run one source thread, one sink thread and many pipe threads,
-      *  // with items sent to the pipe threads in batches of 16 but
-      *  // processed data sent to the sink one-at-a-time:
+      *   // Run one source thread, one sink thread and many pipe threads,
+      *   // with items sent to the pipe threads in batches of 16 but
+      *   // processed data sent to the sink one-at-a-time:
       *   run_batched_queue_threaded_pipe (source, Item(), 16, pipe, Item(), 1, sink);
       *
       * }
@@ -940,9 +942,11 @@ flush:
       * \sa run_queue_threaded_source<Source,Type,Sink>
       * \sa run_queue_threaded_sink<Source,Type,Sink>
       * \sa run_queue_threaded_pipe<Source,Type1,Pipe,Type2,Sink>
+      * \sa run_batched_queue_custom_threading<Source,Type,Sink>
+      * \sa run_batched_queue_custom_threading<Source,Type1,Pipe,Type2,Sink>
       */
 
-     template <class Source, class Type, class Sink>
+    template <class Source, class Type, class Sink>
       inline void run_batched_queue_threaded_source (Source& source, const Type& item_type, size_t batch_size, Sink& sink)
       {
 
@@ -957,7 +961,7 @@ flush:
       }
 
 
-     template <class Source, class Type, class Sink>
+    template <class Source, class Type, class Sink>
       inline void run_batched_queue_threaded_sink (Source& source, const Type& item_type, size_t batch_size,Sink& sink)
       {
 
@@ -972,7 +976,7 @@ flush:
       }
 
 
-     template <class Source, class Type1, class Pipe, class Type2, class Sink>
+    template <class Source, class Type1, class Pipe, class Type2, class Sink>
       inline void run_batched_queue_threaded_pipe (
           Source& source,
           const Type1& item_type1, size_t batch_size1,
@@ -993,6 +997,163 @@ flush:
         Exec pipe_threads  (pipe_list, "pipes");
         Exec sink_thread   (q_sink, "sink");
       }
+
+
+
+
+
+
+
+
+
+     //! convenience functions to set up and run custom multi-threaded queues.
+     /* This set of functions differ from Thread::run_queue_threaded_* and
+      * Thread::run_batched_queue_threaded_* in that the number of threads
+      * executed for the source, pipe and sink classes is entirely up to the
+      * programmer (and can even be determined at run-time).
+      *
+      * Usage differs from the previous functions in that the number of
+      * threads for each class in the processing chain is specified as a
+      * function parameter. If this number is set to 0, then the maximum
+      * number of threads (as specified by the NumberOfThreads entry in the
+      * configuration file, or the -nthreads command line option) will be
+      * invoked.
+      *
+      * Functions are available for both standard queues and batched queues.
+      *
+      * Note that to invoke one of these functions, a valid copy-constructor
+      * MUST be defined for ALL functors involved (even if only a single
+      * thread is used for that functor, and hence it is not actually copy-
+      * constructed). If only one functor the queue chain is to be
+      * multi-threaded, it is recommended that the programmer use one of the
+      * run_queue_threaded_* or run_batched_queue_threaded_* functions instead;
+      * these do not require valid copy-constructors for those functors that
+      * are not copy-constructed, and the resulting function call is much more
+      * readable.
+      *
+      * Example usage:
+      * \code
+      * int main (...)
+      * {
+      *   Source source;
+      *   Pipe pipe;
+      *   Sink sink;
+      *
+      *   // Run half the maximum number of threads for the source, and the
+      *   // same number for the sink:
+      *   run_queue_custom_threading (source, Thread::number_of_threads()/2, Item(), sink, Thread::number_of_threads()/2);
+      *
+      *   // Run a batched queue (batch size 100), with a single source
+      *   // thread and as many sink threads as possible
+      *   // (Note that this is identical to run_batched_queue_threaded_sink()):
+      *   run_batched_queue_custom_threading (source, 1, Item(), 100, sink, 0);
+      *
+      *   // Run two queues, with multi-threaded source and pipe functors,
+      *   but only a single sink thread:
+      *   run_queue_custom_threading (source, 0, Item(), pipe, 0, Item(), sink, 1);
+      *
+      *   // Run two batched queues (both with batch size 100), with a single
+      *   // source thread, and multiple pipe and sink threads:
+      *   run_batched_queue_custom_threading (source, 1, Item(), 100, pipe, 0, Item(), 100, sink, 0);
+      *
+      * }
+      * \endcode
+      *
+      * \sa run_queue_threaded_source<Source,Type,Sink>
+      * \sa run_queue_threaded_sink<Source,Type,Sink>
+      * \sa run_queue_threaded_pipe<Source,Type1,Pipe,Type2,Sink>
+      * \sa run_batched_queue_threaded_source<Source,Type,Sink>
+      * \sa run_batched_queue_threaded_sink<Source,Type,Sink>
+      * \sa run_batched_queue_threaded_pipe<Source,Type1,Pipe,Type2,Sink>
+      */
+
+     template <class Source, class Type, class Sink>
+       inline void run_queue_custom_threading (
+           Source& source, const size_t num_sources,
+           const Type& item_type1,
+           Sink& sink, const size_t num_sinks)
+     {
+        Queue<Type> queue ("queue1");
+
+        __Source<Type,Source> q_source (queue, source);
+        __Sink<Type,Sink>     q_sink   (queue, sink);
+
+        Array<__Source<Type,Source> > source_list (q_source, num_sources ? num_sources : number_of_threads());
+        Array<__Sink<Type,Sink> >     sink_list   (q_sink,   num_sinks   ? num_sinks   : number_of_threads());
+
+        Exec source_threads (source_list, "sources");
+        Exec sink_threads   (sink_list,   "sinks");
+     }
+
+
+     template <class Source, class Type1, class Pipe, class Type2, class Sink>
+       inline void run_queue_custom_threading (
+           Source& source, const size_t num_sources,
+           const Type1& item_type1,
+           Pipe& pipe, const size_t num_pipes,
+           const Type2& item_type2,
+           Sink& sink, const size_t num_sinks)
+     {
+        Queue<Type1> queue1 ("queue1");
+        Queue<Type2> queue2 ("queue2");
+
+        __Source<Type1,Source>   q_source (queue1, source);
+        __Pipe<Type1,Pipe,Type2> q_pipe   (queue1, pipe, queue2);
+        __Sink<Type2,Sink>       q_sink   (queue2, sink);
+
+        Array<__Source<Type1,Source> >   source_list (q_source, num_sources ? num_sources : number_of_threads());
+        Array<__Pipe<Type1,Pipe,Type2> > pipe_list   (q_pipe,   num_pipes   ? num_pipes   : number_of_threads());
+        Array<__Sink<Type2,Sink> >       sink_list   (q_sink,   num_sinks   ? num_sinks   : number_of_threads());
+
+        Exec source_threads (source_list, "sources");
+        Exec pipe_threads   (pipe_list,   "pipes");
+        Exec sink_threads   (sink_list,   "sinks");
+     }
+
+
+     template <class Source, class Type, class Sink>
+       inline void run_batched_queue_custom_threading (
+           Source& source, const size_t num_sources,
+           const Type& item_type1, const size_t batch_size,
+           Sink& sink, const size_t num_sinks)
+     {
+        Queue< std::vector<Type> > queue ("queue1");
+
+        Batch::__Source<Type,Source> q_source (queue, source, batch_size);
+        Batch::__Sink<Type,Sink>     q_sink   (queue, sink);
+
+        Array<Batch::__Source<Type,Source> > source_list (q_source, num_sources ? num_sources : number_of_threads());
+        Array<Batch::__Sink<Type,Sink> >     sink_list   (q_sink,   num_sinks   ? num_sinks   : number_of_threads());
+
+        Exec source_threads (source_list, "sources");
+        Exec sink_threads   (sink_list,   "sinks");
+     }
+
+
+     template <class Source, class Type1, class Pipe, class Type2, class Sink>
+       inline void run_batched_queue_custom_threading (
+           Source& source, const size_t num_sources,
+           const Type1& item_type1, const size_t batch_size1,
+           Pipe& pipe, const size_t num_pipes,
+           const Type2& item_type2, const size_t batch_size2,
+           Sink& sink, const size_t num_sinks)
+     {
+        Queue< std::vector<Type1> > queue1 ("queue1");
+        Queue< std::vector<Type2> > queue2 ("queue2");
+
+        Batch::__Source<Type1,Source>   q_source (queue1, source, batch_size1);
+        Batch::__Pipe<Type1,Pipe,Type2> q_pipe   (queue1, pipe, queue2, batch_size2);
+        Batch::__Sink<Type2,Sink>       q_sink   (queue2, sink);
+
+        Array< Batch::__Source<Type1,Source> >   source_list (q_source, num_sources ? num_sources : number_of_threads());
+        Array< Batch::__Pipe<Type1,Pipe,Type2> > pipe_list   (q_pipe,   num_pipes   ? num_pipes   : number_of_threads());
+        Array< Batch::__Sink<Type2,Sink> >       sink_list   (q_sink,   num_sinks   ? num_sinks   : number_of_threads());
+
+        Exec source_threads (source_list, "sources");
+        Exec pipe_threads   (pipe_list,   "pipes");
+        Exec sink_threads   (sink_list,   "sinks");
+     }
+
 
 
     /** @} */
