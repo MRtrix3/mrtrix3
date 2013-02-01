@@ -118,7 +118,7 @@ namespace MR
               BufferScratch<int>::voxel_type b0_mean_mask_voxel (b0_mean_mask_data);
               threshold_filter (b0_mean_voxel, b0_mean_mask_voxel);
 
-              BufferScratch<value_type> dwi_mean_mask_data (threshold_filter);
+              BufferScratch<value_type> dwi_mean_mask_data (info);
               typename BufferScratch<value_type>::voxel_type dwi_mean_mask_voxel (dwi_mean_mask_data);
               threshold_filter (dwi_mean_voxel, dwi_mean_mask_voxel);
 

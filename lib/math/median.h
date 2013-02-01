@@ -49,8 +49,7 @@ namespace MR
             count = number_of_elements;
             current_count = 0;
             median_index = number_of_elements/2 + 1;
-            values.clear();
-            values.reserve (median_index);
+            values.assign (median_index, value_type (0));
           }
 
           void operator+= (value_type val) {
