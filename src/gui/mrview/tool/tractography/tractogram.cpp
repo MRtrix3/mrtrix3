@@ -48,7 +48,8 @@ namespace MR
           tool (tool),
           filename (filename),
           use_default_line_thickness (true),
-          line_thickness (1.0)
+          line_thickness (1.0),
+          scalar_filename ("")
         {
           load_tracks();
         }
@@ -67,8 +68,11 @@ namespace MR
           if (tool.do_crop_to_slab() && tool.get_slab_thickness() <= 0.0)
             return;
 
-          if (tool.do_shader_update() || !shader)
-            shader.set_crop_to_slab (tool.do_crop_to_slab());  // recompile
+          if (tool.do_shader_update() || !shader) {
+            shader.set_crop_to_slab (tool.do_crop_to_slab());
+            shader.recompile();
+            tool.set_shader_update (false);
+          }
 
           shader.start (transform);
 

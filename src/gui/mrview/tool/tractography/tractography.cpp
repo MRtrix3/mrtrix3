@@ -31,6 +31,8 @@
 #include "gui/mrview/tool/tractography/tractogram.h"
 #include "gui/dialog/file.h"
 #include "gui/mrview/tool/list_model_base.h"
+#include "gui/mrview/tool/tractography/scalar_file_options.h"
+
 
 namespace MR
 {
@@ -49,8 +51,8 @@ namespace MR
               ListModelBase (parent) { }
 
             void add_items (std::vector<std::string>& filenames,
-                             Window& main_window,
-                             Tractography& tractography_tool) {
+                            Window& main_window,
+                            Tractography& tractography_tool) {
               beginInsertRows (QModelIndex(), items.size(), items.size() + filenames.size());
               for (size_t i = 0; i < filenames.size(); ++i)
                 items.push_back (new Tractogram (main_window, tractography_tool, filenames[i]));
@@ -63,6 +65,7 @@ namespace MR
 
         Tractography::Tractography (Window& main_window, Dock* parent) :
           Base (main_window, parent),
+          scalar_file_options (NULL),
           line_thickness (1.0),
           crop_to_slab (true),
           shader_update (false),
@@ -109,6 +112,10 @@ namespace MR
 
             connect (tractogram_list_view, SIGNAL (clicked (const QModelIndex&)), this, SLOT (toggle_shown_slot (const QModelIndex&)));
 
+            connect (tractogram_list_view->selectionModel(),
+              SIGNAL(selectionChanged(const QItemSelection &, const QItemSelection &)),
+              SLOT(selection_changed_slot(const QItemSelection &, const QItemSelection &))
+             );
 
             tractogram_list_view->setContextMenuPolicy(Qt::CustomContextMenu);
             connect(tractogram_list_view, SIGNAL(customContextMenuRequested(const QPoint&)),
@@ -118,10 +125,6 @@ namespace MR
             main_box->addWidget (tractogram_list_view, 1);
 
             QGridLayout* default_opt_grid = new QGridLayout;
-
-            QWidget::setStyleSheet("QSlider { margin: 5 0 5 0px;  }"
-                                   "QGroupBox { padding:7 3 0 0px; margin: 10 0 5 0px; border: 1px solid gray; border-radius: 4px}"
-                                   "QGroupBox::title { subcontrol-position: top left; top:-8px; left:5px}");
 
             QGroupBox* slab_group_box = new QGroupBox (tr("crop to slab"));
             slab_group_box->setCheckable (true);
@@ -157,20 +160,19 @@ namespace MR
             main_box->addLayout (default_opt_grid, 0);
 
             QAction* action;
-            track_option_menu = new QMenu();
+            track_option_menu = new QMenu ();
             action = new QAction("&Colour by direction", this);
-            connect(action, SIGNAL(triggered()), this, SLOT(colour_track_by_direction_slot()));
-            track_option_menu->addAction(action);
+            connect (action, SIGNAL(triggered()), this, SLOT (colour_track_by_direction_slot()));
+            track_option_menu->addAction (action);
             action = new QAction("&Randomise colour", this);
-            connect(action, SIGNAL(triggered()), this, SLOT(randomise_track_colour_slot()));
-            track_option_menu->addAction(action);
+            connect (action, SIGNAL(triggered()), this, SLOT (randomise_track_colour_slot()));
+            track_option_menu->addAction (action);
             action = new QAction("&Set colour", this);
-            connect(action, SIGNAL(triggered()), this, SLOT(set_track_colour_slot()));
-            track_option_menu->addAction(action);
+            connect (action, SIGNAL(triggered()), this, SLOT (set_track_colour_slot()));
+            track_option_menu->addAction (action);
             action = new QAction("&Colour by scalar file     ", this);
-            connect(action, SIGNAL(triggered()), this, SLOT(colour_by_scalar_file_slot()));
-            track_option_menu->addAction(action);
-
+            connect (action, SIGNAL(triggered()), this, SLOT (colour_by_scalar_file_slot()));
+            track_option_menu->addAction (action);
 
         }
 
@@ -210,14 +212,12 @@ namespace MR
         void Tractography::toggle_shown_slot (const QModelIndex& index) {
           shader_update = true;
           window.updateGL();
-          shader_update = false;
         }
 
         void Tractography::on_crop_to_slab_slot (bool checked) {
           crop_to_slab = checked;
           shader_update = true;
           window.updateGL();
-          shader_update = false;
         }
 
         void Tractography::on_slab_thickness_slot() {
@@ -237,46 +237,80 @@ namespace MR
 
         void Tractography::right_click_menu_slot (const QPoint& pos)
         {
-
           QModelIndex index = tractogram_list_view->indexAt (pos);
-
           if (index.isValid()) {
             QPoint globalPos = tractogram_list_view->mapToGlobal( pos);
             tractogram_list_view->selectionModel()->select(index, QItemSelectionModel::Select);
-
-
-            QAction* selectedItem = track_option_menu->exec(globalPos);
-            if (selectedItem)
-            {
-            }
-            else
-            {
-            }
+            track_option_menu->exec(globalPos);
           }
         }
 
         void Tractography::colour_track_by_direction_slot() {
-          TEST;
+          QModelIndexList indexes = tractogram_list_view->selectionModel()->selectedIndexes();
+          for (int i = 0; i < indexes.size(); ++i) {
+            dynamic_cast<Tractogram*>(tractogram_list_model->items[indexes[i].row()])->set_colour_type (Direction);
+          }
+          shader_update = true;
+          window.updateGL();
         }
 
         void Tractography::set_track_colour_slot() {
           QColor color;
-          color = QColorDialog::getColor(Qt::green, this, "Select Color", QColorDialog::DontUseNativeDialog);
+          color = QColorDialog::getColor(Qt::red, this, "Select Color", QColorDialog::DontUseNativeDialog);
+          float colour[] = {float(color.redF()), float(color.greenF()), float(color.blueF())};
 
           if (color.isValid()) {
-            QModelIndexList indexes = tractogram_list_view->selectionModel()->selectedIndexes();
-            for (int i = 0; i < indexes.size(); ++i) {
-//              tractogram_list_model->items[indexes[i].row()]
+            QModelIndexList indices = tractogram_list_view->selectionModel()->selectedIndexes();
+            for (int i = 0; i < indices.size(); ++i) {
+              dynamic_cast<Tractogram*>(tractogram_list_model->items[indices[i].row()])->set_colour_type (Colour);
+              dynamic_cast<Tractogram*>(tractogram_list_model->items[indices[i].row()])->set_colour (colour);
             }
           }
+          shader_update = true;
+          window.updateGL();
         }
 
         void Tractography::randomise_track_colour_slot() {
-          TEST;
+          QModelIndexList indices = tractogram_list_view->selectionModel()->selectedIndexes();
+          for (int i = 0; i < indices.size(); ++i) {
+            float colour[3];
+            Math::RNG rng;
+            do {
+              colour[0] = rng.uniform();
+              colour[1] = rng.uniform();
+              colour[2] = rng.uniform();
+            } while (colour[0] < 0.5 && colour[1] < 0.5 && colour[2] < 0.5);
+            dynamic_cast<Tractogram*>(tractogram_list_model->items[indices[i].row()])->set_colour_type (Colour);
+            dynamic_cast<Tractogram*>(tractogram_list_model->items[indices[i].row()])->set_colour (colour);
+          }
+          shader_update = true;
+          window.updateGL();
         }
 
         void Tractography::colour_by_scalar_file_slot() {
-          TEST;
+          QModelIndexList indices = tractogram_list_view->selectionModel()->selectedIndexes();
+          if (indices.size() != 1) {
+            QMessageBox msgBox;
+            msgBox.setText("Please select only one tractogram when colouring by scalar file.    ");
+            msgBox.exec();
+          } else {
+            dynamic_cast<Tractogram*>(tractogram_list_model->items[indices[0].row()])->set_colour_type (ScalarFile);
+
+            if (!scalar_file_options) {
+              scalar_file_options = Tool::create<ScalarFileOptions> ("Scalar File Options", window);
+              dynamic_cast<ScalarFileOptions*> (scalar_file_options->tool)->set_tractogram (dynamic_cast<Tractogram*>(tractogram_list_model->items[indices[0].row()]));
+              dynamic_cast<ScalarFileOptions*> (scalar_file_options->tool)->open_track_scalar_file_slot();
+            }
+
+            dynamic_cast<ScalarFileOptions*> (scalar_file_options->tool)->set_tractogram (dynamic_cast<Tractogram*>(tractogram_list_model->items[indices[0].row()]));
+            scalar_file_options->show();
+
+          }
+        }
+
+        void Tractography::selection_changed_slot(const QItemSelection &, const QItemSelection &) {
+          if (scalar_file_options)
+            dynamic_cast<ScalarFileOptions*> (scalar_file_options)->update();
         }
 
 

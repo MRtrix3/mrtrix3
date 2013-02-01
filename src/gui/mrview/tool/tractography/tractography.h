@@ -26,7 +26,6 @@
 #include "gui/mrview/tool/base.h"
 #include "gui/projection.h"
 #include "gui/mrview/adjust_button.h"
-
 class QStringListModel;
 
 namespace MR
@@ -44,9 +43,11 @@ namespace MR
 
           public:
 
+            class Model;
+
             Tractography (Window& main_window, Dock* parent);
 
-            ~Tractography ();
+            virtual ~Tractography ();
 
             void draw2D (const Projection& transform);
             void draw3D (const Projection& transform);
@@ -55,7 +56,16 @@ namespace MR
             bool do_crop_to_slab () const { return crop_to_slab; }
             float get_slab_thickness () const { return slab_thickness; }
             bool do_shader_update () const { return shader_update; }
+            void set_shader_update (bool do_update) { shader_update = do_update; }
             float get_opacity () const { return line_opacity; }
+
+            QListView* get_tractogram_list_view () {
+              return tractogram_list_view;
+            }
+
+            Model* get_tractogram_list_model() {
+              return tractogram_list_model;
+            }
 
           private slots:
             void tractogram_open_slot ();
@@ -70,13 +80,14 @@ namespace MR
             void set_track_colour_slot ();
             void randomise_track_colour_slot ();
             void colour_by_scalar_file_slot ();
+            void selection_changed_slot(const QItemSelection &, const QItemSelection &);
 
           protected:
-             class Model;
              Model* tractogram_list_model;
              QListView* tractogram_list_view;
              AdjustButton* slab_entry;
              QMenu* track_option_menu;
+             Dock* scalar_file_options;
              float line_thickness;
              bool crop_to_slab;
              float slab_thickness;

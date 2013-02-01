@@ -24,7 +24,6 @@
 #define __gui_mrview_tool_tractogram_h__
 
 #include <QAction>
-#include <string>
 
 // necessary to avoid conflict with Qt4's foreach macro:
 #ifdef foreach
@@ -66,6 +65,21 @@ namespace MR
 
             void render3D ();
 
+            void set_colour_type (colour_option type) {
+              shader.set_colour_type (type);
+            }
+
+            void set_colour (float color[3]) {
+              shader.set_colour (color);
+            }
+
+            std::string get_scalar_filename () {
+              return scalar_filename;
+            }
+            std::string get_filename () {
+              return filename;
+            }
+
           signals:
             void scalingChanged ();
 
@@ -82,9 +96,10 @@ namespace MR
             bool use_default_line_thickness;
             float line_thickness;
             Shader shader;
+            std::string scalar_filename;
+            GLint scalar_file_buffer;
+            GLint scalar_file_array_object;
 
-            void set_color () {
-            }
 
             inline void load_data_into_GPU_buffer (std::vector<Point<float> >& buffer,
                                                    std::vector<GLint>& starts,

@@ -34,17 +34,35 @@ namespace MR
       namespace Tool
       {
 
+        enum colour_option { Direction, Colour, ScalarFile };
+
         class Shader : public MRView::Shader
         {
           public:
+
+            Shader () : do_crop_to_slab (true),
+                        colour_type (Direction) { }
+
             void set_crop_to_slab (bool crop_to_slab) {
               do_crop_to_slab = crop_to_slab;
-              recompile();
             }
-          protected:
+
+            void set_colour (float color[3]) {
+              colour[0] = color[0];
+              colour[1] = color[1];
+              colour[2] = color[2];
+            }
+
+            void set_colour_type (colour_option type) {
+              colour_type = type;
+            }
+
             virtual void recompile ();
 
+          protected:
             bool do_crop_to_slab;
+            colour_option colour_type;
+            float colour[3];
 
         };
 

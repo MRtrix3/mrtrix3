@@ -55,14 +55,30 @@ namespace MR
 
           vertex_shader_code +=
               "void main() {\n"
-              "  gl_Position =  MVP * vec4(vertexPosition_modelspace,1);\n"
-              "  if (isnan(previousVertex.x))\n"
-              "    fragmentColor = nextVertex - vertexPosition_modelspace;\n"
-              "  else if (isnan(nextVertex.x))\n"
-              "    fragmentColor = vertexPosition_modelspace - previousVertex;\n"
-              "  else\n"
-              "    fragmentColor = nextVertex - previousVertex;\n"
-              "  fragmentColor = normalize (abs(fragmentColor));\n";
+              "  gl_Position =  MVP * vec4(vertexPosition_modelspace,1);\n";
+
+          switch (colour_type) {
+            case Direction:
+              vertex_shader_code +=
+                "  if (isnan(previousVertex.x))\n"
+                "    fragmentColor = nextVertex - vertexPosition_modelspace;\n"
+                "  else if (isnan(nextVertex.x))\n"
+                "    fragmentColor = vertexPosition_modelspace - previousVertex;\n"
+                "  else\n"
+                "    fragmentColor = nextVertex - previousVertex;\n"
+                "  fragmentColor = normalize (abs(fragmentColor));\n";
+              break;
+            case Colour:
+              vertex_shader_code +=
+                  "fragmentColor = vec3(" + str(colour[0]) + ", " + str(colour[1]) + ", " + str(colour[2]) + ");";
+              break;
+            case ScalarFile:
+
+              break;
+            default:
+              assert(0);
+              break;
+          }
 
           if (do_crop_to_slab) {
             vertex_shader_code +=

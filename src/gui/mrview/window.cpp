@@ -665,8 +665,6 @@ namespace MR
         Tool::Dock* tool = dynamic_cast<Tool::__Action__*>(action)->instance;
         if (!tool) {
           tool = dynamic_cast<Tool::__Action__*>(action)->create (*this);
-          addDockWidget (Qt::RightDockWidgetArea, tool);
-          tool->show();
           connect (tool, SIGNAL (visibilityChanged (bool)), action, SLOT (setChecked (bool)));
         }
         if (action->isChecked())

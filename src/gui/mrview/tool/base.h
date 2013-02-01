@@ -104,6 +104,8 @@ namespace MR
           scroll->setHorizontalScrollBarPolicy (Qt::ScrollBarAlwaysOff);
           scroll->setMinimumWidth (scroll->widget()->minimumWidth());
           instance->setWidget (scroll);
+          main_window.addDockWidget (Qt::RightDockWidgetArea, instance);
+          instance->show();
           return instance;
         }
 

@@ -130,8 +130,6 @@ done_painting:
 
         void Base::register_extra_controls (Tool::Dock* controls) 
         {
-          window.addDockWidget (Qt::RightDockWidgetArea, controls);
-          controls->show();
           connect (controls, SIGNAL (visibilityChanged (bool)), window.extra_controls_action, SLOT (setChecked (bool)));
         }
 

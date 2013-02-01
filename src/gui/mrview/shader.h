@@ -221,6 +221,7 @@ namespace MR
             return flags_ & Lighting;
           }
 
+          virtual void recompile ();
 
         protected:
           uint32_t flags_;
@@ -241,7 +242,6 @@ namespace MR
             set (cmap);
           }
 
-          virtual void recompile ();
       };
 
     }
