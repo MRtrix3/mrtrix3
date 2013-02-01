@@ -60,13 +60,12 @@ namespace MR
             void onSetPlane (int index);
             void onSetScaling ();
             void onScalingChanged ();
-            void onSetColourBar (int index);
 
           private:
             AdjustButton *focus_x, *focus_y, *focus_z; 
             AdjustButton *max_entry, *min_entry;
             // AdjustButton *lessthan, *greaterthan;
-            QComboBox *plane_combobox, *colourbar_combobox;
+            QComboBox *plane_combobox;
 
             void set_scaling_rate ();
             void set_focus_rate ();

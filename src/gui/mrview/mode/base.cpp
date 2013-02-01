@@ -101,8 +101,8 @@ namespace MR
 
             projection.done_render_text();
 
-            if (window.colourbar_position()) 
-              window.render_colourbar (projection, *image(), window.colourbar_position());
+            if (window.show_colourbar())
+              window.colourbar_renderer.render (projection, *image(), window.colourbar_position_index);
           }
 
 done_painting:

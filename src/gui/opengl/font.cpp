@@ -41,7 +41,7 @@ namespace MR
 
 
 
-      void Font::initialise () 
+      void Font::initGL () 
       {
         const int first_char = ' ', last_char = '~', default_char = '?';
         INFO ("loading font into OpenGL texture...");

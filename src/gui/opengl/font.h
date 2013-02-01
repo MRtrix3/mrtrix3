@@ -44,32 +44,32 @@ namespace MR
             vertex_array_object_ID (0) { } 
           ~Font ();
 
-          void initialise ();
+          void initGL ();
 
           const QFontMetrics metric;
 
-        void setupGL (int width, int height, float red, float green, float blue) const {
-          assert (program);
-          glDisable (GL_DEPTH_TEST);
-          glDepthMask (GL_FALSE);
-          glEnable (GL_BLEND);
-          glBlendEquation (GL_FUNC_ADD);
-          glBlendFunc (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-          program.start();
-          glUniform1f (glGetUniformLocation (program, "scale_x"), 2.0 / width);
-          glUniform1f (glGetUniformLocation (program, "scale_y"), 2.0 / height);
-          glUniform1f (glGetUniformLocation (program, "red"), red);
-          glUniform1f (glGetUniformLocation (program, "green"), green);
-          glUniform1f (glGetUniformLocation (program, "blue"), blue);
-        }
+          void start (int width, int height, float red, float green, float blue) const {
+            assert (program);
+            glDisable (GL_DEPTH_TEST);
+            glDepthMask (GL_FALSE);
+            glEnable (GL_BLEND);
+            glBlendEquation (GL_FUNC_ADD);
+            glBlendFunc (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+            program.start();
+            glUniform1f (glGetUniformLocation (program, "scale_x"), 2.0 / width);
+            glUniform1f (glGetUniformLocation (program, "scale_y"), 2.0 / height);
+            glUniform1f (glGetUniformLocation (program, "red"), red);
+            glUniform1f (glGetUniformLocation (program, "green"), green);
+            glUniform1f (glGetUniformLocation (program, "blue"), blue);
+          }
 
-        void resetGL () const {
-          program.stop();
-          glDepthMask (GL_TRUE);
-          glDisable (GL_BLEND);
-        }
+          void stop () const {
+            program.stop();
+            glDepthMask (GL_TRUE);
+            glDisable (GL_BLEND);
+          }
 
-        void render (const std::string& text, int x, int y) const;
+          void render (const std::string& text, int x, int y) const;
 
         protected:
           const QFont& font;

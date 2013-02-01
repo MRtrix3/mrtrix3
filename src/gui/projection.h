@@ -167,9 +167,9 @@ namespace MR
         void render_crosshairs (const Point<>& focus);
 
         void setup_render_text (float red = 1.0, float green = 1.0, float blue = 0.0) const { 
-          font.setupGL (width(), height(), red, green, blue); 
+          font.start (width(), height(), red, green, blue); 
         }
-        void done_render_text () const { font.resetGL(); }
+        void done_render_text () const { font.stop(); }
 
         void render_text (int x, int y, const std::string& text) const {
           font.render (text, x, y);
@@ -183,7 +183,7 @@ namespace MR
           else if (halign > 0) x -= w;
           if (valign == 0) y -= h/2;
           else if (valign > 0) y -= h;
-          font.render (text, x, y);
+          render_text (x, y, text);
         }
 
         void render_text_inset (int x, int y, const std::string& text, int inset = -1) const {

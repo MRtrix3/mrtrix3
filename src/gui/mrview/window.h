@@ -70,48 +70,20 @@ namespace MR
             return tool_group;
           }
 
-          Mode::Base* get_current_mode () const {
-            return mode;
-          }
-          const Point<>& focus () const {
-            return focal_point; 
-          }
-          const Point<>& target () const {
-            return camera_target; 
-          }
-          float FOV () const {
-            return field_of_view; 
-          }
-          int plane () const {
-            return anatomical_plane; 
-          }
-          const Math::Versor<float>& orientation () const {
-            return orient; 
-          }
+          Mode::Base* get_current_mode () const { return mode; }
+          const Point<>& focus () const { return focal_point; }
+          const Point<>& target () const { return camera_target; }
+          float FOV () const { return field_of_view; }
+          int plane () const { return anatomical_plane; }
+          const Math::Versor<float>& orientation () const { return orient; }
+          Image* image () { return static_cast<Image*> (image_group->checkedAction()); }
 
-          Image* image () {
-            return static_cast<Image*> (image_group->checkedAction());
-          }
-          void set_focus (const Point<>& p) {
-            focal_point = p; emit focusChanged(); 
-          }
-          void set_target (const Point<>& p) {
-            camera_target = p; emit targetChanged(); 
-          }
-          void set_FOV (float value) {
-            field_of_view = value; emit fieldOfViewChanged(); 
-          }
-          void set_plane (int p) {
-            anatomical_plane = p; emit planeChanged(); 
-          }
-          void set_orientation (const Math::Versor<float>& Q) {
-            orient = Q; emit orientationChanged(); 
-          }
-
-          void set_scaling (float min, float max) {
-            if (!image()) return;
-            image()->set_windowing (min, max);
-          }
+          void set_focus (const Point<>& p) { focal_point = p; emit focusChanged(); }
+          void set_target (const Point<>& p) { camera_target = p; emit targetChanged(); }
+          void set_FOV (float value) { field_of_view = value; emit fieldOfViewChanged(); }
+          void set_plane (int p) { anatomical_plane = p; emit planeChanged(); }
+          void set_orientation (const Math::Versor<float>& Q) { orient = Q; emit orientationChanged(); }
+          void set_scaling (float min, float max) { if (!image()) return; image()->set_windowing (min, max); }
 
           void set_scaling_all (float min, float max) {
             QList<QAction*> list = image_group->actions();
@@ -119,35 +91,16 @@ namespace MR
               static_cast<Image*> (list[n])->set_windowing (min, max);
           }
 
-          void set_colourbar_position (int index) {
-            colourbar_position_index = index;
-          }
+          bool show_crosshairs () const { return show_crosshairs_action->isChecked(); } 
+          bool show_comments () const { return show_comments_action->isChecked(); } 
+          bool show_voxel_info () const { return show_voxel_info_action->isChecked(); } 
+          bool show_orientation_labels () const { return show_orientation_labels_action->isChecked(); } 
+          bool show_colourbar () const { return show_colourbar_action->isChecked(); }
 
-          bool show_crosshairs () const { 
-            return show_crosshairs_action->isChecked();
-          }
-
-          bool show_comments () const { 
-            return show_comments_action->isChecked();
-          }
-
-          bool show_voxel_info () const { 
-            return show_voxel_info_action->isChecked();
-          }
-
-          bool show_orientation_labels () const { 
-            return show_orientation_labels_action->isChecked();
-          }
-
-          int colourbar_position () const {
-            return colourbar_position_index;
-          }
-
-          void updateGL () {
-            glarea->updateGL();
-          }
+          void updateGL () { glarea->updateGL(); }
 
           GL::Lighting& lighting () { return *lighting_; }
+          ColourMap::Renderer colourbar_renderer;
 
         signals: 
           void focusChanged ();
@@ -228,7 +181,15 @@ namespace MR
               void wheelEvent (QWheelEvent* event);
           };
 
-          enum MouseAction { NoAction, SetFocus, Contrast, Pan, PanThrough, Tilt, Rotate };
+          enum MouseAction {
+            NoAction,
+            SetFocus, 
+            Contrast, 
+            Pan, 
+            PanThrough, 
+            Tilt, 
+            Rotate 
+          };
 
           GLArea* glarea;
           Ptr<Mode::Base> mode;
@@ -243,19 +204,54 @@ namespace MR
           float field_of_view;
           int anatomical_plane, annotations, colourbar_position_index;
 
-          QMenu *image_menu, *colourmap_menu;
-          QAction *save_action, *close_action, *properties_action;
-          QAction *reset_windowing_action, *toggle_annotations_action;
-          QAction **tool_actions, **colourmap_actions, *invert_colourmap_action, *invert_scale_action;
-          QAction *next_image_action, *prev_image_action, *next_image_volume_action, *prev_image_volume_action;
-          QAction *next_slice_action, *prev_slice_action, *reset_view_action;
-          QAction *next_image_volume_group_action, *prev_image_volume_group_action, *image_list_area;
-          QAction *axial_action, *sagittal_action, *coronal_action, *extra_controls_action;
-          QAction *show_comments_action, *show_voxel_info_action, *show_orientation_labels_action, *show_crosshairs_action;
-          QAction *image_interpolate_action, *full_screen_action;
-          QAction *OpenGL_action, *about_action, *aboutQt_action;
-          QActionGroup *mode_group, *tool_group, *image_group, *colourmap_group, *mode_action_group, *plane_group;
-          ColourMap::Renderer colourbar_renderer;
+          QMenu *image_menu, 
+                *colourmap_menu;
+
+          QActionGroup *mode_group, 
+                       *tool_group, 
+                       *image_group, 
+                       *colourmap_group, 
+                       *mode_action_group, 
+                       *plane_group;
+
+          QAction *save_action, 
+                  *close_action, 
+                  *properties_action,
+
+                  **tool_actions, 
+                  **colourmap_actions, 
+                  *invert_colourmap_action, 
+                  *invert_scale_action,
+                  *extra_controls_action,
+
+                  *next_image_action,
+                  *prev_image_action, 
+                  *next_image_volume_action, 
+                  *prev_image_volume_action,
+                  *next_slice_action, 
+                  *prev_slice_action, 
+                  *reset_view_action,
+                  *next_image_volume_group_action, 
+                  *prev_image_volume_group_action, 
+                  *image_list_area,
+
+                  *reset_windowing_action, 
+                  *axial_action, 
+                  *sagittal_action, 
+                  *coronal_action, 
+
+                  *toggle_annotations_action,
+                  *show_comments_action, 
+                  *show_voxel_info_action, 
+                  *show_orientation_labels_action,
+                  *show_crosshairs_action, 
+                  *show_colourbar_action, 
+                  *image_interpolate_action, 
+                  *full_screen_action,
+
+                  *OpenGL_action, 
+                  *about_action, 
+                  *aboutQt_action;
 
           void paintGL ();
           void initGL ();
@@ -271,9 +267,6 @@ namespace MR
           void set_image_menu ();
           void set_mode_features ();
           void set_image_navigation_menu ();
-          void render_colourbar (const Projection& projection, const Displayable& object, int position) { 
-            colourbar_renderer.render (projection, object, position);
-          }
 
           template <class Event> void grab_mouse_state (Event* event);
           template <class Event> void update_mouse_state (Event* event);

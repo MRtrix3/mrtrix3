@@ -163,7 +163,7 @@ namespace MR
         orient (NAN, NAN, NAN, NAN),
         field_of_view (100.0),
         anatomical_plane (2),
-        colourbar_position_index (0)
+        colourbar_position_index (2)
       {
         setWindowTitle (tr ("MRView"));
         setWindowIcon (QPixmap (":/mrtrix.png"));
@@ -404,6 +404,12 @@ namespace MR
         show_orientation_labels_action->setChecked (true);
         addAction (show_orientation_labels_action);
 
+        show_colourbar_action = menu->addAction (tr ("Show colour bar"), glarea, SLOT (updateGL()));
+        show_colourbar_action->setShortcut (tr("B"));
+        show_colourbar_action->setCheckable (true);
+        show_colourbar_action->setChecked (true);
+        addAction (show_colourbar_action);
+
         menu->addSeparator();
 
         full_screen_action = menu->addAction (tr ("Full screen"), this, SLOT (full_screen_slot()));
@@ -539,11 +545,10 @@ namespace MR
 
         std::string cbar_pos = lowercase (MR::File::Config::get ("MRViewColourBarPosition"));
         if (cbar_pos.size()) {
-          if (cbar_pos == "hidden") set_colourbar_position (0);
-          else if (cbar_pos == "bottomleft") set_colourbar_position (1);
-          else if (cbar_pos == "bottomright") set_colourbar_position (2);
-          else if (cbar_pos == "topleft") set_colourbar_position (3);
-          else if (cbar_pos == "topright") set_colourbar_position (4);
+          if (cbar_pos == "bottomleft") colourbar_position_index = 1;
+          else if (cbar_pos == "bottomright") colourbar_position_index = 2;
+          else if (cbar_pos == "topleft") colourbar_position_index = 3;
+          else if (cbar_pos == "topright") colourbar_position_index = 4;
           else 
             WARN ("invalid specifier \"" + cbar_pos + "\" for config file entry \"MRViewColourBarPosition\"");
         }
@@ -870,6 +875,7 @@ namespace MR
         if (show_comments()) current_annotations |= 0x00000002;
         if (show_voxel_info()) current_annotations |= 0x00000004;
         if (show_orientation_labels()) current_annotations |= 0x00000008;
+        if (show_colourbar()) current_annotations |= 0x00000010;
 
         if (current_annotations) {
           annotations = current_annotations;
@@ -877,6 +883,7 @@ namespace MR
           show_comments_action->setChecked (false);
           show_voxel_info_action->setChecked (false);
           show_orientation_labels_action->setChecked (false);
+          show_colourbar_action->setChecked (false);
         }
         else {
           if (!annotations) 
@@ -885,6 +892,7 @@ namespace MR
           show_comments_action->setChecked (annotations & 0x00000002);
           show_voxel_info_action->setChecked (annotations & 0x00000004);
           show_orientation_labels_action->setChecked (annotations & 0x00000008);
+          show_colourbar_action->setChecked (annotations & 0x00000010);
         }
         updateGL();
       }
@@ -1052,7 +1060,7 @@ namespace MR
       {
         GL::init ();
 
-        font.initialise();
+        font.initGL();
 
         glClearColor (0.0, 0.0, 0.0, 0.0);
         glEnable (GL_DEPTH_TEST);
