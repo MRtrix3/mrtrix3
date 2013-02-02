@@ -18,7 +18,7 @@ TOOL(View, View options, Adjust view settings)
 TOOL(Lighting, Lighting options, Adjust lighting settings for those modes that support it)
 //TOOL(ROI, ROI analysis, Draw & analyse regions of interest)
 TOOL(Overlay, Overlay, Overlay other images over the current image)
-TOOL(Tractography, Tractography, Display tracks over the current image)
+TOOL(Tractography::Tractography, Tractography::Tractography, Display tracks over the current image)
 
 #endif
 

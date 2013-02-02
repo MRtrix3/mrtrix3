@@ -36,27 +36,36 @@ namespace MR
     {
       namespace Tool
       {
-
-        class ScalarFileOptions : public Base
+        namespace Tractography
         {
-          Q_OBJECT
 
-          public:
-            ScalarFileOptions (Window& main_window, Dock* parent);
+          class ScalarFileOptions : public Base
+          {
+            Q_OBJECT
 
-            void set_tractogram (Tractogram* selected_tractogram);
+            public:
+              ScalarFileOptions (Window& main_window, Dock* parent);
 
-          public slots:
-            void open_track_scalar_file_slot ();
+              void set_tractogram (Tractogram* selected_tractogram);
 
-          protected:
-            QPushButton* button;
-            Tractogram* tractogram;
+            public slots:
+              void open_track_scalar_file_slot ();
 
-        };
+            private slots:
+              void on_set_scaling_slot ();
+              void on_set_threshold_slot ();
 
+            protected:
+              Tractogram* tractogram;
+              QVBoxLayout* main_box;
+              QPushButton* button;
+              AdjustButton *max_entry, *min_entry;
+              AdjustButton *lessthan, *greaterthan;
+
+          };
+
+        }
       }
-
     }
   }
 }

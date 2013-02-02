@@ -96,14 +96,14 @@ namespace MR
             return;
           }
 
-          if (!finite (window.image()->shader.transparent_intensity) || 
-              !finite (window.image()->shader.opaque_intensity) || 
-              !finite (window.image()->shader.alpha) ) {
+          if (!finite (window.image()->transparent_intensity) ||
+              !finite (window.image()->opaque_intensity) ||
+              !finite (window.image()->alpha) ) {
             if (finite (window.image()->intensity_min()) && 
                 finite (window.image()->intensity_max())) {
-              window.image()->shader.transparent_intensity = window.image()->intensity_min();
-              window.image()->shader.opaque_intensity = window.image()->intensity_max();
-              window.image()->shader.alpha = opacity->value() / 255.0;
+              window.image()->transparent_intensity = window.image()->intensity_min();
+              window.image()->opaque_intensity = window.image()->intensity_max();
+              window.image()->alpha = opacity->value() / 255.0;
             }
             else {
               transparent_intensity->clear();
@@ -111,19 +111,19 @@ namespace MR
             }
           }
 
-          if (finite (window.image()->shader.transparent_intensity) &&
-              finite (window.image()->shader.opaque_intensity) &&
-              finite (window.image()->shader.alpha) ) {
-            transparent_intensity->setValue (window.image()->shader.transparent_intensity);
-            opaque_intensity->setValue (window.image()->shader.opaque_intensity);
-            opacity->setValue (window.image()->shader.alpha * 255.0);
+          if (finite (window.image()->transparent_intensity) &&
+              finite (window.image()->opaque_intensity) &&
+              finite (window.image()->alpha) ) {
+            transparent_intensity->setValue (window.image()->transparent_intensity);
+            opaque_intensity->setValue (window.image()->opaque_intensity);
+            opacity->setValue (window.image()->alpha * 255.0);
             float rate = window.image() ? window.image()->scaling_rate() : 0.0;
             transparent_intensity->setRate (rate);
             opaque_intensity->setRate (rate);
             onSetTransparency();
           }
 
-          lighting_box->setChecked (window.image()->shader.lighting_enabled());
+          lighting_box->setChecked (window.image()->lighting_enabled());
           setEnabled (true);
         }
 
@@ -133,7 +133,7 @@ namespace MR
         void VolumeExtraControls::onSetTransparency () 
         {
           if (window.image()) {
-            window.image()->shader.set_transparency (
+            window.image()->set_transparency (
                 transparent_intensity->value(), 
                 opaque_intensity->value(),
                 float (opacity->value()) / 255.0);
@@ -146,7 +146,7 @@ namespace MR
         void VolumeExtraControls::onUseLighting (bool on) 
         {
           if (window.image())
-            window.image()->shader.set_use_lighting (on);
+            window.image()->set_use_lighting (on);
           window.updateGL();
         }
 

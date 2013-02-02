@@ -176,9 +176,9 @@ namespace MR
         vertices[7].set (1.0, 0.0, 0.0);
 
 
-        shader.start (projection);
+        start (projection);
         draw_vertices (vertices);
-        shader.stop();
+        stop();
       }
 
 
@@ -192,9 +192,9 @@ namespace MR
         glTexParameteri (GL_TEXTURE_3D, GL_TEXTURE_MAG_FILTER, interpolation);
         glTexParameteri (GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, interpolation);
 
-        shader.start (projection, windowing_scale_3D);
+        start (projection, windowing_scale_3D);
 
-        if (shader.use_lighting())
+        if (use_lighting())
           glEnable (GL_LIGHTING);
 
         pos[0] = projection.screen_to_model (0.0, projection.height(), depth);
@@ -276,7 +276,7 @@ namespace MR
         type = GL_FLOAT;
         Ptr<float,true> data;
 
-        std::string cmap_name = ColourMap::maps[shader.colourmap()].name;
+        std::string cmap_name = ColourMap::maps[colourmap()].name;
 
         if (cmap_name == "RGB") {
 
@@ -381,7 +381,7 @@ namespace MR
         if ((value_max - value_min) < 2.0*std::numeric_limits<float>::epsilon()) 
           value_min = value_max - 1.0;
 
-        if (isnan (shader.display_midpoint) || isnan (shader.display_range))
+        if (isnan (display_midpoint) || isnan (display_range))
           reset_windowing();
 
         glTexImage3D (GL_TEXTURE_3D, 0, internal_format, xdim, ydim, 1, 0, format, type, data);
@@ -395,7 +395,7 @@ namespace MR
 
       inline void Image::update_texture3D ()
       {
-        std::string cmap_name = ColourMap::maps[shader.colourmap()].name;
+        std::string cmap_name = ColourMap::maps[colourmap()].name;
 
         if (cmap_name == "RGB") format = GL_RGB;
         else if (cmap_name == "Complex") format = GL_RG;
@@ -509,7 +509,7 @@ namespace MR
         else 
           copy_texture_3D_complex();
 
-        if (isnan (shader.display_midpoint) || isnan (shader.display_range))
+        if (isnan (display_midpoint) || isnan (display_range))
           reset_windowing();
 
       }

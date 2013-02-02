@@ -30,7 +30,6 @@
 #include "image/voxel.h"
 #include "math/versor.h"
 #include "image/interp/linear.h"
-#include "gui/mrview/shader.h"
 
 
 namespace MR
@@ -72,8 +71,8 @@ namespace MR
           void render3D_pre (const Projection& transform, float depth);
           void render3D_slice (float offset);
           void render3D_post () {
-            shader.stop(); 
-            if (shader.use_lighting())
+            stop();
+            if (use_lighting())
               glDisable (GL_LIGHTING);
           }
 

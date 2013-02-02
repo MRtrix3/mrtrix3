@@ -16,8 +16,6 @@
 #include "gui/dialog/file.h"
 #include "gui/dialog/opengl.h"
 #include "gui/dialog/image_properties.h"
-#include "gui/mrview/window.h"
-#include "gui/mrview/shader.h"
 #include "gui/mrview/mode/base.h"
 #include "gui/mrview/mode/list.h"
 #include "gui/mrview/tool/base.h"
@@ -693,14 +691,14 @@ namespace MR
       void Window::invert_colourmap_slot () 
       {
         if (image()) {
-          image()->shader.set_invert_map (invert_colourmap_action->isChecked());
+          image()->set_invert_map (invert_colourmap_action->isChecked());
           glarea->updateGL();
         }
       }
       void Window::invert_scaling_slot ()
       {
         if (image()) {
-          image()->shader.set_invert_scale (invert_scale_action->isChecked());
+          image()->set_invert_scale (invert_scale_action->isChecked());
           glarea->updateGL();
         }
       }
@@ -853,11 +851,11 @@ namespace MR
         image_interpolate_action->setChecked (image()->interpolate());
         size_t cmap_index = image()->colourmap();
         colourmap_group->actions()[cmap_index]->setChecked (true);
-        invert_scale_action->setChecked (image()->shader.scale_inverted());
-        invert_colourmap_action->setChecked (image()->shader.colourmap_inverted());
+        invert_scale_action->setChecked (image()->scale_inverted());
+        invert_colourmap_action->setChecked (image()->colourmap_inverted());
         setWindowTitle (image()->interp.name().c_str());
         set_image_navigation_menu();
-        image()->shader.set_allowed_features (
+        image()->set_allowed_features (
             mode->features & Mode::ShaderThreshold,
             mode->features & Mode::ShaderTransparency,
             mode->features & Mode::ShaderLighting);
@@ -967,7 +965,7 @@ namespace MR
         if (!mode_action_group->checkedAction()->isEnabled())
           mode_action_group->actions()[0]->setChecked (true);
         if (image()) 
-          image()->shader.set_allowed_features (
+          image()->set_allowed_features (
               mode->features & Mode::ShaderThreshold,
               mode->features & Mode::ShaderTransparency,
               mode->features & Mode::ShaderLighting);

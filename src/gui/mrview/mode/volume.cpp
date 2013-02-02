@@ -130,15 +130,15 @@ namespace MR
 
           image()->update_texture3D();
 
-          if (isnan (image()->shader.transparent_intensity) || 
-              isnan (image()->shader.opaque_intensity)) {
+          if (isnan (image()->transparent_intensity) ||
+              isnan (image()->opaque_intensity)) {
             float range = image()->intensity_max() - image()->intensity_min();
-            image()->shader.transparent_intensity = image()->intensity_min() + 0.025 * range;
-            image()->shader.opaque_intensity = image()->intensity_min() + 0.475 * range;
-            image()->shader.alpha = 1.0;
+            image()->transparent_intensity = image()->intensity_min() + 0.025 * range;
+            image()->opaque_intensity = image()->intensity_min() + 0.475 * range;
+            image()->alpha = 1.0;
           }
 
-          image()->shader.set_use_transparency (true);
+          image()->set_use_transparency (true);
 
           glEnable (GL_BLEND);
           glBlendFunc (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);

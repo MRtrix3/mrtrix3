@@ -29,6 +29,8 @@
 #include "gui/mrview/window.h"
 #include "gui/projection.h"
 #include "dwi/tractography/file.h"
+#include "dwi/tractography/scalar_file.h"
+
 
 
 const size_t MAX_BUFFER_SIZE = 2796200;  // number of points to fill 32MB
@@ -41,110 +43,257 @@ namespace MR
     {
       namespace Tool
       {
-
-        Tractogram::Tractogram (Window& window, Tractography& tool, const std::string& filename) :
-          Displayable (filename),
-          window (window),
-          tool (tool),
-          filename (filename),
-          use_default_line_thickness (true),
-          line_thickness (1.0),
-          scalar_filename ("")
-        {
-          load_tracks();
-        }
-
-
-        Tractogram::~Tractogram ()
-        {
-          glDeleteBuffers (vertex_buffers.size(), &vertex_buffers[0]);
-          glDeleteVertexArrays (vertex_array_objects.size(), &vertex_array_objects[0]);
-        }
-
-
-        void Tractogram::render2D (const Projection& transform)
+        namespace Tractography
         {
 
-          if (tool.do_crop_to_slab() && tool.get_slab_thickness() <= 0.0)
-            return;
+          Tractogram::Tractogram (Window& window, Tractography& tool, const std::string& filename) :
+            Displayable (filename),
+            window (window),
+            tool (tool),
+            filename (filename),
+            use_default_line_thickness (true),
+            line_thickness (1.0),
+            scalar_filename (""),
+            tck_scalar_max (0.0),
+            tck_scalar_min (std::numeric_limits<float>::max()),
+            do_crop_to_slab (true),
+            color_type (Direction) {}
 
-          if (tool.do_shader_update() || !shader) {
-            shader.set_crop_to_slab (tool.do_crop_to_slab());
-            shader.recompile();
-            tool.set_shader_update (false);
+
+          Tractogram::~Tractogram ()
+          {
+            if (vertex_buffers.size())
+              glDeleteBuffers (vertex_buffers.size(), &vertex_buffers[0]);
+            if (vertex_array_objects.size())
+              glDeleteVertexArrays (vertex_array_objects.size(), &vertex_array_objects[0]);
+            if (scalar_buffers.size())
+              glDeleteBuffers (scalar_buffers.size(), &scalar_buffers[0]);
           }
 
-          shader.start (transform);
 
-          if (tool.do_crop_to_slab()) {
-            glUniform3f (shader.get_uniform ("screen_normal"), 
-                transform.screen_normal()[0], transform.screen_normal()[1], transform.screen_normal()[2]);
-            glUniform1f (shader.get_uniform ("crop_var"),
-                window.focus().dot(transform.screen_normal()) - tool.get_slab_thickness() / 2);
-            glUniform1f (shader.get_uniform ("slab_width"), 
-                tool.get_slab_thickness());
+          void Tractogram::render2D (const Projection& transform)
+          {
+
+            if (tool.do_crop_to_slab() && tool.get_slab_thickness() <= 0.0)
+              return;
+
+            if (tool.do_shader_update() || !(this)) {
+              set_crop_to_slab (tool.do_crop_to_slab());
+              recompile();
+              tool.set_shader_update (false);
+            }
+
+            start (transform);
+
+            if (tool.do_crop_to_slab()) {
+              glUniform3f (get_uniform ("screen_normal"),
+                  transform.screen_normal()[0], transform.screen_normal()[1], transform.screen_normal()[2]);
+              glUniform1f (get_uniform ("crop_var"),
+                  window.focus().dot(transform.screen_normal()) - tool.get_slab_thickness() / 2);
+              glUniform1f (get_uniform ("slab_width"),
+                  tool.get_slab_thickness());
+            }
+
+            glShadeModel(GL_SMOOTH);
+            if (tool.get_opacity() < 1.0) {
+              glEnable (GL_BLEND);
+              glDisable (GL_DEPTH_TEST);
+              glDepthMask (GL_FALSE);
+              glBlendEquation (GL_FUNC_ADD);
+              glBlendFunc (GL_CONSTANT_ALPHA, GL_ONE);
+              glBlendColor (1.0, 1.0, 1.0, tool.get_opacity());
+            } else {
+              glEnable (GL_DEPTH_TEST);
+              glDepthMask (GL_TRUE);
+            }
+
+            if (use_default_line_thickness)
+              glLineWidth (tool.get_line_thickness());
+            else
+              glLineWidth (line_thickness);
+
+            for (size_t buf = 0; buf < vertex_buffers.size(); ++buf) {
+              glBindVertexArray (vertex_array_objects[buf]);
+              glMultiDrawArrays (GL_LINE_STRIP, &track_starts[buf][0], &track_sizes[buf][0], num_tracks_per_buffer[buf]);
+            }
+
+            if (tool.get_opacity() < 1.0) {
+              glDisable (GL_BLEND);
+              glEnable (GL_DEPTH_TEST);
+              glDepthMask (GL_TRUE);
+            }
+            stop();
           }
 
-          glShadeModel(GL_SMOOTH);
-          if (tool.get_opacity() < 1.0) {
-            glEnable (GL_BLEND);
-            glDisable (GL_DEPTH_TEST);
-            glDepthMask (GL_FALSE);
-            glBlendEquation (GL_FUNC_ADD);
-            glBlendFunc (GL_CONSTANT_ALPHA, GL_ONE);
-            glBlendColor (1.0, 1.0, 1.0, tool.get_opacity());
-          } else {
-            glEnable (GL_DEPTH_TEST);
-            glDepthMask (GL_TRUE);
+
+          void Tractogram::render3D ()
+          {
+
           }
 
-          if (use_default_line_thickness)
-            glLineWidth (tool.get_line_thickness());
-          else
-            glLineWidth (line_thickness);
 
-          for (size_t buf = 0; buf < vertex_buffers.size(); ++buf) {
-            glBindVertexArray (vertex_array_objects[buf]);
-            glMultiDrawArrays (GL_LINE_STRIP, &track_starts[buf][0], &track_sizes[buf][0], num_tracks_per_buffer[buf]);
+          bool Tractogram::load_tracks()
+          {
+            try {
+              DWI::Tractography::Properties properties;
+              DWI::Tractography::Reader<float> file (filename, properties);
+              std::vector<Point<float> > tck;
+              std::vector<Point<float> > buffer;
+              std::vector<GLint> starts;
+              std::vector<GLint> sizes;
+              size_t tck_count = 0;
+
+              while (file.next (tck)) {
+                starts.push_back (buffer.size());
+                buffer.push_back (Point<float>());
+                buffer.insert (buffer.end(), tck.begin(), tck.end());
+                sizes.push_back(tck.size());
+                tck_count++;
+                if (buffer.size() >= MAX_BUFFER_SIZE)
+                  load_tracks_onto_GPU (buffer, starts, sizes, tck_count);
+              }
+              if (buffer.size())
+                load_tracks_onto_GPU (buffer, starts, sizes, tck_count);
+              file.close();
+            } catch (Exception& e) {
+              e.display();
+              return false;
+            }
+            return true;
           }
 
-          if (tool.get_opacity() < 1.0) {
-            glDisable (GL_BLEND);
-            glEnable (GL_DEPTH_TEST);
-            glDepthMask (GL_TRUE);
+
+          bool Tractogram::load_track_scalars (std::string filename)
+          {
+            scalar_filename = filename;
+
+            // free any previously loaded scalar data
+            if (scalar_buffers.size()) {
+              glDeleteBuffers (scalar_buffers.size(), &scalar_buffers[0]);
+              scalar_buffers.clear();
+            }
+
+            DWI::Tractography::Properties scalar_properties;
+            DWI::Tractography::ScalarReader<float> file (scalar_filename, scalar_properties);
+//            if (scalar_properties.timestamp != properties.timestamp) {
+//              QMessageBox msgBox;
+//              msgBox.setText("The scalar track file does not match the selected tractogram   ");
+//              msgBox.exec();
+//              return false;
+//            }
+            std::vector<float> tck_scalar;
+            std::vector<float > buffer;
+
+            while (file.next (tck_scalar)) {
+              buffer.push_back (NAN);
+              for (size_t i = 0; i < tck_scalar.size(); ++i) {
+                buffer.push_back (tck_scalar[i]);
+                if (tck_scalar[i] > tck_scalar_max) tck_scalar_max = tck_scalar[i];
+                if (tck_scalar[i] < tck_scalar_min) tck_scalar_min = tck_scalar[i];
+              }
+              if (buffer.size() >= MAX_BUFFER_SIZE)
+                load_scalars_onto_GPU (buffer);
+            }
+            if (buffer.size())
+              load_scalars_onto_GPU (buffer);
+            file.close();
+            this->set_windowing (tck_scalar_min, tck_scalar_max);
+            return true;
           }
-          shader.stop();
+
+
+          void Tractogram::recompile ()
+          {
+
+            if (shader_program)
+              shader_program.clear();
+
+            std::string vertex_shader_code =
+                "layout (location = 0) in vec3 vertexPosition_modelspace;\n"
+                "layout (location = 1) in vec3 previousVertex;\n"
+                "layout (location = 2) in vec3 nextVertex;\n"
+                "out vec3 fragmentColour;\n"
+                "uniform mat4 MVP;\n"
+                "vec3 color;\n";
+
+            if (color_type == ScalarFile)
+              vertex_shader_code += "layout (location = 3) in float amp;\n"
+                                    "uniform float offset, scale;\n";
+
+            if (do_crop_to_slab) {
+              vertex_shader_code +=
+                  "out float include;\n"
+                  "uniform vec3 screen_normal;\n"
+                  "uniform float crop_var;\n"
+                  "uniform float slab_width;\n";
+            }
+
+            vertex_shader_code +=
+                "void main() {\n"
+                "  gl_Position =  MVP * vec4(vertexPosition_modelspace,1);\n";
+
+            switch (color_type) {
+              case Direction:
+                vertex_shader_code +=
+                  "  if (isnan (previousVertex.x))\n"
+                  "    color = nextVertex - vertexPosition_modelspace;\n"
+                  "  else if (isnan (nextVertex.x))\n"
+                  "    color = vertexPosition_modelspace - previousVertex;\n"
+                  "  else\n"
+                  "    color = nextVertex - previousVertex;\n"
+                  "  color = normalize (abs (color));\n";
+                break;
+              case Colour:
+                vertex_shader_code +=
+                    "  color = vec3(" + str(colour[0]) + ", " + str(colour[1]) + ", " + str(colour[2]) + ");\n";
+                break;
+              case ScalarFile:
+                vertex_shader_code += "  float amplitude = amp;\n";
+                if (!ColourMap::maps[colourmap_index].special) {
+                  vertex_shader_code += "  amplitude = clamp (";
+                  if (flags_ & InvertScale) vertex_shader_code += "1.0 -";
+                  vertex_shader_code += " scale * (amplitude - offset), 0.0, 1.0);\n  ";
+                }
+                vertex_shader_code += ColourMap::maps[colourmap_index].mapping;
+
+                break;
+              default:
+                assert(0);
+                break;
+            }
+
+            if (do_crop_to_slab)
+              vertex_shader_code +=
+                  "  include = (dot (vertexPosition_modelspace, screen_normal) - crop_var) / slab_width;\n";
+
+            vertex_shader_code += "  fragmentColour = color;\n}\n";
+
+            std::string fragment_shader_code =
+                "in vec3 fragmentColour;\n"
+                "in float include; \n"
+                "out vec3 color;\n"
+                "void main(){\n";
+            if (do_crop_to_slab) {
+              fragment_shader_code +=
+                  "  if (include < 0 || include > 1) \n"
+                  "    discard; \n";
+            }
+
+            fragment_shader_code +=
+                "  color = normalize (fragmentColour);\n"
+                "}\n";
+
+
+
+            GL::Shader::Vertex vertex_shader (vertex_shader_code);
+            GL::Shader::Fragment fragment_shader (fragment_shader_code);
+            shader_program.attach (vertex_shader);
+            shader_program.attach (fragment_shader);
+            shader_program.link();
+
+          }
+
         }
-
-        void Tractogram::render3D ()
-        {
-
-        }
-
-
-        void Tractogram::load_tracks()
-        {
-          DWI::Tractography::Reader<float> file (filename, properties);
-          std::vector<Point<float> > tck;
-          std::vector<Point<float> > buffer;
-          std::vector<GLint> starts;
-          std::vector<GLint> sizes;
-          size_t tck_count = 0;
-
-          while (file.next (tck)) {
-            starts.push_back (buffer.size());
-            buffer.push_back (Point<float>());
-            buffer.insert (buffer.end(), tck.begin(), tck.end());
-            sizes.push_back(tck.size());
-            tck_count++;
-            if (buffer.size() >= MAX_BUFFER_SIZE)
-              load_data_into_GPU_buffer (buffer, starts, sizes, tck_count);
-          }
-          if (buffer.size())
-            load_data_into_GPU_buffer (buffer, starts, sizes, tck_count);
-          file.close();
-        }
-
       }
     }
   }
