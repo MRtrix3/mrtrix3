@@ -41,12 +41,8 @@ namespace MR
         Displayable (image_header.name()),
         buffer (image_header),
         interp (buffer),
-        texture3D_ID (0),
-        position (header().ndim()),
-        vertex_buffer_ID (0),
-        vertex_array_object_ID (0)
+        position (header().ndim())
       {
-        texture2D_ID[0] = texture2D_ID[1] = texture2D_ID[2] = 0;
         position[0] = position[1] = position[2] = std::numeric_limits<ssize_t>::min();
         set_colourmap (guess_colourmap ());
       }
@@ -57,12 +53,8 @@ namespace MR
         Displayable (window, image_header.name()),
         buffer (image_header),
         interp (buffer),
-        texture3D_ID (0),
-        position (image_header.ndim()),
-        vertex_buffer_ID (0),
-        vertex_array_object_ID (0)
+        position (image_header.ndim())
       {
-        texture2D_ID[0] = texture2D_ID[1] = texture2D_ID[2] = 0;
         position[0] = position[1] = position[2] = std::numeric_limits<ssize_t>::min();
         set_colourmap (guess_colourmap ());
         setCheckable (true);
@@ -73,18 +65,6 @@ namespace MR
         connect (this, SIGNAL(scalingChanged()), &window, SLOT(on_scaling_changed()));
       }
 
-
-      Image::~Image ()
-      {
-        if (texture2D_ID[0]) 
-          glDeleteTextures (3, texture2D_ID);
-        if (texture3D_ID)
-          glDeleteTextures (1, &texture3D_ID);
-        if (vertex_buffer_ID)
-          glDeleteBuffers (1, &vertex_buffer_ID);
-        if (vertex_array_object_ID)
-          glDeleteVertexArrays (1, &vertex_array_object_ID);
-      }
 
 
 
@@ -111,15 +91,15 @@ namespace MR
 
       inline void Image::draw_vertices (const Point<float>* vertices)
       {
-        if (!vertex_buffer_ID || !vertex_array_object_ID) {
-          assert (vertex_buffer_ID == 0);
-          assert (vertex_array_object_ID == 0);
+        if (!vertex_buffer || !vertex_array_object) {
+          assert (!vertex_buffer_ID);
+          assert (!vertex_array_object_ID);
 
-          glGenBuffers (1, &vertex_buffer_ID);
-          glGenVertexArrays (1, &vertex_array_object_ID);
+          vertex_buffer.gen();
+          vertex_array_object.gen();
 
-          glBindBuffer (GL_ARRAY_BUFFER, vertex_buffer_ID);
-          glBindVertexArray (vertex_array_object_ID);
+          vertex_buffer.bind (GL_ARRAY_BUFFER);
+          vertex_array_object.bind();
 
           glEnableVertexAttribArray (0);
           glVertexAttribPointer (0, 3, GL_FLOAT, GL_FALSE, 2*sizeof(Point<float>), (void*)0);
@@ -128,8 +108,8 @@ namespace MR
           glVertexAttribPointer (1, 3, GL_FLOAT, GL_FALSE, 2*sizeof(Point<float>), (void*)(sizeof(Point<float>)));
         }
         else {
-          glBindBuffer (GL_ARRAY_BUFFER, vertex_buffer_ID);
-          glBindVertexArray (vertex_array_object_ID);
+          vertex_buffer.bind (GL_ARRAY_BUFFER);
+          vertex_array_object.bind();
         }
 
         glBufferData (GL_ARRAY_BUFFER, 8*sizeof(Point<float>), &vertices[0][0], GL_STREAM_DRAW);
@@ -253,15 +233,15 @@ namespace MR
 
       inline void Image::update_texture2D (int plane, int slice)
       {
-        if (!texture2D_ID[plane]) { // allocate:
-          glGenTextures (1, &texture2D_ID[plane]);
-          assert (texture2D_ID[plane]);
-          glBindTexture (GL_TEXTURE_3D, texture2D_ID[plane]);
+        if (!texture2D[plane]) { // allocate:
+          texture2D[plane].gen();
+          texture2D[plane].bind (GL_TEXTURE_3D);
           glTexParameteri (GL_TEXTURE_3D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
           glTexParameteri (GL_TEXTURE_3D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
           glTexParameteri (GL_TEXTURE_3D, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
         }
-        glBindTexture (GL_TEXTURE_3D, texture2D_ID[plane]);
+        else
+          texture2D[plane].bind (GL_TEXTURE_3D);
         glPixelStorei (GL_UNPACK_ALIGNMENT, 1);
 
         if (position[plane] == slice && volume_unchanged())
@@ -448,23 +428,23 @@ namespace MR
 
 
         if (volume_unchanged() && texture_mode_3D_unchanged) {
-          glBindTexture (GL_TEXTURE_3D, texture3D_ID);
+          texture3D.bind (GL_TEXTURE_3D);
           return;
         }
 
-        if (!texture3D_ID) { // allocate:
-          glGenTextures (1, &texture3D_ID);
-          assert (texture3D_ID);
-          glBindTexture (GL_TEXTURE_3D, texture3D_ID);
+        if (!texture3D) { // allocate:
+          texture3D.gen();
+          texture3D.bind (GL_TEXTURE_3D);
           glTexParameteri (GL_TEXTURE_3D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
           glTexParameteri (GL_TEXTURE_3D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
           glTexParameteri (GL_TEXTURE_3D, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
           DEBUG_OPENGL;
         }
+        else 
+          texture3D.bind (GL_TEXTURE_3D);
 
         texture_mode_3D_unchanged = true;
 
-        glBindTexture (GL_TEXTURE_3D, texture3D_ID);
         glPixelStorei (GL_UNPACK_ALIGNMENT, 1);
 
         DEBUG_OPENGL;

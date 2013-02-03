@@ -49,21 +49,10 @@ namespace MR
       class Renderer
       {
         public:
-          Renderer () :
-            num_indices (0), 
-            vertex_buffer_ID (0), 
-            surface_buffer_ID (0), 
-            index_buffer_ID (0),
-            vertex_array_object_ID (0) { }
+          Renderer () : num_indices (0) { }
 
-          ~Renderer ();
-
-          bool ready () const {
-            return shader_program;
-          }
-
+          bool ready () const { return shader_program; }
           void initGL ();
-
           void update_mesh (int LOD, int lmax);
 
           void compute_r_del_daz (Math::Matrix<float>& r_del_daz, const Math::Matrix<float>& SH) const {
@@ -82,7 +71,7 @@ namespace MR
 
           void set_data (const Math::Vector<float>& r_del_daz, int buffer_ID = 0) const {
             assert (r_del_daz.stride() == 1);
-            glBindBuffer (GL_ARRAY_BUFFER, surface_buffer_ID);
+            surface_buffer.bind (GL_ARRAY_BUFFER);
             glBufferData (GL_ARRAY_BUFFER, r_del_daz.size()*sizeof(float), &r_del_daz[0], GL_STREAM_DRAW);
             glVertexAttribPointer (1, 3, GL_FLOAT, GL_FALSE, 3*sizeof(GLfloat), (void*)0);
           }
@@ -124,7 +113,8 @@ namespace MR
 
           size_t num_indices;
           GL::Shader::Program shader_program;
-          GLuint vertex_buffer_ID, surface_buffer_ID, index_buffer_ID, vertex_array_object_ID;
+          GL::VertexBuffer vertex_buffer, surface_buffer, index_buffer;
+          GL::VertexArrayObject vertex_array_object;
           mutable GLuint reverse_ID, origin_ID;
       };
 

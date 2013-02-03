@@ -24,8 +24,10 @@
 #define __gui_mrview_tool_overlay_h__
 
 #include "gui/mrview/tool/base.h"
+#include "gui/mrview/adjust_button.h"
 
 class QStringListModel;
+class QSlider;
 
 namespace MR
 {
@@ -44,14 +46,21 @@ namespace MR
 
             Overlay (Window& main_window, Dock* parent);
 
+            void draw2D (const Projection& projection);
+            void draw3D (const Projection& projection);
+
           private slots:
             void image_open_slot ();
             void image_close_slot ();
+            void update_slot ();
+            void update_slot (int unused);
 
           protected:
              class Model;
              Model* image_list_model;
              QListView* image_list_view;
+             QSlider *opacity;
+             AdjustButton *min_value, *max_value, *threshold_lower, *threshold_upper;
         };
 
       }

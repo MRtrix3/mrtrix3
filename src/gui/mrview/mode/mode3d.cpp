@@ -88,7 +88,6 @@ namespace MR
           // set up OpenGL environment:
           glDisable (GL_BLEND);
           glEnable (GL_TEXTURE_3D);
-          glShadeModel (GL_FLAT);
           glDisable (GL_DEPTH_TEST);
           glTexEnvf (GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
           glDepthMask (GL_FALSE);

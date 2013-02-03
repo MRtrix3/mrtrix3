@@ -203,11 +203,16 @@ namespace MR
 
           void Tractography::tractogram_open_slot ()
           {
-            Dialog::File dialog (this, "Select tractograms to open", true, false);
-            if (dialog.exec()) {
-              std::vector<std::string> list;
-              dialog.get_selection (list);
-              tractogram_list_model->add_items (list, window,  *this);
+            try {
+              Dialog::File dialog (this, "Select tractograms to open", true, false);
+              if (dialog.exec()) {
+                std::vector<std::string> list;
+                dialog.get_selection (list);
+                tractogram_list_model->add_items (list, window,  *this);
+              }
+            }
+            catch (Exception& E) {
+              E.display();
             }
           }
 
@@ -243,13 +248,13 @@ namespace MR
 
 
           void Tractography::opacity_slot (int opacity) {
-            line_opacity = Math::pow2(static_cast<float>(opacity)) / 1e6;
+            line_opacity = Math::pow2(static_cast<float>(opacity)) / 1.0e6f;
             window.updateGL();
           }
 
 
           void Tractography::line_thickness_slot (int thickness) {
-            line_thickness = static_cast<float>(thickness) / 100.0;
+            line_thickness = static_cast<float>(thickness) / 100.0f;
             window.updateGL();
           }
 

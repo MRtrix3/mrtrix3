@@ -39,10 +39,7 @@ namespace MR
         public:
           Font (const QFont& font) :
             metric (font),
-            font (font),
-            tex_ID (0),
-            vertex_array_object_ID (0) { } 
-          ~Font ();
+            font (font) { } 
 
           void initGL ();
 
@@ -73,7 +70,9 @@ namespace MR
 
         protected:
           const QFont& font;
-          GLuint tex_ID, vertex_buffer_ID[2], vertex_array_object_ID;
+          GL::Texture tex;
+          GL::VertexBuffer vertex_buffer[2];
+          GL::VertexArrayObject vertex_array_object;
           GL::Shader::Program program;
           int font_width[256], font_height;
           float font_tex_pos[256], font_tex_width[256];

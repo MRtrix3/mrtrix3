@@ -53,8 +53,6 @@ namespace MR
           Image (const MR::Image::Header& image_header);
           Image (Window& parent, const MR::Image::Header& image_header);
 
-          ~Image ();
-
           MR::Image::Header& header () {
             return buffer;
           }
@@ -129,11 +127,12 @@ namespace MR
           }
 
         private:
-          GLuint texture2D_ID[3], texture3D_ID;
+          GL::Texture texture2D[3], texture3D;
+          GL::VertexBuffer vertex_buffer;
+          GL::VertexArrayObject vertex_array_object;
           float windowing_scale_3D;
           GLenum type, format, internal_format;
           std::vector<ssize_t> position;
-          GLuint vertex_buffer_ID, vertex_array_object_ID;
 
           Point<> pos[4], tex[4], z, im_z;
 

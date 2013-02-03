@@ -184,18 +184,6 @@ namespace MR
       }
 
 
-      Renderer::~Renderer () 
-      {
-        if (vertex_buffer_ID)
-          glDeleteBuffers (1, &vertex_buffer_ID);
-        if (surface_buffer_ID)
-          glDeleteBuffers (1, &surface_buffer_ID);
-        if (index_buffer_ID)
-          glDeleteBuffers (1, &index_buffer_ID);
-        if (vertex_array_object_ID)
-          glDeleteVertexArrays (1, &vertex_array_object_ID);
-      }
-
 
 
       void Renderer::initGL ()
@@ -206,21 +194,21 @@ namespace MR
         shader_program.attach (fragment_shader);
         shader_program.link();
 
-        glGenBuffers (1, &vertex_buffer_ID);
-        glGenBuffers (1, &surface_buffer_ID);
-        glGenBuffers (1, &index_buffer_ID);
-        glGenVertexArrays (1, &vertex_array_object_ID);
-        glBindVertexArray (vertex_array_object_ID);
+        vertex_buffer.gen();
+        surface_buffer.gen();
+        index_buffer.gen();
+        vertex_array_object.gen();
+        vertex_array_object.bind();
 
-        glBindBuffer (GL_ARRAY_BUFFER, vertex_buffer_ID);
+        vertex_buffer.bind (GL_ARRAY_BUFFER);
         glEnableVertexAttribArray (0);
         glVertexAttribPointer (0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)0);
 
-        glBindBuffer (GL_ARRAY_BUFFER, surface_buffer_ID);
+        surface_buffer.bind (GL_ARRAY_BUFFER);
         glEnableVertexAttribArray (1);
         glVertexAttribPointer (1, 3, GL_FLOAT, GL_FALSE, 3*sizeof(GLfloat), (void*)0);
 
-        glBindBuffer (GL_ELEMENT_ARRAY_BUFFER, index_buffer_ID);
+        index_buffer.bind (GL_ELEMENT_ARRAY_BUFFER);
       }
 
 
@@ -230,7 +218,7 @@ namespace MR
       void Renderer::start (const Projection& projection, const GL::Lighting& lighting, float scale, 
           bool use_lighting, bool color_by_direction, bool hide_neg_lobes) const
       {
-        glBindVertexArray (vertex_array_object_ID);
+        vertex_array_object.bind();
         shader_program.start();
 
         glUniformMatrix4fv (glGetUniformLocation (shader_program, "MV"), 1, GL_FALSE, projection.modelview());
@@ -310,11 +298,11 @@ namespace MR
 
         update_transform (vertices, lmax);
 
-        glBindBuffer (GL_ARRAY_BUFFER, vertex_buffer_ID);
+        vertex_buffer.bind (GL_ARRAY_BUFFER);
         glBufferData (GL_ARRAY_BUFFER, vertices.size()*sizeof(Vertex), &vertices[0][0], GL_STATIC_DRAW);
 
         num_indices = 3*indices.size();
-        glBindBuffer (GL_ELEMENT_ARRAY_BUFFER, index_buffer_ID);
+        index_buffer.bind (GL_ELEMENT_ARRAY_BUFFER);
         glBufferData (GL_ELEMENT_ARRAY_BUFFER, indices.size()*sizeof(Triangle), &indices[0], GL_STATIC_DRAW);
 
         QApplication::restoreOverrideCursor();

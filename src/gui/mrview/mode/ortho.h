@@ -40,8 +40,10 @@ namespace MR
             Q_OBJECT
 
           public:
-            Ortho (Window& parent);
-            virtual ~Ortho ();
+              Ortho (Window& parent) : 
+                Base (parent),
+                projections (3, projection),
+                current_plane (-1) { }
 
             virtual void paint ();
 
@@ -58,7 +60,8 @@ namespace MR
 
             std::vector<Projection> projections;
             int current_plane;
-            GLuint vertex_buffer_ID, vertex_array_object_ID;
+            GL::VertexBuffer frame_VB;
+            GL::VertexArrayObject frame_VAO;
             GL::Shader::Program frame_program;
 
             void reset_view ();

@@ -26,11 +26,7 @@ namespace MR
       public:
         Projection (QGLWidget* parent, const GL::Font& font) : 
           glarea (parent), 
-          font (font),
-          crosshairs_VB (0),
-          crosshairs_VAO (0) { }
-
-        ~Projection();
+          font (font) { } 
 
         void set_viewport (int x, int y, int w, int h) {
           viewport[0] = x;
@@ -229,7 +225,8 @@ namespace MR
         const GL::Font& font;
         GL::mat4 MV, iMV, P, iP, MVP, iMVP;
         GLint viewport[4];
-        GLuint crosshairs_VB, crosshairs_VAO;
+        GL::VertexBuffer crosshairs_VB;
+        GL::VertexArrayObject crosshairs_VAO;
         GL::Shader::Program crosshairs_program;
     };
 

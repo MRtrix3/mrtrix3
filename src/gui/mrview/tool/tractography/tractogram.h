@@ -116,8 +116,6 @@ namespace MR
               bool use_default_line_thickness;
               float line_thickness;
               std::string scalar_filename;
-              GLint scalar_file_buffer;
-              GLint scalar_file_array_object;
               float tck_scalar_max;
               float tck_scalar_min;
 

@@ -52,7 +52,6 @@ namespace MR
 
         public:
           RenderFrame (QWidget* parent);
-          ~RenderFrame ();
 
           GL::Lighting* lighting;
 
@@ -124,7 +123,8 @@ namespace MR
           GLubyte* framebuffer;
           int OS, OS_x, OS_y;
 
-          GLuint vertex_buffer_ID, vertex_array_object_ID;
+          GL::VertexBuffer axes_VB;
+          GL::VertexArrayObject axes_VAO;
           GL::Shader::Program axes_shader;
 
           Renderer renderer;

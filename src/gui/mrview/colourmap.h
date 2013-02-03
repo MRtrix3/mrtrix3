@@ -106,12 +106,11 @@ namespace MR
         class Renderer {
           public:
             Renderer();
-            ~Renderer();
-
             void render (const Projection& projection, const Displayable& object, int position);
 
           protected:
-            GLuint VB, VAO;
+            GL::VertexBuffer VB;
+            GL::VertexArrayObject VAO;
             GL::Shader::Program frame_program, program;
             size_t current_index;
             const GLfloat width, height, inset, text_offset;

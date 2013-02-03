@@ -27,6 +27,7 @@
 
 #include "glee.h"
 #include "mrtrix.h"
+#include "debug.h"
 
 
 namespace MR
@@ -39,6 +40,45 @@ namespace MR
       void init ();
 
       const char* ErrorString (GLenum errorcode);
+
+
+      class Texture {
+        public:
+          Texture () : id (0) { }
+          ~Texture () { clear(); }
+          operator GLuint () const { return id; }
+          void gen () { if (!id) glGenTextures (1, &id); }
+          void clear () { if (id) glDeleteTextures (1, &id); id = 0; }
+          void bind (GLenum target) const { assert (id); glBindTexture (target, id); }
+        protected:
+          GLuint id;
+      };
+
+
+      class VertexBuffer {
+        public:
+          VertexBuffer () : id (0) { }
+          ~VertexBuffer () { clear(); }
+          operator GLuint () const { return id; }
+          void gen () { if (!id) glGenBuffers (1, &id); }
+          void clear () { if (id) glDeleteBuffers (1, &id); id = 0; }
+          void bind (GLenum target) const { assert (id); glBindBuffer (target, id); }
+        protected:
+          GLuint id;
+      };
+
+
+      class VertexArrayObject {
+        public:
+          VertexArrayObject () : id (0) { }
+          ~VertexArrayObject () { clear(); }
+          operator GLuint () const { return id; }
+          void gen () { if (!id) glGenVertexArrays (1, &id); }
+          void clear () { if (id) glDeleteVertexArrays (1, &id); id = 0; }
+          void bind () const { assert (id); glBindVertexArray (id); }
+        protected:
+          GLuint id;
+      };
 
     }
   }

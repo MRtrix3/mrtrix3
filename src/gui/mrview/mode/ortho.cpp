@@ -36,21 +36,6 @@ namespace MR
       namespace Mode
       {
 
-        Ortho::Ortho (Window& parent) : 
-          Base (parent),
-          projections (3, projection),
-          current_plane (-1),
-          vertex_buffer_ID (0),
-          vertex_array_object_ID (0) {
-          }
-
-        Ortho::~Ortho () { 
-          if (vertex_buffer_ID)
-            glDeleteBuffers (1, &vertex_buffer_ID);
-          if (vertex_array_object_ID)
-            glDeleteVertexArrays (1, &vertex_array_object_ID);
-        }
-
 
 
 
@@ -79,12 +64,12 @@ namespace MR
           glColor4f (0.1, 0.1, 0.1, 1.0);
           glLineWidth (2.0);
 
-          if (!vertex_buffer_ID || !vertex_array_object_ID) {
-            glGenBuffers (1, &vertex_buffer_ID);
-            glGenVertexArrays (1, &vertex_array_object_ID);
+          if (!frame_VB || !frame_VAO) {
+            frame_VB.gen();
+            frame_VAO.gen();
 
-            glBindBuffer (GL_ARRAY_BUFFER, vertex_buffer_ID);
-            glBindVertexArray (vertex_array_object_ID);
+            frame_VB.bind (GL_ARRAY_BUFFER);
+            frame_VAO.bind();
 
             glEnableVertexAttribArray (0);
             glVertexAttribPointer (0, 2, GL_FLOAT, GL_FALSE, 0, (void*)0);
@@ -98,7 +83,7 @@ namespace MR
             glBufferData (GL_ARRAY_BUFFER, sizeof(data), data, GL_STATIC_DRAW);
           }
           else 
-            glBindVertexArray (vertex_array_object_ID);
+            frame_VAO.bind();
 
           if (!frame_program) {
             GL::Shader::Vertex vertex_shader (

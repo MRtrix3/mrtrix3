@@ -60,20 +60,11 @@ namespace MR
         view_angle (40.0), distance (0.3), line_width (1.0), scale (1.0), 
         lmax_computed (0), lod_computed (0), recompute_mesh (true), recompute_amplitudes (true), 
         show_axes (true), hide_neg_lobes (true), color_by_dir (true), use_lighting (true), font (parent->font()), projection (this, font),
-        focus (0.0, 0.0, 0.0), framebuffer (NULL), OS (0), OS_x (0), OS_y (0), vertex_buffer_ID (0), vertex_array_object_ID (0)
+        focus (0.0, 0.0, 0.0), framebuffer (NULL), OS (0), OS_x (0), OS_y (0)
       {
         lighting = new GL::Lighting (this);
         lighting->set_background = true;
         connect (lighting, SIGNAL (changed()), this, SLOT (updateGL()));
-      }
-
-
-      RenderFrame::~RenderFrame ()
-      {
-        if (vertex_buffer_ID)
-          glDeleteBuffers (1, &vertex_buffer_ID);
-        if (vertex_array_object_ID)
-          glDeleteVertexArrays (1, &vertex_array_object_ID);
       }
 
 
@@ -97,10 +88,10 @@ namespace MR
         glClearColor (lighting->background_color[0], lighting->background_color[1], lighting->background_color[2], 0.0);
         glEnable (GL_DEPTH_TEST);
 
-        glGenBuffers (1, &vertex_buffer_ID);
-        glGenVertexArrays (1, &vertex_array_object_ID);
-        glBindBuffer (GL_ARRAY_BUFFER, vertex_buffer_ID);
-        glBindVertexArray (vertex_array_object_ID);
+        axes_VB.gen();
+        axes_VAO.gen();
+        axes_VB.bind (GL_ARRAY_BUFFER);
+        axes_VAO.bind();
         glEnableVertexAttribArray (0);
         glVertexAttribPointer (0, 3, GL_FLOAT, GL_FALSE, 6*sizeof(GLfloat), (void*)0);
 
@@ -219,7 +210,7 @@ namespace MR
           axes_shader.start();
           glUniform3fv (glGetUniformLocation (axes_shader, "origin"), 1, focus);
           glUniformMatrix4fv (glGetUniformLocation (axes_shader, "MVP"), 1, GL_FALSE, projection.modelview_projection());
-          glBindVertexArray (vertex_array_object_ID);
+          axes_VAO.bind();
           glDrawArrays (GL_LINES, 0, 6);
           axes_shader.stop();
 

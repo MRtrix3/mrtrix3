@@ -102,8 +102,6 @@ namespace MR
 
 
         Renderer::Renderer () : 
-          VB (0), 
-          VAO (0), 
           current_index (0),
           width (MR::File::Config::get_float ("MRViewColourBarWidth", 20.0f)), 
           height (MR::File::Config::get_float ("MRViewColourBarHeight", 100.0f)), 
@@ -112,15 +110,6 @@ namespace MR
 
 
 
-
-
-        Renderer::~Renderer () 
-        {
-          if (VB)
-            glDeleteBuffers (1, &VB);
-          if (VAO)
-            glDeleteVertexArrays (1, &VAO);
-        }
 
 
 
@@ -184,18 +173,18 @@ namespace MR
             setup (object.colourmap());
 
           if (!VB || !VAO) {
-            glGenBuffers (1, &VB);
-            glGenVertexArrays (1, &VAO);
+            VB.gen();
+            VAO.gen();
 
-            glBindBuffer (GL_ARRAY_BUFFER, VB);
-            glBindVertexArray (VAO);
+            VB.bind (GL_ARRAY_BUFFER);
+            VAO.bind();
 
             glEnableVertexAttribArray (0);
             glVertexAttribPointer (0, 3, GL_FLOAT, GL_FALSE, 0, (void*)0);
           }
           else {
-            glBindBuffer (GL_ARRAY_BUFFER, VB);
-            glBindVertexArray (VAO);
+            VB.bind (GL_ARRAY_BUFFER);
+            VAO.bind();
           }
 
 

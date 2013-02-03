@@ -28,35 +28,22 @@ namespace MR
   {
 
 
-    Projection::~Projection () 
-    {
-      if (crosshairs_VB)
-        glDeleteBuffers (1, &crosshairs_VB);
-      if (crosshairs_VAO)
-        glDeleteVertexArrays (1, &crosshairs_VAO);
-    }
-
-
-
-
-
-
 
     void Projection::render_crosshairs (const Point<>& focus)
     {
       if (!crosshairs_VB || !crosshairs_VAO) {
-        glGenBuffers (1, &crosshairs_VB);
-        glGenVertexArrays (1, &crosshairs_VAO);
+        crosshairs_VB.gen();
+        crosshairs_VAO.gen();
 
-        glBindBuffer (GL_ARRAY_BUFFER, crosshairs_VB);
-        glBindVertexArray (crosshairs_VAO);
+        crosshairs_VB.bind (GL_ARRAY_BUFFER);
+        crosshairs_VAO.bind();
 
         glEnableVertexAttribArray (0);
         glVertexAttribPointer (0, 2, GL_FLOAT, GL_FALSE, 0, (void*)0);
       }
       else {
-        glBindBuffer (GL_ARRAY_BUFFER, crosshairs_VB);
-        glBindVertexArray (crosshairs_VAO);
+        crosshairs_VB.bind (GL_ARRAY_BUFFER);
+        crosshairs_VAO.bind();
       }
 
       if (!crosshairs_program) {

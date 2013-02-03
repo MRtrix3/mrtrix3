@@ -46,8 +46,6 @@ namespace MR
         const int first_char = ' ', last_char = '~', default_char = '?';
         INFO ("loading font into OpenGL texture...");
 
-        vertex_buffer_ID[0] = vertex_buffer_ID[1] = 0;
-
         font_height = metric.height() + 2;
         const float max_font_width = metric.maxWidth() + 2;
 
@@ -130,23 +128,23 @@ namespace MR
           }
         }
 
-        glGenTextures (1, &tex_ID);
-        glBindTexture (GL_TEXTURE_2D, tex_ID);
+        tex.gen();
+        tex.bind (GL_TEXTURE_2D);
         glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
         glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
         glTexImage2D (GL_TEXTURE_2D, 0, GL_LUMINANCE_ALPHA, tex_width, font_height, 
             0, GL_LUMINANCE_ALPHA, GL_FLOAT, tex_data);
 
-        glGenBuffers (2, vertex_buffer_ID);
+        vertex_buffer[0].gen();
+        vertex_buffer[1].gen();
+        vertex_array_object.gen();
+        vertex_array_object.bind();
 
-        glGenVertexArrays (1, &vertex_array_object_ID);
-        glBindVertexArray (vertex_array_object_ID);
-
-        glBindBuffer (GL_ARRAY_BUFFER, vertex_buffer_ID[0]);
+        vertex_buffer[0].bind (GL_ARRAY_BUFFER);
         glEnableVertexAttribArray (0);
         glVertexAttribPointer (0, 2, GL_FLOAT, GL_FALSE, 0, (void*)0);
 
-        glBindBuffer (GL_ARRAY_BUFFER, vertex_buffer_ID[1]);
+        vertex_buffer[1].bind (GL_ARRAY_BUFFER);
         glEnableVertexAttribArray (1);
         glVertexAttribPointer (1, 2, GL_FLOAT, GL_FALSE, 0, (void*)0);
 
@@ -162,16 +160,6 @@ namespace MR
 
 
 
-
-        Font::~Font () 
-        {
-          if (tex_ID)
-            glDeleteTextures (1, &tex_ID);
-          if (vertex_buffer_ID[0])
-            glDeleteBuffers (2, vertex_buffer_ID);
-          if (vertex_array_object_ID)
-            glDeleteVertexArrays (1, &vertex_array_object_ID);
-        }
 
 
 
@@ -207,15 +195,15 @@ namespace MR
           }
 
 
-          glBindBuffer (GL_ARRAY_BUFFER, vertex_buffer_ID[0]);
+          vertex_buffer[0].bind (GL_ARRAY_BUFFER);
           glBufferData (GL_ARRAY_BUFFER, sizeof (screen_pos), screen_pos, GL_STREAM_DRAW);
 
-          glBindBuffer (GL_ARRAY_BUFFER, vertex_buffer_ID[1]);
+          vertex_buffer[1].bind (GL_ARRAY_BUFFER);
           glBufferData (GL_ARRAY_BUFFER, sizeof (tex_pos), tex_pos, GL_STREAM_DRAW);
 
-          glBindTexture (GL_TEXTURE_2D, tex_ID);
+          tex.bind (GL_TEXTURE_2D);
+          vertex_array_object.bind();
 
-          glBindVertexArray (vertex_array_object_ID);
           glDrawArrays (GL_QUADS, 0, 8*text.size());
         }
 
