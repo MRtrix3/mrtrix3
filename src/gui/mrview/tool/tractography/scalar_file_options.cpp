@@ -124,10 +124,15 @@ namespace MR
               std::vector<std::string> list;
               dialog.get_selection (list);
               CONSOLE(list[0]);
-              if (!tractogram->load_track_scalars (list[0])) {
-                button->setText (shorten (list[0], 20, 0).c_str());
-              } else {
-  //            lessthan->setValue (window.image() ? window.image()->intensity_min() : 0.0); TODO
+              try {
+                if (!tractogram->load_track_scalars (list[0])) {
+                  button->setText (shorten (list[0], 20, 0).c_str());
+                } else {
+                  //            lessthan->setValue (window.image() ? window.image()->intensity_min() : 0.0); TODO
+                }
+              }
+              catch (Exception& E) {
+                E.display();
               }
             }
 
