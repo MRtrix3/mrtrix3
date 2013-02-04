@@ -378,6 +378,7 @@ elif system == 'windows':
   exe_suffix = '.exe'
   lib_prefix = ''
   lib_suffix = '.dll'
+  ld_flags += [ '-Wl,--allow-multiple-definition' ]
 elif system == 'darwin':
   cpp_flags += [ '-DMACOSX', '-fPIC' ]
   ld_lib_flags += [ '-dynamiclib' ]
