@@ -184,13 +184,13 @@ namespace MR
           }
 
           void set_use_discard_upper (bool yesno) {
-            set_bit (DiscardLower | DiscardLowerOn, ( yesno && finite (lessthan) ));
+            set_bit (DiscardUpper | DiscardUpperOn, ( yesno && finite (greaterthan) ));
           }
 
           void set_use_thresholds (bool yesno) {
             uint32_t cmap = flags_;
             set_bit (cmap, DiscardLower | DiscardLowerOn, ( yesno && finite (lessthan) ));
-            set_bit (cmap, DiscardLower | DiscardLowerOn, ( yesno && finite (lessthan) ));
+            set_bit (cmap, DiscardUpper | DiscardUpperOn, ( yesno && finite (greaterthan) ));
             set (cmap);
           }
 

@@ -28,6 +28,7 @@
 
 class QStringListModel;
 class QSlider;
+class QCheckBox;
 
 namespace MR
 {
@@ -52,8 +53,14 @@ namespace MR
           private slots:
             void image_open_slot ();
             void image_close_slot ();
-            void update_slot ();
+            void toggle_shown_slot (const QModelIndex& index);
+            void selection_changed_slot (const QItemSelection &, const QItemSelection &);
             void update_slot (int unused);
+            void values_changed ();
+            void threshold_upper_changed (int unused);
+            void threshold_lower_changed (int unused);
+            void threshold_upper_value_changed ();
+            void threshold_lower_value_changed ();
 
           protected:
              class Model;
@@ -61,6 +68,9 @@ namespace MR
              QListView* image_list_view;
              QSlider *opacity;
              AdjustButton *min_value, *max_value, *threshold_lower, *threshold_upper;
+             QCheckBox *threshold_lower_box, *threshold_upper_box;
+
+             void update_selection ();
         };
 
       }

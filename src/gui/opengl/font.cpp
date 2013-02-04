@@ -166,10 +166,10 @@ namespace MR
 
         void Font::render (const std::string& text, int x, int y) const
         {
-          assert (tex_ID);
-          assert (vertex_buffer_ID[0]);
-          assert (vertex_buffer_ID[1]);
-          assert (vertex_array_object_ID);
+          assert (tex);
+          assert (vertex_buffer[0]);
+          assert (vertex_buffer[1]);
+          assert (vertex_array_object);
 
           GLfloat screen_pos [8*text.size()];
           GLfloat tex_pos [8*text.size()];

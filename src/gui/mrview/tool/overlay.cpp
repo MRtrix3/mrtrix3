@@ -22,6 +22,7 @@
 
 #include <QLabel>
 #include <QListView>
+#include <QCheckBox>
 #include <QStringListModel>
 
 #include "mrtrix.h"
@@ -58,7 +59,9 @@ namespace MR
         {
           beginInsertRows (QModelIndex(), items.size(), items.size()+list.size());
           for (size_t i = 0; i < list.size(); ++i) {
-            items.push_back (new Image (*list[i]));
+            Image* overlay = new Image (*list[i]);
+            overlay->set_allowed_features (true, false, false);
+            items.push_back (overlay);
             //setData (createIndex (images.size()-1,0), Qt::Checked, Qt::CheckStateRole);
           }
           shown.resize (items.size(), true);
@@ -89,8 +92,8 @@ namespace MR
 
             main_box->addLayout (layout, 0);
 
-            image_list_view = new QListView(this);
-            image_list_view->setSelectionMode (QAbstractItemView::MultiSelection);
+            image_list_view = new QListView (this);
+            image_list_view->setSelectionMode (QAbstractItemView::ExtendedSelection);
             image_list_view->setDragEnabled (true);
             image_list_view->viewport()->setAcceptDrops (true);
             image_list_view->setDropIndicatorShown (true);
@@ -104,26 +107,46 @@ namespace MR
 
             default_opt_grid->addWidget (new QLabel ("max value"), 0, 0);
             max_value = new AdjustButton (this, 0.1);
-            max_value->setValue (1.0f);
-            //max_value->setMin (0.0f);
-            connect (max_value, SIGNAL (valueChanged()), this, SLOT (update_slot()));
+            connect (max_value, SIGNAL (valueChanged()), this, SLOT (values_changed()));
             default_opt_grid->addWidget (max_value, 0, 1);
 
             default_opt_grid->addWidget (new QLabel ("min value"), 1, 0);
             min_value = new AdjustButton (this, 0.1);
-            min_value->setValue (0.0f);
-            //min_value->setMin (0.0f);
-            connect (min_value, SIGNAL (valueChanged()), this, SLOT (update_slot()));
+            connect (min_value, SIGNAL (valueChanged()), this, SLOT (values_changed()));
             default_opt_grid->addWidget (min_value, 1, 1);
+
+            threshold_upper_box = new QCheckBox ("upper threshold");
+            //threshold_upper_box->setTristate (true);
+            connect (threshold_upper_box, SIGNAL (stateChanged(int)), this, SLOT (threshold_upper_changed(int)));
+            default_opt_grid->addWidget (threshold_upper_box, 2, 0);
+            threshold_upper = new AdjustButton (this, 0.1);
+            connect (threshold_upper, SIGNAL (valueChanged()), this, SLOT (threshold_upper_value_changed()));
+            default_opt_grid->addWidget (threshold_upper, 2, 1);
+
+            threshold_lower_box = new QCheckBox ("lower threshold");
+            //threshold_lower_box->setTristate (true);
+            connect (threshold_lower_box, SIGNAL (stateChanged(int)), this, SLOT (threshold_lower_changed(int)));
+            default_opt_grid->addWidget (threshold_lower_box, 3, 0);
+            threshold_lower = new AdjustButton (this, 0.1);
+            connect (threshold_lower, SIGNAL (valueChanged()), this, SLOT (threshold_lower_value_changed()));
+            default_opt_grid->addWidget (threshold_lower, 3, 1);
 
             opacity = new QSlider (Qt::Horizontal);
             opacity->setRange (1,1000);
             opacity->setSliderPosition (int (1000));
             connect (opacity, SIGNAL (valueChanged (int)), this, SLOT (update_slot (int)));
-            default_opt_grid->addWidget (new QLabel ("opacity"), 2, 0);
-            default_opt_grid->addWidget (opacity, 2, 1);
+            default_opt_grid->addWidget (new QLabel ("opacity"), 4, 0);
+            default_opt_grid->addWidget (opacity, 4, 1);
 
             main_box->addLayout (default_opt_grid, 0);
+
+            connect (image_list_view->selectionModel(),
+                SIGNAL(selectionChanged(const QItemSelection &, const QItemSelection &)),
+                SLOT (selection_changed_slot(const QItemSelection &, const QItemSelection &)) );
+
+            connect (image_list_view, SIGNAL (clicked (const QModelIndex&)), this, SLOT (toggle_shown_slot (const QModelIndex&)));
+
+            update_selection();
           }
 
 
@@ -153,7 +176,7 @@ namespace MR
 
         void Overlay::draw2D (const Projection& projection) 
         {
-          float overlay_opacity = Math::pow2(static_cast<float>(opacity->value())) / 1.0e6f;
+          float overlay_opacity = opacity->value() / 1.0e3f;
 
           // set up OpenGL environment:
           glEnable (GL_BLEND);
@@ -169,7 +192,6 @@ namespace MR
           for (int i = 0; i < image_list_model->rowCount(); ++i) {
             if (image_list_model->shown[i]) {
               Image* image = dynamic_cast<Image*>(image_list_model->items[i]);
-              image->set_windowing (min_value->value(), max_value->value());
               image->render3D (projection, projection.depth_of (window.focus()));
             }
           }
@@ -188,13 +210,142 @@ namespace MR
         }
 
 
-        void Overlay::update_slot () {
+        void Overlay::toggle_shown_slot (const QModelIndex& index) {
           window.updateGL();
         }
+
 
         void Overlay::update_slot (int unused) {
           window.updateGL();
         }
+
+
+        void Overlay::values_changed ()
+        {
+          QModelIndexList indices = image_list_view->selectionModel()->selectedIndexes();
+          for (int i = 0; i < indices.size(); ++i) {
+            Image* overlay = dynamic_cast<Image*> (image_list_model->get_image (indices[i]));
+            overlay->set_windowing (min_value->value(), max_value->value());
+          }
+          window.updateGL();
+        }
+
+
+        void Overlay::threshold_lower_changed (int unused) 
+        {
+          QModelIndexList indices = image_list_view->selectionModel()->selectedIndexes();
+          for (int i = 0; i < indices.size(); ++i) {
+            Image* overlay = dynamic_cast<Image*> (image_list_model->get_image (indices[i]));
+            overlay->set_use_discard_lower (threshold_lower_box->isChecked());
+          }
+          threshold_lower->setEnabled (indices.size() && threshold_lower_box->isChecked());
+          window.updateGL();
+        }
+
+
+        void Overlay::threshold_upper_changed (int unused)
+        {
+          QModelIndexList indices = image_list_view->selectionModel()->selectedIndexes();
+          for (int i = 0; i < indices.size(); ++i) {
+            Image* overlay = dynamic_cast<Image*> (image_list_model->get_image (indices[i]));
+            overlay->set_use_discard_upper (threshold_upper_box->isChecked());
+          }
+          threshold_upper->setEnabled (indices.size() && threshold_upper_box->isChecked());
+          window.updateGL();
+        }
+
+
+        void Overlay::threshold_upper_value_changed ()
+        {
+          if (threshold_upper_box->isChecked()) {
+            QModelIndexList indices = image_list_view->selectionModel()->selectedIndexes();
+            for (int i = 0; i < indices.size(); ++i) {
+              Image* overlay = dynamic_cast<Image*> (image_list_model->get_image (indices[i]));
+              overlay->greaterthan = threshold_upper->value();
+            }
+          }
+          window.updateGL();
+        }
+
+
+        void Overlay::threshold_lower_value_changed ()
+        {
+          if (threshold_lower_box->isChecked()) {
+            QModelIndexList indices = image_list_view->selectionModel()->selectedIndexes();
+            for (int i = 0; i < indices.size(); ++i) {
+              Image* overlay = dynamic_cast<Image*> (image_list_model->get_image (indices[i]));
+              overlay->lessthan = threshold_lower->value();
+            }
+          }
+          window.updateGL();
+        }
+
+
+        void Overlay::selection_changed_slot (const QItemSelection &, const QItemSelection &)
+        {
+          update_selection();
+        }
+
+
+
+        void Overlay::update_selection () 
+        {
+          QModelIndexList indices = image_list_view->selectionModel()->selectedIndexes();
+          max_value->setEnabled (indices.size());
+          min_value->setEnabled (indices.size());
+          threshold_lower_box->setEnabled (indices.size());
+          threshold_upper_box->setEnabled (indices.size());
+          threshold_lower->setEnabled (indices.size());
+          threshold_upper->setEnabled (indices.size());
+
+          if (!indices.size())
+            return;
+
+          float rate = 0.0f, min_val = 0.0f, max_val = 0.0f;
+          float threshold_lower_val = 0.0f, threshold_upper_val = 0.0f;
+          int num_threshold_lower = 0, num_threshold_upper = 0;
+          for (int i = 0; i < indices.size(); ++i) {
+            Image* overlay = dynamic_cast<Image*> (image_list_model->get_image (indices[i]));
+            rate += overlay->scaling_rate();
+            min_val += overlay->scaling_min();
+            max_val += overlay->scaling_max();
+            num_threshold_lower += overlay->use_discard_lower();
+            num_threshold_upper += overlay->use_discard_upper();
+            if (!finite (overlay->lessthan)) 
+              overlay->lessthan = overlay->intensity_min();
+            if (!finite (overlay->greaterthan)) 
+              overlay->greaterthan = overlay->intensity_max();
+            threshold_lower_val += overlay->lessthan;
+            threshold_upper_val += overlay->greaterthan;
+          }
+          rate /= indices.size();
+          min_val /= indices.size();
+          max_val /= indices.size();
+          threshold_lower_val /= indices.size();
+          threshold_upper_val /= indices.size();
+
+          min_value->setRate (rate);
+          max_value->setRate (rate);
+          min_value->setValue (min_val);
+          max_value->setValue (max_val);
+
+          threshold_lower_box->setCheckState (num_threshold_lower ? 
+              ( num_threshold_lower == indices.size() ? 
+                Qt::Checked :
+                Qt::PartiallyChecked ) : 
+              Qt::Unchecked);
+          threshold_lower->setValue (threshold_lower_val);
+          threshold_lower->setRate (rate);
+
+          threshold_upper_box->setCheckState (num_threshold_upper ? 
+              ( num_threshold_upper == indices.size() ? 
+                Qt::Checked :
+                Qt::PartiallyChecked ) : 
+              Qt::Unchecked);
+          threshold_upper->setValue (threshold_upper_val);
+          threshold_upper->setRate (rate);
+        }
+
 
 
       }
