@@ -55,20 +55,13 @@ namespace MR
               void draw2D (const Projection& transform);
               void draw3D (const Projection& transform);
 
-              float get_line_thickness () const { return line_thickness; }
-              bool do_crop_to_slab () const { return crop_to_slab; }
-              float get_slab_thickness () const { return slab_thickness; }
-              bool do_shader_update () const { return shader_update; }
-              void set_shader_update (bool do_update) { shader_update = do_update; }
-              float get_opacity () const { return line_opacity; }
-
-              QListView* get_tractogram_list_view () {
-                return tractogram_list_view;
-              }
-
-              Model* get_tractogram_list_model() {
-                return tractogram_list_model;
-              }
+              float line_thickness;
+              bool do_crop_to_slab;
+              float slab_thickness;
+              bool do_shader_update;
+              float line_opacity;
+              Model* tractogram_list_model;
+              QListView* tractogram_list_view;
 
             private slots:
               void tractogram_open_slot ();
@@ -87,18 +80,13 @@ namespace MR
 
             protected:
 
-              void colour_changed ();
+              void update_scalar_file_options();
+              void update_display ();
 
-              Model* tractogram_list_model;
-              QListView* tractogram_list_view;
               AdjustButton* slab_entry;
               QMenu* track_option_menu;
               Dock* scalar_file_options;
-              float line_thickness;
-              bool crop_to_slab;
-              float slab_thickness;
-              bool shader_update;
-              float line_opacity;
+
           };
         }
       }

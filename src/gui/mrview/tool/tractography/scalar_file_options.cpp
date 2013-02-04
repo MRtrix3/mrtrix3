@@ -30,9 +30,8 @@
 
 #include "gui/mrview/tool/tractography/scalar_file_options.h"
 #include "math/vector.h"
-#include "gui/color_button.h"
 #include "gui/dialog/lighting.h"
-
+#include "gui/mrview/colourmap.h"
 
 namespace MR
 {
@@ -52,10 +51,50 @@ namespace MR
             main_box->setContentsMargins (5, 5, 5, 5);
             main_box->setSpacing (5);
 
+            QHBoxLayout* hlayout = new QHBoxLayout;
+            hlayout->setContentsMargins (0, 0, 0, 0);
+            hlayout->setSpacing (0);
+
             button = new QPushButton (this);
-            button->setToolTip (tr ("Open Tracks"));
+            button->setToolTip (tr ("Open scalar track file"));
             connect (button, SIGNAL (clicked()), this, SLOT (open_track_scalar_file_slot ()));
-            main_box->addWidget (button);
+            hlayout->addWidget (button);
+
+
+            // Colourmap menu:
+
+            colourmap_menu = new QMenu (tr ("Colourmap menu"), this);
+
+            ColourMap::create_menu (this, colourmap_group, colourmap_menu, colourmap_actions, true);
+            connect (colourmap_group, SIGNAL (triggered (QAction*)), this, SLOT (select_colourmap_slot()));
+
+//            colourmap_menu->addSeparator();
+//
+//            invert_scale_action = colourmap_menu->addAction (tr ("Invert scaling"), this, SLOT (invert_scaling_slot()));
+//            invert_scale_action->setCheckable (true);
+//            invert_scale_action->setShortcut (tr("U"));
+//            addAction (invert_scale_action);
+//
+//
+//            invert_colourmap_action = colourmap_menu->addAction (tr ("Invert Colourmap"), this, SLOT (invert_colourmap_slot()));
+//            invert_colourmap_action->setCheckable (true);
+//            invert_colourmap_action->setShortcut (tr("Shift+U"));
+//            addAction (invert_colourmap_action);
+//
+//            colourmap_menu->addSeparator();
+//
+//            reset_windowing_action = colourmap_menu->addAction (tr ("Reset brightness/contrast"), this, SLOT (image_reset_slot()));
+//            reset_windowing_action->setShortcut (tr ("Esc"));
+//            addAction (reset_windowing_action);
+
+            colourmap_button = new QToolButton (this);
+            colourmap_button->setToolTip (tr ("Colourmap menu"));
+            colourmap_button->setIcon (QIcon (":/colourmap.svg"));
+            colourmap_button->setPopupMode (QToolButton::InstantPopup);
+            colourmap_button->setMenu (colourmap_menu);
+            hlayout->addWidget (colourmap_button);
+
+            main_box->addLayout (hlayout);
 
             QGroupBox* group_box = new QGroupBox ("Scaling");
             QGridLayout* layout = new QGridLayout;
@@ -72,10 +111,10 @@ namespace MR
             connect (max_entry, SIGNAL (valueChanged()), this, SLOT (on_set_scaling_slot()));
             layout->addWidget (max_entry, 1, 1);
 
-            QGroupBox* threshold_box = new QGroupBox ("Thresholds");
+            threshold_box = new QGroupBox ("Thresholds");
             threshold_box->setCheckable (true);
             threshold_box->setChecked (false);
-            connect (threshold_box, SIGNAL (toggled(bool)), this, SLOT (on_set_threshold_slot()));
+            connect (threshold_box, SIGNAL (toggled(bool)), this, SLOT (toggle_threshold_slot()));
             layout = new QGridLayout;
             main_box->addWidget (threshold_box);
             threshold_box->setLayout (layout);
@@ -94,16 +133,30 @@ namespace MR
             setMinimumSize (main_box->minimumSize());
           }
 
+
           void ScalarFileOptions::set_tractogram (Tractogram* selected_tractogram) {
             tractogram = selected_tractogram;
-            if (tractogram && tractogram->get_colour_type() == ScalarFile) {
+            if (tractogram && tractogram->color_type == ScalarFile) {
               button->setEnabled (true);
               min_entry->setEnabled (true);
               max_entry->setEnabled (true);
-              lessthan->setEnabled (true);
-              greaterthan->setEnabled (true);
-              if (tractogram->get_scalar_filename().length()) {
-                button->setText (shorten (tractogram->get_scalar_filename(), 20, 0).c_str());
+              min_entry->setRate (tractogram->scaling_rate());
+              max_entry->setRate (tractogram->scaling_rate());
+              threshold_box->setEnabled (true);
+              if (threshold_box->isChecked()) {
+                greaterthan->setEnabled (true);
+                lessthan->setEnabled (true);
+                greaterthan->setRate (tractogram->scaling_rate());
+                lessthan->setRate (tractogram->scaling_rate());
+              } else {
+                lessthan->setEnabled (false);
+                greaterthan->setEnabled (false);
+              }
+              if (tractogram->scalar_filename.length()) {
+                button->setText (shorten (tractogram->scalar_filename, 20, 0).c_str());
+                min_entry->setValue (tractogram->scaling_min());
+                max_entry->setValue (tractogram->scaling_max());
+                toggle_threshold_slot ();
               } else {
                 button->setText ("");
               }
@@ -112,49 +165,78 @@ namespace MR
               button->setEnabled (false);
               min_entry->setEnabled (false);
               max_entry->setEnabled (false);
-              lessthan->setEnabled (false);
-              greaterthan->setEnabled (false);
+              min_entry->clear();
+              max_entry->clear();
+              threshold_box->setEnabled(false);
+              greaterthan->clear();
+              lessthan->clear();
             }
           }
 
-          void ScalarFileOptions::open_track_scalar_file_slot ()
+
+          bool ScalarFileOptions::open_track_scalar_file_slot ()
           {
             Dialog::File dialog (this, "Select track scalar to open", false, false);
             if (dialog.exec()) {
               std::vector<std::string> list;
               dialog.get_selection (list);
-              CONSOLE(list[0]);
               try {
-                if (!tractogram->load_track_scalars (list[0])) {
-                  button->setText (shorten (list[0], 20, 0).c_str());
-                } else {
-                  //            lessthan->setValue (window.image() ? window.image()->intensity_min() : 0.0); TODO
-                }
-              }
-              catch (Exception& E) {
+                tractogram->load_track_scalars (list[0]);
+              } catch (Exception& E) {
                 E.display();
+                return false;
               }
+              return true;
             }
-
+            return false;
           }
 
-          void ScalarFileOptions::on_set_scaling_slot ()
+
+          void ScalarFileOptions::select_colourmap_slot ()
           {
-            if (window.image()) {
-              window.image()->set_windowing (min_entry->value(), max_entry->value());
+            if (tractogram) {
+              QAction* action = colourmap_group->checkedAction();
+              size_t n = 0;
+              while (action != colourmap_actions[n])
+                ++n;
+              tractogram->set_colourmap (n);
               window.updateGL();
             }
           }
 
-          void ScalarFileOptions::on_set_threshold_slot ()
+
+
+          void ScalarFileOptions::on_set_scaling_slot ()
           {
-            TEST;
             if (tractogram) {
               tractogram->set_windowing (min_entry->value(), max_entry->value());
               window.updateGL();
             }
           }
 
+
+          void ScalarFileOptions::toggle_threshold_slot() {
+            if (threshold_box->isChecked()) {
+              greaterthan->setEnabled (true);
+              lessthan->setEnabled (true);
+              tractogram->do_threshold = true;
+            } else {
+              greaterthan->setEnabled (false);
+              lessthan->setEnabled (false);
+              tractogram->do_threshold = false;
+            }
+            greaterthan->setValue (tractogram->greaterthan);
+            lessthan->setValue (tractogram->lessthan);
+            tractogram->recompile();
+            window.updateGL();
+          }
+
+
+          void ScalarFileOptions::on_set_threshold_slot ()
+          {
+            tractogram->set_thresholds (lessthan->value(), greaterthan->value());
+            window.updateGL();
+          }
 
 
   //        void ScalarFileOptions::on_scaling_changed_slot ()

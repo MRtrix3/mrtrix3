@@ -60,6 +60,23 @@ namespace MR
             return buffer;
           }
 
+          void set_interpolate (bool linear) {
+            interpolation = linear ? GL_LINEAR : GL_NEAREST;
+          }
+
+          bool interpolate () const {
+            return interpolation == GL_LINEAR;
+          }
+
+          void set_colourmap (size_t index) {
+            if (ColourMap::maps[index].special || ColourMap::maps[colourmap()].special) {
+              if (index != colourmap()) {
+//                position[0] = position[1] = position[2] = std::numeric_limits<ssize_t>::min(); TODO
+                texture_mode_3D_unchanged = false;
+              }
+            }
+            Displayable::set_colourmap (index);
+          }
 
           void update_texture2D (int plane, int slice);
           void update_texture3D ();
@@ -98,10 +115,6 @@ namespace MR
             }
           }
 
-
-          float scaling_rate () const {
-            return 1e-3 * (value_max - value_min);
-          }
           
           float focus_rate () const {
             return 1e-3 * (Math::pow ( 
@@ -127,6 +140,8 @@ namespace MR
           }
 
         private:
+          int interpolation;
+          bool texture_mode_3D_unchanged;
           GL::Texture texture2D[3], texture3D;
           GL::VertexBuffer vertex_buffer;
           GL::VertexArrayObject vertex_array_object;

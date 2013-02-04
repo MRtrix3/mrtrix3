@@ -68,17 +68,10 @@ namespace MR
 
               void render3D ();
 
-              std::string get_scalar_filename () const {
-                return scalar_filename;
-              }
-              std::string get_filename () const {
-                return filename;
-              }
+              void load_tracks();
+              void load_track_scalars (std::string filename);
 
-              // Shader
-              void set_crop_to_slab (bool crop_to_slab) {
-                do_crop_to_slab = crop_to_slab;
-              }
+              virtual void recompile ();
 
               void set_colour (float color[3]) {
                 colour[0] = color[0];
@@ -86,25 +79,17 @@ namespace MR
                 colour[2] = color[2];
               }
 
-              void set_colour_type (colour_type type) {
-                color_type = type;
-              }
-
-              colour_type get_colour_type () {
-                return color_type;
-              }
-
-              bool load_track_scalars (std::string filename);
-              bool load_tracks();
-
-              virtual void recompile ();
+              bool do_crop_to_slab;
+              bool do_threshold;
+              colour_type color_type;
+              std::string scalar_filename;
 
             signals:
               void scalingChanged ();
 
             private:
               Window& window;
-              Tractography& tool;
+              Tractography& tractography_tool;
               std::string filename;
               std::vector<GLuint> vertex_buffers;
               std::vector<GLuint> vertex_array_objects;
@@ -113,22 +98,13 @@ namespace MR
               std::vector<std::vector<GLint> > track_starts;
               std::vector<std::vector<GLint> > track_sizes;
               std::vector<size_t> num_tracks_per_buffer;
-              bool use_default_line_thickness;
-              float line_thickness;
-              std::string scalar_filename;
-              float tck_scalar_max;
-              float tck_scalar_min;
-
-              // Shader
-              bool do_crop_to_slab;
-              colour_type color_type;
               float colour[3];
 
 
               inline void load_tracks_onto_GPU (std::vector<Point<float> >& buffer,
-                                                 std::vector<GLint>& starts,
-                                                 std::vector<GLint>& sizes,
-                                                 size_t& tck_count) {
+                                                std::vector<GLint>& starts,
+                                                std::vector<GLint>& sizes,
+                                                size_t& tck_count) {
                 buffer.push_back (Point<float>());
                 GLuint vertexbuffer;
                 glGenBuffers (1, &vertexbuffer);

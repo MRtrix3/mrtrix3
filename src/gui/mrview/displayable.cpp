@@ -47,11 +47,9 @@ namespace MR
         transparent_intensity (NAN),
         opaque_intensity (NAN),
         alpha (NAN),
-        interpolation (GL_LINEAR),
+        filename (filename),
         value_min (NAN),
         value_max (NAN),
-        texture_mode_3D_unchanged (false),
-        filename (filename),
         flags_ (0x00000000),
         colourmap_index (0) { }
 
@@ -65,11 +63,9 @@ namespace MR
         transparent_intensity (NAN),
         opaque_intensity (NAN),
         alpha (NAN),
-        interpolation (GL_LINEAR),
+        filename (filename),
         value_min (NAN),
         value_max (NAN),
-        texture_mode_3D_unchanged (false),
-        filename (filename),
         flags_ (0x00000000),
         colourmap_index (0) {
           connect (this, SIGNAL(scalingChanged()), &window, SLOT(on_scaling_changed()));

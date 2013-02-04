@@ -80,13 +80,19 @@ namespace MR
           float scaling_min () const {
             return display_midpoint - 0.5f * display_range;
           }
+
           float scaling_max () const {
             return display_midpoint + 0.5f * display_range;
+          }
+
+          float scaling_rate () const {
+            return 1e-3 * (value_max - value_min);
           }
 
           float intensity_min () const {
             return value_min;
           }
+
           float intensity_max () const {
             return value_max;
           }
@@ -99,12 +105,7 @@ namespace MR
           void adjust_windowing (const QPoint& p) {
             adjust_windowing (p.x(), p.y());
           }
-          void set_interpolate (bool linear) {
-            interpolation = linear ? GL_LINEAR : GL_NEAREST;
-          }
-          bool interpolate () const {
-            return interpolation == GL_LINEAR;
-          }
+
           void reset_windowing () {
             set_windowing (value_min, value_max);
           }
@@ -116,19 +117,12 @@ namespace MR
           }
 
           void set_colourmap (size_t index) {
-            if (ColourMap::maps[index].special || ColourMap::maps[colourmap()].special) {
-              if (index != colourmap()) {
-//                position[0] = position[1] = position[2] = std::numeric_limits<ssize_t>::min(); TODO
-                texture_mode_3D_unchanged = false;
-              }
-            }
             if (index != colourmap_index) {
               colourmap_index = index;
               recompile();
             }
           }
           
-
           float lessthan, greaterthan;
           float display_midpoint, display_range;
           float transparent_intensity, opaque_intensity, alpha;
@@ -282,10 +276,8 @@ namespace MR
 
 
         protected:
-          int interpolation;
-          float value_min, value_max;
-          bool texture_mode_3D_unchanged;
           const std::string filename;
+          float value_min, value_max;
 
           uint32_t flags_;
           size_t colourmap_index;

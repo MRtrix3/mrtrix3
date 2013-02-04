@@ -41,6 +41,8 @@ namespace MR
         Displayable (image_header.name()),
         buffer (image_header),
         interp (buffer),
+        interpolation (GL_LINEAR),
+        texture_mode_3D_unchanged (false),
         position (header().ndim())
       {
         position[0] = position[1] = position[2] = std::numeric_limits<ssize_t>::min();
@@ -53,6 +55,8 @@ namespace MR
         Displayable (window, image_header.name()),
         buffer (image_header),
         interp (buffer),
+        interpolation (GL_LINEAR),
+        texture_mode_3D_unchanged (false),
         position (image_header.ndim())
       {
         position[0] = position[1] = position[2] = std::numeric_limits<ssize_t>::min();
@@ -92,8 +96,8 @@ namespace MR
       inline void Image::draw_vertices (const Point<float>* vertices)
       {
         if (!vertex_buffer || !vertex_array_object) {
-          assert (!vertex_buffer_ID);
-          assert (!vertex_array_object_ID);
+//          assert (!vertex_buffer_ID);
+//          assert (!vertex_array_object_ID);
 
           vertex_buffer.gen();
           vertex_array_object.gen();

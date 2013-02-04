@@ -49,18 +49,27 @@ namespace MR
               void set_tractogram (Tractogram* selected_tractogram);
 
             public slots:
-              void open_track_scalar_file_slot ();
+              bool open_track_scalar_file_slot ();
 
             private slots:
+              void select_colourmap_slot ();
+              void toggle_threshold_slot ();
               void on_set_scaling_slot ();
               void on_set_threshold_slot ();
 
             protected:
+              void update_threshold_box();
+
               Tractogram* tractogram;
               QVBoxLayout* main_box;
+              QMenu* colourmap_menu;
+              QAction** colourmap_actions;
+              QActionGroup *colourmap_group;
+              QToolButton* colourmap_button;
               QPushButton* button;
               AdjustButton *max_entry, *min_entry;
               AdjustButton *lessthan, *greaterthan;
+              QGroupBox* threshold_box;
 
           };
 
