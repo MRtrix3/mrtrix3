@@ -181,10 +181,10 @@ namespace MR
         if (use_lighting())
           glEnable (GL_LIGHTING);
 
-        pos[0] = projection.screen_to_model (0.0, projection.height(), depth);
-        pos[1] = projection.screen_to_model (0.0, 0.0, depth);
-        pos[2] = projection.screen_to_model (projection.width(), 0.0, depth);
-        pos[3] = projection.screen_to_model (projection.width(), projection.height(), depth);
+        pos[0] = projection.screen_to_model (projection.x_position(), projection.y_position()+projection.height(), depth);
+        pos[1] = projection.screen_to_model (projection.x_position(), projection.y_position(), depth);
+        pos[2] = projection.screen_to_model (projection.x_position()+projection.width(), projection.y_position(), depth);
+        pos[3] = projection.screen_to_model (projection.x_position()+projection.width(), projection.y_position()+projection.height(), depth);
 
         tex[0] = interp.scanner2voxel (pos[0]) + Point<> (0.5, 0.5, 0.5);
         tex[1] = interp.scanner2voxel (pos[1]) + Point<> (0.5, 0.5, 0.5);

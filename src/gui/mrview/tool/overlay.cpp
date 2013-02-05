@@ -103,42 +103,42 @@ namespace MR
 
             main_box->addWidget (image_list_view, 1);
 
-            QGridLayout* default_opt_grid = new QGridLayout;
+            QGridLayout* main_layout = new QGridLayout;
 
-            default_opt_grid->addWidget (new QLabel ("max value"), 0, 0);
+            main_layout->addWidget (new QLabel ("max value"), 0, 0);
             max_value = new AdjustButton (this, 0.1);
             connect (max_value, SIGNAL (valueChanged()), this, SLOT (values_changed()));
-            default_opt_grid->addWidget (max_value, 0, 1);
+            main_layout->addWidget (max_value, 0, 1);
 
-            default_opt_grid->addWidget (new QLabel ("min value"), 1, 0);
+            main_layout->addWidget (new QLabel ("min value"), 1, 0);
             min_value = new AdjustButton (this, 0.1);
             connect (min_value, SIGNAL (valueChanged()), this, SLOT (values_changed()));
-            default_opt_grid->addWidget (min_value, 1, 1);
+            main_layout->addWidget (min_value, 1, 1);
 
             threshold_upper_box = new QCheckBox ("upper threshold");
             //threshold_upper_box->setTristate (true);
             connect (threshold_upper_box, SIGNAL (stateChanged(int)), this, SLOT (threshold_upper_changed(int)));
-            default_opt_grid->addWidget (threshold_upper_box, 2, 0);
+            main_layout->addWidget (threshold_upper_box, 2, 0);
             threshold_upper = new AdjustButton (this, 0.1);
             connect (threshold_upper, SIGNAL (valueChanged()), this, SLOT (threshold_upper_value_changed()));
-            default_opt_grid->addWidget (threshold_upper, 2, 1);
+            main_layout->addWidget (threshold_upper, 2, 1);
 
             threshold_lower_box = new QCheckBox ("lower threshold");
             //threshold_lower_box->setTristate (true);
             connect (threshold_lower_box, SIGNAL (stateChanged(int)), this, SLOT (threshold_lower_changed(int)));
-            default_opt_grid->addWidget (threshold_lower_box, 3, 0);
+            main_layout->addWidget (threshold_lower_box, 3, 0);
             threshold_lower = new AdjustButton (this, 0.1);
             connect (threshold_lower, SIGNAL (valueChanged()), this, SLOT (threshold_lower_value_changed()));
-            default_opt_grid->addWidget (threshold_lower, 3, 1);
+            main_layout->addWidget (threshold_lower, 3, 1);
 
             opacity = new QSlider (Qt::Horizontal);
             opacity->setRange (1,1000);
             opacity->setSliderPosition (int (1000));
             connect (opacity, SIGNAL (valueChanged (int)), this, SLOT (update_slot (int)));
-            default_opt_grid->addWidget (new QLabel ("opacity"), 4, 0);
-            default_opt_grid->addWidget (opacity, 4, 1);
+            main_layout->addWidget (new QLabel ("opacity"), 4, 0);
+            main_layout->addWidget (opacity, 4, 1);
 
-            main_box->addLayout (default_opt_grid, 0);
+            main_box->addLayout (main_layout, 0);
 
             connect (image_list_view->selectionModel(),
                 SIGNAL(selectionChanged(const QItemSelection &, const QItemSelection &)),
