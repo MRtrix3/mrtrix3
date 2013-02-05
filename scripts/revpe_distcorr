@@ -27,22 +27,22 @@ if [ ! -f "$TOPUP_CONFIG_PATH" ]; then
 fi 
 
 if [ command -v topup >/dev/null 2>&1 ]; then
-  if [ command -v fsl_5.0-topup >/dev/null 2>&1 ]; then
+  if [ command -v fsl5.0-topup >/dev/null 2>&1 ]; then
     echo "Could not find FSL program topup in path; make sure FSL 5.0 is installed"
     return 0
   else
-    TOPUP_CMD="fsl_5.0-topup"
+    TOPUP_CMD="fsl5.0-topup"
   fi
 else
   TOPUP_CMD="topup"
 fi
 
 if [ command -v applytopup >/dev/null 2>&1 ]; then
-  if [ command -v fsl_5.0-applytopup >/dev/null 2>&1 ]; then
+  if [ command -v fsl5.0-applytopup >/dev/null 2>&1 ]; then
     echo "Could not find FSL program applytopup in path; make sure FSL 5.0 is installed"
     return 0
   else
-    APPLYTOPUP_CMD="fsl_5.0-applytopup"
+    APPLYTOPUP_CMD="fsl5.0-applytopup"
   fi
 else
   APPLYTOPUP_CMD="applytopup"

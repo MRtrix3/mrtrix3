@@ -12,33 +12,33 @@ if [ -z "$FSLDIR" ]; then
 fi 
 
 if [ command -v bet >/dev/null 2>&1 ]; then
-  if [ command -v fsl_5.0-bet >/dev/null 2>&1 ]; then
+  if [ command -v fsl5.0-bet >/dev/null 2>&1 ]; then
     echo "Could not find FSL program bet in path; make sure FSL is installed"
     return 0
   else
-    BET_CMD="fsl_5.0-bet"
+    BET_CMD="fsl5.0-bet"
   fi
 else
   BET_CMD="bet"
 fi
 
 if [ command -v fast >/dev/null 2>&1 ]; then
-  if [ command -v fsl_5.0-fast >/dev/null 2>&1 ]; then
+  if [ command -v fsl5.0-fast >/dev/null 2>&1 ]; then
     echo "Could not find FSL program fast in path; make sure FSL is installed"
     return 0
   else
-    FAST_CMD="fsl_5.0-fast"
+    FAST_CMD="fsl5.0-fast"
   fi
 else
   FAST_CMD="fast"
 fi
 
 if [ command -v run-first-all >/dev/null 2>&1 ]; then
-  if [ command -v fsl_5.0-run-first-all >/dev/null 2>&1 ]; then
+  if [ command -v fsl5.0-run-first-all >/dev/null 2>&1 ]; then
     echo "Could not find FSL program first (run-first-all) in path; make sure FSL is installed"
     return 0
   else
-    FIRST_CMD="fsl_5.0-run-first-all"
+    FIRST_CMD="fsl5.0-run-first-all"
   fi
 else
   FIRST_CMD="run-first-all"
