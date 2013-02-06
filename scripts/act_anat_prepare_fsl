@@ -78,7 +78,7 @@ SGM_STRUCTURES=("L_Accu" "R_Accu" "L_Caud" "R_Caud" "L_Pall" "R_Pall" "L_Puta" "
 mkdir $TEMP_DIR
 
 # Start by cropping the image and putting it in the correct format for FSL
-mrcrop $1 - -axis 2 64 255 -quiet | mrconvert - $TEMP_DIR/T1.nii -stride +0,+1,+2 -quiet
+mrcrop $1 - -axis 2 64 255 -quiet | mrconvert - $TEMP_DIR/T1.nii -stride +1,+2,+3 -quiet
 cd $TEMP_DIR
 # BET
 $BET_CMD T1.nii T1_bet.nii -f 0.25 -R
