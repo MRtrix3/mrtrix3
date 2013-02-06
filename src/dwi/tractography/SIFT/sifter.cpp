@@ -425,11 +425,15 @@ namespace MR
       void SIFTer::output_all_debug_images (const std::string& prefix) const
       {
         output_target_image (prefix + "_target.mif");
+#ifdef SIFTER_OUTPUT_SH_IMAGES
         output_target_image_sh (prefix + "_target_sh.mif");
+#endif
         output_tdi (prefix + "_tdi.mif");
         if (fmls.get_create_null_lobe())
           output_tdi_null_lobes (prefix + "_tdi_null_lobes.mif");
+#ifdef SIFTER_OUTPUT_SH_IMAGES
         output_tdi_sh (prefix + "_tdi_sh.mif");
+#endif
         output_error_images (prefix + "_max_abs_diff.mif", prefix + "_diff.mif", prefix + "_cost.mif");
         output_scatterplot (prefix + "_scatterplot.csv");
         output_lobe_count_image (prefix + "_lobe_count.mif");

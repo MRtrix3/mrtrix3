@@ -69,6 +69,9 @@
 #define SIFT_SORT_BLOCK_SIZE 1024
 
 
+//#define SIFTER_OUTPUT_SH_IMAGES
+
+
 
 namespace MR
 {
@@ -84,6 +87,8 @@ namespace MR
 
       class SIFTer : public Mapping::FOD_TD_diff_map<FOD_TD_weighted>
       {
+
+        protected:
 
         typedef FOD_TD_weighted Lobe;
 
