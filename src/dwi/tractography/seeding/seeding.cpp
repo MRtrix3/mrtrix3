@@ -44,14 +44,15 @@ namespace MR
       + Option ("seed_sphere", "spherical seed as four comma-separated values (XYZ position and radius").allow_multiple()
         + Argument ("spec").type_sequence_float()
 
-      + Option ("seed_mask", "seed mask for random placement of seed points").allow_multiple()
+      + Option ("seed_image", "seed streamlines entirely at random within a mask image "
+                              "(this is the same behaviour as the streamline seeding in MRtrix 0.2)").allow_multiple()
         + Argument ("image").type_image_in()
 
-      + Option ("seed_random_per_voxel", "seed a fixed number of streamlines per voxel in the mask; random placement of seeds in each voxel").allow_multiple()
+      + Option ("seed_random_per_voxel", "seed a fixed number of streamlines per voxel in a mask image; random placement of seeds in each voxel").allow_multiple()
         + Argument ("image").type_image_in()
         + Argument ("num_per_voxel").type_integer (1, 1, std::numeric_limits<int>::max())
 
-      + Option ("seed_grid_per_voxel", "seed a fixed number of streamlines per voxel in the mask; place seeds on a 3D mesh grid").allow_multiple()
+      + Option ("seed_grid_per_voxel", "seed a fixed number of streamlines per voxel in a mask image; place seeds on a 3D mesh grid").allow_multiple()
         + Argument ("image").type_image_in()
         + Argument ("grid_size").type_integer (1, 1, std::numeric_limits<int>::max())
 
@@ -61,7 +62,7 @@ namespace MR
       + Option ("seed_gmwmi", "seed from the grey matter - white matter interface (only valid if using ACT framework)").allow_multiple()
         + Argument ("seed_image").type_image_in()
 
-      + Option ("seed_dynamic", "determine seed points dynamically using the SIFT model (must NOT provide any other seed)") // Don't allow multiple
+      + Option ("seed_dynamic", "determine seed points dynamically using the SIFT model (must NOT provide any other seeding mechanism)") // Don't allow multiple
         + Argument ("fod_image").type_image_in();
 
 
@@ -78,7 +79,7 @@ namespace MR
           list.add (seed);
         }
 
-        opt = get_options ("seed_mask");
+        opt = get_options ("seed_image");
         for (size_t i = 0; i < opt.size(); ++i) {
           Default* seed = new Default (opt[i][0], list.get_rng());
           list.add (seed);
