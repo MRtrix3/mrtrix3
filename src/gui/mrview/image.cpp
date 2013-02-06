@@ -96,8 +96,8 @@ namespace MR
       inline void Image::draw_vertices (const Point<float>* vertices)
       {
         if (!vertex_buffer || !vertex_array_object) {
-//          assert (!vertex_buffer_ID);
-//          assert (!vertex_array_object_ID);
+          assert (!vertex_buffer);
+          assert (!vertex_array_object);
 
           vertex_buffer.gen();
           vertex_array_object.gen();
