@@ -191,7 +191,7 @@ namespace MR
 
 
 
-      /*
+/*
 // This is a 'safe' version of Track_lobe_contribution that does not use byte-sharing, but requires double the RAM
 class Track_lobe_contribution
 {
@@ -216,7 +216,7 @@ class Track_lobe_contribution
     float value;
 
 };
-       */
+*/
 
 
 
@@ -236,6 +236,8 @@ class Track_lobe_contribution
           total_contribution  (0.0),
           total_length        (0.0) { }
 
+        ~TrackContribution() { }
+
         float get_total_contribution() const { return total_contribution; }
         float get_total_length      () const { return total_length; }
 
@@ -252,8 +254,8 @@ class Track_lobe_contribution
       {
         public:
           Cost_fn_gradient_sort (const track_t i, const double g, const double gpul) :
-            tck_index (i),
-            cost_gradient (g),
+            tck_index            (i),
+            cost_gradient        (g),
             grad_per_unit_length (gpul) { }
 
           Cost_fn_gradient_sort (const Cost_fn_gradient_sort& that) :
