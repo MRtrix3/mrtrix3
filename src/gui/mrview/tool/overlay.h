@@ -57,6 +57,7 @@ namespace MR
             void selection_changed_slot (const QItemSelection &, const QItemSelection &);
             void update_slot (int unused);
             void values_changed ();
+            void colourmap_changed (int index);
             void threshold_upper_changed (int unused);
             void threshold_lower_changed (int unused);
             void threshold_upper_value_changed ();
@@ -66,6 +67,7 @@ namespace MR
              class Model;
              Model* image_list_model;
              QListView* image_list_view;
+             QComboBox* colourmap_combobox;
              QSlider *opacity;
              AdjustButton *min_value, *max_value, *threshold_lower, *threshold_upper;
              QCheckBox *threshold_lower_box, *threshold_upper_box;

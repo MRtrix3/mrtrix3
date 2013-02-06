@@ -126,7 +126,7 @@ namespace MR
             }
 
             Point<> move_in_out_displacement (float distance, const Projection& with_projection) {
-              Point<> move (-with_projection.screen_normal());
+              Point<> move (with_projection.screen_normal());
               move.normalise();
               move *= distance;
               return move;
@@ -139,14 +139,14 @@ namespace MR
               set_focus (focus() + move);
             }
             void move_in_out_FOV (int increment, const Projection& with_projection) {
-              move_in_out (1e-3 * increment * FOV(), with_projection);
+              move_in_out (1.0e-3f * increment * FOV(), with_projection);
             }
 
             void move_in_out (float distance) {
               move_in_out (distance, projection);
             }
             void move_in_out_FOV (int increment) {
-              move_in_out (1e-3 * increment * FOV());
+              move_in_out (1.0e-3f* increment * FOV());
             }
 
             void render_tools2D (const Projection& with_projection) {
