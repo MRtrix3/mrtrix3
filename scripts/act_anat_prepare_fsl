@@ -33,15 +33,15 @@ else
   FAST_CMD="fast"
 fi
 
-if [ command -v run-first-all >/dev/null 2>&1 ]; then
-  if [ command -v fsl5.0-run-first-all >/dev/null 2>&1 ]; then
-    echo "Could not find FSL program first (run-first-all) in path; make sure FSL is installed"
+if [ command -v run_first_all >/dev/null 2>&1 ]; then
+  if [ command -v fsl5.0-run_first_all >/dev/null 2>&1 ]; then
+    echo "Could not find FSL program first (run_first_all) in path; make sure FSL is installed"
     return 0
   else
-    FIRST_CMD="fsl5.0-run-first-all"
+    FIRST_CMD="fsl5.0-run_first_all"
   fi
 else
-  FIRST_CMD="run-first-all"
+  FIRST_CMD="run_first_all"
 fi
 
 FIRST_ATLAS_PATH="$FSLDIR/data/first/models_336_bin/"
