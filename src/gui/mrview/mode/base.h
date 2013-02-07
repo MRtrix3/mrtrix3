@@ -25,6 +25,7 @@
 
 #include "gui/opengl/gl.h"
 #include "gui/opengl/transformation.h"
+#include "gui/projection.h"
 
 #include <QAction>
 #include <QCursor>
@@ -68,7 +69,7 @@ namespace MR
             Projection projection;
             const int features;
 
-            virtual void paint ();
+            virtual void paint (Projection& projection);
             virtual void mouse_press_event ();
             virtual void mouse_release_event ();
             virtual void reset_event ();
@@ -83,49 +84,34 @@ namespace MR
 
             void paintGL ();
 
-            const Image* image () const { 
-              return window.image(); 
-            }
-            const Point<>& focus () const {
-              return window.focus(); 
-            }
-            const Point<>& target () const {
-              return window.target(); 
-            }
-            float FOV () const { 
-              return window.FOV(); 
-            }
-            int plane () const { 
-              return window.plane(); 
-            }
-            const Math::Versor<float>& orientation () const {
+            const Image* image () const { return window.image(); }
+            const Point<>& focus () const { return window.focus(); }
+            const Point<>& target () const { return window.target(); }
+            float FOV () const { return window.FOV(); }
+            int plane () const { return window.plane(); }
+            Math::Versor<float> orientation () const { 
+              if (snap_to_image()) 
+                return Math::Versor<float>(1.0f, 0.0f, 0.0f, 0.0f);
               return window.orientation(); 
             }
 
-            Image* image () {
-              return window.image(); 
-            }
-            void set_focus (const Point<>& p) {
-              window.set_focus (p); 
-            }
-            void set_target (const Point<>& p) {
-              window.set_target (p); 
-            }
-            void set_FOV (float value) {
-              window.set_FOV (value); 
-            }
-            void set_plane (int p) {
-              window.set_plane (p); 
-            }
-            void set_orientation (const Math::Versor<float>& Q) {
-              window.set_orientation (Q); 
-            }
+            int width () const { return glarea()->width(); }
+            int height () const { return glarea()->height(); }
+            bool snap_to_image () const { return window.snap_to_image(); }
+
+            Image* image () { return window.image(); }
+            void set_focus (const Point<>& p, int current_plane) { actual_focus = p; window.set_focus (snap (actual_focus, current_plane)); }
+            void set_focus (const Point<>& p) { set_focus (p, plane()); }
+            void set_target (const Point<>& p) { window.set_target (p); }
+            void set_FOV (float value) { window.set_FOV (value); }
+            void set_plane (int p) { window.set_plane (p); }
+            void set_orientation (const Math::Versor<float>& Q) { window.set_orientation (Q); }
 
             QGLWidget* glarea () const {
               return reinterpret_cast <QGLWidget*> (window.glarea);
             }
 
-            Point<> move_in_out_displacement (float distance, const Projection& with_projection) {
+            Point<> move_in_out_displacement (float distance, const Projection& with_projection) const {
               Point<> move (with_projection.screen_normal());
               move.normalise();
               move *= distance;
@@ -136,7 +122,7 @@ namespace MR
               if (!image()) return;
               Point<> move = move_in_out_displacement (distance, with_projection);
               set_target (target() + move);
-              set_focus (focus() + move);
+              set_focus (actual_focus + move);
             }
             void move_in_out_FOV (int increment, const Projection& with_projection) {
               move_in_out (1.0e-3f * increment * FOV(), with_projection);
@@ -158,22 +144,35 @@ namespace MR
               }
             }
 
-
-            bool in_paint () const {
-              return painting;
+            Point<> voxel_at (const Point<>& pos) const {
+              if (!image()) return Point<>();
+              return image()->interp.scanner2voxel (pos);
             }
 
-            void updateGL () {
-              window.updateGL();
-            }
+            int slice () const { return Math::round<int> (voxel_at (focus())[plane()]); }
 
+
+            bool in_paint () const { return painting; } 
+            void updateGL () { window.updateGL(); } 
 
           protected:
+            Point<> actual_focus;
+
             void register_extra_controls (Tool::Dock* controls);
             GL::mat4 adjust_projection_matrix (const GL::mat4& Q, int proj) const;
             GL::mat4 adjust_projection_matrix (const GL::mat4& Q) const { 
               return adjust_projection_matrix (Q, plane()); 
             }
+
+            Point<> snap (const Point<>& pos, int current_plane) const {
+              if (!image() || !window.snap_to_image())
+                return pos;
+              Point<> vox = voxel_at (pos);
+              vox[current_plane] = Math::round<float> (vox[current_plane]);
+              return image()->interp.voxel2scanner (vox);
+            }
+
+            void reset_view ();
 
             bool painting;
         };

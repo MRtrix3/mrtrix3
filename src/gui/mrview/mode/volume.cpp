@@ -38,7 +38,7 @@ namespace MR
       {
 
         Volume::Volume (Window& parent) : 
-          Mode3D (parent, FocusContrast | MoveTarget | TiltRotate | 
+          Slice (parent, FocusContrast | MoveTarget | TiltRotate | 
               ExtraControls | ShaderTransparency | ShaderLighting),
           extra_controls (NULL) { 
           }
@@ -48,11 +48,8 @@ namespace MR
           delete extra_controls;
         }
 
-        void Volume::paint ()
+        void Volume::paint (Projection& projection)
         {
-          if (!focus()) reset_view();
-          if (!target()) set_target (focus());
-
           // info for projection:
           int w = glarea()->width(), h = glarea()->height();
           float fov = FOV() / (float) (w+h);

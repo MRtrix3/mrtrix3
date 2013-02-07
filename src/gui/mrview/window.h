@@ -76,6 +76,7 @@ namespace MR
           float FOV () const { return field_of_view; }
           int plane () const { return anatomical_plane; }
           const Math::Versor<float>& orientation () const { return orient; }
+          bool snap_to_image () const { return snap_to_image_axes_and_voxel; }
           Image* image () { return static_cast<Image*> (image_group->checkedAction()); }
 
           void set_focus (const Point<>& p) { focal_point = p; emit focusChanged(); }
@@ -84,6 +85,7 @@ namespace MR
           void set_plane (int p) { anatomical_plane = p; emit planeChanged(); }
           void set_orientation (const Math::Versor<float>& Q) { orient = Q; emit orientationChanged(); }
           void set_scaling (float min, float max) { if (!image()) return; image()->set_windowing (min, max); }
+          void set_snap_to_image (bool onoff) { snap_to_image_axes_and_voxel = onoff; emit focusChanged(); }
 
           void set_scaling_all (float min, float max) {
             QList<QAction*> list = image_group->actions();
@@ -132,6 +134,7 @@ namespace MR
           void invert_scaling_slot ();
           void full_screen_slot ();
           void toggle_annotations_slot ();
+          void snap_to_image_slot ();
 
           void slice_next_slot ();
           void slice_previous_slot ();
@@ -203,6 +206,7 @@ namespace MR
           Math::Versor<float> orient;
           float field_of_view;
           int anatomical_plane, annotations, colourbar_position_index;
+          bool snap_to_image_axes_and_voxel;
 
           QMenu *image_menu, 
                 *colourmap_menu;
@@ -223,6 +227,7 @@ namespace MR
                   *invert_colourmap_action, 
                   *invert_scale_action,
                   *extra_controls_action,
+                  *snap_to_image_action,
 
                   *next_image_action,
                   *prev_image_action, 

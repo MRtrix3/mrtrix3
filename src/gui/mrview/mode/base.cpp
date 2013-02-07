@@ -61,8 +61,12 @@ namespace MR
             goto done_painting;
           }
 
+          if (!focus() || !target()) 
+            reset_view();
+
           {
-            paint();
+            // call mode's draw method:
+            paint (projection);
 
             glDisable (GL_MULTISAMPLE);
             glColor4f (1.0, 1.0, 0.0, 1.0);
@@ -110,8 +114,7 @@ done_painting:
         }
 
 
-        void Base::paint () { }
-        void Base::reset_event () { }
+        void Base::paint (Projection& projection) { }
         void Base::mouse_press_event () { }
         void Base::mouse_release_event () { }
         void Base::slice_move_event (int x) { }
@@ -124,6 +127,47 @@ done_painting:
 
         Tool::Dock* Base::get_extra_controls () { 
           return NULL;
+        }
+
+
+
+
+        void Base::reset_event () 
+        { 
+          reset_view();
+          updateGL();
+        }
+
+
+        void Base::reset_view () 
+        {
+          if (!image()) return;
+
+          float dim[] = {
+            image()->header().dim (0) * image()->header().vox (0),
+            image()->header().dim (1) * image()->header().vox (1),
+            image()->header().dim (2) * image()->header().vox (2)
+          };
+          if (dim[0] < dim[1] && dim[0] < dim[2])
+            set_plane (0);
+          else if (dim[1] < dim[0] && dim[1] < dim[2])
+            set_plane (1);
+          else
+            set_plane (2);
+
+          Point<> p (image()->header().dim (0)/2.0f, image()->header().dim (1)/2.0f, image()->header().dim (2)/2.0f);
+          p = image()->interp.voxel2scanner (p);
+          set_focus (p);
+          set_target (p);
+          Math::Versor<float> orient;
+          orient.from_matrix (image()->header().transform());
+          set_orientation (orient);
+
+          int x, y;
+          image()->get_axes (plane(), x, y);
+          set_FOV (std::max (dim[x], dim[y]));
+
+          updateGL();
         }
 
 

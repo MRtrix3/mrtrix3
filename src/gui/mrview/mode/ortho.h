@@ -45,7 +45,7 @@ namespace MR
                 projections (3, projection),
                 current_plane (-1) { }
 
-            virtual void paint ();
+            virtual void paint (Projection& projection);
 
             virtual void reset_event ();
             virtual void mouse_press_event ();

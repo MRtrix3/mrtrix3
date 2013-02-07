@@ -33,7 +33,11 @@ namespace MR
           viewport[1] = y;
           viewport[2] = w;
           viewport[3] = h;
-          glViewport (x, y, w, h);
+          set_viewport();
+        }
+
+        void set_viewport () const {
+          glViewport (viewport[0], viewport[1], viewport[2], viewport[3]);
         }
 
 

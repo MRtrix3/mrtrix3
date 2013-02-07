@@ -20,11 +20,11 @@
 
 */
 
-#ifndef __gui_mrview_mode_mode3d_h__
-#define __gui_mrview_mode_mode3d_h__
+#ifndef __gui_mrview_mode_slice_h__
+#define __gui_mrview_mode_slice_h__
 
 #include "app.h"
-#include "gui/mrview/mode/mode2d.h"
+#include "gui/mrview/mode/base.h"
 
 #define ROTATION_INC 0.002
 
@@ -37,15 +37,14 @@ namespace MR
       namespace Mode
       {
 
-        class Mode3D : public Mode2D
+        class Slice : public Base
         {
           public:
-            Mode3D (Window& parent, int flags = FocusContrast | MoveTarget | TiltRotate);
-            virtual ~Mode3D ();
+            Slice (Window& parent, int flags = FocusContrast | MoveTarget | TiltRotate);
+            virtual ~Slice ();
 
-            virtual void paint ();
+            virtual void paint (Projection& projection);
 
-            virtual void reset_event ();
             virtual void slice_move_event (int x);
             virtual void set_focus_event ();
             virtual void contrast_event ();

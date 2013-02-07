@@ -21,7 +21,7 @@
 */
 
 #include "math/vector.h"
-#include "gui/mrview/mode/mode3d.h"
+#include "gui/mrview/mode/slice.h"
 
 namespace MR
 {
@@ -48,8 +48,8 @@ namespace MR
           };
         }
 
-        Mode3D::Mode3D (Window& parent, int flags) : 
-          Mode2D (parent, flags) {
+        Slice::Slice (Window& parent, int flags) : 
+          Base (parent, flags) {
             using namespace App;
             Options opt = get_options ("view");
             if (opt.size()) {
@@ -59,30 +59,23 @@ namespace MR
           }
 
 
-        Mode3D::~Mode3D () { }
+        Slice::~Slice () { }
 
 
 
-        void Mode3D::paint ()
+        void Slice::paint (Projection& projection)
         {
-          if (!focus()) reset_view();
-          if (!target()) set_target (focus());
-
           // info for projection:
-          int w = glarea()->width(), h = glarea()->height();
-          float fov = FOV() / (float) (w+h);
-          float depth = 100.0;
-
-
-          Math::Versor<float> Q = orientation();
-          if (!Q) {
-            Q = Math::Versor<float> (1.0, 0.0, 0.0, 0.0);
-            set_orientation (Q);
-          }
+          float fov = FOV() / (float) (width()+height());
+          float depth = 100.0;//std::max (std::max (image()->header().dim(0), image()->header().dim(1)), image()->header().dim(2));
 
           // set up projection & modelview matrices:
-          GL::mat4 P = GL::ortho (-w*fov, w*fov, -h*fov, h*fov, -depth, depth);
-          GL::mat4 MV = adjust_projection_matrix (Q) * GL::translate (-target()[0], -target()[1], -target()[2]);
+          GL::mat4 P = GL::ortho (
+              -width()*fov, width()*fov, 
+              -height()*fov, height()*fov, 
+              -depth, depth);
+          GL::mat4 M = snap_to_image() ? GL::mat4 (image()->interp.image2scanner_matrix()) : GL::mat4 (orientation());
+          GL::mat4 MV = adjust_projection_matrix (M) * GL::translate (-target());
           projection.set (MV, P);
 
           // set up OpenGL environment:
@@ -95,7 +88,10 @@ namespace MR
 
           // render image:
           DEBUG_OPENGL;
-          image()->render3D (projection, projection.depth_of (focus()));
+          if (snap_to_image()) 
+            image()->render2D (projection, plane(), slice());
+          else 
+            image()->render3D (projection, projection.depth_of (focus()));
           DEBUG_OPENGL;
 
           glDisable (GL_TEXTURE_3D);
@@ -110,7 +106,7 @@ namespace MR
 
 
 
-        void Mode3D::draw_orientation_labels ()
+        void Slice::draw_orientation_labels ()
         {
           if (window.show_orientation_labels()) {
             glColor4f (1.0, 0.0, 0.0, 1.0);
@@ -141,17 +137,10 @@ namespace MR
 
 
 
-        void Mode3D::reset_event ()
-        {
-          Math::Versor<float> Q;
-          set_orientation (Q);
-          Mode2D::reset_event();
-        }
 
 
 
-
-        void Mode3D::slice_move_event (int x) 
+        void Slice::slice_move_event (int x) 
         {
           move_in_out (x * std::min (std::min (image()->header().vox(0), image()->header().vox(1)), image()->header().vox(2)));
           updateGL();
@@ -160,7 +149,7 @@ namespace MR
 
 
 
-        void Mode3D::set_focus_event ()
+        void Slice::set_focus_event ()
         {
           set_focus (projection.screen_to_model (window.mouse_position(), focus()));
           updateGL();
@@ -169,7 +158,7 @@ namespace MR
 
 
 
-        void Mode3D::contrast_event ()
+        void Slice::contrast_event ()
         {
           image()->adjust_windowing (window.mouse_displacement());
           window.on_scaling_changed();
@@ -178,7 +167,7 @@ namespace MR
 
 
 
-        void Mode3D::pan_event ()
+        void Slice::pan_event ()
         {
           set_target (target() - projection.screen_to_model_direction (window.mouse_displacement(), target()));
           updateGL();
@@ -186,7 +175,7 @@ namespace MR
 
 
 
-        void Mode3D::panthrough_event ()
+        void Slice::panthrough_event ()
         {
           move_in_out_FOV (window.mouse_displacement().y());
           updateGL();
@@ -195,7 +184,7 @@ namespace MR
 
 
 
-        void Mode3D::tilt_event ()
+        void Slice::tilt_event ()
         {
           QPoint dpos = window.mouse_displacement();
           if (dpos.x() == 0 && dpos.y() == 0)
@@ -217,7 +206,7 @@ namespace MR
 
 
 
-        void Mode3D::rotate_event ()
+        void Slice::rotate_event ()
         {
           Point<> x1 (window.mouse_position().x() - projection.width()/2,
               window.mouse_position().y() - projection.height()/2,
@@ -247,7 +236,7 @@ namespace MR
 
 
         using namespace App;
-        const App::OptionGroup Mode3D::options = OptionGroup ("3D reslice mode") 
+        const App::OptionGroup Slice::options = OptionGroup ("single-slice mode") 
           + Option ("view", "specify initial angle of view")
           + Argument ("azimuth").type_float(-M_PI, 0.0, M_PI)
           + Argument ("elevation").type_float(0.0, 0.0, M_PI);

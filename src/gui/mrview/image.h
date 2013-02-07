@@ -53,20 +53,11 @@ namespace MR
           Image (const MR::Image::Header& image_header);
           Image (Window& parent, const MR::Image::Header& image_header);
 
-          MR::Image::Header& header () {
-            return buffer;
-          }
-          const MR::Image::Header& header () const {
-            return buffer;
-          }
+          MR::Image::Header& header () { return buffer; }
+          const MR::Image::Header& header () const { return buffer; }
 
-          void set_interpolate (bool linear) {
-            interpolation = linear ? GL_LINEAR : GL_NEAREST;
-          }
-
-          bool interpolate () const {
-            return interpolation == GL_LINEAR;
-          }
+          void set_interpolate (bool linear) { interpolation = linear ? GL_LINEAR : GL_NEAREST; }
+          bool interpolate () const { return interpolation == GL_LINEAR; }
 
           void set_colourmap (size_t index) {
             if (ColourMap::maps[index].special || ColourMap::maps[colourmap()].special) {
@@ -135,9 +126,7 @@ namespace MR
         public:
           InterpVoxelType interp;
 
-          VoxelType& voxel () { 
-            return interp;
-          }
+          VoxelType& voxel () { return interp; }
 
         private:
           int interpolation;

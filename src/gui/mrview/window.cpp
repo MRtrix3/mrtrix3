@@ -161,7 +161,8 @@ namespace MR
         orient (NAN, NAN, NAN, NAN),
         field_of_view (100.0),
         anatomical_plane (2),
-        colourbar_position_index (2)
+        colourbar_position_index (2),
+        snap_to_image_axes_and_voxel (true)
       {
         setWindowTitle (tr ("MRView"));
         setWindowIcon (QPixmap (":/mrtrix.png"));
@@ -497,7 +498,7 @@ namespace MR
         action->setToolTip (tr ((
                 "Left-click: move camera in-plane\n"
                 "Right-click: rotate camera about view axis\n\n"
-                "Shortcut: 2\n\n"
+                "Shortcut: 3\n\n"
                 "Hold down " + get_modifier (RotateModifier) + " key to use this mode\n"
                 "regardless of currently selected mode").c_str()));
         action->setShortcut (tr("3"));
@@ -518,6 +519,17 @@ namespace MR
 
         toolbar->addSeparator();
 
+        snap_to_image_action = toolbar->addAction (QIcon (":/lock.svg"), 
+            tr ("Snap to image"), this, SLOT (snap_to_image_slot()));
+        snap_to_image_action->setToolTip (tr (
+                "Snap focus and view orientation to\n"
+                "image voxel grid and axes respectively\n\n"
+                "Shortcut: L"));
+        snap_to_image_action->setShortcut (tr("L"));
+        snap_to_image_action->setCheckable (true);
+        snap_to_image_action->setChecked (snap_to_image_axes_and_voxel);
+
+        toolbar->addSeparator();
 
         // Help menu:
 
@@ -695,6 +707,9 @@ namespace MR
           glarea->updateGL();
         }
       }
+
+
+
       void Window::invert_scaling_slot ()
       {
         if (image()) {
@@ -702,6 +717,19 @@ namespace MR
           glarea->updateGL();
         }
       }
+
+
+
+      void Window::snap_to_image_slot ()
+      {
+        if (image()) {
+          snap_to_image_axes_and_voxel = snap_to_image_action->isChecked();
+          glarea->updateGL();
+        }
+      }
+
+
+
 
       void Window::on_scaling_changed () 
       {

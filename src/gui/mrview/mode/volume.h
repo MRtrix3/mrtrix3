@@ -24,7 +24,7 @@
 #define __gui_mrview_mode_volume_h__
 
 #include "app.h"
-#include "gui/mrview/mode/mode3d.h"
+#include "gui/mrview/mode/slice.h"
 
 namespace MR
 {
@@ -35,13 +35,13 @@ namespace MR
       namespace Mode
       {
 
-        class Volume : public Mode3D
+        class Volume : public Slice
         {
           public:
             Volume (Window& parent);
             virtual ~Volume ();
 
-            virtual void paint ();
+            virtual void paint (Projection& projection);
             virtual Tool::Dock* get_extra_controls ();
 
           protected:

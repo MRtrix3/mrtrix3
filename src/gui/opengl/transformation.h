@@ -25,6 +25,7 @@
 
 #include <iostream>
 
+#include "point.h"
 #include "math/LU.h"
 #include "math/versor.h"
 #include "gui/opengl/gl.h"
@@ -179,6 +180,12 @@ namespace MR
         m(3,3) = 1.0f;
         return m;
       }
+
+      template <typename ValueType>
+        inline mat4 translate (const Point<ValueType> x)
+        {
+          return translate (x[0], x[1], x[2]);
+        }
 
 
       inline mat4 scale (float x, float y, float z) 

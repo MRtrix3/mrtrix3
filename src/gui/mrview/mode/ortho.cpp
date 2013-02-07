@@ -39,11 +39,8 @@ namespace MR
 
 
 
-        void Ortho::paint ()
+        void Ortho::paint (Projection& projection)
         {
-          if (!focus()) reset_view();
-          if (!target()) set_target (focus());
-
           GLint w = glarea()->width()/2;
           GLint h = glarea()->height()/2;
           float fov = FOV() / float(w+h);
@@ -54,7 +51,7 @@ namespace MR
           draw_plane (1, w, h, fovx, fovy);
           draw_plane (2, w, h, fovx, fovy);
 
-          projection.set_viewport (0, 0, glarea()->width(), glarea()->height());
+          projection.set_viewport ();
 
           GL::mat4 MV = GL::identity();
           GL::mat4 P = GL::ortho (0, glarea()->width(), 0, glarea()->height(), -1.0, 1.0);
@@ -225,7 +222,7 @@ namespace MR
         {
           if (current_plane < 0) 
             return;
-          Base::set_focus (projections[current_plane].screen_to_model (window.mouse_position(), focus()));
+          Base::set_focus (projections[current_plane].screen_to_model (window.mouse_position(), focus()), current_plane);
           updateGL();
         }
 
