@@ -65,8 +65,15 @@ namespace MR
 
             colourmap_menu = new QMenu (tr ("Colourmap menu"), this);
 
-            ColourMap::create_menu (this, colourmap_group, colourmap_menu, colourmap_actions, true);
+            ColourMap::create_menu (this, colourmap_group, colourmap_menu, colourmap_actions);
             connect (colourmap_group, SIGNAL (triggered (QAction*)), this, SLOT (select_colourmap_slot()));
+
+            colourmap_menu->addSeparator();
+
+            show_colour_bar = colourmap_menu->addAction (tr ("Show colour bar"), this, SLOT (show_colour_bar_slot()));
+            show_colour_bar->setCheckable (true);
+            show_colour_bar->setChecked (true);
+            addAction (show_colour_bar);
 
 //            colourmap_menu->addSeparator();
 //
@@ -143,6 +150,7 @@ namespace MR
               min_entry->setRate (tractogram->scaling_rate());
               max_entry->setRate (tractogram->scaling_rate());
               threshold_box->setEnabled (true);
+              colourmap_menu->setEnabled (true);
               if (threshold_box->isChecked()) {
                 greaterthan->setEnabled (true);
                 lessthan->setEnabled (true);
@@ -167,9 +175,10 @@ namespace MR
               max_entry->setEnabled (false);
               min_entry->clear();
               max_entry->clear();
-              threshold_box->setEnabled(false);
+              threshold_box->setEnabled (false);
               greaterthan->clear();
               lessthan->clear();
+              colourmap_menu->setEnabled (false);
             }
           }
 
@@ -189,6 +198,15 @@ namespace MR
               return true;
             }
             return false;
+          }
+
+
+          void ScalarFileOptions::show_colour_bar_slot ()
+          {
+            if (tractogram) {
+              tractogram->show_colour_bar = show_colour_bar->isChecked();
+              window.updateGL();
+            }
           }
 
 

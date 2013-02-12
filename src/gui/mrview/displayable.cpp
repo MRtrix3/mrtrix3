@@ -40,6 +40,7 @@ namespace MR
 
       Displayable::Displayable (const std::string& filename) :
         QAction (NULL),
+        show (true),
         lessthan (NAN),
         greaterthan (NAN),
         display_midpoint (NAN),
@@ -56,6 +57,7 @@ namespace MR
 
       Displayable::Displayable (Window& window, const std::string& filename) :
         QAction (shorten (filename, 20, 0).c_str(), &window),
+        show (true),
         lessthan (NAN),
         greaterthan (NAN),
         display_midpoint (NAN),

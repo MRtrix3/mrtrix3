@@ -47,7 +47,7 @@ namespace MR
             QVariant data (const QModelIndex& index, int role) const {
               if (!index.isValid()) return QVariant();
               if (role == Qt::CheckStateRole) {
-                return shown[index.row()] ? Qt::Checked : Qt::Unchecked;
+                return items[index.row()]->show ? Qt::Checked : Qt::Unchecked;
               }
               if (role != Qt::DisplayRole) return QVariant();
               return shorten (items[index.row()]->get_filename(), 20, 0).c_str();
@@ -55,7 +55,7 @@ namespace MR
 
             bool setData (const QModelIndex& index, const QVariant& value, int role) {
               if (role == Qt::CheckStateRole) {
-                shown[index.row()] =  (value == Qt::Checked);
+                items[index.row()]->show = (value == Qt::Checked);
                 emit dataChanged (index, index);
                 return true;
               }
@@ -78,12 +78,10 @@ namespace MR
             void remove_item (QModelIndex& index) {
               beginRemoveRows (QModelIndex(), index.row(), index.row());
               items.erase (items.begin() + index.row());
-              shown.resize (items.size(), true);
               endRemoveRows();
             }
 
             VecPtr<Displayable> items;
-            std::vector<bool> shown;
         };
 
 

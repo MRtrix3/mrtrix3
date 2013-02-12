@@ -107,6 +107,13 @@ namespace MR
 
             if (window.show_colourbar())
               window.colourbar_renderer.render (projection, *image(), window.colourbar_position_index);
+
+            QList<QAction*> tools = window.tools()->actions();
+            for (int i = 0; i < tools.size(); ++i) {
+              Tool::Dock* dock = dynamic_cast<Tool::__Action__*>(tools[i])->instance;
+              if (dock)
+                dock->tool->drawOverlays (projection);
+            }
           }
 
 done_painting:

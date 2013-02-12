@@ -52,16 +52,16 @@ namespace MR
               bool open_track_scalar_file_slot ();
 
             private slots:
+              void show_colour_bar_slot();
               void select_colourmap_slot ();
               void toggle_threshold_slot ();
               void on_set_scaling_slot ();
               void on_set_threshold_slot ();
 
             protected:
-              void update_threshold_box();
-
               Tractogram* tractogram;
               QVBoxLayout* main_box;
+              QAction* show_colour_bar;
               QMenu* colourmap_menu;
               QAction** colourmap_actions;
               QActionGroup *colourmap_group;

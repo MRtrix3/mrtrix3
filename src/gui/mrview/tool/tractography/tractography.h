@@ -54,6 +54,8 @@ namespace MR
 
               void draw2D (const Projection& transform);
               void draw3D (const Projection& transform);
+              void drawOverlays (const Projection& transform);
+
 
               float line_thickness;
               bool do_crop_to_slab;

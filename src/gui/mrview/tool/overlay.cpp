@@ -66,7 +66,6 @@ namespace MR
               overlay->set_colourmap (1);
             items.push_back (overlay);
           }
-          shown.resize (items.size(), true);
           endInsertRows();
         }
 
@@ -209,7 +208,7 @@ namespace MR
 
           bool need_to_update = false;
           for (int i = 0; i < image_list_model->rowCount(); ++i) {
-            if (image_list_model->shown[i]) {
+            if (image_list_model->items[i]->show) {
               Image* image = dynamic_cast<Image*>(image_list_model->items[i]);
               need_to_update |= !finite (image->intensity_min());
               image->render3D (projection, projection.depth_of (window.focus()));

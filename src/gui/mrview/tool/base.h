@@ -67,6 +67,7 @@ namespace MR
 
             virtual void draw2D (const Projection& transform);
             virtual void draw3D (const Projection& transform);
+            virtual void drawOverlays (const Projection& transform);
         };
 
 

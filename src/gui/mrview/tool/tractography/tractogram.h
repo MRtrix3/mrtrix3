@@ -33,6 +33,7 @@
 #include "gui/mrview/displayable.h"
 #include "dwi/tractography/properties.h"
 #include "gui/mrview/tool/tractography/tractography.h"
+#include "gui/mrview/colourmap.h"
 
 
 namespace MR
@@ -68,7 +69,13 @@ namespace MR
 
               void render3D ();
 
+              void renderColourBar (const Projection& transform) {
+                if (color_type == ScalarFile && show_colour_bar)
+                  colourbar_renderer.render (transform, *this, colourbar_position_index);
+              }
+
               void load_tracks();
+
               void load_track_scalars (std::string filename);
 
               virtual void recompile ();
@@ -81,6 +88,7 @@ namespace MR
 
               bool do_crop_to_slab;
               bool do_threshold;
+              bool show_colour_bar;
               colour_type color_type;
               std::string scalar_filename;
 
@@ -99,6 +107,8 @@ namespace MR
               std::vector<std::vector<GLint> > track_sizes;
               std::vector<size_t> num_tracks_per_buffer;
               float colour[3];
+              ColourMap::Renderer colourbar_renderer;
+              int colourbar_position_index;
 
 
               inline void load_tracks_onto_GPU (std::vector<Point<float> >& buffer,

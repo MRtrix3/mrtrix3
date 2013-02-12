@@ -62,7 +62,6 @@ namespace MR
                     tractogram->load_tracks();
                     beginInsertRows (QModelIndex(), items.size(), items.size() + 1);
                     items.push_back (tractogram);
-                    shown.resize (items.size(), true);
                     endInsertRows();
                   } catch (Exception& e) {
                     delete tractogram;
@@ -193,8 +192,16 @@ namespace MR
 
           void Tractography::draw2D (const Projection& transform) {
             for (int i = 0; i < tractogram_list_model->rowCount(); ++i) {
-              if (tractogram_list_model->shown[i])
+              if (tractogram_list_model->items[i]->show)
                 dynamic_cast<Tractogram*>(tractogram_list_model->items[i])->render2D (transform);
+            }
+          }
+
+
+          void Tractography::drawOverlays (const Projection& transform) {
+            for (int i = 0; i < tractogram_list_model->rowCount(); ++i) {
+              if (tractogram_list_model->items[i]->show)
+                dynamic_cast<Tractogram*>(tractogram_list_model->items[i])->renderColourBar (transform);
             }
           }
 

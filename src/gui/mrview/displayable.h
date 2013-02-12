@@ -123,6 +123,7 @@ namespace MR
             }
           }
           
+          bool show;
           float lessthan, greaterthan;
           float display_midpoint, display_range;
           float transparent_intensity, opaque_intensity, alpha;
@@ -278,7 +279,6 @@ namespace MR
         protected:
           const std::string filename;
           float value_min, value_max;
-
           uint32_t flags_;
           size_t colourmap_index;
 

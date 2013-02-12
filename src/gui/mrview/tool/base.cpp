@@ -51,6 +51,8 @@ namespace MR
 
         void Base::draw3D (const Projection& transform) { }
 
+        void Base::drawOverlays (const Projection& transform) { }
+
       }
     }
   }

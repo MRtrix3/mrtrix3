@@ -50,11 +50,15 @@ namespace MR
             Displayable (filename),
             do_crop_to_slab (true),
             do_threshold (false),
+            show_colour_bar (true),
             color_type (Direction),
             scalar_filename (""),
             window (window),
             tractography_tool (tool),
-            filename (filename){} //TODO do I need this
+            filename (filename),
+            colourbar_position_index (4) {
+              colourmap_index = 1;
+          }
 
 
           Tractogram::~Tractogram ()
@@ -105,6 +109,7 @@ namespace MR
               glBlendFunc (GL_CONSTANT_ALPHA, GL_ONE);
               glBlendColor (1.0, 1.0, 1.0, tractography_tool.line_opacity);
             } else {
+              glDisable (GL_BLEND);
               glEnable (GL_DEPTH_TEST);
               glDepthMask (GL_TRUE);
             }
@@ -121,6 +126,7 @@ namespace MR
               glEnable (GL_DEPTH_TEST);
               glDepthMask (GL_TRUE);
             }
+
             stop();
           }
 
@@ -132,104 +138,104 @@ namespace MR
 
 
           void Tractogram::recompile ()
-                   {
+          {
 
-                     if (shader_program)
-                       shader_program.clear();
+            if (shader_program)
+              shader_program.clear();
 
-                     std::string vertex_shader_code =
-                         "layout (location = 0) in vec3 vertexPosition_modelspace;\n"
-                         "layout (location = 1) in vec3 previousVertex;\n"
-                         "layout (location = 2) in vec3 nextVertex;\n"
-                         "out vec3 fragmentColour;\n"
-                         "uniform mat4 MVP;\n"
-                         "vec3 color;\n"
-                         "out float amp_out;\n";  //TODO
+            std::string vertex_shader_code =
+                "layout (location = 0) in vec3 vertexPosition_modelspace;\n"
+                "layout (location = 1) in vec3 previousVertex;\n"
+                "layout (location = 2) in vec3 nextVertex;\n"
+                "out vec3 fragmentColour;\n"
+                "uniform mat4 MVP;\n"
+                "vec3 color;\n"
+                "out float amp_out;\n";  //TODO
 
-                     if (color_type == ScalarFile)
-                       vertex_shader_code += "layout (location = 3) in float amp;\n"
-                                             "uniform float offset, scale;\n";
+            if (color_type == ScalarFile)
+              vertex_shader_code += "layout (location = 3) in float amp;\n"
+                  "uniform float offset, scale;\n";
 
-                     if (do_crop_to_slab) {
-                       vertex_shader_code +=
-                           "out float include;\n"
-                           "uniform vec3 screen_normal;\n"
-                           "uniform float crop_var;\n"
-                           "uniform float slab_width;\n";
-                     }
+            if (do_crop_to_slab) {
+              vertex_shader_code +=
+                  "out float include;\n"
+                  "uniform vec3 screen_normal;\n"
+                  "uniform float crop_var;\n"
+                  "uniform float slab_width;\n";
+            }
 
-                     vertex_shader_code +=
-                         "void main() {\n"
-                         "  gl_Position =  MVP * vec4(vertexPosition_modelspace,1);\n";
+            vertex_shader_code +=
+                "void main() {\n"
+                "  gl_Position =  MVP * vec4(vertexPosition_modelspace,1);\n";
 
-                     switch (color_type) {
-                       case Direction:
-                         vertex_shader_code +=
-                           "  if (isnan (previousVertex.x))\n"
-                           "    color = nextVertex - vertexPosition_modelspace;\n"
-                           "  else if (isnan (nextVertex.x))\n"
-                           "    color = vertexPosition_modelspace - previousVertex;\n"
-                           "  else\n"
-                           "    color = nextVertex - previousVertex;\n"
-                           "  color = normalize (abs (color));\n";
-                         break;
-                       case Colour:
-                         vertex_shader_code +=
-                             "  color = vec3(" + str(colour[0]) + ", " + str(colour[1]) + ", " + str(colour[2]) + ");\n";
-                         break;
-                       case ScalarFile:
-                         vertex_shader_code += "  amp_out = amp;\n";
-                         if (!ColourMap::maps[colourmap_index].special) {
-                           vertex_shader_code += "  float amplitude = clamp (";
-                           if (flags_ & InvertScale) vertex_shader_code += "1.0 -";
-                           vertex_shader_code += " scale * (amp - offset), 0.0, 1.0);\n  ";
-                         }
-                         vertex_shader_code += ColourMap::maps[colourmap_index].mapping;
+            switch (color_type) {
+            case Direction:
+              vertex_shader_code +=
+                  "  if (isnan (previousVertex.x))\n"
+                  "    color = nextVertex - vertexPosition_modelspace;\n"
+                  "  else if (isnan (nextVertex.x))\n"
+                  "    color = vertexPosition_modelspace - previousVertex;\n"
+                  "  else\n"
+                  "    color = nextVertex - previousVertex;\n"
+                  "  color = normalize (abs (color));\n";
+              break;
+            case Colour:
+              vertex_shader_code +=
+                  "  color = vec3(" + str(colour[0]) + ", " + str(colour[1]) + ", " + str(colour[2]) + ");\n";
+              break;
+            case ScalarFile:
+              vertex_shader_code += "  amp_out = amp;\n";
+              if (!ColourMap::maps[colourmap_index].special) {
+                vertex_shader_code += "  float amplitude = clamp (";
+                if (flags_ & InvertScale) vertex_shader_code += "1.0 -";
+                vertex_shader_code += " scale * (amp - offset), 0.0, 1.0);\n  ";
+              }
+              vertex_shader_code += ColourMap::maps[colourmap_index].mapping;
 
-                         break;
-                       default:
-                         assert(0);
-                         break;
-                     }
+              break;
+            default:
+              assert(0);
+              break;
+            }
 
-                     if (do_crop_to_slab)
-                       vertex_shader_code +=
-                           "  include = (dot (vertexPosition_modelspace, screen_normal) - crop_var) / slab_width;\n";
+            if (do_crop_to_slab)
+              vertex_shader_code +=
+                  "  include = (dot (vertexPosition_modelspace, screen_normal) - crop_var) / slab_width;\n";
 
-                     vertex_shader_code += "  fragmentColour = color;\n}\n";
+            vertex_shader_code += "  fragmentColour = color;\n}\n";
 
-                     std::string fragment_shader_code =
-                         "in vec3 fragmentColour;\n"
-                         "in float include; \n"
-                         "out vec3 color;\n"
-                         "in float amp_out;\n";
+            std::string fragment_shader_code =
+                "in vec3 fragmentColour;\n"
+                "in float include; \n"
+                "out vec3 color;\n"
+                "in float amp_out;\n";
 
-                     if (color_type == ScalarFile && do_threshold)
-                       fragment_shader_code += "uniform float lessthan, greaterthan;\n";
+            if (color_type == ScalarFile && do_threshold)
+              fragment_shader_code += "uniform float lessthan, greaterthan;\n";
 
-                     fragment_shader_code +=
-                         "void main(){\n";
+            fragment_shader_code +=
+                "void main(){\n";
 
-                     if (do_crop_to_slab)
-                       fragment_shader_code += "  if (include < 0 || include > 1) discard;\n";
+            if (do_crop_to_slab)
+              fragment_shader_code += "  if (include < 0 || include > 1) discard;\n";
 
-                     if (color_type == ScalarFile && do_threshold)
-                       fragment_shader_code += "  if (amp_out < lessthan) discard;\n"
-                                               "  if (amp_out > greaterthan) discard;\n";
+            if (color_type == ScalarFile && do_threshold)
+              fragment_shader_code += "  if (amp_out < lessthan) discard;\n"
+                  "  if (amp_out > greaterthan) discard;\n";
 
-                     fragment_shader_code +=
-                         "  color = " + std::string ( color_type == Direction ? "normalize" : "" ) + " (fragmentColour);\n"
-                         "}\n";
+            fragment_shader_code +=
+                "  color = " + std::string ( color_type == Direction ? "normalize" : "" ) + " (fragmentColour);\n"
+                "}\n";
 
 
 
-                     GL::Shader::Vertex vertex_shader (vertex_shader_code);
-                     GL::Shader::Fragment fragment_shader (fragment_shader_code);
-                     shader_program.attach (vertex_shader);
-                     shader_program.attach (fragment_shader);
-                     shader_program.link();
+            GL::Shader::Vertex vertex_shader (vertex_shader_code);
+            GL::Shader::Fragment fragment_shader (fragment_shader_code);
+            shader_program.attach (vertex_shader);
+            shader_program.attach (fragment_shader);
+            shader_program.link();
 
-                   }
+          }
 
 
           void Tractogram::load_tracks()
