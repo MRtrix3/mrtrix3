@@ -56,19 +56,37 @@ namespace MR
 
 #define TRACK_INDEX_BUFFER_SIZE 10000
 
-
-      class SH_Writer
+      template <class FODBufferType, class MaskBufferType>
+      class FODQueueWriter
       {
 
         public:
-          SH_Writer (Image::Buffer<float>&, Image::BufferScratch<float>&);
+          FODQueueWriter (FODBufferType& fod_buffer, MaskBufferType& mask_buffer) :
+            fod_vox (fod_buffer),
+            mask_vox (mask_buffer),
+            loop ("Segmenting FODs...", 0, 3)
+            {
+              loop.start (fod_vox, mask_vox);
+            }
 
-          bool operator() (DWI::SH_coefs&);
 
+          bool operator () (DWI::SH_coefs& out)
+          {
+            while (loop.ok() && !mask_vox.value())
+              loop.next (fod_vox, mask_vox);
+            if (!loop.ok())
+              return false;
+            out.vox[0] = fod_vox[0]; out.vox[1] = fod_vox[1]; out.vox[2] = fod_vox[2];
+            out.allocate (fod_vox.dim (3));
+            for (fod_vox[3] = 0; fod_vox[3] != fod_vox.dim (3); ++fod_vox[3])
+              out[fod_vox[3]] = fod_vox.value();
+            loop.next (fod_vox, mask_vox);
+            return true;
+          }
 
         private:
-          Image::Buffer<float>::voxel_type dwi;
-          Image::BufferScratch<float>::voxel_type mask;
+          typename FODBufferType::voxel_type fod_vox;
+          typename MaskBufferType::voxel_type mask_vox;
           Image::Loop loop;
 
       };

@@ -35,39 +35,6 @@ namespace MR
       {
 
 
-
-
-
-      SH_Writer::SH_Writer (Image::Buffer<float>& dwi_data, Image::BufferScratch<float>& mask_data) :
-        dwi (dwi_data),
-        mask (mask_data),
-        loop ("Segmenting FODs...", 0, 3)
-      {
-        loop.start (dwi, mask);
-      }
-
-
-
-      bool SH_Writer::operator () (DWI::SH_coefs& out)
-      {
-        while (loop.ok() && !mask.value())
-          loop.next (dwi, mask);
-        if (!loop.ok())
-          return false;
-        out.vox[0] = dwi[0]; out.vox[1] = dwi[1]; out.vox[2] = dwi[2];
-        out.allocate (dwi.dim (3));
-        for (dwi[3] = 0; dwi[3] != dwi.dim (3); ++dwi[3])
-          out[dwi[3]] = dwi.value();
-        loop.next (dwi, mask);
-        return true;
-      }
-
-
-
-
-
-
-
       TrackIndexRangeWriter::TrackIndexRangeWriter (const track_t buffer_size, const track_t num_tracks, const std::string& message) :
         size  (buffer_size),
         end   (num_tracks),
