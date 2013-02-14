@@ -34,7 +34,7 @@
 #include "image/registration/metric/mean_squared.h"
 #include "image/registration/transform/affine.h"
 #include "image/registration/transform/rigid.h"
-#include "math/hemisphere/predefined_dirs.h"
+#include "dwi/directions/predefined.h"
 #include "math/vector.h"
 #include "math/matrix.h"
 #include "math/SH.h"
@@ -385,7 +385,7 @@ void run ()
 
   opt = get_options ("directions");
   Math::Matrix<value_type> directions;
-  Math::Hemisphere::directions_60 (directions);
+  DWI::Directions::electrostatic_repulsion_60 (directions);
   if (opt.size())
     directions.load(opt[0][0]);
 

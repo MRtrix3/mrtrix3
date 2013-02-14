@@ -160,7 +160,7 @@ namespace MR
                 moving_resize_filter.set_interp_type (1);
                 Image::BufferScratch<float> moving_resized (moving_resize_filter.info());
                 Image::BufferScratch<float>::voxel_type moving_resized_vox (moving_resized);
-                Image::Filter::GaussianSmooth moving_smooth_filter (moving_resized_vox);
+                Image::Filter::GaussianSmooth<float> moving_smooth_filter (moving_resized_vox);
                 Image::BufferScratch<float> moving_resized_smoothed (moving_smooth_filter.info());
                 Image::BufferScratch<float>::voxel_type moving_resized_smoothed_vox (moving_resized_smoothed);
 

@@ -128,9 +128,8 @@ void run() {
     vert(d,2) = cos (directions(d,1));
   }
 
-  DWI::Tractography::Reader<value_type> tck_reader;
   DWI::Tractography::Properties properties;
-  tck_reader.open (argument[1], properties);
+  DWI::Tractography::Reader<value_type> tck_reader (argument[1], properties);
 
   int num_tracks = properties["count"].empty() ? 0 : to<int> (properties["count"]);
   if (!num_tracks)
@@ -162,5 +161,4 @@ void run() {
     write_scalars(stats, tck_writer);
   }
   tck_reader.close();
-  tck_writer.close();
 }

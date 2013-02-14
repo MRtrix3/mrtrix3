@@ -32,7 +32,7 @@
 #include "math/SH.h"
 #include "math/vector.h"
 #include "math/matrix.h"
-#include "math/hemisphere/directions.h"
+#include "dwi/directions/set.h"
 #include "timer.h"
 #include "math/stats/permutation.h"
 #include "math/stats/glm.h"
@@ -42,6 +42,7 @@
 #include "dwi/tractography/mapping/mapper.h"
 #include "dwi/tractography/mapping/loader.h"
 #include "dwi/tractography/mapping/writer.h"
+#include "dwi/tractography/SIFT/multithread.h"
 
 MRTRIX_APPLICATION
 
@@ -122,51 +123,51 @@ void usage ()
 
 
 
-// TODO combine this with Rob's SIFT code once committed into main repository
-template <class FODImageType, class MaskImageType>
-class SHQueueWriter
-{
-  public:
-    SHQueueWriter (FODImageType& fod_image, MaskImageType& mask_data) :
-      fod_image_ (fod_image),
-      mask_ (mask_data),
-      loop_ (0, 3),
-      progress_ ("computing FOD lobe integrals... ", 1)
-    {
-      size_t count = 0;
-      Image::Loop count_loop;
-      for (count_loop.start (mask_); count_loop.ok(); count_loop.next (mask_)) {
-        if (mask_.value())
-          ++count;
-      }
-      progress_.set_max (count);
-      loop_.start (fod_image_, mask_);
-    }
-
-
-    bool operator () (DWI::SH_coefs& out) {
-      while (loop_.ok() && !mask_.value())
-        loop_.next (fod_image_, mask_);
-      if (!loop_.ok()) {
-        return false;
-      }
-      out.vox[0] = fod_image_[0]; out.vox[1] = fod_image_[1]; out.vox[2] = fod_image_[2];
-      out.allocate (fod_image_.dim (3));
-      for (fod_image_[3] = 0; fod_image_[3] != fod_image_.dim (3); ++fod_image_[3])
-        out[fod_image_[3]] = fod_image_.value();
-      ++progress_;
-      loop_.next (fod_image_, mask_);
-      return true;
-    }
-
-
-  private:
-    typename FODImageType::voxel_type fod_image_;
-    typename MaskImageType::voxel_type mask_;
-    Image::Loop loop_;
-    ProgressBar progress_;
-
-};
+//// TODO combine this with Rob's SIFT code once committed into main repository
+//template <class FODImageType, class MaskImageType>
+//class SHQueueWriter
+//{
+//  public:
+//    SHQueueWriter (FODImageType& fod_image, MaskImageType& mask_data) :
+//      fod_image_ (fod_image),
+//      mask_ (mask_data),
+//      loop_ (0, 3),
+//      progress_ ("computing FOD lobe integrals... ", 1)
+//    {
+//      size_t count = 0;
+//      Image::Loop count_loop;
+//      for (count_loop.start (mask_); count_loop.ok(); count_loop.next (mask_)) {
+//        if (mask_.value())
+//          ++count;
+//      }
+//      progress_.set_max (count);
+//      loop_.start (fod_image_, mask_);
+//    }
+//
+//
+//    bool operator () (DWI::SH_coefs& out) {
+//      while (loop_.ok() && !mask_.value())
+//        loop_.next (fod_image_, mask_);
+//      if (!loop_.ok()) {
+//        return false;
+//      }
+//      out.vox[0] = fod_image_[0]; out.vox[1] = fod_image_[1]; out.vox[2] = fod_image_[2];
+//      out.allocate (fod_image_.dim (3));
+//      for (fod_image_[3] = 0; fod_image_[3] != fod_image_.dim (3); ++fod_image_[3])
+//        out[fod_image_[3]] = fod_image_.value();
+//      ++progress_;
+//      loop_.next (fod_image_, mask_);
+//      return true;
+//    }
+//
+//
+//  private:
+//    typename FODImageType::voxel_type fod_image_;
+//    typename MaskImageType::voxel_type mask_;
+//    Image::Loop loop_;
+//    ProgressBar progress_;
+//
+//};
 
 
 
@@ -347,8 +348,7 @@ void compute_track_indices (const string& input_track_filename,
   Image::Interp::Nearest<Image::BufferScratch<int32_t>::voxel_type> interp (lobe_indexer);
   float angular_threshold_dp = cos (angular_threshold * (M_PI/180.0));
   DWI::Tractography::Properties tck_properties;
-  DWI::Tractography::Reader<value_type> tck_reader;
-  tck_reader.open (input_track_filename, tck_properties);
+  DWI::Tractography::Reader<value_type> tck_reader (input_track_filename, tck_properties);
   DWI::Tractography::Writer<value_type> tck_writer (output_track_filename, tck_properties);
   vector<Point<value_type> > tck;
   int counter = 0;
@@ -389,7 +389,6 @@ void compute_track_indices (const string& input_track_filename,
     track_indices.push_back (indices);
     counter++;
   }
-  tck_writer.close();
   tck_reader.close();
 }
 
@@ -430,7 +429,6 @@ void write_track_stats (const string& filename,
     }
     writer.append (tck_scalars);
   }
-  writer.close();
 }
 
 
@@ -491,19 +489,19 @@ void load_data_and_compute_integrals (const vector<string>& filename_list,
 
   fod_lobe_integrals.resize (lobe_directions.size(), filename_list.size(), 0.0);
   ProgressBar progress ("loading FOD images and computing integrals...", filename_list.size());
-  Math::Hemisphere::Directions dirs (1281);
+  DWI::Directions::Set dirs (1281);
 
   for (size_t subject = 0; subject < filename_list.size(); subject++) {
 
     LogLevelLatch log_level (0);
     Image::Buffer<value_type> fod_buffer (filename_list[subject]);
     Image::check_dimensions (fod_buffer, lobe_mask, 0, 3);
-    SHQueueWriter<Image::Buffer<value_type>, Image::BufferScratch<bool> > writer2 (fod_buffer, lobe_mask);
+    DWI::Tractography::SIFT::FODQueueWriter<Image::Buffer<value_type>, Image::BufferScratch<bool> > writer2 (fod_buffer, lobe_mask);
     DWI::FOD_FMLS fmls (dirs, Math::SH::LforN (fod_buffer.dim(3)));
     fmls.set_peak_value_threshold (SUBJECT_FOD_THRESHOLD);
     vector<value_type> temp_lobe_integrals (lobe_directions.size(), 0.0);
     SubjectLobeProcessor lobe_processor (lobe_indexer, lobe_directions, temp_lobe_integrals, angular_threshold);
-    Thread::run_queue (writer2, 1, DWI::SH_coefs(), fmls, 0, DWI::FOD_lobes(), lobe_processor, 1);
+    Thread::run_queue_threaded_pipe (writer2, DWI::SH_coefs(), fmls, DWI::FOD_lobes(), lobe_processor);
 
     // Smooth the data based on connectivity
     for (size_t lobe = 0; lobe < lobe_directions.size(); ++lobe) {
@@ -608,7 +606,7 @@ void run() {
 
   // Compute FOD lobes on average FOD image
   vector<Point<value_type> > lobe_directions;
-  Math::Hemisphere::Directions dirs (1281);
+  DWI::Directions::Set dirs (1281);
   Image::Header index_header (argument[4]);
   index_header.dim(3) = 2;
   Image::BufferScratch<int32_t> lobe_indexer (index_header);
@@ -622,11 +620,11 @@ void run() {
     Image::Buffer<value_type> av_fod_buffer (argument[4]);
     Image::Buffer<bool> brain_mask_buffer (argument[5]);
     Image::check_dimensions (av_fod_buffer, brain_mask_buffer, 0, 3);
-    SHQueueWriter<Image::Buffer<value_type>, Image::Buffer<bool> > writer (av_fod_buffer, brain_mask_buffer);
+    DWI::Tractography::SIFT::FODQueueWriter <Image::Buffer<value_type>, Image::Buffer<bool> > writer (av_fod_buffer, brain_mask_buffer);
     DWI::FOD_FMLS fmls (dirs, Math::SH::LforN (av_fod_buffer.dim(3)));
     fmls.set_peak_value_threshold (GROUP_AVERAGE_FOD_THRESHOLD);
     GroupAvLobeProcessor lobe_processor (lobe_indexer, lobe_directions, lobe_positions);
-    Thread::run_queue (writer, 1, DWI::SH_coefs(), fmls, 0, DWI::FOD_lobes(), lobe_processor, 1);
+    Thread::run_queue_threaded_pipe (writer, DWI::SH_coefs(), fmls, DWI::FOD_lobes(), lobe_processor);
   }
 
   uint32_t num_lobes = lobe_directions.size();
@@ -670,9 +668,8 @@ void run() {
   vector<vector<int32_t> > track_point_indices;
   string track_filename = argument[6];
   string output_prefix = argument[7];
-  DWI::Tractography::Reader<value_type> track_file;
   DWI::Tractography::Properties properties;
-  track_file.open (track_filename, properties);
+  DWI::Tractography::Reader<value_type> track_file (track_filename, properties);
   {
     // Read in tracts, and computer whole-brain lobe-lobe connectivity
     const size_t num_tracks = properties["count"].empty() ? 0 : to<int> (properties["count"]);
@@ -690,7 +687,7 @@ void run() {
     Image::Header header (argument[4]);
     DWI::Tractography::Mapping::TrackMapperBase<SetVoxelDir> mapper (header);
     TractProcessor tract_processor (lobe_indexer, lobe_directions, lobe_TDI, lobe_connectivity, 30);
-    Thread::run_queue (loader, 1, DWI::Tractography::Mapping::TrackAndIndex(), mapper, 1, SetVoxelDir(), tract_processor, 1);
+    Thread::run_queue_custom_threading (loader, 1, DWI::Tractography::Mapping::TrackAndIndex(), mapper, 1, SetVoxelDir(), tract_processor, 1);
   }
   track_file.close();
 
@@ -770,21 +767,21 @@ void run() {
   Math::Stats::GLM::stdev (mod_fod_lobe_integrals, design, std_dev_matrix);
   write_track_stats (output_prefix + "_mod_fod_std_dev.tck", std_dev, track_point_indices);
 
-  Math::Stats::GLM::std_effect_size (log_mod_scale_factor, design, contrast, std_effect_size_matrix);
-  matrix2vector (std_effect_size_matrix, std_effect_size);
-  write_track_stats (output_prefix + "_mod_effect_size.tck", std_effect_size, track_point_indices);
-  Math::Stats::GLM::stdev (log_mod_scale_factor, design, std_dev_matrix);
-  matrix2vector (std_dev_matrix, std_dev);
-  write_track_stats (output_prefix + "_mod_std_dev.tck", std_dev, track_point_indices);
+//  Math::Stats::GLM::std_effect_size (log_mod_scale_factor, design, contrast, std_effect_size_matrix);
+//  matrix2vector (std_effect_size_matrix, std_effect_size);
+//  write_track_stats (output_prefix + "_mod_effect_size.tck", std_effect_size, track_point_indices);
+//  Math::Stats::GLM::stdev (log_mod_scale_factor, design, std_dev_matrix);
+//  matrix2vector (std_dev_matrix, std_dev);
+//  write_track_stats (output_prefix + "_mod_std_dev.tck", std_dev, track_point_indices);
 
   // Perform permutation testing
   opt = get_options("notest");
   if (!opt.size()) {
     // Modulated FODs
-    do_glm_and_output (mod_fod_lobe_integrals, design, contrast, dh, tfce_E, tfce_H, num_perms, lobe_connectivity, lobe_indexer, lobe_directions, track_point_indices, output_prefix + "_fod_mod");
+    do_glm_and_output (mod_fod_lobe_integrals, design, contrast, dh, tfce_E, tfce_H, num_perms, lobe_connectivity, lobe_indexer, lobe_directions, track_point_indices, output_prefix + "_mod_fod");
     // FOD information only
     do_glm_and_output (fod_lobe_integrals, design, contrast, dh, tfce_E, tfce_H, num_perms, lobe_connectivity, lobe_indexer, lobe_directions, track_point_indices, output_prefix + "_fod");
     // Modulation information only
-    do_glm_and_output (log_mod_scale_factor, design, contrast, dh, tfce_E, tfce_H, num_perms, lobe_connectivity, lobe_indexer, lobe_directions, track_point_indices, output_prefix + "_mod");
+//    do_glm_and_output (log_mod_scale_factor, design, contrast, dh, tfce_E, tfce_H, num_perms, lobe_connectivity, lobe_indexer, lobe_directions, track_point_indices, output_prefix + "_mod");
   }
 }

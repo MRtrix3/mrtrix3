@@ -26,7 +26,7 @@
 #include "image/buffer.h"
 #include "image/buffer_preload.h"
 #include "math/SH.h"
-#include "math/hemisphere/directions.h"
+#include "dwi/directions/predefined.h"
 #include "timer.h"
 #include "math/stats/permutation.h"
 #include "math/stats/glm.h"

@@ -56,13 +56,11 @@ void run ()
   bool invert = opt.size() ? true : false;
 
   Tractography::Properties properties;
-  Tractography::Reader<float> file;
-  file.open (argument[0], properties);
+  Tractography::Reader<float> file (argument[0], properties);
 
   float threshold = argument[1];
 
-  Tractography::Writer<float> writer;
-  writer.create (argument[2],  properties);
+  Tractography::Writer<float> writer (argument[2],  properties);
 
   std::vector<Point<float> > tck;
 
@@ -98,5 +96,4 @@ void run ()
     progress++;
   }
   file.close();
-  writer.close();
 }
