@@ -647,6 +647,7 @@ if not noshared:
   with TempFile ('.cpp') as F:
     F.fid.write ('int bogus() { return (1); }')
     F.fid.flush()
+    F.fid.close()
     with DeleteAfter (F.name[:-4] + '.o') as obj:
       cmd = fillin (cpp, {
         'CFLAGS': cpp_flags,
