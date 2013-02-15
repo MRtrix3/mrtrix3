@@ -202,8 +202,8 @@ class TempFile:
   def __exit__(self, type, value, traceback):
     try:
       os.unlink (self.name)
-    except OSError:
-      log ('error deleting temporary file "' + self.name + '"')
+    except OSError as error:
+      log ('error deleting temporary file "' + self.name + '": ' + error.strerror)
 
 
 class DeleteAfter:
@@ -213,11 +213,11 @@ class DeleteAfter:
   def __enter__ (self):
     return self
 
-  def __exit__(self, type, value, traceback):
+  def __exit__(self, exception_type, value, traceback):
     try:
       os.unlink (self.name)
-    except OSError:
-      log ('error deleting temporary file "' + self.name + '"')
+    except OSError as error:
+      log ('error deleting temporary file "' + self.name + '": ' + error.strerror)
     
     
 class TempDir:
@@ -237,8 +237,8 @@ class TempDir:
           os.unlink (fname)
       os.rmdir (self.name)
       
-    except OSError:
-      log ('error deleting temporary folder "' + self.name + '"')
+    except OSError as error:
+      log ('error deleting temporary folder "' + self.name + '": ' + error.strerror)
 
 
 
@@ -274,16 +274,21 @@ def execute (cmd, exception, raise_on_non_zero_exit_code = True, cwd = None):
   try: 
     process = subprocess.Popen (cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, cwd=cwd)
     ( stdout, stderr ) = process.communicate()
+
+    log ('EXIT: ' + str(process.returncode) + '\n')
+    stdout = stdout.rstrip()
+    if len (stdout): log ('STDOUT:\n' + stdout + '\n')
+    stderr = stderr.rstrip()
+    if len (stderr): log ('STDERR:\n' + stderr + '\n')
+    log ('>>\n\n')
+  
+    if raise_on_non_zero_exit_code and process.returncode != 0: 
+      raise exception
+
   except OSError as error: 
-    log ('error invoking command "' + cmd[0] + '": ' + os.strerror (error.errno) + '\n>>\n\n')
+    log ('error invoking command "' + cmd[0] + '": ' + error.strerror + '\n>>\n\n')
     raise exception
-  log ('EXIT: ' + str(process.returncode) + '\n')
-  stdout = stdout.rstrip()
-  if len (stdout): log ('STDOUT:\n' + stdout + '\n')
-  stderr = stderr.rstrip()
-  if len (stderr): log ('STDERR:\n' + stderr + '\n')
-  log ('>>\n\n')
-  if raise_on_non_zero_exit_code and process.returncode != 0: raise exception
+
   return (process.returncode, stdout, stderr)
 
   
@@ -301,7 +306,7 @@ def compile (source, compiler_flags = [], linker_flags = []):
         'SRC': F.name,
         'OBJECT': obj.name })
       execute (cmd, CompileError)
-
+      
       with DeleteAfter ('./a.out') as out:
         cmd = fillin (ld, {
           'LDFLAGS': linker_flags,
@@ -311,9 +316,7 @@ def compile (source, compiler_flags = [], linker_flags = []):
 
         ret = execute ([ out.name ], RuntimeError)
 
-    return ret[1]
-
-
+  return ret[1]
 
 
 

@@ -707,7 +707,7 @@ flush:
 
     //! convenience functions to set up and run multi-threaded queues.
      /*! This set of convenience functions simplify the process of setting up a
-      * multi-threaded processing chain that should meet most user's needs.
+      * multi-threaded processing chain that should meet most users' needs.
       * The differences between the three functions are as follows:
       * - run_queue_threaded_source(): Multiple 'source' threads feed data
       *     onto the queue, which are received by a single 'sink' thread.
