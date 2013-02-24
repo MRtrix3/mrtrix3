@@ -152,10 +152,10 @@ namespace MR
           * @param effect the matrix containing the output effect
           */
           template <typename ValueType>
-            inline void effect (const Math::Matrix<ValueType>& measurements,
-                                  const Math::Matrix<ValueType>& design,
-                                  const Math::Matrix<ValueType>& contrast,
-                                  Math::Matrix<ValueType>& effect) {
+            inline void abs_effect_size (const Math::Matrix<ValueType>& measurements,
+                                const Math::Matrix<ValueType>& design,
+                                const Math::Matrix<ValueType>& contrast,
+                                Math::Matrix<ValueType>& effect) {
               Math::Matrix<ValueType> betas;
               GLM::solve_betas (measurements, design, betas);
               Math::mult (effect, ValueType(1.0), CblasNoTrans, betas, CblasTrans, contrast);
@@ -170,15 +170,15 @@ namespace MR
           */
           template <typename ValueType>
             inline void std_effect_size (const Math::Matrix<ValueType>& measurements,
-                                  const Math::Matrix<ValueType>& design,
-                                  const Math::Matrix<ValueType>& contrast,
-                                  Math::Matrix<ValueType>& cohens_d) {
+                                         const Math::Matrix<ValueType>& design,
+                                         const Math::Matrix<ValueType>& contrast,
+                                         Math::Matrix<ValueType>& cohens_d) {
               Math::Matrix<ValueType> betas;
               GLM::solve_betas (measurements, design, betas);
               Math::Matrix<ValueType> residuals;
               Math::mult (residuals, ValueType(-1.0), CblasNoTrans, betas, CblasTrans, design);
               residuals += measurements;
-              residuals.pow(2.0);
+              residuals.pow (2.0);
               Math::Matrix<ValueType> one_over_dof (measurements.columns(), 1);
               one_over_dof = 1.0 / ValueType(design.rows()-rank(design));
               Math::Matrix<ValueType> stdev;
