@@ -24,6 +24,7 @@
 #define __image_adapter_extract_h__
 
 #include "image/adapter/voxel.h"
+#include "image/info.h"
 #include "image/position.h"
 
 namespace MR
