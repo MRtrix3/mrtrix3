@@ -32,13 +32,14 @@
 #include "math/SH.h"
 #include "math/vector.h"
 #include "math/matrix.h"
-#include "dwi/directions/set.h"
-#include "timer.h"
 #include "math/stats/permutation.h"
 #include "math/stats/glm.h"
+#include "timer.h"
 #include "stats/tfce.h"
 #include "dwi/fmls.h"
+#include "dwi/directions/set.h"
 #include "dwi/tractography/file.h"
+#include "dwi/tractography/scalar_file.h"
 #include "dwi/tractography/mapping/mapper.h"
 #include "dwi/tractography/mapping/loader.h"
 #include "dwi/tractography/mapping/writer.h"
@@ -123,54 +124,6 @@ void usage ()
 
 
 
-//// TODO combine this with Rob's SIFT code once committed into main repository
-//template <class FODImageType, class MaskImageType>
-//class SHQueueWriter
-//{
-//  public:
-//    SHQueueWriter (FODImageType& fod_image, MaskImageType& mask_data) :
-//      fod_image_ (fod_image),
-//      mask_ (mask_data),
-//      loop_ (0, 3),
-//      progress_ ("computing FOD lobe integrals... ", 1)
-//    {
-//      size_t count = 0;
-//      Image::Loop count_loop;
-//      for (count_loop.start (mask_); count_loop.ok(); count_loop.next (mask_)) {
-//        if (mask_.value())
-//          ++count;
-//      }
-//      progress_.set_max (count);
-//      loop_.start (fod_image_, mask_);
-//    }
-//
-//
-//    bool operator () (DWI::SH_coefs& out) {
-//      while (loop_.ok() && !mask_.value())
-//        loop_.next (fod_image_, mask_);
-//      if (!loop_.ok()) {
-//        return false;
-//      }
-//      out.vox[0] = fod_image_[0]; out.vox[1] = fod_image_[1]; out.vox[2] = fod_image_[2];
-//      out.allocate (fod_image_.dim (3));
-//      for (fod_image_[3] = 0; fod_image_[3] != fod_image_.dim (3); ++fod_image_[3])
-//        out[fod_image_[3]] = fod_image_.value();
-//      ++progress_;
-//      loop_.next (fod_image_, mask_);
-//      return true;
-//    }
-//
-//
-//  private:
-//    typename FODImageType::voxel_type fod_image_;
-//    typename MaskImageType::voxel_type mask_;
-//    Image::Loop loop_;
-//    ProgressBar progress_;
-//
-//};
-
-
-
 class GroupAvLobeProcessor
 {
   public:
@@ -209,6 +162,7 @@ class GroupAvLobeProcessor
     vector<Point<value_type> >& index2scanner_pos;
     Image::Transform image_transform;
 };
+
 
 
 class SubjectLobeProcessor {
@@ -331,6 +285,7 @@ class TractProcessor {
 };
 
 
+
 /**
  * Processes each track in the tractogram (most likely a subset of all tracks since we need less
  * tracks for display than for estimating lobe-lobe connectivity) and computes the FOD lobe
@@ -402,7 +357,7 @@ void write_track_stats (const string& filename,
                         const vector<vector<int32_t> >& track_point_indices) {
 
   DWI::Tractography::Properties tck_properties;
-  DWI::Tractography::Writer<value_type> writer (filename, tck_properties);
+  DWI::Tractography::ScalarWriter<value_type> writer (filename, tck_properties);
 
   for (size_t t = 0; t < track_point_indices.size(); ++t) {
     vector<value_type > scalars (track_point_indices[t].size());
@@ -412,24 +367,19 @@ void write_track_stats (const string& filename,
       else
         scalars[p] = data [track_point_indices[t][p]];
     }
-
-    vector<Point<value_type> > tck_scalars;
-    for (size_t i = 0; i < scalars.size(); i += 3) {
-      Point<value_type> point;
-      point[0] = scalars[i];
-      if (i + 1 < scalars.size())
-        point[1] = scalars[i + 1];
-      else
-        point[1] = NAN;
-      if (i + 2 < scalars.size())
-        point[2] = scalars[i + 2];
-      else
-        point[2] = NAN;
-      tck_scalars.push_back(point);
-    }
-    writer.append (tck_scalars);
+    writer.append (scalars);
   }
 }
+
+void write_track_stats (const string& filename,
+                        const Math::Matrix<value_type>& data,
+                        const vector<vector<int32_t> >& track_point_indices) {
+  vector<value_type> vec (data.rows());
+  for (size_t i = 0; i < data.rows(); ++i)
+    vec[i] = data(i, 0);
+  write_track_stats (filename, vec, track_point_indices);
+}
+
 
 
 /**
@@ -471,12 +421,13 @@ void do_glm_and_output (const Math::Matrix<value_type>& data,
   Math::Stats::statistic2pvalue (perm_distribution_pos, tfce_output_pos, pvalue_output_pos);
   Math::Stats::statistic2pvalue (perm_distribution_neg, tfce_output_neg, pvalue_output_neg);
 
-  write_track_stats (output_prefix + "_tfce_pos.tck", tfce_output_pos, track_point_indices);
-  write_track_stats (output_prefix + "_tfce_neg.tck", tfce_output_neg, track_point_indices);
-  write_track_stats (output_prefix + "_tvalue.tck", tvalue_output, track_point_indices);
-  write_track_stats (output_prefix + "_pvalue_pos.tck", pvalue_output_pos, track_point_indices);
-  write_track_stats (output_prefix + "_pvalue_neg.tck", pvalue_output_neg, track_point_indices);
+  write_track_stats (output_prefix + "_tfce_pos.tsf", tfce_output_pos, track_point_indices);
+  write_track_stats (output_prefix + "_tfce_neg.tsf", tfce_output_neg, track_point_indices);
+  write_track_stats (output_prefix + "_tvalue.tsf", tvalue_output, track_point_indices);
+  write_track_stats (output_prefix + "_pvalue_pos.tsf", pvalue_output_pos, track_point_indices);
+  write_track_stats (output_prefix + "_pvalue_neg.tsf", pvalue_output_neg, track_point_indices);
 }
+
 
 
 void load_data_and_compute_integrals (const vector<string>& filename_list,
@@ -515,11 +466,6 @@ void load_data_and_compute_integrals (const vector<string>& filename_list,
   }
 }
 
-
-void matrix2vector (const Math::Matrix<value_type>& matrix, std::vector<value_type>& vector) {
-  for (size_t i = 0; i < vector.size(); ++i)
-    vector[i] = matrix(i, 0);
-}
 
 
 void run() {
@@ -687,7 +633,7 @@ void run() {
     Image::Header header (argument[4]);
     DWI::Tractography::Mapping::TrackMapperBase<SetVoxelDir> mapper (header);
     TractProcessor tract_processor (lobe_indexer, lobe_directions, lobe_TDI, lobe_connectivity, 30);
-    Thread::run_queue_custom_threading (loader, 1, DWI::Tractography::Mapping::TrackAndIndex(), mapper, 1, SetVoxelDir(), tract_processor, 1);
+    Thread::run_queue_custom_threading (loader, 0, DWI::Tractography::Mapping::TrackAndIndex(), mapper, 0, SetVoxelDir(), tract_processor, 1);
   }
   track_file.close();
 
@@ -744,34 +690,31 @@ void run() {
   load_data_and_compute_integrals (mod_fod_filenames, lobe_mask, lobe_indexer, lobe_directions, angular_threshold, lobe_smoothing_weights, mod_fod_lobe_integrals);
   Math::Matrix<value_type> log_mod_scale_factor (num_lobes, fod_filenames.size());
 
-  // Extract the amount of AFD contributed by modulation
-  for (size_t l = 0; l < num_lobes; ++l)
-    for (size_t s = 0; s < fod_filenames.size(); ++s)
-      log_mod_scale_factor(l,s) = Math::log (mod_fod_lobe_integrals(l,s) / fod_lobe_integrals(l,s));
 
-  // Compute and output population statistics
-  Math::Matrix<float> std_effect_size_matrix;
-  Math::Stats::GLM::std_effect_size (fod_lobe_integrals, design, contrast, std_effect_size_matrix);
-  vector<value_type> std_effect_size (num_lobes);
-  matrix2vector (std_effect_size_matrix, std_effect_size);
-  write_track_stats (output_prefix + "_fod_effect_size.tck", std_effect_size, track_point_indices);
-  Math::Matrix<float> std_dev_matrix;
-  Math::Stats::GLM::stdev (fod_lobe_integrals, design, std_dev_matrix);
-  vector<value_type> std_dev (num_lobes);
-  matrix2vector (std_dev_matrix, std_dev);
+  // Compute and output effect size and std_deviation
+  Math::Matrix<float> abs_effect_size, std_effect_size, std_dev;
+  Math::Stats::GLM::abs_effect_size (fod_lobe_integrals, design, contrast, abs_effect_size);
+  write_track_stats (output_prefix + "_fod_abs_effect_size.tsf", abs_effect_size, track_point_indices);
+  Math::Stats::GLM::std_effect_size (fod_lobe_integrals, design, contrast, std_effect_size);
+  write_track_stats (output_prefix + "_fod_std_effect_size.tsf", std_effect_size, track_point_indices);
+  Math::Stats::GLM::stdev (fod_lobe_integrals, design, std_dev);
   write_track_stats (output_prefix + "_fod_std_dev.tck", std_dev, track_point_indices);
+  Math::Stats::GLM::abs_effect_size (mod_fod_lobe_integrals, design, contrast, abs_effect_size);
+  write_track_stats (output_prefix + "_mod_fod_abs_effect.tsf", abs_effect_size, track_point_indices);
+  Math::Stats::GLM::std_effect_size (mod_fod_lobe_integrals, design, contrast, std_effect_size);
+  write_track_stats (output_prefix + "_mod_fod_std_effect.tsf", std_effect_size, track_point_indices);
+  Math::Stats::GLM::stdev (mod_fod_lobe_integrals, design, std_dev);
+  write_track_stats (output_prefix + "_mod_fod_std_dev.tsf", std_dev, track_point_indices);
 
-  Math::Stats::GLM::std_effect_size (mod_fod_lobe_integrals, design, contrast, std_effect_size_matrix);
-  matrix2vector (std_effect_size_matrix, std_effect_size);
-  write_track_stats (output_prefix + "_mod_fod_effect_size.tck", std_effect_size, track_point_indices);
-  Math::Stats::GLM::stdev (mod_fod_lobe_integrals, design, std_dev_matrix);
-  write_track_stats (output_prefix + "_mod_fod_std_dev.tck", std_dev, track_point_indices);
-
-//  Math::Stats::GLM::std_effect_size (log_mod_scale_factor, design, contrast, std_effect_size_matrix);
-//  matrix2vector (std_effect_size_matrix, std_effect_size);
-//  write_track_stats (output_prefix + "_mod_effect_size.tck", std_effect_size, track_point_indices);
-//  Math::Stats::GLM::stdev (log_mod_scale_factor, design, std_dev_matrix);
-//  matrix2vector (std_dev_matrix, std_dev);
+//  // Extract the amount of AFD contributed by modulation
+//  for (size_t l = 0; l < num_lobes; ++l)
+//    for (size_t s = 0; s < fod_filenames.size(); ++s)
+//      log_mod_scale_factor(l,s) = Math::log (mod_fod_lobe_integrals(l,s) / fod_lobe_integrals(l,s));
+//  Math::Stats::GLM::abs_effect_size (log_mod_scale_factor, design, contrast, abs_effect_size);
+//  write_track_stats (output_prefix + "_mod_abs_effect_size.tck", abs_effect_size, track_point_indices);
+//  Math::Stats::GLM::std_effect_size (log_mod_scale_factor, design, contrast, std_effect_size);
+//  write_track_stats (output_prefix + "_mod_std_effect_size.tck", std_effect_size, track_point_indices);
+//  Math::Stats::GLM::stdev (log_mod_scale_factor, design, std_dev);
 //  write_track_stats (output_prefix + "_mod_std_dev.tck", std_dev, track_point_indices);
 
   // Perform permutation testing
