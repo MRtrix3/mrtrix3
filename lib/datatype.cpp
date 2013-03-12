@@ -331,7 +331,8 @@ namespace MR
   {
     using namespace App;
     return OptionGroup ("Data type options") 
-      + Option ("datatype", "specify output image data type.")
+      + Option ("datatype", "specify output image data type. "
+          "Valid choices are: " + join (identifiers, ", ") + ".")
       + Argument ("spec").type_choice (identifiers);
   }
 
