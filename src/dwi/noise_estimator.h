@@ -30,6 +30,7 @@
 #include "math/matrix.h"
 #include "math/least_squares.h"
 #include "math/SH.h"
+#include "dwi/Sn_scale_estimator.h"
 
 
 namespace MR {
@@ -55,6 +56,7 @@ namespace MR {
             leverage.allocate (H.rows());
             for (size_t n = 0; n < leverage.size(); ++n) 
               leverage[n] = H(n,n) < 1.0 ? 1.0 / Math::sqrt (1.0 - H(n,n)) : 1.0;
+
           }
 
         void operator () (const Image::Iterator& pos) {
@@ -64,14 +66,12 @@ namespace MR {
               S(dwi[3],dwi[axis]) = dwi.value();
 
           Math::mult (R, CblasLeft, value_type(0.0), value_type(1.0), CblasUpper, H, S);
+          R -= S;
 
           Image::voxel_assign (noise, pos);
           for (noise[axis] = 0; noise[axis] < noise.dim(axis); ++noise[axis]) {
-            value_type MSE = 0.0;
-            for (size_t n = 0; n < R.rows(); ++n) 
-              MSE += Math::pow2 ((S(n,noise[axis]) - R(n,noise[axis])) * leverage[n]);
-            MSE /= R.rows();
-            noise.value() = Math::sqrt (MSE);
+            R.column(noise[axis]) *= leverage;
+            noise.value() = scale_estimator (R.column (noise[axis]));
           }
         }
 
@@ -80,6 +80,7 @@ namespace MR {
         OutputVoxelType noise;
         Math::Matrix<value_type> H, S, R;
         Math::Vector<value_type> leverage;
+        Sn_scale_estimator<value_type> scale_estimator;
         int axis;
     };
 
