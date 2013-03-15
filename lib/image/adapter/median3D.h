@@ -83,19 +83,19 @@ namespace MR
               (*this)[2] >= dim(2)-extent_[2] ? dim(2) : (*this)[2]+extent_[2]+1
             };
 
-            median.reset ((to[0]-from[0])*(to[1]-from[1])*(to[2]-from[2]));
+            values.clear();
 
             for ((*this)[2] = from[2]; (*this)[2] < to[2]; ++(*this)[2]) 
               for ((*this)[1] = from[1]; (*this)[1] < to[1]; ++(*this)[1]) 
                 for ((*this)[0] = from[0]; (*this)[0] < to[0]; ++(*this)[0]) 
-                  median += parent_vox.value();
-            result = median.value();
+                  values.push_back (parent_vox.value());
 
             (*this)[0] = old_pos[0];
             (*this)[1] = old_pos[1];
             (*this)[2] = old_pos[2];
 
-            return result;
+            retval = Math::median (values);
+            return retval;
           }
 
           using Voxel<VoxelType>::name;
@@ -105,8 +105,8 @@ namespace MR
         protected:
           using Voxel<VoxelType>::parent_vox;
           std::vector<int> extent_;
-          Math::Median<value_type> median;
-          value_type result;
+          std::vector<value_type> values;
+          value_type retval;
         };
 
     }

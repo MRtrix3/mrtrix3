@@ -605,6 +605,15 @@ namespace MR
           return stream;
         }
 
+
+
+        const ValueType* begin () const { return ptr(); }
+        ValueType* begin () { return ptr(); }
+
+        const ValueType* end () const { return ptr()+size(); }
+        ValueType* end () { return ptr()+size(); }
+
+
       protected:
         using GSLVector<ValueType>::data;
         using GSLVector<ValueType>::block;

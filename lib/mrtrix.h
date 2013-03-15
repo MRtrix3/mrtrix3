@@ -144,13 +144,50 @@ namespace MR
   }
 
 
+  inline std::string& lowercase (std::string& string)
+  {
+    for (std::string::iterator i = string.begin(); i != string.end(); ++i)
+      *i = tolower (*i);
+    return string;
+  }
+
+  inline std::string& uppercase (std::string& string)
+  {
+    for (std::string::iterator i = string.begin(); i != string.end(); ++i)
+      *i = toupper (*i);
+    return string;
+  }
+
+  inline std::string lowercase (const std::string& string)
+  {
+    std::string ret;
+    ret.resize (string.size());
+    transform (string.begin(), string.end(), ret.begin(), tolower);
+    return ret;
+  }
+
+  inline std::string uppercase (const std::string& string)
+  {
+    std::string ret;
+    ret.resize (string.size());
+    transform (string.begin(), string.end(), ret.begin(), toupper);
+    return ret;
+  }
+
   template <class T> inline T to (const std::string& string)
   {
     std::istringstream stream (string);
     T value;
     stream >> value;
-    if (stream.fail())
+    if (stream.fail()) {
+      if (lowercase (string) == "nan") 
+        return std::numeric_limits<T>::quiet_NaN();
+      else if (lowercase (string) == "inf") 
+        return std::numeric_limits<T>::infinity();
+      else if (lowercase (string) == "-inf")
+        return -std::numeric_limits<T>::infinity();
       throw Exception ("error converting string \"" + string + "\"");
+    }
     return value;
   }
 
@@ -186,36 +223,6 @@ namespace MR
       if (*i == orig) *i = final;
   }
 
-
-  inline std::string& lowercase (std::string& string)
-  {
-    for (std::string::iterator i = string.begin(); i != string.end(); ++i)
-      *i = tolower (*i);
-    return string;
-  }
-
-  inline std::string& uppercase (std::string& string)
-  {
-    for (std::string::iterator i = string.begin(); i != string.end(); ++i)
-      *i = toupper (*i);
-    return string;
-  }
-
-  inline std::string lowercase (const std::string& string)
-  {
-    std::string ret;
-    ret.resize (string.size());
-    transform (string.begin(), string.end(), ret.begin(), tolower);
-    return ret;
-  }
-
-  inline std::string uppercase (const std::string& string)
-  {
-    std::string ret;
-    ret.resize (string.size());
-    transform (string.begin(), string.end(), ret.begin(), toupper);
-    return ret;
-  }
 
   std::vector<std::string> split (
     const std::string& string,

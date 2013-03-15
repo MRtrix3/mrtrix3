@@ -26,71 +26,42 @@
 #include <vector>
 #include <limits>
 
+
+#include <algorithm>
+
+#include "types.h"
+
+
 namespace MR
 {
   namespace Math
   {
 
-    template <typename ValueType> 
-      class Median {
-        public:
-          typedef ValueType value_type;
 
-          Median () {
-            reset (0);
+
+    template <class Container> 
+      inline typename Container::value_type median (Container& list) 
+      {
+        size_t num = list.size();
+        // remove NaNs:
+        for (size_t n = 0; n < num; ++n) {
+          while (isnan (list[n])) {
+            --num;
+            std::swap (list[n], list[num]);
           }
+        }
 
-          Median (size_t max_number) {
-            reset (max_number);
-          }
+        size_t middle = num/2;
+        std::nth_element (list.begin(), list.begin()+middle, list.begin()+num);
+        typename Container::value_type med_val = list[middle];
+        if (!(num&1U)) {
+          --middle;
+          std::nth_element (list.begin(), list.begin()+middle, list.begin()+middle+1);
+          med_val = (med_val + list[middle])/2.0;
+        }
+        return med_val;
+      }
 
-          void reset (size_t number_of_elements) {
-            result = -std::numeric_limits<value_type>::infinity();
-            count = number_of_elements;
-            current_count = 0;
-            median_index = number_of_elements/2 + 1;
-            values.assign (median_index, value_type (0));
-          }
-
-          void operator+= (value_type val) {
-            if (current_count < median_index) {
-              values[current_count] = val;
-              if (values[current_count] > result) 
-                result = val;
-              ++current_count;
-            }
-            else if (val < result) {
-              size_t i;
-              for (i = 0; values[i] != result; ++i);
-              values[i] = val;
-              result = -std::numeric_limits<value_type>::infinity();
-              for (i = 0; i < median_index; i++)
-                if (values[i] > result) result = values[i];
-            }
-          }
-
-          value_type value () {
-
-            if ((count+1) & 1) {
-              value_type t = result = -std::numeric_limits<value_type>::infinity();
-              for (size_t i = 0; i < median_index; ++i) {
-                if (values[i] > result) {
-                  t = result;
-                  result = values[i];
-                }
-                else if (values[i] > t) t = values[i];
-              }
-              result = (result+t)/2.0;
-            }
-
-            return result;
-          }
-
-        protected:
-          std::vector<value_type> values;
-          value_type result;
-          size_t count, current_count, median_index;
-      };
 
   }
 }

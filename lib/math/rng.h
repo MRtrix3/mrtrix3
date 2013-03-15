@@ -67,22 +67,22 @@ namespace MR
 
 
         gsl_rng*  operator() ()                    {
-          return (generator);
+          return generator;
         }
 
         float uniform ()              {
-          return (gsl_rng_uniform (generator));
+          return gsl_rng_uniform (generator);
         }
         size_t uniform_int (size_t max) {
-          return (gsl_rng_uniform_int (generator, max));
+          return gsl_rng_uniform_int (generator, max);
         }
         float normal (float SD = 1.0) {
-          return (gsl_ran_gaussian (generator, SD));
+          return gsl_ran_gaussian (generator, SD);
         }
         float rician (float amplitude, float SD) {
           amplitude += gsl_ran_gaussian_ratio_method (generator, SD);
           float imag = gsl_ran_gaussian_ratio_method (generator, SD);
-          return (sqrt (amplitude*amplitude + imag*imag));
+          return sqrt (amplitude*amplitude + imag*imag);
         }
 
         template <typename T> void shuffle (Vector<T>& V) {
