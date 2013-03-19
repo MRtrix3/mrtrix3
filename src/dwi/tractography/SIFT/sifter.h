@@ -66,9 +66,6 @@
 
 
 
-#define SIFT_SORT_BLOCK_SIZE 1024
-
-
 //#define SIFTER_OUTPUT_SH_IMAGES
 
 

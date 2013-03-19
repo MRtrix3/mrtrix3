@@ -229,7 +229,15 @@ namespace MR
           // * Perform a golden section search to find the optimal block size
           // This wasn't implemented as the optimal block size seems pretty stable regardless of gradient vector size
 
-          MT_gradient_vector_sorter sorter (gradient_vector, SIFT_SORT_BLOCK_SIZE);
+          // Ideally the sorting block size should change dynamically as streamlines are filtered
+          // This is to reduce the load on the single-threaded section as the multi-threaded sorting complexity declines
+          //   (as more streamlines are no longer present, hence have a null gradient and are excluded from the full sort)
+          // Tried for an algebraic solution but the numbers didn't line up with my experiments
+          // Trying a heuristic for now; go for a sort size of 1000 following initial sort, assuming half of all
+          //   remaining streamlines have a negative gradient
+
+          const track_t sort_size = std::min (num_tracks / double(Thread::number_of_threads()), Math::round (2000.0 * double(num_tracks) / double(tracks_remaining)));
+          MT_gradient_vector_sorter sorter (gradient_vector, sort_size);
 
           // Remove candidate streamlines one at a time, and correspondingly modify the lobes to which they were attributed
           unsigned int removed_this_iteration = 0;
