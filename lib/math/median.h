@@ -45,11 +45,13 @@ namespace MR
         size_t num = list.size();
         // remove NaNs:
         for (size_t n = 0; n < num; ++n) {
-          while (isnan (list[n])) {
+          while (isnan (list[n]) && n < num) {
             --num;
             std::swap (list[n], list[num]);
           }
         }
+        if (!num)
+          return std::numeric_limits<typename Container::value_type>::quiet_NaN();
 
         size_t middle = num/2;
         std::nth_element (list.begin(), list.begin()+middle, list.begin()+num);
