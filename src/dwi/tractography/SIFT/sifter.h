@@ -53,8 +53,8 @@
 #include "dwi/tractography/mapping/voxel.h"
 #include "dwi/tractography/mapping/writer.h"
 
-#include "dwi/tractography/SIFT/types.h"
 #include "dwi/tractography/SIFT/multithread.h"
+#include "dwi/tractography/SIFT/types.h"
 
 
 #include <iomanip>

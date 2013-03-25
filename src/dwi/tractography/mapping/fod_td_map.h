@@ -27,8 +27,10 @@
 
 
 #include "image/buffer_scratch.h"
+#include "image/copy.h"
 #include "image/nav.h"
 #include "image/transform.h"
+#include "image/utils.h"
 #include "image/voxel.h"
 #include "image/interp/linear.h"
 
@@ -50,7 +52,7 @@ namespace MR
 
 
 
-        // Tempalted Lobe class MUST provide operator+= (const float) for adding streamline density
+        // Templated Lobe class MUST provide operator+= (const float) for adding streamline density
 
       template <class Lobe>
       class FOD_TD_map : public FOD_map<Lobe>
@@ -215,81 +217,95 @@ namespace MR
         Image::Transform transform_dwi (dwi);
         Image::BufferScratch<float>::voxel_type mask (out_mask);
 
-        App::Options opt = App::get_options ("act");
-        if (!opt.size()) {
+        App::Options opt = App::get_options ("proc_mask");
+        if (opt.size()) {
 
-          Image::LoopInOrder loop (dwi, "Creating processing mask from DWI data...", 0, 3);
-          dwi[3] = 0;
-          for (loop.start (dwi, mask); loop.ok(); loop.next (dwi, mask))
-            mask.value() = (dwi.value() && finite (dwi.value())) ? 1.0 : 0.0;
+          // User-specified processing mask
+          Image::Buffer<float> in_image (opt[0][0]);
+          Image::Buffer<float>::voxel_type image (in_image);
+          if (!Image::dimensions_match (proc_mask, image, 0, 3))
+            throw Exception ("Dimensions of processing mask image provided using -proc_mask option must match relevant FOD image");
+          Image::copy_with_progress_message ("Copying processing mask to memory... ", image, mask);
 
         } else {
 
-          Image::Buffer<float> in_anat (opt[0][0]);
-          Image::Buffer<float>::voxel_type anat (in_anat);
-          Image::Interp::Linear< Image::Buffer<float>::voxel_type > interp (anat);
+          App::Options opt = App::get_options ("act");
+          if (opt.size()) {
 
-          // How densely to sample each voxel, considering the dwi will be a coarser resolution than the anatomical image
-          // Express as a step size in voxel space (1.0 = 8 samples, 0.5 = 27 samples, etc.)
-          // In case of asymmetrical voxels, take the safest option == denser sampling
-          const float voxel_size_ratio = maxvalue (in_dwi.vox(0), in_dwi.vox(1), in_dwi.vox(2)) / minvalue (in_anat.vox(0), in_anat.vox(1), in_anat.vox(2));
-          const int   voxel_oversample_ratio = MAX (2, ceil (voxel_size_ratio));
-          const float voxel_oversample_step = 1.0 / (voxel_oversample_ratio - 1);
+            Image::Buffer<float> in_anat (opt[0][0]);
+            Image::Buffer<float>::voxel_type anat (in_anat);
+            Image::Interp::Linear< Image::Buffer<float>::voxel_type > interp (anat);
 
-          Image::LoopInOrder loop (dwi, "Creating processing mask from anatomical image...", 0, 3);
-          for (loop.start (dwi, mask); loop.ok(); loop.next (dwi, mask)) {
-            dwi[3] = 0;
-            if (dwi.value()) {
+            // How densely to sample each voxel, considering the dwi will be a coarser resolution than the anatomical image
+            // Express as a step size in voxel space (1.0 = 8 samples, 0.5 = 27 samples, etc.)
+            // In case of asymmetrical voxels, take the safest option == denser sampling
+            const float voxel_size_ratio = maxvalue (in_dwi.vox(0), in_dwi.vox(1), in_dwi.vox(2)) / minvalue (in_anat.vox(0), in_anat.vox(1), in_anat.vox(2));
+            const int   voxel_oversample_ratio = MAX (2, ceil (voxel_size_ratio));
+            const float voxel_oversample_step = 1.0 / (voxel_oversample_ratio - 1);
 
-              // Build a list of points in voxel space of the DWI image to be tested
-              std::vector< Point<float> > to_test_voxel_space_dwi;
-              for (int iz = 0; iz != voxel_oversample_ratio; ++iz) {
-                const float pz = float(dwi[2]) - 0.5 + (iz * voxel_oversample_step);
-                for (int iy = 0; iy != voxel_oversample_ratio; ++iy) {
-                  const float py = float(dwi[1]) - 0.5 + (iy * voxel_oversample_step);
-                  for (int ix = 0; ix != voxel_oversample_ratio; ++ix) {
-                    const float px = float(dwi[0]) - 0.5 + (ix * voxel_oversample_step);
-                    to_test_voxel_space_dwi.push_back (Point<float> (px, py, pz));
+            Image::LoopInOrder loop (dwi, "Creating processing mask from anatomical image...", 0, 3);
+            for (loop.start (dwi, mask); loop.ok(); loop.next (dwi, mask)) {
+              dwi[3] = 0;
+              if (dwi.value()) {
+
+                // Build a list of points in voxel space of the DWI image to be tested
+                std::vector< Point<float> > to_test_voxel_space_dwi;
+                for (int iz = 0; iz != voxel_oversample_ratio; ++iz) {
+                  const float pz = float(dwi[2]) - 0.5 + (iz * voxel_oversample_step);
+                  for (int iy = 0; iy != voxel_oversample_ratio; ++iy) {
+                    const float py = float(dwi[1]) - 0.5 + (iy * voxel_oversample_step);
+                    for (int ix = 0; ix != voxel_oversample_ratio; ++ix) {
+                      const float px = float(dwi[0]) - 0.5 + (ix * voxel_oversample_step);
+                      to_test_voxel_space_dwi.push_back (Point<float> (px, py, pz));
+                    }
                   }
                 }
-              }
 
-              // Transform these to real-space
-              std::vector< Point<float> > to_test_real_space;
-              for (std::vector< Point<float> >::const_iterator p = to_test_voxel_space_dwi.begin(); p != to_test_voxel_space_dwi.end(); ++p)
-                to_test_real_space.push_back (transform_dwi.voxel2scanner (*p));
+                // Transform these to real-space
+                std::vector< Point<float> > to_test_real_space;
+                for (std::vector< Point<float> >::const_iterator p = to_test_voxel_space_dwi.begin(); p != to_test_voxel_space_dwi.end(); ++p)
+                  to_test_real_space.push_back (transform_dwi.voxel2scanner (*p));
 
-              // Sample from the anatomical segmentation image
-              float cgm = 0.0, sgm = 0.0, wm = 0.0, csf = 0.0;
-              size_t wm_count = 0;
-              for (std::vector< Point<float> >::const_iterator p = to_test_real_space.begin(); p != to_test_real_space.end(); ++p) {
-                if (!interp.scanner (*p)) {
-                  Tractography::ACT::Tissues tissues (interp);
-                  if (tissues.valid()) {
-                    if (tissues.get_wm() >= tissues.get_gm())
-                      ++wm_count;
-                    cgm += tissues.get_cgm();
-                    sgm += tissues.get_sgm();
-                    wm  += tissues.get_wm ();
-                    csf += tissues.get_csf();
+                // Sample from the anatomical segmentation image
+                float cgm = 0.0, sgm = 0.0, wm = 0.0, csf = 0.0;
+                size_t wm_count = 0;
+                for (std::vector< Point<float> >::const_iterator p = to_test_real_space.begin(); p != to_test_real_space.end(); ++p) {
+                  if (!interp.scanner (*p)) {
+                    Tractography::ACT::Tissues tissues (interp);
+                    if (tissues.valid()) {
+                      if (tissues.get_wm() >= tissues.get_gm())
+                        ++wm_count;
+                      cgm += tissues.get_cgm();
+                      sgm += tissues.get_sgm();
+                      wm  += tissues.get_wm ();
+                      csf += tissues.get_csf();
+                    }
                   }
                 }
+
+                cgm /= float (to_test_real_space.size());
+                sgm /= float (to_test_real_space.size());
+                wm  /= float (to_test_real_space.size());
+                csf /= float (to_test_real_space.size());
+
+                // In my experience, using the square of the WM fraction is better than the WM fraction alone, and this is what was used in the SIFT paper
+                //mask.value() = Math::pow2 (wm);
+
+                // Doing a WM > GM fraction rather than the interpolated values - sharper at the interface
+                mask.value() = Math::pow2 (float(wm_count) / float(to_test_real_space.size()));
+
+              } else {
+                mask.value() = 0.0;
               }
-
-              cgm /= float (to_test_real_space.size());
-              sgm /= float (to_test_real_space.size());
-              wm  /= float (to_test_real_space.size());
-              csf /= float (to_test_real_space.size());
-
-              // In my experience, using the square of the WM fraction is better than the WM fraction alone, and this is what was used in the SIFT paper
-              //mask.value() = Math::pow2 (wm);
-
-              // Doing a WM > GM fraction rather than the interpolated values - sharper at the interface
-              mask.value() = Math::pow2 (float(wm_count) / float(to_test_real_space.size()));
-
-            } else {
-              mask.value() = 0.0;
             }
+
+          } else {
+
+            Image::LoopInOrder loop (dwi, "Creating homogeneous processing mask...", 0, 3);
+            dwi[3] = 0;
+            for (loop.start (dwi, mask); loop.ok(); loop.next (dwi, mask))
+              mask.value() = (dwi.value() && finite (dwi.value())) ? 1.0 : 0.0;
+
           }
 
         }

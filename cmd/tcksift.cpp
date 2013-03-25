@@ -86,8 +86,11 @@ void usage ()
 
   OPTIONS
 
-  + Option ("act", "use an ACT four-tissue-type segmented anatomical image to derive the processing mask for SIFT.\n"
-                   "If this is not provided, a homogeneous mask will be used.")
+  + Option ("proc_mask", "provide an image containing the processing mask weights for the SIFT model. \n"
+                         "Image spatial dimensions must match the FOD image.")
+    + Argument ("image").type_image_in()
+
+  + Option ("act", "use an ACT four-tissue-type segmented anatomical image to derive the processing mask for SIFT. \n")
     + Argument ("image").type_image_in()
 
   + Option ("no_dilate_lut", "do NOT dilate FOD lobe lookup tables; only map streamlines to FOD lobes if the precise tangent lies within the angular spread of that lobe")
