@@ -266,7 +266,7 @@ void run () {
       throw Exception ("cannot use mask with -voxel option");
 
     Image::Buffer<bool> mask_data (opt[0][0]);
-    check_dimensions (mask_data, data);
+    check_dimensions (mask_data, data, 0, 3);
     Image::Buffer<bool>::voxel_type mask (mask_data);
 
     if (hist_stream) {
