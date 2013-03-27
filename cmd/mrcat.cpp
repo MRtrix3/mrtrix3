@@ -51,7 +51,9 @@ OPTIONS
   "specify axis along which concatenation should be performed. By default, "
   "the program will use the axis after the last non-singleton axis of any "
   "of the input images")
-  + Argument ("axis").type_integer (0, std::numeric_limits<int>::max(), std::numeric_limits<int>::max());
+  + Argument ("axis").type_integer (0, std::numeric_limits<int>::max(), std::numeric_limits<int>::max())
+
+  + DataType::options();
 }
 
 
@@ -116,6 +118,9 @@ void run () {
     }
     header_out.dim(axis) = axis_dim;
   }
+
+  header_out.datatype() = DataType::from_command_line (header_out.datatype());
+  
 
 
   if (axis > 2) { // concatenate DW schemes
