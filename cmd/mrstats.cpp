@@ -105,15 +105,14 @@ class CalibrateHistogram
 class Stats
 {
   public:
-    Stats (bool complex = false) :
+    Stats (bool is_complex = false) :
       mean (0.0, 0.0),
       std (0.0, 0.0),
       min (INFINITY, INFINITY),
       max (-INFINITY, -INFINITY),
       count (0),
-      dump (NULL) {
-        is_complex = complex;
-    }
+      dump (NULL),
+      is_complex (is_complex) { }
 
     void generate_histogram (const CalibrateHistogram& cal) {
       hmin = cal.min;
@@ -169,8 +168,11 @@ class Stats
       std.imag() = sqrt (std.imag()/double(count) - mean.imag()*mean.imag());
 
       std::string s = "[ ";
-      for (size_t n = 3; n < ima.ndim(); n++)
-        s += str (ima[n]) + " ";
+      if (ima.ndim() > 3) 
+        for (size_t n = 3; n < ima.ndim(); n++)
+          s += str (ima[n]) + " ";
+      else 
+        s += "0 ";
       s += "] ";
 
       if (!is_complex) {
