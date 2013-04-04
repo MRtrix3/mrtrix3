@@ -71,6 +71,10 @@ namespace MR
       // needed to round floating-point values and map non-finite values (NaN, Inf) to zero for integer types:
       template <typename value_out_type, typename value_type> 
         inline value_out_type round_finite (value_type val) { return finite (val) ? Math::round (val) : value_out_type (0); }
+      template <typename value_out_type, typename value_type> 
+        inline value_out_type no_round (value_type val) { return val; }
+
+
 
       // specialisation for conversion to bool
       template <> bool __getLE<bool,float> (const void* data, size_t i) { return round_finite<bool> (MR::getLE<float> (data, i)); }
@@ -87,31 +91,31 @@ namespace MR
       template <> void __put<cdouble,bool> (cdouble val, void* data, size_t i) { return MR::put<bool> (round_finite<bool> (val.real()), data, i); }
 
       // specialisations for conversion between real types and complex types
-#define GET_COMPLEX(type) \
-      template <> type __getLE<type,cfloat> (const void* data, size_t i) { return round_finite<type> (MR::getLE<cfloat>(data, i).real()); } \
-      template <> type __getBE<type,cfloat> (const void* data, size_t i) { return round_finite<type> (MR::getBE<cfloat>(data, i).real()); } \
-      template <> type __getLE<type,cdouble> (const void* data, size_t i) { return round_finite<type> (MR::getLE<cdouble>(data, i).real()); } \
-      template <> type __getBE<type,cdouble> (const void* data, size_t i) { return round_finite<type> (MR::getBE<cdouble>(data, i).real()); } 
+#define GET_COMPLEX(type,round_func) \
+      template <> type __getLE<type,cfloat> (const void* data, size_t i) { return round_func<type> (MR::getLE<cfloat>(data, i).real()); } \
+      template <> type __getBE<type,cfloat> (const void* data, size_t i) { return round_func<type> (MR::getBE<cfloat>(data, i).real()); } \
+      template <> type __getLE<type,cdouble> (const void* data, size_t i) { return round_func<type> (MR::getLE<cdouble>(data, i).real()); } \
+      template <> type __getBE<type,cdouble> (const void* data, size_t i) { return round_func<type> (MR::getBE<cdouble>(data, i).real()); } 
 
-#define GET_PUT_COMPLEX(type) \
-      GET_COMPLEX(type) \
-      template <> void __put<cfloat,type> (cfloat val, void* data, size_t i) { return MR::put<type> (round_finite<type> (val.real()), data, i); } \
-      template <> void __put<cdouble,type> (cdouble val, void* data, size_t i) { return MR::put<type> (round_finite<type> (val.real()), data, i); }
-#define GET_PUT_COMPLEX_BO(type) \
-      GET_COMPLEX(type) \
-      template <> void __putLE<cfloat,type> (cfloat val, void* data, size_t i) { return MR::putLE<type> (round_finite<type> (val.real()), data, i); } \
-      template <> void __putBE<cfloat,type> (cfloat val, void* data, size_t i) { return MR::putBE<type> (round_finite<type> (val.real()), data, i); } \
-      template <> void __putLE<cdouble,type> (cdouble val, void* data, size_t i) { return MR::putLE<type> (round_finite<type> (val.real()), data, i); } \
-      template <> void __putBE<cdouble,type> (cdouble val, void* data, size_t i) { return MR::putBE<type> (round_finite<type> (val.real()), data, i); }
+#define GET_PUT_COMPLEX(type,round_func) \
+      GET_COMPLEX(type,round_func) \
+      template <> void __put<cfloat,type> (cfloat val, void* data, size_t i) { return MR::put<type> (round_func<type> (val.real()), data, i); } \
+      template <> void __put<cdouble,type> (cdouble val, void* data, size_t i) { return MR::put<type> (round_func<type> (val.real()), data, i); }
+#define GET_PUT_COMPLEX_BO(type,round_func) \
+      GET_COMPLEX(type,round_func) \
+      template <> void __putLE<cfloat,type> (cfloat val, void* data, size_t i) { return MR::putLE<type> (round_func<type> (val.real()), data, i); } \
+      template <> void __putBE<cfloat,type> (cfloat val, void* data, size_t i) { return MR::putBE<type> (round_func<type> (val.real()), data, i); } \
+      template <> void __putLE<cdouble,type> (cdouble val, void* data, size_t i) { return MR::putLE<type> (round_func<type> (val.real()), data, i); } \
+      template <> void __putBE<cdouble,type> (cdouble val, void* data, size_t i) { return MR::putBE<type> (round_func<type> (val.real()), data, i); }
 
-      GET_PUT_COMPLEX(int8_t);
-      GET_PUT_COMPLEX(uint8_t);
-      GET_PUT_COMPLEX_BO(int16_t);
-      GET_PUT_COMPLEX_BO(uint16_t);
-      GET_PUT_COMPLEX_BO(int32_t);
-      GET_PUT_COMPLEX_BO(uint32_t);
-      GET_PUT_COMPLEX_BO(float32);
-      GET_PUT_COMPLEX_BO(float64);
+      GET_PUT_COMPLEX(int8_t,round_finite);
+      GET_PUT_COMPLEX(uint8_t,round_finite);
+      GET_PUT_COMPLEX_BO(int16_t,round_finite);
+      GET_PUT_COMPLEX_BO(uint16_t,round_finite);
+      GET_PUT_COMPLEX_BO(int32_t,round_finite);
+      GET_PUT_COMPLEX_BO(uint32_t,round_finite);
+      GET_PUT_COMPLEX_BO(float32,no_round);
+      GET_PUT_COMPLEX_BO(float64,no_round);
     }
 
     // \endcond
