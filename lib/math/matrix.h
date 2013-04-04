@@ -129,49 +129,7 @@ namespace MR
         typedef ValueType value_type;
         typedef typename Vector<ValueType>::View VectorView;
 
-        //! A class to reference existing Matrix data
-        /*! This class is used purely to access and modify the elements of
-         * existing Matrices. It cannot perform allocation/deallocation or
-         * resizing operations. It is designed to be returned by members
-         * functions of the Matrix classes to allow convenient access to
-         * specific portions of the data (i.e. a subset of a Matrix).
-         */
-        class View : public Matrix<ValueType>
-      {
-        public:
-          View (const View& M) : Matrix<ValueType> (M) { }
-
-          Matrix<ValueType>& operator= (ValueType value) throw () {
-            return Matrix<ValueType>::operator= (value);
-          }
-          Matrix<ValueType>& operator= (const Matrix<ValueType>& M) throw () {
-            return Matrix<ValueType>::operator= (M);
-          }
-          template <typename U> Matrix<ValueType>& operator= (const Matrix<U>& M) throw () {
-            return Matrix<ValueType>::operator= (M);
-          }
-
-        private:
-          View () {
-            assert (0);
-          }
-          View (const Matrix<ValueType>& M) {
-            assert (0);
-          }
-          template <typename U> View (const Matrix<U>& M) {
-            assert (0);
-          }
-          View (ValueType* data, size_t nrows, size_t ncolumns, size_t row_skip) throw () {
-            Matrix<ValueType>::size1 = nrows;
-            Matrix<ValueType>::size2 = ncolumns;
-            Matrix<ValueType>::tda = row_skip;
-            Matrix<ValueType>::set (data);
-            Matrix<ValueType>::block = NULL;
-            Matrix<ValueType>::owner = 0;
-          }
-
-          friend class Matrix<ValueType>;
-      };
+        class View;
 
         //! construct empty matrix
         Matrix () throw () {
@@ -713,6 +671,53 @@ namespace MR
     };
 
 
+
+
+
+    //! A class to reference existing Matrix data
+    /*! This class is used purely to access and modify the elements of
+     * existing Matrices. It cannot perform allocation/deallocation or
+     * resizing operations. It is designed to be returned by members
+     * functions of the Matrix classes to allow convenient access to
+     * specific portions of the data (i.e. a subset of a Matrix).
+     */
+    template <class ValueType>
+      class Matrix<ValueType>::View : public Matrix<ValueType>
+      {
+        public:
+          View (const View& M) : Matrix<ValueType> (M) { }
+
+          Matrix<ValueType>& operator= (ValueType value) throw () {
+            return Matrix<ValueType>::operator= (value);
+          }
+          Matrix<ValueType>& operator= (const Matrix<ValueType>& M) throw () {
+            return Matrix<ValueType>::operator= (M);
+          }
+          template <typename U> Matrix<ValueType>& operator= (const Matrix<U>& M) throw () {
+            return Matrix<ValueType>::operator= (M);
+          }
+
+        private:
+          View () {
+            assert (0);
+          }
+          View (const Matrix<ValueType>& M) {
+            assert (0);
+          }
+          template <typename U> View (const Matrix<U>& M) {
+            assert (0);
+          }
+          View (ValueType* data, size_t nrows, size_t ncolumns, size_t row_skip) throw () {
+            Matrix<ValueType>::size1 = nrows;
+            Matrix<ValueType>::size2 = ncolumns;
+            Matrix<ValueType>::tda = row_skip;
+            Matrix<ValueType>::set (data);
+            Matrix<ValueType>::block = NULL;
+            Matrix<ValueType>::owner = 0;
+          }
+
+          friend class Matrix<ValueType>;
+      };
 
 
     //! \cond skip

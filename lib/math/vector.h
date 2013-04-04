@@ -185,51 +185,8 @@ namespace MR
         template <typename U> friend class Vector;
         typedef ValueType value_type;
 
-        //! A class to reference existing Vector data
-        /*! This class is used purely to access and modify the elements of
-         * existing Vectors. It cannot perform allocation/deallocation or
-         * resizing operations. It is designed to be returned by members
-         * functions of the Vector and Matrix classes to allow convenient
-         * access to specific portions of the data (e.g. a row of a Matrix,
-         * etc.).
-         */
-        class View : public Vector<ValueType>
-        {
-          public:
-            View (const View& V) : Vector<ValueType> (V) { }
+        class View;
 
-            Vector<ValueType>& operator= (ValueType value) throw () {
-              return Vector<ValueType>::operator= (value);
-            }
-            Vector<ValueType>& operator= (const Vector<ValueType>& V) {
-              return Vector<ValueType>::operator= (V);
-            }
-            template <typename U> Vector<ValueType>& operator= (const Vector<U>& V) {
-              return Vector<ValueType>::operator= (V);
-            }
-
-          private:
-            View () {
-              assert (0);
-            }
-            View (const Vector<ValueType>& V) {
-              assert (0);
-            }
-            template <typename U> View (const Vector<U>& V) {
-              assert (0);
-            }
-
-            View (ValueType* vector_data, size_t nelements, size_t skip = 1) throw () {
-              GSLVector<ValueType>::size = nelements;
-              GSLVector<ValueType>::stride = skip;
-              GSLVector<ValueType>::set (vector_data);
-              GSLVector<ValueType>::block = NULL;
-              GSLVector<ValueType>::owner = 0;
-            }
-
-            friend class Vector<ValueType>;
-            friend class Matrix<ValueType>;
-        };
 
         //! construct empty vector
         Vector () throw () {
@@ -640,6 +597,57 @@ namespace MR
     };
 
 
+
+
+
+
+
+    //! A class to reference existing Vector data
+    /*! This class is used purely to access and modify the elements of
+     * existing Vectors. It cannot perform allocation/deallocation or
+     * resizing operations. It is designed to be returned by members
+     * functions of the Vector and Matrix classes to allow convenient
+     * access to specific portions of the data (e.g. a row of a Matrix,
+     * etc.).
+     */
+    template <class ValueType>
+      class Vector<ValueType>::View : public Vector<ValueType>
+      {
+        public:
+          View (const View& V) : Vector<ValueType> (V) { }
+
+          Vector<ValueType>& operator= (ValueType value) throw () {
+            return Vector<ValueType>::operator= (value);
+          }
+          Vector<ValueType>& operator= (const Vector<ValueType>& V) {
+            return Vector<ValueType>::operator= (V);
+          }
+          template <typename U> Vector<ValueType>& operator= (const Vector<U>& V) {
+            return Vector<ValueType>::operator= (V);
+          }
+
+        private:
+          View () {
+            assert (0);
+          }
+          View (const Vector<ValueType>& V) {
+            assert (0);
+          }
+          template <typename U> View (const Vector<U>& V) {
+            assert (0);
+          }
+
+          View (ValueType* vector_data, size_t nelements, size_t skip = 1) throw () {
+            GSLVector<ValueType>::size = nelements;
+            GSLVector<ValueType>::stride = skip;
+            GSLVector<ValueType>::set (vector_data);
+            GSLVector<ValueType>::block = NULL;
+            GSLVector<ValueType>::owner = 0;
+          }
+
+          friend class Vector<ValueType>;
+          friend class Matrix<ValueType>;
+      };
 
     /** @defgroup vector Vector functions
       @{ */
