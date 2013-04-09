@@ -85,7 +85,9 @@ bool FOD_FMLS::operator() (const SH_coefs& in, FOD_lobes& out) const {
   if (data_in_order.begin()->first <= 0.0)
     return true;
 
-  std::vector< std::pair<dir_t, uint8_t> > retrospective_assignments;
+  std::vector< std::pair<dir_t, uint32_t> > retrospective_assignments;
+
+  std::map<uint32_t, uint32_t> lobes_to_merge;
 
   for (map_type::const_iterator i = data_in_order.begin(); i != data_in_order.end(); ++i) {
 
@@ -112,12 +114,8 @@ bool FOD_FMLS::operator() (const SH_coefs& in, FOD_lobes& out) const {
 
       if (out[adj_lobes.back()].get_peak_value() / Math::abs (i->first) < ratio_to_peak_value) {
 
-        for (size_t j = adj_lobes.size() - 1; j; --j) {
-          out[adj_lobes.front()].merge (out[adj_lobes[j]]);
-          std::vector<FOD_lobe>::iterator ptr = out.begin();
-          advance (ptr, adj_lobes[j]);
-          out.erase (ptr);
-        }
+        if (lobes_to_merge.find (adj_lobes.back()) == lobes_to_merge.end())
+          lobes_to_merge.insert (std::make_pair (adj_lobes.back(), adj_lobes.front()));
         out[adj_lobes.front()].add (i->second, i->first);
 
       } else {
@@ -130,11 +128,19 @@ bool FOD_FMLS::operator() (const SH_coefs& in, FOD_lobes& out) const {
 
   }
 
-  for (std::vector< std::pair<dir_t, uint8_t> >::const_iterator i = retrospective_assignments.begin(); i != retrospective_assignments.end(); ++i)
+  for (std::vector< std::pair<dir_t, uint32_t> >::const_iterator i = retrospective_assignments.begin(); i != retrospective_assignments.end(); ++i)
     out[i->second].add (i->first, values[i->first]);
 
+  for (std::map<uint32_t, uint32_t>::const_reverse_iterator i = lobes_to_merge.rbegin(); i != lobes_to_merge.rend(); ++i) {
+    out[i->second].merge (out[i->first]);
+    std::vector<FOD_lobe>::iterator ptr = out.begin();
+    advance (ptr, i->first);
+    out.erase (ptr);
+  }
+
+
   float mean_neg_peak = 0.0, max_neg_integral = 0.0;
-  uint8_t neg_lobe_count = 0;
+  uint32_t neg_lobe_count = 0;
   for (std::vector<FOD_lobe>::const_iterator i = out.begin(); i != out.end(); ++i) {
     if (i->is_negative()) {
       mean_neg_peak += i->get_peak_value();
@@ -180,7 +186,7 @@ bool FOD_FMLS::operator() (const SH_coefs& in, FOD_lobes& out) const {
       for (std::vector<FOD_lobe>::iterator i = out.begin(); i != out.end(); ++i)
         processed |= i->get_mask();
 
-      std::vector<uint8_t> new_assignments [dirs.size()];
+      std::vector<uint32_t> new_assignments [dirs.size()];
       while (!processed.full()) {
 
         for (dir_t dir = 0; dir != dirs.size(); ++dir) {
@@ -200,9 +206,9 @@ bool FOD_FMLS::operator() (const SH_coefs& in, FOD_lobes& out) const {
 
           } else if (new_assignments[dir].size() > 1) {
 
-            uint8_t best_lobe = 0;
+            uint32_t best_lobe = 0;
             float max_integral = 0.0;
-            for (std::vector<uint8_t>::const_iterator lobe_no = new_assignments[dir].begin(); lobe_no != new_assignments[dir].end(); ++lobe_no) {
+            for (std::vector<uint32_t>::const_iterator lobe_no = new_assignments[dir].begin(); lobe_no != new_assignments[dir].end(); ++lobe_no) {
               if (out[*lobe_no].get_integral() > max_integral) {
                 best_lobe = *lobe_no;
                 max_integral = out[*lobe_no].get_integral();

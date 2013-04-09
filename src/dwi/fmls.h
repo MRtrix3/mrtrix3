@@ -62,7 +62,7 @@ class FOD_lobe {
       peak_dir_bin (seed),
       peak_value (Math::abs (value)),
       peak_dir (dirs.get_dir (seed)),
-      integral (value),
+      integral (Math::abs (value)),
       neg (value <= 0.0)
     {
       mask[seed] = true;
