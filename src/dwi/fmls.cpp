@@ -46,7 +46,6 @@ FOD_FMLS::FOD_FMLS (const DWI::Directions::Set& directions, const size_t l) :
       create_lookup_table              (true),
       dilate_lookup_table              (false)
 {
-
   Math::Matrix<float> az_el_pairs (dirs.size(), 2);
   for (size_t row = 0; row != dirs.size(); ++row) {
     const Point<float> d (dirs.get_dir (row));
@@ -87,8 +86,8 @@ bool FOD_FMLS::operator() (const SH_coefs& in, FOD_lobes& out) const {
 
   for (map_type::const_iterator i = data_in_order.begin(); i != data_in_order.end(); ++i) {
 
-    std::vector<lobe_t> adj_lobes;
-    for (lobe_t l = 0; l != out.size(); ++l) {
+    std::vector<uint32_t> adj_lobes;
+    for (uint32_t l = 0; l != out.size(); ++l) {
       if ((((i->first <= 0.0) &&  out[l].is_negative())
         || ((i->first >  0.0) && !out[l].is_negative()))
         && (out[l].get_mask().is_adjacent (i->second))) {

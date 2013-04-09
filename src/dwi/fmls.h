@@ -147,8 +147,6 @@ class SH_coefs : public Math::Vector<float> {
 
 class FOD_FMLS {
 
-    typedef uint8_t lobe_t;
-
   public:
     FOD_FMLS (const DWI::Directions::Set&, const size_t);
 
