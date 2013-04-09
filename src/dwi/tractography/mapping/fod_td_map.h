@@ -225,7 +225,7 @@ namespace MR
           Image::Buffer<float>::voxel_type image (in_image);
           if (!Image::dimensions_match (proc_mask, image, 0, 3))
             throw Exception ("Dimensions of processing mask image provided using -proc_mask option must match relevant FOD image");
-          Image::copy_with_progress_message ("Copying processing mask to memory... ", image, mask);
+          Image::copy_with_progress_message ("Copying processing mask to memory... ", image, mask, 0, 3);
 
         } else {
 
