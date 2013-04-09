@@ -82,6 +82,9 @@ bool FOD_FMLS::operator() (const SH_coefs& in, FOD_lobes& out) const {
   for (size_t i = 0; i != values.size(); ++i)
     data_in_order.insert (std::make_pair (values[i], i));
 
+  if (data_in_order.begin()->first <= 0.0)
+    return true;
+
   std::vector< std::pair<dir_t, uint8_t> > retrospective_assignments;
 
   for (map_type::const_iterator i = data_in_order.begin(); i != data_in_order.end(); ++i) {
