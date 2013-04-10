@@ -633,7 +633,7 @@ void run() {
     Image::Header header (argument[4]);
     DWI::Tractography::Mapping::TrackMapperBase<SetVoxelDir> mapper (header);
     TractProcessor tract_processor (lobe_indexer, lobe_directions, lobe_TDI, lobe_connectivity, 30);
-    Thread::run_queue_custom_threading (loader, 0, DWI::Tractography::Mapping::TrackAndIndex(), mapper, 0, SetVoxelDir(), tract_processor, 1);
+    Thread::run_queue_custom_threading (loader, 1, DWI::Tractography::Mapping::TrackAndIndex(), mapper, 1, SetVoxelDir(), tract_processor, 1);
   }
   track_file.close();
 
