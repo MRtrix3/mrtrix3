@@ -104,8 +104,6 @@ void run ()
   DEBUG ("estimated total count: " + str(total_count));
 
   Tractography::Writer<float> writer (argument[in_count], mean_properties);
-  VAR (writer.count);
-  VAR (writer.total_count);
   std::vector< Point<float> > tck;
 
   ProgressBar progress ("concatenating track files...", in_count);
