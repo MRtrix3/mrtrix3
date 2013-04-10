@@ -36,8 +36,6 @@ namespace MR
     {
       namespace Tool
       {
-        namespace Tractography
-        {
 
           class ScalarFileOptions : public Base
           {
@@ -73,7 +71,6 @@ namespace MR
 
           };
 
-        }
       }
     }
   }

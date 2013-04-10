@@ -37,60 +37,56 @@ namespace MR
     {
       namespace Tool
       {
-        namespace Tractography
+        class Tractography : public Base
         {
+            Q_OBJECT
 
-          class Tractography : public Base
-          {
-              Q_OBJECT
+          public:
 
-            public:
+            class Model;
 
-              class Model;
+            Tractography (Window& main_window, Dock* parent);
 
-              Tractography (Window& main_window, Dock* parent);
+            virtual ~Tractography ();
 
-              virtual ~Tractography ();
-
-              void draw2D (const Projection& transform);
-              void draw3D (const Projection& transform);
-              void drawOverlays (const Projection& transform);
+            void draw2D (const Projection& transform);
+            void draw3D (const Projection& transform);
+            void drawOverlays (const Projection& transform);
 
 
-              float line_thickness;
-              bool do_crop_to_slab;
-              float slab_thickness;
-              bool do_shader_update;
-              float line_opacity;
-              Model* tractogram_list_model;
-              QListView* tractogram_list_view;
+            float line_thickness;
+            bool do_crop_to_slab;
+            float slab_thickness;
+            bool do_shader_update;
+            float line_opacity;
+            Model* tractogram_list_model;
+            QListView* tractogram_list_view;
 
-            private slots:
-              void tractogram_open_slot ();
-              void tractogram_close_slot ();
-              void toggle_shown_slot (const QModelIndex& index);
-              void on_slab_thickness_slot();
-              void on_crop_to_slab_slot (bool checked);
-              void opacity_slot (int opacity);
-              void line_thickness_slot (int thickness);
-              void right_click_menu_slot (const QPoint& pos);
-              void colour_track_by_direction_slot ();
-              void set_track_colour_slot ();
-              void randomise_track_colour_slot ();
-              void colour_by_scalar_file_slot ();
-              void selection_changed_slot (const QItemSelection &, const QItemSelection &);
+          private slots:
+            void tractogram_open_slot ();
+            void tractogram_close_slot ();
+            void toggle_shown_slot (const QModelIndex& index);
+            void on_slab_thickness_slot();
+            void on_crop_to_slab_slot (bool checked);
+            void opacity_slot (int opacity);
+            void line_thickness_slot (int thickness);
+            void right_click_menu_slot (const QPoint& pos);
+            void colour_track_by_direction_slot ();
+            void set_track_colour_slot ();
+            void randomise_track_colour_slot ();
+            void colour_by_scalar_file_slot ();
+            void selection_changed_slot (const QItemSelection &, const QItemSelection &);
 
-            protected:
+          protected:
 
-              void update_scalar_file_options();
-              void update_display ();
+            void update_scalar_file_options();
+            void update_display ();
 
-              AdjustButton* slab_entry;
-              QMenu* track_option_menu;
-              Dock* scalar_file_options;
+            AdjustButton* slab_entry;
+            QMenu* track_option_menu;
+            Dock* scalar_file_options;
 
-          };
-        }
+        };
       }
     }
   }

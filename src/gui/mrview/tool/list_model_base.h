@@ -50,7 +50,7 @@ namespace MR
                 return items[index.row()]->show ? Qt::Checked : Qt::Unchecked;
               }
               if (role != Qt::DisplayRole) return QVariant();
-              return shorten (items[index.row()]->get_filename(), 20, 0).c_str();
+              return shorten (items[index.row()]->get_filename(), 35, 0).c_str();
             }
 
             bool setData (const QModelIndex& index, const QVariant& value, int role) {
