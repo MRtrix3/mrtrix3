@@ -24,8 +24,9 @@
 #define __gui_mrview_tool_screen_capture_h__
 
 #include <QVBoxLayout>
-
+#include <QSpinBox>
 #include "gui/mrview/tool/base.h"
+#include "gui/mrview/adjust_button.h"
 
 class QComboBox;
 
@@ -50,14 +51,16 @@ namespace MR
 
           private slots:
             void onScreenCapture ();
-            void onSetRotationAxis (int);
-            void onSetRotationDegree (float);
 
           private:
-            QComboBox *axis_combobox;
+
+            AdjustButton *rotaton_axis_x;
+            AdjustButton *rotaton_axis_y;
+            AdjustButton *rotaton_axis_z;
             AdjustButton *degrees_button;
+            QSpinBox *num_captures;
+            QLineEdit *prefix_textbox;
             int axis;
-            float degrees;
 
         };
 

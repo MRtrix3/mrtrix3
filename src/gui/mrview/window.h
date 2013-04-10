@@ -63,7 +63,7 @@ namespace MR
           Qt::MouseButtons mouse_buttons () const { return buttons_; }
           Qt::KeyboardModifiers modifiers () const { return modifiers_; }
 
-          const Image* image () const { 
+          const Image* image () const {
             return static_cast<const Image*> (image_group->checkedAction());
           }
           QActionGroup* tools () const {
@@ -89,22 +89,27 @@ namespace MR
 
           void set_scaling_all (float min, float max) {
             QList<QAction*> list = image_group->actions();
-            for (int n = 0; n < list.size(); ++n) 
+            for (int n = 0; n < list.size(); ++n)
               static_cast<Image*> (list[n])->set_windowing (min, max);
           }
 
-          bool show_crosshairs () const { return show_crosshairs_action->isChecked(); } 
-          bool show_comments () const { return show_comments_action->isChecked(); } 
-          bool show_voxel_info () const { return show_voxel_info_action->isChecked(); } 
-          bool show_orientation_labels () const { return show_orientation_labels_action->isChecked(); } 
+          bool show_crosshairs () const { return show_crosshairs_action->isChecked(); }
+          bool show_comments () const { return show_comments_action->isChecked(); }
+          bool show_voxel_info () const { return show_voxel_info_action->isChecked(); }
+          bool show_orientation_labels () const { return show_orientation_labels_action->isChecked(); }
           bool show_colourbar () const { return show_colourbar_action->isChecked(); }
 
           void updateGL () { glarea->updateGL(); }
 
+          void captureGL(std::string& filename) {
+            QImage image (glarea->grabFrameBuffer());
+            image.save (filename.c_str());
+          }
+
           GL::Lighting& lighting () { return *lighting_; }
           ColourMap::Renderer colourbar_renderer;
 
-        signals: 
+        signals:
           void focusChanged ();
           void targetChanged ();
           void sliceChanged ();
@@ -186,12 +191,12 @@ namespace MR
 
           enum MouseAction {
             NoAction,
-            SetFocus, 
-            Contrast, 
-            Pan, 
-            PanThrough, 
-            Tilt, 
-            Rotate 
+            SetFocus,
+            Contrast,
+            Pan,
+            PanThrough,
+            Tilt,
+            Rotate
           };
 
           GLArea* glarea;
@@ -208,54 +213,54 @@ namespace MR
           int anatomical_plane, annotations, colourbar_position_index;
           bool snap_to_image_axes_and_voxel;
 
-          QMenu *image_menu, 
+          QMenu *image_menu,
                 *colourmap_menu;
 
-          QActionGroup *mode_group, 
-                       *tool_group, 
-                       *image_group, 
-                       *colourmap_group, 
-                       *mode_action_group, 
+          QActionGroup *mode_group,
+                       *tool_group,
+                       *image_group,
+                       *colourmap_group,
+                       *mode_action_group,
                        *plane_group;
 
-          QAction *save_action, 
-                  *close_action, 
+          QAction *save_action,
+                  *close_action,
                   *properties_action,
 
-                  **tool_actions, 
-                  **colourmap_actions, 
-                  *invert_colourmap_action, 
+                  **tool_actions,
+                  **colourmap_actions,
+                  *invert_colourmap_action,
                   *invert_scale_action,
                   *extra_controls_action,
                   *snap_to_image_action,
 
                   *next_image_action,
-                  *prev_image_action, 
-                  *next_image_volume_action, 
+                  *prev_image_action,
+                  *next_image_volume_action,
                   *prev_image_volume_action,
-                  *next_slice_action, 
-                  *prev_slice_action, 
+                  *next_slice_action,
+                  *prev_slice_action,
                   *reset_view_action,
-                  *next_image_volume_group_action, 
-                  *prev_image_volume_group_action, 
+                  *next_image_volume_group_action,
+                  *prev_image_volume_group_action,
                   *image_list_area,
 
-                  *reset_windowing_action, 
-                  *axial_action, 
-                  *sagittal_action, 
-                  *coronal_action, 
+                  *reset_windowing_action,
+                  *axial_action,
+                  *sagittal_action,
+                  *coronal_action,
 
                   *toggle_annotations_action,
-                  *show_comments_action, 
-                  *show_voxel_info_action, 
+                  *show_comments_action,
+                  *show_voxel_info_action,
                   *show_orientation_labels_action,
-                  *show_crosshairs_action, 
-                  *show_colourbar_action, 
-                  *image_interpolate_action, 
+                  *show_crosshairs_action,
+                  *show_colourbar_action,
+                  *image_interpolate_action,
                   *full_screen_action,
 
-                  *OpenGL_action, 
-                  *about_action, 
+                  *OpenGL_action,
+                  *about_action,
                   *aboutQt_action;
 
           void paintGL ();
