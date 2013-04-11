@@ -60,7 +60,6 @@ namespace MR
 
 
           // Colourmap menu:
-
           colourmap_menu = new QMenu (tr ("Colourmap menu"), this);
 
           ColourMap::create_menu (this, colourmap_group, colourmap_menu, colourmap_actions);
@@ -74,18 +73,19 @@ namespace MR
           show_colour_bar->setChecked (true);
           addAction (show_colour_bar);
 
-//            colourmap_menu->addSeparator();
+//          colourmap_menu->addSeparator();
+//          invert_scale_action = colourmap_menu->addAction (tr ("Invert scaling"), this, SLOT (invert_scaling_slot()));
+//          invert_scale_action->setCheckable (true);
+//          invert_scale_action->setShortcut (tr("U"));
+//          addAction (invert_scale_action);
 //
-//            invert_scale_action = colourmap_menu->addAction (tr ("Invert scaling"), this, SLOT (invert_scaling_slot()));
-//            invert_scale_action->setCheckable (true);
-//            invert_scale_action->setShortcut (tr("U"));
-//            addAction (invert_scale_action);
-//
-//
-//            invert_colourmap_action = colourmap_menu->addAction (tr ("Invert Colourmap"), this, SLOT (invert_colourmap_slot()));
-//            invert_colourmap_action->setCheckable (true);
-//            invert_colourmap_action->setShortcut (tr("Shift+U"));
-//            addAction (invert_colourmap_action);
+            invert_colourmap_action = colourmap_menu->addAction (tr ("Invert Colourmap"), this, SLOT (invert_colourmap_slot()));
+            invert_colourmap_action->setCheckable (true);
+            addAction (invert_colourmap_action);
+
+            scalarfile_by_direction = colourmap_menu->addAction (tr ("By Direction"), this, SLOT (scalarfile_by_direction_slot()));
+            scalarfile_by_direction->setCheckable (true);
+            addAction (scalarfile_by_direction);
 //
 //            colourmap_menu->addSeparator();
 //
@@ -233,7 +233,8 @@ namespace MR
         }
 
 
-        void ScalarFileOptions::toggle_threshold_slot() {
+        void ScalarFileOptions::toggle_threshold_slot()
+        {
           if (threshold_box->isChecked()) {
             greaterthan->setEnabled (true);
             lessthan->setEnabled (true);
@@ -255,6 +256,27 @@ namespace MR
           tractogram->set_thresholds (lessthan->value(), greaterthan->value());
           window.updateGL();
         }
+
+
+
+        void ScalarFileOptions::scalarfile_by_direction_slot ()
+        {
+          if (tractogram) {
+            tractogram->scalarfile_by_direction = scalarfile_by_direction->isChecked();
+            tractogram->recompile();
+            window.updateGL();
+          }
+        }
+
+        void ScalarFileOptions::invert_colourmap_slot ()
+        {
+          if (tractogram) {
+            tractogram->set_invert_map (invert_colourmap_action->isChecked());
+            tractogram->recompile();
+            window.updateGL();
+          }
+        }
+
 
 
 //        void ScalarFileOptions::on_scaling_changed_slot ()

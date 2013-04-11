@@ -55,19 +55,23 @@ namespace MR
               void toggle_threshold_slot ();
               void on_set_scaling_slot ();
               void on_set_threshold_slot ();
+              void invert_colourmap_slot ();
+              void scalarfile_by_direction_slot ();
 
             protected:
-              Tractogram* tractogram;
-              QVBoxLayout* main_box;
-              QAction* show_colour_bar;
-              QMenu* colourmap_menu;
-              QAction** colourmap_actions;
+              Tractogram *tractogram;
+              QVBoxLayout *main_box;
+              QAction *show_colour_bar;
+              QAction *invert_colourmap_action;
+              QAction *scalarfile_by_direction;
+              QMenu *colourmap_menu;
+              QAction **colourmap_actions;
               QActionGroup *colourmap_group;
-              QToolButton* colourmap_button;
-              QPushButton* button;
+              QToolButton *colourmap_button;
+              QPushButton *button;
               AdjustButton *max_entry, *min_entry;
               AdjustButton *lessthan, *greaterthan;
-              QGroupBox* threshold_box;
+              QGroupBox *threshold_box;
 
           };
 

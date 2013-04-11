@@ -46,6 +46,7 @@ namespace MR
 
         Tractogram::Tractogram (Window& window, Tractography& tool, const std::string& filename) :
           Displayable (filename),
+          scalarfile_by_direction (false),
           do_crop_to_slab (true),
           do_threshold (false),
           show_colour_bar (true),
@@ -189,7 +190,18 @@ namespace MR
               if (flags_ & InvertScale) vertex_shader_code += "1.0 -";
               vertex_shader_code += " scale * (amp - offset), 0.0, 1.0);\n  ";
             }
-            vertex_shader_code += ColourMap::maps[colourmap_index].mapping;
+            if (scalarfile_by_direction) {
+              vertex_shader_code +=
+                  "  if (isnan (previousVertex.x))\n"
+                  "    color = nextVertex - vertexPosition_modelspace;\n"
+                  "  else if (isnan (nextVertex.x))\n"
+                  "    color = vertexPosition_modelspace - previousVertex;\n"
+                  "  else\n"
+                  "    color = nextVertex - previousVertex;\n"
+                  "  color = normalize (abs (color));\n";
+            } else {
+              vertex_shader_code += ColourMap::maps[colourmap_index].mapping;
+            }
 
             break;
           default:

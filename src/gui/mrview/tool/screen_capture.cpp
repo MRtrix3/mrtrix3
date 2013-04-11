@@ -135,7 +135,7 @@ namespace MR
           std::string prefix (prefix_textbox->text().toUtf8().constData());
           int first_index = start_index->value();
           int i = first_index;
-          for (; i < first_index + frames->value() - 1; ++i) {
+          for (; i < first_index + frames->value(); ++i) {
             this->window.captureGL (folder + "/" + prefix + printf ("%04d.png", i));
             Math::Versor<float> orientation (this->window.orientation());
             Math::Vector<float> axis (3);
@@ -148,7 +148,6 @@ namespace MR
             this->window.updateGL();
             start_index->setValue (i + 1);
           }
-          this->window.captureGL (folder + "/" + prefix + printf ("%04d.png", i));
         }
 
         bool ScreenCapture::select_output_folder_slot ()

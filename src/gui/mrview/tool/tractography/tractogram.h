@@ -83,6 +83,7 @@ namespace MR
               colour[2] = color[2];
             }
 
+            bool scalarfile_by_direction; //TODO
             bool do_crop_to_slab;
             bool do_threshold;
             bool show_colour_bar;
