@@ -50,7 +50,8 @@ namespace MR
           ScreenCapture (Window& main_window, Dock* parent);
 
           private slots:
-            void onScreenCapture ();
+            void on_screen_capture ();
+            bool select_output_folder_slot();
 
           private:
 
@@ -58,9 +59,12 @@ namespace MR
             AdjustButton *rotaton_axis_y;
             AdjustButton *rotaton_axis_z;
             AdjustButton *degrees_button;
-            QSpinBox *num_captures;
+            QSpinBox *start_index;
+            QSpinBox *frames;
             QLineEdit *prefix_textbox;
+            QPushButton *folder_button;
             int axis;
+            QDir* directory;
 
         };
 

@@ -85,7 +85,7 @@ namespace MR
           void set_plane (int p) { anatomical_plane = p; emit planeChanged(); }
           void set_orientation (const Math::Versor<float>& Q) { orient = Q; emit orientationChanged(); }
           void set_scaling (float min, float max) { if (!image()) return; image()->set_windowing (min, max); }
-          void set_snap_to_image (bool onoff) { snap_to_image_axes_and_voxel = onoff; emit focusChanged(); }
+          void set_snap_to_image (bool onoff) { snap_to_image_axes_and_voxel = onoff; snap_to_image_action->setChecked(onoff);  emit focusChanged(); }
 
           void set_scaling_all (float min, float max) {
             QList<QAction*> list = image_group->actions();
@@ -101,7 +101,7 @@ namespace MR
 
           void updateGL () { glarea->updateGL(); }
 
-          void captureGL(std::string& filename) {
+          void captureGL (std::string filename) {
             QImage image (glarea->grabFrameBuffer());
             image.save (filename.c_str());
           }
