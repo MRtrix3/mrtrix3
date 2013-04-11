@@ -60,8 +60,10 @@ void usage ()
   + Argument ("factor").type_sequence_float()
 
   + Option ("interp",
-            "set the interpolation method to use when resizing (default: cubic).")
-  + Argument ("method").type_choice (interp_choices);
+            "set the interpolation method to use when resizing (choices: nearest, linear, cubic, sinc. Default: cubic).")
+  + Argument ("method").type_choice (interp_choices)
+
+  + DataType::options();
 }
 
 
@@ -111,6 +113,7 @@ void run () {
 
   Image::Header header (input_data);
   header.info() = resize_filter.info();
+  header.datatype() = DataType::from_command_line (header.datatype());
   Image::Buffer<float> output_data (argument[1], header);
   Image::Buffer<float>::voxel_type output_vox (output_data);
 
