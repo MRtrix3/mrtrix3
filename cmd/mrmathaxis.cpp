@@ -53,7 +53,7 @@ void usage ()
   + Argument ("input", "the input image.").type_image_in ()
   + Argument ("operation", "the operation to apply, one of: " + join(operations, ", ") + ".").type_choice (operations)
   + Argument ("axis", "the axis along which to compute summary statistic.").type_integer (0)
-  + Argument ("mean", "the output image.").type_image_out ();
+  + Argument ("output", "the output image.").type_image_out ();
 }
 
 
