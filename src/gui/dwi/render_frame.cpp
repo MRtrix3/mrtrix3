@@ -62,6 +62,7 @@ namespace MR
         show_axes (true), hide_neg_lobes (true), color_by_dir (true), use_lighting (true), font (parent->font()), projection (this, font),
         focus (0.0, 0.0, 0.0), framebuffer (NULL), OS (0), OS_x (0), OS_y (0)
       {
+        setMinimumSize (128, 128);
         lighting = new GL::Lighting (this);
         lighting->set_background = true;
         connect (lighting, SIGNAL (changed()), this, SLOT (updateGL()));

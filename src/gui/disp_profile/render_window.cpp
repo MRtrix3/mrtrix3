@@ -225,18 +225,14 @@ namespace MR
 
       void Window::open_slot ()
       {
-        Dialog::File dialog (this, "Select SH coefficients file", false, false);
-        if (dialog.exec()) {
-          std::vector<std::string> list;
-          dialog.get_selection (list);
-          assert (list.size() == 1);
-          set_values (list[0]);
-        }
+        std::string coef_file = Dialog::File::get_file (this, "Select SH coefficients file");
+        if (coef_file.size())
+          set_values (coef_file);
       }
 
       void Window::close_slot ()
       {
-        TEST;
+        TRACE;
       }
       void Window::use_lighting_slot (bool is_checked)
       {

@@ -125,6 +125,7 @@ namespace MR
 
         private slots:
           void image_open_slot ();
+          void image_import_DICOM_slot ();
           void image_save_slot ();
           void image_close_slot ();
           void image_properties_slot ();

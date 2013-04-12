@@ -5,6 +5,7 @@
 #include "gui/mrview/tool/lighting.h"
 //#include "gui/mrview/tool/roi_analysis.h"
 #include "gui/mrview/tool/overlay.h"
+#include "gui/mrview/tool/odf.h"
 #include "gui/mrview/tool/screen_capture.h"
 #include "gui/mrview/tool/tractography/tractography.h"
 
@@ -20,6 +21,7 @@ TOOL(Lighting, Lighting options, Adjust lighting settings for those modes that s
 //TOOL(ROI, ROI analysis, Draw & analyse regions of interest)
 TOOL(Overlay, Overlay, Overlay other images over the current image)
 TOOL(Tractography, Tractography, Display tracks over the current image)
+TOOL(ODF, ODF Display, Display orientation density functions)
 TOOL(ScreenCapture, Screen capture, Capture the screen as a png file)
 
 #endif

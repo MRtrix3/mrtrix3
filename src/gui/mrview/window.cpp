@@ -214,6 +214,12 @@ namespace MR
 
         menu->addSeparator();
 
+        action = menu->addAction (tr ("DICOM import..."), this, SLOT (image_import_DICOM_slot()));
+        action->setShortcut (tr ("Ctrl+D"));
+        addAction (action);
+
+        menu->addSeparator();
+
         action = menu->addAction (tr ("Quit"), this, SLOT (close()));
         action->setShortcut (tr ("Ctrl+Q"));
         addAction (action);
@@ -582,13 +588,35 @@ namespace MR
 
       void Window::image_open_slot ()
       {
-        Dialog::File dialog (this, "Select images to open", true, true);
-        if (dialog.exec()) {
+        std::vector<std::string> image_list = Dialog::File::get_images (this, "Select images to open");
+        if (image_list.empty())
+          return;
+
+        VecPtr<MR::Image::Header> list;
+        for (size_t n = 0; n < image_list.size(); ++n) 
+          list.push_back (new MR::Image::Header (image_list[n]));
+        add_images (list);
+      }
+
+
+
+      void Window::image_import_DICOM_slot ()
+      {
+        std::string folder = Dialog::File::get_folder (this, "Select DICOM folder to import");
+        if (folder.empty())
+          return;
+
+
+        try {
           VecPtr<MR::Image::Header> list;
-          dialog.get_images (list);
+          list.push_back (new MR::Image::Header (folder));
           add_images (list);
         }
+        catch (Exception& E) {
+          E.display();
+        }
       }
+
 
 
 
@@ -606,19 +634,17 @@ namespace MR
 
       void Window::image_save_slot ()
       {
-        Dialog::File dialog (this, "Select image destination", false, false);
-        if (dialog.exec()) {
-          std::vector<std::string> selection;
-          dialog.get_selection (selection);
-          if (selection.size() != 1) return;
-          try {
-            MR::Image::Buffer<cfloat> dest (selection[0], image()->header());
-            MR::Image::Buffer<cfloat>::voxel_type vox (dest);
-            MR::Image::copy_with_progress (image()->voxel(), vox);
-          }
-          catch (Exception& E) {
-            E.display();
-          }
+        std::string image_name = Dialog::File::get_save_image_name (this, "Select image destination");
+        if (image_name.empty())
+          return;
+
+        try {
+          MR::Image::Buffer<cfloat> dest (image_name, image()->header());
+          MR::Image::Buffer<cfloat>::voxel_type vox (dest);
+          MR::Image::copy_with_progress (image()->voxel(), vox);
+        }
+        catch (Exception& E) {
+          E.display();
         }
       }
 

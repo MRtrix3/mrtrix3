@@ -184,20 +184,19 @@ namespace MR
 
         bool ScalarFileOptions::open_track_scalar_file_slot ()
         {
-          Dialog::File dialog (this, "Select track scalar to open", false, false);
-          if (dialog.exec()) {
-            std::vector<std::string> list;
-            dialog.get_selection (list);
-            try {
-              tractogram->load_track_scalars (list[0]);
-              set_tractogram (tractogram);
-            } catch (Exception& E) {
-              E.display();
-              return false;
-            }
-            return true;
+          std::string scalar_file = Dialog::File::get_file (this, "Select track scalar to open", "Track Scalar files (*.tsf)");
+          if (scalar_file.empty())
+            return false;
+
+          try {
+            tractogram->load_track_scalars (scalar_file);
+            set_tractogram (tractogram);
+          } 
+          catch (Exception& E) {
+            E.display();
+            return false;
           }
-          return false;
+          return true;
         }
 
 

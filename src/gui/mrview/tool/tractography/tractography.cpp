@@ -210,13 +210,12 @@ namespace MR
 
         void Tractography::tractogram_open_slot ()
         {
+          std::vector<std::string> list = Dialog::File::get_files (this, "Select tractograms to open", "Tractograms (*.tck)");
+          if (list.empty())
+            return;
+
           try {
-            Dialog::File dialog (this, "Select tractograms to open", true, false);
-            if (dialog.exec()) {
-              std::vector<std::string> list;
-              dialog.get_selection (list);
-              tractogram_list_model->add_items (list, window,  *this);
-            }
+            tractogram_list_model->add_items (list, window, *this);
           }
           catch (Exception& E) {
             E.display();

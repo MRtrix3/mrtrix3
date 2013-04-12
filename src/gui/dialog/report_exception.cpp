@@ -57,7 +57,8 @@ namespace MR
       void display_exception (const Exception& E, int log_level)
       {
         MR::display_exception_cmdline (E, log_level);
-        report (E);
+        if (log_level < 2)
+          report (E);
       }
 
     }

@@ -164,17 +164,18 @@ namespace MR
 
         void Overlay::image_open_slot ()
         {
-          Dialog::File dialog (this, "Select overlay images to open", true, true);
-          if (dialog.exec()) {
-            VecPtr<MR::Image::Header> list;
-            dialog.get_images (list);
-            size_t previous_size = image_list_model->rowCount();
-            image_list_model->add_items (list);
+          std::vector<std::string> overlay_names = Dialog::File::get_images (this, "Select overlay images to open");
+          if (overlay_names.empty())
+            return;
+          VecPtr<MR::Image::Header> list;
+          for (size_t n = 0; n < overlay_names.size(); ++n)
+            list.push_back (new MR::Image::Header (overlay_names[n]));
+          size_t previous_size = image_list_model->rowCount();
+          image_list_model->add_items (list);
 
-            QModelIndex first = image_list_model->index (previous_size, 0, QModelIndex());
-            QModelIndex last = image_list_model->index (image_list_model->rowCount()-1, 0, QModelIndex());
-            image_list_view->selectionModel()->select (QItemSelection (first, last), QItemSelectionModel::Select);
-          }
+          QModelIndex first = image_list_model->index (previous_size, 0, QModelIndex());
+          QModelIndex last = image_list_model->index (image_list_model->rowCount()-1, 0, QModelIndex());
+          image_list_view->selectionModel()->select (QItemSelection (first, last), QItemSelectionModel::Select);
         }
 
 
@@ -228,7 +229,7 @@ namespace MR
 
         void Overlay::draw3D (const Projection& transform)
         { 
-          TEST;
+          TRACE;
         }
 
 

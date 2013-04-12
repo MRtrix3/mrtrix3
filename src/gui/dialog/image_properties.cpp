@@ -157,13 +157,9 @@ namespace MR
       void ImageProperties::write_to_file ()
       {
         assert (save_target);
-        File dialog (this, "Save as...", false, false);
-        if (dialog.exec()) {
-          std::vector<std::string> selection;
-          dialog.get_selection (selection);
-          if (selection.empty()) return;
-          save_target->save (selection[0]);
-        }
+        std::string name = File::get_save_name (this, "Save as...");
+        if (name.size())
+          save_target->save (name);
       }
 
     }
