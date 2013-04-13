@@ -29,6 +29,7 @@
 
 #include "gui/opengl/gl.h"
 #include "gui/opengl/font.h"
+#include "gui/opengl/transformation.h"
 #include <QGLWidget>
 
 #include "ptr.h"
@@ -61,7 +62,7 @@ namespace MR
             updateGL();
           }
 
-          void set_rotation (const GLdouble* rotation = NULL);
+          void set_rotation (const GL::mat4& rotation);
 
           void set_show_axes (bool yesno = true) {
             show_axes = yesno;

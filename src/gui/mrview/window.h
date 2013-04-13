@@ -99,6 +99,7 @@ namespace MR
           bool show_orientation_labels () const { return show_orientation_labels_action->isChecked(); }
           bool show_colourbar () const { return show_colourbar_action->isChecked(); }
 
+          void makeGLcurrent () { glarea->makeCurrent(); }
           void updateGL () { glarea->updateGL(); }
 
           void captureGL (std::string filename) {

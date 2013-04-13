@@ -69,12 +69,14 @@ namespace MR
       }
 
 
-      void RenderFrame::set_rotation (const GLdouble* rotation)
+
+
+      void RenderFrame::set_rotation (const GL::mat4& rotation)
       {
         float p[9];
-        p[0] = rotation[0]; p[1] = rotation[1]; p[2] = rotation[2];
-        p[3] = rotation[4]; p[4] = rotation[5]; p[5] = rotation[6];
-        p[6] = rotation[8]; p[7] = rotation[9]; p[8] = rotation[10];
+        p[0] = rotation(0,0); p[1] = rotation(1,0); p[2] = rotation(2,0);
+        p[3] = rotation(0,1); p[4] = rotation(1,1); p[5] = rotation(2,1);
+        p[6] = rotation(0,2); p[7] = rotation(1,2); p[8] = rotation(2,2);
         Math::Matrix<float> M (p, 3, 3);
         orientation.from_matrix (M);
         updateGL();

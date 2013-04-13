@@ -32,6 +32,7 @@
 #include "gui/mrview/window.h"
 #include "gui/mrview/tool/odf.h"
 #include "gui/mrview/tool/list_model_base.h"
+#include "gui/mrview/mode/base.h"
 
 namespace MR
 {
@@ -189,9 +190,14 @@ namespace MR
             level_of_detail_selector->setMaximum (7);
             level_of_detail_selector->setSingleStep (1);
             level_of_detail_selector->setValue (3);
-            connect (level_of_detail_selector, SIGNAL (valueChanged(int)), this, SLOT(level_of_detail_selector(int)));
+            connect (level_of_detail_selector, SIGNAL (valueChanged(int)), this, SLOT(level_of_detail_slot(int)));
             box_layout->addWidget (level_of_detail_selector, 7, 1);
 
+
+            overlay_frame = new QGroupBox (tr("Overlay"));
+            main_box->addWidget (overlay_frame);
+            box_layout = new QGridLayout;
+            overlay_frame->setLayout (box_layout);
 
 /*
             box_layout->addWidget (new QLabel ("min"), 1, 0);
@@ -234,16 +240,26 @@ namespace MR
             update_selection();
             */
 
+            splitter->setStretchFactor (0, 1);
+            splitter->setStretchFactor (1, 0);
+
             hide_negative_lobes_slot (0);
             show_axes_slot (0);
             colour_by_direction_slot (0);
             use_lighting_slot (0);
-            // lock_orientation_to_image_slot (0);
+            lmax_slot (0);
+            level_of_detail_slot (0);
+            lock_orientation_to_image_slot (0);
           }
 
 
         void ODF::draw2D (const Projection& projection) 
         {
+          lock_orientation_to_image_slot(0);
+
+          if (overlay_frame->isChecked())
+            TRACE;
+
           /*
           float overlay_opacity = opacity->value() / 1.0e3f;
 
@@ -305,7 +321,6 @@ namespace MR
           for (image->interp[3] = 0; image->interp[3] < image->interp.dim(3); ++image->interp[3])
             values[image->interp[3]] = image->interp.value().real(); 
 
-          VAR (values);
           render_frame->set (values);
 
         }
@@ -337,14 +352,21 @@ namespace MR
 
 
 
-        void ODF::lock_orientation_to_image_slot (int unused) { TRACE; }
+        void ODF::lock_orientation_to_image_slot (int unused) {
+          if (lock_orientation_to_image_box->isChecked()) {
+            render_frame->makeCurrent();
+            render_frame->set_rotation (window.get_current_mode()->projection.modelview());
+            window.makeGLcurrent();
+          }
+        }
+
         void ODF::colour_by_direction_slot (int unused) { render_frame->set_color_by_dir (colour_by_direction_box->isChecked()); }
         void ODF::hide_negative_lobes_slot (int unused) { render_frame->set_hide_neg_lobes (hide_negative_lobes_box->isChecked()); }
         void ODF::use_lighting_slot (int unused) { render_frame->set_use_lighting (use_lighting_box->isChecked()); }
         void ODF::interpolation_slot (int unused) { TRACE; }
         void ODF::show_axes_slot (int unused) { render_frame->set_show_axes (show_axes_box->isChecked()); }
-        void ODF::lmax_slot (int value) { render_frame->set_LOD (value); }
-        void ODF::level_of_detail_slot (int value) { render_frame->set_lmax (value); }
+        void ODF::level_of_detail_slot (int value) { render_frame->set_LOD (level_of_detail_selector->value()); }
+        void ODF::lmax_slot (int value) { render_frame->set_lmax (lmax_selector->value()); }
 
         void ODF::update_slot (int unused) {
           window.updateGL();
