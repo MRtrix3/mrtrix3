@@ -153,6 +153,14 @@ namespace MR
         template <class P1> Point<float> voxel2scanner_dir (const P1& r) const {
           return transform_vector (V2S, r);
         }
+        //! Transform the orientation \p r from scanner-space to voxel-space
+        template <class P1> Point<float> scanner2image_dir (const P1& r) const {
+          return transform_vector (S2I, r);
+        }
+        //! Transform the orientation \p r from voxel-space to scanner-space
+        template <class P1> Point<float> image2scanner_dir (const P1& r) const {
+          return transform_vector (I2S, r);
+        }
 
         const float* scanner2voxel_matrix () {
           return *S2V;
