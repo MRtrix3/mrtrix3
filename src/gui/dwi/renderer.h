@@ -76,7 +76,7 @@ namespace MR
             glVertexAttribPointer (1, 3, GL_FLOAT, GL_FALSE, 3*sizeof(GLfloat), (void*)0);
           }
 
-          void draw (float* origin, int buffer_ID = 0) const {
+          void draw (const float* origin, int buffer_ID = 0) const {
             glUniform3fv (origin_ID, 1, origin);
             glUniform1i (reverse_ID, 0);
             glDrawElements (GL_TRIANGLES, num_indices, GL_UNSIGNED_INT, (void*)0);

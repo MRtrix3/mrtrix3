@@ -151,6 +151,7 @@ namespace MR
 
             int slice () const { return Math::round<int> (voxel_at (focus())[plane()]); }
 
+            void project_target_onto_current_slice();
 
             bool in_paint () const { return painting; } 
             void updateGL () { window.updateGL(); } 

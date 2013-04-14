@@ -823,13 +823,13 @@ namespace MR
       void Window::slice_next_slot () 
       {
         mode->slice_move_event (1);
-        updateGL();
+        glarea->updateGL();
       }
 
       void Window::slice_previous_slot () 
       {
         mode->slice_move_event (-1);
-        updateGL();
+        glarea->updateGL();
       }
 
 
@@ -944,7 +944,7 @@ namespace MR
           show_orientation_labels_action->setChecked (annotations & 0x00000008);
           show_colourbar_action->setChecked (annotations & 0x00000010);
         }
-        updateGL();
+        glarea->updateGL();
       }
 
 
@@ -1258,7 +1258,7 @@ mode_selected:
 
               if (modifiers_ == Qt::ControlModifier) {
                 set_FOV (FOV() * Math::exp (-event->delta()/1200.0));
-                updateGL();
+                glarea->updateGL();
                 event->accept();
                 return;
               }
@@ -1270,7 +1270,7 @@ mode_selected:
 
               mode->slice_move_event (delta);
               event->accept();
-              updateGL();
+              glarea->updateGL();
               return;
             }
           }

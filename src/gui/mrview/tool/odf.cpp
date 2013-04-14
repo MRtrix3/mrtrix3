@@ -88,7 +88,10 @@ namespace MR
 
 
         ODF::ODF (Window& main_window, Dock* parent) :
-          Base (main_window, parent) { 
+          Base (main_window, parent),
+          overlay_renderer (NULL),
+          overlay_lmax (0),
+          overlay_level_of_detail (0) { 
             QVBoxLayout *main_box = new QVBoxLayout (this);
             main_box->setContentsMargins (0, 0, 0, 0);
             main_box->setSpacing (0);
@@ -189,59 +192,53 @@ namespace MR
             level_of_detail_selector->setMinimum (1);
             level_of_detail_selector->setMaximum (7);
             level_of_detail_selector->setSingleStep (1);
-            level_of_detail_selector->setValue (3);
+            level_of_detail_selector->setValue (4);
             connect (level_of_detail_selector, SIGNAL (valueChanged(int)), this, SLOT(level_of_detail_slot(int)));
             box_layout->addWidget (level_of_detail_selector, 7, 1);
 
 
             overlay_frame = new QGroupBox (tr("Overlay"));
+            overlay_frame->setCheckable (true);
+            overlay_frame->setChecked (false);
+            connect (overlay_frame, SIGNAL (clicked()), this, SLOT(overlay_toggled_slot()));
             main_box->addWidget (overlay_frame);
             box_layout = new QGridLayout;
             overlay_frame->setLayout (box_layout);
 
-/*
-            box_layout->addWidget (new QLabel ("min"), 1, 0);
-            min_value = new AdjustButton (this, 0.1);
-            connect (min_value, SIGNAL (valueChanged()), this, SLOT (values_changed()));
-            box_layout->addWidget (min_value, 1, 1);
+            box_layout->addWidget (new QLabel ("scale"), 0, 0, 1, 1);
+            overlay_scale = new AdjustButton (this, 1.0);
+            overlay_scale->setValue (1.0);
+            overlay_scale->setMin (0.0);
+            connect (overlay_scale, SIGNAL (valueChanged()), this, SLOT (overlay_scale_slot()));
+            box_layout->addWidget (overlay_scale, 0, 1, 1, 1);
 
-            group_box = new QGroupBox (tr("Thresholds"));
-            main_box->addWidget (group_box);
-            box_layout = new QGridLayout;
-            group_box->setLayout (box_layout);
+            box_layout->addWidget (new QLabel ("detail"), 1, 0, 1,1);
+            overlay_level_of_detail_selector = new QSpinBox (this);
+            overlay_level_of_detail_selector->setMinimum (1);
+            overlay_level_of_detail_selector->setMaximum (6);
+            overlay_level_of_detail_selector->setSingleStep (1);
+            overlay_level_of_detail_selector->setValue (3);
+            connect (overlay_level_of_detail_selector, SIGNAL (valueChanged(int)), this, SLOT(overlay_update_slot(int)));
+            box_layout->addWidget (overlay_level_of_detail_selector, 1, 1, 1, 1);
 
-            threshold_upper_box = new QCheckBox ("max");
-            connect (threshold_upper_box, SIGNAL (stateChanged(int)), this, SLOT (threshold_upper_changed(int)));
-            box_layout->addWidget (threshold_upper_box, 0, 0);
-            threshold_upper = new AdjustButton (this, 0.1);
-            connect (threshold_upper, SIGNAL (valueChanged()), this, SLOT (threshold_upper_value_changed()));
-            box_layout->addWidget (threshold_upper, 0, 1);
+            box_layout->addWidget (new QLabel ("grid"), 2, 0, 1, 1);
+            overlay_grid_selector = new QComboBox (this);
+            overlay_grid_selector->addItem ("overlay");
+            overlay_grid_selector->addItem ("main");
+            connect (overlay_grid_selector, SIGNAL (activated(int)), this, SLOT(overlay_update_slot(int)));
+            box_layout->addWidget (overlay_grid_selector, 2, 1, 1, 1);
 
-            threshold_lower_box = new QCheckBox ("min");
-            connect (threshold_lower_box, SIGNAL (stateChanged(int)), this, SLOT (threshold_lower_changed(int)));
-            box_layout->addWidget (threshold_lower_box, 1, 0);
-            threshold_lower = new AdjustButton (this, 0.1);
-            connect (threshold_lower, SIGNAL (valueChanged()), this, SLOT (threshold_lower_value_changed()));
-            box_layout->addWidget (threshold_lower, 1, 1);
+            overlay_lock_to_grid_box = new QCheckBox ("lock to grid");
+            overlay_lock_to_grid_box->setChecked (true);
+            connect (overlay_lock_to_grid_box, SIGNAL (stateChanged(int)), this, SLOT (overlay_update_slot(int)));
+            box_layout->addWidget (overlay_lock_to_grid_box, 3, 0, 1, 2);
 
-            opacity = new QSlider (Qt::Horizontal);
-            opacity->setRange (1,1000);
-            opacity->setSliderPosition (int (1000));
-            connect (opacity, SIGNAL (valueChanged (int)), this, SLOT (update_slot (int)));
-            main_box->addWidget (new QLabel ("opacity"), 0);
-            main_box->addWidget (opacity, 0);
+            splitter->setStretchFactor (0, 1);
+            splitter->setStretchFactor (1, 0);
 
             connect (image_list_view->selectionModel(),
                 SIGNAL(selectionChanged(const QItemSelection &, const QItemSelection &)),
                 SLOT (selection_changed_slot(const QItemSelection &, const QItemSelection &)) );
-
-            connect (image_list_view, SIGNAL (clicked (const QModelIndex&)), this, SLOT (toggle_shown_slot (const QModelIndex&)));
-
-            update_selection();
-            */
-
-            splitter->setStretchFactor (0, 1);
-            splitter->setStretchFactor (1, 0);
 
             hide_negative_lobes_slot (0);
             show_axes_slot (0);
@@ -250,46 +247,94 @@ namespace MR
             lmax_slot (0);
             level_of_detail_slot (0);
             lock_orientation_to_image_slot (0);
+
+            overlay_scale_slot ();
           }
+
+
+
+
 
 
         void ODF::draw2D (const Projection& projection) 
         {
           lock_orientation_to_image_slot(0);
 
-          if (overlay_frame->isChecked())
-            TRACE;
+          Image* image = get_image();
+          if (!image)
+            return;
 
-          /*
-          float overlay_opacity = opacity->value() / 1.0e3f;
-
-          // set up OpenGL environment:
-          glEnable (GL_BLEND);
-          glEnable (GL_TEXTURE_3D);
-          glDisable (GL_DEPTH_TEST);
-          glTexEnvf (GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
-          glDepthMask (GL_FALSE);
-          glColorMask (GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
-          glBlendFunc (GL_CONSTANT_ALPHA, GL_ONE_MINUS_CONSTANT_ALPHA);
-          glBlendEquation (GL_FUNC_ADD);
-          glBlendColor (1.0f, 1.0f, 1.0f, overlay_opacity);
-
-          bool need_to_update = false;
-          for (int i = 0; i < image_list_model->rowCount(); ++i) {
-            if (image_list_model->items[i]->show) {
-              Image* image = dynamic_cast<Image*>(image_list_model->items[i]);
-              need_to_update |= !finite (image->intensity_min());
-              image->render3D (projection, projection.depth_of (window.focus()));
+          if (overlay_frame->isChecked()) {
+          
+            if (!overlay_renderer) {
+              overlay_renderer = new DWI::Renderer;
+              overlay_renderer->initGL();
             }
+
+            if (overlay_lmax != lmax_selector->value() || 
+                overlay_level_of_detail != overlay_level_of_detail_selector->value()) {
+              overlay_lmax = lmax_selector->value();
+              overlay_level_of_detail = overlay_level_of_detail_selector->value();
+              overlay_renderer->update_mesh (overlay_level_of_detail, overlay_lmax);
+            }
+
+            overlay_renderer->start (projection, render_frame->lighting, overlay_scale->value(), 
+              use_lighting_box->isChecked(), colour_by_direction_box->isChecked(), hide_negative_lobes_box->isChecked());
+
+            glEnable (GL_DEPTH_TEST);
+            glDepthMask (GL_TRUE);
+
+            Point<> pos (window.target());
+            pos += projection.screen_normal() * (projection.screen_normal().dot (window.focus() - window.target()));
+            if (overlay_lock_to_grid_box->isChecked()) {
+              Point<> p = image->interp.scanner2voxel (pos);
+              p[0] = Math::round (p[0]);
+              p[1] = Math::round (p[1]);
+              p[2] = Math::round (p[2]);
+              pos = image->interp.voxel2scanner (p);
+            }
+            
+            Point<> x_dir = projection.screen_to_model_direction (1.0, 0.0, projection.depth_of (pos));
+            x_dir.normalise();
+            x_dir = image->interp.scanner2image_dir (x_dir);
+            x_dir[0] *= image->interp.vox(0);
+            x_dir[1] *= image->interp.vox(1);
+            x_dir[2] *= image->interp.vox(2);
+            x_dir = image->interp.image2scanner_dir (x_dir);
+
+            Point<> y_dir = projection.screen_to_model_direction (0.0, 1.0, projection.depth_of (pos));
+            y_dir.normalise();
+            y_dir = image->interp.scanner2image_dir (y_dir);
+            y_dir[0] *= image->interp.vox(0);
+            y_dir[1] *= image->interp.vox(1);
+            y_dir[2] *= image->interp.vox(2);
+            y_dir = image->interp.image2scanner_dir (y_dir);
+
+            Point<> x_width = projection.screen_to_model_direction (projection.width()/2.0, 0.0, projection.depth_of (pos));
+            int nx = Math::ceil (x_width.norm() / x_dir.norm());
+            Point<> y_width = projection.screen_to_model_direction (0.0, projection.height()/2.0, projection.depth_of (pos));
+            int ny = Math::ceil (y_width.norm() / y_dir.norm());
+
+            Math::Vector<float> values (image->interp.dim(3));
+            Math::Vector<float> r_del_daz;
+
+            for (int y = -ny; y < ny; ++y) {
+              for (int x = -nx; x < nx; ++x) {
+                Point<> p = pos + float(x)*x_dir + float(y)*y_dir;
+                get_values (values, *image, p);
+                if (!finite (values[0])) continue;
+                if (values[0] == 0.0) continue;
+                overlay_renderer->compute_r_del_daz (r_del_daz, values.sub (0, Math::SH::NforL (overlay_lmax)));
+                overlay_renderer->set_data (r_del_daz);
+                overlay_renderer->draw (p);
+              }
+            }
+
+            overlay_renderer->stop();
+
+            glDisable (GL_DEPTH_TEST);
+            glDepthMask (GL_FALSE);
           }
-
-          if (need_to_update)
-            update_selection();
-
-          DEBUG_OPENGL;
-
-          glDisable (GL_TEXTURE_3D);
-          */
         }
 
 
@@ -311,18 +356,34 @@ namespace MR
 
         void ODF::onFocusChanged () 
         {
-          QModelIndex index = image_list_view->selectionModel()->currentIndex();
-          Image* image = image_list_model->get_image (index);
+          Image* image = get_image();
           if (!image)
             return;
 
           Math::Vector<float> values (image->interp.dim(3));
-          image->interp.scanner (window.focus());
-          for (image->interp[3] = 0; image->interp[3] < image->interp.dim(3); ++image->interp[3])
-            values[image->interp[3]] = image->interp.value().real(); 
-
+          get_values (values, *image, window.focus());
           render_frame->set (values);
+        }
 
+        inline Image* ODF::get_image () 
+        {
+          QModelIndexList list = image_list_view->selectionModel()->selectedRows();
+          if (!list.size())
+            return NULL;
+          return image_list_model->get_image (list[0]);
+        }
+
+        void ODF::get_values (Math::Vector<float>& values, Image& image, const Point<>& pos)
+        {
+          Point<> p = image.interp.scanner2voxel (pos);
+          if (!interpolation_box->isChecked()) {
+            p[0] = Math::round (p[0]);
+            p[1] = Math::round (p[1]);
+            p[2] = Math::round (p[2]);
+          }
+          image.interp.voxel (p);
+          for (image.interp[3] = 0; image.interp[3] < image.interp.dim(3); ++image.interp[3])
+            values[image.interp[3]] = image.interp.value().real(); 
         }
 
 
@@ -336,7 +397,8 @@ namespace MR
           size_t previous_size = image_list_model->rowCount();
           image_list_model->add_items (list);
           QModelIndex first = image_list_model->index (previous_size, 0, QModelIndex());
-          image_list_view->selectionModel()->select (QItemSelection (first, first), QItemSelectionModel::Select);
+          image_list_view->selectionModel()->select (first, QItemSelectionModel::ClearAndSelect);
+          onFocusChanged();
         }
 
 
@@ -360,168 +422,75 @@ namespace MR
           }
         }
 
-        void ODF::colour_by_direction_slot (int unused) { render_frame->set_color_by_dir (colour_by_direction_box->isChecked()); }
-        void ODF::hide_negative_lobes_slot (int unused) { render_frame->set_hide_neg_lobes (hide_negative_lobes_box->isChecked()); }
-        void ODF::use_lighting_slot (int unused) { render_frame->set_use_lighting (use_lighting_box->isChecked()); }
-        void ODF::interpolation_slot (int unused) { TRACE; }
-        void ODF::show_axes_slot (int unused) { render_frame->set_show_axes (show_axes_box->isChecked()); }
+        void ODF::colour_by_direction_slot (int unused) 
+        { 
+          render_frame->set_color_by_dir (colour_by_direction_box->isChecked()); 
+          if (overlay_frame->isChecked())
+            window.updateGL();
+        }
+
+        void ODF::hide_negative_lobes_slot (int unused) 
+        {
+          render_frame->set_hide_neg_lobes (hide_negative_lobes_box->isChecked()); 
+          if (overlay_frame->isChecked())
+            window.updateGL();
+        }
+
+        void ODF::use_lighting_slot (int unused) 
+        { 
+          render_frame->set_use_lighting (use_lighting_box->isChecked()); 
+          if (overlay_frame->isChecked())
+            window.updateGL();
+        }
+
+        void ODF::interpolation_slot (int unused) 
+        { 
+          onFocusChanged();
+          if (overlay_frame->isChecked())
+            window.updateGL();
+        }
+
+
+        void ODF::show_axes_slot (int unused) {
+          render_frame->set_show_axes (show_axes_box->isChecked()); 
+        }
+
         void ODF::level_of_detail_slot (int value) { render_frame->set_LOD (level_of_detail_selector->value()); }
-        void ODF::lmax_slot (int value) { render_frame->set_lmax (lmax_selector->value()); }
+
+        void ODF::lmax_slot (int value) 
+        { 
+          render_frame->set_lmax (lmax_selector->value()); 
+          if (overlay_frame->isChecked())
+            window.updateGL();
+        }
 
         void ODF::update_slot (int unused) {
           window.updateGL();
         }
-/*
-        void ODF::colourmap_changed (int index) 
-        {
-          QModelIndexList indices = image_list_view->selectionModel()->selectedIndexes();
-          for (int i = 0; i < indices.size(); ++i) {
-            Image* overlay = dynamic_cast<Image*> (image_list_model->get_image (indices[i]));
-            overlay->set_colourmap (index);
-          }
-          window.updateGL();
+
+
+
+        void ODF::overlay_toggled_slot () { window.updateGL(); }
+
+
+        void ODF::overlay_scale_slot () 
+        { 
+          overlay_scale->setRate (0.01 * overlay_scale->value());
+          if (overlay_frame->isChecked())
+            window.updateGL();
         }
 
-
-        void ODF::values_changed ()
+        void ODF::overlay_update_slot (int value) 
         {
-          QModelIndexList indices = image_list_view->selectionModel()->selectedIndexes();
-          for (int i = 0; i < indices.size(); ++i) {
-            Image* overlay = dynamic_cast<Image*> (image_list_model->get_image (indices[i]));
-            overlay->set_windowing (min_value->value(), max_value->value());
-          }
-          window.updateGL();
+          if (overlay_frame->isChecked()) 
+            window.updateGL();
         }
 
-
-        void ODF::threshold_lower_changed (int unused) 
-        {
-          QModelIndexList indices = image_list_view->selectionModel()->selectedIndexes();
-          for (int i = 0; i < indices.size(); ++i) {
-            Image* overlay = dynamic_cast<Image*> (image_list_model->get_image (indices[i]));
-            overlay->lessthan = threshold_lower->value();
-            overlay->set_use_discard_lower (threshold_lower_box->isChecked());
-          }
-          threshold_lower->setEnabled (indices.size() && threshold_lower_box->isChecked());
-          window.updateGL();
-        }
-
-
-        void ODF::threshold_upper_changed (int unused)
-        {
-          QModelIndexList indices = image_list_view->selectionModel()->selectedIndexes();
-          for (int i = 0; i < indices.size(); ++i) {
-            Image* overlay = dynamic_cast<Image*> (image_list_model->get_image (indices[i]));
-            overlay->greaterthan = threshold_upper->value();
-            overlay->set_use_discard_upper (threshold_upper_box->isChecked());
-          }
-          threshold_upper->setEnabled (indices.size() && threshold_upper_box->isChecked());
-          window.updateGL();
-        }
-
-
-
-        void ODF::threshold_lower_value_changed ()
-        {
-          if (threshold_lower_box->isChecked()) {
-            QModelIndexList indices = image_list_view->selectionModel()->selectedIndexes();
-            for (int i = 0; i < indices.size(); ++i) {
-              Image* overlay = dynamic_cast<Image*> (image_list_model->get_image (indices[i]));
-              overlay->lessthan = threshold_lower->value();
-            }
-          }
-          window.updateGL();
-        }
-
-
-
-        void ODF::threshold_upper_value_changed ()
-        {
-          if (threshold_upper_box->isChecked()) {
-            QModelIndexList indices = image_list_view->selectionModel()->selectedIndexes();
-            for (int i = 0; i < indices.size(); ++i) {
-              Image* overlay = dynamic_cast<Image*> (image_list_model->get_image (indices[i]));
-              overlay->greaterthan = threshold_upper->value();
-            }
-          }
-          window.updateGL();
-        }
-
-
-*/
         void ODF::selection_changed_slot (const QItemSelection &, const QItemSelection &)
         {
-          update_selection();
-        }
-
-
-        void ODF::update_selection () 
-        {
-          /*
-          QModelIndexList indices = image_list_view->selectionModel()->selectedIndexes();
-          colourmap_combobox->setEnabled (indices.size());
-          max_value->setEnabled (indices.size());
-          min_value->setEnabled (indices.size());
-          threshold_lower_box->setEnabled (indices.size());
-          threshold_upper_box->setEnabled (indices.size());
-          threshold_lower->setEnabled (indices.size());
-          threshold_upper->setEnabled (indices.size());
-
-          if (!indices.size())
-            return;
-
-          float rate = 0.0f, min_val = 0.0f, max_val = 0.0f;
-          float threshold_lower_val = 0.0f, threshold_upper_val = 0.0f;
-          int num_threshold_lower = 0, num_threshold_upper = 0;
-          int colourmap_index = -2;
-          for (int i = 0; i < indices.size(); ++i) {
-            Image* overlay = dynamic_cast<Image*> (image_list_model->get_image (indices[i]));
-            if (colourmap_index != int(overlay->colourmap())) {
-              if (colourmap_index == -2)
-                colourmap_index = overlay->colourmap();
-              else 
-                colourmap_index = -1;
-            }
-            rate += overlay->scaling_rate();
-            min_val += overlay->scaling_min();
-            max_val += overlay->scaling_max();
-            num_threshold_lower += overlay->use_discard_lower();
-            num_threshold_upper += overlay->use_discard_upper();
-            if (!finite (overlay->lessthan)) 
-              overlay->lessthan = overlay->intensity_min();
-            if (!finite (overlay->greaterthan)) 
-              overlay->greaterthan = overlay->intensity_max();
-            threshold_lower_val += overlay->lessthan;
-            threshold_upper_val += overlay->greaterthan;
-          }
-          rate /= indices.size();
-          min_val /= indices.size();
-          max_val /= indices.size();
-          threshold_lower_val /= indices.size();
-          threshold_upper_val /= indices.size();
-
-          colourmap_combobox->setCurrentIndex (colourmap_index);
-
-          min_value->setRate (rate);
-          max_value->setRate (rate);
-          min_value->setValue (min_val);
-          max_value->setValue (max_val);
-
-          threshold_lower_box->setCheckState (num_threshold_lower ? 
-              ( num_threshold_lower == indices.size() ? 
-                Qt::Checked :
-                Qt::PartiallyChecked ) : 
-              Qt::Unchecked);
-          threshold_lower->setValue (threshold_lower_val);
-          threshold_lower->setRate (rate);
-
-          threshold_upper_box->setCheckState (num_threshold_upper ? 
-              ( num_threshold_upper == indices.size() ? 
-                Qt::Checked :
-                Qt::PartiallyChecked ) : 
-              Qt::Unchecked);
-          threshold_upper->setValue (threshold_upper_val);
-          threshold_upper->setRate (rate);*/
+          onFocusChanged();
+          if (overlay_frame->isChecked())
+            window.updateGL();
         }
 
 
