@@ -132,6 +132,19 @@ namespace MR
         };
 
 
+        class ODF::RenderFrame : public DWI::RenderFrame 
+        {
+          public:
+            RenderFrame (QWidget* parent, Window& window) :
+              DWI::RenderFrame (parent),
+              window (window) { }
+          protected:
+            Window& window;
+            virtual void glDraw () {
+              DWI::RenderFrame::glDraw();
+              window.makeGLcurrent();
+            }
+        };
 
 
         ODF::ODF (Window& main_window, Dock* parent) :
@@ -147,7 +160,7 @@ namespace MR
             QSplitter* splitter = new QSplitter (Qt::Vertical, parent);
             main_box->addWidget (splitter);
 
-            render_frame = new DWI::RenderFrame (this);
+            render_frame = new RenderFrame (this, window);
             splitter->addWidget (render_frame);
 
 
@@ -488,9 +501,7 @@ namespace MR
 
         void ODF::lock_orientation_to_image_slot (int unused) {
           if (lock_orientation_to_image_box->isChecked()) {
-            render_frame->makeCurrent();
             render_frame->set_rotation (window.get_current_mode()->projection.modelview());
-            window.makeGLcurrent();
           }
         }
 
@@ -535,7 +546,9 @@ namespace MR
           render_frame->set_show_axes (show_axes_box->isChecked()); 
         }
 
-        void ODF::level_of_detail_slot (int value) { render_frame->set_LOD (level_of_detail_selector->value()); }
+        void ODF::level_of_detail_slot (int value) { 
+          render_frame->set_LOD (level_of_detail_selector->value());
+        }
 
         void ODF::lmax_slot (int value) 
         { 

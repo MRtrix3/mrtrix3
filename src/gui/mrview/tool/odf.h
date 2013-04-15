@@ -36,7 +36,6 @@ namespace MR
   {
     namespace DWI {
       class Renderer;
-      class RenderFrame;
     }
     namespace Dialog {
       class Lighting;
@@ -87,9 +86,10 @@ namespace MR
           protected:
              class Model;
              class Image;
+             class RenderFrame;
 
              Model* image_list_model;
-             DWI::RenderFrame *render_frame;
+             RenderFrame *render_frame;
              QListView* image_list_view;
              QCheckBox *lock_orientation_to_image_box, *use_lighting_box, *hide_negative_lobes_box;
              QCheckBox *colour_by_direction_box, *interpolation_box, *show_axes_box;

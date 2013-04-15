@@ -140,7 +140,8 @@ namespace MR
               for (int i = 0; i < tools.size(); ++i) {
                 Tool::Dock* dock = dynamic_cast<Tool::__Action__*>(tools[i])->instance;
                 if (dock)
-                  dock->tool->draw2D (with_projection);
+                  if (dock->isVisible())
+                    dock->tool->draw2D (with_projection);
               }
             }
 
