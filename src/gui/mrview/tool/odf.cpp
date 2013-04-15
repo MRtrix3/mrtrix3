@@ -25,13 +25,13 @@
 #include <QListView>
 #include <QCheckBox>
 #include <QComboBox>
+#include <QAbstractItemModel>
 
 #include "mrtrix.h"
 #include "gui/dialog/file.h"
 #include "gui/dwi/render_frame.h"
 #include "gui/mrview/window.h"
 #include "gui/mrview/tool/odf.h"
-#include "gui/mrview/tool/list_model_base.h"
 #include "gui/mrview/mode/base.h"
 
 namespace MR
@@ -44,16 +44,34 @@ namespace MR
       {
 
 
-        class ODF::Model : public ListModelBase
+        class ODF::Image {
+          public:
+            Image (const MR::Image::Header& header, int lmax, float scale, bool hide_negative_lobes, bool color_by_direction) :
+              image (header),
+              lmax (lmax),
+              scale (scale),
+              hide_negative_lobes (hide_negative_lobes),
+              color_by_direction (color_by_direction) { }
+
+            MRView::Image image;
+            int lmax;
+            float scale;
+            bool hide_negative_lobes, color_by_direction;
+        };
+
+
+
+        class ODF::Model : public QAbstractItemModel
         {
           public:
-            Model (QObject* parent) : 
-              ListModelBase (parent) { }
+
+            Model (QObject* parent) :
+              QAbstractItemModel (parent) { }
 
             QVariant data (const QModelIndex& index, int role) const {
               if (!index.isValid()) return QVariant();
               if (role != Qt::DisplayRole) return QVariant();
-              return shorten (items[index.row()]->get_filename(), 35, 0).c_str();
+              return shorten (items[index.row()]->image.get_filename(), 35, 0).c_str();
             }
 
             bool setData (const QModelIndex& index, const QVariant& value, int role) {
@@ -65,23 +83,51 @@ namespace MR
               return Qt::ItemIsEnabled | Qt::ItemIsSelectable;
             }
 
-            void add_items (const std::vector<std::string>& list) {
-              beginInsertRows (QModelIndex(), items.size(), items.size()+list.size());
+            QModelIndex parent (const QModelIndex& index) const { return QModelIndex(); }
+
+            int rowCount (const QModelIndex& parent = QModelIndex()) const { return items.size(); }
+
+            int columnCount (const QModelIndex& parent = QModelIndex()) const { return 1; }
+
+            size_t add_items (const std::vector<std::string>& list, int lmax, bool colour_by_direction, bool hide_negative_lobes, float scale) {
+              VecPtr<MR::Image::Header> hlist;
               for (size_t i = 0; i < list.size(); ++i) {
                 try {
-                  MR::Image::Header header (list[i]);
-                  items.push_back (new Image (header));
+                  Ptr<MR::Image::Header> header (new MR::Image::Header (list[i]));
+                  if (header->ndim() < 4) 
+                    throw Exception ("image \"" + header->name() + "\" is not 4D");
+                  if (header->dim(3) < 6)
+                    throw Exception ("image \"" + header->name() + "\" does not contain enough SH coefficients (too few volumes along 4th axis)");
+                  hlist.push_back (header.release());
                 }
                 catch (Exception& E) {
                   E.display();
                 }
               }
-              endInsertRows();
+
+              if (hlist.size()) {
+                beginInsertRows (QModelIndex(), items.size(), items.size()+hlist.size());
+                for (size_t i = 0; i < hlist.size(); ++i) 
+                  items.push_back (new Image (*hlist[i], lmax, scale, hide_negative_lobes, colour_by_direction));
+                endInsertRows();
+              }
+
+              return hlist.size();
+            }
+
+            QModelIndex index (int row, int column, const QModelIndex& parent = QModelIndex()) const { return createIndex (row, column); }
+
+            void remove_item (QModelIndex& index) {
+              beginRemoveRows (QModelIndex(), index.row(), index.row());
+              items.erase (items.begin() + index.row());
+              endRemoveRows();
             }
 
             Image* get_image (QModelIndex& index) {
               return index.isValid() ? dynamic_cast<Image*>(items[index.row()]) : NULL;
             }
+
+            VecPtr<Image> items;
         };
 
 
@@ -260,9 +306,11 @@ namespace MR
         {
           lock_orientation_to_image_slot(0);
 
-          Image* image = get_image();
-          if (!image)
+          Image* settings = get_image();
+          if (!settings)
             return;
+
+          MRView::Image& image (settings->image);
 
           if (overlay_frame->isChecked()) {
           
@@ -271,15 +319,15 @@ namespace MR
               overlay_renderer->initGL();
             }
 
-            if (overlay_lmax != lmax_selector->value() || 
+            if (overlay_lmax != settings->lmax || 
                 overlay_level_of_detail != overlay_level_of_detail_selector->value()) {
-              overlay_lmax = lmax_selector->value();
+              overlay_lmax = settings->lmax;
               overlay_level_of_detail = overlay_level_of_detail_selector->value();
               overlay_renderer->update_mesh (overlay_level_of_detail, overlay_lmax);
             }
 
-            overlay_renderer->start (projection, render_frame->lighting, overlay_scale->value(), 
-              use_lighting_box->isChecked(), colour_by_direction_box->isChecked(), hide_negative_lobes_box->isChecked());
+            overlay_renderer->start (projection, render_frame->lighting, settings->scale, 
+              use_lighting_box->isChecked(), settings->color_by_direction, settings->hide_negative_lobes);
 
             glEnable (GL_DEPTH_TEST);
             glDepthMask (GL_TRUE);
@@ -287,41 +335,41 @@ namespace MR
             Point<> pos (window.target());
             pos += projection.screen_normal() * (projection.screen_normal().dot (window.focus() - window.target()));
             if (overlay_lock_to_grid_box->isChecked()) {
-              Point<> p = image->interp.scanner2voxel (pos);
+              Point<> p = image.interp.scanner2voxel (pos);
               p[0] = Math::round (p[0]);
               p[1] = Math::round (p[1]);
               p[2] = Math::round (p[2]);
-              pos = image->interp.voxel2scanner (p);
+              pos = image.interp.voxel2scanner (p);
             }
             
             Point<> x_dir = projection.screen_to_model_direction (1.0, 0.0, projection.depth_of (pos));
             x_dir.normalise();
-            x_dir = image->interp.scanner2image_dir (x_dir);
-            x_dir[0] *= image->interp.vox(0);
-            x_dir[1] *= image->interp.vox(1);
-            x_dir[2] *= image->interp.vox(2);
-            x_dir = image->interp.image2scanner_dir (x_dir);
+            x_dir = image.interp.scanner2image_dir (x_dir);
+            x_dir[0] *= image.interp.vox(0);
+            x_dir[1] *= image.interp.vox(1);
+            x_dir[2] *= image.interp.vox(2);
+            x_dir = image.interp.image2scanner_dir (x_dir);
 
             Point<> y_dir = projection.screen_to_model_direction (0.0, 1.0, projection.depth_of (pos));
             y_dir.normalise();
-            y_dir = image->interp.scanner2image_dir (y_dir);
-            y_dir[0] *= image->interp.vox(0);
-            y_dir[1] *= image->interp.vox(1);
-            y_dir[2] *= image->interp.vox(2);
-            y_dir = image->interp.image2scanner_dir (y_dir);
+            y_dir = image.interp.scanner2image_dir (y_dir);
+            y_dir[0] *= image.interp.vox(0);
+            y_dir[1] *= image.interp.vox(1);
+            y_dir[2] *= image.interp.vox(2);
+            y_dir = image.interp.image2scanner_dir (y_dir);
 
             Point<> x_width = projection.screen_to_model_direction (projection.width()/2.0, 0.0, projection.depth_of (pos));
             int nx = Math::ceil (x_width.norm() / x_dir.norm());
             Point<> y_width = projection.screen_to_model_direction (0.0, projection.height()/2.0, projection.depth_of (pos));
             int ny = Math::ceil (y_width.norm() / y_dir.norm());
 
-            Math::Vector<float> values (image->interp.dim(3));
+            Math::Vector<float> values (Math::SH::NforL (settings->lmax));
             Math::Vector<float> r_del_daz;
 
             for (int y = -ny; y < ny; ++y) {
               for (int x = -nx; x < nx; ++x) {
                 Point<> p = pos + float(x)*x_dir + float(y)*y_dir;
-                get_values (values, *image, p);
+                get_values (values, image, p);
                 if (!finite (values[0])) continue;
                 if (values[0] == 0.0) continue;
                 overlay_renderer->compute_r_del_daz (r_del_daz, values.sub (0, Math::SH::NforL (overlay_lmax)));
@@ -356,16 +404,18 @@ namespace MR
 
         void ODF::onFocusChanged () 
         {
-          Image* image = get_image();
-          if (!image)
+          Image* settings = get_image();
+          if (!settings)
             return;
 
-          Math::Vector<float> values (image->interp.dim(3));
-          get_values (values, *image, window.focus());
+          MRView::Image& image (settings->image);
+
+          Math::Vector<float> values (Math::SH::NforL (lmax_selector->value()));
+          get_values (values, image, window.focus());
           render_frame->set (values);
         }
 
-        inline Image* ODF::get_image () 
+        inline ODF::Image* ODF::get_image () 
         {
           QModelIndexList list = image_list_view->selectionModel()->selectedRows();
           if (!list.size())
@@ -373,7 +423,7 @@ namespace MR
           return image_list_model->get_image (list[0]);
         }
 
-        void ODF::get_values (Math::Vector<float>& values, Image& image, const Point<>& pos)
+        void ODF::get_values (Math::Vector<float>& values, MRView::Image& image, const Point<>& pos)
         {
           Point<> p = image.interp.scanner2voxel (pos);
           if (!interpolation_box->isChecked()) {
@@ -382,7 +432,8 @@ namespace MR
             p[2] = Math::round (p[2]);
           }
           image.interp.voxel (p);
-          for (image.interp[3] = 0; image.interp[3] < image.interp.dim(3); ++image.interp[3])
+          values.zero();
+          for (image.interp[3] = 0; image.interp[3] < std::min (ssize_t(values.size()), image.interp.dim(3)); ++image.interp[3])
             values[image.interp[3]] = image.interp.value().real(); 
         }
 
@@ -395,10 +446,17 @@ namespace MR
             return;
 
           size_t previous_size = image_list_model->rowCount();
-          image_list_model->add_items (list);
+          if (!image_list_model->add_items (list,
+                lmax_selector->value(), 
+                colour_by_direction_box->isChecked(), 
+                hide_negative_lobes_box->isChecked(), 
+                overlay_scale->value())) 
+            return;
           QModelIndex first = image_list_model->index (previous_size, 0, QModelIndex());
           image_list_view->selectionModel()->select (first, QItemSelectionModel::ClearAndSelect);
           onFocusChanged();
+          if (overlay_frame->isChecked())
+            window.updateGL();
         }
 
 
@@ -406,10 +464,11 @@ namespace MR
         void ODF::image_close_slot ()
         {
           QModelIndexList indexes = image_list_view->selectionModel()->selectedIndexes();
-          while (indexes.size()) {
+          if (indexes.size())
             image_list_model->remove_item (indexes.first());
-            indexes = image_list_view->selectionModel()->selectedIndexes();
-          }
+          onFocusChanged();
+          if (overlay_frame->isChecked())
+            window.updateGL();
         }
 
 
@@ -425,6 +484,10 @@ namespace MR
         void ODF::colour_by_direction_slot (int unused) 
         { 
           render_frame->set_color_by_dir (colour_by_direction_box->isChecked()); 
+          Image* settings = get_image();
+          if (!settings)
+            return;
+          settings->color_by_direction = colour_by_direction_box->isChecked();
           if (overlay_frame->isChecked())
             window.updateGL();
         }
@@ -432,6 +495,10 @@ namespace MR
         void ODF::hide_negative_lobes_slot (int unused) 
         {
           render_frame->set_hide_neg_lobes (hide_negative_lobes_box->isChecked()); 
+          Image* settings = get_image();
+          if (!settings)
+            return;
+          settings->hide_negative_lobes = hide_negative_lobes_box->isChecked();
           if (overlay_frame->isChecked())
             window.updateGL();
         }
@@ -460,6 +527,10 @@ namespace MR
         void ODF::lmax_slot (int value) 
         { 
           render_frame->set_lmax (lmax_selector->value()); 
+          Image* settings = get_image();
+          if (!settings)
+            return;
+          settings->lmax = lmax_selector->value();
           if (overlay_frame->isChecked())
             window.updateGL();
         }
@@ -476,6 +547,10 @@ namespace MR
         void ODF::overlay_scale_slot () 
         { 
           overlay_scale->setRate (0.01 * overlay_scale->value());
+          Image* settings = get_image();
+          if (!settings)
+            return;
+          settings->scale = overlay_scale->value();
           if (overlay_frame->isChecked())
             window.updateGL();
         }
@@ -489,6 +564,13 @@ namespace MR
         void ODF::selection_changed_slot (const QItemSelection &, const QItemSelection &)
         {
           onFocusChanged();
+          Image* settings = get_image();
+          if (!settings)
+            return;
+          lmax_selector->setValue (settings->lmax);
+          hide_negative_lobes_box->setChecked (settings->hide_negative_lobes);
+          colour_by_direction_box->setChecked (settings->color_by_direction);
+          overlay_scale->setValue (settings->scale);
           if (overlay_frame->isChecked())
             window.updateGL();
         }

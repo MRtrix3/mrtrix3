@@ -82,6 +82,8 @@ namespace MR
 
           protected:
              class Model;
+             class Image;
+
              Model* image_list_model;
              DWI::RenderFrame *render_frame;
              QListView* image_list_view;
@@ -103,7 +105,7 @@ namespace MR
              virtual void closeEvent (QCloseEvent* event);
 
              Image* get_image ();
-             void get_values (Math::Vector<float>& SH, Image& image, const Point<>& pos);
+             void get_values (Math::Vector<float>& SH, MRView::Image& image, const Point<>& pos);
         };
 
       }
