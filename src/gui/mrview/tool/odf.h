@@ -29,7 +29,6 @@
 class QStringListModel;
 class QSlider;
 class QCheckBox;
-class QColorButton;
 
 namespace MR
 {
@@ -38,6 +37,9 @@ namespace MR
     namespace DWI {
       class Renderer;
       class RenderFrame;
+    }
+    namespace Dialog {
+      class Lighting;
     }
 
     namespace MRView
@@ -72,9 +74,11 @@ namespace MR
             void show_axes_slot (int unused);
             void lmax_slot (int value);
             void level_of_detail_slot (int value);
+            void lighting_settings_slot (bool unused);
 
             void overlay_toggled_slot ();
             void overlay_scale_slot ();
+            void overlay_update_slot ();
             void overlay_update_slot (int value);
 
             // void values_changed ();
@@ -87,9 +91,8 @@ namespace MR
              Model* image_list_model;
              DWI::RenderFrame *render_frame;
              QListView* image_list_view;
-             QCheckBox *lock_orientation_to_image_box, *hide_negative_lobes_box;
-             QCheckBox *colour_by_direction_box, *use_lighting_box, *interpolation_box, *show_axes_box;
-             QColorButton *colour_button;
+             QCheckBox *lock_orientation_to_image_box, *use_lighting_box, *hide_negative_lobes_box;
+             QCheckBox *colour_by_direction_box, *interpolation_box, *show_axes_box;
              QSpinBox *lmax_selector, *level_of_detail_selector;
 
              DWI::Renderer *overlay_renderer;
@@ -98,6 +101,8 @@ namespace MR
              QSpinBox *overlay_level_of_detail_selector;
              QComboBox *overlay_grid_selector;
              QCheckBox *overlay_lock_to_grid_box;
+
+             Dialog::Lighting *lighting_dialog;
 
              int overlay_lmax, overlay_level_of_detail;
              

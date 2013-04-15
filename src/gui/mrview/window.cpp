@@ -1315,6 +1315,11 @@ mode_selected:
 
 
 
+      void Window::closeEvent (QCloseEvent* event) 
+      {
+        qApp->quit();
+        event->accept();
+      }
 
 
   }

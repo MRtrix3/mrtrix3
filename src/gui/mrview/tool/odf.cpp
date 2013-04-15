@@ -29,6 +29,7 @@
 
 #include "mrtrix.h"
 #include "gui/dialog/file.h"
+#include "gui/dialog/lighting.h"
 #include "gui/dwi/render_frame.h"
 #include "gui/mrview/window.h"
 #include "gui/mrview/tool/odf.h"
@@ -136,6 +137,7 @@ namespace MR
         ODF::ODF (Window& main_window, Dock* parent) :
           Base (main_window, parent),
           overlay_renderer (NULL),
+          lighting_dialog (NULL),
           overlay_lmax (0),
           overlay_level_of_detail (0) { 
             QVBoxLayout *main_box = new QVBoxLayout (this);
@@ -214,9 +216,12 @@ namespace MR
             box_layout->addWidget (colour_by_direction_box, 3, 0, 1, 2);
 
             use_lighting_box = new QCheckBox ("use lighting");
+            use_lighting_box->setCheckable (true);
             use_lighting_box->setChecked (true);
             connect (use_lighting_box, SIGNAL (stateChanged(int)), this, SLOT (use_lighting_slot(int)));
             box_layout->addWidget (use_lighting_box, 4, 0, 1, 2);
+
+
 
             hide_negative_lobes_box = new QCheckBox ("hide negative lobes");
             hide_negative_lobes_box->setChecked (true);
@@ -241,6 +246,12 @@ namespace MR
             level_of_detail_selector->setValue (4);
             connect (level_of_detail_selector, SIGNAL (valueChanged(int)), this, SLOT(level_of_detail_slot(int)));
             box_layout->addWidget (level_of_detail_selector, 7, 1);
+
+
+            QPushButton *lighting_settings_button = new QPushButton ("lighting...", this);
+            connect (lighting_settings_button, SIGNAL(clicked(bool)), this, SLOT (lighting_settings_slot (bool)));
+            box_layout->addWidget (lighting_settings_button, 8, 0, 1, 2);
+            
 
 
             overlay_frame = new QGroupBox (tr("Overlay"));
@@ -286,6 +297,8 @@ namespace MR
                 SIGNAL(selectionChanged(const QItemSelection &, const QItemSelection &)),
                 SLOT (selection_changed_slot(const QItemSelection &, const QItemSelection &)) );
 
+            connect (render_frame->lighting, SIGNAL (changed()), this, SLOT (overlay_update_slot()));
+
             hide_negative_lobes_slot (0);
             show_axes_slot (0);
             colour_by_direction_slot (0);
@@ -326,7 +339,7 @@ namespace MR
               overlay_renderer->update_mesh (overlay_level_of_detail, overlay_lmax);
             }
 
-            overlay_renderer->start (projection, render_frame->lighting, settings->scale, 
+            overlay_renderer->start (projection, *render_frame->lighting, settings->scale, 
               use_lighting_box->isChecked(), settings->color_by_direction, settings->hide_negative_lobes);
 
             glEnable (GL_DEPTH_TEST);
@@ -539,6 +552,13 @@ namespace MR
           window.updateGL();
         }
 
+        void ODF::lighting_settings_slot (bool unused)
+        {
+          if (!lighting_dialog)
+            lighting_dialog = new Dialog::Lighting (&window, "Advanced Lighting", *render_frame->lighting);
+          lighting_dialog->show();
+        }
+
 
 
         void ODF::overlay_toggled_slot () { window.updateGL(); }
@@ -552,6 +572,12 @@ namespace MR
             return;
           settings->scale = overlay_scale->value();
           if (overlay_frame->isChecked())
+            window.updateGL();
+        }
+
+        void ODF::overlay_update_slot () 
+        {
+          if (overlay_frame->isChecked()) 
             window.updateGL();
         }
 

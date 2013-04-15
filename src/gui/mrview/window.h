@@ -162,6 +162,7 @@ namespace MR
           void aboutQt_slot ();
 
 
+
         private:
           Cursor cursors_do_not_use;
           QPoint mouse_position_, mouse_displacement_;
@@ -279,6 +280,8 @@ namespace MR
           void set_image_menu ();
           void set_mode_features ();
           void set_image_navigation_menu ();
+
+          void closeEvent (QCloseEvent* event);
 
           template <class Event> void grab_mouse_state (Event* event);
           template <class Event> void update_mouse_state (Event* event);
