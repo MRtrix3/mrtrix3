@@ -94,10 +94,10 @@ void run ()
       output_header.stride(n) = strides[n];
   }
 
-  Image::Buffer<unsigned int> output_data (argument[1], output_header);
-  Image::Buffer<unsigned int>::voxel_type output_voxel(output_data);
-  Image::Buffer<unsigned int> input_data (input_header);
-  Image::Buffer<unsigned int>::voxel_type input_voxel(input_data);
+  Image::Buffer<float> output_data (argument[1], output_header);
+  Image::Buffer<float>::voxel_type output_voxel(output_data);
+  Image::Buffer<float> input_data (input_header);
+  Image::Buffer<float>::voxel_type input_voxel(input_data);
 
   Image::threaded_copy_with_progress_message ("aligning scanner and image coordinate axes...", input_voxel, output_voxel);
 }
