@@ -292,18 +292,19 @@ class TractProcessor {
  * indexes for each track point. Indices are stored for later use when outputting various
  * track-point statistics. This function also writes out the tractogram subset.
  */
-void compute_track_indices (const string& input_track_filename,
-                            Image::BufferScratch<int32_t>& lobe_indexer,
-                            const vector<Point<value_type> >& lobe_directions,
-                            const value_type angular_threshold,
-                            const int num_vis_tracks,
-                            const string& output_track_filename,
-                            vector<vector<int32_t> >& track_indices) {
+double compute_track_indices (const string& input_track_filename,
+                              Image::BufferScratch<int32_t>& lobe_indexer,
+                              const vector<Point<value_type> >& lobe_directions,
+                              const value_type angular_threshold,
+                              const int num_vis_tracks,
+                              const string& output_track_filename,
+                              vector<vector<int32_t> >& track_indices) {
 
   Image::Interp::Nearest<Image::BufferScratch<int32_t>::voxel_type> interp (lobe_indexer);
   float angular_threshold_dp = cos (angular_threshold * (M_PI/180.0));
   DWI::Tractography::Properties tck_properties;
   DWI::Tractography::Reader<value_type> tck_reader (input_track_filename, tck_properties);
+  double tck_timestamp = tck_properties.timestamp;
   DWI::Tractography::Writer<value_type> tck_writer (output_track_filename, tck_properties);
   vector<Point<value_type> > tck;
   int counter = 0;
@@ -345,6 +346,7 @@ void compute_track_indices (const string& input_track_filename,
     counter++;
   }
   tck_reader.close();
+  return tck_timestamp;
 }
 
 
@@ -354,9 +356,11 @@ void compute_track_indices (const string& input_track_filename,
  */
 void write_track_stats (const string& filename,
                         const vector<value_type>& data,
-                        const vector<vector<int32_t> >& track_point_indices) {
+                        const vector<vector<int32_t> >& track_point_indices,
+                        double tckfile_timestamp) {
 
   DWI::Tractography::Properties tck_properties;
+  tck_properties.timestamp = tckfile_timestamp;
   DWI::Tractography::ScalarWriter<value_type> writer (filename, tck_properties);
 
   for (size_t t = 0; t < track_point_indices.size(); ++t) {
@@ -373,11 +377,12 @@ void write_track_stats (const string& filename,
 
 void write_track_stats (const string& filename,
                         const Math::Matrix<value_type>& data,
-                        const vector<vector<int32_t> >& track_point_indices) {
+                        const vector<vector<int32_t> >& track_point_indices,
+                        double tckfile_timestamp) {
   vector<value_type> vec (data.rows());
   for (size_t i = 0; i < data.rows(); ++i)
     vec[i] = data(i, 0);
-  write_track_stats (filename, vec, track_point_indices);
+  write_track_stats (filename, vec, track_point_indices, tckfile_timestamp);
 }
 
 
@@ -396,7 +401,8 @@ void do_glm_and_output (const Math::Matrix<value_type>& data,
                         Image::BufferScratch<int32_t>& lobe_indexer,
                         const vector<Point<value_type> >& lobe_directions,
                         const vector<vector<int32_t> >& track_point_indices,
-                        string output_prefix) {
+                        string output_prefix,
+                        double tckfile_timestamp) {
 
   int num_lobes = lobe_directions.size();
   Math::Vector<value_type> perm_distribution_pos (num_perms - 1);
@@ -407,7 +413,7 @@ void do_glm_and_output (const Math::Matrix<value_type>& data,
   vector<value_type> pvalue_output_pos (num_lobes, 0.0);
   vector<value_type> pvalue_output_neg (num_lobes, 0.0);
 
-    Math::Stats::GLMTTest glm (data, design, contrast);
+  Math::Stats::GLMTTest glm (data, design, contrast);
   {
     Stats::TFCE::Connectivity tfce_integrator (lobe_connectivity, dh, E, H);
     Stats::TFCE::run (glm, tfce_integrator, num_perms,
@@ -421,11 +427,11 @@ void do_glm_and_output (const Math::Matrix<value_type>& data,
   Math::Stats::statistic2pvalue (perm_distribution_pos, tfce_output_pos, pvalue_output_pos);
   Math::Stats::statistic2pvalue (perm_distribution_neg, tfce_output_neg, pvalue_output_neg);
 
-  write_track_stats (output_prefix + "_tfce_pos.tsf", tfce_output_pos, track_point_indices);
-  write_track_stats (output_prefix + "_tfce_neg.tsf", tfce_output_neg, track_point_indices);
-  write_track_stats (output_prefix + "_tvalue.tsf", tvalue_output, track_point_indices);
-  write_track_stats (output_prefix + "_pvalue_pos.tsf", pvalue_output_pos, track_point_indices);
-  write_track_stats (output_prefix + "_pvalue_neg.tsf", pvalue_output_neg, track_point_indices);
+  write_track_stats (output_prefix + "_tfce_pos.tsf", tfce_output_pos, track_point_indices, tckfile_timestamp);
+  write_track_stats (output_prefix + "_tfce_neg.tsf", tfce_output_neg, track_point_indices, tckfile_timestamp);
+  write_track_stats (output_prefix + "_tvalue.tsf", tvalue_output, track_point_indices, tckfile_timestamp);
+  write_track_stats (output_prefix + "_pvalue_pos.tsf", pvalue_output_pos, track_point_indices, tckfile_timestamp);
+  write_track_stats (output_prefix + "_pvalue_neg.tsf", pvalue_output_neg, track_point_indices, tckfile_timestamp);
 }
 
 
@@ -616,6 +622,7 @@ void run() {
   string output_prefix = argument[7];
   DWI::Tractography::Properties properties;
   DWI::Tractography::Reader<value_type> track_file (track_filename, properties);
+  double tckfile_timestamp;
   {
     // Read in tracts, and computer whole-brain lobe-lobe connectivity
     const size_t num_tracks = properties["count"].empty() ? 0 : to<int> (properties["count"]);
@@ -626,7 +633,7 @@ void run() {
       num_vis_tracks = num_tracks;
     }
 
-    compute_track_indices (track_filename, lobe_indexer, lobe_directions, angular_threshold, num_vis_tracks, output_prefix + "_tracks.tck", track_point_indices);
+    tckfile_timestamp = compute_track_indices (track_filename, lobe_indexer, lobe_directions, angular_threshold, num_vis_tracks, output_prefix + "_tracks.tck", track_point_indices);
 
     typedef DWI::Tractography::Mapping::SetVoxelDir SetVoxelDir;
     DWI::Tractography::Mapping::TrackLoader loader (track_file, num_tracks, "pre-computing lobe-lobe connectivity...");
@@ -694,17 +701,17 @@ void run() {
   // Compute and output effect size and std_deviation
   Math::Matrix<float> abs_effect_size, std_effect_size, std_dev;
   Math::Stats::GLM::abs_effect_size (fod_lobe_integrals, design, contrast, abs_effect_size);
-  write_track_stats (output_prefix + "_fod_abs_effect_size.tsf", abs_effect_size, track_point_indices);
+  write_track_stats (output_prefix + "_fod_abs_effect_size.tsf", abs_effect_size, track_point_indices, tckfile_timestamp);
   Math::Stats::GLM::std_effect_size (fod_lobe_integrals, design, contrast, std_effect_size);
-  write_track_stats (output_prefix + "_fod_std_effect_size.tsf", std_effect_size, track_point_indices);
+  write_track_stats (output_prefix + "_fod_std_effect_size.tsf", std_effect_size, track_point_indices, tckfile_timestamp);
   Math::Stats::GLM::stdev (fod_lobe_integrals, design, std_dev);
-  write_track_stats (output_prefix + "_fod_std_dev.tck", std_dev, track_point_indices);
+  write_track_stats (output_prefix + "_fod_std_dev.tck", std_dev, track_point_indices, tckfile_timestamp);
   Math::Stats::GLM::abs_effect_size (mod_fod_lobe_integrals, design, contrast, abs_effect_size);
-  write_track_stats (output_prefix + "_mod_fod_abs_effect.tsf", abs_effect_size, track_point_indices);
+  write_track_stats (output_prefix + "_mod_fod_abs_effect.tsf", abs_effect_size, track_point_indices, tckfile_timestamp);
   Math::Stats::GLM::std_effect_size (mod_fod_lobe_integrals, design, contrast, std_effect_size);
-  write_track_stats (output_prefix + "_mod_fod_std_effect.tsf", std_effect_size, track_point_indices);
+  write_track_stats (output_prefix + "_mod_fod_std_effect.tsf", std_effect_size, track_point_indices, tckfile_timestamp);
   Math::Stats::GLM::stdev (mod_fod_lobe_integrals, design, std_dev);
-  write_track_stats (output_prefix + "_mod_fod_std_dev.tsf", std_dev, track_point_indices);
+  write_track_stats (output_prefix + "_mod_fod_std_dev.tsf", std_dev, track_point_indices, tckfile_timestamp);
 
 //  // Extract the amount of AFD contributed by modulation
 //  for (size_t l = 0; l < num_lobes; ++l)
@@ -721,9 +728,9 @@ void run() {
   opt = get_options("notest");
   if (!opt.size()) {
     // Modulated FODs
-    do_glm_and_output (mod_fod_lobe_integrals, design, contrast, dh, tfce_E, tfce_H, num_perms, lobe_connectivity, lobe_indexer, lobe_directions, track_point_indices, output_prefix + "_mod_fod");
+    do_glm_and_output (mod_fod_lobe_integrals, design, contrast, dh, tfce_E, tfce_H, num_perms, lobe_connectivity, lobe_indexer, lobe_directions, track_point_indices, output_prefix + "_mod_fod", tckfile_timestamp);
     // FOD information only
-    do_glm_and_output (fod_lobe_integrals, design, contrast, dh, tfce_E, tfce_H, num_perms, lobe_connectivity, lobe_indexer, lobe_directions, track_point_indices, output_prefix + "_fod");
+    do_glm_and_output (fod_lobe_integrals, design, contrast, dh, tfce_E, tfce_H, num_perms, lobe_connectivity, lobe_indexer, lobe_directions, track_point_indices, output_prefix + "_fod", tckfile_timestamp);
     // Modulation information only
 //    do_glm_and_output (log_mod_scale_factor, design, contrast, dh, tfce_E, tfce_H, num_perms, lobe_connectivity, lobe_indexer, lobe_directions, track_point_indices, output_prefix + "_mod");
   }
