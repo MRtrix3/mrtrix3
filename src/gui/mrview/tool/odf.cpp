@@ -392,8 +392,8 @@ namespace MR
             Math::Vector<float> values (Math::SH::NforL (settings->lmax));
             Math::Vector<float> r_del_daz;
 
-            for (int y = -ny; y < ny; ++y) {
-              for (int x = -nx; x < nx; ++x) {
+            for (int y = -ny; y <= ny; ++y) {
+              for (int x = -nx; x <= nx; ++x) {
                 Point<> p = pos + float(x)*x_dir + float(y)*y_dir;
                 get_values (values, image, p);
                 if (!finite (values[0])) continue;
