@@ -216,6 +216,8 @@ namespace MR
           render_text (x, y, text);
         }
 
+        void draw_orientation_labels ();
+
 
         const GL::mat4& modelview_projection () const { return MVP; }
         const GL::mat4& modelview_projection_inverse () const { return iMVP; }

@@ -56,7 +56,7 @@ namespace
   const char* vertex_shader_source =
     "layout(location = 0) in vec3 vertex;\n"
     "layout(location = 1) in vec3 r_del_daz;\n"
-    "uniform int color_by_direction, use_lighting, reverse;\n"
+    "uniform int color_by_direction, use_lighting, reverse, orthographic;\n"
     "uniform float scale;\n"
     "uniform vec3 constant_color, origin;\n"
     "uniform mat4 MV, MVP;\n"
@@ -88,7 +88,10 @@ namespace
     "  vec3 pos = vertex * amplitude * scale;\n"
     "  if (reverse != 0)\n"
     "    pos = -pos;\n"
-    "  position = -(MV * vec4 (pos, 1.0)).xyz;\n"
+    "  if (orthographic != 0)\n"
+    "    position = vec3(0.0, 0.0, 1.0);\n"
+    "  else\n"
+    "    position = -(MV * vec4 (pos, 1.0)).xyz;\n"
     "  gl_Position = MVP * vec4 (pos + origin, 1.0);\n"
     "}\n";
 
@@ -216,7 +219,7 @@ namespace MR
 
 
       void Renderer::start (const Projection& projection, const GL::Lighting& lighting, float scale, 
-          bool use_lighting, bool color_by_direction, bool hide_neg_lobes) const
+          bool use_lighting, bool color_by_direction, bool hide_neg_lobes, bool orthographic) const
       {
         vertex_array_object.bind();
         shader_program.start();
@@ -232,6 +235,7 @@ namespace MR
         glUniform1i (glGetUniformLocation (shader_program, "color_by_direction"), color_by_direction);
         glUniform1i (glGetUniformLocation (shader_program, "use_lighting"), use_lighting);
         glUniform1i (glGetUniformLocation (shader_program, "hide_neg_lobes"), hide_neg_lobes);
+        glUniform1i (glGetUniformLocation (shader_program, "orthographic"), orthographic);
         glUniform3fv (glGetUniformLocation (shader_program, "constant_color"), 1, lighting.object_color);
         reverse_ID = glGetUniformLocation (shader_program, "reverse");
         origin_ID = glGetUniformLocation (shader_program, "origin");

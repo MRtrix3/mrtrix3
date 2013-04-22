@@ -26,8 +26,6 @@
 #include "app.h"
 #include "gui/mrview/mode/base.h"
 
-#define ROTATION_INC 0.002
-
 namespace MR
 {
   namespace GUI
@@ -40,23 +38,15 @@ namespace MR
         class Slice : public Base
         {
           public:
-            Slice (Window& parent, int flags = FocusContrast | MoveTarget | TiltRotate);
+            Slice (Window& parent);
             virtual ~Slice ();
 
-            virtual void paint (Projection& projection);
-
-            virtual void slice_move_event (int x);
-            virtual void set_focus_event ();
-            virtual void contrast_event ();
-            virtual void pan_event ();
-            virtual void panthrough_event ();
-            virtual void tilt_event ();
-            virtual void rotate_event ();
+            virtual void paint (Projection& with_projection);
 
             static const App::OptionGroup options;
 
           protected:
-            void draw_orientation_labels ();
+            void draw_plane (int axis, Projection& with_projection);
         };
 
       }

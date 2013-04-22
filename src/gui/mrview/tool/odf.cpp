@@ -353,7 +353,7 @@ namespace MR
             }
 
             overlay_renderer->start (projection, *render_frame->lighting, settings->scale, 
-              use_lighting_box->isChecked(), settings->color_by_direction, settings->hide_negative_lobes);
+              use_lighting_box->isChecked(), settings->color_by_direction, settings->hide_negative_lobes, true);
 
             glEnable (GL_DEPTH_TEST);
             glDepthMask (GL_TRUE);
@@ -501,7 +501,7 @@ namespace MR
 
         void ODF::lock_orientation_to_image_slot (int unused) {
           if (lock_orientation_to_image_box->isChecked()) {
-            render_frame->set_rotation (window.get_current_mode()->projection.modelview());
+            render_frame->set_rotation (window.get_current_mode()->get_current_projection().modelview());
           }
         }
 

@@ -24,7 +24,7 @@
 #define __gui_mrview_mode_ortho_h__
 
 #include "app.h"
-#include "gui/mrview/mode/base.h"
+#include "gui/mrview/mode/slice.h"
 
 namespace MR
 {
@@ -35,36 +35,27 @@ namespace MR
       namespace Mode
       {
 
-        class Ortho : public Base
+        class Ortho : public Slice
         {
             Q_OBJECT
 
           public:
               Ortho (Window& parent) : 
-                Base (parent),
+                Slice (parent),
                 projections (3, projection),
                 current_plane (-1) { }
 
             virtual void paint (Projection& projection);
 
-            virtual void reset_event ();
             virtual void mouse_press_event ();
-            virtual void slice_move_event (int x);
-            virtual void set_focus_event ();
-            virtual void contrast_event ();
-            virtual void pan_event ();
-            virtual void panthrough_event ();
+            virtual Projection& get_current_projection ();
 
           protected:
-            void draw_plane (int axis, int w, int h, float fovx, float fovy);
-
             std::vector<Projection> projections;
             int current_plane;
             GL::VertexBuffer frame_VB;
             GL::VertexArrayObject frame_VAO;
             GL::Shader::Program frame_program;
-
-            void reset_view ();
         };
 
       }

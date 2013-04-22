@@ -67,7 +67,7 @@ namespace MR
 
 
           void start (const Projection& projection, const GL::Lighting& lighting, float scale, 
-              bool use_lighting, bool color_by_direction, bool hide_neg_lobes) const;
+              bool use_lighting, bool color_by_direction, bool hide_neg_lobes, bool orthographic = false) const;
 
           void set_data (const Math::Vector<float>& r_del_daz, int buffer_ID = 0) const {
             assert (r_del_daz.stride() == 1);

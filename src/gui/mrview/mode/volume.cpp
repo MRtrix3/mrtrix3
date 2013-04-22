@@ -38,8 +38,7 @@ namespace MR
       {
 
         Volume::Volume (Window& parent) : 
-          Slice (parent, FocusContrast | MoveTarget | TiltRotate | 
-              ExtraControls | ShaderTransparency | ShaderLighting),
+          Slice (parent),
           extra_controls (NULL) { 
           }
 
@@ -154,7 +153,7 @@ namespace MR
           if (window.show_crosshairs()) 
             projection.render_crosshairs (focus());
 
-          draw_orientation_labels();
+          projection.draw_orientation_labels();
         }
 
 

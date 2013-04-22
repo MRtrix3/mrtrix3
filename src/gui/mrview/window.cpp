@@ -534,6 +534,7 @@ namespace MR
         snap_to_image_action->setShortcut (tr("L"));
         snap_to_image_action->setCheckable (true);
         snap_to_image_action->setChecked (snap_to_image_axes_and_voxel);
+        addAction (snap_to_image_action);
 
         toolbar->addSeparator();
 

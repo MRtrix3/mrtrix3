@@ -1,7 +1,6 @@
 #ifndef MODE
 
 // place #include files in here:
-//#include "gui/mrview/mode/mode2d.h"
 #include "gui/mrview/mode/slice.h"
 #include "gui/mrview/mode/ortho.h"
 #include "gui/mrview/mode/volume.h"
@@ -16,7 +15,6 @@ The fourth argument is a brief description of the mode, to be displayed in a too
 
 Use the MODE_OPTION variant if your mode supplies its own command-line options. */
 
-//MODE (Mode2D, 2D, 2D slice, display slices aligned with image axes)
 MODE_OPTION (Slice, slice, single slice, display a single slice)
 MODE (Ortho, ortho, OrthoView, axial-coronal-sagittal display)
 MODE (Volume, volume, Volume, volumetric render)

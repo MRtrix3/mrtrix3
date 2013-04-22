@@ -36,6 +36,8 @@
 #include "gui/projection.h"
 #include "gui/mrview/tool/base.h"
 
+#define ROTATION_INC 0.002
+
 namespace MR
 {
   namespace GUI
@@ -81,6 +83,7 @@ namespace MR
             virtual void tilt_event ();
             virtual void rotate_event ();
             virtual Tool::Dock* get_extra_controls ();
+            virtual Projection& get_current_projection();
 
             void paintGL ();
 
@@ -100,8 +103,14 @@ namespace MR
             bool snap_to_image () const { return window.snap_to_image(); }
 
             Image* image () { return window.image(); }
-            void set_focus (const Point<>& p, int current_plane) { actual_focus = p; window.set_focus (snap (actual_focus, current_plane)); }
-            void set_focus (const Point<>& p) { set_focus (p, plane()); }
+            void set_focus (const Point<>& p, int current_plane, const Projection& projection) { 
+              actual_focus = p; 
+              window.set_focus (snap (actual_focus, current_plane)); 
+              Point<> in_plane_target = projection.model_to_screen (target());
+              in_plane_target[2] = projection.depth_of (focus());
+              set_target (projection.screen_to_model (in_plane_target));
+            }
+            void set_focus (const Point<>& p, const Projection& projection) { set_focus (p, plane(), projection); }
             void set_target (const Point<>& p) { window.set_target (p); }
             void set_FOV (float value) { window.set_FOV (value); }
             void set_plane (int p) { window.set_plane (p); }
@@ -111,37 +120,31 @@ namespace MR
               return reinterpret_cast <QGLWidget*> (window.glarea);
             }
 
-            Point<> move_in_out_displacement (float distance, const Projection& with_projection) const {
-              Point<> move (with_projection.screen_normal());
+            Point<> move_in_out_displacement (float distance, const Projection& projection) const {
+              Point<> move (projection.screen_normal());
               move.normalise();
               move *= distance;
               return move;
             }
 
-            void move_in_out (float distance, const Projection& with_projection) {
+            void move_in_out (float distance, const Projection& projection) {
               if (!image()) return;
-              Point<> move = move_in_out_displacement (distance, with_projection);
+              Point<> move = move_in_out_displacement (distance, projection);
               set_target (target() + move);
-              set_focus (actual_focus + move);
-            }
-            void move_in_out_FOV (int increment, const Projection& with_projection) {
-              move_in_out (1.0e-3f * increment * FOV(), with_projection);
+              set_focus (actual_focus + move, projection);
             }
 
-            void move_in_out (float distance) {
-              move_in_out (distance, projection);
-            }
-            void move_in_out_FOV (int increment) {
-              move_in_out (1.0e-3f* increment * FOV());
+            void move_in_out_FOV (int increment, const Projection& projection) {
+              move_in_out (1.0e-3f* increment * FOV(), projection);
             }
 
-            void render_tools2D (const Projection& with_projection) {
+            void render_tools2D (const Projection& projection) {
               QList<QAction*> tools = window.tools()->actions();
               for (int i = 0; i < tools.size(); ++i) {
                 Tool::Dock* dock = dynamic_cast<Tool::__Action__*>(tools[i])->instance;
                 if (dock)
                   if (dock->isVisible())
-                    dock->tool->draw2D (with_projection);
+                    dock->tool->draw2D (projection);
               }
             }
 
@@ -150,7 +153,8 @@ namespace MR
               return image()->interp.scanner2voxel (pos);
             }
 
-            int slice () const { return Math::round<int> (voxel_at (focus())[plane()]); }
+            int slice (int axis) const { return Math::round<int> (voxel_at (focus())[axis]); }
+            int slice () const { return slice (plane()); }
 
             void project_target_onto_current_slice();
 

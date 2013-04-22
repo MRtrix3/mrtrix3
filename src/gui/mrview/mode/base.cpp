@@ -47,6 +47,8 @@ namespace MR
           glarea()->setCursor (Cursor::crosshair);
         }
 
+        Projection& Base::get_current_projection () { return projection; }
+
         void Base::paintGL ()
         {
           painting = true;
@@ -125,13 +127,103 @@ done_painting:
         void Base::paint (Projection& projection) { }
         void Base::mouse_press_event () { }
         void Base::mouse_release_event () { }
-        void Base::slice_move_event (int x) { }
-        void Base::set_focus_event () { }
-        void Base::contrast_event () { }
-        void Base::pan_event () { }
-        void Base::panthrough_event () { }
-        void Base::tilt_event () { }
-        void Base::rotate_event () { }
+
+        void Base::slice_move_event (int x) 
+        {
+          move_in_out (x * std::min (std::min (image()->header().vox(0), image()->header().vox(1)), image()->header().vox(2)),
+              get_current_projection());
+          updateGL();
+        }
+
+
+
+
+        void Base::set_focus_event ()
+        {
+          set_focus (get_current_projection().screen_to_model (window.mouse_position(), focus()), get_current_projection());
+          updateGL();
+        }
+
+
+
+
+        void Base::contrast_event ()
+        {
+          image()->adjust_windowing (window.mouse_displacement());
+          window.on_scaling_changed();
+          updateGL();
+        }
+
+
+
+        void Base::pan_event ()
+        {
+          set_target (target() - get_current_projection().screen_to_model_direction (window.mouse_displacement(), target()));
+          updateGL();
+        }
+
+
+
+        void Base::panthrough_event ()
+        {
+          move_in_out_FOV (window.mouse_displacement().y(), get_current_projection());
+          updateGL();
+        }
+
+
+
+
+        void Base::tilt_event ()
+        {
+          QPoint dpos = window.mouse_displacement();
+          if (dpos.x() == 0 && dpos.y() == 0)
+            return;
+          Point<> x = get_current_projection().screen_to_model_direction (dpos, target());
+          Point<> z = get_current_projection().screen_normal();
+          Point<> v (x.cross (z));
+          float angle = -ROTATION_INC * Math::sqrt (float (Math::pow2 (dpos.x()) + Math::pow2 (dpos.y())));
+          v.normalise();
+          if (angle > M_PI_2) angle = M_PI_2;
+
+          Math::Versor<float> q = Math::Versor<float> (angle, v) * orientation();
+          q.normalise();
+          set_orientation (q);
+          updateGL();
+        }
+
+
+
+
+
+        void Base::rotate_event ()
+        {
+          Point<> x1 (window.mouse_position().x() - get_current_projection().width()/2,
+              window.mouse_position().y() - get_current_projection().height()/2,
+              0.0);
+
+          if (x1.norm() < 16) 
+            return;
+
+          Point<> x0 (window.mouse_displacement().x() - x1[0], 
+              window.mouse_displacement().y() - x1[1],
+              0.0);
+
+          x1.normalise();
+          x0.normalise();
+
+          Point<> n = x1.cross (x0);
+
+          Point<> v = get_current_projection().screen_normal();
+          v.normalise();
+
+          Math::Versor<float> q = Math::Versor<float> (n[2], v) * orientation();
+          q.normalise();
+          set_orientation (q);
+          updateGL();
+        }
+
+
+
 
         Tool::Dock* Base::get_extra_controls () { 
           return NULL;
@@ -165,7 +257,7 @@ done_painting:
 
           Point<> p (image()->header().dim (0)/2.0f, image()->header().dim (1)/2.0f, image()->header().dim (2)/2.0f);
           p = image()->interp.voxel2scanner (p);
-          set_focus (p);
+          set_focus (p, get_current_projection());
           set_target (p);
           Math::Versor<float> orient;
           orient.from_matrix (image()->header().transform());
