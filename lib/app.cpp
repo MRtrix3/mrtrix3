@@ -36,6 +36,7 @@ namespace MR
     Description DESCRIPTION;
     ArgumentList ARGUMENTS;
     OptionList OPTIONS;
+    bool REQUIRES_AT_LEAST_ONE_ARGUMENT = true;
 
     OptionGroup __standard_options = OptionGroup ("Standard options")
                                      + Option ("info", "display information messages.")
@@ -92,10 +93,10 @@ namespace MR
             if (! (ARGUMENTS[i].flags & Optional))
               std::cerr << " [ " << ARGUMENTS[i].id;
             std::cerr << " ...";
-          }   
+          }
           if (ARGUMENTS[i].flags & (Optional | AllowMultiple))
             std::cerr << " ]";
-        }   
+        }
         std::cerr << "\n\n";
       }
 
@@ -214,7 +215,7 @@ namespace MR
       }
       if (get_options ("debug").size())
         log_level = 3;
-      if (get_options ("quiet").size()) 
+      if (get_options ("quiet").size())
         log_level = 0;
       if (get_options ("force").size()) {
         WARN ("existing output files will be overwritten");
@@ -250,6 +251,9 @@ namespace MR
         if (ARGUMENTS[i].flags & AllowMultiple)
           has_optional_arguments = true;
       }
+
+      if (!option.size() && !argument.size() && REQUIRES_AT_LEAST_ONE_ARGUMENT)
+        print_help ();
 
       if (has_optional_arguments && num_args_required > argument.size())
         throw Exception ("expected at least " + str (num_args_required)
