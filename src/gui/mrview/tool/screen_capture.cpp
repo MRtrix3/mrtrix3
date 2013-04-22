@@ -143,8 +143,8 @@ namespace MR
             axis[1] = rotaton_axis_y->value();
             axis[2] = rotaton_axis_z->value();
             Math::Versor<float> rotation (radians, axis.ptr());
-            orientation *= rotation;
-            this->window.set_orientation (orientation);
+            rotation *= orientation;
+            this->window.set_orientation (rotation);
             this->window.updateGL();
             start_index->setValue (i + 1);
           }
