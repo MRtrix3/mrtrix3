@@ -128,7 +128,7 @@ namespace MR
 
         void ScreenCapture::on_screen_capture ()
         {
-          if (window.snap_to_image ())
+          if (window.snap_to_image () && degrees_button->value() > 0.0)
             window.set_snap_to_image (false);
           float radians = degrees_button->value() * (M_PI / 180.0);
           std::string folder (directory->path().toUtf8().constData());

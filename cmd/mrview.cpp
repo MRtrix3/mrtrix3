@@ -14,7 +14,7 @@ using namespace App;
 
 void usage ()
 {
-  AUTHOR = "J-Donald Tournier (d.tournier@brain.org.au) & Dave Raffelt (d.raffelt@brain.org.au)"; 
+  AUTHOR = "J-Donald Tournier (d.tournier@brain.org.au) & Dave Raffelt (d.raffelt@brain.org.au)";
 
   DESCRIPTION
   + "the MRtrix image viewer.";
@@ -34,6 +34,8 @@ void usage ()
     + GUI::MRView::Window::options
 #include "gui/mrview/mode/list.h"
     ;
+
+  REQUIRES_AT_LEAST_ONE_ARGUMENT = false;
 
   GUI::init ();
 }
