@@ -707,11 +707,11 @@ void run() {
   Math::Stats::GLM::std_effect_size (fod_dixel_integrals, design, contrast, std_effect_size);
   write_track_stats (output_prefix + "_fod_std_effect_size.tsf", std_effect_size, track_point_indices, tckfile_timestamp);
   Math::Stats::GLM::stdev (fod_dixel_integrals, design, std_dev);
-  write_track_stats (output_prefix + "_fod_std_dev.tck", std_dev, track_point_indices, tckfile_timestamp);
+  write_track_stats (output_prefix + "_fod_std_dev.tsf", std_dev, track_point_indices, tckfile_timestamp);
   Math::Stats::GLM::abs_effect_size (mod_fod_dixel_integrals, design, contrast, abs_effect_size);
-  write_track_stats (output_prefix + "_mod_fod_abs_effect.tsf", abs_effect_size, track_point_indices, tckfile_timestamp);
+  write_track_stats (output_prefix + "_mod_fod_abs_effect_size.tsf", abs_effect_size, track_point_indices, tckfile_timestamp);
   Math::Stats::GLM::std_effect_size (mod_fod_dixel_integrals, design, contrast, std_effect_size);
-  write_track_stats (output_prefix + "_mod_fod_std_effect.tsf", std_effect_size, track_point_indices, tckfile_timestamp);
+  write_track_stats (output_prefix + "_mod_fod_std_effect_size.tsf", std_effect_size, track_point_indices, tckfile_timestamp);
   Math::Stats::GLM::stdev (mod_fod_dixel_integrals, design, std_dev);
   write_track_stats (output_prefix + "_mod_fod_std_dev.tsf", std_dev, track_point_indices, tckfile_timestamp);
 
