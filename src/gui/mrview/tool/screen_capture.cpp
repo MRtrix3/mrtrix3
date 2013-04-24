@@ -56,22 +56,22 @@ namespace MR
           rotate_group_box->setLayout (rotate_layout);
 
           rotate_layout->addWidget (new QLabel ("Axis X"), 0, 0);
-          rotaton_axis_x = new AdjustButton (this);
-          rotate_layout->addWidget (rotaton_axis_x, 0, 1);
-          rotaton_axis_x->setValue (0.0);
-          rotaton_axis_x->setRate (0.1);
+          rotation_axis_x = new AdjustButton (this);
+          rotate_layout->addWidget (rotation_axis_x, 0, 1);
+          rotation_axis_x->setValue (0.0);
+          rotation_axis_x->setRate (0.1);
 
           rotate_layout->addWidget (new QLabel ("Axis Y"), 1, 0);
-          rotaton_axis_y = new AdjustButton (this);
-          rotate_layout->addWidget (rotaton_axis_y, 1, 1);
-          rotaton_axis_y->setValue (0.0);
-          rotaton_axis_y->setRate (0.1);
+          rotation_axis_y = new AdjustButton (this);
+          rotate_layout->addWidget (rotation_axis_y, 1, 1);
+          rotation_axis_y->setValue (0.0);
+          rotation_axis_y->setRate (0.1);
 
           rotate_layout->addWidget (new QLabel ("Axis Z"), 2, 0);
-          rotaton_axis_z = new AdjustButton (this);
-          rotate_layout->addWidget (rotaton_axis_z, 2, 1);
-          rotaton_axis_z->setValue (1.0);
-          rotaton_axis_z->setRate (0.1);
+          rotation_axis_z = new AdjustButton (this);
+          rotate_layout->addWidget (rotation_axis_z, 2, 1);
+          rotation_axis_z->setValue (1.0);
+          rotation_axis_z->setRate (0.1);
 
           rotate_layout->addWidget (new QLabel ("Angle"), 3, 0);
           degrees_button = new AdjustButton (this);
@@ -79,12 +79,35 @@ namespace MR
           degrees_button->setValue (0.0);
           degrees_button->setRate (0.1);
 
+          QGroupBox* translate_group_box = new QGroupBox ("Translate");
+          QGridLayout* translate_layout = new QGridLayout;
+          translate_layout->setContentsMargins (5, 5, 5, 5);
+          translate_layout->setSpacing (5);
+          main_box->addWidget (translate_group_box);
+          translate_group_box->setLayout (translate_layout);
+
+          translate_layout->addWidget (new QLabel ("Axis X"), 0, 0);
+          translate_x = new AdjustButton (this);
+          translate_layout->addWidget (translate_x, 0, 1);
+          translate_x->setValue (0.0);
+          translate_x->setRate (0.1);
+
+          translate_layout->addWidget (new QLabel ("Axis Y"), 1, 0);
+          translate_y = new AdjustButton (this);
+          translate_layout->addWidget (translate_y, 1, 1);
+          translate_y->setValue (0.0);
+          translate_y->setRate (0.1);
+
+          translate_layout->addWidget (new QLabel ("Axis Z"), 2, 0);
+          translate_z = new AdjustButton (this);
+          translate_layout->addWidget (translate_z, 2, 1);
+          translate_z->setValue (0.0);
+          translate_z->setRate (0.1);
 
           QGroupBox* output_group_box = new QGroupBox ("Output");
           main_box->addWidget (output_group_box);
           QGridLayout* output_grid_layout = new QGridLayout;
           output_group_box->setLayout (output_grid_layout);
-
 
           output_grid_layout->addWidget (new QLabel ("Prefix"), 0, 0);
           prefix_textbox = new QLineEdit ("screenshot", this);
@@ -137,15 +160,25 @@ namespace MR
           int i = first_index;
           for (; i < first_index + frames->value(); ++i) {
             this->window.captureGL (folder + "/" + prefix + printf ("%04d.png", i));
+
+            // Rotation
             Math::Versor<float> orientation (this->window.orientation());
             Math::Vector<float> axis (3);
-            axis[0] = rotaton_axis_x->value();
-            axis[1] = rotaton_axis_y->value();
-            axis[2] = rotaton_axis_z->value();
+            axis[0] = rotation_axis_x->value();
+            axis[1] = rotation_axis_y->value();
+            axis[2] = rotation_axis_z->value();
             Math::Versor<float> rotation (radians, axis.ptr());
             rotation *= orientation;
             this->window.set_orientation (rotation);
+
+            // Translation
+            Point<float> focus (this->window.focus());
+            focus[0] += translate_x->value();
+            focus[1] += translate_y->value();
+            focus[2] += translate_z->value();
+            window.set_focus (focus);
             this->window.updateGL();
+
             start_index->setValue (i + 1);
           }
         }

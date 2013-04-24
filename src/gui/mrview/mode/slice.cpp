@@ -32,7 +32,7 @@ namespace MR
       namespace Mode
       {
 
-        Slice::Slice (Window& parent) : 
+        Slice::Slice (Window& parent) :
           Base (parent, FocusContrast | MoveTarget | TiltRotate) {
             using namespace App;
             Options opt = get_options ("view");
@@ -68,8 +68,8 @@ namespace MR
 
           // set up projection & modelview matrices:
           GL::mat4 P = GL::ortho (
-              -with_projection.width()*fov, with_projection.width()*fov, 
-              -with_projection.height()*fov, with_projection.height()*fov, 
+              -with_projection.width()*fov, with_projection.width()*fov,
+              -with_projection.height()*fov, with_projection.height()*fov,
               -depth, depth);
           GL::mat4 M = snap_to_image() ? GL::mat4 (image()->interp.image2scanner_matrix()) : GL::mat4 (orientation());
           GL::mat4 MV = adjust_projection_matrix (M, axis) * GL::translate (-target());
@@ -77,9 +77,9 @@ namespace MR
 
           // render image:
           DEBUG_OPENGL;
-          if (snap_to_image()) 
+          if (snap_to_image())
             image()->render2D (with_projection, axis, slice(axis));
-          else 
+          else
             image()->render3D (with_projection, with_projection.depth_of (focus()));
           DEBUG_OPENGL;
 
@@ -87,10 +87,10 @@ namespace MR
 
           render_tools2D (with_projection);
 
-          if (window.show_crosshairs()) 
+          if (window.show_crosshairs())
             with_projection.render_crosshairs (focus());
-
-          with_projection.draw_orientation_labels();
+          if (window.show_orientation_labels())
+            with_projection.draw_orientation_labels();
         }
 
 
@@ -99,7 +99,7 @@ namespace MR
 
 
         using namespace App;
-        const App::OptionGroup Slice::options = OptionGroup ("single-slice mode") 
+        const App::OptionGroup Slice::options = OptionGroup ("single-slice mode")
           + Option ("view", "specify initial angle of view")
           + Argument ("azimuth").type_float(-M_PI, 0.0, M_PI)
           + Argument ("elevation").type_float(0.0, 0.0, M_PI);

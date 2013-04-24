@@ -55,10 +55,13 @@ namespace MR
 
           private:
 
-            AdjustButton *rotaton_axis_x;
-            AdjustButton *rotaton_axis_y;
-            AdjustButton *rotaton_axis_z;
+            AdjustButton *rotation_axis_x;
+            AdjustButton *rotation_axis_y;
+            AdjustButton *rotation_axis_z;
             AdjustButton *degrees_button;
+            AdjustButton *translate_x;
+            AdjustButton *translate_y;
+            AdjustButton *translate_z;
             QSpinBox *start_index;
             QSpinBox *frames;
             QLineEdit *prefix_textbox;
