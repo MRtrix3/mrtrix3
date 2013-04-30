@@ -542,7 +542,9 @@ namespace MR
 
         //! write the vector \a V to \a stream as text
         friend std::ostream& operator<< (std::ostream& stream, const Vector& V) {
-          for (size_t i = 0; i < V.size(); i++) stream << str(V[i], 10) << " ";
+          for (size_t i = 0; i < V.size() - 1; i++)
+            stream << str(V[i], 10) << " ";
+          stream << str(V[V.size() - 1], 10);
           return stream;
         }
 
