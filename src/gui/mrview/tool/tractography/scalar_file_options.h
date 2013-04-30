@@ -62,7 +62,7 @@ namespace MR
               Tractogram *tractogram;
               QVBoxLayout *main_box;
               QAction *show_colour_bar;
-              QAction *invert_colourmap_action;
+              QAction *invert_action;
               QAction *scalarfile_by_direction;
               QMenu *colourmap_menu;
               QAction **colourmap_actions;

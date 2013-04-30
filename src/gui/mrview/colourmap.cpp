@@ -45,21 +45,24 @@ namespace MR
           Entry ("Hot", 
               "color.rgb = vec3 (2.7213 * amplitude, 2.7213 * amplitude - 1.0, 3.7727 * amplitude - 2.7727);\n"),
 
-          Entry ("Jet", 
-              "color.rgb = 1.5 - 4.0 * abs (amplitude - vec3(0.25, 0.5, 0.75));\n"),
+          Entry ("Cool",
+              "color.rgb = 1.0 - (vec3 (2.7213 * (1.0 - amplitude), 2.7213 * (1.0 - amplitude) - 1.0, 3.7727 * (1.0 - amplitude) - 2.7727));\n"),
 
-          Entry ("RGB", 
+          Entry ("Jet", 
+              "color.rgb = 1.5 - 4.0 * abs (1.0 - amplitude - vec3(0.25, 0.5, 0.75));\n"),
+
+          Entry ("RGB",
               "color.rgb = scale * (abs(color.rgb) - offset);\n",
-              "length (color.rgb)", 
+              "length (color.rgb)",
               true),
 
-          Entry ("Complex", 
+          Entry ("Complex",
               "float phase = atan (color.r, color.g) * 0.954929658551372;\n"
               "color.rgb = phase + vec3 (-2.0, 0.0, 2.0);\n"
               "if (phase > 2.0) color.b -= 6.0;\n"
               "if (phase < -2.0) color.r += 6.0;\n"
-              "color.rgb = clamp (scale * (amplitude - offset), 0.0, 1.0) * (2.0 - abs (color.rgb));\n", 
-              "length (color.rg)", 
+              "color.rgb = clamp (scale * (amplitude - offset), 0.0, 1.0) * (2.0 - abs (color.rgb));\n",
+              "length (color.rg)",
               true),
 
           Entry (NULL, NULL, NULL, true)
@@ -69,7 +72,7 @@ namespace MR
 
 
 
-        void create_menu (QWidget* parent, QActionGroup*& group, QMenu* menu, QAction** & actions, bool create_shortcuts)
+        void create_menu (QWidget* parent, QActionGroup*& group, QMenu* menu, QAction** & actions, bool create_shortcuts, bool use_special)
         {
           group = new QActionGroup (parent);
           group->setExclusive (true);
@@ -77,6 +80,8 @@ namespace MR
           bool in_scalar_section = true;
 
           for (size_t n = 0; maps[n].name; ++n) {
+            if (maps[n].special && !use_special)
+              continue;
             QAction* action = new QAction (maps[n].name, parent);
             action->setCheckable (true);
             group->addAction (action);
@@ -103,6 +108,7 @@ namespace MR
 
         Renderer::Renderer () : 
           current_index (0),
+          current_inverted (false),
           width (MR::File::Config::get_float ("MRViewColourBarWidth", 20.0f)), 
           height (MR::File::Config::get_float ("MRViewColourBarHeight", 100.0f)), 
           inset (MR::File::Config::get_float ("MRViewColourBarInset", 20.0f)), 
@@ -115,25 +121,31 @@ namespace MR
 
 
 
-        void Renderer::setup (size_t index) 
+        void Renderer::setup (size_t index, bool inverted)
         {
           program.clear();
           frame_program.clear();
 
-          GL::Shader::Vertex vertex_shader (
-              "layout(location=0) in vec3 data;\n"
-              "uniform float scale_x, scale_y;\n"
-              "out float amplitude;\n"
-              "void main () {\n"
-              "  gl_Position = vec4 (data.x*scale_x-1.0, data.y*scale_y-1.0, 0.0, 1.0);\n"
-              "  amplitude = data.z;\n"
-              "}\n");
+          std::string source =
+            "layout(location=0) in vec3 data;\n"
+            "uniform float scale_x, scale_y;\n"
+            "out float amplitude;\n"
+            "void main () {\n"
+            "  gl_Position = vec4 (data.x*scale_x-1.0, data.y*scale_y-1.0, 0.0, 1.0);\n"
+            "  amplitude = ";
+            if (inverted)
+              source += "1.0 - ";
+            source += "data.z;\n"
+            "}\n";
+
+
+          GL::Shader::Vertex vertex_shader (source);
 
           GL::Shader::Fragment fragment_shader (
               "in float amplitude;\n"
               "out vec3 color;\n"
               "void main () {\n"
-              "  " + std::string(maps[index].mapping) + 
+              "  " + std::string(maps[index].mapping) +
               "}\n");
 
           GL::Shader::Fragment frame_fragment_shader (
@@ -151,6 +163,7 @@ namespace MR
           frame_program.link();
           
           current_index = index;
+          current_inverted = inverted;
         }
 
 
@@ -164,13 +177,13 @@ namespace MR
 
 
 
-        void Renderer::render (const Projection& projection, const Displayable& object, int position)
+        void Renderer::render (const Projection& projection, const Displayable& object, int position, bool inverted)
         {
           if (!position) return;
           if (maps[object.colourmap()].special) return;
           
-          if (!program || !frame_program || object.colourmap() != current_index)
-            setup (object.colourmap());
+          if (!program || !frame_program || object.colourmap() != current_index || current_inverted != inverted)
+            setup (object.colourmap(), inverted);
 
           if (!VB || !VAO) {
             VB.gen();

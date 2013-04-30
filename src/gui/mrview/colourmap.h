@@ -91,7 +91,7 @@ namespace MR
 
 
 
-        void create_menu (QWidget* parent, QActionGroup*& group, QMenu* menu, QAction** & actions, bool create_shortcuts = false);
+        void create_menu (QWidget* parent, QActionGroup*& group, QMenu* menu, QAction** & actions, bool create_shortcuts = false, bool use_special = true);
 
         inline size_t from_menu (size_t n)
         {
@@ -106,16 +106,17 @@ namespace MR
         class Renderer {
           public:
             Renderer();
-            void render (const Projection& projection, const Displayable& object, int position);
+            void render (const Projection& projection, const Displayable& object, int position, bool inverted);
 
           protected:
             GL::VertexBuffer VB;
             GL::VertexArrayObject VAO;
             GL::Shader::Program frame_program, program;
             size_t current_index;
+            bool current_inverted;
             const GLfloat width, height, inset, text_offset;
 
-            void setup (size_t index);
+            void setup (size_t index, bool inverted);
         };
 
 

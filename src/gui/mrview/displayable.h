@@ -53,7 +53,6 @@ namespace MR
       class Window;
 
       const uint32_t InvertScale = 0x08000000;
-      const uint32_t InvertMap = 0x10000000;
       const uint32_t DiscardLower = 0x20000000;
       const uint32_t DiscardUpper = 0x40000000;
       const uint32_t Transparency = 0x80000000;
@@ -204,10 +203,6 @@ namespace MR
             set_bit (Lighting | LightingOn, value);
           }
 
-          void set_invert_map (bool value) {
-            set_bit (InvertMap, value);
-          }
-
           void set_invert_scale (bool value) {
             set_bit (InvertScale, value);
           }
@@ -231,10 +226,6 @@ namespace MR
 
           bool scale_inverted () const {
             return flags_ & InvertScale;
-          }
-
-          bool colourmap_inverted () const {
-            return flags_ & InvertMap;
           }
 
           bool discard_lower_enabled () const {

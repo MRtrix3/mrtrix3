@@ -112,6 +112,7 @@ namespace MR
           output_grid_layout->addWidget (new QLabel ("Prefix"), 0, 0);
           prefix_textbox = new QLineEdit ("screenshot", this);
           output_grid_layout->addWidget (prefix_textbox, 0, 1);
+          connect (prefix_textbox, SIGNAL (editingFinished()), this, SLOT (on_prefix_update()));
 
           folder_button = new QPushButton ("Select output folder", this);
           folder_button->setToolTip (tr ("Output Folder"));
@@ -136,7 +137,6 @@ namespace MR
           frames->setMaximum (std::numeric_limits<int>::max());
           frames->setValue (1);
           capture_grid_layout->addWidget (frames, 1, 1);
-
 
           QPushButton* capture = new QPushButton ("Go", this);
           connect (capture, SIGNAL (clicked()), this, SLOT (on_screen_capture()));
@@ -191,6 +191,9 @@ namespace MR
           return true;
         }
 
+        void ScreenCapture::on_prefix_update () {
+          start_index->setValue (0);
+        }
 
       }
     }

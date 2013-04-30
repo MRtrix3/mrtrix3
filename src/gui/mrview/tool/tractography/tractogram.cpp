@@ -98,8 +98,6 @@ namespace MR
             glUniform1f (get_uniform ("greaterthan"), greaterthan);
           }
 
-//          glEnable( GL_LINE_SMOOTH );
-//          glHint( GL_LINE_SMOOTH_HINT, GL_NICEST );
           if (tractography_tool.line_opacity < 1.0) {
             glEnable (GL_BLEND);
             glDisable (GL_DEPTH_TEST);
@@ -186,7 +184,8 @@ namespace MR
             vertex_shader_code += "  amp_out = amp;\n";
             if (!ColourMap::maps[colourmap_index].special) {
               vertex_shader_code += "  float amplitude = clamp (";
-              if (flags_ & InvertScale) vertex_shader_code += "1.0 -";
+              if (scale_inverted ())
+                vertex_shader_code += "1.0 -";
               vertex_shader_code += " scale * (amp - offset), 0.0, 1.0);\n  ";
             }
             if (scalarfile_by_direction) {
@@ -277,6 +276,7 @@ namespace MR
           DWI::Tractography::Properties scalar_properties;
           DWI::Tractography::ScalarReader<float> file (filename, scalar_properties);
 
+          // TODO uncomment before release
 //            if (scalar_properties.timestamp != properties.timestamp)
 //              throw Exception ("The scalar track file does not match the selected tractogram   ");
 

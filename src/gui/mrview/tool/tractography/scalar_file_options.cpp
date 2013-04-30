@@ -62,7 +62,7 @@ namespace MR
           // Colourmap menu:
           colourmap_menu = new QMenu (tr ("Colourmap menu"), this);
 
-          ColourMap::create_menu (this, colourmap_group, colourmap_menu, colourmap_actions);
+          ColourMap::create_menu (this, colourmap_group, colourmap_menu, colourmap_actions, false, false);
           connect (colourmap_group, SIGNAL (triggered (QAction*)), this, SLOT (select_colourmap_slot()));
           colourmap_actions[1]->setChecked (true);
 
@@ -73,19 +73,13 @@ namespace MR
           show_colour_bar->setChecked (true);
           addAction (show_colour_bar);
 
-//          colourmap_menu->addSeparator();
-//          invert_scale_action = colourmap_menu->addAction (tr ("Invert scaling"), this, SLOT (invert_scaling_slot()));
-//          invert_scale_action->setCheckable (true);
-//          invert_scale_action->setShortcut (tr("U"));
-//          addAction (invert_scale_action);
-//
-            invert_colourmap_action = colourmap_menu->addAction (tr ("Invert Colourmap"), this, SLOT (invert_colourmap_slot()));
-            invert_colourmap_action->setCheckable (true);
-            addAction (invert_colourmap_action);
+          invert_action = colourmap_menu->addAction (tr ("Invert"), this, SLOT (invert_colourmap_slot()));
+          invert_action->setCheckable (true);
+          addAction (invert_action);
 
-            scalarfile_by_direction = colourmap_menu->addAction (tr ("By Direction"), this, SLOT (scalarfile_by_direction_slot()));
-            scalarfile_by_direction->setCheckable (true);
-            addAction (scalarfile_by_direction);
+          scalarfile_by_direction = colourmap_menu->addAction (tr ("Colour by direction"), this, SLOT (scalarfile_by_direction_slot()));
+          scalarfile_by_direction->setCheckable (true);
+          addAction (scalarfile_by_direction);
 //
 //            colourmap_menu->addSeparator();
 //
@@ -222,7 +216,6 @@ namespace MR
         }
 
 
-
         void ScalarFileOptions::on_set_scaling_slot ()
         {
           if (tractogram) {
@@ -257,7 +250,6 @@ namespace MR
         }
 
 
-
         void ScalarFileOptions::scalarfile_by_direction_slot ()
         {
           if (tractogram) {
@@ -267,25 +259,16 @@ namespace MR
           }
         }
 
+
         void ScalarFileOptions::invert_colourmap_slot ()
         {
           if (tractogram) {
-            tractogram->set_invert_map (invert_colourmap_action->isChecked());
+            tractogram->set_invert_scale (invert_action->isChecked());
             tractogram->recompile();
             window.updateGL();
           }
         }
 
-
-
-//        void ScalarFileOptions::on_scaling_changed_slot ()
-//        {
-//          if (window.image()) {
-//            min_entry->setValue (window.image()->scaling_min());
-//            max_entry->setValue (window.image()->scaling_max());
-//            set_scaling_rate();
-//          }
-//        }
       }
     }
   }

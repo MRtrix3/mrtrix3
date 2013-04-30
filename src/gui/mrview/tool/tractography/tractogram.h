@@ -68,7 +68,7 @@ namespace MR
 
             void renderColourBar (const Projection& transform) {
               if (color_type == ScalarFile && show_colour_bar)
-                colourbar_renderer.render (transform, *this, colourbar_position_index);
+                colourbar_renderer.render (transform, *this, colourbar_position_index, this->scale_inverted());
             }
 
             void load_tracks();
@@ -83,7 +83,7 @@ namespace MR
               colour[2] = color[2];
             }
 
-            bool scalarfile_by_direction; //TODO
+            bool scalarfile_by_direction;
             bool do_crop_to_slab;
             bool do_threshold;
             bool show_colour_bar;

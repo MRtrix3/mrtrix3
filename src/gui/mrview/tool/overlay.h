@@ -63,16 +63,18 @@ namespace MR
             void threshold_lower_changed (int unused);
             void threshold_upper_value_changed ();
             void threshold_lower_value_changed ();
+            void interpolate_changed ();
 
           protected:
              class Model;
+             QPushButton* hide_all_button;
              Model* image_list_model;
              QListView* image_list_view;
              QComboBox* colourmap_combobox;
-             QSlider *opacity;
              AdjustButton *min_value, *max_value, *threshold_lower, *threshold_upper;
              QCheckBox *threshold_lower_box, *threshold_upper_box;
-             QPushButton* hide_all_button;
+             QCheckBox* interpolate_check_box;
+             QSlider *opacity;
 
              void update_selection ();
         };

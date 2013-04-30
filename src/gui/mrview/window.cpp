@@ -300,16 +300,10 @@ namespace MR
 
         colourmap_menu->addSeparator();
 
-        invert_scale_action = colourmap_menu->addAction (tr ("Invert scaling"), this, SLOT (invert_scaling_slot()));
+        invert_scale_action = colourmap_menu->addAction (tr ("Invert"), this, SLOT (invert_scaling_slot()));
         invert_scale_action->setCheckable (true);
         invert_scale_action->setShortcut (tr("U"));
         addAction (invert_scale_action);
-
-
-        invert_colourmap_action = colourmap_menu->addAction (tr ("Invert Colourmap"), this, SLOT (invert_colourmap_slot()));
-        invert_colourmap_action->setCheckable (true);
-        invert_colourmap_action->setShortcut (tr("Shift+U"));
-        addAction (invert_colourmap_action);
 
         colourmap_menu->addSeparator();
 
@@ -727,14 +721,6 @@ namespace MR
         }
       }
 
-      void Window::invert_colourmap_slot () 
-      {
-        if (image()) {
-          image()->set_invert_map (invert_colourmap_action->isChecked());
-          glarea->updateGL();
-        }
-      }
-
 
 
       void Window::invert_scaling_slot ()
@@ -907,7 +893,6 @@ namespace MR
         size_t cmap_index = image()->colourmap();
         colourmap_group->actions()[cmap_index]->setChecked (true);
         invert_scale_action->setChecked (image()->scale_inverted());
-        invert_colourmap_action->setChecked (image()->colourmap_inverted());
         setWindowTitle (image()->interp.name().c_str());
         set_image_navigation_menu();
         image()->set_allowed_features (

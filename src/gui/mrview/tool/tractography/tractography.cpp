@@ -135,7 +135,7 @@ namespace MR
                      SLOT (selection_changed_slot(const QItemSelection &, const QItemSelection &)) );
 
             tractogram_list_view->setContextMenuPolicy (Qt::CustomContextMenu);
-            connect (tractogram_list_view, SIGNAL(customContextMenuRequested(const QPoint&)),
+            connect (tractogram_list_view, SIGNAL(customContextMenuRequested (const QPoint&)),
                      this, SLOT(right_click_menu_slot (const QPoint&)));
 
             main_box->addWidget (tractogram_list_view, 1);

@@ -138,9 +138,6 @@ namespace MR
 
         source += ColourMap::maps[colourmap_index].mapping;
 
-        if (flags_ & InvertMap)
-          source += "color.rgb = 1.0 - color.rgb;";
-
         if (flags_ & Transparency)
           source += "color.a = alpha;\n";
         source += "}\n";

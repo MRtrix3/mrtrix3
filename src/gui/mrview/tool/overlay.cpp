@@ -117,7 +117,6 @@ namespace MR
             main_box->addWidget (colourmap_combobox, 0);
             connect (colourmap_combobox, SIGNAL (activated(int)), this, SLOT (colourmap_changed(int)));
 
-
             QGroupBox* group_box = new QGroupBox (tr("Intensity range"));
             main_box->addWidget (group_box);
             QGridLayout* box_layout = new QGridLayout;
@@ -158,6 +157,11 @@ namespace MR
             connect (opacity, SIGNAL (valueChanged (int)), this, SLOT (update_slot (int)));
             main_box->addWidget (new QLabel ("opacity"), 0);
             main_box->addWidget (opacity, 0);
+
+            interpolate_check_box = new QCheckBox (tr ("interpolate"));
+            interpolate_check_box->setChecked (true);
+            connect (interpolate_check_box, SIGNAL (clicked ()), this, SLOT (interpolate_changed ()));
+            main_box->addWidget (interpolate_check_box, 0);
 
             connect (image_list_view->selectionModel(),
                 SIGNAL(selectionChanged(const QItemSelection &, const QItemSelection &)),
@@ -223,6 +227,7 @@ namespace MR
             if (image_list_model->items[i]->show && !hide_all_button->isChecked()) {
               Image* image = dynamic_cast<Image*>(image_list_model->items[i]);
               need_to_update |= !finite (image->intensity_min());
+              image->set_interpolate (interpolate_check_box->isChecked());
               image->render3D (projection, projection.depth_of (window.focus()));
             }
           }
@@ -328,6 +333,11 @@ namespace MR
           window.updateGL();
         }
 
+
+        void Overlay::interpolate_changed ()
+        {
+          window.updateGL();
+        }
 
 
         void Overlay::selection_changed_slot (const QItemSelection &, const QItemSelection &)

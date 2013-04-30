@@ -137,7 +137,6 @@ namespace MR
           void select_plane_slot (QAction* action);
           void mode_control_slot ();
           void select_colourmap_slot ();
-          void invert_colourmap_slot ();
           void invert_scaling_slot ();
           void full_screen_slot ();
           void toggle_annotations_slot ();
@@ -232,7 +231,6 @@ namespace MR
 
                   **tool_actions,
                   **colourmap_actions,
-                  *invert_colourmap_action,
                   *invert_scale_action,
                   *extra_controls_action,
                   *snap_to_image_action,
