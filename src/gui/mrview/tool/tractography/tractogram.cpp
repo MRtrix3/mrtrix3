@@ -73,6 +73,8 @@ namespace MR
 
         void Tractogram::render2D (const Projection& transform)
         {
+          if (tractography_tool.hide_tracks->isChecked())
+            return;
 
           if (tractography_tool.do_crop_to_slab && tractography_tool.slab_thickness <= 0.0)
             return;

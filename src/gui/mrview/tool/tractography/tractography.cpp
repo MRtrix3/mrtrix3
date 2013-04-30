@@ -110,6 +110,13 @@ namespace MR
             connect (button, SIGNAL (clicked()), this, SLOT (tractogram_close_slot ()));
             layout->addWidget (button, 1);
 
+            hide_tracks = new QPushButton (this);
+            hide_tracks->setToolTip (tr ("Hide Tracks"));
+            hide_tracks->setIcon (QIcon (":/hide.svg"));
+            hide_tracks->setCheckable (true);
+            connect (hide_tracks, SIGNAL (clicked()), this, SLOT (show_tracks_slot ()));
+            layout->addWidget (hide_tracks, 1);
+
             main_box->addLayout (layout, 0);
 
             tractogram_list_view = new QListView (this);
@@ -135,10 +142,25 @@ namespace MR
 
             QGridLayout* default_opt_grid = new QGridLayout;
 
+            QSlider* slider;
+            slider = new QSlider (Qt::Horizontal);
+            slider->setRange (1,1000);
+            slider->setSliderPosition (int (1000));
+            connect (slider, SIGNAL (valueChanged (int)), this, SLOT (opacity_slot (int)));
+            default_opt_grid->addWidget (new QLabel ("opacity"), 0, 0);
+            default_opt_grid->addWidget (slider, 0, 1);
+
+            slider = new QSlider (Qt::Horizontal);
+            slider->setRange (100,1000);
+            slider->setSliderPosition (float (100.0));
+            connect (slider, SIGNAL (valueChanged (int)), this, SLOT (line_thickness_slot (int)));
+            default_opt_grid->addWidget (new QLabel ("line thickness"), 1, 0);
+            default_opt_grid->addWidget (slider, 1, 1);
+
             QGroupBox* slab_group_box = new QGroupBox (tr("crop to slab"));
             slab_group_box->setCheckable (true);
             slab_group_box->setChecked (true);
-            default_opt_grid->addWidget (slab_group_box, 0, 0, 1, 2);
+            default_opt_grid->addWidget (slab_group_box, 2, 0, 1, 2);
 
             connect (slab_group_box, SIGNAL (clicked (bool)), this, SLOT (on_crop_to_slab_slot (bool)));
 
@@ -150,21 +172,6 @@ namespace MR
             slab_entry->setMin (0.0);
             connect (slab_entry, SIGNAL (valueChanged()), this, SLOT (on_slab_thickness_slot()));
             slab_layout->addWidget (slab_entry, 0, 1);
-
-            QSlider* slider;
-            slider = new QSlider (Qt::Horizontal);
-            slider->setRange (1,1000);
-            slider->setSliderPosition (int (1000));
-            connect (slider, SIGNAL (valueChanged (int)), this, SLOT (opacity_slot (int)));
-            default_opt_grid->addWidget (new QLabel ("opacity"), 1, 0);
-            default_opt_grid->addWidget (slider, 1, 1);
-
-            slider = new QSlider (Qt::Horizontal);
-            slider->setRange (100,1000);
-            slider->setSliderPosition (float (100.0));
-            connect (slider, SIGNAL (valueChanged (int)), this, SLOT (line_thickness_slot (int)));
-            default_opt_grid->addWidget (new QLabel ("line thickness"), 2, 0);
-            default_opt_grid->addWidget (slider, 2, 1);
 
             main_box->addLayout (default_opt_grid, 0);
 
@@ -236,6 +243,11 @@ namespace MR
 
         void Tractography::toggle_shown_slot (const QModelIndex& index) {
           do_shader_update = true;
+          window.updateGL();
+        }
+
+
+        void Tractography::show_tracks_slot () {
           window.updateGL();
         }
 
