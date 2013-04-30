@@ -91,6 +91,13 @@ namespace MR
             connect (button, SIGNAL (clicked()), this, SLOT (image_close_slot ()));
             layout->addWidget (button, 1);
 
+            hide_all_button = new QPushButton (this);
+            hide_all_button->setToolTip (tr ("Hide All"));
+            hide_all_button->setIcon (QIcon (":/hide.svg"));
+            hide_all_button->setCheckable (true);
+            connect (hide_all_button, SIGNAL (clicked()), this, SLOT (hide_all_slot ()));
+            layout->addWidget (hide_all_button, 1);
+
             main_box->addLayout (layout, 0);
 
             image_list_view = new QListView (this);
@@ -187,9 +194,13 @@ namespace MR
             image_list_model->remove_item (indexes.first());
             indexes = image_list_view->selectionModel()->selectedIndexes();
           }
+          window.updateGL();
         }
 
 
+        void Overlay::hide_all_slot () {
+          window.updateGL();
+        }
 
 
         void Overlay::draw2D (const Projection& projection) 
@@ -209,7 +220,7 @@ namespace MR
 
           bool need_to_update = false;
           for (int i = 0; i < image_list_model->rowCount(); ++i) {
-            if (image_list_model->items[i]->show) {
+            if (image_list_model->items[i]->show && !hide_all_button->isChecked()) {
               Image* image = dynamic_cast<Image*>(image_list_model->items[i]);
               need_to_update |= !finite (image->intensity_min());
               image->render3D (projection, projection.depth_of (window.focus()));

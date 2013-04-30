@@ -53,6 +53,7 @@ namespace MR
           private slots:
             void image_open_slot ();
             void image_close_slot ();
+            void hide_all_slot ();
             void toggle_shown_slot (const QModelIndex& index);
             void selection_changed_slot (const QItemSelection &, const QItemSelection &);
             void update_slot (int unused);
@@ -71,6 +72,7 @@ namespace MR
              QSlider *opacity;
              AdjustButton *min_value, *max_value, *threshold_lower, *threshold_upper;
              QCheckBox *threshold_lower_box, *threshold_upper_box;
+             QPushButton* hide_all_button;
 
              void update_selection ();
         };

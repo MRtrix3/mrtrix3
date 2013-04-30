@@ -110,12 +110,12 @@ namespace MR
             connect (button, SIGNAL (clicked()), this, SLOT (tractogram_close_slot ()));
             layout->addWidget (button, 1);
 
-            hide_tracks = new QPushButton (this);
-            hide_tracks->setToolTip (tr ("Hide Tracks"));
-            hide_tracks->setIcon (QIcon (":/hide.svg"));
-            hide_tracks->setCheckable (true);
-            connect (hide_tracks, SIGNAL (clicked()), this, SLOT (show_tracks_slot ()));
-            layout->addWidget (hide_tracks, 1);
+            hide_all_button = new QPushButton (this);
+            hide_all_button->setToolTip (tr ("Hide Tracks"));
+            hide_all_button->setIcon (QIcon (":/hide.svg"));
+            hide_all_button->setCheckable (true);
+            connect (hide_all_button, SIGNAL (clicked()), this, SLOT (hide_all_slot ()));
+            layout->addWidget (hide_all_button, 1);
 
             main_box->addLayout (layout, 0);
 
@@ -197,7 +197,7 @@ namespace MR
 
         void Tractography::draw2D (const Projection& transform) {
           for (int i = 0; i < tractogram_list_model->rowCount(); ++i) {
-            if (tractogram_list_model->items[i]->show)
+            if (tractogram_list_model->items[i]->show && !hide_all_button->isChecked())
               dynamic_cast<Tractogram*>(tractogram_list_model->items[i])->render2D (transform);
           }
         }
@@ -247,7 +247,7 @@ namespace MR
         }
 
 
-        void Tractography::show_tracks_slot () {
+        void Tractography::hide_all_slot () {
           window.updateGL();
         }
 

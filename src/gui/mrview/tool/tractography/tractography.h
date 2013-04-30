@@ -54,7 +54,7 @@ namespace MR
             void drawOverlays (const Projection& transform);
 
 
-            QPushButton* hide_tracks;
+            QPushButton* hide_all_button;
             float line_thickness;
             bool do_crop_to_slab;
             float slab_thickness;
@@ -67,7 +67,7 @@ namespace MR
             void tractogram_open_slot ();
             void tractogram_close_slot ();
             void toggle_shown_slot (const QModelIndex& index);
-            void show_tracks_slot ();
+            void hide_all_slot ();
             void on_slab_thickness_slot ();
             void on_crop_to_slab_slot (bool checked);
             void opacity_slot (int opacity);
