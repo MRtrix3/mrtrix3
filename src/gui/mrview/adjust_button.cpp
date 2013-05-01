@@ -65,14 +65,17 @@ namespace MR
 
       bool AdjustButton::eventFilter (QObject* obj, QEvent* event)
       {
-        if (event->type() == QEvent::MouseButtonPress) 
-          previous_y = ((QMouseEvent*) event)->y();
-        else if (event->type() == QEvent::MouseMove) {
-          QMouseEvent* mouse_event = (QMouseEvent*) event;
-          setValue (value() - rate * (mouse_event->y() - previous_y));
-          previous_y = mouse_event->y();
-          emit valueChanged();
-          return true;
+        if (this->isEnabled()) {
+          if (event->type() == QEvent::MouseButtonPress)
+            previous_y = ((QMouseEvent*) event)->y();
+          else if (event->type() == QEvent::MouseMove) {
+            QMouseEvent* mouse_event = (QMouseEvent*) event;
+            setValue (value() - rate * (mouse_event->y() - previous_y));
+            previous_y = mouse_event->y();
+            emit valueChanged();
+            return true;
+
+          }
         }
         return QObject::eventFilter(obj, event);
       }

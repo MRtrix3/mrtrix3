@@ -52,13 +52,19 @@ namespace MR
             private slots:
               void show_colour_bar_slot();
               void select_colourmap_slot ();
-              void toggle_threshold_slot ();
               void on_set_scaling_slot ();
-              void on_set_threshold_slot ();
+              void threshold_lower_changed (int unused);
+              void threshold_upper_changed (int unused);
+              void threshold_lower_value_changed ();
+              void threshold_upper_value_changed ();
               void invert_colourmap_slot ();
               void scalarfile_by_direction_slot ();
+              void reset_intensity_slot ();
 
             protected:
+              void clear_tool_display ();
+              void update_tool_display ();
+
               Tractogram *tractogram;
               QVBoxLayout *main_box;
               QAction *show_colour_bar;
@@ -68,10 +74,10 @@ namespace MR
               QAction **colourmap_actions;
               QActionGroup *colourmap_group;
               QToolButton *colourmap_button;
-              QPushButton *button;
+              QPushButton *file_button;
               AdjustButton *max_entry, *min_entry;
-              AdjustButton *lessthan, *greaterthan;
-              QGroupBox *threshold_box;
+              AdjustButton *threshold_lower, *threshold_upper;
+              QCheckBox *threshold_upper_box, *threshold_lower_box;
 
           };
 

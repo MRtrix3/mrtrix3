@@ -53,12 +53,10 @@ namespace MR
             void draw3D (const Projection& transform);
             void drawOverlays (const Projection& transform);
 
-
             QPushButton* hide_all_button;
             float line_thickness;
             bool do_crop_to_slab;
             float slab_thickness;
-            bool do_shader_update;
             float line_opacity;
             Model* tractogram_list_model;
             QListView* tractogram_list_view;
@@ -69,7 +67,7 @@ namespace MR
             void toggle_shown_slot (const QModelIndex& index);
             void hide_all_slot ();
             void on_slab_thickness_slot ();
-            void on_crop_to_slab_slot (bool checked);
+            void on_crop_to_slab_slot (bool is_checked);
             void opacity_slot (int opacity);
             void line_thickness_slot (int thickness);
             void right_click_menu_slot (const QPoint& pos);
@@ -80,10 +78,6 @@ namespace MR
             void selection_changed_slot (const QItemSelection &, const QItemSelection &);
 
           protected:
-
-            void update_scalar_file_options();
-            void update_display ();
-
             AdjustButton* slab_entry;
             QMenu* track_option_menu;
             Dock* scalar_file_options;

@@ -78,7 +78,6 @@ namespace MR
           Base (main_window, parent),
           line_thickness (1.0),
           do_crop_to_slab (true),
-          do_shader_update (false),
           line_opacity (1.0),
           scalar_file_options (NULL) {
 
@@ -220,7 +219,6 @@ namespace MR
           std::vector<std::string> list = Dialog::File::get_files (this, "Select tractograms to open", "Tractograms (*.tck)");
           if (list.empty())
             return;
-
           try {
             tractogram_list_model->add_items (list, window, *this);
           }
@@ -242,7 +240,6 @@ namespace MR
 
 
         void Tractography::toggle_shown_slot (const QModelIndex& index) {
-          do_shader_update = true;
           window.updateGL();
         }
 
@@ -252,9 +249,10 @@ namespace MR
         }
 
 
-        void Tractography::on_crop_to_slab_slot (bool checked) {
-          do_crop_to_slab = checked;
-          do_shader_update = true;
+        void Tractography::on_crop_to_slab_slot (bool is_checked) {
+          do_crop_to_slab = is_checked;
+          for (size_t i = 0; i < tractogram_list_model->items.size(); ++i)
+            tractogram_list_model->items[i]->recompile();
           window.updateGL();
         }
 
@@ -291,9 +289,11 @@ namespace MR
         void Tractography::colour_track_by_direction_slot()
         {
           QModelIndexList indices = tractogram_list_view->selectionModel()->selectedIndexes();
-          for (int i = 0; i < indices.size(); ++i)
+          for (int i = 0; i < indices.size(); ++i) {
             tractogram_list_model->get_tractogram (indices[i])->color_type = Direction;
-          update_display();
+            tractogram_list_model->get_tractogram (indices[i])->recompile();
+          }
+          window.updateGL();
         }
 
 
@@ -307,9 +307,10 @@ namespace MR
             for (int i = 0; i < indices.size(); ++i) {
               tractogram_list_model->get_tractogram (indices[i])->color_type = Colour;
               tractogram_list_model->get_tractogram (indices[i])->set_colour (colour);
+              dynamic_cast<Tractogram*> (tractogram_list_model->items[indices[i].row()])->recompile();
             }
           }
-          update_display();
+          window.updateGL();
         }
 
 
@@ -324,10 +325,11 @@ namespace MR
               colour[1] = rng.uniform();
               colour[2] = rng.uniform();
             } while (colour[0] < 0.5 && colour[1] < 0.5 && colour[2] < 0.5);
-            dynamic_cast<Tractogram*>(tractogram_list_model->items[indices[i].row()])->color_type = Colour;
-            dynamic_cast<Tractogram*>(tractogram_list_model->items[indices[i].row()])->set_colour (colour);
+            dynamic_cast<Tractogram*> (tractogram_list_model->items[indices[i].row()])->color_type = Colour;
+            dynamic_cast<Tractogram*> (tractogram_list_model->items[indices[i].row()])->set_colour (colour);
+            dynamic_cast<Tractogram*> (tractogram_list_model->items[indices[i].row()])->recompile();
           }
-          update_display();
+          window.updateGL();
         }
 
 
@@ -341,40 +343,31 @@ namespace MR
           } else {
             if (!scalar_file_options) {
               scalar_file_options = Tool::create<ScalarFileOptions> ("Scalar File Options", window);
-              dynamic_cast<ScalarFileOptions*> (scalar_file_options->tool)->set_tractogram (tractogram_list_model->get_tractogram (indices[0]));
             }
+            dynamic_cast<ScalarFileOptions*> (scalar_file_options->tool)->set_tractogram (tractogram_list_model->get_tractogram (indices[0]));
             if (dynamic_cast<Tractogram*> (tractogram_list_model->items[indices[0].row()])->scalar_filename.length() == 0) {
               if (!dynamic_cast<ScalarFileOptions*> (scalar_file_options->tool)->open_track_scalar_file_slot())
                 return;
+            } else {
+              dynamic_cast<Tractogram*> (tractogram_list_model->items[indices[0].row()])->color_type = ScalarFile;
+              dynamic_cast<Tractogram*> (tractogram_list_model->items[indices[0].row()])->recompile();
             }
-            dynamic_cast<Tractogram*> (tractogram_list_model->items[indices[0].row()])->color_type = ScalarFile;
             scalar_file_options->show();
-            update_display();
+            window.updateGL();
           }
         }
 
 
         void Tractography::selection_changed_slot (const QItemSelection &, const QItemSelection &)
         {
-          update_scalar_file_options();
-        }
-
-
-        void Tractography::update_scalar_file_options () {
           if (scalar_file_options) {
             QModelIndexList indices = tractogram_list_view->selectionModel()->selectedIndexes();
-            if (indices.size() == 1)
+            if (indices.size() == 1) {
               dynamic_cast<ScalarFileOptions*> (scalar_file_options->tool)->set_tractogram (tractogram_list_model->get_tractogram (indices[0]));
-            else
+            } else {
               dynamic_cast<ScalarFileOptions*> (scalar_file_options->tool)->set_tractogram (NULL);
+            }
           }
-        }
-
-
-        void Tractography::update_display () {
-          update_scalar_file_options ();
-          do_shader_update = true;
-          window.updateGL();
         }
 
       }

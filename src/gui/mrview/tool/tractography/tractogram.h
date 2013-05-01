@@ -84,8 +84,6 @@ namespace MR
             }
 
             bool scalarfile_by_direction;
-            bool do_crop_to_slab;
-            bool do_threshold;
             bool show_colour_bar;
             colour_type color_type;
             std::string scalar_filename;

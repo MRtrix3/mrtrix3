@@ -141,6 +141,7 @@ namespace MR
             connect (threshold_upper_box, SIGNAL (stateChanged(int)), this, SLOT (threshold_upper_changed(int)));
             box_layout->addWidget (threshold_upper_box, 0, 0);
             threshold_upper = new AdjustButton (this, 0.1);
+            threshold_upper->setEnabled (false);
             connect (threshold_upper, SIGNAL (valueChanged()), this, SLOT (threshold_upper_value_changed()));
             box_layout->addWidget (threshold_upper, 0, 1);
 
@@ -148,6 +149,7 @@ namespace MR
             connect (threshold_lower_box, SIGNAL (stateChanged(int)), this, SLOT (threshold_lower_changed(int)));
             box_layout->addWidget (threshold_lower_box, 1, 0);
             threshold_lower = new AdjustButton (this, 0.1);
+            threshold_lower->setEnabled (false);
             connect (threshold_lower, SIGNAL (valueChanged()), this, SLOT (threshold_lower_value_changed()));
             box_layout->addWidget (threshold_lower, 1, 1);
 
