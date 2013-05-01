@@ -258,7 +258,7 @@ namespace MR
           for (size_t s = 0; s < DW_scheme.size(); s++) {
             if ( (G (s,3) = DW_scheme[s]->bvalue) != 0.0) {
               float norm = Math::norm (DW_scheme[s]->G);
-              G (s,3) *= norm;
+              G (s,3) *= (norm*norm);
               if (norm) {
                 float d[] = { DW_scheme[s]->G[0]/norm, DW_scheme[s]->G[1]/norm, DW_scheme[s]->G[2]/norm };
                 if (is_not_GE) {
