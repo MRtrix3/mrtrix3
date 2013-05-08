@@ -82,6 +82,11 @@ namespace MR
           if (min_num_points > 1)
             min_num_points *= num_samples;
           max_num_points *= num_samples;
+
+          downsample = num_samples;
+          properties.set (downsample, "downsample_factor");
+          properties["output_step_size"] = str (step_size * downsample / float(num_samples));
+
         }
 
         ~Shared ()
@@ -101,7 +106,7 @@ namespace MR
         }
 
         // This affects the white matter path integral calculation
-        float output_step_size() const { return step_size / float(num_samples); }
+        float internal_step_size() const { return step_size / float(num_samples); }
 
         size_t lmax, num_samples, max_trials;
         value_type sin_max_angle, fod_power;

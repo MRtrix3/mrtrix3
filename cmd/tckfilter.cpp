@@ -80,17 +80,15 @@ class Filter
     typedef std::vector< Point<float> > Track;
 
   public:
-    Filter (Tractography::Properties& p) :
+    Filter (Tractography::Properties& p, const float step_size) :
       properties (p)
     {
-      const float step_size = to<float>(properties["step_size"]);
-      const float step_scaling = properties.find ("samples_per_step") == properties.end() ? 1.0 : (1.0 / (to<float>(properties["samples_per_step"]) - 1));
       if (properties.find ("min_dist") != properties.end())
-        min_num_points = Math::round (to<float>(properties["min_dist"]) / (step_size * step_scaling)) + 1;
+        min_num_points = Math::round (to<float>(properties["min_dist"]) / step_size) + 1;
       else
         min_num_points = 0;
       if (properties.find ("max_dist") != properties.end())
-        max_num_points = Math::round (to<float>(properties["max_dist"]) / (step_size * step_scaling));
+        max_num_points = Math::round (to<float>(properties["max_dist"]) / step_size);
       else
         max_num_points = INT_MAX;
     }
@@ -217,15 +215,16 @@ void run ()
     using_length_filtering = true;
   }
 
-  if (using_length_filtering) {
-    if (properties.find ("step_size") == properties.end())
-      throw Exception ("Cannot filter streamlines by length as tractography step size is not specified in file");
-    const float step_size = to<float> (properties["step_size"]);
-    if (!step_size || !finite (step_size))
-      throw Exception ("Cannot filter streamlines by length as tractography step size is malformed");
-  }
+  float step_size = 0.0;
+  if (properties.find ("output_step_size") != properties.end())
+    step_size = to<float> (properties["output_step_size"]);
+  else
+    step_size = to<float> (properties["step_size"]);
 
-  Filter filter (properties);
+  if (using_length_filtering && (!step_size || !finite (step_size)))
+    throw Exception ("Cannot filter streamlines by length as tractography step size is malformed");
+
+  Filter filter (properties, step_size);
   Writer writer (argument[1], properties);
 
   typedef std::vector< Point<float> > Track;

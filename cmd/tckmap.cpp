@@ -246,11 +246,13 @@ void run () {
   Tractography::Properties properties;
   Tractography::Reader<float> file (argument[0], properties);
 
-  const size_t num_tracks = properties["count"]    .empty() ? 0   : to<size_t> (properties["count"]);
+  const size_t num_tracks = properties["count"].empty() ? 0 : to<size_t> (properties["count"]);
 
-  float step_size = properties["step_size"].empty() ? 1.0 : to<float>  (properties["step_size"]);
-  if (properties.find ("samples_per_step") != properties.end())
-    step_size /= (to<int>(properties["samples_per_step"]) - 1);
+  float step_size = 0.0;
+  if (properties.find ("output_step_size") != properties.end())
+    step_size = to<float> (properties["output_step_size"]);
+  else
+    step_size = to<float> (properties["step_size"]);
 
   std::vector<float> voxel_size;
   Options opt = get_options("vox");
@@ -417,13 +419,13 @@ void run () {
     resample_factor = opt[0][0];
     INFO ("track interpolation factor manually set to " + str(resample_factor));
   }
-  else if (step_size) {
+  else if (step_size && finite (step_size)) {
     resample_factor = Math::ceil<size_t> (step_size / (minvalue (header.vox(0), header.vox(1), header.vox(2)) * MAX_VOXEL_STEP_RATIO));
     INFO ("track interpolation factor automatically set to " + str(resample_factor));
   }
   else {
     resample_factor = 1;
-    INFO ("track interpolation off; no track step size information in header");
+    WARN ("track interpolation off; track step size information in header is absent or malformed");
   }
 
   const bool dump = get_options ("dump").size();

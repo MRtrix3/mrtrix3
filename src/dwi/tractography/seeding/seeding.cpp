@@ -63,7 +63,11 @@ namespace MR
         + Argument ("seed_image").type_image_in()
 
       + Option ("seed_dynamic", "determine seed points dynamically using the SIFT model (must NOT provide any other seeding mechanism)") // Don't allow multiple
-        + Argument ("fod_image").type_image_in();
+        + Argument ("fod_image").type_image_in()
+
+
+      + Option ("output_seeds", "output the seed location of all successful streamlines to a file")
+        + Argument ("path").type_text();
 
 
 
@@ -123,6 +127,9 @@ namespace MR
         } else if (!list.num_seeds()) {
           throw Exception ("Must provide at least one source of streamline seeds!");
         }
+
+        opt = get_options ("output_seeds");
+        if (opt.size()) properties["seed_output"] = std::string (opt[0][0]);
 
       }
 

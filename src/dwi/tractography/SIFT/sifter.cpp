@@ -195,17 +195,17 @@ namespace MR
           throw Exception ("Filtering failed; desired number of filtered streamlines is greater than or equal to the size of the input dataset");
 
         const double init_cf = calc_cost_function();
+        unsigned int iteration = 0;
 
         if (csv_out)
           (*csv_out) << "0,0,0," << str (tracks_remaining) << "," << str (init_cf) << "," << str (TD_sum) << "," << str (mu()) << ",Start,\n";
 
         if (App::log_level) {
-          fprintf (stderr, "%s:   Iteration     Tracks removed      Tracks remaining      Cost function %%\n", App::NAME.c_str());
-          fprintf (stderr, "%s:        0                 0             %9u               %.2f%%   ", App::NAME.c_str(), tracks_remaining, 100.0);
+          fprintf (stderr, "%s:   Iteration    Tracks removed     Tracks remaining     Cost function %%\n", App::NAME.c_str());
+          fprintf (stderr, "%s:    %6u           %7u            %9u              %.2f%%  ", App::NAME.c_str(), iteration, 0, tracks_remaining, 100.0);
         }
 
         bool another_iteration = true;
-        unsigned int iteration = 0;
         recalc_reason recalculate (UNDEFINED);
 
         do {
@@ -361,7 +361,7 @@ namespace MR
           const float cf_end_iteration = calc_cost_function();
 
           if (App::log_level)
-            fprintf (stderr, "\r%s:     %4u            %6u             %9u               %.2f%%   ", App::NAME.c_str(), iteration, removed_this_iteration, tracks_remaining, 100.0 * cf_end_iteration / init_cf);
+            fprintf (stderr, "\r%s:   %6u           %6u            %9u              %.2f%%  ", App::NAME.c_str(), iteration, removed_this_iteration, tracks_remaining, 100.0 * cf_end_iteration / init_cf);
 
           if (csv_out) {
             (*csv_out) << str (iteration) << "," << str (removed_this_iteration) << "," << str (num_tracks - tracks_remaining) << "," << str (tracks_remaining) << "," << str (cf_end_iteration) << "," << str (TD_sum) << "," << str (mu()) << ",";

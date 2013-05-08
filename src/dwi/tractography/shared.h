@@ -48,7 +48,19 @@ namespace MR
     {
 
 
-    typedef std::vector< Point<float> > Track;
+
+    class Track : public std::vector< Point<float> > {
+      public:
+        Track() : seed_index (0) { }
+        void clear() { std::vector< Point<float> >::clear(); seed_index = 0; }
+        size_t get_seed_index() const { return seed_index; }
+        void reverse() { std::reverse (begin(), end()); seed_index = size()-1; }
+        void set_seed_index (const size_t i) { seed_index = i; }
+      private:
+        size_t seed_index;
+    };
+
+
 
     enum term_t { CONTINUE, ENTER_CGM, CALIBRATE_FAIL, EXIT_IMAGE, ENTER_CSF, BAD_SIGNAL, HIGH_CURVATURE, LENGTH_EXCEED, TERM_IN_SGM, EXIT_SGM, EXIT_MASK, ENTER_EXCLUDE };
 #define TERMINATION_REASON_COUNT 12
@@ -66,11 +78,11 @@ namespace MR
 
 
     namespace {
-    std::vector<ssize_t> strides_by_volume () {
-      std::vector<ssize_t> S (4, 0);
-      S[3] = 1;
-      return S;
-    }
+      std::vector<ssize_t> strides_by_volume () {
+        std::vector<ssize_t> S (4, 0);
+        S[3] = 1;
+        return S;
+      }
     }
 
 
@@ -104,10 +116,11 @@ namespace MR
           step_size (NAN),
           threshold (0.1),
           unidirectional (false),
-          rk4 (false)
+          rk4 (false),
+          downsample (1)
 #ifdef DEBUG_TERMINATIONS
         , debug_header       (properties.find ("act") == properties.end() ? diff_path : properties["act"]),
-        transform          (debug_header)
+          transform          (debug_header)
 #endif
         {
 
@@ -115,6 +128,9 @@ namespace MR
           properties.set (unidirectional, "unidirectional");
           properties.set (max_num_tracks, "max_num_tracks");
           properties.set (rk4, "rk4");
+
+          if (properties.find ("downsample_factor") != properties.end())
+            downsample = to<int> (properties["downsample_factor"]);
 
           properties["source"] = source_buffer.name();
 
@@ -231,6 +247,7 @@ namespace MR
         value_type step_size, threshold, init_threshold;
         bool unidirectional;
         bool rk4;
+        int downsample;
 
         // Additional members for ACT
         bool is_act() const { return act_shared_additions; }
@@ -248,6 +265,9 @@ namespace MR
           step_size = stepsize * vox();
           properties.set (step_size, "step_size");
           INFO ("step size = " + str (step_size) + " mm");
+
+          if (downsample > 1)
+            properties["output_step_size"] = str (step_size * downsample);
 
           value_type max_dist = 100.0 * vox();
           properties.set (max_dist, "max_dist");
@@ -273,8 +293,9 @@ namespace MR
         }
 
 
-        // This gets overloaded for iFOD2
-        virtual float output_step_size() const { return step_size; }
+        // This gets overloaded for iFOD2, as each sample is output rather than just each step, and there are
+        //   multiple samples per step
+        virtual float internal_step_size() const { return step_size; }
 
 
         void add_termination (const term_t i)   const { ++terminations[i]; }

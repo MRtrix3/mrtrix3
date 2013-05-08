@@ -105,7 +105,10 @@ namespace MR
           + Argument ("number").type_integer (2, 4, 100)
 
       + Option ("rk4", "use 4th-order Runge-Kutta integration "
-                       "(slower, but eliminates curvature overshoot in 1st-order deterministic methods)");
+                       "(slower, but eliminates curvature overshoot in 1st-order deterministic methods)")
+
+      + Option ("downsample", "downsample the generated streamlines to reduce output file size")
+          + Argument ("factor").type_integer (1, 1, 100);
 
 
 
@@ -173,6 +176,9 @@ namespace MR
 
         opt = get_options ("rk4");
         if (opt.size()) properties["rk4"] = "1";
+
+        opt = get_options ("downsample");
+        if (opt.size()) properties["downsample_factor"] = std::string (opt[0][0]);
 
       }
 

@@ -66,19 +66,32 @@ namespace MR
               DWI::Tractography::Properties& properties) :
                 S (shared),
                 writer (output_file, properties),
-                next_time (timer.elapsed()) { }
+                next_time (timer.elapsed())
+          {
+            if (properties.find ("seed_output") != properties.end())
+              seeds = new std::ofstream (properties["seed_output"].c_str(), std::ios_base::trunc);
+          }
 
           ~WriteKernel ()
           {
             if (App::log_level > 0)
               fprintf (stderr, "\r%8zu generated, %8zu selected    [100%%]\n", writer.total_count, writer.count);
+            if (seeds) {
+              (*seeds) << "\n";
+              seeds->close();
+            }
+
           }
 
-          bool operator() (const std::vector<Point<value_type> >& tck)
+          bool operator() (const Track& tck)
           {
             if (complete())
               return false;
             writer.append (tck);
+            if (seeds) {
+              const Point<float>& p = tck[tck.get_seed_index()];
+              (*seeds) << str(p[0]) << "," << str(p[1]) << "," << str(p[2]) << ",\n";
+            }
             if (App::log_level > 0 && timer.elapsed() >= next_time) {
               next_time += UPDATE_INTERVAL;
               fprintf (stderr, "\r%8zu generated, %8zu selected    [%3d%%]",
@@ -88,9 +101,9 @@ namespace MR
             return true;
           }
 
-          bool operator() (const std::vector<Point<value_type> >& in, Mapping::TrackAndIndex& out)
+          bool operator() (const Track& in, Mapping::TrackAndIndex& out)
           {
-            out.index = writer.total_count;
+            out.index = writer.count;
             if (!operator() (in))
               return false;
             out.tck = in;
@@ -104,6 +117,7 @@ namespace MR
         private:
           const SharedBase& S;
           Writer<value_type> writer;
+          Ptr<std::ofstream> seeds;
           Timer timer;
           double next_time;
       };
@@ -131,7 +145,6 @@ namespace MR
 
               const std::string& fod_path (properties["seed_dynamic"]);
 
-              typedef std::vector< Point<float> > Tck;
               typedef Mapping::SetDixel SetDixel;
               typedef Mapping::TrackAndIndex TrackAndIndex;
               typedef Mapping::TrackMapperDixel TckMapper;
@@ -148,16 +161,16 @@ namespace MR
               Exec<Method> tracker (shared);
               TckMapper    mapper  (H, true, dirs);
 
-              Thread::Queue<Tck>               tracking_output_queue;
+              Thread::Queue<Track>             tracking_output_queue;
               Thread::Queue<TrackAndIndex>     writer_output_queue;
               Thread::Queue<Mapping::SetDixel> dixel_queue;
 
-              Thread::__Source<Tck, Exec<Method> >                 q_tracker (tracking_output_queue, tracker);
-              Thread::__Pipe  <Tck, WriteKernel, TrackAndIndex>    q_writer  (tracking_output_queue, writer, writer_output_queue);
+              Thread::__Source<Track, Exec<Method> >               q_tracker (tracking_output_queue, tracker);
+              Thread::__Pipe  <Track, WriteKernel, TrackAndIndex>  q_writer  (tracking_output_queue, writer, writer_output_queue);
               Thread::__Pipe  <TrackAndIndex, TckMapper, SetDixel> q_mapper  (writer_output_queue, mapper, dixel_queue);
               Thread::__Sink  <SetDixel, Seeding::Dynamic>         q_seeder  (dixel_queue, *seeder);
 
-              Thread::Array< Thread::__Source<Tck, Exec<Method> > >               tracker_array (q_tracker, Thread::number_of_threads());
+              Thread::Array< Thread::__Source<Track, Exec<Method> > >             tracker_array (q_tracker, Thread::number_of_threads());
               Thread::Array< Thread::__Pipe<TrackAndIndex, TckMapper, SetDixel> > mapper_array  (q_mapper,  Thread::number_of_threads());
 
               Thread::Exec tracker_threads (tracker_array, "trackers");
@@ -182,6 +195,8 @@ namespace MR
               return false;
             if (track_rejected (item))
               item.clear();
+            else if (S.downsample > 1)
+              downsample_track (item, S.downsample);
             return true;
           }
 
@@ -255,8 +270,8 @@ namespace MR
 
             }
 
-            if (S.is_act() && !unidirectional && method.act().seed_is_unidirectional (method.pos, method.dir))
-              unidirectional = true;
+            if (S.is_act() && !unidirectional)
+              unidirectional = method.act().seed_is_unidirectional (method.pos, method.dir);
 
             S.properties.include.contains (method.pos, track_included);
 
@@ -266,7 +281,7 @@ namespace MR
             gen_track_unidir (tck);
 
             if (!track_excluded && !unidirectional) {
-              std::reverse (tck.begin(), tck.end());
+              tck.reverse();
               method.pos = tck.back();
               method.dir = -seed_dir;
               method.reverse_track ();
@@ -283,7 +298,6 @@ namespace MR
           void gen_track_unidir (Track& tck)
           {
 
-            const size_t init_size = tck.size();
             if (S.is_act())
               method.act().sgm_depth = 0;
 
@@ -301,7 +315,7 @@ namespace MR
                   apply_priors (termination);
                   if (track_excluded && termination != ENTER_EXCLUDE) {
                     method.truncate_track (tck, ++revert_step);
-                    if (tck.size() > init_size) {
+                    if (tck.size() > tck.get_seed_index() + 1) {
                       track_excluded = false;
                       termination = CONTINUE;
                       method.pos = tck.back();
@@ -474,7 +488,7 @@ namespace MR
               if (method.act().fetch_tissue_data (*i)) {
                 const float wm = method.act().tissues().get_wm();
                 max_value = MAX (max_value, wm);
-                if (((integral += (Math::pow2 (wm) * S.output_step_size())) > ACT_WM_INT_REQ) && (max_value > ACT_WM_ABS_REQ))
+                if (((integral += (Math::pow2 (wm) * S.internal_step_size())) > ACT_WM_INT_REQ) && (max_value > ACT_WM_ABS_REQ))
                   return true;
               }
             }
@@ -543,6 +557,32 @@ namespace MR
             method.dir = final_dir;
             return CONTINUE;
           }
+
+
+
+          void downsample_track (Track& tck, const int factor)
+          {
+            Track new_track;
+            new_track.reserve ((tck.size() / factor) + 2);
+            new_track.push_back (tck.front());
+            size_t i;
+            if (tck.get_seed_index()) {
+              i = (((tck.get_seed_index() - 1) % factor) + 1);
+              new_track.set_seed_index (1 + ((tck.get_seed_index() - i) / factor));
+            } else {
+              i = factor;
+              new_track.set_seed_index (0);
+            }
+            while (i < tck.size() - 1) {
+              new_track.push_back (tck[i]);
+              i += factor;
+            }
+            new_track.push_back (tck.back());
+            tck = new_track;
+          }
+
+
+
 
 
       };
