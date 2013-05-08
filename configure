@@ -1,4 +1,4 @@
-#!/usr/bin/python2
+#!/usr/bin/python
 
 import subprocess, sys, os, platform, tempfile, shutil
 
@@ -21,12 +21,12 @@ for arg in sys.argv[1:]:
   elif '-verbose'.startswith (arg): verbose = True
   elif arg[0] != '-':
     if profile_name != None: 
-      print 'configure: too many names supplied'
+      print ('configure: too many names supplied')
       sys.exit (1)
     profile_name = arg
   else: 
-    print """\
-usage: [ENV] ./configure [name] [-debug] [-profile] [-nogui] [-noshared]'
+    print ("""
+usage: [ENV] ./configure [name] [-debug] [-profile] [-nogui] [-noshared]
 
 In most cases, a simple invocation should work:
 
@@ -123,7 +123,7 @@ PATH            Set the path to use during the configure process.
 
                 Note that this path will NOT be used during the build
                 process itself.
-"""
+""")
     sys.exit (0)
   
 
@@ -276,9 +276,9 @@ def execute (cmd, exception, raise_on_non_zero_exit_code = True, cwd = None):
     ( stdout, stderr ) = process.communicate()
 
     log ('EXIT: ' + str(process.returncode) + '\n')
-    stdout = stdout.rstrip()
+    stdout = stdout.decode(errors='ignore').rstrip()
     if len (stdout): log ('STDOUT:\n' + stdout + '\n')
-    stderr = stderr.rstrip()
+    stderr = stderr.decode(errors='ignore').rstrip()
     if len (stderr): log ('STDERR:\n' + stderr + '\n')
     log ('>>\n\n')
   
@@ -336,6 +336,7 @@ try:
   if len(compiler_version) == 0: report ('(no version information)')
   else: report (compiler_version)
 except:
+  raise
   error ('''compiler not found!
 
 Use CXX environment variable to set path to compiler, as follows:
@@ -394,6 +395,8 @@ if 'ARCH' in os.environ.keys():
   march = os.environ['ARCH']
   report ('Machine architecture set by ARCH environment variable to: ' + march + '\n')
   cpp_flags += [ '-march='+march ]
+else:
+  cpp_flags += [ '-march=native' ]
 
 
 
@@ -677,18 +680,55 @@ if not noshared:
 
 
 
-qmake = [ 'qmake' ]
-moc = 'moc' 
+moc = '' 
 qt_cflags = []
 qt_ldflags = []
 
 
 if not nogui:
 
-  report ('Checking for Qt4: ')
+  report ('Checking for Qt4 moc: ')
+  moc_candidates = [ 'moc-qt4', 'moc' ]
+  if 'MOC' in os.environ.keys(): 
+    moc_candidates = [ os.environ['MOC'] ]
+  for exe in moc_candidates:
+    try:
+      moc_version = execute ([ exe, '-v' ], OSError, False)[2].split('(')[1].rstrip(')').split()[1]
+      if moc_version.split('.')[0] == '4':
+        moc = exe
+        break
+    except OSError:
+      continue 
+  else:
+    error (''' Qt4 moc not found!
 
-  if 'QMAKE' in os.environ.keys(): qmake = os.environ['QMAKE'].split()
-  if 'MOC' in os.environ.keys(): moc = os.environ['MOC']
+  Use the MOC environment variable to specify the Qt4 meta-object compiler''')
+  
+  report (moc + ' (version ' + moc_version + ')\n')
+    
+
+  report ('Checking for Qt4 qmake: ')
+  qmake_candidates = [ 'qmake-qt4', 'qmake' ]
+  if 'QMAKE' in os.environ.keys(): 
+    qmake_candidates = [ os.environ['QMAKE'] ]
+  for exe in qmake_candidates:
+    try:
+      qmake_version = execute ([ exe, '-v' ], OSError, False)[1].splitlines()[1].split()[3]
+      if qmake_version.split('.')[0] == '4':
+        qmake = exe
+        break
+    except OSError:
+      continue 
+  else:
+    error (''' Qt4 qmake not found!
+
+  Use the QMAKE environment variable to specify the Qt4 qmake executable''')
+  
+  report (qmake + ' (version ' + qmake_version + ')\n')
+    
+
+
+  report ('Checking for Qt4: ')
 
   try:
     with TempDir() as qt_dir:
@@ -739,7 +779,7 @@ int main() { Foo f; }
       f.write (file)
       f.close();
 
-      try: execute (qmake, QMakeError, cwd=qt_dir.name)
+      try: execute ([ qmake ], QMakeError, cwd=qt_dir.name)
       except QMakeError:
         error ('''error issuing qmake command!
 
@@ -806,7 +846,7 @@ int main() { Foo f; }
       log ('\nexecuting "' + cmd + '"...\n')
       process = subprocess.Popen (cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
       if process.wait() != 0: raise LinkError
-      report (process.stdout.read().strip() + '\n')
+      report (process.stdout.read().decode(errors='ignore').strip() + '\n')
 
     
   except QMakeError:

@@ -1,4 +1,4 @@
-#!/usr/bin/python2
+#!/usr/bin/python
 
 import platform, sys, os, time, threading, subprocess, copy
 
@@ -20,8 +20,7 @@ stop = False
 
 def disp (msg):
   print_lock.acquire()
-  print msg
-  sys.stdout.flush()
+  sys.stderr.write (msg)
   print_lock.release()
   
 
@@ -64,7 +63,7 @@ def get_real_name (path):
 
 while os.path.abspath (os.path.dirname (get_real_name (build_script))) != os.path.abspath (mrtrix_dir):
   if verbose and not separate_project:
-    print 'compiling separate project against:'
+    sys.stderr.write ('compiling separate project against:' + os.linesep)
   separate_project = True
   build_script = os.path.normpath (os.path.join (mrtrix_dir, get_real_name (build_script)))
   mrtrix_dir = os.path.dirname (build_script)
@@ -72,14 +71,14 @@ while os.path.abspath (os.path.dirname (get_real_name (build_script))) != os.pat
   if os.path.exists (os.path.join (mrtrix_dir, other_dir)):
     include_paths += [ os.path.join (mrtrix_dir, other_dir) ]
   if verbose: 
-    print '    ' + mrtrix_dir
+    sys.stderr.write ('    ' + mrtrix_dir + os.linesep)
 
 if separate_project:
   lib_dir = os.path.join (mrtrix_dir, lib_dir)
   config_file = os.path.join (mrtrix_dir, config_file)
 
   if verbose:
-    print ''
+    sys.stderr.write (os.linesep);
 
 
 
@@ -88,11 +87,32 @@ if separate_project:
 
 # parse command-line:
 for arg in sys.argv[1:]:
-  if   '-verbose'.startswith(arg): verbose = True
-  elif '-dependencies'.startswith(arg): dependencies = True
+  if '-help'.startswith (arg):
+    print ('''
+usage: ./build [-verbose] [-dependencies] [target ...]
+
+In most cases, a simple invocation is all that is required:
+
+  $ ./build
+
+If no targets are provided, the command will default to building 
+all applications by scanning through the cmd/ folder. 
+
+The special target 'clean' is used to remove all compiler-generated 
+files, including objects, executables, and shared libraries. 
+
+OPTIONS:
+
+  -verbose       print each command as it is being invoked
+  -dependencies  print the list of dependencies for every target 
+''')
+    exit (0)
+  elif   '-verbose'.startswith(arg): 
+    verbose = True
+  elif '-dependencies'.startswith(arg): 
+    dependencies = True
   elif arg[0] == '-':
-    print 'unknown command-line option "' + arg + '"'
-    sys.stdout.flush()
+    sys.stderr.write ('unknown command-line option "' + arg + '"')
     sys.exit (1)
   elif arg == 'clean':
     targets = [ 'clean' ]
@@ -109,12 +129,13 @@ for arg in sys.argv[1:]:
 # load configuration file:
 try:
   if verbose:
-    print 'reading configuration from "' + config_file + '"...'
-  exec (open (config_file))
+    sys.stderr.write ('reading configuration from "' + config_file + '"...' + os.linesep)
+  exec (open (config_file).read())
 except IOError:
-  print '''no configuration file found!
+  sys.stderr.write ('''no configuration file found!
 please run "./configure" prior to invoking this script
-'''
+
+''')
   sys.exit (1)
 
 
@@ -183,7 +204,8 @@ class Entry:
     elif is_object (self.name): self.set_object()
     elif is_library (self.name): self.set_library()
     elif is_moc (self.name): self.set_moc()
-    elif not os.path.exists (self.name): raise Exception, 'unknown target "' + self.name + '"'
+    elif not os.path.exists (self.name): 
+      raise Exception ('unknown target "' + self.name + '"')
 
     [ Entry(item) for item in self.deps ]
     dep_timestamp = [ todo[item].dep_timestamp for item in todo.keys() if item in self.deps and not is_library(item) ]
@@ -191,8 +213,10 @@ class Entry:
     
 
   def execute (self):
-    if len(self.cmd) > 0: return execute ('[' + self.action + '] ' + self.name, self.cmd)
-    else: return None
+    if len(self.cmd) > 0: 
+      return execute ('[' + self.action + '] ' + self.name, self.cmd)
+    else: 
+      return None
 
 
   def set_executable (self):
@@ -290,12 +314,13 @@ class Entry:
 
 
   def display (self):
-    print '[' + self.action + '] ' + self.name,
-    if not self.timestamp or self.timestamp < self.dep_timestamp: print '[REBUILD]',
-    print ':'
-    print '  deps: ', ' '.join(self.deps)
-    print '  command: ', ' '.join(self.cmd)
-    sys.stdout.flush()
+    sys.stderr.write ('[' + self.action + '] ' + self.name)
+    if not self.timestamp or self.timestamp < self.dep_timestamp: 
+      sys.stderr.write (' [REBUILD]')
+    sys.stderr.write (''':
+  deps: ''' + ' '.join(self.deps) + '''
+  command: ''' + ' '.join(self.cmd) + '''
+''')
 
 
 
@@ -309,7 +334,7 @@ class Entry:
 
 def default_targets():
   if not os.path.isdir (cmd_dir): 
-    print 'ERROR: no "cmd" folder - unable to determine default targets'
+    sys.stderr.write ('ERROR: no "cmd" folder - unable to determine default targets' + os.linesep)
     sys.exit (1)
   for entry in os.listdir (cmd_dir):
     if entry.endswith(cpp_suffix):
@@ -348,31 +373,35 @@ def fillin (template, keyvalue):
 
 
 def execute (message, cmd):
-  disp (message)
+  disp (message + os.linesep)
   if verbose: 
-    disp (' '.join(cmd))
+    disp (' '.join(cmd) + os.linesep)
 
   try: 
     process = subprocess.Popen (cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     ( stdout, stderr ) = process.communicate()
     if process.returncode != 0:
-      disp ('\nERROR: ' + message + '\n\n' + ' '.join(cmd) + '\n\nfailed with output\n\n' + stderr)
+      disp ('\nERROR: ' + message + '\n\n' + ' '.join(cmd) + '\n\nfailed with output\n\n' + stderr.decode (errors='ignore'))
       return 1
     if len(stdout):
-      disp ('STDOUT: ' + message + '\n' + stdout)
+      disp ('STDOUT: ' + message + '\n' + stdout.decode (errors='ignore'))
     if len(stderr):
-      disp ('STDERR: ' + message + '\n' + stderr)
+      disp ('STDERR: ' + message + '\n' + stderr.decode (errors='ignore'))
 
   except OSError:
     disp (cmd[0] + ': command not found')
     return 1
+  except:
+    print ('unexpected exception: ' + str(sys.exc_info()))
+    raise
 
 
 def print_deps (file, indent=''):
-  print indent + file,
+  sys.stderr.write (indent + file)
   if file in file_flags: 
-    if len(file_flags[file]): print '[' + file_flags[file] + ']',
-  print ''
+    if len(file_flags[file]): 
+      sys.stderr.write (' [' + file_flags[file] + ']')
+  sys.stderr.write (os.linesep)
   if len(todo[file].deps):
     for entry in todo[file].deps:
       print_deps (entry, indent + '    ')
@@ -388,8 +417,7 @@ def list_headers (file):
     if file not in file_flags: file_flags[file] = ''
 
     if not os.path.exists (file):
-      print 'ERROR: cannot find file "' + file + '"'
-      sys.stdout.flush()
+      sys.stderr.write ('ERROR: cannot find file "' + file + '"' + os.linesep)
       sys.exit(1)
     fd = open (file, 'r')
     for line in fd:
@@ -408,8 +436,7 @@ def list_headers (file):
               [ headers[file].add(entry) for entry in list_headers(line) ]
               break
           else:
-            print 'ERROR: cannot find header file \"' + line + '\" (from file \"' + file + '\")'
-            sys.stdout.flush()
+            sys.stderr.write ('ERROR: cannot find header file \"' + line + '\" (from file \"' + file + '\")' + os.linesep)
             sys.exit(1)
         elif line.startswith ('<Q'):
           if 'Q' not in file_flags[file]:
@@ -523,18 +550,16 @@ def gen_command_html_help ():
 
   # generate each program's individual page:
   for n in range (0, len(binaries)):
-    print '[DOC] ' + binaries[n]
-    sys.stdout.flush()
+    sys.stderr.write ('[DOC] ' + binaries[n] + os.linesep)
      
     process = subprocess.Popen ([ binaries[n], '__print_full_usage__' ], stdout=subprocess.PIPE)
     if process.wait() != 0:
-      print 'ERROR: unable to execute', binaries[n], ' - aborting'
-      sys.stdout.flush()
+      sys.stderr.write ('ERROR: unable to execute', binaries[n], ' - aborting' + os.linesep)
       return 1
-    H = process.stdout.read()
+    H = process.stdout.read().decode (errors='ignore')
     H = H.splitlines()
 
-    fid = open (os.path.join (doc_dir, 'commands', binaries[n] + '.html'), 'wb')
+    fid = open (os.path.join (doc_dir, 'commands', binaries[n] + '.html'), 'w')
 
     if n == 0: prev = 'index'
     else: prev = binaries[n-1]
@@ -555,8 +580,7 @@ def gen_command_html_help ():
     opt = []
     while line < len(H)-2:
       if not H[line].startswith ('ARGUMENT') and not H[line].startswith ('OPTION'):
-        print 'ERROR: malformed usage for executable "' + binaries[n] + '" - aborting'
-        sys.stdout.flush()
+        sys.stderr.write ('ERROR: malformed usage for executable "' + binaries[n] + '" - aborting' + os.linesep)
         return 1
 
       if H[line].startswith ('ARGUMENT'):
@@ -635,12 +659,13 @@ def clean_cmd ():
   dirs_to_remove = []
   if os.path.isdir (bin_dir):
     for root, dirs, files in os.walk (bin_dir, topdown=False):
-      for file in files: files_to_remove.append (os.path.join (root, file))
-      for entry in dirs: dirs_to_remove.append (os.path.join (root, entry))
+      for file in files: 
+        files_to_remove.append (os.path.join (root, file))
+      for entry in dirs: 
+        dirs_to_remove.append (os.path.join (root, entry))
   
   if os.path.isdir (dev_dir):
-    print '[RM] development doc'
-    sys.stdout.flush()
+    sys.stderr.write ('[RM] development doc' + os.linesep)
     for root, dirs, files in os.walk (dev_dir, topdown=False):
       for entry in files:
         os.remove (os.path.join (root, entry))
@@ -649,14 +674,14 @@ def clean_cmd ():
     os.rmdir (dev_dir)
 
   if len(files_to_remove):
-    print '[RM] ' + ' '.join(files_to_remove)
-    sys.stdout.flush()
-    for entry in files_to_remove: os.remove (entry)
+    sys.stderr.write ('[RM] ' + ' '.join(files_to_remove) + os.linesep)
+    for entry in files_to_remove: 
+      os.remove (entry)
 
   if len(dirs_to_remove):
-    print '[RM] ' + ' '.join (dirs_to_remove)
-    sys.stdout.flush()
-    for entry in dirs_to_remove: os.rmdir (entry)
+    sys.stderr.write ('[RM] ' + ' '.join (dirs_to_remove) + os.linesep)
+    for entry in dirs_to_remove: 
+      os.rmdir (entry)
 
 
 
@@ -679,35 +704,39 @@ if dev_dir in targets:
 if len(targets) == 0: targets = default_targets()
 
 if verbose:
-  print 'building targets:',
+  sys.stderr.write ('building targets:')
   for entry in targets:
-    print entry,
-  print ''
-  sys.stdout.flush()
+    sys.stderr.write (' ' + entry)
+  sys.stderr.write (os.linesep)
 
 if verbose:
-  print '' 
-  print 'compiling TODO list...'
+  sys.stderr.write ('''
+compiling TODO list...
+''')
 
 try: [ Entry(item) for item in targets ]
-except Exception, e: 
-  print 'ERROR:', e.args[0]
+except Exception as e: 
+  sys.stderr.write ('ERROR:', e.args[0] + os.linesep)
   sys.exit (1)
 
 if dependencies:
-  print ''
-  print 'Printing dependencies:'
-  print ''
+  sys.stderr.write ('''
+Printing dependencies:
+
+''')
   for entry in targets:
     print_deps (entry)
   sys.exit (0)
 
-for item in todo.keys():
-  if todo[item].action == 'NA' or (todo[item].timestamp and todo[item].timestamp >= todo[item].dep_timestamp):
-    del todo[item]
+todo_tmp = todo
+todo = {}
+for item in todo_tmp.keys():
+  if not ( todo_tmp[item].action == 'NA' or (todo_tmp[item].timestamp and todo_tmp[item].timestamp >= todo_tmp[item].dep_timestamp) ):
+    todo[item] = todo_tmp[item]
 if verbose: 
-  print 'TODO list contains ' + str(len(todo)) + ' items'
-  print ''
+  sys.stderr.write ('TODO list contains ' + str(len(todo)) + ''' items
+
+''')
 
 
 #for entry in todo.values(): entry.display()
@@ -722,9 +751,11 @@ except:
   except: num_processors = 1
   
 if verbose:
-  print '' 
-  print 'launching ' + str(num_processors) + ' threads'
-  print '' 
+  sys.stderr.write ('''
+
+launching ''' + str(num_processors) + ''' threads
+
+''')
 
 threads = []
 for i in range (1, num_processors):
