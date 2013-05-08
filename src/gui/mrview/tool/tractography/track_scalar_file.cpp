@@ -23,7 +23,7 @@
 #include <QGroupBox>
 #include <QGridLayout>
 
-#include "gui/mrview/tool/tractography/scalar_file_options.h"
+#include "gui/mrview/tool/tractography/track_scalar_file.h"
 #include "math/vector.h"
 #include "gui/dialog/lighting.h"
 #include "gui/mrview/colourmap.h"
@@ -37,7 +37,7 @@ namespace MR
       namespace Tool
       {
 
-        ScalarFileOptions::ScalarFileOptions (Window& main_window, Dock* parent) :
+        TrackScalarFile::TrackScalarFile (Window& main_window, Dock* parent) :
           Base (main_window, parent)
         {
           main_box = new QVBoxLayout (this);
@@ -68,9 +68,9 @@ namespace MR
           show_colour_bar->setChecked (true);
           addAction (show_colour_bar);
 
-          invert_action = colourmap_menu->addAction (tr ("Invert"), this, SLOT (invert_colourmap_slot()));
-          invert_action->setCheckable (true);
-          addAction (invert_action);
+          invert_scale = colourmap_menu->addAction (tr ("Invert"), this, SLOT (invert_colourmap_slot()));
+          invert_scale->setCheckable (true);
+          addAction (invert_scale);
 
           scalarfile_by_direction = colourmap_menu->addAction (tr ("Colour by direction"), this, SLOT (scalarfile_by_direction_slot()));
           scalarfile_by_direction->setCheckable (true);
@@ -130,13 +130,13 @@ namespace MR
         }
 
 
-        void ScalarFileOptions::set_tractogram (Tractogram* selected_tractogram) {
+        void TrackScalarFile::set_tractogram (Tractogram* selected_tractogram) {
           tractogram = selected_tractogram;
           update_tool_display();
         }
 
 
-        void ScalarFileOptions::clear_tool_display () {
+        void TrackScalarFile::clear_tool_display () {
           file_button->setText ("");
           file_button->setEnabled (false);
           min_entry->setEnabled (false);
@@ -155,7 +155,7 @@ namespace MR
         }
 
 
-        void ScalarFileOptions::update_tool_display () {
+        void TrackScalarFile::update_tool_display () {
 
           if (!tractogram) {
             clear_tool_display ();
@@ -191,6 +191,9 @@ namespace MR
             threshold_upper->setValue (tractogram->greaterthan);
             colourmap_menu->setEnabled (true);
             colourmap_actions[tractogram->colourmap()]->setChecked (true);
+            show_colour_bar->setChecked (tractogram->show_colour_bar);
+            invert_scale->setChecked (tractogram->scale_inverted());
+            scalarfile_by_direction->setChecked (tractogram->scalarfile_by_direction);
             if (tractogram->scalar_filename.length()) {
               file_button->setText (shorten (tractogram->scalar_filename, 35, 0).c_str());
               min_entry->setValue (tractogram->scaling_min());
@@ -206,7 +209,7 @@ namespace MR
         }
 
 
-        bool ScalarFileOptions::open_track_scalar_file_slot ()
+        bool TrackScalarFile::open_track_scalar_file_slot ()
         {
           std::string scalar_file = Dialog::File::get_file (this, "Select track scalar to open", "Track Scalar files (*.tsf)");
           if (scalar_file.empty())
@@ -226,7 +229,7 @@ namespace MR
         }
 
 
-        void ScalarFileOptions::show_colour_bar_slot ()
+        void TrackScalarFile::show_colour_bar_slot ()
         {
           if (tractogram) {
             tractogram->show_colour_bar = show_colour_bar->isChecked();
@@ -235,7 +238,7 @@ namespace MR
         }
 
 
-        void ScalarFileOptions::select_colourmap_slot ()
+        void TrackScalarFile::select_colourmap_slot ()
         {
           if (tractogram) {
             QAction* action = colourmap_group->checkedAction();
@@ -248,7 +251,7 @@ namespace MR
         }
 
 
-        void ScalarFileOptions::on_set_scaling_slot ()
+        void TrackScalarFile::on_set_scaling_slot ()
         {
           if (tractogram) {
             tractogram->set_windowing (min_entry->value(), max_entry->value());
@@ -257,7 +260,7 @@ namespace MR
         }
 
 
-        void ScalarFileOptions::threshold_lower_changed (int unused)
+        void TrackScalarFile::threshold_lower_changed (int unused)
         {
           if (tractogram) {
             threshold_lower->setEnabled (threshold_lower_box->isChecked());
@@ -268,7 +271,7 @@ namespace MR
         }
 
 
-        void ScalarFileOptions::threshold_upper_changed (int unused)
+        void TrackScalarFile::threshold_upper_changed (int unused)
         {
           if (tractogram) {
             threshold_upper->setEnabled (threshold_upper_box->isChecked());
@@ -280,7 +283,7 @@ namespace MR
 
 
 
-        void ScalarFileOptions::threshold_lower_value_changed ()
+        void TrackScalarFile::threshold_lower_value_changed ()
         {
           if (tractogram && threshold_lower_box->isChecked()) {
             tractogram->lessthan = threshold_lower->value();
@@ -290,7 +293,7 @@ namespace MR
 
 
 
-        void ScalarFileOptions::threshold_upper_value_changed ()
+        void TrackScalarFile::threshold_upper_value_changed ()
         {
           if (tractogram && threshold_upper_box->isChecked()) {
             tractogram->greaterthan = threshold_upper->value();
@@ -299,7 +302,7 @@ namespace MR
         }
 
 
-        void ScalarFileOptions::scalarfile_by_direction_slot ()
+        void TrackScalarFile::scalarfile_by_direction_slot ()
         {
           if (tractogram) {
             tractogram->scalarfile_by_direction = scalarfile_by_direction->isChecked();
@@ -308,7 +311,7 @@ namespace MR
           }
         }
 
-        void ScalarFileOptions::reset_intensity_slot ()
+        void TrackScalarFile::reset_intensity_slot ()
         {
           if (tractogram) {
             tractogram->reset_windowing();
@@ -318,10 +321,10 @@ namespace MR
         }
 
 
-        void ScalarFileOptions::invert_colourmap_slot ()
+        void TrackScalarFile::invert_colourmap_slot ()
         {
           if (tractogram) {
-            tractogram->set_invert_scale (invert_action->isChecked());
+            tractogram->set_invert_scale (invert_scale->isChecked());
             tractogram->recompile();
             window.updateGL();
           }

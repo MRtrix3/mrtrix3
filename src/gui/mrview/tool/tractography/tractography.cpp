@@ -30,7 +30,7 @@
 #include "gui/mrview/tool/tractography/tractography.h"
 #include "gui/dialog/file.h"
 #include "gui/mrview/tool/list_model_base.h"
-#include "gui/mrview/tool/tractography/scalar_file_options.h"
+#include "gui/mrview/tool/tractography/track_scalar_file.h"
 #include "gui/mrview/tool/tractography/tractogram.h"
 
 
@@ -342,11 +342,11 @@ namespace MR
             msgBox.exec();
           } else {
             if (!scalar_file_options) {
-              scalar_file_options = Tool::create<ScalarFileOptions> ("Scalar File Options", window);
+              scalar_file_options = Tool::create<TrackScalarFile> ("Scalar File Options", window);
             }
-            dynamic_cast<ScalarFileOptions*> (scalar_file_options->tool)->set_tractogram (tractogram_list_model->get_tractogram (indices[0]));
+            dynamic_cast<TrackScalarFile*> (scalar_file_options->tool)->set_tractogram (tractogram_list_model->get_tractogram (indices[0]));
             if (dynamic_cast<Tractogram*> (tractogram_list_model->items[indices[0].row()])->scalar_filename.length() == 0) {
-              if (!dynamic_cast<ScalarFileOptions*> (scalar_file_options->tool)->open_track_scalar_file_slot())
+              if (!dynamic_cast<TrackScalarFile*> (scalar_file_options->tool)->open_track_scalar_file_slot())
                 return;
             } else {
               dynamic_cast<Tractogram*> (tractogram_list_model->items[indices[0].row()])->color_type = ScalarFile;
@@ -363,9 +363,9 @@ namespace MR
           if (scalar_file_options) {
             QModelIndexList indices = tractogram_list_view->selectionModel()->selectedIndexes();
             if (indices.size() == 1) {
-              dynamic_cast<ScalarFileOptions*> (scalar_file_options->tool)->set_tractogram (tractogram_list_model->get_tractogram (indices[0]));
+              dynamic_cast<TrackScalarFile*> (scalar_file_options->tool)->set_tractogram (tractogram_list_model->get_tractogram (indices[0]));
             } else {
-              dynamic_cast<ScalarFileOptions*> (scalar_file_options->tool)->set_tractogram (NULL);
+              dynamic_cast<TrackScalarFile*> (scalar_file_options->tool)->set_tractogram (NULL);
             }
           }
         }

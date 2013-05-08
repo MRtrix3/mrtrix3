@@ -37,12 +37,13 @@ namespace MR
       namespace Tool
       {
 
-          class ScalarFileOptions : public Base
+          class TrackScalarFile : public Base
           {
             Q_OBJECT
 
             public:
-              ScalarFileOptions (Window& main_window, Dock* parent);
+              TrackScalarFile (Window& main_window, Dock* parent);
+              virtual ~TrackScalarFile () {}
 
               void set_tractogram (Tractogram* selected_tractogram);
 
@@ -68,7 +69,7 @@ namespace MR
               Tractogram *tractogram;
               QVBoxLayout *main_box;
               QAction *show_colour_bar;
-              QAction *invert_action;
+              QAction *invert_scale;
               QAction *scalarfile_by_direction;
               QMenu *colourmap_menu;
               QAction **colourmap_actions;
@@ -78,6 +79,7 @@ namespace MR
               AdjustButton *max_entry, *min_entry;
               AdjustButton *threshold_lower, *threshold_upper;
               QCheckBox *threshold_upper_box, *threshold_lower_box;
+              int num_of_colourmaps;
 
           };
 
