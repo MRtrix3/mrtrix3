@@ -127,15 +127,16 @@ namespace MR
             tractogram_list_model = new Model (this);
             tractogram_list_view->setModel (tractogram_list_model);
 
-            connect (tractogram_list_view, SIGNAL (clicked (const QModelIndex&)), this, SLOT (toggle_shown_slot (const QModelIndex&)));
+            connect (tractogram_list_model, SIGNAL (dataChanged (const QModelIndex&, const QModelIndex&)),
+                     this, SLOT (toggle_shown_slot (const QModelIndex&, const QModelIndex&)));
 
             connect (tractogram_list_view->selectionModel(),
-                     SIGNAL(selectionChanged(const QItemSelection &, const QItemSelection &)),
-                     SLOT (selection_changed_slot(const QItemSelection &, const QItemSelection &)) );
+                     SIGNAL (selectionChanged (const QItemSelection &, const QItemSelection &)),
+                     SLOT (selection_changed_slot (const QItemSelection &, const QItemSelection &)));
 
             tractogram_list_view->setContextMenuPolicy (Qt::CustomContextMenu);
-            connect (tractogram_list_view, SIGNAL(customContextMenuRequested (const QPoint&)),
-                     this, SLOT(right_click_menu_slot (const QPoint&)));
+            connect (tractogram_list_view, SIGNAL (customContextMenuRequested (const QPoint&)),
+                     this, SLOT (right_click_menu_slot (const QPoint&)));
 
             main_box->addWidget (tractogram_list_view, 1);
 
@@ -239,7 +240,17 @@ namespace MR
         }
 
 
-        void Tractography::toggle_shown_slot (const QModelIndex& index) {
+        void Tractography::toggle_shown_slot (const QModelIndex& index, const QModelIndex& index2) {
+          if (index.row() == index2.row()) {
+            tractogram_list_view->setCurrentIndex(index);
+          } else {
+            for (size_t i = 0; i < tractogram_list_model->items.size(); ++i) {
+              if (tractogram_list_model->items[i]->show) {
+                tractogram_list_view->setCurrentIndex (tractogram_list_model->index (i, 0));
+                break;
+              }
+            }
+          }
           window.updateGL();
         }
 

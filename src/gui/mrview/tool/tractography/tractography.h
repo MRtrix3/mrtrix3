@@ -64,7 +64,7 @@ namespace MR
           private slots:
             void tractogram_open_slot ();
             void tractogram_close_slot ();
-            void toggle_shown_slot (const QModelIndex& index);
+            void toggle_shown_slot (const QModelIndex&, const QModelIndex&);
             void hide_all_slot ();
             void on_slab_thickness_slot ();
             void on_crop_to_slab_slot (bool is_checked);

@@ -169,7 +169,8 @@ namespace MR
                 SIGNAL(selectionChanged(const QItemSelection &, const QItemSelection &)),
                 SLOT (selection_changed_slot(const QItemSelection &, const QItemSelection &)) );
 
-            connect (image_list_view, SIGNAL (clicked (const QModelIndex&)), this, SLOT (toggle_shown_slot (const QModelIndex&)));
+            connect (image_list_model, SIGNAL (dataChanged (const QModelIndex&, const QModelIndex&)),
+                     this, SLOT (toggle_shown_slot (const QModelIndex&, const QModelIndex&)));
 
             update_selection();
           }
@@ -251,7 +252,17 @@ namespace MR
         }
 
 
-        void Overlay::toggle_shown_slot (const QModelIndex& index) {
+        void Overlay::toggle_shown_slot (const QModelIndex& index, const QModelIndex& index2) {
+          if (index.row() == index2.row()) {
+            image_list_view->setCurrentIndex(index);
+          } else {
+            for (size_t i = 0; i < image_list_model->items.size(); ++i) {
+              if (image_list_model->items[i]->show) {
+                image_list_view->setCurrentIndex (image_list_model->index (i, 0));
+                break;
+              }
+            }
+          }
           window.updateGL();
         }
 

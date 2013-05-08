@@ -221,6 +221,7 @@ namespace MR
 
             // FOV
             window.set_FOV (window.FOV() * (Math::pow (FOV_multipler->value(), (float) 1.0 / frames->value())));
+
             start_index->setValue (i + 1);
             this->window.updateGL();
           }

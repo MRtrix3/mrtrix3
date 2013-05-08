@@ -53,13 +53,24 @@ namespace MR
               return shorten (items[index.row()]->get_filename(), 35, 0).c_str();
             }
 
-            bool setData (const QModelIndex& index, const QVariant& value, int role) {
+            bool setData (const QModelIndex& idx, const QVariant& value, int role) {
               if (role == Qt::CheckStateRole) {
-                items[index.row()]->show = (value == Qt::Checked);
-                emit dataChanged (index, index);
+                Qt::KeyboardModifiers keyMod = QApplication::keyboardModifiers ();
+                if (keyMod.testFlag (Qt::ShiftModifier)) {
+                  for (int i = 0; i < (int)items.size(); ++i) {
+                    if (i == idx.row())
+                      items[i]->show = true;
+                    else
+                      items[i]->show = false;
+                  }
+                  emit dataChanged (index(0, 0), index(items.size(), 0));
+                } else {
+                  items[idx.row()]->show = (value == Qt::Checked);
+                  emit dataChanged (idx, idx);
+                }
                 return true;
               }
-              return QAbstractItemModel::setData (index, value, role);
+              return QAbstractItemModel::setData (idx, value, role);
             }
 
             Qt::ItemFlags flags (const QModelIndex& index) const {
