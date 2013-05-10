@@ -187,7 +187,8 @@ namespace MR
           Exec (const typename Method::Shared& shared) :
             S (shared),
             method (shared),
-            track_included (S.properties.include.size()) { }
+            track_excluded (false),
+            track_included (S.properties.include.size(), false) { }
 
 
           bool operator() (Track& item) {
@@ -562,23 +563,18 @@ namespace MR
 
           void downsample_track (Track& tck, const int factor)
           {
-            Track new_track;
-            new_track.reserve ((tck.size() / factor) + 2);
-            new_track.push_back (tck.front());
-            size_t i;
+            size_t index_old = factor;
             if (tck.get_seed_index()) {
-              i = (((tck.get_seed_index() - 1) % factor) + 1);
-              new_track.set_seed_index (1 + ((tck.get_seed_index() - i) / factor));
-            } else {
-              i = factor;
-              new_track.set_seed_index (0);
+              index_old = (((tck.get_seed_index() - 1) % factor) + 1);
+              tck.set_seed_index (1 + ((tck.get_seed_index() - index_old) / factor));
             }
-            while (i < tck.size() - 1) {
-              new_track.push_back (tck[i]);
-              i += factor;
+            size_t index_new = 1;
+            while (index_old < tck.size() - 1) {
+              tck[index_new++] = tck[index_old];
+              index_old += factor;
             }
-            new_track.push_back (tck.back());
-            tck = new_track;
+            tck[index_new] = tck.back();
+            tck.resize (index_new + 1);
           }
 
 
