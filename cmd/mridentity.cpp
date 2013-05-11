@@ -70,7 +70,7 @@ void run ()
 
   if (grad.is_set()) {
     Image::Transform transform (input_header);
-    for (uint dir = 0; dir < grad.rows(); dir++) {
+    for (size_t dir = 0; dir < grad.rows(); dir++) {
       Math::Vector<float> grad_rotated(3);
       transform.scanner2image_dir(grad.row(dir).sub(0,3), grad_rotated);
       grad.row(dir).sub(0,3) = grad_rotated;
