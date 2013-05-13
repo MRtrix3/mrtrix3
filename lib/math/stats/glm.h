@@ -74,7 +74,7 @@ namespace MR
         //! scale contrasts for use in t-test
         /*! Note each row of the contrast matrix will be treated as an
          * independent contrast. */
-        template <typename ValueType> 
+        template <typename ValueType>
           inline Math::Matrix<ValueType> scale_contrasts (const Math::Matrix<ValueType>& contrasts, const Math::Matrix<ValueType>& design, size_t degrees_of_freedom)
           {
             Math::Matrix<ValueType> XtX;
@@ -108,20 +108,20 @@ namespace MR
         //! generic GLM t-test
         /*! note that the data, effects, and residual matrices are transposed.
          * This is to take advantage of the GSL's convention of storing
-         * matrices in column-major format. 
+         * matrices in column-major format.
          *
          * Note also that the contrast matrix should already have been scaled
          * using the GLM::scale_contrasts() function. */
-        template <typename ValueType> 
+        template <typename ValueType>
           inline void ttest (
               Math::Matrix<ValueType>& tvalues,
-              const Math::Matrix<ValueType>& design, 
-              const Math::Matrix<ValueType>& pinv_design, 
-              const Math::Matrix<ValueType>& measurements, 
+              const Math::Matrix<ValueType>& design,
+              const Math::Matrix<ValueType>& pinv_design,
+              const Math::Matrix<ValueType>& measurements,
               const Math::Matrix<ValueType>& scaled_contrasts,
               Math::Matrix<ValueType>& betas,
-              Math::Matrix<ValueType>& residuals) 
-          { 
+              Math::Matrix<ValueType>& residuals)
+          {
             Math::mult (betas, ValueType(1.0), CblasNoTrans, measurements, CblasTrans, pinv_design);
             Math::mult (residuals, ValueType(-1.0), CblasNoTrans, betas, CblasTrans, design);
             residuals += measurements;
@@ -130,7 +130,13 @@ namespace MR
               tvalues.row(n) /= Math::norm (residuals.row(n));
           }
 
-
+          /** \addtogroup Statistics
+          @{ */
+          /*! Compute a matrix of the beta coefficients
+          * @param measurements a matrix storing the measured data for each subject in a column
+          * @param design the design matrix (unlike other packages a column of ones is NOT automatically added for correlation analysis)
+          * @param beta the matrix containing the output effect
+          */
           template <typename ValueType>
             inline void solve_betas (const Math::Matrix<ValueType>& measurements,
                                         const Math::Matrix<ValueType>& design,
@@ -161,21 +167,6 @@ namespace MR
               Math::mult (effect, ValueType(1.0), CblasNoTrans, betas, CblasTrans, contrast);
           }
 
-
-          /** \addtogroup Statistics
-          @{ */
-          /*! Compute a matrix of the beta coefficients
-          * @param measurements a matrix storing the measured data for each subject in a column
-          * @param design the design matrix (unlike other packages a column of ones is NOT automatically added for correlation analysis)
-          * @param beta the matrix containing the output effect
-          */
-          template <typename ValueType>
-            inline void beta (const Math::Matrix<ValueType>& measurements,
-                                const Math::Matrix<ValueType>& design,
-                                Math::Matrix<ValueType>& effect) {
-              Math::Matrix<ValueType> betas;
-              GLM::solve_betas (measurements, design, betas);
-          }
 
 
           /*! Compute cohen's d, the standardised effect size between two means
@@ -242,7 +233,7 @@ namespace MR
           */
           GLMTTest (const Math::Matrix<value_type>& measurements,
                     const Math::Matrix<value_type>& design,
-                    const Math::Matrix<value_type>& contrast) : 
+                    const Math::Matrix<value_type>& contrast) :
             y (measurements),
             X (design),
             scaled_contrasts (GLM::scale_contrasts (contrast, X, X.rows()-rank(X)))
@@ -267,7 +258,7 @@ namespace MR
             pinvSX.allocate (pinvX);
             for (size_t i = 0; i < X.rows(); ++i) {
               // TODO: check whether we should permute rows or columns
-              SX.row(i) = X.row (perm_labelling[i]); 
+              SX.row(i) = X.row (perm_labelling[i]);
               pinvSX.column(i) = pinvX.column (perm_labelling[i]);
             }
 
