@@ -288,10 +288,10 @@ void run ()
   warp_header.stride(2) = 4;
   warp_header.stride(3) = 1;
   Ptr<Image::Buffer<value_type> > warp_buffer;
-  bool output_syn = false;
+//  bool output_syn = false;
   if (opt.size()) {
     warp_buffer = new Image::Buffer<value_type> (argument[3], warp_header);
-    output_syn = true;
+//    output_syn = true;
     if (!do_syn)
       throw Exception ("syn transformation output requested when no syn registration is to be performed.");
   }
@@ -372,16 +372,16 @@ void run ()
     if (!do_syn)
       throw Exception ("the number of syn iterations have been input when no syn registration is to be performed");
   }
-
-  opt = get_options ("smooth_grad");
-  value_type smooth_grad =  template_header.vox(0) + template_header.vox(1) + template_header.vox(2);
-  if (opt.size())
-    smooth_grad = opt[0][0];
-
-  opt = get_options ("smooth_disp");
-  value_type smooth_disp =  (template_header.vox(0) + template_header.vox(1) + template_header.vox(2)) / 3.0;
-  if (opt.size())
-    smooth_disp = opt[0][0];
+//
+//  opt = get_options ("smooth_grad");
+//  value_type smooth_grad =  template_header.vox(0) + template_header.vox(1) + template_header.vox(2);
+//  if (opt.size())
+//    smooth_grad = opt[0][0];
+//
+//  opt = get_options ("smooth_disp");
+//  value_type smooth_disp =  (template_header.vox(0) + template_header.vox(1) + template_header.vox(2)) / 3.0;
+//  if (opt.size())
+//    smooth_disp = opt[0][0];
 
   opt = get_options ("directions");
   Math::Matrix<value_type> directions;

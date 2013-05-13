@@ -555,8 +555,8 @@ void run() {
   contrast.load (argument[3]);
 
   if (contrast.columns() > design.columns())
-   throw Exception ("too many contrasts for design matrix");
-   contrast.resize (contrast.rows(), design.columns());
+    throw Exception ("too many contrasts for design matrix");
+  contrast.resize (contrast.rows(), design.columns());
 
   // Compute FOD dixels on average FOD image
   vector<Point<value_type> > dixel_directions;
@@ -701,7 +701,7 @@ void run() {
 
 
   // Compute and output effect size and std_deviation
-  Math::Matrix<float> abs_effect_size, std_effect_size, std_dev;
+  Math::Matrix<float> abs_effect_size, std_effect_size, std_dev, beta;
   Math::Stats::GLM::abs_effect_size (fod_dixel_integrals, design, contrast, abs_effect_size);
   write_track_stats (output_prefix + "_fod_abs_effect_size.tsf", abs_effect_size, track_point_indices, tckfile_timestamp);
   Math::Stats::GLM::std_effect_size (fod_dixel_integrals, design, contrast, std_effect_size);
@@ -714,6 +714,14 @@ void run() {
   write_track_stats (output_prefix + "_mod_fod_std_effect_size.tsf", std_effect_size, track_point_indices, tckfile_timestamp);
   Math::Stats::GLM::stdev (mod_fod_dixel_integrals, design, std_dev);
   write_track_stats (output_prefix + "_mod_fod_std_dev.tsf", std_dev, track_point_indices, tckfile_timestamp);
+
+  Math::Stats::GLM::beta (fod_dixel_integrals, design, beta);
+  for (size_t i = 0; i < contrast.columns(); ++i) {
+    std::cout << beta.rows() << " " << beta.columns() << std::endl;
+//    write_track_stats (output_prefix + "_fod_beta" + str(i) + ".tsf", beta.row(i), track_point_indices, tckfile_timestamp);
+  }
+//      Math::Stats::GLM::beta (mod_fod_dixel_integrals, design, beta);
+//      write_track_stats (output_prefix + "_mod_fod_beta.tsf", beta, track_point_indices, tckfile_timestamp);
 
 //  // Extract the amount of AFD contributed by modulation
 //  for (size_t l = 0; l < num_dixels; ++l)
