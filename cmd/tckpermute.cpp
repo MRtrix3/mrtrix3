@@ -378,12 +378,22 @@ void write_track_stats (const string& filename,
 }
 
 void write_track_stats (const string& filename,
-                        const Math::Matrix<value_type>& data,
-                        const vector<vector<int32_t> >& track_point_indices,
-                        double tckfile_timestamp) {
+                           const Math::Matrix<value_type>& data,
+                           const vector<vector<int32_t> >& track_point_indices,
+                           double tckfile_timestamp) {
   vector<value_type> vec (data.rows());
   for (size_t i = 0; i < data.rows(); ++i)
     vec[i] = data(i, 0);
+  write_track_stats (filename, vec, track_point_indices, tckfile_timestamp);
+}
+
+void write_track_stats (const string& filename,
+                           const Math::Vector<value_type>& data,
+                           const vector<vector<int32_t> >& track_point_indices,
+                           double tckfile_timestamp) {
+  vector<value_type> vec (data.size());
+  for (size_t i = 0; i < data.size(); ++i)
+    vec[i] = data[i];
   write_track_stats (filename, vec, track_point_indices, tckfile_timestamp);
 }
 
@@ -716,12 +726,11 @@ void run() {
   write_track_stats (output_prefix + "_mod_fod_std_dev.tsf", std_dev, track_point_indices, tckfile_timestamp);
 
   Math::Stats::GLM::beta (fod_dixel_integrals, design, beta);
-  for (size_t i = 0; i < contrast.columns(); ++i) {
-    std::cout << beta.rows() << " " << beta.columns() << std::endl;
-//    write_track_stats (output_prefix + "_fod_beta" + str(i) + ".tsf", beta.row(i), track_point_indices, tckfile_timestamp);
-  }
-//      Math::Stats::GLM::beta (mod_fod_dixel_integrals, design, beta);
-//      write_track_stats (output_prefix + "_mod_fod_beta.tsf", beta, track_point_indices, tckfile_timestamp);
+  for (size_t i = 0; i < contrast.columns(); ++i)
+    write_track_stats (output_prefix + "_fod_beta" + str(i) + ".tsf", beta.column (i), track_point_indices, tckfile_timestamp);
+  Math::Stats::GLM::beta (mod_fod_dixel_integrals, design, beta);
+  for (size_t i = 0; i < contrast.columns(); ++i)
+    write_track_stats (output_prefix + "_mod_fod_beta" + str(i) + ".tsf", beta.column (i), track_point_indices, tckfile_timestamp);
 
 //  // Extract the amount of AFD contributed by modulation
 //  for (size_t l = 0; l < num_dixels; ++l)
