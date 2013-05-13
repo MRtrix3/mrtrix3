@@ -725,10 +725,12 @@ void run() {
   Math::Stats::GLM::stdev (mod_fod_dixel_integrals, design, std_dev);
   write_track_stats (output_prefix + "_mod_fod_std_dev.tsf", std_dev, track_point_indices, tckfile_timestamp);
 
-  Math::Stats::GLM::beta (fod_dixel_integrals, design, beta);
+  Math::Stats::GLM::solve_betas (fod_dixel_integrals, design, beta);
+  std::cout << beta.columns() << " " << beta.rows() << std::endl;
+  std::cout << contrast << std::endl;
   for (size_t i = 0; i < contrast.columns(); ++i)
     write_track_stats (output_prefix + "_fod_beta" + str(i) + ".tsf", beta.column (i), track_point_indices, tckfile_timestamp);
-  Math::Stats::GLM::beta (mod_fod_dixel_integrals, design, beta);
+  Math::Stats::GLM::solve_betas (mod_fod_dixel_integrals, design, beta);
   for (size_t i = 0; i < contrast.columns(); ++i)
     write_track_stats (output_prefix + "_mod_fod_beta" + str(i) + ".tsf", beta.column (i), track_point_indices, tckfile_timestamp);
 
