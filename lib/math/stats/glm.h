@@ -133,8 +133,8 @@ namespace MR
 
           template <typename ValueType>
             inline void solve_betas (const Math::Matrix<ValueType>& measurements,
-                                     const Math::Matrix<ValueType>& design,
-                                     Math::Matrix<ValueType>& betas) {
+                                        const Math::Matrix<ValueType>& design,
+                                        Math::Matrix<ValueType>& betas) {
             Math::Matrix<double> d_pinvX, d_X (design);
             SVD_invert (d_pinvX, d_X);
             Math::Matrix<ValueType> pinvX = d_pinvX;
@@ -153,12 +153,28 @@ namespace MR
           */
           template <typename ValueType>
             inline void abs_effect_size (const Math::Matrix<ValueType>& measurements,
-                                const Math::Matrix<ValueType>& design,
-                                const Math::Matrix<ValueType>& contrast,
-                                Math::Matrix<ValueType>& effect) {
+                                            const Math::Matrix<ValueType>& design,
+                                            const Math::Matrix<ValueType>& contrast,
+                                            Math::Matrix<ValueType>& effect) {
               Math::Matrix<ValueType> betas;
               GLM::solve_betas (measurements, design, betas);
               Math::mult (effect, ValueType(1.0), CblasNoTrans, betas, CblasTrans, contrast);
+          }
+
+
+          /** \addtogroup Statistics
+          @{ */
+          /*! Compute a matrix of the beta coefficients
+          * @param measurements a matrix storing the measured data for each subject in a column
+          * @param design the design matrix (unlike other packages a column of ones is NOT automatically added for correlation analysis)
+          * @param beta the matrix containing the output effect
+          */
+          template <typename ValueType>
+            inline void beta (const Math::Matrix<ValueType>& measurements,
+                                const Math::Matrix<ValueType>& design,
+                                Math::Matrix<ValueType>& effect) {
+              Math::Matrix<ValueType> betas;
+              GLM::solve_betas (measurements, design, betas);
           }
 
 
@@ -170,9 +186,9 @@ namespace MR
           */
           template <typename ValueType>
             inline void std_effect_size (const Math::Matrix<ValueType>& measurements,
-                                         const Math::Matrix<ValueType>& design,
-                                         const Math::Matrix<ValueType>& contrast,
-                                         Math::Matrix<ValueType>& cohens_d) {
+                                            const Math::Matrix<ValueType>& design,
+                                            const Math::Matrix<ValueType>& contrast,
+                                            Math::Matrix<ValueType>& cohens_d) {
               Math::Matrix<ValueType> betas;
               GLM::solve_betas (measurements, design, betas);
               Math::Matrix<ValueType> residuals;
