@@ -81,8 +81,8 @@ namespace MR
         class Iterator;
         class ConstIterator;
 
-        Iterator      begin (VoxelAccessor& v)       { return Iterator      (*v.value(), *this); }
-        ConstIterator begin (VoxelAccessor& v) const { return ConstIterator (*v.value(), *this); }
+        Iterator      begin (VoxelAccessor& v)       { return Iterator      (v.value(), *this); }
+        ConstIterator begin (VoxelAccessor& v) const { return ConstIterator (v.value(), *this); }
 
         Lobe&       operator[] (const size_t i)       { return lobes[i]; }
         const Lobe& operator[] (const size_t i) const { return lobes[i]; }
@@ -169,9 +169,9 @@ namespace MR
     {
         friend class FOD_map<Lobe>::ConstIterator;
       public:
-        Iterator (MapVoxel& voxel, FOD_map<Lobe>& parent) :
-          index (voxel.first_index()),
-          last  (index + voxel.num_lobes()),
+        Iterator (const MapVoxel* const voxel, FOD_map<Lobe>& parent) :
+          index (voxel ? voxel->first_index() : 0),
+          last  (voxel ? (index + voxel->num_lobes()) : 0),
           fod_map (parent) { }
         Iterator& operator++ ()       { ++index; return *this; }
         Lobe&     operator() () const { return fod_map.lobes[index]; }
@@ -186,9 +186,9 @@ namespace MR
     class FOD_map<Lobe>::ConstIterator
     {
       public:
-        ConstIterator (const MapVoxel& voxel, const FOD_map& parent) :
-          index   (voxel.first_index()),
-          last    (index + voxel.num_lobes()),
+        ConstIterator (const MapVoxel* const voxel, const FOD_map& parent) :
+          index   (voxel ? voxel->first_index() : 0),
+          last    (voxel ? (index + voxel->num_lobes()) : 0),
           fod_map (parent) { }
         ConstIterator (const Iterator& that) :
           index   (that.index),

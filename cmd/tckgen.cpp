@@ -60,7 +60,7 @@ void usage ()
 	AUTHOR = "Robert E. Smith (r.smith@brain.org.au)";
 
   DESCRIPTION
-  + "perform streamlines tracking incorporating anatomical information.";
+  + "perform streamlines tractography.";
 
   ARGUMENTS
   + Argument ("source",
