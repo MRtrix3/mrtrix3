@@ -214,6 +214,7 @@ namespace MR
       {
 
         Image::Buffer<float>::voxel_type dwi (in_dwi);
+        dwi[3] = 0;
         Image::Transform transform_dwi (dwi);
         Image::BufferScratch<float>::voxel_type mask (out_mask);
 
@@ -233,68 +234,99 @@ namespace MR
           if (opt.size()) {
 
             Image::Buffer<float> in_anat (opt[0][0]);
+
+            const int os_ratio = 10;
+            const float os_step = 1.0 / float(os_ratio);
+            const float os_offset = 0.5 * os_step;
+
+            // TODO Could multi-thread this
+
             Image::Buffer<float>::voxel_type anat (in_anat);
             Image::Interp::Linear< Image::Buffer<float>::voxel_type > interp (anat);
 
-            // How densely to sample each voxel, considering the dwi will be a coarser resolution than the anatomical image
-            // Express as a step size in voxel space (1.0 = 8 samples, 0.5 = 27 samples, etc.)
-            // In case of asymmetrical voxels, take the safest option == denser sampling
-            const float voxel_size_ratio = maxvalue (in_dwi.vox(0), in_dwi.vox(1), in_dwi.vox(2)) / minvalue (in_anat.vox(0), in_anat.vox(1), in_anat.vox(2));
-            const int   voxel_oversample_ratio = MAX (2, ceil (voxel_size_ratio));
-            const float voxel_oversample_step = 1.0 / (voxel_oversample_ratio - 1);
-
             Image::LoopInOrder loop (dwi, "Creating processing mask from anatomical image...", 0, 3);
             for (loop.start (dwi, mask); loop.ok(); loop.next (dwi, mask)) {
-              dwi[3] = 0;
               if (dwi.value()) {
 
-                // Build a list of points in voxel space of the DWI image to be tested
-                std::vector< Point<float> > to_test_voxel_space_dwi;
-                for (int iz = 0; iz != voxel_oversample_ratio; ++iz) {
-                  const float pz = float(dwi[2]) - 0.5 + (iz * voxel_oversample_step);
-                  for (int iy = 0; iy != voxel_oversample_ratio; ++iy) {
-                    const float py = float(dwi[1]) - 0.5 + (iy * voxel_oversample_step);
-                    for (int ix = 0; ix != voxel_oversample_ratio; ++ix) {
-                      const float px = float(dwi[0]) - 0.5 + (ix * voxel_oversample_step);
-                      to_test_voxel_space_dwi.push_back (Point<float> (px, py, pz));
-                    }
-                  }
+                // Get the upper & lower bounds of the diffusion voxel, in ACT image voxel space
+                ssize_t limits[3][2] = {{anat.dim(0)-1, 0}, {anat.dim(1)-1, 0}, {anat.dim(2)-1, 0}};
+                Point<int> edges;
+                Point<float> v_dwi;
+                for (edges[2] = 0; edges[2] != 2; ++edges[2]) {
+                  v_dwi[2] = dwi[2] - 0.5 + edges[2];
+                  for (edges[1] = 0; edges[1] != 2; ++edges[1]) {
+                    v_dwi[1] = dwi[1] - 0.5 + edges[1];
+                    for (edges[0] = 0; edges[0] != 2; ++edges[0]) {
+                      v_dwi[0] = dwi[0] - 0.5 + edges[0];
+
+                      const Point<float> p_scanner (transform_dwi.voxel2scanner (v_dwi));
+                      const Point<float> v_anat (interp.scanner2voxel (p_scanner));
+
+                      for (size_t axis = 0; axis != 3; ++axis) {
+                        limits[axis][0] = std::min (limits[axis][0], ssize_t(Math::floor (v_anat[axis])));
+                        limits[axis][1] = std::max (limits[axis][1], ssize_t(Math::ceil  (v_anat[axis])));
+                      }
+
+                } } }
+
+                // Ensure that these bounds are actually within the anatomical image
+                for (size_t axis = 0; axis != 3; ++axis) {
+                  limits[axis][0] = std::max (limits[axis][0], ssize_t(0));
+                  limits[axis][1] = std::min (limits[axis][1], ssize_t(anat.dim (axis) - 1));
                 }
 
-                // Transform these to real-space
-                std::vector< Point<float> > to_test_real_space;
-                for (std::vector< Point<float> >::const_iterator p = to_test_voxel_space_dwi.begin(); p != to_test_voxel_space_dwi.end(); ++p)
-                  to_test_real_space.push_back (transform_dwi.voxel2scanner (*p));
+                // Test ALL ACT voxels within this cube; want to know if there is any chance of
+                //   non-zero and non-unity WM partial volume within this diffusion voxel
+                bool WM_lt_rest = false, WM_gt_rest = false;
+                for (anat[2] = limits[2][0]; anat[2] <= limits[2][1]; ++anat[2]) {
+                  for (anat[1] = limits[1][0]; anat[1] <= limits[1][1]; ++anat[1]) {
+                    for (anat[0] = limits[0][0]; anat[0] <= limits[0][1]; ++anat[0]) {
 
-                // Sample from the anatomical segmentation image
-                float cgm = 0.0, sgm = 0.0, wm = 0.0, csf = 0.0;
-                size_t wm_count = 0;
-                for (std::vector< Point<float> >::const_iterator p = to_test_real_space.begin(); p != to_test_real_space.end(); ++p) {
-                  if (!interp.scanner (*p)) {
-                    Tractography::ACT::Tissues tissues (interp);
-                    if (tissues.valid()) {
-                      if (tissues.get_wm() >= tissues.get_gm())
-                        ++wm_count;
-                      cgm += tissues.get_cgm();
-                      sgm += tissues.get_sgm();
-                      wm  += tissues.get_wm ();
-                      csf += tissues.get_csf();
-                    }
-                  }
+                      Tractography::ACT::Tissues tissues (anat);
+                      if (tissues.get_wm() < tissues.get_gm() + tissues.get_csf())
+                        WM_lt_rest = true;
+                      else if (tissues.get_wm() > tissues.get_gm() + tissues.get_csf())
+                        WM_gt_rest = true;
+
+                } } }
+
+                // Determine whether or not this voxel needs to be tested using a full partial-volume approach
+                if (!WM_gt_rest) {
+                  mask.value() = 0.0;
+                } else if (!WM_lt_rest) {
+                  mask.value() = 1.0;
+                } else {
+
+                  // Full partial volume test
+                  size_t wm_count = 0, total_count = 0;
+                  Point<int> i;
+                  Point<float> v_dwi;
+                  for (i[2] = 0; i[2] != os_ratio; ++i[2]) {
+                    v_dwi[2] = dwi[2] - 0.5 + os_offset + (i[2] * os_step);
+                    for (i[1] = 0; i[1] != os_ratio; ++i[1]) {
+                      v_dwi[1] = dwi[1] - 0.5 + os_offset + (i[1] * os_step);
+                      for (i[0] = 0; i[0] != os_ratio; ++i[0]) {
+                        v_dwi[0] = dwi[0] - 0.5 + os_offset + (i[0] * os_step);
+
+                        const Point<float> p_scanner (transform_dwi.voxel2scanner (v_dwi));
+                        if (!interp.scanner (p_scanner)) {
+                          ++total_count;
+                          Tractography::ACT::Tissues tissues (interp);
+                          if (tissues.valid() && (tissues.get_wm() > tissues.get_gm() + tissues.get_csf()))
+                            ++wm_count;
+
+                        }
+
+                  } } }
+
+                  if (total_count)
+                    mask.value() = Math::pow2 (float(wm_count) / float(total_count));
+                  else
+                    mask.value() = 0.0;
+
                 }
 
-                cgm /= float (to_test_real_space.size());
-                sgm /= float (to_test_real_space.size());
-                wm  /= float (to_test_real_space.size());
-                csf /= float (to_test_real_space.size());
-
-                // In my experience, using the square of the WM fraction is better than the WM fraction alone, and this is what was used in the SIFT paper
-                //mask.value() = Math::pow2 (wm);
-
-                // Doing a WM > GM fraction rather than the interpolated values - sharper at the interface
-                mask.value() = Math::pow2 (float(wm_count) / float(to_test_real_space.size()));
-
-              } else {
+              } else { // No DWI data in this voxel
                 mask.value() = 0.0;
               }
             }
