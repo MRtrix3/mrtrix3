@@ -1,6 +1,6 @@
 #!/usr/bin/python
 
-import platform, sys, os, time, threading, subprocess, copy
+import platform, sys, os, time, threading, subprocess, copy, codecs
 
 
 config_file = 'config.default'
@@ -130,7 +130,7 @@ OPTIONS:
 try:
   if verbose:
     sys.stderr.write ('reading configuration from "' + config_file + '"...' + os.linesep)
-  exec (open (config_file).read())
+  exec (codecs.open (config_file, mode='r', encoding='utf-8').read())
 except IOError:
   sys.stderr.write ('''no configuration file found!
 please run "./configure" prior to invoking this script
@@ -146,15 +146,14 @@ please run "./configure" prior to invoking this script
 # get version info:
 
 if ld_enabled:
-  f = open (os.path.join (lib_dir, 'mrtrix.h'), 'r')
-  for line in f:
-    line = line.split()
-    if len(line) != 3: continue
-    if line[0] == '#define':
-      if line[1] == 'MRTRIX_MAJOR_VERSION': major = line[2]
-      elif line[1] == 'MRTRIX_MINOR_VERSION': minor = line[2]
-      elif line[1] == 'MRTRIX_MICRO_VERSION': micro = line[2]
-  f.close()
+  with codecs.open (os.path.join (lib_dir, 'mrtrix.h'), mode='r', encoding='utf-8') as f:
+    for line in f:
+      line = line.split()
+      if len(line) != 3: continue
+      if line[0] == '#define':
+        if line[1] == 'MRTRIX_MAJOR_VERSION': major = line[2]
+        elif line[1] == 'MRTRIX_MINOR_VERSION': minor = line[2]
+        elif line[1] == 'MRTRIX_MICRO_VERSION': micro = line[2]
 
   libname += '-' + major + '_' + minor + '_' + micro + config_suffix
 
@@ -419,33 +418,32 @@ def list_headers (file):
     if not os.path.exists (file):
       sys.stderr.write ('ERROR: cannot find file "' + file + '"' + os.linesep)
       sys.exit(1)
-    fd = open (file, 'r')
-    for line in fd:
-      line = line.strip()
-      if line.startswith('#include'):
-        line = line[8:].split ('//')[0].split ('/*')[0].strip()
-        if line[0] == '"':
-          line = line[1:].rstrip('"')
-          if line == 'thread/exec.h':
-            if 'T' not in file_flags[file]: 
-              file_flags[file] += 'T'
-          for path in include_paths:
-            if os.path.exists (os.path.join (path, line)):
-              line = os.path.join (path, line)
-              headers[file].add (line)
-              [ headers[file].add(entry) for entry in list_headers(line) ]
-              break
-          else:
-            sys.stderr.write ('ERROR: cannot find header file \"' + line + '\" (from file \"' + file + '\")' + os.linesep)
-            sys.exit(1)
-        elif line.startswith ('<Q'):
-          if 'Q' not in file_flags[file]:
-            file_flags[file] += 'Q'
-      elif line == 'Q_OBJECT':
-        if 'M' not in file_flags[file]:
-          file_flags[file] += 'M'
+    with codecs.open (file, mode='r', encoding='utf-8') as fd:
+      for line in fd:
+        line = line.strip()
+        if line.startswith('#include'):
+          line = line[8:].split ('//')[0].split ('/*')[0].strip()
+          if line[0] == '"':
+            line = line[1:].rstrip('"')
+            if line == 'thread/exec.h':
+              if 'T' not in file_flags[file]: 
+                file_flags[file] += 'T'
+            for path in include_paths:
+              if os.path.exists (os.path.join (path, line)):
+                line = os.path.join (path, line)
+                headers[file].add (line)
+                [ headers[file].add(entry) for entry in list_headers(line) ]
+                break
+            else:
+              sys.stderr.write ('ERROR: cannot find header file \"' + line + '\" (from file \"' + file + '\")' + os.linesep)
+              sys.exit(1)
+          elif line.startswith ('<Q'):
+            if 'Q' not in file_flags[file]:
+              file_flags[file] += 'Q'
+        elif line == 'Q_OBJECT':
+          if 'M' not in file_flags[file]:
+            file_flags[file] += 'M'
 
-    fd.close()
     for entry in headers[file]:
       for c in file_flags[entry]:
         if c != 'M' and c not in file_flags[file]:
@@ -559,91 +557,87 @@ def gen_command_html_help ():
     H = process.stdout.read().decode (errors='ignore')
     H = H.splitlines()
 
-    fid = open (os.path.join (doc_dir, 'commands', binaries[n] + '.html'), 'w')
+    with codecs.open (os.path.join (doc_dir, 'commands', binaries[n] + '.html'), mode='w', encoding='utf-8') as fid:
 
-    if n == 0: prev = 'index'
-    else: prev = binaries[n-1]
+      if n == 0: prev = 'index'
+      else: prev = binaries[n-1]
 
-    if n == len(binaries)-1: next = 'index'
-    else: next = binaries[n+1]
+      if n == len(binaries)-1: next = 'index'
+      else: next = binaries[n+1]
 
-    start_html (fid, binaries[n], prev, 'index', '../index', next)
-    fid.write ('<h2>Description</h2>\n')
+      start_html (fid, binaries[n], prev, 'index', '../index', next)
+      fid.write ('<h2>Description</h2>\n')
 
-    line = 0
-    while not H[line].startswith ('ARGUMENT') and not H[line].startswith('OPTION'):
-      if len(description) <= n: description.append (H[line])
-      fid.write ('<p>\n' + H[line] + '\n</p>\n')
-      line += 1
+      line = 0
+      while not H[line].startswith ('ARGUMENT') and not H[line].startswith('OPTION'):
+        if len(description) <= n: description.append (H[line])
+        fid.write ('<p>\n' + H[line] + '\n</p>\n')
+        line += 1
+  
+      arg = []
+      opt = []
+      while line < len(H)-2:
+        if not H[line].startswith ('ARGUMENT') and not H[line].startswith ('OPTION'):
+          sys.stderr.write ('ERROR: malformed usage for executable "' + binaries[n] + '" - aborting' + os.linesep)
+          return 1
+  
+        if H[line].startswith ('ARGUMENT'):
+          S = H[line].split (None, 5)
+          A = [ S[1], int(S[2]), int(S[3]), S[4], H[line+1], H[line+2] ]
+          if len(opt) > 0: opt[-1].append (A)
+          else: arg.append(A)
+  
+        elif H[line].startswith ('OPTION'):
+          S = H[line].split (None, 4)
+          A = [ S[1], int(S[2]), int(S[3]), H[line+1], H[line+2] ]
+          opt.append (A)
+  
+        line += 3
+  
+      fid.write ('<p class=indented><strong>syntax:</strong> &nbsp; &nbsp; ' + binaries[n] + ' [ options ] ')
+      for A in arg:
+        if A[1] == 0: fid.write ('[ ')
+        fid.write (A[0] + ' ')
+        if A[2] == 1: fid.write ('[ ' + A[0] + ' ... ')
+        if A[1] == 0 or A[2] == 1: fid.write ('] ')
+      fid.write ('</p>\n<h2>Arguments</h2>\n<table class=args>\n')
+  
 
-    arg = []
-    opt = []
-    while line < len(H)-2:
-      if not H[line].startswith ('ARGUMENT') and not H[line].startswith ('OPTION'):
-        sys.stderr.write ('ERROR: malformed usage for executable "' + binaries[n] + '" - aborting' + os.linesep)
-        return 1
+      for A in arg:
+        fid.write ('<tr><td><b>' + A[0] + '</b>')
+        if A[1] == 0 or A[2] == 1:
+          fid.write (' [ ')
+          if A[1] == 0: 
+            fid.write ('optional')
+            if A[2] == 1: fid.write (', ')
+          if A[2] == 1: fid.write ('multiples allowed')
+          fid.write (' ]')
+        fid.write ('</td>\n<td>' + A[5] + '</td></tr>\n')
+      fid.write ('</table>\n')
 
-      if H[line].startswith ('ARGUMENT'):
-        S = H[line].split (None, 5)
-        A = [ S[1], int(S[2]), int(S[3]), S[4], H[line+1], H[line+2] ]
-        if len(opt) > 0: opt[-1].append (A)
-        else: arg.append(A)
+      fid.write ('<h2>Options</h2>\n<table class=args>\n')
+      for O in opt:
+        fid.write ('<tr><td><b>-' + O[0] + '</b>')
+        for A in O[5:]: fid.write ('&nbsp;<i>' + A[0] + '</i>')
+        fid.write ('</td>\n<td>' + O[4])
+        if len(O) > 5:
+          fid.write ('\n<table class=opts>\n')
+          for A in O[5:]:
+            fid.write ('<tr><td><i>' + A[0] + '</i></td>\n<td>' + A[5] + '</td></tr>\n')
+          fid.write ('</table>')
+        fid.write ('</td></tr>\n')
+      fid.write ('</table>\n')
+  
+      fid.write ('</body>\n</html>')
+  
 
-      elif H[line].startswith ('OPTION'):
-        S = H[line].split (None, 4)
-        A = [ S[1], int(S[2]), int(S[3]), H[line+1], H[line+2] ]
-        opt.append (A)
+  with codecs.open (os.path.join (doc_dir, 'commands', 'index.html'), mode='w', encoding='utf-8') as fid:
+    start_html (fid, 'list of MRtrix commands', '../faq', '../index', '../index', '../appendix/index')
+    fid.write ('<table class=cmdindex width=100%>\n')
 
-      line += 3
-
-    fid.write ('<p class=indented><strong>syntax:</strong> &nbsp; &nbsp; ' + binaries[n] + ' [ options ] ')
-    for A in arg:
-      if A[1] == 0: fid.write ('[ ')
-      fid.write (A[0] + ' ')
-      if A[2] == 1: fid.write ('[ ' + A[0] + ' ... ')
-      if A[1] == 0 or A[2] == 1: fid.write ('] ')
-    fid.write ('</p>\n<h2>Arguments</h2>\n<table class=args>\n')
-
-
-    for A in arg:
-      fid.write ('<tr><td><b>' + A[0] + '</b>')
-      if A[1] == 0 or A[2] == 1:
-        fid.write (' [ ')
-        if A[1] == 0: 
-          fid.write ('optional')
-          if A[2] == 1: fid.write (', ')
-        if A[2] == 1: fid.write ('multiples allowed')
-        fid.write (' ]')
-      fid.write ('</td>\n<td>' + A[5] + '</td></tr>\n')
-    fid.write ('</table>\n')
-
-    fid.write ('<h2>Options</h2>\n<table class=args>\n')
-    for O in opt:
-      fid.write ('<tr><td><b>-' + O[0] + '</b>')
-      for A in O[5:]: fid.write ('&nbsp;<i>' + A[0] + '</i>')
-      fid.write ('</td>\n<td>' + O[4])
-      if len(O) > 5:
-        fid.write ('\n<table class=opts>\n')
-        for A in O[5:]:
-          fid.write ('<tr><td><i>' + A[0] + '</i></td>\n<td>' + A[5] + '</td></tr>\n')
-        fid.write ('</table>')
-      fid.write ('</td></tr>\n')
-    fid.write ('</table>\n')
-
-    fid.write ('</body>\n</html>')
-
-    fid.close()
-
-
-
-  fid = open (os.path.join (doc_dir, 'commands', 'index.html'), 'wb')
-  start_html (fid, 'list of MRtrix commands', '../faq', '../index', '../index', '../appendix/index')
-  fid.write ('<table class=cmdindex width=100%>\n')
-
-  for n in range (0,len(binaries)):
-    fid.write ('<tr><td><a href="' + binaries[n] + '.html">' + binaries[n] + '</a></td><td>' + description[n] + '</td></tr>\n')
-  fid.write ('</table>\n</body>\n</html>')
-  fid.close()
+    for n in range (0,len(binaries)):
+      fid.write ('<tr><td><a href="' + binaries[n] + '.html">' + binaries[n] + '</a></td><td>' + description[n] + '</td></tr>\n')
+    fid.write ('</table>\n</body>\n</html>')
 
 
 
@@ -716,7 +710,7 @@ compiling TODO list...
 
 try: [ Entry(item) for item in targets ]
 except Exception as e: 
-  sys.stderr.write ('ERROR:', e.args[0] + os.linesep)
+  sys.stderr.write ('ERROR: ' + e.args[0] + os.linesep)
   sys.exit (1)
 
 if dependencies:
