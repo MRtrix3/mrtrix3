@@ -12,83 +12,16 @@ def is_int(s):
   except ValueError:
       return False
 
-class Server:
-  def __init__(self, name, dataDir, sshfsDir, cpuCores, isCluster):
-    self.name = name
-    self.dataDir = dataDir
-    self.sshfsDir = sshfsDir
-    self.cpuCores = cpuCores
-    self.isCluster = isCluster
-
-def launchRemote(jobs, clusterJobs, servers):
-
-  if len(jobs) != len(clusterJobs):
-    print "The job list for the cluster and all other computers must have the same length"
-    return
-
-  processes = []
-  currentJob = 0;
-
-
-  while (currentJob < len(jobs)):
-    for i in servers:
-      if i.isCluster:
-        subprocess.call(["ssh", i.name, "countJobs" + " > " + i.dataDir + "jobcount.txt"]); #qstat | grep raf022 | wc -l
-      else:
-        subprocess.call(["ssh", i.name, "ps aux|awk 'NR > 0 { s +=$3 }; END {print s}'" + " > " + i.dataDir + "cputime.txt"]);
-
-    for i in servers:
-      if i.isCluster:
-        text_file = open(i.sshfsDir + 'jobcount.txt', "r")
-        for line in text_file:
-          currentNumberOfJobs = float(line.rstrip())
-        text_file.close()
-
-        if currentNumberOfJobs < i.cpuCores:
-          pid = os.fork()
-          # If we have the child process then launch this job
-          if pid == 0:
-            subprocess.call(["ssh", i.name, "dataDir=" + i.dataDir + "; " + clusterJobs[currentJob]]);
-            sys.exit(1)
-          # We have the parent so store this id in the processes list
-          else:
-            currentJob = currentJob + 1
-            processes.append(pid)
-            print 'Launched job number ' + str(currentJob) + '/' + str(len(jobs)) + ' on ' + i.name
-
-      else:
-        text_file = open(i.sshfsDir + 'cputime.txt', "r")
-        for line in text_file:
-          cpuUsage = float(line.rstrip())
-        text_file.close()
-
-        if cpuUsage < ((i.cpuCores * 100) - 85):
-          pid = os.fork()
-          # If we have the child process then launch this job
-          if pid == 0:
-            subprocess.call(["ssh", i.name, "dataDir=" + i.dataDir + "; " + jobs[currentJob]]);
-            sys.exit(1)
-          # We have the parent so store this id in the processes list
-          else:
-            currentJob = currentJob + 1
-            processes.append(pid)
-            print 'Launched job number ' + str(currentJob) + '/' + str(len(jobs)) + ' on ' + i.name
-
-    time.sleep(5)
-
-  # make sure all processes are finished
-  stillRunning = True
-  while stillRunning:
-    stillRunning = False
-    for i in range(0,len(processes)):
-      if processes[i] != 0:
-        status = os.waitpid(processes[i],os.WNOHANG)
-        if status[0] != 0:
-          processes[i] = 0
-        else:
-          stillRunning = True
-    time.sleep(1)
-  print "Finished all jobs!"
+def launchJobs(jobs, logfile='None'):
+  if logfile == 'None':
+    cmd = ['parallel','--env', 'PATH', '--sshlogin', '2/beast,2/beauty']
+  else:
+    cmd = ['parallel','--env', 'PATH', '--sshlogin', '2/beast,2/beauty', '--joblog', logfile]
+  proc = subprocess.Popen (cmd, stdin=subprocess.PIPE)
+  alljobs = ''
+  for job in jobs:
+    alljobs = alljobs + str(job) + ';\n'
+  proc.communicate (alljobs)
 
 def launchLocal(jobs, maxProcessors):
   numJobs = len(jobs)
