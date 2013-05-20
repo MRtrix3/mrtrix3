@@ -12,8 +12,7 @@ if len(dirs) == 0:
 
 commandString = string.join(sys.argv[1:])
 
-jobs = []
+jobs = ''
 for i in dirs:
-  job = commandString.replace('DIR', i)
-  jobs.append(job)
+  jobs = commandString.replace('DIR', i) + '; '
 jobLauncher.launchJobs(jobs)

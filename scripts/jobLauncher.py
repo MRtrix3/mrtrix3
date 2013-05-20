@@ -16,8 +16,4 @@ def launchJobs(jobs, logfile='None'):
   else:
     cmd = ['parallel','--env', 'PATH', '--sshlogin', '2/beast,2/beauty', '--wd', os.getcwd(), '--joblog', logfile]
   proc = subprocess.Popen (cmd, stdin=subprocess.PIPE)
-  alljobs = ''
-  print jobs
-  for job in jobs:
-    alljobs = alljobs + job + ';'
-  proc.communicate (alljobs)
+  proc.communicate (jobs)
