@@ -3,8 +3,11 @@ import os
 import sys
 import string
 import getCommonTail
-import jobLauncher
 
+def run_command(cmd):
+  if (os.system(cmd)):
+    print 'Command failed: ' +  cmd
+    exit(1)
 
 inputFiles = os.listdir(os.getcwd())
 common = getCommonTail.get(inputFiles)
@@ -19,4 +22,4 @@ for i in inputFiles:
   p = string.split(i,common)[0]
   job = commandString.replace('IN', i)
   job = job.replace('PRE', p)
-  jobLauncher.launchJobs(job)
+  run_command(job)

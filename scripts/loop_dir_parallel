@@ -2,11 +2,7 @@
 import os
 import sys
 import string
-
-def run_command(cmd):
-  if (os.system(cmd)):
-    print 'Command failed: ' +  cmd
-    exit(1)
+import jobLauncher
 
 dirs = [d for d in os.listdir(os.getcwd()) if os.path.isdir(os.path.join(os.getcwd(), d))]
 
@@ -16,6 +12,8 @@ if len(dirs) == 0:
 
 commandString = string.join(sys.argv[1:])
 
+jobs = []
 for i in dirs:
   job = commandString.replace('DIR', i)
-  run_command(job)
+  jobs.append(job)
+jobLauncher.launchJobs(jobs)
