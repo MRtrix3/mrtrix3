@@ -3,7 +3,6 @@ import time
 import os
 import sys
 import multiprocessing
-import progress
 
 def is_int(s):
   try:
