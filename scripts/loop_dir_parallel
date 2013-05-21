@@ -14,5 +14,5 @@ commandString = string.join(sys.argv[1:])
 
 jobs = ''
 for i in dirs:
-  jobs = commandString.replace('DIR', i) + '; '
+  jobs = jobs + commandString.replace('DIR', i) + ';\n'
 jobLauncher.launchJobs(jobs)
