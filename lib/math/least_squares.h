@@ -99,15 +99,12 @@ namespace MR
     template <typename ValueType> 
       inline Matrix<ValueType>& pinv (Matrix<ValueType>& I, const Matrix<ValueType>& Mt, Matrix<ValueType>& work)
       {
-        if (Mt.rows() < Mt.columns()) 
-          mult (work, ValueType (0.0), ValueType (1.0), CblasNoTrans, Mt, CblasTrans, Mt);
-        else 
-          mult (work, ValueType (0.0), ValueType (1.0), CblasTrans, Mt, CblasNoTrans, Mt);
+        CBLAS_TRANSPOSE trans1 = Mt.rows() > Mt.columns() ? __transpose<ValueType>() : CblasNoTrans;
+        CBLAS_TRANSPOSE trans2 = Mt.rows() > Mt.columns() ? CblasNoTrans : __transpose<ValueType>();
+        CBLAS_SIDE side = Mt.rows() > Mt.columns() ? CblasRight : CblasLeft;
+        mult (work, ValueType (0.0), ValueType (1.0), trans1, Mt, trans2, Mt);
         Cholesky::inv (work);
-        if (Mt.rows() < Mt.columns()) 
-          return mult (I, CblasLeft, ValueType (0.0), ValueType (1.0), CblasUpper, work, Mt);
-        else 
-          return mult (I, CblasRight, ValueType (0.0), ValueType (1.0), CblasUpper, Mt, work);
+        return mult (I, side, ValueType (0.0), ValueType (1.0), CblasUpper, work, Mt);
       }
 
 

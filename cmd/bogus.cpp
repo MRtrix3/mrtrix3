@@ -22,10 +22,8 @@
 
 #include "app.h"
 #include "debug.h"
-#include "image/buffer.h"
-#include "image/voxel.h"
-#include "image/threaded_copy.h"
-#include "image/adapter/replicate.h"
+#include "math/rng.h"
+#include "math/least_squares.h"
 
 MRTRIX_APPLICATION
 
@@ -52,18 +50,16 @@ typedef float value_type;
 
 void run () 
 {
-  Image::Buffer<value_type> buf_mask (argument[0]);
-  Image::Buffer<value_type> buf_ref (argument[1]);
+  Math::RNG rng;
 
-  Image::Buffer<value_type>::voxel_type vox_mask (buf_mask);
-  Image::Buffer<value_type>::voxel_type vox_ref (buf_ref);
-  Image::Adapter::Replicate<Image::Buffer<value_type>::voxel_type> replicated_mask (vox_mask, vox_ref);
+  Math::Matrix<value_type> M (6,9);
+  VAR (M.rows());
+  VAR (M.columns());
+  for (size_t i = 0; i < M.rows(); ++i)
+    for (size_t j = 0; j < M.columns(); ++j)
+      M(i,j) = rng.normal();
 
-  Image::Header header = buf_mask;
-  header.info() = replicated_mask.info();
-  Image::Buffer<value_type> buf_out (argument[2], header);
-  Image::Buffer<value_type>::voxel_type vox_out (buf_out);
-
-  Image::threaded_copy_with_progress (replicated_mask, vox_out);
+  M.save ("M.txt");
+  Math::pinv (M).save("iM.txt");
 }
 
