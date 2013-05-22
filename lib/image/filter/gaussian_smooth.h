@@ -71,39 +71,39 @@ namespace MR
           template <class InputVoxelType>
             GaussianSmooth (const InputVoxelType& in) :
               ConstInfo (in),
-              extent_ (in.ndim(), 0),
-              stdev_ (in.ndim()) {
+              extent (in.ndim(), 0),
+              stdev (in.ndim()) {
                 for (unsigned int i = 0; i < in.ndim(); i++)
-                  stdev_[i] = in.vox(i);
+                  stdev[i] = in.vox(i);
               }
 
           template <class InputVoxelType>
             GaussianSmooth (const InputVoxelType& in,
                 const std::vector<float>& stdev) :
               ConstInfo (in),
-              extent_ (in.ndim(), 0),
-              stdev_ (in.ndim()) {
+              extent (in.ndim(), 0),
+              stdev (in.ndim()) {
                 set_stdev (stdev);
               }
 
           //! Set the extent of smoothing kernel in voxels.
           //! This can be set as a single value for all dimensions
           //! or separate values, one for each dimension. (Default: 4 standard deviations)
-          void set_extent (const std::vector<int>& extent)
+          void set_extent (const std::vector<int>& new_exent)
           {
-            if (extent.size() != 1 && extent.size() != this->ndim())
+            if (new_exent.size() != 1 && new_exent.size() != this->ndim())
               throw Exception ("the number of extent elements does not correspond to the number of image dimensions");
-            for (size_t i = 0; i < extent.size(); ++i) {
-              if (!(extent[i] & int (1)))
+            for (size_t i = 0; i < new_exent.size(); ++i) {
+              if (!(new_exent[i] & int (1)))
                 throw Exception ("expected odd number for extent");
-              if (extent[i] < 0)
+              if (new_exent[i] < 0)
                 throw Exception ("the kernel extent must be positive");
             }
-            if (extent.size() == 1)
+            if (new_exent.size() == 1)
               for (unsigned int i = 0; i < this->ndim(); i++)
-                extent_[i] = extent[0];
+                extent[i] = new_exent[0];
             else
-              extent_ = extent;
+              extent = new_exent;
           }
 
           void set_stdev (float stdev) {
@@ -113,18 +113,18 @@ namespace MR
           //! Set the standard deviation of the Gaussian defined in mm.
           //! This must be set as a single value to be used for the first 3 dimensions
           //! or separate values, one for each dimension. (Default: 1 voxel)
-          void set_stdev (const std::vector<float>& stdev)
+          void set_stdev (const std::vector<float>& std_dev)
           {
-            if (stdev.size() == 1) {
+            if (std_dev.size() == 1) {
               for (unsigned int i = 0; i < 3; i++)
-                stdev_[i] = stdev[0];
+                stdev[i] = std_dev[0];
             } else {
-              if (stdev_.size() != this->ndim())
+              if (stdev.size() != this->ndim())
                 throw Exception ("The number of stdev values supplied does not correspond to the number of dimensions");
-              stdev_ = stdev;
+              stdev = std_dev;
             }
-            for (size_t i = 0; i < stdev_.size(); ++i)
-              if (stdev_[i] < 0.0)
+            for (size_t i = 0; i < stdev.size(); ++i)
+              if (stdev[i] < 0.0)
                 throw Exception ("the Gaussian stdev values cannot be negative");
           }
 
@@ -138,10 +138,10 @@ namespace MR
               RefPtr <typename BufferScratch<value_type>::voxel_type> out;
 
               for (size_t dim = 0; dim < this->ndim(); dim++) {
-                if (stdev_[dim] > 0) {
+                if (stdev[dim] > 0) {
                   out_data = new BufferScratch<value_type> (input);
                   out = new typename BufferScratch<value_type>::voxel_type (*out_data);
-                  Adapter::Gaussian1D<typename BufferScratch<value_type>::voxel_type > gaussian (*in, stdev_[dim], dim, extent_[dim]);
+                  Adapter::Gaussian1D<typename BufferScratch<value_type>::voxel_type > gaussian (*in, stdev[dim], dim, extent[dim]);
                   threaded_copy_with_progress_message ("Smoothing axis " + str(dim) + "...", gaussian, *out);
                   in_data = out_data;
                   in = out;
@@ -151,8 +151,8 @@ namespace MR
             }
 
         protected:
-          std::vector<int> extent_;
-          std::vector<float> stdev_;
+          std::vector<int> extent;
+          std::vector<float> stdev;
       };
       //! @}
     }
