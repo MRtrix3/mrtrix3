@@ -15,7 +15,7 @@
 set -e
 
 if [ -z "$FSLDIR" ]; then
-  echo "Environment variable $FSLDIR is not set; please run appropriate FSL configuration script"
+  echo "Environment variable FSLDIR is not set; please run appropriate FSL configuration script"
   return 0
 fi 
 
@@ -70,7 +70,9 @@ mkdir $TEMP_DIR
 cd $TEMP_DIR
 
 # Concatenate the reversed-phase-encode pair into a nifti image
-mrcat ../$1 ../$2 pair.nii -axis 3 -quiet
+mrconvert ../$1 ap.nii -stride +1,+2,+3 -quiet
+mrconvert ../$2 pa.nii -stride +1,+2,+3 -quiet
+mrcat ap.nii pa.nii pair.nii -axis 3 -quiet
 
 # Construct a configuration file
 echo $'0  1 0 0.1\n0 -1 0 0.1\n' > config.txt
