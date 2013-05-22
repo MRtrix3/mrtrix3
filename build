@@ -244,7 +244,7 @@ class Entry:
       self.cmd = fillin (ld, { 
         'LDFLAGS': ld_flags + flags,
         'OBJECTS': self.deps,
-        'EXECUTABLE': self.name })
+        'EXECUTABLE': [ self.name ] })
 
       try:
         if ld_use_shell: self.cmd = [ 'sh', '-c', ' '.join(self.cmd) ]
@@ -275,8 +275,8 @@ class Entry:
     if not skip: 
       self.cmd = fillin (cpp, { 
         'CFLAGS': cpp_flags + flags,
-        'OBJECT': self.name,
-        'SRC': cc_file })
+        'OBJECT': [ self.name ],
+        'SRC': [ cc_file ] })
 
 
   def set_moc (self):
@@ -299,7 +299,7 @@ class Entry:
     self.cmd = fillin (ld_lib, {
       'LDLIB_FLAGS': ld_lib_flags,
       'OBJECTS': [ item for item in self.deps ],
-      'LIB': self.name })
+      'LIB': [ self.name ] })
 
     try:
       if ld_use_shell: self.cmd = [ 'sh', '-c', ' '.join(self.cmd) ]
@@ -364,9 +364,9 @@ def fillin (template, keyvalue):
   cmd = []
   for item in template:
     if item in keyvalue: 
-      if type(keyvalue[item]) == type (''): cmd += [ keyvalue[item] ]
-      else: cmd += keyvalue[item]
-    else: cmd += [ item ]
+      cmd += keyvalue[item]
+    else: 
+      cmd += [ item ]
   return cmd
 
 
@@ -391,7 +391,7 @@ def execute (message, cmd):
     disp (cmd[0] + ': command not found')
     return 1
   except:
-    print ('unexpected exception: ' + str(sys.exc_info()))
+    disp ('unexpected exception: ' + str(sys.exc_info()))
     raise
 
 
@@ -695,7 +695,8 @@ if doc_dir in targets:
 if dev_dir in targets: 
   sys.exit (execute ('[DOC] development', [ 'doxygen' ]))
     
-if len(targets) == 0: targets = default_targets()
+if len(targets) == 0: 
+  targets = default_targets()
 
 if verbose:
   sys.stderr.write ('building targets:')
