@@ -120,14 +120,6 @@ namespace MR
               if (opt.size())
                 niter = opt[0][0];
 
-#ifndef USE_ORTHONORMAL_SH_BASIS
-              if (norm_lambda) {
-                WARN ("norm regularisation requires use of orthonormal SH basis - compile with -DUSE_ORTHONORMAL_SH_BASIS");
-                WARN ("(norm_lambda reset to 0.0 for this execution)");
-                norm_lambda = 0.0;
-              }
-#endif
-
               init (response, filter, DW_dirs, HR_dirs, lmax);
             }
 
@@ -156,7 +148,10 @@ namespace MR
               Math::Matrix<value_type> fconv;
               Math::SH::init_transform (fconv, DW_dirs, lmax_data);
               rconv.allocate (fconv.columns(), fconv.rows());
+              fconv.diagonal() += 1.0e-2;
+              fconv.save ("fconv.txt");
               Math::pinv (rconv, fconv);
+              rconv.save ("rconv.txt");
               size_t l = 0, nl = 1;
               for (size_t row = 0; row < rconv.rows(); ++row) {
                 if (row >= nl) {
@@ -264,6 +259,23 @@ namespace MR
             for (size_t j = 0; j < i; j++)
               work (i,j) = shared.Mt_M (i,j);
             work (i,i) = shared.Mt_M (i,i) + norm_lambda;
+          }
+
+          // min-norm constraint:
+          if (norm_lambda) {
+#ifdef USE_ORTHONORMAL_SH_BASIS
+            work.diagonal() += norm_lambda;
+#else
+            int l = 0;
+            for (size_t i = 0; i < work.rows(); ++i) {
+              if (Math::SH::index (l,0) == i) {
+                work(i,i) += norm_lambda;
+                ++l;
+              }
+              else 
+                work(i,i) += 2.0*norm_lambda;
+            }
+#endif
           }
 
           if (neg.size()) {

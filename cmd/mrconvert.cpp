@@ -136,6 +136,11 @@ inline std::vector<int> set_header (
       header.stride(n) = strides[n];
   }
 
+
+  opt = get_options ("grad");
+  if (opt.size()) 
+    header.DW_scheme() = DWI::get_DW_scheme<float> (header);
+
   opt = get_options ("prs");
   if (opt.size() &&
       header.DW_scheme().rows() &&
@@ -216,12 +221,8 @@ void run ()
   if (header_in.datatype().is_complex() && !header_out.datatype().is_complex())
     WARN ("requested datatype is real but input datatype is complex - imaginary component will be ignored");
 
-  Options opt = get_options ("grad");
-  if (opt.size()) 
-    header_out.DW_scheme() = DWI::get_DW_scheme<float> (header_in);
 
-
-  opt = get_options ("coord");
+  Options opt = get_options ("coord");
   if (opt.size()) {
     std::vector<std::vector<int> > pos (buffer_in.ndim());
     for (size_t n = 0; n < opt.size(); n++) {
