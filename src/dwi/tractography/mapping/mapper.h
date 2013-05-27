@@ -434,27 +434,24 @@ void TrackMapperTWI<Cont>::set_factor (const std::vector< Point<float> >& tck, C
           }
           break;
 
-        case GM_MIN:
+        case ENDS_MIN:
           out.factor = (Math::abs(factors[0]) < Math::abs(factors[1])) ? factors[0] : factors[1];
           break;
 
-        case GM_MEAN:
+        case ENDS_MEAN:
           out.factor = 0.5 * (factors[0] + factors[1]);
           break;
 
-        case GM_MAX:
+        case ENDS_MAX:
           out.factor = (Math::abs(factors[0]) > Math::abs(factors[1])) ? factors[0] : factors[1];
           break;
 
-        case GM_PROD:
+        case ENDS_PROD:
           if ((factors[0] < 0.0 && factors[1] < 0.0) || (factors[0] > 0.0 && factors[1] > 0.0))
             out.factor = factors[0] * factors[1];
           else
             out.factor = 0.0;
           break;
-
-        case GM_BOTH:
-          throw Exception ("FIXME: TrackMapperTWI does not support statistic GM_BOTH");
 
         default:
           throw Exception ("FIXME: Undefined / unsupported track statistic in TrackMapperTWI::get_factor()");
@@ -541,50 +538,19 @@ template <class Cont>
 void TrackMapperTWIImage<Cont>::load_factors (const std::vector< Point<float> >& tck)
 {
 
-  static const int fmri_contrast_extrap_points = Math::round (FMRI_CONTRAST_EXTRAP_LENGTH / FMRI_CONTRAST_STEP);
-
   switch (TrackMapperTWI<Cont>::contrast) {
 
     case SCALAR_MAP:
     case SCALAR_MAP_COUNT:
-      if (TrackMapperTWI<Cont>::track_statistic == GM_MIN || TrackMapperTWI<Cont>::track_statistic == GM_MEAN || TrackMapperTWI<Cont>::track_statistic == GM_MAX || TrackMapperTWI<Cont>::track_statistic == GM_PROD) { // Only the track endpoints contribute
 
-        // Want to extrapolate the track forwards & backwards at either end by some distance, take the
-        //   maximum scalar value
-        // The higher-level function TrackMapper::set_factor() will deal with taking the min/mean/max of the two
+      if (TrackMapperTWI<Cont>::track_statistic == ENDS_MIN || TrackMapperTWI<Cont>::track_statistic == ENDS_MEAN || TrackMapperTWI<Cont>::track_statistic == ENDS_MAX || TrackMapperTWI<Cont>::track_statistic == ENDS_PROD) { // Only the track endpoints contribute
+
         for (size_t tck_end_index = 0; tck_end_index != 2; ++tck_end_index) {
-          Point<float> endpoint, tangent;
-          if (tck_end_index) {
-            endpoint = tck.back();
-            tangent = (endpoint - tck[tck.size() - 1]).normalise();
-          } else {
-            endpoint = tck.front();
-            tangent = (tck[1] - endpoint).normalise();
-          }
-          if (tangent.valid()) {
-
-            // Build a vector of points to use when sampling the scalar image
-            std::vector< Point<float> > to_test;
-            for (int i = -fmri_contrast_extrap_points; i <= fmri_contrast_extrap_points; ++i)
-              to_test.push_back (endpoint + (tangent * FMRI_CONTRAST_STEP * i));
-
-            float max_value = 0.0;
-            for (std::vector< Point<float> >::const_iterator p = to_test.begin(); p != to_test.end(); ++p) {
-              if (!interp.scanner (*p)) {
-                const float value = interp.value();
-                if (Math::abs (value) > Math::abs(max_value))
-                  max_value = value;
-              }
-            }
-            TrackMapperTWI<Cont>::factors.push_back (max_value);
-
-          } else {
-            // Could not compute a tangent; just take the value at the endpoint
-            if (!interp.scanner (endpoint))
-              TrackMapperTWI<Cont>::factors.push_back (interp.value());
-            else
-              TrackMapperTWI<Cont>::factors.push_back (NAN);
-          }
+          const Point<float>& endpoint = tck_end_index ? tck.back() : tck.front();
+          if (!interp.scanner (endpoint))
+            TrackMapperTWI<Cont>::factors.push_back (interp.value());
+          else
+            TrackMapperTWI<Cont>::factors.push_back (NAN);
         }
 
       } else { // The entire length of the track contributes

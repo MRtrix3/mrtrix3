@@ -33,7 +33,7 @@ namespace Mapping {
 
 const char* contrasts[] = { "tdi", "precise_tdi", "endpoint", "length", "invlength", "scalar_map", "scalar_map_count", "fod_amp", "curvature", 0 };
 
-const char* statistics[] = { "sum", "min", "mean", "median", "max", "gaussian", "gm_min", "gm_mean", "gm_max", "gm_prod", 0 };
+const char* statistics[] = { "sum", "min", "mean", "median", "max", "gaussian", "ends_min", "ends_mean", "ends_max", "ends_prod", 0 };
 
 
 }

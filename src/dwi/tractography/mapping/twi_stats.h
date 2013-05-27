@@ -31,11 +31,8 @@ namespace Mapping {
 
 
 enum contrast_t { TDI, PRECISE_TDI, ENDPOINT, LENGTH, INVLENGTH, SCALAR_MAP, SCALAR_MAP_COUNT, FOD_AMP, CURVATURE };
-//const char** const contrasts;
 
-
-enum stat_t { SUM, MIN, MEAN, MEDIAN, MAX, GAUSSIAN, GM_MIN, GM_MEAN, GM_MAX, GM_PROD, GM_BOTH };
-//const char** const statistics;
+enum stat_t { SUM, MIN, MEAN, MEDIAN, MAX, GAUSSIAN, ENDS_MIN, ENDS_MEAN, ENDS_MAX, ENDS_PROD };
 
 extern const char* contrasts[];
 extern const char* statistics[];

@@ -113,4 +113,5 @@ rm -f *.*
 cd ../
 rmdir $TEMP_DIR
 
+set +e
 

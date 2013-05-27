@@ -104,7 +104,7 @@ OPTIONS
       "define the statistic for choosing the contribution to be made by each streamline as a "
       "function of the samples taken along their lengths\n"
       "Only has an effect for 'scalar_map', 'fod_amp' and 'curvature' contrast types\n"
-      "Options are: sum, min, mean, median, max, gaussian, gm_min, gm_mean, gm_max, gm_prod (default: mean)")
+      "Options are: sum, min, mean, median, max, gaussian, ends_min, ends_mean, ends_max, ends_prod (default: mean)")
     + Argument ("type").type_choice (statistics)
 
   + Option ("fwhm_tck",
@@ -375,8 +375,8 @@ void run () {
       break;
 
     case FOD_AMP:
-      if (stat_tck == GM_MIN || stat_tck == GM_MEAN || stat_tck == GM_MAX || stat_tck == GM_PROD)
-        throw Exception ("Sorry; can't use GM-based track statistics with FOD_AMP contrast");
+      if (stat_tck == ENDS_MIN || stat_tck == ENDS_MEAN || stat_tck == ENDS_MAX || stat_tck == ENDS_PROD)
+        throw Exception ("Can't use endpoint-based track-wise statistics with FOD_AMP contrast");
 
     case CURVATURE:
       break;
@@ -467,10 +467,10 @@ void run () {
       case MEDIAN:    msg += "median";  break;
       case MAX:       msg += "maximum"; break;
       case GAUSSIAN:  msg += "gaussian (FWHM " + str (gaussian_fwhm_tck) + "mm)"; break;
-      case GM_MIN:    msg += "GM-mapped (minimum)"; break;
-      case GM_MEAN:   msg += "GM-mapped (mean)"; break;
-      case GM_MAX:    msg += "GM-mapped (maximum)"; break;
-      case GM_PROD:   msg += "GM-mapped (product)"; break;
+      case ENDS_MIN:  msg += "endpoints (minimum)"; break;
+      case ENDS_MEAN: msg += "endpoints (mean)"; break;
+      case ENDS_MAX:  msg += "endpoints (maximum)"; break;
+      case ENDS_PROD: msg += "endpoints (product)"; break;
       default:        msg += "ERROR";   break;
     }
     msg += " per-track statistic";
