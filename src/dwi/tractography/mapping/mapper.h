@@ -160,7 +160,7 @@ template <class Cont>
 class TrackMapperTWI : public TrackMapperBase<Cont>
 {
   public:
-    TrackMapperTWI (const Image::Header& output_header, const bool map_zero, const float step, const contrast_t c, const stat_t s, const float denom = 0.0) :
+    TrackMapperTWI (const Image::Header& output_header, const bool map_zero, const float step, const contrast_t c, const tck_stat_t s, const float denom = 0.0) :
       TrackMapperBase<Cont> (output_header, map_zero),
       contrast              (c),
       track_statistic       (s),
@@ -180,7 +180,7 @@ class TrackMapperTWI : public TrackMapperBase<Cont>
   protected:
     virtual void load_factors (const std::vector< Point<float> >&);
     const contrast_t contrast;
-    const stat_t track_statistic;
+    const tck_stat_t track_statistic;
 
     // Members for when the contribution of a track is not constant along its length (i.e. Gaussian smoothed along the track)
     const float gaussian_denominator;
@@ -379,7 +379,7 @@ void TrackMapperTWI<Cont>::set_factor (const std::vector< Point<float> >& tck, C
 
       switch (track_statistic) {
 
-        case SUM:
+        case T_SUM:
           out.factor = 0.0;
           for (std::vector<float>::const_iterator i = factors.begin(); i != factors.end(); ++i) {
             if (finite (*i))
@@ -387,7 +387,7 @@ void TrackMapperTWI<Cont>::set_factor (const std::vector< Point<float> >& tck, C
           }
           break;
 
-        case MIN:
+        case T_MIN:
           out.factor = INFINITY;
           for (std::vector<float>::const_iterator i = factors.begin(); i != factors.end(); ++i) {
             if (finite (*i))
@@ -395,7 +395,7 @@ void TrackMapperTWI<Cont>::set_factor (const std::vector< Point<float> >& tck, C
           }
           break;
 
-        case MEAN:
+        case T_MEAN:
           out.factor = 0.0;
           for (std::vector<float>::const_iterator i = factors.begin(); i != factors.end(); ++i) {
             if (finite (*i)) {
@@ -406,15 +406,15 @@ void TrackMapperTWI<Cont>::set_factor (const std::vector< Point<float> >& tck, C
           out.factor = (count ? (out.factor / float(count)) : 0.0);
           break;
 
-        case MAX:
+        case T_MAX:
           out.factor = -INFINITY;
           for (std::vector<float>::const_iterator i = factors.begin(); i != factors.end(); ++i) {
-            if (finite (out.factor))
+            if (finite (*i))
               out.factor = MAX (out.factor, *i);
           }
           break;
 
-        case MEDIAN:
+        case T_MEDIAN:
           if (factors.empty()) {
             out.factor = 0.0;
           } else {
@@ -435,22 +435,31 @@ void TrackMapperTWI<Cont>::set_factor (const std::vector< Point<float> >& tck, C
           break;
 
         case ENDS_MIN:
+          assert (factors.size() == 2);
           out.factor = (Math::abs(factors[0]) < Math::abs(factors[1])) ? factors[0] : factors[1];
           break;
 
         case ENDS_MEAN:
+          assert (factors.size() == 2);
           out.factor = 0.5 * (factors[0] + factors[1]);
           break;
 
         case ENDS_MAX:
+          assert (factors.size() == 2);
           out.factor = (Math::abs(factors[0]) > Math::abs(factors[1])) ? factors[0] : factors[1];
           break;
 
         case ENDS_PROD:
+          assert (factors.size() == 2);
           if ((factors[0] < 0.0 && factors[1] < 0.0) || (factors[0] > 0.0 && factors[1] > 0.0))
             out.factor = factors[0] * factors[1];
           else
             out.factor = 0.0;
+          break;
+
+        case ENDS_CORR:
+          assert (factors.size() == 1);
+          out.factor = factors.front();
           break;
 
         default:
@@ -484,8 +493,8 @@ class TrackMapperTWIImage : public TrackMapperTWI<Cont>
   typedef Image::BufferPreload<float>::voxel_type input_voxel_type;
 
   public:
-    TrackMapperTWIImage (const Image::Header& output_header, const bool map_zero, const float step, const contrast_t c, const stat_t m, const float denom, Image::BufferPreload<float>& input_image) :
-      TrackMapperTWI<Cont> (output_header, map_zero, step, c, m, denom),
+    TrackMapperTWIImage (const Image::Header& output_header, const bool map_zero, const float step, const contrast_t c, const tck_stat_t s, const float denom, Image::BufferPreload<float>& input_image) :
+      TrackMapperTWI<Cont> (output_header, map_zero, step, c, s, denom),
       voxel                (input_image),
       interp               (voxel),
       lmax                 (0),
@@ -552,6 +561,41 @@ void TrackMapperTWIImage<Cont>::load_factors (const std::vector< Point<float> >&
           else
             TrackMapperTWI<Cont>::factors.push_back (NAN);
         }
+
+      } else if (TrackMapperTWI<Cont>::track_statistic == ENDS_CORR) {
+
+        TrackMapperTWI<Cont>::factors.assign (1, 0.0);
+        input_voxel_type start (voxel), end (voxel);
+        const Point<float> p_start (interp.scanner2voxel (tck.front()));
+        const Point<int> v_start (Math::round (p_start[0]), Math::round (p_start[1]), Math::round (p_start[2]));
+        Image::Nav::set_pos (start, v_start);
+        if (!Image::Nav::within_bounds (start))
+          return;
+        const Point<float> p_end (interp.scanner2voxel (tck.back()));
+        const Point<int> v_end (Math::round (p_end[0]), Math::round (p_end[1]), Math::round (p_end[2]));
+        Image::Nav::set_pos (end, v_end);
+        if (!Image::Nav::within_bounds (end))
+          return;
+
+        double start_sum = 0.0, end_sum = 0.0;
+        for (start[3] = end[3] = 0; start[3] != start.dim (3); ++start[3], ++end[3]) {
+          start_sum += start.value();
+          end_sum   += end  .value();
+        }
+        const float start_mean = start_sum / double (start.dim (3));
+        const float end_mean   = end_sum   / double (end  .dim (3));
+
+        double product = 0.0, start_sum_variance = 0.0, end_sum_variance = 0.0;
+        for (start[3] = end[3] = 0; start[3] != start.dim (3); ++start[3], ++end[3]) {
+          product += ((start.value() - start_mean) * (end.value() - end_mean));
+          start_sum_variance += Math::pow2 (start.value() - start_mean);
+          end_sum_variance   += Math::pow2 (end  .value() - end_mean);
+        }
+        const float product_expectation = product / double (start.dim(3));
+        const float start_stdev = Math::sqrt (start_sum_variance / double(start.dim(3) - 1));
+        const float end_stdev   = Math::sqrt (end_sum_variance   / double(end  .dim(3) - 1));
+
+        TrackMapperTWI<Cont>::factors[0] = product_expectation / (start_stdev * end_stdev);
 
       } else { // The entire length of the track contributes
 

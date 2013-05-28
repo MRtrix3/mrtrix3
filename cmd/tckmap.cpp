@@ -97,14 +97,14 @@ OPTIONS
       "define the statistic for choosing the final voxel intensities for a given contrast "
       "type given the individual values from the tracks passing through each voxel\n"
       "Options are: sum, min, mean, max (default: sum)")
-    + Argument ("type").type_choice (statistics)
+    + Argument ("type").type_choice (voxel_statistics)
 
   + Option ("stat_tck",
       "define the statistic for choosing the contribution to be made by each streamline as a "
       "function of the samples taken along their lengths\n"
       "Only has an effect for 'scalar_map', 'fod_amp' and 'curvature' contrast types\n"
-      "Options are: sum, min, mean, median, max, gaussian, ends_min, ends_mean, ends_max, ends_prod, ends_corr (default: mean)")
-    + Argument ("type").type_choice (statistics)
+      "Options are: sum, min, mean, max, median, gaussian, ends_min, ends_mean, ends_max, ends_prod, ends_corr (default: mean)")
+    + Argument ("type").type_choice (track_statistics)
 
   + Option ("fwhm_tck",
       "when using gaussian-smoothed per-track statistic, specify the "
@@ -135,7 +135,7 @@ OPTIONS
 
 
 template <class Cont>
-MapWriterBase<Cont>* make_writer (Image::Header& H, const std::string& name, const bool dump, const stat_t stat_vox)
+MapWriterBase<Cont>* make_writer (Image::Header& H, const std::string& name, const bool dump, const vox_stat_t stat_vox)
 {
     MapWriterBase<Cont>* writer = NULL;
     const uint8_t dt = H.datatype() ();
@@ -215,13 +215,10 @@ void run () {
   contrast_t contrast = opt.size() ? contrast_t(int(opt[0][0])) : TDI;
 
   opt = get_options ("stat_vox");
-  stat_t stat_vox = opt.size() ? stat_t(int(opt[0][0])) : SUM;
+  vox_stat_t stat_vox = opt.size() ? vox_stat_t(int(opt[0][0])) : V_SUM;
 
   opt = get_options ("stat_tck");
-  stat_t stat_tck = opt.size() ? stat_t(int(opt[0][0])) : MEAN;
-
-  if (stat_vox == MEDIAN)
-    throw Exception ("Sorry, can't calculate median values for each voxel - would take too much memory");
+  tck_stat_t stat_tck = opt.size() ? tck_stat_t(int(opt[0][0])) : T_MEAN;
 
   float gaussian_fwhm_tck = 0.0, gaussian_denominator_tck = 0.0;
   opt = get_options ("fwhm_tck");
@@ -257,45 +254,45 @@ void run () {
   switch (contrast) {
 
     case TDI:
-      if (stat_vox != SUM && stat_vox != MEAN) {
+      if (stat_vox != V_SUM && stat_vox != V_MEAN) {
         INFO ("Cannot use voxel statistic other than 'sum' or 'mean' for TDI generation - ignoring");
-        stat_vox = SUM;
+        stat_vox = V_SUM;
       }
-      if (stat_tck != MEAN)
+      if (stat_tck != T_MEAN)
         INFO ("Cannot use track statistic other than default for TDI generation - ignoring");
-      stat_tck = MEAN;
+      stat_tck = T_MEAN;
       break;
 
     case PRECISE_TDI:
-      if (stat_vox != SUM) {
+      if (stat_vox != V_SUM) {
         INFO ("Cannot use voxel statistic other than 'sum' for precise TDI generation - ignoring");
-        stat_vox = SUM;
+        stat_vox = V_SUM;
       }
-      if (stat_tck != MEAN)
+      if (stat_tck != T_MEAN)
         INFO ("Cannot use track statistic other than default for precise TDI generation - ignoring");
-      stat_tck = MEAN;
+      stat_tck = T_MEAN;
       break;
 
     case ENDPOINT:
-      if (stat_vox != SUM && stat_vox != MEAN) {
+      if (stat_vox != V_SUM && stat_vox != V_MEAN) {
         INFO ("Cannot use voxel statistic other than 'sum' or 'mean' for endpoint map generation - ignoring");
-        stat_vox = SUM;
+        stat_vox = V_SUM;
       }
-      if (stat_tck != MEAN)
+      if (stat_tck != T_MEAN)
         INFO ("Cannot use track statistic other than default for endpoint map generation - ignoring");
-      stat_tck = MEAN;
+      stat_tck = T_MEAN;
       break;
 
     case LENGTH:
-      if (stat_tck != MEAN)
+      if (stat_tck != T_MEAN)
         INFO ("Cannot use track statistic other than default for length-weighted TDI generation - ignoring");
-      stat_tck = MEAN;
+      stat_tck = T_MEAN;
       break;
 
     case INVLENGTH:
-      if (stat_tck != MEAN)
+      if (stat_tck != T_MEAN)
         INFO ("Cannot use track statistic other than default for inverse-length-weighted TDI generation - ignoring");
-      stat_tck = MEAN;
+      stat_tck = T_MEAN;
       break;
 
     case SCALAR_MAP:
@@ -303,7 +300,7 @@ void run () {
       break;
 
     case FOD_AMP:
-      if (stat_tck == ENDS_MIN || stat_tck == ENDS_MEAN || stat_tck == ENDS_MAX || stat_tck == ENDS_PROD)
+      if (stat_tck == ENDS_MIN || stat_tck == ENDS_MEAN || stat_tck == ENDS_MAX || stat_tck == ENDS_PROD || stat_tck == ENDS_CORR)
         throw Exception ("Can't use endpoint-based track-wise statistics with FOD_AMP contrast");
       break;
 
@@ -383,26 +380,27 @@ void run () {
   else
     msg += " and ";
   switch (stat_vox) {
-    case SUM:    msg += "summed";  break;
-    case MIN:    msg += "minimum"; break;
-    case MEAN:   msg += "mean";    break;
-    case MAX:    msg += "maximum"; break;
+    case V_SUM:  msg += "summed";  break;
+    case V_MIN:  msg += "minimum"; break;
+    case V_MEAN: msg += "mean";    break;
+    case V_MAX:  msg += "maximum"; break;
     default:     msg += "ERROR";   break;
   }
   msg += " per-voxel statistic";
   if (contrast == SCALAR_MAP || contrast == SCALAR_MAP_COUNT || contrast == FOD_AMP || contrast == CURVATURE) {
     msg += " and ";
     switch (stat_tck) {
-      case SUM:       msg += "summed";  break;
-      case MIN:       msg += "minimum"; break;
-      case MEAN:      msg += "mean";    break;
-      case MEDIAN:    msg += "median";  break;
-      case MAX:       msg += "maximum"; break;
+      case T_SUM:     msg += "summed";  break;
+      case T_MIN:     msg += "minimum"; break;
+      case T_MEAN:    msg += "mean";    break;
+      case T_MAX:     msg += "maximum"; break;
+      case T_MEDIAN:  msg += "median";  break;
       case GAUSSIAN:  msg += "gaussian (FWHM " + str (gaussian_fwhm_tck) + "mm)"; break;
       case ENDS_MIN:  msg += "endpoints (minimum)"; break;
       case ENDS_MEAN: msg += "endpoints (mean)"; break;
       case ENDS_MAX:  msg += "endpoints (maximum)"; break;
       case ENDS_PROD: msg += "endpoints (product)"; break;
+      case ENDS_CORR: msg += "endpoints (temporal correlation)"; break;
       default:        msg += "ERROR";   break;
     }
     msg += " per-track statistic";
@@ -493,8 +491,13 @@ void run () {
 
     Image::BufferPreload<float> input_image (opt[0][0]);
     if ((contrast == SCALAR_MAP || contrast == SCALAR_MAP_COUNT)) {
-      if (!(input_image.ndim() == 3 || (input_image.ndim() == 4 && input_image.dim(3) == 1)))
-        throw Exception ("Use of 'scalar_map' contrast option requires a 3-dimensional image; your image is " + str(input_image.ndim()) + "D");
+      if (stat_tck == ENDS_CORR) {
+        if (!(input_image.ndim() == 4 && input_image.dim(3) > 1))
+          throw Exception ("Use of 'ends-corr' track-wise statistic requires a 4D image");
+      } else {
+        if (!(input_image.ndim() == 3 || (input_image.ndim() == 4 && input_image.dim(3) == 1)))
+          throw Exception ("Use of 'scalar_map' contrast option requires a 3-dimensional image; your image is " + str(input_image.ndim()) + "D");
+      }
     }
 
     if (contrast == FOD_AMP && input_image.ndim() != 4)

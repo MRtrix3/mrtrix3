@@ -46,15 +46,15 @@ bool MapWriter<float, SetVoxelDir>::operator () (const SetVoxelDir& in)
     Image::Nav::set_pos (v_buffer, *i);
     const float factor = i->get_dir().norm();
     switch (MapWriterBase<SetVoxelDir>::voxel_statistic) {
-    case SUM:  v_buffer.value() += factor;                       break;
-    case MIN:  v_buffer.value() = MIN(v_buffer.value(), factor); break;
-    case MAX:  v_buffer.value() = MAX(v_buffer.value(), factor); break;
-    case MEAN:
+    case V_SUM:  v_buffer.value() += factor;                       break;
+    case V_MIN:  v_buffer.value() = MIN(v_buffer.value(), factor); break;
+    case V_MEAN:
       // Only increment counts[] if it is necessary to do so given the chosen statistic
       v_buffer.value() += factor;
       Image::Nav::set_pos (*v_counts, *i);
       (*v_counts).value() += 1;
       break;
+    case V_MAX:  v_buffer.value() = MAX(v_buffer.value(), factor); break;
     default:
       throw Exception ("Unknown / unhandled voxel statistic in MapWriter::execute()");
     }

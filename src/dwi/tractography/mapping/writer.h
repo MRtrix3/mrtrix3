@@ -141,12 +141,12 @@ class MapWriterBase
   typedef Image::BufferScratch<uint32_t>::voxel_type counts_voxel_type;
 
   public:
-    MapWriterBase (Image::Header& header, const std::string& name, const bool dump, const stat_t s) :
+    MapWriterBase (Image::Header& header, const std::string& name, const bool dump, const vox_stat_t s) :
       H (header),
       output_image_name (name),
       direct_dump (dump),
       voxel_statistic (s),
-      counts ((s == MEAN) ? (new Image::BufferScratch<uint32_t>(header, "counts")) : NULL),
+      counts ((s == V_MEAN) ? (new Image::BufferScratch<uint32_t>(header, "counts")) : NULL),
       v_counts (counts ? new counts_voxel_type (*counts) : NULL)
     { }
 
@@ -168,7 +168,7 @@ class MapWriterBase
     Image::Header& H;
     const std::string output_image_name;
     const bool direct_dump;
-    const stat_t voxel_statistic;
+    const vox_stat_t voxel_statistic;
     Ptr< Image::BufferScratch<uint32_t> > counts;
     Ptr< counts_voxel_type > v_counts;
 
@@ -195,16 +195,16 @@ class MapWriter : public MapWriterBase<Cont>
   typedef typename Image::BufferScratch<value_type>::voxel_type buffer_voxel_type;
 
   public:
-    MapWriter (Image::Header& header, const std::string& name, const bool direct_dump = false, const stat_t voxel_statistic = SUM) :
+    MapWriter (Image::Header& header, const std::string& name, const bool direct_dump = false, const vox_stat_t voxel_statistic = V_SUM) :
       MapWriterBase<Cont> (header, name, direct_dump, voxel_statistic),
       buffer (header, "buffer"),
       v_buffer (buffer)
     {
       Image::Loop loop;
-      if (voxel_statistic == MIN) {
+      if (voxel_statistic == V_MIN) {
         for (loop.start (v_buffer); loop.ok(); loop.next (v_buffer))
           v_buffer.value() = std::numeric_limits<value_type>::max();
-      } else if (voxel_statistic == MAX) {
+      } else if (voxel_statistic == V_MAX) {
         for (loop.start (v_buffer); loop.ok(); loop.next (v_buffer))
           v_buffer.value() = -std::numeric_limits<value_type>::max();
       } else {
@@ -227,23 +227,23 @@ class MapWriter : public MapWriterBase<Cont>
       Image::Loop loop;
       switch (MapWriterBase<Cont>::voxel_statistic) {
 
-        case SUM: break;
+        case V_SUM: break;
 
-        case MIN:
+        case V_MIN:
           for (loop.start (v_buffer); loop.ok(); loop.next (v_buffer)) {
             if (v_buffer.value() == std::numeric_limits<value_type>::max())
               v_buffer.value() = 0.0;
           }
           break;
 
-        case MEAN:
+        case V_MEAN:
           for (loop.start (v_buffer, *MapWriterBase<Cont>::v_counts); loop.ok(); loop.next (v_buffer, *MapWriterBase<Cont>::v_counts)) {
             if ((*MapWriterBase<Cont>::v_counts).value())
               v_buffer.value() /= float(MapWriterBase<Cont>::v_counts->value());
           }
           break;
 
-        case MAX:
+        case V_MAX:
           for (loop.start (v_buffer); loop.ok(); loop.next (v_buffer)) {
             if (v_buffer.value() == -std::numeric_limits<value_type>::max())
               v_buffer.value() = 0.0;
@@ -275,10 +275,10 @@ class MapWriter : public MapWriterBase<Cont>
         Image::Nav::set_pos (v_buffer, *i);
         const value_type factor = get_factor (in, i);
         switch (MapWriterBase<Cont>::voxel_statistic) {
-        case SUM:  v_buffer.value() += factor;                     break;
-        case MIN:  v_buffer.value() = MIN(v_buffer.value(), factor); break;
-        case MAX:  v_buffer.value() = MAX(v_buffer.value(), factor); break;
-        case MEAN:
+        case V_SUM:  v_buffer.value() += factor;                     break;
+        case V_MIN:  v_buffer.value() = MIN(v_buffer.value(), factor); break;
+        case V_MAX:  v_buffer.value() = MAX(v_buffer.value(), factor); break;
+        case V_MEAN:
           // Only increment counts[] if it is necessary to do so given the chosen statistic
           v_buffer.value() += factor;
           Image::Nav::set_pos (*MapWriterBase<Cont>::v_counts, *i);
@@ -313,13 +313,13 @@ class MapWriterColour : public MapWriterBase<Cont>
   typedef typename Image::BufferScratch<float>::voxel_type buffer_voxel_type;
 
   public:
-    MapWriterColour (Image::Header& header, const std::string& name, const bool direct_dump = false, const stat_t voxel_statistic = SUM) :
+    MapWriterColour (Image::Header& header, const std::string& name, const bool direct_dump = false, const vox_stat_t voxel_statistic = V_SUM) :
       MapWriterBase<Cont> (header, name, direct_dump, voxel_statistic),
       buffer (header, "buffer"),
       v_buffer (buffer)
     {
       Image::Loop loop;
-      if (voxel_statistic == MIN) {
+      if (voxel_statistic == V_MIN) {
         for (loop.start (v_buffer); loop.ok(); loop.next (v_buffer))
           v_buffer.value() = std::numeric_limits<float>::max();
       } else {
@@ -341,9 +341,9 @@ class MapWriterColour : public MapWriterBase<Cont>
       Image::Loop loop (0, 3);
       switch (MapWriterBase<Cont>::voxel_statistic) {
 
-        case SUM: break;
+        case V_SUM: break;
 
-        case MIN:
+        case V_MIN:
           for (loop.start (v_buffer); loop.ok(); loop.next (v_buffer)) {
             const Point<float> value (get_value());
             if (value == Point<float> (std::numeric_limits<float>::max(), std::numeric_limits<float>::max(), std::numeric_limits<float>::max()))
@@ -351,7 +351,7 @@ class MapWriterColour : public MapWriterBase<Cont>
           }
           break;
 
-        case MEAN:
+        case V_MEAN:
           for (loop.start (v_buffer); loop.ok(); loop.next (v_buffer)) {
             Point<float> value (get_value());
             if (value.norm2()) {
@@ -361,7 +361,7 @@ class MapWriterColour : public MapWriterBase<Cont>
           }
           break;
 
-        case MAX:
+        case V_MAX:
           break;
 
         default:
@@ -396,24 +396,24 @@ class MapWriterColour : public MapWriterBase<Cont>
         scaled_colour *= factor;
         const Point<float> current_value = get_value();
         switch (MapWriterBase<Cont>::voxel_statistic) {
-        case SUM:
-          set_value (current_value + scaled_colour);
-          break;
-        case MIN:
-          if (scaled_colour.norm2() < current_value.norm2())
-            set_value (scaled_colour);
-          break;
-        case MAX:
-          if (scaled_colour.norm2() > current_value.norm2())
-            set_value (scaled_colour);
-          break;
-        case MEAN:
-          set_value (current_value + scaled_colour);
-          Image::Nav::set_pos (*MapWriterBase<Cont>::v_counts, *i);
-          (*MapWriterBase<Cont>::v_counts).value() += 1;
-          break;
-        default:
-          throw Exception ("Unknown / unhandled voxel statistic in MapWriter::execute()");
+          case V_SUM:
+            set_value (current_value + scaled_colour);
+            break;
+          case V_MIN:
+            if (scaled_colour.norm2() < current_value.norm2())
+              set_value (scaled_colour);
+            break;
+          case V_MEAN:
+            set_value (current_value + scaled_colour);
+            Image::Nav::set_pos (*MapWriterBase<Cont>::v_counts, *i);
+            (*MapWriterBase<Cont>::v_counts).value() += 1;
+            break;
+          case V_MAX:
+            if (scaled_colour.norm2() > current_value.norm2())
+              set_value (scaled_colour);
+            break;
+          default:
+            throw Exception ("Unknown / unhandled voxel statistic in MapWriter::execute()");
         }
       }
       return true;
