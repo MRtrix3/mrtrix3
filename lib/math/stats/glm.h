@@ -135,7 +135,7 @@ namespace MR
           /*! Compute a matrix of the beta coefficients
           * @param measurements a matrix storing the measured data for each subject in a column
           * @param design the design matrix (unlike other packages a column of ones is NOT automatically added for correlation analysis)
-          * @param beta the matrix containing the output effect
+          * @param betas the matrix containing the output effect
           */
           template <typename ValueType>
             inline void solve_betas (const Math::Matrix<ValueType>& measurements,
@@ -149,8 +149,6 @@ namespace MR
 
 
 
-          /** \addtogroup Statistics
-          @{ */
           /*! Compute the effect of interest
           * @param measurements a matrix storing the measured data for each subject in a column
           * @param design the design matrix (unlike other packages a column of ones is NOT automatically added for correlation analysis)
