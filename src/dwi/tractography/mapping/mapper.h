@@ -423,6 +423,17 @@ void TrackMapperTWI<Cont>::set_factor (const std::vector< Point<float> >& tck, C
           }
           break;
 
+        case T_MEAN_NONZERO:
+          out.factor = 0.0;
+          for (std::vector<float>::const_iterator i = factors.begin(); i != factors.end(); ++i) {
+            if (finite (*i) && *i) {
+              out.factor += *i;
+              ++count;
+            }
+          }
+          out.factor = (count ? (out.factor / float(count)) : 0.0);
+          break;
+
         case GAUSSIAN:
           gaussian_smooth_factors();
           out.factor = 0.0;

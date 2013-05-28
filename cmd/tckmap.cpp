@@ -103,7 +103,7 @@ OPTIONS
       "define the statistic for choosing the contribution to be made by each streamline as a "
       "function of the samples taken along their lengths\n"
       "Only has an effect for 'scalar_map', 'fod_amp' and 'curvature' contrast types\n"
-      "Options are: sum, min, mean, max, median, gaussian, ends_min, ends_mean, ends_max, ends_prod, ends_corr (default: mean)")
+      "Options are: sum, min, mean, max, median, mean_nonzero, gaussian, ends_min, ends_mean, ends_max, ends_prod, ends_corr (default: mean)")
     + Argument ("type").type_choice (track_statistics)
 
   + Option ("fwhm_tck",
@@ -390,18 +390,19 @@ void run () {
   if (contrast == SCALAR_MAP || contrast == SCALAR_MAP_COUNT || contrast == FOD_AMP || contrast == CURVATURE) {
     msg += " and ";
     switch (stat_tck) {
-      case T_SUM:     msg += "summed";  break;
-      case T_MIN:     msg += "minimum"; break;
-      case T_MEAN:    msg += "mean";    break;
-      case T_MAX:     msg += "maximum"; break;
-      case T_MEDIAN:  msg += "median";  break;
-      case GAUSSIAN:  msg += "gaussian (FWHM " + str (gaussian_fwhm_tck) + "mm)"; break;
-      case ENDS_MIN:  msg += "endpoints (minimum)"; break;
-      case ENDS_MEAN: msg += "endpoints (mean)"; break;
-      case ENDS_MAX:  msg += "endpoints (maximum)"; break;
-      case ENDS_PROD: msg += "endpoints (product)"; break;
-      case ENDS_CORR: msg += "endpoints (temporal correlation)"; break;
-      default:        msg += "ERROR";   break;
+      case T_SUM:          msg += "summed";  break;
+      case T_MIN:          msg += "minimum"; break;
+      case T_MEAN:         msg += "mean";    break;
+      case T_MAX:          msg += "maximum"; break;
+      case T_MEDIAN:       msg += "median";  break;
+      case T_MEAN_NONZERO: msg += "mean (nonzero)"; break;
+      case GAUSSIAN:       msg += "gaussian (FWHM " + str (gaussian_fwhm_tck) + "mm)"; break;
+      case ENDS_MIN:       msg += "endpoints (minimum)"; break;
+      case ENDS_MEAN:      msg += "endpoints (mean)"; break;
+      case ENDS_MAX:       msg += "endpoints (maximum)"; break;
+      case ENDS_PROD:      msg += "endpoints (product)"; break;
+      case ENDS_CORR:      msg += "endpoints (temporal correlation)"; break;
+      default:             msg += "ERROR";   break;
     }
     msg += " per-track statistic";
   }
