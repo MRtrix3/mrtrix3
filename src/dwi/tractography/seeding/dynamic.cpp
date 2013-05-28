@@ -86,9 +86,9 @@ namespace MR
         if (opt.size())
           act = new Dynamic_ACT_additions (opt[0][0]);
         SIFT::FODQueueWriter<Image::Buffer<float>, Image::BufferScratch<float> > writer (fod_data, proc_mask);
-        DWI::FOD_FMLS fmls (dirs, Math::SH::LforN (fod_data.dim (3)));
+        FMLS::Segmenter fmls (dirs, Math::SH::LforN (fod_data.dim (3)));
         fmls.set_dilate_lookup_table (true);
-        Thread::run_queue_threaded_pipe (writer, DWI::SH_coefs(), fmls, DWI::FOD_lobes(), *this);
+        Thread::run_queue_threaded_pipe (writer, FMLS::SH_coefs(), fmls, FMLS::FOD_lobes(), *this);
 
         // Have to set a volume so that Seeding::List works correctly
         for (std::vector<Lobe>::const_iterator i = lobes.begin(); i != lobes.end(); ++i)
@@ -186,7 +186,7 @@ namespace MR
 
 
 
-      bool Dynamic::operator() (const FOD_lobes& in)
+      bool Dynamic::operator() (const FMLS::FOD_lobes& in)
       {
 
         if (!Image::Nav::within_bounds (accessor, in.vox))
@@ -200,7 +200,7 @@ namespace MR
         Image::BufferScratch<float>::voxel_type mask (proc_mask);
         const float weight = Image::Nav::get_value_at_pos (mask, in.vox);
 
-        for (FOD_lobes::const_iterator i = in.begin(); i != in.end(); ++i) {
+        for (FMLS::FOD_lobes::const_iterator i = in.begin(); i != in.end(); ++i) {
           lobes.push_back (Lobe (*i, weight, in.vox));
           FOD_sum += i->get_integral() * weight;
         }

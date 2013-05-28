@@ -34,6 +34,7 @@
 #include "image/voxel.h"
 #include "image/interp/linear.h"
 
+#include "dwi/fmls.h"
 #include "dwi/fod_map.h"
 #include "dwi/directions/set.h"
 #include "dwi/tractography/mapping/voxel.h"
@@ -142,7 +143,7 @@ namespace MR
             fill_proc_mask (dwi, proc_mask);
           }
 
-          bool operator() (const FOD_lobes& in);
+          bool operator() (const FMLS::FOD_lobes& in);
           bool operator() (const SetDixel& in);
 
           double mu() const { return FOD_sum / TD_sum; }
@@ -171,7 +172,7 @@ namespace MR
 
 
       template <class Lobe>
-      bool FOD_TD_diff_map<Lobe>::operator() (const FOD_lobes& in)
+      bool FOD_TD_diff_map<Lobe>::operator() (const FMLS::FOD_lobes& in)
       {
         if (!FOD_map<Lobe>::operator() (in))
           return false;

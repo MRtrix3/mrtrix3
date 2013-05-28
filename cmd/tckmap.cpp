@@ -38,15 +38,14 @@
 #include "dwi/tractography/file.h"
 #include "dwi/tractography/properties.h"
 
-#include "dwi/tractography/mapping/common.h"
 #include "dwi/tractography/mapping/loader.h"
 #include "dwi/tractography/mapping/mapper.h"
+#include "dwi/tractography/mapping/mapping.h"
 #include "dwi/tractography/mapping/voxel.h"
 #include "dwi/tractography/mapping/writer.h"
 
 
 
-#define MAX_TRACKS_READ_FOR_HEADER 1000000
 #define MAX_VOXEL_STEP_RATIO 0.333
 
 
@@ -72,7 +71,7 @@ DESCRIPTION
 
 ARGUMENTS
   + Argument ("tracks", "the input track file.").type_file ()
-  + Argument ("output", "the output track density image").type_image_out();
+  + Argument ("output", "the output track-weighted image").type_image_out();
 
 OPTIONS
   + Option ("template",
@@ -104,7 +103,7 @@ OPTIONS
       "define the statistic for choosing the contribution to be made by each streamline as a "
       "function of the samples taken along their lengths\n"
       "Only has an effect for 'scalar_map', 'fod_amp' and 'curvature' contrast types\n"
-      "Options are: sum, min, mean, median, max, gaussian, ends_min, ends_mean, ends_max, ends_prod (default: mean)")
+      "Options are: sum, min, mean, median, max, gaussian, ends_min, ends_mean, ends_max, ends_prod, ends_corr (default: mean)")
     + Argument ("type").type_choice (statistics)
 
   + Option ("fwhm_tck",
@@ -131,77 +130,6 @@ OPTIONS
 }
 
 
-
-
-void generate_header (Image::Header& header, const std::vector<float>& voxel_size, const std::string& filename)
-{
-
-  Tractography::Properties properties;
-  Tractography::Reader<float> file (argument[0], properties);
-
-  std::vector<Point<float> > tck;
-  size_t track_counter = 0;
-
-  Point<float> min_values ( INFINITY,  INFINITY,  INFINITY);
-  Point<float> max_values (-INFINITY, -INFINITY, -INFINITY);
-
-  {
-    ProgressBar progress ("creating new template image...", 0);
-    while (file.next(tck) && track_counter++ < MAX_TRACKS_READ_FOR_HEADER) {
-      for (std::vector<Point<float> >::const_iterator i = tck.begin(); i != tck.end(); ++i) {
-        min_values[0] = std::min (min_values[0], (*i)[0]);
-        max_values[0] = std::max (max_values[0], (*i)[0]);
-        min_values[1] = std::min (min_values[1], (*i)[1]);
-        max_values[1] = std::max (max_values[1], (*i)[1]);
-        min_values[2] = std::min (min_values[2], (*i)[2]);
-        max_values[2] = std::max (max_values[2], (*i)[2]);
-      }
-      ++progress;
-    }
-  }
-
-  min_values -= Point<float> (3.0*voxel_size[0], 3.0*voxel_size[1], 3.0*voxel_size[2]);
-  max_values += Point<float> (3.0*voxel_size[0], 3.0*voxel_size[1], 3.0*voxel_size[2]);
-
-  header.name() = "tckmap image header";
-  header.set_ndim (3);
-
-  for (size_t i = 0; i != 3; ++i) {
-    header.dim(i) = Math::ceil((max_values[i] - min_values[i]) / voxel_size[i]);
-    header.vox(i) = voxel_size[i];
-    header.stride(i) = i+1;
-    //header.set_units (i, Image::Axis::millimeters);
-  }
-
-  //header.set_description (0, Image::Axis::left_to_right);
-  //header.set_description (1, Image::Axis::posterior_to_anterior);
-  //header.set_description (2, Image::Axis::inferior_to_superior);
-
-  Math::Matrix<float>& M (header.transform());
-  M.allocate (4,4);
-  M.identity();
-  M(0,3) = min_values[0];
-  M(1,3) = min_values[1];
-  M(2,3) = min_values[2];
-  file.close();
-}
-
-
-
-
-
-void oversample_header (Image::Header& header, const std::vector<float>& voxel_size)
-{
-  INFO ("oversampling header...");
-
-  Math::Matrix<float> transform (header.transform());
-  for (size_t j = 0; j != 3; ++j) {
-    for (size_t i = 0; i < 3; ++i)
-      header.transform()(i,3) += 0.5 * (voxel_size[j] - header.vox(j)) * transform(i,j);
-    header.dim(j) = Math::ceil(header.dim(j) * header.vox(j) / voxel_size[j]);
-    header.vox(j) = voxel_size[j];
-  }
-}
 
 
 
@@ -278,7 +206,7 @@ void run () {
   else {
     if (voxel_size.empty())
       throw Exception ("please specify either a template image or the desired voxel size");
-    generate_header (header, voxel_size, argument[0]);
+    generate_header (header, argument[0], voxel_size);
   }
 
   header.set_ndim (3);
@@ -377,6 +305,7 @@ void run () {
     case FOD_AMP:
       if (stat_tck == ENDS_MIN || stat_tck == ENDS_MEAN || stat_tck == ENDS_MAX || stat_tck == ENDS_PROD)
         throw Exception ("Can't use endpoint-based track-wise statistics with FOD_AMP contrast");
+      break;
 
     case CURVATURE:
       break;
@@ -425,10 +354,13 @@ void run () {
   }
   else {
     resample_factor = 1;
-    WARN ("track interpolation off; track step size information in header is absent or malformed");
+    if (contrast != PRECISE_TDI)
+      WARN ("track interpolation off; track step size information in header is absent or malformed");
   }
 
   const bool dump = get_options ("dump").size();
+  if (dump && Path::has_suffix (argument[1], "mih"))
+    throw Exception ("Option -dump only works when outputting to .mih image format");
 
   Math::Matrix<float> interp_matrix (resample_factor > 1 ? gen_interp_matrix<float> (resample_factor) : Math::Matrix<float> ());
 
@@ -560,8 +492,11 @@ void run () {
     }
 
     Image::BufferPreload<float> input_image (opt[0][0]);
-    if ((contrast == SCALAR_MAP || contrast == SCALAR_MAP_COUNT) && !(input_image.ndim() == 3 || (input_image.ndim() == 4 && input_image.dim(3) == 1)))
-      throw Exception ("Use of 'scalar_map' contrast option requires a 3-dimensional image; your image is " + str(input_image.ndim()) + "D");
+    if ((contrast == SCALAR_MAP || contrast == SCALAR_MAP_COUNT)) {
+      if (!(input_image.ndim() == 3 || (input_image.ndim() == 4 && input_image.dim(3) == 1)))
+        throw Exception ("Use of 'scalar_map' contrast option requires a 3-dimensional image; your image is " + str(input_image.ndim()) + "D");
+    }
+
     if (contrast == FOD_AMP && input_image.ndim() != 4)
       throw Exception ("Use of 'fod_amp' contrast option requires a 4-dimensional image; your image is " + str(input_image.ndim()) + "D");
 

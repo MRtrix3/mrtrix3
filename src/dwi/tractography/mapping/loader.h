@@ -28,7 +28,7 @@
 #include "thread/queue.h"
 #include "dwi/tractography/file.h"
 
-#include "dwi/tractography/mapping/common.h"
+#include "dwi/tractography/mapping/mapping.h"
 
 
 namespace MR {

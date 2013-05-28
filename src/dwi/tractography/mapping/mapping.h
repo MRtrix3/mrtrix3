@@ -20,14 +20,22 @@
 
 */
 
-#ifndef __dwi_tractography_mapping_common_h__
-#define __dwi_tractography_mapping_common_h__
+#ifndef __dwi_tractography_mapping_mapping_h__
+#define __dwi_tractography_mapping_mapping_h__
 
 
 
 #include "point.h"
+#include "progressbar.h"
 
-#include "thread/queue.h"
+#include "dwi/tractography/properties.h"
+#include "dwi/tractography/file.h"
+
+#include "image/header.h"
+
+#include "math/matrix.h"
+
+#include <vector>
 
 
 
@@ -37,6 +45,8 @@ namespace Tractography {
 namespace Mapping {
 
 
+
+
 // Want to retain the index # of each track (not necessary for tckmap, but may be for other functions)
 class TrackAndIndex {
   public:
@@ -44,7 +54,16 @@ class TrackAndIndex {
     size_t index;
 };
 
-//typedef Thread::Queue<TrackAndIndex> TrackQueue;
+
+
+
+#define MAX_TRACKS_READ_FOR_HEADER 1000000
+void generate_header (Image::Header&, const std::string&, const std::vector<float>&);
+
+void oversample_header (Image::Header&, const std::vector<float>&);
+
+
+
 
 
 }

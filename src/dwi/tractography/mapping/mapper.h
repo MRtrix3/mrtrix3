@@ -42,7 +42,7 @@
 
 #include "dwi/tractography/file.h"
 
-#include "dwi/tractography/mapping/common.h"
+#include "dwi/tractography/mapping/mapping.h"
 #include "dwi/tractography/mapping/resampler.h"
 #include "dwi/tractography/mapping/twi_stats.h"
 #include "dwi/tractography/mapping/voxel.h"

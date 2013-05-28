@@ -29,7 +29,7 @@
 #include "dwi/tractography/file.h"
 #include "dwi/tractography/properties.h"
 #include "dwi/tractography/roi.h"
-#include "dwi/tractography/mapping/common.h"
+#include "dwi/tractography/mapping/mapping.h"
 #include "dwi/tractography/mapping/loader.h"
 #include "thread/queue.h"
 

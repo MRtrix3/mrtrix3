@@ -35,6 +35,7 @@
 
 #include "min_mem_array.h"
 
+#include "dwi/fmls.h"
 #include "dwi/fod_map.h"
 
 
@@ -73,7 +74,7 @@ namespace MR
             weight (0.0),
             dir (d) { }
 
-          FOD_TD_weighted (const FOD_lobe& lobe) :
+          FOD_TD_weighted (const FMLS::FOD_lobe& lobe) :
             FOD (lobe.get_integral()),
             TD (0.0),
             weight (0.0),

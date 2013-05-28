@@ -48,8 +48,8 @@
 
 #include "dwi/directions/set.h"
 
-#include "dwi/tractography/mapping/common.h"
 #include "dwi/tractography/mapping/mapper.h"
+#include "dwi/tractography/mapping/mapping.h"
 #include "dwi/tractography/mapping/voxel.h"
 #include "dwi/tractography/mapping/writer.h"
 
@@ -134,7 +134,7 @@ namespace MR
         void set_regular_outputs (const std::vector<int>&, const bool);
 
 
-        bool operator() (const FOD_lobes& in) { return MapType::operator() (in); }
+        bool operator() (const FMLS::FOD_lobes& in) { return MapType::operator() (in); }
 
         size_t num_tracks() const { return contributions.size(); }
 
@@ -158,7 +158,7 @@ namespace MR
         Image::Buffer<float>& fod_data;
         Image::Header H;
         const DWI::Directions::FastLookupSet& dirs;
-        DWI::FOD_FMLS fmls;
+        FMLS::Segmenter fmls;
 
 
         std::string tck_file_path;

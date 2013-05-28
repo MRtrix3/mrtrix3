@@ -70,7 +70,7 @@ namespace MR
             }
 
 
-          bool operator () (DWI::SH_coefs& out)
+          bool operator () (FMLS::SH_coefs& out)
           {
             while (loop.ok() && !mask_vox.value())
               loop.next (fod_vox, mask_vox);

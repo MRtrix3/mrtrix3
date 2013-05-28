@@ -33,8 +33,8 @@
 #include "dwi/tractography/method.h"
 #include "dwi/tractography/shared.h"
 
-#include "dwi/tractography/mapping/common.h"
 #include "dwi/tractography/mapping/mapper.h"
+#include "dwi/tractography/mapping/mapping.h"
 #include "dwi/tractography/mapping/voxel.h"
 
 #include "dwi/tractography/seeding/dynamic.h"

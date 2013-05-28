@@ -28,6 +28,8 @@
 
 #include "thread/mutex.h"
 
+#include "dwi/fmls.h"
+
 #include "dwi/directions/set.h"
 
 #include "dwi/tractography/ACT/tissues.h"
@@ -74,7 +76,7 @@ namespace MR
       {
 
         public:
-          FOD_TD_seed (const FOD_lobe& lobe, const float proc_mask_value, const Point<int>& vox) :
+          FOD_TD_seed (const FMLS::FOD_lobe& lobe, const float proc_mask_value, const Point<int>& vox) :
             FOD (lobe.get_integral()),
             TD (0.0),
             weight (proc_mask_value),
@@ -165,7 +167,7 @@ namespace MR
 
         // Although the FOD_TD_diff_map versions of these functions are OK, the FOD_TD_seed lobe class
         //   includes the processing mask weight, which is faster to access than the mask image
-        bool operator() (const FOD_lobes&);
+        bool operator() (const FMLS::FOD_lobes&);
         bool operator() (const Mapping::SetDixel&);
 
 

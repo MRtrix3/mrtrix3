@@ -29,7 +29,7 @@
 
 #include "math/matrix.h"
 
-#include "dwi/tractography/mapping/common.h"
+#include "dwi/tractography/mapping/mapping.h"
 
 #include "dwi/tractography/file.h"
 #include "dwi/tractography/properties.h"
