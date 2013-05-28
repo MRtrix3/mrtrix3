@@ -87,7 +87,7 @@ namespace MR
         Lobe&       operator[] (const size_t i)       { return lobes[i]; }
         const Lobe& operator[] (const size_t i) const { return lobes[i]; }
 
-        bool operator() (const FOD_lobes& in);
+        bool operator() (const FMLS::FOD_lobes& in);
 
         const Image::Info& info() const { return info_; }
 
@@ -122,7 +122,7 @@ namespace MR
     class FOD_map<Lobe>::MapVoxel
     {
       public:
-        MapVoxel (const FOD_lobes& in, const size_t first) :
+        MapVoxel (const FMLS::FOD_lobes& in, const size_t first) :
           first_lobe_index (first),
           count (in.size()),
           lookup_table (new uint8_t[in.lut.size()])
@@ -207,7 +207,7 @@ namespace MR
 
 
     template <class Lobe>
-    bool FOD_map<Lobe>::operator() (const FOD_lobes& in)
+    bool FOD_map<Lobe>::operator() (const FMLS::FOD_lobes& in)
     {
         if (in.empty())
           return true;
@@ -218,7 +218,7 @@ namespace MR
         if (v.value())
           throw Exception ("FIXME: FOD_map has received multiple segmentations for the same voxel!");
         v.value() = new MapVoxel (in, lobes.size());
-        for (FOD_lobes::const_iterator i = in.begin(); i != in.end(); ++i)
+        for (FMLS::FOD_lobes::const_iterator i = in.begin(); i != in.end(); ++i)
           lobes.push_back (Lobe (*i));
         return true;
     }

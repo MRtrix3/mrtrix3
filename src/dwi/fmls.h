@@ -22,8 +22,8 @@
 
 
 
-#ifndef __sh_em_fmls_h__
-#define __sh_em_fmls_h__
+#ifndef __dwi_fmls_h__
+#define __dwi_fmls_h__
 
 
 
@@ -34,23 +34,30 @@
 #include "dwi/directions/mask.h"
 
 
-#include <map>
+#include <map> // Used for sorting FOD samples
 
 
-#define RATIO_TO_NEGATIVE_LOBE_INTEGRAL_DEFAULT 0.0
-#define RATIO_TO_NEGATIVE_LOBE_MEAN_PEAK_DEFAULT 2.0
-#define RATIO_TO_PEAK_VALUE_DEFAULT 1.1 // By default, get (almost) all peaks
-#define PEAK_VALUE_THRESHOLD 0.2
+#define FMLS_RATIO_TO_NEGATIVE_LOBE_INTEGRAL_DEFAULT 0.0
+#define FMLS_RATIO_TO_NEGATIVE_LOBE_MEAN_PEAK_DEFAULT 1.0 // Peak amplitude needs to be greater than the mean negative peak
+#define FMLS_PEAK_VALUE_THRESHOLD 0.1 // Throw out anything that's below the CSD regularisation threshold
+#define FMLS_RATIO_TO_PEAK_VALUE_DEFAULT 1.0 // By default, turn all peaks into lobes (discrete peaks are never merged)
+
 
 
 namespace MR {
 namespace DWI {
+namespace FMLS {
 
 
 using DWI::Directions::Mask;
+using DWI::Directions::dir_t;
 
-typedef Point<float> PointF;
-using Directions::dir_t;
+
+class Segmenter;
+
+// These are for configuring the FMLS segmenter at the command line, particularly for fod_metric command
+extern const App::OptionGroup FMLSSegmentOption;
+void load_fmls_thresholds (Segmenter&);
 
 
 
@@ -58,35 +65,38 @@ class FOD_lobe {
 
   public:
     FOD_lobe (const DWI::Directions::Set& dirs, const dir_t seed, const float value) :
-      mask (dirs),
-      peak_dir_bin (seed),
-      peak_value (Math::abs (value)),
-      peak_dir (dirs.get_dir (seed)),
-      integral (Math::abs (value)),
-      neg (value <= 0.0)
+        mask (dirs),
+        values (dirs.size(), 0.0),
+        peak_dir_bin (seed),
+        peak_value (Math::abs (value)),
+        peak_dir (dirs.get_dir (seed)),
+        integral (Math::abs (value)),
+        neg (value <= 0.0)
     {
       mask[seed] = true;
+      values[seed] = value;
     }
 
     // This is used for creating a `null lobe' i.e. an FOD lobe with zero size, containing all directions not
     //   assigned to any other lobe in the voxel
     FOD_lobe (const Mask& i) :
-      mask (i),
-      peak_dir_bin (i.size()),
-      peak_value (0.0),
-      integral (0.0),
-      neg (false) { }
-
+        mask (i),
+        values (i.size(), 0.0),
+        peak_dir_bin (i.size()),
+        peak_value (0.0),
+        integral (0.0),
+        neg (false) { }
 
 
     void add (const dir_t bin, const float value)
     {
       assert ((value <= 0.0 && neg) || (value > 0.0 && !neg));
       mask[bin] = true;
+      values[bin] = value;
       integral += Math::abs (value);
     }
 
-    void revise_peak (const PointF& real_peak, const float value)
+    void revise_peak (const Point<float>& real_peak, const float value)
     {
       assert (!neg);
       peak_dir = real_peak;
@@ -103,6 +113,8 @@ class FOD_lobe {
     {
       assert (neg == that.neg);
       mask |= that.mask;
+      for (size_t i = 0; i != mask.size(); ++i)
+        values[i] += that.values[i];
       if (that.peak_value > peak_value) {
         peak_dir_bin = that.peak_dir_bin;
         peak_value = that.peak_value;
@@ -112,6 +124,7 @@ class FOD_lobe {
     }
 
     const Mask& get_mask() const { return mask; }
+    const std::vector<float>& get_values() const { return values; }
     dir_t get_peak_dir_bin() const { return peak_dir_bin; }
     float get_peak_value() const { return peak_value; }
     const Point<float>& get_peak_dir() const { return peak_dir; }
@@ -121,6 +134,7 @@ class FOD_lobe {
 
   private:
     Mask mask;
+    std::vector<float> values;
     dir_t peak_dir_bin;
     float peak_value;
     Point<float> peak_dir;
@@ -145,10 +159,10 @@ class SH_coefs : public Math::Vector<float> {
 
 
 
-class FOD_FMLS {
+class Segmenter {
 
   public:
-    FOD_FMLS (const DWI::Directions::Set&, const size_t);
+    Segmenter (const DWI::Directions::Set&, const size_t);
 
     bool operator() (const SH_coefs&, FOD_lobes&) const;
 
@@ -157,10 +171,10 @@ class FOD_FMLS {
     void  set_ratio_to_negative_lobe_integral  (const float i)       { ratio_to_negative_lobe_integral = i; }
     float get_ratio_to_negative_lobe_mean_peak ()              const { return ratio_to_negative_lobe_mean_peak; }
     void  set_ratio_to_negative_lobe_mean_peak (const float i)       { ratio_to_negative_lobe_mean_peak = i; }
-    float get_ratio_to_peak_value              ()              const { return ratio_to_peak_value; }
-    void  set_ratio_to_peak_value              (const float i)       { ratio_to_peak_value = i; }
     float get_peak_value_threshold             ()              const { return peak_value_threshold; }
     void  set_peak_value_threshold             (const float i)       { peak_value_threshold = i; }
+    float get_ratio_of_peak_value_to_merge     ()              const { return ratio_of_peak_value_to_merge; }
+    void  set_ratio_of_peak_value_to_merge     (const float i)       { ratio_of_peak_value_to_merge = i; }
     bool  get_create_null_lobe                 ()              const { return create_null_lobe; }
     void  set_create_null_lobe                 (const bool  i)       { create_null_lobe = i; verify_settings(); }
     bool  get_create_lookup_table              ()              const { return create_lookup_table; }
@@ -180,8 +194,8 @@ class FOD_FMLS {
 
     float ratio_to_negative_lobe_integral; // Integral of positive lobe must be at least this ratio larger than the largest negative lobe integral
     float ratio_to_negative_lobe_mean_peak; // Peak value of positive lobe must be at least this ratio larger than the mean negative lobe peak
-    float ratio_to_peak_value; // Determines whether two lobes get agglomerated into one, depending on the FOD amplitude at the current point and how it compares to the peak amplitudes of the lobes to which it could be assigned
     float peak_value_threshold; // Absolute threshold for the peak amplitude of the lobe
+    float ratio_of_peak_value_to_merge; // Determines whether two lobes get agglomerated into one, depending on the FOD amplitude at the current point and how it compares to the peak amplitudes of the lobes to which it could be assigned
     bool  create_null_lobe; // If this is set, an additional lobe will be created after segmentation with zero size, containing all directions not assigned to any other lobe
     bool  create_lookup_table; // If this is set, an additional lobe will be created after segmentation with zero size, containing all directions not assigned to any other lobe
     bool  dilate_lookup_table; // If this is set, the lookup table created for each voxel will be dilated so that all directions correspond to the nearest positive non-zero FOD lobe
@@ -190,9 +204,9 @@ class FOD_FMLS {
     void verify_settings() const
     {
       if (create_null_lobe && dilate_lookup_table)
-        throw Exception ("For FOD segmentation, options 'create_null_lobe' and 'dilate_lookup_table' are mutually exclusive");
+        throw Exception ("For FOD segmentation, options '-create_null_lobe' and '-dilate_lookup_table' are mutually exclusive");
       if (!create_lookup_table && dilate_lookup_table)
-        throw Exception ("For FOD segmentation, 'create_lookup_table' must be set in order for lookup tables to be dilated ('dilate_lookup_table')");
+        throw Exception ("For FOD segmentation, '-create_lookup_table' must be set in order for lookup tables to be dilated ('-dilate_lookup_table')");
     }
 
 };
@@ -202,7 +216,7 @@ class FOD_FMLS {
 
 }
 }
-
+}
 
 
 #endif
