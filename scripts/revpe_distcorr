@@ -2,13 +2,13 @@
 
 #Script for performing EPI distortion correction using FSL 5.0 tools topup and applytopup
 
-#This script is only for the specific case where a single pair of reversed-phase-encode images have been acquired for estimating the inhomogeneity field (phase encode A>>P then P>>A), which is to be used subsequently to correct a DWI series that has been acquired using A>>P phase-encode direction
+#This script is only for the specific case where a single pair of reversed-phase-encode images have been acquired for estimating the inhomogeneity field (phase encode A>>P then P>>A), which is to be used subsequently to correct a volume series (DWI / fMRI) that has been acquired using A>>P phase-encode direction. If your acquisition is different or more complex, you will need to modify this script accordingly or make your own.
 
 #Order of input arguments is:
 # * Anterior-posterior image from reverse phase-encode pair
 # * Posterior-anterior image from reverse phase-encode pair
-# * DWI series to be corrected; note that motion correction should be applied BEFORE this script
-# * Name of output corrected DWI series
+# * Image series to be corrected; note that motion correction should be applied BEFORE this script
+# * Name of output corrected image series
 
 #The script will generate a temporary directory for all of its working files, and delete this directory on close
 
@@ -52,7 +52,7 @@ fi
 EXPECTED_ARGS=4
 if [ $# -ne $EXPECTED_ARGS ]
 then
-  echo "Usage: revpe_distcorr {AP image} {PA image} {DWI series} {Output image}"
+  echo "Usage: revpe_distcorr {AP image} {PA image} {Image series} {Output image}"
   return 0
 fi
 
@@ -80,23 +80,33 @@ echo $'0  1 0 0.1\n0 -1 0 0.1\n' > config.txt
 # Perform the field estimation
 $TOPUP_CMD --imain=pair.nii --datain=config.txt --out=field --config=$TOPUP_CONFIG_PATH
 
-# Convert the DWI series into something that FSL can recognise
-mrconvert ../$3 dwi_before.nii -quiet
+# Convert the image series into something that FSL can recognise
+mrconvert ../$3 series_before.nii -stride +1,+2,+3,+4 -quiet
 
-# Apply the warp field to the DWIs
-$APPLYTOPUP_CMD --imain=dwi_before.nii --datain=config.txt --inindex=1 --topup=field --out=dwi_after.nii --method=jac
+# Apply the warp field to the image series
+$APPLYTOPUP_CMD --imain=series_before.nii --datain=config.txt --inindex=1 --topup=field --out=series_after.nii --method=jac
 
-# Get the DWI encoding from the input DWI
-mrinfo ../$3 -gradient grad.b > /dev/null
+# Get the original strides from the volume series using mrinfo, so that the output image can have the same strides
+STRIDES=`mrinfo ../$3 | grep "Data strides: "`
+STRIDES=${STRIDES##*[ }
+STRIDES=${STRIDES%% ]*}
+STRIDES=${STRIDES// /,}
 
-# Convert the resulting DWI to the output image, and re-insert the diffusion encoding
-mrconvert dwi_after.nii ../$4 -grad grad.b -quiet
+# Get the diffusion gradient encoding from the input image (if not present, mrinfo throws an error and grad.b will be empty)
+set +e
+mrinfo ../$3 -gradient grad.b > /dev/null 2>&1
+
+# Convert the resulting volume to the output image, and re-insert the diffusion encoding if present
+if [[ $(stat -c%s "grad.b") -ne "0" ]]; then
+  mrconvert series_after.nii ../$4 -stride $STRIDES -grad grad.b -quiet
+else
+  mrconvert series_after.nii ../$4 -stride $STRIDES -quiet
+fi
 
 # Delete all working files
 rm -f *.*
 cd ../
 rmdir $TEMP_DIR
 
-set +e
 
 
