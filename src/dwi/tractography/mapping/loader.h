@@ -25,6 +25,7 @@
 
 
 #include "progressbar.h"
+#include "ptr.h"
 #include "thread/queue.h"
 #include "dwi/tractography/file.h"
 
@@ -46,7 +47,7 @@ class TrackLoader
       reader (file),
       counter (0),
       tracks_to_load (to_load),
-      progress (new ProgressBar (msg, tracks_to_load))
+      progress (msg.size() ? new ProgressBar (msg, tracks_to_load) : NULL)
     { }
 
     virtual ~TrackLoader() { }
@@ -58,7 +59,8 @@ class TrackLoader
         return false;
       }
       out.index = counter++;
-      ++(*progress);
+      if (progress)
+        ++(*progress);
       return true;
     }
 

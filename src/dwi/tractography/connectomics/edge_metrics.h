@@ -33,6 +33,7 @@
 #include "image/buffer.h"
 #include "image/loop.h"
 #include "image/voxel.h"
+#include "image/interp/linear.h"
 
 #include "dwi/tractography/connectomics/connectomics.h"
 
@@ -143,6 +144,39 @@ class Metric_invlength_invnodevolume : public Metric_invnodevolume {
     {
       return (tck.size() > 1 ? (Metric_invnodevolume::operator() (tck, nodes) / (tck.size() - 1)) : 0);
     }
+
+};
+
+
+
+class Metric_meanscalar : public Metric_base {
+
+  public:
+    Metric_meanscalar (const std::string& path) :
+      Metric_base (true),
+      image (path),
+      v (image),
+      interp_template (v) { }
+
+    double operator() (const std::vector< Point<float> >& tck, const std::pair<node_t, node_t>& nodes) const
+    {
+      Image::Interp::Linear< Image::Buffer<float>::voxel_type > interp (interp_template);
+      double sum = 0.0;
+      size_t count = 0.0;
+      for (std::vector< Point<float> >::const_iterator i = tck.begin(); i != tck.end(); ++i) {
+        if (!interp.scanner (*i)) {
+          sum += interp.value();
+          ++count;
+        }
+      }
+      return (count ? (sum / double(count)) : 0.0);
+    }
+
+
+  private:
+    Image::Buffer<float> image;
+    const Image::Buffer<float>::voxel_type v;
+    const Image::Interp::Linear< Image::Buffer<float>::voxel_type > interp_template;
 
 };
 

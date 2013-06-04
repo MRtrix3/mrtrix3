@@ -37,7 +37,7 @@ namespace Connectomics {
 
 
 
-const char* metrics[] = { "count", "meanlength", "invlength", "invnodevolume", "invlength_invnodevolume", NULL };
+const char* metrics[] = { "count", "meanlength", "invlength", "invnodevolume", "invlength_invnodevolume", "mean_scalar", NULL };
 
 const char* modes[] = { "voxel", "radial_search", "reverse_search", NULL };
 
@@ -84,8 +84,11 @@ Tck2nodes_base* load_assignment_mode (Image::Buffer<node_t>& nodes_data)
 const OptionGroup MetricOption = OptionGroup ("Structural connectome metric option")
 
   + Option ("metric", "specify the edge weight metric. "
-                      "Options are: count (default), meanlength, invlength, invnodevolume, invlength_invnodevolume")
-    + Argument ("choice").type_choice (metrics);
+                      "Options are: count (default), meanlength, invlength, invnodevolume, invlength_invnodevolume, mean_scalar")
+    + Argument ("choice").type_choice (metrics)
+
+  + Option ("image", "provide the associated image for the mean_scalar metric")
+    + Argument ("path").type_image_in();
 
 
 
@@ -96,12 +99,22 @@ Metric_base* load_metric (Image::Buffer<node_t>& nodes_data)
   if (opt.size())
     edge_metric = opt[0][0];
   switch (edge_metric) {
+
     case 0: return new Connectomics::Metric_count (); break;
     case 1: return new Connectomics::Metric_meanlength (); break;
     case 2: return new Connectomics::Metric_invlength (); break;
     case 3: return new Connectomics::Metric_invnodevolume (nodes_data); break;
     case 4: return new Connectomics::Metric_invlength_invnodevolume (nodes_data); break;
+
+    case 5:
+      opt = get_options ("image");
+      if (!opt.size())
+        throw Exception ("To use the \"mean_scalar\" metric, you must provide the associated scalar image using the -image option");
+      return new Connectomics::Metric_meanscalar (opt[0][0]);
+      break;
+
     default: throw Exception ("Undefined edge weight metric");
+
   }
 }
 
