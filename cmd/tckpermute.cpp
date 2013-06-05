@@ -139,7 +139,7 @@ class GroupAvDixelProcessor
                               index2scanner_pos (index2scanner_pos),
                               image_transform (FOD_dixel_indexer) {}
 
-    bool operator () (DWI::FOD_lobes& in) {
+    bool operator () (DWI::FMLS::FOD_lobes& in) {
       if (in.empty())
          return true;
       FOD_dixel_indexer[0] = in.vox[0];
@@ -148,7 +148,7 @@ class GroupAvDixelProcessor
       FOD_dixel_indexer[3] = 0;
       FOD_dixel_indexer.value() = FOD_dixel_directions.size();
       int32_t dixel_count = 0;
-      for (vector<DWI::FOD_lobe>::const_iterator i = in.begin(); i != in.end(); ++i, ++dixel_count) {
+      for (vector<DWI::FMLS::FOD_lobe>::const_iterator i = in.begin(); i != in.end(); ++i, ++dixel_count) {
         FOD_dixel_directions.push_back (i->get_peak_dir());
         Point<value_type> pos;
         image_transform.voxel2scanner (FOD_dixel_indexer, pos);
@@ -183,7 +183,7 @@ class SubjectDixelProcessor {
       angular_threshold_dp = cos (angular_threshold * (M_PI/180.0));
     }
 
-    bool operator () (DWI::FOD_lobes& in)
+    bool operator () (DWI::FMLS::FOD_lobes& in)
     {
       if (in.empty())
         return true;
@@ -466,11 +466,11 @@ void load_data_and_compute_integrals (const vector<string>& filename_list,
     Image::Buffer<value_type> fod_buffer (filename_list[subject]);
     Image::check_dimensions (fod_buffer, dixel_mask, 0, 3);
     DWI::Tractography::SIFT::FODQueueWriter<Image::Buffer<value_type>, Image::BufferScratch<bool> > writer2 (fod_buffer, dixel_mask);
-    DWI::FOD_FMLS fmls (dirs, Math::SH::LforN (fod_buffer.dim(3)));
+    DWI::FMLS::Segmenter fmls (dirs, Math::SH::LforN (fod_buffer.dim(3)));
     fmls.set_peak_value_threshold (SUBJECT_FOD_THRESHOLD);
     vector<value_type> temp_dixel_integrals (dixel_directions.size(), 0.0);
     SubjectDixelProcessor dixel_processor (dixel_indexer, dixel_directions, temp_dixel_integrals, angular_threshold);
-    Thread::run_queue_threaded_pipe (writer2, DWI::SH_coefs(), fmls, DWI::FOD_lobes(), dixel_processor);
+    Thread::run_queue_threaded_pipe (writer2, DWI::FMLS::SH_coefs(), fmls, DWI::FMLS::FOD_lobes(), dixel_processor);
 
     // Smooth the data based on connectivity
     for (size_t dixel = 0; dixel < dixel_directions.size(); ++dixel) {
@@ -585,10 +585,10 @@ void run() {
     Image::Buffer<bool> brain_mask_buffer (argument[5]);
     Image::check_dimensions (av_fod_buffer, brain_mask_buffer, 0, 3);
     DWI::Tractography::SIFT::FODQueueWriter <Image::Buffer<value_type>, Image::Buffer<bool> > writer (av_fod_buffer, brain_mask_buffer);
-    DWI::FOD_FMLS fmls (dirs, Math::SH::LforN (av_fod_buffer.dim(3)));
+    DWI::FMLS::Segmenter fmls (dirs, Math::SH::LforN (av_fod_buffer.dim(3)));
     fmls.set_peak_value_threshold (GROUP_AVERAGE_FOD_THRESHOLD);
     GroupAvDixelProcessor dixel_processor (dixel_indexer, dixel_directions, dixel_positions);
-    Thread::run_queue_threaded_pipe (writer, DWI::SH_coefs(), fmls, DWI::FOD_lobes(), dixel_processor);
+    Thread::run_queue_threaded_pipe (writer, DWI::FMLS::SH_coefs(), fmls, DWI::FMLS::FOD_lobes(), dixel_processor);
   }
 
   uint32_t num_dixels = dixel_directions.size();
