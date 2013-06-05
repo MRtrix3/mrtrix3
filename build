@@ -242,7 +242,7 @@ class Entry:
         self.deps = self.deps.union (list_lib_deps())
 
       self.cmd = fillin (ld, { 
-        'LDFLAGS': fillin (ld_flags, { 'LIBNAME': [ os.path.basename (self.name) ] }) + flags,
+        'LDFLAGS': [ s.replace ('LIBNAME', os.path.basename (self.name)) for s in ld_flags ] + flags,
         'OBJECTS': self.deps,
         'EXECUTABLE': [ self.name ] })
 
@@ -297,7 +297,7 @@ class Entry:
     self.deps = list_lib_deps()
 
     self.cmd = fillin (ld_lib, {
-      'LDLIB_FLAGS': fillin (ld_lib_flags, { 'LIBNAME': [ os.path.basename (self.name) ] }),
+      'LDLIB_FLAGS': [ s.replace ('LIBNAME', os.path.basename (self.name) for s in ld_lib_flags ],
       'OBJECTS': [ item for item in self.deps ],
       'LIB': [ self.name ] })
 
