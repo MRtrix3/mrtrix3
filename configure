@@ -396,7 +396,8 @@ if 'ARCH' in os.environ.keys():
   report ('Machine architecture set by ARCH environment variable to: ' + march + '\n')
   cpp_flags += [ '-march='+march ]
 else:
-  cpp_flags += [ '-march=native' ]
+  if system != 'darwin':
+    cpp_flags += [ '-march=native' ]
 
 
 
