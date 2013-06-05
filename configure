@@ -20,7 +20,9 @@ for arg in sys.argv[1:]:
     static = True
     noshared = True
   elif '-verbose'.startswith (arg): verbose = True
-  elif '-R'.startswith (arg): R_module = True
+  elif '-R'.startswith (arg): 
+    noshared = True
+    R_module = True
   elif arg[0] != '-':
     if profile_name != None: 
       print ('configure: too many names supplied')
@@ -58,7 +60,7 @@ OPTIONS:
 
     -noshared    disable shared library generation.
 
-    -R           used to generate an R module
+    -R           used to generate an R module (implies -noshared)
 
     -static      produce statically-linked executables.
 
