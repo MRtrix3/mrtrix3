@@ -41,6 +41,7 @@
 
 
 
+
 MRTRIX_APPLICATION
 
 using namespace MR;
@@ -57,17 +58,24 @@ void usage ()
 	AUTHOR = "Robert E. Smith (r.smith@brain.org.au)";
 
   DESCRIPTION
-  + "generate a connectome matrix from a streamlines file and a segmented anatomical image";
+  + "generate a connectome matrix from a streamlines file and a node parcellation image";
 
   ARGUMENTS
   + Argument ("tracks_in",      "the input track file").type_file()
-  + Argument ("nodes_in",       "the input segmented anatomical image").type_image_in()
+  + Argument ("nodes_in",       "the input node parcellation image").type_image_in()
   + Argument ("connectome_out", "the output .csv file containing edge weights").type_file();
 
 
   OPTIONS
   + Connectomics::AssignmentOption
-  + Connectomics::MetricOption;
+  + Connectomics::MetricOption
+
+  + Option ("keep_unassigned", "By default, the program discards the information regarding those streamlines that are not successfully assigned to a node pair. "
+                               "Set this option to keep these values (will be the first row/column in the output matrix)")
+
+  + Option ("zero_diagonal", "set all diagonal entries in the matrix to zero \n"
+                             "(these represent streamlines that connect to the same node at both ends)");
+
 
 };
 
@@ -101,6 +109,14 @@ void run ()
 
   if (metric->scale_edges_by_streamline_count())
     connectome.scale_by_streamline_count();
+
+  Options opt = get_options ("keep_unassigned");
+  if (!opt.size())
+    connectome.remove_unassigned();
+
+  opt = get_options ("zero_diagonal");
+  if (opt.size())
+    connectome.zero_diagonal();
 
   connectome.write (argument[2]);
 

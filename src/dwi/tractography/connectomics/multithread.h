@@ -145,6 +145,24 @@ class Connectome
     }
 
 
+    void remove_unassigned() {
+      for (node_t i = 0; i != data.rows() - 1; ++i) {
+        for (node_t j = 0; j != data.columns() - 1; ++j) {
+          data   (i, j) = data   (i+1, j+1);
+          counts (i, j) = counts (i+i, j+1);
+        }
+      }
+      data  .resize (data  .rows() - 1, data  .columns() - 1);
+      counts.resize (counts.rows() - 1, counts.columns() - 1);
+    }
+
+
+    void zero_diagonal() {
+      for (node_t i = 0; i != data.rows(); ++i)
+        data (i, i) = 0.0;
+    }
+
+
     void write (const std::string& path) { data.save (path); }
 
 

@@ -80,7 +80,7 @@ void usage ()
   + "filter a whole-brain fibre-tracking data set such that the streamline densities match the FOD lobe integrals.";
 
   ARGUMENTS
-  + Argument ("in_tracks",  "the input track file.").type_file()
+  + Argument ("in_tracks",  "the input track file").type_file()
   + Argument ("in_fod",     "input image containing the spherical harmonics of the fibre orientation distributions").type_image_in()
   + Argument ("out_tracks", "the output filtered tracks file").type_file();
 
@@ -90,7 +90,7 @@ void usage ()
                          "Image spatial dimensions must match the FOD image.")
     + Argument ("image").type_image_in()
 
-  + Option ("act", "use an ACT four-tissue-type segmented anatomical image to derive the processing mask for SIFT. \n")
+  + Option ("act", "use an ACT four-tissue-type segmented anatomical image to derive the processing mask for SIFT.")
     + Argument ("image").type_image_in()
 
   + Option ("no_dilate_lut", "do NOT dilate FOD lobe lookup tables; only map streamlines to FOD lobes if the precise tangent lies within the angular spread of that lobe")
