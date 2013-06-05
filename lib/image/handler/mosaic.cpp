@@ -56,7 +56,7 @@ namespace MR
         ProgressBar progress ("reformatting DICOM mosaic images...", slices*files.size());
         uint8_t* data = addresses[0];
         for (size_t n = 0; n < files.size(); n++) {
-          File::MMap file (files[n], false, m_xdim * m_ydim * datatype.bytes());
+          File::MMap file (files[n], false, false, m_xdim * m_ydim * datatype.bytes());
           size_t nx = 0, ny = 0;
           for (size_t z = 0; z < slices; z++) {
             size_t ox = nx*xdim;

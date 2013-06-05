@@ -33,9 +33,7 @@
 #include "mrtrix.h"
 #include "types.h"
 #include "file/path.h"
-
-#define TMPFILE_ROOT "mrtrix-tmp-"
-#define TMPFILE_ROOT_LEN 11
+#include "file/config.h"
 
 
 namespace MR
@@ -51,6 +49,17 @@ namespace MR
         if (c < 10) return c+48;
         if (c < 36) return c+55;
         return c+61;
+      }
+
+      const std::string& tmpfile_dir () {
+        static const std::string __tmpfile_dir = File::Config::get ("TmpFileDir", ".");
+        return __tmpfile_dir;
+      }
+
+
+      const std::string& tmpfile_prefix () {
+        static const std::string __tmpfile_prefix = File::Config::get ("TmpFilePrefix", "mrtrix-tmp-");
+        return __tmpfile_prefix;
       }
 
     }
@@ -95,8 +104,11 @@ namespace MR
 
     inline bool is_tempfile (const std::string& name, const char* suffix = NULL)
     {
-      if (Path::basename (name).compare (0, TMPFILE_ROOT_LEN, TMPFILE_ROOT)) return false;
-      if (suffix) if (!Path::has_suffix (name, suffix)) return false;
+      if (Path::basename (name).compare (0, tmpfile_prefix().size(), tmpfile_prefix())) 
+        return false;
+      if (suffix) 
+        if (!Path::has_suffix (name, suffix)) 
+          return false;
       return true;
     }
 
@@ -107,13 +119,14 @@ namespace MR
     {
       DEBUG ("creating temporary file of size " + str (size));
 
-      std::string filename (TMPFILE_ROOT"XXXXXX.");
+      std::string filename (Path::join (tmpfile_dir(), tmpfile_prefix()) + "XXXXXX.");
+      int rand_index = filename.size() - 7;
       if (suffix) filename += suffix;
 
       int fid;
       do {
         for (int n = 0; n < 6; n++)
-          filename[TMPFILE_ROOT_LEN+n] = random_char();
+          filename[rand_index+n] = random_char();
         fid = open (filename.c_str(), O_CREAT | O_RDWR | O_EXCL, 0644);
       } while (fid < 0 && errno == EEXIST);
 

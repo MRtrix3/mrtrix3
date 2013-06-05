@@ -67,8 +67,13 @@ namespace MR
 
           if (writable) {
             for (size_t n = 0; n < files.size(); n++) {
-              File::MMap file (files[n], true, bytes_per_segment);
-              memcpy (file.address(), addresses[0] + n*bytes_per_segment, bytes_per_segment);
+              std::ofstream out (files[n].name.c_str(), std::ios::out | std::ios::binary);
+              if (!out) 
+                throw Exception ("failed to open file \"" + files[n].name + "\": " + strerror (errno));
+              out.seekp (files[n].start, out.beg);
+              out.write ((char*) (addresses[0] + n*bytes_per_segment), bytes_per_segment);
+              if (!out.good())
+                throw Exception ("error writing back contents of file \"" + files[n].name + "\": " + strerror(errno));
             }
           }
         }
@@ -87,7 +92,7 @@ namespace MR
         mmaps.resize (files.size());
         addresses.resize (mmaps.size());
         for (size_t n = 0; n < files.size(); n++) {
-          mmaps[n] = new File::MMap (files[n], writable, bytes_per_segment);
+          mmaps[n] = new File::MMap (files[n], writable, !is_new, bytes_per_segment);
           addresses[n] = mmaps[n]->address();
         }
       }
@@ -107,7 +112,7 @@ namespace MR
         if (is_new) memset (addresses[0], 0, files.size() * bytes_per_segment);
         else {
           for (size_t n = 0; n < files.size(); n++) {
-            File::MMap file (files[n], false, bytes_per_segment);
+            File::MMap file (files[n], false, false, bytes_per_segment);
             memcpy (addresses[0] + n*bytes_per_segment, file.address(), bytes_per_segment);
           }
         }

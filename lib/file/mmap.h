@@ -38,14 +38,22 @@ namespace MR
     class MMap : protected Entry
     {
       public:
-        MMap (const Entry& entry, bool read_write = false, int64_t mapped_size = -1) :
-          Entry (entry), msize (mapped_size), readwrite (read_write) {
-          map();
-        }
-        MMap (const std::string& fname, bool read_write = false, int64_t from = 0, int64_t mapped_size = -1) :
-          Entry (fname, from), msize (mapped_size), readwrite (read_write) {
-          map();
-        }
+        //! create a new memory-mapping to file in \a entry
+        /*! map file in \a entry at the offset in \a entry. By default, the
+         * file will be mapped read-only. If \a readwrite is set to true, a
+         * write-back RAM buffer will be allocated to store the contents of the
+         * file, and written back when the constructor is invoked. 
+         *
+         * By default, the contents of a file mapped read-write will be
+         * preloaded into the RAM buffer. If the file has just been created, \a
+         * preload can be set to false to prevent preloading its contents into
+         * the buffer. 
+         *
+         * By default, the whole file is mapped. If \a mapped_size is
+         * non-zero, then only the region of size \a mapped_size starting from
+         * the byte offset specified in \a entry will be mapped. 
+         */
+        MMap (const Entry& entry, bool readwrite = false, bool preload = true, int64_t mapped_size = -1);
         ~MMap ();
 
         std::string name () const {
@@ -55,10 +63,10 @@ namespace MR
           return msize;
         }
         uint8_t* address() {
-          return addr + start;
+          return first;
         }
         const uint8_t* address() const {
-          return addr + start;
+          return first;
         }
 
         bool is_read_write () const {
@@ -76,6 +84,7 @@ namespace MR
       protected:
         int       fd;
         uint8_t*  addr;        /**< The address in memory where the file has been mapped. */
+        uint8_t*  first;       /**< The address in memory to the start of the region of interest. */
         int64_t   msize;       /**< The size of the file. */
         time_t    mtime;       /**< The modification time of the file at the last check. */
         bool      readwrite;

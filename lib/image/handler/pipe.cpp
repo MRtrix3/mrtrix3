@@ -47,7 +47,7 @@ namespace MR
         if (double (bytes_per_segment) >= double (std::numeric_limits<size_t>::max()))
           throw Exception ("image \"" + name + "\" is larger than maximum accessible memory");
 
-        mmap = new File::MMap (files[0], writable, bytes_per_segment);
+        mmap = new File::MMap (files[0], writable, !is_new, bytes_per_segment);
         addresses.resize (1);
         addresses[0] = mmap->address();
       }
@@ -56,10 +56,10 @@ namespace MR
       void Pipe::unload()
       {
         if (mmap) {
+          mmap = NULL;
           if (is_new)
             std::cout << files[0].name << "\n";
           else {
-            mmap = NULL;
             DEBUG ("deleting piped image file \"" + files[0].name + "\"...");
             unlink (files[0].name.c_str());
           }

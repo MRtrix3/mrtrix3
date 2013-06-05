@@ -112,7 +112,7 @@ OPTIONS:
   elif '-dependencies'.startswith(arg): 
     dependencies = True
   elif arg[0] == '-':
-    sys.stderr.write ('unknown command-line option "' + arg + '"')
+    sys.stderr.write ('unknown command-line option "' + arg + '"\n')
     sys.exit (1)
   elif arg == 'clean':
     targets = [ 'clean' ]

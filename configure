@@ -561,8 +561,22 @@ except:
 # GSL flags:
 
 report ('Checking for GNU Scientific Library: ')
-if 'GSL_CFLAGS' in os.environ.keys(): gsl_cflags = os.environ['GSL_CFLAGS'].split()
-if 'GSL_LDFLAGS' in os.environ.keys(): gsl_ldflags = os.environ['GSL_LDFLAGS'].split()
+if 'GSL_CFLAGS' in os.environ.keys(): 
+  gsl_cflags = os.environ['GSL_CFLAGS'].split()
+else:
+  try: 
+    gsl_cflags = execute ([ 'gsl-config', '--cflags' ], RuntimeError)[1].split()
+  except:
+    log ('gsl-config not in PATH - assuming defaults for GSL_CFLAGS\n\n')
+    
+if 'GSL_LDFLAGS' in os.environ.keys(): 
+  gsl_ldflags = os.environ['GSL_LDFLAGS'].split()
+else:
+  try: 
+    gsl_ldflags = execute ([ 'gsl-config', '--libs' ], RuntimeError)[1].split()
+  except:
+    log ('gsl-config not in PATH - assuming defaults for GSL_LDFLAGS\n\n')
+    
 
 try:
   gsl_version = compile ('''
@@ -779,7 +793,13 @@ int main() { Foo f; }
       f.write (file)
       f.close();
 
-      try: execute ([ qmake ], QMakeError, cwd=qt_dir.name)
+      qmake_cmd = [ qmake ]
+      if system == 'windows':
+        qmake_cmd += [ '-spec', 'win32-g++' ]
+      elif system == 'darwin':
+        qmake_cmd += [ '-spec', 'macx-g++' ]
+
+      try: execute (qmake_cmd, QMakeError, cwd=qt_dir.name)
       except QMakeError:
         error ('''error issuing qmake command!
 
