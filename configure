@@ -393,7 +393,7 @@ elif system == 'windows':
   ld_lib_flags += [ '-shared' ]
 elif system == 'darwin':
   cpp_flags += [ '-DMACOSX', '-fPIC' ]
-  ld_lib_flags += [ '-dynamiclib', '-install_name', '@rpath/../'+lib_dir+'/LIBNAME' ]
+  ld_lib_flags += [ '-dynamiclib', '-install_name', '@rpath/../lib/LIBNAME' ]
   lib_suffix = '.dylib'
 
 
