@@ -385,7 +385,7 @@ elif system == 'windows':
   ld_flags += [ '-Wl,--allow-multiple-definition' ]
 elif system == 'darwin':
   cpp_flags += [ '-DMACOSX', '-fPIC' ]
-  ld_lib_flags += [ '-dynamiclib' ]
+  ld_lib_flags += [ '-dynamiclib', '-install_name', 'LIBNAME' ]
   lib_suffix = '.dylib'
 
 

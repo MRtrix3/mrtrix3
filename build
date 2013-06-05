@@ -297,7 +297,7 @@ class Entry:
     self.deps = list_lib_deps()
 
     self.cmd = fillin (ld_lib, {
-      'LDLIB_FLAGS': ld_lib_flags,
+      'LDLIB_FLAGS': fillin (ld_lib_flags, { 'LIBNAME': [ os.path.basename (self.name) ] }),
       'OBJECTS': [ item for item in self.deps ],
       'LIB': [ self.name ] })
 
