@@ -8,6 +8,7 @@ nogui = False
 noshared = False
 static = False
 verbose = False
+R_module = False
 profile_name = None
 
 for arg in sys.argv[1:]:
@@ -19,6 +20,7 @@ for arg in sys.argv[1:]:
     static = True
     noshared = True
   elif '-verbose'.startswith (arg): verbose = True
+  elif '-R'.startswith (arg): R_module = True
   elif arg[0] != '-':
     if profile_name != None: 
       print ('configure: too many names supplied')
@@ -55,6 +57,8 @@ OPTIONS:
     -nogui       disable GUI components.
 
     -noshared    disable shared library generation.
+
+    -R           used to generate an R module
 
     -static      produce statically-linked executables.
 
@@ -176,8 +180,8 @@ cpp_flags = [ '-Wno-unused-parameter' ]
 ld = 'g++ OBJECTS LDFLAGS -o EXECUTABLE'.split()
 ld_flags = []
 
-ld_lib = 'g++ -shared OBJECTS LDLIB_FLAGS -o LIB'.split()
-ld_lib_flags = []
+ld_lib = 'g++ OBJECTS LDLIB_FLAGS -o LIB'.split()
+ld_lib_flags = [ ]
 
 thread_cflags = []
 thread_ldflags = [ '-lpthread' ]
@@ -377,15 +381,17 @@ report ('Detecting OS: ' + system + '\n')
 if system == 'linux':
   cpp_flags += [ '-fPIC' ]
   lib_suffix = '.so'
+  ld_lib_flags += [ '-shared' ]
 elif system == 'windows':
   cpp_flags += [ '-DWINDOWS', '-mms-bitfields' ]
   exe_suffix = '.exe'
   lib_prefix = ''
   lib_suffix = '.dll'
   ld_flags += [ '-Wl,--allow-multiple-definition' ]
+  ld_lib_flags += [ '-shared' ]
 elif system == 'darwin':
   cpp_flags += [ '-DMACOSX', '-fPIC' ]
-  ld_lib_flags += [ '-dynamiclib', '-install_name', 'LIBNAME' ]
+  ld_lib_flags += [ '-dynamiclib', '-install_name', '@rpath/LIBNAME' ]
   lib_suffix = '.dylib'
 
 
@@ -958,6 +964,9 @@ if static:
   ld_flags = [ '-static' ] + zlib_ldflags + gsl_ldflags + thread_ldflags
 
 
+if R_module:
+  ld_flags = ld_lib_flags
+  exe_suffix = lib_suffix
 
 
 # write out configuration:
