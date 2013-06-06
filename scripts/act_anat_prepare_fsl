@@ -102,7 +102,7 @@ done
 mradd pves/* - -quiet | mrmath - 1.0 -min pves/all.nii -quiet
 # Combine
 cd ../
-mrmake4tt T1_bet_pve_* FIRST/pves/all.nii ../$2 -quiet
+mr4ttmake T1_bet_pve_* FIRST/pves/all.nii ../$2 -quiet
 # Don't leave a trace
 rm -f FIRST/pves/*.*
 rm -f FIRST/first.logs/*.*
