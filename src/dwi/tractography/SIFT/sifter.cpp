@@ -99,6 +99,19 @@ namespace MR
         MappedTrackReceiver receiver (*this);
         Thread::run_batched_queue_custom_threading (loader, 1, Mapping::TrackAndIndex(), 100, mapper, 0, SetDixel(), 100, receiver, 0);
 
+        if (!contributions.back()) {
+          track_t num_tracks = 0, max_index = 0;
+          for (track_t i = 0; i != contributions.size(); ++i) {
+            if (contributions[i]) {
+              ++num_tracks;
+              max_index = std::max (max_index, i);
+            }
+            WARN ("Only " + str (num_tracks) + " tracks read from input track file; expected " + str (contributions.size()));
+            WARN ("(suggest running command tckfixcount on file " + tck_file_path + ")");
+            contributions.resize (max_index + 1);
+          }
+        }
+
         tck_file_path = path;
       }
 
@@ -176,11 +189,13 @@ namespace MR
         double sum_contributing_length = 0.0, sum_noncontributing_length = 0.0;
         std::vector<track_t> noncontributing_indices;
         for (track_t i = 0; i != contributions.size(); ++i) {
-          if (contributions[i]->get_total_contribution()) {
-            sum_contributing_length    += contributions[i]->get_total_length();
-          } else {
-            sum_noncontributing_length += contributions[i]->get_total_length();
-            noncontributing_indices.push_back (i);
+          if (contributions[i]) {
+            if (contributions[i]->get_total_contribution()) {
+              sum_contributing_length    += contributions[i]->get_total_length();
+            } else {
+              sum_noncontributing_length += contributions[i]->get_total_length();
+              noncontributing_indices.push_back (i);
+            }
           }
         }
         double contributing_length_removed = 0.0, noncontributing_length_removed = 0.0;
@@ -415,7 +430,7 @@ namespace MR
         std::vector< Point<float> > tck;
         ProgressBar progress ("Writing filtered tracks output file...", contributions.size());
         std::vector< Point<float> > empty_tck;
-        while (reader.next (tck)) {
+        while (reader.next (tck) && tck_counter < contributions.size()) {
           if (contributions[tck_counter++])
             writer.append (tck);
           else
@@ -785,7 +800,7 @@ namespace MR
         std::vector< Point<float> > tck;
         ProgressBar progress ("Writing non-contributing streamlines output file...", contributions.size());
         track_t tck_counter = 0;
-        while (reader.next (tck)) {
+        while (reader.next (tck) && tck_counter < contributions.size()) {
           if (contributions[tck_counter] && !contributions[tck_counter++]->get_total_contribution())
             writer.append (tck);
           ++progress;
