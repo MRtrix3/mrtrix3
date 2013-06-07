@@ -44,6 +44,13 @@ inline void set_pos (Set& data, const Nav& pos)
       data[axis] = pos[axis];
 }
 
+template <class Set, class Nav>
+inline void set_pos (Set& data, const Nav& pos, const size_t from_axis, const size_t to_axis)
+{
+    for (size_t axis = from_axis; axis != to_axis; ++axis)
+      data[axis] = pos[axis];
+}
+
 template <class Set, class Point_type>
 inline void set_pos (Set& data, const Point<Point_type>& pos)
 {
