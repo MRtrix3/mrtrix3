@@ -48,7 +48,7 @@ namespace MR
         if (!Path::has_suffix (H.name(), ".mif"))
           throw Exception ("MRtrix only supports the .mif format for command-line piping");
 
-        Ptr<Handler::Base> original_handler (mrtrix_handler.read (H));
+        RefPtr<Handler::Base> original_handler (mrtrix_handler.read (H));
         RefPtr<Handler::Pipe> handler (new Handler::Pipe (*original_handler));
         return handler;
       }
@@ -72,7 +72,7 @@ namespace MR
 
       RefPtr<Handler::Base> Pipe::create (Header& H) const
       {
-        Ptr<Handler::Base> original_handler (mrtrix_handler.create (H));
+        RefPtr<Handler::Base> original_handler (mrtrix_handler.create (H));
         RefPtr<Handler::Pipe> handler (new Handler::Pipe (*original_handler));
         return handler;
       }

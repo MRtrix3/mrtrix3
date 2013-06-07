@@ -138,7 +138,7 @@ namespace MR
 
         while (++item < list.size()) {
           Header header (*this);
-          Ptr<Handler::Base> H_handler;
+          RefPtr<Handler::Base> H_handler;
           header.name() = list[item].name();
           if (!(H_handler = (*format_handler)->read (header)))
             throw Exception ("image specifier contains mixed format files");

@@ -138,6 +138,7 @@ namespace MR
           if (!out.good())
             throw Exception ("error writing back contents of file \"" + Entry::name + "\": " + strerror(errno));
         }
+        delete [] first;
       }
     }
 
