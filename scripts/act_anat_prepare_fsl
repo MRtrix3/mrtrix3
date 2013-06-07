@@ -4,6 +4,7 @@
 # in a format appropriate for ACT
 # Also erases any and all working files/folders created
 
+
 set -e
 
 if [ -z "$FSLDIR" ]; then
@@ -47,10 +48,35 @@ fi
 FIRST_ATLAS_PATH="$FSLDIR/data/first/models_336_bin/"
 
 if [ ! -d "$FIRST_ATLAS_PATH" ]; then
-  echo "Atlases required for FSL's FIRST program not installed, please run:"
-  echo "sudo apt-get install fsl-first-data"
+  echo "Atlases required for FSL's FIRST program not installed"
+  echo "Please install fsl-first-data using your relevant package manager"
   return 0
 fi 
+
+FSLSUFFIX="nii.gz" # The default for FSL unless ${HOME}/.fslconf/fsl.sh is provided
+if [ -z "$FSLOUTPUTTYPE" ]; then
+  echo "Environment variable FSLOUTPUTTYPE not set; assuming compressed NIFTI"
+  echo "(If the script runs into problems, you may need to manually set FSLOUTPUTTYPE)"
+else
+  case $FSLOUTPUTTYPE in
+    "NIFTI")
+    FSLSUFFIX="nii"
+    ;;
+    "NIFTI_PAIR")
+    FSLSUFFIX="img"
+    ;;
+    "NIFTI_GZ")
+    FSLSUFFIX="nii.gz"
+    ;;
+    "NIFTI_PAIR_GZ")
+    echo "MRtrix does not currently support GZipped .hdr / .img pairs; please set environment variable FSLOUTPUTTYPE to something else"
+    return 0
+    ;;
+    "*")
+    echo "Environment variable FSLOUTPUTTYPE appears to not be supported by FSL; FSL may give an error"
+    ;;
+  esac
+fi
 
 
 EXPECTED_ARGS=2
@@ -61,38 +87,37 @@ then
 fi
 
 
-
 # Generate a random string, and use it to create a new temporary directory
 TEMP_DIR_PREFIX="act_anat_prepare_TEMP_"
-RANDOM_STRING=`tr -dc "[:alpha:]" < /dev/urandom | head -c 8`
-TEMP_DIR="$TEMP_DIR_PREFIX$RANDOM_STRING/"
+TEMP_DIR="."
 while [ -d $TEMP_DIR ]; do
   RANDOM_STRING=`tr -dc "[:alpha:]" < /dev/urandom | head -c 8`
   TEMP_DIR="$TEMP_DIR_PREFIX$RANDOM_STRING/"
 done
 
-
 SGM_STRUCTURES=("L_Accu" "R_Accu" "L_Caud" "R_Caud" "L_Pall" "R_Pall" "L_Puta" "R_Puta" "L_Thal" "R_Thal")
+
+
 
 
 mkdir $TEMP_DIR
 
-# Start by cropping the image and putting it in the correct format for FSL
+# Start by cropping the inferior quarter of the image and putting it in the correct format for FSL
 mrcrop $1 - -axis 2 64 255 -quiet | mrconvert - $TEMP_DIR/T1.nii -stride +1,+2,+3 -quiet
 cd $TEMP_DIR
 # BET
-$BET_CMD T1.nii T1_bet.nii -f 0.25 -R
+$BET_CMD T1.nii T1_bet.$FSLSUFFIX -f 0.25 -R
 # FAST
-$FAST_CMD T1_bet.nii
-# FIRST
-mkdir FIRST/
-cd FIRST/
+$FAST_CMD T1_bet.$FSLSUFFIX
 # Produce a string of structure names to pass to FIRST
 declare -a sgm_cat=()
 for i in ${SGM_STRUCTURES[*]}; do
   sgm_cat=${sgm_cat}${i}','
 done
 sgm_cat=${sgm_cat%','}
+# FIRST
+mkdir FIRST/
+cd FIRST/
 $FIRST_CMD -s ${sgm_cat} -i ../T1.nii -o first > /dev/null 2>&1
 # Convert FIRST meshes to partial volume images
 mkdir pves/
@@ -102,14 +127,11 @@ done
 mradd pves/* - -quiet | mrmath - 1.0 -min pves/all.nii -quiet
 # Combine
 cd ../
-mr4ttmake T1_bet_pve_* FIRST/pves/all.nii ../$2 -quiet
+mr4ttmake T1_bet_pve_*.$FSLSUFFIX FIRST/pves/all.nii 4tt.mif -quiet
+# Use mrcrop to reduce file size (improves caching of image data during tracking)
+mrmathaxis 4tt.mif sum 3 - -quiet | mrthreshold - - -abs 0.5 -quiet | mrcrop 4tt.mif ../$2 -mask - -quiet
 # Don't leave a trace
-rm -f FIRST/pves/*.*
-rm -f FIRST/first.logs/*.*
-rmdir FIRST/*/
-rm -f FIRST/*.*
-rmdir FIRST/
-rm -f *.*
+rm -rf *
 cd ../
 rmdir $TEMP_DIR
 

@@ -4,6 +4,8 @@
 
 #This script is only for the specific case where a single pair of reversed-phase-encode images have been acquired for estimating the inhomogeneity field (phase encode A>>P then P>>A), which is to be used subsequently to correct a volume series (DWI / fMRI) that has been acquired using A>>P phase-encode direction. If your acquisition is different or more complex, you will need to modify this script accordingly or make your own.
 
+#The script assumes that motion correction has already been applied to the image series. If this is not the case, then the corrections will be erroneous in the presence of significant motion.
+
 #Order of input arguments is:
 # * Anterior-posterior image from reverse phase-encode pair
 # * Posterior-anterior image from reverse phase-encode pair
@@ -49,6 +51,32 @@ else
 fi
 
 
+FSLSUFFIX="nii.gz" # The default for FSL unless ${HOME}/.fslconf/fsl.sh is provided
+if [ -z "$FSLOUTPUTTYPE" ]; then
+  echo "Environment variable FSLOUTPUTTYPE not set; assuming compressed NIFTI"
+  echo "(If the script runs into problems, you may need to manually set FSLOUTPUTTYPE)"
+else
+  case $FSLOUTPUTTYPE in
+    "NIFTI")
+    FSLSUFFIX="nii"
+    ;;
+    "NIFTI_PAIR")
+    FSLSUFFIX="img"
+    ;;
+    "NIFTI_GZ")
+    FSLSUFFIX="nii.gz"
+    ;;
+    "NIFTI_PAIR_GZ")
+    echo "MRtrix does not currently support GZipped .hdr / .img pairs; please set environment variable FSLOUTPUTTYPE to something else"
+    return 0
+    ;;
+    "*")
+    echo "Environment variable FSLOUTPUTTYPE appears to not be supported by FSL; FSL may give an error"
+    ;;
+  esac
+fi
+
+
 EXPECTED_ARGS=4
 if [ $# -ne $EXPECTED_ARGS ]
 then
@@ -59,8 +87,7 @@ fi
 
 # Generate a random string, and use it to create a new temporary directory
 TEMP_DIR_PREFIX="revpe_distcorr_TEMP_"
-RANDOM_STRING=`tr -dc "[:alpha:]" < /dev/urandom | head -c 8`
-TEMP_DIR="$TEMP_DIR_PREFIX$RANDOM_STRING/"
+TEMP_DIR="."
 while [ -d $TEMP_DIR ]; do
   RANDOM_STRING=`tr -dc "[:alpha:]" < /dev/urandom | head -c 8`
   TEMP_DIR="$TEMP_DIR_PREFIX$RANDOM_STRING/"
@@ -84,7 +111,7 @@ $TOPUP_CMD --imain=pair.nii --datain=config.txt --out=field --config=$TOPUP_CONF
 mrconvert ../$3 series_before.nii -stride +1,+2,+3,+4 -quiet
 
 # Apply the warp field to the image series
-$APPLYTOPUP_CMD --imain=series_before.nii --datain=config.txt --inindex=1 --topup=field --out=series_after.nii --method=jac
+$APPLYTOPUP_CMD --imain=series_before.nii --datain=config.txt --inindex=1 --topup=field --out=series_after.$FSLSUFFIX --method=jac
 
 # Get the original strides from the volume series using mrinfo, so that the output image can have the same strides
 STRIDES=`mrinfo ../$3 | grep "Data strides: "`
@@ -95,12 +122,13 @@ STRIDES=${STRIDES// /,}
 # Get the diffusion gradient encoding from the input image (if not present, mrinfo throws an error and grad.b will be empty)
 set +e
 mrinfo ../$3 -gradient grad.b > /dev/null 2>&1
+set -e
 
 # Convert the resulting volume to the output image, and re-insert the diffusion encoding if present
 if [[ $(stat -c%s "grad.b") -ne "0" ]]; then
-  mrconvert series_after.nii ../$4 -stride $STRIDES -grad grad.b -quiet
+  mrconvert series_after.$FSLSUFFIX ../$4 -stride $STRIDES -grad grad.b -quiet
 else
-  mrconvert series_after.nii ../$4 -stride $STRIDES -quiet
+  mrconvert series_after.$FSLSUFFIX ../$4 -stride $STRIDES -quiet
 fi
 
 # Delete all working files
@@ -108,5 +136,5 @@ rm -f *.*
 cd ../
 rmdir $TEMP_DIR
 
-
+set +e
 
