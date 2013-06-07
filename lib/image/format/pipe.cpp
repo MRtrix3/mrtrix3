@@ -33,10 +33,10 @@ namespace MR
     namespace Format
     {
 
-      Handler::Base* Pipe::read (Header& H) const
+      RefPtr<Handler::Base> Pipe::read (Header& H) const
       {
         if (H.name() != "-") 
-          return NULL;
+          return RefPtr<Handler::Base>();
 
         std::string name;
         getline (std::cin, name);
@@ -49,8 +49,8 @@ namespace MR
           throw Exception ("MRtrix only supports the .mif format for command-line piping");
 
         Ptr<Handler::Base> original_handler (mrtrix_handler.read (H));
-        Ptr<Handler::Pipe> handler (new Handler::Pipe (*original_handler));
-        return handler.release();
+        RefPtr<Handler::Pipe> handler (new Handler::Pipe (*original_handler));
+        return handler;
       }
 
 
@@ -70,11 +70,11 @@ namespace MR
 
 
 
-      Handler::Base* Pipe::create (Header& H) const
+      RefPtr<Handler::Base> Pipe::create (Header& H) const
       {
         Ptr<Handler::Base> original_handler (mrtrix_handler.create (H));
-        Ptr<Handler::Pipe> handler (new Handler::Pipe (*original_handler));
-        return handler.release();
+        RefPtr<Handler::Pipe> handler (new Handler::Pipe (*original_handler));
+        return handler;
       }
 
 

@@ -76,7 +76,7 @@ namespace MR
           return *this;
         }
 
-        void print () const;
+        std::string syntax () const;
     };
 
     //! A class to specify a command-line argument
@@ -258,8 +258,8 @@ namespace MR
         }
 
 
-        void print () const;
-        void print_usage (std::ostream& stream) const;
+        std::string syntax () const;
+        std::string usage () const;
     };
 
 
@@ -272,8 +272,7 @@ namespace MR
           return *this;
         }
 
-        void print () const;
-        void print_usage (std::ostream& stream) const;
+        std::string syntax () const;
     };
 
 
@@ -366,8 +365,8 @@ namespace MR
           return name == id;
         }
 
-        void print () const;
-        void print_usage (std::ostream& stream) const;
+        std::string syntax () const;
+        std::string usage () const;
     };
 
 
@@ -396,7 +395,7 @@ namespace MR
           return std::vector<Option>::back();
         }
 
-        void print () const;
+        std::string syntax () const;
     };
 
 
@@ -426,7 +425,7 @@ namespace MR
           return std::vector<OptionGroup>::back();
         }
 
-        void print () const;
+        std::string syntax () const;
     };
 
 

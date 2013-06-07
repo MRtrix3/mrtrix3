@@ -23,43 +23,49 @@
 #ifndef __app_h__
 #define __app_h__
 
+#ifdef MRTRIX_AS_R_LIBRARY
+
+# ifdef WARN 
+#  undef WARN
+# endif
+
+# include <R.h>
+
+# ifdef WARN 
+#  undef WARN
+# endif
+
+#define MRTRIX_APPLICATION \
+extern "C" void R_main (int* cmdline_argc, char** cmdline_argv) { \
+    try { if (MR::App::DESCRIPTION.empty()) { MR::App::init (*cmdline_argc, cmdline_argv); usage (); } MR::App::parse (); run (); } \
+    catch (MR::Exception& E) { E.display(); return; } \
+    catch (int retval) { return; } \
+} \
+extern "C" void R_usage (char** output) { \
+    if (MR::App::DESCRIPTION.empty()) usage(); \
+    std::string s = MR::App::full_usage(); \
+    *output = new char [s.size()+1]; \
+    strncpy(*output, s.c_str(), s.size()); \
+}
+
+#else
+
+#define MRTRIX_APPLICATION int main (int cmdline_argc, char** cmdline_argv) { \
+    try { MR::App::init (cmdline_argc, cmdline_argv); usage (); MR::App::parse (); run (); } \
+    catch (MR::Exception& E) { E.display(); return 1; } \
+    catch (int retval) { return retval; } } 
+
+#endif
+
+
+
+
 #include "mrtrix.h"
 #include "args.h"
 #include <string.h>
 
 
-#ifdef MRTRIX_AS_R_LIBRARY
-#define ERROR_STREAM std::cout
-#define C_ERROR_STREAM stdout
-#define RMAIN \
-extern "C" void R_main (int* cmdline_argc, char** cmdline_argv) { \
-    main (*cmdline_argc, cmdline_argv);\
-} \
-extern "C" void R_usage (char** output) { \
-    usage(); \
-    std::ostringstream stream; \
-    try { MR::App::print_full_usage (stream); } catch (int) {  } \
-    *output = new char [stream.str().size()+1]; \
-    strncpy(*output, stream.str().c_str(), stream.str().size()); \
-}
-#else
-#define RMAIN
-#endif
 
-
-#ifndef ERROR_STREAM
-#define ERROR_STREAM std::cerr
-#endif
-#ifndef C_ERROR_STREAM
-#define C_ERROR_STREAM stderr
-#endif
-
-
-#define MRTRIX_APPLICATION int main (int cmdline_argc, char** cmdline_argv) { \
-    try { MR::App::init (cmdline_argc, cmdline_argv); usage (); MR::App::parse (); run (); } \
-    catch (MR::Exception& E) { E.display(); return 1; } \
-    catch (int retval) { return retval; } } \
-    RMAIN
 
 extern void usage ();
 extern void run ();
@@ -95,7 +101,7 @@ namespace MR
     void init (int argc, char** argv);
     void parse ();
     const Option* match_option (const char* stub);
-    void print_full_usage (std::ostream& stream);
+    std::string full_usage ();
 
     class ParsedArgument;
 

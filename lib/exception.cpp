@@ -50,14 +50,22 @@ namespace MR
 
   void cmdline_report_to_user_func (const std::string& msg, int type)
   {
-    ERROR_STREAM << App::NAME << console_prefix (type) << msg << "\n";
+#ifdef MRTRIX_R_AS_MODULE
+    REprintf ("%s%s%s\n", App::NAME.c_str(), console_prefix (type), msg.c_str());
+#else
+    std::cerr << App::NAME << console_prefix (type) << msg << "\n";
+#endif
   }
 
 
 
   void cmdline_print_func (const std::string& msg)
   {
+#ifdef MRTRIX_R_AS_MODULE
+    Rprintf (msg.c_str());
+#else 
     std::cout << msg;
+#endif
   }
 
 

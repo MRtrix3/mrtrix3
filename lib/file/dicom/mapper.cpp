@@ -20,6 +20,7 @@
 
 */
 
+#include "app.h"
 #include "image/header.h"
 #include "image/handler/default.h"
 #include "image/handler/mosaic.h"
@@ -37,10 +38,10 @@ namespace MR
     namespace Dicom
     {
 
-      MR::Image::Handler::Base* dicom_to_mapper (MR::Image::Header& H, std::vector< RefPtr<Series> >& series)
+      RefPtr<MR::Image::Handler::Base> dicom_to_mapper (MR::Image::Header& H, std::vector< RefPtr<Series> >& series)
       {
         assert (series.size() > 0);
-        Ptr<MR::Image::Handler::Base> handler;
+        RefPtr<MR::Image::Handler::Base> handler;
 
         Patient* patient (series[0]->study->patient);
         std::string sbuf = (patient->name.size() ? patient->name : "unnamed");
@@ -279,7 +280,7 @@ namespace MR
           }
         }
 
-        return handler.release();
+        return handler;
       }
 
 

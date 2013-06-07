@@ -159,10 +159,10 @@ namespace MR
 
 
 
-      Handler::Base* MRI::read (Header& H) const
+      RefPtr<Handler::Base> MRI::read (Header& H) const
       {
         if (!Path::has_suffix (H.name(), ".mri"))
-          return NULL;
+          return RefPtr<Handler::Base>();
 
         File::MMap fmap (H.name());
 
@@ -242,10 +242,10 @@ namespace MR
         if (!data_offset)
           throw Exception ("no data field found in MRI image \"" + H.name() + "\"");
 
-        Ptr<Handler::Base> handler (new Handler::Default (H));
+        RefPtr<Handler::Base> handler (new Handler::Default (H));
         handler->files.push_back (File::Entry (H.name(), data_offset));
 
-        return handler.release();
+        return handler;
       }
 
 
@@ -271,7 +271,7 @@ namespace MR
 
 
 
-      Handler::Base* MRI::create (Header& H) const
+      RefPtr<Handler::Base> MRI::create (Header& H) const
       {
         File::create (H.name());
         std::ofstream out (H.name().c_str());
@@ -337,11 +337,11 @@ namespace MR
         size_t data_offset = out.tellp();
         out.close();
 
-        Ptr<Handler::Base> handler (new Handler::Default (H));
+        RefPtr<Handler::Base> handler (new Handler::Default (H));
         File::resize (H.name(), data_offset + Image::footprint(H));
         handler->files.push_back (File::Entry (H.name(), data_offset));
 
-        return handler.release();
+        return handler;
       }
 
     }

@@ -52,7 +52,7 @@ namespace MR
                        format_ID (tree[i]->ID).c_str(),
                        format_date (tree[i]->DOB).c_str());
             }
-            ERROR_STREAM << "? ";
+            print ("? ");
             std::cin >> buf;
             if (!isdigit (buf[0])) {
               series.clear();
@@ -89,7 +89,7 @@ namespace MR
                        format_date (patient[i]->date).c_str(),
                        format_time (patient[i]->time).c_str());
             }
-            ERROR_STREAM << "? ";
+            print ("? ");
             std::cin >> buf;
             if (!isdigit (buf[0])) {
               series.clear();
@@ -129,7 +129,7 @@ namespace MR
                        ( (*study[i]) [0]->sequence_name.size() ? (*study[i]) [0]->sequence_name.c_str() : "?"),
                        study[i]->number);
             }
-            ERROR_STREAM << "? ";
+            print ("? ");
             std::cin >> buf;
             if (!isdigit (buf[0])) {
               series.clear();

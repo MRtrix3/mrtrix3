@@ -38,15 +38,15 @@ namespace MR
     namespace
     {
 
-      void paragraph (
+      std::string paragraph (
           const std::string& header,
           const std::string& text,
           size_t header_indent,
           size_t indent)
       {
-        std::string out = std::string (header_indent, ' ') + header + " ";
-        if (out.size() < indent)
-          out.resize (indent, ' ');
+        std::string out, line = std::string (header_indent, ' ') + header + " ";
+        if (line.size() < indent)
+          line.resize (indent, ' ');
 
         std::vector<std::string> paragraphs = split (text, "\n");
 
@@ -55,15 +55,16 @@ namespace MR
           std::vector<std::string> words = split (paragraphs[n]);
           while (i < words.size()) {
             do {
-              out += " " + words[i++];
+              line += " " + words[i++];
               if (i >= words.size())
                 break;
             }
-            while (out.size() + 1 + words[i].size() < HELP_WIDTH);
-            ERROR_STREAM << out << "\n";
-            out = std::string (indent, ' ');
+            while (line.size() + 1 + words[i].size() < HELP_WIDTH);
+            out += line + "\n";
+            line = std::string (indent, ' ');
           }
         }
+        return out;
       }
 
     }
@@ -98,47 +99,50 @@ namespace MR
 
 
 
-    void Description::print () const
+    std::string Description::syntax () const
     {
-      for (size_t i = 0; i < size(); ++i) {
-        paragraph ("", (*this)[i], HELP_PURPOSE_INDENT);
-        ERROR_STREAM << "\n";
-      }
+      std::string s;
+      for (size_t i = 0; i < size(); ++i) 
+        s += paragraph ("", (*this)[i], HELP_PURPOSE_INDENT) + "\n";
+      return s;
     }
 
-    void Argument::print () const
+    std::string Argument::syntax () const
     {
-      paragraph (id, desc, HELP_ARG_INDENT);
+      return paragraph (id, desc, HELP_ARG_INDENT);
     }
 
-    void ArgumentList::print () const
+    std::string ArgumentList::syntax () const
     {
+      std::string s;
       for (size_t i = 0; i < size(); ++i)
-        (*this)[i].print();
-      ERROR_STREAM << "\n";
+        s += (*this)[i].syntax();
+      return s + "\n";
     }
 
-    void Option::print () const
+    std::string Option::syntax () const
     {
       std::string opt ("-");
       opt += id;
       for (size_t i = 0; i < size(); ++i)
         opt += std::string (" ") + (*this)[i].id;
-      paragraph (opt, desc, HELP_OPTION_INDENT);
+      return paragraph (opt, desc, HELP_OPTION_INDENT);
     }
 
-    void OptionGroup::print () const
+    std::string OptionGroup::syntax () const
     {
-      ERROR_STREAM << ( name ? name : "OPTIONS" ) << ":\n";
+      std::string s = std::string ( name ? name : "OPTIONS" ) + ":\n";
       for (size_t i = 0; i < size(); ++i)
-        (*this) [i].print();
-      ERROR_STREAM << "\n";
+        s += (*this) [i].syntax();
+      return s + "\n";
     }
 
-    void OptionList::print () const
+    std::string OptionList::syntax () const
     {
+      std::string s;
       for (size_t i = 0; i < size(); ++i)
-        (*this) [i].print();
+        s += (*this) [i].syntax();
+      return s;
     }
 
 
@@ -148,8 +152,9 @@ namespace MR
 
 
 
-    void Argument::print_usage (std::ostream& stream) const
+    std::string Argument::usage () const
     {
+      std::ostringstream stream;
       stream << "ARGUMENT " << id << " "
         << (flags & Optional ? '1' : '0') << " "
         << (flags & AllowMultiple ? '1' : '0') << " ";
@@ -193,13 +198,16 @@ namespace MR
       stream << "\n";
       if (desc.size())
         stream << desc << "\n";
+
+      return stream.str();
     }
 
 
 
 
-    void Option::print_usage (std::ostream& stream) const
+    std::string Option::usage () const
     {
+      std::ostringstream stream;
       stream << "OPTION " << id << " "
         << (flags & Optional ? '1' : '0') << " "
         << (flags & AllowMultiple ? '1' : '0') << "\n";
@@ -208,7 +216,9 @@ namespace MR
         stream << desc << "\n";
 
       for (size_t i = 0; i < size(); ++i)
-        (*this)[i].print_usage (stream);
+        stream << (*this)[i].usage ();
+      
+      return stream.str();
     }
 
 

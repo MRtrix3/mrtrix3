@@ -23,6 +23,12 @@
 #include "app.h"
 #include "progressbar.h"
 
+#ifdef MRTRIX_R_AS_MODULE
+#define PROGRESS_PRINT REprintf (
+#else
+#define PROGRESS_PRINT fprintf (stderr, 
+#endif
+
 namespace MR
 {
 
@@ -45,18 +51,18 @@ namespace MR
     void display_func_cmdline (ProgressInfo& p)
     {
       if (p.as_percentage)
-        fprintf (C_ERROR_STREAM, "\r%s: %s %3zu%%", App::NAME.c_str(), p.text.c_str(), size_t (p.value));
+        PROGRESS_PRINT "\r%s: %s %3zu%%", App::NAME.c_str(), p.text.c_str(), size_t (p.value));
       else
-        fprintf (C_ERROR_STREAM, "\r%s: %s %s", App::NAME.c_str(), p.text.c_str(), busy[p.value%8]);
+        PROGRESS_PRINT "\r%s: %s %s", App::NAME.c_str(), p.text.c_str(), busy[p.value%8]);
     }
 
 
     void done_func_cmdline (ProgressInfo& p)
     {
       if (p.as_percentage)
-        fprintf (C_ERROR_STREAM, "\r%s: %s %3u%%\n", App::NAME.c_str(), p.text.c_str(), 100);
+        PROGRESS_PRINT "\r%s: %s %3u%%\n", App::NAME.c_str(), p.text.c_str(), 100);
       else
-        fprintf (C_ERROR_STREAM, "\r%s: %s  - done\n", App::NAME.c_str(), p.text.c_str());
+        PROGRESS_PRINT "\r%s: %s  - done\n", App::NAME.c_str(), p.text.c_str());
     }
   }
 

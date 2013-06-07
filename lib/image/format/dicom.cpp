@@ -40,10 +40,10 @@ namespace MR
     namespace Format
     {
 
-      Handler::Base* DICOM::read (Header& H) const
+      RefPtr<Handler::Base> DICOM::read (Header& H) const
       {
         if (!Path::is_dir (H.name())) 
-          return NULL;
+          return RefPtr<Handler::Base>();
 
         File::Dicom::Tree dicom;
 
@@ -63,10 +63,10 @@ namespace MR
         return false;
       }
 
-      Handler::Base* DICOM::create (Header& H) const
+      RefPtr<Handler::Base> DICOM::create (Header& H) const
       {
         assert (0);
-        return NULL;
+        return RefPtr<Handler::Base>();
       }
 
 

@@ -1,7 +1,7 @@
 /*
-    Copyright 2008 Brain Research Institute, Melbourne, Australia
+    Copyright 2009 Brain Research Institute, Melbourne, Australia
 
-    Written by J-Donald Tournier, 27/06/08.
+    Written by J-Donald Tournier, 22/08/09.
 
     This file is part of MRtrix.
 
@@ -20,37 +20,41 @@
 
 */
 
-#ifndef __file_dicom_mapper_h__
-#define __file_dicom_mapper_h__
+#ifdef MRTRIX_R_AS_MODULE
 
-#include "ptr.h"
+#include <limits>
+#include <unistd.h>
+
+#include "app.h"
+#include "image/handler/ram.h"
 
 namespace MR
 {
-
   namespace Image
   {
-    class Header;
-    namespace Handler { class Base; }
-  }
-
-  namespace File
-  {
-    namespace Dicom
+    namespace Handler
     {
 
-      class Series;
 
-      /*! \todo add other DICOM header information to header as generic
-       * key/value entries. */
-      RefPtr<MR::Image::Handler::Base> dicom_to_mapper (MR::Image::Header& H, std::vector< RefPtr<Series> >& series);
+      void RAM::load ()
+      {
+        DEBUG ("allocating RAM buffer for image \"" + name + "\"...");
+        int64_t bytes_per_segment = (datatype.bits() * segsize + 7) / 8;
+        addresses.push_back (new uint8_t [bytes_per_segment]);
+      }
+
+
+      void RAM::unload()
+      {
+        if (addresses.size()) {
+          DEBUG ("deleting RAM buffer for image \"" + name + "\"...");
+          delete [] addresses[0];
+        }
+      }
 
     }
   }
 }
 
 #endif
-
-
-
 

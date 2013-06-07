@@ -35,17 +35,17 @@ namespace MR
     namespace Format
     {
 
-      Handler::Base* MGH::read (Header& H) const
+      RefPtr<Handler::Base> MGH::read (Header& H) const
       {
         if (!Path::has_suffix (H.name(), ".mgh"))
-          return NULL;
+          return RefPtr<Handler::Base>();
         File::MMap fmap (H.name());
         size_t data_offset = File::MGH::read_header (H, * ( (const mgh_header*) fmap.address()), fmap.size());
 
-        Ptr<Handler::Base> handler (new Handler::Default (H));
+        RefPtr<Handler::Base> handler (new Handler::Default (H));
         handler->files.push_back (File::Entry (H.name(), data_offset));
 
-        return handler.release();
+        return handler;
       }
 
 
@@ -67,7 +67,7 @@ namespace MR
 
 
 
-      Handler::Base* MGH::create (Header& H) const
+      RefPtr<Handler::Base> MGH::create (Header& H) const
       {
         if (H.ndim() > 4)
           throw Exception ("MGH format cannot support more than 4 dimensions for image \"" + H.name() + "\"");
@@ -88,10 +88,10 @@ namespace MR
 
         File::MGH::write_other_to_file (H.name(), MGHO);
 
-        Ptr<Handler::Base> handler (new Handler::Default (H));
+        RefPtr<Handler::Base> handler (new Handler::Default (H));
         handler->files.push_back (File::Entry (H.name(), MGH_DATA_OFFSET));
 
-        return handler.release();
+        return handler;
       }
 
     }

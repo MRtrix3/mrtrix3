@@ -24,6 +24,7 @@
 #include <fcntl.h>
 #include <fstream>
 
+#include "image/stride.h"
 #include "types.h"
 #include "file/utils.h"
 #include "file/entry.h"
@@ -31,7 +32,6 @@
 #include "file/key_value.h"
 #include "image/utils.h"
 #include "image/header.h"
-#include "image/stride.h"
 #include "image/handler/default.h"
 #include "image/name_parser.h"
 #include "image/format/list.h"
@@ -47,10 +47,10 @@ namespace MR
       // mih: MRtrix Image Header
       // mif: MRtrix Image File
 
-      Handler::Base* MRtrix::read (Header& H) const
+      RefPtr<Handler::Base> MRtrix::read (Header& H) const
       {
         if (!Path::has_suffix (H.name(), ".mih") && !Path::has_suffix (H.name(), ".mif"))
-          return NULL;
+          return RefPtr<Handler::Base>();
 
         File::KeyValue kv (H.name(), "mrtrix image");
 
@@ -177,11 +177,11 @@ namespace MR
         ParsedName::List list;
         std::vector<int> num = list.parse_scan_check (fname);
 
-        Ptr<Handler::Base> handler (new Handler::Default (H));
+        RefPtr<Handler::Base> handler (new Handler::Default (H));
         for (size_t n = 0; n < list.size(); ++n)
           handler->files.push_back (File::Entry (list[n].name(), offset));
 
-        return handler.release();
+        return handler;
       }
 
 
@@ -205,7 +205,7 @@ namespace MR
 
 
 
-      Handler::Base* MRtrix::create (Header& H) const
+      RefPtr<Handler::Base> MRtrix::create (Header& H) const
       {
         if (!File::is_tempfile (H.name()))
           File::create (H.name());
@@ -270,7 +270,7 @@ namespace MR
 
         out.close();
 
-        Ptr<Handler::Base> handler (new Handler::Default (H));
+        RefPtr<Handler::Base> handler (new Handler::Default (H));
         if (single_file) {
           File::resize (H.name(), offset + Image::footprint(H));
           handler->files.push_back (File::Entry (H.name(), offset));
@@ -281,7 +281,7 @@ namespace MR
           handler->files.push_back (File::Entry (data_file));
         }
 
-        return handler.release();
+        return handler;
       }
 
 

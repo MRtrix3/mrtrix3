@@ -29,9 +29,9 @@
   class format : public Base { \
     public:  \
       format () : Base (desc) { } \
-      virtual Handler::Base* read (Header& H) const; \
+      virtual RefPtr<Handler::Base> read (Header& H) const; \
       virtual bool check (Header& H, size_t num_axes) const; \
-      virtual Handler::Base* create (Header& H) const; \
+      virtual RefPtr<Handler::Base> create (Header& H) const; \
   }
 
 namespace MR
@@ -71,7 +71,7 @@ namespace MR
            * H with all the relevant information as read from the images before
            * returning.
            * \note this function should throw an Exception in case of error. */
-          virtual Handler::Base* read (Header& H) const = 0;
+          virtual RefPtr<Handler::Base> read (Header& H) const = 0;
 
           /*! \brief check whether the Image::Header \c H can be created using
            * this handler.
@@ -94,8 +94,12 @@ namespace MR
            * beforehand.
            *
            * \note this function should throw an Exception in case of error. */
-          virtual Handler::Base* create (Header& H) const = 0;
+          virtual RefPtr<Handler::Base> create (Header& H) const = 0;
       };
+
+#ifdef MRTRIX_R_AS_MODULE
+      DECLARE_IMAGEFORMAT (RAM, "RAM buffer");
+#endif
 
       DECLARE_IMAGEFORMAT (Pipe, "Internal pipe");
       DECLARE_IMAGEFORMAT (DICOM, "DICOM");

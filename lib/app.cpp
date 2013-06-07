@@ -80,40 +80,49 @@ namespace MR
       }
 
 
-      void print_syntax ()
+      std::string syntax ()
       {
-        ERROR_STREAM << "SYNTAX: " << NAME << " [ options ]";
+        std::string s = "SYNTAX: ";
+        s += NAME + " [ options ]";
         for (size_t i = 0; i < ARGUMENTS.size(); ++i) {
 
           if (ARGUMENTS[i].flags & Optional)
-            ERROR_STREAM << "[";
-          ERROR_STREAM << " " << ARGUMENTS[i].id;
+            s += "[";
+          s += std::string(" ") + ARGUMENTS[i].id;
 
           if (ARGUMENTS[i].flags & AllowMultiple) {
             if (! (ARGUMENTS[i].flags & Optional))
-              ERROR_STREAM << " [ " << ARGUMENTS[i].id;
-            ERROR_STREAM << " ...";
+              s += std::string(" [ ") + ARGUMENTS[i].id;
+            s += " ...";
           }
           if (ARGUMENTS[i].flags & (Optional | AllowMultiple))
-            ERROR_STREAM << " ]";
+            s += " ]";
         }
-        ERROR_STREAM << "\n\n";
+        return s + "\n\n";
       }
+
+
+
 
       void print_help ()
       {
-        ERROR_STREAM << NAME << ": part of the MRtrix package\n\n";
-        DESCRIPTION.print();
-        print_syntax();
-        ARGUMENTS.print();
-        OPTIONS.print();
-        __standard_options.print();
-        throw 0;
+        print (
+            std::string (NAME) + ": part of the MRtrix package\n\n"
+            + DESCRIPTION.syntax()
+            + syntax()
+            + ARGUMENTS.syntax()
+            + OPTIONS.syntax()
+            + __standard_options.syntax()
+            );
       }
 
-      void print_version ()
+
+
+
+
+      std::string version_string ()
       {
-        std::printf (
+        return MR::printf (
           "== %s %zu.%zu.%zu ==\n"
           "%d bit %s version, built " __DATE__ " against MRtrix %zu.%zu.%zu, using GSL %s\n"
           "Author: %s\n"
@@ -128,27 +137,30 @@ namespace MR
 #endif
           , mrtrix_major_version, mrtrix_minor_version, mrtrix_micro_version,
           gsl_version, AUTHOR, COPYRIGHT);
-
-        throw 0;
       }
     }
 
-    void print_full_usage (std::ostream& stream)
+
+
+
+
+    std::string full_usage ()
     {
-        for (size_t i = 0; i < DESCRIPTION.size(); ++i)
-            stream << DESCRIPTION[i] << "\n";
+      std::string s;
+      for (size_t i = 0; i < DESCRIPTION.size(); ++i)
+        s += DESCRIPTION[i] + std::string("\n");
 
-        for (size_t i = 0; i < ARGUMENTS.size(); ++i)
-            ARGUMENTS[i].print_usage (stream);
+      for (size_t i = 0; i < ARGUMENTS.size(); ++i)
+        s += ARGUMENTS[i].usage();
 
-        for (size_t i = 0; i < OPTIONS.size(); ++i)
-            for (size_t j = 0; j < OPTIONS[i].size(); ++j)
-                OPTIONS[i][j].print_usage (stream);
+      for (size_t i = 0; i < OPTIONS.size(); ++i)
+        for (size_t j = 0; j < OPTIONS[i].size(); ++j)
+          s += OPTIONS[i][j].usage();
 
-        for (size_t i = 0; i < __standard_options.size(); ++i)
-            __standard_options[i].print_usage (stream);
+      for (size_t i = 0; i < __standard_options.size(); ++i)
+        s += __standard_options[i].usage ();
 
-        throw 0;
+      return s;
     }
 
 
@@ -224,8 +236,10 @@ namespace MR
       }
       if (get_options ("help").size())
         print_help();
-      if (get_options ("version").size())
-        print_version();
+      if (get_options ("version").size()) {
+        print (version_string());
+        throw 0;
+      }
     }
 
 
@@ -233,9 +247,12 @@ namespace MR
 
     void parse ()
     {
-      if (argc == 2)
-        if (strcmp (argv[1], "__print_full_usage__") == 0)
-          print_full_usage (std::cout);
+      if (argc == 2) {
+        if (strcmp (argv[1], "__print_full_usage__") == 0) {
+          print (full_usage ());
+          throw 0;
+        }
+      }
 
       sort_arguments (argc, argv);
 

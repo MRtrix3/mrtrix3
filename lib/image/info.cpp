@@ -20,8 +20,8 @@
 
 */
 
-#include "image/info.h"
 #include "image/stride.h"
+#include "image/info.h"
 #include "image/transform.h"
 #include "math/permutation.h"
 

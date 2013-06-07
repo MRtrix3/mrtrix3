@@ -180,6 +180,10 @@ namespace MR
         void merge (const Header& H);
 
         template <class ValueType> friend class Buffer;
+
+#ifdef MRTRIX_R_AS_MODULE
+        friend class Handler::RAM;
+#endif
     };
 
 

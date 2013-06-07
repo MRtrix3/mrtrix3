@@ -38,11 +38,11 @@ namespace MR
     namespace Format
     {
 
-      Handler::Base* XDS::read (Header& H) const
+      RefPtr<Handler::Base> XDS::read (Header& H) const
       {
         if (!Path::has_suffix (H.name(), ".bfloat") &&
             !Path::has_suffix (H.name(), ".bshort"))
-          return NULL;
+          return RefPtr<Handler::Base>();
 
         H.set_ndim (4);
         int BE;
@@ -78,10 +78,10 @@ namespace MR
         H.stride(2) = 0;
         H.stride(3) = 3;
 
-        Ptr<Handler::Default> handler (new Handler::Default (H));
+        RefPtr<Handler::Default> handler (new Handler::Default (H));
         handler->files.push_back (File::Entry (H.name()));
 
-        return handler.release();
+        return handler;
       }
 
 
@@ -134,7 +134,7 @@ namespace MR
 
 
 
-      Handler::Base* XDS::create (Header& H) const
+      RefPtr<Handler::Base> XDS::create (Header& H) const
       {
         std::string header_name (H.name());
         header_name.replace (header_name.size()-6, 6, "hdr");
@@ -147,11 +147,11 @@ namespace MR
             << " " << (H.datatype().is_little_endian() ? 1 : 0) << "\n";
         out.close();
 
-        Ptr<Handler::Default> handler (new Handler::Default (H));
+        RefPtr<Handler::Default> handler (new Handler::Default (H));
         File::create (H.name(), Image::footprint (H, "11 1"));
         handler->files.push_back (File::Entry (H.name()));
 
-        return handler.release();
+        return handler;
       }
 
     }

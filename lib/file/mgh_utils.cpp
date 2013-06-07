@@ -20,11 +20,11 @@
 
 */
 
+#include "image/stride.h"
 #include "datatype.h"
 #include "get_set.h"
 #include "file/mgh_utils.h"
 #include "image/header.h"
-#include "image/stride.h"
 #include "math/vector.h"
 
 namespace MR

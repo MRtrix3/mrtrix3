@@ -37,10 +37,10 @@ namespace MR
     {
 
 
-      Handler::Base* NIfTI_GZ::read (Header& H) const
+      RefPtr<Handler::Base> NIfTI_GZ::read (Header& H) const
       {
         if (!Path::has_suffix (H.name(), ".nii.gz")) 
-          return NULL;
+          return RefPtr<Handler::Base>();
 
         nifti_1_header NH;
 
@@ -50,10 +50,10 @@ namespace MR
 
         size_t data_offset = File::NIfTI::read (H, NH);
 
-        Ptr<Handler::Base> handler (new Handler::GZ (H, 0));
+        RefPtr<Handler::Base> handler (new Handler::GZ (H, 0));
         handler->files.push_back (File::Entry (H.name(), data_offset));
 
-        return handler.release();
+        return handler;
       }
 
 
@@ -81,12 +81,14 @@ namespace MR
 
 
 
-      Image::Handler::Base* NIfTI_GZ::create (Header& H) const
+      RefPtr<Image::Handler::Base> NIfTI_GZ::create (Header& H) const
       {
         if (H.ndim() > 7)
           throw Exception ("NIfTI-1.1 format cannot support more than 7 dimensions for image \"" + H.name() + "\"");
 
-        Ptr<Handler::GZ> handler (new Handler::GZ (H, 352));
+        RefPtr<Handler::GZ> handler (new Handler::GZ (H, sizeof(nifti_1_header)+sizeof(nifti1_extender)));
+        VAR (sizeof(nifti_1_header));
+        VAR (sizeof(nifti1_extender));
 
         File::NIfTI::write (*reinterpret_cast<nifti_1_header*> (handler->header()), H, true);
         memset (handler->header()+sizeof(nifti_1_header), 0, sizeof(nifti1_extender));
@@ -94,7 +96,7 @@ namespace MR
         File::create (H.name());
         handler->files.push_back (File::Entry (H.name(), 352));
 
-        return handler.release();
+        return handler;
       }
 
     }

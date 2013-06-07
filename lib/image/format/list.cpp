@@ -30,6 +30,9 @@ namespace MR
   {
     namespace Format
     {
+#ifdef MRTRIX_R_AS_MODULE
+      Format::RAM        RAM_handler;
+#endif
 
       Format::Pipe       pipe_handler;
       Format::MRtrix     mrtrix_handler;
@@ -43,6 +46,9 @@ namespace MR
       Format::MGZ        mgz_handler;
 
       const Base* handlers[] = {
+#ifdef MRTRIX_R_AS_MODULE
+        &RAM_handler;
+#endif
         &pipe_handler,
         &dicom_handler,
         &mrtrix_handler,

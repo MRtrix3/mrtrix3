@@ -20,6 +20,7 @@
 
 */
 
+#include "image/stride.h"
 #include "get_set.h"
 #include "file/config.h"
 #include "file/nifti1_utils.h"
@@ -27,7 +28,6 @@
 #include "math/permutation.h"
 #include "math/versor.h"
 #include "image/header.h"
-#include "image/stride.h"
 
 namespace MR
 {

@@ -22,6 +22,7 @@
 
 #ifndef __image_stride_h__
 #define __image_stride_h__
+
 #include "app.h"
 #include "datatype.h"
 #include "math/math.h"

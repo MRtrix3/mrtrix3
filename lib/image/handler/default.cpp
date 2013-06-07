@@ -79,7 +79,7 @@ namespace MR
         }
         else {
           for (size_t n = 0; n < addresses.size(); ++n)
-            addresses[n] = NULL;
+            addresses.release (n);
           mmaps.clear();
         }
       }

@@ -37,10 +37,10 @@ namespace MR
     {
 
 
-      Handler::Base* MGZ::read (Header& H) const
+      RefPtr<Handler::Base> MGZ::read (Header& H) const
       {
         if (!Path::has_suffix (H.name(), ".mgh.gz") && !Path::has_suffix (H.name(), ".mgz"))
-          return NULL;
+          return RefPtr<Handler::Base>();
 
         mgh_header MGHH;
         mgh_other MGHO;
@@ -55,10 +55,10 @@ namespace MR
 
         zf.close();
 
-        Ptr<Handler::Base> handler (new Handler::GZ (H, 0));
+        RefPtr<Handler::Base> handler (new Handler::GZ (H, 0));
         handler->files.push_back (File::Entry (H.name(), data_offset));
 
-        return handler.release();
+        return handler;
       }
 
 
@@ -80,12 +80,12 @@ namespace MR
 
 
 
-      Image::Handler::Base* MGZ::create (Header& H) const
+      RefPtr<Image::Handler::Base> MGZ::create (Header& H) const
       {
         if (H.ndim() > 4)
           throw Exception ("MGZ format cannot support more than 4 dimensions for image \"" + H.name() + "\"");
 
-        Ptr<Handler::GZ> handler (new Handler::GZ (H, MGH_DATA_OFFSET));
+        RefPtr<Handler::GZ> handler (new Handler::GZ (H, MGH_DATA_OFFSET));
 
         File::MGH::write_header (*reinterpret_cast<mgh_header*> (handler->header()), H);
 
@@ -94,7 +94,7 @@ namespace MR
         File::create (H.name());
         handler->files.push_back (File::Entry (H.name(), MGH_DATA_OFFSET));
 
-        return handler.release();
+        return handler;
       }
 
     }
