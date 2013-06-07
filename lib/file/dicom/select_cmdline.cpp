@@ -20,6 +20,7 @@
 
 */
 
+#include "app.h"
 #include "file/dicom/image.h"
 #include "file/dicom/series.h"
 #include "file/dicom/study.h"
@@ -51,7 +52,7 @@ namespace MR
                        format_ID (tree[i]->ID).c_str(),
                        format_date (tree[i]->DOB).c_str());
             }
-            std::cerr << "? ";
+            ERROR_STREAM << "? ";
             std::cin >> buf;
             if (!isdigit (buf[0])) {
               series.clear();
@@ -88,7 +89,7 @@ namespace MR
                        format_date (patient[i]->date).c_str(),
                        format_time (patient[i]->time).c_str());
             }
-            std::cerr << "? ";
+            ERROR_STREAM << "? ";
             std::cin >> buf;
             if (!isdigit (buf[0])) {
               series.clear();
@@ -128,7 +129,7 @@ namespace MR
                        ( (*study[i]) [0]->sequence_name.size() ? (*study[i]) [0]->sequence_name.c_str() : "?"),
                        study[i]->number);
             }
-            std::cerr << "? ";
+            ERROR_STREAM << "? ";
             std::cin >> buf;
             if (!isdigit (buf[0])) {
               series.clear();

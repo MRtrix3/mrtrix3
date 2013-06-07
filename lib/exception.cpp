@@ -50,7 +50,7 @@ namespace MR
 
   void cmdline_report_to_user_func (const std::string& msg, int type)
   {
-    std::cerr << App::NAME << console_prefix (type) << msg << "\n";
+    ERROR_STREAM << App::NAME << console_prefix (type) << msg << "\n";
   }
 
 

@@ -259,7 +259,7 @@ namespace MR
 
 
         void print () const;
-        void print_usage () const;
+        void print_usage (std::ostream& stream) const;
     };
 
 
@@ -273,7 +273,7 @@ namespace MR
         }
 
         void print () const;
-        void print_usage () const;
+        void print_usage (std::ostream& stream) const;
     };
 
 
@@ -367,7 +367,7 @@ namespace MR
         }
 
         void print () const;
-        void print_usage () const;
+        void print_usage (std::ostream& stream) const;
     };
 
 

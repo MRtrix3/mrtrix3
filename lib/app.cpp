@@ -82,27 +82,27 @@ namespace MR
 
       void print_syntax ()
       {
-        std::cerr << "SYNTAX: " << NAME << " [ options ]";
+        ERROR_STREAM << "SYNTAX: " << NAME << " [ options ]";
         for (size_t i = 0; i < ARGUMENTS.size(); ++i) {
 
           if (ARGUMENTS[i].flags & Optional)
-            std::cerr << "[";
-          std::cerr << " " << ARGUMENTS[i].id;
+            ERROR_STREAM << "[";
+          ERROR_STREAM << " " << ARGUMENTS[i].id;
 
           if (ARGUMENTS[i].flags & AllowMultiple) {
             if (! (ARGUMENTS[i].flags & Optional))
-              std::cerr << " [ " << ARGUMENTS[i].id;
-            std::cerr << " ...";
+              ERROR_STREAM << " [ " << ARGUMENTS[i].id;
+            ERROR_STREAM << " ...";
           }
           if (ARGUMENTS[i].flags & (Optional | AllowMultiple))
-            std::cerr << " ]";
+            ERROR_STREAM << " ]";
         }
-        std::cerr << "\n\n";
+        ERROR_STREAM << "\n\n";
       }
 
       void print_help ()
       {
-        std::cerr << NAME << ": part of the MRtrix package\n\n";
+        ERROR_STREAM << NAME << ": part of the MRtrix package\n\n";
         DESCRIPTION.print();
         print_syntax();
         ARGUMENTS.print();
@@ -131,25 +131,26 @@ namespace MR
 
         throw 0;
       }
+    }
 
-      void print_full_usage ()
-      {
+    void print_full_usage (std::ostream& stream)
+    {
         for (size_t i = 0; i < DESCRIPTION.size(); ++i)
-          std::cout << DESCRIPTION[i] << "\n";
+            stream << DESCRIPTION[i] << "\n";
 
         for (size_t i = 0; i < ARGUMENTS.size(); ++i)
-          ARGUMENTS[i].print_usage();
+            ARGUMENTS[i].print_usage (stream);
 
         for (size_t i = 0; i < OPTIONS.size(); ++i)
-          for (size_t j = 0; j < OPTIONS[i].size(); ++j)
-            OPTIONS[i][j].print_usage();
+            for (size_t j = 0; j < OPTIONS[i].size(); ++j)
+                OPTIONS[i][j].print_usage (stream);
 
         for (size_t i = 0; i < __standard_options.size(); ++i)
-          __standard_options[i].print_usage();
+            __standard_options[i].print_usage (stream);
 
         throw 0;
-      }
     }
+
 
 
 
@@ -234,7 +235,7 @@ namespace MR
     {
       if (argc == 2)
         if (strcmp (argv[1], "__print_full_usage__") == 0)
-          print_full_usage ();
+          print_full_usage (std::cout);
 
       sort_arguments (argc, argv);
 

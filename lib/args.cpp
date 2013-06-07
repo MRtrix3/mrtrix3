@@ -60,7 +60,7 @@ namespace MR
                 break;
             }
             while (out.size() + 1 + words[i].size() < HELP_WIDTH);
-            std::cerr << out << "\n";
+            ERROR_STREAM << out << "\n";
             out = std::string (indent, ' ');
           }
         }
@@ -102,7 +102,7 @@ namespace MR
     {
       for (size_t i = 0; i < size(); ++i) {
         paragraph ("", (*this)[i], HELP_PURPOSE_INDENT);
-        std::cerr << "\n";
+        ERROR_STREAM << "\n";
       }
     }
 
@@ -115,7 +115,7 @@ namespace MR
     {
       for (size_t i = 0; i < size(); ++i)
         (*this)[i].print();
-      std::cerr << "\n";
+      ERROR_STREAM << "\n";
     }
 
     void Option::print () const
@@ -129,10 +129,10 @@ namespace MR
 
     void OptionGroup::print () const
     {
-      std::cerr << ( name ? name : "OPTIONS" ) << ":\n";
+      ERROR_STREAM << ( name ? name : "OPTIONS" ) << ":\n";
       for (size_t i = 0; i < size(); ++i)
         (*this) [i].print();
-      std::cerr << "\n";
+      ERROR_STREAM << "\n";
     }
 
     void OptionList::print () const
@@ -148,67 +148,67 @@ namespace MR
 
 
 
-    void Argument::print_usage () const
+    void Argument::print_usage (std::ostream& stream) const
     {
-      std::cout << "ARGUMENT " << id << " "
+      stream << "ARGUMENT " << id << " "
         << (flags & Optional ? '1' : '0') << " "
         << (flags & AllowMultiple ? '1' : '0') << " ";
 
       switch (type) {
         case Integer:
-          std::cout << "INT " << defaults.i.min << " " << defaults.i.max << " " << defaults.i.def;
+          stream << "INT " << defaults.i.min << " " << defaults.i.max << " " << defaults.i.def;
           break;
         case Float:
-          std::cout << "FLOAT " << defaults.f.min << " " << defaults.f.max << " " << defaults.f.def;
+          stream << "FLOAT " << defaults.f.min << " " << defaults.f.max << " " << defaults.f.def;
           break;
         case Text:
-          std::cout << "TEXT";
+          stream << "TEXT";
           if (defaults.text)
-            std::cout << " " << defaults.text;
+            stream << " " << defaults.text;
           break;
         case ArgFile:
-          std::cout << "FILE";
+          stream << "FILE";
           break;
         case Choice:
-          std::cout << "CHOICE";
+          stream << "CHOICE";
           for (const char* const* p = defaults.choices.list; *p; ++p)
-            std::cout << " " << *p;
-          std::cout << " " << defaults.choices.def;
+            stream << " " << *p;
+          stream << " " << defaults.choices.def;
           break;
         case ImageIn:
-          std::cout << "IMAGEIN";
+          stream << "IMAGEIN";
           break;
         case ImageOut:
-          std::cout << "IMAGEOUT";
+          stream << "IMAGEOUT";
           break;
         case IntSeq:
-          std::cout << "ISEQ";
+          stream << "ISEQ";
           break;
         case FloatSeq:
-          std::cout << "FSEQ";
+          stream << "FSEQ";
           break;
         default:
           assert (0);
       }
-      std::cout << "\n";
+      stream << "\n";
       if (desc.size())
-        std::cout << desc << "\n";
+        stream << desc << "\n";
     }
 
 
 
 
-    void Option::print_usage () const
+    void Option::print_usage (std::ostream& stream) const
     {
-      std::cout << "OPTION " << id << " "
+      stream << "OPTION " << id << " "
         << (flags & Optional ? '1' : '0') << " "
         << (flags & AllowMultiple ? '1' : '0') << "\n";
 
       if (desc.size())
-        std::cout << desc << "\n";
+        stream << desc << "\n";
 
       for (size_t i = 0; i < size(); ++i)
-        (*this)[i].print_usage();
+        (*this)[i].print_usage (stream);
     }
 
 

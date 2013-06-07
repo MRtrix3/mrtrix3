@@ -23,6 +23,7 @@ for arg in sys.argv[1:]:
   elif '-R'.startswith (arg): 
     noshared = True
     R_module = True
+    nogui = True
   elif arg[0] != '-':
     if profile_name != None: 
       print ('configure: too many names supplied')
@@ -969,6 +970,7 @@ if static:
 if R_module:
   ld_flags = ld_lib_flags
   exe_suffix = lib_suffix
+  cpp_flags += [ '-DMRTRIX_AS_R_LIBRARY' ]
 
 
 # write out configuration:

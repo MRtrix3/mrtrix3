@@ -34,7 +34,6 @@
 #include "mrtrix.h"
 #include "types.h"
 #include "exception.h"
-#include "file/confirm.h"
 #include "file/path.h"
 
 namespace MR
