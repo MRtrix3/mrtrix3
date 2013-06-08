@@ -960,6 +960,11 @@ else:
   cpp_flags += [ '-O2', '-DNDEBUG' ]
 
 
+# runpath settings:
+if system == 'linux':
+  runpath = '-Wl,-rpath,$ORIGIN/'
+else:
+  runpath = ''
 
 
 # set flags for static build if required:
@@ -999,6 +1004,7 @@ commit ('cpp', cpp);
 commit ('cpp_flags', cpp_flags);
 commit ('ld', ld);
 commit ('ld_flags', ld_flags);
+commit ('runpath', runpath);
 cache.write ('ld_enabled = ')
 if noshared:
   cache.write ('False\n')

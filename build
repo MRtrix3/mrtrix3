@@ -74,7 +74,6 @@ while os.path.abspath (os.path.dirname (get_real_name (build_script))) != os.pat
     sys.stderr.write ('    ' + mrtrix_dir + os.linesep)
 
 if separate_project:
-  lib_dir = os.path.join (mrtrix_dir, lib_dir)
   config_file = os.path.join (mrtrix_dir, config_file)
 
   if verbose:
@@ -141,6 +140,14 @@ please run "./configure" prior to invoking this script
 
 
 
+if ld_enabled and len(runpath):
+    ld_flags += [ runpath+os.path.relpath (lib_dir,bin_dir) ]
+
+if separate_project:
+  lib_dir = os.path.join (mrtrix_dir, lib_dir)
+  if ld_enabled and len(runpath):
+    ld_flags += [ runpath+os.path.relpath (lib_dir,bin_dir) ]
+
 
 
 # get version info:
@@ -172,6 +179,7 @@ exe_suffix = config_suffix + exe_suffix
 include_paths += [ lib_dir, cmd_dir ]
 cpp_flags += [ '-Wall' ] + [ '-I' + entry for entry in include_paths ]
 ld_flags += [ '-L' + lib_dir ]
+
 
 
 
