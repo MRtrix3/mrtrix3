@@ -86,10 +86,11 @@ namespace MR
           }
 
           void create (const std::string& file, const Properties& properties, const std::string& type) {
-            out.open (file.c_str(), std::ios::out | std::ios::binary);
+            name = file;
+            out.open (name.c_str(), std::ios::out | std::ios::binary);
 
             if (!out)
-              throw Exception ("error creating " + type + " file \"" + file + "\": " + strerror (errno));
+              throw Exception ("error creating " + type + " file \"" + name + "\": " + strerror (errno));
 
             out << "mrtrix " + type + "\nEND\n";
 
@@ -134,6 +135,7 @@ namespace MR
 
         protected:
           std::ofstream  out;
+          std::string    name;
           DataType dtype;
           int64_t  count_offset;
       };

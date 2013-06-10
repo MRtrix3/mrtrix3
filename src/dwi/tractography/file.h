@@ -40,7 +40,8 @@ namespace MR
     namespace Tractography
     {
 
-      template <typename T = float> class Reader : public __ReaderBase__
+      template <typename T = float> 
+        class Reader : public __ReaderBase__
       {
         public:
           typedef T value_type;
@@ -128,7 +129,22 @@ namespace MR
 
 
 
-      template <typename T = float> class Writer : public __WriterBase__ <T>
+      //! class to handle writing tracks to file
+      /*! writes track header as specified in \a properties and individual
+       * tracks to the file specified in \a file. Writing individual tracks is
+       * done using the append() method.
+       *
+       * This class implements a large write-back RAM buffer to hold the track
+       * data in RAM, and only commits to file when the buffer capacity is
+       * reached. This minimises the number of write() calls, which can
+       * otherwise become a bottleneck on distributed or network filesystems.
+       * It also helps reduce file fragmentation when multiple processes write
+       * to file concurrently. The size of the write-back buffer defaults to
+       * 16MB, and can be set in the config file using the
+       * TrackWriterBufferSize field (in bytes). 
+       * */
+      template <typename T = float> 
+        class Writer : public __WriterBase__ <T>
       {
         public:
           typedef T value_type;
@@ -138,31 +154,32 @@ namespace MR
           using __WriterBase__<T>::dtype;
           using __WriterBase__<T>::create;
 
-          Writer (const std::string& file, const Properties& properties)
+          Writer (const std::string& file, const Properties& properties) :
+            buffer_capacity (File::Config::get_int ("TrackWriterBufferSize", 16777216) / sizeof (Point<value_type>)),
+            buffer (new Point<value_type> [buffer_capacity+2]),
+            buffer_size (0)
           {
             create (file, properties, "tracks");
-            write_next_point (Point<value_type> (INFINITY, INFINITY, INFINITY));
+            barrier_addr = out.tellp();
+            write_point (barrier());
+          }
+
+          ~Writer() {
+            commit();
           }
 
           void append (const std::vector< Point<value_type> >& tck)
           {
             if (tck.size()) {
-              int64_t current (out.tellp());
-              current -= sizeof (Point<value_type>);
-              if (tck.size()) {
-                for (typename std::vector<Point<value_type> >::const_iterator i = tck.begin()+1; i != tck.end(); ++i)
-                  write_next_point (*i);
-                write_next_point (Point<value_type> (NAN, NAN, NAN));
-              }
-              write_next_point (Point<value_type> (INFINITY, INFINITY, INFINITY));
-              int64_t end (out.tellp());
-              out.seekp (current);
-              write_next_point (tck.size() ? tck[0] : Point<value_type> (NAN, NAN, NAN));
-              out.seekp (end);
+              if (buffer_size + tck.size() > buffer_capacity)
+                commit();
 
-              count++;
+              for (typename std::vector<Point<value_type> >::const_iterator i = tck.begin()+1; i != tck.end(); ++i)
+                add_point (*i);
+              add_point (delimiter());
+              ++count;
             }
-            total_count++;
+            ++total_count;
           }
 
           bool operator() (const std::vector< Point<value_type> >& tck)
@@ -173,14 +190,54 @@ namespace MR
 
 
         protected:
+          const size_t buffer_capacity;
 
-          void write_next_point (const Point<value_type>& p) 
+          Ptr<Point<value_type>,true> buffer;
+          size_t buffer_size;
+          int64_t barrier_addr;
+
+          void add_point (const Point<value_type>& p) 
+          {
+            format_point (p, buffer[buffer_size]);
+            ++buffer_size;
+          }
+
+          Point<value_type> delimiter () const { return Point<value_type> (NAN, NAN, NAN); } 
+          Point<value_type> barrier () const { return Point<value_type> (INFINITY, INFINITY, INFINITY); }
+
+          void format_point (const Point<value_type>& p, Point<value_type>& destination) 
           {
             using namespace ByteOrder;
-            value_type x[3];
-            if (dtype.is_little_endian()) { x[0] = LE(p[0]); x[1] = LE(p[1]); x[2] = LE(p[2]); }
-            else { x[0] = BE(p[0]); x[1] = BE(p[1]); x[2] = BE(p[2]); }
-            out.write ((const char*) x, 3*sizeof(value_type));
+            if (dtype.is_little_endian()) { destination[0] = LE(p[0]); destination[1] = LE(p[1]); destination[2] = LE(p[2]); }
+            else { destination[0] = BE(p[0]); destination[1] = BE(p[1]); destination[2] = BE(p[2]); }
+          }
+
+          void write_point (const Point<value_type>& p) 
+          {
+            Point<value_type> x;
+            format_point (p, x);
+            out.write ((char*) &x[0], sizeof (x));
+            if (!out.good())
+              throw Exception ("error writing track file \"" + this->name + "\": " + strerror (errno));
+          }
+
+
+          void commit () 
+          {
+            if (buffer_size == 0) 
+              return;
+            add_point (barrier());
+            int64_t prev_barrier_addr = barrier_addr;
+            out.write ((char*) &(buffer[1]), sizeof (Point<value_type>)*(buffer_size-1));
+            if (!out.good())
+              throw Exception ("error writing track file \"" + this->name + "\": " + strerror (errno));
+            barrier_addr = int64_t(out.tellp()) - sizeof(Point<value_type>);
+            out.seekp (prev_barrier_addr, out.beg);
+            out.write ((char*) &(buffer[0]), sizeof(Point<value_type>));
+            out.seekp (barrier_addr, out.beg);
+            if (!out.good())
+              throw Exception ("error writing track file \"" + this->name + "\": " + strerror (errno));
+            buffer_size = 0;
           }
 
           Writer (const Writer& W) { assert (0); }
