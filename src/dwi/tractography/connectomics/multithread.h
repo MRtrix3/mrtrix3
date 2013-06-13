@@ -37,7 +37,7 @@
 #include "dwi/tractography/connectomics/edge_metrics.h"
 #include "dwi/tractography/connectomics/tck2nodes.h"
 
-
+#include <set>
 
 
 
@@ -127,6 +127,7 @@ class Connectome
     bool operator() (const Mapped_track& in) {
       assert (in.get_first_node()  < data.rows());
       assert (in.get_second_node() < data.rows());
+      assert (in.get_first_node() <= in.get_second_node());
       data   (in.get_first_node(), in.get_second_node()) += in.get_weight();
       counts (in.get_first_node(), in.get_second_node()) ++;
       return true;
@@ -135,7 +136,7 @@ class Connectome
 
     void scale_by_streamline_count() {
       for (node_t i = 0; i != counts.rows(); ++i) {
-        for (node_t j = 0; j != counts.columns(); ++j) {
+        for (node_t j = i; j != counts.columns(); ++j) {
           if (counts (i, j)) {
             data (i, j) /= counts (i, j);
             counts (i, j) = 1;
@@ -145,11 +146,35 @@ class Connectome
     }
 
 
+    void error_check (const std::set<node_t>& missing_nodes) {
+      std::vector<uint32_t> node_counts (num_nodes(), 0);
+      for (node_t i = 0; i != counts.rows() - 1; ++i) {
+        for (node_t j = i; j != counts.columns() - 1; ++j) {
+          node_counts[i] += counts (i, j);
+          node_counts[j] += counts (i, j);
+        }
+      }
+      std::vector<node_t> empty_nodes;
+      for (size_t i = 0; i != node_counts.size(); ++i) {
+        if (!node_counts[i] && missing_nodes.find (i) == missing_nodes.end())
+          empty_nodes.push_back (i);
+      }
+      if (empty_nodes.size()) {
+        WARN ("The following nodes do not have any streamlines assigned:");
+        std::string list = str(empty_nodes.front());
+        for (size_t i = 1; i != empty_nodes.size(); ++i)
+          list += ", " + str(empty_nodes[i]);
+        WARN (list);
+        WARN ("(This may indicate a poor registration)");
+      }
+    }
+
+
     void remove_unassigned() {
       for (node_t i = 0; i != data.rows() - 1; ++i) {
-        for (node_t j = 0; j != data.columns() - 1; ++j) {
+        for (node_t j = i; j != data.columns() - 1; ++j) {
           data   (i, j) = data   (i+1, j+1);
-          counts (i, j) = counts (i+i, j+1);
+          counts (i, j) = counts (i+1, j+1);
         }
       }
       data  .resize (data  .rows() - 1, data  .columns() - 1);
@@ -159,7 +184,7 @@ class Connectome
 
     void zero_diagonal() {
       for (node_t i = 0; i != data.rows(); ++i)
-        data (i, i) = 0.0;
+        data (i, i) = counts (i, i) = 0.0;
     }
 
 

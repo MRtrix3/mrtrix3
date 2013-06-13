@@ -33,11 +33,14 @@
 #include "dwi/tractography/connectomics/tck2nodes.h"
 
 
-#include "image/buffer_preload.h"
+#include "image/buffer.h"
 #include "image/loop.h"
 #include "image/voxel.h"
 
 #include "thread/queue.h"
+
+#include <vector>
+#include <set>
 
 
 
@@ -95,10 +98,29 @@ void run ()
 
   // First, find out how many segmented nodes there are, so the matrix can be pre-allocated
   node_t max_node_index = 0;
-  Image::Loop loop;
+  Image::LoopInOrder loop (nodes);
   for (loop.start (nodes); loop.ok(); loop.next (nodes)) {
     if (nodes.value() > max_node_index)
       max_node_index = nodes.value();
+  }
+
+  // Check for node volume for all nodes
+  std::vector<uint32_t> node_volumes (max_node_index + 1);
+  for (loop.start (nodes); loop.ok(); loop.next (nodes))
+    ++node_volumes[nodes.value()];
+  std::set<node_t> missing_nodes;
+  for (size_t i = 1; i != node_volumes.size(); ++i) {
+    if (!node_volumes[i])
+      missing_nodes.insert (i);
+  }
+  if (missing_nodes.size()) {
+    WARN ("The following nodes are missing from the parcellation image:");
+    std::set<node_t>::iterator i = missing_nodes.begin();
+    std::string list = str(*i);
+    for (++i; i != missing_nodes.end(); ++i)
+      list += ", " + str(*i);
+    WARN (list);
+    WARN ("(This may indicate poor parcellation image preparation, use of incorrect config file in mrprep4connectome, or very poor registration)");
   }
 
   // Multi-threaded connectome construction
@@ -109,6 +131,8 @@ void run ()
 
   if (metric->scale_edges_by_streamline_count())
     connectome.scale_by_streamline_count();
+
+  connectome.error_check (missing_nodes);
 
   Options opt = get_options ("keep_unassigned");
   if (!opt.size())

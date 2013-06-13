@@ -1,6 +1,6 @@
 # Configuration file for MRtrix command mrprep4connectome
 # Extracts the relevant grey matter parcellations from the a2009s
-# FreeSurfer segmentation (desikan_killiany)
+# FreeSurfer segmentation
 
 0     Unknown
 

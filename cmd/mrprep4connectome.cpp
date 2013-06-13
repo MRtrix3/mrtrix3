@@ -232,7 +232,10 @@ void run ()
       WARN ("Could not add spine node; need to specify \"" + str(SPINE_NODE_NAME) + "\" node in config file");
     }
 
+  } else if (inv_lookup.find (SPINE_NODE_NAME) != inv_lookup.end()) {
+    WARN ("Config file includes \"" + str (SPINE_NODE_NAME) + "\" node, but user has not provided the segmentation using -spine option");
   }
+
 
 }
 
