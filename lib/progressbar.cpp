@@ -24,9 +24,10 @@
 #include "progressbar.h"
 
 #ifdef MRTRIX_R_AS_MODULE
-#define PROGRESS_PRINT REprintf (
+# include <R.h>
+# define PROGRESS_PRINT REprintf (
 #else
-#define PROGRESS_PRINT fprintf (stderr, 
+# define PROGRESS_PRINT fprintf (stderr, 
 #endif
 
 namespace MR

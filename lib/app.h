@@ -25,16 +25,6 @@
 
 #ifdef MRTRIX_AS_R_LIBRARY
 
-# ifdef WARN 
-#  undef WARN
-# endif
-
-# include <R.h>
-
-# ifdef WARN 
-#  undef WARN
-# endif
-
 #define MRTRIX_APPLICATION \
 extern "C" void R_main (int* cmdline_argc, char** cmdline_argv) { \
     try { if (MR::App::DESCRIPTION.empty()) { MR::App::init (*cmdline_argc, cmdline_argv); usage (); } MR::App::parse (); run (); } \

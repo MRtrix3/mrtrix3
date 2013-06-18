@@ -23,6 +23,10 @@
 #include "app.h"
 #include "exception.h"
 
+#ifdef MRTRIX_R_AS_MODULE
+# include <R.h>
+#endif
+
 namespace MR
 {
 
