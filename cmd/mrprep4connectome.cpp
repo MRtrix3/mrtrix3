@@ -184,7 +184,8 @@ void run ()
   // Create a new header for the output file
   Image::Header H (in_data);
   H.comments().push_back ("Created by mrprep4connectome");
-  H.comments().push_back ("Basis image: " + argument[0]);
+  H.comments().push_back ("Basis image: " + Path::basename (argument[0]));
+  H.comments().push_back ("Configuration file: " + Path::basename (argument[1]));
 
   // Create the output file
   Image::Buffer<node_t> out_data (argument[2], H);

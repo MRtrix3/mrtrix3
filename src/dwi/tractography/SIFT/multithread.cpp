@@ -117,13 +117,15 @@ namespace MR
           const size_t lobe_index = sifter.dix2lobe (*i);
           if (lobe_index) {
             total_contribution += i->get_value() * sifter.lobes[lobe_index].get_weight();
-            bool incremented = false;
-            for (std::vector<Track_lobe_contribution>::iterator c = masked_contributions.begin(); !incremented && c != masked_contributions.end(); ++c) {
-              if ((c->get_lobe_index() == lobe_index) && c->add (i->get_value()))
-                incremented = true;
+            if (i->get_value() > Track_lobe_contribution::min()) {
+              bool incremented = false;
+              for (std::vector<Track_lobe_contribution>::iterator c = masked_contributions.begin(); !incremented && c != masked_contributions.end(); ++c) {
+                if ((c->get_lobe_index() == lobe_index) && c->add (i->get_value()))
+                  incremented = true;
+              }
+              if (!incremented)
+                masked_contributions.push_back (Track_lobe_contribution (lobe_index, i->get_value()));
             }
-            if (!incremented)
-              masked_contributions.push_back (Track_lobe_contribution (lobe_index, i->get_value()));
           }
         }
 

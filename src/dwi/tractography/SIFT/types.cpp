@@ -41,6 +41,7 @@ namespace MR
 
         float Track_lobe_contribution::scale_to_storage = 0.0;
         float Track_lobe_contribution::scale_from_storage = 0.0;
+        float Track_lobe_contribution::min_length_for_storage = 0.0;
 
 
       }

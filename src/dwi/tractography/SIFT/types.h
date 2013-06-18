@@ -179,13 +179,18 @@ namespace MR
             const float max_length = Math::sqrt (Math::pow2 (in.vox(0)) + Math::pow2 (in.vox(1)) + Math::pow2 (in.vox(2)));
             scale_to_storage = 255.0 / max_length;
             scale_from_storage = max_length / 255.0;
+            min_length_for_storage = 0.5 / scale_to_storage;
           }
+
+
+          // Minimum length that will be non-zero once converted to an integer for word-sharing storage
+          static float min() { return min_length_for_storage; }
 
 
         private:
           uint32_t data;
 
-          static float scale_to_storage, scale_from_storage;
+          static float scale_to_storage, scale_from_storage, min_length_for_storage;
 
       };
 
