@@ -1,14 +1,13 @@
 #!/bin/bash
 
-# Script that receives as argument a T1-weighted image, and outputs a four-tissue-type (4TT) segmented image
-# in a format appropriate for ACT
-# Also erases any and all working files/folders created
+# Script that receives as argument a T1-weighted image, and outputs a four-tissue-type (4TT) segmented image in a format appropriate for ACT
+# This version uses FSL tools BET, FAST and FIRST to perform segmentation
 
 
 set -e
 
 if [ -z "$FSLDIR" ]; then
-  echo "Environment variable $FSLDIR is not set; please run appropriate FSL configuration script"
+  echo "Environment variable \$FSLDIR is not set; please run appropriate FSL configuration script"
   return 0
 fi 
 
@@ -82,13 +81,13 @@ fi
 EXPECTED_ARGS=2
 if [ $# -ne $EXPECTED_ARGS ]
 then
-  echo "Usage: act_anat_prepare {input image} {output image}"
+  echo "Usage: act_anat_prepare_fsl {input image} {output image}"
   return 0
 fi
 
 
 # Generate a random string, and use it to create a new temporary directory
-TEMP_DIR_PREFIX="act_anat_prepare_TEMP_"
+TEMP_DIR_PREFIX="act_anat_prepare_fsl_TEMP_"
 TEMP_DIR="."
 while [ -d $TEMP_DIR ]; do
   RANDOM_STRING=`tr -dc "[:alpha:]" < /dev/urandom | head -c 8`

@@ -1,0 +1,80 @@
+#!/bin/bash
+
+# Script that receives as argument a segmented T1 image from FreeSurfer, and outputs a four-tissue-type (4TT) segmented image in a format appropriate for ACT
+
+# Any of the following images generated using FreeSurfer's recon-all should work using this script:
+# aseg.mgz (recommended)
+# aparc.a2009s+aseg.mgz
+# aparc+aseg.mgz
+# aseg.auto.mgz
+# aseg.auto_noCCseg.mgz
+
+
+set -e
+
+CONFIG_FILE_NAME="FreeSurfer2ACT.txt"
+
+if [ -z "$FREESURFER_HOME" ]; then
+  echo "Environment variable \$FREESURFER_HOME is not set"
+  echo "Either set manually or run appropriate FreeSurfer configuration script"
+  return 0
+fi 
+
+lut="$FREESURFER_HOME/FreeSurferColorLUT.txt"
+if [ ! -f "$lut" ]; then
+  echo "Could not find FreeSurfer lookup table file"
+  echo "(Expected location was $lut)"
+  return 0
+fi
+
+script_path="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+config_path="$script_path/$CONFIG_FILE_NAME"
+if [ ! -f "$config_path" ]; then
+  echo "Could not find config file \"$CONFIG_FILE_NAME\""
+  echo "(should be in the same directory as the script)"
+  return 0
+fi
+
+
+EXPECTED_ARGS=2
+if [ $# -ne $EXPECTED_ARGS ]
+then
+  echo "Usage: act_anat_prepare_freesurfer {input image} {output image}"
+  return 0
+fi
+
+
+# Generate a random string, and use it to create a new temporary directory
+TEMP_DIR_PREFIX="act_anat_prepare_freesurfer_TEMP_"
+TEMP_DIR="."
+while [ -d $TEMP_DIR ]; do
+  RANDOM_STRING=`tr -dc "[:alpha:]" < /dev/urandom | head -c 8`
+  TEMP_DIR="$TEMP_DIR_PREFIX$RANDOM_STRING/"
+done
+
+mkdir $TEMP_DIR
+
+
+# Steps:
+# Use mrprep4connectome to convert FreeSurfer output file
+# mrcrop to reduce file size
+# mrmath to split into 4 separate image volumes
+# mrcat to combine them into a single 4D image in the 4TT format
+#   (no need to call mr4ttmake, as there are no partial volumes involved)
+
+mrprep4connectome $1 $config_path $TEMP_DIR/indices_precrop.mif -freesurfer $lut -quiet
+cd $TEMP_DIR
+mrthreshold indices_precrop.mif - -abs 0.5 -quiet | mrcrop indices_precrop.mif indices.mif -mask - -quiet
+mrmath indices.mif 1 -eq cgm.mif -quiet
+mrmath indices.mif 2 -eq sgm.mif -quiet
+mrmath indices.mif 3 -eq  wm.mif -quiet
+mrmath indices.mif 4 -eq csf.mif -quiet
+mrcat cgm.mif sgm.mif wm.mif csf.mif ../$2 -axis 3 -quiet
+
+# Don't leave a trace
+rm -f *
+cd ../
+rmdir $TEMP_DIR
+
+set +e
+
