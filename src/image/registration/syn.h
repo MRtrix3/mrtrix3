@@ -23,6 +23,8 @@
 #ifndef __registration_syn_h__
 #define __registration_syn_h__
 
+#include <vector>
+#include "image/voxel.h"
 
 namespace MR
 {
@@ -40,10 +42,49 @@ namespace MR
 
           SyN (){}
 
+//          run_masked
+//
+//
+//          void set_max_iter (const std::vector<int>& maxiter) {
+//            for (size_t i = 0; i < maxiter.size (); ++i)
+//              if (maxiter[i] < 0)
+//                throw Exception ("the number of iterations must be positive");
+//            max_iter = maxiter;
+//          }
+//
+//          void set_scale_factor (const std::vector<float>& scalefactor) {
+//            for (size_t i = 0; i < scale_factors.size(); ++i)
+//              if (scale_factors[i] < 0)
+//                throw Exception ("the multi-resolution scale factor must be positive");
+//            scale_factor = scalefactor;
+//          }
+//
+//        protected:
+//          std::vector<int> max_iter;
+//          std::vector<float> scale_factor;
+//
+//          Math::Matrix affine_transform;
+//          Image::BufferScratch deformation;
+//          Image::BufferScratch inverse_deformation;
+//
+//          std::vector<float> m_GradientDescentParameters;
+//
+//          float gradient_smoothing;
+//          float deformation_smoothing;
+//          float gradient_step;
+//
+//          std::vector<float> energy;
+//          std::vector<float> last_energy;
+//          std::vector<unsigned int> energy_bad;
+//
+//          Image::BufferScratch template_deformation;
+//          Image::BufferScratch template_inverse_deformation;
+//          Image::BufferScratch moving_deformation;
+//          Image::BufferScratch moving_inverse_deformation;
 
-        protected:
-
-
+//          unsigned int m_BSplineFieldOrder;
+//          ArrayType m_GradSmoothingMeshSize;
+//          ArrayType m_TotalSmoothingMeshSize;
 
       };
     }

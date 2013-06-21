@@ -40,11 +40,11 @@ namespace MR
       {
         namespace Init
         {
-          enum InitType {mass, centre, none};
+          enum InitType {mass, geometric, none};
 
           template <class MovingVoxelType,
-                     class TargetVoxelType,
-                     class TransformType>
+                    class TargetVoxelType,
+                    class TransformType>
             void initialise_using_image_centres (const MovingVoxelType& moving,
                                                  const TargetVoxelType& target,
                                                  TransformType& transform)

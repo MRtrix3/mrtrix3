@@ -66,5 +66,4 @@ void run ()
   inverter (deformation_vox, inv_deformation_vox);
 
   Image::Registration::deformation2displacement (inv_deformation_vox, inv_deformation_vox);
-
 }
