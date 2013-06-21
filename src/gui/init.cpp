@@ -40,9 +40,11 @@ namespace MR
     {
       new QApplication (App::argc, App::argv);
 
-      if (File::Config::get_int ("FSAA", 0)) {
+      int nsamples = File::Config::get_int ("FSAA", 0);
+      if (nsamples > 1) {
         QGLFormat f = QGLFormat::defaultFormat();
         f.setSampleBuffers(true);
+        f.setSamples (nsamples);
         QGLFormat::setDefaultFormat(f);
       }
 

@@ -30,6 +30,7 @@
 #include "gui/projection.h"
 #include "dwi/tractography/file.h"
 #include "dwi/tractography/scalar_file.h"
+#include "gui/opengl/lighting.h"
 
 
 
@@ -91,6 +92,14 @@ namespace MR
             if (use_discard_upper())
               glUniform1f (get_uniform ("upper"), greaterthan);
           }
+          if (tractography_tool.use_lighting) {
+            glUniformMatrix4fv (glGetUniformLocation (shader_program, "MV"), 1, GL_FALSE, transform.modelview());
+            glUniform3fv (glGetUniformLocation (shader_program, "light_pos"), 1, tractography_tool.lighting->lightpos);
+            glUniform1f (glGetUniformLocation (shader_program, "ambient"), tractography_tool.lighting->ambient);
+            glUniform1f (glGetUniformLocation (shader_program, "diffuse"), tractography_tool.lighting->diffuse);
+            glUniform1f (glGetUniformLocation (shader_program, "specular"), tractography_tool.lighting->specular);
+            glUniform1f (glGetUniformLocation (shader_program, "shine"), tractography_tool.lighting->shine);
+          }
 
           if (tractography_tool.line_opacity < 1.0) {
             glEnable (GL_BLEND);
@@ -106,6 +115,7 @@ namespace MR
           }
 
           glLineWidth (tractography_tool.line_thickness);
+          glEnable (GL_LINE_SMOOTH);
 
           for (size_t buf = 0; buf < vertex_buffers.size(); ++buf) {
             glBindVertexArray (vertex_array_objects[buf]);
@@ -133,14 +143,20 @@ namespace MR
           if (shader_program)
             shader_program.clear();
 
+          bool colour_by_direction = ( color_type == Direction || ( color_type == ScalarFile && scalarfile_by_direction ) );
+
+          // VERTEX SHADER:
           std::string vertex_shader_code =
               "layout (location = 0) in vec3 vertexPosition_modelspace;\n"
               "layout (location = 1) in vec3 previousVertex;\n"
               "layout (location = 2) in vec3 nextVertex;\n"
-              "out vec3 fragmentColour;\n"
               "uniform mat4 MVP;\n"
-              "vec3 color;\n"
-              "flat out float amp_out;\n";  //TODO
+              "flat out float amp_out;\n"
+              "out vec3 fragmentColour;\n";
+          if (tractography_tool.use_lighting) 
+            vertex_shader_code += 
+              "out vec3 tangent;\n"
+              "uniform mat4 MV;\n";
 
           if (color_type == ScalarFile)
             vertex_shader_code += "layout (location = 3) in float amp;\n"
@@ -158,20 +174,24 @@ namespace MR
               "void main() {\n"
               "  gl_Position =  MVP * vec4(vertexPosition_modelspace,1);\n";
 
+          if (tractography_tool.use_lighting || colour_by_direction) 
+            vertex_shader_code += 
+              "  vec3 dir;\n"
+              "  if (isnan (previousVertex.x))\n"
+              "    dir = nextVertex - vertexPosition_modelspace;\n"
+              "  else if (isnan (nextVertex.x))\n"
+              "    dir = vertexPosition_modelspace - previousVertex;\n"
+              "  else\n"
+              "    dir = nextVertex - previousVertex;\n";
+          if (colour_by_direction)
+              vertex_shader_code += "  fragmentColour = dir;\n";
+          if (tractography_tool.use_lighting)
+              vertex_shader_code += "  tangent = normalize (mat3(MV) * dir);\n";
+
           switch (color_type) {
-            case Direction:
-              vertex_shader_code +=
-                  "  if (isnan (previousVertex.x))\n"
-                  "    color = nextVertex - vertexPosition_modelspace;\n"
-                  "  else if (isnan (nextVertex.x))\n"
-                  "    color = vertexPosition_modelspace - previousVertex;\n"
-                  "  else\n"
-                  "    color = nextVertex - previousVertex;\n"
-                  "  color = normalize (abs (color));\n";
-              break;
             case Colour:
               vertex_shader_code +=
-                  "  color = vec3(" + str(colour[0]) + ", " + str(colour[1]) + ", " + str(colour[2]) + ");\n";
+                  "  fragmentColour = vec3(" + str(colour[0]) + ", " + str(colour[1]) + ", " + str(colour[2]) + ");\n";
               break;
             case ScalarFile:
               vertex_shader_code += "  amp_out = amp;\n";
@@ -181,22 +201,10 @@ namespace MR
                   vertex_shader_code += "1.0 -";
                 vertex_shader_code += " scale * (amp - offset), 0.0, 1.0);\n  ";
               }
-              if (scalarfile_by_direction) {
-                vertex_shader_code +=
-                    "  if (isnan (previousVertex.x))\n"
-                    "    color = nextVertex - vertexPosition_modelspace;\n"
-                    "  else if (isnan (nextVertex.x))\n"
-                    "    color = vertexPosition_modelspace - previousVertex;\n"
-                    "  else\n"
-                    "    color = nextVertex - previousVertex;\n"
-                    "  color = normalize (abs (color));\n";
-              } else {
+              if (!scalarfile_by_direction) 
                 vertex_shader_code += ColourMap::maps[colourmap_index].mapping;
-              }
-
               break;
             default:
-              assert(0);
               break;
           }
 
@@ -204,13 +212,22 @@ namespace MR
             vertex_shader_code +=
                 "  include = (dot (vertexPosition_modelspace, screen_normal) - crop_var) / slab_width;\n";
 
-          vertex_shader_code += "  fragmentColour = color;\n}\n";
+          vertex_shader_code += "}\n";
 
+
+
+
+          // FRAGMENT SHADER:
           std::string fragment_shader_code =
-              "in vec3 fragmentColour;\n"
               "in float include; \n"
               "out vec3 color;\n"
-              "flat in float amp_out;\n";
+              "flat in float amp_out;\n"
+              "in vec3 fragmentColour;\n";
+          if (tractography_tool.use_lighting)
+            fragment_shader_code += 
+              "in vec3 tangent;\n"
+              "uniform float ambient, diffuse, specular, shine;\n"
+              "uniform vec3 light_pos;\n";
 
           if (color_type == ScalarFile) {
             if (use_discard_lower())
@@ -232,15 +249,42 @@ namespace MR
               fragment_shader_code += "  if (amp_out > upper) discard;\n";
           }
 
-          fragment_shader_code +=
-              "  color = " + std::string ( color_type == Direction ? "normalize" : "" ) + " (fragmentColour);\n"
-              "}\n";
+          if (tractography_tool.use_lighting)
+            fragment_shader_code += "  vec3 t = normalize (tangent);\n";
 
-          GL::Shader::Vertex vertex_shader (vertex_shader_code);
-          GL::Shader::Fragment fragment_shader (fragment_shader_code);
-          shader_program.attach (vertex_shader);
-          shader_program.attach (fragment_shader);
-          shader_program.link();
+          fragment_shader_code +=
+            std::string("  color = ") + (colour_by_direction ? "normalize (abs (fragmentColour))" : "fragmentColour" ) + ";\n";
+
+          if (tractography_tool.use_lighting) {
+            fragment_shader_code += 
+
+             "float l_dot_t = dot(light_pos, t);\n"
+             "vec3 l_perp = light_pos - l_dot_t * t;\n"
+             "vec3 l_perp_norm = normalize (l_perp);\n"
+             "float n_dot_t = t.z;\n"
+             "vec3 n_perp = vec3(0.0, 0.0, 1.0) - n_dot_t * t;\n"
+             "vec3 n_perp_norm = normalize (n_perp);\n"
+             "float cos2_theta = 0.5+0.5*dot(l_perp_norm,n_perp_norm);\n"
+             "color *= ambient + diffuse * length(l_perp) * cos2_theta;\n"
+             "color += specular * sqrt(cos2_theta) * pow (clamp (-l_dot_t*n_dot_t + length(l_perp)*length(n_perp), 0, 1), shine);\n";
+          }
+
+          fragment_shader_code += "}\n";
+
+
+
+
+          // COMPILE AND LINK SHADERS:
+          try {
+            GL::Shader::Vertex vertex_shader (vertex_shader_code);
+            GL::Shader::Fragment fragment_shader (fragment_shader_code);
+            shader_program.attach (vertex_shader);
+            shader_program.attach (fragment_shader);
+            shader_program.link();
+          }
+          catch (Exception& E) {
+            E.display();
+          }
 
         }
 

@@ -33,6 +33,13 @@ namespace MR
 {
   namespace GUI
   {
+    namespace GL {
+      class Lighting;
+    }
+    namespace Dialog {
+      class Lighting;
+    }
+
     namespace MRView
     {
       namespace Tool
@@ -56,10 +63,13 @@ namespace MR
             QPushButton* hide_all_button;
             float line_thickness;
             bool do_crop_to_slab;
+            bool use_lighting;
             float slab_thickness;
             float line_opacity;
             Model* tractogram_list_model;
             QListView* tractogram_list_view;
+
+            GL::Lighting* lighting;
 
           private slots:
             void tractogram_open_slot ();
@@ -68,6 +78,8 @@ namespace MR
             void hide_all_slot ();
             void on_slab_thickness_slot ();
             void on_crop_to_slab_slot (bool is_checked);
+            void on_use_lighting_slot (bool is_checked);
+            void on_lighting_settings ();
             void opacity_slot (int opacity);
             void line_thickness_slot (int thickness);
             void right_click_menu_slot (const QPoint& pos);
@@ -81,6 +93,7 @@ namespace MR
             AdjustButton* slab_entry;
             QMenu* track_option_menu;
             Dock* scalar_file_options;
+            Dialog::Lighting *lighting_dialog;
 
         };
       }

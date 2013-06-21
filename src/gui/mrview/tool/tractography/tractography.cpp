@@ -32,6 +32,8 @@
 #include "gui/mrview/tool/list_model_base.h"
 #include "gui/mrview/tool/tractography/track_scalar_file.h"
 #include "gui/mrview/tool/tractography/tractogram.h"
+#include "gui/opengl/lighting.h"
+#include "gui/dialog/lighting.h"
 
 
 namespace MR
@@ -78,8 +80,10 @@ namespace MR
           Base (main_window, parent),
           line_thickness (1.0),
           do_crop_to_slab (true),
+          use_lighting (false),
           line_opacity (1.0),
-          scalar_file_options (NULL) {
+          scalar_file_options (NULL),
+          lighting_dialog (NULL) {
 
             float voxel_size;
             if (main_window.image()) {
@@ -173,7 +177,23 @@ namespace MR
             connect (slab_entry, SIGNAL (valueChanged()), this, SLOT (on_slab_thickness_slot()));
             slab_layout->addWidget (slab_entry, 0, 1);
 
+            QGroupBox* lighting_group_box = new QGroupBox (tr("lighting"));
+            lighting_group_box->setCheckable (true);
+            lighting_group_box->setChecked (false);
+            default_opt_grid->addWidget (lighting_group_box, 3, 0, 1, 2);
+
+            connect (lighting_group_box, SIGNAL (clicked (bool)), this, SLOT (on_use_lighting_slot (bool)));
+
+            QVBoxLayout* lighting_layout = new QVBoxLayout (lighting_group_box);
+            QPushButton* lighting_button = new QPushButton ("settings...");
+            connect (lighting_button, SIGNAL (clicked()), this, SLOT (on_lighting_settings()));
+            lighting_layout->addWidget (lighting_button);
+
             main_box->addLayout (default_opt_grid, 0);
+
+            lighting = new GL::Lighting (parent); 
+            connect (lighting, SIGNAL (changed()), SLOT (hide_all_slot()));
+
 
             QAction* action;
             track_option_menu = new QMenu ();
@@ -267,6 +287,19 @@ namespace MR
           window.updateGL();
         }
 
+        void Tractography::on_use_lighting_slot (bool is_checked) {
+          use_lighting = is_checked;
+          for (size_t i = 0; i < tractogram_list_model->items.size(); ++i)
+            tractogram_list_model->items[i]->recompile();
+          window.updateGL();
+        }
+
+        void Tractography::on_lighting_settings () {
+          if (!lighting_dialog)
+            lighting_dialog = new Dialog::Lighting (&window, "Tractogram lighting", *lighting);
+          lighting_dialog->show();
+        }
+
 
         void Tractography::on_slab_thickness_slot() {
           slab_thickness = slab_entry->value();
@@ -281,7 +314,7 @@ namespace MR
 
 
         void Tractography::line_thickness_slot (int thickness) {
-          line_thickness = static_cast<float>(thickness) / 100.0f;
+          line_thickness = static_cast<float>(thickness) / 200.0f;
           window.updateGL();
         }
 
