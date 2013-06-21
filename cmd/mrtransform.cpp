@@ -53,22 +53,29 @@ void usage ()
   + Argument ("output", "the output image.").type_image_out ();
 
   OPTIONS
-  + Option ("transform", "specify the 4x4 transform to apply, in the form of a 4x4 ascii file.")
+  + Option ("linear", "specify a 4x4 linear transform to apply, in the form "
+                      "of a 4x4 ascii file. Note the standard 'reverse' convention "
+                      "is used, where the transform maps points in the template image "
+                      "to the moving image.")
   + Argument ("transform").type_file ()
 
-  + Option ("replace",
-            "replace the transform of the original image by that specified, "
-            "rather than applying it to the original image.")
+  + Option ("warp",
+            "apply a non-linear transform to the input image.")
+  + Argument ("image").type_image_in ()
+
+  + Option ("template",
+            "reslice the input image to match the specified template image.")
+  + Argument ("image").type_image_in ()
 
   + Option ("inverse",
-            "invert the specified transform before using it.")
+            "apply the inverse transformation")
 
-  + Option ("reslice",
-            "reslice the input image to match the specified template image.")
-  + Argument ("template").type_image_in ()
+  + Option ("replace",
+            "replace the linear transform of the original image by that specified, "
+            "rather than applying it to the original image.")
 
   + Option ("interp",
-            "set the interpolation method to use when reslicing (default: linear).")
+            "set the interpolation method to use when reslicing (default: cubic).")
   + Argument ("method").type_choice (interp_choices)
 
   + Option ("oversample",
@@ -93,12 +100,12 @@ typedef float value_type;
 
 void run ()
 {
-  Math::Matrix<float> operation;
+  Math::Matrix<float> linear_transform;
 
   Options opt = get_options ("transform");
   if (opt.size()) {
-    operation.load (opt[0][0]);
-    if (operation.rows() != 4 || operation.columns() != 4)
+    linear_transform.load (opt[0][0]);
+    if (linear_transform.rows() != 4 || linear_transform.columns() != 4)
       throw Exception ("transform matrix supplied in file \"" + opt[0][0] + "\" is not 4x4");
   }
 
@@ -112,16 +119,16 @@ void run ()
   bool replace = get_options ("replace").size();
 
   if (inverse) {
-    if (!operation.is_set())
+    if (!linear_transform.is_set())
       throw Exception ("no transform provided for option '-inverse' (specify using '-transform' option)");
     Math::Matrix<float> I;
-    Math::LU::inv (I, operation);
-    operation.swap (I);
+    Math::LU::inv (I, linear_transform);
+    linear_transform.swap (I);
   }
 
 
   if (replace)
-    if (!operation.is_set())
+    if (!linear_transform.is_set())
       throw Exception ("no transform provided for option '-replace' (specify using '-transform' option)");
 
   opt = get_options ("reslice"); // need to reslice
@@ -141,7 +148,7 @@ void run ()
     header_out.comments().push_back ("resliced to reference image \"" + template_header.name() + "\"");
 
 
-  int interp = 1;
+  int interp = 2;
   opt = get_options ("interp");
   if (opt.size())
     interp = opt[0][0];
@@ -165,8 +172,8 @@ void run ()
 
   if (replace) {
     Image::Info& info_in (data_in);
-    info_in.transform().swap (operation);
-    operation.clear();
+    info_in.transform().swap (linear_transform);
+    linear_transform.clear();
   }
 
   Image::Buffer<float>::voxel_type in (data_in);
@@ -176,17 +183,17 @@ void run ()
 
   switch (interp) {
     case 0:
-      Image::Filter::reslice<Image::Interp::Nearest> (in, out, operation, oversample, out_of_bounds_value);
+      Image::Filter::reslice<Image::Interp::Nearest> (in, out, linear_transform, oversample, out_of_bounds_value);
       break;
     case 1:
-      Image::Filter::reslice<Image::Interp::Linear> (in, out, operation, oversample, out_of_bounds_value);
+      Image::Filter::reslice<Image::Interp::Linear> (in, out, linear_transform, oversample, out_of_bounds_value);
       break;
     case 2:
-      Image::Filter::reslice<Image::Interp::Cubic> (in, out, operation, oversample, out_of_bounds_value);
+      Image::Filter::reslice<Image::Interp::Cubic> (in, out, linear_transform, oversample, out_of_bounds_value);
       break;
     case 3:
       FAIL ("FIXME: sinc interpolation needs a lot of work!");
-      Image::Filter::reslice<Image::Interp::Sinc> (in, out, operation, oversample, out_of_bounds_value);
+      Image::Filter::reslice<Image::Interp::Sinc> (in, out, linear_transform, oversample, out_of_bounds_value);
       break;
     default:
       assert (0);
@@ -195,13 +202,13 @@ void run ()
 
   } else {
     // straight copy:
-    if (operation.is_set()) {
+    if (linear_transform.is_set()) {
       header_out.comments().push_back ("transform modified");
       if (replace)
-        header_out.transform().swap (operation);
+        header_out.transform().swap (linear_transform);
       else {
         Math::Matrix<float> M (header_out.transform());
-        Math::mult (header_out.transform(), operation, M);
+        Math::mult (header_out.transform(), linear_transform, M);
       }
     }
 

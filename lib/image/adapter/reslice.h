@@ -36,7 +36,7 @@ namespace MR
     namespace Adapter
     {
 
-      extern const Math::Matrix<float> NoOp;
+      extern const Math::Matrix<float> NoTransform;
       extern const std::vector<int> AutoOverSample;
 
       //! \addtogroup interp
@@ -68,7 +68,7 @@ namespace MR
        * \endcode
        *
        * It is also possible to supply an additional transform to be applied to
-       * the data, using the \a operation parameter. The transform will be
+       * the data, using the \a transform parameter. The transform will be
        * applied in the scanner coordinate system, and should map scanner-space
        * coordinates in the original image to scanner-space coordinates in the
        * reference image.
@@ -95,7 +95,7 @@ namespace MR
           template <class InfoType>
             Reslice (const VoxelType& original,
                      const InfoType& reference,
-                     const Math::Matrix<float>& operation = NoOp,
+                     const Math::Matrix<float>& transform = NoTransform,
                      const std::vector<int>& oversample = AutoOverSample,
                      const value_type value_when_out_of_bounds = DataType::default_out_of_bounds_value<value_type>()) :
               ConstInfo (reference),
@@ -109,9 +109,9 @@ namespace MR
                 transform_reference.voxel2scanner_matrix (Mr);
                 transform_original.scanner2voxel_matrix (Mo);
 
-                if (operation.is_set()) {
+                if (transform.is_set()) {
                   Math::Matrix<float> Mt;
-                  Math::mult (Mt, Mo, operation);
+                  Math::mult (Mt, Mo, transform);
                   Mo.swap (Mt);
                 }
 

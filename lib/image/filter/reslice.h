@@ -34,9 +34,11 @@ namespace MR
     namespace Filter
     {
 
-      //! convenience function to regrid one DataSet onto another.
-      /*! This function resamples (regrids) the DataSet \a source onto the
-       * DataSet& \a destination, using the Interp::Reslice class.
+      //! convenience function to regrid one DataSet onto another
+      /*! This function resamples (regrids) the Image \a source onto the
+       * Image& \a destination, using the templated interpolator class.
+       *
+       * A linear transformation can be optionally applied (that maps from the destination to the source)
        *
        * For example:
        * \code
@@ -48,6 +50,7 @@ namespace MR
        * Image::Voxel<float> destination (destination_header);
        *
        * // regrid source onto destination using linear interpolation:
+       * Image::Filter::reslice<Image::Interp::Linear> (source, destination, operation);
        * DataSet::Interp::reslice<DataSet::Interp::Linear> (destination, source);
        * \endcode
        */
@@ -55,11 +58,11 @@ namespace MR
         void reslice (
             VoxelTypeSource& source,
             VoxelTypeDestination& destination,
-            const Math::Matrix<float>& operation = Adapter::NoOp,
+            const Math::Matrix<float>& transform = Adapter::NoTransform,
             const std::vector<int>& oversampling = Adapter::AutoOverSample,
             const typename VoxelTypeDestination::value_type value_when_out_of_bounds = DataType::default_out_of_bounds_value<typename VoxelTypeDestination::value_type>())
         {
-          Adapter::Reslice<Interpolator,VoxelTypeSource> interp (source, destination, operation, oversampling, value_when_out_of_bounds);
+          Adapter::Reslice<Interpolator,VoxelTypeSource> interp (source, destination, transform, oversampling, value_when_out_of_bounds);
           Image::threaded_copy_with_progress_message ("reslicing \"" + source.name() + "\"...", interp, destination, 2);
         }
 

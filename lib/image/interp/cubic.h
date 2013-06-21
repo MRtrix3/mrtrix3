@@ -84,10 +84,10 @@ namespace MR
           using typename Transform::out_of_bounds;
           using typename Transform::bounds;
 
-          //! construct an Nearest object to obtain interpolated values using the
+          //! construct a Nearest object to obtain interpolated values using the
           // parent DataSet class
           Cubic (const VoxelType& parent, value_type value_when_out_of_bounds = DataType::default_out_of_bounds_value<value_type>()) :
-            VoxelType(parent),
+            VoxelType (parent),
             Transform (parent),
             out_of_bounds_value (value_when_out_of_bounds) { }
 

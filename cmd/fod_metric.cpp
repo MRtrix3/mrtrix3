@@ -40,7 +40,6 @@
 
 
 
-
 MRTRIX_APPLICATION
 
 using namespace MR;
@@ -73,7 +72,7 @@ void usage ()
     + Argument ("image").type_image_out()
 
   + Option ("dixels",
-            "compute a SH image showing the orientations & relative ampitudes of segmented fibre populations (useful for assessing segmentation performance)")
+            "compute a SH image showing the orientations & relative amplitudes of segmented fibre populations (useful for assessing segmentation performance)")
     + Argument ("image").type_image_out()
 
   + Option ("gfa",

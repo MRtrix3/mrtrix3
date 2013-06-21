@@ -28,7 +28,7 @@ namespace MR
   {
     namespace Adapter
     {
-      const Math::Matrix<float> NoOp;
+      const Math::Matrix<float> NoTransform;
       const std::vector<int> AutoOverSample;
     }
   }
