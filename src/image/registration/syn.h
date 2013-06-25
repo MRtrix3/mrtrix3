@@ -44,7 +44,13 @@ namespace MR
 
 //          run_masked
 //
+////
+//          value_type smooth_grad =  template_header.vox(0) + template_header.vox(1) + template_header.vox(2);
+//          if (opt.size())
+//            smooth_grad = opt[0][0];
 //
+//          opt = get_options ("smooth_disp");
+//          value_type smooth_disp =  (template_header.vox(0) + template_header.vox(1) + template_header.vox(2)) / 3.0;
 //          void set_max_iter (const std::vector<int>& maxiter) {
 //            for (size_t i = 0; i < maxiter.size (); ++i)
 //              if (maxiter[i] < 0)

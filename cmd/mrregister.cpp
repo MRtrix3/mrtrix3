@@ -73,8 +73,8 @@ void usage ()
 
 
   ARGUMENTS
-      + Argument ("moving", "moving image").type_image_in ()
-      + Argument ("template", "template image").type_image_in ();
+    + Argument ("moving", "moving image").type_image_in ()
+    + Argument ("template", "template image").type_image_in ();
 
 
   OPTIONS
@@ -82,7 +82,7 @@ void usage ()
                              "rigid, affine, syn, rigid_affine, rigid_syn, affine_syn, rigid_affine_syn (Default: affine_syn)")
     + Argument ("type").type_choice (transformation_choices)
 
-    + Option ("transformed", "the transformed moving image after registration to the template")
+  + Option ("transformed", "the transformed moving image after registration to the template")
     + Argument ("image").type_image_out ()
 
   + Option ("tmask", "a mask to define the template image region to use for optimisation.")
@@ -173,10 +173,13 @@ void run ()
     load_image (argument[1], 1, template_buffer_ptr);
   }
 
+  Image::BufferScratch<value_type>::voxel_type moving_voxel (*moving_buffer_ptr);
+  Image::BufferScratch<value_type>::voxel_type template_voxel (*template_buffer_ptr);
+
   opt = get_options ("transformed");
-  Ptr<Image::Buffer<value_type> > transformed_buffer;
+  Ptr<Image::Buffer<value_type> > transformed_buffer_ptr;
   if (opt.size())
-    transformed_buffer = new Image::Buffer<value_type> (opt[0][0], template_header);
+    transformed_buffer_ptr = new Image::Buffer<value_type> (opt[0][0], template_header);
 
   opt = get_options ("registration");
   bool do_rigid  = false;
@@ -222,7 +225,7 @@ void run ()
   std::string rigid_filename;
   if (opt.size()) {
     if (!do_rigid)
-      throw Exception ("rigid transformation output requested when no rigid registration type is set");
+      throw Exception ("rigid transformation output requested when no rigid registration is requested");
     output_rigid = true;
     rigid_filename = std::string (opt[0][0]);
   }
@@ -232,26 +235,33 @@ void run ()
   std::string affine_filename;
   if (opt.size()) {
    if (!do_affine)
-     throw Exception ("affine transformation output requested when no affine registration type is set");
+     throw Exception ("affine transformation output requested when no affine registration is requested");
    output_affine = true;
    affine_filename = std::string (opt[0][0]);
   }
 
   opt = get_options ("warp_out");
-  std::string warp_filename;
-  bool output_syn = false;
+  Ptr<Image::Buffer<value_type> > warp_buffer;
   if (opt.size()) {
     if (!do_syn)
-      throw Exception ("SyN warp output requested when no SyN registration type is set");
-    output_syn = false;
-    warp_filename = std::string (opt[0][0]);
+      throw Exception ("SyN warp output requested when no SyN registration is requested");
+    Image::Header warp_header (template_header);
+    warp_header.set_ndim (5);
+    warp_header.dim(3) = 3;
+    warp_header.dim(4) = 4;
+    warp_header.stride(0) = 2;
+    warp_header.stride(1) = 3;
+    warp_header.stride(2) = 4;
+    warp_header.stride(3) = 1;
+    warp_header.stride(4) = 5;
+    warp_buffer = new Image::Buffer<value_type> (std::string (opt[0][0]), warp_header);
   }
 
   opt = get_options ("rigid_scale");
   std::vector<value_type> rigid_scale_factors;
   if (opt.size ()) {
     if (!do_rigid)
-      throw Exception ("the rigid multi-resolution scale factors were input when no rigid registration type is set");
+      throw Exception ("the rigid multi-resolution scale factors were input when no rigid registration is requested");
     rigid_scale_factors = parse_floats (opt[0][0]);
   }
 
@@ -259,7 +269,7 @@ void run ()
   std::vector<value_type> affine_scale_factors;
   if (opt.size ()) {
     if (!do_affine)
-      throw Exception ("the affine multi-resolution scale factors were input when no rigid registration type is set");
+      throw Exception ("the affine multi-resolution scale factors were input when no rigid registration is requested");
     affine_scale_factors = parse_floats (opt[0][0]);
   }
 
@@ -267,7 +277,7 @@ void run ()
   std::vector<value_type> syn_scale_factors;
   if (opt.size ()) {
     if (!do_syn)
-      throw Exception ("the syn multi-resolution scale factors were input when no rigid registration type is set");
+      throw Exception ("the syn multi-resolution scale factors were input when no rigid registration is requested");
     syn_scale_factors = parse_floats (opt[0][0]);
   }
 
@@ -286,7 +296,7 @@ void run ()
   if (opt.size ()) {
     rigid_niter = parse_ints (opt[0][0]);
     if (!do_rigid)
-      throw Exception ("the number of rigid iterations have been input when no rigid registration type is set");
+      throw Exception ("the number of rigid iterations have been input when no rigid registration is requested");
   }
 
   opt = get_options ("affine_niter");
@@ -294,26 +304,32 @@ void run ()
   if (opt.size ()) {
     affine_niter = parse_ints (opt[0][0]);
     if (!do_affine)
-      throw Exception ("the number of affine iterations have been input when no affine registration type is set");
+      throw Exception ("the number of affine iterations have been input when no affine registration is requested");
   }
 
   opt = get_options ("syn_niter");
   std::vector<int> syn_niter;
   if (opt.size ()) {
     if (!do_syn)
-      throw Exception ("the number of syn iterations have been input when no syn registration type is set");
+      throw Exception ("the number of syn iterations have been input when no SyN registration is requested");
     syn_niter = parse_ints (opt[0][0]);
   }
 
-  opt = get_options ("smooth_grad");
-  value_type smooth_grad =  template_header.vox(0) + template_header.vox(1) + template_header.vox(2);
-  if (opt.size())
-    smooth_grad = opt[0][0];
+  opt = get_options ("smooth_update");
+  value_type smooth_update = NAN;
+  if (opt.size()) {
+    smooth_update = opt[0][0];
+    if (!do_syn)
+      throw Exception ("the warp update field smoothing parameter was input with no SyN registration is requested");
+  }
 
-  opt = get_options ("smooth_disp");
-  value_type smooth_disp =  (template_header.vox(0) + template_header.vox(1) + template_header.vox(2)) / 3.0;
-  if (opt.size())
-    smooth_disp = opt[0][0];
+  opt = get_options ("smooth_warp");
+  value_type smooth_warp = NAN;
+  if (opt.size()) {
+    smooth_warp = opt[0][0];
+    if (!do_syn)
+      throw Exception ("the warp field smoothing parameter was input with no SyN registration is requested");
+  }
 
   Image::Registration::Transform::Rigid<double> rigid;
   opt = get_options ("rigid_init");
@@ -369,6 +385,7 @@ void run ()
     }
   }
 
+
   opt = get_options ("directions");
   Math::Matrix<value_type> directions;
   DWI::Directions::electrostatic_repulsion_60 (directions);
@@ -384,14 +401,16 @@ void run ()
     Image::Registration::Linear rigid_registration;
     Image::Registration::Metric::MeanSquared metric;
 
-    rigid_registration.set_scale_factor (rigid_scale_factors);
-    rigid_registration.set_max_iter (rigid_niter);
+    if (rigid_scale_factors.size())
+      rigid_registration.set_scale_factor (rigid_scale_factors);
+    if (rigid_niter.size())
+      rigid_registration.set_max_iter (rigid_niter);
     if (init_rigid_set)
       rigid_registration.set_init_type (Image::Registration::Transform::Init::none);
     else
       rigid_registration.set_init_type (init_centre);
 
-    rigid_registration.run_masked (metric, rigid, *moving_buffer_ptr, *template_buffer_ptr, mmask_image, tmask_image);
+    rigid_registration.run_masked (metric, rigid, moving_voxel, template_voxel, mmask_image, tmask_image);
 
     if (output_rigid)
       rigid.get_transform().save (rigid_filename);
@@ -403,8 +422,10 @@ void run ()
     Image::Registration::Linear affine_registration;
     Image::Registration::Metric::MeanSquared metric;
 
-    affine_registration.set_scale_factor (affine_scale_factors);
-    affine_registration.set_max_iter (affine_niter);
+    if (affine_scale_factors.size())
+      affine_registration.set_scale_factor (affine_scale_factors);
+    if (affine_niter.size())
+      affine_registration.set_max_iter (affine_niter);
     if (do_rigid) {
       affine.set_centre (rigid.get_centre());
       affine.set_translation (rigid.get_translation());
@@ -415,7 +436,7 @@ void run ()
     else
       affine_registration.set_init_type (init_centre);
 
-    affine_registration.run_masked (metric, affine, *moving_buffer_ptr, *template_buffer_ptr, mmask_image, tmask_image);
+    affine_registration.run_masked (metric, affine, moving_voxel, template_voxel, mmask_image, tmask_image);
     if (output_affine)
       affine.get_transform().save (affine_filename);
 
@@ -425,30 +446,33 @@ void run ()
 
     CONSOLE ("running SyN registration");
 
-//    Image::Header warp_header (warp_filename);
-//    warp_header.set_ndim (5);
-//    warp_header.dim(3) = 3;
-//    warp_header.dim(4) = 4;
-//    warp_header.stride(0) = 2;
-//    warp_header.stride(1) = 3;
-//    warp_header.stride(2) = 4;
-//    warp_header.stride(3) = 1;
-//    warp_header.stride(4) = 5;
-//    Ptr<Image::Buffer<value_type> > warp_buffer;
-//    warp_buffer = new Image::Buffer<value_type> (argument[3], warp_header);
+    if (smooth_warp) {
+
+    }
+
+    if (smooth_update) {
+
+    }
+
+    if (warp_buffer) {
+      //write out warp
+    }
+
   }
 
-  if (transformed_buffer) {
+  if (transformed_buffer_ptr) {
+    Image::Buffer<float>::voxel_type transformed_voxel (*transformed_buffer_ptr);
 
     if (do_syn) {
+
 //      if (do_reorientation)
 //        Image::Registration::fod_reorient (transformed_buffer, affine.get_transform());
     } else if (do_affine) {
-//      Image::Filter::reslice<Image::Interp::Cubic> (*moving_buffer, *transformed_buffer, affine.get_transform(), Image::Adapter::AutoOverSample, 0.0);
+      Image::Filter::reslice<Image::Interp::Cubic> (moving_voxel, transformed_voxel, affine.get_transform(), Image::Adapter::AutoOverSample, 0.0);
 //      if (do_reorientation)
 //        Image::Filter::fod_reorient (transformed_buffer, affine.get_transform());
     } else {
-//      Image::Filter::reslice<Image::Interp::Cubic> (*moving_buffer, *transformed_buffer, rigid.get_transform(), Image::Adapter::AutoOverSample, 0.0);
+      Image::Filter::reslice<Image::Interp::Cubic> (moving_voxel, transformed_voxel, rigid.get_transform(), Image::Adapter::AutoOverSample, 0.0);
 //      if (do_reorientation)
 //        Image::Filter::fod_reorient (transformed_buffer, affine.get_transform());
     }

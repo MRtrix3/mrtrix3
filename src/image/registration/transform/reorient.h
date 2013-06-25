@@ -1,5 +1,5 @@
 /*
-    Copyright 2012 Brain Research Institute, Melbourne, Australia
+    Copyright 2013 Brain Research Institute, Melbourne, Australia
 
     Written by David Raffelt 2013
 
@@ -23,6 +23,7 @@
 #ifndef __image_registration_transform_reorient_h__
 #define __image_registration_transform_reorient_h__
 
+#include "image/threaded_loop.h"
 
 namespace MR
 {
@@ -33,14 +34,31 @@ namespace MR
       namespace Transform
       {
 
+        template <class WarpVoxelType, class FODVoxelType>
+        class ReorientAdapter {
+          public:
+
+          private:
+            WarpVoxelType warp;
+            FODVoxelType fod;
+        };
+
+        void reorient_FOD (const Math::Matrix<float>& transform, Math::Vector<float>& FOD) {
+
+        }
+
         template <class FODVoxelType>
         void reorient (const Math::Matrix<float>& transform, FODVoxelType& target)
         {
+          Image::ThreadedLoop
         }
 
         template <class WarpVoxelType, class FODVoxelType>
-        void reorient (const WarpVoxelType& transform, FODVoxelType& target)
+        void reorient (const WarpVoxelType& warp, FODVoxelType& target)
         {
+          // for each warp component compute gradient
+
+
         }
 
 
