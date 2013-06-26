@@ -595,7 +595,7 @@ void run() {
   CONSOLE ("number of dixels: " + str(num_dixels));
 
   // Compute 3D analysis mask based on dixels in average FOD image
-  Image::Header header3D (argument[4]);
+  Image::Header header3D (index_header);
   header3D.set_ndim(3);
   Image::BufferScratch<bool> dixel_mask (header3D);
   Image::BufferScratch<bool>::voxel_type dixel_mask_vox (dixel_mask);
@@ -616,7 +616,7 @@ void run() {
   if (opt.size()) {
     Image::Buffer<value_type> fibre_count_buffer (opt[0][0], header3D);
     Image::Buffer<value_type>::voxel_type fibre_count_buffer_vox (fibre_count_buffer);
-    Image::Loop loop(0, 3);
+    Image::Loop loop (0, 3);
     for (loop.start (dixel_indexer_vox, fibre_count_buffer_vox); loop.ok(); loop.next (dixel_indexer_vox, fibre_count_buffer_vox)) {
       dixel_indexer_vox[3] = 0;
       int32_t dixel_index = dixel_indexer_vox.value();
