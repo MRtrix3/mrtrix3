@@ -66,7 +66,7 @@ namespace MR
     template functions and algorithms that operate on images.
 
     In the MRtrix code and documentation, objects that provide an equivalent
-    interface to Image::Info are often to referred as InfoType objects. This
+    interface to Image::Info are often referred to as InfoType objects. This
     terminology is used particularly in naming template arguments. 
 
     \section image_header_class Image::Header
@@ -151,7 +151,7 @@ namespace MR
     multi-threading applications. It will keep a reference to its Image::Buffer
     class, so that all copies will be accessing the same data buffer. They can
     be used in a thread-safe manner - as long as a mechanism exists to prevent
-    concurrent write access to the same voxel location.
+    concurrent writes to the same voxel location.
 
 
     In the MRtrix code and documentation, objects that provide an equivalent

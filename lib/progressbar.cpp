@@ -23,7 +23,10 @@
 #include "app.h"
 #include "progressbar.h"
 
-#ifdef MRTRIX_R_AS_MODULE
+#ifdef MRTRIX_AS_R_LIBRARY
+# ifdef WARN
+#  undef WARN
+# endif
 # include <R.h>
 # define PROGRESS_PRINT REprintf (
 #else

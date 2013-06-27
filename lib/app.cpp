@@ -234,8 +234,10 @@ namespace MR
         WARN ("existing output files will be overwritten");
         overwrite_files = true;
       }
-      if (get_options ("help").size())
+      if (get_options ("help").size()) {
         print_help();
+        throw 0;
+      }
       if (get_options ("version").size()) {
         print (version_string());
         throw 0;
@@ -270,8 +272,10 @@ namespace MR
           has_optional_arguments = true;
       }
 
-      if (!option.size() && !argument.size() && REQUIRES_AT_LEAST_ONE_ARGUMENT)
+      if (!option.size() && !argument.size() && REQUIRES_AT_LEAST_ONE_ARGUMENT) {
         print_help ();
+        throw 0;
+      }
 
       if (has_optional_arguments && num_args_required > argument.size())
         throw Exception ("expected at least " + str (num_args_required)

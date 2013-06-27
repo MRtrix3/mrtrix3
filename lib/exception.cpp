@@ -23,7 +23,10 @@
 #include "app.h"
 #include "exception.h"
 
-#ifdef MRTRIX_R_AS_MODULE
+#ifdef MRTRIX_AS_R_LIBRARY
+# ifdef WARN
+#  undef WARN
+# endif
 # include <R.h>
 #endif
 
@@ -54,7 +57,7 @@ namespace MR
 
   void cmdline_report_to_user_func (const std::string& msg, int type)
   {
-#ifdef MRTRIX_R_AS_MODULE
+#ifdef MRTRIX_AS_R_LIBRARY
     REprintf ("%s%s%s\n", App::NAME.c_str(), console_prefix (type), msg.c_str());
 #else
     std::cerr << App::NAME << console_prefix (type) << msg << "\n";
@@ -65,7 +68,7 @@ namespace MR
 
   void cmdline_print_func (const std::string& msg)
   {
-#ifdef MRTRIX_R_AS_MODULE
+#ifdef MRTRIX_AS_R_LIBRARY
     Rprintf (msg.c_str());
 #else 
     std::cout << msg;
