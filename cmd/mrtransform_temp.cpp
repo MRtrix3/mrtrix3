@@ -96,9 +96,9 @@ void usage ()
   + Option ("directions", "the directions used for FOD reorienation using apodised point spread functions (Default: 60 directions)")
     + Argument ("file", "a list of directions [az el] generated using the gendir command.").type_file()
 
-  + Option ("no_reorientation", "turn off FOD reorientation. Reorientation is on by default if the number "
-                                "of volumes in the 4th dimension corresponds to the number of coefficients in an "
-                                "antipodally symmetric spherical harmonic series (i.e. 6, 15, 28, 45, 66 etc")
+  + Option ("noreorientation", "turn off FOD reorientation. Reorientation is on by default if the number "
+                               "of volumes in the 4th dimension corresponds to the number of coefficients in an "
+                               "antipodally symmetric spherical harmonic series (i.e. 6, 15, 28, 45, 66 etc")
 
   + DataType::options ();
 }
@@ -203,26 +203,27 @@ void run ()
       linear_transform.clear();
     }
 
+    Options opt = get_options ("noreorientation");
     bool do_reorientation = false;
     if (output_header.ndim() > 3) {
       value_type val = (Math::sqrt (float (1 + 8 * output_header.dim(3))) - 3.0) / 4.0;
-      if (!(val - (int)val)) {
+      if (!(val - (int)val) && !opt.size()) {
         do_reorientation = true;
         CONSOLE ("SH series detected, performing apodised PSF reorientation");
       }
     }
 
-    Options opt = get_options ("no_reorientation");
-    if (opt.size())
-      do_reorientation = false;
 
-    opt = get_options ("directions");
-    Math::Matrix<value_type> directions;
-    DWI::Directions::electrostatic_repulsion_60 (directions);
-    if (opt.size()) {
-      if (!do_reorientation)
-        throw Exception ("apodised PSF directions specified when no reorientation is to be performed");
-      directions.load(opt[0][0]);
+
+    Math::Matrix<value_type> directions_cartesian;
+    if (do_reorientation) {
+      Math::Matrix<value_type> directions_el_az;
+      opt = get_options ("directions");
+      if (opt.size())
+        directions_el_az.load(opt[0][0]);
+      else
+        DWI::Directions::electrostatic_repulsion_60 (directions_el_az);
+      Math::SH::S2C(directions_el_az, directions_cartesian);
     }
 
     Image::Buffer<float>::voxel_type in (*input_buffer);
@@ -249,8 +250,10 @@ void run ()
         break;
     }
 
-    if (do_reorientation)
-      Image::Registration::Transform::reorient (output_scratch_vox, linear_transform, directions);
+    if (do_reorientation) {
+      std::string msg("reorienting...");
+      Image::Registration::Transform::reorient (msg, output_scratch_vox, linear_transform, directions_cartesian);
+    }
 
     Image::Buffer<float> output_buffer (argument[1], output_header);
     Image::Buffer<float>::voxel_type output_vox (output_buffer);

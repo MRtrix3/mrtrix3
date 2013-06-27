@@ -141,14 +141,14 @@ void run ()
   Ptr<Image::BufferScratch<value_type> > moving_buffer_ptr;
   Ptr<Image::BufferScratch<value_type> > template_buffer_ptr;
 
-  Options opt = get_options ("no_reorientation");
+  Options opt = get_options ("noreorientation");
   bool do_reorientation = true;
   if (opt.size())
     do_reorientation = false;
 
   if (template_header.ndim() > 3) {
     value_type val = (Math::sqrt (float (1 + 8 * template_header.dim(3))) - 3.0) / 4.0;
-    if (!(val - (int)val) && do_reorientation) {
+    if (!(val - (int)val) && do_reorientation && template_header.dim(3) > 1) {
         CONSOLE ("SH series detected, performing FOD registration");
         // Only load as many SH coefficients as required
         int lmax = 4;
@@ -462,12 +462,13 @@ void run ()
 
   if (transformed_buffer_ptr) {
     Image::Buffer<float>::voxel_type transformed_voxel (*transformed_buffer_ptr);
-
+    TRACE;
     if (do_syn) {
 
 //      if (do_reorientation)
 //        Image::Registration::fod_reorient (transformed_buffer, affine.get_transform());
     } else if (do_affine) {
+    TRACE;
       Image::Filter::reslice<Image::Interp::Cubic> (moving_voxel, transformed_voxel, affine.get_transform(), Image::Adapter::AutoOverSample, 0.0);
 //      if (do_reorientation)
 //        Image::Filter::fod_reorient (transformed_buffer, affine.get_transform());

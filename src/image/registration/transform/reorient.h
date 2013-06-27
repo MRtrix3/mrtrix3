@@ -42,27 +42,23 @@ namespace MR
 
           public:
             Base (FODVoxelType& fod_voxel,
-                  const Math::Matrix<float>& directions,
+                  const Math::Matrix<float>& directions_transposed,
                   const Math::Matrix<float>& fod_to_aPSF_weights_transform) :
                   fod_voxel (fod_voxel),
-                  directions (directions),
                   fod_to_aPSF_weights_transform (fod_to_aPSF_weights_transform),
-                  aPSF_generator (Math::SH::LforN(fod_voxel.dim(3))){ }
+                  aPSF_generator (Math::SH::LforN(fod_voxel.dim(3))) {
+                    directions = Math::transpose(directions_transposed);}
 
           protected:
-            inline void reorient_FOD () {
-              // Compute the aPSF weights
+            void reorient_FOD () {
               Math::Vector<float> fod (fod_voxel.address(), fod_voxel.dim(3));
-              Math::Vector<float> weights;
               Math::mult (weights, fod_to_aPSF_weights_transform, fod);
-
-              Math::Matrix<float> transformed_directions;
               Math::mult (transformed_directions, transform, directions);
               fod.zero();
               // for each direction, compute an apodised PSF, add it to the FOD with the weight
-              for (int i = 0; i < directions.rows(); ++i) {
-                Math::Vector<float> aPSF;
-                Point<float> dir (directions (i, 0), directions (i, 1), directions (i, 2));
+              Math::Vector<float> aPSF;
+              for (int i = 0; i < transformed_directions.columns(); ++i) {
+                Point<float> dir (transformed_directions (0, i), transformed_directions (1, i), transformed_directions (2, i));
                 aPSF_generator (aPSF, dir);
                 aPSF *= weights[i];
                 fod += aPSF;
@@ -70,10 +66,12 @@ namespace MR
             }
 
             FODVoxelType fod_voxel;
-            Math::Matrix<float> directions;
             Math::Matrix<float> fod_to_aPSF_weights_transform;
             Math::Matrix<float> transform;
             Math::SH::aPSF<float> aPSF_generator;
+            Math::Matrix<float> transformed_directions;
+            Math::Vector<float> weights;
+            Math::Matrix<float> directions;
         };
 
 
@@ -87,7 +85,10 @@ namespace MR
                                 const Math::Matrix<float>& directions,
                                 const Math::Matrix<float>& fod_to_aPSF_weights_transform,
                                 const Math::Matrix<float>& transform) :
-                                  Base<FODVoxelType> (fod_voxel, directions, fod_to_aPSF_weights_transform) {}
+                                  Base<FODVoxelType> (fod_voxel, directions, fod_to_aPSF_weights_transform) {
+                                    Base<FODVoxelType>::transform.resize(3,3);
+                                    Math::LU::inv(Base<FODVoxelType>::transform, transform.sub(0,3,0,3));
+          }
 
             void operator() (const Image::Iterator& pos) {
               Image::voxel_assign (Base<FODVoxelType>::fod_voxel, pos, 0, 3);
@@ -108,28 +109,31 @@ namespace MR
                                 const Math::Matrix<float>& fod_to_aPSF_weights_transform,
                                 const WarpVoxelType& warp) :
                                   Base<FODVoxelType> (fod_voxel, directions, fod_to_aPSF_weights_transform),
-                                  warp_gradient (warp) {}
+                                  warp_gradient (warp),
+                                  jacobian (3, 3) {}
 
               void operator() (const Image::Iterator& pos) {
                 Image::voxel_assign (Base<FODVoxelType>::fod_voxel, pos, 0, 3);
                 Base<FODVoxelType>::fod_voxel[3] = 0;
                 if (Base<FODVoxelType>::fod_voxel.value() > 0) {
-                  Base<FODVoxelType>::transform.identity();
+                  jacobian.identity();
                   Image::voxel_assign (warp_gradient, pos, 0, 3);
                   for (size_t i = 0; i < 3; ++i) {
                     warp_gradient.set_axis(i);
                     for (size_t j = 0; j < 3; ++j) {
                       warp_gradient[3] = j;
-                      Base<FODVoxelType>::transform(i, j) += warp_gradient.value();
+                      jacobian(i, j) += warp_gradient.value();
                     } // TODO check the rows/cols
                   }
                   // adjust for scanner coord TODO
+                  Math::LU::inv(Base<FODVoxelType>::transform, jacobian);
                   Base<FODVoxelType>::reorient_FOD ();
                 }
               }
 
           private:
             Adapter::Gradient1D<WarpVoxelType> warp_gradient;
+            Math::Matrix<float> jacobian;
         };
 
         void precompute_FOD_to_aPSF_weights_transform (const int num_SH,
@@ -137,13 +141,13 @@ namespace MR
                                                        Math::Matrix<float>& fod_to_aPSF_weights_transform) {
           Math::Matrix<float> aPSF_matrix (num_SH, directions.rows());
           Math::SH::aPSF<float> aPSF_generator (Math::SH::LforN (num_SH));
+          Math::Vector<float> aPSF;
           for (size_t i = 0; i < directions.rows(); ++i) {
             Point<float> dir (directions (i, 0), directions (i, 1), directions (i, 2));
-            Math::Vector<float> aPSF;
             aPSF_generator (aPSF, dir);
-            fod_to_aPSF_weights_transform.column(i) = aPSF;
+            aPSF_matrix.column(i) = aPSF;
           }
-          Math::LU::inv (fod_to_aPSF_weights_transform, aPSF_matrix);
+          Math::pinv (fod_to_aPSF_weights_transform, aPSF_matrix);
         }
 
 
@@ -155,9 +159,9 @@ namespace MR
           Math::Matrix<float> fod_to_aPSF_weights_transform;
           precompute_FOD_to_aPSF_weights_transform (fod_vox.dim(3), directions, fod_to_aPSF_weights_transform);
           LinearReorientKernel<FODVoxelType> kernel (fod_vox,
-                                                     transform,
                                                      directions,
-                                                     fod_to_aPSF_weights_transform);
+                                                     fod_to_aPSF_weights_transform,
+                                                     transform);
           Image::ThreadedLoop loop (fod_vox, 1, 0, 3);
           loop.run (kernel);
         }
@@ -171,9 +175,9 @@ namespace MR
           Math::Matrix<float> fod_to_aPSF_weights_transform;
           precompute_FOD_to_aPSF_weights_transform (fod_vox.dim(3), directions, fod_to_aPSF_weights_transform);
           LinearReorientKernel<FODVoxelType> kernel (fod_vox,
-                                                     transform,
                                                      directions,
-                                                     fod_to_aPSF_weights_transform);
+                                                     fod_to_aPSF_weights_transform,
+                                                     transform);
           Image::ThreadedLoop loop (progress_message, fod_vox, 1, 0, 3);
           loop.run (kernel);
         }
@@ -186,9 +190,9 @@ namespace MR
           Math::Matrix<float> fod_to_aPSF_weights_transform;
           precompute_FOD_to_aPSF_weights_transform (fod_vox.dim(3), directions, fod_to_aPSF_weights_transform);
           WarpReorientKernel<FODVoxelType, WarpVoxelType> kernel (fod_vox,
-                                                                  warp,
                                                                   directions,
-                                                                  fod_to_aPSF_weights_transform);
+                                                                  fod_to_aPSF_weights_transform,
+                                                                  warp);
           Image::ThreadedLoop loop (fod_vox, 1, 0, 3);
           loop.run (kernel);
         }
@@ -202,9 +206,9 @@ namespace MR
           Math::Matrix<float> fod_to_aPSF_weights_transform;
           precompute_FOD_to_aPSF_weights_transform (fod_vox.dim(3), directions, fod_to_aPSF_weights_transform);
           WarpReorientKernel<FODVoxelType, WarpVoxelType> kernel (fod_vox,
-                                                                  warp,
                                                                   directions,
-                                                                  fod_to_aPSF_weights_transform);
+                                                                  fod_to_aPSF_weights_transform,
+                                                                  warp);
           Image::ThreadedLoop loop (progress_message, fod_vox, 1, 0, 3);
           loop.run (kernel);
         }

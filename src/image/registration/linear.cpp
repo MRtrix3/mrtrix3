@@ -94,9 +94,9 @@ namespace MR
                          "first use lmax 2 until convergence, then add lmax 4 SH coefficients and run till convergence")
           + Argument ("num").type_integer ()
 
-        + Option ("no_reorientation", "turn off FOD reorientation. Reorientation is on by default if the number "
-                                      "of volumes in the 4th dimension corresponds to the number of coefficients in an "
-                                      "antipodally symmetric spherical harmonic series (i.e. 6, 15, 28, 45, 66 etc");
+        + Option ("noreorientation", "turn off FOD reorientation. Reorientation is on by default if the number "
+                                     "of volumes in the 4th dimension corresponds to the number of coefficients in an "
+                                     "antipodally symmetric spherical harmonic series (i.e. 6, 15, 28, 45, 66 etc");
     }
   }
 }
