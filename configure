@@ -22,6 +22,7 @@ for arg in sys.argv[1:]:
   elif '-verbose'.startswith (arg): verbose = True
   elif '-R'.startswith (arg): 
     R_module = True
+    noshared = True
     nogui = True
   elif arg[0] != '-':
     if profile_name != None: 

@@ -249,6 +249,9 @@ namespace MR
 
     void parse ()
     {
+       argument.clear();
+       option.clear();
+
       if (argc == 2) {
         if (strcmp (argv[1], "__print_full_usage__") == 0) {
           print (full_usage ());
