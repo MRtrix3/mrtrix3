@@ -24,10 +24,7 @@
 #include "exception.h"
 
 #ifdef MRTRIX_AS_R_LIBRARY
-# ifdef WARN
-#  undef WARN
-# endif
-# include <R.h>
+# include "wrap_r.h"
 #endif
 
 namespace MR
