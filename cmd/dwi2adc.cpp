@@ -43,7 +43,7 @@ void usage ()
 
   ARGUMENTS 
     + Argument ("input", "the input image.").type_image_in ()
-    + Argument ("ouput", "the output image.").type_image_out ();
+    + Argument ("output", "the output image.").type_image_out ();
 
   OPTIONS 
     + DWI::GradOption;

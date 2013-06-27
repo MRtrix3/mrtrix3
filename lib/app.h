@@ -27,7 +27,7 @@
 
 #define MRTRIX_APPLICATION \
 extern "C" void R_main (int* cmdline_argc, char** cmdline_argv) { \
-    try { if (MR::App::DESCRIPTION.empty()) { MR::App::init (*cmdline_argc, cmdline_argv); usage (); } MR::App::parse (); run (); } \
+    try { if (MR::App::DESCRIPTION.empty()) { usage (); } MR::App::init (*cmdline_argc, cmdline_argv); MR::App::parse (); run (); } \
     catch (MR::Exception& E) { E.display(); return; } \
     catch (int retval) { return; } \
 } \
@@ -35,7 +35,7 @@ extern "C" void R_usage (char** output) { \
     if (MR::App::DESCRIPTION.empty()) usage(); \
     std::string s = MR::App::full_usage(); \
     *output = new char [s.size()+1]; \
-    strncpy(*output, s.c_str(), s.size()); \
+    strncpy(*output, s.c_str(), s.size()+1); \
 }
 
 #else

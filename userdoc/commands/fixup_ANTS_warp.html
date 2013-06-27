@@ -25,14 +25,14 @@ fix up issues with ANTS-generated transformations, whereby locations out of the 
 <p>
 These nonsense values seem to correspond with the values in the very first voxel of the original image (i.e. the voxel at [ 0 0 0 ]). The fix is to read that value from the original image, then identify voxels with the same set of values in the transformed images, and set these locations to NaN.
 </p>
-<p class=indented><strong>syntax:</strong> &nbsp; &nbsp; fixup_ANTS_warp [ options ] warp original ouput </p>
+<p class=indented><strong>syntax:</strong> &nbsp; &nbsp; fixup_ANTS_warp [ options ] warp original output </p>
 <h2>Arguments</h2>
 <table class=args>
 <tr><td><b>warp</b></td>
 <td>the input warp image to be fixed up.</td></tr>
 <tr><td><b>original</b></td>
 <td>the original warp image pre-normalisation (as generated using gen_unit_warp).</td></tr>
-<tr><td><b>ouput</b></td>
+<tr><td><b>output</b></td>
 <td>the corrected output warp image.</td></tr>
 </table>
 <h2>Options</h2>

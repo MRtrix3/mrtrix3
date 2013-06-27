@@ -44,7 +44,7 @@ void usage ()
   + Argument ("SH", "the input image of SH coefficients.")
   .type_image_in ()
 
-  + Argument ("ouput",
+  + Argument ("output",
               "the output image. Each volume corresponds to the x, y & z component "
               "of each peak direction vector in turn.")
   .type_image_out ();

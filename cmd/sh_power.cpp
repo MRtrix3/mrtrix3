@@ -39,7 +39,7 @@ void usage () {
 
   ARGUMENTS
     + Argument ("SH", "the input spherical harmonics coefficients image.").type_image_in ()
-    + Argument ("power", "the ouput power image.").type_image_out ();
+    + Argument ("power", "the output power image.").type_image_out ();
 }
 
 
