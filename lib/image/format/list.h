@@ -97,7 +97,7 @@ namespace MR
           virtual RefPtr<Handler::Base> create (Header& H) const = 0;
       };
 
-#ifdef MRTRIX_R_AS_MODULE
+#ifdef MRTRIX_AS_R_LIBRARY
       DECLARE_IMAGEFORMAT (RAM, "RAM buffer");
 #endif
 

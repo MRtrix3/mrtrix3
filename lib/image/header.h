@@ -168,6 +168,10 @@ namespace MR
           return handler_;
         }
 
+        void __set_handler (RefPtr<Handler::Base> handler) {
+          handler_ = handler;
+        }
+
       protected:
         const char* format_;
         Math::Matrix<float> DW_scheme_;
@@ -181,9 +185,6 @@ namespace MR
 
         template <class ValueType> friend class Buffer;
 
-#ifdef MRTRIX_R_AS_MODULE
-        friend class Handler::RAM;
-#endif
     };
 
 

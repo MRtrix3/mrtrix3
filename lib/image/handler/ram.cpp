@@ -20,7 +20,7 @@
 
 */
 
-#ifdef MRTRIX_R_AS_MODULE
+#ifdef MRTRIX_AS_R_LIBRARY
 
 #include <limits>
 #include <unistd.h>

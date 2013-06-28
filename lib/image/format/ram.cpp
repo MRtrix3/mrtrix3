@@ -20,8 +20,9 @@
 
 */
 
-#ifdef MRTRIX_R_AS_MODULE
+#ifdef MRTRIX_AS_R_LIBRARY
 
+#include "file/path.h"
 #include "image/header.h"
 #include "image/handler/ram.h"
 #include "image/format/list.h"
@@ -36,7 +37,7 @@ namespace MR
       RefPtr<Handler::Base> RAM::read (Header& H) const
       {
         if (!Path::has_suffix (H.name(), ".R"))
-          return NULL;
+          return RefPtr<Handler::Base>();
 
         Header* R_header = (Header*) to<size_t> (H.name().substr (0, H.name().size()-2));
         H = *R_header;
@@ -59,8 +60,8 @@ namespace MR
       {
         Header* R_header = (Header*) to<size_t> (H.name().substr (0, H.name().size()-2));
         *R_header = H;
-        RefPtr<Handler::RAM> handler = new Handler::RAM (H);
-        R_header->__get_handler() = handler;
+        RefPtr<Handler::RAM> handler (new Handler::RAM (H));
+        R_header->__set_handler (handler);
         return handler;
       }
 
