@@ -295,6 +295,17 @@ namespace MR
               cos (el));
         }
 
+      template <typename ValueType>
+        void S2C (Math::Matrix<ValueType>& az_el, Math::Matrix<ValueType>& cartesian)
+        {
+          cartesian.allocate (az_el.rows(), 3);
+          for (size_t dir = 0; dir < az_el.rows(); ++dir) {
+            cartesian(dir, 0) = sin (az_el (dir, 1)) * cos (az_el (dir, 0));
+            cartesian(dir, 1) = sin (az_el (dir, 1)) * sin (az_el (dir, 0));
+            cartesian(dir, 2) = cos (az_el (dir, 1));
+          }
+        }
+
 
       template <typename ValueType>
         class Rotate
@@ -631,8 +642,7 @@ namespace MR
       {
         public:
           aPSF (const size_t _lmax) :
-            lmax (_lmax),
-            N    (Math::SH::NforL (lmax))
+            lmax (_lmax)
           {
             switch (lmax) {
               case 2:
@@ -678,6 +688,7 @@ namespace MR
 
           Math::Vector<ValueType>& operator() (Math::Vector<ValueType>& SH, const Point<ValueType>& dir) const
           {
+            SH.allocate(RH.size());
             Math::Vector<ValueType> delta;
             Math::SH::delta (delta, dir, lmax);
             Math::SH::sconv (SH, RH, delta);
@@ -686,7 +697,7 @@ namespace MR
 
 
         private:
-          const size_t lmax, N;
+          const size_t lmax;
           Math::Vector<ValueType> RH;
 
       };

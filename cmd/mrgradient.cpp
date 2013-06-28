@@ -26,7 +26,7 @@
 #include "image/buffer_scratch.h"
 #include "image/voxel.h"
 #include "image/filter/gaussian_smooth.h"
-#include "image/filter/gradient3D.h"
+#include "image/filter/gradient.h"
 #include "progressbar.h"
 
 MRTRIX_APPLICATION
@@ -39,11 +39,14 @@ void usage ()
   AUTHOR = "David Raffelt (d.raffelt@brain.org.au)";
 
   DESCRIPTION
-  + "compute the image gradient along the x, y, and z axes of a 3D image.";
+  + "compute the image gradient along the x, y, and z axes of a 3D or 4D image."
+
+  + "If the input file is 4D, then the output gradient image will be 5D. The 4th "
+    "dimension will contain the x,y,z components of each input volume (defined by the 5th dimension).";
 
   ARGUMENTS
-  + Argument ("input", "input 3D image.").type_image_in ()
-  + Argument ("output", "the output 4D gradient image.").type_image_out ();
+  + Argument ("input", "input image.").type_image_in ()
+  + Argument ("output", "the output gradient image.").type_image_out ();
 
   OPTIONS
   + Option ("stdev", "the standard deviation of the Gaussian kernel used to "
@@ -75,13 +78,13 @@ void run () {
     if (stdev.size() != 1 && stdev.size() != 3)
       throw Exception ("unexpected number of elements specified in Gaussian stdev");
   } else {
-    stdev.resize(3);
+    stdev.resize (input_data.ndim(), 0.0);
     for (size_t dim = 0; dim < 3; dim++)
       stdev[dim] = input_data.vox (dim);
   }
   smooth_filter.set_stdev(stdev);
 
-  Image::Filter::Gradient3D gradient_filter (input_voxel);
+  Image::Filter::Gradient gradient_filter (input_voxel);
 
   opt = get_options("scanner");
   if(opt.size()) {

@@ -51,21 +51,26 @@ void usage ()
             "The standard deviation is defined in mm (Default 1 voxel). "
             "This can be specified either as a single value to be used for all axes, "
             "or as a comma-separated list of the stdev for each axis.")
-  + Argument ("sigma").type_sequence_float()
+  + Argument ("mm").type_sequence_float()
+
+  + Option ("fwhm", "apply Gaussian smoothing with the specified full-width half maximum. "
+            "The FWHM is defined in mm (Default 1 voxel * 2.3548). "
+            "This can be specified either as a single value to be used for all axes, "
+            "or as a comma-separated list of the FWHM for each axis.")
+  + Argument ("mm").type_sequence_float()
 
   + Option ("extent", "specify the extent (width) of kernel size in voxels. "
             "This can be specified either as a single value to be used for all axes, "
             "or as a comma-separated list of the extent for each axis. "
             "The default extent is 2 * ceil(2.5 * stdev / voxel_size) - 1.")
-  + Argument ("size").type_sequence_int()
+  + Argument ("voxels").type_sequence_int()
 
   + Option ("anisotropic", "smooth each 3D volume of a 4D image using an anisotropic gaussian kernel "
                            "oriented along a corresponding direction. Note that when this option is used "
                            "the -stdev option takes two comma separated values, the first value defines the standard "
                            "deviation along the major eigenvector of the kernel (default: 1.27mm (FWHM = 3mm)) and "
                            "the second value defines the standard deviation along the other two eigenvectors "
-                           "(default: 0.42mm (FWHM = 1mm)). This option is used to smooth AFD values sampled along a "
-                           "number of directions. The directions can be specified within the header of the input image, "
+                           "(default: 0.42mm (FWHM = 1mm)). The directions can be specified within the header of the input image, "
                            "or by using the -directions option.")
 
   + Option ("directions", "the directions for anisotropic smoothing.")
@@ -97,8 +102,19 @@ void run () {
   }
 
   opt = get_options ("stdev");
-  if (opt.size())
+  int stdev_supplied = opt.size();
+  if (stdev_supplied) {
     stdev = parse_floats (opt[0][0]);
+  }
+
+  opt = get_options ("fwhm");
+  if (opt.size()) {
+    if (stdev_supplied)
+      throw Exception ("The stdev and FWHM options are mutually exclusive.");
+    stdev = parse_floats (opt[0][0]);
+    for (size_t d = 0; d < stdev.size(); ++d)
+      stdev[d] = stdev[d] / 2.3548;  //convert FWHM to stdev
+  }
 
   opt = get_options ("stride");
   std::vector<int> strides;

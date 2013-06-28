@@ -137,6 +137,7 @@ namespace MR
               RefPtr <BufferScratch<value_type> > out_data;
               RefPtr <typename BufferScratch<value_type>::voxel_type> out;
 
+
               for (size_t dim = 0; dim < this->ndim(); dim++) {
                 if (stdev[dim] > 0) {
                   out_data = new BufferScratch<value_type> (input);
