@@ -478,10 +478,8 @@ namespace MR
             // If using the Seed_test algorithm (indicated by max_num_points == 2), don't want to execute this check
             if (S.max_num_points == 2)
               return true;
-            // Even if the WM requirements aren't directly enforced, streamline needs to be at least 3 points;
-            //   this prevents formation of streamlines entirely within the GM that never traverse the WM
-            if (tck.size() < 3)
-              return false;
+            // Used these in the ACT paper, but wasn't entirely happy with the method; can change these #defines to re-enable
+            // ACT instead now defaults to a 2-voxel minimum length
             if (!ACT_WM_INT_REQ && !ACT_WM_ABS_REQ)
               return true;
             float integral = 0.0, max_value = 0.0;

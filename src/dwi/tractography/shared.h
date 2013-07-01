@@ -271,12 +271,11 @@ namespace MR
 
           value_type max_dist = 100.0 * vox();
           properties.set (max_dist, "max_dist");
-          max_num_points = round (max_dist/step_size);
+          max_num_points = round (max_dist/step_size) + 1;
 
-          // Deal with minimum length differently for ACT; use zero minimum length unless a threshold has been explicitly provided
-          value_type min_dist = is_act() ? 0 : (5.0 * vox());
+          value_type min_dist = is_act() ? (2.0 * vox()) : (5.0 * vox());
           properties.set (min_dist, "min_dist");
-          min_num_points = round (min_dist/step_size) + 1;
+          min_num_points = std::max (2, round (min_dist/step_size) + 1);
 
           max_angle = 90.0 * step_size / vox();
           properties.set (max_angle, "max_angle");

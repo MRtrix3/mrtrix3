@@ -44,8 +44,7 @@ namespace MR
       class Shared : public SharedBase {
         public:
         Shared (const std::string& diff_path, DWI::Tractography::Properties& property_set) :
-          SharedBase (diff_path, property_set),
-          sin_max_angle (Math::sin (max_angle))
+          SharedBase (diff_path, property_set)
         {
           set_step_size (0.1);
           sin_max_angle = Math::sin (max_angle);
@@ -63,12 +62,12 @@ namespace MR
       bool init () {
         if (!get_data (source))
           return false;
-        if (S.init_dir) {
+        if (!S.init_dir) {
+          dir.set (rng.normal(), rng.normal(), rng.normal());
+          dir.normalise();
+        } else {
           dir = S.init_dir;
-          return true;
         }
-        dir.set (rng.normal(), rng.normal(), rng.normal());
-        dir.normalise();
         return true;
       }
 

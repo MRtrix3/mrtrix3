@@ -48,7 +48,7 @@ namespace MR
           max_trials (MAX_TRIALS),
           sin_max_angle (Math::sin (max_angle)),
           mean_samples (0.0),
-          mean_num_truncations (0.0),
+          mean_truncations (0.0),
           max_max_truncation (0.0),
           num_proc (0) {
 
@@ -73,15 +73,21 @@ namespace MR
 
         ~Shared ()
         {
-          INFO ("mean number of samples per step = " + str (mean_samples/double(num_proc)));
-          INFO ("mean number of rejection sampling truncations per step = " + str (mean_num_truncations/double(num_proc)));
-          INFO ("maximum truncation error = " + str (max_max_truncation));
+          mean_samples /= double(num_proc);
+          mean_truncations /= double(num_proc);
+          INFO ("mean number of samples per step = " + str (mean_samples));
+          if (mean_truncations) {
+            INFO ("mean number of steps between rejection sampling truncations = " + str (1.0/mean_truncations));
+            INFO ("maximum truncation error = " + str (max_max_truncation));
+          } else {
+            INFO ("no rejection sampling truncations occurred");
+          }
         }
 
-        void update_stats (double mean_samples_per_run, double num_truncations, double max_truncation) const
+        void update_stats (double mean_samples_per_run, double mean_truncations_per_run, double max_truncation) const
         {
           mean_samples += mean_samples_per_run;
-          mean_num_truncations += num_truncations;
+          mean_truncations += mean_truncations_per_run;
           if (max_truncation > max_max_truncation)
             max_max_truncation = max_truncation;
           ++num_proc;
@@ -92,7 +98,7 @@ namespace MR
         Math::SH::PrecomputedAL<value_type> precomputer;
 
         private:
-        mutable double mean_samples, mean_num_truncations, max_max_truncation;
+        mutable double mean_samples, mean_truncations, max_max_truncation;
         mutable int num_proc;
       };
 
@@ -116,8 +122,8 @@ namespace MR
       ~iFOD1 ()
       {
         S.update_stats (calibrate_list.size() + value_type(mean_sample_num)/value_type(num_sample_runs),
-            value_type(num_truncations) / value_type(num_sample_runs),
-            max_truncation);
+                        value_type(num_truncations) / value_type(num_sample_runs),
+                        max_truncation);
       }
 
 

@@ -174,7 +174,7 @@ namespace MR
               if (buffer_size + tck.size() > buffer_capacity)
                 commit();
 
-              for (typename std::vector<Point<value_type> >::const_iterator i = tck.begin()+1; i != tck.end(); ++i)
+              for (typename std::vector<Point<value_type> >::const_iterator i = tck.begin(); i != tck.end(); ++i)
                 add_point (*i);
               add_point (delimiter());
               ++count;
