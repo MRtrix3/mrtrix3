@@ -159,11 +159,11 @@ namespace MR
             dim(a) = num[num.size()-1-i];
             stride(a) = ++n;
           }
+          name() = image_name;
         }
 
         sanitise();
-        name() = image_name;
-        handler_->set_name (image_name);
+        handler_->set_name (name());
       }
       catch (Exception& E) {
         throw Exception (E, "error opening image \"" + image_name + "\"");
@@ -245,10 +245,11 @@ namespace MR
             dim(a) = Pdim[i];
             stride(a) = ++n;
           }
+
+          name() = image_name;
         }
 
-        name() = image_name;
-        handler_->set_name (image_name);
+        handler_->set_name (name());
         handler_->set_image_is_new (true);
         handler_->set_readwrite (true);
 
