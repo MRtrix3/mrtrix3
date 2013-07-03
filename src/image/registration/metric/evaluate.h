@@ -25,6 +25,10 @@
 
 #include "image/registration/metric/thread_kernel.h"
 #include "image/threaded_loop.h"
+#include "math/matrix.h"
+#include "image/registration/transform/reorient.h"
+#include "image/buffer_scratch.h"
+#include "image/voxel.h"
 
 namespace MR
 {
@@ -42,35 +46,55 @@ namespace MR
               typedef double value_type;
 
               Evaluate (const MetricType& metric, ParamType& parameters) :
-                metric_ (metric),
-                params_ (parameters) { }
+                metric (metric),
+                params (parameters) { }
 
 
               double operator() (const Math::Vector<double>& x, Math::Vector<double>& gradient) {
 
                 double overall_cost_function = 0.0;
                 gradient.zero();
-                params_.transformation.set_parameter_vector (x);
+                params.transformation.set_parameter_vector(x);
+
+                Ptr<Image::BufferScratch<float> > reoriented_moving;
+                Ptr<Image::BufferScratch<float>::voxel_type > reoriented_moving_vox;
+                if (directions.is_set()) {
+                  reoriented_moving = new Image::BufferScratch<float> (params.moving_image);
+                  reoriented_moving_vox = new Image::BufferScratch<float>::voxel_type (*reoriented_moving);
+                  std::string msg ("reorienting...");
+                  Image::Registration::Transform::reorient (msg, params.moving_image, *reoriented_moving_vox, params.transformation.get_matrix(), directions);
+                  params.set_moving_iterpolator (*reoriented_moving_vox);
+                  metric.set_moving_image (*reoriented_moving_vox);
+                }
+
                 {
-                  ThreadKernel<MetricType, ParamType> kernel (metric_, params_, overall_cost_function, gradient);
-                  Image::ThreadedLoop threaded_loop (params_.template_image, 2, 0, 3);
+                  ThreadKernel<MetricType, ParamType> kernel (metric, params, overall_cost_function, gradient);
+                  Image::ThreadedLoop threaded_loop (params.template_image, 2);
                   threaded_loop.run (kernel);
                 }
+                std::cout << x << std::endl;
+                std::cout << overall_cost_function << std::endl;
                 return overall_cost_function;
               }
 
+              void set_directions (Math::Matrix<float>& dir) {
+                directions = dir;
+              }
+
               size_t size() {
-                return params_.transformation.size();
+                return params.transformation.size();
               }
 
               double init (Math::Vector<TransformParamType>& x) {
-                params_.transformation.get_parameter_vector (x);
+                params.transformation.get_parameter_vector(x);
                 return 1.0;
               }
 
             protected:
-                MetricType metric_;
-                ParamType params_;
+                MetricType metric;
+                ParamType params;
+                Math::Matrix<float> directions;
+
         };
       }
     }

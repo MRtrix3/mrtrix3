@@ -45,14 +45,14 @@ namespace MR
                                  Point<double> moving_point,
                                  Math::Vector<double>& gradient) {
 
-                params.transformation.get_jacobian_wrt_params (target_point, jacobian_);
+                params.transformation.get_jacobian_wrt_params (target_point, jacobian);
 
                 value_type diff = params.moving_image_interp.value() - params.target_image.value();
 
                 for (size_t par = 0; par < gradient.size(); par++) {
                   value_type sum = 0.0;
                   for( size_t dim = 0; dim < 3; dim++) {
-                    sum += 2.0 * diff * jacobian_(dim, par) * moving_grad[dim];
+                    sum += 2.0 * diff * jacobian(dim, par) * moving_grad[dim];
                   }
                   gradient[par] += sum;
                 }

@@ -32,22 +32,34 @@ namespace MR
       namespace Metric
       {
 
-        template <class TransformType, class MovingImageInterpolatorType, class TemplateImageVoxelType, class MovingMaskInterpolatorType, class TemplateMaskInterpolatorType>
+        template <class TransformType,
+                  class MovingImageVoxelType,
+                  class MovingImageInterpolatorType,
+                  class TemplateImageVoxelType,
+                  class MovingMaskInterpolatorType,
+                  class TemplateMaskInterpolatorType>
         class Params {
           public:
 
             typedef typename TransformType::ParameterType TransformParamType;
 
             Params (TransformType& transform,
-                    MovingImageInterpolatorType& moving_image,
+                    MovingImageVoxelType& moving_image,
                     TemplateImageVoxelType& template_image) :
                       transformation (transform),
-                      moving_image_interp (moving_image),
-                      template_image (template_image){ }
+                      moving_image (moving_image),
+                      template_image (template_image){
+                        moving_image_interp = new MovingImageInterpolatorType (moving_image);
+            }
+
+            void set_moving_iterpolator (MovingImageVoxelType& moving_image) {
+              moving_image_interp = new MovingImageInterpolatorType (moving_image);
+            }
 
             TransformType& transformation;
-            MovingImageInterpolatorType moving_image_interp;
+            TemplateImageVoxelType moving_image;
             TemplateImageVoxelType template_image;
+            Ptr<MovingImageInterpolatorType> moving_image_interp;
             Ptr<TemplateMaskInterpolatorType> template_mask_interp;
             Ptr<MovingMaskInterpolatorType> moving_mask_interp;
         };

@@ -40,20 +40,23 @@ namespace MR
 
             template <class Params>
               double operator() (Params& params,
-                                 Point<double> target_point,
-                                 Point<double> moving_point,
+                                 const Point<double> target_point,
+                                 const Point<double> moving_point,
                                  Math::Vector<double>& gradient) {
 
-                params.transformation.get_jacobian_wrt_params (target_point, this->jacobian_);
-                Math::Vector<double> moving_grad (3);
-                this->get_moving_gradient(moving_point, moving_grad);
+                params.transformation.get_jacobian_wrt_params (target_point, this->jacobian);
 
-                double diff = params.moving_image_interp.value() - params.template_image.value();
+                if (params.template_image.ndim() == 4)
+                  (*gradient_interp)[4] = params.template_image [3];
+
+                this->compute_moving_gradient (moving_point);
+
+                double diff = params.moving_image_interp->value() - params.template_image.value();
 
                 for (size_t par = 0; par < gradient.size(); par++) {
                   double sum = 0.0;
                   for( size_t dim = 0; dim < 3; dim++) {
-                    sum += 2.0 * diff * this->jacobian_(dim, par) * moving_grad[dim];
+                    sum += 2.0 * diff * this->jacobian(dim, par) * moving_grad[dim];
                   }
                   gradient[par] += sum;
                 }

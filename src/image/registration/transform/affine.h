@@ -59,9 +59,9 @@ namespace MR
 
             Affine () : Base<ValueType> (12) {
               for (size_t i = 0; i < 9; i++)
-                this->optimiser_weights_[i] = 0.003;
+                this->optimiser_weights[i] = 0.003;
               for (size_t i = 9; i < 12; i++)
-                this->optimiser_weights_[i] = 1.0;
+                this->optimiser_weights[i] = 1.0;
             }
 
             template <class PointType>
@@ -69,9 +69,9 @@ namespace MR
               jacobian.resize(3,12);
               jacobian.zero();
               Vector<ValueType> v (3);
-              v[0] = p[0] - this->centre_[0];
-              v[1] = p[1] - this->centre_[1];
-              v[2] = p[2] - this->centre_[2];
+              v[0] = p[0] - this->centre[0];
+              v[1] = p[1] - this->centre[1];
+              v[2] = p[2] - this->centre[2];
               size_t blockOffset = 0;
               for (size_t block = 0; block < 3; block++) {
                 for (size_t dim = 0; dim < 3; dim++)
@@ -88,10 +88,10 @@ namespace MR
               size_t index = 0;
               for (size_t row = 0; row < 3; row++) {
                 for (size_t col = 0; col < 3; col++)
-                  this->matrix_(row, col) = param_vector[index++];
+                  this->matrix (row, col) = param_vector[index++];
               }
               for (size_t dim = 0; dim < 3; dim++)
-                this->translation_[dim] = param_vector[index++];
+                this->translation [dim] = param_vector[index++];
               this->compute_offset();
             }
 
@@ -100,10 +100,10 @@ namespace MR
               size_t index = 0;
               for (size_t row = 0; row < 3; row++) {
                 for (size_t col = 0; col < 3; col++)
-                  param_vector[index++] = this->matrix_(row, col);
+                  param_vector[index++] = this->matrix (row, col);
               }
               for (size_t dim = 0; dim < 3; dim++)
-                param_vector[index++] = this->translation_[dim];
+                param_vector[index++] = this->translation [dim];
             }
 
             UpdateType* get_gradient_descent_updator (){

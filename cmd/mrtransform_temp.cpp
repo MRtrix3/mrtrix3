@@ -223,27 +223,27 @@ void run ()
         directions_el_az.load(opt[0][0]);
       else
         DWI::Directions::electrostatic_repulsion_60 (directions_el_az);
-      Math::SH::S2C(directions_el_az, directions_cartesian);
+      Math::SH::S2C (directions_el_az, directions_cartesian);
     }
 
-    Image::Buffer<float>::voxel_type in (*input_buffer);
+    Image::BufferPreload<float>::voxel_type in (*input_buffer);
 
-    Image::BufferScratch<float> output_scratch_buffer (output_header);
-    Image::BufferScratch<float>::voxel_type output_scratch_vox (output_scratch_buffer);
+    Image::Buffer<float> output_buffer (argument[1], output_header);
+    Image::Buffer<float>::voxel_type output_vox (output_buffer);
 
     switch (interp) {
       case 0:
-        Image::Filter::reslice<Image::Interp::Nearest> (in, output_scratch_vox, linear_transform, oversample, out_of_bounds_value);
+        Image::Filter::reslice<Image::Interp::Nearest> (in, output_vox, linear_transform, oversample, out_of_bounds_value);
         break;
       case 1:
-        Image::Filter::reslice<Image::Interp::Linear> (in, output_scratch_vox, linear_transform, oversample, out_of_bounds_value);
+        Image::Filter::reslice<Image::Interp::Linear> (in, output_vox, linear_transform, oversample, out_of_bounds_value);
         break;
       case 2:
-        Image::Filter::reslice<Image::Interp::Cubic> (in, output_scratch_vox, linear_transform, oversample, out_of_bounds_value);
+        Image::Filter::reslice<Image::Interp::Cubic> (in, output_vox, linear_transform, oversample, out_of_bounds_value);
         break;
       case 3:
         FAIL ("FIXME: sinc interpolation needs a lot of work!");
-        Image::Filter::reslice<Image::Interp::Sinc> (in, output_scratch_vox, linear_transform, oversample, out_of_bounds_value);
+        Image::Filter::reslice<Image::Interp::Sinc> (in, output_vox, linear_transform, oversample, out_of_bounds_value);
         break;
       default:
         assert (0);
@@ -251,13 +251,10 @@ void run ()
     }
 
     if (do_reorientation) {
-      std::string msg("reorienting...");
-      Image::Registration::Transform::reorient (msg, output_scratch_vox, linear_transform, directions_cartesian);
+      std::string msg ("reorienting...");
+      Image::Registration::Transform::reorient (msg, output_vox, output_vox, linear_transform, directions_cartesian);
     }
 
-    Image::Buffer<float> output_buffer (argument[1], output_header);
-    Image::Buffer<float>::voxel_type output_vox (output_buffer);
-    Image::copy(output_scratch_vox, output_vox);
 
   } else {
     // straight copy:

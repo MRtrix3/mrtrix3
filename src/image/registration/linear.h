@@ -89,53 +89,54 @@ namespace MR
             init_type = type;
           }
 
-          template <class MetricType, class TransformType, class MovingImageType, class TemplateImageType>
+          void set_directions (Math::Matrix<float>& dir) {
+            directions = dir;
+          }
+
+          template <class MetricType, class TransformType, class MovingVoxelType, class TemplateVoxelType>
           void run (
             MetricType& metric,
             TransformType& transform,
-            MovingImageType& moving_image,
-            TemplateImageType& template_image) {
+            MovingVoxelType& moving_vox,
+            TemplateVoxelType& template_vox) {
               typedef Image::BufferScratch<bool>::voxel_type BogusMaskType;
-              run_masked<MetricType, TransformType, MovingImageType, TemplateImageType, BogusMaskType, BogusMaskType >
-                (metric, transform, moving_image, template_image, NULL, NULL);
+              run_masked<MetricType, TransformType, MovingVoxelType, TemplateVoxelType, BogusMaskType, BogusMaskType >
+                (metric, transform, moving_vox, template_vox, NULL, NULL);
             }
 
-          template <class MetricType, class TransformType, class MovingImageType, class TemplateImageType, class TemplateMaskType>
+          template <class MetricType, class TransformType, class MovingVoxelType, class TemplateVoxelType, class TemplateMaskType>
           void run_template_mask (
             MetricType& metric,
             TransformType& transform,
-            MovingImageType& moving_image,
-            TemplateImageType& template_image,
+            MovingVoxelType& moving_vox,
+            TemplateVoxelType& template_vox,
             Ptr<TemplateMaskType>& template_mask) {
               typedef Image::BufferScratch<bool>::voxel_type BogusMaskType;
-              run_masked<MetricType, TransformType, MovingImageType, TemplateImageType, BogusMaskType, TemplateMaskType >
-                (metric, transform, moving_image, template_image, NULL, template_mask);
+              run_masked<MetricType, TransformType, MovingVoxelType, TemplateVoxelType, BogusMaskType, TemplateMaskType >
+                (metric, transform, moving_vox, template_vox, NULL, template_mask);
             }
 
 
-          template <class MetricType, class TransformType, class MovingImageType, class TemplateImageType, class MovingMaskType>
+          template <class MetricType, class TransformType, class MovingVoxelType, class TemplateVoxelType, class MovingMaskType>
           void run_moving_mask (
             MetricType& metric,
             TransformType& transform,
-            MovingImageType& moving_image,
-            TemplateImageType& template_image,
+            MovingVoxelType& moving_vox,
+            TemplateVoxelType& template_vox,
             Ptr<MovingMaskType>& moving_mask) {
               typedef Image::BufferScratch<bool>::voxel_type BogusMaskType;
-              run_masked<MetricType, TransformType, MovingImageType, TemplateImageType, MovingMaskType, BogusMaskType >
-                (metric, transform, moving_image, template_image, moving_mask, NULL);
+              run_masked<MetricType, TransformType, MovingVoxelType, TemplateVoxelType, MovingMaskType, BogusMaskType >
+                (metric, transform, moving_vox, template_vox, moving_mask, NULL);
             }
 
-          template <class MetricType, class TransformType, class MovingImageType, class TemplateImageType, class MovingMaskType, class TemplateMaskType>
+          template <class MetricType, class TransformType, class MovingVoxelType, class TemplateVoxelType, class MovingMaskType, class TemplateMaskType>
           void run_masked (
             MetricType& metric,
             TransformType& transform,
-            MovingImageType& moving_image,
-            TemplateImageType& template_image,
+            MovingVoxelType& moving_vox,
+            TemplateVoxelType& template_vox,
             Ptr<MovingMaskType>& moving_mask,
             Ptr<TemplateMaskType>& template_mask) {
-
-              typename MovingImageType::voxel_type moving_image_vox (moving_image);
-              typename TemplateImageType::voxel_type template_image_vox (template_image);
 
               if (max_iter.size() == 1)
                 max_iter.resize (scale_factor.size(), max_iter[0]);
@@ -143,9 +144,9 @@ namespace MR
                 throw Exception ("the max number of iterations needs to be defined for each multi-resolution level");
 
               if (init_type == Transform::Init::mass)
-                Transform::Init::initialise_using_image_mass (moving_image_vox, template_image_vox, transform);
+                Transform::Init::initialise_using_image_mass (moving_vox, template_vox, transform);
               else if (init_type == Transform::Init::geometric)
-                Transform::Init::initialise_using_image_centres (moving_image_vox, template_image_vox, transform);
+                Transform::Init::initialise_using_image_centres (moving_vox, template_vox, transform);
 
               typedef typename MovingMaskType::voxel_type MovingMaskVoxelType;
               typedef typename TemplateMaskType::voxel_type TemplateMaskVoxelType;
@@ -153,6 +154,7 @@ namespace MR
               typedef Image::Interp::Linear<Image::BufferScratch<float>::voxel_type > MovingImageInterpolatorType;
 
               typedef Metric::Params<TransformType,
+                                     Image::BufferScratch<float>::voxel_type,
                                      MovingImageInterpolatorType,
                                      Image::BufferScratch<float>::voxel_type,
                                      Image::Interp::Nearest<MovingMaskVoxelType >,
@@ -162,8 +164,7 @@ namespace MR
 
                 CONSOLE ("multi-resolution level " + str(level + 1) + ", scale factor: " + str(scale_factor[level]));
 
-                Image::Filter::Resize moving_resize_filter (moving_image_vox);
-                Image::Filter::Resize template_resize_filter (template_image_vox);
+                Image::Filter::Resize moving_resize_filter (moving_vox);
                 moving_resize_filter.set_scale_factor (scale_factor[level]);
                 moving_resize_filter.set_interp_type (1);
                 Image::BufferScratch<float> moving_resized (moving_resize_filter.info());
@@ -172,19 +173,19 @@ namespace MR
                 Image::BufferScratch<float> moving_resized_smoothed (moving_smooth_filter.info());
                 Image::BufferScratch<float>::voxel_type moving_resized_smoothed_vox (moving_resized_smoothed);
 
+                Image::Filter::Resize template_resize_filter (template_vox);
                 template_resize_filter.set_scale_factor (scale_factor[level]);
                 template_resize_filter.set_interp_type (1);
-                Image::BufferScratch<float> template_buffer (template_resize_filter.info());
-                Image::BufferScratch<float>::voxel_type template_vox (template_buffer);
+                Image::BufferScratch<float> template_resized (template_resize_filter.info());
+                Image::BufferScratch<float>::voxel_type template_resized_vox (template_resized);
                 {
                   LogLevelLatch log_level (0);
-                  moving_resize_filter (moving_image_vox, moving_resized_vox);
+                  moving_resize_filter (moving_vox, moving_resized_vox);
                   moving_smooth_filter (moving_resized_vox, moving_resized_smoothed_vox);
-                  template_resize_filter (template_image_vox, template_vox);
+                  template_resize_filter (template_vox, template_resized_vox);
                 }
-                MovingImageInterpolatorType moving_interp (moving_resized_smoothed_vox);
                 metric.set_moving_image (moving_resized_smoothed_vox);
-                ParamType parameters (transform, moving_interp, template_vox);
+                ParamType parameters (transform, moving_resized_smoothed_vox, template_resized_vox);
 
                 Ptr<MovingMaskVoxelType> moving_mask_vox;
                 Ptr<TemplateMaskVoxelType> template_mask_vox;
@@ -198,6 +199,9 @@ namespace MR
                 }
 
                 Metric::Evaluate<MetricType, ParamType> evaluate (metric, parameters);
+                if (directions.is_set())
+                  evaluate.set_directions (directions);
+
                 Math::GradientDescent<Metric::Evaluate<MetricType, ParamType>,
                                       typename TransformType::UpdateType > optim (evaluate, *transform.get_gradient_descent_updator());
                 Math::Vector<typename TransformType::ParameterType> optimiser_weights;
@@ -207,9 +211,9 @@ namespace MR
                 optim.run (max_iter[level], 1.0e-4);
                 parameters.transformation.set_parameter_vector (optim.state());
 
-  //              Math::Vector<double> params = optim.state();
-  //              VAR(optim.function_evaluations());
-  //              Math::check_function_gradient(evaluate, params, 0.1, true, optimiser_weights);
+//                Math::Vector<double> params = optim.state();
+//                VAR(optim.function_evaluations());
+//                Math::check_function_gradient(evaluate, params, 0.1, true, optimiser_weights);
               }
             }
 
@@ -217,6 +221,7 @@ namespace MR
           std::vector<int> max_iter;
           std::vector<float> scale_factor;
           Transform::Init::InitType init_type;
+          Math::Matrix<float> directions;
 
       };
     }

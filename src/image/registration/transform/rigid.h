@@ -134,9 +134,9 @@ namespace MR
 
             Rigid () : Base<ValueType> (6) {
               for (size_t i = 0; i < 3; i++)
-                this->optimiser_weights_[i] = 1.0;
+                this->optimiser_weights[i] = 1.0;
               for (size_t i = 3; i < 6; i++)
-                this->optimiser_weights_[i] = 1.0;
+                this->optimiser_weights[i] = 1.0;
             }
 
             template <class PointType>
@@ -150,9 +150,9 @@ namespace MR
               jacobian.resize(3, 6);
               jacobian.zero();
 
-              const double px = p[0] - this->centre_[0];
-              const double py = p[1] - this->centre_[1];
-              const double pz = p[2] - this->centre_[2];
+              const double px = p[0] - this->centre[0];
+              const double py = p[1] - this->centre[1];
+              const double pz = p[2] - this->centre[2];
 
               const double vxx = vx * vx;
               const double vyy = vy * vy;
@@ -204,9 +204,9 @@ namespace MR
               versor_.set (axis);
               compute_matrix();
 
-              this->translation_[0] = param_vector[3];
-              this->translation_[1] = param_vector[4];
-              this->translation_[2] = param_vector[5];
+              this->translation[0] = param_vector[3];
+              this->translation[1] = param_vector[4];
+              this->translation[2] = param_vector[5];
               this->compute_offset();
             }
 
@@ -215,9 +215,9 @@ namespace MR
               param_vector[0] = versor_[1];
               param_vector[1] = versor_[2];
               param_vector[2] = versor_[3];
-              param_vector[3] = this->translation_[0];
-              param_vector[4] = this->translation_[1];
-              param_vector[5] = this->translation_[2];
+              param_vector[3] = this->translation[0];
+              param_vector[4] = this->translation[1];
+              param_vector[5] = this->translation[2];
             }
 
             UpdateType* get_gradient_descent_updator (){
@@ -227,7 +227,7 @@ namespace MR
           protected:
 
             void compute_matrix () {
-              versor_.to_matrix (this->matrix_);
+              versor_.to_matrix (this->matrix);
             }
 
             Versor<ValueType> versor_;

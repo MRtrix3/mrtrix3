@@ -78,9 +78,9 @@ void usage ()
 
 
   OPTIONS
-  + Option ("registration", "the registration type. Valid choices are: "
+  + Option ("type", "the registration type. Valid choices are: "
                              "rigid, affine, syn, rigid_affine, rigid_syn, affine_syn, rigid_affine_syn (Default: affine_syn)")
-    + Argument ("type").type_choice (transformation_choices)
+    + Argument ("choice").type_choice (transformation_choices)
 
   + Option ("transformed", "the transformed moving image after registration to the template")
     + Argument ("image").type_image_out ()
@@ -152,6 +152,8 @@ void run ()
         CONSOLE ("SH series detected, performing FOD registration");
         // Only load as many SH coefficients as required
         int lmax = 4;
+        if (Math::SH::LforN(template_header.dim(3)) < 4)
+          lmax = Math::SH::LforN(template_header.dim(3));
         Options opt = get_options ("lmax");
         if (opt.size()) {
           lmax = opt[0][0];
@@ -164,6 +166,7 @@ void run ()
         load_image(argument[0], num_SH, moving_buffer_ptr);
         load_image(argument[1], num_SH, template_buffer_ptr);
     } else {
+      do_reorientation = false;
       load_image (argument[0], moving_header.dim(3), moving_buffer_ptr);
       load_image (argument[1], template_header.dim(3), template_buffer_ptr);
     }
@@ -181,7 +184,7 @@ void run ()
   if (opt.size())
     transformed_buffer_ptr = new Image::Buffer<value_type> (opt[0][0], template_header);
 
-  opt = get_options ("registration");
+  opt = get_options ("type");
   bool do_rigid  = false;
   bool do_affine = false;
   bool do_syn = false;
@@ -386,17 +389,18 @@ void run ()
   }
 
 
-  opt = get_options ("directions");
-  Math::Matrix<value_type> directions;
-  DWI::Directions::electrostatic_repulsion_60 (directions);
-  if (opt.size()) {
-    if (!do_reorientation)
-      throw Exception ("apodised PSF directions specified when no reorientation is to be performed");
-    directions.load(opt[0][0]);
+  Math::Matrix<value_type> directions_cartesian;
+  if (do_reorientation) {
+    Math::Matrix<value_type> directions_el_az;
+    opt = get_options ("directions");
+    if (opt.size())
+      directions_el_az.load(opt[0][0]);
+    else
+      DWI::Directions::electrostatic_repulsion_60 (directions_el_az);
+    Math::SH::S2C (directions_el_az, directions_cartesian);
   }
 
   if (do_rigid) {
-
     CONSOLE ("running rigid registration");
     Image::Registration::Linear rigid_registration;
     Image::Registration::Metric::MeanSquared metric;
@@ -417,7 +421,6 @@ void run ()
   }
 
   if (do_affine) {
-
     CONSOLE ("running affine registration");
     Image::Registration::Linear affine_registration;
     Image::Registration::Metric::MeanSquared metric;
@@ -436,10 +439,11 @@ void run ()
     else
       affine_registration.set_init_type (init_centre);
 
+    if (do_reorientation)
+      affine_registration.set_directions (directions_cartesian);
     affine_registration.run_masked (metric, affine, moving_voxel, template_voxel, mmask_image, tmask_image);
     if (output_affine)
       affine.get_transform().save (affine_filename);
-
   }
 
   if (do_syn) {
@@ -462,20 +466,19 @@ void run ()
 
   if (transformed_buffer_ptr) {
     Image::Buffer<float>::voxel_type transformed_voxel (*transformed_buffer_ptr);
-    TRACE;
     if (do_syn) {
-
-//      if (do_reorientation)
-//        Image::Registration::fod_reorient (transformed_buffer, affine.get_transform());
     } else if (do_affine) {
-    TRACE;
       Image::Filter::reslice<Image::Interp::Cubic> (moving_voxel, transformed_voxel, affine.get_transform(), Image::Adapter::AutoOverSample, 0.0);
-//      if (do_reorientation)
-//        Image::Filter::fod_reorient (transformed_buffer, affine.get_transform());
+      if (do_reorientation) {
+        std::string msg ("reorienting...");
+        Image::Registration::Transform::reorient (msg, transformed_voxel, transformed_voxel, affine.get_transform(), directions_cartesian);
+      }
     } else {
       Image::Filter::reslice<Image::Interp::Cubic> (moving_voxel, transformed_voxel, rigid.get_transform(), Image::Adapter::AutoOverSample, 0.0);
-//      if (do_reorientation)
-//        Image::Filter::fod_reorient (transformed_buffer, affine.get_transform());
+      if (do_reorientation) {
+        std::string msg ("reorienting...");
+        Image::Registration::Transform::reorient (msg, transformed_voxel, transformed_voxel, rigid.get_transform(), directions_cartesian);
+      }
     }
   }
 }

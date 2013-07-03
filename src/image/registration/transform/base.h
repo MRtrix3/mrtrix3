@@ -54,30 +54,30 @@ namespace MR
             typedef ValueType ParameterType;
 
             Base (size_t number_of_parameters) :
-              number_of_parameters_(number_of_parameters),
-              matrix_(3,3),
-              translation_(3),
-              centre_(3),
-              offset_(3),
-              optimiser_weights_ (number_of_parameters) {
-                matrix_.identity();
-                translation_.zero();
-                centre_.zero();
-                offset_.zero();
+              number_of_parameters(number_of_parameters),
+              matrix(3,3),
+              translation(3),
+              centre(3),
+              offset(3),
+              optimiser_weights (number_of_parameters) {
+                matrix.identity();
+                translation.zero();
+                centre.zero();
+                offset.zero();
             }
 
             template <class OutPointType, class InPointType>
             inline void transform (OutPointType& out, const InPointType& in) const {
-              out[0] = matrix_(0,0)*in[0] + matrix_(0,1)*in[1] + matrix_(0,2)*in[2] + offset_[0];
-              out[1] = matrix_(1,0)*in[0] + matrix_(1,1)*in[1] + matrix_(1,2)*in[2] + offset_[1];
-              out[2] = matrix_(2,0)*in[0] + matrix_(2,1)*in[1] + matrix_(2,2)*in[2] + offset_[2];
+              out[0] = matrix(0,0)*in[0] + matrix(0,1)*in[1] + matrix(0,2)*in[2] + offset[0];
+              out[1] = matrix(1,0)*in[0] + matrix(1,1)*in[1] + matrix(1,2)*in[2] + offset[1];
+              out[2] = matrix(2,0)*in[0] + matrix(2,1)*in[1] + matrix(2,2)*in[2] + offset[2];
             }
 
             void set_transform (Matrix<ValueType>& transform) {
               for (size_t row = 0; row < 3; row++) {
                 for (size_t col = 0; col < 3; col++)
-                  matrix_(row, col) = transform(row, col);
-                translation_[row] = transform(row, 3);
+                  matrix(row, col) = transform(row, col);
+                translation[row] = transform(row, 3);
               }
               compute_offset();
             }
@@ -87,8 +87,8 @@ namespace MR
               transform.identity();
               for (size_t row = 0; row < 3; row++) {
                 for (size_t col = 0; col < 3; col++)
-                  transform(row,col) = matrix_(row,col);
-                transform(row, 3) = offset_[row];
+                  transform(row,col) = matrix(row,col);
+                transform(row, 3) = offset[row];
               }
             }
 
@@ -97,68 +97,68 @@ namespace MR
               transform.identity();
               for (size_t row = 0; row < 3; row++) {
                 for (size_t col = 0; col < 3; col++)
-                  transform(row,col) = matrix_(row,col);
-                transform(row, 3) = offset_[row];
+                  transform(row,col) = matrix(row,col);
+                transform(row, 3) = offset[row];
               }
               return transform;
             }
 
-            void set_matrix (const Matrix<ValueType>& matrix) {
+            void set_matrix (const Matrix<ValueType>& mat) {
               for (size_t row = 0; row < 3; row++) {
                 for (size_t col = 0; col < 3; col++)
-                   matrix_(row, col) = matrix (row, col);
+                   matrix(row, col) = matrix (row, col);
               }
               compute_offset();
             }
 
             const Matrix<ValueType> get_matrix () const {
-              return matrix_;
+              return matrix;
             }
 
-            void set_translation (const Vector<ValueType>& translation) {
-              translation_ = translation;
+            void set_translation (const Vector<ValueType>& trans) {
+              translation = trans;
               compute_offset();
             }
 
             const Vector<ValueType> get_translation() const {
-              return translation_;
+              return translation;
             }
 
-            void set_centre (const Vector<ValueType>& centre) {
-              centre_ = centre;
+            void set_centre (const Vector<ValueType>& center) {
+              centre = center;
               compute_offset();
             }
 
             const Vector<ValueType> get_centre() const {
-              return centre_;
+              return centre;
             }
 
             size_t size() const {
-              return number_of_parameters_;
+              return number_of_parameters;
             }
 
-            void set_optimiser_weights (Vector<ValueType>& optimiser_weights) {
+            void set_optimiser_weights (Vector<ValueType>& weights) {
               assert(size() == optimiser_weights.size());
-                optimiser_weights_ = optimiser_weights;
+                optimiser_weights = weights;
             }
 
-            void get_optimiser_weights (Vector<ValueType>& optimiser_weights) const {
-              optimiser_weights.allocate (optimiser_weights_.size());
-              for (size_t i = 0; i < optimiser_weights_.size(); i++)
-                optimiser_weights[i] = optimiser_weights_[i];
+            void get_optimiser_weights (Vector<ValueType>& weights) const {
+              weights.allocate (optimiser_weights.size());
+              for (size_t i = 0; i < optimiser_weights.size(); i++)
+                weights[i] = optimiser_weights[i];
             }
 
-            void get_offset (Math::Vector<ValueType>& offset) const {
-              offset.allocate(3);
-              offset[0] = offset_[0];
-              offset[1] = offset_[1];
-              offset[2] = offset_[2];
+            void get_offset (Math::Vector<ValueType>& offset_out) const {
+              offset_out.allocate(3);
+              offset_out[0] = offset[0];
+              offset_out[1] = offset[1];
+              offset_out[2] = offset[2];
             }
 
-            void set_offset (const Math::Vector<ValueType>& offset) {
-              offset_[0] = offset[0];
-              offset_[1] = offset[1];
-              offset_[2] = offset[2];
+            void set_offset (const Math::Vector<ValueType>& offset_in) {
+              offset[0] = offset_in[0];
+              offset[1] = offset_in[1];
+              offset[2] = offset_in[2];
             }
 
 
@@ -166,18 +166,18 @@ namespace MR
 
             void compute_offset () {
               for( size_t i = 0; i < 3; i++ ) {
-                offset_[i] = translation_[i] + centre_[i];
+                offset[i] = translation[i] + centre[i];
                 for( size_t j = 0; j < 3; j++ )
-                  offset_[i] -= matrix_(i, j) * centre_[j];
+                  offset[i] -= matrix(i, j) * centre[j];
               }
             }
 
-            size_t number_of_parameters_;
-            Matrix<ValueType> matrix_;
-            Vector<ValueType> translation_;
-            Vector<ValueType> centre_;
-            Vector<ValueType> offset_;
-            Vector<ValueType> optimiser_weights_;
+            size_t number_of_parameters;
+            Matrix<ValueType> matrix;
+            Vector<ValueType> translation;
+            Vector<ValueType> centre;
+            Vector<ValueType> offset;
+            Vector<ValueType> optimiser_weights;
 
         };
         //! @}

@@ -41,56 +41,55 @@ namespace MR
         class ThreadKernel {
           public:
             ThreadKernel (const MetricType& metric, ParamType& parameters, double& overall_cost_function, Math::Vector<double>& overall_gradient) :
-              metric_ (metric),
-              params_ (parameters),
-              cost_function_ (0.0),
-              gradient_ (overall_gradient.size()),
-              overall_cost_function_ (overall_cost_function),
-              overall_gradient_ (overall_gradient),
-              transform_ (params_.template_image) {
-                gradient_.zero();
+              metric (metric),
+              params (parameters),
+              cost_function (0.0),
+              gradient (overall_gradient.size()),
+              overall_cost_function (overall_cost_function),
+              overall_gradient (overall_gradient),
+              transform (params.template_image) {
+                gradient.zero();
             }
 
             ~ThreadKernel () {
-              overall_cost_function_ += cost_function_;
-              overall_gradient_ += gradient_;
+              overall_cost_function += cost_function;
+              overall_gradient += gradient;
             }
 
             void operator() (const Image::Iterator& iter) {
 
-              Point<float> template_point = transform_.voxel2scanner (iter);
-              if (params_.template_mask_interp) {
-                params_.template_mask_interp->scanner (template_point);
-                if (!params_.template_mask_interp->value())
+              Point<float> template_point = transform.voxel2scanner (iter);
+              if (params.template_mask_interp) {
+                params.template_mask_interp->scanner (template_point);
+                if (!params.template_mask_interp->value())
                   return;
               }
 
               Point<float> moving_point;
               Math::Vector<double> param;
-              params_.transformation.get_parameter_vector (param);
-              params_.transformation.transform (moving_point, template_point);
-              if (params_.moving_mask_interp) {
-                params_.moving_mask_interp->scanner (moving_point);
-                if (!params_.moving_mask_interp->value())
+              params.transformation.get_parameter_vector (param);
+              params.transformation.transform (moving_point, template_point);
+              if (params.moving_mask_interp) {
+                params.moving_mask_interp->scanner (moving_point);
+                if (!params.moving_mask_interp->value())
                   return;
               }
-              Image::voxel_assign (params_.template_image, iter);
-              params_.moving_image_interp.scanner (moving_point);
-              if (!params_.moving_image_interp)
+              Image::voxel_assign (params.template_image, iter);
+              params.moving_image_interp->scanner (moving_point);
+              if (!(*params.moving_image_interp))
                 return;
-              cost_function_ += metric_ (params_, template_point, moving_point, gradient_);
+              cost_function += metric (params, template_point, moving_point, gradient);
             }
 
             protected:
+              MetricType metric;
+              ParamType params;
 
-              MetricType metric_;
-              ParamType params_;
-
-              double cost_function_;
-              Math::Vector<double> gradient_;
-              double& overall_cost_function_;
-              Math::Vector<double>& overall_gradient_;
-              Image::Transform transform_;
+              double cost_function;
+              Math::Vector<double> gradient;
+              double& overall_cost_function;
+              Math::Vector<double>& overall_gradient;
+              Image::Transform transform;
         };
       }
     }
