@@ -73,7 +73,7 @@ namespace MR
 
         public:
           template <class InputVoxelType>
-            Resize (const InputVoxelType& in) : Info (in), interp_type_(2) { }
+            Resize (const InputVoxelType& in) : Info (in), interp_type(2) { }
 
 
           void set_voxel_size (float size)
@@ -134,8 +134,8 @@ namespace MR
           }
 
 
-          void set_interp_type (int interp_type) {
-            interp_type_ = interp_type;
+          void set_interp_type (int type) {
+            interp_type = type;
           }
 
 
@@ -146,12 +146,13 @@ namespace MR
               bool do_smoothing = false;
               std::vector<float> stdev (input.ndim(), 0.0);
               for (unsigned int d = 0; d < 3; ++d) {
-                float scale_factor = input.vox(d) / output.vox(d);
+                float scale_factor = (float)input.vox(d) / (float)output.vox(d);
                 if (scale_factor < 1.0) {
                   do_smoothing = true;
                   stdev[d] = 1.0 / (2.0 * scale_factor);
                 }
               }
+
 
               if (do_smoothing) {
                 Filter::GaussianSmooth<> smooth_filter (input);
@@ -162,7 +163,7 @@ namespace MR
                   LogLevelLatch log_level (0);
                   smooth_filter (input, smoothed_voxel);
                 }
-                switch (interp_type_) {
+                switch (interp_type) {
                 case 0:
                   reslice <Image::Interp::Nearest> (smoothed_voxel, output);
                   break;
@@ -181,7 +182,7 @@ namespace MR
                   break;
                 }
               } else {
-                switch (interp_type_) {
+                switch (interp_type) {
                   case 0:
                     reslice <Image::Interp::Nearest> (input, output);
                     break;
@@ -203,7 +204,7 @@ namespace MR
             }
 
         protected:
-          int interp_type_;
+          int interp_type;
       };
       //! @}
     }

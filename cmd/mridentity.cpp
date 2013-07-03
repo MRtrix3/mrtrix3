@@ -66,7 +66,7 @@ void run ()
 {
   Image::Header input_header (argument[0]);
 
-  Math::Matrix<float> grad = DWI::get_DW_scheme<float> (input_header);
+  Math::Matrix<float> grad = DWI::get_DW_scheme<float> (input_header, false);
 
   if (grad.is_set()) {
     Image::Transform transform (input_header);

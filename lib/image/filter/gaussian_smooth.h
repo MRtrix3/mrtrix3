@@ -72,8 +72,10 @@ namespace MR
             GaussianSmooth (const InputVoxelType& in) :
               ConstInfo (in),
               extent (in.ndim(), 0),
-              stdev (in.ndim()) {
-                for (unsigned int i = 0; i < in.ndim(); i++)
+              stdev (in.ndim(), 0.0) {
+                int max_dim;
+                (in.ndim() < 3) ? max_dim = in.ndim() : max_dim = 3;
+                for (unsigned int i = 0; i < max_dim; i++)
                   stdev[i] = in.vox(i);
               }
 
@@ -136,7 +138,6 @@ namespace MR
 
               RefPtr <BufferScratch<value_type> > out_data;
               RefPtr <typename BufferScratch<value_type>::voxel_type> out;
-
 
               for (size_t dim = 0; dim < this->ndim(); dim++) {
                 if (stdev[dim] > 0) {
