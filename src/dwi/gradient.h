@@ -201,7 +201,7 @@ namespace MR
      * the image and the '_bvecs' & '_bvals' extension, then load and rectify
      * that and return it.  */
     template <typename ValueType> 
-      Math::Matrix<ValueType> get_DW_scheme (const Image::Header& header, bool required = true)
+      Math::Matrix<ValueType> get_DW_scheme (const Image::Header& header)
       {
         DEBUG ("searching for suitable gradient encoding...");
         using namespace App;
@@ -223,12 +223,8 @@ namespace MR
             load_bvecs_bvals (grad, header);
           } 
           catch (Exception& E) {
-            if (required) {
-              E.display (3);
-              throw Exception ("no diffusion encoding found in image \"" + header.name() + "\" or corresponding directory");
-            } else {
-              return grad;
-            }
+            E.display (3);
+            throw Exception ("no diffusion encoding found in image \"" + header.name() + "\" or corresponding directory");
           }
         }
 
