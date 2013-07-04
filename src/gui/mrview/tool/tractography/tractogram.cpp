@@ -115,7 +115,6 @@ namespace MR
           }
 
           glLineWidth (tractography_tool.line_thickness);
-          glEnable (GL_LINE_SMOOTH);
 
           for (size_t buf = 0; buf < vertex_buffers.size(); ++buf) {
             glBindVertexArray (vertex_array_objects[buf]);
@@ -202,7 +201,10 @@ namespace MR
                 vertex_shader_code += " scale * (amp - offset), 0.0, 1.0);\n  ";
               }
               if (!scalarfile_by_direction) 
-                vertex_shader_code += ColourMap::maps[colourmap_index].mapping;
+                vertex_shader_code += 
+                  std::string ("  vec3 color;\n") +
+                  ColourMap::maps[colourmap_index].mapping +
+                  "  fragmentColour = color;\n";
               break;
             default:
               break;

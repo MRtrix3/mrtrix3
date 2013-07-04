@@ -22,6 +22,8 @@
 #include "gui/mrview/tool/list.h"
 
 
+#include "timer.h"
+
 namespace MR
 {
   namespace GUI
@@ -810,13 +812,11 @@ namespace MR
       void Window::slice_next_slot () 
       {
         mode->slice_move_event (1);
-        glarea->updateGL();
       }
 
       void Window::slice_previous_slot () 
       {
         mode->slice_move_event (-1);
-        glarea->updateGL();
       }
 
 
@@ -1256,7 +1256,6 @@ mode_selected:
 
               mode->slice_move_event (delta);
               event->accept();
-              glarea->updateGL();
               return;
             }
           }
