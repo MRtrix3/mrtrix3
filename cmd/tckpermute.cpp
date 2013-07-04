@@ -115,8 +115,8 @@ void usage ()
   + Argument ("FWHM").type_float (0.0, 5.0, 200.0)
 
   + Option ("num_vis_tracks", "the number of tracks to use when generating output for visualisation. "
-                              "These tracts are obtained by truncating the input tracks (default: 100000")
-  + Argument ("num").type_integer (1, 100000, INT_MAX)
+                              "These tracts are obtained by truncating the input tracks (default: 200000")
+  + Argument ("num").type_integer (1, 200000, INT_MAX)
 
   + Option ("check", "output a 3D image to check the number of dixels per voxel identified in the template")
   + Argument ("image").type_image_out ();
@@ -132,12 +132,12 @@ class GroupAvDixelProcessor
 {
   public:
     GroupAvDixelProcessor (Image::BufferScratch<int32_t>& FOD_dixel_indexer,
-                              vector<Point<value_type> >& FOD_dixel_directions,
-                              vector<Point<value_type> >& index2scanner_pos) :
-                              FOD_dixel_indexer (FOD_dixel_indexer) ,
-                              FOD_dixel_directions (FOD_dixel_directions),
-                              index2scanner_pos (index2scanner_pos),
-                              image_transform (FOD_dixel_indexer) {}
+                           vector<Point<value_type> >& FOD_dixel_directions,
+                           vector<Point<value_type> >& index2scanner_pos) :
+                           FOD_dixel_indexer (FOD_dixel_indexer) ,
+                           FOD_dixel_directions (FOD_dixel_directions),
+                           index2scanner_pos (index2scanner_pos),
+                           image_transform (FOD_dixel_indexer) {}
 
     bool operator () (DWI::FMLS::FOD_lobes& in) {
       if (in.empty())
@@ -529,7 +529,7 @@ void run() {
     smooth_std_dev = value_type(opt[0][0]) / 2.3548;
 
   opt = get_options ("num_vis_tracks");
-  size_t num_vis_tracks = 100000;
+  size_t num_vis_tracks = 200000;
   if (opt.size())
     num_vis_tracks = opt[0][0];
 
@@ -707,10 +707,10 @@ void run() {
   Math::Matrix<value_type> mod_fod_dixel_integrals;
   load_data_and_compute_integrals (fod_filenames, dixel_mask, dixel_indexer, dixel_directions, angular_threshold, dixel_smoothing_weights, fod_dixel_integrals);
   load_data_and_compute_integrals (mod_fod_filenames, dixel_mask, dixel_indexer, dixel_directions, angular_threshold, dixel_smoothing_weights, mod_fod_dixel_integrals);
-  Math::Matrix<value_type> log_mod_scale_factor (num_dixels, fod_filenames.size());
 
 
   // Compute and output effect size and std_deviation
+  CONSOLE ("Computing effect size and standard deviation");
   Math::Matrix<float> abs_effect_size, std_effect_size, std_dev, beta;
   Math::Stats::GLM::abs_effect_size (fod_dixel_integrals, design, contrast, abs_effect_size);
   write_track_stats (output_prefix + "_fod_abs_effect_size.tsf", abs_effect_size, track_point_indices, tckfile_timestamp);
@@ -725,25 +725,13 @@ void run() {
   Math::Stats::GLM::stdev (mod_fod_dixel_integrals, design, std_dev);
   write_track_stats (output_prefix + "_mod_fod_std_dev.tsf", std_dev, track_point_indices, tckfile_timestamp);
 
+  CONSOLE ("Computing beta coefficients");
   Math::Stats::GLM::solve_betas (fod_dixel_integrals, design, beta);
-  std::cout << beta.columns() << " " << beta.rows() << std::endl;
-  std::cout << contrast << std::endl;
   for (size_t i = 0; i < contrast.columns(); ++i)
     write_track_stats (output_prefix + "_fod_beta" + str(i) + ".tsf", beta.column (i), track_point_indices, tckfile_timestamp);
   Math::Stats::GLM::solve_betas (mod_fod_dixel_integrals, design, beta);
   for (size_t i = 0; i < contrast.columns(); ++i)
     write_track_stats (output_prefix + "_mod_fod_beta" + str(i) + ".tsf", beta.column (i), track_point_indices, tckfile_timestamp);
-
-//  // Extract the amount of AFD contributed by modulation
-//  for (size_t l = 0; l < num_dixels; ++l)
-//    for (size_t s = 0; s < fod_filenames.size(); ++s)
-//      log_mod_scale_factor(l,s) = Math::log (mod_fod_dixel_integrals(l,s) / fod_dixel_integrals(l,s));
-//  Math::Stats::GLM::abs_effect_size (log_mod_scale_factor, design, contrast, abs_effect_size);
-//  write_track_stats (output_prefix + "_mod_abs_effect_size.tck", abs_effect_size, track_point_indices);
-//  Math::Stats::GLM::std_effect_size (log_mod_scale_factor, design, contrast, std_effect_size);
-//  write_track_stats (output_prefix + "_mod_std_effect_size.tck", std_effect_size, track_point_indices);
-//  Math::Stats::GLM::stdev (log_mod_scale_factor, design, std_dev);
-//  write_track_stats (output_prefix + "_mod_std_dev.tck", std_dev, track_point_indices);
 
   // Perform permutation testing
   opt = get_options("notest");
@@ -752,7 +740,5 @@ void run() {
     do_glm_and_output (mod_fod_dixel_integrals, design, contrast, dh, tfce_E, tfce_H, num_perms, dixel_connectivity, dixel_indexer, dixel_directions, track_point_indices, output_prefix + "_mod_fod", tckfile_timestamp);
     // FOD information only
     do_glm_and_output (fod_dixel_integrals, design, contrast, dh, tfce_E, tfce_H, num_perms, dixel_connectivity, dixel_indexer, dixel_directions, track_point_indices, output_prefix + "_fod", tckfile_timestamp);
-    // Modulation information only
-//    do_glm_and_output (log_mod_scale_factor, design, contrast, dh, tfce_E, tfce_H, num_perms, dixel_connectivity, dixel_indexer, dixel_directions, track_point_indices, output_prefix + "_mod");
   }
 }
