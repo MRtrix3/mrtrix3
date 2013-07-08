@@ -173,12 +173,12 @@ class SubjectDixelProcessor {
 
   public:
     SubjectDixelProcessor (Image::BufferScratch<int32_t>& FOD_dixel_indexer,
-                              const vector<Point<value_type> >& FOD_dixel_directions,
-                              vector<value_type>& subject_dixel_integrals,
-                              value_type angular_threshold) :
-                              FOD_dixel_indexer (FOD_dixel_indexer),
-                              average_dixel_directions (FOD_dixel_directions),
-                              subject_dixel_integrals (subject_dixel_integrals)
+                           const vector<Point<value_type> >& FOD_dixel_directions,
+                           vector<value_type>& subject_dixel_integrals,
+                           value_type angular_threshold) :
+                           FOD_dixel_indexer (FOD_dixel_indexer),
+                           average_dixel_directions (FOD_dixel_directions),
+                           subject_dixel_integrals (subject_dixel_integrals)
     {
       angular_threshold_dp = cos (angular_threshold * (M_PI/180.0));
     }
@@ -666,30 +666,34 @@ void run() {
     do_smoothing = true;
     gaussian_const1 = 1.0 / (smooth_std_dev *  Math::sqrt (2.0 * M_PI));
   }
-  for (unsigned int dixel = 0; dixel < num_dixels; ++dixel) {
-    map<int32_t, Stats::TFCE::connectivity>::iterator it = dixel_connectivity[dixel].begin();
-    while (it != dixel_connectivity[dixel].end()) {
-      value_type connectivity = it->second.value / value_type (dixel_TDI[dixel]);
-      if (connectivity < connectivity_threshold)  {
-        dixel_connectivity[dixel].erase (it++);
-      } else {
-        if (do_smoothing) {
-          value_type distance = Math::sqrt (Math::pow2 (dixel_positions[dixel][0] - dixel_positions[it->first][0]) +
-                                            Math::pow2 (dixel_positions[dixel][1] - dixel_positions[it->first][1]) +
-                                            Math::pow2 (dixel_positions[dixel][2] - dixel_positions[it->first][2]));
-          value_type weight = connectivity * gaussian_const1 * Math::exp (-Math::pow2 (distance) / gaussian_const2);
-          if (weight > 0.005)
-            dixel_smoothing_weights[dixel].insert (pair<int32_t, value_type> (it->first, weight));
+  {
+    ProgressBar progress ("normalising and thresholding dixel-dixel connectivity matri...", num_dixels);
+    for (unsigned int dixel = 0; dixel < num_dixels; ++dixel) {
+      map<int32_t, Stats::TFCE::connectivity>::iterator it = dixel_connectivity[dixel].begin();
+      while (it != dixel_connectivity[dixel].end()) {
+        value_type connectivity = it->second.value / value_type (dixel_TDI[dixel]);
+        if (connectivity < connectivity_threshold)  {
+          dixel_connectivity[dixel].erase (it++);
+        } else {
+          if (do_smoothing) {
+            value_type distance = Math::sqrt (Math::pow2 (dixel_positions[dixel][0] - dixel_positions[it->first][0]) +
+                                              Math::pow2 (dixel_positions[dixel][1] - dixel_positions[it->first][1]) +
+                                              Math::pow2 (dixel_positions[dixel][2] - dixel_positions[it->first][2]));
+            value_type weight = connectivity * gaussian_const1 * Math::exp (-Math::pow2 (distance) / gaussian_const2);
+            if (weight > 0.005)
+              dixel_smoothing_weights[dixel].insert (pair<int32_t, value_type> (it->first, weight));
+          }
+          it->second.value = Math::pow (connectivity, tfce_C);
+          ++it;
         }
-        it->second.value = Math::pow (connectivity, tfce_C);
-        ++it;
       }
+      // Make sure the dixel is fully connected to itself and give it a smoothing weight
+      Stats::TFCE::connectivity self_connectivity;
+      self_connectivity.value = 1.0;
+      dixel_connectivity[dixel].insert (pair<int32_t, Stats::TFCE::connectivity> (dixel, self_connectivity));
+      dixel_smoothing_weights[dixel].insert (pair<int32_t, value_type> (dixel, gaussian_const1));
+      progress++;
     }
-    // Make sure the dixel is fully connected to itself and give it a smoothing weight
-    Stats::TFCE::connectivity self_connectivity;
-    self_connectivity.value = 1.0;
-    dixel_connectivity[dixel].insert (pair<int32_t, Stats::TFCE::connectivity> (dixel, self_connectivity));
-    dixel_smoothing_weights[dixel].insert (pair<int32_t, value_type> (dixel, gaussian_const1));
   }
 
   // Normalise smoothing weights
@@ -708,9 +712,23 @@ void run() {
   load_data_and_compute_integrals (fod_filenames, dixel_mask, dixel_indexer, dixel_directions, angular_threshold, dixel_smoothing_weights, fod_dixel_integrals);
   load_data_and_compute_integrals (mod_fod_filenames, dixel_mask, dixel_indexer, dixel_directions, angular_threshold, dixel_smoothing_weights, mod_fod_dixel_integrals);
 
+  dixel_indexer_vox[0] = 47;
+  dixel_indexer_vox[1] = 49;
+  dixel_indexer_vox[2] = 37;
+  dixel_indexer_vox[3] = 0;
+  uint32_t cc_index = dixel_indexer_vox.value();
+  dixel_indexer_vox[3] = 1;
+  uint32_t num_fibres = dixel_indexer_vox.value();
+  std::cout << "index " << cc_index << std::endl;
+  std::cout << "num_fibres " << num_fibres << std::endl;
+
+  for (size_t i = 0; i < mod_fod_filenames.size() ; ++i )
+    std::cout << mod_fod_dixel_integrals(cc_index, i) << std::endl;
+
+
 
   // Compute and output effect size and std_deviation
-  CONSOLE ("Computing effect size and standard deviation");
+  CONSOLE ("computing effect size and standard deviation");
   Math::Matrix<float> abs_effect_size, std_effect_size, std_dev, beta;
   Math::Stats::GLM::abs_effect_size (fod_dixel_integrals, design, contrast, abs_effect_size);
   write_track_stats (output_prefix + "_fod_abs_effect_size.tsf", abs_effect_size, track_point_indices, tckfile_timestamp);
@@ -725,7 +743,7 @@ void run() {
   Math::Stats::GLM::stdev (mod_fod_dixel_integrals, design, std_dev);
   write_track_stats (output_prefix + "_mod_fod_std_dev.tsf", std_dev, track_point_indices, tckfile_timestamp);
 
-  CONSOLE ("Computing beta coefficients");
+  CONSOLE ("computing beta coefficients");
   Math::Stats::GLM::solve_betas (fod_dixel_integrals, design, beta);
   for (size_t i = 0; i < contrast.columns(); ++i)
     write_track_stats (output_prefix + "_fod_beta" + str(i) + ".tsf", beta.column (i), track_point_indices, tckfile_timestamp);
