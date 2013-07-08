@@ -196,6 +196,9 @@ class SubjectDixelProcessor {
       FOD_dixel_indexer[3] = 1;
       int32_t number_dixels = FOD_dixel_indexer.value();
 
+
+
+
       // for each dixel in the average, find the corresponding dixel in this subject voxel
       for (int32_t i = voxel_index; i < voxel_index + number_dixels; ++i) {
         value_type largest_dp = 0.0;
@@ -212,6 +215,11 @@ class SubjectDixelProcessor {
         }
       }
 
+      if (in.vox[0] == 47 && in.vox[1] == 49 && in.vox[2] == 37) {
+        std::cout << "index " << voxel_index << std::endl;
+        std::cout << "dixels " << number_dixels << std::endl;
+        std::cout << "integral" <<  subject_dixel_integrals << std::endl;
+      }
       return true;
     }
 
@@ -461,7 +469,6 @@ void load_data_and_compute_integrals (const vector<string>& filename_list,
   DWI::Directions::Set dirs (1281);
 
   for (size_t subject = 0; subject < filename_list.size(); subject++) {
-
     LogLevelLatch log_level (0);
     Image::Buffer<value_type> fod_buffer (filename_list[subject]);
     Image::check_dimensions (fod_buffer, dixel_mask, 0, 3);
@@ -667,7 +674,7 @@ void run() {
     gaussian_const1 = 1.0 / (smooth_std_dev *  Math::sqrt (2.0 * M_PI));
   }
   {
-    ProgressBar progress ("normalising and thresholding dixel-dixel connectivity matri...", num_dixels);
+    ProgressBar progress ("normalising and thresholding dixel-dixel connectivity matrix...", num_dixels);
     for (unsigned int dixel = 0; dixel < num_dixels; ++dixel) {
       map<int32_t, Stats::TFCE::connectivity>::iterator it = dixel_connectivity[dixel].begin();
       while (it != dixel_connectivity[dixel].end()) {
@@ -680,14 +687,14 @@ void run() {
                                               Math::pow2 (dixel_positions[dixel][1] - dixel_positions[it->first][1]) +
                                               Math::pow2 (dixel_positions[dixel][2] - dixel_positions[it->first][2]));
             value_type weight = connectivity * gaussian_const1 * Math::exp (-Math::pow2 (distance) / gaussian_const2);
-            if (weight > 0.005)
+            if (weight > connectivity_threshold)
               dixel_smoothing_weights[dixel].insert (pair<int32_t, value_type> (it->first, weight));
           }
           it->second.value = Math::pow (connectivity, tfce_C);
           ++it;
         }
       }
-      // Make sure the dixel is fully connected to itself and give it a smoothing weight
+      // Make sure the dixel is fully connected to itself giving it a smoothing weight of 1
       Stats::TFCE::connectivity self_connectivity;
       self_connectivity.value = 1.0;
       dixel_connectivity[dixel].insert (pair<int32_t, Stats::TFCE::connectivity> (dixel, self_connectivity));
@@ -710,8 +717,8 @@ void run() {
   Math::Matrix<value_type> fod_dixel_integrals;
   Math::Matrix<value_type> mod_fod_dixel_integrals;
   load_data_and_compute_integrals (fod_filenames, dixel_mask, dixel_indexer, dixel_directions, angular_threshold, dixel_smoothing_weights, fod_dixel_integrals);
-  load_data_and_compute_integrals (mod_fod_filenames, dixel_mask, dixel_indexer, dixel_directions, angular_threshold, dixel_smoothing_weights, mod_fod_dixel_integrals);
 
+  load_data_and_compute_integrals (mod_fod_filenames, dixel_mask, dixel_indexer, dixel_directions, angular_threshold, dixel_smoothing_weights, mod_fod_dixel_integrals);
   dixel_indexer_vox[0] = 47;
   dixel_indexer_vox[1] = 49;
   dixel_indexer_vox[2] = 37;
@@ -725,12 +732,16 @@ void run() {
   for (size_t i = 0; i < mod_fod_filenames.size() ; ++i )
     std::cout << mod_fod_dixel_integrals(cc_index, i) << std::endl;
 
-
+  std::cout <<  std::endl;
 
   // Compute and output effect size and std_deviation
   CONSOLE ("computing effect size and standard deviation");
   Math::Matrix<float> abs_effect_size, std_effect_size, std_dev, beta;
   Math::Stats::GLM::abs_effect_size (fod_dixel_integrals, design, contrast, abs_effect_size);
+
+  for (size_t i = 0; i < mod_fod_filenames.size() ; ++i )
+    std::cout << abs_effect_size(cc_index, 0) << std::endl;
+
   write_track_stats (output_prefix + "_fod_abs_effect_size.tsf", abs_effect_size, track_point_indices, tckfile_timestamp);
   Math::Stats::GLM::std_effect_size (fod_dixel_integrals, design, contrast, std_effect_size);
   write_track_stats (output_prefix + "_fod_std_effect_size.tsf", std_effect_size, track_point_indices, tckfile_timestamp);
