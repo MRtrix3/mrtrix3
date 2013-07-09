@@ -210,16 +210,10 @@ class SubjectDixelProcessor {
             largest_index = j;
           }
         }
-        if (largest_dp > angular_threshold_dp) {
+        if (largest_dp > angular_threshold_dp)
           subject_dixel_integrals[i] = in[largest_index].get_integral();
-        }
       }
 
-      if (in.vox[0] == 47 && in.vox[1] == 49 && in.vox[2] == 37) {
-        std::cout << "index " << voxel_index << std::endl;
-        std::cout << "dixels " << number_dixels << std::endl;
-        std::cout << "integral" <<  subject_dixel_integrals << std::endl;
-      }
       return true;
     }
 
@@ -239,14 +233,14 @@ class TrackProcessor {
 
   public:
     TrackProcessor (Image::BufferScratch<int32_t>& FOD_dixel_indexer,
-                      const vector<Point<value_type> >& FOD_dixel_directions,
-                      vector<uint16_t>& dixel_TDI,
-                      vector<map<int32_t, Stats::TFCE::connectivity> >& dixel_connectivity,
-                      value_type angular_threshold):
-                      dixel_indexer (FOD_dixel_indexer) ,
-                      dixel_directions (FOD_dixel_directions),
-                      dixel_TDI (dixel_TDI),
-                      dixel_connectivity (dixel_connectivity) {
+                    const vector<Point<value_type> >& FOD_dixel_directions,
+                    vector<uint16_t>& dixel_TDI,
+                    vector<map<int32_t, Stats::TFCE::connectivity> >& dixel_connectivity,
+                    value_type angular_threshold):
+                    dixel_indexer (FOD_dixel_indexer) ,
+                    dixel_directions (FOD_dixel_directions),
+                    dixel_TDI (dixel_TDI),
+                    dixel_connectivity (dixel_connectivity) {
       angular_threshold_dp = cos (angular_threshold * (M_PI/180.0));
     }
 
@@ -305,12 +299,12 @@ class TrackProcessor {
  * use when outputting various track-point statistics. This function also writes out the tractogram subset.
  */
 double compute_track_indices (const string& input_track_filename,
-                                  Image::BufferScratch<int32_t>& dixel_indexer,
-                                  const vector<Point<value_type> >& dixel_directions,
-                                  const value_type angular_threshold,
-                                  const int num_vis_tracks,
-                                  const string& output_track_filename,
-                                  vector<vector<int32_t> >& track_indices) {
+                              Image::BufferScratch<int32_t>& dixel_indexer,
+                              const vector<Point<value_type> >& dixel_directions,
+                              const value_type angular_threshold,
+                              const int num_vis_tracks,
+                              const string& output_track_filename,
+                              vector<vector<int32_t> >& track_indices) {
 
   Image::Interp::Nearest<Image::BufferScratch<int32_t>::voxel_type> interp (dixel_indexer);
   float angular_threshold_dp = cos (angular_threshold * (M_PI/180.0));
@@ -386,9 +380,9 @@ void write_track_stats (const string& filename,
 }
 
 void write_track_stats (const string& filename,
-                           const Math::Matrix<value_type>& data,
-                           const vector<vector<int32_t> >& track_point_indices,
-                           double tckfile_timestamp) {
+                        const Math::Matrix<value_type>& data,
+                        const vector<vector<int32_t> >& track_point_indices,
+                        double tckfile_timestamp) {
   vector<value_type> vec (data.rows());
   for (size_t i = 0; i < data.rows(); ++i)
     vec[i] = data(i, 0);
@@ -396,9 +390,9 @@ void write_track_stats (const string& filename,
 }
 
 void write_track_stats (const string& filename,
-                           const Math::Vector<value_type>& data,
-                           const vector<vector<int32_t> >& track_point_indices,
-                           double tckfile_timestamp) {
+                        const Math::Vector<value_type>& data,
+                        const vector<vector<int32_t> >& track_point_indices,
+                        double tckfile_timestamp) {
   vector<value_type> vec (data.size());
   for (size_t i = 0; i < data.size(); ++i)
     vec[i] = data[i];
@@ -717,30 +711,17 @@ void run() {
   Math::Matrix<value_type> fod_dixel_integrals;
   Math::Matrix<value_type> mod_fod_dixel_integrals;
   load_data_and_compute_integrals (fod_filenames, dixel_mask, dixel_indexer, dixel_directions, angular_threshold, dixel_smoothing_weights, fod_dixel_integrals);
-
   load_data_and_compute_integrals (mod_fod_filenames, dixel_mask, dixel_indexer, dixel_directions, angular_threshold, dixel_smoothing_weights, mod_fod_dixel_integrals);
-  dixel_indexer_vox[0] = 47;
-  dixel_indexer_vox[1] = 49;
-  dixel_indexer_vox[2] = 37;
-  dixel_indexer_vox[3] = 0;
-  uint32_t cc_index = dixel_indexer_vox.value();
-  dixel_indexer_vox[3] = 1;
-  uint32_t num_fibres = dixel_indexer_vox.value();
-  std::cout << "index " << cc_index << std::endl;
-  std::cout << "num_fibres " << num_fibres << std::endl;
 
-  for (size_t i = 0; i < mod_fod_filenames.size() ; ++i )
-    std::cout << mod_fod_dixel_integrals(cc_index, i) << std::endl;
-
-  std::cout <<  std::endl;
-
-  // Compute and output effect size and std_deviation
-  CONSOLE ("computing effect size and standard deviation");
+  CONSOLE ("outputting beta coefficients, effect size and standard deviation");
   Math::Matrix<float> abs_effect_size, std_effect_size, std_dev, beta;
-  Math::Stats::GLM::abs_effect_size (fod_dixel_integrals, design, contrast, abs_effect_size);
 
-  for (size_t i = 0; i < mod_fod_filenames.size() ; ++i )
-    std::cout << abs_effect_size(cc_index, 0) << std::endl;
+  Math::Stats::GLM::solve_betas (fod_dixel_integrals, design, beta);
+  for (size_t i = 0; i < contrast.columns(); ++i)
+    write_track_stats (output_prefix + "_fod_beta" + str(i) + ".tsf", beta.column (i), track_point_indices, tckfile_timestamp);
+  Math::Stats::GLM::solve_betas (mod_fod_dixel_integrals, design, beta);
+  for (size_t i = 0; i < contrast.columns(); ++i)
+    write_track_stats (output_prefix + "_mod_fod_beta" + str(i) + ".tsf", beta.column (i), track_point_indices, tckfile_timestamp);
 
   write_track_stats (output_prefix + "_fod_abs_effect_size.tsf", abs_effect_size, track_point_indices, tckfile_timestamp);
   Math::Stats::GLM::std_effect_size (fod_dixel_integrals, design, contrast, std_effect_size);
@@ -754,13 +735,6 @@ void run() {
   Math::Stats::GLM::stdev (mod_fod_dixel_integrals, design, std_dev);
   write_track_stats (output_prefix + "_mod_fod_std_dev.tsf", std_dev, track_point_indices, tckfile_timestamp);
 
-  CONSOLE ("computing beta coefficients");
-  Math::Stats::GLM::solve_betas (fod_dixel_integrals, design, beta);
-  for (size_t i = 0; i < contrast.columns(); ++i)
-    write_track_stats (output_prefix + "_fod_beta" + str(i) + ".tsf", beta.column (i), track_point_indices, tckfile_timestamp);
-  Math::Stats::GLM::solve_betas (mod_fod_dixel_integrals, design, beta);
-  for (size_t i = 0; i < contrast.columns(); ++i)
-    write_track_stats (output_prefix + "_mod_fod_beta" + str(i) + ".tsf", beta.column (i), track_point_indices, tckfile_timestamp);
 
   // Perform permutation testing
   opt = get_options("notest");
