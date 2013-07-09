@@ -68,8 +68,10 @@ namespace MR
                 writer (output_file, properties),
                 next_time (timer.elapsed())
           {
-            if (properties.find ("seed_output") != properties.end())
+            if (properties.find ("seed_output") != properties.end()) {
               seeds = new std::ofstream (properties["seed_output"].c_str(), std::ios_base::trunc);
+              (*seeds) << "#Track_index,Seed_index,Pos_x,Pos_y,Pos_z,\n";
+            }
           }
 
           ~WriteKernel ()
@@ -87,11 +89,11 @@ namespace MR
           {
             if (complete())
               return false;
-            writer.append (tck);
-            if (seeds) {
+            if (tck.size() && seeds) {
               const Point<float>& p = tck[tck.get_seed_index()];
-              (*seeds) << str(p[0]) << "," << str(p[1]) << "," << str(p[2]) << ",\n";
+              (*seeds) << str(writer.count) << "," << str(tck.get_seed_index()) << "," << str(p[0]) << "," << str(p[1]) << "," << str(p[2]) << ",\n";
             }
+            writer.append (tck);
             if (App::log_level > 0 && timer.elapsed() >= next_time) {
               next_time += UPDATE_INTERVAL;
               fprintf (stderr, "\r%8zu generated, %8zu selected    [%3d%%]",

@@ -15,7 +15,8 @@ namespace MR
 
         const OptionGroup ACTOption = OptionGroup ("Anatomically-Constrained Tractography options")
 
-          + Option ("act", "use the Anatomically-Constrained Tractography framework")
+          + Option ("act", "use the Anatomically-Constrained Tractography framework;\n"
+                           "provided image must be in the 4TT (four-tissue-type) format")
             + Argument ("image").type_image_in()
 
           + Option ("backtrack", "allow tracks to be truncated and re-tracked if a poor structural termination is encountered")

@@ -33,7 +33,7 @@ namespace Connectomics {
 
 
 
-node_t Tck2nodes_voxel::select_node (const std::vector< Point<float> >& tck, VoxelType& voxel, bool end)
+node_t Tck2nodes_voxel::select_node (const std::vector< Point<float> >& tck, VoxelType& voxel, bool end) const
 {
 
   const Point<float>& p (end ? tck.back() : tck.front());
@@ -72,7 +72,7 @@ void Tck2nodes_radial::initialise_search ()
 
 
 
-node_t Tck2nodes_radial::select_node (const std::vector< Point<float> >& tck, VoxelType& voxel, bool end)
+node_t Tck2nodes_radial::select_node (const std::vector< Point<float> >& tck, VoxelType& voxel, bool end) const
 {
 
   float min_dist = max_dist;
@@ -107,7 +107,7 @@ node_t Tck2nodes_radial::select_node (const std::vector< Point<float> >& tck, Vo
 
 
 
-node_t Tck2nodes_revsearch::select_node (const std::vector< Point<float> >& tck, VoxelType& voxel, bool end)
+node_t Tck2nodes_revsearch::select_node (const std::vector< Point<float> >& tck, VoxelType& voxel, bool end) const
 {
 
   const int midpoint_index = end ? (tck.size() / 2) : ((tck.size() + 1) / 2);
@@ -132,6 +132,102 @@ node_t Tck2nodes_revsearch::select_node (const std::vector< Point<float> >& tck,
   return 0;
 
 }
+
+
+
+
+
+
+node_t Tck2nodes_forwardsearch::select_node (const std::vector< Point<float> >& tck, VoxelType& voxel, bool end) const
+{
+
+  // Start by defining the endpoint and the tangent at the endpoint
+  const int index = end ? (tck.size() - 1) : 0;
+  const int step  = end ? -1 : 1;
+  const Point<float>& p (tck[index]);
+  Point<float> t;
+
+  // Heuristic for determining the tangent at the streamline endpoint
+  if (tck.size() > 2) {
+	  const Point<float> second_last_step (tck[index+step] - tck[index+2*step]);
+	  const Point<float> last_step (p - tck[index+step]);
+	  const float length_ratio = last_step.norm() / second_last_step.norm();
+    const Point<float> curvature (last_step - (second_last_step * length_ratio));
+    t = last_step + curvature;
+  } else {
+    t = p - tck[index+step];
+  }
+  t.normalise();
+
+  // Need to store a list of those voxels that have already been considered
+  std::set< Point<int> > visited;
+  // Also a list of voxels to test & potentially expand - based on cost function
+  std::map<float, Point<int> > to_test;
+
+  // Voxel containing streamline endpoint not guaranteed to be appropriate
+  // Should it be tested anyway? Probably
+  const Point<float> vp (transform.scanner2voxel (p));
+  const Point<int> v (Math::round (vp[0]), Math::round (vp[1]), Math::round (vp[2]));
+  if (!Image::Nav::within_bounds (nodes, v))
+    return 0;
+  visited.insert (v);
+  to_test.insert (std::make_pair (0.0, v));
+
+  while (to_test.size()) {
+
+    const Point<int> v = to_test.begin()->second;
+    to_test.erase (to_test.begin());
+
+    const node_t value = Image::Nav::get_value_at_pos (voxel, v);
+    if (value)
+      return value;
+
+    // Check voxel neighbours
+    Point<int> offset;
+    for (offset[2] = -1; offset[2] <= 1; ++offset[2]) {
+      for (offset[1] = -1; offset[1] <= 1; ++offset[1]) {
+        for (offset[0] = -1; offset[0] <= 1; ++offset[0]) {
+
+          const Point<int> v_neighbour (v + offset);
+          if (visited.find (v_neighbour) == visited.end()) {
+            visited.insert (v_neighbour);
+            const float cf = get_cf (p, t, v_neighbour);
+            if (finite (cf))
+              to_test.insert (std::make_pair (cf, v_neighbour));
+          }
+
+        }
+      }
+    }
+
+  }
+
+  return 0;
+
+}
+
+
+
+float Tck2nodes_forwardsearch::get_cf (const Point<float>& p, const Point<float>& t, const Point<int>& v) const
+{
+
+  const Point<float> vfloat (v[0], v[1], v[2]);
+  const Point<float> vp (transform.voxel2scanner (vfloat));
+  Point<float> offset (vp - p);
+  const float dist = offset.norm();
+  offset.normalise();
+  const float angle = Math::acos (t.dot (offset));
+  if (angle > angle_limit)
+    return NAN;
+
+  // Multiplier of 1 for straight ahead, 2 for right at the angle limit
+  // Makes the search space a kind of diamond shape
+  const float multiplier = 1.0 + (angle / angle_limit);
+  const float cf = dist * multiplier;
+  return (cf > max_dist ? NAN : cf);
+
+}
+
 
 
 

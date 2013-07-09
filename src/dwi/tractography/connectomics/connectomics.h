@@ -42,7 +42,7 @@ namespace Connectomics {
 
 #define TCK2NODES_RADIAL_DEFAULT_DIST 2.0
 #define TCK2NODES_REVSEARCH_DEFAULT_DIST 0.0 // Default = no distance limit, reverse search all the way to the streamline midpoint
-
+#define TCK2NODES_FORWARDSEARCH_DEFAULT_DIST 3.0
 
 
 typedef uint32_t node_t;

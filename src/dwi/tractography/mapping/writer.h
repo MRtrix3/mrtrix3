@@ -232,7 +232,7 @@ class MapWriter : public MapWriterBase<Cont>
         case V_MIN:
           for (loop.start (v_buffer); loop.ok(); loop.next (v_buffer)) {
             if (v_buffer.value() == std::numeric_limits<value_type>::max())
-              v_buffer.value() = 0.0;
+              v_buffer.value() = value_type(0);
           }
           break;
 
@@ -246,7 +246,7 @@ class MapWriter : public MapWriterBase<Cont>
         case V_MAX:
           for (loop.start (v_buffer); loop.ok(); loop.next (v_buffer)) {
             if (v_buffer.value() == -std::numeric_limits<value_type>::max())
-              v_buffer.value() = 0.0;
+              v_buffer.value() = value_type(0);
           }
           break;
 
@@ -275,7 +275,7 @@ class MapWriter : public MapWriterBase<Cont>
         Image::Nav::set_pos (v_buffer, *i);
         const value_type factor = get_factor (in, i);
         switch (MapWriterBase<Cont>::voxel_statistic) {
-        case V_SUM:  v_buffer.value() += factor;                     break;
+        case V_SUM:  v_buffer.value() += factor;                       break;
         case V_MIN:  v_buffer.value() = MIN(v_buffer.value(), factor); break;
         case V_MAX:  v_buffer.value() = MAX(v_buffer.value(), factor); break;
         case V_MEAN:

@@ -41,7 +41,7 @@ namespace MR
 
       const OptionGroup SeedOption = OptionGroup ("Tractography seeding options")
 
-      + Option ("seed_sphere", "spherical seed as four comma-separated values (XYZ position and radius").allow_multiple()
+      + Option ("seed_sphere", "spherical seed as four comma-separated values (XYZ position and radius)").allow_multiple()
         + Argument ("spec").type_sequence_float()
 
       + Option ("seed_image", "seed streamlines entirely at random within a mask image "
@@ -52,7 +52,8 @@ namespace MR
         + Argument ("image").type_image_in()
         + Argument ("num_per_voxel").type_integer (1, 1, std::numeric_limits<int>::max())
 
-      + Option ("seed_grid_per_voxel", "seed a fixed number of streamlines per voxel in a mask image; place seeds on a 3D mesh grid").allow_multiple()
+      + Option ("seed_grid_per_voxel", "seed a fixed number of streamlines per voxel in a mask image; place seeds on a 3D mesh grid "
+                                       "(grid_size argument is per axis; so a grid_size of 3 results in 27 seeds per voxel)").allow_multiple()
         + Argument ("image").type_image_in()
         + Argument ("grid_size").type_integer (1, 1, std::numeric_limits<int>::max())
 

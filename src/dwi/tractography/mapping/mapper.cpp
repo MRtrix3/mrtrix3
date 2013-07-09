@@ -145,17 +145,34 @@ void TrackMapperBase<SetVoxelDir>::voxelise (const std::vector< Point<float> >& 
 
   static const float accuracy = Math::pow2 (0.005 * maxvalue (H_out.vox (0), H_out.vox (1), H_out.vox (2)));
 
+  if (tck.size() < 2)
+    return;
+
   Math::Hermite<float> hermite (0.1);
 
-  const PointF start_vector_offset = (tck.size() > 2) ? ((tck.front() - tck[1]) - (tck[1] - tck[2])) : PointF (0.0, 0.0, 0.0);
-  const PointF start_vector = (tck.front() - tck[1]) + start_vector_offset;
-  const PointF tck_proj_front = tck.front() + start_vector;
+  PointF tck_proj_front, tck_proj_back;
+  if (tck.size() > 2) {
 
-  const unsigned int last_point = tck.size() - 1;
+    const PointF first_step (tck[0] - tck[1]);
+    const PointF second_step (tck[1] - tck[2]);
+    const float front_length_ratio = first_step.norm() / second_step.norm();
+    const Point<float> front_curvature (first_step - (second_step * front_length_ratio));
+    tck_proj_front = tck[0] + first_step + front_curvature;
 
-  const PointF end_vector_offset = (tck.size() > 2) ? ((tck[last_point] - tck[last_point - 1]) - (tck[last_point - 1] - tck[last_point - 2])) : PointF (0.0, 0.0, 0.0);
-  const PointF end_vector = (tck[last_point] - tck[last_point - 1]) + end_vector_offset;
-  const PointF tck_proj_back = tck.back() + end_vector;
+    const size_t last (tck.size() - 1);
+
+    const PointF last_step (tck[last] - tck[last-1]);
+    const PointF second_last_step (tck[last-1] - tck[last-2]);
+    const float back_length_ratio = last_step.norm() / second_last_step.norm();
+    const Point<float> back_curvature (last_step - (second_last_step * back_length_ratio));
+    tck_proj_back = tck[last] + last_step + back_curvature;
+
+  } else {
+
+    tck_proj_front = (tck[0] * 2.0) - tck[1];
+    tck_proj_back = (tck[1] * 2.0) - tck[0];
+
+  }
 
   unsigned int p = 0;
   PointF p_end = tck.front();
@@ -234,17 +251,34 @@ void TrackMapperDixel::voxelise (const std::vector< Point<float> >& tck, SetDixe
 
   static const float accuracy = Math::pow2 (0.005 * maxvalue (H_out.vox (0), H_out.vox (1), H_out.vox (2)));
 
+  if (tck.size() < 2)
+    return;
+
   Math::Hermite<float> hermite (0.1);
 
-  const PointF start_vector_offset = (tck.size() > 2) ? ((tck.front() - tck[1]) - (tck[1] - tck[2])) : PointF (0.0, 0.0, 0.0);
-  const PointF start_vector = (tck.front() - tck[1]) + start_vector_offset;
-  const PointF tck_proj_front = tck.front() + start_vector;
+  PointF tck_proj_front, tck_proj_back;
+  if (tck.size() > 2) {
 
-  const unsigned int last_point = tck.size() - 1;
+    const PointF first_step (tck[0] - tck[1]);
+    const PointF second_step (tck[1] - tck[2]);
+    const float front_length_ratio = first_step.norm() / second_step.norm();
+    const Point<float> front_curvature (first_step - (second_step * front_length_ratio));
+    tck_proj_front = tck[0] + first_step + front_curvature;
 
-  const PointF end_vector_offset = (tck.size() > 2) ? ((tck[last_point] - tck[last_point - 1]) - (tck[last_point - 1] - tck[last_point - 2])) : PointF (0.0, 0.0, 0.0);
-  const PointF end_vector = (tck[last_point] - tck[last_point - 1]) + end_vector_offset;
-  const PointF tck_proj_back = tck.back() + end_vector;
+    const size_t last (tck.size() - 1);
+
+    const PointF last_step (tck[last] - tck[last-1]);
+    const PointF second_last_step (tck[last-1] - tck[last-2]);
+    const float back_length_ratio = last_step.norm() / second_last_step.norm();
+    const Point<float> back_curvature (last_step - (second_last_step * back_length_ratio));
+    tck_proj_back = tck[last] + last_step + back_curvature;
+
+  } else {
+
+    tck_proj_front = (tck[0] * 2.0) - tck[1];
+    tck_proj_back = (tck[1] * 2.0) - tck[0];
+
+  }
 
   unsigned int p = 0;
   PointF p_end = tck.front();

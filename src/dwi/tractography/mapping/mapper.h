@@ -578,12 +578,12 @@ void TrackMapperTWIImage<Cont>::load_factors (const std::vector< Point<float> >&
         TrackMapperTWI<Cont>::factors.assign (1, 0.0);
         input_voxel_type start (voxel), end (voxel);
         const Point<float> p_start (interp.scanner2voxel (tck.front()));
-        const Point<int> v_start (Math::round (p_start[0]), Math::round (p_start[1]), Math::round (p_start[2]));
+        const Point<int> v_start (int(Math::round (p_start[0])), int(Math::round (p_start[1])), int(Math::round (p_start[2])));
         Image::Nav::set_pos (start, v_start);
         if (!Image::Nav::within_bounds (start))
           return;
         const Point<float> p_end (interp.scanner2voxel (tck.back()));
-        const Point<int> v_end (Math::round (p_end[0]), Math::round (p_end[1]), Math::round (p_end[2]));
+        const Point<int> v_end (int(Math::round (p_end[0])), int(Math::round (p_end[1])), int(Math::round (p_end[2])));
         Image::Nav::set_pos (end, v_end);
         if (!Image::Nav::within_bounds (end))
           return;

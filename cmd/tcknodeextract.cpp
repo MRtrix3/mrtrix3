@@ -74,16 +74,16 @@ void usage ()
   + Connectomics::AssignmentOption
 
   + Option ("node_single", "output all streamlines attributed to a particular node (regardless of the other connected node) to a single .tck file").allow_multiple()
-    + Argument ("index").type_integer (0, 0, std::numeric_limits<node_t>::max())
+    + Argument ("index").type_integer (0)
     + Argument ("name").type_file()
 
   + Option ("node_pair", "output streamlines attributed to a particular node pair to a .tck file").allow_multiple()
-    + Argument ("index_one").type_integer (0, 0, std::numeric_limits<node_t>::max())
-    + Argument ("index_two").type_integer (0, 0, std::numeric_limits<node_t>::max())
+    + Argument ("index_one").type_integer (0)
+    + Argument ("index_two").type_integer (0)
     + Argument ("name").type_file()
 
   + Option ("node_all_edges", "for a node of interest, output a nomber of .tck files, where each contains the connections between some node in the parcellation, and the node of interest").allow_multiple()
-    + Argument ("index").type_integer (0, 0, std::numeric_limits<node_t>::max())
+    + Argument ("index").type_integer (0)
     + Argument ("prefix").type_text()
 
   + Option ("batch_nodes", "output one .tck file for each node, where each contains all streamlines connected to that node")

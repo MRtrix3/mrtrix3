@@ -37,9 +37,9 @@ namespace Connectomics {
 
 
 
-const char* metrics[] = { "count", "meanlength", "invlength", "invnodevolume", "invlength_invnodevolume", "mean_scalar", NULL };
+const char* modes[] = { "assignment_voxel_lookup", "assignment_radial_search", "assignment_reverse_search", "assignment_forward_search", NULL };
 
-const char* modes[] = { "voxel", "radial_search", "reverse_search", NULL };
+const char* metrics[] = { "count", "meanlength", "invlength", "invnodevolume", "invlength_invnodevolume", "mean_scalar", NULL };
 
 
 using namespace App;
@@ -48,34 +48,53 @@ using namespace App;
 
 const OptionGroup AssignmentOption = OptionGroup ("Structural connectome streamline assignment option")
 
-  + Option ("assignment_mode", "specify the mechanism by which streamlines are assigned to the relevant nodes. "
-            "Options are: voxel, radial_search (default), reverse_search")
-    + Argument ("choice").type_choice (modes)
+  + Option ("assignment_voxel_lookup", "use a simple voxel lookup value at each streamline endpoint")
 
-  + Option ("assignment_distance", "set the distance threshold for streamline assignment (relevant for some modes, and behaviour depends on the particular assignment mode)")
-    + Argument ("value").type_float (0.0, 0.0, 1e6);
+  + Option ("assignment_radial_search", "perform a radial search from each streamline endpoint to locate the nearest node.\n"
+                                        "Argument is the maximum radius in mm; if no node is found within this radius, the streamline endpoint is not assigned to any node. ")
+    + Argument ("radius").type_float (0.0, TCK2NODES_RADIAL_DEFAULT_DIST, 1e6)
+
+  + Option ("assignment_reverse_search", "traverse from each streamline endpoint inwards along the streamline, in search of the last node traversed by the streamline. "
+                                         "Argument is the maximum traversal length in mm (set to 0 to allow search to continue to the streamline midpoint).")
+    + Argument ("max_dist").type_float (0.0, TCK2NODES_REVSEARCH_DEFAULT_DIST, 1e6)
+
+  + Option ("assignment_forward_search", "project the streamline forwards from the endpoint in search of a parcellation node voxel. "
+                                         "Argument is the maximum traversal length in mm.")
+    + Argument ("max_dist").type_float (0.0, TCK2NODES_FORWARDSEARCH_DEFAULT_DIST, 1e6);
 
 
 
 
 Tck2nodes_base* load_assignment_mode (Image::Buffer<node_t>& nodes_data)
 {
-  int assignment_mode = 1; // default = radial search
-  Options opt = get_options ("assignment_mode");
-  if (opt.size())
-    assignment_mode = opt[0][0];
-  switch (assignment_mode) {
-    case 0:
-      return new Connectomics::Tck2nodes_voxel (nodes_data);
-    case 1: case 2:
-        opt = get_options ("assignment_distance");
-        if (assignment_mode == 1)
-          return new Connectomics::Tck2nodes_radial    (nodes_data, opt.size() ? to<float> (opt[0][0]) : TCK2NODES_RADIAL_DEFAULT_DIST);
-        else
-          return new Connectomics::Tck2nodes_revsearch (nodes_data, opt.size() ? to<float> (opt[0][0]) : TCK2NODES_REVSEARCH_DEFAULT_DIST);
-    default:
-      throw Exception ("Undefined streamline assigment mode");
+
+  Tck2nodes_base* tck2nodes = NULL;
+  for (size_t index = 0; modes[index]; ++index) {
+    Options opt = get_options (modes[index]);
+    if (opt.size()) {
+
+      if (tck2nodes) {
+        delete tck2nodes;
+        tck2nodes = NULL;
+        throw Exception ("Please only request one streamline assignment mechanism");
+      }
+
+      switch (index) {
+        case 0: tck2nodes = new Connectomics::Tck2nodes_voxel (nodes_data); break;
+        case 1: tck2nodes = new Connectomics::Tck2nodes_radial (nodes_data, float(opt[0][0])); break;
+        case 2: tck2nodes = new Connectomics::Tck2nodes_revsearch (nodes_data, float(opt[0][0])); break;
+        case 3: tck2nodes = new Connectomics::Tck2nodes_forwardsearch (nodes_data, float(opt[0][0])); break;
+      }
+
+    }
   }
+
+  // default
+  if (!tck2nodes)
+    tck2nodes = new Connectomics::Tck2nodes_radial (nodes_data, TCK2NODES_RADIAL_DEFAULT_DIST);
+
+  return tck2nodes;
+
 }
 
 

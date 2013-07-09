@@ -27,8 +27,10 @@
 
 
 #include <stdint.h>
+#include <deque>
 #include <vector>
 #include <map>
+#include <set>
 
 #include "point.h"
 
@@ -65,7 +67,7 @@ class Tck2nodes_base {
 
     virtual ~Tck2nodes_base() { }
 
-    std::pair<node_t, node_t> operator() (const std::vector< Point<float> >& tck) {
+    virtual std::pair<node_t, node_t> operator() (const std::vector< Point<float> >& tck) const {
       VoxelType voxel (nodes);
       const node_t node_one = select_node (tck, voxel, false);
       const node_t node_two = select_node (tck, voxel, true);
@@ -81,7 +83,7 @@ class Tck2nodes_base {
     Image::Buffer<node_t>& nodes;
     Image::Transform transform;
 
-    virtual node_t select_node (const std::vector< Point<float> >& tck, VoxelType& voxel, bool end) {
+    virtual node_t select_node (const std::vector< Point<float> >& tck, VoxelType& voxel, bool end) const {
       throw Exception ("Calling empty virtual function Tck2nodes_base::select_node()");
     }
 
@@ -105,7 +107,7 @@ class Tck2nodes_voxel : public Tck2nodes_base {
     ~Tck2nodes_voxel() { }
 
   private:
-    node_t select_node (const std::vector< Point<float> >& tck, VoxelType& voxel, bool end);
+    node_t select_node (const std::vector< Point<float> >& tck, VoxelType& voxel, bool end) const;
 
 };
 
@@ -134,7 +136,7 @@ class Tck2nodes_radial : public Tck2nodes_base {
     ~Tck2nodes_radial() { }
 
   private:
-    node_t select_node (const std::vector< Point<float> >& tck, VoxelType& voxel, bool end);
+    node_t select_node (const std::vector< Point<float> >& tck, VoxelType& voxel, bool end) const;
 
     void initialise_search ();
     std::vector< Point<int> > radial_search;
@@ -143,6 +145,8 @@ class Tck2nodes_radial : public Tck2nodes_base {
     //   This parameter controls when to stop the radial search because no voxel within the search space can be closer
     //   than the closest voxel with non-zero node index processed thus far.
     const float max_add_dist;
+
+    friend class Tck2nodes_visitation;
 
 };
 
@@ -164,12 +168,40 @@ class Tck2nodes_revsearch : public Tck2nodes_base
     ~Tck2nodes_revsearch() { }
 
   private:
-    node_t select_node (const std::vector< Point<float> >& tck, VoxelType& voxel, bool end);
+    node_t select_node (const std::vector< Point<float> >& tck, VoxelType& voxel, bool end) const;
 
     const float max_dist;
 
 };
 
+
+
+// Forward search - form a diamond-like shape emanating from the streamline endpoint in the direction of the tangent
+class Tck2nodes_forwardsearch : public Tck2nodes_base
+{
+
+  public:
+    Tck2nodes_forwardsearch (Image::Buffer<node_t>& nodes_data, const float length) :
+      Tck2nodes_base (nodes_data),
+      max_dist       (length),
+      angle_limit    (M_PI_4) { } // 45 degree limit
+
+    Tck2nodes_forwardsearch (const Tck2nodes_forwardsearch& that) :
+      Tck2nodes_base (that),
+      max_dist       (that.max_dist),
+      angle_limit    (that.angle_limit) { }
+
+    ~Tck2nodes_forwardsearch() { }
+
+  private:
+    node_t select_node (const std::vector< Point<float> >& tck, VoxelType& voxel, bool end) const;
+
+    const float max_dist;
+    const float angle_limit;
+
+    float get_cf (const Point<float>&, const Point<float>&, const Point<int>&) const;
+
+};
 
 
 
