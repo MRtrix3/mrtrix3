@@ -35,6 +35,7 @@ using namespace App;
 const char* operations[] = {
   "mean",
   "sum",
+  "rms",
   "var",
   "std",
   "min",
@@ -95,6 +96,24 @@ class Sum {
       return sum; 
     }
     double sum;
+};
+
+class RMS {
+  public:
+    RMS() : sum (0.0), count (0) { }
+    void operator() (value_type val) {
+      if (finite (val)) {
+        sum += Math::pow2 (val);
+        ++count;
+      }
+    }
+    value_type result() const {
+      if (!count)
+        return NAN;
+      return Math::sqrt(sum / count);
+    }
+    double sum;
+    size_t count;
 };
 
 class Var {
@@ -216,12 +235,13 @@ void run ()
   switch (op) {
     case 0: loop.run_outer (Kernel<Mean> (vox_in, vox_out, axis)); return;
     case 1: loop.run_outer (Kernel<Sum> (vox_in, vox_out, axis)); return;
-    case 2: loop.run_outer (Kernel<Var> (vox_in, vox_out, axis)); return;
-    case 3: loop.run_outer (Kernel<Std> (vox_in, vox_out, axis)); return;
-    case 4: loop.run_outer (Kernel<Min> (vox_in, vox_out, axis)); return;
-    case 5: loop.run_outer (Kernel<Max> (vox_in, vox_out, axis)); return;
-    case 6: loop.run_outer (Kernel<AbsMax> (vox_in, vox_out, axis)); return;
-    case 7: loop.run_outer (Kernel<MagMax> (vox_in, vox_out, axis)); return;
+    case 2: loop.run_outer (Kernel<RMS> (vox_in, vox_out, axis)); return;
+    case 3: loop.run_outer (Kernel<Var> (vox_in, vox_out, axis)); return;
+    case 4: loop.run_outer (Kernel<Std> (vox_in, vox_out, axis)); return;
+    case 5: loop.run_outer (Kernel<Min> (vox_in, vox_out, axis)); return;
+    case 6: loop.run_outer (Kernel<Max> (vox_in, vox_out, axis)); return;
+    case 7: loop.run_outer (Kernel<AbsMax> (vox_in, vox_out, axis)); return;
+    case 8: loop.run_outer (Kernel<MagMax> (vox_in, vox_out, axis)); return;
     default: assert (0);
   }
 }
