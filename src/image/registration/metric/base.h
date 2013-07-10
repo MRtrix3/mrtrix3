@@ -54,6 +54,7 @@ namespace MR
               Image::BufferScratch<float>::voxel_type gradient_voxel (*gradient_data);
               gradient_filter (moving_voxel_copy, gradient_voxel);
               gradient_interp = new Image::Interp::Linear<Image::BufferScratch<float>::voxel_type > (gradient_voxel);
+              gradient_voxel.save("gradient.mif");
             }
 
           protected:

@@ -160,6 +160,9 @@ namespace MR
                                      Image::Interp::Nearest<MovingMaskVoxelType >,
                                      Image::Interp::Nearest<TemplateMaskVoxelType > > ParamType;
 
+              Math::Vector<typename TransformType::ParameterType> optimiser_weights;
+              transform.get_optimiser_weights (optimiser_weights);
+
               for (size_t level = 0; level < scale_factor.size(); level++) {
 
                 CONSOLE ("multi-resolution level " + str(level + 1) + ", scale factor: " + str(scale_factor[level]));
@@ -204,8 +207,7 @@ namespace MR
 
                 Math::GradientDescent<Metric::Evaluate<MetricType, ParamType>,
                                       typename TransformType::UpdateType > optim (evaluate, *transform.get_gradient_descent_updator());
-                Math::Vector<typename TransformType::ParameterType> optimiser_weights;
-                parameters.transformation.get_optimiser_weights (optimiser_weights);
+
 
                 optim.precondition (optimiser_weights);
                 optim.run (max_iter[level], 1.0e-4);

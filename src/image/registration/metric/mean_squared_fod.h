@@ -44,15 +44,10 @@ namespace MR
                                  const Point<double> moving_point,
                                  Math::Vector<double>& gradient) {
 
-                if (isnan (params.template_image.value()))
-                  return 0.0;
-
                 params.transformation.get_jacobian_wrt_params (target_point, this->jacobian);
 
-                if (params.template_image.ndim() == 4) {
+                if (params.template_image.ndim() == 4)
                   (*gradient_interp)[4] = params.template_image[3];
-                  (*params.moving_image_interp)[3] = params.template_image[3];
-                }
 
                 this->compute_moving_gradient (moving_point);
 
@@ -60,7 +55,7 @@ namespace MR
 
                 for (size_t par = 0; par < gradient.size(); par++) {
                   double sum = 0.0;
-                  for ( size_t dim = 0; dim < 3; dim++) {
+                  for( size_t dim = 0; dim < 3; dim++) {
                     sum += 2.0 * diff * this->jacobian(dim, par) * moving_grad[dim];
                   }
                   gradient[par] += sum;

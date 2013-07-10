@@ -58,6 +58,7 @@ namespace MR
 
                 Ptr<Image::BufferScratch<float> > reoriented_moving;
                 Ptr<Image::BufferScratch<float>::voxel_type > reoriented_moving_vox;
+
                 if (directions.is_set()) {
                   reoriented_moving = new Image::BufferScratch<float> (params.moving_image);
                   reoriented_moving_vox = new Image::BufferScratch<float>::voxel_type (*reoriented_moving);
@@ -72,8 +73,8 @@ namespace MR
                   Image::ThreadedLoop threaded_loop (params.template_image, 2);
                   threaded_loop.run (kernel);
                 }
-                std::cout << x << std::endl;
-                std::cout << overall_cost_function << std::endl;
+//                std::cout << x << std::endl;
+//                std::cout << overall_cost_function << std::endl;
                 return overall_cost_function;
               }
 
