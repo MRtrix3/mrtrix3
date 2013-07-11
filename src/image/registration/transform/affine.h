@@ -58,27 +58,27 @@ namespace MR
             typedef Math::LinearUpdate UpdateType;
 
             Affine () : Base<ValueType> (12) {
-              for (size_t i = 0; i < 9; i++)
+              for (size_t i = 0; i < 9; ++i)
                 this->optimiser_weights[i] = 0.003;
-              for (size_t i = 9; i < 12; i++)
+              for (size_t i = 9; i < 12; ++i)
                 this->optimiser_weights[i] = 1.0;
             }
 
             template <class PointType>
             void get_jacobian_wrt_params (const PointType& p, Matrix<ValueType>& jacobian) const {
-              jacobian.resize(3,12);
+              jacobian.resize (3,12);
               jacobian.zero();
               Vector<ValueType> v (3);
               v[0] = p[0] - this->centre[0];
               v[1] = p[1] - this->centre[1];
               v[2] = p[2] - this->centre[2];
               size_t blockOffset = 0;
-              for (size_t block = 0; block < 3; block++) {
-                for (size_t dim = 0; dim < 3; dim++)
+              for (size_t block = 0; block < 3; ++block) {
+                for (size_t dim = 0; dim < 3; ++dim)
                   jacobian (block, blockOffset + dim) = v[dim];
                 blockOffset += 3;
               }
-              for (size_t dim = 0; dim < 3; dim++) {
+              for (size_t dim = 0; dim < 3; ++dim) {
                 jacobian (dim, blockOffset + dim) = 1.0;
               }
             }
@@ -86,11 +86,11 @@ namespace MR
 
             void set_parameter_vector (const Math::Vector<ValueType>& param_vector) {
               size_t index = 0;
-              for (size_t row = 0; row < 3; row++) {
-                for (size_t col = 0; col < 3; col++)
+              for (size_t row = 0; row < 3; ++row) {
+                for (size_t col = 0; col < 3; ++col)
                   this->matrix (row, col) = param_vector[index++];
               }
-              for (size_t dim = 0; dim < 3; dim++)
+              for (size_t dim = 0; dim < 3; ++dim)
                 this->translation [dim] = param_vector[index++];
               this->compute_offset();
             }
@@ -98,12 +98,12 @@ namespace MR
             void get_parameter_vector (Vector<ValueType>& param_vector) const {
               param_vector.allocate (12);
               size_t index = 0;
-              for (size_t row = 0; row < 3; row++) {
-                for (size_t col = 0; col < 3; col++)
+              for (size_t row = 0; row < 3; ++row) {
+                for (size_t col = 0; col < 3; ++col)
                   param_vector[index++] = this->matrix (row, col);
               }
-              for (size_t dim = 0; dim < 3; dim++)
-                param_vector[index++] = this->translation [dim];
+              for (size_t dim = 0; dim < 3; ++dim)
+                param_vector[index++] = this->translation[dim];
             }
 
             UpdateType* get_gradient_descent_updator (){

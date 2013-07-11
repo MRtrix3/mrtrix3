@@ -32,6 +32,7 @@
 #include "image/registration/linear.h"
 #include "image/registration/syn.h"
 #include "image/registration/metric/mean_squared.h"
+#include "image/registration/metric/mean_squared_4D.h"
 #include "image/registration/transform/affine.h"
 #include "image/registration/transform/rigid.h"
 #include "dwi/directions/predefined.h"
@@ -146,7 +147,10 @@ void run ()
   if (opt.size())
     do_reorientation = false;
 
-  if (template_header.ndim() > 3) {
+  if (template_header.ndim() > 4) {
+    throw Exception ("image dimensions larger than 4 are not supported");
+  }
+  else if (template_header.ndim() == 4) {
     value_type val = (Math::sqrt (float (1 + 8 * template_header.dim(3))) - 3.0) / 4.0;
     if (!(val - (int)val) && do_reorientation && template_header.dim(3) > 1) {
         CONSOLE ("SH series detected, performing FOD registration");
@@ -165,12 +169,14 @@ void run ()
             throw Exception ("not enough SH coefficients within input image for desired lmax");
         load_image(argument[0], num_SH, moving_buffer_ptr);
         load_image(argument[1], num_SH, template_buffer_ptr);
-    } else {
+    }
+    else {
       do_reorientation = false;
       load_image (argument[0], moving_header.dim(3), moving_buffer_ptr);
       load_image (argument[1], template_header.dim(3), template_buffer_ptr);
     }
-  } else {
+  }
+  else {
     do_reorientation = false;
     load_image (argument[0], 1, moving_buffer_ptr);
     load_image (argument[1], 1, template_buffer_ptr);
@@ -394,7 +400,7 @@ void run ()
     Math::Matrix<value_type> directions_el_az;
     opt = get_options ("directions");
     if (opt.size())
-      directions_el_az.load(opt[0][0]);
+      directions_el_az.load (opt[0][0]);
     else
       DWI::Directions::electrostatic_repulsion_60 (directions_el_az);
     Math::SH::S2C (directions_el_az, directions_cartesian);
@@ -403,7 +409,6 @@ void run ()
   if (do_rigid) {
     CONSOLE ("running rigid registration");
     Image::Registration::Linear rigid_registration;
-    Image::Registration::Metric::MeanSquared metric;
 
     if (rigid_scale_factors.size())
       rigid_registration.set_scale_factor (rigid_scale_factors);
@@ -414,7 +419,13 @@ void run ()
     else
       rigid_registration.set_init_type (init_centre);
 
-    rigid_registration.run_masked (metric, rigid, moving_voxel, template_voxel, mmask_image, tmask_image);
+    if (template_voxel.ndim() == 4) {
+      Image::Registration::Metric::MeanSquared4D metric;
+      rigid_registration.run_masked (metric, rigid, moving_voxel, template_voxel, mmask_image, tmask_image);
+    } else {
+      Image::Registration::Metric::MeanSquared metric;
+      rigid_registration.run_masked (metric, rigid, moving_voxel, template_voxel, mmask_image, tmask_image);
+    }
 
     if (output_rigid)
       rigid.get_transform().save (rigid_filename);
@@ -423,7 +434,6 @@ void run ()
   if (do_affine) {
     CONSOLE ("running affine registration");
     Image::Registration::Linear affine_registration;
-    Image::Registration::Metric::MeanSquared metric;
 
     if (affine_scale_factors.size())
       affine_registration.set_scale_factor (affine_scale_factors);
@@ -441,7 +451,17 @@ void run ()
 
     if (do_reorientation)
       affine_registration.set_directions (directions_cartesian);
-    affine_registration.run_masked (metric, affine, moving_voxel, template_voxel, mmask_image, tmask_image);
+
+
+    if (template_voxel.ndim() == 4) {
+      Image::Registration::Metric::MeanSquared4D metric;
+      affine_registration.run_masked (metric, affine, moving_voxel, template_voxel, mmask_image, tmask_image);
+    } else {
+      Image::Registration::Metric::MeanSquared metric;
+      affine_registration.run_masked (metric, affine, moving_voxel, template_voxel, mmask_image, tmask_image);
+    }
+
+
     if (output_affine)
       affine.get_transform().save (affine_filename);
   }

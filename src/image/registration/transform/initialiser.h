@@ -49,6 +49,7 @@ namespace MR
                                                  const TargetVoxelType& target,
                                                  TransformType& transform)
             {
+              CONSOLE ("initialising centre of rotation and translation using geometric centre");
               Point<double> moving_centre_voxel;
               moving_centre_voxel[0] = (static_cast<double>(moving.dim(0)) / 2.0) - 0.5;
               moving_centre_voxel[1] = (static_cast<double>(moving.dim(1)) / 2.0) - 0.5;
@@ -58,9 +59,9 @@ namespace MR
               moving_transform.voxel2scanner (moving_centre_voxel, moving_centre_scanner);
 
               Point<double> target_centre_voxel;
-              target_centre_voxel[0] = (static_cast<double>(target.dim(0)) / 2.0) - 0.5;
-              target_centre_voxel[1] = (static_cast<double>(target.dim(1)) / 2.0) - 0.5;
-              target_centre_voxel[2] = (static_cast<double>(target.dim(2)) / 2.0) - 0.5;
+              target_centre_voxel[0] = (static_cast<double>(target.dim(0)) / 2.0) - 0.5 + 1.0;
+              target_centre_voxel[1] = (static_cast<double>(target.dim(1)) / 2.0) - 0.5 + 1.0;
+              target_centre_voxel[2] = (static_cast<double>(target.dim(2)) / 2.0) - 0.5 + 1.0;
               Image::Transform target_transform (target);
               Math::Vector<double> target_centre_scanner (3);
               moving_transform.voxel2scanner (target_centre_voxel, target_centre_scanner);
@@ -77,12 +78,15 @@ namespace MR
                                               const TargetVoxelType& target,
                                               TransformType& transform)
             {
+              CONSOLE ("initialising centre of rotation and translation using centre of mass");
               Math::Vector<typename TransformType::ParameterType > target_centre_of_mass (3);
               target_centre_of_mass.zero();
               double target_mass = 0;
               MovingVoxelType target_voxel (target);
               Image::Transform target_transform (target_voxel);
-              Image::LoopInOrder target_loop (target_voxel);
+
+              // only user the first volume of a 4D file. This is important for FOD images.
+              Image::LoopInOrder target_loop (target_voxel, 0, 3);
               for (target_loop.start (target_voxel); target_loop.ok(); target_loop.next (target_voxel)) {
                 Point<float> target_scanner = target_transform.voxel2scanner (target_voxel);
                 target_mass += target_voxel.value();

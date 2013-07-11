@@ -47,7 +47,8 @@ namespace MR
 
               Evaluate (const MetricType& metric, ParamType& parameters) :
                 metric (metric),
-                params (parameters) { }
+                params (parameters),
+                iteration (1) { }
 
 
               double operator() (const Math::Vector<double>& x, Math::Vector<double>& gradient) {
@@ -62,19 +63,17 @@ namespace MR
                 if (directions.is_set()) {
                   reoriented_moving = new Image::BufferScratch<float> (params.moving_image);
                   reoriented_moving_vox = new Image::BufferScratch<float>::voxel_type (*reoriented_moving);
-                  std::string msg ("reorienting...");
-                  Image::Registration::Transform::reorient (msg, params.moving_image, *reoriented_moving_vox, params.transformation.get_matrix(), directions);
+                  Image::Registration::Transform::reorient (params.moving_image, *reoriented_moving_vox, params.transformation.get_matrix(), directions);
                   params.set_moving_iterpolator (*reoriented_moving_vox);
                   metric.set_moving_image (*reoriented_moving_vox);
                 }
 
                 {
                   ThreadKernel<MetricType, ParamType> kernel (metric, params, overall_cost_function, gradient);
-                  Image::ThreadedLoop threaded_loop (params.template_image, 2);
-                  threaded_loop.run (kernel);
+                  Image::ThreadedLoop (params.template_image, 1, 0, 3).run (kernel);
                 }
-//                std::cout << x << std::endl;
-//                std::cout << overall_cost_function << std::endl;
+                std::cerr.precision(10);
+                std::cerr << std::fixed << App::NAME << ":   "<< "iteration: " << iteration++ << ", cost: " << overall_cost_function << "       \r";
                 return overall_cost_function;
               }
 
@@ -95,6 +94,7 @@ namespace MR
                 MetricType metric;
                 ParamType params;
                 Math::Matrix<float> directions;
+                size_t iteration;
 
         };
       }

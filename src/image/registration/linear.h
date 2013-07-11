@@ -37,6 +37,7 @@
 #include "math/matrix.h"
 #include "math/gradient_descent.h"
 #include "math/check_gradient.h"
+#include "math/rng.h"
 
 namespace MR
 {
@@ -173,6 +174,7 @@ namespace MR
                 Image::BufferScratch<float> moving_resized (moving_resize_filter.info());
                 Image::BufferScratch<float>::voxel_type moving_resized_vox (moving_resized);
                 Image::Filter::GaussianSmooth<float> moving_smooth_filter (moving_resized_vox);
+
                 Image::BufferScratch<float> moving_resized_smoothed (moving_smooth_filter.info());
                 Image::BufferScratch<float>::voxel_type moving_resized_smoothed_vox (moving_resized_smoothed);
 
@@ -181,14 +183,19 @@ namespace MR
                 template_resize_filter.set_interp_type (1);
                 Image::BufferScratch<float> template_resized (template_resize_filter.info());
                 Image::BufferScratch<float>::voxel_type template_resized_vox (template_resized);
+                Image::Filter::GaussianSmooth<float> template_smooth_filter (template_resized_vox);
+                Image::BufferScratch<float> template_resized_smoothed (template_smooth_filter.info());
+                Image::BufferScratch<float>::voxel_type template_resized_smoothed_vox (template_resized_smoothed);
+
                 {
                   LogLevelLatch log_level (0);
                   moving_resize_filter (moving_vox, moving_resized_vox);
                   moving_smooth_filter (moving_resized_vox, moving_resized_smoothed_vox);
                   template_resize_filter (template_vox, template_resized_vox);
+                  template_smooth_filter (template_resized_vox, template_resized_smoothed_vox);
                 }
                 metric.set_moving_image (moving_resized_smoothed_vox);
-                ParamType parameters (transform, moving_resized_smoothed_vox, template_resized_vox);
+                ParamType parameters (transform, moving_resized_smoothed_vox, template_resized_smoothed_vox);
 
                 Ptr<MovingMaskVoxelType> moving_mask_vox;
                 Ptr<TemplateMaskVoxelType> template_mask_vox;
@@ -210,12 +217,13 @@ namespace MR
 
 
                 optim.precondition (optimiser_weights);
-                optim.run (max_iter[level], 1.0e-4);
+                optim.run (max_iter[level], 1.0e-3);
+                std::cerr << std::endl;
                 parameters.transformation.set_parameter_vector (optim.state());
 
-//                Math::Vector<double> params = optim.state();
-//                VAR(optim.function_evaluations());
-//                Math::check_function_gradient(evaluate, params, 0.1, true, optimiser_weights);
+                //Math::Vector<double> params = optim.state();
+                //VAR(optim.function_evaluations());
+                //Math::check_function_gradient (evaluate, params, 0.0001, true, optimiser_weights);
               }
             }
 

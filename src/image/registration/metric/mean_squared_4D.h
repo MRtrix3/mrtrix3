@@ -1,7 +1,7 @@
 /*
    Copyright 2012 Brain Research Institute, Melbourne, Australia
 
-   Written by David Raffelt, 24/02/2012
+   Written by David Raffelt, 10/07/13
 
    This file is part of MRtrix.
 
@@ -20,8 +20,8 @@
 
  */
 
-#ifndef __image_registration_metric_mean_squared_h__
-#define __image_registration_metric_mean_squared_h__
+#ifndef __image_registration_metric_mean_squared_4D_h__
+#define __image_registration_metric_mean_squared_4D_h__
 
 #include "image/registration/metric/base.h"
 #include "point.h"
@@ -35,34 +35,50 @@ namespace MR
     {
       namespace Metric
       {
-
-        class MeanSquared : public Base {
-
+        class MeanSquared4D : public Base {
           public:
+
             template <class Params>
               double operator() (Params& params,
                                  const Point<double> target_point,
                                  const Point<double> moving_point,
                                  Math::Vector<double>& gradient) {
+
+                assert (params.template_image.ndim() == 4);
+
+                params.template_image[3] = 0;
                 if (isnan (params.template_image.value()))
                   return 0.0;
 
                 params.transformation.get_jacobian_wrt_params (target_point, this->jacobian);
-                if (params.template_image.ndim() == 4) {
+
+                double total_diff = 0.0;
+
+                gradient_interp->scanner (moving_point);
+
+                for (params.template_image[3] = 0; params.template_image[3] < params.template_image.dim(3); ++params.template_image[3]) {
                   (*gradient_interp)[4] = params.template_image[3];
                   (*params.moving_image_interp)[3] = params.template_image[3];
-                }
 
-                this->compute_moving_gradient (moving_point);
+                  (*gradient_interp)[3] = 0;
+                  moving_grad[0] = gradient_interp->value();
+                  ++(*gradient_interp)[3];
+                  moving_grad[1] = gradient_interp->value();
+                  ++(*gradient_interp)[3];
+                  moving_grad[2] = gradient_interp->value();
 
-                double diff = params.moving_image_interp->value() - params.template_image.value();
-                for (size_t par = 0; par < gradient.size(); par++) {
-                  double sum = 0.0;
-                  for ( size_t dim = 0; dim < 3; dim++)
-                    sum += 2.0 * diff * this->jacobian (dim, par) * moving_grad[dim];
-                  gradient[par] += sum;
+                  double diff = params.moving_image_interp->value() - params.template_image.value();
+                  total_diff += (diff * diff);
+
+                  for (size_t par = 0; par < gradient.size(); par++) {
+                    double sum = 0.0;
+                    for ( size_t dim = 0; dim < 3; dim++)
+                      sum += 2.0 * diff * this->jacobian (dim, par) * moving_grad[dim];
+                    gradient[par] += sum;
+                  }
+
                 }
-                return diff * diff;
+                return total_diff;
             }
 
         };
