@@ -139,8 +139,8 @@ namespace MR
           */
           template <typename ValueType>
             inline void solve_betas (const Math::Matrix<ValueType>& measurements,
-                                        const Math::Matrix<ValueType>& design,
-                                        Math::Matrix<ValueType>& betas) {
+                                     const Math::Matrix<ValueType>& design,
+                                     Math::Matrix<ValueType>& betas) {
             Math::Matrix<double> d_pinvX, d_X (design);
             SVD_invert (d_pinvX, d_X);
             Math::Matrix<ValueType> pinvX = d_pinvX;
@@ -157,9 +157,9 @@ namespace MR
           */
           template <typename ValueType>
             inline void abs_effect_size (const Math::Matrix<ValueType>& measurements,
-                                            const Math::Matrix<ValueType>& design,
-                                            const Math::Matrix<ValueType>& contrast,
-                                            Math::Matrix<ValueType>& effect) {
+                                         const Math::Matrix<ValueType>& design,
+                                         const Math::Matrix<ValueType>& contrast,
+                                         Math::Matrix<ValueType>& effect) {
               Math::Matrix<ValueType> betas;
               GLM::solve_betas (measurements, design, betas);
               Math::mult (effect, ValueType(1.0), CblasNoTrans, betas, CblasTrans, contrast);
@@ -175,9 +175,9 @@ namespace MR
           */
           template <typename ValueType>
             inline void std_effect_size (const Math::Matrix<ValueType>& measurements,
-                                            const Math::Matrix<ValueType>& design,
-                                            const Math::Matrix<ValueType>& contrast,
-                                            Math::Matrix<ValueType>& cohens_d) {
+                                         const Math::Matrix<ValueType>& design,
+                                         const Math::Matrix<ValueType>& contrast,
+                                         Math::Matrix<ValueType>& cohens_d) {
               Math::Matrix<ValueType> betas;
               GLM::solve_betas (measurements, design, betas);
               Math::Matrix<ValueType> residuals;

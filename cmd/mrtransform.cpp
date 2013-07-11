@@ -23,6 +23,8 @@
 #include "app.h"
 #include "progressbar.h"
 #include "image/buffer.h"
+#include "image/buffer_preload.h"
+#include "image/buffer_scratch.h"
 #include "image/voxel.h"
 #include "image/interp/nearest.h"
 #include "image/interp/linear.h"
@@ -33,6 +35,7 @@
 #include "image/loop.h"
 #include "image/copy.h"
 #include "dwi/directions/predefined.h"
+#include "image/registration/transform/reorient.h"
 
 MRTRIX_APPLICATION
 
@@ -57,7 +60,7 @@ void usage ()
 
   ARGUMENTS
   + Argument ("input", "input image to be transformed.").type_image_in ()
-    + Argument ("output", "the output image.").type_image_out ();
+  + Argument ("output", "the output image.").type_image_out ();
 
   OPTIONS
   + Option ("linear", "specify a 4x4 linear transform to apply, in the form "
@@ -93,9 +96,9 @@ void usage ()
   + Option ("directions", "the directions used for FOD reorienation using apodised point spread functions (Default: 60 directions)")
     + Argument ("file", "a list of directions [az el] generated using the gendir command.").type_file()
 
-  + Option ("no_reorientation", "turn off FOD reorientation. Reorientation is on by default if the number "
-                                "of volumes in the 4th dimension corresponds to the number of coefficients in an "
-                                "antipodally symmetric spherical harmonic series (i.e. 6, 15, 28, 45, 66 etc")
+  + Option ("noreorientation", "turn off FOD reorientation. Reorientation is on by default if the number "
+                               "of volumes in the 4th dimension corresponds to the number of coefficients in an "
+                               "antipodally symmetric spherical harmonic series (i.e. 6, 15, 28, 45, 66 etc")
 
   + DataType::options ();
 }
@@ -117,11 +120,27 @@ void run ()
       throw Exception ("transform matrix supplied in file \"" + opt[0][0] + "\" is not 4x4");
   }
 
+  Ptr<Image::BufferPreload<value_type> > input_buffer;
+  Image::Header input_header (argument[0]);
+  Image::Header output_header (input_header);
 
-  Image::Buffer<value_type> data_in (argument[0]);
-  Image::Header header_out (data_in);
+  if (input_header.ndim() == 4) {
+    Image::Stride::List stride (4);
+    stride[0] = 2;
+    stride[1] = 3;
+    stride[2] = 4;
+    stride[3] = 1;
+    output_header.stride(0) = 2;
+    output_header.stride(1) = 3;
+    output_header.stride(2) = 4;
+    output_header.stride(3) = 1;
+    input_buffer = new Image::BufferPreload<value_type> (argument[0], stride);
+  } else {
+    input_buffer = new Image::BufferPreload<value_type> (argument[0]);
+  }
 
-  header_out.datatype() = DataType::from_command_line (header_out.datatype());
+
+  output_header.datatype() = DataType::from_command_line (output_header.datatype());
 
   bool inverse = get_options ("inverse").size();
   bool replace = get_options ("replace").size();
@@ -144,16 +163,16 @@ void run ()
     std::string name = opt[0][0];
     Image::ConstHeader template_header (name);
 
-    header_out.dim(0) = template_header.dim (0);
-    header_out.dim(1) = template_header.dim (1);
-    header_out.dim(2) = template_header.dim (2);
+    output_header.dim(0) = template_header.dim (0);
+    output_header.dim(1) = template_header.dim (1);
+    output_header.dim(2) = template_header.dim (2);
 
-    header_out.vox(0) = template_header.vox (0);
-    header_out.vox(1) = template_header.vox (1);
-    header_out.vox(2) = template_header.vox (2);
+    output_header.vox(0) = template_header.vox (0);
+    output_header.vox(1) = template_header.vox (1);
+    output_header.vox(2) = template_header.vox (2);
 
-    header_out.transform() = template_header.transform();
-    header_out.comments().push_back ("resliced to reference image \"" + template_header.name() + "\"");
+    output_header.transform() = template_header.transform();
+    output_header.comments().push_back ("resliced to reference image \"" + template_header.name() + "\"");
 
 
     int interp = 2;
@@ -179,72 +198,79 @@ void run ()
       out_of_bounds_value = NAN;
 
     if (replace) {
-      Image::Info& info_in (data_in);
+      Image::Info& info_in (*input_buffer);
       info_in.transform().swap (linear_transform);
       linear_transform.clear();
     }
 
+    Options opt = get_options ("noreorientation");
     bool do_reorientation = false;
-    if (header_out.ndim() > 3) {
-      value_type val = (Math::sqrt (float (1 + 8 * header_out.dim(3))) - 3.0) / 4.0;
-      if (!(val - (int)val)) {
+    if (output_header.ndim() > 3) {
+      value_type val = (Math::sqrt (float (1 + 8 * output_header.dim(3))) - 3.0) / 4.0;
+      if (!(val - (int)val) && !opt.size()) {
         do_reorientation = true;
         CONSOLE ("SH series detected, performing apodised PSF reorientation");
       }
     }
 
-    Options opt = get_options ("no_reorientation");
-    if (opt.size())
-      do_reorientation = false;
 
-    opt = get_options ("directions");
-    Math::Matrix<value_type> directions;
-    DWI::Directions::electrostatic_repulsion_60 (directions);
-    if (opt.size()) {
-      if (!do_reorientation)
-        throw Exception ("apodised PSF directions specified when no reorientation is to be performed");
-      directions.load(opt[0][0]);
+
+    Math::Matrix<value_type> directions_cartesian;
+    if (do_reorientation) {
+      Math::Matrix<value_type> directions_el_az;
+      opt = get_options ("directions");
+      if (opt.size())
+        directions_el_az.load(opt[0][0]);
+      else
+        DWI::Directions::electrostatic_repulsion_60 (directions_el_az);
+      Math::SH::S2C (directions_el_az, directions_cartesian);
     }
 
-    Image::Buffer<float>::voxel_type in (data_in);
+    Image::BufferPreload<float>::voxel_type in (*input_buffer);
 
-    Image::Buffer<float> data_out (argument[1], header_out);
-    Image::Buffer<float>::voxel_type out (data_out);
+    Image::Buffer<float> output_buffer (argument[1], output_header);
+    Image::Buffer<float>::voxel_type output_vox (output_buffer);
 
     switch (interp) {
       case 0:
-        Image::Filter::reslice<Image::Interp::Nearest> (in, out, linear_transform, oversample, out_of_bounds_value);
+        Image::Filter::reslice<Image::Interp::Nearest> (in, output_vox, linear_transform, oversample, out_of_bounds_value);
         break;
       case 1:
-        Image::Filter::reslice<Image::Interp::Linear> (in, out, linear_transform, oversample, out_of_bounds_value);
+        Image::Filter::reslice<Image::Interp::Linear> (in, output_vox, linear_transform, oversample, out_of_bounds_value);
         break;
       case 2:
-        Image::Filter::reslice<Image::Interp::Cubic> (in, out, linear_transform, oversample, out_of_bounds_value);
+        Image::Filter::reslice<Image::Interp::Cubic> (in, output_vox, linear_transform, oversample, out_of_bounds_value);
         break;
       case 3:
         FAIL ("FIXME: sinc interpolation needs a lot of work!");
-        Image::Filter::reslice<Image::Interp::Sinc> (in, out, linear_transform, oversample, out_of_bounds_value);
+        Image::Filter::reslice<Image::Interp::Sinc> (in, output_vox, linear_transform, oversample, out_of_bounds_value);
         break;
       default:
         assert (0);
         break;
     }
 
+    if (do_reorientation) {
+      std::string msg ("reorienting...");
+      Image::Registration::Transform::reorient (msg, output_vox, output_vox, linear_transform, directions_cartesian);
+    }
+
+
   } else {
     // straight copy:
     if (linear_transform.is_set()) {
-      header_out.comments().push_back ("transform modified");
+      output_header.comments().push_back ("transform modified");
       if (replace)
-        header_out.transform().swap (linear_transform);
+        output_header.transform().swap (linear_transform);
       else {
-        Math::Matrix<float> M (header_out.transform());
-        Math::mult (header_out.transform(), linear_transform, M);
+        Math::Matrix<float> M (output_header.transform());
+        Math::mult (output_header.transform(), linear_transform, M);
       }
     }
 
-    Image::Buffer<float>::voxel_type in (data_in);
+    Image::Buffer<float>::voxel_type in (*input_buffer);
 
-    Image::Buffer<float> data_out (argument[1], header_out);
+    Image::Buffer<float> data_out (argument[1], output_header);
     Image::Buffer<float>::voxel_type out (data_out);
 
     Image::copy_with_progress (in, out);
