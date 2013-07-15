@@ -66,11 +66,17 @@ void run () {
   for (loop.start (P, SH); loop.ok(); loop.next (P, SH)) {
     P[3] = 0;
     for (int l = 0; l <= lmax; l+=2) {
-      P.value() = 0.0;
+      float power = 0.0;
       for (int m = -l; m <= l; ++m) {
         SH[3] = Math::SH::index (l, m);
-        P.value() += Math::pow2 (float (SH.value()));
+        float val = SH.value();
+#ifndef USE_ORTHONORMAL_SH_BASIS
+        if (m != 0) 
+          val *= M_SQRT1_2;
+#endif
+        power += Math::pow2 (val);
       }
+      P.value() = power / float (2*l+1);
       ++P[3];
     }
   }

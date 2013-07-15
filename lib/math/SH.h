@@ -229,12 +229,12 @@ namespace MR
             delta_vec[index (l,0)] = AL[l];
           for (int m = 1; m <= lmax; m++) {
             Legendre::Plm_sph (AL, lmax, m, ValueType (unit_dir[2]));
-#ifndef USE_ORTHONORMAL_SH_BASIS
-            ValueType c = 2.0 * Math::cos (m*az);
-            ValueType s = 2.0 * Math::sin (m*az);
-#else
+#ifdef USE_ORTHONORMAL_SH_BASIS
             ValueType c = M_SQRT2 * Math::cos (m*az);
             ValueType s = M_SQRT2 * Math::sin (m*az);
+#else
+            ValueType c = 2.0 * Math::cos (m*az);
+            ValueType s = 2.0 * Math::sin (m*az);
 #endif
             for (int l = ( (m&1) ? m+1 : m); l <= lmax; l+=2) {
               delta_vec[index (l,m)]  = AL[l] * c;

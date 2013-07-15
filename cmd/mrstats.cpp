@@ -160,12 +160,6 @@ class Stats
     }
 
     template <class Set> void print (Set& ima) {
-      if (count == 0)
-        throw Exception ("no voxels in mask - aborting");
-
-      mean /= double (count);
-      std.real() = sqrt (std.real()/double(count) - mean.real()*mean.real());
-      std.imag() = sqrt (std.imag()/double(count) - mean.imag()*mean.imag());
 
       std::string s = "[ ";
       if (ima.ndim() > 3) 
@@ -175,19 +169,26 @@ class Stats
         s += "0 ";
       s += "] ";
 
-      if (!is_complex) {
+      int width = is_complex ? 24 : 12;
+      std::cout << std::setw(15) << std::right << s << " ";
+
+      if (count) {
+        mean /= double (count);
+        std.real() = sqrt (std.real()/double(count) - mean.real()*mean.real());
+        std.imag() = sqrt (std.imag()/double(count) - mean.imag()*mean.imag());
+      }
+      std::cout << std::setw(width) << std::right << ( count ? str(mean) : "N/A" );
+
+      if (count && !is_complex) {
         std::sort(values.rbegin(), values.rend());
       }
 
-      int width = is_complex ? 24 : 12;
-      std::cout << std::setw(15) << std::right << s
-        << " " << std::setw(width) << std::right << str(mean);
       if (!is_complex) {
-        std::cout << " " << std::setw(width) << std::right << values[round(float(values.size()) / 2.0)];
+        std::cout << " " << std::setw(width) << std::right << ( count ? str(values[round(float(values.size()) / 2.0)]) : "N/A" );
       }
       std::cout << " " << std::setw(width) << std::right << ( count > 1 ? str(std) : "N/A" )
-        << " " << std::setw(width) << std::right << str(min)
-        << " " << std::setw(width) << std::right << str(max)
+        << " " << std::setw(width) << std::right << ( count ? str(min) : "N/A" )
+        << " " << std::setw(width) << std::right << ( count ? str(max) : "N/A" )
         << " " << std::setw(12) << std::right << count << "\n";
 
     }
