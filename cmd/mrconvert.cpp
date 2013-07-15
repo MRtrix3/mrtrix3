@@ -230,6 +230,18 @@ void run ()
       if (pos[axis].size())
         throw Exception ("\"coord\" option specified twice for axis " + str (axis));
       pos[axis] = parse_ints (opt[n][1], buffer_in.dim(axis)-1);
+      if (axis == 3 && header_in.DW_scheme().is_set()) {
+        Math::Matrix<float>& grad (header_in.DW_scheme());
+        if (grad.rows() != header_in.dim(3)) {
+          WARN ("Diffusion encoding of input file does not match number of image volumes; omitting gradient information from output image");
+          header_out.DW_scheme().clear();
+        } else {
+          Math::Matrix<float> extract_grad (pos[3].size(), 4);
+          for (size_t dir = 0; dir != pos[3].size(); ++dir)
+            extract_grad.row(dir) = grad.row((pos[3])[dir]);
+          header_out.DW_scheme() = extract_grad;
+        }
+      }
     }
 
     for (size_t n = 0; n < buffer_in.ndim(); ++n) {
