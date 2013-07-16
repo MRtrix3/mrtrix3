@@ -232,7 +232,7 @@ void run ()
       pos[axis] = parse_ints (opt[n][1], buffer_in.dim(axis)-1);
       if (axis == 3 && header_in.DW_scheme().is_set()) {
         Math::Matrix<float>& grad (header_in.DW_scheme());
-        if (grad.rows() != header_in.dim(3)) {
+        if ((int)grad.rows() != header_in.dim(3)) {
           WARN ("Diffusion encoding of input file does not match number of image volumes; omitting gradient information from output image");
           header_out.DW_scheme().clear();
         } else {
