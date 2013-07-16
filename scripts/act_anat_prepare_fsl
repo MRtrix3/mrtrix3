@@ -123,7 +123,7 @@ mkdir pves/
 for i in ${SGM_STRUCTURES[*]}; do
   mesh2pve first-${i}_first.vtk ../T1.nii pves/${i}.nii
 done
-mradd pves/* - -quiet | mrmath - 1.0 -min pves/all.nii -quiet
+mrcat pves/* - -axis 3 -quiet | mrmathaxis - sum 3 - -quiet | mrmath - 1.0 -min pves/all.nii -quiet
 # Combine
 cd ../
 mr4ttmake T1_bet_pve_*.$FSLSUFFIX FIRST/pves/all.nii 4tt.mif -quiet
