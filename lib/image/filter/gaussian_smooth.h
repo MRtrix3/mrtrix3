@@ -75,7 +75,7 @@ namespace MR
               stdev (in.ndim(), 0.0) {
                 int max_dim;
                 (in.ndim() < 3) ? max_dim = in.ndim() : max_dim = 3;
-                for (unsigned int i = 0; i < max_dim; i++)
+                for (int i = 0; i < max_dim; i++)
                   stdev[i] = in.vox(i);
               }
 
