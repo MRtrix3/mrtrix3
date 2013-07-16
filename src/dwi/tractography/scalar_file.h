@@ -125,7 +125,23 @@ namespace MR
       };
 
 
-      template <typename T = float> class ScalarWriter : public __WriterBase__<T>
+
+      //! class to handle writing tracks to file
+      /*! writes track header as specified in \a properties and individual
+       * tracks to the file specified in \a file. Writing individual tracks is
+       * done using the append() method.
+       *
+       * This class implements a large write-back RAM buffer to hold the track
+       * data in RAM, and only commits to file when the buffer capacity is
+       * reached. This minimises the number of write() calls, which can
+       * otherwise become a bottleneck on distributed or network filesystems.
+       * It also helps reduce file fragmentation when multiple processes write
+       * to file concurrently. The size of the write-back buffer defaults to
+       * 16MB, and can be set in the config file using the
+       * TrackWriterBufferSize field (in bytes).
+       * */
+      template <typename T = float>
+      class ScalarWriter : public __WriterBase__<T>
       {
         public:
           typedef T value_type;
@@ -135,32 +151,31 @@ namespace MR
           using __WriterBase__<T>::dtype;
           using __WriterBase__<T>::create;
 
-          ScalarWriter (const std::string& file, const Properties& properties)
+          ScalarWriter (const std::string& file, const Properties& properties) :
+            buffer_capacity (File::Config::get_int ("TrackWriterBufferSize", 16777216) / sizeof (value_type)),
+            buffer (new value_type [buffer_capacity+1]),
+            buffer_size (0)
           {
             create (file, properties, "track scalars");
-            write_next_point (value_type (INFINITY));
+          }
+
+          ~ScalarWriter() {
+            commit();
           }
 
 
           void append (const std::vector<value_type>& tck_scalar)
           {
             if (tck_scalar.size()) {
-              int64_t current (out.tellp());
-              current -= sizeof (value_type);
-              if (tck_scalar.size()) {
-                for (typename std::vector<value_type>::const_iterator i = tck_scalar.begin()+1; i != tck_scalar.end(); ++i)
-                  write_next_point (*i);
-                write_next_point (value_type(NAN));
-              }
-              write_next_point (value_type (INFINITY));
-              int64_t end (out.tellp());
-              out.seekp (current);
-              write_next_point (tck_scalar.size() ? tck_scalar[0] : value_type (NAN));
-              out.seekp (end);
+              if (buffer_size + tck_scalar.size() > buffer_capacity)
+                commit();
 
-              count++;
+              for (typename std::vector<value_type>::const_iterator i = tck_scalar.begin(); i != tck_scalar.end(); ++i)
+                add_scalar (*i);
+              add_scalar (delimiter());
+              ++count;
             }
-            total_count++;
+            ++total_count;
           }
 
           bool operator() (const std::vector<value_type>& tck_scalar)
@@ -172,17 +187,38 @@ namespace MR
 
 
         protected:
-          void write_next_point (const value_type& val)
+
+          const size_t buffer_capacity;
+          Ptr<value_type, true> buffer;
+          size_t buffer_size;
+
+          void add_scalar (const value_type& s)
+          {
+            format_scalar (s, buffer[buffer_size]);
+            ++buffer_size;
+          }
+
+          value_type delimiter () const { return value_type (NAN); }
+
+          void format_scalar (const value_type& s, value_type& destination)
           {
             using namespace ByteOrder;
-            value_type x;
-            if (dtype.is_little_endian()) { x = LE(val); }
-            else { x = BE(val);}
-            out.write ((const char*) &x, sizeof(value_type));
+            if (dtype.is_little_endian()) { destination = LE(s); }
+            else { destination = BE(s); }
+          }
+
+          void commit ()
+          {
+            if (buffer_size == 0)
+              return;
+            out.write ((char*) &(buffer[0]), sizeof (value_type)*(buffer_size));
+            if (!out.good())
+              throw Exception ("error writing track scalar file \"" + this->name + "\": " + strerror (errno));
+            buffer_size = 0;
           }
 
 
-          ScalarWriter (const ScalarWriter& W) { assert (0); }
+          ScalarWriter (const ScalarWriter& W) : buffer_size (0) { assert (0); }
 
       };
 
