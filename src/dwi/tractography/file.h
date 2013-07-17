@@ -198,8 +198,7 @@ namespace MR
 
           void add_point (const Point<value_type>& p) 
           {
-            format_point (p, buffer[buffer_size]);
-            ++buffer_size;
+            format_point (p, buffer[buffer_size++]);
           }
 
           Point<value_type> delimiter () const { return Point<value_type> (NAN, NAN, NAN); } 
@@ -231,16 +230,16 @@ namespace MR
             out.write ((char*) &(buffer[1]), sizeof (Point<value_type>)*(buffer_size-1));
             if (!out.good())
               throw Exception ("error writing track file \"" + this->name + "\": " + strerror (errno));
-            barrier_addr = int64_t(out.tellp()) - sizeof(Point<value_type>);
+            barrier_addr = int64_t (out.tellp()) - sizeof(Point<value_type>);
             out.seekp (prev_barrier_addr, out.beg);
             out.write ((char*) &(buffer[0]), sizeof(Point<value_type>));
-            out.seekp (barrier_addr, out.beg);
+            out.seekp (0, out.end);
             if (!out.good())
               throw Exception ("error writing track file \"" + this->name + "\": " + strerror (errno));
             buffer_size = 0;
           }
 
-          Writer (const Writer& W) { assert (0); }
+          Writer (const Writer& W) : buffer_size (0), barrier_addr (0) { assert (0); }
 
       };
 

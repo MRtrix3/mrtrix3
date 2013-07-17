@@ -127,11 +127,11 @@ namespace MR
 
 
       //! class to handle writing tracks to file
-      /*! writes track header as specified in \a properties and individual
-       * tracks to the file specified in \a file. Writing individual tracks is
+      /*! writes track scalar file header as specified in \a properties and individual
+       * track scalars to the file specified in \a file. Writing individual scalars is
        * done using the append() method.
        *
-       * This class implements a large write-back RAM buffer to hold the track
+       * This class implements a large write-back RAM buffer to hold the track scalar
        * data in RAM, and only commits to file when the buffer capacity is
        * reached. This minimises the number of write() calls, which can
        * otherwise become a bottleneck on distributed or network filesystems.
@@ -194,8 +194,7 @@ namespace MR
 
           void add_scalar (const value_type& s)
           {
-            format_scalar (s, buffer[buffer_size]);
-            ++buffer_size;
+            format_scalar (s, buffer[buffer_size++]);
           }
 
           value_type delimiter () const { return value_type (NAN); }
