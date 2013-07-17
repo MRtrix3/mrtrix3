@@ -71,8 +71,8 @@ void usage ()
             "compute a directionally-encoded colour map of fibre population densities")
     + Argument ("image").type_image_out()
 
-  + Option ("dixels",
-            "compute a SH image showing the orientations & relative amplitudes of segmented fibre populations (useful for assessing segmentation performance)")
+  + Option ("dixel_sh",
+            "compute a SH image showing the orientations & relative amplitudes of segmented fibre populations (useful for assessing segmentation performance until sparse image format is implemented)")
     + Argument ("image").type_image_out()
 
   + Option ("gfa",
@@ -149,157 +149,204 @@ class FOD_queue_writer
 
 
 
-class Lobe
+
+class Segmented_FOD_receiver
 {
+
   public:
-    Lobe (const FOD_lobe& in) :
-      values (in.get_values()),
-      peak_value (in.get_peak_value()),
-      peak_dir (in.get_peak_dir()),
-      integral (in.get_integral()) { }
-
-    Lobe () :
-      values (),
-      peak_value (NAN),
-      peak_dir (),
-      integral (NAN) { }
+    Segmented_FOD_receiver (const Image::Header& header, const DWI::Directions::Set& directions) :
+      H (header),
+      dirs (directions),
+      lmax (0)
+    {
+      // aPSF does not have data for lmax > 10
+      lmax = std::min (size_t(10), Math::SH::LforN (header.dim(3)));
+      H.set_ndim (3);
+    }
 
 
-    const std::vector<float>& get_values() const { return values; }
-    float get_peak_value() const { return peak_value; }
-    const Point<float>& get_peak_dir() const { return peak_dir; }
-    float get_integral() const { return integral; }
+    void set_afd_output      (const std::string&);
+    void set_count_output    (const std::string&);
+    void set_dec_output      (const std::string&);
+    void set_dixel_sh_output (const std::string&);
+    void set_gfa_output      (const std::string&);
+    void set_sf_output       (const std::string&);
+
+
+    bool operator() (const FOD_lobes&);
+
 
 
   private:
-    std::vector<float> values;
-    float peak_value;
-    Point<float> peak_dir;
-    float integral;
+    Image::Header H;
+    const DWI::Directions::Set& dirs;
+    size_t lmax;
+
+    Ptr< Image::Buffer<float> > afd_data;
+    Ptr< Image::Buffer<float>::voxel_type > afd;
+    Ptr< Image::Buffer<uint8_t> > count_data;
+    Ptr< Image::Buffer<uint8_t>::voxel_type > count;
+    Ptr< Image::Buffer<float> > dec_data;
+    Ptr< Image::Buffer<float>::voxel_type > dec;
+    Ptr< Image::Buffer<float> > dixel_sh_data;
+    Ptr< Image::Buffer<float>::voxel_type > dixel_sh;
+    Ptr< Image::Buffer<float> > gfa_data;
+    Ptr< Image::Buffer<float>::voxel_type > gfa;
+    Ptr< Image::Buffer<float> > sf_data;
+    Ptr< Image::Buffer<float>::voxel_type > sf;
+
+
+
+    Point<float> calc_mean_dir (const FOD_lobe&) const;
+
+
 };
 
 
 
 
-
-class FOD_metric_map : public FOD_map<Lobe>
+void Segmented_FOD_receiver::set_afd_output (const std::string& path)
 {
-
-  public:
-    template <class Set>
-    FOD_metric_map (const Set& i, const DWI::Directions::Set& dirs) :
-        FOD_map<Lobe> (i),
-        lmax (Math::SH::LforN (i.dim(3))),
-        num_dirs (dirs.size()) { }
-
-
-    float get_afd (const Point<int>&) const;
-    int get_count (const Point<int>&) const;
-    Point<float> get_dec (const Point<int>&, const DWI::Directions::Set&) const;
-    Math::Vector<float> get_dixels (const Point<int>&, const DWI::Directions::Set&) const;
-    float get_gfa (const Point<int>&) const;
-    float get_sf (const Point<int>&) const;
-
-
-  private:
-    const size_t lmax;
-    const size_t num_dirs;
-
-    Point<float> calc_mean_dir (const Lobe&, const DWI::Directions::Set&) const;
-
-};
-
-float FOD_metric_map::get_afd (const Point<int>& voxel) const
-{
-  VoxelAccessor v (accessor);
-  Image::Nav::set_pos (v, voxel);
-  float value = 0.0;
-  for (FOD_map<Lobe>::ConstIterator i = begin (v); i; ++i)
-    value += i().get_integral();
-  return value;
+  assert (!afd_data);
+  afd_data = new Image::Buffer<float> (path, H);
+  afd = new Image::Buffer<float>::voxel_type (*afd_data);
 }
 
-int FOD_metric_map::get_count (const Point<int>& voxel) const
+void Segmented_FOD_receiver::set_count_output (const std::string& path)
 {
-  VoxelAccessor v (accessor);
-  Image::Nav::set_pos (v, voxel);
-  int count = 0;
-  for (FOD_map<Lobe>::ConstIterator i = begin (v); i; ++i)
-    ++count;
-  return count;
+  assert (!count_data);
+  Image::Header H_count (H);
+  H_count.datatype() = DataType::UInt8;
+  count_data = new Image::Buffer<uint8_t> (path, H_count);
+  count = new Image::Buffer<uint8_t>::voxel_type (*count_data);
 }
 
-Point<float> FOD_metric_map::get_dec (const Point<int>& voxel, const DWI::Directions::Set& dirs) const
+void Segmented_FOD_receiver::set_dec_output (const std::string& path)
 {
-  VoxelAccessor v (accessor);
-  Image::Nav::set_pos (v, voxel);
-  Point<float> dec (0.0, 0.0, 0.0);
-  for (FOD_map<Lobe>::ConstIterator i = begin (v); i; ++i) {
-    const Point<float> mean_dir = calc_mean_dir (i(), dirs);
-    dec += i().get_integral() * Point<float> (Math::abs (mean_dir[0]), Math::abs (mean_dir[1]), Math::abs (mean_dir[2]));
+  assert (!dec_data);
+  Image::Header H_dec (H);
+  H_dec.set_ndim (4);
+  H_dec.dim(3) = 3;
+  dec_data = new Image::Buffer<float> (path, H_dec);
+  dec = new Image::Buffer<float>::voxel_type (*dec_data);
+}
+
+void Segmented_FOD_receiver::set_dixel_sh_output (const std::string& path)
+{
+  assert (!dixel_sh_data);
+  Image::Header H_dixel_sh (H);
+  H_dixel_sh.set_ndim (4);
+  H_dixel_sh.dim(3) = Math::SH::NforL (lmax);
+  dixel_sh_data = new Image::Buffer<float> (path, H_dixel_sh);
+  dixel_sh = new Image::Buffer<float>::voxel_type (*dixel_sh_data);
+}
+
+void Segmented_FOD_receiver::set_gfa_output (const std::string& path)
+{
+  assert (!gfa_data);
+  gfa_data = new Image::Buffer<float> (path, H);
+  gfa = new Image::Buffer<float>::voxel_type (*gfa_data);
+}
+
+void Segmented_FOD_receiver::set_sf_output (const std::string& path)
+{
+  assert (!sf_data);
+  sf_data = new Image::Buffer<float> (path, H);
+  sf = new Image::Buffer<float>::voxel_type (*sf_data);
+}
+
+
+
+
+
+bool Segmented_FOD_receiver::operator() (const FOD_lobes& in)
+{
+
+  if (afd) {
+    float sum_integrals = 0.0;
+    for (FOD_lobes::const_iterator i = in.begin(); i != in.end(); ++i)
+      sum_integrals += i->get_integral();
+    Image::Nav::set_value_at_pos (*afd, in.vox, sum_integrals);
   }
-  return dec;
-}
 
-Math::Vector<float> FOD_metric_map::get_dixels (const Point<int>& voxel, const DWI::Directions::Set& dirs) const
-{
-  VoxelAccessor v (accessor);
-  Image::Nav::set_pos (v, voxel);
-  Math::Vector<float> dixels;
-  dixels.resize (Math::SH::NforL (lmax), 0.0);
-  Math::SH::aPSF<float> aPSF (lmax);
-  for (FOD_map<Lobe>::ConstIterator i = begin (v); i; ++i) {
-    Math::Vector<float> this_lobe;
-    aPSF (this_lobe, calc_mean_dir (i(), dirs));
-    for (size_t c = 0; c != dixels.size(); ++c)
-      dixels[c] += i().get_integral() * this_lobe[c];
+  if (count)
+    Image::Nav::set_value_at_pos (*count, in.vox, in.size());
+
+  if (dec) {
+    Point<float> sum_decs (0.0, 0.0, 0.0);
+    for (FOD_lobes::const_iterator i = in.begin(); i != in.end(); ++i) {
+      const Point<float> mean_dir (calc_mean_dir (*i));
+      sum_decs += Point<float> (Math::abs(mean_dir[0]), Math::abs(mean_dir[1]), Math::abs(mean_dir[2])) * i->get_integral();
+    }
+    Image::Nav::set_pos (*dec, in.vox);
+    (*dec)[3] = 0; dec->value() = sum_decs[0];
+    (*dec)[3] = 1; dec->value() = sum_decs[1];
+    (*dec)[3] = 2; dec->value() = sum_decs[2];
   }
-  return dixels;
-}
 
-float FOD_metric_map::get_gfa (const Point<int>& voxel) const
-{
-  VoxelAccessor v (accessor);
-  Image::Nav::set_pos (v, voxel);
-  double sum = 0.0;
-  std::vector<float> combined_values (num_dirs, 0.0);
-  for (FOD_map<Lobe>::ConstIterator i = begin (v); i; ++i) {
-    const std::vector<float>& values = i().get_values();
-    for (size_t j = 0; j != num_dirs; ++j) {
-      if (values[j]) {
-        sum += values[j];
-        combined_values[j] = values[j];
-      }
+  if (dixel_sh) {
+    Image::Nav::set_pos (*dixel_sh, in.vox);
+    Math::Vector<float> sum_dixel_sh;
+    sum_dixel_sh.resize (Math::SH::NforL (lmax), 0.0);
+    Math::SH::aPSF<float> aPSF (lmax);
+    for (FOD_lobes::const_iterator i = in.begin(); i != in.end(); ++i) {
+      Math::Vector<float> this_lobe;
+      aPSF (this_lobe, calc_mean_dir (*i));
+      for (size_t c = 0; c != sum_dixel_sh.size(); ++c)
+        sum_dixel_sh[c] += i->get_integral() * this_lobe[c];
+    }
+    for (size_t c = 0; c != sum_dixel_sh.size(); ++c) {
+      (*dixel_sh)[3] = c;
+      dixel_sh->value() = sum_dixel_sh[c];
     }
   }
-  if (!sum)
-    return 0.0;
-  const float fod_normaliser = 1.0 / sum;
-  const float normalised_mean = 1.0 / float(num_dirs);
-  double sum_variance = 0.0, sum_of_squares = 0.0;
-  for (size_t i = 0; i != num_dirs; ++i) {
-    sum_variance   += Math::pow2((combined_values[i] * fod_normaliser) - normalised_mean);
-    sum_of_squares += Math::pow2 (combined_values[i] * fod_normaliser);
+
+  if (gfa) {
+    double sum = 0.0;
+    std::vector<float> combined_values (dirs.size(), 0.0);
+    for (FOD_lobes::const_iterator i = in.begin(); i != in.end(); ++i) {
+      const std::vector<float>& values = i->get_values();
+      for (size_t j = 0; j != dirs.size(); ++j) {
+        sum += values[j];
+        combined_values[j] += values[j];
+      }
+    }
+    if (sum) {
+      const float fod_normaliser = 1.0 / sum;
+      const float normalised_mean = 1.0 / float(dirs.size());
+      double sum_variance = 0.0, sum_of_squares = 0.0;
+      for (size_t i = 0; i != dirs.size(); ++i) {
+        sum_variance   += Math::pow2((combined_values[i] * fod_normaliser) - normalised_mean);
+        sum_of_squares += Math::pow2 (combined_values[i] * fod_normaliser);
+      }
+      const float mean_variance = sum_variance   / double(dirs.size() - 1);
+      const float mean_square   = sum_of_squares / double(dirs.size());
+      const float value = Math::sqrt (mean_variance / mean_square);
+      Image::Nav::set_value_at_pos (*gfa, in.vox, value);
+    }
   }
-  const float mean_variance = sum_variance   / double(num_dirs - 1);
-  const float mean_square   = sum_of_squares / double(num_dirs);
-  return Math::sqrt (mean_variance / mean_square);
+
+  if (sf) {
+    float sum = 0.0, maximum = 0.0;
+    for (FOD_lobes::const_iterator i = in.begin(); i != in.end(); ++i) {
+      sum += i->get_integral();
+      maximum = std::max (maximum, i->get_integral());
+    }
+    const float value = sum ? (maximum / sum) : 0.0;
+    Image::Nav::set_value_at_pos (*sf, in.vox, value);
+  }
+
+  return true;
+
 }
 
-float FOD_metric_map::get_sf (const Point<int>& voxel) const
-{
-  VoxelAccessor v (accessor);
-  Image::Nav::set_pos (v, voxel);
-  float sum = 0.0, maximum = 0.0;
-  for (FOD_map<Lobe>::ConstIterator i = begin (v); i; ++i) {
-    sum += i().get_integral();
-    maximum = std::max (maximum, i().get_integral());
-  }
-  return (sum ? (maximum / sum) : 0.0);
-}
 
-Point<float> FOD_metric_map::calc_mean_dir (const Lobe& lobe, const DWI::Directions::Set& dirs) const
+
+Point<float> Segmented_FOD_receiver::calc_mean_dir (const FOD_lobe& lobe) const
 {
+  // Note that this method for calculating the mean direction is approximate only,
+  //   but is good enough for most applications
+  // For a better method see Buss and Fillmore 2001
   const Point<float>& peak_dir (lobe.get_peak_dir());
   const std::vector<float>& values (lobe.get_values());
   Point<float> mean_dir (0.0, 0.0, 0.0);
@@ -317,9 +364,11 @@ Point<float> FOD_metric_map::calc_mean_dir (const Lobe& lobe, const DWI::Directi
 
 
 
+
 void run ()
 {
-  Image::Buffer<float> fod_data (argument[0]);
+  Image::Header H (argument[0]);
+  Image::Buffer<float> fod_data (H);
 
   if (fod_data.ndim() != 4)
     throw Exception ("input FOD image should contain 4 dimensions");
@@ -329,127 +378,59 @@ void run ()
   if (Math::SH::NforL (lmax) != size_t(fod_data.dim(3)))
     throw Exception ("Input image does not appear to contain an SH series per voxel");
 
-  std::string afd_path, count_path, dec_path, dixel_path, sf_path, gfa_path, mask_path;
+  const DWI::Directions::Set dirs (1281);
+  Segmented_FOD_receiver receiver (H, dirs);
+
   size_t output_count = 0;
   Options opt = get_options ("afd");
   if (opt.size()) {
-    afd_path = std::string (opt[0][0]);
+    receiver.set_afd_output (opt[0][0]);
     ++output_count;
   }
   opt = get_options ("count");
   if (opt.size()) {
-    count_path = std::string (opt[0][0]);
+    receiver.set_count_output (opt[0][0]);
     ++output_count;
   }
   opt = get_options ("dec");
   if (opt.size()) {
-    dec_path = std::string (opt[0][0]);
+    receiver.set_dec_output (opt[0][0]);
     ++output_count;
   }
-  opt = get_options ("dixels");
+  opt = get_options ("dixel_sh");
   if (opt.size()) {
-    dixel_path = std::string (opt[0][0]);
+    receiver.set_dixel_sh_output (opt[0][0]);
     ++output_count;
   }
   opt = get_options ("gfa");
   if (opt.size()) {
-    gfa_path = std::string (opt[0][0]);
+    receiver.set_gfa_output (opt[0][0]);
     ++output_count;
   }
   opt = get_options ("sf");
   if (opt.size()) {
-    sf_path = std::string (opt[0][0]);
+    receiver.set_sf_output (opt[0][0]);
     ++output_count;
   }
+  if (!output_count)
+    throw Exception ("Nothing to do; please specify at least one output image type");
+
   opt = get_options ("mask");
+  std::string mask_path;
   if (opt.size()) {
     mask_path = std::string (opt[0][0]);
     Image::Header H_mask (mask_path);
     if (!Image::dimensions_match (fod_data, H_mask, 0, 3))
       throw Exception ("Cannot use image \"" + str(mask_path) + "\" as mask image; dimensions do not match FOD image");
   }
-  if (!output_count)
-    throw Exception ("Nothing to do; please specify at least one output image type");
 
-  const DWI::Directions::Set dirs (1281);
-  FOD_metric_map map (fod_data, dirs);
+  FOD_queue_writer writer (fod_data);
+  if (!mask_path.empty())
+    writer.set_mask (mask_path);
+  Segmenter fmls (dirs, lmax);
+  load_fmls_thresholds (fmls);
 
-  {
-    FOD_queue_writer writer (fod_data);
-    if (!mask_path.empty())
-      writer.set_mask (mask_path);
-    Segmenter fmls (dirs, lmax);
-    load_fmls_thresholds (fmls);
-
-    Thread::run_queue_threaded_pipe (writer, SH_coefs(), fmls, FOD_lobes(), map);
-  }
-
-  ProgressBar progress ("Generating output images... ", output_count);
-
-  Image::Header H_out (argument[0]);
-  H_out.set_ndim (3);
-  Image::Loop loop (0, 3);
-
-  if (!afd_path.empty()) {
-    Image::Buffer<float> afd_out (afd_path, H_out);
-    Image::Buffer<float>::voxel_type v (afd_out);
-    for (loop.start (v); loop.ok(); loop.next (v))
-      v.value() = map.get_afd (Point<int> (v[0], v[1], v[2]));
-    ++progress;
-  }
-
-  if (!count_path.empty()) {
-    Image::Header H_count (H_out);
-    H_count.datatype() = DataType::UInt8;
-    Image::Buffer<uint8_t> count_out (count_path, H_count);
-    Image::Buffer<uint8_t>::voxel_type v (count_out);
-    for (loop.start (v); loop.ok(); loop.next (v))
-      v.value() = map.get_count (Point<int> (v[0], v[1], v[2]));
-    ++progress;
-  }
-
-  if (!dec_path.empty()) {
-    Image::Header H_dec (H_out);
-    H_dec.set_ndim (4);
-    H_dec.dim (3) = 3;
-    H_dec.stride (3) = 0;
-    Image::Buffer<float> dec_out (dec_path, H_dec);
-    Image::Buffer<float>::voxel_type v (dec_out);
-    for (loop.start (v); loop.ok(); loop.next (v)) {
-      const Point<float> dec (map.get_dec (Point<int> (v[0], v[1], v[2]), dirs));
-      for (v[3] = 0; v[3] != 3; ++v[3])
-        v.value() = dec[size_t(v[3])];
-    }
-    ++progress;
-  }
-
-  if (!dixel_path.empty()) {
-    Image::Header H_dixel (argument[0]);
-    Image::Buffer<float> dixel_out (dixel_path, H_dixel);
-    Image::Buffer<float>::voxel_type v (dixel_out);
-    for (loop.start (v); loop.ok(); loop.next (v)) {
-      const Math::Vector<float> dixels (map.get_dixels (Point<int> (v[0], v[1], v[2]), dirs));
-      for (v[3] = 0; v[3] != v.dim(3); ++v[3])
-        v.value() = dixels[v[3]];
-    }
-    ++progress;
-  }
-
-  if (!gfa_path.empty()) {
-    Image::Buffer<float> gfa_out (gfa_path, H_out);
-    Image::Buffer<float>::voxel_type v (gfa_out);
-    for (loop.start (v); loop.ok(); loop.next (v))
-      v.value() = map.get_gfa (Point<int> (v[0], v[1], v[2]));
-    ++progress;
-  }
-
-  if (!sf_path.empty()) {
-    Image::Buffer<float> sf_out (sf_path, H_out);
-    Image::Buffer<float>::voxel_type v (sf_out);
-    for (loop.start (v); loop.ok(); loop.next (v))
-      v.value() = map.get_sf (Point<int> (v[0], v[1], v[2]));
-    ++progress;
-  }
+  Thread::run_queue_threaded_pipe (writer, SH_coefs(), fmls, FOD_lobes(), receiver);
 
 }
 
