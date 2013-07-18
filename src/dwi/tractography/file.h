@@ -230,10 +230,11 @@ namespace MR
             out.write ((char*) &(buffer[1]), sizeof (Point<value_type>)*(buffer_size-1));
             if (!out.good())
               throw Exception ("error writing track file \"" + this->name + "\": " + strerror (errno));
-            barrier_addr = int64_t (out.tellp()) - sizeof(Point<value_type>);
+            barrier_addr = int64_t (out.tellp());
             out.seekp (prev_barrier_addr, out.beg);
             out.write ((char*) &(buffer[0]), sizeof(Point<value_type>));
-            out.seekp (0, out.end);
+            out.seekp (barrier_addr, out.beg);
+            barrier_addr -= sizeof(Point<value_type>);
             if (!out.good())
               throw Exception ("error writing track file \"" + this->name + "\": " + strerror (errno));
             buffer_size = 0;
