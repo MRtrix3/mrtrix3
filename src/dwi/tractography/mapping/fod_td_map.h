@@ -235,6 +235,8 @@ namespace MR
           if (opt.size()) {
 
             Image::Buffer<float> in_anat (opt[0][0]);
+            if (in_anat.ndim() != 4 || in_anat.dim(3) != 4)
+              throw Exception ("Image passed using the -act option must be in the 4TT format");
 
             const int os_ratio = 10;
             const float os_step = 1.0 / float(os_ratio);
