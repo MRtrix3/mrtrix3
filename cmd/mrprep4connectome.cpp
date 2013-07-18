@@ -32,20 +32,18 @@
 #include "image/voxel.h"
 #include "image/interp/nearest.h"
 
+#include "dwi/tractography/connectomics/config.h"
 #include "dwi/tractography/connectomics/connectomics.h"
-using MR::DWI::Tractography::Connectomics::node_t;
+#include "dwi/tractography/connectomics/lut.h"
+
 
 #include <fstream>
+#include <map>
 #include <string>
+#include <vector>
 
-
-#define AAL_LUT_PATH        "ROI_MNI_V4.txt"
-#define FREESURFER_LUT_PATH "FreeSurferColorLUT.txt"
 
 #define SPINE_NODE_NAME "Spinal_column"
-
-#define MAX_NODE_INDEX (std::numeric_limits<node_t>::max())
-
 
 
 
@@ -53,6 +51,9 @@ MRTRIX_APPLICATION
 
 using namespace MR;
 using namespace App;
+using namespace MR::DWI::Tractography::Connectomics;
+using MR::DWI::Tractography::Connectomics::node_t;
+
 
 
 void usage ()
@@ -61,7 +62,11 @@ void usage ()
 	AUTHOR = "Robert E. Smith (r.smith@brain.org.au)";
 
 	DESCRIPTION
-	+ "prepare the output from FreeSurfer segmentation for a connectomics analysis";
+	+ "prepare a parcellated image for connectome construction by modifying the image values; "
+	  "typically this involves making the parcellation intensities increment from 1 to coincide with rows and columns of a matrix. "
+	  "The configuration file passed as the second argument specifies the indices that should be assigned to different structures; "
+	  "examples of such configuration files are provided in src//dwi//tractography//connectomics//configs//";
+
 
 	ARGUMENTS
 	+ Argument ("path_in",   "the input image").type_text()
@@ -70,13 +75,7 @@ void usage ()
 
 
 	OPTIONS
-	+ Option ("freesurfer", "indicate that anatomical parcellation is from FreeSurfer, and provide the path to the "
-	                        "FreeSurfer lookup table file (\"" FREESURFER_LUT_PATH "\")")
-	  + Argument ("path").type_file()
-
-	+ Option ("aal", "indicate that anatomical parcellation is from AAL, and provide the path to the "
-                   "AAL lookup table file (\"" AAL_LUT_PATH "\")")
-    + Argument ("path").type_file()
+	+ LookupTableOption
 
 	+ Option ("spine", "provide a manually-defined segmentation of the base of the spine where the streamlines terminate, so that "
 	                   "this can become a node in the connection matrix.")
@@ -89,92 +88,26 @@ void usage ()
 void run ()
 {
 
-  // Parse the parcellation file, getting indices and string names for nodes
-  std::vector<std::string> in_nodes;
-
-  Options opt = get_options ("freesurfer");
-  if (opt.size()) {
-
-    std::ifstream in_lut (opt[0][0].c_str(), std::ios_base::in);
-    if (!in_lut)
-      throw Exception ("Unable to open FreeSurfer lookup table file!");
-
-    std::string line;
-    char name [80];
-    while (std::getline (in_lut, line)) {
-      if (!line[0] != '#' && line.size() > 1) {
-        node_t index = MAX_NODE_INDEX, r, g, b, a;
-        sscanf (line.c_str(), "%u %s %u %u %u %u", &index, name, &r, &g, &b, &a);
-        if (index != MAX_NODE_INDEX) {
-          if (index >= in_nodes.size())
-            in_nodes.resize (index + 1);
-          in_nodes[index] = str(name);
-        }
-      }
-      line.clear();
-    }
-
-  } else {
-
-    opt = get_options ("aal");
-    if (opt.size()) {
-
-      std::ifstream in_lut (opt[0][0].c_str(), std::ios_base::in);
-      if (!in_lut)
-        throw Exception ("Unable to open AAL lookup table file!");
-
-      std::string line;
-      char short_name[20], name [80];
-      while (std::getline (in_lut, line)) {
-        if (!line[0] != '#' && line.size() > 1) {
-          node_t index = MAX_NODE_INDEX;
-          sscanf (line.c_str(), "%s %s %u", short_name, name, &index);
-          if (index != MAX_NODE_INDEX) {
-            if (index >= in_nodes.size())
-              in_nodes.resize (index + 1);
-            in_nodes[index] = str(name);
-          }
-        }
-        line.clear();
-      }
-
-    } else {
-      throw Exception ("Must provide either -freesurfer or -aal option (no other parcellation types currently supported)");
-    }
-
-  }
+  // Load the lookup table - need this info to match config file structure names to indices in the input image
+  Node_map in_nodes;
+  load_lookup_table (in_nodes);
+  if (in_nodes.empty())
+    throw Exception ("Must provide the lookup table corresponding to the input image parcellation");
 
   // Import the configuration file
-  if (!Path::exists (argument[1]))
-    throw Exception ("Cannot find input configuration file!");
-  std::ifstream in_config (argument[1].c_str(), std::ios_base::in);
-  if (!in_config)
-    throw Exception ("Unable to open configuration file!");
-
-  // Configuration file should contain node index, followed by structure name
-  // Name should be identical to that in relevant lookup table file e.g. FreeSurferColorLUT.txt, ROI_MNI_v4.txt
-  // However, when importing, these are inverted; map structure name to desired node index
-  std::map<std::string, node_t> inv_lookup;
-  std::string line;
-  char name [80];
-  while (std::getline (in_config, line)) {
-    if (!line[0] != '#' && line.size() > 1) {
-      node_t index = MAX_NODE_INDEX;
-      sscanf (line.c_str(), "%u %s", &index, name);
-      if (index != MAX_NODE_INDEX)
-        inv_lookup.insert (std::make_pair (str(name), index));
-    }
-  }
+  ConfigInvLookup config;
+  load_config (argument[1], config);
 
   // Create the look-up table (just a vector) to go from input index to output index
-  std::vector<node_t> lookup (in_nodes.size(), 0);
-  for (node_t in_index = 0; in_index != in_nodes.size(); ++in_index) {
-    const std::string& name = in_nodes[in_index];
-    if (!name.empty()) {
-      const std::map<std::string, node_t>::const_iterator out_index = inv_lookup.find (name);
-      if (out_index != inv_lookup.end())
-        lookup[in_index] = out_index->second;
-    }
+  // First, need the largest index expected
+  const node_t max_in_index = in_nodes.rbegin()->first;
+  std::vector<node_t> lookup (max_in_index, 0);
+  for (Node_map::const_iterator i = in_nodes.begin(); i != in_nodes.end(); ++i) {
+    const node_t in_index = i->first;
+    const std::string& name = i->second.get_name();
+    const ConfigInvLookup::const_iterator out_index = config.find (name);
+    if (out_index != config.end())
+      lookup[in_index] = out_index->second;
   }
 
   // Open the input file
@@ -197,11 +130,11 @@ void run ()
     out.value() = lookup[in.value()];
 
   // If the spine segment option has been provided, add this retrospectively
-  opt = get_options ("spine");
+  Options opt = get_options ("spine");
   if (opt.size()) {
 
-    const std::map<std::string, node_t>::const_iterator find_spine_node_index = inv_lookup.find (str (SPINE_NODE_NAME));
-    if (find_spine_node_index != inv_lookup.end()) {
+    const ConfigInvLookup::const_iterator find_spine_node_index = config.find (str (SPINE_NODE_NAME));
+    if (find_spine_node_index != config.end()) {
       const node_t spine_node_index = find_spine_node_index->second;
 
       Image::Buffer<bool> in_spine_data (opt[0][0]);
@@ -233,7 +166,7 @@ void run ()
       WARN ("Could not add spine node; need to specify \"" + str(SPINE_NODE_NAME) + "\" node in config file");
     }
 
-  } else if (inv_lookup.find (SPINE_NODE_NAME) != inv_lookup.end()) {
+  } else if (config.find (SPINE_NODE_NAME) != config.end()) {
     WARN ("Config file includes \"" + str (SPINE_NODE_NAME) + "\" node, but user has not provided the segmentation using -spine option");
   }
 
