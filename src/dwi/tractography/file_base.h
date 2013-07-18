@@ -87,7 +87,7 @@ namespace MR
 
           void create (const std::string& file, const Properties& properties, const std::string& type) {
             name = file;
-            out.open (name.c_str(), std::ios::out | std::ios::binary);
+            out.open (name.c_str(), std::ios::out | std::ios::binary | std::ios::trunc);
 
             if (!out)
               throw Exception ("error creating " + type + " file \"" + name + "\": " + strerror (errno));
