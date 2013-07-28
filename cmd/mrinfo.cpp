@@ -37,7 +37,7 @@ void usage () {
   ARGUMENTS =
     ArgumentList() 
     + Argument ("image", 
-        "the input image.").type_image_in ();
+        "the input image.").allow_multiple().type_image_in ();
 
   OPTIONS = 
     OptionList() + OptionGroup()
@@ -52,10 +52,13 @@ void usage () {
 
 
 void run () {
+
   Image::Header header (argument[0]);
 
   Options opt = get_options ("gradient");
   if (opt.size()) {
+    if (argument.size() > 1)
+      throw Exception ("only a single input image is allowed when writing DW gradient directions to file");
     if (!header.DW_scheme().is_set())
       FAIL ("no gradient file found for image \"" + header.name() + "\"");
     header.DW_scheme().save (opt[0][0]);
@@ -64,10 +67,15 @@ void run () {
 
   opt = get_options ("transform");
   if (opt.size()) {
+    if (argument.size() > 1)
+      throw Exception ("only a single input image is allowed when writing image header transform to file");
     header.transform().save (opt[0][0]);
     return;
   }
 
-  std::cout << header.description();
+  for (size_t i = 0; i < argument.size(); ++i) {
+    Image::Header header (argument[i]);
+    std::cout << header.description();
+  }
 }
 
