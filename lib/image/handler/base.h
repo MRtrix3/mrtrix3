@@ -93,7 +93,7 @@ namespace MR
 
           friend std::ostream& operator<< (std::ostream& stream, const Base& B) {
             stream << "\"" << B.name << ", data type " << B.datatype << ", " << str (B.files.size()) << " files, segsize " << str(B.segsize)
-                   << ", is " << (B.is_new ? "" : "NOT ") << " new, " << (B.writable ? "read/write" : "read-only");
+                   << ", is " << (B.is_new ? "" : "NOT ") << "new, " << (B.writable ? "read/write" : "read-only");
             return stream;
           }
 

@@ -207,7 +207,7 @@ namespace MR
         datatype().set_byte_order_native();
         int a = 0;
         for (size_t n = 0; n < Pdim.size(); ++n) {
-          while (stride (a) && a < int(ndim())) 
+          while (a < int(ndim()) && stride (a))
             a++;
           Pdim[n] = Hdim[a];
         }
@@ -225,7 +225,7 @@ namespace MR
 
         while (get_next (num, Pdim)) {
           header.name() = parser.name (num);
-          Ptr<Handler::Base> H_handler ((*format_handler)->create (header));
+          RefPtr<Handler::Base> H_handler ((*format_handler)->create (header));
           assert (H_handler);
           merge (header);
           handler_->merge (*H_handler);
