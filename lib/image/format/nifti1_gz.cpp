@@ -87,8 +87,6 @@ namespace MR
           throw Exception ("NIfTI-1.1 format cannot support more than 7 dimensions for image \"" + H.name() + "\"");
 
         RefPtr<Handler::GZ> handler (new Handler::GZ (H, sizeof(nifti_1_header)+sizeof(nifti1_extender)));
-        VAR (sizeof(nifti_1_header));
-        VAR (sizeof(nifti1_extender));
 
         File::NIfTI::write (*reinterpret_cast<nifti_1_header*> (handler->header()), H, true);
         memset (handler->header()+sizeof(nifti_1_header), 0, sizeof(nifti1_extender));

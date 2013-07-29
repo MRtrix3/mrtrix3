@@ -149,9 +149,9 @@ namespace MR
               Math::SH::init_transform (fconv, DW_dirs, lmax_data);
               rconv.allocate (fconv.columns(), fconv.rows());
               fconv.diagonal() += 1.0e-2;
-              fconv.save ("fconv.txt");
+              //fconv.save ("fconv.txt");
               Math::pinv (rconv, fconv);
-              rconv.save ("rconv.txt");
+              //rconv.save ("rconv.txt");
               size_t l = 0, nl = 1;
               for (size_t row = 0; row < rconv.rows(); ++row) {
                 if (row >= nl) {
