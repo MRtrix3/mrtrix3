@@ -45,7 +45,8 @@ namespace MR
       }
   };
 
-
+  template <class, bool> class Ptr;
+  template <class, bool> class RefPtr;
 
   //! A simple smart pointer implementation
   /*! A simple pointer class that will delete the object it points to when it
@@ -177,6 +178,16 @@ namespace MR
         else
           delete ptr;
       }
+
+      //! A Ptr<> class should NEVER be constructed using a RefPtr
+      /*! This constructor is defined private to forbid its use. If it were used,
+       *  the constructing RefPtr may go out of scope, and the constructed Ptr
+       *  instance would therefore point to freed memory (and try to free it again
+       *  when it goes out of scope itself). If the RefPtr class is used,
+       *  ALL copies of the pointer should be stored using the RefPtr class. */
+      template <class _T, bool _is_array>
+      Ptr (const RefPtr<_T, _is_array>& that) : ptr(NULL) { }
+
   };
 
 
@@ -327,6 +338,15 @@ namespace MR
         else
           delete ptr;
       }
+
+      //! A RefPtr<> class should NEVER be constructed using a Ptr
+      /*! This constructor is defined private to forbid its use. If it were used,
+       *  the constructing Ptr may go out of scope, and the constructed RefPtr
+       *  instance would therefore point to freed memory (and try to free it again
+       *  when it goes out of scope itself). If the RefPtr class is used,
+       *  ALL copies of the pointer should be stored using the RefPtr class. */
+      template <class _T, bool _is_array>
+      RefPtr (const Ptr<_T, _is_array>& that) : ptr(NULL), count (NULL) { }
   };
 
 
@@ -447,8 +467,9 @@ namespace MR
       }
 
       iterator insert (iterator position, T* item = NULL) {
-        V.insert (position, NULL);
+        iterator ret = V.insert (position, NULL);
         *position = item;
+        return ret;
       }
       void insert (iterator position, size_t n) {
         V.insert (position, n, NULL);
