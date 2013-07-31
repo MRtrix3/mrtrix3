@@ -708,26 +708,27 @@ void run() {
   load_data_and_compute_integrals (mod_fod_filenames, fixel_mask, fixel_indexer, fixel_directions, angular_threshold, fixel_smoothing_weights, mod_fod_fixel_integrals);
 
   CONSOLE ("outputting beta coefficients, effect size and standard deviation");
-  Math::Matrix<float> abs_effect_size, std_effect_size, std_dev, beta;
+  Math::Matrix<float> temp;
 
-  Math::Stats::GLM::solve_betas (fod_fixel_integrals, design, beta);
+  Math::Stats::GLM::solve_betas (fod_fixel_integrals, design, temp);
   for (size_t i = 0; i < contrast.columns(); ++i)
-    write_track_stats (output_prefix + "_fod_beta" + str(i) + ".tsf", beta.column (i), track_point_indices, tckfile_timestamp);
-  Math::Stats::GLM::solve_betas (mod_fod_fixel_integrals, design, beta);
+    write_track_stats (output_prefix + "_fod_beta" + str(i) + ".tsf", temp.column (i), track_point_indices, tckfile_timestamp);
+  Math::Stats::GLM::solve_betas (mod_fod_fixel_integrals, design, temp);
   for (size_t i = 0; i < contrast.columns(); ++i)
-    write_track_stats (output_prefix + "_mod_fod_beta" + str(i) + ".tsf", beta.column (i), track_point_indices, tckfile_timestamp);
+    write_track_stats (output_prefix + "_mod_fod_beta" + str(i) + ".tsf", temp.column (i), track_point_indices, tckfile_timestamp);
 
-  write_track_stats (output_prefix + "_fod_abs_effect_size.tsf", abs_effect_size, track_point_indices, tckfile_timestamp);
-  Math::Stats::GLM::std_effect_size (fod_fixel_integrals, design, contrast, std_effect_size);
-  write_track_stats (output_prefix + "_fod_std_effect_size.tsf", std_effect_size, track_point_indices, tckfile_timestamp);
-  Math::Stats::GLM::stdev (fod_fixel_integrals, design, std_dev);
-  write_track_stats (output_prefix + "_fod_std_dev.tsf", std_dev, track_point_indices, tckfile_timestamp);
-  Math::Stats::GLM::abs_effect_size (mod_fod_fixel_integrals, design, contrast, abs_effect_size);
-  write_track_stats (output_prefix + "_mod_fod_abs_effect_size.tsf", abs_effect_size, track_point_indices, tckfile_timestamp);
-  Math::Stats::GLM::std_effect_size (mod_fod_fixel_integrals, design, contrast, std_effect_size);
-  write_track_stats (output_prefix + "_mod_fod_std_effect_size.tsf", std_effect_size, track_point_indices, tckfile_timestamp);
-  Math::Stats::GLM::stdev (mod_fod_fixel_integrals, design, std_dev);
-  write_track_stats (output_prefix + "_mod_fod_std_dev.tsf", std_dev, track_point_indices, tckfile_timestamp);
+  Math::Stats::GLM::abs_effect_size (fod_fixel_integrals, design, contrast, temp);
+  write_track_stats (output_prefix + "_fod_abs_effect_size.tsf", temp, track_point_indices, tckfile_timestamp);
+  Math::Stats::GLM::std_effect_size (fod_fixel_integrals, design, contrast, temp);
+  write_track_stats (output_prefix + "_fod_std_effect_size.tsf", temp, track_point_indices, tckfile_timestamp);
+  Math::Stats::GLM::stdev (fod_fixel_integrals, design, temp);
+  write_track_stats (output_prefix + "_fod_std_dev.tsf", temp, track_point_indices, tckfile_timestamp);
+  Math::Stats::GLM::abs_effect_size (mod_fod_fixel_integrals, design, contrast, temp);
+  write_track_stats (output_prefix + "_mod_fod_abs_effect_size.tsf", temp, track_point_indices, tckfile_timestamp);
+  Math::Stats::GLM::std_effect_size (mod_fod_fixel_integrals, design, contrast, temp);
+  write_track_stats (output_prefix + "_mod_fod_std_effect_size.tsf", temp, track_point_indices, tckfile_timestamp);
+  Math::Stats::GLM::stdev (mod_fod_fixel_integrals, design, temp);
+  write_track_stats (output_prefix + "_mod_fod_std_dev.tsf", temp, track_point_indices, tckfile_timestamp);
 
 
   // Perform permutation testing
@@ -738,4 +739,5 @@ void run() {
     // FOD information only
     do_glm_and_output (fod_fixel_integrals, design, contrast, dh, tfce_E, tfce_H, num_perms, fixel_connectivity, fixel_indexer, fixel_directions, track_point_indices, output_prefix + "_fod", tckfile_timestamp);
   }
+
 }
