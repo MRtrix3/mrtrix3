@@ -85,7 +85,7 @@ namespace MR
         App::Options opt = App::get_options ("act");
         if (opt.size())
           act = new Dynamic_ACT_additions (opt[0][0]);
-        SIFT::FODQueueWriter<Image::Buffer<float>, Image::BufferScratch<float> > writer (fod_data, proc_mask);
+        FMLS::FODQueueWriter<Image::Buffer<float>, Image::BufferScratch<float> > writer (fod_data, proc_mask);
         FMLS::Segmenter fmls (dirs, Math::SH::LforN (fod_data.dim (3)));
         fmls.set_dilate_lookup_table (true);
         Thread::run_queue_threaded_pipe (writer, FMLS::SH_coefs(), fmls, FMLS::FOD_lobes(), *this);

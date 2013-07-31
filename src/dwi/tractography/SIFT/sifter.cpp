@@ -23,9 +23,8 @@
 
 
 #include "dwi/tractography/SIFT/sifter.h"
-
 #include "dwi/tractography/mapping/loader.h"
-
+#include "dwi/fmls.h"
 #include "timer.h"
 
 
@@ -77,7 +76,7 @@ namespace MR
 
       void SIFTer::perform_FOD_segmentation ()
       {
-        FODQueueWriter<Image::Buffer<float>, Image::BufferScratch<float> > writer (fod_data, proc_mask);
+        DWI::FMLS::FODQueueWriter<Image::Buffer<float>, Image::BufferScratch<float> > writer (fod_data, proc_mask);
         Thread::run_queue_threaded_pipe (writer, FMLS::SH_coefs(), fmls, FMLS::FOD_lobes(), *this);
       }
 
