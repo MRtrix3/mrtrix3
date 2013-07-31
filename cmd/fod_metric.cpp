@@ -94,62 +94,6 @@ void usage ()
 
 
 
-
-class FOD_queue_writer
-{
-
-    typedef Image::Buffer<float> FODBufferType;
-    typedef Image::Buffer<bool > MaskBufferType;
-
-  public:
-    FOD_queue_writer (FODBufferType& fod_buffer) :
-        fod_vox (fod_buffer),
-        loop ("Segmenting FODs...", 0, 3)
-    {
-      loop.start (fod_vox);
-    }
-
-
-    void set_mask (const std::string& path)
-    {
-      assert (!mask_buffer);
-      mask_buffer = new MaskBufferType (path);
-      mask_vox = new MaskBufferType::voxel_type (*mask_buffer);
-    }
-
-
-    bool operator () (SH_coefs& out)
-    {
-      if (!loop.ok())
-        return false;
-      if (mask_vox) {
-        do {
-          Image::Nav::set_pos (*mask_vox, fod_vox);
-          if (!mask_vox->value())
-            loop.next (fod_vox);
-        } while (loop.ok() && !mask_vox->value());
-      }
-      out.vox[0] = fod_vox[0]; out.vox[1] = fod_vox[1]; out.vox[2] = fod_vox[2];
-      out.allocate (fod_vox.dim (3));
-      for (fod_vox[3] = 0; fod_vox[3] != fod_vox.dim (3); ++fod_vox[3])
-        out[fod_vox[3]] = fod_vox.value();
-      loop.next (fod_vox);
-      return true;
-    }
-
-
-  private:
-    FODBufferType::voxel_type fod_vox;
-    Ptr< MaskBufferType > mask_buffer;
-    Ptr< MaskBufferType::voxel_type > mask_vox;
-    Image::Loop loop;
-
-};
-
-
-
-
-
 class Segmented_FOD_receiver
 {
 
@@ -415,18 +359,17 @@ void run ()
   if (!output_count)
     throw Exception ("Nothing to do; please specify at least one output image type");
 
+  FMLS::FODQueueWriter<Image::Buffer<float> > writer (fod_data);
+
   opt = get_options ("mask");
-  std::string mask_path;
+  Ptr<Image::Buffer<bool> > mask_buffer_ptr;
   if (opt.size()) {
-    mask_path = std::string (opt[0][0]);
-    Image::Header H_mask (mask_path);
-    if (!Image::dimensions_match (fod_data, H_mask, 0, 3))
-      throw Exception ("Cannot use image \"" + str(mask_path) + "\" as mask image; dimensions do not match FOD image");
+    mask_buffer_ptr = new Image::Buffer<bool> (std::string (opt[0][0]));
+    if (!Image::dimensions_match (fod_data, *mask_buffer_ptr, 0, 3))
+      throw Exception ("Cannot use image \"" + str(opt[0][0]) + "\" as mask image; dimensions do not match FOD image");
+    writer.set_mask (*mask_buffer_ptr);
   }
 
-  FOD_queue_writer writer (fod_data);
-  if (!mask_path.empty())
-    writer.set_mask (mask_path);
   Segmenter fmls (dirs, lmax);
   load_fmls_thresholds (fmls);
 

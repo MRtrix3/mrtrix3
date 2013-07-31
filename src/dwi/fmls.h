@@ -32,6 +32,9 @@
 #include "point.h"
 #include "dwi/directions/set.h"
 #include "dwi/directions/mask.h"
+#include "image/buffer.h"
+#include "image/voxel.h"
+#include "image/nav.h"
 
 
 #include <map> // Used for sorting FOD samples
@@ -58,7 +61,6 @@ class Segmenter;
 // These are for configuring the FMLS segmenter at the command line, particularly for fod_metric command
 extern const App::OptionGroup FMLSSegmentOption;
 void load_fmls_thresholds (Segmenter&);
-
 
 
 class FOD_lobe {
@@ -156,6 +158,63 @@ class SH_coefs : public Math::Vector<float> {
   public:
     Point<int> vox;
 };
+
+template <class FODBufferType, class MaskBufferType = Image::Buffer<bool> >
+class FODQueueWriter
+{
+
+  public:
+    typedef typename MaskBufferType::voxel_type mask_voxel_type;
+
+    FODQueueWriter (FODBufferType& fod_buffer) :
+        fod_vox (fod_buffer),
+        loop ("Segmenting FODs...", 0, 3)
+    {
+      loop.start (fod_vox);
+    }
+
+    FODQueueWriter (FODBufferType& fod_buffer, MaskBufferType& mask_buffer) :
+        fod_vox (fod_buffer),
+        loop ("Segmenting FODs...", 0, 3),
+        mask_vox_ptr (new mask_voxel_type (mask_buffer))
+    {
+      loop.start (fod_vox);
+    }
+
+
+    void set_mask (MaskBufferType& mask_buffer)
+    {
+      mask_vox_ptr = new mask_voxel_type (mask_buffer);
+    }
+
+
+    bool operator () (SH_coefs& out)
+    {
+      if (!loop.ok())
+        return false;
+      if (mask_vox_ptr) {
+        do {
+          Image::Nav::set_pos (*mask_vox_ptr, fod_vox);
+          if (!mask_vox_ptr->value())
+            loop.next (fod_vox);
+        } while (loop.ok() && !mask_vox_ptr->value());
+      }
+      out.vox[0] = fod_vox[0]; out.vox[1] = fod_vox[1]; out.vox[2] = fod_vox[2];
+      out.allocate (fod_vox.dim (3));
+      for (fod_vox[3] = 0; fod_vox[3] != fod_vox.dim (3); ++fod_vox[3])
+        out[fod_vox[3]] = fod_vox.value();
+      loop.next (fod_vox);
+      return true;
+    }
+
+
+  private:
+    typename FODBufferType::voxel_type fod_vox;
+    Image::Loop loop;
+    Ptr<mask_voxel_type> mask_vox_ptr;
+
+};
+
 
 
 
