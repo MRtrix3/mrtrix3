@@ -107,8 +107,8 @@ class FOD_lobe {
 
     void normalise_integral()
     {
-      // 2pi == solid angle of hemisphere in steradians
-      integral *= 2.0 * M_PI / float(mask.size());
+      // 4pi == solid angle of sphere in steradians
+      integral *= 4.0 * M_PI / float(mask.size());
     }
 
     void merge (const FOD_lobe& that)
