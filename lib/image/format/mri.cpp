@@ -184,7 +184,7 @@ namespace MR
         while (current <= last) {
           switch (type (current, is_BE)) {
             case MRI_DATA:
-              H.datatype() =  ( ( (const char*) data (current)) - 4) [0];
+              H.datatype() =  ( (const char*) data (current)) [0];
               data_offset = current + 5 - (uint8_t*) fmap.address();
               break;
             case MRI_DIMENSIONS:
@@ -331,7 +331,7 @@ namespace MR
               write<float> (out, H.DW_scheme() (i,j), is_BE);
         }
 
-        write_tag (out, MRI_DATA, 0, is_BE);
+        write_tag (out, MRI_DATA, 1, is_BE);
         out.write ( (const char*) &H.datatype() (), 1);
 
         size_t data_offset = out.tellp();

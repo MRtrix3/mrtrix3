@@ -41,10 +41,10 @@ namespace MR
           return RefPtr<Handler::Base>();
 
         File::MMap fmap (H.name().substr (0, H.name().size()-4) + ".hdr");
-        size_t data_offset = File::NIfTI::read (H, * ( (const nifti_1_header*) fmap.address()));
+        File::NIfTI::read (H, * ( (const nifti_1_header*) fmap.address()));
 
         RefPtr<Handler::Base> handler (new Handler::Default (H));
-        handler->files.push_back (File::Entry (H.name(), data_offset));
+        handler->files.push_back (File::Entry (H.name()));
 
         return handler;
       }
