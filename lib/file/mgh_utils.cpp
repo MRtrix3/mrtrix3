@@ -186,16 +186,18 @@ namespace MR
         const DataType& dt = H.datatype();
         if (dt.is_complex())
           throw Exception ("MGH file format does not support complex types");
-        if (dt.bits() == 64)
-          throw Exception ("MGH file format does not support 64-bit floating-point format");
-        if (dt.bits() == 1)
+        if ((dt() & DataType::Type) == DataType::Bit)
           throw Exception ("MGH file format does not support bit type");
-        if (dt.bits() == 8 && !dt.is_signed())
-          throw Exception ("MGH file format does not support signed 8-bit format; unsigned only");
-        if (dt.bits() == 16 && !dt.is_signed())
-          throw Exception ("MGH file format does not support unsigned 16-bit integer format; signed only");
-        if (dt == DataType::UInt32 || dt == DataType::UInt32BE || dt == DataType::UInt32LE)
-          throw Exception ("MGH file format does not support unsigned 32-bit integer format; signed only");
+        if (((dt() & DataType::Type) == DataType::UInt8) && dt.is_signed())
+          throw Exception ("MGH file format does not support signed 8-bit integers; unsigned only");
+        if (((dt() & DataType::Type) == DataType::UInt16) && !dt.is_signed())
+          throw Exception ("MGH file format does not support unsigned 16-bit integers; signed only");
+        if (((dt() & DataType::Type) == DataType::UInt32) && !dt.is_signed())
+          throw Exception ("MGH file format does not support unsigned 32-bit integers; signed only");
+        if ((dt() & DataType::Type) == DataType::UInt64)
+          throw Exception ("MGH file format does not support 64-bit integer data");
+        if ((dt() & DataType::Type) == DataType::Float64)
+          throw Exception ("MGH file format does not support 64-bit floating-point data");
         int32_t type;
         switch (dt()) {
           case DataType::UInt8: type = MGH_TYPE_UCHAR; break;

@@ -72,7 +72,7 @@ namespace MR
 
       // needed to round floating-point values and map non-finite values (NaN, Inf) to zero for integer types:
       template <typename value_out_type, typename value_type> 
-        inline value_out_type round_finite (value_type val) { return finite (val) ? Math::round (val) : value_out_type (0); }
+        inline value_out_type round_finite (value_type val) { return finite (val) ? value_out_type(Math::round (val)) : value_out_type (0); }
       template <typename value_out_type, typename value_type> 
         inline value_out_type no_round (value_type val) { return val; }
 
@@ -133,6 +133,8 @@ namespace MR
       GET_PUT_FUNC_BO(uint16_t,round_finite);
       GET_PUT_FUNC_BO(int32_t,round_finite);
       GET_PUT_FUNC_BO(uint32_t,round_finite);
+      GET_PUT_FUNC_BO(int64_t,round_finite);
+      GET_PUT_FUNC_BO(uint64_t,round_finite);
 
       // conversion between non-integer real & complex types:
       GET_PUT_FUNC_BO_COMPLEX(float32,no_round);
@@ -270,6 +272,22 @@ namespace MR
             case DataType::UInt32BE:
               get_func = &__getBE<value_type,uint32_t>;
               put_func = &__putBE<value_type,uint32_t>;
+              return;
+            case DataType::Int64LE:
+              get_func = &__getLE<value_type,int64_t>;
+              put_func = &__putLE<value_type,int64_t>;
+              return;
+            case DataType::UInt64LE:
+              get_func = &__getLE<value_type,uint64_t>;
+              put_func = &__putLE<value_type,uint64_t>;
+              return;
+            case DataType::Int64BE:
+              get_func = &__getBE<value_type,int64_t>;
+              put_func = &__putBE<value_type,int64_t>;
+              return;
+            case DataType::UInt64BE:
+              get_func = &__getBE<value_type,uint64_t>;
+              put_func = &__putBE<value_type,uint64_t>;
               return;
             case DataType::Float32LE:
               get_func = &__getLE<value_type,float>;

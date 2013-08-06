@@ -130,8 +130,10 @@ namespace MR
       static const uint8_t     UInt8         = 0x02U;
       static const uint8_t     UInt16        = 0x03U;
       static const uint8_t     UInt32        = 0x04U;
-      static const uint8_t     Float32       = 0x05U;
-      static const uint8_t     Float64       = 0x06U;
+      static const uint8_t     UInt64        = 0x05U;
+      static const uint8_t     Float32       = 0x06U;
+      static const uint8_t     Float64       = 0x07U;
+
 
       static const uint8_t     Int8          = UInt8  | Signed;
       static const uint8_t     Int16         = UInt16 | Signed;
@@ -144,6 +146,11 @@ namespace MR
       static const uint8_t     UInt32LE      = UInt32 | LittleEndian;
       static const uint8_t     Int32BE       = UInt32 | Signed | BigEndian;
       static const uint8_t     UInt32BE      = UInt32 | BigEndian;
+      static const uint8_t     Int64         = UInt64 | Signed;
+      static const uint8_t     Int64LE       = UInt64 | Signed | LittleEndian;
+      static const uint8_t     UInt64LE      = UInt64 | LittleEndian;
+      static const uint8_t     Int64BE       = UInt64 | Signed | BigEndian;
+      static const uint8_t     UInt64BE      = UInt64 | BigEndian;
       static const uint8_t     Float32LE     = Float32 | LittleEndian;
       static const uint8_t     Float32BE     = Float32 | BigEndian;
       static const uint8_t     Float64LE     = Float64 | LittleEndian;
@@ -224,6 +231,14 @@ namespace MR
   template <> inline DataType DataType::from<uint32_t> ()
   {
     return DataType::native (DataType::UInt32);
+  }
+  template <> inline DataType DataType::from<int64_t> ()
+  {
+    return DataType::native (DataType::Int64);
+  }
+  template <> inline DataType DataType::from<uint64_t> ()
+  {
+    return DataType::native (DataType::UInt64);
   }
   template <> inline DataType DataType::from<float> ()
   {

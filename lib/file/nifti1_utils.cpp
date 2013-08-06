@@ -110,6 +110,12 @@ namespace MR
           case DT_UINT32:
             dtype = DataType::UInt32;
             break;
+          case DT_INT64:
+            dtype = DataType::Int64;
+            break;
+          case DT_UINT64:
+            dtype = DataType::UInt64;
+            break;
           case DT_FLOAT32:
             dtype = DataType::Float32;
             break;
@@ -379,6 +385,14 @@ namespace MR
           case DataType::UInt32LE:
           case DataType::UInt32BE:
             dt = DT_UINT32;
+            break;
+          case DataType::Int64LE:
+          case DataType::Int64BE:
+            dt = DT_INT64;
+            break;
+          case DataType::UInt64LE:
+          case DataType::UInt64BE:
+            dt = DT_UINT64;
             break;
           case DataType::Float32LE:
           case DataType::Float32BE:

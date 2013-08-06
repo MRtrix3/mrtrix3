@@ -57,6 +57,11 @@ namespace MR
   const uint8_t DataType::UInt32LE;
   const uint8_t DataType::Int32BE;
   const uint8_t DataType::UInt32BE;
+  const uint8_t DataType::Int64;
+  const uint8_t DataType::Int64LE;
+  const uint8_t DataType::UInt64LE;
+  const uint8_t DataType::Int64BE;
+  const uint8_t DataType::UInt64BE;
   const uint8_t DataType::Float32LE;
   const uint8_t DataType::Float32BE;
   const uint8_t DataType::Float64LE;
@@ -71,6 +76,7 @@ namespace MR
 
   const char* DataType::identifiers[] = {
     "float32", "float32le", "float32be", "float64", "float64le", "float64be",
+    "int64", "uint64", "int64le", "uint64le", "int64be", "uint64be",
     "int32", "uint32", "int32le", "uint32le", "int32be", "uint32be",
     "int16", "uint16", "int16le", "uint16le", "int16be", "uint16be",
     "cfloat32", "cfloat32le", "cfloat32be", "cfloat64", "cfloat64le", "cfloat64be",
@@ -95,6 +101,19 @@ namespace MR
       return Float64LE;
     if (str == "float64be") 
       return Float64BE;
+
+    if (str == "int64")
+      return Int64;
+    if (str == "uint64")
+      return UInt64;
+    if (str == "int64le")
+      return Int64LE;
+    if (str == "uint64le")
+      return UInt64LE;
+    if (str == "int64be")
+      return Int64BE;
+    if (str == "uint64be")
+      return UInt64BE;
 
     if (str == "int32") 
       return Int32;
@@ -161,6 +180,8 @@ namespace MR
         return 16;
       case UInt32:
         return 32;
+      case UInt64:
+        return 64;
       case Float32:
         return is_complex() ? 64 : 32;
       case Float64:
@@ -204,6 +225,15 @@ namespace MR
         return "signed 32 bit integer (big endian)";
       case UInt32BE:
         return "unsigned 32 bit integer (big endian)";
+
+      case Int64LE:
+        return "signed 64 bit integer (little endian)";
+      case UInt64LE:
+        return "unsigned 64 bit integer (little endian)";
+      case Int64BE:
+        return "signed 64 bit integer (big endian)";
+      case UInt64BE:
+        return "unsigned 64 bit integer (big endian)";
 
       case Float32LE:
         return "32 bit float (little endian)";
@@ -270,6 +300,15 @@ namespace MR
       case UInt32BE:
         return "UInt32BE";
 
+      case Int64LE:
+        return ("Int64LE");
+      case UInt64LE:
+        return ("UInt64LE");
+      case Int64BE:
+        return "Int64BE";
+      case UInt64BE:
+        return "UInt64BE";
+
       case Float32LE:
         return "Float32LE";
       case Float32BE:
@@ -298,6 +337,10 @@ namespace MR
         return "Int32";
       case UInt32:
         return "UInt32";
+      case Int64:
+        return "Int64";
+      case UInt64:
+        return "UInt64";
       case Float32:
         return "Float32";
       case Float64:

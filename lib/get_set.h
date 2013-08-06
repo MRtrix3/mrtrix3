@@ -104,6 +104,30 @@ namespace MR
       swap (val.i[1], val.i[2]);
       return val.v;
     }
+    inline int64_t  swap (int64_t v)
+    {
+      union {
+        int64_t v;
+        uint8_t i[8];
+      } val = { v };
+      swap (val.i[0], val.i[7]);
+      swap (val.i[1], val.i[6]);
+      swap (val.i[2], val.i[5]);
+      swap (val.i[3], val.i[4]);
+      return val.v;
+    }
+    inline uint64_t swap (uint64_t v)
+    {
+      union {
+        uint64_t v;
+        uint8_t i[8];
+      } val = { v };
+      swap (val.i[0], val.i[7]);
+      swap (val.i[1], val.i[6]);
+      swap (val.i[2], val.i[5]);
+      swap (val.i[3], val.i[4]);
+      return val.v;
+    }
     inline float32  swap (float32 v)
     {
       union {
@@ -155,6 +179,22 @@ namespace MR
       return TO_LE (v);
     }
     inline uint32_t BE (uint32_t v)
+    {
+      return TO_BE (v);
+    }
+    inline int64_t LE (int64_t v)
+    {
+      return TO_LE (v);
+    }
+    inline int64_t BE (int64_t v)
+    {
+      return TO_BE (v);
+    }
+    inline uint64_t LE (uint64_t v)
+    {
+      return TO_LE (v);
+    }
+    inline uint64_t BE (uint64_t v)
     {
       return TO_BE (v);
     }
