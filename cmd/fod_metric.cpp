@@ -24,9 +24,14 @@
 #include "progressbar.h"
 
 #include "image/buffer.h"
+#include "image/buffer_sparse.h"
 #include "image/nav.h"
 #include "image/utils.h"
 #include "image/voxel.h"
+
+#include "image/sparse/fixel_metric.h"
+#include "image/sparse/keys.h"
+#include "image/sparse/voxel.h"
 
 #include "math/matrix.h"
 #include "math/SH.h"
@@ -49,18 +54,14 @@ using namespace App;
 
 
 
-void usage ()
-{
-  DESCRIPTION
-  + "generate parameter maps from fibre orientation distributions using the fast-marching level-set segmenter.";
-
-  ARGUMENTS
-  + Argument ("fod", "the input fod image.").type_image_in ();
+using Image::Sparse::Fixel_metric;
 
 
-  OPTIONS
+
+const OptionGroup ScalarOutputOptions = OptionGroup ("Scalar output image options")
+
   + Option ("afd",
-            "compute the sum of per-dixel Apparent Fibre Density in each voxel")
+            "compute the sum of per-fixel Apparent Fibre Density in each voxel")
     + Argument ("image").type_image_out()
 
   + Option ("count",
@@ -71,26 +72,64 @@ void usage ()
             "compute a directionally-encoded colour map of fibre population densities")
     + Argument ("image").type_image_out()
 
-  + Option ("dixel_sh",
-            "compute a SH image showing the orientations & relative amplitudes of segmented fibre populations (useful for assessing segmentation performance until sparse image format is implemented)")
-    + Argument ("image").type_image_out()
-
   + Option ("gfa",
             "compute a Generalised Fractional Anisotropy image (does not require FOD segmentation)")
     + Argument ("image").type_image_out()
 
+  + Option ("pseudo_fod",
+            "compute a pseudo-FOD image in the SH basis, showing the orientations & relative amplitudes of segmented fibre populations (useful for assessing segmentation performance until sparse image format is implemented)")
+    + Argument ("image").type_image_out()
+
   + Option ("sf",
             "compute the fraction of AFD in the voxel that is attributed to the largest FOD lobe, i.e. \"single fibre\" nature of voxels")
+    + Argument ("image").type_image_out();
+
+
+
+
+const OptionGroup FixelOutputOptions = OptionGroup ("Fixel-based sparse output image options")
+
+  + Option ("fixel_afd",
+            "compute the Apparent Fibre Density per fixel")
     + Argument ("image").type_image_out()
+
+  + Option ("fixel_peak",
+            "compute the peak amplitude per fixel")
+    + Argument ("image").type_image_out()
+
+  + Option ("fixel_disp",
+            "compute a measure of dispersion per fixel as the ratio between FOD lobe integral and peak")
+    + Argument ("image").type_image_out();
+
+
+
+
+void usage ()
+{
+  DESCRIPTION
+  + "generate parameter maps from fibre orientation distributions using the fast-marching level-set segmenter.";
+
+  ARGUMENTS
+  + Argument ("fod", "the input fod image.").type_image_in ();
+
+
+  OPTIONS
 
   + Option ("mask",
             "only perform computation within the specified binary brain mask image.")
     + Argument ("image").type_image_in()
 
+  + ScalarOutputOptions
+
+  + FixelOutputOptions
 
   + FMLSSegmentOption;
 
 }
+
+
+
+
 
 
 
@@ -100,21 +139,33 @@ class Segmented_FOD_receiver
   public:
     Segmented_FOD_receiver (const Image::Header& header, const DWI::Directions::Set& directions) :
       H (header),
+      H_fixel (header),
       dirs (directions),
       lmax (0)
     {
       // aPSF does not have data for lmax > 10
       lmax = std::min (size_t(10), Math::SH::LforN (header.dim(3)));
       H.set_ndim (3);
+      H.DW_scheme().clear();
+      H_fixel.set_ndim (3);
+      H_fixel.DW_scheme().clear();
+      H_fixel.datatype() = DataType::UInt64;
+      H_fixel.datatype().set_byte_order_native();
+      H_fixel[Image::Sparse::name_key] = str(typeid(Fixel_metric).name());
+      H_fixel[Image::Sparse::size_key] = str(sizeof(Fixel_metric));
     }
 
 
-    void set_afd_output      (const std::string&);
-    void set_count_output    (const std::string&);
-    void set_dec_output      (const std::string&);
-    void set_dixel_sh_output (const std::string&);
-    void set_gfa_output      (const std::string&);
-    void set_sf_output       (const std::string&);
+    void set_afd_output        (const std::string&);
+    void set_count_output      (const std::string&);
+    void set_dec_output        (const std::string&);
+    void set_gfa_output        (const std::string&);
+    void set_pseudo_fod_output (const std::string&);
+    void set_sf_output         (const std::string&);
+
+    void set_fixel_afd_output  (const std::string&);
+    void set_fixel_peak_output (const std::string&);
+    void set_fixel_disp_output (const std::string&);
 
 
     bool operator() (const FOD_lobes&);
@@ -122,7 +173,7 @@ class Segmented_FOD_receiver
 
 
   private:
-    Image::Header H;
+    Image::Header H, H_fixel;
     const DWI::Directions::Set& dirs;
     size_t lmax;
 
@@ -132,13 +183,20 @@ class Segmented_FOD_receiver
     Ptr< Image::Buffer<uint8_t>::voxel_type > count;
     Ptr< Image::Buffer<float> > dec_data;
     Ptr< Image::Buffer<float>::voxel_type > dec;
-    Ptr< Image::Buffer<float> > dixel_sh_data;
-    Ptr< Image::Buffer<float>::voxel_type > dixel_sh;
     Ptr< Image::Buffer<float> > gfa_data;
     Ptr< Image::Buffer<float>::voxel_type > gfa;
+    Ptr< Image::Buffer<float> > pseudo_fod_data;
+    Ptr< Image::Buffer<float>::voxel_type > pseudo_fod;
     Ptr< Image::Buffer<float> > sf_data;
     Ptr< Image::Buffer<float>::voxel_type > sf;
 
+
+    Ptr< Image::BufferSparse<Fixel_metric> > fixel_afd_data;
+    Ptr< Image::BufferSparse<Fixel_metric>::voxel_type > fixel_afd;
+    Ptr< Image::BufferSparse<Fixel_metric> > fixel_peak_data;
+    Ptr< Image::BufferSparse<Fixel_metric>::voxel_type > fixel_peak;
+    Ptr< Image::BufferSparse<Fixel_metric> > fixel_disp_data;
+    Ptr< Image::BufferSparse<Fixel_metric>::voxel_type > fixel_disp;
 
 
     Point<float> calc_mean_dir (const FOD_lobe&) const;
@@ -175,21 +233,21 @@ void Segmented_FOD_receiver::set_dec_output (const std::string& path)
   dec = new Image::Buffer<float>::voxel_type (*dec_data);
 }
 
-void Segmented_FOD_receiver::set_dixel_sh_output (const std::string& path)
-{
-  assert (!dixel_sh_data);
-  Image::Header H_dixel_sh (H);
-  H_dixel_sh.set_ndim (4);
-  H_dixel_sh.dim(3) = Math::SH::NforL (lmax);
-  dixel_sh_data = new Image::Buffer<float> (path, H_dixel_sh);
-  dixel_sh = new Image::Buffer<float>::voxel_type (*dixel_sh_data);
-}
-
 void Segmented_FOD_receiver::set_gfa_output (const std::string& path)
 {
   assert (!gfa_data);
   gfa_data = new Image::Buffer<float> (path, H);
   gfa = new Image::Buffer<float>::voxel_type (*gfa_data);
+}
+
+void Segmented_FOD_receiver::set_pseudo_fod_output (const std::string& path)
+{
+  assert (!pseudo_fod_data);
+  Image::Header H_pseudo_fod (H);
+  H_pseudo_fod.set_ndim (4);
+  H_pseudo_fod.dim(3) = Math::SH::NforL (lmax);
+  pseudo_fod_data = new Image::Buffer<float> (path, H_pseudo_fod);
+  pseudo_fod = new Image::Buffer<float>::voxel_type (*pseudo_fod_data);
 }
 
 void Segmented_FOD_receiver::set_sf_output (const std::string& path)
@@ -198,6 +256,41 @@ void Segmented_FOD_receiver::set_sf_output (const std::string& path)
   sf_data = new Image::Buffer<float> (path, H);
   sf = new Image::Buffer<float>::voxel_type (*sf_data);
 }
+
+
+
+
+void Segmented_FOD_receiver::set_fixel_afd_output (const std::string& path)
+{
+  assert (!fixel_afd_data);
+  fixel_afd_data = new Image::BufferSparse<Fixel_metric> (path, H_fixel);
+  fixel_afd = new Image::BufferSparse<Fixel_metric>::voxel_type (*fixel_afd_data);
+  Image::LoopInOrder loop (*fixel_afd);
+  for (loop.start (*fixel_afd); loop.ok(); loop.next (*fixel_afd))
+    fixel_afd->value().zero();
+}
+
+void Segmented_FOD_receiver::set_fixel_peak_output (const std::string& path)
+{
+  assert (!fixel_peak_data);
+  fixel_peak_data = new Image::BufferSparse<Fixel_metric> (path, H_fixel);
+  fixel_peak = new Image::BufferSparse<Fixel_metric>::voxel_type (*fixel_peak_data);
+  Image::LoopInOrder loop (*fixel_peak);
+  for (loop.start (*fixel_peak); loop.ok(); loop.next (*fixel_peak))
+    fixel_peak->value().zero();
+}
+
+void Segmented_FOD_receiver::set_fixel_disp_output (const std::string& path)
+{
+  assert (!fixel_disp_data);
+  fixel_disp_data = new Image::BufferSparse<Fixel_metric> (path, H_fixel);
+  fixel_disp = new Image::BufferSparse<Fixel_metric>::voxel_type (*fixel_disp_data);
+  Image::LoopInOrder loop (*fixel_disp);
+  for (loop.start (*fixel_disp); loop.ok(); loop.next (*fixel_disp))
+    fixel_disp->value().zero();
+}
+
+
 
 
 
@@ -228,23 +321,6 @@ bool Segmented_FOD_receiver::operator() (const FOD_lobes& in)
     (*dec)[3] = 2; dec->value() = sum_decs[2];
   }
 
-  if (dixel_sh) {
-    Image::Nav::set_pos (*dixel_sh, in.vox);
-    Math::Vector<float> sum_dixel_sh;
-    sum_dixel_sh.resize (Math::SH::NforL (lmax), 0.0);
-    Math::SH::aPSF<float> aPSF (lmax);
-    for (FOD_lobes::const_iterator i = in.begin(); i != in.end(); ++i) {
-      Math::Vector<float> this_lobe;
-      aPSF (this_lobe, calc_mean_dir (*i));
-      for (size_t c = 0; c != sum_dixel_sh.size(); ++c)
-        sum_dixel_sh[c] += i->get_integral() * this_lobe[c];
-    }
-    for (size_t c = 0; c != sum_dixel_sh.size(); ++c) {
-      (*dixel_sh)[3] = c;
-      dixel_sh->value() = sum_dixel_sh[c];
-    }
-  }
-
   if (gfa) {
     double sum = 0.0;
     std::vector<float> combined_values (dirs.size(), 0.0);
@@ -270,6 +346,23 @@ bool Segmented_FOD_receiver::operator() (const FOD_lobes& in)
     }
   }
 
+  if (pseudo_fod) {
+    Image::Nav::set_pos (*pseudo_fod, in.vox);
+    Math::Vector<float> sum_pseudo_fod;
+    sum_pseudo_fod.resize (Math::SH::NforL (lmax), 0.0);
+    Math::SH::aPSF<float> aPSF (lmax);
+    for (FOD_lobes::const_iterator i = in.begin(); i != in.end(); ++i) {
+      Math::Vector<float> this_lobe;
+      aPSF (this_lobe, calc_mean_dir (*i));
+      for (size_t c = 0; c != sum_pseudo_fod.size(); ++c)
+        sum_pseudo_fod[c] += i->get_integral() * this_lobe[c];
+    }
+    for (size_t c = 0; c != sum_pseudo_fod.size(); ++c) {
+      (*pseudo_fod)[3] = c;
+      pseudo_fod->value() = sum_pseudo_fod[c];
+    }
+  }
+
   if (sf) {
     float sum = 0.0, maximum = 0.0;
     for (FOD_lobes::const_iterator i = in.begin(); i != in.end(); ++i) {
@@ -280,9 +373,41 @@ bool Segmented_FOD_receiver::operator() (const FOD_lobes& in)
     Image::Nav::set_value_at_pos (*sf, in.vox, value);
   }
 
+
+
+  if (fixel_afd && in.size()) {
+    Image::Nav::set_pos (*fixel_afd, in.vox);
+    fixel_afd->value().set_size (in.size());
+    for (size_t i = 0; i != in.size(); ++i) {
+      Fixel_metric this_fixel (calc_mean_dir (in[i]), in[i].get_integral(), in[i].get_integral());
+      (*fixel_afd).value()[i] = this_fixel;
+    }
+  }
+
+  if (fixel_peak && in.size()) {
+    Image::Nav::set_pos (*fixel_peak, in.vox);
+    fixel_peak->value().set_size (in.size());
+    for (size_t i = 0; i != in.size(); ++i) {
+      Fixel_metric this_fixel (in[i].get_peak_dir(), in[i].get_integral(), in[i].get_peak_value());
+      (*fixel_peak).value()[i] = this_fixel;
+    }
+  }
+
+  if (fixel_disp && in.size()) {
+    Image::Nav::set_pos (*fixel_disp, in.vox);
+    fixel_disp->value().set_size (in.size());
+    for (size_t i = 0; i != in.size(); ++i) {
+      Fixel_metric this_fixel (calc_mean_dir (in[i]), in[i].get_integral(), in[i].get_integral() / in[i].get_peak_value());
+      (*fixel_disp).value()[i] = this_fixel;
+    }
+  }
+
+
   return true;
 
 }
+
+
 
 
 
@@ -291,6 +416,7 @@ Point<float> Segmented_FOD_receiver::calc_mean_dir (const FOD_lobe& lobe) const
   // Note that this method for calculating the mean direction is approximate only,
   //   but is good enough for most applications
   // For a better method see Buss and Fillmore 2001
+  // TODO Consider doing this in the FMLS segmenter
   const Point<float>& peak_dir (lobe.get_peak_dir());
   const std::vector<float>& values (lobe.get_values());
   Point<float> mean_dir (0.0, 0.0, 0.0);
@@ -341,19 +467,34 @@ void run ()
     receiver.set_dec_output (opt[0][0]);
     ++output_count;
   }
-  opt = get_options ("dixel_sh");
-  if (opt.size()) {
-    receiver.set_dixel_sh_output (opt[0][0]);
-    ++output_count;
-  }
   opt = get_options ("gfa");
   if (opt.size()) {
     receiver.set_gfa_output (opt[0][0]);
     ++output_count;
   }
+  opt = get_options ("pseudo_fod");
+  if (opt.size()) {
+    receiver.set_pseudo_fod_output (opt[0][0]);
+    ++output_count;
+  }
   opt = get_options ("sf");
   if (opt.size()) {
     receiver.set_sf_output (opt[0][0]);
+    ++output_count;
+  }
+  opt = get_options ("fixel_afd");
+  if (opt.size()) {
+    receiver.set_fixel_afd_output (opt[0][0]);
+    ++output_count;
+  }
+  opt = get_options ("fixel_peak");
+  if (opt.size()) {
+    receiver.set_fixel_peak_output (opt[0][0]);
+    ++output_count;
+  }
+  opt = get_options ("fixel_disp");
+  if (opt.size()) {
+    receiver.set_fixel_disp_output (opt[0][0]);
     ++output_count;
   }
   if (!output_count)

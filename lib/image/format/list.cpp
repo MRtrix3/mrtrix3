@@ -34,16 +34,18 @@ namespace MR
       Format::RAM        RAM_handler;
 #endif
 
-      Format::Pipe       pipe_handler;
-      Format::MRtrix     mrtrix_handler;
-      Format::MRI        mri_handler;
-      Format::NIfTI      nifti_handler;
-      Format::NIfTI_GZ   nifti_gz_handler;
-      Format::Analyse    analyse_handler;
-      Format::XDS        xds_handler;
-      Format::DICOM      dicom_handler;
-      Format::MGH        mgh_handler;
-      Format::MGZ        mgz_handler;
+      Format::Pipe          pipe_handler;
+      Format::MRtrix        mrtrix_handler;
+      Format::MRI           mri_handler;
+      Format::NIfTI         nifti_handler;
+      Format::NIfTI_GZ      nifti_gz_handler;
+      Format::Analyse       analyse_handler;
+      Format::XDS           xds_handler;
+      Format::DICOM         dicom_handler;
+      Format::MGH           mgh_handler;
+      Format::MGZ           mgz_handler;
+      Format::MRtrix_sparse mrtrix_sparse_handler;
+
 
       const Base* handlers[] = {
 #ifdef MRTRIX_AS_R_LIBRARY
@@ -59,6 +61,7 @@ namespace MR
         &xds_handler,
         &mgh_handler,
         &mgz_handler,
+        &mrtrix_sparse_handler,
         NULL
       };
 
@@ -76,6 +79,8 @@ namespace MR
         ".mgh",
         ".mgz",
         ".mgh.gz",
+        ".msif",
+        ".msih",
         NULL
       };
 

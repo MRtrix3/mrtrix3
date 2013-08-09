@@ -111,6 +111,7 @@ namespace MR
       DECLARE_IMAGEFORMAT (XDS, "XDS");
       DECLARE_IMAGEFORMAT (MGH, "MGH");
       DECLARE_IMAGEFORMAT (MGZ, "MGZ (compressed MGH)");
+      DECLARE_IMAGEFORMAT (MRtrix_sparse, "MRtrix WIP sparse image data format");
 
       /*! a list of all extensions for image formats that %MRtrix can handle. */
       extern const char* known_extensions[];

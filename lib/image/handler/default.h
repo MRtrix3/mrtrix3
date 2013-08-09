@@ -39,7 +39,8 @@ namespace MR
       {
         public:
           Default (const Image::Header& header) : 
-            Base (header) { }
+            Base (header),
+            bytes_per_segment (0) { }
           ~Default () { close(); }
 
         protected:
@@ -52,6 +53,7 @@ namespace MR
           void map_files ();
           void copy_to_mem ();
           void copy_to_files ();
+
       };
 
     }
