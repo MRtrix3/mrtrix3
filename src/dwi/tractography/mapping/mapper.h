@@ -549,6 +549,9 @@ class TrackMapperTWIImage : public TrackMapperTWI<Cont>
 
     void load_factors (const std::vector< Point<float> >&);
 
+    // New helper function; find the last point on the streamline from which valid image information can be read
+    const Point<float> get_last_point_in_fov (const std::vector< Point<float> >&, const bool);
+
 };
 
 
@@ -566,8 +569,8 @@ void TrackMapperTWIImage<Cont>::load_factors (const std::vector< Point<float> >&
       if (TrackMapperTWI<Cont>::track_statistic == ENDS_MIN || TrackMapperTWI<Cont>::track_statistic == ENDS_MEAN || TrackMapperTWI<Cont>::track_statistic == ENDS_MAX || TrackMapperTWI<Cont>::track_statistic == ENDS_PROD) { // Only the track endpoints contribute
 
         for (size_t tck_end_index = 0; tck_end_index != 2; ++tck_end_index) {
-          const Point<float>& endpoint = tck_end_index ? tck.back() : tck.front();
-          if (!interp.scanner (endpoint))
+          const Point<float> endpoint = get_last_point_in_fov (tck, tck_end_index);
+          if (endpoint.valid())
             TrackMapperTWI<Cont>::factors.push_back (interp.value());
           else
             TrackMapperTWI<Cont>::factors.push_back (NAN);
@@ -577,16 +580,14 @@ void TrackMapperTWIImage<Cont>::load_factors (const std::vector< Point<float> >&
 
         TrackMapperTWI<Cont>::factors.assign (1, 0.0);
         input_voxel_type start (voxel), end (voxel);
-        const Point<float> p_start (interp.scanner2voxel (tck.front()));
+        const Point<float> p_start (get_last_point_in_fov (tck, false));
+        if (!p_start) return;
         const Point<int> v_start (int(Math::round (p_start[0])), int(Math::round (p_start[1])), int(Math::round (p_start[2])));
         Image::Nav::set_pos (start, v_start);
-        if (!Image::Nav::within_bounds (start))
-          return;
-        const Point<float> p_end (interp.scanner2voxel (tck.back()));
+        const Point<float> p_end (get_last_point_in_fov (tck, true));
+        if (!p_end) return;
         const Point<int> v_end (int(Math::round (p_end[0])), int(Math::round (p_end[1])), int(Math::round (p_end[2])));
         Image::Nav::set_pos (end, v_end);
-        if (!Image::Nav::within_bounds (end))
-          return;
 
         double start_sum = 0.0, end_sum = 0.0;
         for (start[3] = end[3] = 0; start[3] != start.dim (3); ++start[3], ++end[3]) {
@@ -639,6 +640,23 @@ void TrackMapperTWIImage<Cont>::load_factors (const std::vector< Point<float> >&
       throw Exception ("FIXME: Undefined / unsupported contrast mechanism in TrackMapperTWIImage::load_factors()");
 
   }
+
+}
+
+
+
+template <class Cont>
+const Point<float> TrackMapperTWIImage<Cont>::get_last_point_in_fov (const std::vector< Point<float> >& tck, const bool end)
+{
+
+  int index = end ? tck.size() - 1 : 0;
+  const int step = end ? -1 : 1;
+  while (interp.scanner (tck[index])) {
+    index += step;
+    if (index < 0 || index == tck.size())
+      return Point<float>();
+  }
+  return tck[index];
 
 }
 
