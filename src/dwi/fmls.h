@@ -194,7 +194,7 @@ class FODQueueWriter
         return false;
       if (mask_vox_ptr) {
         do {
-          Image::Nav::set_pos (*mask_vox_ptr, fod_vox);
+          Image::voxel_assign (*mask_vox_ptr, fod_vox, 0, 3);
           if (!mask_vox_ptr->value())
             loop.next (fod_vox);
         } while (loop.ok() && !mask_vox_ptr->value());
