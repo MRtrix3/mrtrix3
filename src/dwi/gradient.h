@@ -32,6 +32,8 @@
 #include "math/LU.h"
 #include "math/SH.h"
 #include "math/matrix.h"
+#include "dwi/shells.h"
+
 
 namespace MR
 {
@@ -49,11 +51,12 @@ namespace MR
       if (grad.columns() != 4)
         throw Exception ("invalid gradient matrix dimensions");
       for (size_t i = 0; i < grad.rows(); i++) {
-        ValueType Gnorm = Math::norm (grad.row (i).sub (0,3));
-        ValueType norm = grad (i,3) && Gnorm ?
-                 ValueType (1.0) / Gnorm :
-                 ValueType (0.0);
-        grad.row (i).sub (0,3) *= norm;
+        ValueType norm = Math::norm (grad.row (i).sub (0,3));
+        if (norm) {
+          grad.row (i).sub (0,3) /= norm;
+        } else {
+          grad (i,3) = 0;
+        }
       }
       return (grad);
     }
@@ -74,20 +77,24 @@ namespace MR
           ValueType bvalue_threshold = NAN)
     {
       if (!finite (bvalue_threshold))
-          bvalue_threshold = File::Config::get_float ("BValueThreshold", 10.0);
+        bvalue_threshold = File::Config::get_float ("BValueThreshold", 10.0);
       if (grad.columns() != 4)
         throw Exception ("invalid gradient encoding matrix: expecting 4 columns.");
-      dwi.clear();
-      bzero.clear();
-      for (size_t i = 0; i < grad.rows(); i++) {
-        if (grad (i,3) > bvalue_threshold)
-          dwi.push_back (i);
-        else
-          bzero.push_back (i);
-      }
-
-      INFO ("found " + str (dwi.size()) + " diffusion-weighted volumes and " 
-          + str (bzero.size()) + " b=0 volumes");
+      Shells<ValueType> shells(grad);
+      int shell_count = shells.count();
+      if (shell_count < 1 || shell_count > sqrt(grad.rows()))
+        throw Exception ("Gradient encoding matrix does not represent a HARDI sequence!");
+      INFO ("found " + str (shell_count) + " shells");
+      Shell<ValueType> bzeroShell;
+      Shell<ValueType> dwiShell;
+      if (shell_count>1)
+        bzeroShell = shells.first();
+      dwiShell = shells.last();
+      if (shell_count>1)
+        INFO ("using " + str (bzeroShell.count()) + " volumes with b-value " + str (bzeroShell.avg_bval()) + " +/-" + str (bzeroShell.std_bval()) + " as b=0 volumes");
+      INFO ("using " + str (dwiShell.count()) + " volumes with b-value " + str (dwiShell.avg_bval()) + " +/-" + str (dwiShell.std_bval()) + " as diffusion-weighted volumes");
+      bzero = bzeroShell.idx();
+      dwi = dwiShell.idx();
     }
 
 
