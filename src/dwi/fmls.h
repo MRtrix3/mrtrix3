@@ -26,7 +26,6 @@
 #define __dwi_fmls_h__
 
 
-
 #include "math/SH.h"
 #include "math/vector.h"
 #include "point.h"
@@ -44,6 +43,14 @@
 #define FMLS_RATIO_TO_NEGATIVE_LOBE_MEAN_PEAK_DEFAULT 1.0 // Peak amplitude needs to be greater than the mean negative peak
 #define FMLS_PEAK_VALUE_THRESHOLD 0.1 // Throw out anything that's below the CSD regularisation threshold
 #define FMLS_RATIO_TO_PEAK_VALUE_DEFAULT 1.0 // By default, turn all peaks into lobes (discrete peaks are never merged)
+
+
+// By default, the mean direction of each FOD lobe is calculated by taking a weighted average of the
+//   Euclidean unit vectors (weights are FOD amplitudes). This is not strictly mathematically correct, and
+//   a method is provided for optimising the mean direction estimate based on minimising the weighted sum of squared
+//   geodesic distances on the sphere. However the coarse estimate is in fact accurate enough for our applications.
+//   Uncomment this line to activate the optimal mean direction calculation (about a 20% performance penalty).
+//#define FMLS_OPTIMISE_MEAN_DIR
 
 
 
@@ -72,6 +79,7 @@ class FOD_lobe {
         peak_dir_bin (seed),
         peak_value (Math::abs (value)),
         peak_dir (dirs.get_dir (seed)),
+        mean_dir (peak_dir * value),
         integral (Math::abs (value)),
         neg (value <= 0.0)
     {
@@ -95,6 +103,9 @@ class FOD_lobe {
       assert ((value <= 0.0 && neg) || (value > 0.0 && !neg));
       mask[bin] = true;
       values[bin] = value;
+      const Point<float>& dir = mask.get_dirs()[bin];
+      const float multiplier = (peak_dir.dot (dir)) > 0.0 ? 1.0 : -1.0;
+      mean_dir += dir * multiplier * value;
       integral += Math::abs (value);
     }
 
@@ -105,10 +116,20 @@ class FOD_lobe {
       peak_value = value;
     }
 
-    void normalise_integral()
+#ifdef FMLS_OPTIMISE_MEAN_DIR
+    void revise_mean_dir (const Point<float>& real_mean)
+    {
+      assert (!neg);
+      mean_dir = real_mean;
+    }
+#endif
+
+    void finalise()
     {
       // 4pi == solid angle of sphere in steradians
       integral *= 4.0 * M_PI / float(mask.size());
+      // This is calculated as the lobe is built, just needs to be set to unit length
+      mean_dir.normalise();
     }
 
     void merge (const FOD_lobe& that)
@@ -122,6 +143,8 @@ class FOD_lobe {
         peak_value = that.peak_value;
         peak_dir = that.peak_dir;
       }
+      const float multiplier = (mean_dir.dot (that.mean_dir)) > 0.0 ? 1.0 : -1.0;
+      mean_dir += that.mean_dir * that.integral * multiplier;
       integral += that.integral;
     }
 
@@ -130,6 +153,7 @@ class FOD_lobe {
     dir_t get_peak_dir_bin() const { return peak_dir_bin; }
     float get_peak_value() const { return peak_value; }
     const Point<float>& get_peak_dir() const { return peak_dir; }
+    const Point<float>& get_mean_dir() const { return mean_dir; }
     float get_integral() const { return integral; }
     bool is_negative() const { return neg; }
 
@@ -140,6 +164,7 @@ class FOD_lobe {
     dir_t peak_dir_bin;
     float peak_value;
     Point<float> peak_dir;
+    Point<float> mean_dir;
     float integral;
     bool neg;
 
@@ -194,7 +219,7 @@ class FODQueueWriter
         return false;
       if (mask_vox_ptr) {
         do {
-          Image::voxel_assign (*mask_vox_ptr, fod_vox, 0, 3);
+          Image::Nav::set_pos (*mask_vox_ptr, fod_vox);
           if (!mask_vox_ptr->value())
             loop.next (fod_vox);
         } while (loop.ok() && !mask_vox_ptr->value());
@@ -263,10 +288,14 @@ class Segmenter {
     void verify_settings() const
     {
       if (create_null_lobe && dilate_lookup_table)
-        throw Exception ("For FOD segmentation, options '-create_null_lobe' and '-dilate_lookup_table' are mutually exclusive");
+        throw Exception ("For FOD segmentation, options 'create_null_lobe' and 'dilate_lookup_table' are mutually exclusive");
       if (!create_lookup_table && dilate_lookup_table)
-        throw Exception ("For FOD segmentation, '-create_lookup_table' must be set in order for lookup tables to be dilated ('-dilate_lookup_table')");
+        throw Exception ("For FOD segmentation, 'create_lookup_table' must be set in order for lookup tables to be dilated ('dilate_lookup_table')");
     }
+
+#ifdef FMLS_OPTIMISE_MEAN_DIR
+    void optimise_mean_dir (FOD_lobe&) const;
+#endif
 
 };
 

@@ -199,9 +199,6 @@ class Segmented_FOD_receiver
     Ptr< Image::BufferSparse<Fixel_metric>::voxel_type > fixel_disp;
 
 
-    Point<float> calc_mean_dir (const FOD_lobe&) const;
-
-
 };
 
 
@@ -311,10 +308,8 @@ bool Segmented_FOD_receiver::operator() (const FOD_lobes& in)
 
   if (dec) {
     Point<float> sum_decs (0.0, 0.0, 0.0);
-    for (FOD_lobes::const_iterator i = in.begin(); i != in.end(); ++i) {
-      const Point<float> mean_dir (calc_mean_dir (*i));
-      sum_decs += Point<float> (Math::abs(mean_dir[0]), Math::abs(mean_dir[1]), Math::abs(mean_dir[2])) * i->get_integral();
-    }
+    for (FOD_lobes::const_iterator i = in.begin(); i != in.end(); ++i)
+      sum_decs += Point<float> (Math::abs(i->get_mean_dir()[0]), Math::abs(i->get_mean_dir()[1]), Math::abs(i->get_mean_dir()[2])) * i->get_integral();
     Image::Nav::set_pos (*dec, in.vox);
     (*dec)[3] = 0; dec->value() = sum_decs[0];
     (*dec)[3] = 1; dec->value() = sum_decs[1];
@@ -353,7 +348,7 @@ bool Segmented_FOD_receiver::operator() (const FOD_lobes& in)
     Math::SH::aPSF<float> aPSF (lmax);
     for (FOD_lobes::const_iterator i = in.begin(); i != in.end(); ++i) {
       Math::Vector<float> this_lobe;
-      aPSF (this_lobe, calc_mean_dir (*i));
+      aPSF (this_lobe, i->get_mean_dir());
       for (size_t c = 0; c != sum_pseudo_fod.size(); ++c)
         sum_pseudo_fod[c] += i->get_integral() * this_lobe[c];
     }
@@ -379,7 +374,7 @@ bool Segmented_FOD_receiver::operator() (const FOD_lobes& in)
     Image::Nav::set_pos (*fixel_afd, in.vox);
     fixel_afd->value().set_size (in.size());
     for (size_t i = 0; i != in.size(); ++i) {
-      Fixel_metric this_fixel (calc_mean_dir (in[i]), in[i].get_integral(), in[i].get_integral());
+      Fixel_metric this_fixel (in[i].get_mean_dir(), in[i].get_integral(), in[i].get_integral());
       (*fixel_afd).value()[i] = this_fixel;
     }
   }
@@ -397,7 +392,7 @@ bool Segmented_FOD_receiver::operator() (const FOD_lobes& in)
     Image::Nav::set_pos (*fixel_disp, in.vox);
     fixel_disp->value().set_size (in.size());
     for (size_t i = 0; i != in.size(); ++i) {
-      Fixel_metric this_fixel (calc_mean_dir (in[i]), in[i].get_integral(), in[i].get_integral() / in[i].get_peak_value());
+      Fixel_metric this_fixel (in[i].get_mean_dir(), in[i].get_integral(), in[i].get_integral() / in[i].get_peak_value());
       (*fixel_disp).value()[i] = this_fixel;
     }
   }
@@ -406,30 +401,6 @@ bool Segmented_FOD_receiver::operator() (const FOD_lobes& in)
   return true;
 
 }
-
-
-
-
-
-Point<float> Segmented_FOD_receiver::calc_mean_dir (const FOD_lobe& lobe) const
-{
-  // Note that this method for calculating the mean direction is approximate only,
-  //   but is good enough for most applications
-  // For a better method see Buss and Fillmore 2001
-  // TODO Consider doing this in the FMLS segmenter
-  const Point<float>& peak_dir (lobe.get_peak_dir());
-  const std::vector<float>& values (lobe.get_values());
-  Point<float> mean_dir (0.0, 0.0, 0.0);
-  for (size_t j = 0; j != dirs.size(); ++j) {
-    if (values[j]) {
-      const float multiplier = (peak_dir.dot (dirs.get_dir (j)) > 0.0) ? 1.0 : -1.0;
-      mean_dir += multiplier * values[j] * dirs.get_dir (j);
-    }
-  }
-  mean_dir.normalise();
-  return mean_dir;
-}
-
 
 
 
