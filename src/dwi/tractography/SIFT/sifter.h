@@ -176,6 +176,7 @@ namespace MR
         track_t term_number;
         float   term_ratio;
         double  term_mu;
+        bool    enforce_quantisation;
         std::string csv_path;
 
 

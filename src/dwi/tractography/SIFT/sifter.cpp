@@ -52,8 +52,9 @@ namespace MR
         remove_untracked_lobes (false),
         min_FOD_integral (0.0),
         term_number (0),
-        term_ratio (0),
-        term_mu (std::numeric_limits<double>::max())
+        term_ratio (0.0),
+        term_mu (0.0),
+        enforce_quantisation (true)
       {
         Track_lobe_contribution::set_scaling (fod_data);
         H.info() = fod_data.info();
@@ -274,7 +275,7 @@ namespace MR
               goto end_iteration;
             }
 
-            if (mu() > term_mu) {
+            if (term_mu && (mu() > term_mu)) {
               another_iteration = false;
               recalculate = TERM_MU;
               goto end_iteration;
@@ -332,7 +333,7 @@ namespace MR
                 this_actual_cf_change += delta_gradient;
               }
 
-              const double required_cf_change_quantisation = -0.5 * quantisation;
+              const double required_cf_change_quantisation = enforce_quantisation ? (-0.5 * quantisation) : 0.0;
               const double this_nonlinearity = (candidate->get_cost_gradient() - this_actual_cf_change);
 
               if (this_actual_cf_change < minvalue (required_cf_change_ratio, required_cf_change_quantisation, this_nonlinearity)) {
@@ -360,8 +361,21 @@ namespace MR
                   recalculate = TERM_RATIO;
                 else
                   recalculate = QUANTISATION;
-                if (!removed_this_iteration)
-                  another_iteration = false;
+                if (!removed_this_iteration) {
+                  // If filtering has been completed to convergence, but the user does not want to filter to convergence
+                  //   (i.e. they have defined a desired termination criterion but it has not yet been met), disable
+                  //   the quantisation check to give the algorithm a chance to meet the user's termination request
+                  if (enforce_quantisation && (term_number || term_ratio || term_mu)) {
+                    if (App::log_level)
+                      fprintf (stderr, "\n");
+                    WARN ("filtering has reached quantisation error but desired termination criterion has not been met;");
+                    WARN ("  disabling cost function quantisation check");
+                    enforce_quantisation = false;
+                  } else {
+                    // Filtering completed to convergence
+                    another_iteration = false;
+                  }
+                }
                 goto end_iteration;
 
               } // End checking validity of candidate streamline removal
@@ -409,6 +423,10 @@ namespace MR
           case TERM_MU:      INFO ("Filtering terminated due to reaching desired proportionality coefficient"); break;
           case POS_GRADIENT: INFO ("Filtering terminated due to candidate streamline having positive gradient"); break;
         }
+
+        if ((term_number || term_ratio || term_mu)
+            && (recalculate == NONLINEARITY || recalculate == QUANTISATION || recalculate == POS_GRADIENT))
+          WARN ("algorithm terminated before any user-specified termination criterion was met");
 
         INFO ("Proportionality coefficient at end of filtering is " + str (mu()));
 
