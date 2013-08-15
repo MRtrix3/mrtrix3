@@ -56,6 +56,7 @@ void usage ()
     "possible due to uncorrectable EPI distortions.";
 
 
+
   ARGUMENTS
   + Argument ("image", "the input FOD image.").type_image_in()
 
@@ -65,10 +66,6 @@ void usage ()
   + Option ("afd", "output a 3D image containing the AFD estimated for each voxel. "
                    "If the input tracks are tangent to multiple fibres in a voxel (fixels), "
                    "then the output AFD is the sum of the AFD for each fixel")
-  + Argument ("image").type_image_out()
-
-
-  + Option ("count", "output a 3D image to check the number of fibers per voxel (fixels) identified based on the input tracks")
   + Argument ("image").type_image_out();
 
 }
@@ -88,15 +85,14 @@ class TrackProcessor {
     TrackProcessor (Image::Buffer<float>& fod_buf,
                     Image::BufferScratch<int32_t>& FOD_fixel_indexer,
                     std::vector<Point<value_type> >& FOD_fixel_directions,
-                    std::vector<value_type>& fixel_afd,
-                    std::vector<bool>& fixel_visited,
+                    std::vector<value_type>& fixel_AFD,
+                    std::vector<int>& fixel_TDI,
                     DWI::FMLS::Segmenter& fmls):
-                    total_afd (0.0),
                     fod_vox (fod_buf),
                     fixel_indexer (FOD_fixel_indexer),
                     fixel_directions (FOD_fixel_directions),
-                    fixel_afd (fixel_afd),
-                    fixel_visited (fixel_visited),
+                    fixel_AFD (fixel_AFD),
+                    fixel_TDI (fixel_TDI),
                     fmls (fmls) {}
 
     bool operator () (SetVoxelDir& dixels)
@@ -120,14 +116,13 @@ class TrackProcessor {
           fmls (fod, lobes);
           if (lobes.size() == 0)
             return true;
-
           fixel_indexer.value() = fixel_directions.size();
           first_index = fixel_directions.size();
           int32_t fixel_count = 0;
           for (DWI::FMLS::FOD_lobes::const_iterator l = lobes.begin(); l != lobes.end(); ++l, ++fixel_count) {
             fixel_directions.push_back (l->get_peak_dir());
-            fixel_afd.push_back (l->get_integral());
-            fixel_visited.push_back (false);
+            fixel_AFD.push_back (l->get_integral());
+            fixel_TDI.push_back (0);
           }
           fixel_indexer[3] = 1;
           fixel_indexer.value() = fixel_count;
@@ -148,23 +143,18 @@ class TrackProcessor {
             closest_fixel_index = j;
           }
         }
-        if (!fixel_visited[closest_fixel_index]) {
-          fixel_visited[closest_fixel_index] = true;
-          total_afd += fixel_afd[closest_fixel_index];
-        }
+        fixel_TDI[closest_fixel_index]++;
       }
 
       return true;
     }
 
-    double total_afd;
-
   private:
     Image::Buffer<float>::voxel_type fod_vox;
     Image::BufferScratch<int32_t>::voxel_type fixel_indexer;
     std::vector<Point<value_type> >& fixel_directions;
-    std::vector<value_type>& fixel_afd;
-    std::vector<bool>& fixel_visited;
+    std::vector<value_type>& fixel_AFD;
+    std::vector<int>& fixel_TDI;
     DWI::FMLS::Segmenter& fmls;
 };
 
@@ -185,7 +175,7 @@ void run ()
     throw Exception ("track file step size is equal to zero");
 
   std::vector<Point<value_type> > fixel_directions;
-  std::vector<value_type> fixel_afd;
+  std::vector<value_type> fixel_AFD;
   DWI::Directions::Set dirs (1281);
   Image::Header index_header (argument[0]);
   index_header.dim(3) = 2;
@@ -195,14 +185,36 @@ void run ()
   for (loop4D.start (fixel_indexer_vox); loop4D.ok(); loop4D.next (fixel_indexer_vox))
     fixel_indexer_vox.value() = -1;
 
-  DWI::Tractography::Mapping::TrackLoader loader (track_file, track_count, "summing apparent fibre volume within track...");
+  DWI::Tractography::Mapping::TrackLoader loader (track_file, track_count, "summing apparent fibre density within track...");
   Image::Header header (argument[0]);
   DWI::Tractography::Mapping::TrackMapperBase<SetVoxelDir> mapper (header);
-  std::vector<bool> fixel_visited;
+  std::vector<int> fixel_TDI;
   Image::Buffer<value_type> fod_buffer (argument[0]);
   DWI::FMLS::Segmenter fmls (dirs, Math::SH::LforN (fod_buffer.dim(3)));
-  TrackProcessor tract_processor (fod_buffer, fixel_indexer, fixel_directions, fixel_afd, fixel_visited, fmls);
+  TrackProcessor tract_processor (fod_buffer, fixel_indexer, fixel_directions, fixel_AFD, fixel_TDI, fmls);
   Thread::run_queue_custom_threading (loader, 1, DWI::Tractography::Mapping::TrackAndIndex(), mapper, 1, SetVoxelDir(), tract_processor, 1);
+
+  double total_AFD = 0.0;
+  Image::Loop loop (0, 3);
+
+  for (loop.start (fixel_indexer_vox); loop.ok(); loop.next (fixel_indexer_vox)) {
+    fixel_indexer_vox[3] = 0;
+    int32_t fixel_index = fixel_indexer_vox.value();
+    if (fixel_index >= 0) {
+      fixel_indexer_vox[3] = 1;
+      int32_t last_index = fixel_index + fixel_indexer_vox.value();
+      int32_t largest_TDI_index = std::numeric_limits<int32_t>::max();
+      int largest_TDI = 0;
+      for (;fixel_index < last_index; ++fixel_index) {
+        if (fixel_TDI[fixel_index] > largest_TDI) {
+          largest_TDI = fixel_TDI[fixel_index];
+          largest_TDI_index = fixel_index;
+        }
+      }
+      if (largest_TDI_index != std::numeric_limits<int32_t>::max())
+        total_AFD += fixel_AFD [largest_TDI_index];
+    }
+  }
 
   Tractography::Reader<value_type> tck_file (argument[1], properties);
   std::vector<Point<value_type> > tck;
@@ -216,42 +228,31 @@ void run ()
   }
 
   // output the AFD sum using std::cout. This enables output to be redirected to a file without the console output.
-  std::cout << tract_processor.total_afd / (total_track_length / static_cast<value_type>(track_count)) << std::endl;
+  std::cout << total_AFD / (total_track_length / static_cast<value_type>(track_count)) << std::endl;
 
   header.set_ndim(3);
 
   Options opt = get_options ("afd");
   if (opt.size()) {
-    Image::Buffer<value_type> avf_buf (opt[0][0], header);
-    Image::Buffer<value_type>::voxel_type avf_vox (avf_buf);
-    Image::Loop loop (0, 3);
-    for (loop.start (fixel_indexer_vox, avf_vox); loop.ok(); loop.next (fixel_indexer_vox, avf_vox)) {
-      fixel_indexer_vox[3] = 0;
-      int32_t fixel_index = fixel_indexer_vox.value();
-      if (fixel_index >= 0) {
-        fixel_indexer_vox[3] = 1;
-        int32_t last_index = fixel_index + fixel_indexer_vox.value();
-        for (;fixel_index < last_index; ++fixel_index)
-          avf_vox.value() += fixel_afd[fixel_index];
+    Image::Buffer<value_type> AFD_buf (opt[0][0], header);
+    Image::Buffer<value_type>::voxel_type AFD_vox (AFD_buf);
+    for (loop.start (fixel_indexer_vox, AFD_vox); loop.ok(); loop.next (fixel_indexer_vox, AFD_vox)) {
+        fixel_indexer_vox[3] = 0;
+        int32_t fixel_index = fixel_indexer_vox.value();
+        if (fixel_index >= 0) {
+          fixel_indexer_vox[3] = 1;
+          int32_t last_index = fixel_index + fixel_indexer_vox.value();
+          int32_t largest_TDI_index = std::numeric_limits<int32_t>::max();
+          int largest_TDI = 0;
+          for (;fixel_index < last_index; ++fixel_index) {
+            if (fixel_TDI[fixel_index] > largest_TDI) {
+              largest_TDI = fixel_TDI[fixel_index];
+              largest_TDI_index = fixel_index;
+            }
+          }
+          if (largest_TDI_index != std::numeric_limits<int32_t>::max())
+            AFD_vox.value() += fixel_AFD [largest_TDI_index];
+        }
       }
-    }
-  }
-
-  // Check number of tract elements per voxel
-  opt = get_options ("count");
-  if (opt.size()) {
-    Image::Buffer<int16_t> fixel_count_buf (opt[0][0], header);
-    Image::Buffer<int16_t>::voxel_type fibre_count_vox (fixel_count_buf);
-    Image::Loop loop (0, 3);
-    for (loop.start (fixel_indexer_vox, fibre_count_vox); loop.ok(); loop.next (fixel_indexer_vox, fibre_count_vox)) {
-      fixel_indexer_vox[3] = 0;
-      int32_t fixel_index = fixel_indexer_vox.value();
-      if (fixel_index >= 0) {
-        fixel_indexer_vox[3] = 1;
-        int32_t last_index = fixel_index + fixel_indexer_vox.value();
-        for (;fixel_index < last_index; ++fixel_index)
-          fibre_count_vox.value() += fixel_visited[fixel_index];
-      }
-    }
   }
 }
