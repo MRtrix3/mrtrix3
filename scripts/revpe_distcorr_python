@@ -1,0 +1,135 @@
+#!/usr/bin/python2
+
+# Script for performing EPI distortion correction using FSL 5.0 tools topup and applytopup
+
+# This script is only for the specific case where a single pair of reversed-phase-encode images have been acquired for estimating the inhomogeneity field (phase encode A>>P then P>>A), which is to be used subsequently to correct a volume series (DWI / fMRI) that has been acquired using A>>P phase-encode direction. If your acquisition is different or more complex, you will need to modify this script accordingly or make your own.
+
+# The script assumes that motion correction has already been applied to the image series. If this is not the case, then the corrections will be erroneous in the presence of significant motion. Eventually when FSL's 'eddy' gets updated to work with high b-value data, that should be used instead of this script, as it will perform motion correction, susceptibility distortion correction & eddy current correction in a single interpolation step.
+
+# Order of input arguments is:
+# * Anterior-posterior image from reverse phase-encode pair
+# * Posterior-anterior image from reverse phase-encode pair
+# * Image series to be corrected; note that motion correction should be applied BEFORE this script
+# * Name of output corrected image series
+
+
+import os, subprocess, sys
+
+from lib.binaryInPath import binaryInPath
+from lib.delTempDir   import delTempDir
+from lib.getFSLSuffix import getFSLSuffix
+from lib.loadOptions  import loadOptions
+from lib.makeTempDir  import makeTempDir
+from lib.printMessage import printMessage
+from lib.runCommand   import runCommand
+
+
+num_args = 4
+
+if len(sys.argv) < num_args+1:
+  errorMessage('Usage: ' + os.path.basename(sys.argv[0]) + ' <AP image> <PA image> <Input image series> <Output image series>')
+
+fsl_path = os.environ.get('FSLDIR', '')
+if not fsl_path:
+  errorMessage('Environment variable FSLDIR is not set; please run appropriate FSL configuration script')
+
+topup_config_path = os.path.join(fsl_path, 'etc', 'flirtsch', 'b02b0.cnf')
+if not os.path.isfile(topup_config_path):
+  errorMessage('Could not find necessary default config file for FSL\'s topup program\n(expected location: ' + topup_config_path + ')')
+
+topup_cmd = 'topup'
+if not binaryInPath(topup_cmd):
+  topup_cmd = 'fsl5.0-topup'
+  if not binaryInPath(topup_cmd):
+    errorMessage('Could not find FSL program topup; please verify FSL install')
+
+applytopup_cmd = 'applytopup'
+if not binaryInPath(applytopup_cmd):
+  applytopup_cmd = 'fsl5.0-applytopup'
+  if not binaryInPath(applytopup_cmd):
+    errorMessage('Could not find FSL program applytopup; please verify FSL install')
+
+(quiet, verbose) = loadOptions(num_args)
+
+fsl_suffix = getFSLSuffix()
+
+working_dir = os.getcwd()
+temp_dir = makeTempDir(verbose)
+
+
+# Convert the input files and place in the temporary directory
+runCommand('mrcat ' + sys.argv[1] + ' ' + sys.argv[2] + ' - -axis 3' + quiet + ' | mrconvert - ' + os.path.join(temp_dir, 'pair.nii') + ' -stride +1,+2,+3,+4' + quiet, verbose)
+runCommand('mrconvert ' + sys.argv[3] + ' ' + os.path.join(temp_dir, 'series_before.nii') + ' -stride +1,+2,+3,+4' + quiet, verbose)
+
+# Get the output of running mrinfo on the input series, for finding the data layout
+mrinfo_command = 'mrinfo ' + sys.argv[3]
+mrinfo_out_path = os.path.join(temp_dir, 'mrinfo_out.txt')
+if verbose:
+  printMessage(mrinfo_command + ' (piping output to ' + mrinfo_out_path + ')')
+with open(mrinfo_out_path, 'w') as mrinfo_out:
+  subprocess.call(mrinfo_command, stdout=mrinfo_out, stderr=None, shell=True)
+  mrinfo_out.close()
+
+# Also try to get the gradient encoding
+# (mrinfo will write an empty grad.b if no gradient encoding is present)
+mrinfo_command += ' -grad ' + os.path.join(temp_dir, 'grad.b')
+if verbose:
+  printMessage(mrinfo_command)
+mrinfo_process = subprocess.call(mrinfo_command, stdout=None, stderr=None, shell=True)
+
+# Move into the temporary directory now that all files are prepared
+if verbose:
+  printMessage('Changing to temporary directory (' + temp_dir + ')')
+os.chdir(temp_dir)
+
+# Construct a configuration file
+if verbose:
+  printMessage('Creating phase-encoding configuration file')
+config_file = open('config.txt', 'w')
+config_file.write('0  1 0 0.1\n0 -1 0 0.1\n')
+config_file.close()
+
+# Perform the field estimation
+runCommand(topup_cmd + ' --imain=pair.nii --datain=config.txt --out=field --config=' + topup_config_path, verbose)
+
+# Apply the warp field to the image series
+# Note: applytopup appears to ignore FSLOUTPUTTYPE field, and just outputs a .nii.gz
+runCommand(applytopup_cmd + ' --imain=series_before.nii --datain=config.txt --inindex=1 --topup=field --out=series_after.' + fsl_suffix + ' --method=jac', verbose)
+
+# Get the data layout of the original image series if possible
+mrinfo_output = open ('mrinfo_out.txt', 'r')
+stride_option = ''
+for line in mrinfo_output:
+  line = line.strip(' ')
+  if line.startswith('Data strides: '):
+    line = line[line.find("[")+2:line.find("]")-1]
+    line = line.replace(' ', ',')
+    stride_option = ' -stride ' + line
+    if verbose:
+      printMessage('Target data layout for output image series: ' + line)
+
+grad_option = ''
+if os.path.getsize('grad.b'):
+  if verbose:
+    printMessage('Detected diffusion gradient encoding in input file; retaining in output file')
+  grad_option = ' -grad grad.b'
+else:
+  if verbose:
+    printMessage('No diffusion gradient encoding found in input file')
+
+# Convert the resulting volume to the output image, and re-insert the diffusion encoding if present
+runCommand('mrconvert series_after.' + fsl_suffix + ' ' + os.path.basename(sys.argv[4]) + stride_option + grad_option + quiet, verbose) 
+
+# Move back to original directory
+if verbose:
+  printMessage('Changing back to original directory (' + working_dir + ')')
+os.chdir(working_dir)
+
+# Get the final file from the temporary directory & put it in the correct location
+if verbose:
+  printMessage('Moving output file from temporary directory to user specified location')
+os.rename(os.path.join(temp_dir, os.path.basename(sys.argv[4])), sys.argv[4])
+
+# Don't leave a trace
+delTempDir(temp_dir, verbose)
+
