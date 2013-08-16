@@ -78,7 +78,7 @@ runCommand(first_cmd + ' -s ' + ','.join(sgm_structures) + ' -i T1.nii -o first'
 pve_image_list = [ ]
 for struct in sgm_structures:
   pve_image_path = 'mesh2pve_' + struct + '.nii'
-  runCommand('mesh2pve first-' + struct + '_first.vtk T1.nii ' + pve_image_path + quiet, verbose)
+  runCommand('mesh2pve first-' + struct + '_first.vtk T1.nii ' + pve_image_path + ' -first T1.nii' + quiet, verbose)
   pve_image_list.append(pve_image_path)
 pve_cat = ' '.join(pve_image_list)
 runCommand('mrcat ' + pve_cat + ' - -axis 3' + quiet + ' | mrmathaxis - sum 3 -' + quiet + ' | mrmath - 1.0 -min all_sgms.nii' + quiet, verbose)
