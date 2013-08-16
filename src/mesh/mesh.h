@@ -35,6 +35,7 @@
 #include "image/copy.h"
 #include "image/header.h"
 #include "image/loop.h"
+#include "image/nav.h"
 #include "image/transform.h"
 #include "image/voxel.h"
 
@@ -74,24 +75,14 @@ namespace MR
             indices[i] = d[i];
         }
 
-
         Polygon()
         {
           memset (indices, 0, vertices * sizeof (uint32_t));
         }
 
 
-        uint32_t operator[] (const size_t i) const
-        {
-          assert (i < vertices);
-          return indices[i];
-        }
-
-        uint32_t& operator[] (const size_t i)
-        {
-          assert (i < vertices);
-          return indices[i];
-        }
+        uint32_t  operator[] (const size_t i) const { assert (i < vertices); return indices[i]; }
+        uint32_t& operator[] (const size_t i)       { assert (i < vertices); return indices[i]; }
 
 
       private:
@@ -117,10 +108,10 @@ namespace MR
         }
 
 
-        void transform_fsl_to_image (const Image::Header&);
+        void transform_first_to_realspace (const Image::Header&);
+        void transform_realspace_to_voxel (const Image::Header&);
 
-
-        void output_pve_image (const Image::Header&, const std::string&) const;
+        void output_pve_image (const Image::Header&, const std::string&);
 
 
       private:
@@ -132,7 +123,7 @@ namespace MR
 
         void verify_data() const;
 
-        void load_vertices (VertexList&, const size_t) const;
+        void load_polygon_vertices (VertexList&, const size_t) const;
 
     };
 

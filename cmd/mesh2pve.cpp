@@ -50,6 +50,11 @@ void usage ()
   + Argument ("template", "the template image").type_image_in()
   + Argument ("output",   "the output image").type_text();
 
+  OPTIONS
+  + Option ("first", "indicates that the mesh file is provided by FSL FIRST, so the vertex locations need to be transformed accordingly")
+    + Argument ("source_image").type_image_in();
+
+
 };
 
 
@@ -60,11 +65,16 @@ void run ()
   // Read in the mesh data
   Mesh::Mesh mesh (argument[0]);
 
+  // If the .vtk files come from FIRST, they are defined in a native FSL space, and
+  //   therefore the source image must be known in order to transform to real space
+  Options opt = get_options ("first");
+  if (opt.size()) {
+    Image::Header H_first (opt[0][0]);
+    mesh.transform_first_to_realspace (H_first);
+  }
+
   // Get the template image
   Image::Header template_image (argument[1]);
-
-  // Convert the mesh to voxel coordinates to make processing easier
-  mesh.transform_fsl_to_image (template_image);
 
   // Create the output image
   mesh.output_pve_image (template_image, argument[2]);

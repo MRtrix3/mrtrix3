@@ -35,52 +35,51 @@ namespace MR
 
 
 
-    void Mesh::transform_fsl_to_image (const Image::Header& image)
+    void Mesh::transform_first_to_realspace (const Image::Header& H)
     {
 
-      // To make PVE calculations as simple as possible, transform all mesh points from FSL
-      //   internal coordinate space to voxel-space coordinates
-
-      // TODO Need to make this more robust
+      Image::Transform transform (H);
 
       for (VertexList::iterator v = vertices.begin(); v != vertices.end(); ++v) {
-        (*v)[0] /= image.vox (0);
-        (*v)[1] /= image.vox (1);
-        (*v)[2] /= image.vox (2);
-        (*v)[0]  = image.dim (0) - 1 - (*v)[0];
+        (*v)[0] = ((H.dim(0)-1) * H.vox(0)) - (*v)[0];
+        *v = transform.image2scanner (*v);
       }
 
     }
 
 
 
+    void Mesh::transform_realspace_to_voxel (const Image::Header& H)
+    {
+      Image::Transform transform (H);
+      for (VertexList::iterator v = vertices.begin(); v != vertices.end(); ++v)
+        *v = transform.scanner2voxel (*v);
+    }
 
 
-    // For initial segmentation of mesh - identify voxels on the mesh, inside & outside
-    enum vox_mesh_t { UNDEFINED, ON_MESH, NOT_ON_MESH, OUTSIDE, INSIDE };
 
 
 
-    void Mesh::output_pve_image (const Image::Header& template_image, const std::string& path) const
+    void Mesh::output_pve_image (const Image::Header& H, const std::string& path)
     {
 
-      // 3D vector math should be accurate enough to only consider 6 nearest neighbours
-      static const Point<int> adj_voxels[6] = { Point<int> (-1,  0,  0),
-          Point<int> (+1,  0,  0),
-          Point<int> ( 0, -1,  0),
-          Point<int> ( 0, +1,  0),
-          Point<int> ( 0,  0, -1),
-          Point<int> ( 0,  0, +1)};
+      // For initial segmentation of mesh - identify voxels on the mesh, inside & outside
+      enum vox_mesh_t { UNDEFINED, ON_MESH, OUTSIDE, INSIDE };
 
-      // Offsets from the centre of a voxel to its corners
-      static const Point<float> vox_cnr_offsets[8] = { Point<float> (-0.5, -0.5, -0.5),
-          Point<float> (-0.5, -0.5, +0.5),
-          Point<float> (-0.5, +0.5, -0.5),
-          Point<float> (-0.5, +0.5, +0.5),
-          Point<float> (+0.5, -0.5, -0.5),
-          Point<float> (+0.5, +0.5, +0.5),
-          Point<float> (+0.5, -0.5, -0.5),
-          Point<float> (+0.5, +0.5, +0.5)};
+      ProgressBar progress ("converting mesh to PVE image... ", 7);
+
+      // For speed, want the vertex data to be in voxel positions
+      // Therefore modify the vertex data in place, but save the original data and set it
+      //   back to the way it was on function completion
+      const VertexList vertices_realspace (vertices);
+      transform_realspace_to_voxel (H);
+
+      static const Point<int> adj_voxels[6] = { Point<int> (-1,  0,  0),
+                                                Point<int> (+1,  0,  0),
+                                                Point<int> ( 0, -1,  0),
+                                                Point<int> ( 0, +1,  0),
+                                                Point<int> ( 0,  0, -1),
+                                                Point<int> ( 0,  0, +1)};
 
       // Compute normals for polygons
       std::vector< Point<float> > normals;
@@ -90,234 +89,143 @@ namespace MR
         normals.push_back (this_normal);
       }
 
-      Image::Header H (template_image);
-      H.datatype() = DataType::Float32; // Output intensity will range from 0.0 to 1.0
-
-      // Create some memory to work with
+      // Create some memory to work with:
+      // Stores a flag for each voxel as encoded in enum vox_mesh_t
       Image::BufferScratch<uint8_t> init_seg_data (H);
       Image::BufferScratch<uint8_t>::voxel_type init_seg (init_seg_data);
 
-      std::vector< Point<int> > pv_voxels;
+      // For every voxel, stores those polygons that may intersect the voxel
+      typedef std::map< Point<int>, std::vector<size_t> > Vox2Poly;
+      Vox2Poly voxel2poly;
 
-      // Step through the vertex list, flagging any voxels which intersect with them
-      for (VertexList::const_iterator v = vertices.begin(); v != vertices.end(); ++v) {
-        const Point<int> voxel (round ((*v)[0]), round ((*v)[1]), round ((*v)[2]));
-        init_seg[0] = voxel[0];
-        init_seg[1] = voxel[1];
-        init_seg[2] = voxel[2];
-        init_seg.value() = vox_mesh_t (ON_MESH);
-        pv_voxels.push_back (voxel);
-      }
+      // Map each polygon to the underlying voxels
+      for (size_t poly_index = 0; poly_index != polygons.size(); ++poly_index) {
 
-      /*
-  Image::Header H_onmesh (template_image);
-  H_onmesh.datatype() = DataType::Bit;
-  Image::Buffer<bool> onmesh_data ("onmesh.mif", H_onmesh);
-  Image::Buffer<bool>::voxel_type v_onmesh (onmesh_data);
-  Image::Loop loop;
-  for (loop.start (init_seg, v_onmesh); loop.ok(); loop.next (init_seg, v_onmesh))
-    v_onmesh.value() = (init_seg.value() == vox_mesh_t (ON_MESH));
-       */
-
-      // From here, expand the selection of PV-voxels to adjacent voxels in an iterative fashion,
-      //   flagging any voxels which intersect with a polygon
-      std::vector< Point<int> > to_expand (pv_voxels);
-      do {
-        const Point<int> centre_voxel = to_expand.back();
-        to_expand.pop_back();
-
-        for (size_t adj_vox_idx = 0; adj_vox_idx != 6; ++adj_vox_idx) {
-          const Point<int> this_voxel (centre_voxel + adj_voxels[adj_vox_idx]);
-          if (this_voxel[0] >= 0 && this_voxel[0] < init_seg.dim (0) && this_voxel[1] >= 0 && this_voxel[1] < init_seg.dim (1) && this_voxel[2] >= 0 && this_voxel[2] < init_seg.dim (2)) {
-            init_seg[0] = this_voxel[0];
-            init_seg[1] = this_voxel[1];
-            init_seg[2] = this_voxel[2];
-            if (init_seg.value() == vox_mesh_t (UNDEFINED)) { // Don't process a voxel more than once
-
-              VertexList this_polygon;
-              bool is_pv_voxel = false;
-              for (size_t poly_idx = 0; poly_idx != polygons.size() && !is_pv_voxel; ++poly_idx) {
-                load_vertices (this_polygon, poly_idx);
-
-                // Early exit: For all three axes, must have at least one vertex smaller
-                //   than +ve edge, and at least one larger than +ve edge
-                // (Don't just test for a vertex within the voxel range - polygons may be larger than voxel size!)
-                bool early_exit = false;
-                for (size_t axis = 0; axis != 3 && !early_exit; ++axis) {
-                  bool below_max = false, above_min = false;
-                  for (VertexList::const_iterator v = this_polygon.begin(); v != this_polygon.end(); ++v) {
-                    if ((*v)[axis] <= float(this_voxel[axis]) + 0.5)
-                      below_max = true;
-                    if ((*v)[axis] >= float(this_voxel[axis]) - 0.5)
-                      above_min = true;
-                  }
-                  early_exit = !(below_max && above_min);
-                }
-                if (!early_exit) {
-
-                  const Point<float> polygon_centre ((this_polygon[0] + this_polygon[1] + this_polygon[2]) * (1.0 / 3.0));
-
-                  bool corner_outside = false, corner_inside = false;
-                  for (size_t cnr_idx = 0; cnr_idx != 8; ++cnr_idx) {
-                    const Point<float> corner (Point<float>(this_voxel) + vox_cnr_offsets[cnr_idx]);
-                    const Point<float> diff (corner - polygon_centre);
-                    if (diff.dot (normals[poly_idx]) >= 0.0)
-                      corner_outside = true;
-                    else
-                      corner_inside = true;
-                  }
-                  is_pv_voxel = corner_outside && corner_inside;
-
-                }
-              }
-
-              if (is_pv_voxel) {
-                init_seg.value() = ON_MESH;
-                pv_voxels.push_back (this_voxel);
-                to_expand.push_back (this_voxel);
-              } else {
-                init_seg.value() = NOT_ON_MESH;
-              }
-
-            }
-
+        // Figure out the voxel extent of this polygon in three dimensions
+        Point<int> lower_bound (H.dim(0)-1, H.dim(1)-1, H.dim(2)-1), upper_bound (0, 0, 0);
+        VertexList this_poly_verts;
+        load_polygon_vertices (this_poly_verts, poly_index);
+        for (VertexList::const_iterator v = this_poly_verts.begin(); v != this_poly_verts.end(); ++v) {
+          for (size_t axis = 0; axis != 3; ++axis) {
+            const int this_axis_voxel = Math::round((*v)[axis]);
+            lower_bound[axis] = std::min (lower_bound[axis], this_axis_voxel);
+            upper_bound[axis] = std::max (upper_bound[axis], this_axis_voxel);
           }
         }
 
-      } while (!to_expand.empty());
+        // Constrain to lie within the dimensions of the image
+        for (size_t axis = 0; axis != 3; ++axis) {
+          lower_bound[axis] = std::max(0,             lower_bound[axis]);
+          upper_bound[axis] = std::min(H.dim(axis)-1, upper_bound[axis]);
+        }
 
-      /*
-  Image::Header H_init (template_image);
-  H_init.datatype() = DataType::UInt8;
-  Image::Buffer<uint8_t> init_data ("init_seg.mif", H_init);
-  Image::Buffer<uint8_t>::voxel_type v_init (init_data);
-  Image::copy (init_seg, v_init);
-       */
+        // For all voxels within this rectangular region, assign this polygon to the map
+        Point<int> voxel;
+        for (voxel[2] = lower_bound[2]; voxel[2] <= upper_bound[2]; ++voxel[2]) {
+          for (voxel[1] = lower_bound[1]; voxel[1] <= upper_bound[1]; ++voxel[1]) {
+            for (voxel[0] = lower_bound[0]; voxel[0] <= upper_bound[0]; ++voxel[0]) {
+              std::vector<size_t> this_voxel_polys;
+              Vox2Poly::iterator existing = voxel2poly.find (voxel);
+              if (existing != voxel2poly.end()) {
+                this_voxel_polys = existing->second;
+                voxel2poly.erase (existing);
+              } else {
+                // Only call this once each voxel, regardless of the number of intersecting polygons
+                Image::Nav::set_value_at_pos (init_seg, voxel, ON_MESH);
+              }
+              this_voxel_polys.push_back (poly_index);
+              voxel2poly.insert (std::make_pair (voxel, this_voxel_polys));
+        } } }
 
-      // For those voxels which are not on the mesh, fill them as either inside or outside
+      }
+      ++progress;
 
-      const Point<int> corner_voxels[8] = { Point<int> (                0,                 0,                 0),
-          Point<int> (                0,                 0, template_image.dim (2) - 1),
-          Point<int> (                0, template_image.dim (1) - 1,                 0),
-          Point<int> (                0, template_image.dim (1) - 1, template_image.dim (2) - 1),
-          Point<int> (template_image.dim (0) - 1,                 0,                 0),
-          Point<int> (template_image.dim (0) - 1,                 0, template_image.dim (2) - 1),
-          Point<int> (template_image.dim (0) - 1, template_image.dim (1) - 1,                 0),
-          Point<int> (template_image.dim (0) - 1, template_image.dim (1) - 1, template_image.dim (2) - 1)};
 
+      // Find all voxels that are not partial-volumed with the mesh, and are not inside the mesh
+      // Use a corner of the image FoV to commence filling of the volume, and then check that all
+      //   eight corners have been flagged as outside the volume
+      const Point<int> corner_voxels[8] = {
+          Point<int> (            0,             0,             0),
+          Point<int> (            0,             0, H.dim (2) - 1),
+          Point<int> (            0, H.dim (1) - 1,             0),
+          Point<int> (            0, H.dim (1) - 1, H.dim (2) - 1),
+          Point<int> (H.dim (0) - 1,             0,             0),
+          Point<int> (H.dim (0) - 1,             0, H.dim (2) - 1),
+          Point<int> (H.dim (0) - 1, H.dim (1) - 1,             0),
+          Point<int> (H.dim (0) - 1, H.dim (1) - 1, H.dim (2) - 1)};
+
+      // TODO This is slow; is there a faster implementation?
+      // This is essentially a connected-component analysis...
+      std::vector< Point<int> > to_expand;
       to_expand.push_back (corner_voxels[0]);
-      init_seg[0] = corner_voxels[0][0];
-      init_seg[1] = corner_voxels[0][1];
-      init_seg[2] = corner_voxels[0][2];
-      init_seg.value() = vox_mesh_t (OUTSIDE);
+      Image::Nav::set_value_at_pos (init_seg, corner_voxels[0], vox_mesh_t(OUTSIDE));
       do {
         const Point<int> centre_voxel (to_expand.back());
         to_expand.pop_back();
-
         for (size_t adj_vox_idx = 0; adj_vox_idx != 6; ++adj_vox_idx) {
           const Point<int> this_voxel (centre_voxel + adj_voxels[adj_vox_idx]);
-          if (this_voxel[0] >= 0 && this_voxel[0] < init_seg.dim (0) && this_voxel[1] >= 0 && this_voxel[1] < init_seg.dim (1) && this_voxel[2] >= 0 && this_voxel[2] < init_seg.dim (2)) {
-
-            init_seg[0] = this_voxel[0];
-            init_seg[1] = this_voxel[1];
-            init_seg[2] = this_voxel[2];
-            if (init_seg.value() == vox_mesh_t (UNDEFINED) || init_seg.value() == vox_mesh_t (NOT_ON_MESH)) {
-              init_seg.value() = vox_mesh_t (OUTSIDE);
-              to_expand.push_back (this_voxel);
-            }
-
+          Image::Nav::set_pos (init_seg, this_voxel);
+          if (Image::Nav::within_bounds (init_seg) && init_seg.value() == vox_mesh_t (UNDEFINED)) {
+            init_seg.value() = vox_mesh_t (OUTSIDE);
+            to_expand.push_back (this_voxel);
           }
         }
-
       } while (!to_expand.empty());
+      ++progress;
 
       for (size_t cnr_idx = 0; cnr_idx != 8; ++cnr_idx) {
-        init_seg[0] = corner_voxels[cnr_idx][0];
-        init_seg[1] = corner_voxels[cnr_idx][1];
-        init_seg[2] = corner_voxels[cnr_idx][2];
-        if (init_seg.value() == vox_mesh_t (UNDEFINED))
+        if (Image::Nav::get_value_at_pos (init_seg, corner_voxels[cnr_idx]) == vox_mesh_t (UNDEFINED))
           throw Exception ("Mesh is not bound within image field of view");
       }
 
+
+      // Find those voxels that remain unassigned, and set them to INSIDE
       Image::Loop loop;
       for (loop.start (init_seg); loop.ok(); loop.next (init_seg)) {
-        if (init_seg.value() == vox_mesh_t (UNDEFINED) || init_seg.value() == vox_mesh_t (NOT_ON_MESH))
+        if (init_seg.value() == vox_mesh_t (UNDEFINED))
           init_seg.value() = vox_mesh_t (INSIDE);
       }
+      ++progress;
 
+
+      // Generate the initial estimated PVE image
       Image::BufferScratch<float> pve_est_data (H);
       Image::BufferScratch<float>::voxel_type pve_est (pve_est_data);
 
       for (loop.start (init_seg, pve_est); loop.ok(); loop.next (init_seg, pve_est)) {
         switch (init_seg.value()) {
-          case vox_mesh_t (UNDEFINED):   throw Exception ("Poor filling of initial mesh estimate"); break;
+          case vox_mesh_t (UNDEFINED):   throw Exception ("Code error: poor filling of initial mesh estimate"); break;
           case vox_mesh_t (ON_MESH):     pve_est.value() = 0.5; break;
-          case vox_mesh_t (NOT_ON_MESH): throw Exception ("Poor filling of initial mesh estimate"); break;
           case vox_mesh_t (OUTSIDE):     pve_est.value() = 0.0; break;
           case vox_mesh_t (INSIDE):      pve_est.value() = 1.0; break;
-          default:                       throw Exception ("Poor filling of initial mesh estimate"); break;
         }
       }
+      ++progress;
 
-      /*
-  Image::Header H_est (template_image);
-  H_est.datatype() = DataType::Float32;
-  Image::Buffer<float> est_data ("estimate.mif", H_est);
-  Image::Buffer<float>::voxel_type v_est (est_data);
-  Image::copy (pve_est, v_est);
-       */
 
+      // Get better partial volume estimates for all necessary voxels
+      // TODO This could be multi-threaded, but hard to justify the dev time
       static const size_t pve_os_ratio = 10;
 
-      // Obtain better partial volume estimates for those voxels that lie on the mesh
-      for (std::vector< Point<int> >::const_iterator vox = pv_voxels.begin(); vox != pv_voxels.end(); ++vox) {
-        pve_est[0] = (*vox)[0];
-        pve_est[1] = (*vox)[1];
-        pve_est[2] = (*vox)[2];
+      for (Vox2Poly::const_iterator i = voxel2poly.begin(); i != voxel2poly.end(); ++i) {
 
-        // Generate a set of points within this voxel which need to be tested individually
+        const Point<int>& voxel (i->first);
+
+        // Generate a set of points within this voxel that need to be tested individually
         std::vector< Point<float> > to_test;
         to_test.reserve (Math::pow3 (pve_os_ratio));
-
         for (size_t x_idx = 0; x_idx != pve_os_ratio; ++x_idx) {
-          const float x = (*vox)[0] - 0.5 + ((float(x_idx) + 0.5) / float(pve_os_ratio));
+          const float x = voxel[0] - 0.5 + ((float(x_idx) + 0.5) / float(pve_os_ratio));
           for (size_t y_idx = 0; y_idx != pve_os_ratio; ++y_idx) {
-            const float y = (*vox)[1] - 0.5 + ((float(y_idx) + 0.5) / float(pve_os_ratio));
+            const float y = voxel[1] - 0.5 + ((float(y_idx) + 0.5) / float(pve_os_ratio));
             for (size_t z_idx = 0; z_idx != pve_os_ratio; ++z_idx) {
-              const float z = (*vox)[2] - 0.5 + ((float(z_idx) + 0.5) / float(pve_os_ratio));
+              const float z = voxel[2] - 0.5 + ((float(z_idx) + 0.5) / float(pve_os_ratio));
               to_test.push_back (Point<float> (x, y, z));
             }
           }
         }
 
-        // Determine those polygons that should be considered during PV-estimation for this voxel
-        std::vector<size_t> near_polys;
-        for (size_t p = 0; p != polygons.size(); ++p) {
-
-          VertexList v;
-          load_vertices (v, p);
-
-          const Polygon<3>& polygon (polygons[p]);
-          bool consider_this_polygon = true;
-          for (size_t axis = 0; axis != 3 && consider_this_polygon; ++axis) {
-            bool below_max = false, above_min = false;
-            for (size_t vertex_index = 0; vertex_index != 3; ++vertex_index) {
-              const Vertex& vertex (vertices[polygon[vertex_index]]);
-              if (vertex[axis] <= float((*vox)[axis]) + 0.5)
-                below_max = true;
-              if (vertex[axis] >= float((*vox)[axis]) - 0.5)
-                above_min = true;
-            }
-            consider_this_polygon = below_max && above_min;
-          }
-          if (consider_this_polygon)
-            near_polys.push_back (p);
-
-        }
-
-        if (near_polys.empty())
-          throw Exception ("Voxel labelled as interacting with mesh, but no polygons found");
-
+        // Count the number of these points that lie inside the mesh
         int inside_mesh_count = 0;
         for (std::vector< Point<float> >::const_iterator i_p = to_test.begin(); i_p != to_test.end(); ++i_p) {
           const Point<float>& p (*i_p);
@@ -325,11 +233,12 @@ namespace MR
           float best_min_edge_distance = -INFINITY;
           bool best_result_inside = false;
 
-          for (std::vector<size_t>::const_iterator polygon_index = near_polys.begin(); polygon_index != near_polys.end(); ++polygon_index) {
+          // Only test against those polygons that are near this voxel
+          for (std::vector<size_t>::const_iterator polygon_index = i->second.begin(); polygon_index != i->second.end(); ++polygon_index) {
             const Point<float>& n (normals[*polygon_index]);
 
             VertexList v;
-            load_vertices (v, *polygon_index);
+            load_polygon_vertices (v, *polygon_index);
 
             // First: is it aligned with the normal?
             const Point<float> poly_centre ((v[0] + v[1] + v[2]) * (1.0 / 3.0));
@@ -340,8 +249,8 @@ namespace MR
             const Point<float> p_on_plane (p - (n * (diff.dot (n))));
 
             const float min_edge_distance = minvalue ((p_on_plane - v[0]).dot ((v[2]-v[0]).cross (n)),
-                (p_on_plane - v[2]).dot ((v[1]-v[2]).cross (n)),
-                (p_on_plane - v[1]).dot ((v[0]-v[1]).cross (n)));
+                                                      (p_on_plane - v[2]).dot ((v[1]-v[2]).cross (n)),
+                                                      (p_on_plane - v[1]).dot ((v[0]-v[1]).cross (n)));
 
             if (min_edge_distance > best_min_edge_distance) {
               best_min_edge_distance = min_edge_distance;
@@ -355,17 +264,21 @@ namespace MR
 
         }
 
-        pve_est.value() = (float)inside_mesh_count / (float)Math::pow3 (pve_os_ratio);
+        Image::Nav::set_value_at_pos (pve_est, voxel, (float)inside_mesh_count / (float)Math::pow3 (pve_os_ratio));
 
       }
+      ++progress;
 
-      // Finally, output the result
-      Image::Buffer<float> out (path, H);
-      Image::Buffer<float>::voxel_type v (out);
-      for (loop.start (pve_est, v); loop.ok(); loop.next (pve_est, v))
-        v.value() = pve_est.value();
+      // Write image to file
+      pve_est.save (path);
+      ++progress;
+
+      // Restore the vertex data back to realspace
+      vertices = vertices_realspace;
 
     }
+
+
 
 
 
@@ -403,7 +316,7 @@ namespace MR
         throw Exception ("Error in definition of .vtk dataset");
       line = line.substr (8);
       if (line == "STRUCTURED_POINTS" || line == "STRUCTURED_GRID" || line == "UNSTRUCTURED_GRID" || line == "RECTILINEAR_GRID" || line == "FIELD")
-        throw Exception ("Unsupported dataset type in .vtk file");
+        throw Exception ("Unsupported dataset type (" + line + ") in .vtk file");
 
       // From here, don't necessarily know which parts of the data will come first
       while (!in.eof()) {
@@ -506,7 +419,7 @@ namespace MR
 
 
 
-    void Mesh::load_vertices (VertexList& output, const size_t index) const
+    void Mesh::load_polygon_vertices (VertexList& output, const size_t index) const
     {
       output.clear();
       for (size_t axis = 0; axis != 3; ++axis)
