@@ -98,7 +98,7 @@ void load_lookup_table (Node_map& nodes)
   }
 
 
-  Options opt = get_options ("lut_freesurfer");
+  opt = get_options ("lut_freesurfer");
   if (opt.size()) {
 
     if (nodes.size())
