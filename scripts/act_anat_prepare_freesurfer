@@ -17,6 +17,7 @@ import os, sys
 
 from lib.binaryInPath import binaryInPath
 from lib.delTempDir   import delTempDir
+from lib.errorMessage import errorMessage
 from lib.loadOptions  import loadOptions
 from lib.makeTempDir  import makeTempDir
 from lib.printMessage import printMessage
