@@ -64,16 +64,16 @@
 7     Left-Caudate
 7     Left-Putamen
 7     Left-Pallidum
-4     Left-Hippocampus
-4     Left-Amygdala
+7     Left-Hippocampus
+7     Left-Amygdala
 7     Left-Accumbens-area
 
 8     Right-Thalamus-Proper
 8     Right-Caudate
 8     Right-Putamen
 8     Right-Pallidum
-11    Right-Hippocampus
-11    Right-Amygdala
+8     Right-Hippocampus
+8     Right-Amygdala
 8     Right-Accumbens-area
 
 9     Right-Cerebellum-Cortex

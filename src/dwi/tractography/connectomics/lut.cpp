@@ -41,6 +41,9 @@ using namespace App;
 
 const OptionGroup LookupTableOption = OptionGroup ("Options for importing information from parcellation lookup tables")
 
+  + Option ("lut_basic", "get information from a basic lookup table consisting of index / name pairs")
+    + Argument("path").type_file()
+
   + Option ("lut_freesurfer", "get information from a FreeSurfer lookup table (typically \"FreeSurferColorLUT.txt\")")
     + Argument("path").type_file()
 
@@ -64,6 +67,35 @@ void load_lookup_table (Node_map& nodes)
 
 
   const node_t max_node_index = std::numeric_limits<node_t>::max();
+
+
+  Options opt = get_options ("lut_basic");
+  if (opt.size()) {
+
+    if (nodes.size())
+      throw Exception ("Cannot import lookup table information from multiple sources");
+
+    std::ifstream in_lut (opt[0][0].c_str(), std::ios_base::in);
+    if (!in_lut)
+      throw Exception ("Unable to open lookup table file");
+
+    std::string line;
+    char name [80];
+    while (std::getline (in_lut, line)) {
+      if (line[0] != '#' && line.size() > 1) {
+        node_t index = max_node_index;
+        sscanf (line.c_str(), "%u %s", &index, name);
+        if (index != max_node_index) {
+          if (nodes.find (index) != nodes.end())
+            throw Exception ("Lookup table " + opt[0][0] + " contains redundant entries");
+          const std::string strname (name);
+          nodes.insert (std::make_pair (index, Node_info (strname)));
+        }
+      }
+      line.clear();
+    }
+
+  }
 
 
   Options opt = get_options ("lut_freesurfer");
