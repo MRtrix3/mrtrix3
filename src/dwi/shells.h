@@ -147,6 +147,8 @@ namespace MR
         maxBval = *std::max_element(bvals.begin(),bvals.end());
         if (!finite (bvalue_threshold)) {
           bvalue_threshold = (maxBval-minBval)/(2.0*ValueType(bvals.size()));
+	  if (bvalue_threshold == 0)
+            bvalue_threshold = 1;
         }
         clusterBvalues(minDirections, bvalue_threshold);
         sortByBval();
