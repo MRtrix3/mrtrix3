@@ -129,7 +129,7 @@ class Var {
     value_type result () const { 
       if (count < 2) 
         return NAN;
-      return sum_sqr / (count-1) - Math::pow2 (sum / (count-1)); 
+      return  (sum_sqr - Math::pow2 (sum) / static_cast<double> (count)) / (static_cast<double> (count) - 1.0);
     }
     double sum, sum_sqr;
     size_t count;
