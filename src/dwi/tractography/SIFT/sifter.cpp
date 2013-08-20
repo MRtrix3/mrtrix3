@@ -113,6 +113,8 @@ namespace MR
         }
 
         tck_file_path = path;
+
+        INFO ("Proportionality coefficient before filtering is " + str (mu()));
       }
 
 
@@ -175,8 +177,6 @@ namespace MR
         enum recalc_reason { UNDEFINED, NONLINEARITY, QUANTISATION, TERM_COUNT, TERM_RATIO, TERM_MU, POS_GRADIENT };
 
         const track_t num_tracks = contributions.size();
-
-        INFO ("Proportionality coefficient at start of filtering is " + str (mu()));
 
         Ptr<std::ofstream> csv_out;
         if (!csv_path.empty()) {
