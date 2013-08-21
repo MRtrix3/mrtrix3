@@ -108,7 +108,7 @@
 97     ctx_rh_G_and_S_cingul-Mid-Post
 98     ctx_rh_G_cingul-Post-dorsal
 99     ctx_rh_G_cingul-Post-ventral
-100     ctx_rh_G_cuneus
+100    ctx_rh_G_cuneus
 101    ctx_rh_G_front_inf-Opercular
 102    ctx_rh_G_front_inf-Orbital
 103    ctx_rh_G_front_inf-Triangul
@@ -174,3 +174,4 @@
 163    ctx_rh_S_temporal_transverse
 
 164   Right-Cerebellum-Cortex
+
