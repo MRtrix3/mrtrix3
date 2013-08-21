@@ -146,10 +146,12 @@ namespace MR
         minBval = *std::min_element(bvals.begin(),bvals.end());
         maxBval = *std::max_element(bvals.begin(),bvals.end());
         if (!finite (bvalue_threshold)) {
-          bvalue_threshold = (maxBval-minBval)/(2.0*ValueType(bvals.size()));
-	  if (bvalue_threshold == 0)
-            bvalue_threshold = 1;
+          bvalue_threshold = 100;
+          //bvalue_threshold = (maxBval-minBval)/(2.0*ValueType(bvals.size()));
+	  //if (bvalue_threshold == 0)
+          //  bvalue_threshold = 1;
         }
+        std::cout << bvalue_threshold << std::endl;
         clusterBvalues(minDirections, bvalue_threshold);
         sortByBval();
       }
