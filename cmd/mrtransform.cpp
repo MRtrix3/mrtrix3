@@ -134,9 +134,9 @@ void run ()
     output_header.stride(1) = 3;
     output_header.stride(2) = 4;
     output_header.stride(3) = 1;
-    input_buffer = new Image::BufferPreload<value_type> (argument[0], stride);
+    input_buffer = new Image::BufferPreload<value_type> (input_header, stride);
   } else {
-    input_buffer = new Image::BufferPreload<value_type> (argument[0]);
+    input_buffer = new Image::BufferPreload<value_type> (input_header);
   }
 
 

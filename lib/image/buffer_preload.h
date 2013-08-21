@@ -43,22 +43,28 @@ namespace MR
             init();
           }
 
+        BufferPreload (const std::string& image_name, const Image::Stride::List& desired_strides) :
+          Buffer<value_type> (image_name),
+          data_ (NULL) {
+            init (desired_strides);
+          }
+
         BufferPreload (const Header& header) :
           Buffer<value_type> (header),
           data_ (NULL) {
             init();
           }
 
+        BufferPreload (const Header& header, const Image::Stride::List& desired_strides) :
+          Buffer<value_type> (header),
+          data_ (NULL) {
+            init (desired_strides);
+          }
+
         BufferPreload (const Buffer<ValueType>& buffer) :
           Buffer<value_type> (buffer),
           data_ (NULL) {
             init();
-          }
-
-        BufferPreload (const std::string& image_name, const Image::Stride::List& desired_strides) :
-          Buffer<value_type> (image_name),
-          data_ (NULL) {
-            init (desired_strides);
           }
 
         ~BufferPreload () {
