@@ -93,12 +93,15 @@ void run ()
     grad.load (argument[1]);
     std::vector<int> bzeros, dwis;
     DWI::guess_DW_directions (dwis, bzeros, grad);
-    DWI::gen_direction_matrix(directions, grad, dwis);
+    DWI::gen_direction_matrix (directions, grad, dwis);
   } 
   else {
-    directions.load(argument[1]);
+    directions.load (argument[1]);
     Math::Matrix<value_type> grad (directions.rows(), 4);
   }
+
+  if (!directions.rows())
+    throw Exception ("no directions found in input directions file");
 
   std::stringstream dir_stream;
   for (size_t d = 0; d < directions.rows() - 1; ++d)

@@ -636,6 +636,9 @@ namespace MR
           }
           while (stream.good());
 
+          if (!V.size())
+            throw Exception ("no data in file");
+
           M.allocate (V.size(), V[0]->size());
 
           for (size_t i = 0; i < M.rows(); i++) {
