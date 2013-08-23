@@ -143,6 +143,11 @@ namespace MR
           }
         }
 
+        // Don't allocate memory for voxels with no sparse data; just point them all to the start of the
+        //   sparse data where theres a single uint32_t(0)
+        if (!numel)
+          return 0;
+
         const int64_t requested_size = sizeof (uint32_t) + (numel * class_size);
         if (data_end + requested_size > size()) {
 
