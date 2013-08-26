@@ -40,17 +40,17 @@ namespace MR
       //   tested, it may be useful from a visualisation perspective to be able to e.g. scale fixels by
       //   AFD but colour by the parameter of interest. It may also be a useful parameter in the process
       //   of determining fixel correspondence, or adding/averaging quantities between multiple fixels.
-      class Fixel_metric
+      class FixelMetric
       {
         public:
-          Fixel_metric (const Point<float>& d, const float a, const float v) :
+          FixelMetric (const Point<float>& d, const float a, const float v) :
             dir (d),
             amplitude (a),
             value (v) { }
-          Fixel_metric () :
+          FixelMetric () :
             dir (),
-            amplitude (0),
-            value (0) { }
+            amplitude (0.0),
+            value (0.0) { }
           Point<float> dir;
           float amplitude, value;
       };

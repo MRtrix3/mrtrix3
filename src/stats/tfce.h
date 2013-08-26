@@ -116,25 +116,25 @@ namespace MR
       class Connectivity {
         public:
           Connectivity (const std::vector<std::map<int32_t, connectivity> >& connectivity_map, value_type dh, value_type E, value_type H) :
-                            connectivity_map (connectivity_map), dh (dh), E (E), H (H) { }
+                          connectivity_map (connectivity_map), dh (dh), E (E), H (H) { }
 
           value_type operator() (const value_type max_stat, const std::vector<value_type>& stats, std::vector<value_type>* get_tfce_stats) 
           {
-            tfce_stats.resize(stats.size());
+            tfce_stats.resize (stats.size());
             std::fill (tfce_stats.begin(), tfce_stats.end(), 0.0);
 
             value_type max_tfce_stat = 0.0;
-            for (size_t lobe = 0; lobe < connectivity_map.size(); ++lobe) {
-              std::map<int32_t, connectivity>::const_iterator connected_lobe;
-              for (value_type h = this->dh; h < stats[lobe]; h +=  this->dh) {
+            for (size_t fixel = 0; fixel < connectivity_map.size(); ++fixel) {
+              std::map<int32_t, connectivity>::const_iterator connected_fixel;
+              for (value_type h = this->dh; h < stats[fixel]; h +=  this->dh) {
                 value_type extent = 0.0;
-                for (connected_lobe = connectivity_map[lobe].begin(); connected_lobe != connectivity_map[lobe].end(); ++connected_lobe)
-                  if (stats[connected_lobe->first] > h)
-                    extent += connected_lobe->second.value;
-                tfce_stats[lobe] += pow (extent,  this->E) * pow (h,  this->H);
+                for (connected_fixel = connectivity_map[fixel].begin(); connected_fixel != connectivity_map[fixel].end(); ++connected_fixel)
+                  if (stats[connected_fixel->first] > h)
+                    extent += connected_fixel->second.value;
+                tfce_stats[fixel] += pow (extent, E) * pow (h, H);
               }
-              if (tfce_stats[lobe] > max_tfce_stat)
-                max_tfce_stat = tfce_stats[lobe];
+              if (tfce_stats[fixel] > max_tfce_stat)
+                max_tfce_stat = tfce_stats[fixel];
             }
 
             if (get_tfce_stats) 

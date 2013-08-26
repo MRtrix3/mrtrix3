@@ -54,7 +54,7 @@ using namespace App;
 
 
 
-using Image::Sparse::Fixel_metric;
+using Image::Sparse::FixelMetric;
 
 
 
@@ -151,8 +151,8 @@ class Segmented_FOD_receiver
       H_fixel.DW_scheme().clear();
       H_fixel.datatype() = DataType::UInt64;
       H_fixel.datatype().set_byte_order_native();
-      H_fixel[Image::Sparse::name_key] = str(typeid(Fixel_metric).name());
-      H_fixel[Image::Sparse::size_key] = str(sizeof(Fixel_metric));
+      H_fixel[Image::Sparse::name_key] = str(typeid(FixelMetric).name());
+      H_fixel[Image::Sparse::size_key] = str(sizeof(FixelMetric));
     }
 
 
@@ -191,12 +191,12 @@ class Segmented_FOD_receiver
     Ptr< Image::Buffer<float>::voxel_type > sf;
 
 
-    Ptr< Image::BufferSparse<Fixel_metric> > fixel_afd_data;
-    Ptr< Image::BufferSparse<Fixel_metric>::voxel_type > fixel_afd;
-    Ptr< Image::BufferSparse<Fixel_metric> > fixel_peak_data;
-    Ptr< Image::BufferSparse<Fixel_metric>::voxel_type > fixel_peak;
-    Ptr< Image::BufferSparse<Fixel_metric> > fixel_disp_data;
-    Ptr< Image::BufferSparse<Fixel_metric>::voxel_type > fixel_disp;
+    Ptr< Image::BufferSparse<FixelMetric> > fixel_afd_data;
+    Ptr< Image::BufferSparse<FixelMetric>::voxel_type > fixel_afd;
+    Ptr< Image::BufferSparse<FixelMetric> > fixel_peak_data;
+    Ptr< Image::BufferSparse<FixelMetric>::voxel_type > fixel_peak;
+    Ptr< Image::BufferSparse<FixelMetric> > fixel_disp_data;
+    Ptr< Image::BufferSparse<FixelMetric>::voxel_type > fixel_disp;
 
 
 };
@@ -260,8 +260,8 @@ void Segmented_FOD_receiver::set_sf_output (const std::string& path)
 void Segmented_FOD_receiver::set_fixel_afd_output (const std::string& path)
 {
   assert (!fixel_afd_data);
-  fixel_afd_data = new Image::BufferSparse<Fixel_metric> (path, H_fixel);
-  fixel_afd = new Image::BufferSparse<Fixel_metric>::voxel_type (*fixel_afd_data);
+  fixel_afd_data = new Image::BufferSparse<FixelMetric> (path, H_fixel);
+  fixel_afd = new Image::BufferSparse<FixelMetric>::voxel_type (*fixel_afd_data);
   Image::LoopInOrder loop (*fixel_afd);
   for (loop.start (*fixel_afd); loop.ok(); loop.next (*fixel_afd))
     fixel_afd->value().zero();
@@ -270,8 +270,8 @@ void Segmented_FOD_receiver::set_fixel_afd_output (const std::string& path)
 void Segmented_FOD_receiver::set_fixel_peak_output (const std::string& path)
 {
   assert (!fixel_peak_data);
-  fixel_peak_data = new Image::BufferSparse<Fixel_metric> (path, H_fixel);
-  fixel_peak = new Image::BufferSparse<Fixel_metric>::voxel_type (*fixel_peak_data);
+  fixel_peak_data = new Image::BufferSparse<FixelMetric> (path, H_fixel);
+  fixel_peak = new Image::BufferSparse<FixelMetric>::voxel_type (*fixel_peak_data);
   Image::LoopInOrder loop (*fixel_peak);
   for (loop.start (*fixel_peak); loop.ok(); loop.next (*fixel_peak))
     fixel_peak->value().zero();
@@ -280,8 +280,8 @@ void Segmented_FOD_receiver::set_fixel_peak_output (const std::string& path)
 void Segmented_FOD_receiver::set_fixel_disp_output (const std::string& path)
 {
   assert (!fixel_disp_data);
-  fixel_disp_data = new Image::BufferSparse<Fixel_metric> (path, H_fixel);
-  fixel_disp = new Image::BufferSparse<Fixel_metric>::voxel_type (*fixel_disp_data);
+  fixel_disp_data = new Image::BufferSparse<FixelMetric> (path, H_fixel);
+  fixel_disp = new Image::BufferSparse<FixelMetric>::voxel_type (*fixel_disp_data);
   Image::LoopInOrder loop (*fixel_disp);
   for (loop.start (*fixel_disp); loop.ok(); loop.next (*fixel_disp))
     fixel_disp->value().zero();
@@ -374,7 +374,7 @@ bool Segmented_FOD_receiver::operator() (const FOD_lobes& in)
     Image::Nav::set_pos (*fixel_afd, in.vox);
     fixel_afd->value().set_size (in.size());
     for (size_t i = 0; i != in.size(); ++i) {
-      Fixel_metric this_fixel (in[i].get_mean_dir(), in[i].get_integral(), in[i].get_integral());
+      FixelMetric this_fixel (in[i].get_mean_dir(), in[i].get_integral(), in[i].get_integral());
       (*fixel_afd).value()[i] = this_fixel;
     }
   }
@@ -383,7 +383,7 @@ bool Segmented_FOD_receiver::operator() (const FOD_lobes& in)
     Image::Nav::set_pos (*fixel_peak, in.vox);
     fixel_peak->value().set_size (in.size());
     for (size_t i = 0; i != in.size(); ++i) {
-      Fixel_metric this_fixel (in[i].get_peak_dir(), in[i].get_integral(), in[i].get_peak_value());
+      FixelMetric this_fixel (in[i].get_peak_dir(), in[i].get_integral(), in[i].get_peak_value());
       (*fixel_peak).value()[i] = this_fixel;
     }
   }
@@ -392,7 +392,7 @@ bool Segmented_FOD_receiver::operator() (const FOD_lobes& in)
     Image::Nav::set_pos (*fixel_disp, in.vox);
     fixel_disp->value().set_size (in.size());
     for (size_t i = 0; i != in.size(); ++i) {
-      Fixel_metric this_fixel (in[i].get_mean_dir(), in[i].get_integral(), in[i].get_integral() / in[i].get_peak_value());
+      FixelMetric this_fixel (in[i].get_mean_dir(), in[i].get_integral(), in[i].get_integral() / in[i].get_peak_value());
       (*fixel_disp).value()[i] = this_fixel;
     }
   }

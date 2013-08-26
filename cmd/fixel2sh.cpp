@@ -42,7 +42,7 @@ using namespace App;
 
 
 
-using Image::Sparse::Fixel_metric;
+using Image::Sparse::FixelMetric;
 
 
 
@@ -65,8 +65,8 @@ void run ()
 {
 
   Image::Header H_in (argument[0]);
-  Image::BufferSparse<Fixel_metric> fixel_data (H_in);
-  Image::BufferSparse<Fixel_metric>::voxel_type fixel (fixel_data);
+  Image::BufferSparse<FixelMetric> fixel_data (H_in);
+  Image::BufferSparse<FixelMetric>::voxel_type fixel (fixel_data);
 
   const size_t lmax = 8;
   const ssize_t n = Math::SH::NforL (lmax);
