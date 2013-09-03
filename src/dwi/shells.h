@@ -151,7 +151,6 @@ namespace MR
 	  //if (bvalue_threshold == 0)
           //  bvalue_threshold = 1;
         }
-        std::cout << bvalue_threshold << std::endl;
         clusterBvalues(minDirections, bvalue_threshold);
         sortByBval();
       }
