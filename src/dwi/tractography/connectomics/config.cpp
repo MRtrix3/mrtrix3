@@ -57,7 +57,7 @@ void load_config (const std::string& path, ConfigInvLookup& config)
   char name [80];
   const node_t max_node_index = std::numeric_limits<node_t>::max();
   while (std::getline (in, line)) {
-    if (line[0] != '#' && line.size() > 1) {
+    if (line.size() > 1 && line[0] != '#') {
       node_t index = max_node_index;
       sscanf (line.c_str(), "%u %s", &index, name);
       if (index != max_node_index)

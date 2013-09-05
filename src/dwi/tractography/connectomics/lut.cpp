@@ -82,7 +82,7 @@ void load_lookup_table (Node_map& nodes)
     std::string line;
     char name [80];
     while (std::getline (in_lut, line)) {
-      if (line[0] != '#' && line.size() > 1) {
+      if (line.size() > 1 && line[0] != '#') {
         node_t index = max_node_index;
         sscanf (line.c_str(), "%u %s", &index, name);
         if (index != max_node_index) {
@@ -111,7 +111,7 @@ void load_lookup_table (Node_map& nodes)
     std::string line;
     char name [80];
     while (std::getline (in_lut, line)) {
-      if (line[0] != '#' && line.size() > 1) {
+      if (line.size() > 1 && line[0] != '#') {
         node_t index = max_node_index;
         node_t r = 256, g = 256, b = 256, a = 255;
         sscanf (line.c_str(), "%u %s %u %u %u %u", &index, name, &r, &g, &b, &a);
@@ -143,7 +143,7 @@ void load_lookup_table (Node_map& nodes)
     std::string line;
     char short_name[20], name [80];
     while (std::getline (in_lut, line)) {
-      if (line[0] != '#' && line.size() > 1) {
+      if (line.size() > 1 && line[0] != '#') {
         node_t index = max_node_index;
         sscanf (line.c_str(), "%s %s %u", short_name, name, &index);
         if (index != max_node_index) {
@@ -172,7 +172,7 @@ void load_lookup_table (Node_map& nodes)
     std::string line;
     char name [80];
     while (std::getline (in_lut, line)) {
-      if (line[0] != '#' && line.size() > 1) {
+      if (line.size() > 1 && line[0] != '#') {
         node_t index = max_node_index;
         node_t r = 256, g = 256, b = 256;
         float a = 1.0;

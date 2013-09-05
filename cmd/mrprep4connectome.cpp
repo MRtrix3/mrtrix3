@@ -101,7 +101,7 @@ void run ()
   // Create the look-up table (just a vector) to go from input index to output index
   // First, need the largest index expected
   const node_t max_in_index = in_nodes.rbegin()->first;
-  std::vector<node_t> lookup (max_in_index, 0);
+  std::vector<node_t> lookup (max_in_index + 1, 0);
   for (Node_map::const_iterator i = in_nodes.begin(); i != in_nodes.end(); ++i) {
     const node_t in_index = i->first;
     const std::string& name = i->second.get_name();
