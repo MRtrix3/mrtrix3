@@ -136,10 +136,10 @@ namespace MR
             Image::voxel_assign (fod_voxel_out, pos, 0, 3);
             fod_voxel_in[3] = 0;
             if (fod_voxel_in.value() > 0) {
-              for (fod_voxel_in[3] = 0; fod_voxel_in[3] < fod_in.size(); ++fod_voxel_in[3])
+              for (fod_voxel_in[3] = 0; fod_voxel_in[3] < (int)fod_in.size(); ++fod_voxel_in[3])
                 fod_in[fod_voxel_in[3]] = fod_voxel_in.value();
               Math::mult (fod_out, reorient_transform, fod_in);
-              for (fod_voxel_out[3] = 0; fod_voxel_out[3] < fod_out.size(); ++fod_voxel_out[3])
+              for (fod_voxel_out[3] = 0; fod_voxel_out[3] < (int)fod_out.size(); ++fod_voxel_out[3])
                  fod_voxel_out.value() = fod_out[fod_voxel_out[3]];
             }
           }
