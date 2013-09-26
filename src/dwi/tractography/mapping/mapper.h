@@ -649,7 +649,7 @@ template <class Cont>
 const Point<float> TrackMapperTWIImage<Cont>::get_last_point_in_fov (const std::vector< Point<float> >& tck, const bool end)
 {
 
-  int index = end ? tck.size() - 1 : 0;
+  size_t index = end ? tck.size() - 1 : 0;
   const int step = end ? -1 : 1;
   while (interp.scanner (tck[index])) {
     index += step;
