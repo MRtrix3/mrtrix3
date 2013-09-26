@@ -122,7 +122,7 @@ namespace MR
             Math::SH::aPSF<float> aPSF_generator (Math::SH::LforN (fod_image_in.dim(3)));
             Math::Vector<float> aPSF;
             Math::Matrix<float> aPSF_matrix (fod_image_in.dim(3), transformed_directions.columns());
-            for (int i = 0; i < transformed_directions.columns(); ++i) {
+            for (size_t i = 0; i < transformed_directions.columns(); ++i) {
               Point<float> dir (transformed_directions (0, i), transformed_directions (1, i), transformed_directions (2, i));
               aPSF_generator (aPSF, dir);
               for (int j = 0; j < fod_image_in.dim(3); ++j)
