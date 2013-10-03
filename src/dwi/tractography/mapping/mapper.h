@@ -30,7 +30,7 @@
 #include "point.h"
 
 #include "image/buffer_preload.h"
-#include "image/header.h"
+#include "image/info.h"
 #include "image/transform.h"
 #include "math/matrix.h"
 #include "math/SH.h"
@@ -43,17 +43,16 @@
 #include "dwi/tractography/file.h"
 
 #include "dwi/tractography/mapping/mapping.h"
-#include "dwi/tractography/mapping/resampler.h"
 #include "dwi/tractography/mapping/twi_stats.h"
+#include "dwi/tractography/mapping/upsampler.h"
 #include "dwi/tractography/mapping/voxel.h"
 
 
 // Didn't bother making this a command-line option, since curvature contrast results were very poor regardless of smoothing
 #define CURVATURE_TRACK_SMOOTHING_FWHM 10.0 // In mm
 
-// For getting the FMRI-based contrasts - how finely to sample the image, and how far to extrapolate +/- of the actual track termination
-#define FMRI_CONTRAST_STEP 0.25
-#define FMRI_CONTRAST_EXTRAP_LENGTH 4.0
+
+
 
 
 
@@ -65,35 +64,24 @@ namespace Mapping {
 
 
 
-typedef Image::Transform HeaderInterp;
-
-
-
 template <class Cont>
 class TrackMapperBase
 {
 
   public:
-    TrackMapperBase (const Image::Header& output_header, const bool mapzero = false) :
-      H_out      (output_header),
-      transform  (H_out),
-      map_zero   (mapzero) { }
+    TrackMapperBase (const Image::Info& template_image, const size_t upsample_ratio = 1, const bool mapzero = false) :
+        upsampler (upsample_ratio),
+        info      (template_image),
+        transform (info),
+        map_zero  (mapzero) { }
 
     TrackMapperBase (const TrackMapperBase& that) :
-      R          (that.R ? new Resampler< Point<float>, float > (*that.R) : NULL),
-      H_out      (that.H_out),
-      transform  (H_out),
-      map_zero   (that.map_zero)
-    { }
+        upsampler (that.upsampler),
+        info      (that.info),
+        transform (info),
+        map_zero  (that.map_zero) { }
 
     virtual ~TrackMapperBase() { }
-
-
-    void set_interp (const Math::Matrix<float>& interp_matrix)
-    {
-      if (interp_matrix.is_set())
-        R = new Resampler< Point<float>, float > (interp_matrix, 3);
-    }
 
 
     bool operator() (TrackAndIndex& in, Cont& out)
@@ -103,30 +91,29 @@ class TrackMapperBase
       if (in.tck.empty())
         return true;
       if (preprocess (in.tck, out) || map_zero) {
-        if (R)
-          R->interpolate (in.tck);
+        upsampler (in.tck);
         voxelise (in.tck, out);
         postprocess (in.tck, out);
       }
       return true;
     }
 
-    size_t os_factor() const { return R ? R->get_os_ratio() : 1; }
 
   private:
-    Ptr< Resampler< Point<float>, float > > R;
+    Upsampler<float> upsampler;
 
 
   protected:
-    const Image::Header& H_out;
+    const Image::Info& info;
     Image::Transform transform;
     const bool map_zero;
 
 
+    size_t get_upsample_factor() const { return upsampler.get_ratio(); }
+
     virtual void voxelise    (const std::vector< Point<float> >&, Cont&) const { throw Exception ("Running empty virtual function TrackMapperBase::voxelise()"); }
     virtual bool preprocess  (const std::vector< Point<float> >& tck, Cont& out) { out.factor = 1.0; return true; }
     virtual void postprocess (const std::vector< Point<float> >&, Cont&) const { }
-
 
 };
 
@@ -141,9 +128,9 @@ template <> void TrackMapperBase<SetVoxelDir>::voxelise (const std::vector< Poin
 class TrackMapperDixel : public TrackMapperBase<SetDixel>
 {
   public:
-    TrackMapperDixel (const Image::Header& output_header, const bool map_zero, const DWI::Directions::FastLookupSet& directions) :
-      TrackMapperBase<SetDixel> (output_header, map_zero),
-      dirs (directions) { }
+    TrackMapperDixel (const Image::Header& template_image, const size_t upsample_ratio, const bool map_zero, const DWI::Directions::FastLookupSet& directions) :
+        TrackMapperBase<SetDixel> (template_image, upsample_ratio, map_zero),
+        dirs (directions) { }
 
   protected:
     const DWI::Directions::FastLookupSet& dirs;
@@ -160,19 +147,19 @@ template <class Cont>
 class TrackMapperTWI : public TrackMapperBase<Cont>
 {
   public:
-    TrackMapperTWI (const Image::Header& output_header, const bool map_zero, const float step, const contrast_t c, const tck_stat_t s, const float denom = 0.0) :
-      TrackMapperBase<Cont> (output_header, map_zero),
-      contrast              (c),
-      track_statistic       (s),
-      gaussian_denominator  (denom),
-      step_size             (step) { }
+    TrackMapperTWI (const Image::Header& template_image, const size_t upsample_ratio, const bool map_zero, const float step, const contrast_t c, const tck_stat_t s, const float denom = 0.0) :
+        TrackMapperBase<Cont> (template_image, upsample_ratio, map_zero),
+        contrast              (c),
+        track_statistic       (s),
+        gaussian_denominator  (denom),
+        step_size             (step) { }
 
     TrackMapperTWI (const TrackMapperTWI& that) :
-      TrackMapperBase<Cont> (that),
-      contrast              (that.contrast),
-      track_statistic       (that.track_statistic),
-      gaussian_denominator  (that.gaussian_denominator),
-      step_size             (that.step_size) { }
+        TrackMapperBase<Cont> (that),
+        contrast              (that.contrast),
+        track_statistic       (that.track_statistic),
+        gaussian_denominator  (that.gaussian_denominator),
+        step_size             (that.step_size) { }
 
     virtual ~TrackMapperTWI() { }
 
@@ -504,26 +491,26 @@ class TrackMapperTWIImage : public TrackMapperTWI<Cont>
   typedef Image::BufferPreload<float>::voxel_type input_voxel_type;
 
   public:
-    TrackMapperTWIImage (const Image::Header& output_header, const bool map_zero, const float step, const contrast_t c, const tck_stat_t s, const float denom, Image::BufferPreload<float>& input_image) :
-      TrackMapperTWI<Cont> (output_header, map_zero, step, c, s, denom),
-      voxel                (input_image),
-      interp               (voxel),
-      lmax                 (0),
-      sh_coeffs            (NULL)
-      {
-        if (c == FOD_AMP) {
-          lmax = Math::SH::LforN (voxel.dim(3));
-          sh_coeffs = new float[voxel.dim(3)];
-          precomputer.init (lmax);
-        }
+    TrackMapperTWIImage (const Image::Header& template_image, const size_t upsample_ratio, const bool map_zero, const float step, const contrast_t c, const tck_stat_t s, const float denom, Image::BufferPreload<float>& input_image) :
+        TrackMapperTWI<Cont> (template_image, upsample_ratio, map_zero, step, c, s, denom),
+        voxel                (input_image),
+        interp               (voxel),
+        lmax                 (0),
+        sh_coeffs            (NULL)
+    {
+      if (c == FOD_AMP) {
+        lmax = Math::SH::LforN (voxel.dim(3));
+        sh_coeffs = new float[voxel.dim(3)];
+        precomputer.init (lmax);
       }
+    }
 
     TrackMapperTWIImage (const TrackMapperTWIImage& that) :
-      TrackMapperTWI<Cont> (that),
-      voxel                (that.voxel),
-      interp               (voxel),
-      lmax                 (that.lmax),
-      sh_coeffs            (NULL)
+        TrackMapperTWI<Cont> (that),
+        voxel                (that.voxel),
+        interp               (voxel),
+        lmax                 (that.lmax),
+        sh_coeffs            (NULL)
     {
       if (that.sh_coeffs) {
         sh_coeffs = new float[voxel.dim(3)];
@@ -531,7 +518,8 @@ class TrackMapperTWIImage : public TrackMapperTWI<Cont>
       }
     }
 
-    ~TrackMapperTWIImage() {
+    ~TrackMapperTWIImage()
+    {
       if (sh_coeffs) {
         delete[] sh_coeffs;
         sh_coeffs = NULL;
@@ -648,7 +636,6 @@ void TrackMapperTWIImage<Cont>::load_factors (const std::vector< Point<float> >&
 template <class Cont>
 const Point<float> TrackMapperTWIImage<Cont>::get_last_point_in_fov (const std::vector< Point<float> >& tck, const bool end)
 {
-
   size_t index = end ? tck.size() - 1 : 0;
   const int step = end ? -1 : 1;
   while (interp.scanner (tck[index])) {
@@ -657,8 +644,9 @@ const Point<float> TrackMapperTWIImage<Cont>::get_last_point_in_fov (const std::
       return Point<float>();
   }
   return tck[index];
-
 }
+
+
 
 
 

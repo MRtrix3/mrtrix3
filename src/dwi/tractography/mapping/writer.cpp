@@ -44,7 +44,7 @@ bool MapWriter<float, SetVoxelDir>::operator () (const SetVoxelDir& in)
 {
   for (SetVoxelDir::const_iterator i = in.begin(); i != in.end(); ++i) {
     Image::Nav::set_pos (v_buffer, *i);
-    const float factor = i->get_dir().norm();
+    const float factor = i->get_length();
     switch (MapWriterBase<SetVoxelDir>::voxel_statistic) {
     case V_SUM:  v_buffer.value() += factor;                       break;
     case V_MIN:  v_buffer.value() = MIN(v_buffer.value(), factor); break;
@@ -71,7 +71,7 @@ bool MapWriterColour<SetVoxelDir>::operator () (const SetVoxelDir& in)
     const Point<float> tangent (i->get_dir());
     const Point<float> pos_tangent (Math::abs (tangent[0]), Math::abs (tangent[1]), Math::abs (tangent[2]));
     const Point<float> current_value = get_value();
-    set_value (current_value + pos_tangent);
+    set_value (current_value + (pos_tangent * i->get_length()));
   }
   return true;
 }

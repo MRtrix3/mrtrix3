@@ -46,10 +46,6 @@
 
 
 
-#define MAX_VOXEL_STEP_RATIO 0.333
-
-
-
 
 MRTRIX_APPLICATION
 
@@ -117,9 +113,9 @@ OPTIONS
       "specify output image data type.")
     + Argument ("spec").type_choice (DataType::identifiers)
 
-  + Option ("resample",
-      "resample the tracks at regular intervals using Hermite interpolation\n"
-      "(If omitted, an appropriate interpolation will be determined automatically)")
+  + Option ("upsample",
+      "upsample the tracks by some ratio using Hermite interpolation before mappping\n"
+      "(If omitted, an appropriate ratio will be determined automatically)")
     + Argument ("factor").type_integer (1, 1, std::numeric_limits<int>::max())
 
   + Option ("dump", "dump the scratch buffer contents directly to a .mih / .dat file pair, rather than memory-mapping the output file")
@@ -339,27 +335,28 @@ void run () {
   for (std::vector<std::string>::iterator i = properties.comments.begin(); i != properties.comments.end(); ++i)
     header.comments().push_back ("comment: " + *i);
 
-  size_t resample_factor;
-  opt = get_options ("resample");
+  size_t upsample_ratio = 1;
+  opt = get_options ("upsample");
   if (opt.size()) {
-    resample_factor = opt[0][0];
-    INFO ("track interpolation factor manually set to " + str(resample_factor));
+    upsample_ratio = opt[0][0];
+    INFO ("track upsampling ratio manually set to " + str(upsample_ratio));
   }
   else if (step_size && finite (step_size)) {
-    resample_factor = Math::ceil<size_t> (step_size / (minvalue (header.vox(0), header.vox(1), header.vox(2)) * MAX_VOXEL_STEP_RATIO));
-    INFO ("track interpolation factor automatically set to " + str(resample_factor));
+    // If accurately calculating the length through each voxel traversed, need a higher upsampling ratio
+    //   (1/10th of the voxel size was found to give a good quantification of chordal length)
+    // For all other applications, making the upsampled step size about 1/3rd of a voxel seems sufficient
+    const float voxel_step_ratio = (contrast == PRECISE_TDI) ? 0.1 : 0.333;
+    upsample_ratio = Math::ceil<size_t> (step_size / (minvalue (header.vox(0), header.vox(1), header.vox(2)) * voxel_step_ratio));
+    INFO ("track upsampling ratio automatically set to " + str(upsample_ratio));
   }
   else {
-    resample_factor = 1;
     if (contrast != PRECISE_TDI)
-      WARN ("track interpolation off; track step size information in header is absent or malformed");
+      WARN ("track upsampling off; track step size information in header is absent or malformed");
   }
 
   const bool dump = get_options ("dump").size();
   if (dump && Path::has_suffix (argument[1], "mih"))
     throw Exception ("Option -dump only works when outputting to .mih image format");
-
-  Math::Matrix<float> interp_matrix (resample_factor > 1 ? gen_interp_matrix<float> (resample_factor) : Math::Matrix<float> ());
 
   std::string msg = str("Generating ") + (colour ? "colour " : "") + "image with ";
   switch (contrast) {
@@ -431,14 +428,12 @@ void run () {
     }
 
     if (colour) {
+      TrackMapperTWI <SetVoxelDEC> mapper (header, upsample_ratio, map_zero, step_size, contrast, stat_tck);
       MapWriterColour<SetVoxelDEC> writer (header, argument[1], dump, stat_vox);
-      TrackMapperTWI <SetVoxelDEC> mapper (header, map_zero, step_size, contrast, stat_tck);
-      mapper.set_interp (interp_matrix);
       Thread::run_queue_threaded_pipe (loader, TrackAndIndex(), mapper, SetVoxelDEC(), writer);
     } else {
+      TrackMapperTWI    <SetVoxel>   mapper (header, upsample_ratio, map_zero, step_size, contrast, stat_tck);
       Ptr< MapWriterBase<SetVoxel> > writer (make_writer<SetVoxel> (header, argument[1], dump, stat_vox));
-      TrackMapperTWI    <SetVoxel>   mapper (header, map_zero, step_size, contrast, stat_tck);
-      mapper.set_interp (interp_matrix);
       Thread::run_queue_threaded_pipe (loader, TrackAndIndex(), mapper, SetVoxel(), *writer);
     }
 
@@ -450,14 +445,12 @@ void run () {
     }
 
     if (colour) {
+      TrackMapperTWI <SetVoxelDir> mapper (header, upsample_ratio, map_zero, step_size, contrast, stat_tck);
       MapWriterColour<SetVoxelDir> writer (header, argument[1], dump, stat_vox);
-      TrackMapperTWI <SetVoxelDir> mapper (header, map_zero, step_size, contrast, stat_tck);
-      mapper.set_interp (interp_matrix);
       Thread::run_queue_threaded_pipe (loader, TrackAndIndex(), mapper, SetVoxelDir(), writer);
     } else {
+      TrackMapperTWI <       SetVoxelDir> mapper (header, upsample_ratio, map_zero, step_size, contrast, stat_tck);
       MapWriter      <float, SetVoxelDir> writer (header, argument[1], dump, stat_vox);
-      TrackMapperTWI <       SetVoxelDir> mapper (header, map_zero, step_size, contrast, stat_tck);
-      mapper.set_interp (interp_matrix);
       Thread::run_queue_threaded_pipe (loader, TrackAndIndex(), mapper, SetVoxelDir(), writer);
     }
 
@@ -469,14 +462,12 @@ void run () {
     }
 
     if (colour) {
+      TrackMapperTWI <SetVoxelDECFactor> mapper (header, upsample_ratio, map_zero, step_size, contrast, stat_tck, gaussian_denominator_tck);
       MapWriterColour<SetVoxelDECFactor> writer (header, argument[1], dump, stat_vox);
-      TrackMapperTWI <SetVoxelDECFactor> mapper (header, map_zero, step_size, contrast, stat_tck, gaussian_denominator_tck);
-      mapper.set_interp (interp_matrix);
       Thread::run_queue_threaded_pipe (loader, TrackAndIndex(), mapper, SetVoxelDECFactor(), writer);
     } else {
+      TrackMapperTWI    <SetVoxelFactor>   mapper (header, upsample_ratio, map_zero, step_size, contrast, stat_tck, gaussian_denominator_tck);
       Ptr< MapWriterBase<SetVoxelFactor> > writer (make_writer<SetVoxelFactor> (header, argument[1], dump, stat_vox));
-      TrackMapperTWI    <SetVoxelFactor>   mapper (header, map_zero, step_size, contrast, stat_tck, gaussian_denominator_tck);
-      mapper.set_interp (interp_matrix);
       Thread::run_queue_threaded_pipe (loader, TrackAndIndex(), mapper, SetVoxelFactor(), *writer);
     }
 
@@ -510,28 +501,24 @@ void run () {
     if (colour) {
 
       if (stat_tck == GAUSSIAN) {
+        TrackMapperTWIImage <SetVoxelDECFactor> mapper (header, upsample_ratio, map_zero, step_size, contrast, stat_tck, gaussian_denominator_tck, input_image);
         MapWriterColour     <SetVoxelDECFactor> writer (header, argument[1], dump, stat_vox);
-        TrackMapperTWIImage <SetVoxelDECFactor> mapper (header, map_zero, step_size, contrast, stat_tck, gaussian_denominator_tck, input_image);
-        mapper.set_interp (interp_matrix);
         Thread::run_queue_threaded_pipe (loader, TrackAndIndex(), mapper, SetVoxelDECFactor(), writer);
       } else {
+        TrackMapperTWIImage <SetVoxelDEC> mapper (header, upsample_ratio, map_zero, step_size, contrast, stat_tck, 0.0, input_image);
         MapWriterColour     <SetVoxelDEC> writer (header, argument[1], dump, stat_vox);
-        TrackMapperTWIImage <SetVoxelDEC> mapper (header, map_zero, step_size, contrast, stat_tck, 0.0, input_image);
-        mapper.set_interp (interp_matrix);
         Thread::run_queue_threaded_pipe (loader, TrackAndIndex(), mapper, SetVoxelDEC(), writer);
       }
 
     } else {
 
       if (stat_tck == GAUSSIAN) {
+        TrackMapperTWIImage <SetVoxelFactor>   mapper (header, upsample_ratio, map_zero, step_size, contrast, stat_tck, gaussian_denominator_tck, input_image);
         Ptr< MapWriterBase  <SetVoxelFactor> > writer (make_writer<SetVoxelFactor> (header, argument[1], dump, stat_vox));
-        TrackMapperTWIImage <SetVoxelFactor>   mapper (header, map_zero, step_size, contrast, stat_tck, gaussian_denominator_tck, input_image);
-        mapper.set_interp (interp_matrix);
         Thread::run_queue_threaded_pipe (loader, TrackAndIndex(), mapper, SetVoxelFactor(), *writer);
       } else {
+        TrackMapperTWIImage <SetVoxel>   mapper (header, upsample_ratio, map_zero, step_size, contrast, stat_tck, 0.0, input_image);
         Ptr< MapWriterBase  <SetVoxel> > writer (make_writer<SetVoxel> (header, argument[1], dump, stat_vox));
-        TrackMapperTWIImage <SetVoxel>   mapper (header, map_zero, step_size, contrast, stat_tck, 0.0, input_image);
-        mapper.set_interp (interp_matrix);
         Thread::run_queue_threaded_pipe (loader, TrackAndIndex(), mapper, SetVoxel(), *writer);
       }
 

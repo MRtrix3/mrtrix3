@@ -39,7 +39,7 @@ void TrackMapperBase<SetVoxel>::voxelise (const std::vector< Point<float> >& tck
   Voxel vox;
   for (std::vector< Point<float> >::const_iterator i = tck.begin(); i != tck.end(); ++i) {
     vox = round (transform.scanner2voxel (*i));
-    if (check (vox, H_out))
+    if (check (vox, info))
       voxels.insert (vox);
   }
 
@@ -53,11 +53,11 @@ void TrackMapperTWI<SetVoxel>::voxelise (const std::vector< Point<float> >& tck,
   if (contrast == ENDPOINT) {
 
     Voxel vox = round (transform.scanner2voxel (tck.front()));
-    if (check (vox, H_out))
+    if (check (vox, info))
       voxels.insert (vox);
 
     vox = round (transform.scanner2voxel (tck.back()));
-    if (check (vox, H_out))
+    if (check (vox, info))
       voxels.insert (vox);
 
   } else {
@@ -80,7 +80,7 @@ void TrackMapperBase<SetVoxelDEC>::voxelise (const std::vector< Point<float> >& 
   VoxelDEC vox;
   for (std::vector< Point<float> >::const_iterator i = tck.begin(); i != last; ++i) {
     vox = round (transform.scanner2voxel (*i));
-    if (check (vox, H_out)) {
+    if (check (vox, info)) {
       SetVoxelDEC::iterator existing_vox = voxels.find (vox);
       if (existing_vox == voxels.end()) {
         vox.set_dir (*(i+1) - *prev);
@@ -93,7 +93,7 @@ void TrackMapperBase<SetVoxelDEC>::voxelise (const std::vector< Point<float> >& 
   }
 
   vox = round (transform.scanner2voxel (*last));
-  if (check (vox, H_out)) {
+  if (check (vox, info)) {
     SetVoxelDEC::iterator existing_vox = voxels.find (vox);
     if (existing_vox == voxels.end()) {
       vox.set_dir (*last - *prev);
@@ -116,13 +116,13 @@ void TrackMapperTWI<SetVoxelDEC>::voxelise (const std::vector< Point<float> >& t
   if (contrast == ENDPOINT) {
 
     VoxelDEC vox = round (transform.scanner2voxel (tck.front()));
-    if (check (vox, H_out)) {
+    if (check (vox, info)) {
       vox.set_dir (tck[0] - tck[1]);
       voxels.insert (vox);
     }
 
     vox = round (transform.scanner2voxel (tck.back()));
-    if (check (vox, H_out)) {
+    if (check (vox, info)) {
       vox.set_dir (tck[tck.size() - 1] - tck[tck.size() - 2]);
       voxels.insert (vox);
     }
@@ -143,56 +143,38 @@ void TrackMapperBase<SetVoxelDir>::voxelise (const std::vector< Point<float> >& 
 
   typedef Point<float> PointF;
 
-  static const float accuracy = Math::pow2 (0.005 * maxvalue (H_out.vox (0), H_out.vox (1), H_out.vox (2)));
+  static const float accuracy = Math::pow2 (0.005 * maxvalue (info.vox (0), info.vox (1), info.vox (2)));
 
   if (tck.size() < 2)
     return;
 
   Math::Hermite<float> hermite (0.1);
 
-  PointF tck_proj_front, tck_proj_back;
-  if (tck.size() > 2) {
-
-    const PointF first_step (tck[0] - tck[1]);
-    const PointF second_step (tck[1] - tck[2]);
-    const float front_length_ratio = first_step.norm() / second_step.norm();
-    const Point<float> front_curvature (first_step - (second_step * front_length_ratio));
-    tck_proj_front = tck[0] + first_step + front_curvature;
-
-    const size_t last (tck.size() - 1);
-
-    const PointF last_step (tck[last] - tck[last-1]);
-    const PointF second_last_step (tck[last-1] - tck[last-2]);
-    const float back_length_ratio = last_step.norm() / second_last_step.norm();
-    const Point<float> back_curvature (last_step - (second_last_step * back_length_ratio));
-    tck_proj_back = tck[last] + last_step + back_curvature;
-
-  } else {
-
-    tck_proj_front = (tck[0] * 2.0) - tck[1];
-    tck_proj_back = (tck[1] * 2.0) - tck[0];
-
-  }
+  const PointF tck_proj_front = (tck[0] * 2.0) - tck[1];
+  const PointF tck_proj_back  = (tck[1] * 2.0) - tck[0];
 
   unsigned int p = 0;
-  PointF p_end = tck.front();
+  PointF p_voxel_exit = tck.front();
   float mu = 0.0;
   bool end_track = false;
   Voxel next_voxel (round (transform.scanner2voxel (tck.front())));
 
   while (!end_track) {
 
-    const PointF p_start (p_end);
-
+    const PointF p_voxel_entry (p_voxel_exit);
+    PointF p_prev (p_voxel_entry);
+    float length = 0.0;
     const Voxel this_voxel = next_voxel;
 
     while ((p != tck.size()) && (round (transform.scanner2voxel (tck[p])) == this_voxel)) {
+      length += dist (p_prev, tck[p]);
+      p_prev = tck[p];
       ++p;
       mu = 0.0;
     }
 
     if (p == tck.size()) {
-      p_end = tck.back();
+      p_voxel_exit = tck.back();
       end_track = true;
     } else {
 
@@ -200,15 +182,16 @@ void TrackMapperBase<SetVoxelDir>::voxelise (const std::vector< Point<float> >& 
       float mu_max = 1.0;
       Voxel mu_voxel = this_voxel;
 
+      const PointF* p_one  = (p == 1)              ? &tck_proj_front : &tck[p - 2];
+      const PointF* p_four = (p == tck.size() - 1) ? &tck_proj_back  : &tck[p + 1];
+
       PointF p_mu = tck[p];
 
       do {
 
-        p_end = p_mu;
+        p_voxel_exit = p_mu;
 
         mu = 0.5 * (mu_min + mu_max);
-        const PointF* p_one = (p == 1) ? &tck_proj_front : &tck[p - 2];
-        const PointF* p_four = (p == tck.size() - 1) ? &tck_proj_back : &tck[p + 1];
 
         hermite.set (mu);
         p_mu = hermite.value (*p_one, tck[p - 1], tck[p], *p_four);
@@ -221,20 +204,16 @@ void TrackMapperBase<SetVoxelDir>::voxelise (const std::vector< Point<float> >& 
           next_voxel = mu_voxel;
         }
 
-      } while (dist2 (p_mu, p_end) > accuracy);
+      } while (dist2 (p_mu, p_voxel_exit) > accuracy);
+      p_voxel_exit = p_mu;
 
     }
 
-    const PointF traversal_vector (p_end - p_start);
-    if (traversal_vector.norm2()) {
-      SetVoxelDir::iterator existing_vox = voxels.find (this_voxel);
-      if (existing_vox == voxels.end()) {
-        VoxelDir voxel_dir (this_voxel);
-        voxel_dir.add_dir (traversal_vector);
-        voxels.insert (voxel_dir);
-      } else {
-        existing_vox->add_dir (traversal_vector);
-      }
+    length += dist (p_prev, p_voxel_exit);
+    PointF traversal_vector (p_voxel_exit - p_voxel_entry);
+    if (traversal_vector.normalise()) {
+      VoxelDir voxel_dir (this_voxel, traversal_vector, length);
+      voxels.insert (voxel_dir);
     }
 
   }
@@ -249,56 +228,38 @@ void TrackMapperDixel::voxelise (const std::vector< Point<float> >& tck, SetDixe
 
   typedef Point<float> PointF;
 
-  static const float accuracy = Math::pow2 (0.005 * maxvalue (H_out.vox (0), H_out.vox (1), H_out.vox (2)));
+  static const float accuracy = Math::pow2 (0.005 * maxvalue (info.vox (0), info.vox (1), info.vox (2)));
 
   if (tck.size() < 2)
     return;
 
   Math::Hermite<float> hermite (0.1);
 
-  PointF tck_proj_front, tck_proj_back;
-  if (tck.size() > 2) {
-
-    const PointF first_step (tck[0] - tck[1]);
-    const PointF second_step (tck[1] - tck[2]);
-    const float front_length_ratio = first_step.norm() / second_step.norm();
-    const Point<float> front_curvature (first_step - (second_step * front_length_ratio));
-    tck_proj_front = tck[0] + first_step + front_curvature;
-
-    const size_t last (tck.size() - 1);
-
-    const PointF last_step (tck[last] - tck[last-1]);
-    const PointF second_last_step (tck[last-1] - tck[last-2]);
-    const float back_length_ratio = last_step.norm() / second_last_step.norm();
-    const Point<float> back_curvature (last_step - (second_last_step * back_length_ratio));
-    tck_proj_back = tck[last] + last_step + back_curvature;
-
-  } else {
-
-    tck_proj_front = (tck[0] * 2.0) - tck[1];
-    tck_proj_back = (tck[1] * 2.0) - tck[0];
-
-  }
+  const PointF tck_proj_front = (tck[0] * 2.0) - tck[1];
+  const PointF tck_proj_back  = (tck[1] * 2.0) - tck[0];
 
   unsigned int p = 0;
-  PointF p_end = tck.front();
+  PointF p_voxel_exit = tck.front();
   float mu = 0.0;
   bool end_track = false;
   Voxel next_voxel (round (transform.scanner2voxel (tck.front())));
 
   while (!end_track) {
 
-    const PointF p_start (p_end);
-
+    const PointF p_voxel_entry (p_voxel_exit);
+    PointF p_prev (p_voxel_entry);
+    float length = 0.0;
     const Voxel this_voxel = next_voxel;
 
     while ((p != tck.size()) && (round (transform.scanner2voxel (tck[p])) == this_voxel)) {
+      length += dist (p_prev, tck[p]);
+      p_prev = tck[p];
       ++p;
       mu = 0.0;
     }
 
     if (p == tck.size()) {
-      p_end = tck.back();
+      p_voxel_exit = tck.back();
       end_track = true;
     } else {
 
@@ -306,15 +267,16 @@ void TrackMapperDixel::voxelise (const std::vector< Point<float> >& tck, SetDixe
       float mu_max = 1.0;
       Voxel mu_voxel = this_voxel;
 
+      const PointF* p_one  = (p == 1)              ? &tck_proj_front : &tck[p - 2];
+      const PointF* p_four = (p == tck.size() - 1) ? &tck_proj_back  : &tck[p + 1];
+
       PointF p_mu = tck[p];
 
       do {
 
-        p_end = p_mu;
+        p_voxel_exit = p_mu;
 
         mu = 0.5 * (mu_min + mu_max);
-        const PointF* p_one = (p == 1) ? &tck_proj_front : &tck[p - 2];
-        const PointF* p_four = (p == tck.size() - 1) ? &tck_proj_back : &tck[p + 1];
 
         hermite.set (mu);
         p_mu = hermite.value (*p_one, tck[p - 1], tck[p], *p_four);
@@ -327,22 +289,24 @@ void TrackMapperDixel::voxelise (const std::vector< Point<float> >& tck, SetDixe
           next_voxel = mu_voxel;
         }
 
-      } while (dist2 (p_mu, p_end) > accuracy);
+      } while (dist2 (p_mu, p_voxel_exit) > accuracy);
+      p_voxel_exit = p_mu;
 
     }
 
-    const PointF traversal_vector (p_end - p_start);
-    if (traversal_vector.norm2()) {
+    length += dist (p_prev, p_voxel_exit);
+    PointF traversal_vector (p_voxel_exit - p_voxel_entry);
+    if (traversal_vector.normalise()) {
 
       // Only here does this voxelise() function differ from TrackMapperBase<SetVoxelDir>::voxelise()
       // Map to the appropriate direction & add to the set; only add to an existing dixel if
-      //   both the voxel and direction match; otherwise, a single streamline will contribute to
+      //   both the voxel and direction match; otherwise, a single streamline may contribute to
       //   multiple dixels within a voxel)
-      PointF tangent (traversal_vector);
-      tangent.normalise();
-      const size_t bin = dirs.select_direction (tangent);
-      const float length = traversal_vector.norm();
-
+      // Although it would be possible to functionalise TrackMapperBase<SetVoxelDir>::voxelise(),
+      //   call this function, then map individual VoxelDirs to dixels, this would require
+      //   twice as many memory requests and potentially more cache misses. So I'm sticking to the
+      //   code duplication solution.
+      const size_t bin = dirs.select_direction (traversal_vector);
       Dixel this_dixel (this_voxel, bin, length);
 
       SetDixel::iterator existing_dixel = dixels.find (this_dixel);
@@ -367,11 +331,11 @@ void TrackMapperTWI<SetVoxelFactor>::voxelise (const std::vector< Point<float> >
   VoxelFactor vox;
   for (size_t i = 0; i != tck.size(); ++i) {
     vox = round (transform.scanner2voxel (tck[i]));
-    if (check (vox, H_out)) {
+    if (check (vox, info)) {
 
       // Get a linearly-interpolated value from factors[] based upon factors[] being
       //   generated with non-interpolated data, and index 'i' here representing interpolated data
-      const float ideal_index = float(i) / float(os_factor());
+      const float ideal_index = float(i) / float(get_upsample_factor());
       const size_t lower_index = MAX(floor (ideal_index), 0);
       const size_t upper_index = MIN(ceil  (ideal_index), tck.size() - 1);
       const float mu = ideal_index - lower_index;
@@ -406,9 +370,9 @@ void TrackMapperTWI<SetVoxelDECFactor>::voxelise (const std::vector< Point<float
   VoxelDECFactor vox;
   for (unsigned int i = 0; i != tck.size() - 1; ++i) {
     vox = round (transform.scanner2voxel (tck[i]));
-    if (check (vox, H_out)) {
+    if (check (vox, info)) {
 
-      const float ideal_index = float(i) / float(os_factor());
+      const float ideal_index = float(i) / float(get_upsample_factor());
       const size_t lower_index = MAX(floor (ideal_index), 0);
       const size_t upper_index = MIN(ceil  (ideal_index), tck.size() - 1);
       const float mu = ideal_index - lower_index;
@@ -428,9 +392,9 @@ void TrackMapperTWI<SetVoxelDECFactor>::voxelise (const std::vector< Point<float
   }
 
   vox = round (transform.scanner2voxel (last));
-  if (check (vox, H_out)) {
+  if (check (vox, info)) {
 
-    const float ideal_index = float(tck.size() - 1) / float(os_factor());
+    const float ideal_index = float(tck.size() - 1) / float(get_upsample_factor());
     const size_t lower_index = MAX(floor (ideal_index), 0);
     const size_t upper_index = MIN(ceil  (ideal_index), tck.size() - 1);
     const float mu = ideal_index - lower_index;

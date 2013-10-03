@@ -94,8 +94,17 @@ namespace MR
 
         contributions.assign (num_tracks, NULL);
 
+        // Determine appropriate upsampling ratio for mapping
+        // In this particular context want the calculation of length to be precise - 1/10th voxel size at worst
+        float step_size = 0.0;
+        if (properties.find ("output_step_size") != properties.end())
+          step_size = to<float> (properties["output_step_size"]);
+        else
+          step_size = to<float> (properties["step_size"]);
+        const float upsample_ratio = Math::ceil<size_t> (step_size / (minvalue (fod_data.vox(0), fod_data.vox(1), fod_data.vox(2)) * 0.1));
+
         Mapping::TrackLoader loader (file, num_tracks);
-        Mapping::TrackMapperDixel mapper (H, true, dirs);
+        Mapping::TrackMapperDixel mapper (H, upsample_ratio, true, dirs);
         MappedTrackReceiver receiver (*this);
         Thread::run_batched_queue_custom_threading (loader, 1, Mapping::TrackAndIndex(), 100, mapper, 0, SetDixel(), 100, receiver, 0);
 
