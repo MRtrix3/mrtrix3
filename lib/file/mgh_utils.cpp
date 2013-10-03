@@ -35,7 +35,7 @@ namespace MR
     {
 
 
-      size_t read_header (Image::Header& H, const mgh_header& MGHH, int64_t file_size)
+      bool read_header (Image::Header& H, const mgh_header& MGHH)
       {
 
         bool is_BE = false;
@@ -111,24 +111,13 @@ namespace MR
 
         }
 
-        // Remaining header items appear AFTER the data
-        // It's possible that these data may not even be there; need to make sure that we don't go over the file size
-        // This will require an additional parameter sent to this function
-        int64_t other_offset = MGH_DATA_OFFSET + Image::footprint (H);
-        if (other_offset < file_size)
-          read_other (H, *(mgh_other*)(&MGHH + other_offset), file_size - other_offset, is_BE);
-
-        return MGH_DATA_OFFSET;
+        return is_BE;
 
       }
 
 
 
-      void read_other (Image::Header& H, const mgh_other& MGHO, const int64_t other_size, const bool is_BE) {
-
-        // FIXME For some reason this is segfaulting
-        // MGHO should lie within the memory-mapped region...
-        return;
+      void read_other (Image::Header& H, const mgh_other& MGHO, const bool is_BE) {
 
         if (get<float> (&MGHO.tr, is_BE))
           H.comments().push_back ("TR: "   + str (get<float> (&MGHO.tr, is_BE)) + "ms");
@@ -141,26 +130,8 @@ namespace MR
 
         // Ignore FoV field
 
-        const int64_t tags_offset = 5 * sizeof (float);
-        if (other_size > tags_offset) {
-
-          // It's memory-mapped, so should be able to use memcpy to do the initial grab
-          size_t total_text_length = other_size - tags_offset;
-          char* const tags = new char [total_text_length];
-          memcpy (tags, &MGHO + tags_offset, total_text_length);
-
-          // Extract and separate null-terminated strings
-          size_t char_offset = 0;
-          while (char_offset < total_text_length) {
-            std::string line (tags + char_offset);
-            if (line.size())
-              H.comments().push_back ("Tag: " + line);
-            char_offset += line.size() + 1;
-          }
-
-          delete[] tags;
-
-        }
+        for (std::vector<std::string>::const_iterator i = MGHO.tags.begin(); i != MGHO.tags.end(); ++i)
+          H.comments().push_back (*i);
 
       }
 

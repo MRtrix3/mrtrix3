@@ -36,6 +36,7 @@ namespace MR
 
       Format::Pipe          pipe_handler;
       Format::MRtrix        mrtrix_handler;
+      Format::MRtrix_GZ     mrtrix_gz_handler;
       Format::MRI           mri_handler;
       Format::NIfTI         nifti_handler;
       Format::NIfTI_GZ      nifti_gz_handler;
@@ -54,6 +55,7 @@ namespace MR
         &pipe_handler,
         &dicom_handler,
         &mrtrix_handler,
+        &mrtrix_gz_handler,
         &nifti_handler,
         &nifti_gz_handler,
         &analyse_handler,
@@ -70,6 +72,7 @@ namespace MR
       const char* known_extensions[] = {
         ".mih",
         ".mif",
+        ".mif.gz"
         ".img",
         ".nii",
         ".nii.gz",

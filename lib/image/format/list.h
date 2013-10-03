@@ -104,6 +104,7 @@ namespace MR
       DECLARE_IMAGEFORMAT (Pipe, "Internal pipe");
       DECLARE_IMAGEFORMAT (DICOM, "DICOM");
       DECLARE_IMAGEFORMAT (MRtrix, "MRtrix");
+      DECLARE_IMAGEFORMAT (MRtrix_GZ, "MRtrix (GZip compressed)");
       DECLARE_IMAGEFORMAT (NIfTI, "NIfTI-1.1");
       DECLARE_IMAGEFORMAT (NIfTI_GZ, "NIfTI-1.1 (GZip compressed)");
       DECLARE_IMAGEFORMAT (Analyse, "AnalyseAVW / NIfTI-1.1");

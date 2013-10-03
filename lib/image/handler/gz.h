@@ -42,8 +42,8 @@ namespace MR
             lead_in = file_header_size ? new uint8_t [file_header_size] : NULL ;
           }
           ~GZ () { 
-            delete [] lead_in;
             close();
+            delete [] lead_in;
           }
 
           uint8_t* header () {

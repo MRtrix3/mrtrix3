@@ -43,20 +43,39 @@ namespace MR
           return RefPtr<Handler::Base>();
 
         mgh_header MGHH;
-        mgh_other MGHO;
 
         File::GZ zf (H.name(), "rb");
         zf.read (reinterpret_cast<char*> (&MGHH), MGH_HEADER_SIZE);
 
-        const size_t data_offset = File::MGH::read_header (H, MGHH, MGH_HEADER_SIZE);
-        //const size_t other_offset = data_offset + Image::footprint (H);
-        // TODO Have to read the relevat post-data header information into local memory
-        //   so that it can be parsed by File::MGH::read_other()
+        bool is_BE = File::MGH::read_header (H, MGHH);
+
+        try {
+
+          mgh_other  MGHO;
+          memset (&MGHO, 0x00, 5 * sizeof(float));
+          MGHO.tags.clear();
+
+          zf.seek (MGH_DATA_OFFSET + Image::footprint (H));
+          zf.read (reinterpret_cast<char*> (&MGHO), 5 * sizeof(float));
+
+          try {
+
+            do {
+              std::string tag = zf.getline();
+              if (!tag.empty())
+                MGHO.tags.push_back (tag);
+            } while (!zf.eof());
+
+          } catch (...) { }
+
+          File::MGH::read_other (H, MGHO, is_BE);
+
+        } catch (...) { }
 
         zf.close();
 
-        RefPtr<Handler::Base> handler (new Handler::GZ (H, 0));
-        handler->files.push_back (File::Entry (H.name(), data_offset));
+        RefPtr<Handler::Base> handler (new Handler::GZ (H, MGH_DATA_OFFSET));
+        handler->files.push_back (File::Entry (H.name(), MGH_DATA_OFFSET));
 
         return handler;
       }
@@ -89,7 +108,10 @@ namespace MR
 
         File::MGH::write_header (*reinterpret_cast<mgh_header*> (handler->header()), H);
 
-        // TODO Figure out how to write the post-data header information to the zipped file
+        // Figure out how to write the post-data header information to the zipped file
+        // This is not possible without implementation of a dedicated handler
+        // Not worth the effort, unless a use case arises where this information absolutely
+        //   must be written
 
         File::create (H.name());
         handler->files.push_back (File::Entry (H.name(), MGH_DATA_OFFSET));

@@ -39,12 +39,12 @@ namespace MR
     namespace MGH
     {
 
-      size_t read_header  (Image::Header& H, const mgh_header& MGHH, const int64_t file_size);
-      void   read_other   (Image::Header& H, const mgh_other& MGHO, const int64_t other_size, const bool is_BE);
-      void   write_header (mgh_header& MGHH, const Image::Header& H);
-      void   write_other  (mgh_other& MGHO, const Image::Header& H);
+      bool read_header  (Image::Header& H, const mgh_header& MGHH);
+      void read_other   (Image::Header& H, const mgh_other& MGHO, const bool is_BE);
+      void write_header (mgh_header& MGHH, const Image::Header& H);
+      void write_other  (mgh_other&  MGHO, const Image::Header& H);
 
-      void   write_other_to_file (const std::string&, const mgh_other&);
+      void write_other_to_file (const std::string&, const mgh_other&);
 
     }
   }
