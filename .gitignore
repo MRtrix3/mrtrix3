@@ -1,0 +1,10 @@
+*.o
+*_moc.cpp
+*.so
+*.dll
+*.a
+*~
+/config.*
+/configure.log
+/bin/
+
