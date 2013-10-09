@@ -15,7 +15,7 @@
 #   that are being re-defined.
 
 
-import os, sys
+import os, shutil, sys
 
 from lib.binaryInPath import binaryInPath
 from lib.delTempDir   import delTempDir
@@ -111,7 +111,7 @@ os.chdir(working_dir)
 # Get the final file from the temporary directory & put it in the correct location
 if verbose:
   printMessage('Moving output file from temporary directory to user specified location')
-os.rename(os.path.join(temp_dir, os.path.basename(sys.argv[4])), sys.argv[4])
+shutil.move(os.path.join(temp_dir, os.path.basename(sys.argv[4])), sys.argv[4])
 
 # Don't leave a trace
 delTempDir(temp_dir, verbose)
