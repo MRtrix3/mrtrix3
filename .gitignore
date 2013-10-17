@@ -7,4 +7,6 @@
 /config.*
 /configure.log
 /bin/
+.cproject
+.project
 
