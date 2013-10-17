@@ -611,7 +611,7 @@ namespace MR
           const Lobe& lobe = lobes[tck_cont[v].get_lobe_index()];
           const double undo_gradient_mu_only = lobe.get_d_cost_d_mu (current_mu) * mu_change_if_removed;
           gradient -= undo_gradient_mu_only;
-          const double gradient_remove_tck = lobe.get_cost_manual_TD (mu_if_removed, lobe.get_TD() - tck_cont[v].get_value()) - lobe.get_cost (current_mu);
+          const double gradient_remove_tck = lobe.get_cost_wo_track (mu_if_removed, tck_cont[v].get_value()) - lobe.get_cost (current_mu);
           gradient += gradient_remove_tck;
         }
         return gradient;

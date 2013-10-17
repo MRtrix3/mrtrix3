@@ -111,15 +111,11 @@ namespace MR
 
 
           double get_diff          (const double mu) const { return ((TD * mu) - FOD); }
-          double get_cost          (const double mu) const { return get_cost_unweighted          (mu) * weight; }
-          double get_d_cost_d_mu   (const double mu) const { return get_d_cost_d_mu_unweighted   (mu) * weight; }
-          double get_d_cost_d_TD   (const double mu) const { return get_d_cost_d_TD_unweighted   (mu) * weight; }
-          double get_d2_cost_d_TD2 (const double mu) const { return get_d2_cost_d_TD2_unweighted (mu) * weight; }
+          double get_cost          (const double mu) const { return get_cost_unweighted        (mu) * weight; }
+          double get_d_cost_d_mu   (const double mu) const { return get_d_cost_d_mu_unweighted (mu) * weight; }
 
           double get_cost_wo_track  (const double mu, const double length)    const { return get_cost_wo_track_unweighted  (mu, length)    * weight; }
           double get_cost_manual_TD (const double mu, const double manual_TD) const { return get_cost_manual_TD_unweighted (mu, manual_TD) * weight; }
-
-          double get_d_cost_d_TD_manual_TD (const double mu, const double manual_TD) const { return get_d_cost_d_TD_manual_TD_unweighted (mu, manual_TD) * weight; }
 
           double calc_quantisation  (const double mu, const double length)    const { return get_cost_manual_TD (mu, (FOD/mu) + length); }
 
@@ -132,13 +128,9 @@ namespace MR
 
           double get_cost_unweighted          (const double mu) const { return (Math::pow2 (get_diff (mu))); }
           double get_d_cost_d_mu_unweighted   (const double mu) const { return (2.0 * TD * get_diff (mu)); }
-          double get_d_cost_d_TD_unweighted   (const double mu) const { return (2.0 * mu * get_diff (mu)); }
-          double get_d2_cost_d_TD2_unweighted (const double mu) const { return (2.0 * Math::pow2 (mu)); }
 
           double get_cost_wo_track_unweighted  (const double mu, const double length)    const { return (Math::pow2 (((TD - length) * mu) - FOD)); }
           double get_cost_manual_TD_unweighted (const double mu, const double manual_TD) const { return  Math::pow2 ((  manual_TD   * mu) - FOD); }
-
-          double get_d_cost_d_TD_manual_TD_unweighted (const double mu, const double manual_TD) const { return (2.0 * manual_TD * ((manual_TD * mu) - FOD)); }
 
       };
 
