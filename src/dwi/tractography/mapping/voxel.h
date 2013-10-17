@@ -199,7 +199,7 @@ class VoxelDir : public Voxel
 
     VoxelDir& operator=  (const Voxel& V)          { Voxel::operator= (V); return (*this); }
     bool      operator== (const Voxel& V)    const { return Voxel::operator== (V); }
-    bool      operator<  (const VoxelDir& V) const { return Voxel::operator< (V); }
+    bool      operator<  (const VoxelDir& V) const { return Voxel::operator== (V) ? true : Voxel::operator< (V); }
     bool      operator== (const VoxelDir& V) const { return false; }
 
 
@@ -243,7 +243,7 @@ class Dixel : public Voxel
     float  get_value() const { return value; }
 
     bool operator== (const Dixel& V) const { return (Voxel::operator== (V) ? (dir == V.dir) : false); }
-    bool operator<  (const Dixel& V) const { return (operator== (V)        ? (dir <  V.dir) : Voxel::operator< (V)); }
+    bool operator<  (const Dixel& V) const { return (Voxel::operator== (V) ? (dir <  V.dir) : Voxel::operator< (V)); }
 
   private:
     size_t dir;
