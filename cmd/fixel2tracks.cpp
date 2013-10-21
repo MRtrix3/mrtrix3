@@ -55,15 +55,19 @@ void usage ()
 
   ARGUMENTS
   + Argument ("fixel_in", "the input sparse fixel image.").type_image_in ()
+  + Argument ("tracks",   "the output track file ")       .type_file ();
 
-  + Argument ("tracks", "the output tract file ").type_file ()
 
-  + Argument ("tsf", "the output track scalar file").type_image_out ();
+  OPTIONS
+  + Option ("tsf", "output an accompanying track scalar file containing the fixel values")
+    + Argument ("path").type_image_out ()
+
+  + Option ("length", "vary the length of each track according to the fixel value")
+
+  + Option ("scale", "scale the length of each track by a multiplicative factor")
+    + Argument ("value").type_float (1e-6, 1.0, 1e+6);
 
 }
-
-
-#define ANGULAR_THRESHOLD 45
 
 
 
@@ -73,14 +77,23 @@ void run ()
   Image::BufferSparse<FixelMetric> input_data (input_header);
   Image::BufferSparse<FixelMetric>::voxel_type input_fixel (input_data);
 
-  float step = (input_fixel.vox(0) + input_fixel.vox(1) + input_fixel.vox(2)) / 6.0;
+  float half_length = 0.5 * Math::sqrt (Math::pow2 (input_fixel.vox(0)) + Math::pow2 (input_fixel.vox(1)) + Math::pow2(input_fixel.vox(2)));
+  Options opt = get_options ("scale");
+  if (opt.size())
+    half_length *= float(opt[0][0]);
 
-  DWI::Tractography::Properties tck_properties;
-  DWI::Tractography::Writer<float> tck_writer (argument[1], tck_properties);
+  DWI::Tractography::Properties properties;
+  properties.comments.push_back ("Created using fixel2tracks");
+  properties.comments.push_back ("Source fixel image: " + Path::basename (argument[0]));
+  DWI::Tractography::Writer<float> tck_writer (argument[1], properties);
 
-  DWI::Tractography::Properties tsf_properties;
-  tsf_properties.timestamp = tck_properties.timestamp;
-  DWI::Tractography::ScalarWriter<float> tsf_writer (argument[2], tsf_properties);
+  Ptr< DWI::Tractography::ScalarWriter<float> > tsf_writer;
+  opt = get_options ("tsf");
+  if (opt.size())
+    tsf_writer = new DWI::Tractography::ScalarWriter<float> (opt[0][0], properties);
+
+  opt = get_options ("length");
+  bool scale_length_by_value = opt.size();
 
   Image::Transform transform (input_fixel);
   Point<float> voxel_pos;
@@ -88,15 +101,18 @@ void run ()
   Image::LoopInOrder loop (input_fixel, "generating fixel-wise track segments");
   for (loop.start (input_fixel); loop.ok(); loop.next (input_fixel)) {
     for (size_t f = 0; f != input_fixel.value().size(); ++f) {
-      std::vector<Point<float> > tck;
+      std::vector< Point<float> > tck;
       transform.voxel2scanner (input_fixel, voxel_pos);
-      tck.push_back (voxel_pos + (input_fixel.value()[f].dir * step));
+      const float step = half_length * (scale_length_by_value ? input_fixel.value()[f].value : 1.0);
+      tck.push_back (voxel_pos + (input_fixel.value()[f].dir *  step));
       tck.push_back (voxel_pos + (input_fixel.value()[f].dir * -step));
       tck_writer.append (tck);
-      std::vector<float> scalars;
-      scalars.push_back(input_fixel.value()[f].value);
-      scalars.push_back(input_fixel.value()[f].value);
-      tsf_writer.append(scalars);
+      if (tsf_writer) {
+        std::vector<float> scalars;
+        scalars.push_back (input_fixel.value()[f].value);
+        scalars.push_back (input_fixel.value()[f].value);
+        tsf_writer->append (scalars);
+      }
     }
   }
 
