@@ -271,6 +271,8 @@ namespace MR
 
             if (!output_at_counts.empty() && (tracks_remaining == output_at_counts.back())) {
               const std::string prefix = str (tracks_remaining);
+              if (App::log_level)
+                fprintf (stderr, "\n");
               output_filtered_tracks (tck_file_path, prefix + "_tracks.tck");
               if (output_debug)
                 output_all_debug_images (prefix);
@@ -856,6 +858,9 @@ namespace MR
             }
             v_out_count.value() = count;
             v_out_amps .value() = sum;
+          } else {
+            v_out_count.value() = 0;
+            v_out_amps .value() = NAN;
           }
         }
       }
