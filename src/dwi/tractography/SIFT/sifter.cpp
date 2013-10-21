@@ -479,11 +479,17 @@ namespace MR
 #ifdef SIFTER_OUTPUT_SH_IMAGES
         output_target_image_sh (prefix + "_target_sh.mif");
 #endif
+#ifdef SIFTER_OUTPUT_FIXEL_IMAGES
+        output_target_image_fixel (prefix + "_target_fixel.msih");
+#endif
         output_tdi (prefix + "_tdi.mif");
         if (fmls.get_create_null_lobe())
           output_tdi_null_lobes (prefix + "_tdi_null_lobes.mif");
 #ifdef SIFTER_OUTPUT_SH_IMAGES
         output_tdi_sh (prefix + "_tdi_sh.mif");
+#endif
+#ifdef SIFTER_OUTPUT_FIXEL_IMAGES
+        output_tdi_fixel (prefix + "_tdi_fixel.msih");
 #endif
         output_error_images (prefix + "_max_abs_diff.mif", prefix + "_diff.mif", prefix + "_cost.mif");
         output_scatterplot (prefix + "_scatterplot.csv");
@@ -688,6 +694,31 @@ namespace MR
         }
       }
 
+      void SIFTer::output_target_image_fixel (const std::string& path) const
+      {
+        using Image::Sparse::FixelMetric;
+        Image::Header H_fixel (H);
+        H_fixel.datatype() = DataType::UInt64;
+        H_fixel.datatype().set_byte_order_native();
+        H_fixel[Image::Sparse::name_key] = str(typeid(FixelMetric).name());
+        H_fixel[Image::Sparse::size_key] = str(sizeof(FixelMetric));
+        Image::BufferSparse<FixelMetric> out (path, H_fixel);
+        Image::BufferSparse<FixelMetric>::voxel_type v_out (out);
+        VoxelAccessor v (accessor);
+        Image::LoopInOrder loop (v_out);
+        for (loop.start (v_out, v); loop.ok(); loop.next (v_out, v)) {
+          v_out.value().zero();
+          if (v.value()) {
+            v_out.value().set_size ((*v.value()).num_lobes());
+            size_t index = 0;
+            for (FOD_map<Lobe>::ConstIterator iter = begin (v); iter; ++iter, ++index) {
+              FixelMetric fixel (dirs.get_dir (iter().get_dir()), iter().get_FOD(), iter().get_FOD());
+              v_out.value()[index] = fixel;
+            }
+          }
+        }
+      }
+
       void SIFTer::output_tdi (const std::string& path) const
       {
         const double current_mu = mu();
@@ -759,6 +790,32 @@ namespace MR
           } else {
             for (v_out[3] = 0; v_out[3] != (int)N; ++v_out[3])
               v_out.value() = NAN;
+          }
+        }
+      }
+
+      void SIFTer::output_tdi_fixel (const std::string& path) const
+      {
+        using Image::Sparse::FixelMetric;
+        const double current_mu = mu();
+        Image::Header H_fixel (H);
+        H_fixel.datatype() = DataType::UInt64;
+        H_fixel.datatype().set_byte_order_native();
+        H_fixel[Image::Sparse::name_key] = str(typeid(FixelMetric).name());
+        H_fixel[Image::Sparse::size_key] = str(sizeof(FixelMetric));
+        Image::BufferSparse<FixelMetric> out (path, H_fixel);
+        Image::BufferSparse<FixelMetric>::voxel_type v_out (out);
+        VoxelAccessor v (accessor);
+        Image::LoopInOrder loop (v_out);
+        for (loop.start (v_out, v); loop.ok(); loop.next (v_out, v)) {
+          v_out.value().zero();
+          if (v.value()) {
+            v_out.value().set_size ((*v.value()).num_lobes());
+            size_t index = 0;
+            for (FOD_map<Lobe>::ConstIterator iter = begin (v); iter; ++iter, ++index) {
+              FixelMetric fixel (dirs.get_dir (iter().get_dir()), iter().get_FOD(), current_mu * iter().get_TD());
+              v_out.value()[index] = fixel;
+            }
           }
         }
       }

@@ -38,6 +38,11 @@
 #include "image/nav.h"
 #include "image/voxel.h"
 
+#include "image/buffer_sparse.h"
+#include "image/sparse/fixel_metric.h"
+#include "image/sparse/keys.h"
+#include "image/sparse/voxel.h"
+
 #include "math/rng.h"
 #include "math/SH.h"
 
@@ -67,6 +72,7 @@
 
 
 //#define SIFTER_OUTPUT_SH_IMAGES
+#define SIFTER_OUTPUT_FIXEL_IMAGES
 
 
 
@@ -190,9 +196,11 @@ namespace MR
         // Output functions - non-essential, mostly debugging outputs
         void output_target_image (const std::string&) const;
         void output_target_image_sh (const std::string&) const;
+        void output_target_image_fixel (const std::string&) const;
         void output_tdi (const std::string& path) const;
         void output_tdi_null_lobes (const std::string& path) const;
         void output_tdi_sh (const std::string&) const;
+        void output_tdi_fixel (const std::string&) const;
         void output_error_images (const std::string&, const std::string&, const std::string&) const;
         void output_scatterplot (const std::string&) const;
         void output_lobe_count_image (const std::string&) const;
