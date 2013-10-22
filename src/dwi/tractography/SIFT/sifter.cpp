@@ -138,32 +138,34 @@ namespace MR
         VoxelAccessor v (accessor);
         Image::LoopInOrder loop (v);
 
-        lobes.clear();
-        lobes.push_back (Lobe());
+        std::vector<Lobe> new_lobes;
+        new_lobes.push_back (Lobe());
         FOD_sum = 0.0;
 
         for (loop.start (v); loop.ok(); loop.next (v)) {
           if (v.value()) {
 
-            size_t new_start_index = lobes.size();
+            size_t new_start_index = new_lobes.size();
 
             for (FOD_map<Lobe>::ConstIterator i = begin(v); i; ++i) {
               if ((!remove_untracked_lobes || i().get_TD()) && (i().get_FOD() > min_FOD_integral)) {
-                lobe_index_mapping [size_t (i)] = lobes.size();
-                lobes.push_back (i());
-                FOD_sum += i().get_FOD();
+                lobe_index_mapping [size_t (i)] = new_lobes.size();
+                new_lobes.push_back (i());
+                FOD_sum += i().get_weight() * i().get_FOD();
               }
             }
 
             delete v.value();
 
-            if (lobes.size() == new_start_index)
+            if (new_lobes.size() == new_start_index)
               v.value() = NULL;
             else
-              v.value() = new MapVoxel (new_start_index, lobes.size() - new_start_index);
+              v.value() = new MapVoxel (new_start_index, new_lobes.size() - new_start_index);
 
           }
         }
+
+        lobes.swap (new_lobes);
 
         TrackIndexRangeWriter writer (TRACK_INDEX_BUFFER_SIZE, num_tracks(), "Removing excluded FOD lobes...");
         LobeRemapper remapper (*this, lobe_index_mapping);
