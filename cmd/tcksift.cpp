@@ -93,6 +93,9 @@ void usage ()
   + Option ("act", "use an ACT four-tissue-type segmented anatomical image to derive the processing mask for SIFT.")
     + Argument ("image").type_image_in()
 
+  + Option ("no_fod_scaling", "by default, the amplitudes of FOD lobes in voxels with grey matter partial volume contamination are scaled appropriately to compensate. \n"
+                              "Provide this option to override this behaviour and not perform any scaling.")
+
   + Option ("no_dilate_lut", "do NOT dilate FOD lobe lookup tables; only map streamlines to FOD lobes if the precise tangent lies within the angular spread of that lobe")
 
   + Option ("make_null_lobes", "add an additional FOD lobe to each voxel, with zero integral, that covers all directions with zero / negative FOD amplitudes")
@@ -156,6 +159,13 @@ void run ()
   }
 
   sifter.perform_FOD_segmentation ();
+
+  if (sifter.have_act_data()) {
+    opt = get_options ("no_fod_scaling");
+    if (!opt.size())
+      sifter.scale_FODs_by_GM();
+  }
+
   sifter.map_streamlines (argument[0]);
 
   if (out_debug)

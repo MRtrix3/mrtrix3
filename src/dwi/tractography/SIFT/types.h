@@ -94,6 +94,7 @@ namespace MR
           size_t get_dir()    const { return dir; }
 
 
+          void             scale_FOD  (const float factor)  { FOD *= factor; }
           void             set_weight (const float w)       { weight = w; }
           FOD_TD_weighted& operator+= (const double length) { TD += length; return *this; }
 
@@ -126,9 +127,8 @@ namespace MR
           float weight;
           size_t dir; // This is purely for visualisation purposes
 
-          double get_cost_unweighted          (const double mu) const { return (Math::pow2 (get_diff (mu))); }
-          double get_d_cost_d_mu_unweighted   (const double mu) const { return (2.0 * TD * get_diff (mu)); }
-
+          double get_cost_unweighted           (const double mu) const { return (Math::pow2 (get_diff (mu))); }
+          double get_d_cost_d_mu_unweighted    (const double mu) const { return (2.0 * TD * get_diff (mu)); }
           double get_cost_wo_track_unweighted  (const double mu, const double length)    const { return (Math::pow2 (((TD - length) * mu) - FOD)); }
           double get_cost_manual_TD_unweighted (const double mu, const double manual_TD) const { return  Math::pow2 ((  manual_TD   * mu) - FOD); }
 
@@ -142,7 +142,7 @@ namespace MR
       {
         public:
           Track_lobe_contribution (const uint32_t lobe_index, const float length) {
-            const uint32_t length_as_int = MIN(255, Math::round (scale_to_storage * length));
+            const uint32_t length_as_int = std::min (uint32_t(255), uint32_t(Math::round (scale_to_storage * length)));
             data = (lobe_index & 0x00FFFFFF) | (length_as_int << 24);
           }
 
@@ -169,6 +169,8 @@ namespace MR
           static void set_scaling (const Image::Info& in)
           {
             const float max_length = Math::sqrt (Math::pow2 (in.vox(0)) + Math::pow2 (in.vox(1)) + Math::pow2 (in.vox(2)));
+            // TODO Newer mapping performs chordal approximation of length
+            // Should technically take this into account when setting scaling
             scale_to_storage = 255.0 / max_length;
             scale_from_storage = max_length / 255.0;
             min_length_for_storage = 0.5 / scale_to_storage;
@@ -191,6 +193,7 @@ namespace MR
 
 /*
 // This is a 'safe' version of Track_lobe_contribution that does not use byte-sharing, but requires double the RAM
+// Simply comment the class above and un-comment this one to use
 class Track_lobe_contribution
 {
   public:
@@ -209,9 +212,15 @@ class Track_lobe_contribution
     float    get_value()      const { return value; }
 
 
+    static void set_scaling (const Image::Info& in) { min_length_for_storage = 0.0; }
+    static float min() { return min_length_for_storage; }
+
+
   private:
     uint32_t lobe;
     float value;
+
+    static float scale_to_storage, scale_from_storage, min_length_for_storage;
 
 };
 */

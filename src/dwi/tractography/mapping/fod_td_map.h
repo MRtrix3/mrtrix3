@@ -25,10 +25,14 @@
 #ifndef __dwi_tractography_mapping_fod_td_map_h__
 #define __dwi_tractography_mapping_fod_td_map_h__
 
+#include "point.h"
 
 #include "image/buffer_scratch.h"
 #include "image/copy.h"
+#include "image/iterator.h"
+#include "image/loop.h"
 #include "image/nav.h"
+#include "image/threaded_loop.h"
 #include "image/transform.h"
 #include "image/utils.h"
 #include "image/voxel.h"
@@ -140,13 +144,14 @@ namespace MR
           FOD_sum (0.0),
           TD_sum (0.0)
           {
-            fill_proc_mask (dwi, proc_mask);
+            initialise (dwi);
           }
 
           bool operator() (const FMLS::FOD_lobes& in);
           bool operator() (const SetDixel& in);
 
           double mu() const { return FOD_sum / TD_sum; }
+          bool have_act_data() const { return act_4tt; }
 
           using FOD_TD_map<Lobe>::begin;
 
@@ -155,13 +160,45 @@ namespace MR
           using FOD_map<Lobe>::lobes;
           using FOD_TD_map<Lobe>::dirs;
 
+          Ptr< Image::BufferScratch<float> > act_4tt;
           Image::BufferScratch<float> proc_mask;
           double FOD_sum, TD_sum;
 
 
         private:
           template <class Set>
-          void fill_proc_mask (Set&, Image::BufferScratch<float>&);
+          void initialise (Set&);
+
+
+          // Private functor for performing ACT image regridding
+          template <class Set>
+          class ResampleFunctor
+          {
+            public:
+
+              ResampleFunctor (Set& dwi, Image::Buffer<float>& anat, Image::BufferScratch<float>& out) :
+                  v_dwi (dwi),
+                  transform_dwi (new Image::Transform (dwi)),
+                  v_anat (anat),
+                  interp_anat (v_anat),
+                  v_out (out) { v_dwi[3] = 0; }
+
+              ResampleFunctor (const ResampleFunctor& that) :
+                  v_dwi (that.v_dwi),
+                  transform_dwi (that.transform_dwi),
+                  v_anat (that.v_anat),
+                  interp_anat (v_anat),
+                  v_out (that.v_out) { v_dwi[3] = 0; }
+
+              void operator() (const Image::Iterator&);
+
+            private:
+              typename Set::voxel_type v_dwi;
+              RefPtr<Image::Transform> transform_dwi;
+              Image::Buffer<float>::voxel_type v_anat;
+              Image::Interp::Linear< Image::Buffer<float>::voxel_type > interp_anat;
+              Image::BufferScratch<float>::voxel_type v_out;
+          };
 
 
         protected:
@@ -211,13 +248,10 @@ namespace MR
 
       template <class Lobe>
       template <class Set>
-      void FOD_TD_diff_map<Lobe>::fill_proc_mask (Set& in_dwi, Image::BufferScratch<float>& out_mask)
+      void FOD_TD_diff_map<Lobe>::initialise (Set& in_dwi)
       {
 
-        Image::Buffer<float>::voxel_type dwi (in_dwi);
-        dwi[3] = 0;
-        Image::Transform transform_dwi (dwi);
-        Image::BufferScratch<float>::voxel_type mask (out_mask);
+        Image::BufferScratch<float>::voxel_type mask (proc_mask);
 
         App::Options opt = App::get_options ("proc_mask");
         if (opt.size()) {
@@ -225,7 +259,7 @@ namespace MR
           // User-specified processing mask
           Image::Buffer<float> in_image (opt[0][0]);
           Image::Buffer<float>::voxel_type image (in_image);
-          if (!Image::dimensions_match (proc_mask, image, 0, 3))
+          if (!Image::dimensions_match (mask, image, 0, 3))
             throw Exception ("Dimensions of processing mask image provided using -proc_mask option must match relevant FOD image");
           Image::copy_with_progress_message ("Copying processing mask to memory... ", image, mask, 0, 3);
 
@@ -238,104 +272,25 @@ namespace MR
             if (in_anat.ndim() != 4 || in_anat.dim(3) != 4)
               throw Exception ("Image passed using the -act option must be in the 4TT format");
 
-            const int os_ratio = 10;
-            const float os_step = 1.0 / float(os_ratio);
-            const float os_offset = 0.5 * os_step;
+            Image::Info info_4tt (in_dwi);
+            info_4tt.set_ndim (4);
+            info_4tt.dim(3) = 4;
+            act_4tt = new Image::BufferScratch<float> (info_4tt);
 
-            // TODO Could multi-thread this
+            Image::ThreadedLoop threaded_loop ("resampling ACT 4TT image to diffusion image space...", in_dwi, 1, 0, 3);
+            ResampleFunctor<Set> functor (in_dwi, in_anat, *act_4tt);
+            threaded_loop.run (functor);
 
-            Image::Buffer<float>::voxel_type anat (in_anat);
-            Image::Interp::Linear< Image::Buffer<float>::voxel_type > interp (anat);
-
-            Image::LoopInOrder loop (dwi, "Creating processing mask from anatomical image...", 0, 3);
-            for (loop.start (dwi, mask); loop.ok(); loop.next (dwi, mask)) {
-              if (dwi.value()) {
-
-                // Get the upper & lower bounds of the diffusion voxel, in ACT image voxel space
-                ssize_t limits[3][2] = {{anat.dim(0)-1, 0}, {anat.dim(1)-1, 0}, {anat.dim(2)-1, 0}};
-                Point<int> edges;
-                Point<float> v_dwi;
-                for (edges[2] = 0; edges[2] != 2; ++edges[2]) {
-                  v_dwi[2] = dwi[2] - 0.5 + edges[2];
-                  for (edges[1] = 0; edges[1] != 2; ++edges[1]) {
-                    v_dwi[1] = dwi[1] - 0.5 + edges[1];
-                    for (edges[0] = 0; edges[0] != 2; ++edges[0]) {
-                      v_dwi[0] = dwi[0] - 0.5 + edges[0];
-
-                      const Point<float> p_scanner (transform_dwi.voxel2scanner (v_dwi));
-                      const Point<float> v_anat (interp.scanner2voxel (p_scanner));
-
-                      for (size_t axis = 0; axis != 3; ++axis) {
-                        limits[axis][0] = std::min (limits[axis][0], ssize_t(Math::floor (v_anat[axis])));
-                        limits[axis][1] = std::max (limits[axis][1], ssize_t(Math::ceil  (v_anat[axis])));
-                      }
-
-                } } }
-
-                // Ensure that these bounds are actually within the anatomical image
-                for (size_t axis = 0; axis != 3; ++axis) {
-                  limits[axis][0] = std::max (limits[axis][0], ssize_t(0));
-                  limits[axis][1] = std::min (limits[axis][1], ssize_t(anat.dim (axis) - 1));
-                }
-
-                // Test ALL ACT voxels within this cube; want to know if there is any chance of
-                //   non-zero and non-unity WM partial volume within this diffusion voxel
-                bool WM_lt_rest = false, WM_gt_rest = false;
-                for (anat[2] = limits[2][0]; anat[2] <= limits[2][1]; ++anat[2]) {
-                  for (anat[1] = limits[1][0]; anat[1] <= limits[1][1]; ++anat[1]) {
-                    for (anat[0] = limits[0][0]; anat[0] <= limits[0][1]; ++anat[0]) {
-
-                      Tractography::ACT::Tissues tissues (anat);
-                      if (tissues.get_wm() < tissues.get_gm() + tissues.get_csf())
-                        WM_lt_rest = true;
-                      else if (tissues.get_wm() > tissues.get_gm() + tissues.get_csf())
-                        WM_gt_rest = true;
-
-                } } }
-
-                // Determine whether or not this voxel needs to be tested using a full partial-volume approach
-                if (!WM_gt_rest) {
-                  mask.value() = 0.0;
-                } else if (!WM_lt_rest) {
-                  mask.value() = 1.0;
-                } else {
-
-                  // Full partial volume test
-                  size_t wm_count = 0, total_count = 0;
-                  Point<int> i;
-                  Point<float> v_dwi;
-                  for (i[2] = 0; i[2] != os_ratio; ++i[2]) {
-                    v_dwi[2] = dwi[2] - 0.5 + os_offset + (i[2] * os_step);
-                    for (i[1] = 0; i[1] != os_ratio; ++i[1]) {
-                      v_dwi[1] = dwi[1] - 0.5 + os_offset + (i[1] * os_step);
-                      for (i[0] = 0; i[0] != os_ratio; ++i[0]) {
-                        v_dwi[0] = dwi[0] - 0.5 + os_offset + (i[0] * os_step);
-
-                        const Point<float> p_scanner (transform_dwi.voxel2scanner (v_dwi));
-                        if (!interp.scanner (p_scanner)) {
-                          ++total_count;
-                          Tractography::ACT::Tissues tissues (interp);
-                          if (tissues.valid() && (tissues.get_wm() > tissues.get_gm() + tissues.get_csf()))
-                            ++wm_count;
-
-                        }
-
-                  } } }
-
-                  if (total_count)
-                    mask.value() = Math::pow2 (float(wm_count) / float(total_count));
-                  else
-                    mask.value() = 0.0;
-
-                }
-
-              } else { // No DWI data in this voxel
-                mask.value() = 0.0;
-              }
-            }
+            // Once all of the 4TT data has been read in, use it to derive the processing mask
+            Image::BufferScratch<float>::voxel_type v_4tt (*act_4tt);
+            Image::LoopInOrder loop (v_4tt, 0, 3);
+            v_4tt[3] = 2; // Access the WM fraction
+            for (loop.start (v_4tt, mask); loop.ok(); loop.next (v_4tt, mask))
+              mask.value() = Math::pow2<float> (v_4tt.value()); // Processing mask value is the square of the WM fraction
 
           } else {
 
+            typename Set::voxel_type dwi (in_dwi);
             Image::LoopInOrder loop (dwi, "Creating homogeneous processing mask...", 0, 3);
             dwi[3] = 0;
             for (loop.start (dwi, mask); loop.ok(); loop.next (dwi, mask))
@@ -348,6 +303,61 @@ namespace MR
       }
 
 
+
+
+      template <class Lobe>
+      template <class Set>
+      void FOD_TD_diff_map<Lobe>::ResampleFunctor<Set>::operator() (const Image::Iterator& pos)
+      {
+
+        static const int os_ratio = 10;
+        static const float os_step = 1.0 / float(os_ratio);
+        static const float os_offset = 0.5 * os_step;
+
+        Image::voxel_assign (v_dwi, pos);
+        Image::voxel_assign (v_out, pos);
+        if (v_dwi.value() && finite (v_dwi.value())) {
+
+          // Jump straight to the partial volume calculation
+          size_t cgm_count = 0, sgm_count = 0, wm_count = 0, csf_count = 0, total_count = 0;
+
+          Point<int> i;
+          Point<float> subvoxel_pos_dwi;
+          for (i[2] = 0; i[2] != os_ratio; ++i[2]) {
+            subvoxel_pos_dwi[2] = v_dwi[2] - 0.5 + os_offset + (i[2] * os_step);
+            for (i[1] = 0; i[1] != os_ratio; ++i[1]) {
+              subvoxel_pos_dwi[1] = v_dwi[1] - 0.5 + os_offset + (i[1] * os_step);
+              for (i[0] = 0; i[0] != os_ratio; ++i[0]) {
+                subvoxel_pos_dwi[0] = v_dwi[0] - 0.5 + os_offset + (i[0] * os_step);
+
+                const Point<float> p_scanner (transform_dwi->voxel2scanner (subvoxel_pos_dwi));
+                if (!interp_anat.scanner (p_scanner)) {
+                  ++total_count;
+                  Tractography::ACT::Tissues tissues (interp_anat);
+                  if (tissues.valid()) {
+                    if (tissues.get_cgm() > tissues.get_sgm() + tissues.get_wm() + tissues.get_csf())
+                      ++cgm_count;
+                    else if (tissues.get_sgm() > tissues.get_cgm() + tissues.get_wm() + tissues.get_csf())
+                      ++sgm_count;
+                    else if (tissues.get_wm() > tissues.get_gm() + tissues.get_csf())
+                      ++wm_count;
+                    else if (tissues.get_csf() > tissues.get_gm() + tissues.get_wm())
+                      ++csf_count;
+                  }
+                }
+
+          } } }
+
+          v_out[3] = 0; v_out.value() = cgm_count / float(total_count);
+          v_out[3] = 1; v_out.value() = sgm_count / float(total_count);
+          v_out[3] = 2; v_out.value() =  wm_count / float(total_count);
+          v_out[3] = 3; v_out.value() = csf_count / float(total_count);
+
+        } else {
+          for (v_out[3] = 0; v_out[3] != 4; ++v_out[3])
+            v_out.value() = 0.0;
+        }
+      }
 
 
 

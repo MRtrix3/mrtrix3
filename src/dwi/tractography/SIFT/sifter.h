@@ -111,6 +111,7 @@ namespace MR
 
         // CORE OPERATIONS
         void perform_FOD_segmentation ();
+        void scale_FODs_by_GM ();
         void map_streamlines (const std::string&);
         void remove_excluded_lobes();
         void perform_filtering();

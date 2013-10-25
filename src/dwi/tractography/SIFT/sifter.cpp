@@ -83,6 +83,28 @@ namespace MR
 
 
 
+      void SIFTer::scale_FODs_by_GM ()
+      {
+        if (!act_4tt)
+          throw Exception ("Can only perform scalling of FODs if ACT image is provided");
+        // Loop through voxels, getting total GM fraction for each, and scale all lobes in each voxel
+        VoxelAccessor v (accessor);
+        Image::BufferScratch<float>::voxel_type v_anat (*act_4tt);
+        FOD_sum = 0.0;
+        Image::LoopInOrder loop (v);
+        for (loop.start (v, v_anat); loop.ok(); loop.next (v, v_anat)) {
+          Tractography::ACT::Tissues tissues (v_anat);
+          const float multiplier = 1.0 - tissues.get_cgm() - (0.5 * tissues.get_sgm());
+          for (FOD_map<Lobe>::Iterator i = begin(v); i; ++i) {
+            i().scale_FOD (multiplier);
+            FOD_sum += i().get_weight() * i().get_FOD();
+          }
+        }
+      }
+
+
+
+
       void SIFTer::map_streamlines (const std::string& path)
       {
         Tractography::Properties properties;
