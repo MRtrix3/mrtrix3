@@ -4,6 +4,7 @@
 *.dll
 *.a
 *~
+*.swp
 /config.*
 /configure.log
 /bin/

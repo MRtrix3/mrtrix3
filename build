@@ -416,6 +416,19 @@ def print_deps (file, indent=''):
 
 
 
+
+def is_GUI_target (file):
+  if file in file_flags: 
+    if 'Q' in file_flags[file]: 
+      return True
+  if len(todo[file].deps):
+    for entry in todo[file].deps:
+      if is_GUI_target (entry):
+        return True
+  return False
+
+
+
 def list_headers (file):
   global headers, file_flags
 
@@ -708,12 +721,6 @@ if len(targets) == 0:
   targets = default_targets()
 
 if verbose:
-  sys.stderr.write ('building targets:')
-  for entry in targets:
-    sys.stderr.write (' ' + entry)
-  sys.stderr.write (os.linesep)
-
-if verbose:
   sys.stderr.write ('''
 compiling TODO list...
 ''')
@@ -722,6 +729,28 @@ try: [ Entry(item) for item in targets ]
 except Exception as e: 
   sys.stderr.write ('ERROR: ' + e.args[0] + os.linesep)
   sys.exit (1)
+
+
+# for nogui config, remove GUI elements from targets and todo list:
+if nogui:
+  nogui_targets = []
+  for entry in targets:
+    if not is_GUI_target (entry):
+      nogui_targets.append (entry)
+  targets = nogui_targets
+  
+  nogui_todo = {}
+  for item in todo.keys():
+    if not is_GUI_target (todo[item].name):
+       nogui_todo[item] = todo[item]
+  todo = nogui_todo
+
+
+
+
+if verbose:
+  sys.stderr.write ('building targets: ' + ' '.join (targets) + os.linesep)
+
 
 if dependencies:
   sys.stderr.write ('''
