@@ -479,6 +479,46 @@ except:
 
 
 
+report ('Checking for variable-length array support: ')
+try:
+  compile ('''
+
+int main(int argc, char* argv[]) { 
+  int x[argc];
+  return 0; 
+}
+''', cpp_flags, ld_flags)
+  report ('yes\n')
+except:
+  report ('no\n')
+  cpp_flags += [ '-DNO_VLA' ]
+
+
+
+report ('Checking for non-POD variable-length array support: ')
+try:
+  compile ('''
+#include <string>
+
+class X {
+  int x;
+  double y;
+  std::string s;
+};
+
+int main(int argc, char* argv[]) { 
+  X x[argc];
+  return 0; 
+}
+''', cpp_flags, ld_flags)
+  report ('yes\n')
+except:
+  report ('no\n')
+  cpp_flags += [ '-DNO_NON_POD_VLA' ]
+
+
+
+
 # zlib:
 
 report ('Checking for zlib compression library: ')
@@ -1065,9 +1105,16 @@ commit ('thread_cflags', thread_cflags)
 commit ('thread_ldflags', thread_ldflags)
 commit ('gsl_cflags', gsl_cflags)
 commit ('gsl_ldflags', gsl_ldflags)
+
 commit ('moc', moc)
 commit ('qt_cflags', qt_cflags)
 commit ('qt_ldflags', qt_ldflags)
+cache.write ('nogui = ')
+if nogui:
+  cache.write ('True\n')
+else:
+  cache.write ('False\n')
+
 
 cache.close()
 sys.stdout.write ('ok\n\n')
