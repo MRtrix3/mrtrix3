@@ -348,10 +348,15 @@ namespace MR
 
           } } }
 
-          v_out[3] = 0; v_out.value() = cgm_count / float(total_count);
-          v_out[3] = 1; v_out.value() = sgm_count / float(total_count);
-          v_out[3] = 2; v_out.value() =  wm_count / float(total_count);
-          v_out[3] = 3; v_out.value() = csf_count / float(total_count);
+          if (total_count) {
+            v_out[3] = 0; v_out.value() = cgm_count / float(total_count);
+            v_out[3] = 1; v_out.value() = sgm_count / float(total_count);
+            v_out[3] = 2; v_out.value() =  wm_count / float(total_count);
+            v_out[3] = 3; v_out.value() = csf_count / float(total_count);
+          } else {
+            for (v_out[3] = 0; v_out[3] != 4; ++v_out[3])
+              v_out.value() = 0.0;
+          }
 
         } else {
           for (v_out[3] = 0; v_out[3] != 4; ++v_out[3])
