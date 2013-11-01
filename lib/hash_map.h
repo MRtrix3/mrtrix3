@@ -31,20 +31,26 @@
 
 #define MRTRIX_HASH_MAP_TYPE std::hash_map
 
-#ifdef MRTRIX_USE_TR1
-#  include <tr1/unordered_map>
+#ifdef __clang__
+#  include <unordered_map>
 #  undef MRTRIX_HASH_MAP_TYPE
-#  define MRTRIX_HASH_MAP_TYPE std::tr1::unordered_map
+#  define MRTRIX_HASH_MAP_TYPE std::unordered_map
 #else
-#  ifdef __GNUC__
-#    if __GNUC__ < 3
-#      include <hash_map.h>
-#      undef MRTRIX_HASH_MAP_TYPE
-#      define MRTRIX_HASH_MAP_TYPE ::hash_map
-#    else
-#      include <ext/hash_map>
-#      undef MRTRIX_HASH_MAP_TYPE
-#      define MRTRIX_HASH_MAP_TYPE ::__gnu_cxx::hash_map
+#  ifdef MRTRIX_USE_TR1
+#    include <tr1/unordered_map>
+#    undef MRTRIX_HASH_MAP_TYPE
+#    define MRTRIX_HASH_MAP_TYPE std::tr1::unordered_map
+#  else
+#    ifdef __GNUC__
+#      if __GNUC__ < 3
+#        include <hash_map.h>
+#        undef MRTRIX_HASH_MAP_TYPE
+#        define MRTRIX_HASH_MAP_TYPE ::hash_map
+#      else
+#        include <ext/hash_map>
+#        undef MRTRIX_HASH_MAP_TYPE
+#        define MRTRIX_HASH_MAP_TYPE ::__gnu_cxx::hash_map
+#      endif
 #    endif
 #  endif
 #endif
