@@ -35,7 +35,7 @@
 #include "types.h"
 #include "exception.h"
 
-#ifdef WINDOWS
+#ifdef MRTRIX_WINDOWS
 #define PATH_SEPARATOR "\\/"
 #else
 #define PATH_SEPARATOR "/"
@@ -66,7 +66,7 @@ namespace MR
       if (first.empty()) 
         return second;
       if (first[first.size()-1] != PATH_SEPARATOR[0]
-#ifdef WINDOWS
+#ifdef MRTRIX_WINDOWS
           && first[first.size()-1] != PATH_SEPARATOR[1]
 #endif
           ) 

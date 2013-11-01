@@ -75,7 +75,7 @@ namespace MR
               uint16_t s[2];
               uint32_t i;
             } val = { {
-#ifdef BYTE_ORDER_BIG_ENDIAN
+#ifdef MRTRIX_BYTE_ORDER_BIG_ENDIAN
                 group, element
 #else
                 element, group

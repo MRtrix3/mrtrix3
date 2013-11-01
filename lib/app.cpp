@@ -335,7 +335,7 @@ namespace MR
 
     void init (int cmdline_argc, char** cmdline_argv)
     {
-#ifdef WINDOWS
+#ifdef MRTRIX_WINDOWS
       // force stderr to be unbuffered, and stdout to be line-buffered:
       setvbuf (stderr, NULL, _IONBF, 0);
       setvbuf (stdout, NULL, _IOLBF, 0);
@@ -345,7 +345,7 @@ namespace MR
       argv = cmdline_argv;
 
       NAME = Path::basename (argv[0]);
-#ifdef WINDOWS
+#ifdef MRTRIX_WINDOWS
       if (Path::has_suffix (NAME, ".exe"))
         NAME.erase (NAME.size()-4);
 #endif

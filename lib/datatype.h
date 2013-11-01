@@ -83,7 +83,7 @@ namespace MR
       void set_byte_order_native () {
         if (dt != Bit && dt != Int8 && dt != UInt8) {
           if (!is_little_endian() && !is_big_endian()) {
-#ifdef BYTE_ORDER_BIG_ENDIAN
+#ifdef MRTRIX_BYTE_ORDER_BIG_ENDIAN
             dt |= BigEndian;
 #else
             dt |= LittleEndian;
@@ -163,7 +163,7 @@ namespace MR
       static const uint8_t     CFloat64BE    = Complex | Float64 | BigEndian;
 
       static const uint8_t     Native        = Float32 |
-#ifdef BYTE_ORDER_BIG_ENDIAN
+#ifdef MRTRIX_BYTE_ORDER_BIG_ENDIAN
           BigEndian;
 #else
           LittleEndian;

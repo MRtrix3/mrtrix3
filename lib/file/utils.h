@@ -146,7 +146,7 @@ namespace MR
     inline void mkdir (const std::string& folder) 
     {
       if (::mkdir (folder.c_str()
-#ifndef WINDOWS
+#ifndef MRTRIX_WINDOWS
             , 0755
 #endif
             ))

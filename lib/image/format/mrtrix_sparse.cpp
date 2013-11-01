@@ -68,7 +68,7 @@ namespace MR
         //   the correct endianness for the system. Since MRtrix_sparse::create() forces the endianness of the
         //   offset data to be native, this is the easiest way to verify that the sparse data also has the
         //   correct endianness
-#ifdef BYTE_ORDER_BIG_ENDIAN
+#ifdef MRTRIX_BYTE_ORDER_BIG_ENDIAN
         const DataType dt = DataType::UInt64BE;
 #else
         const DataType dt = DataType::UInt64LE;

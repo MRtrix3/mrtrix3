@@ -24,7 +24,7 @@
 #include <unistd.h>
 #include <zlib.h>
 
-#ifdef WINDOWS
+#ifdef MRTRIX_WINDOWS
 #include <windows.h>
 #else
 #include <sys/mman.h>
@@ -85,7 +85,7 @@ namespace MR
           throw Exception ("error opening file \"" + Entry::name + "\": " + strerror (errno));
 
         try {
-#ifdef WINDOWS
+#ifdef MRTRIX_WINDOWS
           HANDLE handle = CreateFileMapping ( (HANDLE) _get_osfhandle (fd), NULL,
               PAGE_READONLY, 0, start + msize, NULL);
           if (!handle) throw 0;
@@ -119,7 +119,7 @@ namespace MR
       if (!first) return;
       if (addr) {
         DEBUG ("unmapping file \"" + Entry::name + "\"");
-#ifdef WINDOWS
+#ifdef MRTRIX_WINDOWS
         if (!UnmapViewOfFile ( (LPVOID) addr))
 #else
           if (munmap (addr, msize))

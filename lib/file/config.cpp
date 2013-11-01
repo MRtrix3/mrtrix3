@@ -28,14 +28,14 @@
 #include "file/path.h"
 #include "file/config.h"
 
-#define CONFIG_FILE "mrtrix.conf"
+#define MRTRIX_CONFIG_FILE "mrtrix.conf"
 
-#ifdef WINDOWS
-#define SYS_CONFIG_FILE "C:\\" CONFIG_FILE
-#define USER_CONFIG_FILE CONFIG_FILE
+#ifdef MRTRIX_WINDOWS
+#define MRTRIX_SYS_CONFIG_FILE "C:\\" MRTRIX_CONFIG_FILE
+#define MRTRIX_USER_CONFIG_FILE MRTRIX_CONFIG_FILE
 #else
-#define SYS_CONFIG_FILE "/etc/" CONFIG_FILE
-#define USER_CONFIG_FILE "." CONFIG_FILE
+#define MRTRIX_SYS_CONFIG_FILE "/etc/" MRTRIX_CONFIG_FILE
+#define MRTRIX_USER_CONFIG_FILE "." MRTRIX_CONFIG_FILE
 #endif
 
 
@@ -49,9 +49,9 @@ namespace MR
 
     void Config::init ()
     {
-      if (Path::is_file (SYS_CONFIG_FILE)) {
+      if (Path::is_file (MRTRIX_SYS_CONFIG_FILE)) {
         try {
-          KeyValue kv (SYS_CONFIG_FILE);
+          KeyValue kv (MRTRIX_SYS_CONFIG_FILE);
           while (kv.next()) {
             config[kv.key()] = kv.value();
           }
@@ -59,7 +59,7 @@ namespace MR
         catch (...) { }
       }
 
-      std::string path = Path::join (Path::home(), USER_CONFIG_FILE);
+      std::string path = Path::join (Path::home(), MRTRIX_USER_CONFIG_FILE);
       if (Path::is_file (path)) {
         try {
           KeyValue kv (path);

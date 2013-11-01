@@ -21,7 +21,7 @@
     17-03-2009 J-Donald Tournier <d.tournier@brain.org.au>
     * Use the C++ TR1 unordered_map instead of hash_map by default
     * This avoids compilation warnings on newer compilers.
-    * The old SGI hash_map can be used by removing the USE_TR1 macro on the command-line
+    * The old SGI hash_map can be used by removing the MRTRIX_USE_TR1 macro on the command-line
     * (i.e. remove the '-DUSE_TR1' entry in the cpp_flags line of the relevant sysconf file).
 
 */
@@ -29,22 +29,22 @@
 #ifndef __hash_map_h__
 #define __hash_map_h__
 
-#define HASH_MAP_TYPE std::hash_map
+#define MRTRIX_HASH_MAP_TYPE std::hash_map
 
-#ifdef USE_TR1
+#ifdef MRTRIX_USE_TR1
 #  include <tr1/unordered_map>
-#  undef HASH_MAP_TYPE
-#  define HASH_MAP_TYPE std::tr1::unordered_map
+#  undef MRTRIX_HASH_MAP_TYPE
+#  define MRTRIX_HASH_MAP_TYPE std::tr1::unordered_map
 #else
 #  ifdef __GNUC__
 #    if __GNUC__ < 3
 #      include <hash_map.h>
-#      undef HASH_MAP_TYPE
-#      define HASH_MAP_TYPE ::hash_map
+#      undef MRTRIX_HASH_MAP_TYPE
+#      define MRTRIX_HASH_MAP_TYPE ::hash_map
 #    else
 #      include <ext/hash_map>
-#      undef HASH_MAP_TYPE
-#      define HASH_MAP_TYPE ::__gnu_cxx::hash_map
+#      undef MRTRIX_HASH_MAP_TYPE
+#      define MRTRIX_HASH_MAP_TYPE ::__gnu_cxx::hash_map
 #    endif
 #  endif
 #endif
@@ -53,10 +53,10 @@ namespace MR
 {
   template <class K, class V> struct UnorderedMap {
     typedef
-    HASH_MAP_TYPE <K,V> Type;
+    MRTRIX_HASH_MAP_TYPE <K,V> Type;
   };
 }
 
-#undef HASH_MAP_TYPE
+#undef MRTRIX_HASH_MAP_TYPE
 
 #endif

@@ -278,7 +278,7 @@ namespace MR
         if (!out)
           throw Exception ("error creating file \"" + H.name() + "\": " + strerror (errno));
 
-#ifdef BYTE_ORDER_BIG_ENDIAN
+#ifdef MRTRIX_BYTE_ORDER_BIG_ENDIAN
         bool is_BE = true;
 #else
         bool is_BE = false;
