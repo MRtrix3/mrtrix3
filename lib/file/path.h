@@ -112,14 +112,19 @@ namespace MR
     }
 
 
-    inline std::string cwd (size_t buf_size = 32)
+    inline std::string cwd ()
     {
-      char buf [buf_size];
-      if (getcwd (buf, buf_size))
-        return buf;
-      if (errno != ERANGE)
-        throw Exception ("failed to get current working directory!");
-      return cwd (buf_size * 2);
+      std::string path;
+      size_t buf_size = 32;
+      while (true) {
+        path.reserve (buf_size);
+        if (getcwd (&path[0], buf_size))
+          break;
+        if (errno != ERANGE)
+          throw Exception ("failed to get current working directory!");
+        buf_size *= 2;
+      }
+      return path;
     }
 
     inline std::string home ()

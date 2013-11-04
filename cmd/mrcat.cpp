@@ -68,7 +68,7 @@ void run () {
     axis = opt[0][0];
 
   int num_images = argument.size()-1;
-  Ptr<Image::Buffer<value_type> > in [num_images];
+  std::vector<Ptr<Image::Buffer<value_type> > > in (num_images);
   in[0] = new Image::Buffer<value_type> (argument[0]);
   Image::ConstHeader& header_in (*in[0]);
 

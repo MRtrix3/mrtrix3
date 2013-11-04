@@ -73,7 +73,7 @@ namespace MR
         {
           if (dirs.columns() != 2) throw Exception ("direction matrix should have 2 columns: [ azimuth elevation ]");
           SHT.allocate (dirs.rows(), NforL (lmax));
-          ValueType AL [lmax+1];
+          VLA_MAX (AL, ValueType, lmax+1, 64);
           for (size_t i = 0; i < dirs.rows(); i++) {
             ValueType x = cos (dirs (i,1));
             Legendre::Plm_sph (AL, lmax, 0, x);
@@ -186,7 +186,7 @@ namespace MR
         inline ValueType value (const CoefType& coefs, ValueType cos_elevation, ValueType azimuth, int lmax)
         {
           ValueType amplitude = 0.0;
-          ValueType AL [lmax+1];
+          VLA_MAX (AL, ValueType, lmax+1, 64);
           Legendre::Plm_sph (AL, lmax, 0, ValueType (cos_elevation));
           for (int l = 0; l <= lmax; l+=2) amplitude += AL[l] * coefs[index (l,0)];
           for (int m = 1; m <= lmax; m++) {
@@ -223,7 +223,7 @@ namespace MR
         {
           delta_vec.allocate (NforL (lmax));
           ValueType az = Math::atan2 (unit_dir[1], unit_dir[0]);
-          ValueType AL [lmax+1];
+          VLA_MAX (AL, ValueType, lmax+1, 64);
           Legendre::Plm_sph (AL, lmax, 0, ValueType (unit_dir[2]));
           for (int l = 0; l <= lmax; l+=2)
             delta_vec[index (l,0)] = AL[l];
@@ -251,7 +251,7 @@ namespace MR
         {
           RH.allocate (SH.size());
           int lmax = 2*SH.size() +1;
-          ValueType AL [lmax+1];
+          VLA_MAX (AL, ValueType, lmax+1, 64);
           Legendre::Plm_sph (AL, lmax, 0, ValueType (1.0));
           for (size_t l = 0; l < SH.size(); l++)
             RH[l] = SH[l]/ AL[2*l];
@@ -389,7 +389,7 @@ namespace MR
 
         Math::Vector<ValueType> sigs (precision);
         Math::Matrix<ValueType> SHT (precision, lmax/2+1);
-        ValueType AL [lmax+1];
+        VLA_MAX (AL, ValueType, lmax+1, 64);
 
         for (int i = 0; i < precision; i++) {
           ValueType el = i*M_PI/ (2.0* (precision-1));
@@ -437,7 +437,7 @@ namespace MR
             nAL = NforL_mpos (lmax);
             inc = M_PI/ (ndir-1);
             AL.resize (ndir*nAL);
-            value_type buf [lmax+1];
+            VLA_MAX (buf, value_type, lmax+1, 64);
 
             for (int n = 0; n < ndir; n++) {
               typename std::vector<value_type>::iterator p = AL.begin() + n*nAL;
@@ -570,7 +570,7 @@ namespace MR
           bool atpole = sel < 1e-4;
 
           dSH_del = dSH_daz = d2SH_del2 = d2SH_deldaz = d2SH_daz2 = 0.0;
-          ValueType AL [NforL_mpos (lmax)];
+          VLA_MAX (AL, ValueType, NforL_mpos (lmax), 64);
 
           if (precomputer) {
             PrecomputedFraction<ValueType> f;
@@ -578,7 +578,7 @@ namespace MR
             precomputer->get (AL, f);
           }
           else {
-            ValueType buf [lmax+1];
+            VLA_MAX (buf, ValueType, lmax+1, 64);
             for (int m = 0; m <= lmax; m++) {
               Legendre::Plm_sph (buf, lmax, m, cel);
               for (int l = ( (m&1) ?m+1:m); l <= lmax; l+=2)

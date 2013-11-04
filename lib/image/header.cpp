@@ -188,7 +188,7 @@ namespace MR
         parser.parse (image_name);
         std::vector<int> Pdim (parser.ndim());
 
-        int Hdim [ndim()];
+        std::vector<int> Hdim (ndim());
         for (size_t i = 0; i < ndim(); ++i)
           Hdim[i] = dim (i);
 

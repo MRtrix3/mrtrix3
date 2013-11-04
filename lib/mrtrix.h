@@ -198,7 +198,7 @@ namespace MR
     va_start (list, format);
     size_t len = vsnprintf (NULL, 0, format, list) + 1;
     va_end (list);
-    char buf[len];
+    VLA(buf, char, len);
     va_start (list, format);
     vsnprintf (buf, len, format, list);
     va_end (list);

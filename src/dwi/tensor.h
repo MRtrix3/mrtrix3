@@ -51,7 +51,7 @@ namespace MR
 
     template <typename T> inline void dwi2tensor (const Math::Matrix<T>& binv, T* d)
     {
-      T logs[binv.columns()];
+      VLA (logs, T, binv.columns());
       for (size_t i = 0; i < binv.columns(); ++i)
         logs[i] = d[i] > T (0.0) ? -Math::log (d[i]) : T (0.0);
       Math::Vector<T> logS (logs, binv.columns());

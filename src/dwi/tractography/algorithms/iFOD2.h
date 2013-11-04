@@ -144,13 +144,13 @@ namespace MR
         num_sample_runs (0),
         num_truncations (0),
         max_truncation (0.0),
-        positions (new Point<value_type>[S.num_samples]),
-        tangents  (new Point<value_type>[S.num_samples]),
+        positions (S.num_samples),
+        calib_positions (S.num_samples),
+        tangents (S.num_samples),
+        calib_tangents (S.num_samples),
         sample_idx (S.num_samples)
       {
         calibrate (*this);
-        for (size_t i = 0; i != S.num_samples; ++i)
-          positions[i] = tangents[i] = Point<float>();
       }
 
       iFOD2 (const iFOD2& that) :
@@ -163,12 +163,12 @@ namespace MR
         num_truncations (0),
         max_truncation (0.0),
         calibrate_list (that.calibrate_list),
-        positions (new Point<value_type>[S.num_samples]),
-        tangents  (new Point<value_type>[S.num_samples]),
+        positions (S.num_samples),
+        calib_positions (S.num_samples),
+        tangents (S.num_samples),
+        calib_tangents (S.num_samples),
         sample_idx (S.num_samples)
       {
-        for (size_t i = 0; i != S.num_samples; ++i)
-          positions[i] = tangents[i] = Point<float>();
       }
 
 
@@ -178,8 +178,6 @@ namespace MR
         S.update_stats (calibrate_list.size() + value_type(mean_sample_num)/value_type(num_sample_runs),
                         value_type(num_truncations) / value_type(num_sample_runs),
                         max_truncation);
-        delete[] positions;
-        delete[] tangents;
       }
 
 
@@ -235,7 +233,6 @@ namespace MR
         }
 
         Point<value_type> next_pos, next_dir;
-        Point<value_type> calib_positions [S.num_samples], calib_tangents [S.num_samples];
 
         value_type max_val = 0.0;
         size_t nan_count = 0;
@@ -336,8 +333,8 @@ namespace MR
       std::vector< Point<value_type> > calibrate_list;
 
       // Store list of points in the currently-calculated arc
-      Point<value_type>* positions;
-      Point<value_type>* tangents;
+      std::vector< Point<value_type> > positions, calib_positions;
+      std::vector< Point<value_type> > tangents, calib_tangents;
 
       // Generate an arc only when required, and on the majority of next() calls, simply return the next point
       //   in the arc - more dense structural image sampling
@@ -371,7 +368,7 @@ namespace MR
 
 
 
-      value_type path_prob (Point<value_type>* positions, Point<value_type>* tangents)
+      value_type path_prob (std::vector< Point<value_type> >& positions, std::vector< Point<value_type> >& tangents)
       {
 
         // Early exit for ACT when path is not sensible
@@ -404,7 +401,7 @@ namespace MR
 
 
 
-      void get_path (Point<value_type>* positions, Point<value_type>* tangents, const Point<value_type>& end_dir) const
+      void get_path (std::vector< Point<value_type> >& positions, std::vector< Point<value_type> >& tangents, const Point<value_type>& end_dir) const
       {
         value_type cos_theta = end_dir.dot (dir);
         cos_theta = std::min (cos_theta, value_type(1.0));
@@ -420,18 +417,18 @@ namespace MR
             value_type a = (theta * (i+1)) / S.num_samples;
             value_type cos_a = Math::cos (a);
             value_type sin_a = Math::sin (a);
-            *positions++ = pos + R * (sin_a * dir + (value_type(1.0) - cos_a) * curv);
-            *tangents++  = cos_a * dir + sin_a * curv;
+            positions[i] = pos + R * (sin_a * dir + (value_type(1.0) - cos_a) * curv);
+            tangents[i] = cos_a * dir + sin_a * curv;
           }
-          *positions = pos + R * (Math::sin (theta) * dir + (value_type(1.0)-cos_theta) * curv);
-          *tangents  = end_dir;
+          positions[S.num_samples-1] = pos + R * (Math::sin (theta) * dir + (value_type(1.0)-cos_theta) * curv);
+          tangents[S.num_samples-1]  = end_dir;
 
         } else { // straight on:
 
           for (size_t i = 0; i < S.num_samples; ++i) {
             value_type f = (i+1) * (S.step_size / S.num_samples);
-            *positions++ = pos + f * dir;
-            *tangents++  = dir;
+            positions[i] = pos + f * dir;
+            tangents[i]  = dir;
           }
 
         }
@@ -449,7 +446,9 @@ namespace MR
         public:
           Calibrate (iFOD2& method) :
             P (method),
-            fod (&P.values[0], P.source.dim(3))
+            fod (&P.values[0], P.source.dim(3)),
+            positions (P.S.num_samples),
+            tangents (P.S.num_samples)
           {
             Math::SH::delta (fod, Point<value_type> (0.0, 0.0, 1.0), P.S.lmax);
             init_log_prob = 0.5 * Math::log (Math::SH::value (P.values, Point<value_type> (0.0, 0.0, 1.0), P.S.lmax));
@@ -457,7 +456,6 @@ namespace MR
 
           value_type operator() (value_type el)
           {
-            Point<value_type> positions [P.S.num_samples], tangents [P.S.num_samples];
             P.get_path (positions, tangents, Point<value_type> (Math::sin (el), 0.0, Math::cos(el)));
 
             value_type log_prob = init_log_prob;
@@ -479,6 +477,7 @@ namespace MR
           iFOD2& P;
           Math::Vector<value_type> fod;
           value_type init_log_prob;
+          std::vector< Point<value_type> > positions, tangents;
       };
 
       friend void calibrate<iFOD2> (iFOD2& method);

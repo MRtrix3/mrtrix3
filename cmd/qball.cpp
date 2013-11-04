@@ -273,8 +273,8 @@ void run ()
   // Setup response function
   int num_RH = (lmax + 2)/2;
   Math::Vector<value_type> sigs(num_RH);
-  value_type AL[lmax+1];
-  Math::Legendre::Plm_sph<value_type>(AL, lmax, 0, 0);
+  std::vector<value_type> AL (lmax+1);
+  Math::Legendre::Plm_sph<value_type>(&AL[0], lmax, 0, 0);
   for (int l = 0; l <= lmax; l += 2) sigs[l/2] = AL[l];
   Math::Vector<value_type> response(num_RH);
   Math::SH::SH2RH(response, sigs);

@@ -20,10 +20,6 @@
 
 */
 
-/** \file
-  Declares bootstrap details.
- */
-
 #ifndef __bootstrap_h__
 #define __bootstrap_h__
 

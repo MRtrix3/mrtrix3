@@ -56,7 +56,7 @@ namespace MR
         QImage pixmap (max_font_width, font_height, QImage::Format_ARGB32);
         const GLubyte* pix_data = pixmap.bits();
 
-        float tex_data [2 * tex_width * font_height];
+        VLA (tex_data, float, 2 * tex_width * font_height);
 
         QPainter painter (&pixmap);
         painter.setFont (font);
@@ -171,8 +171,8 @@ namespace MR
           assert (vertex_buffer[1]);
           assert (vertex_array_object);
 
-          GLfloat screen_pos [8*text.size()];
-          GLfloat tex_pos [8*text.size()];
+          VLA (screen_pos, GLfloat, 8*text.size());
+          VLA (tex_pos, GLfloat, 8*text.size());
 
           x -= 1;
           y -= 1;

@@ -264,7 +264,7 @@ namespace MR
             H.dim(i) = 1;
 
         if (single_file) {
-          ssize_t order[H.ndim()];
+          VLA_MAX (order, ssize_t, H.ndim(), 32);
           size_t i, axis = 0;
           for (i = 0; i < H.ndim() && axis < 3; ++i)
             if (abs (H.stride (i)) <= 3)

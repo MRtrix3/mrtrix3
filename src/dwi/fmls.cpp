@@ -249,7 +249,7 @@ bool Segmenter::operator() (const SH_coefs& in, FOD_lobes& out) const {
       for (std::vector<FOD_lobe>::iterator i = out.begin(); i != out.end(); ++i)
         processed |= i->get_mask();
 
-      std::vector<uint32_t> new_assignments [dirs.size()];
+      NON_POD_VLA (new_assignments, std::vector<uint32_t>, dirs.size());
       while (!processed.full()) {
 
         for (dir_t dir = 0; dir != dirs.size(); ++dir) {
