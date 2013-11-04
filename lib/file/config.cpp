@@ -50,6 +50,7 @@ namespace MR
     void Config::init ()
     {
       if (Path::is_file (MRTRIX_SYS_CONFIG_FILE)) {
+        INFO ("reading config file \"" MRTRIX_SYS_CONFIG_FILE "\"...");
         try {
           KeyValue kv (MRTRIX_SYS_CONFIG_FILE);
           while (kv.next()) {
@@ -61,6 +62,7 @@ namespace MR
 
       std::string path = Path::join (Path::home(), MRTRIX_USER_CONFIG_FILE);
       if (Path::is_file (path)) {
+        INFO ("reading config file \"" + path + "\"...");
         try {
           KeyValue kv (path);
           while (kv.next()) {

@@ -326,7 +326,7 @@ namespace MR
         }
       }
 
-
+      File::Config::init ();
     }
 
 
@@ -351,8 +351,6 @@ namespace MR
 #endif
 
       srand (time (NULL));
-
-      File::Config::init ();
     }
 
 
