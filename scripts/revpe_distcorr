@@ -4,12 +4,12 @@
 
 # This script is only for the specific case where a single pair of reversed-phase-encode images have been acquired for estimating the inhomogeneity field (phase encode A>>P then P>>A), which is to be used subsequently to correct a volume series (DWI / fMRI) that has been acquired using A>>P phase-encode direction. If your acquisition is different or more complex, you will need to modify this script accordingly or make your own.
 
-# The script assumes that motion correction has already been applied to the image series. If this is not the case, then the corrections will be erroneous in the presence of significant motion. Eventually when FSL's 'eddy' gets updated to work with high b-value data, that should be used instead of this script, as it will perform motion correction, susceptibility distortion correction & eddy current correction in a single interpolation step.
+# Unlike the previous version of this script, this uses FSL's eddy tool to perform motion & eddy current correction as well as susceptibility distortion correction for DWI. Therefore the input images to this script should be the images as they are received from the scanner i.e. it is no longer necessary to perform DWI motion correction before running this script. However, if it is an fMRI time series that is being processed, eddy is not applicable, so motion correction will need to be applied prior to this script, and this script is only responsible for the susceptibility distortion correction. (Perhaps down the track FMRIB will modify mcflirt to use the field output from topup...?)
 
 # Order of input arguments is:
 # * Anterior-posterior image from reverse phase-encode pair
 # * Posterior-anterior image from reverse phase-encode pair
-# * Image series to be corrected; note that motion correction should be applied BEFORE this script
+# * Image series to be corrected
 # * Name of output corrected image series
 
 
@@ -23,6 +23,7 @@ from lib.loadOptions  import loadOptions
 from lib.makeTempDir  import makeTempDir
 from lib.printMessage import printMessage
 from lib.runCommand   import runCommand
+from lib.warnMessage  import warnMessage
 
 
 num_args = 4
@@ -49,6 +50,12 @@ if not binaryInPath(applytopup_cmd):
   applytopup_cmd = 'fsl5.0-applytopup'
   if not binaryInPath(applytopup_cmd):
     errorMessage('Could not find FSL program applytopup; please verify FSL install')
+    
+eddy_cmd = 'eddy'
+if not binaryInPath(eddy_cmd):
+  eddy_cmd = 'fsl5.0-eddy'
+  if not binaryInPath(eddy_cmd):
+    errorMessage('Could not find FSL program eddy; please verify FSL install')
 
 (quiet, verbose) = loadOptions(num_args)
 
@@ -64,15 +71,16 @@ runCommand('mrconvert ' + sys.argv[3] + ' ' + os.path.join(temp_dir, 'series_bef
 
 # Get the output of running mrinfo on the input series, for finding the data layout
 mrinfo_command = 'mrinfo ' + sys.argv[3]
-mrinfo_out_path = os.path.join(temp_dir, 'mrinfo_out.txt')
+mrinfo_out_path = os.path.join(temp_dir, 'mrinfo_out_series.txt')
 if verbose:
-  printMessage(mrinfo_command + ' (piping output to ' + mrinfo_out_path + ')')
+  printMessage('Running \'' + mrinfo_command + '\' (piping output to ' + mrinfo_out_path + ')')
 with open(mrinfo_out_path, 'w') as mrinfo_out:
   subprocess.call(mrinfo_command, stdout=mrinfo_out, stderr=None, shell=True)
   mrinfo_out.close()
 
 # Also try to get the gradient encoding
 # (mrinfo will write an empty grad.b if no gradient encoding is present)
+# Subprocess needed to be used explicitly here as if there is no diffusion encoding, mrinfo returns a fail code, terminating the script
 mrinfo_command += ' -grad ' + os.path.join(temp_dir, 'grad.b')
 if verbose:
   printMessage(mrinfo_command)
@@ -83,22 +91,8 @@ if verbose:
   printMessage('Changing to temporary directory (' + temp_dir + ')')
 os.chdir(temp_dir)
 
-# Construct a configuration file
-if verbose:
-  printMessage('Creating phase-encoding configuration file')
-config_file = open('config.txt', 'w')
-config_file.write('0  1 0 0.1\n0 -1 0 0.1\n')
-config_file.close()
-
-# Perform the field estimation
-runCommand(topup_cmd + ' --imain=pair.nii --datain=config.txt --out=field --config=' + topup_config_path, verbose)
-
-# Apply the warp field to the image series
-# Note: applytopup appears to ignore FSLOUTPUTTYPE field, and just outputs a .nii.gz
-runCommand(applytopup_cmd + ' --imain=series_before.nii --datain=config.txt --inindex=1 --topup=field --out=series_after.' + fsl_suffix + ' --method=jac', verbose)
-
 # Get the data layout of the original image series if possible
-mrinfo_output = open ('mrinfo_out.txt', 'r')
+mrinfo_output = open ('mrinfo_out_series.txt', 'r')
 stride_option = ''
 for line in mrinfo_output:
   line = line.strip(' ')
@@ -108,18 +102,114 @@ for line in mrinfo_output:
     stride_option = ' -stride ' + line
     if verbose:
       printMessage('Target data layout for output image series: ' + line)
+      
+# Need to check the dimensions along the three spatial axes of the image pair
+mrinfo_command = 'mrinfo pair.nii'
+mrinfo_out_path = 'mrinfo_out_pair.txt'
+if verbose:
+  printMessage('Running \'' + mrinfo_command + '\' (piping output to ' + mrinfo_out_path + ')')
+with open(mrinfo_out_path, 'w') as mrinfo_out:
+  subprocess.call(mrinfo_command, stdout=mrinfo_out, stderr=None, shell=True)
+  mrinfo_out.close()
 
-grad_option = ''
+# If no axes need to be cropped, use the original 4D volume with the image pair
+# Otherwise, need to call mrcrop with the appropriate options, and pass the modified image to topup
+topup_imain = 'pair.nii'
+applytopup_imain = 'series_before.nii'
+
+# For any non-even dimensions, crop the first voxel along that dimension
+mrinfo_output = open ('mrinfo_out_pair.txt', 'r')
+crop_option = ''
+for line in mrinfo_output:
+  line = line.strip()
+  if line.startswith('Dimensions: '):
+    line = line.split(':')
+    line = line[1].split('x')
+    for index in range(0, 3):
+      line[index] = line[index].strip()
+      dim = int(line[index])
+      if dim%2:
+        crop_option += ' -axis ' + str(index) + ' 1 ' + str(dim-1)
+
+if crop_option:
+  warnMessage('Input images contain at least one non-even dimension; cropping images for topup / eddy compatibility') 
+  runCommand('mrcrop pair.nii pair_crop.nii' + crop_option + quiet, verbose)
+  runCommand('mrcrop series_before.nii series_crop.nii' + crop_option + quiet, verbose)
+  topup_imain = 'pair_crop.nii'
+  # Does the input image series also need to be cropped? Test this
+  # It appears to be the case for eddy, not for applytopup; but just do it straight away
+  applytopup_imain = 'series_crop.nii'
+
+# Construct a configuration file
+if verbose:
+  printMessage('Creating phase-encoding configuration file')
+config_file = open('config.txt', 'w')
+config_file.write('0  1 0 0.1\n0 -1 0 0.1\n')
+config_file.close()
+
+# Perform the field estimation
+runCommand(topup_cmd + ' --imain=' + topup_imain + ' --datain=config.txt --out=field --config=' + topup_config_path, verbose)
+
+# Apply the warp field to the image series
+# Note: applytopup appears to ignore FSLOUTPUTTYPE field, and just outputs a .nii.gz
+runCommand(applytopup_cmd + ' --imain=' + applytopup_imain + ' --datain=config.txt --inindex=1 --topup=field --out=series_topup.' + fsl_suffix + ' --method=jac', verbose)
+
+# Need to split depending on whether DW information is available
 if os.path.getsize('grad.b'):
-  if verbose:
-    printMessage('Detected diffusion gradient encoding in input file; retaining in output file')
-  grad_option = ' -grad grad.b'
-else:
-  if verbose:
-    printMessage('No diffusion gradient encoding found in input file')
 
-# Convert the resulting volume to the output image, and re-insert the diffusion encoding if present
-runCommand('mrconvert series_after.' + fsl_suffix + ' ' + os.path.basename(sys.argv[4]) + stride_option + grad_option + quiet, verbose) 
+  if verbose:
+    printMessage('Detected diffusion gradient encoding in input file; running eddy')
+    
+  # Use the initial corrected image series from applytopup to derive a processing mask for eddy
+  runCommand('mrconvert series_topup.' + fsl_suffix + ' -grad grad.b  -' + quiet + ' | dwi_brain_mask - -' + quiet + ' | mrdilate - - | mrconvert - mask.nii -datatype float32' + quiet, verbose)
+  
+  # Convert gradient table into bvecs / bvals
+  # TODO Once implemented, use new mrtrix command dwgradextract to export directly to this format
+  with open ('grad.b', 'r') as f:
+    grad_data = f.readlines()
+  num_volumes = len(grad_data)
+  # Need to split the data based on whitespaces and remove the newline character
+  for index in xrange(num_volumes): 
+    grad_data[index] = grad_data[index].rstrip().split(' ')
+  # Transpose
+  grad_x = (x for x,y,z,b in grad_data)
+  grad_y = (y for x,y,z,b in grad_data)
+  grad_z = (z for x,y,z,b in grad_data)
+  grad_b = (b for x,y,z,b in grad_data)
+  # Output to files
+  with open('bvecs', 'w') as bvecs_file:
+    bvecs_file.write(' '.join(grad_x) + os.linesep)
+    bvecs_file.write(' '.join(grad_y) + os.linesep)
+    bvecs_file.write(' '.join(grad_z))
+  with open('bvals', 'w') as bvals_file:
+    bvals_file.write(' '.join(grad_b))
+  
+  # Generate configuration file for eddy - index referring to PE and bandwidth for each volume
+  # In this particular use case, we assume that every volume in the series has the same imaging parameters as the first of the reversed-PE pair
+  # Therefore, every volume has an index of 1
+  indices = ''
+  for volume in range(0, num_volumes):
+    indices = indices + '1 '
+  with open('indices.txt', 'w') as index_file:
+    index_file.write(indices);
+  
+  # Run eddy
+  fsl_verbose = ''
+  if verbose:
+    fsl_verbose = ' --verbose'
+  runCommand('eddy --imain=' + applytopup_imain + ' --mask=mask.nii --index=indices.txt --acqp=config.txt --bvecs=bvecs --bvals=bvals --topup=field --out=series_after' + fsl_verbose, verbose)
+  
+  # Convert the resulting volume to the output image, and re-insert the diffusion encoding
+  # Note that currently the script uses the diffusion encoding from the original DWI volumes, i.e. no reorientation of diffusion
+  #   gradient vectors is performed. It should be possible to get the motion parameters from the eddy 
+  # text file output and modify them manually, or FMRIB may update eddy itself.
+  runCommand('mrconvert series_after.' + fsl_suffix + ' ' + os.path.basename(sys.argv[4]) + stride_option + ' -grad grad.b' + quiet, verbose) 
+  
+else: # No gradient encoding - input is fMRI time series
+  if verbose:
+    printMessage('No diffusion gradient encoding found in input file; using output from applytopup')
+  runCommand('mrconvert series_topup.' + fsl_suffix + ' ' + os.path.basename(sys.argv[4]) + stride_option + quiet, verbose) 
+  
 
 # Move back to original directory
 if verbose:
