@@ -4,7 +4,7 @@
 
 # This script is only for the specific case where a single pair of reversed-phase-encode images have been acquired for estimating the inhomogeneity field (phase encode A>>P then P>>A), which is to be used subsequently to correct a volume series (DWI / fMRI) that has been acquired using A>>P phase-encode direction. If your acquisition is different or more complex, you will need to modify this script accordingly or make your own.
 
-# Unlike the previous version of this script, this uses FSL's eddy tool to perform motion & eddy current correction as well as susceptibility distortion correction for DWI. Therefore the input images to this script should be the images as they are received from the scanner i.e. it is no longer necessary to perform DWI motion correction before running this script. However, if it is an fMRI time series that is being processed, eddy is not applicable, so motion correction will need to be applied prior to this script, and this script is only responsible for the susceptibility distortion correction. (Perhaps down the track FMRIB will modify mcflirt to use the field output from topup...?)
+# Unlike the previous version of this script, this now uses FSL's eddy tool to perform motion & eddy current correction as well as susceptibility distortion correction for DWI. Therefore the input images to this script should be the images as they are received from the scanner i.e. it is no longer necessary to perform DWI motion correction before running this script. However, if it is an fMRI time series that is being processed, eddy is not applicable, so motion correction will need to be applied prior to this script, and this script is only responsible for the susceptibility distortion correction. (Perhaps down the track FMRIB will modify mcflirt to use the field output from topup...?)
 
 # Order of input arguments is:
 # * Anterior-posterior image from reverse phase-encode pair
@@ -79,12 +79,11 @@ with open(mrinfo_out_path, 'w') as mrinfo_out:
   mrinfo_out.close()
 
 # Also try to get the gradient encoding
-# (mrinfo will write an empty grad.b if no gradient encoding is present)
-# Subprocess needed to be used explicitly here as if there is no diffusion encoding, mrinfo returns a fail code, terminating the script
-mrinfo_command += ' -grad ' + os.path.join(temp_dir, 'grad.b')
+# Subprocess needed to be used explicitly here as if there is no diffusion encoding, dwgradextract returns a fail code, terminating the script if runCommand() is used
+dwgradextract_command = 'dwgradextract ' + sys.argv[3] + ' ' + os.path.join(temp_dir, 'bvecs') + ' -fsl' + quiet
 if verbose:
-  printMessage(mrinfo_command)
-mrinfo_process = subprocess.call(mrinfo_command, stdout=None, stderr=None, shell=True)
+  printMessage('Running \'' + dwgradextract_command + '\'')
+dwgradextract_process = subprocess.call(dwgradextract_command, stdout=None, stderr=None, shell=True)
 
 # Move into the temporary directory now that all files are prepared
 if verbose:
@@ -155,38 +154,25 @@ runCommand(topup_cmd + ' --imain=' + topup_imain + ' --datain=config.txt --out=f
 runCommand(applytopup_cmd + ' --imain=' + applytopup_imain + ' --datain=config.txt --inindex=1 --topup=field --out=series_topup.' + fsl_suffix + ' --method=jac', verbose)
 
 # Need to split depending on whether DW information is available
-if os.path.getsize('grad.b'):
+if os.path.exists('bvecs'):
 
   if verbose:
     printMessage('Detected diffusion gradient encoding in input file; running eddy')
     
   # Use the initial corrected image series from applytopup to derive a processing mask for eddy
-  runCommand('mrconvert series_topup.' + fsl_suffix + ' -grad grad.b  -' + quiet + ' | dwi_brain_mask - -' + quiet + ' | mrdilate - - | mrconvert - mask.nii -datatype float32' + quiet, verbose)
-  
-  # Convert gradient table into bvecs / bvals
-  # TODO Once implemented, use new mrtrix command dwgradextract to export directly to this format
-  with open ('grad.b', 'r') as f:
-    grad_data = f.readlines()
-  num_volumes = len(grad_data)
-  # Need to split the data based on whitespaces and remove the newline character
-  for index in xrange(num_volumes): 
-    grad_data[index] = grad_data[index].rstrip().split(' ')
-  # Transpose
-  grad_x = (x for x,y,z,b in grad_data)
-  grad_y = (y for x,y,z,b in grad_data)
-  grad_z = (z for x,y,z,b in grad_data)
-  grad_b = (b for x,y,z,b in grad_data)
-  # Output to files
-  with open('bvecs', 'w') as bvecs_file:
-    bvecs_file.write(' '.join(grad_x) + os.linesep)
-    bvecs_file.write(' '.join(grad_y) + os.linesep)
-    bvecs_file.write(' '.join(grad_z))
-  with open('bvals', 'w') as bvals_file:
-    bvals_file.write(' '.join(grad_b))
+  runCommand('mrconvert series_topup.' + fsl_suffix + ' -grad bvecs  -' + quiet + ' | dwi_brain_mask - -' + quiet + ' | mrdilate - - | mrconvert - mask.nii -datatype float32' + quiet, verbose)
   
   # Generate configuration file for eddy - index referring to PE and bandwidth for each volume
   # In this particular use case, we assume that every volume in the series has the same imaging parameters as the first of the reversed-PE pair
   # Therefore, every volume has an index of 1
+  
+  # Need to find the number of input volumes
+  # For this, import bvals and count the number of entries
+  bvals_input = open ('bvals', 'r')
+  bvals = bvals_input.read()
+  bvals = bvals.strip().split()
+  num_volumes = len(bvals)
+  
   indices = ''
   for volume in range(0, num_volumes):
     indices = indices + '1 '

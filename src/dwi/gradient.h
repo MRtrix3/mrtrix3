@@ -29,9 +29,11 @@
 #include "file/config.h"
 #include "image/header.h"
 #include "image/stride.h"
+#include "image/transform.h"
 #include "math/LU.h"
 #include "math/SH.h"
 #include "math/matrix.h"
+#include "math/permutation.h"
 #include "dwi/shells.h"
 
 
@@ -190,6 +192,16 @@ namespace MR
       grad.column(3) = bvals.row(0);
     }
 
+
+
+    //! export gradient table in FSL format (bvecs/bvals)
+    /*! This will take the gradient table information from a header and export it
+     * to a bvecs/bvals file pair. In addition to splitting the information over two
+     * files, the vectors must be reoriented; firstly to change from scanner space to
+     * image space, and then to compensate for the fact that FSL defines its vectors
+     * with regards to the data strides in the image file.
+     */
+    void save_bvecs_bvals (const Image::Header&, const std::string&);
 
 
 

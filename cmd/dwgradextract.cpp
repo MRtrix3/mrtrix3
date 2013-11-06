@@ -22,6 +22,7 @@
 
 #include "app.h"
 #include "image/header.h"
+#include "dwi/gradient.h"
 
 MRTRIX_APPLICATION
 
@@ -30,38 +31,33 @@ using namespace App;
 
 void usage () {
 
-  DESCRIPTION =
-    Description()
-    + "display header information, or extract specific information from the header";
+  DESCRIPTION
+    + "extract diffusion-weighting information from the header of an image";
 
-  ARGUMENTS =
-    ArgumentList() 
-    + Argument ("image", 
-        "the input image.").allow_multiple().type_image_in ();
+  ARGUMENTS
+  + Argument ("image",  "the input image.").type_image_in ()
+  + Argument ("output", "the output text file containing the gradient information").type_text();
 
-  OPTIONS = 
-    OptionList() + OptionGroup()
-
-    + Option ("transform", "write transform matrix to file")
-    +   Argument ("file").type_file ();
+  OPTIONS
+  + Option ("fsl", "output the gradient information in FSL (bvecs/bvals) format. \n"
+                   "This also performs the appropriate re-orientation for FSL's gradient direction convention.");
 
 }
 
 
+
 void run () {
 
-  Options opt = get_options ("transform");
-  if (opt.size()) {
-    if (argument.size() > 1)
-      throw Exception ("only a single input image is allowed when writing image header transform to file");
-    Image::Header header (argument[0]);
-    header.transform().save (opt[0][0]);
-    return;
-  }
+  Image::Header header (argument[0]);
 
-  for (size_t i = 0; i < argument.size(); ++i) {
-    Image::Header header (argument[i]);
-    std::cout << header.description();
-  }
+  if (!header.DW_scheme().is_set())
+    throw Exception ("no gradient information found within image \"" + header.name() + "\"");
+
+  Options opt = get_options ("fsl");
+  if (opt.size())
+    DWI::save_bvecs_bvals (header, argument[1]);
+  else
+    header.DW_scheme().save (argument[1]);
+
 }
 
