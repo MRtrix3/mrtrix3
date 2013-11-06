@@ -5,6 +5,7 @@
 *.a
 *~
 *.swp
+*.pyc
 /config.*
 /configure.log
 /bin/
