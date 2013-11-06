@@ -13,7 +13,7 @@ def makeTempDir(verbose):
     full_path = os.path.join(dir_path, prefix + random_string) + os.sep
   os.makedirs(full_path)
   if verbose:
-    sys.stdout.write('Generated temporary directory: ' + full_path + '\n')
+    sys.stdout.write(os.path.basename(sys.argv[0]) + ': Generated temporary directory: ' + full_path + '\n')
     sys.stdout.flush()
   return full_path
 

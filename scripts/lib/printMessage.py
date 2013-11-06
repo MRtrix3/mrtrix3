@@ -1,5 +1,5 @@
 def printMessage(message):
-  import sys
-  sys.stdout.write(message + '\n')
+  import os, sys
+  sys.stdout.write(os.path.basename(sys.argv[0]) + ': ' + message + '\n')
   sys.stdout.flush()
   

@@ -1,7 +1,7 @@
 def runCommand(cmd, verbose):
   import os, sys
   if verbose:
-  	sys.stdout.write(cmd + '\n')
+  	sys.stdout.write('Command: ' + cmd + '\n')
   	sys.stdout.flush()
 # Consider changing this to a subprocess call, pipe console outputs to local variables,
 #   if the command fails then provide output from the relevant function only
