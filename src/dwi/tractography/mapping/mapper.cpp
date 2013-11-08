@@ -166,7 +166,7 @@ void TrackMapperBase<SetVoxelDir>::voxelise (const std::vector< Point<float> >& 
     float length = 0.0;
     const Voxel this_voxel = next_voxel;
 
-    while ((p != tck.size()) && (round (transform.scanner2voxel (tck[p])) == this_voxel)) {
+    while ((p != tck.size()) && ((next_voxel = round (transform.scanner2voxel (tck[p]))) == this_voxel)) {
       length += dist (p_prev, tck[p]);
       p_prev = tck[p];
       ++p;
@@ -251,7 +251,7 @@ void TrackMapperDixel::voxelise (const std::vector< Point<float> >& tck, SetDixe
     float length = 0.0;
     const Voxel this_voxel = next_voxel;
 
-    while ((p != tck.size()) && (round (transform.scanner2voxel (tck[p])) == this_voxel)) {
+    while ((p != tck.size()) && ((next_voxel = round (transform.scanner2voxel (tck[p]))) == this_voxel)) {
       length += dist (p_prev, tck[p]);
       p_prev = tck[p];
       ++p;
