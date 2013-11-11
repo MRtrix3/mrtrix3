@@ -26,6 +26,9 @@
 #include <fstream>
 #include <gsl/gsl_matrix.h>
 #include <gsl/gsl_blas.h>
+#include <gsl/gsl_matrix.h>
+#include <gsl/gsl_vector.h>
+#include <gsl/gsl_linalg.h>
 
 #include "ptr.h"
 #include "math/math.h"
@@ -1155,6 +1158,26 @@ namespace MR
     /** @} */
 
 
+    //! compute determinant of \a A
+    /** \param A input matrix
+     * \return the determinant
+     */
+    template <typename ValueType>
+      inline ValueType determinant (const Matrix<ValueType>& A)
+      {
+        if (A.rows() != A.columns())
+          throw Exception ("determinant is only defined for square matrices");
+        int sign = 0;
+        ValueType det = 0.0;
+        gsl_permutation* p = gsl_permutation_calloc (A.rows());
+        Matrix<double> temp (A);
+        int* signum = &sign;
+        gsl_linalg_LU_decomp (temp.gsl(), p, signum);
+        det = gsl_linalg_LU_det (temp.gsl(), *signum);
+        gsl_permutation_free (p);
+        return det;
+      }
+    /** @} */
 
 
 
