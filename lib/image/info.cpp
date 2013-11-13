@@ -69,7 +69,18 @@ namespace MR
 
       if (!finite (vox (0)) || !finite (vox (1)) || !finite (vox (2))) {
         FAIL ("invalid voxel sizes - resetting to sane defaults");
-        vox(0) = vox(1) = vox(2) = 1.0;
+        float mean_vox_size = 0.0;
+        size_t num_valid_vox = 0;
+        for (size_t i = 0; i < 3; ++i) {
+          if (finite(vox(i))) {
+            ++num_valid_vox; 
+            mean_vox_size += vox(i);
+          }
+        }
+        mean_vox_size /= num_valid_vox;
+        for (size_t i = 0; i < 3; ++i) 
+          if (!finite(vox(i))) 
+            vox(i) = mean_vox_size;
       }
     }
 
