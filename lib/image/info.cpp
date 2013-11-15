@@ -68,7 +68,7 @@ namespace MR
       }
 
       if (!finite (vox (0)) || !finite (vox (1)) || !finite (vox (2))) {
-        FAIL ("invalid voxel sizes - resetting to sane defaults");
+        WARN ("invalid voxel sizes - resetting to sane defaults");
         float mean_vox_size = 0.0;
         size_t num_valid_vox = 0;
         for (size_t i = 0; i < 3; ++i) {
@@ -90,14 +90,14 @@ namespace MR
       if (transform().is_set()) {
         if (transform().rows() != 4 || transform().columns() != 4) {
           transform_.clear();
-          FAIL ("transform matrix is not 4x4 - resetting to sane defaults");
+          WARN ("transform matrix is not 4x4 - resetting to sane defaults");
         }
         else {
           for (size_t i = 0; i < 3; i++) {
             for (size_t j = 0; j < 4; j++) {
               if (!finite (transform_ (i,j))) {
                 transform_.clear();
-                FAIL ("transform matrix contains invalid entries - resetting to sane defaults");
+                WARN ("transform matrix contains invalid entries - resetting to sane defaults");
                 break;
               }
             }

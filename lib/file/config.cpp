@@ -82,7 +82,7 @@ namespace MR
       value = lowercase (value);
       if (value == "true") return (true);
       if (value == "false") return (false);
-      FAIL ("malformed boolean entry \"" + value + "\" for key \"" + key + "\" in configuration file - ignored");
+      WARN ("malformed boolean entry \"" + value + "\" for key \"" + key + "\" in configuration file - ignored");
       return (default_value);
     }
 
@@ -95,7 +95,7 @@ namespace MR
         return (to<int> (value));
       }
       catch (...) {
-        FAIL ("malformed integer entry \"" + value + "\" for key \"" + key + "\" in configuration file - ignored");
+        WARN ("malformed integer entry \"" + value + "\" for key \"" + key + "\" in configuration file - ignored");
         return (default_value);
       }
     }
@@ -109,7 +109,7 @@ namespace MR
         return (to<float> (value));
       }
       catch (...) {
-        FAIL ("malformed floating-point entry \"" + value + "\" for key \"" + key + "\" in configuration file - ignored");
+        WARN ("malformed floating-point entry \"" + value + "\" for key \"" + key + "\" in configuration file - ignored");
         return (default_value);
       }
     }

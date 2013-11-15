@@ -216,7 +216,7 @@ namespace MR {
                 else if (strncmp (reinterpret_cast<const char*> (data), "1.2.840.10008.1.2.1.99", size) == 0) {
                   throw Exception ("DICOM deflated explicit VR little endian transfer syntax not supported");
                 }
-                else FAIL ("unknown DICOM transfer syntax: \"" + std::string (reinterpret_cast<const char*> (data), size) 
+                else WARN ("unknown DICOM transfer syntax: \"" + std::string (reinterpret_cast<const char*> (data), size) 
                     + "\" in file \"" + fmap->name() + "\" - ignored");
                 break;
             }

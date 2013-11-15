@@ -124,7 +124,7 @@ namespace MR
 #else
           if (munmap (addr, msize))
 #endif
-            FAIL ("error unmapping file \"" + Entry::name + "\": " + strerror (errno));
+            WARN ("error unmapping file \"" + Entry::name + "\": " + strerror (errno));
         close (fd);
       }
       else {
