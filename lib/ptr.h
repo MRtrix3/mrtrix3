@@ -40,9 +40,10 @@ namespace MR
   * example. */
   class PtrComp {
     public:
-      template <class A, class B> bool operator() (const A& a, const B& b) const {
-        return *a < *b;
-      }
+      template <class PtrType> 
+        bool operator() (const PtrType& a, const PtrType& b) const {
+          return *a < *b;
+        }
   };
 
   template <class, bool> class Ptr;

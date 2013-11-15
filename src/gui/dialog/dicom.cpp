@@ -176,7 +176,7 @@ namespace MR
                 for (size_t j = 0; j < patient.size(); ++j) {
                   Item* study_root = new Item (patient_root, patient[j]);
                   patient_root->appendChild (study_root);
-                  const Study study (*patient[i]);
+                  const Study study (*patient[j]);
                   for (size_t k = 0; k < study.size(); ++k)
                     study_root->appendChild (new Item (study_root, study[k]));
                 }
@@ -209,15 +209,25 @@ namespace MR
 
       std::vector< RefPtr<Series> > select_dicom (const Tree& tree)
       {
-        DicomSelector selector (tree);
         std::vector<RefPtr<Series> > ret;
+        if (tree.size() == 1) {
+          if (tree[0]->size() == 1) {
+            if ((*tree[0])[0]->size() == 1) {
+              ret.push_back ((*(*tree[0])[0])[0]);
+              return ret;
+            }
+          }
+        }
+            
+        DicomSelector selector (tree);
         if (selector.exec()) {
           QModelIndexList indexes = selector.view->selectionModel()->selectedIndexes();
           if (indexes.size()) {
             QModelIndex index;
             foreach (index, indexes) {
               Item* item = static_cast<Item*> (index.internalPointer());
-              if (item->series()) ret.push_back (item->series());
+              if (item->series()) 
+                ret.push_back (item->series());
             }
           }
         }

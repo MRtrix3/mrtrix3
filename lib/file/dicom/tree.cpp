@@ -18,7 +18,18 @@
     You should have received a copy of the GNU General Public License
     along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
 
+
+    15-09-2008 J-Donald Tournier <d.tournier@brain.org.au>
+    * handle files even when any of the study, series or patient description fields are blank
+
+    19-12-2008 J-Donald Tournier <d.tournier@brain.org.au>
+    * various sanity checks to ignore non-image DICOM files
+
+    15-03-2010 J-Donald Tournier <d.tournier@brain.org.au>
+    * add shorten() function to reduce long filenames 
+
 */
+
 
 #include "file/path.h"
 #include "file/dicom/element.h"
@@ -29,30 +40,25 @@
 #include "file/dicom/patient.h"
 #include "file/dicom/tree.h"
 
-namespace MR
-{
-  namespace File
-  {
-    namespace Dicom
-    {
+namespace MR {
+  namespace File {
+    namespace Dicom {
 
       RefPtr<Patient> Tree::find (const std::string& patient_name, const std::string& patient_ID, const std::string& patient_DOB)
       {
-        bool match;
-
         for (size_t n = 0; n < size(); n++) {
-          match = true;
-          if (patient_name == (*this) [n]->name) {
-            if (patient_ID.size() && (*this) [n]->ID.size())
-              if (patient_ID != (*this) [n]->ID) 
+          bool match = true;
+          if (patient_name == (*this)[n]->name) {
+            if (patient_ID.size() && (*this)[n]->ID.size()) 
+              if (patient_ID != (*this)[n]->ID) 
                 match = false;
             if (match) {
-              if (patient_DOB.size() && (*this) [n]->DOB.size())
-                if (patient_DOB != (*this) [n]->DOB)
+              if (patient_DOB.size() && (*this)[n]->DOB.size())
+                if (patient_DOB != (*this)[n]->DOB) 
                   match = false;
             }
-            if (match)
-              return (*this) [n];
+            if (match) 
+              return (*this)[n];
           }
         }
 
@@ -67,25 +73,26 @@ namespace MR
 
       void Tree::read_dir (const std::string& filename, ProgressBar& progress)
       {
-        try {
-          Path::Dir folder (filename);
+        try { 
+          Path::Dir folder (filename); 
           std::string entry;
-          while ( (entry = folder.read_name()).size()) {
+          while ((entry = folder.read_name()).size()) {
             std::string name (Path::join (filename, entry));
-            if (Path::is_dir (name)) read_dir (name, progress);
+            if (Path::is_dir (name))
+              read_dir (name, progress);
             else {
-              try {
-                read_file (name);
+              try { 
+                read_file (name); 
               }
-              catch (Exception& E) {
+              catch (Exception& E) { 
                 E.display (3);
               }
             }
             ++progress;
           }
         }
-        catch (Exception& E) {
-          throw Exception (E, "error opening DICOM folder \"" + filename + "\": " + strerror (errno));
+        catch (Exception& E) { 
+          throw Exception (E, "error opening DICOM folder \"" + filename + "\": " + strerror (errno)); 
         }
       }
 
@@ -97,12 +104,12 @@ namespace MR
       {
         QuickScan reader;
         if (reader.read (filename)) {
-          INFO ("error reading file \"" + filename + "\" - assuming not DICOM");
+          INFO ("error reading file \"" + filename + "\" - assuming not DICOM"); 
           return;
         }
 
         if (! (reader.dim[0] && reader.dim[1] && reader.bits_alloc && reader.data)) {
-          INFO ("DICOM file \"" + filename + "\" does not seem to contain image data - ignored");
+          INFO ("DICOM file \"" + filename + "\" does not seem to contain image data - ignored"); 
           return;
         }
 
@@ -123,10 +130,18 @@ namespace MR
 
       void Tree::read (const std::string& filename)
       {
-        ProgressBar progress ("scanning DICOM folder \"" + shorten (filename) + "\"");
-        read_dir (filename, progress);
+        ProgressBar progress ("scanning DICOM folder \"" + shorten (filename) + "\"", 0);
+        if (Path::is_dir (filename))
+          read_dir (filename, progress);
+        else {
+          try {
+            read_file (filename);
+          }
+          catch (Exception) { 
+          }
+        }
 
-        if (size() > 0)
+        if (size() > 0) 
           return;
 
         throw Exception ("no DICOM images found in \"" + filename + "\"");
@@ -138,10 +153,10 @@ namespace MR
 
 
       std::ostream& operator<< (std::ostream& stream, const Tree& item)
-      {
+      { 
         stream << "FileSet " << item.description << ":\n";
-        for (size_t n = 0; n < item.size(); n++)
-          stream << (*item[n]);
+        for (size_t n = 0; n < item.size(); n++) 
+          stream << *item[n]; 
         return stream;
       }
 

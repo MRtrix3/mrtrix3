@@ -18,6 +18,10 @@
     You should have received a copy of the GNU General Public License
     along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
 
+
+    19-12-2008 J-Donald Tournier <d.tournier@brain.org.au>
+    * various sanity checks to ignore non-image DICOM files
+
 */
 
 #ifndef __file_dicom_quick_scan_h__
@@ -25,27 +29,20 @@
 
 #include "mrtrix.h"
 
-namespace MR
-{
-  namespace File
-  {
-    namespace Dicom
-    {
+namespace MR {
+  namespace File {
+    namespace Dicom {
 
-      class QuickScan
-      {
+      class QuickScan {
 
         public:
-          /*! \todo could exclude Siemens MPR info images by splitting the
-           * series based on entry (0x0008U, 0x0008U). */
           bool read (const std::string& file_name, bool print_DICOM_fields = false, bool print_CSA_fields = false, bool force_read = false);
 
-          std::string      filename, modality;
-          std::string      patient, patient_ID, patient_DOB;
-          std::string      study, study_ID, study_date, study_time;
-          std::string      series, series_date, series_time;
-          std::string      sequence;
-          size_t           series_number, bits_alloc, dim[2], data;
+          std::string filename, modality;
+          std::string patient, patient_ID, patient_DOB;
+          std::string study, study_ID, study_date, study_time;
+          std::string series, series_date, series_time, sequence;
+          size_t series_number, bits_alloc, dim[2], data;
       };
 
       std::ostream& operator<< (std::ostream& stream, const QuickScan& file);

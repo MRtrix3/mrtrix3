@@ -26,78 +26,67 @@
 #include "ptr.h"
 #include "datatype.h"
 #include "math/vector.h"
+#include "math/matrix.h"
 #include "file/dicom/element.h"
 
-namespace MR
-{
-  namespace File
-  {
-    namespace Dicom
-    {
+namespace MR {
+  namespace File {
+    namespace Dicom {
 
       class Series;
       class Element;
 
-      class Image
-      {
-
+      class Frame { 
         public:
-          Image (Series* parent = NULL) :
-            series (parent) {
-            acq_dim[0] = acq_dim[1] = dim[0] = dim[1] = instance = acq = sequence = std::numeric_limits<size_t>::max();
+          Frame () { 
+            acq_dim[0] = acq_dim[1] = dim[0] = dim[1] = instance = series_num = acq = sequence = UINT_MAX;
             position_vector[0] = position_vector[1] = position_vector[2] = NAN;
             orientation_x[0] = orientation_x[1] = orientation_x[2] = NAN;
             orientation_y[0] = orientation_y[1] = orientation_y[2] = NAN;
             orientation_z[0] = orientation_z[1] = orientation_z[2] = NAN;
             distance = NAN;
-            pixel_size[0] = pixel_size[1] = slice_thickness = slice_spacing = NAN;
+            pixel_size[0] = pixel_size[1] = slice_thickness = slice_spacing = NAN; 
             scale_intercept = 0.0;
             scale_slope = 1.0;
             bvalue = G[0] = G[1] = G[2] = NAN;
-            data = bits_alloc = images_in_mosaic = data_size = 0;
-            is_BE = false;
+            data = bits_alloc = data_size = frame_offset = 0;
+            DW_scheme_wrt_image = false;
           }
 
-          std::string  filename;
-          std::string  sequence_name;
-          std::string  manufacturer;
-          Series*      series;
+          size_t acq_dim[2], dim[2], series_num, instance, acq, sequence;
+          float position_vector[3], orientation_x[3], orientation_y[3], orientation_z[3], distance;
+          float pixel_size[2], slice_thickness, slice_spacing, scale_slope, scale_intercept;
+          float bvalue, G[3];
+          size_t data, bits_alloc, data_size, frame_offset;
+          std::string filename;
+          bool DW_scheme_wrt_image;
+          std::vector<uint32_t> index;
 
-          size_t   acq_dim[2], dim[2], instance, acq, sequence;
-          float    position_vector[3], orientation_x[3], orientation_y[3], orientation_z[3], distance;
-          float    pixel_size[2], slice_thickness, slice_spacing, scale_slope, scale_intercept;
-          float    bvalue, G[3];
-          size_t   data, bits_alloc, images_in_mosaic, data_size;
-          DataType data_type;
-          bool     is_BE;
-
-          void read ();
-          void parse_item (Element& item, const std::string& dirname = "");
-          void decode_csa (const uint8_t* start, const uint8_t* end);
-
-          bool operator< (const Image& ima) const {
-            if (acq != ima.acq) 
-              return acq < ima.acq;
-            assert (!isnan (distance));
-            assert (!isnan (ima.distance));
-            if (distance != ima.distance) 
-              return distance < ima.distance;
-            if (sequence != ima.sequence) 
-              return sequence < ima.sequence;
-            if (instance != ima.instance) 
-              return instance < ima.instance;
+          bool operator< (const Frame& frame) const {
+            if (series_num != frame.series_num) 
+              return series_num < frame.series_num;
+            if (acq != frame.acq) 
+              return acq < frame.acq;
+            assert (finite (distance));
+            assert (finite (frame.distance));
+            if (distance != frame.distance) 
+              return distance < frame.distance;
+            for (size_t n = index.size(); n--;)
+              if (index[n] != frame.index[n])
+                return index[n] < frame.index[n];
+            if (sequence != frame.sequence) 
+              return sequence < frame.sequence;
+            if (instance != frame.instance) 
+              return instance < frame.instance;
             return false;
           }
 
-          void print_fields (bool dcm, bool csa) const;
 
-          void calc_distance () {
-            if (images_in_mosaic) {
-              float xinc = pixel_size[0] * float (dim[0] - acq_dim[0]) / 2.0;
-              float yinc = pixel_size[1] * float (dim[1] - acq_dim[1]) / 2.0;
-              for (size_t i = 0; i < 3; i++)
-                position_vector[i] += xinc * orientation_x[i] + yinc * orientation_y[i];
-
+          void calc_distance ()
+          {
+            if (!finite (orientation_z[0])) 
+              Math::cross (orientation_z, orientation_x, orientation_y);
+            else {
               float normal[3];
               Math::cross (normal, orientation_x, orientation_y);
               if (Math::dot (normal, orientation_z) < 0.0) {
@@ -110,18 +99,59 @@ namespace MR
                 orientation_z[1] = normal[1];
                 orientation_z[2] = normal[2];
               }
-
             }
-            else Math::cross (orientation_z, orientation_x, orientation_y);
 
             Math::normalise (orientation_z);
             distance = Math::dot (orientation_z, position_vector);
           }
 
+          static std::vector<size_t> count (const std::vector<Frame*>& frames);
+          static float get_slice_separation (const std::vector<Frame*>& frames, size_t nslices);
+          static Math::Matrix<float> get_DW_scheme (const std::vector<Frame*>& frames, size_t nslices, const Math::Matrix<float>& image_transform);
 
+          friend std::ostream& operator<< (std::ostream& stream, const Frame& item);
       };
 
-      std::ostream& operator<< (std::ostream& stream, const Image& item);
+
+
+
+
+
+
+
+
+
+
+      class Image : public Frame {
+
+        public:
+          Image (Series* parent = NULL) : 
+            series (parent), 
+            images_in_mosaic (0),
+            is_BE (false),
+            in_frames (false) { }
+
+          Series* series;
+          size_t images_in_mosaic;
+          std::string  sequence_name, manufacturer;
+          bool is_BE, in_frames;
+
+          std::vector<uint32_t> frame_dim;
+          std::vector< RefPtr<Frame> > frames;
+
+          void read ();
+          void parse_item (Element& item, const std::string& dirname = "");
+          void decode_csa (const uint8_t* start, const uint8_t* end);
+
+          bool operator< (const Image& ima) const {
+            return Frame::operator< (ima);
+          }
+
+          friend std::ostream& operator<< (std::ostream& stream, const Image& item);
+      };
+
+
+
 
 
     }

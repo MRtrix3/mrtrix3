@@ -18,6 +18,9 @@
     You should have received a copy of the GNU General Public License
     along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
 
+    14-12-2010 J-Donald Tournier <d.tournier@brain.org.au>
+    * modify format_date() to (not) handle badly formatted date fields
+
 */
 
 #ifndef __file_dicom_dict_h__
@@ -55,8 +58,8 @@
 
 #define GROUP_BYTE_ORDER                0x0002U
 #define GROUP_BYTE_ORDER_SWAPPED        0x0200U
-#define GROUP_SEQUENCE                  0xFFFEU
-#define GROUP_DATA                      0x7FE0U
+#define GROUP_SEQUENCE                  0xFFFEU 
+#define GROUP_DATA                      0x7FE0U 
 
 #define ELEMENT_TRANSFER_SYNTAX_UID     0x0010U
 #define ELEMENT_SEQUENCE_ITEM           0xE000U
@@ -65,33 +68,33 @@
 
 
 
-namespace MR
-{
-  namespace File
-  {
-    namespace Dicom
-    {
+namespace MR {
+  namespace File {
+    namespace Dicom {
 
       inline std::string format_date (const std::string& date)
       {
-        if (date.empty()) return (date);
-        return (date.substr (6,2) + "/" + date.substr (4,2) + "/" + date.substr (0,4));
+        if (date.empty() || date.size() < 8) 
+          return date;
+        return date.substr(6,2) + "/" + date.substr(4,2) + "/" + date.substr(0,4);
       }
 
 
 
       inline std::string format_time (const std::string& time)
       {
-        if (time.empty()) return (time);
-        return (time.substr (0,2) + ":" + time.substr (2,2) + ":" + time.substr (4,2));
+        if (time.empty()) 
+          return time;
+        return time.substr(0,2) + ":" + time.substr(2,2) + ":" + time.substr(4,2);
       }
 
 
 
       inline std::string format_ID (const std::string& ID)
       {
-        if (ID.empty()) return (ID);
-        return ("(" + ID + ")");
+        if (ID.empty()) 
+          return ID;
+        return "(" + ID + ")";
       }
 
 

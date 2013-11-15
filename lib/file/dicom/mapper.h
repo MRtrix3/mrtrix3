@@ -18,6 +18,10 @@
     You should have received a copy of the GNU General Public License
     along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
 
+
+    15-10-2008 J-Donald Tournier <d.tournier@brain.org.au>
+    * remove MR::DICOM_DW_gradients_PRS flag
+
 */
 
 #ifndef __file_dicom_mapper_h__
@@ -25,26 +29,22 @@
 
 #include "ptr.h"
 
-namespace MR
-{
+namespace MR {
 
-  namespace Image
-  {
-    class Header;
-    namespace Handler { class Base; }
+  namespace Image { 
+    class Header; 
+    namespace Handler {
+      class Base;
+    }
   }
 
-  namespace File
-  {
-    namespace Dicom
-    {
+  namespace File {
+    namespace Dicom {
 
       class Series;
 
-      /*! \todo add other DICOM header information to header as generic
-       * key/value entries. */
       RefPtr<MR::Image::Handler::Base> dicom_to_mapper (MR::Image::Header& H, std::vector< RefPtr<Series> >& series);
-
+      
     }
   }
 }
