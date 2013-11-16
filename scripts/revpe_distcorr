@@ -189,7 +189,7 @@ if os.path.exists('bvecs'):
   # Note that currently the script uses the diffusion encoding from the original DWI volumes, i.e. no reorientation of diffusion
   #   gradient vectors is performed. It should be possible to get the motion parameters from the eddy 
   # text file output and modify them manually, or FMRIB may update eddy itself.
-  runCommand('mrconvert series_after.' + fsl_suffix + ' ' + os.path.basename(sys.argv[4]) + stride_option + ' -grad grad.b' + quiet, verbose) 
+  runCommand('mrconvert series_after.' + fsl_suffix + ' ' + os.path.basename(sys.argv[4]) + stride_option + ' -grad bvecs' + quiet, verbose) 
   
 else: # No gradient encoding - input is fMRI time series
   if verbose:
