@@ -90,18 +90,18 @@ for struct in structure_map.keys():
   runCommand('mesh2pve first-' + struct + '_first.vtk parc.mif - -first T1.nii' + quiet + ' | mrthreshold - ' + image_path + ' -abs 0.5' + quiet, verbose)
   # Replace the node location in the parcellation image with the new mask image
   node_index = config[structure_map[struct]]
-  runCommand('mrmath parc.mif ' + node_index + ' -neq parc.mif -mult parc_old_removed.mif' + quiet, verbose)
+  runCommand('mrcalc parc.mif ' + node_index + ' -neq parc.mif -mult parc_old_removed.mif' + quiet, verbose)
   # Can't add images here - may have overlap with existing nodes
   # Instead, set to the desired node index value if the mask is true, or use the existing value in the image otherwise
-  runCommand('mrmath ' + image_path + ' ' + node_index + ' parc_old_removed.mif -if parc_new_inserted.mif' + quiet, verbose)
+  runCommand('mrcalc ' + image_path + ' ' + node_index + ' parc_old_removed.mif -if parc_new_inserted.mif' + quiet, verbose)
   os.remove('parc.mif')
   os.remove('parc_old_removed.mif')
   os.rename('parc_new_inserted.mif', 'parc.mif')
 
 # Detect any overlapping voxels between these masks
 # These will be set to 0 in the final parcellated image
-runCommand('mrcat ' + ' '.join(mask_list) + ' - -axis 3' + quiet + ' | mrmathaxis - sum 3 -' + quiet + ' | mrmath - 1 -gt overlap_mask.nii' + quiet, verbose)
-runCommand('mrmath overlap_mask.nii 0 parc.mif -if ' + os.path.basename(sys.argv[4]) + quiet, verbose)
+runCommand('mrcat ' + ' '.join(mask_list) + ' - -axis 3' + quiet + ' | mrmath - sum 3 -' + quiet + ' | mrcalc - 1 -gt overlap_mask.nii' + quiet, verbose)
+runCommand('mrcalc overlap_mask.nii 0 parc.mif -if ' + os.path.basename(sys.argv[4]) + quiet, verbose)
 
 # Move back to original directory
 if verbose:

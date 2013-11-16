@@ -59,10 +59,10 @@ os.chdir(temp_dir)
 runCommand('mrthreshold indices_precrop.mif - -abs 0.5' + quiet + ' | mrcrop indices_precrop.mif indices.mif -mask -' + quiet, verbose)
 
 # Convert into the 4TT format for ACT
-runCommand('mrmath indices.mif 1 -eq cgm.mif' + quiet, verbose)
-runCommand('mrmath indices.mif 2 -eq sgm.mif' + quiet, verbose)
-runCommand('mrmath indices.mif 3 -eq  wm.mif' + quiet, verbose)
-runCommand('mrmath indices.mif 4 -eq csf.mif' + quiet, verbose)
+runCommand('mrcalc indices.mif 1 -eq cgm.mif' + quiet, verbose)
+runCommand('mrcalc indices.mif 2 -eq sgm.mif' + quiet, verbose)
+runCommand('mrcalc indices.mif 3 -eq  wm.mif' + quiet, verbose)
+runCommand('mrcalc indices.mif 4 -eq csf.mif' + quiet, verbose)
 runCommand('mrcat cgm.mif sgm.mif wm.mif csf.mif ' + os.path.basename(sys.argv[2]) + ' -axis 3' + quiet, verbose)
 
 # Move back to original directory
