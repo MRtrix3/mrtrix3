@@ -82,7 +82,7 @@ for struct in sgm_structures:
   runCommand('mesh2pve first-' + struct + '_first.vtk T1.nii ' + pve_image_path + ' -first T1.nii' + quiet, verbose)
   pve_image_list.append(pve_image_path)
 pve_cat = ' '.join(pve_image_list)
-runCommand('mrcat ' + pve_cat + ' - -axis 3' + quiet + ' | mrmath - sum 3 -' + quiet + ' | mrcalc - 1.0 -min all_sgms.nii' + quiet, verbose)
+runCommand('mrmath ' + pve_cat + ' sum -' + quiet + ' | mrcalc - 1.0 -min all_sgms.nii' + quiet, verbose)
 
 # Combine all tissue types using the mr4ttmake command
 # Looks like FAST in 5.0 ignores FSLOUTPUTTYPE when writing the PVE images
@@ -94,7 +94,7 @@ else:
 runCommand('mr4ttmake T1_bet_pve_0.' + fast_suffix + ' T1_bet_pve_1.' + fast_suffix + ' T1_bet_pve_2.' + fast_suffix + ' all_sgms.nii combined_precrop.mif' + quiet, verbose)
 
 # Use mrcrop to reduce file size (improves caching of image data during tracking)
-runCommand('mrmath combined_precrop.mif sum 3 -' + quiet + ' | mrthreshold - - -abs 0.5' + quiet + ' | mrcrop combined_precrop.mif ' + os.path.basename(sys.argv[2]) + ' -mask -' + quiet, verbose)
+runCommand('mrmath combined_precrop.mif sum - -axis 3' + quiet + ' | mrthreshold - - -abs 0.5' + quiet + ' | mrcrop combined_precrop.mif ' + os.path.basename(sys.argv[2]) + ' -mask -' + quiet, verbose)
 
 # Move back to original directory
 if verbose:

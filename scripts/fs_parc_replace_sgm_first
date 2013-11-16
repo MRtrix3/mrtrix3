@@ -100,7 +100,7 @@ for struct in structure_map.keys():
 
 # Detect any overlapping voxels between these masks
 # These will be set to 0 in the final parcellated image
-runCommand('mrcat ' + ' '.join(mask_list) + ' - -axis 3' + quiet + ' | mrmath - sum 3 -' + quiet + ' | mrcalc - 1 -gt overlap_mask.nii' + quiet, verbose)
+runCommand('mrmath ' + ' '.join(mask_list) + ' sum -' + quiet + ' | mrcalc - 1 -gt overlap_mask.nii' + quiet, verbose)
 runCommand('mrcalc overlap_mask.nii 0 parc.mif -if ' + os.path.basename(sys.argv[4]) + quiet, verbose)
 
 # Move back to original directory
