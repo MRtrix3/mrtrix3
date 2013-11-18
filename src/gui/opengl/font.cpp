@@ -204,7 +204,7 @@ namespace MR
           tex.bind (GL_TEXTURE_2D);
           vertex_array_object.bind();
 
-          glDrawArrays (GL_QUADS, 0, 8*text.size());
+          glDrawArrays (GL_QUADS, 0, 4*text.size());
         }
 
       }
