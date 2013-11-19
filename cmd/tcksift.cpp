@@ -65,7 +65,7 @@ void usage ()
                                 "numbers of remaining streamlines; provide as comma-separated list of integers")
     + Argument ("counts").type_sequence_int()
 
-  + FODMapProcMaskOption
+  + FixelMapProcMaskOption
 
   + SIFTModelOption
   + SIFTOutputOption
@@ -115,12 +115,12 @@ void run ()
 
   opt = get_options ("remove_untracked");
   if (opt.size())
-    sifter.set_remove_untracked_lobes (true);
+    sifter.set_remove_untracked_fixels (true);
   opt = get_options ("FOD_int_thresh");
   if (opt.size())
     sifter.set_min_FOD_integral (float(opt[0][0]));
 
-  sifter.remove_excluded_lobes();
+  sifter.remove_excluded_fixels();
 
   opt = get_options ("nofilter");
   if (!opt.size()) {

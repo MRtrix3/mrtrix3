@@ -49,14 +49,14 @@ namespace MR
         dirs (d),
         fmls (dirs, Math::SH::LforN (fod_data.dim (3))),
         output_debug (false),
-        remove_untracked_lobes (false),
+        remove_untracked_fixels (false),
         min_FOD_integral (0.0),
         term_number (0),
         term_ratio (0.0),
         term_mu (0.0),
         enforce_quantisation (true)
       {
-        Track_lobe_contribution::set_scaling (fod_data);
+        Track_fixel_contribution::set_scaling (fod_data);
         H.info() = fod_data.info();
         H.set_ndim (3);
       }
@@ -86,8 +86,8 @@ namespace MR
       void SIFTer::scale_FODs_by_GM ()
       {
         if (!act_4tt)
-          throw Exception ("Can only perform scalling of FODs if ACT image is provided");
-        // Loop through voxels, getting total GM fraction for each, and scale all lobes in each voxel
+          throw Exception ("Can only perform scaling of FODs if ACT image is provided");
+        // Loop through voxels, getting total GM fraction for each, and scale all fixels in each voxel
         VoxelAccessor v (accessor);
         Image::BufferScratch<float>::voxel_type v_anat (*act_4tt);
         FOD_sum = 0.0;
@@ -95,7 +95,7 @@ namespace MR
         for (loop.start (v, v_anat); loop.ok(); loop.next (v, v_anat)) {
           Tractography::ACT::Tissues tissues (v_anat);
           const float multiplier = 1.0 - tissues.get_cgm() - (0.5 * tissues.get_sgm());
-          for (FOD_map<Lobe>::Iterator i = begin(v); i; ++i) {
+          for (Fixel_map<Fixel>::Iterator i = begin(v); i; ++i) {
             i().scale_FOD (multiplier);
             FOD_sum += i().get_weight() * i().get_FOD();
           }
@@ -150,47 +150,47 @@ namespace MR
 
 
 
-      void SIFTer::remove_excluded_lobes()
+      void SIFTer::remove_excluded_fixels()
       {
 
-        if (!remove_untracked_lobes && !min_FOD_integral)
+        if (!remove_untracked_fixels && !min_FOD_integral)
           return;
 
-        std::vector<size_t> lobe_index_mapping (lobes.size(), 0);
+        std::vector<size_t> fixel_index_mapping (fixels.size(), 0);
         VoxelAccessor v (accessor);
         Image::LoopInOrder loop (v);
 
-        std::vector<Lobe> new_lobes;
-        new_lobes.push_back (Lobe());
+        std::vector<Fixel> new_fixels;
+        new_fixels.push_back (Fixel());
         FOD_sum = 0.0;
 
         for (loop.start (v); loop.ok(); loop.next (v)) {
           if (v.value()) {
 
-            size_t new_start_index = new_lobes.size();
+            size_t new_start_index = new_fixels.size();
 
-            for (FOD_map<Lobe>::ConstIterator i = begin(v); i; ++i) {
-              if ((!remove_untracked_lobes || i().get_TD()) && (i().get_FOD() > min_FOD_integral)) {
-                lobe_index_mapping [size_t (i)] = new_lobes.size();
-                new_lobes.push_back (i());
+            for (Fixel_map<Fixel>::ConstIterator i = begin(v); i; ++i) {
+              if ((!remove_untracked_fixels || i().get_TD()) && (i().get_FOD() > min_FOD_integral)) {
+                fixel_index_mapping [size_t (i)] = new_fixels.size();
+                new_fixels.push_back (i());
                 FOD_sum += i().get_weight() * i().get_FOD();
               }
             }
 
             delete v.value();
 
-            if (new_lobes.size() == new_start_index)
+            if (new_fixels.size() == new_start_index)
               v.value() = NULL;
             else
-              v.value() = new MapVoxel (new_start_index, new_lobes.size() - new_start_index);
+              v.value() = new MapVoxel (new_start_index, new_fixels.size() - new_start_index);
 
           }
         }
 
-        lobes.swap (new_lobes);
+        fixels.swap (new_fixels);
 
-        TrackIndexRangeWriter writer (TRACK_INDEX_BUFFER_SIZE, num_tracks(), "Removing excluded FOD lobes...");
-        LobeRemapper remapper (*this, lobe_index_mapping);
+        TrackIndexRangeWriter writer (TRACK_INDEX_BUFFER_SIZE, num_tracks(), "Removing excluded fixels...");
+        FixelRemapper remapper (*this, fixel_index_mapping);
         Thread::run_queue_threaded_sink (writer, TrackIndexRange(), remapper);
 
         TD_sum = 0.0;
@@ -287,7 +287,7 @@ namespace MR
           const track_t sort_size = std::min (num_tracks / double(Thread::number_of_threads()), Math::round (2000.0 * double(num_tracks) / double(tracks_remaining)));
           MT_gradient_vector_sorter sorter (gradient_vector, sort_size);
 
-          // Remove candidate streamlines one at a time, and correspondingly modify the lobes to which they were attributed
+          // Remove candidate streamlines one at a time, and correspondingly modify the fixels to which they were attributed
           unsigned int removed_this_iteration = 0;
           recalculate = UNDEFINED;
           std::vector<Cost_fn_gradient_sort>::const_iterator candidate (gradient_vector.begin());
@@ -360,11 +360,11 @@ namespace MR
               double quantisation = 0.0;
 
               for (size_t l = 0; l != candidate_contribution.dim(); ++l) {
-                const Track_lobe_contribution& lobe_cont = candidate_contribution[l];
-                const float length = lobe_cont.get_value();
-                Lobe& this_lobe = lobes[lobe_cont.get_lobe_index()];
-                quantisation += this_lobe.calc_quantisation (old_mu, length);
-                const float delta_gradient = (this_lobe.remove_TD (length, new_mu, old_mu) - (this_lobe.get_d_cost_d_mu (old_mu) * mu_change));
+                const Track_fixel_contribution& fixel_cont = candidate_contribution[l];
+                const float length = fixel_cont.get_value();
+                Fixel& this_fixel = fixels[fixel_cont.get_fixel_index()];
+                quantisation += this_fixel.calc_quantisation (old_mu, length);
+                const float delta_gradient = (this_fixel.remove_TD (length, new_mu, old_mu) - (this_fixel.get_d_cost_d_mu (old_mu) * mu_change));
                 this_actual_cf_change += delta_gradient;
               }
 
@@ -386,8 +386,8 @@ namespace MR
 
                 // Removal doesn't meet all criteria; put this track back into the reconstruction
                 for (size_t l = 0; l != candidate_contribution.dim(); ++l) {
-                  const Track_lobe_contribution& lobe_cont = candidate_contribution[l];
-                  lobes[lobe_cont.get_lobe_index()] += lobe_cont.get_value();
+                  const Track_fixel_contribution& fixel_cont = candidate_contribution[l];
+                  fixels[fixel_cont.get_fixel_index()] += fixel_cont.get_value();
                 }
 
                 if (this_actual_cf_change >= this_nonlinearity)
@@ -517,8 +517,8 @@ namespace MR
 #endif
         output_error_images (prefix + "_max_abs_diff.mif", prefix + "_diff.mif", prefix + "_cost.mif");
         output_scatterplot (prefix + "_scatterplot.csv");
-        output_lobe_count_image (prefix + "_lobe_count.mif");
-        output_untracked_lobes (prefix + "_untracked_count.mif", prefix + "_untracked_amps.mif");
+        output_fixel_count_image (prefix + "_fixel_count.mif");
+        output_untracked_fixels (prefix + "_untracked_count.mif", prefix + "_untracked_amps.mif");
       }
 
 
@@ -542,13 +542,13 @@ namespace MR
 
         VAR (TD_sum);
 
-        double sum_from_lobes = 0.0, sum_from_lobes_weighted = 0.0;
-        for (std::vector<Lobe>::const_iterator i = lobes.begin(); i != lobes.end(); ++i) {
-          sum_from_lobes          += i->get_TD();
-          sum_from_lobes_weighted += i->get_TD() * i->get_weight();
+        double sum_from_fixels = 0.0, sum_from_fixels_weighted = 0.0;
+        for (std::vector<Fixel>::const_iterator i = fixels.begin(); i != fixels.end(); ++i) {
+          sum_from_fixels          += i->get_TD();
+          sum_from_fixels_weighted += i->get_TD() * i->get_weight();
         }
-        VAR (sum_from_lobes);
-        VAR (sum_from_lobes_weighted);
+        VAR (sum_from_fixels);
+        VAR (sum_from_fixels_weighted);
         double sum_from_tracks = 0.0;
         for (std::vector<TckCont*>::const_iterator i = contributions.begin(); i != contributions.end(); ++i) {
           if (*i)
@@ -614,8 +614,8 @@ namespace MR
       {
         const double current_mu = mu();
         double cost = 0.0;
-        std::vector<Lobe>::const_iterator i = lobes.begin();
-        for (++i; i != lobes.end(); ++i)
+        std::vector<Fixel>::const_iterator i = fixels.begin();
+        for (++i; i != fixels.end(); ++i)
           cost += i->get_cost (current_mu);
         return cost;
       }
@@ -624,8 +624,8 @@ namespace MR
       {
         const double current_mu = mu();
         double roc_cost = 0.0;
-        std::vector<Lobe>::const_iterator i = lobes.begin();
-        for (++i; i != lobes.end(); ++i)
+        std::vector<Fixel>::const_iterator i = fixels.begin();
+        for (++i; i != fixels.end(); ++i)
           roc_cost += i->get_d_cost_d_mu (current_mu);
         return roc_cost;
       }
@@ -640,10 +640,10 @@ namespace MR
         const double mu_change_if_removed = mu_if_removed - current_mu;
         double gradient = current_roc_cost * mu_change_if_removed;
         for (size_t v = 0; v != tck_cont.dim(); ++v) {
-          const Lobe& lobe = lobes[tck_cont[v].get_lobe_index()];
-          const double undo_gradient_mu_only = lobe.get_d_cost_d_mu (current_mu) * mu_change_if_removed;
+          const Fixel& fixel = fixels[tck_cont[v].get_fixel_index()];
+          const double undo_gradient_mu_only = fixel.get_d_cost_d_mu (current_mu) * mu_change_if_removed;
           gradient -= undo_gradient_mu_only;
-          const double gradient_remove_tck = lobe.get_cost_wo_track (mu_if_removed, tck_cont[v].get_value()) - lobe.get_cost (current_mu);
+          const double gradient_remove_tck = fixel.get_cost_wo_track (mu_if_removed, tck_cont[v].get_value()) - fixel.get_cost (current_mu);
           gradient += gradient_remove_tck;
         }
         return gradient;
@@ -675,7 +675,7 @@ namespace MR
         for (loop.start (v_out, v); loop.ok(); loop.next (v_out, v)) {
           if (v.value()) {
             float value = 0.0;
-            for (FOD_map<Lobe>::ConstIterator i = begin (v); i; ++i)
+            for (Fixel_map<Fixel>::ConstIterator i = begin (v); i; ++i)
               value += i().get_FOD();
             v_out.value() = value;
           } else {
@@ -701,7 +701,7 @@ namespace MR
           if (v.value()) {
             Math::Vector<float> sum;
             sum.resize (N, 0.0);
-            for (FOD_map<Lobe>::ConstIterator i = begin (v); i; ++i) {
+            for (Fixel_map<Fixel>::ConstIterator i = begin (v); i; ++i) {
               if (i().get_FOD()) {
                 Math::Vector<float> this_lobe;
                 aPSF (this_lobe, dirs.get_dir (i().get_dir()));
@@ -733,9 +733,9 @@ namespace MR
         for (loop.start (v_out, v); loop.ok(); loop.next (v_out, v)) {
           v_out.value().zero();
           if (v.value()) {
-            v_out.value().set_size ((*v.value()).num_lobes());
+            v_out.value().set_size ((*v.value()).num_fixels());
             size_t index = 0;
-            for (FOD_map<Lobe>::ConstIterator iter = begin (v); iter; ++iter, ++index) {
+            for (Fixel_map<Fixel>::ConstIterator iter = begin (v); iter; ++iter, ++index) {
               FixelMetric fixel (dirs.get_dir (iter().get_dir()), iter().get_FOD(), iter().get_FOD());
               v_out.value()[index] = fixel;
             }
@@ -753,7 +753,7 @@ namespace MR
         for (loop.start (v_out, v); loop.ok(); loop.next (v_out, v)) {
           if (v.value()) {
             float value = 0.0;
-            for (FOD_map<Lobe>::ConstIterator i = begin (v); i; ++i)
+            for (Fixel_map<Fixel>::ConstIterator i = begin (v); i; ++i)
               value += i().get_TD();
             v_out.value() = value * current_mu;
           } else {
@@ -772,7 +772,7 @@ namespace MR
         for (loop.start (v_out, v); loop.ok(); loop.next (v_out, v)) {
           if (v.value()) {
             float value = 0.0;
-            for (FOD_map<Lobe>::ConstIterator i = begin (v); i; ++i) {
+            for (Fixel_map<Fixel>::ConstIterator i = begin (v); i; ++i) {
               if (!i().get_FOD())
                 value += i().get_TD();
             }
@@ -801,7 +801,7 @@ namespace MR
           if (v.value()) {
             Math::Vector<float> sum;
             sum.resize (N, 0.0);
-            for (FOD_map<Lobe>::ConstIterator i = begin (v); i; ++i) {
+            for (Fixel_map<Fixel>::ConstIterator i = begin (v); i; ++i) {
               if (i().get_FOD()) {
                 Math::Vector<float> this_lobe;
                 aPSF (this_lobe, dirs.get_dir (i().get_dir()));
@@ -834,9 +834,9 @@ namespace MR
         for (loop.start (v_out, v); loop.ok(); loop.next (v_out, v)) {
           v_out.value().zero();
           if (v.value()) {
-            v_out.value().set_size ((*v.value()).num_lobes());
+            v_out.value().set_size ((*v.value()).num_fixels());
             size_t index = 0;
-            for (FOD_map<Lobe>::ConstIterator iter = begin (v); iter; ++iter, ++index) {
+            for (Fixel_map<Fixel>::ConstIterator iter = begin (v); iter; ++iter, ++index) {
               FixelMetric fixel (dirs.get_dir (iter().get_dir()), iter().get_FOD(), current_mu * iter().get_TD());
               v_out.value()[index] = fixel;
             }
@@ -857,7 +857,7 @@ namespace MR
           v_max_abs_diff[0] = v_diff[0] = v_cost[0] = v[0];
           if (v.value()) {
             double max_abs_diff = 0.0, diff = 0.0, cost = 0.0;
-            for (FOD_map<Lobe>::ConstIterator i = begin (v); i; ++i) {
+            for (Fixel_map<Fixel>::ConstIterator i = begin (v); i; ++i) {
               const double this_diff = i().get_diff (current_mu);
               max_abs_diff = MAX (max_abs_diff, fabs (this_diff));
               diff += this_diff;
@@ -879,12 +879,12 @@ namespace MR
         std::ofstream out (path.c_str(), std::ios_base::trunc);
         const double current_mu = mu();
         out << "FOD amplitude,Track density (unscaled),Track density (scaled),Weight,\n";
-        for (std::vector<Lobe>::const_iterator i = lobes.begin(); i != lobes.end(); ++i)
+        for (std::vector<Fixel>::const_iterator i = fixels.begin(); i != fixels.end(); ++i)
           out << str (i->get_FOD()) << "," << str (i->get_TD()) << "," << str (i->get_TD() * current_mu) << "," << str (i->get_weight()) << ",\n";
         out.close();
       }
 
-      void SIFTer::output_lobe_count_image (const std::string& path) const
+      void SIFTer::output_fixel_count_image (const std::string& path) const
       {
         Image::Header H_out (H);
         H_out.datatype() = DataType::UInt8;
@@ -894,7 +894,7 @@ namespace MR
         Image::LoopInOrder loop (v_out);
         for (loop.start (v_out, v); loop.ok(); loop.next (v_out, v)) {
           if (v.value())
-            v_out.value() = (*v.value()).num_lobes();
+            v_out.value() = (*v.value()).num_fixels();
           else
             v_out.value() = 0;
         }
@@ -917,7 +917,7 @@ namespace MR
         reader.close();
       }
 
-      void SIFTer::output_untracked_lobes (const std::string& path_count, const std::string& path_amps) const
+      void SIFTer::output_untracked_fixels (const std::string& path_count, const std::string& path_amps) const
       {
         Image::Header H_uint8_t (H);
         H_uint8_t.datatype() = DataType::UInt8;
@@ -931,7 +931,7 @@ namespace MR
           if (v.value()) {
             uint8_t count = 0;
             float sum = 0.0;
-            for (FOD_map<Lobe>::ConstIterator i = begin (v); i; ++i) {
+            for (Fixel_map<Fixel>::ConstIterator i = begin (v); i; ++i) {
               if (!i().get_TD()) {
                 ++count;
                 sum += i().get_FOD();

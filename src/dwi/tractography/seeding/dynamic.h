@@ -27,6 +27,7 @@
 #include "image/transform.h"
 
 #include "thread/mutex.h"
+#include "thread/queue.h"
 
 #include "dwi/fmls.h"
 
@@ -35,7 +36,7 @@
 #include "dwi/tractography/ACT/tissues.h"
 #include "dwi/tractography/ACT/gmwmi.h"
 
-#include "dwi/tractography/mapping/fod_td_map.h"
+#include "dwi/tractography/mapping/fixel_td_map.h"
 
 #include "dwi/tractography/seeding/base.h"
 
@@ -72,18 +73,18 @@ namespace MR
 
 
 
-      class FOD_TD_seed
+      class Fixel_TD_seed
       {
 
         public:
-          FOD_TD_seed (const FMLS::FOD_lobe& lobe, const float proc_mask_value, const Point<int>& vox) :
+          Fixel_TD_seed (const FMLS::FOD_lobe& lobe, const float proc_mask_value, const Point<int>& vox) :
             FOD (lobe.get_integral()),
             TD (0.0),
             weight (proc_mask_value),
             dir (lobe.get_peak_dir()),
             voxel (vox) { }
 
-          FOD_TD_seed() :
+          Fixel_TD_seed() :
             FOD (0.0),
             TD (0.0),
             weight (0.0),
@@ -97,7 +98,7 @@ namespace MR
           const Point<float>& get_dir()   const { return dir; }
           const Point<int>&   get_voxel() const { return voxel; }
 
-          FOD_TD_seed& operator+= (const float i) { TD += i; return *this; }
+          Fixel_TD_seed& operator+= (const float i) { TD += i; return *this; }
 
           float get_diff (const double mu) const { return ((TD * mu) - FOD); }
           float get_cost (const double mu) const { return (weight * Math::pow2 (get_diff (mu))); }
@@ -107,7 +108,7 @@ namespace MR
             const float diff = get_diff (mu);
             if (diff >= 0.0)
               return 0.0;
-            return (Math::pow2 (diff) / Math::pow2 (FOD));
+            return (Math::pow2 (diff / FOD));
           }
 
 
@@ -149,13 +150,13 @@ namespace MR
 
 
 
-      class Dynamic : public Base, public Mapping::FOD_TD_diff_map<FOD_TD_seed>
+      class Dynamic : public Base, public Mapping::Fixel_TD_diff_map<Fixel_TD_seed>
       {
 
-        typedef FOD_TD_seed Lobe;
+        typedef Fixel_TD_seed Fixel;
 
-        typedef FOD_map<Lobe>::MapVoxel MapVoxel;
-        typedef FOD_map<Lobe>::VoxelAccessor VoxelAccessor;
+        typedef Fixel_map<Fixel>::MapVoxel MapVoxel;
+        typedef Fixel_map<Fixel>::VoxelAccessor VoxelAccessor;
 
 
         public:
@@ -165,18 +166,18 @@ namespace MR
 
         bool get_seed (Point<float>&, Point<float>&);
 
-        // Although the FOD_TD_diff_map versions of these functions are OK, the FOD_TD_seed lobe class
+        // Although the FOD_TD_diff_map versions of these functions are OK, the FOD_TD_seed fixel class
         //   includes the processing mask weight, which is faster to access than the mask image
         bool operator() (const FMLS::FOD_lobes&);
         bool operator() (const Mapping::SetDixel&);
 
 
         private:
-        using FOD_map<Lobe>::accessor;
-        using FOD_map<Lobe>::lobes;
+        using Fixel_map<Fixel>::accessor;
+        using Fixel_map<Fixel>::fixels;
 
-        using Mapping::FOD_TD_diff_map<Lobe>::mu;
-        using Mapping::FOD_TD_diff_map<Lobe>::proc_mask;
+        using Mapping::Fixel_TD_diff_map<Fixel>::mu;
+        using Mapping::Fixel_TD_diff_map<Fixel>::proc_mask;
 
 
         // Want to know statistics on dynamic seeding sampling

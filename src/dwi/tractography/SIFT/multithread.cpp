@@ -77,16 +77,16 @@ namespace MR
 
 
 
-      bool LobeRemapper::operator() (const TrackIndexRange& in)
+      bool FixelRemapper::operator() (const TrackIndexRange& in)
       {
         for (track_t track_index = in.first; track_index != in.second; ++track_index) {
           TckCont& this_cont (*sifter.contributions[track_index]);
-          std::vector<Track_lobe_contribution> new_cont;
+          std::vector<Track_fixel_contribution> new_cont;
           double total_contribution = 0.0;
           for (size_t i = 0; i != this_cont.dim(); ++i) {
-            const size_t new_index = remapper[this_cont[i].get_lobe_index()];
+            const size_t new_index = remapper[this_cont[i].get_fixel_index()];
             if (new_index) {
-              new_cont.push_back (Track_lobe_contribution (new_index, this_cont[i].get_value()));
+              new_cont.push_back (Track_fixel_contribution (new_index, this_cont[i].get_value()));
               total_contribution += this_cont[i].get_value() * sifter[new_index].get_weight();
             }
           }
@@ -109,33 +109,33 @@ namespace MR
         if (sifter.contributions[in.index])
           throw Exception ("FIXME: Same streamline has been mapped multiple times! (?)");
 
-        std::vector<Track_lobe_contribution> masked_contributions;
+        std::vector<Track_fixel_contribution> masked_contributions;
         double total_contribution = 0.0, total_length = 0.0;
 
         for (Mapping::SetDixel::const_iterator i = in.begin(); i != in.end(); ++i) {
           total_length += i->get_value();
-          const size_t lobe_index = sifter.dix2lobe (*i);
-          if (lobe_index) {
-            total_contribution += i->get_value() * sifter.lobes[lobe_index].get_weight();
-            if (i->get_value() > Track_lobe_contribution::min()) {
+          const size_t fixel_index = sifter.dixel2fixel (*i);
+          if (fixel_index) {
+            total_contribution += i->get_value() * sifter.fixels[fixel_index].get_weight();
+            if (i->get_value() > Track_fixel_contribution::min()) {
               bool incremented = false;
-              for (std::vector<Track_lobe_contribution>::iterator c = masked_contributions.begin(); !incremented && c != masked_contributions.end(); ++c) {
-                if ((c->get_lobe_index() == lobe_index) && c->add (i->get_value()))
+              for (std::vector<Track_fixel_contribution>::iterator c = masked_contributions.begin(); !incremented && c != masked_contributions.end(); ++c) {
+                if ((c->get_fixel_index() == fixel_index) && c->add (i->get_value()))
                   incremented = true;
               }
               if (!incremented)
-                masked_contributions.push_back (Track_lobe_contribution (lobe_index, i->get_value()));
+                masked_contributions.push_back (Track_fixel_contribution (fixel_index, i->get_value()));
             }
           }
         }
 
-        sifter.contributions[in.index] = new TrackContribution<Track_lobe_contribution> (masked_contributions, total_contribution, total_length);
+        sifter.contributions[in.index] = new TrackContribution<Track_fixel_contribution> (masked_contributions, total_contribution, total_length);
 
         {
           Thread::Mutex::Lock lock (*mutex);
           sifter.TD_sum += total_contribution;
-          for (std::vector<Track_lobe_contribution>::const_iterator i = masked_contributions.begin(); i != masked_contributions.end(); ++i)
-            sifter.lobes[i->get_lobe_index()] += i->get_value();
+          for (std::vector<Track_fixel_contribution>::const_iterator i = masked_contributions.begin(); i != masked_contributions.end(); ++i)
+            sifter.fixels[i->get_fixel_index()] += i->get_value();
         }
 
         return true;

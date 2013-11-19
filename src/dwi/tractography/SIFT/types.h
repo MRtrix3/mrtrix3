@@ -36,7 +36,6 @@
 #include "min_mem_array.h"
 
 #include "dwi/fmls.h"
-#include "dwi/fod_map.h"
 
 
 
@@ -62,29 +61,29 @@ namespace MR
 
 
 
-      class FOD_TD_weighted
+      class Fixel_TD_weighted
       {
 
         public:
-          FOD_TD_weighted () :
+          Fixel_TD_weighted () :
             FOD (0.0),
             TD (0.0),
             weight (0.0),
             dir (0) { }
 
-          FOD_TD_weighted (const double amp, size_t d) :
+          Fixel_TD_weighted (const double amp, size_t d) :
             FOD (amp),
             TD (0.0),
             weight (0.0),
             dir (d) { }
 
-          FOD_TD_weighted (const FMLS::FOD_lobe& lobe) :
+          Fixel_TD_weighted (const FMLS::FOD_lobe& lobe) :
             FOD (lobe.get_integral()),
             TD (0.0),
             weight (0.0),
             dir (lobe.get_peak_dir_bin()) { }
 
-          FOD_TD_weighted (const FOD_TD_weighted& that) :
+          Fixel_TD_weighted (const Fixel_TD_weighted& that) :
             FOD (that.FOD),
             TD (that.TD),
             weight (that.weight),
@@ -98,9 +97,9 @@ namespace MR
           size_t get_dir()    const { return dir; }
 
 
-          void             scale_FOD  (const float factor)  { FOD *= factor; }
-          void             set_weight (const float w)       { weight = w; }
-          FOD_TD_weighted& operator+= (const double length) { TD += length; return *this; }
+          void               scale_FOD  (const float factor)  { FOD *= factor; }
+          void               set_weight (const float w)       { weight = w; }
+          Fixel_TD_weighted& operator+= (const double length) { TD += length; return *this; }
 
 
           // This function has two purposes; removes the relevant track length, and also provides the change in cost function given that removal
@@ -142,24 +141,24 @@ namespace MR
 
 
 
-      class Track_lobe_contribution
+      class Track_fixel_contribution
       {
         public:
-          Track_lobe_contribution (const uint32_t lobe_index, const float length) {
+          Track_fixel_contribution (const uint32_t fixel_index, const float length) {
             const uint32_t length_as_int = std::min (uint32_t(255), uint32_t(Math::round (scale_to_storage * length)));
-            data = (lobe_index & 0x00FFFFFF) | (length_as_int << 24);
+            data = (fixel_index & 0x00FFFFFF) | (length_as_int << 24);
           }
 
-          Track_lobe_contribution() :
+          Track_fixel_contribution() :
             data (0) { }
 
-          uint32_t get_lobe_index() const { return (data & 0x00FFFFFF); }
-          float    get_value()      const { return (uint32_t((data & 0xFF000000) >> 24) * scale_from_storage); }
+          uint32_t get_fixel_index() const { return (data & 0x00FFFFFF); }
+          float    get_value()       const { return (uint32_t((data & 0xFF000000) >> 24) * scale_from_storage); }
 
 
           bool add (const float length)
           {
-            // Allow summing of multiple contributions to a lobe, UNLESS it would cause truncation, in which
+            // Allow summing of multiple contributions to a fixel, UNLESS it would cause truncation, in which
             //   case keep them separate
             const uint32_t increment = Math::round (scale_to_storage * length);
             const uint32_t existing = (data & 0xFF000000) >> 24;
@@ -196,24 +195,24 @@ namespace MR
 
 
 /*
-// This is a 'safe' version of Track_lobe_contribution that does not use byte-sharing, but requires double the RAM
+// This is a 'safe' version of Track_fixel_contribution that does not use byte-sharing, but requires double the RAM
 // Simply comment the class above and un-comment this one to use
-class Track_lobe_contribution
+class Track_fixel_contribution
 {
   public:
-    Track_lobe_contribution (const uint32_t lobe_index, const float length) :
-      lobe (lobe_index),
+    Track_fixel_contribution (const uint32_t fixel_index, const float length) :
+      fixel (fixel_index),
       value (length) { }
 
-    Track_lobe_contribution() :
-      lobe (0),
+    Track_fixel_contribution() :
+      fixel (0),
       value (0.0) { }
 
 
     bool add (const float length) { value += length; return true; }
 
-    uint32_t get_lobe_index() const { return lobe; }
-    float    get_value()      const { return value; }
+    uint32_t get_fixel_index() const { return fixel; }
+    float    get_value()       const { return value; }
 
 
     static void set_scaling (const Image::Info& in) { min_length_for_storage = 0.0; }
@@ -221,7 +220,7 @@ class Track_lobe_contribution
 
 
   private:
-    uint32_t lobe;
+    uint32_t fixel;
     float value;
 
     static float scale_to_storage, scale_from_storage, min_length_for_storage;

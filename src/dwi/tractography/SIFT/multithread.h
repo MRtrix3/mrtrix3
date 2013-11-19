@@ -107,13 +107,13 @@ namespace MR
 
 
 
-      class LobeRemapper
+      class FixelRemapper
       {
 
-          typedef TrackContribution<Track_lobe_contribution> TckCont;
+          typedef TrackContribution<Track_fixel_contribution> TckCont;
 
         public:
-          LobeRemapper (SIFTer& s, std::vector<size_t>& r) :
+          FixelRemapper (SIFTer& s, std::vector<size_t>& r) :
             sifter   (s),
             remapper (r) { }
 
@@ -129,7 +129,7 @@ namespace MR
 
 
       // Receive mapped streamlines, convert to TckCont, allocate memory, assign to contributions[] vector,
-      //   once this is all completed lock a mutex and update the lobe TD's
+      //   once this is all completed lock a mutex and update the fixel TD's
       class MappedTrackReceiver
       {
 

@@ -53,6 +53,7 @@
 
 #include "dwi/directions/set.h"
 
+#include "dwi/tractography/mapping/fixel_td_map.h"
 #include "dwi/tractography/mapping/mapper.h"
 #include "dwi/tractography/mapping/mapping.h"
 #include "dwi/tractography/mapping/voxel.h"
@@ -64,9 +65,6 @@
 
 #include <iomanip>
 #include <algorithm>
-
-
-#include "dwi/tractography/mapping/fod_td_map.h"
 
 
 
@@ -88,19 +86,19 @@ namespace MR
 
 
 
-      class SIFTer : public Mapping::FOD_TD_diff_map<FOD_TD_weighted>
+      class SIFTer : public Mapping::Fixel_TD_diff_map<Fixel_TD_weighted>
       {
 
         protected:
 
-        typedef FOD_TD_weighted Lobe;
+        typedef Fixel_TD_weighted Fixel;
 
-        typedef Mapping::FOD_TD_diff_map<Lobe> MapType;
-        typedef FOD_map<Lobe>::MapVoxel MapVoxel;
-        typedef FOD_map<Lobe>::VoxelAccessor VoxelAccessor;
+        typedef Mapping::Fixel_TD_diff_map<Fixel> MapType;
+        typedef Fixel_map<Fixel>::MapVoxel MapVoxel;
+        typedef Fixel_map<Fixel>::VoxelAccessor VoxelAccessor;
         typedef Mapping::Dixel Dixel;
         typedef Mapping::SetDixel SetDixel;
-        typedef TrackContribution<Track_lobe_contribution> TckCont;
+        typedef TrackContribution<Track_fixel_contribution> TckCont;
 
 
         public:
@@ -113,7 +111,7 @@ namespace MR
         void perform_FOD_segmentation ();
         void scale_FODs_by_GM ();
         void map_streamlines (const std::string&);
-        void remove_excluded_lobes();
+        void remove_excluded_fixels();
         void perform_filtering();
         void output_filtered_tracks (const std::string&, const std::string&) const;
 
@@ -131,12 +129,12 @@ namespace MR
         void FMLS_set_create_null_lobe     ()              { fmls.set_create_null_lobe (true); }
 
         // These configure the filtering before it is run
-        void set_remove_untracked_lobes (const bool i)         { remove_untracked_lobes = i; }
-        void set_min_FOD_integral       (const float i)        { min_FOD_integral = i; }
-        void set_term_number            (const track_t i)      { term_number = i; }
-        void set_term_ratio             (const float i)        { term_ratio = i; }
-        void set_term_mu                (const float i)        { term_mu = i; }
-        void set_csv_path               (const std::string& i) { csv_path = i; }
+        void set_remove_untracked_fixels (const bool i)         { remove_untracked_fixels = i; }
+        void set_min_FOD_integral        (const float i)        { min_FOD_integral = i; }
+        void set_term_number             (const track_t i)      { term_number = i; }
+        void set_term_ratio              (const float i)        { term_ratio = i; }
+        void set_term_mu                 (const float i)        { term_mu = i; }
+        void set_csv_path                (const std::string& i) { csv_path = i; }
 
         void set_regular_outputs (const std::vector<int>&, const bool);
 
@@ -152,8 +150,8 @@ namespace MR
 
 
         protected:
-        using FOD_map<Lobe>::accessor;
-        using FOD_map<Lobe>::lobes;
+        using Fixel_map<Fixel>::accessor;
+        using Fixel_map<Fixel>::fixels;
 
         using MapType::FOD_sum;
         using MapType::TD_sum;
@@ -178,7 +176,7 @@ namespace MR
         // User-controllable settings
         std::vector<track_t> output_at_counts;
         bool    output_debug;
-        bool    remove_untracked_lobes;
+        bool    remove_untracked_fixels;
         float   min_FOD_integral;
         track_t term_number;
         float   term_ratio;
@@ -204,13 +202,13 @@ namespace MR
         void output_tdi_fixel (const std::string&) const;
         void output_error_images (const std::string&, const std::string&, const std::string&) const;
         void output_scatterplot (const std::string&) const;
-        void output_lobe_count_image (const std::string&) const;
+        void output_fixel_count_image (const std::string&) const;
         void output_non_contributing_streamlines (const std::string&, const std::string&) const;
-        void output_untracked_lobes (const std::string&, const std::string&) const;
+        void output_untracked_fixels (const std::string&, const std::string&) const;
 
 
         friend class TrackGradientCalculator;
-        friend class LobeRemapper;
+        friend class FixelRemapper;
         friend class MappedTrackReceiver;
 
 
@@ -218,7 +216,14 @@ namespace MR
           MapType (that),
           fod_data (that.fod_data),
           dirs (that.dirs),
-          fmls (that.fmls) { assert (0); }
+          fmls (that.fmls),
+          output_debug (false),
+          remove_untracked_fixels (false),
+          min_FOD_integral (0.0),
+          term_number (0),
+          term_ratio (0.0),
+          term_mu (0.0),
+          enforce_quantisation (true) { assert (0); }
 
 
       };

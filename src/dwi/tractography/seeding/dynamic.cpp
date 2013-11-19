@@ -27,11 +27,6 @@
 
 #include "image/nav.h"
 
-// For SIFT::SH_writer
-// TODO Perhaps this should be moved to FMLS.h / its own file in src/dwi/?
-// Would need to template both DWI buffer and mask, have a base class without mask?
-#include "dwi/tractography/SIFT/multithread.h"
-
 #include "dwi/fmls.h"
 
 #include "math/SH.h"
@@ -74,10 +69,10 @@ namespace MR
 
       Dynamic::Dynamic (const std::string& in, Image::Buffer<float>& fod_data, const Math::RNG& rng, const DWI::Directions::FastLookupSet& dirs) :
             Base (in, rng, "dynamic"),
-            Mapping::FOD_TD_diff_map<FOD_TD_seed> (fod_data, dirs),
+            Mapping::Fixel_TD_diff_map<Fixel_TD_seed> (fod_data, dirs),
             total_samples (0),
             total_seeds   (0),
-            transform (Mapping::FOD_TD_diff_map<FOD_TD_seed>::info())
+            transform (Mapping::Fixel_TD_diff_map<Fixel_TD_seed>::info())
 #ifdef DYNAMIC_SEED_DEBUGGING
           , seed_output ("seeds.tck", Tractography::Properties())
 #endif
@@ -91,12 +86,12 @@ namespace MR
         Thread::run_queue_threaded_pipe (writer, FMLS::SH_coefs(), fmls, FMLS::FOD_lobes(), *this);
 
         // Have to set a volume so that Seeding::List works correctly
-        for (std::vector<Lobe>::const_iterator i = lobes.begin(); i != lobes.end(); ++i)
+        for (std::vector<Fixel>::const_iterator i = fixels.begin(); i != fixels.end(); ++i)
           volume += i->get_weight();
         volume *= (fod_data.vox(0) * fod_data.vox(1) * fod_data.vox(2));
 
         // Prevent divide-by-zero at commencement
-        Mapping::FOD_TD_diff_map<FOD_TD_seed>::TD_sum = DYNAMIC_SEED_INITIAL_TD_SUM;
+        Mapping::Fixel_TD_diff_map<Fixel_TD_seed>::TD_sum = DYNAMIC_SEED_INITIAL_TD_SUM;
 
       }
 
@@ -122,7 +117,7 @@ namespace MR
 
             float sum = 0.0;
             size_t count = 0;
-            for (FOD_map<FOD_TD_seed>::ConstIterator i = begin (v); i; ++i) {
+            for (Fixel_map<Fixel_TD_seed>::ConstIterator i = begin (v); i; ++i) {
               sum += i().get_seed_prob (final_mu);
               ++count;
             }
@@ -146,13 +141,13 @@ namespace MR
         while (1) {
 
           ++samples;
-          const size_t lobe_index = 1 + rng.uniform_int (lobes.size() - 1);
-          const Lobe& lobe = lobes[lobe_index];
+          const size_t fixel_index = 1 + rng.uniform_int (fixels.size() - 1);
+          const Fixel& fixel = fixels[fixel_index];
 
           // TODO Is rng.uniform() thread-safe?
-          if (lobe.get_seed_prob (mu()) > rng.uniform()) {
+          if (fixel.get_seed_prob (mu()) > rng.uniform()) {
 
-            const Point<int>& v (lobe.get_voxel());
+            const Point<int>& v (fixel.get_voxel());
             const Point<float> vp (v[0]+rng.uniform()-0.5, v[1]+rng.uniform()-0.5, v[2]+rng.uniform()-0.5);
             p = transform.voxel2scanner (vp);
 
@@ -167,7 +162,7 @@ namespace MR
               }
             }
             if (good_seed) {
-              d = lobe.get_dir();
+              d = fixel.get_dir();
 #ifdef DYNAMIC_SEED_DEBUGGING
               write_seed (p);
 #endif
@@ -180,6 +175,7 @@ namespace MR
           }
 
         }
+        return false;
 
       }
 
@@ -195,13 +191,13 @@ namespace MR
         Image::Nav::set_pos (v, in.vox);
         if (v.value())
           throw Exception ("Error: Dynamic seeder has received multiple FOD segmentations for the same voxel!");
-        v.value() = new MapVoxel (in, lobes.size());
+        v.value() = new MapVoxel (in, fixels.size());
 
         Image::BufferScratch<float>::voxel_type mask (proc_mask);
         const float weight = Image::Nav::get_value_at_pos (mask, in.vox);
 
         for (FMLS::FOD_lobes::const_iterator i = in.begin(); i != in.end(); ++i) {
-          lobes.push_back (Lobe (*i, weight, in.vox));
+          fixels.push_back (Fixel (*i, weight, in.vox));
           FOD_sum += i->get_integral() * weight;
         }
 
@@ -218,10 +214,10 @@ namespace MR
           return true;
         float total_contribution = 0.0;
         for (Mapping::SetDixel::const_iterator i = in.begin(); i != in.end(); ++i) {
-          const size_t lobe_index = Mapping::FOD_TD_diff_map<Lobe>::dix2lobe (*i);
-          if (lobe_index) {
-            lobes[lobe_index] += i->get_value();
-            total_contribution += lobes[lobe_index].get_weight() * i->get_value();
+          const size_t fixel_index = Mapping::Fixel_TD_diff_map<Fixel>::dixel2fixel (*i);
+          if (fixel_index) {
+            fixels[fixel_index] += i->get_value();
+            total_contribution += fixels[fixel_index].get_weight() * i->get_value();
           }
         }
         TD_sum += total_contribution;

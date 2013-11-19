@@ -22,8 +22,8 @@
 
 
 
-#ifndef __dwi_fod_map_h__
-#define __dwi_fod_map_h__
+#ifndef __dwi_fixel_map_h__
+#define __dwi_fixel_map_h__
 
 
 #include "image/buffer_scratch.h"
@@ -42,30 +42,30 @@ namespace MR
 
 
 
-    template <class Lobe>
-    class FOD_map
+    template <class Fixel>
+    class Fixel_map
     {
 
       public:
         template <typename Set>
-        FOD_map (const Set& i) :
+        Fixel_map (const Set& i) :
         info_ (i),
-        data  (info_, "FOD map voxels"),
+        data  (info_, "fixel map voxels"),
         accessor (data)
         {
           Image::Voxel< Image::BufferScratch<MapVoxel*> > v (data);
           Image::Loop loop;
           for (loop.start (v); loop.ok(); loop.next (v))
             v.value() = NULL;
-          // Lobes[0] is an invaid lobe, as provided by the relevant empty constructor
+          // fixels[0] is an invaid fixel, as provided by the relevant empty constructor
           // This allows index 0 to be used as an error code, simplifying the implementation of MapVoxel and Iterator
-          lobes.push_back (Lobe());
+          fixels.push_back (Fixel());
         }
 
         class MapVoxel;
         typedef Image::Voxel< Image::BufferScratch<MapVoxel*> > VoxelAccessor;
 
-        virtual ~FOD_map()
+        virtual ~Fixel_map()
         {
           Image::Loop loop;
           VoxelAccessor v (accessor);
@@ -84,8 +84,8 @@ namespace MR
         Iterator      begin (VoxelAccessor& v)       { return Iterator      (v.value(), *this); }
         ConstIterator begin (VoxelAccessor& v) const { return ConstIterator (v.value(), *this); }
 
-        Lobe&       operator[] (const size_t i)       { return lobes[i]; }
-        const Lobe& operator[] (const size_t i) const { return lobes[i]; }
+        Fixel&       operator[] (const size_t i)       { return fixels[i]; }
+        const Fixel& operator[] (const size_t i) const { return fixels[i]; }
 
         bool operator() (const FMLS::FOD_lobes& in);
 
@@ -107,10 +107,10 @@ namespace MR
 
         Image::BufferScratch<MapVoxel*> data;
         const VoxelAccessor accessor; // Functions can copy-construct their own voxel accessor from this and retain const-ness
-        std::vector<Lobe> lobes;
+        std::vector<Fixel> fixels;
 
 
-        FOD_map (const FOD_map& that) : info_ (that.data), data (info_) { assert (0); }
+        Fixel_map (const Fixel_map& that) : info_ (that.data), data (info_) { assert (0); }
 
 
     };
@@ -118,12 +118,12 @@ namespace MR
 
 
 
-    template <class Lobe>
-    class FOD_map<Lobe>::MapVoxel
+    template <class Fixel>
+    class Fixel_map<Fixel>::MapVoxel
     {
       public:
         MapVoxel (const FMLS::FOD_lobes& in, const size_t first) :
-          first_lobe_index (first),
+          first_fixel_index (first),
           count (in.size()),
           lookup_table (new uint8_t[in.lut.size()])
         {
@@ -131,7 +131,7 @@ namespace MR
         }
 
         MapVoxel (const size_t first, const size_t size) :
-          first_lobe_index (first),
+          first_fixel_index (first),
           count (size),
           lookup_table (NULL) { }
 
@@ -143,71 +143,71 @@ namespace MR
           }
         }
 
-        size_t first_index() const { return first_lobe_index; }
-        size_t num_lobes()   const { return count; }
+        size_t first_index() const { return first_fixel_index; }
+        size_t num_fixels()  const { return count; }
         bool   empty()       const { return !count; }
 
         // Direction must have been assigned to a histogram bin first
-        size_t dir2lobe (const size_t dir) const
+        size_t dir2fixel (const size_t dir) const
         {
           assert (lookup_table);
           const size_t offset = lookup_table[dir];
-          return ((offset == count) ? 0 : (first_lobe_index + offset));
+          return ((offset == count) ? 0 : (first_fixel_index + offset));
         }
 
 
       private:
-        size_t first_lobe_index, count;
+        size_t first_fixel_index, count;
         uint8_t* lookup_table;
 
     };
 
 
 
-    template <class Lobe>
-    class FOD_map<Lobe>::Iterator
+    template <class Fixel>
+    class Fixel_map<Fixel>::Iterator
     {
-        friend class FOD_map<Lobe>::ConstIterator;
+        friend class Fixel_map<Fixel>::ConstIterator;
       public:
-        Iterator (const MapVoxel* const voxel, FOD_map<Lobe>& parent) :
+        Iterator (const MapVoxel* const voxel, Fixel_map<Fixel>& parent) :
           index (voxel ? voxel->first_index() : 0),
-          last  (voxel ? (index + voxel->num_lobes()) : 0),
-          fod_map (parent) { }
+          last  (voxel ? (index + voxel->num_fixels()) : 0),
+          fixel_map (parent) { }
         Iterator& operator++ ()       { ++index; return *this; }
-        Lobe&     operator() () const { return fod_map.lobes[index]; }
+        Fixel&    operator() () const { return fixel_map.fixels[index]; }
         operator  bool ()       const { return (index != last); }
         operator  size_t ()     const { return index; }
       private:
         size_t index, last;
-        FOD_map<Lobe>& fod_map;
+        Fixel_map<Fixel>& fixel_map;
     };
 
-    template <class Lobe>
-    class FOD_map<Lobe>::ConstIterator
+    template <class Fixel>
+    class Fixel_map<Fixel>::ConstIterator
     {
       public:
-        ConstIterator (const MapVoxel* const voxel, const FOD_map& parent) :
+        ConstIterator (const MapVoxel* const voxel, const Fixel_map& parent) :
           index   (voxel ? voxel->first_index() : 0),
-          last    (voxel ? (index + voxel->num_lobes()) : 0),
-          fod_map (parent) { }
+          last    (voxel ? (index + voxel->num_fixels()) : 0),
+          fixel_map (parent) { }
         ConstIterator (const Iterator& that) :
           index   (that.index),
           last    (that.last),
-          fod_map (that.fod_map) { }
+          fixel_map (that.fixel_map) { }
         ConstIterator&  operator++ ()       { ++index; return *this; }
-        const Lobe&     operator() () const { return fod_map.lobes[index]; }
+        const Fixel&    operator() () const { return fixel_map.fixels[index]; }
         operator        bool ()       const { return (index != last); }
         operator        size_t ()     const { return index; }
       private:
         size_t index, last;
-        const FOD_map<Lobe>& fod_map;
+        const Fixel_map<Fixel>& fixel_map;
     };
 
 
 
 
-    template <class Lobe>
-    bool FOD_map<Lobe>::operator() (const FMLS::FOD_lobes& in)
+    template <class Fixel>
+    bool Fixel_map<Fixel>::operator() (const FMLS::FOD_lobes& in)
     {
         if (in.empty())
           return true;
@@ -217,9 +217,9 @@ namespace MR
         Image::Nav::set_pos (v, in.vox);
         if (v.value())
           throw Exception ("FIXME: FOD_map has received multiple segmentations for the same voxel!");
-        v.value() = new MapVoxel (in, lobes.size());
+        v.value() = new MapVoxel (in, fixels.size());
         for (FMLS::FOD_lobes::const_iterator i = in.begin(); i != in.end(); ++i)
-          lobes.push_back (Lobe (*i));
+          fixels.push_back (Fixel (*i));
         return true;
     }
 

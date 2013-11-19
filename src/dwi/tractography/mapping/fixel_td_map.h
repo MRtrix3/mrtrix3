@@ -22,8 +22,8 @@
 
 
 
-#ifndef __dwi_tractography_mapping_fod_td_map_h__
-#define __dwi_tractography_mapping_fod_td_map_h__
+#ifndef __dwi_tractography_mapping_fixel_td_map_h__
+#define __dwi_tractography_mapping_fixel_td_map_h__
 
 #include "app.h"
 #include "point.h"
@@ -40,7 +40,7 @@
 #include "image/interp/linear.h"
 
 #include "dwi/fmls.h"
-#include "dwi/fod_map.h"
+#include "dwi/fixel_map.h"
 #include "dwi/directions/set.h"
 #include "dwi/tractography/mapping/voxel.h"
 #include "dwi/tractography/ACT/tissues.h"
@@ -61,44 +61,44 @@ namespace MR
 
 
 
-      extern const App::OptionGroup FODMapProcMaskOption;
+      extern const App::OptionGroup FixelMapProcMaskOption;
 
 
 
 
-        // Templated Lobe class MUST provide operator+= (const float) for adding streamline density
+        // Templated Fixel class MUST provide operator+= (const float) for adding streamline density
 
-      template <class Lobe>
-      class FOD_TD_map : public FOD_map<Lobe>
+      template <class Fixel>
+      class Fixel_TD_map : public Fixel_map<Fixel>
       {
 
-        typedef typename FOD_map<Lobe>::MapVoxel MapVoxel;
-        typedef typename FOD_map<Lobe>::VoxelAccessor VoxelAccessor;
+        typedef typename Fixel_map<Fixel>::MapVoxel MapVoxel;
+        typedef typename Fixel_map<Fixel>::VoxelAccessor VoxelAccessor;
 
         public:
 
         template <typename Info>
-        FOD_TD_map (const Info& info, const DWI::Directions::FastLookupSet& directions) :
-        FOD_map<Lobe> (info),
+        Fixel_TD_map (const Info& info, const DWI::Directions::FastLookupSet& directions) :
+        Fixel_map<Fixel> (info),
         dirs (directions) { }
 
-        virtual ~FOD_TD_map() { }
+        virtual ~Fixel_TD_map() { }
 
 
         bool operator() (const SetDixel& in);
 
 
         protected:
-        using FOD_map<Lobe>::accessor;
-        using FOD_map<Lobe>::lobes;
+        using Fixel_map<Fixel>::accessor;
+        using Fixel_map<Fixel>::fixels;
 
 
         const DWI::Directions::FastLookupSet& dirs;
 
-        size_t dix2lobe (const Dixel&);
+        size_t dixel2fixel (const Dixel&);
 
 
-        FOD_TD_map (const FOD_TD_map& that) : FOD_map<Lobe> (that), dirs (that.dirs) { assert (0); }
+        Fixel_TD_map (const Fixel_TD_map& that) : Fixel_map<Fixel> (that), dirs (that.dirs) { assert (0); }
 
       };
 
@@ -106,20 +106,20 @@ namespace MR
 
 
 
-      template <class Lobe>
-      bool FOD_TD_map<Lobe>::operator() (const SetDixel& in)
+      template <class Fixel>
+      bool Fixel_TD_map<Fixel>::operator() (const SetDixel& in)
       {
         for (SetDixel::const_iterator i = in.begin(); i != in.end(); ++i) {
-          const size_t lobe_index = dix2lobe (*i);
-          if (lobe_index)
-            lobes[lobe_index] += i->get_value();
+          const size_t fixel_index = dixel2fixel (*i);
+          if (fixel_index)
+            fixels[fixel_index] += i->get_value();
         }
         return true;
       }
 
 
-      template <class Lobe>
-      size_t FOD_TD_map<Lobe>::dix2lobe (const Dixel& in)
+      template <class Fixel>
+      size_t Fixel_TD_map<Fixel>::dixel2fixel (const Dixel& in)
       {
         if (!Image::Nav::within_bounds (accessor, in))
           return 0;
@@ -130,26 +130,26 @@ namespace MR
         const MapVoxel& map_voxel (*v.value());
         if (map_voxel.empty())
           return 0;
-        return map_voxel.dir2lobe (in.get_dir());
+        return map_voxel.dir2fixel (in.get_dir());
       }
 
 
 
 
-      // Templated Lobe class MUST also provide void set_weight (const float), for setting weight of processing mask
+      // Templated Fixel class MUST also provide void set_weight (const float), for setting weight of processing mask
 
-      template <class Lobe>
-      class FOD_TD_diff_map : public FOD_TD_map<Lobe>
+      template <class Fixel>
+      class Fixel_TD_diff_map : public Fixel_TD_map<Fixel>
       {
 
-        typedef typename FOD_map<Lobe>::MapVoxel MapVoxel;
-        typedef typename FOD_map<Lobe>::VoxelAccessor VoxelAccessor;
+        typedef typename Fixel_map<Fixel>::MapVoxel MapVoxel;
+        typedef typename Fixel_map<Fixel>::VoxelAccessor VoxelAccessor;
 
         public:
           template <class Set>
-          FOD_TD_diff_map (Set& dwi, const DWI::Directions::FastLookupSet& dirs) :
-          FOD_TD_map<Lobe> (dwi, dirs),
-          proc_mask (FOD_map<Lobe>::info(), "FOD map processing mask"),
+          Fixel_TD_diff_map (Set& dwi, const DWI::Directions::FastLookupSet& dirs) :
+          Fixel_TD_map<Fixel> (dwi, dirs),
+          proc_mask (Fixel_map<Fixel>::info(), "FOD map processing mask"),
           FOD_sum (0.0),
           TD_sum (0.0)
           {
@@ -162,12 +162,12 @@ namespace MR
           double mu() const { return FOD_sum / TD_sum; }
           bool have_act_data() const { return act_4tt; }
 
-          using FOD_TD_map<Lobe>::begin;
+          using Fixel_TD_map<Fixel>::begin;
 
         protected:
-          using FOD_map<Lobe>::accessor;
-          using FOD_map<Lobe>::lobes;
-          using FOD_TD_map<Lobe>::dirs;
+          using Fixel_map<Fixel>::accessor;
+          using Fixel_map<Fixel>::fixels;
+          using Fixel_TD_map<Fixel>::dirs;
 
           Ptr< Image::BufferScratch<float> > act_4tt;
           Image::BufferScratch<float> proc_mask;
@@ -211,39 +211,39 @@ namespace MR
 
 
         protected:
-          FOD_TD_diff_map (const FOD_TD_diff_map& that) : FOD_TD_map<Lobe> (that), proc_mask (that.proc_mask.info()), FOD_sum (0.0), TD_sum (0.0) { assert (0); }
+          Fixel_TD_diff_map (const Fixel_TD_diff_map& that) : Fixel_TD_map<Fixel> (that), proc_mask (that.proc_mask.info()), FOD_sum (0.0), TD_sum (0.0) { assert (0); }
 
       };
 
 
 
-      template <class Lobe>
-      bool FOD_TD_diff_map<Lobe>::operator() (const FMLS::FOD_lobes& in)
+      template <class Fixel>
+      bool Fixel_TD_diff_map<Fixel>::operator() (const FMLS::FOD_lobes& in)
       {
-        if (!FOD_map<Lobe>::operator() (in))
+        if (!Fixel_map<Fixel>::operator() (in))
           return false;
         Image::BufferScratch<float>::voxel_type mask (proc_mask);
         const float mask_value = Image::Nav::get_value_at_pos (mask, in.vox);
         VoxelAccessor v (accessor);
         Image::Nav::set_pos (v, in.vox);
         if (v.value()) {
-          for (typename FOD_map<Lobe>::Iterator i = begin (v); i; ++i) {
-            i().set_weight (mask_value); // Note: Lobe class must provide this (even if it does nothing)
+          for (typename Fixel_map<Fixel>::Iterator i = begin (v); i; ++i) {
+            i().set_weight (mask_value); // Note: Fixel class must provide this (even if it does nothing)
             FOD_sum += i().get_FOD() * mask_value;
           }
         }
         return true;
       }
 
-      template <class Lobe>
-      bool FOD_TD_diff_map<Lobe>::operator() (const SetDixel& in)
+      template <class Fixel>
+      bool Fixel_TD_diff_map<Fixel>::operator() (const SetDixel& in)
       {
         Image::BufferScratch<float>::voxel_type v (proc_mask);
         float total_contribution = 0.0;
         for (SetDixel::const_iterator i = in.begin(); i != in.end(); ++i) {
-          const size_t lobe_index = FOD_TD_map<Lobe>::dix2lobe (*i);
-          if (lobe_index) {
-            lobes[lobe_index] += i->get_value(); // Note: Lobe class must provide operator+= (const float)
+          const size_t fixel_index = Fixel_TD_map<Fixel>::dixel2fixel (*i);
+          if (fixel_index) {
+            fixels[fixel_index] += i->get_value(); // Note: Fixel class must provide operator+= (const float)
             Image::Nav::set_pos (v, *i);
             total_contribution += v.value() * i->get_value();
           }
@@ -255,9 +255,9 @@ namespace MR
 
 
 
-      template <class Lobe>
+      template <class Fixel>
       template <class Set>
-      void FOD_TD_diff_map<Lobe>::initialise (Set& in_dwi)
+      void Fixel_TD_diff_map<Fixel>::initialise (Set& in_dwi)
       {
 
         Image::BufferScratch<float>::voxel_type mask (proc_mask);
@@ -269,7 +269,7 @@ namespace MR
           Image::Buffer<float> in_image (opt[0][0]);
           Image::Buffer<float>::voxel_type image (in_image);
           if (!Image::dimensions_match (mask, image, 0, 3))
-            throw Exception ("Dimensions of processing mask image provided using -proc_mask option must match relevant FOD image");
+            throw Exception ("Dimensions of processing mask image provided using -proc_mask option must match relevant fixel image");
           Image::copy_with_progress_message ("Copying processing mask to memory... ", image, mask, 0, 3);
 
         } else {
@@ -286,7 +286,7 @@ namespace MR
             info_4tt.dim(3) = 4;
             act_4tt = new Image::BufferScratch<float> (info_4tt);
 
-            Image::ThreadedLoop threaded_loop ("resampling ACT 4TT image to diffusion image space...", in_dwi, 1, 0, 3);
+            Image::ThreadedLoop threaded_loop ("resampling ACT 4TT image to fixel image space...", in_dwi, 1, 0, 3);
             ResampleFunctor<Set> functor (in_dwi, in_anat, *act_4tt);
             threaded_loop.run (functor);
 
@@ -314,9 +314,9 @@ namespace MR
 
 
 
-      template <class Lobe>
+      template <class Fixel>
       template <class Set>
-      void FOD_TD_diff_map<Lobe>::ResampleFunctor<Set>::operator() (const Image::Iterator& pos)
+      void Fixel_TD_diff_map<Fixel>::ResampleFunctor<Set>::operator() (const Image::Iterator& pos)
       {
 
         static const int os_ratio = 10;

@@ -40,7 +40,7 @@
 #include "thread/queue.h"
 
 #include "dwi/fmls.h"
-#include "dwi/fod_map.h"
+#include "dwi/fixel_map.h"
 #include "dwi/directions/set.h"
 
 
