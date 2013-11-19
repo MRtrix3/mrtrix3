@@ -50,7 +50,8 @@ extern "C" void R_usage (char** output) { \
 #define MRTRIX_APPLICATION int main (int cmdline_argc, char** cmdline_argv) { \
     try { MR::App::init (cmdline_argc, cmdline_argv); usage (); MR::App::parse (); run (); } \
     catch (MR::Exception& E) { E.display(); return 1; } \
-    catch (int retval) { return retval; } } 
+    catch (int retval) { return retval; } \
+    return 0; }
 
 #endif
 
