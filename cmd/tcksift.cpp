@@ -22,30 +22,11 @@
 
 
 
-
 #include "app.h"
-#include "point.h"
-#include "progressbar.h"
 
 #include "image/buffer.h"
-#include "image/buffer_scratch.h"
-#include "image/copy.h"
-#include "image/header.h"
-#include "image/loop.h"
-#include "image/voxel.h"
 
-#include "image/interp/linear.h"
-
-#include "thread/exec.h"
-#include "thread/queue.h"
-
-#include "dwi/tractography/file.h"
-
-#include "dwi/tractography/mapping/loader.h"
-
-#include "dwi/tractography/ACT/tissues.h"
-
-#include "dwi/tractography/SIFT/multithread.h"
+#include "dwi/tractography/SIFT/sift.h"
 #include "dwi/tractography/SIFT/sifter.h"
 
 
@@ -59,14 +40,6 @@ using namespace MR::DWI;
 using namespace MR::DWI::Tractography;
 using namespace MR::DWI::Tractography::Mapping;
 using namespace MR::DWI::Tractography::SIFT;
-
-
-
-
-#define TERMINATION_RATIO_DEFAULT 0.0
-#define TERMINATION_NUMBER_DEFAULT 1
-#define TERMINATION_MU_DEFAULT 0.0
-
 
 
 
@@ -86,48 +59,17 @@ void usage ()
 
   OPTIONS
 
-  + Option ("proc_mask", "provide an image containing the processing mask weights for the SIFT model. \n"
-                         "Image spatial dimensions must match the FOD image.")
-    + Argument ("image").type_image_in()
+  + Option ("nofilter", "do NOT perform track filtering - just construct the model in order to provide output debugging images")
 
-  + Option ("act", "use an ACT four-tissue-type segmented anatomical image to derive the processing mask for SIFT.")
-    + Argument ("image").type_image_in()
-
-  + Option ("no_fod_scaling", "by default, the amplitudes of FOD lobes in voxels with grey matter partial volume contamination are scaled appropriately to compensate. \n"
-                              "Provide this option to override this behaviour and not perform any scaling.")
-
-  + Option ("no_dilate_lut", "do NOT dilate FOD lobe lookup tables; only map streamlines to FOD lobes if the precise tangent lies within the angular spread of that lobe")
-
-  + Option ("make_null_lobes", "add an additional FOD lobe to each voxel, with zero integral, that covers all directions with zero / negative FOD amplitudes")
-
-  + Option ("remove_untracked", "remove FOD lobes that do not have any streamline density attributed to them; "
-                                "this improves filtering slightly, at the expense of longer computation time "
-                                "(and you can no longer do quantitative comparisons between reconstructions if this is enabled)")
-
-  + Option ("FOD_int_thresh", "FOD integral threshold; exclude an FOD lobe from filtering processing if its integral is less than this amount "
-                              "(streamlines will still be mapped to it, but it will not contribute to the cost function or the filtering)")
-    + Argument ("value").type_float (0.0, 0.0, 2.0 * M_PI)
-
-  + Option ("nofilter", "do NOT perform track filtering - just get the initial output images")
-
-  + Option ("term_number", "number of streamlines - continue filtering until this number of streamlines remain")
-    + Argument ("value").type_integer (1, TERMINATION_NUMBER_DEFAULT, std::numeric_limits<int>::max())
-
-  + Option ("term_ratio", "termination ratio - defined as the ratio between reduction in cost function, and reduction in density of streamlines.\n"
-                          "Smaller values result in more streamlines being filtered out.")
-    + Argument ("value").type_float (0.0, TERMINATION_RATIO_DEFAULT, 10.0)
-
-  + Option ("term_mu", "terminate filtering once the SIFT proportionality coefficient reaches a given value")
-    + Argument ("value").type_float (0.0, TERMINATION_MU_DEFAULT, std::numeric_limits<float>::max())
-
-  + Option ("csv", "output statistics of execution per iteration to a .csv file")
-    + Argument ("file").type_file()
-
-  + Option ("output_at_counts", "output filtered track files (and optionally debugging images if -output_debug is specified) at certain "
+  + Option ("output_at_counts", "output filtered track files (and optionally debugging images if -output_debug is specified) at specific "
                                 "numbers of remaining streamlines; provide as comma-separated list of integers")
     + Argument ("counts").type_sequence_int()
 
-  + Option ("output_debug", "provide various output images for assessing & debugging filtering performace etc.");
+  + FODMapProcMaskOption
+
+  + SIFTModelOption
+  + SIFTOutputOption
+  + SIFTTermOption;
 
 };
 
@@ -176,7 +118,7 @@ void run ()
     sifter.set_remove_untracked_lobes (true);
   opt = get_options ("FOD_int_thresh");
   if (opt.size())
-    sifter.set_min_FOD_integral (opt[0][0]);
+    sifter.set_min_FOD_integral (float(opt[0][0]));
 
   sifter.remove_excluded_lobes();
 
@@ -188,10 +130,10 @@ void run ()
       sifter.set_term_number (int(opt[0][0]));
     opt = get_options ("term_ratio");
     if (opt.size())
-      sifter.set_term_ratio (opt[0][0]);
+      sifter.set_term_ratio (float(opt[0][0]));
     opt = get_options ("term_mu");
     if (opt.size())
-      sifter.set_term_mu (opt[0][0]);
+      sifter.set_term_mu (float(opt[0][0]));
     opt = get_options ("csv");
     if (opt.size())
       sifter.set_csv_path (opt[0][0]);

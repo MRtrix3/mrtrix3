@@ -25,6 +25,7 @@
 #ifndef __dwi_tractography_mapping_fod_td_map_h__
 #define __dwi_tractography_mapping_fod_td_map_h__
 
+#include "app.h"
 #include "point.h"
 
 #include "image/buffer_scratch.h"
@@ -48,12 +49,20 @@
 
 namespace MR
 {
+
+  namespace App { class OptionGroup; }
+
   namespace DWI
   {
     namespace Tractography
     {
       namespace Mapping
       {
+
+
+
+      extern const App::OptionGroup FODMapProcMaskOption;
+
 
 
 
