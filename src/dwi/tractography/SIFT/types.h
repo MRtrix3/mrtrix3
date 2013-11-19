@@ -57,6 +57,10 @@ namespace MR
 
 
 
+      typedef std::pair<track_t, track_t> TrackIndexRange;
+
+
+
 
       class FOD_TD_weighted
       {

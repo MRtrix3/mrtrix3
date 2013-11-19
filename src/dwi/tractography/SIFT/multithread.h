@@ -62,7 +62,6 @@ namespace MR
       // Instead, the input queue for multi-threading is filled with std::pair<track_t, track_t>'s, where the values
       //   are the start and end track indices to be processed
 
-      typedef std::pair<track_t, track_t> TrackIndexRange;
       typedef Thread::Queue< TrackIndexRange > TrackIndexRangeQueue;
 
       class TrackIndexRangeWriter
