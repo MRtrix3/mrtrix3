@@ -106,6 +106,8 @@ namespace MR
             void set_focus (const Point<>& p, int current_plane, const Projection& projection) { 
               actual_focus = p; 
               window.set_focus (snap (actual_focus, current_plane)); 
+            }
+            void move_target_to_focus_plane (const Projection& projection) {
               Point<> in_plane_target = projection.model_to_screen (target());
               in_plane_target[2] = projection.depth_of (focus());
               set_target (projection.screen_to_model (in_plane_target));
@@ -130,7 +132,6 @@ namespace MR
             void move_in_out (float distance, const Projection& projection) {
               if (!image()) return;
               Point<> move = move_in_out_displacement (distance, projection);
-              set_target (target() + move);
               set_focus (actual_focus + move, projection);
             }
 

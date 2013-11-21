@@ -131,6 +131,7 @@ done_painting:
         {
           move_in_out (x * std::min (std::min (image()->header().vox(0), image()->header().vox(1)), image()->header().vox(2)),
               get_current_projection());
+          move_target_to_focus_plane (get_current_projection());
           updateGL();
         }
 
@@ -166,6 +167,7 @@ done_painting:
         void Base::panthrough_event ()
         {
           move_in_out_FOV (window.mouse_displacement().y(), get_current_projection());
+          move_target_to_focus_plane (get_current_projection());
           updateGL();
         }
 

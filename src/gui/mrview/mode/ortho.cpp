@@ -140,6 +140,23 @@ namespace MR
         }
 
 
+
+
+        void Ortho::slice_move_event (int x) 
+        {
+          move_in_out (x * std::min (std::min (image()->header().vox(0), image()->header().vox(1)), image()->header().vox(2)),
+              get_current_projection());
+          updateGL();
+        }
+
+
+        void Ortho::panthrough_event ()
+        {
+          move_in_out_FOV (window.mouse_displacement().y(), get_current_projection());
+          updateGL();
+        }
+
+
       }
     }
   }

@@ -1237,8 +1237,8 @@ mode_selected:
         if (event->orientation() == Qt::Vertical) {
 
           if (image()) {
-          grab_mouse_state (event);
-          mode->mouse_press_event();
+            grab_mouse_state (event);
+            mode->mouse_press_event();
 
             if (buttons_ == Qt::NoButton) {
 

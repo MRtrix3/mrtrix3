@@ -48,6 +48,8 @@ namespace MR
             virtual void paint (Projection& projection);
 
             virtual void mouse_press_event ();
+            virtual void slice_move_event (int x);
+            virtual void panthrough_event ();
             virtual Projection& get_current_projection ();
 
           protected:
