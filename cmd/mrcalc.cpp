@@ -40,7 +40,7 @@ void usage () {
 DESCRIPTION
   + "apply generic voxel-wise mathematical operations to images."
 
-  + "This command will only computer per-voxel operations. "
+  + "This command will only compute per-voxel operations. "
   "Use 'mrmath' to compute summary statistics across images or "
   "along image axes."
   
@@ -49,7 +49,7 @@ DESCRIPTION
   "(i.e. images or values) in the stack. Operands (values or "
   "images) are pushed onto the stack in the order they appear "
   "(as arguments) on the command-line, and operands (specified "
-  "as options) operate on and comsume the top-most entries in "
+  "as options) operate on and consume the top-most entries in "
   "the stack, and push their output as a new entry on the stack. "
   "For example:"
   
@@ -70,11 +70,11 @@ DESCRIPTION
   "dimensions to be processed, provided they satisfy the following "
   "conditions: for each axis, the dimensions match if they are the same size, "
   "or one of them has size one. In the latter case, the entire image will be "
-  "replicated along that axis. This allows for example a 4D image of  "
+  "replicated along that axis. This allows for example a 4D image of "
   "size [ X Y Z N ] to be added to a 3D image of size [ X Y Z ], as if it "
   "consisted of N copies of the 3D image along the 4th axis (the missing "
   "dimension is assumed to have size 1). Another example would a "
-  "single-voxel 4D image of size [ 1 1 1 N ], multiplied by a 3D image of  "
+  "single-voxel 4D image of size [ 1 1 1 N ], multiplied by a 3D image of "
   "size [ X Y Z ], which would allow the creation of a 4D image where each "
   "volume consists of the 3D image scaled by the corresponding value for "
   "that volume in the single-voxel image.";
@@ -124,12 +124,12 @@ OPTIONS
   + Option ("pow", "raise (n-1)th operand to nth power").allow_multiple()
   + Option ("min", "smallest of last two operands").allow_multiple()
   + Option ("max", "greatest of last two operands").allow_multiple()
-  + Option ("lt", "true (1) if (n-1)th operand is smaller than nth, false (0) otherwise").allow_multiple()
-  + Option ("gt", "true (1) if (n-1)th operand is greater than nth, false (0) otherwise").allow_multiple()
-  + Option ("le", "true (1) if (n-1)th operand is smaller than or equal to nth, false (0) otherwise").allow_multiple()
-  + Option ("ge", "true (1) if (n-1)th operand is greater than or equal to nth, false (0) otherwise").allow_multiple()
-  + Option ("eq", "true (1) if last two operands are equal, false (0) otherwise").allow_multiple()
-  + Option ("neq", "true (1) if last two operands are not equal, false (0) otherwise").allow_multiple()
+  + Option ("lt", "less-than operator (true=1, false=0)").allow_multiple()
+  + Option ("gt", "greater-than operator (true=1, false=0)").allow_multiple()
+  + Option ("le", "less-than-or-equal-to operator (true=1, false=0)").allow_multiple()
+  + Option ("ge", "greater-than-or-equal-to operator (true=1, false=0)").allow_multiple()
+  + Option ("eq", "equal-to operator (true=1, false=0)").allow_multiple()
+  + Option ("neq", "not-equal-to operator (true=1, false=0)").allow_multiple()
 
   + Option ("complex", "create complex number using the last two operands as real,imaginary components").allow_multiple()
 
