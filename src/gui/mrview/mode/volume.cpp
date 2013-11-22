@@ -153,7 +153,8 @@ namespace MR
           if (window.show_crosshairs()) 
             projection.render_crosshairs (focus());
 
-          projection.draw_orientation_labels();
+          if (window.show_orientation_labels())
+            projection.draw_orientation_labels();
         }
 
 
