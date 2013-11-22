@@ -103,16 +103,13 @@ namespace MR
             bool snap_to_image () const { return window.snap_to_image(); }
 
             Image* image () { return window.image(); }
-            void set_focus (const Point<>& p, int current_plane, const Projection& projection) { 
-              actual_focus = p; 
-              window.set_focus (snap (actual_focus, current_plane)); 
-            }
+
             void move_target_to_focus_plane (const Projection& projection) {
               Point<> in_plane_target = projection.model_to_screen (target());
               in_plane_target[2] = projection.depth_of (focus());
               set_target (projection.screen_to_model (in_plane_target));
             }
-            void set_focus (const Point<>& p, const Projection& projection) { set_focus (p, plane(), projection); }
+            void set_focus (const Point<>& p) { window.set_focus (p); }
             void set_target (const Point<>& p) { window.set_target (p); }
             void set_FOV (float value) { window.set_FOV (value); }
             void set_plane (int p) { window.set_plane (p); }
@@ -132,7 +129,7 @@ namespace MR
             void move_in_out (float distance, const Projection& projection) {
               if (!image()) return;
               Point<> move = move_in_out_displacement (distance, projection);
-              set_focus (actual_focus + move, projection);
+              set_focus (focus() + move);
             }
 
             void move_in_out_FOV (int increment, const Projection& projection) {
@@ -153,6 +150,16 @@ namespace MR
               return image()->interp.scanner2voxel (pos);
             }
 
+            void draw_crosshairs (const Projection& with_projection) const {
+              if (window.show_crosshairs())
+                with_projection.render_crosshairs (focus());
+            }
+
+            void draw_orientation_labels (const Projection& with_projection) const {
+              if (window.show_orientation_labels())
+                with_projection.draw_orientation_labels();
+            }
+
             int slice (int axis) const { return Math::round<int> (voxel_at (focus())[axis]); }
             int slice () const { return slice (plane()); }
 
@@ -162,20 +169,11 @@ namespace MR
             void updateGL () { window.updateGL(); } 
 
           protected:
-            Point<> actual_focus;
 
             void register_extra_controls (Tool::Dock* controls);
             GL::mat4 adjust_projection_matrix (const GL::mat4& Q, int proj) const;
             GL::mat4 adjust_projection_matrix (const GL::mat4& Q) const { 
               return adjust_projection_matrix (Q, plane()); 
-            }
-
-            Point<> snap (const Point<>& pos, int current_plane) const {
-              if (!image() || !window.snap_to_image())
-                return pos;
-              Point<> vox = voxel_at (pos);
-              vox[current_plane] = Math::round<float> (vox[current_plane]);
-              return image()->interp.voxel2scanner (vox);
             }
 
             void reset_view ();

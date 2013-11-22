@@ -164,7 +164,7 @@ namespace MR
         }
 
 
-        void render_crosshairs (const Point<>& focus);
+        void render_crosshairs (const Point<>& focus) const;
 
         void setup_render_text (float red = 1.0, float green = 1.0, float blue = 0.0) const { 
           font.start (width(), height(), red, green, blue); 
@@ -216,7 +216,7 @@ namespace MR
           render_text (x, y, text);
         }
 
-        void draw_orientation_labels ();
+        void draw_orientation_labels () const;
 
 
         const GL::mat4& modelview_projection () const { return MVP; }
@@ -231,9 +231,9 @@ namespace MR
         const GL::Font& font;
         GL::mat4 MV, iMV, P, iP, MVP, iMVP;
         GLint viewport[4];
-        GL::VertexBuffer crosshairs_VB;
-        GL::VertexArrayObject crosshairs_VAO;
-        GL::Shader::Program crosshairs_program;
+        mutable GL::VertexBuffer crosshairs_VB;
+        mutable GL::VertexArrayObject crosshairs_VAO;
+        mutable GL::Shader::Program crosshairs_program;
     };
 
 

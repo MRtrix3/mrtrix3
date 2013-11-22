@@ -87,10 +87,8 @@ namespace MR
 
           render_tools2D (with_projection);
 
-          if (window.show_crosshairs())
-            with_projection.render_crosshairs (focus());
-          if (window.show_orientation_labels())
-            with_projection.draw_orientation_labels();
+          draw_crosshairs (with_projection);
+          draw_orientation_labels (with_projection);
         }
 
 

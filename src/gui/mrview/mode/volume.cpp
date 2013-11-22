@@ -150,11 +150,8 @@ namespace MR
           glDisable (GL_TEXTURE_3D);
           glDisable (GL_BLEND);
 
-          if (window.show_crosshairs()) 
-            projection.render_crosshairs (focus());
-
-          if (window.show_orientation_labels())
-            projection.draw_orientation_labels();
+          draw_crosshairs (projection);
+          draw_orientation_labels (projection);
         }
 
 

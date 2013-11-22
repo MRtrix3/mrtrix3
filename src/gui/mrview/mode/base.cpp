@@ -143,7 +143,7 @@ done_painting:
         {
           const Projection* proj = get_current_projection();
           if (!proj) return;
-          set_focus (proj->screen_to_model (window.mouse_position(), focus()), *proj);
+          set_focus (proj->screen_to_model (window.mouse_position(), focus()));
           updateGL();
         }
 
@@ -270,9 +270,8 @@ done_painting:
             set_plane (2);
 
           Point<> p (image()->header().dim (0)/2.0f, image()->header().dim (1)/2.0f, image()->header().dim (2)/2.0f);
-          p = image()->interp.voxel2scanner (p);
-          set_focus (p, *proj);
-          set_target (p);
+          set_focus (image()->interp.voxel2scanner (p));
+          set_target (focus());
           Math::Versor<float> orient;
           orient.from_matrix (image()->header().transform());
           set_orientation (orient);

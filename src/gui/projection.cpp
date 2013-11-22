@@ -44,7 +44,7 @@ namespace MR
     }
 
 
-    void Projection::render_crosshairs (const Point<>& focus)
+    void Projection::render_crosshairs (const Point<>& focus) const
     {
       if (!crosshairs_VB || !crosshairs_VAO) {
         crosshairs_VB.gen();
@@ -105,7 +105,7 @@ namespace MR
 
 
 
-    void Projection::draw_orientation_labels ()
+    void Projection::draw_orientation_labels () const
     {
       glColor4f (1.0, 0.0, 0.0, 1.0);
       std::vector<OrientationLabel> labels;
