@@ -1000,8 +1000,6 @@ namespace MR
         mode_action_group->actions()[1]->setEnabled (mode->features & Mode::MoveTarget);
         mode_action_group->actions()[2]->setEnabled (mode->features & Mode::TiltRotate);
         extra_controls_action->setEnabled (mode->features & Mode::ExtraControls);
-        if (! (mode->features & Mode::ExtraControls) ) 
-          extra_controls_action->setChecked (false);
         if (!mode_action_group->checkedAction()->isEnabled())
           mode_action_group->actions()[0]->setChecked (true);
         if (image()) 

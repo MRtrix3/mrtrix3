@@ -24,7 +24,7 @@
 #define __gui_mrview_mode_volume_h__
 
 #include "app.h"
-#include "gui/mrview/mode/slice.h"
+#include "gui/mrview/mode/base.h"
 
 namespace MR
 {
@@ -35,7 +35,7 @@ namespace MR
       namespace Mode
       {
 
-        class Volume : public Slice
+        class Volume : public Base
         {
           public:
             Volume (Window& parent);

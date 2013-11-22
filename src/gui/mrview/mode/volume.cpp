@@ -38,7 +38,7 @@ namespace MR
       {
 
         Volume::Volume (Window& parent) : 
-          Slice (parent),
+          Base (parent, FocusContrast | MoveTarget | TiltRotate | ExtraControls),
           extra_controls (NULL) { 
           }
 
