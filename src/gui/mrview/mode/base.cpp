@@ -112,7 +112,7 @@ namespace MR
 
             QList<QAction*> tools = window.tools()->actions();
             for (int i = 0; i < tools.size(); ++i) {
-              Tool::Dock* dock = dynamic_cast<Tool::__Action__*>(tools[i])->instance;
+              Tool::Dock* dock = dynamic_cast<Tool::__Action__*>(tools[i])->dock;
               if (dock)
                 dock->tool->drawOverlays (projection);
             }

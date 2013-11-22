@@ -35,18 +35,6 @@ namespace MR
       namespace Tool
       {
 
-        void Dock::showEvent (QShowEvent * event) {
-          widget()->show();
-        }
-
-        void Dock::closeEvent (QCloseEvent * event) {
-          widget()->close();
-        }
-
-        void Dock::hideEvent (QCloseEvent * event) {
-          widget()->close();
-        }
-
         void Base::draw2D (const Projection& transform) { }
 
         void Base::draw3D (const Projection& transform) { }

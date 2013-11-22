@@ -695,7 +695,7 @@ namespace MR
 
       void Window::select_tool_slot (QAction* action)
       {
-        Tool::Dock* tool = dynamic_cast<Tool::__Action__*>(action)->instance;
+        Tool::Dock* tool = dynamic_cast<Tool::__Action__*>(action)->dock;
         if (!tool) {
           tool = dynamic_cast<Tool::__Action__*>(action)->create (*this);
           connect (tool, SIGNAL (visibilityChanged (bool)), action, SLOT (setChecked (bool)));

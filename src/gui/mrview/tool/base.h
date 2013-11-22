@@ -46,13 +46,7 @@ namespace MR
               QDockWidget (name, parent), tool (NULL) { }
 
             Base* tool;
-
-          protected:
-            virtual void showEvent (QShowEvent * event);
-            virtual void closeEvent (QCloseEvent * event);
-            virtual void hideEvent (QCloseEvent * event);
         };
-
 
 
         class Base : public QFrame {
@@ -72,8 +66,6 @@ namespace MR
 
 
 
-
-
         //! \cond skip
         class __Action__ : public QAction
         {
@@ -83,53 +75,51 @@ namespace MR
                         const char* const description,
                         int index) :
               QAction (name, parent),
-              instance (NULL) {
+              dock (NULL) {
               setCheckable (true);
               setShortcut (tr (std::string ("Ctrl+F" + str (index)).c_str()));
               setStatusTip (tr (description));
             }
 
             virtual Dock* create (Window& main_window) = 0;
-            Dock* instance;
+            Dock* dock;
         };
         //! \endcond
 
 
-        template <class T> Dock* create (const QString& text, Window& main_window)
-        {
-          Dock* instance = new Dock (&main_window, text);
-          QScrollArea* scroll = new QScrollArea (instance);
-          instance->tool = new T (main_window, instance);
-          scroll->setWidget (instance->tool);
-          scroll->setWidgetResizable (true);
-          scroll->setHorizontalScrollBarPolicy (Qt::ScrollBarAlwaysOff);
-          scroll->setMinimumWidth (scroll->widget()->minimumWidth());
-          instance->setWidget (scroll);
-          main_window.addDockWidget (Qt::RightDockWidgetArea, instance);
-          instance->show();
-          return instance;
-        }
+        template <class T> 
+          Dock* create (const QString& text, Window& main_window)
+          {
+            Dock* dock = new Dock (&main_window, text);
+            main_window.addDockWidget (Qt::RightDockWidgetArea, dock);
+            dock->tool = new T (main_window, dock);
+            dock->setWidget (dock->tool);
+            dock->setFloating (true);
+            dock->show();
+            return dock;
+          }
 
 
-        template <class T> class Action : public __Action__
+        template <class T> 
+          class Action : public __Action__
         {
           public:
             Action (QActionGroup* parent,
-                    const char* const name,
-                    const char* const description,
-                    int index) :
+                const char* const name,
+                const char* const description,
+                int index) :
               __Action__ (parent, name, description, index) { }
 
             virtual Dock* create (Window& parent) {
-              instance = Tool::create<T> (this->text(), parent);
-              return instance;
+              dock = Tool::create<T> (this->text(), parent);
+              return dock;
             }
         };
 
 
 
 
-    }
+      }
   }
 }
 }
