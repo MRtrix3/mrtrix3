@@ -501,7 +501,9 @@ namespace MR
 
         void ODF::lock_orientation_to_image_slot (int unused) {
           if (lock_orientation_to_image_box->isChecked()) {
-            render_frame->set_rotation (window.get_current_mode()->get_current_projection().modelview());
+            const Projection* proj = window.get_current_mode()->get_current_projection();
+            if (!proj) return;
+            render_frame->set_rotation (proj->modelview());
           }
         }
 

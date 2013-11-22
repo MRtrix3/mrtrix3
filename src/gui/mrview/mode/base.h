@@ -83,7 +83,7 @@ namespace MR
             virtual void tilt_event ();
             virtual void rotate_event ();
             virtual Tool::Dock* get_extra_controls ();
-            virtual Projection& get_current_projection();
+            virtual Projection* get_current_projection();
 
             void paintGL ();
 

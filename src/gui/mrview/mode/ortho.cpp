@@ -118,9 +118,11 @@ namespace MR
 
 
 
-        Projection& Ortho::get_current_projection () 
+        Projection* Ortho::get_current_projection () 
         {
-          return projections[current_plane];
+          if (current_plane < 0 || current_plane > 2)
+            return NULL;
+          return &projections[current_plane];
         }
 
 
@@ -144,15 +146,18 @@ namespace MR
 
         void Ortho::slice_move_event (int x) 
         {
-          move_in_out (x * std::min (std::min (image()->header().vox(0), image()->header().vox(1)), image()->header().vox(2)),
-              get_current_projection());
+          const Projection* proj = get_current_projection();
+          if (!proj) return;
+          move_in_out (x * std::min (std::min (image()->header().vox(0), image()->header().vox(1)), image()->header().vox(2)), *proj);
           updateGL();
         }
 
 
         void Ortho::panthrough_event ()
         {
-          move_in_out_FOV (window.mouse_displacement().y(), get_current_projection());
+          const Projection* proj = get_current_projection();
+          if (!proj) return;
+          move_in_out_FOV (window.mouse_displacement().y(), *proj);
           updateGL();
         }
 

@@ -47,7 +47,7 @@ namespace MR
           glarea()->setCursor (Cursor::crosshair);
         }
 
-        Projection& Base::get_current_projection () { return projection; }
+        Projection* Base::get_current_projection () { return &projection; }
 
         void Base::paintGL ()
         {
@@ -129,9 +129,10 @@ done_painting:
 
         void Base::slice_move_event (int x) 
         {
-          move_in_out (x * std::min (std::min (image()->header().vox(0), image()->header().vox(1)), image()->header().vox(2)),
-              get_current_projection());
-          move_target_to_focus_plane (get_current_projection());
+          const Projection* proj = get_current_projection();
+          if (!proj) return;
+          move_in_out (x * std::min (std::min (image()->header().vox(0), image()->header().vox(1)), image()->header().vox(2)), *proj);
+          move_target_to_focus_plane (*proj);
           updateGL();
         }
 
@@ -140,7 +141,9 @@ done_painting:
 
         void Base::set_focus_event ()
         {
-          set_focus (get_current_projection().screen_to_model (window.mouse_position(), focus()), get_current_projection());
+          const Projection* proj = get_current_projection();
+          if (!proj) return;
+          set_focus (proj->screen_to_model (window.mouse_position(), focus()), *proj);
           updateGL();
         }
 
@@ -158,7 +161,9 @@ done_painting:
 
         void Base::pan_event ()
         {
-          set_target (target() - get_current_projection().screen_to_model_direction (window.mouse_displacement(), target()));
+          const Projection* proj = get_current_projection();
+          if (!proj) return;
+          set_target (target() - proj->screen_to_model_direction (window.mouse_displacement(), target()));
           updateGL();
         }
 
@@ -166,8 +171,10 @@ done_painting:
 
         void Base::panthrough_event ()
         {
-          move_in_out_FOV (window.mouse_displacement().y(), get_current_projection());
-          move_target_to_focus_plane (get_current_projection());
+          const Projection* proj = get_current_projection();
+          if (!proj) return;
+          move_in_out_FOV (window.mouse_displacement().y(), *proj);
+          move_target_to_focus_plane (*proj);
           updateGL();
         }
 
@@ -176,11 +183,13 @@ done_painting:
 
         void Base::tilt_event ()
         {
+          const Projection* proj = get_current_projection();
+          if (!proj) return;
           QPoint dpos = window.mouse_displacement();
           if (dpos.x() == 0 && dpos.y() == 0)
             return;
-          Point<> x = get_current_projection().screen_to_model_direction (dpos, target());
-          Point<> z = get_current_projection().screen_normal();
+          Point<> x = proj->screen_to_model_direction (dpos, target());
+          Point<> z = proj->screen_normal();
           Point<> v (x.cross (z));
           float angle = -ROTATION_INC * Math::sqrt (float (Math::pow2 (dpos.x()) + Math::pow2 (dpos.y())));
           v.normalise();
@@ -198,8 +207,10 @@ done_painting:
 
         void Base::rotate_event ()
         {
-          Point<> x1 (window.mouse_position().x() - get_current_projection().width()/2,
-              window.mouse_position().y() - get_current_projection().height()/2,
+          const Projection* proj = get_current_projection();
+          if (!proj) return;
+          Point<> x1 (window.mouse_position().x() - proj->width()/2,
+              window.mouse_position().y() - proj->height()/2,
               0.0);
 
           if (x1.norm() < 16) 
@@ -214,7 +225,7 @@ done_painting:
 
           Point<> n = x1.cross (x0);
 
-          Point<> v = get_current_projection().screen_normal();
+          Point<> v = proj->screen_normal();
           v.normalise();
 
           Math::Versor<float> q = Math::Versor<float> (n[2], v) * orientation();
@@ -243,6 +254,8 @@ done_painting:
         void Base::reset_view () 
         {
           if (!image()) return;
+          const Projection* proj = get_current_projection();
+          if (!proj) return;
 
           float dim[] = {
             image()->header().dim (0) * image()->header().vox (0),
@@ -258,7 +271,7 @@ done_painting:
 
           Point<> p (image()->header().dim (0)/2.0f, image()->header().dim (1)/2.0f, image()->header().dim (2)/2.0f);
           p = image()->interp.voxel2scanner (p);
-          set_focus (p, get_current_projection());
+          set_focus (p, *proj);
           set_target (p);
           Math::Versor<float> orient;
           orient.from_matrix (image()->header().transform());
