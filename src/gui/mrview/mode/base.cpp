@@ -209,8 +209,8 @@ done_painting:
         {
           const Projection* proj = get_current_projection();
           if (!proj) return;
-          Point<> x1 (window.mouse_position().x() - proj->width()/2,
-              window.mouse_position().y() - proj->height()/2,
+          Point<> x1 (window.mouse_position().x() - proj->x_position() - proj->width()/2,
+              window.mouse_position().y() - proj->y_position() - proj->height()/2,
               0.0);
 
           if (x1.norm() < 16) 
