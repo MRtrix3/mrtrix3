@@ -56,7 +56,6 @@ namespace MR
         const int MoveTarget = 0x00000002;
         const int TiltRotate = 0x00000004;
         const int MoveSlice = 0x00000008;
-        const int ExtraControls = 0x00000010;
         const int ShaderThreshold = 0x10000000;
         const int ShaderTransparency = 0x20000000;
         const int ShaderLighting = 0x40000000;
@@ -82,7 +81,6 @@ namespace MR
             virtual void panthrough_event ();
             virtual void tilt_event ();
             virtual void rotate_event ();
-            virtual Tool::Dock* get_extra_controls ();
             virtual Projection* get_current_projection();
 
             void paintGL ();
@@ -170,7 +168,6 @@ namespace MR
 
           protected:
 
-            void register_extra_controls (Tool::Dock* controls);
             GL::mat4 adjust_projection_matrix (const GL::mat4& Q, int proj) const;
             GL::mat4 adjust_projection_matrix (const GL::mat4& Q) const { 
               return adjust_projection_matrix (Q, plane()); 

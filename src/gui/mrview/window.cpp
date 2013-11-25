@@ -510,15 +510,6 @@ namespace MR
         for (int n = 0; n < mode_action_group->actions().size(); ++n)
           addAction (mode_action_group->actions()[n]);
 
-        extra_controls_action = toolbar->addAction (QIcon (":/controls.svg"),
-            tr ("Additional controls"), this, SLOT (mode_control_slot()));
-        extra_controls_action->setShortcut (tr("0"));
-        extra_controls_action->setToolTip (tr ("Adjust additional viewing parameters"));
-        extra_controls_action->setCheckable (true);
-        extra_controls_action->setChecked (false);
-        extra_controls_action->setEnabled (false);
-        addAction (extra_controls_action);
-
         toolbar->addSeparator();
 
         snap_to_image_action = toolbar->addAction (QIcon (":/lock.svg"), 
@@ -682,6 +673,7 @@ namespace MR
       {
         mode = dynamic_cast<GUI::MRView::Mode::__Action__*> (action)->create (*this);
         set_mode_features();
+        emit modeChanged();
         glarea->updateGL();
       }
 
@@ -791,16 +783,6 @@ namespace MR
         glarea->updateGL();
       }
 
-
-      void Window::mode_control_slot ()
-      {
-        assert (mode->features & Mode::ExtraControls);
-        Tool::Dock* extra_controls = mode->get_extra_controls();
-        if (extra_controls_action->isChecked())
-          extra_controls->show();
-        else 
-          extra_controls->close();
-      }
 
       void Window::reset_view_slot ()
       {
@@ -999,7 +981,6 @@ namespace MR
         mode_action_group->actions()[0]->setEnabled (mode->features & Mode::FocusContrast);
         mode_action_group->actions()[1]->setEnabled (mode->features & Mode::MoveTarget);
         mode_action_group->actions()[2]->setEnabled (mode->features & Mode::TiltRotate);
-        extra_controls_action->setEnabled (mode->features & Mode::ExtraControls);
         if (!mode_action_group->checkedAction()->isEnabled())
           mode_action_group->actions()[0]->setChecked (true);
         if (image()) 

@@ -90,6 +90,31 @@ namespace MR
           connect (max_entry, SIGNAL (valueChanged()), this, SLOT (onSetScaling()));
           layout->addWidget (max_entry, 1, 1);
 
+
+
+          transparency_box = new QGroupBox ("Transparency");
+          layout = new QGridLayout;
+          main_box->addWidget (transparency_box);
+          transparency_box->setLayout (layout);
+
+          layout->addWidget (new QLabel ("transparent"), 0, 0);
+          transparent_intensity = new AdjustButton (this);
+          connect (transparent_intensity, SIGNAL (valueChanged()), this, SLOT (onSetTransparency()));
+          layout->addWidget (transparent_intensity, 0, 1);
+
+          layout->addWidget (new QLabel ("opaque"), 1, 0);
+          opaque_intensity = new AdjustButton (this);
+          connect (opaque_intensity, SIGNAL (valueChanged()), this, SLOT (onSetTransparency()));
+          layout->addWidget (opaque_intensity, 1, 1);
+
+          layout->addWidget (new QLabel ("alpha"), 2, 0);
+          opacity = new QSlider (Qt::Horizontal);
+          opacity->setRange (0, 255);
+          opacity->setValue (255);
+          connect (opacity, SIGNAL (valueChanged(int)), this, SLOT (onSetTransparency()));
+          layout->addWidget (opacity, 2, 1);
+
+
           /*
              threshold_box = new QGroupBox ("Thresholds");
              threshold_box->setCheckable (true);
@@ -116,28 +141,45 @@ namespace MR
           setMinimumSize (main_box->minimumSize());
         }
 
+
+
+
+
         void View::showEvent (QShowEvent* event) 
         {
           connect (&window, SIGNAL (imageChanged()), this, SLOT (onImageChanged()));
           connect (&window, SIGNAL (focusChanged()), this, SLOT (onFocusChanged()));
           connect (&window, SIGNAL (planeChanged()), this, SLOT (onPlaneChanged()));
           connect (&window, SIGNAL (scalingChanged()), this, SLOT (onScalingChanged()));
+          connect (&window, SIGNAL (modeChanged()), this, SLOT (onModeChanged()));
           onPlaneChanged();
           onFocusChanged();
           onScalingChanged();
+          onModeChanged();
           onImageChanged();
         }
+
+
+
+
 
         void View::closeEvent (QCloseEvent* event) 
         {
           window.disconnect (this);
         }
 
+
+
         void View::onImageChanged () 
         {
           set_scaling_rate();
           set_focus_rate();
+          set_transparency_from_image();
         }
+
+
+
+
 
         void View::onFocusChanged () 
         {
@@ -145,6 +187,10 @@ namespace MR
           focus_y->setValue (window.focus()[1]);
           focus_z->setValue (window.focus()[2]);
         }
+
+
+
+
 
         void View::onSetFocus () 
         {
@@ -156,10 +202,40 @@ namespace MR
         }
 
 
+
+
+
+        void View::onModeChanged () 
+        {
+          transparency_box->setEnabled (window.get_current_mode()->features & Mode::ShaderTransparency);
+        }
+
+
+
+
+        void View::onSetTransparency () 
+        {
+          assert (window.image()); 
+          if (transparency_box->isEnabled()) {
+            window.image()->set_transparency (
+                transparent_intensity->value(), 
+                opaque_intensity->value(),
+                float (opacity->value()) / 255.0);
+            window.updateGL();
+          }
+        }
+
+
+
+
+
         void View::onPlaneChanged () 
         {
           plane_combobox->setCurrentIndex (window.plane());
         }
+
+
+
 
 
         void View::onSetPlane (int index) 
@@ -167,6 +243,9 @@ namespace MR
           window.set_plane (index);
           window.updateGL();
         }
+
+
+
 
 
         void View::set_scaling_rate () 
@@ -177,6 +256,10 @@ namespace MR
           max_entry->setRate (rate);
         }
 
+
+
+
+
         void View::set_focus_rate () 
         {
           if (!window.image()) return;
@@ -185,6 +268,37 @@ namespace MR
           focus_y->setRate (rate);
           focus_z->setRate (rate);
         }
+
+
+
+
+
+        void View::set_transparency_from_image () 
+        {
+          if (!finite (window.image()->transparent_intensity) ||
+              !finite (window.image()->opaque_intensity) ||
+              !finite (window.image()->alpha) ) { // reset:
+            if (!finite (window.image()->intensity_min()) || 
+                !finite (window.image()->intensity_max()))
+              return;
+            window.image()->transparent_intensity = window.image()->intensity_min();
+            window.image()->opaque_intensity = window.image()->intensity_max();
+            window.image()->alpha = opacity->value() / 255.0;
+          }
+
+          assert (finite (window.image()->transparent_intensity));
+          assert (finite (window.image()->opaque_intensity));
+          assert (finite (window.image()->alpha));
+
+          transparent_intensity->setValue (window.image()->transparent_intensity);
+          opaque_intensity->setValue (window.image()->opaque_intensity);
+          opacity->setValue (window.image()->alpha * 255.0);
+          float rate = window.image() ? window.image()->scaling_rate() : 0.0;
+          transparent_intensity->setRate (rate);
+          opaque_intensity->setRate (rate);
+        }
+
+
 
 
         void View::onSetScaling ()
@@ -203,6 +317,8 @@ namespace MR
             min_entry->setValue (window.image()->scaling_min());
             max_entry->setValue (window.image()->scaling_max());
             set_scaling_rate();
+            if (transparency_box->isEnabled())
+              set_transparency_from_image();
           }
         }
 

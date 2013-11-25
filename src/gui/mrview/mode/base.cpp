@@ -237,10 +237,6 @@ done_painting:
 
 
 
-        Tool::Dock* Base::get_extra_controls () { 
-          return NULL;
-        }
-
 
 
 
@@ -284,11 +280,6 @@ done_painting:
         }
 
 
-
-        void Base::register_extra_controls (Tool::Dock* controls) 
-        {
-          connect (controls, SIGNAL (visibilityChanged (bool)), window.extra_controls_action, SLOT (setChecked (bool)));
-        }
 
 
 

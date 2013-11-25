@@ -23,7 +23,6 @@
 #include "gui/opengl/lighting.h"
 #include "math/vector.h"
 #include "gui/mrview/mode/volume.h"
-#include "gui/mrview/mode/volume_extra_controls.h"
 #include "gui/mrview/tool/base.h"
 #include "gui/mrview/adjust_button.h"
 #include "gui/dialog/lighting.h"
@@ -38,14 +37,8 @@ namespace MR
       {
 
         Volume::Volume (Window& parent) : 
-          Base (parent, FocusContrast | MoveTarget | TiltRotate | ExtraControls),
-          extra_controls (NULL) { 
+          Base (parent, FocusContrast | MoveTarget | TiltRotate | ShaderTransparency) {
           }
-
-        Volume::~Volume () 
-        { 
-          delete extra_controls;
-        }
 
         void Volume::paint (Projection& projection)
         {
@@ -154,17 +147,6 @@ namespace MR
           draw_orientation_labels (projection);
         }
 
-
-
-
-        Tool::Dock* Volume::get_extra_controls () 
-        {
-          if (!extra_controls) {
-            extra_controls = Tool::create<VolumeExtraControls> ("Controls for volume mode", window);
-            register_extra_controls (extra_controls);
-          }
-          return extra_controls;
-        }
 
 
 

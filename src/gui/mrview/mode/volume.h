@@ -39,13 +39,9 @@ namespace MR
         {
           public:
             Volume (Window& parent);
-            virtual ~Volume ();
 
             virtual void paint (Projection& projection);
-            virtual Tool::Dock* get_extra_controls ();
 
-          protected:
-            Tool::Dock* extra_controls;
         };
 
       }

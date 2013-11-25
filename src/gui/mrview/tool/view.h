@@ -28,6 +28,9 @@
 #include "gui/mrview/tool/base.h"
 
 class QComboBox;
+class QSpinBox;
+class QSlider;
+class QGroupBox;
 
 namespace MR
 {
@@ -60,15 +63,22 @@ namespace MR
             void onSetPlane (int index);
             void onSetScaling ();
             void onScalingChanged ();
+            void onSetTransparency ();
+            void onModeChanged ();
 
           private:
             AdjustButton *focus_x, *focus_y, *focus_z; 
+            QSpinBox **voxel_pos;
             AdjustButton *max_entry, *min_entry;
-            // AdjustButton *lessthan, *greaterthan;
+            AdjustButton *transparent_intensity, *opaque_intensity;
+            AdjustButton *lessthan, *greaterthan;
             QComboBox *plane_combobox;
+            QGroupBox *transparency_box, *thresholding_box;
+            QSlider *opacity;
 
             void set_scaling_rate ();
             void set_focus_rate ();
+            void set_transparency_from_image ();
 
         };
 

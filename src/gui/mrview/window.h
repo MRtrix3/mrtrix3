@@ -135,7 +135,6 @@ namespace MR
           void select_mouse_mode_slot (QAction* action);
           void select_tool_slot (QAction* action);
           void select_plane_slot (QAction* action);
-          void mode_control_slot ();
           void select_colourmap_slot ();
           void invert_scaling_slot ();
           void full_screen_slot ();
