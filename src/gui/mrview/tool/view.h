@@ -58,18 +58,20 @@ namespace MR
           private slots:
             void onImageChanged ();
             void onFocusChanged ();
+            void onFOVChanged ();
             void onSetFocus ();
             void onPlaneChanged ();
             void onSetPlane (int index);
             void onSetScaling ();
             void onScalingChanged ();
             void onSetTransparency ();
+            void onSetFOV ();
             void onModeChanged ();
 
           private:
             AdjustButton *focus_x, *focus_y, *focus_z; 
             QSpinBox **voxel_pos;
-            AdjustButton *max_entry, *min_entry;
+            AdjustButton *max_entry, *min_entry, *fov;
             AdjustButton *transparent_intensity, *opaque_intensity;
             AdjustButton *lessthan, *greaterthan;
             QComboBox *plane_combobox;

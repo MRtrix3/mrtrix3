@@ -29,6 +29,8 @@
 #include "gui/mrview/tool/view.h"
 #include "gui/mrview/adjust_button.h"
 
+#define FOV_RATE_MULTIPLIER 0.01
+
 namespace MR
 {
   namespace GUI
@@ -51,8 +53,17 @@ namespace MR
           main_box->addWidget (plane_combobox);
           connect (plane_combobox, SIGNAL (activated(int)), this, SLOT (onSetPlane(int)));
 
-          QGroupBox* group_box = new QGroupBox ("Focus");
           QGridLayout* layout = new QGridLayout;
+          layout->setContentsMargins (5, 5, 5, 5);
+          layout->setSpacing (5);
+          main_box->addLayout (layout);
+          layout->addWidget (new QLabel ("FOV"), 0, 0);
+          fov = new AdjustButton (this);
+          connect (fov, SIGNAL (valueChanged()), this, SLOT (onSetFOV()));
+          layout->addWidget (fov, 0, 1);
+
+          QGroupBox* group_box = new QGroupBox ("Focus");
+          layout = new QGridLayout;
           layout->setContentsMargins (5, 5, 5, 5);
           layout->setSpacing (5);
           main_box->addWidget (group_box);
@@ -152,11 +163,13 @@ namespace MR
           connect (&window, SIGNAL (planeChanged()), this, SLOT (onPlaneChanged()));
           connect (&window, SIGNAL (scalingChanged()), this, SLOT (onScalingChanged()));
           connect (&window, SIGNAL (modeChanged()), this, SLOT (onModeChanged()));
+          connect (&window, SIGNAL (fieldOfViewChanged()), this, SLOT (onFOVChanged()));
           onPlaneChanged();
           onFocusChanged();
           onScalingChanged();
           onModeChanged();
           onImageChanged();
+          onFOVChanged();
         }
 
 
@@ -186,6 +199,14 @@ namespace MR
           focus_x->setValue (window.focus()[0]);
           focus_y->setValue (window.focus()[1]);
           focus_z->setValue (window.focus()[2]);
+        }
+
+
+
+        void View::onFOVChanged () 
+        {
+          fov->setValue (window.FOV());
+          fov->setRate (FOV_RATE_MULTIPLIER * fov->value());
         }
 
 
@@ -305,6 +326,18 @@ namespace MR
         {
           if (window.image()) {
             window.image()->set_windowing (min_entry->value(), max_entry->value());
+            window.updateGL();
+          }
+        }
+
+
+
+
+        void View::onSetFOV ()
+        {
+          if (window.image()) {
+            window.set_FOV (fov->value());
+            fov->setRate (FOV_RATE_MULTIPLIER * fov->value());
             window.updateGL();
           }
         }
