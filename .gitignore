@@ -6,6 +6,15 @@
 *~
 *.swp
 *.pyc
+*.mif
+*.mih
+*.dat
+*.nii
+*.nii.gz
+*.mri
+*.img
+*.hdr
+*.qrc
 /config.*
 /configure.log
 /bin/
