@@ -22,25 +22,15 @@
 
 
 
-#ifndef __dwi_tractography_sift_multithread_h__
-#define __dwi_tractography_sift_multithread_h__
+#ifndef __dwi_tractography_sift_sort_h__
+#define __dwi_tractography_sift_sort_h__
 
-#include "thread/exec.h"
-#include "thread/mutex.h"
-#include "thread/queue.h"
 
-#include "image/buffer.h"
-#include "image/buffer_scratch.h"
-#include "image/loop.h"
-#include "image/voxel.h"
+#include <set>
+#include <vector>
 
-#include "dwi/fmls.h"
-
-#include "dwi/tractography/mapping/mapper.h"
-#include "dwi/tractography/mapping/voxel.h"
-
+#include "dwi/tractography/SIFT/track_index_range.h"
 #include "dwi/tractography/SIFT/types.h"
-#include "dwi/tractography/SIFT/sifter.h"
 
 
 namespace MR
@@ -54,102 +44,33 @@ namespace MR
 
 
 
-#define TRACK_INDEX_BUFFER_SIZE 10000
 
-
-      // Some processes in SIFT are fast for each streamline, but there are a large number of streamlines, so
-      //   if multi-threading is done on a per-track basis the I/O associated with multi-threading begins to dominate
-      // Instead, the input queue for multi-threading is filled with std::pair<track_t, track_t>'s, where the values
-      //   are the start and end track indices to be processed
-
-      typedef Thread::Queue< TrackIndexRange > TrackIndexRangeQueue;
-
-      class TrackIndexRangeWriter
+      class Cost_fn_gradient_sort
       {
-
         public:
-          TrackIndexRangeWriter (const track_t, const track_t, const std::string& message = std::string ());
+          Cost_fn_gradient_sort (const track_t i, const double g, const double gpul) :
+            tck_index            (i),
+            cost_gradient        (g),
+            grad_per_unit_length (gpul) { }
 
-          bool operator() (TrackIndexRange&);
+          Cost_fn_gradient_sort (const Cost_fn_gradient_sort& that) :
+            tck_index            (that.tck_index),
+            cost_gradient        (that.cost_gradient),
+            grad_per_unit_length (that.grad_per_unit_length) { }
+
+          void set (const track_t i, const double g, const double gpul) { tck_index = i; cost_gradient = g; grad_per_unit_length = gpul; }
+
+          bool operator< (const Cost_fn_gradient_sort& that) const { return grad_per_unit_length < that.grad_per_unit_length; }
+
+          track_t get_tck_index()                const { return tck_index; }
+          double  get_cost_gradient()            const { return cost_gradient; }
+          double  get_gradient_per_unit_length() const { return grad_per_unit_length; }
 
         private:
-          const track_t size, end;
-          track_t start;
-          Ptr<ProgressBar> progress;
-
+          track_t tck_index;
+          double  cost_gradient;
+          double  grad_per_unit_length;
       };
-
-
-
-      class SIFTer;
-
-
-
-      class TrackGradientCalculator
-      {
-
-        public:
-          TrackGradientCalculator (const SIFTer& in, std::vector<Cost_fn_gradient_sort>& v, const double mu, const double r) :
-            sifter (in),
-            gradient_vector (v),
-            current_mu (mu),
-            current_roc_cost (r) { }
-
-          bool operator() (const TrackIndexRange&);
-
-        private:
-          const SIFTer& sifter;
-          std::vector<Cost_fn_gradient_sort>& gradient_vector;
-          const double current_mu, current_roc_cost;
-
-      };
-
-
-
-
-      class FixelRemapper
-      {
-
-          typedef TrackContribution<Track_fixel_contribution> TckCont;
-
-        public:
-          FixelRemapper (SIFTer& s, std::vector<size_t>& r) :
-            sifter   (s),
-            remapper (r) { }
-
-          bool operator() (const TrackIndexRange&);
-
-        private:
-          SIFTer& sifter;
-          std::vector<size_t>& remapper;
-
-
-      };
-
-
-
-      // Receive mapped streamlines, convert to TckCont, allocate memory, assign to contributions[] vector,
-      //   once this is all completed lock a mutex and update the fixel TD's
-      class MappedTrackReceiver
-      {
-
-        public:
-          MappedTrackReceiver (SIFTer& s) :
-            sifter (s),
-            mutex (new Thread::Mutex()) { }
-
-          MappedTrackReceiver (const MappedTrackReceiver& that) :
-            sifter (that.sifter),
-            mutex (that.mutex) { }
-
-          bool operator() (const Mapping::SetDixel&);
-
-        private:
-          SIFTer& sifter;
-          RefPtr<Thread::Mutex> mutex;
-
-      };
-
 
 
 
@@ -165,7 +86,6 @@ namespace MR
       //     is incremented and re-written to the set; this allows multiple streamlines from a single block to
       //     be filtered in a single iteration, provided the gradient is less than that of the candidate streamline
       //     from all other blocks
-
       class MT_gradient_vector_sorter
       {
 
@@ -191,24 +111,18 @@ namespace MR
           }
 
 
-
         private:
           VecType& data;
-
           SetType candidates;
-
-
 
 
           class BlockSender
           {
-
             public:
               BlockSender (const track_t count, const track_t size) :
                 num_tracks (count),
                 block_size (size),
                 counter (0) { }
-
               bool operator() (TrackIndexRange& out)
               {
                 if (counter == num_tracks) {
@@ -220,33 +134,25 @@ namespace MR
                 out.second = counter;
                 return true;
               }
-
             private:
               const track_t num_tracks, block_size;
               track_t counter;
-
           };
 
           class Sorter
           {
-
             public:
               Sorter (VecType& in) :
                 data  (in) { }
-
               Sorter (const Sorter& that) :
                 data  (that.data) { }
-
               bool operator() (const TrackIndexRange&, VecItType&) const;
-
             private:
               VecType& data;
-
           };
 
 
       };
-
 
 
 
@@ -258,4 +164,5 @@ namespace MR
 
 
 #endif
+
 

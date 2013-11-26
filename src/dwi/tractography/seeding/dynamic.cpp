@@ -68,22 +68,20 @@ namespace MR
 
 
       Dynamic::Dynamic (const std::string& in, Image::Buffer<float>& fod_data, const Math::RNG& rng, const DWI::Directions::FastLookupSet& dirs) :
-            Base (in, rng, "dynamic"),
-            Mapping::Fixel_TD_diff_map<Fixel_TD_seed> (fod_data, dirs),
-            total_samples (0),
-            total_seeds   (0),
-            transform (Mapping::Fixel_TD_diff_map<Fixel_TD_seed>::info())
+          Base (in, rng, "dynamic"),
+          SIFT::ModelBase<Fixel_TD_seed> (fod_data, dirs),
+          total_samples (0),
+          total_seeds   (0),
+          transform (SIFT::ModelBase<Fixel_TD_seed>::info())
 #ifdef DYNAMIC_SEED_DEBUGGING
-          , seed_output ("seeds.tck", Tractography::Properties())
+        , seed_output ("seeds.tck", Tractography::Properties())
 #endif
       {
         App::Options opt = App::get_options ("act");
         if (opt.size())
           act = new Dynamic_ACT_additions (opt[0][0]);
-        FMLS::FODQueueWriter<Image::Buffer<float>, Image::BufferScratch<float> > writer (fod_data, proc_mask);
-        FMLS::Segmenter fmls (dirs, Math::SH::LforN (fod_data.dim (3)));
-        fmls.set_dilate_lookup_table (true);
-        Thread::run_queue_threaded_pipe (writer, FMLS::SH_coefs(), fmls, FMLS::FOD_lobes(), *this);
+
+        perform_FOD_segmentation (fod_data);
 
         // Have to set a volume so that Seeding::List works correctly
         for (std::vector<Fixel>::const_iterator i = fixels.begin(); i != fixels.end(); ++i)
@@ -91,8 +89,7 @@ namespace MR
         volume *= (fod_data.vox(0) * fod_data.vox(1) * fod_data.vox(2));
 
         // Prevent divide-by-zero at commencement
-        Mapping::Fixel_TD_diff_map<Fixel_TD_seed>::TD_sum = DYNAMIC_SEED_INITIAL_TD_SUM;
-
+        SIFT::ModelBase<Fixel_TD_seed>::TD_sum = DYNAMIC_SEED_INITIAL_TD_SUM;
       }
 
 
@@ -144,7 +141,6 @@ namespace MR
           const size_t fixel_index = 1 + rng.uniform_int (fixels.size() - 1);
           const Fixel& fixel = fixels[fixel_index];
 
-          // TODO Is rng.uniform() thread-safe?
           if (fixel.get_seed_prob (mu()) > rng.uniform()) {
 
             const Point<int>& v (fixel.get_voxel());
@@ -184,46 +180,16 @@ namespace MR
 
       bool Dynamic::operator() (const FMLS::FOD_lobes& in)
       {
-
-        if (!Image::Nav::within_bounds (accessor, in.vox))
+        if (!ModelBase<Fixel_TD_seed>::operator() (in))
           return false;
         VoxelAccessor v (accessor);
         Image::Nav::set_pos (v, in.vox);
-        if (v.value())
-          throw Exception ("Error: Dynamic seeder has received multiple FOD segmentations for the same voxel!");
-        v.value() = new MapVoxel (in, fixels.size());
-
-        Image::BufferScratch<float>::voxel_type mask (proc_mask);
-        const float weight = Image::Nav::get_value_at_pos (mask, in.vox);
-
-        for (FMLS::FOD_lobes::const_iterator i = in.begin(); i != in.end(); ++i) {
-          fixels.push_back (Fixel (*i, weight, in.vox));
-          FOD_sum += i->get_integral() * weight;
+        if (v.value()) {
+          for (typename Fixel_map<Fixel>::Iterator i = begin (v); i; ++i)
+            i().set_voxel (in.vox);
         }
-
-        return true;
-
-      }
-
-
-
-
-      bool Dynamic::operator() (const Mapping::SetDixel& in)
-      {
-        if (in.empty())
-          return true;
-        float total_contribution = 0.0;
-        for (Mapping::SetDixel::const_iterator i = in.begin(); i != in.end(); ++i) {
-          const size_t fixel_index = Mapping::Fixel_TD_diff_map<Fixel>::dixel2fixel (*i);
-          if (fixel_index) {
-            fixels[fixel_index] += i->get_value();
-            total_contribution += fixels[fixel_index].get_weight() * i->get_value();
-          }
-        }
-        TD_sum += total_contribution;
         return true;
       }
-
 
 
 

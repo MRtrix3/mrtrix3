@@ -26,7 +26,10 @@
 #ifndef __min_mem_array_h__
 #define __min_mem_array_h__
 
-
+#include <algorithm>
+#include <assert.h>
+#include <stddef.h>
+#include <stdint.h>
 
 
 namespace MR {
@@ -37,7 +40,7 @@ namespace MR {
 //   memory overhead is minimal (a pointer and a size_t)
 // std::vector<>'s have some amount of overhead, which can add up if many are being stored
 // Typical usage is to gather the required data using a std::vector<>, and use that vector
-//   to construct a Mon_mem_array<>
+//   to construct a Min_mem_array<>
 
 template <class T>
 class Min_mem_array {
@@ -146,7 +149,7 @@ class Min_mem_array {
         return that.n;
       if (!that.n)
         return false;
-      for (size_t i = 0; i != MIN(n, that.n); ++i) {
+      for (size_t i = 0; i != std::min (n, that.n); ++i) {
         if (d[i] < that.d[i])
           return true;
         if (d[i] > that.d[i])

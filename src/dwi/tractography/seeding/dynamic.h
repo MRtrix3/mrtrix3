@@ -36,9 +36,11 @@
 #include "dwi/tractography/ACT/tissues.h"
 #include "dwi/tractography/ACT/gmwmi.h"
 
-#include "dwi/tractography/mapping/fixel_td_map.h"
+#include "dwi/tractography/mapping/voxel.h"
 
 #include "dwi/tractography/seeding/base.h"
+
+#include "dwi/tractography/SIFT/model_base.h"
 
 #include "dwi/tractography/file.h"
 #include "dwi/tractography/properties.h"
@@ -72,36 +74,22 @@ namespace MR
 
 
 
-
-      class Fixel_TD_seed
+      class Fixel_TD_seed : public SIFT::FixelBase
       {
 
         public:
-          Fixel_TD_seed (const FMLS::FOD_lobe& lobe, const float proc_mask_value, const Point<int>& vox) :
-            FOD (lobe.get_integral()),
-            TD (0.0),
-            weight (proc_mask_value),
-            dir (lobe.get_peak_dir()),
-            voxel (vox) { }
+          Fixel_TD_seed (const FMLS::FOD_lobe& lobe) :
+            SIFT::FixelBase (lobe),
+            voxel (-1, -1, -1) { }
 
           Fixel_TD_seed() :
-            FOD (0.0),
-            TD (0.0),
-            weight (0.0),
-            dir (),
-            voxel (0, 0, 0) { }
+            SIFT::FixelBase (),
+            voxel (-1, -1, -1) { }
 
 
-          double get_FOD()    const { return FOD; }
-          double get_TD()     const { return TD; }
-          float  get_weight() const { return weight; }
-          const Point<float>& get_dir()   const { return dir; }
+          void set_voxel (const Point<int>& i) { voxel = i; }
           const Point<int>&   get_voxel() const { return voxel; }
 
-          Fixel_TD_seed& operator+= (const float i) { TD += i; return *this; }
-
-          float get_diff (const double mu) const { return ((TD * mu) - FOD); }
-          float get_cost (const double mu) const { return (weight * Math::pow2 (get_diff (mu))); }
 
           float get_seed_prob (const double mu) const
           {
@@ -113,10 +101,6 @@ namespace MR
 
 
         private:
-          double FOD;
-          double TD;
-          float weight;
-          Point<float> dir;
           Point<int> voxel;
 
 
@@ -150,7 +134,7 @@ namespace MR
 
 
 
-      class Dynamic : public Base, public Mapping::Fixel_TD_diff_map<Fixel_TD_seed>
+      class Dynamic : public Base, public SIFT::ModelBase<Fixel_TD_seed>
       {
 
         typedef Fixel_TD_seed Fixel;
@@ -166,18 +150,20 @@ namespace MR
 
         bool get_seed (Point<float>&, Point<float>&);
 
-        // Although the FOD_TD_diff_map versions of these functions are OK, the FOD_TD_seed fixel class
-        //   includes the processing mask weight, which is faster to access than the mask image
+        // Although the ModelBase version of this function is OK, the Fixel_TD_seed class
+        //   includes the voxel location for easier determination of seed location
         bool operator() (const FMLS::FOD_lobes&);
-        bool operator() (const Mapping::SetDixel&);
+
+        // Default from ModelBase<> has adequate functionality
+        bool operator() (const Mapping::SetDixel& i) { return SIFT::ModelBase<Fixel_TD_seed>::operator() (i); }
 
 
         private:
         using Fixel_map<Fixel>::accessor;
         using Fixel_map<Fixel>::fixels;
 
-        using Mapping::Fixel_TD_diff_map<Fixel>::mu;
-        using Mapping::Fixel_TD_diff_map<Fixel>::proc_mask;
+        using SIFT::ModelBase<Fixel>::mu;
+        using SIFT::ModelBase<Fixel>::proc_mask;
 
 
         // Want to know statistics on dynamic seeding sampling

@@ -43,7 +43,6 @@
 #include "dwi/tractography/mapping/mapper.h"
 #include "dwi/tractography/mapping/loader.h"
 #include "dwi/tractography/mapping/writer.h"
-#include "dwi/tractography/SIFT/multithread.h"
 
 MRTRIX_APPLICATION
 

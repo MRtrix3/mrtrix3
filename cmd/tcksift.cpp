@@ -26,6 +26,7 @@
 
 #include "image/buffer.h"
 
+#include "dwi/tractography/SIFT/proc_mask.h"
 #include "dwi/tractography/SIFT/sift.h"
 #include "dwi/tractography/SIFT/sifter.h"
 
@@ -65,8 +66,7 @@ void usage ()
                                 "numbers of remaining streamlines; provide as comma-separated list of integers")
     + Argument ("counts").type_sequence_int()
 
-  + FixelMapProcMaskOption
-
+  + SIFTModelProcMaskOption
   + SIFTModelOption
   + SIFTOutputOption
   + SIFTTermOption;
@@ -89,38 +89,15 @@ void run ()
   if (out_debug)
     sifter.output_proc_mask ("proc_mask.mif");
 
-  opt = get_options ("no_dilate_lut");
-  bool dilate_lut = !opt.size();
-  if (dilate_lut)
-    sifter.FMLS_set_dilate_lookup_table();
-  opt = get_options ("make_null_lobes");
-  if (opt.size()) {
-    if (dilate_lut)
-      throw Exception ("Option -make_null_lobes only works if lookup tables are NOT dilated (i.e. also provide option -no_dilate_lut)");
-    sifter.FMLS_set_create_null_lobe();
-  }
-
-  sifter.perform_FOD_segmentation ();
-
-  if (sifter.have_act_data()) {
-    opt = get_options ("no_fod_scaling");
-    if (!opt.size())
-      sifter.scale_FODs_by_GM();
-  }
+  sifter.perform_FOD_segmentation (in_dwi);
+  sifter.scale_FODs_by_GM();
 
   sifter.map_streamlines (argument[0]);
 
   if (out_debug)
     sifter.output_all_debug_images ("before");
 
-  opt = get_options ("remove_untracked");
-  if (opt.size())
-    sifter.set_remove_untracked_fixels (true);
-  opt = get_options ("FOD_int_thresh");
-  if (opt.size())
-    sifter.set_min_FOD_integral (float(opt[0][0]));
-
-  sifter.remove_excluded_fixels();
+  sifter.remove_excluded_fixels ();
 
   opt = get_options ("nofilter");
   if (!opt.size()) {

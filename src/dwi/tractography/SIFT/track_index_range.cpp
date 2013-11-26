@@ -21,11 +21,7 @@
  */
 
 
-
-#include "dwi/tractography/SIFT/types.h"
-
-
-
+#include "dwi/tractography/SIFT/track_index_range.h"
 
 
 namespace MR
@@ -39,9 +35,26 @@ namespace MR
 
 
 
-        float Track_fixel_contribution::scale_to_storage = 0.0;
-        float Track_fixel_contribution::scale_from_storage = 0.0;
-        float Track_fixel_contribution::min_length_for_storage = 0.0;
+      TrackIndexRangeWriter::TrackIndexRangeWriter (const track_t buffer_size, const track_t num_tracks, const std::string& message) :
+        size  (buffer_size),
+        end   (num_tracks),
+        start (0),
+        progress (message.empty() ? NULL : new ProgressBar (message, ceil (float(end) / float(size)))) { }
+
+
+      bool TrackIndexRangeWriter::operator() (TrackIndexRange& out)
+      {
+        if (start >= end)
+          return false;
+        out.first = start;
+        const track_t last = MIN (start + size, end);
+        out.second = last;
+        start = last;
+        if (progress)
+          ++*progress;
+        return true;
+      }
+
 
 
       }

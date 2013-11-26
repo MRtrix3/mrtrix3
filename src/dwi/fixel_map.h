@@ -87,7 +87,7 @@ namespace MR
         Fixel&       operator[] (const size_t i)       { return fixels[i]; }
         const Fixel& operator[] (const size_t i) const { return fixels[i]; }
 
-        bool operator() (const FMLS::FOD_lobes& in);
+        virtual bool operator() (const FMLS::FOD_lobes& in);
 
         const Image::Info& info() const { return info_; }
 

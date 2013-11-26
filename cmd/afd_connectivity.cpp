@@ -24,7 +24,6 @@
 #include "dwi/tractography/file.h"
 #include "dwi/tractography/properties.h"
 #include "dwi/fmls.h"
-#include "dwi/tractography/SIFT/multithread.h"
 #include "thread/queue.h"
 #include "dwi/tractography/mapping/mapper.h"
 #include "dwi/tractography/mapping/loader.h"

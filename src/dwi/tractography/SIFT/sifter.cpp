@@ -1,31 +1,32 @@
-/*
-    Copyright 2011 Brain Research Institute, Melbourne, Australia
-
-    Written by Robert Smith, 2011.
-
-    This file is part of MRtrix.
-
-    MRtrix is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-
-    MRtrix is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
-
- */
-
-
 
 #include "dwi/tractography/SIFT/sifter.h"
-#include "dwi/tractography/mapping/loader.h"
-#include "dwi/fmls.h"
+
+#include <fstream>
+
+#include "point.h"
+#include "progressbar.h"
+#include "ptr.h"
 #include "timer.h"
+
+#include "dwi/tractography/file.h"
+#include "dwi/tractography/properties.h"
+
+#include "dwi/tractography/ACT/tissues.h"
+
+#include "dwi/tractography/mapping/loader.h"
+#include "dwi/tractography/mapping/mapper.h"
+#include "dwi/tractography/mapping/mapping.h"
+
+#include "math/rng.h"
+
+#include "image/buffer.h"
+#include "image/buffer_sparse.h"
+#include "image/loop.h"
+
+
+
+
+
 
 
 namespace MR
@@ -39,177 +40,10 @@ namespace MR
 
 
 
-
-
-
-
-      SIFTer::SIFTer (Image::Buffer<float>& i, const DWI::Directions::FastLookupSet& d) :
-        MapType (i, d),
-        fod_data (i),
-        dirs (d),
-        fmls (dirs, Math::SH::LforN (fod_data.dim (3))),
-        output_debug (false),
-        remove_untracked_fixels (false),
-        min_FOD_integral (0.0),
-        term_number (0),
-        term_ratio (0.0),
-        term_mu (0.0),
-        enforce_quantisation (true)
-      {
-        Track_fixel_contribution::set_scaling (fod_data);
-        H.info() = fod_data.info();
-        H.set_ndim (3);
-      }
-
-
-
-      SIFTer::~SIFTer ()
-      {
-        for (std::vector<TckCont*>::iterator i = contributions.begin(); i != contributions.end(); ++i) {
-          if (*i) {
-            delete *i;
-            *i = NULL;
-          }
-        }
-      }
-
-
-
-      void SIFTer::perform_FOD_segmentation ()
-      {
-        DWI::FMLS::FODQueueWriter<Image::Buffer<float>, Image::BufferScratch<float> > writer (fod_data, proc_mask);
-        Thread::run_queue_threaded_pipe (writer, FMLS::SH_coefs(), fmls, FMLS::FOD_lobes(), *this);
-      }
-
-
-
-      void SIFTer::scale_FODs_by_GM ()
-      {
-        if (!act_4tt)
-          throw Exception ("Can only perform scaling of FODs if ACT image is provided");
-        // Loop through voxels, getting total GM fraction for each, and scale all fixels in each voxel
-        VoxelAccessor v (accessor);
-        Image::BufferScratch<float>::voxel_type v_anat (*act_4tt);
-        FOD_sum = 0.0;
-        Image::LoopInOrder loop (v);
-        for (loop.start (v, v_anat); loop.ok(); loop.next (v, v_anat)) {
-          Tractography::ACT::Tissues tissues (v_anat);
-          const float multiplier = 1.0 - tissues.get_cgm() - (0.5 * tissues.get_sgm());
-          for (Fixel_map<Fixel>::Iterator i = begin(v); i; ++i) {
-            i().scale_FOD (multiplier);
-            FOD_sum += i().get_weight() * i().get_FOD();
-          }
-        }
-      }
-
-
-
-
-      void SIFTer::map_streamlines (const std::string& path)
-      {
-        Tractography::Properties properties;
-        Tractography::Reader<float> file (path, properties);
-
-        if (properties.find ("count") == properties.end())
-          throw Exception ("Input .tck file does not specify number of streamlines (run tckfixcount on your .tck file!)");
-        const track_t num_tracks = to<track_t>(properties["count"]);
-
-        contributions.assign (num_tracks, NULL);
-
-        // Determine appropriate upsampling ratio for mapping
-        // In this particular context want the calculation of length to be precise - 1/10th voxel size at worst
-        float step_size = 0.0;
-        if (properties.find ("output_step_size") != properties.end())
-          step_size = to<float> (properties["output_step_size"]);
-        else
-          step_size = to<float> (properties["step_size"]);
-        const float upsample_ratio = Math::ceil<size_t> (step_size / (minvalue (fod_data.vox(0), fod_data.vox(1), fod_data.vox(2)) * 0.1));
-
-        Mapping::TrackLoader loader (file, num_tracks);
-        Mapping::TrackMapperDixel mapper (H, upsample_ratio, true, dirs);
-        MappedTrackReceiver receiver (*this);
-        Thread::run_batched_queue_custom_threading (loader, 1, Mapping::TrackAndIndex(), 100, mapper, 0, SetDixel(), 100, receiver, 0);
-
-        if (!contributions.back()) {
-          track_t num_tracks = 0, max_index = 0;
-          for (track_t i = 0; i != contributions.size(); ++i) {
-            if (contributions[i]) {
-              ++num_tracks;
-              max_index = std::max (max_index, i);
-            }
-            WARN ("Only " + str (num_tracks) + " tracks read from input track file; expected " + str (contributions.size()));
-            WARN ("(suggest running command tckfixcount on file " + tck_file_path + ")");
-            contributions.resize (max_index + 1);
-          }
-        }
-
-        tck_file_path = path;
-
-        INFO ("Proportionality coefficient before filtering is " + str (mu()));
-      }
-
-
-
-      void SIFTer::remove_excluded_fixels()
-      {
-
-        if (!remove_untracked_fixels && !min_FOD_integral)
-          return;
-
-        std::vector<size_t> fixel_index_mapping (fixels.size(), 0);
-        VoxelAccessor v (accessor);
-        Image::LoopInOrder loop (v);
-
-        std::vector<Fixel> new_fixels;
-        new_fixels.push_back (Fixel());
-        FOD_sum = 0.0;
-
-        for (loop.start (v); loop.ok(); loop.next (v)) {
-          if (v.value()) {
-
-            size_t new_start_index = new_fixels.size();
-
-            for (Fixel_map<Fixel>::ConstIterator i = begin(v); i; ++i) {
-              if ((!remove_untracked_fixels || i().get_TD()) && (i().get_FOD() > min_FOD_integral)) {
-                fixel_index_mapping [size_t (i)] = new_fixels.size();
-                new_fixels.push_back (i());
-                FOD_sum += i().get_weight() * i().get_FOD();
-              }
-            }
-
-            delete v.value();
-
-            if (new_fixels.size() == new_start_index)
-              v.value() = NULL;
-            else
-              v.value() = new MapVoxel (new_start_index, new_fixels.size() - new_start_index);
-
-          }
-        }
-
-        fixels.swap (new_fixels);
-
-        TrackIndexRangeWriter writer (TRACK_INDEX_BUFFER_SIZE, num_tracks(), "Removing excluded fixels...");
-        FixelRemapper remapper (*this, fixel_index_mapping);
-        Thread::run_queue_threaded_sink (writer, TrackIndexRange(), remapper);
-
-        TD_sum = 0.0;
-        for (std::vector<TckCont*>::const_iterator i = contributions.begin(); i != contributions.end(); ++i)
-          TD_sum += (*i)->get_total_contribution();
-
-      }
-
-
-
-
-
-
       void SIFTer::perform_filtering()
       {
 
         enum recalc_reason { UNDEFINED, NONLINEARITY, QUANTISATION, TERM_COUNT, TERM_RATIO, TERM_MU, POS_GRADIENT };
-
-        const track_t num_tracks = contributions.size();
 
         Ptr<std::ofstream> csv_out;
         if (!csv_path.empty()) {
@@ -236,8 +70,8 @@ namespace MR
         std::random_shuffle (noncontributing_indices.begin(), noncontributing_indices.end());
 
         std::vector<Cost_fn_gradient_sort> gradient_vector;
-        gradient_vector.assign (num_tracks, Cost_fn_gradient_sort (num_tracks, std::numeric_limits<double>::max(), std::numeric_limits<double>::max()));
-        unsigned int tracks_remaining = num_tracks;
+        gradient_vector.assign (num_tracks(), Cost_fn_gradient_sort (num_tracks(), std::numeric_limits<double>::max(), std::numeric_limits<double>::max()));
+        unsigned int tracks_remaining = num_tracks();
 
         if (tracks_remaining < term_number)
           throw Exception ("Filtering failed; desired number of filtered streamlines is greater than or equal to the size of the input dataset");
@@ -265,7 +99,7 @@ namespace MR
           const double current_roc_cf = calc_roc_cost_function();
 
 
-          TrackIndexRangeWriter range_writer (TRACK_INDEX_BUFFER_SIZE, num_tracks);
+          TrackIndexRangeWriter range_writer (SIFT_TRACK_INDEX_BUFFER_SIZE, num_tracks());
           TrackGradientCalculator gradient_calculator (*this, gradient_vector, current_mu, current_roc_cf);
           Thread::run_queue_threaded_sink (range_writer, TrackIndexRange(), gradient_calculator);
 
@@ -284,7 +118,7 @@ namespace MR
           // Trying a heuristic for now; go for a sort size of 1000 following initial sort, assuming half of all
           //   remaining streamlines have a negative gradient
 
-          const track_t sort_size = std::min (num_tracks / double(Thread::number_of_threads()), Math::round (2000.0 * double(num_tracks) / double(tracks_remaining)));
+          const track_t sort_size = std::min (num_tracks() / double(Thread::number_of_threads()), Math::round (2000.0 * double(num_tracks()) / double(tracks_remaining)));
           MT_gradient_vector_sorter sorter (gradient_vector, sort_size);
 
           // Remove candidate streamlines one at a time, and correspondingly modify the fixels to which they were attributed
@@ -349,7 +183,7 @@ namespace MR
               const double streamline_density_ratio = candidate->get_cost_gradient() / (sum_contributing_length - contributing_length_removed);
               const double required_cf_change_ratio = - term_ratio * streamline_density_ratio * current_cf;
 
-              const TckCont& candidate_contribution (*contributions[candidate_index]);
+              const TrackContribution& candidate_contribution (*contributions[candidate_index]);
 
               const double old_mu = mu();
               const double new_mu = FOD_sum / (TD_sum - candidate_contribution.get_total_contribution());
@@ -427,7 +261,7 @@ namespace MR
             fprintf (stderr, "\r%s:   %6u           %6u            %9u              %.2f%%  ", App::NAME.c_str(), iteration, removed_this_iteration, tracks_remaining, 100.0 * cf_end_iteration / init_cf);
 
           if (csv_out) {
-            (*csv_out) << str (iteration) << "," << str (removed_this_iteration) << "," << str (num_tracks - tracks_remaining) << "," << str (tracks_remaining) << "," << str (cf_end_iteration) << "," << str (TD_sum) << "," << str (mu()) << ",";
+            (*csv_out) << str (iteration) << "," << str (removed_this_iteration) << "," << str (num_tracks() - tracks_remaining) << "," << str (tracks_remaining) << "," << str (cf_end_iteration) << "," << str (TD_sum) << "," << str (mu()) << ",";
             switch (recalculate) {
               case UNDEFINED:    throw Exception ("Encountered undefined recalculation at end of iteration!");
               case NONLINEARITY: (*csv_out) << "Non-linearity"; break;
@@ -497,30 +331,6 @@ namespace MR
 
 
 
-      void SIFTer::output_all_debug_images (const std::string& prefix) const
-      {
-        output_target_image (prefix + "_target.mif");
-#ifdef SIFTER_OUTPUT_SH_IMAGES
-        output_target_image_sh (prefix + "_target_sh.mif");
-#endif
-#ifdef SIFTER_OUTPUT_FIXEL_IMAGES
-        output_target_image_fixel (prefix + "_target_fixel.msih");
-#endif
-        output_tdi (prefix + "_tdi.mif");
-        if (fmls.get_create_null_lobe())
-          output_tdi_null_lobes (prefix + "_tdi_null_lobes.mif");
-#ifdef SIFTER_OUTPUT_SH_IMAGES
-        output_tdi_sh (prefix + "_tdi_sh.mif");
-#endif
-#ifdef SIFTER_OUTPUT_FIXEL_IMAGES
-        output_tdi_fixel (prefix + "_tdi_fixel.msih");
-#endif
-        output_error_images (prefix + "_max_abs_diff.mif", prefix + "_diff.mif", prefix + "_cost.mif");
-        output_scatterplot (prefix + "_scatterplot.csv");
-        output_fixel_count_image (prefix + "_fixel_count.mif");
-        output_untracked_fixels (prefix + "_untracked_count.mif", prefix + "_untracked_amps.mif");
-      }
-
 
 
 
@@ -533,31 +343,6 @@ namespace MR
         sort (output_at_counts.begin(), output_at_counts.end());
         output_debug = b;
       }
-
-
-
-
-      void SIFTer::check_TD()
-      {
-
-        VAR (TD_sum);
-
-        double sum_from_fixels = 0.0, sum_from_fixels_weighted = 0.0;
-        for (std::vector<Fixel>::const_iterator i = fixels.begin(); i != fixels.end(); ++i) {
-          sum_from_fixels          += i->get_TD();
-          sum_from_fixels_weighted += i->get_TD() * i->get_weight();
-        }
-        VAR (sum_from_fixels);
-        VAR (sum_from_fixels_weighted);
-        double sum_from_tracks = 0.0;
-        for (std::vector<TckCont*>::const_iterator i = contributions.begin(); i != contributions.end(); ++i) {
-          if (*i)
-            sum_from_tracks += (*i)->get_total_contribution();
-        }
-        VAR (sum_from_tracks);
-
-      }
-
 
 
 
@@ -610,16 +395,6 @@ namespace MR
 
       // Convenience functions
 
-      double SIFTer::calc_cost_function() const
-      {
-        const double current_mu = mu();
-        double cost = 0.0;
-        std::vector<Fixel>::const_iterator i = fixels.begin();
-        for (++i; i != fixels.end(); ++i)
-          cost += i->get_cost (current_mu);
-        return cost;
-      }
-
       double SIFTer::calc_roc_cost_function() const
       {
         const double current_mu = mu();
@@ -634,7 +409,7 @@ namespace MR
       {
         if (!contributions[index])
           return std::numeric_limits<double>::max();
-        const TckCont& tck_cont = *contributions[index];
+        const TrackContribution& tck_cont = *contributions[index];
         const double TD_sum_if_removed = TD_sum - tck_cont.get_total_contribution();
         const double mu_if_removed = FOD_sum / TD_sum_if_removed;
         const double mu_change_if_removed = mu_if_removed - current_mu;
@@ -654,297 +429,20 @@ namespace MR
 
 
 
-
-
-      // Output functions - non-essential, mostly debugging outputs
-
-      void SIFTer::output_proc_mask (const std::string& path)
+      bool SIFTer::TrackGradientCalculator::operator() (const TrackIndexRange& in) const
       {
-        Image::Buffer<float> out (path, H);
-        Image::Buffer<float>::voxel_type v_out (out);
-        Image::BufferScratch<float>::voxel_type v_mask (proc_mask);
-        Image::copy (v_mask, v_out);
-      }
-
-      void SIFTer::output_target_image (const std::string& path) const
-      {
-        Image::Buffer<float> out (path, H);
-        Image::Buffer<float>::voxel_type v_out (out);
-        VoxelAccessor v (accessor);
-        Image::LoopInOrder loop (v_out);
-        for (loop.start (v_out, v); loop.ok(); loop.next (v_out, v)) {
-          if (v.value()) {
-            float value = 0.0;
-            for (Fixel_map<Fixel>::ConstIterator i = begin (v); i; ++i)
-              value += i().get_FOD();
-            v_out.value() = value;
+        for (track_t track_index = in.first; track_index != in.second; ++track_index) {
+          if (master.contributions[track_index]) {
+            const double gradient = master.calc_gradient (track_index, current_mu, current_roc_cost);
+            const double grad_per_unit_length = master.contributions[track_index]->get_total_contribution() ? (gradient / master.contributions[track_index]->get_total_contribution()) : 0.0;
+            gradient_vector[track_index].set (track_index, gradient, grad_per_unit_length);
           } else {
-            v_out.value() = NAN;
+            gradient_vector[track_index].set (master.num_tracks(), 0.0, 0.0);
           }
         }
+        return true;
       }
 
-      void SIFTer::output_target_image_sh (const std::string& path) const
-      {
-        const size_t L = 8;
-        const size_t N = Math::SH::NforL (L);
-        Math::SH::aPSF<float> aPSF (L);
-        Image::Header H_sh (H);
-        H_sh.set_ndim (4);
-        H_sh.dim(3) = N;
-        H_sh.stride (3) = 0;
-        Image::Buffer<float> out (path, H_sh);
-        Image::Buffer<float>::voxel_type v_out (out);
-        VoxelAccessor v (accessor);
-        Image::LoopInOrder loop (v_out, 0, 3);
-        for (loop.start (v_out, v); loop.ok(); loop.next (v_out, v)) {
-          if (v.value()) {
-            Math::Vector<float> sum;
-            sum.resize (N, 0.0);
-            for (Fixel_map<Fixel>::ConstIterator i = begin (v); i; ++i) {
-              if (i().get_FOD()) {
-                Math::Vector<float> this_lobe;
-                aPSF (this_lobe, dirs.get_dir (i().get_dir()));
-                for (size_t c = 0; c != N; ++c)
-                  sum[c] += i().get_FOD() * this_lobe[c];
-              }
-            }
-            for (v_out[3] = 0; v_out[3] != (int)N; ++v_out[3])
-              v_out.value() = sum[v_out[3]];
-          } else {
-            for (v_out[3] = 0; v_out[3] != (int)N; ++v_out[3])
-              v_out.value() = NAN;
-          }
-        }
-      }
-
-      void SIFTer::output_target_image_fixel (const std::string& path) const
-      {
-        using Image::Sparse::FixelMetric;
-        Image::Header H_fixel (H);
-        H_fixel.datatype() = DataType::UInt64;
-        H_fixel.datatype().set_byte_order_native();
-        H_fixel[Image::Sparse::name_key] = str(typeid(FixelMetric).name());
-        H_fixel[Image::Sparse::size_key] = str(sizeof(FixelMetric));
-        Image::BufferSparse<FixelMetric> out (path, H_fixel);
-        Image::BufferSparse<FixelMetric>::voxel_type v_out (out);
-        VoxelAccessor v (accessor);
-        Image::LoopInOrder loop (v_out);
-        for (loop.start (v_out, v); loop.ok(); loop.next (v_out, v)) {
-          v_out.value().zero();
-          if (v.value()) {
-            v_out.value().set_size ((*v.value()).num_fixels());
-            size_t index = 0;
-            for (Fixel_map<Fixel>::ConstIterator iter = begin (v); iter; ++iter, ++index) {
-              FixelMetric fixel (dirs.get_dir (iter().get_dir()), iter().get_FOD(), iter().get_FOD());
-              v_out.value()[index] = fixel;
-            }
-          }
-        }
-      }
-
-      void SIFTer::output_tdi (const std::string& path) const
-      {
-        const double current_mu = mu();
-        Image::Buffer<float> out (path, H);
-        Image::Buffer<float>::voxel_type v_out (out);
-        VoxelAccessor v (accessor);
-        Image::LoopInOrder loop (v_out);
-        for (loop.start (v_out, v); loop.ok(); loop.next (v_out, v)) {
-          if (v.value()) {
-            float value = 0.0;
-            for (Fixel_map<Fixel>::ConstIterator i = begin (v); i; ++i)
-              value += i().get_TD();
-            v_out.value() = value * current_mu;
-          } else {
-            v_out.value() = NAN;
-          }
-        }
-      }
-
-      void SIFTer::output_tdi_null_lobes (const std::string& path) const
-      {
-        const double current_mu = mu();
-        Image::Buffer<float> out (path, H);
-        Image::Buffer<float>::voxel_type v_out (out);
-        VoxelAccessor v (accessor);
-        Image::LoopInOrder loop (v_out);
-        for (loop.start (v_out, v); loop.ok(); loop.next (v_out, v)) {
-          if (v.value()) {
-            float value = 0.0;
-            for (Fixel_map<Fixel>::ConstIterator i = begin (v); i; ++i) {
-              if (!i().get_FOD())
-                value += i().get_TD();
-            }
-            v_out.value() = value * current_mu;
-          } else {
-            v_out.value() = NAN;
-          }
-        }
-      }
-
-      void SIFTer::output_tdi_sh (const std::string& path) const
-      {
-        const double current_mu = mu();
-        const size_t L = 8;
-        const size_t N = Math::SH::NforL (L);
-        Math::SH::aPSF<float> aPSF (L);
-        Image::Header H_sh (H);
-        H_sh.set_ndim (4);
-        H_sh.dim(3) = N;
-        H_sh.stride (3) = 0;
-        Image::Buffer<float> out (path, H_sh);
-        Image::Buffer<float>::voxel_type v_out (out);
-        VoxelAccessor v (accessor);
-        Image::LoopInOrder loop (v_out, 0, 3);
-        for (loop.start (v_out, v); loop.ok(); loop.next (v_out, v)) {
-          if (v.value()) {
-            Math::Vector<float> sum;
-            sum.resize (N, 0.0);
-            for (Fixel_map<Fixel>::ConstIterator i = begin (v); i; ++i) {
-              if (i().get_FOD()) {
-                Math::Vector<float> this_lobe;
-                aPSF (this_lobe, dirs.get_dir (i().get_dir()));
-                for (size_t c = 0; c != N; ++c)
-                  sum[c] += i().get_TD() * this_lobe[c];
-              }
-              for (v_out[3] = 0; v_out[3] != (int)N; ++v_out[3])
-                v_out.value() = sum[v_out[3]] * current_mu;
-            }
-          } else {
-            for (v_out[3] = 0; v_out[3] != (int)N; ++v_out[3])
-              v_out.value() = NAN;
-          }
-        }
-      }
-
-      void SIFTer::output_tdi_fixel (const std::string& path) const
-      {
-        using Image::Sparse::FixelMetric;
-        const double current_mu = mu();
-        Image::Header H_fixel (H);
-        H_fixel.datatype() = DataType::UInt64;
-        H_fixel.datatype().set_byte_order_native();
-        H_fixel[Image::Sparse::name_key] = str(typeid(FixelMetric).name());
-        H_fixel[Image::Sparse::size_key] = str(sizeof(FixelMetric));
-        Image::BufferSparse<FixelMetric> out (path, H_fixel);
-        Image::BufferSparse<FixelMetric>::voxel_type v_out (out);
-        VoxelAccessor v (accessor);
-        Image::LoopInOrder loop (v_out);
-        for (loop.start (v_out, v); loop.ok(); loop.next (v_out, v)) {
-          v_out.value().zero();
-          if (v.value()) {
-            v_out.value().set_size ((*v.value()).num_fixels());
-            size_t index = 0;
-            for (Fixel_map<Fixel>::ConstIterator iter = begin (v); iter; ++iter, ++index) {
-              FixelMetric fixel (dirs.get_dir (iter().get_dir()), iter().get_FOD(), current_mu * iter().get_TD());
-              v_out.value()[index] = fixel;
-            }
-          }
-        }
-      }
-
-      void SIFTer::output_error_images (const std::string& max_abs_diff_path, const std::string& diff_path, const std::string& cost_path) const
-      {
-        const double current_mu = mu();
-        Image::Buffer<float> max_abs_diff (max_abs_diff_path, H), diff (diff_path, H), cost (cost_path, H);
-        Image::Buffer<float>::voxel_type v_max_abs_diff (max_abs_diff), v_diff (diff), v_cost (cost);
-        VoxelAccessor v (accessor);
-        Image::LoopInOrder loop (v);
-        for (loop.start (v); loop.ok(); loop.next (v)) {
-          v_max_abs_diff[2] = v_diff[2] = v_cost[2] = v[2];
-          v_max_abs_diff[1] = v_diff[1] = v_cost[1] = v[1];
-          v_max_abs_diff[0] = v_diff[0] = v_cost[0] = v[0];
-          if (v.value()) {
-            double max_abs_diff = 0.0, diff = 0.0, cost = 0.0;
-            for (Fixel_map<Fixel>::ConstIterator i = begin (v); i; ++i) {
-              const double this_diff = i().get_diff (current_mu);
-              max_abs_diff = MAX (max_abs_diff, fabs (this_diff));
-              diff += this_diff;
-              cost += i().get_cost (current_mu) * i().get_weight();
-            }
-            v_max_abs_diff.value() = max_abs_diff;
-            v_diff.value() = diff;
-            v_cost.value() = cost;
-          } else {
-            v_max_abs_diff.value() = NAN;
-            v_diff.value() = NAN;
-            v_cost.value() = NAN;
-          }
-        }
-      }
-
-      void SIFTer::output_scatterplot (const std::string& path) const
-      {
-        std::ofstream out (path.c_str(), std::ios_base::trunc);
-        const double current_mu = mu();
-        out << "FOD amplitude,Track density (unscaled),Track density (scaled),Weight,\n";
-        for (std::vector<Fixel>::const_iterator i = fixels.begin(); i != fixels.end(); ++i)
-          out << str (i->get_FOD()) << "," << str (i->get_TD()) << "," << str (i->get_TD() * current_mu) << "," << str (i->get_weight()) << ",\n";
-        out.close();
-      }
-
-      void SIFTer::output_fixel_count_image (const std::string& path) const
-      {
-        Image::Header H_out (H);
-        H_out.datatype() = DataType::UInt8;
-        Image::Buffer<uint8_t> image (path, H_out);
-        Image::Buffer<uint8_t>::voxel_type v_out (image);
-        VoxelAccessor v (accessor);
-        Image::LoopInOrder loop (v_out);
-        for (loop.start (v_out, v); loop.ok(); loop.next (v_out, v)) {
-          if (v.value())
-            v_out.value() = (*v.value()).num_fixels();
-          else
-            v_out.value() = 0;
-        }
-      }
-
-      void SIFTer::output_non_contributing_streamlines (const std::string& input_path, const std::string& output_path) const
-      {
-        Tractography::Properties p;
-        Tractography::Reader<float> reader (input_path, p);
-        p["total_count"] = contributions.size();
-        Tractography::Writer<float> writer (output_path, p);
-        std::vector< Point<float> > tck;
-        ProgressBar progress ("Writing non-contributing streamlines output file...", contributions.size());
-        track_t tck_counter = 0;
-        while (reader.next (tck) && tck_counter < contributions.size()) {
-          if (contributions[tck_counter] && !contributions[tck_counter++]->get_total_contribution())
-            writer.append (tck);
-          ++progress;
-        }
-        reader.close();
-      }
-
-      void SIFTer::output_untracked_fixels (const std::string& path_count, const std::string& path_amps) const
-      {
-        Image::Header H_uint8_t (H);
-        H_uint8_t.datatype() = DataType::UInt8;
-        Image::Buffer<uint8_t> out_count (path_count, H_uint8_t);
-        Image::Buffer<float>   out_amps (path_amps, H);
-        Image::Buffer<uint8_t>::voxel_type v_out_count (out_count);
-        Image::Buffer<float>  ::voxel_type v_out_amps  (out_amps);
-        VoxelAccessor v (accessor);
-        Image::LoopInOrder loop (v_out_count);
-        for (loop.start (v_out_count, v_out_amps, v); loop.ok(); loop.next (v_out_count, v_out_amps, v)) {
-          if (v.value()) {
-            uint8_t count = 0;
-            float sum = 0.0;
-            for (Fixel_map<Fixel>::ConstIterator i = begin (v); i; ++i) {
-              if (!i().get_TD()) {
-                ++count;
-                sum += i().get_FOD();
-              }
-            }
-            v_out_count.value() = count;
-            v_out_amps .value() = sum;
-          } else {
-            v_out_count.value() = 0;
-            v_out_amps .value() = NAN;
-          }
-        }
-      }
 
 
 
