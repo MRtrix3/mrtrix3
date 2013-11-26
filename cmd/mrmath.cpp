@@ -21,12 +21,18 @@
 */
 
 #include "app.h"
+#include "progressbar.h"
+#include "ptr.h"
 #include "image/buffer.h"
 #include "image/buffer_preload.h"
+#include "image/buffer_scratch.h"
+#include "image/iterator.h"
 #include "image/threaded_loop.h"
 #include "image/utils.h"
 #include "image/voxel.h"
+#include "math/math.h"
 
+#include <limits>
 #include <vector>
 
 MRTRIX_APPLICATION
@@ -146,6 +152,7 @@ class Var {
 
 class Std : public Var {
   public:
+    Std() : Var() { }
     value_type result () const { return Math::sqrt (Var::result()); }
 };
 
@@ -185,6 +192,7 @@ class AbsMax {
 class MagMax {
   public:
     MagMax () : max (-std::numeric_limits<value_type>::infinity()) { }
+    MagMax (const int i) : max (-std::numeric_limits<value_type>::infinity()) { }
     void operator() (value_type val) { 
       if (finite (val) && Math::abs(val) > max) 
         max = val;
@@ -220,42 +228,58 @@ class AxisKernel {
 
 
 
-template <class Operation>
-class ImageKernel {
+class ImageKernelBase {
   public:
-    ImageKernel (std::vector<BufferType*>& input_buffers, BufferType& output_buffer) :
-        out (output_buffer)
-    {
-      for (std::vector<BufferType*>::const_iterator i = input_buffers.begin(); i != input_buffers.end(); ++i)
-        inputs.push_back (new VoxelType (**i));
-    }
-    ImageKernel (const ImageKernel& that) :
-        out (that.out)
-    {
-      inputs.reserve (that.inputs.size());
-      for (std::vector<VoxelType*>::const_iterator i = that.inputs.begin(); i != that.inputs.end(); ++i)
-        inputs.push_back (new VoxelType (**i));
-    }
-    ~ImageKernel()
-    {
-      for (std::vector<VoxelType*>::iterator i = inputs.begin(); i != inputs.end(); ++i) {
-        delete *i; *i = NULL;
-      }
-    }
-    void operator() (const Image::Iterator& pos) {
-      Operation op;
-      for (std::vector<VoxelType*>::iterator i = inputs.begin(); i != inputs.end(); ++i) {
-        Image::voxel_assign (**i, pos);
-        op ((*i)->value());
-      }
-      Image::voxel_assign (out, pos);
-      out.value() = op.result();
-    }
+    ImageKernelBase (const std::string& path) :
+      output_path (path) { }
+    virtual ~ImageKernelBase() { }
+    virtual void process (const Image::Header& image_in) = 0;
   protected:
-    std::vector<VoxelType*> inputs;
-    VoxelType out;
+    const std::string output_path;
 };
 
+
+
+template <class Operation>
+class ImageKernel : public ImageKernelBase {
+  protected:
+    class InitFunctor    { public: void operator() (Operation&  out)                const { out = Operation(); } };
+    class ProcessFunctor { public: void operator() (Operation&  out, value_type in) const { out (in); } };
+    class ResultFunctor  { public: void operator() (value_type& out, Operation& in) const { out = in.result(); } };
+
+  public:
+    ImageKernel (const Image::Header& header, const std::string& path) :
+        ImageKernelBase (path),
+        header (header),
+        buffer (header)
+    {
+      typename Image::BufferScratch<Operation>::voxel_type v_buffer (buffer);
+      Image::ThreadedLoop (v_buffer).run_foreach (InitFunctor(), v_buffer, Output);
+    }
+
+    ~ImageKernel()
+    {
+      Image::Buffer<value_type> out (output_path, header);
+      Image::Buffer<value_type>::voxel_type v_out (out);
+      typename Image::BufferScratch<Operation>::voxel_type v_buffer (buffer);
+      Image::ThreadedLoop (v_buffer).run_foreach (ResultFunctor(), v_out, Output, v_buffer, Input);
+    }
+
+    void process (const Image::Header& image_in)
+    {
+      Image::Buffer<value_type> in (image_in);
+      Image::Buffer<value_type>::voxel_type v_in (in);
+      for (size_t axis = buffer.ndim(); axis < v_in.ndim(); ++axis)
+        v_in[axis] = 0;
+      typename Image::BufferScratch<Operation>::voxel_type v_buffer (buffer);
+      Image::ThreadedLoop (v_buffer).run_foreach (ProcessFunctor(), v_buffer, Input | Output, v_in, Input);
+    }
+
+  protected:
+    const Image::Header& header;
+    Image::BufferScratch<Operation> buffer;
+
+};
 
 
 
@@ -304,38 +328,60 @@ void run ()
     if (num_inputs < 2)
       throw Exception ("mrmath requires either multiple input images, or the -axis option to be provided");
 
-    std::vector<BufferType*> buffers;
-    for (size_t index = 0; index != num_inputs; ++index)
-      buffers.push_back (new BufferType (argument[index]));
+    // Pre-load all image headers
+    VecPtr<Image::Header> headers_in;
 
-    Image::Header header_out (*buffers.front());
-    header_out.datatype() = DataType::Float32;
-    for (size_t index = 1; index != buffers.size(); ++index) {
-      if (!Image::dimensions_match (header_out, *buffers[index]))
-        throw Exception ("Input images must have the same dimensions!");
+    // Header of first input image is the template to which all other input images are compared
+    headers_in.push_back (new Image::Header (argument[0]));
+    Image::Header header (*headers_in[0]);
+
+    // Wipe any excess unary-dimensional axes
+    while (header.dim (header.ndim() - 1) == 1)
+      header.set_ndim (header.ndim() - 1);
+
+    // Verify that dimensions of all input images adequately match
+    for (size_t i = 1; i != num_inputs; ++i) {
+      const std::string path = argument[i];
+      headers_in.push_back (new Image::Header (path));
+      const Image::Header& temp (*headers_in[i]);
+      if (temp.ndim() < header.ndim())
+        throw Exception ("Image " + path + " has fewer axes than first imput image " + header.name());
+      for (size_t axis = 0; axis != header.ndim(); ++axis) {
+        if (temp.dim(axis) != header.dim(axis))
+          throw Exception ("Dimensions of image " + path + " do not match those of first input image " + header.name());
+      }
+      for (size_t axis = header.ndim(); axis != temp.ndim(); ++axis) {
+        if (temp.dim(axis) != 1)
+          throw Exception ("Image " + path + " has axis with non-unary dimension beyond first input image " + header.name());
+      }
     }
 
-    BufferType buffer_out (output_path, header_out);
-
-    Image::ThreadedLoop loop (std::string("computing ") + operations[op] + " across " + str(num_inputs) + " images...", buffer_out);
-
+    // Instantiate a kernel depending on the operation requested
+    Ptr<ImageKernelBase> kernel;
     switch (op) {
-      case 0: loop.run (ImageKernel<Mean>   (buffers, buffer_out)); return;
-      case 1: loop.run (ImageKernel<Sum>    (buffers, buffer_out)); return;
-      case 2: loop.run (ImageKernel<RMS>    (buffers, buffer_out)); return;
-      case 3: loop.run (ImageKernel<Var>    (buffers, buffer_out)); return;
-      case 4: loop.run (ImageKernel<Std>    (buffers, buffer_out)); return;
-      case 5: loop.run (ImageKernel<Min>    (buffers, buffer_out)); return;
-      case 6: loop.run (ImageKernel<Max>    (buffers, buffer_out)); return;
-      case 7: loop.run (ImageKernel<AbsMax> (buffers, buffer_out)); return;
-      case 8: loop.run (ImageKernel<MagMax> (buffers, buffer_out)); return;
+      case 0: kernel = new ImageKernel<Mean>   (header, output_path); break;
+      case 1: kernel = new ImageKernel<Sum>    (header, output_path); break;
+      case 2: kernel = new ImageKernel<RMS>    (header, output_path); break;
+      case 3: kernel = new ImageKernel<Var>    (header, output_path); break;
+      case 4: kernel = new ImageKernel<Std>    (header, output_path); break;
+      case 5: kernel = new ImageKernel<Min>    (header, output_path); break;
+      case 6: kernel = new ImageKernel<Max>    (header, output_path); break;
+      case 7: kernel = new ImageKernel<AbsMax> (header, output_path); break;
+      case 8: kernel = new ImageKernel<MagMax> (header, output_path); break;
       default: assert (0);
     }
 
-    while (buffers.size()) {
-      delete buffers.back();
-      buffers.pop_back();
+    // Feed the input images to the kernel one at a time
+    {
+      ProgressBar progress (std::string("computing ") + operations[op] + " across " 
+          + str(headers_in.size()) + " images...", num_inputs);
+      for (size_t i = 0; i != headers_in.size(); ++i) {
+        kernel->process (*headers_in[i]);
+        ++progress;
+      }
     }
+
+    // Image output is handled by the kernel destructor
 
   }
 
