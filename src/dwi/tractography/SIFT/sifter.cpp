@@ -124,7 +124,6 @@ namespace MR
           // Remove candidate streamlines one at a time, and correspondingly modify the fixels to which they were attributed
           unsigned int removed_this_iteration = 0;
           recalculate = UNDEFINED;
-          std::vector<Cost_fn_gradient_sort>::const_iterator candidate (gradient_vector.begin());
           do {
 
             if (!output_at_counts.empty() && (tracks_remaining == output_at_counts.back())) {
@@ -170,15 +169,15 @@ namespace MR
 
               const track_t candidate_index = candidate->get_tck_index();
 
-              assert (candidate_index != num_tracks);
-              assert (contributions[candidate_index]);
-
               if (candidate->get_cost_gradient() >= 0.0) {
                 recalculate = POS_GRADIENT;
                 if (!removed_this_iteration)
                   another_iteration = false;
                 goto end_iteration;
               }
+
+              assert (candidate_index != num_tracks());
+              assert (contributions[candidate_index]);
 
               const double streamline_density_ratio = candidate->get_cost_gradient() / (sum_contributing_length - contributing_length_removed);
               const double required_cf_change_ratio = - term_ratio * streamline_density_ratio * current_cf;
@@ -198,7 +197,8 @@ namespace MR
                 const float length = fixel_cont.get_value();
                 Fixel& this_fixel = fixels[fixel_cont.get_fixel_index()];
                 quantisation += this_fixel.calc_quantisation (old_mu, length);
-                const float delta_gradient = (this_fixel.remove_TD (length, new_mu, old_mu) - (this_fixel.get_d_cost_d_mu (old_mu) * mu_change));
+                float delta_gradient = -(this_fixel.get_d_cost_d_mu (old_mu) * mu_change);
+                delta_gradient += this_fixel.remove_TD (length, new_mu, old_mu);
                 this_actual_cf_change += delta_gradient;
               }
 

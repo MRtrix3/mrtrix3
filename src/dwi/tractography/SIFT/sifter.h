@@ -59,7 +59,6 @@ namespace MR
       {
 
         protected:
-
         typedef Model<Fixel> MapType;
         typedef Fixel_map<Fixel>::MapVoxel MapVoxel;
         typedef Fixel_map<Fixel>::VoxelAccessor VoxelAccessor;
@@ -83,10 +82,10 @@ namespace MR
 
 
         // CONFIGURATION OPTIONS
-        void set_term_number             (const track_t i)      { term_number = i; }
-        void set_term_ratio              (const float i)        { term_ratio = i; }
-        void set_term_mu                 (const float i)        { term_mu = i; }
-        void set_csv_path                (const std::string& i) { csv_path = i; }
+        void set_term_number (const track_t i)      { term_number = i; }
+        void set_term_ratio  (const float i)        { term_ratio = i; }
+        void set_term_mu     (const float i)        { term_mu = i; }
+        void set_csv_path    (const std::string& i) { csv_path = i; }
 
         void set_regular_outputs (const std::vector<int>&, const bool);
 

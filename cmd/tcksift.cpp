@@ -21,10 +21,13 @@
  */
 
 
+#include <vector>
 
 #include "app.h"
 
 #include "image/buffer.h"
+
+#include "dwi/directions/set.h"
 
 #include "dwi/tractography/SIFT/proc_mask.h"
 #include "dwi/tractography/SIFT/sift.h"
