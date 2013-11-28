@@ -126,27 +126,26 @@ namespace MR
           layout->addWidget (opacity, 2, 1);
 
 
-          /*
-             threshold_box = new QGroupBox ("Thresholds");
-             threshold_box->setCheckable (true);
-             threshold_box->setChecked (false);
-             connect (threshold_box, SIGNAL (toggled(bool)), this, SLOT (onSetThreshold()));
-             layout = new QGridLayout;
-             main_box->addWidget (threshold_box);
-             threshold_box->setLayout (layout);
+          threshold_box = new QGroupBox ("Thresholds");
+          layout = new QGridLayout;
+          main_box->addWidget (threshold_box);
+          threshold_box->setLayout (layout);
 
-             layout->addWidget (new QLabel (">"), 0, 0);
-             lessthan = new AdjustButton (this);
-             lessthan->setValue (window.image() ? window.image()->intensity_min() : 0.0);
-             connect (lessthan, SIGNAL (valueChanged()), this, SLOT (onSetThreshold()));
-             layout->addWidget (lessthan, 0, 1);
+          lower_threshold_check_box = new QCheckBox ("lower", this);
+          layout->addWidget (lower_threshold_check_box, 0, 0);
+          lower_threshold = new AdjustButton (this);
+          lower_threshold->setValue (window.image() ? window.image()->intensity_min() : 0.0);
+          connect (lower_threshold_check_box, SIGNAL (clicked(bool)), this, SLOT (onCheckThreshold(bool)));
+          connect (lower_threshold, SIGNAL (valueChanged()), this, SLOT (onSetTransparency()));
+          layout->addWidget (lower_threshold, 0, 1);
 
-             layout->addWidget (new QLabel ("<"), 1, 0);
-             greaterthan = new AdjustButton (this);
-             greaterthan->setValue (window.image() ? window.image()->intensity_max() : 1.0);
-             connect (greaterthan, SIGNAL (valueChanged()), this, SLOT (onSetThreshold()));
-             layout->addWidget (greaterthan, 1, 1);
-           */
+          upper_threshold_check_box = new QCheckBox ("upper", this);
+          layout->addWidget (upper_threshold_check_box, 1, 0);
+          upper_threshold = new AdjustButton (this);
+          upper_threshold->setValue (window.image() ? window.image()->intensity_max() : 1.0);
+          connect (upper_threshold_check_box, SIGNAL (clicked(bool)), this, SLOT (onCheckThreshold(bool)));
+          connect (upper_threshold, SIGNAL (valueChanged()), this, SLOT (onSetTransparency()));
+          layout->addWidget (upper_threshold, 1, 1);
 
           main_box->addStretch ();
           setMinimumSize (main_box->minimumSize());
@@ -185,9 +184,17 @@ namespace MR
 
         void View::onImageChanged () 
         {
-          set_scaling_rate();
-          set_focus_rate();
+          onScalingChanged();
+
+          float rate = window.image()->focus_rate();
+          focus_x->setRate (rate);
+          focus_y->setRate (rate);
+          focus_z->setRate (rate);
+
           set_transparency_from_image();
+
+          lower_threshold_check_box->setChecked (window.image()->use_discard_lower());
+          upper_threshold_check_box->setChecked (window.image()->use_discard_upper());
         }
 
 
@@ -229,6 +236,7 @@ namespace MR
         void View::onModeChanged () 
         {
           transparency_box->setEnabled (window.get_current_mode()->features & Mode::ShaderTransparency);
+          threshold_box->setEnabled (window.get_current_mode()->features & Mode::ShaderTransparency);
         }
 
 
@@ -237,13 +245,12 @@ namespace MR
         void View::onSetTransparency () 
         {
           assert (window.image()); 
-          if (transparency_box->isEnabled()) {
-            window.image()->set_transparency (
-                transparent_intensity->value(), 
-                opaque_intensity->value(),
-                float (opacity->value()) / 255.0);
-            window.updateGL();
-          }
+          window.image()->transparent_intensity = transparent_intensity->value();
+          window.image()->opaque_intensity = opaque_intensity->value();
+          window.image()->alpha = float (opacity->value()) / 255.0;
+          window.image()->lessthan = lower_threshold->value(); 
+          window.image()->greaterthan = upper_threshold->value(); 
+          window.updateGL();
         }
 
 
@@ -268,27 +275,16 @@ namespace MR
 
 
 
-
-        void View::set_scaling_rate () 
+        void View::onCheckThreshold (bool) 
         {
-          if (!window.image()) return;
-          float rate = window.image()->scaling_rate();
-          min_entry->setRate (rate);
-          max_entry->setRate (rate);
+          assert (window.image());
+          assert (threshold_box->isEnabled());
+          window.image()->set_use_discard_lower (lower_threshold_check_box->isChecked());
+          window.image()->set_use_discard_upper (upper_threshold_check_box->isChecked());
+          window.updateGL();
         }
 
 
-
-
-
-        void View::set_focus_rate () 
-        {
-          if (!window.image()) return;
-          float rate = window.image()->focus_rate();
-          focus_x->setRate (rate);
-          focus_y->setRate (rate);
-          focus_z->setRate (rate);
-        }
 
 
 
@@ -298,25 +294,44 @@ namespace MR
         {
           if (!finite (window.image()->transparent_intensity) ||
               !finite (window.image()->opaque_intensity) ||
-              !finite (window.image()->alpha) ) { // reset:
+              !finite (window.image()->alpha) ||
+              !finite (window.image()->lessthan) ||
+              !finite (window.image()->greaterthan)) { // reset:
             if (!finite (window.image()->intensity_min()) || 
                 !finite (window.image()->intensity_max()))
               return;
-            window.image()->transparent_intensity = window.image()->intensity_min();
-            window.image()->opaque_intensity = window.image()->intensity_max();
-            window.image()->alpha = opacity->value() / 255.0;
+
+            if (!finite (window.image()->transparent_intensity))
+              window.image()->transparent_intensity = window.image()->intensity_min();
+            if (!finite (window.image()->opaque_intensity))
+              window.image()->opaque_intensity = window.image()->intensity_max();
+            if (!finite (window.image()->alpha))
+              window.image()->alpha = opacity->value() / 255.0;
+            if (!finite (window.image()->lessthan))
+              window.image()->lessthan = window.image()->intensity_min();
+            if (!finite (window.image()->greaterthan))
+              window.image()->greaterthan = window.image()->intensity_max();
           }
 
           assert (finite (window.image()->transparent_intensity));
           assert (finite (window.image()->opaque_intensity));
           assert (finite (window.image()->alpha));
+          assert (finite (window.image()->lessthan));
+          assert (finite (window.image()->greaterthan));
 
           transparent_intensity->setValue (window.image()->transparent_intensity);
           opaque_intensity->setValue (window.image()->opaque_intensity);
           opacity->setValue (window.image()->alpha * 255.0);
+          lower_threshold->setValue (window.image()->lessthan);
+          upper_threshold->setValue (window.image()->greaterthan);
+          lower_threshold_check_box->setChecked (window.image()->use_discard_lower());
+          upper_threshold_check_box->setChecked (window.image()->use_discard_upper());
+
           float rate = window.image() ? window.image()->scaling_rate() : 0.0;
           transparent_intensity->setRate (rate);
           opaque_intensity->setRate (rate);
+          lower_threshold->setRate (rate);
+          upper_threshold->setRate (rate);
         }
 
 
@@ -349,9 +364,9 @@ namespace MR
           if (window.image()) {
             min_entry->setValue (window.image()->scaling_min());
             max_entry->setValue (window.image()->scaling_max());
-            set_scaling_rate();
-            if (transparency_box->isEnabled())
-              set_transparency_from_image();
+            float rate = window.image()->scaling_rate();
+            min_entry->setRate (rate);
+            max_entry->setRate (rate);
           }
         }
 

@@ -69,19 +69,23 @@ namespace MR
           std::string fragment_shader_source = 
             "uniform sampler3D tex;\n"
             "in vec3 texcoord;\n"
-            "uniform float offset, scale, alpha_scale, alpha_offset, alpha;\n"
+            "uniform float offset, scale, alpha_scale, alpha_offset, alpha";
+          if (image()->flags() & DiscardLower) fragment_shader_source += ", lower";
+          if (image()->flags() & DiscardUpper) fragment_shader_source += ", upper";
+
+            fragment_shader_source += ";\n"
             "uniform vec3 ray;\n"
             "out vec4 final_color;\n"
             "void main () {\n"
             "  final_color = vec4 (0.0);\n"
             "  vec3 coord = texcoord + ray * (fract(sin(gl_FragCoord.x * 12.9898 + gl_FragCoord.y * 78.233) * 43758.5453));\n"
             "  int nmax = 10000;\n"
-            "  if (ray.x < 0.0) nmax = int (floor (-texcoord.s/ray.x));\n"
-            "  else if (ray.x > 0.0) nmax = int (floor ((1.0-texcoord.s) / ray.x));\n"
-            "  if (ray.y < 0.0) nmax = min (nmax, int (floor (-texcoord.t/ray.y)));\n"
-            "  else if (ray.y > 0.0) nmax = min (nmax, int (floor ((1.0-texcoord.t) / ray.y)));\n"
-            "  if (ray.z < 0.0) nmax = min (nmax, int (floor (-texcoord.p/ray.z)));\n"
-            "  else if (ray.z > 0.0) nmax = min (nmax, int (floor ((1.0-texcoord.p) / ray.z)));\n"
+            "  if (ray.x < 0.0) nmax = int (-texcoord.s/ray.x);\n"
+            "  else if (ray.x > 0.0) nmax = int ((1.0-texcoord.s) / ray.x);\n"
+            "  if (ray.y < 0.0) nmax = min (nmax, int (-texcoord.t/ray.y));\n"
+            "  else if (ray.y > 0.0) nmax = min (nmax, int ((1.0-texcoord.t) / ray.y));\n"
+            "  if (ray.z < 0.0) nmax = min (nmax, int (-texcoord.p/ray.z));\n"
+            "  else if (ray.z > 0.0) nmax = min (nmax, int ((1.0-texcoord.p) / ray.z));\n"
             "  for (int n = 0; n < nmax; ++n) {\n"
             "    coord += ray;\n"
             "    vec4 color = texture (tex, coord);\n"

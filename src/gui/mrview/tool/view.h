@@ -31,6 +31,7 @@ class QComboBox;
 class QSpinBox;
 class QSlider;
 class QGroupBox;
+class QCheckBox;
 
 namespace MR
 {
@@ -66,6 +67,7 @@ namespace MR
             void onScalingChanged ();
             void onSetTransparency ();
             void onSetFOV ();
+            void onCheckThreshold (bool);
             void onModeChanged ();
 
           private:
@@ -73,13 +75,12 @@ namespace MR
             QSpinBox **voxel_pos;
             AdjustButton *max_entry, *min_entry, *fov;
             AdjustButton *transparent_intensity, *opaque_intensity;
-            AdjustButton *lessthan, *greaterthan;
+            AdjustButton *lower_threshold, *upper_threshold;
+            QCheckBox *lower_threshold_check_box, *upper_threshold_check_box;
             QComboBox *plane_combobox;
-            QGroupBox *transparency_box, *thresholding_box;
+            QGroupBox *transparency_box, *threshold_box;
             QSlider *opacity;
 
-            void set_scaling_rate ();
-            void set_focus_rate ();
             void set_transparency_from_image ();
 
         };

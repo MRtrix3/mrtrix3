@@ -877,10 +877,6 @@ namespace MR
         invert_scale_action->setChecked (image()->scale_inverted());
         setWindowTitle (image()->interp.name().c_str());
         set_image_navigation_menu();
-        image()->set_allowed_features (
-            mode->features & Mode::ShaderThreshold,
-            mode->features & Mode::ShaderTransparency,
-            mode->features & Mode::ShaderLighting);
         emit imageChanged();
         glarea->updateGL();
       }
@@ -983,11 +979,6 @@ namespace MR
         mode_action_group->actions()[2]->setEnabled (mode->features & Mode::TiltRotate);
         if (!mode_action_group->checkedAction()->isEnabled())
           mode_action_group->actions()[0]->setChecked (true);
-        if (image()) 
-          image()->set_allowed_features (
-              mode->features & Mode::ShaderThreshold,
-              mode->features & Mode::ShaderTransparency,
-              mode->features & Mode::ShaderLighting);
       }
 
 
