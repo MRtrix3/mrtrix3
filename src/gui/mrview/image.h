@@ -60,12 +60,9 @@ namespace MR
           bool interpolate () const { return interpolation == GL_LINEAR; }
 
           void set_colourmap (size_t index) {
-            if (ColourMap::maps[index].special || ColourMap::maps[colourmap()].special) {
-              if (index != colourmap()) {
-//                position[0] = position[1] = position[2] = std::numeric_limits<ssize_t>::min(); TODO
+            if (ColourMap::maps[index].special || ColourMap::maps[colourmap()].special) 
+              if (index != colourmap()) 
                 texture_mode_3D_unchanged = false;
-              }
-            }
             Displayable::set_colourmap (index);
           }
 
@@ -73,21 +70,7 @@ namespace MR
           void update_texture3D ();
 
           void render2D (const Projection& projection, int plane, int slice);
-
-          void render3D_pre (const Projection& transform, float depth);
-          void render3D_slice (float offset);
-          void render3D_post () {
-            stop();
-            if (use_lighting())
-              glDisable (GL_LIGHTING);
-          }
-
-          void render3D (const Projection& transform, float depth) {
-            render3D_pre (transform, depth);
-            render3D_slice (0.0);
-            render3D_post ();
-          }
-
+          void render3D (const Projection& projection, float depth);
 
           void get_axes (int plane, int& x, int& y) {
             if (plane) {
@@ -119,6 +102,9 @@ namespace MR
           typedef BufferType::voxel_type VoxelType;
           typedef MR::Image::Interp::Linear<VoxelType> InterpVoxelType;
 
+          float scaling_3D () const { 
+            return windowing_scale_3D;
+          }
 
         private:
           BufferType buffer;

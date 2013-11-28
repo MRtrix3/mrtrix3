@@ -167,10 +167,15 @@ namespace MR
 
 
 
+      namespace {
+        inline Point<> div (const Point<>& a, const Point<>& b) {
+          return Point<> (a[0]/b[0], a[1]/b[1], a[2]/b[2]);
+        }
+      }
 
-
-      void Image::render3D_pre (const Projection& projection, float depth)
+      void Image::render3D (const Projection& projection, float depth) 
       {
+
         update_texture3D();
 
         glTexParameteri (GL_TEXTURE_3D, GL_TEXTURE_MAG_FILTER, interpolation);
@@ -181,57 +186,25 @@ namespace MR
         if (use_lighting())
           glEnable (GL_LIGHTING);
 
-        pos[0] = projection.screen_to_model (projection.x_position(), projection.y_position()+projection.height(), depth);
-        pos[1] = projection.screen_to_model (projection.x_position(), projection.y_position(), depth);
-        pos[2] = projection.screen_to_model (projection.x_position()+projection.width(), projection.y_position(), depth);
-        pos[3] = projection.screen_to_model (projection.x_position()+projection.width(), projection.y_position()+projection.height(), depth);
-
-        tex[0] = interp.scanner2voxel (pos[0]) + Point<> (0.5, 0.5, 0.5);
-        tex[1] = interp.scanner2voxel (pos[1]) + Point<> (0.5, 0.5, 0.5);
-        tex[2] = interp.scanner2voxel (pos[2]) + Point<> (0.5, 0.5, 0.5);
-        tex[3] = interp.scanner2voxel (pos[3]) + Point<> (0.5, 0.5, 0.5);
-
-        z = projection.screen_normal();
-        im_z = interp.scanner2voxel_dir (z);
-      }
-
-
-
-
-      void Image::render3D_slice (float offset)
-      {
         Point<> vertices[8];
 
-        if (offset == 0.0) {
-          vertices[0] = pos[0];
-          vertices[2] = pos[1];
-          vertices[4] = pos[2];
-          vertices[6] = pos[3];
-          vertices[1] = tex[0];
-          vertices[3] = tex[1];
-          vertices[5] = tex[2];
-          vertices[7] = tex[3];
-        }
-        else {
-          Point<> d = z * offset;
-          vertices[0] = pos[0] + d;
-          vertices[2] = pos[1] + d;
-          vertices[4] = pos[2] + d;
-          vertices[6] = pos[3] + d;
-          d = im_z * offset;
-          vertices[1] = tex[0] + d;
-          vertices[3] = tex[1] + d;
-          vertices[5] = tex[2] + d;
-          vertices[7] = tex[3] + d;
-        }
+        vertices[0] = projection.screen_to_model (projection.x_position(), projection.y_position()+projection.height(), depth);
+        vertices[2] = projection.screen_to_model (projection.x_position(), projection.y_position(), depth);
+        vertices[4] = projection.screen_to_model (projection.x_position()+projection.width(), projection.y_position(), depth);
+        vertices[6] = projection.screen_to_model (projection.x_position()+projection.width(), projection.y_position()+projection.height(), depth);
 
-        for (size_t i = 0; i < 4; ++i)
-          for (size_t j = 0; j < 3; ++j)
-            vertices[2*i+1][j] /= header().dim (j);
+        Point<> dim (header().dim(0), header().dim(1), header().dim(2));
+        vertices[1] = div (interp.scanner2voxel (vertices[0]) + Point<> (0.5, 0.5, 0.5), dim);
+        vertices[3] = div (interp.scanner2voxel (vertices[2]) + Point<> (0.5, 0.5, 0.5), dim);
+        vertices[5] = div (interp.scanner2voxel (vertices[4]) + Point<> (0.5, 0.5, 0.5), dim);
+        vertices[7] = div (interp.scanner2voxel (vertices[6]) + Point<> (0.5, 0.5, 0.5), dim);
 
         draw_vertices (vertices);
-      }
 
+        stop();
+        if (use_lighting())
+          glDisable (GL_LIGHTING);
+      }
 
 
 

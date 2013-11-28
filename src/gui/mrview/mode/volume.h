@@ -41,6 +41,14 @@ namespace MR
             Volume (Window& parent);
 
             virtual void paint (Projection& projection);
+          protected:
+            GL::VertexBuffer volume_VB, volume_VI;
+            GL::VertexArrayObject volume_VAO;
+            GL::Shader::Program volume_program;
+            uint32_t shader_flags;
+            size_t shader_colourmap;
+
+            void recompile_shader();
 
         };
 

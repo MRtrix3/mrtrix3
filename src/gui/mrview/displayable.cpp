@@ -121,14 +121,14 @@ namespace MR
             "  if (isnan(amplitude) || isinf(amplitude)) discard;\n";
 
         if (flags_ & DiscardLower)
-          source += "if (amplitude < lower) discard;";
+          source += "if (amplitude < lower) discard;\n";
 
         if (flags_ & DiscardUpper)
-          source += "if (amplitude > upper) discard;";
+          source += "if (amplitude > upper) discard;\n";
 
         if (flags_ & Transparency)
-          source += "if (amplitude < alpha_offset) discard; "
-              "float alpha = clamp ((amplitude - alpha_offset) * alpha_scale, 0, alpha); ";
+          source += "if (amplitude < alpha_offset) discard;\n"
+              "float alpha = clamp ((amplitude - alpha_offset) * alpha_scale, 0, alpha);\n";
 
         if (!ColourMap::maps[colourmap_index].special) {
           source += "  amplitude = clamp (";
@@ -144,7 +144,7 @@ namespace MR
 
 
 
-        GL::Shader::Fragment fragment_shader (source.c_str());
+        GL::Shader::Fragment fragment_shader (source);
 
         shader_program.attach (vertex_shader);
         shader_program.attach (fragment_shader);

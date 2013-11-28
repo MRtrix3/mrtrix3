@@ -37,8 +37,95 @@ namespace MR
       {
 
         Volume::Volume (Window& parent) : 
-          Base (parent, FocusContrast | MoveTarget | TiltRotate | ShaderTransparency) {
+          Base (parent, FocusContrast | MoveTarget | TiltRotate | ShaderTransparency),
+          shader_flags (0xFFFFFFFF),
+          shader_colourmap (0) {
           }
+
+
+
+
+
+
+        void Volume::recompile_shader () 
+        {
+          if (volume_program)
+            volume_program.clear();
+
+          shader_flags = image()->flags();
+          shader_colourmap = image()->colourmap();
+
+          GL::Shader::Vertex vertex_shader (
+              "layout(location=0) in vec3 vertpos;\n"
+              "uniform mat4 M;\n"
+              "out vec3 texcoord;\n"
+              "void main () {\n"
+              "  texcoord = vertpos;\n"
+              "  gl_Position =  M * vec4 (vertpos,1);\n"
+              "}\n");
+
+
+
+          std::string fragment_shader_source = 
+            "uniform sampler3D tex;\n"
+            "in vec3 texcoord;\n"
+            "uniform float offset, scale, alpha_scale, alpha_offset, alpha;\n"
+            "uniform vec3 ray;\n"
+            "out vec4 final_color;\n"
+            "void main () {\n"
+            "  final_color = vec4 (0.0);\n"
+            "  vec3 coord = texcoord + ray * (fract(sin(gl_FragCoord.x * 12.9898 + gl_FragCoord.y * 78.233) * 43758.5453));\n"
+            "  int nmax = 10000;\n"
+            "  if (ray.x < 0.0) nmax = int (floor (-texcoord.s/ray.x));\n"
+            "  else if (ray.x > 0.0) nmax = int (floor ((1.0-texcoord.s) / ray.x));\n"
+            "  if (ray.y < 0.0) nmax = min (nmax, int (floor (-texcoord.t/ray.y)));\n"
+            "  else if (ray.y > 0.0) nmax = min (nmax, int (floor ((1.0-texcoord.t) / ray.y)));\n"
+            "  if (ray.z < 0.0) nmax = min (nmax, int (floor (-texcoord.p/ray.z)));\n"
+            "  else if (ray.z > 0.0) nmax = min (nmax, int (floor ((1.0-texcoord.p) / ray.z)));\n"
+            "  for (int n = 0; n < nmax; ++n) {\n"
+            "    coord += ray;\n"
+            "    vec4 color = texture (tex, coord);\n"
+            "    float amplitude = " + std::string (ColourMap::maps[image()->colourmap()].amplitude) + ";\n"
+            "    if (isnan(amplitude) || isinf(amplitude)) continue;\n";
+
+          if (image()->flags() & DiscardLower)
+            fragment_shader_source += 
+              "    if (amplitude < lower) continue;\n";
+
+          if (image()->flags() & DiscardUpper)
+            fragment_shader_source += 
+              "    if (amplitude > upper) continue;\n";
+
+          fragment_shader_source +=
+            "    if (amplitude < alpha_offset) continue;\n"
+            "    color.a = clamp ((amplitude - alpha_offset) * alpha_scale, 0, alpha);\n";
+
+          if (!ColourMap::maps[image()->colourmap()].special) {
+            fragment_shader_source += 
+              "    amplitude = clamp (";
+            if (image()->flags() & InvertScale) fragment_shader_source += "1.0 -";
+            fragment_shader_source += 
+              " scale * (amplitude - offset), 0.0, 1.0);\n";
+          }
+
+          fragment_shader_source += 
+            std::string ("    ") + ColourMap::maps[image()->colourmap()].mapping +
+            "    final_color.rgb += (1.0 - final_color.a) * color.rgb * color.a;\n"
+            "    final_color.a += color.a;\n" 
+            "    if (final_color.a > 0.95) break;\n"
+            "  }\n"
+            "}\n";
+
+          GL::Shader::Fragment fragment_shader (fragment_shader_source);
+
+          volume_program.attach (vertex_shader);
+          volume_program.attach (fragment_shader);
+          volume_program.link();
+        }
+
+
+
+
 
         void Volume::paint (Projection& projection)
         {
@@ -62,83 +149,147 @@ namespace MR
           GL::mat4 MV = adjust_projection_matrix (Q) * GL::translate  (-target()[0], -target()[1], -target()[2]);
           projection.set (MV, P);
 
-          // find min/max depth of texture:
-          Point<> z = projection.screen_normal();
-          z.normalise();
-          float d;
-          float mindepth = std::numeric_limits<float>::infinity();
-          float maxdepth = -std::numeric_limits<float>::infinity();
+          Point<> pos = image()->interp.voxel2scanner (Point<> (-0.5f, -0.5f, -0.5f));
+          Point<> vec_X = image()->interp.voxel2scanner_dir (Point<> (image()->interp.dim(0), 0.0f, 0.0f));
+          Point<> vec_Y = image()->interp.voxel2scanner_dir (Point<> (0.0f, image()->interp.dim(1), 0.0f));
+          Point<> vec_Z = image()->interp.voxel2scanner_dir (Point<> (0.0f, 0.0f, image()->interp.dim(2)));
+          GL::mat4 T2S;
+          T2S(0,0) = vec_X[0];
+          T2S(1,0) = vec_X[1];
+          T2S(2,0) = vec_X[2];
 
-          Point<> top (
-              image()->interp.dim(0)-0.5, 
-              image()->interp.dim(1)-0.5, 
-              image()->interp.dim(2)-0.5);
+          T2S(0,1) = vec_Y[0];
+          T2S(1,1) = vec_Y[1];
+          T2S(2,1) = vec_Y[2];
 
-          d = z.dot (image()->interp.voxel2scanner(Point<> (-0.5, -0.5, -0.5)));
-          if (d < mindepth) mindepth = d;
-          if (d > maxdepth) maxdepth = d;
+          T2S(0,2) = vec_Z[0];
+          T2S(1,2) = vec_Z[1];
+          T2S(2,2) = vec_Z[2];
 
-          d = z.dot (image()->interp.voxel2scanner(Point<> (top[0], -0.5, -0.5)));
-          if (d < mindepth) mindepth = d;
-          if (d > maxdepth) maxdepth = d;
+          T2S(0,3) = pos[0];
+          T2S(1,3) = pos[1];
+          T2S(2,3) = pos[2];
 
-          d = z.dot (image()->interp.voxel2scanner(Point<> (-0.5, top[1], -0.5)));
-          if (d < mindepth) mindepth = d;
-          if (d > maxdepth) maxdepth = d;
+          T2S(3,0) = T2S(3,1) = T2S(3,2) = 0.0f; 
+          T2S(3,3) = 1.0f;
+          GL::mat4 M = projection.modelview_projection() * GL::mat4 (T2S);
+          
+          float step_size = std::min (std::min (
+                image()->interp.vox(0) / float (image()->interp.dim(0)),
+                image()->interp.vox(1) / float (image()->interp.dim(1))),
+                image()->interp.vox(2) / float (image()->interp.dim(2)));
+          Point<> ray = image()->interp.scanner2voxel_dir (projection.screen_normal());
+          ray[0] /= image()->interp.dim(0);
+          ray[1] /= image()->interp.dim(1);
+          ray[2] /= image()->interp.dim(2);
+          ray.normalise();
+          ray *= step_size;
 
-          d = z.dot (image()->interp.voxel2scanner(Point<> (-0.5, -0.5, top[2])));
-          if (d < mindepth) mindepth = d;
-          if (d > maxdepth) maxdepth = d;
+          if (!volume_program || shader_flags != image()->flags() || shader_colourmap != image()->colourmap()) 
+            recompile_shader();
 
-          d = z.dot (image()->interp.voxel2scanner(Point<> (top[0], top[1], -0.5)));
-          if (d < mindepth) mindepth = d;
-          if (d > maxdepth) maxdepth = d;
+          if (!volume_VB || !volume_VAO || !volume_VI) {
+            volume_VB.gen();
+            volume_VI.gen();
+            volume_VAO.gen();
 
-          d = z.dot (image()->interp.voxel2scanner(Point<> (top[0], -0.5, top[2])));
-          if (d < mindepth) mindepth = d;
-          if (d > maxdepth) maxdepth = d;
+            volume_VAO.bind();
+            volume_VB.bind (GL_ARRAY_BUFFER);
+            volume_VI.bind (GL_ELEMENT_ARRAY_BUFFER);
 
-          d = z.dot (image()->interp.voxel2scanner(Point<> (-0.5, top[1], top[2])));
-          if (d < mindepth) mindepth = d;
-          if (d > maxdepth) maxdepth = d;
+            glEnableVertexAttribArray (0);
+            glVertexAttribPointer (0, 3, GL_BYTE, GL_FALSE, 0, (void*)0);
 
-          d = z.dot (image()->interp.voxel2scanner(Point<> (top[0], top[1], top[2])));
-          if (d < mindepth) mindepth = d;
-          if (d > maxdepth) maxdepth = d;
-
-          d = z.dot (focus());
-          mindepth -= d;
-          maxdepth -= d;
-
-
-          // set up OpenGL environment:
-          glEnable (GL_DEPTH_TEST);
-
-          glDepthMask (GL_FALSE);
-          glDisable (GL_BLEND);
-
-          image()->update_texture3D();
-
-          if (isnan (image()->transparent_intensity) ||
-              isnan (image()->opaque_intensity)) {
-            float range = image()->intensity_max() - image()->intensity_min();
-            image()->transparent_intensity = image()->intensity_min() + 0.025 * range;
-            image()->opaque_intensity = image()->intensity_min() + 0.475 * range;
-            image()->alpha = 1.0;
+            GLbyte vertices[] = {
+              0, 0, 0,
+              0, 0, 1,
+              0, 1, 0,
+              0, 1, 1,
+              1, 0, 0,
+              1, 0, 1,
+              1, 1, 0,
+              1, 1, 1
+            };
+            glBufferData (GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+          }
+          else {
+            volume_VAO.bind();
+            volume_VI.bind (GL_ELEMENT_ARRAY_BUFFER);
           }
 
-          image()->set_use_transparency (true);
+          GLubyte indices[12];
 
-          glEnable (GL_BLEND);
-          glBlendFunc (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-          glBlendEquation (GL_FUNC_ADD);
+          if (ray[0] < 0) {
+            indices[0] = 4; 
+            indices[1] = 5;
+            indices[2] = 7;
+            indices[3] = 6;
+          }
+          else {
+            indices[0] = 0; 
+            indices[1] = 1;
+            indices[2] = 3;
+            indices[3] = 2;
+          }
 
-          // render image:
-          image()->render3D_pre (projection, projection.depth_of (focus()));
-          float increment = std::min (image()->interp.vox(0), std::min (image()->interp.vox(1), image()->interp.vox(2)));
-          for (float offset = maxdepth; offset >= mindepth; offset -= increment)
-            image()->render3D_slice (offset);
-          image()->render3D_post();
+          if (ray[1] < 0) {
+            indices[4] = 2; 
+            indices[5] = 3;
+            indices[6] = 7;
+            indices[7] = 6;
+          }
+          else {
+            indices[4] = 0; 
+            indices[5] = 1;
+            indices[6] = 5;
+            indices[7] = 4;
+          }
+
+          if (ray[2] < 0) {
+            indices[8] = 1; 
+            indices[9] = 3;
+            indices[10] = 7;
+            indices[11] = 5;
+          }
+          else {
+            indices[8] = 0; 
+            indices[9] = 2;
+            indices[10] = 6;
+            indices[11] = 4;
+          }
+
+          glBufferData (GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STREAM_DRAW);
+
+          image()->update_texture3D();
+          if (!finite (image()->alpha) || !finite (image()->transparent_intensity) || !finite (image()->opaque_intensity)) {
+            image()->alpha = 0.5;
+            image()->transparent_intensity = image()->display_midpoint - 0.4f * image()->display_range;
+            image()->opaque_intensity = image()->display_midpoint;
+          }
+
+          volume_program.start();
+
+          glUniformMatrix4fv (glGetUniformLocation (volume_program, "M"), 1, GL_FALSE, M);
+          glUniform3fv (glGetUniformLocation (volume_program, "ray"), 1, ray);
+          glUniform1f (glGetUniformLocation (volume_program, "offset"), (image()->display_midpoint - 0.5f * image()->display_range) / image()->scaling_3D());
+          glUniform1f (glGetUniformLocation (volume_program, "scale"), image()->scaling_3D() / image()->display_range);
+          if (image()->flags() & DiscardLower)
+            glUniform1f (glGetUniformLocation (volume_program, "lower"), image()->lessthan / image()->scaling_3D());
+          if (image()->flags() & DiscardUpper)
+            glUniform1f (glGetUniformLocation (volume_program, "upper"), image()->greaterthan / image()->scaling_3D());
+          glUniform1f (glGetUniformLocation (volume_program, "alpha_scale"), image()->scaling_3D() / (image()->opaque_intensity - image()->transparent_intensity));
+          glUniform1f (glGetUniformLocation (volume_program, "alpha_offset"), image()->transparent_intensity / image()->scaling_3D());
+          glUniform1f (glGetUniformLocation (volume_program, "alpha"), image()->alpha);
+
+          glEnable (GL_DEPTH_TEST);
+          glEnable (GL_TEXTURE_3D);
+          glDepthMask (GL_FALSE);
+
+          glTexParameteri (GL_TEXTURE_3D, GL_TEXTURE_MAG_FILTER, image()->interpolate() ? GL_LINEAR : GL_NEAREST);
+          glTexParameteri (GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, image()->interpolate() ? GL_LINEAR : GL_NEAREST);
+
+          glDrawElements (GL_QUADS, 12, GL_UNSIGNED_BYTE, (void*) 0);
+          volume_program.stop();
 
           glDisable (GL_TEXTURE_3D);
           glDisable (GL_BLEND);
