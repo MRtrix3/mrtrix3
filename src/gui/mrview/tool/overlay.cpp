@@ -28,6 +28,7 @@
 
 #include "mrtrix.h"
 #include "gui/mrview/window.h"
+#include "gui/mrview/mode/slice.h"
 #include "gui/mrview/tool/overlay.h"
 #include "gui/dialog/file.h"
 #include "gui/mrview/tool/list_model_base.h"
@@ -41,6 +42,14 @@ namespace MR
       namespace Tool
       {
 
+        class Item : public Image {
+          public:
+            Item (const MR::Image::Header& H) : Image (H) { }
+            Mode::Slice::Shader slice_shader; 
+        };
+
+
+
 
         class Overlay::Model : public ListModelBase
         {
@@ -50,8 +59,8 @@ namespace MR
 
             void add_items (VecPtr<MR::Image::Header>& list);
 
-            Image* get_image (QModelIndex& index) {
-              return dynamic_cast<Image*>(items[index.row()]);
+            Item* get_image (QModelIndex& index) {
+              return dynamic_cast<Item*>(items[index.row()]);
             }
         };
 
@@ -60,10 +69,10 @@ namespace MR
         {
           beginInsertRows (QModelIndex(), items.size(), items.size()+list.size());
           for (size_t i = 0; i < list.size(); ++i) {
-            Image* overlay = new Image (*list[i]);
+            Item* overlay = new Item (*list[i]);
             overlay->set_allowed_features (true, false, false);
-            if (!overlay->colourmap()) 
-              overlay->set_colourmap (1);
+            if (!overlay->colourmap) 
+              overlay->colourmap = 1;
             items.push_back (overlay);
           }
           endInsertRows();
@@ -228,10 +237,10 @@ namespace MR
           bool need_to_update = false;
           for (int i = 0; i < image_list_model->rowCount(); ++i) {
             if (image_list_model->items[i]->show && !hide_all_button->isChecked()) {
-              Image* image = dynamic_cast<Image*>(image_list_model->items[i]);
+              Item* image = dynamic_cast<Item*>(image_list_model->items[i]);
               need_to_update |= !finite (image->intensity_min());
               image->set_interpolate (interpolate_check_box->isChecked());
-              image->render3D (projection, projection.depth_of (window.focus()));
+              image->render3D (image->slice_shader, projection, projection.depth_of (window.focus()));
             }
           }
 
@@ -380,9 +389,9 @@ namespace MR
           int colourmap_index = -2;
           for (int i = 0; i < indices.size(); ++i) {
             Image* overlay = dynamic_cast<Image*> (image_list_model->get_image (indices[i]));
-            if (colourmap_index != int(overlay->colourmap())) {
+            if (colourmap_index != int(overlay->colourmap)) {
               if (colourmap_index == -2)
-                colourmap_index = overlay->colourmap();
+                colourmap_index = overlay->colourmap;
               else 
                 colourmap_index = -1;
             }

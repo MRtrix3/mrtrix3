@@ -45,6 +45,185 @@ namespace MR
       namespace Tool
       {
 
+        std::string Tractogram::Shader::vertex_shader_source (const Displayable& object)
+        {
+          const Tractogram& tractogram (dynamic_cast<const Tractogram&> (object));
+
+          bool colour_by_direction = ( tractogram.color_type == Direction || 
+              ( tractogram.color_type == ScalarFile && tractogram.scalarfile_by_direction ) );
+
+          std::string source =
+              "layout (location = 0) in vec3 vertexPosition_modelspace;\n"
+              "layout (location = 1) in vec3 previousVertex;\n"
+              "layout (location = 2) in vec3 nextVertex;\n"
+              "uniform mat4 MVP;\n"
+              "flat out float amp_out;\n"
+              "out vec3 fragmentColour;\n";
+          if (tractogram.tractography_tool.use_lighting) 
+            source += 
+              "out vec3 tangent;\n"
+              "uniform mat4 MV;\n";
+
+          if (tractogram.color_type == ScalarFile)
+            source += "layout (location = 3) in float amp;\n"
+                "uniform float offset, scale;\n";
+
+          if (tractogram.color_type == Colour) 
+            source += "uniform vec3 const_colour;\n";
+
+          if (tractogram.tractography_tool.do_crop_to_slab) {
+            source +=
+                "out float include;\n"
+                "uniform vec3 screen_normal;\n"
+                "uniform float crop_var;\n"
+                "uniform float slab_width;\n";
+          }
+
+          source +=
+              "void main() {\n"
+              "  gl_Position =  MVP * vec4(vertexPosition_modelspace,1);\n";
+
+          if (tractogram.tractography_tool.use_lighting || colour_by_direction) 
+            source += 
+              "  vec3 dir;\n"
+              "  if (isnan (previousVertex.x))\n"
+              "    dir = nextVertex - vertexPosition_modelspace;\n"
+              "  else if (isnan (nextVertex.x))\n"
+              "    dir = vertexPosition_modelspace - previousVertex;\n"
+              "  else\n"
+              "    dir = nextVertex - previousVertex;\n";
+          if (colour_by_direction)
+              source += "  fragmentColour = dir;\n";
+          if (tractogram.tractography_tool.use_lighting)
+              source += "  tangent = normalize (mat3(MV) * dir);\n";
+
+          switch (tractogram.color_type) {
+            case Colour:
+              source +=
+                  "  fragmentColour = const_colour;\n";
+              break;
+            case ScalarFile:
+              source += "  amp_out = amp;\n";
+              if (!ColourMap::maps[tractogram.colourmap].special) {
+                source += "  float amplitude = clamp (";
+                if (tractogram.scale_inverted())
+                  source += "1.0 -";
+                source += " scale * (amp - offset), 0.0, 1.0);\n  ";
+              }
+              if (!tractogram.scalarfile_by_direction) 
+                source += 
+                  std::string ("  vec3 color;\n") +
+                  ColourMap::maps[tractogram.colourmap].mapping +
+                  "  fragmentColour = color;\n";
+              break;
+            default:
+              break;
+          }
+
+          if (tractogram.tractography_tool.do_crop_to_slab)
+            source +=
+                "  include = (dot (vertexPosition_modelspace, screen_normal) - crop_var) / slab_width;\n";
+
+          source += "}\n";
+
+          return source;
+        }
+
+
+
+        std::string Tractogram::Shader::fragment_shader_source (const Displayable& object) 
+        {
+          const Tractogram& tractogram (dynamic_cast<const Tractogram&> (object));
+
+          bool colour_by_direction = ( tractogram.color_type == Direction || 
+              ( tractogram.color_type == ScalarFile && tractogram.scalarfile_by_direction ) );
+
+          std::string source =
+              "in float include; \n"
+              "out vec3 color;\n"
+              "flat in float amp_out;\n"
+              "in vec3 fragmentColour;\n";
+          if (tractogram.tractography_tool.use_lighting)
+            source += 
+              "in vec3 tangent;\n"
+              "uniform float ambient, diffuse, specular, shine;\n"
+              "uniform vec3 light_pos;\n";
+
+          if (tractogram.color_type == ScalarFile) {
+            if (tractogram.use_discard_lower())
+              source += "uniform float lower;\n";
+            if (tractogram.use_discard_upper())
+              source += "uniform float upper;\n";
+          }
+
+          source +=
+              "void main(){\n";
+
+          if (tractogram.tractography_tool.do_crop_to_slab)
+            source += "  if (include < 0 || include > 1) discard;\n";
+
+          if (tractogram.color_type == ScalarFile) {
+            if (tractogram.use_discard_lower())
+              source += "  if (amp_out < lower) discard;\n";
+            if (tractogram.use_discard_upper())
+              source += "  if (amp_out > upper) discard;\n";
+          }
+
+          if (tractogram.tractography_tool.use_lighting)
+            source += "  vec3 t = normalize (tangent);\n";
+
+          source +=
+            std::string("  color = ") + (colour_by_direction ? "normalize (abs (fragmentColour))" : "fragmentColour" ) + ";\n";
+
+          if (tractogram.tractography_tool.use_lighting) 
+            source += 
+             "float l_dot_t = dot(light_pos, t);\n"
+             "vec3 l_perp = light_pos - l_dot_t * t;\n"
+             "vec3 l_perp_norm = normalize (l_perp);\n"
+             "float n_dot_t = t.z;\n"
+             "vec3 n_perp = vec3(0.0, 0.0, 1.0) - n_dot_t * t;\n"
+             "vec3 n_perp_norm = normalize (n_perp);\n"
+             "float cos2_theta = 0.5+0.5*dot(l_perp_norm,n_perp_norm);\n"
+             "color *= ambient + diffuse * length(l_perp) * cos2_theta;\n"
+             "color += specular * sqrt(cos2_theta) * pow (clamp (-l_dot_t*n_dot_t + length(l_perp)*length(n_perp), 0, 1), shine);\n";
+
+          source += "}\n";
+
+          return source;
+        }
+
+
+        bool Tractogram::Shader::need_update (const Displayable& object) const {
+          const Tractogram& tractogram (dynamic_cast<const Tractogram&> (object));
+          if (do_crop_to_slab != tractogram.tractography_tool.do_crop_to_slab ||
+              color_type != tractogram.color_type) 
+            return true;
+          if (tractogram.color_type == ScalarFile)
+            if (scalarfile_by_direction != tractogram.scalarfile_by_direction)
+              return true;
+          if (use_lighting != tractogram.tractography_tool.use_lighting)
+            return true;
+          return Displayable::Shader::need_update (object);
+        }
+
+
+
+
+        void Tractogram::Shader::update (const Displayable& object) {
+          const Tractogram& tractogram (dynamic_cast<const Tractogram&> (object));
+          do_crop_to_slab = tractogram.tractography_tool.do_crop_to_slab;
+          scalarfile_by_direction = tractogram.scalarfile_by_direction;
+          use_lighting = tractogram.tractography_tool.use_lighting;
+          color_type = tractogram.color_type;
+          Displayable::Shader::update (object);
+        }
+
+
+
+
+
+
+
         Tractogram::Tractogram (Window& window, Tractography& tool, const std::string& filename) :
           Displayable (filename),
           scalarfile_by_direction (false),
@@ -55,8 +234,12 @@ namespace MR
           tractography_tool (tool),
           filename (filename),
           colourbar_position_index (4) {
-            colourmap_index = 1;
+            set_allowed_features (true, true, true);
+            colourmap = 1;
         }
+
+
+
 
 
         Tractogram::~Tractogram ()
@@ -70,35 +253,42 @@ namespace MR
         }
 
 
+
+
+
         void Tractogram::render2D (const Projection& transform)
         {
           if (tractography_tool.do_crop_to_slab && tractography_tool.slab_thickness <= 0.0)
             return;
 
-          start (transform);
+          start (track_shader);
+          transform.set (track_shader);
 
           if (tractography_tool.do_crop_to_slab) {
-            glUniform3f (get_uniform ("screen_normal"),
+            glUniform3f (glGetUniformLocation (track_shader, "screen_normal"),
                 transform.screen_normal()[0], transform.screen_normal()[1], transform.screen_normal()[2]);
-            glUniform1f (get_uniform ("crop_var"),
+            glUniform1f (glGetUniformLocation (track_shader, "crop_var"),
                 window.focus().dot(transform.screen_normal()) - tractography_tool.slab_thickness / 2);
-            glUniform1f (get_uniform ("slab_width"),
+            glUniform1f (glGetUniformLocation (track_shader, "slab_width"),
                 tractography_tool.slab_thickness);
           }
 
           if (color_type == ScalarFile) {
             if (use_discard_lower())
-              glUniform1f (get_uniform ("lower"), lessthan);
+              glUniform1f (glGetUniformLocation (track_shader, "lower"), lessthan);
             if (use_discard_upper())
-              glUniform1f (get_uniform ("upper"), greaterthan);
+              glUniform1f (glGetUniformLocation (track_shader, "upper"), greaterthan);
           }
+          else if (color_type == Colour) 
+              glUniform3fv (glGetUniformLocation (track_shader, "const_colour"), 1, colour);
+
           if (tractography_tool.use_lighting) {
-            glUniformMatrix4fv (glGetUniformLocation (shader_program, "MV"), 1, GL_FALSE, transform.modelview());
-            glUniform3fv (glGetUniformLocation (shader_program, "light_pos"), 1, tractography_tool.lighting->lightpos);
-            glUniform1f (glGetUniformLocation (shader_program, "ambient"), tractography_tool.lighting->ambient);
-            glUniform1f (glGetUniformLocation (shader_program, "diffuse"), tractography_tool.lighting->diffuse);
-            glUniform1f (glGetUniformLocation (shader_program, "specular"), tractography_tool.lighting->specular);
-            glUniform1f (glGetUniformLocation (shader_program, "shine"), tractography_tool.lighting->shine);
+            glUniformMatrix4fv (glGetUniformLocation (track_shader, "MV"), 1, GL_FALSE, transform.modelview());
+            glUniform3fv (glGetUniformLocation (track_shader, "light_pos"), 1, tractography_tool.lighting->lightpos);
+            glUniform1f (glGetUniformLocation (track_shader, "ambient"), tractography_tool.lighting->ambient);
+            glUniform1f (glGetUniformLocation (track_shader, "diffuse"), tractography_tool.lighting->diffuse);
+            glUniform1f (glGetUniformLocation (track_shader, "specular"), tractography_tool.lighting->specular);
+            glUniform1f (glGetUniformLocation (track_shader, "shine"), tractography_tool.lighting->shine);
           }
 
           if (tractography_tool.line_opacity < 1.0) {
@@ -127,8 +317,11 @@ namespace MR
             glDepthMask (GL_TRUE);
           }
 
-          stop();
+          stop (track_shader);
         }
+
+
+
 
 
         void Tractogram::render3D ()
@@ -137,158 +330,7 @@ namespace MR
         }
 
 
-        void Tractogram::recompile ()
-        {
-          if (shader_program)
-            shader_program.clear();
 
-          bool colour_by_direction = ( color_type == Direction || ( color_type == ScalarFile && scalarfile_by_direction ) );
-
-          // VERTEX SHADER:
-          std::string vertex_shader_code =
-              "layout (location = 0) in vec3 vertexPosition_modelspace;\n"
-              "layout (location = 1) in vec3 previousVertex;\n"
-              "layout (location = 2) in vec3 nextVertex;\n"
-              "uniform mat4 MVP;\n"
-              "flat out float amp_out;\n"
-              "out vec3 fragmentColour;\n";
-          if (tractography_tool.use_lighting) 
-            vertex_shader_code += 
-              "out vec3 tangent;\n"
-              "uniform mat4 MV;\n";
-
-          if (color_type == ScalarFile)
-            vertex_shader_code += "layout (location = 3) in float amp;\n"
-                "uniform float offset, scale;\n";
-
-          if (tractography_tool.do_crop_to_slab) {
-            vertex_shader_code +=
-                "out float include;\n"
-                "uniform vec3 screen_normal;\n"
-                "uniform float crop_var;\n"
-                "uniform float slab_width;\n";
-          }
-
-          vertex_shader_code +=
-              "void main() {\n"
-              "  gl_Position =  MVP * vec4(vertexPosition_modelspace,1);\n";
-
-          if (tractography_tool.use_lighting || colour_by_direction) 
-            vertex_shader_code += 
-              "  vec3 dir;\n"
-              "  if (isnan (previousVertex.x))\n"
-              "    dir = nextVertex - vertexPosition_modelspace;\n"
-              "  else if (isnan (nextVertex.x))\n"
-              "    dir = vertexPosition_modelspace - previousVertex;\n"
-              "  else\n"
-              "    dir = nextVertex - previousVertex;\n";
-          if (colour_by_direction)
-              vertex_shader_code += "  fragmentColour = dir;\n";
-          if (tractography_tool.use_lighting)
-              vertex_shader_code += "  tangent = normalize (mat3(MV) * dir);\n";
-
-          switch (color_type) {
-            case Colour:
-              vertex_shader_code +=
-                  "  fragmentColour = vec3(" + str(colour[0]) + ", " + str(colour[1]) + ", " + str(colour[2]) + ");\n";
-              break;
-            case ScalarFile:
-              vertex_shader_code += "  amp_out = amp;\n";
-              if (!ColourMap::maps[colourmap_index].special) {
-                vertex_shader_code += "  float amplitude = clamp (";
-                if (scale_inverted ())
-                  vertex_shader_code += "1.0 -";
-                vertex_shader_code += " scale * (amp - offset), 0.0, 1.0);\n  ";
-              }
-              if (!scalarfile_by_direction) 
-                vertex_shader_code += 
-                  std::string ("  vec3 color;\n") +
-                  ColourMap::maps[colourmap_index].mapping +
-                  "  fragmentColour = color;\n";
-              break;
-            default:
-              break;
-          }
-
-          if (tractography_tool.do_crop_to_slab)
-            vertex_shader_code +=
-                "  include = (dot (vertexPosition_modelspace, screen_normal) - crop_var) / slab_width;\n";
-
-          vertex_shader_code += "}\n";
-
-
-
-
-          // FRAGMENT SHADER:
-          std::string fragment_shader_code =
-              "in float include; \n"
-              "out vec3 color;\n"
-              "flat in float amp_out;\n"
-              "in vec3 fragmentColour;\n";
-          if (tractography_tool.use_lighting)
-            fragment_shader_code += 
-              "in vec3 tangent;\n"
-              "uniform float ambient, diffuse, specular, shine;\n"
-              "uniform vec3 light_pos;\n";
-
-          if (color_type == ScalarFile) {
-            if (use_discard_lower())
-              fragment_shader_code += "uniform float lower;\n";
-            if (use_discard_upper())
-              fragment_shader_code += "uniform float upper;\n";
-          }
-
-          fragment_shader_code +=
-              "void main(){\n";
-
-          if (tractography_tool.do_crop_to_slab)
-            fragment_shader_code += "  if (include < 0 || include > 1) discard;\n";
-
-          if (color_type == ScalarFile) {
-            if (use_discard_lower())
-              fragment_shader_code += "  if (amp_out < lower) discard;\n";
-            if (use_discard_upper())
-              fragment_shader_code += "  if (amp_out > upper) discard;\n";
-          }
-
-          if (tractography_tool.use_lighting)
-            fragment_shader_code += "  vec3 t = normalize (tangent);\n";
-
-          fragment_shader_code +=
-            std::string("  color = ") + (colour_by_direction ? "normalize (abs (fragmentColour))" : "fragmentColour" ) + ";\n";
-
-          if (tractography_tool.use_lighting) {
-            fragment_shader_code += 
-
-             "float l_dot_t = dot(light_pos, t);\n"
-             "vec3 l_perp = light_pos - l_dot_t * t;\n"
-             "vec3 l_perp_norm = normalize (l_perp);\n"
-             "float n_dot_t = t.z;\n"
-             "vec3 n_perp = vec3(0.0, 0.0, 1.0) - n_dot_t * t;\n"
-             "vec3 n_perp_norm = normalize (n_perp);\n"
-             "float cos2_theta = 0.5+0.5*dot(l_perp_norm,n_perp_norm);\n"
-             "color *= ambient + diffuse * length(l_perp) * cos2_theta;\n"
-             "color += specular * sqrt(cos2_theta) * pow (clamp (-l_dot_t*n_dot_t + length(l_perp)*length(n_perp), 0, 1), shine);\n";
-          }
-
-          fragment_shader_code += "}\n";
-
-
-
-
-          // COMPILE AND LINK SHADERS:
-          try {
-            GL::Shader::Vertex vertex_shader (vertex_shader_code);
-            GL::Shader::Fragment fragment_shader (fragment_shader_code);
-            shader_program.attach (vertex_shader);
-            shader_program.attach (fragment_shader);
-            shader_program.link();
-          }
-          catch (Exception& E) {
-            E.display();
-          }
-
-        }
 
 
         void Tractogram::load_tracks()
@@ -313,6 +355,9 @@ namespace MR
             load_tracks_onto_GPU (buffer, starts, sizes, tck_count);
           file.close();
         }
+
+
+
 
 
         void Tractogram::load_track_scalars (std::string filename)
@@ -357,6 +402,59 @@ namespace MR
           greaterthan = value_max;
           lessthan = value_min;
         }
+
+
+
+
+        void Tractogram::load_tracks_onto_GPU (std::vector<Point<float> >& buffer,
+            std::vector<GLint>& starts,
+            std::vector<GLint>& sizes,
+            size_t& tck_count) {
+          buffer.push_back (Point<float>());
+          GLuint vertexbuffer;
+          glGenBuffers (1, &vertexbuffer);
+          glBindBuffer (GL_ARRAY_BUFFER, vertexbuffer);
+          glBufferData (GL_ARRAY_BUFFER, buffer.size() * sizeof(Point<float>), &buffer[0][0], GL_STATIC_DRAW);
+
+          GLuint vertex_array_object;
+          glGenVertexArrays (1, &vertex_array_object);
+          glBindVertexArray (vertex_array_object);
+          glEnableVertexAttribArray (0);
+          glVertexAttribPointer (0, 3, GL_FLOAT, GL_FALSE, 0, (void*)(3*sizeof(float)));
+          glEnableVertexAttribArray (1);
+          glVertexAttribPointer (1, 3, GL_FLOAT, GL_FALSE, 0, (void*)0);
+          glEnableVertexAttribArray (2);
+          glVertexAttribPointer (2, 3, GL_FLOAT, GL_FALSE, 0, (void*)(6*sizeof(float)));
+
+          vertex_array_objects.push_back (vertex_array_object);
+          vertex_buffers.push_back (vertexbuffer);
+          track_starts.push_back (starts);
+          track_sizes.push_back (sizes);
+          num_tracks_per_buffer.push_back (tck_count);
+          buffer.clear();
+          starts.clear();
+          sizes.clear();
+          tck_count = 0;
+        }
+
+
+
+
+
+        void Tractogram::load_scalars_onto_GPU (std::vector<float>& buffer) {
+          buffer.push_back (NAN);
+          GLuint vertexbuffer;
+          glGenBuffers (1, &vertexbuffer);
+          glBindBuffer (GL_ARRAY_BUFFER, vertexbuffer);
+          glBufferData (GL_ARRAY_BUFFER, buffer.size() * sizeof(float), &buffer[0], GL_STATIC_DRAW);
+
+          glBindVertexArray (vertex_array_objects[scalar_buffers.size()]);
+          glEnableVertexAttribArray (3);
+          glVertexAttribPointer (3, 1, GL_FLOAT, GL_FALSE, 0, (void*)(sizeof(float)));
+          scalar_buffers.push_back (vertexbuffer);
+          buffer.clear();
+        }
+
 
 
       }

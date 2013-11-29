@@ -36,44 +36,28 @@ namespace MR
       namespace Mode
       {
 
-        Volume::Volume (Window& parent) : 
-          Base (parent, FocusContrast | MoveTarget | TiltRotate | ShaderTransparency),
-          shader_flags (0xFFFFFFFF),
-          shader_colourmap (0) {
-          }
-
-
-
-
-
-
-        void Volume::recompile_shader () 
+        std::string Volume::Shader::vertex_shader_source (const Displayable& object) 
         {
-          if (volume_program)
-            volume_program.clear();
+          return
+            "layout(location=0) in vec3 vertpos;\n"
+            "uniform mat4 M;\n"
+            "out vec3 texcoord;\n"
+            "void main () {\n"
+            "  texcoord = vertpos;\n"
+            "  gl_Position =  M * vec4 (vertpos,1);\n"
+            "}\n";
+        }
 
-          shader_flags = image()->flags();
-          shader_colourmap = image()->colourmap();
-
-          GL::Shader::Vertex vertex_shader (
-              "layout(location=0) in vec3 vertpos;\n"
-              "uniform mat4 M;\n"
-              "out vec3 texcoord;\n"
-              "void main () {\n"
-              "  texcoord = vertpos;\n"
-              "  gl_Position =  M * vec4 (vertpos,1);\n"
-              "}\n");
-
-
-
-          std::string fragment_shader_source = 
+        std::string Volume::Shader::fragment_shader_source (const Displayable& object)
+        {
+          std::string source = 
             "uniform sampler3D tex;\n"
             "in vec3 texcoord;\n"
             "uniform float offset, scale, alpha_scale, alpha_offset, alpha";
-          if (image()->flags() & DiscardLower) fragment_shader_source += ", lower";
-          if (image()->flags() & DiscardUpper) fragment_shader_source += ", upper";
+          if (object.use_discard_lower()) source += ", lower";
+          if (object.use_discard_upper()) source += ", upper";
 
-            fragment_shader_source += ";\n"
+          source += ";\n"
             "uniform vec3 ray;\n"
             "out vec4 final_color;\n"
             "void main () {\n"
@@ -89,43 +73,50 @@ namespace MR
             "  for (int n = 0; n < nmax; ++n) {\n"
             "    coord += ray;\n"
             "    vec4 color = texture (tex, coord);\n"
-            "    float amplitude = " + std::string (ColourMap::maps[image()->colourmap()].amplitude) + ";\n"
+            "    float amplitude = " + std::string (ColourMap::maps[object.colourmap].amplitude) + ";\n"
             "    if (isnan(amplitude) || isinf(amplitude)) continue;\n";
 
-          if (image()->flags() & DiscardLower)
-            fragment_shader_source += 
+          if (object.use_discard_lower())
+            source += 
               "    if (amplitude < lower) continue;\n";
 
-          if (image()->flags() & DiscardUpper)
-            fragment_shader_source += 
+          if (object.use_discard_upper())
+            source += 
               "    if (amplitude > upper) continue;\n";
 
-          fragment_shader_source +=
+          source +=
             "    if (amplitude < alpha_offset) continue;\n"
             "    color.a = clamp ((amplitude - alpha_offset) * alpha_scale, 0, alpha);\n";
 
-          if (!ColourMap::maps[image()->colourmap()].special) {
-            fragment_shader_source += 
+          if (!ColourMap::maps[object.colourmap].special) {
+            source += 
               "    amplitude = clamp (";
-            if (image()->flags() & InvertScale) fragment_shader_source += "1.0 -";
-            fragment_shader_source += 
+            if (object.scale_inverted()) 
+              source += "1.0 -";
+            source += 
               " scale * (amplitude - offset), 0.0, 1.0);\n";
           }
 
-          fragment_shader_source += 
-            std::string ("    ") + ColourMap::maps[image()->colourmap()].mapping +
+          source += 
+            std::string ("    ") + ColourMap::maps[object.colourmap].mapping +
             "    final_color.rgb += (1.0 - final_color.a) * color.rgb * color.a;\n"
             "    final_color.a += color.a;\n" 
             "    if (final_color.a > 0.95) break;\n"
             "  }\n"
             "}\n";
 
-          GL::Shader::Fragment fragment_shader (fragment_shader_source);
-
-          volume_program.attach (vertex_shader);
-          volume_program.attach (fragment_shader);
-          volume_program.link();
+          return source;
         }
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -177,20 +168,17 @@ namespace MR
           T2S(3,0) = T2S(3,1) = T2S(3,2) = 0.0f; 
           T2S(3,3) = 1.0f;
           GL::mat4 M = projection.modelview_projection() * GL::mat4 (T2S);
-          
+
           float step_size = std::min (std::min (
                 image()->interp.vox(0) / float (image()->interp.dim(0)),
                 image()->interp.vox(1) / float (image()->interp.dim(1))),
-                image()->interp.vox(2) / float (image()->interp.dim(2)));
+              image()->interp.vox(2) / float (image()->interp.dim(2)));
           Point<> ray = image()->interp.scanner2voxel_dir (projection.screen_normal());
           ray[0] /= image()->interp.dim(0);
           ray[1] /= image()->interp.dim(1);
           ray[2] /= image()->interp.dim(2);
           ray.normalise();
           ray *= step_size;
-
-          if (!volume_program || shader_flags != image()->flags() || shader_colourmap != image()->colourmap()) 
-            recompile_shader();
 
           if (!volume_VB || !volume_VAO || !volume_VI) {
             volume_VB.gen();
@@ -265,25 +253,11 @@ namespace MR
           glBufferData (GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STREAM_DRAW);
 
           image()->update_texture3D();
-          if (!finite (image()->alpha) || !finite (image()->transparent_intensity) || !finite (image()->opaque_intensity)) {
-            image()->alpha = 0.5;
-            image()->transparent_intensity = image()->display_midpoint - 0.4f * image()->display_range;
-            image()->opaque_intensity = image()->display_midpoint;
-          }
+          image()->set_use_transparency (true);
 
-          volume_program.start();
-
-          glUniformMatrix4fv (glGetUniformLocation (volume_program, "M"), 1, GL_FALSE, M);
-          glUniform3fv (glGetUniformLocation (volume_program, "ray"), 1, ray);
-          glUniform1f (glGetUniformLocation (volume_program, "offset"), (image()->display_midpoint - 0.5f * image()->display_range) / image()->scaling_3D());
-          glUniform1f (glGetUniformLocation (volume_program, "scale"), image()->scaling_3D() / image()->display_range);
-          if (image()->flags() & DiscardLower)
-            glUniform1f (glGetUniformLocation (volume_program, "lower"), image()->lessthan / image()->scaling_3D());
-          if (image()->flags() & DiscardUpper)
-            glUniform1f (glGetUniformLocation (volume_program, "upper"), image()->greaterthan / image()->scaling_3D());
-          glUniform1f (glGetUniformLocation (volume_program, "alpha_scale"), image()->scaling_3D() / (image()->opaque_intensity - image()->transparent_intensity));
-          glUniform1f (glGetUniformLocation (volume_program, "alpha_offset"), image()->transparent_intensity / image()->scaling_3D());
-          glUniform1f (glGetUniformLocation (volume_program, "alpha"), image()->alpha);
+          image()->start (volume_shader, image()->scaling_3D());
+          glUniformMatrix4fv (glGetUniformLocation (volume_shader, "M"), 1, GL_FALSE, M);
+          glUniform3fv (glGetUniformLocation (volume_shader, "ray"), 1, ray);
 
           glEnable (GL_DEPTH_TEST);
           glEnable (GL_TEXTURE_3D);
@@ -293,7 +267,7 @@ namespace MR
           glTexParameteri (GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, image()->interpolate() ? GL_LINEAR : GL_NEAREST);
 
           glDrawElements (GL_QUADS, 12, GL_UNSIGNED_BYTE, (void*) 0);
-          volume_program.stop();
+          image()->stop (volume_shader);
 
           glDisable (GL_TEXTURE_3D);
           glDisable (GL_BLEND);

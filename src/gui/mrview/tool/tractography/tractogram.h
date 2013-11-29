@@ -51,7 +51,7 @@ namespace MR
       namespace Tool
       {
 
-        enum colour_type { Direction, Colour, ScalarFile };
+        enum ColourType { Direction, Colour, ScalarFile };
 
         class Tractogram : public Displayable
         {
@@ -75,8 +75,6 @@ namespace MR
 
             void load_track_scalars (std::string filename);
 
-            virtual void recompile ();
-
             void set_colour (float color[3]) {
               colour[0] = color[0];
               colour[1] = color[1];
@@ -85,8 +83,22 @@ namespace MR
 
             bool scalarfile_by_direction;
             bool show_colour_bar;
-            colour_type color_type;
+            ColourType color_type;
+            float colour[3];
             std::string scalar_filename;
+
+            class Shader : public Displayable::Shader {
+              public:
+                Shader () : do_crop_to_slab (false), scalarfile_by_direction (false), use_lighting (false), color_type (Direction) { }
+                virtual std::string vertex_shader_source (const Displayable& object);
+                virtual std::string fragment_shader_source (const Displayable& object);
+                virtual bool need_update (const Displayable& object) const;
+                virtual void update (const Displayable& object);
+              protected:
+                bool do_crop_to_slab, scalarfile_by_direction, use_lighting;
+                ColourType color_type;
+
+            } track_shader;
 
           signals:
             void scalingChanged ();
@@ -102,55 +114,16 @@ namespace MR
             std::vector<std::vector<GLint> > track_starts;
             std::vector<std::vector<GLint> > track_sizes;
             std::vector<size_t> num_tracks_per_buffer;
-            float colour[3];
             ColourMap::Renderer colourbar_renderer;
             int colourbar_position_index;
 
 
-            inline void load_tracks_onto_GPU (std::vector<Point<float> >& buffer,
+            void load_tracks_onto_GPU (std::vector<Point<float> >& buffer,
                                               std::vector<GLint>& starts,
                                               std::vector<GLint>& sizes,
-                                              size_t& tck_count) {
-              buffer.push_back (Point<float>());
-              GLuint vertexbuffer;
-              glGenBuffers (1, &vertexbuffer);
-              glBindBuffer (GL_ARRAY_BUFFER, vertexbuffer);
-              glBufferData (GL_ARRAY_BUFFER, buffer.size() * sizeof(Point<float>), &buffer[0][0], GL_STATIC_DRAW);
+                                              size_t& tck_count);
 
-              GLuint vertex_array_object;
-              glGenVertexArrays (1, &vertex_array_object);
-              glBindVertexArray (vertex_array_object);
-              glEnableVertexAttribArray (0);
-              glVertexAttribPointer (0, 3, GL_FLOAT, GL_FALSE, 0, (void*)(3*sizeof(float)));
-              glEnableVertexAttribArray (1);
-              glVertexAttribPointer (1, 3, GL_FLOAT, GL_FALSE, 0, (void*)0);
-              glEnableVertexAttribArray (2);
-              glVertexAttribPointer (2, 3, GL_FLOAT, GL_FALSE, 0, (void*)(6*sizeof(float)));
-
-              vertex_array_objects.push_back (vertex_array_object);
-              vertex_buffers.push_back (vertexbuffer);
-              track_starts.push_back (starts);
-              track_sizes.push_back (sizes);
-              num_tracks_per_buffer.push_back (tck_count);
-              buffer.clear();
-              starts.clear();
-              sizes.clear();
-              tck_count = 0;
-            }
-
-            inline void load_scalars_onto_GPU (std::vector<float>& buffer) {
-              buffer.push_back (NAN);
-              GLuint vertexbuffer;
-              glGenBuffers (1, &vertexbuffer);
-              glBindBuffer (GL_ARRAY_BUFFER, vertexbuffer);
-              glBufferData (GL_ARRAY_BUFFER, buffer.size() * sizeof(float), &buffer[0], GL_STATIC_DRAW);
-
-              glBindVertexArray (vertex_array_objects[scalar_buffers.size()]);
-              glEnableVertexAttribArray (3);
-              glVertexAttribPointer (3, 1, GL_FLOAT, GL_FALSE, 0, (void*)(sizeof(float)));
-              scalar_buffers.push_back (vertexbuffer);
-              buffer.clear();
-            }
+            void load_scalars_onto_GPU (std::vector<float>& buffer);
 
         };
       }

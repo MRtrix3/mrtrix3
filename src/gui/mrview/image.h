@@ -60,17 +60,17 @@ namespace MR
           bool interpolate () const { return interpolation == GL_LINEAR; }
 
           void set_colourmap (size_t index) {
-            if (ColourMap::maps[index].special || ColourMap::maps[colourmap()].special) 
-              if (index != colourmap()) 
+            if (ColourMap::maps[index].special || ColourMap::maps[colourmap].special) 
+              if (index != colourmap) 
                 texture_mode_3D_unchanged = false;
-            Displayable::set_colourmap (index);
+            Displayable::colourmap = index;
           }
 
           void update_texture2D (int plane, int slice);
           void update_texture3D ();
 
-          void render2D (const Projection& projection, int plane, int slice);
-          void render3D (const Projection& projection, float depth);
+          void render2D (Displayable::Shader& shader_program, const Projection& projection, int plane, int slice);
+          void render3D (Displayable::Shader& shader_program, const Projection& projection, float depth);
 
           void get_axes (int plane, int& x, int& y) {
             if (plane) {

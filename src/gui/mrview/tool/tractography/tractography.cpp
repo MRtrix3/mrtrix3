@@ -282,15 +282,11 @@ namespace MR
 
         void Tractography::on_crop_to_slab_slot (bool is_checked) {
           do_crop_to_slab = is_checked;
-          for (size_t i = 0; i < tractogram_list_model->items.size(); ++i)
-            tractogram_list_model->items[i]->recompile();
           window.updateGL();
         }
 
         void Tractography::on_use_lighting_slot (bool is_checked) {
           use_lighting = is_checked;
-          for (size_t i = 0; i < tractogram_list_model->items.size(); ++i)
-            tractogram_list_model->items[i]->recompile();
           window.updateGL();
         }
 
@@ -333,10 +329,8 @@ namespace MR
         void Tractography::colour_track_by_direction_slot()
         {
           QModelIndexList indices = tractogram_list_view->selectionModel()->selectedIndexes();
-          for (int i = 0; i < indices.size(); ++i) {
+          for (int i = 0; i < indices.size(); ++i) 
             tractogram_list_model->get_tractogram (indices[i])->color_type = Direction;
-            tractogram_list_model->get_tractogram (indices[i])->recompile();
-          }
           window.updateGL();
         }
 
@@ -351,7 +345,6 @@ namespace MR
             for (int i = 0; i < indices.size(); ++i) {
               tractogram_list_model->get_tractogram (indices[i])->color_type = Colour;
               tractogram_list_model->get_tractogram (indices[i])->set_colour (colour);
-              dynamic_cast<Tractogram*> (tractogram_list_model->items[indices[i].row()])->recompile();
             }
           }
           window.updateGL();
@@ -371,7 +364,6 @@ namespace MR
             } while (colour[0] < 0.5 && colour[1] < 0.5 && colour[2] < 0.5);
             dynamic_cast<Tractogram*> (tractogram_list_model->items[indices[i].row()])->color_type = Colour;
             dynamic_cast<Tractogram*> (tractogram_list_model->items[indices[i].row()])->set_colour (colour);
-            dynamic_cast<Tractogram*> (tractogram_list_model->items[indices[i].row()])->recompile();
           }
           window.updateGL();
         }
@@ -392,10 +384,8 @@ namespace MR
             if (dynamic_cast<Tractogram*> (tractogram_list_model->items[indices[0].row()])->scalar_filename.length() == 0) {
               if (!dynamic_cast<TrackScalarFile*> (scalar_file_options->tool)->open_track_scalar_file_slot())
                 return;
-            } else {
+            } else
               dynamic_cast<Tractogram*> (tractogram_list_model->items[indices[0].row()])->color_type = ScalarFile;
-              dynamic_cast<Tractogram*> (tractogram_list_model->items[indices[0].row()])->recompile();
-            }
             scalar_file_options->show();
             window.updateGL();
           }

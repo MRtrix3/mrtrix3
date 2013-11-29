@@ -38,17 +38,20 @@ namespace MR
         class Volume : public Base
         {
           public:
-            Volume (Window& parent);
+            Volume (Window& parent) :
+              Base (parent, FocusContrast | MoveTarget | TiltRotate | ShaderTransparency | ShaderThreshold) {
+              }
 
             virtual void paint (Projection& projection);
           protected:
             GL::VertexBuffer volume_VB, volume_VI;
             GL::VertexArrayObject volume_VAO;
-            GL::Shader::Program volume_program;
-            uint32_t shader_flags;
-            size_t shader_colourmap;
 
-            void recompile_shader();
+            class Shader : public Displayable::Shader {
+              public:
+                virtual std::string vertex_shader_source (const Displayable& object);
+                virtual std::string fragment_shader_source (const Displayable& object);
+            } volume_shader;
 
         };
 

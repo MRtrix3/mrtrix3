@@ -30,7 +30,6 @@
 #include "math/math.h"
 #include "gui/opengl/gl.h"
 #include "gui/opengl/shader.h"
-#include "gui/projection.h"
 #include "gui/mrview/colourmap.h"
 
 #ifdef Complex
@@ -45,7 +44,6 @@ namespace MR
 
   namespace GUI
   {
-    class Projection;
 
     namespace MRView
     {
@@ -57,10 +55,10 @@ namespace MR
       const uint32_t DiscardUpper = 0x40000000;
       const uint32_t Transparency = 0x80000000;
       const uint32_t Lighting = 0x01000000;
-      const uint32_t DiscardLowerOn = 0x00100000;
-      const uint32_t DiscardUpperOn = 0x00200000;
-      const uint32_t TransparencyOn = 0x00400000;
-      const uint32_t LightingOn = 0x00800000;
+      const uint32_t DiscardLowerEnabled = 0x00100000;
+      const uint32_t DiscardUpperEnabled = 0x00200000;
+      const uint32_t TransparencyEnabled = 0x00400000;
+      const uint32_t LightingEnabled = 0x00800000;
 
       class Displayable : public QAction
       {
@@ -115,113 +113,40 @@ namespace MR
             emit scalingChanged();
           }
 
-          void set_colourmap (size_t index) {
-            if (index != colourmap_index) {
-              colourmap_index = index;
-              recompile();
-            }
-          }
-          
-          bool show;
-          float lessthan, greaterthan;
-          float display_midpoint, display_range;
-          float transparent_intensity, opaque_intensity, alpha;
-
-          bool operator! () const {
-            return !shader_program;
-          }
-          void set (uint32_t new_flags) {
-            if (new_flags != flags_) {
-              flags_ = new_flags;
-              recompile();
-            }
-          }
-
-          void start (const Projection& projection, float scaling = 1.0) {
-            if (!shader_program)
-              recompile();
-            shader_program.start();
-
-            glUniformMatrix4fv (glGetUniformLocation (shader_program, "MVP"), 1, GL_FALSE, projection.modelview_projection());
-            glUniform1f (glGetUniformLocation (shader_program, "offset"), (display_midpoint - 0.5f * display_range) / scaling);
-            glUniform1f (glGetUniformLocation (shader_program, "scale"), scaling / display_range);
-            if (flags_ & DiscardLower)
-              glUniform1f (glGetUniformLocation (shader_program, "lower"), lessthan / scaling);
-            if (flags_ & DiscardUpper)
-              glUniform1f (glGetUniformLocation (shader_program, "upper"), greaterthan / scaling);
-            if (flags_ & Transparency) {
-              glUniform1f (glGetUniformLocation (shader_program, "alpha_scale"), scaling / (opaque_intensity - transparent_intensity));
-              glUniform1f (glGetUniformLocation (shader_program, "alpha_offset"), transparent_intensity / scaling);
-              glUniform1f (glGetUniformLocation (shader_program, "alpha"), alpha);
-            }
-          }
-
-          void stop () {
-            shader_program.stop();
-          }
-
-          GLuint get_uniform (const std::string& name) {
-            return glGetUniformLocation (shader_program, name.c_str());
-          }
-
           uint32_t flags () const { return flags_; }
 
           void set_allowed_features (bool thresholding, bool transparency, bool lighting) {
             uint32_t cmap = flags_;
-            set_bit (cmap, DiscardLower, ( thresholding && discard_lower_enabled() && finite (lessthan) ));
-            set_bit (cmap, DiscardUpper, ( thresholding && discard_upper_enabled() && finite (greaterthan) ));
-            set_bit (cmap, Transparency, (
-                  transparency && transparency_enabled() &&
-                  finite (transparent_intensity) && finite (opaque_intensity)
-                  && finite (alpha)));
-            set_bit (cmap, Lighting, ( lighting_enabled() && lighting ));
-            set (cmap);
+            set_bit (cmap, DiscardLowerEnabled, thresholding);
+            set_bit (cmap, DiscardUpperEnabled, thresholding);
+            set_bit (cmap, TransparencyEnabled, transparency);
+            set_bit (cmap, LightingEnabled, lighting);
+            flags_ = cmap;
           }
 
 
           void set_use_discard_lower (bool yesno) {
-            set_bit (DiscardLower | DiscardLowerOn, ( yesno && finite (lessthan) ));
+            if (!discard_lower_enabled()) return;
+            set_bit (DiscardLower, yesno);
           }
 
           void set_use_discard_upper (bool yesno) {
-            set_bit (DiscardUpper | DiscardUpperOn, ( yesno && finite (greaterthan) ));
+            if (!discard_upper_enabled()) return;
+            set_bit (DiscardUpper, yesno);
           }
 
-          void set_use_thresholds (bool yesno) {
-            uint32_t cmap = flags_;
-            set_bit (cmap, DiscardLower | DiscardLowerOn, ( yesno && finite (lessthan) ));
-            set_bit (cmap, DiscardUpper | DiscardUpperOn, ( yesno && finite (greaterthan) ));
-            set (cmap);
+          void set_use_transparency (bool yesno) {
+            if (!transparency_enabled()) return;
+            set_bit (Transparency,  yesno);
           }
 
-          void set_use_transparency (bool value) {
-            set_bit (Transparency | TransparencyOn,
-                ( value && finite (transparent_intensity) && finite (opaque_intensity) && finite (alpha) ));
+          void set_use_lighting (bool yesno) {
+            if (!lighting_enabled()) return;
+            set_bit (LightingEnabled, yesno);
           }
 
-          void set_use_lighting (bool value) {
-            set_bit (Lighting | LightingOn, value);
-          }
-
-          void set_invert_scale (bool value) {
-            set_bit (InvertScale, value);
-          }
-
-          void set_thresholds (float less_than_value = NAN, float greater_than_value = NAN) {
-            lessthan = less_than_value;
-            greaterthan = greater_than_value;
-            set_use_thresholds (true);
-          }
-
-          void set_transparency (float transparent = NAN, float opaque = NAN, float alpha_value = 1.0) {
-            transparent_intensity = transparent;
-            opaque_intensity = opaque;
-            alpha = alpha_value;
-            set_use_transparency (true);
-          }
-
-          size_t colourmap () const {
-            return colourmap_index;
+          void set_invert_scale (bool yesno) {
+            set_bit (InvertScale, yesno);
           }
 
           bool scale_inverted () const {
@@ -229,38 +154,97 @@ namespace MR
           }
 
           bool discard_lower_enabled () const {
-            return flags_ & DiscardLowerOn;
+            return flags_ & DiscardLowerEnabled;
           }
 
           bool discard_upper_enabled () const {
-            return flags_ & DiscardUpperOn;
+            return flags_ & DiscardUpperEnabled;
           }
 
           bool transparency_enabled () const {
-            return flags_ & TransparencyOn;
+            return flags_ & TransparencyEnabled;
           }
 
           bool lighting_enabled () const {
-            return flags_ & LightingOn;
+            return flags_ & LightingEnabled;
           }
 
           bool use_discard_lower () const {
-            return flags_ & DiscardLower;
+            return discard_lower_enabled() && ( flags_ & DiscardLower );
           }
 
           bool use_discard_upper () const {
-            return flags_ & DiscardUpper;
+            return discard_upper_enabled() && ( flags_ & DiscardUpper );
           }
 
           bool use_transparency () const {
-            return flags_ & Transparency;
+            return transparency_enabled() && ( flags_ & Transparency );
           }
 
           bool use_lighting () const {
-            return flags_ & Lighting;
+            return lighting_enabled() && ( flags_ & Lighting );
           }
 
-          virtual void recompile ();
+
+          class Shader : public GL::Shader::Program {
+            public:
+              virtual std::string fragment_shader_source (const Displayable& object) = 0;
+              virtual std::string vertex_shader_source (const Displayable& object) = 0;
+
+              virtual bool need_update (const Displayable& object) const;
+              virtual void update (const Displayable& object);
+
+              void start (const Displayable& object) {
+                if (*this  == 0 || need_update (object)) 
+                  recompile (object);
+                GL::Shader::Program::start();
+              }
+            protected:
+              uint32_t flags;
+              size_t colourmap;
+
+              void recompile (const Displayable& object) {
+                if (*this != 0) 
+                  clear();
+
+                GL::Shader::Vertex vertex_shader (vertex_shader_source (object));
+                GL::Shader::Fragment fragment_shader (fragment_shader_source (object));
+
+                attach (vertex_shader);
+                attach (fragment_shader);
+                link();
+
+                update (object);
+              }
+          };
+
+
+
+          void start (Shader& shader_program, float scaling = 1.0) {
+            shader_program.start (*this);
+
+            glUniform1f (glGetUniformLocation (shader_program, "offset"), (display_midpoint - 0.5f * display_range) / scaling);
+            glUniform1f (glGetUniformLocation (shader_program, "scale"), scaling / display_range);
+            if (use_discard_lower())
+              glUniform1f (glGetUniformLocation (shader_program, "lower"), lessthan / scaling);
+            if (use_discard_upper())
+              glUniform1f (glGetUniformLocation (shader_program, "upper"), greaterthan / scaling);
+            if (use_transparency()) {
+              glUniform1f (glGetUniformLocation (shader_program, "alpha_scale"), scaling / (opaque_intensity - transparent_intensity));
+              glUniform1f (glGetUniformLocation (shader_program, "alpha_offset"), transparent_intensity / scaling);
+              glUniform1f (glGetUniformLocation (shader_program, "alpha"), alpha);
+            }
+          }
+
+          void stop (Shader& shader_program) {
+            shader_program.stop();
+          }
+
+          float lessthan, greaterthan;
+          float display_midpoint, display_range;
+          float transparent_intensity, opaque_intensity, alpha;
+          size_t colourmap;
+          bool show;
 
 
         signals:
@@ -271,9 +255,6 @@ namespace MR
           const std::string filename;
           float value_min, value_max;
           uint32_t flags_;
-          size_t colourmap_index;
-
-          GL::Shader::Program shader_program;
 
           static const char* vertex_shader_source;
 
@@ -285,7 +266,22 @@ namespace MR
           void set_bit (uint32_t bit, bool value) {
             uint32_t cmap = flags_;
             set_bit (cmap, bit, value);
-            set (cmap);
+            flags_ = cmap;
+          }
+
+          void update_levels () {
+            assert (finite (value_min));
+            assert (finite (value_max));
+            if (!finite (transparent_intensity)) 
+              transparent_intensity = value_min + 0.1 * (value_max - value_min);
+            if (!finite (opaque_intensity)) 
+              opaque_intensity = value_min + 0.5 * (value_max - value_min);
+            if (!finite (alpha)) 
+              alpha = 0.5;
+            if (!finite (lessthan))
+              lessthan = value_min;
+            if (!finite (greaterthan))
+              greaterthan = value_max;
           }
 
       };

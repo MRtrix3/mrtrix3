@@ -25,12 +25,13 @@
 
 #include "gui/opengl/gl.h"
 #include "gui/opengl/shader.h"
-#include "gui/projection.h"
 
 namespace MR
 {
   namespace GUI
   {
+    class Projection;
+
     namespace MRView
     {
       class Displayable;

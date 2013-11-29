@@ -190,7 +190,7 @@ namespace MR
             threshold_upper->setRate (tractogram->scaling_rate());
             threshold_upper->setValue (tractogram->greaterthan);
             colourmap_menu->setEnabled (true);
-            colourmap_actions[tractogram->colourmap()]->setChecked (true);
+            colourmap_actions[tractogram->colourmap]->setChecked (true);
             show_colour_bar->setChecked (tractogram->show_colour_bar);
             invert_scale->setChecked (tractogram->scale_inverted());
             scalarfile_by_direction->setChecked (tractogram->scalarfile_by_direction);
@@ -218,7 +218,6 @@ namespace MR
           try {
             tractogram->load_track_scalars (scalar_file);
             tractogram->color_type = ScalarFile;
-            tractogram->recompile();
             set_tractogram (tractogram);
           } 
           catch (Exception& E) {
@@ -245,7 +244,7 @@ namespace MR
             size_t n = 0;
             while (action != colourmap_actions[n])
               ++n;
-            tractogram->set_colourmap (n);
+            tractogram->colourmap = n;
             window.updateGL();
           }
         }
@@ -265,7 +264,6 @@ namespace MR
           if (tractogram) {
             threshold_lower->setEnabled (threshold_lower_box->isChecked());
             tractogram->set_use_discard_lower (threshold_lower_box->isChecked());
-            tractogram->recompile();
             window.updateGL();
           }
         }
@@ -276,7 +274,6 @@ namespace MR
           if (tractogram) {
             threshold_upper->setEnabled (threshold_upper_box->isChecked());
             tractogram->set_use_discard_upper (threshold_upper_box->isChecked());
-            tractogram->recompile();
             window.updateGL();
           }
         }
@@ -306,7 +303,6 @@ namespace MR
         {
           if (tractogram) {
             tractogram->scalarfile_by_direction = scalarfile_by_direction->isChecked();
-            tractogram->recompile();
             window.updateGL();
           }
         }
@@ -325,7 +321,6 @@ namespace MR
         {
           if (tractogram) {
             tractogram->set_invert_scale (invert_scale->isChecked());
-            tractogram->recompile();
             window.updateGL();
           }
         }

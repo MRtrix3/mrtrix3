@@ -54,11 +54,11 @@ namespace MR
           GLint h = glarea()->height()/2;
 
           projections[0].set_viewport (w, h, w, h); 
-          draw_plane (0, projections[0]);
+          draw_plane (0, slice_shader, projections[0]);
           projections[1].set_viewport (0, h, w, h); 
-          draw_plane (1, projections[1]);
+          draw_plane (1, slice_shader, projections[1]);
           projections[2].set_viewport (0, 0, w, h); 
-          draw_plane (2, projections[2]);
+          draw_plane (2, slice_shader, projections[2]);
 
           projection.set_viewport ();
 

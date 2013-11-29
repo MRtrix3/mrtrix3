@@ -37,6 +37,8 @@ namespace MR
     namespace MRView
     {
 
+
+
       Image::Image (const MR::Image::Header& image_header) :
         Displayable (image_header.name()),
         buffer (image_header),
@@ -124,7 +126,7 @@ namespace MR
 
 
 
-      void Image::render2D (const Projection& projection, int plane, int slice)
+      void Image::render2D (Displayable::Shader& shader_program, const Projection& projection, int plane, int slice)
       {
         update_texture2D (plane, slice);
 
@@ -160,9 +162,10 @@ namespace MR
         vertices[7].set (1.0, 0.0, 0.0);
 
 
-        start (projection);
+        start (shader_program);
+        projection.set (shader_program);
         draw_vertices (vertices);
-        stop();
+        stop (shader_program);
       }
 
 
@@ -173,7 +176,7 @@ namespace MR
         }
       }
 
-      void Image::render3D (const Projection& projection, float depth) 
+      void Image::render3D (Displayable::Shader& shader_program, const Projection& projection, float depth) 
       {
 
         update_texture3D();
@@ -181,7 +184,8 @@ namespace MR
         glTexParameteri (GL_TEXTURE_3D, GL_TEXTURE_MAG_FILTER, interpolation);
         glTexParameteri (GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, interpolation);
 
-        start (projection, windowing_scale_3D);
+        start (shader_program, windowing_scale_3D);
+        projection.set (shader_program);
 
         if (use_lighting())
           glEnable (GL_LIGHTING);
@@ -201,7 +205,7 @@ namespace MR
 
         draw_vertices (vertices);
 
-        stop();
+        stop (shader_program);
         if (use_lighting())
           glDisable (GL_LIGHTING);
       }
@@ -233,7 +237,7 @@ namespace MR
         type = GL_FLOAT;
         Ptr<float,true> data;
 
-        std::string cmap_name = ColourMap::maps[colourmap()].name;
+        std::string cmap_name = ColourMap::maps[colourmap].name;
 
         if (cmap_name == "RGB") {
 
@@ -338,6 +342,8 @@ namespace MR
         if ((value_max - value_min) < 2.0*std::numeric_limits<float>::epsilon()) 
           value_min = value_max - 1.0;
 
+        update_levels();
+
         if (isnan (display_midpoint) || isnan (display_range))
           reset_windowing();
 
@@ -352,7 +358,7 @@ namespace MR
 
       inline void Image::update_texture3D ()
       {
-        std::string cmap_name = ColourMap::maps[colourmap()].name;
+        std::string cmap_name = ColourMap::maps[colourmap].name;
 
         if (cmap_name == "RGB") format = GL_RGB;
         else if (cmap_name == "Complex") format = GL_RG;
@@ -465,6 +471,8 @@ namespace MR
         }
         else 
           copy_texture_3D_complex();
+
+        update_levels();
 
         if (isnan (display_midpoint) || isnan (display_range))
           reset_windowing();

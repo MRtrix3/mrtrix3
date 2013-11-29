@@ -45,8 +45,15 @@ namespace MR
 
             static const App::OptionGroup options;
 
+            class Shader : public Displayable::Shader {
+              public:
+                virtual std::string vertex_shader_source (const Displayable& object);
+                virtual std::string fragment_shader_source (const Displayable& object);
+            } slice_shader;
+
           protected:
-            void draw_plane (int axis, Projection& with_projection);
+
+            void draw_plane (int axis, Displayable::Shader& shader_program, Projection& with_projection);
         };
 
       }

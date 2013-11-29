@@ -226,6 +226,12 @@ namespace MR
         const GL::mat4& projection () const { return P; }
         const GL::mat4& projection_inverse () const { return iP; }
 
+
+        void set (GL::Shader::Program& shader_program) const {
+          assert (shader_program != 0);
+          glUniformMatrix4fv (glGetUniformLocation (shader_program, "MVP"), 1, GL_FALSE, modelview_projection());
+        }
+
       protected:
         QGLWidget* glarea;
         const GL::Font& font;

@@ -24,6 +24,7 @@
 #include "gui/opengl/font.h"
 #include "gui/mrview/colourmap.h"
 #include "gui/mrview/displayable.h"
+#include "gui/projection.h"
 
 namespace MR
 {
@@ -138,7 +139,6 @@ namespace MR
             source += "data.z;\n"
             "}\n";
 
-
           GL::Shader::Vertex vertex_shader (source);
 
           GL::Shader::Fragment fragment_shader (
@@ -148,15 +148,15 @@ namespace MR
               "  " + std::string(maps[index].mapping) +
               "}\n");
 
+          program.attach (vertex_shader);
+          program.attach (fragment_shader);
+          program.link();
+
           GL::Shader::Fragment frame_fragment_shader (
               "out vec3 color;\n"
               "void main () {\n"
               "  color = vec3(1.0, 1.0, 0.0);\n"
               "}\n");
-
-          program.attach (vertex_shader);
-          program.attach (fragment_shader);
-          program.link();
 
           frame_program.attach (vertex_shader);
           frame_program.attach (frame_fragment_shader);
@@ -180,10 +180,10 @@ namespace MR
         void Renderer::render (const Projection& projection, const Displayable& object, int position, bool inverted)
         {
           if (!position) return;
-          if (maps[object.colourmap()].special) return;
+          if (maps[object.colourmap].special) return;
           
-          if (!program || !frame_program || object.colourmap() != current_index || current_inverted != inverted)
-            setup (object.colourmap(), inverted);
+          if (!program || !frame_program || object.colourmap != current_index || current_inverted != inverted)
+            setup (object.colourmap, inverted);
 
           if (!VB || !VAO) {
             VB.gen();
