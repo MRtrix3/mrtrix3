@@ -376,7 +376,7 @@ namespace MR
           try {
             MT_gradient_vector_sorter sorter (temp_gv, block_size);
             for (size_t candidate_count = 0; candidate_count < num_tracks / 1000; ++candidate_count)
-              const std::vector<Cost_fn_gradient_sort>::iterator candidate = sorter.get();
+              sorter.get();
             std::cerr << "Time required for sorting " << num_tracks << " tracks, block size " << block_size << " = " << timer.elapsed() * 1000.0 << "ms\n";
           } catch (...) {
             std::cerr << "Could not sort " << num_tracks << "tracks with block size " << block_size << "\n";
