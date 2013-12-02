@@ -200,13 +200,16 @@ namespace MR
             action = new QAction("&Colour by direction", this);
             connect (action, SIGNAL(triggered()), this, SLOT (colour_track_by_direction_slot()));
             track_option_menu->addAction (action);
+            action = new QAction("&Colour by track ends", this);
+            connect (action, SIGNAL(triggered()), this, SLOT (colour_track_by_ends_slot()));
+            track_option_menu->addAction (action);
             action = new QAction("&Randomise colour", this);
             connect (action, SIGNAL(triggered()), this, SLOT (randomise_track_colour_slot()));
             track_option_menu->addAction (action);
             action = new QAction("&Set colour", this);
             connect (action, SIGNAL(triggered()), this, SLOT (set_track_colour_slot()));
             track_option_menu->addAction (action);
-            action = new QAction("&Colour by scalar file     ", this);
+            action = new QAction("&Colour by (track) scalar file", this);
             connect (action, SIGNAL(triggered()), this, SLOT (colour_by_scalar_file_slot()));
             track_option_menu->addAction (action);
         }
@@ -329,8 +332,22 @@ namespace MR
         void Tractography::colour_track_by_direction_slot()
         {
           QModelIndexList indices = tractogram_list_view->selectionModel()->selectedIndexes();
-          for (int i = 0; i < indices.size(); ++i) 
+          for (int i = 0; i < indices.size(); ++i)  {
+            tractogram_list_model->get_tractogram (indices[i])->erase_nontrack_data();
             tractogram_list_model->get_tractogram (indices[i])->color_type = Direction;
+          }
+          window.updateGL();
+        }
+        
+        
+        void Tractography::colour_track_by_ends_slot()
+        {
+          QModelIndexList indices = tractogram_list_view->selectionModel()->selectedIndexes();
+          for (int i = 0; i < indices.size(); ++i) {
+            tractogram_list_model->get_tractogram (indices[i])->erase_nontrack_data();
+            tractogram_list_model->get_tractogram (indices[i])->color_type = Ends;
+            tractogram_list_model->get_tractogram (indices[i])->load_end_colours();
+          }
           window.updateGL();
         }
 
@@ -362,6 +379,7 @@ namespace MR
               colour[1] = rng.uniform();
               colour[2] = rng.uniform();
             } while (colour[0] < 0.5 && colour[1] < 0.5 && colour[2] < 0.5);
+            dynamic_cast<Tractogram*> (tractogram_list_model->items[indices[i].row()])->erase_nontrack_data();
             dynamic_cast<Tractogram*> (tractogram_list_model->items[indices[i].row()])->color_type = Colour;
             dynamic_cast<Tractogram*> (tractogram_list_model->items[indices[i].row()])->set_colour (colour);
           }
@@ -384,8 +402,10 @@ namespace MR
             if (dynamic_cast<Tractogram*> (tractogram_list_model->items[indices[0].row()])->scalar_filename.length() == 0) {
               if (!dynamic_cast<TrackScalarFile*> (scalar_file_options->tool)->open_track_scalar_file_slot())
                 return;
-            } else
+            } else {
+              dynamic_cast<Tractogram*> (tractogram_list_model->items[indices[0].row()])->erase_nontrack_data();
               dynamic_cast<Tractogram*> (tractogram_list_model->items[indices[0].row()])->color_type = ScalarFile;
+            }
             scalar_file_options->show();
             window.updateGL();
           }

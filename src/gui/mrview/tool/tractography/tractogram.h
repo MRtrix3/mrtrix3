@@ -51,7 +51,7 @@ namespace MR
       namespace Tool
       {
 
-        enum ColourType { Direction, Colour, ScalarFile };
+        enum ColourType { Direction, Ends, Colour, ScalarFile };
 
         class Tractogram : public Displayable
         {
@@ -73,12 +73,15 @@ namespace MR
 
             void load_tracks();
 
-            void load_track_scalars (std::string filename);
+            void load_end_colours();
+            void load_track_scalars (const std::string&);
+            void erase_nontrack_data();
 
-            void set_colour (float color[3]) {
-              colour[0] = color[0];
-              colour[1] = color[1];
-              colour[2] = color[2];
+            void set_colour (float c[3])
+            {
+              colour[0] = c[0];
+              colour[1] = c[1];
+              colour[2] = c[2];
             }
 
             bool scalarfile_by_direction;
@@ -109,6 +112,7 @@ namespace MR
             std::string filename;
             std::vector<GLuint> vertex_buffers;
             std::vector<GLuint> vertex_array_objects;
+            std::vector<GLuint> colour_buffers;
             std::vector<GLuint> scalar_buffers;
             DWI::Tractography::Properties properties;
             std::vector<std::vector<GLint> > track_starts;
@@ -122,6 +126,8 @@ namespace MR
                                               std::vector<GLint>& starts,
                                               std::vector<GLint>& sizes,
                                               size_t& tck_count);
+                                              
+            void load_end_colours_onto_GPU (std::vector<Point<float> >& buffer);
 
             void load_scalars_onto_GPU (std::vector<float>& buffer);
 

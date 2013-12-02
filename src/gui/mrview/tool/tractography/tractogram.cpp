@@ -63,13 +63,20 @@ namespace MR
             source += 
               "out vec3 tangent;\n"
               "uniform mat4 MV;\n";
-
-          if (tractogram.color_type == ScalarFile)
-            source += "layout (location = 3) in float amp;\n"
-                "uniform float offset, scale;\n";
-
-          if (tractogram.color_type == Colour) 
-            source += "uniform vec3 const_colour;\n";
+              
+          switch (tractogram.color_type) {
+            case Direction: break;
+            case Ends:
+              source += "layout (location = 3) in vec3 color;\n";
+              break;
+            case Colour:
+              source += "uniform vec3 const_colour;\n";
+              break;
+            case ScalarFile:
+              source += "layout (location = 3) in float amp;\n"
+                        "uniform float offset, scale;\n";
+              break;
+          }
 
           if (tractogram.tractography_tool.do_crop_to_slab) {
             source +=
@@ -98,6 +105,9 @@ namespace MR
               source += "  tangent = normalize (mat3(MV) * dir);\n";
 
           switch (tractogram.color_type) {
+            case Ends:
+              source += std::string (" fragmentColour = color;\n");
+              break;
             case Colour:
               source +=
                   "  fragmentColour = const_colour;\n";
@@ -177,15 +187,15 @@ namespace MR
 
           if (tractogram.tractography_tool.use_lighting) 
             source += 
-             "float l_dot_t = dot(light_pos, t);\n"
-             "vec3 l_perp = light_pos - l_dot_t * t;\n"
-             "vec3 l_perp_norm = normalize (l_perp);\n"
-             "float n_dot_t = t.z;\n"
-             "vec3 n_perp = vec3(0.0, 0.0, 1.0) - n_dot_t * t;\n"
-             "vec3 n_perp_norm = normalize (n_perp);\n"
-             "float cos2_theta = 0.5+0.5*dot(l_perp_norm,n_perp_norm);\n"
-             "color *= ambient + diffuse * length(l_perp) * cos2_theta;\n"
-             "color += specular * sqrt(cos2_theta) * pow (clamp (-l_dot_t*n_dot_t + length(l_perp)*length(n_perp), 0, 1), shine);\n";
+             "  float l_dot_t = dot(light_pos, t);\n"
+             "  vec3 l_perp = light_pos - l_dot_t * t;\n"
+             "  vec3 l_perp_norm = normalize (l_perp);\n"
+             "  float n_dot_t = t.z;\n"
+             "  vec3 n_perp = vec3(0.0, 0.0, 1.0) - n_dot_t * t;\n"
+             "  vec3 n_perp_norm = normalize (n_perp);\n"
+             "  float cos2_theta = 0.5+0.5*dot(l_perp_norm,n_perp_norm);\n"
+             "  color *= ambient + diffuse * length(l_perp) * cos2_theta;\n"
+             "  color += specular * sqrt(cos2_theta) * pow (clamp (-l_dot_t*n_dot_t + length(l_perp)*length(n_perp), 0, 1), shine);\n";
 
           source += "}\n";
 
@@ -225,17 +235,18 @@ namespace MR
 
 
         Tractogram::Tractogram (Window& window, Tractography& tool, const std::string& filename) :
-          Displayable (filename),
-          scalarfile_by_direction (false),
-          show_colour_bar (true),
-          color_type (Direction),
-          scalar_filename (""),
-          window (window),
-          tractography_tool (tool),
-          filename (filename),
-          colourbar_position_index (4) {
-            set_allowed_features (true, true, true);
-            colourmap = 1;
+            Displayable (filename),
+            scalarfile_by_direction (false),
+            show_colour_bar (true),
+            color_type (Direction),
+            scalar_filename (""),
+            window (window),
+            tractography_tool (tool),
+            filename (filename),
+            colourbar_position_index (4)
+        {
+          set_allowed_features (true, true, true);
+          colourmap = 1;
         }
 
 
@@ -248,6 +259,8 @@ namespace MR
             glDeleteBuffers (vertex_buffers.size(), &vertex_buffers[0]);
           if (vertex_array_objects.size())
             glDeleteVertexArrays (vertex_array_objects.size(), &vertex_array_objects[0]);
+          if (colour_buffers.size())
+            glDeleteBuffers (colour_buffers.size(), &colour_buffers[0]);
           if (scalar_buffers.size())
             glDeleteBuffers (scalar_buffers.size(), &scalar_buffers[0]);
         }
@@ -355,52 +368,105 @@ namespace MR
             load_tracks_onto_GPU (buffer, starts, sizes, tck_count);
           file.close();
         }
-
-
-
-
-
-        void Tractogram::load_track_scalars (std::string filename)
+        
+        
+        
+        
+        void Tractogram::load_end_colours()
         {
-          DWI::Tractography::Properties scalar_properties;
-          DWI::Tractography::ScalarReader<float> file (filename, scalar_properties);
+          erase_nontrack_data();
+          // TODO Is it possible to read the track endpoints from the GPU buffer rather than re-reading the .tck file?
+          DWI::Tractography::Reader<float> file (filename, properties);
+          for (size_t buffer_index = 0; buffer_index != vertex_buffers.size(); ++buffer_index) {
+            size_t num_tracks = num_tracks_per_buffer[buffer_index];
+            std::vector< Point<float> > buffer;
+            std::vector< Point<float> > tck;
+            while (num_tracks--) {
+              file.next (tck);
+              const Point<float> tangent ((tck.back() - tck.front()).normalise());
+              const Point<float> colour (Math::abs (tangent[0]), Math::abs (tangent[1]), Math::abs (tangent[2]));
+              buffer.push_back (Point<float>());
+              for (std::vector< Point<float> >::iterator i = tck.begin(); i != tck.end(); ++i)
+                *i = colour;
+              buffer.insert (buffer.end(), tck.begin(), tck.end());
+            }
+            load_end_colours_onto_GPU (buffer);
+          }
+          file.close();
+        }
 
-          // TODO uncomment before release
-//            if (scalar_properties.timestamp != properties.timestamp)
-//              throw Exception ("The scalar track file does not match the selected tractogram   ");
 
-          // free any previously loaded scalar data
+
+
+
+        void Tractogram::load_track_scalars (const std::string& filename)
+        {
+          erase_nontrack_data();
+          scalar_filename = filename;
+          value_min = std::numeric_limits<float>::infinity();
+          value_max = -std::numeric_limits<float>::infinity();
+          std::vector<float> buffer;
+          std::vector<float> tck_scalar;
+          if (Path::has_suffix (filename, ".tsf")) {
+            DWI::Tractography::Properties scalar_properties;
+            DWI::Tractography::ScalarReader<float> file (filename, scalar_properties);
+            // TODO uncomment before release
+            //            if (scalar_properties.timestamp != properties.timestamp)
+            //              throw Exception ("The scalar track file does not match the selected tractogram   ");
+            while (file.next (tck_scalar)) {
+              buffer.push_back (NAN);
+              for (size_t i = 0; i < tck_scalar.size(); ++i) {
+                buffer.push_back (tck_scalar[i]);
+                if (tck_scalar[i] > value_max) value_max = tck_scalar[i];
+                if (tck_scalar[i] < value_min) value_min = tck_scalar[i];
+              }
+              if (buffer.size() >= MAX_BUFFER_SIZE)
+                load_scalars_onto_GPU (buffer);
+            }
+            if (buffer.size())
+              load_scalars_onto_GPU (buffer);
+            file.close();
+          } else {
+            Math::Vector<float> scalars (filename);
+            size_t total_num_tracks = 0;
+            for (std::vector<size_t>::const_iterator i = num_tracks_per_buffer.begin(); i != num_tracks_per_buffer.end(); ++i)
+              total_num_tracks += *i;
+            if (scalars.size() != total_num_tracks)
+              throw Exception ("The scalar text file does not contain the same number of elements as the selected tractogram");
+            size_t running_index = 0;
+            for (size_t buffer_index = 0; buffer_index != vertex_buffers.size(); ++buffer_index) {
+              const size_t num_tracks = num_tracks_per_buffer[buffer_index];
+              std::vector<GLint>& track_lengths (track_sizes[buffer_index]);
+              for (size_t index = 0; index != num_tracks; ++index, ++running_index) {
+                const float value = scalars[running_index];
+                buffer.push_back (NAN);
+                tck_scalar.assign (track_lengths[index], value);
+                buffer.insert (buffer.end(), tck_scalar.begin(), tck_scalar.end());
+                if (value > value_max) value_max = value;
+                if (value < value_min) value_min = value;
+              }
+              load_scalars_onto_GPU (buffer);
+            }
+          }
+          this->set_windowing (value_min, value_max);
+          greaterthan = value_max;
+          lessthan = value_min;
+        }
+        
+        
+        
+        void Tractogram::erase_nontrack_data()
+        {
+          if (colour_buffers.size()) {
+            glDeleteBuffers (colour_buffers.size(), &colour_buffers[0]);
+            colour_buffers.clear();
+          }
           if (scalar_buffers.size()) {
             glDeleteBuffers (scalar_buffers.size(), &scalar_buffers[0]);
             scalar_buffers.clear();
             set_use_discard_lower (false);
             set_use_discard_upper (false);
           }
-
-          scalar_filename = filename;
-
-          value_min = std::numeric_limits<float>::infinity();
-          value_max = -std::numeric_limits<float>::infinity();
-
-          std::vector<float> tck_scalar;
-          std::vector<float > buffer;
-
-          while (file.next (tck_scalar)) {
-            buffer.push_back (NAN);
-            for (size_t i = 0; i < tck_scalar.size(); ++i) {
-              buffer.push_back (tck_scalar[i]);
-              if (tck_scalar[i] > value_max) value_max = tck_scalar[i];
-              if (tck_scalar[i] < value_min) value_min = tck_scalar[i];
-            }
-            if (buffer.size() >= MAX_BUFFER_SIZE)
-              load_scalars_onto_GPU (buffer);
-          }
-          if (buffer.size())
-            load_scalars_onto_GPU (buffer);
-          file.close();
-          this->set_windowing (value_min, value_max);
-          greaterthan = value_max;
-          lessthan = value_min;
         }
 
 
@@ -435,6 +501,25 @@ namespace MR
           starts.clear();
           sizes.clear();
           tck_count = 0;
+        }
+        
+        
+        
+        
+        
+        void Tractogram::load_end_colours_onto_GPU (std::vector< Point<float> >& buffer) {
+          buffer.push_back (Point<float>());
+          GLuint vertexbuffer;
+          glGenBuffers (1, &vertexbuffer);
+          glBindBuffer (GL_ARRAY_BUFFER, vertexbuffer);
+          glBufferData (GL_ARRAY_BUFFER, buffer.size() * sizeof(Point<float>), &buffer[0][0], GL_STATIC_DRAW);
+
+          glBindVertexArray (vertex_array_objects[colour_buffers.size()]);
+          glEnableVertexAttribArray (3);
+          glVertexAttribPointer (3, 3, GL_FLOAT, GL_FALSE, 0, (void*)(3*sizeof(float)));
+
+          colour_buffers.push_back (vertexbuffer);
+          buffer.clear();
         }
 
 

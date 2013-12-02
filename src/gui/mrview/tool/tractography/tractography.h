@@ -84,6 +84,7 @@ namespace MR
             void line_thickness_slot (int thickness);
             void right_click_menu_slot (const QPoint& pos);
             void colour_track_by_direction_slot ();
+            void colour_track_by_ends_slot ();
             void set_track_colour_slot ();
             void randomise_track_colour_slot ();
             void colour_by_scalar_file_slot ();

@@ -211,7 +211,7 @@ namespace MR
 
         bool TrackScalarFile::open_track_scalar_file_slot ()
         {
-          std::string scalar_file = Dialog::File::get_file (this, "Select track scalar to open", "Track Scalar files (*.tsf)");
+          std::string scalar_file = Dialog::File::get_file (this, "Select scalar text file or Track Scalar file (.tsf) to open", "");
           if (scalar_file.empty())
             return false;
 
