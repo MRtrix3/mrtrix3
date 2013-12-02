@@ -339,7 +339,7 @@ namespace MR
           std::ofstream out (filename.c_str());
           if (!out)
             throw Exception ("cannot open matrix file \"" + filename + "\": " + strerror (errno));
-          out << *this;
+          out << *this << " ";
         }
 
 
