@@ -28,6 +28,7 @@
 
 #include "dwi/tractography/file.h"
 #include "dwi/tractography/properties.h"
+#include "dwi/tractography/weights.h"
 #include "dwi/tractography/connectomics/connectomics.h"
 #include "dwi/tractography/connectomics/multithread.h"
 #include "dwi/tractography/connectomics/tck2nodes.h"
@@ -73,6 +74,9 @@ void usage ()
 
   + Connectomics::AssignmentOption
 
+  + Tractography::TrackWeightsInOption
+  + Tractography::TrackWeightsOutOption
+
   + Option ("node_single", "output all streamlines attributed to a particular node (regardless of the other connected node) to a single .tck file").allow_multiple()
     + Argument ("index").type_integer (0)
     + Argument ("name").type_file()
@@ -82,7 +86,7 @@ void usage ()
     + Argument ("index_two").type_integer (0)
     + Argument ("name").type_file()
 
-  + Option ("node_all_edges", "for a node of interest, output a nomber of .tck files, where each contains the connections between some node in the parcellation, and the node of interest").allow_multiple()
+  + Option ("node_all_edges", "for a node of interest, output a number of .tck files, where each contains the connections between some node in the parcellation, and the node of interest").allow_multiple()
     + Argument ("index").type_integer (0)
     + Argument ("prefix").type_text()
 
@@ -134,11 +138,15 @@ void run ()
       writer.add (i, str(opt[0][0]) + "_" + str(i) + ".tck");
   }
 
-  if (writer.file_count()) {
-    Mapping::TrackLoader loader (reader, properties["count"].empty() ? 0 : to<size_t>(properties["count"]), "extracting streamlines of interest... ");
-    Thread::run_batched_queue_threaded_pipe (loader, Mapping::TrackAndIndex(), 100, mapper, MappedTrackWithData(), 100, writer);
-  } else {
+  if (!writer.file_count()) {
     WARN ("No extraction performed - must provide at least one node or edge of interest using command-line options");
+    return;
   }
+
+  if (writer.file_count() > 1 && get_options ("tck_weights_out").size())
+    throw Exception ("Can only propagate streamline weights to output if a single track file is being generated");
+
+  Mapping::TrackLoader loader (reader, properties["count"].empty() ? 0 : to<size_t>(properties["count"]), "extracting streamlines of interest... ");
+  Thread::run_batched_queue_threaded_pipe (loader, Tractography::TrackData<float>(), 100, mapper, MappedTrackWithData(), 100, writer);
 
 }

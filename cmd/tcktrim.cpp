@@ -30,6 +30,7 @@
 #include "progressbar.h"
 #include "dwi/tractography/file.h"
 #include "dwi/tractography/properties.h"
+#include "dwi/tractography/weights.h"
 #include "math/rng.h"
 
 
@@ -55,14 +56,17 @@ void usage ()
 
   OPTIONS
   + Option ( "minlength", "minimum track length that will be written out in mm (default=0).")
-  + Argument ("value").type_float(0.0,0.0,INFINITY);
+  + Argument ("value").type_float(0.0,0.0,INFINITY)
+
+  + Tractography::TrackWeightsInOption
+  + Tractography::TrackWeightsOutOption;
 
 }
 
 
 typedef float value_type;
 typedef cfloat complex_type;
-typedef std::vector< Point<float> > Track;
+typedef Tractography::TrackData<float> Track;
 
 
 void run ()
@@ -90,48 +94,52 @@ void run ()
   Track in_track, out_track;
   size_t out_count=0;
 
-  while (file.next (in_track) ) {
+  while (file.next_data (in_track) ) {
 
 	  // loop through the points on the in_track
 	  bool within_mask = false;
 	  out_track.clear();
+	  out_track.weight = in_track.weight;
 
 	  for ( Track::iterator pt = in_track.begin() ; pt != in_track.end() ; ++pt ) {
 
 		  // is this point in the mask ?
 		  Point<float> p = transform.scanner2voxel( *pt );
 		  for (size_t i=0; i<3; i++)
-			  vox[i] = p[i];
+			  vox[i] = Math::round (p[i]);
 
-		  if (! within_mask ) {
-		  // while we are outside the mask, either wait, or start a new track
-			     if ( vox.value() ) {
-			    	 within_mask = true;
-			    	 out_track.clear();
-			    	 out_track.push_back(*pt);
-			     }
+		  if (Image::Nav::within_bounds (vox)) {
 
-		  } else {
-		  // while we are within the mask, keep writing out this track, or end
-			    if ( vox.value() ) {
-			    	// continue with track
-			    	 out_track.push_back(*pt);
-			    } else {
-			        // now outside the mask, so write the track and start another
-			    	within_mask=false;
+		    if (! within_mask ) {
+		      // while we are outside the mask, either wait, or start a new track
+		      if ( vox.value() ) {
+		        within_mask = true;
+		        out_track.clear();
+		        out_track.push_back(*pt);
+		      }
 
-			    	// check length before writing it out
-			    	float len = 0;
-			  		for (size_t i = 0; i < out_track.size() -1; ++i ) {
-			  			  len += dist( out_track[i], out_track[i+1]);
-			  			  if (len> min_length) break;
-			  		}
-			  		if (len > min_length) {
-			  			  writer.append(out_track);
-			  			  out_count++;
-			  		}
-			    }
+		    } else {
+		      // while we are within the mask, keep writing out this track, or end
+		      if ( vox.value() ) {
+		        // continue with track
+		        out_track.push_back(*pt);
+		      } else {
+		        // now outside the mask, so write the track and start another
+		        within_mask=false;
 
+		        // check length before writing it out
+		        float len = 0;
+		        for (size_t i = 0; i < out_track.size() -1; ++i ) {
+		          len += dist( out_track[i], out_track[i+1]);
+		          if (len> min_length) break;
+		        }
+		        if (len > min_length) {
+		          writer.append(out_track);
+		          out_count++;
+		        }
+		      }
+
+		    }
 		  }
 	  }
 	  // write out any remaining track fragment
@@ -149,8 +157,8 @@ void run ()
 	  }
 
 	  progress++;
-    }
+  }
 
-    writer.total_count = std::max (writer.total_count, out_count);
+  writer.total_count = std::max (writer.total_count, out_count);
 
 }

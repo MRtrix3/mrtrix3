@@ -189,7 +189,7 @@ namespace MR
         Mapping::TrackLoader loader (file, count);
         Mapping::TrackMapperDixel mapper (H, upsample_ratio, true, dirs);
         MappedTrackReceiver receiver (*this);
-        Thread::run_batched_queue_custom_threading (loader, 1, Mapping::TrackAndIndex(), 100, mapper, 0, Mapping::SetDixel(), 100, receiver, 0);
+        Thread::run_batched_queue_custom_threading (loader, 1, Tractography::TrackData<float>(), 100, mapper, 0, Mapping::SetDixel(), 100, receiver, 0);
 
         if (!contributions.back()) {
           track_t num_tracks = 0, max_index = 0;

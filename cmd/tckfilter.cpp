@@ -29,6 +29,7 @@
 #include "dwi/tractography/file.h"
 #include "dwi/tractography/properties.h"
 #include "dwi/tractography/roi.h"
+#include "dwi/tractography/weights.h"
 #include "dwi/tractography/mapping/mapping.h"
 #include "dwi/tractography/mapping/loader.h"
 #include "thread/queue.h"
@@ -46,7 +47,7 @@ void usage ()
   + "filter streamlines according to criteria such as inclusion / exclusion ROIs and length";
 
   ARGUMENTS
-  + Argument ("in_tracks",  "the input track files").type_file().allow_multiple()
+  + Argument ("in_tracks",  "the input track file").type_file()
   + Argument ("out_tracks", "the output track file").type_file();
 
   OPTIONS
@@ -68,16 +69,19 @@ void usage ()
           + Argument ("value").type_float (0.0, 0.0, INFINITY)
 
   + Option ("minlength", "set the minimum length of any track in mm.")
-          + Argument ("value").type_float (0.0, 0.0, INFINITY);
+          + Argument ("value").type_float (0.0, 0.0, INFINITY)
+
+  + Tractography::TrackWeightsInOption
+  + Tractography::TrackWeightsOutOption;
 
 }
 
 
+typedef Tractography::TrackData<float> TrackData;
+
 
 class Filter
 {
-
-    typedef std::vector< Point<float> > Track;
 
   public:
     Filter (Tractography::Properties& p, const float step_size) :
@@ -94,13 +98,13 @@ class Filter
     }
 
 
-    bool operator() (const Track& in, Track& out)
+    bool operator() (const TrackData& in, TrackData& out)
     {
       out.clear();
       if ((in.size() < min_num_points) || (in.size() > max_num_points))
         return true;
       track_included.assign (properties.include.size(), false);
-      for (Track::const_iterator i = in.begin(); i != in.end(); ++i) {
+      for (TrackData::const_iterator i = in.begin(); i != in.end(); ++i) {
         if (!test_point (*i))
           return true;
       }
@@ -149,7 +153,6 @@ class Writer : public Tractography::Writer<float>
 {
 
   typedef Tractography::Writer<float> WriterBase;
-  typedef std::vector< Point<float> > Track;
 
   public:
     Writer (const std::string& path, Tractography::Properties& properties) :
@@ -164,7 +167,7 @@ class Writer : public Tractography::Writer<float>
         fprintf (stderr, "\r%8zu read, %8zu filtered    [100%%]\n", WriterBase::total_count, WriterBase::count);
     }
 
-    bool operator() (const Track& in)
+    bool operator() (const TrackData& in)
     {
       if (App::log_level > 0 && timer.elapsed() >= next_time) {
         next_time += UPDATE_INTERVAL;
@@ -227,8 +230,7 @@ void run ()
   Filter filter (properties, step_size);
   Writer writer (argument[1], properties);
 
-  typedef std::vector< Point<float> > Track;
-  Thread::run_batched_queue_threaded_pipe (reader, Track(), 100, filter, Track(), 100, writer);
+  Thread::run_batched_queue_threaded_pipe (reader, TrackData(), 100, filter, TrackData(), 100, writer);
 
 }
 

@@ -29,8 +29,6 @@
 #include "thread/queue.h"
 #include "dwi/tractography/file.h"
 
-#include "dwi/tractography/mapping/mapping.h"
-
 
 namespace MR {
 namespace DWI {
@@ -45,20 +43,25 @@ class TrackLoader
   public:
     TrackLoader (Tractography::Reader<float>& file, const size_t to_load = 0, const std::string& msg = "mapping tracks to image...") :
       reader (file),
-      counter (0),
       tracks_to_load (to_load),
       progress (msg.size() ? new ProgressBar (msg, tracks_to_load) : NULL)
     { }
 
     virtual ~TrackLoader() { }
-    virtual bool operator() (TrackAndIndex& out)
+    virtual bool operator() (Tractography::TrackData<float>& out)
     {
-      if (!reader.next (out.tck) || (tracks_to_load && (counter >= tracks_to_load))) {
+      if (!reader.next_data (out)) {
         delete progress;
         progress = NULL;
         return false;
       }
-      out.index = counter++;
+      if (tracks_to_load && out.index >= tracks_to_load) {
+        out.clear();
+        out.index = -1;
+        delete progress;
+        progress = NULL;
+        return false;
+      }
       if (progress)
         ++(*progress);
       return true;
@@ -66,7 +69,6 @@ class TrackLoader
 
   protected:
     Tractography::Reader<float>& reader;
-    size_t counter;
     size_t tracks_to_load;
     ProgressBar* progress;
 

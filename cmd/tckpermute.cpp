@@ -646,7 +646,7 @@ void run() {
     Image::Header header (argument[4]);
     DWI::Tractography::Mapping::TrackMapperBase<SetVoxelDir> mapper (header);
     TrackProcessor tract_processor (fixel_indexer, fixel_directions, fixel_TDI, fixel_connectivity, angular_threshold);
-    Thread::run_queue_custom_threading (loader, 1, DWI::Tractography::Mapping::TrackAndIndex(), mapper, 1, SetVoxelDir(), tract_processor, 1);
+    Thread::run_queue_custom_threading (loader, 1, DWI::Tractography::TrackData<float>(), mapper, 1, SetVoxelDir(), tract_processor, 1);
   }
   track_file.close();
 

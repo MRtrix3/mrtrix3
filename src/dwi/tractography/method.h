@@ -102,7 +102,7 @@ namespace MR
         virtual float get_metric() = 0;
 
 
-        virtual void truncate_track (Track& tck, const size_t revert_step)
+        virtual void truncate_track (std::vector< Point<value_type> >& tck, const size_t revert_step)
         {
           for (size_t i = revert_step; i && tck.size(); --i)
             tck.pop_back();

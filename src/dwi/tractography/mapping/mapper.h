@@ -84,16 +84,17 @@ class TrackMapperBase
     virtual ~TrackMapperBase() { }
 
 
-    bool operator() (TrackAndIndex& in, Cont& out)
+    bool operator() (Tractography::TrackData<float>& in, Cont& out)
     {
       out.clear();
       out.index = in.index;
-      if (in.tck.empty())
+      out.weight = in.weight;
+      if (in.empty())
         return true;
-      if (preprocess (in.tck, out) || map_zero) {
-        upsampler (in.tck);
-        voxelise (in.tck, out);
-        postprocess (in.tck, out);
+      if (preprocess (in, out) || map_zero) {
+        upsampler (in);
+        voxelise (in, out);
+        postprocess (in, out);
       }
       return true;
     }

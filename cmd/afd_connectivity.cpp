@@ -191,7 +191,7 @@ void run ()
   Image::Buffer<value_type> fod_buffer (argument[0]);
   DWI::FMLS::Segmenter fmls (dirs, Math::SH::LforN (fod_buffer.dim(3)));
   TrackProcessor tract_processor (fod_buffer, fixel_indexer, fixel_directions, fixel_AFD, fixel_TDI, fmls);
-  Thread::run_queue_custom_threading (loader, 1, DWI::Tractography::Mapping::TrackAndIndex(), mapper, 1, SetVoxelDir(), tract_processor, 1);
+  Thread::run_queue_custom_threading (loader, 1, DWI::Tractography::TrackData<float>(), mapper, 1, SetVoxelDir(), tract_processor, 1);
 
   double total_AFD = 0.0;
   Image::Loop loop (0, 3);

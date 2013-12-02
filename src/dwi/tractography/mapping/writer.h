@@ -138,7 +138,8 @@ template <typename Cont>
 class MapWriterBase
 {
 
-  typedef Image::BufferScratch<uint32_t>::voxel_type counts_voxel_type;
+  // counts needs to be floating-point to cover possibility of weighted streamlines
+  typedef Image::BufferScratch<float>::voxel_type counts_voxel_type;
 
   public:
     MapWriterBase (Image::Header& header, const std::string& name, const bool dump, const vox_stat_t s) :
@@ -146,7 +147,7 @@ class MapWriterBase
       output_image_name (name),
       direct_dump (dump),
       voxel_statistic (s),
-      counts ((s == V_MEAN) ? (new Image::BufferScratch<uint32_t>(header, "counts")) : NULL),
+      counts ((s == V_MEAN) ? (new Image::BufferScratch<float>(header, "counts")) : NULL),
       v_counts (counts ? new counts_voxel_type (*counts) : NULL)
     { }
 
@@ -169,7 +170,7 @@ class MapWriterBase
     const std::string output_image_name;
     const bool direct_dump;
     const vox_stat_t voxel_statistic;
-    Ptr< Image::BufferScratch<uint32_t> > counts;
+    Ptr< Image::BufferScratch<float> > counts;
     Ptr< counts_voxel_type > v_counts;
 
 };
@@ -275,14 +276,14 @@ class MapWriter : public MapWriterBase<Cont>
         Image::Nav::set_pos (v_buffer, *i);
         const value_type factor = get_factor (in, i);
         switch (MapWriterBase<Cont>::voxel_statistic) {
-        case V_SUM:  v_buffer.value() += factor;                       break;
+        case V_SUM:  v_buffer.value() += in.weight * factor;           break;
         case V_MIN:  v_buffer.value() = MIN(v_buffer.value(), factor); break;
         case V_MAX:  v_buffer.value() = MAX(v_buffer.value(), factor); break;
         case V_MEAN:
           // Only increment counts[] if it is necessary to do so given the chosen statistic
-          v_buffer.value() += factor;
+          v_buffer.value() += in.weight * factor;
           Image::Nav::set_pos (*MapWriterBase<Cont>::v_counts, *i);
-          (*MapWriterBase<Cont>::v_counts).value() += 1;
+          (*MapWriterBase<Cont>::v_counts).value() += in.weight;
           break;
         default:
           throw Exception ("Unknown / unhandled voxel statistic in MapWriter::execute()");
@@ -397,16 +398,16 @@ class MapWriterColour : public MapWriterBase<Cont>
         const Point<float> current_value = get_value();
         switch (MapWriterBase<Cont>::voxel_statistic) {
           case V_SUM:
-            set_value (current_value + scaled_colour);
+            set_value (current_value + (scaled_colour * in.weight));
             break;
           case V_MIN:
             if (scaled_colour.norm2() < current_value.norm2())
               set_value (scaled_colour);
             break;
           case V_MEAN:
-            set_value (current_value + scaled_colour);
+            set_value (current_value + (scaled_colour * in.weight));
             Image::Nav::set_pos (*MapWriterBase<Cont>::v_counts, *i);
-            (*MapWriterBase<Cont>::v_counts).value() += 1;
+            (*MapWriterBase<Cont>::v_counts).value() += in.weight;
             break;
           case V_MAX:
             if (scaled_colour.norm2() > current_value.norm2())

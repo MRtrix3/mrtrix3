@@ -55,21 +55,24 @@ class Mapped_track
   public:
     Mapped_track() :
       nodes (std::make_pair (0, 0)),
-      weight (0.0) { }
+      factor (0.0),
+      weight (1.0) { }
 
     void set_first_node  (const node_t i) { nodes.first = i;  }
     void set_second_node (const node_t i) { nodes.second = i; }
     void set_nodes       (const std::pair<node_t, node_t>& i) { nodes = i; }
+    void set_factor      (const float i)    { factor = i; }
     void set_weight      (const float i)    { weight = i; }
 
     node_t get_first_node()  const { return nodes.first;  }
     node_t get_second_node() const { return nodes.second; }
     const std::pair<node_t, node_t>& get_nodes() const { return nodes; }
+    float get_factor() const { return factor; }
     float get_weight() const { return weight; }
 
   private:
     std::pair<node_t, node_t> nodes;
-    float weight;
+    float factor, weight;
 
 };
 
@@ -90,10 +93,11 @@ class Mapper
       metric (that.metric) { }
 
 
-    bool operator() (const Mapping::TrackAndIndex& in, Mapped_track& out)
+    bool operator() (const Tractography::TrackData<float>& in, Mapped_track& out)
     {
-      out.set_nodes (tck2nodes (in.tck));
-      out.set_weight (metric (in.tck, out.get_nodes()));
+      out.set_nodes (tck2nodes (in));
+      out.set_factor (metric (in, out.get_nodes()));
+      out.set_weight (in.weight);
       return true;
     }
 
@@ -128,8 +132,8 @@ class Connectome
       assert (in.get_first_node()  < data.rows());
       assert (in.get_second_node() < data.rows());
       assert (in.get_first_node() <= in.get_second_node());
-      data   (in.get_first_node(), in.get_second_node()) += in.get_weight();
-      counts (in.get_first_node(), in.get_second_node()) ++;
+      data   (in.get_first_node(), in.get_second_node()) += in.get_factor() * in.get_weight();
+      counts (in.get_first_node(), in.get_second_node()) += in.get_weight();
       return true;
     }
 
@@ -227,10 +231,12 @@ class NodeExtractMapper
     NodeExtractMapper (const NodeExtractMapper& that) :
       tck2nodes (that.tck2nodes) { }
 
-    bool operator() (const Mapping::TrackAndIndex& in, MappedTrackWithData& out) const
+    bool operator() (const Tractography::TrackData<float>& in, MappedTrackWithData& out) const
     {
-      out.set_nodes (tck2nodes (in.tck));
-      out.tck = in.tck;
+      out.set_nodes (tck2nodes (in));
+      out.set_factor (0.0);
+      out.set_weight (in.weight);
+      out.tck = in;
       return true;
     }
 
@@ -310,8 +316,13 @@ class NodeExtractWriter
     bool operator() (const MappedTrackWithData& in) const
     {
       for (size_t i = 0; i != file_count(); ++i) {
-        if (nodes[i] (in))
-          writers[i]->append (in.tck);
+        if (nodes[i] (in)) {
+          Tractography::TrackData<float> temp (in.tck);
+          temp.weight = in.get_weight();
+          writers[i]->append (temp);
+        } else {
+          writers[i]->append (empty_tck);
+        }
       }
       return true;
     }
@@ -319,10 +330,12 @@ class NodeExtractWriter
 
     size_t file_count() const { return writers.size(); }
 
+
   private:
     Tractography::Properties properties;
     std::vector<NodeSelector> nodes;
     std::vector< Tractography::Writer<float>* > writers;
+    std::vector< Point<float> > empty_tck;
 
 };
 

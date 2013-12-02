@@ -46,6 +46,9 @@ void usage ()
   + Argument ("in_tracks",  "the input track files").type_file().allow_multiple()
   + Argument ("out_tracks", "the output track file").type_file();
 
+  // TODO Add capability to read in list of scalar text files and concatenate accordingly
+  // TODO Add capability to read in list of track scalar files and concatenate accordingly
+
 }
 
 

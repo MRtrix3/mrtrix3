@@ -28,6 +28,7 @@
 #include "progressbar.h"
 #include "dwi/tractography/file.h"
 #include "dwi/tractography/properties.h"
+#include "dwi/tractography/weights.h"
 #include "math/rng.h"
 
 MRTRIX_APPLICATION
@@ -51,7 +52,10 @@ void usage ()
   + Option ("skip", "skip a number of tracks from the start of file before truncating")
     + Argument ("number").type_integer (0, 1, INT_MAX)
 
-  + Option ("randomise", "select a random subset of tracks instead of a contiguous block");
+  + Option ("randomise", "select a random subset of tracks instead of a contiguous block")
+
+  + Tractography::TrackWeightsInOption
+  + Tractography::TrackWeightsOutOption;
 
 }
 
@@ -78,7 +82,7 @@ void run ()
 
   Tractography::Writer<float> writer (argument[2], properties);
 
-  std::vector<Point<float> > tck;
+  Tractography::TrackData<float> tck;
   size_t index = 0;
 
   opt = get_options ("randomise");

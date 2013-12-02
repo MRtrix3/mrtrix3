@@ -293,7 +293,7 @@ namespace MR
       }
 
 
-      void truncate_track (Track& tck, const int revert_step)
+      void truncate_track (std::vector< Point<value_type> >& tck, const int revert_step)
       {
         // Need to be able to get an estimate of the tangent at the new endpoint
         // Removing start of current arc (counts as 1 if it exists) plus 1 arclength for each remaining revert_step

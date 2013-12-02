@@ -25,12 +25,15 @@
 
 #include <fstream>
 #include <map>
+#include <vector>
 
+#include "app.h"
 #include "types.h"
 #include "point.h"
 #include "file/key_value.h"
 #include "dwi/tractography/file_base.h"
 #include "dwi/tractography/properties.h"
+#include "math/vector.h"
 
 
 namespace MR
@@ -40,15 +43,43 @@ namespace MR
     namespace Tractography
     {
 
+
+      template <typename T = float>
+      class TrackData : public std::vector< Point<T> >
+      {
+        public:
+          typedef T value_type;
+          TrackData () :
+              std::vector< Point<value_type> > (),
+              index (-1),
+              weight (value_type (1.0)) { }
+          TrackData (const std::vector< Point<value_type> >& tck) :
+              std::vector< Point<value_type> > (tck),
+              index (-1),
+              weight (1.0) { }
+          size_t index;
+          value_type weight;
+      };
+
+
       template <typename T = float> 
         class Reader : public __ReaderBase__
       {
         public:
           typedef T value_type;
 
-          Reader (const std::string& file, Properties& properties) {
+          Reader (const std::string& file, Properties& properties) :
+              track_index (0)
+          {
             open (file, "tracks", properties);
+            App::Options opt = App::get_options ("tck_weights_in");
+            if (opt.size()) {
+              const std::string path = opt[0][0];
+              weights.load (path);
+              DEBUG ("Imported track weights file " + path + " with " + str(weights.size()) + " elements");
+            }
           }
+
 
           bool next (std::vector< Point<value_type> >& tck)
           {
@@ -67,25 +98,42 @@ namespace MR
                 return false;
               }
 
-              if (isnan (p[0]))
+              if (isnan (p[0])) {
+                ++track_index;
                 return true;
+              }
               tck.push_back (p);
             } while (in.good());
 
             in.close();
             return false;
           }
+          bool operator() (std::vector< Point<value_type> >& tck) { return next (tck); }
 
-          bool operator() (std::vector< Point<value_type> >& tck)
+
+          bool next_data (TrackData<value_type>& tck)
           {
+            tck.clear();
+            tck.index = track_index;
+            if (weights.size()) {
+              if (tck.index >= weights.size())
+                return false;
+              tck.weight = weights[tck.index];
+            } else {
+              tck.weight = 1.0;
+            }
             return next (tck);
           }
+          bool operator() (TrackData<value_type>& tck) { return next_data (tck); }
 
 
 
         protected:
           using __ReaderBase__::in;
           using __ReaderBase__::dtype;
+
+          Math::Vector<value_type> weights;
+          size_t track_index;
 
           Point<value_type> get_next_point ()
           { 
@@ -151,6 +199,7 @@ namespace MR
           using __WriterBase__<T>::count;
           using __WriterBase__<T>::total_count;
           using __WriterBase__<T>::out;
+          using __WriterBase__<T>::name;
           using __WriterBase__<T>::dtype;
           using __WriterBase__<T>::create;
 
@@ -162,10 +211,15 @@ namespace MR
             create (file, properties, "tracks");
             barrier_addr = out.tellp();
             write_point (barrier());
+            App::Options opt = App::get_options ("tck_weights_out");
+            if (opt.size())
+              weights_out.open (std::string (opt[0][0]).c_str(), std::ios_base::trunc);
           }
 
           ~Writer() {
             commit();
+            if (weights_out.is_open())
+              weights_out.close();
           }
 
           void append (const std::vector< Point<value_type> >& tck)
@@ -181,12 +235,15 @@ namespace MR
             }
             ++total_count;
           }
+          bool operator() (const std::vector< Point<value_type> >& tck) { append (tck); return true; }
 
-          bool operator() (const std::vector< Point<value_type> >& tck)
+          void append (const TrackData<value_type>& tck)
           {
-            append (tck);
-            return true;
+            append (std::vector< Point<value_type> > (tck));
+            if (weights_out.is_open() && tck.size())
+              weights_buffer += str (tck.weight) + ' ';
           }
+          bool operator() (const TrackData<value_type>& tck) { append (tck); return true; }
 
 
         protected:
@@ -195,6 +252,9 @@ namespace MR
           Ptr<Point<value_type>,true> buffer;
           size_t buffer_size;
           int64_t barrier_addr;
+
+          std::ofstream weights_out;
+          std::string weights_buffer;
 
           void add_point (const Point<value_type>& p) 
           {
@@ -238,6 +298,12 @@ namespace MR
             if (!out.good())
               throw Exception ("error writing track file \"" + this->name + "\": " + strerror (errno));
             buffer_size = 0;
+            if (weights_out.is_open()) {
+              weights_out << weights_buffer;
+              weights_buffer.clear();
+              if (!weights_out.good())
+                throw Exception (std::string ("error writing track weights file: ") + strerror (errno));
+            }
           }
 
           Writer (const Writer& W) : buffer_size (0), barrier_addr (0) { assert (0); }

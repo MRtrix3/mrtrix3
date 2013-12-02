@@ -85,7 +85,7 @@ namespace MR
 
           }
 
-          bool operator() (const Track& tck)
+          bool operator() (const GeneratedTrack& tck)
           {
             if (complete())
               return false;
@@ -103,12 +103,13 @@ namespace MR
             return true;
           }
 
-          bool operator() (const Track& in, Mapping::TrackAndIndex& out)
+          bool operator() (const GeneratedTrack& in, Tractography::TrackData<float>& out)
           {
             out.index = writer.count;
+            out.weight = 1.0;
             if (!operator() (in))
               return false;
-            out.tck = in;
+            out = in;
             return true;
           }
 
@@ -141,14 +142,14 @@ namespace MR
               typename Method::Shared shared (diff_path, properties);
               WriteKernel writer (shared, destination, properties);
               Exec<Method> tracker (shared);
-              Thread::run_queue_threaded_source (tracker, Track(), writer);
+              Thread::run_queue_threaded_source (tracker, GeneratedTrack(), writer);
 
             } else {
 
               const std::string& fod_path (properties["seed_dynamic"]);
 
               typedef Mapping::SetDixel SetDixel;
-              typedef Mapping::TrackAndIndex TrackAndIndex;
+              typedef Tractography::TrackData<float> TrackData;
               typedef Mapping::TrackMapperDixel TckMapper;
 
               DWI::Directions::FastLookupSet dirs (1281);
@@ -177,17 +178,17 @@ namespace MR
 
               TckMapper mapper (H, upsample_ratio, true, dirs);
 
-              Thread::Queue<Track>             tracking_output_queue;
-              Thread::Queue<TrackAndIndex>     writer_output_queue;
+              Thread::Queue<GeneratedTrack>    tracking_output_queue;
+              Thread::Queue<TrackData>         writer_output_queue;
               Thread::Queue<Mapping::SetDixel> dixel_queue;
 
-              Thread::__Source<Track, Exec<Method> >               q_tracker (tracking_output_queue, tracker);
-              Thread::__Pipe  <Track, WriteKernel, TrackAndIndex>  q_writer  (tracking_output_queue, writer, writer_output_queue);
-              Thread::__Pipe  <TrackAndIndex, TckMapper, SetDixel> q_mapper  (writer_output_queue, mapper, dixel_queue);
-              Thread::__Sink  <SetDixel, Seeding::Dynamic>         q_seeder  (dixel_queue, *seeder);
+              Thread::__Source<GeneratedTrack, Exec<Method> >          q_tracker (tracking_output_queue, tracker);
+              Thread::__Pipe  <GeneratedTrack, WriteKernel, TrackData> q_writer  (tracking_output_queue, writer, writer_output_queue);
+              Thread::__Pipe  <TrackData, TckMapper, SetDixel>         q_mapper  (writer_output_queue, mapper, dixel_queue);
+              Thread::__Sink  <SetDixel, Seeding::Dynamic>             q_seeder  (dixel_queue, *seeder);
 
-              Thread::Array< Thread::__Source<Track, Exec<Method> > >             tracker_array (q_tracker, Thread::number_of_threads());
-              Thread::Array< Thread::__Pipe<TrackAndIndex, TckMapper, SetDixel> > mapper_array  (q_mapper,  Thread::number_of_threads());
+              Thread::Array< Thread::__Source<GeneratedTrack, Exec<Method> > > tracker_array (q_tracker, Thread::number_of_threads());
+              Thread::Array< Thread::__Pipe<TrackData, TckMapper, SetDixel> >  mapper_array  (q_mapper,  Thread::number_of_threads());
 
               Thread::Exec tracker_threads (tracker_array, "trackers");
               Thread::Exec writer_thread   (q_writer,      "writer");
@@ -207,7 +208,7 @@ namespace MR
             track_included (S.properties.include.size(), false) { }
 
 
-          bool operator() (Track& item) {
+          bool operator() (GeneratedTrack& item) {
             if (!gen_track (item))
               return false;
             if (track_rejected (item))
@@ -256,7 +257,7 @@ namespace MR
           };
 
 
-          bool gen_track (Track& tck)
+          bool gen_track (GeneratedTrack& tck)
           {
             tck.clear();
             track_excluded = false;
@@ -312,7 +313,7 @@ namespace MR
 
 
 
-          void gen_track_unidir (Track& tck)
+          void gen_track_unidir (GeneratedTrack& tck)
           {
 
             if (S.is_act())
@@ -443,7 +444,7 @@ namespace MR
 
 
 
-          bool track_rejected (const Track& tck)
+          bool track_rejected (const std::vector< Point<float> >& tck)
           {
 
             if (track_excluded)
@@ -462,7 +463,7 @@ namespace MR
               }
 
               if (S.act().backtrack()) {
-                for (Track::const_iterator i = tck.begin(); i != tck.end(); ++i)
+                for (std::vector< Point<float> >::const_iterator i = tck.begin(); i != tck.end(); ++i)
                   S.properties.include.contains (*i, track_included);
               }
 
@@ -489,7 +490,7 @@ namespace MR
 
 
 
-          bool satisfy_wm_requirement (const Track& tck)
+          bool satisfy_wm_requirement (const std::vector< Point<float> >& tck)
           {
             // If using the Seed_test algorithm (indicated by max_num_points == 2), don't want to execute this check
             if (S.max_num_points == 2)
@@ -499,7 +500,7 @@ namespace MR
             if (!ACT_WM_INT_REQ && !ACT_WM_ABS_REQ)
               return true;
             float integral = 0.0, max_value = 0.0;
-            for (Track::const_iterator i = tck.begin(); i != tck.end(); ++i) {
+            for (std::vector< Point<float> >::const_iterator i = tck.begin(); i != tck.end(); ++i) {
               if (method.act().fetch_tissue_data (*i)) {
                 const float wm = method.act().tissues().get_wm();
                 max_value = MAX (max_value, wm);
@@ -512,7 +513,7 @@ namespace MR
 
 
 
-          void truncate_exit_sgm (Track& tck)
+          void truncate_exit_sgm (std::vector< Point<float> >& tck)
           {
 
             Interpolator<SourceBufferType::voxel_type>::type source (S.source_voxel);
@@ -575,7 +576,7 @@ namespace MR
 
 
 
-          void downsample_track (Track& tck, const int factor)
+          void downsample_track (GeneratedTrack& tck, const int factor)
           {
             size_t index_old = factor;
             if (tck.get_seed_index()) {

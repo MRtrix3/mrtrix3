@@ -23,6 +23,8 @@
 #ifndef __dwi_tractography_shared_h__
 #define __dwi_tractography_shared_h__
 
+#include <vector>
+
 #include "image/nav.h"
 
 #include "point.h"
@@ -46,19 +48,6 @@ namespace MR
   {
     namespace Tractography
     {
-
-
-
-    class Track : public std::vector< Point<float> > {
-      public:
-        Track() : seed_index (0) { }
-        void clear() { std::vector< Point<float> >::clear(); seed_index = 0; }
-        size_t get_seed_index() const { return seed_index; }
-        void reverse() { std::reverse (begin(), end()); seed_index = size()-1; }
-        void set_seed_index (const size_t i) { seed_index = i; }
-      private:
-        size_t seed_index;
-    };
 
 
 
@@ -88,6 +77,20 @@ namespace MR
 
     typedef Image::BufferPreload<float> SourceBufferType;
     typedef SourceBufferType::value_type value_type;
+
+
+    // Using value_type instead of float here confuses the compiler...
+    class GeneratedTrack : public std::vector< Point<float> > {
+        typedef std::vector< Point<float> > BaseType;
+      public:
+        GeneratedTrack() : seed_index (0) { }
+        void clear() { BaseType::clear(); seed_index = 0; }
+        size_t get_seed_index() const { return seed_index; }
+        void reverse() { std::reverse (begin(), end()); seed_index = size()-1; }
+        void set_seed_index (const size_t i) { seed_index = i; }
+      private:
+        size_t seed_index;
+    };
 
 
     template <class VoxelType>
@@ -279,7 +282,7 @@ namespace MR
 
           max_angle = 90.0 * step_size / vox();
           properties.set (max_angle, "max_angle");
-          INFO ("maximum deviation angle = " + str (max_angle) + "°");
+          INFO ("maximum deviation angle = " + str (max_angle) + " deg");
           max_angle *= M_PI / 180.0;
           cos_max_angle = Math::cos (max_angle);
 
