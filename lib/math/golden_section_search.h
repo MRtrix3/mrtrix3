@@ -25,6 +25,7 @@
 #include <cmath>
 
 #include "progressbar.h"
+#include "ptr.h"
 
 namespace MR
 {
@@ -58,7 +59,9 @@ namespace MR
                                        ValueType max_bound,
                                        ValueType tolerance = 0.01)	{
 
-     ProgressBar progress(message);
+     Ptr<ProgressBar> progress;
+     if (message.size())
+       progress = new ProgressBar (message);
 
      const ValueType g1 = 0.61803399, g2 = 1 - g1;
      ValueType x0 = min_bound, x1, x2, x3 = max_bound;
@@ -86,7 +89,8 @@ namespace MR
           x1 = g1 * x2 + g2 * x0;
           f2 = f1, f1 = function(x1);
         }
-        ++progress;
+        if (progress)
+          ++*progress;
       }
       return f1 < f2 ? x1 : x2;
     }
