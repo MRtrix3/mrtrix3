@@ -80,6 +80,14 @@ namespace MR
       bool is_big_endian () const {
         return dt & BigEndian;
       }
+      bool is_integer () const {
+        const uint8_t type = dt & Type;
+        return ((type == UInt8) || (type == UInt16) || (type == UInt32) || (type == UInt64));
+      }
+      bool is_floating_point () const {
+        const uint8_t type = dt & Type;
+        return ((type == Float32) || (type == Float64));
+      }
       void set_byte_order_native () {
         if (dt != Bit && dt != Int8 && dt != UInt8) {
           if (!is_little_endian() && !is_big_endian()) {
