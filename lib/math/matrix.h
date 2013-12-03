@@ -616,28 +616,26 @@ namespace MR
         friend std::istream& operator>> (std::istream& stream, Matrix& M) {
           std::vector< RefPtr< std::vector<ValueType> > > V;
           std::string sbuf, entry;
-          do {
-            getline (stream, sbuf);
-            if (stream.bad()) throw Exception (strerror (errno));
-            if (stream.eof()) break;
 
+          while (getline (stream, sbuf)) {
             sbuf = strip (sbuf.substr (0, sbuf.find_first_of ('#')));
-            if (sbuf.size()) {
-              V.push_back (RefPtr< std::vector<ValueType> > (new std::vector<ValueType>));
+            if (sbuf.empty()) 
+              continue;
 
-              std::istringstream stream (sbuf);
-              while (true) {
-                stream >> entry;
-                if (stream.fail()) break;
-                V.back()->push_back (to<ValueType> (entry));
-              }
+            V.push_back (RefPtr< std::vector<ValueType> > (new std::vector<ValueType>));
 
-              if (V.size() > 1)
-                if (V.back()->size() != V[0]->size())
-                  throw Exception ("uneven rows in matrix");
-            }
+            std::istringstream line (sbuf);
+            while (line >> entry) 
+              V.back()->push_back (to<ValueType> (entry));
+            if (line.bad())
+              throw Exception (strerror (errno));
+
+            if (V.size() > 1)
+              if (V.back()->size() != V[0]->size())
+                throw Exception ("uneven rows in matrix");
           }
-          while (stream.good());
+          if (stream.bad()) 
+            throw Exception (strerror (errno));
 
           if (!V.size())
             throw Exception ("no data in file");

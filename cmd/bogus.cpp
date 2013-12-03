@@ -21,9 +21,9 @@
 */
 
 #include "app.h"
-#include "debug.h"
 #include "math/rng.h"
-#include "math/least_squares.h"
+#include "math/vector.h"
+#include "math/matrix.h"
 
 MRTRIX_APPLICATION
 
@@ -34,14 +34,8 @@ using namespace App;
 
 void usage () {
 
-  DESCRIPTION 
-    + "this is used to test stuff. I need to write a lot of stuff here to pad this out and check that the wrapping functionality works as advertised... Seems to do an OK job so far. Wadaya reckon?"
-    + "some more details here.";
-
   ARGUMENTS
-    + Argument ("mask", "mask").type_image_in()
-    + Argument ("in", "in").type_image_in()
-    + Argument ("out", "out").type_image_out();
+    + Argument ("file", "a file name").type_file();
 }
 
 
@@ -52,14 +46,39 @@ void run ()
 {
   Math::RNG rng;
 
-  Math::Matrix<value_type> M (6,9);
-  VAR (M.rows());
-  VAR (M.columns());
-  for (size_t i = 0; i < M.rows(); ++i)
-    for (size_t j = 0; j < M.columns(); ++j)
-      M(i,j) = rng.normal();
 
-  M.save ("M.txt");
-  Math::pinv (M).save("iM.txt");
+  Math::Vector<value_type> V_orig (1000);
+  for (size_t i = 0; i < V_orig.size(); ++i)
+      V_orig[i] = rng.normal();
+  V_orig.save (argument[0]);
+
+  Math::Vector<value_type> V (static_cast<std::string> (argument[0]));
+
+  for (size_t n = 0; n < 10; ++n) {
+    V.save (argument[0]);
+    V.clear ();
+    V.load (argument[0]);
+    if (V != V_orig)
+      FAIL ("difference detected in run " + str(n) + " for Math::Vector!");
+  }
+
+
+
+
+  Math::Matrix<value_type> M_orig (100, 100);
+  for (size_t i = 0; i < M_orig.rows(); ++i)
+    for (size_t j = 0; j < M_orig.columns(); ++j)
+      M_orig(i,j) = rng.normal();
+  M_orig.save (argument[0]);
+
+  Math::Matrix<value_type> M (static_cast<std::string> (argument[0]));
+
+  for (size_t n = 0; n < 10; ++n) {
+    M.save (argument[0]);
+    M.clear ();
+    M.load (argument[0]);
+    if (M != M_orig)
+      FAIL ("difference detected in run " + str(n) + " for Math::Matrix!");
+  }
 }
 

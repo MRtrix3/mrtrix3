@@ -339,7 +339,7 @@ namespace MR
           std::ofstream out (filename.c_str());
           if (!out)
             throw Exception ("cannot open matrix file \"" + filename + "\": " + strerror (errno));
-          out << *this << " ";
+          out << *this;
         }
 
 
@@ -552,11 +552,10 @@ namespace MR
         friend std::istream& operator>> (std::istream& stream, Vector& V) {
           std::vector<ValueType> vec;
           std::string entry;
-          while (true) {
-            stream >> entry;
-            if (stream.good()) vec.push_back (to<ValueType> (entry));
-            else break;
-          }
+          while (stream >> entry) 
+            vec.push_back (to<ValueType> (entry));
+          if (stream.bad()) 
+            throw Exception (strerror (errno));
 
           V.allocate (vec.size());
           for (size_t n = 0; n < V.size(); n++)

@@ -110,8 +110,8 @@ namespace MR
 
 
   //! read a line from the stream
-  /*! a replacement for the standard getline() function that will read to the
-    end of the line and grow the string accordingly.  */
+  /*! a replacement for the standard getline() function that also discards
+   * carriage returns if found at the end of the line. */
   inline std::istream& getline (std::istream& stream, std::string& string)
   {
     std::getline (stream, string);
