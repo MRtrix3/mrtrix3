@@ -109,7 +109,7 @@ namespace MR
      * M = 0.0;
      *
      * // set diagonal elements to 1 (this uses the diagonal() function,
-     * // which returns a Matrix::View):
+     * // which returns a Vector::View):
      * M.diagonal() = 1.0;
      *
      * // create instance of Vector from data file:

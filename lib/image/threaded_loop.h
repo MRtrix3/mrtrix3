@@ -69,7 +69,7 @@ namespace MR
      * from, in the form of an Image::Iterator class.
      *
      *
-     * ### The run_outer() method
+     * \par The run_outer() method
      *
      * The most general of these methods is the run_outer() method, which launches a
      * set of threads that will each iteratively invokes the functor, providing
@@ -135,7 +135,7 @@ namespace MR
      * \endcode
      *
      *
-     * ### The run() method
+     * \par The run() method
      *
      * The run() method is a convenience function that reduces the amount of
      * code required for most simple operations. Essentially, it takes a
@@ -162,7 +162,7 @@ namespace MR
      * \endcode
      *
      *
-     * ### The run_foreach() methods
+     * \par The run_foreach() methods
      *
      * These convenience functions can be used for any per-voxel operation, and
      * simplify the code further by taking a simple function, or a functor if
@@ -178,7 +178,7 @@ namespace MR
      * - \a voxN: the VoxelType objects whose voxel values are to be
      * used as inputs/outputs; their number and order should match that of
      * the function or functor.
-     * - \a flagsN: specifies whether the preceeding VoxelType object is an
+     * - \a flagsN: specifies whether the preceding VoxelType object is an
      * input and/or an output, in the form of an \a Input or \a Output flags
      * (or an OR'd combination of them). If \a Input is specified, the
      * corresponding value will be read from the VoxelType object before
@@ -246,7 +246,7 @@ namespace MR
      * \endcode
      *
      *
-     * ### Constructors
+     * \par Constructors
      *
      * The Image::ThreadedLoop constructors can be used to set up any
      * reasonable multi-threaded looping structure. The various relevant
