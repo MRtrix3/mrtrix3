@@ -65,9 +65,10 @@ namespace MR
         public:
           typedef T value_type;
 
-          __WriterBase__():
+          __WriterBase__(const std::string& name) :
             count (0),
             total_count (0),
+            name (name), 
             dtype (DataType::from<value_type>()),
             count_offset (0)
           {
@@ -80,18 +81,14 @@ namespace MR
 
           ~__WriterBase__()
           {
+            std::ofstream out (name.c_str(), std::ios::in | std::ios::out | std::ios::binary);
+            if (!out) 
+              throw Exception ("error re-opening output file \"" + name + "\": " + strerror (errno));
             out.seekp (count_offset);
             out << count << "\ntotal_count: " << total_count << "\nEND\n";
-            out.close();
           }
 
-          void create (const std::string& file, const Properties& properties, const std::string& type) {
-            name = file;
-            out.open (name.c_str(), std::ios::out | std::ios::binary | std::ios::trunc);
-
-            if (!out)
-              throw Exception ("error creating " + type + " file \"" + name + "\": " + strerror (errno));
-
+          void create (std::ofstream& out, const Properties& properties, const std::string& type) {
             out << "mrtrix " + type + "\nEND\n";
 
             out.precision (properties.timestamp_precision);
@@ -134,8 +131,7 @@ namespace MR
           size_t count, total_count;
 
         protected:
-          std::ofstream  out;
-          std::string    name;
+          std::string name;
           DataType dtype;
           int64_t  count_offset;
       };

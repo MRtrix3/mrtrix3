@@ -198,19 +198,29 @@ namespace MR
           typedef T value_type;
           using __WriterBase__<T>::count;
           using __WriterBase__<T>::total_count;
-          using __WriterBase__<T>::out;
           using __WriterBase__<T>::name;
           using __WriterBase__<T>::dtype;
           using __WriterBase__<T>::create;
 
           Writer (const std::string& file, const Properties& properties) :
+            __WriterBase__<T> (file), 
             buffer_capacity (File::Config::get_int ("TrackWriterBufferSize", 16777216) / sizeof (Point<value_type>)),
             buffer (new Point<value_type> [buffer_capacity+2]),
             buffer_size (0)
           {
-            create (file, properties, "tracks");
+            std::ofstream out (name.c_str(), std::ios::out | std::ios::binary | std::ios::trunc);
+            if (!out)
+              throw Exception ("error creating tracks file \"" + name + "\": " + strerror (errno));
+
+            create (out, properties, "tracks");
             barrier_addr = out.tellp();
-            write_point (barrier());
+
+            Point<value_type> x;
+            format_point (barrier(), x);
+            out.write (reinterpret_cast<char*> (&x[0]), sizeof (x));
+            if (!out.good())
+              throw Exception ("error writing tracks file \"" + name + "\": " + strerror (errno));
+          
             App::Options opt = App::get_options ("tck_weights_out");
             if (opt.size())
               weights_out.open (std::string (opt[0][0]).c_str(), std::ios_base::trunc);
@@ -235,7 +245,10 @@ namespace MR
             }
             ++total_count;
           }
-          bool operator() (const std::vector< Point<value_type> >& tck) { append (tck); return true; }
+          bool operator() (const std::vector< Point<value_type> >& tck) { 
+            append (tck); 
+            return true;
+          }
 
           void append (const TrackData<value_type>& tck)
           {
@@ -243,7 +256,10 @@ namespace MR
             if (weights_out.is_open() && tck.size())
               weights_buffer += str (tck.weight) + ' ';
           }
-          bool operator() (const TrackData<value_type>& tck) { append (tck); return true; }
+          bool operator() (const TrackData<value_type>& tck) { 
+            append (tck); 
+            return true;
+          }
 
 
         protected:
@@ -271,15 +287,6 @@ namespace MR
             else { destination[0] = BE(p[0]); destination[1] = BE(p[1]); destination[2] = BE(p[2]); }
           }
 
-          void write_point (const Point<value_type>& p) 
-          {
-            Point<value_type> x;
-            format_point (p, x);
-            out.write ((char*) &x[0], sizeof (x));
-            if (!out.good())
-              throw Exception ("error writing track file \"" + this->name + "\": " + strerror (errno));
-          }
-
 
           void commit () 
           {
@@ -287,17 +294,22 @@ namespace MR
               return;
             add_point (barrier());
             int64_t prev_barrier_addr = barrier_addr;
-            out.write ((char*) &(buffer[1]), sizeof (Point<value_type>)*(buffer_size-1));
+
+            std::ofstream out (name.c_str(), std::ios::in | std::ios::out | std::ios::binary | std::ios::ate);
+            if (!out)
+              throw Exception ("error re-opening tracks file \"" + name + "\": " + strerror (errno));
+
+            out.write (reinterpret_cast<char*> (&(buffer[1])), sizeof (Point<value_type>)*(buffer_size-1));
             if (!out.good())
-              throw Exception ("error writing track file \"" + this->name + "\": " + strerror (errno));
+              throw Exception ("error writing tracks file \"" + name + "\": " + strerror (errno));
             barrier_addr = int64_t (out.tellp());
             out.seekp (prev_barrier_addr, out.beg);
-            out.write ((char*) &(buffer[0]), sizeof(Point<value_type>));
-            out.seekp (barrier_addr, out.beg);
+            out.write (reinterpret_cast<char*> (&(buffer[0])), sizeof(Point<value_type>));
             barrier_addr -= sizeof(Point<value_type>);
             if (!out.good())
-              throw Exception ("error writing track file \"" + this->name + "\": " + strerror (errno));
+              throw Exception ("error writing tracks file \"" + name + "\": " + strerror (errno));
             buffer_size = 0;
+
             if (weights_out.is_open()) {
               weights_out << weights_buffer;
               weights_buffer.clear();

@@ -147,16 +147,21 @@ namespace MR
           typedef T value_type;
           using __WriterBase__<T>::count;
           using __WriterBase__<T>::total_count;
-          using __WriterBase__<T>::out;
+          using __WriterBase__<T>::name;
           using __WriterBase__<T>::dtype;
           using __WriterBase__<T>::create;
 
           ScalarWriter (const std::string& file, const Properties& properties) :
+            __WriterBase__<T> (file),
             buffer_capacity (File::Config::get_int ("TrackWriterBufferSize", 16777216) / sizeof (value_type)),
             buffer (new value_type [buffer_capacity+1]),
             buffer_size (0)
           {
-            create (file, properties, "track scalars");
+            std::ofstream out (name.c_str(), std::ios::out | std::ios::binary | std::ios::trunc);
+            if (!out)
+              throw Exception ("error creating track scalars file \"" + name + "\": " + strerror (errno));
+
+            create (out, properties, "track scalars");
           }
 
           ~ScalarWriter() {
@@ -210,9 +215,14 @@ namespace MR
           {
             if (buffer_size == 0)
               return;
-            out.write ((char*) &(buffer[0]), sizeof (value_type)*(buffer_size));
+
+            std::ofstream out (name.c_str(), std::ios::in | std::ios::out | std::ios::binary | std::ios::ate);
+            if (!out)
+              throw Exception ("error re-opening track scalars file \"" + name + "\": " + strerror (errno));
+
+            out.write (reinterpret_cast<char*> (&(buffer[0])), sizeof (value_type)*(buffer_size));
             if (!out.good())
-              throw Exception ("error writing track scalar file \"" + this->name + "\": " + strerror (errno));
+              throw Exception ("error writing track scalars file \"" + name + "\": " + strerror (errno));
             buffer_size = 0;
           }
 
