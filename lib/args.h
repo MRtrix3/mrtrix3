@@ -68,6 +68,10 @@ namespace MR
     //! \endcond
 
 
+    std::string help_head (int format);
+    std::string help_tail (int format);
+    std::string help_syntax (int format);
+
     class Description : public std::vector<const char*>
     {
       public:
@@ -76,7 +80,7 @@ namespace MR
           return *this;
         }
 
-        std::string syntax () const;
+        std::string syntax (int format) const;
     };
 
     //! A class to specify a command-line argument
@@ -258,7 +262,7 @@ namespace MR
         }
 
 
-        std::string syntax () const;
+        std::string syntax (int format) const;
         std::string usage () const;
     };
 
@@ -272,7 +276,7 @@ namespace MR
           return *this;
         }
 
-        std::string syntax () const;
+        std::string syntax (int format) const;
     };
 
 
@@ -365,7 +369,7 @@ namespace MR
           return name == id;
         }
 
-        std::string syntax () const;
+        std::string syntax (int format) const;
         std::string usage () const;
     };
 
@@ -395,7 +399,7 @@ namespace MR
           return std::vector<Option>::back();
         }
 
-        std::string syntax () const;
+        std::string syntax (int format) const;
     };
 
 
@@ -425,7 +429,7 @@ namespace MR
           return std::vector<OptionGroup>::back();
         }
 
-        std::string syntax () const;
+        std::string syntax (int format) const;
     };
 
 

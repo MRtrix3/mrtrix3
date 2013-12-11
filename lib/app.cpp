@@ -28,6 +28,10 @@
 #include "file/path.h"
 #include "file/config.h"
 
+
+#define MRTRIX_HELP_COMMAND "less"
+
+
 namespace MR
 {
   namespace App
@@ -80,40 +84,35 @@ namespace MR
       }
 
 
-      std::string syntax ()
-      {
-        std::string s = "SYNTAX: ";
-        s += NAME + " [ options ]";
-        for (size_t i = 0; i < ARGUMENTS.size(); ++i) {
-
-          if (ARGUMENTS[i].flags & Optional)
-            s += "[";
-          s += std::string(" ") + ARGUMENTS[i].id;
-
-          if (ARGUMENTS[i].flags & AllowMultiple) {
-            if (! (ARGUMENTS[i].flags & Optional))
-              s += std::string(" [ ") + ARGUMENTS[i].id;
-            s += " ...";
-          }
-          if (ARGUMENTS[i].flags & (Optional | AllowMultiple))
-            s += " ]";
-        }
-        return s + "\n\n";
-      }
 
 
 
 
       void print_help ()
       {
-        print (
-            std::string (NAME) + ": part of the MRtrix package\n\n"
-            + DESCRIPTION.syntax()
-            + syntax()
-            + ARGUMENTS.syntax()
-            + OPTIONS.syntax()
-            + __standard_options.syntax()
-            );
+        File::Config::init ();
+
+        const std::string help_display_command = File::Config::get ("HelpCommand", MRTRIX_HELP_COMMAND); 
+        const int format = ( help_display_command.size() != 0 );
+        const std::string help_string = 
+              help_head (format)
+              + DESCRIPTION.syntax (format)
+              + help_syntax (format)
+              + ARGUMENTS.syntax (format)
+              + OPTIONS.syntax (format)
+              + __standard_options.syntax (format)
+              + help_tail (format);
+
+        if (help_display_command.empty())
+          print (help_string);
+        else {
+          FILE* file = popen (help_display_command.c_str(), "w");
+          if (!file) 
+            throw Exception ("error launching help display command \"" + help_display_command + "\": " + strerror (errno));
+          if (fwrite (help_string.c_str(), 1, help_string.size(), file) != help_string.size())
+            throw Exception ("error sending help page to display command \"" + help_display_command + "\": " + strerror (errno));
+          pclose (file);
+        }
       }
 
 
