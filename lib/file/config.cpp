@@ -18,11 +18,6 @@
     You should have received a copy of the GNU General Public License
     along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
 
-
-    08-07-2008 J-Donald Tournier <d.tournier@brain.org.au>
-    * fixed get_int() & get_float()
-      They were previously defined as returning bool
-
 */
 
 #include "file/path.h"

@@ -74,7 +74,7 @@ namespace MR
           else {
             K = strip (sbuf.substr (0, colon));
             V = strip (sbuf.substr (colon+1));
-            if (K.empty() || V.empty()) {
+            if (K.empty()) {
               INFO ("malformed key/value entry (\"" + sbuf + "\") in file \"" + filename + "\" - ignored");
             }
             else 
