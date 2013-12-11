@@ -57,18 +57,18 @@ const char* algorithms[] = { "fact", "ifod1", "ifod2", "nulldist", "sd_stream", 
 void usage ()
 {
 
-	AUTHOR = "Robert E. Smith (r.smith@brain.org.au)";
+  AUTHOR = "Robert E. Smith (r.smith@brain.org.au) & J-Donald Tournier (jdtournier@gmail.com)";
 
   DESCRIPTION
   + "perform streamlines tractography.";
 
   ARGUMENTS
   + Argument ("source",
-              "the image containing the source data.\n"
-              "For FACT / WBFACT, this should be the DWI image.\n"
-              "For iFOD1/2 & SD_Stream, this should be the SH image resulting from CSD.\n"
-              "For Nulldist & SeedTest, provide any image (it is not used in any way).\n"
-              "For VecStream (& variants), this should be the directions file."
+              "the image containing the source data. The type of data depends on the algorithm used:\n"
+              "- FACT / WBFACT: the DWI image.\n"
+              "- iFOD1/2 & SD_Stream: the SH image resulting from CSD.\n"
+              "- Nulldist & SeedTest: any image (will not be used).\n"
+              "- VecStream (& variants): the directions file."
              ).type_image_in()
 
   + Argument ("tracks", "the output file containing the tracks generated.").type_file();
