@@ -29,7 +29,11 @@
 #include "file/config.h"
 
 
-#define MRTRIX_HELP_COMMAND "less"
+#ifdef MRTRIX_WINDOWS
+# define MRTRIX_HELP_COMMAND ""
+#else
+# define MRTRIX_HELP_COMMAND "less"
+#endif
 
 
 namespace MR
