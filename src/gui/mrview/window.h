@@ -56,8 +56,6 @@ namespace MR
 
           void add_images (VecPtr<MR::Image::Header>& list);
 
-          static const App::OptionGroup options;
-
           const QPoint& mouse_position () const { return mouse_position_; }
           const QPoint& mouse_displacement () const { return mouse_displacement_; }
           Qt::MouseButtons mouse_buttons () const { return buttons_; }
@@ -159,6 +157,8 @@ namespace MR
           void about_slot ();
           void aboutQt_slot ();
 
+          void process_batch_command ();
+
 
 
         private:
@@ -166,6 +166,7 @@ namespace MR
           QPoint mouse_position_, mouse_displacement_;
           Qt::MouseButtons buttons_;
           Qt::KeyboardModifiers modifiers_;
+          std::vector<std::string> batch_commands;
 
 
           class GLArea : public QGLWidget {

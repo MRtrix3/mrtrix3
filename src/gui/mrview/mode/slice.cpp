@@ -104,15 +104,6 @@ namespace MR
 
 
 
-        Slice::Slice (Window& parent) :
-          Base (parent, FocusContrast | MoveTarget | TiltRotate) {
-            using namespace App;
-            Options opt = get_options ("view");
-            if (opt.size()) {
-              FAIL ("TODO: apply view option");
-            }
-
-          }
 
 
         Slice::~Slice () { }
@@ -167,12 +158,6 @@ namespace MR
 
 
 
-
-        using namespace App;
-        const App::OptionGroup Slice::options = OptionGroup ("single-slice mode")
-          + Option ("view", "specify initial angle of view")
-          + Argument ("azimuth").type_float(-M_PI, 0.0, M_PI)
-          + Argument ("elevation").type_float(0.0, 0.0, M_PI);
 
       }
     }

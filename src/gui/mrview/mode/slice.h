@@ -38,12 +38,11 @@ namespace MR
         class Slice : public Base
         {
           public:
-            Slice (Window& parent);
+            Slice (Window& parent) :
+              Base (parent, FocusContrast | MoveTarget | TiltRotate) { }
             virtual ~Slice ();
 
             virtual void paint (Projection& with_projection);
-
-            static const App::OptionGroup options;
 
             class Shader : public Displayable::Shader {
               public:
