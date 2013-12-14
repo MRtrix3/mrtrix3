@@ -34,6 +34,7 @@
 #include "dwi/tractography/connectomics/connectomics.h"
 #include "dwi/tractography/connectomics/lut.h"
 
+#include <map>
 #include <vector>
 
 
@@ -42,7 +43,6 @@ MRTRIX_APPLICATION
 using namespace MR;
 using namespace App;
 using namespace MR::DWI::Tractography::Connectomics;
-typedef MR::DWI::Tractography::Connectomics::node_t node_t;
 
 
 void usage ()

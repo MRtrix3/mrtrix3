@@ -180,12 +180,12 @@ namespace MR
 
       bool Dynamic::operator() (const FMLS::FOD_lobes& in)
       {
-        if (!ModelBase<Fixel_TD_seed>::operator() (in))
+        if (!SIFT::ModelBase<Fixel_TD_seed>::operator() (in))
           return false;
         VoxelAccessor v (accessor);
         Image::Nav::set_pos (v, in.vox);
         if (v.value()) {
-          for (typename Fixel_map<Fixel>::Iterator i = begin (v); i; ++i)
+          for (DWI::Fixel_map<Fixel>::Iterator i = begin (v); i; ++i)
             i().set_voxel (in.vox);
         }
         return true;
