@@ -121,14 +121,21 @@ namespace MR
             public:
               MappedTrackReceiver (Model& i) :
                 master (i),
-                mutex (new Thread::Mutex()) { }
+                mutex (new Thread::Mutex()),
+                TD_sum (0.0),
+                fixel_TDs (master.fixels.size(), 0.0) { }
               MappedTrackReceiver (const MappedTrackReceiver& that) :
                 master (that.master),
-                mutex (that.mutex) { }
+                mutex (that.mutex),
+                TD_sum (0.0),
+                fixel_TDs (master.fixels.size(), 0.0) { }
+              ~MappedTrackReceiver();
               bool operator() (const Mapping::SetDixel&);
             private:
               Model& master;
               RefPtr<Thread::Mutex> mutex;
+              double TD_sum;
+              std::vector<double> fixel_TDs;
           };
 
           class FixelRemapper
@@ -199,7 +206,7 @@ namespace MR
               max_index = std::max (max_index, i);
             }
             WARN ("Only " + str (num_tracks) + " tracks read from input track file; expected " + str (contributions.size()));
-            WARN ("(suggest running command tckfixcount on file " + tck_file_path + ")");
+            WARN ("(suggest running command tckfixcount on file " + path + ")");
             contributions.resize (max_index + 1);
           }
         }
@@ -323,6 +330,17 @@ namespace MR
 
 
       template <class Fixel>
+      Model<Fixel>::MappedTrackReceiver::~MappedTrackReceiver()
+      {
+        Thread::Mutex::Lock lock (*mutex);
+        master.TD_sum += TD_sum;
+        for (size_t i = 0; i != fixel_TDs.size(); ++i)
+          master.fixels[i] += fixel_TDs[i];
+      }
+
+
+
+      template <class Fixel>
       bool Model<Fixel>::MappedTrackReceiver::operator() (const Mapping::SetDixel& in)
       {
 
@@ -337,28 +355,23 @@ namespace MR
         for (Mapping::SetDixel::const_iterator i = in.begin(); i != in.end(); ++i) {
           total_length += i->get_value();
           const size_t fixel_index = master.dixel2fixel (*i);
-          if (fixel_index) {
+          if (fixel_index && (i->get_value() > Track_fixel_contribution::min())) {
             total_contribution += i->get_value() * master.fixels[fixel_index].get_weight();
-            if (i->get_value() > Track_fixel_contribution::min()) {
-              bool incremented = false;
-              for (std::vector<Track_fixel_contribution>::iterator c = masked_contributions.begin(); !incremented && c != masked_contributions.end(); ++c) {
-                if ((c->get_fixel_index() == fixel_index) && c->add (i->get_value()))
-                  incremented = true;
-              }
-              if (!incremented)
-                masked_contributions.push_back (Track_fixel_contribution (fixel_index, i->get_value()));
+            bool incremented = false;
+            for (std::vector<Track_fixel_contribution>::iterator c = masked_contributions.begin(); !incremented && c != masked_contributions.end(); ++c) {
+              if ((c->get_fixel_index() == fixel_index) && c->add (i->get_value()))
+                incremented = true;
             }
+            if (!incremented)
+              masked_contributions.push_back (Track_fixel_contribution (fixel_index, i->get_value()));
           }
         }
 
         master.contributions[in.index] = new TrackContribution (masked_contributions, total_contribution, total_length);
 
-        {
-          Thread::Mutex::Lock lock (*mutex);
-          master.TD_sum += total_contribution;
-          for (std::vector<Track_fixel_contribution>::const_iterator i = masked_contributions.begin(); i != masked_contributions.end(); ++i)
-            master.fixels[i->get_fixel_index()] += i->get_value();
-        }
+        TD_sum += total_contribution;
+        for (std::vector<Track_fixel_contribution>::const_iterator i = masked_contributions.begin(); i != masked_contributions.end(); ++i)
+          fixel_TDs [i->get_fixel_index()] += i->get_value();
 
         return true;
 
