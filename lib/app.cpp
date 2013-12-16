@@ -95,8 +95,8 @@ namespace MR
         return
           help_head (format)
           + help_syntax (format)
-          + DESCRIPTION.syntax (format)
           + ARGUMENTS.syntax (format)
+          + DESCRIPTION.syntax (format)
           + OPTIONS.syntax (format)
           + __standard_options.syntax (format)
           + help_tail (format);
