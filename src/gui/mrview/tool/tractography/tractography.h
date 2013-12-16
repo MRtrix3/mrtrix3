@@ -59,6 +59,7 @@ namespace MR
             void draw2D (const Projection& transform);
             void draw3D (const Projection& transform);
             void drawOverlays (const Projection& transform);
+            bool process_batch_command (const std::string& cmd, const std::string& args);
 
             QPushButton* hide_all_button;
             float line_thickness;

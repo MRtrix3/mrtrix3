@@ -90,6 +90,19 @@ namespace MR
 
 
 
+      std::string get_help_string (int format) 
+      {
+        return
+          help_head (format)
+          + help_syntax (format)
+          + ARGUMENTS.syntax (format)
+          + DESCRIPTION.syntax (format)
+          + OPTIONS.syntax (format)
+          + __standard_options.syntax (format)
+          + help_tail (format);
+      }
+
+
 
 
       void print_help ()
@@ -97,26 +110,27 @@ namespace MR
         File::Config::init ();
 
         const std::string help_display_command = File::Config::get ("HelpCommand", MRTRIX_HELP_COMMAND); 
-        const int format = ( help_display_command.size() != 0 );
-        const std::string help_string = 
-              help_head (format)
-              + DESCRIPTION.syntax (format)
-              + help_syntax (format)
-              + ARGUMENTS.syntax (format)
-              + OPTIONS.syntax (format)
-              + __standard_options.syntax (format)
-              + help_tail (format);
 
-        if (help_display_command.empty())
-          print (help_string);
-        else {
+        if (help_display_command.size()) {
+          std::string help_string = get_help_string (1);
           FILE* file = popen (help_display_command.c_str(), "w");
-          if (!file) 
-            throw Exception ("error launching help display command \"" + help_display_command + "\": " + strerror (errno));
-          if (fwrite (help_string.c_str(), 1, help_string.size(), file) != help_string.size())
-            throw Exception ("error sending help page to display command \"" + help_display_command + "\": " + strerror (errno));
-          pclose (file);
+          if (!file) {
+            WARN ("error launching help display command \"" + help_display_command + "\": " + strerror (errno));
+          }
+          else if (fwrite (help_string.c_str(), 1, help_string.size(), file) != help_string.size()) {
+            WARN ("error sending help page to display command \"" + help_display_command + "\": " + strerror (errno));
+          }
+
+          if (pclose (file) == 0)
+            return;
+
+          WARN ("error launching help display command \"" + help_display_command + "\"");
         }
+
+        if (help_display_command.size()) 
+          WARN ("displaying help page using fail-safe output:\n");
+
+        print (get_help_string (0));
       }
 
 

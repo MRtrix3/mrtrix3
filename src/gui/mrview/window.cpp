@@ -7,6 +7,8 @@
 #include <QStatusBar>
 #include <QDockWidget>
 #include <QGLWidget>
+#include <QTimer>
+
 
 #include "app.h"
 #include "file/config.h"
@@ -31,7 +33,7 @@ namespace MR
     namespace MRView
     {
       using namespace App;
-
+/*
 #define MODE(classname, specifier, name, description) #specifier ", "
 #define MODE_OPTION(classname, specifier, name, description) MODE(classname, specifier, name, description)
 
@@ -42,6 +44,7 @@ namespace MR
         + Argument ("name");
 #undef MODE
 #undef MODE_OPTION
+*/
 
 
       namespace {
@@ -59,8 +62,12 @@ namespace MR
           throw Exception ("no such modifier \"" + value + "\" (parsed from config file)");
           return Qt::NoModifier;
         }
-
       }
+
+
+
+
+
 
       std::string get_modifier (Qt::KeyboardModifiers key) {
         switch (key) {
@@ -166,6 +173,22 @@ namespace MR
         colourbar_position_index (2),
         snap_to_image_axes_and_voxel (true)
       {
+
+        Options opt = get_options ("batch");
+        for (size_t n = 0; n < opt.size(); ++n) {
+          std::ifstream batch_file (opt[n][0].c_str());
+          if (!batch_file) 
+            throw Exception ("error opening batch file \"" + opt[n][0] + "\": " + strerror (errno));
+          std::string command;
+          while (getline (batch_file, command)) 
+            batch_commands.push_back (command);
+        }
+
+        opt = get_options ("run");
+        for (size_t n = 0; n < opt.size(); ++n) 
+          batch_commands.push_back (opt[n][0]);
+
+
         setWindowTitle (tr ("MRView"));
         setWindowIcon (QPixmap (":/mrtrix.png"));
         { 
@@ -692,7 +715,7 @@ namespace MR
           tool = dynamic_cast<Tool::__Action__*>(action)->create (*this);
           connect (tool, SIGNAL (visibilityChanged (bool)), action, SLOT (setChecked (bool)));
         }
-        if (action->isChecked())
+        if (action->isChecked()) 
           tool->show();
         else 
           tool->close();
@@ -1080,35 +1103,11 @@ namespace MR
         glClearColor (0.0, 0.0, 0.0, 0.0);
         glEnable (GL_DEPTH_TEST);
 
-        Options opt = get_options ("mode");
-        if (opt.size()) {
-#undef MODE
-#define MODE(classname, specifier, name, description) \
-   #specifier,
-#define MODE_OPTION(classname, specifier, name, description) MODE(classname, specifier, name, description)
-          const char* specifier_list[] = { 
-#include "gui/mrview/mode/list.h"
-            NULL
-          };
-#undef MODE
-#undef MODE_OPTION
-          std::string specifier (lowercase (opt[0][0]));
-          for (int n = 0; specifier_list[n]; ++n) {
-            if (specifier == lowercase (specifier_list[n])) {
-              mode = dynamic_cast<Mode::__Action__*> (mode_group->actions()[n])->create (*this);
-              set_mode_features();
-              goto mode_selected;
-            }
-          }
-          throw Exception ("unknown mode \"" + std::string (opt[0][0]) + "\"");
-        }
-        else {
-          mode = dynamic_cast<Mode::__Action__*> (mode_group->actions()[0])->create (*this);
-          set_mode_features();
-        }
+        mode = dynamic_cast<Mode::__Action__*> (mode_group->actions()[0])->create (*this);
+        set_mode_features();
 
-mode_selected:
-        DEBUG_OPENGL;
+        if (batch_commands.size()) 
+          QTimer::singleShot (0, this, SLOT (process_batch_command()));
       }
 
 
@@ -1286,8 +1285,166 @@ mode_selected:
       }
 
 
+
+      void Window::process_batch_command ()
+      {
+        assert (batch_commands.size());
+        try {
+          std::string line;
+          do {
+            if (batch_commands.empty())
+              return;
+            line = batch_commands[0];
+            batch_commands.erase (batch_commands.begin(), batch_commands.begin()+1);
+            line = strip (line.substr (0, line.find_first_of ('#')));
+          } while (line.empty());
+
+          std::string cmd = line.substr (0, line.find_first_of (" \t"));
+          std::string args;
+          if (line.size() > cmd.size()+1)
+            args = strip (line.substr (cmd.size()+1));
+
+          // starts of commands proper:
+          
+          // BATCH_COMMAND view.mode index # Switch to view mode specified by the integer index. as per the view menu.
+          if (cmd == "view.mode") { 
+            int n = to<int> (args) - 1;
+            if (n < 0 || n >= mode_group->actions().size())
+              throw Exception ("invalid mode index \"" + args + "\" in batch command");
+            select_mode_slot (mode_group->actions()[n]);
+          }
+
+          // BATCH_COMMAND view.size width,height # Set the size of the view area, in pixel units.
+          else if (cmd == "view.size") { 
+            std::vector<int> glsize = parse_ints (args);
+            if (glsize.size() != 2)
+              throw Exception ("invalid argument \"" + args + "\" to view.size batch command");
+            QSize oldsize = glarea->size();
+            QSize winsize = size();
+            resize (winsize.width() - oldsize.width() + glsize[0], winsize.height() - oldsize.height() + glsize[1]);
+          }
+
+          // BATCH_COMMAND view.position x,y # Set the position of the main window, in pixel units.
+          else if (cmd == "view.position") { 
+            std::vector<int> pos = parse_ints (args);
+            if (pos.size() != 2)
+              throw Exception ("invalid argument \"" + args + "\" to view.position batch command");
+            move (pos[0], pos[1]);
+          }
+
+          // BATCH_COMMAND view.reset # Reset the view according to current image. This resets the FOV, projection, and focus.
+          else if (cmd == "view.reset") 
+            reset_view_slot();
+
+          // BATCH_COMMAND view.fov num # Set the field of view, in mm.
+          else if (cmd == "view.fov") { 
+            float fov = to<float> (args);
+            set_FOV (fov);
+            glarea->updateGL();
+          }
+          
+          // BATCH_COMMAND view.plane num # Set the viewing plane, according to the mappping 0: sagittal; 1: coronal; 2: axial.
+          else if (cmd == "view.plane") { 
+            int n = to<int> (args);
+            set_plane (n);
+            glarea->updateGL();
+          }
+
+          // BATCH_COMMAND view.lock # Set whether view is locked to image axes (0: no, 1: yes).
+          else if (cmd == "view.lock") { 
+            bool n = to<bool> (args);
+            snap_to_image_action->setChecked (n);
+            snap_to_image_slot();
+          }
+
+          // BATCH_COMMAND view.fullscreen # Show fullscreen or windowed (0: windowed, 1: fullscreen).
+          else if (cmd == "view.fullscreen") { 
+            bool n = to<bool> (args);
+            full_screen_action->setChecked (n);
+            full_screen_slot();
+          }
+
+          // BATCH_COMMAND image.select index # Switch to image number specified, with reference to the list of currently loaded images.
+          else if (cmd == "image.select") {
+            int n = to<int> (args) - 1;
+            if (n < 0 || n >= image_group->actions().size())
+              throw Exception ("invalid image index requested in batch command");
+            image_select_slot (image_group->actions()[n]);
+          }
+
+          // BATCH_COMMAND image.load path # Load image specified and make it current.
+          else if (cmd == "image.load") { 
+            VecPtr<MR::Image::Header> list; 
+            try { list.push_back (new MR::Image::Header (args)); }
+            catch (Exception& e) { e.display(); }
+            add_images (list);
+          }
+
+          // BATCH_COMMAND image.reset # Reset the image scaling.
+          else if (cmd == "image.reset") 
+            image_reset_slot();
+
+          // BATCH_COMMAND image.colourmap index # Switch the image colourmap to that specified, as per the colourmap menu.
+          else if (cmd == "image.colourmap") { 
+            int n = to<int> (args) - 1;
+            if (n < 0 || n >= colourmap_group->actions().size())
+              throw Exception ("invalid image colourmap index \"" + args + "\" requested in batch command");
+            colourmap_group->actions()[n]->setChecked (true);
+            select_colourmap_slot ();
+          }
+
+          // BATCH_COMMAND image.range min max # Set the image intensity range to that specified
+          else if (cmd == "image.range") { 
+            if (image()) {
+              std::vector<std::string> param = split (args);
+              if (param.size() != 2) 
+                throw Exception ("batch command image.range expects two arguments");
+              image()->set_windowing (to<float> (param[0]), to<float> (param[1]));
+              updateGL();
+            }
+          }
+
+          // BATCH_COMMAND tool.open index # Start the tool specified, indexed as per the tool menu
+          else if (cmd == "tool.open") {
+            int n = to<int> (args) - 1;
+            if (n < 0 || n >= tool_group->actions().size())
+              throw Exception ("invalid tool index \"" + args + "\" requested in batch command");
+            tool_group->actions()[n]->setChecked (true);
+            select_tool_slot (tool_group->actions()[n]);
+          }
+
+          // BATCH_COMMAND exit # quit MRView.
+          else if (cmd == "exit") 
+            qApp->quit();
+
+          else { // process by tool
+            int n = 0; 
+            while (n < tools()->actions().size()) {
+              Tool::Dock* dock = dynamic_cast<Tool::__Action__*>(tools()->actions()[n])->dock;
+              if (dock)
+                if (dock->tool->process_batch_command (cmd, args)) 
+                  break;
+              ++n;
+            }
+            if (n >= tools()->actions().size())
+              WARN ("batch command \"" + cmd + "\" unclaimed by main window or any acive tool - ignored");
+          }
+
+
+          // end of commands
+        }
+
+        catch (Exception& E) {
+          E.display();
+          qApp->quit();
+        }
+
+        if (batch_commands.size())
+          QTimer::singleShot (0, this, SLOT (process_batch_command()));
+      }
+
+    }
   }
-}
 }
 
 

@@ -43,7 +43,7 @@ namespace MR
               Ortho (Window& parent) : 
                 Slice (parent),
                 projections (3, projection),
-                current_plane (-1) { }
+                current_plane (0) { }
 
             virtual void paint (Projection& projection);
 

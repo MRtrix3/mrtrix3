@@ -41,6 +41,11 @@ namespace MR
 
         void Base::drawOverlays (const Projection& transform) { }
 
+        bool Base::process_batch_command (const std::string& cmd, const std::string& args) 
+        {
+          return false;
+        }
+
       }
     }
   }
