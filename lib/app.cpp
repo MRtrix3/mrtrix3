@@ -100,8 +100,8 @@ namespace MR
         const int format = ( help_display_command.size() != 0 );
         const std::string help_string = 
               help_head (format)
-              + DESCRIPTION.syntax (format)
               + help_syntax (format)
+              + DESCRIPTION.syntax (format)
               + ARGUMENTS.syntax (format)
               + OPTIONS.syntax (format)
               + __standard_options.syntax (format)
