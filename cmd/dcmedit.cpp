@@ -36,29 +36,28 @@ using namespace App;
 void usage ()
 {
   DESCRIPTION
-  + "Anonymise DICOM file in-place. Note that this simply replace the existing "
+  + "Edit DICOM file in-place. Note that this simply replaces the existing "
     "values without modifying the DICOM structure in any way. Replacement text "
     "will be truncated if it is too long to fit inside the existing tag."
 
   + "WARNING: this command will modify existing data! It is recommended to run "
-    "this command on a copy of the original data set to avoid loss of data."
-
-  + "WARNING: there is no guarantee that this command will remove all identiable "
-    "information. You will need to double-check the results independently if you "
-    "need to ensure anonymity."
-
-  + "By default, the following tags will be replaced:\n"
-    " - any tag with Value Representation PN will be replaced with 'anonymous'\n"
-    " - tag (0010,0030) PatientBirthDate will be replaced with an empty string";
+    "this command on a copy of the original data set to avoid loss of data.";
 
 
   ARGUMENTS
-  + Argument ("file", "the DICOM file to be scanned.").type_file ();
+  + Argument ("file", "the DICOM file to be edited.").type_file ();
 
   OPTIONS
-  + Option ("nodefault", "remove all default tags from replacement list.")
+  + Option ("anonymise", "remove any identifiable information, by replacing the following tags:\n"
+      " - any tag with Value Representation PN will be replaced with 'anonymous'\n"
+      " - tag (0010,0030) PatientBirthDate will be replaced with an empty string\n\n"
+      "WARNING: there is no guarantee that this command will remove all identiable "
+      "information, since such information may be contained in any number "
+      "of private vendor-specific tags. You will need to double-check the "
+      "results independently if you " "need to ensure anonymity.")
 
-  + Option ("id", "replace all ID tags with string supplied.")
+  + Option ("id", "replace all ID tags with string supplied. This consists of tags "
+      "(0010, 0020) PatientID and (0010, 1000) OtherPatientIDs")
   +   Argument ("text")
 
   + Option ("tag", "replace specific tag.").allow_multiple()
@@ -76,6 +75,9 @@ class Tag {
     std::string newvalue;
 };
 
+
+
+
 inline std::string hex (uint16_t value)
 {
   std::ostringstream hex;
@@ -91,13 +93,16 @@ inline uint16_t read_hex (const std::string& m)
   return value;
 }
 
+
+
+
 void run ()
 {
   std::vector<Tag> tags;
   std::vector<uint16_t> VRs;
 
-  Options opt = get_options ("nodefault");
-  if (!opt.size()) {
+  Options opt = get_options ("anonymise");
+  if (opt.size()) {
     tags.push_back (Tag (0x0010U, 0x0030U, "")); // PatientBirthDate
     VRs.push_back (VR_PN);
   }
