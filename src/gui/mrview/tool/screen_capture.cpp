@@ -163,6 +163,10 @@ namespace MR
         }
 
 
+
+
+
+
         void ScreenCapture::on_screen_capture ()
         {
 
@@ -227,6 +231,11 @@ namespace MR
           }
         }
 
+
+
+
+
+
         bool ScreenCapture::select_output_folder_slot ()
         {
           directory->setPath(QFileDialog::getExistingDirectory (this, tr("Directory"), directory->path()));
@@ -236,9 +245,47 @@ namespace MR
           return true;
         }
 
+
+
+
+
+
         void ScreenCapture::on_output_update () {
           start_index->setValue (0);
         }
+
+
+
+
+
+
+        bool ScreenCapture::process_batch_command (const std::string& cmd, const std::string& args)
+        {
+          // BATCH_COMMAND capture.folder path # Set the output folder for the screen capture tool
+          if (cmd == "capture.folder") {
+            directory->setPath (args.c_str());
+            QString path (shorten(directory->path().toUtf8().constData(), 20, 0).c_str());
+            folder_button->setText(path);
+            on_output_update ();
+            return true;
+          }
+
+          // BATCH_COMMAND capture.prefix path # Set the output file prefix for the screen capture tool
+          if (cmd == "capture.prefix") {
+            prefix_textbox->setText (args.c_str());
+            on_output_update ();
+            return true;
+          }
+
+          // BATCH_COMMAND capture.grab # Start the screen capture process
+          if (cmd == "capture.grab") {
+            on_screen_capture();
+            return true;
+          }
+
+          return false;
+        }
+
 
       }
     }

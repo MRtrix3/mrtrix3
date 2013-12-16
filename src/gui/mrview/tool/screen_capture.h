@@ -47,8 +47,9 @@ namespace MR
         {
           Q_OBJECT
           public:
-          ScreenCapture (Window& main_window, Dock* parent);
-          virtual ~ScreenCapture() {}
+            ScreenCapture (Window& main_window, Dock* parent);
+            virtual ~ScreenCapture() {}
+            bool process_batch_command (const std::string& cmd, const std::string& args);
 
           private slots:
             void on_screen_capture ();

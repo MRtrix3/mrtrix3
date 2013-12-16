@@ -424,6 +424,23 @@ namespace MR
           }
         }
 
+
+
+
+        bool Tractography::process_batch_command (const std::string& cmd, const std::string& args)
+        {
+          // BATCH_COMMAND tractography.load path # Load the specified tracks file into the tractography tool
+          if (cmd == "tractography.load") {
+            std::vector<std::string> list (1, args);
+            try { tractogram_list_model->add_items (list, window, *this); }
+            catch (Exception& E) { E.display(); }
+            return true;
+          }
+
+          return false;
+        }
+
+
       }
     }
   }
