@@ -44,9 +44,9 @@ namespace MR
           } else {
 
             if (get_options ("backtrack").size())
-              WARN ("ignoring -backtrack option - only vaid if using ACT");
+              WARN ("ignoring -backtrack option - only valid if using ACT");
             if (get_options ("crop_at_gmwmi").size())
-              WARN ("ignoring -crop_at_gmwmi option - only vaid if using ACT");
+              WARN ("ignoring -crop_at_gmwmi option - only valid if using ACT");
 
           }
 
