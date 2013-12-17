@@ -65,7 +65,7 @@ void usage ()
 	+ "prepare a parcellated image for connectome construction by modifying the image values; "
 	  "typically this involves making the parcellation intensities increment from 1 to coincide with rows and columns of a matrix. "
 	  "The configuration file passed as the second argument specifies the indices that should be assigned to different structures; "
-	  "examples of such configuration files are provided in src//dwi//tractography//connectomics//configs//";
+	  "examples of such configuration files are provided in src//dwi//tractography//connectomics//example_configs//";
 
 
 	ARGUMENTS
