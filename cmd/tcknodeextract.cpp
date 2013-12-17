@@ -34,6 +34,8 @@
 #include "dwi/tractography/connectomics/tck2nodes.h"
 #include "dwi/tractography/mapping/loader.h"
 
+#include "math/matrix.h"
+
 #include "image/buffer.h"
 #include "image/loop.h"
 #include "image/nav.h"
@@ -41,6 +43,8 @@
 #include "image/voxel.h"
 
 #include "thread/queue.h"
+
+#include <vector>
 
 
 
@@ -63,34 +67,34 @@ void usage ()
 	AUTHOR = "Robert E. Smith (r.smith@brain.org.au)";
 
   DESCRIPTION
-  + "extract streamlines from a tractogram based on their connectivity to specific nodes";
+  + "extract streamlines from a tractogram based on their connectivity to parcellated nodes.\n "
+  + "By default, this command will create one track file for every edge in the connectome; "
+  + "see available command-line options for altering this behaviour.";
 
   ARGUMENTS
   + Argument ("tracks_in",      "the input track file").type_file()
-  + Argument ("nodes_image_in", "the input parcellated anatomical image").type_image_in();
+  + Argument ("nodes_image_in", "the input parcellated anatomical image").type_image_in()
+  + Argument ("prefix_out",     "the output track file prefix").type_text();
 
 
   OPTIONS
 
+  + Option ("nodes_between", "output track files only for connections between a particular set of nodes of interest; "
+                             "only connections where both nodes appear in this list will be output to file")
+    + Argument ("list").type_sequence_int()
+
+  + Option ("nodes_to_any", "output track files only for connections involving a particular set of nodes of interest; "
+                            "any connections where one of the nodes appears on this list will be output to file")
+    + Argument ("list").type_sequence_int()
+
+  + Option ("per_node", "output one track file containing the streamlines connecting each node, rather than one for each edge")
+
   + Connectomics::AssignmentOption
 
   + Tractography::TrackWeightsInOption
-  + Tractography::TrackWeightsOutOption
 
-  + Option ("node_single", "output all streamlines attributed to a particular node (regardless of the other connected node) to a single .tck file").allow_multiple()
-    + Argument ("index").type_integer (0)
-    + Argument ("name").type_file()
-
-  + Option ("node_pair", "output streamlines attributed to a particular node pair to a .tck file").allow_multiple()
-    + Argument ("index_one").type_integer (0)
-    + Argument ("index_two").type_integer (0)
-    + Argument ("name").type_file()
-
-  + Option ("node_all_edges", "for a node of interest, output a number of .tck files, where each contains the connections between some node in the parcellation, and the node of interest").allow_multiple()
-    + Argument ("index").type_integer (0)
-    + Argument ("prefix").type_text()
-
-  + Option ("batch_nodes", "output one .tck file for each node, where each contains all streamlines connected to that node")
+  + Option ("prefix_tck_weights_out", "provide a prefix for outputting a text file corresponding to each output file, "
+                                      "each containing only the streamline weights relevant for that track file")
     + Argument ("prefix").type_text();
 
 };
@@ -106,6 +110,8 @@ void run ()
   Image::Buffer<node_t> nodes_data (argument[1]);
   Image::Buffer<node_t>::voxel_type nodes (nodes_data);
 
+  const std::string prefix (argument[2]);
+
   Ptr<Connectomics::Tck2nodes_base> tck2nodes (Connectomics::load_assignment_mode (nodes_data));
 
   node_t max_node_index = 0;
@@ -113,9 +119,71 @@ void run ()
   for (loop.start (nodes); loop.ok(); loop.next (nodes))
     max_node_index = MAX (max_node_index, nodes.value());
 
+  INFO ("Maximum node index is " + str(max_node_index));
+
   NodeExtractMapper mapper (*tck2nodes);
   NodeExtractWriter writer (properties);
 
+  Options opt = get_options ("prefix_tck_weights_out");
+  const std::string weights_prefix = opt.size() ? std::string (opt[0][0]) : "";
+
+  if (get_options ("per_node").size()) {
+
+    if (get_options ("nodes_between").size())
+      throw Exception ("Options -per_node and -nodes_between cannot currently be used together");
+
+    Options opt = get_options ("nodes_to_any");
+    if (opt.size()) {
+      std::vector<int> node_list = opt[0][0];
+      for (std::vector<int>::const_iterator i = node_list.begin(); i != node_list.end(); ++i) {
+        if (node_t(*i) > max_node_index)
+          throw Exception ("Node index " + str(*i) + " exceeds the maximum index in the parcellation image (" + str(max_node_index) + ")");
+        writer.add (node_t(*i), prefix + str(*i) + ".tck", weights_prefix.size() ? (weights_prefix + "_" + str(*i) + ".csv") : "");
+      }
+    } else {
+      for (node_t i = 0; i <= max_node_index; ++i)
+        writer.add (i, prefix + str(i) + ".tck", weights_prefix.size() ? (weights_prefix + "_" + str(i) + ".csv") : "");
+    }
+
+  } else {
+
+    Math::Matrix<float> outputs (max_node_index + 1, max_node_index + 1);
+    outputs.zero();
+
+    const Options opt_between = get_options ("nodes_between");
+    const Options opt_to_any  = get_options ("nodes_to_any");
+    if (opt_between.size() && opt_to_any.size())
+      throw Exception ("Options -nodes_between and -nodes_to_any cannot sensibly be used together");
+
+    if (opt_between.size()) {
+      std::vector<int> node_list = opt_between[0][0];
+      for (size_t i = 0; i != node_list.size(); ++i) {
+        for (size_t j = i + 1; j != node_list.size(); ++j)
+          outputs (node_list[i], node_list[j]) = outputs (node_list[j], node_list[i]) = 1.0;
+      }
+    }
+    if (opt_to_any.size()) {
+      std::vector<int> node_list = opt_to_any[0][0];
+      for (std::vector<int>::const_iterator i = node_list.begin(); i != node_list.end(); ++i) {
+        for (size_t j = 0; j <= max_node_index; ++j)
+          outputs (*i, j) = outputs (j, *i) = 1.0;
+      }
+    }
+    if (!opt_between.size() && !opt_to_any.size())
+      outputs = 1.0;
+
+    for (size_t i = 0; i <= max_node_index; ++i) {
+      for (size_t j = i; j <= max_node_index; ++j) {
+        if (outputs (i, j))
+          writer.add (i, j, prefix + str(i) + "-" + str(j) + ".tck", weights_prefix.size() ? (weights_prefix + "_" + str(i) + "_" + str(j) + ".csv") : "");
+      }
+    }
+
+  }
+
+
+
+/*
   Options opt = get_options ("node_single");
   for (size_t i = 0; i != opt.size(); ++i)
     writer.add (int(opt[i][0]), opt[i][1]);
@@ -145,6 +213,9 @@ void run ()
 
   if (writer.file_count() > 1 && get_options ("tck_weights_out").size())
     throw Exception ("Can only propagate streamline weights to output if a single track file is being generated");
+*/
+
+  INFO ("A total of " + str (writer.file_count()) + " output track files will be generated");
 
   Mapping::TrackLoader loader (reader, properties["count"].empty() ? 0 : to<size_t>(properties["count"]), "extracting streamlines of interest... ");
   Thread::run_batched_queue_threaded_pipe (loader, Tractography::TrackData<float>(), 100, mapper, MappedTrackWithData(), 100, writer);

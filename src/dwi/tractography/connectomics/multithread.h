@@ -291,16 +291,20 @@ class NodeExtractWriter
     }
 
 
-    void add (const node_t node, const std::string& path)
+    void add (const node_t node, const std::string& path, const std::string weights_path = "")
     {
       nodes.push_back (NodeSelector (node));
       writers.push_back (new Tractography::Writer<float> (path, properties));
+      if (weights_path.size())
+        writers.back()->set_weights_path (weights_path);
     }
 
-    void add (const node_t node_one, const node_t node_two, const std::string& path)
+    void add (const node_t node_one, const node_t node_two, const std::string& path, const std::string weights_path = "")
     {
       nodes.push_back (NodeSelector (node_one, node_two));
       writers.push_back (new Tractography::Writer<float> (path, properties));
+      if (weights_path.size())
+        writers.back()->set_weights_path (weights_path);
     }
 
     void clear()
@@ -310,6 +314,7 @@ class NodeExtractWriter
         delete writers[i];
         writers[i] = NULL;
       }
+      writers.clear();
     }
 
 
@@ -333,7 +338,7 @@ class NodeExtractWriter
 
   private:
     Tractography::Properties properties;
-    std::vector<NodeSelector> nodes;
+    std::vector< NodeSelector > nodes;
     std::vector< Tractography::Writer<float>* > writers;
     std::vector< Point<float> > empty_tck;
 

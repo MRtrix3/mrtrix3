@@ -31,6 +31,8 @@
 #include "types.h"
 #include "point.h"
 #include "file/key_value.h"
+#include "file/path.h"
+#include "file/utils.h"
 #include "dwi/tractography/file_base.h"
 #include "dwi/tractography/properties.h"
 #include "math/vector.h"
@@ -223,13 +225,11 @@ namespace MR
           
             App::Options opt = App::get_options ("tck_weights_out");
             if (opt.size())
-              weights_out.open (std::string (opt[0][0]).c_str(), std::ios_base::trunc);
+              set_weights_path (opt[0][0]);
           }
 
           ~Writer() {
             commit();
-            if (weights_out.is_open())
-              weights_out.close();
           }
 
           void append (const std::vector< Point<value_type> >& tck)
@@ -253,12 +253,20 @@ namespace MR
           void append (const TrackData<value_type>& tck)
           {
             append (std::vector< Point<value_type> > (tck));
-            if (weights_out.is_open() && tck.size())
+            if (weights_name.size() && tck.size())
               weights_buffer += str (tck.weight) + ' ';
           }
           bool operator() (const TrackData<value_type>& tck) { 
             append (tck); 
             return true;
+          }
+
+          void set_weights_path (const std::string& path) {
+            if (weights_name.size())
+              throw Exception ("Cannot change output streamline weights file path");
+            weights_name = path;
+            if (Path::exists (weights_name))
+              File::unlink (weights_name);
           }
 
 
@@ -269,7 +277,7 @@ namespace MR
           size_t buffer_size;
           int64_t barrier_addr;
 
-          std::ofstream weights_out;
+          std::string weights_name;
           std::string weights_buffer;
 
           void add_point (const Point<value_type>& p) 
@@ -310,11 +318,14 @@ namespace MR
               throw Exception ("error writing tracks file \"" + name + "\": " + strerror (errno));
             buffer_size = 0;
 
-            if (weights_out.is_open()) {
-              weights_out << weights_buffer;
+            if (weights_name.size()) {
+              std::ofstream out_weights (weights_name.c_str(), std::ios::in | std::ios::out | std::ios::binary | std::ios::ate);
+              if (!out_weights)
+                throw Exception ("error re-opening streamline weights file \"" + weights_name + "\": " + strerror (errno));
+              out_weights << weights_buffer;
               weights_buffer.clear();
-              if (!weights_out.good())
-                throw Exception (std::string ("error writing track weights file: ") + strerror (errno));
+              if (!out_weights.good())
+                throw Exception (std::string ("error writing streamline weights file: ") + strerror (errno));
             }
           }
 
