@@ -207,14 +207,14 @@ namespace MR
                 if (*this != 0) 
                   clear();
 
+                update (object);
+
                 GL::Shader::Vertex vertex_shader (vertex_shader_source (object));
                 GL::Shader::Fragment fragment_shader (fragment_shader_source (object));
 
                 attach (vertex_shader);
                 attach (fragment_shader);
                 link();
-
-                update (object);
               }
           };
 

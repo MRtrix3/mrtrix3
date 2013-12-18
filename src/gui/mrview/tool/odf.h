@@ -54,8 +54,7 @@ namespace MR
 
             ODF (Window& main_window, Dock* parent);
 
-            void draw2D (const Projection& projection);
-            void draw3D (const Projection& projection);
+            void draw (const Projection& projection, bool is_3D);
 
 
           private slots:

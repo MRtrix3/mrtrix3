@@ -134,12 +134,12 @@ namespace MR
               move_in_out (1.0e-3f* increment * FOV(), projection);
             }
 
-            void render_tools2D (const Projection& projection) {
+            void render_tools (const Projection& projection, bool is_3D = false) {
               QList<QAction*> tools = window.tools()->actions();
               for (int i = 0; i < tools.size(); ++i) {
                 Tool::Dock* dock = dynamic_cast<Tool::__Action__*>(tools[i])->dock;
                 if (dock)
-                  dock->tool->draw2D (projection);
+                  dock->tool->draw (projection, is_3D);
               }
             }
 

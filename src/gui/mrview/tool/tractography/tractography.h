@@ -56,15 +56,16 @@ namespace MR
 
             virtual ~Tractography ();
 
-            void draw2D (const Projection& transform);
-            void draw3D (const Projection& transform);
+            void draw (const Projection& transform, bool is_3D);
             void drawOverlays (const Projection& transform);
+            bool crop_to_slab () const { return (do_crop_to_slab && not_3D); }
             bool process_batch_command (const std::string& cmd, const std::string& args);
 
             QPushButton* hide_all_button;
             float line_thickness;
             bool do_crop_to_slab;
             bool use_lighting;
+            bool not_3D;
             float slab_thickness;
             float line_opacity;
             Model* tractogram_list_model;

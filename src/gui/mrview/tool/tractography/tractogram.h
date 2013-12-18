@@ -62,9 +62,7 @@ namespace MR
 
             ~Tractogram ();
 
-            void render2D (const Projection& transform);
-
-            void render3D ();
+            void render (const Projection& transform);
 
             void renderColourBar (const Projection& transform) {
               if (color_type == ScalarFile && show_colour_bar)
@@ -93,8 +91,8 @@ namespace MR
             class Shader : public Displayable::Shader {
               public:
                 Shader () : do_crop_to_slab (false), scalarfile_by_direction (false), use_lighting (false), color_type (Direction) { }
-                virtual std::string vertex_shader_source (const Displayable& object);
-                virtual std::string fragment_shader_source (const Displayable& object);
+                virtual std::string vertex_shader_source (const Displayable& tractogram);
+                virtual std::string fragment_shader_source (const Displayable& tractogram);
                 virtual bool need_update (const Displayable& object) const;
                 virtual void update (const Displayable& object);
               protected:
