@@ -1324,17 +1324,36 @@ namespace MR
             resize (winsize.width() - oldsize.width() + glsize[0], winsize.height() - oldsize.height() + glsize[1]);
           }
 
-          // BATCH_COMMAND view.position x,y # Set the position of the main window, in pixel units.
-          else if (cmd == "view.position") { 
-            std::vector<int> pos = parse_ints (args);
-            if (pos.size() != 2)
-              throw Exception ("invalid argument \"" + args + "\" to view.position batch command");
-            move (pos[0], pos[1]);
-          }
-
           // BATCH_COMMAND view.reset # Reset the view according to current image. This resets the FOV, projection, and focus.
           else if (cmd == "view.reset") 
             reset_view_slot();
+
+          // BATCH_COMMAND view.fov num # Set the field of view, in mm.
+          else if (cmd == "view.fov") { 
+            float fov = to<float> (args);
+            set_FOV (fov);
+            glarea->updateGL();
+          }
+          
+          // BATCH_COMMAND view.focus x,y,z # Set the position of the crosshairs in scanner coordinates, with the new position supplied as a comma-separated list of floating-point values. 
+          else if (cmd == "view.focus") { 
+            std::vector<float> pos = parse_floats (args);
+            if (pos.size() != 3) 
+              throw Exception ("batch command \"" + cmd + "\" expects a comma-separated list of 3 floating-point values");
+            set_focus (Point<> (pos[0], pos[1], pos[2]));
+            glarea->updateGL();
+          }
+          
+          // BATCH_COMMAND view.voxel x,y,z # Set the position of the crosshairs in voxel coordinates, relative the image currently displayed. The new position should be supplied as a comma-separated list of floating-point values. 
+          else if (cmd == "view.voxel") { 
+            if (image()) {
+              std::vector<float> pos = parse_floats (args);
+              if (pos.size() != 3) 
+                throw Exception ("batch command \"" + cmd + "\" expects a comma-separated list of 3 floating-point values");
+              set_focus (image()->interp.voxel2scanner (Point<> (pos[0], pos[1], pos[2])));
+              glarea->updateGL();
+            }
+          }
 
           // BATCH_COMMAND view.fov num # Set the field of view, in mm.
           else if (cmd == "view.fov") { 
@@ -1355,13 +1374,6 @@ namespace MR
             bool n = to<bool> (args);
             snap_to_image_action->setChecked (n);
             snap_to_image_slot();
-          }
-
-          // BATCH_COMMAND view.fullscreen # Show fullscreen or windowed (0: windowed, 1: fullscreen).
-          else if (cmd == "view.fullscreen") { 
-            bool n = to<bool> (args);
-            full_screen_action->setChecked (n);
-            full_screen_slot();
           }
 
           // BATCH_COMMAND image.select index # Switch to image number specified, with reference to the list of currently loaded images.
@@ -1411,6 +1423,21 @@ namespace MR
               throw Exception ("invalid tool index \"" + args + "\" requested in batch command");
             tool_group->actions()[n]->setChecked (true);
             select_tool_slot (tool_group->actions()[n]);
+          }
+
+          // BATCH_COMMAND window.position x,y # Set the position of the main window, in pixel units.
+          else if (cmd == "window.position") { 
+            std::vector<int> pos = parse_ints (args);
+            if (pos.size() != 2)
+              throw Exception ("invalid argument \"" + args + "\" to view.position batch command");
+            move (pos[0], pos[1]);
+          }
+
+          // BATCH_COMMAND window.fullscreen # Show fullscreen or windowed (0: windowed, 1: fullscreen).
+          else if (cmd == "window.fullscreen") { 
+            bool n = to<bool> (args);
+            full_screen_action->setChecked (n);
+            full_screen_slot();
           }
 
           // BATCH_COMMAND exit # quit MRView.
