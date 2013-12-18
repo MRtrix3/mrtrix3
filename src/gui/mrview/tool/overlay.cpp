@@ -219,8 +219,12 @@ namespace MR
         }
 
 
-        void Overlay::draw2D (const Projection& projection) 
+        void Overlay::draw (const Projection& projection, bool is_3D)
         {
+          if (is_3D) 
+            return;
+
+
           float overlay_opacity = opacity->value() / 1.0e3f;
 
           // set up OpenGL environment:
@@ -254,11 +258,6 @@ namespace MR
 
 
 
-
-        void Overlay::draw3D (const Projection& transform)
-        { 
-          TRACE;
-        }
 
 
         void Overlay::toggle_shown_slot (const QModelIndex& index, const QModelIndex& index2) {

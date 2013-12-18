@@ -333,9 +333,9 @@ def compile (source, compiler_flags = [], linker_flags = []):
 
 # set CPP compiler:
 
-if 'CXX' in os.environ.keys(): cpp = os.environ['CXX'].split()
-if 'LD' in os.environ.keys(): ld = os.environ['LD'].split()
-if 'LDLIB' in os.environ.keys(): ld_lib = os.environ['LDLIB'].split()
+if 'CXX' in os.environ.keys(): cpp = shlex.split (os.environ['CXX'])
+if 'LD' in os.environ.keys(): ld = shlex.split (os.environ['LD'])
+if 'LDLIB' in os.environ.keys(): ld_lib = shlex.split (os.environ['LDLIB'])
 
 report ('Checking C++ compiler [' + cpp[0] + ']: ')
 try: 
@@ -368,9 +368,9 @@ Use LD environment variable to set path to compiler, as follows:
 
 # CPP flags:
 
-if 'CFLAGS' in os.environ.keys(): cpp_flags = os.environ['CFLAGS'].split()
-if 'LDFLAGS' in os.environ.keys(): ld_flags = os.environ['LDFLAGS'].split()
-if 'LDLIB_FLAGS' in os.environ.keys(): ld_lib_flags = os.environ['LDLIB_FLAGS'].split()
+if 'CFLAGS' in os.environ.keys(): cpp_flags = shlex.split (os.environ['CFLAGS'])
+if 'LDFLAGS' in os.environ.keys(): ld_flags = shlex.spolit (os.environ['LDFLAGS'])
+if 'LDLIB_FLAGS' in os.environ.keys(): ld_lib_flags = shlex.split (os.environ['LDLIB_FLAGS'])
 
 
 # OS-dependent variables:
@@ -523,8 +523,8 @@ except:
 
 report ('Checking for zlib compression library: ')
 
-if 'ZLIB_CFLAGS' in os.environ.keys(): zlib_cflags = os.environ['ZLIB_CFLAGS'].split()
-if 'ZLIB_LDFLAGS' in os.environ.keys(): zlib_ldflags = os.environ['ZLIB_LDFLAGS'].split()
+if 'ZLIB_CFLAGS' in os.environ.keys(): zlib_cflags = shlex.split (os.environ['ZLIB_CFLAGS'])
+if 'ZLIB_LDFLAGS' in os.environ.keys(): zlib_ldflags = shlex.split (os.environ['ZLIB_LDFLAGS'])
 
 try:
   zlib_version = compile ('''
@@ -570,8 +570,8 @@ ld_lib_flags += zlib_ldflags
 
 report ('Checking for POSIX threads: ')
 
-if 'PTHREAD_CFLAGS' in os.environ.keys(): thread_cflags = os.environ['PTHREAD_CFLAGS'].split()
-if 'PTHREAD_LDFLAGS' in os.environ.keys(): thread_ldflags = os.environ['PTHREAD_LDFLAGS'].split()
+if 'PTHREAD_CFLAGS' in os.environ.keys(): thread_cflags = shlex.split (os.environ['PTHREAD_CFLAGS'])
+if 'PTHREAD_LDFLAGS' in os.environ.keys(): thread_ldflags = shlex.split (os.environ['PTHREAD_LDFLAGS'])
 
 try:
   compile ('''
@@ -615,18 +615,18 @@ except:
 
 report ('Checking for GNU Scientific Library: ')
 if 'GSL_CFLAGS' in os.environ.keys(): 
-  gsl_cflags = os.environ['GSL_CFLAGS'].split()
+  gsl_cflags = shlex.split (os.environ['GSL_CFLAGS'])
 else:
   try: 
-    gsl_cflags = execute ([ 'gsl-config', '--cflags' ], RuntimeError)[1].split()
+    gsl_cflags = shlex.split (execute ([ 'gsl-config', '--cflags' ], RuntimeError)[1])
   except:
     log ('gsl-config not in PATH - assuming defaults for GSL_CFLAGS\n\n')
     
 if 'GSL_LDFLAGS' in os.environ.keys(): 
-  gsl_ldflags = os.environ['GSL_LDFLAGS'].split()
+  gsl_ldflags = shlex.split (os.environ['GSL_LDFLAGS'])
 else:
   try: 
-    gsl_ldflags = execute ([ 'gsl-config', '--libs' ], RuntimeError)[1].split()
+    gsl_ldflags = shlex.split (execute ([ 'gsl-config', '--libs' ], RuntimeError)[1])
   except:
     log ('gsl-config not in PATH - assuming defaults for GSL_LDFLAGS\n\n')
     
@@ -680,7 +680,7 @@ except:
 # check for alternate cblas libraries:
 
 if 'CBLAS_LDFLAGS' in os.environ.keys(): 
-  cblas_ldflags = os.environ['CBLAS_LDFLAGS'].split()
+  cblas_ldflags = shlex.split (os.environ['CBLAS_LDFLAGS'])
   flags = gsl_ldflags[:]
   flags.remove ('-lgslcblas')
   flags += cblas_ldflags;
@@ -870,15 +870,15 @@ int main() { Foo f; }
       for line in open (os.path.join (qt_dir.name, qt_makefile)):
         line = line.strip()
         if line.startswith ('DEFINES'):
-          qt_defines = shlex.split(line[line.find('=')+1:].strip())
+          qt_defines = shlex.split (line[line.find('=')+1:].strip())
         elif line.startswith ('CXXFLAGS'):
-          qt_cflags = shlex.split(line[line.find('=')+1:].strip())
+          qt_cflags = shlex.split (line[line.find('=')+1:].strip())
         elif line.startswith ('INCPATH'):
-          qt_includes = shlex.split(line[line.find('=')+1:].strip())
+          qt_includes = shlex.split (line[line.find('=')+1:].strip())
         elif line.startswith ('LIBS'):
-          qt_libs = shlex.split(line[line.find('=')+1:].strip())
+          qt_libs = shlex.split (line[line.find('=')+1:].strip())
         elif line.startswith ('LFLAGS'):
-          qt_ldflags = shlex.split(line[line.find('=')+1:].strip())
+          qt_ldflags = shlex.split (line[line.find('=')+1:].strip())
 
       
       qt = qt_cflags + qt_defines + qt_includes
@@ -993,19 +993,19 @@ if R_module:
   report ('Checking for R library: ')
   R_cflags = [ '-I/usr/include/R' ]
   if 'R_CFLAGS' in os.environ.keys(): 
-    R_cflags = shlex.split( os.environ['R_CFLAGS'])
+    R_cflags = shlex.split (os.environ['R_CFLAGS'])
   else:
     try: 
-      R_cflags = shlex.split( execute ([ 'pkg-config', '--cflags', 'libR' ], RuntimeError)[1])
+      R_cflags = shlex.split (execute ([ 'pkg-config', '--cflags', 'libR' ], RuntimeError)[1])
     except:
       log ('error running pkg-config --libs libR - assuming defaults for R_CFLAGS\n\n')
       
   R_ldflags = [ '-L/usr/lib/R/lib', '-lR' ]
   if 'R_LDFLAGS' in os.environ.keys(): 
-    R_ldflags = shlex.split( os.environ['R_LDFLAGS'])
+    R_ldflags = shlex.split (os.environ['R_LDFLAGS'])
   else:
     try: 
-      R_ldflags = shlex.split( execute ([ 'pkg-config', '--libs', 'libR' ], RuntimeError)[1])
+      R_ldflags = shlex.split (execute ([ 'pkg-config', '--libs', 'libR' ], RuntimeError)[1])
     except:
       log ('error running pkg-config --libs libR - assuming defaults for R_LDFLAGS\n\n')
     

@@ -45,12 +45,10 @@ namespace MR
       namespace Tool
       {
 
-        std::string Tractogram::Shader::vertex_shader_source (const Displayable& object)
+        std::string Tractogram::Shader::vertex_shader_source (const Displayable& tractogram)
         {
-          const Tractogram& tractogram (dynamic_cast<const Tractogram&> (object));
-
-          bool colour_by_direction = ( tractogram.color_type == Direction || 
-              ( tractogram.color_type == ScalarFile && tractogram.scalarfile_by_direction ) );
+          bool colour_by_direction = ( color_type == Direction || 
+              ( color_type == ScalarFile && scalarfile_by_direction ) );
 
           std::string source =
               "layout (location = 0) in vec3 vertexPosition_modelspace;\n"
@@ -59,12 +57,12 @@ namespace MR
               "uniform mat4 MVP;\n"
               "flat out float amp_out;\n"
               "out vec3 fragmentColour;\n";
-          if (tractogram.tractography_tool.use_lighting) 
+          if (use_lighting) 
             source += 
               "out vec3 tangent;\n"
               "uniform mat4 MV;\n";
               
-          switch (tractogram.color_type) {
+          switch (color_type) {
             case Direction: break;
             case Ends:
               source += "layout (location = 3) in vec3 color;\n";
@@ -78,7 +76,7 @@ namespace MR
               break;
           }
 
-          if (tractogram.tractography_tool.do_crop_to_slab) {
+          if (do_crop_to_slab) {
             source +=
                 "out float include;\n"
                 "uniform vec3 screen_normal;\n"
@@ -90,7 +88,7 @@ namespace MR
               "void main() {\n"
               "  gl_Position =  MVP * vec4(vertexPosition_modelspace,1);\n";
 
-          if (tractogram.tractography_tool.use_lighting || colour_by_direction) 
+          if (use_lighting || colour_by_direction) 
             source += 
               "  vec3 dir;\n"
               "  if (isnan (previousVertex.x))\n"
@@ -101,10 +99,10 @@ namespace MR
               "    dir = nextVertex - previousVertex;\n";
           if (colour_by_direction)
               source += "  fragmentColour = dir;\n";
-          if (tractogram.tractography_tool.use_lighting)
+          if (use_lighting)
               source += "  tangent = normalize (mat3(MV) * dir);\n";
 
-          switch (tractogram.color_type) {
+          switch (color_type) {
             case Ends:
               source += std::string (" fragmentColour = color;\n");
               break;
@@ -114,23 +112,23 @@ namespace MR
               break;
             case ScalarFile:
               source += "  amp_out = amp;\n";
-              if (!ColourMap::maps[tractogram.colourmap].special) {
+              if (!ColourMap::maps[colourmap].special) {
                 source += "  float amplitude = clamp (";
                 if (tractogram.scale_inverted())
                   source += "1.0 -";
                 source += " scale * (amp - offset), 0.0, 1.0);\n  ";
               }
-              if (!tractogram.scalarfile_by_direction) 
+              if (!scalarfile_by_direction) 
                 source += 
                   std::string ("  vec3 color;\n") +
-                  ColourMap::maps[tractogram.colourmap].mapping +
+                  ColourMap::maps[colourmap].mapping +
                   "  fragmentColour = color;\n";
               break;
             default:
               break;
           }
 
-          if (tractogram.tractography_tool.do_crop_to_slab)
+          if (do_crop_to_slab)
             source +=
                 "  include = (dot (vertexPosition_modelspace, screen_normal) - crop_var) / slab_width;\n";
 
@@ -141,25 +139,23 @@ namespace MR
 
 
 
-        std::string Tractogram::Shader::fragment_shader_source (const Displayable& object) 
+        std::string Tractogram::Shader::fragment_shader_source (const Displayable& tractogram) 
         {
-          const Tractogram& tractogram (dynamic_cast<const Tractogram&> (object));
-
-          bool colour_by_direction = ( tractogram.color_type == Direction || 
-              ( tractogram.color_type == ScalarFile && tractogram.scalarfile_by_direction ) );
+          bool colour_by_direction = ( color_type == Direction || 
+              ( color_type == ScalarFile && scalarfile_by_direction ) );
 
           std::string source =
               "in float include; \n"
               "out vec3 color;\n"
               "flat in float amp_out;\n"
               "in vec3 fragmentColour;\n";
-          if (tractogram.tractography_tool.use_lighting)
+          if (use_lighting)
             source += 
               "in vec3 tangent;\n"
               "uniform float ambient, diffuse, specular, shine;\n"
               "uniform vec3 light_pos;\n";
 
-          if (tractogram.color_type == ScalarFile) {
+          if (color_type == ScalarFile) {
             if (tractogram.use_discard_lower())
               source += "uniform float lower;\n";
             if (tractogram.use_discard_upper())
@@ -169,23 +165,23 @@ namespace MR
           source +=
               "void main(){\n";
 
-          if (tractogram.tractography_tool.do_crop_to_slab)
+          if (do_crop_to_slab)
             source += "  if (include < 0 || include > 1) discard;\n";
 
-          if (tractogram.color_type == ScalarFile) {
+          if (color_type == ScalarFile) {
             if (tractogram.use_discard_lower())
               source += "  if (amp_out < lower) discard;\n";
             if (tractogram.use_discard_upper())
               source += "  if (amp_out > upper) discard;\n";
           }
 
-          if (tractogram.tractography_tool.use_lighting)
+          if (use_lighting)
             source += "  vec3 t = normalize (tangent);\n";
 
           source +=
             std::string("  color = ") + (colour_by_direction ? "normalize (abs (fragmentColour))" : "fragmentColour" ) + ";\n";
 
-          if (tractogram.tractography_tool.use_lighting) 
+          if (use_lighting) 
             source += 
              "  float l_dot_t = dot(light_pos, t);\n"
              "  vec3 l_perp = light_pos - l_dot_t * t;\n"
@@ -203,9 +199,10 @@ namespace MR
         }
 
 
-        bool Tractogram::Shader::need_update (const Displayable& object) const {
+        bool Tractogram::Shader::need_update (const Displayable& object) const
+        {
           const Tractogram& tractogram (dynamic_cast<const Tractogram&> (object));
-          if (do_crop_to_slab != tractogram.tractography_tool.do_crop_to_slab ||
+          if (do_crop_to_slab != tractogram.tractography_tool.crop_to_slab() ||
               color_type != tractogram.color_type) 
             return true;
           if (tractogram.color_type == ScalarFile)
@@ -219,9 +216,10 @@ namespace MR
 
 
 
-        void Tractogram::Shader::update (const Displayable& object) {
+        void Tractogram::Shader::update (const Displayable& object) 
+        {
           const Tractogram& tractogram (dynamic_cast<const Tractogram&> (object));
-          do_crop_to_slab = tractogram.tractography_tool.do_crop_to_slab;
+          do_crop_to_slab = tractogram.tractography_tool.crop_to_slab();
           scalarfile_by_direction = tractogram.scalarfile_by_direction;
           use_lighting = tractogram.tractography_tool.use_lighting;
           color_type = tractogram.color_type;
@@ -269,7 +267,7 @@ namespace MR
 
 
 
-        void Tractogram::render2D (const Projection& transform)
+        void Tractogram::render (const Projection& transform)
         {
           if (tractography_tool.do_crop_to_slab && tractography_tool.slab_thickness <= 0.0)
             return;
@@ -335,12 +333,6 @@ namespace MR
 
 
 
-
-
-        void Tractogram::render3D ()
-        {
-
-        }
 
 
 

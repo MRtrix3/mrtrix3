@@ -81,6 +81,7 @@ namespace MR
           line_thickness (1.0),
           do_crop_to_slab (true),
           use_lighting (false),
+          not_3D (true),
           line_opacity (1.0),
           scalar_file_options (NULL),
           lighting_dialog (NULL) {
@@ -218,15 +219,24 @@ namespace MR
         Tractography::~Tractography () {}
 
 
-        void Tractography::draw2D (const Projection& transform) {
+
+
+
+        void Tractography::draw (const Projection& transform, bool is_3D)
+        {
+          not_3D = !is_3D;
           for (int i = 0; i < tractogram_list_model->rowCount(); ++i) {
             if (tractogram_list_model->items[i]->show && !hide_all_button->isChecked())
-              dynamic_cast<Tractogram*>(tractogram_list_model->items[i])->render2D (transform);
+              dynamic_cast<Tractogram*>(tractogram_list_model->items[i])->render (transform);
           }
         }
 
 
-        void Tractography::drawOverlays (const Projection& transform) {
+
+
+
+        void Tractography::drawOverlays (const Projection& transform)
+        {
           for (int i = 0; i < tractogram_list_model->rowCount(); ++i) {
             if (tractogram_list_model->items[i]->show)
               dynamic_cast<Tractogram*>(tractogram_list_model->items[i])->renderColourBar (transform);
@@ -234,8 +244,7 @@ namespace MR
         }
 
 
-        void Tractography::draw3D (const Projection& transform) {
-        }
+
 
 
         void Tractography::tractogram_open_slot ()

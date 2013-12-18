@@ -35,9 +35,7 @@ namespace MR
       namespace Tool
       {
 
-        void Base::draw2D (const Projection& transform) { }
-
-        void Base::draw3D (const Projection& transform) { }
+        void Base::draw (const Projection& transform, bool is_3D) { }
 
         void Base::drawOverlays (const Projection& transform) { }
 

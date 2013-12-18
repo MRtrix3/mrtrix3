@@ -26,21 +26,24 @@ void usage ()
 
   // use this command to re-generate the command documentation:
   // grep -rh BATCH_COMMAND src/gui/mrview/window.cpp src/gui/mrview/tool/ | sed -n -e 's/^.*BATCH_COMMAND \(.*\) # \(.*$\)/+ "\1\\n  \2"/p'
- 
+
   + "view.mode index\n  Switch to view mode specified by the integer index. as per the view menu."
   + "view.size width,height\n  Set the size of the view area, in pixel units."
-  + "view.position x,y\n  Set the position of the main window, in pixel units."
   + "view.reset\n  Reset the view according to current image. This resets the FOV, projection, and focus."
+  + "view.fov num\n  Set the field of view, in mm."
+  + "view.focus x,y,z\n  Set the position of the crosshairs in scanner coordinates, with the new position supplied as a comma-separated list of floating-point values. "
+  + "view.voxel x,y,z\n  Set the position of the crosshairs in voxel coordinates, relative the image currently displayed. The new position should be supplied as a comma-separated list of floating-point values. "
   + "view.fov num\n  Set the field of view, in mm."
   + "view.plane num\n  Set the viewing plane, according to the mappping 0: sagittal; 1: coronal; 2: axial."
   + "view.lock\n  Set whether view is locked to image axes (0: no, 1: yes)."
-  + "view.fullscreen\n  Show fullscreen or windowed (0: windowed, 1: fullscreen)."
   + "image.select index\n  Switch to image number specified, with reference to the list of currently loaded images."
   + "image.load path\n  Load image specified and make it current."
   + "image.reset\n  Reset the image scaling."
   + "image.colourmap index\n  Switch the image colourmap to that specified, as per the colourmap menu."
   + "image.range min max\n  Set the image intensity range to that specified"
   + "tool.open index\n  Start the tool specified, indexed as per the tool menu"
+  + "window.position x,y\n  Set the position of the main window, in pixel units."
+  + "window.fullscreen\n  Show fullscreen or windowed (0: windowed, 1: fullscreen)."
   + "exit\n  quit MRView."
   + "tractography.load path\n  Load the specified tracks file into the tractography tool"
   + "capture.folder path\n  Set the output folder for the screen capture tool"
@@ -48,13 +51,11 @@ void usage ()
   + "capture.grab\n  Start the screen capture process"
   ;
 
- 
-
   ARGUMENTS
-  + Argument ("image", "an image to be loaded.")
-  .optional()
-  .allow_multiple()
-  .type_image_in ();
+    + Argument ("image", "an image to be loaded.")
+    .optional()
+    .allow_multiple()
+    .type_image_in ();
 
   OPTIONS
     + Option ("run", "run command specified in string at start time").allow_multiple()

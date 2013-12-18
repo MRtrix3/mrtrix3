@@ -59,8 +59,7 @@ namespace MR
             }
             Window& window;
 
-            virtual void draw2D (const Projection& transform);
-            virtual void draw3D (const Projection& transform);
+            virtual void draw (const Projection& transform, bool is_3D);
             virtual void drawOverlays (const Projection& transform);
             virtual bool process_batch_command (const std::string& cmd, const std::string& args);
         };

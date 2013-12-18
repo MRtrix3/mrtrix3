@@ -328,8 +328,11 @@ namespace MR
 
 
 
-        void ODF::draw2D (const Projection& projection) 
+        void ODF::draw (const Projection& projection, bool is_3D) 
         {
+          if (is_3D) 
+            return;
+
           lock_orientation_to_image_slot(0);
 
           Image* settings = get_image();
@@ -413,10 +416,6 @@ namespace MR
 
 
 
-
-        void ODF::draw3D (const Projection& transform)
-        { 
-        }
 
 
         void ODF::showEvent (QShowEvent* event) 

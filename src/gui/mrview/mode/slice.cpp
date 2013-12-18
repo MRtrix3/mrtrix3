@@ -148,7 +148,7 @@ namespace MR
 
           glDisable (GL_TEXTURE_3D);
 
-          render_tools2D (with_projection);
+          render_tools (with_projection);
 
           draw_crosshairs (with_projection);
           draw_orientation_labels (with_projection);
