@@ -437,6 +437,32 @@ namespace MR
           threshold_upper->setRate (rate);
         }
 
+        bool Overlay::process_batch_command (const std::string& cmd, const std::string& args)
+        {
+
+          // BATCH_COMMAND overlay.load path # Loads the specified image on the overlay tool.
+		  if (cmd == "overlay.load") {
+			VecPtr<MR::Image::Header> list;
+			try { list.push_back (new MR::Image::Header (args)); }
+			catch (Exception& e) { e.display(); }
+			image_list_model->add_items (list);
+			return true;
+		  }
+
+		  // BATCH_COMMAND overlay.opacity value # Sets the overlay opacity to floating value [0-1].
+		  else if (cmd == "overlay.opacity") {
+			try {
+		      float n = to<float> (args);
+			  opacity->setSliderPosition(int(1.e3f*n));
+			 }
+             catch (Exception& e) { e.display(); }
+
+
+			return true;
+		  }
+
+          return false;
+        }
 
 
       }

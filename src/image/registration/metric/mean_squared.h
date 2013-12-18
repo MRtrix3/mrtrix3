@@ -44,7 +44,7 @@ namespace MR
                                  const Point<double> target_point,
                                  const Point<double> moving_point,
                                  Math::Vector<double>& gradient) {
-                if (isnan (params.template_image.value()))
+                if (isnan (double (params.template_image.value())))
                   return 0.0;
 
                 params.transformation.get_jacobian_wrt_params (target_point, this->jacobian);

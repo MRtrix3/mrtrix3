@@ -49,6 +49,7 @@ namespace MR
 
             void draw2D (const Projection& projection);
             void draw3D (const Projection& projection);
+            bool process_batch_command (const std::string& cmd, const std::string& args);
 
           private slots:
             void image_open_slot ();

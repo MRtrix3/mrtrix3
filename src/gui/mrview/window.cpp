@@ -1343,6 +1343,10 @@ namespace MR
             glarea->updateGL();
           }
           
+          // BATCH_COMMAND view.focus num # Set the focus on the selected image index.
+          else if (cmd == "view.focus"){
+
+          }
           // BATCH_COMMAND view.plane num # Set the viewing plane, according to the mappping 0: sagittal; 1: coronal; 2: axial.
           else if (cmd == "view.plane") { 
             int n = to<int> (args);
@@ -1427,7 +1431,7 @@ namespace MR
               ++n;
             }
             if (n >= tools()->actions().size())
-              WARN ("batch command \"" + cmd + "\" unclaimed by main window or any acive tool - ignored");
+              WARN ("batch command \"" + cmd + "\" unclaimed by main window or any active tool - ignored");
           }
 
 
