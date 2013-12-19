@@ -197,6 +197,7 @@ namespace MR
           projection.set (MV, P);
 
           render_tools (projection, true);
+          draw_crosshairs (projection);
 
 
 
@@ -367,7 +368,6 @@ namespace MR
           glDisable (GL_TEXTURE_3D);
           glDisable (GL_BLEND);
 
-          draw_crosshairs (projection);
           draw_orientation_labels (projection);
         }
 

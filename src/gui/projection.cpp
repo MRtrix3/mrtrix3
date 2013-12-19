@@ -70,7 +70,7 @@ namespace MR
         GL::Shader::Fragment fragment_shader (
             "out vec4 color;\n"
             "void main () {\n"
-            "  color = vec4 (1.0, 1.0, 0.0, 0.5);\n"
+            "  color = vec4 (0.5, 0.5, 0.0, 1.0);\n"
             "}\n");
         crosshairs_program.attach (vertex_shader);
         crosshairs_program.attach (fragment_shader);
@@ -92,10 +92,9 @@ namespace MR
       };
       glBufferData (GL_ARRAY_BUFFER, sizeof(data), data, GL_STATIC_DRAW);
 
-      glDepthMask (GL_FALSE);
+      glDepthMask (GL_TRUE);
+      glDisable (GL_BLEND);
       glLineWidth (1.0);
-      glEnable (GL_BLEND);
-      glBlendFunc (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
       crosshairs_program.start();
       glDrawArrays (GL_LINES, 0, 4);
