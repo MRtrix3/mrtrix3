@@ -106,6 +106,10 @@ namespace MR
             return windowing_scale_3D;
           }
 
+          GLuint texture3D_index () const { 
+            return texture3D;
+          }
+
         private:
           BufferType buffer;
 

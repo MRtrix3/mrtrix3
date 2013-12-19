@@ -51,28 +51,67 @@ namespace MR
         std::string Volume::Shader::fragment_shader_source (const Displayable& object)
         {
           std::string source = 
-            "uniform sampler3D tex;\n"
+            "uniform sampler3D image_sampler;\n"
             "in vec3 texcoord;\n"
             "uniform float offset, scale, alpha_scale, alpha_offset, alpha";
           if (object.use_discard_lower()) source += ", lower";
           if (object.use_discard_upper()) source += ", upper";
+          source += ";\n";
+          if (clip1) source += "vec4 clip1;\n";
+          if (clip2) source += "vec4 clip2;\n";
+          if (clip3) source += "vec4 clip3;\n";
+          if (use_depth_testing) 
+            source += 
+              "uniform sampler2D depth_sampler;\n"
+              "uniform mat4 M;\n"
+              "uniform float ray_z;\n";
 
-          source += ";\n"
+
+          source += 
             "uniform vec3 ray;\n"
             "out vec4 final_color;\n"
-            "void main () {\n"
+            "void main () {\n";
+
+
+          if (clip1) source += "  clip1 = vec4 (1.0, 0.0, 0.0, 0.5);\n";
+          if (clip2) source += "  clip2 = vec4 (0.0, 1.0, 0.0, 0.5);\n";
+          if (clip3) source += "  clip3 = vec4 (0.0, 0.0, 1.0, 0.5);\n";
+
+          source += 
             "  final_color = vec4 (0.0);\n"
-            "  vec3 coord = texcoord + ray * (fract(sin(gl_FragCoord.x * 12.9898 + gl_FragCoord.y * 78.233) * 43758.5453));\n"
+            "  float dither = fract(sin(gl_FragCoord.x * 12.9898 + gl_FragCoord.y * 78.233) * 43758.5453);\n"
+            "  vec3 coord = texcoord + ray * dither;\n";
+
+          if (use_depth_testing) {
+            source += 
+              "  float depth = texelFetch (depth_sampler, ivec2(gl_FragCoord.xy), 0).r;\n"
+              "  float current_depth = gl_FragCoord.z + ray_z * dither;\n";
+          }
+
+          source += 
             "  int nmax = 10000;\n"
             "  if (ray.x < 0.0) nmax = int (-texcoord.s/ray.x);\n"
             "  else if (ray.x > 0.0) nmax = int ((1.0-texcoord.s) / ray.x);\n"
             "  if (ray.y < 0.0) nmax = min (nmax, int (-texcoord.t/ray.y));\n"
             "  else if (ray.y > 0.0) nmax = min (nmax, int ((1.0-texcoord.t) / ray.y));\n"
             "  if (ray.z < 0.0) nmax = min (nmax, int (-texcoord.p/ray.z));\n"
-            "  else if (ray.z > 0.0) nmax = min (nmax, int ((1.0-texcoord.p) / ray.z));\n"
+            "  else if (ray.z > 0.0) nmax = min (nmax, int ((1.0-texcoord.p) / ray.z));\n";
+
+          if (use_depth_testing)
+            source += "  nmax = min (nmax, int ((depth - current_depth) / ray_z));\n";
+
+          source +=
+            "  if (nmax <= 0) return;\n"
             "  for (int n = 0; n < nmax; ++n) {\n"
-            "    coord += ray;\n"
-            "    vec4 color = texture (tex, coord);\n"
+            "    coord += ray;\n";
+
+          if (clip1) source += "    if (dot (coord, clip1.xyz) > clip1.w)\n";
+          if (clip2) source += "      if (dot (coord, clip2.xyz) > clip2.w)\n";
+          if (clip3) source += "        if (dot (coord, clip3.xyz) > clip3.w)\n";
+          if (clip1 || clip2 || clip3) source += "          continue;\n";
+
+          source += 
+            "    vec4 color = texture (image_sampler, coord);\n"
             "    float amplitude = " + std::string (ColourMap::maps[object.colourmap].amplitude) + ";\n"
             "    if (isnan(amplitude) || isinf(amplitude)) continue;\n";
 
@@ -111,6 +150,19 @@ namespace MR
 
 
 
+        bool Volume::Shader::need_update (const Displayable& object) const 
+        {
+          if (mode.use_depth_testing != use_depth_testing)
+            return true;
+          return Displayable::Shader::need_update (object);
+        }
+
+        void Volume::Shader::update (const Displayable& object) 
+        {
+          clip1 = clip2 = clip3 = true;
+          use_depth_testing = mode.use_depth_testing;
+          Displayable::Shader::update (object);
+        }
 
 
 
@@ -144,6 +196,10 @@ namespace MR
           GL::mat4 MV = adjust_projection_matrix (Q) * GL::translate  (-target()[0], -target()[1], -target()[2]);
           projection.set (MV, P);
 
+          render_tools (projection, true);
+
+
+
           Point<> pos = image()->interp.voxel2scanner (Point<> (-0.5f, -0.5f, -0.5f));
           Point<> vec_X = image()->interp.voxel2scanner_dir (Point<> (image()->interp.dim(0), 0.0f, 0.0f));
           Point<> vec_Y = image()->interp.voxel2scanner_dir (Point<> (0.0f, image()->interp.dim(1), 0.0f));
@@ -167,18 +223,20 @@ namespace MR
 
           T2S(3,0) = T2S(3,1) = T2S(3,2) = 0.0f; 
           T2S(3,3) = 1.0f;
-          GL::mat4 M = projection.modelview_projection() * GL::mat4 (T2S);
+          GL::mat4 M = projection.modelview_projection() * T2S;
 
-          float step_size = std::min (std::min (
-                image()->interp.vox(0) / float (image()->interp.dim(0)),
-                image()->interp.vox(1) / float (image()->interp.dim(1))),
-              image()->interp.vox(2) / float (image()->interp.dim(2)));
-          Point<> ray = image()->interp.scanner2voxel_dir (projection.screen_normal());
+          int min_vox_index;
+          if (image()->interp.vox(0) < image()->interp.vox (1)) 
+            min_vox_index = image()->interp.vox(0) < image()->interp.vox (2) ? 0 : 2;
+          else 
+            min_vox_index = image()->interp.vox(1) < image()->interp.vox (2) ? 1 : 2;
+          float step_size = 0.5 * image()->interp.vox(min_vox_index);
+          Point<> ray = image()->interp.scanner2voxel_dir (projection.screen_normal() * step_size);
           ray[0] /= image()->interp.dim(0);
           ray[1] /= image()->interp.dim(1);
           ray[2] /= image()->interp.dim(2);
-          ray.normalise();
-          ray *= step_size;
+
+
 
           if (!volume_VB || !volume_VAO || !volume_VI) {
             volume_VB.gen();
@@ -255,13 +313,50 @@ namespace MR
           image()->update_texture3D();
           image()->set_use_transparency (true);
 
+          use_depth_testing = true;
           image()->start (volume_shader, image()->scaling_3D());
           glUniformMatrix4fv (glGetUniformLocation (volume_shader, "M"), 1, GL_FALSE, M);
           glUniform3fv (glGetUniformLocation (volume_shader, "ray"), 1, ray);
+          glUniform1i (glGetUniformLocation (volume_shader, "image_sampler"), 0);
+
+          glActiveTexture (GL_TEXTURE0);
+          glBindTexture (GL_TEXTURE_3D, image()->texture3D_index());
+
+          if (use_depth_testing) {
+
+            glActiveTexture (GL_TEXTURE1);
+            if (!depth_texture) {
+              depth_texture.gen();
+              depth_texture.bind (GL_TEXTURE_2D);
+              glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
+              glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
+              glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+              glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+              glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_COMPARE_MODE, GL_NONE);
+              glTexParameteri (GL_TEXTURE_2D, GL_DEPTH_TEXTURE_MODE, GL_ALPHA);
+            }
+            else 
+              depth_texture.bind (GL_TEXTURE_2D);
+
+            glReadBuffer (GL_BACK);
+            glCopyTexImage2D (GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, 0, 0, projection.width(), projection.height(), 0);
+
+            glUniform1i (glGetUniformLocation (volume_shader, "depth_sampler"), 1);
+
+
+            GL::vec4 ray_eye = M * GL::vec4 (ray, 0.0);
+            glUniform1f (glGetUniformLocation (volume_shader, "ray_z"), 0.5*ray_eye[2]);
+
+            glEnable (GL_BLEND);
+            glBlendFunc (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+          }
+
+
 
           glEnable (GL_DEPTH_TEST);
           glEnable (GL_TEXTURE_3D);
           glDepthMask (GL_FALSE);
+          glActiveTexture (GL_TEXTURE0);
 
           glTexParameteri (GL_TEXTURE_3D, GL_TEXTURE_MAG_FILTER, image()->interpolate() ? GL_LINEAR : GL_NEAREST);
           glTexParameteri (GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, image()->interpolate() ? GL_LINEAR : GL_NEAREST);
