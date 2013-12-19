@@ -166,25 +166,25 @@ namespace MR
 
         File::MMap fmap (H.name());
 
-        if (memcmp ( (uint8_t*) fmap.address(), "MRI#", 4))
+        if (memcmp (fmap.address(), "MRI#", 4))
           throw Exception ("file \"" + H.name() + "\" is not in MRI format (unrecognised magic number)");
 
         bool is_BE = false;
-        if (get<uint16_t> ( (uint8_t*) fmap.address() + sizeof (int32_t), is_BE) == 0x0100U) is_BE = true;
-        else if (get<uint16_t> ( (uint8_t*) fmap.address() + sizeof (uint32_t), is_BE) != 0x0001U)
+        if (get<uint16_t> (fmap.address() + sizeof (int32_t), is_BE) == 0x0100U) is_BE = true;
+        else if (get<uint16_t> (fmap.address() + sizeof (uint32_t), is_BE) != 0x0001U)
           throw Exception ("MRI file \"" + H.name() + "\" is badly formed (invalid byte order specifier)");
 
         H.set_ndim (4);
 
         size_t data_offset = 0;
         char* c;
-        const uint8_t* current = (uint8_t*) fmap.address() + sizeof (int32_t) + sizeof (uint16_t);
-        const uint8_t* last = (uint8_t*) fmap.address() + fmap.size() - 2*sizeof (uint32_t);
+        const uint8_t* current = fmap.address() + sizeof (int32_t) + sizeof (uint16_t);
+        const uint8_t* last = fmap.address() + fmap.size() - 2*sizeof (uint32_t);
 
         while (current <= last) {
           switch (type (current, is_BE)) {
             case MRI_DATA:
-              H.datatype() =  ( (const char*) data (current)) [0];
+              H.datatype() = (reinterpret_cast<const char*> (data (current))) [-4];
               data_offset = current + 5 - (uint8_t*) fmap.address();
               break;
             case MRI_DIMENSIONS:
@@ -211,7 +211,7 @@ namespace MR
               H.vox(2) = get<float32> (data (current) + 2*sizeof (float32), is_BE);
               break;
             case MRI_COMMENT:
-              H.comments().push_back (std::string ( (const char*) data (current), size (current, is_BE)));
+              H.comments().push_back (std::string (reinterpret_cast<const char*> (data (current)), size (current, is_BE)));
               break;
             case MRI_TRANSFORM:
               H.transform().allocate (4,4);
@@ -227,7 +227,7 @@ namespace MR
               break;
             default:
               WARN ("unknown header entity (" + str (type (current, is_BE))
-                     + ", offset " + str (current - (uint8_t*) fmap.address())
+                     + ", offset " + str (current - fmap.address())
                      + ") in image \"" + H.name() + "\" - ignored");
               break;
           }
@@ -285,9 +285,7 @@ namespace MR
 #endif
 
         out.write ("MRI#", 4);
-        //memcpy ((uint8_t*) fmap.address(), "MRI#", 4);
         write<uint16_t> (out, 0x01U, is_BE);
-        //put<uint16_t> (0x01U, (uint8_t*) fmap.address() + sizeof (uint32_t), is_BE);
 
         write_tag (out, MRI_DIMENSIONS, 4*sizeof (uint32_t), is_BE);
         write<uint32_t> (out, H.dim (0), is_BE);
@@ -332,7 +330,7 @@ namespace MR
         }
 
         write_tag (out, MRI_DATA, 1, is_BE);
-        out.write ( (const char*) &H.datatype() (), 1);
+        out.write (reinterpret_cast<const char*> (&H.datatype()()), 1);
 
         size_t data_offset = out.tellp();
         out.close();
