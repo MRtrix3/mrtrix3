@@ -37,6 +37,45 @@ namespace MR
     namespace GL
     {
 
+
+
+
+      class vec4 {
+        public:
+          vec4 () { }
+          template <typename T>
+            vec4 (const Point<T>& p, float w) { 
+              v[0] = p[0]; 
+              v[1] = p[1];
+              v[2] = p[2]; 
+              v[3] = w; 
+            }
+          vec4 (const float* p) { memcpy (v, p, sizeof(v)); }
+
+          void zero () {
+            memset (v, 0, sizeof (v));
+          }
+
+          operator const GLfloat* () const { return v; }
+          operator GLfloat* () { return v; }
+
+          GLfloat& operator[] (size_t i) { return v[i]; }
+          const GLfloat& operator[] (size_t i) const { return v[i]; }
+
+          friend std::ostream& operator<< (std::ostream& stream, const vec4& v) {
+            for (size_t i = 0; i < 4; ++i) 
+              stream << v[i] << " ";
+            return stream;
+          }
+
+        protected:
+          GLfloat v[4];
+      };
+
+
+
+
+
       class mat4 {
         public:
           mat4 () { } 
@@ -81,6 +120,15 @@ namespace MR
               }
             }
             return t;
+          }
+
+          vec4 operator* (const vec4& v) const {
+            vec4 r;
+            r.zero();
+            for (size_t j = 0; j < 4; ++j) 
+              for (size_t i = 0; i < 4; ++i) 
+                r[i] += (*this)(i,j) * v[j];
+            return r;
           }
 
           mat4& operator*= (const mat4& a) {

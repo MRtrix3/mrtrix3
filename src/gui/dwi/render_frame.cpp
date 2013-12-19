@@ -172,7 +172,7 @@ namespace MR
         T[3] = T[7] = T[11] = T[12] = T[13] = T[14] = 0.0;
         T[15] = 1.0;
 
-        GL::mat4 MV = GL::translate (0.0, 0.0, -dist) * T;
+        GL::mat4 MV = GL::translate (0.0, 0.0, -dist) * GL::mat4 (T);
         projection.set (MV, P);
 
         glDepthMask (GL_TRUE);
