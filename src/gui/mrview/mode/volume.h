@@ -40,19 +40,17 @@ namespace MR
           public:
             Volume (Window& parent) :
               Base (parent, FocusContrast | MoveTarget | TiltRotate | ShaderTransparency | ShaderThreshold),
-              use_depth_testing (false),
               volume_shader (*this) { }
 
             virtual void paint (Projection& projection);
           protected:
             GL::VertexBuffer volume_VB, volume_VI;
             GL::VertexArrayObject volume_VAO;
-            bool use_depth_testing;
             GL::Texture depth_texture;
 
             class Shader : public Displayable::Shader {
               public:
-                Shader (const Volume& mode) : mode (mode), clip1 (false), clip2 (false), clip3 (false), use_depth_testing (false) { }
+                Shader (const Volume& mode) : mode (mode), clip1 (false), clip2 (false), clip3 (false) { }
                 virtual std::string vertex_shader_source (const Displayable& object);
                 virtual std::string fragment_shader_source (const Displayable& object);
                 virtual bool need_update (const Displayable& object) const;
@@ -60,7 +58,6 @@ namespace MR
               protected:
                 const Volume& mode;
                 bool clip1, clip2, clip3;
-                bool use_depth_testing;
             } volume_shader;
 
         };

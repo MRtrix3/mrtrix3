@@ -60,14 +60,12 @@ namespace MR
           if (clip1) source += "vec4 clip1;\n";
           if (clip2) source += "vec4 clip2;\n";
           if (clip3) source += "vec4 clip3;\n";
-          if (use_depth_testing) 
-            source += 
-              "uniform sampler2D depth_sampler;\n"
-              "uniform mat4 M;\n"
-              "uniform float ray_z;\n";
 
 
-          source += 
+          source +=
+            "uniform sampler2D depth_sampler;\n"
+            "uniform mat4 M;\n"
+            "uniform float ray_z;\n"
             "uniform vec3 ray;\n"
             "out vec4 final_color;\n"
             "void main () {\n";
@@ -80,27 +78,17 @@ namespace MR
           source += 
             "  final_color = vec4 (0.0);\n"
             "  float dither = fract(sin(gl_FragCoord.x * 12.9898 + gl_FragCoord.y * 78.233) * 43758.5453);\n"
-            "  vec3 coord = texcoord + ray * dither;\n";
-
-          if (use_depth_testing) {
-            source += 
-              "  float depth = texelFetch (depth_sampler, ivec2(gl_FragCoord.xy), 0).r;\n"
-              "  float current_depth = gl_FragCoord.z + ray_z * dither;\n";
-          }
-
-          source += 
+            "  vec3 coord = texcoord + ray * dither;\n"
+            "  float depth = texelFetch (depth_sampler, ivec2(gl_FragCoord.xy), 0).r;\n"
+            "  float current_depth = gl_FragCoord.z + ray_z * dither;\n"
             "  int nmax = 10000;\n"
             "  if (ray.x < 0.0) nmax = int (-texcoord.s/ray.x);\n"
             "  else if (ray.x > 0.0) nmax = int ((1.0-texcoord.s) / ray.x);\n"
             "  if (ray.y < 0.0) nmax = min (nmax, int (-texcoord.t/ray.y));\n"
             "  else if (ray.y > 0.0) nmax = min (nmax, int ((1.0-texcoord.t) / ray.y));\n"
             "  if (ray.z < 0.0) nmax = min (nmax, int (-texcoord.p/ray.z));\n"
-            "  else if (ray.z > 0.0) nmax = min (nmax, int ((1.0-texcoord.p) / ray.z));\n";
-
-          if (use_depth_testing)
-            source += "  nmax = min (nmax, int ((depth - current_depth) / ray_z));\n";
-
-          source +=
+            "  else if (ray.z > 0.0) nmax = min (nmax, int ((1.0-texcoord.p) / ray.z));\n"
+            "  nmax = min (nmax, int ((depth - current_depth) / ray_z));\n"
             "  if (nmax <= 0) return;\n"
             "  for (int n = 0; n < nmax; ++n) {\n"
             "    coord += ray;\n";
@@ -152,15 +140,12 @@ namespace MR
 
         bool Volume::Shader::need_update (const Displayable& object) const 
         {
-          if (mode.use_depth_testing != use_depth_testing)
-            return true;
           return Displayable::Shader::need_update (object);
         }
 
         void Volume::Shader::update (const Displayable& object) 
         {
           clip1 = clip2 = clip3 = true;
-          use_depth_testing = mode.use_depth_testing;
           Displayable::Shader::update (object);
         }
 
@@ -197,8 +182,11 @@ namespace MR
           projection.set (MV, P);
 
           render_tools (projection, true);
-          draw_crosshairs (projection);
+          glDisable (GL_BLEND);
+          glEnable (GL_DEPTH_TEST);
+          glDepthMask (GL_TRUE);
 
+          draw_crosshairs (projection);
 
 
           Point<> pos = image()->interp.voxel2scanner (Point<> (-0.5f, -0.5f, -0.5f));
@@ -314,7 +302,6 @@ namespace MR
           image()->update_texture3D();
           image()->set_use_transparency (true);
 
-          use_depth_testing = true;
           image()->start (volume_shader, image()->scaling_3D());
           glUniformMatrix4fv (glGetUniformLocation (volume_shader, "M"), 1, GL_FALSE, M);
           glUniform3fv (glGetUniformLocation (volume_shader, "ray"), 1, ray);
@@ -323,38 +310,33 @@ namespace MR
           glActiveTexture (GL_TEXTURE0);
           glBindTexture (GL_TEXTURE_3D, image()->texture3D_index());
 
-          if (use_depth_testing) {
 
-            glActiveTexture (GL_TEXTURE1);
-            if (!depth_texture) {
-              depth_texture.gen();
-              depth_texture.bind (GL_TEXTURE_2D);
-              glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
-              glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
-              glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-              glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-              glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_COMPARE_MODE, GL_NONE);
-              glTexParameteri (GL_TEXTURE_2D, GL_DEPTH_TEXTURE_MODE, GL_ALPHA);
-            }
-            else 
-              depth_texture.bind (GL_TEXTURE_2D);
-
-            glReadBuffer (GL_BACK);
-            glCopyTexImage2D (GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, 0, 0, projection.width(), projection.height(), 0);
-
-            glUniform1i (glGetUniformLocation (volume_shader, "depth_sampler"), 1);
-
-
-            GL::vec4 ray_eye = M * GL::vec4 (ray, 0.0);
-            glUniform1f (glGetUniformLocation (volume_shader, "ray_z"), 0.5*ray_eye[2]);
-
-            glEnable (GL_BLEND);
-            glBlendFunc (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+          glActiveTexture (GL_TEXTURE1);
+          if (!depth_texture) {
+            depth_texture.gen();
+            depth_texture.bind (GL_TEXTURE_2D);
+            glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
+            glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
+            glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+            glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+            glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_COMPARE_MODE, GL_NONE);
+            glTexParameteri (GL_TEXTURE_2D, GL_DEPTH_TEXTURE_MODE, GL_ALPHA);
           }
+          else 
+            depth_texture.bind (GL_TEXTURE_2D);
+
+          glReadBuffer (GL_BACK);
+          glCopyTexImage2D (GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, 0, 0, projection.width(), projection.height(), 0);
+
+          glUniform1i (glGetUniformLocation (volume_shader, "depth_sampler"), 1);
 
 
+          GL::vec4 ray_eye = M * GL::vec4 (ray, 0.0);
+          glUniform1f (glGetUniformLocation (volume_shader, "ray_z"), 0.5*ray_eye[2]);
 
-          glEnable (GL_DEPTH_TEST);
+          glEnable (GL_BLEND);
+          glBlendFunc (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
           glEnable (GL_TEXTURE_3D);
           glDepthMask (GL_FALSE);
           glActiveTexture (GL_TEXTURE0);
