@@ -238,7 +238,10 @@ namespace MR
 
           void start (Shader& shader_program, float scaling = 1.0, const std::string& with_prefix = "") {
             shader_program.start (*this);
+            set_shader_variables (shader_program, scaling, with_prefix);
+          }
 
+          void set_shader_variables (Shader& shader_program, float scaling = 1.0, const std::string& with_prefix = "") {
             glUniform1f (glGetUniformLocation (shader_program, (with_prefix+"offset").c_str()), (display_midpoint - 0.5f * display_range) / scaling);
             glUniform1f (glGetUniformLocation (shader_program, (with_prefix+"scale").c_str()), scaling / display_range);
             if (use_discard_lower())

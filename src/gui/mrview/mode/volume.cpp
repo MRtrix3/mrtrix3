@@ -166,7 +166,7 @@ namespace MR
 
 
 
-/*          // OVERLAYS:
+          // OVERLAYS:
           for (int n = 0; n < mode.overlays_for_3D.size(); ++n) {
             source += 
               "    overlay_coord"+str(n) + " += overlay_ray"+str(n) + ";\n"
@@ -197,7 +197,7 @@ namespace MR
               "      final_color.a += amplitude * overlay"+str(n) + "_alpha;\n"
               "    }\n";
           }
-*/
+
 
 
           source += 
@@ -510,7 +510,7 @@ namespace MR
             glActiveTexture (GL_TEXTURE2 + n);
             glBindTexture (GL_TEXTURE_3D, overlays_for_3D[n]->texture3D_index());
             glUniform1i (glGetUniformLocation (volume_shader, ("overlay_sampler"+str(n)).c_str()), 2+n);
-            overlays_for_3D[n]->start (volume_shader, overlays_for_3D[n]->scaling_3D(), "overlay"+str(n)+"_");
+            overlays_for_3D[n]->set_shader_variables (volume_shader, overlays_for_3D[n]->scaling_3D(), "overlay"+str(n)+"_");
             glTexParameteri (GL_TEXTURE_3D, GL_TEXTURE_MAG_FILTER, overlays_for_3D[n]->interpolate() ? GL_LINEAR : GL_NEAREST);
             glTexParameteri (GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, overlays_for_3D[n]->interpolate() ? GL_LINEAR : GL_NEAREST);
           }
