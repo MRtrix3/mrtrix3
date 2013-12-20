@@ -219,20 +219,36 @@ namespace MR
           };
 
 
+          std::string declare_shader_variables (const std::string& with_prefix = "") const {
+            std::string source =
+              "uniform float " + with_prefix+"offset;\n"
+              "uniform float " + with_prefix+"scale;\n";
+            if (use_discard_lower())
+              source += "uniform float " + with_prefix+"lower;\n";
+            if (use_discard_upper())
+              source += "uniform float " + with_prefix+"upper;\n";
+            if (use_transparency()) {
+              source += 
+                "uniform float " + with_prefix+"alpha_scale;\n"
+                "uniform float " + with_prefix+"alpha_offset;\n"
+                "uniform float " + with_prefix+"alpha;\n";
+            }
+            return source;
+          }
 
-          void start (Shader& shader_program, float scaling = 1.0) {
+          void start (Shader& shader_program, float scaling = 1.0, const std::string& with_prefix = "") {
             shader_program.start (*this);
 
-            glUniform1f (glGetUniformLocation (shader_program, "offset"), (display_midpoint - 0.5f * display_range) / scaling);
-            glUniform1f (glGetUniformLocation (shader_program, "scale"), scaling / display_range);
+            glUniform1f (glGetUniformLocation (shader_program, (with_prefix+"offset").c_str()), (display_midpoint - 0.5f * display_range) / scaling);
+            glUniform1f (glGetUniformLocation (shader_program, (with_prefix+"scale").c_str()), scaling / display_range);
             if (use_discard_lower())
-              glUniform1f (glGetUniformLocation (shader_program, "lower"), lessthan / scaling);
+              glUniform1f (glGetUniformLocation (shader_program, (with_prefix+"lower").c_str()), lessthan / scaling);
             if (use_discard_upper())
-              glUniform1f (glGetUniformLocation (shader_program, "upper"), greaterthan / scaling);
+              glUniform1f (glGetUniformLocation (shader_program, (with_prefix+"upper").c_str()), greaterthan / scaling);
             if (use_transparency()) {
-              glUniform1f (glGetUniformLocation (shader_program, "alpha_scale"), scaling / (opaque_intensity - transparent_intensity));
-              glUniform1f (glGetUniformLocation (shader_program, "alpha_offset"), transparent_intensity / scaling);
-              glUniform1f (glGetUniformLocation (shader_program, "alpha"), alpha);
+              glUniform1f (glGetUniformLocation (shader_program, (with_prefix+"alpha_scale").c_str()), scaling / (opaque_intensity - transparent_intensity));
+              glUniform1f (glGetUniformLocation (shader_program, (with_prefix+"alpha_offset").c_str()), transparent_intensity / scaling);
+              glUniform1f (glGetUniformLocation (shader_program, (with_prefix+"alpha").c_str()), alpha);
             }
           }
 

@@ -39,29 +39,52 @@ namespace MR
 
         std::string Volume::Shader::vertex_shader_source (const Displayable& object) 
         {
-          return
+          std::string source = 
             "layout(location=0) in vec3 vertpos;\n"
             "uniform mat4 M;\n"
-            "out vec3 texcoord;\n"
+            "out vec3 texcoord;\n";
+
+          for (int n = 0; n < mode.overlays_for_3D.size(); ++n) 
+            source += 
+              "uniform mat4 overlay_M" + str(n) + ";\n"
+              "out vec3 overlay_texcoord" + str(n) + ";\n";
+
+          source += 
             "void main () {\n"
             "  texcoord = vertpos;\n"
-            "  gl_Position =  M * vec4 (vertpos,1);\n"
+            "  gl_Position =  M * vec4 (vertpos,1);\n";
+
+          for (int n = 0; n < mode.overlays_for_3D.size(); ++n) 
+            source += 
+              "  overlay_texcoord"+str(n) + " = (overlay_M"+str(n) + " * vec4 (vertpos,1)).xyz;\n";
+
+          source +=
             "}\n";
+
+          return source;
         }
+
+
+
+
+
 
         std::string Volume::Shader::fragment_shader_source (const Displayable& object)
         {
-          std::string source = 
+          std::string source = object.declare_shader_variables() +
             "uniform sampler3D image_sampler;\n"
-            "in vec3 texcoord;\n"
-            "uniform float offset, scale, alpha_scale, alpha_offset, alpha";
-          if (object.use_discard_lower()) source += ", lower";
-          if (object.use_discard_upper()) source += ", upper";
-          source += ";\n";
+            "in vec3 texcoord;\n";
+
           if (clip[0]) source += "uniform vec4 clip0;\n";
           if (clip[1]) source += "uniform vec4 clip1;\n";
           if (clip[2]) source += "uniform vec4 clip2;\n";
 
+          for (int n = 0; n < mode.overlays_for_3D.size(); ++n) {
+            source += mode.overlays_for_3D[n]->declare_shader_variables ("overlay"+str(n)+"_") +
+              "uniform sampler3D overlay_sampler"+str(n) + ";\n"
+              "uniform vec3 overlay_ray"+str(n) + ";\n"
+              "in vec3 overlay_texcoord"+str(n) + ";\n";
+          }
 
           source +=
             "uniform sampler2D depth_sampler;\n"
@@ -69,13 +92,21 @@ namespace MR
             "uniform float ray_z;\n"
             "uniform vec3 ray;\n"
             "out vec4 final_color;\n"
-            "void main () {\n";
+            "void main () {\n"
+            "float amplitude;\n"
+            "vec4 color;\n";
 
 
           source += 
             "  final_color = vec4 (0.0);\n"
             "  float dither = fract(sin(gl_FragCoord.x * 12.9898 + gl_FragCoord.y * 78.233) * 43758.5453);\n"
-            "  vec3 coord = texcoord + ray * dither;\n"
+            "  vec3 coord = texcoord + ray * dither;\n";
+
+          for (int n = 0; n < mode.overlays_for_3D.size(); ++n) 
+            source += 
+              "  vec3 overlay_coord"+str(n) +" = overlay_texcoord"+str(n) + " + overlay_ray"+str(n) + " * dither;\n";
+
+              source +=
             "  float depth = texelFetch (depth_sampler, ivec2(gl_FragCoord.xy), 0).r;\n"
             "  float current_depth = gl_FragCoord.z + ray_z * dither;\n"
             "  int nmax = 10000;\n"
@@ -90,31 +121,33 @@ namespace MR
             "  for (int n = 0; n < nmax; ++n) {\n"
             "    coord += ray;\n";
 
-          if (clip[0]) source += "    if (dot (coord, clip0.xyz) > clip0.w)\n";
-          if (clip[1]) source += "      if (dot (coord, clip1.xyz) > clip1.w)\n";
-          if (clip[2]) source += "        if (dot (coord, clip2.xyz) > clip2.w)\n";
-          if (clip[0] || clip[1] || clip[2]) source += "          continue;\n";
+          if (clip[0] || clip[1] || clip[2]) {
+            source += "    bool show = true;\n";
+            if (clip[0]) source += "    if (dot (coord, clip0.xyz) > clip0.w)\n";
+            if (clip[1]) source += "      if (dot (coord, clip1.xyz) > clip1.w)\n";
+            if (clip[2]) source += "        if (dot (coord, clip2.xyz) > clip2.w)\n";
+            source += 
+              "          show = false;\n"
+              "    if (show) {\n";
+          }
 
           source += 
-            "    vec4 color = texture (image_sampler, coord);\n"
-            "    float amplitude = " + std::string (ColourMap::maps[object.colourmap].amplitude) + ";\n"
-            "    if (isnan(amplitude) || isinf(amplitude)) continue;\n";
+            "      color = texture (image_sampler, coord);\n"
+            "      amplitude = " + std::string (ColourMap::maps[object.colourmap].amplitude) + ";\n"
+            "      if (!isnan(amplitude) && !isinf(amplitude)";
 
           if (object.use_discard_lower())
-            source += 
-              "    if (amplitude < lower) continue;\n";
+            source += " && amplitude >= lower";
 
           if (object.use_discard_upper())
-            source += 
-              "    if (amplitude > upper) continue;\n";
+            source += " && amplitude <= upper";
 
-          source +=
-            "    if (amplitude < alpha_offset) continue;\n"
-            "    color.a = clamp ((amplitude - alpha_offset) * alpha_scale, 0, alpha);\n";
+          source += " && amplitude >= alpha_offset) {\n"
+            "        color.a = clamp ((amplitude - alpha_offset) * alpha_scale, 0, alpha);\n";
 
           if (!ColourMap::maps[object.colourmap].special) {
             source += 
-              "    amplitude = clamp (";
+              "        amplitude = clamp (";
             if (object.scale_inverted()) 
               source += "1.0 -";
             source += 
@@ -122,9 +155,52 @@ namespace MR
           }
 
           source += 
-            std::string ("    ") + ColourMap::maps[object.colourmap].mapping +
-            "    final_color.rgb += (1.0 - final_color.a) * color.rgb * color.a;\n"
-            "    final_color.a += color.a;\n" 
+            std::string ("        ") + ColourMap::maps[object.colourmap].mapping +
+            "        final_color.rgb += (1.0 - final_color.a) * color.rgb * color.a;\n"
+            "        final_color.a += color.a;\n"
+            "      }\n";
+
+          if (clip[0] || clip[1] || clip[2]) 
+            source += "    }\n";
+
+
+
+
+/*          // OVERLAYS:
+          for (int n = 0; n < mode.overlays_for_3D.size(); ++n) {
+            source += 
+              "    overlay_coord"+str(n) + " += overlay_ray"+str(n) + ";\n"
+              "    color = texture (overlay_sampler"+str(n) +", overlay_coord"+str(n) +");\n"
+              "    amplitude = " + std::string (ColourMap::maps[mode.overlays_for_3D[n]->colourmap].amplitude) + ";\n"
+              "    if (!isnan(amplitude) && !isinf(amplitude)";
+
+            if (mode.overlays_for_3D[n]->use_discard_lower())
+              source += " && amplitude >= overlay"+str(n)+"_lower";
+
+            if (mode.overlays_for_3D[n]->use_discard_upper())
+              source += " && amplitude <= overlay"+str(n)+"_upper";
+
+            source += ") {\n";
+
+            if (!ColourMap::maps[mode.overlays_for_3D[n]->colourmap].special) {
+              source += 
+                "      amplitude = clamp (";
+              if (mode.overlays_for_3D[n]->scale_inverted()) 
+                source += "1.0 -";
+              source += 
+                " overlay"+str(n)+"_scale * (amplitude - overlay"+str(n)+"_offset), 0.0, 1.0);\n";
+            }
+
+            source += 
+              std::string ("      ") + ColourMap::maps[mode.overlays_for_3D[n]->colourmap].mapping +
+              "      final_color.rgb += (1.0 - final_color.a) * color.rgb * color.a;\n"
+              "      final_color.a += amplitude * overlay"+str(n) + "_alpha;\n"
+              "    }\n";
+          }
+*/
+
+
+          source += 
             "    if (final_color.a > 0.95) break;\n"
             "  }\n"
             "}\n";
@@ -140,6 +216,7 @@ namespace MR
           if (clip[0] != mode.do_clip (0)) return true;
           if (clip[1] != mode.do_clip (1)) return true;
           if (clip[2] != mode.do_clip (2)) return true;
+          if (mode.update_overlays) return true;
           return Displayable::Shader::need_update (object);
         }
 
@@ -163,6 +240,36 @@ namespace MR
             GL::vec4 on_plane = S2T * GL::vec4 (plane[3]*plane[0], plane[3]*plane[1], plane[3]*plane[2], 1.0);
             normal[3] = on_plane[0]*normal[0] + on_plane[1]*normal[1] + on_plane[2]*normal[2];
             return normal;
+          }
+
+
+          inline GL::mat4 get_tex_to_scanner_matrix (const Image& image)
+          {
+            Point<> pos = image.interp.voxel2scanner (Point<> (-0.5f, -0.5f, -0.5f));
+            Point<> vec_X = image.interp.voxel2scanner_dir (Point<> (image.interp.dim(0), 0.0f, 0.0f));
+            Point<> vec_Y = image.interp.voxel2scanner_dir (Point<> (0.0f, image.interp.dim(1), 0.0f));
+            Point<> vec_Z = image.interp.voxel2scanner_dir (Point<> (0.0f, 0.0f, image.interp.dim(2)));
+            GL::mat4 T2S;
+            T2S(0,0) = vec_X[0];
+            T2S(1,0) = vec_X[1];
+            T2S(2,0) = vec_X[2];
+
+            T2S(0,1) = vec_Y[0];
+            T2S(1,1) = vec_Y[1];
+            T2S(2,1) = vec_Y[2];
+
+            T2S(0,2) = vec_Z[0];
+            T2S(1,2) = vec_Z[1];
+            T2S(2,2) = vec_Z[2];
+
+            T2S(0,3) = pos[0];
+            T2S(1,3) = pos[1];
+            T2S(2,3) = pos[2];
+
+            T2S(3,0) = T2S(3,1) = T2S(3,2) = 0.0f; 
+            T2S(3,3) = 1.0f;
+
+            return T2S;
           }
 
         }
@@ -255,6 +362,7 @@ namespace MR
 
 
 
+          overlays_for_3D.clear();
           render_tools (projection, true);
           glDisable (GL_BLEND);
           glEnable (GL_DEPTH_TEST);
@@ -265,29 +373,7 @@ namespace MR
 
 
 
-          Point<> pos = image()->interp.voxel2scanner (Point<> (-0.5f, -0.5f, -0.5f));
-          Point<> vec_X = image()->interp.voxel2scanner_dir (Point<> (image()->interp.dim(0), 0.0f, 0.0f));
-          Point<> vec_Y = image()->interp.voxel2scanner_dir (Point<> (0.0f, image()->interp.dim(1), 0.0f));
-          Point<> vec_Z = image()->interp.voxel2scanner_dir (Point<> (0.0f, 0.0f, image()->interp.dim(2)));
-          GL::mat4 T2S;
-          T2S(0,0) = vec_X[0];
-          T2S(1,0) = vec_X[1];
-          T2S(2,0) = vec_X[2];
-
-          T2S(0,1) = vec_Y[0];
-          T2S(1,1) = vec_Y[1];
-          T2S(2,1) = vec_Y[2];
-
-          T2S(0,2) = vec_Z[0];
-          T2S(1,2) = vec_Z[1];
-          T2S(2,2) = vec_Z[2];
-
-          T2S(0,3) = pos[0];
-          T2S(1,3) = pos[1];
-          T2S(2,3) = pos[2];
-
-          T2S(3,0) = T2S(3,1) = T2S(3,2) = 0.0f; 
-          T2S(3,3) = 1.0f;
+          GL::mat4 T2S = get_tex_to_scanner_matrix (*image());
           GL::mat4 M = projection.modelview_projection() * T2S;
           GL::mat4 S2T = GL::inv (T2S);
 
@@ -414,13 +500,27 @@ namespace MR
           if (volume_shader.clip[2]) 
             glUniform4fv (glGetUniformLocation (volume_shader, "clip2"), 1, clip_real2tex (T2S, S2T, clip[2]));
 
+          for (int n = 0; n < overlays_for_3D.size(); ++n) {
+            overlays_for_3D[n]->update_texture3D();
+            GL::mat4 overlay_M = GL::inv (get_tex_to_scanner_matrix (*overlays_for_3D[n])) * T2S;
+            GL::vec4 overlay_ray = overlay_M * GL::vec4 (ray, 0.0);
+            glUniformMatrix4fv (glGetUniformLocation (volume_shader, ("overlay_M"+str(n)).c_str()), 1, GL_FALSE, overlay_M);
+            glUniform3fv (glGetUniformLocation (volume_shader, ("overlay_ray"+str(n)).c_str()), 1, overlay_ray);
+
+            glActiveTexture (GL_TEXTURE2 + n);
+            glBindTexture (GL_TEXTURE_3D, overlays_for_3D[n]->texture3D_index());
+            glUniform1i (glGetUniformLocation (volume_shader, ("overlay_sampler"+str(n)).c_str()), 2+n);
+            overlays_for_3D[n]->start (volume_shader, overlays_for_3D[n]->scaling_3D(), "overlay"+str(n)+"_");
+            glTexParameteri (GL_TEXTURE_3D, GL_TEXTURE_MAG_FILTER, overlays_for_3D[n]->interpolate() ? GL_LINEAR : GL_NEAREST);
+            glTexParameteri (GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, overlays_for_3D[n]->interpolate() ? GL_LINEAR : GL_NEAREST);
+          }
+
           GL::vec4 ray_eye = M * GL::vec4 (ray, 0.0);
           glUniform1f (glGetUniformLocation (volume_shader, "ray_z"), 0.5*ray_eye[2]);
 
           glEnable (GL_BLEND);
           glBlendFunc (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-          glEnable (GL_TEXTURE_3D);
           glDepthMask (GL_FALSE);
           glActiveTexture (GL_TEXTURE0);
 
@@ -430,7 +530,6 @@ namespace MR
           glDrawElements (GL_QUADS, 12, GL_UNSIGNED_BYTE, (void*) 0);
           image()->stop (volume_shader);
 
-          glDisable (GL_TEXTURE_3D);
           glDisable (GL_BLEND);
 
           draw_orientation_labels (projection);

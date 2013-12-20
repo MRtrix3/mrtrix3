@@ -50,17 +50,8 @@ namespace MR
 
         std::string Slice::Shader::fragment_shader_source (const Displayable& object)
         {
-          std::string source =
-            "uniform float offset, scale";
-          if (object.use_discard_lower())
-            source += ", lower";
-          if (object.use_discard_upper())
-            source += ", upper";
-          if (object.use_transparency())
-            source += ", alpha_scale, alpha_offset, alpha";
-
-          source +=
-            ";\nuniform sampler3D tex;\n"
+          std::string source = object.declare_shader_variables () +
+            "uniform sampler3D tex;\n"
             "in vec3 texcoord;\n"
             "out vec4 color;\n";
 

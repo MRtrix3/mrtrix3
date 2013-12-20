@@ -70,9 +70,10 @@ namespace MR
           beginInsertRows (QModelIndex(), items.size(), items.size()+list.size());
           for (size_t i = 0; i < list.size(); ++i) {
             Item* overlay = new Item (*list[i]);
-            overlay->set_allowed_features (true, false, false);
+            overlay->set_allowed_features (true, true, false);
             if (!overlay->colourmap) 
               overlay->colourmap = 1;
+            overlay->set_use_transparency (true);
             items.push_back (overlay);
           }
           endInsertRows();
@@ -210,33 +211,31 @@ namespace MR
             image_list_model->remove_item (indexes.first());
             indexes = image_list_view->selectionModel()->selectedIndexes();
           }
-          window.updateGL();
+          updateGL();
         }
 
 
-        void Overlay::hide_all_slot () {
-          window.updateGL();
+        void Overlay::hide_all_slot () 
+        {
+          updateGL();
         }
 
 
         void Overlay::draw (const Projection& projection, bool is_3D)
         {
-          if (is_3D) 
-            return;
-
-
           float overlay_opacity = opacity->value() / 1.0e3f;
 
-          // set up OpenGL environment:
-          glEnable (GL_BLEND);
-          glEnable (GL_TEXTURE_3D);
-          glDisable (GL_DEPTH_TEST);
-          glTexEnvf (GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
-          glDepthMask (GL_FALSE);
-          glColorMask (GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
-          glBlendFunc (GL_CONSTANT_ALPHA, GL_ONE_MINUS_CONSTANT_ALPHA);
-          glBlendEquation (GL_FUNC_ADD);
-          glBlendColor (1.0f, 1.0f, 1.0f, overlay_opacity);
+          if (!is_3D) {
+            // set up OpenGL environment:
+            glEnable (GL_BLEND);
+            glDisable (GL_DEPTH_TEST);
+            glTexEnvf (GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
+            glDepthMask (GL_FALSE);
+            glColorMask (GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+            glBlendFunc (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+            glBlendEquation (GL_FUNC_ADD);
+            glBlendColor (1.0f, 1.0f, 1.0f, overlay_opacity);
+          }
 
           bool need_to_update = false;
           for (int i = 0; i < image_list_model->rowCount(); ++i) {
@@ -244,16 +243,16 @@ namespace MR
               Item* image = dynamic_cast<Item*>(image_list_model->items[i]);
               need_to_update |= !finite (image->intensity_min());
               image->set_interpolate (interpolate_check_box->isChecked());
-              image->render3D (image->slice_shader, projection, projection.depth_of (window.focus()));
+              image->alpha = overlay_opacity;
+              if (is_3D) 
+                window.get_current_mode()->overlays_for_3D.push_back (image);
+              else
+                image->render3D (image->slice_shader, projection, projection.depth_of (window.focus()));
             }
           }
 
           if (need_to_update)
             update_selection();
-
-          DEBUG_OPENGL;
-
-          glDisable (GL_TEXTURE_3D);
         }
 
 
@@ -271,12 +270,12 @@ namespace MR
               }
             }
           }
-          window.updateGL();
+          updateGL();
         }
 
 
         void Overlay::update_slot (int unused) {
-          window.updateGL();
+          updateGL();
         }
 
         void Overlay::colourmap_changed (int index) 
@@ -286,7 +285,7 @@ namespace MR
             Image* overlay = dynamic_cast<Image*> (image_list_model->get_image (indices[i]));
             overlay->set_colourmap (index);
           }
-          window.updateGL();
+          updateGL();
         }
 
 
@@ -297,7 +296,7 @@ namespace MR
             Image* overlay = dynamic_cast<Image*> (image_list_model->get_image (indices[i]));
             overlay->set_windowing (min_value->value(), max_value->value());
           }
-          window.updateGL();
+          updateGL();
         }
 
 
@@ -310,7 +309,7 @@ namespace MR
             overlay->set_use_discard_lower (threshold_lower_box->isChecked());
           }
           threshold_lower->setEnabled (indices.size() && threshold_lower_box->isChecked());
-          window.updateGL();
+          updateGL();
         }
 
 
@@ -323,7 +322,7 @@ namespace MR
             overlay->set_use_discard_upper (threshold_upper_box->isChecked());
           }
           threshold_upper->setEnabled (indices.size() && threshold_upper_box->isChecked());
-          window.updateGL();
+          updateGL();
         }
 
 
@@ -337,7 +336,7 @@ namespace MR
               overlay->lessthan = threshold_lower->value();
             }
           }
-          window.updateGL();
+          updateGL();
         }
 
 
@@ -351,7 +350,7 @@ namespace MR
               overlay->greaterthan = threshold_upper->value();
             }
           }
-          window.updateGL();
+          updateGL();
         }
 
 
@@ -440,25 +439,23 @@ namespace MR
         {
 
           // BATCH_COMMAND overlay.load path # Loads the specified image on the overlay tool.
-		  if (cmd == "overlay.load") {
-			VecPtr<MR::Image::Header> list;
-			try { list.push_back (new MR::Image::Header (args)); }
-			catch (Exception& e) { e.display(); }
-			image_list_model->add_items (list);
-			return true;
-		  }
+          if (cmd == "overlay.load") {
+            VecPtr<MR::Image::Header> list;
+            try { list.push_back (new MR::Image::Header (args)); }
+            catch (Exception& e) { e.display(); }
+            image_list_model->add_items (list);
+            return true;
+          }
 
-		  // BATCH_COMMAND overlay.opacity value # Sets the overlay opacity to floating value [0-1].
-		  else if (cmd == "overlay.opacity") {
-			try {
-		      float n = to<float> (args);
-			  opacity->setSliderPosition(int(1.e3f*n));
-			 }
-             catch (Exception& e) { e.display(); }
-
-
-			return true;
-		  }
+          // BATCH_COMMAND overlay.opacity value # Sets the overlay opacity to floating value [0-1].
+          else if (cmd == "overlay.opacity") {
+            try {
+              float n = to<float> (args);
+              opacity->setSliderPosition(int(1.e3f*n));
+            }
+            catch (Exception& e) { e.display(); }
+            return true;
+          }
 
           return false;
         }

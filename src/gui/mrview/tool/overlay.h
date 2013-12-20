@@ -23,6 +23,7 @@
 #ifndef __gui_mrview_tool_overlay_h__
 #define __gui_mrview_tool_overlay_h__
 
+#include "gui/mrview/mode/base.h"
 #include "gui/mrview/tool/base.h"
 #include "gui/mrview/adjust_button.h"
 
@@ -77,6 +78,10 @@ namespace MR
              QSlider *opacity;
 
              void update_selection ();
+             void updateGL() { 
+               window.get_current_mode()->update_overlays = true;
+               window.updateGL();
+             }
         };
 
       }

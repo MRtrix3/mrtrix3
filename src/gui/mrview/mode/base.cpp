@@ -39,6 +39,7 @@ namespace MR
           window (parent),
           projection (window.glarea, window.font),
           features (flags),
+          update_overlays (false),
           painting (false) { } 
 
 
@@ -120,6 +121,7 @@ namespace MR
 
 done_painting:
           painting = false;
+          update_overlays = false;
         }
 
 
