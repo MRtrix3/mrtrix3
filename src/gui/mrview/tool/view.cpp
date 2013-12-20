@@ -26,6 +26,7 @@
 #include "mrtrix.h"
 #include "gui/mrview/window.h"
 #include "gui/mrview/mode/base.h"
+#include "gui/mrview/mode/volume.h"
 #include "gui/mrview/tool/view.h"
 #include "gui/mrview/adjust_button.h"
 
@@ -147,6 +148,36 @@ namespace MR
           connect (upper_threshold, SIGNAL (valueChanged()), this, SLOT (onSetTransparency()));
           layout->addWidget (upper_threshold, 1, 1);
 
+
+          clip_box = new QGroupBox ("Clip planes");
+          layout = new QGridLayout;
+          layout->setSpacing (0);
+          main_box->addWidget (clip_box);
+          clip_box->setLayout (layout);
+          for (size_t n = 0; n < 3; ++n) {
+            clip_on_button[n] = new QPushButton (n == 0 ? "axial" : ( n == 1 ? "sagittal" : "coronal" ), this);
+            clip_on_button[n]->setCheckable (true);
+            connect (clip_on_button[n], SIGNAL (toggled(bool)), &window, SLOT(updateGL()));
+            layout->addWidget (clip_on_button[n], 0, n);
+
+            QPushButton* clip_invert_button = new QPushButton ("invert", this);
+            if (n == 0) connect (clip_invert_button, SIGNAL (clicked(bool)), this, SLOT(onClip0Invert()));
+            else if (n == 1) connect (clip_invert_button, SIGNAL (clicked(bool)), this, SLOT(onClip1Invert()));
+            else connect (clip_invert_button, SIGNAL (clicked(bool)), this, SLOT(onClip2Invert()));
+            layout->addWidget (clip_invert_button, 1, n);
+
+            clip_edit_button[n] = new QPushButton ("modify", this);
+            clip_edit_button[n]->setToolTip ("when checked, standard image manipulation actions apply to clip plane instead");
+            layout->addWidget (clip_edit_button[n], 2, n);
+            clip_edit_button[n]->setCheckable (true);
+          }
+          clip_modify_button = new QPushButton ("toggle modify all", this);
+          connect (clip_modify_button, SIGNAL (clicked(bool)), this, SLOT (onClipModify()));
+          layout->addWidget (clip_modify_button, 3, 0, 1, 3);
+          clip_modify_button = new QPushButton ("reset", this);
+          connect (clip_modify_button, SIGNAL (clicked(bool)), this, SLOT (onClipReset()));
+          layout->addWidget (clip_modify_button, 4, 0, 1, 3);
+
           main_box->addStretch ();
           setMinimumSize (main_box->minimumSize());
         }
@@ -237,8 +268,43 @@ namespace MR
         {
           transparency_box->setEnabled (window.get_current_mode()->features & Mode::ShaderTransparency);
           threshold_box->setEnabled (window.get_current_mode()->features & Mode::ShaderTransparency);
+          clip_box->setEnabled (window.get_current_mode()->features & Mode::ShaderClipping);
         }
 
+
+
+
+
+        void View::onClipModify () 
+        {
+          bool any_on = clip_edit_button[0]->isChecked() || clip_edit_button[1]->isChecked() || clip_edit_button[2]->isChecked();
+
+          clip_edit_button[0]->setChecked (!any_on && clip_on_button[0]->isChecked());
+          clip_edit_button[1]->setChecked (!any_on && clip_on_button[1]->isChecked());
+          clip_edit_button[2]->setChecked (!any_on && clip_on_button[2]->isChecked());
+        }
+
+        void View::onClipReset () 
+        {
+          static_cast<Mode::Volume*> (window.get_current_mode())->reset_clip_planes();
+          window.updateGL();
+        }
+
+
+        void View::onClip0Invert () 
+        {
+          static_cast<Mode::Volume*> (window.get_current_mode())->invert_clip_plane (0);
+        }
+
+        void View::onClip1Invert () 
+        {
+          static_cast<Mode::Volume*> (window.get_current_mode())->invert_clip_plane (1);
+        }
+
+        void View::onClip2Invert () 
+        {
+          static_cast<Mode::Volume*> (window.get_current_mode())->invert_clip_plane (2);
+        }
 
 
 

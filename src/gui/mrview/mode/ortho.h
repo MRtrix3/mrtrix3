@@ -50,7 +50,7 @@ namespace MR
             virtual void mouse_press_event ();
             virtual void slice_move_event (int x);
             virtual void panthrough_event ();
-            virtual Projection* get_current_projection ();
+            virtual const Projection* get_current_projection () const;
 
           protected:
             std::vector<Projection> projections;

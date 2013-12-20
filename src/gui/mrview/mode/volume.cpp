@@ -26,6 +26,7 @@
 #include "gui/mrview/tool/base.h"
 #include "gui/mrview/adjust_button.h"
 #include "gui/dialog/lighting.h"
+#include "gui/mrview/tool/view.h"
 
 namespace MR
 {
@@ -57,9 +58,9 @@ namespace MR
           if (object.use_discard_lower()) source += ", lower";
           if (object.use_discard_upper()) source += ", upper";
           source += ";\n";
-          if (clip1) source += "vec4 clip1;\n";
-          if (clip2) source += "vec4 clip2;\n";
-          if (clip3) source += "vec4 clip3;\n";
+          if (clip[0]) source += "uniform vec4 clip0;\n";
+          if (clip[1]) source += "uniform vec4 clip1;\n";
+          if (clip[2]) source += "uniform vec4 clip2;\n";
 
 
           source +=
@@ -70,10 +71,6 @@ namespace MR
             "out vec4 final_color;\n"
             "void main () {\n";
 
-
-          if (clip1) source += "  clip1 = vec4 (1.0, 0.0, 0.0, 0.5);\n";
-          if (clip2) source += "  clip2 = vec4 (0.0, 1.0, 0.0, 0.5);\n";
-          if (clip3) source += "  clip3 = vec4 (0.0, 0.0, 1.0, 0.5);\n";
 
           source += 
             "  final_color = vec4 (0.0);\n"
@@ -93,10 +90,10 @@ namespace MR
             "  for (int n = 0; n < nmax; ++n) {\n"
             "    coord += ray;\n";
 
-          if (clip1) source += "    if (dot (coord, clip1.xyz) > clip1.w)\n";
-          if (clip2) source += "      if (dot (coord, clip2.xyz) > clip2.w)\n";
-          if (clip3) source += "        if (dot (coord, clip3.xyz) > clip3.w)\n";
-          if (clip1 || clip2 || clip3) source += "          continue;\n";
+          if (clip[0]) source += "    if (dot (coord, clip0.xyz) > clip0.w)\n";
+          if (clip[1]) source += "      if (dot (coord, clip1.xyz) > clip1.w)\n";
+          if (clip[2]) source += "        if (dot (coord, clip2.xyz) > clip2.w)\n";
+          if (clip[0] || clip[1] || clip[2]) source += "          continue;\n";
 
           source += 
             "    vec4 color = texture (image_sampler, coord);\n"
@@ -140,12 +137,17 @@ namespace MR
 
         bool Volume::Shader::need_update (const Displayable& object) const 
         {
+          if (clip[0] != mode.do_clip (0)) return true;
+          if (clip[1] != mode.do_clip (1)) return true;
+          if (clip[2] != mode.do_clip (2)) return true;
           return Displayable::Shader::need_update (object);
         }
 
         void Volume::Shader::update (const Displayable& object) 
         {
-          clip1 = clip2 = clip3 = true;
+          clip[0] = mode.do_clip (0);
+          clip[1] = mode.do_clip (1);
+          clip[2] = mode.do_clip (2);
           Displayable::Shader::update (object);
         }
 
@@ -153,6 +155,76 @@ namespace MR
 
 
 
+        namespace {
+
+          inline GL::vec4 clip_real2tex (const GL::mat4& T2S, const GL::mat4& S2T, const GL::vec4& plane) 
+          {
+            GL::vec4 normal = T2S * GL::vec4 (plane[0], plane[1], plane[2], 0.0);
+            GL::vec4 on_plane = S2T * GL::vec4 (plane[3]*plane[0], plane[3]*plane[1], plane[3]*plane[2], 1.0);
+            normal[3] = on_plane[0]*normal[0] + on_plane[1]*normal[1] + on_plane[2]*normal[2];
+            return normal;
+          }
+
+        }
+
+
+        inline bool Volume::do_clip (int n) const
+        {
+          Tool::Dock* dock = dynamic_cast<Tool::__Action__*>(window.tools()->actions()[0])->dock;
+          if (!dock) 
+            return false;
+
+          Tool::View* view_tool = dynamic_cast<Tool::View*> (dock->tool);
+          return view_tool->clip_on_button[n]->isChecked();
+        }
+
+
+
+
+        inline bool Volume::edit_clip (int n) const
+        {
+          Tool::Dock* dock = dynamic_cast<Tool::__Action__*>(window.tools()->actions()[0])->dock;
+          if (!dock) 
+            return false;
+
+          return dynamic_cast<Tool::View*> (dock->tool)->clip_edit_button[n]->isChecked();
+        }
+
+
+
+
+
+        inline bool Volume::editing () const
+        {
+          Tool::Dock* dock = dynamic_cast<Tool::__Action__*>(window.tools()->actions()[0])->dock;
+          if (!dock) 
+            return false;
+
+          Tool::View* view_tool = dynamic_cast<Tool::View*> (dock->tool);
+          return view_tool->clip_edit_button[0]->isChecked() || view_tool->clip_edit_button[1]->isChecked() || view_tool->clip_edit_button[2]->isChecked();
+        }
+
+
+
+
+
+        void Volume::reset_clip_planes() 
+        {
+          clip[0] = GL::vec4 (0.0, 0.0, 1.0, 0.0);
+          clip[1] = GL::vec4 (1.0, 0.0, 0.0, 0.0);
+          clip[2] = GL::vec4 (0.0, 1.0, 0.0, 0.0);
+        }
+
+
+
+        void Volume::invert_clip_plane (int n) 
+        {
+          clip[n][0] = -clip[n][0];
+          clip[n][1] = -clip[n][1];
+          clip[n][2] = -clip[n][2];
+          clip[n][3] = -clip[n][3];
+          updateGL();
+        }
 
 
 
@@ -181,12 +253,16 @@ namespace MR
           GL::mat4 MV = adjust_projection_matrix (Q) * GL::translate  (-target()[0], -target()[1], -target()[2]);
           projection.set (MV, P);
 
+
+
           render_tools (projection, true);
           glDisable (GL_BLEND);
           glEnable (GL_DEPTH_TEST);
           glDepthMask (GL_TRUE);
 
           draw_crosshairs (projection);
+
+
 
 
           Point<> pos = image()->interp.voxel2scanner (Point<> (-0.5f, -0.5f, -0.5f));
@@ -213,6 +289,7 @@ namespace MR
           T2S(3,0) = T2S(3,1) = T2S(3,2) = 0.0f; 
           T2S(3,3) = 1.0f;
           GL::mat4 M = projection.modelview_projection() * T2S;
+          GL::mat4 S2T = GL::inv (T2S);
 
           int min_vox_index;
           if (image()->interp.vox(0) < image()->interp.vox (1)) 
@@ -330,6 +407,12 @@ namespace MR
 
           glUniform1i (glGetUniformLocation (volume_shader, "depth_sampler"), 1);
 
+          if (volume_shader.clip[0]) 
+            glUniform4fv (glGetUniformLocation (volume_shader, "clip0"), 1, clip_real2tex (T2S, S2T, clip[0]));
+          if (volume_shader.clip[1]) 
+            glUniform4fv (glGetUniformLocation (volume_shader, "clip1"), 1, clip_real2tex (T2S, S2T, clip[1]));
+          if (volume_shader.clip[2]) 
+            glUniform4fv (glGetUniformLocation (volume_shader, "clip2"), 1, clip_real2tex (T2S, S2T, clip[2]));
 
           GL::vec4 ray_eye = M * GL::vec4 (ray, 0.0);
           glUniform1f (glGetUniformLocation (volume_shader, "ray_z"), 0.5*ray_eye[2]);
@@ -356,6 +439,99 @@ namespace MR
 
 
 
+
+        inline void Volume::move_clip_planes_in_out (float distance) 
+        {
+          Point<> d = get_current_projection()->screen_normal();
+          for (size_t n = 0; n < 3; ++n) {
+            if (edit_clip(n)) 
+              clip[n][3] += distance * (clip[n][0]*d[0] + clip[n][1]*d[1] + clip[n][2]*d[2]);
+          }
+          updateGL();
+        }
+
+
+        inline void Volume::rotate_clip_planes (const Math::Versor<float>& rot)
+        {
+          for (size_t n = 0; n < 3; ++n) {
+            if (edit_clip(n)) {
+              float distance_to_focus = clip[n][0]*focus()[0] + clip[n][1]*focus()[1] + clip[n][2]*focus()[2] - clip[n][3];
+              Math::Versor<float> norm (0.0f, clip[n][0], clip[n][1], clip[n][2]);
+              Math::Versor<float> rotated = norm * rot;
+              rotated.normalise();
+              clip[n][0] = rotated[1];
+              clip[n][1] = rotated[2];
+              clip[n][2] = rotated[3];
+              clip[n][3] = clip[n][0]*focus()[0] + clip[n][1]*focus()[1] + clip[n][2]*focus()[2] - distance_to_focus;
+            }
+          }
+          updateGL();
+        }
+
+
+
+
+
+        void Volume::slice_move_event (int x) 
+        {
+          if (editing()) 
+            move_clip_planes_in_out (x * std::min (std::min (image()->header().vox(0), image()->header().vox(1)), image()->header().vox(2)));
+          else
+            Base::slice_move_event (x);
+        }
+
+
+
+        void Volume::pan_event () 
+        {
+          if (editing()) {
+            Point<> move = get_current_projection()->screen_to_model_direction (window.mouse_displacement(), target());
+            for (size_t n = 0; n < 3; ++n) {
+              if (edit_clip(n)) 
+                clip[n][3] += (clip[n][0]*move[0] + clip[n][1]*move[1] + clip[n][2]*move[2]);
+            }
+            updateGL();
+          }
+          else 
+            Base::pan_event();
+        }
+
+
+        void Volume::panthrough_event () 
+        {
+          if (editing())
+            move_clip_planes_in_out (MOVE_IN_OUT_FOV_MULTIPLIER * window.mouse_displacement().y() * FOV());
+          else
+            Base::panthrough_event();
+        }
+
+
+
+        void Volume::tilt_event () 
+        {
+          if (editing()) {
+            Math::Versor<float> rot = get_tilt_rotation();
+            if (!rot) 
+              return;
+            rotate_clip_planes (rot);
+          }
+          else 
+            Base::tilt_event();
+        }
+
+
+
+        void Volume::rotate_event () 
+        {
+          if (editing()) {
+            Math::Versor<float> rot = get_rotate_rotation();
+            if (!rot) 
+              return;
+            rotate_clip_planes (rot);
+          }
+          else 
+            Base::rotate_event();
+        }
 
 
       }

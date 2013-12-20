@@ -39,27 +39,45 @@ namespace MR
         {
           public:
             Volume (Window& parent) :
-              Base (parent, FocusContrast | MoveTarget | TiltRotate | ShaderTransparency | ShaderThreshold),
-              volume_shader (*this) { }
+              Base (parent, FocusContrast | MoveTarget | TiltRotate | ShaderTransparency | ShaderThreshold | ShaderClipping),
+              volume_shader (*this) { 
+                reset_clip_planes();
+              }
+
+            void reset_clip_planes();
+            void invert_clip_plane (int n);
 
             virtual void paint (Projection& projection);
+            virtual void slice_move_event (int x);
+            virtual void pan_event ();
+            virtual void panthrough_event ();
+            virtual void tilt_event ();
+            virtual void rotate_event ();
+
           protected:
             GL::VertexBuffer volume_VB, volume_VI;
             GL::VertexArrayObject volume_VAO;
             GL::Texture depth_texture;
+            GL::vec4 clip[3];
 
             class Shader : public Displayable::Shader {
               public:
-                Shader (const Volume& mode) : mode (mode), clip1 (false), clip2 (false), clip3 (false) { }
+                Shader (const Volume& mode) : mode (mode) { clip[0] = clip[1] = clip[2] = false; }
                 virtual std::string vertex_shader_source (const Displayable& object);
                 virtual std::string fragment_shader_source (const Displayable& object);
                 virtual bool need_update (const Displayable& object) const;
                 virtual void update (const Displayable& object);
-              protected:
                 const Volume& mode;
-                bool clip1, clip2, clip3;
+                bool clip[3];
             } volume_shader;
 
+            bool do_clip (int n) const;
+            bool edit_clip (int n) const;
+            bool editing () const;
+
+
+            void move_clip_planes_in_out (float distance);
+            void rotate_clip_planes (const Math::Versor<float>& rot);
         };
 
       }

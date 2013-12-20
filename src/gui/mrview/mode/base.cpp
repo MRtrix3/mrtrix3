@@ -47,7 +47,7 @@ namespace MR
           glarea()->setCursor (Cursor::crosshair);
         }
 
-        Projection* Base::get_current_projection () { return &projection; }
+        const Projection* Base::get_current_projection () const { return &projection; }
 
         void Base::paintGL ()
         {
@@ -181,44 +181,60 @@ done_painting:
 
 
 
-        void Base::tilt_event ()
+
+
+        Math::Versor<float> Base::get_tilt_rotation () const 
         {
+          Math::Versor<float> rot;
           const Projection* proj = get_current_projection();
-          if (!proj) return;
+          if (!proj) {
+            rot.invalidate(); 
+            return rot;
+          }
+
           QPoint dpos = window.mouse_displacement();
-          if (dpos.x() == 0 && dpos.y() == 0)
-            return;
+          if (dpos.x() == 0 && dpos.y() == 0) {
+            rot.invalidate();
+            return rot;
+          }
+
           Point<> x = proj->screen_to_model_direction (dpos, target());
           Point<> z = proj->screen_normal();
           Point<> v (x.cross (z));
           float angle = -ROTATION_INC * Math::sqrt (float (Math::pow2 (dpos.x()) + Math::pow2 (dpos.y())));
           v.normalise();
-          if (angle > M_PI_2) angle = M_PI_2;
+          if (angle > M_PI_2) 
+            angle = M_PI_2;
 
-          Math::Versor<float> q = Math::Versor<float> (angle, v) * orientation();
-          q.normalise();
-          set_orientation (q);
-          updateGL();
+          return Math::Versor<float> (angle, v);
         }
 
 
 
 
 
-        void Base::rotate_event ()
+
+        Math::Versor<float> Base::get_rotate_rotation () const
         {
+          Math::Versor<float> rot;
+          rot.invalidate();
+
           const Projection* proj = get_current_projection();
-          if (!proj) return;
+          if (!proj) 
+            return rot;
+
+          QPoint dpos = window.mouse_displacement();
+          if (dpos.x() == 0 && dpos.y() == 0) 
+            return rot;
+
           Point<> x1 (window.mouse_position().x() - proj->x_position() - proj->width()/2,
               window.mouse_position().y() - proj->y_position() - proj->height()/2,
               0.0);
 
-          if (x1.norm() < 16) 
-            return;
+          if (x1.norm() < 16.0f) 
+            return rot;
 
-          Point<> x0 (window.mouse_displacement().x() - x1[0], 
-              window.mouse_displacement().y() - x1[1],
-              0.0);
+          Point<> x0 (dpos.x() - x1[0], dpos.y() - x1[1], 0.0);
 
           x1.normalise();
           x0.normalise();
@@ -228,9 +244,36 @@ done_painting:
           Point<> v = proj->screen_normal();
           v.normalise();
 
-          Math::Versor<float> q = Math::Versor<float> (n[2], v) * orientation();
-          q.normalise();
-          set_orientation (q);
+          return Math::Versor<float> (n[2], v);
+        }
+
+
+
+
+
+        void Base::tilt_event ()
+        {
+          Math::Versor<float> rot = get_tilt_rotation();
+          if (!rot) 
+            return;
+          Math::Versor<float> orient = rot * orientation();
+          orient.normalise();
+          set_orientation (orient);
+          updateGL();
+        }
+
+
+
+
+
+        void Base::rotate_event ()
+        {
+          Math::Versor<float> rot = get_rotate_rotation();
+          if (!rot) 
+            return;
+          Math::Versor<float> orient = rot * orientation();
+          orient.normalise();
+          set_orientation (orient);
           updateGL();
         }
 

@@ -98,7 +98,6 @@ namespace MR
           bool show_colourbar () const { return show_colourbar_action->isChecked(); }
 
           void makeGLcurrent () { glarea->makeCurrent(); }
-          void updateGL () { glarea->updateGL(); }
 
           void captureGL (std::string filename) {
             QImage image (glarea->grabFrameBuffer());
@@ -121,6 +120,7 @@ namespace MR
 
         public slots:
           void on_scaling_changed ();
+          void updateGL () { glarea->updateGL(); }
 
         private slots:
           void image_open_slot ();

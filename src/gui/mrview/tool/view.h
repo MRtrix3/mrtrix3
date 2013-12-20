@@ -52,6 +52,8 @@ namespace MR
           public:
             View (Window& main_window, Dock* parent);
 
+            QPushButton *clip_on_button[3], *clip_edit_button[3], *clip_modify_button;
+
           protected:
             virtual void showEvent (QShowEvent* event);
             virtual void closeEvent (QCloseEvent* event);
@@ -69,6 +71,11 @@ namespace MR
             void onSetFOV ();
             void onCheckThreshold (bool);
             void onModeChanged ();
+            void onClipModify();
+            void onClipReset();
+            void onClip0Invert();
+            void onClip1Invert();
+            void onClip2Invert();
 
           private:
             AdjustButton *focus_x, *focus_y, *focus_z; 
@@ -78,7 +85,7 @@ namespace MR
             AdjustButton *lower_threshold, *upper_threshold;
             QCheckBox *lower_threshold_check_box, *upper_threshold_check_box;
             QComboBox *plane_combobox;
-            QGroupBox *transparency_box, *threshold_box;
+            QGroupBox *transparency_box, *threshold_box, *clip_box;
             QSlider *opacity;
 
             void set_transparency_from_image ();

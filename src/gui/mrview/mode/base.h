@@ -37,6 +37,7 @@
 #include "gui/mrview/tool/base.h"
 
 #define ROTATION_INC 0.002
+#define MOVE_IN_OUT_FOV_MULTIPLIER 1.0e-3f
 
 namespace MR
 {
@@ -59,6 +60,7 @@ namespace MR
         const int ShaderThreshold = 0x10000000;
         const int ShaderTransparency = 0x20000000;
         const int ShaderLighting = 0x40000000;
+        const int ShaderClipping = 0x80000008;
 
         class Base : public QObject
         {
@@ -81,7 +83,7 @@ namespace MR
             virtual void panthrough_event ();
             virtual void tilt_event ();
             virtual void rotate_event ();
-            virtual Projection* get_current_projection();
+            virtual const Projection* get_current_projection() const;
 
             void paintGL ();
 
@@ -131,7 +133,7 @@ namespace MR
             }
 
             void move_in_out_FOV (int increment, const Projection& projection) {
-              move_in_out (1.0e-3f* increment * FOV(), projection);
+              move_in_out (MOVE_IN_OUT_FOV_MULTIPLIER * increment * FOV(), projection);
             }
 
             void render_tools (const Projection& projection, bool is_3D = false) {
@@ -142,6 +144,9 @@ namespace MR
                   dock->tool->draw (projection, is_3D);
               }
             }
+
+            Math::Versor<float> get_tilt_rotation () const;
+            Math::Versor<float> get_rotate_rotation () const;
 
             Point<> voxel_at (const Point<>& pos) const {
               if (!image()) return Point<>();

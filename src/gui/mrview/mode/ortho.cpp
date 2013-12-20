@@ -118,7 +118,7 @@ namespace MR
 
 
 
-        Projection* Ortho::get_current_projection () 
+        const Projection* Ortho::get_current_projection () const  
         {
           if (current_plane < 0 || current_plane > 2)
             return NULL;

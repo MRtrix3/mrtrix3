@@ -43,6 +43,7 @@ namespace MR
       class vec4 {
         public:
           vec4 () { }
+          vec4 (float x, float y, float z, float w) { v[0] = x; v[1] = y; v[2] = z; v[3] = w; }
           template <typename T>
             vec4 (const Point<T>& p, float w) { 
               v[0] = p[0]; 
