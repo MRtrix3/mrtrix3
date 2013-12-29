@@ -130,9 +130,6 @@ namespace MR
       {
         update_texture2D (plane, slice);
 
-        glTexParameteri (GL_TEXTURE_3D, GL_TEXTURE_MAG_FILTER, interpolation);
-        glTexParameteri (GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, interpolation);
-
         int x, y;
         get_axes (plane, x, y);
         float xdim = header().dim (x)-0.5, ydim = header().dim (y)-0.5;
@@ -178,11 +175,7 @@ namespace MR
 
       void Image::render3D (Displayable::Shader& shader_program, const Projection& projection, float depth) 
       {
-
         update_texture3D();
-
-        glTexParameteri (GL_TEXTURE_3D, GL_TEXTURE_MAG_FILTER, interpolation);
-        glTexParameteri (GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, interpolation);
 
         start (shader_program, windowing_scale_3D);
         projection.set (shader_program);
@@ -212,18 +205,16 @@ namespace MR
 
 
 
-      inline void Image::update_texture2D (int plane, int slice)
+      void Image::update_texture2D (int plane, int slice)
       {
         if (!texture2D[plane]) { // allocate:
-          texture2D[plane].gen();
-          texture2D[plane].bind (GL_TEXTURE_3D);
-          glTexParameteri (GL_TEXTURE_3D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-          glTexParameteri (GL_TEXTURE_3D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-          glTexParameteri (GL_TEXTURE_3D, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+          texture2D[plane].gen (GL_TEXTURE_3D);
+          texture2D[plane].bind();
         }
         else
-          texture2D[plane].bind (GL_TEXTURE_3D);
+          texture2D[plane].bind();
         glPixelStorei (GL_UNPACK_ALIGNMENT, 1);
+        texture2D[plane].set_interp (interpolation);
 
         if (position[plane] == slice && volume_unchanged())
           return;
@@ -356,8 +347,19 @@ namespace MR
 
 
 
-      inline void Image::update_texture3D ()
+      void Image::update_texture3D ()
       {
+        if (!texture3D) { // allocate:
+          texture3D.gen (GL_TEXTURE_3D);
+          texture3D.bind();
+        }
+        else 
+          texture3D.bind();
+        texture3D.set_interp (interpolation);
+
+        if (volume_unchanged() && texture_mode_3D_unchanged)
+          return;
+
         std::string cmap_name = ColourMap::maps[colourmap].name;
 
         if (cmap_name == "RGB") format = GL_RGB;
@@ -410,31 +412,13 @@ namespace MR
         }
 
 
-        if (volume_unchanged() && texture_mode_3D_unchanged) {
-          texture3D.bind (GL_TEXTURE_3D);
-          return;
-        }
-
-        if (!texture3D) { // allocate:
-          texture3D.gen();
-          texture3D.bind (GL_TEXTURE_3D);
-          glTexParameteri (GL_TEXTURE_3D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-          glTexParameteri (GL_TEXTURE_3D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-          glTexParameteri (GL_TEXTURE_3D, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
-          DEBUG_OPENGL;
-        }
-        else 
-          texture3D.bind (GL_TEXTURE_3D);
-
         texture_mode_3D_unchanged = true;
 
         glPixelStorei (GL_UNPACK_ALIGNMENT, 1);
 
-        DEBUG_OPENGL;
         glTexImage3D (GL_TEXTURE_3D, 0, internal_format,
             header().dim(0), header().dim(1), header().dim(2),
             0, format, type, NULL);
-        DEBUG_OPENGL;
 
         value_min = std::numeric_limits<float>::infinity();
         value_max = -std::numeric_limits<float>::infinity();
@@ -586,7 +570,6 @@ namespace MR
 
           ++progress;
         }
-        DEBUG_OPENGL;
 
         windowing_scale_3D = scale_factor_3D<ValueType>();
       }
@@ -623,7 +606,6 @@ namespace MR
               0, 0, V[2],
               V.dim (0), V.dim (1), 1,
               GL_RG, GL_FLOAT, data);
-          DEBUG_OPENGL;
           ++progress;
         }
 

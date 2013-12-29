@@ -471,22 +471,16 @@ namespace MR
           glUniform1i (glGetUniformLocation (volume_shader, "image_sampler"), 0);
 
           glActiveTexture (GL_TEXTURE0);
-          glBindTexture (GL_TEXTURE_3D, image()->texture3D_index());
-
+          glBindTexture (GL_TEXTURE_3D, image()->texture());
 
           glActiveTexture (GL_TEXTURE1);
           if (!depth_texture) {
-            depth_texture.gen();
-            depth_texture.bind (GL_TEXTURE_2D);
-            glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
-            glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
-            glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-            glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-            glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_COMPARE_MODE, GL_NONE);
-            glTexParameteri (GL_TEXTURE_2D, GL_DEPTH_TEXTURE_MODE, GL_ALPHA);
+            depth_texture.gen (GL_TEXTURE_2D);
+            depth_texture.bind();
+            depth_texture.set_interp (GL_NEAREST);
           }
           else 
-            depth_texture.bind (GL_TEXTURE_2D);
+            depth_texture.bind();
 
           glReadBuffer (GL_BACK);
           glCopyTexImage2D (GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, 0, 0, projection.width(), projection.height(), 0);
@@ -508,11 +502,10 @@ namespace MR
             glUniform3fv (glGetUniformLocation (volume_shader, ("overlay_ray"+str(n)).c_str()), 1, overlay_ray);
 
             glActiveTexture (GL_TEXTURE2 + n);
-            glBindTexture (GL_TEXTURE_3D, overlays_for_3D[n]->texture3D_index());
+            glBindTexture (GL_TEXTURE_3D, overlays_for_3D[n]->texture());
             glUniform1i (glGetUniformLocation (volume_shader, ("overlay_sampler"+str(n)).c_str()), 2+n);
             overlays_for_3D[n]->set_shader_variables (volume_shader, overlays_for_3D[n]->scaling_3D(), "overlay"+str(n)+"_");
-            glTexParameteri (GL_TEXTURE_3D, GL_TEXTURE_MAG_FILTER, overlays_for_3D[n]->interpolate() ? GL_LINEAR : GL_NEAREST);
-            glTexParameteri (GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, overlays_for_3D[n]->interpolate() ? GL_LINEAR : GL_NEAREST);
+            overlays_for_3D[n]->texture().set_interp (overlays_for_3D[n]->interpolate());
           }
 
           GL::vec4 ray_eye = M * GL::vec4 (ray, 0.0);
@@ -523,9 +516,6 @@ namespace MR
 
           glDepthMask (GL_FALSE);
           glActiveTexture (GL_TEXTURE0);
-
-          glTexParameteri (GL_TEXTURE_3D, GL_TEXTURE_MAG_FILTER, image()->interpolate() ? GL_LINEAR : GL_NEAREST);
-          glTexParameteri (GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, image()->interpolate() ? GL_LINEAR : GL_NEAREST);
 
           glDrawElements (GL_QUADS, 12, GL_UNSIGNED_BYTE, (void*) 0);
           image()->stop (volume_shader);

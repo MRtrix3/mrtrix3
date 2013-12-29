@@ -106,7 +106,7 @@ namespace MR
             return windowing_scale_3D;
           }
 
-          GLuint texture3D_index () const { 
+          const GL::Texture& texture () const { 
             return texture3D;
           }
 

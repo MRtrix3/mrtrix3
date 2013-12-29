@@ -128,10 +128,9 @@ namespace MR
           }
         }
 
-        tex.gen();
-        tex.bind (GL_TEXTURE_2D);
-        glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-        glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+        tex.gen (GL_TEXTURE_2D);
+        tex.bind();
+        tex.set_interp (false);
         glTexImage2D (GL_TEXTURE_2D, 0, GL_LUMINANCE_ALPHA, tex_width, font_height, 
             0, GL_LUMINANCE_ALPHA, GL_FLOAT, tex_data);
 
@@ -201,7 +200,7 @@ namespace MR
           vertex_buffer[1].bind (GL_ARRAY_BUFFER);
           glBufferData (GL_ARRAY_BUFFER, sizeof (tex_pos), tex_pos, GL_STREAM_DRAW);
 
-          tex.bind (GL_TEXTURE_2D);
+          tex.bind();
           vertex_array_object.bind();
 
           glDrawArrays (GL_QUADS, 0, 4*text.size());
