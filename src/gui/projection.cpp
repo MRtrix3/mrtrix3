@@ -78,8 +78,8 @@ namespace MR
       }
 
       Point<> F = model_to_screen (focus);
-      F[0] -= x_position();
-      F[1] -= y_position();
+      F[0] = Math::round (F[0] - x_position()) - 0.5f;
+      F[1] = Math::round (F[1] - y_position()) + 0.5f;
 
       F[0] = 2.0f * F[0] / width() - 1.0f;
       F[1] = 2.0f * F[1] / height() - 1.0f;
