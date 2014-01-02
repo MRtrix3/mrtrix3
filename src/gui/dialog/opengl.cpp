@@ -63,6 +63,7 @@ namespace MR
 
         root->appendChild (new TreeItem ("Double buffering", format.doubleBuffer() ? "on" : "off", root));
         root->appendChild (new TreeItem ("VSync", format.swapInterval() ? "on" : "off", root));
+        root->appendChild (new TreeItem ("Multisample anti-aliasing", format.sampleBuffers() ? str(format.samples()).c_str() : "off", root));
 
         glGetIntegerv (GL_MAX_TEXTURE_SIZE, &i);
         root->appendChild (new TreeItem ("Maximum texture size", str (i), root));

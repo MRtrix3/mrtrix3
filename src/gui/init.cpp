@@ -40,13 +40,16 @@ namespace MR
     {
       new QApplication (App::argc, App::argv);
 
-      int nsamples = File::Config::get_int ("FSAA", 0);
+      QGLFormat f (QGL::DoubleBuffer | QGL::DepthBuffer | QGL::Rgba);
+      int swap_interval = MR::File::Config::get_int ("VSync", 1);
+      f.setSwapInterval (swap_interval);
+      f.setProfile (QGLFormat::CoreProfile);
+      int nsamples = File::Config::get_int ("MSAA", 0);
       if (nsamples > 1) {
-        QGLFormat f = QGLFormat::defaultFormat();
-        f.setSampleBuffers(true);
+        f.setSampleBuffers (true);
         f.setSamples (nsamples);
-        QGLFormat::setDefaultFormat(f);
       }
+      QGLFormat::setDefaultFormat(f);
 
 
       MR::ProgressBar::display_func = Dialog::ProgressBar::display;

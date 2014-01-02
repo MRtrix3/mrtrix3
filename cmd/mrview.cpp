@@ -66,7 +66,6 @@ void usage ()
 
   REQUIRES_AT_LEAST_ONE_ARGUMENT = false;
 
-  GUI::init ();
 }
 
 
@@ -74,6 +73,8 @@ void usage ()
 
 void run ()
 {
+  GUI::init ();
+
   GUI::MRView::Window window;
   window.show();
 

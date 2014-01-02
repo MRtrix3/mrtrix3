@@ -83,20 +83,8 @@ namespace MR
 
       // GLArea definitions:
       
-
-      namespace {
-        inline QGLFormat gl_format () {
-          QGLFormat format (QGL::DoubleBuffer | QGL::DepthBuffer | QGL::StencilBuffer | QGL::Rgba);
-          format.setSwapInterval (MR::File::Config::get_int ("MRViewVSync", 1));
-          format.setProfile (QGLFormat::CoreProfile);
-          return format;
-        }
-      }
-
-
-
       inline Window::GLArea::GLArea (Window& parent) :
-        QGLWidget (gl_format(), &parent),
+        QGLWidget (&parent),
         main (parent) {
           setCursor (Cursor::crosshair);
           setMouseTracking (true);
