@@ -170,9 +170,12 @@ namespace MR
           for (int n = 0; n < mode.overlays_for_3D.size(); ++n) {
             source += 
               "    overlay_coord"+str(n) + " += overlay_ray"+str(n) + ";\n"
-              "    color = texture (overlay_sampler"+str(n) +", overlay_coord"+str(n) +");\n"
-              "    amplitude = " + std::string (ColourMap::maps[mode.overlays_for_3D[n]->colourmap].amplitude) + ";\n"
-              "    if (!isnan(amplitude) && !isinf(amplitude)";
+              "    if (overlay_coord"+str(n) + ".s >= 0.0 && overlay_coord"+str(n) + ".s <= 1.0 &&\n"
+              "        overlay_coord"+str(n) + ".t >= 0.0 && overlay_coord"+str(n) + ".t <= 1.0 &&\n"
+              "        overlay_coord"+str(n) + ".p >= 0.0 && overlay_coord"+str(n) + ".p <= 1.0) {\n"
+              "      color = texture (overlay_sampler"+str(n) +", overlay_coord"+str(n) +");\n"
+              "      amplitude = " + std::string (ColourMap::maps[mode.overlays_for_3D[n]->colourmap].amplitude) + ";\n"
+              "      if (!isnan(amplitude) && !isinf(amplitude)";
 
             if (mode.overlays_for_3D[n]->use_discard_lower())
               source += " && amplitude >= overlay"+str(n)+"_lower";
@@ -184,7 +187,7 @@ namespace MR
 
             if (!ColourMap::maps[mode.overlays_for_3D[n]->colourmap].special) {
               source += 
-                "      amplitude = clamp (";
+                "        amplitude = clamp (";
               if (mode.overlays_for_3D[n]->scale_inverted()) 
                 source += "1.0 -";
               source += 
@@ -192,9 +195,11 @@ namespace MR
             }
 
             source += 
-              std::string ("      ") + ColourMap::maps[mode.overlays_for_3D[n]->colourmap].mapping +
-              "      final_color.rgb += (1.0 - final_color.a) * color.rgb * color.a;\n"
-              "      final_color.a += amplitude * overlay"+str(n) + "_alpha;\n"
+              std::string ("        ") + ColourMap::maps[mode.overlays_for_3D[n]->colourmap].mapping +
+              "        color.a = amplitude * overlay"+str(n) + "_alpha;\n"
+              "        final_color.rgb += (1.0 - final_color.a) * color.rgb * color.a;\n"
+              "        final_color.a += color.a;\n"
+              "      }\n"
               "    }\n";
           }
 
