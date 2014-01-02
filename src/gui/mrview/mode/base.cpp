@@ -72,7 +72,6 @@ namespace MR
             paint (projection);
 
             glDisable (GL_MULTISAMPLE);
-            glColor4f (1.0, 1.0, 0.0, 1.0);
 
             projection.setup_render_text();
             if (window.show_voxel_info()) {

@@ -104,9 +104,7 @@ namespace MR
         {
           // set up OpenGL environment:
           glDisable (GL_BLEND);
-          glEnable (GL_TEXTURE_3D);
           glDisable (GL_DEPTH_TEST);
-          glTexEnvf (GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
           glDepthMask (GL_FALSE);
           glColorMask (GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
 
@@ -136,8 +134,6 @@ namespace MR
           else
             image()->render3D (shader_program, with_projection, with_projection.depth_of (focus()));
           DEBUG_OPENGL;
-
-          glDisable (GL_TEXTURE_3D);
 
           render_tools (with_projection);
 

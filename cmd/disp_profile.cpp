@@ -49,6 +49,8 @@ void usage ()
             "assume SH coefficients file only contains even, m=0 terms. Used to "
             "display the response function as produced by estimate_response");
 
+  REQUIRES_AT_LEAST_ONE_ARGUMENT = false;
+
   GUI::init();
 }
 

@@ -106,7 +106,6 @@ namespace MR
 
     void Projection::draw_orientation_labels () const
     {
-      glColor4f (1.0, 0.0, 0.0, 1.0);
       std::vector<OrientationLabel> labels;
       labels.push_back (OrientationLabel (model_to_screen_direction (Point<> (-1.0, 0.0, 0.0)), 'L'));
       labels.push_back (OrientationLabel (model_to_screen_direction (Point<> (1.0, 0.0, 0.0)), 'R'));

@@ -82,9 +82,21 @@ namespace MR
 
 
       // GLArea definitions:
+      
+
+      namespace {
+        inline QGLFormat gl_format () {
+          QGLFormat format (QGL::DoubleBuffer | QGL::DepthBuffer | QGL::StencilBuffer | QGL::Rgba);
+          format.setSwapInterval (MR::File::Config::get_int ("MRViewVSync", 1));
+          format.setProfile (QGLFormat::CoreProfile);
+          return format;
+        }
+      }
+
+
 
       inline Window::GLArea::GLArea (Window& parent) :
-        QGLWidget (QGLFormat (QGL::DoubleBuffer | QGL::DepthBuffer | QGL::StencilBuffer | QGL::Rgba), &parent),
+        QGLWidget (gl_format(), &parent),
         main (parent) {
           setCursor (Cursor::crosshair);
           setMouseTracking (true);
@@ -1046,7 +1058,7 @@ namespace MR
 
       void Window::OpenGL_slot ()
       {
-        Dialog::OpenGL gl (this);
+        Dialog::OpenGL gl (this, glarea->format());
         gl.exec();
       }
 

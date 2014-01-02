@@ -31,7 +31,7 @@ namespace MR
           "uniform float red, green, blue;\n"
           "out vec4 color;\n"
           "void main () {\n"
-          "  color.ra = texture (sampler, tex_coord).ra;\n"
+          "  color.ra = texture (sampler, tex_coord).rg;\n"
           "  color.rgb = color.r * vec3 (red, green, blue);\n"
           "}\n";
           
@@ -131,8 +131,8 @@ namespace MR
         tex.gen (GL_TEXTURE_2D);
         tex.bind();
         tex.set_interp (false);
-        glTexImage2D (GL_TEXTURE_2D, 0, GL_LUMINANCE_ALPHA, tex_width, font_height, 
-            0, GL_LUMINANCE_ALPHA, GL_FLOAT, tex_data);
+        glTexImage2D (GL_TEXTURE_2D, 0, GL_RG, tex_width, font_height, 
+            0, GL_RG, GL_FLOAT, tex_data);
 
         vertex_buffer[0].gen();
         vertex_buffer[1].gen();

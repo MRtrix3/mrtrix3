@@ -25,6 +25,8 @@
 
 #include <QDialog>
 
+class QGLFormat;
+
 namespace MR
 {
   namespace GUI
@@ -35,7 +37,7 @@ namespace MR
       class OpenGL : public QDialog
       {
         public:
-          OpenGL (QWidget* parent);
+          OpenGL (QWidget* parent, const QGLFormat& format);
       };
 
     }

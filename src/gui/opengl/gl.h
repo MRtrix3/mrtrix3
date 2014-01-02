@@ -25,7 +25,7 @@
 
 #include <QtGui>
 
-#include "glee.h"
+#include "gui/opengl/gl_core_3_3.h"
 #include "mrtrix.h"
 #include "debug.h"
 

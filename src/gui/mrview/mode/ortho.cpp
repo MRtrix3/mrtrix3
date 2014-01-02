@@ -43,10 +43,7 @@ namespace MR
         {
           // set up OpenGL environment:
           glDisable (GL_BLEND);
-          glEnable (GL_TEXTURE_2D);
-          glShadeModel (GL_FLAT);
           glDisable (GL_DEPTH_TEST);
-          glTexEnvf (GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
           glDepthMask (GL_FALSE);
           glColorMask (GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
 
@@ -67,7 +64,6 @@ namespace MR
           projection.set (MV, P);
 
           glDisable (GL_DEPTH_TEST);
-          glColor4f (0.1, 0.1, 0.1, 1.0);
           glLineWidth (2.0);
 
           if (!frame_VB || !frame_VAO) {

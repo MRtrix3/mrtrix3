@@ -50,12 +50,6 @@ namespace MR
           iMV = GL::inv (MV);
           iP = GL::inv (P);
           iMVP = iMV * iP;
-
-          // TODO: remove these lines for OpenGL3
-          glMatrixMode (GL_PROJECTION);
-          glLoadMatrixf (P);
-          glMatrixMode (GL_MODELVIEW);
-          glLoadMatrixf (MV);
         }
 
         GLint x_position () const {

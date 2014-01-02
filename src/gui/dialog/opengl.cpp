@@ -20,9 +20,12 @@
 
 */
 
+
 #include "gui/dialog/list.h"
 #include "gui/dialog/opengl.h"
 #include "gui/opengl/gl.h"
+
+#include <QGLFormat>
 
 namespace MR
 {
@@ -31,68 +34,38 @@ namespace MR
     namespace Dialog
     {
 
-      OpenGL::OpenGL (QWidget* parent) : QDialog (parent)
+      OpenGL::OpenGL (QWidget* parent, const QGLFormat& format) : QDialog (parent)
       {
         TreeModel* model = new TreeModel (this);
 
         TreeItem* root = model->rootItem;
 
-        std::string text;
-        if (GLEE_VERSION_3_0) text = "3.0";
-        else if (GLEE_VERSION_2_1) text = "2.1";
-        else if (GLEE_VERSION_2_0) text = "2.0";
-        else if (GLEE_VERSION_1_5) text = "1.5";
-        else if (GLEE_VERSION_1_4) text = "1.4";
-        else if (GLEE_VERSION_1_3) text = "1.3";
-        else if (GLEE_VERSION_1_2) text = "1.2";
-        else text = "1.1";
+        GLint i;
+        glGetIntegerv (GL_MAJOR_VERSION, &i);
+        std::string text = str(i) + ".";
+        glGetIntegerv (GL_MINOR_VERSION, &i);
+        text += str(i);
 
         root->appendChild (new TreeItem ("API version", text, root));
         root->appendChild (new TreeItem ("Renderer", (const char*) glGetString (GL_RENDERER), root));
         root->appendChild (new TreeItem ("Vendor", (const char*) glGetString (GL_VENDOR), root));
         root->appendChild (new TreeItem ("Version", (const char*) glGetString (GL_VERSION), root));
 
-        TreeItem* extensions = new TreeItem ("Extensions", std::string(), root);
-        root->appendChild (extensions);
-
-        std::vector<std::string> ext = split ( (const char*) glGetString (GL_EXTENSIONS));
-        for (size_t n = 0; n < ext.size(); ++n)
-          extensions->appendChild (new TreeItem (std::string(), ext[n], extensions));
-
         TreeItem* bit_depths = new TreeItem ("Bit depths", std::string(), root);
         root->appendChild (bit_depths);
 
-        GLint i;
-        glGetIntegerv (GL_RED_BITS, &i);
-        bit_depths->appendChild (new TreeItem ("red", str (i), bit_depths));
-        glGetIntegerv (GL_GREEN_BITS, &i);
-        bit_depths->appendChild (new TreeItem ("green", str (i), bit_depths));
-        glGetIntegerv (GL_BLUE_BITS, &i);
-        bit_depths->appendChild (new TreeItem ("blue", str (i), bit_depths));
-        glGetIntegerv (GL_ALPHA_BITS, &i);
-        bit_depths->appendChild (new TreeItem ("alpha", str (i), bit_depths));
-        glGetIntegerv (GL_DEPTH_BITS, &i);
-        bit_depths->appendChild (new TreeItem ("depth", str (i), bit_depths));
-        glGetIntegerv (GL_STENCIL_BITS, &i);
-        bit_depths->appendChild (new TreeItem ("stencil", str (i), bit_depths));
+        bit_depths->appendChild (new TreeItem ("red", str (format.redBufferSize()), bit_depths));
+        bit_depths->appendChild (new TreeItem ("green", str (format.greenBufferSize()), bit_depths));
+        bit_depths->appendChild (new TreeItem ("blue", str (format.blueBufferSize()), bit_depths));
+        bit_depths->appendChild (new TreeItem ("alpha", str (format.alphaBufferSize()), bit_depths));
+        bit_depths->appendChild (new TreeItem ("depth", str (format.depthBufferSize()), bit_depths));
+        bit_depths->appendChild (new TreeItem ("stencil", str (format.stencilBufferSize()), bit_depths));
 
-        TreeItem* buffers = new TreeItem ("Buffers", std::string(), root);
-        root->appendChild (buffers);
-        glGetIntegerv (GL_DOUBLEBUFFER, &i);
-        buffers->appendChild (new TreeItem ("Double buffering", i ? "on" : "off", buffers));
-        glGetIntegerv (GL_STEREO, &i);
-        buffers->appendChild (new TreeItem ("Stereo buffering", i ? "on" : "off", buffers));
-        glGetIntegerv (GL_AUX_BUFFERS, &i);
-        buffers->appendChild (new TreeItem ("Auxilliary buffers", str (i), buffers));
-
+        root->appendChild (new TreeItem ("Double buffering", format.doubleBuffer() ? "on" : "off", root));
+        root->appendChild (new TreeItem ("VSync", format.swapInterval() ? "on" : "off", root));
 
         glGetIntegerv (GL_MAX_TEXTURE_SIZE, &i);
         root->appendChild (new TreeItem ("Maximum texture size", str (i), root));
-        glGetIntegerv (GL_MAX_LIGHTS, &i);
-        root->appendChild (new TreeItem ("Maximum number of lights", str (i), root));
-        glGetIntegerv (GL_MAX_CLIP_PLANES, &i);
-        root->appendChild (new TreeItem ("Maximum number of clip planes", str (i), root));
-
 
         QTreeView* view = new QTreeView;
         view->setModel (model);

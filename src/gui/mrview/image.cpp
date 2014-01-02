@@ -180,9 +180,6 @@ namespace MR
         start (shader_program, windowing_scale_3D);
         projection.set (shader_program);
 
-        if (use_lighting())
-          glEnable (GL_LIGHTING);
-
         Point<> vertices[8];
 
         vertices[0] = projection.screen_to_model (projection.x_position(), projection.y_position()+projection.height(), depth);
@@ -199,8 +196,6 @@ namespace MR
         draw_vertices (vertices);
 
         stop (shader_program);
-        if (use_lighting())
-          glDisable (GL_LIGHTING);
       }
 
 

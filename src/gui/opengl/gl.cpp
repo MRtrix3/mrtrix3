@@ -35,11 +35,12 @@ namespace MR
         INFO ("GL renderer:  " + std::string ( (const char*) glGetString (GL_RENDERER)));
         INFO ("GL version:   " + std::string ( (const char*) glGetString (GL_VERSION)));
         INFO ("GL vendor:    " + std::string ( (const char*) glGetString (GL_VENDOR)));
-        if (!GLEE_VERSION_3_0)
-          throw Exception ("your OpenGL implementation is not sufficient to run MRView - need version 3.0 or higher");
-        GLboolean retval;
-        glGetBooleanv (GL_STEREO, &retval);
-        INFO ("Stereo buffering: " + std::string ( retval ? "" : "not" ) + " supported");
+        GLint gl_version, gl_version_major;
+        glGetIntegerv (GL_MAJOR_VERSION, &gl_version_major);
+        glGetIntegerv (GL_MINOR_VERSION, &gl_version);
+        gl_version += 10*gl_version_major;
+        if (gl_version < 33)
+          throw Exception ("your OpenGL implementation is not sufficient to run MRView - need version 3.3 or higher");
       }
 
       const char* ErrorString (GLenum errorcode) 
@@ -48,10 +49,7 @@ namespace MR
           case GL_INVALID_ENUM: return "invalid value for enumerated argument";
           case GL_INVALID_VALUE: return "value out of range";
           case GL_INVALID_OPERATION: return "operation not allowed given current state";
-          case GL_STACK_OVERFLOW: return "stack overflow";
-          case GL_STACK_UNDERFLOW: return "stack underflow";
           case GL_OUT_OF_MEMORY: return "insufficient memory";
-          case GL_TABLE_TOO_LARGE: return "table exceeds maximum supported size";
           default: return "unknown error";
         }
       }
