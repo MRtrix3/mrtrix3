@@ -153,9 +153,7 @@ namespace MR
           lighting_dialog (NULL),
           overlay_lmax (0),
           overlay_level_of_detail (0) { 
-            QVBoxLayout *main_box = new QVBoxLayout (this);
-            main_box->setContentsMargins (0, 0, 0, 0);
-            main_box->setSpacing (0);
+            VBoxLayout *main_box = new VBoxLayout (this);
 
             QSplitter* splitter = new QSplitter (Qt::Vertical, parent);
             main_box->addWidget (splitter);
@@ -169,11 +167,9 @@ namespace MR
             frame->setFrameStyle (QFrame::NoFrame);
             splitter->addWidget (frame);
 
-            main_box = new QVBoxLayout (frame);
+            main_box = new VBoxLayout (frame);
 
-            QHBoxLayout* layout = new QHBoxLayout;
-            layout->setContentsMargins (0, 0, 0, 0);
-            layout->setSpacing (0);
+            HBoxLayout* layout = new HBoxLayout;
 
             QPushButton* button = new QPushButton (this);
             button->setToolTip (tr ("Open Image"));
@@ -203,9 +199,7 @@ namespace MR
 
             QGroupBox* group_box = new QGroupBox (tr("Display settings"));
             main_box->addWidget (group_box);
-            QGridLayout* box_layout = new QGridLayout;
-            box_layout->setContentsMargins (0, 0, 0, 0);
-            box_layout->setSpacing (0);
+            GridLayout* box_layout = new GridLayout;
             group_box->setLayout (box_layout);
 
             lock_orientation_to_image_box = new QCheckBox ("auto align");
@@ -272,7 +266,7 @@ namespace MR
             overlay_frame->setChecked (false);
             connect (overlay_frame, SIGNAL (clicked()), this, SLOT(overlay_toggled_slot()));
             main_box->addWidget (overlay_frame);
-            box_layout = new QGridLayout;
+            box_layout = new GridLayout;
             overlay_frame->setLayout (box_layout);
 
             box_layout->addWidget (new QLabel ("scale"), 0, 0, 1, 1);

@@ -36,10 +36,8 @@ namespace MR
         Lighting::Lighting (Window& main_window, Dock* parent) : 
           Base (main_window, parent)
         {
-          QVBoxLayout* main_box = new QVBoxLayout (this);
+          VBoxLayout* main_box = new VBoxLayout (this);
           main_box->addWidget (new Dialog::LightingSettings (this, window.lighting(), false));
-          main_box->setContentsMargins (0,0,0,0);
-          main_box->setSpacing (0);
           main_box->addStretch ();
           setMinimumSize (main_box->minimumSize());
         }

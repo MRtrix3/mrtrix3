@@ -30,6 +30,11 @@
 #include "gui/mrview/window.h"
 #include "gui/projection.h"
 
+#define LAYOUT_SPACING 1
+
+#define __STR__(x) #x
+#define __STR(x) __STR__(x)
+
 namespace MR
 {
   namespace GUI
@@ -51,13 +56,41 @@ namespace MR
 
         class Base : public QFrame {
           public:
-            Base (Window& main_window, Dock* parent) : 
-              QFrame (parent),
-              window (main_window) { 
-              setFrameShadow (QFrame::Plain); 
-              setFrameShape (QFrame::NoFrame);
-            }
+            Base (Window& main_window, Dock* parent);
             Window& window;
+
+            class HBoxLayout : public QHBoxLayout {
+              public:
+                HBoxLayout () : QHBoxLayout () { init(); }
+                HBoxLayout (QWidget* parent) : QHBoxLayout (parent) { init(); }
+              protected:
+                void init () {
+                  setSpacing (LAYOUT_SPACING);
+                  setContentsMargins(LAYOUT_SPACING,LAYOUT_SPACING,LAYOUT_SPACING,LAYOUT_SPACING);
+                }
+            };
+
+            class VBoxLayout : public QVBoxLayout {
+              public:
+                VBoxLayout () : QVBoxLayout () { init(); }
+                VBoxLayout (QWidget* parent) : QVBoxLayout (parent) { init(); }
+              protected:
+                void init () {
+                  setSpacing (LAYOUT_SPACING);
+                  setContentsMargins(LAYOUT_SPACING,LAYOUT_SPACING,LAYOUT_SPACING,LAYOUT_SPACING);
+                }
+            };
+
+            class GridLayout : public QGridLayout {
+              public:
+                GridLayout () : QGridLayout () { init(); }
+                GridLayout (QWidget* parent) : QGridLayout (parent) { init(); }
+              protected:
+                void init () {
+                  setSpacing (LAYOUT_SPACING);
+                  setContentsMargins(LAYOUT_SPACING,LAYOUT_SPACING,LAYOUT_SPACING,LAYOUT_SPACING);
+                }
+            };
 
             virtual void draw (const Projection& transform, bool is_3D);
             virtual void drawOverlays (const Projection& transform);

@@ -45,7 +45,7 @@ namespace MR
         View::View (Window& main_window, Dock* parent) : 
           Base (main_window, parent)
         {
-          QVBoxLayout* main_box = new QVBoxLayout (this);
+          VBoxLayout* main_box = new VBoxLayout (this);
 
           plane_combobox = new QComboBox;
           plane_combobox->insertItem (0, "Sagittal");
@@ -54,9 +54,7 @@ namespace MR
           main_box->addWidget (plane_combobox);
           connect (plane_combobox, SIGNAL (activated(int)), this, SLOT (onSetPlane(int)));
 
-          QGridLayout* layout = new QGridLayout;
-          layout->setContentsMargins (5, 5, 5, 5);
-          layout->setSpacing (5);
+          GridLayout* layout = new GridLayout;
           main_box->addLayout (layout);
           layout->addWidget (new QLabel ("FOV"), 0, 0);
           fov = new AdjustButton (this);
@@ -64,9 +62,7 @@ namespace MR
           layout->addWidget (fov, 0, 1);
 
           QGroupBox* group_box = new QGroupBox ("Focus");
-          layout = new QGridLayout;
-          layout->setContentsMargins (5, 5, 5, 5);
-          layout->setSpacing (5);
+          layout = new GridLayout;
           main_box->addWidget (group_box);
           group_box->setLayout (layout);
 
@@ -88,7 +84,7 @@ namespace MR
 
 
           group_box = new QGroupBox ("Scaling");
-          layout = new QGridLayout;
+          layout = new GridLayout;
           main_box->addWidget (group_box);
           group_box->setLayout (layout);
 
@@ -105,7 +101,7 @@ namespace MR
 
 
           transparency_box = new QGroupBox ("Transparency");
-          layout = new QGridLayout;
+          layout = new GridLayout;
           main_box->addWidget (transparency_box);
           transparency_box->setLayout (layout);
 
@@ -128,7 +124,7 @@ namespace MR
 
 
           threshold_box = new QGroupBox ("Thresholds");
-          layout = new QGridLayout;
+          layout = new GridLayout;
           main_box->addWidget (threshold_box);
           threshold_box->setLayout (layout);
 
@@ -150,7 +146,7 @@ namespace MR
 
 
           clip_box = new QGroupBox ("Clip planes");
-          layout = new QGridLayout;
+          layout = new GridLayout;
           layout->setSpacing (0);
           main_box->addWidget (clip_box);
           clip_box->setLayout (layout);

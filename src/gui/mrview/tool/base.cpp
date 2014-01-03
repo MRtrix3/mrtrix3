@@ -35,6 +35,18 @@ namespace MR
       namespace Tool
       {
 
+        Base::Base (Window& main_window, Dock* parent) : 
+          QFrame (parent),
+          window (main_window) { 
+            QFont f = font();
+            f.setPointSize (MR::File::Config::get_int ("MRViewToolFontSize", f.pointSize()-1));
+            setFont (f);
+
+            setFrameShadow (QFrame::Plain); 
+            setFrameShape (QFrame::NoFrame);
+          }
+
+
         void Base::draw (const Projection& transform, bool is_3D) { }
 
         void Base::drawOverlays (const Projection& transform) { }
