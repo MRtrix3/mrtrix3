@@ -36,26 +36,27 @@ namespace MR
     {
 
       AdjustButton::AdjustButton (QWidget* parent, float change_rate) :
-        QFrame (parent),
-        text (this),
-        button (this),
+        QLineEdit (parent),
         rate (change_rate),
         min (-std::numeric_limits<float>::max()),
-        max (std::numeric_limits<float>::max()) {
-          text.setValidator (new QDoubleValidator (this));
+        max (std::numeric_limits<float>::max()),
+        adjusting (false) {
+          setValidator (new QDoubleValidator (this));
 
-          button.setToolTip (tr ("Click & drag to adjust"));
-          button.setIcon (QIcon (":/adjust.svg"));
-          button.setAutoRaise (true);
+          setToolTip (tr ("Click & drag to adjust"));
 
-          QHBoxLayout* layout = new QHBoxLayout (this);
-          layout->setContentsMargins (0, 0, 0, 0);
-          layout->setSpacing (5);
-          layout->addWidget (&text, 1);
-          layout->addWidget (&button, 0);
+          connect (this, SIGNAL (editingFinished()), SLOT (onSetValue()));
+          installEventFilter (this);
+          setStyleSheet (
+              "QLineEdit { "
+              "padding-right: 20px; "
+              "padding-left: 5px; "
+              "background: url(:/adjustbutton.svg); "
+              "background-position: right; "
+              "background-repeat: no-repeat; "
+              "border: 1px solid grey; "
+              "border-radius: 5px }");
 
-          connect (&text, SIGNAL (editingFinished()), SLOT (onSetValue()));
-          button.installEventFilter (this);
         }
 
 
@@ -66,18 +67,30 @@ namespace MR
       bool AdjustButton::eventFilter (QObject* obj, QEvent* event)
       {
         if (this->isEnabled()) {
-          if (event->type() == QEvent::MouseButtonPress)
-            previous_y = ((QMouseEvent*) event)->y();
+          if (event->type() == QEvent::MouseButtonPress) {
+            QMouseEvent* mevent = static_cast<QMouseEvent*> (event);
+            if (mevent->button() == mevent->buttons())
+              previous_y = mevent->y();
+          }
+          else if (event->type() == QEvent::MouseButtonRelease) {
+            if (static_cast<QMouseEvent*> (event)->buttons() == Qt::NoButton)
+              adjusting = false;
+          }
           else if (event->type() == QEvent::MouseMove) {
-            QMouseEvent* mouse_event = (QMouseEvent*) event;
-            setValue (value() - rate * (mouse_event->y() - previous_y));
-            previous_y = mouse_event->y();
-            emit valueChanged();
-            return true;
-
+            QMouseEvent* mevent = static_cast<QMouseEvent*> (event);
+            if (mevent->buttons() != Qt::NoButton) {
+              if (!adjusting && Math::abs (mevent->y() - previous_y) > 4) 
+                adjusting = true;
+              if (adjusting) {
+                setValue (value() - rate * (mevent->y() - previous_y));
+                previous_y = mevent->y();
+                emit valueChanged();
+                return true;
+              }
+            }
           }
         }
-        return QObject::eventFilter(obj, event);
+        return QObject::eventFilter (obj, event);
       }
 
     }

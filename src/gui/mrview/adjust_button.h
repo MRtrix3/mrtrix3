@@ -14,22 +14,18 @@ namespace MR
     namespace MRView
     {
 
-
-      class AdjustButton : public QFrame
+      class AdjustButton : public QLineEdit
       {
         Q_OBJECT
 
         public:
           AdjustButton (QWidget* parent, float change_rate = 1.0);
 
-          void clear () {
-            text.clear ();
-          }
           float value () const { 
-            if (text.text().isEmpty()) 
+            if (text().isEmpty()) 
               return NAN;
             try {
-              return to<float> (text.text().toStdString());
+              return to<float> (text().toStdString());
             }
             catch (Exception) {
               return NAN;
@@ -39,16 +35,16 @@ namespace MR
           void setValue (float val) {
             if (finite (val)) {
               if (val > max)
-                text.setText (str(max).c_str());
+                setText (str(max).c_str());
               else if (val < min)
-                text.setText (str(min).c_str());
+                setText (str(min).c_str());
               else
-                text.setText (str(val).c_str());
+                setText (str(val).c_str());
             }
-            else {
-              text.clear();
-            }
+            else 
+              clear();
           }
+
 
           void setRate (float new_rate) {
             rate = new_rate;
@@ -69,12 +65,9 @@ namespace MR
           void onSetValue ();
 
         protected:
-          QLineEdit text;
-          QToolButton button;
-          float rate;
-          float min;
-          float max;
+          float rate, min, max;
           int previous_y;
+          bool adjusting;
 
           bool eventFilter (QObject *obj, QEvent *event);
       };
