@@ -44,6 +44,13 @@ namespace MR
       {
 
 
+        class ClipPlane 
+        {
+          public:
+            GL::vec4 plane;
+            bool active;
+        };
+
         class View : public Base
         {
           Q_OBJECT
@@ -51,6 +58,9 @@ namespace MR
             View (Window& main_window, Dock* parent);
 
             QPushButton *clip_on_button[3], *clip_edit_button[3], *clip_modify_button;
+
+            std::vector<GL::vec4> get_active_clip_planes () const;
+            std::vector<GL::vec4*> get_clip_planes_to_be_edited () const;
 
           protected:
             virtual void showEvent (QShowEvent* event);
@@ -69,11 +79,8 @@ namespace MR
             void onSetFOV ();
             void onCheckThreshold (bool);
             void onModeChanged ();
-            void onClipModify();
-            void onClipReset();
-            void onClip0Invert();
-            void onClip1Invert();
-            void onClip2Invert();
+            void clip_planes_right_click_menu_slot (const QPoint& pos);
+            void clip_planes_toggle_shown_slot();
 
           private:
             AdjustButton *focus_x, *focus_y, *focus_z; 
@@ -85,6 +92,13 @@ namespace MR
             QComboBox *plane_combobox;
             QGroupBox *transparency_box, *threshold_box, *clip_box;
             QSlider *opacity;
+            QMenu *clip_planes_option_menu, *clip_planes_reset_submenu;
+            QAction *clip_planes_new_action[3], *clip_planes_reset_action[3], *clip_plane_invert_action;
+            QAction *clip_plane_remove_action, *clip_planes_clear_action, *clip_planes_help_action;
+
+            class ClipPlaneModel;
+            ClipPlaneModel* clip_planes_model;
+            QListView* clip_planes_list_view;
 
             void set_transparency_from_image ();
 

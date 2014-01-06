@@ -41,6 +41,91 @@ namespace MR
       {
 
 
+        class View::ClipPlaneModel : public QAbstractItemModel
+        {
+          public:
+
+            ClipPlaneModel (QObject* parent) :
+              QAbstractItemModel (parent) { }
+
+            QVariant data (const QModelIndex& index, int role) const {
+              if (!index.isValid()) return QVariant();
+              if (role == Qt::CheckStateRole) {
+                return planes[index.row()].active ? Qt::Checked : Qt::Unchecked;
+              }
+              if (role != Qt::DisplayRole) return QVariant();
+              return (str (planes[index.row()].plane).c_str());
+            }
+
+            bool setData (const QModelIndex& idx, const QVariant& value, int role) {
+              if (role == Qt::CheckStateRole) {
+                planes[idx.row()].active = (value == Qt::Checked);
+                emit dataChanged (idx, idx);
+                return true;
+              }
+              return QAbstractItemModel::setData (idx, value, role);
+            }
+
+            Qt::ItemFlags flags (const QModelIndex& index) const {
+              if (!index.isValid()) return 0;
+              return Qt::ItemIsEnabled | Qt::ItemIsSelectable | Qt::ItemIsUserCheckable;
+            }
+
+            QModelIndex index (int row, int column, const QModelIndex& parent = QModelIndex()) const { return createIndex (row, column); }
+
+            QModelIndex parent (const QModelIndex& index) const { return QModelIndex(); }
+
+            int rowCount (const QModelIndex& parent = QModelIndex()) const { return planes.size(); }
+
+            int columnCount (const QModelIndex& parent = QModelIndex()) const { return 1; }
+
+            void remove (QModelIndex& index) {
+              beginRemoveRows (QModelIndex(), index.row(), index.row());
+              planes.erase (planes.begin() + index.row());
+              endRemoveRows();
+            }
+
+            void invert (QModelIndex& index) {
+              ClipPlane& p (planes[index.row()]);
+              for (size_t n = 0; n < 4; ++n)
+                p.plane[n] = -p.plane[n];
+            }
+
+            void reset (QModelIndex& index, const Image::InterpVoxelType& image, int proj) {
+              reset (planes[index.row()], image, proj);
+            }
+
+            void reset (ClipPlane& p, const Image::InterpVoxelType& image, int proj) {
+              const Math::Matrix<float> M (image.transform());
+              p.plane[0] = M (proj, 0);
+              p.plane[1] = M (proj, 1);
+              p.plane[2] = M (proj, 2);
+
+              Point<> centre = image.voxel2scanner (Point<> (image.dim(0)/2.0f, image.dim(1)/2.0f, image.dim(2)/2.0f));
+              p.plane[3] = centre[0]*p.plane[0] + centre[1]*p.plane[1] + centre[2]*p.plane[2];
+              p.active = true;
+            }
+
+            void clear () {
+              beginRemoveRows (QModelIndex(), 0, planes.size());
+              planes.clear();
+              endRemoveRows();
+            }
+
+            void add (const Image::InterpVoxelType& image, int proj) {
+              ClipPlane p;
+              reset (p, image, proj);
+              beginInsertRows (QModelIndex(), planes.size(), planes.size() + 1);
+              planes.push_back (p);
+              endInsertRows();
+            }
+
+            std::vector<ClipPlane> planes;
+        };
+
+
+
+
         View::View (Window& main_window, Dock* parent) : 
           Base (main_window, parent)
         {
@@ -149,33 +234,68 @@ namespace MR
 
 
           clip_box = new QGroupBox ("Clip planes");
-          layout = new GridLayout;
-          layout->setSpacing (0);
+          clip_box->setCheckable (true);
+          connect (clip_box, SIGNAL (toggled(bool)), this, SLOT(clip_planes_toggle_shown_slot()));
           main_box->addWidget (clip_box);
-          clip_box->setLayout (layout);
-          for (size_t n = 0; n < 3; ++n) {
-            clip_on_button[n] = new QPushButton (n == 0 ? "axial" : ( n == 1 ? "sagittal" : "coronal" ), this);
-            clip_on_button[n]->setCheckable (true);
-            connect (clip_on_button[n], SIGNAL (toggled(bool)), &window, SLOT(updateGL()));
-            layout->addWidget (clip_on_button[n], 0, n);
+          vlayout = new VBoxLayout;
+          clip_box->setLayout (vlayout);
 
-            QPushButton* clip_invert_button = new QPushButton ("invert", this);
-            if (n == 0) connect (clip_invert_button, SIGNAL (clicked(bool)), this, SLOT(onClip0Invert()));
-            else if (n == 1) connect (clip_invert_button, SIGNAL (clicked(bool)), this, SLOT(onClip1Invert()));
-            else connect (clip_invert_button, SIGNAL (clicked(bool)), this, SLOT(onClip2Invert()));
-            layout->addWidget (clip_invert_button, 1, n);
+          clip_planes_model = new ClipPlaneModel (this);
+          connect (clip_planes_model, SIGNAL (dataChanged (const QModelIndex&, const QModelIndex&)),
+              this, SLOT (clip_planes_toggle_shown_slot()));
 
-            clip_edit_button[n] = new QPushButton ("modify", this);
-            clip_edit_button[n]->setToolTip ("when checked, standard image manipulation actions apply to clip plane instead");
-            layout->addWidget (clip_edit_button[n], 2, n);
-            clip_edit_button[n]->setCheckable (true);
-          }
-          clip_modify_button = new QPushButton ("toggle modify all", this);
-          connect (clip_modify_button, SIGNAL (clicked(bool)), this, SLOT (onClipModify()));
-          layout->addWidget (clip_modify_button, 3, 0, 1, 3);
-          clip_modify_button = new QPushButton ("reset", this);
-          connect (clip_modify_button, SIGNAL (clicked(bool)), this, SLOT (onClipReset()));
-          layout->addWidget (clip_modify_button, 4, 0, 1, 3);
+          clip_planes_list_view = new QListView (this);
+          clip_planes_list_view->setModel (clip_planes_model);
+          clip_planes_list_view->setSelectionMode (QAbstractItemView::ExtendedSelection);
+          clip_planes_list_view->setContextMenuPolicy (Qt::CustomContextMenu);
+          clip_planes_list_view->setToolTip ("Right-click for more options");
+          connect (clip_planes_list_view, SIGNAL (customContextMenuRequested (const QPoint&)),
+              this, SLOT (clip_planes_right_click_menu_slot (const QPoint&)));
+          vlayout->addWidget (clip_planes_list_view, 1);
+
+
+          QAction* action;
+          clip_planes_option_menu = new QMenu ();
+          QMenu* submenu = clip_planes_option_menu->addMenu("&New");
+
+          clip_planes_new_action[0] = new QAction ("&axial", this);
+          submenu->addAction (clip_planes_new_action[0]);
+
+          clip_planes_new_action[1] = new QAction ("&sagittal", this);
+          submenu->addAction (clip_planes_new_action[1]);
+
+          clip_planes_new_action[2] = new QAction ("&coronal", this);
+          submenu->addAction (clip_planes_new_action[2]);
+
+          clip_planes_option_menu->addSeparator();
+
+          submenu = clip_planes_reset_submenu = clip_planes_option_menu->addMenu("&Reset");
+
+          clip_planes_reset_action[0] = new QAction ("&axial", this);
+          submenu->addAction (clip_planes_reset_action[0]);
+
+          clip_planes_reset_action[1] = new QAction ("&sagittal", this);
+          submenu->addAction (clip_planes_reset_action[1]);
+
+          clip_planes_reset_action[2] = new QAction ("&coronal", this);
+          submenu->addAction (clip_planes_reset_action[2]);
+
+
+          clip_plane_invert_action = action = new QAction("&Invert", this);
+          clip_planes_option_menu->addAction (clip_plane_invert_action);
+
+          clip_plane_remove_action = action = new QAction("R&emove", this);
+          clip_planes_option_menu->addAction (clip_plane_remove_action);
+
+          clip_planes_option_menu->addSeparator();
+
+          clip_planes_clear_action = new QAction("&Clear", this);
+          clip_planes_option_menu->addAction (clip_planes_clear_action);
+
+          clip_planes_option_menu->addSeparator();
+
+          clip_planes_help_action = new QAction("&Help", this);
+          clip_planes_option_menu->addAction (clip_planes_help_action);
 
           main_box->addStretch ();
         }
@@ -271,38 +391,6 @@ namespace MR
 
 
 
-
-
-        void View::onClipModify () 
-        {
-          bool any_on = clip_edit_button[0]->isChecked() || clip_edit_button[1]->isChecked() || clip_edit_button[2]->isChecked();
-
-          clip_edit_button[0]->setChecked (!any_on && clip_on_button[0]->isChecked());
-          clip_edit_button[1]->setChecked (!any_on && clip_on_button[1]->isChecked());
-          clip_edit_button[2]->setChecked (!any_on && clip_on_button[2]->isChecked());
-        }
-
-        void View::onClipReset () 
-        {
-          static_cast<Mode::Volume*> (window.get_current_mode())->reset_clip_planes();
-          window.updateGL();
-        }
-
-
-        void View::onClip0Invert () 
-        {
-          static_cast<Mode::Volume*> (window.get_current_mode())->invert_clip_plane (0);
-        }
-
-        void View::onClip1Invert () 
-        {
-          static_cast<Mode::Volume*> (window.get_current_mode())->invert_clip_plane (1);
-        }
-
-        void View::onClip2Invert () 
-        {
-          static_cast<Mode::Volume*> (window.get_current_mode())->invert_clip_plane (2);
-        }
 
 
 
@@ -432,6 +520,105 @@ namespace MR
             min_entry->setRate (rate);
             max_entry->setRate (rate);
           }
+        }
+
+
+
+        void View::clip_planes_right_click_menu_slot (const QPoint& pos)
+        {
+          QModelIndex index = clip_planes_list_view->indexAt (pos);
+          clip_planes_reset_submenu->setEnabled (index.isValid());
+          clip_plane_invert_action->setEnabled (index.isValid());
+          clip_plane_remove_action->setEnabled (index.isValid());
+
+          QPoint globalPos = clip_planes_list_view->mapToGlobal (pos);
+          clip_planes_list_view->selectionModel()->select (index, QItemSelectionModel::Select);
+          QAction* selected = clip_planes_option_menu->exec (globalPos);
+
+          if (selected == clip_planes_clear_action) 
+            clip_planes_model->clear();
+          else if (selected == clip_planes_new_action[0]) 
+            clip_planes_model->add (window.image()->interp, 2);
+          else if (selected == clip_planes_new_action[1]) 
+            clip_planes_model->add (window.image()->interp, 0);
+          else if (selected == clip_planes_new_action[2]) 
+            clip_planes_model->add (window.image()->interp, 1);
+          else if (selected == clip_planes_help_action) {
+            QMessageBox* help = new QMessageBox (QMessageBox::Information, "Clip Planes", 
+                "Clip Planes are only available in Volume Render mode "
+                "(along with transparency and thresholding).\n\n"
+                "Adding clip planes is done through the list view "
+                "context menu (right-click on the list); "
+                "this provides the option of adding or removing clip "
+                "planes, inverting them, or resetting them to known positions.\n\n"
+                "Clip planes can be enabled via their corresponding tick-box, "
+                "or more globally via the 'Clip planes' group tick box.\n\n"
+                "More fine-grained manipulation is achieved by selecting the clip "
+                "planes to be modified (use shift- or Ctrl- left click to select "
+                "multiple clip planes), and using the same mouse gestures that would "
+                "normally be used to interact with the image; if any clip planes are "
+                "currently selected, they will be modified according to the actions "
+                "performed, instead of the image itself. "
+                "Click in a blank area of the list to return to normal operation.",
+                QMessageBox::Close);
+            help->setModal (false);
+            help->show();
+          }
+
+          else {
+            QModelIndexList indices = clip_planes_list_view->selectionModel()->selectedIndexes();
+            
+            if (selected == clip_plane_invert_action) {
+            for (int i = 0; i < indices.size(); ++i) 
+              clip_planes_model->invert (indices[i]);
+            }
+            else if (selected == clip_plane_remove_action) {
+              while (indices.size()) {
+                clip_planes_model->remove (indices.first());
+                indices = clip_planes_list_view->selectionModel()->selectedIndexes();
+              }
+            }
+
+            else {
+              int n = (selected == clip_planes_reset_action[0]) ? 2 : ( (selected == clip_planes_reset_action[1]) ? 0 : 1 );
+              QModelIndexList indices = clip_planes_list_view->selectionModel()->selectedIndexes();
+              for (int i = 0; i < indices.size(); ++i) 
+                clip_planes_model->reset (indices[i], window.image()->interp, n);
+            }
+          }
+
+          window.updateGL();
+        }
+
+
+
+        std::vector<GL::vec4> View::get_active_clip_planes () const
+        {
+          std::vector<GL::vec4> ret;
+          if (clip_box->isChecked()) 
+            for (int i = 0; i < clip_planes_model->rowCount(); ++i) 
+              if (clip_planes_model->planes[i].active)
+                ret.push_back (clip_planes_model->planes[i].plane);
+
+          return ret;
+        }
+
+        std::vector<GL::vec4*> View::get_clip_planes_to_be_edited () const
+        {
+          std::vector<GL::vec4*> ret;
+          if (clip_box->isChecked()) {
+            QModelIndexList indices = clip_planes_list_view->selectionModel()->selectedIndexes();
+            for (int i = 0; i < indices.size(); ++i) 
+              if (clip_planes_model->planes[indices[i].row()].active)
+                ret.push_back (&clip_planes_model->planes[indices[i].row()].plane);
+          }
+          return ret;
+        }
+
+
+        void View::clip_planes_toggle_shown_slot ()
+        {
+          window.updateGL();
         }
 
       }

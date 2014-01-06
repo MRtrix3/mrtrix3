@@ -32,6 +32,10 @@ namespace MR
   {
     namespace MRView
     {
+      namespace Tool { class View; }
+
+
+
       namespace Mode
       {
 
@@ -41,11 +45,7 @@ namespace MR
             Volume (Window& parent) :
               Base (parent, FocusContrast | MoveTarget | TiltRotate | ShaderTransparency | ShaderThreshold | ShaderClipping),
               volume_shader (*this) { 
-                reset_clip_planes();
               }
-
-            void reset_clip_planes();
-            void invert_clip_plane (int n);
 
             virtual void paint (Projection& projection);
             virtual void slice_move_event (int x);
@@ -58,26 +58,26 @@ namespace MR
             GL::VertexBuffer volume_VB, volume_VI;
             GL::VertexArrayObject volume_VAO;
             GL::Texture depth_texture;
-            GL::vec4 clip[3];
+            std::vector<GL::vec4> clip;
 
             class Shader : public Displayable::Shader {
               public:
-                Shader (const Volume& mode) : mode (mode) { clip[0] = clip[1] = clip[2] = false; }
+                Shader (const Volume& mode) : mode (mode), active_clip_planes (0) { }
                 virtual std::string vertex_shader_source (const Displayable& object);
                 virtual std::string fragment_shader_source (const Displayable& object);
                 virtual bool need_update (const Displayable& object) const;
                 virtual void update (const Displayable& object);
                 const Volume& mode;
-                bool clip[3];
+                size_t active_clip_planes;
             } volume_shader;
 
-            bool do_clip (int n) const;
-            bool edit_clip (int n) const;
-            bool editing () const;
+            Tool::View* get_view_tool () const;
+            std::vector<GL::vec4> get_active_clip_planes () const;
+            std::vector<GL::vec4*> get_clip_planes_to_be_edited () const;
 
 
-            void move_clip_planes_in_out (float distance);
-            void rotate_clip_planes (const Math::Versor<float>& rot);
+            void move_clip_planes_in_out (std::vector<GL::vec4*>& clip, float distance);
+            void rotate_clip_planes (std::vector<GL::vec4*>& clip, const Math::Versor<float>& rot);
         };
 
       }

@@ -71,13 +71,15 @@ namespace MR
 
         std::string Volume::Shader::fragment_shader_source (const Displayable& object)
         {
+
+          std::vector<GL::vec4> clip = mode.get_active_clip_planes();
+
           std::string source = object.declare_shader_variables() +
             "uniform sampler3D image_sampler;\n"
             "in vec3 texcoord;\n";
 
-          if (clip[0]) source += "uniform vec4 clip0;\n";
-          if (clip[1]) source += "uniform vec4 clip1;\n";
-          if (clip[2]) source += "uniform vec4 clip2;\n";
+          for (size_t n = 0; n < clip.size(); ++n)
+            source += "uniform vec4 clip" + str(n) + ";\n";
 
           for (int n = 0; n < mode.overlays_for_3D.size(); ++n) {
             source += mode.overlays_for_3D[n]->declare_shader_variables ("overlay"+str(n)+"_") +
@@ -121,15 +123,15 @@ namespace MR
             "  for (int n = 0; n < nmax; ++n) {\n"
             "    coord += ray;\n";
 
-          if (clip[0] || clip[1] || clip[2]) {
-            source += "    bool show = true;\n";
-            if (clip[0]) source += "    if (dot (coord, clip0.xyz) > clip0.w)\n";
-            if (clip[1]) source += "      if (dot (coord, clip1.xyz) > clip1.w)\n";
-            if (clip[2]) source += "        if (dot (coord, clip2.xyz) > clip2.w)\n";
-            source += 
-              "          show = false;\n"
-              "    if (show) {\n";
-          }
+              if (clip.size()) {
+                source += "    bool show = true;\n";
+                for (size_t n = 0; n < clip.size(); ++n)
+                  source += "    if (dot (coord, clip" + str(n) + ".xyz) > clip" + str(n) + ".w)\n";
+                source += 
+                  "          show = false;\n"
+                  "    if (show) {\n";
+              }
+
 
           source += 
             "      color = texture (image_sampler, coord);\n"
@@ -160,7 +162,8 @@ namespace MR
             "        final_color.a += color.a;\n"
             "      }\n";
 
-          if (clip[0] || clip[1] || clip[2]) 
+
+          if (clip.size())
             source += "    }\n";
 
 
@@ -218,18 +221,18 @@ namespace MR
 
         bool Volume::Shader::need_update (const Displayable& object) const 
         {
-          if (clip[0] != mode.do_clip (0)) return true;
-          if (clip[1] != mode.do_clip (1)) return true;
-          if (clip[2] != mode.do_clip (2)) return true;
-          if (mode.update_overlays) return true;
+          if (mode.update_overlays) 
+            return true;
+          if (mode.get_active_clip_planes().size() != active_clip_planes) 
+            return true;
           return Displayable::Shader::need_update (object);
         }
 
+
+
         void Volume::Shader::update (const Displayable& object) 
         {
-          clip[0] = mode.do_clip (0);
-          clip[1] = mode.do_clip (1);
-          clip[2] = mode.do_clip (2);
+          active_clip_planes = mode.get_active_clip_planes().size();
           Displayable::Shader::update (object);
         }
 
@@ -280,63 +283,7 @@ namespace MR
         }
 
 
-        inline bool Volume::do_clip (int n) const
-        {
-          Tool::Dock* dock = dynamic_cast<Tool::__Action__*>(window.tools()->actions()[0])->dock;
-          if (!dock) 
-            return false;
 
-          Tool::View* view_tool = dynamic_cast<Tool::View*> (dock->tool);
-          return view_tool->clip_on_button[n]->isChecked();
-        }
-
-
-
-
-        inline bool Volume::edit_clip (int n) const
-        {
-          Tool::Dock* dock = dynamic_cast<Tool::__Action__*>(window.tools()->actions()[0])->dock;
-          if (!dock) 
-            return false;
-
-          return dynamic_cast<Tool::View*> (dock->tool)->clip_edit_button[n]->isChecked();
-        }
-
-
-
-
-
-        inline bool Volume::editing () const
-        {
-          Tool::Dock* dock = dynamic_cast<Tool::__Action__*>(window.tools()->actions()[0])->dock;
-          if (!dock) 
-            return false;
-
-          Tool::View* view_tool = dynamic_cast<Tool::View*> (dock->tool);
-          return view_tool->clip_edit_button[0]->isChecked() || view_tool->clip_edit_button[1]->isChecked() || view_tool->clip_edit_button[2]->isChecked();
-        }
-
-
-
-
-
-        void Volume::reset_clip_planes() 
-        {
-          clip[0] = GL::vec4 (0.0, 0.0, 1.0, 0.0);
-          clip[1] = GL::vec4 (1.0, 0.0, 0.0, 0.0);
-          clip[2] = GL::vec4 (0.0, 1.0, 0.0, 0.0);
-        }
-
-
-
-        void Volume::invert_clip_plane (int n) 
-        {
-          clip[n][0] = -clip[n][0];
-          clip[n][1] = -clip[n][1];
-          clip[n][2] = -clip[n][2];
-          clip[n][3] = -clip[n][3];
-          updateGL();
-        }
 
 
 
@@ -492,12 +439,10 @@ namespace MR
 
           glUniform1i (glGetUniformLocation (volume_shader, "depth_sampler"), 1);
 
-          if (volume_shader.clip[0]) 
-            glUniform4fv (glGetUniformLocation (volume_shader, "clip0"), 1, clip_real2tex (T2S, S2T, clip[0]));
-          if (volume_shader.clip[1]) 
-            glUniform4fv (glGetUniformLocation (volume_shader, "clip1"), 1, clip_real2tex (T2S, S2T, clip[1]));
-          if (volume_shader.clip[2]) 
-            glUniform4fv (glGetUniformLocation (volume_shader, "clip2"), 1, clip_real2tex (T2S, S2T, clip[2]));
+          std::vector<GL::vec4> clip = get_active_clip_planes();
+
+          for (size_t n = 0; n < clip.size(); ++n) 
+            glUniform4fv (glGetUniformLocation (volume_shader, ("clip"+str(n)).c_str()), 1, clip_real2tex (T2S, S2T, clip[n]));
 
           for (int n = 0; n < overlays_for_3D.size(); ++n) {
             overlays_for_3D[n]->update_texture3D();
@@ -531,33 +476,54 @@ namespace MR
         }
 
 
+        inline Tool::View* Volume::get_view_tool () const
+        {
+          Tool::Dock* dock = dynamic_cast<Tool::__Action__*>(window.tools()->actions()[0])->dock;
+          if (!dock) 
+            return NULL;
+          return dynamic_cast<Tool::View*> (dock->tool);
+        }
+
+
+        inline std::vector<GL::vec4> Volume::get_active_clip_planes () const 
+        {
+          Tool::View* view = get_view_tool();
+          return view ? view->get_active_clip_planes() : std::vector<GL::vec4>();
+        }
 
 
 
-        inline void Volume::move_clip_planes_in_out (float distance) 
+        inline std::vector<GL::vec4*> Volume::get_clip_planes_to_be_edited () const
+        {
+          Tool::View* view = get_view_tool();
+          return view ? view->get_clip_planes_to_be_edited() : std::vector<GL::vec4*>();
+        }
+
+
+
+        inline void Volume::move_clip_planes_in_out (std::vector<GL::vec4*>& clip, float distance)
         {
           Point<> d = get_current_projection()->screen_normal();
-          for (size_t n = 0; n < 3; ++n) {
-            if (edit_clip(n)) 
-              clip[n][3] += distance * (clip[n][0]*d[0] + clip[n][1]*d[1] + clip[n][2]*d[2]);
+          for (size_t n = 0; n < clip.size(); ++n) {
+            GL::vec4& p (*clip[n]);
+            p[3] += distance * (p[0]*d[0] + p[1]*d[1] + p[2]*d[2]);
           }
           updateGL();
         }
 
 
-        inline void Volume::rotate_clip_planes (const Math::Versor<float>& rot)
+        inline void Volume::rotate_clip_planes (std::vector<GL::vec4*>& clip, const Math::Versor<float>& rot)
         {
-          for (size_t n = 0; n < 3; ++n) {
-            if (edit_clip(n)) {
-              float distance_to_focus = clip[n][0]*focus()[0] + clip[n][1]*focus()[1] + clip[n][2]*focus()[2] - clip[n][3];
-              Math::Versor<float> norm (0.0f, clip[n][0], clip[n][1], clip[n][2]);
-              Math::Versor<float> rotated = norm * rot;
-              rotated.normalise();
-              clip[n][0] = rotated[1];
-              clip[n][1] = rotated[2];
-              clip[n][2] = rotated[3];
-              clip[n][3] = clip[n][0]*focus()[0] + clip[n][1]*focus()[1] + clip[n][2]*focus()[2] - distance_to_focus;
-            }
+          for (size_t n = 0; n < clip.size(); ++n) {
+            GL::vec4& p (*clip[n]);
+            float distance_to_focus = p[0]*focus()[0] + p[1]*focus()[1] + p[2]*focus()[2] - p[3];
+            Math::Versor<float> norm (0.0f, p[0], p[1], p[2]);
+            Math::Versor<float> rotated = norm * rot;
+            rotated.normalise();
+            p[0] = rotated[1];
+            p[1] = rotated[2];
+            p[2] = rotated[3];
+            p[3] = p[0]*focus()[0] + p[1]*focus()[1] + p[2]*focus()[2] - distance_to_focus;
           }
           updateGL();
         }
@@ -568,8 +534,10 @@ namespace MR
 
         void Volume::slice_move_event (int x) 
         {
-          if (editing()) 
-            move_clip_planes_in_out (x * std::min (std::min (image()->header().vox(0), image()->header().vox(1)), image()->header().vox(2)));
+         
+          std::vector<GL::vec4*> clip = get_clip_planes_to_be_edited();
+          if (clip.size()) 
+            move_clip_planes_in_out (clip, x * std::min (std::min (image()->header().vox(0), image()->header().vox(1)), image()->header().vox(2)));
           else
             Base::slice_move_event (x);
         }
@@ -578,11 +546,12 @@ namespace MR
 
         void Volume::pan_event () 
         {
-          if (editing()) {
+          std::vector<GL::vec4*> clip = get_clip_planes_to_be_edited();
+          if (clip.size()) {
             Point<> move = get_current_projection()->screen_to_model_direction (window.mouse_displacement(), target());
-            for (size_t n = 0; n < 3; ++n) {
-              if (edit_clip(n)) 
-                clip[n][3] += (clip[n][0]*move[0] + clip[n][1]*move[1] + clip[n][2]*move[2]);
+            for (size_t n = 0; n < clip.size(); ++n) {
+              GL::vec4& p (*clip[n]);
+              p[3] += (p[0]*move[0] + p[1]*move[1] + p[2]*move[2]);
             }
             updateGL();
           }
@@ -593,8 +562,9 @@ namespace MR
 
         void Volume::panthrough_event () 
         {
-          if (editing())
-            move_clip_planes_in_out (MOVE_IN_OUT_FOV_MULTIPLIER * window.mouse_displacement().y() * FOV());
+          std::vector<GL::vec4*> clip = get_clip_planes_to_be_edited();
+          if (clip.size()) 
+            move_clip_planes_in_out (clip, MOVE_IN_OUT_FOV_MULTIPLIER * window.mouse_displacement().y() * FOV());
           else
             Base::panthrough_event();
         }
@@ -603,11 +573,12 @@ namespace MR
 
         void Volume::tilt_event () 
         {
-          if (editing()) {
+          std::vector<GL::vec4*> clip = get_clip_planes_to_be_edited();
+          if (clip.size()) {
             Math::Versor<float> rot = get_tilt_rotation();
             if (!rot) 
               return;
-            rotate_clip_planes (rot);
+            rotate_clip_planes (clip, rot);
           }
           else 
             Base::tilt_event();
@@ -617,11 +588,12 @@ namespace MR
 
         void Volume::rotate_event () 
         {
-          if (editing()) {
+          std::vector<GL::vec4*> clip = get_clip_planes_to_be_edited();
+          if (clip.size()) {
             Math::Versor<float> rot = get_rotate_rotation();
             if (!rot) 
               return;
-            rotate_clip_planes (rot);
+            rotate_clip_planes (clip, rot);
           }
           else 
             Base::rotate_event();
