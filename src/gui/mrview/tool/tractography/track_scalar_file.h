@@ -67,7 +67,7 @@ namespace MR
               void update_tool_display ();
 
               Tractogram *tractogram;
-              QVBoxLayout *main_box;
+              VBoxLayout *main_box;
               QAction *show_colour_bar;
               QAction *invert_scale;
               QAction *scalarfile_by_direction;

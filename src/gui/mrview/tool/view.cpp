@@ -21,7 +21,6 @@
 */
 
 #include <QLabel>
-#include <QGridLayout>
 
 #include "mrtrix.h"
 #include "gui/mrview/window.h"
@@ -47,102 +46,106 @@ namespace MR
         {
           VBoxLayout* main_box = new VBoxLayout (this);
 
+          QGroupBox* group_box = new QGroupBox ("FOV");
+          main_box->addWidget (group_box);
+          HBoxLayout* hlayout = new HBoxLayout;
+          group_box->setLayout (hlayout);
+
+          fov = new AdjustButton (this);
+          connect (fov, SIGNAL (valueChanged()), this, SLOT (onSetFOV()));
+          hlayout->addWidget (fov);
+
           plane_combobox = new QComboBox;
           plane_combobox->insertItem (0, "Sagittal");
           plane_combobox->insertItem (1, "Coronal");
           plane_combobox->insertItem (2, "Axial");
-          main_box->addWidget (plane_combobox);
           connect (plane_combobox, SIGNAL (activated(int)), this, SLOT (onSetPlane(int)));
+          hlayout->addWidget (plane_combobox);
 
-          GridLayout* layout = new GridLayout;
-          main_box->addLayout (layout);
-          layout->addWidget (new QLabel ("FOV"), 0, 0);
-          fov = new AdjustButton (this);
-          connect (fov, SIGNAL (valueChanged()), this, SLOT (onSetFOV()));
-          layout->addWidget (fov, 0, 1);
-
-          QGroupBox* group_box = new QGroupBox ("Focus");
-          layout = new GridLayout;
+          group_box = new QGroupBox ("Focus");
           main_box->addWidget (group_box);
-          group_box->setLayout (layout);
+          hlayout = new HBoxLayout;
+          group_box->setLayout (hlayout);
 
-          layout->addWidget (new QLabel ("x"), 0, 0);
           focus_x = new AdjustButton (this);
           connect (focus_x, SIGNAL (valueChanged()), this, SLOT (onSetFocus()));
-          layout->addWidget (focus_x, 0, 1);
+          hlayout->addWidget (focus_x);
 
-          layout->addWidget (new QLabel ("y"), 1, 0);
           focus_y = new AdjustButton (this);
           connect (focus_y, SIGNAL (valueChanged()), this, SLOT (onSetFocus()));
-          layout->addWidget (focus_y, 1, 1);
+          hlayout->addWidget (focus_y);
 
-          layout->addWidget (new QLabel ("z"), 2, 0);
           focus_z = new AdjustButton (this);
           connect (focus_z, SIGNAL (valueChanged()), this, SLOT (onSetFocus()));
-          layout->addWidget (focus_z, 2, 1);
+          hlayout->addWidget (focus_z);
 
-
-
-          group_box = new QGroupBox ("Scaling");
-          layout = new GridLayout;
+          group_box = new QGroupBox ("Intensity scaling");
           main_box->addWidget (group_box);
-          group_box->setLayout (layout);
+          hlayout = new HBoxLayout;
+          group_box->setLayout (hlayout);
 
-          layout->addWidget (new QLabel ("min"), 0, 0);
           min_entry = new AdjustButton (this);
           connect (min_entry, SIGNAL (valueChanged()), this, SLOT (onSetScaling()));
-          layout->addWidget (min_entry, 0, 1);
+          hlayout->addWidget (min_entry);
 
-          layout->addWidget (new QLabel ("max"), 1, 0);
           max_entry = new AdjustButton (this);
           connect (max_entry, SIGNAL (valueChanged()), this, SLOT (onSetScaling()));
-          layout->addWidget (max_entry, 1, 1);
+          hlayout->addWidget (max_entry);
+
+
+          GridLayout* layout;
+          layout = new GridLayout;
+          main_box->addLayout (layout);
 
 
 
           transparency_box = new QGroupBox ("Transparency");
-          layout = new GridLayout;
           main_box->addWidget (transparency_box);
-          transparency_box->setLayout (layout);
+          VBoxLayout* vlayout = new VBoxLayout;
+          transparency_box->setLayout (vlayout);
 
-          layout->addWidget (new QLabel ("transparent"), 0, 0);
+          hlayout = new HBoxLayout;
+          vlayout->addLayout (hlayout);
+
           transparent_intensity = new AdjustButton (this);
           connect (transparent_intensity, SIGNAL (valueChanged()), this, SLOT (onSetTransparency()));
-          layout->addWidget (transparent_intensity, 0, 1);
+          hlayout->addWidget (transparent_intensity, 0, 0);
 
-          layout->addWidget (new QLabel ("opaque"), 1, 0);
           opaque_intensity = new AdjustButton (this);
           connect (opaque_intensity, SIGNAL (valueChanged()), this, SLOT (onSetTransparency()));
-          layout->addWidget (opaque_intensity, 1, 1);
+          hlayout->addWidget (opaque_intensity);
 
-          layout->addWidget (new QLabel ("alpha"), 2, 0);
+          hlayout = new HBoxLayout;
+          vlayout->addLayout (hlayout);
+
+          hlayout->addWidget (new QLabel ("alpha"));
           opacity = new QSlider (Qt::Horizontal);
           opacity->setRange (0, 255);
           opacity->setValue (255);
           connect (opacity, SIGNAL (valueChanged(int)), this, SLOT (onSetTransparency()));
-          layout->addWidget (opacity, 2, 1);
+          hlayout->addWidget (opacity);
 
 
           threshold_box = new QGroupBox ("Thresholds");
-          layout = new GridLayout;
           main_box->addWidget (threshold_box);
-          threshold_box->setLayout (layout);
+          hlayout = new HBoxLayout;
+          threshold_box->setLayout (hlayout);
 
-          lower_threshold_check_box = new QCheckBox ("lower", this);
-          layout->addWidget (lower_threshold_check_box, 0, 0);
+          lower_threshold_check_box = new QCheckBox (this);
+          hlayout->addWidget (lower_threshold_check_box);
           lower_threshold = new AdjustButton (this);
           lower_threshold->setValue (window.image() ? window.image()->intensity_min() : 0.0);
           connect (lower_threshold_check_box, SIGNAL (clicked(bool)), this, SLOT (onCheckThreshold(bool)));
           connect (lower_threshold, SIGNAL (valueChanged()), this, SLOT (onSetTransparency()));
-          layout->addWidget (lower_threshold, 0, 1);
+          hlayout->addWidget (lower_threshold);
 
-          upper_threshold_check_box = new QCheckBox ("upper", this);
-          layout->addWidget (upper_threshold_check_box, 1, 0);
+          upper_threshold_check_box = new QCheckBox (this);
+          hlayout->addWidget (upper_threshold_check_box);
           upper_threshold = new AdjustButton (this);
           upper_threshold->setValue (window.image() ? window.image()->intensity_max() : 1.0);
           connect (upper_threshold_check_box, SIGNAL (clicked(bool)), this, SLOT (onCheckThreshold(bool)));
           connect (upper_threshold, SIGNAL (valueChanged()), this, SLOT (onSetTransparency()));
-          layout->addWidget (upper_threshold, 1, 1);
+          hlayout->addWidget (upper_threshold);
 
 
           clip_box = new QGroupBox ("Clip planes");
@@ -175,7 +178,6 @@ namespace MR
           layout->addWidget (clip_modify_button, 4, 0, 1, 3);
 
           main_box->addStretch ();
-          setMinimumSize (main_box->minimumSize());
         }
 
 

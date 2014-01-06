@@ -44,18 +44,20 @@ namespace MR
           setValidator (new QDoubleValidator (this));
 
           setToolTip (tr ("Click & drag to adjust"));
+          setAlignment (Qt::AlignRight);
 
           connect (this, SIGNAL (editingFinished()), SLOT (onSetValue()));
           installEventFilter (this);
-          setStyleSheet (
+          setStyleSheet ((
               "QLineEdit { "
-              "padding-right: 20px; "
-              "padding-left: 5px; "
-              "background: url(:/adjustbutton.svg); "
+              "padding: 0.1em 20px 0.2em 0.3ex; "
+              "background: qlineargradient(x1:0, y1:0, x2:0, y2:0.2, stop:0 gray, stop:1 white) url(:/adjustbutton.svg); "
               "background-position: right; "
               "background-repeat: no-repeat; "
+              "font-size: " + str(font().pointSize()) + "pt; "
               "border: 1px solid grey; "
-              "border-radius: 5px }");
+              "border-color: black lightgray white gray; "
+              "border-radius: 0.3em }").c_str());
 
         }
 

@@ -97,8 +97,8 @@ namespace MR
 
             slab_thickness  = 2 * voxel_size;
 
-            QVBoxLayout* main_box = new QVBoxLayout (this);
-            QHBoxLayout* layout = new QHBoxLayout;
+            VBoxLayout* main_box = new VBoxLayout (this);
+            HBoxLayout* layout = new HBoxLayout;
             layout->setContentsMargins (0, 0, 0, 0);
             layout->setSpacing (0);
 
@@ -145,7 +145,7 @@ namespace MR
 
             main_box->addWidget (tractogram_list_view, 1);
 
-            QGridLayout* default_opt_grid = new QGridLayout;
+            GridLayout* default_opt_grid = new GridLayout;
 
             QSlider* slider;
             slider = new QSlider (Qt::Horizontal);
@@ -169,7 +169,7 @@ namespace MR
 
             connect (slab_group_box, SIGNAL (clicked (bool)), this, SLOT (on_crop_to_slab_slot (bool)));
 
-            QGridLayout* slab_layout = new QGridLayout;
+            GridLayout* slab_layout = new GridLayout;
             slab_group_box->setLayout(slab_layout);
             slab_layout->addWidget (new QLabel ("thickness (mm)"), 0, 0);
             slab_entry = new AdjustButton (this, 0.1);
@@ -185,7 +185,7 @@ namespace MR
 
             connect (lighting_group_box, SIGNAL (clicked (bool)), this, SLOT (on_use_lighting_slot (bool)));
 
-            QVBoxLayout* lighting_layout = new QVBoxLayout (lighting_group_box);
+            VBoxLayout* lighting_layout = new VBoxLayout (lighting_group_box);
             QPushButton* lighting_button = new QPushButton ("settings...");
             connect (lighting_button, SIGNAL (clicked()), this, SLOT (on_lighting_settings()));
             lighting_layout->addWidget (lighting_button);

@@ -84,8 +84,8 @@ namespace MR
 
         Overlay::Overlay (Window& main_window, Dock* parent) :
           Base (main_window, parent) { 
-            QVBoxLayout* main_box = new QVBoxLayout (this);
-            QHBoxLayout* layout = new QHBoxLayout;
+            VBoxLayout* main_box = new VBoxLayout (this);
+            HBoxLayout* layout = new HBoxLayout;
             layout->setContentsMargins (0, 0, 0, 0);
             layout->setSpacing (0);
 
@@ -129,7 +129,7 @@ namespace MR
 
             QGroupBox* group_box = new QGroupBox (tr("Intensity range"));
             main_box->addWidget (group_box);
-            QGridLayout* box_layout = new QGridLayout;
+            GridLayout* box_layout = new GridLayout;
             group_box->setLayout (box_layout);
 
             box_layout->addWidget (new QLabel ("max"), 0, 0);
@@ -144,7 +144,7 @@ namespace MR
 
             group_box = new QGroupBox (tr("Thresholds"));
             main_box->addWidget (group_box);
-            box_layout = new QGridLayout;
+            box_layout = new GridLayout;
             group_box->setLayout (box_layout);
 
             threshold_upper_box = new QCheckBox ("max");

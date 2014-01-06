@@ -30,7 +30,7 @@
 #include "gui/mrview/window.h"
 #include "gui/projection.h"
 
-#define LAYOUT_SPACING 1
+#define LAYOUT_SPACING 3
 
 #define __STR__(x) #x
 #define __STR(x) __STR__(x)
@@ -92,6 +92,18 @@ namespace MR
                 }
             };
 
+
+            class FormLayout : public QFormLayout {
+              public:
+                FormLayout () : QFormLayout () { init(); }
+                FormLayout (QWidget* parent) : QFormLayout (parent) { init(); }
+              protected:
+                void init () {
+                  setSpacing (LAYOUT_SPACING);
+                  setContentsMargins(LAYOUT_SPACING,LAYOUT_SPACING,LAYOUT_SPACING,LAYOUT_SPACING);
+                }
+            };
+
             virtual void draw (const Projection& transform, bool is_3D);
             virtual void drawOverlays (const Projection& transform);
             virtual bool process_batch_command (const std::string& cmd, const std::string& args);
@@ -127,8 +139,9 @@ namespace MR
             main_window.addDockWidget (Qt::RightDockWidgetArea, dock);
             dock->tool = new T (main_window, dock);
             dock->setWidget (dock->tool);
-            dock->setFloating (true);
+            dock->setFloating (MR::File::Config::get_int ("MRViewDockFloating", 0));
             dock->show();
+            dock->resize (0,0);
             return dock;
           }
 

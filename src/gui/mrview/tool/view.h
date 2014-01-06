@@ -23,8 +23,6 @@
 #ifndef __gui_mrview_tool_view_h__
 #define __gui_mrview_tool_view_h__
 
-#include <QVBoxLayout>
-
 #include "gui/mrview/tool/base.h"
 
 class QComboBox;

@@ -21,7 +21,6 @@
 */
 
 #include <QGroupBox>
-#include <QGridLayout>
 
 #include "gui/mrview/tool/tractography/track_scalar_file.h"
 #include "math/vector.h"
@@ -40,11 +39,11 @@ namespace MR
         TrackScalarFile::TrackScalarFile (Window& main_window, Dock* parent) :
           Base (main_window, parent)
         {
-          main_box = new QVBoxLayout (this);
+          main_box = new VBoxLayout (this);
           main_box->setContentsMargins (5, 5, 5, 5);
           main_box->setSpacing (5);
 
-          QHBoxLayout* hlayout = new QHBoxLayout;
+          HBoxLayout* hlayout = new HBoxLayout;
           hlayout->setContentsMargins (0, 0, 0, 0);
           hlayout->setSpacing (0);
 
@@ -91,7 +90,7 @@ namespace MR
           main_box->addLayout (hlayout);
 
           QGroupBox* group_box = new QGroupBox ("Intensity range");
-          QGridLayout* layout = new QGridLayout;
+          GridLayout* layout = new GridLayout;
           main_box->addWidget (group_box);
           group_box->setLayout (layout);
 
@@ -107,7 +106,7 @@ namespace MR
 
           group_box = new QGroupBox (tr("Thresholds"));
           main_box->addWidget (group_box);
-          layout = new QGridLayout;
+          layout = new GridLayout;
           group_box->setLayout (layout);
 
           threshold_upper_box = new QCheckBox ("max");

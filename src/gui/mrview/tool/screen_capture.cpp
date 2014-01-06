@@ -21,8 +21,6 @@
 */
 
 #include <QLabel>
-#include <QGridLayout>
-#include <QVBoxLayout>
 #include <QPushButton>
 #include <QImage>
 #include <QFileDialog>
@@ -46,10 +44,10 @@ namespace MR
         ScreenCapture::ScreenCapture (Window& main_window, Dock* parent) :
           Base (main_window, parent)
         {
-          QVBoxLayout* main_box = new QVBoxLayout (this);
+          VBoxLayout* main_box = new VBoxLayout (this);
 
           QGroupBox* rotate_group_box = new QGroupBox ("Rotate");
-          QGridLayout* rotate_layout = new QGridLayout;
+          GridLayout* rotate_layout = new GridLayout;
           rotate_layout->setContentsMargins (5, 5, 5, 5);
           rotate_layout->setSpacing (5);
           main_box->addWidget (rotate_group_box);
@@ -80,7 +78,7 @@ namespace MR
           degrees_button->setRate (0.1);
 
           QGroupBox* translate_group_box = new QGroupBox ("Translate");
-          QGridLayout* translate_layout = new QGridLayout;
+          GridLayout* translate_layout = new GridLayout;
           translate_layout->setContentsMargins (5, 5, 5, 5);
           translate_layout->setSpacing (5);
           main_box->addWidget (translate_group_box);
@@ -105,7 +103,7 @@ namespace MR
           translate_z->setRate (0.1);
 
           QGroupBox* FOV_group_box = new QGroupBox ("FOV");
-          QGridLayout* FOV_layout = new QGridLayout;
+          GridLayout* FOV_layout = new GridLayout;
           FOV_layout->setContentsMargins (5, 5, 5, 5);
           FOV_layout->setSpacing (5);
           main_box->addWidget (FOV_group_box);
@@ -120,7 +118,7 @@ namespace MR
 
           QGroupBox* output_group_box = new QGroupBox ("Output");
           main_box->addWidget (output_group_box);
-          QGridLayout* output_grid_layout = new QGridLayout;
+          GridLayout* output_grid_layout = new GridLayout;
           output_group_box->setLayout (output_grid_layout);
 
           output_grid_layout->addWidget (new QLabel ("Prefix"), 0, 0);
@@ -135,7 +133,7 @@ namespace MR
 
           QGroupBox* capture_group_box = new QGroupBox ("Capture");
           main_box->addWidget (capture_group_box);
-          QGridLayout* capture_grid_layout = new QGridLayout;
+          GridLayout* capture_grid_layout = new GridLayout;
           capture_group_box->setLayout (capture_grid_layout);
 
           capture_grid_layout->addWidget (new QLabel ("Start Index"), 0, 0);
