@@ -17,6 +17,7 @@
 *.qrc
 /config.*
 /configure.log
+/lib/version.h
 /bin/
 .cproject
 .project

@@ -170,6 +170,8 @@ if ld_enabled:
 obj_suffix = config_suffix + obj_suffix
 exe_suffix = config_suffix + exe_suffix
 
+
+
 # Qt4 settings:
 #qt4_cflags += [ '-I' + entry for entry in qt4_include_path ]
 
@@ -719,6 +721,45 @@ if dev_dir in targets:
     
 if len(targets) == 0: 
   targets = default_targets()
+
+
+
+# get git version info:
+git_version_file = os.path.join (mrtrix_dir, 'lib/version.h')
+if verbose:
+  sys.stderr.write ('''
+getting git version... ''')
+
+try: 
+  process = subprocess.Popen ([ 'git', 'describe', '--abbrev=8', '--dirty', '--always' ], cwd=mrtrix_dir, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+  ( git_version, stderr ) = process.communicate()
+  if process.returncode != 0:
+    git_version = ''
+  git_version = git_version.decode("utf-8").strip()
+  if verbose:
+    sys.stderr.write (git_version + '\n')
+except:
+  if verbose:
+    sys.stderr.write ('not found')
+  git_version = ''
+
+version_file_contents = '#define GIT_VERSION "' + git_version + '"\n'
+current_version_file_contents = ''
+try:
+  with open (git_version_file) as fd:
+    current_version_file_contents = fd.read()
+except:
+  pass
+
+if not version_file_contents == current_version_file_contents:
+  if verbose:
+    sys.stderr.write ('version file is out of date - updating\n')
+  with open (git_version_file, 'w') as fd:
+    fd.write (version_file_contents)
+
+
+
+
 
 if verbose:
   sys.stderr.write ('''

@@ -27,7 +27,7 @@
 #include "progressbar.h"
 #include "file/path.h"
 #include "file/config.h"
-
+#include "version.h"
 
 #ifdef MRTRIX_WINDOWS
 # define MRTRIX_HELP_COMMAND ""
@@ -140,7 +140,7 @@ namespace MR
       std::string version_string ()
       {
         return MR::printf (
-          "== %s %zu.%zu.%zu ==\n"
+          "== %s %zu.%zu.%zu ==  [" GIT_VERSION "]\n"
           "%d bit %s version, built " __DATE__ " against MRtrix %zu.%zu.%zu, using GSL %s\n"
           "Author: %s\n"
           "%s\n",
