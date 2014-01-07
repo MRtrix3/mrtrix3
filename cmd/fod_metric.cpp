@@ -20,7 +20,7 @@
 
 */
 
-#include "app.h"
+#include "command.h"
 #include "progressbar.h"
 
 #include "image/buffer.h"
@@ -45,7 +45,6 @@
 
 
 
-MRTRIX_APPLICATION
 
 using namespace MR;
 using namespace MR::DWI;

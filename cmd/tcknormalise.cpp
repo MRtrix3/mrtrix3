@@ -22,7 +22,7 @@
 
 #include <fstream>
 
-#include "app.h"
+#include "command.h"
 #include "progressbar.h"
 #include "get_set.h"
 #include "image/buffer_preload.h"
@@ -35,7 +35,6 @@ using namespace MR;
 using namespace MR::DWI;
 using namespace App;
 
-MRTRIX_APPLICATION
 
 void usage ()
 {

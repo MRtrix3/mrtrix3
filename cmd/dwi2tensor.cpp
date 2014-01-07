@@ -22,7 +22,7 @@
 
 #include <algorithm>
 
-#include "app.h"
+#include "command.h"
 #include "progressbar.h"
 #include "thread/exec.h"
 #include "thread/queue.h"
@@ -39,7 +39,6 @@
 
 #include "math/check_gradient.h"
 
-MRTRIX_APPLICATION
 
 using namespace std;
 using namespace MR;

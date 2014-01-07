@@ -1,4 +1,4 @@
-#include "app.h"
+#include "command.h"
 #include "timer.h"
 #include "file/config.h"
 #include "progressbar.h"
@@ -7,7 +7,6 @@
 #include "math/rng.h"
 
 
-MRTRIX_APPLICATION
 
 using namespace MR;
 using namespace App;

@@ -21,7 +21,9 @@
 */
 
 
-#include "app.h"
+#include <vector>
+
+#include "command.h"
 #include "point.h"
 #include "progressbar.h"
 #include "ptr.h"
@@ -44,13 +46,10 @@
 
 #include "thread/queue.h"
 
-#include <vector>
 
 
 
 
-
-MRTRIX_APPLICATION
 
 using namespace MR;
 using namespace App;

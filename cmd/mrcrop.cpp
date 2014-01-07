@@ -21,7 +21,7 @@
  */
 
 
-#include "app.h"
+#include "command.h"
 #include "image/loop.h"
 #include "image/copy.h"
 #include "image/adapter/subset.h"
@@ -29,7 +29,6 @@
 #include "image/voxel.h"
 
 
-MRTRIX_APPLICATION
 
 using namespace MR;
 using namespace App;

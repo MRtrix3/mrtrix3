@@ -19,19 +19,19 @@
     along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "app.h"
+#include <sstream>
+
+#include "command.h"
 #include "math/SH.h"
 #include "image/matrix_multiply.h"
 #include "image/buffer.h"
 #include "image/voxel.h"
 #include "dwi/gradient.h"
 
-#include <sstream>
 
 using namespace MR;
 using namespace App;
 
-MRTRIX_APPLICATION
 
 void usage ()
 {

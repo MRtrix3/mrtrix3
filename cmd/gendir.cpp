@@ -23,13 +23,12 @@
 #include <gsl/gsl_blas.h>
 #include <gsl/gsl_multimin.h>
 
-#include "app.h"
+#include "command.h"
 #include "progressbar.h"
 #include "math/vector.h"
 #include "math/matrix.h"
 #include "math/rng.h"
 
-MRTRIX_APPLICATION
 
 using namespace MR;
 using namespace App;

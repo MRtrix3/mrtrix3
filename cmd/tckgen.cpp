@@ -21,7 +21,7 @@
 */
 
 
-#include "app.h"
+#include "command.h"
 #include "image/voxel.h"
 
 #include "dwi/tractography/exec.h"
@@ -44,7 +44,6 @@
 
 
 
-MRTRIX_APPLICATION
 
 using namespace MR;
 using namespace App;

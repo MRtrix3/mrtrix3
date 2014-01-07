@@ -20,14 +20,13 @@
 
 */
 
-#include "app.h"
+#include "command.h"
 #include "point.h"
 #include "math/vector.h"
 #include "image/buffer.h"
 #include "image/voxel.h"
 #include "image/loop.h"
 
-MRTRIX_APPLICATION
 
 using namespace std;
 using namespace MR;

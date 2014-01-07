@@ -23,6 +23,7 @@
 #include "args.h"
 #include "app.h"
 #include "debug.h"
+#include "version.h"
 
 #define HELP_WIDTH  80
 
@@ -34,6 +35,9 @@ namespace MR
 {
   namespace App
   {
+
+    const char* project_version = NULL;
+    const char* build_date = __DATE__;
 
     namespace
     {
@@ -139,16 +143,20 @@ namespace MR
 
     std::string help_head (int format) 
     {
+      std::string cmd_version = 
+          ( project_version ? std::string ("version ") + project_version + ", external module" : std::string("part") ) +
+          " of the MRtrix package\n\n";
+
       if (!format) 
-        return std::string (NAME) + ": part of the MRtrix package\n\n";
+        return std::string (NAME) + ": " + cmd_version;
 
-      std::string version = MR::printf ("MRtrix %zu.%zu.%zu", VERSION[0], VERSION[1], VERSION[2]);
-      std::string date (__DATE__);
+      std::string mrtrix_version = "MRtrix " MRTRIX_GIT_VERSION;
+      std::string date (build_date);
 
-      std::string topline = version + std::string (40-size(version)-size(App::NAME)/2, ' ') + bold (App::NAME);
+      std::string topline = mrtrix_version + std::string (40-size(mrtrix_version)-size(App::NAME)/2, ' ') + bold (App::NAME);
       topline += std::string (80-size(topline)-size(date), ' ') + date;
       
-      return topline + "\n\n     " + ( format ? bold (NAME) : std::string (NAME) ) + ": part of the MRtrix package\n\n";
+      return topline + "\n\n     " + bold (NAME) + ": " + cmd_version;
     }
 
 

@@ -19,7 +19,7 @@
     along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "app.h"
+#include "command.h"
 #include "file/path.h"
 #include "image/loop.h"
 #include "image/voxel.h"
@@ -32,7 +32,6 @@
 #include "math/stats/glm.h"
 #include "stats/tfce.h"
 
-MRTRIX_APPLICATION
 
 using namespace MR;
 using namespace App;

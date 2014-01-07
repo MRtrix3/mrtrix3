@@ -44,10 +44,6 @@
 #include "types.h"
 #include "exception.h"
 
-#define MRTRIX_MAJOR_VERSION 0
-#define MRTRIX_MINOR_VERSION 3
-#define MRTRIX_MICRO_VERSION 9
-
 #define GUI_SPACING 5
 
 #define MODIFIERS ( \
@@ -89,10 +85,6 @@ namespace std
 
 namespace MR
 {
-
-  extern const size_t mrtrix_major_version;
-  extern const size_t mrtrix_minor_version;
-  extern const size_t mrtrix_micro_version;
 
   namespace Image
   {

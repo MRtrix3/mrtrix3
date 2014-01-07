@@ -20,7 +20,7 @@
 
 */
 
-#include "app.h"
+#include "command.h"
 #include "image/voxel.h"
 #include "image/buffer.h"
 #include "image/buffer_scratch.h"
@@ -30,7 +30,6 @@
 #include "image/threaded_copy.h"
 #include "image/stride.h"
 
-MRTRIX_APPLICATION
 
 using namespace MR;
 using namespace App;

@@ -21,7 +21,7 @@
 */
 
 
-#include "app.h"
+#include "command.h"
 #include "image/buffer_preload.h"
 #include "image/buffer.h"
 #include "image/voxel.h"
@@ -30,7 +30,6 @@
 
 #include <cmath>
 
-MRTRIX_APPLICATION
 
 using namespace MR;
 using namespace App;

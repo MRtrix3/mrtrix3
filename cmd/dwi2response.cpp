@@ -20,7 +20,7 @@
 
 */
 
-#include "app.h"
+#include "command.h"
 #include "args.h"
 #include "exception.h"
 #include "mrtrix.h"
@@ -49,7 +49,6 @@
 
 
 
-MRTRIX_APPLICATION
 
 using namespace MR;
 using namespace MR::DWI;

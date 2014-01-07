@@ -20,12 +20,11 @@
 
 */
 
-#include "app.h"
+#include "command.h"
 #include "math/rng.h"
 #include "math/vector.h"
 #include "math/matrix.h"
 
-MRTRIX_APPLICATION
 
 using namespace MR;
 using namespace App;

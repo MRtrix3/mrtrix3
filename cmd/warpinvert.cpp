@@ -20,13 +20,12 @@
 
  */
 
-#include "app.h"
+#include "command.h"
 #include "image/buffer.h"
 #include "image/loop.h"
 #include "image/transform.h"
 #include "image/registration/transform/warp_inverter.h"
 
-MRTRIX_APPLICATION
 
 using namespace MR;
 using namespace App;

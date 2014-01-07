@@ -18,6 +18,7 @@
 /config.*
 /configure.log
 /lib/version.h
+/src/project_version.h
 /bin/
 .cproject
 .project

@@ -18,7 +18,7 @@
     You should have received a copy of the GNU General Public License
     along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
  */
-#include "app.h"
+#include "command.h"
 #include "progressbar.h"
 #include "thread/exec.h"
 #include "thread/queue.h"
@@ -44,7 +44,6 @@
 #include "dwi/tractography/mapping/loader.h"
 #include "dwi/tractography/mapping/writer.h"
 
-MRTRIX_APPLICATION
 
 using namespace MR;
 using namespace App;

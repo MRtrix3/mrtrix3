@@ -21,7 +21,7 @@
 */
 
 
-#include "app.h"
+#include "command.h"
 
 #include "image/filter/lcc.h"
 
@@ -33,7 +33,6 @@
 
 
 
-MRTRIX_APPLICATION
 
 using namespace MR;
 using namespace App;

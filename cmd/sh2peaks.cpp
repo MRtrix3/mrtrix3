@@ -19,7 +19,7 @@
     along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
 
 */
-#include "app.h"
+#include "command.h"
 #include "math/SH.h"
 #include "progressbar.h"
 #include "thread/exec.h"
@@ -28,7 +28,6 @@
 #include "image/buffer.h"
 #include "image/voxel.h"
 
-MRTRIX_APPLICATION
 
 #define DOT_THRESHOLD 0.99
 

@@ -62,7 +62,6 @@ namespace MR
       "This is free software; see the source for copying conditions.\n"
       "There is NO warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.";
 
-    size_t VERSION[] = { MRTRIX_MAJOR_VERSION, MRTRIX_MINOR_VERSION, MRTRIX_MICRO_VERSION };
 
     std::string NAME;
     bool overwrite_files = false;
@@ -139,24 +138,22 @@ namespace MR
 
       std::string version_string ()
       {
-        return MR::printf (
-          "== %s %zu.%zu.%zu ==  [" GIT_VERSION "]\n"
-          "%d bit %s version, built " __DATE__ " against MRtrix %zu.%zu.%zu, using GSL %s\n"
-          "Author: %s\n"
-          "%s\n",
-
-          App::NAME.c_str(), VERSION[0], VERSION[1], VERSION[2],
-          int (8*sizeof (size_t)),
+        std::string version = 
+          "== " + App::NAME + " " + ( project_version ? project_version : MRTRIX_GIT_VERSION ) + " ==\n" +
+          str(8*sizeof (size_t)) + " bit " 
 #ifdef NDEBUG
           "release"
 #else
           "debug"
 #endif
-          , mrtrix_major_version, mrtrix_minor_version, mrtrix_micro_version,
-          gsl_version, AUTHOR, COPYRIGHT);
-      }
-    }
+          " version, built " __DATE__ + ( project_version ? " against MRtrix " MRTRIX_GIT_VERSION : "" ) + ", using GSL " + gsl_version + "\n"
+          "Author(s): " + AUTHOR + "\n" +
+          COPYRIGHT + "\n";
 
+        return version;
+      }
+
+    }
 
 
 

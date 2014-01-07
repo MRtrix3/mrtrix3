@@ -21,7 +21,7 @@
 */
 
 
-#include "app.h"
+#include "command.h"
 
 #include "image/buffer.h"
 #include "image/header.h"
@@ -30,7 +30,6 @@
 
 #include "dwi/tractography/ACT/tissues.h"
 
-MRTRIX_APPLICATION
 
 using namespace MR;
 using namespace App;

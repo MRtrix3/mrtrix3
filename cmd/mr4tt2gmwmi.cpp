@@ -24,7 +24,7 @@
 
 
 
-#include "app.h"
+#include "command.h"
 #include "image/buffer.h"
 #include "image/header.h"
 #include "image/loop.h"
@@ -38,7 +38,6 @@
 #define MIN_TISSUE_CHANGE 0.01 // Just accounting for floating-point errors
 
 
-MRTRIX_APPLICATION
 
 using namespace MR;
 using namespace App;

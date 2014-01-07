@@ -23,7 +23,7 @@
 
 #include <fstream>
 
-#include "app.h"
+#include "command.h"
 #include "bitset.h"
 #include "progressbar.h"
 #include "dwi/tractography/file.h"
@@ -31,7 +31,6 @@
 #include "dwi/tractography/weights.h"
 #include "math/rng.h"
 
-MRTRIX_APPLICATION
 
 using namespace MR;
 using namespace MR::DWI;

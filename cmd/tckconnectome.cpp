@@ -21,7 +21,10 @@
 */
 
 
-#include "app.h"
+#include <vector>
+#include <set>
+
+#include "command.h"
 #include "ptr.h"
 
 #include "dwi/tractography/file.h"
@@ -40,13 +43,9 @@
 
 #include "thread/queue.h"
 
-#include <vector>
-#include <set>
 
 
 
-
-MRTRIX_APPLICATION
 
 using namespace MR;
 using namespace App;

@@ -21,7 +21,10 @@
 */
 
 
-#include "app.h"
+#include <map>
+#include <vector>
+
+#include "command.h"
 #include "point.h"
 
 #include "image/buffer.h"
@@ -34,11 +37,7 @@
 #include "dwi/tractography/connectomics/connectomics.h"
 #include "dwi/tractography/connectomics/lut.h"
 
-#include <map>
-#include <vector>
 
-
-MRTRIX_APPLICATION
 
 using namespace MR;
 using namespace App;

@@ -24,7 +24,7 @@
 #include <vector>
 #include <set>
 
-#include "app.h"
+#include "command.h"
 #include "point.h"
 #include "progressbar.h"
 
@@ -48,7 +48,6 @@
 
 
 
-MRTRIX_APPLICATION
 
 using namespace MR;
 using namespace App;

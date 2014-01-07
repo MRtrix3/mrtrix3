@@ -21,13 +21,12 @@
 */
 
 
-#include "app.h"
+#include "command.h"
 #include "debug.h"
 #include "file/path.h"
 #include "file/dicom/element.h"
 #include "file/dicom/quick_scan.h"
 
-MRTRIX_APPLICATION
 
 using namespace MR;
 using namespace App;

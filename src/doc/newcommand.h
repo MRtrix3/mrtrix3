@@ -34,10 +34,10 @@ namespace MR
  in the \c cmd/ folder, named identically to the desired application name
  (with the .cpp suffix). The file should contain the following sections:
 
- First, the relevant headers should be \#include'd, typically at least the \c
- lib/app.h file:
+ First, the relevant headers should be \#include'd. This will include at 
+ least \c lib/command.h file, which includes the relevant code for executables.
  \code
- #include "app.h"
+ #include "command.h"
  \endcode
 
  Note that the \c lib/ folder is in the default search path. See \ref
@@ -54,20 +54,30 @@ namespace MR
  void usage () {
  \endcode
 
- In this function, you can optionally set the author, version, and
+ In this function, you can optionally set the author and
  copyright fields, which will be displayed when the command is invoked with
  the -version option. If ommitted, the author field will default to
- "J-Donald Tournier", and the version and copyright notice will default to
+ "J-Donald Tournier", and the copyright notice will default to
  that of the MRtrix core. 
+
  \code
  AUTHOR = "Joe Bloggs"; 
- 
- VERSION[0] = 1;
- VERSION[1] = 4;
- VERSION[2] = 3;
- 
+
  COPYRIGHT = "whatever you want";
  \endcode
+
+ The version information is obtained from the files \c lib/version.h (for the
+ MRtrix core) and \c src/project_version.h (for external modules). Both of
+ these are automatically updated to use the <a href=http://git-scm.com/>git</a>
+ version information if <a href=http://git-scm.com/>git</a> is installed -
+ otherwise the information already contained in these files will be used as-is.
+ If you want to set the version information for your module and can't use <a
+ href=http://git-scm.com/>git</a>, you can simply add the relevant information
+ in the file \c src/project_version.h within your project, e.g.:
+
+ \code
+#define MRTRIX_PROJECT_VERSION "my-version-1.0"
+\endcode
 
  You should then set a brief description of the command. Each entry
  corresponds to a new paragraph:

@@ -22,7 +22,7 @@
 
 
 
-#include "app.h"
+#include "command.h"
 
 #include "image/copy.h"
 #include "image/loop.h"
@@ -37,7 +37,6 @@ using namespace MR;
 using namespace App;
 using namespace Image;
 
-MRTRIX_APPLICATION
 
 void usage ()
 {

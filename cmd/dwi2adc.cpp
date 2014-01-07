@@ -20,7 +20,7 @@
 
 */
 
-#include "app.h"
+#include "command.h"
 #include "progressbar.h"
 #include "image/buffer_preload.h"
 #include "image/voxel.h"
@@ -29,7 +29,6 @@
 #include "math/least_squares.h"
 #include "dwi/gradient.h"
 
-MRTRIX_APPLICATION
 
 using namespace MR;
 using namespace App;

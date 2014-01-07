@@ -20,7 +20,7 @@
 
 */
 
-#include "app.h"
+#include "command.h"
 #include "progressbar.h"
 #include "gui/init.h"
 #include "file/path.h"
@@ -28,7 +28,6 @@
 #include "gui/disp_profile_icon.h"
 #include "gui/disp_profile/render_window.h"
 
-MRTRIX_APPLICATION
 
 using namespace MR;
 using namespace App;

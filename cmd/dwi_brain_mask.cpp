@@ -20,7 +20,7 @@
 
 */
 
-#include "app.h"
+#include "command.h"
 #include "point.h"
 #include "ptr.h"
 #include "image/buffer.h"
@@ -29,7 +29,6 @@
 #include "image/filter/dwi_brain_mask.h"
 
 
-MRTRIX_APPLICATION
 
 using namespace MR;
 using namespace App;

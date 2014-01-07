@@ -20,12 +20,11 @@
 
 */
 
-#include "app.h"
+#include "command.h"
 #include "math/matrix.h"
 #include "point.h"
 #include "dwi/tractography/file.h"
 
-MRTRIX_APPLICATION
 
 using namespace MR;
 using namespace App;

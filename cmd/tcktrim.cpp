@@ -24,7 +24,7 @@
 #include <fstream>
 #include <iomanip>
 
-#include "app.h"
+#include "command.h"
 #include "point.h"
 #include "bitset.h"
 #include "progressbar.h"
@@ -34,7 +34,6 @@
 #include "math/rng.h"
 
 
-MRTRIX_APPLICATION
 
 using namespace MR;
 using namespace MR::DWI;

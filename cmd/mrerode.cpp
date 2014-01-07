@@ -20,13 +20,12 @@
 
 */
 
-#include "app.h"
+#include "command.h"
 #include "image/header.h"
 #include "image/buffer.h"
 #include "image/voxel.h"
 #include "image/filter/erode.h"
 
-MRTRIX_APPLICATION
 
 using namespace std;
 using namespace MR;

@@ -22,7 +22,7 @@
 
 
 
-#include "app.h"
+#include "command.h"
 #include "file/path.h"
 #include "file/utils.h"
 #include "image/buffer.h"
@@ -47,7 +47,6 @@
 
 
 
-MRTRIX_APPLICATION
 
 using namespace MR;
 using namespace App;

@@ -1,13 +1,12 @@
 #include <QApplication>
 
-#include "app.h"
+#include "command.h"
 #include "progressbar.h"
 #include "gui/init.h"
 #include "gui/mrview_icons.h"
 #include "gui/mrview/window.h"
 #include "gui/mrview/mode/list.h"
 
-MRTRIX_APPLICATION
 
 using namespace MR;
 using namespace App;
@@ -73,6 +72,7 @@ void usage ()
 
 void run ()
 {
+  MR::App::build_date = __DATE__; 
   GUI::init ();
 
   GUI::MRView::Window window;

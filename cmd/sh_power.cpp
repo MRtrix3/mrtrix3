@@ -20,7 +20,7 @@
 
 */
 
-#include "app.h"
+#include "command.h"
 #include "progressbar.h"
 #include "image/voxel.h"
 #include "image/buffer.h"
@@ -28,7 +28,6 @@
 #include "math/SH.h"
 #include "image/loop.h"
 
-MRTRIX_APPLICATION
 
 using namespace MR;
 using namespace App;

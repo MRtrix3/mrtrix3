@@ -46,6 +46,9 @@ namespace MR
 
   namespace App {
 
+    extern const char* project_version;
+    extern const char* build_date;
+
     //! \cond skip
     typedef enum {
       Text,

@@ -20,7 +20,7 @@
 
 */
 
-#include "app.h"
+#include "command.h"
 #include "dwi/tractography/file.h"
 #include "dwi/tractography/properties.h"
 #include "dwi/fmls.h"
@@ -28,7 +28,6 @@
 #include "dwi/tractography/mapping/mapper.h"
 #include "dwi/tractography/mapping/loader.h"
 
-MRTRIX_APPLICATION
 
 using namespace MR;
 using namespace MR::DWI;

@@ -20,7 +20,7 @@
 
  */
 
-#include "app.h"
+#include "command.h"
 #include "image/buffer.h"
 #include "image/buffer_scratch.h"
 #include "image/buffer_preload.h"
@@ -41,8 +41,6 @@
 #include "math/SH.h"
 #include "math/LU.h"
 
-
-MRTRIX_APPLICATION
 
 using namespace MR;
 using namespace App;

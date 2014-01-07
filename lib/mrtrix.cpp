@@ -27,14 +27,6 @@
 namespace MR
 {
 
-  /************************************************************************
-   *                     MRtrix version information                      *
-   ************************************************************************/
-
-  const size_t mrtrix_major_version = MRTRIX_MAJOR_VERSION;
-  const size_t mrtrix_minor_version = MRTRIX_MINOR_VERSION;
-  const size_t mrtrix_micro_version = MRTRIX_MICRO_VERSION;
-
 
   /************************************************************************
    *                       Miscellaneous functions                        *

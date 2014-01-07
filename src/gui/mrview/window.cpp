@@ -11,6 +11,7 @@
 
 
 #include "app.h"
+#include "version.h"
 #include "file/config.h"
 #include "image/header.h"
 #include "image/voxel.h"
@@ -1055,16 +1056,17 @@ namespace MR
 
       void Window::about_slot ()
       {
-        std::string message = printf ("<h1>MRView</h1>The MRtrix viewer, version %zu.%zu.%zu<br>"
-                                      "<em>%d bit %s version, built " __DATE__ "</em><p>"
-                                      "<h4>Authors:</h4>%s<p><em>%s</em>",
-                                      App::VERSION[0], App::VERSION[1], App::VERSION[2], int (8*sizeof (size_t)),
+        std::string message = 
+          "<h1>MRView</h1>The MRtrix viewer, version " MRTRIX_GIT_VERSION "<br>"
+          "<em>" + str (8*sizeof (size_t)) + " bit " 
 #ifdef NDEBUG
-                                      "release"
+          "release"
 #else
-                                      "debug"
+          "debug"
 #endif
-                                      , MR::join (MR::split (App::AUTHOR, ",;&\n", true), "<br>").c_str(), App::COPYRIGHT);
+          " version, built " + App::build_date +  "</em><p>"
+          "<h4>Authors:</h4>" + MR::join (MR::split (App::AUTHOR, ",;&\n", true), "<br>") + 
+          "<p><em>" + App::COPYRIGHT + "</em>";
 
         QMessageBox::about (this, tr ("About MRView"), message.c_str());
       }

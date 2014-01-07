@@ -24,7 +24,7 @@
 #include <fstream>
 #include <cstdio>
 
-#include "app.h"
+#include "command.h"
 #include "timer.h"
 #include "dwi/tractography/file.h"
 #include "dwi/tractography/properties.h"
@@ -35,7 +35,6 @@
 #include "thread/queue.h"
 
 
-MRTRIX_APPLICATION
 
 using namespace MR;
 using namespace MR::DWI;

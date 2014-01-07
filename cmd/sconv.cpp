@@ -20,7 +20,7 @@
 
 */
 
-#include "app.h"
+#include "command.h"
 #include "ptr.h"
 #include "progressbar.h"
 #include "image/threaded_loop.h"
@@ -32,7 +32,6 @@
 using namespace MR;
 using namespace App;
 
-MRTRIX_APPLICATION
 
 void usage ()
 {
