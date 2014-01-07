@@ -181,6 +181,12 @@ class FOD_lobes : public std::vector<FOD_lobe> {
 
 class SH_coefs : public Math::Vector<float> {
   public:
+    SH_coefs() :
+        Math::Vector<float>(),
+        vox (-1, -1, -1) { }
+    SH_coefs (const Math::Vector<float>& that) :
+        Math::Vector<float> (that),
+        vox (-1, -1, -1) { }
     Point<int> vox;
 };
 

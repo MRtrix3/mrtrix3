@@ -158,7 +158,10 @@ void run ()
     mask_vox = new MaskBufferType::voxel_type (*mask_data);
   }
 
-  DWI::CSDeconv<value_type>::Shared shared (dwi_buffer, argument[1]);
+  DWI::CSDeconv<value_type>::Shared shared (dwi_buffer);
+  shared.parse_cmdline_options();
+  shared.set_response (argument[1]);
+  shared.init();
 
 
   Image::Header header (dwi_buffer);

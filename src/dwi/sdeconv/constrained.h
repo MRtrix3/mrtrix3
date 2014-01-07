@@ -47,93 +47,73 @@ namespace MR
         class Shared
         {
           public:
-            Shared () : 
-              neg_lambda (1.0),
-              norm_lambda (1.0),
-              threshold (0.0) { }
 
-            Shared (const Math::Vector<value_type>& response,
-                const Math::Vector<value_type>& init_filter,
-                const Math::Matrix<value_type>& DW_dirs,
-                const Math::Matrix<value_type>& HR_dirs,
-                int l_max = 8) :
-              neg_lambda (1.0),
-              norm_lambda (1.0),
-              threshold (0.0) { init (response, init_filter, DW_dirs, HR_dirs); }
-
-            Shared (const Image::Header& dwi_header, 
-                const std::string& response_file) :
-              neg_lambda (1.0),
-              norm_lambda (1.0),
-              threshold (0.0) { init (dwi_header, response_file); }
-
-            void init (const Image::Header& dwi_header, const std::string& response_file) {
-              using namespace App;
-              Math::Matrix<value_type> grad = DWI::get_valid_DW_scheme<value_type> (dwi_header);
-
+            Shared (const Image::Header& dwi_header) :
+                neg_lambda (1.0),
+                norm_lambda (1.0),
+                threshold (0.0),
+                niter (50)
+            {
+              grad = DWI::get_valid_DW_scheme<value_type> (dwi_header);
               DWI::guess_DW_directions (dwis, bzeros, grad);
-
-              Math::Matrix<value_type> DW_dirs;
               DWI::gen_direction_matrix (DW_dirs, grad, dwis);
 
-              Options opt = get_options ("lmax");
-              lmax = opt.size() ? opt[0][0] : Math::SH::LforN (dwis.size());
-              INFO ("calculating even spherical harmonic components up to order " + str (lmax));
+              lmax = lmax_data = Math::SH::LforN (dwis.size());
 
-              INFO ("setting response function from file \"" + response_file + "\"");
-              Math::Vector<value_type> response;
-              response.load (response_file);
-              INFO ("setting response function using even SH coefficients: " + str (response));
+              DWI::Directions::electrostatic_repulsion_300 (HR_dirs);
 
-              opt = get_options ("filter");
-              Math::Vector<value_type> filter;
-              if (opt.size())
-                filter.load (opt[0][0]);
-              else {
-                filter.allocate (response.size());
-                filter.zero();
-                filter[0] = filter[1] = filter[2] = 1.0;
-              }
-              INFO ("using initial filter coefficients: " + str (filter));
-
-              opt = get_options ("directions");
-              Math::Matrix<value_type> HR_dirs;
-              if (opt.size())
-                HR_dirs.load (opt[0][0]);
-              else 
-                DWI::Directions::electrostatic_repulsion_300 (HR_dirs);
-
-              opt = get_options ("neg_lambda");
-              if (opt.size())
-                neg_lambda = opt[0][0];
-
-              opt = get_options ("norm_lambda");
-              if (opt.size())
-                norm_lambda = opt[0][0];
-
-              opt = get_options ("threshold");
-              if (opt.size())
-                threshold = opt[0][0];
-
-              opt = get_options ("niter");
-              niter = 50;
-              if (opt.size())
-                niter = opt[0][0];
-
-              init (response, filter, DW_dirs, HR_dirs, lmax);
+              init_filter.allocate (lmax/2 + 1);
+              init_filter.zero();
+              for (size_t i = 0; i < std::min (size_t(3), init_filter.size()); ++i)
+                init_filter[i] = 1.0;
             }
 
 
+            void parse_cmdline_options()
+            {
+              using namespace App;
+              Options opt = get_options ("lmax");
+              if (opt.size())
+                lmax = opt[0][0];
+              opt = get_options ("filter");
+              if (opt.size())
+                init_filter.load (opt[0][0]);
+              opt = get_options ("directions");
+              if (opt.size())
+                HR_dirs.load (opt[0][0]);
+              opt = get_options ("neg_lambda");
+              if (opt.size())
+                neg_lambda = opt[0][0];
+              opt = get_options ("norm_lambda");
+              if (opt.size())
+                norm_lambda = opt[0][0];
+              opt = get_options ("threshold");
+              if (opt.size())
+                threshold = opt[0][0];
+              opt = get_options ("niter");
+              if (opt.size())
+                niter = opt[0][0];
+            }
 
-            void init (const Math::Vector<value_type>& response,
-                const Math::Vector<value_type>& init_filter,
-                const Math::Matrix<value_type>& DW_dirs,
-                const Math::Matrix<value_type>& HR_dirs,
-                int l_max = 8) {
-              lmax = l_max;
-              int lmax_data = 2*(response.size()-1);
-              int n = Math::SH::LforN (DW_dirs.rows());
-              if (lmax_data > n) lmax_data = n;
+
+            void set_response (const std::string& path)
+            {
+              INFO ("setting response function from file \"" + path + "\"");
+              response.load (path);
+              lmax_data = 2*(response.size()-1);
+              INFO ("setting response function using even SH coefficients: " + str (response));
+            }
+
+            void set_response (const Math::Vector<float>& in)
+            {
+              response = in;
+              lmax_data = 2*(response.size()-1);
+            }
+
+
+            void init ()
+            {
+              assert (response.size());
               if (lmax_data > lmax) lmax_data = lmax;
               INFO ("calculating even spherical harmonic components up to order " + str (lmax_data) + " for initialisation");
 
@@ -176,7 +156,6 @@ namespace MR
                   fconv (row,col) *= RH[l];
               }
 
-
               // high-res sampling to apply constraint:
               Math::SH::init_transform (HR_trans, HR_dirs, lmax);
               value_type constraint_multiplier = neg_lambda * 50.0 * response[0] / value_type (HR_trans.rows());
@@ -200,10 +179,13 @@ namespace MR
               return HR_trans.columns();
             }
 
+            Math::Matrix<value_type> grad;
+            Math::Vector<value_type> response, init_filter;
+            Math::Matrix<value_type> DW_dirs, HR_dirs;
             Math::Matrix<value_type> rconv, HR_trans, M, Mt_M;
             value_type neg_lambda, norm_lambda, threshold;
             std::vector<int> bzeros, dwis;
-            int lmax;
+            int lmax_data, lmax;
             size_t niter;
         };
 
@@ -216,7 +198,8 @@ namespace MR
           init_F (shared.rconv.rows()),
           HR_amps (shared.HR_trans.rows()),
           Mt_b (shared.HR_trans.columns()),
-          old_neg (shared.HR_trans.rows()) {
+          old_neg (shared.HR_trans.rows()),
+          computed_once (false) {
             norm_lambda = NORM_LAMBDA_MULTIPLIER * shared.norm_lambda * shared.Mt_M (0,0);
           }
 
@@ -228,7 +211,8 @@ namespace MR
           init_F (shared.rconv.rows()),
           HR_amps (shared.HR_trans.rows()),
           Mt_b (shared.HR_trans.columns()),
-          old_neg (shared.HR_trans.rows()) {
+          old_neg (shared.HR_trans.rows()),
+          computed_once (false) {
             norm_lambda = NORM_LAMBDA_MULTIPLIER * shared.norm_lambda * shared.Mt_M (0,0);
           }
 
