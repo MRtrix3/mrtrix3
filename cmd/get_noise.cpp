@@ -20,7 +20,7 @@
 
 */
 
-#include "app.h"
+#include "command.h"
 #include "image/buffer_preload.h"
 #include "image/voxel.h"
 #include "image/threaded_loop.h"
@@ -35,7 +35,6 @@
 using namespace MR;
 using namespace App;
 
-MRTRIX_APPLICATION
 
 void usage ()
 {
