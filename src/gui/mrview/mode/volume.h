@@ -72,7 +72,7 @@ namespace MR
             } volume_shader;
 
             Tool::View* get_view_tool () const;
-            std::vector<GL::vec4> get_active_clip_planes () const;
+            std::vector< std::pair<GL::vec4,bool> > get_active_clip_planes () const;
             std::vector<GL::vec4*> get_clip_planes_to_be_edited () const;
 
 

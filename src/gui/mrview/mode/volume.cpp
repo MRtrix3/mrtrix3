@@ -72,14 +72,16 @@ namespace MR
         std::string Volume::Shader::fragment_shader_source (const Displayable& object)
         {
 
-          std::vector<GL::vec4> clip = mode.get_active_clip_planes();
+          std::vector< std::pair<GL::vec4,bool> > clip = mode.get_active_clip_planes();
 
           std::string source = object.declare_shader_variables() +
             "uniform sampler3D image_sampler;\n"
             "in vec3 texcoord;\n";
 
           for (size_t n = 0; n < clip.size(); ++n)
-            source += "uniform vec4 clip" + str(n) + ";\n";
+            source += 
+              "uniform vec4 clip" + str(n) + ";\n"
+              "uniform int clip" + str(n) + "_selected;\n";
 
           for (int n = 0; n < mode.overlays_for_3D.size(); ++n) {
             source += mode.overlays_for_3D[n]->declare_shader_variables ("overlay"+str(n)+"_") +
@@ -91,7 +93,7 @@ namespace MR
           source +=
             "uniform sampler2D depth_sampler;\n"
             "uniform mat4 M;\n"
-            "uniform float ray_z;\n"
+            "uniform float ray_z, selection_thickness;\n"
             "uniform vec3 ray;\n"
             "out vec4 final_color;\n"
             "void main () {\n"
@@ -157,7 +159,16 @@ namespace MR
           }
 
           source += 
-            std::string ("        ") + ColourMap::maps[object.colourmap].mapping +
+            std::string ("        ") + ColourMap::maps[object.colourmap].mapping;
+
+          for (size_t n = 0; n < clip.size(); ++n) 
+            source += 
+              "        if (clip"+str(n)+"_selected != 0) {\n" 
+              "          float dist = dot (coord, clip" + str(n) + ".xyz) - clip" + str(n) + ".w;\n"
+              "          color.rgb = mix (vec3(1.5,0.0,0.0), color.rgb, clamp (abs(dist)/selection_thickness, 0.0, 1.0));\n"
+              "        }\n";
+
+          source +=
             "        final_color.rgb += (1.0 - final_color.a) * color.rgb * color.a;\n"
             "        final_color.a += color.a;\n"
             "      }\n";
@@ -421,6 +432,7 @@ namespace MR
           glUniformMatrix4fv (glGetUniformLocation (volume_shader, "M"), 1, GL_FALSE, M);
           glUniform3fv (glGetUniformLocation (volume_shader, "ray"), 1, ray);
           glUniform1i (glGetUniformLocation (volume_shader, "image_sampler"), 0);
+          glUniform1f (glGetUniformLocation (volume_shader, "selection_thickness"), 3.0*step_size);
 
           glActiveTexture (GL_TEXTURE0);
           glBindTexture (GL_TEXTURE_3D, image()->texture());
@@ -439,10 +451,13 @@ namespace MR
 
           glUniform1i (glGetUniformLocation (volume_shader, "depth_sampler"), 1);
 
-          std::vector<GL::vec4> clip = get_active_clip_planes();
+          std::vector< std::pair<GL::vec4,bool> > clip = get_active_clip_planes();
 
-          for (size_t n = 0; n < clip.size(); ++n) 
-            glUniform4fv (glGetUniformLocation (volume_shader, ("clip"+str(n)).c_str()), 1, clip_real2tex (T2S, S2T, clip[n]));
+          for (size_t n = 0; n < clip.size(); ++n) {
+            glUniform4fv (glGetUniformLocation (volume_shader, ("clip"+str(n)).c_str()), 1,
+                clip_real2tex (T2S, S2T, clip[n].first));
+            glUniform1i (glGetUniformLocation (volume_shader, ("clip"+str(n)+"_selected").c_str()), clip[n].second);
+          }
 
           for (int n = 0; n < overlays_for_3D.size(); ++n) {
             overlays_for_3D[n]->update_texture3D();
@@ -485,10 +500,10 @@ namespace MR
         }
 
 
-        inline std::vector<GL::vec4> Volume::get_active_clip_planes () const 
+        inline std::vector< std::pair<GL::vec4,bool> > Volume::get_active_clip_planes () const 
         {
           Tool::View* view = get_view_tool();
-          return view ? view->get_active_clip_planes() : std::vector<GL::vec4>();
+          return view ? view->get_active_clip_planes() : std::vector< std::pair<GL::vec4,bool> >();
         }
 
 

@@ -251,6 +251,9 @@ namespace MR
           clip_planes_list_view->setToolTip ("Right-click for more options");
           connect (clip_planes_list_view, SIGNAL (customContextMenuRequested (const QPoint&)),
               this, SLOT (clip_planes_right_click_menu_slot (const QPoint&)));
+          connect (clip_planes_list_view->selectionModel(), 
+              SIGNAL (selectionChanged (const QItemSelection, const QItemSelection)),
+              this, SLOT (clip_planes_toggle_shown_slot()));
           vlayout->addWidget (clip_planes_list_view, 1);
 
 
@@ -592,13 +595,20 @@ namespace MR
 
 
 
-        std::vector<GL::vec4> View::get_active_clip_planes () const
+        std::vector< std::pair<GL::vec4,bool> > View::get_active_clip_planes () const
         {
-          std::vector<GL::vec4> ret;
-          if (clip_box->isChecked()) 
-            for (int i = 0; i < clip_planes_model->rowCount(); ++i) 
-              if (clip_planes_model->planes[i].active)
-                ret.push_back (clip_planes_model->planes[i].plane);
+          std::vector< std::pair<GL::vec4,bool> > ret;
+          QItemSelectionModel* selection = clip_planes_list_view->selectionModel();
+          if (clip_box->isChecked()) {
+            for (int i = 0; i < clip_planes_model->rowCount(); ++i) {
+              if (clip_planes_model->planes[i].active) {
+                std::pair<GL::vec4,bool> item;
+                item.first = clip_planes_model->planes[i].plane;
+                item.second = selection->isSelected (clip_planes_model->index (i,0)); 
+                ret.push_back (item);
+              }
+            }
+          }
 
           return ret;
         }
