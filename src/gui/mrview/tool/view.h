@@ -49,6 +49,7 @@ namespace MR
           public:
             GL::vec4 plane;
             bool active;
+            std::string name;
         };
 
         class View : public Base

@@ -54,7 +54,7 @@ namespace MR
                 return planes[index.row()].active ? Qt::Checked : Qt::Unchecked;
               }
               if (role != Qt::DisplayRole) return QVariant();
-              return (str (planes[index.row()].plane).c_str());
+              return planes[index.row()].name.c_str();
             }
 
             bool setData (const QModelIndex& idx, const QVariant& value, int role) {
@@ -89,6 +89,10 @@ namespace MR
               ClipPlane& p (planes[index.row()]);
               for (size_t n = 0; n < 4; ++n)
                 p.plane[n] = -p.plane[n];
+              if (p.name[0] == '-')
+                p.name = p.name.substr (1);
+              else 
+                p.name = "-" + p.name;
             }
 
             void reset (QModelIndex& index, const Image::InterpVoxelType& image, int proj) {
@@ -104,6 +108,8 @@ namespace MR
               Point<> centre = image.voxel2scanner (Point<> (image.dim(0)/2.0f, image.dim(1)/2.0f, image.dim(2)/2.0f));
               p.plane[3] = centre[0]*p.plane[0] + centre[1]*p.plane[1] + centre[2]*p.plane[2];
               p.active = true;
+
+              p.name = ( proj == 0 ? "sagittal" : ( proj == 1 ? "coronal" : "axial" ) );
             }
 
             void clear () {
