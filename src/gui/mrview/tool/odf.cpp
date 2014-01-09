@@ -140,8 +140,21 @@ namespace MR
               window (window) { }
           protected:
             Window& window;
-            virtual void glDraw () {
-              DWI::RenderFrame::glDraw();
+
+            virtual void resizeGL (int w, int h) {
+              makeCurrent();
+              DWI::RenderFrame::resizeGL (w,h);
+              window.makeGLcurrent();
+            }
+
+            virtual void initializeGL () {
+              makeCurrent();
+              DWI::RenderFrame::initializeGL();
+              window.makeGLcurrent();
+            }
+            virtual void paintGL () {
+              makeCurrent();
+              DWI::RenderFrame::paintGL();
               window.makeGLcurrent();
             }
         };
@@ -258,7 +271,7 @@ namespace MR
             QPushButton *lighting_settings_button = new QPushButton ("lighting...", this);
             connect (lighting_settings_button, SIGNAL(clicked(bool)), this, SLOT (lighting_settings_slot (bool)));
             box_layout->addWidget (lighting_settings_button, 8, 0, 1, 2);
-            
+
 
 
             overlay_frame = new QGroupBox (tr("Overlay"));
@@ -336,7 +349,7 @@ namespace MR
           MRView::Image& image (settings->image);
 
           if (overlay_frame->isChecked()) {
-          
+
             if (!overlay_renderer) {
               overlay_renderer = new DWI::Renderer;
               overlay_renderer->initGL();
@@ -350,7 +363,7 @@ namespace MR
             }
 
             overlay_renderer->start (projection, *render_frame->lighting, settings->scale, 
-              use_lighting_box->isChecked(), settings->color_by_direction, settings->hide_negative_lobes, true);
+                use_lighting_box->isChecked(), settings->color_by_direction, settings->hide_negative_lobes, true);
 
             glEnable (GL_DEPTH_TEST);
             glDepthMask (GL_TRUE);
@@ -364,7 +377,7 @@ namespace MR
               p[2] = Math::round (p[2]);
               pos = image.interp.voxel2scanner (p);
             }
-            
+
             Point<> x_dir = projection.screen_to_model_direction (1.0, 0.0, projection.depth_of (pos));
             x_dir.normalise();
             x_dir = image.interp.scanner2image_dir (x_dir);
@@ -423,6 +436,9 @@ namespace MR
 
         void ODF::onFocusChanged () 
         {
+          if (!isVisible())
+            return;
+
           Image* settings = get_image();
           if (!settings)
             return;

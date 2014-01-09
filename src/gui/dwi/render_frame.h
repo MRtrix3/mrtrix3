@@ -131,9 +131,9 @@ namespace MR
           Renderer renderer;
           Math::Vector<float> values;
 
-          void initializeGL ();
-          void resizeGL (int w, int h);
-          void paintGL ();
+          virtual void initializeGL ();
+          virtual void resizeGL (int w, int h);
+          virtual void paintGL ();
           void mouseDoubleClickEvent (QMouseEvent* event);
           void mousePressEvent (QMouseEvent* event);
           void mouseMoveEvent (QMouseEvent* event);
