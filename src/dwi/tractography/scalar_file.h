@@ -223,6 +223,12 @@ namespace MR
             out.write (reinterpret_cast<char*> (&(buffer[0])), sizeof (value_type)*(buffer_size));
             if (!out.good())
               throw Exception ("error writing track scalars file \"" + name + "\": " + strerror (errno));
+
+            out.seekp (count_offset);
+            out << count << "\ntotal_count: " << total_count << "\nEND\n";
+            if (!out.good())
+              throw Exception ("error writing track scalars file \"" + name + "\": " + strerror (errno));
+
             buffer_size = 0;
           }
 
