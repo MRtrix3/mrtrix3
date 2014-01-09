@@ -88,6 +88,9 @@ void usage ()
 
   + Option ("per_node", "output one track file containing the streamlines connecting each node, rather than one for each edge")
 
+  + Option ("keep_unassigned", "by default, the program discards those streamlines that are not successfully assigned to a node pair. "
+                               "Set this option to generate output files containing these streamlines (labelled as node index 0)")
+
   + Connectomics::AssignmentOption
 
   + Tractography::TrackWeightsInOption
@@ -95,6 +98,9 @@ void usage ()
   + Option ("prefix_tck_weights_out", "provide a prefix for outputting a text file corresponding to each output file, "
                                       "each containing only the streamline weights relevant for that track file")
     + Argument ("prefix").type_text();
+
+
+
 
 };
 
@@ -120,6 +126,8 @@ void run ()
 
   INFO ("Maximum node index is " + str(max_node_index));
 
+  const node_t first_node = get_options ("keep_unassigned").size() ? 0 : 1;
+
   NodeExtractMapper mapper (*tck2nodes);
   NodeExtractWriter writer (properties);
 
@@ -140,7 +148,7 @@ void run ()
         writer.add (node_t(*i), prefix + str(*i) + ".tck", weights_prefix.size() ? (weights_prefix + "_" + str(*i) + ".csv") : "");
       }
     } else {
-      for (node_t i = 0; i <= max_node_index; ++i)
+      for (node_t i = first_node; i <= max_node_index; ++i)
         writer.add (i, prefix + str(i) + ".tck", weights_prefix.size() ? (weights_prefix + "_" + str(i) + ".csv") : "");
     }
 
@@ -168,8 +176,13 @@ void run ()
           outputs (*i, j) = outputs (j, *i) = 1.0;
       }
     }
-    if (!opt_between.size() && !opt_to_any.size())
+    if (!opt_between.size() && !opt_to_any.size()) {
       outputs = 1.0;
+      if (first_node) {
+        outputs.row(0) = 0;
+        outputs.column(0) = 0;
+      }
+    }
 
     for (size_t i = 0; i <= max_node_index; ++i) {
       for (size_t j = i; j <= max_node_index; ++j) {
@@ -179,40 +192,6 @@ void run ()
     }
 
   }
-
-
-
-/*
-  Options opt = get_options ("node_single");
-  for (size_t i = 0; i != opt.size(); ++i)
-    writer.add (int(opt[i][0]), opt[i][1]);
-
-  opt = get_options ("node_pair");
-  for (size_t i = 0; i != opt.size(); ++i)
-    writer.add (int(opt[i][0]), int(opt[i][1]), opt[i][2]);
-
-  opt = get_options ("node_all_edges");
-  for (size_t i = 0; i != opt.size(); ++i) {
-    const node_t node_of_interest = size_t(opt[i][0]);
-    const std::string& prefix = opt[i][1];
-    for (node_t j = 0; j <= max_node_index; ++j)
-      writer.add (node_of_interest, j, prefix + "_" + str(j) + ".tck");
-  }
-
-  opt = get_options ("batch_nodes");
-  if (opt.size()) {
-    for (size_t i = 0; i <= max_node_index; ++i)
-      writer.add (i, str(opt[0][0]) + "_" + str(i) + ".tck");
-  }
-
-  if (!writer.file_count()) {
-    WARN ("No extraction performed - must provide at least one node or edge of interest using command-line options");
-    return;
-  }
-
-  if (writer.file_count() > 1 && get_options ("tck_weights_out").size())
-    throw Exception ("Can only propagate streamline weights to output if a single track file is being generated");
-*/
 
   INFO ("A total of " + str (writer.file_count()) + " output track files will be generated");
 
