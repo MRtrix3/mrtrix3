@@ -105,7 +105,7 @@ void run ()
   DEBUG ("estimated total count: " + str(total_count));
 
   Tractography::Writer<float> writer (argument[in_count], mean_properties);
-  std::vector< Point<float> > tck;
+  Tractography::Streamline<float> tck;
 
   ProgressBar progress ("concatenating track files...", in_count);
   for (size_t file_index = 0; file_index != in_count; ++file_index) {
@@ -113,8 +113,8 @@ void run ()
     Properties p;
     Tractography::Reader<float> reader (argument[file_index], p);
     size_t this_count = 0;
-    while (reader.next (tck)) {
-      writer.append (tck);
+    while (reader (tck)) {
+      writer (tck);
       ++this_count;
     }
     DEBUG ("streamlines read from file \"" + str(argument[file_index]) + "\": " + str(this_count));

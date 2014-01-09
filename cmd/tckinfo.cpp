@@ -90,11 +90,11 @@ void run ()
 
 
     if (actual_count) {
-      std::vector<Point<float> > tck;
+      Tractography::Streamline<float> tck;
       size_t count = 0;
       {
         ProgressBar progress ("counting tracks in file... ");
-        while (file.next (tck)) {
+        while (file (tck)) {
           ++count;
           ++progress;
         }
@@ -104,9 +104,9 @@ void run ()
 
     if (opt.size()) {
       ProgressBar progress ("writing track data to ascii files");
-      std::vector<Point<float> > tck;
+      Tractography::Streamline<float> tck;
       size_t count = 0;
-      while (file.next (tck)) {
+      while (file (tck)) {
         std::string filename (opt[0][0]);
         filename += "-000000.txt";
         std::string num (str (count));

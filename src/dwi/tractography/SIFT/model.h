@@ -196,7 +196,7 @@ namespace MR
         Mapping::TrackLoader loader (file, count);
         Mapping::TrackMapperDixel mapper (H, upsample_ratio, true, dirs);
         MappedTrackReceiver receiver (*this);
-        Thread::run_batched_queue_custom_threading (loader, 1, Tractography::TrackData<float>(), 100, mapper, 0, Mapping::SetDixel(), 100, receiver, 0);
+        Thread::run_batched_queue_custom_threading (loader, 1, Tractography::Streamline<float>(), 100, mapper, 0, Mapping::SetDixel(), 100, receiver, 0);
 
         if (!contributions.back()) {
           track_t num_tracks = 0, max_index = 0;
@@ -309,14 +309,14 @@ namespace MR
         Tractography::Properties p;
         Tractography::Reader<float> reader (tck_file_path,  p);
         Tractography::Writer<float> writer (output_path, p);
-        std::vector< Point<float> > tck, null_tck;
+        Tractography::Streamline<float> tck, null_tck;
         ProgressBar progress ("Writing non-contributing streamlines output file...", contributions.size());
         track_t tck_counter = 0;
-        while (reader.next (tck) && tck_counter < contributions.size()) {
+        while (reader (tck) && tck_counter < contributions.size()) {
           if (contributions[tck_counter] && !contributions[tck_counter++]->get_total_contribution())
-            writer.append (tck);
+            writer (tck);
           else
-            writer.append (null_tck);
+            writer (null_tck);
           ++progress;
         }
         reader.close();

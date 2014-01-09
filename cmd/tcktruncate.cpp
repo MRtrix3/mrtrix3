@@ -81,7 +81,7 @@ void run ()
 
   Tractography::Writer<float> writer (argument[2], properties);
 
-  Tractography::TrackData<float> tck;
+  Tractography::Streamline<float> tck;
   size_t index = 0;
 
   opt = get_options ("randomise");
@@ -105,10 +105,10 @@ void run ()
     }
     {
       ProgressBar progress ("writing selected tracks to file...", count);
-      while (file.next (tck)) {
+      while (file (tck)) {
         if (!selection[index++])
           tck.clear();
-        writer.append (tck);
+        writer (tck);
         progress++;
       }
     }
@@ -119,15 +119,15 @@ void run ()
 
     {
       ProgressBar progress ("truncating tracks...", N + skip);
-      while (file.next (tck) && writer.count < N) {
+      while (file (tck) && writer.count < N) {
         if (index++ < skip)
           tck.clear();
-        writer.append (tck);
+        writer (tck);
         progress++;
       }
       tck.clear();
       while (++index < count)
-        writer.append (tck);
+        writer (tck);
       file.close();
     }
 

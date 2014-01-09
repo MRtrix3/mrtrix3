@@ -100,17 +100,17 @@ void run ()
   Image::LoopInOrder loop (input_fixel, "generating fixel-wise track segments");
   for (loop.start (input_fixel); loop.ok(); loop.next (input_fixel)) {
     for (size_t f = 0; f != input_fixel.value().size(); ++f) {
-      std::vector< Point<float> > tck;
+      DWI::Tractography::Streamline<float> tck;
       transform.voxel2scanner (input_fixel, voxel_pos);
       const float step = half_length * (scale_length_by_value ? input_fixel.value()[f].value : 1.0);
       tck.push_back (voxel_pos + (input_fixel.value()[f].dir *  step));
       tck.push_back (voxel_pos + (input_fixel.value()[f].dir * -step));
-      tck_writer.append (tck);
+      tck_writer (tck);
       if (tsf_writer) {
         std::vector<float> scalars;
         scalars.push_back (input_fixel.value()[f].value);
         scalars.push_back (input_fixel.value()[f].value);
-        tsf_writer->append (scalars);
+        (*tsf_writer) (scalars);
       }
     }
   }

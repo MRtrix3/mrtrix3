@@ -53,10 +53,6 @@ namespace MR
 
 
 
-#define UPDATE_INTERVAL 0.0333333 // 30 Hz - most monitors are 60Hz
-
-
-
       class WriteKernel
       {
         public:
@@ -64,18 +60,15 @@ namespace MR
           WriteKernel (const SharedBase& shared,
               const std::string& output_file,
               DWI::Tractography::Properties& properties) :
-                S (shared),
-                writer (output_file, properties),
-                next_time (timer.elapsed())
-          {
-            if (properties.find ("seed_output") != properties.end()) {
-              seeds = new std::ofstream (properties["seed_output"].c_str(), std::ios_base::trunc);
-              (*seeds) << "#Track_index,Seed_index,Pos_x,Pos_y,Pos_z,\n";
+            S (shared),
+            writer (output_file, properties) {
+              if (properties.find ("seed_output") != properties.end()) {
+                seeds = new std::ofstream (properties["seed_output"].c_str(), std::ios_base::trunc);
+                (*seeds) << "#Track_index,Seed_index,Pos_x,Pos_y,Pos_z,\n";
+              }
             }
-          }
 
-          ~WriteKernel ()
-          {
+          ~WriteKernel () {
             if (App::log_level > 0)
               fprintf (stderr, "\r%8zu generated, %8zu selected    [100%%]\n", writer.total_count, writer.count);
             if (seeds) {
@@ -93,19 +86,16 @@ namespace MR
               const Point<float>& p = tck[tck.get_seed_index()];
               (*seeds) << str(writer.count) << "," << str(tck.get_seed_index()) << "," << str(p[0]) << "," << str(p[1]) << "," << str(p[2]) << ",\n";
             }
-            writer.append (tck);
-            if (App::log_level > 0 && timer.elapsed() >= next_time) {
-              next_time += UPDATE_INTERVAL;
+            writer (tck);
+            if (App::log_level > 0 && timer)
               fprintf (stderr, "\r%8zu generated, %8zu selected    [%3d%%]",
                   writer.total_count, writer.count,
                   (int(100.0 * std::max (writer.total_count/float(S.max_num_attempts), writer.count/float(S.max_num_tracks)))));
-            }
             return true;
           }
 
-          bool operator() (const GeneratedTrack& in, Tractography::TrackData<float>& out)
+          bool operator() (const GeneratedTrack& in, Streamline<value_type>& out)
           {
-            out.index = writer.count;
             out.weight = 1.0;
             if (!operator() (in))
               return false;
@@ -121,8 +111,7 @@ namespace MR
           const SharedBase& S;
           Writer<value_type> writer;
           Ptr<std::ofstream> seeds;
-          Timer timer;
-          double next_time;
+          IntervalTimer timer;
       };
 
 
@@ -149,7 +138,6 @@ namespace MR
               const std::string& fod_path (properties["seed_dynamic"]);
 
               typedef Mapping::SetDixel SetDixel;
-              typedef Tractography::TrackData<float> TrackData;
               typedef Mapping::TrackMapperDixel TckMapper;
 
               DWI::Directions::FastLookupSet dirs (1281);
@@ -178,17 +166,17 @@ namespace MR
 
               TckMapper mapper (H, upsample_ratio, true, dirs);
 
-              Thread::Queue<GeneratedTrack>    tracking_output_queue;
-              Thread::Queue<TrackData>         writer_output_queue;
-              Thread::Queue<Mapping::SetDixel> dixel_queue;
+              Thread::Queue<GeneratedTrack>              tracking_output_queue;
+              Thread::Queue< Streamline<value_type> > writer_output_queue;
+              Thread::Queue<Mapping::SetDixel>           dixel_queue;
 
-              Thread::__Source<GeneratedTrack, Exec<Method> >          q_tracker (tracking_output_queue, tracker);
-              Thread::__Pipe  <GeneratedTrack, WriteKernel, TrackData> q_writer  (tracking_output_queue, writer, writer_output_queue);
-              Thread::__Pipe  <TrackData, TckMapper, SetDixel>         q_mapper  (writer_output_queue, mapper, dixel_queue);
-              Thread::__Sink  <SetDixel, Seeding::Dynamic>             q_seeder  (dixel_queue, *seeder);
+              Thread::__Source<GeneratedTrack, Exec<Method> >                        q_tracker (tracking_output_queue, tracker);
+              Thread::__Pipe  <GeneratedTrack, WriteKernel, Streamline<value_type> > q_writer  (tracking_output_queue, writer, writer_output_queue);
+              Thread::__Pipe  <Streamline<value_type> , TckMapper, SetDixel>         q_mapper  (writer_output_queue, mapper, dixel_queue);
+              Thread::__Sink  <SetDixel, Seeding::Dynamic>                           q_seeder  (dixel_queue, *seeder);
 
-              Thread::Array< Thread::__Source<GeneratedTrack, Exec<Method> > > tracker_array (q_tracker, Thread::number_of_threads());
-              Thread::Array< Thread::__Pipe<TrackData, TckMapper, SetDixel> >  mapper_array  (q_mapper,  Thread::number_of_threads());
+              Thread::Array< Thread::__Source<GeneratedTrack, Exec<Method> > >               tracker_array (q_tracker, Thread::number_of_threads());
+              Thread::Array< Thread::__Pipe<Streamline<value_type>, TckMapper, SetDixel> >   mapper_array  (q_mapper,  Thread::number_of_threads());
 
               Thread::Exec tracker_threads (tracker_array, "trackers");
               Thread::Exec writer_thread   (q_writer,      "writer");

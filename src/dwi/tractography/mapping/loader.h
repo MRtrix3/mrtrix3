@@ -44,20 +44,20 @@ class TrackLoader
     TrackLoader (Tractography::Reader<float>& file, const size_t to_load = 0, const std::string& msg = "mapping tracks to image...") :
       reader (file),
       tracks_to_load (to_load),
+      num_loaded (0),
       progress (msg.size() ? new ProgressBar (msg, tracks_to_load) : NULL)
     { }
 
     virtual ~TrackLoader() { }
-    virtual bool operator() (Tractography::TrackData<float>& out)
+    virtual bool operator() (Streamline<float>& out)
     {
-      if (!reader.next_data (out)) {
+      if (!reader (out)) {
         delete progress;
         progress = NULL;
         return false;
       }
-      if (tracks_to_load && out.index >= tracks_to_load) {
+      if (tracks_to_load && num_loaded >= tracks_to_load) {
         out.clear();
-        out.index = -1;
         delete progress;
         progress = NULL;
         return false;
@@ -69,8 +69,9 @@ class TrackLoader
 
   protected:
     Tractography::Reader<float>& reader;
-    size_t tracks_to_load;
-    ProgressBar* progress;
+    const size_t tracks_to_load;
+    size_t num_loaded;
+    Ptr<ProgressBar> progress;
 
 };
 

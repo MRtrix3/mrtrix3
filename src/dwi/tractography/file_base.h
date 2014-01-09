@@ -84,8 +84,7 @@ namespace MR
             std::ofstream out (name.c_str(), std::ios::in | std::ios::out | std::ios::binary);
             if (!out) 
               throw Exception ("error re-opening output file \"" + name + "\": " + strerror (errno));
-            out.seekp (count_offset);
-            out << count << "\ntotal_count: " << total_count << "\nEND\n";
+            update_counts (out);
           }
 
           void create (std::ofstream& out, const Properties& properties, const std::string& type) {
@@ -121,7 +120,7 @@ namespace MR
             out << "file: . " << data_offset << "\n";
             out << "count: ";
             count_offset = out.tellp();
-            out << "\nEND\n";
+            out << "0\nEND\n";
             out.seekp (0);
             out << "mrtrix " + type + "    ";
             out.seekp (data_offset);
@@ -134,6 +133,11 @@ namespace MR
           std::string name;
           DataType dtype;
           int64_t  count_offset;
+
+          void update_counts (std::ofstream& out) {
+            out.seekp (count_offset);
+            out << count << "\ntotal_count: " << total_count << "\nEND\n";
+          }
       };
       //! \endcond
 

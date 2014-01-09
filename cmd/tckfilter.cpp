@@ -76,7 +76,7 @@ void usage ()
 }
 
 
-typedef Tractography::TrackData<float> TrackData;
+typedef Tractography::Streamline<float> Streamline;
 
 
 class Filter
@@ -97,13 +97,13 @@ class Filter
     }
 
 
-    bool operator() (const TrackData& in, TrackData& out)
+    bool operator() (const Streamline& in, Streamline& out)
     {
       out.clear();
       if ((in.size() < min_num_points) || (in.size() > max_num_points))
         return true;
       track_included.assign (properties.include.size(), false);
-      for (TrackData::const_iterator i = in.begin(); i != in.end(); ++i) {
+      for (Streamline::const_iterator i = in.begin(); i != in.end(); ++i) {
         if (!test_point (*i))
           return true;
       }
@@ -146,8 +146,6 @@ class Filter
 
 
 
-#define UPDATE_INTERVAL 0.0333333 // 30 Hz - most monitors are 60Hz
-
 class Writer : public Tractography::Writer<float>
 {
 
@@ -156,9 +154,7 @@ class Writer : public Tractography::Writer<float>
   public:
     Writer (const std::string& path, Tractography::Properties& properties) :
       WriterBase (path, properties),
-      in_count (properties.find ("count") == properties.end() ? 0 : to<size_t>(properties["count"])),
-      timer (),
-      next_time (timer.elapsed()) { }
+      in_count (properties.find ("count") == properties.end() ? 0 : to<size_t>(properties["count"])) { }
 
     ~Writer ()
     {
@@ -166,23 +162,21 @@ class Writer : public Tractography::Writer<float>
         fprintf (stderr, "\r%8zu read, %8zu filtered    [100%%]\n", WriterBase::total_count, WriterBase::count);
     }
 
-    bool operator() (const TrackData& in)
+    bool operator() (const Streamline& in)
     {
-      if (App::log_level > 0 && timer.elapsed() >= next_time) {
-        next_time += UPDATE_INTERVAL;
+      if (App::log_level > 0 && timer) {
         fprintf (stderr, "\r%8zu read, %8zu filtered    [%3d%%]",
             WriterBase::total_count, WriterBase::count,
             in_count ? (int(100.0 * WriterBase::total_count / float(in_count))) : 0);
       }
-      WriterBase::append (in);
+      WriterBase::operator() (in);
       return true;
     }
 
 
   private:
     const size_t in_count;
-    Timer timer;
-    double next_time;
+    IntervalTimer timer;
 
 };
 
@@ -229,7 +223,7 @@ void run ()
   Filter filter (properties, step_size);
   Writer writer (argument[1], properties);
 
-  Thread::run_batched_queue_threaded_pipe (reader, TrackData(), 100, filter, TrackData(), 100, writer);
+  Thread::run_batched_queue_threaded_pipe (reader, Streamline(), 100, filter, Streamline(), 100, writer);
 
 }
 

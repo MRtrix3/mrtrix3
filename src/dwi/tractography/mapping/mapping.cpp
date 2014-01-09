@@ -41,7 +41,7 @@ void generate_header (Image::Header& header, const std::string& tck_file_path, c
   Tractography::Properties properties;
   Tractography::Reader<float> file (tck_file_path, properties);
 
-  std::vector<Point<float> > tck;
+  Streamline<float> tck;
   size_t track_counter = 0;
 
   Point<float> min_values ( INFINITY,  INFINITY,  INFINITY);
@@ -49,7 +49,7 @@ void generate_header (Image::Header& header, const std::string& tck_file_path, c
 
   {
     ProgressBar progress ("creating new template image...", 0);
-    while (file.next(tck) && track_counter++ < MAX_TRACKS_READ_FOR_HEADER) {
+    while (file (tck) && track_counter++ < MAX_TRACKS_READ_FOR_HEADER) {
       for (std::vector<Point<float> >::const_iterator i = tck.begin(); i != tck.end(); ++i) {
         min_values[0] = std::min (min_values[0], (*i)[0]);
         max_values[0] = std::max (max_values[0], (*i)[0]);

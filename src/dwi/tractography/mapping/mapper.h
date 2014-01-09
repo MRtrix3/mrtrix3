@@ -84,10 +84,9 @@ class TrackMapperBase
     virtual ~TrackMapperBase() { }
 
 
-    bool operator() (Tractography::TrackData<float>& in, Cont& out)
+    bool operator() (Streamline<float>& in, Cont& out)
     {
       out.clear();
-      out.index = in.index;
       out.weight = in.weight;
       if (in.empty())
         return true;
