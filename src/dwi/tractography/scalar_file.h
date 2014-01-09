@@ -146,6 +146,7 @@ namespace MR
         public:
           typedef T value_type;
           using __WriterBase__<T>::count;
+          using __WriterBase__<T>::count_offset;
           using __WriterBase__<T>::total_count;
           using __WriterBase__<T>::name;
           using __WriterBase__<T>::dtype;
