@@ -192,14 +192,16 @@ namespace MR
               double this_actual_cf_change = current_roc_cf * mu_change;
               double quantisation = 0.0;
 
-              for (size_t l = 0; l != candidate_contribution.dim(); ++l) {
-                const Track_fixel_contribution& fixel_cont = candidate_contribution[l];
+              for (size_t f = 0; f != candidate_contribution.dim(); ++f) {
+                const Track_fixel_contribution& fixel_cont = candidate_contribution[f];
                 const float length = fixel_cont.get_value();
                 Fixel& this_fixel = fixels[fixel_cont.get_fixel_index()];
                 quantisation += this_fixel.calc_quantisation (old_mu, length);
-                float delta_gradient = -(this_fixel.get_d_cost_d_mu (old_mu) * mu_change);
-                delta_gradient += this_fixel.remove_TD (length, new_mu, old_mu);
-                this_actual_cf_change += delta_gradient;
+                const double undo_change_mu_only = this_fixel.get_d_cost_d_mu (old_mu) * mu_change;
+                const double change_remove_tck = this_fixel.get_cost_wo_track (new_mu, length) - this_fixel.get_cost (old_mu);
+                // TODO Could the first candidate nonlinearity be caused by multiple visitations of the same fixel having
+                //   different effects because of remove_TD()'s operation?
+                this_actual_cf_change = this_actual_cf_change - undo_change_mu_only + change_remove_tck;
               }
 
               const double required_cf_change_quantisation = enforce_quantisation ? (-0.5 * quantisation) : 0.0;
@@ -207,8 +209,11 @@ namespace MR
 
               if (this_actual_cf_change < minvalue (required_cf_change_ratio, required_cf_change_quantisation, this_nonlinearity)) {
 
-                // Candidate streamline removal meets all criteria
-
+                // Candidate streamline removal meets all criteria; remove from reconstruction
+                for (size_t f = 0; f != candidate_contribution.dim(); ++f) {
+                  const Track_fixel_contribution& fixel_cont = candidate_contribution[f];
+                  fixels[fixel_cont.get_fixel_index()] -= fixel_cont.get_value();
+                }
                 TD_sum -= candidate_contribution.get_total_contribution();
                 contributing_length_removed += candidate_contribution.get_total_length();
                 delete contributions[candidate_index];
@@ -218,11 +223,7 @@ namespace MR
 
               } else {
 
-                // Removal doesn't meet all criteria; put this track back into the reconstruction
-                for (size_t l = 0; l != candidate_contribution.dim(); ++l) {
-                  const Track_fixel_contribution& fixel_cont = candidate_contribution[l];
-                  fixels[fixel_cont.get_fixel_index()] += fixel_cont.get_value();
-                }
+                // Removal doesn't meet all criteria
 
                 if (this_actual_cf_change >= this_nonlinearity)
                   recalculate = NONLINEARITY;
@@ -414,12 +415,11 @@ namespace MR
         const double mu_if_removed = FOD_sum / TD_sum_if_removed;
         const double mu_change_if_removed = mu_if_removed - current_mu;
         double gradient = current_roc_cost * mu_change_if_removed;
-        for (size_t v = 0; v != tck_cont.dim(); ++v) {
-          const Fixel& fixel = fixels[tck_cont[v].get_fixel_index()];
+        for (size_t f = 0; f != tck_cont.dim(); ++f) {
+          const Fixel& fixel = fixels[tck_cont[f].get_fixel_index()];
           const double undo_gradient_mu_only = fixel.get_d_cost_d_mu (current_mu) * mu_change_if_removed;
-          gradient -= undo_gradient_mu_only;
-          const double gradient_remove_tck = fixel.get_cost_wo_track (mu_if_removed, tck_cont[v].get_value()) - fixel.get_cost (current_mu);
-          gradient += gradient_remove_tck;
+          const double gradient_remove_tck = fixel.get_cost_wo_track (mu_if_removed, tck_cont[f].get_value()) - fixel.get_cost (current_mu);
+          gradient = gradient - undo_gradient_mu_only + gradient_remove_tck;
         }
         return gradient;
       }

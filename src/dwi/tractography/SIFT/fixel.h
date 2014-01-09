@@ -55,15 +55,7 @@ namespace MR
             FixelBase (that) { }
 
 
-          // This function has two purposes; removes the relevant track length, and also provides the change in cost function given that removal
-          double remove_TD (const double length, const double new_mu, const double old_mu)
-          {
-            const double old_cost = get_cost (old_mu);
-            TD = std::max (TD - length, 0.0);
-            const double new_cost = get_cost (new_mu);
-            return (new_cost - old_cost);
-          }
-
+          Fixel& operator-= (const double length) { TD = std::max (TD - length, 0.0); return *this; }
 
           double get_d_cost_d_mu    (const double mu)                         const { return get_d_cost_d_mu_unweighted    (mu) * weight; }
           double get_cost_wo_track  (const double mu, const double length)    const { return get_cost_wo_track_unweighted  (mu, length)    * weight; }
@@ -73,8 +65,8 @@ namespace MR
 
         private:
           double get_d_cost_d_mu_unweighted    (const double mu) const { return (2.0 * TD * get_diff (mu)); }
-          double get_cost_wo_track_unweighted  (const double mu, const double length)    const { return (Math::pow2 (((TD - length) * mu) - FOD)); }
-          double get_cost_manual_TD_unweighted (const double mu, const double manual_TD) const { return  Math::pow2 ((  manual_TD   * mu) - FOD); }
+          double get_cost_wo_track_unweighted  (const double mu, const double length)    const { return (Math::pow2 ((std::max (TD-length, 0.0) * mu) - FOD)); }
+          double get_cost_manual_TD_unweighted (const double mu, const double manual_TD) const { return  Math::pow2 ((      manual_TD         * mu) - FOD); }
 
       };
 
