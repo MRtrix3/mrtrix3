@@ -405,7 +405,7 @@ namespace MR
             // TODO uncomment before release
             //            if (scalar_properties.timestamp != properties.timestamp)
             //              throw Exception ("The scalar track file does not match the selected tractogram   ");
-            while (file.next (tck_scalar)) {
+            while (file (tck_scalar)) {
               buffer.push_back (NAN);
               for (size_t i = 0; i < tck_scalar.size(); ++i) {
                 buffer.push_back (tck_scalar[i]);

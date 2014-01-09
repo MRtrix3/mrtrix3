@@ -366,7 +366,7 @@ void write_track_stats (const string& filename,
       else
         scalars[p] = data [track_point_indices[t][p]];
     }
-    writer.append (scalars);
+    writer (scalars);
   }
 }
 
