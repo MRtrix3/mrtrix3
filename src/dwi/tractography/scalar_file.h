@@ -146,6 +146,7 @@ namespace MR
         public:
           typedef T value_type;
           using __WriterBase__<T>::count;
+          using __WriterBase__<T>::count_offset;
           using __WriterBase__<T>::total_count;
           using __WriterBase__<T>::name;
           using __WriterBase__<T>::dtype;
@@ -223,6 +224,12 @@ namespace MR
             out.write (reinterpret_cast<char*> (&(buffer[0])), sizeof (value_type)*(buffer_size));
             if (!out.good())
               throw Exception ("error writing track scalars file \"" + name + "\": " + strerror (errno));
+
+            out.seekp (count_offset);
+            out << count << "\ntotal_count: " << total_count << "\nEND\n";
+            if (!out.good())
+              throw Exception ("error writing track scalars file \"" + name + "\": " + strerror (errno));
+
             buffer_size = 0;
           }
 

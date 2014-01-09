@@ -70,10 +70,10 @@ void run ()
 
   size_t init_count = 0;
   if (properties.find ("count") == properties.end()) {
-    DEBUG ("\"count\" field not set in file " + path);
+    INFO ("\"count\" field not set in file " + path);
   } else {
     init_count = to<size_t>(properties["count"]);
-    DEBUG ("Value of \"count\" in file " + path + " is " + str(init_count));
+    INFO ("Value of \"count\" in file " + path + " is " + str(init_count));
   }
 
   // Read the actual number of streamlines in the file
@@ -87,7 +87,7 @@ void run ()
     }
   }
   reader.close();
-  DEBUG ("Actual number of streamlines read is " + str(count));
+  INFO ("Actual number of streamlines read is " + str(count));
 
   // Find the appropriate file offset in the header
   KeyValue kv (argument[0], "mrtrix tracks");
@@ -103,8 +103,8 @@ void run ()
   kv.close();
 
   if (!count_offset)
-    throw Exception ("could not find location of 'count' field in file \"" + path + "\"");
-  DEBUG ("File offset for 'count' field is " + str(count_offset));
+    throw Exception ("could not find location of \"count\" field in file \"" + path + "\"");
+  DEBUG ("File offset for \"count\" field is " + str(count_offset));
 
   // Overwrite this data
   // Used C-style file access here as ofstream would either wipe the file contents, or
@@ -120,8 +120,11 @@ void run ()
   const std::string string = "count: " + str(count) + "\ntotal_count: " + str(count) + "\nEND\n";
   const int rvalue = fputs (string.c_str(), fp);
   fclose (fp);
-  if (rvalue == EOF)
-    WARN ("'count' field may not have been properly updated");
+  if (rvalue == EOF) {
+    WARN ("\"count\" field may not have been properly updated");
+  } else {
+    INFO ("\"count\" field updated successfully");
+  }
 
 }
 

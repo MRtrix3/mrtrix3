@@ -126,6 +126,12 @@ namespace MR
             out.seekp (data_offset);
           }
 
+          void verify_stream (const std::ofstream& out) {
+            if (!out.good())
+              throw Exception ("error writing file \"" + name + "\": " + strerror (errno));
+          }
+
+
 
           size_t count, total_count;
 
@@ -137,6 +143,7 @@ namespace MR
           void update_counts (std::ofstream& out) {
             out.seekp (count_offset);
             out << count << "\ntotal_count: " << total_count << "\nEND\n";
+            verify_stream (out);
           }
       };
       //! \endcond
