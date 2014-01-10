@@ -47,7 +47,7 @@ namespace MR
             overal_max = std::max (overal_max, max);
           }
           void operator() (ValueType val) {
-            if (finite (val)) {
+            if (isfinite (val)) {
               if (val < min) min = val;
               if (val > max) max = val;
             }

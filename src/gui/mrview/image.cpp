@@ -250,7 +250,7 @@ namespace MR
                   cfloat val = vox.value();
                   float mag = Math::abs (val.real());
                   data[3*(vox[x]+vox[y]*xdim) + n] = mag;
-                  if (finite (mag)) {
+                  if (isfinite (mag)) {
                     if (mag < value_min) value_min = mag;
                     if (mag > value_max) value_max = mag;
                   }
@@ -287,7 +287,7 @@ namespace MR
                 data[idx] = val.real();
                 data[idx+1] = val.imag();
                 float mag = std::abs (val);
-                if (finite (mag)) 
+                if (isfinite (mag)) 
                   if (mag > value_max) 
                     value_max = mag;
               }
@@ -315,7 +315,7 @@ namespace MR
               for (vox[x] = 0; vox[x] < xdim; ++vox[x]) {
                 cfloat val = vox.value();
                 data[vox[x]+vox[y]*xdim] = val.real();
-                if (finite (val.real())) {
+                if (isfinite (val.real())) {
                   if (val.real() < value_min) value_min = val.real();
                   if (val.real() > value_max) value_max = val.real();
                 }
@@ -519,7 +519,7 @@ namespace MR
             for (V[1] = 0; V[1] < V.dim(1); ++V[1]) {
               for (V[0] = 0; V[0] < V.dim(0); ++V[0]) {
                 ValueType val = *p = V.value();
-                if (finite (val)) {
+                if (isfinite (val)) {
                   if (val < value_min) value_min = val;
                   if (val > value_max) value_max = val;
                 }
@@ -542,7 +542,7 @@ namespace MR
               for (V[1] = 0; V[1] < V.dim (1); ++V[1]) {
                 for (V[0] = 0; V[0] < V.dim (0); ++V[0]) {
                   ValueType val = *p = Math::abs (ValueType (V.value()));
-                  if (finite (val)) {
+                  if (isfinite (val)) {
                     if (val < value_min) value_min = val;
                     if (val > value_max) value_max = val;
                   }
@@ -590,7 +590,7 @@ namespace MR
               *(p++) = val.real();
               *(p++) = val.imag();
               float mag = std::abs (val);
-              if (finite (mag)) {
+              if (isfinite (mag)) {
                 if (mag < value_min) value_min = mag;
                 if (mag > value_max) value_max = mag;
               }

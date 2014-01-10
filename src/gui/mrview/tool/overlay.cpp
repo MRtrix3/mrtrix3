@@ -240,7 +240,7 @@ namespace MR
           for (int i = 0; i < image_list_model->rowCount(); ++i) {
             if (image_list_model->items[i]->show && !hide_all_button->isChecked()) {
               Item* image = dynamic_cast<Item*>(image_list_model->items[i]);
-              need_to_update |= !finite (image->intensity_min());
+              need_to_update |= !isfinite (image->intensity_min());
               image->set_interpolate (interpolate_check_box->isChecked());
               image->alpha = overlay_opacity;
               if (is_3D) 
@@ -397,9 +397,9 @@ namespace MR
             max_val += overlay->scaling_max();
             num_threshold_lower += overlay->use_discard_lower();
             num_threshold_upper += overlay->use_discard_upper();
-            if (!finite (overlay->lessthan)) 
+            if (!isfinite (overlay->lessthan)) 
               overlay->lessthan = overlay->intensity_min();
-            if (!finite (overlay->greaterthan)) 
+            if (!isfinite (overlay->greaterthan)) 
               overlay->greaterthan = overlay->intensity_max();
             threshold_lower_val += overlay->lessthan;
             threshold_upper_val += overlay->greaterthan;

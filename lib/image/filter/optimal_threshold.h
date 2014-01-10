@@ -283,7 +283,7 @@ namespace MR
               Image::LoopInOrder threshold_loop (input, "thresholding...");
               for (threshold_loop.start (input, output); threshold_loop.ok(); threshold_loop.next (input, output)) {
                 input_value_type val = input.value();
-                output.value() = ( finite (val) && val > optimal_threshold ) ? 1 : 0;
+                output.value() = ( isfinite (val) && val > optimal_threshold ) ? 1 : 0;
               }
             }
       };

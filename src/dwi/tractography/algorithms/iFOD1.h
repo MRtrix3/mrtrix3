@@ -145,7 +145,7 @@ namespace MR
               dir.normalise();
             }
             value_type val = FOD (dir);
-            if (finite (val))
+            if (isfinite (val))
               if (val > S.init_threshold)
                 return (true);
           }
@@ -154,7 +154,7 @@ namespace MR
 
           dir = S.init_dir;
           value_type val = FOD (dir);
-          if (finite (val))
+          if (isfinite (val))
             if (val > S.init_threshold)
               return (true);
 

@@ -75,7 +75,7 @@ namespace MR {
           std::vector<Pair> amps;
           for (value_type el = 0.0; el < method.S.max_angle; el += 0.001) {
             amps.push_back (Pair (el, calibrate_func (el)));
-            if (!finite (amps.back().amp) || amps.back().amp <= 0.0) break;
+            if (!isfinite (amps.back().amp) || amps.back().amp <= 0.0) break;
           }
           value_type zero = amps.back().el;
 

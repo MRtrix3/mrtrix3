@@ -67,8 +67,8 @@ namespace MR {
               return series_num < frame.series_num;
             if (acq != frame.acq) 
               return acq < frame.acq;
-            assert (finite (distance));
-            assert (finite (frame.distance));
+            assert (isfinite (distance));
+            assert (isfinite (frame.distance));
             if (distance != frame.distance) 
               return distance < frame.distance;
             for (size_t n = index.size(); n--;)
@@ -84,7 +84,7 @@ namespace MR {
 
           void calc_distance ()
           {
-            if (!finite (orientation_z[0])) 
+            if (!isfinite (orientation_z[0])) 
               Math::cross (orientation_z, orientation_x, orientation_y);
             else {
               float normal[3];

@@ -1054,11 +1054,11 @@ if profile:
   ld_flags += [ '-g', '-pg' ]
   ld_lib_flags += [ '-g', '-pg' ]
 elif debug:
-  cpp_flags += [ '-O0', '-g', '-D_GLIBCXX_DEBUG=1', '-D_GLIBCXX_DEBUG_PEDANTIC=1' ]
+  cpp_flags += [ '-O0', '-g', '-Wall', '-D_GLIBCXX_DEBUG=1', '-D_GLIBCXX_DEBUG_PEDANTIC=1' ]
   ld_flags += [ '-g' ]
   ld_lib_flags += [ '-g' ]
 else:
-  cpp_flags += [ '-O2', '-DNDEBUG' ]
+  cpp_flags += [ '-O2', '-Wall', '-DNDEBUG' ]
 
 
 

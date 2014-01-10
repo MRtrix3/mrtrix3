@@ -121,7 +121,7 @@ namespace MR
         }
 
         for (int n = 0; n < 256; ++n) {
-          if (!finite (font_tex_pos[n])) {
+          if (!isfinite (font_tex_pos[n])) {
             font_width[n] = font_width[default_char];
             font_tex_pos[n] = font_tex_pos[default_char];
             font_tex_width[n] = font_tex_width[default_char];

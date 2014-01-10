@@ -72,7 +72,7 @@ namespace MR
 
       // needed to round floating-point values and map non-finite values (NaN, Inf) to zero for integer types:
       template <typename value_out_type, typename value_type> 
-        inline value_out_type round_finite (value_type val) { return finite (val) ? value_out_type(Math::round (val)) : value_out_type (0); }
+        inline value_out_type round_finite (value_type val) { return isfinite (val) ? value_out_type(Math::round (val)) : value_out_type (0); }
       template <typename value_out_type, typename value_type> 
         inline value_out_type no_round (value_type val) { return val; }
 

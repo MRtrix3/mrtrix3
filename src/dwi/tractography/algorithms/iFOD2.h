@@ -200,7 +200,7 @@ namespace MR
               dir.normalise();
             }
             half_log_prob0 = FOD (dir);
-            if (finite (half_log_prob0) && (half_log_prob0 > S.init_threshold))
+            if (isfinite (half_log_prob0) && (half_log_prob0 > S.init_threshold))
               goto end_init;
           }
 
@@ -208,7 +208,7 @@ namespace MR
 
           dir = S.init_dir;
           half_log_prob0 = FOD (dir);
-          if (finite (half_log_prob0) && (half_log_prob0 > S.init_threshold))
+          if (isfinite (half_log_prob0) && (half_log_prob0 > S.init_threshold))
             goto end_init;
 
         }

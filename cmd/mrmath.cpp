@@ -84,7 +84,7 @@ class Mean {
   public:
     Mean () : sum (0.0), count (0) { }
     void operator() (value_type val) { 
-      if (finite (val)) {
+      if (isfinite (val)) {
         sum += val;
         ++count;
       }
@@ -103,7 +103,7 @@ class Sum {
   public:
     Sum () : sum (0.0) { }
     void operator() (value_type val) { 
-      if (finite (val)) 
+      if (isfinite (val)) 
         sum += val;
     }
     value_type result () const { 
@@ -116,7 +116,7 @@ class RMS {
   public:
     RMS() : sum (0.0), count (0) { }
     void operator() (value_type val) {
-      if (finite (val)) {
+      if (isfinite (val)) {
         sum += Math::pow2 (val);
         ++count;
       }
@@ -134,7 +134,7 @@ class Var {
   public:
     Var () : sum (0.0), sum_sqr (0.0), count (0) { }
     void operator() (value_type val) { 
-      if (finite (val)) {
+      if (isfinite (val)) {
         sum += val;
         sum_sqr += Math::pow2 (val);
         ++count;
@@ -159,10 +159,10 @@ class Min {
   public:
     Min () : min (std::numeric_limits<value_type>::infinity()) { }
     void operator() (value_type val) { 
-      if (finite (val) && val < min) 
+      if (isfinite (val) && val < min) 
         min = val;
     }
-    value_type result () const { return finite (min) ? min : NAN; }
+    value_type result () const { return isfinite (min) ? min : NAN; }
     value_type min;
 };
 
@@ -170,10 +170,10 @@ class Max {
   public:
     Max () : max (-std::numeric_limits<value_type>::infinity()) { }
     void operator() (value_type val) { 
-      if (finite (val) && val > max) 
+      if (isfinite (val) && val > max) 
         max = val;
     }
-    value_type result () const { return finite (max) ? max : NAN; }
+    value_type result () const { return isfinite (max) ? max : NAN; }
     value_type max;
 };
 
@@ -181,10 +181,10 @@ class AbsMax {
   public:
     AbsMax () : max (-std::numeric_limits<value_type>::infinity()) { }
     void operator() (value_type val) { 
-      if (finite (val) && Math::abs(val) > max) 
+      if (isfinite (val) && Math::abs(val) > max) 
         max = Math::abs(val);
     }
-    value_type result () const { return finite (max) ? max : NAN; }
+    value_type result () const { return isfinite (max) ? max : NAN; }
     value_type max;
 };
 
@@ -193,10 +193,10 @@ class MagMax {
     MagMax () : max (-std::numeric_limits<value_type>::infinity()) { }
     MagMax (const int i) : max (-std::numeric_limits<value_type>::infinity()) { }
     void operator() (value_type val) { 
-      if (finite (val) && Math::abs(val) > max) 
+      if (isfinite (val) && Math::abs(val) > max) 
         max = val;
     }
-    value_type result () const { return finite (max) ? max : NAN; }
+    value_type result () const { return isfinite (max) ? max : NAN; }
     value_type max;
 };
 

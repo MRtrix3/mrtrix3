@@ -67,6 +67,7 @@ namespace MR
      * processing takes place. */
     void init (int argc, char** argv);
     void parse ();
+    void sort_arguments (int argc, const char* const* argv);
     const Option* match_option (const char* stub);
     std::string full_usage ();
 

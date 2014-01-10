@@ -143,7 +143,7 @@ class DataLoader
       for (size_t n = 0; n < dwis.size(); n++) {
         dwi[3] = dwis[n];
         item->data[n] = dwi.value();
-        if (!finite (item->data[n])) return;
+        if (!isfinite (item->data[n])) return;
         if (item->data[n] < 0.0) item->data[n] = 0.0;
         if (normalise) item->data[n] /= norm;
       }

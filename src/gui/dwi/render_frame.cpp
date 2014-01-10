@@ -178,11 +178,11 @@ namespace MR
         glDepthMask (GL_TRUE);
 
         if (values.size()) {
-          if (finite (values[0])) {
+          if (isfinite (values[0])) {
             glDisable (GL_BLEND);
 
             float final_scale = scale;
-            if (normalise && finite (values[0]) && values[0] != 0.0)
+            if (normalise && isfinite (values[0]) && values[0] != 0.0)
               final_scale /= values[0];
 
             renderer.start (projection, *lighting, final_scale, use_lighting, color_by_dir, hide_neg_lobes);

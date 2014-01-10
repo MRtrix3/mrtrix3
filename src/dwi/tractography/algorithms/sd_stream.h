@@ -146,7 +146,7 @@ class SDStream : public MethodBase {
       value_type find_peak ()
       {
         value_type FOD = Math::SH::get_peak (&values[0], S.lmax, dir, S.precomputer);
-        if (!finite (FOD) || FOD < S.threshold)
+        if (!isfinite (FOD) || FOD < S.threshold)
           FOD = 0.0;
         return FOD;
       }

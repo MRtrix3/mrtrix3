@@ -304,7 +304,7 @@ void TrackMapperTWI<Cont>::gaussian_smooth_factors ()
 
     double sum = 0.0, norm = 0.0;
 
-    if (finite (unsmoothed[i])) {
+    if (isfinite (unsmoothed[i])) {
       sum  = unsmoothed[i];
       norm = 1.0; // Gaussian is unnormalised -> e^0 = 1
     }
@@ -312,7 +312,7 @@ void TrackMapperTWI<Cont>::gaussian_smooth_factors ()
     float distance = 0.0;
     for (size_t j = i; j--; ) { // Decrement AFTER null test, so loop_ runs with j = 0
       distance += step_size;
-      if (finite (unsmoothed[j])) {
+      if (isfinite (unsmoothed[j])) {
         const float this_weight = exp (-distance * distance / gaussian_denominator);
         norm += this_weight;
         sum  += this_weight * unsmoothed[j];
@@ -321,7 +321,7 @@ void TrackMapperTWI<Cont>::gaussian_smooth_factors ()
     distance = 0.0;
     for (size_t j = i + 1; j < unsmoothed.size(); ++j) {
       distance += step_size;
-      if (finite (unsmoothed[j])) {
+      if (isfinite (unsmoothed[j])) {
         const float this_weight = exp (-distance * distance / gaussian_denominator);
         norm += this_weight;
         sum  += this_weight * unsmoothed[j];
@@ -370,7 +370,7 @@ void TrackMapperTWI<Cont>::set_factor (const std::vector< Point<float> >& tck, C
         case T_SUM:
           out.factor = 0.0;
           for (std::vector<float>::const_iterator i = factors.begin(); i != factors.end(); ++i) {
-            if (finite (*i))
+            if (isfinite (*i))
               out.factor += *i;
           }
           break;
@@ -378,7 +378,7 @@ void TrackMapperTWI<Cont>::set_factor (const std::vector< Point<float> >& tck, C
         case T_MIN:
           out.factor = INFINITY;
           for (std::vector<float>::const_iterator i = factors.begin(); i != factors.end(); ++i) {
-            if (finite (*i))
+            if (isfinite (*i))
               out.factor = MIN (out.factor, *i);
           }
           break;
@@ -386,7 +386,7 @@ void TrackMapperTWI<Cont>::set_factor (const std::vector< Point<float> >& tck, C
         case T_MEAN:
           out.factor = 0.0;
           for (std::vector<float>::const_iterator i = factors.begin(); i != factors.end(); ++i) {
-            if (finite (*i)) {
+            if (isfinite (*i)) {
               out.factor += *i;
               ++count;
             }
@@ -397,7 +397,7 @@ void TrackMapperTWI<Cont>::set_factor (const std::vector< Point<float> >& tck, C
         case T_MAX:
           out.factor = -INFINITY;
           for (std::vector<float>::const_iterator i = factors.begin(); i != factors.end(); ++i) {
-            if (finite (*i))
+            if (isfinite (*i))
               out.factor = MAX (out.factor, *i);
           }
           break;
@@ -414,7 +414,7 @@ void TrackMapperTWI<Cont>::set_factor (const std::vector< Point<float> >& tck, C
         case T_MEAN_NONZERO:
           out.factor = 0.0;
           for (std::vector<float>::const_iterator i = factors.begin(); i != factors.end(); ++i) {
-            if (finite (*i) && *i) {
+            if (isfinite (*i) && *i) {
               out.factor += *i;
               ++count;
             }
@@ -475,7 +475,7 @@ void TrackMapperTWI<Cont>::set_factor (const std::vector< Point<float> >& tck, C
   if (contrast == SCALAR_MAP_COUNT)
     out.factor = (out.factor ? 1.0 : 0.0);
 
-  if (!finite (out.factor))
+  if (!isfinite (out.factor))
     out.factor = 0.0;
 
 }
@@ -641,7 +641,7 @@ const Point<float> TrackMapperTWIImage<Cont>::get_last_point_in_fov (const std::
   const int step = end ? -1 : 1;
   while (interp.scanner (tck[index])) {
     index += step;
-    if (index < 0 || index == tck.size())
+    if (index == tck.size())
       return Point<float>();
   }
   return tck[index];
