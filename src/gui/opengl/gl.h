@@ -106,11 +106,32 @@ namespace MR
   }
 }
 
+
 #define DEBUG_OPENGL { GLenum error_code = glGetError(); \
     if (error_code != GL_NO_ERROR) { \
       FAIL (std::string ("OpenGL Error: ") + (const char*) MR::GUI::GL::ErrorString (error_code) + " ["__FILE__":" + MR::str(__LINE__) + "]"); \
     }\
   }
+
+
+
+
+#ifdef MRTRIX_MACOSX
+#include <QGLContext>
+#include <QGLFormat>
+
+void* select_3_2_mac_visual (GDHandle handle);
+
+class Core3_2_context : public QGLContext
+{
+  public:
+    Core3_2_context () : QGLContext (QGLFormat::defaultFormat()) { }
+
+    virtual void* chooseMacVisual(GDHandle handle) {
+      return select_3_2_mac_visual(handle);
+    }
+};
+#endif
 
 #endif
 

@@ -796,6 +796,7 @@ if not nogui:
 
 
   report ('Checking for Qt4: ')
+  mm_cflags = []
 
   try:
     with TempDir() as qt_dir:
@@ -983,7 +984,9 @@ WARNING: no OpenGL implementation found.
          Some of the graphical user interface components may not be stable on
          this system.
 ''')
-
+  if system == "darwin":
+    qt_ldflags += [ '-framework', 'Foundation', '-framework', 'Cocoa' ]  
+    mm_cflags = []
 
 
 
@@ -1110,12 +1113,18 @@ commit ('gsl_ldflags', gsl_ldflags)
 commit ('moc', moc)
 commit ('qt_cflags', qt_cflags)
 commit ('qt_ldflags', qt_ldflags)
+commit ('mm_cflags', mm_cflags)
 cache.write ('nogui = ')
 if nogui:
   cache.write ('True\n')
 else:
   cache.write ('False\n')
-
+  
+cache.write ('compile_objc = ')  
+if system == 'darwin':
+  cache.write ('True\n')
+else:  
+  cache.write ('False\n')
 
 cache.close()
 sys.stdout.write ('ok\n\n')

@@ -85,7 +85,11 @@ namespace MR
       // GLArea definitions:
       
       inline Window::GLArea::GLArea (Window& parent) :
+#ifdef MRTRIX_MACOSX
+        QGLWidget (new Core3_2_context(), &parent),
+#else
         QGLWidget (&parent),
+#endif
         main (parent) {
           setCursor (Cursor::crosshair);
           setMouseTracking (true);
