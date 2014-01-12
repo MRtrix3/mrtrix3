@@ -126,19 +126,20 @@ namespace MR
             out.seekp (data_offset);
           }
 
-          void verify_stream (const std::ofstream& out) {
-            if (!out.good())
-              throw Exception ("error writing file \"" + name + "\": " + strerror (errno));
-          }
-
-
 
           size_t count, total_count;
+
 
         protected:
           std::string name;
           DataType dtype;
           int64_t  count_offset;
+
+
+          void verify_stream (const std::ofstream& out) {
+            if (!out.good())
+              throw Exception ("error writing file \"" + name + "\": " + strerror (errno));
+          }
 
           void update_counts (std::ofstream& out) {
             out.seekp (count_offset);
