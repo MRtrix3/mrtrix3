@@ -51,13 +51,11 @@ class TrackLoader
     virtual bool operator() (Streamline<float>& out)
     {
       if (!reader (out)) {
-        delete progress;
         progress = NULL;
         return false;
       }
       if (tracks_to_load && out.index >= tracks_to_load) {
         out.clear();
-        delete progress;
         progress = NULL;
         return false;
       }
