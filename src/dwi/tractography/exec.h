@@ -166,17 +166,17 @@ namespace MR
 
               TckMapper mapper (H, upsample_ratio, true, dirs);
 
-              Thread::Queue<GeneratedTrack>              tracking_output_queue;
+              Thread::Queue<GeneratedTrack>           tracking_output_queue;
               Thread::Queue< Streamline<value_type> > writer_output_queue;
-              Thread::Queue<Mapping::SetDixel>           dixel_queue;
+              Thread::Queue<Mapping::SetDixel>        dixel_queue;
 
               Thread::__Source<GeneratedTrack, Exec<Method> >                        q_tracker (tracking_output_queue, tracker);
               Thread::__Pipe  <GeneratedTrack, WriteKernel, Streamline<value_type> > q_writer  (tracking_output_queue, writer, writer_output_queue);
               Thread::__Pipe  <Streamline<value_type> , TckMapper, SetDixel>         q_mapper  (writer_output_queue, mapper, dixel_queue);
               Thread::__Sink  <SetDixel, Seeding::Dynamic>                           q_seeder  (dixel_queue, *seeder);
 
-              Thread::Array< Thread::__Source<GeneratedTrack, Exec<Method> > >               tracker_array (q_tracker, Thread::number_of_threads());
-              Thread::Array< Thread::__Pipe<Streamline<value_type>, TckMapper, SetDixel> >   mapper_array  (q_mapper,  Thread::number_of_threads());
+              Thread::Array< Thread::__Source<GeneratedTrack, Exec<Method> > >             tracker_array (q_tracker, Thread::number_of_threads());
+              Thread::Array< Thread::__Pipe<Streamline<value_type>, TckMapper, SetDixel> > mapper_array  (q_mapper,  Thread::number_of_threads());
 
               Thread::Exec tracker_threads (tracker_array, "trackers");
               Thread::Exec writer_thread   (q_writer,      "writer");
