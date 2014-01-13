@@ -27,9 +27,9 @@
 #ifndef __gui_dwi_renderer_h__
 #define __gui_dwi_renderer_h__
 
+#include "gui/opengl/shader.h"
 #include "math/matrix.h"
 #include "math/SH.h"
-#include "gui/opengl/shader.h"
 
 namespace MR
 {

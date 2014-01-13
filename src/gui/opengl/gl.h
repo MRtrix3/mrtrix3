@@ -23,12 +23,19 @@
 #ifndef __gui_opengl_gl_h__
 #define __gui_opengl_gl_h__
 
-#include <QtGui>
-
 #include "gui/opengl/gl_core_3_3.h"
 #include "mrtrix.h"
 #include "debug.h"
 
+#include <QtGUI>
+
+// necessary to avoid conflict with Qt4's macros:
+#ifdef Complex
+# undef Complex
+#endif
+#ifdef foreach
+# undef foreach
+#endif
 
 namespace MR
 {

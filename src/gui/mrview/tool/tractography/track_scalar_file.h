@@ -27,7 +27,6 @@
 #include "gui/mrview/tool/tractography/tractogram.h"
 #include "gui/dialog/file.h"
 
-
 namespace MR
 {
   namespace GUI

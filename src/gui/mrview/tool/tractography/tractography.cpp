@@ -20,11 +20,6 @@
 
 */
 
-#include <QLabel>
-#include <QListView>
-#include <QStringListModel>
-#include <QColorDialog>
-
 #include "mrtrix.h"
 #include "gui/mrview/window.h"
 #include "gui/mrview/tool/tractography/tractography.h"
@@ -34,7 +29,6 @@
 #include "gui/mrview/tool/tractography/tractogram.h"
 #include "gui/opengl/lighting.h"
 #include "gui/dialog/lighting.h"
-
 
 namespace MR
 {

@@ -23,9 +23,8 @@
 #ifndef __gui_dialog_exception_h__
 #define __gui_dialog_exception_h__
 
+#include "gui/opengl/gl.h"
 #include "exception.h"
-
-class QWidget;
 
 namespace MR
 {

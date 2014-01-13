@@ -21,10 +21,9 @@
 */
 
 #include <map>
-#include <QApplication>
 
-#include "math/legendre.h"
 #include "gui/dwi/renderer.h"
+#include "math/legendre.h"
 #include "gui/projection.h"
 #include "gui/opengl/lighting.h"
 

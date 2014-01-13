@@ -23,8 +23,8 @@
 #ifndef __gui_opengl_shader_h__
 #define __gui_opengl_shader_h__
 
-#include "app.h"
 #include "gui/opengl/gl.h"
+#include "app.h"
 
 namespace MR
 {

@@ -23,10 +23,6 @@
 #ifndef __gui_mrview_tool_base_h__
 #define __gui_mrview_tool_base_h__
 
-#include <QAction>
-#include <QFrame>
-#include <QDockWidget>
-
 #include "gui/mrview/window.h"
 #include "gui/projection.h"
 

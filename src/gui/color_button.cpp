@@ -22,11 +22,6 @@
 */
 
 #include "gui/color_button.h"
-#include <QPainter>
-#include <QApplication>
-#include <QStyle>
-#include <QColorDialog>
-#include <QStyleOptionButton>
 
 QColorButton::QColorButton (QWidget *parent, const char *name) : QPushButton (name, parent)
 {

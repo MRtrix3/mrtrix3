@@ -20,12 +20,10 @@
 
 */
 
-#include <QAction>
-
 #include "mrtrix.h"
-#include "gui/cursor.h"
 #include "math/vector.h"
 #include "gui/mrview/mode/ortho.h"
+#include "gui/cursor.h"
 
 namespace MR
 {

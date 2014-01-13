@@ -20,13 +20,6 @@
 
 */
 
-#include <QLabel>
-#include <QSplitter>
-#include <QListView>
-#include <QCheckBox>
-#include <QComboBox>
-#include <QAbstractItemModel>
-
 #include "mrtrix.h"
 #include "gui/dialog/file.h"
 #include "gui/dialog/lighting.h"

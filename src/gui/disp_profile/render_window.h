@@ -23,13 +23,7 @@
 #ifndef __gui_dwi_render_window_h__
 #define __gui_dwi_render_window_h__
 
-#include <QObject>
-#include <QApplication>
-#include <QMainWindow>
-#include <QMenu>
-#include <QMenuBar>
-#include <QAction>
-
+#include "gui/opengl/gl.h"
 #include "file/path.h"
 #include "math/SH.h"
 

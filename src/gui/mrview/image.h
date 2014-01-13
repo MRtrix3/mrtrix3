@@ -23,8 +23,7 @@
 #ifndef __gui_mrview_image_h__
 #define __gui_mrview_image_h__
 
-#include <QAction>
-
+#include "gui/opengl/gl.h"
 #include "gui/mrview/displayable.h"
 #include "image/buffer.h"
 #include "image/voxel.h"

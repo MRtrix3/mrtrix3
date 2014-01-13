@@ -23,7 +23,7 @@
 #ifndef __cursor_h__
 #define __cursor_h__
 
-#include <QCursor>
+#include "gui/opengl/gl.h"
 
 namespace MR
 {

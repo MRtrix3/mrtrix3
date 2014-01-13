@@ -20,7 +20,6 @@
 
 */
 
-#include "gui/mrview/window.h"
 #include "gui/mrview/tool/lighting.h"
 #include "gui/dialog/lighting.h"
 

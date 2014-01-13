@@ -20,17 +20,9 @@
 
 */
 
-#include <QPushButton>
-#include <QLabel>
-#include <QLayout>
-#include <QGroupBox>
-#include <QSlider>
-#include <QStyle>
-
 #include "math/vector.h"
-#include "gui/color_button.h"
 #include "gui/dialog/lighting.h"
-
+#include "gui/color_button.h"
 
 namespace MR
 {

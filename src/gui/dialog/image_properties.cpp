@@ -24,7 +24,6 @@
 #include "gui/dialog/file.h"
 #include "gui/dialog/list.h"
 #include "gui/dialog/image_properties.h"
-#include "gui/opengl/gl.h"
 
 
 namespace MR

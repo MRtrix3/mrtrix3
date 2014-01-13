@@ -5,9 +5,6 @@ import platform, sys, os, time, threading, subprocess, copy, codecs
 
 config_file = 'config.default'
 
-macosx_core_profile_attributes_object = 'src/gui/opengl/macosx_core_profile_attributes.o'
-macosx_core_profile_attributes_mm = 'src/gui/opengl/macosx_core_profile_attributes.mm'
-
 
 system = None
 dependencies = False
@@ -234,21 +231,15 @@ class Entry:
 
     skip = False
     flags = copy.copy (gsl_ldflags)
-    if 'T' in file_flags[cc_file]: 
-      flags += thread_ldflags
-    if 'Q' in file_flags[cc_file]: 
-      flags += qt_ldflags
-      if compile_objc:
-        self.deps.add (macosx_core_profile_attributes_object)
-        
-        
+    if 'T' in file_flags[cc_file]: flags += thread_ldflags
+    if 'Q' in file_flags[cc_file]: flags += qt_ldflags
+
     if not skip: 
       if not os.path.isdir (bin_dir): 
         os.mkdir (bin_dir)
 
       if not ld_enabled: 
         self.deps = self.deps.union (list_lib_deps())
-       
 
       self.cmd = fillin (ld, { 
         'LDFLAGS': [ s.replace ('LIBNAME', os.path.basename (self.name)) for s in ld_flags ] + flags,
@@ -266,15 +257,6 @@ class Entry:
 
   def set_object (self):
     self.action = 'CC'
-    if self.name == macosx_core_profile_attributes_object:
-      self.deps = set ([ macosx_core_profile_attributes_mm ])
-      self.cmd = fillin (cpp, {
-        'CFLAGS': cpp_flags + qt_cflags,
-        'OBJECT': [ self.name ],
-        'SRC': [ macosx_core_profile_attributes_mm ] })
-      return
-
-      
     cc_file = self.name[:-len(obj_suffix)] + cpp_suffix
     self.deps = set([ cc_file ])
     flags = copy.copy (gsl_cflags)
@@ -304,7 +286,6 @@ class Entry:
     self.deps = self.deps.union (list_headers (src_file))
     self.cmd = [ moc ]
     self.cmd += [ src_file, '-o', self.name ]
-
 
     
   def set_library (self):
@@ -837,7 +818,6 @@ todo = {}
 for item in todo_tmp.keys():
   if not ( todo_tmp[item].action == 'NA' or (todo_tmp[item].timestamp and todo_tmp[item].timestamp >= todo_tmp[item].dep_timestamp) ):
     todo[item] = todo_tmp[item]
-
 if verbose: 
   sys.stderr.write ('TODO list contains ' + str(len(todo)) + ''' items
 

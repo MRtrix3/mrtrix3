@@ -20,9 +20,6 @@
 
 */
 
-#include <QImage>
-#include <QPixmap>
-
 #include "gui/cursor.h"
 
 namespace MR

@@ -2,9 +2,6 @@
 #include "math/math.h"
 #include "gui/opengl/font.h"
 
-#include <QPainter>
-#include <QImage>
-
 namespace MR
 {
   namespace GUI

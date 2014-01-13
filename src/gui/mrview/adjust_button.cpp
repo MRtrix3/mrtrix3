@@ -20,11 +20,6 @@
 
 */
 
-#include <QMouseEvent>
-#include <QHBoxLayout>
-#include <QDoubleValidator>
-
-#include "debug.h"
 #include "gui/mrview/adjust_button.h"
 #include "math/math.h"
 

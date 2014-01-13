@@ -20,8 +20,6 @@
 
 */
 
-#include <QMenu>
-
 #include "progressbar.h"
 #include "image/stride.h"
 #include "gui/mrview/image.h"

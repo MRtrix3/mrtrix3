@@ -24,10 +24,6 @@
 
 */
 
-#include <QApplication>
-#include <QMouseEvent>
-#include <QWheelEvent>
-
 #include <fstream>
 
 #include "app.h"

@@ -23,10 +23,7 @@
 #ifndef __gui_opengl_font_h__
 #define __gui_opengl_font_h__
 
-#include <QtGui>
-
 #include "gui/opengl/shader.h"
-
 
 namespace MR
 {

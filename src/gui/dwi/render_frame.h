@@ -27,16 +27,14 @@
 #ifndef __gui_dwi_render_frame_h__
 #define __gui_dwi_render_frame_h__
 
-#include "gui/opengl/gl.h"
-#include "gui/opengl/font.h"
-#include "gui/opengl/transformation.h"
-#include <QGLWidget>
-
 #include "ptr.h"
 #include "math/versor.h"
 #include "gui/opengl/lighting.h"
 #include "gui/dwi/renderer.h"
 #include "gui/projection.h"
+#include "gui/opengl/gl.h"
+#include "gui/opengl/font.h"
+#include "gui/opengl/transformation.h"
 
 #define MAX_LOD 8
 

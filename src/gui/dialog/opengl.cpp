@@ -25,8 +25,6 @@
 #include "gui/dialog/opengl.h"
 #include "gui/opengl/gl.h"
 
-#include <QGLFormat>
-
 namespace MR
 {
   namespace GUI

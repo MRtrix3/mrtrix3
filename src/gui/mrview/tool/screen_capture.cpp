@@ -20,11 +20,6 @@
 
 */
 
-#include <QLabel>
-#include <QPushButton>
-#include <QImage>
-#include <QFileDialog>
-
 #include "mrtrix.h"
 #include "gui/mrview/window.h"
 #include "gui/mrview/mode/base.h"

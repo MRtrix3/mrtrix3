@@ -8,8 +8,6 @@
 #include "math/matrix.h"
 #include "math/LU.h"
 
-#include <QGLWidget>
-
 namespace MR
 {
   namespace GUI

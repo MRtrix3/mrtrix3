@@ -1,21 +1,12 @@
-#include "gui/opengl/gl.h"
-#include "gui/opengl/lighting.h"
-
-#include <QMessageBox>
-#include <QAction>
-#include <QMenuBar>
-#include <QStatusBar>
-#include <QDockWidget>
-#include <QGLWidget>
-#include <QTimer>
-
-
 #include "app.h"
 #include "version.h"
+#include "timer.h"
 #include "file/config.h"
 #include "image/header.h"
 #include "image/voxel.h"
 #include "image/copy.h"
+#include "gui/opengl/gl.h"
+#include "gui/opengl/lighting.h"
 #include "gui/dialog/file.h"
 #include "gui/dialog/opengl.h"
 #include "gui/dialog/image_properties.h"
@@ -23,9 +14,6 @@
 #include "gui/mrview/mode/list.h"
 #include "gui/mrview/tool/base.h"
 #include "gui/mrview/tool/list.h"
-
-
-#include "timer.h"
 
 namespace MR
 {

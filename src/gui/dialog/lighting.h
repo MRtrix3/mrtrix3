@@ -23,12 +23,8 @@
 #ifndef __gui_dialog_lighting_h__
 #define __gui_dialog_lighting_h__
 
-#include <QDialog>
-
 #include "mrtrix.h"
 #include "gui/opengl/lighting.h"
-
-class QSlider;
 
 namespace MR
 {

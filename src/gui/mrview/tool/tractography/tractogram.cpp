@@ -20,9 +20,6 @@
 
 */
 
-#include <QMenu>
-#include <stdio.h>
-
 #include "progressbar.h"
 #include "image/stride.h"
 #include "gui/mrview/tool/tractography/tractogram.h"

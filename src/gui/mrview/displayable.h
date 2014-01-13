@@ -23,20 +23,10 @@
 #ifndef __gui_mrview_displayable_h__
 #define __gui_mrview_displayable_h__
 
-#include <QAction>
-#include <QActionGroup>
-#include <QMenu>
-
 #include "math/math.h"
 #include "gui/opengl/gl.h"
 #include "gui/opengl/shader.h"
 #include "gui/mrview/colourmap.h"
-
-#ifdef Complex
-# undef Complex
-#endif
-
-class QAction;
 
 namespace MR
 {

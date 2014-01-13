@@ -20,8 +20,6 @@
 
 */
 
-#include <QFileDialog>
-
 #include "gui/dialog/file.h"
 #include "image/format/list.h"
 

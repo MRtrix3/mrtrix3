@@ -20,12 +20,6 @@
 
 */
 
-#include <QLabel>
-#include <QListView>
-#include <QCheckBox>
-#include <QComboBox>
-#include <QStringListModel>
-
 #include "mrtrix.h"
 #include "gui/mrview/window.h"
 #include "gui/mrview/mode/slice.h"

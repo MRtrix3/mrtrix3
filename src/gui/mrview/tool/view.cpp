@@ -20,8 +20,6 @@
 
 */
 
-#include <QLabel>
-
 #include "mrtrix.h"
 #include "gui/mrview/window.h"
 #include "gui/mrview/mode/base.h"

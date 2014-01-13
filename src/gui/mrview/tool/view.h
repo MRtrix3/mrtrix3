@@ -25,12 +25,6 @@
 
 #include "gui/mrview/tool/base.h"
 
-class QComboBox;
-class QSpinBox;
-class QSlider;
-class QGroupBox;
-class QCheckBox;
-
 namespace MR
 {
   namespace GUI
