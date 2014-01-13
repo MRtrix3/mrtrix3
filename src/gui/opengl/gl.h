@@ -23,11 +23,18 @@
 #ifndef __gui_opengl_gl_h__
 #define __gui_opengl_gl_h__
 
-#include "gui/opengl/gl_core_3_3.h"
 #include "mrtrix.h"
 #include "debug.h"
 
+#include <QtGlobal>
+#if QT_VERSION >= 0x050000
+#include <QtWidgets>
+using std::isfinite;
+#else
+#include "gui/opengl/gl_core_3_3.h"
 #include <QtGUI>
+#endif
+#include <QGLWidget>
 
 // necessary to avoid conflict with Qt4's macros:
 #ifdef Complex
@@ -36,6 +43,7 @@
 #ifdef foreach
 # undef foreach
 #endif
+
 
 namespace MR
 {
@@ -122,23 +130,6 @@ namespace MR
 
 
 
-
-#ifdef MRTRIX_MACOSX
-#include <QGLContext>
-#include <QGLFormat>
-
-void* select_3_2_mac_visual (GDHandle handle);
-
-class Core3_2_context : public QGLContext
-{
-  public:
-    Core3_2_context () : QGLContext (QGLFormat::defaultFormat()) { }
-
-    virtual void* chooseMacVisual(GDHandle handle) {
-      return select_3_2_mac_visual(handle);
-    }
-};
-#endif
 
 #endif
 

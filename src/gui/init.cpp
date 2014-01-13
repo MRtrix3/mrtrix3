@@ -38,14 +38,15 @@ namespace MR
       new QApplication (App::argc, App::argv);
 
       QGLFormat f (QGL::DoubleBuffer | QGL::DepthBuffer | QGL::Rgba);
-      int swap_interval = MR::File::Config::get_int ("VSync", 0);
-      f.setSwapInterval (swap_interval);
+      //int swap_interval = MR::File::Config::get_int ("VSync", 0);
+      //f.setSwapInterval (swap_interval);
+      f.setVersion (3,2);
       f.setProfile (QGLFormat::CoreProfile);
-      int nsamples = File::Config::get_int ("MSAA", 0);
+      /*int nsamples = File::Config::get_int ("MSAA", 0);
       if (nsamples > 1) {
         f.setSampleBuffers (true);
         f.setSamples (nsamples);
-      }
+      }*/
       QGLFormat::setDefaultFormat(f);
 
 

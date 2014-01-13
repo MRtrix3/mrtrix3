@@ -41,6 +41,18 @@ namespace MR
         gl_version += 10*gl_version_major;
         if (gl_version < 33)
           throw Exception ("your OpenGL implementation is not sufficient to run MRView - need version 3.3 or higher");
+/*
+        GLenum status = glCheckFramebufferStatus (GL_FRAMEBUFFER);
+        switch (status) {
+          case GL_FRAMEBUFFER_UNDEFINED: throw Exception ("default framebuffer does not exist!");
+          case GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT: throw Exception ("default framebuffer is incomplete!");
+          case GL_FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT: throw Exception ("default framebuffer has no image attached!");
+          case GL_FRAMEBUFFER_INCOMPLETE_DRAW_BUFFER: throw Exception ("default framebuffer has incomplete draw buffer!");
+          case GL_FRAMEBUFFER_UNSUPPORTED: throw Exception ("default framebuffer does not support requested format!");
+          case GL_FRAMEBUFFER_COMPLETE: break;
+          default: throw Exception ("default framebuffer cannot be used for unknown reason!");
+        }
+        */
       }
 
       const char* ErrorString (GLenum errorcode) 
@@ -50,6 +62,7 @@ namespace MR
           case GL_INVALID_VALUE: return "value out of range";
           case GL_INVALID_OPERATION: return "operation not allowed given current state";
           case GL_OUT_OF_MEMORY: return "insufficient memory";
+          case GL_INVALID_FRAMEBUFFER_OPERATION: return "invalid framebuffer operation";
           default: return "unknown error";
         }
       }
@@ -59,33 +72,4 @@ namespace MR
 }
 
 
-
-
-#ifdef MRTRIX_MACOSX
-
-void* select_3_2_mac_visual(GDHandle handle)
-{
-  static const int Max = 40; 
-  NSOpenGLPixelFormatAttribute attribs[Max];
-  int cnt = 0;
-
-  attribs[cnt++] = NSOpenGLPFAOpenGLProfile;
-  attribs[cnt++] = NSOpenGLProfileVersion3_2Core;
-
-  attribs[cnt++] = NSOpenGLPFADoubleBuffer;
-
-  attribs[cnt++] = NSOpenGLPFADepthSize;
-  attribs[cnt++] = (NSOpenGLPixelFormatAttribute)24;
-
-  attribs[cnt++] = NSOpenGLPFAStencilSize;
-  attribs[cnt++] = (NSOpenGLPixelFormatAttribute)8;
-
-  attribs[cnt] = 0;
-  Q_ASSERT(cnt < Max);
-
-
-  return [[NSOpenGLPixelFormat alloc] initWithAttributes:attribs];
-}
-
-#endif
 

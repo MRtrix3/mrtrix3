@@ -73,11 +73,7 @@ namespace MR
       // GLArea definitions:
       
       inline Window::GLArea::GLArea (Window& parent) :
-#ifdef MRTRIX_MACOSX
-        QGLWidget (new Core3_2_context(), &parent),
-#else
         QGLWidget (&parent),
-#endif
         main (parent) {
           setCursor (Cursor::crosshair);
           setMouseTracking (true);
@@ -117,7 +113,7 @@ namespace MR
           QList<QUrl> urlList = mimeData->urls();
           for (int i = 0; i < urlList.size() && i < 32; ++i) {
             try {
-              list.push_back (new MR::Image::Header (urlList.at (i).path().toAscii().constData()));
+              list.push_back (new MR::Image::Header (urlList.at (i).path().toUtf8().constData()));
             }
             catch (Exception& e) {
               e.display();
@@ -1076,6 +1072,12 @@ namespace MR
 
       inline void Window::paintGL ()
       {
+        if (!mode) {
+          initGL();
+          if (!mode) 
+            return;
+        }
+
         glEnable (GL_MULTISAMPLE);
         if (mode->in_paint())
           return;
@@ -1090,6 +1092,9 @@ namespace MR
 
       inline void Window::initGL ()
       {
+        if (!glarea->isVisible()) 
+          return;
+       
         GL::init ();
 
         font.initGL();

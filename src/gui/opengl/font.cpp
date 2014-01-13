@@ -178,14 +178,14 @@ namespace MR
             GLfloat* pos = &screen_pos[8*n];
             pos[0] = x; pos[1] = y;
             pos[2] = x; pos[3] = y + font_height;
-            pos[4] = x+font_width[c]+2; pos[5] = y + font_height;
-            pos[6] = x+font_width[c]+2; pos[7] = y;
+            pos[4] = x+font_width[c]+2; pos[5] = y;
+            pos[6] = x+font_width[c]+2; pos[7] = y + font_height;
 
             GLfloat* tex = &tex_pos[8*n];
             tex[0] = font_tex_pos[c]; tex[1] = 1.0;
             tex[2] = font_tex_pos[c]; tex[3] = 0.0;
-            tex[4] = font_tex_pos[c]+font_tex_width[c]; tex[5] = 0.0;
-            tex[6] = font_tex_pos[c]+font_tex_width[c]; tex[7] = 1.0;
+            tex[4] = font_tex_pos[c]+font_tex_width[c]; tex[5] = 1.0;
+            tex[6] = font_tex_pos[c]+font_tex_width[c]; tex[7] = 0.0;
 
             x += font_width[c];
           }
@@ -200,7 +200,9 @@ namespace MR
           tex.bind();
           vertex_array_object.bind();
 
-          glDrawArrays (GL_QUADS, 0, 4*text.size());
+          DEBUG_OPENGL;
+          glDrawArrays (GL_TRIANGLE_STRIP, 0, 4*text.size());
+          DEBUG_OPENGL;
         }
 
       }

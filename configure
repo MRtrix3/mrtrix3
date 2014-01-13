@@ -121,10 +121,10 @@ CBLAS_LDFLAGS   Any flags required to link with an alternate cblas library.
 
 QMAKE           The command to run to invoke qmake. 
 
-MOC             The command to invoke Qt4's meta-object compile (default: moc)
+MOC             The command to invoke Qt's meta-object compile (default: moc)
 
 PATH            Set the path to use during the configure process.
-                This may be useful to set the path to Qt4's qmake.
+                This may be useful to set the path to Qt's qmake.
                 For example:
                 $ PATH=/usr/local/bin:$PATH ./configure
 
@@ -178,7 +178,7 @@ report ('\n\n')
 global cpp, cpp_cmd, ld, ld_cmd
 
 cpp = 'g++ -c CFLAGS SRC -o OBJECT'.split()
-cpp_flags = [ '-Wno-unused-parameter' ]
+cpp_flags = []
 
 ld = 'g++ OBJECTS LDFLAGS -o EXECUTABLE'.split()
 ld_flags = []
@@ -395,7 +395,7 @@ elif system == 'windows':
   ld_lib_flags += [ '-shared' ]
   runpath = ''
 elif system == 'darwin':
-  cpp_flags += [ '-DMRTRIX_MACOSX', '-fPIC', '-x', 'objective-c++' ]
+  cpp_flags += [ '-DMRTRIX_MACOSX', '-fPIC' ]
   ld_lib_flags += [ '-dynamiclib', '-install_name', '@rpath/LIBNAME' ]
   runpath = '-Wl,-rpath,@loader_path/'
   lib_suffix = '.dylib'
@@ -754,48 +754,49 @@ qt_ldflags = []
 
 if not nogui:
 
-  report ('Checking for Qt4 moc: ')
+  report ('Checking for Qt moc: ')
   moc_candidates = [ 'moc-qt4', 'moc' ]
   if 'MOC' in os.environ.keys(): 
     moc_candidates = [ os.environ['MOC'] ]
   for exe in moc_candidates:
     try:
-      moc_version = execute ([ exe, '-v' ], OSError, False)[2].split('(')[1].rstrip(')').split()[1]
-      if moc_version.split('.')[0] == '4':
+      ret = execute ([ exe, '-v' ], OSError, False)
+      moc_version = (ret[1]+ret[2]).rstrip(')').split()[-1]
+      if int (moc_version.split('.')[0]) >= 4:
         moc = exe
         break
     except OSError:
       continue 
   else:
-    error (''' Qt4 moc not found!
+    error (''' Qt moc not found!
 
-  Use the MOC environment variable to specify the Qt4 meta-object compiler''')
+  Use the MOC environment variable to specify the Qt meta-object compiler''')
   
   report (moc + ' (version ' + moc_version + ')\n')
     
 
-  report ('Checking for Qt4 qmake: ')
+  report ('Checking for Qt qmake: ')
   qmake_candidates = [ 'qmake-qt4', 'qmake' ]
   if 'QMAKE' in os.environ.keys(): 
     qmake_candidates = [ os.environ['QMAKE'] ]
   for exe in qmake_candidates:
     try:
       qmake_version = execute ([ exe, '-v' ], OSError, False)[1].splitlines()[1].split()[3]
-      if qmake_version.split('.')[0] == '4':
+      if int (qmake_version.split('.')[0]) >= 4:
         qmake = exe
         break
     except OSError:
       continue 
   else:
-    error (''' Qt4 qmake not found!
+    error (''' Qt qmake not found!
 
-  Use the QMAKE environment variable to specify the Qt4 qmake executable''')
+  Use the QMAKE environment variable to specify the Qt qmake executable''')
   
   report (qmake + ' (version ' + qmake_version + ')\n')
     
 
 
-  report ('Checking for Qt4: ')
+  report ('Checking for Qt: ')
 
   try:
     with TempDir() as qt_dir:
@@ -856,7 +857,7 @@ int main() { Foo f; }
       except QMakeError:
         error ('''error issuing qmake command!
 
-  Use the QMAKE environment variable to set the correct qmake command for use with Qt4''')
+  Use the QMAKE environment variable to set the correct qmake command for use with Qt''')
      
 
       qt_defines = [] 
@@ -924,17 +925,17 @@ int main() { Foo f; }
 
     
   except QMakeError:
-    error ('''error invoking Qt4 qmake!
+    error ('''error invoking Qt qmake!
 
-  Use the QMAKE environment variable to set the correct qmake command for use with Qt4''')
+  Use the QMAKE environment variable to set the correct qmake command for use with Qt''')
   except QMOCError:
-    error ('''error invoking Qt4 moc!
+    error ('''error invoking Qt moc!
 
-use the MOC environment variable to specify the Qt4 moc command''')
+use the MOC environment variable to specify the Qt moc command''')
   except CompileError as e:
-    error ('error compiling Qt4 application! ' + str(e))
+    error ('error compiling Qt application! ' + str(e))
   except OSError as e:
-    error ('Unexpected error! Unable to configure Qt4 environment: ' + str(e))
+    error ('Unexpected error! Unable to configure Qt environment: ' + str(e))
 
 
 
@@ -948,9 +949,16 @@ use the MOC environment variable to specify the Qt4 moc command''')
 #include <QGLWidget>
 #include <iostream>
 
+QGLFormat core_format () {
+  QGLFormat f;
+  f.setVersion (3,2);
+  f.setProfile (QGLFormat::CoreProfile);
+  return f;
+}
+
 class GLWidget : public QGLWidget {
   public:
-    GLWidget (QWidget *parent = 0) : QGLWidget (parent) { }
+    GLWidget () : QGLWidget (core_format()) { }
     ~GLWidget() { }
   protected:
     void initializeGL () { 
@@ -984,6 +992,15 @@ WARNING: no OpenGL implementation found.
          this system.
 ''')
   if system == "darwin":
+    cpp_flags += [ '-mmacosx-version-min=10.9' ]
+    if '-Wall' in qt_cflags: qt_cflags.remove ('-Wall')
+    if '-W' in qt_cflags: qt_cflags.remove ('-W')
+    for entry in qt_cflags: 
+      if entry.startswith ('-mmacosx-version-min='):
+        qt_cflags.remove (entry)
+    for entry in qt_ldflags: 
+      if entry.startswith ('-mmacosx-version-min='):
+        qt_ldflags.remove (entry)
     qt_ldflags += [ '-framework', 'Foundation', '-framework', 'Cocoa' ]  
 
 
@@ -1050,16 +1067,18 @@ if R_module:
 
 # add debugging or profiling flags if requested:
 
+cpp_flags += [ '-Wall', '-Wno-unused-function', '-Wno-unused-parameter' ]
+
 if profile:
   cpp_flags += [ '-g', '-pg', '-DNDEBUG' ]
   ld_flags += [ '-g', '-pg' ]
   ld_lib_flags += [ '-g', '-pg' ]
 elif debug:
-  cpp_flags += [ '-O0', '-g', '-Wall', '-D_GLIBCXX_DEBUG=1', '-D_GLIBCXX_DEBUG_PEDANTIC=1' ]
+  cpp_flags += [ '-O0', '-g', '-D_GLIBCXX_DEBUG=1', '-D_GLIBCXX_DEBUG_PEDANTIC=1' ]
   ld_flags += [ '-g' ]
   ld_lib_flags += [ '-g' ]
 else:
-  cpp_flags += [ '-O2', '-Wall', '-DNDEBUG' ]
+  cpp_flags += [ '-O2', '-DNDEBUG' ]
 
 
 
