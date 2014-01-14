@@ -73,7 +73,7 @@ namespace MR
       // GLArea definitions:
       
       inline Window::GLArea::GLArea (Window& parent) :
-        QGLWidget (&parent),
+        GL::Widget (&parent),
         main (parent) {
           setCursor (Cursor::crosshair);
           setMouseTracking (true);
@@ -622,7 +622,7 @@ namespace MR
 
       void Window::add_images (VecPtr<MR::Image::Header>& list)
       {
-        while (!mode) 
+        while (!glarea->ready())
           qApp->processEvents();
 
         for (size_t i = 0; i < list.size(); ++i) {
@@ -1075,12 +1075,6 @@ namespace MR
 
       inline void Window::paintGL ()
       {
-        if (!mode) {
-          initGL();
-          if (!mode) 
-            return;
-        }
-
         glEnable (GL_MULTISAMPLE);
         if (mode->in_paint())
           return;
@@ -1093,9 +1087,6 @@ namespace MR
 
       inline void Window::initGL ()
       {
-        if (!glarea->isVisible()) 
-          return;
-       
         GL::init ();
 
         font.initGL();

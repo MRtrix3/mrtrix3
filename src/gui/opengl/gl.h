@@ -29,7 +29,6 @@
 #include <QtGlobal>
 #if QT_VERSION >= 0x050000
 #include <QtWidgets>
-using std::std::isfinite;
 #else
 #include "gui/opengl/gl_core_3_3.h"
 #include <QtGui>
@@ -115,6 +114,24 @@ namespace MR
           void bind () const { assert (id); glBindVertexArray (id); }
         protected:
           GLuint id;
+      };
+
+
+
+      class Widget : public QGLWidget {
+        public:
+          Widget (QWidget* parent) :
+            QGLWidget (core_format(), parent),
+            initialized (false) { }
+
+          bool ready () const { return initialized; }
+
+        protected:
+          virtual void glInit ();
+          virtual void glDraw ();
+          bool initialized;
+
+          static QGLFormat core_format ();
       };
 
     }

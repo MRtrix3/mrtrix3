@@ -20,8 +20,8 @@
 
 */
 
-
 #include "gui/opengl/gl.h"
+#include "file/config.h"
 
 namespace MR
 {
@@ -65,6 +65,49 @@ namespace MR
           case GL_INVALID_FRAMEBUFFER_OPERATION: return "invalid framebuffer operation";
           default: return "unknown error";
         }
+      }
+
+
+
+
+      void Widget::glInit () {
+        if (!isVisible()) 
+          return;
+
+        if (glCheckFramebufferStatus (GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) 
+          return;
+
+        QGLWidget::glInit ();
+        initialized = true;
+      }
+
+      void Widget::glDraw () {
+        if (!initialized) { 
+          glInit();
+          if (!initialized)
+            return;
+        }
+        QGLWidget::glDraw();
+      }
+
+
+
+
+
+      QGLFormat Widget::core_format () {
+        QGLFormat f (QGL::DoubleBuffer | QGL::DepthBuffer | QGL::Rgba);
+        int swap_interval = MR::File::Config::get_int ("VSync", 0);
+        f.setSwapInterval (swap_interval);
+#ifdef MRTRIX_MACOSX
+        f.setVersion (3,3);
+        f.setProfile (QGLFormat::CoreProfile);
+#endif
+        int nsamples = File::Config::get_int ("MSAA", 0);
+        if (nsamples > 1) {
+          f.setSampleBuffers (true);
+          f.setSamples (nsamples);
+        }
+        return f;
       }
 
     }
