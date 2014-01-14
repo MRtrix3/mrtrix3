@@ -951,7 +951,7 @@ use the MOC environment variable to specify the Qt moc command''')
 
 QGLFormat core_format () {
   QGLFormat f;
-  f.setVersion (3,2);
+  f.setVersion (3,3);
   f.setProfile (QGLFormat::CoreProfile);
   return f;
 }
