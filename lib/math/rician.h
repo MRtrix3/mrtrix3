@@ -135,7 +135,7 @@ namespace MR
           dP_dactual[i] = -nm_a - nm * F1_F0;
           if (actual[i] < 0.0) dP_dactual[i] = -dP_dactual[i];
           lnP += 0.5 * nm_a * m_a - log (nm * F0);
-          assert (isfinite (lnP));
+          assert (std::isfinite (lnP));
         }
 
         return lnP;
@@ -165,8 +165,8 @@ namespace MR
           if (actual[i] < 0.0) dP_dactual[i] = -dP_dactual[i];
           dP_dN += 0.5 * pow2 (m_a) - measured[i] * actual_pos * F1_F0;
           lnP += 0.5 * nm_a * m_a - log (nm * F0);
-          assert (isfinite (dP_dN));
-          assert (isfinite (lnP));
+          assert (std::isfinite (dP_dN));
+          assert (std::isfinite (lnP));
         }
 
         return lnP;

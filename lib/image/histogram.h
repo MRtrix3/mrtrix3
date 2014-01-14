@@ -53,7 +53,7 @@ namespace MR
           MR::Image::LoopInOrder loop (D, "building histogram of \"" + shorten (D.name()) + "\"...");
           for (loop.start (D); loop.ok(); loop.next (D)) {
             value_type val = D.value();
-            if (isfinite (val) && val != 0.0) {
+            if (std::isfinite (val) && val != 0.0) {
               size_t pos = size_t ( (val-min) /step);
               if (pos >= list.size()) pos = list.size()-1;
               list[pos].frequency++;

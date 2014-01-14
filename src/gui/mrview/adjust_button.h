@@ -30,7 +30,7 @@ namespace MR
           }
 
           void setValue (float val) {
-            if (isfinite (val)) {
+            if (std::isfinite (val)) {
               if (val > max)
                 setText (str(max).c_str());
               else if (val < min)

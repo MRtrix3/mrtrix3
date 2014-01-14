@@ -97,8 +97,8 @@ namespace MR
             "uniform vec3 ray;\n"
             "out vec4 final_color;\n"
             "void main () {\n"
-            "float amplitude;\n"
-            "vec4 color;\n";
+            "  float amplitude;\n"
+            "  vec4 color;\n";
 
 
           source += 
@@ -482,7 +482,10 @@ namespace MR
           glDepthMask (GL_FALSE);
           glActiveTexture (GL_TEXTURE0);
 
-          glDrawElements (GL_QUADS, 12, GL_UNSIGNED_BYTE, (void*) 0);
+          const GLsizei counts[] = { 4, 4, 4 };
+          const GLvoid* starts[] = { reinterpret_cast<void*>(0), reinterpret_cast<void*>(4*sizeof(GLubyte)), reinterpret_cast<void*>(8*sizeof(GLubyte)) };
+
+          glMultiDrawElements (GL_TRIANGLE_FAN, counts, GL_UNSIGNED_BYTE, starts, 3);
           image()->stop (volume_shader);
 
           glDisable (GL_BLEND);

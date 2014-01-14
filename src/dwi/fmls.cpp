@@ -131,7 +131,7 @@ bool Segmenter::operator() (const SH_coefs& in, FOD_lobes& out) const {
   out.clear();
   out.vox = in.vox;
 
-  if (in[0] <= 0.0 || !isfinite (in[0]))
+  if (in[0] <= 0.0 || !std::isfinite (in[0]))
     return true;
 
   Math::Vector<float> values (dirs.size());

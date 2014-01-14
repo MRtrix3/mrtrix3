@@ -399,7 +399,7 @@ namespace MR
               for (int x = -nx; x <= nx; ++x) {
                 Point<> p = pos + float(x)*x_dir + float(y)*y_dir;
                 get_values (values, image, p);
-                if (!isfinite (values[0])) continue;
+                if (!std::isfinite (values[0])) continue;
                 if (values[0] == 0.0) continue;
                 overlay_renderer->compute_r_del_daz (r_del_daz, values.sub (0, Math::SH::NforL (overlay_lmax)));
                 overlay_renderer->set_data (r_del_daz);

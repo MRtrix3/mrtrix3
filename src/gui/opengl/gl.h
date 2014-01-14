@@ -29,10 +29,10 @@
 #include <QtGlobal>
 #if QT_VERSION >= 0x050000
 #include <QtWidgets>
-using std::isfinite;
+using std::std::isfinite;
 #else
 #include "gui/opengl/gl_core_3_3.h"
-#include <QtGUI>
+#include <QtGui>
 #endif
 #include <QGLWidget>
 
@@ -120,14 +120,6 @@ namespace MR
     }
   }
 }
-
-
-#define DEBUG_OPENGL { GLenum error_code = glGetError(); \
-    if (error_code != GL_NO_ERROR) { \
-      FAIL (std::string ("OpenGL Error: ") + (const char*) MR::GUI::GL::ErrorString (error_code) + " ["__FILE__":" + MR::str(__LINE__) + "]"); \
-    }\
-  }
-
 
 
 

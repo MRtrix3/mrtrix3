@@ -622,6 +622,9 @@ namespace MR
 
       void Window::add_images (VecPtr<MR::Image::Header>& list)
       {
+        while (!mode) 
+          qApp->processEvents();
+
         for (size_t i = 0; i < list.size(); ++i) {
           QAction* action = new Image (*this, *list[i]);
           image_group->addAction (action);
@@ -1084,8 +1087,6 @@ namespace MR
 
         glDrawBuffer (GL_BACK);
         mode->paintGL();
-
-        DEBUG_OPENGL;
       }
 
 

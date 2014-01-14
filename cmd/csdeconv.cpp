@@ -117,7 +117,7 @@ class Processor
       for (size_t n = 0; n < sdeconv.shared.dwis.size(); n++) {
         dwi[3] = sdeconv.shared.dwis[n];
         data[n] = dwi.value();
-        if (!isfinite (data[n]))
+        if (!std::isfinite (data[n]))
           return false;
         if (data[n] < 0.0)
           data[n] = 0.0;

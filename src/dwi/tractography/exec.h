@@ -173,7 +173,7 @@ namespace MR
               else
                 step_size = to<float> (properties["step_size"]);
               size_t upsample_ratio = 1;
-              if (isfinite(step_size) && !step_size)
+              if (std::isfinite(step_size) && !step_size)
                 upsample_ratio = Math::ceil<size_t> (step_size / (minvalue (fod_data.vox(0), fod_data.vox(1), fod_data.vox(2)) * 0.25));
 
               TckMapper mapper (H, upsample_ratio, true, dirs);

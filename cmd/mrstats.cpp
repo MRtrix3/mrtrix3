@@ -85,7 +85,7 @@ class CalibrateHistogram
     int bins;
 
     void operator() (value_type val) {
-      if (isfinite (val)) {
+      if (std::isfinite (val)) {
         if (val < min) min = val;
         if (val > max) max = val;
       }
@@ -131,7 +131,7 @@ class Stats
 
 
     void operator() (complex_type val) {
-      if (isfinite (val.real()) && isfinite (val.imag())) {
+      if (std::isfinite (val.real()) && std::isfinite (val.imag())) {
         mean += val;
         std += cdouble (val.real()*val.real(), val.imag()*val.imag());
         if (min.real() > val.real()) min = complex_type (val.real(), min.imag());

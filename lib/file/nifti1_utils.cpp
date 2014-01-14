@@ -156,9 +156,9 @@ namespace MR
 
         // offset and scale:
         H.intensity_scale() = get<float32> (&NH.scl_slope, is_BE);
-        if (isfinite (H.intensity_scale()) && H.intensity_scale() != 0.0) {
+        if (std::isfinite (H.intensity_scale()) && H.intensity_scale() != 0.0) {
           H.intensity_offset() = get<float32> (&NH.scl_inter, is_BE);
-          if (!isfinite (H.intensity_offset()))
+          if (!std::isfinite (H.intensity_offset()))
             H.intensity_offset() = 0.0;
         }
         else {

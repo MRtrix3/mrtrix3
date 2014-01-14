@@ -451,32 +451,32 @@ namespace MR
 
         void View::set_transparency_from_image () 
         {
-          if (!isfinite (window.image()->transparent_intensity) ||
-              !isfinite (window.image()->opaque_intensity) ||
-              !isfinite (window.image()->alpha) ||
-              !isfinite (window.image()->lessthan) ||
-              !isfinite (window.image()->greaterthan)) { // reset:
-            if (!isfinite (window.image()->intensity_min()) || 
-                !isfinite (window.image()->intensity_max()))
+          if (!std::isfinite (window.image()->transparent_intensity) ||
+              !std::isfinite (window.image()->opaque_intensity) ||
+              !std::isfinite (window.image()->alpha) ||
+              !std::isfinite (window.image()->lessthan) ||
+              !std::isfinite (window.image()->greaterthan)) { // reset:
+            if (!std::isfinite (window.image()->intensity_min()) || 
+                !std::isfinite (window.image()->intensity_max()))
               return;
 
-            if (!isfinite (window.image()->transparent_intensity))
+            if (!std::isfinite (window.image()->transparent_intensity))
               window.image()->transparent_intensity = window.image()->intensity_min();
-            if (!isfinite (window.image()->opaque_intensity))
+            if (!std::isfinite (window.image()->opaque_intensity))
               window.image()->opaque_intensity = window.image()->intensity_max();
-            if (!isfinite (window.image()->alpha))
+            if (!std::isfinite (window.image()->alpha))
               window.image()->alpha = opacity->value() / 255.0;
-            if (!isfinite (window.image()->lessthan))
+            if (!std::isfinite (window.image()->lessthan))
               window.image()->lessthan = window.image()->intensity_min();
-            if (!isfinite (window.image()->greaterthan))
+            if (!std::isfinite (window.image()->greaterthan))
               window.image()->greaterthan = window.image()->intensity_max();
           }
 
-          assert (isfinite (window.image()->transparent_intensity));
-          assert (isfinite (window.image()->opaque_intensity));
-          assert (isfinite (window.image()->alpha));
-          assert (isfinite (window.image()->lessthan));
-          assert (isfinite (window.image()->greaterthan));
+          assert (std::isfinite (window.image()->transparent_intensity));
+          assert (std::isfinite (window.image()->opaque_intensity));
+          assert (std::isfinite (window.image()->alpha));
+          assert (std::isfinite (window.image()->lessthan));
+          assert (std::isfinite (window.image()->greaterthan));
 
           transparent_intensity->setValue (window.image()->transparent_intensity);
           opaque_intensity->setValue (window.image()->opaque_intensity);

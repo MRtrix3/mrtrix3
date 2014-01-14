@@ -144,7 +144,7 @@ void run ()
   if (Image::voxel_count (data_in) < topN || Image::voxel_count (data_in) < bottomN)
     throw Exception ("number of voxels at which to threshold exceeds number of voxels in image");
 
-  if (isfinite (percentile)) {
+  if (std::isfinite (percentile)) {
     percentile /= 100.0;
     if (percentile < 0.5) {
       bottomN = Math::round (Image::voxel_count (data_in) * percentile);
@@ -165,7 +165,7 @@ void run ()
   float one  = 1.0;
   if (invert) std::swap (zero, one);
 
-  if (isfinite (topNpercent) || isfinite (bottomNpercent)) {
+  if (std::isfinite (topNpercent) || std::isfinite (bottomNpercent)) {
     Image::LoopInOrder loop (in, "computing voxel count...");
     size_t count = 0;
     for (loop.start (in); loop.ok(); loop.next (in)) {
@@ -174,7 +174,7 @@ void run ()
       ++count;
     }
 
-    if (isfinite (topNpercent))
+    if (std::isfinite (topNpercent))
       topN = Math::round (0.01 * topNpercent * count);
     else
       bottomN = Math::round (0.01 * bottomNpercent * count);
@@ -195,7 +195,7 @@ void run ()
       if (topN) {
         for (loop.start (in); loop.ok(); loop.next (in)) {
           const float val = in.value();
-          if (!isfinite (val)) continue;
+          if (!std::isfinite (val)) continue;
           if (ignore_zeroes && val == 0.0) continue;
           if (list.size() == topN) {
             if (val < list.begin()->first) continue;
@@ -210,7 +210,7 @@ void run ()
       else {
         for (loop.start (in); loop.ok(); loop.next (in)) {
           const float val = in.value();
-          if (!isfinite (val)) continue;
+          if (!std::isfinite (val)) continue;
           if (ignore_zeroes && val == 0.0) continue;
           if (list.size() == bottomN) {
             std::multimap<float,std::vector<ssize_t> >::iterator i = list.end();
@@ -256,7 +256,7 @@ void run ()
     Image::Loop loop ("thresholding \"" + shorten (in.name()) + "\" at intensity " + str (threshold_value) + "...");
     for (loop.start (out, in); loop.ok(); loop.next (out, in)) {
       float val = in.value();
-      out.value() = ( !isfinite (val) || val < threshold_value ) ? zero : one;
+      out.value() = ( !std::isfinite (val) || val < threshold_value ) ? zero : one;
     }
   }
 }

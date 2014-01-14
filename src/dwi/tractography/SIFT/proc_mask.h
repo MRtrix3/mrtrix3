@@ -114,7 +114,7 @@ namespace MR
             Image::LoopInOrder loop (dwi, "Creating homogeneous processing mask...", 0, 3);
             dwi[3] = 0;
             for (loop.start (dwi, mask); loop.ok(); loop.next (dwi, mask))
-              mask.value() = (dwi.value() && isfinite (static_cast<value_type> (dwi.value()))) ? 1.0 : 0.0;
+              mask.value() = (dwi.value() && std::isfinite (static_cast<value_type> (dwi.value()))) ? 1.0 : 0.0;
 
           }
 
@@ -166,7 +166,7 @@ namespace MR
         Image::voxel_assign (v_dwi, pos);
         Image::voxel_assign (v_out, pos);
         typedef typename Set::voxel_type::value_type value_type;
-        if (v_dwi.value() && isfinite (static_cast<value_type> (v_dwi.value()))) {
+        if (v_dwi.value() && std::isfinite (static_cast<value_type> (v_dwi.value()))) {
 
           const ACT::Tissues tissues = ACT2pve (pos);
           v_out[3] = 0; v_out.value() = tissues.get_cgm();

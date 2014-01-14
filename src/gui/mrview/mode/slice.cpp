@@ -128,12 +128,10 @@ namespace MR
           with_projection.set (MV, P);
 
           // render image:
-          DEBUG_OPENGL;
           if (snap_to_image())
             image()->render2D (shader_program, with_projection, axis, slice(axis));
           else
             image()->render3D (shader_program, with_projection, with_projection.depth_of (focus()));
-          DEBUG_OPENGL;
 
           render_tools (with_projection);
 

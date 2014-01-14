@@ -162,8 +162,8 @@ inline std::vector<int> set_header (
 inline void zero_non_finite (complex_type in, complex_type& out) 
 {
   out = complex_type (
-      isfinite (in.real()) ? in.real() : 0.0, 
-      isfinite (in.imag()) ? in.imag() : 0.0
+      std::isfinite (in.real()) ? in.real() : 0.0, 
+      std::isfinite (in.imag()) ? in.imag() : 0.0
       );
 }
 

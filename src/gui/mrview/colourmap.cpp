@@ -232,7 +232,7 @@ namespace MR
           program.start();
           glUniform1f (glGetUniformLocation (program, "scale_x"), 2.0f / projection.width());
           glUniform1f (glGetUniformLocation (program, "scale_y"), 2.0f / projection.height());
-          glDrawArrays (GL_QUADS, 0, 4);
+          glDrawArrays (GL_TRIANGLE_FAN, 0, 4);
           program.stop();
 
           frame_program.start();

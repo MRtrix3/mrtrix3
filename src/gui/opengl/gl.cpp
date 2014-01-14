@@ -40,7 +40,7 @@ namespace MR
         glGetIntegerv (GL_MINOR_VERSION, &gl_version);
         gl_version += 10*gl_version_major;
         if (gl_version < 33)
-          throw Exception ("your OpenGL implementation is not sufficient to run MRView - need version 3.3 or higher");
+          FAIL ("your OpenGL implementation is not sufficient to run MRView - need version 3.3 or higher");
 /*
         GLenum status = glCheckFramebufferStatus (GL_FRAMEBUFFER);
         switch (status) {

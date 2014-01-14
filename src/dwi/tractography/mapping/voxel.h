@@ -51,7 +51,7 @@ class Voxel : public Point<int>
 
 inline Voxel round (const Point<float>& p)
 { 
-  assert (isfinite (p[0]) && isfinite (p[1]) && isfinite (p[2]));
+  assert (std::isfinite (p[0]) && std::isfinite (p[1]) && std::isfinite (p[2]));
   return (Voxel (Math::round<int> (p[0]), Math::round<int> (p[1]), Math::round<int> (p[2])));
 }
 

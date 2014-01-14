@@ -192,7 +192,7 @@ node_t Tck2nodes_forwardsearch::select_node (const std::vector< Point<float> >& 
           if (visited.find (v_neighbour) == visited.end()) {
             visited.insert (v_neighbour);
             const float cf = get_cf (p, t, v_neighbour);
-            if (isfinite (cf))
+            if (std::isfinite (cf))
               to_test.insert (std::make_pair (cf, v_neighbour));
           }
 

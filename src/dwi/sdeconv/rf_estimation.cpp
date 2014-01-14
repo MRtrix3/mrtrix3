@@ -127,7 +127,7 @@ bool FODCalcAndSeg::operator() (const Image::Iterator& pos)
   for (size_t n = 0; n < csd.shared.dwis.size(); n++) {
     in[3] = csd.shared.dwis[n];
     dwi_data[n] = in.value();
-    if (!isfinite (dwi_data[n]))
+    if (!std::isfinite (dwi_data[n]))
       return true;
     if (dwi_data[n] < 0.0)
       dwi_data[n] = 0.0;

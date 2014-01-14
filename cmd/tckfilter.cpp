@@ -223,7 +223,7 @@ void run ()
   else
     step_size = to<float> (properties["step_size"]);
 
-  if (using_length_filtering && (!step_size || !isfinite (step_size)))
+  if (using_length_filtering && (!step_size || !std::isfinite (step_size)))
     throw Exception ("Cannot filter streamlines by length as tractography step size is malformed");
 
   Filter filter (properties, step_size);

@@ -153,7 +153,7 @@ class Cost
           + b0_multiplier * x[6];
 
         A[i] = Math::exp (v);
-        assert (isfinite (A[i]));
+        assert (std::isfinite (A[i]));
       }
 
       cost_value_type noise = Math::exp (noise_multiplier * x[7]);
@@ -166,7 +166,7 @@ class Cost
       else if (fitting_method == 3) // rician
         E = Math::Rician::lnP (*S, A, noise, dP, dE[7]);
 
-      assert (isfinite (E));
+      assert (std::isfinite (E));
 
       cost_value_type reg = 0.0;
       for (size_t i = 0; i < 6; i++)

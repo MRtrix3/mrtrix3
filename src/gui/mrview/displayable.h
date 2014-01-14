@@ -279,17 +279,17 @@ namespace MR
           }
 
           void update_levels () {
-            assert (isfinite (value_min));
-            assert (isfinite (value_max));
-            if (!isfinite (transparent_intensity)) 
+            assert (std::isfinite (value_min));
+            assert (std::isfinite (value_max));
+            if (!std::isfinite (transparent_intensity)) 
               transparent_intensity = value_min + 0.1 * (value_max - value_min);
-            if (!isfinite (opaque_intensity)) 
+            if (!std::isfinite (opaque_intensity)) 
               opaque_intensity = value_min + 0.5 * (value_max - value_min);
-            if (!isfinite (alpha)) 
+            if (!std::isfinite (alpha)) 
               alpha = 0.5;
-            if (!isfinite (lessthan))
+            if (!std::isfinite (lessthan))
               lessthan = value_min;
-            if (!isfinite (greaterthan))
+            if (!std::isfinite (greaterthan))
               greaterthan = value_max;
           }
 
