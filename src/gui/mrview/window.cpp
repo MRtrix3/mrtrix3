@@ -44,9 +44,14 @@ namespace MR
             return default_key;
 
           if (value == "shift") return Qt::ShiftModifier;
-          if (value == "ctrl") return Qt::ControlModifier;
           if (value == "alt") return Qt::AltModifier;
+#ifdef MRTRIX_MACOSX
+          if (value == "ctrl") return Qt::MetaModifier;
+          if (value == "cmd") return Qt::ControlModifier;
+#else
+          if (value == "ctrl") return Qt::ControlModifier;
           if (value == "meta" || value == "win") return Qt::MetaModifier;
+#endif 
 
           throw Exception ("no such modifier \"" + value + "\" (parsed from config file)");
           return Qt::NoModifier;
@@ -61,9 +66,14 @@ namespace MR
       std::string get_modifier (Qt::KeyboardModifiers key) {
         switch (key) {
           case Qt::ShiftModifier: return "Shift";
-          case Qt::ControlModifier: return "Ctrl";
           case Qt::AltModifier: return "Alt";
+#ifdef MRTRIX_MACOSX
+          case Qt::ControlModifier: return "Cmd";
+          case Qt::MetaModifier: return "Ctrl";
+#else
+          case Qt::ControlModifier: return "Ctrl";
           case Qt::MetaModifier: return "Win";
+#endif
           default: assert (0);
         }
         return "Invalid";
@@ -152,7 +162,11 @@ namespace MR
         glarea (new GLArea (*this)),
         mode (NULL),
         font (glarea->font()),
+#ifdef MRTRIX_MACOSX
+        FocusModifier (get_modifier ("MRViewFocusModifierKey", Qt::AltModifier)),
+#else
         FocusModifier (get_modifier ("MRViewFocusModifierKey", Qt::MetaModifier)),
+#endif
         MoveModifier (get_modifier ("MRViewMoveModifierKey", Qt::ShiftModifier)),
         RotateModifier (get_modifier ("MRViewRotateModifierKey", Qt::ControlModifier)),
         mouse_action (NoAction),
@@ -947,8 +961,6 @@ namespace MR
 
       inline int Window::get_mouse_mode ()
       {
-        modifiers_ = QApplication::keyboardModifiers();
-
         if (mouse_action == NoAction && modifiers_ != Qt::NoModifier) {
           if (modifiers_ == FocusModifier && ( mode->features & Mode::FocusContrast )) 
             return 1;
@@ -1105,7 +1117,7 @@ namespace MR
       template <class Event> inline void Window::grab_mouse_state (Event* event)
       {
         buttons_ = event->buttons();
-        modifiers_ = event->modifiers();
+        modifiers_ = event->modifiers() & ( FocusModifier | MoveModifier | RotateModifier );
         mouse_displacement_ = QPoint (0,0);
         mouse_position_ = event->pos();
         mouse_position_.setY (glarea->height() - mouse_position_.y());
@@ -1122,11 +1134,13 @@ namespace MR
 
       void Window::keyPressEvent (QKeyEvent* event) 
       {
+        modifiers_ = event->modifiers() & ( FocusModifier | MoveModifier | RotateModifier );
         set_cursor();
       }
 
       void Window::keyReleaseEvent (QKeyEvent* event)
       {
+        modifiers_ = event->modifiers() & ( FocusModifier | MoveModifier | RotateModifier );
         set_cursor();
       }
 
