@@ -44,7 +44,7 @@ namespace MR
         INFO ("loading font into OpenGL texture...");
 
         font_height = metric.height() + 2;
-        const float max_font_width = metric.maxWidth() + 2;
+        const float max_font_width = metric.width("MM") + 2;
 
         int tex_width = 0;
         for (int c = first_char; c <= last_char; ++c) 
