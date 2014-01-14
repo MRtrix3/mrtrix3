@@ -138,7 +138,7 @@ namespace MR
         ~MapVoxel()
         {
           if (lookup_table) {
-            delete lookup_table;
+            delete[] lookup_table;
             lookup_table = NULL;
           }
         }
