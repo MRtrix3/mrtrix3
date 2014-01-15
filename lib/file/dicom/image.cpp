@@ -453,7 +453,7 @@ namespace MR {
 
           if (G(n,3)) {
             float norm = Math::norm (frame.G);
-            G(n,3) *= norm;
+            G(n,3) *= norm*norm;
             if (norm) {
               float d[] = { 
                 frame.G[0]/norm, 
