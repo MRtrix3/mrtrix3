@@ -443,9 +443,22 @@ else:
 
 
 
-report ('Checking for C++ TR1 implementation: ')
+report ('Checking for unordered_map: ')
 try:
   compile ('''
+#include <unordered_map>
+
+int main() { 
+  std::unordered_map<int,int> map; 
+  return (map.size());
+}
+''', cpp_flags, ld_flags)
+  report ('present\n')
+except:
+  report ('no\n')
+  report ('Checking for TR1 unordered_map: ')
+  try:
+    compile ('''
 #include <tr1/unordered_map>
 
 int main() { 
@@ -453,10 +466,11 @@ int main() {
   return (map.size());
 }
 ''', cpp_flags, ld_flags)
-  report ('present\n')
-  cpp_flags += [ '-DMRTRIX_USE_TR1' ]
-except:
-  report ('not present - using SGI hash_map instead\n')
+    report ('present\n')
+    cpp_flags += [ '-DMRTRIX_USE_TR1' ]
+  except:
+    report ('no - will use SGI std::hash_map instead\n')
+    cpp_flags += [ '-DMRTRIX_USE_HASH_MAP' ]
 
 
 
