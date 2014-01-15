@@ -83,7 +83,7 @@ namespace MR
       // GLArea definitions:
       
       inline Window::GLArea::GLArea (Window& parent) :
-        GL::Widget (&parent),
+        QGLWidget (GL::core_format(), &parent),
         main (parent) {
           setCursor (Cursor::crosshair);
           setMouseTracking (true);
@@ -636,9 +636,6 @@ namespace MR
 
       void Window::add_images (VecPtr<MR::Image::Header>& list)
       {
-        while (!glarea->ready())
-          qApp->processEvents();
-
         for (size_t i = 0; i < list.size(); ++i) {
           QAction* action = new Image (*this, *list[i]);
           image_group->addAction (action);

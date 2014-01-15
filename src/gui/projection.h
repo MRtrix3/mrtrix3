@@ -22,7 +22,7 @@ namespace MR
     class Projection
     {
       public:
-        Projection (GL::Widget* parent, const GL::Font& font) : 
+        Projection (QGLWidget* parent, const GL::Font& font) : 
           glarea (parent), 
           font (font) { } 
 
@@ -225,7 +225,7 @@ namespace MR
         }
 
       protected:
-        GL::Widget* glarea;
+        QGLWidget* glarea;
         const GL::Font& font;
         GL::mat4 MV, iMV, P, iP, MVP, iMVP;
         GLint viewport[4];

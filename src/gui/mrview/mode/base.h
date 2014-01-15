@@ -111,8 +111,8 @@ namespace MR
             void set_plane (int p) { window.set_plane (p); }
             void set_orientation (const Math::Versor<float>& Q) { window.set_orientation (Q); }
 
-            GL::Widget* glarea () const {
-              return reinterpret_cast <GL::Widget*> (window.glarea);
+            QGLWidget* glarea () const {
+              return reinterpret_cast <QGLWidget*> (window.glarea);
             }
 
             Point<> move_in_out_displacement (float distance, const Projection& projection) const {

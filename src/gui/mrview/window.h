@@ -156,7 +156,7 @@ namespace MR
           std::vector<std::string> batch_commands;
 
 
-          class GLArea : public GL::Widget {
+          class GLArea : public QGLWidget {
             public:
               GLArea (Window& parent);
               QSize minimumSizeHint () const;

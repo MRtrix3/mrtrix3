@@ -70,31 +70,8 @@ namespace MR
 
 
 
-      void Widget::glInit () {
-        if (!isVisible()) 
-          return;
 
-        if (glCheckFramebufferStatus (GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) 
-          return;
-
-        QGLWidget::glInit ();
-        initialized = true;
-      }
-
-      void Widget::glDraw () {
-        if (!initialized) { 
-          glInit();
-          if (!initialized)
-            return;
-        }
-        QGLWidget::glDraw();
-      }
-
-
-
-
-
-      QGLFormat Widget::core_format () {
+      QGLFormat core_format () {
         QGLFormat f (QGL::DoubleBuffer | QGL::DepthBuffer | QGL::Rgba);
         int swap_interval = MR::File::Config::get_int ("VSync", 0);
         f.setSwapInterval (swap_interval);

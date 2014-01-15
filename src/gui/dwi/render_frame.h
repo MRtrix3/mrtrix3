@@ -45,7 +45,7 @@ namespace MR
     namespace DWI
     {
 
-      class RenderFrame : public GL::Widget
+      class RenderFrame : public QGLWidget
       {
           Q_OBJECT
 
