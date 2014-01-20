@@ -769,44 +769,44 @@ qt_ldflags = []
 if not nogui:
 
   report ('Checking for Qt moc: ')
-  moc_candidates = [ 'moc-qt4', 'moc' ]
+  moc = 'moc' 
   if 'MOC' in os.environ.keys(): 
-    moc_candidates = [ os.environ['MOC'] ]
-  for exe in moc_candidates:
-    try:
-      ret = execute ([ exe, '-v' ], OSError, False)
-      moc_version = (ret[1]+ret[2]).rstrip(')').split()[-1]
-      if int (moc_version.split('.')[0]) >= 4:
-        moc = exe
-        break
-    except OSError:
-      continue 
-  else:
+    moc = os.environ['MOC']
+  try:
+    ret = execute ([ moc, '-v' ], OSError, False)
+    moc_version = (ret[1]+ret[2]).rstrip(')').split()[-1]
+    report (moc + ' (version ' + moc_version + ')\n')
+    if int (moc_version.split('.')[0]) < 4:
+      error (''' Qt moc version is too old!
+
+  Use the MOC environment variable to specify the Qt meta-object compiler, 
+  or set PATH to ensure the correct version is listed first''')
+  except OSError:
     error (''' Qt moc not found!
 
-  Use the MOC environment variable to specify the Qt meta-object compiler''')
+  Use the MOC environment variable to specify the Qt meta-object compiler,
+  or set PATH to include its location''')
   
-  report (moc + ' (version ' + moc_version + ')\n')
     
 
   report ('Checking for Qt qmake: ')
-  qmake_candidates = [ 'qmake-qt4', 'qmake' ]
+  qmake = 'qmake' 
   if 'QMAKE' in os.environ.keys(): 
-    qmake_candidates = [ os.environ['QMAKE'] ]
-  for exe in qmake_candidates:
-    try:
-      qmake_version = execute ([ exe, '-v' ], OSError, False)[1].splitlines()[1].split()[3]
-      if int (qmake_version.split('.')[0]) >= 4:
-        qmake = exe
-        break
-    except OSError:
-      continue 
-  else:
+    qmake = os.environ['QMAKE'] 
+  try:
+    qmake_version = execute ([ qmake, '-v' ], OSError, False)[1].splitlines()[1].split()[3]
+    report (qmake + ' (version ' + qmake_version + ')\n')
+    if int (qmake_version.split('.')[0]) < 4:
+      error (''' Qt qmake not found!
+
+  Use the QMAKE environment variable to specify the Qt qmake executable,
+  or set PATH to ensure the correct version is listed first''')
+  except OSError:
     error (''' Qt qmake not found!
 
-  Use the QMAKE environment variable to specify the Qt qmake executable''')
+  Use the QMAKE environment variable to specify the Qt qmake executable,
+  or set PATH to include its location''')
   
-  report (qmake + ' (version ' + qmake_version + ')\n')
     
 
 
