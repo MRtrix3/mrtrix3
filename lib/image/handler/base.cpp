@@ -49,7 +49,7 @@ namespace MR
           return;
 
         load();
-        INFO ("image \"" + name + "\" loaded");
+        DEBUG ("image \"" + name + "\" loaded");
       }
 
 
@@ -60,7 +60,7 @@ namespace MR
           return;
 
         unload();
-        INFO ("image \"" + name + "\" unloaded");
+        DEBUG ("image \"" + name + "\" unloaded");
         addresses.clear();
       }
 

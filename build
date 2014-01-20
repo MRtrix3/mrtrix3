@@ -710,13 +710,13 @@ getting git version in folder "''' + folder + '"... ')
     pass
 
   if verbose:
-    sys.stderr.write ('not found')
+    sys.stderr.write ('not found\n')
   return None
 
 
 def update_git_version (folder, git_version_file, macro_name):
   git_version = get_git_version (folder)
-  if len (git_version):
+  if git_version is not None:
     version_file_contents = '#define ' + macro_name + ' "' + git_version + '"\n'
     current_version_file_contents = ''
     try:
