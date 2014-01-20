@@ -370,6 +370,7 @@ Use LD environment variable to set path to compiler, as follows:
 
 if 'CFLAGS' in os.environ.keys(): cpp_flags = shlex.split (os.environ['CFLAGS'])
 if 'LDFLAGS' in os.environ.keys(): ld_flags = shlex.split (os.environ['LDFLAGS'])
+ld_lib_flags += ld_flags
 if 'LDLIB_FLAGS' in os.environ.keys(): ld_lib_flags = shlex.split (os.environ['LDLIB_FLAGS'])
 
 
