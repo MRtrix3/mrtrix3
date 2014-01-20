@@ -202,15 +202,15 @@ namespace MR
         vertex_array_object.gen();
         vertex_array_object.bind();
 
-        vertex_buffer.bind (GL_ARRAY_BUFFER);
-        glEnableVertexAttribArray (0);
-        glVertexAttribPointer (0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)0);
+        vertex_buffer.bind (gl::ARRAY_BUFFER);
+        gl::EnableVertexAttribArray (0);
+        gl::VertexAttribPointer (0, 3, gl::FLOAT, gl::FALSE_, sizeof(Vertex), (void*)0);
 
-        surface_buffer.bind (GL_ARRAY_BUFFER);
-        glEnableVertexAttribArray (1);
-        glVertexAttribPointer (1, 3, GL_FLOAT, GL_FALSE, 3*sizeof(GLfloat), (void*)0);
+        surface_buffer.bind (gl::ARRAY_BUFFER);
+        gl::EnableVertexAttribArray (1);
+        gl::VertexAttribPointer (1, 3, gl::FLOAT, gl::FALSE_, 3*sizeof(GLfloat), (void*)0);
 
-        index_buffer.bind (GL_ELEMENT_ARRAY_BUFFER);
+        index_buffer.bind (gl::ELEMENT_ARRAY_BUFFER);
       }
 
 
@@ -223,21 +223,21 @@ namespace MR
         vertex_array_object.bind();
         shader_program.start();
 
-        glUniformMatrix4fv (glGetUniformLocation (shader_program, "MV"), 1, GL_FALSE, projection.modelview());
-        glUniformMatrix4fv (glGetUniformLocation (shader_program, "MVP"), 1, GL_FALSE, projection.modelview_projection());
-        glUniform3fv (glGetUniformLocation (shader_program, "light_pos"), 1, lighting.lightpos);
-        glUniform1f (glGetUniformLocation (shader_program, "ambient"), lighting.ambient);
-        glUniform1f (glGetUniformLocation (shader_program, "diffuse"), lighting.diffuse);
-        glUniform1f (glGetUniformLocation (shader_program, "specular"), lighting.specular);
-        glUniform1f (glGetUniformLocation (shader_program, "shine"), lighting.shine);
-        glUniform1f (glGetUniformLocation (shader_program, "scale"), scale);
-        glUniform1i (glGetUniformLocation (shader_program, "color_by_direction"), color_by_direction);
-        glUniform1i (glGetUniformLocation (shader_program, "use_lighting"), use_lighting);
-        glUniform1i (glGetUniformLocation (shader_program, "hide_neg_lobes"), hide_neg_lobes);
-        glUniform1i (glGetUniformLocation (shader_program, "orthographic"), orthographic);
-        glUniform3fv (glGetUniformLocation (shader_program, "constant_color"), 1, lighting.object_color);
-        reverse_ID = glGetUniformLocation (shader_program, "reverse");
-        origin_ID = glGetUniformLocation (shader_program, "origin");
+        gl::UniformMatrix4fv (gl::GetUniformLocation (shader_program, "MV"), 1, gl::FALSE_, projection.modelview());
+        gl::UniformMatrix4fv (gl::GetUniformLocation (shader_program, "MVP"), 1, gl::FALSE_, projection.modelview_projection());
+        gl::Uniform3fv (gl::GetUniformLocation (shader_program, "light_pos"), 1, lighting.lightpos);
+        gl::Uniform1f (gl::GetUniformLocation (shader_program, "ambient"), lighting.ambient);
+        gl::Uniform1f (gl::GetUniformLocation (shader_program, "diffuse"), lighting.diffuse);
+        gl::Uniform1f (gl::GetUniformLocation (shader_program, "specular"), lighting.specular);
+        gl::Uniform1f (gl::GetUniformLocation (shader_program, "shine"), lighting.shine);
+        gl::Uniform1f (gl::GetUniformLocation (shader_program, "scale"), scale);
+        gl::Uniform1i (gl::GetUniformLocation (shader_program, "color_by_direction"), color_by_direction);
+        gl::Uniform1i (gl::GetUniformLocation (shader_program, "use_lighting"), use_lighting);
+        gl::Uniform1i (gl::GetUniformLocation (shader_program, "hide_neg_lobes"), hide_neg_lobes);
+        gl::Uniform1i (gl::GetUniformLocation (shader_program, "orthographic"), orthographic);
+        gl::Uniform3fv (gl::GetUniformLocation (shader_program, "constant_color"), 1, lighting.object_color);
+        reverse_ID = gl::GetUniformLocation (shader_program, "reverse");
+        origin_ID = gl::GetUniformLocation (shader_program, "origin");
       }
 
 
@@ -301,12 +301,12 @@ namespace MR
 
         update_transform (vertices, lmax);
 
-        vertex_buffer.bind (GL_ARRAY_BUFFER);
-        glBufferData (GL_ARRAY_BUFFER, vertices.size()*sizeof(Vertex), &vertices[0][0], GL_STATIC_DRAW);
+        vertex_buffer.bind (gl::ARRAY_BUFFER);
+        gl::BufferData (gl::ARRAY_BUFFER, vertices.size()*sizeof(Vertex), &vertices[0][0], gl::STATIC_DRAW);
 
         num_indices = 3*indices.size();
-        index_buffer.bind (GL_ELEMENT_ARRAY_BUFFER);
-        glBufferData (GL_ELEMENT_ARRAY_BUFFER, indices.size()*sizeof(Triangle), &indices[0], GL_STATIC_DRAW);
+        index_buffer.bind (gl::ELEMENT_ARRAY_BUFFER);
+        gl::BufferData (gl::ELEMENT_ARRAY_BUFFER, indices.size()*sizeof(Triangle), &indices[0], gl::STATIC_DRAW);
 
         QApplication::restoreOverrideCursor();
       }

@@ -358,8 +358,8 @@ namespace MR
             overlay_renderer->start (projection, *render_frame->lighting, settings->scale, 
                 use_lighting_box->isChecked(), settings->color_by_direction, settings->hide_negative_lobes, true);
 
-            glEnable (GL_DEPTH_TEST);
-            glDepthMask (GL_TRUE);
+            gl::Enable (gl::DEPTH_TEST);
+            gl::DepthMask (gl::TRUE_);
 
             Point<> pos (window.target());
             pos += projection.screen_normal() * (projection.screen_normal().dot (window.focus() - window.target()));
@@ -409,8 +409,8 @@ namespace MR
 
             overlay_renderer->stop();
 
-            glDisable (GL_DEPTH_TEST);
-            glDepthMask (GL_FALSE);
+            gl::Disable (gl::DEPTH_TEST);
+            gl::DepthMask (gl::FALSE_);
           }
         }
 

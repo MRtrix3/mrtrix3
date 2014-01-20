@@ -55,8 +55,8 @@ namespace MR
           MR::Image::Header& header () { return buffer; }
           const MR::Image::Header& header () const { return buffer; }
 
-          void set_interpolate (bool linear) { interpolation = linear ? GL_LINEAR : GL_NEAREST; }
-          bool interpolate () const { return interpolation == GL_LINEAR; }
+          void set_interpolate (bool linear) { interpolation = linear ? gl::LINEAR : gl::NEAREST; }
+          bool interpolate () const { return interpolation == gl::LINEAR; }
 
           void set_colourmap (size_t index) {
             if (ColourMap::maps[index].special || ColourMap::maps[colourmap].special) 

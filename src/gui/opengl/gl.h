@@ -30,10 +30,10 @@
 #if QT_VERSION >= 0x050000
 #include <QtWidgets>
 #else
-#include "gui/opengl/gl_core_3_3.h"
 #include <QtGui>
 #endif
 #include <QGLWidget>
+#include "gui/opengl/gl_core_3_3.h"
 
 // necessary to avoid conflict with Qt4's macros:
 #ifdef Complex
@@ -64,27 +64,27 @@ namespace MR
           void gen (GLenum target) { 
             if (!id) {
               tex_type = target;
-              glGenTextures (1, &id);
+              gl::GenTextures (1, &id);
               bind();
-              glTexParameteri (tex_type, GL_TEXTURE_BASE_LEVEL, 0);
-              glTexParameteri (tex_type, GL_TEXTURE_MAX_LEVEL, 0);
-              glTexParameteri (tex_type, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-              glTexParameteri (tex_type, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-              //glTexParameteri (tex_type, GL_TEXTURE_WRAP_S, GL_CLAMP);
-              //glTexParameteri (tex_type, GL_TEXTURE_WRAP_T, GL_CLAMP);
-              //if (tex_type == GL_TEXTURE_3D)
-                //glTexParameteri (tex_type, GL_TEXTURE_WRAP_R, GL_CLAMP);
+              gl::TexParameteri (tex_type, gl::TEXTURE_BASE_LEVEL, 0);
+              gl::TexParameteri (tex_type, gl::TEXTURE_MAX_LEVEL, 0);
+              gl::TexParameteri (tex_type, gl::TEXTURE_MAG_FILTER, gl::LINEAR);
+              gl::TexParameteri (tex_type, gl::TEXTURE_MIN_FILTER, gl::LINEAR);
+              //gl::TexParameteri (tex_type, gl::TEXTURE_WRAP_S, gl::CLAMP);
+              //gl::TexParameteri (tex_type, gl::TEXTURE_WRAP_T, gl::CLAMP);
+              //if (tex_type == gl::TEXTURE_3D)
+                //gl::TexParameteri (tex_type, gl::TEXTURE_WRAP_R, gl::CLAMP);
             }
           }
           GLenum type () const { return tex_type; }
-          void clear () { if (id) glDeleteTextures (1, &id); id = 0; }
-          void bind () const { assert (id); glBindTexture (tex_type, id); }
+          void clear () { if (id) gl::DeleteTextures (1, &id); id = 0; }
+          void bind () const { assert (id); gl::BindTexture (tex_type, id); }
           void set_interp (GLint type) const {
             bind();
-            glTexParameteri (tex_type, GL_TEXTURE_MAG_FILTER, type);
-            glTexParameteri (tex_type, GL_TEXTURE_MIN_FILTER, type);
+            gl::TexParameteri (tex_type, gl::TEXTURE_MAG_FILTER, type);
+            gl::TexParameteri (tex_type, gl::TEXTURE_MIN_FILTER, type);
           }
-          void set_interp (bool interpolate) const { set_interp (interpolate ? GL_LINEAR : GL_NEAREST); }
+          void set_interp_on (bool interpolate) const { set_interp (interpolate ? gl::LINEAR : gl::NEAREST); }
         protected:
           GLuint id;
           GLenum tex_type;
@@ -96,9 +96,9 @@ namespace MR
           VertexBuffer () : id (0) { }
           ~VertexBuffer () { clear(); }
           operator GLuint () const { return id; }
-          void gen () { if (!id) glGenBuffers (1, &id); }
-          void clear () { if (id) glDeleteBuffers (1, &id); id = 0; }
-          void bind (GLenum target) const { assert (id); glBindBuffer (target, id); }
+          void gen () { if (!id) gl::GenBuffers (1, &id); }
+          void clear () { if (id) gl::DeleteBuffers (1, &id); id = 0; }
+          void bind (GLenum target) const { assert (id); gl::BindBuffer (target, id); }
         protected:
           GLuint id;
       };
@@ -109,9 +109,9 @@ namespace MR
           VertexArrayObject () : id (0) { }
           ~VertexArrayObject () { clear(); }
           operator GLuint () const { return id; }
-          void gen () { if (!id) glGenVertexArrays (1, &id); }
-          void clear () { if (id) glDeleteVertexArrays (1, &id); id = 0; }
-          void bind () const { assert (id); glBindVertexArray (id); }
+          void gen () { if (!id) gl::GenVertexArrays (1, &id); }
+          void clear () { if (id) gl::DeleteVertexArrays (1, &id); id = 0; }
+          void bind () const { assert (id); gl::BindVertexArray (id); }
         protected:
           GLuint id;
       };

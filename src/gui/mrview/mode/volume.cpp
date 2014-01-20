@@ -327,9 +327,9 @@ namespace MR
 
           overlays_for_3D.clear();
           render_tools (projection, true);
-          glDisable (GL_BLEND);
-          glEnable (GL_DEPTH_TEST);
-          glDepthMask (GL_TRUE);
+          gl::Disable (gl::BLEND);
+          gl::Enable (gl::DEPTH_TEST);
+          gl::DepthMask (gl::TRUE_);
 
           draw_crosshairs (projection);
 
@@ -359,11 +359,11 @@ namespace MR
             volume_VAO.gen();
 
             volume_VAO.bind();
-            volume_VB.bind (GL_ARRAY_BUFFER);
-            volume_VI.bind (GL_ELEMENT_ARRAY_BUFFER);
+            volume_VB.bind (gl::ARRAY_BUFFER);
+            volume_VI.bind (gl::ELEMENT_ARRAY_BUFFER);
 
-            glEnableVertexAttribArray (0);
-            glVertexAttribPointer (0, 3, GL_BYTE, GL_FALSE, 0, (void*)0);
+            gl::EnableVertexAttribArray (0);
+            gl::VertexAttribPointer (0, 3, gl::BYTE, gl::FALSE_, 0, (void*)0);
 
             GLbyte vertices[] = {
               0, 0, 0,
@@ -375,11 +375,11 @@ namespace MR
               1, 1, 0,
               1, 1, 1
             };
-            glBufferData (GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+            gl::BufferData (gl::ARRAY_BUFFER, sizeof(vertices), vertices, gl::STATIC_DRAW);
           }
           else {
             volume_VAO.bind();
-            volume_VI.bind (GL_ELEMENT_ARRAY_BUFFER);
+            volume_VI.bind (gl::ELEMENT_ARRAY_BUFFER);
           }
 
           GLubyte indices[12];
@@ -423,72 +423,72 @@ namespace MR
             indices[11] = 4;
           }
 
-          glBufferData (GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STREAM_DRAW);
+          gl::BufferData (gl::ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, gl::STREAM_DRAW);
 
           image()->update_texture3D();
           image()->set_use_transparency (true);
 
           image()->start (volume_shader, image()->scaling_3D());
-          glUniformMatrix4fv (glGetUniformLocation (volume_shader, "M"), 1, GL_FALSE, M);
-          glUniform3fv (glGetUniformLocation (volume_shader, "ray"), 1, ray);
-          glUniform1i (glGetUniformLocation (volume_shader, "image_sampler"), 0);
-          glUniform1f (glGetUniformLocation (volume_shader, "selection_thickness"), 3.0*step_size);
+          gl::UniformMatrix4fv (gl::GetUniformLocation (volume_shader, "M"), 1, gl::FALSE_, M);
+          gl::Uniform3fv (gl::GetUniformLocation (volume_shader, "ray"), 1, ray);
+          gl::Uniform1i (gl::GetUniformLocation (volume_shader, "image_sampler"), 0);
+          gl::Uniform1f (gl::GetUniformLocation (volume_shader, "selection_thickness"), 3.0*step_size);
 
-          glActiveTexture (GL_TEXTURE0);
-          glBindTexture (GL_TEXTURE_3D, image()->texture());
+          gl::ActiveTexture (gl::TEXTURE0);
+          gl::BindTexture (gl::TEXTURE_3D, image()->texture());
 
-          glActiveTexture (GL_TEXTURE1);
+          gl::ActiveTexture (gl::TEXTURE1);
           if (!depth_texture) {
-            depth_texture.gen (GL_TEXTURE_2D);
+            depth_texture.gen (gl::TEXTURE_2D);
             depth_texture.bind();
-            depth_texture.set_interp (GL_NEAREST);
+            depth_texture.set_interp (gl::NEAREST);
           }
           else 
             depth_texture.bind();
 
-          glReadBuffer (GL_BACK);
-          glCopyTexImage2D (GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, 0, 0, projection.width(), projection.height(), 0);
+          gl::ReadBuffer (gl::BACK);
+          gl::CopyTexImage2D (gl::TEXTURE_2D, 0, gl::DEPTH_COMPONENT, 0, 0, projection.width(), projection.height(), 0);
 
-          glUniform1i (glGetUniformLocation (volume_shader, "depth_sampler"), 1);
+          gl::Uniform1i (gl::GetUniformLocation (volume_shader, "depth_sampler"), 1);
 
           std::vector< std::pair<GL::vec4,bool> > clip = get_active_clip_planes();
 
           for (size_t n = 0; n < clip.size(); ++n) {
-            glUniform4fv (glGetUniformLocation (volume_shader, ("clip"+str(n)).c_str()), 1,
+            gl::Uniform4fv (gl::GetUniformLocation (volume_shader, ("clip"+str(n)).c_str()), 1,
                 clip_real2tex (T2S, S2T, clip[n].first));
-            glUniform1i (glGetUniformLocation (volume_shader, ("clip"+str(n)+"_selected").c_str()), clip[n].second);
+            gl::Uniform1i (gl::GetUniformLocation (volume_shader, ("clip"+str(n)+"_selected").c_str()), clip[n].second);
           }
 
           for (int n = 0; n < overlays_for_3D.size(); ++n) {
             overlays_for_3D[n]->update_texture3D();
             GL::mat4 overlay_M = GL::inv (get_tex_to_scanner_matrix (*overlays_for_3D[n])) * T2S;
             GL::vec4 overlay_ray = overlay_M * GL::vec4 (ray, 0.0);
-            glUniformMatrix4fv (glGetUniformLocation (volume_shader, ("overlay_M"+str(n)).c_str()), 1, GL_FALSE, overlay_M);
-            glUniform3fv (glGetUniformLocation (volume_shader, ("overlay_ray"+str(n)).c_str()), 1, overlay_ray);
+            gl::UniformMatrix4fv (gl::GetUniformLocation (volume_shader, ("overlay_M"+str(n)).c_str()), 1, gl::FALSE_, overlay_M);
+            gl::Uniform3fv (gl::GetUniformLocation (volume_shader, ("overlay_ray"+str(n)).c_str()), 1, overlay_ray);
 
-            glActiveTexture (GL_TEXTURE2 + n);
-            glBindTexture (GL_TEXTURE_3D, overlays_for_3D[n]->texture());
-            glUniform1i (glGetUniformLocation (volume_shader, ("overlay_sampler"+str(n)).c_str()), 2+n);
+            gl::ActiveTexture (gl::TEXTURE2 + n);
+            gl::BindTexture (gl::TEXTURE_3D, overlays_for_3D[n]->texture());
+            gl::Uniform1i (gl::GetUniformLocation (volume_shader, ("overlay_sampler"+str(n)).c_str()), 2+n);
             overlays_for_3D[n]->set_shader_variables (volume_shader, overlays_for_3D[n]->scaling_3D(), "overlay"+str(n)+"_");
-            overlays_for_3D[n]->texture().set_interp (overlays_for_3D[n]->interpolate());
+            overlays_for_3D[n]->texture().set_interp_on (overlays_for_3D[n]->interpolate());
           }
 
           GL::vec4 ray_eye = M * GL::vec4 (ray, 0.0);
-          glUniform1f (glGetUniformLocation (volume_shader, "ray_z"), 0.5*ray_eye[2]);
+          gl::Uniform1f (gl::GetUniformLocation (volume_shader, "ray_z"), 0.5*ray_eye[2]);
 
-          glEnable (GL_BLEND);
-          glBlendFunc (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+          gl::Enable (gl::BLEND);
+          gl::BlendFunc (gl::SRC_ALPHA, gl::ONE_MINUS_SRC_ALPHA);
 
-          glDepthMask (GL_FALSE);
-          glActiveTexture (GL_TEXTURE0);
+          gl::DepthMask (gl::FALSE_);
+          gl::ActiveTexture (gl::TEXTURE0);
 
           const GLsizei counts[] = { 4, 4, 4 };
           const GLvoid* starts[] = { reinterpret_cast<void*>(0), reinterpret_cast<void*>(4*sizeof(GLubyte)), reinterpret_cast<void*>(8*sizeof(GLubyte)) };
 
-          glMultiDrawElements (GL_TRIANGLE_FAN, counts, GL_UNSIGNED_BYTE, starts, 3);
+          gl::MultiDrawElements (gl::TRIANGLE_FAN, counts, gl::UNSIGNED_BYTE, starts, 3);
           image()->stop (volume_shader);
 
-          glDisable (GL_BLEND);
+          gl::Disable (gl::BLEND);
 
           draw_orientation_labels (projection);
         }

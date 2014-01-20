@@ -221,13 +221,13 @@ namespace MR
 
           if (!is_3D) {
             // set up OpenGL environment:
-            glEnable (GL_BLEND);
-            glDisable (GL_DEPTH_TEST);
-            glDepthMask (GL_FALSE);
-            glColorMask (GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
-            glBlendFunc (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-            glBlendEquation (GL_FUNC_ADD);
-            glBlendColor (1.0f, 1.0f, 1.0f, overlay_opacity);
+            gl::Enable (gl::BLEND);
+            gl::Disable (gl::DEPTH_TEST);
+            gl::DepthMask (gl::FALSE_);
+            gl::ColorMask (gl::TRUE_, gl::TRUE_, gl::TRUE_, gl::TRUE_);
+            gl::BlendFunc (gl::SRC_ALPHA, gl::ONE_MINUS_SRC_ALPHA);
+            gl::BlendEquation (gl::FUNC_ADD);
+            gl::BlendColor (1.0f, 1.0f, 1.0f, overlay_opacity);
           }
 
           bool need_to_update = false;

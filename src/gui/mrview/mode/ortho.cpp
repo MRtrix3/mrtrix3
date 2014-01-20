@@ -40,10 +40,10 @@ namespace MR
         void Ortho::paint (Projection& projection)
         {
           // set up OpenGL environment:
-          glDisable (GL_BLEND);
-          glDisable (GL_DEPTH_TEST);
-          glDepthMask (GL_FALSE);
-          glColorMask (GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+          gl::Disable (gl::BLEND);
+          gl::Disable (gl::DEPTH_TEST);
+          gl::DepthMask (gl::FALSE_);
+          gl::ColorMask (gl::TRUE_, gl::TRUE_, gl::TRUE_, gl::TRUE_);
 
           GLint w = glarea()->width()/2;
           GLint h = glarea()->height()/2;
@@ -61,18 +61,18 @@ namespace MR
           GL::mat4 P = GL::ortho (0, glarea()->width(), 0, glarea()->height(), -1.0, 1.0);
           projection.set (MV, P);
 
-          glDisable (GL_DEPTH_TEST);
-          glLineWidth (2.0);
+          gl::Disable (gl::DEPTH_TEST);
+          gl::LineWidth (2.0);
 
           if (!frame_VB || !frame_VAO) {
             frame_VB.gen();
             frame_VAO.gen();
 
-            frame_VB.bind (GL_ARRAY_BUFFER);
+            frame_VB.bind (gl::ARRAY_BUFFER);
             frame_VAO.bind();
 
-            glEnableVertexAttribArray (0);
-            glVertexAttribPointer (0, 2, GL_FLOAT, GL_FALSE, 0, (void*)0);
+            gl::EnableVertexAttribArray (0);
+            gl::VertexAttribPointer (0, 2, gl::FLOAT, gl::FALSE_, 0, (void*)0);
 
             GLfloat data [] = {
               -1.0f, 0.0f,
@@ -80,7 +80,7 @@ namespace MR
               0.0f, -1.0f,
               0.0f, 1.0f
             };
-            glBufferData (GL_ARRAY_BUFFER, sizeof(data), data, GL_STATIC_DRAW);
+            gl::BufferData (gl::ARRAY_BUFFER, sizeof(data), data, gl::STATIC_DRAW);
           }
           else 
             frame_VAO.bind();
@@ -102,10 +102,10 @@ namespace MR
           }
 
           frame_program.start();
-          glDrawArrays (GL_LINES, 0, 4);
+          gl::DrawArrays (gl::LINES, 0, 4);
           frame_program.stop();
 
-          glEnable (GL_DEPTH_TEST);
+          gl::Enable (gl::DEPTH_TEST);
         }
 
 

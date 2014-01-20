@@ -103,10 +103,10 @@ namespace MR
         void Slice::paint (Projection& with_projection)
         {
           // set up OpenGL environment:
-          glDisable (GL_BLEND);
-          glDisable (GL_DEPTH_TEST);
-          glDepthMask (GL_FALSE);
-          glColorMask (GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+          gl::Disable (gl::BLEND);
+          gl::Disable (gl::DEPTH_TEST);
+          gl::DepthMask (gl::FALSE_);
+          gl::ColorMask (gl::TRUE_, gl::TRUE_, gl::TRUE_, gl::TRUE_);
 
           draw_plane (plane(), slice_shader, with_projection);
         }

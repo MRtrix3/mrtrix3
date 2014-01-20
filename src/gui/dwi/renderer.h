@@ -71,17 +71,17 @@ namespace MR
 
           void set_data (const Math::Vector<float>& r_del_daz, int buffer_ID = 0) const {
             assert (r_del_daz.stride() == 1);
-            surface_buffer.bind (GL_ARRAY_BUFFER);
-            glBufferData (GL_ARRAY_BUFFER, r_del_daz.size()*sizeof(float), &r_del_daz[0], GL_STREAM_DRAW);
-            glVertexAttribPointer (1, 3, GL_FLOAT, GL_FALSE, 3*sizeof(GLfloat), (void*)0);
+            surface_buffer.bind (gl::ARRAY_BUFFER);
+            gl::BufferData (gl::ARRAY_BUFFER, r_del_daz.size()*sizeof(float), &r_del_daz[0], gl::STREAM_DRAW);
+            gl::VertexAttribPointer (1, 3, gl::FLOAT, gl::FALSE_, 3*sizeof(GLfloat), (void*)0);
           }
 
           void draw (const float* origin, int buffer_ID = 0) const {
-            glUniform3fv (origin_ID, 1, origin);
-            glUniform1i (reverse_ID, 0);
-            glDrawElements (GL_TRIANGLES, num_indices, GL_UNSIGNED_INT, (void*)0);
-            glUniform1i (reverse_ID, 1);
-            glDrawElements (GL_TRIANGLES, num_indices, GL_UNSIGNED_INT, (void*)0);
+            gl::Uniform3fv (origin_ID, 1, origin);
+            gl::Uniform1i (reverse_ID, 0);
+            gl::DrawElements (gl::TRIANGLES, num_indices, gl::UNSIGNED_INT, (void*)0);
+            gl::Uniform1i (reverse_ID, 1);
+            gl::DrawElements (gl::TRIANGLES, num_indices, gl::UNSIGNED_INT, (void*)0);
           }
           void stop () const {
             shader_program.stop();

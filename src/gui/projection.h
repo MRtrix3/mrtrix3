@@ -35,7 +35,7 @@ namespace MR
         }
 
         void set_viewport () const {
-          glViewport (viewport[0], viewport[1], viewport[2], viewport[3]);
+          gl::Viewport (viewport[0], viewport[1], viewport[2], viewport[3]);
         }
 
 
@@ -221,7 +221,7 @@ namespace MR
 
         void set (GL::Shader::Program& shader_program) const {
           assert (shader_program != 0);
-          glUniformMatrix4fv (glGetUniformLocation (shader_program, "MVP"), 1, GL_FALSE, modelview_projection());
+          gl::UniformMatrix4fv (gl::GetUniformLocation (shader_program, "MVP"), 1, gl::FALSE_, modelview_projection());
         }
 
       protected:

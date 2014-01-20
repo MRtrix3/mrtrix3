@@ -50,14 +50,14 @@ namespace MR
         crosshairs_VB.gen();
         crosshairs_VAO.gen();
 
-        crosshairs_VB.bind (GL_ARRAY_BUFFER);
+        crosshairs_VB.bind (gl::ARRAY_BUFFER);
         crosshairs_VAO.bind();
 
-        glEnableVertexAttribArray (0);
-        glVertexAttribPointer (0, 2, GL_FLOAT, GL_FALSE, 0, (void*)0);
+        gl::EnableVertexAttribArray (0);
+        gl::VertexAttribPointer (0, 2, gl::FLOAT, gl::FALSE_, 0, (void*)0);
       }
       else {
-        crosshairs_VB.bind (GL_ARRAY_BUFFER);
+        crosshairs_VB.bind (gl::ARRAY_BUFFER);
         crosshairs_VAO.bind();
       }
 
@@ -90,14 +90,14 @@ namespace MR
         -1.0f, F[1],
         1.0f, F[1]
       };
-      glBufferData (GL_ARRAY_BUFFER, sizeof(data), data, GL_STATIC_DRAW);
+      gl::BufferData (gl::ARRAY_BUFFER, sizeof(data), data, gl::STATIC_DRAW);
 
-      glDepthMask (GL_TRUE);
-      glDisable (GL_BLEND);
-      glLineWidth (1.0);
+      gl::DepthMask (gl::TRUE_);
+      gl::Disable (gl::BLEND);
+      gl::LineWidth (1.0);
 
       crosshairs_program.start();
-      glDrawArrays (GL_LINES, 0, 4);
+      gl::DrawArrays (gl::LINES, 0, 4);
       crosshairs_program.stop();
     }
 

@@ -1,6 +1,6 @@
 #ifndef OPENGL_NOLOAD_STYLE_HPP
 #define OPENGL_NOLOAD_STYLE_HPP
-
+/*
 #if defined(__glew_h__) || defined(__GLEW_H__)
 #error Attempt to include auto-generated header after including glew.h
 #endif
@@ -16,7 +16,7 @@
 #if defined(__gl_ATI_h_)
 #error Attempt to include auto-generated header after including glATI.h
 #endif
-
+*/
 #define __glew_h__
 #define __GLEW_H__
 #define __gl_h_
@@ -142,9 +142,9 @@ typedef unsigned int GLhandleARB;
 		typedef struct __GLsync *GLsync;
 		struct _cl_context;
 		struct _cl_event;
-		typedef void (APIENTRY *GLDEBUGPROC)(GLenum source,GLenum type,GLuint id,GLenum severity,GLsizei length,const GLchar *message,const void *userParam);
-		typedef void (APIENTRY *GLDEBUGPROCARB)(GLenum source,GLenum type,GLuint id,GLenum severity,GLsizei length,const GLchar *message,const void *userParam);
-		typedef void (APIENTRY *GLDEBUGPROCAMD)(GLuint id,GLenum category,GLenum severity,GLsizei length,const GLchar *message,void *userParam);
+		//typedef void (APIENTRY *GLDEBUGPROC)(GLenum source,GLenum type,GLuint id,GLenum severity,GLsizei length,const GLchar *message,const void *userParam);
+		//typedef void (APIENTRY *GLDEBUGPROCARB)(GLenum source,GLenum type,GLuint id,GLenum severity,GLsizei length,const GLchar *message,const void *userParam);
+		//typedef void (APIENTRY *GLDEBUGPROCAMD)(GLuint id,GLenum category,GLenum severity,GLsizei length,const GLchar *message,void *userParam);
 		typedef unsigned short GLhalfNV;
 		typedef GLintptr GLvdpauSurfaceNV;
 		

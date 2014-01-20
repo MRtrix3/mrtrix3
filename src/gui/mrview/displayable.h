@@ -232,16 +232,16 @@ namespace MR
           }
 
           void set_shader_variables (Shader& shader_program, float scaling = 1.0, const std::string& with_prefix = "") {
-            glUniform1f (glGetUniformLocation (shader_program, (with_prefix+"offset").c_str()), (display_midpoint - 0.5f * display_range) / scaling);
-            glUniform1f (glGetUniformLocation (shader_program, (with_prefix+"scale").c_str()), scaling / display_range);
+            gl::Uniform1f (gl::GetUniformLocation (shader_program, (with_prefix+"offset").c_str()), (display_midpoint - 0.5f * display_range) / scaling);
+            gl::Uniform1f (gl::GetUniformLocation (shader_program, (with_prefix+"scale").c_str()), scaling / display_range);
             if (use_discard_lower())
-              glUniform1f (glGetUniformLocation (shader_program, (with_prefix+"lower").c_str()), lessthan / scaling);
+              gl::Uniform1f (gl::GetUniformLocation (shader_program, (with_prefix+"lower").c_str()), lessthan / scaling);
             if (use_discard_upper())
-              glUniform1f (glGetUniformLocation (shader_program, (with_prefix+"upper").c_str()), greaterthan / scaling);
+              gl::Uniform1f (gl::GetUniformLocation (shader_program, (with_prefix+"upper").c_str()), greaterthan / scaling);
             if (use_transparency()) {
-              glUniform1f (glGetUniformLocation (shader_program, (with_prefix+"alpha_scale").c_str()), scaling / (opaque_intensity - transparent_intensity));
-              glUniform1f (glGetUniformLocation (shader_program, (with_prefix+"alpha_offset").c_str()), transparent_intensity / scaling);
-              glUniform1f (glGetUniformLocation (shader_program, (with_prefix+"alpha").c_str()), alpha);
+              gl::Uniform1f (gl::GetUniformLocation (shader_program, (with_prefix+"alpha_scale").c_str()), scaling / (opaque_intensity - transparent_intensity));
+              gl::Uniform1f (gl::GetUniformLocation (shader_program, (with_prefix+"alpha_offset").c_str()), transparent_intensity / scaling);
+              gl::Uniform1f (gl::GetUniformLocation (shader_program, (with_prefix+"alpha").c_str()), alpha);
             }
           }
 

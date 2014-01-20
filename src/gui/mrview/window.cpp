@@ -1084,11 +1084,11 @@ namespace MR
 
       inline void Window::paintGL ()
       {
-        glEnable (GL_MULTISAMPLE);
+        gl::Enable (gl::MULTISAMPLE);
         if (mode->in_paint())
           return;
 
-        glDrawBuffer (GL_BACK);
+        gl::DrawBuffer (gl::BACK);
         mode->paintGL();
       }
 
@@ -1100,8 +1100,8 @@ namespace MR
 
         font.initGL();
 
-        glClearColor (0.0, 0.0, 0.0, 0.0);
-        glEnable (GL_DEPTH_TEST);
+        gl::ClearColor (0.0, 0.0, 0.0, 0.0);
+        gl::Enable (gl::DEPTH_TEST);
 
         mode = dynamic_cast<Mode::__Action__*> (mode_group->actions()[0])->create (*this);
         set_mode_features();
