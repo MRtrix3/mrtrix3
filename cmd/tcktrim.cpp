@@ -26,7 +26,6 @@
 
 #include "command.h"
 #include "point.h"
-#include "bitset.h"
 #include "progressbar.h"
 #include "dwi/tractography/file.h"
 #include "dwi/tractography/properties.h"
