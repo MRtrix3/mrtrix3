@@ -262,6 +262,8 @@ namespace MR
           }
         }
 
+        INFO (str (fixels.size() - new_fixels.size()) + " out of " + str(fixels.size()) + " fixels removed from reconstruction (" + str(new_fixels.size()) + ") remaining)");
+
         fixels.swap (new_fixels);
 
         TrackIndexRangeWriter writer (SIFT_TRACK_INDEX_BUFFER_SIZE, num_tracks(), "Removing excluded fixels...");
@@ -271,6 +273,8 @@ namespace MR
         TD_sum = 0.0;
         for (typename std::vector<Fixel>::const_iterator i = fixels.begin(); i != fixels.end(); ++i)
           TD_sum += i->get_weight() * i->get_TD();
+
+        INFO ("After fixel removal, the proportionality coefficient is " + str(mu()));
 
       }
 
