@@ -25,7 +25,6 @@
 
 
 #include "dwi/tractography/shared.h"
-#include "dwi/tractography/ACT/method.h"
 
 
 
@@ -46,22 +45,14 @@ namespace MR
           pos                (0.0, 0.0, 0.0),
           dir                (0.0, 0.0, 1.0),
           S                  (shared),
-          values             (shared.source_buffer.dim(3))
-        {
-          if (S.is_act())
-            act_method_additions = new ACT::ACT_Method_additions (S);
-        }
+          values             (shared.source_buffer.dim(3)) { }
 
         MethodBase (const MethodBase& that) :
           pos                 (0.0, 0.0, 0.0),
           dir                 (0.0, 0.0, 1.0),
           S                   (that.S),
           rng                 (that.rng),
-          values              (that.values.size())
-        {
-          if (S.is_act())
-            act_method_additions = new ACT::ACT_Method_additions (S);
-        }
+          values              (that.values.size()) { }
 
 
         bool check_seed()
@@ -70,8 +61,7 @@ namespace MR
             return false;
 
           if ((S.properties.mask.size() && !S.properties.mask.contains (pos))
-              || (S.properties.exclude.contains (pos))
-              || (S.is_act() && !act().check_seed (pos))) {
+              || (S.properties.exclude.contains (pos))) {
             pos.invalidate();
             return false;
           }
@@ -99,26 +89,20 @@ namespace MR
         virtual void reverse_track() { }
         virtual bool init() = 0;
         virtual term_t next() = 0;
-        virtual float get_metric() = 0;
 
 
         virtual void truncate_track (std::vector< Point<value_type> >& tck, const size_t revert_step)
         {
           for (size_t i = revert_step; i && tck.size(); --i)
             tck.pop_back();
-          if (S.is_act())
-            act().sgm_depth = MAX (0, act().sgm_depth - int(revert_step));
         }
 
-
-        ACT::ACT_Method_additions& act() const { return *act_method_additions; }
 
         Point<value_type> pos, dir;
 
 
       private:
         const SharedBase& S;
-        Ptr<ACT::ACT_Method_additions> act_method_additions;
 
 
       protected:

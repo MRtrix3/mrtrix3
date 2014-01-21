@@ -43,9 +43,6 @@ class SDStream : public MethodBase {
             lmax (Math::SH::LforN (source_buffer.dim(3)))
         {
 
-          if (is_act() && act().backtrack())
-            throw Exception ("Backtracking not valid for deterministic algorithms");
-
           set_step_size (0.1);
           dot_threshold = Math::cos (max_angle);
 
@@ -132,11 +129,6 @@ class SDStream : public MethodBase {
       return CONTINUE;
     }
 
-
-    float get_metric()
-    {
-      return FOD (dir);
-    }
 
 
     protected:

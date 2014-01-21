@@ -29,7 +29,6 @@
 #include "dwi/tractography/file.h"
 #include "dwi/tractography/properties.h"
 #include "dwi/tractography/roi.h"
-#include "dwi/tractography/weights.h"
 #include "dwi/tractography/mapping/mapping.h"
 #include "dwi/tractography/mapping/loader.h"
 #include "thread/queue.h"
@@ -68,10 +67,7 @@ void usage ()
           + Argument ("value").type_float (0.0, 0.0, INFINITY)
 
   + Option ("minlength", "set the minimum length of any track in mm.")
-          + Argument ("value").type_float (0.0, 0.0, INFINITY)
-
-  + Tractography::TrackWeightsInOption
-  + Tractography::TrackWeightsOutOption;
+          + Argument ("value").type_float (0.0, 0.0, INFINITY);
 
 }
 

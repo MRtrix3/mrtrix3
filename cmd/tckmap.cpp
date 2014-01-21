@@ -37,7 +37,6 @@
 
 #include "dwi/tractography/file.h"
 #include "dwi/tractography/properties.h"
-#include "dwi/tractography/weights.h"
 
 #include "dwi/tractography/mapping/loader.h"
 #include "dwi/tractography/mapping/mapper.h"
@@ -122,9 +121,7 @@ OPTIONS
 
   + Option ("map_zero", "if a streamline has zero contribution based on the contrast & statistic, typically it is not mapped; "
                         "use this option to still contribute to the map even if this is the case "
-                        "(these non-contributing voxels can then influence the mean value in each voxel of the map)")
-
-  + Tractography::TrackWeightsInOption;
+                        "(these non-contributing voxels can then influence the mean value in each voxel of the map)");
 
 }
 

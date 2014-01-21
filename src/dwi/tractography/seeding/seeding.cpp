@@ -63,9 +63,6 @@ namespace MR
       + Option ("seed_gmwmi", "seed from the grey matter - white matter interface (only valid if using ACT framework)").allow_multiple()
         + Argument ("seed_image").type_image_in()
 
-      + Option ("seed_dynamic", "determine seed points dynamically using the SIFT model (must NOT provide any other seeding mechanism)") // Don't allow multiple
-        + Argument ("fod_image").type_image_in()
-
 
       + Option ("output_seeds", "output the seed location of all successful streamlines to a file")
         + Argument ("path").type_text();
@@ -106,27 +103,6 @@ namespace MR
         for (size_t i = 0; i < opt.size(); ++i) {
           Rejection* seed = new Rejection (opt[i][0], list.get_rng());
           list.add (seed);
-        }
-
-        opt = get_options ("seed_gmwmi");
-        if (opt.size()) {
-          App::Options opt_act = get_options ("act");
-          if (!opt_act.size())
-            throw Exception ("Cannot perform GM-WM Interface seeding without ACT segmented tissue image");
-          for (size_t i = 0; i < opt.size(); ++i) {
-            GMWMI* seed = new GMWMI (opt[i][0], list.get_rng(), str(opt_act[0][0]));
-            list.add (seed);
-          }
-        }
-
-        // Can't instantiate the dynamic seeder here; internal FMLS segmenter has to use the same Directions::Set as TrackMapperDixel
-        opt = get_options ("seed_dynamic");
-        if (opt.size()) {
-          if (list.num_seeds())
-            throw Exception ("If performing dynamic streamline seeding, cannot specify any other type of seed!");
-          properties["seed_dynamic"] = str(opt[0][0]);
-        } else if (!list.num_seeds()) {
-          throw Exception ("Must provide at least one source of streamline seeds!");
         }
 
         opt = get_options ("output_seeds");

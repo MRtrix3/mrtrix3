@@ -26,11 +26,9 @@
 
 #include "command.h"
 #include "point.h"
-#include "bitset.h"
 #include "progressbar.h"
 #include "dwi/tractography/file.h"
 #include "dwi/tractography/properties.h"
-#include "dwi/tractography/weights.h"
 #include "math/rng.h"
 
 
@@ -55,10 +53,7 @@ void usage ()
 
   OPTIONS
   + Option ( "minlength", "minimum track length that will be written out in mm (default=0).")
-  + Argument ("value").type_float(0.0,0.0,INFINITY)
-
-  + Tractography::TrackWeightsInOption
-  + Tractography::TrackWeightsOutOption;
+  + Argument ("value").type_float(0.0,0.0,INFINITY);
 
 }
 

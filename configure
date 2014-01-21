@@ -987,65 +987,6 @@ WARNING: no OpenGL implementation found.
 
 
 
-# output R module:
-if R_module:
-
-  report ('Checking for R library: ')
-  R_cflags = [ '-I/usr/include/R' ]
-  if 'R_CFLAGS' in os.environ.keys(): 
-    R_cflags = shlex.split (os.environ['R_CFLAGS'])
-  else:
-    try: 
-      R_cflags = shlex.split (execute ([ 'pkg-config', '--cflags', 'libR' ], RuntimeError)[1])
-    except:
-      log ('error running pkg-config --libs libR - assuming defaults for R_CFLAGS\n\n')
-      
-  R_ldflags = [ '-L/usr/lib/R/lib', '-lR' ]
-  if 'R_LDFLAGS' in os.environ.keys(): 
-    R_ldflags = shlex.split (os.environ['R_LDFLAGS'])
-  else:
-    try: 
-      R_ldflags = shlex.split (execute ([ 'pkg-config', '--libs', 'libR' ], RuntimeError)[1])
-    except:
-      log ('error running pkg-config --libs libR - assuming defaults for R_LDFLAGS\n\n')
-    
-
-  try:
-    R_version = compile ('''
-  #include <R.h>
-  #include <Rversion.h>
-  #include <iostream>
-  
-  int main() { 
-    std::cout << R_MAJOR << "." << R_MINOR << " (r" << R_SVN_REVISION << ")\\n";
-    return 0;
-  }
-  ''', cpp_flags + R_cflags, ld_flags + R_ldflags)
-    report (R_version + '\n')
-  except CompileError:
-    error ('''compiler error!
-  
-  Use the R_CFLAGS environment variable to set the path to the R include files'
-  For example:'
-       R_CFLAGS=-I/usr/local/include/R ./configure.py''')
-  except LinkError:
-    error ('''linker error!'
-  
-  Use the R_LDFLAGS environment variable to set the path to the R library'
-  and include any required libraries'
-  For example:'
-       R_LDFLAGS="-L/usr/local/R/lib -lR" ./configure.py''')
-  except RuntimeError:
-    error ('''error running command - check configure.log for details''')
-  
-  cpp_flags += R_cflags + [ '-DMRTRIX_AS_R_LIBRARY' ]
-  ld_lib_flags += R_ldflags
-    
-  ld_flags = ld_lib_flags
-  exe_suffix = lib_suffix
-
-
-
 
 # add debugging or profiling flags if requested:
 

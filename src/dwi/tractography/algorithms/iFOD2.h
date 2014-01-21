@@ -279,12 +279,6 @@ namespace MR
       }
 
 
-      float get_metric()
-      {
-        return FOD (dir);
-      }
-
-
       // Restore proper probability from the FOD at the track seed point
       void reverse_track()
       {
@@ -292,35 +286,6 @@ namespace MR
         sample_idx = S.num_samples;
       }
 
-
-      void truncate_track (std::vector< Point<value_type> >& tck, const int revert_step)
-      {
-        // Need to be able to get an estimate of the tangent at the new endpoint
-        // Removing start of current arc (counts as 1 if it exists) plus 1 arclength for each remaining revert_step
-        const int points_to_remove = (sample_idx ? sample_idx : S.num_samples) + ((revert_step - 1) * S.num_samples);
-        const int new_end_idx = (int)tck.size() - 1 - points_to_remove;
-        if (new_end_idx <= 1) {
-          tck.clear();
-          pos.invalidate();
-          dir.invalidate();
-          return;
-        }
-        dir = (tck[new_end_idx + 1] - tck[new_end_idx - 1]).normalise();
-
-        // Erase the track up to the correct point
-        tck.erase (tck.begin() + new_end_idx + 1, tck.end());
-
-        // Need to get the path probability contribution from the FOD at this point
-        pos = tck.back();
-        get_data (source);
-        half_log_prob0 = 0.5 * Math::log (FOD (dir));
-
-        // Make sure that arc is re-calculated when next() is called
-        sample_idx = S.num_samples;
-
-        // Need to update sgm_depth appropriately, remembering that it is tracked by exec
-        act().sgm_depth = MAX (0, act().sgm_depth - points_to_remove);
-      }
 
 
 
@@ -370,14 +335,6 @@ namespace MR
 
       value_type path_prob (std::vector< Point<value_type> >& positions, std::vector< Point<value_type> >& tangents)
       {
-
-        // Early exit for ACT when path is not sensible
-        if (S.is_act()) {
-          if (!act().fetch_tissue_data (positions[S.num_samples - 1]))
-            return (NAN);
-          if (act().tissues().get_csf() >= 0.5)
-            return 0.0;
-        }
 
         value_type log_prob = half_log_prob0;
         for (size_t i = 0; i < S.num_samples; ++i) {

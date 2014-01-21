@@ -23,12 +23,7 @@
 #include "app.h"
 #include "progressbar.h"
 
-#ifdef MRTRIX_AS_R_LIBRARY
-# include "wrap_r.h"
-# define PROGRESS_PRINT REprintf (
-#else
-# define PROGRESS_PRINT fprintf (stderr, 
-#endif
+#define PROGRESS_PRINT fprintf (stderr, 
 
 namespace MR
 {

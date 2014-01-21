@@ -49,9 +49,6 @@ namespace MR
         Shared (const std::string& diff_path, DWI::Tractography::Properties& property_set) :
           SharedBase (diff_path, property_set) {
 
-          if (is_act() && act().backtrack())
-            throw Exception ("Backtracking not valid for deterministic algorithms");
-
           set_step_size (0.1);
           if (rk4) {
             INFO ("minimum radius of curvature = " + str(step_size / (max_angle_rk4 / (0.5 * M_PI))) + " mm");
@@ -114,12 +111,6 @@ namespace MR
         return do_next();
       }
 
-
-      float get_metric()
-      {
-        dwi2tensor (S.binv, &values[0]);
-        return tensor2FA (&values[0]);
-      }
 
 
       protected:

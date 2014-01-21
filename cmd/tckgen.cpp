@@ -29,8 +29,6 @@
 #include "dwi/tractography/properties.h"
 #include "dwi/tractography/tractography.h"
 
-#include "dwi/tractography/ACT/act.h"
-
 #include "dwi/tractography/algorithms/fact.h"
 #include "dwi/tractography/algorithms/iFOD1.h"
 #include "dwi/tractography/algorithms/iFOD2.h"
@@ -83,8 +81,6 @@ void usage ()
 
   + DWI::Tractography::TrackOption
 
-  + DWI::Tractography::ACT::ACTOption
-
   + DWI::Tractography::Seeding::SeedOption;
 
 };
@@ -103,8 +99,6 @@ void run ()
   if (opt.size()) algorithm = opt[0][0];
 
   load_streamline_properties (properties);
-
-  ACT::load_act_properties (properties);
 
   Seeding::load_tracking_seeds (properties);
 

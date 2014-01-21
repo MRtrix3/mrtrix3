@@ -49,9 +49,6 @@ namespace MR
           SharedBase (diff_path, property_set),
           num_vec (source_buffer.dim(3)/3) {
 
-          if (is_act() && act().backtrack())
-            throw Exception ("Backtracking not valid for deterministic algorithms");
-
           if (rk4)
             throw Exception ("4th-order Runge-Kutta integration not valid for VecStream algorithm");
 
@@ -113,12 +110,6 @@ namespace MR
         return CONTINUE;
       }
 
-
-      float get_metric()
-      {
-        Point<value_type> d (dir);
-        return do_next (d);
-      }
 
 
       protected:

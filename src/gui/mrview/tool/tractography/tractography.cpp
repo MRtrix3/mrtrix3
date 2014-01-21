@@ -30,7 +30,6 @@
 #include "gui/mrview/tool/tractography/tractography.h"
 #include "gui/dialog/file.h"
 #include "gui/mrview/tool/list_model_base.h"
-#include "gui/mrview/tool/tractography/track_scalar_file.h"
 #include "gui/mrview/tool/tractography/tractogram.h"
 #include "gui/opengl/lighting.h"
 #include "gui/dialog/lighting.h"
@@ -83,7 +82,6 @@ namespace MR
           use_lighting (false),
           not_3D (true),
           line_opacity (1.0),
-          scalar_file_options (NULL),
           lighting_dialog (NULL) {
 
             float voxel_size;
@@ -210,9 +208,6 @@ namespace MR
             action = new QAction("&Set colour", this);
             connect (action, SIGNAL(triggered()), this, SLOT (set_track_colour_slot()));
             track_option_menu->addAction (action);
-            action = new QAction("&Colour by (track) scalar file", this);
-            connect (action, SIGNAL(triggered()), this, SLOT (colour_by_scalar_file_slot()));
-            track_option_menu->addAction (action);
         }
 
 
@@ -228,18 +223,6 @@ namespace MR
           for (int i = 0; i < tractogram_list_model->rowCount(); ++i) {
             if (tractogram_list_model->items[i]->show && !hide_all_button->isChecked())
               dynamic_cast<Tractogram*>(tractogram_list_model->items[i])->render (transform);
-          }
-        }
-
-
-
-
-
-        void Tractography::drawOverlays (const Projection& transform)
-        {
-          for (int i = 0; i < tractogram_list_model->rowCount(); ++i) {
-            if (tractogram_list_model->items[i]->show)
-              dynamic_cast<Tractogram*>(tractogram_list_model->items[i])->renderColourBar (transform);
           }
         }
 
@@ -283,6 +266,11 @@ namespace MR
               }
             }
           }
+          window.updateGL();
+        }
+        
+        
+        void Tractography::selection_changed_slot (const QItemSelection &, const QItemSelection &) {
           window.updateGL();
         }
 
@@ -393,44 +381,6 @@ namespace MR
             dynamic_cast<Tractogram*> (tractogram_list_model->items[indices[i].row()])->set_colour (colour);
           }
           window.updateGL();
-        }
-
-
-        void Tractography::colour_by_scalar_file_slot()
-        {
-          QModelIndexList indices = tractogram_list_view->selectionModel()->selectedIndexes();
-          if (indices.size() != 1) {
-            QMessageBox msgBox;
-            msgBox.setText("Please select only one tractogram when colouring by scalar file.    ");
-            msgBox.exec();
-          } else {
-            if (!scalar_file_options) {
-              scalar_file_options = Tool::create<TrackScalarFile> ("Scalar File Options", window);
-            }
-            dynamic_cast<TrackScalarFile*> (scalar_file_options->tool)->set_tractogram (tractogram_list_model->get_tractogram (indices[0]));
-            if (dynamic_cast<Tractogram*> (tractogram_list_model->items[indices[0].row()])->scalar_filename.length() == 0) {
-              if (!dynamic_cast<TrackScalarFile*> (scalar_file_options->tool)->open_track_scalar_file_slot())
-                return;
-            } else {
-              dynamic_cast<Tractogram*> (tractogram_list_model->items[indices[0].row()])->erase_nontrack_data();
-              dynamic_cast<Tractogram*> (tractogram_list_model->items[indices[0].row()])->color_type = ScalarFile;
-            }
-            scalar_file_options->show();
-            window.updateGL();
-          }
-        }
-
-
-        void Tractography::selection_changed_slot (const QItemSelection &, const QItemSelection &)
-        {
-          if (scalar_file_options) {
-            QModelIndexList indices = tractogram_list_view->selectionModel()->selectedIndexes();
-            if (indices.size() == 1) {
-              dynamic_cast<TrackScalarFile*> (scalar_file_options->tool)->set_tractogram (tractogram_list_model->get_tractogram (indices[0]));
-            } else {
-              dynamic_cast<TrackScalarFile*> (scalar_file_options->tool)->set_tractogram (NULL);
-            }
-          }
         }
 
 

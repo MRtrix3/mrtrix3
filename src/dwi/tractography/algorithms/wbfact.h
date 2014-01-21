@@ -44,9 +44,6 @@ namespace MR
                 FACT::Shared (diff_path, property_set)
               {
 
-                if (is_act() && act().backtrack())
-                  throw Exception ("Sorry, backtracking not currently enabled for WBFACT algorithm");
-
                 properties["method"] = "WBFACT";
 
                 mult (Hat, bmat, binv);
@@ -87,54 +84,7 @@ namespace MR
             return FACT::do_next();
           }
 
-          // TODO Re-implement back-tracking for WBFACT; bootstrapping framework was changed at some point
-
-/*
-          void truncate_track (Track& tck, const int revert_step)
-          {
-
-            // Need to erase the relevant entries in wb_set
-            // "revert_step" is interpreted as the number of voxels for which WB data must be re-acquired
-            // Beware though; each point corresponds to a 2x2x2 linear interpolation neighbourhood
-            // As such, would need to remove all points which have sampled from the WB signal in that voxel
-
-            // Bugger it - just do it per-point, not worth the effort
-
-            // But then, will have to further truncate to remove any points that sampled from these voxels during interpolation!
-
-            //fprintf (stderr, "\n\nNew truncation, size %d, current track:\n", revert_step);
-            //for (Track::const_iterator i = tck.begin(); i != tck.end(); ++i)
-            //  fprintf (stderr, "[%f %f %f]\n", (*i)[0], (*i)[1], (*i)[2]);
-
-            const int new_end_idx = tck.size() - 1 - revert_step;
-            if (new_end_idx <= 1) {
-              tck.clear();
-              return;
-            }
-
-            //fprintf (stderr, "\nNew end index: %d\n", new_end_idx);
-
-            for (int i = new_end_idx + 1; i != int(tck.size()); ++i) {
-              const Point<float> v (source.scanner2voxel (tck[i]));
-              const Point<ssize_t> lower_voxel (Math::floor (v[0]), Math::floor (v[1]), Math::floor (v[2]));
-              unsigned int erase_count = 0;
-              erase_count += (wb_set.erase (lower_voxel + Point<ssize_t> (0, 0, 0))) ? 1 : 0;
-              erase_count += (wb_set.erase (lower_voxel + Point<ssize_t> (0, 0, 1))) ? 1 : 0;
-              erase_count += (wb_set.erase (lower_voxel + Point<ssize_t> (0, 1, 0))) ? 1 : 0;
-              erase_count += (wb_set.erase (lower_voxel + Point<ssize_t> (0, 1, 1))) ? 1 : 0;
-              erase_count += (wb_set.erase (lower_voxel + Point<ssize_t> (1, 0, 0))) ? 1 : 0;
-              erase_count += (wb_set.erase (lower_voxel + Point<ssize_t> (1, 0, 1))) ? 1 : 0;
-              erase_count += (wb_set.erase (lower_voxel + Point<ssize_t> (1, 1, 0))) ? 1 : 0;
-              erase_count += (wb_set.erase (lower_voxel + Point<ssize_t> (1, 1, 1))) ? 1 : 0;
-              //fprintf (stderr, "Erased point [%f %f %f], lower voxel [%d %d %d], %d voxel erases\n", tck[i][0], tck[i][1], tck[i][2], lower_voxel[0], lower_voxel[1], lower_voxel[2], erase_count);
-            }
-
-            tck.erase (tck.begin() + new_end_idx + 1, tck.end());
-
-          }
-*/
-        void truncate_track (std::vector< Point<value_type> >& tck, const int revert_step) {}
-
+         
 
         protected:
 

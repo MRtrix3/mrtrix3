@@ -23,10 +23,6 @@
 #include "app.h"
 #include "exception.h"
 
-#ifdef MRTRIX_AS_R_LIBRARY
-# include "wrap_r.h"
-#endif
-
 namespace MR
 {
 
@@ -54,22 +50,14 @@ namespace MR
 
   void cmdline_report_to_user_func (const std::string& msg, int type)
   {
-#ifdef MRTRIX_AS_R_LIBRARY
-    REprintf ("%s%s%s\n", App::NAME.c_str(), console_prefix (type), msg.c_str());
-#else
     std::cerr << App::NAME << console_prefix (type) << msg << "\n";
-#endif
   }
 
 
 
   void cmdline_print_func (const std::string& msg)
   {
-#ifdef MRTRIX_AS_R_LIBRARY
-    Rprintf (msg.c_str());
-#else 
     std::cout << msg;
-#endif
   }
 
 

@@ -51,7 +51,7 @@ namespace MR
       namespace Tool
       {
 
-        enum ColourType { Direction, Ends, Colour, ScalarFile };
+        enum ColourType { Direction, Ends, Colour };
 
         class Tractogram : public Displayable
         {
@@ -64,15 +64,9 @@ namespace MR
 
             void render (const Projection& transform);
 
-            void renderColourBar (const Projection& transform) {
-              if (color_type == ScalarFile && show_colour_bar)
-                colourbar_renderer.render (transform, *this, colourbar_position_index, this->scale_inverted());
-            }
-
             void load_tracks();
 
             void load_end_colours();
-            void load_track_scalars (const std::string&);
             void erase_nontrack_data();
 
             void set_colour (float c[3])
@@ -82,21 +76,18 @@ namespace MR
               colour[2] = c[2];
             }
 
-            bool scalarfile_by_direction;
-            bool show_colour_bar;
             ColourType color_type;
             float colour[3];
-            std::string scalar_filename;
 
             class Shader : public Displayable::Shader {
               public:
-                Shader () : do_crop_to_slab (false), scalarfile_by_direction (false), use_lighting (false), color_type (Direction) { }
+                Shader () : do_crop_to_slab (false), use_lighting (false), color_type (Direction) { }
                 virtual std::string vertex_shader_source (const Displayable& tractogram);
                 virtual std::string fragment_shader_source (const Displayable& tractogram);
                 virtual bool need_update (const Displayable& object) const;
                 virtual void update (const Displayable& object);
               protected:
-                bool do_crop_to_slab, scalarfile_by_direction, use_lighting;
+                bool do_crop_to_slab, use_lighting;
                 ColourType color_type;
 
             } track_shader;
@@ -111,13 +102,10 @@ namespace MR
             std::vector<GLuint> vertex_buffers;
             std::vector<GLuint> vertex_array_objects;
             std::vector<GLuint> colour_buffers;
-            std::vector<GLuint> scalar_buffers;
             DWI::Tractography::Properties properties;
             std::vector<std::vector<GLint> > track_starts;
             std::vector<std::vector<GLint> > track_sizes;
             std::vector<size_t> num_tracks_per_buffer;
-            ColourMap::Renderer colourbar_renderer;
-            int colourbar_position_index;
 
 
             void load_tracks_onto_GPU (std::vector<Point<float> >& buffer,
@@ -126,8 +114,6 @@ namespace MR
                                               size_t& tck_count);
                                               
             void load_end_colours_onto_GPU (std::vector<Point<float> >& buffer);
-
-            void load_scalars_onto_GPU (std::vector<float>& buffer);
 
         };
       }

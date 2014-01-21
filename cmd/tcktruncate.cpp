@@ -28,7 +28,6 @@
 #include "progressbar.h"
 #include "dwi/tractography/file.h"
 #include "dwi/tractography/properties.h"
-#include "dwi/tractography/weights.h"
 #include "math/rng.h"
 
 
@@ -51,10 +50,7 @@ void usage ()
   + Option ("skip", "skip a number of tracks from the start of file before truncating")
     + Argument ("number").type_integer (0, 1, INT_MAX)
 
-  + Option ("randomise", "select a random subset of tracks instead of a contiguous block")
-
-  + Tractography::TrackWeightsInOption
-  + Tractography::TrackWeightsOutOption;
+  + Option ("randomise", "select a random subset of tracks instead of a contiguous block");
 
 }
 

@@ -57,7 +57,6 @@ namespace MR
             virtual ~Tractography ();
 
             void draw (const Projection& transform, bool is_3D);
-            void drawOverlays (const Projection& transform);
             bool crop_to_slab () const { return (do_crop_to_slab && not_3D); }
             bool process_batch_command (const std::string& cmd, const std::string& args);
 
@@ -77,6 +76,7 @@ namespace MR
             void tractogram_open_slot ();
             void tractogram_close_slot ();
             void toggle_shown_slot (const QModelIndex&, const QModelIndex&);
+            void selection_changed_slot (const QItemSelection &, const QItemSelection &);
             void hide_all_slot ();
             void on_slab_thickness_slot ();
             void on_crop_to_slab_slot (bool is_checked);
@@ -89,13 +89,10 @@ namespace MR
             void colour_track_by_ends_slot ();
             void set_track_colour_slot ();
             void randomise_track_colour_slot ();
-            void colour_by_scalar_file_slot ();
-            void selection_changed_slot (const QItemSelection &, const QItemSelection &);
 
           protected:
             AdjustButton* slab_entry;
             QMenu* track_option_menu;
-            Dock* scalar_file_options;
             Dialog::Lighting *lighting_dialog;
 
         };

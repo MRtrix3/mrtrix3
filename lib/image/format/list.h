@@ -97,10 +97,6 @@ namespace MR
           virtual RefPtr<Handler::Base> create (Header& H) const = 0;
       };
 
-#ifdef MRTRIX_AS_R_LIBRARY
-      DECLARE_IMAGEFORMAT (RAM, "RAM buffer");
-#endif
-
       DECLARE_IMAGEFORMAT (Pipe, "Internal pipe");
       DECLARE_IMAGEFORMAT (DICOM, "DICOM");
       DECLARE_IMAGEFORMAT (MRtrix, "MRtrix");
@@ -112,7 +108,6 @@ namespace MR
       DECLARE_IMAGEFORMAT (XDS, "XDS");
       DECLARE_IMAGEFORMAT (MGH, "MGH");
       DECLARE_IMAGEFORMAT (MGZ, "MGZ (compressed MGH)");
-      DECLARE_IMAGEFORMAT (MRtrix_sparse, "MRtrix WIP sparse image data format");
 
       /*! a list of all extensions for image formats that %MRtrix can handle. */
       extern const char* known_extensions[];

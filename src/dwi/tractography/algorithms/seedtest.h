@@ -57,7 +57,6 @@ class Seedtest : public MethodBase {
 
   bool init () { return true; }
   term_t next () { return EXIT_IMAGE; }
-  float get_metric() { return 1.0; }
 
 
   protected:

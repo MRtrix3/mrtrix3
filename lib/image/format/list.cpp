@@ -30,9 +30,6 @@ namespace MR
   {
     namespace Format
     {
-#ifdef MRTRIX_AS_R_LIBRARY
-      Format::RAM        RAM_handler;
-#endif
 
       Format::Pipe          pipe_handler;
       Format::MRtrix        mrtrix_handler;
@@ -45,13 +42,9 @@ namespace MR
       Format::DICOM         dicom_handler;
       Format::MGH           mgh_handler;
       Format::MGZ           mgz_handler;
-      Format::MRtrix_sparse mrtrix_sparse_handler;
 
 
       const Base* handlers[] = {
-#ifdef MRTRIX_AS_R_LIBRARY
-        &RAM_handler,
-#endif
         &pipe_handler,
         &dicom_handler,
         &mrtrix_handler,
@@ -63,7 +56,6 @@ namespace MR
         &xds_handler,
         &mgh_handler,
         &mgz_handler,
-        &mrtrix_sparse_handler,
         NULL
       };
 
@@ -82,8 +74,6 @@ namespace MR
         ".mgh",
         ".mgz",
         ".mgh.gz",
-        ".msif",
-        ".msih",
         NULL
       };
 

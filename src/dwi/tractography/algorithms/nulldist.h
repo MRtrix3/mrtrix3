@@ -80,8 +80,6 @@ namespace MR
         return CONTINUE;
       }
 
-      float get_metric() { return rng.uniform(); }
-
 
       protected:
       const Shared& S;

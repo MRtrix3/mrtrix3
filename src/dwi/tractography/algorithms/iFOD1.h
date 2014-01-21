@@ -218,11 +218,6 @@ namespace MR
       }
 
 
-      float get_metric()
-      {
-        return FOD (dir);
-      }
-
 
       protected:
       const Shared& S;

@@ -29,7 +29,6 @@
 #include "gui/mrview/window.h"
 #include "gui/projection.h"
 #include "dwi/tractography/file.h"
-#include "dwi/tractography/scalar_file.h"
 #include "gui/opengl/lighting.h"
 
 
@@ -47,8 +46,7 @@ namespace MR
 
         std::string Tractogram::Shader::vertex_shader_source (const Displayable& tractogram)
         {
-          bool colour_by_direction = ( color_type == Direction || 
-              ( color_type == ScalarFile && scalarfile_by_direction ) );
+          bool colour_by_direction = (color_type == Direction);
 
           std::string source =
               "layout (location = 0) in vec3 vertexPosition_modelspace;\n"
@@ -69,10 +67,6 @@ namespace MR
               break;
             case Colour:
               source += "uniform vec3 const_colour;\n";
-              break;
-            case ScalarFile:
-              source += "layout (location = 3) in float amp;\n"
-                        "uniform float offset, scale;\n";
               break;
           }
 
@@ -110,20 +104,6 @@ namespace MR
               source +=
                   "  fragmentColour = const_colour;\n";
               break;
-            case ScalarFile:
-              source += "  amp_out = amp;\n";
-              if (!ColourMap::maps[colourmap].special) {
-                source += "  float amplitude = clamp (";
-                if (tractogram.scale_inverted())
-                  source += "1.0 -";
-                source += " scale * (amp - offset), 0.0, 1.0);\n  ";
-              }
-              if (!scalarfile_by_direction) 
-                source += 
-                  std::string ("  vec3 color;\n") +
-                  ColourMap::maps[colourmap].mapping +
-                  "  fragmentColour = color;\n";
-              break;
             default:
               break;
           }
@@ -141,8 +121,7 @@ namespace MR
 
         std::string Tractogram::Shader::fragment_shader_source (const Displayable& tractogram) 
         {
-          bool colour_by_direction = ( color_type == Direction || 
-              ( color_type == ScalarFile && scalarfile_by_direction ) );
+          bool colour_by_direction = (color_type == Direction);
 
           std::string source =
               "in float include; \n"
@@ -155,25 +134,11 @@ namespace MR
               "uniform float ambient, diffuse, specular, shine;\n"
               "uniform vec3 light_pos;\n";
 
-          if (color_type == ScalarFile) {
-            if (tractogram.use_discard_lower())
-              source += "uniform float lower;\n";
-            if (tractogram.use_discard_upper())
-              source += "uniform float upper;\n";
-          }
-
           source +=
               "void main(){\n";
 
           if (do_crop_to_slab)
             source += "  if (include < 0 || include > 1) discard;\n";
-
-          if (color_type == ScalarFile) {
-            if (tractogram.use_discard_lower())
-              source += "  if (amp_out < lower) discard;\n";
-            if (tractogram.use_discard_upper())
-              source += "  if (amp_out > upper) discard;\n";
-          }
 
           if (use_lighting)
             source += "  vec3 t = normalize (tangent);\n";
@@ -205,9 +170,6 @@ namespace MR
           if (do_crop_to_slab != tractogram.tractography_tool.crop_to_slab() ||
               color_type != tractogram.color_type) 
             return true;
-          if (tractogram.color_type == ScalarFile)
-            if (scalarfile_by_direction != tractogram.scalarfile_by_direction)
-              return true;
           if (use_lighting != tractogram.tractography_tool.use_lighting)
             return true;
           return Displayable::Shader::need_update (object);
@@ -220,7 +182,6 @@ namespace MR
         {
           const Tractogram& tractogram (dynamic_cast<const Tractogram&> (object));
           do_crop_to_slab = tractogram.tractography_tool.crop_to_slab();
-          scalarfile_by_direction = tractogram.scalarfile_by_direction;
           use_lighting = tractogram.tractography_tool.use_lighting;
           color_type = tractogram.color_type;
           Displayable::Shader::update (object);
@@ -234,14 +195,10 @@ namespace MR
 
         Tractogram::Tractogram (Window& window, Tractography& tool, const std::string& filename) :
             Displayable (filename),
-            scalarfile_by_direction (false),
-            show_colour_bar (true),
             color_type (Direction),
-            scalar_filename (""),
             window (window),
             tractography_tool (tool),
-            filename (filename),
-            colourbar_position_index (4)
+            filename (filename)
         {
           set_allowed_features (true, true, true);
           colourmap = 1;
@@ -259,8 +216,6 @@ namespace MR
             glDeleteVertexArrays (vertex_array_objects.size(), &vertex_array_objects[0]);
           if (colour_buffers.size())
             glDeleteBuffers (colour_buffers.size(), &colour_buffers[0]);
-          if (scalar_buffers.size())
-            glDeleteBuffers (scalar_buffers.size(), &scalar_buffers[0]);
         }
 
 
@@ -284,14 +239,8 @@ namespace MR
                 tractography_tool.slab_thickness);
           }
 
-          if (color_type == ScalarFile) {
-            if (use_discard_lower())
-              glUniform1f (glGetUniformLocation (track_shader, "lower"), lessthan);
-            if (use_discard_upper())
-              glUniform1f (glGetUniformLocation (track_shader, "upper"), greaterthan);
-          }
-          else if (color_type == Colour) 
-              glUniform3fv (glGetUniformLocation (track_shader, "const_colour"), 1, colour);
+          if (color_type == Colour) 
+            glUniform3fv (glGetUniformLocation (track_shader, "const_colour"), 1, colour);
 
           if (tractography_tool.use_lighting) {
             glUniformMatrix4fv (glGetUniformLocation (track_shader, "MV"), 1, GL_FALSE, transform.modelview());
@@ -390,74 +339,11 @@ namespace MR
 
 
 
-
-        void Tractogram::load_track_scalars (const std::string& filename)
-        {
-          erase_nontrack_data();
-          scalar_filename = filename;
-          value_min = std::numeric_limits<float>::infinity();
-          value_max = -std::numeric_limits<float>::infinity();
-          std::vector<float> buffer;
-          std::vector<float> tck_scalar;
-          if (Path::has_suffix (filename, ".tsf")) {
-            DWI::Tractography::Properties scalar_properties;
-            DWI::Tractography::ScalarReader<float> file (filename, scalar_properties);
-            // TODO uncomment before release
-            //            if (scalar_properties.timestamp != properties.timestamp)
-            //              throw Exception ("The scalar track file does not match the selected tractogram   ");
-            while (file.next (tck_scalar)) {
-              buffer.push_back (NAN);
-              for (size_t i = 0; i < tck_scalar.size(); ++i) {
-                buffer.push_back (tck_scalar[i]);
-                if (tck_scalar[i] > value_max) value_max = tck_scalar[i];
-                if (tck_scalar[i] < value_min) value_min = tck_scalar[i];
-              }
-              if (buffer.size() >= MAX_BUFFER_SIZE)
-                load_scalars_onto_GPU (buffer);
-            }
-            if (buffer.size())
-              load_scalars_onto_GPU (buffer);
-            file.close();
-          } else {
-            Math::Vector<float> scalars (filename);
-            size_t total_num_tracks = 0;
-            for (std::vector<size_t>::const_iterator i = num_tracks_per_buffer.begin(); i != num_tracks_per_buffer.end(); ++i)
-              total_num_tracks += *i;
-            if (scalars.size() != total_num_tracks)
-              throw Exception ("The scalar text file does not contain the same number of elements as the selected tractogram");
-            size_t running_index = 0;
-            for (size_t buffer_index = 0; buffer_index != vertex_buffers.size(); ++buffer_index) {
-              const size_t num_tracks = num_tracks_per_buffer[buffer_index];
-              std::vector<GLint>& track_lengths (track_sizes[buffer_index]);
-              for (size_t index = 0; index != num_tracks; ++index, ++running_index) {
-                const float value = scalars[running_index];
-                buffer.push_back (NAN);
-                tck_scalar.assign (track_lengths[index], value);
-                buffer.insert (buffer.end(), tck_scalar.begin(), tck_scalar.end());
-                if (value > value_max) value_max = value;
-                if (value < value_min) value_min = value;
-              }
-              load_scalars_onto_GPU (buffer);
-            }
-          }
-          this->set_windowing (value_min, value_max);
-          greaterthan = value_max;
-          lessthan = value_min;
-        }
-        
-        
-        
         void Tractogram::erase_nontrack_data()
         {
           if (colour_buffers.size()) {
             glDeleteBuffers (colour_buffers.size(), &colour_buffers[0]);
             colour_buffers.clear();
-          }
-          if (scalar_buffers.size()) {
-            glDeleteBuffers (scalar_buffers.size(), &scalar_buffers[0]);
-            scalar_buffers.clear();
-            set_use_discard_lower (false);
-            set_use_discard_upper (false);
           }
         }
 
@@ -467,7 +353,8 @@ namespace MR
         void Tractogram::load_tracks_onto_GPU (std::vector<Point<float> >& buffer,
             std::vector<GLint>& starts,
             std::vector<GLint>& sizes,
-            size_t& tck_count) {
+            size_t& tck_count)
+        {
           buffer.push_back (Point<float>());
           GLuint vertexbuffer;
           glGenBuffers (1, &vertexbuffer);
@@ -514,23 +401,6 @@ namespace MR
           buffer.clear();
         }
 
-
-
-
-
-        void Tractogram::load_scalars_onto_GPU (std::vector<float>& buffer) {
-          buffer.push_back (NAN);
-          GLuint vertexbuffer;
-          glGenBuffers (1, &vertexbuffer);
-          glBindBuffer (GL_ARRAY_BUFFER, vertexbuffer);
-          glBufferData (GL_ARRAY_BUFFER, buffer.size() * sizeof(float), &buffer[0], GL_STATIC_DRAW);
-
-          glBindVertexArray (vertex_array_objects[scalar_buffers.size()]);
-          glEnableVertexAttribArray (3);
-          glVertexAttribPointer (3, 1, GL_FLOAT, GL_FALSE, 0, (void*)(sizeof(float)));
-          scalar_buffers.push_back (vertexbuffer);
-          buffer.clear();
-        }
 
 
 

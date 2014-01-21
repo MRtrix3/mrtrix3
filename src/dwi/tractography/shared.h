@@ -33,7 +33,6 @@
 #include "image/transform.h"
 #include "dwi/tractography/properties.h"
 #include "dwi/tractography/roi.h"
-#include "dwi/tractography/ACT/shared.h"
 
 #define MAX_TRIALS 1000
 
@@ -51,15 +50,15 @@ namespace MR
 
 
 
-    enum term_t { CONTINUE, ENTER_CGM, CALIBRATE_FAIL, EXIT_IMAGE, ENTER_CSF, BAD_SIGNAL, HIGH_CURVATURE, LENGTH_EXCEED, TERM_IN_SGM, EXIT_SGM, EXIT_MASK, ENTER_EXCLUDE };
-#define TERMINATION_REASON_COUNT 12
+    enum term_t { CONTINUE, CALIBRATE_FAIL, EXIT_IMAGE, BAD_SIGNAL, HIGH_CURVATURE, LENGTH_EXCEED, EXIT_MASK, ENTER_EXCLUDE };
+#define TERMINATION_REASON_COUNT 8
 
     // This lookup table specifies whether or not the most recent position should be added to the end of the streamline,
     //   based on what mechanism caused the termination
-    const uint8_t term_add_to_tck[TERMINATION_REASON_COUNT] = { 1, 1, 0, 1, 1, 0, 0, 1, 0, 0, 0, 1 };
+    const uint8_t term_add_to_tck[TERMINATION_REASON_COUNT] = { 1, 0, 1, 0, 0, 0, 0, 1 };
 
-    enum reject_t { TRACK_TOO_SHORT, TRACK_TOO_LONG, ENTER_EXCLUDE_REGION, MISSED_INCLUDE_REGION, ACT_POOR_TERMINATION, ACT_FAILED_WM_REQUIREMENT };
-#define REJECTION_REASON_COUNT 6
+    enum reject_t { TRACK_TOO_SHORT, ENTER_EXCLUDE_REGION, MISSED_INCLUDE_REGION };
+#define REJECTION_REASON_COUNT 3
 
 
 
@@ -122,7 +121,7 @@ namespace MR
           rk4 (false),
           downsample (1)
 #ifdef DEBUG_TERMINATIONS
-        , debug_header       (properties.find ("act") == properties.end() ? diff_path : properties["act"]),
+        , debug_header       (diff_path),
           transform          (debug_header)
 #endif
         {
@@ -152,9 +151,6 @@ namespace MR
             init_dir.normalise();
           }
 
-          if (properties.find ("act") != properties.end())
-            act_shared_additions = new ACT::ACT_Shared_additions (properties["act"], property_set);
-
           for (size_t i = 0; i != TERMINATION_REASON_COUNT; ++i)
             terminations[i] = 0;
           for (size_t i = 0; i != REJECTION_REASON_COUNT; ++i)
@@ -167,17 +163,13 @@ namespace MR
             std::string name;
             switch (i) {
               case 0:  name = "undefined";      break;
-              case 1:  name = "enter_cgm";      break;
-              case 2:  name = "calibrate_fail"; break;
-              case 3:  name = "exit_image";     break;
-              case 4:  name = "enter_csf";      break;
-              case 5:  name = "bad_signal";     break;
-              case 6:  name = "curvature";      break;
-              case 7:  name = "max_length";     break;
-              case 8:  name = "term_in_sgm";    break;
-              case 9:  name = "exit_sgm";       break;
-              case 10: name = "exit_mask";      break;
-              case 11: name = "enter_exclude";  break;
+              case 1:  name = "calibrate_fail"; break;
+              case 2:  name = "exit_image";     break;
+              case 3:  name = "bad_signal";     break;
+              case 4:  name = "curvature";      break;
+              case 5:  name = "max_length";     break;
+              case 6:  name = "exit_mask";      break;
+              case 7:  name = "enter_exclude";  break;
             }
             debug_images[i] = new Image::Buffer<uint32_t>("terms_" + name + ".mif", debug_header);
           }
@@ -198,18 +190,14 @@ namespace MR
             std::string term_type;
             bool to_print = false;
             switch (i) {
-              case 0:  term_type = "Unknown";                      to_print = false;    break;
-              case 1:  term_type = "Entered cortical grey matter"; to_print = is_act(); break;
-              case 2:  term_type = "Calibrator failed";            to_print = true;     break;
-              case 3:  term_type = "Exited image";                 to_print = true;     break;
-              case 4:  term_type = "Entered CSF";                  to_print = is_act(); break;
-              case 5:  term_type = "Bad diffusion signal";         to_print = true;     break;
-              case 6:  term_type = "Excessive curvature";          to_print = true;     break;
-              case 7:  term_type = "Max length exceeded";          to_print = true;     break;
-              case 8:  term_type = "Terminated in subcortex";      to_print = is_act(); break;
-              case 9:  term_type = "Exiting sub-cortical GM";      to_print = is_act(); break;
-              case 10: term_type = "Exited mask";                  to_print = properties.mask.size(); break;
-              case 11: term_type = "Entered exclusion region";     to_print = properties.exclude.size(); break;
+              case 0: term_type = "Unknown";                  to_print = false;                     break;
+              case 1: term_type = "Calibrator failed";        to_print = true;                      break;
+              case 2: term_type = "Exited image";             to_print = true;                      break;
+              case 3: term_type = "Bad diffusion signal";     to_print = true;                      break;
+              case 4: term_type = "Excessive curvature";      to_print = true;                      break;
+              case 5: term_type = "Max length exceeded";      to_print = true;                      break;
+              case 6: term_type = "Exited mask";              to_print = properties.mask.size();    break;
+              case 7: term_type = "Entered exclusion region"; to_print = properties.exclude.size(); break;
             }
             if (to_print)
               INFO ("  " + term_type + ": " + str (100.0 * terminations[i] / (double)sum_terminations) + "\%");
@@ -220,12 +208,9 @@ namespace MR
             std::string reject_type;
             bool to_print = false;
             switch (i) {
-              case 0: reject_type = "Shorter than minimum length";     to_print = true;     break;
-              case 1: reject_type = "Longer than maximum length";      to_print = is_act(); break;
-              case 2: reject_type = "Entered exclusion region";        to_print = properties.exclude.size(); break;
-              case 3: reject_type = "Missed inclusion region";         to_print = properties.include.size(); break;
-              case 4: reject_type = "Poor structural termination";     to_print = is_act(); break;
-              case 5: reject_type = "Failed to traverse white matter"; to_print = is_act(); break;
+              case 0: reject_type = "Shorter than minimum length";     to_print = true;                      break;
+              case 1: reject_type = "Entered exclusion region";        to_print = properties.exclude.size(); break;
+              case 2: reject_type = "Missed inclusion region";         to_print = properties.include.size(); break;
             }
             if (to_print)
               INFO ("  " + reject_type + ": " + str (rejections[i]));
@@ -252,10 +237,6 @@ namespace MR
         bool rk4;
         int downsample;
 
-        // Additional members for ACT
-        bool is_act() const { return act_shared_additions; }
-        const ACT::ACT_Shared_additions& act() const { return *act_shared_additions; }
-
 
 
         value_type vox () const
@@ -276,7 +257,7 @@ namespace MR
           properties.set (max_dist, "max_dist");
           max_num_points = round (max_dist/step_size) + 1;
 
-          value_type min_dist = is_act() ? (2.0 * vox()) : (5.0 * vox());
+          value_type min_dist = 5.0 * vox();
           properties.set (min_dist, "min_dist");
           min_num_points = std::max (2, round (min_dist/step_size) + 1);
 
@@ -322,8 +303,6 @@ namespace MR
       private:
         mutable size_t terminations[TERMINATION_REASON_COUNT];
         mutable size_t rejections  [REJECTION_REASON_COUNT];
-
-        Ptr<ACT::ACT_Shared_additions> act_shared_additions;
 
 #ifdef DEBUG_TERMINATIONS
         Image::Header debug_header;
