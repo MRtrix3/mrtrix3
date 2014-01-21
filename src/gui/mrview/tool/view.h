@@ -75,7 +75,20 @@ namespace MR
             void onCheckThreshold (bool);
             void onModeChanged ();
             void clip_planes_right_click_menu_slot (const QPoint& pos);
+            void clip_planes_selection_changed_slot ();
             void clip_planes_toggle_shown_slot();
+
+            void clip_planes_add_axial_slot ();
+            void clip_planes_add_sagittal_slot ();
+            void clip_planes_add_coronal_slot ();
+
+            void clip_planes_reset_axial_slot ();
+            void clip_planes_reset_sagittal_slot ();
+            void clip_planes_reset_coronal_slot ();
+
+            void clip_planes_invert_slot ();
+            void clip_planes_remove_slot ();
+            void clip_planes_clear_slot ();
 
           private:
             AdjustButton *focus_x, *focus_y, *focus_z; 
@@ -88,8 +101,9 @@ namespace MR
             QGroupBox *transparency_box, *threshold_box, *clip_box;
             QSlider *opacity;
             QMenu *clip_planes_option_menu, *clip_planes_reset_submenu;
-            QAction *clip_planes_new_action[3], *clip_planes_reset_action[3], *clip_plane_invert_action;
-            QAction *clip_plane_remove_action, *clip_planes_clear_action, *clip_planes_help_action;
+            QAction *clip_planes_new_axial_action, *clip_planes_new_sagittal_action, *clip_planes_new_coronal_action;
+            QAction *clip_planes_reset_axial_action, *clip_planes_reset_sagittal_action, *clip_planes_reset_coronal_action;
+            QAction *clip_planes_invert_action, *clip_planes_remove_action, *clip_planes_clear_action;
 
             class ClipPlaneModel;
             ClipPlaneModel* clip_planes_model;

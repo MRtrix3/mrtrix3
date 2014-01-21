@@ -1301,7 +1301,7 @@ namespace MR
             line = strip (line.substr (0, line.find_first_of ('#')));
           } while (line.empty());
 
-          std::string cmd = line.substr (0, line.find_first_of (" \t"));
+          std::string cmd = line.substr (0, line.find_first_of (" :\t"));
           std::string args;
           if (line.size() > cmd.size()+1)
             args = strip (line.substr (cmd.size()+1));
