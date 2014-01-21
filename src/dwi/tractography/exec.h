@@ -104,7 +104,6 @@ namespace MR
           bool operator() (const GeneratedTrack& in, Tractography::TrackData<float>& out)
           {
             out.index = writer.count;
-            out.weight = 1.0;
             if (!operator() (in))
               return false;
             out = in;

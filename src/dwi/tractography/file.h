@@ -53,14 +53,11 @@ namespace MR
           typedef T value_type;
           TrackData () :
               std::vector< Point<value_type> > (),
-              index (-1),
-              weight (value_type (1.0)) { }
+              index (-1) { }
           TrackData (const std::vector< Point<value_type> >& tck) :
               std::vector< Point<value_type> > (tck),
-              index (-1),
-              weight (1.0) { }
+              index (-1) { }
           size_t index;
-          value_type weight;
       };
 
 
@@ -74,12 +71,6 @@ namespace MR
               track_index (0)
           {
             open (file, "tracks", properties);
-            App::Options opt = App::get_options ("tck_weights_in");
-            if (opt.size()) {
-              const std::string path = opt[0][0];
-              weights.load (path);
-              DEBUG ("Imported track weights file " + path + " with " + str(weights.size()) + " elements");
-            }
           }
 
 
@@ -117,13 +108,6 @@ namespace MR
           {
             tck.clear();
             tck.index = track_index;
-            if (weights.size()) {
-              if (tck.index >= weights.size())
-                return false;
-              tck.weight = weights[tck.index];
-            } else {
-              tck.weight = 1.0;
-            }
             return next (tck);
           }
           bool operator() (TrackData<value_type>& tck) { return next_data (tck); }
@@ -134,7 +118,6 @@ namespace MR
           using __ReaderBase__::in;
           using __ReaderBase__::dtype;
 
-          Math::Vector<value_type> weights;
           size_t track_index;
 
           Point<value_type> get_next_point ()
@@ -219,9 +202,6 @@ namespace MR
             if (!out.good())
               throw Exception ("error writing tracks file \"" + name + "\": " + strerror (errno));
 
-            App::Options opt = App::get_options ("tck_weights_out");
-            if (opt.size())
-              set_weights_path (opt[0][0]);
           }
 
           virtual ~WriterUnbuffered() { }
@@ -233,11 +213,8 @@ namespace MR
           virtual void append (const TrackData<value_type>&);
           bool operator() (const TrackData<value_type>& tck) { append (tck); return true; }
 
-          void set_weights_path (const std::string&);
-
 
         protected:
-          std::string weights_name;
           int64_t barrier_addr;
 
           Point<value_type> delimiter () const { return Point<value_type> (NAN, NAN, NAN); }
@@ -278,23 +255,6 @@ namespace MR
       void WriterUnbuffered<value_type>::append (const TrackData<value_type>& tck)
       {
         append (std::vector< Point<value_type> > (tck));
-        if (weights_name.size() && tck.size()) {
-          std::ofstream out (weights_name.c_str(), std::ios::in | std::ios::out | std::ios::binary | std::ios::ate);
-          if (!out)
-            throw Exception ("error re-opening streamline weights file \"" + weights_name + "\": " + strerror (errno));
-          out << tck.weight << "\n";
-          if (!out.good())
-            throw Exception ("error writing streamline weights file \"" + weights_name + "\": " + strerror (errno));
-        }
-      }
-
-      template <typename value_type>
-      void WriterUnbuffered<value_type>::set_weights_path (const std::string& path) {
-        if (weights_name.size())
-          throw Exception ("Cannot change output streamline weights file path");
-        weights_name = path;
-        if (Path::exists (weights_name))
-          File::unlink (weights_name);
       }
 
       template <typename value_type>
@@ -369,7 +329,6 @@ namespace MR
           using WriterUnbuffered<T>::delimiter;
           using WriterUnbuffered<T>::format_point;
           using WriterUnbuffered<T>::verify_stream;
-          using WriterUnbuffered<T>::weights_name;
 
 
           Writer (const std::string& file, const Properties& properties) :
@@ -420,8 +379,6 @@ namespace MR
       void Writer<value_type>::append (const TrackData<value_type>& tck)
       {
         append (std::vector< Point<value_type> > (tck));
-        if (weights_name.size() && tck.size())
-          weights_buffer += str (tck.weight) + ' ';
       }
 
       template <typename value_type>
@@ -451,16 +408,6 @@ namespace MR
         out.seekp (count_offset);
         out << count << "\ntotal_count: " << total_count << "\nEND\n";
         verify_stream (out);
-
-        if (weights_name.size()) {
-          std::ofstream out_weights (weights_name.c_str(), std::ios::in | std::ios::out | std::ios::binary | std::ios::ate);
-          if (!out_weights)
-            throw Exception ("error re-opening streamline weights file \"" + weights_name + "\": " + strerror (errno));
-          out_weights << weights_buffer;
-          weights_buffer.clear();
-          if (!out_weights.good())
-            throw Exception ("error writing streamline weights file \"" + weights_name + "\": " + strerror (errno));
-        }
 
         buffer_size = 0;
       }

@@ -88,7 +88,6 @@ class TrackMapperBase
     {
       out.clear();
       out.index = in.index;
-      out.weight = in.weight;
       if (in.empty())
         return true;
       if (preprocess (in, out) || map_zero) {

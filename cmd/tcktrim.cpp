@@ -93,7 +93,6 @@ void run ()
 	  // loop through the points on the in_track
 	  bool within_mask = false;
 	  out_track.clear();
-	  out_track.weight = in_track.weight;
 
 	  for ( Track::iterator pt = in_track.begin() ; pt != in_track.end() ; ++pt ) {
 
