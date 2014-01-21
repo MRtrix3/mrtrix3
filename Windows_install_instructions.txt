@@ -1,0 +1,84 @@
+ These are the steps I took in my first go at getting MRtrix working natively in Windows:
+ 
+ 1. Download and install:
+      * Git: http://git-scm.com/downloads
+      * MinGW-w64: http://sourceforge.net/projects/mingwbuilds/files/host-windows/releases/4.8.1/64-bit/threads-posix/seh/
+      * Python: http://www.python.org/getit/
+      * GSL: http://sourceforge.net/projects/mingw-w64/files/External%20binary%20packages%20%28Win64%20hosted%29/Binaries%20%2864-bit%29/
+          (install to MinGW-w64 directory)
+      * QT: http://sourceforge.net/projects/mingwbuilds/files/external-binary-packages/Qt-Builds/
+          (QT4, 64-bit)
+      * Zlib: http://sourceforge.net/projects/mingw-w64/files/External%20binary%20packages%20%28Win64%20hosted%29/Binaries%20%2864-bit%29/zlib-1.2.5-bin-x64.zip/download
+	      (see point 12 for what to do with this)
+
+ 2. Add components to PATH environment variable as necessary
+      ( can be done permamently through Control Panel - User Accounts - Change my environment variables)
+      * MinGW-w64: add the bin\ sub-directory
+      * QT: Add the bin\ sub-directory
+
+ 3. Open Git Bash (from Start menu)
+
+ 4. Create an MRtrix configuration file:
+      echo $'NumberOfThreads: #\n' > ~/mrtrix.conf
+      (Where the '#' is, type in the number of threads your CPU supports)
+
+ 5. Configure global settings for Git:
+      git config --global user.name "John Doe"
+      git config --global user.email johndoe@example.com
+      git config --global core.autocrlf true
+
+ 6. Configure SSH key access to GitLab:
+      ssh-keygen -t rsa -C "johndoe@example.com"
+      cat ~/.ssh/id_rsa.pub
+      Copy contents of this file to clipboard, go to GitLab.com, log into account, go to Profile settings -> SSH keys, paste contents into text box and give it a name
+
+ 7. Create a directory in home folder to store repository
+      mkdir mrtrix_tdi; cd mrtrix_tdi
+
+ 8. Set up path to repository
+      git remote add origin 'git@gitlab.com:mrtrix/siemens-wip.git'
+      Use the same password as that used to set up the SSH key
+
+ 9. Import contents of repository
+      git fetch origin
+      git checkout master
+
+10. Set up necessary environment variables to configure the MRtrix installation
+      export GSL_CFLAGS="-Ic:/mingw64/include"
+        (note: use Linux directory symbol '/' rather than Windows '\' here)
+
+11. Set up QT4
+      Technically it should be possible to install QT4 wherever you like, and configure it accordingly.
+      I however had a problem where QT would not let me change the relevant variables
+        (see list using qmake -query, change values using qmake -set)
+      The only way I could get it to work was by installing QT to the directory used by
+        whoever built the distribution; this happened to be C:\Test\Qt-4.8.5-x86_64\
+		
+12. Set up Zlib
+      On my system, the viewer refused to run as it could not find zlib1.dll, and none of the
+	    versions of this file provided in other packages would work; it needed to be the MinGW-w64
+		version. Rather than compiling from source, the link in point 1. is a pre-compiled DLL
+		that works (zlib1.dll). Just put this file in the MRtrix lib/ directory.
+
+13. Configure the MRtrix install
+      ./configure
+      If this does not work, running ./configure -verbose may give further clues
+        as to the specific error.
+
+14. Build the binaries
+      ./build
+
+15. Add the locations of the MRtrix binaries and the shared library .dll file to the PATH variable
+      export PATH="/c/Users/johndoe/mrtrix_tdi/bin/:/c/Users/johndoe/mrtrix_tdi/lib/:$PATH"
+
+16. Run the provided script for performing all processing to generate a TDI from a DWI dataset
+      The script will generate temporary images in the current working directory, so
+        best to create a new directory for testing:
+      mkdir test/; cd test/
+      ../scripts/dwi2tdi <path_to_DWI>
+
+      Note that the script is designed to be run in the SH shell provided by "Git Bash".
+      It is possible to run this script from a standard Windows command-line, provided:
+        * In the first line of the script, "$1" is changed to "%1"
+        * The HOME environment variable is set
+    
