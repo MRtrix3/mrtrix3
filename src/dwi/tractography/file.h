@@ -31,8 +31,6 @@
 #include "types.h"
 #include "point.h"
 #include "file/key_value.h"
-#include "file/path.h"
-#include "file/utils.h"
 #include "dwi/tractography/file_base.h"
 #include "dwi/tractography/properties.h"
 #include "math/vector.h"
@@ -279,7 +277,7 @@ namespace MR
       {
         append (std::vector< Point<value_type> > (tck));
         if (weights_name.size() && tck.size()) {
-          std::ofstream out (weights_name.c_str(), std::ios::in | std::ios::out | std::ios::binary | std::ios::ate);
+          std::ofstream out (weights_name.c_str(), std::ios::out | std::ios::binary | std::ios::ate);
           if (!out)
             throw Exception ("error re-opening streamline weights file \"" + weights_name + "\": " + strerror (errno));
           out << tck.weight << "\n";
@@ -293,8 +291,9 @@ namespace MR
         if (weights_name.size())
           throw Exception ("Cannot change output streamline weights file path");
         weights_name = path;
-        if (Path::exists (weights_name))
-          File::unlink (weights_name);
+        std::ofstream out (weights_name.c_str(), std::ios::out | std::ios::binary | std::ios::trunc);
+        if (!out)
+          throw Exception ("error creating empty streamline weights file \"" + name + "\": " + strerror (errno));
       }
 
       template <typename value_type>
@@ -453,7 +452,7 @@ namespace MR
         verify_stream (out);
 
         if (weights_name.size()) {
-          std::ofstream out_weights (weights_name.c_str(), std::ios::in | std::ios::out | std::ios::binary | std::ios::ate);
+          std::ofstream out_weights (weights_name.c_str(), std::ios::out | std::ios::binary | std::ios::ate);
           if (!out_weights)
             throw Exception ("error re-opening streamline weights file \"" + weights_name + "\": " + strerror (errno));
           out_weights << weights_buffer;
