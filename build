@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!python
 
 import platform, sys, os, time, threading, subprocess, copy, codecs
 
