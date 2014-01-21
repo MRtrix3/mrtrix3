@@ -80,7 +80,11 @@ namespace MR
     \subsection multithreading_shared Sharing read-only data
 
     The approach generally used in MRtrix applications is to define a class to
-    be shared across threads, called for example \c Shared:
+    hold data that threads need read-only access to during processing. This
+    class is then initialised prior to creating and launching the threads, and
+    is passed by const-reference to the threads to prevent the threads from
+    unintentionally modifying the data. For example:
+
     \code 
     class Shared:
       public: 
@@ -93,11 +97,11 @@ namespace MR
     };
     \endcode
 
-    This class could for example contain all the reconstruction parameters set
+    This class might for example contain all the reconstruction parameters set
     by the user, and any number of potentially large structures (e.g. matrices)
-    that will be used by the other threads in a read-only fashion. Once
-    initialised, it is then passed by const-reference to the thread class's
-    constructor:
+    that will be used but not modified) by the other threads. Once initialised,
+    it is then passed by const-reference to the thread class's constructor:
+
     \code
     class Thread {
       public:
@@ -111,15 +115,15 @@ namespace MR
         OtherType local_variables;
     };
     \endcode
-    
-    At this point, each thread class has access to the shared data in a
-    read-only (const) and hopefully thread-safe fashion. 
 
     This structure helps to clearly delineate what is shared across threads and
-    what is private to each thread. Any attempt at non-const access to the
-    shared data will result in a compile-time failure. This is a very good
-    thing, since trying to debug subtle bugs introduced by race conditions can
-    be very frustrating.
+    what is private to each thread. Using this construct, each thread class has
+    read-only (const) access to the shared data, and any attempt at non-const
+    access to this data will result in a compile-time failure. This is a very
+    good thing, since trying to debug subtle bugs introduced by race conditions
+    can be very frustrating, and any strategy designed to catch unintended
+    access will save many hours of exasperation further down the track.
+
 
     \subsection multithreading_concurrent Sharing read/write data
 
@@ -127,12 +131,11 @@ namespace MR
     design an additional class that encapsulates the data to be protected. This
     class provides methods to access data items, and manages the mutex
     associated with the data. For example:
+
     \code
     class SharedRW {
       public:
-        SharedRW () {
-          // initialise 
-        }
+        ...
 
         Item get_next () {
           lock_mutex();
@@ -141,8 +144,7 @@ namespace MR
           return item;
         }
 
-      protected:
-        ListType list;
+        ...
     };
     \endcode
 
@@ -168,7 +170,7 @@ namespace MR
     Each call to lock or release a mutex will take up CPU cycles due to the
     function call and the need for the hardware to synchronise across all CPU
     cores. This overhead can become significant if run within a sufficiently
-    tight loop, where the processing itself might take up fewer CPU cycles that
+    tight loop, where the processing itself might take up fewer CPU cycles than
     the mutex handling. 
 
     Another related issue is the cost of holding the mutex, in terms of its
@@ -201,51 +203,48 @@ namespace MR
 
     \section multithreading_in_mrtrix Multi-threading API in MRtrix
 
+    MRtrix provides a number of constructs to simplify the process of writing solid
+    multi-threading applications. In most cases, the high-level
+    Image::ThreadedLoop and Thread::Queue frameworks will be appropriate for
+    the particular algorithm to be implemented. If a more sophisticated
+    implementation is required, MRtrix also provides low-level wrappers around
+    much of the POSIX threads API.
 
-    \subsection multithreading_posix Simple POSIX wrappers
+    \subsection multithreading_exec Launching threads
 
-    MRtrix provides a set of classes encapsulating POSIX basic objects:
-    Thread::Mutex (and its associated Thread::Mutex::Lock), and Thread::Cond.
-    These are essentially thin wrappers around the equivalent POSIX objects. To
-    invoke threads and wait on their completion, the classes Thread::Exec (for
-    a single thread) and Thread::Array (for a set of identical threads) are
-    provided.
+    The Thread::Exec class is designed to launch and manage one or more
+    threads. This is done by providing one or more specially-designed thread
+    classes (or functors), whose execute() method will be invoked within the
+    newly-created thread. Multiple instances of the same thread class can be
+    launched by constructing a Thread::Array of this class and passing this to
+    Thread::Exec. 
+
+    \note If the class is to be used in multiple concurrent threads (i.e.
+    launched using Thread::Array), the class must be copy-constructable,
+    and any copy created in this way must be fully independent: if pointers to
+    non-const data or other complex structures are members of the class, there
+    is a good chance the default copy constructor will provide a copy
+    referencing the same data as the original, which would generally lead to
+    race conditions if these were written to during processing. Most of the
+    classes provided in MRtrix do copy-construct appropriately for use in
+    multi-threading (for example Image::Voxel, Math::Vector, Math::Matrix,
+    Ptr), while others do not (Image::Buffer for example). That said, if
+    all class members have appropriate copy constructors, the default copy
+    constructor should also be appropriate.
 
     For example:
+
     \code
     class MyThread {
       public:
-        MyThread (ListType& list) :
-          list (list) {
-          // initialise
+        void execute() {
+          // do stuff
         }
-
-        void execute () { // this is the method that will be executed in the thread
-          Item* item;
-          while ((item = get_next()) != NULL) {
-            // process item
-          }
-        }
-
-        Item* get_next() {
-          Thread::Mutex::Lock lock (mutex); // locks the mutex
-          return list.pop();
-        } // mutex is released when lock goes out of scope
-
-      protected:
-        ListType& list;
-        Thread::Mutex mutex;
-        ...
     };
-    \endcode
 
-    The thread class's execute() method can be run in one or more different threads using Thread::Exec, for example:
-    \code
-    ListType list;
-    // initialise list
-    
-    void run () {
-      MyThread thread (list);
+
+    void run() {
+      MyThread thread;
       Thread::Exec exec (thread, "my thread");
 
       ...
@@ -257,12 +256,14 @@ namespace MR
     }
     \endcode
 
-    To run it across multiple threads, use the Thread::Array class:
+    To run it across multiple threads, use the Thread::Array class. By default,
+    the number of threads launched is set in the config file or on the command
+    line.
+
     \code
     void run () {
-      MyThread thread (list);
-      // by default, the number of threads launched is set in the config file
-      // or on the command line.
+      MyThread thread;
+
       Thread::Array thread_array (thread);
       Thread::Exec exec (thread_array, "my threads");
 
@@ -275,21 +276,15 @@ namespace MR
     }
     \endcode
 
-    \note For these classes to work as intended, the thread class provided by the
-    developer must meet a few requirements. First, it must provide an execute()
-    method, which will be invoked by Thread::Exec. Second, if the class is to be
-    used in Thread::Array, the class must be copy-constructable, and any copy
-    created in this way must be fully independent: if pointers to non-const data
-    or other complex structures are members of the class, there is a good chance
-    the default copy constructor will provide a copy referencing the same data as
-    the original, which would generally lead to race conditions if these were
-    written to during processing. Most of the classes provided in MRtrix do
-    copy-construct appropriately for use in multi-threading (for example
-    Image::Voxel, Math::Vector, Math::Matrix, Ptr), while others do not
-    (Image::Buffer for example). That said, if all class members have
-    appropriate copy constructors, the default copy constructor should also be
-    appropriate.
+    \subsection multithreading_loop The Image::ThreadedLoop 
 
+    It is very common in imaging to process image voxels. The
+    Image::ThreadedLoop class is designed to greatly simplify the process of
+    creating such applications. It allows the developer to provide a simple
+    functor class implementing the operation to be performed for each voxel,
+    which can be passed to Image::ThreadedLoop to be executed over the whole
+    dataset. Refer to the Image::ThreadedLoop documentation for more
+    information.
 
     \subsection multithreading_queue The Thread::Queue
 
@@ -298,19 +293,66 @@ namespace MR
     independently. The results might then need to be written back to disk in a
     serial fashion. The Thread::Queue class is designed to facilitate this type
     of operation. Please refer to the Thread::Queue documentation for a
-    detailed description.
+    detailed description. 
+
+    There are also a number of convenience functions to simplify the setting up
+    of the queue structure. These are called Thread::run_queue_XXX and
+    Thread::run_batched_queue_XXX, and are documented in the \ref Thread
+    module.
+
+    \subsection multithreading_posix Simple POSIX wrappers
+
+    MRtrix provides a set of classes encapsulating POSIX basic objects:
+    Thread::Mutex (and its associated Thread::Mutex::Lock), and Thread::Cond.
+    These are essentially thin wrappers around the equivalent POSIX objects. 
+
+    For example:
+    \code
+    // The MyList class is shared across threads.
+    // Access to it is protected via a Thread::Mutex
+    class MyList {
+      public:
+        MyList () {
+          // initialise list with data, etc.
+        }
+
+        Item* next () {
+          Thread::Mutex::Lock lock (mutex); // locks the mutex
+          if (queue.empty()) 
+            return NULL;
+          Item* item = queue.front();
+          queue.pop();
+          return item;
+        } // mutex is released when lock goes out of scope
+
+      protected:
+        Thread::Mutex mutex;
+        std::queue<Item*> queue;
+    };
 
 
-    \subsection multithreading_loop The Image::ThreadedLoop 
 
-    It is even more common in imaging to process image voxels. The
-    Image::ThreadedLoop class is designed to greatly simplify the process of
-    creating such applications. It allows the developer to provide a simple
-    functor class implementing the operation to be performed for each voxel,
-    which can be passed to Image::ThreadedLoop to be executed over the whole
-    dataset. Refer to the Image::ThreadedLoop documentation for more
-    information.
+    // The MyThread class fetches the next item in the list
+    // and operates on it, until no more items remain.
+    class MyThread {
+      public:
+        MyThread (MyList& list) :
+          list (list) {
+          // initialise
+        }
 
+        void execute () { // this is the method that will be executed in the thread
+          Item* item;
+          while ((item = list.next()) != NULL) {
+            // process item
+          }
+        }
+
+      protected:
+        MyList& list;
+        ...
+    };
+    \endcode
 
 
    */
