@@ -60,9 +60,6 @@ namespace MR
       + Option ("seed_rejection", "seed from an image using rejection sampling (higher values = more probable to seed from)").allow_multiple()
         + Argument ("image").type_image_in()
 
-      + Option ("seed_gmwmi", "seed from the grey matter - white matter interface (only valid if using ACT framework)").allow_multiple()
-        + Argument ("seed_image").type_image_in()
-
 
       + Option ("output_seeds", "output the seed location of all successful streamlines to a file")
         + Argument ("path").type_text();
