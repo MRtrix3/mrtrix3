@@ -347,27 +347,22 @@ namespace MR
   template <> inline cfloat to<cfloat> (const std::string& string)
   {
     std::istringstream stream (string);
-    cfloat value;
-    stream >> value.real();
+    float real, imag;
+    stream >> real;
     if (stream.fail())
       throw Exception ("error converting string \"" + string + "\"");
     if (stream.eof())
-      return value;
+      return cfloat (real, 0.0f);
 
-    if (stream.peek() == 'i') {
-      value.imag() = value.real();
-      value.real() = 0.0;
-      return value;
-    }
+    if (stream.peek() == 'i')
+      return cfloat (0.0f, real);
 
-    stream >> value.imag();
-    if (stream.fail()) {
-      value.imag() = 0.0;
-      return value;
-    }
+    stream >> imag;
+    if (stream.fail()) 
+      return cfloat (real, 0.0f);
     else if (stream.peek() != 'i')
       throw Exception ("error converting string \"" + string + "\"");
-    return value;
+    return cfloat (real, imag);
   }
 
 
@@ -390,27 +385,22 @@ namespace MR
   template <> inline cdouble to<cdouble> (const std::string& string)
   {
     std::istringstream stream (string);
-    cdouble value;
-    stream >> value.real();
+    double real, imag;
+    stream >> real;
     if (stream.fail())
       throw Exception ("error converting string \"" + string + "\"");
     if (stream.eof())
-      return value;
+      return cdouble (real, 0.0);
 
-    if (stream.peek() == 'i') {
-      value.imag() = value.real();
-      value.real() = 0.0;
-      return value;
-    }
+    if (stream.peek() == 'i') 
+      return cdouble (0.0, real);
 
-    stream >> value.imag();
-    if (stream.fail()) {
-      value.imag() = 0.0;
-      return value;
-    }
+    stream >> imag;
+    if (stream.fail()) 
+      return cfloat (real, 0.0);
     else if (stream.peek() != 'i')
       throw Exception ("error converting string \"" + string + "\"");
-    return value;
+    return cdouble (real, imag);
   }
 
 

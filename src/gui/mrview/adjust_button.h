@@ -1,11 +1,8 @@
 #ifndef __gui_mrview_log_spin_box_h__
 #define __gui_mrview_log_spin_box_h__
 
-#include <QFrame>
-#include <QLineEdit>
-#include <QToolButton>
-
 #include "mrtrix.h"
+#include "gui/opengl/gl.h"
 
 namespace MR
 {
@@ -33,7 +30,7 @@ namespace MR
           }
 
           void setValue (float val) {
-            if (finite (val)) {
+            if (std::isfinite (val)) {
               if (val > max)
                 setText (str(max).c_str());
               else if (val < min)

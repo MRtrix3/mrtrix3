@@ -27,8 +27,6 @@
 #include "gui/projection.h"
 #include "gui/mrview/adjust_button.h"
 
-class QStringListModel;
-
 namespace MR
 {
   namespace GUI

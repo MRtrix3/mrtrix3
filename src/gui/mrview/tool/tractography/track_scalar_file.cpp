@@ -20,8 +20,6 @@
 
 */
 
-#include <QGroupBox>
-
 #include "gui/mrview/tool/tractography/track_scalar_file.h"
 #include "math/vector.h"
 #include "gui/dialog/lighting.h"

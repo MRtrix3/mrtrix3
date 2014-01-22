@@ -145,7 +145,7 @@ namespace MR
         }
         minBval = *std::min_element(bvals.begin(),bvals.end());
         maxBval = *std::max_element(bvals.begin(),bvals.end());
-        if (!finite (bvalue_threshold)) {
+        if (!std::isfinite (bvalue_threshold)) {
           bvalue_threshold = 100;
           //bvalue_threshold = (maxBval-minBval)/(2.0*ValueType(bvals.size()));
 	  //if (bvalue_threshold == 0)

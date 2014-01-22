@@ -37,8 +37,10 @@
 
 #ifdef MRTRIX_WINDOWS
 #define PATH_SEPARATOR "\\/"
+#define HOME_ENV "USERPROFILE"
 #else
 #define PATH_SEPARATOR "/"
+#define HOME_ENV "HOME"
 #endif
 
 
@@ -129,9 +131,9 @@ namespace MR
 
     inline std::string home ()
     {
-      const char* home = getenv ("HOME");
+      const char* home = getenv (HOME_ENV);
       if (!home)
-        throw Exception ("HOME environment variable is not set!");
+        throw Exception (HOME_ENV " environment variable is not set!");
       return home;
     }
 

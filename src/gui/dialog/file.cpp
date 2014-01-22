@@ -20,8 +20,6 @@
 
 */
 
-#include <QFileDialog>
-
 #include "gui/dialog/file.h"
 #include "image/format/list.h"
 
@@ -43,7 +41,7 @@ namespace MR
         {
           QString qstring = QFileDialog::getExistingDirectory (parent, caption.c_str(), folder.size() ? QString(folder.c_str()) : QString());
           if (qstring.size()) {
-            std::string folder = qstring.toAscii().data();
+            std::string folder = qstring.toUtf8().data();
             QDir::setCurrent (Path::dirname (folder).c_str());
             return folder;
           }
@@ -57,7 +55,7 @@ namespace MR
         {
           QString qstring = QFileDialog::getOpenFileName (parent, caption.c_str(), folder.size() ? QString(folder.c_str()) : QString(), filter.c_str());
           if (qstring.size()) {
-            std::string name = qstring.toAscii().data();
+            std::string name = qstring.toUtf8().data();
             QDir::setCurrent (Path::dirname (name).c_str());
             return name;
           }
@@ -74,7 +72,7 @@ namespace MR
           std::vector<std::string> list;
           if (qlist.size()) {
             for (int n = 0; n < qlist.size(); ++n) 
-              list.push_back (qlist[n].toAscii().data());
+              list.push_back (qlist[n].toUtf8().data());
             QDir::setCurrent (Path::dirname (list[0]).c_str());
           }
           return list;
@@ -87,7 +85,7 @@ namespace MR
         {
           QString qstring = QFileDialog::getSaveFileName (parent, caption.c_str(), folder.size() ? QString(folder.c_str()) : QString(), filter.c_str());
           if (qstring.size()) {
-            std::string folder = qstring.toAscii().data();
+            std::string folder = qstring.toUtf8().data();
             QDir::setCurrent (Path::dirname (folder).c_str());
           }
           return std::string();

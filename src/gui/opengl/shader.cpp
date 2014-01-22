@@ -38,16 +38,16 @@ namespace MR
           char* log;
 
           if (is_program) 
-            glGetProgramiv (index, GL_INFO_LOG_LENGTH, &length);
+            gl::GetProgramiv (index, gl::INFO_LOG_LENGTH, &length);
           else 
-            glGetShaderiv (index, GL_INFO_LOG_LENGTH, &length);
+            gl::GetShaderiv (index, gl::INFO_LOG_LENGTH, &length);
 
           if (length > 0) {
             log = new char [length];
             if (is_program)
-              glGetProgramInfoLog (index, length, &chars, log);
+              gl::GetProgramInfoLog (index, length, &chars, log);
             else 
-              glGetShaderInfoLog (index, length, &chars, log);
+              gl::GetShaderInfoLog (index, length, &chars, log);
 
             if (strlen (log)) 
               MR::print ("GLSL log [" + type_name + "]: " + log + "\n");

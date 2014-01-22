@@ -161,8 +161,10 @@ inline std::vector<int> set_header (
 
 inline void zero_non_finite (complex_type in, complex_type& out) 
 {
-  out.real() = finite (in.real()) ? in.real() : 0.0;
-  out.imag() = finite (in.imag()) ? in.imag() : 0.0;
+  out = complex_type (
+      std::isfinite (in.real()) ? in.real() : 0.0, 
+      std::isfinite (in.imag()) ? in.imag() : 0.0
+      );
 }
 
 template <class InputVoxelType>

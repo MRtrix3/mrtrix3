@@ -23,8 +23,6 @@
 #ifndef __gui_opengl_lighting_h__
 #define __gui_opengl_lighting_h__
 
-#include <QObject>
-
 #include "gui/opengl/gl.h"
 
 namespace MR

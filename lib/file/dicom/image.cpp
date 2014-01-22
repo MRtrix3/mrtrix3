@@ -310,7 +310,7 @@ namespace MR {
           << item.position_vector[0] << " " << item.position_vector[1] << " " << item.position_vector[2] << " ] [ "
           << item.orientation_x[0] << " " << item.orientation_x[1] << " " << item.orientation_x[2] << " ] [ "
           << item.orientation_y[0] << " " << item.orientation_y[1] << " " << item.orientation_y[2] << " ]";
-        if (finite (item.bvalue)) {
+        if (std::isfinite (item.bvalue)) {
           stream << ", b = " << item.bvalue;
           if (item.bvalue > 0.0)
             stream << ", G = [ " << item.G[0] << " " << item.G[1] << " " << item.G[2] << " ]";
@@ -398,13 +398,13 @@ namespace MR {
         bool slicegap_warning_issued = false;
 
         if (nslices < 2) 
-          return finite (frames[0]->slice_spacing) ? 
+          return std::isfinite (frames[0]->slice_spacing) ? 
             frames[0]->slice_spacing : frames[0]->slice_thickness;
 
         float slice_separation = NAN;
         for (size_t n = 0; n < nslices-1; ++n) {
           float current_slice_separation = frames[n+1]->distance - frames[n]->distance;
-          if (!finite (slice_separation)) {
+          if (!std::isfinite (slice_separation)) {
             slice_separation = current_slice_separation;
             continue;
           }
@@ -436,7 +436,7 @@ namespace MR {
       {
         Math::Matrix<float> G;
 
-        if (!finite (frames[0]->bvalue)) {
+        if (!std::isfinite (frames[0]->bvalue)) {
           DEBUG ("no DW encoding information found in DICOM frames");
           return G;
         }

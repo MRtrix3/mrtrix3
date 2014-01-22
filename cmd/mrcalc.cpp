@@ -564,7 +564,7 @@ void get_header (const StackEntry& entry, Image::Header& header)
     if (header.dim(n) > 1 && entry.buffer->dim(n) > 1 && header.dim(n) != entry.buffer->dim(n))
       throw Exception ("dimensions of input images do not match - aborting");
     header.dim(n) = std::max (header.dim(n), entry.buffer->dim(n));
-    if (!finite (header.vox(n))) 
+    if (!std::isfinite (header.vox(n))) 
       header.vox(n) = entry.buffer->vox(n);
   }
 
@@ -884,8 +884,8 @@ class OpIsInf : public OpUnary {
 class OpFinite : public OpUnary {
   public:
     OpFinite () : OpUnary ("finite (%1)", true, false) { }
-    complex_type R (real_type v) const { return finite (v) != 0; }
-    complex_type Z (complex_type v) const { return finite (v.real()) != 0|| finite (v.imag()) != 0; }
+    complex_type R (real_type v) const { return std::isfinite (v) != 0; }
+    complex_type Z (complex_type v) const { return std::isfinite (v.real()) != 0|| std::isfinite (v.imag()) != 0; }
 };
 
 

@@ -20,8 +20,6 @@
 
 */
 
-#include <QDockWidget>
-
 #include "file/config.h"
 #include "gui/opengl/gl.h"
 #include "gui/mrview/mode/base.h"
@@ -56,7 +54,7 @@ namespace MR
 
           projection.set_viewport (0, 0, glarea()->width(), glarea()->height());
 
-          glClear (GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+          gl::Clear (gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT);
           if (!image()) {
             projection.setup_render_text();
             projection.render_text (10, 10, "No image loaded");
@@ -71,7 +69,7 @@ namespace MR
             // call mode's draw method:
             paint (projection);
 
-            glDisable (GL_MULTISAMPLE);
+            gl::Disable (gl::MULTISAMPLE);
 
             projection.setup_render_text();
             if (window.show_voxel_info()) {

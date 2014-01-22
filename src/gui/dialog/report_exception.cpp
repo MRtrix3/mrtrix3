@@ -20,9 +20,6 @@
 
 */
 
-#include <QApplication>
-#include <QMessageBox>
-
 #include "gui/dialog/report_exception.h"
 
 namespace MR

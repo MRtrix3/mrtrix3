@@ -20,13 +20,10 @@
 
 */
 
-#include <QAbstractItemModel>
-
-#include "gui/mrview/displayable.h"
-
 #ifndef __gui_mrview_tool_list_model_base_h__
 #define __gui_mrview_tool_list_model_base_h__
 
+#include "gui/mrview/displayable.h"
 
 namespace MR
 {

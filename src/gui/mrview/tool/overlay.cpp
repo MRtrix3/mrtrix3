@@ -20,12 +20,6 @@
 
 */
 
-#include <QLabel>
-#include <QListView>
-#include <QCheckBox>
-#include <QComboBox>
-#include <QStringListModel>
-
 #include "mrtrix.h"
 #include "gui/mrview/window.h"
 #include "gui/mrview/mode/slice.h"
@@ -227,20 +221,20 @@ namespace MR
 
           if (!is_3D) {
             // set up OpenGL environment:
-            glEnable (GL_BLEND);
-            glDisable (GL_DEPTH_TEST);
-            glDepthMask (GL_FALSE);
-            glColorMask (GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
-            glBlendFunc (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-            glBlendEquation (GL_FUNC_ADD);
-            glBlendColor (1.0f, 1.0f, 1.0f, overlay_opacity);
+            gl::Enable (gl::BLEND);
+            gl::Disable (gl::DEPTH_TEST);
+            gl::DepthMask (gl::FALSE_);
+            gl::ColorMask (gl::TRUE_, gl::TRUE_, gl::TRUE_, gl::TRUE_);
+            gl::BlendFunc (gl::SRC_ALPHA, gl::ONE_MINUS_SRC_ALPHA);
+            gl::BlendEquation (gl::FUNC_ADD);
+            gl::BlendColor (1.0f, 1.0f, 1.0f, overlay_opacity);
           }
 
           bool need_to_update = false;
           for (int i = 0; i < image_list_model->rowCount(); ++i) {
             if (image_list_model->items[i]->show && !hide_all_button->isChecked()) {
               Item* image = dynamic_cast<Item*>(image_list_model->items[i]);
-              need_to_update |= !finite (image->intensity_min());
+              need_to_update |= !std::isfinite (image->intensity_min());
               image->set_interpolate (interpolate_check_box->isChecked());
               image->alpha = overlay_opacity;
               if (is_3D) 
@@ -397,9 +391,9 @@ namespace MR
             max_val += overlay->scaling_max();
             num_threshold_lower += overlay->use_discard_lower();
             num_threshold_upper += overlay->use_discard_upper();
-            if (!finite (overlay->lessthan)) 
+            if (!std::isfinite (overlay->lessthan)) 
               overlay->lessthan = overlay->intensity_min();
-            if (!finite (overlay->greaterthan)) 
+            if (!std::isfinite (overlay->greaterthan)) 
               overlay->greaterthan = overlay->intensity_max();
             threshold_lower_val += overlay->lessthan;
             threshold_upper_val += overlay->greaterthan;

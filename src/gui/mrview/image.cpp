@@ -20,8 +20,6 @@
 
 */
 
-#include <QMenu>
-
 #include "progressbar.h"
 #include "image/stride.h"
 #include "gui/mrview/image.h"
@@ -43,7 +41,7 @@ namespace MR
         Displayable (image_header.name()),
         buffer (image_header),
         interp (buffer),
-        interpolation (GL_LINEAR),
+        interpolation (gl::LINEAR),
         texture_mode_3D_unchanged (false),
         position (header().ndim())
       {
@@ -57,7 +55,7 @@ namespace MR
         Displayable (window, image_header.name()),
         buffer (image_header),
         interp (buffer),
-        interpolation (GL_LINEAR),
+        interpolation (gl::LINEAR),
         texture_mode_3D_unchanged (false),
         position (image_header.ndim())
       {
@@ -104,22 +102,22 @@ namespace MR
           vertex_buffer.gen();
           vertex_array_object.gen();
 
-          vertex_buffer.bind (GL_ARRAY_BUFFER);
+          vertex_buffer.bind (gl::ARRAY_BUFFER);
           vertex_array_object.bind();
 
-          glEnableVertexAttribArray (0);
-          glVertexAttribPointer (0, 3, GL_FLOAT, GL_FALSE, 2*sizeof(Point<float>), (void*)0);
+          gl::EnableVertexAttribArray (0);
+          gl::VertexAttribPointer (0, 3, gl::FLOAT, gl::FALSE_, 2*sizeof(Point<float>), (void*)0);
 
-          glEnableVertexAttribArray (1);
-          glVertexAttribPointer (1, 3, GL_FLOAT, GL_FALSE, 2*sizeof(Point<float>), (void*)(sizeof(Point<float>)));
+          gl::EnableVertexAttribArray (1);
+          gl::VertexAttribPointer (1, 3, gl::FLOAT, gl::FALSE_, 2*sizeof(Point<float>), (void*)(sizeof(Point<float>)));
         }
         else {
-          vertex_buffer.bind (GL_ARRAY_BUFFER);
+          vertex_buffer.bind (gl::ARRAY_BUFFER);
           vertex_array_object.bind();
         }
 
-        glBufferData (GL_ARRAY_BUFFER, 8*sizeof(Point<float>), &vertices[0][0], GL_STREAM_DRAW);
-        glDrawArrays (GL_QUADS, 0, 4);
+        gl::BufferData (gl::ARRAY_BUFFER, 8*sizeof(Point<float>), &vertices[0][0], gl::STREAM_DRAW);
+        gl::DrawArrays (gl::TRIANGLE_FAN, 0, 4);
       }
 
 
@@ -203,12 +201,12 @@ namespace MR
       void Image::update_texture2D (int plane, int slice)
       {
         if (!texture2D[plane]) { // allocate:
-          texture2D[plane].gen (GL_TEXTURE_3D);
+          texture2D[plane].gen (gl::TEXTURE_3D);
           texture2D[plane].bind();
         }
         else
           texture2D[plane].bind();
-        glPixelStorei (GL_UNPACK_ALIGNMENT, 1);
+        gl::PixelStorei (gl::UNPACK_ALIGNMENT, 1);
         texture2D[plane].set_interp (interpolation);
 
         if (position[plane] == slice && volume_unchanged())
@@ -220,7 +218,7 @@ namespace MR
         get_axes (plane, x, y);
         ssize_t xdim = header().dim (x), ydim = header().dim (y);
 
-        type = GL_FLOAT;
+        type = gl::FLOAT;
         Ptr<float,true> data;
 
         std::string cmap_name = ColourMap::maps[colourmap].name;
@@ -228,8 +226,8 @@ namespace MR
         if (cmap_name == "RGB") {
 
           data = new float [3*xdim*ydim];
-          format = GL_RGB;
-          internal_format = GL_RGB32F;
+          format = gl::RGB;
+          internal_format = gl::RGB32F;
 
           memset (data, 0, 3*xdim*ydim*sizeof (float));
           if (position[plane] >= 0 && position[plane] < header().dim (plane)) {
@@ -250,7 +248,7 @@ namespace MR
                   cfloat val = vox.value();
                   float mag = Math::abs (val.real());
                   data[3*(vox[x]+vox[y]*xdim) + n] = mag;
-                  if (finite (mag)) {
+                  if (std::isfinite (mag)) {
                     if (mag < value_min) value_min = mag;
                     if (mag > value_max) value_max = mag;
                   }
@@ -268,8 +266,8 @@ namespace MR
         else if (cmap_name == "Complex") {
 
           data = new float [2*xdim*ydim];
-          format = GL_RG;
-          internal_format = GL_RG32F;
+          format = gl::RG;
+          internal_format = gl::RG32F;
 
           if (position[plane] < 0 || position[plane] >= header().dim (plane)) {
             memset (data, 0, 2*xdim*ydim*sizeof (float));
@@ -287,7 +285,7 @@ namespace MR
                 data[idx] = val.real();
                 data[idx+1] = val.imag();
                 float mag = std::abs (val);
-                if (finite (mag)) 
+                if (std::isfinite (mag)) 
                   if (mag > value_max) 
                     value_max = mag;
               }
@@ -299,8 +297,8 @@ namespace MR
         else {
 
           data = new float [xdim*ydim];
-          format = GL_RED;
-          internal_format = GL_R32F;
+          format = gl::RED;
+          internal_format = gl::R32F;
 
           if (position[plane] < 0 || position[plane] >= header().dim (plane)) {
             memset (data, 0, xdim*ydim*sizeof (float));
@@ -315,7 +313,7 @@ namespace MR
               for (vox[x] = 0; vox[x] < xdim; ++vox[x]) {
                 cfloat val = vox.value();
                 data[vox[x]+vox[y]*xdim] = val.real();
-                if (finite (val.real())) {
+                if (std::isfinite (val.real())) {
                   if (val.real() < value_min) value_min = val.real();
                   if (val.real() > value_max) value_max = val.real();
                 }
@@ -333,7 +331,7 @@ namespace MR
         if (isnan (display_midpoint) || isnan (display_range))
           reset_windowing();
 
-        glTexImage3D (GL_TEXTURE_3D, 0, internal_format, xdim, ydim, 1, 0, format, type, data);
+        gl::TexImage3D (gl::TEXTURE_3D, 0, internal_format, xdim, ydim, 1, 0, format, type, data);
       }
 
 
@@ -345,7 +343,7 @@ namespace MR
       void Image::update_texture3D ()
       {
         if (!texture3D) { // allocate:
-          texture3D.gen (GL_TEXTURE_3D);
+          texture3D.gen (gl::TEXTURE_3D);
           texture3D.bind();
         }
         else 
@@ -357,51 +355,51 @@ namespace MR
 
         std::string cmap_name = ColourMap::maps[colourmap].name;
 
-        if (cmap_name == "RGB") format = GL_RGB;
-        else if (cmap_name == "Complex") format = GL_RG;
-        else format = GL_RED;
+        if (cmap_name == "RGB") format = gl::RGB;
+        else if (cmap_name == "Complex") format = gl::RG;
+        else format = gl::RED;
 
         GLenum type;
 
         if (cmap_name == "Complex") {
-          internal_format = GL_RG32F;
-          type = GL_FLOAT;
+          internal_format = gl::RG32F;
+          type = gl::FLOAT;
         }
         else {
 
           switch (header().datatype() ()) {
             case DataType::Bit:
             case DataType::Int8:
-              internal_format = ( format == GL_RED ? GL_R16F : GL_RGB16F );
-              type = GL_BYTE;
+              internal_format = ( format == gl::RED ? gl::R16F : gl::RGB16F );
+              type = gl::BYTE;
               break;
             case DataType::UInt8:
-              internal_format = ( format == GL_RED ? GL_R16F : GL_RGB16F );
-              type = GL_UNSIGNED_BYTE;
+              internal_format = ( format == gl::RED ? gl::R16F : gl::RGB16F );
+              type = gl::UNSIGNED_BYTE;
               break;
             case DataType::UInt16LE:
             case DataType::UInt16BE:
-              internal_format = ( format == GL_RED ? GL_R16F : GL_RGB16F );
-              type = GL_UNSIGNED_SHORT;
+              internal_format = ( format == gl::RED ? gl::R16F : gl::RGB16F );
+              type = gl::UNSIGNED_SHORT;
               break;
             case DataType::Int16LE:
             case DataType::Int16BE:
-              internal_format = ( format == GL_RED ? GL_R16F : GL_RGB16F );
-              type = GL_SHORT;
+              internal_format = ( format == gl::RED ? gl::R16F : gl::RGB16F );
+              type = gl::SHORT;
               break;
             case DataType::UInt32LE:
             case DataType::UInt32BE:
-              internal_format = ( format == GL_RED ? GL_R32F : GL_RGB32F );
-              type = GL_UNSIGNED_INT;
+              internal_format = ( format == gl::RED ? gl::R32F : gl::RGB32F );
+              type = gl::UNSIGNED_INT;
               break;
             case DataType::Int32LE:
             case DataType::Int32BE:
-              internal_format = ( format == GL_RED ? GL_R32F : GL_RGB32F );
-              type = GL_INT;
+              internal_format = ( format == gl::RED ? gl::R32F : gl::RGB32F );
+              type = gl::INT;
               break;
             default:
-              internal_format = ( format == GL_RED ? GL_R32F : GL_RGB32F );
-              type = GL_FLOAT;
+              internal_format = ( format == gl::RED ? gl::R32F : gl::RGB32F );
+              type = gl::FLOAT;
               break;
           }
         }
@@ -409,16 +407,16 @@ namespace MR
 
         texture_mode_3D_unchanged = true;
 
-        glPixelStorei (GL_UNPACK_ALIGNMENT, 1);
+        gl::PixelStorei (gl::UNPACK_ALIGNMENT, 1);
 
-        glTexImage3D (GL_TEXTURE_3D, 0, internal_format,
+        gl::TexImage3D (gl::TEXTURE_3D, 0, internal_format,
             header().dim(0), header().dim(1), header().dim(2),
             0, format, type, NULL);
 
         value_min = std::numeric_limits<float>::infinity();
         value_max = -std::numeric_limits<float>::infinity();
 
-        if (format != GL_RG) {
+        if (format != gl::RG) {
           switch (header().datatype() ()) {
             case DataType::Bit:
             case DataType::UInt8:
@@ -460,31 +458,31 @@ namespace MR
 
       template <> inline GLenum Image::GLtype<int8_t> () const
       {
-        return GL_BYTE;
+        return gl::BYTE;
       }
       template <> inline GLenum Image::GLtype<uint8_t> () const
       {
-        return GL_UNSIGNED_BYTE;
+        return gl::UNSIGNED_BYTE;
       }
       template <> inline GLenum Image::GLtype<int16_t> () const
       {
-        return GL_SHORT;
+        return gl::SHORT;
       }
       template <> inline GLenum Image::GLtype<uint16_t> () const
       {
-        return GL_UNSIGNED_SHORT;
+        return gl::UNSIGNED_SHORT;
       }
       template <> inline GLenum Image::GLtype<int32_t> () const
       {
-        return GL_INT;
+        return gl::INT;
       }
       template <> inline GLenum Image::GLtype<uint32_t> () const
       {
-        return GL_UNSIGNED_INT;
+        return gl::UNSIGNED_INT;
       }
       template <> inline GLenum Image::GLtype<float> () const
       {
-        return GL_FLOAT;
+        return gl::FLOAT;
       }
 
       template <typename ValueType> inline float Image::scale_factor_3D () const
@@ -503,7 +501,7 @@ namespace MR
         MR::Image::Buffer<ValueType> buffer_tmp (buffer);
         typename MR::Image::Buffer<ValueType>::voxel_type V (buffer_tmp);
         GLenum type = GLtype<ValueType>();
-        int N = ( format == GL_RED ? 1 : 3 );
+        int N = ( format == gl::RED ? 1 : 3 );
         Ptr<ValueType,true> data (new ValueType [N * V.dim(0) * V.dim(1)]);
 
         ProgressBar progress ("loading image data...", V.dim(2));
@@ -513,13 +511,13 @@ namespace MR
 
         for (V[2] = 0; V[2] < V.dim(2); ++V[2]) {
 
-          if (format == GL_RED) {
+          if (format == gl::RED) {
             ValueType* p = data;
 
             for (V[1] = 0; V[1] < V.dim(1); ++V[1]) {
               for (V[0] = 0; V[0] < V.dim(0); ++V[0]) {
                 ValueType val = *p = V.value();
-                if (finite (val)) {
+                if (std::isfinite (val)) {
                   if (val < value_min) value_min = val;
                   if (val > value_max) value_max = val;
                 }
@@ -542,7 +540,7 @@ namespace MR
               for (V[1] = 0; V[1] < V.dim (1); ++V[1]) {
                 for (V[0] = 0; V[0] < V.dim (0); ++V[0]) {
                   ValueType val = *p = Math::abs (ValueType (V.value()));
-                  if (finite (val)) {
+                  if (std::isfinite (val)) {
                     if (val < value_min) value_min = val;
                     if (val > value_max) value_max = val;
                   }
@@ -558,7 +556,7 @@ namespace MR
 
           }
 
-          glTexSubImage3D (GL_TEXTURE_3D, 0,
+          gl::TexSubImage3D (gl::TEXTURE_3D, 0,
               0, 0, V[2],
               V.dim(0), V.dim(1), 1,
               format, type, data);
@@ -590,17 +588,17 @@ namespace MR
               *(p++) = val.real();
               *(p++) = val.imag();
               float mag = std::abs (val);
-              if (finite (mag)) {
+              if (std::isfinite (mag)) {
                 if (mag < value_min) value_min = mag;
                 if (mag > value_max) value_max = mag;
               }
             }
           }
 
-          glTexSubImage3D (GL_TEXTURE_3D, 0,
+          gl::TexSubImage3D (gl::TEXTURE_3D, 0,
               0, 0, V[2],
               V.dim (0), V.dim (1), 1,
-              GL_RG, GL_FLOAT, data);
+              gl::RG, gl::FLOAT, data);
           ++progress;
         }
 

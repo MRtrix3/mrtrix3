@@ -29,11 +29,7 @@
 #include "file/config.h"
 #include "version.h"
 
-#ifdef MRTRIX_WINDOWS
-# define MRTRIX_HELP_COMMAND ""
-#else
-# define MRTRIX_HELP_COMMAND "less"
-#endif
+#define MRTRIX_HELP_COMMAND "less"
 
 
 namespace MR
@@ -114,20 +110,20 @@ namespace MR
           std::string help_string = get_help_string (1);
           FILE* file = popen (help_display_command.c_str(), "w");
           if (!file) {
-            WARN ("error launching help display command \"" + help_display_command + "\": " + strerror (errno));
+            INFO ("error launching help display command \"" + help_display_command + "\": " + strerror (errno));
           }
           else if (fwrite (help_string.c_str(), 1, help_string.size(), file) != help_string.size()) {
-            WARN ("error sending help page to display command \"" + help_display_command + "\": " + strerror (errno));
+            INFO ("error sending help page to display command \"" + help_display_command + "\": " + strerror (errno));
           }
 
           if (pclose (file) == 0)
             return;
 
-          WARN ("error launching help display command \"" + help_display_command + "\"");
+          INFO ("error launching help display command \"" + help_display_command + "\"");
         }
 
         if (help_display_command.size()) 
-          WARN ("displaying help page using fail-safe output:\n");
+          INFO ("displaying help page using fail-safe output:\n");
 
         print (get_help_string (0));
       }

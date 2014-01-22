@@ -24,7 +24,6 @@
 #include "gui/dialog/file.h"
 #include "gui/dialog/list.h"
 #include "gui/dialog/image_properties.h"
-#include "gui/opengl/gl.h"
 
 
 namespace MR
@@ -134,7 +133,7 @@ namespace MR
         k = k.sibling (k.row(), 0);
 
         while (k.parent().isValid()) k = k.parent();
-        std::string text = k.data().toString().toAscii().constData();
+        std::string text = k.data().toString().toUtf8().constData();
 
         if (text == "Transform") save_target = &H.transform();
         else if (text == "Diffusion scheme") save_target = &H.DW_scheme();

@@ -1,21 +1,12 @@
-#include "gui/opengl/gl.h"
-#include "gui/opengl/lighting.h"
-
-#include <QMessageBox>
-#include <QAction>
-#include <QMenuBar>
-#include <QStatusBar>
-#include <QDockWidget>
-#include <QGLWidget>
-#include <QTimer>
-
-
 #include "app.h"
 #include "version.h"
+#include "timer.h"
 #include "file/config.h"
 #include "image/header.h"
 #include "image/voxel.h"
 #include "image/copy.h"
+#include "gui/opengl/gl.h"
+#include "gui/opengl/lighting.h"
 #include "gui/dialog/file.h"
 #include "gui/dialog/opengl.h"
 #include "gui/dialog/image_properties.h"
@@ -23,9 +14,6 @@
 #include "gui/mrview/mode/list.h"
 #include "gui/mrview/tool/base.h"
 #include "gui/mrview/tool/list.h"
-
-
-#include "timer.h"
 
 namespace MR
 {
@@ -56,9 +44,14 @@ namespace MR
             return default_key;
 
           if (value == "shift") return Qt::ShiftModifier;
-          if (value == "ctrl") return Qt::ControlModifier;
           if (value == "alt") return Qt::AltModifier;
+#ifdef MRTRIX_MACOSX
+          if (value == "ctrl") return Qt::MetaModifier;
+          if (value == "cmd") return Qt::ControlModifier;
+#else
+          if (value == "ctrl") return Qt::ControlModifier;
           if (value == "meta" || value == "win") return Qt::MetaModifier;
+#endif 
 
           throw Exception ("no such modifier \"" + value + "\" (parsed from config file)");
           return Qt::NoModifier;
@@ -73,9 +66,14 @@ namespace MR
       std::string get_modifier (Qt::KeyboardModifiers key) {
         switch (key) {
           case Qt::ShiftModifier: return "Shift";
-          case Qt::ControlModifier: return "Ctrl";
           case Qt::AltModifier: return "Alt";
+#ifdef MRTRIX_MACOSX
+          case Qt::ControlModifier: return "Cmd";
+          case Qt::MetaModifier: return "Ctrl";
+#else
+          case Qt::ControlModifier: return "Ctrl";
           case Qt::MetaModifier: return "Win";
+#endif
           default: assert (0);
         }
         return "Invalid";
@@ -85,7 +83,7 @@ namespace MR
       // GLArea definitions:
       
       inline Window::GLArea::GLArea (Window& parent) :
-        QGLWidget (&parent),
+        QGLWidget (GL::core_format(), &parent),
         main (parent) {
           setCursor (Cursor::crosshair);
           setMouseTracking (true);
@@ -125,7 +123,7 @@ namespace MR
           QList<QUrl> urlList = mimeData->urls();
           for (int i = 0; i < urlList.size() && i < 32; ++i) {
             try {
-              list.push_back (new MR::Image::Header (urlList.at (i).path().toAscii().constData()));
+              list.push_back (new MR::Image::Header (urlList.at (i).path().toUtf8().constData()));
             }
             catch (Exception& e) {
               e.display();
@@ -164,7 +162,11 @@ namespace MR
         glarea (new GLArea (*this)),
         mode (NULL),
         font (glarea->font()),
+#ifdef MRTRIX_MACOSX
+        FocusModifier (get_modifier ("MRViewFocusModifierKey", Qt::AltModifier)),
+#else
         FocusModifier (get_modifier ("MRViewFocusModifierKey", Qt::MetaModifier)),
+#endif
         MoveModifier (get_modifier ("MRViewMoveModifierKey", Qt::ShiftModifier)),
         RotateModifier (get_modifier ("MRViewRotateModifierKey", Qt::ControlModifier)),
         mouse_action (NoAction),
@@ -956,8 +958,6 @@ namespace MR
 
       inline int Window::get_mouse_mode ()
       {
-        modifiers_ = QApplication::keyboardModifiers();
-
         if (mouse_action == NoAction && modifiers_ != Qt::NoModifier) {
           if (modifiers_ == FocusModifier && ( mode->features & Mode::FocusContrast )) 
             return 1;
@@ -1084,14 +1084,12 @@ namespace MR
 
       inline void Window::paintGL ()
       {
-        glEnable (GL_MULTISAMPLE);
+        gl::Enable (gl::MULTISAMPLE);
         if (mode->in_paint())
           return;
 
-        glDrawBuffer (GL_BACK);
+        gl::DrawBuffer (gl::BACK);
         mode->paintGL();
-
-        DEBUG_OPENGL;
       }
 
 
@@ -1102,8 +1100,8 @@ namespace MR
 
         font.initGL();
 
-        glClearColor (0.0, 0.0, 0.0, 0.0);
-        glEnable (GL_DEPTH_TEST);
+        gl::ClearColor (0.0, 0.0, 0.0, 0.0);
+        gl::Enable (gl::DEPTH_TEST);
 
         mode = dynamic_cast<Mode::__Action__*> (mode_group->actions()[0])->create (*this);
         set_mode_features();
@@ -1116,7 +1114,7 @@ namespace MR
       template <class Event> inline void Window::grab_mouse_state (Event* event)
       {
         buttons_ = event->buttons();
-        modifiers_ = event->modifiers();
+        modifiers_ = event->modifiers() & ( FocusModifier | MoveModifier | RotateModifier );
         mouse_displacement_ = QPoint (0,0);
         mouse_position_ = event->pos();
         mouse_position_.setY (glarea->height() - mouse_position_.y());
@@ -1133,11 +1131,13 @@ namespace MR
 
       void Window::keyPressEvent (QKeyEvent* event) 
       {
+        modifiers_ = event->modifiers() & ( FocusModifier | MoveModifier | RotateModifier );
         set_cursor();
       }
 
       void Window::keyReleaseEvent (QKeyEvent* event)
       {
+        modifiers_ = event->modifiers() & ( FocusModifier | MoveModifier | RotateModifier );
         set_cursor();
       }
 
@@ -1301,7 +1301,7 @@ namespace MR
             line = strip (line.substr (0, line.find_first_of ('#')));
           } while (line.empty());
 
-          std::string cmd = line.substr (0, line.find_first_of (" \t"));
+          std::string cmd = line.substr (0, line.find_first_of (" :\t"));
           std::string args;
           if (line.size() > cmd.size()+1)
             args = strip (line.substr (cmd.size()+1));

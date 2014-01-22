@@ -1,24 +1,11 @@
 #ifndef __gui_mrview_window_h__
 #define __gui_mrview_window_h__
 
-#include <QMainWindow>
-
-#ifdef Complex
-# undef Complex
-#endif
-
 #include "ptr.h"
-#include "gui/cursor.h"
 #include "gui/mrview/image.h"
 #include "gui/opengl/font.h"
 #include "gui/mrview/colourmap.h"
-
-#include <QGLWidget>
-
-class QMenu;
-class QAction;
-class QActionGroup;
-class Qlist;
+#include "gui/cursor.h"
 
 namespace MR
 {

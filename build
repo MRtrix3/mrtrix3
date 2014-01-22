@@ -169,7 +169,7 @@ exe_suffix = config_suffix + exe_suffix
 
 # other settings:
 include_paths += [ lib_dir, cmd_dir ]
-cpp_flags += [ '-Wall' ] + [ '-I' + entry for entry in include_paths ]
+cpp_flags += [ '-I' + entry for entry in include_paths ]
 ld_flags += [ '-L' + lib_dir ]
 
 

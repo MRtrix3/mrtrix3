@@ -189,7 +189,7 @@ namespace MR
           step_size = to<float> (properties["output_step_size"]);
         else
           step_size = to<float> (properties["step_size"]);
-        if (!step_size || !finite (step_size))
+        if (!step_size || !std::isfinite (step_size))
           throw Exception ("Cannot perform appropriate streamline mapping without knowledge of track step size!");
         const float upsample_ratio = Math::ceil<size_t> (step_size / (minvalue (H.vox(0), H.vox(1), H.vox(2)) * 0.1));
 

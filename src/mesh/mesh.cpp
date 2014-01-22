@@ -125,7 +125,11 @@ namespace MR
           for (voxel[1] = lower_bound[1]; voxel[1] <= upper_bound[1]; ++voxel[1]) {
             for (voxel[0] = lower_bound[0]; voxel[0] <= upper_bound[0]; ++voxel[0]) {
               std::vector<size_t> this_voxel_polys;
+#if __clang__
+              Vox2Poly::const_iterator existing = voxel2poly.find (voxel);
+#else
               Vox2Poly::iterator existing = voxel2poly.find (voxel);
+#endif
               if (existing != voxel2poly.end()) {
                 this_voxel_polys = existing->second;
                 voxel2poly.erase (existing);

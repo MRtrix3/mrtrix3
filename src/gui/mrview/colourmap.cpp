@@ -189,14 +189,14 @@ namespace MR
             VB.gen();
             VAO.gen();
 
-            VB.bind (GL_ARRAY_BUFFER);
+            VB.bind (gl::ARRAY_BUFFER);
             VAO.bind();
 
-            glEnableVertexAttribArray (0);
-            glVertexAttribPointer (0, 3, GL_FLOAT, GL_FALSE, 0, (void*)0);
+            gl::EnableVertexAttribArray (0);
+            gl::VertexAttribPointer (0, 3, gl::FLOAT, gl::FALSE_, 0, (void*)0);
           }
           else {
-            VB.bind (GL_ARRAY_BUFFER);
+            VB.bind (gl::ARRAY_BUFFER);
             VAO.bind();
           }
 
@@ -222,23 +222,23 @@ namespace MR
           data[6] += x_offset; data[7] += y_offset;
           data[9] += x_offset; data[10] += y_offset;
 
-          glBufferData (GL_ARRAY_BUFFER, sizeof(data), data, GL_STREAM_DRAW);
+          gl::BufferData (gl::ARRAY_BUFFER, sizeof(data), data, gl::STREAM_DRAW);
 
-          glDepthMask (GL_FALSE);
-          glLineWidth (1.0);
-          glDisable (GL_BLEND);
-          glDisable (GL_DEPTH_TEST);
+          gl::DepthMask (gl::FALSE_);
+          gl::LineWidth (1.0);
+          gl::Disable (gl::BLEND);
+          gl::Disable (gl::DEPTH_TEST);
 
           program.start();
-          glUniform1f (glGetUniformLocation (program, "scale_x"), 2.0f / projection.width());
-          glUniform1f (glGetUniformLocation (program, "scale_y"), 2.0f / projection.height());
-          glDrawArrays (GL_QUADS, 0, 4);
+          gl::Uniform1f (gl::GetUniformLocation (program, "scale_x"), 2.0f / projection.width());
+          gl::Uniform1f (gl::GetUniformLocation (program, "scale_y"), 2.0f / projection.height());
+          gl::DrawArrays (gl::TRIANGLE_FAN, 0, 4);
           program.stop();
 
           frame_program.start();
-          glUniform1f (glGetUniformLocation (program, "scale_x"), 2.0f / projection.width());
-          glUniform1f (glGetUniformLocation (program, "scale_y"), 2.0f / projection.height());
-          glDrawArrays (GL_LINE_LOOP, 0, 4);
+          gl::Uniform1f (gl::GetUniformLocation (program, "scale_x"), 2.0f / projection.width());
+          gl::Uniform1f (gl::GetUniformLocation (program, "scale_y"), 2.0f / projection.height());
+          gl::DrawArrays (gl::LINE_LOOP, 0, 4);
           frame_program.stop();
 
           projection.setup_render_text();
@@ -247,7 +247,7 @@ namespace MR
           projection.render_text_align (x, data[4], str(object.scaling_max()), halign, 0);
           projection.done_render_text();
 
-          glDepthMask (GL_TRUE);
+          gl::DepthMask (gl::TRUE_);
 
         }
 

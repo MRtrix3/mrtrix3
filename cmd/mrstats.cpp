@@ -85,7 +85,7 @@ class CalibrateHistogram
     int bins;
 
     void operator() (value_type val) {
-      if (finite (val)) {
+      if (std::isfinite (val)) {
         if (val < min) min = val;
         if (val > max) max = val;
       }
@@ -131,13 +131,13 @@ class Stats
 
 
     void operator() (complex_type val) {
-      if (finite (val.real()) && finite (val.imag())) {
+      if (std::isfinite (val.real()) && std::isfinite (val.imag())) {
         mean += val;
         std += cdouble (val.real()*val.real(), val.imag()*val.imag());
-        if (min.real() > val.real()) min.real() = val.real();
-        if (min.imag() > val.imag()) min.imag() = val.imag();
-        if (max.real() < val.real()) max.real() = val.real();
-        if (max.imag() < val.imag()) max.imag() = val.imag();
+        if (min.real() > val.real()) min = complex_type (val.real(), min.imag());
+        if (min.imag() > val.imag()) min = complex_type (min.real(), val.imag());
+        if (max.real() < val.real()) max = complex_type (val.real(), max.imag());
+        if (max.imag() < val.imag()) max = complex_type (max.real(), val.imag());
         count++;
 
         if (dump)
@@ -173,8 +173,8 @@ class Stats
 
       if (count) {
         mean /= double (count);
-        std.real() = sqrt (std.real()/double(count) - mean.real()*mean.real());
-        std.imag() = sqrt (std.imag()/double(count) - mean.imag()*mean.imag());
+        std = complex_type (sqrt (std.real()/double(count) - mean.real()*mean.real()),
+            sqrt (std.imag()/double(count) - mean.imag()*mean.imag()));
       }
       std::cout << std::setw(width) << std::right << ( count ? str(mean) : "N/A" );
 

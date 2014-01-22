@@ -80,8 +80,8 @@ namespace MR
           using Transform::image2voxel;
           using Transform::scanner2voxel;
           using Transform::operator!;
-          using typename Transform::out_of_bounds;
-          using typename Transform::bounds;
+          using Transform::out_of_bounds;
+          using Transform::bounds;
 
           //! construct an Nearest object to obtain interpolated values using the
           // parent DataSet class

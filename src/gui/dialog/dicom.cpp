@@ -20,15 +20,6 @@
 
 */
 
-#include <QDialog>
-#include <QModelIndex>
-#include <QVariant>
-#include <QList>
-#include <QTreeView>
-#include <QDialogButtonBox>
-#include <QVBoxLayout>
-#include <QAbstractListModel>
-
 #include "file/dicom/tree.h"
 #include "gui/dialog/list.h"
 #include "gui/dialog/dicom.h"
@@ -224,7 +215,7 @@ namespace MR
           QModelIndexList indexes = selector.view->selectionModel()->selectedIndexes();
           if (indexes.size()) {
             QModelIndex index;
-            foreach (index, indexes) {
+            Q_FOREACH (index, indexes) {
               Item* item = static_cast<Item*> (index.internalPointer());
               if (item->series()) 
                 ret.push_back (item->series());

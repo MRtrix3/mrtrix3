@@ -23,20 +23,10 @@
 #ifndef __gui_mrview_displayable_h__
 #define __gui_mrview_displayable_h__
 
-#include <QAction>
-#include <QActionGroup>
-#include <QMenu>
-
 #include "math/math.h"
 #include "gui/opengl/gl.h"
 #include "gui/opengl/shader.h"
 #include "gui/mrview/colourmap.h"
-
-#ifdef Complex
-# undef Complex
-#endif
-
-class QAction;
 
 namespace MR
 {
@@ -242,16 +232,16 @@ namespace MR
           }
 
           void set_shader_variables (Shader& shader_program, float scaling = 1.0, const std::string& with_prefix = "") {
-            glUniform1f (glGetUniformLocation (shader_program, (with_prefix+"offset").c_str()), (display_midpoint - 0.5f * display_range) / scaling);
-            glUniform1f (glGetUniformLocation (shader_program, (with_prefix+"scale").c_str()), scaling / display_range);
+            gl::Uniform1f (gl::GetUniformLocation (shader_program, (with_prefix+"offset").c_str()), (display_midpoint - 0.5f * display_range) / scaling);
+            gl::Uniform1f (gl::GetUniformLocation (shader_program, (with_prefix+"scale").c_str()), scaling / display_range);
             if (use_discard_lower())
-              glUniform1f (glGetUniformLocation (shader_program, (with_prefix+"lower").c_str()), lessthan / scaling);
+              gl::Uniform1f (gl::GetUniformLocation (shader_program, (with_prefix+"lower").c_str()), lessthan / scaling);
             if (use_discard_upper())
-              glUniform1f (glGetUniformLocation (shader_program, (with_prefix+"upper").c_str()), greaterthan / scaling);
+              gl::Uniform1f (gl::GetUniformLocation (shader_program, (with_prefix+"upper").c_str()), greaterthan / scaling);
             if (use_transparency()) {
-              glUniform1f (glGetUniformLocation (shader_program, (with_prefix+"alpha_scale").c_str()), scaling / (opaque_intensity - transparent_intensity));
-              glUniform1f (glGetUniformLocation (shader_program, (with_prefix+"alpha_offset").c_str()), transparent_intensity / scaling);
-              glUniform1f (glGetUniformLocation (shader_program, (with_prefix+"alpha").c_str()), alpha);
+              gl::Uniform1f (gl::GetUniformLocation (shader_program, (with_prefix+"alpha_scale").c_str()), scaling / (opaque_intensity - transparent_intensity));
+              gl::Uniform1f (gl::GetUniformLocation (shader_program, (with_prefix+"alpha_offset").c_str()), transparent_intensity / scaling);
+              gl::Uniform1f (gl::GetUniformLocation (shader_program, (with_prefix+"alpha").c_str()), alpha);
             }
           }
 
@@ -289,17 +279,17 @@ namespace MR
           }
 
           void update_levels () {
-            assert (finite (value_min));
-            assert (finite (value_max));
-            if (!finite (transparent_intensity)) 
+            assert (std::isfinite (value_min));
+            assert (std::isfinite (value_max));
+            if (!std::isfinite (transparent_intensity)) 
               transparent_intensity = value_min + 0.1 * (value_max - value_min);
-            if (!finite (opaque_intensity)) 
+            if (!std::isfinite (opaque_intensity)) 
               opaque_intensity = value_min + 0.5 * (value_max - value_min);
-            if (!finite (alpha)) 
+            if (!std::isfinite (alpha)) 
               alpha = 0.5;
-            if (!finite (lessthan))
+            if (!std::isfinite (lessthan))
               lessthan = value_min;
-            if (!finite (greaterthan))
+            if (!std::isfinite (greaterthan))
               greaterthan = value_max;
           }
 

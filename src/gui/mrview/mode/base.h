@@ -26,12 +26,6 @@
 #include "gui/opengl/gl.h"
 #include "gui/opengl/transformation.h"
 #include "gui/projection.h"
-
-#include <QAction>
-#include <QCursor>
-#include <QMouseEvent>
-#include <QMenu>
-
 #include "gui/mrview/window.h"
 #include "gui/projection.h"
 #include "gui/mrview/tool/base.h"

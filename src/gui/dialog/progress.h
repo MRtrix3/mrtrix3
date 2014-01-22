@@ -23,6 +23,7 @@
 #ifndef __gui_dialog_progressbar_h__
 #define __gui_dialog_progressbar_h__
 
+#include "gui/opengl/gl.h"
 #include "progressbar.h"
 
 namespace MR

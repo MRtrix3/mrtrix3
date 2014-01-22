@@ -23,10 +23,7 @@
 #ifndef __gui_opengl_font_h__
 #define __gui_opengl_font_h__
 
-#include <QtGui>
-
 #include "gui/opengl/shader.h"
-
 
 namespace MR
 {
@@ -47,23 +44,23 @@ namespace MR
 
           void start (int width, int height, float red, float green, float blue) const {
             assert (program);
-            glDisable (GL_DEPTH_TEST);
-            glDepthMask (GL_FALSE);
-            glEnable (GL_BLEND);
-            glBlendEquation (GL_FUNC_ADD);
-            glBlendFunc (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+            gl::Disable (gl::DEPTH_TEST);
+            gl::DepthMask (gl::FALSE_);
+            gl::Enable (gl::BLEND);
+            gl::BlendEquation (gl::FUNC_ADD);
+            gl::BlendFunc (gl::SRC_ALPHA, gl::ONE_MINUS_SRC_ALPHA);
             program.start();
-            glUniform1f (glGetUniformLocation (program, "scale_x"), 2.0 / width);
-            glUniform1f (glGetUniformLocation (program, "scale_y"), 2.0 / height);
-            glUniform1f (glGetUniformLocation (program, "red"), red);
-            glUniform1f (glGetUniformLocation (program, "green"), green);
-            glUniform1f (glGetUniformLocation (program, "blue"), blue);
+            gl::Uniform1f (gl::GetUniformLocation (program, "scale_x"), 2.0 / width);
+            gl::Uniform1f (gl::GetUniformLocation (program, "scale_y"), 2.0 / height);
+            gl::Uniform1f (gl::GetUniformLocation (program, "red"), red);
+            gl::Uniform1f (gl::GetUniformLocation (program, "green"), green);
+            gl::Uniform1f (gl::GetUniformLocation (program, "blue"), blue);
           }
 
           void stop () const {
             program.stop();
-            glDepthMask (GL_TRUE);
-            glDisable (GL_BLEND);
+            gl::DepthMask (gl::TRUE_);
+            gl::Disable (gl::BLEND);
           }
 
           void render (const std::string& text, int x, int y) const;

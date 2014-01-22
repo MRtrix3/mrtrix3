@@ -70,7 +70,7 @@ void run ()
       dir[2] = dir_vox.value(); ++dir_vox[3];
 
       float amplitude = 0.0;
-      if (isfinite (dir[0]) && isfinite (dir[1]) && isfinite (dir[2]))
+      if (std::isfinite (dir[0]) && std::isfinite (dir[1]) && std::isfinite (dir[2]))
         amplitude = Math::norm (dir);
 
       amp_vox.value() = amplitude;

@@ -23,13 +23,6 @@
 #ifndef __gui_mrview_tool_tractogram_h__
 #define __gui_mrview_tool_tractogram_h__
 
-#include <QAction>
-
-// necessary to avoid conflict with Qt4's foreach macro:
-#ifdef foreach
-# undef foreach
-#endif
-
 #include "gui/mrview/displayable.h"
 #include "dwi/tractography/properties.h"
 #include "gui/mrview/tool/tractography/tractography.h"

@@ -67,19 +67,19 @@ namespace MR
         set_ndim (3);
       }
 
-      if (!finite (vox (0)) || !finite (vox (1)) || !finite (vox (2))) {
+      if (!std::isfinite (vox (0)) || !std::isfinite (vox (1)) || !std::isfinite (vox (2))) {
         WARN ("invalid voxel sizes - resetting to sane defaults");
         float mean_vox_size = 0.0;
         size_t num_valid_vox = 0;
         for (size_t i = 0; i < 3; ++i) {
-          if (finite(vox(i))) {
+          if (std::isfinite(vox(i))) {
             ++num_valid_vox; 
             mean_vox_size += vox(i);
           }
         }
         mean_vox_size /= num_valid_vox;
         for (size_t i = 0; i < 3; ++i) 
-          if (!finite(vox(i))) 
+          if (!std::isfinite(vox(i))) 
             vox(i) = mean_vox_size;
       }
     }
@@ -95,7 +95,7 @@ namespace MR
         else {
           for (size_t i = 0; i < 3; i++) {
             for (size_t j = 0; j < 4; j++) {
-              if (!finite (transform_ (i,j))) {
+              if (!std::isfinite (transform_ (i,j))) {
                 transform_.clear();
                 WARN ("transform matrix contains invalid entries - resetting to sane defaults");
                 break;

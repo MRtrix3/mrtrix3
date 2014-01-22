@@ -201,7 +201,7 @@ class Processor
       for (size_t i = 0; i < dirs.rows(); i++) {
         Direction p (dirs (i,0), dirs (i,1));
         p.a = Math::SH::get_peak (item.data.ptr(), lmax, p.v);
-        if (finite (p.a)) {
+        if (std::isfinite (p.a)) {
           for (size_t j = 0; j < all_peaks.size(); j++) {
             if (Math::abs (p.v.dot (all_peaks[j].v)) > DOT_THRESHOLD) {
               p.a = NAN;
@@ -209,7 +209,7 @@ class Processor
             }
           }
         }
-        if (finite (p.a) && p.a >= threshold) 
+        if (std::isfinite (p.a) && p.a >= threshold) 
           all_peaks.push_back (p);
       }
 
