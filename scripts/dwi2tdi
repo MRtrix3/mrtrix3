@@ -3,7 +3,8 @@ dwi_brain_mask dwi.mif mask.mif
 mrerode mask.mif mask_eroded.mif -npass 3
 dwi2response dwi.mif response.txt -mask mask_eroded.mif
 csdeconv dwi.mif response.txt fod.mif -mask mask.mif
-tckgen fod.mif tracks.tck -seed_image mask.mif -mask mask.mif -number 5000000
+tckgen fod.mif tracks.tck -seed_image mask.mif -mask mask.mif -number 1000000
 mrcrop mask.mif template.mif -mask mask.mif
-tckmap tracks.tck tdi.mif -template template.mif -vox 0.25
-mrview tdi.mif
+tckmap tracks.tck tdi.mif -template template.mif -vox 0.5
+tckmap tracks.tck dectdi.mif -template template.mif -vox 0.5 -colour
+mrview tdi.mif dectdi.mif
