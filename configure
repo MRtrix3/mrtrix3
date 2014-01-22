@@ -1,4 +1,4 @@
-#!python
+#!/usr/bin/python
 
 import subprocess, sys, os, platform, tempfile, shutil, shlex
 
