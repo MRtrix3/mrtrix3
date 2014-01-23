@@ -416,12 +416,12 @@ namespace MR
 
         put<int16_t> (dt, &NH.datatype, is_BE);
         put<int16_t> (H.datatype().bits(), &NH.bitpix, is_BE);
-        NH.pixdim[0] = 0;
+        NH.pixdim[0] = 1.0;
 
         // voxel sizes:
-        for (size_t i = 0; i < 3; i++)
+        for (size_t i = 0; i < 3; ++i)
           put<float32> (H.vox (perm[i]), &NH.pixdim[i+1], is_BE);
-        for (size_t i = 3; i < H.ndim(); i++)
+        for (size_t i = 3; i < H.ndim(); ++i)
           put<float32> (H.vox (i), &NH.pixdim[i+1], is_BE);
 
         put<float32> (352.0, &NH.vox_offset, is_BE);
@@ -446,8 +446,19 @@ namespace MR
         }
         strncpy ( (char*) &NH.descrip, descrip, 80);
 
-        put<int16_t> (NIFTI_XFORM_UNKNOWN, &NH.qform_code, is_BE);
+        put<int16_t> (NIFTI_XFORM_SCANNER_ANAT, &NH.qform_code, is_BE);
         put<int16_t> (NIFTI_XFORM_SCANNER_ANAT, &NH.sform_code, is_BE);
+
+        // qform:
+        const Math::Versor<float> Q (M);
+
+        put<float32> (Q[1], &NH.quatern_b, is_BE);
+        put<float32> (Q[2], &NH.quatern_c, is_BE);
+        put<float32> (Q[3], &NH.quatern_d, is_BE);
+
+        put<float32> (M(0,3), &NH.qoffset_x, is_BE);
+        put<float32> (M(1,3), &NH.qoffset_y, is_BE);
+        put<float32> (M(2,3), &NH.qoffset_z, is_BE);
 
         put<float32> (H.vox (perm[0]) *M (0,0), &NH.srow_x[0], is_BE);
         put<float32> (H.vox (perm[1]) *M (0,1), &NH.srow_x[1], is_BE);

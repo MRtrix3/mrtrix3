@@ -20,8 +20,8 @@
 
 */
 
-#ifndef __quaternion_h__
-#define __quaternion_h__
+#ifndef __versor_h__
+#define __versor_h__
 
 #include "math/matrix.h"
 
