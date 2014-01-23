@@ -78,7 +78,7 @@ namespace MR
           const Math::Matrix<ValueType>& grad,
           ValueType bvalue_threshold = NAN)
     {
-      if (!finite (bvalue_threshold))
+      if (!std::isfinite (bvalue_threshold))
         bvalue_threshold = File::Config::get_float ("BValueThreshold", 10.0);
       if (grad.columns() != 4)
         throw Exception ("invalid gradient encoding matrix: expecting 4 columns.");

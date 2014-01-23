@@ -66,17 +66,17 @@ namespace MR
       class ROI {
         public:
           ROI (const Point<>& sphere_pos, float sphere_radius) :
-            pos (sphere_pos), rad (sphere_radius), rad2 (Math::pow2 (rad)) { }
+            pos (sphere_pos), radius (sphere_radius), radius2 (Math::pow2 (radius)) { }
 
           ROI (const std::string& spec) :
-            rad (NAN), rad2 (NAN)
+            radius (NAN), radius2 (NAN)
           {
             try {
               std::vector<float> F (parse_floats (spec));
               if (F.size() != 4) throw 1;
               pos.set (F[0], F[1], F[2]);
-              rad = F[3];
-              rad2 = Math::pow2 (rad);
+              radius = F[3];
+              radius2 = Math::pow2 (radius);
             }
             catch (...) { 
               DEBUG ("could not parse spherical ROI specification \"" + spec + "\" - assuming mask image");
@@ -87,7 +87,7 @@ namespace MR
           std::string shape () const { return (mask ? "image" : "sphere"); }
 
           std::string parameters () const {
-            return (mask ? mask->name() : str(pos[0]) + "," + str(pos[1]) + "," + str(pos[2]) + "," + str(rad));
+            return (mask ? mask->name() : str(pos[0]) + "," + str(pos[1]) + "," + str(pos[2]) + "," + str(radius));
           }
 
           bool contains (const Point<>& p) const
@@ -104,7 +104,7 @@ namespace MR
               return (voxel.value());
             }
 
-            return ((pos-p).norm2() <= rad2);
+            return ((pos-p).norm2() <= radius2);
 
           }
 
@@ -118,7 +118,7 @@ namespace MR
 
         private:
           Point<> pos;
-          float rad, rad2;
+          float radius, radius2;
           RefPtr<Mask> mask;
 
       };

@@ -24,10 +24,6 @@
 
 */
 
-#include <QApplication>
-#include <QMouseEvent>
-#include <QWheelEvent>
-
 #include <fstream>
 
 #include "app.h"
@@ -56,7 +52,7 @@ namespace MR
     {
 
       RenderFrame::RenderFrame (QWidget* parent) :
-        QGLWidget (QGLFormat (QGL::FormatOptions (QGL::DoubleBuffer | QGL::DepthBuffer | QGL::Rgba)), parent),
+        QGLWidget (GL::core_format(), parent),
         view_angle (40.0), distance (0.3), line_width (1.0), scale (1.0), 
         lmax_computed (0), lod_computed (0), recompute_mesh (true), recompute_amplitudes (true), 
         show_axes (true), hide_neg_lobes (true), color_by_dir (true), use_lighting (true), font (parent->font()), projection (this, font),
@@ -88,18 +84,18 @@ namespace MR
       {
         GL::init();
         renderer.initGL();
-        glClearColor (lighting->background_color[0], lighting->background_color[1], lighting->background_color[2], 0.0);
-        glEnable (GL_DEPTH_TEST);
+        gl::ClearColor (lighting->background_color[0], lighting->background_color[1], lighting->background_color[2], 0.0);
+        gl::Enable (gl::DEPTH_TEST);
 
         axes_VB.gen();
         axes_VAO.gen();
-        axes_VB.bind (GL_ARRAY_BUFFER);
+        axes_VB.bind (gl::ARRAY_BUFFER);
         axes_VAO.bind();
-        glEnableVertexAttribArray (0);
-        glVertexAttribPointer (0, 3, GL_FLOAT, GL_FALSE, 6*sizeof(GLfloat), (void*)0);
+        gl::EnableVertexAttribArray (0);
+        gl::VertexAttribPointer (0, 3, gl::FLOAT, gl::FALSE_, 6*sizeof(GLfloat), (void*)0);
 
-        glEnableVertexAttribArray (1);
-        glVertexAttribPointer (1, 3, GL_FLOAT, GL_FALSE, 6*sizeof(GLfloat), (void*) (3*sizeof(GLfloat)));
+        gl::EnableVertexAttribArray (1);
+        gl::VertexAttribPointer (1, 3, gl::FLOAT, gl::FALSE_, 6*sizeof(GLfloat), (void*) (3*sizeof(GLfloat)));
 
         GLfloat axis_data[] = {
           -1.0, -1.0, -1.0,   1.0, 0.0, 0.0,
@@ -109,7 +105,7 @@ namespace MR
           -1.0, -1.0, -1.0,   0.0, 0.0, 1.0,
           -1.0, -1.0,  1.0,   0.0, 0.0, 1.0
         };
-        glBufferData (GL_ARRAY_BUFFER, sizeof(axis_data), axis_data, GL_STATIC_DRAW);
+        gl::BufferData (gl::ARRAY_BUFFER, sizeof(axis_data), axis_data, gl::STATIC_DRAW);
 
         GL::Shader::Vertex vertex_shader (
             "layout(location = 0) in vec3 vertex_in;\n"
@@ -147,7 +143,7 @@ namespace MR
 
       void RenderFrame::paintGL ()
       {
-        glClear (GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        gl::Clear (gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT);
 
         float dist (1.0f / (distance * view_angle * D2R));
         float near_ = (dist-3.0f > 0.001f ? dist-3.0f : 0.001f);
@@ -175,14 +171,14 @@ namespace MR
         GL::mat4 MV = GL::translate (0.0, 0.0, -dist) * GL::mat4 (T);
         projection.set (MV, P);
 
-        glDepthMask (GL_TRUE);
+        gl::DepthMask (gl::TRUE_);
 
         if (values.size()) {
-          if (finite (values[0])) {
-            glDisable (GL_BLEND);
+          if (std::isfinite (values[0])) {
+            gl::Disable (gl::BLEND);
 
             float final_scale = scale;
-            if (normalise && finite (values[0]) && values[0] != 0.0)
+            if (normalise && std::isfinite (values[0]) && values[0] != 0.0)
               final_scale /= values[0];
 
             renderer.start (projection, *lighting, final_scale, use_lighting, color_by_dir, hide_neg_lobes);
@@ -205,25 +201,23 @@ namespace MR
         }
 
         if (show_axes) {
-          glLineWidth (line_width);
-          glBlendFunc (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-          glEnable (GL_BLEND);
-          glEnable (GL_LINE_SMOOTH);
+          gl::LineWidth (line_width);
+          gl::BlendFunc (gl::SRC_ALPHA, gl::ONE_MINUS_SRC_ALPHA);
+          gl::Enable (gl::BLEND);
+          gl::Enable (gl::LINE_SMOOTH);
 
           axes_shader.start();
-          glUniform3fv (glGetUniformLocation (axes_shader, "origin"), 1, focus);
-          glUniformMatrix4fv (glGetUniformLocation (axes_shader, "MVP"), 1, GL_FALSE, projection.modelview_projection());
+          gl::Uniform3fv (gl::GetUniformLocation (axes_shader, "origin"), 1, focus);
+          gl::UniformMatrix4fv (gl::GetUniformLocation (axes_shader, "MVP"), 1, gl::FALSE_, projection.modelview_projection());
           axes_VAO.bind();
-          glDrawArrays (GL_LINES, 0, 6);
+          gl::DrawArrays (gl::LINES, 0, 6);
           axes_shader.stop();
 
-          glDisable (GL_BLEND);
-          glDisable (GL_LINE_SMOOTH);
+          gl::Disable (gl::BLEND);
+          gl::Disable (gl::LINE_SMOOTH);
         }
 
         if (OS > 0) snapshot();
-
-        DEBUG_OPENGL;
 
       }
 
@@ -322,8 +316,8 @@ namespace MR
       void RenderFrame::snapshot ()
       {
         makeCurrent();
-        glPixelStorei (GL_PACK_ALIGNMENT, 1);
-        glReadPixels (0, 0, projection.width(), projection.height(), GL_RGB, GL_UNSIGNED_BYTE, framebuffer);
+        gl::PixelStorei (gl::PACK_ALIGNMENT, 1);
+        gl::ReadPixels (0, 0, projection.width(), projection.height(), gl::RGB, gl::UNSIGNED_BYTE, framebuffer);
 
         int start_i = projection.width()*OS_x;
         int start_j = projection.height()* (OS-OS_y-1);

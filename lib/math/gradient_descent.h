@@ -114,8 +114,8 @@ namespace MR
               CONSOLE ("initialise: f = " + str (f) + ", |g| = " + str (normg) + ":");
               CONSOLE ("  x = [ " + str(x) + "]");
             }
-            assert (finite (f));
-            assert (finite (normg));
+            assert (std::isfinite (f));
+            assert (std::isfinite (normg));
           }
 
 
@@ -162,7 +162,7 @@ namespace MR
           value_type evaluate_func (const Vector<value_type>& newx, Vector<value_type>& newg, bool verbose = false) {
             nfeval++;
             value_type cost = func (newx, newg);
-            if (!finite (cost))
+            if (!std::isfinite (cost))
               throw Exception ("cost function is NaN or Inf!");
             if (verbose)
               CONSOLE ("      << eval " + str(nfeval) + ", f = " + str (cost) + " >>");

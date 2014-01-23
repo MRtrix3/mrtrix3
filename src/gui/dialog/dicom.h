@@ -23,6 +23,7 @@
 #ifndef __dialog_dicom_h__
 #define __dialog_dicom_h__
 
+#include "gui/opengl/gl.h"
 #include "file/dicom/tree.h"
 
 namespace MR

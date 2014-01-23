@@ -20,9 +20,6 @@
 
 */
 
-#include <QApplication>
-#include <QGLFormat>
-
 #include "app.h"
 #include "progressbar.h"
 #include "file/config.h"
@@ -39,18 +36,6 @@ namespace MR
     void init ()
     {
       new QApplication (App::argc, App::argv);
-
-      QGLFormat f (QGL::DoubleBuffer | QGL::DepthBuffer | QGL::Rgba);
-      int swap_interval = MR::File::Config::get_int ("VSync", 1);
-      f.setSwapInterval (swap_interval);
-      f.setProfile (QGLFormat::CoreProfile);
-      int nsamples = File::Config::get_int ("MSAA", 0);
-      if (nsamples > 1) {
-        f.setSampleBuffers (true);
-        f.setSamples (nsamples);
-      }
-      QGLFormat::setDefaultFormat(f);
-
 
       MR::ProgressBar::display_func = Dialog::ProgressBar::display;
       MR::ProgressBar::done_func = Dialog::ProgressBar::done;

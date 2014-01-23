@@ -90,7 +90,7 @@ namespace MR
         public:
           typedef typename VoxelType::value_type value_type;
 
-          using typename ConstInfo::name;
+          using ConstInfo::name;
 
           template <class InfoType>
             Reslice (const VoxelType& original,

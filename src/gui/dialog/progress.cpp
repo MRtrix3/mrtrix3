@@ -20,9 +20,6 @@
 
 */
 
-#include <QApplication>
-#include <QProgressDialog>
-
 #include <cassert>
 #include "gui/dialog/progress.h"
 

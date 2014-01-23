@@ -20,10 +20,6 @@
 
 */
 
-#include <QAction>
-#include <cassert>
-
-#include "gui/mrview/window.h"
 #include "gui/mrview/tool/base.h"
 
 namespace MR

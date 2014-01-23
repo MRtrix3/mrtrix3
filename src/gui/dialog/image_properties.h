@@ -23,11 +23,8 @@
 #ifndef __gui_dialog_image_properties_h__
 #define __gui_dialog_image_properties_h__
 
-#include <QDialog>
-
 #include "math/matrix.h"
-
-class QTreeView;
+#include "gui/opengl/gl.h"
 
 namespace MR
 {

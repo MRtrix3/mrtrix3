@@ -24,7 +24,7 @@
 #ifndef __gui_color_button_h__
 #define __gui_color_button_h__
 
-#include <QPushButton>
+#include "gui/opengl/gl.h"
 
 class QColorButton : public QPushButton
 {

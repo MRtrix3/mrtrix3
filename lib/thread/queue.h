@@ -792,7 +792,7 @@ flush:
       *     }
       *
       *     size_t count;
-      *};
+      * };
       *
       * // The Pipe class processes data from one queue and places the result
       * //   onto another:
@@ -806,7 +806,7 @@ flush:
       *       item_out.n = 2 * item_in.n;
       *       return true;
       *     }
-      *};
+      * };
       *
       * // The Sink class processes each item received through the queue:
       * class Sink {

@@ -2,9 +2,6 @@
 #include "math/math.h"
 #include "gui/opengl/font.h"
 
-#include <QPainter>
-#include <QImage>
-
 namespace MR
 {
   namespace GUI
@@ -47,7 +44,7 @@ namespace MR
         INFO ("loading font into OpenGL texture...");
 
         font_height = metric.height() + 2;
-        const float max_font_width = metric.maxWidth() + 2;
+        const float max_font_width = metric.width("MM") + 2;
 
         int tex_width = 0;
         for (int c = first_char; c <= last_char; ++c) 
@@ -121,31 +118,31 @@ namespace MR
         }
 
         for (int n = 0; n < 256; ++n) {
-          if (!finite (font_tex_pos[n])) {
+          if (!std::isfinite (font_tex_pos[n])) {
             font_width[n] = font_width[default_char];
             font_tex_pos[n] = font_tex_pos[default_char];
             font_tex_width[n] = font_tex_width[default_char];
           }
         }
 
-        tex.gen (GL_TEXTURE_2D);
+        tex.gen (gl::TEXTURE_2D);
         tex.bind();
-        tex.set_interp (false);
-        glTexImage2D (GL_TEXTURE_2D, 0, GL_RG, tex_width, font_height, 
-            0, GL_RG, GL_FLOAT, tex_data);
+        tex.set_interp_on (false);
+        gl::TexImage2D (gl::TEXTURE_2D, 0, gl::RG, tex_width, font_height, 
+            0, gl::RG, gl::FLOAT, tex_data);
 
         vertex_buffer[0].gen();
         vertex_buffer[1].gen();
         vertex_array_object.gen();
         vertex_array_object.bind();
 
-        vertex_buffer[0].bind (GL_ARRAY_BUFFER);
-        glEnableVertexAttribArray (0);
-        glVertexAttribPointer (0, 2, GL_FLOAT, GL_FALSE, 0, (void*)0);
+        vertex_buffer[0].bind (gl::ARRAY_BUFFER);
+        gl::EnableVertexAttribArray (0);
+        gl::VertexAttribPointer (0, 2, gl::FLOAT, gl::FALSE_, 0, (void*)0);
 
-        vertex_buffer[1].bind (GL_ARRAY_BUFFER);
-        glEnableVertexAttribArray (1);
-        glVertexAttribPointer (1, 2, GL_FLOAT, GL_FALSE, 0, (void*)0);
+        vertex_buffer[1].bind (gl::ARRAY_BUFFER);
+        gl::EnableVertexAttribArray (1);
+        gl::VertexAttribPointer (1, 2, gl::FLOAT, gl::FALSE_, 0, (void*)0);
 
         GL::Shader::Vertex vertex_shader (vertex_shader_source);
         GL::Shader::Fragment fragment_shader (fragment_shader_source);
@@ -172,11 +169,15 @@ namespace MR
 
           VLA (screen_pos, GLfloat, 8*text.size());
           VLA (tex_pos, GLfloat, 8*text.size());
+          VLA (starts, GLint, text.size());
+          VLA (counts, GLsizei, text.size());
 
           x -= 1;
           y -= 1;
 
           for (size_t n = 0; n < text.size(); ++n) {
+            starts[n] = 4*n;
+            counts[n] = 4;
             const int c = text[n];
             GLfloat* pos = &screen_pos[8*n];
             pos[0] = x; pos[1] = y;
@@ -194,16 +195,16 @@ namespace MR
           }
 
 
-          vertex_buffer[0].bind (GL_ARRAY_BUFFER);
-          glBufferData (GL_ARRAY_BUFFER, sizeof (screen_pos), screen_pos, GL_STREAM_DRAW);
+          vertex_buffer[0].bind (gl::ARRAY_BUFFER);
+          gl::BufferData (gl::ARRAY_BUFFER, sizeof (screen_pos), screen_pos, gl::STREAM_DRAW);
 
-          vertex_buffer[1].bind (GL_ARRAY_BUFFER);
-          glBufferData (GL_ARRAY_BUFFER, sizeof (tex_pos), tex_pos, GL_STREAM_DRAW);
+          vertex_buffer[1].bind (gl::ARRAY_BUFFER);
+          gl::BufferData (gl::ARRAY_BUFFER, sizeof (tex_pos), tex_pos, gl::STREAM_DRAW);
 
           tex.bind();
           vertex_array_object.bind();
 
-          glDrawArrays (GL_QUADS, 0, 4*text.size());
+          gl::MultiDrawArrays (gl::TRIANGLE_FAN, starts, counts, text.size()); //4*text.size());
         }
 
       }

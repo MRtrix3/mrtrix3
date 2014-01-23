@@ -24,8 +24,7 @@
 #define __gui_dialog_file_h__
 
 #include "file/path.h"
-
-class QWidget;
+#include "gui/opengl/gl.h"
 
 namespace MR
 {

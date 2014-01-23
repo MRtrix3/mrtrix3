@@ -1,5 +1,3 @@
-#include <QApplication>
-
 #include "command.h"
 #include "progressbar.h"
 #include "gui/init.h"

@@ -46,7 +46,7 @@ namespace MR
           uint32_t label;
           uint32_t size;
 
-          bool operator< (const cluster& j) {
+          bool operator< (const cluster& j) const {
             return size < j.size;
           }
 

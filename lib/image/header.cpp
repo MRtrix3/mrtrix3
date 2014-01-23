@@ -84,7 +84,7 @@ namespace MR
         if (stride (n) != H.stride (n))
           throw Exception ("data strides differs image files for \"" + name() + "\"");
 
-        if (finite(vox(n)) && finite(H.vox(n)) && vox (n) != H.vox (n))
+        if (std::isfinite(vox(n)) && std::isfinite(H.vox(n)) && vox (n) != H.vox (n))
           WARN ("voxel dimensions differ between image files for \"" + name() + "\"");
       }
 

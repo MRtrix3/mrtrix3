@@ -23,10 +23,7 @@
 #ifndef __gui_dialog_list_h__
 #define __gui_dialog_list_h__
 
-#include <QModelIndex>
-#include <QVariant>
-#include <QList>
-#include <QAbstractListModel>
+#include "gui/opengl/gl.h"
 
 namespace MR
 {

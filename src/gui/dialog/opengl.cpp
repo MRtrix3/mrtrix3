@@ -25,8 +25,6 @@
 #include "gui/dialog/opengl.h"
 #include "gui/opengl/gl.h"
 
-#include <QGLFormat>
-
 namespace MR
 {
   namespace GUI
@@ -41,15 +39,15 @@ namespace MR
         TreeItem* root = model->rootItem;
 
         GLint i;
-        glGetIntegerv (GL_MAJOR_VERSION, &i);
+        gl::GetIntegerv (gl::MAJOR_VERSION, &i);
         std::string text = str(i) + ".";
-        glGetIntegerv (GL_MINOR_VERSION, &i);
+        gl::GetIntegerv (gl::MINOR_VERSION, &i);
         text += str(i);
 
         root->appendChild (new TreeItem ("API version", text, root));
-        root->appendChild (new TreeItem ("Renderer", (const char*) glGetString (GL_RENDERER), root));
-        root->appendChild (new TreeItem ("Vendor", (const char*) glGetString (GL_VENDOR), root));
-        root->appendChild (new TreeItem ("Version", (const char*) glGetString (GL_VERSION), root));
+        root->appendChild (new TreeItem ("Renderer", (const char*) gl::GetString (gl::RENDERER), root));
+        root->appendChild (new TreeItem ("Vendor", (const char*) gl::GetString (gl::VENDOR), root));
+        root->appendChild (new TreeItem ("Version", (const char*) gl::GetString (gl::VERSION), root));
 
         TreeItem* bit_depths = new TreeItem ("Bit depths", std::string(), root);
         root->appendChild (bit_depths);
@@ -65,7 +63,7 @@ namespace MR
         root->appendChild (new TreeItem ("VSync", format.swapInterval() ? "on" : "off", root));
         root->appendChild (new TreeItem ("Multisample anti-aliasing", format.sampleBuffers() ? str(format.samples()).c_str() : "off", root));
 
-        glGetIntegerv (GL_MAX_TEXTURE_SIZE, &i);
+        gl::GetIntegerv (gl::MAX_TEXTURE_SIZE, &i);
         root->appendChild (new TreeItem ("Maximum texture size", str (i), root));
 
         QTreeView* view = new QTreeView;

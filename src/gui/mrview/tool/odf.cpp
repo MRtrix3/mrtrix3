@@ -20,13 +20,6 @@
 
 */
 
-#include <QLabel>
-#include <QSplitter>
-#include <QListView>
-#include <QCheckBox>
-#include <QComboBox>
-#include <QAbstractItemModel>
-
 #include "mrtrix.h"
 #include "gui/dialog/file.h"
 #include "gui/dialog/lighting.h"
@@ -365,8 +358,8 @@ namespace MR
             overlay_renderer->start (projection, *render_frame->lighting, settings->scale, 
                 use_lighting_box->isChecked(), settings->color_by_direction, settings->hide_negative_lobes, true);
 
-            glEnable (GL_DEPTH_TEST);
-            glDepthMask (GL_TRUE);
+            gl::Enable (gl::DEPTH_TEST);
+            gl::DepthMask (gl::TRUE_);
 
             Point<> pos (window.target());
             pos += projection.screen_normal() * (projection.screen_normal().dot (window.focus() - window.target()));
@@ -406,7 +399,7 @@ namespace MR
               for (int x = -nx; x <= nx; ++x) {
                 Point<> p = pos + float(x)*x_dir + float(y)*y_dir;
                 get_values (values, image, p);
-                if (!finite (values[0])) continue;
+                if (!std::isfinite (values[0])) continue;
                 if (values[0] == 0.0) continue;
                 overlay_renderer->compute_r_del_daz (r_del_daz, values.sub (0, Math::SH::NforL (overlay_lmax)));
                 overlay_renderer->set_data (r_del_daz);
@@ -416,8 +409,8 @@ namespace MR
 
             overlay_renderer->stop();
 
-            glDisable (GL_DEPTH_TEST);
-            glDepthMask (GL_FALSE);
+            gl::Disable (gl::DEPTH_TEST);
+            gl::DepthMask (gl::FALSE_);
           }
         }
 

@@ -119,13 +119,13 @@ namespace MR
 
       void read_other (Image::Header& H, const mgh_other& MGHO, const bool is_BE) {
 
-        if (get<float> (&MGHO.tr, is_BE))
+        if (get<float> (&MGHO.tr, is_BE) != 0.0f)
           H.comments().push_back ("TR: "   + str (get<float> (&MGHO.tr, is_BE)) + "ms");
-        if (get<float> (&MGHO.flip_angle, is_BE))
+        if (get<float> (&MGHO.flip_angle, is_BE) != 0.0f)
           H.comments().push_back ("Flip: " + str (get<float> (&MGHO.flip_angle, is_BE) * 180.0 / M_PI) + "deg");
-        if (get<float> (&MGHO.te, is_BE))
+        if (get<float> (&MGHO.te, is_BE) != 0.0f)
           H.comments().push_back ("TE: "   + str (get<float> (&MGHO.te, is_BE)) + "ms");
-        if (get<float> (&MGHO.ti, is_BE))
+        if (get<float> (&MGHO.ti, is_BE) != 0.0f)
           H.comments().push_back ("TI: "   + str (get<float> (&MGHO.ti, is_BE)) + "ms");
 
         // Ignore FoV field

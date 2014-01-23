@@ -38,6 +38,9 @@
  * two classes provide simple and convenient ways of multi-threading, and
  * should be sufficient for the vast majority of applications.
  *
+ * Please refer to the \ref multithreading page for an overview of
+ * multi-threading in MRtrix.
+ *
  * \sa Image::ThreadedLoop
  */
 

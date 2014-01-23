@@ -23,8 +23,6 @@
 #ifndef __gui_mrview_tool_screen_capture_h__
 #define __gui_mrview_tool_screen_capture_h__
 
-#include <QVBoxLayout>
-#include <QSpinBox>
 #include "gui/mrview/tool/base.h"
 #include "gui/mrview/adjust_button.h"
 

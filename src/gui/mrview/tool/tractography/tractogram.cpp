@@ -20,9 +20,6 @@
 
 */
 
-#include <QMenu>
-#include <stdio.h>
-
 #include "progressbar.h"
 #include "image/stride.h"
 #include "gui/mrview/tool/tractography/tractogram.h"
@@ -211,11 +208,11 @@ namespace MR
         Tractogram::~Tractogram ()
         {
           if (vertex_buffers.size())
-            glDeleteBuffers (vertex_buffers.size(), &vertex_buffers[0]);
+            gl::DeleteBuffers (vertex_buffers.size(), &vertex_buffers[0]);
           if (vertex_array_objects.size())
-            glDeleteVertexArrays (vertex_array_objects.size(), &vertex_array_objects[0]);
+            gl::DeleteVertexArrays (vertex_array_objects.size(), &vertex_array_objects[0]);
           if (colour_buffers.size())
-            glDeleteBuffers (colour_buffers.size(), &colour_buffers[0]);
+            gl::DeleteBuffers (colour_buffers.size(), &colour_buffers[0]);
         }
 
 
@@ -231,50 +228,50 @@ namespace MR
           transform.set (track_shader);
 
           if (tractography_tool.do_crop_to_slab) {
-            glUniform3f (glGetUniformLocation (track_shader, "screen_normal"),
+            gl::Uniform3f (gl::GetUniformLocation (track_shader, "screen_normal"),
                 transform.screen_normal()[0], transform.screen_normal()[1], transform.screen_normal()[2]);
-            glUniform1f (glGetUniformLocation (track_shader, "crop_var"),
+            gl::Uniform1f (gl::GetUniformLocation (track_shader, "crop_var"),
                 window.focus().dot(transform.screen_normal()) - tractography_tool.slab_thickness / 2);
-            glUniform1f (glGetUniformLocation (track_shader, "slab_width"),
+            gl::Uniform1f (gl::GetUniformLocation (track_shader, "slab_width"),
                 tractography_tool.slab_thickness);
           }
 
           if (color_type == Colour) 
-            glUniform3fv (glGetUniformLocation (track_shader, "const_colour"), 1, colour);
+            gl::Uniform3fv (gl::GetUniformLocation (track_shader, "const_colour"), 1, colour);
 
           if (tractography_tool.use_lighting) {
-            glUniformMatrix4fv (glGetUniformLocation (track_shader, "MV"), 1, GL_FALSE, transform.modelview());
-            glUniform3fv (glGetUniformLocation (track_shader, "light_pos"), 1, tractography_tool.lighting->lightpos);
-            glUniform1f (glGetUniformLocation (track_shader, "ambient"), tractography_tool.lighting->ambient);
-            glUniform1f (glGetUniformLocation (track_shader, "diffuse"), tractography_tool.lighting->diffuse);
-            glUniform1f (glGetUniformLocation (track_shader, "specular"), tractography_tool.lighting->specular);
-            glUniform1f (glGetUniformLocation (track_shader, "shine"), tractography_tool.lighting->shine);
+            gl::UniformMatrix4fv (gl::GetUniformLocation (track_shader, "MV"), 1, gl::FALSE_, transform.modelview());
+            gl::Uniform3fv (gl::GetUniformLocation (track_shader, "light_pos"), 1, tractography_tool.lighting->lightpos);
+            gl::Uniform1f (gl::GetUniformLocation (track_shader, "ambient"), tractography_tool.lighting->ambient);
+            gl::Uniform1f (gl::GetUniformLocation (track_shader, "diffuse"), tractography_tool.lighting->diffuse);
+            gl::Uniform1f (gl::GetUniformLocation (track_shader, "specular"), tractography_tool.lighting->specular);
+            gl::Uniform1f (gl::GetUniformLocation (track_shader, "shine"), tractography_tool.lighting->shine);
           }
 
           if (tractography_tool.line_opacity < 1.0) {
-            glEnable (GL_BLEND);
-            glDisable (GL_DEPTH_TEST);
-            glDepthMask (GL_FALSE);
-            glBlendEquation (GL_FUNC_ADD);
-            glBlendFunc (GL_CONSTANT_ALPHA, GL_ONE);
-            glBlendColor (1.0, 1.0, 1.0, tractography_tool.line_opacity);
+            gl::Enable (gl::BLEND);
+            gl::Disable (gl::DEPTH_TEST);
+            gl::DepthMask (gl::FALSE_);
+            gl::BlendEquation (gl::FUNC_ADD);
+            gl::BlendFunc (gl::CONSTANT_ALPHA, gl::ONE);
+            gl::BlendColor (1.0, 1.0, 1.0, tractography_tool.line_opacity);
           } else {
-            glDisable (GL_BLEND);
-            glEnable (GL_DEPTH_TEST);
-            glDepthMask (GL_TRUE);
+            gl::Disable (gl::BLEND);
+            gl::Enable (gl::DEPTH_TEST);
+            gl::DepthMask (gl::TRUE_);
           }
 
-          glLineWidth (tractography_tool.line_thickness);
+          gl::LineWidth (tractography_tool.line_thickness);
 
           for (size_t buf = 0; buf < vertex_buffers.size(); ++buf) {
-            glBindVertexArray (vertex_array_objects[buf]);
-            glMultiDrawArrays (GL_LINE_STRIP, &track_starts[buf][0], &track_sizes[buf][0], num_tracks_per_buffer[buf]);
+            gl::BindVertexArray (vertex_array_objects[buf]);
+            gl::MultiDrawArrays (gl::LINE_STRIP, &track_starts[buf][0], &track_sizes[buf][0], num_tracks_per_buffer[buf]);
           }
 
           if (tractography_tool.line_opacity < 1.0) {
-            glDisable (GL_BLEND);
-            glEnable (GL_DEPTH_TEST);
-            glDepthMask (GL_TRUE);
+            gl::Disable (gl::BLEND);
+            gl::Enable (gl::DEPTH_TEST);
+            gl::DepthMask (gl::TRUE_);
           }
 
           stop (track_shader);
@@ -342,7 +339,7 @@ namespace MR
         void Tractogram::erase_nontrack_data()
         {
           if (colour_buffers.size()) {
-            glDeleteBuffers (colour_buffers.size(), &colour_buffers[0]);
+            gl::DeleteBuffers (colour_buffers.size(), &colour_buffers[0]);
             colour_buffers.clear();
           }
         }
@@ -357,19 +354,19 @@ namespace MR
         {
           buffer.push_back (Point<float>());
           GLuint vertexbuffer;
-          glGenBuffers (1, &vertexbuffer);
-          glBindBuffer (GL_ARRAY_BUFFER, vertexbuffer);
-          glBufferData (GL_ARRAY_BUFFER, buffer.size() * sizeof(Point<float>), &buffer[0][0], GL_STATIC_DRAW);
+          gl::GenBuffers (1, &vertexbuffer);
+          gl::BindBuffer (gl::ARRAY_BUFFER, vertexbuffer);
+          gl::BufferData (gl::ARRAY_BUFFER, buffer.size() * sizeof(Point<float>), &buffer[0][0], gl::STATIC_DRAW);
 
           GLuint vertex_array_object;
-          glGenVertexArrays (1, &vertex_array_object);
-          glBindVertexArray (vertex_array_object);
-          glEnableVertexAttribArray (0);
-          glVertexAttribPointer (0, 3, GL_FLOAT, GL_FALSE, 0, (void*)(3*sizeof(float)));
-          glEnableVertexAttribArray (1);
-          glVertexAttribPointer (1, 3, GL_FLOAT, GL_FALSE, 0, (void*)0);
-          glEnableVertexAttribArray (2);
-          glVertexAttribPointer (2, 3, GL_FLOAT, GL_FALSE, 0, (void*)(6*sizeof(float)));
+          gl::GenVertexArrays (1, &vertex_array_object);
+          gl::BindVertexArray (vertex_array_object);
+          gl::EnableVertexAttribArray (0);
+          gl::VertexAttribPointer (0, 3, gl::FLOAT, gl::FALSE_, 0, (void*)(3*sizeof(float)));
+          gl::EnableVertexAttribArray (1);
+          gl::VertexAttribPointer (1, 3, gl::FLOAT, gl::FALSE_, 0, (void*)0);
+          gl::EnableVertexAttribArray (2);
+          gl::VertexAttribPointer (2, 3, gl::FLOAT, gl::FALSE_, 0, (void*)(6*sizeof(float)));
 
           vertex_array_objects.push_back (vertex_array_object);
           vertex_buffers.push_back (vertexbuffer);
@@ -389,13 +386,13 @@ namespace MR
         void Tractogram::load_end_colours_onto_GPU (std::vector< Point<float> >& buffer) {
           buffer.push_back (Point<float>());
           GLuint vertexbuffer;
-          glGenBuffers (1, &vertexbuffer);
-          glBindBuffer (GL_ARRAY_BUFFER, vertexbuffer);
-          glBufferData (GL_ARRAY_BUFFER, buffer.size() * sizeof(Point<float>), &buffer[0][0], GL_STATIC_DRAW);
+          gl::GenBuffers (1, &vertexbuffer);
+          gl::BindBuffer (gl::ARRAY_BUFFER, vertexbuffer);
+          gl::BufferData (gl::ARRAY_BUFFER, buffer.size() * sizeof(Point<float>), &buffer[0][0], gl::STATIC_DRAW);
 
-          glBindVertexArray (vertex_array_objects[colour_buffers.size()]);
-          glEnableVertexAttribArray (3);
-          glVertexAttribPointer (3, 3, GL_FLOAT, GL_FALSE, 0, (void*)(3*sizeof(float)));
+          gl::BindVertexArray (vertex_array_objects[colour_buffers.size()]);
+          gl::EnableVertexAttribArray (3);
+          gl::VertexAttribPointer (3, 3, gl::FLOAT, gl::FALSE_, 0, (void*)(3*sizeof(float)));
 
           colour_buffers.push_back (vertexbuffer);
           buffer.clear();

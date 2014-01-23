@@ -183,7 +183,7 @@ void run() {
 
   { // Do permutation testing:
     Math::Stats::GLMTTest glm (data, design, contrast);
-    if (finite (cluster_forming_threshold)) {
+    if (std::isfinite (cluster_forming_threshold)) {
       Stats::TFCE::ClusterSize cluster_size_test (connector, cluster_forming_threshold);
       Stats::TFCE::run (glm, cluster_size_test, num_perms,
           perm_distribution_pos, perm_distribution_neg,

@@ -348,7 +348,7 @@ void run () {
     upsample_ratio = opt[0][0];
     INFO ("track upsampling ratio manually set to " + str(upsample_ratio));
   }
-  else if (step_size && finite (step_size)) {
+  else if (step_size && std::isfinite (step_size)) {
     // If accurately calculating the length through each voxel traversed, need a higher upsampling ratio
     //   (1/10th of the voxel size was found to give a good quantification of chordal length)
     // For all other applications, making the upsampled step size about 1/3rd of a voxel seems sufficient

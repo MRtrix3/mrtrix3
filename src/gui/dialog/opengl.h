@@ -23,9 +23,7 @@
 #ifndef __gui_dialog_opengl_h__
 #define __gui_dialog_opengl_h__
 
-#include <QDialog>
-
-class QGLFormat;
+#include "gui/opengl/gl.h"
 
 namespace MR
 {
