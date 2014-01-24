@@ -38,9 +38,16 @@ namespace MR
             f.setPointSize (MR::File::Config::get_int ("MRViewToolFontSize", f.pointSize()-1));
             setFont (f);
 
-            setFrameShadow (QFrame::Plain); 
-            setFrameShape (QFrame::NoFrame);
+            setFrameShadow (QFrame::Sunken); 
+            setFrameShape (QFrame::Panel);
           }
+
+
+
+        QSize Base::sizeHint () const
+        {
+          return minimumSizeHint();
+        }
 
 
         void Base::draw (const Projection& transform, bool is_3D) { }
