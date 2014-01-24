@@ -56,10 +56,10 @@ namespace MR
             void update_slot (int unused);
             void values_changed ();
             void colourmap_changed (int index);
-            void threshold_upper_changed (int unused);
-            void threshold_lower_changed (int unused);
-            void threshold_upper_value_changed ();
-            void threshold_lower_value_changed ();
+            void upper_threshold_changed (int unused);
+            void lower_threshold_changed (int unused);
+            void upper_threshold_value_changed ();
+            void lower_threshold_value_changed ();
             void interpolate_changed ();
 
           protected:
@@ -68,8 +68,8 @@ namespace MR
              Model* image_list_model;
              QListView* image_list_view;
              QComboBox* colourmap_combobox;
-             AdjustButton *min_value, *max_value, *threshold_lower, *threshold_upper;
-             QCheckBox *threshold_lower_box, *threshold_upper_box;
+             AdjustButton *min_value, *max_value, *lower_threshold, *upper_threshold;
+             QCheckBox *lower_threshold_check_box, *upper_threshold_check_box;
              QCheckBox* interpolate_check_box;
              QSlider *opacity;
 

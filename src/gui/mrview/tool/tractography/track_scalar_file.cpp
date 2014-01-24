@@ -87,40 +87,38 @@ namespace MR
 
           main_box->addLayout (hlayout);
 
-          QGroupBox* group_box = new QGroupBox ("Intensity range");
-          GridLayout* layout = new GridLayout;
+          QGroupBox* group_box = new QGroupBox ("Intensity scaling");
           main_box->addWidget (group_box);
-          group_box->setLayout (layout);
+          hlayout = new HBoxLayout;
+          group_box->setLayout (hlayout);
 
-          layout->addWidget (new QLabel ("min"), 0, 0);
           min_entry = new AdjustButton (this);
           connect (min_entry, SIGNAL (valueChanged()), this, SLOT (on_set_scaling_slot()));
-          layout->addWidget (min_entry, 0, 1);
+          hlayout->addWidget (min_entry);
 
-          layout->addWidget (new QLabel ("max"), 1, 0);
           max_entry = new AdjustButton (this);
           connect (max_entry, SIGNAL (valueChanged()), this, SLOT (on_set_scaling_slot()));
-          layout->addWidget (max_entry, 1, 1);
+          hlayout->addWidget (max_entry);
 
-          group_box = new QGroupBox (tr("Thresholds"));
-          main_box->addWidget (group_box);
-          layout = new GridLayout;
-          group_box->setLayout (layout);
 
-          threshold_upper_box = new QCheckBox ("max");
-          connect (threshold_upper_box, SIGNAL (stateChanged(int)), this, SLOT (threshold_upper_changed(int)));
-          layout->addWidget (threshold_upper_box, 0, 0);
-          threshold_upper = new AdjustButton (this, 0.1);
-          connect (threshold_upper, SIGNAL (valueChanged()), this, SLOT (threshold_upper_value_changed()));
-          layout->addWidget (threshold_upper, 0, 1);
+          QGroupBox* threshold_box = new QGroupBox ("Thresholds");
+          main_box->addWidget (threshold_box);
+          hlayout = new HBoxLayout;
+          threshold_box->setLayout (hlayout);
 
-          threshold_lower_box = new QCheckBox ("min");
+          threshold_lower_box = new QCheckBox (this);
           connect (threshold_lower_box, SIGNAL (stateChanged(int)), this, SLOT (threshold_lower_changed(int)));
-          layout->addWidget (threshold_lower_box, 1, 0);
+          hlayout->addWidget (threshold_lower_box);
           threshold_lower = new AdjustButton (this, 0.1);
           connect (threshold_lower, SIGNAL (valueChanged()), this, SLOT (threshold_lower_value_changed()));
-          layout->addWidget (threshold_lower, 1, 1);
+          hlayout->addWidget (threshold_lower);
 
+          threshold_upper_box = new QCheckBox (this);
+          hlayout->addWidget (threshold_upper_box);
+          threshold_upper = new AdjustButton (this, 0.1);
+          connect (threshold_upper_box, SIGNAL (stateChanged(int)), this, SLOT (threshold_upper_changed(int)));
+          connect (threshold_upper, SIGNAL (valueChanged()), this, SLOT (threshold_upper_value_changed()));
+          hlayout->addWidget (threshold_upper);
 
           main_box->addStretch ();
           setMinimumSize (main_box->minimumSize());

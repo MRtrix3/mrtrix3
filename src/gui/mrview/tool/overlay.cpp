@@ -121,41 +121,42 @@ namespace MR
             main_box->addWidget (colourmap_combobox, 0);
             connect (colourmap_combobox, SIGNAL (activated(int)), this, SLOT (colourmap_changed(int)));
 
-            QGroupBox* group_box = new QGroupBox (tr("Intensity range"));
+
+            QGroupBox* group_box = new QGroupBox ("Intensity scaling");
             main_box->addWidget (group_box);
-            GridLayout* box_layout = new GridLayout;
-            group_box->setLayout (box_layout);
+            HBoxLayout* hlayout = new HBoxLayout;
+            group_box->setLayout (hlayout);
 
-            box_layout->addWidget (new QLabel ("max"), 0, 0);
-            max_value = new AdjustButton (this, 0.1);
-            connect (max_value, SIGNAL (valueChanged()), this, SLOT (values_changed()));
-            box_layout->addWidget (max_value, 0, 1);
-
-            box_layout->addWidget (new QLabel ("min"), 1, 0);
-            min_value = new AdjustButton (this, 0.1);
+            min_value = new AdjustButton (this);
             connect (min_value, SIGNAL (valueChanged()), this, SLOT (values_changed()));
-            box_layout->addWidget (min_value, 1, 1);
+            hlayout->addWidget (min_value);
 
-            group_box = new QGroupBox (tr("Thresholds"));
-            main_box->addWidget (group_box);
-            box_layout = new GridLayout;
-            group_box->setLayout (box_layout);
+            max_value = new AdjustButton (this);
+            connect (max_value, SIGNAL (valueChanged()), this, SLOT (values_changed()));
+            hlayout->addWidget (max_value);
 
-            threshold_upper_box = new QCheckBox ("max");
-            connect (threshold_upper_box, SIGNAL (stateChanged(int)), this, SLOT (threshold_upper_changed(int)));
-            box_layout->addWidget (threshold_upper_box, 0, 0);
-            threshold_upper = new AdjustButton (this, 0.1);
-            threshold_upper->setEnabled (false);
-            connect (threshold_upper, SIGNAL (valueChanged()), this, SLOT (threshold_upper_value_changed()));
-            box_layout->addWidget (threshold_upper, 0, 1);
 
-            threshold_lower_box = new QCheckBox ("min");
-            connect (threshold_lower_box, SIGNAL (stateChanged(int)), this, SLOT (threshold_lower_changed(int)));
-            box_layout->addWidget (threshold_lower_box, 1, 0);
-            threshold_lower = new AdjustButton (this, 0.1);
-            threshold_lower->setEnabled (false);
-            connect (threshold_lower, SIGNAL (valueChanged()), this, SLOT (threshold_lower_value_changed()));
-            box_layout->addWidget (threshold_lower, 1, 1);
+            QGroupBox* threshold_box = new QGroupBox ("Thresholds");
+            main_box->addWidget (threshold_box);
+            hlayout = new HBoxLayout;
+            threshold_box->setLayout (hlayout);
+
+            lower_threshold_check_box = new QCheckBox (this);
+            connect (lower_threshold_check_box, SIGNAL (stateChanged(int)), this, SLOT (lower_threshold_changed(int)));
+            hlayout->addWidget (lower_threshold_check_box);
+            lower_threshold = new AdjustButton (this, 0.1);
+            lower_threshold->setEnabled (false);
+            connect (lower_threshold, SIGNAL (valueChanged()), this, SLOT (lower_threshold_value_changed()));
+            hlayout->addWidget (lower_threshold);
+
+            upper_threshold_check_box = new QCheckBox (this);
+            hlayout->addWidget (upper_threshold_check_box);
+            upper_threshold = new AdjustButton (this, 0.1);
+            upper_threshold->setEnabled (false);
+            connect (upper_threshold_check_box, SIGNAL (stateChanged(int)), this, SLOT (upper_threshold_changed(int)));
+            connect (upper_threshold, SIGNAL (valueChanged()), this, SLOT (upper_threshold_value_changed()));
+            hlayout->addWidget (upper_threshold);
+
 
             opacity = new QSlider (Qt::Horizontal);
             opacity->setRange (1,1000);
@@ -293,40 +294,40 @@ namespace MR
         }
 
 
-        void Overlay::threshold_lower_changed (int unused) 
+        void Overlay::lower_threshold_changed (int unused)
         {
           QModelIndexList indices = image_list_view->selectionModel()->selectedIndexes();
           for (int i = 0; i < indices.size(); ++i) {
             Image* overlay = dynamic_cast<Image*> (image_list_model->get_image (indices[i]));
-            overlay->lessthan = threshold_lower->value();
-            overlay->set_use_discard_lower (threshold_lower_box->isChecked());
+            overlay->lessthan = lower_threshold->value();
+            overlay->set_use_discard_lower (lower_threshold_check_box->isChecked());
           }
-          threshold_lower->setEnabled (indices.size() && threshold_lower_box->isChecked());
+          lower_threshold->setEnabled (indices.size() && lower_threshold_check_box->isChecked());
           updateGL();
         }
 
 
-        void Overlay::threshold_upper_changed (int unused)
+        void Overlay::upper_threshold_changed (int unused)
         {
           QModelIndexList indices = image_list_view->selectionModel()->selectedIndexes();
           for (int i = 0; i < indices.size(); ++i) {
             Image* overlay = dynamic_cast<Image*> (image_list_model->get_image (indices[i]));
-            overlay->greaterthan = threshold_upper->value();
-            overlay->set_use_discard_upper (threshold_upper_box->isChecked());
+            overlay->greaterthan = upper_threshold->value();
+            overlay->set_use_discard_upper (upper_threshold_check_box->isChecked());
           }
-          threshold_upper->setEnabled (indices.size() && threshold_upper_box->isChecked());
+          upper_threshold->setEnabled (indices.size() && upper_threshold_check_box->isChecked());
           updateGL();
         }
 
 
 
-        void Overlay::threshold_lower_value_changed ()
+        void Overlay::lower_threshold_value_changed ()
         {
-          if (threshold_lower_box->isChecked()) {
+          if (lower_threshold_check_box->isChecked()) {
             QModelIndexList indices = image_list_view->selectionModel()->selectedIndexes();
             for (int i = 0; i < indices.size(); ++i) {
               Image* overlay = dynamic_cast<Image*> (image_list_model->get_image (indices[i]));
-              overlay->lessthan = threshold_lower->value();
+              overlay->lessthan = lower_threshold->value();
             }
           }
           updateGL();
@@ -334,13 +335,13 @@ namespace MR
 
 
 
-        void Overlay::threshold_upper_value_changed ()
+        void Overlay::upper_threshold_value_changed ()
         {
-          if (threshold_upper_box->isChecked()) {
+          if (upper_threshold_check_box->isChecked()) {
             QModelIndexList indices = image_list_view->selectionModel()->selectedIndexes();
             for (int i = 0; i < indices.size(); ++i) {
               Image* overlay = dynamic_cast<Image*> (image_list_model->get_image (indices[i]));
-              overlay->greaterthan = threshold_upper->value();
+              overlay->greaterthan = upper_threshold->value();
             }
           }
           updateGL();
@@ -366,17 +367,17 @@ namespace MR
           colourmap_combobox->setEnabled (indices.size());
           max_value->setEnabled (indices.size());
           min_value->setEnabled (indices.size());
-          threshold_lower_box->setEnabled (indices.size());
-          threshold_upper_box->setEnabled (indices.size());
-          threshold_lower->setEnabled (indices.size());
-          threshold_upper->setEnabled (indices.size());
+          lower_threshold_check_box->setEnabled (indices.size());
+          upper_threshold_check_box->setEnabled (indices.size());
+          lower_threshold->setEnabled (indices.size());
+          upper_threshold->setEnabled (indices.size());
 
           if (!indices.size())
             return;
 
           float rate = 0.0f, min_val = 0.0f, max_val = 0.0f;
-          float threshold_lower_val = 0.0f, threshold_upper_val = 0.0f;
-          int num_threshold_lower = 0, num_threshold_upper = 0;
+          float lower_threshold_val = 0.0f, upper_threshold_val = 0.0f;
+          int num_lower_threshold = 0, num_upper_threshold = 0;
           int colourmap_index = -2;
           for (int i = 0; i < indices.size(); ++i) {
             Image* overlay = dynamic_cast<Image*> (image_list_model->get_image (indices[i]));
@@ -389,20 +390,20 @@ namespace MR
             rate += overlay->scaling_rate();
             min_val += overlay->scaling_min();
             max_val += overlay->scaling_max();
-            num_threshold_lower += overlay->use_discard_lower();
-            num_threshold_upper += overlay->use_discard_upper();
+            num_lower_threshold += overlay->use_discard_lower();
+            num_upper_threshold += overlay->use_discard_upper();
             if (!std::isfinite (overlay->lessthan)) 
               overlay->lessthan = overlay->intensity_min();
             if (!std::isfinite (overlay->greaterthan)) 
               overlay->greaterthan = overlay->intensity_max();
-            threshold_lower_val += overlay->lessthan;
-            threshold_upper_val += overlay->greaterthan;
+            lower_threshold_val += overlay->lessthan;
+            upper_threshold_val += overlay->greaterthan;
           }
           rate /= indices.size();
           min_val /= indices.size();
           max_val /= indices.size();
-          threshold_lower_val /= indices.size();
-          threshold_upper_val /= indices.size();
+          lower_threshold_val /= indices.size();
+          upper_threshold_val /= indices.size();
 
           colourmap_combobox->setCurrentIndex (colourmap_index);
 
@@ -411,21 +412,21 @@ namespace MR
           min_value->setValue (min_val);
           max_value->setValue (max_val);
 
-          threshold_lower_box->setCheckState (num_threshold_lower ? 
-              ( num_threshold_lower == indices.size() ? 
+          lower_threshold_check_box->setCheckState (num_lower_threshold ?
+              ( num_lower_threshold == indices.size() ?
                 Qt::Checked :
                 Qt::PartiallyChecked ) : 
               Qt::Unchecked);
-          threshold_lower->setValue (threshold_lower_val);
-          threshold_lower->setRate (rate);
+          lower_threshold->setValue (lower_threshold_val);
+          lower_threshold->setRate (rate);
 
-          threshold_upper_box->setCheckState (num_threshold_upper ? 
-              ( num_threshold_upper == indices.size() ? 
+          upper_threshold_check_box->setCheckState (num_upper_threshold ?
+              ( num_upper_threshold == indices.size() ?
                 Qt::Checked :
                 Qt::PartiallyChecked ) : 
               Qt::Unchecked);
-          threshold_upper->setValue (threshold_upper_val);
-          threshold_upper->setRate (rate);
+          upper_threshold->setValue (upper_threshold_val);
+          upper_threshold->setRate (rate);
         }
 
         bool Overlay::process_batch_command (const std::string& cmd, const std::string& args)
