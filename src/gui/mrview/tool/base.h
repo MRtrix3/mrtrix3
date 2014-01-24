@@ -55,6 +55,8 @@ namespace MR
             Base (Window& main_window, Dock* parent);
             Window& window;
 
+            virtual QSize sizeHint () const;
+
             class HBoxLayout : public QHBoxLayout {
               public:
                 HBoxLayout () : QHBoxLayout () { init(); }
@@ -137,7 +139,6 @@ namespace MR
             dock->setWidget (dock->tool);
             dock->setFloating (MR::File::Config::get_int ("MRViewDockFloating", 0));
             dock->show();
-            dock->resize (0,0);
             return dock;
           }
 

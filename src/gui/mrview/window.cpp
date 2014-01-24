@@ -177,6 +177,9 @@ namespace MR
         snap_to_image_axes_and_voxel (true)
       {
 
+        setDockOptions (AllowTabbedDocks);
+        setDocumentMode (true);
+
         Options opt = get_options ("batch");
         for (size_t n = 0; n < opt.size(); ++n) {
           std::ifstream batch_file (opt[n][0].c_str());
