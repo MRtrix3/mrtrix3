@@ -42,6 +42,8 @@ void usage ()
   + "window.position x,y\n  Set the position of the main window, in pixel units."
   + "window.fullscreen\n  Show fullscreen or windowed (0: windowed, 1: fullscreen)."
   + "exit\n  quit MRView."
+  + "overlay.load path\n  Loads the specified image on the overlay tool."
+  + "overlay.opacity value\n  Sets the overlay opacity to floating value [0-1]."
   + "tractography.load path\n  Load the specified tracks file into the tractography tool"
   + "capture.folder path\n  Set the output folder for the screen capture tool"
   + "capture.prefix path\n  Set the output file prefix for the screen capture tool"

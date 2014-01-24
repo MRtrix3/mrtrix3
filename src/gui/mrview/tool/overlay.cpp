@@ -392,13 +392,14 @@ namespace MR
             max_val += overlay->scaling_max();
             num_lower_threshold += overlay->use_discard_lower();
             num_upper_threshold += overlay->use_discard_upper();
-            if (!std::isfinite (overlay->lessthan)) 
+            if (!std::isfinite (overlay->lessthan))
               overlay->lessthan = overlay->intensity_min();
             if (!std::isfinite (overlay->greaterthan)) 
               overlay->greaterthan = overlay->intensity_max();
             lower_threshold_val += overlay->lessthan;
             upper_threshold_val += overlay->greaterthan;
           }
+
           rate /= indices.size();
           min_val /= indices.size();
           max_val /= indices.size();
@@ -412,20 +413,20 @@ namespace MR
           min_value->setValue (min_val);
           max_value->setValue (max_val);
 
+          lower_threshold->setValue (lower_threshold_val);
           lower_threshold_check_box->setCheckState (num_lower_threshold ?
               ( num_lower_threshold == indices.size() ?
                 Qt::Checked :
                 Qt::PartiallyChecked ) : 
               Qt::Unchecked);
-          lower_threshold->setValue (lower_threshold_val);
           lower_threshold->setRate (rate);
 
+          upper_threshold->setValue (upper_threshold_val);
           upper_threshold_check_box->setCheckState (num_upper_threshold ?
               ( num_upper_threshold == indices.size() ?
                 Qt::Checked :
                 Qt::PartiallyChecked ) : 
               Qt::Unchecked);
-          upper_threshold->setValue (upper_threshold_val);
           upper_threshold->setRate (rate);
         }
 
