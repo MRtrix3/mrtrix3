@@ -260,7 +260,6 @@ class SetVoxelExtras
   public:
     float factor; // For TWI, when contribution to the map is uniform along the length of the track
     size_t index; // Index of the track
-    float weight; // Cross-sectional multiplier for the track
 };
 
 
