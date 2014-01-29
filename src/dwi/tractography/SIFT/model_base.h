@@ -111,7 +111,7 @@ namespace MR
           void       clear_TD   ()                    { TD = 0.0; }
 
           double get_diff (const double mu) const { return ((TD * mu) - FOD); }
-          double get_cost (const double mu) const { return get_cost_unweighted        (mu) * weight; }
+          double get_cost (const double mu) const { return get_cost_unweighted (mu) * weight; }
 
 
         protected:
@@ -170,6 +170,7 @@ namespace MR
           bool have_act_data() const { return act_4tt; }
 
           void output_proc_mask (const std::string&);
+          void output_4tt_image (const std::string&);
           void output_all_debug_images (const std::string&) const;
 
           using Mapping::Fixel_TD_map<Fixel>::begin;
@@ -200,7 +201,7 @@ namespace MR
           void output_untracked_fixels (const std::string&, const std::string&) const;
 
 
-          ModelBase (const ModelBase& that) : Mapping::Fixel_TD_map<Fixel> (that), act_4tt (NULL), proc_mask (that.proc_mask.info()), FOD_sum (0.0), TD_sum (0.0) { assert (0); }
+          ModelBase (const ModelBase& that) : Mapping::Fixel_TD_map<Fixel> (that), act_4tt (NULL), proc_mask (that.proc_mask.info()), FOD_sum (0.0), TD_sum (0.0), have_null_lobes (false) { assert (0); }
 
       };
 
@@ -225,8 +226,12 @@ namespace MR
       template <class Fixel>
       void ModelBase<Fixel>::scale_FODs_by_GM ()
       {
-        if (App::get_options("no_fod_scaling").size() || !act_4tt)
+        if (App::get_options("no_fod_scaling").size())
           return;
+        if (!act_4tt) {
+          INFO ("Cannot scale FOD amplitudes according to GM fraction; no ACT image data provided");
+          return;
+        }
         // Loop through voxels, getting total GM fraction for each, and scale all fixels in each voxel
         VoxelAccessor v (accessor);
         Image::BufferScratch<float>::voxel_type v_anat (*act_4tt);
@@ -302,6 +307,16 @@ namespace MR
       void ModelBase<Fixel>::output_proc_mask (const std::string& path)
       {
         Image::BufferScratch<float>::voxel_type v (proc_mask);
+        v.save (path);
+      }
+
+
+      template <class Fixel>
+      void ModelBase<Fixel>::output_4tt_image (const std::string& path)
+      {
+        if (!have_act_data())
+          throw Exception ("Cannot export 4TT image; none exists!");
+        Image::BufferScratch<float>::voxel_type v (*act_4tt);
         v.save (path);
       }
 

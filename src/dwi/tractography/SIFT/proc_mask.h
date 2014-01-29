@@ -67,7 +67,7 @@ namespace MR
 
 
       template <class Set>
-      void initialise_processing_mask (Set& in_dwi, Image::BufferScratch<float>& proc_mask, Image::BufferScratch<float>* act_4tt)
+      void initialise_processing_mask (Set& in_dwi, Image::BufferScratch<float>& proc_mask, Ptr< Image::BufferScratch<float> >& act_4tt)
       {
 
         Image::BufferScratch<float>::voxel_type mask (proc_mask);
@@ -95,13 +95,21 @@ namespace MR
             info_4tt.set_ndim (4);
             info_4tt.dim(3) = 4;
             act_4tt = new Image::BufferScratch<float> (info_4tt);
+            Image::BufferScratch<float>::voxel_type v_4tt (*act_4tt);
 
-            Image::ThreadedLoop threaded_loop ("resampling ACT 4TT image to fixel image space...", in_dwi, 1, 0, 3);
-            ResampleFunctor<Set> functor (in_dwi, in_anat, *act_4tt);
-            threaded_loop.run (functor);
+            // Test to see if the image has already been re-gridded to match the fixel image
+            // If it has, can do a direct import
+            if (Image::dimensions_match (v_4tt, in_anat, 0, 3)) {
+              INFO ("4TT image dimensions match fixel image - importing directly");
+              Image::Buffer<float>::voxel_type v_anat (in_anat);
+              Image::copy (v_anat, v_4tt);
+            } else {
+              Image::ThreadedLoop threaded_loop ("resampling ACT 4TT image to fixel image space...", in_dwi, 1, 0, 3);
+              ResampleFunctor<Set> functor (in_dwi, in_anat, *act_4tt);
+              threaded_loop.run (functor);
+            }
 
             // Once all of the 4TT data has been read in, use it to derive the processing mask
-            Image::BufferScratch<float>::voxel_type v_4tt (*act_4tt);
             Image::LoopInOrder loop (v_4tt, 0, 3);
             v_4tt[3] = 2; // Access the WM fraction
             for (loop.start (v_4tt, mask); loop.ok(); loop.next (v_4tt, mask))

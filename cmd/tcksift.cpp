@@ -88,8 +88,11 @@ void run ()
 
   SIFTer sifter (in_dwi, dirs);
 
-  if (out_debug)
+  if (out_debug) {
     sifter.output_proc_mask ("proc_mask.mif");
+    if (get_options("act").size())
+      sifter.output_4tt_image ("4tt.mif");
+  }
 
   sifter.perform_FOD_segmentation (in_dwi);
   sifter.scale_FODs_by_GM();
