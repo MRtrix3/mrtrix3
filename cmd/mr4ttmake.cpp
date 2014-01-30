@@ -110,14 +110,14 @@ void run ()
     v_out[3] = 3; v_out.value() = csf;
     float sum = csf;
 
-    // Sub-cortical grey matter masks FAST grey and white matter, up to its own value
-    sgm = MIN (sgm, 1.0 - csf);
+    // Sub-cortical grey matter masks grey and white matter, but do not exceed 1 if it overlaps with CSF
+    sgm = std::min (sgm, float(1.0) - csf);
     v_out[3] = 1; v_out.value() = sgm;
     sum += sgm;
 
     // Normalise WM and CGM so sum is always 1.0
-    const float gm_wm_multiplier = (Math::abs (cgm + wm) <= std::numeric_limits<float>::epsilon()) ? 0.0 : ((1.0 - sum) / (cgm + wm));
-    wm *=  gm_wm_multiplier;
+    const float gm_wm_multiplier = ((cgm + wm) <= std::numeric_limits<float>::epsilon()) ? 0.0 : ((1.0 - sum) / (cgm + wm));
+    wm  *= gm_wm_multiplier;
     cgm *= gm_wm_multiplier;
     v_out[3] = 0; v_out.value() = cgm;
     v_out[3] = 2; v_out.value() = wm;

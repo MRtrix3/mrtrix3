@@ -212,16 +212,16 @@ namespace MR
 
               const Point<float> p_scanner (transform_dwi->voxel2scanner (subvoxel_pos_dwi));
               if (!interp_anat.scanner (p_scanner)) {
+                const Tractography::ACT::Tissues tissues (interp_anat);
                 ++total_count;
-                Tractography::ACT::Tissues tissues (interp_anat);
                 if (tissues.valid()) {
-                  if (tissues.get_cgm() > tissues.get_sgm() + tissues.get_wm() + tissues.get_csf())
+                  if (tissues.is_cgm())
                     ++cgm_count;
-                  else if (tissues.get_sgm() > tissues.get_cgm() + tissues.get_wm() + tissues.get_csf())
+                  else if (tissues.is_sgm())
                     ++sgm_count;
-                  else if (tissues.get_wm() > tissues.get_gm() + tissues.get_csf())
+                  else if (tissues.is_wm())
                     ++wm_count;
-                  else if (tissues.get_csf() > tissues.get_gm() + tissues.get_wm())
+                  else
                     ++csf_count;
                 }
               }

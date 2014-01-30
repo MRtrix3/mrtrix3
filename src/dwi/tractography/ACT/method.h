@@ -68,11 +68,11 @@ namespace MR
               if (!fetch_tissue_data (pos))
                 return EXIT_IMAGE;
 
-              if (tissues().is_fluid())
+              if (tissues().is_csf())
                 return (sgm_depth ? EXIT_SGM : ENTER_CSF);
 
-              if (tissues().get_gm() > tissues().get_wm()) {
-                if (tissues().get_cgm() > tissues().get_sgm())
+              if (tissues().is_gm()) {
+                if (tissues().get_cgm() >= tissues().get_sgm())
                   return ENTER_CGM;
                 ++sgm_depth;
               } else if (sgm_depth) {
@@ -88,7 +88,7 @@ namespace MR
               if (!fetch_tissue_data (pos))
                 return false;
 
-              if ((tissues().is_fluid()) || !tissues().get_wm() || ((tissues().get_gm() - tissues().get_wm()) >= GMWMI_ACCURACY))
+              if ((tissues().is_csf()) || !tissues().get_wm() || ((tissues().get_gm() - tissues().get_wm()) >= GMWMI_ACCURACY))
                 return false;
 
               return true;

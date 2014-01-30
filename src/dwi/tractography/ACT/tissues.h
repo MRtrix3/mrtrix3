@@ -106,13 +106,19 @@ namespace MR
 
             bool valid() const { return is_valid; }
 
-            float get_cgm () const { return cgm; }
-            float get_sgm () const { return sgm; }
-            float get_wm  () const { return wm; }
-            float get_csf () const { return csf; }
+            float get_cgm() const { return cgm; }
+            float get_sgm() const { return sgm; }
+            float get_wm () const { return wm; }
+            float get_csf() const { return csf; }
 
-            float get_gm  () const { return (cgm + sgm); }
-            bool is_fluid () const { return (csf >= (cgm + sgm + wm)); }
+            float get_gm () const { return (cgm + sgm); }
+
+            bool is_cgm() const { return ((cgm >= sgm) && (cgm >= wm ) && (cgm >  csf)); }
+            bool is_sgm() const { return ((sgm >  cgm) && (sgm >= wm ) && (sgm >  csf)); }
+            bool is_wm () const { return ((wm  >  cgm) && (wm  >  sgm) && (wm  >  csf)); }
+            bool is_csf() const { return ((csf >= cgm) && (csf >= sgm) && (csf >= wm )); }
+
+            bool is_gm() const { return ((get_gm() >= wm) && (get_gm() > csf)); }
 
           private:
             float cgm, sgm, wm, csf;
