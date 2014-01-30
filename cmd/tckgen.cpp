@@ -31,7 +31,6 @@
 
 #include "dwi/tractography/algorithms/fact.h"
 #include "dwi/tractography/algorithms/iFOD1.h"
-#include "dwi/tractography/algorithms/iFOD2.h"
 #include "dwi/tractography/algorithms/nulldist.h"
 #include "dwi/tractography/algorithms/sd_stream.h"
 #include "dwi/tractography/algorithms/seedtest.h"
@@ -48,7 +47,7 @@ using namespace App;
 
 
 
-const char* algorithms[] = { "fact", "ifod1", "ifod2", "nulldist", "sd_stream", "seedtest", "vecstream", "wbfact", NULL };
+const char* algorithms[] = { "fact", "ifod1", "nulldist", "sd_stream", "seedtest", "vecstream", "wbfact", NULL };
 
 
 void usage ()
@@ -63,7 +62,7 @@ void usage ()
   + Argument ("source",
               "the image containing the source data. The type of data depends on the algorithm used:\n"
               "- FACT / WBFACT: the DWI image.\n"
-              "- iFOD1/2 & SD_Stream: the SH image resulting from CSD.\n"
+              "- iFOD1 & SD_Stream: the SH image resulting from CSD.\n"
               "- Nulldist & SeedTest: any image (will not be used).\n"
               "- VecStream (& variants): the directions file."
              ).type_image_in()
@@ -76,7 +75,7 @@ void usage ()
 
   + Option ("algorithm",
             "specify the tractography algorithm to use. Valid choices are: "
-              "FACT, iFOD1, iFOD2, Nulldist, SD_Stream, Seedtest, VecStream, WBFACT (default: iFOD2).")
+              "FACT, iFOD1, Nulldist, SD_Stream, Seedtest, VecStream, WBFACT (default: iFOD1).")
     + Argument ("name").type_choice (algorithms, 2)
 
   + DWI::Tractography::TrackOption
@@ -94,7 +93,7 @@ void run ()
 
   Properties properties;
 
-  int algorithm = 2; // default = ifod2
+  int algorithm = 1; // default = ifod1
   Options opt = get_options ("algorithm");
   if (opt.size()) algorithm = opt[0][0];
 
@@ -124,21 +123,18 @@ void run ()
       Exec<iFOD1>    ::run (argument[0], argument[1], properties);
       break;
     case 2:
-      Exec<iFOD2>    ::run (argument[0], argument[1], properties);
-      break;
-    case 3:
       Exec<NullDist> ::run (argument[0], argument[1], properties);
       break;
-    case 4:
+    case 3:
       Exec<SDStream> ::run (argument[0], argument[1], properties);
       break;
-    case 5:
+    case 4:
       Exec<Seedtest> ::run (argument[0], argument[1], properties);
       break;
-    case 6:
+    case 5:
       Exec<VecStream>::run (argument[0], argument[1], properties);
       break;
-    case 7:
+    case 6:
       Exec<WBFACT>   ::run (argument[0], argument[1], properties);
       break;
     default:
