@@ -189,6 +189,16 @@ namespace MR
           VecPtr<MR::Image::Header> list;
           for (size_t n = 0; n < overlay_names.size(); ++n)
             list.push_back (new MR::Image::Header (overlay_names[n]));
+
+          add_images (list);
+        }
+
+
+
+
+
+        void Overlay::add_images (VecPtr<MR::Image::Header>& list) 
+        {
           size_t previous_size = image_list_model->rowCount();
           image_list_model->add_items (list);
 
@@ -452,7 +462,7 @@ namespace MR
             VecPtr<MR::Image::Header> list;
             try { list.push_back (new MR::Image::Header (args)); }
             catch (Exception& e) { e.display(); }
-            image_list_model->add_items (list);
+            add_images (list);
             return true;
           }
 
