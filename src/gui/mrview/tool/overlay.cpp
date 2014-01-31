@@ -238,6 +238,7 @@ namespace MR
               need_to_update |= !std::isfinite (image->intensity_min());
               image->set_interpolate (interpolate_check_box->isChecked());
               image->alpha = overlay_opacity;
+              image->transparent_intensity = image->opaque_intensity = image->intensity_min();
               if (is_3D) 
                 window.get_current_mode()->overlays_for_3D.push_back (image);
               else
@@ -436,6 +437,12 @@ namespace MR
               Qt::Unchecked);
           upper_threshold->setRate (rate);
         }
+
+
+
+
+
+
 
         bool Overlay::process_batch_command (const std::string& cmd, const std::string& args)
         {
