@@ -247,6 +247,13 @@ namespace MR
 
           if (need_to_update)
             update_selection();
+
+          if (!is_3D) {
+            // restore up OpenGL environment:
+            gl::Disable (gl::BLEND);
+            gl::Enable (gl::DEPTH_TEST);
+            gl::DepthMask (gl::TRUE_);
+          }
         }
 
 

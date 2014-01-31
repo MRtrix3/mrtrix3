@@ -55,7 +55,8 @@ namespace MR
         QGLWidget (GL::core_format(), parent),
         view_angle (40.0), distance (0.3), line_width (1.0), scale (1.0), 
         lmax_computed (0), lod_computed (0), recompute_mesh (true), recompute_amplitudes (true), 
-        show_axes (true), hide_neg_lobes (true), color_by_dir (true), use_lighting (true), font (parent->font()), projection (this, font),
+        show_axes (true), hide_neg_lobes (true), color_by_dir (true), use_lighting (true), 
+        normalise (false), font (parent->font()), projection (this, font),
         focus (0.0, 0.0, 0.0), framebuffer (NULL), OS (0), OS_x (0), OS_y (0)
       {
         setMinimumSize (128, 128);
