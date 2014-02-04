@@ -185,19 +185,17 @@ void run ()
   update_output_step_size (properties, upsample, downsample);
   Receiver receiver (output_path, properties, count, number, skip);
 
-  // FIXME Batched multi-threading seems to be hanging
-  //Thread::run_batched_queue_threaded_pipe (loader, Tractography::TrackData<>(), 100, worker, Tractography::TrackData<>(), 100, receiver);
-
-  // Standard multi-threading works OK
-  Thread::run_queue_threaded_pipe (loader, Tractography::TrackData<>(), worker, Tractography::TrackData<>(), receiver);
-
-  // Single-threading for debugging purposes
-/*
-  Tractography::TrackData<> tck1, tck2;
-  while (loader (tck1)) {
-    worker (tck1, tck2);
-    if (!receiver (tck2))
-      break;
+  if (Thread::number_of_threads() == 1) {
+    Tractography::TrackData<> tck1, tck2;
+    while (loader (tck1)) {
+      worker (tck1, tck2);
+      if (!receiver (tck2))
+        break;
+    }
+  } else if (number && number <= 100000 && (number/float(count) <= 0.1)) {
+    Thread::run_queue_threaded_pipe (loader, Tractography::TrackData<>(), worker, Tractography::TrackData<>(), receiver);
+  } else {
+    Thread::run_batched_queue_threaded_pipe (loader, Tractography::TrackData<>(), 100, worker, Tractography::TrackData<>(), 100, receiver);
   }
-*/
+
 }
