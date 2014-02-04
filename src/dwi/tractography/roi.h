@@ -136,13 +136,13 @@ namespace MR
           const ROI& operator[] (size_t i) const { return (R[i]); }
           void add (const ROI& roi) { R.push_back (roi); }
 
-          bool contains (const Point<>& p) {
+          bool contains (const Point<>& p) const {
             for (size_t n = 0; n < R.size(); ++n)
               if (R[n].contains (p)) return (true);
             return (false);
           }
 
-          void contains (const Point<>& p, std::vector<bool>& retval) {
+          void contains (const Point<>& p, std::vector<bool>& retval) const {
             for (size_t n = 0; n < R.size(); ++n)
               if (R[n].contains (p)) retval[n] = true;
           }
