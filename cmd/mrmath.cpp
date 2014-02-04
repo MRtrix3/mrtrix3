@@ -300,6 +300,9 @@ void run ()
 
     PreloadBufferType buffer_in (argument[0], Image::Stride::contiguous_along_axis (axis));
 
+    if (axis >= buffer_in.ndim())
+      throw Exception ("Cannot perform operation along axis " + str (axis) + "; image only has " + str(buffer_in.ndim()) + " axes");
+
     Image::Header header_out (buffer_in);
     header_out.datatype() = DataType::Float32;
     header_out.dim(axis) = 1;
