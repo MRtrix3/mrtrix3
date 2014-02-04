@@ -24,10 +24,11 @@
 #include "command.h"
 #include "image/voxel.h"
 
-#include "dwi/tractography/exec.h"
-#include "dwi/tractography/method.h"
 #include "dwi/tractography/properties.h"
-#include "dwi/tractography/tractography.h"
+
+#include "dwi/tractography/tracking/exec.h"
+#include "dwi/tractography/tracking/method.h"
+#include "dwi/tractography/tracking/tractography.h"
 
 #include "dwi/tractography/ACT/act.h"
 
@@ -81,7 +82,7 @@ void usage ()
               "FACT, iFOD1, iFOD2, Nulldist, SD_Stream, Seedtest, VecStream, WBFACT (default: iFOD2).")
     + Argument ("name").type_choice (algorithms, 2)
 
-  + DWI::Tractography::TrackOption
+  + DWI::Tractography::Tracking::TrackOption
 
   + DWI::Tractography::ACT::ACTOption
 
@@ -95,6 +96,8 @@ void run ()
 {
 
   using namespace DWI::Tractography;
+  using namespace DWI::Tractography::Tracking;
+  using namespace DWI::Tractography::Algorithms;
 
   Properties properties;
 
@@ -102,7 +105,7 @@ void run ()
   Options opt = get_options ("algorithm");
   if (opt.size()) algorithm = opt[0][0];
 
-  load_streamline_properties (properties);
+  Tracking::load_streamline_properties (properties);
 
   ACT::load_act_properties (properties);
 

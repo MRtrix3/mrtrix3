@@ -20,8 +20,8 @@
 
 */
 
-#ifndef __dwi_tractography_exec_h__
-#define __dwi_tractography_exec_h__
+#ifndef __dwi_tractography_tracking_exec_h__
+#define __dwi_tractography_tracking_exec_h__
 
 
 #include "thread/exec.h"
@@ -29,9 +29,12 @@
 
 #include "dwi/directions/set.h"
 
-#include "dwi/tractography/file.h"
-#include "dwi/tractography/method.h"
-#include "dwi/tractography/shared.h"
+#include "dwi/tractography/track_data.h"
+
+#include "dwi/tractography/tracking/generated_track.h"
+#include "dwi/tractography/tracking/method.h"
+#include "dwi/tractography/tracking/shared.h"
+#include "dwi/tractography/tracking/write_kernel.h"
 
 #include "dwi/tractography/mapping/mapper.h"
 #include "dwi/tractography/mapping/mapping.h"
@@ -50,82 +53,8 @@ namespace MR
   {
     namespace Tractography
     {
-
-
-
-#define UPDATE_INTERVAL 0.0333333 // 30 Hz - most monitors are 60Hz
-
-
-
-      class WriteKernel
+      namespace Tracking
       {
-        public:
-
-          WriteKernel (const SharedBase& shared,
-              const std::string& output_file,
-              DWI::Tractography::Properties& properties) :
-                S (shared),
-                writer (output_file, properties),
-                next_time (timer.elapsed())
-          {
-            if (properties.find ("seed_output") != properties.end()) {
-              seeds = new std::ofstream (properties["seed_output"].c_str(), std::ios_base::trunc);
-              (*seeds) << "#Track_index,Seed_index,Pos_x,Pos_y,Pos_z,\n";
-            }
-          }
-
-          ~WriteKernel ()
-          {
-            if (App::log_level > 0)
-              fprintf (stderr, "\r%8zu generated, %8zu selected    [100%%]\n", writer.total_count, writer.count);
-            if (seeds) {
-              (*seeds) << "\n";
-              seeds->close();
-            }
-
-          }
-
-          bool operator() (const GeneratedTrack& tck)
-          {
-            if (complete())
-              return false;
-            if (tck.size() && seeds) {
-              const Point<float>& p = tck[tck.get_seed_index()];
-              (*seeds) << str(writer.count) << "," << str(tck.get_seed_index()) << "," << str(p[0]) << "," << str(p[1]) << "," << str(p[2]) << ",\n";
-            }
-            writer.append (tck);
-            if (App::log_level > 0 && timer.elapsed() >= next_time) {
-              next_time += UPDATE_INTERVAL;
-              fprintf (stderr, "\r%8zu generated, %8zu selected    [%3d%%]",
-                  writer.total_count, writer.count,
-                  (int(100.0 * std::max (writer.total_count/float(S.max_num_attempts), writer.count/float(S.max_num_tracks)))));
-            }
-            return true;
-          }
-
-          bool operator() (const GeneratedTrack& in, Tractography::TrackData<float>& out)
-          {
-            out.index = writer.count;
-            out.weight = 1.0;
-            if (!operator() (in))
-              return false;
-            out = in;
-            return true;
-          }
-
-
-          bool complete() const { return (writer.count >= S.max_num_tracks || writer.total_count >= S.max_num_attempts); }
-
-
-        private:
-          const SharedBase& S;
-          Writer<value_type> writer;
-          Ptr<std::ofstream> seeds;
-          Timer timer;
-          double next_time;
-      };
-
-
 
 
       // TODO Try having ACT as a template boolean; allow compiler to optimise out branch statements
@@ -213,8 +142,7 @@ namespace MR
               return false;
             if (track_rejected (item))
               item.clear();
-            else if (S.downsample > 1)
-              downsample_track (item, S.downsample);
+            S.downsampler (item);
             return true;
           }
 
@@ -576,26 +504,6 @@ namespace MR
 
 
 
-          void downsample_track (GeneratedTrack& tck, const int factor)
-          {
-            size_t index_old = factor;
-            if (tck.get_seed_index()) {
-              index_old = (((tck.get_seed_index() - 1) % factor) + 1);
-              tck.set_seed_index (1 + ((tck.get_seed_index() - index_old) / factor));
-            }
-            size_t index_new = 1;
-            while (index_old < tck.size() - 1) {
-              tck[index_new++] = tck[index_old];
-              index_old += factor;
-            }
-            tck[index_new] = tck.back();
-            tck.resize (index_new + 1);
-          }
-
-
-
-
-
       };
 
 
@@ -606,7 +514,7 @@ namespace MR
 
 
 
-
+      }
     }
   }
 }

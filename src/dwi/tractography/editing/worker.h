@@ -29,12 +29,9 @@
 
 #include "point.h"
 
-#include "dwi/tractography/file.h"
 #include "dwi/tractography/properties.h"
-
-#include "dwi/tractography/mapping/upsampler.h"
-
-#include "dwi/tractography/editing/downsampler.h"
+#include "dwi/tractography/resample.h"
+#include "dwi/tractography/track_data.h"
 
 
 
@@ -70,7 +67,7 @@ class Worker
 
   private:
     const Tractography::Properties& properties;
-    Mapping::Upsampler<float> upsampler;
+    Upsampler<> upsampler;
     Downsampler downsampler;
 
     class Thresholds

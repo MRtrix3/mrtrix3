@@ -28,6 +28,7 @@
 #include "ptr.h"
 #include "thread/queue.h"
 #include "dwi/tractography/file.h"
+#include "dwi/tractography/track_data.h"
 
 
 namespace MR {

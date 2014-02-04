@@ -33,6 +33,7 @@
 #include "file/key_value.h"
 #include "dwi/tractography/file_base.h"
 #include "dwi/tractography/properties.h"
+#include "dwi/tractography/track_data.h"
 #include "math/vector.h"
 
 
@@ -42,24 +43,6 @@ namespace MR
   {
     namespace Tractography
     {
-
-
-      template <typename T = float>
-      class TrackData : public std::vector< Point<T> >
-      {
-        public:
-          typedef T value_type;
-          TrackData () :
-              std::vector< Point<value_type> > (),
-              index (-1),
-              weight (value_type (1.0)) { }
-          TrackData (const std::vector< Point<value_type> >& tck) :
-              std::vector< Point<value_type> > (tck),
-              index (-1),
-              weight (1.0) { }
-          size_t index;
-          value_type weight;
-      };
 
 
       template <typename T = float> 

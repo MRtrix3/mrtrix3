@@ -1,4 +1,4 @@
-#include "dwi/tractography/tractography.h"
+#include "dwi/tractography/tracking/tractography.h"
 
 #define MAX_TRIALS 1000
 
@@ -8,6 +8,8 @@ namespace MR
   {
     namespace Tractography
     {
+      namespace Tracking
+      {
 
       using namespace App;
 
@@ -44,7 +46,7 @@ namespace MR
           + Argument ("size").type_float (0.0, 0.0, INFINITY)
 
       + Option ("angle",
-            "set the maximum angle between successive steps (default is 90° x stepsize / voxelsize).")
+            "set the maximum angle between successive steps (default is 90deg x stepsize / voxelsize).")
           + Argument ("theta").type_float (0.0, 90.0, 90.0)
 
       + Option ("number",
@@ -184,6 +186,7 @@ namespace MR
 
 
 
+      }
     }
   }
 }

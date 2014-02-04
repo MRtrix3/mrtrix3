@@ -1,7 +1,7 @@
 /*
     Copyright 2011 Brain Research Institute, Melbourne, Australia
 
-    Written by Robert E. Smith, 2014.
+    Written by Robert E. Smith, 2011.
 
     This file is part of MRtrix.
 
@@ -20,23 +20,25 @@
 
 */
 
-
-#include "dwi/tractography/editing/downsampler.h"
-
+#include "dwi/tractography/resample.h"
 
 
 namespace MR {
 namespace DWI {
 namespace Tractography {
-namespace Editing {
 
 
 
 
-bool Downsampler::operator() (std::vector< Point<float> >& tck) const
+bool Downsampler::operator() (Tracking::GeneratedTrack& tck) const
 {
-  const size_t midpoint = tck.size()/2;
-  size_t index_old = (((midpoint - 1) % ratio) + 1);
+  if (ratio <= 1 || tck.empty())
+    return false;
+  size_t index_old = ratio;
+  if (tck.get_seed_index()) {
+    index_old = (((tck.get_seed_index() - 1) % ratio) + 1);
+    tck.set_seed_index (1 + ((tck.get_seed_index() - index_old) / ratio));
+  }
   size_t index_new = 1;
   while (index_old < tck.size() - 1) {
     tck[index_new++] = tck[index_old];
@@ -54,5 +56,5 @@ bool Downsampler::operator() (std::vector< Point<float> >& tck) const
 }
 }
 }
-}
+
 

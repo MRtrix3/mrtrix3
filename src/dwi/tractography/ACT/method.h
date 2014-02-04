@@ -30,6 +30,9 @@
 #include "dwi/tractography/ACT/act.h"
 #include "dwi/tractography/ACT/tissues.h"
 
+#include "dwi/tractography/tracking/shared.h"
+#include "dwi/tractography/tracking/types.h"
+
 #include "image/interp/linear.h"
 
 
@@ -47,6 +50,8 @@ namespace MR
       {
 
 
+      using namespace MR::DWI::Tractography::Tracking;
+
         class ACT_Method_additions {
 
           public:
@@ -58,7 +63,7 @@ namespace MR
             const Tissues& tissues() const { return tissue_values; }
 
 
-            term_t check_structural (const Point<float>& pos)
+            term_t check_structural (const Point<value_type>& pos)
             {
               if (!fetch_tissue_data (pos))
                 return EXIT_IMAGE;
@@ -78,7 +83,7 @@ namespace MR
             }
 
 
-            bool check_seed (const Point<float>& pos)
+            bool check_seed (const Point<value_type>& pos)
             {
               if (!fetch_tissue_data (pos))
                 return false;
@@ -90,7 +95,7 @@ namespace MR
             }
 
 
-            bool seed_is_unidirectional (const Point<float>& pos, Point<float>& dir)
+            bool seed_is_unidirectional (const Point<value_type>& pos, Point<value_type>& dir)
             {
               // Tissue values should have already been acquired for the seed point when this function is run
               if ((tissues().get_wm() >= tissues().get_gm()) || (tissues().get_sgm() >= tissues().get_cgm()))

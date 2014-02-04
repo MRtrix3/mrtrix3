@@ -33,6 +33,7 @@
 
 #include "dwi/tractography/file.h"
 #include "dwi/tractography/properties.h"
+#include "dwi/tractography/track_data.h"
 #include "dwi/tractography/connectomics/connectomics.h"
 #include "dwi/tractography/connectomics/edge_metrics.h"
 #include "dwi/tractography/connectomics/tck2nodes.h"

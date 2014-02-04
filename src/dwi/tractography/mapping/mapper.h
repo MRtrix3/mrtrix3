@@ -40,11 +40,11 @@
 
 #include "image/interp/linear.h"
 
-#include "dwi/tractography/file.h"
+#include "dwi/tractography/resample.h"
+#include "dwi/tractography/track_data.h"
 
 #include "dwi/tractography/mapping/mapping.h"
 #include "dwi/tractography/mapping/twi_stats.h"
-#include "dwi/tractography/mapping/upsampler.h"
 #include "dwi/tractography/mapping/voxel.h"
 
 

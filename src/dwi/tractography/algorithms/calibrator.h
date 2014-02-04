@@ -20,12 +20,13 @@
 
 */
 
-#ifndef __dwi_tractography_iFOD_calibrator_h__
-#define __dwi_tractography_iFOD_calibrator_h__
+#ifndef __dwi_tractography_algorithms_iFOD_calibrator_h__
+#define __dwi_tractography_algorithms_iFOD_calibrator_h__
 
 #include "point.h"
 #include "math/SH.h"
-#include "dwi/tractography/shared.h"
+#include "dwi/tractography/tracking/shared.h"
+#include "dwi/tractography/tracking/types.h"
 
 #define SQRT_3_OVER_2 0.866025403784439
 #define NUM_CALIBRATE 1000
@@ -33,6 +34,9 @@
 namespace MR {
   namespace DWI {
     namespace Tractography {
+      namespace Algorithms {
+
+      using namespace MR::DWI::Tractography::Tracking;
 
       template <typename value_type>
         std::vector<Point<value_type> > direction_grid (value_type max_angle, value_type spacing)
@@ -100,8 +104,8 @@ namespace MR {
               + " directions with a ratio of " + str (method.calibrate_ratio) + " (predicted number of samples per step = " + str (N_min) + ")");
         }
 
-      
 
+      }
     }
   }
 }

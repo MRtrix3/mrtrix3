@@ -30,6 +30,7 @@
 
 #include "dwi/tractography/file.h"
 #include "dwi/tractography/properties.h"
+#include "dwi/tractography/track_data.h"
 
 
 namespace MR {

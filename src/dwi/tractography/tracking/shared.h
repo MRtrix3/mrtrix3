@@ -20,20 +20,22 @@
 
  */
 
-#ifndef __dwi_tractography_shared_h__
-#define __dwi_tractography_shared_h__
+#ifndef __dwi_tractography_tracking_shared_h__
+#define __dwi_tractography_tracking_shared_h__
 
 #include <vector>
 
 #include "image/nav.h"
 
 #include "point.h"
-#include "image/buffer_preload.h"
+
 #include "image/header.h"
 #include "image/transform.h"
 #include "dwi/tractography/properties.h"
+#include "dwi/tractography/resample.h"
 #include "dwi/tractography/roi.h"
 #include "dwi/tractography/ACT/shared.h"
+#include "dwi/tractography/tracking/types.h"
 
 #define MAX_TRIALS 1000
 
@@ -48,20 +50,8 @@ namespace MR
   {
     namespace Tractography
     {
-
-
-
-    enum term_t { CONTINUE, ENTER_CGM, CALIBRATE_FAIL, EXIT_IMAGE, ENTER_CSF, BAD_SIGNAL, HIGH_CURVATURE, LENGTH_EXCEED, TERM_IN_SGM, EXIT_SGM, EXIT_MASK, ENTER_EXCLUDE };
-#define TERMINATION_REASON_COUNT 12
-
-    // This lookup table specifies whether or not the most recent position should be added to the end of the streamline,
-    //   based on what mechanism caused the termination
-    const uint8_t term_add_to_tck[TERMINATION_REASON_COUNT] = { 1, 1, 0, 1, 1, 0, 0, 1, 0, 0, 0, 1 };
-
-    enum reject_t { TRACK_TOO_SHORT, TRACK_TOO_LONG, ENTER_EXCLUDE_REGION, MISSED_INCLUDE_REGION, ACT_POOR_TERMINATION, ACT_FAILED_WM_REQUIREMENT };
-#define REJECTION_REASON_COUNT 6
-
-
+      namespace Tracking
+      {
 
 
 
@@ -73,31 +63,6 @@ namespace MR
         return S;
       }
     }
-
-
-    typedef Image::BufferPreload<float> SourceBufferType;
-    typedef SourceBufferType::value_type value_type;
-
-
-    // Using value_type instead of float here confuses the compiler...
-    class GeneratedTrack : public std::vector< Point<float> > {
-        typedef std::vector< Point<float> > BaseType;
-      public:
-        GeneratedTrack() : seed_index (0) { }
-        void clear() { BaseType::clear(); seed_index = 0; }
-        size_t get_seed_index() const { return seed_index; }
-        void reverse() { std::reverse (begin(), end()); seed_index = size()-1; }
-        void set_seed_index (const size_t i) { seed_index = i; }
-      private:
-        size_t seed_index;
-    };
-
-
-    template <class VoxelType>
-    class Interpolator {
-      public:
-        typedef Image::Interp::Linear<VoxelType> type;
-    };
 
 
 
@@ -120,7 +85,7 @@ namespace MR
           threshold (0.1),
           unidirectional (false),
           rk4 (false),
-          downsample (1)
+          downsampler ()
 #ifdef DEBUG_TERMINATIONS
         , debug_header       (properties.find ("act") == properties.end() ? diff_path : properties["act"]),
           transform          (debug_header)
@@ -131,9 +96,6 @@ namespace MR
           properties.set (unidirectional, "unidirectional");
           properties.set (max_num_tracks, "max_num_tracks");
           properties.set (rk4, "rk4");
-
-          if (properties.find ("downsample_factor") != properties.end())
-            downsample = to<int> (properties["downsample_factor"]);
 
           properties["source"] = source_buffer.name();
 
@@ -154,6 +116,9 @@ namespace MR
 
           if (properties.find ("act") != properties.end())
             act_shared_additions = new ACT::ACT_Shared_additions (properties["act"], property_set);
+
+          if (properties.find ("downsample_factor") != properties.end())
+            downsampler.set_ratio (to<int> (properties["downsample_factor"]));
 
           for (size_t i = 0; i != TERMINATION_REASON_COUNT; ++i)
             terminations[i] = 0;
@@ -250,7 +215,7 @@ namespace MR
         value_type step_size, threshold, init_threshold;
         bool unidirectional;
         bool rk4;
-        int downsample;
+        Downsampler downsampler;
 
         // Additional members for ACT
         bool is_act() const { return act_shared_additions; }
@@ -269,8 +234,8 @@ namespace MR
           properties.set (step_size, "step_size");
           INFO ("step size = " + str (step_size) + " mm");
 
-          if (downsample > 1)
-            properties["output_step_size"] = str (step_size * downsample);
+          if (downsampler.get_ratio() > 1)
+            properties["output_step_size"] = str (step_size * downsampler.get_ratio());
 
           value_type max_dist = 100.0 * vox();
           properties.set (max_dist, "max_dist");
@@ -334,6 +299,7 @@ namespace MR
 
     };
 
+      }
     }
   }
 }

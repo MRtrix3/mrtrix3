@@ -20,8 +20,8 @@
 
 */
 
-#ifndef __dwi_tractography_tractography_h__
-#define __dwi_tractography_tractography_h__
+#ifndef __dwi_tractography_tracking_tractography_h__
+#define __dwi_tractography_tracking_tractography_h__
 
 #include "app.h"
 #include "point.h"
@@ -38,10 +38,14 @@ namespace MR
     namespace Tractography
     {
 
-      extern const App::OptionGroup TrackOption;
+      namespace Tracking
+      {
 
-      void load_streamline_properties (Properties&);
+        extern const App::OptionGroup TrackOption;
 
+        void load_streamline_properties (Properties&);
+
+      }
     }
   }
 }

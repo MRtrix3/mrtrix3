@@ -20,11 +20,11 @@
 
 */
 
-#ifndef __dwi_tractography_method_h__
-#define __dwi_tractography_method_h__
+#ifndef __dwi_tractography_tracking_method_h__
+#define __dwi_tractography_tracking_method_h__
 
 
-#include "dwi/tractography/shared.h"
+#include "dwi/tractography/tracking/shared.h"
 #include "dwi/tractography/ACT/method.h"
 
 
@@ -35,6 +35,8 @@ namespace MR
   {
     namespace Tractography
     {
+      namespace Tracking
+      {
 
 
 
@@ -175,6 +177,7 @@ namespace MR
     }
 
 
+      }
     }
   }
 }
