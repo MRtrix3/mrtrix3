@@ -35,7 +35,6 @@ namespace Editing {
 
 
 
-extern const App::OptionGroup ROIOption; // TODO Merge this with tractography?
 extern const App::OptionGroup LengthOption;
 extern const App::OptionGroup ResampleOption;
 extern const App::OptionGroup TruncateOption;

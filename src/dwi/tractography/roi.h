@@ -25,6 +25,7 @@
 #ifndef __dwi_tractography_roi_h__
 #define __dwi_tractography_roi_h__
 
+#include "app.h"
 #include "point.h"
 #include "ptr.h"
 
@@ -44,6 +45,11 @@ namespace MR
   {
     namespace Tractography
     {
+      class Properties;
+
+
+      extern const App::OptionGroup ROIOption;
+      void load_rois (Properties& properties);
 
 
       class Mask : public Image::BufferScratch<bool> {

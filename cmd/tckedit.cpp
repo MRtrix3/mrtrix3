@@ -27,10 +27,12 @@
 #include "exception.h"
 #include "mrtrix.h"
 
+#include "thread/exec.h"
 #include "thread/queue.h"
 
 #include "dwi/tractography/file.h"
 #include "dwi/tractography/properties.h"
+#include "dwi/tractography/roi.h"
 #include "dwi/tractography/weights.h"
 
 #include "dwi/tractography/editing/editing.h"
@@ -158,6 +160,8 @@ void run ()
 
   DEBUG ("estimated number of input tracks: " + str(count));
 
+  load_rois (properties);
+
   // Some properties from tracking may be overwritten by this editing process
   Editing::load_properties (properties);
 
@@ -196,5 +200,4 @@ void run ()
       break;
   }
 */
-
 }

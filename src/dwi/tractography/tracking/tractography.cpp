@@ -15,27 +15,6 @@ namespace MR
 
       const OptionGroup TrackOption = OptionGroup ("Streamlines tractography options")
 
-      + Option ("include",
-            "specify an inclusion region of interest, as either a binary mask image, "
-            "or as a sphere using 4 comma-separared values (x,y,z,radius). Streamlines "
-            "must traverse ALL inclusion regions to be accepted.")
-          .allow_multiple()
-          + Argument ("spec")
-
-      + Option ("exclude",
-            "specify an exclusion region of interest, as either a binary mask image, "
-            "or as a sphere using 4 comma-separared values (x,y,z,radius). Streamlines "
-            "that enter ANY exclude region will be discarded.")
-          .allow_multiple()
-          + Argument ("spec")
-
-      + Option ("mask",
-            "specify an inclusion region of interest, as either a binary mask image, "
-            "or as a sphere using 4 comma-separared values (x,y,z,radius). If defined, "
-            "streamlines will be terminated as soon as they no longer lie within a mask.")
-          .allow_multiple()
-          + Argument ("spec")
-
       + Option ("grad",
             "specify the diffusion encoding scheme (may be required for FACT "
             "and WBFACT, ignored otherwise)")

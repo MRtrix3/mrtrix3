@@ -21,6 +21,7 @@
 */
 
 
+#include "dwi/tractography/properties.h"
 #include "dwi/tractography/roi.h"
 #include "image/adapter/subset.h"
 #include "image/copy.h"
@@ -29,6 +30,54 @@
 namespace MR {
   namespace DWI {
     namespace Tractography {
+
+
+    using namespace App;
+
+
+    const OptionGroup ROIOption = OptionGroup ("Region Of Interest processing options")
+
+      + Option ("include",
+            "specify an inclusion region of interest, as either a binary mask image, "
+            "or as a sphere using 4 comma-separared values (x,y,z,radius). Streamlines "
+            "must traverse ALL inclusion regions to be accepted.")
+          .allow_multiple()
+          + Argument ("spec")
+
+      + Option ("exclude",
+            "specify an exclusion region of interest, as either a binary mask image, "
+            "or as a sphere using 4 comma-separared values (x,y,z,radius). Streamlines "
+            "that enter ANY exclude region will be discarded.")
+          .allow_multiple()
+          + Argument ("spec")
+
+      + Option ("mask",
+            "specify a masking region of interest, as either a binary mask image, "
+            "or as a sphere using 4 comma-separared values (x,y,z,radius). If defined, "
+            "streamlines exiting the mask will be truncated.")
+          .allow_multiple()
+          + Argument ("spec");
+
+
+
+      void load_rois (Properties& properties)
+      {
+        Options opt = get_options ("include");
+        for (size_t i = 0; i < opt.size(); ++i)
+          properties.include.add (ROI (opt[i][0]));
+
+        opt = get_options ("exclude");
+        for (size_t i = 0; i < opt.size(); ++i)
+          properties.exclude.add (ROI (opt[i][0]));
+
+        opt = get_options ("mask");
+        for (size_t i = 0; i < opt.size(); ++i)
+          properties.mask.add (ROI (opt[i][0]));
+      }
+
+
+
+
 
 
       Mask* get_mask (const std::string& name)

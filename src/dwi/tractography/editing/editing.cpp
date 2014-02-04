@@ -35,31 +35,6 @@ using namespace App;
 
 
 
-const OptionGroup ROIOption = OptionGroup ("Region Of Interest processing options")
-
-  + Option ("include",
-            "specify an inclusion region of interest, as either a binary mask image, "
-            "or as a sphere using 4 comma-separared values (x,y,z,radius). Streamlines "
-            "must traverse ALL inclusion regions to be accepted.")
-          .allow_multiple()
-    + Argument ("spec")
-
-  + Option ("exclude",
-            "specify an exclusion region of interest, as either a binary mask image, "
-            "or as a sphere using 4 comma-separared values (x,y,z,radius). Streamlines "
-            "that enter ANY exclude region will be discarded.")
-          .allow_multiple()
-    + Argument ("spec")
-
-  + Option ("mask",
-            "specify a masking region of interest, as either a binary mask image, "
-            "or as a sphere using 4 comma-separared values (x,y,z,radius). If defined, "
-            "streamline points outside of the mask will be erased.")
-          .allow_multiple()
-    + Argument ("spec");
-
-
-
 
 
 const OptionGroup LengthOption = OptionGroup ("Streamline length threshold options")
