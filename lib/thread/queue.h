@@ -615,7 +615,7 @@ namespace MR
              typename Queue<std::vector<Type> >::Writer writer;
              Ptr<Functor> funcp;
              Functor& func;
-             size_t N;
+             const size_t N;
          };
 
 
@@ -637,14 +637,14 @@ namespace MR
                out->resize (N);
                size_t n1 = 0, n2 = 0;
                if (!in.read()) goto flush;
-               if ((*in).empty()) goto flush;
+               if (in->empty()) goto flush;
                do {
                  if (!func ((*in)[n1], (*out)[n2])) goto flush;
                  ++n1;
                  ++n2;
                  if (n1 >= in->size()) {
                    if (!in.read()) goto flush;
-                   if ((*in).empty()) goto flush;
+                   if (in->empty()) goto flush;
                    n1 = 0;
                  }
                  if (n2 >= N) {
@@ -667,7 +667,7 @@ flush:
              typename Queue<std::vector<Type2> >::Writer writer;
              Ptr<Functor> funcp;
              Functor& func;
-             size_t N;
+             const size_t N;
          };
 
 

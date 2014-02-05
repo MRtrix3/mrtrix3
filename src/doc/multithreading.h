@@ -99,7 +99,7 @@ namespace MR
 
     This class might for example contain all the reconstruction parameters set
     by the user, and any number of potentially large structures (e.g. matrices)
-    that will be used but not modified) by the other threads. Once initialised,
+    that will be used (but not modified) by the other threads. Once initialised,
     it is then passed by const-reference to the thread class's constructor:
 
     \code
