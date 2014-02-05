@@ -43,7 +43,7 @@ namespace MR
         class Tissues {
 
           public:
-            Tissues () : cgm (0.0), sgm (0.0), wm (0.0), csf (0.0) { }
+            Tissues () : cgm (0.0), sgm (0.0), wm (0.0), csf (0.0), is_valid (false) { }
 
             Tissues (const float cg, const float sg, const float w, const float c) :
                 cgm (0.0),
@@ -59,7 +59,8 @@ namespace MR
                 cgm (0.0),
                 sgm (0.0),
                 wm  (0.0),
-                csf (0.0)
+                csf (0.0),
+                is_valid (false)
             {
               set<Set> (data);
             }
@@ -69,13 +70,15 @@ namespace MR
                 cgm (that.cgm),
                 sgm (that.sgm),
                 wm  (that.wm),
-                csf (that.csf) { }
+                csf (that.csf),
+                is_valid (that.is_valid) { }
 
             Tissues (Tissues& that) :
                 cgm (that.cgm),
                 sgm (that.sgm),
                 wm  (that.wm),
-                csf (that.csf) { }
+                csf (that.csf),
+                is_valid (that.is_valid) { }
 
             bool set (const float cg, const float sg, const float w, const float c) {
               if (isnan (cg) || isnan (sg) || isnan (w) || isnan (c)) {
