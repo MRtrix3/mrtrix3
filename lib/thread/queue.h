@@ -648,7 +648,8 @@ namespace MR
                    n1 = 0;
                  }
                  if (n2 >= N) {
-                   out.write();
+                   if (!out.write())
+                     return;
                    out->resize (N);
                    n2 = 0;
                  }

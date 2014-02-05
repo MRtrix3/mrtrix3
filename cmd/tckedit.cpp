@@ -42,8 +42,6 @@
 
 
 
-
-
 using namespace MR;
 using namespace App;
 using namespace MR::DWI;
@@ -185,17 +183,6 @@ void run ()
   update_output_step_size (properties, upsample, downsample);
   Receiver receiver (output_path, properties, count, number, skip);
 
-  if (Thread::number_of_threads() == 1) {
-    Tractography::TrackData<> tck1, tck2;
-    while (loader (tck1)) {
-      worker (tck1, tck2);
-      if (!receiver (tck2))
-        break;
-    }
-  } else if (number && number <= 100000 && (number/float(count) <= 0.1)) {
-    Thread::run_queue_threaded_pipe (loader, Tractography::TrackData<>(), worker, Tractography::TrackData<>(), receiver);
-  } else {
-    Thread::run_batched_queue_threaded_pipe (loader, Tractography::TrackData<>(), 100, worker, Tractography::TrackData<>(), 100, receiver);
-  }
+  Thread::run_batched_queue_threaded_pipe (loader, Tractography::TrackData<>(), 100, worker, Tractography::TrackData<>(), 100, receiver);
 
 }
