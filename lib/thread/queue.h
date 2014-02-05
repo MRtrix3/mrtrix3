@@ -740,6 +740,10 @@ flush:
       * confugration file, or can be set at the command-line using the
       * -nthreads option.
       *
+      * Note that if the number of threads is set to 1, then no additional
+      * threads will be spawned; the function will use local data storage and
+      * explicitly execute the relevant functors within the calling thread.
+      *
       *
       * \par Source: the input functor 
       * The Source class must at least provide the method:
@@ -852,46 +856,85 @@ flush:
     template <class Source, class Type, class Sink>
       inline void run_queue_threaded_source (Source& source, const Type& item_type, Sink& sink)
       {
-        Queue<Type> queue;
-        __Source<Type,Source> q_source (queue, source);
-        __Sink<Type,Sink>     q_sink   (queue, sink);
+        if (number_of_threads() == 1) {
 
-        Array<__Source<Type,Source> > source_list (q_source);
+          Type item;
+          while (source (item)) {
+            if (!sink (item))
+              return;
+          }
 
-        Exec source_threads (source_list, "sources");
-        Exec sink_thread    (q_sink, "sink");
+        } else {
+
+          Queue<Type> queue;
+          __Source<Type,Source> q_source (queue, source);
+          __Sink<Type,Sink>     q_sink   (queue, sink);
+
+          Array<__Source<Type,Source> > source_list (q_source);
+
+          Exec source_threads (source_list, "sources");
+          Exec sink_thread    (q_sink, "sink");
+
+        }
       }
 
 
     template <class Source, class Type, class Sink>
       inline void run_queue_threaded_sink (Source& source, const Type& item_type, Sink& sink)
       {
-        Queue<Type> queue;
-        __Source<Type,Source> q_source (queue, source);
-        __Sink<Type,Sink>     q_sink   (queue, sink);
+        if (number_of_threads() == 1) {
 
-        Array<__Sink<Type,Sink> > sink_list (q_sink);
+          Type item;
+          while (source (item)) {
+            if (!sink (item))
+              return;
+          }
 
-        Exec source_thread (q_source, "source");
-        Exec sink_threads  (sink_list, "sinks");
+        } else {
+
+          Queue<Type> queue;
+          __Source<Type,Source> q_source (queue, source);
+          __Sink<Type,Sink>     q_sink   (queue, sink);
+
+          Array<__Sink<Type,Sink> > sink_list (q_sink);
+
+          Exec source_thread (q_source, "source");
+          Exec sink_threads  (sink_list, "sinks");
+
+        }
       }
 
 
     template <class Source, class Type1, class Pipe, class Type2, class Sink>
       inline void run_queue_threaded_pipe (Source& source, const Type1& item_type1, Pipe& pipe, const Type2& item_type2, Sink& sink)
       {
-        Queue<Type1> queue1 ("queue1");
-        Queue<Type2> queue2 ("queue2");
+        if (number_of_threads() == 1) {
 
-        __Source<Type1,Source>   q_source (queue1, source);
-        __Pipe<Type1,Pipe,Type2> q_pipe   (queue1, pipe, queue2);
-        __Sink<Type2,Sink>       q_sink   (queue2, sink);
+          Type1 item1;
+          Type2 item2;
+          while (source (item1)) {
+            if (!pipe (item1, item2))
+              return;
+            if (!sink (item2))
+              return;
+          }
 
-        Array<__Pipe<Type1,Pipe,Type2> > pipe_list (q_pipe);
+        } else {
 
-        Exec source_thread (q_source,  "source");
-        Exec pipe_threads  (pipe_list, "pipes");
-        Exec sink_threads  (q_sink,    "sink");
+          Queue<Type1> queue1 ("queue1");
+          Queue<Type2> queue2 ("queue2");
+
+          __Source<Type1,Source>   q_source (queue1, source);
+          __Pipe<Type1,Pipe,Type2> q_pipe   (queue1, pipe, queue2);
+          __Sink<Type2,Sink>       q_sink   (queue2, sink);
+
+          Array<__Pipe<Type1,Pipe,Type2> > pipe_list (q_pipe);
+
+          Exec source_thread (q_source,  "source");
+          Exec pipe_threads  (pipe_list, "pipes");
+          Exec sink_threads  (q_sink,    "sink");
+
+        }
       }
 
 
@@ -950,30 +993,78 @@ flush:
     template <class Source, class Type, class Sink>
       inline void run_batched_queue_threaded_source (Source& source, const Type& item_type, size_t batch_size, Sink& sink)
       {
+        if (number_of_threads() == 1) {
 
-        Queue<std::vector<Type> > queue ("queue");
-        Batch::__Source<Type,Source> q_source (queue, source, batch_size);
-        Batch::__Sink  <Type,Sink>   q_sink   (queue, sink);
+          assert (batch_size);
+          std::vector<Type> batch (batch_size, Type());
+          size_t in_index = 0;
+          while (source (batch[in_index++])) {
+            if (in_index == batch_size) {
+              for (size_t out_index = 0; out_index != batch_size; ++out_index) {
+                if (!sink (batch[out_index]))
+                  return;
+              }
+              in_index = 0;
+            }
+          }
+          if (in_index) {
+            for (size_t out_index = 0; out_index != in_index; ++out_index) {
+              if (!sink (batch[out_index]))
+                return;
+            }
+          }
 
-        Array<Batch::__Source<Type,Source> > source_list (q_source);
+        } else {
 
-        Exec source_threads (source_list, "sources");
-        Exec sink_thread    (q_sink, "sink");
+          Queue<std::vector<Type> > queue ("queue");
+          Batch::__Source<Type,Source> q_source (queue, source, batch_size);
+          Batch::__Sink  <Type,Sink>   q_sink   (queue, sink);
+
+          Array<Batch::__Source<Type,Source> > source_list (q_source);
+
+          Exec source_threads (source_list, "sources");
+          Exec sink_thread    (q_sink, "sink");
+
+        }
       }
 
 
     template <class Source, class Type, class Sink>
       inline void run_batched_queue_threaded_sink (Source& source, const Type& item_type, size_t batch_size,Sink& sink)
       {
+        if (number_of_threads() == 1) {
 
-        Queue<std::vector<Type> > queue ("queue");
-        Batch::__Source<Type,Source> q_source (queue, source, batch_size);
-        Batch::__Sink  <Type,Sink>   q_sink   (queue, sink);
+          assert (batch_size);
+          std::vector<Type> batch (batch_size, Type());
+          size_t in_index = 0;
+          while (source (batch[in_index++])) {
+            if (in_index == batch_size) {
+              for (size_t out_index = 0; out_index != batch_size; ++out_index) {
+                if (!sink (batch[out_index]))
+                  return;
+              }
+              in_index = 0;
+            }
+          }
+          if (in_index) {
+            for (size_t out_index = 0; out_index != in_index; ++out_index) {
+              if (!sink (batch[out_index]))
+                return;
+            }
+          }
 
-        Array<Batch::__Sink<Type,Sink> > sink_list (q_sink);
+        } else {
 
-        Exec source_thread (q_source, "source");
-        Exec sink_threads  (sink_list, "sinks");
+          Queue<std::vector<Type> > queue ("queue");
+          Batch::__Source<Type,Source> q_source (queue, source, batch_size);
+          Batch::__Sink  <Type,Sink>   q_sink   (queue, sink);
+
+          Array<Batch::__Sink<Type,Sink> > sink_list (q_sink);
+
+          Exec source_thread (q_source, "source");
+          Exec sink_threads  (sink_list, "sinks");
+
+        }
       }
 
 
@@ -985,18 +1076,65 @@ flush:
           const Type2& item_type2, size_t batch_size2,
           Sink& sink)
       {
-        Queue<std::vector<Type1> > queue1 ("queue1");
-        Queue<std::vector<Type2> > queue2 ("queue2");
+        if (number_of_threads() == 1) {
 
-        Batch::__Source<Type1,Source>   q_source (queue1, source, batch_size1);
-        Batch::__Pipe<Type1,Pipe,Type2> q_pipe   (queue1, pipe, queue2, batch_size2);
-        Batch::__Sink<Type2,Sink>       q_sink   (queue2, sink);
+          assert (batch_size1);
+          assert (batch_size2);
+          std::vector<Type1> batch1 (batch_size1, Type1());
+          std::vector<Type2> batch2 (batch_size2, Type2());
+          size_t batch1_in_index = 0, batch2_in_index = 0;
+          while (source (batch1[batch1_in_index++])) {
+            if (batch1_in_index == batch_size1) {
+              for (size_t batch1_out_index = 0; batch1_out_index != batch_size1; ++batch1_out_index) {
+                if (!pipe (batch1[batch1_out_index], batch2[batch2_in_index++]))
+                  return;
+                if (batch2_in_index == batch_size2) {
+                  for (size_t batch2_out_index = 0; batch2_out_index != batch_size2; ++batch2_out_index) {
+                    if (!sink (batch2[batch2_out_index]))
+                      return;
+                  }
+                  batch2_in_index = 0;
+                }
+              }
+              batch1_in_index = 0;
+            }
+          }
+          if (batch1_in_index) {
+            for (size_t batch1_out_index = 0; batch1_out_index != batch1_in_index; ++batch1_out_index) {
+              if (!pipe (batch1[batch1_out_index], batch2[batch2_in_index++]))
+                return;
+              if (batch2_in_index == batch_size2) {
+                for (size_t batch2_out_index = 0; batch2_out_index != batch_size2; ++batch2_out_index) {
+                  if (!sink (batch2[batch2_out_index]))
+                    return;
+                }
+                batch2_in_index = 0;
+              }
+            }
+          }
+          if (batch2_in_index) {
+            for (size_t batch2_out_index = 0; batch2_out_index != batch2_in_index; ++batch2_out_index) {
+              if (!sink (batch2[batch2_out_index]))
+                return;
+            }
+          }
 
-        Array<Batch::__Pipe<Type1,Pipe,Type2> > pipe_list (q_pipe);
+        } else {
 
-        Exec source_thread (q_source, "source");
-        Exec pipe_threads  (pipe_list, "pipes");
-        Exec sink_thread   (q_sink, "sink");
+          Queue<std::vector<Type1> > queue1 ("queue1");
+          Queue<std::vector<Type2> > queue2 ("queue2");
+
+          Batch::__Source<Type1,Source>   q_source (queue1, source, batch_size1);
+          Batch::__Pipe<Type1,Pipe,Type2> q_pipe   (queue1, pipe, queue2, batch_size2);
+          Batch::__Sink<Type2,Sink>       q_sink   (queue2, sink);
+
+          Array<Batch::__Pipe<Type1,Pipe,Type2> > pipe_list (q_pipe);
+
+          Exec source_thread (q_source, "source");
+          Exec pipe_threads  (pipe_list, "pipes");
+          Exec sink_thread   (q_sink, "sink");
+
+        }
       }
 
 
