@@ -43,8 +43,7 @@ namespace MR
               (*seeds) << str(writer.count) << "," << str(tck.get_seed_index()) << "," << str(p[0]) << "," << str(p[1]) << "," << str(p[2]) << ",\n";
             }
             writer (tck);
-            if (App::log_level > 0 && timer.elapsed() >= next_time) {
-              next_time += UPDATE_INTERVAL;
+            if (timer && App::log_level > 0) {
               fprintf (stderr, "\r%8zu generated, %8zu selected    [%3d%%]",
                   writer.total_count, writer.count,
                   (int(100.0 * std::max (writer.total_count/float(S.max_num_attempts), writer.count/float(S.max_num_tracks)))));

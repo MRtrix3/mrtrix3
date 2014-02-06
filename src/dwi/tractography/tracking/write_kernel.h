@@ -50,9 +50,6 @@ namespace MR
       {
 
 
-#define UPDATE_INTERVAL 0.0333333 // 30 Hz - most monitors are 60Hz
-
-
       class WriteKernel
       {
         public:
@@ -61,8 +58,7 @@ namespace MR
               const std::string& output_file,
               DWI::Tractography::Properties& properties) :
                 S (shared),
-                writer (output_file, properties),
-                next_time (timer.elapsed())
+                writer (output_file, properties)
           {
             if (properties.find ("seed_output") != properties.end()) {
               seeds = new std::ofstream (properties["seed_output"].c_str(), std::ios_base::trunc);
@@ -92,8 +88,7 @@ namespace MR
           const SharedBase& S;
           Writer<value_type> writer;
           Ptr<std::ofstream> seeds;
-          Timer timer;
-          double next_time;
+          IntervalTimer timer;
 
       };
 

@@ -41,7 +41,6 @@ namespace MR {
 
 
 
-#define UPDATE_INTERVAL 0.0333333333333333333
         class Receiver
         {
 
@@ -54,9 +53,7 @@ namespace MR {
               skip (s),
               // Need to use local counts instead of writer class members due to track cropping
               count (0),
-              total_count (0),
-              timer (),
-              next_time (timer.elapsed()) { }
+              total_count (0) { }
 
             ~Receiver()
             {
@@ -77,8 +74,7 @@ namespace MR {
             const size_t in_count, number;
             size_t skip;
             size_t count, total_count;
-            Timer timer;
-            double next_time;
+            IntervalTimer timer;
 
             void update_cmdline();
             void print();

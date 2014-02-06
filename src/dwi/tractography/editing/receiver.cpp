@@ -84,10 +84,8 @@ bool Receiver::operator() (const Tractography::Streamline<>& in)
 
 void Receiver::update_cmdline()
 {
-  if (timer.elapsed() >= next_time && App::log_level > 0) {
-    next_time += UPDATE_INTERVAL;
+  if (timer && App::log_level > 0)
     print();
-  }
 }
 
 
