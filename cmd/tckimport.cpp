@@ -63,11 +63,11 @@ void run ()
       if (M.columns() != 3)
         throw Exception ("file \"" + argument[n] + "\" does not contain 3 columns - ignored");
 
-      std::vector<Point<float> > tck (M.rows());
+      DWI::Tractography::Streamline<float> tck (M.rows());
       for (size_t i = 0; i < M.rows(); i++) {
         tck[i].set (M (i,0), M (i,1), M (i,2));
       }
-      writer.append (tck);
+      writer (tck);
       writer.total_count++;
     }
     catch (Exception) { }

@@ -314,14 +314,14 @@ namespace MR
         p["SIFT_mu"] = str (mu());
         Tractography::Writer<float> writer (output_path, p);
         track_t tck_counter = 0;
-        std::vector< Point<float> > tck;
+        Tractography::Streamline<float> tck;
         ProgressBar progress ("Writing filtered tracks output file...", contributions.size());
         std::vector< Point<float> > empty_tck;
-        while (reader.next (tck) && tck_counter < contributions.size()) {
+        while (reader (tck) && tck_counter < contributions.size()) {
           if (contributions[tck_counter++])
-            writer.append (tck);
+            writer (tck);
           else
-            writer.append (empty_tck);
+            writer (empty_tck);
           ++progress;
         }
         reader.close();

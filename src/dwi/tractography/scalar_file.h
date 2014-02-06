@@ -50,7 +50,7 @@ namespace MR
             open (file, "track scalars", properties);
           }
 
-          bool next (std::vector<value_type>& tck_scalar)
+          bool operator() (std::vector<value_type>& tck_scalar)
           {
             tck_scalar.clear();
 
@@ -74,11 +74,6 @@ namespace MR
 
             in.close();
             return false;
-          }
-
-          bool operator() (std::vector< Point<value_type> >& tck_scalar)
-          {
-            return next (tck_scalar);
           }
 
         protected:
@@ -151,6 +146,8 @@ namespace MR
           using __WriterBase__<T>::name;
           using __WriterBase__<T>::dtype;
           using __WriterBase__<T>::create;
+          using __WriterBase__<T>::update_counts;
+          using __WriterBase__<T>::verify_stream;
 
           ScalarWriter (const std::string& file, const Properties& properties) :
             __WriterBase__<T> (file),
@@ -170,7 +167,7 @@ namespace MR
           }
 
 
-          void append (const std::vector<value_type>& tck_scalar)
+          bool operator() (const std::vector<value_type>& tck_scalar)
           {
             if (tck_scalar.size()) {
               if (buffer_size + tck_scalar.size() > buffer_capacity)
@@ -182,11 +179,6 @@ namespace MR
               ++count;
             }
             ++total_count;
-          }
-
-          bool operator() (const std::vector<value_type>& tck_scalar)
-          {
-            append (tck_scalar);
             return true;
           }
 
@@ -198,8 +190,7 @@ namespace MR
           Ptr<value_type, true> buffer;
           size_t buffer_size;
 
-          void add_scalar (const value_type& s)
-          {
+          void add_scalar (const value_type& s) {
             format_scalar (s, buffer[buffer_size++]);
           }
 
@@ -208,8 +199,10 @@ namespace MR
           void format_scalar (const value_type& s, value_type& destination)
           {
             using namespace ByteOrder;
-            if (dtype.is_little_endian()) { destination = LE(s); }
-            else { destination = BE(s); }
+            if (dtype.is_little_endian()) 
+              destination = LE(s); 
+            else  
+              destination = BE(s); 
           }
 
           void commit ()
@@ -222,13 +215,9 @@ namespace MR
               throw Exception ("error re-opening track scalars file \"" + name + "\": " + strerror (errno));
 
             out.write (reinterpret_cast<char*> (&(buffer[0])), sizeof (value_type)*(buffer_size));
-            if (!out.good())
-              throw Exception ("error writing track scalars file \"" + name + "\": " + strerror (errno));
-
-            out.seekp (count_offset);
-            out << count << "\ntotal_count: " << total_count << "\nEND\n";
-            if (!out.good())
-              throw Exception ("error writing track scalars file \"" + name + "\": " + strerror (errno));
+            verify_stream (out);
+            update_counts (out);
+            verify_stream (out);
 
             buffer_size = 0;
           }

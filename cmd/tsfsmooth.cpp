@@ -71,7 +71,7 @@ void run ()
     kernel[c] /= norm_factor;
 
   std::vector<value_type> tck_scalar;
-  while (reader.next (tck_scalar)) {
+  while (reader (tck_scalar)) {
     std::vector<value_type> tck_scalars_smoothed (tck_scalar.size());
 
     for (size_t i = 0; i < tck_scalar.size(); ++i) {
@@ -85,7 +85,7 @@ void run ()
       }
       tck_scalars_smoothed[i] = value / norm_factor;
     }
-    writer.append (tck_scalars_smoothed);
+    writer (tck_scalars_smoothed);
   }
 }
 

@@ -32,7 +32,7 @@
 
 #include "dwi/tractography/file.h"
 #include "dwi/tractography/properties.h"
-#include "dwi/tractography/track_data.h"
+#include "dwi/tractography/streamline.h"
 
 #include "dwi/tractography/tracking/generated_track.h"
 #include "dwi/tractography/tracking/shared.h"
@@ -83,7 +83,7 @@ namespace MR
 
 
           bool operator() (const GeneratedTrack&);
-          bool operator() (const GeneratedTrack&, Tractography::TrackData<>&);
+          bool operator() (const GeneratedTrack&, Tractography::Streamline<>&);
 
           bool complete() const { return (writer.count >= S.max_num_tracks || writer.total_count >= S.max_num_attempts); }
 

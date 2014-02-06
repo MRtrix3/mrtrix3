@@ -33,7 +33,7 @@ namespace Editing {
 
 
 
-bool Receiver::operator() (const Tractography::TrackData<>& in)
+bool Receiver::operator() (const Tractography::Streamline<>& in)
 {
 
   if (number && (count == number))
@@ -60,10 +60,10 @@ bool Receiver::operator() (const Tractography::TrackData<>& in)
 
     // Explicitly handle case where the streamline has been cropped into multiple components
     // Worker class separates track segments using invalid points as delimiters
-    Tractography::TrackData<> temp;
+    Tractography::Streamline<> temp;
     temp.index = in.index;
     temp.weight = in.weight;
-    for (Tractography::TrackData<>::const_iterator p = in.begin(); p != in.end(); ++p) {
+    for (Tractography::Streamline<>::const_iterator p = in.begin(); p != in.end(); ++p) {
       if (p->valid()) {
         temp.push_back (*p);
       } else if (temp.size()) {

@@ -307,11 +307,11 @@ double compute_track_indices (const string& input_track_filename,
   DWI::Tractography::Reader<value_type> tck_reader (input_track_filename, tck_properties);
   double tck_timestamp = tck_properties.timestamp;
   DWI::Tractography::Writer<value_type> tck_writer (output_track_filename, tck_properties);
-  vector<Point<value_type> > tck;
+  DWI::Tractography::Streamline<value_type> tck;
   int counter = 0;
 
-  while (tck_reader.next (tck) && counter < num_vis_tracks) {
-    tck_writer.append (tck);
+  while (tck_reader (tck) && counter < num_vis_tracks) {
+    tck_writer (tck);
     vector<int32_t> indices (tck.size(), std::numeric_limits<int32_t>::max());
     Point<value_type> tangent;
     for (size_t p = 0; p < tck.size(); ++p) {
@@ -366,7 +366,7 @@ void write_track_stats (const string& filename,
       else
         scalars[p] = data [track_point_indices[t][p]];
     }
-    writer.append (scalars);
+    writer (scalars);
   }
 }
 
@@ -645,7 +645,7 @@ void run() {
     Image::Header header (argument[4]);
     DWI::Tractography::Mapping::TrackMapperBase<SetVoxelDir> mapper (header);
     TrackProcessor tract_processor (fixel_indexer, fixel_directions, fixel_TDI, fixel_connectivity, angular_threshold);
-    Thread::run_queue_custom_threading (loader, 1, DWI::Tractography::TrackData<float>(), mapper, 1, SetVoxelDir(), tract_processor, 1);
+    Thread::run_queue_custom_threading (loader, 1, DWI::Tractography::Streamline<float>(), mapper, 1, SetVoxelDir(), tract_processor, 1);
   }
   track_file.close();
 

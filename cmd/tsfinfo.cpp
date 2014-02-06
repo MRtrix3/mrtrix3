@@ -95,7 +95,7 @@ void run ()
       size_t count = 0;
       {
         ProgressBar progress ("counting tracks in file... ");
-        while (file.next (tck)) {
+        while (file (tck)) {
           ++count;
           ++progress;
         }
@@ -107,7 +107,7 @@ void run ()
       ProgressBar progress ("writing track scalar data to ascii files");
       std::vector<float> tck;
       size_t count = 0;
-      while (file.next (tck)) {
+      while (file (tck)) {
         std::string filename (opt[0][0]);
         filename += "-000000.txt";
         std::string num (str (count));

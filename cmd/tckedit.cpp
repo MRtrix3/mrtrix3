@@ -183,6 +183,6 @@ void run ()
   update_output_step_size (properties, upsample, downsample);
   Receiver receiver (output_path, properties, count, number, skip);
 
-  Thread::run_batched_queue_threaded_pipe (loader, Tractography::TrackData<>(), 100, worker, Tractography::TrackData<>(), 100, receiver);
+  Thread::run_batched_queue_threaded_pipe (loader, Tractography::Streamline<>(), 100, worker, Tractography::Streamline<>(), 100, receiver);
 
 }

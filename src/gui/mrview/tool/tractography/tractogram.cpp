@@ -338,13 +338,13 @@ namespace MR
         void Tractogram::load_tracks()
         {
           DWI::Tractography::Reader<float> file (filename, properties);
-          std::vector<Point<float> > tck;
+          DWI::Tractography::Streamline<float> tck;
           std::vector<Point<float> > buffer;
           std::vector<GLint> starts;
           std::vector<GLint> sizes;
           size_t tck_count = 0;
 
-          while (file.next (tck)) {
+          while (file (tck)) {
             starts.push_back (buffer.size());
             buffer.push_back (Point<float>());
             buffer.insert (buffer.end(), tck.begin(), tck.end());
@@ -369,9 +369,9 @@ namespace MR
           for (size_t buffer_index = 0; buffer_index != vertex_buffers.size(); ++buffer_index) {
             size_t num_tracks = num_tracks_per_buffer[buffer_index];
             std::vector< Point<float> > buffer;
-            std::vector< Point<float> > tck;
+            DWI::Tractography::Streamline<float> tck;
             while (num_tracks--) {
-              file.next (tck);
+              file (tck);
               const Point<float> tangent ((tck.back() - tck.front()).normalise());
               const Point<float> colour (Math::abs (tangent[0]), Math::abs (tangent[1]), Math::abs (tangent[2]));
               buffer.push_back (Point<float>());
@@ -402,7 +402,7 @@ namespace MR
             // TODO uncomment before release
             //            if (scalar_properties.timestamp != properties.timestamp)
             //              throw Exception ("The scalar track file does not match the selected tractogram   ");
-            while (file.next (tck_scalar)) {
+            while (file (tck_scalar)) {
               buffer.push_back (NAN);
               for (size_t i = 0; i < tck_scalar.size(); ++i) {
                 buffer.push_back (tck_scalar[i]);

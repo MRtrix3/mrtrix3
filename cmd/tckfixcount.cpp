@@ -77,11 +77,11 @@ void run ()
   }
 
   // Read the actual number of streamlines in the file
-  std::vector< Point<float> > tck;
+  Tractography::Streamline<float> tck;
   size_t count = 0;
   {
     ProgressBar progress ("evaluating actual streamline data count...");
-    while (reader.next (tck)) {
+    while (reader (tck)) {
       ++count;
       ++progress;
     }

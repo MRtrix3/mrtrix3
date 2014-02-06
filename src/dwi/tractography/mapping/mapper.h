@@ -41,7 +41,7 @@
 #include "image/interp/linear.h"
 
 #include "dwi/tractography/resample.h"
-#include "dwi/tractography/track_data.h"
+#include "dwi/tractography/streamline.h"
 
 #include "dwi/tractography/mapping/mapping.h"
 #include "dwi/tractography/mapping/twi_stats.h"
@@ -84,7 +84,7 @@ class TrackMapperBase
     virtual ~TrackMapperBase() { }
 
 
-    bool operator() (Tractography::TrackData<float>& in, Cont& out)
+    bool operator() (Streamline<float>& in, Cont& out)
     {
       out.clear();
       out.index = in.index;

@@ -190,7 +190,7 @@ void run ()
   Image::Buffer<value_type> fod_buffer (argument[0]);
   DWI::FMLS::Segmenter fmls (dirs, Math::SH::LforN (fod_buffer.dim(3)));
   TrackProcessor tract_processor (fod_buffer, fixel_indexer, fixel_directions, fixel_AFD, fixel_TDI, fmls);
-  Thread::run_queue_custom_threading (loader, 1, DWI::Tractography::TrackData<float>(), mapper, 1, SetVoxelDir(), tract_processor, 1);
+  Thread::run_queue_custom_threading (loader, 1, DWI::Tractography::Streamline<float>(), mapper, 1, SetVoxelDir(), tract_processor, 1);
 
   double total_AFD = 0.0;
   Image::Loop loop (0, 3);
@@ -215,11 +215,11 @@ void run ()
   }
 
   Tractography::Reader<value_type> tck_file (argument[1], properties);
-  std::vector<Point<value_type> > tck;
+  Tractography::Streamline<value_type> tck;
   double total_track_length = 0.0;
   {
     ProgressBar progress ("normalising apparent fibre density by mean track length...", track_count);
-    while (tck_file.next (tck)) {
+    while (tck_file (tck)) {
       total_track_length += static_cast<value_type>(tck.size() - 1) * step_size;
       progress++;
     }

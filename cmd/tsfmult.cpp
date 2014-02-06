@@ -58,8 +58,8 @@ void run ()
 
   std::vector<value_type> tck_scalar1;
   std::vector<value_type> tck_scalar2;
-  while (reader1.next(tck_scalar1)) {
-    reader2.next(tck_scalar2);
+  while (reader1 (tck_scalar1)) {
+    reader2 (tck_scalar2);
     if (tck_scalar1.size() != tck_scalar2.size())
       throw Exception ("track scalar length mismatch");
 
@@ -67,7 +67,7 @@ void run ()
     for (size_t i = 0; i < tck_scalar1.size(); ++i) {
       tck_scalar_output[i] = tck_scalar1[i] * tck_scalar2[i];
     }
-    writer.append (tck_scalar_output);
+    writer (tck_scalar_output);
   }
 }
 

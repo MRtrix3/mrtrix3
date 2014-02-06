@@ -28,7 +28,7 @@
 #include "ptr.h"
 #include "thread/queue.h"
 #include "dwi/tractography/file.h"
-#include "dwi/tractography/track_data.h"
+#include "dwi/tractography/streamline.h"
 
 
 namespace MR {
@@ -49,17 +49,14 @@ class TrackLoader
     { }
 
     virtual ~TrackLoader() { }
-    virtual bool operator() (Tractography::TrackData<float>& out)
+    virtual bool operator() (Streamline<float>& out)
     {
-      if (!reader.next_data (out)) {
-        delete progress;
+      if (!reader (out)) {
         progress = NULL;
         return false;
       }
       if (tracks_to_load && out.index >= tracks_to_load) {
         out.clear();
-        out.index = -1;
-        delete progress;
         progress = NULL;
         return false;
       }
@@ -70,8 +67,8 @@ class TrackLoader
 
   protected:
     Tractography::Reader<float>& reader;
-    size_t tracks_to_load;
-    ProgressBar* progress;
+    const size_t tracks_to_load;
+    Ptr<ProgressBar> progress;
 
 };
 

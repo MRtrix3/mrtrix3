@@ -33,7 +33,7 @@
 
 #include "dwi/tractography/file.h"
 #include "dwi/tractography/properties.h"
-#include "dwi/tractography/track_data.h"
+#include "dwi/tractography/streamline.h"
 #include "dwi/tractography/connectomics/connectomics.h"
 #include "dwi/tractography/connectomics/edge_metrics.h"
 #include "dwi/tractography/connectomics/tck2nodes.h"
@@ -94,7 +94,7 @@ class Mapper
       metric (that.metric) { }
 
 
-    bool operator() (const Tractography::TrackData<float>& in, Mapped_track& out)
+    bool operator() (const Tractography::Streamline<float>& in, Mapped_track& out)
     {
       out.set_nodes (tck2nodes (in));
       out.set_factor (metric (in, out.get_nodes()));
@@ -232,7 +232,7 @@ class NodeExtractMapper
     NodeExtractMapper (const NodeExtractMapper& that) :
       tck2nodes (that.tck2nodes) { }
 
-    bool operator() (const Tractography::TrackData<float>& in, MappedTrackWithData& out) const
+    bool operator() (const Tractography::Streamline<float>& in, MappedTrackWithData& out) const
     {
       out.set_nodes (tck2nodes (in));
       out.set_factor (0.0);
@@ -323,11 +323,11 @@ class NodeExtractWriter
     {
       for (size_t i = 0; i != file_count(); ++i) {
         if (nodes[i] (in)) {
-          Tractography::TrackData<float> temp (in.tck);
+          Tractography::Streamline<float> temp (in.tck);
           temp.weight = in.get_weight();
-          writers[i]->append (temp);
+          (*writers[i]) (temp);
         } else {
-          writers[i]->append (empty_tck);
+          (*writers[i]) (empty_tck);
         }
       }
       return true;

@@ -42,7 +42,7 @@ namespace MR
               const Point<float>& p = tck[tck.get_seed_index()];
               (*seeds) << str(writer.count) << "," << str(tck.get_seed_index()) << "," << str(p[0]) << "," << str(p[1]) << "," << str(p[2]) << ",\n";
             }
-            writer.append (tck);
+            writer (tck);
             if (App::log_level > 0 && timer.elapsed() >= next_time) {
               next_time += UPDATE_INTERVAL;
               fprintf (stderr, "\r%8zu generated, %8zu selected    [%3d%%]",
@@ -52,7 +52,7 @@ namespace MR
             return true;
           }
 
-          bool WriteKernel::operator() (const GeneratedTrack& in, Tractography::TrackData<>& out)
+          bool WriteKernel::operator() (const GeneratedTrack& in, Tractography::Streamline<>& out)
           {
             out.index = writer.count;
             out.weight = 1.0;
