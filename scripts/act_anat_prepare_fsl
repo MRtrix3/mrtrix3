@@ -94,7 +94,8 @@ else:
 runCommand('mr4ttmake T1_bet_pve_0.' + fast_suffix + ' T1_bet_pve_1.' + fast_suffix + ' T1_bet_pve_2.' + fast_suffix + ' all_sgms.nii combined_precrop.mif' + quiet, verbose)
 
 # Use mrcrop to reduce file size (improves caching of image data during tracking)
-runCommand('mrmath combined_precrop.mif sum - -axis 3' + quiet + ' | mrthreshold - - -abs 0.5' + quiet + ' | mrcrop combined_precrop.mif ' + os.path.basename(sys.argv[2]) + ' -mask -' + quiet, verbose)
+result_path = 'result' + os.path.splitext(sys.argv[2])[1]
+runCommand('mrmath combined_precrop.mif sum - -axis 3' + quiet + ' | mrthreshold - - -abs 0.5' + quiet + ' | mrcrop combined_precrop.mif ' + result_path + ' -mask -' + quiet, verbose)
 
 # Move back to original directory
 if verbose:
@@ -104,7 +105,7 @@ os.chdir(working_dir)
 # Get the final file from the temporary directory & put it in the correct location
 if verbose:
   printMessage('Moving output file from temporary directory to user specified location')
-shutil.move(os.path.join(temp_dir, os.path.basename(sys.argv[2])), sys.argv[2])
+shutil.move(os.path.join(temp_dir, result_path), sys.argv[2])
 
 # Don't leave a trace
 delTempDir(temp_dir, verbose)

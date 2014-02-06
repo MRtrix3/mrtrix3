@@ -3,7 +3,11 @@
 # Script that receives as argument a segmented T1 image from FreeSurfer, and outputs
 #   a four-tissue-type (4TT) segmented image in a format appropriate for ACT
 # Note that there are many structures that FreeSurfer does not segment, and therefore the
-#   tracking behaviour may not be as expected
+#   tracking behaviour may not be as expected in those regions. This script is primarly
+#   provided to demonstrate that ACT is independent of the particular method used to
+#   derive the tissue segmentation; hopefully additional scripts will be developed in
+#   the future to use the results from other software packages.
+
 
 # Any of the following images generated using FreeSurfer's recon-all should work using this script:
 # aseg.mgz (recommended)
@@ -63,7 +67,8 @@ runCommand('mrcalc indices.mif 1 -eq cgm.mif' + quiet, verbose)
 runCommand('mrcalc indices.mif 2 -eq sgm.mif' + quiet, verbose)
 runCommand('mrcalc indices.mif 3 -eq  wm.mif' + quiet, verbose)
 runCommand('mrcalc indices.mif 4 -eq csf.mif' + quiet, verbose)
-runCommand('mrcat cgm.mif sgm.mif wm.mif csf.mif ' + os.path.basename(sys.argv[2]) + ' -axis 3' + quiet, verbose)
+result_path = 'result' + os.path.splitext(sys.argv[2])[1]
+runCommand('mrcat cgm.mif sgm.mif wm.mif csf.mif ' + result_path + ' -axis 3' + quiet, verbose)
 
 # Move back to original directory
 if verbose:
@@ -73,7 +78,7 @@ os.chdir(working_dir)
 # Get the final file from the temporary directory & put it in the correct location
 if verbose:
   printMessage('Moving output file from temporary directory to user specified location')
-shutil.move(os.path.join(temp_dir, os.path.basename(sys.argv[2])), sys.argv[2])
+shutil.move(os.path.join(temp_dir, result_path), sys.argv[2])
 
 # Don't leave a trace
 delTempDir(temp_dir, verbose)

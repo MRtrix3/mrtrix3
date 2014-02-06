@@ -134,12 +134,13 @@ runCommand(topup_cmd + ' --imain=' + topup_imain + ' --datain=config.txt --out=f
 runCommand(applytopup_cmd + ' --imain=' + series_imain + ' --datain=config.txt --inindex=1 --topup=field --out=series_topup.' + fsl_suffix + ' --method=jac', verbose)
 
 # Need to split depending on whether DW information is available
+result_path = 'result' + os.path.splitext(sys.argv[4])[1]
 if not grad:
 
   if verbose:
     printMessage('No diffusion gradient encoding found in input file; using output from applytopup')
     
-  runCommand('mrconvert series_topup.' + fsl_suffix + ' ' + os.path.basename(sys.argv[4]) + stride_option + quiet, verbose) 
+  runCommand('mrconvert series_topup.' + fsl_suffix + ' ' + result_path + stride_option + quiet, verbose) 
   
 else:
 
@@ -179,7 +180,7 @@ else:
   # Note that currently the script uses the diffusion encoding from the original DWI volumes, i.e. no reorientation of diffusion
   #   gradient vectors is performed. It should be possible to get the motion parameters from the eddy 
   # text file output and modify them manually, or FMRIB may update eddy itself.
-  runCommand('mrconvert series_after.' + fsl_suffix + ' ' + os.path.basename(sys.argv[4]) + stride_option + ' -grad bvecs' + quiet, verbose) 
+  runCommand('mrconvert series_after.' + fsl_suffix + ' ' + result_path + stride_option + ' -grad bvecs' + quiet, verbose) 
   
 
 # Move back to original directory
@@ -190,7 +191,7 @@ os.chdir(working_dir)
 # Get the final file from the temporary directory & put it in the correct location
 if verbose:
   printMessage('Moving output file from temporary directory to user specified location')
-shutil.move(os.path.join(temp_dir, os.path.basename(sys.argv[4])), sys.argv[4])
+shutil.move(os.path.join(temp_dir, result_path), sys.argv[4])
 
 # Don't leave a trace
 delTempDir(temp_dir, verbose)

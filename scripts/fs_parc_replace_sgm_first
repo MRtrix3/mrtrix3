@@ -8,7 +8,7 @@
 #   node indices that correspond to these structures, and replaces them with estimates
 #   derived from FIRST.
 # This script can be used in one of two ways. Firstly, it can directly change the nodes in
-#   one of FreeSurfer's segmentation outputs, by providing the file FreeSurferColorLUT.tx
+#   one of FreeSurfer's segmentation outputs, by providing the file FreeSurferColorLUT.txt
 #   as the lookup table file. If such a segmentation has already been processed using
 #   mrprep4connectome, then provide the connectome config file used. These are necessary to
 #   determine which integer values correspond to the sub-cortical grey matter structres
@@ -100,8 +100,9 @@ for struct in structure_map.keys():
 
 # Detect any overlapping voxels between these masks
 # These will be set to 0 in the final parcellated image
+result_path = 'result' + os.path.splitext(sys.argv[4])[1]
 runCommand('mrmath ' + ' '.join(mask_list) + ' sum -' + quiet + ' | mrcalc - 1 -gt overlap_mask.nii' + quiet, verbose)
-runCommand('mrcalc overlap_mask.nii 0 parc.mif -if ' + os.path.basename(sys.argv[4]) + quiet, verbose)
+runCommand('mrcalc overlap_mask.nii 0 parc.mif -if ' + result_path + quiet, verbose)
 
 # Move back to original directory
 if verbose:
@@ -111,7 +112,7 @@ os.chdir(working_dir)
 # Get the final file from the temporary directory & put it in the correct location
 if verbose:
   printMessage('Moving output file from temporary directory to user specified location')
-shutil.move(os.path.join(temp_dir, os.path.basename(sys.argv[4])), sys.argv[4])
+shutil.move(os.path.join(temp_dir, result_path), sys.argv[4])
 
 # Don't leave a trace
 delTempDir(temp_dir, verbose)
