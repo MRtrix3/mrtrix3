@@ -1,6 +1,6 @@
 #!/usr/bin/python2
 
-# Script for performing EPI distortion correction using FSL 5.0 tools topup and applytopup
+# Script for performing EPI distortion correction using FSL 5.0 tools eddy / topup / applytopup
 
 # This script is only for the specific case where a single pair of reversed-phase-encode images have been acquired for estimating the inhomogeneity field (phase encode A>>P then P>>A), which is to be used subsequently to correct a volume series (DWI / fMRI) that has been acquired using A>>P phase-encode direction. If your acquisition is different or more complex, you will need to modify this script accordingly or make your own.
 
@@ -13,17 +13,18 @@
 # * Name of output corrected image series
 
 
-import os, shutil, subprocess, sys
+import os, shutil, sys
 
-from lib.binaryInPath import binaryInPath
-from lib.delTempDir   import delTempDir
-from lib.errorMessage import errorMessage
-from lib.getFSLSuffix import getFSLSuffix
-from lib.loadOptions  import loadOptions
-from lib.makeTempDir  import makeTempDir
-from lib.printMessage import printMessage
-from lib.runCommand   import runCommand
-from lib.warnMessage  import warnMessage
+from lib.binaryInPath  import binaryInPath
+from lib.delTempDir    import delTempDir
+from lib.errorMessage  import errorMessage
+from lib.getFSLSuffix  import getFSLSuffix
+from lib.getHeaderInfo import getHeaderInfo
+from lib.loadOptions   import loadOptions
+from lib.makeTempDir   import makeTempDir
+from lib.printMessage  import printMessage
+from lib.runCommand    import runCommand
+from lib.warnMessage   import warnMessage
 
 
 num_args = 4
@@ -64,80 +65,59 @@ fsl_suffix = getFSLSuffix()
 working_dir = os.getcwd()
 temp_dir = makeTempDir(verbose)
 
+# Convert all input images into MRtrix format and store in temprary directory first;
+#   that way getHeaderInfo() can be run multiple times without having to repeatedly parse e.g. DICOM data
+runCommand('mrconvert ' + sys.argv[1] + ' ' + os.path.join(temp_dir, 'AP.mif')     + quiet, verbose)
+runCommand('mrconvert ' + sys.argv[2] + ' ' + os.path.join(temp_dir, 'PA.mif')     + quiet, verbose)
+runCommand('mrconvert ' + sys.argv[3] + ' ' + os.path.join(temp_dir, 'series.mif') + quiet, verbose)
 
-# Convert the input files and place in the temporary directory
-runCommand('mrcat ' + sys.argv[1] + ' ' + sys.argv[2] + ' - -axis 3' + quiet + ' | mrconvert - ' + os.path.join(temp_dir, 'pair.nii') + ' -stride +1,+2,+3,+4' + quiet, verbose)
-runCommand('mrconvert ' + sys.argv[3] + ' ' + os.path.join(temp_dir, 'series_before.nii') + ' -stride +1,+2,+3,+4' + quiet, verbose)
-
-# Get the output of running mrinfo on the input series, for finding the data layout
-mrinfo_command = 'mrinfo ' + sys.argv[3]
-mrinfo_out_path = os.path.join(temp_dir, 'mrinfo_out_series.txt')
-if verbose:
-  printMessage('Running \'' + mrinfo_command + '\' (piping output to ' + mrinfo_out_path + ')')
-with open(mrinfo_out_path, 'w') as mrinfo_out:
-  subprocess.call(mrinfo_command, stdout=mrinfo_out, stderr=None, shell=True)
-  mrinfo_out.close()
-
-# Also try to get the gradient encoding
-# Subprocess needed to be used explicitly here as if there is no diffusion encoding, dwgradextract returns a fail code, terminating the script if runCommand() is used
-dwgradextract_command = 'dwgradextract ' + sys.argv[3] + ' ' + os.path.join(temp_dir, 'bvecs') + ' -fsl' + quiet
-if verbose:
-  printMessage('Running \'' + dwgradextract_command + '\'')
-dwgradextract_process = subprocess.call(dwgradextract_command, stdout=None, stderr=None, shell=True)
-
-# Move into the temporary directory now that all files are prepared
+# Move into the temporary directory
 if verbose:
   printMessage('Changing to temporary directory (' + temp_dir + ')')
 os.chdir(temp_dir)
 
-# Get the data layout of the original image series if possible
-mrinfo_output = open ('mrinfo_out_series.txt', 'r')
-stride_option = ''
-for line in mrinfo_output:
-  line = line.strip(' ')
-  if line.startswith('Data strides: '):
-    line = line[line.find("[")+2:line.find("]")-1]
-    line = line.replace(' ', ',')
-    stride_option = ' -stride ' + line
-    if verbose:
-      printMessage('Target data layout for output image series: ' + line)
-      
-# Need to check the dimensions along the three spatial axes of the image pair
-mrinfo_command = 'mrinfo pair.nii'
-mrinfo_out_path = 'mrinfo_out_pair.txt'
-if verbose:
-  printMessage('Running \'' + mrinfo_command + '\' (piping output to ' + mrinfo_out_path + ')')
-with open(mrinfo_out_path, 'w') as mrinfo_out:
-  subprocess.call(mrinfo_command, stdout=mrinfo_out, stderr=None, shell=True)
-  mrinfo_out.close()
+# Verify that input images are valid
+AP_dim     = getHeaderInfo ('AP.mif',     'dimensions', verbose).split()
+PA_dim     = getHeaderInfo ('PA.mif',     'dimensions', verbose).split()
+series_dim = getHeaderInfo ('series.mif', 'dimensions', verbose).split()
+
+if len(AP_dim) != 3 or len(PA_dim) != 3:
+  errorMessage ('First two images (reversed phase-encode pair) must be 3D images')
+if AP_dim != PA_dim:
+  errorMessage ('Dimensions of reversed phase-encode image pair do not match')
+if series_dim[:3] != AP_dim:
+  errorMessage ('Spatial dimensions of volume series does not match reversed-PE pair')
+if len(series_dim) != 4:
+  errorMessage ('Third input image should be a 4D volume series')
+  
+# Get the axis strides from the input series, so the output image can be modified to match
+stride = getHeaderInfo ('series.mif', 'stride', verbose)
+stride_option = ' -stride ' + stride.replace(' ', ',')
+
+# Test to see if there is any diffusion gradient encoding in the input series
+grad = getHeaderInfo ('series.mif', 'dwgrad', verbose)
+
+# Convert the input files as necessary for FSL tools
+runCommand('mrcat AP.mif PA.mif - -axis 3' + quiet + ' | mrconvert - pair.nii -stride +1,+2,+3,+4' + quiet, verbose)
+runCommand('mrconvert series.mif series_before.nii -stride +1,+2,+3,+4' + quiet, verbose)
 
 # If no axes need to be cropped, use the original 4D volume with the image pair
-# Otherwise, need to call mrcrop with the appropriate options, and pass the modified image to topup
+# Otherwise, need to call mrcrop with the appropriate options, and pass the modified images to topup
 topup_imain = 'pair.nii'
-applytopup_imain = 'series_before.nii'
+series_imain = 'series_before.nii'
 
 # For any non-even dimensions, crop the first voxel along that dimension
-mrinfo_output = open ('mrinfo_out_pair.txt', 'r')
-crop_option = ''
-for line in mrinfo_output:
-  line = line.strip()
-  if line.startswith('Dimensions: '):
-    line = line.split(':')
-    line = line[1].split('x')
-    for index in range(0, 3):
-      line[index] = line[index].strip()
-      dim = int(line[index])
-      if dim%2:
-        crop_option += ' -axis ' + str(index) + ' 1 ' + str(dim-1)
+crop_option = ''        
+for axis, axis_dim in enumerate(AP_dim):
+  if int(axis_dim)%2:
+    crop_option += ' -axis ' + str(axis) + ' 1 ' + str(axis_dim-1) 
 
 if crop_option:
   warnMessage('Input images contain at least one non-even dimension; cropping images for topup / eddy compatibility') 
   runCommand('mrcrop pair.nii pair_crop.nii' + crop_option + quiet, verbose)
   runCommand('mrcrop series_before.nii series_crop.nii' + crop_option + quiet, verbose)
   topup_imain = 'pair_crop.nii'
-  # Does the input image series also need to be cropped? Test this
-  # It appears to be the case for eddy, not for applytopup; but just do it straight away
-  applytopup_imain = 'series_crop.nii'
+  series_imain = 'series_crop.nii'
 
 # Construct a configuration file
 if verbose:
@@ -151,13 +131,23 @@ runCommand(topup_cmd + ' --imain=' + topup_imain + ' --datain=config.txt --out=f
 
 # Apply the warp field to the image series
 # Note: applytopup appears to ignore FSLOUTPUTTYPE field, and just outputs a .nii.gz
-runCommand(applytopup_cmd + ' --imain=' + applytopup_imain + ' --datain=config.txt --inindex=1 --topup=field --out=series_topup.' + fsl_suffix + ' --method=jac', verbose)
+runCommand(applytopup_cmd + ' --imain=' + series_imain + ' --datain=config.txt --inindex=1 --topup=field --out=series_topup.' + fsl_suffix + ' --method=jac', verbose)
 
 # Need to split depending on whether DW information is available
-if os.path.exists('bvecs'):
+if not grad:
+
+  if verbose:
+    printMessage('No diffusion gradient encoding found in input file; using output from applytopup')
+    
+  runCommand('mrconvert series_topup.' + fsl_suffix + ' ' + os.path.basename(sys.argv[4]) + stride_option + quiet, verbose) 
+  
+else:
 
   if verbose:
     printMessage('Detected diffusion gradient encoding in input file; running eddy')
+    
+  # Create the diffusion gradient table in FSL format
+  runCommand('mrinfo series.mif -export_grad_fsl bvecs' + quiet, verbose)
     
   # Use the initial corrected image series from applytopup to derive a processing mask for eddy
   runCommand('mrconvert series_topup.' + fsl_suffix + ' -grad bvecs  -' + quiet + ' | dwi_brain_mask - -' + quiet + ' | mrdilate - -' + quiet + ' | mrconvert - mask.nii -datatype float32' + quiet, verbose)
@@ -183,18 +173,13 @@ if os.path.exists('bvecs'):
   fsl_verbose = ''
   if verbose:
     fsl_verbose = ' --verbose'
-  runCommand('eddy --imain=' + applytopup_imain + ' --mask=mask.nii --index=indices.txt --acqp=config.txt --bvecs=bvecs --bvals=bvals --topup=field --out=series_after' + fsl_verbose, verbose)
+  runCommand('eddy --imain=' + series_imain + ' --mask=mask.nii --index=indices.txt --acqp=config.txt --bvecs=bvecs --bvals=bvals --topup=field --out=series_after' + fsl_verbose, verbose)
   
   # Convert the resulting volume to the output image, and re-insert the diffusion encoding
   # Note that currently the script uses the diffusion encoding from the original DWI volumes, i.e. no reorientation of diffusion
   #   gradient vectors is performed. It should be possible to get the motion parameters from the eddy 
   # text file output and modify them manually, or FMRIB may update eddy itself.
   runCommand('mrconvert series_after.' + fsl_suffix + ' ' + os.path.basename(sys.argv[4]) + stride_option + ' -grad bvecs' + quiet, verbose) 
-  
-else: # No gradient encoding - input is fMRI time series
-  if verbose:
-    printMessage('No diffusion gradient encoding found in input file; using output from applytopup')
-  runCommand('mrconvert series_topup.' + fsl_suffix + ' ' + os.path.basename(sys.argv[4]) + stride_option + quiet, verbose) 
   
 
 # Move back to original directory
