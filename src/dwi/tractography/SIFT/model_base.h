@@ -331,7 +331,7 @@ namespace MR
         output_target_image_sh (prefix + "_target_sh.mif");
 #endif
 #ifdef SIFT_MODEL_OUTPUT_FIXEL_IMAGES
-        output_target_image_fixel (prefix + "_target_fixel.msih");
+        output_target_image_fixel (prefix + "_target_fixel.msh");
 #endif
         output_tdi (prefix + "_tdi.mif");
         if (have_null_lobes)
@@ -340,7 +340,7 @@ namespace MR
         output_tdi_sh (prefix + "_tdi_sh.mif");
 #endif
 #ifdef SIFT_MODEL_OUTPUT_FIXEL_IMAGES
-        output_tdi_fixel (prefix + "_tdi_fixel.msih");
+        output_tdi_fixel (prefix + "_tdi_fixel.msh");
 #endif
         output_error_images (prefix + "_max_abs_diff.mif", prefix + "_diff.mif", prefix + "_cost.mif");
         output_scatterplot (prefix + "_scatterplot.csv");

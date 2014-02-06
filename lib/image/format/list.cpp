@@ -82,8 +82,8 @@ namespace MR
         ".mgh",
         ".mgz",
         ".mgh.gz",
-        ".msif",
-        ".msih",
+        ".msf",
+        ".msh",
         NULL
       };
 

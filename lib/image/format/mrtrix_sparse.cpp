@@ -50,13 +50,13 @@ namespace MR
     {
 
       // extensions are:
-      // msih: MRtrix Sparse Image Header
-      // msif: MRtrix Sparse Image File
+      // msh: MRtrix Sparse image Header
+      // msf: MRtrix Sparse image File
 
       RefPtr<Handler::Base> MRtrix_sparse::read (Header& H) const
       {
 
-        if (!Path::has_suffix (H.name(), ".msih") && !Path::has_suffix (H.name(), ".msif"))
+        if (!Path::has_suffix (H.name(), ".msh") && !Path::has_suffix (H.name(), ".msf"))
           return RefPtr<Handler::Base>();
 
         File::KeyValue kv (H.name(), "mrtrix sparse image");
@@ -109,8 +109,8 @@ namespace MR
 
       bool MRtrix_sparse::check (Header& H, size_t num_axes) const
       {
-        if (!Path::has_suffix (H.name(), ".msih") &&
-            !Path::has_suffix (H.name(), ".msif"))
+        if (!Path::has_suffix (H.name(), ".msh") &&
+            !Path::has_suffix (H.name(), ".msf"))
           return false;
 
         if (H.find (Image::Sparse::name_key) == H.end() ||
@@ -155,7 +155,7 @@ namespace MR
 
         write_mrtrix_header (H, out);
 
-        bool single_file = Path::has_suffix (H.name(), ".msif");
+        bool single_file = Path::has_suffix (H.name(), ".msf");
 
         int64_t image_offset = 0, sparse_offset = 0;
         std::string image_path, sparse_path;
