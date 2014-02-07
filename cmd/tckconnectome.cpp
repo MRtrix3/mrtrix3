@@ -129,7 +129,12 @@ void run ()
   Mapping::TrackLoader loader (reader, properties["count"].empty() ? 0 : to<size_t>(properties["count"]), "Constructing connectome... ");
   Mapper mapper (*tck2nodes, *metric);
   Connectome connectome (max_node_index);
-  Thread::run_batched_queue_threaded_pipe (loader, Tractography::Streamline<float>(), 100, mapper, Mapped_track(), 100, connectome);
+  Thread::run_queue (
+      loader, 
+      Thread::batch (Tractography::Streamline<float>()), 
+      Thread::multi (mapper), 
+      Thread::batch (Mapped_track()), 
+      connectome);
 
   if (metric->scale_edges_by_streamline_count())
     connectome.scale_by_streamline_count();

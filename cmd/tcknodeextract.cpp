@@ -196,6 +196,11 @@ void run ()
   INFO ("A total of " + str (writer.file_count()) + " output track files will be generated");
 
   Mapping::TrackLoader loader (reader, properties["count"].empty() ? 0 : to<size_t>(properties["count"]), "extracting streamlines of interest... ");
-  Thread::run_batched_queue_threaded_pipe (loader, Tractography::Streamline<float>(), 100, mapper, MappedTrackWithData(), 100, writer);
+  Thread::run_queue (
+      loader, 
+      Thread::batch (Tractography::Streamline<float>()), 
+      Thread::multi (mapper), 
+      Thread::batch (MappedTrackWithData()), 
+      writer);
 
 }

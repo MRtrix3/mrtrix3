@@ -101,7 +101,7 @@ namespace MR
 
           TrackIndexRangeWriter range_writer (SIFT_TRACK_INDEX_BUFFER_SIZE, num_tracks());
           TrackGradientCalculator gradient_calculator (*this, gradient_vector, current_mu, current_roc_cf);
-          Thread::run_queue_threaded_sink (range_writer, TrackIndexRange(), gradient_calculator);
+          Thread::run_queue (range_writer, TrackIndexRange(), Thread::multi (gradient_calculator));
 
 
           // Theoretically possible to optimise the sorting block size at execution time

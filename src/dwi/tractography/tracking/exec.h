@@ -71,7 +71,7 @@ namespace MR
                 typename Method::Shared shared (diff_path, properties);
                 WriteKernel writer (shared, destination, properties);
                 Exec<Method> tracker (shared);
-                Thread::run_queue_threaded_source (tracker, GeneratedTrack(), writer);
+                Thread::run_queue (Thread::multi (tracker), GeneratedTrack(), writer);
 
               } else {
 
