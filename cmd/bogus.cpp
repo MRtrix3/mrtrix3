@@ -29,12 +29,32 @@
 using namespace MR;
 using namespace App;
 
+const OptionGroup SpecialOptions = 
+  OptionGroup ("Crap and stuff") 
+  + Option ("sag", " safnsfa sakgf kagbkgbs jk gkadbk")
+  +   Argument ("test").type_image_in()
+  + Option ("fbk", "rljt sdln gklnd gknsd gk s")
+  +  Argument ("file").type_file();
 
 
 void usage () {
 
   ARGUMENTS
     + Argument ("file", "a file name").type_file();
+
+
+  OPTIONS
+    + OptionGroup ("Crap and stuff")
+
+    + Option ("asd", "sdo se fsj")
+    + Option ("dgs", "lois sag nosid ngshosandgkih")
+
+    + OptionGroup ("Other things")
+    + Option ("fksd", "dgfgk kdf gksd gks nkg ksd gkb k")
+    + Option ("poipoh", "l  s sa fn asfb aksdbgbdgjk bgbd k")
+    +   Argument ("pop")
+
+    + SpecialOptions;
 }
 
 

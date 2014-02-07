@@ -93,7 +93,9 @@ namespace MR
           + ARGUMENTS.syntax (format)
           + DESCRIPTION.syntax (format)
           + OPTIONS.syntax (format)
-          + __standard_options.syntax (format)
+          + __standard_options.header (format)
+          + __standard_options.contents (format)
+          + __standard_options.footer (format)
           + help_tail (format);
       }
 
