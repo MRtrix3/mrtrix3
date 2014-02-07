@@ -269,25 +269,48 @@ namespace MR
 
 
 
-    std::string OptionGroup::syntax (int format) const
+    std::string OptionGroup::header (int format) const
     {
-      std::string s ( format ? bold (name) + "\n\n" : std::string (name) + ":\n" );
+      return format ? bold (name) + "\n\n" : std::string (name) + ":\n";
+    }
 
-      for (size_t i = 0; i < size(); ++i)
-        s += (*this) [i].syntax (format);
-      if (!format)
-        s += "\n";
+    std::string OptionGroup::contents (int format) const
+    {
+      std::string s;
+      for (size_t i = 0; i < size(); ++i) 
+        s += (*this)[i].syntax (format);
       return s;
     }
 
+    std::string OptionGroup::footer (int format)
+    {
+      return format ? "" : "\n";
+    }
 
 
 
     std::string OptionList::syntax (int format) const
     {
+      std::vector<std::string> group_names;
+      for (size_t i = 0; i < size(); ++i) {
+        if (std::find (group_names.begin(), group_names.end(), (*this)[i].name) == group_names.end()) 
+          group_names.push_back ((*this)[i].name);
+      }
+
       std::string s;
-      for (size_t i = 0; i < size(); ++i)
-        s += (*this) [i].syntax (format);
+      for (size_t i = 0; i < group_names.size(); ++i) {
+        size_t n = i;
+        while ((*this)[n].name != group_names[i])
+          ++n;
+        s += (*this)[n].header (format);
+        while (n < size()) {
+          if ((*this)[n].name == group_names[i])
+            s += (*this)[n].contents (format);
+          ++n;
+        }
+        s += OptionGroup::footer (format);
+      }
+
       return s;
     }
 

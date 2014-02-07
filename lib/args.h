@@ -402,7 +402,9 @@ namespace MR
           return std::vector<Option>::back();
         }
 
-        std::string syntax (int format) const;
+        std::string header (int format) const;
+        std::string contents (int format) const;
+        static std::string footer (int format);
     };
 
 
