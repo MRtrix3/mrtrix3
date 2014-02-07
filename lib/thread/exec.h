@@ -57,15 +57,6 @@ namespace MR
      * the -nthreads command-line option */
     size_t number_of_threads ();
 
-    //! temporarily change number of cores, until class goes out of scope
-    class SetNumberOfThreads {
-      public:
-        SetNumberOfThreads (size_t number);
-        ~SetNumberOfThreads ();
-      private:
-        size_t previous_number;
-    };
-
 
 
     //! Create an array of duplicate functors to execute in parallel
