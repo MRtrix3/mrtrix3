@@ -711,25 +711,24 @@ getting git version in folder "''' + folder + '"... ')
 
   if verbose:
     sys.stderr.write ('not found\n')
-  return None
+  return 'unknown'
 
 
 def update_git_version (folder, git_version_file, macro_name):
   git_version = get_git_version (folder)
-  if git_version is not None:
-    version_file_contents = '#define ' + macro_name + ' "' + git_version + '"\n'
-    current_version_file_contents = ''
-    try:
-      with open (git_version_file) as fd:
-        current_version_file_contents = fd.read()
-    except:
-      pass
+  version_file_contents = '#define ' + macro_name + ' "' + git_version + '"\n'
+  current_version_file_contents = ''
+  try:
+    with open (git_version_file) as fd:
+      current_version_file_contents = fd.read()
+  except:
+    pass
     
-    if not version_file_contents == current_version_file_contents:
-      if verbose:
-        sys.stderr.write ('version file "' + git_version_file + '" is out of date - updating\n')
-      with open (git_version_file, 'w') as fd:
-        fd.write (version_file_contents)
+  if not version_file_contents == current_version_file_contents:
+    if verbose:
+      sys.stderr.write ('version file "' + git_version_file + '" is out of date - updating\n')
+    with open (git_version_file, 'w') as fd:
+      fd.write (version_file_contents)
 
 
 
