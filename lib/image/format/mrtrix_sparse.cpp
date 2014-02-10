@@ -173,8 +173,8 @@ namespace MR
 
         } else {
 
-          image_path  = Path::basename (H.name().substr (0, H.name().size()-5) + ".dat");
-          sparse_path = Path::basename (H.name().substr (0, H.name().size()-5) + ".sdat");
+          image_path  = Path::basename (H.name().substr (0, H.name().size()-4) + ".dat");
+          sparse_path = Path::basename (H.name().substr (0, H.name().size()-4) + ".sdat");
 
           out << "file: " << image_path << "\nsparse_file: " << sparse_path << "\nEND\n";
 
