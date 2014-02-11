@@ -42,6 +42,7 @@
  * multi-threading in MRtrix.
  *
  * \sa Image::ThreadedLoop
+ * \sa thread_run_queue
  */
 
 namespace MR
@@ -53,17 +54,9 @@ namespace MR
      * @{ */
 
     /*! the number of cores to use for multi-threading, as specified in the
-     * variable NumberOfThreads in the MRtrix configuration file */
+     * variable NumberOfThreads in the MRtrix configuration file, or set using
+     * the -nthreads command-line option */
     size_t number_of_threads ();
-
-    //! temporarily change number of cores, until class goes out of scope
-    class SetNumberOfThreads {
-      public:
-        SetNumberOfThreads (size_t number);
-        ~SetNumberOfThreads ();
-      private:
-        size_t previous_number;
-    };
 
 
 

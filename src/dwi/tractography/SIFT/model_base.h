@@ -216,7 +216,7 @@ namespace MR
         DWI::FMLS::Segmenter fmls (dirs, Math::SH::LforN (data.dim(3)));
         fmls.set_dilate_lookup_table (!App::get_options ("no_dilate_lut").size());
         fmls.set_create_null_lobe (App::get_options ("make_null_lobes").size());
-        Thread::run_queue_threaded_pipe (writer, FMLS::SH_coefs(), fmls, FMLS::FOD_lobes(), *this);
+        Thread::run_queue (writer, FMLS::SH_coefs(), Thread::multi (fmls), FMLS::FOD_lobes(), *this);
         have_null_lobes = fmls.get_create_null_lobe();
       }
 

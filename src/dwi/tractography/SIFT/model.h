@@ -197,7 +197,12 @@ namespace MR
         Mapping::TrackLoader loader (file, count);
         Mapping::TrackMapperDixel mapper (H, upsample_ratio, true, dirs);
         MappedTrackReceiver receiver (*this);
-        Thread::run_batched_queue_custom_threading (loader, 1, Tractography::Streamline<float>(), 100, mapper, 0, Mapping::SetDixel(), 100, receiver, 0);
+        Thread::run_queue (
+            loader, 
+            Thread::batch (Tractography::Streamline<float>()), 
+            Thread::multi (mapper), 
+            Thread::batch (Mapping::SetDixel()), 
+            Thread::multi (receiver));
 
         if (!contributions.back()) {
           track_t num_tracks = 0, max_index = 0;
@@ -269,7 +274,7 @@ namespace MR
 
         TrackIndexRangeWriter writer (SIFT_TRACK_INDEX_BUFFER_SIZE, num_tracks(), "Removing excluded fixels...");
         FixelRemapper remapper (*this, fixel_index_mapping);
-        Thread::run_queue_threaded_sink (writer, TrackIndexRange(), remapper);
+        Thread::run_queue (writer, TrackIndexRange(), Thread::multi (remapper));
 
         TD_sum = 0.0;
         for (typename std::vector<Fixel>::const_iterator i = fixels.begin(); i != fixels.end(); ++i)

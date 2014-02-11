@@ -46,7 +46,7 @@ namespace MR
       {
         BlockSender source (in.size(), block_size);
         Sorter      pipe   (in);
-        Thread::run_queue_threaded_pipe (source, TrackIndexRange(), pipe, VecItType(), *this);
+        Thread::run_queue (source, TrackIndexRange(), Thread::multi (pipe), VecItType(), *this);
       }
 
 

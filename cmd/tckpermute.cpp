@@ -463,7 +463,7 @@ void load_data_and_compute_integrals (const vector<string>& filename_list,
     fmls.set_peak_value_threshold (SUBJECT_FOD_THRESHOLD);
     vector<value_type> temp_fixel_integrals (fixel_directions.size(), 0.0);
     SubjectFixelProcessor fixel_processor (fixel_indexer, fixel_directions, temp_fixel_integrals, angular_threshold);
-    Thread::run_queue_threaded_pipe (writer2, DWI::FMLS::SH_coefs(), fmls, DWI::FMLS::FOD_lobes(), fixel_processor);
+    Thread::run_queue (writer2, DWI::FMLS::SH_coefs(), Thread::multi (fmls), DWI::FMLS::FOD_lobes(), fixel_processor);
 
     // Smooth the data based on connectivity
     for (size_t fixel = 0; fixel < fixel_directions.size(); ++fixel) {
@@ -581,7 +581,7 @@ void run() {
     DWI::FMLS::Segmenter fmls (dirs, Math::SH::LforN (av_fod_buffer.dim(3)));
     fmls.set_peak_value_threshold (GROUP_AVERAGE_FOD_THRESHOLD);
     GroupAvFixelProcessor fixel_processor (fixel_indexer, fixel_directions, fixel_positions);
-    Thread::run_queue_threaded_pipe (writer, DWI::FMLS::SH_coefs(), fmls, DWI::FMLS::FOD_lobes(), fixel_processor);
+    Thread::run_queue (writer, DWI::FMLS::SH_coefs(), Thread::multi (fmls), DWI::FMLS::FOD_lobes(), fixel_processor);
   }
 
   uint32_t num_fixels = fixel_directions.size();
@@ -645,7 +645,12 @@ void run() {
     Image::Header header (argument[4]);
     DWI::Tractography::Mapping::TrackMapperBase<SetVoxelDir> mapper (header);
     TrackProcessor tract_processor (fixel_indexer, fixel_directions, fixel_TDI, fixel_connectivity, angular_threshold);
-    Thread::run_queue_custom_threading (loader, 1, DWI::Tractography::Streamline<float>(), mapper, 1, SetVoxelDir(), tract_processor, 1);
+    Thread::run_queue (
+        loader, 
+        Thread::batch (DWI::Tractography::Streamline<float>()), 
+        mapper, 
+        Thread::batch (SetVoxelDir()), 
+        tract_processor);
   }
   track_file.close();
 

@@ -47,9 +47,6 @@ namespace MR
 
 
 
-    SetNumberOfThreads::SetNumberOfThreads (size_t number) : previous_number (__number_of_threads) { __number_of_threads = number; }
-    SetNumberOfThreads::~SetNumberOfThreads () { __number_of_threads = previous_number; }
-
 
     void (*Exec::Common::previous_print_func) (const std::string& msg) = NULL;
     void (*Exec::Common::previous_report_to_user_func) (const std::string& msg, int type) = NULL;
