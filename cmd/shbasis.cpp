@@ -85,10 +85,10 @@ template <typename value_type>
 void check_and_update (Image::Header& H, const bool force_old, const bool force_new)
 {
 
-  const size_t lmax = Math::SH::LforN (H.dim(3));
+  const size_t lmax = std::min (Math::SH::LforN (H.dim(3)), size_t(8));
 
   // Flag which volumes are m==0 and which are not
-  const size_t N = H.dim(3);
+  const ssize_t N = H.dim(3);
   BitSet mzero_terms (N, false);
   for (size_t l = 2; l <= lmax; l += 2)
     mzero_terms[Math::SH::index (l, 0)] = true;
@@ -119,18 +119,21 @@ void check_and_update (Image::Header& H, const bool force_old, const bool force_
   }
 
   // Get sums independently for each l
-  // Each order has a different power, and a different number of m!=0 volumes. Therefore,
-  //   calculate the ratio of m==0 to m!=0 volume intensities independently for each
-  //   harmonic order, ad average this ratio across harmonic orders
-  double ratio_sum = 0.0;
+ 
+  // Each order has a different power, and a different number of m!=0 volumes.
+  // Therefore, calculate the mean-square intensity for the m==0 and m!=0
+  // volumes independently, report ratio for each harmonic order, and the
+  // overall ratio over all harmonic orders:
+  double mzero_SoS (0.0), mnonzero_MSoS (0.0);
   Ptr<ProgressBar> progress;
-  if (App::log_level > 0 && App::log_level < 3)
+  if (App::log_level > 0 && App::log_level < 2)
     progress = new ProgressBar ("Evaluating SH basis of image " + H.name() + "...", N-1);
+
   for (size_t l = 2; l <= lmax; l += 2) {
 
     double mzero_sum = 0.0, mnonzero_sum = 0.0;
     Image::LoopInOrder loop (v, 0, 3);
-    for (v[3] = Math::SH::NforL(l-2); v[3] != Math::SH::NforL(l); ++v[3]) {
+    for (v[3] = ssize_t (Math::SH::NforL(l-2)); v[3] != ssize_t (Math::SH::NforL(l)); ++v[3]) {
       double sum = 0.0;
       for (loop.start (v, v_mask); loop.ok(); loop.next (v, v_mask)) {
         if (v_mask.value())
@@ -147,19 +150,20 @@ void check_and_update (Image::Header& H, const bool force_old, const bool force_
       ++*progress;
     }
 
-    const double mzero_meansquared    = mzero_sum    / double(voxel_count);
-    const double mnonzero_meansquared = mnonzero_sum / double(voxel_count * 2 * l);
-    const double ratio = mnonzero_meansquared / mzero_meansquared;
+    const double current_mnonzero_MSoS = mnonzero_sum / (2.0 * l);
 
-    ratio_sum += ratio;
-    DEBUG ("SH order " + str(l) + ", ratio of m!=0 to m==0 power: " + str(ratio));
+    mzero_SoS += mzero_sum;
+    mnonzero_MSoS += current_mnonzero_MSoS;
+
+    INFO ("SH order " + str(l) + ", ratio of m!=0 to m==0 power: " + str(current_mnonzero_MSoS/mzero_sum) + 
+        ", overall m=0 power: " + str (mzero_sum));
 
   }
 
   if (progress)
     progress = NULL;
 
-  const double ratio = ratio_sum / double(lmax/2);
+  const double ratio = mnonzero_MSoS / mzero_SoS;
   INFO ("Mean power ratio across SH orders: " + str(ratio));
 
   // Threshold to make decision on what basis is being used, if unambiguous

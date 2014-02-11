@@ -239,11 +239,9 @@ namespace MR
             if (old_neg == neg)
               return true;
 
-          for (size_t i = 0; i < work.rows(); i++) {
-            for (size_t j = 0; j < i; j++)
+          for (size_t i = 0; i < work.rows(); i++) 
+            for (size_t j = 0; j <= i; j++)
               work (i,j) = shared.Mt_M (i,j);
-            work (i,i) = shared.Mt_M (i,i) + norm_lambda;
-          }
 
           // min-norm constraint:
           if (norm_lambda) {
@@ -257,7 +255,7 @@ namespace MR
                 ++l;
               }
               else 
-                work(i,i) += 2.0*norm_lambda;
+                work(i,i) += 0.5 * norm_lambda;
             }
 #endif
           }
