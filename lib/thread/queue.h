@@ -20,6 +20,8 @@
 
  */
 
+/** \file */
+
 #ifndef __mrtrix_thread_queue_h__
 #define __mrtrix_thread_queue_h__
 
@@ -122,13 +124,67 @@ namespace MR
 
 
 
+    /** \defgroup thread_queue Thread-safe queue
+     * \brief Functionality for thread-safe parallel processing of queued items 
+     *
+     * These functions and classes provide functionality for one or more \e
+     * source threads to feed items into a first-in first-out queue, and one or
+     * more \e sink threads to consume items. This pipeline can also extend
+     * over two queues, with one or more \e pipe threads consuming items of one
+     * type from the first queue, and feeding items of another type onto the
+     * second queue. 
+     *
+     * As a graphical representation of the pipeline, the following workflows
+     * can be achieved:
+     *
+     * \code
+     *     [source] \               / [sink]
+     *     [source] -- queue<item> -- [sink]
+     *     [source] /               \ [sink]
+     *        ..                        ..
+     *     N_source                   N_sink
+     * \endcode
+     *
+     * or for a deeper pipeline:
+     *
+     * \code
+     *     [source] \                / [pipe]  \                 / [sink]
+     *     [source] -- queue<item1> -- [pipe]  -- queue<item2>  -- [sink]
+     *     [source] /                \ [pipe]  /                 \ [sink]
+     *        ..                         ..                          ..    
+     *     N_source                    N_pipe                      N_sink
+     * \endcode
+     *
+     * By default, items are push to and pulled from the queue one by one. In
+     * situations where the amount of processing per item is small, items can
+     * be sent in batches to reduce the overhead of thread management (mutex
+     * locking/unlocking, etc). 
+     *
+     * The simplest way to use this functionality is via the
+     * Thread::run_queue() and associated Thread::multi() and Thread::batch()
+     * functions. In complex situations, it may be necessary to use the
+     * Thread::Queue class directly, although that should very rarely (if ever)
+     * be needed. 
+     *
+     * \sa Thread::run_queue()
+     * \sa Thread::Queue
+     *
+     * @{ */
 
 
 
     //! A first-in first-out thread-safe item queue
     /*! This class implements a thread-safe means of pushing data items into a
      * queue, so that they can each be processed in one or more separate
-     * threads. It has somewhat unusual usage, which consists of the following
+     * threads. 
+     *
+     * \note In practice, it is almost always simpler to use the convenience
+     * function Thread::run_queue(). You should never need to use the
+     * Thread::Queue directly unless you have a very unusual situation.
+     *
+     * \section thread_queue_usage Usage overview
+     *
+     * Thread::Queue has somewhat unusual usage, which consists of the following
      * steps:
      * - Create an instance of a Thread::Queue
      * - Create one or more instances of the corresponding
@@ -285,7 +341,7 @@ namespace MR
      * }
      * \endcode
      *
-     * \par Rationale for the Writer, Reader, and Item member classes
+     * \section thread_queue_rationale Rationale for the Writer, Reader, and Item member classes
      *
      * The motivation for the use of additional member classes to perform the
      * actual process of writing and reading to and from the queue is related
@@ -320,6 +376,8 @@ namespace MR
      * items in the queue, by preventing direct access to the underlying
      * pointers, and ensuring the Queue itself is responsible for all
      * allocation and deallocation of items as needed.
+     *
+     * \sa Thread::run_queue()
      */
     template <class T> class Queue
     {
@@ -345,6 +403,7 @@ namespace MR
           assert (capacity > 0);
         }
 
+        //! needed for Thread::run_queue()
         Queue (const T& item_type, const std::string& description = "unnamed", size_t buffer_size = MRTRIX_QUEUE_DEFAULT_CAPACITY) :
           more_data (mutex),
           more_space (mutex),
@@ -370,7 +429,9 @@ namespace MR
          * process of writing items to the queue is done via the Writer::Item
          * class.
          *
-         * See Thread::Queue for more information and an example. */
+         * \sa Thread::Queue for more detailed information and examples.
+         * \sa Thread::run_queue() for a much more user-friendly way of setting
+         * up a queue.  */
         class Writer
         {
           public:
@@ -389,7 +450,9 @@ namespace MR
              * object of this class must be instantiated and used to write to the
              * queue.
              *
-             * See Thread::Queue for more information and an example. */
+             * \sa Thread::Queue for more detailed information and examples.
+             * \sa Thread::run_queue() for a much more user-friendly way of setting
+             * up a queue.  */
             class Item
             {
               public:
@@ -433,7 +496,9 @@ namespace MR
          * process of reading items from the queue is done via the Reader::Item
          * class.
          *
-         * See Thread::Queue for more information and an example. */
+         * \sa Thread::Queue for more detailed information and examples.
+         * \sa Thread::run_queue() for a much more user-friendly way of setting
+         * up a queue.  */
         class Reader
         {
           public:
@@ -452,7 +517,9 @@ namespace MR
              * object of this class must be instanciated and used to read from the
              * queue.
              *
-             * See Thread::Queue for more information and an example. */
+             * \sa Thread::Queue for more detailed information and examples.
+             * \sa Thread::run_queue() for a much more user-friendly way of setting
+             * up a queue.  */
             class Item
             {
               public:
@@ -710,6 +777,13 @@ namespace MR
     };
 
 
+
+
+
+
+
+    /*! wrapper classes to extend simple functors designed for use with
+     * Thread::run_queue with functionality needed for use with Thread::Queue */
     namespace {
 
        template <class Type, class Functor>
@@ -803,44 +877,59 @@ namespace MR
 
 
 
-    //! convenience functions to set up and run multi-threaded queues.
-    /*! This set of convenience functions simplify the process of setting up a
-     * multi-threaded processing chain that should meet most users' needs.
-     * The differences between the three functions are as follows:
-     * - run_queue_threaded_source(): Multiple 'source' threads feed data
-     *     onto the queue, which are received by a single 'sink' thread.
-     * - run_queue_threaded_sink(): A single 'source' thread feeds data
-     *     onto the queue, which are then received and processed by multiple
-     *     'sink' threads.
-     * - run_queue_threaded_pipe(); A 'source' thread places data onto a
-     *     queue. These data are processed by multiple 'pipe' threads,
-     *     which place the processed data onto a second queue. A single
-     *     'sink' thread then reads the data from this second queue.
-     * 
-     * The template types consist of the functor classes, and
-     * the type(s) of the item(s) that will be passed through the queue(s).
-     * Note that in the case of run_queue_threaded_pipe(), there are two
-     * queues involved, and these queues may have different types.
+
+
+    //! used to request multiple threads of the corresponding functor
+    /*! This function is used in combination with Thread::run_queue to request
+     * that the functor \a object be run in parallel using \a number threads of
+     * execution (defaults to Thread::number_of_threads()). 
+     * \sa Thread::run_queue() */
+    template <class Functor>
+      inline __Multi<Functor> multi (Functor& object, size_t number = number_of_threads()) 
+      {
+        return __Multi<Functor> (object, number);
+      }
+
+ 
+    //! used to request batched processing of items
+    /*! This function is used in combination with Thread::run_queue to request
+     * that the items \a object be processed in batches of \a number items 
+     * (defaults to MRTRIX_QUEUE_DEFAULT_BATCH_SIZE).
+     * \sa Thread::run_queue() */
+    template <class Item>
+      inline __Batch<Item> batch (const Item& object, size_t number = MRTRIX_QUEUE_DEFAULT_BATCH_SIZE) 
+      {
+        return __Batch<Item> (number);
+      }
+
+
+
+
+
+
+    //! convenience function to set up and run a 2-stage multi-threaded pipeline.
+    /*! This function (and its 3-stage equivalent 
+     * Thread::run_queue(const Source&, const Type1&, const Pipe&, const Type2&, const Sink&, size_t)) 
+     * simplify the process of setting up a multi-threaded processing chain
+     * that should meet most users' needs.
      *
-     * The actual arguments correspond to an instance of both the source &
-     * sink functors (as well as the pipe functor if run_queue_threaded_pipe()
-     * is used), and an item instance for each queue (provided purely to specify
-     * the type of object to pass through the queue(s)).
+     * The arguments to this function correspond to an instance of the Source, 
+     * the Sink, and optionally the Pipe functors, in addition to an instance
+     * of the Items to be passed through each stage of the pipeline - these are
+     * provided purely to specify the type of object to pass through the
+     * queue(s).
      *
-     * Where more than one thread is to be used for a functor, additional
-     * instances of the functor will be created using the relevant class's
-     * copy constructor. Therefore, care should be taken to ensure that the
-     * copy constructor behaves appropriately.
+     * \note While the functors are passed by const-reference, you  should not
+     * rely on them being unmodified - they will immediately be cast back
+     * to their non-const version within Thread::run_queue(). The reason for
+     * the const declaration is to support passing the lightweight temporary
+     * structures produced by Thread::multi(), which have to be passed by
+     * const-reference as mandated by the C++ standard.
      *
-     * For the functor that is being multi-threaded, the number of threads
-     * instantiated will depend on the "NumberOfThreads" entry in the MRtrix
-     * confugration file, or can be set at the command-line using the
-     * -nthreads option.
+     * \section thread_run_queue_functors Functors
      *
-     * Note that if the number of threads is set to 1, then no additional
-     * threads will be spawned; the function will use local data storage and
-     * explicitly execute the relevant functors within the calling thread.
-     *
+     * The 3 types of functors each have a specific purpose, and corresponding
+     * requirements as described below:
      *
      * \par Source: the input functor 
      * The Source class must at least provide the method:
@@ -848,7 +937,7 @@ namespace MR
      * bool operator() (Type& item);
      * \endcode
      * This function prepares the \a item passed to it, and should return \c
-     * true if further items need to be prepared, or \c false to signal that
+     * true if further items need to be processed, or \c false to signal that
      * no further items are to be sent through the queue (at which point the
      * corresponding thread(s) will exit).
      *
@@ -861,7 +950,7 @@ namespace MR
      * true when ready to process further items, or \c false to signal the end
      * of processing (at which point the corresponding thread(s) will exit).
      *
-     * \par Pipe: the processing functor (for run_queue_threaded_pipe() only)
+     * \par Pipe: the processing functor (for 3-stage pipeline only)
      * The Pipe class must at least provide the method:
      * \code 
      * bool operator() (const Type1& item_in, Type2& item_out);
@@ -871,102 +960,138 @@ namespace MR
      * true when ready to process further items, or \c false to signal the end
      * of processing (at which point the corresponding thread(s) will exit).
      *
+     * \section thread_run_queue_example Simple example
      *
-     * \par Example usage
+     * This is a simple demo application that generates a linear sequence of
+     * numbers and sums them up:
+     *
      * \code
-     * // The item type to be passed through the queue:
-     * class Item {
-     *   public:
-     *     size_t n;
-     * };
+     * const size_t max_count;
      *
-     *
-     * // The Source class prepares each item to be sent through the queue:
+     * // the functor that will generate the items:
      * class Source {
      *   public:
      *     Source () : count (0) { }
-     *
-     *     // The kernel responsible for preparing each item to be sent.
-     *     // This simply generates 1000000 items with incrementing count.
-     *     bool operator() (Item& item) {
-     *       item.n = count++;
-     *       return count < 1000000;
-     *     }
-     *
-     *     size_t count;
+     *     bool operator() (size_t& item) {
+     *       item.value = count++;
+     *       return count < max_count; // stop when max_count is reached
      * };
      *
-     * // The Pipe class processes data from one queue and places the result
-     * //   onto another:
-     * class Pipe {
-     *   public:
-     *     Pipe () { }
-     *
-     *     // The kernel responsible for processing the data.
-     *     // This simply doubles each value received.
-     *     bool operator() (const Item& item_in, Item& item_out) {
-     *       item_out.n = 2 * item_in.n;
-     *       return true;
-     *     }
-     * };
-     *
-     * // The Sink class processes each item received through the queue:
+     * // the functor that will consume the items:
      * class Sink {
      *   public:
-     *     Sink () : count (0) { }
-     *
-     *     // The kernel responsible for processing each item received.
-     *     // This example simply adds up the counts of the items received.
-     *     bool operator() (const Item& item) {
-     *       count += item.n;
-     *       return true;
+     *     Sink (size_t& total) : 
+     *       grand_total (grand_total),
+     *       total (0) { }
+     *     ~Sink () { // update grand_total in destructor
+     *       grand_total += total;
      *     }
-     *
-     *     size_t count;
+     *     bool operator() (const size_t& item) {
+     *       total += item.value();
+     *       return true;
+     *    }
+     *  protected:
+     *    size_t& grand_total;
      * };
      *
-     * int main (...) 
+     * void run () 
      * {
+     *   size_t grand_total = 0;
      *   Source source;
-     *   Pipe pipe;
-     *   Sink sink;
+     *   Sink sink (grand_total);
      *
-     *   // Run many threads for the source and one thread for the sink:
-     *   run_queue_threaded_source (source, Item(), sink);
-     *
-     *   // Run one thread for the source and many threads for the sink:
-     *   run_queue_threaded_sink   (source, Item(), sink);
-     *
-     *   // Run one source thread, one sink thread and many pipe threads:
-     *   run_queue_threaded_pipe   (source, Item(), pipe, Item(), sink);
-     *
+     *   // run a single-source => single-sink pipeline:
+     *   Thread::run_queue (source, size_t(), sink);
      * }
      * \endcode
+     *
+     * \section thread_run_queue_multi Parallel execution of functors
+     *
+     * If a functor is to be run over multiple parallel threads of execution,
+     * it should be wrappred in a call to Thread::multi() before being passed
+     * to the Thread::run_queue() functions.  The Thread::run_queue() functions
+     * will then create additional instances of the relevant functor using its
+     * copy constructor. Care should therefore be taken to ensure that the
+     * functor's copy constructor behaves appropriately.
+     *
+     * For example, using the code above:
+     *
+     * \code 
+     * ...
+     *
+     * void run () 
+     * {
+     *   ...
+     *
+     *   // run a single-source => multi-sink pipeline:
+     *   Thread::run_queue (source, size_t(), Thread::multi (sink));
+     * }
+     * \endcode
+     *
+     * For the functor that is being multi-threaded, the default number of
+     * threads instantiated will depend on the "NumberOfThreads" entry in the
+     * MRtrix confugration file, or can be set at the command-line using the
+     * -nthreads option. This number can also be set as additional optional
+     * argument to Thread::multi().
+     *
+     * Note that any functor can be parallelised in this way. In the example
+     * above, the Source functor could have been wrapped in Thread::multi()
+     * instead if this was the behaviour required:
+     *
+     * \code 
+     * ...
+     *
+     * void run () 
+     * {
+     *   ...
+     *
+     *   // run a multi-source => single-sink pipeline:
+     *   Thread::run_queue (Thread::multi (source), size_t(), sink);
+     * }
+     * \endcode
+     *
+     *
+     * \section thread_run_queue_batch Batching items
+     *
+     * In cases where the amount of processing per item is small, the overhead
+     * of managing the concurrent access to the various queues from all the
+     * threads may become prohibitive (see \ref multithreading for details). In
+     * this case, it is a good idea to process the items in batches, which
+     * drastically reduces the number of accesses to the queue. This can be
+     * done by wrapping the items in a call to Thread::batch():
+     *
+     * \code 
+     * ...
+     *
+     * void run () 
+     * {
+     *   ...
+     *
+     *   // run a single-source => multi-sink pipeline on batches of size_t items:
+     *   Thread::run_queue (source, Thread::batch (size_t()), Thread::multi (sink));
+     * }
+     * \endcode
+     *
+     * By default, batches consist of MRTRIX_QUEUE_DEFAULT_BATCH_SIZE items
+     * (defined as 128). This can be set explicitly by providing the desired
+     * size as an additional argument to Thread::batch():
+     *
+     * \code 
+     * ...
+     *
+     * void run () 
+     * {
+     *   ...
+     *
+     *   // run a single-source => multi-sink pipeline on batches of 1024 size_t items:
+     *   Thread::run_queue (source, Thread::batch (size_t(), 1024), Thread::multi (sink));
+     * }
+     * \endcode
+     *
+     * Obviously, Thread::multi() and Thread::batch() can be used in any
+     * combination to perform the operations required. 
      */
 
-
-
-
-
-    //! used to request multiple threads of the corresponding functor
-    template <class Functor>
-      inline __Multi<Functor> multi (Functor& object, size_t number = number_of_threads()) 
-      {
-        return __Multi<Functor> (object, number);
-      }
-
- 
-    //! used to request batched processing of items
-    template <class Item>
-      inline __Batch<Item> batch (const Item& object, size_t number = MRTRIX_QUEUE_DEFAULT_BATCH_SIZE) 
-      {
-        return __Batch<Item> (number);
-      }
-
-
-
-
-    //! functors not const as advertised!
     template <class Source, class Type, class Sink>
       inline void run_queue (
           const Source& source, 
@@ -995,8 +1120,44 @@ namespace MR
 
 
 
-
-    //! functors not const as advertised!
+    //! convenience functions to set up and run a 3-stage multi-threaded pipeline.
+    /*! This function extends the 2-stage Thread::run_queue() function to allow
+     * a 3-stage pipeline. For example, using the example from 
+     * Thread::run_queue(), the following would add an additional stage to the
+     * pipeline to double the numbers as they come through:
+     *
+     * \code
+     *
+     * ...
+     *
+     * class Pipe {
+     *   public:
+     *     bool operator() (const Item& item_in, Item& item_out) {
+     *       item_out.n = 2 * item_in.n;
+     *       return true;
+     *     }
+     * };
+     *
+     * ...
+     *
+     * void run () 
+     * {
+     *   ...
+     *
+     *   // run a single-source => multi-pipe => single-sink pipeline on batches of size_t items:
+     *   Thread::run_queue (
+     *       source, 
+     *       Thread::batch (size_t()), 
+     *       Thread::multi (sink)
+     *       Thread::batch (size_t()), 
+     *       sink);
+     * }
+     * \endcode
+     *
+     * Note that any functor can be executed in parallel (i.e. wrapped in
+     * Thread::multi()), Items do not need to be of the same type, and can be
+     * batched independently with any desired size. 
+     * */
     template <class Source, class Type1, class Pipe, class Type2, class Sink>
       inline void run_queue (
           const Source& source,
@@ -1036,10 +1197,7 @@ namespace MR
       }
 
 
-
-
-
-
+    /** @} */
     /** @} */
   }
 }

@@ -42,6 +42,7 @@
  * multi-threading in MRtrix.
  *
  * \sa Image::ThreadedLoop
+ * \sa thread_run_queue
  */
 
 namespace MR
