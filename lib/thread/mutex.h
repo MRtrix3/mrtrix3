@@ -30,7 +30,7 @@ namespace MR
   namespace Thread
   {
 
-    /** \addtogroup Thread
+    /** \addtogroup thread_basics
      * @{ */
 
     //! Mutual exclusion lock

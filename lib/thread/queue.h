@@ -1008,11 +1008,12 @@ namespace MR
      * \section thread_run_queue_multi Parallel execution of functors
      *
      * If a functor is to be run over multiple parallel threads of execution,
-     * it should be wrappred in a call to Thread::multi() before being passed
+     * it should be wrapped in a call to Thread::multi() before being passed
      * to the Thread::run_queue() functions.  The Thread::run_queue() functions
      * will then create additional instances of the relevant functor using its
-     * copy constructor. Care should therefore be taken to ensure that the
-     * functor's copy constructor behaves appropriately.
+     * copy constructor, via the Thread::Array class; care should therefore be
+     * taken to ensure that the functor's copy constructor behaves
+     * appropriately.
      *
      * For example, using the code above:
      *

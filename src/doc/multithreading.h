@@ -205,10 +205,10 @@ namespace MR
 
     MRtrix provides a number of constructs to simplify the process of writing solid
     multi-threading applications. In most cases, the high-level
-    Image::ThreadedLoop and Thread::Queue frameworks will be appropriate for
-    the particular algorithm to be implemented. If a more sophisticated
-    implementation is required, MRtrix also provides low-level wrappers around
-    much of the POSIX threads API.
+    \ref image_thread_looping and \ref thread_queue frameworks will be
+    appropriate for the particular algorithm to be implemented. If a more
+    sophisticated implementation is required, MRtrix also provides low-level
+    wrappers around much of the POSIX threads API.
 
     \subsection multithreading_exec Launching threads
 
@@ -283,7 +283,7 @@ namespace MR
     creating such applications. It allows the developer to provide a simple
     functor class implementing the operation to be performed for each voxel,
     which can be passed to Image::ThreadedLoop to be executed over the whole
-    dataset. Refer to the Image::ThreadedLoop documentation for more
+    dataset. Refer to \ref image_thread_looping documentation for more
     information.
 
     \subsection multithreading_queue The Thread::Queue
@@ -292,7 +292,7 @@ namespace MR
     For example, data items are read in order from disk, and can be processed
     independently. The results might then need to be written back to disk in a
     serial fashion. The Thread::Queue class is designed to facilitate this type
-    of operation. Please refer to the Thread::Queue documentation for a
+    of operation. Please refer to the \ref thread_queue for a
     detailed description. 
 
     There are also a number of convenience functions to simplify the setting up
