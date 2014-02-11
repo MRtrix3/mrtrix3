@@ -38,12 +38,27 @@ namespace MR
   namespace Image
   {
 
+    /** \addtogroup Thread
+     * @{
+     *
+     * \defgroup image_thread_looping Thread-safe image looping 
+     * \brief A class to perform multi-threaded operations on images
+     *
+     * The Image::ThreadedLoop class provides a simple and powerful interface
+     * for rapid development of multi-threaded image processing applications.
+     * For full details, please refer the Image::ThreadedLoop class
+     * documentation.
+     *
+     * @} */
+
+
 
     /*! \addtogroup loop 
      * \{ */
 
     //! a class to loop over images in a multi-threaded fashion
-    /*! This class allows arbitrary looping operations to be performed in
+    /*! \ingroup image_thread_looping 
+     * This class allows arbitrary looping operations to be performed in
      * parallel, using a versatile multi-threading framework. It builds on the
      * single-threaded imaging looping classes, Image::Loop and
      * Image::LoopInOrder, and can be used to code up complex operations with
