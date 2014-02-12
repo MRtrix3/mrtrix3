@@ -138,6 +138,8 @@ please run "./configure" prior to invoking this script
   sys.exit (1)
 
 
+environ = os.environ.copy()
+environ.update ({ 'PATH': PATH })
 
 
 if ld_enabled and len(runpath):
@@ -378,7 +380,7 @@ def execute (message, cmd):
     disp (' '.join(cmd) + os.linesep)
 
   try: 
-    process = subprocess.Popen (cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    process = subprocess.Popen (cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, env=environ)
     ( stdout, stderr ) = process.communicate()
     if process.returncode != 0:
       disp ('\nERROR: ' + message + '\n\n' + ' '.join(cmd) + '\n\nfailed with output\n\n' + stderr.decode (errors='ignore'))
