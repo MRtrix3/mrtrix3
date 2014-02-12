@@ -20,7 +20,6 @@
 
  */
 
-/** \file */
 
 #ifndef __mrtrix_thread_queue_h__
 #define __mrtrix_thread_queue_h__
@@ -78,7 +77,6 @@ namespace MR
           public:
             typedef X type;
             static X& functor (const X& job) { return const_cast<X&> (job); }
-            static bool single_thread () { return true; }
         };
 
       template <class X>
@@ -87,7 +85,6 @@ namespace MR
           public:
             typedef X type;
             static X& functor (const __Multi<X>& job) { return const_cast<X&> (job.obj); }
-            static bool single_thread () { return false; }
         };
 
       // to launch multi/single job/functor seamlessly:
@@ -870,7 +867,7 @@ namespace MR
     }
 
 
-    //* \endcond
+    //! \endcond
 
 
 
@@ -975,6 +972,7 @@ namespace MR
      *     bool operator() (size_t& item) {
      *       item.value = count++;
      *       return count < max_count; // stop when max_count is reached
+     *     }
      * };
      *
      * // the functor that will consume the items:
@@ -1100,7 +1098,7 @@ namespace MR
           const Sink& sink, 
           size_t capacity = MRTRIX_QUEUE_DEFAULT_CAPACITY)
       {
-        if (__job<Source>::single_thread() && __job<Sink>::single_thread()) {
+        if (number_of_threads() == 0) {
           typename __item<Type>::type item;
           while (const_cast<Source&> (source) (item)) 
             if (!const_cast<Sink&> (sink) (item))
@@ -1168,7 +1166,7 @@ namespace MR
           const Sink& sink, 
           size_t capacity = MRTRIX_QUEUE_DEFAULT_CAPACITY)
       {
-        if (__job<Source>::single_thread() && __job<Pipe>::single_thread() && __job<Sink>::single_thread()) {
+        if (number_of_threads() == 0) {
           typename __item<Type1>::type item1;
           typename __item<Type2>::type item2;
           while (const_cast <Source&> (source) (item1)) {
