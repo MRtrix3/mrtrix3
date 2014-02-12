@@ -25,8 +25,8 @@
 #include "gui/init.h"
 #include "file/path.h"
 #include "math/SH.h"
-#include "gui/disp_profile_icon.h"
-#include "gui/disp_profile/render_window.h"
+#include "gui/shview_icon.h"
+#include "gui/shview/render_window.h"
 
 
 using namespace MR;
