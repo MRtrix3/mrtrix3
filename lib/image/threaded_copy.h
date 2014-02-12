@@ -53,7 +53,7 @@ namespace MR
           size_t num_axes_in_thread = 1) 
       {
         ThreadedLoop (source, axes, num_axes_in_thread)
-          .run_foreach (__copy_functor<OutputVoxelType, InputVoxelType>, Input, source, Output, destination);
+          .run_foreach (__copy_functor<OutputVoxelType, InputVoxelType>, Input(), source, Output(), destination);
       }
 
     template <class InputVoxelType, class OutputVoxelType>
@@ -66,8 +66,8 @@ namespace MR
       {
         ThreadedLoop (source, num_axes_in_thread, from_axis, to_axis)
           .run_foreach (__copy_functor<OutputVoxelType, InputVoxelType>, 
-              source, Input, 
-              destination, Output);
+              source, Input(), 
+              destination, Output());
       }
 
 
@@ -83,8 +83,8 @@ namespace MR
       {
         ThreadedLoop (message, source, axes, num_axes_in_thread)
           .run_foreach (__copy_functor<OutputVoxelType, InputVoxelType>, 
-              source, Input, 
-              destination, Output);
+              source, Input(), 
+              destination, Output());
       }
 
     template <class InputVoxelType, class OutputVoxelType>
@@ -98,8 +98,8 @@ namespace MR
       {
         ThreadedLoop (message, source, num_axes_in_thread, from_axis, to_axis)
           .run_foreach (__copy_functor<OutputVoxelType, InputVoxelType>, 
-              source, Input, 
-              destination, Output);
+              source, Input(), 
+              destination, Output());
       }
 
 
