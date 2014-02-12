@@ -413,6 +413,11 @@ namespace MR
           typename std::vector<ValueType>::const_iterator p1, p2;
       };
 
+#ifndef USE_NON_ORTHONORMAL_SH_BASIS
+#define SH_NON_M0_SCALE_FACTOR (m?M_SQRT2:1.0)*
+#else
+#define SH_NON_M0_SCALE_FACTOR
+#endif
 
       template <typename ValueType> class PrecomputedAL
       {
@@ -445,7 +450,7 @@ namespace MR
               for (int m = 0; m <= lmax; m++) {
                 Legendre::Plm_sph (buf, lmax, m, cos_el);
                 for (int l = ( (m&1) ?m+1:m); l <= lmax; l+=2)
-                  p[index_mpos (l,m)] = buf[l];
+                  p[index_mpos (l,m)] = SH_NON_M0_SCALE_FACTOR buf[l];
               }
             }
           }
@@ -491,21 +496,21 @@ namespace MR
           }
 
           template <class ValueContainer>
-          ValueType value (const ValueContainer& val, const Point<ValueType>& unit_dir) const {
-            PrecomputedFraction<ValueType> f;
-            set (f, Math::acos (unit_dir[2]));
-            ValueType az = Math::atan2 (unit_dir[1], unit_dir[0]);
-            ValueType v = 0.0;
-            for (int l = 0; l <= lmax; l+=2)
-              v += get (f,l,0) * val[index (l,0)];
-            for (int m = 1; m <= lmax; m++) {
-              ValueType c = Math::cos (m*az);
-              ValueType s = Math::sin (m*az);
-              for (int l = ( (m&1) ? m+1 : m); l <= lmax; l+=2)
-                v += get (f,l,m) * (c * val[index (l,m)] + s * val[index (l,-m)]);
+            ValueType value (const ValueContainer& val, const Point<ValueType>& unit_dir) const {
+              PrecomputedFraction<ValueType> f;
+              set (f, Math::acos (unit_dir[2]));
+              ValueType az = Math::atan2 (unit_dir[1], unit_dir[0]);
+              ValueType v = 0.0;
+              for (int l = 0; l <= lmax; l+=2)
+                v += get (f,l,0) * val[index (l,0)];
+              for (int m = 1; m <= lmax; m++) {
+                ValueType c = Math::cos (m*az);
+                ValueType s = Math::sin (m*az);
+                for (int l = ( (m&1) ? m+1 : m); l <= lmax; l+=2)
+                  v += get (f,l,m) * (c * val[index (l,m)] + s * val[index (l,-m)]);
+              }
+              return v;
             }
-            return v;
-          }
 
         protected:
           int lmax, ndir, nAL;
