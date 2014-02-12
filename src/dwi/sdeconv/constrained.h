@@ -252,7 +252,7 @@ namespace MR
             for (size_t i = 0; i < work.rows(); ++i) {
               if (Math::SH::index (l,0) == i) {
                 work(i,i) += norm_lambda;
-                ++l;
+                l+=2;
               }
               else 
                 work(i,i) += 0.5 * norm_lambda;
