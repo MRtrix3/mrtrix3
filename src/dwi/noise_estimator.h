@@ -98,7 +98,6 @@ namespace MR {
 
         template <class InputVoxelType, class OutputVoxelType, class ValueType> 
           inline void operator() (InputVoxelType& dwi, OutputVoxelType& noise, const Math::Matrix<ValueType>& SH2amp_mapping) {
-            Thread::SetNumberOfThreads num (4*Thread::number_of_threads());
             Image::ThreadedLoop loop ("estimating noise level...", dwi, 1, 0, 3);
             NoiseEstimatorFunctor<InputVoxelType,OutputVoxelType,ValueType> functor (dwi, noise, SH2amp_mapping, loop.inner_axes()[0]);
             loop.run_outer (functor);
