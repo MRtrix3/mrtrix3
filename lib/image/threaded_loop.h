@@ -679,6 +679,17 @@ namespace MR
     template <class Functor, class VoxelType1, class InputOutput1> 
       inline void ThreadedLoop::run_foreach (Functor functor, VoxelType1& vox1, InputOutput1 flags1)
       {
+        if (Thread::number_of_threads() == 0) {
+          LoopInOrder full_loop (all_axes());
+          typename VoxelType1::value_type val1 = typename VoxelType1::value_type();
+          for (full_loop.start (vox1); full_loop.ok(); full_loop.next (vox1)) {
+            flags1.read (val1, vox1);
+            functor (val1);
+            flags1.write (vox1, val1);
+          }
+          return;
+        }
+
         ThreadedLoopKernelForEach1<Functor, VoxelType1, InputOutput1> 
           loop_thread (*this, functor, vox1, flags1);
         run_outer (loop_thread, "run_foreach thread");
@@ -687,6 +698,20 @@ namespace MR
     template <class Functor, class VoxelType1, class InputOutput1, class VoxelType2, class InputOutput2> 
       inline void ThreadedLoop::run_foreach (Functor functor, VoxelType1& vox1, InputOutput1 flags1, VoxelType2& vox2, InputOutput2 flags2)
       {
+        if (Thread::number_of_threads() == 0) {
+          LoopInOrder full_loop (all_axes());
+          typename VoxelType1::value_type val1 = typename VoxelType1::value_type();
+          typename VoxelType2::value_type val2 = typename VoxelType2::value_type();
+          for (full_loop.start (vox1, vox2); full_loop.ok(); full_loop.next (vox1, vox2)) {
+            flags1.read (val1, vox1);
+            flags2.read (val2, vox2);
+            functor (val1, val2);
+            flags1.write (vox1, val1);
+            flags2.write (vox2, val2);
+          }
+          return;
+        }
+
         ThreadedLoopKernelForEach2<Functor, VoxelType1, InputOutput1, VoxelType2, InputOutput2> 
           loop_thread (*this, functor, vox1, flags1, vox2, flags2);
         run_outer (loop_thread, "run_foreach thread");
@@ -695,6 +720,23 @@ namespace MR
     template <class Functor, class VoxelType1, class InputOutput1, class VoxelType2, class InputOutput2, class VoxelType3, class InputOutput3> 
       inline void ThreadedLoop::run_foreach (Functor functor, VoxelType1& vox1, InputOutput1 flags1, VoxelType2& vox2, InputOutput2 flags2, VoxelType3& vox3, InputOutput3 flags3)
       {
+        if (Thread::number_of_threads() == 0) {
+          LoopInOrder full_loop (all_axes());
+          typename VoxelType1::value_type val1 = typename VoxelType1::value_type();
+          typename VoxelType2::value_type val2 = typename VoxelType2::value_type();
+          typename VoxelType3::value_type val3 = typename VoxelType3::value_type();
+          for (full_loop.start (vox1, vox2, vox3); full_loop.ok(); full_loop.next (vox1, vox2, vox3)) {
+            flags1.read (val1, vox1);
+            flags2.read (val2, vox2);
+            flags3.read (val3, vox3);
+            functor (val1, vox2, vox3);
+            flags1.write (vox1, val1);
+            flags2.write (vox2, val2);
+            flags3.write (vox3, val3);
+          }
+          return;
+        }
+
         ThreadedLoopKernelForEach3<Functor, VoxelType1, InputOutput1, VoxelType2, InputOutput2, VoxelType3, InputOutput3>
           loop_thread (*this, functor, vox1, flags1, vox2, flags2, vox3, flags3);
         run_outer (loop_thread, "run_foreach thread");

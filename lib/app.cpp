@@ -48,7 +48,7 @@ namespace MR
                                      + Option ("debug", "display debugging messages.")
                                      + Option ("force", "force overwrite of output files.")
                                      + Option ("nthreads", "use this number of threads in multi-threaded applications")
-                                       + Argument ("number").type_integer (1, 1, std::numeric_limits<int>::max())
+                                       + Argument ("number").type_integer (0, 1, std::numeric_limits<int>::max())
                                      + Option ("help", "display this information page and exit.")
                                      + Option ("version", "display version information and exit.");
 
