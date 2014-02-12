@@ -131,7 +131,7 @@ namespace MR
         normalise_action->setStatusTip (tr ("Normalise surface intensity"));
         connect (normalise_action, SIGNAL (triggered (bool)), this, SLOT (normalise_slot (bool)));
 
-        QAction* response_action = new QAction ("Treat as &response", this);
+        response_action = new QAction ("Treat as &response", this);
         response_action->setCheckable (true);
         response_action->setChecked (is_response_coefs);
         response_action->setShortcut (tr ("R"));
@@ -232,8 +232,10 @@ namespace MR
 
       void Window::close_slot ()
       {
-        TRACE;
+        values.clear();
+        set_values (0);
       }
+
       void Window::use_lighting_slot (bool is_checked)
       {
         render_frame->set_use_lighting (is_checked);
@@ -321,6 +323,11 @@ namespace MR
             values.swap (tmp);
           }
 
+          is_response = values.columns() < 15;
+          response_action->setChecked (is_response);
+          int lmax = is_response ? values.columns()-2 : (Math::SH::LforN (values.columns())/2)-1;
+          lmax_group->actions()[lmax]->setChecked (true);
+
           name = Path::basename (filename);
           set_values (0);
         }
@@ -333,25 +340,30 @@ namespace MR
 
       void Window::set_values (int row)
       {
-        current = row;
-        if (current < 0) 
-          current = 0;
-        else if (current >= int (values.rows())) 
-          current = int (values.rows())-1;
-
         Math::Vector<float> val;
-        if (is_response) {
-          val.resize (Math::SH::NforL (2* (values.columns()-1)), 0.0);
-          for (size_t n = 0; n < values.columns(); n++)
-            val[Math::SH::index (2*n,0)] = values (current,n);
+        std::string title;
+
+        if (values.rows()) {
+          current = row;
+          if (current < 0) 
+            current = 0;
+          else if (current >= int (values.rows())) 
+            current = int (values.rows())-1;
+
+          if (is_response) {
+            val.resize (Math::SH::NforL (2* (values.columns()-1)), 0.0);
+            for (size_t n = 0; n < values.columns(); n++)
+              val[Math::SH::index (2*n,0)] = values (current,n);
+          }
+          else 
+            val = values.row (current);
+          if (is_response) title += " (response)";
+          title = name + " [ " + str (current) + " ]";
         }
         else 
-          val = values.row (current);
+          name.clear();
 
         render_frame->set (val);
-        std::string title (name);
-        if (is_response) title += " (response)";
-        title += " [ " + str (current) + " ]";
         setWindowTitle (QString (title.c_str()));
       }
 
