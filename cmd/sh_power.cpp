@@ -69,7 +69,7 @@ void run () {
       for (int m = -l; m <= l; ++m) {
         SH[3] = Math::SH::index (l, m);
         float val = SH.value();
-#ifndef USE_ORTHONORMAL_SH_BASIS
+#ifdef USE_NON_ORTHONORMAL_SH_BASIS
         if (m != 0) 
           val *= M_SQRT1_2;
 #endif

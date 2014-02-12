@@ -56,9 +56,9 @@ void usage ()
     + "In previous versions of MRtrix, the convention used for storing spherical harmonic "
       "coefficients was a non-orthonormal basis (the m!=0 coefficients were a factor of "
       "sqrt(2) too large). This error has been rectified in the new MRtrix (assuming that "
-      "compilation was performed with the USE_ORTHONORMAL_SH_BASIS symbol defined), but will "
-      "cause issues if processing SH data that was generated using an older version of MRtrix "
-      "(or vice-versa)."
+      "compilation was performed without the USE_NON_ORTHONORMAL_SH_BASIS symbol defined), "
+      "but will cause issues if processing SH data that was generated using an older version "
+      "of MRtrix (or vice-versa)."
 
     + "This command provides a mechanism for testing the basis used in storage of image data "
       "representing a spherical harmonic series per voxel, and allows the user to forcibly "
@@ -214,7 +214,7 @@ void run ()
   if (get_options ("force_native").size()) {
     if (force_old || force_new)
       throw Exception ("Option -force_native cannot be used in conjunction with one of the other -force options");
-#ifdef USE_ORTHONORMAL_SH_BASIS
+#ifndef USE_NON_ORTHONORMAL_SH_BASIS
     INFO ("Forcing to new orthonormal basis (native)");
     force_new = true;
 #else

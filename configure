@@ -10,11 +10,13 @@ static = False
 verbose = False
 R_module = False
 profile_name = None
+sh_basis_def = None
 
 for arg in sys.argv[1:]:
   if '-debug'.startswith (arg): debug = True
   elif '-profile'.startswith (arg): profile = True
   elif '-nogui'.startswith (arg): nogui = True
+  elif '-noortho'.startswith (arg): sh_basis_def = '-DUSE_NON_ORTHONORMAL_SH_BASIS'
   elif '-noshared'.startswith (arg): noshared = True
   elif '-static'.startswith (arg): 
     static = True
@@ -1101,6 +1103,10 @@ else:
 if static:
   ld_flags = [ '-static' ] + zlib_ldflags + gsl_ldflags + thread_ldflags
 
+#
+# set macro for non-orthonormal SH basis if requested:
+if sh_basis_def is not None:
+  cpp_flags += [ sh_basis_def ]
 
 
 # write out configuration:

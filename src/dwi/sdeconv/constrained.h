@@ -245,7 +245,7 @@ namespace MR
 
           // min-norm constraint:
           if (norm_lambda) {
-#ifdef USE_ORTHONORMAL_SH_BASIS
+#ifndef USE_NON_ORTHONORMAL_SH_BASIS
             work.diagonal() += norm_lambda;
 #else
             int l = 0;

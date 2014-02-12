@@ -23,8 +23,8 @@
 #ifndef __math_SH_h__
 #define __math_SH_h__
 
-#ifdef USE_ORTHONORMAL_SH_BASIS
-# warning using orthonormal SH basis
+#ifdef USE_NON_ORTHONORMAL_SH_BASIS
+# warning using non-orthonormal SH basis
 #endif
 
 #include "point.h"
@@ -81,7 +81,7 @@ namespace MR
             for (int m = 1; m <= lmax; m++) {
               Legendre::Plm_sph (AL, lmax, m, x);
               for (int l = ( (m&1) ? m+1 : m); l <= lmax; l+=2) {
-#ifdef USE_ORTHONORMAL_SH_BASIS
+#ifndef USE_NON_ORTHONORMAL_SH_BASIS
                 SHT (i,index (l, m)) = M_SQRT2 * AL[l]*cos (m*dirs (i,0));
                 SHT (i,index (l,-m)) = M_SQRT2 * AL[l]*sin (m*dirs (i,0));
 #else
@@ -191,7 +191,7 @@ namespace MR
           for (int l = 0; l <= lmax; l+=2) amplitude += AL[l] * coefs[index (l,0)];
           for (int m = 1; m <= lmax; m++) {
             Legendre::Plm_sph (AL, lmax, m, ValueType (cos_elevation));
-#ifdef USE_ORTHONORMAL_SH_BASIS
+#ifndef USE_NON_ORTHONORMAL_SH_BASIS
             ValueType c = M_SQRT2 * Math::cos (m*azimuth);
             ValueType s = M_SQRT2 * Math::sin (m*azimuth);
 #else
@@ -229,7 +229,7 @@ namespace MR
             delta_vec[index (l,0)] = AL[l];
           for (int m = 1; m <= lmax; m++) {
             Legendre::Plm_sph (AL, lmax, m, ValueType (unit_dir[2]));
-#ifdef USE_ORTHONORMAL_SH_BASIS
+#ifndef USE_NON_ORTHONORMAL_SH_BASIS
             ValueType c = M_SQRT2 * Math::cos (m*az);
             ValueType s = M_SQRT2 * Math::sin (m*az);
 #else
@@ -595,7 +595,7 @@ namespace MR
           }
 
           for (int m = 1; m <= lmax; m++) {
-#ifdef USE_ORTHONORMAL_SH_BASIS
+#ifndef USE_NON_ORTHONORMAL_SH_BASIS
             ValueType caz = M_SQRT2 * cos (m*azimuth);
             ValueType saz = M_SQRT2 * sin (m*azimuth);
 #else
