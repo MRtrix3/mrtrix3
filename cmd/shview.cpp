@@ -25,7 +25,7 @@
 #include "gui/init.h"
 #include "file/path.h"
 #include "math/SH.h"
-#include "gui/shview_icon.h"
+#include "gui/shview/icons.h"
 #include "gui/shview/render_window.h"
 
 
