@@ -1150,6 +1150,7 @@ commit ('gsl_cflags', gsl_cflags)
 commit ('gsl_ldflags', gsl_ldflags)
 
 commit ('moc', moc)
+commit ('rcc', 'rcc')
 commit ('qt_cflags', qt_cflags)
 commit ('qt_ldflags', qt_ldflags)
 cache.write ('nogui = ')
