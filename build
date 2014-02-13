@@ -161,6 +161,8 @@ if ld_enabled:
 
 obj_suffix = config_suffix + obj_suffix
 exe_suffix = config_suffix + exe_suffix
+moc_cpp_suffix = config_suffix + '_moc' + cpp_suffix
+moc_obj_suffix = config_suffix + '_moc' + obj_suffix
 
 
 
@@ -264,7 +266,7 @@ class Entry:
     flags = copy.copy (gsl_cflags)
 
     if is_moc (cc_file):
-      src_header = cc_file[:-len('_moc'+cpp_suffix)] + h_suffix
+      src_header = cc_file[:-len(moc_cpp_suffix)] + h_suffix
       list_headers (src_header)
       file_flags[cc_file] = file_flags[src_header]
     else: self.deps = self.deps.union (list_headers (cc_file))
@@ -283,7 +285,7 @@ class Entry:
 
   def set_moc (self):
     self.action = 'MOC'
-    src_file = self.name[:-len('_moc'+cpp_suffix)] + h_suffix
+    src_file = self.name[:-len(moc_cpp_suffix)] + h_suffix
     self.deps = set([ src_file ])
     self.deps = self.deps.union (list_headers (src_file))
     self.cmd = [ moc ]
@@ -352,7 +354,7 @@ def is_object (target):
   return target.endswith (obj_suffix)
 
 def is_moc (target):
-  return target.endswith ('_moc' + cpp_suffix)
+  return target.endswith (moc_cpp_suffix)
 
 def is_icon (target):
   return target == icon
@@ -479,7 +481,8 @@ def list_cmd_deps (file_cc):
     object_deps[file_cc] = set([ file_cc[:-len(cpp_suffix)] + obj_suffix ])
     for entry in list_headers (file_cc):
       if os.path.abspath(entry).startswith(os.path.abspath(lib_dir)): continue
-      if 'M' in file_flags[entry]: object_deps[file_cc] = object_deps[file_cc].union ([ entry[:-len(h_suffix)] + '_moc' + obj_suffix ])
+      if 'M' in file_flags[entry]: 
+        object_deps[file_cc] = object_deps[file_cc].union ([ entry[:-len(h_suffix)] + moc_obj_suffix ])
       entry_cc = entry[:-len(h_suffix)] + cpp_suffix
       if os.path.exists (entry_cc):
         object_deps[file_cc] = object_deps[file_cc].union (list_cmd_deps(entry_cc))
@@ -663,7 +666,7 @@ def clean_cmd ():
   for root, dirs, files in os.walk ('.'):
     for file in files:
       if file[0] == '.': continue
-      if file.endswith (obj_suffix) or ( file.startswith (lib_prefix) and file.endswith (lib_suffix) ) or file.endswith ('_moc'+cpp_suffix):
+      if file.endswith (obj_suffix) or ( file.startswith (lib_prefix) and file.endswith (lib_suffix) ) or file.endswith (moc_cpp_suffix):
         files_to_remove.append (os.path.join (root, file))
         
   dirs_to_remove = []
