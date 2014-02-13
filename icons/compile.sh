@@ -8,6 +8,6 @@ done
 echo '</qresource>' >> mrview.qrc
 echo '</RCC>' >> mrview.qrc
 
-rcc-qt4 mrview.qrc -o ../src/gui/mrview_icons.cpp
-rcc-qt4 disp_profile.qrc -o ../src/gui/disp_profile_icon.cpp
+rcc mrview.qrc -o ../src/gui/mrview_icons.cpp
+rcc shview.qrc -o ../src/gui/shview_icon.cpp
 
