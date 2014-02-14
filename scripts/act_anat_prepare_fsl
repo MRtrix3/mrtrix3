@@ -91,7 +91,7 @@ if fast_cmd == 'fast':
   fast_suffix = fsl_suffix
 else:
   fast_suffix = 'nii.gz'
-runCommand('mr4ttmake T1_bet_pve_0.' + fast_suffix + ' T1_bet_pve_1.' + fast_suffix + ' T1_bet_pve_2.' + fast_suffix + ' all_sgms.nii combined_precrop.mif' + quiet, verbose)
+runCommand('4ttgen T1_bet_pve_0.' + fast_suffix + ' T1_bet_pve_1.' + fast_suffix + ' T1_bet_pve_2.' + fast_suffix + ' all_sgms.nii combined_precrop.mif' + quiet, verbose)
 
 # Use mrcrop to reduce file size (improves caching of image data during tracking)
 result_path = 'result' + os.path.splitext(sys.argv[2])[1]

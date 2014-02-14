@@ -53,7 +53,7 @@ temp_dir = makeTempDir(verbose)
 
 
 # Initial conversion from FreeSurfer parcellation to four principal tissue types
-runCommand('mrprep4connectome ' + sys.argv[1] + ' ' + config_path + ' ' + os.path.join(temp_dir, 'indices_precrop.mif') + ' -lut_freesurfer ' + freesurfer_lut + quiet, verbose)
+runCommand('labelconfig ' + sys.argv[1] + ' ' + config_path + ' ' + os.path.join(temp_dir, 'indices_precrop.mif') + ' -lut_freesurfer ' + freesurfer_lut + quiet, verbose)
 
 if verbose:
   printMessage('Changing to temporary directory (' + temp_dir + ')')
