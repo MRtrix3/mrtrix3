@@ -23,6 +23,8 @@
 
 #include <vector>
 
+//#include <gsl/gsl_fit.h>
+
 #include "app.h"
 #include "bitset.h"
 #include "command.h"
@@ -80,20 +82,46 @@ void usage ()
 
 
 
+// Perform a linear regression on the power ratio in each order
+// Omit l=2 - tends to be abnormally small due to non-isotropic brain-wide fibre distribution
+// If the regression has a substantial gradient, warn the user
+// Threshold on gradient will depend on the basis of the image
+//
+// Calcelled this: think the difference between l=4 and lmax is a better predictor
+//
+/*
+float get_regression_gradient (const std::vector<float>& ratios)
+{
+  const size_t n = ratios.size() - 1;
+  double x[n], y[n];
+  for (size_t i = 0; i != n; ++i) {
+    x[i] = i;
+    y[i] = ratios[i+1];
+  }
+  double c0, c1, cov00, cov01, cov11, sumsq;
+  gsl_fit_linear (x, 1, y, 1, n, &c0, &c1, &cov00, &cov01, &cov11, &sumsq);
+  return (float)c1;
+
+}
+*/
+
+
+
+
 
 template <typename value_type>
 void check_and_update (Image::Header& H, const bool force_old, const bool force_new)
 {
 
-  const size_t lmax = std::min (Math::SH::LforN (H.dim(3)), size_t(8));
+  const size_t lmax = Math::SH::LforN (H.dim(3));
+  const size_t l_for_decision = ((lmax >= 4) ? 4 : 2);
+  float ratio_for_decision = 0.0;
 
   // Flag which volumes are m==0 and which are not
   const ssize_t N = H.dim(3);
   BitSet mzero_terms (N, false);
   for (size_t l = 2; l <= lmax; l += 2)
     mzero_terms[Math::SH::index (l, 0)] = true;
-
-  value_type multiplier = 1.0;
 
   typename Image::Buffer<value_type> buffer (H, (force_old || force_new));
   typename Image::Buffer<value_type>::voxel_type v (buffer);
@@ -124,10 +152,11 @@ void check_and_update (Image::Header& H, const bool force_old, const bool force_
   // Therefore, calculate the mean-square intensity for the m==0 and m!=0
   // volumes independently, report ratio for each harmonic order, and the
   // overall ratio over all harmonic orders:
-  double mzero_SoS (0.0), mnonzero_MSoS (0.0);
   Ptr<ProgressBar> progress;
   if (App::log_level > 0 && App::log_level < 2)
     progress = new ProgressBar ("Evaluating SH basis of image " + H.name() + "...", N-1);
+
+  std::vector<float> ratios;
 
   for (size_t l = 2; l <= lmax; l += 2) {
 
@@ -150,36 +179,51 @@ void check_and_update (Image::Header& H, const bool force_old, const bool force_
       ++*progress;
     }
 
-    const double current_mnonzero_MSoS = mnonzero_sum / (2.0 * l);
+    const double mnonzero_MSoS = mnonzero_sum / (2.0 * l);
+    const float power_ratio = mnonzero_MSoS/mzero_sum;
+    ratios.push_back (power_ratio);
 
-    mzero_SoS += mzero_sum;
-    mnonzero_MSoS += current_mnonzero_MSoS;
-
-    INFO ("SH order " + str(l) + ", ratio of m!=0 to m==0 power: " + str(current_mnonzero_MSoS/mzero_sum) + 
+    INFO ("SH order " + str(l) + ", ratio of m!=0 to m==0 power: " + str(power_ratio) +
         ", overall m=0 power: " + str (mzero_sum));
+
+    if (l == l_for_decision)
+      ratio_for_decision = power_ratio;
 
   }
 
   if (progress)
     progress = NULL;
 
-  const double ratio = mnonzero_MSoS / mzero_SoS;
-  INFO ("Mean power ratio across SH orders: " + str(ratio));
-
   // Threshold to make decision on what basis is being used, if unambiguous
-  if ((ratio > (5.0/3.0)) && (ratio < (7.0/3.0))) {
+  value_type multiplier = 1.0;
+  if ((ratio_for_decision > (5.0/3.0)) && (ratio_for_decision < (7.0/3.0))) {
     CONSOLE ("Image " + str(H.name()) + " appears to be in the old non-orthonormal basis");
     if (force_new)
       multiplier = 1.0 / M_SQRT2;
-  } else if ((ratio > (2.0/3.0)) && (ratio < (4.0/3.0))) {
+  } else if ((ratio_for_decision > (2.0/3.0)) && (ratio_for_decision < (4.0/3.0))) {
     CONSOLE ("Image " + str(H.name()) + " appears to be in the new orthonormal basis");
     if (force_old)
       multiplier = M_SQRT2;
   } else {
-    throw Exception ("Cannot make unambiguous decision on SH basis of image " + H.name() + " (power ratio = " + str(ratio) + ")");
+    multiplier = 0.0;
+    WARN ("Cannot make unambiguous decision on SH basis of image " + H.name() + " (power ratio in l=" + str(l_for_decision) + " is " + str(ratio_for_decision) + ")");
   }
 
-  if (multiplier != 1.0) {
+  if (lmax > 4) {
+ /* const float regression_grad = get_regression_gradient (ratios);
+    INFO ("Gradient of per-order power ratio linear regression: " + str(regression_grad));
+    if (regression_grad < grad_threshold) {
+      WARN ("Image " + H.name() + " appears to have been derived from poor directional encoding");
+      WARN ("(m==0 to m!=0 power ratio decreases by " + str(regression_grad) + " per harmonic order)");
+    } */
+    const float power_ratio_ratio = ratios.back() / ratio_for_decision;
+    if (power_ratio_ratio < 0.9) {
+      WARN ("Image " + H.name() + " appears to have been derived from poor directional encoding");
+      WARN ("(m==0 to m!=0 power ratio in l=4 is " + str(ratio_for_decision) + ", in l=" + str(lmax) + " is " + str(ratios.back()) + ")");
+    }
+  }
+
+  if (multiplier && (multiplier != 1.0)) {
 
     Image::LoopInOrder loop (v, 0, 3);
     ProgressBar progress ("Modifying SH basis of image " + H.name() + "...", N-1);
@@ -191,11 +235,15 @@ void check_and_update (Image::Header& H, const bool force_old, const bool force_
       ++progress;
     }
 
-  } else if (force_old || force_new) {
+  } else if (multiplier && (force_old || force_new)) {
     INFO ("Image " + H.name() + " already in desired basis; nothing to do");
   }
 
 }
+
+
+
+
 
 
 
