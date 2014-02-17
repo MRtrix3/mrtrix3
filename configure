@@ -1127,7 +1127,11 @@ for line in config_report.splitlines():
   cache.write ('# ' + line + '\n')
 cache.write ('\n\n')
 
-commit ('PATH', os.environ['PATH'])
+path = os.environ['PATH']
+if path.endswith ('\\'):
+  path = path[:-1]
+cache.write ("PATH = r'" + path + "'\n")
+
 commit ('obj_suffix', obj_suffix)
 commit ('exe_suffix', exe_suffix)
 commit ('lib_prefix', lib_prefix)
