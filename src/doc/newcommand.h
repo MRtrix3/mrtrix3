@@ -156,7 +156,7 @@ namespace MR
    // perform processing...
  }
  \endcode
- Note that the retrieved arguments are implictly type-cast to the requested
+ Note that the retrieved arguments are implicitly type-cast to the requested
  type, without any need for explicit conversion. 
 
  It is also worth explaining that get_options() returns a vector of vectors

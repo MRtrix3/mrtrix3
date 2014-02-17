@@ -356,7 +356,7 @@ void run ()
   Segmenter fmls (dirs, lmax);
   load_fmls_thresholds (fmls);
 
-  Thread::run_queue_threaded_pipe (writer, SH_coefs(), fmls, FOD_lobes(), receiver);
+  Thread::run_queue (writer, SH_coefs(), Thread::multi (fmls), FOD_lobes(), receiver);
 
 }
 

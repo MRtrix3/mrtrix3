@@ -20,8 +20,8 @@
 
 */
 
-#ifndef __dwi_tractography_WBFACT_h__
-#define __dwi_tractography_WBFACT_h__
+#ifndef __dwi_tractography_algorithms_WBFACT_h__
+#define __dwi_tractography_algorithms_WBFACT_h__
 
 #include "dwi/bootstrap.h"
 #include "dwi/tractography/algorithms/fact.h"
@@ -33,8 +33,10 @@ namespace MR
   {
     namespace Tractography
     {
+      namespace Algorithms
+      {
 
-
+      using namespace MR::DWI::Tractography::Tracking;
 
       class WBFACT : public FACT {
         public:
@@ -205,6 +207,7 @@ namespace MR
 
       };
 
+      }
     }
   }
 }

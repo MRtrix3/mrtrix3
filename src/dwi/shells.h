@@ -140,56 +140,50 @@ namespace MR
     public:
       Shells(const Math::Matrix<ValueType>& grad, size_t minDirections = 6, ValueType bvalue_threshold = NAN)
       {
-        for (size_t i = 0; i < grad.rows(); i++) {
+        for (size_t i = 0; i < grad.rows(); i++) 
           bvals.push_back(grad (i,3));
-        }
+        
         minBval = *std::min_element(bvals.begin(),bvals.end());
         maxBval = *std::max_element(bvals.begin(),bvals.end());
-        if (!std::isfinite (bvalue_threshold)) {
+        if (!std::isfinite (bvalue_threshold)) 
           bvalue_threshold = 100;
           //bvalue_threshold = (maxBval-minBval)/(2.0*ValueType(bvals.size()));
 	  //if (bvalue_threshold == 0)
           //  bvalue_threshold = 1;
-        }
-        clusterBvalues(minDirections, bvalue_threshold);
+        
+        clusterBvalues (minDirections, bvalue_threshold);
         sortByBval();
       }
 
-      int count()
-      {
+      int count() const {
         return shells.size();
       }
 
-      Shell<ValueType>& operator[] (const int i)
-      {
+      Shell<ValueType>& operator[] (const int i) {
         return shells[i];
       }
 
-      Shell<ValueType>& first()
-      {
+      Shell<ValueType>& first() {
         return shells.front();
       }
 
-      Shell<ValueType>& last()
-      {
+      Shell<ValueType>& last() {
         return shells.back();
       }
 
-      void sortByCount()
-      {
+      void sortByCount() {
         std::sort (shells.begin(), shells.end(), countComp);
       }
 
-      void sortByBval()
-      {
+      void sortByBval() {
         std::sort (shells.begin(), shells.end(), bvalComp);
       }
 
       friend std::ostream& operator <<(std::ostream& stream, const Shells& S)
       {
-        for(typename std::vector<Shell <ValueType> >::const_iterator it = S.shells.begin(); it != S.shells.end(); ++it) {
+        for(typename std::vector<Shell <ValueType> >::const_iterator it = S.shells.begin(); it != S.shells.end(); ++it) 
           stream << *it << std::endl;
-        }
+        
         return stream;
       }
 
@@ -199,68 +193,59 @@ namespace MR
       ValueType minBval;
       ValueType maxBval;
 
-      static bool countComp (Shell<ValueType> a, Shell<ValueType> b)
-      {
-        return (a.count()<b.count());
+      static bool countComp (Shell<ValueType> a, Shell<ValueType> b) {
+        return a.count() < b.count();
       }
 
-      static bool bvalComp (Shell<ValueType> a, Shell<ValueType> b)
-      {
-        return (a.avg_bval()<b.avg_bval());
+      static bool bvalComp (Shell<ValueType> a, Shell<ValueType> b) {
+        return a.avg_bval() < b.avg_bval();
       }
 
-      void regionQuery (ValueType p, std::vector<ValueType> x, ValueType eps, std::vector<int>& idx)
-      {
-        for (size_t i = 0; i < x.size(); i++) {
-          if (std::abs(p-x[i]) < eps) {
+      void regionQuery (ValueType p, std::vector<ValueType> x, ValueType eps, std::vector<int>& idx) {
+        for (size_t i = 0; i < x.size(); i++) 
+          if (std::abs(p-x[i]) < eps) 
             idx.push_back(i);
-          }
-        }
       }
 
-      void clusterBvalues(size_t minDirections, ValueType eps)
-      {
-        std::vector<bool> visited;
-        visited.resize(bvals.size(),false);
-
-        std::vector<int> cluster;
-        cluster.resize(bvals.size(),-1);
+      void clusterBvalues (size_t minDirections, ValueType eps) {
+        std::vector<bool> visited (bvals.size(), false);
+        std::vector<int> cluster (bvals.size(), -1);
         int clusterIdx = -1;
 
         for (size_t ii = 0; ii < bvals.size(); ii++) {
           if (!visited[ii]) {
             visited[ii] = true;
             std::vector<int> neighborIdx;
-            regionQuery(bvals[ii],bvals,eps,neighborIdx);
-            if (bvals[ii] > eps && neighborIdx.size() < minDirections) {
+            regionQuery (bvals[ii], bvals, eps, neighborIdx);
+
+            if (bvals[ii] > eps && neighborIdx.size() < minDirections) 
               cluster[ii] = -1;
-            } else {
-              cluster[ii]=++clusterIdx;
+            else {
+              cluster[ii] = ++clusterIdx;
               for (size_t i = 0; i < neighborIdx.size(); i++) {
                 if (!visited[neighborIdx[i]]) {
                   visited[neighborIdx[i]] = true;
                   std::vector<int> neighborIdx2;
-                  regionQuery(bvals[neighborIdx[i]],bvals,eps,neighborIdx2);
-                  if (neighborIdx2.size() >= minDirections) {
-                    for (size_t j = 0; j < neighborIdx2.size(); j++) {
+                  regionQuery (bvals[neighborIdx[i]], bvals, eps, neighborIdx2);
+                  if (neighborIdx2.size() >= minDirections) 
+                    for (size_t j = 0; j < neighborIdx2.size(); j++) 
                       neighborIdx.push_back(neighborIdx2[j]);
-                    }
-                  }
                 }
-                if (cluster[neighborIdx[i]] < 0) {
+                if (cluster[neighborIdx[i]] < 0) 
                   cluster[neighborIdx[i]] = clusterIdx;
-                }
+                
               }
             }
           }
         }
-        ValueType minIdx = *std::min_element(cluster.begin(),cluster.end());
-        ValueType maxIdx = *std::max_element(cluster.begin(),cluster.end());
+        ValueType minIdx = *std::min_element (cluster.begin(), cluster.end());
+        ValueType maxIdx = *std::max_element (cluster.begin(), cluster.end());
         for (size_t i = minIdx; i <= maxIdx; i++) {
-          Shell<ValueType> s(bvals,cluster,i);
-          shells.push_back(s);
+          Shell<ValueType> s (bvals, cluster, i);
+          shells.push_back (s);
         }
       }
+
     };
   }
 }

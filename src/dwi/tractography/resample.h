@@ -20,22 +20,23 @@
 
 */
 
-#ifndef __dwi_tractography_mapping_upsampler_h__
-#define __dwi_tractography_mapping_upsampler_h__
+#ifndef __dwi_tractography_resample_h__
+#define __dwi_tractography_resample_h__
 
 
 #include <vector>
 
 #include "point.h"
+
 #include "math/hermite.h"
 #include "math/matrix.h"
 
+#include "dwi/tractography/tracking/generated_track.h"
 
 
 namespace MR {
 namespace DWI {
 namespace Tractography {
-namespace Mapping {
 
 
 template <typename T = float>
@@ -157,7 +158,59 @@ void Upsampler<T>::increment (const Point<T>& a)
 
 
 
+
+
+
+
+
+
+
+class Downsampler
+{
+
+  public:
+    Downsampler () : ratio (1) { }
+    Downsampler (const size_t downsample_ratio) : ratio (downsample_ratio) { }
+
+    bool operator() (Tracking::GeneratedTrack&) const;
+
+    template <typename T>
+    bool operator() (std::vector< Point<T> >&) const;
+
+    bool valid() const { return (ratio > 1); }
+    size_t get_ratio() const { return ratio; }
+    void set_ratio (const size_t i) { ratio = i; }
+
+  private:
+    size_t ratio;
+
+};
+
+
+
+
+template <typename T>
+bool Downsampler::operator() (std::vector< Point<T> >& tck) const
+{
+  if (ratio <= 1 || tck.empty())
+    return false;
+  const size_t midpoint = tck.size()/2;
+  size_t index_old = (((midpoint - 1) % ratio) + 1);
+  size_t index_new = 1;
+  while (index_old < tck.size() - 1) {
+    tck[index_new++] = tck[index_old];
+    index_old += ratio;
+  }
+  tck[index_new] = tck.back();
+  tck.resize (index_new + 1);
+  return true;
 }
+
+
+
+
+
+
 }
 }
 }

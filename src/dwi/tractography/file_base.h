@@ -30,6 +30,7 @@
 #include "types.h"
 #include "point.h"
 #include "file/key_value.h"
+#include "file/path.h"
 #include "dwi/tractography/properties.h"
 
 
@@ -77,6 +78,8 @@ namespace MR
                 dtype != DataType::Float64LE && dtype != DataType::Float64BE)
                 throw Exception ("only supported datatype for tracks file are "
                     "Float32LE, Float32BE, Float64LE & Float64BE");
+            if (!App::overwrite_files && Path::exists (name))
+              throw Exception ("error creating file \"" + name + "\": file exists (use -force option to force overwrite)");
           }
 
           ~__WriterBase__()
@@ -84,8 +87,7 @@ namespace MR
             std::ofstream out (name.c_str(), std::ios::in | std::ios::out | std::ios::binary);
             if (!out) 
               throw Exception ("error re-opening output file \"" + name + "\": " + strerror (errno));
-            out.seekp (count_offset);
-            out << count << "\ntotal_count: " << total_count << "\nEND\n";
+            update_counts (out);
           }
 
           void create (std::ofstream& out, const Properties& properties, const std::string& type) {
@@ -121,7 +123,7 @@ namespace MR
             out << "file: . " << data_offset << "\n";
             out << "count: ";
             count_offset = out.tellp();
-            out << "\nEND\n";
+            out << "0\nEND\n";
             out.seekp (0);
             out << "mrtrix " + type + "    ";
             out.seekp (data_offset);
@@ -130,10 +132,23 @@ namespace MR
 
           size_t count, total_count;
 
+
         protected:
           std::string name;
           DataType dtype;
           int64_t  count_offset;
+
+
+          void verify_stream (const std::ofstream& out) {
+            if (!out.good())
+              throw Exception ("error writing file \"" + name + "\": " + strerror (errno));
+          }
+
+          void update_counts (std::ofstream& out) {
+            out.seekp (count_offset);
+            out << count << "\ntotal_count: " << total_count << "\nEND\n";
+            verify_stream (out);
+          }
       };
       //! \endcond
 

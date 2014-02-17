@@ -26,6 +26,7 @@
 #include "gui/mrview/displayable.h"
 #include "dwi/tractography/properties.h"
 #include "gui/mrview/tool/tractography/tractography.h"
+#include "dwi/tractography/streamline.h"
 #include "gui/mrview/colourmap.h"
 
 
@@ -101,12 +102,12 @@ namespace MR
             std::vector<size_t> num_tracks_per_buffer;
 
 
-            void load_tracks_onto_GPU (std::vector<Point<float> >& buffer,
+            void load_tracks_onto_GPU (DWI::Tractography::Streamline<float>& buffer,
                                               std::vector<GLint>& starts,
                                               std::vector<GLint>& sizes,
                                               size_t& tck_count);
                                               
-            void load_end_colours_onto_GPU (std::vector<Point<float> >& buffer);
+            void load_end_colours_onto_GPU (DWI::Tractography::Streamline<float>& buffer);
 
         };
       }

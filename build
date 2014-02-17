@@ -1,6 +1,6 @@
 #!/usr/bin/python
 
-import platform, sys, os, time, threading, subprocess, copy, codecs
+import platform, sys, os, time, threading, subprocess, copy, codecs, glob
 
 
 config_file = 'config.default'
@@ -36,9 +36,6 @@ misc_dir = 'src'
 other_dir = '3rd_party'
 doc_dir = 'doc'
 dev_dir = 'dev'
-
-icon = 'icons/icon.o'
-icon_dep = 'icons/icon.rc'
 
 cpp_suffix = '.cpp'
 h_suffix = '.h'
@@ -138,6 +135,8 @@ please run "./configure" prior to invoking this script
   sys.exit (1)
 
 
+environ = os.environ.copy()
+environ.update ({ 'PATH': PATH })
 
 
 if ld_enabled and len(runpath):
@@ -159,6 +158,8 @@ if ld_enabled:
 
 obj_suffix = config_suffix + obj_suffix
 exe_suffix = config_suffix + exe_suffix
+moc_cpp_suffix = config_suffix + '_moc' + cpp_suffix
+moc_obj_suffix = config_suffix + '_moc' + obj_suffix
 
 
 
@@ -207,11 +208,23 @@ class Entry:
       raise Exception ('unknown target "' + self.name + '"')
 
     [ Entry(item) for item in self.deps ]
-    dep_timestamp = [ todo[item].dep_timestamp for item in todo.keys() if item in self.deps and not is_library(item) ]
-    if len(dep_timestamp): self.dep_timestamp = max(dep_timestamp)
+    dep_timestamp = [ todo[item].timestamp for item in todo.keys() if item in self.deps and not is_library(item) ]
+    dep_timestamp += [ todo[item].dep_timestamp for item in todo.keys() if item in self.deps and not is_library(item) ]
+    if len(dep_timestamp): 
+      self.dep_timestamp = max(dep_timestamp)
+
     
 
   def execute (self):
+    if self.action == 'RCC':
+      with codecs.open (self.cmd[1], mode='w', encoding='utf-8') as fd:
+        fd.write ('<!DOCTYPE RCC><RCC version="1.0">\n<qresource>\n')
+        for entry in self.deps:
+          entry = os.path.basename (entry)
+          if not entry.startswith ('config.'):
+            fd.write ('<file>' + entry + '</file>\n')
+        fd.write ('</qresource>\n</RCC>\n')
+      
     if len(self.cmd) > 0: 
       return execute ('[' + self.action + '] ' + self.name, self.cmd)
     else: 
@@ -224,10 +237,6 @@ class Entry:
     else: cc_file = self.name
     cc_file = os.path.join (cmd_dir, os.sep.join (cc_file.split(os.sep)[1:])) + cpp_suffix
     self.deps = list_cmd_deps(cc_file)
-
-    try: windres
-    except NameError: pass
-    else: self.deps.add (icon)
 
     skip = False
     flags = copy.copy (gsl_ldflags)
@@ -262,7 +271,7 @@ class Entry:
     flags = copy.copy (gsl_cflags)
 
     if is_moc (cc_file):
-      src_header = cc_file[:-len('_moc'+cpp_suffix)] + h_suffix
+      src_header = cc_file[:-len(moc_cpp_suffix)] + h_suffix
       list_headers (src_header)
       file_flags[cc_file] = file_flags[src_header]
     else: self.deps = self.deps.union (list_headers (cc_file))
@@ -281,9 +290,10 @@ class Entry:
 
   def set_moc (self):
     self.action = 'MOC'
-    src_file = self.name[:-len('_moc'+cpp_suffix)] + h_suffix
+    src_file = self.name[:-len(moc_cpp_suffix)] + h_suffix
     self.deps = set([ src_file ])
     self.deps = self.deps.union (list_headers (src_file))
+    self.deps.add (config_file)
     self.cmd = [ moc ]
     self.cmd += [ src_file, '-o', self.name ]
 
@@ -307,18 +317,27 @@ class Entry:
 
 
   def set_icon (self):
-    self.action = 'WR'
-    self.deps = [ icon_dep ]
-    self.cmd = windres + [ icon_dep, icon ]
+    self.action = 'RCC'
+    with codecs.open (self.name[:-len(cpp_suffix)]+h_suffix, mode='r', encoding='utf-8') as fd:
+      for line in fd:
+        if line.startswith ('//RCC:'):
+          for entry in line[6:].strip().split():
+            self.deps = self.deps.union (glob.glob (os.path.join (mrtrix_dir, 'icons', entry)))
+    self.deps.add (config_file)
+    self.cmd = [ rcc, os.path.join ('icons', os.path.basename (os.path.dirname(self.name)) + '.qrc'), '-o', self.name ]
 
+
+  def need_rebuild (self):
+    return self.timestamp == float("inf") or self.timestamp < self.dep_timestamp
 
   def display (self):
-    sys.stderr.write ('[' + self.action + '] ' + self.name)
-    if not self.timestamp or self.timestamp < self.dep_timestamp: 
-      sys.stderr.write (' [REBUILD]')
-    sys.stderr.write (''':
+    sys.stdout.write ('[' + self.action + '] ' + self.name)
+    if self.need_rebuild():
+      sys.stdout.write (' [REBUILD]')
+    sys.stdout.write (''':
   deps: ''' + ' '.join(self.deps) + '''
   command: ''' + ' '.join(self.cmd) + '''
+  timestamp: ''' + str(self.timestamp) + ', dep timestamp: ' + str(self.dep_timestamp) + '''
 ''')
 
 
@@ -350,13 +369,13 @@ def is_object (target):
   return target.endswith (obj_suffix)
 
 def is_moc (target):
-  return target.endswith ('_moc' + cpp_suffix)
+  return target.endswith (moc_cpp_suffix)
 
 def is_icon (target):
-  return target == icon
+  return os.path.basename (target) == 'icons'+cpp_suffix
 
 def mtime (target):
-  if not os.path.exists (target): return None
+  if not os.path.exists (target): return float('inf')
   return os.stat(target).st_mtime
 
 
@@ -378,7 +397,7 @@ def execute (message, cmd):
     disp (' '.join(cmd) + os.linesep)
 
   try: 
-    process = subprocess.Popen (cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    process = subprocess.Popen (cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, env=environ)
     ( stdout, stderr ) = process.communicate()
     if process.returncode != 0:
       disp ('\nERROR: ' + message + '\n\n' + ' '.join(cmd) + '\n\nfailed with output\n\n' + stderr.decode (errors='ignore'))
@@ -396,43 +415,48 @@ def execute (message, cmd):
     raise
 
 
-def print_deps (file, indent=''):
-  sys.stderr.write (indent + file)
-  if file in file_flags: 
-    if len(file_flags[file]): 
-      sys.stderr.write (' [' + file_flags[file] + ']')
-  sys.stderr.write (os.linesep)
-  if len(todo[file].deps):
-    for entry in todo[file].deps:
+def print_deps (current_file, indent=''):
+  sys.stdout.write (indent + current_file)
+  if current_file in file_flags: 
+    if len(file_flags[current_file]): 
+      sys.stdout.write (' [' + file_flags[current_file] + ']')
+  sys.stdout.write (os.linesep)
+  if len(todo[current_file].deps):
+    for entry in todo[current_file].deps:
       print_deps (entry, indent + '    ')
 
 
 
 
-def is_GUI_target (file):
-  if file in file_flags: 
-    if 'Q' in file_flags[file]: 
+def is_GUI_target (current_file):
+  if current_file in file_flags: 
+    if 'Q' in file_flags[current_file]: 
       return True
-  if len(todo[file].deps):
-    for entry in todo[file].deps:
+  if len(todo[current_file].deps):
+    for entry in todo[current_file].deps:
       if is_GUI_target (entry):
         return True
   return False
 
 
 
-def list_headers (file):
+def list_headers (current_file):
   global headers, file_flags
 
-  if file not in headers.keys(): 
-    headers[file] = set()
+  if current_file not in headers.keys(): 
+    headers[current_file] = set()
 
-    if file not in file_flags: file_flags[file] = ''
+    if current_file not in file_flags: 
+      file_flags[current_file] = ''
 
-    if not os.path.exists (file):
-      sys.stderr.write ('ERROR: cannot find file "' + file + '"' + os.linesep)
+    if not os.path.exists (current_file):
+      if os.path.basename(current_file) == 'icons'+cpp_suffix: 
+        if 'Q' not in file_flags[current_file]:
+          file_flags[current_file] += 'Q'
+        return headers[current_file]
+      sys.stderr.write ('ERROR: cannot find file "' + current_file + '"' + os.linesep)
       sys.exit(1)
-    with codecs.open (file, mode='r', encoding='utf-8') as fd:
+    with codecs.open (current_file, mode='r', encoding='utf-8') as fd:
       for line in fd:
         line = line.strip()
         if line.startswith('#include'):
@@ -440,30 +464,30 @@ def list_headers (file):
           if line[0] == '"':
             line = line[1:].rstrip('"')
             if line == 'thread/exec.h':
-              if 'T' not in file_flags[file]: 
-                file_flags[file] += 'T'
+              if 'T' not in file_flags[current_file]: 
+                file_flags[current_file] += 'T'
             for path in include_paths:
               if os.path.exists (os.path.join (path, line)):
                 line = os.path.join (path, line)
-                headers[file].add (line)
-                [ headers[file].add(entry) for entry in list_headers(line) ]
+                headers[current_file].add (line)
+                [ headers[current_file].add(entry) for entry in list_headers(line) ]
                 break
             else:
-              sys.stderr.write ('ERROR: cannot find header file \"' + line + '\" (from file \"' + file + '\")' + os.linesep)
+              sys.stderr.write ('ERROR: cannot find header file \"' + line + '\" (from file \"' + current_file + '\")' + os.linesep)
               sys.exit(1)
           elif line.startswith ('<Q'):
-            if 'Q' not in file_flags[file]:
-              file_flags[file] += 'Q'
+            if 'Q' not in file_flags[current_file]:
+              file_flags[current_file] += 'Q'
         elif line == 'Q_OBJECT':
-          if 'M' not in file_flags[file]:
-            file_flags[file] += 'M'
+          if 'M' not in file_flags[current_file]:
+            file_flags[current_file] += 'M'
 
-    for entry in headers[file]:
+    for entry in headers[current_file]:
       for c in file_flags[entry]:
-        if c != 'M' and c not in file_flags[file]:
-          file_flags[file] += c
+        if c != 'M' and c not in file_flags[current_file]:
+          file_flags[current_file] += c
 
-  return headers[file]
+  return headers[current_file]
 
 
 
@@ -477,10 +501,13 @@ def list_cmd_deps (file_cc):
     object_deps[file_cc] = set([ file_cc[:-len(cpp_suffix)] + obj_suffix ])
     for entry in list_headers (file_cc):
       if os.path.abspath(entry).startswith(os.path.abspath(lib_dir)): continue
-      if 'M' in file_flags[entry]: object_deps[file_cc] = object_deps[file_cc].union ([ entry[:-len(h_suffix)] + '_moc' + obj_suffix ])
+      if 'M' in file_flags[entry]: 
+        object_deps[file_cc] = object_deps[file_cc].union ([ entry[:-len(h_suffix)] + moc_obj_suffix ])
       entry_cc = entry[:-len(h_suffix)] + cpp_suffix
       if os.path.exists (entry_cc):
         object_deps[file_cc] = object_deps[file_cc].union (list_cmd_deps(entry_cc))
+      if os.path.basename (entry) == 'icons'+h_suffix:
+        object_deps[file_cc].add (entry[:-len(h_suffix)]+obj_suffix)
     if file_cc not in file_flags: file_flags[file_cc] = ''
     for entry in headers[file_cc]:
       for c in file_flags[entry]:
@@ -494,10 +521,10 @@ def list_cmd_deps (file_cc):
 def list_lib_deps ():
   deps = set()
   for root, dirs, files in os.walk (lib_dir):
-    for file in files:
-      if file[0] == '.': continue
-      if file.endswith (cpp_suffix):
-        deps.add (os.path.join (root, file[:-len(cpp_suffix)] + obj_suffix))
+    for current_file in files:
+      if current_file[0] == '.': continue
+      if current_file.endswith (cpp_suffix):
+        deps.add (os.path.join (root, current_file[:-len(cpp_suffix)] + obj_suffix))
 
   return (deps)
 
@@ -659,16 +686,16 @@ def gen_command_html_help ():
 def clean_cmd ():
   files_to_remove = []
   for root, dirs, files in os.walk ('.'):
-    for file in files:
-      if file[0] == '.': continue
-      if file.endswith (obj_suffix) or ( file.startswith (lib_prefix) and file.endswith (lib_suffix) ) or file.endswith ('_moc'+cpp_suffix):
-        files_to_remove.append (os.path.join (root, file))
+    for current_file in files:
+      if current_file[0] == '.': continue
+      if current_file.endswith (obj_suffix) or ( current_file.startswith (lib_prefix) and current_file.endswith (lib_suffix) ) or current_file.endswith (moc_cpp_suffix) or current_file.endswith ('.qrc'):
+        files_to_remove.append (os.path.join (root, current_file))
         
   dirs_to_remove = []
   if os.path.isdir (bin_dir):
     for root, dirs, files in os.walk (bin_dir, topdown=False):
-      for file in files: 
-        files_to_remove.append (os.path.join (root, file))
+      for current_file in files: 
+        files_to_remove.append (os.path.join (root, current_file))
       for entry in dirs: 
         dirs_to_remove.append (os.path.join (root, entry))
   
@@ -711,25 +738,24 @@ getting git version in folder "''' + folder + '"... ')
 
   if verbose:
     sys.stderr.write ('not found\n')
-  return None
+  return 'unknown'
 
 
 def update_git_version (folder, git_version_file, macro_name):
   git_version = get_git_version (folder)
-  if git_version is not None:
-    version_file_contents = '#define ' + macro_name + ' "' + git_version + '"\n'
-    current_version_file_contents = ''
-    try:
-      with open (git_version_file) as fd:
-        current_version_file_contents = fd.read()
-    except:
-      pass
+  version_file_contents = '#define ' + macro_name + ' "' + git_version + '"\n'
+  current_version_file_contents = ''
+  try:
+    with open (git_version_file) as fd:
+      current_version_file_contents = fd.read()
+  except:
+    pass
     
-    if not version_file_contents == current_version_file_contents:
-      if verbose:
-        sys.stderr.write ('version file "' + git_version_file + '" is out of date - updating\n')
-      with open (git_version_file, 'w') as fd:
-        fd.write (version_file_contents)
+  if not current_version_file_contents or (version_file_contents != current_version_file_contents and git_version != 'unknown'):
+    if verbose:
+      sys.stderr.write ('version file "' + git_version_file + '" is out of date - updating\n')
+    with open (git_version_file, 'w') as fd:
+      fd.write (version_file_contents)
 
 
 
@@ -779,8 +805,9 @@ compiling TODO list...
 
 try: [ Entry(item) for item in targets ]
 except Exception as e: 
-  sys.stderr.write ('ERROR: ' + e.args[0] + os.linesep)
+  sys.stderr.write ('ERROR: ' + str(e) + os.linesep)
   sys.exit (1)
+
 
 
 # for nogui config, remove GUI elements from targets and todo list:
@@ -816,7 +843,7 @@ Printing dependencies:
 todo_tmp = todo
 todo = {}
 for item in todo_tmp.keys():
-  if not ( todo_tmp[item].action == 'NA' or (todo_tmp[item].timestamp and todo_tmp[item].timestamp >= todo_tmp[item].dep_timestamp) ):
+  if todo_tmp[item].action != 'NA' and todo_tmp[item].need_rebuild():
     todo[item] = todo_tmp[item]
 if verbose: 
   sys.stderr.write ('TODO list contains ' + str(len(todo)) + ''' items

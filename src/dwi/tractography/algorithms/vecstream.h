@@ -23,14 +23,15 @@
 
 
 
-#ifndef __dwi_tractography_vecstream_h__
-#define __dwi_tractography_vecstream_h__
+#ifndef __dwi_tractography_algorithms_vecstream_h__
+#define __dwi_tractography_algorithms_vecstream_h__
 
 #include "point.h"
 #include "image/interp/nearest.h"
 
-#include "dwi/tractography/method.h"
-#include "dwi/tractography/shared.h"
+#include "dwi/tractography/tracking/method.h"
+#include "dwi/tractography/tracking/shared.h"
+#include "dwi/tractography/tracking/types.h"
 
 
 namespace MR
@@ -39,7 +40,10 @@ namespace MR
   {
     namespace Tractography
     {
+      namespace Algorithms
+      {
 
+    using namespace MR::DWI::Tractography::Tracking;
 
     class VecStream : public MethodBase {
       public:
@@ -148,6 +152,7 @@ namespace MR
 
     };
 
+      }
     }
   }
 }

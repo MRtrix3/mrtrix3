@@ -20,18 +20,22 @@
 
 */
 
-#ifndef __dwi_tractography_seedtest_h__
-#define __dwi_tractography_seedtest_h__
+#ifndef __dwi_tractography_algorithms_seedtest_h__
+#define __dwi_tractography_algorithms_seedtest_h__
 
 #include "point.h"
-#include "dwi/tractography/method.h"
-#include "dwi/tractography/shared.h"
+#include "dwi/tractography/tracking/method.h"
+#include "dwi/tractography/tracking/shared.h"
+#include "dwi/tractography/tracking/types.h"
 
 
 
 namespace MR {
 namespace DWI {
 namespace Tractography {
+namespace Algorithms {
+
+using namespace MR::DWI::Tractography::Tracking;
 
 class Seedtest : public MethodBase {
 
@@ -64,6 +68,7 @@ class Seedtest : public MethodBase {
 
 };
 
+}
 }
 }
 }

@@ -189,6 +189,16 @@ namespace MR
           VecPtr<MR::Image::Header> list;
           for (size_t n = 0; n < overlay_names.size(); ++n)
             list.push_back (new MR::Image::Header (overlay_names[n]));
+
+          add_images (list);
+        }
+
+
+
+
+
+        void Overlay::add_images (VecPtr<MR::Image::Header>& list) 
+        {
           size_t previous_size = image_list_model->rowCount();
           image_list_model->add_items (list);
 
@@ -238,6 +248,7 @@ namespace MR
               need_to_update |= !std::isfinite (image->intensity_min());
               image->set_interpolate (interpolate_check_box->isChecked());
               image->alpha = overlay_opacity;
+              image->transparent_intensity = image->opaque_intensity = image->intensity_min();
               if (is_3D) 
                 window.get_current_mode()->overlays_for_3D.push_back (image);
               else
@@ -247,6 +258,13 @@ namespace MR
 
           if (need_to_update)
             update_selection();
+
+          if (!is_3D) {
+            // restore OpenGL environment:
+            gl::Disable (gl::BLEND);
+            gl::Enable (gl::DEPTH_TEST);
+            gl::DepthMask (gl::TRUE_);
+          }
         }
 
 
@@ -430,6 +448,12 @@ namespace MR
           upper_threshold->setRate (rate);
         }
 
+
+
+
+
+
+
         bool Overlay::process_batch_command (const std::string& cmd, const std::string& args)
         {
 
@@ -438,7 +462,7 @@ namespace MR
             VecPtr<MR::Image::Header> list;
             try { list.push_back (new MR::Image::Header (args)); }
             catch (Exception& e) { e.display(); }
-            image_list_model->add_items (list);
+            add_images (list);
             return true;
           }
 

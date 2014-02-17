@@ -20,16 +20,17 @@
 
 */
 
-#ifndef __dwi_tractography_FACT_h__
-#define __dwi_tractography_FACT_h__
+#ifndef __dwi_tractography_algorithms_FACT_h__
+#define __dwi_tractography_algorithms_FACT_h__
 
 #include "point.h"
 #include "math/eigen.h"
 #include "math/least_squares.h"
 #include "dwi/gradient.h"
 #include "dwi/tensor.h"
-#include "dwi/tractography/method.h"
-#include "dwi/tractography/shared.h"
+#include "dwi/tractography/tracking/method.h"
+#include "dwi/tractography/tracking/shared.h"
+#include "dwi/tractography/tracking/types.h"
 
 
 
@@ -39,7 +40,11 @@ namespace MR
   {
     namespace Tractography
     {
+      namespace Algorithms
+      {
 
+
+    using namespace MR::DWI::Tractography::Tracking;
 
 
     class FACT : public MethodBase {
@@ -58,7 +63,7 @@ namespace MR
 
           properties["method"] = "FACT";
 
-          Math::Matrix<value_type> grad;
+          Math::Matrix<float> grad;
           if (properties.find ("DW_scheme") != properties.end())
             grad.load (properties["DW_scheme"]);
           else
@@ -75,7 +80,7 @@ namespace MR
           Math::pinv (binv, bmat);
         }
 
-        Math::Matrix<value_type> bmat, binv;
+        Math::Matrix<float> bmat, binv;
       };
 
 
@@ -107,7 +112,7 @@ namespace MR
       term_t next ()
       {
         if (!get_data (source))
-          return EXIT_IMAGE;
+          return Tracking::EXIT_IMAGE;
         return do_next();
       }
 
@@ -115,7 +120,7 @@ namespace MR
 
       protected:
       const Shared& S;
-      Interpolator<SourceBufferType::voxel_type>::type source;
+      Tracking::Interpolator<SourceBufferType::voxel_type>::type source;
       Math::Eigen::SymmV<double> eig;
       Math::Matrix<double> M, V;
       Math::Vector<double> ev;
@@ -179,6 +184,7 @@ namespace MR
 
     };
 
+      }
     }
   }
 }

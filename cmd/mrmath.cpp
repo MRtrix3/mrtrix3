@@ -253,7 +253,7 @@ class ImageKernel : public ImageKernelBase {
         buffer (header)
     {
       typename Image::BufferScratch<Operation>::voxel_type v_buffer (buffer);
-      Image::ThreadedLoop (v_buffer).run_foreach (InitFunctor(), v_buffer, Output);
+      Image::ThreadedLoop (v_buffer).run_foreach (InitFunctor(), v_buffer, Output());
     }
 
     ~ImageKernel()
@@ -261,7 +261,7 @@ class ImageKernel : public ImageKernelBase {
       Image::Buffer<value_type> out (output_path, header);
       Image::Buffer<value_type>::voxel_type v_out (out);
       typename Image::BufferScratch<Operation>::voxel_type v_buffer (buffer);
-      Image::ThreadedLoop (v_buffer).run_foreach (ResultFunctor(), v_out, Output, v_buffer, Input);
+      Image::ThreadedLoop (v_buffer).run_foreach (ResultFunctor(), v_out, Output(), v_buffer, Input());
     }
 
     void process (const Image::Header& image_in)
@@ -271,7 +271,7 @@ class ImageKernel : public ImageKernelBase {
       for (size_t axis = buffer.ndim(); axis < v_in.ndim(); ++axis)
         v_in[axis] = 0;
       typename Image::BufferScratch<Operation>::voxel_type v_buffer (buffer);
-      Image::ThreadedLoop (v_buffer).run_foreach (ProcessFunctor(), v_buffer, Input | Output, v_in, Input);
+      Image::ThreadedLoop (v_buffer).run_foreach (ProcessFunctor(), v_buffer, InputOutput(), v_in, Input());
     }
 
   protected:
@@ -299,6 +299,9 @@ void run ()
     const size_t axis = opt[0][0];
 
     PreloadBufferType buffer_in (argument[0], Image::Stride::contiguous_along_axis (axis));
+
+    if (axis >= buffer_in.ndim())
+      throw Exception ("Cannot perform operation along axis " + str (axis) + "; image only has " + str(buffer_in.ndim()) + " axes");
 
     Image::Header header_out (buffer_in);
     header_out.datatype() = DataType::Float32;

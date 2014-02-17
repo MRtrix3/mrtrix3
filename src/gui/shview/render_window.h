@@ -72,6 +72,7 @@ namespace MR
           RenderFrame* render_frame;
           Dialog::Lighting* lighting_dialog;
           QActionGroup* lod_group, *lmax_group, *screenshot_OS_group;
+          QAction* response_action;
 
           std::string name;
           int current;

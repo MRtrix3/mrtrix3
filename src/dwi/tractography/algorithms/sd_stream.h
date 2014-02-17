@@ -20,19 +20,22 @@
 
 */
 
-#ifndef __dwi_tractography_sd_stream_h__
-#define __dwi_tractography_sd_stream_h__
+#ifndef __dwi_tractography_algorithms_sd_stream_h__
+#define __dwi_tractography_algorithms_sd_stream_h__
 
 #include "point.h"
 #include "math/SH.h"
-#include "dwi/tractography/method.h"
-#include "dwi/tractography/shared.h"
+#include "dwi/tractography/tracking/method.h"
+#include "dwi/tractography/tracking/shared.h"
+#include "dwi/tractography/tracking/types.h"
 
 
 namespace MR {
 namespace DWI {
 namespace Tractography {
+namespace Algorithms {
 
+using namespace MR::DWI::Tractography::Tracking;
 
 class SDStream : public MethodBase {
   public:
@@ -154,6 +157,7 @@ class SDStream : public MethodBase {
 
 };
 
+}
 }
 }
 }

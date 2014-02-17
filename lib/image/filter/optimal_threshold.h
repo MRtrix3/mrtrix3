@@ -165,12 +165,12 @@ namespace MR
                 if (mask) {
                   Adapter::Replicate<MaskVoxelType> replicated_mask (*mask, input);
                   loop.run_foreach (MeanStdFunctorMask<value_type, mask_value_type> (sum, sum_sqr, count), 
-                      input, Input,
-                      replicated_mask, Input);
+                      input, Input(),
+                      replicated_mask, Input());
                 }
                 else {
                   loop.run_foreach (MeanStdFunctor<value_type> (sum, sum_sqr), 
-                      input, Input);
+                      input, Input());
                   count = Image::voxel_count (input);
                 }
 
@@ -186,12 +186,12 @@ namespace MR
               if (mask) {
                   Adapter::Replicate<MaskVoxelType> replicated_mask (*mask, input);
                   loop.run_foreach (CorrelationFunctorMask<value_type, mask_value_type> (threshold, sum, mean_xy), 
-                      input, Input,
-                      replicated_mask, Input);
+                      input, Input(),
+                      replicated_mask, Input());
               }
               else
                 loop.run_foreach (CorrelationFunctor<value_type> (threshold, sum, mean_xy), 
-                    input, Input);
+                    input, Input());
 
               mean_xy /= count;
               double covariance = mean_xy - (sum / count) * input_image_mean;

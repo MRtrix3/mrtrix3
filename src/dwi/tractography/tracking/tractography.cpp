@@ -1,4 +1,4 @@
-#include "dwi/tractography/tractography.h"
+#include "dwi/tractography/tracking/tractography.h"
 
 #define MAX_TRIALS 1000
 
@@ -8,31 +8,12 @@ namespace MR
   {
     namespace Tractography
     {
+      namespace Tracking
+      {
 
       using namespace App;
 
       const OptionGroup TrackOption = OptionGroup ("Streamlines tractography options")
-
-      + Option ("include",
-            "specify an inclusion region of interest, as either a binary mask image, "
-            "or as a sphere using 4 comma-separared values (x,y,z,radius). Streamlines "
-            "must traverse ALL inclusion regions to be accepted.")
-          .allow_multiple()
-          + Argument ("spec")
-
-      + Option ("exclude",
-            "specify an exclusion region of interest, as either a binary mask image, "
-            "or as a sphere using 4 comma-separared values (x,y,z,radius). Streamlines "
-            "that enter ANY exclude region will be discarded.")
-          .allow_multiple()
-          + Argument ("spec")
-
-      + Option ("mask",
-            "specify an inclusion region of interest, as either a binary mask image, "
-            "or as a sphere using 4 comma-separared values (x,y,z,radius). If defined, "
-            "streamlines will be terminated as soon as they no longer lie within a mask.")
-          .allow_multiple()
-          + Argument ("spec")
 
       + Option ("grad",
             "specify the diffusion encoding scheme (may be required for FACT "
@@ -44,7 +25,7 @@ namespace MR
           + Argument ("size").type_float (0.0, 0.0, INFINITY)
 
       + Option ("angle",
-            "set the maximum angle between successive steps (default is 90° x stepsize / voxelsize).")
+            "set the maximum angle between successive steps (default is 90deg x stepsize / voxelsize).")
           + Argument ("theta").type_float (0.0, 90.0, 90.0)
 
       + Option ("number",
@@ -184,6 +165,7 @@ namespace MR
 
 
 
+      }
     }
   }
 }

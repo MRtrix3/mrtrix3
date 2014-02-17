@@ -1,7 +1,7 @@
 /*
-    Copyright 2008 Brain Research Institute, Melbourne, Australia
+    Copyright 2011 Brain Research Institute, Melbourne, Australia
 
-    Written by Robert E. Smith, 02/02/12.
+    Written by Robert E. Smith, 2014.
 
     This file is part of MRtrix.
 
@@ -20,31 +20,34 @@
 
 */
 
-#ifndef __dwi_tractography_tractography_h__
-#define __dwi_tractography_tractography_h__
+
+#ifndef __dwi_tractography_editing_editing_h__
+#define __dwi_tractography_editing_editing_h__
 
 #include "app.h"
-#include "point.h"
 
 #include "dwi/tractography/properties.h"
 
-namespace MR
-{
-  namespace App { class OptionGroup; }
+namespace MR {
+namespace DWI {
+namespace Tractography {
+namespace Editing {
 
-  namespace DWI
-  {
 
-    namespace Tractography
-    {
 
-      extern const App::OptionGroup TrackOption;
+extern const App::OptionGroup LengthOption;
+extern const App::OptionGroup ResampleOption;
+extern const App::OptionGroup TruncateOption;
+extern const App::OptionGroup WeightsOption;
 
-      void load_streamline_properties (Properties&);
 
-    }
-  }
+void load_properties (Tractography::Properties&);
+
+
+
+}
+}
+}
 }
 
 #endif
-

@@ -78,6 +78,8 @@ namespace MR
                window.get_current_mode()->update_overlays = true;
                window.updateGL();
              }
+             
+             void add_images (VecPtr<MR::Image::Header>& list); 
         };
 
       }

@@ -287,13 +287,13 @@ namespace MR
         void Tractogram::load_tracks()
         {
           DWI::Tractography::Reader<float> file (filename, properties);
-          std::vector<Point<float> > tck;
-          std::vector<Point<float> > buffer;
+          DWI::Tractography::Streamline<float> tck;
+          DWI::Tractography::Streamline<float> buffer;
           std::vector<GLint> starts;
           std::vector<GLint> sizes;
           size_t tck_count = 0;
 
-          while (file.next (tck)) {
+          while (file (tck)) {
             starts.push_back (buffer.size());
             buffer.push_back (Point<float>());
             buffer.insert (buffer.end(), tck.begin(), tck.end());
@@ -317,14 +317,14 @@ namespace MR
           DWI::Tractography::Reader<float> file (filename, properties);
           for (size_t buffer_index = 0; buffer_index != vertex_buffers.size(); ++buffer_index) {
             size_t num_tracks = num_tracks_per_buffer[buffer_index];
-            std::vector< Point<float> > buffer;
-            std::vector< Point<float> > tck;
+            DWI::Tractography::Streamline<float> buffer;
+            DWI::Tractography::Streamline<float> tck;
             while (num_tracks--) {
-              file.next (tck);
+              file (tck);
               const Point<float> tangent ((tck.back() - tck.front()).normalise());
               const Point<float> colour (Math::abs (tangent[0]), Math::abs (tangent[1]), Math::abs (tangent[2]));
               buffer.push_back (Point<float>());
-              for (std::vector< Point<float> >::iterator i = tck.begin(); i != tck.end(); ++i)
+              for (DWI::Tractography::Streamline<float>::iterator i = tck.begin(); i != tck.end(); ++i)
                 *i = colour;
               buffer.insert (buffer.end(), tck.begin(), tck.end());
             }
@@ -347,7 +347,7 @@ namespace MR
 
 
 
-        void Tractogram::load_tracks_onto_GPU (std::vector<Point<float> >& buffer,
+        void Tractogram::load_tracks_onto_GPU (DWI::Tractography::Streamline<float>& buffer,
             std::vector<GLint>& starts,
             std::vector<GLint>& sizes,
             size_t& tck_count)
@@ -383,7 +383,7 @@ namespace MR
         
         
         
-        void Tractogram::load_end_colours_onto_GPU (std::vector< Point<float> >& buffer) {
+        void Tractogram::load_end_colours_onto_GPU (DWI::Tractography::Streamline<float>& buffer) {
           buffer.push_back (Point<float>());
           GLuint vertexbuffer;
           gl::GenBuffers (1, &vertexbuffer);

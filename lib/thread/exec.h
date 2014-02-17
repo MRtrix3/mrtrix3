@@ -33,15 +33,16 @@
  *
  * These functions and class provide a simple interface for multi-threading in
  * MRtrix applications. Most of the low-level funtionality is a thin wrapper on
- * top to POSIX threads. There are two classes that are MRtrix-specific: the
- * Thread::Queue (and associated functions), and the Image::ThreadedLoop. These
- * two classes provide simple and convenient ways of multi-threading, and
- * should be sufficient for the vast majority of applications.
+ * top to POSIX threads. There are two classes that are MRtrix-specific: 
+ * \ref thread_queue, and \ref image_thread_looping. These two APIs provide
+ * simple and convenient ways of multi-threading, and should be sufficient for
+ * the vast majority of applications.
  *
  * Please refer to the \ref multithreading page for an overview of
  * multi-threading in MRtrix.
  *
  * \sa Image::ThreadedLoop
+ * \sa thread_run_queue
  */
 
 namespace MR
@@ -52,18 +53,21 @@ namespace MR
     /** \addtogroup Thread
      * @{ */
 
-    /*! the number of cores to use for multi-threading, as specified in the
-     * variable NumberOfThreads in the MRtrix configuration file */
-    size_t number_of_threads ();
+    /** \defgroup thread_basics Basic multi-threading primitives
+     * \brief basic functions and classes to allow multi-threading
+     *
+     * These functions and classes mostly provide a thin wrapper around the
+     * POSIX threads API. While they can be used as-is to develop
+     * multi-threaded applications, in practice the \ref image_thread_looping
+     * and \ref thread_queue APIs provide much more convenient and powerful
+     * ways of developing robust and efficient applications.
+     * 
+     * @{ */
 
-    //! temporarily change number of cores, until class goes out of scope
-    class SetNumberOfThreads {
-      public:
-        SetNumberOfThreads (size_t number);
-        ~SetNumberOfThreads ();
-      private:
-        size_t previous_number;
-    };
+    /*! the number of cores to use for multi-threading, as specified in the
+     * variable NumberOfThreads in the MRtrix configuration file, or set using
+     * the -nthreads command-line option */
+    size_t number_of_threads ();
 
 
 
@@ -237,6 +241,7 @@ namespace MR
 
     };
 
+    /** @} */
     /** @} */
   }
 }

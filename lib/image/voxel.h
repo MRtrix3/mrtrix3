@@ -178,6 +178,20 @@ namespace MR
           out[n] = in[n];
       }
 
+    template <class InputVoxelType, class OutputVoxelType, class OutputVoxelType2>
+      void voxel_assign2 (OutputVoxelType& out, OutputVoxelType2& out2, const InputVoxelType& in, size_t from_axis = 0, size_t to_axis = std::numeric_limits<size_t>::max()) {
+        to_axis = std::min (to_axis, std::min (in.ndim(), std::min (out.ndim(), out2.ndim())));
+        for (size_t n = from_axis; n < to_axis; ++n)
+          out[n] = out2[n] = in[n];
+      }
+
+    template <class InputVoxelType, class OutputVoxelType, class OutputVoxelType2, class OutputVoxelType3>
+      void voxel_assign3 (OutputVoxelType& out, OutputVoxelType2& out2, OutputVoxelType2& out3, const InputVoxelType& in, size_t from_axis = 0, size_t to_axis = std::numeric_limits<size_t>::max()) {
+        to_axis = std::min (to_axis, std::min (in.ndim(), std::min (out.ndim(), std::min (out2.ndim(), out3.ndim()))));
+        for (size_t n = from_axis; n < to_axis; ++n)
+          out[n] = out2[n] = out3[n] = in[n];
+      }
+
     //! reset all coordinates to zero.
     template <class VoxelType>
       void voxel_reset (VoxelType& vox) {

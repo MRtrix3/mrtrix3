@@ -20,15 +20,16 @@
 
 */
 
-#ifndef __dwi_tractography_iFOD2_h__
-#define __dwi_tractography_iFOD2_h__
+#ifndef __dwi_tractography_algorithms_iFOD2_h__
+#define __dwi_tractography_algorithms_iFOD2_h__
 
 #include <algorithm>
 
 #include "point.h"
 #include "math/SH.h"
-#include "dwi/tractography/method.h"
-#include "dwi/tractography/shared.h"
+#include "dwi/tractography/tracking/method.h"
+#include "dwi/tractography/tracking/shared.h"
+#include "dwi/tractography/tracking/types.h"
 #include "dwi/tractography/algorithms/calibrator.h"
 
 
@@ -40,6 +41,10 @@ namespace MR
   {
     namespace Tractography
     {
+      namespace Algorithms
+      {
+
+    using namespace MR::DWI::Tractography::Tracking;
 
     class iFOD2 : public MethodBase {
       public:
@@ -88,10 +93,11 @@ namespace MR
 
           // iFOD2 by default downsamples after track propagation back to the desired 'step size'
           //   i.e. the sub-step detail is removed from the output
-          downsample = num_samples;
-          properties.set (downsample, "downsample_factor");
+          size_t downsample_ratio = num_samples;
+          properties.set (downsample_ratio, "downsample_factor");
+          downsampler.set_ratio (downsample_ratio);
 
-          properties["output_step_size"] = str (step_size * downsample / float(num_samples));
+          properties["output_step_size"] = str (step_size * downsample_ratio / float(num_samples));
 
         }
 
@@ -443,6 +449,7 @@ namespace MR
 
 
 
+      }
     }
   }
 }

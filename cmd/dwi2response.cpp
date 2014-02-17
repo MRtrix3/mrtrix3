@@ -282,7 +282,7 @@ void run ()
       {
         SFSelector selector (seg_results, thresholds, mask);
         ResponseEstimator estimator (dwi, shared, lmax, output);
-        Thread::run_queue_threaded_sink (selector, FODSegResult(), estimator);
+        Thread::run_queue (selector, FODSegResult(), Thread::multi (estimator));
       }
       if (!output.get_count())
         throw Exception ("Cannot estimate response function; all voxels have been excluded from slection");

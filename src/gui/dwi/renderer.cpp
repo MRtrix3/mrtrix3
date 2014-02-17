@@ -315,6 +315,11 @@ namespace MR
 
 
 
+#ifdef USE_NON_ORTHONORMAL_SH_BASIS
+# define SH_NON_M0_SCALE_FACTOR
+#else
+# define SH_NON_M0_SCALE_FACTOR (m?M_SQRT2:1.0)*
+#endif
 
 
 
@@ -329,7 +334,7 @@ namespace MR
           for (int l = 0; l <= lmax; l+=2) {
             for (int m = 0; m <= l; m++) {
               const int idx (Math::SH::index (l,m));
-              transform (3*n, idx) = transform(3*n, idx-2*m) = Math::Legendre::Plm_sph<float> (l, m, vertices[n][2]);
+              transform (3*n, idx) = transform(3*n, idx-2*m) = SH_NON_M0_SCALE_FACTOR Math::Legendre::Plm_sph<float> (l, m, vertices[n][2]);
             }
           }
 

@@ -20,13 +20,14 @@
 
 */
 
-#ifndef __dwi_tractography_iFOD1_h__
-#define __dwi_tractography_iFOD1_h__
+#ifndef __dwi_tractography_algorithms_iFOD1_h__
+#define __dwi_tractography_algorithms_iFOD1_h__
 
 #include "point.h"
 #include "math/SH.h"
-#include "dwi/tractography/method.h"
-#include "dwi/tractography/shared.h"
+#include "dwi/tractography/tracking/method.h"
+#include "dwi/tractography/tracking/shared.h"
+#include "dwi/tractography/tracking/types.h"
 #include "dwi/tractography/algorithms/calibrator.h"
 
 
@@ -37,6 +38,10 @@ namespace MR
   {
     namespace Tractography
     {
+      namespace Algorithms
+      {
+
+    using namespace MR::DWI::Tractography::Tracking;
 
     class iFOD1 : public MethodBase {
       public:
@@ -121,8 +126,8 @@ namespace MR
 
       ~iFOD1 ()
       {
-        S.update_stats (calibrate_list.size() + value_type(mean_sample_num)/value_type(num_sample_runs),
-                        value_type(num_truncations) / value_type(num_sample_runs),
+        S.update_stats (calibrate_list.size() + float(mean_sample_num)/float(num_sample_runs),
+                        float(num_truncations) / float(num_sample_runs),
                         max_truncation);
       }
 
@@ -135,7 +140,7 @@ namespace MR
 
         if (!S.init_dir) {
 
-          const Point<float> init_dir (dir);
+          const Point<Tracking::value_type> init_dir (dir);
 
           for (size_t n = 0; n < S.max_trials; n++) {
             if (init_dir.valid()) {
@@ -265,6 +270,7 @@ namespace MR
 
     };
 
+      }
     }
   }
 }

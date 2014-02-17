@@ -168,6 +168,7 @@ line), and its description, which will appear in a separate listing after the
 
  It is possible to specify at most one argument as being optional, by adding
  the 'optional' flag:
+
  \code
  ARGUMENTS 
  +  Argument ("input", 
@@ -179,6 +180,7 @@ line), and its description, which will appear in a separate listing after the
  words, a number of these arguments can be supplied one after the other).
  This is useful for example if the command can operate on multiple data sets
  sequentially:
+
  \code
  ARGUMENTS
  + Argument ("input", 
@@ -192,12 +194,14 @@ line), and its description, which will appear in a separate listing after the
  Individual command-line options are added to the OPTIONS vector as App::Option
  objects using the + operator.  As a minimum, each Option is constructed with
  its short-hand name (used on the command-line), and its description:
+
  \code
  OPTIONS
  +  Option ("option", "a description of the option");
  \endcode
 
  Similarly to arguments, options can be specified as repeatable:
+
  \code
  OPTIONS
  + Option ("option", "a description of the option").allow_multiple();
@@ -205,6 +209,7 @@ line), and its description, which will appear in a separate listing after the
 
  Options can also be specified as required (by default, options are
  optional):
+
  \code
  OPTIONS
  + Option ("option", "a description of the option").required();
@@ -215,6 +220,7 @@ line), and its description, which will appear in a separate listing after the
  case the description field of the argument is ignored, and so does not need
  to be specified: These Arguments can be typed in the same way as regular
  Arguments. For example:
+
  \code
  OPTIONS 
  + Option ("option", "a description of the option")
@@ -229,6 +235,7 @@ line), and its description, which will appear in a separate listing after the
  example above, new Options were added to the default App::OptionGroup. It is
  possible to create new option groups that will appear under their own heading
  in the help page.  
+
  \code
  OPTIONS
  +   Option ("normal", "a 'standard' option")
@@ -239,9 +246,10 @@ line), and its description, which will appear in a separate listing after the
      "this option will now appear in the 'My options' section);
  \endcode
 
- This also makes it possible to define OptionGroup objects for commonly-used
+ This makes it possible to define OptionGroup objects for commonly-used
  functions elsewhere in the code, and simply add them into the application when
  required. For example: 
+
  \code
  // funny_processing.h:
  
@@ -276,7 +284,8 @@ line), and its description, which will appear in a separate listing after the
  the 'funny_processing' code might declare a function 'do_funny_processing()',
  which could then retrieve any relevant parameters supplied by the user on the
  command-line, with no interaction with the body of the application using that
- function: 
+ function (other than adding the relevant OptionGroup to the OPTIONS list): 
+
  \code 
  // funny_processing.cpp:
  
@@ -290,6 +299,58 @@ line), and its description, which will appear in a separate listing after the
    ...
  }
  \endcode
+
+ \subsubsection command_line_option_group_broken_up Breaking up an option group into multiple lists
+
+ In some cases, it might be useful to break up an OptionGroup into several
+ distinct sub-groups, even though they would all conceptually belong to the
+ same section. For instance, some options might only be required when
+ processing input data, others when producing output data. Some applications
+ might only need to process data without producing any, others might only
+ produce data, and others might need to do both. To support this, developers
+ can provide several OptionGroups with identical sections names; these will then
+ be displayed together in the help page if used together in the corresponding
+ application. 
+ 
+ For example:
+
+ \code
+ // funny_processing.h:
+ 
+ extern const OptionGroup funny_options_in;
+ extern const OptionGroup funny_options_out;
+ \endcode
+
+ \code
+ // funny_processing.cpp:
+
+ const OptionGroup funny_options_in ("Funny options")
+ + Option ("funny_in", "specify funny input data")
+ +   Argument ("name");
+
+ // Note that the group heading is the same in both cases:
+ const OptionGroup funny_options_out ("Funny options")
+ + Option ("funny_out", "specify funny output data")
+ +   Argument ("name");
+ \endcode
+
+ \code
+ // my_application.cpp:
+    
+ void usage () 
+ { 
+   ...
+
+   OPTIONS
+   + Option ("normal", "a 'standard' option")
+
+   // these will both now appear under the same heading "Funny options" on the
+   // help page, with the options themselves appearing in the order listed here:
+   + funny_options_in 
+   + funny_options_out;
+ }
+ \endcode
+
 
 
  \section command_line_retrieve Retrieving command-line argument and option values

@@ -50,7 +50,7 @@ void usage ()
 
 
 typedef float value_type;
-typedef std::vector<Point<value_type> > TrackType;
+typedef Tractography::Streamline<value_type> TrackType;
 
 
 
@@ -60,7 +60,7 @@ class Loader
     Loader (const std::string& file) : reader (file, properties) {}
 
     bool operator() (TrackType& item) {
-      return reader.next (item);
+      return reader (item);
     }
 
     Tractography::Properties properties;
@@ -108,7 +108,7 @@ class Writer
       writer (file, properties) { }
 
     bool operator() (const TrackType& item) {
-      writer.append (item);
+      writer (item);
       writer.total_count++;
       ++progress;
       return true;
@@ -134,6 +134,11 @@ void run ()
 
   Writer writer (argument[2], loader.properties);
 
-  Thread::run_batched_queue_threaded_pipe (loader, TrackType(), 1024, warper, TrackType(), 1024, writer);
+  Thread::run_queue (
+      loader, 
+      Thread::batch (TrackType(), 1024), 
+      Thread::multi (warper), 
+      Thread::batch (TrackType(), 1024), 
+      writer);
 }
 

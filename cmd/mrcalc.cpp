@@ -79,7 +79,9 @@ DESCRIPTION
   "that volume in the single-voxel image.";
 
 ARGUMENTS
-  + Argument ("operand", "an input image or intensity.").allow_multiple();
+  + Argument ("operand", "an input image, intensity value, or the special keywords "
+      "'rand' (random number between 0 and 1) or 'randn' (random number from unit "
+      "std.dev. normal distribution).").allow_multiple();
 
 OPTIONS
   + OptionGroup ("Unary operators")
@@ -227,11 +229,13 @@ class StackEntry {
       }
       catch (Exception) {
         std::string a = lowercase (arg);
-        if      (a ==  "nan") value =  std::numeric_limits<real_type>::quiet_NaN();
-        else if (a == "-nan") value = -std::numeric_limits<real_type>::quiet_NaN();
-        else if (a ==  "inf") value =  std::numeric_limits<real_type>::infinity();
-        else if (a == "-inf") value = -std::numeric_limits<real_type>::infinity();
-        else                  value =  to<complex_type> (arg);
+        if      (a ==  "nan")  { value =  std::numeric_limits<real_type>::quiet_NaN(); }
+        else if (a == "-nan")  { value = -std::numeric_limits<real_type>::quiet_NaN(); }
+        else if (a ==  "inf")  { value =  std::numeric_limits<real_type>::infinity(); }
+        else if (a == "-inf")  { value = -std::numeric_limits<real_type>::infinity(); }
+        else if (a == "rand")  { value = 0.0; rng = new Math::RNG(); rng_gausssian = false; } 
+        else if (a == "randn") { value = 0.0; rng = new Math::RNG(); rng_gausssian = true; } 
+        else                   { value =  to<complex_type> (arg); }
       }
       arg = NULL;
     }
@@ -239,7 +243,9 @@ class StackEntry {
     const char* arg;
     RefPtr<Evaluator> evaluator;
     RefPtr<Image::Buffer<complex_type> > buffer;
+    Ptr<Math::RNG> rng;
     complex_type value;
+    bool rng_gausssian;
 
     bool is_complex () const;
 
@@ -295,26 +301,17 @@ inline bool StackEntry::is_complex () const {
 
 inline Chunk& StackEntry::evaluate (ThreadLocalStorage& storage) const
 {
-  return evaluator ? evaluator->evaluate (storage) : storage.next();
-}
-
-
-
-/*
-void print_stack (const std::vector<StackEntry>& stack, const std::string& prefix = "  ") 
-{
-  for (size_t n = 0; n < stack.size(); ++n) {
-    std::cerr << prefix << n << ": ";
-    if (stack[n].buffer) std::cerr << "[IMA] " << stack[n].buffer->name();
-    else if (stack[n].evaluator) std::cerr << "[EVAL] " << stack[n].evaluator->id;
-    else if (stack[n].arg) std::cerr << "[ARG] " << stack[n].arg;
-    else std::cerr << "[VAL] " << str(stack[n].value);
-    std::cerr << " [" << ( stack[n].is_complex() ? "COMPLEX" : "REAL" ) << "]\n";
-    if (stack[n].evaluator) 
-      print_stack (stack[n].evaluator->operands, prefix + "  ");
+  if (evaluator) return evaluator->evaluate (storage);
+  if (rng) {
+    Chunk& chunk = storage.next();
+    for (size_t n = 0; n < chunk.size(); ++n)
+      chunk[n] = rng_gausssian ? rng->normal() : rng->uniform(); 
+    return chunk;
   }
+  return storage.next();
 }
-*/
+
+
 
 
 
@@ -344,7 +341,10 @@ inline void replace (std::string& orig, size_t n, const std::string& value)
 // later:
 std::string operation_string (const StackEntry& entry) 
 {
-  if (entry.buffer) return entry.buffer->name();
+  if (entry.buffer)
+    return entry.buffer->name();
+  else if (entry.rng)
+    return entry.rng_gausssian ? "randn()" : "rand()";
   else if (entry.evaluator) {
     std::string s = entry.evaluator->format;
     for (size_t n = 0; n < entry.evaluator->operands.size(); ++n) 
@@ -353,6 +353,9 @@ std::string operation_string (const StackEntry& entry)
   }
   else return str(entry.value);
 }
+
+
+
 
 
 template <class Operation>
@@ -587,6 +590,7 @@ class ThreadFunctor {
         storage.axes = loop.axes();
         storage.dim.push_back (vox.dim(storage.axes[0]));
         storage.dim.push_back (vox.dim(storage.axes[1]));
+        chunk_size = vox.dim (storage.axes[0]) * vox.dim (storage.axes[1]);
         allocate_storage (top_entry);
       }
 
@@ -600,8 +604,11 @@ class ThreadFunctor {
       storage.push_back (ThreadLocalStorageItem());
       if (entry.buffer) {
         storage.back().vox = new Image::Buffer<complex_type>::voxel_type (*entry.buffer);
-        storage.back().chunk.resize (vox.dim(storage.axes[0])*vox.dim(storage.axes[1]));
+        storage.back().chunk.resize (chunk_size);
         return;
+      }
+      else if (entry.rng) {
+        storage.back().chunk.resize (chunk_size);
       }
       else storage.back().chunk.value = entry.value;
     }
@@ -624,6 +631,7 @@ class ThreadFunctor {
     Image::Buffer<complex_type>::voxel_type vox;
     Image::LoopInOrder loop;
     ThreadLocalStorage storage;
+    size_t chunk_size;
 };
 
 
@@ -637,6 +645,8 @@ void run_operations (const std::vector<StackEntry>& stack)
 
   Image::Header header;
   get_header (stack[0], header);
+  if (header.ndim() == 0)
+    throw Exception ("no valid images supplied - cannot produce output image");
 
   if (stack[0].is_complex()) {
     header.datatype() = DataType::from_command_line (DataType::CFloat32);

@@ -24,10 +24,12 @@
 #include "command.h"
 #include "image/voxel.h"
 
-#include "dwi/tractography/exec.h"
-#include "dwi/tractography/method.h"
 #include "dwi/tractography/properties.h"
-#include "dwi/tractography/tractography.h"
+#include "dwi/tractography/roi.h"
+
+#include "dwi/tractography/tracking/exec.h"
+#include "dwi/tractography/tracking/method.h"
+#include "dwi/tractography/tracking/tractography.h"
 
 #include "dwi/tractography/algorithms/fact.h"
 #include "dwi/tractography/algorithms/iFOD1.h"
@@ -79,7 +81,9 @@ void usage ()
               "FACT, iFOD1, iFOD2, Nulldist, SD_Stream, Seedtest, VecStream, WBFACT (default: iFOD2).")
     + Argument ("name").type_choice (algorithms, 2)
 
-  + DWI::Tractography::TrackOption
+  + DWI::Tractography::ROIOption
+
+  + DWI::Tractography::Tracking::TrackOption
 
   + DWI::Tractography::Seeding::SeedOption;
 
@@ -91,6 +95,8 @@ void run ()
 {
 
   using namespace DWI::Tractography;
+  using namespace DWI::Tractography::Tracking;
+  using namespace DWI::Tractography::Algorithms;
 
   Properties properties;
 
@@ -98,7 +104,9 @@ void run ()
   Options opt = get_options ("algorithm");
   if (opt.size()) algorithm = opt[0][0];
 
-  load_streamline_properties (properties);
+  load_rois (properties);
+
+  Tracking::load_streamline_properties (properties);
 
   Seeding::load_tracking_seeds (properties);
 
