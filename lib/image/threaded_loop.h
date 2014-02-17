@@ -428,6 +428,15 @@ namespace MR
         template <class Functor, class VoxelType1, class InputOutput1, class VoxelType2, class InputOutput2, class VoxelType3, class InputOutput3>
           void run_foreach (Functor functor, VoxelType1& vox1, InputOutput1 flags1, VoxelType2& vox2, InputOutput2 flags2, VoxelType3& vox3, InputOutput3 flags3);
 
+        template <class Functor, class VoxelType1, class InputOutput1> 
+          void run_foreach_pos (Functor functor, VoxelType1& vox1, InputOutput1 flags1);
+
+        template <class Functor, class VoxelType1, class InputOutput1, class VoxelType2, class InputOutput2>
+          void run_foreach_pos (Functor functor, VoxelType1& vox1, InputOutput1 flags1, VoxelType2& vox2, InputOutput2 flags2);
+
+        template <class Functor, class VoxelType1, class InputOutput1, class VoxelType2, class InputOutput2, class VoxelType3, class InputOutput3>
+          void run_foreach_pos (Functor functor, VoxelType1& vox1, InputOutput1 flags1, VoxelType2& vox2, InputOutput2 flags2, VoxelType3& vox3, InputOutput3 flags3);
+
       protected:
         LoopInOrder loop;
         Iterator dummy;
@@ -467,280 +476,437 @@ namespace MR
     };
 
 
-    class ThreadedLoopKernelBase {
-      public:
-        ThreadedLoopKernelBase (ThreadedLoop& shared_info) :
-          shared (shared_info) { }
-
-      protected:
-        ThreadedLoop& shared;
-    };
-
-
-    template <class Functor>
-      class ThreadedLoopKernelOuter : public ThreadedLoopKernelBase {
-        public:
-          ThreadedLoopKernelOuter (ThreadedLoop& shared_info, const Functor& functor) :
-            ThreadedLoopKernelBase (shared_info),
-            func (functor) { }
-
-          void execute () {
-            Iterator pos (shared.iterator());
-            while (shared.next (pos))
-              func (pos);
-          }
-
-        protected:
-          Functor func;
-      };
-
-
-    template <class Functor>
-      class ThreadedLoopKernelFull : public ThreadedLoopKernelBase {
-        public:
-          ThreadedLoopKernelFull (ThreadedLoop& shared_info, const Functor& functor) :
-            ThreadedLoopKernelBase (shared_info),
-            func (functor) { }
-
-          void execute () {
-            LoopInOrder loop (shared.inner_axes());
-            Iterator pos (shared.iterator());
-            while (shared.next (pos))
-              for (loop.start (pos); loop.ok(); loop.next (pos))
-                func (pos);
-          }
-
-        protected:
-          Functor func;
-      };
-
-
-    template <class Functor, class VoxelType1, class InputOutput1>
-      class ThreadedLoopKernelForEach1 {
-        public:
-          ThreadedLoopKernelForEach1 (
-              ThreadedLoop& shared_info,
-              const Functor& functor, 
-              VoxelType1& vox1, 
-              InputOutput1 flags1) :
-            func (functor),
-            loop (shared_info.inner_axes()),
-            axes (shared_info.outer_axes()),
-            vox1 (vox1),
-            flags1 (flags1) { }
-
-          void operator() (const Iterator& pos) {
-            voxel_assign (vox1, pos, axes);
-            for (loop.start (vox1); loop.ok(); loop.next (vox1)) {
-              flags1.read (val1, vox1);
-              func (val1);
-              flags1.write (vox1, val1);
-            }
-          }
-
-        protected:
-          Functor func;
-          LoopInOrder loop;
-          const std::vector<size_t>& axes;
-          VoxelType1 vox1;
-          InputOutput1 flags1;
-          typename VoxelType1::value_type val1;
-      };
 
 
 
-    template <class Functor, class VoxelType1, class InputOutput1, class VoxelType2, class InputOutput2>
-      class ThreadedLoopKernelForEach2 {
-        public:
-          ThreadedLoopKernelForEach2 (
-              ThreadedLoop& shared_info, 
-              const Functor& functor, 
-              VoxelType1& vox1, InputOutput1 flags1, 
-              VoxelType2& vox2, InputOutput2 flags2) :
-            func (functor),
-            loop (shared_info.inner_axes()),
-            axes (shared_info.outer_axes()),
-            vox1 (vox1), vox2 (vox2),
-            flags1 (flags1), flags2 (flags2) { }
-
-          void operator() (const Iterator& pos) {
-            voxel_assign2 (vox1, vox2, pos, axes);
-            for (loop.start (vox1, vox2); loop.ok(); loop.next (vox1, vox2)) {
-              flags1.read (val1, vox1);
-              flags2.read (val2, vox2);
-              func (val1, val2);
-              flags1.write (vox1, val1);
-              flags2.write (vox2, val2);
-            }
-          }
-
-        protected:
-          Functor func;
-          LoopInOrder loop;
-          const std::vector<size_t>& axes;
-          VoxelType1 vox1;
-          VoxelType2 vox2;
-          InputOutput1 flags1;
-          InputOutput2 flags2;
-          typename VoxelType1::value_type val1;
-          typename VoxelType2::value_type val2;
-      };
+     namespace {
 
 
-    template <class Functor, class VoxelType1, class InputOutput1, class VoxelType2, class InputOutput2, class VoxelType3, class InputOutput3>
-      class ThreadedLoopKernelForEach3 {
-        public:
-          ThreadedLoopKernelForEach3 (
-              ThreadedLoop& shared_info, 
-              const Functor& functor, 
-              VoxelType1& vox1, InputOutput1 flags1, 
-              VoxelType2& vox2, InputOutput2 flags2, 
-              VoxelType3& vox3, InputOutput3 flags3)  :
-            func (functor),
-            loop (shared_info.inner_axes()),
-            axes (shared_info.outer_axes()),
-            vox1 (vox1), vox2 (vox2), vox3 (vox3),
-            flags1 (flags1), flags2 (flags2), flags3 (flags3) { }
+       template <class Functor>
+         class Outer {
+           public:
+             Outer (ThreadedLoop& shared_info, const Functor& functor) :
+               shared (shared_info),
+               func (functor) { }
 
-          void operator() (const Iterator& pos) {
-            voxel_assign3 (vox1, vox2, vox3, pos, axes);
-            for (loop.start (vox1, vox2, vox3); loop.ok(); loop.next (vox1, vox2, vox3)) {
-              flags1.read (val1, vox1);
-              flags2.read (val2, vox2);
-              flags3.read (val3, vox3);
-              func (val1, val2, val3);
-              flags1.write (vox1, val1);
-              flags2.write (vox2, val2);
-              flags3.write (vox3, val3);
-            }
-          }
+             void execute () {
+               Iterator pos (shared.iterator());
+               while (shared.next (pos))
+                 func (pos);
+             }
 
-        protected:
-          Functor func;
-          LoopInOrder loop;
-          const std::vector<size_t>& axes;
-          VoxelType1 vox1;
-          VoxelType2 vox2;
-          VoxelType3 vox3;
-          InputOutput1 flags1;
-          InputOutput2 flags2;
-          InputOutput3 flags3;
-          typename VoxelType1::value_type val1;
-          typename VoxelType2::value_type val2;
-          typename VoxelType3::value_type val3;
-      };
-
-
-
-    /*! \} */
+           protected:
+             ThreadedLoop& shared;
+             Functor func;
+         };
 
 
 
 
 
+       template <class Functor>
+         class Base {
+           public:
+             Base (ThreadedLoop& shared_info, const Functor& functor) :
+               func (functor), 
+               loop (shared_info.inner_axes()),
+               axes (shared_info.outer_axes()) { }
+
+           protected:
+             Functor func;
+             LoopInOrder loop;
+             const std::vector<size_t>& axes;
+         };
+
+
+
+       template <class Functor>
+         class Pos : public Base<Functor> {
+           public:
+             Pos (ThreadedLoop& shared_info, const Functor& functor) :
+               Base<Functor> (shared_info, functor) { }
+
+             void operator() (const Iterator& pos) {
+               this->func (pos);
+             }
+         };
+
+
+       template <class Functor, class VoxelType1, class InputOutput1>
+         class ForEach1 : public Base<Functor> {
+           public:
+             ForEach1 (ThreadedLoop& shared_info, const Functor& functor, VoxelType1& vox1, InputOutput1 flags1) :
+               Base<Functor> (shared_info, functor),
+               vox1 (vox1),
+               flags1 (flags1) { }
+
+             void operator() (const Iterator& pos) {
+               voxel_assign (vox1, pos, this->axes);
+               for (this->loop.start (vox1); this->loop.ok(); this->loop.next (vox1)) {
+                 flags1.read (val1, vox1);
+                 this->func (val1);
+                 flags1.write (vox1, val1);
+               }
+             }
+
+           protected:
+             VoxelType1 vox1;
+             InputOutput1 flags1;
+             typename VoxelType1::value_type val1;
+         };
+
+
+       template <class Functor, class VoxelType1, class InputOutput1>
+         class ForEachPos1 : public Base<Functor> {
+           public:
+             ForEachPos1 (ThreadedLoop& shared_info, const Functor& functor, VoxelType1& vox1, InputOutput1 flags1) :
+               Base<Functor> (shared_info, functor),
+               vox1 (vox1),
+               flags1 (flags1) { }
+
+             void operator() (const Iterator& pos) {
+               voxel_assign2 (vox1, cpos, pos, this->axes);
+               for (this->loop.start (vox1, cpos); this->loop.ok(); this->loop.next (vox1, cpos)) {
+                 flags1.read (val1, vox1);
+                 this->func (cpos, val1);
+                 flags1.write (vox1, val1);
+               }
+             }
+
+           protected:
+             Iterator cpos;
+             VoxelType1 vox1;
+             InputOutput1 flags1;
+             typename VoxelType1::value_type val1;
+         };
+
+
+
+       template <class Functor, class VoxelType1, class InputOutput1, class VoxelType2, class InputOutput2>
+         class ForEach2 : public Base<Functor> {
+           public:
+             ForEach2 (ThreadedLoop& shared_info, const Functor& functor, VoxelType1& vox1, InputOutput1 flags1, VoxelType2& vox2, InputOutput2 flags2) :
+               Base<Functor> (shared_info, functor),
+               vox1 (vox1), vox2 (vox2),
+               flags1 (flags1), flags2 (flags2) { }
+
+             void operator() (const Iterator& pos) {
+               voxel_assign2 (vox1, vox2, pos, this->axes);
+               for (this->loop.start (vox1, vox2); this->loop.ok(); this->loop.next (vox1, vox2)) {
+                 flags1.read (val1, vox1);
+                 flags2.read (val2, vox2);
+                 this->func (val1, val2);
+                 flags1.write (vox1, val1);
+                 flags2.write (vox2, val2);
+               }
+             }
+
+           protected:
+             VoxelType1 vox1;
+             VoxelType2 vox2;
+             InputOutput1 flags1;
+             InputOutput2 flags2;
+             typename VoxelType1::value_type val1;
+             typename VoxelType2::value_type val2;
+         };
+
+
+       template <class Functor, class VoxelType1, class InputOutput1, class VoxelType2, class InputOutput2>
+         class ForEachPos2 : public Base<Functor> {
+           public:
+             ForEachPos2 (ThreadedLoop& shared_info, const Functor& functor, VoxelType1& vox1, InputOutput1 flags1, VoxelType2& vox2, InputOutput2 flags2) :
+               Base<Functor> (shared_info, functor),
+               vox1 (vox1), vox2 (vox2),
+               flags1 (flags1), flags2 (flags2) { }
+
+             void operator() (const Iterator& pos) {
+               voxel_assign3 (vox1, vox2, cpos, pos, this->axes);
+               for (this->loop.start (vox1, vox2, cpos); this->loop.ok(); this->loop.next (vox1, vox2, cpos)) {
+                 flags1.read (val1, vox1);
+                 flags2.read (val2, vox2);
+                 this->func (cpos, val1, val2);
+                 flags1.write (vox1, val1);
+                 flags2.write (vox2, val2);
+               }
+             }
+
+           protected:
+             Iterator cpos;
+             VoxelType1 vox1;
+             VoxelType2 vox2;
+             InputOutput1 flags1;
+             InputOutput2 flags2;
+             typename VoxelType1::value_type val1;
+             typename VoxelType2::value_type val2;
+         };
+
+
+       template <class Functor, class VoxelType1, class InputOutput1, class VoxelType2, class InputOutput2, class VoxelType3, class InputOutput3>
+         class ForEach3 : public Base<Functor> {
+           public:
+             ForEach3 (ThreadedLoop& shared_info, const Functor& functor, VoxelType1& vox1, InputOutput1 flags1, VoxelType2& vox2, InputOutput2 flags2, VoxelType3& vox3, InputOutput3 flags3) :
+               Base<Functor> (shared_info, functor),
+               vox1 (vox1), vox2 (vox2), vox3 (vox3),
+               flags1 (flags1), flags2 (flags2), flags3 (flags3) { }
+
+             void operator() (const Iterator& pos) {
+               voxel_assign3 (vox1, vox2, vox3, pos, this->axes);
+               for (this->loop.start (vox1, vox2, vox3); this->loop.ok(); this->loop.next (vox1, vox2, vox3)) {
+                 flags1.read (val1, vox1);
+                 flags2.read (val2, vox2);
+                 flags3.read (val3, vox3);
+                 this->func (val1, val2, val3);
+                 flags1.write (vox1, val1);
+                 flags2.write (vox2, val2);
+                 flags3.write (vox3, val3);
+               }
+             }
+
+           protected:
+             VoxelType1 vox1;
+             VoxelType2 vox2;
+             VoxelType3 vox3;
+             InputOutput1 flags1;
+             InputOutput2 flags2;
+             InputOutput3 flags3;
+             typename VoxelType1::value_type val1;
+             typename VoxelType2::value_type val2;
+             typename VoxelType3::value_type val3;
+         };
+
+
+       template <class Functor, class VoxelType1, class InputOutput1, class VoxelType2, class InputOutput2, class VoxelType3, class InputOutput3>
+         class ForEachPos3 : public Base<Functor> {
+           public:
+             ForEachPos3 (ThreadedLoop& shared_info, const Functor& functor, VoxelType1& vox1, InputOutput1 flags1, VoxelType2& vox2, InputOutput2 flags2, VoxelType3& vox3, InputOutput3 flags3) :
+               Base<Functor> (shared_info, functor),
+               vox1 (vox1), vox2 (vox2), vox3 (vox3),
+               flags1 (flags1), flags2 (flags2), flags3 (flags3) { }
+
+             void operator() (const Iterator& pos) {
+               voxel_assign4 (vox1, vox2, vox3, cpos, pos, this->axes);
+               for (this->loop.start (vox1, vox2, vox3, cpos); this->loop.ok(); this->loop.next (vox1, vox2, vox3, cpos)) {
+                 flags1.read (val1, vox1);
+                 flags2.read (val2, vox2);
+                 flags3.read (val3, vox3);
+                 this->func (cpos, val1, val2, val3);
+                 flags1.write (vox1, val1);
+                 flags2.write (vox2, val2);
+                 flags3.write (vox3, val3);
+               }
+             }
+
+           protected:
+             Iterator cpos;
+             VoxelType1 vox1;
+             VoxelType2 vox2;
+             VoxelType3 vox3;
+             InputOutput1 flags1;
+             InputOutput2 flags2;
+             InputOutput3 flags3;
+             typename VoxelType1::value_type val1;
+             typename VoxelType2::value_type val2;
+             typename VoxelType3::value_type val3;
+         };
+
+     }
+
+
+
+     /*! \} */
 
 
 
 
-    template <class Functor> 
-      inline void ThreadedLoop::run_outer (Functor functor, const std::string& thread_label)
-      {
-        if (Thread::number_of_threads() == 0) {
-          for (loop.start (dummy); loop.ok(); loop.next (dummy)) 
-            functor (dummy);
-          return;
-        }
-
-        ThreadedLoopKernelOuter<Functor> loop_thread (*this, functor);
-        Thread::Array<ThreadedLoopKernelOuter<Functor> > thread_list (loop_thread);
-        Thread::Exec threads (thread_list, thread_label);
-      }
 
 
 
 
-    template <class Functor> 
-      inline void ThreadedLoop::run (Functor functor, const std::string& thread_label)
-      {
-        if (Thread::number_of_threads() == 0) {
-          LoopInOrder full_loop (all_axes());
-          for (full_loop.start (dummy); full_loop.ok(); full_loop.next (dummy)) 
-            functor (dummy);
-          return;
-        }
 
-        ThreadedLoopKernelFull<Functor> loop_thread (*this, functor);
-        Thread::Array<ThreadedLoopKernelFull<Functor> > thread_list (loop_thread);
-        Thread::Exec threads (thread_list, thread_label);
-      }
+     template <class Functor> 
+       inline void ThreadedLoop::run_outer (Functor functor, const std::string& thread_label)
+       {
+         if (Thread::number_of_threads() == 0) {
+           for (loop.start (dummy); loop.ok(); loop.next (dummy)) 
+             functor (dummy);
+           return;
+         }
+
+         Outer<Functor> loop_thread (*this, functor);
+         Thread::Array<Outer<Functor> > thread_list (loop_thread);
+         Thread::Exec threads (thread_list, thread_label);
+       }
 
 
 
-    template <class Functor, class VoxelType1, class InputOutput1> 
-      inline void ThreadedLoop::run_foreach (Functor functor, VoxelType1& vox1, InputOutput1 flags1)
-      {
-        if (Thread::number_of_threads() == 0) {
-          LoopInOrder full_loop (all_axes());
-          typename VoxelType1::value_type val1 = typename VoxelType1::value_type();
-          for (full_loop.start (vox1); full_loop.ok(); full_loop.next (vox1)) {
-            flags1.read (val1, vox1);
-            functor (val1);
-            flags1.write (vox1, val1);
-          }
-          return;
-        }
 
-        ThreadedLoopKernelForEach1<Functor, VoxelType1, InputOutput1> 
-          loop_thread (*this, functor, vox1, flags1);
-        run_outer (loop_thread, "run_foreach thread");
-      }
+     template <class Functor> 
+       inline void ThreadedLoop::run (Functor functor, const std::string& thread_label)
+       {
+         if (Thread::number_of_threads() == 0) {
+           LoopInOrder full_loop (all_axes());
+           for (full_loop.start (dummy); full_loop.ok(); full_loop.next (dummy)) 
+             functor (dummy);
+           return;
+         }
 
-    template <class Functor, class VoxelType1, class InputOutput1, class VoxelType2, class InputOutput2> 
-      inline void ThreadedLoop::run_foreach (Functor functor, VoxelType1& vox1, InputOutput1 flags1, VoxelType2& vox2, InputOutput2 flags2)
-      {
-        if (Thread::number_of_threads() == 0) {
-          LoopInOrder full_loop (all_axes());
-          typename VoxelType1::value_type val1 = typename VoxelType1::value_type();
-          typename VoxelType2::value_type val2 = typename VoxelType2::value_type();
-          for (full_loop.start (vox1, vox2); full_loop.ok(); full_loop.next (vox1, vox2)) {
-            flags1.read (val1, vox1);
-            flags2.read (val2, vox2);
-            functor (val1, val2);
-            flags1.write (vox1, val1);
-            flags2.write (vox2, val2);
-          }
-          return;
-        }
+         Pos<Functor> loop_thread (*this, functor);
+         run_outer (loop_thread, "run_foreach_pos thread");
+       }
 
-        ThreadedLoopKernelForEach2<Functor, VoxelType1, InputOutput1, VoxelType2, InputOutput2> 
-          loop_thread (*this, functor, vox1, flags1, vox2, flags2);
-        run_outer (loop_thread, "run_foreach thread");
-      }
 
-    template <class Functor, class VoxelType1, class InputOutput1, class VoxelType2, class InputOutput2, class VoxelType3, class InputOutput3> 
-      inline void ThreadedLoop::run_foreach (Functor functor, VoxelType1& vox1, InputOutput1 flags1, VoxelType2& vox2, InputOutput2 flags2, VoxelType3& vox3, InputOutput3 flags3)
-      {
-        if (Thread::number_of_threads() == 0) {
-          LoopInOrder full_loop (all_axes());
-          typename VoxelType1::value_type val1 = typename VoxelType1::value_type();
-          typename VoxelType2::value_type val2 = typename VoxelType2::value_type();
-          typename VoxelType3::value_type val3 = typename VoxelType3::value_type();
-          for (full_loop.start (vox1, vox2, vox3); full_loop.ok(); full_loop.next (vox1, vox2, vox3)) {
-            flags1.read (val1, vox1);
-            flags2.read (val2, vox2);
-            flags3.read (val3, vox3);
-            functor (val1, vox2, vox3);
-            flags1.write (vox1, val1);
-            flags2.write (vox2, val2);
-            flags3.write (vox3, val3);
-          }
-          return;
-        }
 
-        ThreadedLoopKernelForEach3<Functor, VoxelType1, InputOutput1, VoxelType2, InputOutput2, VoxelType3, InputOutput3>
-          loop_thread (*this, functor, vox1, flags1, vox2, flags2, vox3, flags3);
-        run_outer (loop_thread, "run_foreach thread");
-      }
+     template <class Functor, class VoxelType1, class InputOutput1> 
+       inline void ThreadedLoop::run_foreach (Functor functor, VoxelType1& vox1, InputOutput1 flags1)
+       {
+         if (Thread::number_of_threads() == 0) {
+           LoopInOrder full_loop (all_axes());
+           typename VoxelType1::value_type val1 = typename VoxelType1::value_type();
+           for (full_loop.start (vox1); full_loop.ok(); full_loop.next (vox1)) {
+             flags1.read (val1, vox1);
+             functor (val1);
+             flags1.write (vox1, val1);
+           }
+           return;
+         }
+
+         ForEach1<Functor, VoxelType1, InputOutput1> 
+           loop_thread (*this, functor, vox1, flags1);
+         run_outer (loop_thread, "run_foreach thread");
+       }
+
+
+
+
+
+     template <class Functor, class VoxelType1, class InputOutput1> 
+       inline void ThreadedLoop::run_foreach_pos (Functor functor, VoxelType1& vox1, InputOutput1 flags1)
+       {
+         if (Thread::number_of_threads() == 0) {
+           LoopInOrder full_loop (all_axes());
+           typename VoxelType1::value_type val1 = typename VoxelType1::value_type();
+           Iterator pos;
+           for (full_loop.start (vox1, pos); full_loop.ok(); full_loop.next (vox1, pos)) {
+             flags1.read (val1, vox1);
+             functor (pos, val1);
+             flags1.write (vox1, val1);
+           }
+           return;
+         }
+
+         ForEachPos1<Functor, VoxelType1, InputOutput1> 
+           loop_thread (*this, functor, vox1, flags1);
+         run_outer (loop_thread, "run_foreach_pos thread");
+       }
+
+
+
+
+     template <class Functor, class VoxelType1, class InputOutput1, class VoxelType2, class InputOutput2> 
+       inline void ThreadedLoop::run_foreach (Functor functor, VoxelType1& vox1, InputOutput1 flags1, VoxelType2& vox2, InputOutput2 flags2)
+       {
+         if (Thread::number_of_threads() == 0) {
+           LoopInOrder full_loop (all_axes());
+           typename VoxelType1::value_type val1 = typename VoxelType1::value_type();
+           typename VoxelType2::value_type val2 = typename VoxelType2::value_type();
+           for (full_loop.start (vox1, vox2); full_loop.ok(); full_loop.next (vox1, vox2)) {
+             flags1.read (val1, vox1);
+             flags2.read (val2, vox2);
+             functor (val1, val2);
+             flags1.write (vox1, val1);
+             flags2.write (vox2, val2);
+           }
+           return;
+         }
+
+         ForEach2<Functor, VoxelType1, InputOutput1, VoxelType2, InputOutput2> 
+           loop_thread (*this, functor, vox1, flags1, vox2, flags2);
+         run_outer (loop_thread, "run_foreach thread");
+       }
+
+
+
+
+     template <class Functor, class VoxelType1, class InputOutput1, class VoxelType2, class InputOutput2> 
+       inline void ThreadedLoop::run_foreach_pos (Functor functor, VoxelType1& vox1, InputOutput1 flags1, VoxelType2& vox2, InputOutput2 flags2)
+       {
+         if (Thread::number_of_threads() == 0) {
+           LoopInOrder full_loop (all_axes());
+           Iterator pos;
+           typename VoxelType1::value_type val1 = typename VoxelType1::value_type();
+           typename VoxelType2::value_type val2 = typename VoxelType2::value_type();
+           for (full_loop.start (vox1, vox2, pos); full_loop.ok(); full_loop.next (vox1, vox2, pos)) {
+             flags1.read (val1, vox1);
+             flags2.read (val2, vox2);
+             functor (pos, val1, val2);
+             flags1.write (vox1, val1);
+             flags2.write (vox2, val2);
+           }
+           return;
+         }
+
+         ForEachPos2<Functor, VoxelType1, InputOutput1, VoxelType2, InputOutput2> 
+           loop_thread (*this, functor, vox1, flags1, vox2, flags2);
+         run_outer (loop_thread, "run_foreach_pos thread");
+       }
+
+
+
+
+     template <class Functor, class VoxelType1, class InputOutput1, class VoxelType2, class InputOutput2, class VoxelType3, class InputOutput3> 
+       inline void ThreadedLoop::run_foreach (Functor functor, VoxelType1& vox1, InputOutput1 flags1, VoxelType2& vox2, InputOutput2 flags2, VoxelType3& vox3, InputOutput3 flags3)
+       {
+         if (Thread::number_of_threads() == 0) {
+           LoopInOrder full_loop (all_axes());
+           typename VoxelType1::value_type val1 = typename VoxelType1::value_type();
+           typename VoxelType2::value_type val2 = typename VoxelType2::value_type();
+           typename VoxelType3::value_type val3 = typename VoxelType3::value_type();
+           for (full_loop.start (vox1, vox2, vox3); full_loop.ok(); full_loop.next (vox1, vox2, vox3)) {
+             flags1.read (val1, vox1);
+             flags2.read (val2, vox2);
+             flags3.read (val3, vox3);
+             functor (val1, vox2, vox3);
+             flags1.write (vox1, val1);
+             flags2.write (vox2, val2);
+             flags3.write (vox3, val3);
+           }
+           return;
+         }
+
+         ForEach3<Functor, VoxelType1, InputOutput1, VoxelType2, InputOutput2, VoxelType3, InputOutput3>
+           loop_thread (*this, functor, vox1, flags1, vox2, flags2, vox3, flags3);
+         run_outer (loop_thread, "run_foreach thread");
+       }
+
+
+
+
+
+     template <class Functor, class VoxelType1, class InputOutput1, class VoxelType2, class InputOutput2, class VoxelType3, class InputOutput3> 
+       inline void ThreadedLoop::run_foreach_pos (Functor functor, VoxelType1& vox1, InputOutput1 flags1, VoxelType2& vox2, InputOutput2 flags2, VoxelType3& vox3, InputOutput3 flags3)
+       {
+         if (Thread::number_of_threads() == 0) {
+           LoopInOrder full_loop (all_axes());
+           Iterator pos;
+           typename VoxelType1::value_type val1 = typename VoxelType1::value_type();
+           typename VoxelType2::value_type val2 = typename VoxelType2::value_type();
+           typename VoxelType3::value_type val3 = typename VoxelType3::value_type();
+           for (full_loop.start (vox1, vox2, vox3, pos); full_loop.ok(); full_loop.next (vox1, vox2, vox3, pos)) {
+             flags1.read (val1, vox1);
+             flags2.read (val2, vox2);
+             flags3.read (val3, vox3);
+             functor (pos, val1, vox2, vox3);
+             flags1.write (vox1, val1);
+             flags2.write (vox2, val2);
+             flags3.write (vox3, val3);
+           }
+           return;
+         }
+
+         ForEachPos3<Functor, VoxelType1, InputOutput1, VoxelType2, InputOutput2, VoxelType3, InputOutput3>
+           loop_thread (*this, functor, vox1, flags1, vox2, flags2, vox3, flags3);
+         run_outer (loop_thread, "run_foreach thread");
+       }
 
 
 

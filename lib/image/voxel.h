@@ -210,6 +210,12 @@ namespace MR
           out[axes[n]] = out2[axes[n]] = out3[axes[n]] = in[axes[n]];
       }
 
+    template <class InputVoxelType, class OutputVoxelType, class OutputVoxelType2 , class OutputVoxelType3, class OutputVoxelType4>
+      void voxel_assign4 (OutputVoxelType& out, OutputVoxelType2& out2, OutputVoxelType3& out3, OutputVoxelType4& out4, const InputVoxelType& in, const std::vector<size_t>& axes) {
+        for (size_t n = 0; n < axes.size(); ++n)
+          out[axes[n]] = out2[axes[n]] = out3[axes[n]] = out4[axes[n]] = in[axes[n]];
+      }
+
     //! reset all coordinates to zero.
     template <class VoxelType>
       void voxel_reset (VoxelType& vox) {
