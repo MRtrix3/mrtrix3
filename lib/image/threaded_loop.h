@@ -432,12 +432,6 @@ namespace MR
         template <class Functor, class VoxelType1, class InputOutput1, class VoxelType2, class InputOutput2, class VoxelType3, class InputOutput3>
           void run_foreach (Functor functor, VoxelType1& vox1, InputOutput1 flags1, VoxelType2& vox2, InputOutput2 flags2, VoxelType3& vox3, InputOutput3 flags3);
 
-        template <class VoxelType>
-          void set_outer_pos (VoxelType& vox, const Iterator& pos) const {
-            for (size_t n = 0; n < loop.axes().size(); ++n)
-              vox[loop.axes()[n]] = pos[loop.axes()[n]];
-          }
-
       protected:
         LoopInOrder loop;
         Iterator dummy;
@@ -535,11 +529,12 @@ namespace MR
               InputOutput1 flags1) :
             func (functor),
             loop (shared_info.inner_axes()),
+            axes (shared_info.outer_axes()),
             vox1 (vox1),
             flags1 (flags1) { }
 
           void operator() (const Iterator& pos) {
-            voxel_assign (vox1, pos);
+            voxel_assign (vox1, pos, axes);
             for (loop.start (vox1); loop.ok(); loop.next (vox1)) {
               flags1.read (val1, vox1);
               func (val1);
@@ -550,6 +545,7 @@ namespace MR
         protected:
           Functor func;
           LoopInOrder loop;
+          const std::vector<size_t>& axes;
           VoxelType1 vox1;
           InputOutput1 flags1;
           typename VoxelType1::value_type val1;
@@ -567,11 +563,12 @@ namespace MR
               VoxelType2& vox2, InputOutput2 flags2) :
             func (functor),
             loop (shared_info.inner_axes()),
+            axes (shared_info.outer_axes()),
             vox1 (vox1), vox2 (vox2),
             flags1 (flags1), flags2 (flags2) { }
 
           void operator() (const Iterator& pos) {
-            voxel_assign2 (vox1, vox2, pos);
+            voxel_assign2 (vox1, vox2, pos, axes);
             for (loop.start (vox1, vox2); loop.ok(); loop.next (vox1, vox2)) {
               flags1.read (val1, vox1);
               flags2.read (val2, vox2);
@@ -584,6 +581,7 @@ namespace MR
         protected:
           Functor func;
           LoopInOrder loop;
+          const std::vector<size_t>& axes;
           VoxelType1 vox1;
           VoxelType2 vox2;
           InputOutput1 flags1;
@@ -604,11 +602,12 @@ namespace MR
               VoxelType3& vox3, InputOutput3 flags3)  :
             func (functor),
             loop (shared_info.inner_axes()),
+            axes (shared_info.outer_axes()),
             vox1 (vox1), vox2 (vox2), vox3 (vox3),
             flags1 (flags1), flags2 (flags2), flags3 (flags3) { }
 
           void operator() (const Iterator& pos) {
-            voxel_assign3 (vox1, vox2, vox3, pos);
+            voxel_assign3 (vox1, vox2, vox3, pos, axes);
             for (loop.start (vox1, vox2, vox3); loop.ok(); loop.next (vox1, vox2, vox3)) {
               flags1.read (val1, vox1);
               flags2.read (val2, vox2);
@@ -623,6 +622,7 @@ namespace MR
         protected:
           Functor func;
           LoopInOrder loop;
+          const std::vector<size_t>& axes;
           VoxelType1 vox1;
           VoxelType2 vox2;
           VoxelType3 vox3;
