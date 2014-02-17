@@ -1,24 +1,28 @@
-/*
-    Copyright 2008 Brain Research Institute, Melbourne, Australia
+/*******************************************************************************
+    Copyright (C) 2014 Brain Research Institute, Melbourne, Australia
+    
+    Permission is hereby granted under the Patent Licence Agreement between
+    the BRI and Siemens AG from July 3rd, 2012, to Siemens AG obtaining a
+    copy of this software and associated documentation files (the
+    "Software"), to deal in the Software without restriction, including
+    without limitation the rights to possess, use, develop, manufacture,
+    import, offer for sale, market, sell, lease or otherwise distribute
+    Products, and to permit persons to whom the Software is furnished to do
+    so, subject to the following conditions:
+    
+    The above copyright notice and this permission notice shall be included
+    in all copies or substantial portions of the Software.
+    
+    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
+    OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+    MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+    IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
+    CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+    TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+    SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-    Written by J-Donald Tournier, 27/11/09.
+*******************************************************************************/
 
-    This file is part of MRtrix.
-
-    MRtrix is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-
-    MRtrix is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
-
-*/
 
 #include "command.h"
 #include "progressbar.h"
@@ -253,7 +257,7 @@ class ImageKernel : public ImageKernelBase {
         buffer (header)
     {
       typename Image::BufferScratch<Operation>::voxel_type v_buffer (buffer);
-      Image::ThreadedLoop (v_buffer).run_foreach (InitFunctor(), v_buffer, Output);
+      Image::ThreadedLoop (v_buffer).run_foreach (InitFunctor(), v_buffer, Output());
     }
 
     ~ImageKernel()
@@ -261,7 +265,7 @@ class ImageKernel : public ImageKernelBase {
       Image::Buffer<value_type> out (output_path, header);
       Image::Buffer<value_type>::voxel_type v_out (out);
       typename Image::BufferScratch<Operation>::voxel_type v_buffer (buffer);
-      Image::ThreadedLoop (v_buffer).run_foreach (ResultFunctor(), v_out, Output, v_buffer, Input);
+      Image::ThreadedLoop (v_buffer).run_foreach (ResultFunctor(), v_out, Output(), v_buffer, Input());
     }
 
     void process (const Image::Header& image_in)
@@ -271,7 +275,7 @@ class ImageKernel : public ImageKernelBase {
       for (size_t axis = buffer.ndim(); axis < v_in.ndim(); ++axis)
         v_in[axis] = 0;
       typename Image::BufferScratch<Operation>::voxel_type v_buffer (buffer);
-      Image::ThreadedLoop (v_buffer).run_foreach (ProcessFunctor(), v_buffer, Input | Output, v_in, Input);
+      Image::ThreadedLoop (v_buffer).run_foreach (ProcessFunctor(), v_buffer, InputOutput(), v_in, Input());
     }
 
   protected:
@@ -299,6 +303,9 @@ void run ()
     const size_t axis = opt[0][0];
 
     PreloadBufferType buffer_in (argument[0], Image::Stride::contiguous_along_axis (axis));
+
+    if (axis >= buffer_in.ndim())
+      throw Exception ("Cannot perform operation along axis " + str (axis) + "; image only has " + str(buffer_in.ndim()) + " axes");
 
     Image::Header header_out (buffer_in);
     header_out.datatype() = DataType::Float32;

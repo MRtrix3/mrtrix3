@@ -1,24 +1,28 @@
-/*
-    Copyright 2013 Brain Research Institute, Melbourne, Australia
+/*******************************************************************************
+    Copyright (C) 2014 Brain Research Institute, Melbourne, Australia
+    
+    Permission is hereby granted under the Patent Licence Agreement between
+    the BRI and Siemens AG from July 3rd, 2012, to Siemens AG obtaining a
+    copy of this software and associated documentation files (the
+    "Software"), to deal in the Software without restriction, including
+    without limitation the rights to possess, use, develop, manufacture,
+    import, offer for sale, market, sell, lease or otherwise distribute
+    Products, and to permit persons to whom the Software is furnished to do
+    so, subject to the following conditions:
+    
+    The above copyright notice and this permission notice shall be included
+    in all copies or substantial portions of the Software.
+    
+    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
+    OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+    MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+    IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
+    CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+    TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+    SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-    Written by B Jeurissen, 12/08/13.
+*******************************************************************************/
 
-    This file is part of MRtrix.
-
-    MRtrix is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-
-    MRtrix is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
-
-*/
 
 #ifndef __dwi_shells_h__
 #define __dwi_shells_h__
@@ -140,56 +144,50 @@ namespace MR
     public:
       Shells(const Math::Matrix<ValueType>& grad, size_t minDirections = 6, ValueType bvalue_threshold = NAN)
       {
-        for (size_t i = 0; i < grad.rows(); i++) {
+        for (size_t i = 0; i < grad.rows(); i++) 
           bvals.push_back(grad (i,3));
-        }
+        
         minBval = *std::min_element(bvals.begin(),bvals.end());
         maxBval = *std::max_element(bvals.begin(),bvals.end());
-        if (!std::isfinite (bvalue_threshold)) {
+        if (!std::isfinite (bvalue_threshold)) 
           bvalue_threshold = 100;
           //bvalue_threshold = (maxBval-minBval)/(2.0*ValueType(bvals.size()));
 	  //if (bvalue_threshold == 0)
           //  bvalue_threshold = 1;
-        }
-        clusterBvalues(minDirections, bvalue_threshold);
+        
+        clusterBvalues (minDirections, bvalue_threshold);
         sortByBval();
       }
 
-      int count()
-      {
+      int count() const {
         return shells.size();
       }
 
-      Shell<ValueType>& operator[] (const int i)
-      {
+      Shell<ValueType>& operator[] (const int i) {
         return shells[i];
       }
 
-      Shell<ValueType>& first()
-      {
+      Shell<ValueType>& first() {
         return shells.front();
       }
 
-      Shell<ValueType>& last()
-      {
+      Shell<ValueType>& last() {
         return shells.back();
       }
 
-      void sortByCount()
-      {
+      void sortByCount() {
         std::sort (shells.begin(), shells.end(), countComp);
       }
 
-      void sortByBval()
-      {
+      void sortByBval() {
         std::sort (shells.begin(), shells.end(), bvalComp);
       }
 
       friend std::ostream& operator <<(std::ostream& stream, const Shells& S)
       {
-        for(typename std::vector<Shell <ValueType> >::const_iterator it = S.shells.begin(); it != S.shells.end(); ++it) {
+        for(typename std::vector<Shell <ValueType> >::const_iterator it = S.shells.begin(); it != S.shells.end(); ++it) 
           stream << *it << std::endl;
-        }
+        
         return stream;
       }
 
@@ -199,68 +197,59 @@ namespace MR
       ValueType minBval;
       ValueType maxBval;
 
-      static bool countComp (Shell<ValueType> a, Shell<ValueType> b)
-      {
-        return (a.count()<b.count());
+      static bool countComp (Shell<ValueType> a, Shell<ValueType> b) {
+        return a.count() < b.count();
       }
 
-      static bool bvalComp (Shell<ValueType> a, Shell<ValueType> b)
-      {
-        return (a.avg_bval()<b.avg_bval());
+      static bool bvalComp (Shell<ValueType> a, Shell<ValueType> b) {
+        return a.avg_bval() < b.avg_bval();
       }
 
-      void regionQuery (ValueType p, std::vector<ValueType> x, ValueType eps, std::vector<int>& idx)
-      {
-        for (size_t i = 0; i < x.size(); i++) {
-          if (std::abs(p-x[i]) < eps) {
+      void regionQuery (ValueType p, std::vector<ValueType> x, ValueType eps, std::vector<int>& idx) {
+        for (size_t i = 0; i < x.size(); i++) 
+          if (std::abs(p-x[i]) < eps) 
             idx.push_back(i);
-          }
-        }
       }
 
-      void clusterBvalues(size_t minDirections, ValueType eps)
-      {
-        std::vector<bool> visited;
-        visited.resize(bvals.size(),false);
-
-        std::vector<int> cluster;
-        cluster.resize(bvals.size(),-1);
+      void clusterBvalues (size_t minDirections, ValueType eps) {
+        std::vector<bool> visited (bvals.size(), false);
+        std::vector<int> cluster (bvals.size(), -1);
         int clusterIdx = -1;
 
         for (size_t ii = 0; ii < bvals.size(); ii++) {
           if (!visited[ii]) {
             visited[ii] = true;
             std::vector<int> neighborIdx;
-            regionQuery(bvals[ii],bvals,eps,neighborIdx);
-            if (bvals[ii] > eps && neighborIdx.size() < minDirections) {
+            regionQuery (bvals[ii], bvals, eps, neighborIdx);
+
+            if (bvals[ii] > eps && neighborIdx.size() < minDirections) 
               cluster[ii] = -1;
-            } else {
-              cluster[ii]=++clusterIdx;
+            else {
+              cluster[ii] = ++clusterIdx;
               for (size_t i = 0; i < neighborIdx.size(); i++) {
                 if (!visited[neighborIdx[i]]) {
                   visited[neighborIdx[i]] = true;
                   std::vector<int> neighborIdx2;
-                  regionQuery(bvals[neighborIdx[i]],bvals,eps,neighborIdx2);
-                  if (neighborIdx2.size() >= minDirections) {
-                    for (size_t j = 0; j < neighborIdx2.size(); j++) {
+                  regionQuery (bvals[neighborIdx[i]], bvals, eps, neighborIdx2);
+                  if (neighborIdx2.size() >= minDirections) 
+                    for (size_t j = 0; j < neighborIdx2.size(); j++) 
                       neighborIdx.push_back(neighborIdx2[j]);
-                    }
-                  }
                 }
-                if (cluster[neighborIdx[i]] < 0) {
+                if (cluster[neighborIdx[i]] < 0) 
                   cluster[neighborIdx[i]] = clusterIdx;
-                }
+                
               }
             }
           }
         }
-        ValueType minIdx = *std::min_element(cluster.begin(),cluster.end());
-        ValueType maxIdx = *std::max_element(cluster.begin(),cluster.end());
+        ValueType minIdx = *std::min_element (cluster.begin(), cluster.end());
+        ValueType maxIdx = *std::max_element (cluster.begin(), cluster.end());
         for (size_t i = minIdx; i <= maxIdx; i++) {
-          Shell<ValueType> s(bvals,cluster,i);
-          shells.push_back(s);
+          Shell<ValueType> s (bvals, cluster, i);
+          shells.push_back (s);
         }
       }
+
     };
   }
 }

@@ -1,8 +1,8 @@
 mrconvert $1 dwi.mif
-dwi_brain_mask dwi.mif mask.mif
+dwi2mask dwi.mif mask.mif
 mrerode mask.mif mask_eroded.mif -npass 3
 dwi2response dwi.mif response.txt -mask mask_eroded.mif
-csdeconv dwi.mif response.txt fod.mif -mask mask.mif
+dwi2fod dwi.mif response.txt fod.mif -mask mask.mif
 tckgen fod.mif tracks.tck -seed_image mask.mif -mask mask.mif -number 1000000
 mrcrop mask.mif template.mif -mask mask.mif
 tckmap tracks.tck tdi.mif -template template.mif -vox 0.5

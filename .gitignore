@@ -15,6 +15,7 @@
 *.img
 *.hdr
 *.qrc
+icons.cpp
 /config.*
 /configure.log
 /lib/version.h

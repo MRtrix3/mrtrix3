@@ -1,24 +1,28 @@
-/*
-    Copyright 2008 Brain Research Institute, Melbourne, Australia
+/*******************************************************************************
+    Copyright (C) 2014 Brain Research Institute, Melbourne, Australia
+    
+    Permission is hereby granted under the Patent Licence Agreement between
+    the BRI and Siemens AG from July 3rd, 2012, to Siemens AG obtaining a
+    copy of this software and associated documentation files (the
+    "Software"), to deal in the Software without restriction, including
+    without limitation the rights to possess, use, develop, manufacture,
+    import, offer for sale, market, sell, lease or otherwise distribute
+    Products, and to permit persons to whom the Software is furnished to do
+    so, subject to the following conditions:
+    
+    The above copyright notice and this permission notice shall be included
+    in all copies or substantial portions of the Software.
+    
+    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
+    OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+    MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+    IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
+    CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+    TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+    SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-    Written by J-Donald Tournier, 27/06/08.
+*******************************************************************************/
 
-    This file is part of MRtrix.
-
-    MRtrix is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-
-    MRtrix is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
-
-*/
 
 #include "command.h"
 #include "progressbar.h"
@@ -184,8 +188,8 @@ inline void copy_permute (InputVoxelType& in, Image::Header& header_out, const s
     if (replace_nans)
       Image::ThreadedLoop ("copying from \"" + shorten (perm.name()) + "\" to \"" + shorten (out.name()) + "\"...", perm, 2)
         .run_foreach (zero_non_finite, 
-            perm, Input,
-            out, Output);
+            perm, Input(),
+            out, Output());
     else 
       Image::threaded_copy_with_progress (perm, out, 2);
   }
@@ -193,8 +197,8 @@ inline void copy_permute (InputVoxelType& in, Image::Header& header_out, const s
     if (replace_nans)
       Image::ThreadedLoop ("copying from \"" + shorten (in.name()) + "\" to \"" + shorten (out.name()) + "\"...", in, 2)
         .run_foreach (zero_non_finite, 
-            in, Input,
-            out, Output);
+            in, Input(),
+            out, Output());
     else
       Image::threaded_copy_with_progress (in, out, 2);
   }

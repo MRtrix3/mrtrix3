@@ -1,24 +1,28 @@
-/*
-    Copyright 2008 Brain Research Institute, Melbourne, Australia
+/*******************************************************************************
+    Copyright (C) 2014 Brain Research Institute, Melbourne, Australia
+    
+    Permission is hereby granted under the Patent Licence Agreement between
+    the BRI and Siemens AG from July 3rd, 2012, to Siemens AG obtaining a
+    copy of this software and associated documentation files (the
+    "Software"), to deal in the Software without restriction, including
+    without limitation the rights to possess, use, develop, manufacture,
+    import, offer for sale, market, sell, lease or otherwise distribute
+    Products, and to permit persons to whom the Software is furnished to do
+    so, subject to the following conditions:
+    
+    The above copyright notice and this permission notice shall be included
+    in all copies or substantial portions of the Software.
+    
+    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
+    OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+    MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+    IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
+    CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+    TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+    SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-    Written by J-Donald Tournier & David Raffelt 17/12/12
+*******************************************************************************/
 
-    This file is part of MRtrix.
-
-    MRtrix is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-
-    MRtrix is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
-
-*/
 
 #include "progressbar.h"
 #include "image/stride.h"
@@ -287,13 +291,13 @@ namespace MR
         void Tractogram::load_tracks()
         {
           DWI::Tractography::Reader<float> file (filename, properties);
-          std::vector<Point<float> > tck;
-          std::vector<Point<float> > buffer;
+          DWI::Tractography::Streamline<float> tck;
+          DWI::Tractography::Streamline<float> buffer;
           std::vector<GLint> starts;
           std::vector<GLint> sizes;
           size_t tck_count = 0;
 
-          while (file.next (tck)) {
+          while (file (tck)) {
             starts.push_back (buffer.size());
             buffer.push_back (Point<float>());
             buffer.insert (buffer.end(), tck.begin(), tck.end());
@@ -317,14 +321,14 @@ namespace MR
           DWI::Tractography::Reader<float> file (filename, properties);
           for (size_t buffer_index = 0; buffer_index != vertex_buffers.size(); ++buffer_index) {
             size_t num_tracks = num_tracks_per_buffer[buffer_index];
-            std::vector< Point<float> > buffer;
-            std::vector< Point<float> > tck;
+            DWI::Tractography::Streamline<float> buffer;
+            DWI::Tractography::Streamline<float> tck;
             while (num_tracks--) {
-              file.next (tck);
+              file (tck);
               const Point<float> tangent ((tck.back() - tck.front()).normalise());
               const Point<float> colour (Math::abs (tangent[0]), Math::abs (tangent[1]), Math::abs (tangent[2]));
               buffer.push_back (Point<float>());
-              for (std::vector< Point<float> >::iterator i = tck.begin(); i != tck.end(); ++i)
+              for (DWI::Tractography::Streamline<float>::iterator i = tck.begin(); i != tck.end(); ++i)
                 *i = colour;
               buffer.insert (buffer.end(), tck.begin(), tck.end());
             }
@@ -347,7 +351,7 @@ namespace MR
 
 
 
-        void Tractogram::load_tracks_onto_GPU (std::vector<Point<float> >& buffer,
+        void Tractogram::load_tracks_onto_GPU (DWI::Tractography::Streamline<float>& buffer,
             std::vector<GLint>& starts,
             std::vector<GLint>& sizes,
             size_t& tck_count)
@@ -383,7 +387,7 @@ namespace MR
         
         
         
-        void Tractogram::load_end_colours_onto_GPU (std::vector< Point<float> >& buffer) {
+        void Tractogram::load_end_colours_onto_GPU (DWI::Tractography::Streamline<float>& buffer) {
           buffer.push_back (Point<float>());
           GLuint vertexbuffer;
           gl::GenBuffers (1, &vertexbuffer);

@@ -1,30 +1,34 @@
-/*
-    Copyright 2008 Brain Research Institute, Melbourne, Australia
+/*******************************************************************************
+    Copyright (C) 2014 Brain Research Institute, Melbourne, Australia
+    
+    Permission is hereby granted under the Patent Licence Agreement between
+    the BRI and Siemens AG from July 3rd, 2012, to Siemens AG obtaining a
+    copy of this software and associated documentation files (the
+    "Software"), to deal in the Software without restriction, including
+    without limitation the rights to possess, use, develop, manufacture,
+    import, offer for sale, market, sell, lease or otherwise distribute
+    Products, and to permit persons to whom the Software is furnished to do
+    so, subject to the following conditions:
+    
+    The above copyright notice and this permission notice shall be included
+    in all copies or substantial portions of the Software.
+    
+    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
+    OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+    MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+    IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
+    CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+    TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+    SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-    Written by J-Donald Tournier, 27/06/08.
+*******************************************************************************/
 
-    This file is part of MRtrix.
-
-    MRtrix is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-
-    MRtrix is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
-
-*/
 
 #ifndef __math_SH_h__
 #define __math_SH_h__
 
-#ifdef USE_ORTHONORMAL_SH_BASIS
-# warning using orthonormal SH basis
+#ifdef USE_NON_ORTHONORMAL_SH_BASIS
+# warning using non-orthonormal SH basis
 #endif
 
 #include "point.h"
@@ -81,7 +85,7 @@ namespace MR
             for (int m = 1; m <= lmax; m++) {
               Legendre::Plm_sph (AL, lmax, m, x);
               for (int l = ( (m&1) ? m+1 : m); l <= lmax; l+=2) {
-#ifdef USE_ORTHONORMAL_SH_BASIS
+#ifndef USE_NON_ORTHONORMAL_SH_BASIS
                 SHT (i,index (l, m)) = M_SQRT2 * AL[l]*cos (m*dirs (i,0));
                 SHT (i,index (l,-m)) = M_SQRT2 * AL[l]*sin (m*dirs (i,0));
 #else
@@ -191,7 +195,7 @@ namespace MR
           for (int l = 0; l <= lmax; l+=2) amplitude += AL[l] * coefs[index (l,0)];
           for (int m = 1; m <= lmax; m++) {
             Legendre::Plm_sph (AL, lmax, m, ValueType (cos_elevation));
-#ifdef USE_ORTHONORMAL_SH_BASIS
+#ifndef USE_NON_ORTHONORMAL_SH_BASIS
             ValueType c = M_SQRT2 * Math::cos (m*azimuth);
             ValueType s = M_SQRT2 * Math::sin (m*azimuth);
 #else
@@ -229,7 +233,7 @@ namespace MR
             delta_vec[index (l,0)] = AL[l];
           for (int m = 1; m <= lmax; m++) {
             Legendre::Plm_sph (AL, lmax, m, ValueType (unit_dir[2]));
-#ifdef USE_ORTHONORMAL_SH_BASIS
+#ifndef USE_NON_ORTHONORMAL_SH_BASIS
             ValueType c = M_SQRT2 * Math::cos (m*az);
             ValueType s = M_SQRT2 * Math::sin (m*az);
 #else
@@ -413,6 +417,11 @@ namespace MR
           typename std::vector<ValueType>::const_iterator p1, p2;
       };
 
+#ifndef USE_NON_ORTHONORMAL_SH_BASIS
+#define SH_NON_M0_SCALE_FACTOR (m?M_SQRT2:1.0)*
+#else
+#define SH_NON_M0_SCALE_FACTOR
+#endif
 
       template <typename ValueType> class PrecomputedAL
       {
@@ -445,7 +454,7 @@ namespace MR
               for (int m = 0; m <= lmax; m++) {
                 Legendre::Plm_sph (buf, lmax, m, cos_el);
                 for (int l = ( (m&1) ?m+1:m); l <= lmax; l+=2)
-                  p[index_mpos (l,m)] = buf[l];
+                  p[index_mpos (l,m)] = SH_NON_M0_SCALE_FACTOR buf[l];
               }
             }
           }
@@ -491,21 +500,21 @@ namespace MR
           }
 
           template <class ValueContainer>
-          ValueType value (const ValueContainer& val, const Point<ValueType>& unit_dir) const {
-            PrecomputedFraction<ValueType> f;
-            set (f, Math::acos (unit_dir[2]));
-            ValueType az = Math::atan2 (unit_dir[1], unit_dir[0]);
-            ValueType v = 0.0;
-            for (int l = 0; l <= lmax; l+=2)
-              v += get (f,l,0) * val[index (l,0)];
-            for (int m = 1; m <= lmax; m++) {
-              ValueType c = Math::cos (m*az);
-              ValueType s = Math::sin (m*az);
-              for (int l = ( (m&1) ? m+1 : m); l <= lmax; l+=2)
-                v += get (f,l,m) * (c * val[index (l,m)] + s * val[index (l,-m)]);
+            ValueType value (const ValueContainer& val, const Point<ValueType>& unit_dir) const {
+              PrecomputedFraction<ValueType> f;
+              set (f, Math::acos (unit_dir[2]));
+              ValueType az = Math::atan2 (unit_dir[1], unit_dir[0]);
+              ValueType v = 0.0;
+              for (int l = 0; l <= lmax; l+=2)
+                v += get (f,l,0) * val[index (l,0)];
+              for (int m = 1; m <= lmax; m++) {
+                ValueType c = Math::cos (m*az);
+                ValueType s = Math::sin (m*az);
+                for (int l = ( (m&1) ? m+1 : m); l <= lmax; l+=2)
+                  v += get (f,l,m) * (c * val[index (l,m)] + s * val[index (l,-m)]);
+              }
+              return v;
             }
-            return v;
-          }
 
         protected:
           int lmax, ndir, nAL;
@@ -595,7 +604,7 @@ namespace MR
           }
 
           for (int m = 1; m <= lmax; m++) {
-#ifdef USE_ORTHONORMAL_SH_BASIS
+#ifndef USE_NON_ORTHONORMAL_SH_BASIS
             ValueType caz = M_SQRT2 * cos (m*azimuth);
             ValueType saz = M_SQRT2 * sin (m*azimuth);
 #else

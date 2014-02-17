@@ -1,24 +1,28 @@
-/*
-   Copyright 2009 Brain Research Institute, Melbourne, Australia
+/*******************************************************************************
+    Copyright (C) 2014 Brain Research Institute, Melbourne, Australia
+    
+    Permission is hereby granted under the Patent Licence Agreement between
+    the BRI and Siemens AG from July 3rd, 2012, to Siemens AG obtaining a
+    copy of this software and associated documentation files (the
+    "Software"), to deal in the Software without restriction, including
+    without limitation the rights to possess, use, develop, manufacture,
+    import, offer for sale, market, sell, lease or otherwise distribute
+    Products, and to permit persons to whom the Software is furnished to do
+    so, subject to the following conditions:
+    
+    The above copyright notice and this permission notice shall be included
+    in all copies or substantial portions of the Software.
+    
+    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
+    OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+    MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+    IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
+    CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+    TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+    SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-   Written by J-Donald Tournier, 14/10/09.
+*******************************************************************************/
 
-   This file is part of MRtrix.
-
-   MRtrix is free software: you can redistribute it and/or modify
-   it under the terms of the GNU General Public License as published by
-   the Free Software Foundation, either version 3 of the License, or
-   (at your option) any later version.
-
-   MRtrix is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-   GNU General Public License for more details.
-
-   You should have received a copy of the GNU General Public License
-   along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
-
- */
 
 #ifndef __mrtrix_thread_exec_h__
 #define __mrtrix_thread_exec_h__
@@ -33,15 +37,16 @@
  *
  * These functions and class provide a simple interface for multi-threading in
  * MRtrix applications. Most of the low-level funtionality is a thin wrapper on
- * top to POSIX threads. There are two classes that are MRtrix-specific: the
- * Thread::Queue (and associated functions), and the Image::ThreadedLoop. These
- * two classes provide simple and convenient ways of multi-threading, and
- * should be sufficient for the vast majority of applications.
+ * top to POSIX threads. There are two classes that are MRtrix-specific: 
+ * \ref thread_queue, and \ref image_thread_looping. These two APIs provide
+ * simple and convenient ways of multi-threading, and should be sufficient for
+ * the vast majority of applications.
  *
  * Please refer to the \ref multithreading page for an overview of
  * multi-threading in MRtrix.
  *
  * \sa Image::ThreadedLoop
+ * \sa thread_run_queue
  */
 
 namespace MR
@@ -52,18 +57,21 @@ namespace MR
     /** \addtogroup Thread
      * @{ */
 
-    /*! the number of cores to use for multi-threading, as specified in the
-     * variable NumberOfThreads in the MRtrix configuration file */
-    size_t number_of_threads ();
+    /** \defgroup thread_basics Basic multi-threading primitives
+     * \brief basic functions and classes to allow multi-threading
+     *
+     * These functions and classes mostly provide a thin wrapper around the
+     * POSIX threads API. While they can be used as-is to develop
+     * multi-threaded applications, in practice the \ref image_thread_looping
+     * and \ref thread_queue APIs provide much more convenient and powerful
+     * ways of developing robust and efficient applications.
+     * 
+     * @{ */
 
-    //! temporarily change number of cores, until class goes out of scope
-    class SetNumberOfThreads {
-      public:
-        SetNumberOfThreads (size_t number);
-        ~SetNumberOfThreads ();
-      private:
-        size_t previous_number;
-    };
+    /*! the number of cores to use for multi-threading, as specified in the
+     * variable NumberOfThreads in the MRtrix configuration file, or set using
+     * the -nthreads command-line option */
+    size_t number_of_threads ();
 
 
 
@@ -237,6 +245,7 @@ namespace MR
 
     };
 
+    /** @} */
     /** @} */
   }
 }

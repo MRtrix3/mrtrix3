@@ -1,24 +1,28 @@
-/*
-   Copyright 2009 Brain Research Institute, Melbourne, Australia
+/*******************************************************************************
+    Copyright (C) 2014 Brain Research Institute, Melbourne, Australia
+    
+    Permission is hereby granted under the Patent Licence Agreement between
+    the BRI and Siemens AG from July 3rd, 2012, to Siemens AG obtaining a
+    copy of this software and associated documentation files (the
+    "Software"), to deal in the Software without restriction, including
+    without limitation the rights to possess, use, develop, manufacture,
+    import, offer for sale, market, sell, lease or otherwise distribute
+    Products, and to permit persons to whom the Software is furnished to do
+    so, subject to the following conditions:
+    
+    The above copyright notice and this permission notice shall be included
+    in all copies or substantial portions of the Software.
+    
+    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
+    OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+    MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+    IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
+    CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+    TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+    SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-   Written by J-Donald Tournier, 16/08/09.
+*******************************************************************************/
 
-   This file is part of MRtrix.
-
-   MRtrix is free software: you can redistribute it and/or modify
-   it under the terms of the GNU General Public License as published by
-   the Free Software Foundation, either version 3 of the License, or
-   (at your option) any later version.
-
-   MRtrix is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-   GNU General Public License for more details.
-
-   You should have received a copy of the GNU General Public License
-   along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
-
- */
 
 #error - this file is for documentation purposes only!
 #error - It should NOT be included in other code files.
@@ -99,7 +103,7 @@ namespace MR
 
     This class might for example contain all the reconstruction parameters set
     by the user, and any number of potentially large structures (e.g. matrices)
-    that will be used but not modified) by the other threads. Once initialised,
+    that will be used (but not modified) by the other threads. Once initialised,
     it is then passed by const-reference to the thread class's constructor:
 
     \code
@@ -205,10 +209,10 @@ namespace MR
 
     MRtrix provides a number of constructs to simplify the process of writing solid
     multi-threading applications. In most cases, the high-level
-    Image::ThreadedLoop and Thread::Queue frameworks will be appropriate for
-    the particular algorithm to be implemented. If a more sophisticated
-    implementation is required, MRtrix also provides low-level wrappers around
-    much of the POSIX threads API.
+    \ref image_thread_looping and \ref thread_queue frameworks will be
+    appropriate for the particular algorithm to be implemented. If a more
+    sophisticated implementation is required, MRtrix also provides low-level
+    wrappers around much of the POSIX threads API.
 
     \subsection multithreading_exec Launching threads
 
@@ -283,7 +287,7 @@ namespace MR
     creating such applications. It allows the developer to provide a simple
     functor class implementing the operation to be performed for each voxel,
     which can be passed to Image::ThreadedLoop to be executed over the whole
-    dataset. Refer to the Image::ThreadedLoop documentation for more
+    dataset. Refer to \ref image_thread_looping documentation for more
     information.
 
     \subsection multithreading_queue The Thread::Queue
@@ -292,7 +296,7 @@ namespace MR
     For example, data items are read in order from disk, and can be processed
     independently. The results might then need to be written back to disk in a
     serial fashion. The Thread::Queue class is designed to facilitate this type
-    of operation. Please refer to the Thread::Queue documentation for a
+    of operation. Please refer to the \ref thread_queue for a
     detailed description. 
 
     There are also a number of convenience functions to simplify the setting up

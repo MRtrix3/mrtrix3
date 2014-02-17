@@ -1,32 +1,37 @@
-/*
-   Copyright 2011 Brain Research Institute, Melbourne, Australia
+/*******************************************************************************
+    Copyright (C) 2014 Brain Research Institute, Melbourne, Australia
+    
+    Permission is hereby granted under the Patent Licence Agreement between
+    the BRI and Siemens AG from July 3rd, 2012, to Siemens AG obtaining a
+    copy of this software and associated documentation files (the
+    "Software"), to deal in the Software without restriction, including
+    without limitation the rights to possess, use, develop, manufacture,
+    import, offer for sale, market, sell, lease or otherwise distribute
+    Products, and to permit persons to whom the Software is furnished to do
+    so, subject to the following conditions:
+    
+    The above copyright notice and this permission notice shall be included
+    in all copies or substantial portions of the Software.
+    
+    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
+    OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+    MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+    IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
+    CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+    TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+    SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-   Written by J-Donald Tournier and Robert E. Smith, 2011.
+*******************************************************************************/
 
-   This file is part of MRtrix.
 
-   MRtrix is free software: you can redistribute it and/or modify
-   it under the terms of the GNU General Public License as published by
-   the Free Software Foundation, either version 3 of the License, or
-   (at your option) any later version.
-
-   MRtrix is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-   GNU General Public License for more details.
-
-   You should have received a copy of the GNU General Public License
-   along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
-
-*/
-
-#ifndef __dwi_tractography_iFOD1_h__
-#define __dwi_tractography_iFOD1_h__
+#ifndef __dwi_tractography_algorithms_iFOD1_h__
+#define __dwi_tractography_algorithms_iFOD1_h__
 
 #include "point.h"
 #include "math/SH.h"
-#include "dwi/tractography/method.h"
-#include "dwi/tractography/shared.h"
+#include "dwi/tractography/tracking/method.h"
+#include "dwi/tractography/tracking/shared.h"
+#include "dwi/tractography/tracking/types.h"
 #include "dwi/tractography/algorithms/calibrator.h"
 
 
@@ -37,6 +42,10 @@ namespace MR
   {
     namespace Tractography
     {
+      namespace Algorithms
+      {
+
+    using namespace MR::DWI::Tractography::Tracking;
 
     class iFOD1 : public MethodBase {
       public:
@@ -121,8 +130,8 @@ namespace MR
 
       ~iFOD1 ()
       {
-        S.update_stats (calibrate_list.size() + value_type(mean_sample_num)/value_type(num_sample_runs),
-                        value_type(num_truncations) / value_type(num_sample_runs),
+        S.update_stats (calibrate_list.size() + float(mean_sample_num)/float(num_sample_runs),
+                        float(num_truncations) / float(num_sample_runs),
                         max_truncation);
       }
 
@@ -135,7 +144,7 @@ namespace MR
 
         if (!S.init_dir) {
 
-          const Point<float> init_dir (dir);
+          const Point<Tracking::value_type> init_dir (dir);
 
           for (size_t n = 0; n < S.max_trials; n++) {
             if (init_dir.valid()) {
@@ -265,6 +274,7 @@ namespace MR
 
     };
 
+      }
     }
   }
 }

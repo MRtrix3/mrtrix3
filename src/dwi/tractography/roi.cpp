@@ -1,26 +1,30 @@
-/*
-    Copyright 2009 Brain Research Institute, Melbourne, Australia
+/*******************************************************************************
+    Copyright (C) 2014 Brain Research Institute, Melbourne, Australia
+    
+    Permission is hereby granted under the Patent Licence Agreement between
+    the BRI and Siemens AG from July 3rd, 2012, to Siemens AG obtaining a
+    copy of this software and associated documentation files (the
+    "Software"), to deal in the Software without restriction, including
+    without limitation the rights to possess, use, develop, manufacture,
+    import, offer for sale, market, sell, lease or otherwise distribute
+    Products, and to permit persons to whom the Software is furnished to do
+    so, subject to the following conditions:
+    
+    The above copyright notice and this permission notice shall be included
+    in all copies or substantial portions of the Software.
+    
+    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
+    OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+    MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+    IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
+    CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+    TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+    SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-    Written by J-Donald Tournier, 22/10/09.
-
-    This file is part of MRtrix.
-
-    MRtrix is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-
-    MRtrix is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
-
-*/
+*******************************************************************************/
 
 
+#include "dwi/tractography/properties.h"
 #include "dwi/tractography/roi.h"
 #include "image/adapter/subset.h"
 #include "image/copy.h"
@@ -29,6 +33,54 @@
 namespace MR {
   namespace DWI {
     namespace Tractography {
+
+
+    using namespace App;
+
+
+    const OptionGroup ROIOption = OptionGroup ("Region Of Interest processing options")
+
+      + Option ("include",
+            "specify an inclusion region of interest, as either a binary mask image, "
+            "or as a sphere using 4 comma-separared values (x,y,z,radius). Streamlines "
+            "must traverse ALL inclusion regions to be accepted.")
+          .allow_multiple()
+          + Argument ("spec")
+
+      + Option ("exclude",
+            "specify an exclusion region of interest, as either a binary mask image, "
+            "or as a sphere using 4 comma-separared values (x,y,z,radius). Streamlines "
+            "that enter ANY exclude region will be discarded.")
+          .allow_multiple()
+          + Argument ("spec")
+
+      + Option ("mask",
+            "specify a masking region of interest, as either a binary mask image, "
+            "or as a sphere using 4 comma-separared values (x,y,z,radius). If defined, "
+            "streamlines exiting the mask will be truncated.")
+          .allow_multiple()
+          + Argument ("spec");
+
+
+
+      void load_rois (Properties& properties)
+      {
+        Options opt = get_options ("include");
+        for (size_t i = 0; i < opt.size(); ++i)
+          properties.include.add (ROI (opt[i][0]));
+
+        opt = get_options ("exclude");
+        for (size_t i = 0; i < opt.size(); ++i)
+          properties.exclude.add (ROI (opt[i][0]));
+
+        opt = get_options ("mask");
+        for (size_t i = 0; i < opt.size(); ++i)
+          properties.mask.add (ROI (opt[i][0]));
+      }
+
+
+
+
 
 
       Mask* get_mask (const std::string& name)

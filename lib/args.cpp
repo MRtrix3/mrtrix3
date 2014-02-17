@@ -1,24 +1,28 @@
-/*
-    Copyright 2008 Brain Research Institute, Melbourne, Australia
+/*******************************************************************************
+    Copyright (C) 2014 Brain Research Institute, Melbourne, Australia
+    
+    Permission is hereby granted under the Patent Licence Agreement between
+    the BRI and Siemens AG from July 3rd, 2012, to Siemens AG obtaining a
+    copy of this software and associated documentation files (the
+    "Software"), to deal in the Software without restriction, including
+    without limitation the rights to possess, use, develop, manufacture,
+    import, offer for sale, market, sell, lease or otherwise distribute
+    Products, and to permit persons to whom the Software is furnished to do
+    so, subject to the following conditions:
+    
+    The above copyright notice and this permission notice shall be included
+    in all copies or substantial portions of the Software.
+    
+    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
+    OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+    MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+    IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
+    CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+    TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+    SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-    Written by J-Donald Tournier, 27/06/08.
+*******************************************************************************/
 
-    This file is part of MRtrix.
-
-    MRtrix is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-
-    MRtrix is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
-
-*/
 
 #include "args.h"
 #include "app.h"
@@ -269,25 +273,48 @@ namespace MR
 
 
 
-    std::string OptionGroup::syntax (int format) const
+    std::string OptionGroup::header (int format) const
     {
-      std::string s ( format ? bold (name) + "\n\n" : std::string (name) + ":\n" );
+      return format ? bold (name) + "\n\n" : std::string (name) + ":\n";
+    }
 
-      for (size_t i = 0; i < size(); ++i)
-        s += (*this) [i].syntax (format);
-      if (!format)
-        s += "\n";
+    std::string OptionGroup::contents (int format) const
+    {
+      std::string s;
+      for (size_t i = 0; i < size(); ++i) 
+        s += (*this)[i].syntax (format);
       return s;
     }
 
+    std::string OptionGroup::footer (int format)
+    {
+      return format ? "" : "\n";
+    }
 
 
 
     std::string OptionList::syntax (int format) const
     {
+      std::vector<std::string> group_names;
+      for (size_t i = 0; i < size(); ++i) {
+        if (std::find (group_names.begin(), group_names.end(), (*this)[i].name) == group_names.end()) 
+          group_names.push_back ((*this)[i].name);
+      }
+
       std::string s;
-      for (size_t i = 0; i < size(); ++i)
-        s += (*this) [i].syntax (format);
+      for (size_t i = 0; i < group_names.size(); ++i) {
+        size_t n = i;
+        while ((*this)[n].name != group_names[i])
+          ++n;
+        s += (*this)[n].header (format);
+        while (n < size()) {
+          if ((*this)[n].name == group_names[i])
+            s += (*this)[n].contents (format);
+          ++n;
+        }
+        s += OptionGroup::footer (format);
+      }
+
       return s;
     }
 

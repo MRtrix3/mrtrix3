@@ -1,33 +1,56 @@
-/*
-   Copyright 2009 Brain Research Institute, Melbourne, Australia
+/*******************************************************************************
+    Copyright (C) 2014 Brain Research Institute, Melbourne, Australia
+    
+    Permission is hereby granted under the Patent Licence Agreement between
+    the BRI and Siemens AG from July 3rd, 2012, to Siemens AG obtaining a
+    copy of this software and associated documentation files (the
+    "Software"), to deal in the Software without restriction, including
+    without limitation the rights to possess, use, develop, manufacture,
+    import, offer for sale, market, sell, lease or otherwise distribute
+    Products, and to permit persons to whom the Software is furnished to do
+    so, subject to the following conditions:
+    
+    The above copyright notice and this permission notice shall be included
+    in all copies or substantial portions of the Software.
+    
+    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
+    OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+    MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+    IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
+    CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+    TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+    SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-   Written by J-Donald Tournier, 13/11/09.
+*******************************************************************************/
 
-   This file is part of MRtrix.
-
-   MRtrix is free software: you can redistribute it and/or modify
-   it under the terms of the GNU General Public License as published by
-   the Free Software Foundation, either version 3 of the License, or
-   (at your option) any later version.
-
-   MRtrix is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-   GNU General Public License for more details.
-
-   You should have received a copy of the GNU General Public License
-   along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
-
-*/
 
 #include "mrtrix.h"
+#include "math/math.h"
 #include "gui/mrview/window.h"
 #include "gui/mrview/mode/base.h"
 #include "gui/mrview/mode/volume.h"
 #include "gui/mrview/tool/view.h"
 #include "gui/mrview/adjust_button.h"
 
-#define FOV_RATE_MULTIPLIER 0.01
+#define FOV_RATE_MULTIPLIER 0.01f
+#define MRTRIX_MIN_ALPHA 1.0e-3f
+#define MRTRIX_ALPHA_MULT (-MR::Math::log (MRTRIX_MIN_ALPHA)/1000.0f)
+
+
+namespace {
+
+  inline float get_alpha_from_slider (float slider_value) {
+    return MRTRIX_MIN_ALPHA * MR::Math::exp (MRTRIX_ALPHA_MULT * float (slider_value));
+  }
+
+  inline float get_slider_value_from_alpha (float alpha) {
+    return MR::Math::log (alpha/MRTRIX_MIN_ALPHA) / MRTRIX_ALPHA_MULT;
+  }
+
+}
+
+
+
 
 namespace MR
 {
@@ -210,8 +233,8 @@ namespace MR
 
           hlayout->addWidget (new QLabel ("alpha"));
           opacity = new QSlider (Qt::Horizontal);
-          opacity->setRange (0, 255);
-          opacity->setValue (255);
+          opacity->setRange (0, 1000);
+          opacity->setValue (1000);
           connect (opacity, SIGNAL (valueChanged(int)), this, SLOT (onSetTransparency()));
           hlayout->addWidget (opacity);
 
@@ -452,13 +475,12 @@ namespace MR
 
 
 
-
         void View::onSetTransparency () 
         {
           assert (window.image()); 
           window.image()->transparent_intensity = transparent_intensity->value();
           window.image()->opaque_intensity = opaque_intensity->value();
-          window.image()->alpha = float (opacity->value()) / 255.0;
+          window.image()->alpha = get_alpha_from_slider (opacity->value());
           window.image()->lessthan = lower_threshold->value(); 
           window.image()->greaterthan = upper_threshold->value(); 
           window.updateGL();
@@ -517,7 +539,7 @@ namespace MR
             if (!std::isfinite (window.image()->opaque_intensity))
               window.image()->opaque_intensity = window.image()->intensity_max();
             if (!std::isfinite (window.image()->alpha))
-              window.image()->alpha = opacity->value() / 255.0;
+              window.image()->alpha = get_alpha_from_slider (opacity->value());
             if (!std::isfinite (window.image()->lessthan))
               window.image()->lessthan = window.image()->intensity_min();
             if (!std::isfinite (window.image()->greaterthan))
@@ -532,7 +554,7 @@ namespace MR
 
           transparent_intensity->setValue (window.image()->transparent_intensity);
           opaque_intensity->setValue (window.image()->opaque_intensity);
-          opacity->setValue (window.image()->alpha * 255.0);
+          opacity->setValue (get_slider_value_from_alpha (window.image()->alpha)); 
           lower_threshold->setValue (window.image()->lessthan);
           upper_threshold->setValue (window.image()->greaterthan);
           lower_threshold_check_box->setChecked (window.image()->use_discard_lower());

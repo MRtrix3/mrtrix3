@@ -1,24 +1,28 @@
-/*
-    Copyright 2011 Brain Research Institute, Melbourne, Australia
+/*******************************************************************************
+    Copyright (C) 2014 Brain Research Institute, Melbourne, Australia
+    
+    Permission is hereby granted under the Patent Licence Agreement between
+    the BRI and Siemens AG from July 3rd, 2012, to Siemens AG obtaining a
+    copy of this software and associated documentation files (the
+    "Software"), to deal in the Software without restriction, including
+    without limitation the rights to possess, use, develop, manufacture,
+    import, offer for sale, market, sell, lease or otherwise distribute
+    Products, and to permit persons to whom the Software is furnished to do
+    so, subject to the following conditions:
+    
+    The above copyright notice and this permission notice shall be included
+    in all copies or substantial portions of the Software.
+    
+    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
+    OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+    MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+    IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
+    CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+    TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+    SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-    Written by Robert E. Smith and J-Donald Tournier, 2011.
+*******************************************************************************/
 
-    This file is part of MRtrix.
-
-    MRtrix is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-
-    MRtrix is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
-
-*/
 
 #include <fstream>
 #include <vector>
@@ -437,11 +441,11 @@ void run () {
     if (colour) {
       TrackMapperTWI <SetVoxelDEC> mapper (header, upsample_ratio, map_zero, step_size, contrast, stat_tck);
       MapWriterColour<SetVoxelDEC> writer (header, argument[1], dump, stat_vox);
-      Thread::run_queue_threaded_pipe (loader, Tractography::TrackData<float>(), mapper, SetVoxelDEC(), writer);
+      Thread::run_queue (loader, Tractography::Streamline<float>(), Thread::multi (mapper), SetVoxelDEC(), writer);
     } else {
       TrackMapperTWI    <SetVoxel>   mapper (header, upsample_ratio, map_zero, step_size, contrast, stat_tck);
       Ptr< MapWriterBase<SetVoxel> > writer (make_writer<SetVoxel> (header, argument[1], dump, stat_vox));
-      Thread::run_queue_threaded_pipe (loader, Tractography::TrackData<float>(), mapper, SetVoxel(), *writer);
+      Thread::run_queue (loader, Tractography::Streamline<float>(), Thread::multi (mapper), SetVoxel(), *writer);
     }
 
   } else if (contrast == PRECISE_TDI) {
@@ -454,11 +458,11 @@ void run () {
     if (colour) {
       TrackMapperTWI <SetVoxelDir> mapper (header, upsample_ratio, map_zero, step_size, contrast, stat_tck);
       MapWriterColour<SetVoxelDir> writer (header, argument[1], dump, stat_vox);
-      Thread::run_queue_threaded_pipe (loader, Tractography::TrackData<float>(), mapper, SetVoxelDir(), writer);
+      Thread::run_queue (loader, Tractography::Streamline<float>(), Thread::multi (mapper), SetVoxelDir(), writer);
     } else {
       TrackMapperTWI <       SetVoxelDir> mapper (header, upsample_ratio, map_zero, step_size, contrast, stat_tck);
       MapWriter      <float, SetVoxelDir> writer (header, argument[1], dump, stat_vox);
-      Thread::run_queue_threaded_pipe (loader, Tractography::TrackData<float>(), mapper, SetVoxelDir(), writer);
+      Thread::run_queue (loader, Tractography::Streamline<float>(), Thread::multi (mapper), SetVoxelDir(), writer);
     }
 
   } else if (contrast == CURVATURE && stat_tck == GAUSSIAN) {
@@ -471,11 +475,11 @@ void run () {
     if (colour) {
       TrackMapperTWI <SetVoxelDECFactor> mapper (header, upsample_ratio, map_zero, step_size, contrast, stat_tck, gaussian_denominator_tck);
       MapWriterColour<SetVoxelDECFactor> writer (header, argument[1], dump, stat_vox);
-      Thread::run_queue_threaded_pipe (loader, Tractography::TrackData<float>(), mapper, SetVoxelDECFactor(), writer);
+      Thread::run_queue (loader, Tractography::Streamline<float>(), Thread::multi (mapper), SetVoxelDECFactor(), writer);
     } else {
       TrackMapperTWI    <SetVoxelFactor>   mapper (header, upsample_ratio, map_zero, step_size, contrast, stat_tck, gaussian_denominator_tck);
       Ptr< MapWriterBase<SetVoxelFactor> > writer (make_writer<SetVoxelFactor> (header, argument[1], dump, stat_vox));
-      Thread::run_queue_threaded_pipe (loader, Tractography::TrackData<float>(), mapper, SetVoxelFactor(), *writer);
+      Thread::run_queue (loader, Tractography::Streamline<float>(), Thread::multi (mapper), SetVoxelFactor(), *writer);
     }
 
   } else if (contrast == SCALAR_MAP || contrast == SCALAR_MAP_COUNT || contrast == FOD_AMP) {
@@ -510,11 +514,11 @@ void run () {
       if (stat_tck == GAUSSIAN) {
         TrackMapperTWIImage <SetVoxelDECFactor> mapper (header, upsample_ratio, map_zero, step_size, contrast, stat_tck, gaussian_denominator_tck, input_image);
         MapWriterColour     <SetVoxelDECFactor> writer (header, argument[1], dump, stat_vox);
-        Thread::run_queue_threaded_pipe (loader, Tractography::TrackData<float>(), mapper, SetVoxelDECFactor(), writer);
+        Thread::run_queue (loader, Tractography::Streamline<float>(), Thread::multi (mapper), SetVoxelDECFactor(), writer);
       } else {
         TrackMapperTWIImage <SetVoxelDEC> mapper (header, upsample_ratio, map_zero, step_size, contrast, stat_tck, 0.0, input_image);
         MapWriterColour     <SetVoxelDEC> writer (header, argument[1], dump, stat_vox);
-        Thread::run_queue_threaded_pipe (loader, Tractography::TrackData<float>(), mapper, SetVoxelDEC(), writer);
+        Thread::run_queue (loader, Tractography::Streamline<float>(), Thread::multi (mapper), SetVoxelDEC(), writer);
       }
 
     } else {
@@ -522,11 +526,11 @@ void run () {
       if (stat_tck == GAUSSIAN) {
         TrackMapperTWIImage <SetVoxelFactor>   mapper (header, upsample_ratio, map_zero, step_size, contrast, stat_tck, gaussian_denominator_tck, input_image);
         Ptr< MapWriterBase  <SetVoxelFactor> > writer (make_writer<SetVoxelFactor> (header, argument[1], dump, stat_vox));
-        Thread::run_queue_threaded_pipe (loader, Tractography::TrackData<float>(), mapper, SetVoxelFactor(), *writer);
+        Thread::run_queue (loader, Tractography::Streamline<float>(), Thread::multi (mapper), SetVoxelFactor(), *writer);
       } else {
         TrackMapperTWIImage <SetVoxel>   mapper (header, upsample_ratio, map_zero, step_size, contrast, stat_tck, 0.0, input_image);
         Ptr< MapWriterBase  <SetVoxel> > writer (make_writer<SetVoxel> (header, argument[1], dump, stat_vox));
-        Thread::run_queue_threaded_pipe (loader, Tractography::TrackData<float>(), mapper, SetVoxel(), *writer);
+        Thread::run_queue (loader, Tractography::Streamline<float>(), Thread::multi (mapper), SetVoxel(), *writer);
       }
 
     }

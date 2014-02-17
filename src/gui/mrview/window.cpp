@@ -1,3 +1,29 @@
+/*******************************************************************************
+    Copyright (C) 2014 Brain Research Institute, Melbourne, Australia
+    
+    Permission is hereby granted under the Patent Licence Agreement between
+    the BRI and Siemens AG from July 3rd, 2012, to Siemens AG obtaining a
+    copy of this software and associated documentation files (the
+    "Software"), to deal in the Software without restriction, including
+    without limitation the rights to possess, use, develop, manufacture,
+    import, offer for sale, market, sell, lease or otherwise distribute
+    Products, and to permit persons to whom the Software is furnished to do
+    so, subject to the following conditions:
+    
+    The above copyright notice and this permission notice shall be included
+    in all copies or substantial portions of the Software.
+    
+    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
+    OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+    MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+    IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
+    CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+    TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+    SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+*******************************************************************************/
+
+
 #include "app.h"
 #include "version.h"
 #include "timer.h"
@@ -221,15 +247,17 @@ namespace MR
           }
         }
 
+        Qt::ToolButtonStyle button_style = static_cast<Qt::ToolButtonStyle> (MR::File::Config::get_int ("ToolbarStyle", 2));
+
         toolbar = new QToolBar ("Main toolbar", this);
         addToolBar (toolbar_position, toolbar);
         action = toolbar->toggleViewAction ();
         action->setShortcut (tr ("Ctrl+M"));
         addAction (action);
 
-        // Start menu:
+        // File menu:
 
-        menu = new QMenu (tr ("Start menu"), this);
+        menu = new QMenu (tr ("File menu"), this);
 
         action = menu->addAction (tr ("Open..."), this, SLOT (image_open_slot()));
         action->setShortcut (tr ("Ctrl+O"));
@@ -257,7 +285,9 @@ namespace MR
 
 
         button = new QToolButton (this);
-        button->setToolTip (tr ("Start menu"));
+        button->setText ("File");
+        button->setToolButtonStyle (button_style);
+        button->setToolTip (tr ("File menu"));
         button->setIcon (QIcon (":/start.svg"));
         button->setPopupMode (QToolButton::InstantPopup);
         button->setMenu (menu);
@@ -315,6 +345,8 @@ namespace MR
         image_list_area = image_menu->addSeparator();
 
         button = new QToolButton (this);
+        button->setText ("Image");
+        button->setToolButtonStyle (button_style);
         button->setToolTip (tr ("Image menu"));
         button->setIcon (QIcon (":/image.svg"));
         button->setPopupMode (QToolButton::InstantPopup);
@@ -349,6 +381,8 @@ namespace MR
         addAction (image_interpolate_action);
 
         button = new QToolButton (this);
+        button->setText ("Colourmap");
+        button->setToolButtonStyle (button_style);
         button->setToolTip (tr ("Colourmap menu"));
         button->setIcon (QIcon (":/colourmap.svg"));
         button->setPopupMode (QToolButton::InstantPopup);
@@ -453,6 +487,8 @@ namespace MR
         addAction (action);
 
         button = new QToolButton (this);
+        button->setText ("View");
+        button->setToolButtonStyle (button_style);
         button->setToolTip (tr ("Display"));
         button->setIcon (QIcon (":/mode.svg"));
         button->setMenu (menu);
@@ -481,6 +517,8 @@ namespace MR
           addAction (tool_group->actions()[n]);
 
         button = new QToolButton (this);
+        button->setText ("Tool");
+        button->setToolButtonStyle (button_style);
         button->setToolTip (tr ("Select additional tools..."));
         button->setIcon (QIcon (":/tools.svg"));
         button->setMenu (menu);
@@ -563,6 +601,8 @@ namespace MR
         menu->addAction (tr ("about Qt"), this, SLOT (aboutQt_slot()));
 
         button = new QToolButton (this);
+        button->setText ("Help");
+        button->setToolButtonStyle (button_style);
         button->setToolTip (tr ("Help"));
         button->setIcon (QIcon (":/help.svg"));
         button->setPopupMode (QToolButton::InstantPopup);
