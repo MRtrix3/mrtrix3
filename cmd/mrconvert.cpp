@@ -159,15 +159,20 @@ inline std::vector<int> set_header (
 
 
 
-inline void zero_non_finite (complex_type in, complex_type& out) 
-{
-  out = complex_type (
-      std::isfinite (in.real()) ? in.real() : 0.0, 
-      std::isfinite (in.imag()) ? in.imag() : 0.0
-      );
-}
+class zero_non_finite {
+  public:
+    template <class VoxelType1, class VoxelType2>
+      void operator() (const VoxelType1& in, VoxelType2& out) 
+      {
+        complex_type val = in.value();
+        out.value() = complex_type (
+            std::isfinite (val.real()) ? val.real() : 0.0, 
+            std::isfinite (val.imag()) ? val.imag() : 0.0
+            );
+      }
+};
 
-template <class InputVoxelType>
+  template <class InputVoxelType>
 inline void copy_permute (InputVoxelType& in, Image::Header& header_out, const std::string& output_filename)
 {
   bool replace_nans = App::get_options ("zero").size();
@@ -183,18 +188,14 @@ inline void copy_permute (InputVoxelType& in, Image::Header& header_out, const s
 
     if (replace_nans)
       Image::ThreadedLoop ("copying from \"" + shorten (perm.name()) + "\" to \"" + shorten (out.name()) + "\"...", perm, 2)
-        .run_foreach (zero_non_finite, 
-            perm, Input(),
-            out, Output());
+        .run (zero_non_finite(), perm, out);
     else 
       Image::threaded_copy_with_progress (perm, out, 2);
   }
   else {
     if (replace_nans)
       Image::ThreadedLoop ("copying from \"" + shorten (in.name()) + "\" to \"" + shorten (out.name()) + "\"...", in, 2)
-        .run_foreach (zero_non_finite, 
-            in, Input(),
-            out, Output());
+        .run (zero_non_finite(), in, out);
     else
       Image::threaded_copy_with_progress (in, out, 2);
   }

@@ -40,7 +40,6 @@ namespace MR
       //! \cond skip
       namespace {
 
-        template <typename ValueType>
           class MeanStdFunctor {
             public:
               MeanStdFunctor (double& overall_sum, double& overall_sum_sqr) : 
@@ -52,17 +51,18 @@ namespace MR
                 overall_sum_sqr += sum_sqr;
               }
 
-              void operator() (ValueType in) {
-                sum += in;
-                sum_sqr += Math::pow2 (in);
-              }
+              template <class VoxelType>
+                void operator() (VoxelType& vox) {
+                  double in = vox.value();
+                  sum += in;
+                  sum_sqr += Math::pow2 (in);
+                }
 
               double& overall_sum;
               double& overall_sum_sqr;
               double sum, sum_sqr;
           };
 
-        template <typename ValueType, typename MaskValueType>
           class MeanStdFunctorMask {
             public:
               MeanStdFunctorMask (double& overall_sum, double& overall_sum_sqr, size_t& overall_count) : 
@@ -75,8 +75,10 @@ namespace MR
                 overall_count += count;
               }
 
-              void operator() (ValueType in, MaskValueType mask) {
-                if (mask) {
+        template <class VoxelType, class MaskVoxelType>
+              void operator() (VoxelType vox, MaskVoxelType mask) {
+                if (mask.value()) {
+                  double in = vox.value();
                   sum += in;
                   sum_sqr += Math::pow2 (in);
                   ++count;
@@ -90,10 +92,9 @@ namespace MR
               size_t count;
           };
 
-        template <typename ValueType>
           class CorrelationFunctor {
             public:
-              CorrelationFunctor (ValueType threshold, double& overall_sum, double& overall_mean_xy) : 
+              CorrelationFunctor (double threshold, double& overall_sum, double& overall_mean_xy) : 
                 threshold (threshold), overall_sum (overall_sum), overall_mean_xy (overall_mean_xy),
                 sum (0), mean_xy (0.0) { }
 
@@ -102,14 +103,16 @@ namespace MR
                 overall_mean_xy += mean_xy;
               }
 
-              void operator() (ValueType in) {
+              template <class VoxelType>
+              void operator() (VoxelType& vox) {
+                double in = vox.value();
                 if (in > threshold) {
                   sum += 1;
                   mean_xy += in;
                 }
               }
 
-              const ValueType threshold;
+              const double threshold;
               double& overall_sum;
               double& overall_mean_xy;
               double sum;
@@ -117,10 +120,9 @@ namespace MR
           };
 
 
-        template <typename ValueType, typename MaskValueType>
           class CorrelationFunctorMask {
             public:
-              CorrelationFunctorMask (ValueType threshold, double& overall_sum, double& overall_mean_xy) : 
+              CorrelationFunctorMask (double threshold, double& overall_sum, double& overall_mean_xy) : 
                 threshold (threshold), overall_sum (overall_sum), overall_mean_xy (overall_mean_xy),
                 sum (0), mean_xy (0.0) { }
 
@@ -129,14 +131,18 @@ namespace MR
                 overall_mean_xy += mean_xy;
               }
 
-              void operator() (ValueType in, MaskValueType mask) {
-                if (mask && in > threshold) {
-                  sum += 1;
-                  mean_xy += in;
+              template <class VoxelType, class MaskVoxelType>
+                void operator() (VoxelType& vox, MaskVoxelType& mask) {
+                  if (mask.value()) {
+                    double in = vox.value();
+                    if (in > threshold) {
+                      sum += 1;
+                      mean_xy += in;
+                    }
+                  }
                 }
-              }
 
-              const ValueType threshold;
+              const double threshold;
               double& overall_sum;
               double& overall_mean_xy;
               double sum;
@@ -164,13 +170,10 @@ namespace MR
                 Image::ThreadedLoop loop (input);
                 if (mask) {
                   Adapter::Replicate<MaskVoxelType> replicated_mask (*mask, input);
-                  loop.run_foreach (MeanStdFunctorMask<value_type, mask_value_type> (sum, sum_sqr, count), 
-                      input, Input(),
-                      replicated_mask, Input());
+                  loop.run (MeanStdFunctorMask (sum, sum_sqr, count), input, replicated_mask);
                 }
                 else {
-                  loop.run_foreach (MeanStdFunctor<value_type> (sum, sum_sqr), 
-                      input, Input());
+                  loop.run (MeanStdFunctor (sum, sum_sqr), input);
                   count = Image::voxel_count (input);
                 }
 
@@ -185,13 +188,10 @@ namespace MR
               Image::ThreadedLoop loop (input);
               if (mask) {
                   Adapter::Replicate<MaskVoxelType> replicated_mask (*mask, input);
-                  loop.run_foreach (CorrelationFunctorMask<value_type, mask_value_type> (threshold, sum, mean_xy), 
-                      input, Input(),
-                      replicated_mask, Input());
+                  loop.run (CorrelationFunctorMask (threshold, sum, mean_xy), input, replicated_mask);
               }
               else
-                loop.run_foreach (CorrelationFunctor<value_type> (threshold, sum, mean_xy), 
-                    input, Input());
+                loop.run (CorrelationFunctor (threshold, sum, mean_xy), input);
 
               mean_xy /= count;
               double covariance = mean_xy - (sum / count) * input_image_mean;
