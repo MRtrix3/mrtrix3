@@ -125,6 +125,8 @@ QMAKE           The command to run to invoke qmake.
 
 MOC             The command to invoke Qt's meta-object compile (default: moc)
 
+RCC             The command to invoke Qt's resource compiler (default: rcc)
+
 PATH            Set the path to use during the configure process.
                 This may be useful to set the path to Qt's qmake.
                 For example:
@@ -810,6 +812,26 @@ if not nogui:
   Use the QMAKE environment variable to specify the Qt qmake executable,
   or set PATH to include its location''')
   
+  
+  
+  report ('Checking for Qt rcc: ')
+  rcc = 'rcc' 
+  if 'RCC' in os.environ.keys(): 
+    rcc = os.environ['RCC'] 
+  try:
+    rcc_version = execute ([ rcc, '-v' ], OSError, False)[2].split()[4]
+    report (rcc + ' (version ' + rcc_version + ')\n')
+    if int (rcc_version.split('.')[0]) < 4:
+      error (''' Qt rcc not found!
+
+  Use the RCC environment variable to specify the Qt rcc executable,
+  or set PATH to ensure the correct version is listed first''')
+  except OSError:
+    error (''' Qt rcc not found!
+
+  Use the RCC environment variable to specify the Qt rcc executable,
+  or set PATH to include its location''')
+  
     
 
 
@@ -1154,7 +1176,7 @@ commit ('gsl_cflags', gsl_cflags)
 commit ('gsl_ldflags', gsl_ldflags)
 
 commit ('moc', moc)
-commit ('rcc', 'rcc')
+commit ('rcc', rcc)
 commit ('qt_cflags', qt_cflags)
 commit ('qt_ldflags', qt_ldflags)
 cache.write ('nogui = ')
