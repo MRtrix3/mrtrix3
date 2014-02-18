@@ -190,33 +190,33 @@ class SH_coefs : public Math::Vector<float> {
     Point<int> vox;
 };
 
-template <class FODBufferType, class MaskBufferType = Image::Buffer<bool> >
+template <class FODVoxelType, class MaskVoxelType = Image::Buffer<bool>::voxel_type >
 class FODQueueWriter
 {
 
   public:
-    typedef typename MaskBufferType::voxel_type mask_voxel_type;
 
-    FODQueueWriter (FODBufferType& fod_buffer) :
-        fod_vox (fod_buffer),
-        loop ("Segmenting FODs...", 0, 3)
-    {
-      loop.start (fod_vox);
-    }
+    template <class FODVoxelOrBufferType>
+      FODQueueWriter (FODVoxelOrBufferType& fod) :
+        fod_vox (fod),
+        loop ("Segmenting FODs...", 0, 3) {
+          loop.start (fod_vox);
+        }
 
-    FODQueueWriter (FODBufferType& fod_buffer, MaskBufferType& mask_buffer) :
-        fod_vox (fod_buffer),
+    template <class FODVoxelOrBufferType, class MaskVoxelOrBufferType>
+    FODQueueWriter (FODVoxelOrBufferType& fod, MaskVoxelOrBufferType& mask) :
+      fod_vox (fod),
         loop ("Segmenting FODs...", 0, 3),
-        mask_vox_ptr (new mask_voxel_type (mask_buffer))
+        mask_vox_ptr (new MaskVoxelType (mask))
     {
       loop.start (fod_vox);
     }
 
 
-    void set_mask (MaskBufferType& mask_buffer)
-    {
-      mask_vox_ptr = new mask_voxel_type (mask_buffer);
-    }
+    template <class MaskVoxelOrBufferType>
+      void set_mask (MaskVoxelOrBufferType& mask_vox) {
+        mask_vox_ptr = new MaskVoxelType (mask_vox);
+      }
 
 
     bool operator () (SH_coefs& out)
@@ -240,9 +240,9 @@ class FODQueueWriter
 
 
   private:
-    typename FODBufferType::voxel_type fod_vox;
+    FODVoxelType fod_vox;
     Image::Loop loop;
-    Ptr<mask_voxel_type> mask_vox_ptr;
+    Ptr<MaskVoxelType> mask_vox_ptr;
 
 };
 

@@ -458,7 +458,7 @@ void load_data_and_compute_integrals (const vector<string>& filename_list,
     LogLevelLatch log_level (0);
     Image::Buffer<value_type> fod_buffer (filename_list[subject]);
     Image::check_dimensions (fod_buffer, fixel_mask, 0, 3);
-    DWI::FMLS::FODQueueWriter<Image::Buffer<value_type>, Image::BufferScratch<bool> > writer2 (fod_buffer, fixel_mask);
+    DWI::FMLS::FODQueueWriter<Image::Buffer<value_type>::voxel_type, Image::BufferScratch<bool>::voxel_type> writer2 (fod_buffer, fixel_mask);
     DWI::FMLS::Segmenter fmls (dirs, Math::SH::LforN (fod_buffer.dim(3)));
     fmls.set_peak_value_threshold (SUBJECT_FOD_THRESHOLD);
     vector<value_type> temp_fixel_integrals (fixel_directions.size(), 0.0);
@@ -577,7 +577,7 @@ void run() {
     Image::Buffer<value_type> av_fod_buffer (argument[4]);
     Image::Buffer<bool> brain_mask_buffer (argument[5]);
     Image::check_dimensions (av_fod_buffer, brain_mask_buffer, 0, 3);
-    DWI::FMLS::FODQueueWriter <Image::Buffer<value_type>, Image::Buffer<bool> > writer (av_fod_buffer, brain_mask_buffer);
+    DWI::FMLS::FODQueueWriter <Image::Buffer<value_type>::voxel_type, Image::Buffer<bool>::voxel_type> writer (av_fod_buffer, brain_mask_buffer);
     DWI::FMLS::Segmenter fmls (dirs, Math::SH::LforN (av_fod_buffer.dim(3)));
     fmls.set_peak_value_threshold (GROUP_AVERAGE_FOD_THRESHOLD);
     GroupAvFixelProcessor fixel_processor (fixel_indexer, fixel_directions, fixel_positions);
