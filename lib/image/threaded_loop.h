@@ -526,8 +526,9 @@ namespace MR
              Pos (ThreadedLoop& shared_info, const Functor& functor) :
                Base<Functor> (shared_info, functor) { }
 
-             void operator() (const Iterator& pos) {
-               this->func (pos);
+             void operator() (Iterator& pos) {
+               for (this->loop.start (pos); this->loop.ok(); this->loop.next (pos)) 
+                 this->func (pos);
              }
          };
 
