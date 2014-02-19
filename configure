@@ -1,6 +1,7 @@
 #!/usr/bin/python
 
-import subprocess, sys, os, platform, tempfile, shutil, shlex
+import subprocess, sys, os, platform, tempfile, shutil, shlex, re
+
 
 debug = False
 profile = False
@@ -764,6 +765,14 @@ if not noshared:
 
 
 
+#the following regex will be reused so keep it outside of the get_qt_version func
+version_regex = re.compile(r'\d+\.\d+(\.\d+)+') #: :type version_regex: re.compile
+def get_qt_version(cmd_list, raise_on_non_zero_exit_code):
+  out = execute (cmd_list, raise_on_non_zero_exit_code, False)
+  stdouterr = ' '.join(out[1:]).replace(r'\n',' ').replace(r'\r','')
+  version_found = version_regex.search(stdouterr)
+  if version_found: return version_found.group()
+  else: raise raise_on_non_zero_exit_code('Version not Found')
 
 
 moc = '' 
@@ -778,8 +787,7 @@ if not nogui:
   if 'MOC' in os.environ.keys(): 
     moc = os.environ['MOC']
   try:
-    ret = execute ([ moc, '-v' ], OSError, False)
-    moc_version = (ret[1]+ret[2]).rstrip(')').split()[-1]
+    moc_version = get_qt_version([ moc, '-v' ], OSError)
     report (moc + ' (version ' + moc_version + ')\n')
     if int (moc_version.split('.')[0]) < 4:
       error (''' Qt moc version is too old!
@@ -799,7 +807,7 @@ if not nogui:
   if 'QMAKE' in os.environ.keys(): 
     qmake = os.environ['QMAKE'] 
   try:
-    qmake_version = execute ([ qmake, '-v' ], OSError, False)[1].splitlines()[1].split()[3]
+    qmake_version = get_qt_version([ qmake, '-v' ], OSError)
     report (qmake + ' (version ' + qmake_version + ')\n')
     if int (qmake_version.split('.')[0]) < 4:
       error (''' Qt qmake not found!
@@ -816,10 +824,11 @@ if not nogui:
   
   report ('Checking for Qt rcc: ')
   rcc = 'rcc' 
+   
   if 'RCC' in os.environ.keys(): 
     rcc = os.environ['RCC'] 
   try:
-    rcc_version = execute ([ rcc, '-v' ], OSError, False)[2].split()[4]
+    rcc_version = get_qt_version([ rcc, '-v' ], OSError)
     report (rcc + ' (version ' + rcc_version + ')\n')
     if int (rcc_version.split('.')[0]) < 4:
       error (''' Qt rcc not found!
