@@ -84,11 +84,12 @@ namespace MR
         std::string get_save_name (QWidget* parent, const std::string& caption, const std::string& filter, const std::string& folder)
         {
           QString qstring = QFileDialog::getSaveFileName (parent, caption.c_str(), folder.size() ? QString(folder.c_str()) : QString(), filter.c_str());
+          std::string name;
           if (qstring.size()) {
-            std::string folder = qstring.toUtf8().data();
-            QDir::setCurrent (Path::dirname (folder).c_str());
+            name = qstring.toUtf8().data();
+            QDir::setCurrent (Path::dirname (name).c_str());
           }
-          return std::string();
+          return name;
         }
 
       }
