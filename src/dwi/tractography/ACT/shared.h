@@ -45,6 +45,7 @@ namespace MR
               bt (false),
               voxel (buffer)
             {
+              verify_5TT_image (buffer);
               property_set.set (bt, "backtrack");
               if (property_set.find ("crop_at_gmwmi") != property_set.end())
                 gmwmi_finder = new GMWMI_finder (buffer);

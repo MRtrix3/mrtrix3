@@ -15,8 +15,8 @@ namespace MR
 
         const OptionGroup ACTOption = OptionGroup ("Anatomically-Constrained Tractography options")
 
-          + Option ("act", "use the Anatomically-Constrained Tractography framework;\n"
-                           "provided image must be in the 4TT (four-tissue-type) format")
+          + Option ("act", "use the Anatomically-Constrained Tractography framework during tracking;\n"
+                           "provided image must be in the 5TT (five-tissue-type) format")
             + Argument ("image").type_image_in()
 
           + Option ("backtrack", "allow tracks to be truncated and re-tracked if a poor structural termination is encountered")
@@ -51,6 +51,17 @@ namespace MR
           }
 
         }
+
+
+
+
+        void verify_5TT_image (const Image::Header& H)
+        {
+          if (!H.datatype().is_floating_point() || H.ndim() != 4 || H.dim(3) != 5)
+            throw Exception ("Image " + H.name() + " is not a valid ACT 5TT image");
+        }
+
+
 
 
       }

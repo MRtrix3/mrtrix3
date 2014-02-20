@@ -45,7 +45,7 @@ void usage ()
 	AUTHOR = "Robert E. Smith (r.smith@brain.org.au)";
 
   DESCRIPTION
-  + "concatenate segmentation results from FSL FAST and FIRST into the format required for ACT";
+  + "concatenate segmentation results from FSL FAST and FIRST into the 5TT format required for ACT";
 
   ARGUMENTS
   + Argument ("in_fast_one",   "first output PVE image from FAST (should be CSF)").type_image_in()
@@ -68,12 +68,12 @@ void run ()
 
   for (size_t axis = 0; axis != 3; ++axis) {
     if (fast_csf.dim (axis) != fast_gm.dim (axis) || fast_gm.dim (axis) != fast_wm.dim (axis) || fast_wm.dim (axis) != first.dim (axis))
-      throw Exception ("Image dimensions must match!");
+      throw Exception ("Input image dimensions must match!");
   }
 
   Image::Header H_out (fast_csf);
   H_out.set_ndim (4);
-  H_out.dim(3) = 4;
+  H_out.dim(3) = 5;
   H_out.datatype() = DataType::Float32;
   H_out.stride(0) = 2;
   H_out.stride(1) = 3;
@@ -121,6 +121,9 @@ void run ()
     cgm *= gm_wm_multiplier;
     v_out[3] = 0; v_out.value() = cgm;
     v_out[3] = 2; v_out.value() = wm;
+
+    // Pathological tissue is empty by default; can only be added using the 5ttedit command
+    v_out[3] = 4; v_out.value() = 0.0;
 
   }
 

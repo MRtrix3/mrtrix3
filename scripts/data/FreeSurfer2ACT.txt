@@ -1,7 +1,7 @@
 # Config file to convert FreeSurfer volumetric segmentation outputs
 #   into a format that can be used in Anatomically-Constrained Tractography
 
-# This is in fact a configuration file just like those used in mrprep4connectome
+# This is in fact a configuration file just like those used in labelconfig
 #   to convert from a raw parcellation image into an image with contiguous
 #   node indices, for the purposes for constructing a structural connectome.
 # As it turns out, this framework is appropriate here, where many FreeSurfer
@@ -12,6 +12,7 @@
 # 2: Sub-cortical grey matter
 # 3: White matter
 # 4: CSF
+# 5: Pathological tissue
 # (0 is skipped, and reserved for non-bran voxels & tissues for which no
 #   tissue type has been specified)
 
@@ -22,8 +23,6 @@
 # aseg.auto.mgz
 # aseg.auto_noCCseg.mgz
 # aseg.mgz
-
-# Note that lesions and cortical dysplasias have been tagged as sub-cortical grey matter (for now)
 
 
 3   Left-Cerebral-White-Matter
@@ -71,12 +70,12 @@
 4   5th-Ventricle
 4   Left-Lateral-Ventricles
 4   Right-Lateral-Ventricles
-3   WM-hypointensities
-3   Left-WM-hypointensities
-3   Right-WM-hypointensities
-3   non-WM-hypointensities
-3   Left-non-WM-hypointensities
-3   Right-non-WM-hypointensities
+5   WM-hypointensities
+5   Left-WM-hypointensities
+5   Right-WM-hypointensities
+5   non-WM-hypointensities
+5   Left-non-WM-hypointensities
+5   Right-non-WM-hypointensities
 3   Optic-Chiasm
 3   Corpus_Callosum
 1   Left-Amygdala-Anterior
@@ -94,8 +93,8 @@
 3   Pons
 3   Medulla
 
-2   Left-Cortical-Dysplasia
-2   Right-Cortical-Dysplasia
+5   Left-Cortical-Dysplasia
+5   Right-Cortical-Dysplasia
 
 3   Fornix
 3   CC_Posterior

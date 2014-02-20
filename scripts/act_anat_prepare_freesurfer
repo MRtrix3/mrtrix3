@@ -1,7 +1,7 @@
 #!/usr/bin/python2
 
 # Script that receives as argument a segmented T1 image from FreeSurfer, and outputs
-#   a four-tissue-type (4TT) segmented image in a format appropriate for ACT
+#   a five-tissue-type (5TT) segmented image in a format appropriate for ACT
 # Note that there are many structures that FreeSurfer does not segment, and therefore the
 #   tracking behaviour may not be as expected in those regions. This script is primarly
 #   provided to demonstrate that ACT is independent of the particular method used to
@@ -52,7 +52,7 @@ working_dir = os.getcwd()
 temp_dir = makeTempDir(verbose)
 
 
-# Initial conversion from FreeSurfer parcellation to four principal tissue types
+# Initial conversion from FreeSurfer parcellation to five principal tissue types
 runCommand('labelconfig ' + sys.argv[1] + ' ' + config_path + ' ' + os.path.join(temp_dir, 'indices_precrop.mif') + ' -lut_freesurfer ' + freesurfer_lut + quiet, verbose)
 
 if verbose:
@@ -62,13 +62,14 @@ os.chdir(temp_dir)
 # Use mrcrop to reduce file size
 runCommand('mrthreshold indices_precrop.mif - -abs 0.5' + quiet + ' | mrcrop indices_precrop.mif indices.mif -mask -' + quiet, verbose)
 
-# Convert into the 4TT format for ACT
-runCommand('mrcalc indices.mif 1 -eq cgm.mif' + quiet, verbose)
-runCommand('mrcalc indices.mif 2 -eq sgm.mif' + quiet, verbose)
-runCommand('mrcalc indices.mif 3 -eq  wm.mif' + quiet, verbose)
-runCommand('mrcalc indices.mif 4 -eq csf.mif' + quiet, verbose)
+# Convert into the 5TT format for ACT
+runCommand('mrcalc indices.mif 1 -eq cgm.mif'  + quiet, verbose)
+runCommand('mrcalc indices.mif 2 -eq sgm.mif'  + quiet, verbose)
+runCommand('mrcalc indices.mif 3 -eq  wm.mif'  + quiet, verbose)
+runCommand('mrcalc indices.mif 4 -eq csf.mif'  + quiet, verbose)
+runCommand('mrcalc indices.mif 5 -eq path.mif' + quiet, verbose)
 result_path = 'result' + os.path.splitext(sys.argv[2])[1]
-runCommand('mrcat cgm.mif sgm.mif wm.mif csf.mif ' + result_path + ' -axis 3' + quiet, verbose)
+runCommand('mrcat cgm.mif sgm.mif wm.mif csf.mif path.mif - -axis 3' + quiet + ' | mrconvert - ' + result_path + ' -datatype float32' + quiet, verbose)
 
 # Move back to original directory
 if verbose:

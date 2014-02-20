@@ -340,7 +340,7 @@ namespace MR
                   case CALIBRATE_FAIL: case BAD_SIGNAL: case HIGH_CURVATURE:
                     if (method.act().sgm_depth)
                       termination = TERM_IN_SGM;
-                    else
+                    else if (!method.act().in_pathology())
                       track_excluded = true;
                     break;
 

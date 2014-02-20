@@ -1,6 +1,6 @@
 #!/usr/bin/python2
 
-# Script that receives as argument a T1-weighted image, and outputs a four-tissue-type (4TT) segmented image
+# Script that receives as argument a T1-weighted image, and outputs a five-tissue-type (5TT) segmented image
 # in a format appropriate for ACT
 # In this script, all major stages of processing are performed using FSL tools:
 # BET for brain extraction, FAST for tissue segmentation, FIRST for sub-cortical grey matter segmentation
@@ -84,14 +84,14 @@ for struct in sgm_structures:
 pve_cat = ' '.join(pve_image_list)
 runCommand('mrmath ' + pve_cat + ' sum -' + quiet + ' | mrcalc - 1.0 -min all_sgms.nii' + quiet, verbose)
 
-# Combine all tissue types using the mr4ttmake command
+# Combine all tissue types using the 5ttgen command
 # Looks like FAST in 5.0 ignores FSLOUTPUTTYPE when writing the PVE images
 # Will have to wait and see whether this changes, and update the script accordingly
 if fast_cmd == 'fast':
   fast_suffix = fsl_suffix
 else:
   fast_suffix = 'nii.gz'
-runCommand('4ttgen T1_bet_pve_0.' + fast_suffix + ' T1_bet_pve_1.' + fast_suffix + ' T1_bet_pve_2.' + fast_suffix + ' all_sgms.nii combined_precrop.mif' + quiet, verbose)
+runCommand('5ttgen T1_bet_pve_0.' + fast_suffix + ' T1_bet_pve_1.' + fast_suffix + ' T1_bet_pve_2.' + fast_suffix + ' all_sgms.nii combined_precrop.mif' + quiet, verbose)
 
 # Use mrcrop to reduce file size (improves caching of image data during tracking)
 result_path = 'result' + os.path.splitext(sys.argv[2])[1]

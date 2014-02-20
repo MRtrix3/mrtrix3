@@ -31,7 +31,7 @@
 #include "image/position.h"
 #include "image/voxel.h"
 
-
+#include "dwi/tractography/ACT/act.h"
 
 
 using namespace MR;
@@ -45,22 +45,25 @@ void usage ()
 	AUTHOR = "Robert E. Smith (r.smith@brain.org.au)";
 
   DESCRIPTION
-  + "manually set the partial volume fractions in a four-tissue-type (4TT) image using mask images";
+  + "manually set the partial volume fractions in an ACT five-tissue-type (5TT) image using mask images";
 
   ARGUMENTS
-  + Argument ("input",  "the 4TT image");
+  + Argument ("input",  "the 5TT image to be modified in-place");
 
   OPTIONS
-  + Option ("cgm", "provide a mask of voxels that should be set to cortical grey matter")
+  + Option ("cgm",  "provide a mask of voxels that should be set to cortical grey matter")
     + Argument ("image").type_image_in()
 
-  + Option ("sgm", "provide a mask of voxels that should be set to sub-cortical grey matter")
+  + Option ("sgm",  "provide a mask of voxels that should be set to sub-cortical grey matter")
     + Argument ("image").type_image_in()
 
-  + Option ("wm",  "provide a mask of voxels that should be set to white matter")
+  + Option ("wm",   "provide a mask of voxels that should be set to white matter")
     + Argument ("image").type_image_in()
 
-  + Option ("csf", "provide a mask of voxels that should be set to CSF")
+  + Option ("csf",  "provide a mask of voxels that should be set to CSF")
+    + Argument ("image").type_image_in()
+
+  + Option ("path", "provide a mask of voxels that should be set to pathological tissue")
     + Argument ("image").type_image_in()
 
   + Option ("none", "provide a mask of voxels that should be cleared (i.e. are non-brain); note that this will supersede all other provided masks")
@@ -81,24 +84,25 @@ class Modifier
     void set_sgm_mask  (const std::string& path) { load (path, 1); }
     void set_wm_mask   (const std::string& path) { load (path, 2); }
     void set_csf_mask  (const std::string& path) { load (path, 3); }
-    void set_none_mask (const std::string& path) { load (path, 4); }
+    void set_path_mask (const std::string& path) { load (path, 4); }
+    void set_none_mask (const std::string& path) { load (path, 5); }
 
 
     void set_values()
     {
       bool voxel_nulled = false;
-      if (voxels[4]) {
-        Image::Nav::set_pos (*voxels[4], *this, 0, 3);
-        if (voxels[4]->value()) {
-          for (v[3] = 0; v[3] != 4; ++v[3])
+      if (voxels[5]) {
+        Image::Nav::set_pos (*voxels[5], *this, 0, 3);
+        if (voxels[5]->value()) {
+          for (v[3] = 0; v[3] != 5; ++v[3])
             v.value() = 0.0;
           voxel_nulled = true;
         }
       }
       if (!voxel_nulled) {
         unsigned int sum = 0;
-        memset (values, 0, 4 * sizeof (float));
-        for (size_t tissue = 0; tissue != 4; ++tissue) {
+        memset (values, 0, 5 * sizeof (float));
+        for (size_t tissue = 0; tissue != 5; ++tissue) {
           if (voxels[tissue]) {
             Image::Nav::set_pos (*voxels[tissue], v, 0, 3);
             if (voxels[tissue]->value()) {
@@ -110,10 +114,10 @@ class Modifier
         if (sum) {
           if (sum > 1) {
             const float multiplier = 1.0 / float(sum);
-            for (size_t tissue = 0; tissue != 4; ++tissue)
+            for (size_t tissue = 0; tissue != 5; ++tissue)
               values[tissue] *= multiplier;
           }
-          for (v[3] = 0; v[3] != 4; ++v[3])
+          for (v[3] = 0; v[3] != 5; ++v[3])
             v.value() = values[v[3]];
         }
       }
@@ -131,16 +135,16 @@ class Modifier
 
   private:
     Image::Buffer<float>::voxel_type v;
-    Ptr< Image::Buffer<bool> > buffers[5];
-    Ptr< Image::Buffer<bool>::voxel_type > voxels[5];
-    float values[4];
+    Ptr< Image::Buffer<bool> > buffers[6];
+    Ptr< Image::Buffer<bool>::voxel_type > voxels[6];
+    float values[5];
 
     void load (const std::string& path, const size_t index)
     {
-      assert (index <= 4);
+      assert (index <= 5);
       buffers[index] = new Image::Buffer<bool> (path);
       if (!Image::dimensions_match (v, *buffers[index], 0, 3))
-        throw Exception ("Image " + str(path) + " does not match 4TT image dimensions");
+        throw Exception ("Image " + str(path) + " does not match 5TT image dimensions");
       voxels[index] = new Image::Buffer<bool>::voxel_type (*buffers[index]);
     }
 
@@ -152,9 +156,9 @@ class Modifier
 void run ()
 {
 
-  Image::Buffer<float> in (argument[0], true); // Open as read-write
-  if (in.ndim() != 4 || in.dim (3) != 4)
-    throw Exception ("Input image is not a four-tissue-type (4TT) segmented image");
+  Image::Header H (argument[0]);
+  DWI::Tractography::ACT::verify_5TT_image (H);
+  Image::Buffer<float> in (H, true); // Open as read-write
 
   Modifier modifier (in);
 
@@ -163,12 +167,12 @@ void run ()
   opt = get_options ("sgm");  if (opt.size()) modifier.set_sgm_mask  (opt[0][0]);
   opt = get_options ("wm");   if (opt.size()) modifier.set_wm_mask   (opt[0][0]);
   opt = get_options ("csf");  if (opt.size()) modifier.set_csf_mask  (opt[0][0]);
+  opt = get_options ("path"); if (opt.size()) modifier.set_path_mask (opt[0][0]);
   opt = get_options ("none"); if (opt.size()) modifier.set_none_mask (opt[0][0]);
 
   Image::LoopInOrder loop (modifier, 0, 3);
-  for (loop.start (modifier); loop.ok(); loop.next (modifier)) {
+  for (loop.start (modifier); loop.ok(); loop.next (modifier))
     modifier.set_values();
-  }
 
 }
 

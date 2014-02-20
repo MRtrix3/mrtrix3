@@ -149,7 +149,7 @@ namespace MR
               TD_sum (0.0),
               have_null_lobes (false)
           {
-            SIFT::initialise_processing_mask (dwi, proc_mask, act_4tt);
+            SIFT::initialise_processing_mask (dwi, proc_mask, act_5tt);
             H.info() = dwi.info();
             H.set_ndim (3);
           }
@@ -167,10 +167,10 @@ namespace MR
           double calc_cost_function() const;
 
           double mu() const { return FOD_sum / TD_sum; }
-          bool have_act_data() const { return act_4tt; }
+          bool have_act_data() const { return act_5tt; }
 
           void output_proc_mask (const std::string&);
-          void output_4tt_image (const std::string&);
+          void output_5tt_image (const std::string&);
           void output_all_debug_images (const std::string&) const;
 
           using Mapping::Fixel_TD_map<Fixel>::begin;
@@ -181,7 +181,7 @@ namespace MR
           using Fixel_map<Fixel>::fixels;
           using Mapping::Fixel_TD_map<Fixel>::dirs;
 
-          Ptr< Image::BufferScratch<float> > act_4tt;
+          Ptr< Image::BufferScratch<float> > act_5tt;
           Image::BufferScratch<float> proc_mask;
           Image::Header H;
           double FOD_sum, TD_sum;
@@ -201,7 +201,7 @@ namespace MR
           void output_untracked_fixels (const std::string&, const std::string&) const;
 
 
-          ModelBase (const ModelBase& that) : Mapping::Fixel_TD_map<Fixel> (that), act_4tt (NULL), proc_mask (that.proc_mask.info()), FOD_sum (0.0), TD_sum (0.0), have_null_lobes (false) { assert (0); }
+          ModelBase (const ModelBase& that) : Mapping::Fixel_TD_map<Fixel> (that), act_5tt (NULL), proc_mask (that.proc_mask.info()), FOD_sum (0.0), TD_sum (0.0), have_null_lobes (false) { assert (0); }
 
       };
 
@@ -228,13 +228,13 @@ namespace MR
       {
         if (App::get_options("no_fod_scaling").size())
           return;
-        if (!act_4tt) {
+        if (!act_5tt) {
           INFO ("Cannot scale FOD amplitudes according to GM fraction; no ACT image data provided");
           return;
         }
         // Loop through voxels, getting total GM fraction for each, and scale all fixels in each voxel
         VoxelAccessor v (accessor);
-        Image::BufferScratch<float>::voxel_type v_anat (*act_4tt);
+        Image::BufferScratch<float>::voxel_type v_anat (*act_5tt);
         FOD_sum = 0.0;
         Image::LoopInOrder loop (v);
         for (loop.start (v, v_anat); loop.ok(); loop.next (v, v_anat)) {
@@ -312,11 +312,11 @@ namespace MR
 
 
       template <class Fixel>
-      void ModelBase<Fixel>::output_4tt_image (const std::string& path)
+      void ModelBase<Fixel>::output_5tt_image (const std::string& path)
       {
         if (!have_act_data())
-          throw Exception ("Cannot export 4TT image; none exists!");
-        Image::BufferScratch<float>::voxel_type v (*act_4tt);
+          throw Exception ("Cannot export 5TT image; none exists!");
+        Image::BufferScratch<float>::voxel_type v (*act_5tt);
         v.save (path);
       }
 

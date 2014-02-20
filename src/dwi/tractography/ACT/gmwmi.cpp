@@ -102,7 +102,7 @@ namespace MR
 
           // Make sure an appropriate cost function minimum has been found, and that
           //   this would be an acceptable termination point if it were processed by the tracking algorithm
-          if (!tissues.valid() || tissues.is_csf() || !tissues.get_wm()
+          if (!tissues.valid() || tissues.is_csf() || tissues.is_path() || !tissues.get_wm()
               || (Math::abs (tissues.get_gm() - tissues.get_wm()) > GMWMI_ACCURACY)) {
 
             p.invalidate();

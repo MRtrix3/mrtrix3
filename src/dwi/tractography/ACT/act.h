@@ -26,6 +26,8 @@
 #include "app.h"
 #include "point.h"
 
+#include "image/header.h"
+
 
 // Actually think it's preferable to not use these
 #define ACT_WM_INT_REQ 0.0
@@ -53,6 +55,10 @@ namespace MR
         extern const App::OptionGroup ACTOption;
 
         void load_act_properties (Properties& properties);
+
+
+        void verify_5TT_image (const Image::Header&);
+
 
       }
     }

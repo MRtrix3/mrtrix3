@@ -132,6 +132,9 @@ namespace MR
             }
 
 
+            bool in_pathology() const { return (tissue_values.valid() && tissue_values.is_path()); }
+
+
             int sgm_depth;
 
 

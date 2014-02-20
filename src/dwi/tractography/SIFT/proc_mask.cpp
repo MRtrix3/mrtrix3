@@ -19,7 +19,7 @@ const OptionGroup SIFTModelProcMaskOption = OptionGroup ("Options for setting th
   + Option ("proc_mask", "provide an image containing the processing mask weights for the model; image spatial dimensions must match the fixel image")
     + Argument ("image").type_image_in()
 
-  + Option ("act", "use an ACT four-tissue-type segmented anatomical image to derive the processing mask")
+  + Option ("act", "use an ACT five-tissue-type segmented anatomical image to derive the processing mask")
     + Argument ("image").type_image_in();
 
 

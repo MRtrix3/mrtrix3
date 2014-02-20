@@ -41,6 +41,7 @@
 
 #include "image/interp/linear.h"
 
+#include "dwi/tractography/ACT/act.h"
 #include "dwi/tractography/ACT/tissues.h"
 
 
@@ -67,7 +68,7 @@ namespace MR
 
 
       template <class Set>
-      void initialise_processing_mask (Set& in_dwi, Image::BufferScratch<float>& proc_mask, Ptr< Image::BufferScratch<float> >& act_4tt)
+      void initialise_processing_mask (Set& in_dwi, Image::BufferScratch<float>& proc_mask, Ptr< Image::BufferScratch<float> >& act_5tt)
       {
 
         Image::BufferScratch<float>::voxel_type mask (proc_mask);
@@ -88,32 +89,31 @@ namespace MR
           if (opt.size()) {
 
             Image::Buffer<float> in_anat (opt[0][0]);
-            if (in_anat.ndim() != 4 || in_anat.dim(3) != 4)
-              throw Exception ("Image passed using the -act option must be in the 4TT format");
+            ACT::verify_5TT_image (in_anat);
 
-            Image::Info info_4tt (in_dwi);
-            info_4tt.set_ndim (4);
-            info_4tt.dim(3) = 4;
-            act_4tt = new Image::BufferScratch<float> (info_4tt);
-            Image::BufferScratch<float>::voxel_type v_4tt (*act_4tt);
+            Image::Info info_5tt (in_dwi);
+            info_5tt.set_ndim (4);
+            info_5tt.dim(3) = 5;
+            act_5tt = new Image::BufferScratch<float> (info_5tt, "5TT BufferScratch");
+            Image::BufferScratch<float>::voxel_type v_5tt (*act_5tt);
 
             // Test to see if the image has already been re-gridded to match the fixel image
             // If it has, can do a direct import
-            if (Image::dimensions_match (v_4tt, in_anat, 0, 3)) {
-              INFO ("4TT image dimensions match fixel image - importing directly");
+            if (Image::dimensions_match (v_5tt, in_anat, 0, 3)) {
+              INFO ("5TT image dimensions match fixel image - importing directly");
               Image::Buffer<float>::voxel_type v_anat (in_anat);
-              Image::copy (v_anat, v_4tt);
+              Image::copy (v_anat, v_5tt);
             } else {
-              Image::ThreadedLoop threaded_loop ("resampling ACT 4TT image to fixel image space...", in_dwi, 1, 0, 3);
-              ResampleFunctor<Set> functor (in_dwi, in_anat, *act_4tt);
+              Image::ThreadedLoop threaded_loop ("resampling ACT 5TT image to fixel image space...", in_dwi, 1, 0, 3);
+              ResampleFunctor<Set> functor (in_dwi, in_anat, *act_5tt);
               threaded_loop.run (functor);
             }
 
-            // Once all of the 4TT data has been read in, use it to derive the processing mask
-            Image::LoopInOrder loop (v_4tt, 0, 3);
-            v_4tt[3] = 2; // Access the WM fraction
-            for (loop.start (v_4tt, mask); loop.ok(); loop.next (v_4tt, mask))
-              mask.value() = Math::pow2<float> (v_4tt.value()); // Processing mask value is the square of the WM fraction
+            // Once all of the 5TT data has been read in, use it to derive the processing mask
+            Image::LoopInOrder loop (v_5tt, 0, 3);
+            v_5tt[3] = 2; // Access the WM fraction
+            for (loop.start (v_5tt, mask); loop.ok(); loop.next (v_5tt, mask))
+              mask.value() = Math::pow2<float> (v_5tt.value()); // Processing mask value is the square of the WM fraction
 
           } else {
 
@@ -181,9 +181,10 @@ namespace MR
           v_out[3] = 1; v_out.value() = tissues.get_sgm();
           v_out[3] = 2; v_out.value() = tissues.get_wm();
           v_out[3] = 3; v_out.value() = tissues.get_csf();
+          v_out[3] = 4; v_out.value() = tissues.get_path();
 
         } else {
-          for (v_out[3] = 0; v_out[3] != 4; ++v_out[3])
+          for (v_out[3] = 0; v_out[3] != 5; ++v_out[3])
             v_out.value() = 0.0;
         }
 
@@ -199,7 +200,7 @@ namespace MR
         static const float os_step = 1.0 / float(os_ratio);
         static const float os_offset = 0.5 * os_step;
 
-        size_t cgm_count = 0, sgm_count = 0, wm_count = 0, csf_count = 0, total_count = 0;
+        size_t cgm_count = 0, sgm_count = 0, wm_count = 0, csf_count = 0, path_count = 0, total_count = 0;
 
         Point<int> i;
         Point<float> subvoxel_pos_dwi;
@@ -221,17 +222,26 @@ namespace MR
                     ++sgm_count;
                   else if (tissues.is_wm())
                     ++wm_count;
-                  else
+                  else if (tissues.is_csf())
                     ++csf_count;
+                  else if (tissues.is_path())
+                    ++path_count;
+                  else
+                    --total_count; // Should ideally never happen...
                 }
               }
 
             } } }
 
-        if (total_count)
-          return ACT::Tissues (cgm_count / float(total_count), sgm_count / float(total_count), wm_count / float(total_count), csf_count / float(total_count));
-        else
-          return ACT::Tissues (0.0, 0.0, 0.0, 0.0);
+        if (total_count) {
+          return ACT::Tissues (cgm_count  / float(total_count),
+                               sgm_count  / float(total_count),
+                               wm_count   / float(total_count),
+                               csf_count  / float(total_count),
+                               path_count / float(total_count));
+        } else {
+          return ACT::Tissues ();
+        }
 
       }
 

@@ -32,6 +32,7 @@
 #include "image/voxel.h"
 #include "progressbar.h"
 
+#include "dwi/tractography/ACT/act.h"
 #include "dwi/tractography/ACT/tissues.h"
 
 
@@ -52,12 +53,12 @@ void usage ()
 	+ "Generate a mask image appropriate for seeding streamlines on the grey matter - white matter interface";
 
 	ARGUMENTS
-	+ Argument ("anat_in",  "the input segmented anatomical image").type_image_in()
-	+ Argument ("mask_out", "the output mask image")               .type_image_out();
+	+ Argument ("5tt_in",  "the input 5TT segmented anatomical image").type_image_in()
+	+ Argument ("mask_out", "the output mask image")                  .type_image_out();
 
 	OPTIONS
 
-	+ Option("mask_in", "Filter an input mask image according to those voxels which lie upon the grey matter - white matter boundary. \n"
+	+ Option("mask_in", "Filter an input mask image according to those voxels that lie upon the grey matter - white matter boundary. \n"
 	                    "If no input mask is provided, the output will be a whole-brain mask image calculated using the anatomical image only.")
 	  + Argument ("image", "the input mask image").type_image_in();
 
@@ -68,7 +69,9 @@ void usage ()
 void run ()
 {
 
-  Image::Buffer<float> image_in (argument[0]);
+  Image::Header H_in (argument[0]);
+  DWI::Tractography::ACT::verify_5TT_image (H_in);
+  Image::Buffer<float> image_in (H_in);
   Image::Buffer<float>::voxel_type v_in (image_in);
   Image::Interp::Linear< Image::Buffer<float>::voxel_type > interp_in (v_in);
 
@@ -114,12 +117,8 @@ void run ()
 
       if (!interp_in.scanner (p_voxel_centre)) {
 
-        interp_in[3] = 0; const float cgm = interp_in.value();
-        interp_in[3] = 1; const float sgm = interp_in.value();
-        interp_in[3] = 2; const float wm  = interp_in.value();
-        interp_in[3] = 3; const float csf = interp_in.value();
-        MR::DWI::Tractography::ACT::Tissues values_voxel_centre;
-        if (values_voxel_centre.set (cgm, sgm, wm, csf)) {
+        DWI::Tractography::ACT::Tissues values_voxel_centre (interp_in);
+        if (values_voxel_centre.valid()) {
 
           bool mask_value = false;
 
@@ -137,12 +136,8 @@ void run ()
             }
             const Point<float> p_voxel_corner (interp_out.voxel2scanner (voxel_corner));
             if (!interp_in.scanner (p_voxel_corner)) {
-              interp_in[3] = 0; const float cgm = interp_in.value();
-              interp_in[3] = 1; const float sgm = interp_in.value();
-              interp_in[3] = 2; const float wm  = interp_in.value();
-              interp_in[3] = 3; const float csf = interp_in.value();
-              MR::DWI::Tractography::ACT::Tissues values_voxel_corner;
-              if (values_voxel_corner.set (cgm, sgm, wm, csf)) {
+              DWI::Tractography::ACT::Tissues values_voxel_corner (interp_in);
+              if (values_voxel_corner.valid()) {
 
                 // No absolute values for differences here - one must increase, the other must decrease
                 mask_value = ((values_voxel_corner.get_gm() - values_voxel_centre.get_gm() > MIN_TISSUE_CHANGE) && (values_voxel_centre.get_wm() - values_voxel_corner.get_wm() > MIN_TISSUE_CHANGE))
