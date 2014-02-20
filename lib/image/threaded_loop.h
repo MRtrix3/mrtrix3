@@ -107,185 +107,35 @@ namespace MR
      * invocation of the thread's functor is given a fresh position to operate
      * from, in the form of an Image::Iterator class.
      *
+     * Conceptually, the Image::ThreadedLoop performs something akin to the
+     * following:
      *
-     * \par The run_outer() method
-     *
-     * The most general of these methods is the run_outer() method, which launches a
-     * set of threads that will each iteratively invokes the functor, providing
-     * it with an Image::Iterator class containing a fresh voxel position to
-     * process. This takes a single argument to a functor class that must
-     * provide an operator() (const Image::Iterator& pos) member function. For
-     * example, the following code can be used to compute the exponential of
-     * the voxel values in-place. Note that this is for illustration purposes
-     * only; this can be done in a much simpler way using the convenience
-     * functions below.
      * \code
-     * class MyFunctor {
-     *   public:
-     *     MyFunctor (ImageVoxelType& vox, const std::vector<size_t>& inner_axes) :
-     *         vox (vox),
-     *         loop (inner_axes) { }
-     *     void operator() (const Image::Iterator& pos) {
-     *       Image::voxel_assign (vox, pos);
-     *       for (loop.start (vox); loop.ok(); loop.next (vox))
-     *         vox.value() = Math::exp (vox.value());
-     *     }
-     *   protected:
-     *     ImageVoxelType vox;
-     *     Image::LoopInOrder loop;
-     * };
+     * // a generic VoxelType object to be looped over:
+     * VoxelType vox;
      *
-     * ...
+     * // the function or functor to be invoked:
+     * void my_func (VoxelType& vox) {
+     *   // do something
+     * }
      *
-     * MyVoxelType vox;
-     * Image::ThreadedLoop loop (vox);
-     * class MyFunctor myfunc (vox, loop.inner_axes());
-     * loop.run_outer (myfunc);
-     * \endcode
-     * Obviously, any number of VoxelType objects can be involved in the
-     * computation, as long as they are members of the functor. For example, to
-     * restrict the computation above to a binary mask:
-     * \code
-     * class MyFunctor {
-     *   public:
-     *     MyFunctor (ImageVoxelType& vox, MaskVoxelType& mask, const std::vector<size_t>& inner_axes) :
-     *         vox (vox),
-     *         mask (mask),
-     *         loop (inner_axes) { }
-     *     void operator() (const Image::Iterator& pos) {
-     *       Image::voxel_assign (mask, pos);
-     *       Image::voxel_assign (vox, pos);
-     *       for (loop.start (mask, vox); loop.ok(); loop.next (mask, vox))
-     *         vox.value() = mask.value() ? Math::exp (vox.value()) : NAN;
-     *     }
-     *   protected:
-     *     ImageVoxelType vox;
-     *     MaskVoxelType mask;
-     *     Image::LoopInOrder loop;
-     * };
+     * // outer loop includes axes 1 and above:
+     * Image::Loop outer_loop (vox, 1); 
      *
-     * ...
+     * // inner loop includes axis 0:
+     * Image::Loop inner_loop (vox, 0, 1);
      *
-     * MyVoxelType vox;
-     * MyMaskVoxelType mask;
-     * Image::ThreadedLoop loop (vox);
-     * MyFunctor myfunc (vox, mask, loop.inner_axes());
-     * loop.run_outer (myfunc);
+     * // the outer loop is processed sequentially in a thread-safe manner,
+     * // so that each thread receives the next position in the loop:
+     * for (outer_loop.start (vox); outer_loop.ok(); outer_loop.next (vox) {
+     *   // the inner loop is processed within each thread, with multiple threads 
+     *   // running concurrently, each processing a different row of voxels:
+     *   for (inner_loop.start (vox); inner_loop.ok(); inner_loop.next (vox) 
+     *     my_func (vox);
+     * }
      * \endcode
      *
-     *
-     * \par The run() method
-     *
-     * The run() method is a convenience function that reduces the amount of
-     * code required for most simple operations. Essentially, it takes a
-     * simpler functor and manages looping over the inner axes. In this case,
-     * the functor is invoked once per voxel, and is provided with a fresh
-     * Image::Iterator each time. Using this method, the operation above can be
-     * coded as:
-     * \code
-     * class MyFunctor {
-     *   public:
-     *     MyFunctor (ImageVoxelType& vox) : vox (vox) { }
-     *     void operator() (const Image::Iterator& pos) {
-     *       Image::voxel_assign (vox, pos);
-     *       vox.value() = Math::exp (vox.value());
-     *     }
-     *   protected:
-     *     ImageVoxelType vox;
-     * };
-     *
-     * ...
-     *
-     * MyVoxelType vox;
-     * Image::ThreadedLoop loop (vox).run (MyFunctor (vox));
-     * \endcode
-     *
-     *
-     * \par The run_foreach() methods
-     *
-     * These convenience functions can be used for any per-voxel operation, and
-     * simplify the code further by taking a simple function, or a functor if
-     * required, and managing all looping aspects and VoxelType interactions. 
-     * These functions require a function or class as an argument that defines
-     * the operation to be performed. When passing a class, the operator()
-     * method will be invoked. The number and order of arguments of this
-     * function should match the number of VoxelType objects supplied to
-     * run_foreach(). 
-     *
-     * The run_foreach() functions take the following arguments:
-     * - \a functor: the function or functor defining the operation itself.
-     * - \a voxN: the VoxelType objects whose voxel values are to be
-     * used as inputs/outputs; their number and order should match that of
-     * the function or functor.
-     * - \a flagsN: specifies whether the preceding VoxelType object is an
-     * input and/or an output, in the form of \a Input(), \a Output(), or
-     * \a InputOutput(). If \a Input() is specified, the corresponding value will
-     * be read from the VoxelType object before invoking the function or
-     * functor. If \a Output() is specified, the corresponding value as
-     * modified by the function or functor will be written to the VoxelType
-     * object for each voxel. In this case, you need to ensure that the
-     * function or functor takes the corresponding argument by reference.  If
-     * \a InputOutput() is specified, the corresponding value will be read
-     * prior to, and written back invoking the functor for that voxel. 
-     *
-     * For example, the example above, computing the exponential of \a vox
-     * in-place, can be coded up very simply:
-     * \code
-     * void myfunc (float& val) { val = Math::exp (val); }
-     *
-     * ...
-     *
-     * Image::ThreadedLoop ("computing exponential in-place...", vox)
-     *    .run_foreach (myfunc, vox, InputOutput());
-     * \endcode
-     * 
-     * As a further example, the following snippet performs the addition of \a
-     * vox1 and \a vox2, this time storing the results in \a vox_out, with no
-     * progress display, and looping according to the strides in \a vox1: 
-     * \code
-     * void myadd (float& out, float in1, float in2) { out = in1 + in2; }
-     *
-     * ...
-     *
-     * Image::ThreadedLoop (vox1)
-     *     .run_foreach (myadd, 
-     *               vox_out, Output(), 
-     *               vox1, Input(), 
-     *               vox2, Input());
-     * \endcode 
-     * 
-     * This example uses a functor to computes the root-mean-square of \a vox,
-     * with no per-voxel output:
-     * \code 
-     * class RMS {
-     *   public:
-     *     // We pass a reference to the same double to all threads. 
-     *     // Each thread accumulates its own sum-of-squares, and 
-     *     // updates the overal sum-of-squares in the destructor, which is
-     *     // guaranteed to be invoked after all threads have re-joined,
-     *     // thereby avoiding race conditions.
-     *     RMS (double& grand_SoS) : SoS (0.0), grand_SoS (grand_SoS) { }
-     *     ~RMS () { grand_SoS += SoS; }
-     *
-     *     // accumulate the thread-local sum-of-squares:
-     *     void operator() (float in) { SoS += Math::pow2 (in); } 
-     *
-     *   protected:
-     *     double SoS;
-     *     double& grand_SoS;
-     * };
-     * 
-     * ...
-     *
-     * double SoS = 0.0;
-     * Image::ThreadedLoop ("computing RMS of \"" + vox.name() + "\"...", vox)
-     *     .run_foreach (RMS(SoS), vox, Input());
-     *
-     * double rms = Math::sqrt (SoS / Image::voxel_count (vox));
-     * \endcode
-     *
-     *
-     * \par Constructors
+     * \section threaded_loop_constructor Constructors
      *
      * The Image::ThreadedLoop constructors can be used to set up any
      * reasonable multi-threaded looping structure. The various relevant
@@ -313,6 +163,112 @@ namespace MR
      * are needed; they will then be taken from the list of axes to be looped
      * over. It is also possible to provide the list of inners axes and outer
      * axes as separate std::vector<size_t> arguments.
+     *
+     *
+     *
+     * \section threaded_loop_run The run() methods
+     *
+     * The run() methods will run the Image::ThreadedLoop, invoking the
+     * specified function or functor once per voxel in the loop. The different
+     * versions will expect different signatures for the function or functor,
+     * and manage looping over different numbers of VoxelTypes. This should be
+     * clarified by examining the examples below.
+     *
+     * This example can be used to compute the exponential of the voxel values
+     * in-place, while displaying a progress message:
+     *
+     * \code
+     * void my_function (MyVoxelType& vox) {
+     *   vox.value() = Math::exp (vox.value());
+     * }
+     *
+     * ...
+     *
+     * MyVoxelType vox;
+     * Image::ThreadedLoop ("computing exponential in-place...", vox)
+     *   .run (my_function, vox);
+     * \endcode
+     *
+     * To make this operation more easily generalisable to any VoxelType, use a
+     * functor with a template operator() method:
+     *
+     * \code
+     * class MyFunction {
+     *   public: 
+     *     template <class VoxelType> 
+     *       void operator() (VoxelType& vox) {
+     *         vox.value() = Math::exp (vox.value());
+     *       }
+     * };
+     *
+     * ...
+     *
+     * AnyVoxelType vox;
+     * Image::ThreadedLoop ("computing exponential in-place...", vox)
+     *   .run (MyFunction(), vox);
+     * \endcode
+     *
+     *
+     * As a further example, the following snippet performs the addition of any
+     * VoxelTypes \a vox1 and \a vox2, this time storing the results in \a
+     * vox_out, with no progress display, and looping according to the strides
+     * in \a vox1: 
+     *
+     * \code
+     * struct MyAdd {
+     *   template <class VoxelType1, class VoxelType2, class VoxelType3>
+     *     void operator() (VoxelType1& out, const VoxelType2& in1, const VoxelType3& in2) {
+     *       out.value() = in1.value() + in2.value(); 
+     *     }
+     * };
+     *
+     * ...
+     *
+     * Image::ThreadedLoop (vox1).run (MyAdd(), vox_out, vox1, vox2); 
+     * \endcode 
+     * 
+     * 
+     * This example uses a functor to computes the root-mean-square of \a vox:
+     * \code 
+     * class RMS {
+     *   public:
+     *     // We pass a reference to the same double to all threads. 
+     *     // Each thread accumulates its own sum-of-squares, and 
+     *     // updates the overal sum-of-squares in the destructor, which is
+     *     // guaranteed to be invoked after all threads have re-joined,
+     *     // thereby avoiding race conditions.
+     *     RMS (double& grand_SoS) : SoS (0.0), grand_SoS (grand_SoS) { }
+     *     ~RMS () { grand_SoS += SoS; }
+     *
+     *     // accumulate the thread-local sum-of-squares:
+     *     template <class VoxelType>
+     *       void operator() (const VoxelType& in) { 
+     *         SoS += Math::pow2 (in.value()); 
+     *       } 
+     *
+     *   protected:
+     *     double SoS;
+     *     double& grand_SoS;
+     * };
+     * 
+     * ...
+     *
+     * double SoS = 0.0;
+     * Image::ThreadedLoop ("computing RMS of \"" + vox.name() + "\"...", vox)
+     *     .run (RMS(SoS), vox);
+     *
+     * double rms = Math::sqrt (SoS / Image::voxel_count (vox));
+     * \endcode
+     *
+     * \section threaded_loop_run_outer The run_outer() method
+     *
+     * The run_outer() method can be used if needed to loop over the indices in
+     * the outer loop only. This method is used by the run() methods, and may
+     * prove useful in selected cases if each thread needs to handle its own
+     * looping over the inner axes. Usage is essentially identical to the run()
+     * method, and the function or functor provided will need to have a void
+     * operator() (const Iterator& pos) method defined.
+     *
      *
      * \sa Image::Loop
      * \sa Image::ThreadedLoop
@@ -393,15 +349,20 @@ namespace MR
             }
 
        
+        //! all axes to be looped over
         std::vector<size_t> all_axes () const {
           std::vector<size_t> a (inner_axes());
           a.insert (a.end(), outer_axes().begin(), outer_axes().end());
           return a;
         }
+        //! return an ordered vector of axes in the outer loop
         const std::vector<size_t>& outer_axes () const { return loop.axes(); }
+        //! return an ordered vector of axes in the inner loop
         const std::vector<size_t>& inner_axes () const { return axes; }
+        //! a dummy object that can be used to construct other Iterators
         const Iterator& iterator () const { return dummy; }
 
+        //! get next position in the outer loop
         bool next (Iterator& pos) {
           Thread::Mutex::Lock lock (mutex);
           if (loop.ok()) {
@@ -412,18 +373,23 @@ namespace MR
           else return false;
         }
 
+        //! invoke \a functor (const Iterator& pos) per voxel <em> in the outer axes only</em>
         template <class Functor> 
           void run_outer (Functor functor, const std::string& thread_label = "loop thread");
 
+        //! invoke \a functor(const Iterator& pos) per voxel
         template <class Functor> 
           void run (Functor functor);
 
+        //! invoke \a functor(VoxelType1& vox1) per voxel
         template <class Functor, class VoxelType1> 
           void run (Functor functor, VoxelType1& vox1);
 
+        //! invoke \a functor(VoxelType1& vox1, VoxelType2& vox2) per voxel
         template <class Functor, class VoxelType1, class VoxelType2> 
           void run (Functor functor, VoxelType1& vox1, VoxelType2& vox2);
 
+        //! invoke \a functor(VoxelType1& vox1, VoxelType2& vox2, VoxelType3& vox3) per voxel
         template <class Functor, class VoxelType1, class VoxelType2, class VoxelType3> 
           void run (Functor functor, VoxelType1& vox1, VoxelType2& vox2, VoxelType3& vox3);
 
