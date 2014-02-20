@@ -33,9 +33,9 @@ namespace MR
     //! \cond skip
     namespace {
 
-      template <class OutputVoxelType, class InputVoxelType>
-        inline void __copy_functor (typename OutputVoxelType::value_type in, typename InputVoxelType::value_type& out) {
-          out = in;
+      template <class InputVoxelType, class OutputVoxelType>
+        inline void __copy (InputVoxelType& in, OutputVoxelType& out) {
+          out.value() = in.value();
         }
 
     }
@@ -53,7 +53,7 @@ namespace MR
           size_t num_axes_in_thread = 1) 
       {
         ThreadedLoop (source, axes, num_axes_in_thread)
-          .run_foreach (__copy_functor<OutputVoxelType, InputVoxelType>, Input(), source, Output(), destination);
+          .run (__copy<InputVoxelType, OutputVoxelType>, source, destination);
       }
 
     template <class InputVoxelType, class OutputVoxelType>
@@ -65,9 +65,7 @@ namespace MR
           size_t to_axis = std::numeric_limits<size_t>::max())
       {
         ThreadedLoop (source, num_axes_in_thread, from_axis, to_axis)
-          .run_foreach (__copy_functor<OutputVoxelType, InputVoxelType>, 
-              source, Input(), 
-              destination, Output());
+          .run (__copy<InputVoxelType, OutputVoxelType>, source, destination);
       }
 
 
@@ -82,9 +80,7 @@ namespace MR
           size_t num_axes_in_thread = 1)
       {
         ThreadedLoop (message, source, axes, num_axes_in_thread)
-          .run_foreach (__copy_functor<OutputVoxelType, InputVoxelType>, 
-              source, Input(), 
-              destination, Output());
+          .run (__copy<InputVoxelType, OutputVoxelType>, source, destination);
       }
 
     template <class InputVoxelType, class OutputVoxelType>
@@ -97,9 +93,7 @@ namespace MR
           size_t to_axis = std::numeric_limits<size_t>::max())
       {
         ThreadedLoop (message, source, num_axes_in_thread, from_axis, to_axis)
-          .run_foreach (__copy_functor<OutputVoxelType, InputVoxelType>, 
-              source, Input(), 
-              destination, Output());
+          .run (__copy<InputVoxelType, OutputVoxelType>, source, destination);
       }
 
 

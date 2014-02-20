@@ -207,19 +207,16 @@ class MagMax {
 template <class Operation>
 class AxisKernel {
   public:
-    AxisKernel (PreloadBufferType& buffer_in, BufferType& buffer_out, size_t axis) :
-      in (buffer_in), out (buffer_out), axis (axis) { }
-    void operator() (const Image::Iterator& pos) {
-      Image::voxel_assign (in,  pos);
-      Image::voxel_assign (out, pos);
-      Operation op;
-      for (in[axis] = 0; in[axis] < in.dim(axis); ++in[axis])
-        op (in.value());
-      out.value() = op.result();
-    }
+    AxisKernel (size_t axis) : axis (axis) { }
+
+    template <class InputVoxelType, class OutputVoxelType>
+      void operator() (InputVoxelType& in, OutputVoxelType& out) {
+        Operation op;
+        for (in[axis] = 0; in[axis] < in.dim(axis); ++in[axis])
+          op (in.value());
+        out.value() = op.result();
+      }
   protected:
-    PreloadVoxelType in;
-    VoxelType out;
     const size_t axis;
 };
 
@@ -242,9 +239,28 @@ class ImageKernelBase {
 template <class Operation>
 class ImageKernel : public ImageKernelBase {
   protected:
-    class InitFunctor    { public: void operator() (Operation&  out)                const { out = Operation(); } };
-    class ProcessFunctor { public: void operator() (Operation&  out, value_type in) const { out (in); } };
-    class ResultFunctor  { public: void operator() (value_type& out, Operation& in) const { out = in.result(); } };
+    class InitFunctor { 
+      public: 
+        template <class VoxelType> 
+          void operator() (VoxelType& out) const { out.value() = Operation(); } 
+    };
+    class ProcessFunctor { 
+      public: 
+        template <class VoxelType1, class VoxelType2>
+          void operator() (VoxelType1& out, VoxelType2& in) const { 
+            Operation op = out.value(); 
+            op (in.value()); 
+            out.value() = op;
+          } 
+    };
+    class ResultFunctor {
+      public: 
+        template <class VoxelType1, class VoxelType2>
+          void operator() (VoxelType1& out, VoxelType2& in) const {
+            Operation op = in.value(); 
+            out.value() = op.result(); 
+          } 
+    };
 
   public:
     ImageKernel (const Image::Header& header, const std::string& path) :
@@ -253,7 +269,7 @@ class ImageKernel : public ImageKernelBase {
         buffer (header)
     {
       typename Image::BufferScratch<Operation>::voxel_type v_buffer (buffer);
-      Image::ThreadedLoop (v_buffer).run_foreach (InitFunctor(), v_buffer, Output());
+      Image::ThreadedLoop (v_buffer).run (InitFunctor(), v_buffer);
     }
 
     ~ImageKernel()
@@ -261,7 +277,7 @@ class ImageKernel : public ImageKernelBase {
       Image::Buffer<value_type> out (output_path, header);
       Image::Buffer<value_type>::voxel_type v_out (out);
       typename Image::BufferScratch<Operation>::voxel_type v_buffer (buffer);
-      Image::ThreadedLoop (v_buffer).run_foreach (ResultFunctor(), v_out, Output(), v_buffer, Input());
+      Image::ThreadedLoop (v_buffer).run (ResultFunctor(), v_out, v_buffer);
     }
 
     void process (const Image::Header& image_in)
@@ -271,7 +287,7 @@ class ImageKernel : public ImageKernelBase {
       for (size_t axis = buffer.ndim(); axis < v_in.ndim(); ++axis)
         v_in[axis] = 0;
       typename Image::BufferScratch<Operation>::voxel_type v_buffer (buffer);
-      Image::ThreadedLoop (v_buffer).run_foreach (ProcessFunctor(), v_buffer, InputOutput(), v_in, Input());
+      Image::ThreadedLoop (v_buffer).run (ProcessFunctor(), v_buffer, v_in);
     }
 
   protected:
@@ -310,18 +326,22 @@ void run ()
 
     BufferType buffer_out (output_path, header_out);
 
+    PreloadBufferType::voxel_type vox_in (buffer_in);
+    BufferType::voxel_type vox_out (buffer_out);
+
+
     Image::ThreadedLoop loop (std::string("computing ") + operations[op] + " along axis " + str(axis) + "...", buffer_in);
 
     switch (op) {
-      case 0: loop.run_outer (AxisKernel<Mean>   (buffer_in, buffer_out, axis)); return;
-      case 1: loop.run_outer (AxisKernel<Sum>    (buffer_in, buffer_out, axis)); return;
-      case 2: loop.run_outer (AxisKernel<RMS>    (buffer_in, buffer_out, axis)); return;
-      case 3: loop.run_outer (AxisKernel<Var>    (buffer_in, buffer_out, axis)); return;
-      case 4: loop.run_outer (AxisKernel<Std>    (buffer_in, buffer_out, axis)); return;
-      case 5: loop.run_outer (AxisKernel<Min>    (buffer_in, buffer_out, axis)); return;
-      case 6: loop.run_outer (AxisKernel<Max>    (buffer_in, buffer_out, axis)); return;
-      case 7: loop.run_outer (AxisKernel<AbsMax> (buffer_in, buffer_out, axis)); return;
-      case 8: loop.run_outer (AxisKernel<MagMax> (buffer_in, buffer_out, axis)); return;
+      case 0: loop.run (AxisKernel<Mean>   (axis), vox_in, vox_out); return;
+      case 1: loop.run (AxisKernel<Sum>    (axis), vox_in, vox_out); return;
+      case 2: loop.run (AxisKernel<RMS>    (axis), vox_in, vox_out); return;
+      case 3: loop.run (AxisKernel<Var>    (axis), vox_in, vox_out); return;
+      case 4: loop.run (AxisKernel<Std>    (axis), vox_in, vox_out); return;
+      case 5: loop.run (AxisKernel<Min>    (axis), vox_in, vox_out); return;
+      case 6: loop.run (AxisKernel<Max>    (axis), vox_in, vox_out); return;
+      case 7: loop.run (AxisKernel<AbsMax> (axis), vox_in, vox_out); return;
+      case 8: loop.run (AxisKernel<MagMax> (axis), vox_in, vox_out); return;
       default: assert (0);
     }
 

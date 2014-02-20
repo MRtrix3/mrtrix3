@@ -141,10 +141,11 @@ namespace MR
         typedef typename Fixel_map<Fixel>::VoxelAccessor VoxelAccessor;
 
         public:
-          template <class Set>
-          ModelBase (Set& dwi, const DWI::Directions::FastLookupSet& dirs) :
+          template <class BufferType>
+          ModelBase (BufferType& dwi, const DWI::Directions::FastLookupSet& dirs) :
               Mapping::Fixel_TD_map<Fixel> (dwi, dirs),
-              proc_mask (Fixel_map<Fixel>::info(), "SIFT model processing mask"),
+              proc_mask_buffer (Fixel_map<Fixel>::info(), "SIFT model processing mask"),
+              proc_mask (proc_mask_buffer),
               FOD_sum (0.0),
               TD_sum (0.0),
               have_null_lobes (false)
@@ -157,8 +158,8 @@ namespace MR
           virtual ~ModelBase () { }
 
 
-          template <class Set>
-          void perform_FOD_segmentation (Set&);
+          template <class BufferType>
+          void perform_FOD_segmentation (BufferType&);
           void scale_FODs_by_GM ();
 
           virtual bool operator() (const FMLS::FOD_lobes& in);
@@ -182,7 +183,8 @@ namespace MR
           using Mapping::Fixel_TD_map<Fixel>::dirs;
 
           Ptr< Image::BufferScratch<float> > act_5tt;
-          Image::BufferScratch<float> proc_mask;
+          Image::BufferScratch<float> proc_mask_buffer;
+          Image::BufferScratch<float>::voxel_type proc_mask;
           Image::Header H;
           double FOD_sum, TD_sum;
           bool have_null_lobes;
@@ -201,7 +203,9 @@ namespace MR
           void output_untracked_fixels (const std::string&, const std::string&) const;
 
 
-          ModelBase (const ModelBase& that) : Mapping::Fixel_TD_map<Fixel> (that), act_5tt (NULL), proc_mask (that.proc_mask.info()), FOD_sum (0.0), TD_sum (0.0), have_null_lobes (false) { assert (0); }
+          ModelBase (const ModelBase& that) : 
+            Mapping::Fixel_TD_map<Fixel> (that), act_5tt (NULL), proc_mask_buffer (that.proc_mask.info()), 
+            proc_mask (proc_mask_buffer), FOD_sum (0.0), TD_sum (0.0), have_null_lobes (false) { assert (0); }
 
       };
 
@@ -209,10 +213,11 @@ namespace MR
 
 
       template <class Fixel>
-      template <class Set>
-      void ModelBase<Fixel>::perform_FOD_segmentation (Set& data)
+      template <class BufferType>
+      void ModelBase<Fixel>::perform_FOD_segmentation (BufferType& data)
       {
-        DWI::FMLS::FODQueueWriter<Set, Image::BufferScratch<float> > writer (data, proc_mask);
+        typename BufferType::voxel_type data_vox (data);
+        DWI::FMLS::FODQueueWriter<typename BufferType::voxel_type, Image::BufferScratch<float>::voxel_type> writer (data_vox, proc_mask);
         DWI::FMLS::Segmenter fmls (dirs, Math::SH::LforN (data.dim(3)));
         fmls.set_dilate_lookup_table (!App::get_options ("no_dilate_lut").size());
         fmls.set_create_null_lobe (App::get_options ("make_null_lobes").size());

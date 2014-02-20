@@ -68,7 +68,7 @@ namespace MR
 
 
       template <class Set>
-      void initialise_processing_mask (Set& in_dwi, Image::BufferScratch<float>& proc_mask, Ptr< Image::BufferScratch<float> >& act_5tt)
+      void initialise_processing_mask (Set& in_dwi, Image::BufferScratch<float>::voxel_type& proc_mask, Ptr< Image::BufferScratch<float> >& act_5tt)
       {
 
         Image::BufferScratch<float>::voxel_type mask (proc_mask);
