@@ -396,12 +396,14 @@ namespace MR
           value_max = -std::numeric_limits<float>::infinity();
           std::vector<float> buffer;
           std::vector<float> tck_scalar;
+
           if (Path::has_suffix (filename, ".tsf")) {
             DWI::Tractography::Properties scalar_properties;
             DWI::Tractography::ScalarReader<float> file (filename, scalar_properties);
-            // TODO uncomment before release
-            //            if (scalar_properties.timestamp != properties.timestamp)
-            //              throw Exception ("The scalar track file does not match the selected tractogram   ");
+
+            if (scalar_properties.timestamp != properties.timestamp)
+              throw Exception ("The scalar track file does not match the selected tractogram   ");
+
             while (file (tck_scalar)) {
               buffer.push_back (NAN);
               for (size_t i = 0; i < tck_scalar.size(); ++i) {
