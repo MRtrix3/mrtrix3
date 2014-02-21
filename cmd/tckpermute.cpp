@@ -647,9 +647,9 @@ void run() {
     TrackProcessor tract_processor (fixel_indexer, fixel_directions, fixel_TDI, fixel_connectivity, angular_threshold);
     Thread::run_queue (
         loader, 
-        Thread::batch (DWI::Tractography::Streamline<float>()), 
+        Thread::batch (DWI::Tractography::Streamline<float>()),
         mapper, 
-        Thread::batch (SetVoxelDir()), 
+        Thread::batch (SetVoxelDir()),
         tract_processor);
   }
   track_file.close();
