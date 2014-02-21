@@ -210,7 +210,7 @@ void TrackMapperBase<SetVoxelDir>::voxelise (const std::vector< Point<float> >& 
 
     length += dist (p_prev, p_voxel_exit);
     PointF traversal_vector (p_voxel_exit - p_voxel_entry);
-    if (traversal_vector.normalise() && check (this_voxel, info)) {
+    if (traversal_vector.normalise().valid() && check (this_voxel, info)) {
       VoxelDir voxel_dir (this_voxel, traversal_vector, length);
       voxels.insert (voxel_dir);
     }
@@ -294,7 +294,7 @@ void TrackMapperDixel::voxelise (const std::vector< Point<float> >& tck, SetDixe
 
     length += dist (p_prev, p_voxel_exit);
     PointF traversal_vector (p_voxel_exit - p_voxel_entry);
-    if (traversal_vector.normalise() && check (this_voxel, info)) {
+    if (traversal_vector.normalise().valid() && check (this_voxel, info)) {
 
       // Only here does this voxelise() function differ from TrackMapperBase<SetVoxelDir>::voxelise()
       // Map to the appropriate direction & add to the set; only add to an existing dixel if
