@@ -158,15 +158,16 @@ namespace MR
             hlayout->addWidget (upper_threshold);
 
 
-            opacity = new QSlider (Qt::Horizontal);
-            opacity->setRange (1,1000);
-            opacity->setSliderPosition (int (1000));
-            connect (opacity, SIGNAL (valueChanged (int)), this, SLOT (update_slot (int)));
+            opacity_slider = new QSlider (Qt::Horizontal);
+            opacity_slider->setRange (1,1000);
+            opacity_slider->setSliderPosition (int (1000));
+            connect (opacity_slider, SIGNAL (valueChanged (int)), this, SLOT (opacity_changed(int)));
             main_box->addWidget (new QLabel ("opacity"), 0);
-            main_box->addWidget (opacity, 0);
+            main_box->addWidget (opacity_slider, 0);
 
             interpolate_check_box = new QCheckBox (tr ("interpolate"));
-            interpolate_check_box->setChecked (true);
+            interpolate_check_box->setTristate (true);
+            interpolate_check_box->setCheckState (Qt::Checked);
             connect (interpolate_check_box, SIGNAL (clicked ()), this, SLOT (interpolate_changed ()));
             main_box->addWidget (interpolate_check_box, 0);
 
@@ -228,7 +229,6 @@ namespace MR
 
         void Overlay::draw (const Projection& projection, bool is_3D)
         {
-          float overlay_opacity = opacity->value() / 1.0e3f;
 
           if (!is_3D) {
             // set up OpenGL environment:
@@ -238,7 +238,7 @@ namespace MR
             gl::ColorMask (gl::TRUE_, gl::TRUE_, gl::TRUE_, gl::TRUE_);
             gl::BlendFunc (gl::SRC_ALPHA, gl::ONE_MINUS_SRC_ALPHA);
             gl::BlendEquation (gl::FUNC_ADD);
-            gl::BlendColor (1.0f, 1.0f, 1.0f, overlay_opacity);
+            //gl::BlendColor (1.0f, 1.0f, 1.0f, overlay_opacity);
           }
 
           bool need_to_update = false;
@@ -246,8 +246,8 @@ namespace MR
             if (image_list_model->items[i]->show && !hide_all_button->isChecked()) {
               Item* image = dynamic_cast<Item*>(image_list_model->items[i]);
               need_to_update |= !std::isfinite (image->intensity_min());
-              image->set_interpolate (interpolate_check_box->isChecked());
-              image->alpha = overlay_opacity;
+              //image->set_interpolate (interpolate_check_box->isChecked());
+              //image->alpha = overlay_opacity;
               image->transparent_intensity = image->opaque_intensity = image->intensity_min();
               if (is_3D) 
                 window.get_current_mode()->overlays_for_3D.push_back (image);
@@ -366,8 +366,23 @@ namespace MR
         }
 
 
+        void Overlay::opacity_changed (int unused)
+        {
+          QModelIndexList indices = image_list_view->selectionModel()->selectedIndexes();
+          for (int i = 0; i < indices.size(); ++i) {
+            Image* overlay = dynamic_cast<Image*> (image_list_model->get_image (indices[i]));
+            overlay->alpha = opacity_slider->value() / 1.0e3f;
+          }
+          window.updateGL();
+        }
+
         void Overlay::interpolate_changed ()
         {
+          QModelIndexList indices = image_list_view->selectionModel()->selectedIndexes();
+          for (int i = 0; i < indices.size(); ++i) {
+            Image* overlay = dynamic_cast<Image*> (image_list_model->get_image (indices[i]));
+            overlay->set_interpolate (interpolate_check_box->isChecked());
+          }
           window.updateGL();
         }
 
@@ -389,14 +404,18 @@ namespace MR
           upper_threshold_check_box->setEnabled (indices.size());
           lower_threshold->setEnabled (indices.size());
           upper_threshold->setEnabled (indices.size());
+          opacity_slider->setEnabled (indices.size());
+          interpolate_check_box->setEnabled (indices.size());
 
           if (!indices.size())
             return;
 
           float rate = 0.0f, min_val = 0.0f, max_val = 0.0f;
           float lower_threshold_val = 0.0f, upper_threshold_val = 0.0f;
+          float opacity = 0.0f;
           int num_lower_threshold = 0, num_upper_threshold = 0;
           int colourmap_index = -2;
+          int num_interp = 0;
           for (int i = 0; i < indices.size(); ++i) {
             Image* overlay = dynamic_cast<Image*> (image_list_model->get_image (indices[i]));
             if (colourmap_index != int(overlay->colourmap)) {
@@ -410,6 +429,9 @@ namespace MR
             max_val += overlay->scaling_max();
             num_lower_threshold += overlay->use_discard_lower();
             num_upper_threshold += overlay->use_discard_upper();
+            opacity += opacity_slider->value();
+            if (overlay->interpolate()) 
+              ++num_interp;
             if (!std::isfinite (overlay->lessthan))
               overlay->lessthan = overlay->intensity_min();
             if (!std::isfinite (overlay->greaterthan)) 
@@ -423,8 +445,16 @@ namespace MR
           max_val /= indices.size();
           lower_threshold_val /= indices.size();
           upper_threshold_val /= indices.size();
+          opacity /= indices.size();
 
           colourmap_combobox->setCurrentIndex (colourmap_index);
+          opacity_slider->setValue (opacity);
+          if (num_interp == 0)
+            interpolate_check_box->setCheckState (Qt::Unchecked);
+          else if (num_interp == indices.size())
+            interpolate_check_box->setCheckState (Qt::Checked);
+          else 
+            interpolate_check_box->setCheckState (Qt::PartiallyChecked);
 
           min_value->setRate (rate);
           max_value->setRate (rate);
@@ -470,7 +500,7 @@ namespace MR
           else if (cmd == "overlay.opacity") {
             try {
               float n = to<float> (args);
-              opacity->setSliderPosition(int(1.e3f*n));
+              opacity_slider->setSliderPosition(int(1.e3f*n));
             }
             catch (Exception& e) { e.display(); }
             return true;

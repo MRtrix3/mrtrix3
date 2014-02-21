@@ -60,6 +60,7 @@ namespace MR
             void lower_threshold_changed (int unused);
             void upper_threshold_value_changed ();
             void lower_threshold_value_changed ();
+            void opacity_changed (int unused);
             void interpolate_changed ();
 
           protected:
@@ -71,7 +72,7 @@ namespace MR
              AdjustButton *min_value, *max_value, *lower_threshold, *upper_threshold;
              QCheckBox *lower_threshold_check_box, *upper_threshold_check_box;
              QCheckBox* interpolate_check_box;
-             QSlider *opacity;
+             QSlider *opacity_slider;
 
              void update_selection ();
              void updateGL() { 
