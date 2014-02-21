@@ -23,7 +23,7 @@
 
 #include <vector>
 
-//#include <gsl/gsl_fit.h>
+#include <gsl/gsl_fit.h>
 
 #include "app.h"
 #include "bitset.h"
@@ -84,26 +84,22 @@ void usage ()
 
 // Perform a linear regression on the power ratio in each order
 // Omit l=2 - tends to be abnormally small due to non-isotropic brain-wide fibre distribution
-// If the regression has a substantial gradient, warn the user
+// Use this to project the power ratio at l=0; better predictor for poor data
+// Also, if the regression has a substantial gradient, warn the user
 // Threshold on gradient will depend on the basis of the image
 //
-// Calcelled this: think the difference between l=4 and lmax is a better predictor
-//
-/*
-float get_regression_gradient (const std::vector<float>& ratios)
+std::pair<float, float> get_regression (const std::vector<float>& ratios)
 {
   const size_t n = ratios.size() - 1;
   double x[n], y[n];
-  for (size_t i = 0; i != n; ++i) {
-    x[i] = i;
-    y[i] = ratios[i+1];
+  for (size_t i = 1; i != ratios.size(); ++i) {
+    x[i-1] = (2*i)+2;
+    y[i-1] = ratios[i];
   }
   double c0, c1, cov00, cov01, cov11, sumsq;
   gsl_fit_linear (x, 1, y, 1, n, &c0, &c1, &cov00, &cov01, &cov11, &sumsq);
-  return (float)c1;
-
+  return std::make_pair (c0, c1);
 }
-*/
 
 
 
@@ -114,8 +110,6 @@ void check_and_update (Image::Header& H, const bool force_old, const bool force_
 {
 
   const size_t lmax = Math::SH::LforN (H.dim(3));
-  const size_t l_for_decision = ((lmax >= 4) ? 4 : 2);
-  float ratio_for_decision = 0.0;
 
   // Flag which volumes are m==0 and which are not
   const ssize_t N = H.dim(3);
@@ -150,8 +144,7 @@ void check_and_update (Image::Header& H, const bool force_old, const bool force_
  
   // Each order has a different power, and a different number of m!=0 volumes.
   // Therefore, calculate the mean-square intensity for the m==0 and m!=0
-  // volumes independently, report ratio for each harmonic order, and the
-  // overall ratio over all harmonic orders:
+  // volumes independently, and report ratio for each harmonic order
   Ptr<ProgressBar> progress;
   if (App::log_level > 0 && App::log_level < 2)
     progress = new ProgressBar ("Evaluating SH basis of image " + H.name() + "...", N-1);
@@ -186,43 +179,79 @@ void check_and_update (Image::Header& H, const bool force_old, const bool force_
     INFO ("SH order " + str(l) + ", ratio of m!=0 to m==0 power: " + str(power_ratio) +
         ", overall m=0 power: " + str (mzero_sum));
 
-    if (l == l_for_decision)
-      ratio_for_decision = power_ratio;
-
   }
 
   if (progress)
     progress = NULL;
 
+  // First is ratio to be used for SH basis decision, second is gradient of regression
+  std::pair<float, float> regression;
+  size_t l_for_decision;
+
+  // The gradient will change depending on the current basis, so the threshold needs to also
+  // The gradient is as a function of l, not of even orders
+  float grad_threshold = -0.02;
+
+  switch (lmax) {
+
+    // Lmax == 2: only one order to use
+    case 2:
+      regression = std::make_pair (ratios.front(), 0.0);
+      l_for_decision = 2;
+      break;
+
+    // Lmax = 4: Use l=4 order to determine SH basis, can't check gradient since l=2 is untrustworthy
+    case 4:
+      regression = std::make_pair (ratios.back(), 0.0);
+      l_for_decision = 4;
+      break;
+
+    // Lmax = 6: Use l=4 order to determine SH basis, but checking the gradient is not reliable:
+    //   artificially double the threshold so the power ratio at l=6 needs to be substantially
+    //   smaller than l=4 to throw a warning
+    case 6:
+      regression = std::make_pair (ratios[1], 0.5 * (ratios[2] - ratios[1]));
+      l_for_decision = 4;
+      grad_threshold *= 2.0;
+      break;
+
+    // Lmax >= 8: Do a linear regression from l=4 to l=lmax, project back to l=0
+    // (this is a more reliable quantification on poor data than l=4 alone)
+    default:
+      regression = get_regression (ratios);
+      l_for_decision = 0;
+      break;
+
+  }
+
+  DEBUG ("Power ratio for assessing SH basis is " + str(regression.first) + " as derived from l=" + str(l_for_decision));
+  if (regression.second)
+    DEBUG ("Gradient of regression is " + str(regression.second) + "; threshold is " + str(grad_threshold));
+
   // Threshold to make decision on what basis is being used, if unambiguous
   value_type multiplier = 1.0;
-  if ((ratio_for_decision > (5.0/3.0)) && (ratio_for_decision < (7.0/3.0))) {
+  if ((regression.first > (5.0/3.0)) && (regression.first < (7.0/3.0))) {
     CONSOLE ("Image " + str(H.name()) + " appears to be in the old non-orthonormal basis");
     if (force_new)
       multiplier = 1.0 / M_SQRT2;
-  } else if ((ratio_for_decision > (2.0/3.0)) && (ratio_for_decision < (4.0/3.0))) {
+    grad_threshold *= 2.0;
+  } else if ((regression.first > (2.0/3.0)) && (regression.first < (4.0/3.0))) {
     CONSOLE ("Image " + str(H.name()) + " appears to be in the new orthonormal basis");
     if (force_old)
       multiplier = M_SQRT2;
   } else {
     multiplier = 0.0;
-    WARN ("Cannot make unambiguous decision on SH basis of image " + H.name() + " (power ratio in l=" + str(l_for_decision) + " is " + str(ratio_for_decision) + ")");
+    WARN ("Cannot make unambiguous decision on SH basis of image " + H.name()
+        + " (power ratio " + (l_for_decision ? ("in l=" + str(l_for_decision)) : ("regressed to l=0")) + " is " + str(regression.first) + ")");
   }
 
-  if (lmax > 4) {
- /* const float regression_grad = get_regression_gradient (ratios);
-    INFO ("Gradient of per-order power ratio linear regression: " + str(regression_grad));
-    if (regression_grad < grad_threshold) {
-      WARN ("Image " + H.name() + " appears to have been derived from poor directional encoding");
-      WARN ("(m==0 to m!=0 power ratio decreases by " + str(regression_grad) + " per harmonic order)");
-    } */
-    const float power_ratio_ratio = ratios.back() / ratio_for_decision;
-    if (power_ratio_ratio < 0.9) {
-      WARN ("Image " + H.name() + " appears to have been derived from poor directional encoding");
-      WARN ("(m==0 to m!=0 power ratio in l=4 is " + str(ratio_for_decision) + ", in l=" + str(lmax) + " is " + str(ratios.back()) + ")");
-    }
+  // Decide whether the user needs to be warned about a poor diffusion encoding scheme
+  if (regression.second < grad_threshold) {
+    WARN ("Image " + H.name() + " may have been derived from poor directional encoding");
+    WARN ("(m==0 to m!=0 power ratio decreasing by " + str(-2.0*regression.second) + " per even order)");
   }
 
+  // Adjust the image data in-place if necessary
   if (multiplier && (multiplier != 1.0)) {
 
     Image::LoopInOrder loop (v, 0, 3);
