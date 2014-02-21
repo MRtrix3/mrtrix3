@@ -67,6 +67,7 @@ namespace MR
             overlay->set_allowed_features (true, true, false);
             if (!overlay->colourmap) 
               overlay->colourmap = 1;
+            overlay->alpha = 1.0f;
             overlay->set_use_transparency (true);
             items.push_back (overlay);
           }
@@ -238,7 +239,6 @@ namespace MR
             gl::ColorMask (gl::TRUE_, gl::TRUE_, gl::TRUE_, gl::TRUE_);
             gl::BlendFunc (gl::SRC_ALPHA, gl::ONE_MINUS_SRC_ALPHA);
             gl::BlendEquation (gl::FUNC_ADD);
-            //gl::BlendColor (1.0f, 1.0f, 1.0f, overlay_opacity);
           }
 
           bool need_to_update = false;
@@ -246,8 +246,6 @@ namespace MR
             if (image_list_model->items[i]->show && !hide_all_button->isChecked()) {
               Item* image = dynamic_cast<Item*>(image_list_model->items[i]);
               need_to_update |= !std::isfinite (image->intensity_min());
-              //image->set_interpolate (interpolate_check_box->isChecked());
-              //image->alpha = overlay_opacity;
               image->transparent_intensity = image->opaque_intensity = image->intensity_min();
               if (is_3D) 
                 window.get_current_mode()->overlays_for_3D.push_back (image);
@@ -429,7 +427,7 @@ namespace MR
             max_val += overlay->scaling_max();
             num_lower_threshold += overlay->use_discard_lower();
             num_upper_threshold += overlay->use_discard_upper();
-            opacity += opacity_slider->value();
+            opacity += overlay->alpha;
             if (overlay->interpolate()) 
               ++num_interp;
             if (!std::isfinite (overlay->lessthan))
@@ -448,7 +446,7 @@ namespace MR
           opacity /= indices.size();
 
           colourmap_combobox->setCurrentIndex (colourmap_index);
-          opacity_slider->setValue (opacity);
+          opacity_slider->setValue (1.0e3f * opacity);
           if (num_interp == 0)
             interpolate_check_box->setCheckState (Qt::Unchecked);
           else if (num_interp == indices.size())

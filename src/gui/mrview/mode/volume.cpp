@@ -460,17 +460,18 @@ namespace MR
           }
 
           for (int n = 0; n < overlays_for_3D.size(); ++n) {
+            gl::ActiveTexture (gl::TEXTURE2 + n);
+            gl::BindTexture (gl::TEXTURE_3D, overlays_for_3D[n]->texture());
             overlays_for_3D[n]->update_texture3D();
+            overlays_for_3D[n]->texture().set_interp_on (overlays_for_3D[n]->interpolate());
+            gl::Uniform1i (gl::GetUniformLocation (volume_shader, ("overlay_sampler"+str(n)).c_str()), 2+n);
+
             GL::mat4 overlay_M = GL::inv (get_tex_to_scanner_matrix (*overlays_for_3D[n])) * T2S;
             GL::vec4 overlay_ray = overlay_M * GL::vec4 (ray, 0.0);
             gl::UniformMatrix4fv (gl::GetUniformLocation (volume_shader, ("overlay_M"+str(n)).c_str()), 1, gl::FALSE_, overlay_M);
             gl::Uniform3fv (gl::GetUniformLocation (volume_shader, ("overlay_ray"+str(n)).c_str()), 1, overlay_ray);
 
-            gl::ActiveTexture (gl::TEXTURE2 + n);
-            gl::BindTexture (gl::TEXTURE_3D, overlays_for_3D[n]->texture());
-            gl::Uniform1i (gl::GetUniformLocation (volume_shader, ("overlay_sampler"+str(n)).c_str()), 2+n);
             overlays_for_3D[n]->set_shader_variables (volume_shader, overlays_for_3D[n]->scaling_3D(), "overlay"+str(n)+"_");
-            overlays_for_3D[n]->texture().set_interp_on (overlays_for_3D[n]->interpolate());
           }
 
           GL::vec4 ray_eye = M * GL::vec4 (ray, 0.0);
