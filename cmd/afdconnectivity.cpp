@@ -24,7 +24,6 @@
 #include "dwi/tractography/file.h"
 #include "dwi/tractography/properties.h"
 #include "dwi/fmls.h"
-#include "thread/queue.h"
 #include "dwi/tractography/mapping/mapper.h"
 #include "dwi/tractography/mapping/loader.h"
 
@@ -49,7 +48,7 @@ void usage ()
   + "Note that the sum of the AFD is normalised by the mean track length to "
     "account for subject differences in fibre bundle length. This normalisation results in a measure "
     "that is more related to the cross-sectional volume of the tract (and therefore 'connectivity'). "
-    "Note that SIFT-ed tract count is a superior measure because it is unaffected by tangental yet unrelated "
+    "Note that SIFT-ed tract count is a superior measure because it is unaffected by tangential yet unrelated "
     "fibres. However, AFD connectivity can be used as a substitute when Anatomically Constrained Tractography and SIFT is not"
     "possible due to uncorrectable EPI distortions.";
 
@@ -71,91 +70,6 @@ void usage ()
 
 typedef float value_type;
 typedef DWI::Tractography::Mapping::SetVoxelDir SetVoxelDir;
-
-
-
-/**
- * Process each track (represented as a set of dixels). For each track dixel, identify the closest FOD fixel
- */
-class TrackProcessor {
-
-  public:
-    TrackProcessor (Image::Buffer<float>& fod_buf,
-                    Image::BufferScratch<int32_t>& FOD_fixel_indexer,
-                    std::vector<Point<value_type> >& FOD_fixel_directions,
-                    std::vector<value_type>& fixel_AFD,
-                    std::vector<int>& fixel_TDI,
-                    DWI::FMLS::Segmenter& fmls):
-                    fod_vox (fod_buf),
-                    fixel_indexer (FOD_fixel_indexer),
-                    fixel_directions (FOD_fixel_directions),
-                    fixel_AFD (fixel_AFD),
-                    fixel_TDI (fixel_TDI),
-                    fmls (fmls) {}
-
-    bool operator () (SetVoxelDir& dixels)
-    {
-      // For each fixel in the tract
-      std::vector<int32_t> tract_fixel_indices;
-      for (SetVoxelDir::const_iterator d = dixels.begin(); d != dixels.end(); ++d) {
-        Image::Nav::set_pos (fixel_indexer, *d);
-        fixel_indexer[3] = 0;
-        int32_t first_index = fixel_indexer.value();
-
-        // We have not yet visited this voxel so segment the FOD and store fixel details
-        if (first_index < 0) {
-          Image::Nav::set_pos (fod_vox, *d);
-          DWI::FMLS::SH_coefs fod;
-          DWI::FMLS::FOD_lobes lobes;
-          fod.vox[0] = fod_vox[0]; fod.vox[1] = fod_vox[1]; fod.vox[2] = fod_vox[2];
-          fod.allocate (fod_vox.dim (3));
-          for (fod_vox[3] = 0; fod_vox[3] < fod_vox.dim (3); ++fod_vox[3])
-            fod[fod_vox[3]] = fod_vox.value();
-          fmls (fod, lobes);
-          if (lobes.size() == 0)
-            return true;
-          fixel_indexer.value() = fixel_directions.size();
-          first_index = fixel_directions.size();
-          int32_t fixel_count = 0;
-          for (DWI::FMLS::FOD_lobes::const_iterator l = lobes.begin(); l != lobes.end(); ++l, ++fixel_count) {
-            fixel_directions.push_back (l->get_peak_dir());
-            fixel_AFD.push_back (l->get_integral());
-            fixel_TDI.push_back (0);
-          }
-          fixel_indexer[3] = 1;
-          fixel_indexer.value() = fixel_count;
-        }
-
-        fixel_indexer[3] = 1;
-        int32_t last_index = first_index + fixel_indexer.value();
-        int32_t closest_fixel_index = -1;
-        value_type largest_dp = -1.0;
-        Point<value_type> dir (d->get_dir());
-        dir.normalise();
-
-        // find the fixel with the closest direction to track tangent
-        for (int32_t j = first_index; j < last_index; ++j) {
-          value_type dp = Math::abs (dir.dot (fixel_directions[j]));
-          if (dp >= largest_dp) {
-            largest_dp = dp;
-            closest_fixel_index = j;
-          }
-        }
-        fixel_TDI[closest_fixel_index]++;
-      }
-
-      return true;
-    }
-
-  private:
-    Image::Buffer<float>::voxel_type fod_vox;
-    Image::BufferScratch<int32_t>::voxel_type fixel_indexer;
-    std::vector<Point<value_type> >& fixel_directions;
-    std::vector<value_type>& fixel_AFD;
-    std::vector<int>& fixel_TDI;
-    DWI::FMLS::Segmenter& fmls;
-};
-
 
 
 void run ()
@@ -188,14 +102,69 @@ void run ()
   DWI::Tractography::Mapping::TrackMapperBase<SetVoxelDir> mapper (header);
   std::vector<int> fixel_TDI;
   Image::Buffer<value_type> fod_buffer (argument[0]);
+  Image::Buffer<value_type>::voxel_type fod_vox (fod_buffer);
   DWI::FMLS::Segmenter fmls (dirs, Math::SH::LforN (fod_buffer.dim(3)));
-  TrackProcessor tract_processor (fod_buffer, fixel_indexer, fixel_directions, fixel_AFD, fixel_TDI, fmls);
-  Thread::run_queue (
-      loader, 
-      Thread::batch (DWI::Tractography::Streamline<float>()), 
-      mapper, 
-      Thread::batch (SetVoxelDir()), 
-      tract_processor);
+
+  Tractography::Streamline<float> tck;
+  SetVoxelDir dixels;
+
+  int track_counter = 0;
+
+  // Map each track to dixels
+  while (loader(tck)) {
+    track_counter++;
+    mapper (tck, dixels);
+
+    // For each dixel in the track
+    for (SetVoxelDir::const_iterator d = dixels.begin(); d != dixels.end(); ++d) {
+
+      Image::Nav::set_pos (fixel_indexer_vox, *d);
+      fixel_indexer_vox[3] = 0;
+      int32_t first_index = fixel_indexer_vox.value();
+
+      // We have not yet visited this voxel so segment the FOD and store fixel details
+      if (first_index < 0) {
+        Image::Nav::set_pos (fod_vox, *d);
+        DWI::FMLS::SH_coefs fod;
+        DWI::FMLS::FOD_lobes lobes;
+        fod.vox[0] = fod_vox[0]; fod.vox[1] = fod_vox[1]; fod.vox[2] = fod_vox[2];
+        fod.allocate (fod_vox.dim (3));
+        for (fod_vox[3] = 0; fod_vox[3] < fod_vox.dim (3); ++fod_vox[3])
+          fod[fod_vox[3]] = fod_vox.value();
+        fmls (fod, lobes);
+        if (lobes.size() == 0)
+          continue;
+        fixel_indexer_vox.value() = fixel_directions.size();
+        first_index = fixel_directions.size();
+        int32_t fixel_count = 0;
+        for (DWI::FMLS::FOD_lobes::const_iterator l = lobes.begin(); l != lobes.end(); ++l, ++fixel_count) {
+          fixel_directions.push_back (l->get_peak_dir());
+          fixel_AFD.push_back (l->get_integral());
+          fixel_TDI.push_back (0);
+        }
+        fixel_indexer_vox[3] = 1;
+        fixel_indexer_vox.value() = fixel_count;
+      }
+
+      fixel_indexer_vox[3] = 1;
+      int32_t last_index = first_index + fixel_indexer_vox.value();
+      int32_t closest_fixel_index = -1;
+      value_type largest_dp = -1.0;
+      Point<value_type> dir (d->get_dir());
+      dir.normalise();
+
+      // find the fixel with the closest direction to track tangent
+      for (int32_t j = first_index; j < last_index; ++j) {
+        value_type dp = Math::abs (dir.dot (fixel_directions[j]));
+        if (dp >= largest_dp) {
+          largest_dp = dp;
+          closest_fixel_index = j;
+        }
+      }
+      fixel_TDI[closest_fixel_index]++;
+    }
+  }
+
 
   double total_AFD = 0.0;
   Image::Loop loop (0, 3);
@@ -220,7 +189,6 @@ void run ()
   }
 
   Tractography::Reader<value_type> tck_file (argument[1], properties);
-  Tractography::Streamline<value_type> tck;
   double total_track_length = 0.0;
   {
     ProgressBar progress ("normalising apparent fibre density by mean track length...", track_count);
