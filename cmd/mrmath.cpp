@@ -330,7 +330,7 @@ void run ()
     BufferType::voxel_type vox_out (buffer_out);
 
 
-    Image::ThreadedLoop loop (std::string("computing ") + operations[op] + " along axis " + str(axis) + "...", buffer_in);
+    Image::ThreadedLoop loop (std::string("computing ") + operations[op] + " along axis " + str(axis) + "...", buffer_out);
 
     switch (op) {
       case 0: loop.run (AxisKernel<Mean>   (axis), vox_in, vox_out); return;
