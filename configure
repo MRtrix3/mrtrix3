@@ -775,7 +775,8 @@ def get_qt_version(cmd_list, raise_on_non_zero_exit_code):
   else: raise raise_on_non_zero_exit_code('Version not Found')
 
 
-moc = '' 
+moc = ''
+rcc = ''
 qt_cflags = []
 qt_ldflags = []
 
