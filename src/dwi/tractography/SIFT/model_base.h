@@ -260,8 +260,7 @@ namespace MR
       {
         if (!Fixel_map<Fixel>::operator() (in))
           return false;
-        Image::BufferScratch<float>::voxel_type mask (proc_mask);
-        const float mask_value = Image::Nav::get_value_at_pos (mask, in.vox);
+        const float mask_value = Image::Nav::get_value_at_pos (proc_mask, in.vox);
         VoxelAccessor v (accessor);
         Image::Nav::set_pos (v, in.vox);
         if (v.value()) {
@@ -279,7 +278,6 @@ namespace MR
       template <class Fixel>
       bool ModelBase<Fixel>::operator() (const Mapping::SetDixel& in)
       {
-        Image::BufferScratch<float>::voxel_type v (proc_mask);
         float total_contribution = 0.0;
         for (Mapping::SetDixel::const_iterator i = in.begin(); i != in.end(); ++i) {
           const size_t fixel_index = Mapping::Fixel_TD_map<Fixel>::dixel2fixel (*i);
@@ -311,8 +309,7 @@ namespace MR
       template <class Fixel>
       void ModelBase<Fixel>::output_proc_mask (const std::string& path)
       {
-        Image::BufferScratch<float>::voxel_type v (proc_mask);
-        v.save (path);
+        proc_mask.save (path);
       }
 
 
