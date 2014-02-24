@@ -1147,7 +1147,7 @@ namespace MR
      *   Thread::run_queue (
      *       source, 
      *       Thread::batch (size_t()), 
-     *       Thread::multi (sink)
+     *       Thread::multi (pipe)
      *       Thread::batch (size_t()), 
      *       sink);
      * }
