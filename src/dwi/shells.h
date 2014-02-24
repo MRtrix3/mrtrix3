@@ -238,9 +238,7 @@ namespace MR
             }
           }
         }
-        ValueType minIdx = *std::min_element (cluster.begin(), cluster.end());
-        ValueType maxIdx = *std::max_element (cluster.begin(), cluster.end());
-        for (size_t i = minIdx; i <= maxIdx; i++) {
+        for (int i = 0; i <= clusterIdx; i++) {
           Shell<ValueType> s (bvals, cluster, i);
           shells.push_back (s);
         }
