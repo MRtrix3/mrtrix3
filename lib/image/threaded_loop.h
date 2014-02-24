@@ -577,9 +577,11 @@ namespace MR
        inline void ThreadedLoop::run (Functor functor)
        {
          if (Thread::number_of_threads() == 0) {
-           LoopInOrder full_loop (all_axes());
-           for (full_loop.start (dummy); full_loop.ok(); full_loop.next (dummy)) 
-             functor (dummy);
+           LoopInOrder inner_loop (axes);
+           for (loop.start (dummy); loop.ok(); loop.next (dummy)) {
+             for (inner_loop.start (dummy); inner_loop.ok(); inner_loop.next (dummy))
+               functor (dummy);
+           }
            return;
          }
 
@@ -592,9 +594,11 @@ namespace MR
        void ThreadedLoop::run (Functor functor, VoxelType1& vox1)
        {
          if (Thread::number_of_threads() == 0) {
-           LoopInOrder full_loop (all_axes());
-           for (full_loop.start (vox1); full_loop.ok(); full_loop.next (vox1)) 
-             functor (vox1);
+           LoopInOrder inner_loop (axes);
+           for (loop.start (vox1); loop.ok(); loop.next (vox1)) {
+             for (inner_loop.start (vox1); inner_loop.ok(); inner_loop.next (vox1))
+               functor (vox1);
+           }
            return;
          }
 
@@ -609,9 +613,11 @@ namespace MR
        void ThreadedLoop::run (Functor functor, VoxelType1& vox1, VoxelType2& vox2)
        {
          if (Thread::number_of_threads() == 0) {
-           LoopInOrder full_loop (all_axes());
-           for (full_loop.start (vox1, vox2); full_loop.ok(); full_loop.next (vox1, vox2)) 
-             functor (vox1, vox2);
+           LoopInOrder inner_loop (axes);
+           for (loop.start (vox1, vox2); loop.ok(); loop.next (vox1, vox2)) {
+             for (inner_loop.start (vox1, vox2); inner_loop.ok(); inner_loop.next (vox1, vox2))
+               functor (vox1, vox2);
+           }
            return;
          }
 
@@ -626,9 +632,11 @@ namespace MR
        void ThreadedLoop::run (Functor functor, VoxelType1& vox1, VoxelType2& vox2, VoxelType3& vox3)
        {
          if (Thread::number_of_threads() == 0) {
-           LoopInOrder full_loop (all_axes());
-           for (full_loop.start (vox1, vox2, vox3); full_loop.ok(); full_loop.next (vox1, vox2, vox3)) 
-             functor (vox1, vox2, vox3);
+           LoopInOrder inner_loop (axes);
+           for (loop.start (vox1, vox2, vox3); loop.ok(); loop.next (vox1, vox2, vox3)) {
+             for (inner_loop.start (vox1, vox2, vox3); inner_loop.ok(); inner_loop.next (vox1, vox2, vox3))
+               functor (vox1, vox2, vox3);
+           }
            return;
          }
 
