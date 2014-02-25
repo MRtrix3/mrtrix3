@@ -74,7 +74,7 @@ namespace MR
         std_bval_ = sqrt(std_bval_/count_);
       }
 
-      std::vector<size_t> idx()
+      std::vector<int> idx()
       {
         return idx_;
       }
@@ -126,7 +126,7 @@ namespace MR
       }
 
     private:
-      std::vector<size_t> idx_;
+      std::vector<int> idx_;
       ValueType avg_bval_;
       ValueType std_bval_;
       size_t count_;
@@ -198,7 +198,7 @@ namespace MR
         return a.avg_bval() < b.avg_bval();
       }
 
-      void regionQuery (ValueType p, std::vector<ValueType> x, ValueType eps, std::vector<size_t>& idx) {
+      void regionQuery (ValueType p, std::vector<ValueType> x, ValueType eps, std::vector<int>& idx) {
         for (size_t i = 0; i < x.size(); i++) 
           if (std::abs(p-x[i]) < eps) 
             idx.push_back(i);
@@ -212,7 +212,7 @@ namespace MR
         for (size_t ii = 0; ii < bvals.size(); ii++) {
           if (!visited[ii]) {
             visited[ii] = true;
-            std::vector<size_t> neighborIdx;
+            std::vector<int> neighborIdx;
             regionQuery (bvals[ii], bvals, eps, neighborIdx);
 
             if (bvals[ii] > eps && neighborIdx.size() < minDirections) 
@@ -222,7 +222,7 @@ namespace MR
               for (size_t i = 0; i < neighborIdx.size(); i++) {
                 if (!visited[neighborIdx[i]]) {
                   visited[neighborIdx[i]] = true;
-                  std::vector<size_t> neighborIdx2;
+                  std::vector<int> neighborIdx2;
                   regionQuery (bvals[neighborIdx[i]], bvals, eps, neighborIdx2);
                   if (neighborIdx2.size() >= minDirections) 
                     for (size_t j = 0; j < neighborIdx2.size(); j++) 
