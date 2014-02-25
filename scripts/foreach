@@ -39,7 +39,7 @@ SEQUENTIAL PROCESSING:
 
     $ foreach -8 images/*.nii : \\
       echo processing NAME... ";" \\
-      mrmath IN mask/PRE.mif -mult "images masked"/PRE.mif -quiet "&&" \\
+      mrcalc IN mask/PRE.mif -mult "images masked"/PRE.mif -quiet "&&" \\
       mrstats IN -mask images\\ masked/PRE.mif \\| tail -n 1
 
   will run the three commands specified for each input file one 
