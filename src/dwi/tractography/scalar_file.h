@@ -160,6 +160,7 @@ namespace MR
               throw Exception ("error creating track scalars file \"" + name + "\": " + strerror (errno));
 
             create (out, properties, "track scalars");
+            current_offset = out.tellp();
           }
 
           ~ScalarWriter() {
@@ -189,6 +190,7 @@ namespace MR
           const size_t buffer_capacity;
           Ptr<value_type, true> buffer;
           size_t buffer_size;
+          int64_t current_offset;
 
           void add_scalar (const value_type& s) {
             format_scalar (s, buffer[buffer_size++]);
@@ -214,11 +216,12 @@ namespace MR
             if (!out)
               throw Exception ("error re-opening track scalars file \"" + name + "\": " + strerror (errno));
 
+            out.seekp (current_offset, out.beg);
             out.write (reinterpret_cast<char*> (&(buffer[0])), sizeof (value_type)*(buffer_size));
             verify_stream (out);
             update_counts (out);
             verify_stream (out);
-
+            current_offset = int64_t (out.tellp()) - sizeof(value_type);
             buffer_size = 0;
           }
 
