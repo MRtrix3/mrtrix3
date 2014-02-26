@@ -218,10 +218,10 @@ namespace MR
 
             out.seekp (current_offset, out.beg);
             out.write (reinterpret_cast<char*> (&(buffer[0])), sizeof (value_type)*(buffer_size));
+            current_offset = int64_t (out.tellp()) - sizeof(value_type);
             verify_stream (out);
             update_counts (out);
             verify_stream (out);
-            current_offset = int64_t (out.tellp()) - sizeof(value_type);
             buffer_size = 0;
           }
 
