@@ -29,6 +29,7 @@
 #include "image/voxel.h"
 #include "image/buffer.h"
 #include "dwi/gradient.h"
+#include "dwi/shells.h"
 #include "math/SH.h"
 #include "math/legendre.h"
 #include "dwi/directions/predefined.h"
@@ -48,6 +49,7 @@ void usage ()
 
   OPTIONS
   + DWI::GradOption
+  + DWI::ShellOption
 
   + Option ("lmax",
             "set the maximum harmonic order for the output series. By default, the "
@@ -95,14 +97,12 @@ class DataLoader
     DataLoader (Queue& queue,
                 Image::Buffer<value_type>& dwi_data,
                 Image::Buffer<bool>* mask_data,
-                const std::vector<int>& vec_bzeros,
-                const std::vector<int>& vec_dwis,
+                const DWI::Shells& shells,
                 bool normalise_to_b0) :
       writer (queue),
       dwi (dwi_data),
       mask (mask_data),
-      bzeros (vec_bzeros),
-      dwis (vec_dwis),
+      shells (shells),
       normalise (normalise_to_b0) { }
 
     void execute () {
@@ -125,27 +125,26 @@ class DataLoader
     Queue::Writer writer;
     Image::Buffer<value_type>::voxel_type dwi;
     Image::Buffer<bool>* mask;
-    const std::vector<int>&  bzeros;
-    const std::vector<int>&  dwis;
+    const DWI::Shells& shells;
     bool normalise;
 
     void load (Queue::Writer::Item& item) {
 
-      value_type norm = 0.0;
+      value_type norm = 1.0;
       if (normalise) {
-        for (size_t n = 0; n < bzeros.size(); n++) {
-          dwi[3] = bzeros[n];
+        for (size_t n = 0; n < shells.smallest().count(); n++) {
+          dwi[3] = shells.smallest().get_volumes()[n];
           norm += dwi.value ();
         }
-        norm /= bzeros.size();
+        norm = shells.smallest().count() / norm;
       }
-      item->data.allocate (dwis.size());
-      for (size_t n = 0; n < dwis.size(); n++) {
-        dwi[3] = dwis[n];
+      item->data.allocate (shells.largest().count());
+      for (size_t n = 0; n < shells.largest().count(); n++) {
+        dwi[3] = shells.largest().get_volumes()[n];
         item->data[n] = dwi.value();
         if (!std::isfinite (item->data[n])) return;
         if (item->data[n] < 0.0) item->data[n] = 0.0;
-        if (normalise) item->data[n] /= norm;
+        item->data[n] *= norm;
       }
       item->pos[0] = dwi[0];
       item->pos[1] = dwi[1];
@@ -234,15 +233,15 @@ void run ()
 
   DWI::normalise_grad (grad);
 
-  std::vector<int> bzeros, dwis;
-  DWI::guess_DW_directions (dwis, bzeros, grad);
-  INFO ("found " + str (dwis.size()) + " diffusion-weighted directions");
+  DWI::Shells shells (grad);
+  // Keep the b=0 shell (may be used for normalisation), but force single non-zero shell
+  shells.select_shells (true, true);
 
   Math::Matrix<value_type> DW_dirs;
-  DWI::gen_direction_matrix (DW_dirs, grad, dwis);
+  DWI::gen_direction_matrix (DW_dirs, grad, shells.largest().get_volumes());
 
   opt = get_options ("lmax");
-  int lmax = opt.size() ? opt[0][0] : Math::SH::LforN (dwis.size());
+  int lmax = opt.size() ? opt[0][0] : Math::SH::LforN (shells.largest().count());
   INFO ("calculating even spherical harmonic components up to order " + str (lmax));
 
   Math::Matrix<value_type> HR_dirs;
@@ -261,7 +260,7 @@ void run ()
 
   // set Lmax
   int i;
-  for (i = 0; Math::SH::NforL(i) < dwis.size(); i += 2);
+  for (i = 0; Math::SH::NforL(i) < shells.largest().count(); i += 2);
   i -= 2;
   if (lmax > i) {
     WARN ("not enough data for SH order " + str(lmax) + ", falling back to " + str(i));
@@ -307,7 +306,7 @@ void run ()
 
 
   Queue queue ("work queue");
-  DataLoader loader (queue, dwi_data, mask_data, bzeros, dwis, normalise);
+  DataLoader loader (queue, dwi_data, mask_data, shells, normalise);
 
   Processor processor (queue, FRT_SHT.mat_A2SH(), HR_SHT, SH_data);
 

@@ -73,7 +73,7 @@ namespace MR
         public:
 
           template <class InputVoxelType>
-            DWIBrainMask (const InputVoxelType & input) :
+          DWIBrainMask (const InputVoxelType & input) :
               ConstInfo (input) {
             axes_.resize(3);
             datatype_ = DataType::Bit;
@@ -81,70 +81,67 @@ namespace MR
 
 
           template <class InputVoxelType, class OutputVoxelType>
-            void operator() (InputVoxelType& input, Math::Matrix<float>& grad, OutputVoxelType& output) {
+          void operator() (InputVoxelType& input, Math::Matrix<float>& grad, OutputVoxelType& output) {
               typedef typename InputVoxelType::value_type value_type;
-
-              std::vector<int> bzeros, dwis;
-              DWI::guess_DW_directions (dwis, bzeros, grad);
-
 
               Info info (input);
               info.set_ndim (3);
-              ProgressBar progress("computing dwi brain mask...");
-              // Compute the mean b=0 and mean DWI image
-              BufferScratch<value_type> b0_mean_data (info, "mean b0");
-              typename BufferScratch<value_type>::voxel_type b0_mean_voxel (b0_mean_data);
+              LoopInOrder loop (info, 0, 3);
 
-              BufferScratch<value_type> dwi_mean_data (info, "mean DWI");
-              typename BufferScratch<value_type>::voxel_type dwi_mean_voxel (dwi_mean_data);
-              Loop loop(0, 3);
-              for (loop.start (input, b0_mean_voxel, dwi_mean_voxel); loop.ok(); loop.next (input, b0_mean_voxel, dwi_mean_voxel)) {
-                value_type mean = 0;
-                for (size_t i = 0; i < dwis.size(); i++) {
-                  input[3] = dwis[i];
-                  mean += input.value();
+              // Generate a 'master' scratch buffer mask, to which all shells will contribute
+              BufferScratch<bool> mask_data (info, "DWI mask");
+              BufferScratch<bool>::voxel_type mask_voxel (mask_data);
+
+              ProgressBar progress ("computing dwi brain mask... ");
+
+              // Loop over each shell, including b=0, in turn
+              DWI::Shells shells (grad);
+              for (size_t s = 0; s != shells.count(); ++s) {
+                const DWI::Shell shell (shells[s]);
+
+                BufferScratch<value_type> shell_data (info, "mean b=" + str(size_t(Math::round(shell.get_mean()))) + " image");
+                typename BufferScratch<value_type>::voxel_type shell_voxel (shell_data);
+
+                for (loop.start (input, shell_voxel); loop.ok(); loop.next (input, shell_voxel)) {
+                  value_type mean = 0;
+                  for (std::vector<size_t>::const_iterator v = shell.get_volumes().begin(); v != shell.get_volumes().end(); ++v) {
+                    input[3] = *v;
+                    mean += input.value();
+                  }
+                  shell_voxel.value() = mean / value_type(shell.count());
                 }
-                dwi_mean_voxel.value() = mean / dwis.size();
-                mean = 0;
-                for (size_t i = 0; i < bzeros.size(); i++) {
-                  input[3] = bzeros[i];
-                  mean += input.value();
+
+                // Threshold the mean intensity image for this shell
+                OptimalThreshold threshold_filter (shell_data);
+                BufferScratch<bool> shell_mask_data (threshold_filter);
+                BufferScratch<bool>::voxel_type shell_mask_voxel (shell_mask_data);
+                threshold_filter (shell_voxel, shell_mask_voxel);
+
+                // Add this mask to the master
+                for (loop.start (mask_voxel, shell_mask_voxel); loop.ok(); loop.next (mask_voxel, shell_mask_voxel)) {
+                  if (shell_mask_voxel.value())
+                    mask_voxel.value() = true;
                 }
-                b0_mean_voxel.value() = mean / bzeros.size();
+
               }
-              // Here we independently threshold the mean b=0 and dwi images
-              OptimalThreshold threshold_filter (b0_mean_data);
-              BufferScratch<int> b0_mean_mask_data (threshold_filter);
-              BufferScratch<int>::voxel_type b0_mean_mask_voxel (b0_mean_mask_data);
-              threshold_filter (b0_mean_voxel, b0_mean_mask_voxel);
 
-              BufferScratch<value_type> dwi_mean_mask_data (info);
-              typename BufferScratch<value_type>::voxel_type dwi_mean_mask_voxel (dwi_mean_mask_data);
-              threshold_filter (dwi_mean_voxel, dwi_mean_mask_voxel);
+              // The following operations apply to the mask as combined from all shells
 
-              for (loop.start (b0_mean_voxel, b0_mean_mask_voxel, dwi_mean_mask_voxel); 
-                  loop.ok(); 
-                  loop.next (b0_mean_voxel, b0_mean_mask_voxel, dwi_mean_mask_voxel)) {
-                if (b0_mean_mask_voxel.value() > 0.0)
-                  dwi_mean_mask_voxel.value() = 1.0;
-              }
-              Median3D median_filter (dwi_mean_mask_voxel);
-
-              BufferScratch<value_type> temp_data (info, "temp image");
-              typename BufferScratch<value_type>::voxel_type temp_voxel (temp_data);
-              median_filter (dwi_mean_mask_voxel, temp_voxel);
+              BufferScratch<bool> temp_data (info, "temporary mask");
+              BufferScratch<bool>::voxel_type temp_voxel (temp_data);
+              Median3D median_filter (mask_voxel);
+              median_filter (mask_voxel, temp_voxel);
 
               ConnectedComponents connected_filter (temp_voxel);
               connected_filter.set_largest_only (true);
               connected_filter (temp_voxel, temp_voxel);
 
-              Loop loop_mask(0,3);
-              for (loop_mask.start (temp_voxel); loop_mask.ok(); loop_mask.next (temp_voxel))
+              for (loop.start (temp_voxel); loop.ok(); loop.next (temp_voxel))
                 temp_voxel.value() = !temp_voxel.value();
 
               connected_filter (temp_voxel, temp_voxel);
 
-              for (loop_mask.start (temp_voxel, output); loop_mask.ok(); loop_mask.next (temp_voxel, output))
+              for (loop.start (temp_voxel, output); loop.ok(); loop.next (temp_voxel, output))
                 output.value() = !temp_voxel.value();
           }
       };

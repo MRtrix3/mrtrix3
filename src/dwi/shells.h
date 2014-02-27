@@ -23,223 +23,149 @@
 #ifndef __dwi_shells_h__
 #define __dwi_shells_h__
 
+
+#include <fstream>
+#include <limits>
+#include <vector>
+
+#include "app.h"
+#include "bitset.h"
+
 #include "math/matrix.h"
-#include <list>
+#include "math/vector.h"
+
+
+
+// Don't expect these values to change depending on the particular command that is initialising the Shells class;
+//   method should be robust to all incoming data
+
+// Maximum absolute difference in b-value for two volumes to be considered to be in the same shell
+#define DWI_SHELLS_EPSILON 100
+// Minimum number of volumes within DWI_SHELL_EPSILON necessary to continue expansion of the cluster selection
+#define DWI_SHELLS_MIN_LINKAGE 3
+// Number of volumes necessary for a shell to be retained
+#define DWI_SHELLS_MIN_DIRECTIONS 6
+
 
 
 namespace MR
 {
+
+  namespace App { class OptionGroup; }
+
   namespace DWI
   {
 
-    template <typename ValueType> class Shell
+
+    extern const App::OptionGroup ShellOption;
+
+
+    extern const float bzero_threshold;
+
+
+    class Shell
     {
 
-    public:
-      Shell()
-      {
-        count_ = 0;
-        avg_bval_ = 0;
-        std_bval_ = 0;
-        min_bval_ = 0;
-        max_bval_ = 0;
-      }
+      public:
 
-      Shell(std::vector<ValueType> bvals, std::vector<int> clusters, int cluster)
-      {
-        count_ = 0;
-        avg_bval_ = 0;
-        std_bval_ = 0;
-        min_bval_ = std::numeric_limits<ValueType>::max();
-        max_bval_ = std::numeric_limits<ValueType>::min();
-        for (size_t j = 0; j < clusters.size(); j++) {
-          if (clusters[j] == cluster) {
-            idx_.push_back(j);
-            count_++;
-            avg_bval_ += bvals[j];
-            if (bvals[j]<min_bval_) {
-              min_bval_ = bvals[j];
-            }
-            if (bvals[j]>max_bval_) {
-              max_bval_ = bvals[j];
-            }
-          }
+        Shell() : mean (0.0), stdev (0.0), min (0.0), max (0.0) { }
+
+        Shell (const Math::Matrix<float>& grad, const std::vector<size_t>& indices);
+
+        Shell& operator= (const Shell& rhs)
+        {
+          volumes = rhs.volumes;
+          mean = rhs.mean;
+          stdev = rhs.stdev;
+          min = rhs.min;
+          max = rhs.max;
+          return *this;
         }
-        avg_bval_ = avg_bval_/count_;
-        for (size_t j = 0; j < clusters.size(); j++) {
-          if (clusters[j] == cluster) {
-            std_bval_ += pow(bvals[j]-avg_bval_,2);
-          }
+
+
+        const std::vector<size_t>& get_volumes() const { return volumes; }
+        size_t count() const { return volumes.size(); }
+
+        float get_mean()  const { return mean; }
+        float get_stdev() const { return stdev; }
+        float get_min()   const { return min; }
+        float get_max()   const { return max; }
+
+        bool is_bzero()   const { return (mean < bzero_threshold); }
+
+
+        bool operator< (const Shell& rhs) const { return (mean < rhs.mean); }
+
+        friend std::ostream& operator<< (std::ostream& stream, const Shell& S)
+        {
+          stream << "Shell: " << S.volumes.size() << " volumes, b-value "
+              << S.mean << " =- " << S.stdev << " (range [" << S.min << " - " << S.max << "])";
+          return stream;
         }
-        std_bval_ = sqrt(std_bval_/count_);
-      }
 
-      std::vector<int> idx()
-      {
-        return idx_;
-      }
 
-      size_t count() const
-      {
-        return count_;
-      }
+      protected:
+        std::vector<size_t> volumes;
+        float mean, stdev, min, max;
 
-      ValueType avg_bval() const
-      {
-        return avg_bval_;
-      }
-
-      ValueType std_bval() const
-      {
-        return std_bval_;
-      }
-
-      ValueType min_bval() const
-      {
-        return min_bval_;
-      }
-
-      ValueType max_bval() const
-      {
-        return max_bval_;
-      }
-
-      Shell& operator= (const Shell& rhs)
-      {
-        idx_ = rhs.idx_;
-        avg_bval_ = rhs.avg_bval_;
-        std_bval_ = rhs.std_bval_;
-        count_ = rhs.count_;
-        min_bval_ = rhs.min_bval_;
-        max_bval_ = rhs.max_bval_;
-        return *this;
-      }
-
-      friend std::ostream& operator <<(std::ostream& stream, const Shell& S)
-      {
-        stream << S.count() << std::endl;
-        stream << S.min_bval() << std::endl;
-        stream << S.max_bval() << std::endl;
-        stream << S.avg_bval() << std::endl;
-        stream << S.std_bval() << std::endl;
-        return stream;
-      }
-
-    private:
-      std::vector<int> idx_;
-      ValueType avg_bval_;
-      ValueType std_bval_;
-      size_t count_;
-      ValueType min_bval_;
-      ValueType max_bval_;
     };
 
 
-    template <typename ValueType> class Shells
+
+
+
+    class Shells
     {
-    public:
-      Shells(const Math::Matrix<ValueType>& grad, size_t minDirections = 6, ValueType bvalue_threshold = NAN)
-      {
-        std::vector<ValueType> bvals;
-        for (size_t i = 0; i < grad.rows(); i++) 
-          bvals.push_back(grad (i,3));
-        
-        minBval = *std::min_element (bvals.begin(), bvals.end());
-        maxBval = *std::max_element (bvals.begin(), bvals.end());
-        if (!std::isfinite (bvalue_threshold)) 
-          bvalue_threshold = 100;
-        
-        clusterBvalues (bvals, minDirections, bvalue_threshold);
-        sortByBval();
-      }
 
-      size_t count() const {
-        return shells.size();
-      }
+      public:
+        Shells (const Math::Matrix<float>& grad) { initialise (grad); }
+        Shells (const Math::Matrix<double>& grad) { Math::Matrix<float> gradF (grad); initialise (gradF); }
 
-      Shell<ValueType>& operator[] (const size_t i) {
-        return shells[i];
-      }
 
-      Shell<ValueType>& first() {
-        return shells.front();
-      }
+        const Shell& operator[] (const size_t i) const { return shells[i]; }
+        const Shell& smallest() const { return shells.front(); }
+        const Shell& largest()  const { return shells.back(); }
+        size_t       count()    const { return shells.size(); }
 
-      Shell<ValueType>& last() {
-        return shells.back();
-      }
 
-      void sortByCount() {
-        std::sort (shells.begin(), shells.end(), countComp);
-      }
+        void select_shells (const bool keep_bzero = false, const bool force_single_shell = true);
 
-      void sortByBval() {
-        std::sort (shells.begin(), shells.end(), bvalComp);
-      }
 
-      friend std::ostream& operator <<(std::ostream& stream, const Shells& S)
-      {
-        for(typename std::vector<Shell <ValueType> >::const_iterator it = S.shells.begin(); it != S.shells.end(); ++it) 
-          stream << *it << std::endl;
-        
-        return stream;
-      }
-
-    private:
-      std::vector<Shell <ValueType> > shells;
-      ValueType minBval;
-      ValueType maxBval;
-
-      static bool countComp (Shell<ValueType> a, Shell<ValueType> b) {
-        return a.count() < b.count();
-      }
-
-      static bool bvalComp (Shell<ValueType> a, Shell<ValueType> b) {
-        return a.avg_bval() < b.avg_bval();
-      }
-
-      void regionQuery (ValueType p, std::vector<ValueType> x, ValueType eps, std::vector<int>& idx) {
-        for (size_t i = 0; i < x.size(); i++) 
-          if (std::abs(p-x[i]) < eps) 
-            idx.push_back(i);
-      }
-
-      void clusterBvalues (const std::vector<ValueType>& bvals, size_t minDirections, ValueType eps) {
-        std::vector<bool> visited (bvals.size(), false);
-        std::vector<int> cluster (bvals.size(), -1);
-        int clusterIdx = -1;
-
-        for (size_t ii = 0; ii < bvals.size(); ii++) {
-          if (!visited[ii]) {
-            visited[ii] = true;
-            std::vector<int> neighborIdx;
-            regionQuery (bvals[ii], bvals, eps, neighborIdx);
-
-            if (bvals[ii] > eps && neighborIdx.size() < minDirections) 
-              cluster[ii] = -1;
-            else {
-              cluster[ii] = ++clusterIdx;
-              for (size_t i = 0; i < neighborIdx.size(); i++) {
-                if (!visited[neighborIdx[i]]) {
-                  visited[neighborIdx[i]] = true;
-                  std::vector<int> neighborIdx2;
-                  regionQuery (bvals[neighborIdx[i]], bvals, eps, neighborIdx2);
-                  if (neighborIdx2.size() >= minDirections) 
-                    for (size_t j = 0; j < neighborIdx2.size(); j++) 
-                      neighborIdx.push_back(neighborIdx2[j]);
-                }
-                if (cluster[neighborIdx[i]] < 0) 
-                  cluster[neighborIdx[i]] = clusterIdx;
-                
-              }
-            }
-          }
+        bool is_single_shell() const {
+          return ((shells.size() == 1) || ((shells.size() == 2 && smallest().is_bzero())));
         }
-        for (int i = 0; i <= clusterIdx; i++) 
-          shells.push_back (Shell<ValueType> (bvals, cluster, i));
-      }
+
+
+        friend std::ostream& operator<< (std::ostream& stream, const Shells& S)
+        {
+          stream << "Total of " << S.count() << " DWI shells:" << std::endl;
+          for (std::vector<Shell>::const_iterator it = S.shells.begin(); it != S.shells.end(); ++it)
+            stream << *it << std::endl;
+          return stream;
+        }
+
+
+      protected:
+        std::vector<Shell> shells;
+
+
+      private:
+
+        typedef Math::Vector<float>::View BValueList;
+
+        void initialise (const Math::Matrix<float>&);
+
+        // Functions for current b-value clustering implementation
+        size_t clusterBvalues (const BValueList&, std::vector<size_t>&) const;
+        void regionQuery (const BValueList&, const float, std::vector<size_t>&) const;
+        size_t rejectSmallShells (const BValueList&, std::vector<size_t>&, const size_t) const;
+
 
     };
+
+
+
+
   }
 }
 

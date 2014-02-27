@@ -91,13 +91,10 @@ void run ()
   if (get_options("gradient").size()) {
     Math::Matrix<value_type> grad;
     grad.load (argument[1]);
-    std::vector<int> bzeros, dwis;
-    DWI::guess_DW_directions (dwis, bzeros, grad);
-    DWI::gen_direction_matrix (directions, grad, dwis);
-  } 
-  else {
+    DWI::Shells shells (grad);
+    DWI::gen_direction_matrix (directions, grad, shells.largest().get_volumes());
+  } else {
     directions.load (argument[1]);
-    Math::Matrix<value_type> grad (directions.rows(), 4);
   }
 
   if (!directions.rows())

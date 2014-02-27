@@ -43,6 +43,7 @@
 
 #include "dwi/directions/set.h"
 #include "dwi/gradient.h"
+#include "dwi/shells.h"
 #include "dwi/sdeconv/constrained.h"
 #include "dwi/sdeconv/rf_estimation.h"
 
@@ -110,6 +111,7 @@ void usage () {
   OPTIONS
 
     + DWI::GradOption
+    + DWI::ShellOption
 
     + Option ("mask", "provide an initial mask image")
       + Argument ("image").type_image_in()

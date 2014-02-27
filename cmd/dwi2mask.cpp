@@ -38,7 +38,7 @@ void usage () {
 
 DESCRIPTION
   + "Generates an whole brain mask from a DWI image."
-    "Both diffusion weighted and b=0 volumes are required to "
+    "All diffusion weighted and b=0 volumes are used to "
     "obtain a mask that includes both brain tissue and CSF.";
 
 ARGUMENTS
@@ -67,8 +67,9 @@ void run () {
 
   Image::Header output_header (input_data);
   output_header.info() = dwi_brain_mask_filter.info();
-  Image::Buffer<uint32_t> mask_data (argument[1], output_header);
-  Image::Buffer<uint32_t>::voxel_type mask_voxel (mask_data);
+  output_header.datatype() = DataType::Bit;
+  Image::Buffer<bool> mask_data (argument[1], output_header);
+  Image::Buffer<bool>::voxel_type mask_voxel (mask_data);
 
   dwi_brain_mask_filter (input_voxel, grad, mask_voxel);
 }

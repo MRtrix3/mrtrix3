@@ -28,6 +28,7 @@
 #include "math/matrix.h"
 #include "math/SH.h"
 #include "dwi/gradient.h"
+#include "dwi/shells.h"
 #include "image/loop.h"
 
 
@@ -80,6 +81,7 @@ void usage ()
   + Argument ("file", "a list of directions [az el] generated using the gendir command.").type_file()
 
   + DWI::GradOption
+  + DWI::ShellOption
 
   + Image::Stride::StrideOption;
 }
@@ -93,7 +95,7 @@ void run ()
   Image::BufferPreload<float> amp_data (argument[0], strides);
   Image::Header header (amp_data);
 
-  std::vector<int> bzeros, dwis;
+  std::vector<size_t> bzeros, dwis;
   Math::Matrix<float> dirs;
   Options opt = get_options ("directions");
   if (opt.size()) {
@@ -113,7 +115,11 @@ void run ()
       }
     } else {
       Math::Matrix<float> grad = DWI::get_valid_DW_scheme<float> (amp_data);
-      DWI::guess_DW_directions (dwis, bzeros, grad);
+      DWI::Shells shells (grad);
+      shells.select_shells (true, true);
+      if (shells.smallest().is_bzero())
+        bzeros = shells.smallest().get_volumes();
+      dwis = shells.largest().get_volumes();
       DWI::gen_direction_matrix (dirs, grad, dwis);
     }
   }
@@ -159,13 +165,13 @@ void run ()
   Image::LoopInOrder loop (SH_vox, "mapping amplitudes to SH coefficients...", 0, 3);
   for (loop.start (SH_vox, amp_vox); loop.ok(); loop.next (SH_vox, amp_vox)) {
 
-    double norm = 0.0;
+    double norm = 1.0;
     if (normalise) {
       for (size_t n = 0; n < bzeros.size(); n++) {
         amp_vox[3] = bzeros[n];
         norm += amp_vox.value ();
       }
-      norm /= bzeros.size();
+      norm = bzeros.size() / norm;
     }
 
     for (size_t n = 0; n < dirs.rows(); n++) {
@@ -173,8 +179,7 @@ void run ()
         amp_vox[3] = dwis[n];
       else
         amp_vox[3] = n;
-      sigs[n] = amp_vox.value();
-      if (normalise) sigs[n] /= norm;
+      sigs[n] = amp_vox.value() * norm;
     }
 
     SHT.A2SH (res, sigs);

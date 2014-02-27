@@ -55,7 +55,11 @@ namespace MR
                 niter (50)
             {
               grad = DWI::get_valid_DW_scheme<value_type> (dwi_header);
-              DWI::guess_DW_directions (dwis, bzeros, grad);
+              DWI::Shells shells (grad);
+              // Discard b=0 (b=0 normalisation not supported in this version)
+              // Only allow selection of one non-zero shell from command line
+              shells.select_shells (false, true);
+              dwis = shells.largest().get_volumes();
               DWI::gen_direction_matrix (DW_dirs, grad, dwis);
 
               lmax = lmax_data = Math::SH::LforN (dwis.size());
@@ -184,7 +188,7 @@ namespace MR
             Math::Matrix<value_type> DW_dirs, HR_dirs;
             Math::Matrix<value_type> rconv, HR_trans, M, Mt_M;
             value_type neg_lambda, norm_lambda, threshold;
-            std::vector<int> bzeros, dwis;
+            std::vector<size_t> dwis;
             int lmax_data, lmax;
             size_t niter;
         };

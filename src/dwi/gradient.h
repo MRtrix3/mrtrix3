@@ -64,43 +64,6 @@ namespace MR
     }
 
 
-    /*! \brief find which volumes correspond to b=0 and which to DWIs, assuming
-     * a simple threshold on the b-value 
-     *
-     * By default, any volume with a b-value <= 10 is considered a b=0. This
-     * can be modified using the argument \a bvalue_threshold, or by specifying
-     * the desired value in the configuration file, under the key
-     * "BValueThreshold". */
-    template <typename ValueType> 
-      inline void guess_DW_directions (
-          std::vector<int>& dwi, 
-          std::vector<int>& bzero, 
-          const Math::Matrix<ValueType>& grad,
-          ValueType bvalue_threshold = NAN)
-    {
-      if (!std::isfinite (bvalue_threshold))
-        bvalue_threshold = File::Config::get_float ("BValueThreshold", 10.0);
-      if (grad.columns() != 4)
-        throw Exception ("invalid gradient encoding matrix: expecting 4 columns.");
-      Shells<ValueType> shells(grad);
-      int shell_count = shells.count();
-      if (shell_count < 1 || shell_count > sqrt(grad.rows()))
-        throw Exception ("Gradient encoding matrix does not represent a HARDI sequence!");
-      INFO ("found " + str (shell_count) + " shells");
-      Shell<ValueType> bzeroShell;
-      Shell<ValueType> dwiShell;
-      if (shell_count>1)
-        bzeroShell = shells.first();
-      dwiShell = shells.last();
-      if (shell_count>1)
-        INFO ("using " + str (bzeroShell.count()) + " volumes with b-value " + str (bzeroShell.avg_bval()) + " +/-" + str (bzeroShell.std_bval()) + " as b=0 volumes");
-      INFO ("using " + str (dwiShell.count()) + " volumes with b-value " + str (dwiShell.avg_bval()) + " +/-" + str (dwiShell.std_bval()) + " as diffusion-weighted volumes");
-      bzero = bzeroShell.idx();
-      dwi = dwiShell.idx();
-    }
-
-
-
     /*! \brief convert the DW encoding matrix in \a grad into a
      * azimuth/elevation direction set, using only the DWI volumes as per \a
      * dwi */
@@ -108,7 +71,7 @@ namespace MR
       inline Math::Matrix<ValueType>& gen_direction_matrix (
           Math::Matrix<ValueType>& dirs, 
           const Math::Matrix<ValueType>& grad, 
-          const std::vector<int>& dwi)
+          const std::vector<size_t>& dwi)
     {
       dirs.allocate (dwi.size(),2);
       for (size_t i = 0; i < dwi.size(); i++) {
@@ -123,8 +86,6 @@ namespace MR
       }
       return dirs;
     }
-
-
 
 
 

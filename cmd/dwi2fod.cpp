@@ -7,6 +7,8 @@
 #include "image/buffer.h"
 #include "image/buffer_preload.h"
 #include "image/voxel.h"
+#include "dwi/gradient.h"
+#include "dwi/shells.h"
 #include "dwi/sdeconv/constrained.h"
 
 using namespace MR;
@@ -42,6 +44,7 @@ void usage ()
 
   OPTIONS
     + DWI::GradOption
+    + DWI::ShellOption
     + DWI::CSD_options
     + Image::Stride::StrideOption;
 }

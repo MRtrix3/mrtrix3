@@ -49,7 +49,8 @@ void usage ()
 
   OPTIONS
     + Option ("bzero", "output b=0 volumes instead of the diffusion weighted volumes.")
-    + DWI::GradOption;
+    + DWI::GradOption
+    + DWI::ShellOption;
 }
 
 void run() {
@@ -59,50 +60,76 @@ void run() {
   Image::BufferPreload<float>::voxel_type voxel_in (data_in);
 
   Math::Matrix<value_type> grad (DWI::get_DW_scheme<float> (data_in));
-  std::vector<int> bzeros, dwis;
-  DWI::guess_DW_directions (dwis, bzeros, grad);
-  INFO ("found " + str(dwis.size()) + " diffusion-weighted directions");
+
+  // Want to support non-shell-like data if it's just a straight extraction
+  //   of all dwis or all bzeros i.e. don't initialise the Shells class
+  std::vector<size_t> volumes;
+  bool bzero = get_options ("bzero").size();
+  Options opt = get_options ("shell");
+  if (opt.size()) {
+    DWI::Shells shells (grad);
+    shells.select_shells (true, false);
+    // Remove DW information from header if b=0 is the only 'shell' selected
+    std::vector<int> bvalues = opt[0][0];
+    bzero = (bvalues.size() == 1 && !bvalues[0]);
+    for (size_t s = 0; s != shells.count(); ++s) {
+      DEBUG ("Including data from shell b=" + str(shells[s].get_mean()) + " +- " + str(shells[s].get_stdev()));
+      for (std::vector<size_t>::const_iterator v = shells[s].get_volumes().begin(); v != shells[s].get_volumes().end(); ++v)
+        volumes.push_back (*v);
+    }
+  } else {
+    const float bzero_threshold = File::Config::get_float ("BValueThreshold", 10.0);
+    for (size_t row = 0; row != grad.rows(); ++row) {
+      if ((bzero && (grad (row, 3) < bzero_threshold)) || (!bzero && (grad (row, 3) > bzero_threshold)))
+        volumes.push_back (row);
+    }
+  }
+
+  if (volumes.empty())
+    throw Exception ("No " + str(bzero ? "b=0" : "dwi") + " volumes present");
+
+  std::sort (volumes.begin(), volumes.end());
 
   Image::Header header (data_in);
-  Options opt = get_options ("bzero");
-  if (opt.size()) {
-    if (!bzeros.size())
-      throw Exception ("no b=0 images found in image \"" + data_in.name() + "\"");
-    if (bzeros.size() == 1)
-      header.set_ndim(3);
-    else
-      header.dim(3) = bzeros.size();
+
+  if (volumes.size() == 1)
+    header.set_ndim (3);
+  else
+    header.dim (3) = volumes.size();
+
+  if (bzero) {
     header.DW_scheme().clear();
   } else {
-    header.dim(3) = dwis.size();
-    Math::Matrix<value_type> dwi_grad (dwis.size(), 4);
-    for (size_t dir = 0; dir < dwis.size(); dir++)
-      dwi_grad.row(dir)= grad.row(dwis[dir]);
-    header.DW_scheme() = dwi_grad;
+    Math::Matrix<value_type> new_grad (volumes.size(), 4);
+    for (size_t i = 0; i < volumes.size(); i++)
+      new_grad.row (i) = grad.row (volumes[i]);
+    header.DW_scheme() = new_grad;
   }
 
-  Image::Buffer<value_type> data_out(argument[1], header);
+  Image::Buffer<value_type> data_out (argument[1], header);
   Image::Buffer<value_type>::voxel_type voxel_out (data_out);
 
-  Image::Loop outer ("extracting volumes...", 0, 3 );
+  Image::Loop outer ("extracting volumes...", 0, 3);
 
-  if (opt.size()) {
+  if (voxel_out.ndim() == 4) {
+
     for (outer.start (voxel_out, voxel_in); outer.ok(); outer.next (voxel_out, voxel_in)) {
-      for (size_t i = 0; i < bzeros.size(); i++) {
-        voxel_in[3] = bzeros[i];
-        if (bzeros.size() > 1)
-          voxel_out[3] = i;
+      for (size_t i = 0; i < volumes.size(); i++) {
+        voxel_in[3] = volumes[i];
+        voxel_out[3] = i;
         voxel_out.value() = voxel_in.value();
       }
     }
+
   } else {
+
+    const size_t volume = volumes[0];
     for (outer.start (voxel_out, voxel_in); outer.ok(); outer.next (voxel_out, voxel_in)) {
-      for (size_t i = 0; i < dwis.size(); i++) {
-        voxel_in[3] = dwis[i];
-        if (dwis.size() > 1)
-          voxel_out[3] = i;
-        voxel_out.value() = voxel_in.value();
-      }
+      voxel_in[3] = volume;
+      voxel_out.value() = voxel_in.value();
     }
+
   }
+
+
 }

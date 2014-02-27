@@ -26,7 +26,6 @@
 #include <vector>
 #include <limits>
 
-
 #include <algorithm>
 
 #include "types.h"
@@ -40,14 +39,16 @@ namespace MR
 
 
     template <class Container> 
-      inline typename Container::value_type median (Container& list) 
-      {
+    inline typename Container::value_type median (Container& list)
+    {
         size_t num = list.size();
         // remove NaNs:
         for (size_t n = 0; n < num; ++n) {
           while (isnan (list[n]) && n < num) {
             --num;
-            std::swap (list[n], list[num]);
+            //std::swap (list[n], list[num]);
+            // Commented std::swap to provide bool compatibility
+            typename Container::value_type temp = list[num]; list[num] = list[n]; list[n] = temp;
           }
         }
         if (!num)
@@ -62,7 +63,7 @@ namespace MR
           med_val = (med_val + list[middle])/2.0;
         }
         return med_val;
-      }
+    }
 
 
   }
