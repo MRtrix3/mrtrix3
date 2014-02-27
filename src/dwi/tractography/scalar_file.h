@@ -41,6 +41,81 @@ namespace MR
     {
 
 
+
+
+      //! functions for comparing tsf files
+      /*! in order to be interpreted correctly, track scalar files must match some
+       * corresponding streamline data (.tck) file; this is handled using the timestamp
+       * field in the Properties class. Alternatively two .tsf files may be processed,
+       * but these must both correspond to the same .tck file (even if that file is
+       * not explicitly read).
+       *
+       * Furthermore, in some contexts it may be necessary to ensure that two files
+       * contain the same number of streamlines (or scalar data corresponding to the
+       * same number of streamlines). This check is also provided; in the "validate_*"
+       * functions a mis-match of the 'count' field results in an exception being
+       * thrown, whereas in the "check_*" functibothons, only a warning is thrown, and
+       * processing is free to continue.
+       *
+       * Note that the only difference between those functions comparing a .tck file
+       * to a .tsf file, and those comparing a pair of .tsf files, is the information
+       * provided to the user if the comparison fails.
+       * */
+      void validate_tck_tsf_pair (const Properties& p_tck, const Properties& p_tsf)
+      {
+        if (p_tsf.timestamp != p_tck.timestamp)
+          throw Exception ("input scalar file does not correspond to the input track file");
+        Properties::const_iterator count_tck = p_tck.find ("count");
+        Properties::const_iterator count_tsf = p_tsf.find ("count");
+        if ((count_tck == p_tck.end()) || (count_tsf == p_tsf.end()))
+          throw Exception ("Unable to validate .tck / .tsf file pair due to missing count field");
+        if (to<size_t>(count_tsf->second) != to<size_t>(count_tck->second))
+          throw Exception ("input scalar file does not contain same number of elements as input track file");
+      }
+
+      void check_tck_tsf_pair (const Properties& p_tck, const Properties& p_tsf)
+      {
+        if (p_tsf.timestamp != p_tck.timestamp)
+          throw Exception ("input scalar file does not correspond to the input track file");
+        Properties::const_iterator count_tck = p_tck.find ("count");
+        Properties::const_iterator count_tsf = p_tsf.find ("count");
+        if ((count_tck == p_tck.end()) || (count_tsf == p_tsf.end())) {
+          WARN ("Missing count field in .tck / .tsf file pair; unable to compare");
+        } else if (to<size_t>(count_tsf->second) != to<size_t>(count_tck->second)) {
+          WARN ("input scalar file does not contain same number of elements as input track file");
+        }
+      }
+
+      void validate_tsf_pair (const Properties& p_one, const Properties& p_two)
+      {
+        if (p_one.timestamp != p_two.timestamp)
+          throw Exception ("input scalar files do not correspond to the same track file");
+        Properties::const_iterator count_one = p_one.find ("count");
+        Properties::const_iterator count_two = p_two.find ("count");
+        if ((count_one == p_one.end()) || (count_two == p_two.end()))
+          throw Exception ("Unable to validate track scalar file pair due to missing count field");
+        if (to<size_t>(count_one->second) != to<size_t>(count_two->second))
+          throw Exception ("input scalar files do not contain the same number of elements");
+      }
+
+      void check_tsf_pair (const Properties& p_one, const Properties& p_two)
+      {
+        if (p_one.timestamp != p_two.timestamp)
+          throw Exception ("input scalar files do not correspond to the same track file");
+        Properties::const_iterator count_one = p_one.find ("count");
+        Properties::const_iterator count_two = p_two.find ("count");
+        if ((count_one == p_one.end()) || (count_two == p_two.end())) {
+          WARN ("Unable to validate track scalar file pair due to missing count field");
+        } else if (to<size_t>(count_one->second) != to<size_t>(count_two->second)) {
+          WARN ("input scalar files do not contain the same number of elements");
+        }
+      }
+
+
+
+
+
+
       template <typename T = float> class ScalarReader : public __ReaderBase__
       {
         public:
@@ -121,7 +196,7 @@ namespace MR
 
 
 
-      //! class to handle writing tracks to file
+      //! class to handle writing track scalars to file
       /*! writes track scalar file header as specified in \a properties and individual
        * track scalars to the file specified in \a file. Writing individual scalars is
        * done using the append() method.
@@ -158,6 +233,8 @@ namespace MR
             std::ofstream out (name.c_str(), std::ios::out | std::ios::binary | std::ios::trunc);
             if (!out)
               throw Exception ("error creating track scalars file \"" + name + "\": " + strerror (errno));
+
+            // Do NOT set Properties timestamp here! (Must match corresponding .tck file)
 
             create (out, properties, "track scalars");
             current_offset = out.tellp();

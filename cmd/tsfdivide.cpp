@@ -52,14 +52,13 @@ void run ()
   DWI::Tractography::ScalarReader<value_type> reader2 (argument[1], properties2);
   DWI::Tractography::ScalarWriter<value_type> writer (argument[2], properties1);
 
-  if (properties1.timestamp != properties2.timestamp)
-    throw Exception ("the input scalar files do not relate to the same "
-                     "tractography file (as defined by the timestamp in the header)");
+  DWI::Tractography::check_tsf_pair (properties1, properties2);
 
   std::vector<value_type> tck_scalar1;
   std::vector<value_type> tck_scalar2;
   while (reader1 (tck_scalar1)) {
-    reader2 (tck_scalar2);
+    if (!reader2 (tck_scalar2))
+      break;
     if (tck_scalar1.size() != tck_scalar2.size())
       throw Exception ("track scalar length mismatch");
 

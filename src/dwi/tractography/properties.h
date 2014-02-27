@@ -41,15 +41,19 @@ namespace MR
         public:
 
           Properties () : timestamp_precision (20) {
-            timestamp = Timer::current_time();
+            set_timestamp();
           }
 
-          double timestamp;
           ROISet include, exclude, mask;
           Seeding::List seeds;
           std::vector<std::string> comments;
           std::multimap<std::string, std::string> roi;
+
+          mutable double timestamp;
           const size_t timestamp_precision;
+
+
+          void set_timestamp() const { timestamp = Timer::current_time(); }
 
 
           void  clear () { 

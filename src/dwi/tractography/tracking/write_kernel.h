@@ -56,12 +56,13 @@ namespace MR
 
           WriteKernel (const SharedBase& shared,
               const std::string& output_file,
-              DWI::Tractography::Properties& properties) :
+              const DWI::Tractography::Properties& properties) :
                 S (shared),
                 writer (output_file, properties)
           {
-            if (properties.find ("seed_output") != properties.end()) {
-              seeds = new std::ofstream (properties["seed_output"].c_str(), std::ios_base::trunc);
+            DWI::Tractography::Properties::const_iterator seed_output = properties.find ("seed_output");
+            if (seed_output != properties.end()) {
+              seeds = new std::ofstream ((seed_output->second).c_str(), std::ios_base::trunc);
               (*seeds) << "#Track_index,Seed_index,Pos_x,Pos_y,Pos_z,\n";
             }
           }

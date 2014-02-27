@@ -60,8 +60,8 @@ namespace MR
               App::Options opt = App::get_options ("tck_weights_in");
               if (opt.size()) {
                 weights.load (opt[0][0]);
-                if (weights.size() != to<size_t> (properties["count"])) // TODO: turn this into Exception once count write-out at commit-time works.
-                  WARN ("number of weights does not match number of tracks in file");
+                if (weights.size() != to<size_t> (properties["count"]))
+                  throw Exception ("number of streamline weights in file \"" + std::string(opt[0][0]) + "\"does not match number of tracks in file \"" + file + "\"");
                 DEBUG ("loaded " + str(weights.size()) + " track weights from file \"" + std::string (opt[0][0]) + "\"");
               }
             }
@@ -194,6 +194,8 @@ namespace MR
           std::ofstream out (name.c_str(), std::ios::out | std::ios::binary | std::ios::trunc);
           if (!out)
             throw Exception ("error creating tracks file \"" + name + "\": " + strerror (errno));
+
+          properties.set_timestamp();
 
           create (out, properties, "tracks");
           barrier_addr = out.tellp();
