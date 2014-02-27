@@ -105,6 +105,8 @@ void usage ()
 
 
 typedef float value_type;
+typedef Image::BufferPreload<value_type> InputBufferType;
+typedef Image::Buffer<value_type> OutputBufferType;
 
 
 
@@ -119,7 +121,7 @@ void run ()
       throw Exception ("transform matrix supplied in file \"" + opt[0][0] + "\" is not 4x4");
   }
 
-  Ptr<Image::BufferPreload<value_type> > input_buffer;
+  Ptr<InputBufferType> input_buffer;
   Image::Header input_header (argument[0]);
   Image::Header output_header (input_header);
 
@@ -133,9 +135,9 @@ void run ()
     output_header.stride(1) = 3;
     output_header.stride(2) = 4;
     output_header.stride(3) = 1;
-    input_buffer = new Image::BufferPreload<value_type> (input_header, stride);
+    input_buffer = new InputBufferType (input_header, stride);
   } else {
-    input_buffer = new Image::BufferPreload<value_type> (input_header);
+    input_buffer = new InputBufferType (input_header);
   }
 
 
@@ -205,7 +207,7 @@ void run ()
     Options opt = get_options ("noreorientation");
     bool do_reorientation = false;
     if (output_header.ndim() > 3) {
-      value_type val = (Math::sqrt (float (1 + 8 * output_header.dim(3))) - 3.0) / 4.0;
+      value_type val = (Math::sqrt (value_type (1 + 8 * output_header.dim(3))) - 3.0) / 4.0;
       if (!(val - (int)val) && !opt.size()) {
         do_reorientation = true;
         CONSOLE ("SH series detected, performing apodised PSF reorientation");
@@ -225,10 +227,10 @@ void run ()
       Math::SH::S2C (directions_el_az, directions_cartesian);
     }
 
-    Image::BufferPreload<float>::voxel_type in (*input_buffer);
+    InputBufferType::voxel_type in (*input_buffer);
 
-    Image::Buffer<float> output_buffer (argument[1], output_header);
-    Image::Buffer<float>::voxel_type output_vox (output_buffer);
+    OutputBufferType output_buffer (argument[1], output_header);
+    OutputBufferType::voxel_type output_vox (output_buffer);
 
     switch (interp) {
       case 0:
@@ -267,10 +269,10 @@ void run ()
       }
     }
 
-    Image::Buffer<float>::voxel_type in (*input_buffer);
+    InputBufferType::voxel_type in (*input_buffer);
 
-    Image::Buffer<float> data_out (argument[1], output_header);
-    Image::Buffer<float>::voxel_type out (data_out);
+    OutputBufferType data_out (argument[1], output_header);
+    OutputBufferType::voxel_type out (data_out);
 
     Image::copy_with_progress (in, out);
   }
