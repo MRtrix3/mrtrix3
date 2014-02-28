@@ -61,7 +61,7 @@ namespace MR
       template <typename T> inline Matrix<T>& decomp (Matrix<T>& A, Permutation& p, int& signum)
       {
         gsl_linalg_LU_decomp (A.gsl(), p.gsl(), &signum);
-        return (A);
+        return A;
       }
 
       //! inverse of A given its %LU decomposition D,p
@@ -69,7 +69,7 @@ namespace MR
       {
         I.allocate (D);
         gsl_linalg_LU_invert (D.gsl(), p.gsl(), I.gsl());
-        return (I);
+        return I;
       }
 
       //! solve A*x = b given %LU decomposition D,p of A
@@ -77,14 +77,14 @@ namespace MR
       {
         x.allocate (D.rows());
         gsl_linalg_LU_solve (D.gsl(), p.gsl(), b.gsl(), x.gsl());
-        return (x);
+        return x;
       }
 
       //! solve A*x = b given %LU decomposition D,p of A, in place (b passed in as x).
       template <typename T> inline Vector<T>& solve (Vector<T>& x, const Matrix<T>& D, const Permutation& p)
       {
         gsl_linalg_LU_svx (D.gsl(), p.gsl(), x.gsl());
-        return (x);
+        return x;
       }
 
       //! inverse of A by %LU decomposition
@@ -95,7 +95,19 @@ namespace MR
         int signum;
         Matrix<T> D (A);
         decomp (D, p, signum);
-        return (inv (I, D, p));
+        return inv (I, D, p);
+      }
+
+      //! inverse of A by %LU decomposition
+      template <typename T> inline Matrix<T> inv (const Matrix<T>& A)
+      {
+        Matrix<T> I (A.rows(), A.columns());
+        Permutation p (A.rows());
+        int signum;
+        Matrix<T> D (A);
+        decomp (D, p, signum);
+        inv (I, D, p);
+        return I;
       }
 
 
