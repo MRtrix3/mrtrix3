@@ -76,7 +76,11 @@ void usage ()
         "of a 4x4 ascii file. Note the standard 'reverse' convention "
         "is used, where the transform maps points in the template image "
         "to the moving image.")
-    + Argument ("transform").type_file ()
+    +   Argument ("transform").type_file ()
+
+    + Option ("flip",
+        "flip the specified axes, provided as a comma-separated list of indices (0:x, 1:y, 2:z).")
+    +   Argument ("axes").type_sequence_int()
 
     + Option ("inverse", 
         "apply the inverse transformation")
@@ -166,6 +170,32 @@ void run ()
     linear_transform.swap (I);
   }
 
+  opt = get_options ("flip");
+  if (opt.size()) {
+    std::vector<int> axes = opt[0][0];
+    Math::Matrix<float> flip (4,4);
+    flip.identity();
+    for (size_t i = 0; i < axes.size(); ++i) {
+      if (axes[i] < 0 || axes[i] > 2)
+        throw Exception ("axes supplied to -flip are out of bounds (" + std::string (opt[0][0]) + ")");
+      flip(axes[i],3) += flip(axes[i],axes[i]) * input_header.vox(axes[i]) * (input_header.dim(axes[i])-1);
+      flip(axes[i], axes[i]) *= -1.0;
+    }
+
+    if (!linear_transform.is_set()) {
+      linear_transform.allocate (4,4);
+      linear_transform.identity();
+    }
+    
+    Math::Matrix<float> tmp;
+    if (!replace) {
+      Math::Matrix<float> irot = Math::LU::inv (input_header.transform());
+      Math::mult (tmp, flip, irot);
+      Math::mult (flip, input_header.transform(), tmp);
+    }
+    Math::mult (tmp, linear_transform, flip);
+    linear_transform = tmp;
+  }
 
   if (replace)
     if (!linear_transform.is_set())
@@ -183,10 +213,8 @@ void run ()
         Math::Matrix<float> rot = linear_transform.sub(0,3,0,3);
         if (replace) {
           Math::Matrix<float> irot = Math::LU::inv (input_header.transform().sub (0,3,0,3));
-          VAR (irot);
           Math::mult (rot, linear_transform.sub(0,3,0,3), irot);
         }
-        VAR (rot);
 
         Math::Vector<float> g (3);
         for (size_t n = 0; n < grad.rows(); ++n) {
@@ -313,6 +341,7 @@ void run ()
   else {
     // straight copy:
     INFO ("image will not be regridded");
+
     if (linear_transform.is_set()) {
       output_header.comments().push_back ("transform modified");
       if (replace)
