@@ -51,9 +51,11 @@ void usage ()
   + "If a linear transform is applied without a template image the command "
     "will modify the image header transform matrix"
 
-  + "FOD reorientation (with apodised point spread functions) will be performed by default if the number of volumes "
-    "in the 4th dimension equals the number of coefficients in an antipodally symmetric spherical harmonic series (e.g. 6, 15, 28 etc). "
-    "The -no_reorientation option can be used to force reorientation off if required.";
+  + "FOD reorientation (with apodised point spread functions) will be performed "
+    "by default if the number of volumes in the 4th dimension equals the number "
+    "of coefficients in an antipodally symmetric spherical harmonic series (e.g. "
+    "6, 15, 28 etc). The -no_reorientation option can be used to force "
+    "reorientation off if required.";
 
 
 
@@ -62,44 +64,63 @@ void usage ()
   + Argument ("output", "the output image.").type_image_out ();
 
   OPTIONS
-  + Option ("linear", "specify a 4x4 linear transform to apply, in the form "
-                      "of a 4x4 ascii file. Note the standard 'reverse' convention "
-                      "is used, where the transform maps points in the template image "
-                      "to the moving image.")
+    + OptionGroup ("Affine transformation options")
+
+    + Option ("linear", 
+        "specify a 4x4 linear transform to apply, in the form "
+        "of a 4x4 ascii file. Note the standard 'reverse' convention "
+        "is used, where the transform maps points in the template image "
+        "to the moving image.")
     + Argument ("transform").type_file ()
 
-  + Option ("warp", "apply a non-linear transform to the input image. If no template image is supplied, "
-                    "then the input warp will define the output image dimensions.")
+    + Option ("inverse", 
+        "apply the inverse transformation")
+
+    + Option ("replace", 
+        "replace the linear transform of the original image by that specified, "
+        "rather than applying it to the original image.")
+
+    + OptionGroup ("Regridding options")
+
+    + Option ("template", 
+        "reslice the input image to match the specified template image.")
     + Argument ("image").type_image_in ()
 
-  + Option ("template", "reslice the input image to match the specified template image.")
-    + Argument ("image").type_image_in ()
-
-  + Option ("inverse", "apply the inverse transformation")
-
-  + Option ("replace", "replace the linear transform of the original image by that specified, "
-                       "rather than applying it to the original image.")
-
-  + Option ("interp", "set the interpolation method to use when reslicing (default: cubic).")
+    + Option ("interp", 
+        "set the interpolation method to use when reslicing (default: cubic).")
     + Argument ("method").type_choice (interp_choices)
 
-  + Option ("oversample", "set the oversampling factor to use when down sampling (i.e. the "
-                          "number of samples to take and average per voxel along each spatial dimension). "
-                          "This should be supplied as a vector of 3 integers. By default, the "
-                          "oversampling factor is determined based on the differences between "
-                          "input and output voxel sizes.")
+    + Option ("oversample", 
+        "set the oversampling factor to use when down-sampling (i.e. the "
+        "number of samples to take and average per voxel along each spatial dimension). "
+        "This should be supplied as a vector of 3 integers. By default, the "
+        "oversampling factor is determined based on the differences between "
+        "input and output voxel sizes.")
     + Argument ("factors").type_sequence_int()
 
-  + Option ("nan", "Use NaN as the out of bounds value (Default: 0.0)")
+    + OptionGroup ("Non-linear transformation options")
 
-  + Option ("directions", "the directions used for FOD reorienation using apodised point spread functions (Default: 60 directions)")
+    + Option ("warp", 
+        "apply a non-linear transform to the input image. If no template image is supplied, "
+        "then the input warp will define the output image dimensions.")
+    + Argument ("image").type_image_in ()
+
+    + OptionGroup ("Fibre orientation distribution handling options")
+
+    + Option ("directions", 
+        "the directions used for FOD reorientation using apodised point spread functions "
+        "(Default: 60 directions)")
     + Argument ("file", "a list of directions [az el] generated using the gendir command.").type_file()
 
-  + Option ("noreorientation", "turn off FOD reorientation. Reorientation is on by default if the number "
-                               "of volumes in the 4th dimension corresponds to the number of coefficients in an "
-                               "antipodally symmetric spherical harmonic series (i.e. 6, 15, 28, 45, 66 etc")
+    + Option ("noreorientation", 
+        "turn off FOD reorientation. Reorientation is on by default if the number "
+        "of volumes in the 4th dimension corresponds to the number of coefficients in an "
+        "antipodally symmetric spherical harmonic series (i.e. 6, 15, 28, 45, 66 etc")
 
-  + DataType::options ();
+    + DataType::options ()
+
+    + Option ("nan", 
+      "Use NaN as the out of bounds value (Default: 0.0)");
 }
 
 
