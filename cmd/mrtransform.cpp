@@ -35,6 +35,7 @@
 #include "image/loop.h"
 #include "image/copy.h"
 #include "dwi/directions/predefined.h"
+#include "dwi/gradient.h"
 #include "image/registration/transform/reorient.h"
 
 
@@ -55,7 +56,11 @@ void usage ()
     "by default if the number of volumes in the 4th dimension equals the number "
     "of coefficients in an antipodally symmetric spherical harmonic series (e.g. "
     "6, 15, 28 etc). The -no_reorientation option can be used to force "
-    "reorientation off if required.";
+    "reorientation off if required."
+  
+  + "If a DW scheme is contained in the header (or specified separately), and "
+    "the number of directions matches the number of volumes in the images, any "
+    "transformation applied using the -linear option will be also be applied to the directions.";
 
 
 
@@ -117,6 +122,8 @@ void usage ()
         "of volumes in the 4th dimension corresponds to the number of coefficients in an "
         "antipodally symmetric spherical harmonic series (i.e. 6, 15, 28, 45, 66 etc")
 
+    + DWI::GradOption
+
     + DataType::options ()
 
     + Option ("nan", 
@@ -142,24 +149,8 @@ void run ()
       throw Exception ("transform matrix supplied in file \"" + opt[0][0] + "\" is not 4x4");
   }
 
-  Ptr<InputBufferType> input_buffer;
   Image::Header input_header (argument[0]);
   Image::Header output_header (input_header);
-
-  if (input_header.ndim() == 4) {
-    Image::Stride::List stride (4);
-    stride[0] = 2;
-    stride[1] = 3;
-    stride[2] = 4;
-    stride[3] = 1;
-    output_header.stride(0) = 2;
-    output_header.stride(1) = 3;
-    output_header.stride(2) = 4;
-    output_header.stride(3) = 1;
-    input_buffer = new InputBufferType (input_header, stride);
-  } else {
-    input_buffer = new InputBufferType (input_header);
-  }
 
 
   output_header.datatype() = DataType::from_command_line (output_header.datatype());
@@ -180,8 +171,43 @@ void run ()
     if (!linear_transform.is_set())
       throw Exception ("no transform provided for option '-replace' (specify using '-transform' option)");
 
+
+
+
+  if (linear_transform.is_set() && input_header.ndim() == 4) {
+    try {
+      Math::Matrix<float> grad = DWI::get_DW_scheme<float> (input_header);
+      if (input_header.dim (3) == (int) grad.rows()) {
+        INFO ("DW gradients will be reoriented");
+
+        Math::Matrix<float> rot = linear_transform.sub(0,3,0,3);
+        if (replace) {
+          Math::Matrix<float> irot = Math::LU::inv (input_header.transform().sub (0,3,0,3));
+          VAR (irot);
+          Math::mult (rot, linear_transform.sub(0,3,0,3), irot);
+        }
+        VAR (rot);
+
+        Math::Vector<float> g (3);
+        for (size_t n = 0; n < grad.rows(); ++n) {
+          Math::mult (g, rot, grad.row(n).sub(0,3));
+          grad.row(n).sub(0,3) = g;
+        }
+
+        output_header.DW_scheme() = grad;
+      }
+    }
+    catch (Exception& e) {
+      e.display (2);
+    }
+  }
+
+
+
   opt = get_options ("template"); // need to reslice
   if (opt.size()) {
+    INFO ("image will be regridded");
+
     std::string name = opt[0][0];
     Image::ConstHeader template_header (name);
 
@@ -219,18 +245,13 @@ void run ()
     if (opt.size())
       out_of_bounds_value = NAN;
 
-    if (replace) {
-      Image::Info& info_in (*input_buffer);
-      info_in.transform().swap (linear_transform);
-      linear_transform.clear();
-    }
+    Image::Stride::List stride = Image::Stride::get (input_header);
 
-
-    Math::Matrix<value_type> directions_cartesian;
     Options opt = get_options ("noreorientation");
     bool do_reorientation = false;
-    if (!opt.size() && output_header.ndim() > 3 && 
-        output_header.dim(3) == Math::SH::NforL (Math::SH::LforN (output_header.dim(3)))) {
+    Math::Matrix<value_type> directions_cartesian;
+    if (!opt.size() && input_header.ndim() == 4 && 
+        input_header.dim(3) == (int) Math::SH::NforL (Math::SH::LforN (input_header.dim(3)))) {
       do_reorientation = true;
       CONSOLE ("SH series detected, performing apodised PSF reorientation");
 
@@ -241,9 +262,24 @@ void run ()
       else
         DWI::Directions::electrostatic_repulsion_60 (directions_el_az);
       Math::SH::S2C (directions_el_az, directions_cartesian);
+
+      stride[0] = 2;
+      stride[1] = 3;
+      stride[2] = 4;
+      stride[3] = 1;
+      Image::Stride::set (output_header, stride);
     }
 
-    InputBufferType::voxel_type in (*input_buffer);
+    InputBufferType input_buffer (input_header, stride);
+    if (replace) {
+      Image::Info& info_in (input_buffer);
+      info_in.transform().swap (linear_transform);
+      linear_transform.clear();
+    }
+    InputBufferType::voxel_type in (input_buffer);
+
+    // required to prevent MRtrix from redefining frame of reference:
+    Image::ProtectTransform protect;
 
     OutputBufferType output_buffer (argument[1], output_header);
     OutputBufferType::voxel_type output_vox (output_buffer);
@@ -273,8 +309,10 @@ void run ()
     }
 
 
-  } else {
+  } 
+  else {
     // straight copy:
+    INFO ("image will not be regridded");
     if (linear_transform.is_set()) {
       output_header.comments().push_back ("transform modified");
       if (replace)
@@ -284,8 +322,15 @@ void run ()
         Math::mult (output_header.transform(), linear_transform, M);
       }
     }
+    input_header.transform().save ("in.txt");
+    output_header.transform().save ("out.txt");
+    linear_transform.save ("T.txt");
 
-    InputBufferType::voxel_type in (*input_buffer);
+    Image::Buffer<value_type> input_buffer (input_header);
+    Image::Buffer<value_type>::voxel_type in (input_buffer);
+
+    // required to prevent MRtrix from redefining frame of reference:
+    Image::ProtectTransform protect;
 
     OutputBufferType data_out (argument[1], output_header);
     OutputBufferType::voxel_type out (data_out);
