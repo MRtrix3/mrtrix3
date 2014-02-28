@@ -170,7 +170,7 @@ void run ()
   const int downsample = opt.size() ? int(opt[0][0]) : 1;
 
   // Parameters that the output thread needs to be aware of
-  opt = get_options("number");
+  opt = get_options ("number");
   const size_t number = opt.size() ? size_t(opt[0][0]) : 0;
   opt = get_options ("skip");
   const size_t skip   = opt.size() ? size_t(opt[0][0]) : 0;
