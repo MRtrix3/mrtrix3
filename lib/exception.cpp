@@ -59,6 +59,8 @@ namespace MR
 #else
     std::cerr << App::NAME << console_prefix (type) << msg << "\n";
 #endif
+    if (type == 1 && App::fail_on_warn)
+      throw Exception ("terminating due to request to fail on warning");
   }
 
 

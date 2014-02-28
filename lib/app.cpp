@@ -49,6 +49,7 @@ namespace MR
                                      + Option ("force", "force overwrite of output files.")
                                      + Option ("nthreads", "use this number of threads in multi-threaded applications")
                                        + Argument ("number").type_integer (0, 1, std::numeric_limits<int>::max())
+                                     + Option ("failonwarn", "terminate program if a warning is produced")
                                      + Option ("help", "display this information page and exit.")
                                      + Option ("version", "display version information and exit.");
 
@@ -64,6 +65,7 @@ namespace MR
     std::vector<ParsedArgument> argument;
     std::vector<ParsedOption> option;
     int log_level = 1;
+    bool fail_on_warn = false;
 
     int argc = 0;
     char** argv = NULL;
@@ -232,8 +234,13 @@ namespace MR
         else
           argument.push_back (ParsedArgument (NULL, NULL, argv[n]));
       }
+    }
 
 
+
+
+    void load_standard_options()
+    {
       if (get_options ("info").size()) {
         if (log_level < 2)
           log_level = 2;
@@ -246,14 +253,8 @@ namespace MR
         WARN ("existing output files will be overwritten");
         overwrite_files = true;
       }
-      if (get_options ("help").size()) {
-        print_help();
-        throw 0;
-      }
-      if (get_options ("version").size()) {
-        print (version_string());
-        throw 0;
-      }
+      if (get_options ("failonwarn").size() || File::Config::get_bool ("FailOnWarn", false))
+        fail_on_warn = true;
     }
 
 
@@ -272,6 +273,15 @@ namespace MR
       }
 
       sort_arguments (argc, argv);
+
+      if (get_options ("help").size()) {
+        print_help();
+        throw 0;
+      }
+      if (get_options ("version").size()) {
+        print (version_string());
+        throw 0;
+      }
 
       size_t num_args_required = 0, num_command_arguments = 0;
       bool has_optional_arguments = false;
@@ -339,8 +349,9 @@ namespace MR
       }
 
       File::Config::init ();
-    }
 
+      load_standard_options();
+    }
 
 
 
