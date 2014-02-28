@@ -225,20 +225,15 @@ void run ()
       linear_transform.clear();
     }
 
-    Options opt = get_options ("noreorientation");
-    bool do_reorientation = false;
-    if (output_header.ndim() > 3) {
-      value_type val = (Math::sqrt (value_type (1 + 8 * output_header.dim(3))) - 3.0) / 4.0;
-      if (!(val - (int)val) && !opt.size()) {
-        do_reorientation = true;
-        CONSOLE ("SH series detected, performing apodised PSF reorientation");
-      }
-    }
-
-
 
     Math::Matrix<value_type> directions_cartesian;
-    if (do_reorientation) {
+    Options opt = get_options ("noreorientation");
+    bool do_reorientation = false;
+    if (!opt.size() && output_header.ndim() > 3 && 
+        output_header.dim(3) == Math::SH::NforL (Math::SH::LforN (output_header.dim(3)))) {
+      do_reorientation = true;
+      CONSOLE ("SH series detected, performing apodised PSF reorientation");
+
       Math::Matrix<value_type> directions_el_az;
       opt = get_options ("directions");
       if (opt.size())
