@@ -30,6 +30,8 @@ namespace MR
   namespace Image
   {
 
+    bool ProtectTransform::leave_transform_unmodified = false;
+
     namespace
     {
 
@@ -107,7 +109,7 @@ namespace MR
       }
 
       if (!transform().is_set())
-        Image::Transform::set_default (transform_, *this);
+        Transform::set_default (transform_, *this);
 
       transform_ (3,0) = transform_ (3,1) = transform_ (3,2) = 0.0;
       transform_ (3,3) = 1.0;
@@ -118,8 +120,11 @@ namespace MR
 
     void Info::sanitise_strides ()
     {
-      Image::Stride::sanitise (*this);
-      Image::Stride::symbolise (*this);
+      Stride::sanitise (*this);
+      Stride::symbolise (*this);
+
+      if (ProtectTransform::leave_transform_unmodified) 
+        return;
 
       // find which row of the transform is closest to each scanner axis:
       Math::Permutation perm (3);

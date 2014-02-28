@@ -213,6 +213,20 @@ namespace MR
         using Info::sanitise;
     };
 
+
+
+    class ProtectTransform {
+      public:
+        ProtectTransform () { start(); } 
+        ~ProtectTransform () { stop(); }
+
+        void start () { leave_transform_unmodified = true; }
+        void stop () { leave_transform_unmodified = false; }
+      private:
+        static bool leave_transform_unmodified;
+        friend class Info;
+    };
+
   }
   //! @}
 }
