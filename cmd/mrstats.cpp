@@ -27,10 +27,13 @@
 #include "image/voxel.h"
 #include "image/buffer.h"
 #include "image/loop.h"
+#include "math/median.h"
 
 
 using namespace MR;
 using namespace App;
+
+const char * field_choices[] = { "mean", "median", "std", "min", "max", "count", NULL };
 
 void usage () {
 DESCRIPTION
@@ -42,6 +45,11 @@ ARGUMENTS
   .type_image_in ();
 
 OPTIONS
+  + Option ("output",
+      "output only the field specified. Multiple such options can be supplied if required. "
+      "Choices are: " + join (field_choices, ", ") + ". Useful for use in scripts.").allow_multiple()
+  +   Argument ("field").type_choice (field_choices)
+
   + Option ("mask",
   "only perform computation within the specified binary brain mask image.")
   + Argument ("image").type_image_in ()
@@ -158,37 +166,53 @@ class Stats
       }
     }
 
-    template <class Set> void print (Set& ima) {
-
-      std::string s = "[ ";
-      if (ima.ndim() > 3) 
-        for (size_t n = 3; n < ima.ndim(); n++)
-          s += str (ima[n]) + " ";
-      else 
-        s += "0 ";
-      s += "] ";
-
-      int width = is_complex ? 24 : 12;
-      std::cout << std::setw(15) << std::right << s << " ";
+    template <class Set> void print (Set& ima, const std::vector<std::string>& fields) {
 
       if (count) {
         mean /= double (count);
         std = complex_type (sqrt (std.real()/double(count) - mean.real()*mean.real()),
             sqrt (std.imag()/double(count) - mean.imag()*mean.imag()));
       }
-      std::cout << std::setw(width) << std::right << ( count ? str(mean) : "N/A" );
 
-      if (count && !is_complex) {
-        std::sort(values.rbegin(), values.rend());
-      }
+      std::sort (values.begin(), values.end());
 
-      if (!is_complex) {
-        std::cout << " " << std::setw(width) << std::right << ( count ? str(values[round(float(values.size()) / 2.0)]) : "N/A" );
+      if (fields.size()) {
+        if (!count) 
+          return;
+        for (size_t n = 0; n < fields.size(); ++n) {
+          if (fields[n] == "mean") std::cout << str(mean) << " ";
+          else if (fields[n] == "median") std::cout << Math::median (values) << " ";
+          else if (fields[n] == "std") std::cout << str(std) << " ";
+          else if (fields[n] == "min") std::cout << str(max) << " ";
+          else if (fields[n] == "max") std::cout << str(min) << " ";
+          else if (fields[n] == "count") std::cout << count << " ";
+        }
+        std::cout << "\n";
+
       }
-      std::cout << " " << std::setw(width) << std::right << ( count > 1 ? str(std) : "N/A" )
-        << " " << std::setw(width) << std::right << ( count ? str(min) : "N/A" )
-        << " " << std::setw(width) << std::right << ( count ? str(max) : "N/A" )
-        << " " << std::setw(12) << std::right << count << "\n";
+      else {
+
+        std::string s = "[ ";
+        if (ima.ndim() > 3) 
+          for (size_t n = 3; n < ima.ndim(); n++)
+            s += str (ima[n]) + " ";
+        else 
+          s += "0 ";
+        s += "] ";
+
+        int width = is_complex ? 24 : 12;
+        std::cout << std::setw(15) << std::right << s << " ";
+
+        std::cout << std::setw(width) << std::right << ( count ? str(mean) : "N/A" );
+
+        if (!is_complex) {
+          std::cout << " " << std::setw(width) << std::right << ( count ? str(Math::median (values)) : "N/A" );
+        }
+        std::cout << " " << std::setw(width) << std::right << ( count > 1 ? str(std) : "N/A" )
+          << " " << std::setw(width) << std::right << ( count ? str(min) : "N/A" )
+          << " " << std::setw(width) << std::right << ( count ? str(max) : "N/A" )
+          << " " << std::setw(12) << std::right << count << "\n";
+      }
 
     }
 
@@ -226,7 +250,6 @@ void run () {
   Image::Loop inner_loop (0, 3);
   Image::Loop outer_loop (3);
 
-  bool header_shown (!App::log_level);
   Ptr<std::ostream> dumpstream, hist_stream, position_stream;
 
   Options opt = get_options ("histogram");
@@ -258,6 +281,13 @@ void run () {
     if (!*position_stream)
       throw Exception ("error opening positions file \"" + opt[0][0] + "\": " + strerror (errno));
   }
+
+  std::vector<std::string> fields;
+  opt = get_options ("output");
+  for (size_t n = 0; n < opt.size(); ++n) 
+    fields.push_back (opt[n][0]);
+
+  bool header_shown (!App::log_level || fields.size());
 
   Options voxels = get_options ("voxel");
 
@@ -307,7 +337,7 @@ void run () {
         print_header (vox.datatype().is_complex());
       header_shown = true;
 
-      stats.print (vox);
+      stats.print (vox, fields);
 
       if (hist_stream)
         stats.write_histogram (*hist_stream);
@@ -354,7 +384,7 @@ void run () {
         print_header (vox.datatype().is_complex());
       header_shown = true;
 
-      stats.print (vox);
+      stats.print (vox, fields);
 
       if (hist_stream)
         stats.write_histogram (*hist_stream);
@@ -420,7 +450,7 @@ void run () {
       print_header (vox.datatype().is_complex());
     header_shown = true;
 
-    stats.print (vox);
+    stats.print (vox, fields);
 
     if (hist_stream)
       stats.write_histogram (*hist_stream);
