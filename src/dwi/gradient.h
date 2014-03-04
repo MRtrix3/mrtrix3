@@ -263,8 +263,8 @@ namespace MR
           const Image::Header& header, 
           Math::Matrix<ValueType>& grad,
           Math::Matrix<ValueType>& directions,
-          std::vector<int>& dwis, 
-          std::vector<int>& bzeros, 
+          std::vector<size_t>& dwis, 
+          std::vector<size_t>& bzeros, 
           bool lmax_from_command_line = true, 
           int lmax = -1, 
           int max_lmax = 8, 
@@ -273,7 +273,11 @@ namespace MR
         grad = get_valid_DW_scheme<ValueType> (header);
         normalise_grad (grad);
 
-        guess_DW_directions (dwis, bzeros, grad, bvalue_threshold);
+        DWI::Shells shells (grad);
+        shells.select_shells (true, true);
+        if (shells.smallest().is_bzero())
+          bzeros = shells.smallest().get_volumes();
+        dwis = shells.largest().get_volumes();
 
         if (lmax_from_command_line) {
           App::Options opt = App::get_options ("lmax");
@@ -312,7 +316,7 @@ namespace MR
           int max_lmax = 8, 
           ValueType bvalue_threshold = NAN)
       {
-        std::vector<int> dwis, bzeros;
+        std::vector<size_t> dwis, bzeros;
         Math::Matrix<ValueType> grad, directions;
         return get_SH2amp_mapping (header, grad, directions, dwis, bzeros, lmax_from_command_line, lmax, max_lmax, bvalue_threshold);
       }
