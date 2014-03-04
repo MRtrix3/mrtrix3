@@ -175,25 +175,11 @@ void run ()
     std::vector<int> axes = opt[0][0];
     Math::Matrix<float> flip (4,4);
     flip.identity();
-
-    Math::Matrix<float> grad = DWI::get_DW_scheme<float> (input_header);
-    Image::Transform transform (input_header);
-
     for (size_t i = 0; i < axes.size(); ++i) {
       if (axes[i] < 0 || axes[i] > 2)
         throw Exception ("axes supplied to -flip are out of bounds (" + std::string (opt[0][0]) + ")");
       flip(axes[i],3) += flip(axes[i],axes[i]) * input_header.vox(axes[i]) * (input_header.dim(axes[i])-1);
       flip(axes[i], axes[i]) *= -1.0;
-      if (grad.is_set()) {
-        for (size_t dir = 0; dir < grad.rows(); dir++) {
-          Math::Vector<float> grad_flipped (3);
-          transform.scanner2image_dir (grad.row(dir).sub(0,3), grad_flipped);
-          grad_flipped[axes[i]] = -grad_flipped[axes[i]];
-          Math::Vector<float> grad_flipped_scanner (3);
-          transform.image2scanner_dir (grad_flipped, grad_flipped_scanner);
-          grad.row(dir).sub(0,3) = grad_flipped_scanner;
-        }
-      }
     }
 
     if (!linear_transform.is_set()) {
@@ -209,9 +195,6 @@ void run ()
     }
     Math::mult (tmp, linear_transform, flip);
     linear_transform = tmp;
-
-    if (grad.is_set())
-      output_header.DW_scheme() = grad;
   }
 
   if (replace)
