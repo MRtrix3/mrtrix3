@@ -207,6 +207,8 @@ namespace MR
         QMenu* menu;
         QToolButton* button;
 
+        setTabPosition (Qt::AllDockWidgetAreas, QTabWidget::North);
+
         // Main toolbar:
 
         Qt::ToolBarArea toolbar_position = Qt::TopToolBarArea;
@@ -599,6 +601,7 @@ namespace MR
           else 
             WARN ("invalid specifier \"" + cbar_pos + "\" for config file entry \"MRViewColourBarPosition\"");
         }
+
       }
 
 
@@ -734,11 +737,27 @@ namespace MR
         if (!tool) {
           tool = dynamic_cast<Tool::__Action__*>(action)->create (*this);
           connect (tool, SIGNAL (visibilityChanged (bool)), action, SLOT (setChecked (bool)));
+          for (int i = 0; i < tool_group->actions().size(); ++i) {
+            Tool::Dock* other_tool = dynamic_cast<Tool::__Action__*>(tool_group->actions()[i])->dock;
+            if (other_tool && other_tool != tool) {
+              QList<QDockWidget* > list = QMainWindow::tabifiedDockWidgets (other_tool);
+              if (list.size())
+                QMainWindow::tabifyDockWidget (list.last(), tool);
+              else
+                QMainWindow::tabifyDockWidget (other_tool, tool);
+              tool->show();
+              tool->raise();
+              return;
+            }
+          }
         }
-        if (action->isChecked()) 
-          tool->show();
-        else 
+        if (action->isChecked()) {
+          if (!tool->isVisible())
+            tool->show();
+          tool->raise();
+        } else {
           tool->close();
+        }
         glarea->updateGL();
       }
 
