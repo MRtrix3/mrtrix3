@@ -627,8 +627,14 @@ namespace MR
           return;
 
         VecPtr<MR::Image::Header> list;
-        for (size_t n = 0; n < image_list.size(); ++n) 
-          list.push_back (new MR::Image::Header (image_list[n]));
+        for (size_t n = 0; n < image_list.size(); ++n) {
+          try {
+            list.push_back (new MR::Image::Header (image_list[n]));
+          }
+          catch (Exception& E) {
+            E.display();
+          }
+        }
         add_images (list);
       }
 
