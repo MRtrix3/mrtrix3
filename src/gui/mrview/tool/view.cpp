@@ -423,8 +423,6 @@ namespace MR
           focus_y->setRate (rate);
           focus_z->setRate (rate);
 
-          set_transparency_from_image();
-
           lower_threshold_check_box->setChecked (window.image()->use_discard_lower());
           upper_threshold_check_box->setChecked (window.image()->use_discard_upper());
         }
@@ -601,6 +599,8 @@ namespace MR
             float rate = window.image()->scaling_rate();
             min_entry->setRate (rate);
             max_entry->setRate (rate);
+
+            set_transparency_from_image();
           }
         }
 
@@ -694,66 +694,6 @@ namespace MR
 
 
 
-
-
-        /*
-           QAction* selected = clip_planes_option_menu->exec (globalPos);
-
-           if (selected == clip_planes_clear_action) 
-           clip_planes_model->clear();
-           else if (selected == clip_planes_new_action[0]) 
-           clip_planes_model->add (window.image()->interp, 2);
-           else if (selected == clip_planes_new_action[1]) 
-           clip_planes_model->add (window.image()->interp, 0);
-           else if (selected == clip_planes_new_action[2]) 
-           clip_planes_model->add (window.image()->interp, 1);
-           else if (selected == clip_planes_help_action) {
-           QMessageBox* help = new QMessageBox (QMessageBox::Information, "Clip Planes", 
-           "Clip Planes are only available in Volume Render mode "
-           "(along with transparency and thresholding).\n\n"
-           "Adding clip planes is done through the list view "
-                "context menu (right-click on the list); "
-                "this provides the option of adding or removing clip "
-                "planes, inverting them, or resetting them to known positions.\n\n"
-                "Clip planes can be enabled via their corresponding tick-box, "
-                "or more globally via the 'Clip planes' group tick box.\n\n"
-                "More fine-grained manipulation is achieved by selecting the clip "
-                "planes to be modified (use shift- or Ctrl- left click to select "
-                "multiple clip planes), and using the same mouse gestures that would "
-                "normally be used to interact with the image; if any clip planes are "
-                "currently selected, they will be modified according to the actions "
-                "performed, instead of the image itself. "
-                "Click in a blank area of the list to return to normal operation.",
-                QMessageBox::Close);
-            help->setModal (false);
-            help->show();
-          }
-
-          else {
-            QModelIndexList indices = clip_planes_list_view->selectionModel()->selectedIndexes();
-            
-            if (selected == clip_planes_invert_action) {
-            for (int i = 0; i < indices.size(); ++i) 
-              clip_planes_model->invert (indices[i]);
-            }
-            else if (selected == clip_planes_remove_action) {
-              while (indices.size()) {
-                clip_planes_model->remove (indices.first());
-                indices = clip_planes_list_view->selectionModel()->selectedIndexes();
-              }
-            }
-
-            else {
-              int n = (selected == clip_planes_reset_action[0]) ? 2 : ( (selected == clip_planes_reset_action[1]) ? 0 : 1 );
-              QModelIndexList indices = clip_planes_list_view->selectionModel()->selectedIndexes();
-              for (int i = 0; i < indices.size(); ++i) 
-                clip_planes_model->reset (indices[i], window.image()->interp, n);
-            }
-          }
-
-          window.updateGL();
-        }
-        */
 
 
 
