@@ -411,6 +411,11 @@ namespace MR
 
         void View::onImageChanged () 
         {
+          setEnabled (window.image());
+
+          if (!window.image()) 
+            return;
+
           onScalingChanged();
 
           float rate = window.image()->focus_rate();
