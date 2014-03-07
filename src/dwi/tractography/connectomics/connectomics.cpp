@@ -135,6 +135,7 @@ Metric_base* load_metric (Image::Buffer<node_t>& nodes_data)
     default: throw Exception ("Undefined edge weight metric");
 
   }
+  return NULL;
 }
 
 
