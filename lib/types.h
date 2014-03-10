@@ -107,6 +107,13 @@ namespace MR
   typedef std::complex<double> cdouble;
   typedef std::complex<float> cfloat;
 
+  template <typename T>
+    struct container_cast : public T {
+      template <typename U>
+        container_cast (const U& x) : 
+        T (x.begin(), x.end()) { }
+    };
+
 
 }
 
