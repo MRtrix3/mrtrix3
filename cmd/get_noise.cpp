@@ -76,12 +76,16 @@ void run ()
   header.datatype() = DataType::Float32;
   Image::Buffer<value_type> noise_buffer (argument[1], header);
 
-  std::vector<int> dwis, bzeros;
-  DWI::guess_DW_directions (dwis, bzeros, dwi_buffer.DW_scheme());
-  Math::Matrix<value_type> mapping = DWI::get_SH2amp_mapping<value_type> (dwi_buffer);
+  std::vector<size_t> dwis, bzeros;
+  Math::Matrix<value_type> mapping;
+  {
+    Math::Matrix<value_type> grad, directions;
+    mapping = DWI::get_SH2amp_mapping<value_type> (dwi_buffer, grad, mapping, dwis, bzeros);
+  }
+
 
   Image::Buffer<value_type>::voxel_type dwi_voxel (dwi_buffer);
-  Image::Adapter::Extract1D<Image::Buffer<value_type>::voxel_type> dwi (dwi_voxel, 3, dwis);
+  Image::Adapter::Extract1D<Image::Buffer<value_type>::voxel_type> dwi (dwi_voxel, 3, container_cast< std::vector<int> > (dwis));
   Image::Buffer<value_type>::voxel_type noise (noise_buffer);
 
   VAR (dwi.info());
