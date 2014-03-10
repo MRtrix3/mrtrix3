@@ -52,16 +52,12 @@ void usage ()
 
   + Argument ("contrast", "the contrast matrix, only specify one contrast as it will automatically compute the opposite contrast.").type_file()
 
-  + Argument ("mask", "a mask used to define voxels included in the analysis. "
-                      "Note that a 4D mask must be supplied for AFD analysis - "
-                      "computed by doing an SH2amp on the group average CSD8 image then mrthreshold").type_image_in()
+  + Argument ("mask", "a mask used to define voxels included in the analysis.").type_image_in()
 
   + Argument ("output", "the filename prefix for all output.").type_text();
 
 
   OPTIONS
-  + Option ("afd", "assume input images are FOD images (i.e. perform AFD voxel-based analysis.")
-
   + Option ("nperms", "the number of permutations (default = 5000).")
   +   Argument ("num").type_integer (1, 5000, 100000)
 
@@ -77,14 +73,6 @@ void usage ()
 
   + Option ("tfce_h", "TFCE extent parameter (default = 0.5)")
   +   Argument ("value").type_float (0.001, 0.5, 100000)
-
-  + Option ("directions", "the directions (corresponding to the input mask) used to sample AFD. "
-                          "By default this option is not required providing the direction set can "
-                          "be found within the mask image header.")
-  +   Argument ("file", "a list of directions [az el] generated using the gendir command.").type_file()
-
-  + Option ("angle", "the angular threshold used to define neighbouring orientations (in degrees)")
-  +   Argument ("value").type_float (0.001, 12, 90)
 
   + Option ("connectivity", "use 26 neighbourhood connectivity (Default: 6)");
 }
@@ -121,7 +109,6 @@ void run() {
     num_perms = opt[0][0];
 
   bool do_26_connectivity = get_options("connectivity").size();
-  bool do_afd = get_options ("afd").size();
 
   // Read filenames
   std::vector<std::string> subjects;
@@ -153,39 +140,7 @@ void run() {
   Image::Buffer<value_type> mask_data (header);
   Image::Buffer<value_type>::voxel_type mask_vox (mask_data);
 
-  Math::Matrix<value_type> directions;
-  value_type angular_threshold = 12;
-
-  if (do_afd) {
-    opt = get_options ("directions");
-    if (opt.size())
-      directions.load(opt[0][0]);
-    else {
-      if (!header["directions"].size())
-        throw Exception ("no mask directions have been specified.");
-      std::vector<value_type> dir_vector;
-      std::vector<std::string> lines = split (header["directions"], "\n", true);
-      for (size_t l = 0; l < lines.size(); l++) {
-        std::vector<float> v = parse_floats (lines[l]);
-        dir_vector.insert (dir_vector.end(), v.begin(), v.end());
-      }
-      directions.resize (dir_vector.size() / 2, 2);
-      for (size_t i = 0; i < dir_vector.size(); i += 2) {
-        directions(i/2, 0) = dir_vector[i];
-        directions(i/2, 1) = dir_vector[i+1];
-      }
-    }
-    if (int(directions.rows()) != mask_data.dim(3))
-      throw Exception ("the number of directions is not equal to the number of 3D volumes within the mask.");
-
-    opt = get_options ("angle");
-    if (opt.size())
-      angular_threshold = opt[0][0];
-  }
-
   Image::Filter::Connector connector (do_26_connectivity);
-  if (do_afd)
-    connector.set_directions (directions, angular_threshold);
   std::vector<std::vector<int> > mask_indices = connector.precompute_adjacency (mask_vox);
 
   const size_t num_vox = mask_indices.size();
@@ -193,56 +148,21 @@ void run() {
 
 
   // Load images
-  if (do_afd) {
-
-    Math::Matrix<value_type> SHT;
-    Image::Header first_header (subjects[0]);
-    Image::check_dimensions(header, first_header, 0, 3);
-    Math::SH::init_transform (SHT, directions, Math::SH::LforN (first_header.dim(3)));
-    {
-      ProgressBar progress("loading FOD images and computing AFD...", subjects.size());
-      for (size_t subject = 0; subject < subjects.size(); subject++) {
-        LogLevelLatch log_level (0);
-        Image::BufferPreload<value_type> fod_data (subjects[subject], Image::Stride::contiguous_along_axis (3));
-        Image::BufferPreload<value_type>::voxel_type fod_voxel (fod_data);
-        int index = 0;
-        std::vector<std::vector<int> >::iterator it;
-        Math::Vector<value_type> fod (fod_voxel.dim(3));
-        for (it = mask_indices.begin(); it != mask_indices.end(); ++it) {
-          if (fod_voxel[0] != (*it)[0] || fod_voxel[1] != (*it)[1] || fod_voxel[2] != (*it)[2]) {
-            fod_voxel[0] = (*it)[0];
-            fod_voxel[1] = (*it)[1];
-            fod_voxel[2] = (*it)[2];
-            for (int sh = 0; sh < fod_voxel.dim(3); sh++) {
-              fod_voxel[3] = sh;
-              fod[sh] = fod_voxel.value();
-            }
-          }
-          data (index++, subject) = Math::dot (SHT.row ((*it)[3]), fod);
-        }
-        progress++;
-      }
+  ProgressBar progress("loading images...", subjects.size());
+  for (size_t subject = 0; subject < subjects.size(); subject++) {
+    LogLevelLatch log_level (0);
+    Image::BufferPreload<value_type> fod_data (subjects[subject], Image::Stride::contiguous_along_axis (3));
+    Image::check_dimensions (fod_data, mask_vox, 0, 3);
+    Image::BufferPreload<value_type>::voxel_type input_vox (fod_data);
+    int index = 0;
+    std::vector<std::vector<int> >::iterator it;
+    for (it = mask_indices.begin(); it != mask_indices.end(); ++it) {
+      input_vox[0] = (*it)[0];
+      input_vox[1] = (*it)[1];
+      input_vox[2] = (*it)[2];
+      data (index++, subject) = input_vox.value();
     }
-
-  }
-  else {
-
-    ProgressBar progress("loading images...", subjects.size());
-    for (size_t subject = 0; subject < subjects.size(); subject++) {
-      LogLevelLatch log_level (0);
-      Image::BufferPreload<value_type> fod_data (subjects[subject], Image::Stride::contiguous_along_axis (3));
-      Image::check_dimensions (fod_data, mask_vox, 0, 3);
-      Image::BufferPreload<value_type>::voxel_type input_vox (fod_data);
-      int index = 0;
-      std::vector<std::vector<int> >::iterator it;
-      for (it = mask_indices.begin(); it != mask_indices.end(); ++it) {
-        input_vox[0] = (*it)[0];
-        input_vox[1] = (*it)[1];
-        input_vox[2] = (*it)[2];
-        data (index++, subject) = input_vox.value();
-      }
-      progress++;
-    }
+    progress++;
   }
 
   header.datatype() = DataType::Float32;
