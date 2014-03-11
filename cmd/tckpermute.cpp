@@ -94,14 +94,14 @@ void usage ()
   + Option ("dh", "the height increment used in the TFCE integration (default = 0.1)")
   + Argument ("value").type_float (0.001, 0.1, 100000)
 
-  + Option ("tfce_e", "TFCE height parameter (default = 1.0)")
+  + Option ("tfce_e", "TFCE extent parameter (default = 1.0)")
   + Argument ("value").type_float (0.001, 0.5, 100000)
 
-  + Option ("tfce_h", "TFCE extent parameter (default = 2.0)")
+  + Option ("tfce_h", "TFCE height parameter (default = 2.0)")
   + Argument ("value").type_float (0.001, 2.0, 100000)
 
-  + Option ("tfce_c", "TFCE connectivity parameter (default = 0.5)")
-  + Argument ("value").type_float (0.001, 0.5, 100000)
+  + Option ("tfce_c", "TFCE connectivity parameter (default = 0.0)")
+  + Argument ("value").type_float (0.001, 0.0, 100000)
 
   + Option ("angle", "the max angle threshold for computing inter-subject FOD peak correspondence")
   + Argument ("value").type_float (0.001, 30, 90)
@@ -497,7 +497,7 @@ void run() {
     tfce_E = opt[0][0];
 
   opt = get_options ("tfce_c");
-  value_type tfce_C = 0.5;
+  value_type tfce_C = 0.0;
   if (opt.size())
     tfce_C = opt[0][0];
 
