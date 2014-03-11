@@ -98,13 +98,13 @@ namespace MR
         }
 
 
-        virtual void reverse_track() { }
-        virtual bool init() = 0;
-        virtual term_t next() = 0;
-        virtual float get_metric() = 0;
+        void reverse_track() { }
+        bool init() { return false; }
+        term_t next() { return term_t(); }
+        float get_metric() { return NAN; }
 
 
-        virtual void truncate_track (std::vector< Point<value_type> >& tck, const size_t revert_step)
+        void truncate_track (std::vector< Point<value_type> >& tck, const size_t revert_step)
         {
           for (size_t i = revert_step; i && tck.size(); --i)
             tck.pop_back();
