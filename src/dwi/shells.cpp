@@ -76,69 +76,86 @@ namespace MR
 
         for (std::vector<int>::const_iterator b = desired_bvalues.begin(); b != desired_bvalues.end(); ++b) {
 
-          // First, see if the b-value lies within the range of one of the shells
-          // If this doesn't occur, need to make a decision based on the shell distributions
-          // Few ways this could be done:
-          // * Compute number of standard deviations away from each shell mean, see if there's a clear winner
-          //   - Won't work if any of the standard deviations are zero
-          // * Assume each is a Poisson distribution, see if there's a clear winner
-          // Prompt warning if decision is slightly askew, exception if ambiguous
-          bool shell_selected = false;
-          for (size_t s = 0; s != shells.size(); ++s) {
-            if ((*b >= shells[s].get_min()) && (*b <= shells[s].get_max())) {
-              to_retain[s] = true;
-              shell_selected = true;
-              DEBUG ("User requested b-value " + str(*b) + "; got shell " + str(s) + ": " + str(shells[s].get_mean()) + " +- " + str(shells[s].get_stdev()) + " with " + str(shells[s].count()) + " volumes");
-            }
-          }
-          if (!shell_selected) {
+          if (*b < 0)
+            throw Exception ("Cannot select shells corresponding to negative b-values");
 
-            // First, check to see if all shells have a non-zero standard deviation
-            bool zero_stdev = false;
-            for (std::vector<Shell>::const_iterator s = shells.begin(); s != shells.end(); ++s) {
-              if (!s->get_stdev()) {
-                zero_stdev = true;
-                break;
+          // Automatically select a b=0 shell if the requested b-value is zero
+          if (*b <= bzero_threshold) {
+
+            if (smallest().is_bzero()) {
+              to_retain[0] = true;
+              DEBUG ("User requested b-value " + str(*b) + "; got b=0 shell : " + str(smallest().get_mean()) + " +- " + str(smallest().get_stdev()) + " with " + str(smallest().count()) + " volumes");
+            } else {
+              throw Exception ("User selected b=0 shell, but no such data exists");
+            }
+
+          } else {
+
+            // First, see if the b-value lies within the range of one of the shells
+            // If this doesn't occur, need to make a decision based on the shell distributions
+            // Few ways this could be done:
+            // * Compute number of standard deviations away from each shell mean, see if there's a clear winner
+            //   - Won't work if any of the standard deviations are zero
+            // * Assume each is a Poisson distribution, see if there's a clear winner
+            // Prompt warning if decision is slightly askew, exception if ambiguous
+            bool shell_selected = false;
+            for (size_t s = 0; s != shells.size(); ++s) {
+              if ((*b >= shells[s].get_min()) && (*b <= shells[s].get_max())) {
+                to_retain[s] = true;
+                shell_selected = true;
+                DEBUG ("User requested b-value " + str(*b) + "; got shell " + str(s) + ": " + str(shells[s].get_mean()) + " +- " + str(shells[s].get_stdev()) + " with " + str(shells[s].count()) + " volumes");
               }
             }
+            if (!shell_selected) {
 
-            size_t best_shell = 0;
-            float best_num_stdevs = std::numeric_limits<float>::max();
-            bool ambiguous = false;
-            for (size_t s = 0; s != shells.size(); ++s) {
-              const float num_stdev = (*b - shells[s].get_mean()) / (zero_stdev ? Math::sqrt (shells[s].get_mean()) : shells[s].get_stdev());
-              const bool within_range = (num_stdev < (zero_stdev ? 1.0 : 5.0));
-              if (within_range) {
-                if (!shell_selected) {
-                  best_shell = s;
-                  best_num_stdevs = num_stdev;
-                } else {
-                  // More than one shell plausible; decide whether or not the decision is unambiguous
-                  if (num_stdev < 0.1 * best_num_stdevs) {
-                    best_shell = s;
-                    best_num_stdevs = num_stdev;
-                  } else if (num_stdev < 10.0 * best_num_stdevs) {
-                    ambiguous = true;
-                  } // No need to do anything if the existing selection is significantly better than this shell
+              // First, check to see if all non-zero shells have a non-zero standard deviation
+              bool zero_stdev = false;
+              for (std::vector<Shell>::const_iterator s = shells.begin(); s != shells.end(); ++s) {
+                if (!s->is_bzero() && !s->get_stdev()) {
+                  zero_stdev = true;
+                  break;
                 }
               }
-            }
 
-            if (ambiguous) {
-              std::string bvalues;
+              size_t best_shell = 0;
+              float best_num_stdevs = std::numeric_limits<float>::max();
+              bool ambiguous = false;
               for (size_t s = 0; s != shells.size(); ++s) {
-                if (bvalues.size())
-                  bvalues += ", ";
-                bvalues += str(shells[s].get_mean()) + " +- " + str(shells[s].get_stdev());
+                const float num_stdev = Math::abs ((*b - shells[s].get_mean()) / (zero_stdev ? Math::sqrt (shells[s].get_mean()) : shells[s].get_stdev()));
+                const bool within_range = (num_stdev < (zero_stdev ? 1.0 : 5.0));
+                if (within_range) {
+                  if (!shell_selected) {
+                    best_shell = s;
+                    best_num_stdevs = num_stdev;
+                  } else {
+                    // More than one shell plausible; decide whether or not the decision is unambiguous
+                    if (num_stdev < 0.1 * best_num_stdevs) {
+                      best_shell = s;
+                      best_num_stdevs = num_stdev;
+                    } else if (num_stdev < 10.0 * best_num_stdevs) {
+                      ambiguous = true;
+                    } // No need to do anything if the existing selection is significantly better than this shell
+                  }
+                }
               }
-              throw Exception ("Unable to robustly select desired shell b=" + str(*b) + " (detected shells are: " + bvalues + ")");
+
+              if (ambiguous) {
+                std::string bvalues;
+                for (size_t s = 0; s != shells.size(); ++s) {
+                  if (bvalues.size())
+                    bvalues += ", ";
+                  bvalues += str(shells[s].get_mean()) + " +- " + str(shells[s].get_stdev());
+                }
+                throw Exception ("Unable to robustly select desired shell b=" + str(*b) + " (detected shells are: " + bvalues + ")");
+              }
+
+              WARN ("User requested shell b=" + str(*b) + "; have selected shell " + str(shells[best_shell].get_mean()) + " +- " + str(shells[best_shell].get_stdev()));
+
+              to_retain[best_shell] = true;
+
             }
 
-            WARN ("User requested shell b=" + str(*b) + "; have selected shell " + str(shells[best_shell].get_mean()) + " +- " + str(shells[best_shell]));
-
-            to_retain[best_shell] = true;
-
-          }
+          } // End checking to see if requested shell is b=0
 
         } // End looping over list of requested b-value shells
 

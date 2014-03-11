@@ -68,15 +68,14 @@ void run() {
   Options opt = get_options ("shell");
   if (opt.size()) {
     DWI::Shells shells (grad);
-    shells.select_shells (true, false);
-    // Remove DW information from header if b=0 is the only 'shell' selected
-    std::vector<int> bvalues = opt[0][0];
-    bzero = (bvalues.size() == 1 && !bvalues[0]);
+    shells.select_shells (false, false);
     for (size_t s = 0; s != shells.count(); ++s) {
       DEBUG ("Including data from shell b=" + str(shells[s].get_mean()) + " +- " + str(shells[s].get_stdev()));
       for (std::vector<size_t>::const_iterator v = shells[s].get_volumes().begin(); v != shells[s].get_volumes().end(); ++v)
         volumes.push_back (*v);
     }
+    // Remove DW information from header if b=0 is the only 'shell' selected
+    bzero = (shells.count() == 1 && shells[0].is_bzero());
   } else {
     const float bzero_threshold = File::Config::get_float ("BValueThreshold", 10.0);
     for (size_t row = 0; row != grad.rows(); ++row) {
