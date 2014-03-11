@@ -48,7 +48,7 @@ namespace MR
       }
       mean /= float(volumes.size());
       for (std::vector<size_t>::const_iterator i = volumes.begin(); i != volumes.end(); i++)
-        stdev =+ Math::pow2 (grad (*i, 3) - mean);
+        stdev += Math::pow2 (grad (*i, 3) - mean);
       stdev = Math::sqrt (stdev / (volumes.size() - 1));
     }
 

@@ -410,14 +410,10 @@ namespace MR
       }
 
 
-      for (PolygonList::const_iterator i = polygons.begin(); i != polygons.end(); ++i) {
-        for (size_t j = 0; j != 3; ++j) {
-          if ((*i)[j] < 0)
-            throw Exception ("Negative vertex index in polygon data");
+      for (PolygonList::const_iterator i = polygons.begin(); i != polygons.end(); ++i) 
+        for (size_t j = 0; j != 3; ++j) 
           if ((*i)[j] >= vertices.size())
             throw Exception ("Mesh vertex index exceeds number of vertices read");
-        }
-      }
 
     }
 

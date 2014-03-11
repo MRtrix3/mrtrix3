@@ -20,7 +20,7 @@
 
  */
 
-#ifndef __imaget_interp_sinc_h__
+#ifndef __image_interp_sinc_h__
 #define __image_interp_sinc_h__
 
 #include "image/transform.h"

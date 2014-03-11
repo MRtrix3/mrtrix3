@@ -62,7 +62,6 @@ namespace MR
               target_centre_voxel[0] = (static_cast<double>(target.dim(0)) / 2.0) - 0.5 + 1.0;
               target_centre_voxel[1] = (static_cast<double>(target.dim(1)) / 2.0) - 0.5 + 1.0;
               target_centre_voxel[2] = (static_cast<double>(target.dim(2)) / 2.0) - 0.5 + 1.0;
-              Image::Transform target_transform (target);
               Math::Vector<double> target_centre_scanner (3);
               moving_transform.voxel2scanner (target_centre_voxel, target_centre_scanner);
 
