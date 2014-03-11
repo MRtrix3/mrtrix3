@@ -36,6 +36,16 @@ namespace MR
   namespace Math
   {
 
+    namespace {
+      template <typename X>
+        inline bool not_a_number (X x) { 
+          return true;
+        }
+
+      template <> inline bool not_a_number (float x) { return isnan (x); }
+      template <> inline bool not_a_number (double x) { return isnan (x); }
+    }
+
 
 
     template <class Container> 
@@ -44,7 +54,7 @@ namespace MR
         size_t num = list.size();
         // remove NaNs:
         for (size_t n = 0; n < num; ++n) {
-          while (isnan (list[n]) && n < num) {
+          while (not_a_number (list[n]) && n < num) {
             --num;
             //std::swap (list[n], list[num]);
             // Commented std::swap to provide bool compatibility
