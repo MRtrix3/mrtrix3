@@ -39,7 +39,7 @@ namespace MR
     namespace {
       template <typename X>
         inline bool not_a_number (X x) { 
-          return true;
+          return false;
         }
 
       template <> inline bool not_a_number (float x) { return isnan (x); }
