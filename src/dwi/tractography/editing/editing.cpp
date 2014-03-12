@@ -144,10 +144,10 @@ void load_properties (Tractography::Properties& properties)
   // Only the thresholds have an influence on Properties
   opt = get_options ("maxweight");
   if (opt.size())
-    properties["maxweight"] = std::string(opt[0][0]);
+    properties["max_weight"] = std::string(opt[0][0]);
   opt = get_options ("minweight");
   if (opt.size())
-    properties["minweight"] = std::string(opt[0][0]);
+    properties["min_weight"] = std::string(opt[0][0]);
 
 }
 

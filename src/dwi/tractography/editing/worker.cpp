@@ -151,10 +151,10 @@ namespace MR {
             min_num_points = std::max (2, round (minlength/step_size) + 1);
           }
 
-          if (properties.find ("maxweight") != properties.end())
+          if (properties.find ("max_weight") != properties.end())
             max_weight = to<float>(properties["max_weight"]);
 
-          if (properties.find ("minweight") != properties.end())
+          if (properties.find ("min_weight") != properties.end())
             min_weight = to<float>(properties["min_weight"]);
 
         }
