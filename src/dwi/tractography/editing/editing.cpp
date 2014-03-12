@@ -81,7 +81,7 @@ const OptionGroup WeightsOption = OptionGroup ("Thresholds pertaining to per-str
   + Option ("maxweight", "set the maximum weight of any streamline")
     + Argument ("value").type_float (0.0, std::numeric_limits<float>::infinity(), std::numeric_limits<float>::infinity())
 
-  + Option ("minlength", "set the minimum weight of any streamline")
+  + Option ("minweight", "set the minimum weight of any streamline")
     + Argument ("value").type_float (0.0, 0.0, std::numeric_limits<float>::infinity());
 
 
