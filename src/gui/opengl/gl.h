@@ -70,10 +70,10 @@ namespace MR
               gl::TexParameteri (tex_type, gl::TEXTURE_MAX_LEVEL, 0);
               gl::TexParameteri (tex_type, gl::TEXTURE_MAG_FILTER, gl::LINEAR);
               gl::TexParameteri (tex_type, gl::TEXTURE_MIN_FILTER, gl::LINEAR);
-              //gl::TexParameteri (tex_type, gl::TEXTURE_WRAP_S, gl::CLAMP);
-              //gl::TexParameteri (tex_type, gl::TEXTURE_WRAP_T, gl::CLAMP);
-              //if (tex_type == gl::TEXTURE_3D)
-                //gl::TexParameteri (tex_type, gl::TEXTURE_WRAP_R, gl::CLAMP);
+              gl::TexParameteri (tex_type, gl::TEXTURE_WRAP_S, gl::CLAMP_TO_EDGE);
+              gl::TexParameteri (tex_type, gl::TEXTURE_WRAP_T, gl::CLAMP_TO_EDGE);
+              if (tex_type == gl::TEXTURE_3D)
+                gl::TexParameteri (tex_type, gl::TEXTURE_WRAP_R, gl::CLAMP_TO_EDGE);
             }
           }
           GLenum type () const { return tex_type; }
