@@ -57,6 +57,10 @@ namespace MR
           max_max_truncation (0.0),
           num_proc (0) {
 
+          if (source_buffer.dim(3) != int (Math::SH::NforL (Math::SH::LforN (source_buffer.dim(3))))) 
+            throw Exception ("number of volumes in input data does not match that expected for a SH dataset");
+
+
           set_step_size (0.1);
           if (rk4) {
             max_angle = 0.5 * max_angle_rk4;

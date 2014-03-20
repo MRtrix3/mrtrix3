@@ -45,6 +45,8 @@ class SDStream : public MethodBase {
             SharedBase (diff_path, property_set),
             lmax (Math::SH::LforN (source_buffer.dim(3)))
         {
+          if (source_buffer.dim(3) != int (Math::SH::NforL (Math::SH::LforN (source_buffer.dim(3))))) 
+            throw Exception ("number of volumes in input data does not match that expected for a SH dataset");
 
           if (is_act() && act().backtrack())
             throw Exception ("Backtracking not valid for deterministic algorithms");

@@ -62,6 +62,8 @@ namespace MR
           max_max_truncation (0.0),
           num_proc (0)
         {
+          if (source_buffer.dim(3) != int (Math::SH::NforL (Math::SH::LforN (source_buffer.dim(3))))) 
+            throw Exception ("number of volumes in input data does not match that expected for a SH dataset");
 
           if (rk4)
             throw Exception ("4th-order Runge-Kutta integration not valid for iFOD2 algorithm");
