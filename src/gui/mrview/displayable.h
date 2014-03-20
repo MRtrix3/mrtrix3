@@ -23,9 +23,11 @@
 #ifndef __gui_mrview_displayable_h__
 #define __gui_mrview_displayable_h__
 
+#include "point.h"
 #include "math/math.h"
 #include "gui/opengl/gl.h"
 #include "gui/opengl/shader.h"
+#include "gui/projection.h"
 #include "gui/mrview/colourmap.h"
 
 namespace MR
@@ -223,6 +225,8 @@ namespace MR
                 "uniform float " + with_prefix+"alpha_offset;\n"
                 "uniform float " + with_prefix+"alpha;\n";
             }
+            if (ColourMap::maps[colourmap].is_colour)
+              source += "uniform vec3 " + with_prefix + "colourmap_colour;\n";
             return source;
           }
 
@@ -243,6 +247,9 @@ namespace MR
               gl::Uniform1f (gl::GetUniformLocation (shader_program, (with_prefix+"alpha_offset").c_str()), transparent_intensity / scaling);
               gl::Uniform1f (gl::GetUniformLocation (shader_program, (with_prefix+"alpha").c_str()), alpha);
             }
+            if (ColourMap::maps[colourmap].is_colour)
+              gl::Uniform3f (gl::GetUniformLocation (shader_program, (with_prefix+"colourmap_colour").c_str()), 
+                  colour[0]/255.0, colour[1]/255.0, colour[2]/255.0);
           }
 
           void stop (Shader& shader_program) {
@@ -252,6 +259,7 @@ namespace MR
           float lessthan, greaterthan;
           float display_midpoint, display_range;
           float transparent_intensity, opaque_intensity, alpha;
+          GLubyte colour[3];
           size_t colourmap;
           bool show;
 
@@ -294,6 +302,38 @@ namespace MR
           }
 
       };
+
+
+      namespace {
+        inline Point<> div (const Point<>& a, const Point<>& b) {
+          return Point<> (a[0]/b[0], a[1]/b[1], a[2]/b[2]);
+        }
+      }
+
+
+
+      template <class InterpType> 
+        void set_vertices_for_slice_render (Point<> vertices[8], const InterpType& interp, const Projection& projection, float depth) 
+        {
+          vertices[0] = projection.screen_to_model (projection.x_position(), projection.y_position()+projection.height(), depth);
+          vertices[2] = projection.screen_to_model (projection.x_position(), projection.y_position(), depth);
+          vertices[4] = projection.screen_to_model (projection.x_position()+projection.width(), projection.y_position(), depth);
+          vertices[6] = projection.screen_to_model (projection.x_position()+projection.width(), projection.y_position()+projection.height(), depth);
+
+          Point<> dim (interp.dim(0), interp.dim(1), interp.dim(2));
+          vertices[1] = div (interp.scanner2voxel (vertices[0]) + Point<> (0.5, 0.5, 0.5), dim);
+          vertices[3] = div (interp.scanner2voxel (vertices[2]) + Point<> (0.5, 0.5, 0.5), dim);
+          vertices[5] = div (interp.scanner2voxel (vertices[4]) + Point<> (0.5, 0.5, 0.5), dim);
+          vertices[7] = div (interp.scanner2voxel (vertices[6]) + Point<> (0.5, 0.5, 0.5), dim);
+        }
+
+
+      inline void draw_slice_vertices (const Point<> vertices[8]) 
+      {
+        gl::BufferData (gl::ARRAY_BUFFER, 8*sizeof(Point<float>), &vertices[0][0], gl::STREAM_DRAW);
+        gl::DrawArrays (gl::TRIANGLE_FAN, 0, 4);
+      }
+
 
     }
   }

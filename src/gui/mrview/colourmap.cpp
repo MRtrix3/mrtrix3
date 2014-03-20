@@ -52,6 +52,10 @@ namespace MR
           Entry ("Jet", 
               "color.rgb = 1.5 - 4.0 * abs (1.0 - amplitude - vec3(0.25, 0.5, 0.75));\n"),
 
+          Entry ("Colour", 
+              "color.rgb = amplitude * colourmap_colour;\n", 
+              NULL, false, true),
+
           Entry ("RGB",
               "color.rgb = scale * (abs(color.rgb) - offset);\n",
               "length (color.rgb)",
@@ -122,7 +126,7 @@ namespace MR
 
 
 
-        void Renderer::setup (size_t index, bool inverted)
+        void Renderer::setup (size_t index, bool inverted, const GLubyte* colour)
         {
           program.clear();
           frame_program.clear();
@@ -141,12 +145,16 @@ namespace MR
 
           GL::Shader::Vertex vertex_shader (source);
 
-          GL::Shader::Fragment fragment_shader (
+          std::string shader = 
               "in float amplitude;\n"
-              "out vec3 color;\n"
-              "void main () {\n"
-              "  " + std::string(maps[index].mapping) +
-              "}\n");
+              "out vec3 color;\n";
+          if (colour)
+            shader += "uniform vec3 colourmap_colour;\n";
+          shader += "void main () {\n"
+            "  " + std::string(maps[index].mapping) +
+            "}\n";
+
+          GL::Shader::Fragment fragment_shader (shader);
 
           program.attach (vertex_shader);
           program.attach (fragment_shader);
@@ -183,7 +191,7 @@ namespace MR
           if (maps[object.colourmap].special) return;
           
           if (!program || !frame_program || object.colourmap != current_index || current_inverted != inverted)
-            setup (object.colourmap, inverted);
+            setup (object.colourmap, inverted, maps[object.colourmap].is_colour ? object.colour : NULL);
 
           if (!VB || !VAO) {
             VB.gen();

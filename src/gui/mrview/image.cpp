@@ -116,8 +116,7 @@ namespace MR
           vertex_array_object.bind();
         }
 
-        gl::BufferData (gl::ARRAY_BUFFER, 8*sizeof(Point<float>), &vertices[0][0], gl::STREAM_DRAW);
-        gl::DrawArrays (gl::TRIANGLE_FAN, 0, 4);
+        draw_slice_vertices (vertices);
       }
 
 
@@ -165,12 +164,6 @@ namespace MR
 
 
 
-      namespace {
-        inline Point<> div (const Point<>& a, const Point<>& b) {
-          return Point<> (a[0]/b[0], a[1]/b[1], a[2]/b[2]);
-        }
-      }
-
       void Image::render3D (Displayable::Shader& shader_program, const Projection& projection, float depth) 
       {
         update_texture3D();
@@ -179,18 +172,7 @@ namespace MR
         projection.set (shader_program);
 
         Point<> vertices[8];
-
-        vertices[0] = projection.screen_to_model (projection.x_position(), projection.y_position()+projection.height(), depth);
-        vertices[2] = projection.screen_to_model (projection.x_position(), projection.y_position(), depth);
-        vertices[4] = projection.screen_to_model (projection.x_position()+projection.width(), projection.y_position(), depth);
-        vertices[6] = projection.screen_to_model (projection.x_position()+projection.width(), projection.y_position()+projection.height(), depth);
-
-        Point<> dim (header().dim(0), header().dim(1), header().dim(2));
-        vertices[1] = div (interp.scanner2voxel (vertices[0]) + Point<> (0.5, 0.5, 0.5), dim);
-        vertices[3] = div (interp.scanner2voxel (vertices[2]) + Point<> (0.5, 0.5, 0.5), dim);
-        vertices[5] = div (interp.scanner2voxel (vertices[4]) + Point<> (0.5, 0.5, 0.5), dim);
-        vertices[7] = div (interp.scanner2voxel (vertices[6]) + Point<> (0.5, 0.5, 0.5), dim);
-
+        set_vertices_for_slice_render (vertices, interp, projection, depth);
         draw_vertices (vertices);
 
         stop (shader_program);

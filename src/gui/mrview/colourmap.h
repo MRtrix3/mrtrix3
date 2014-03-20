@@ -41,16 +41,18 @@ namespace MR
 
         class Entry {
           public:
-            Entry (const char* name, const char* mapping, const char* amplitude = NULL, bool special = false) : 
+            Entry (const char* name, const char* mapping, const char* amplitude = NULL, 
+                bool special = false, bool is_colour = false) : 
               name (name),
               mapping (mapping), 
               amplitude (amplitude ? amplitude : default_amplitude), 
-              special (special) { }
+              special (special),
+              is_colour (is_colour) { }
 
             const char* name;
             const char* mapping;
             const char* amplitude;
-            bool special;
+            bool special, is_colour;
 
             static const char* default_amplitude;
         };
@@ -117,7 +119,7 @@ namespace MR
             bool current_inverted;
             const GLfloat width, height, inset, text_offset;
 
-            void setup (size_t index, bool inverted);
+            void setup (size_t index, bool inverted, const GLubyte* colour);
         };
 
 
