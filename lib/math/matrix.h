@@ -242,8 +242,10 @@ namespace MR
         Matrix& allocate (size_t nrows, size_t ncolumns) {
           if (rows() == nrows && columns() == ncolumns)
             return *this;
-          if (!owner)
-            throw Exception ("attempt to allocate view of a Matrix!");
+          if (!owner) {
+            FAIL ("attempt to allocate view of a Matrix!");
+            abort();
+          }
           if (block) {
             if (block->size < nrows * ncolumns) {
               GSLBlock<ValueType>::free (block);
@@ -268,8 +270,10 @@ namespace MR
          * the Matrix will be set to in case the size requested exceeds the
          * current size. */
         Matrix& resize (size_t nrows, size_t ncolumns, value_type fill_value = value_type (0.0)) {
-          if (!owner)
-            throw Exception ("attempt to resize view of a Matrix!");
+          if (!owner) {
+            FAIL ("attempt to resize view of a Matrix!");
+            abort();
+          }
           if (nrows == 0 || ncolumns == 0) {
             size1 = size2 = 0;
             return *this;

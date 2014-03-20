@@ -276,8 +276,10 @@ namespace MR
         //! allocate the vector to have size \a nelements
         Vector& allocate (size_t nelements) {
           if (nelements == size()) return *this;
-          if (!owner)
-            throw Exception ("attempt to allocate a view of a Vector!");
+          if (!owner) {
+            FAIL ("attempt to allocate a view of a Vector!");
+            abort();
+          }
           if (block) {
             if (block->size < nelements) {
               GSLBlock<ValueType>::free (block);
@@ -301,8 +303,10 @@ namespace MR
          * the Vector will be set to in case the size requested exceeds the
          * current size. */
         Vector& resize (size_t nelements, value_type fill_value = 0.0) {
-          if (!owner)
-            throw Exception ("attempt to resize a view of a Vector!");
+          if (!owner) {
+            FAIL ("attempt to resize a view of a Vector!");
+            abort();
+          }
           if (nelements == size())
             return *this;
           if (nelements < size()) {
