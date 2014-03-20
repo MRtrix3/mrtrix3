@@ -76,7 +76,7 @@ namespace MR
               source_buffer (diff_path, strides_by_volume()),
               source_voxel (source_buffer),
               properties (property_set),
-              max_num_tracks (0),
+              max_num_tracks (1000),
               max_angle (NAN),
               max_angle_rk4 (NAN),
               cos_max_angle (NAN),
