@@ -23,7 +23,9 @@
 #ifndef __gui_mrview_tool_roi_analysis_h__
 #define __gui_mrview_tool_roi_analysis_h__
 
+#include "gui/mrview/mode/base.h"
 #include "gui/mrview/tool/base.h"
+#include "gui/color_button.h"
 
 namespace MR
 {
@@ -39,12 +41,38 @@ namespace MR
             Q_OBJECT
 
           public:
-            ROI (Window& parent, const QString& name);
+            ROI (Window& main_window, Dock* parent);
+
+            void draw (const Projection& projection, bool is_3D);
+            bool process_batch_command (const std::string& cmd, const std::string& args);
 
           private slots:
-            void slot ();
+            void image_open_slot ();
+            void image_close_slot ();
+            void hide_all_slot ();
+            void toggle_shown_slot (const QModelIndex&, const QModelIndex&);
+            void selection_changed_slot (const QItemSelection &, const QItemSelection &);
+            void update_slot (int unused);
+            void colour_changed ();
+            void opacity_changed (int unused);
 
+          protected:
+             class Model;
+             QPushButton* hide_all_button;
+             Model* image_list_model;
+             QListView* image_list_view;
+             QColorButton* colour_button;
+             QSlider *opacity_slider;
+
+             void update_selection ();
+             void updateGL() { 
+               window.get_current_mode()->update_overlays = true;
+               window.updateGL();
+             }
+             
+             void add_images (VecPtr<MR::Image::Header>& list); 
         };
+
 
       }
     }

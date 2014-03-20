@@ -223,6 +223,8 @@ namespace MR
                 "uniform float " + with_prefix+"alpha_offset;\n"
                 "uniform float " + with_prefix+"alpha;\n";
             }
+            if (ColourMap::maps[colourmap].is_colour)
+              source += "uniform vec3 " + with_prefix + "colourmap_colour;\n";
             return source;
           }
 
@@ -243,6 +245,9 @@ namespace MR
               gl::Uniform1f (gl::GetUniformLocation (shader_program, (with_prefix+"alpha_offset").c_str()), transparent_intensity / scaling);
               gl::Uniform1f (gl::GetUniformLocation (shader_program, (with_prefix+"alpha").c_str()), alpha);
             }
+            if (ColourMap::maps[colourmap].is_colour)
+              gl::Uniform3f (gl::GetUniformLocation (shader_program, (with_prefix+"colourmap_colour").c_str()), 
+                  colour[0]/255.0, colour[1]/255.0, colour[2]/255.0);
           }
 
           void stop (Shader& shader_program) {
@@ -252,6 +257,7 @@ namespace MR
           float lessthan, greaterthan;
           float display_midpoint, display_range;
           float transparent_intensity, opaque_intensity, alpha;
+          GLubyte colour[3];
           size_t colourmap;
           bool show;
 
