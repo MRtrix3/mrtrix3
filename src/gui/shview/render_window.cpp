@@ -352,6 +352,7 @@ namespace MR
 
           if (is_response) {
             val.resize (Math::SH::NforL (2* (values.columns()-1)), 0.0);
+            val = 0.0;
             for (size_t n = 0; n < values.columns(); n++)
               val[Math::SH::index (2*n,0)] = values (current,n);
           }
