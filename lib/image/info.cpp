@@ -20,7 +20,6 @@
 
 */
 
-#include "image/stride.h"
 #include "image/info.h"
 #include "image/transform.h"
 #include "math/permutation.h"
@@ -30,7 +29,6 @@ namespace MR
   namespace Image
   {
 
-    bool ProtectTransform::leave_transform_unmodified = false;
 
     namespace
     {
@@ -118,14 +116,8 @@ namespace MR
 
 
 
-    void Info::sanitise_strides ()
+    void Info::realign_transform ()
     {
-      Stride::sanitise (*this);
-      Stride::symbolise (*this);
-
-      if (ProtectTransform::leave_transform_unmodified) 
-        return;
-
       // find which row of the transform is closest to each scanner axis:
       Math::Permutation perm (3);
       Math::absmax (transform().row (0).sub (0,3), perm[0]);

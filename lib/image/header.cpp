@@ -63,6 +63,7 @@ namespace MR
     }
 
 
+    bool Header::do_not_realign_transform = false;
 
 
 
@@ -163,6 +164,8 @@ namespace MR
         }
 
         sanitise();
+        if (!do_not_realign_transform) 
+          realign_transform();
         handler_->set_name (name());
       }
       catch (Exception& E) {

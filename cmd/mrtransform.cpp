@@ -306,9 +306,6 @@ void run ()
     }
     InputBufferType::voxel_type in (input_buffer);
 
-    // required to prevent MRtrix from redefining frame of reference:
-    Image::ProtectTransform protect;
-
     OutputBufferType output_buffer (argument[1], output_header);
     OutputBufferType::voxel_type output_vox (output_buffer);
 
@@ -357,9 +354,6 @@ void run ()
 
     Image::Buffer<value_type> input_buffer (input_header);
     Image::Buffer<value_type>::voxel_type in (input_buffer);
-
-    // required to prevent MRtrix from redefining frame of reference:
-    Image::ProtectTransform protect;
 
     OutputBufferType data_out (argument[1], output_header);
     OutputBufferType::voxel_type out (data_out);

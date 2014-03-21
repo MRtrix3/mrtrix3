@@ -27,6 +27,7 @@
 #include "types.h"
 #include "datatype.h"
 #include "image/axis.h"
+#include "image/stride.h"
 #include "math/matrix.h"
 
 namespace MR
@@ -140,6 +141,8 @@ namespace MR
           sanitise_transform ();
           sanitise_strides ();
         }
+        //! realign transform to match RAS coordinate system as closely as possible
+        void realign_transform ();
 
         friend std::ostream& operator<< (std::ostream& stream, const Info& A)
         {
@@ -161,7 +164,10 @@ namespace MR
 
         void sanitise_voxel_sizes ();
         void sanitise_transform ();
-        void sanitise_strides ();
+        void sanitise_strides () {
+          Stride::sanitise (*this);
+          Stride::symbolise (*this);
+        }
     };
 
 
@@ -213,19 +219,6 @@ namespace MR
         using Info::sanitise;
     };
 
-
-
-    class ProtectTransform {
-      public:
-        ProtectTransform () { start(); } 
-        ~ProtectTransform () { stop(); }
-
-        void start () { leave_transform_unmodified = true; }
-        void stop () { leave_transform_unmodified = false; }
-      private:
-        static bool leave_transform_unmodified;
-        friend class Info;
-    };
 
   }
   //! @}
