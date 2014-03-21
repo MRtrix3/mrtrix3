@@ -48,9 +48,8 @@ namespace MR {
                     match = false;
               }
               if (match) {
-                if (series_time.size() && (*this)[n]->time.size()) 
-                  if (series_time != (*this)[n]->time) 
-                    match = false;
+                if (to<float> (series_time) != to<float> ((*this)[n]->time))
+                  match = false;
               }
               if (match)
                 return (*this)[n];

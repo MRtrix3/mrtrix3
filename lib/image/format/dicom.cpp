@@ -51,8 +51,6 @@ namespace MR
         dicom.read (H.name());
         dicom.sort();
 
-        std::cout << dicom;
-
         std::vector< RefPtr<File::Dicom::Series> > series = File::Dicom::select_func (dicom);
         if (series.empty()) 
           throw Exception ("no DICOM series selected");
