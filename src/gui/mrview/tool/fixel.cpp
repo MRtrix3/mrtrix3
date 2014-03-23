@@ -191,6 +191,44 @@ namespace MR
             main_box->addLayout (default_opt_grid, 0);
 
 
+
+            QGroupBox* group_box = new QGroupBox ("Intensity scaling");
+            main_box->addWidget (group_box);
+            HBoxLayout* hlayout = new HBoxLayout;
+            group_box->setLayout (hlayout);
+
+            min_entry = new AdjustButton (this);
+            connect (min_entry, SIGNAL (valueChanged()), this, SLOT (on_set_scaling_slot()));
+            hlayout->addWidget (min_entry);
+
+            max_entry = new AdjustButton (this);
+            connect (max_entry, SIGNAL (valueChanged()), this, SLOT (on_set_scaling_slot()));
+            hlayout->addWidget (max_entry);
+
+
+            QGroupBox* threshold_box = new QGroupBox ("Thresholds");
+            main_box->addWidget (threshold_box);
+            hlayout = new HBoxLayout;
+            threshold_box->setLayout (hlayout);
+
+            threshold_lower_box = new QCheckBox (this);
+            connect (threshold_lower_box, SIGNAL (stateChanged(int)), this, SLOT (threshold_lower_changed(int)));
+            hlayout->addWidget (threshold_lower_box);
+            threshold_lower = new AdjustButton (this, 0.1);
+            connect (threshold_lower, SIGNAL (valueChanged()), this, SLOT (threshold_lower_value_changed()));
+            hlayout->addWidget (threshold_lower);
+
+            threshold_upper_box = new QCheckBox (this);
+            hlayout->addWidget (threshold_upper_box);
+            threshold_upper = new AdjustButton (this, 0.1);
+            connect (threshold_upper_box, SIGNAL (stateChanged(int)), this, SLOT (threshold_upper_changed(int)));
+            connect (threshold_upper, SIGNAL (valueChanged()), this, SLOT (threshold_upper_value_changed()));
+            hlayout->addWidget (threshold_upper);
+
+            main_box->addStretch ();
+            setMinimumSize (main_box->minimumSize());
+
+
 //            QAction* action;
 //            fixel_option_menu = new QMenu ();
 //            action = new QAction("&Colour by direction", this);
@@ -351,6 +389,76 @@ namespace MR
         void Fixel::line_size_slot (int thickness)
         {
           TRACE;
+        }
+
+        void Fixel::show_colour_bar_slot ()
+        {
+//          if (tractogram) {
+//            tractogram->show_colour_bar = show_colour_bar->isChecked();
+//            window.updateGL();
+//          }
+        }
+
+
+        void Fixel::select_colourmap_slot ()
+        {
+//          if (tractogram) {
+//            QAction* action = colourmap_group->checkedAction();
+//            size_t n = 0;
+//            while (action != colourmap_actions[n])
+//              ++n;
+//            tractogram->colourmap = n;
+//            window.updateGL();
+//          }
+        }
+
+
+        void Fixel::on_set_scaling_slot ()
+        {
+//          if (tractogram) {
+//            tractogram->set_windowing (min_entry->value(), max_entry->value());
+//            window.updateGL();
+//          }
+        }
+
+
+        void Fixel::threshold_lower_changed (int unused)
+        {
+          if (tractogram) {
+            threshold_lower->setEnabled (threshold_lower_box->isChecked());
+            tractogram->set_use_discard_lower (threshold_lower_box->isChecked());
+            window.updateGL();
+          }
+        }
+
+
+        void Fixel::threshold_upper_changed (int unused)
+        {
+//          if (tractogram) {
+//            threshold_upper->setEnabled (threshold_upper_box->isChecked());
+//            tractogram->set_use_discard_upper (threshold_upper_box->isChecked());
+//            window.updateGL();
+//          }
+        }
+
+
+
+        void Fixel::threshold_lower_value_changed ()
+        {
+//          if (tractogram && threshold_lower_box->isChecked()) {
+//            tractogram->lessthan = threshold_lower->value();
+//            window.updateGL();
+//          }
+        }
+
+
+
+        void Fixel::threshold_upper_value_changed ()
+        {
+//          if (tractogram && threshold_upper_box->isChecked()) {
+//            tractogram->greaterthan = threshold_upper->value();
+//            window.updateGL();
+//          }
         }
 
 

@@ -40,7 +40,6 @@ namespace MR
             Q_OBJECT
 
           public:
-
             class Model;
 
             Fixel (Window& main_window, Dock* parent);
@@ -74,10 +73,29 @@ namespace MR
             void set_colour_slot ();
             void randomise_colour_slot ();
             void selection_changed_slot (const QItemSelection &, const QItemSelection &);
+            void show_colour_bar_slot ();
+            void select_colourmap_slot ();
+            void on_set_scaling_slot ();
+            void threshold_lower_changed (int unused);
+            void threshold_upper_changed (int unused);
+            void threshold_lower_value_changed ();
+            void threshold_upper_value_changed ();
+
+
+
 
           protected:
-            AdjustButton* slab_entry;
             class Image;
+
+            AdjustButton* slab_entry;
+            AdjustButton *max_entry, *min_entry;
+            AdjustButton *threshold_lower, *threshold_upper;
+            QCheckBox *threshold_upper_box, *threshold_lower_box;
+
+            void updateGL() {
+//              window.get_current_mode()->update_overlays = true; TODO
+              window.updateGL();
+            }
 //            QMenu* fixel_option_menu;
 
         };
