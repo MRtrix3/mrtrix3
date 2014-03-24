@@ -27,6 +27,9 @@
 #include "gui/mrview/tool/list_model_base.h"
 #include "gui/mrview/displayable.h"
 #include "gui/mrview/colourmap.h"
+#include "image/header.h"
+#include "image/buffer_sparse.h"
+#include "image/sparse/fixel_metric.h"
 #include "math/rng.h"
 
 namespace MR
@@ -43,18 +46,79 @@ namespace MR
 
         class Fixel::Image : public Displayable {
           public:
-            Image (Window& parent, Fixel& tool, const std::string& filename) :
-                    Displayable (filename),
-                    window (window),
-                    fixel_tool (tool),
-                    filename (filename),
-                    colourbar_position_index (4)
-                    {
-                      set_allowed_features (true, true, false);
-                      colourmap = 1;
-                    }
+            Image (const std::string& filename, Fixel& fixel_tool) :
+                   Displayable (filename),
+                   filename (filename),
+                   fixel_tool (fixel_tool),
+                   header (filename),
+                   fixel_data (header),
+                   colourbar_position_index (4)
+                   {
+                     set_allowed_features (true, true, false);
+                     colourmap = 1;
+                     alpha = 1.0f;
+                     set_use_transparency (true);
+                   }
 
-            void render (const Projection& transform) { TRACE; }
+
+//            class Shader : public Displayable::Shader {
+//              public:
+//                Shader () : do_crop_to_slice (false), color_type (Direction) { }
+//                virtual std::string vertex_shader_source (const Displayable& fixel_image);
+//                virtual std::string fragment_shader_source (const Displayable& fixel_image);
+//                virtual bool need_update (const Displayable& object) const;
+//                virtual void update (const Displayable& object);
+//              protected:
+//                bool do_crop_to_slice;
+//                ColourType color_type;
+//            } fixel_shader;
+
+
+
+            void render (const Projection& transform, bool is_3D, int plane, int slice) {
+
+//              start (fixel_shader);
+//              transform.set (fixel_shader);
+//
+//              if (color_type == ScalarFile) {
+//                if (use_discard_lower())
+//                  gl::Uniform1f (gl::GetUniformLocation (track_shader, "lower"), lessthan);
+//                if (use_discard_upper())
+//                  gl::Uniform1f (gl::GetUniformLocation (track_shader, "upper"), greaterthan);
+//              }
+//              else if (color_type == Colour)
+//                gl::Uniform3fv (gl::GetUniformLocation (track_shader, "const_colour"), 1, colour);
+//
+//              if (fixel_tool.line_opacity < 1.0) {
+//                gl::Enable (gl::BLEND);
+//                gl::Disable (gl::DEPTH_TEST);
+//                gl::DepthMask (gl::FALSE_);
+//                gl::BlendEquation (gl::FUNC_ADD);
+//                gl::BlendFunc (gl::CONSTANT_ALPHA, gl::ONE);
+//                gl::BlendColor (1.0, 1.0, 1.0, fixel_tool.line_opacity);
+//              } else {
+//                gl::Disable (gl::BLEND);
+//                gl::Enable (gl::DEPTH_TEST);
+//                gl::DepthMask (gl::TRUE_);
+//              }
+//
+//              gl::LineWidth (fixel_tool.line_thickness);
+//
+////              for (size_t buf = 0; buf < vertex_buffers.size(); ++buf) {
+////                gl::BindVertexArray (vertex_array_objects[buf]);
+////                gl::MultiDrawArrays (gl::LINE_STRIP, &track_starts[buf][0], &track_sizes[buf][0], num_tracks_per_buffer[buf]);
+////              }
+//
+//              if (fixel_tool.line_opacity < 1.0) {
+//                gl::Disable (gl::BLEND);
+//                gl::Enable (gl::DEPTH_TEST);
+//                gl::DepthMask (gl::TRUE_);
+//              }
+//
+//              stop (track_shader);
+            }
+
+
 
             void renderColourBar (const Projection& transform) {
               if (color_type == ScalarFile && show_colour_bar)
@@ -73,12 +137,15 @@ namespace MR
             float colour[3];
 
           private:
-            Window& window;
-            Fixel& fixel_tool;
             std::string filename;
+            Fixel& fixel_tool;
+            MR::Image::Header header;
+            MR::Image::BufferSparse<MR::Image::Sparse::FixelMetric> fixel_data;
             ColourMap::Renderer colourbar_renderer;
             int colourbar_position_index;
         };
+
+
 
 
 
@@ -89,27 +156,23 @@ namespace MR
             Model (QObject* parent) :
               ListModelBase (parent) { }
 
-            void add_items (std::vector<std::string>& filenames,
-                            Window& main_window,
-                            Fixel& fixel_tool) {
-
+            void add_items (std::vector<std::string>& filenames, Fixel& fixel_tool) {
+              beginInsertRows (QModelIndex(), items.size(), items.size() + filenames.size());
               for (size_t i = 0; i < filenames.size(); ++i) {
-                Image* fixel_image = new Image (main_window, fixel_tool, filenames[i]);
-                try {
-                  beginInsertRows (QModelIndex(), items.size(), items.size() + 1);
-                  items.push_back (fixel_image);
-                  endInsertRows();
-                } catch (Exception& e) {
-                  delete fixel_image;
-                  e.display();
-                }
+                Image* fixel_image = new Image (filenames[i], fixel_tool);
+                items.push_back (fixel_image);
               }
+              endInsertRows();
             }
 
             Image* get_fixel_image (QModelIndex& index) {
               return dynamic_cast<Image*>(items[index.row()]);
             }
         };
+
+
+
+
 
 
         Fixel::Fixel (Window& main_window, Dock* parent) :
@@ -166,35 +229,51 @@ namespace MR
 
             main_box->addWidget (fixel_list_view, 1);
 
-            GridLayout* default_opt_grid = new GridLayout;
 
-            QSlider* slider;
-            slider = new QSlider (Qt::Horizontal);
-            slider->setRange (1,1000);
-            slider->setSliderPosition (int (1000));
-            connect (slider, SIGNAL (valueChanged (int)), this, SLOT (opacity_slot (int)));
-            default_opt_grid->addWidget (new QLabel ("opacity"), 0, 0);
-            default_opt_grid->addWidget (slider, 0, 1);
+            HBoxLayout* hlayout = new HBoxLayout;
+            hlayout->setContentsMargins (0, 0, 0, 0);
+            hlayout->setSpacing (0);
 
-            slider = new QSlider (Qt::Horizontal);
-            slider->setRange (100,1000);
-            slider->setSliderPosition (float (100.0));
-            connect (slider, SIGNAL (valueChanged (int)), this, SLOT (line_thickness_slot (int)));
-            default_opt_grid->addWidget (new QLabel ("line thickness"), 1, 0);
-            default_opt_grid->addWidget (slider, 1, 1);
+            colour_combobox = new QComboBox;
+            colour_combobox->addItem ("Colour Bar");
+            colour_combobox->addItem ("Colour By Direction");
+            colour_combobox->addItem ("Set Colour");
+            colour_combobox->addItem ("Randomise Colour");
+            hlayout->addWidget (colour_combobox, 0);
+            connect (colour_combobox, SIGNAL (activated(int)), this, SLOT (colour_changed(int)));
 
-            QGroupBox* slab_group_box = new QGroupBox (tr("crop to slice"));
-            slab_group_box->setCheckable (true);
-            slab_group_box->setChecked (true);
-            default_opt_grid->addWidget (slab_group_box, 2, 0, 1, 2);
+            // Colourmap menu:
+            colourmap_menu = new QMenu (tr ("Colourmap menu"), this);
 
-            main_box->addLayout (default_opt_grid, 0);
+            ColourMap::create_menu (this, colourmap_group, colourmap_menu, colourmap_actions, false, false);
+            connect (colourmap_group, SIGNAL (triggered (QAction*)), this, SLOT (select_colourmap_slot()));
+            colourmap_actions[1]->setChecked (true);
 
+            colourmap_menu->addSeparator();
 
+            show_colour_bar = colourmap_menu->addAction (tr ("Show colour bar"), this, SLOT (show_colour_bar_slot()));
+            show_colour_bar->setCheckable (true);
+            show_colour_bar->setChecked (true);
+            addAction (show_colour_bar);
+
+            invert_scale = colourmap_menu->addAction (tr ("Invert"), this, SLOT (invert_colourmap_slot()));
+            invert_scale->setCheckable (true);
+            addAction (invert_scale);
+
+            QAction* reset_intensity = colourmap_menu->addAction (tr ("Reset intensity"), this, SLOT (reset_intensity_slot()));
+            addAction (reset_intensity);
+
+            colourmap_button = new QToolButton (this);
+            colourmap_button->setToolTip (tr ("Colourmap menu"));
+            colourmap_button->setIcon (QIcon (":/colourmap.svg"));
+            colourmap_button->setPopupMode (QToolButton::InstantPopup);
+            colourmap_button->setMenu (colourmap_menu);
+            hlayout->addWidget (colourmap_button);
+            main_box->addLayout (hlayout);
 
             QGroupBox* group_box = new QGroupBox ("Intensity scaling");
             main_box->addWidget (group_box);
-            HBoxLayout* hlayout = new HBoxLayout;
+            hlayout = new HBoxLayout;
             group_box->setLayout (hlayout);
 
             min_entry = new AdjustButton (this);
@@ -225,21 +304,32 @@ namespace MR
             connect (threshold_upper, SIGNAL (valueChanged()), this, SLOT (threshold_upper_value_changed()));
             hlayout->addWidget (threshold_upper);
 
+            GridLayout* default_opt_grid = new GridLayout;
+
+            QSlider* slider;
+            slider = new QSlider (Qt::Horizontal);
+            slider->setRange (1, 1000);
+            slider->setSliderPosition (int (1000));
+            connect (slider, SIGNAL (valueChanged (int)), this, SLOT (opacity_slot (int)));
+            default_opt_grid->addWidget (new QLabel ("opacity"), 0, 0);
+            default_opt_grid->addWidget (slider, 0, 1);
+
+            slider = new QSlider (Qt::Horizontal);
+            slider->setRange (100,1000);
+            slider->setSliderPosition (float (100.0));
+            connect (slider, SIGNAL (valueChanged (int)), this, SLOT (line_thickness_slot (int)));
+            default_opt_grid->addWidget (new QLabel ("line thickness"), 1, 0);
+            default_opt_grid->addWidget (slider, 1, 1);
+
+            QGroupBox* slab_group_box = new QGroupBox (tr("crop to slice"));
+            slab_group_box->setCheckable (true);
+            slab_group_box->setChecked (true);
+            default_opt_grid->addWidget (slab_group_box, 2, 0, 1, 2);
+
+            main_box->addLayout (default_opt_grid, 0);
+
             main_box->addStretch ();
             setMinimumSize (main_box->minimumSize());
-
-
-//            QAction* action;
-//            fixel_option_menu = new QMenu ();
-//            action = new QAction("&Colour by direction", this);
-//            connect (action, SIGNAL(triggered()), this, SLOT (colour_track_by_direction_slot()));
-//            fixel_option_menu->addAction (action);
-//            action = new QAction("&Randomise colour", this);
-//            connect (action, SIGNAL(triggered()), this, SLOT (randomise_track_colour_slot()));
-//            fixel_option_menu->addAction (action);
-//            action = new QAction("&Set colour", this);
-//            connect (action, SIGNAL(triggered()), this, SLOT (set_track_colour_slot()));
-//            fixel_option_menu->addAction (action);
         }
 
 
@@ -251,10 +341,11 @@ namespace MR
 
         void Fixel::draw (const Projection& transform, bool is_3D)
         {
-          not_3D = !is_3D;
+          if (!window.snap_to_image() && !is_3D)
+            return;
           for (int i = 0; i < fixel_list_model->rowCount(); ++i) {
             if (fixel_list_model->items[i]->show && !hide_all_button->isChecked())
-              dynamic_cast<Image*>(fixel_list_model->items[i])->render (transform);
+              dynamic_cast<Image*>(fixel_list_model->items[i])->render (transform, is_3D, window.plane(), window.slice());
           }
         }
 
@@ -279,12 +370,8 @@ namespace MR
           std::vector<std::string> list = Dialog::File::get_files (this, "Select fixel images to open", "MRtrix sparse format (*.msf)");
           if (list.empty())
             return;
-          try {
-            fixel_list_model->add_items (list, window, *this);
-          }
-          catch (Exception& E) {
-            E.display();
-          }
+          else
+            fixel_list_model->add_items (list, *this);
         }
 
 
@@ -400,7 +487,7 @@ namespace MR
         }
 
 
-        void Fixel::select_colourmap_slot ()
+        void Fixel::select_colourmap_slot (int selection)
         {
 //          if (tractogram) {
 //            QAction* action = colourmap_group->checkedAction();
@@ -411,6 +498,28 @@ namespace MR
 //            window.updateGL();
 //          }
         }
+
+        void Fixel::colour_changed_slot (int selection)
+        {
+        }
+
+        void Fixel::reset_intensity_slot ()
+        {
+//          if (tractogram) {
+//            tractogram->set_windowing (min_entry->value(), max_entry->value());
+//            window.updateGL();
+//          }
+        }
+
+
+        void Fixel::invert_colourmap_slot ()
+        {
+//          if (tractogram) {
+//            tractogram->set_windowing (min_entry->value(), max_entry->value());
+//            window.updateGL();
+//          }
+        }
+
 
 
         void Fixel::on_set_scaling_slot ()
@@ -424,11 +533,11 @@ namespace MR
 
         void Fixel::threshold_lower_changed (int unused)
         {
-          if (tractogram) {
-            threshold_lower->setEnabled (threshold_lower_box->isChecked());
-            tractogram->set_use_discard_lower (threshold_lower_box->isChecked());
-            window.updateGL();
-          }
+//          if (tractogram) {
+//            threshold_lower->setEnabled (threshold_lower_box->isChecked());
+//            tractogram->set_use_discard_lower (threshold_lower_box->isChecked());
+//            window.updateGL();
+//          }
         }
 
 

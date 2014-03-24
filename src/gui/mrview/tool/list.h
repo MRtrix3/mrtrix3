@@ -21,7 +21,7 @@ TOOL(View, View options, Adjust view settings)
 TOOL(Overlay, Overlay, Overlay other images over the current image)
 TOOL(Tractography, Tractography, Display tracks over the current image)
 TOOL(ODF, ODF Display, Display orientation density functions)
-TOOL(Fixel, Fixel Display, Display fixel images)
+TOOL(Fixel, Fixel Overlay, Display fixel images)
 TOOL(ScreenCapture, Screen capture, Capture the screen as a png file)
 
 #endif
