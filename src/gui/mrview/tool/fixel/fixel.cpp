@@ -49,14 +49,14 @@ namespace MR
             void add_items (std::vector<std::string>& filenames, Fixel& fixel_tool) {
               beginInsertRows (QModelIndex(), items.size(), items.size() + filenames.size());
               for (size_t i = 0; i < filenames.size(); ++i) {
-                Image* fixel_image = new Image (filenames[i], fixel_tool);
+                FixelImage* fixel_image = new FixelImage (filenames[i], fixel_tool);
                 items.push_back (fixel_image);
               }
               endInsertRows();
             }
 
-            Image* get_fixel_image (QModelIndex& index) {
-              return dynamic_cast<Image*>(items[index.row()]);
+            FixelImage* get_fixel_image (QModelIndex& index) {
+              return dynamic_cast<FixelImage*>(items[index.row()]);
             }
         };
 
@@ -232,7 +232,7 @@ namespace MR
             return;
           for (int i = 0; i < fixel_list_model->rowCount(); ++i) {
             if (fixel_list_model->items[i]->show && !hide_all_button->isChecked())
-              dynamic_cast<Image*>(fixel_list_model->items[i])->render (transform, is_3D, window.plane(), window.slice());
+              dynamic_cast<FixelImage*>(fixel_list_model->items[i])->render (transform, is_3D, window.plane(), window.slice());
           }
         }
 
@@ -244,7 +244,7 @@ namespace MR
         {
           for (int i = 0; i < fixel_list_model->rowCount(); ++i) {
             if (fixel_list_model->items[i]->show)
-              dynamic_cast<Image*>(fixel_list_model->items[i])->renderColourBar (transform);
+              dynamic_cast<FixelImage*>(fixel_list_model->items[i])->renderColourBar (transform);
           }
         }
 
@@ -342,8 +342,8 @@ namespace MR
               colour[1] = rng.uniform();
               colour[2] = rng.uniform();
             } while (colour[0] < 0.5 && colour[1] < 0.5 && colour[2] < 0.5);
-            dynamic_cast<Image*> (fixel_list_model->items[indices[i].row()])->color_type = Colour;
-            dynamic_cast<Image*> (fixel_list_model->items[indices[i].row()])->set_colour (colour);
+            dynamic_cast<FixelImage*> (fixel_list_model->items[indices[i].row()])->color_type = Colour;
+            dynamic_cast<FixelImage*> (fixel_list_model->items[indices[i].row()])->set_colour (colour);
           }
           window.updateGL();
         }
