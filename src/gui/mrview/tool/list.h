@@ -5,7 +5,7 @@
 //#include "gui/mrview/tool/roi_analysis.h"
 #include "gui/mrview/tool/overlay.h"
 #include "gui/mrview/tool/odf.h"
-#include "gui/mrview/tool/fixel.h"
+#include "gui/mrview/tool/fixel/fixel.h"
 #include "gui/mrview/tool/screen_capture.h"
 #include "gui/mrview/tool/tractography/tractography.h"
 

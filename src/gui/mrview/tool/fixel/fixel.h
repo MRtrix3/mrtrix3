@@ -1,5 +1,5 @@
 /*
-   Copyright 2009 Brain Research Institute, Melbourne, Australia
+   Copyright 2014 Brain Research Institute, Melbourne, Australia
 
    Written by David Raffelt 2014.
 
@@ -20,8 +20,8 @@
 
 */
 
-#ifndef __gui_mrview_tool_fixel_h__
-#define __gui_mrview_tool_fixel_h__
+#ifndef __gui_mrview_tool_fixel_fixel_h__
+#define __gui_mrview_tool_fixel_fixel_h__
 
 #include "gui/mrview/tool/base.h"
 #include "gui/projection.h"
@@ -48,7 +48,6 @@ namespace MR
 
             void draw (const Projection& transform, bool is_3D);
             void drawOverlays (const Projection& transform);
-//            bool crop_to_slab () const { return (do_crop_to_slab && not_3D); }
 //            bool process_batch_command (const std::string& cmd, const std::string& args);
 
             QPushButton* hide_all_button;
@@ -85,8 +84,6 @@ namespace MR
             void threshold_upper_value_changed ();
 
           protected:
-            class Image;
-
             AdjustButton *slab_entry;
             AdjustButton *max_entry, *min_entry;
             AdjustButton *threshold_lower, *threshold_upper;
