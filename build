@@ -33,7 +33,7 @@ def pipe_errors_to_less_handler():
     try:
       [ fid, name ] = tempfile.mkstemp()
       try:
-        fid = os.fdopen (fid, 'w')
+        fid = os.fdopen (fid, 'wb')
         fid.write (error_stream.encode (errors='ignore'))
         fid.close()
         os.system ("less " + name)
