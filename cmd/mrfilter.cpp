@@ -40,12 +40,20 @@ using namespace App;
 // Can also set up progress message as a member variable before functor is used; will
 //   behave differently depending on whether input is 3D or 4D; in fact, could possibly
 //   make this a base function
+
 // Extent should also possibly be a member of the base class; should be a common
 //   feature of image 'filters'
+// Cancel that; not common for all 'filters', and some of these processes don't work
+//   using a sliding 3D kernel window anyways
 
 // TODO For gradient filter, move smoothing filter operation to inside gradient filter
 
 // TODO Should all filters be templated?
+
+// TODO Create maskfilter command, with erode / dilate / connected components / LCC / median
+// Eventually this will form the basis for trying the fuzzy LCC algorithm
+// Remember with fuzzy LCC command: wrap around image edges - that will hopefully make it
+//   work with an inverted brain mask
 
 
 
@@ -143,6 +151,38 @@ void parse_gradient_filter_cmdline_options (Image::Filter::GaussianSmooth<>& smo
 // Keep the option groups and these functions in the cmd/ file; only really relevant for this command, other
 //   uses of the classes are likely to be deeper in a processing chain
 
+void parse_median_filter_cmdline_options (Image::Filter::Median3D& filter)
+{
+  Options opt = get_options ("extent");
+  if (opt.size())
+    filter.set_extent (parse_ints (opt[0][0]));
+}
+
+
+
+void parse_smooth_filter_cmdline_options (Image::Filter::GaussianSmooth<>& filter)
+{
+
+  Options opt = get_options ("stdev");
+  const bool stdev_supplied = opt.size();
+  if (stdev_supplied)
+    filter.set_stdev (parse_floats (opt[0][0]));
+
+  opt = get_options ("fwhm");
+  if (opt.size()) {
+    if (stdev_supplied)
+      throw Exception ("The stdev and FWHM options are mutually exclusive.");
+    std::vector<float> stdevs = parse_floats (opt[0][0]);
+    for (size_t d = 0; d < stdevs.size(); ++d)
+      stdevs[d] = stdevs[d] / 2.3548;  //convert FWHM to stdev
+    filter.set_stdev (stdevs);
+  }
+
+  opt = get_options ("extent");
+  if (opt.size())
+    filter.set_extent (parse_ints (opt[0][0]));
+
+}
 
 
 
@@ -186,88 +226,46 @@ void run () {
     Image::Filter::GaussianSmooth<> smooth_filter (input_voxel);
     Image::Filter::Gradient gradient_filter (input_voxel);
 
+    parse_gradient_filter_cmdline_options (smooth_filter, gradient_filter);
+
     Image::Header smooth_header (input_data);
     smooth_header.info() = smooth_filter.info();
 
     Image::BufferScratch<float> smoothed_data (smooth_header);
     Image::BufferScratch<float>::voxel_type smoothed_voxel (smoothed_data);
 
-    Image::Header gradient_header (input_data);
-    gradient_header.info() = gradient_filter.info();
+    Image::Header output_header (input_data);
+    output_header.info() = gradient_filter.info();
 
-    Image::Buffer<float> gradient_data (argument[2], gradient_header);
-    Image::Buffer<float>::voxel_type gradient_voxel (gradient_data);
+    Image::Buffer<float> output_data (argument[2], output_header);
+    Image::Buffer<float>::voxel_type output_voxel (output_data);
 
-    ProgressBar progress ("computing image gradient...");
     smooth_filter (input_voxel, smoothed_voxel);
-    gradient_filter (smoothed_voxel, gradient_voxel);
+    gradient_filter (smoothed_voxel, output_voxel);
 
   } else if (int(argument[1]) == 1) { // Median filter
 
-    std::vector<int> extent (1);
-    extent[0] = 3;
+    Image::Filter::Median3D median_filter (input_voxel);
 
-    Options opt = get_options ("extent");
+    parse_median_filter_cmdline_options (median_filter);
 
-    if (opt.size())
-      extent = parse_ints (opt[0][0]);
-
-    Image::BufferPreload<float> src_array (argument[0]);
-    Image::BufferPreload<float>::voxel_type src (src_array);
-
-    Image::Filter::Median3D median_filter (src, extent);
-
-    Image::Header header (src_array);
+    Image::Header header (input_data);
     header.info() = median_filter.info();
-    header.datatype() = src_array.datatype();
+    header.datatype() = input_data.datatype();
 
-    Image::Buffer<float> dest_array (argument[2], header);
-    Image::Buffer<float>::voxel_type dest (dest_array);
+    Image::Buffer<float> output_data (argument[2], header);
+    Image::Buffer<float>::voxel_type output_voxel (output_data);
 
-    median_filter (src, dest);
+    median_filter (input_voxel, output_voxel);
 
   } else if (int(argument[1]) == 2) { // Smooth filter
 
-    std::vector<float> stdev;
-    stdev.resize(3);
-    for (size_t dim = 0; dim < 3; dim++)
-      stdev[dim] = input_data.vox (dim);
+    Image::Filter::GaussianSmooth<> smooth_filter (input_voxel);
 
-    Options opt = get_options ("stdev");
-    const bool stdev_supplied = opt.size();
-    if (stdev_supplied)
-      stdev = parse_floats (opt[0][0]);
-
-    opt = get_options ("fwhm");
-    if (opt.size()) {
-      if (stdev_supplied)
-        throw Exception ("The stdev and FWHM options are mutually exclusive.");
-      stdev = parse_floats (opt[0][0]);
-      for (size_t d = 0; d < stdev.size(); ++d)
-        stdev[d] = stdev[d] / 2.3548;  //convert FWHM to stdev
-    }
-
-    opt = get_options ("stride");
-    std::vector<int> strides;
-    if (opt.size()) {
-      strides = opt[0][0];
-      if (strides.size() > input_data.ndim())
-        throw Exception ("too many axes supplied to -stride option");
-    }
-
-    Image::Filter::GaussianSmooth<> smooth_filter (input_voxel, stdev);
-    opt = get_options ("extent");
-    if (opt.size())
-      smooth_filter.set_extent (parse_ints (opt[0][0]));
-
-    // TODO Allow setting of strides for all filters
     Image::Header header;
     header.info() = smooth_filter.info();
-    if (strides.size()) {
-      for (size_t n = 0; n < strides.size(); ++n)
-        header.stride(n) = strides[n];
-    }
-    Image::Buffer<float> output_data (argument[1], header);
+
+    Image::Buffer<float> output_data (argument[2], header);
     Image::Buffer<float>::voxel_type output_voxel (output_data);
     smooth_filter (input_voxel, output_voxel);
 
@@ -275,5 +273,25 @@ void run () {
     assert (0);
   }
 
+
+
+/*
+  opt = get_options ("stride");
+  std::vector<int> strides;
+  if (opt.size()) {
+    strides = opt[0][0];
+    if (strides.size() > input_data.ndim())
+      throw Exception ("too many axes supplied to -stride option");
+  }
+
+  // TODO Allow setting of strides for all filters
+  // This will happen once the Filter::Base class is implemented
+
+  if (strides.size()) {
+    for (size_t n = 0; n < strides.size(); ++n)
+      header.stride(n) = strides[n];
+  }
+
+*/
 
 }
