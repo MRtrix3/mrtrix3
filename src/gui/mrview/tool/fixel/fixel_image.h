@@ -29,7 +29,7 @@
 #include "image/sparse/voxel.h"
 #include "image/transform.h"
 #include "gui/mrview/tool/fixel/fixel.h"
-
+#include "image/loop.h"
 
 namespace MR
 {
@@ -47,14 +47,15 @@ namespace MR
             FixelImage (const std::string& filename, Fixel& fixel_tool) :
               Displayable (filename),
               show_colour_bar (true),
-              color_type (Colour),
+              color_type (Value),
               filename (filename),
               fixel_tool (fixel_tool),
               header (filename),
               fixel_data (header),
               fixel_vox (fixel_data),
-              transform (fixel_vox),
-              colourbar_position_index (4)
+              header_transform (fixel_vox),
+              colourbar_position_index (4),
+              fixel_count (0)
               {
                 set_allowed_features (true, true, false);
                 colourmap = 1;
@@ -62,7 +63,19 @@ namespace MR
                 set_use_transparency (true);
                 colour[0] = colour[1] = colour[2] = 1;
                 line_length = 0.5 * static_cast<float>(fixel_vox.vox(0) + fixel_vox.vox(1) + fixel_vox.vox(2)) / 3.0;
+                value_min = std::numeric_limits<float>::infinity();
+                value_max = -std::numeric_limits<float>::infinity();
+                load_image();
               }
+
+            ~FixelImage() {
+                if (vertex_buffer)
+                  gl::DeleteBuffers (1, &vertex_buffer);
+                if (vertex_array_object)
+                  gl::DeleteVertexArrays (1, &vertex_array_object);
+                if (value_buffer)
+                  gl::DeleteBuffers (1, &value_buffer);
+            }
 
 
               class Shader : public Displayable::Shader {
@@ -85,6 +98,8 @@ namespace MR
                   colourbar_renderer.render (transform, *this, colourbar_position_index, this->scale_inverted());
               }
 
+              void load_image ();
+
               void set_colour (float c[3])
               {
                 colour[0] = c[0];
@@ -103,10 +118,16 @@ namespace MR
               MR::Image::Header header;
               MR::Image::BufferSparse<MR::Image::Sparse::FixelMetric> fixel_data;
               MR::Image::BufferSparse<MR::Image::Sparse::FixelMetric>::voxel_type fixel_vox;
-              MR::Image::Transform transform;
+              MR::Image::Transform header_transform;
               Point<float> voxel_pos;
               ColourMap::Renderer colourbar_renderer;
               int colourbar_position_index;
+              GLuint vertex_buffer;
+              GLuint vertex_array_object;
+              GLuint value_buffer;
+              std::vector<GLint> line_starts;
+              std::vector<GLint> line_sizes;
+              size_t fixel_count;
         };
 
       }

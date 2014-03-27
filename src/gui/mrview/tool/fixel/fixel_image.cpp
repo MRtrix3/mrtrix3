@@ -22,6 +22,7 @@
 
 #include "gui/mrview/tool/fixel/fixel_image.h"
 
+
 namespace MR
 {
   namespace GUI
@@ -34,29 +35,93 @@ namespace MR
         std::string FixelImage::Shader::vertex_shader_source (const Displayable& fixel)
         {
 
-          std::string source =
-              "layout (location = 0) in vec3 vertexPosition_modelspace;\n"
-              "layout (location = 1) in vec3 previousVertex;\n"
-              "layout (location = 2) in vec3 nextVertex;\n"
-              "uniform mat4 MVP;\n"
-              "flat out float amp_out;\n"
-              "out vec3 fragmentColour;\n";
 
-          switch (color_type) {
-            case Direction: break;
-            case Colour:
-              source += "uniform vec3 const_colour;\n";
-              break;
-            case Value:
-              source += "layout (location = 3) in float amp;\n"
-                        "uniform float offset, scale;\n";
-              break;
-          }
 
-          source +=
-              "void main() {\n"
-              "  gl_Position =  MVP * vec4(vertexPosition_modelspace,1);\n";
+          bool colour_by_direction = color_type == Direction;
 
+           std::string source =
+               "layout (location = 0) in vec3 vertexPosition_modelspace;\n"
+               "layout (location = 1) in vec3 previousVertex;\n"
+               "layout (location = 2) in vec3 nextVertex;\n"
+               "uniform mat4 MVP;\n"
+               "flat out float amp_out;\n"
+               "out vec3 fragmentColour;\n";
+
+           switch (color_type) {
+             case Direction: break;
+             case Colour:
+               source += "uniform vec3 const_colour;\n";
+               break;
+             case Value:
+               source += "layout (location = 3) in float amp;\n"
+                         "uniform float offset, scale;\n";
+               break;
+           }
+
+
+           source +=
+               "void main() {\n"
+               "  gl_Position =  MVP * vec4(vertexPosition_modelspace,1);\n";
+
+           if (colour_by_direction)
+             source +=
+               "  vec3 dir;\n"
+               "  if (isnan (previousVertex.x))\n"
+               "    dir = nextVertex - vertexPosition_modelspace;\n"
+               "  else if (isnan (nextVertex.x))\n"
+               "    dir = vertexPosition_modelspace - previousVertex;\n"
+               "  else\n"
+               "    dir = nextVertex - previousVertex;\n";
+           if (colour_by_direction)
+               source += "  fragmentColour = dir;\n";
+
+           switch (color_type) {
+             case Colour:
+               source +=
+                   "  fragmentColour = const_colour;\n";
+               break;
+             case Value:
+               source += "  amp_out = amp;\n";
+               if (!ColourMap::maps[colourmap].special) {
+                 source += "  float amplitude = clamp (";
+                 if (fixel.scale_inverted())
+                   source += "1.0 -";
+                 source += " scale * (amp - offset), 0.0, 1.0);\n  ";
+               }
+               break;
+             default:
+               break;
+           }
+
+
+
+           source += "}\n";
+
+           return source;
+
+//          std::string source =
+//              "layout (location = 0) in vec3 vertexPosition_modelspace;\n"
+//              "layout (location = 1) in vec3 previousVertex;\n"
+//              "layout (location = 2) in vec3 nextVertex;\n"
+//              "uniform mat4 MVP;\n"
+//              "flat out float amp_out;\n"
+//              "out vec3 fragmentColour;\n";
+//
+//          switch (color_type) {
+//            case Direction: break;
+//            case Colour:
+//              source += "uniform vec3 const_colour;\n";
+//              break;
+//            case Value:
+//              source += "layout (location = 3) in float amp;\n"
+//                        "uniform float offset, scale;\n";
+//              break;
+//          }
+//
+//          source +=
+//              "void main() {\n"
+//              "  gl_Position =  MVP * vec4(vertexPosition_modelspace,1);\n";
+//
 //          if (color_type == Direction)
 //            source +=
 //              "  vec3 dir;\n"
@@ -67,28 +132,28 @@ namespace MR
 //              "  else\n"
 //              "    dir = nextVertex - previousVertex;\n";
 //              source += "  fragmentColour = dir;\n";
-
-          switch (color_type) {
-            case Colour:
-              source +=
-                  "  fragmentColour = const_colour;\n";
-              break;
-            case Value:
-              source += "  amp_out = amp;\n";
-              if (!ColourMap::maps[colourmap].special) {
-                source += "  float amplitude = clamp (";
-                if (fixel.scale_inverted())
-                  source += "1.0 -";
-                source += " scale * (amp - offset), 0.0, 1.0);\n  ";
-              }
-              break;
-            default:
-              break;
-          }
-
-          source += "}\n";
-
-          return source;
+//
+//          switch (color_type) {
+//            case Colour:
+//              source +=
+//                  "  fragmentColour = const_colour;\n";
+//              break;
+//            case Value:
+//              source += "  amp_out = amp;\n";
+//              if (!ColourMap::maps[colourmap].special) {
+//                source += "  float amplitude = clamp (";
+//                if (fixel.scale_inverted())
+//                  source += "1.0 -";
+//                source += " scale * (amp - offset), 0.0, 1.0);\n  ";
+//              }
+//              break;
+//            default:
+//              break;
+//          }
+//
+//          source += "}\n";
+//
+//          return source;
         }
 
 
@@ -136,7 +201,6 @@ namespace MR
 
 
 
-
         void FixelImage::Shader::update (const Displayable& object)
         {
           const FixelImage& fixel (dynamic_cast<const FixelImage&> (object));
@@ -144,8 +208,6 @@ namespace MR
           color_type = fixel.color_type;
           Displayable::Shader::update (object);
         }
-
-
 
 
 
@@ -178,41 +240,8 @@ namespace MR
 
           gl::LineWidth (fixel_tool.line_thickness);
 
-
-          std::vector<Point<float> > buffer;
-          std::vector<float> values;
-          std::vector<GLint> starts;
-          std::vector<GLint> sizes;
-          size_t count = 0;
-          MR::Image::Loop loop (fixel_vox);
-          for (loop.start (fixel_vox); loop.ok(); loop.next (fixel_vox)) {
-            for (size_t f = 0; f != fixel_vox.value().size(); ++f) {
-
-
-              transform.voxel2scanner (fixel_vox, voxel_pos);
-              starts.push_back (buffer.size());
-              buffer.push_back (Point<float>());
-              buffer.push_back (voxel_pos + (fixel_vox.value()[f].dir *  line_length));
-              buffer.push_back (voxel_pos + (fixel_vox.value()[f].dir * -line_length));
-              sizes.push_back (2);
-              count++;
-
-
-
-             // tck_writer (tck);
-              //if (tsf_writer) {
-               // std::vector<float> scalars;
-               // scalars.push_back (fixel_vox.value()[f].value);
-               // scalars.push_back (fixel_vox.value()[f].value);
-               // (*tsf_writer) (scalars);
-             // }
-            }
-	  }
-
-  //              for (size_t buf = 0; buf < vertex_buffers.size(); ++buf) {
-  //                gl::BindVertexArray (vertex_array_objects[buf]);
-  //                gl::MultiDrawArrays (gl::LINE_STRIP, &track_starts[buf][0], &track_sizes[buf][0], num_tracks_per_buffer[buf]);
-  //              }
+          gl::BindVertexArray (vertex_array_object);
+          gl::MultiDrawArrays (gl::LINE_STRIP, &line_starts[0], &line_sizes[0], fixel_count);
 
           if (fixel_tool.line_opacity < 1.0) {
             gl::Disable (gl::BLEND);
@@ -220,7 +249,65 @@ namespace MR
             gl::DepthMask (gl::TRUE_);
           }
 
-          stop (track_shader);
+          stop (fixel_shader);
+        }
+
+
+        void FixelImage::load_image () {
+
+          std::vector<Point<float> > buffer;
+          std::vector<float> values;
+          std::vector<GLint> starts;
+          std::vector<GLint> sizes;
+          MR::Image::Loop loop;
+          for (loop.start (fixel_vox); loop.ok(); loop.next (fixel_vox)) {
+            for (size_t f = 0; f != fixel_vox.value().size(); ++f) {
+              if (fixel_vox.value()[f].value > value_max)
+                value_max = fixel_vox.value()[f].value;
+              if (fixel_vox.value()[f].value < value_min)
+                value_min = fixel_vox.value()[f].value;
+              line_starts.push_back (buffer.size());
+              header_transform.voxel2scanner (fixel_vox, voxel_pos);
+              values.push_back (NAN);
+              values.push_back (fixel_vox.value()[f].value);
+              values.push_back (fixel_vox.value()[f].value);
+              buffer.push_back (Point<float>());
+              buffer.push_back (voxel_pos + (fixel_vox.value()[f].dir *  line_length));
+              buffer.push_back (voxel_pos + (fixel_vox.value()[f].dir * -line_length));
+              line_sizes.push_back (2);
+              ++fixel_count;
+            }
+          }
+
+          this->set_windowing (value_min, value_max);
+          greaterthan = value_max;
+          lessthan = value_min;
+
+          VAR(value_min);
+          VAR(value_max);
+
+          values.push_back (NAN);
+          buffer.push_back (Point<float> ());
+          gl::GenBuffers (1, &vertex_buffer);
+          gl::BindBuffer (gl::ARRAY_BUFFER, vertex_buffer);
+          gl::BufferData (gl::ARRAY_BUFFER, buffer.size() * sizeof(Point<float>), &buffer[0][0], gl::STATIC_DRAW);
+
+          gl::GenVertexArrays (1, &vertex_array_object);
+          gl::BindVertexArray (vertex_array_object);
+          gl::EnableVertexAttribArray (0);
+          gl::VertexAttribPointer (0, 3, gl::FLOAT, gl::FALSE_, 0, (void*)(3*sizeof(float)));
+          gl::EnableVertexAttribArray (1);
+          gl::VertexAttribPointer (1, 3, gl::FLOAT, gl::FALSE_, 0, (void*)0);
+          gl::EnableVertexAttribArray (2);
+          gl::VertexAttribPointer (2, 3, gl::FLOAT, gl::FALSE_, 0, (void*)(6*sizeof(float)));
+
+          gl::GenBuffers (1, &value_buffer);
+          gl::BindBuffer (gl::ARRAY_BUFFER, value_buffer);
+          gl::BufferData (gl::ARRAY_BUFFER, values.size() * sizeof(float), &values[0], gl::STATIC_DRAW);
+
+          gl::BindVertexArray (vertex_array_object);
+          gl::EnableVertexAttribArray (3);
+          gl::VertexAttribPointer (3, 1, gl::FLOAT, gl::FALSE_, 0, (void*)(sizeof(float)));
         }
 
 
