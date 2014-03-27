@@ -73,25 +73,34 @@ namespace MR
     bool Config::get_bool (const std::string& key, bool default_value)
     {
       std::string value = get (key);
-      if (value.empty()) return (default_value);
+      if (value.empty()) 
+        return default_value;
       value = lowercase (value);
-      if (value == "true") return (true);
-      if (value == "false") return (false);
-      WARN ("malformed boolean entry \"" + value + "\" for key \"" + key + "\" in configuration file - ignored");
-      return (default_value);
+      if (value == "true") 
+        return true;
+      if (value == "false") 
+        return false;
+      try {
+        return to<bool> (value);
+      }
+      catch (...) {
+        WARN ("malformed boolean entry \"" + value + "\" for key \"" + key + "\" in configuration file - ignored");
+        return default_value;
+      }
     }
 
 
     int Config::get_int (const std::string& key, int default_value)
     {
       std::string value = get (key);
-      if (value.empty()) return (default_value);
+      if (value.empty()) 
+        return default_value;
       try {
-        return (to<int> (value));
+        return to<int> (value);
       }
       catch (...) {
         WARN ("malformed integer entry \"" + value + "\" for key \"" + key + "\" in configuration file - ignored");
-        return (default_value);
+        return default_value;
       }
     }
 
@@ -99,13 +108,14 @@ namespace MR
     float Config::get_float (const std::string& key, float default_value)
     {
       std::string value = get (key);
-      if (value.empty()) return (default_value);
+      if (value.empty()) 
+        return default_value;
       try {
-        return (to<float> (value));
+        return to<float> (value);
       }
       catch (...) {
         WARN ("malformed floating-point entry \"" + value + "\" for key \"" + key + "\" in configuration file - ignored");
-        return (default_value);
+        return default_value;
       }
     }
 
