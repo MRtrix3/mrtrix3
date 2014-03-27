@@ -23,7 +23,7 @@
 #include "mrtrix.h"
 #include "gui/mrview/window.h"
 #include "gui/mrview/tool/fixel/fixel.h"
-#include "gui/mrview/tool/fixel/image.h"
+#include "gui/mrview/tool/fixel/fixel_image.h"
 #include "gui/dialog/file.h"
 #include "gui/mrview/tool/list_model_base.h"
 #include "math/rng.h"

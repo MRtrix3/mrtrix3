@@ -19,13 +19,15 @@
    along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
 
 */
-#ifndef __gui_mrview_tool_fixel_imageh__
-#define __gui_mrview_tool_fixel_image_h__
+#ifndef __gui_mrview_tool_fixel_fixelimage_h__
+#define __gui_mrview_tool_fixel_fixelimage_h__
 
 #include "gui/mrview/displayable.h"
 #include "image/header.h"
 #include "image/buffer_sparse.h"
 #include "image/sparse/fixel_metric.h"
+#include "image/sparse/voxel.h"
+#include "image/transform.h"
 #include "gui/mrview/tool/fixel/fixel.h"
 
 
@@ -45,17 +47,21 @@ namespace MR
             FixelImage (const std::string& filename, Fixel& fixel_tool) :
               Displayable (filename),
               show_colour_bar (true),
-              color_type (Value),
+              color_type (Colour),
               filename (filename),
               fixel_tool (fixel_tool),
               header (filename),
               fixel_data (header),
+              fixel_vox (fixel_data),
+              transform (fixel_vox),
               colourbar_position_index (4)
               {
                 set_allowed_features (true, true, false);
                 colourmap = 1;
                 alpha = 1.0f;
                 set_use_transparency (true);
+                colour[0] = colour[1] = colour[2] = 1;
+                line_length = 0.5 * static_cast<float>(fixel_vox.vox(0) + fixel_vox.vox(1) + fixel_vox.vox(2)) / 3.0;
               }
 
 
@@ -72,50 +78,7 @@ namespace MR
               } fixel_shader;
 
 
-              void render (const Projection& transform, bool is_3D, int plane, int slice) {
-
-                //              start (fixel_shader);
-                //              transform.set (fixel_shader);
-                //
-                //              if (color_type == ScalarFile) {
-                //                if (use_discard_lower())
-                //                  gl::Uniform1f (gl::GetUniformLocation (track_shader, "lower"), lessthan);
-                //                if (use_discard_upper())
-                //                  gl::Uniform1f (gl::GetUniformLocation (track_shader, "upper"), greaterthan);
-                //              }
-                //              else if (color_type == Colour)
-                //                gl::Uniform3fv (gl::GetUniformLocation (track_shader, "const_colour"), 1, colour);
-                //
-                //              if (fixel_tool.line_opacity < 1.0) {
-                //                gl::Enable (gl::BLEND);
-                //                gl::Disable (gl::DEPTH_TEST);
-                //                gl::DepthMask (gl::FALSE_);
-                //                gl::BlendEquation (gl::FUNC_ADD);
-                //                gl::BlendFunc (gl::CONSTANT_ALPHA, gl::ONE);
-                //                gl::BlendColor (1.0, 1.0, 1.0, fixel_tool.line_opacity);
-                //              } else {
-                //                gl::Disable (gl::BLEND);
-                //                gl::Enable (gl::DEPTH_TEST);
-                //                gl::DepthMask (gl::TRUE_);
-                //              }
-                //
-                //              gl::LineWidth (fixel_tool.line_thickness);
-                //
-                ////              for (size_t buf = 0; buf < vertex_buffers.size(); ++buf) {
-                ////                gl::BindVertexArray (vertex_array_objects[buf]);
-                ////                gl::MultiDrawArrays (gl::LINE_STRIP, &track_starts[buf][0], &track_sizes[buf][0], num_tracks_per_buffer[buf]);
-                ////              }
-                //
-                //              if (fixel_tool.line_opacity < 1.0) {
-                //                gl::Disable (gl::BLEND);
-                //                gl::Enable (gl::DEPTH_TEST);
-                //                gl::DepthMask (gl::TRUE_);
-                //              }
-                //
-                //              stop (track_shader);
-              }
-
-
+              void render (const Projection& transform, bool is_3D, int plane, int slice);
 
               void renderColourBar (const Projection& transform) {
                 if (color_type == Value && show_colour_bar)
@@ -132,12 +95,16 @@ namespace MR
               bool show_colour_bar;
               ColourType color_type;
               float colour[3];
+              float line_length;
 
             private:
               std::string filename;
               Fixel& fixel_tool;
               MR::Image::Header header;
               MR::Image::BufferSparse<MR::Image::Sparse::FixelMetric> fixel_data;
+              MR::Image::BufferSparse<MR::Image::Sparse::FixelMetric>::voxel_type fixel_vox;
+              MR::Image::Transform transform;
+              Point<float> voxel_pos;
               ColourMap::Renderer colourbar_renderer;
               int colourbar_position_index;
         };

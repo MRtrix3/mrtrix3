@@ -20,7 +20,7 @@
 
 */
 
-#include "gui/mrview/tool/fixel/image.h"
+#include "gui/mrview/tool/fixel/fixel_image.h"
 
 namespace MR
 {
@@ -144,6 +144,85 @@ namespace MR
           color_type = fixel.color_type;
           Displayable::Shader::update (object);
         }
+
+
+
+
+
+        void FixelImage::render (const Projection& transform, bool is_3D, int plane, int slice) {
+
+          start (fixel_shader);
+          transform.set (fixel_shader);
+
+          if (color_type == Value) {
+            if (use_discard_lower())
+              gl::Uniform1f (gl::GetUniformLocation (fixel_shader, "lower"), lessthan);
+            if (use_discard_upper())
+              gl::Uniform1f (gl::GetUniformLocation (fixel_shader, "upper"), greaterthan);
+          }
+          else if (color_type == Colour)
+            gl::Uniform3fv (gl::GetUniformLocation (fixel_shader, "const_colour"), 1, colour);
+
+          if (fixel_tool.line_opacity < 1.0) {
+            gl::Enable (gl::BLEND);
+            gl::Disable (gl::DEPTH_TEST);
+            gl::DepthMask (gl::FALSE_);
+            gl::BlendEquation (gl::FUNC_ADD);
+            gl::BlendFunc (gl::CONSTANT_ALPHA, gl::ONE);
+            gl::BlendColor (1.0, 1.0, 1.0, fixel_tool.line_opacity);
+          } else {
+            gl::Disable (gl::BLEND);
+            gl::Enable (gl::DEPTH_TEST);
+            gl::DepthMask (gl::TRUE_);
+          }
+
+          gl::LineWidth (fixel_tool.line_thickness);
+
+
+          std::vector<Point<float> > buffer;
+          std::vector<float> values;
+          std::vector<GLint> starts;
+          std::vector<GLint> sizes;
+          size_t count = 0;
+          MR::Image::Loop loop (fixel_vox);
+          for (loop.start (fixel_vox); loop.ok(); loop.next (fixel_vox)) {
+            for (size_t f = 0; f != fixel_vox.value().size(); ++f) {
+
+
+              transform.voxel2scanner (fixel_vox, voxel_pos);
+              starts.push_back (buffer.size());
+              buffer.push_back (Point<float>());
+              buffer.push_back (voxel_pos + (fixel_vox.value()[f].dir *  line_length));
+              buffer.push_back (voxel_pos + (fixel_vox.value()[f].dir * -line_length));
+              sizes.push_back (2);
+              count++;
+
+
+
+             // tck_writer (tck);
+              //if (tsf_writer) {
+               // std::vector<float> scalars;
+               // scalars.push_back (fixel_vox.value()[f].value);
+               // scalars.push_back (fixel_vox.value()[f].value);
+               // (*tsf_writer) (scalars);
+             // }
+            }
+	  }
+
+  //              for (size_t buf = 0; buf < vertex_buffers.size(); ++buf) {
+  //                gl::BindVertexArray (vertex_array_objects[buf]);
+  //                gl::MultiDrawArrays (gl::LINE_STRIP, &track_starts[buf][0], &track_sizes[buf][0], num_tracks_per_buffer[buf]);
+  //              }
+
+          if (fixel_tool.line_opacity < 1.0) {
+            gl::Disable (gl::BLEND);
+            gl::Enable (gl::DEPTH_TEST);
+            gl::DepthMask (gl::TRUE_);
+          }
+
+          stop (track_shader);
+        }
+
 
       }
     }
