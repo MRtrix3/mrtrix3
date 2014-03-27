@@ -27,6 +27,7 @@
 #include "image/buffer_scratch.h"
 #include "image/copy.h"
 #include "image/nav.h"
+#include "image/filter/base.h"
 
 
 namespace MR
@@ -36,90 +37,84 @@ namespace MR
     namespace Filter
     {
 
-      class LargestConnectedComponent : public ConstInfo
+      class LargestConnectedComponent : public Base
       {
 
         public:
-        template <class InputVoxelType> 
-          LargestConnectedComponent (const InputVoxelType& in, const std::string& message) :
-            ConstInfo (in),
-            progress (message) { }
+          template <class InfoType>
+            LargestConnectedComponent (const InfoType& in, const std::string& message) :
+                Base (in) { }
 
 
-        typedef Point<int> voxel_type;
+          typedef Point<int> voxel_type;
 
 
-        template <class InputVoxelType, class OutputVoxelType>
+          template <class InputVoxelType, class OutputVoxelType>
           void operator() (InputVoxelType& input, OutputVoxelType& output) {
 
-          typedef typename InputVoxelType::value_type value_type;
+              typedef typename InputVoxelType::value_type value_type;
 
-          // Force calling the templated constructor instead of the copy-constructor
-          BufferScratch<bool> visited_data (input, "visited");
-          BufferScratch<bool>::voxel_type visited (visited_data);
-          size_t largest_mask_size = 0;
+              // Force calling the templated constructor instead of the copy-constructor
+              BufferScratch<bool> visited_data (input, "visited");
+              BufferScratch<bool>::voxel_type visited (visited_data);
+              size_t largest_mask_size = 0;
 
-          voxel_type seed (0, 0, 0);
+              voxel_type seed (0, 0, 0);
 
-          std::vector<voxel_type> adj_voxels;
-          adj_voxels.reserve (6);
-          adj_voxels.push_back (voxel_type (-1,  0,  0));
-          adj_voxels.push_back (voxel_type (+1,  0,  0));
-          adj_voxels.push_back (voxel_type ( 0, -1,  0));
-          adj_voxels.push_back (voxel_type ( 0, +1,  0));
-          adj_voxels.push_back (voxel_type ( 0,  0, -1));
-          adj_voxels.push_back (voxel_type ( 0,  0, +1));
+              std::vector<voxel_type> adj_voxels;
+              adj_voxels.reserve (6);
+              adj_voxels.push_back (voxel_type (-1,  0,  0));
+              adj_voxels.push_back (voxel_type (+1,  0,  0));
+              adj_voxels.push_back (voxel_type ( 0, -1,  0));
+              adj_voxels.push_back (voxel_type ( 0, +1,  0));
+              adj_voxels.push_back (voxel_type ( 0,  0, -1));
+              adj_voxels.push_back (voxel_type ( 0,  0, +1));
 
-          for (seed[2] = 0; seed[2] != input.dim (2); ++seed[2]) {
-            for (seed[1] = 0; seed[1] != input.dim (1); ++seed[1]) {
-              for (seed[0] = 0; seed[0] != input.dim (0); ++seed[0]) {
-                if (!Image::Nav::get_value_at_pos (visited, seed) && Image::Nav::get_value_at_pos (input, seed)) {
+              for (seed[2] = 0; seed[2] != input.dim (2); ++seed[2]) {
+                for (seed[1] = 0; seed[1] != input.dim (1); ++seed[1]) {
+                  for (seed[0] = 0; seed[0] != input.dim (0); ++seed[0]) {
+                    if (!Image::Nav::get_value_at_pos (visited, seed) && Image::Nav::get_value_at_pos (input, seed)) {
 
-                  visited.value() = true;
-                  BufferScratch<value_type> local_mask_data (input, "local_mask");
-                  typename BufferScratch<value_type>::voxel_type local_mask (local_mask_data);
-                  Image::Nav::set_value_at_pos (local_mask, seed, (value_type)input.value());
-                  size_t local_mask_size = 1;
+                      visited.value() = true;
+                      BufferScratch<value_type> local_mask_data (input, "local_mask");
+                      typename BufferScratch<value_type>::voxel_type local_mask (local_mask_data);
+                      Image::Nav::set_value_at_pos (local_mask, seed, (value_type)input.value());
+                      size_t local_mask_size = 1;
 
-                  std::vector<voxel_type> to_expand (1, seed);
+                      std::vector<voxel_type> to_expand (1, seed);
 
-                  do {
+                      do {
 
-                    const voxel_type v = to_expand.back();
-                    to_expand.pop_back();
+                        const voxel_type v = to_expand.back();
+                        to_expand.pop_back();
 
-                    for (std::vector<voxel_type>::const_iterator step = adj_voxels.begin(); step != adj_voxels.end(); ++step) {
-                      voxel_type to_test (v);
-                      to_test += *step;
-                      if (Image::Nav::within_bounds (visited, to_test) && !Image::Nav::get_value_at_pos (visited, to_test)) {
-                        if (Image::Nav::get_value_at_pos (input, to_test)) {
-                          Image::Nav::set_value_at_pos (visited, to_test, true);
-                          Image::Nav::set_value_at_pos (local_mask, to_test, (value_type)input.value());
-                          ++local_mask_size;
-                          to_expand.push_back (to_test);
+                        for (std::vector<voxel_type>::const_iterator step = adj_voxels.begin(); step != adj_voxels.end(); ++step) {
+                          voxel_type to_test (v);
+                          to_test += *step;
+                          if (Image::Nav::within_bounds (visited, to_test) && !Image::Nav::get_value_at_pos (visited, to_test)) {
+                            if (Image::Nav::get_value_at_pos (input, to_test)) {
+                              Image::Nav::set_value_at_pos (visited, to_test, true);
+                              Image::Nav::set_value_at_pos (local_mask, to_test, (value_type)input.value());
+                              ++local_mask_size;
+                              to_expand.push_back (to_test);
+                            }
+                          }
                         }
+
+                      } while (to_expand.size());
+
+                      if (local_mask_size > largest_mask_size) {
+                        largest_mask_size = local_mask_size;
+                        Image::copy (local_mask, output);
                       }
+
                     }
-
-                  } while (to_expand.size());
-
-                  if (local_mask_size > largest_mask_size) {
-                    largest_mask_size = local_mask_size;
-                    Image::copy (local_mask, output);
                   }
-
-                  ++progress;
-
                 }
               }
-            }
+
           }
 
-        }
-
-
-        private:
-          ProgressBar progress;
 
       };
 

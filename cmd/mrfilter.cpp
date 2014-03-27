@@ -25,6 +25,7 @@
 #include "image/buffer_preload.h"
 #include "image/buffer_scratch.h"
 #include "image/voxel.h"
+#include "image/filter/base.h"
 #include "image/filter/gaussian_smooth.h"
 #include "image/filter/gradient.h"
 #include "image/filter/median3D.h"
@@ -40,20 +41,37 @@ using namespace App;
 // Can also set up progress message as a member variable before functor is used; will
 //   behave differently depending on whether input is 3D or 4D; in fact, could possibly
 //   make this a base function
-
-// Extent should also possibly be a member of the base class; should be a common
-//   feature of image 'filters'
-// Cancel that; not common for all 'filters', and some of these processes don't work
-//   using a sliding 3D kernel window anyways
-
-// TODO For gradient filter, move smoothing filter operation to inside gradient filter
+// TODO Make sure the filters make use of the progress message member
 
 // TODO Should all filters be templated?
+// Alternatively, should the template on GaussianSmooth be removed?
 
 // TODO Create maskfilter command, with erode / dilate / connected components / LCC / median
 // Eventually this will form the basis for trying the fuzzy LCC algorithm
 // Remember with fuzzy LCC command: wrap around image edges - that will hopefully make it
 //   work with an inverted brain mask
+
+// TODO Check erode and dilate filters: use bool class, use of RefPtr's
+
+// TODO Check documentation of each filter; e.g. example use cases explicitly create
+//   new header and manually set data type, this should be done within the filter constructor
+
+// TODO Modify FFT to conform to code style, make available in mrfilter
+
+// TODO Rename gaussian smooth to just 'smooth' (both file name and class)
+
+// TODO Can LCC be removed completely? Just take the largest output of connected_components...
+
+// TODO Rather than trying to provide a custom boolean implementation of the median() function,
+//   just create a separate MedianBool image filter?
+
+// TODO Rename Median3D to just Median? The namespace should differentiate it from the math function
+
+// TODO Some filter headers have functions defined external to the filter class;
+//   might be cleaner to have these within the relevant classes (unless they may have other applications)
+
+// TODO The resize operator needs to be able to modify the underlying Info class
+// For now, this remains unchanged i.e. doesn't derive from Filter::Base
 
 
 
@@ -121,7 +139,7 @@ const OptionGroup SmoothOption = OptionGroup ("Options for smooth filter")
 
 
 
-void parse_gradient_filter_cmdline_options (Image::Filter::GaussianSmooth<>& smooth_filter, Image::Filter::Gradient& gradient_filter)
+void parse_gradient_filter_cmdline_options (Image::Filter::Gradient& filter)
 {
 
   std::vector<float> stdev;
@@ -134,22 +152,18 @@ void parse_gradient_filter_cmdline_options (Image::Filter::GaussianSmooth<>& smo
     if (stdev.size() != 1 && stdev.size() != 3)
       throw Exception ("unexpected number of elements specified in Gaussian stdev");
   } else {
-    stdev.resize (smooth_filter.info().ndim(), 0.0);
+    stdev.resize (filter.info().ndim(), 0.0);
     for (size_t dim = 0; dim != 3; ++dim)
-      stdev[dim] = smooth_filter.info().vox (dim);
+      stdev[dim] = filter.info().vox (dim);
   }
-  smooth_filter.set_stdev (stdev);
+  filter.set_stdev (stdev);
 
   opt = get_options ("scanner");
-  gradient_filter.compute_wrt_scanner (opt.size());
+  filter.compute_wrt_scanner (opt.size());
 
 }
 
 
-
-// TODO Functions for importing command-line options for the other filters
-// Keep the option groups and these functions in the cmd/ file; only really relevant for this command, other
-//   uses of the classes are likely to be deeper in a processing chain
 
 void parse_median_filter_cmdline_options (Image::Filter::Median3D& filter)
 {
@@ -221,77 +235,47 @@ void run () {
   Image::BufferPreload<float> input_data (argument[0]);
   Image::BufferPreload<float>::voxel_type input_voxel (input_data);
 
-  if (int(argument[1]) == 0) { // Gradient filter
+  const size_t filter_index = argument[1];
 
-    Image::Filter::GaussianSmooth<> smooth_filter (input_voxel);
-    Image::Filter::Gradient gradient_filter (input_voxel);
-
-    parse_gradient_filter_cmdline_options (smooth_filter, gradient_filter);
-
-    Image::Header smooth_header (input_data);
-    smooth_header.info() = smooth_filter.info();
-
-    Image::BufferScratch<float> smoothed_data (smooth_header);
-    Image::BufferScratch<float>::voxel_type smoothed_voxel (smoothed_data);
-
-    Image::Header output_header (input_data);
-    output_header.info() = gradient_filter.info();
-
-    Image::Buffer<float> output_data (argument[2], output_header);
-    Image::Buffer<float>::voxel_type output_voxel (output_data);
-
-    smooth_filter (input_voxel, smoothed_voxel);
-    gradient_filter (smoothed_voxel, output_voxel);
-
-  } else if (int(argument[1]) == 1) { // Median filter
-
-    Image::Filter::Median3D median_filter (input_voxel);
-
-    parse_median_filter_cmdline_options (median_filter);
-
-    Image::Header header (input_data);
-    header.info() = median_filter.info();
-    header.datatype() = input_data.datatype();
-
-    Image::Buffer<float> output_data (argument[2], header);
-    Image::Buffer<float>::voxel_type output_voxel (output_data);
-
-    median_filter (input_voxel, output_voxel);
-
-  } else if (int(argument[1]) == 2) { // Smooth filter
-
-    Image::Filter::GaussianSmooth<> smooth_filter (input_voxel);
-
-    Image::Header header;
-    header.info() = smooth_filter.info();
-
-    Image::Buffer<float> output_data (argument[2], header);
-    Image::Buffer<float>::voxel_type output_voxel (output_data);
-    smooth_filter (input_voxel, output_voxel);
-
-  } else {
-    assert (0);
+  Image::Filter::Base* filter = NULL;
+  switch (filter_index) {
+    case 0:
+      filter = new Image::Filter::Gradient (input_voxel);
+      parse_gradient_filter_cmdline_options (*(dynamic_cast<Image::Filter::Gradient*> (filter)));
+      break;
+    case 1:
+      filter = new Image::Filter::Median3D (input_voxel);
+      parse_median_filter_cmdline_options (*(dynamic_cast<Image::Filter::Median3D*> (filter)));
+      break;
+    case 2:
+      filter = new Image::Filter::GaussianSmooth<> (input_voxel);
+      parse_smooth_filter_cmdline_options (*(dynamic_cast<Image::Filter::GaussianSmooth<>* > (filter)));
+      break;
+    default:
+      assert (0);
   }
 
+  Image::Header header;
+  header.info() = filter->info();
 
-
-/*
-  opt = get_options ("stride");
-  std::vector<int> strides;
+  Options opt = get_options ("stride");
   if (opt.size()) {
-    strides = opt[0][0];
+    std::vector<int> strides = opt[0][0];
     if (strides.size() > input_data.ndim())
       throw Exception ("too many axes supplied to -stride option");
-  }
-
-  // TODO Allow setting of strides for all filters
-  // This will happen once the Filter::Base class is implemented
-
-  if (strides.size()) {
     for (size_t n = 0; n < strides.size(); ++n)
       header.stride(n) = strides[n];
   }
 
-*/
+  Image::Buffer<float> output_data (argument[2], header);
+  Image::Buffer<float>::voxel_type output_voxel (output_data);
+
+  switch (filter_index) {
+    case 0: (*dynamic_cast<Image::Filter::Gradient*>          (filter)) (input_voxel, output_voxel); break;
+    case 1: (*dynamic_cast<Image::Filter::Median3D*>          (filter)) (input_voxel, output_voxel); break;
+    case 2: (*dynamic_cast<Image::Filter::GaussianSmooth<>* > (filter)) (input_voxel, output_voxel); break;
+  }
+
+  delete filter;
 
 }

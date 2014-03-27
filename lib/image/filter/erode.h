@@ -23,11 +23,12 @@
 #ifndef __image_filter_erode_h__
 #define __image_filter_erode_h__
 
-#include "image/loop.h"
-#include "ptr.h"
 #include "progressbar.h"
+#include "ptr.h"
 #include "image/buffer_scratch.h"
 #include "image/copy.h"
+#include "image/loop.h"
+#include "image/filter/base.h"
 
 namespace MR
 {
@@ -56,18 +57,20 @@ namespace MR
        *
        * \endcode
        */
-      class Erode : public ConstInfo
+      class Erode : public Base
       {
 
         public:
-          template <class InputVoxelType>
-            Erode (const InputVoxelType & input) : ConstInfo (input) {
-              npass_ = 1;
+          template <class InfoType>
+          Erode (const InfoType& in) :
+              Base (in)
+          {
+            npass_ = 1;
           }
 
 
           template <class InputVoxelType, class OutputVoxelType>
-          void operator() (InputVoxelType & input, OutputVoxelType & output) {
+          void operator() (InputVoxelType& input, OutputVoxelType& output) {
 
             RefPtr <BufferScratch<float> > in_data (new BufferScratch<float> (input));
             RefPtr <BufferScratch<float>::voxel_type> in (new BufferScratch<float>::voxel_type (*in_data));
@@ -99,7 +102,7 @@ namespace MR
 
         protected:
 
-          float erode (BufferScratch<float>::voxel_type & in)
+          float erode (BufferScratch<float>::voxel_type& in)
           {
             if (in.value() < 0.5) return (0.0);
             float val;

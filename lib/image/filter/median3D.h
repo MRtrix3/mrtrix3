@@ -26,6 +26,7 @@
 #include "image/info.h"
 #include "image/threaded_copy.h"
 #include "image/adapter/median3D.h"
+#include "image/filter/base.h"
 
 namespace MR
 {
@@ -37,18 +38,18 @@ namespace MR
       @{ */
 
       //! Smooth images using median filtering.
-      class Median3D : public ConstInfo
+      class Median3D : public Base
       {
 
-      public:
-          template <class InputVoxelType>
-            Median3D (const InputVoxelType& in) :
-              ConstInfo (in),
+        public:
+          template <class InfoType>
+          Median3D (const InfoType& in) :
+              Base (in),
               extent_ (1,3) { }
 
-          template <class InputVoxelType>
-            Median3D (const InputVoxelType& in, const std::vector<int>& extent) :
-              ConstInfo (in),
+          template <class InfoType>
+          Median3D (const InfoType& in, const std::vector<int>& extent) :
+              Base (in),
               extent_ (extent) { }
 
           //! Set the extent of median filtering neighbourhood in voxels.
@@ -59,10 +60,13 @@ namespace MR
           }
 
           template <class InputVoxelType, class OutputVoxelType>
-            void operator() (InputVoxelType& in, OutputVoxelType& out, const std::string& message = "median filtering...") {
+          void operator() (InputVoxelType& in, OutputVoxelType& out) {
               Adapter::Median3D<InputVoxelType> median (in, extent_);
-              threaded_copy_with_progress_message (message, median, out);
-            }
+              if (message.size())
+                threaded_copy_with_progress_message (message, median, out);
+              else
+                threaded_copy (median, out);
+          }
 
       protected:
           std::vector<int> extent_;

@@ -23,11 +23,12 @@
 #ifndef __image_filter_gaussian_h__
 #define __image_filter_gaussian_h__
 
-#include "image/info.h"
-#include "image/threaded_copy.h"
-#include "image/adapter/gaussian1D.h"
+
 #include "image/buffer_scratch.h"
 #include "image/copy.h"
+#include "image/threaded_copy.h"
+#include "image/adapter/gaussian1D.h"
+#include "image/filter/base.h"
 
 namespace MR
 {
@@ -62,31 +63,30 @@ namespace MR
        * \endcode
        */
       template <typename ValueType = float>
-        class GaussianSmooth : public ConstInfo
+        class GaussianSmooth : public Base
       {
 
         public:
           typedef ValueType value_type;
 
-          template <class InputVoxelType>
-            GaussianSmooth (const InputVoxelType& in) :
-              ConstInfo (in),
+          template <class InfoType>
+          GaussianSmooth (const InfoType& in) :
+              Base (in),
               extent (in.ndim(), 0),
-              stdev (in.ndim(), 0.0) {
-                int max_dim;
-                (in.ndim() < 3) ? max_dim = in.ndim() : max_dim = 3;
-                for (int i = 0; i < max_dim; i++)
-                  stdev[i] = in.vox(i);
-              }
+              stdev (in.ndim(), 0.0)
+          {
+            for (int i = 0; i < std::min (int(in.ndim()), 3); i++)
+              stdev[i] = in.vox(i);
+          }
 
-          template <class InputVoxelType>
-            GaussianSmooth (const InputVoxelType& in,
-                const std::vector<float>& stdev) :
-              ConstInfo (in),
+          template <class InfoType>
+          GaussianSmooth (const InfoType& in, const std::vector<float>& stdev) :
+              Base (in),
               extent (in.ndim(), 0),
-              stdev (in.ndim()) {
-                set_stdev (stdev);
-              }
+              stdev (in.ndim())
+          {
+            set_stdev (stdev);
+          }
 
           //! Set the extent of smoothing kernel in voxels.
           //! This can be set as a single value for all dimensions
@@ -130,8 +130,10 @@ namespace MR
                 throw Exception ("the Gaussian stdev values cannot be negative");
           }
 
+
           template <class InputVoxelType, class OutputVoxelType>
-            void operator() (InputVoxelType& input, OutputVoxelType& output) {
+          void operator() (InputVoxelType& input, OutputVoxelType& output)
+          {
               RefPtr <BufferScratch<value_type> > in_data (new BufferScratch<value_type> (input));
               RefPtr <typename BufferScratch<value_type>::voxel_type> in (new typename BufferScratch<value_type>::voxel_type (*in_data));
               threaded_copy (input, *in);
@@ -150,7 +152,7 @@ namespace MR
                 }
               }
               threaded_copy (*in, output);
-            }
+          }
 
         protected:
           std::vector<int> extent;

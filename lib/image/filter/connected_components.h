@@ -23,11 +23,14 @@
 #ifndef __image_filter_connected_h__
 #define __image_filter_connected_h__
 
+#include "image/buffer_scratch.h"
 #include "image/info.h"
 #include "image/loop.h"
-#include "image/voxel.h"
-#include "image/buffer_scratch.h"
 #include "image/nav.h"
+#include "image/voxel.h"
+
+#include "image/filter/base.h"
+
 #include "math/matrix.h"
 
 #include <stack>
@@ -359,14 +362,17 @@ namespace MR
        *
        * \endcode
        */
-      class ConnectedComponents : public ConstInfo
+      class ConnectedComponents : public Base
       {
         public:
 
-        template <class InputVoxelType>
-        ConnectedComponents (const InputVoxelType& in) : ConstInfo (in), angular_threshold_(15.0) {
+        template <class InfoType>
+        ConnectedComponents (const InfoType& in) :
+            Base (in),
+            angular_threshold_(15.0)
+        {
           datatype_ = DataType::UInt32;
-          dim_to_ignore_.resize(this->ndim(), false);
+          dim_to_ignore_.resize (this->ndim(), false);
           largest_only_ = false;
           do_26_connectivity_ = false;
         }

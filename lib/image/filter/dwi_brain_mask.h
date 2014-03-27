@@ -27,6 +27,7 @@
 #include "image/buffer.h"
 #include "image/buffer_scratch.h"
 #include "image/voxel.h"
+#include "image/filter/base.h"
 #include "image/filter/optimal_threshold.h"
 #include "image/filter/median3D.h"
 #include "image/filter/connected_components.h"
@@ -56,7 +57,9 @@ namespace MR
        * Buffer<value_type> input_data (argument[0]);
        * Buffer<value_type>::voxel_type input_voxel (input_data);
        *
-       * Filter::DWIBrainMask filter (input_data);
+       * Math::Matrix<float> grad = DWI::get_valid_DW_scheme<float> (input_data);
+       *
+       * Filter::DWIBrainMask filter (input_data, grad);
        * Header mask_header (input_data);
        * mask_header.info() = filter.info();
        *
@@ -67,21 +70,23 @@ namespace MR
        *
        * \endcode
        */
-      class DWIBrainMask : public ConstInfo
+      class DWIBrainMask : public Base
       {
 
         public:
 
-          template <class InputVoxelType>
-          DWIBrainMask (const InputVoxelType & input) :
-              ConstInfo (input) {
+          template <class InfoType>
+          DWIBrainMask (const InfoType& input, const Math::Matrix<float>& grad) :
+              Base (input),
+              grad (grad)
+          {
             axes_.resize(3);
             datatype_ = DataType::Bit;
           }
 
 
           template <class InputVoxelType, class OutputVoxelType>
-          void operator() (InputVoxelType& input, Math::Matrix<float>& grad, OutputVoxelType& output) {
+          void operator() (InputVoxelType& input, OutputVoxelType& output) {
               typedef typename InputVoxelType::value_type value_type;
 
               Info info (input);
@@ -144,6 +149,10 @@ namespace MR
               for (loop.start (temp_voxel, output); loop.ok(); loop.next (temp_voxel, output))
                 output.value() = !temp_voxel.value();
           }
+
+        protected:
+          const Math::Matrix<float>& grad;
+
       };
       //! @}
     }
