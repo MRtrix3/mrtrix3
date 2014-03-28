@@ -44,44 +44,14 @@ namespace MR
 
         class FixelImage : public Displayable {
           public:
-            FixelImage (const std::string& filename, Fixel& fixel_tool) :
-              Displayable (filename),
-              show_colour_bar (true),
-              color_type (Value),
-              filename (filename),
-              fixel_tool (fixel_tool),
-              header (filename),
-              fixel_data (header),
-              fixel_vox (fixel_data),
-              header_transform (fixel_vox),
-              colourbar_position_index (4),
-              fixel_count (0)
-              {
-                set_allowed_features (true, true, false);
-                colourmap = 1;
-                alpha = 1.0f;
-                set_use_transparency (true);
-                colour[0] = colour[1] = colour[2] = 1;
-                line_length = 0.5 * static_cast<float>(fixel_vox.vox(0) + fixel_vox.vox(1) + fixel_vox.vox(2)) / 3.0;
-                value_min = std::numeric_limits<float>::infinity();
-                value_max = -std::numeric_limits<float>::infinity();
-                load_image();
-              }
+            FixelImage (const std::string& filename, Fixel& fixel_tool);
 
-            ~FixelImage() {
-                if (vertex_buffer)
-                  gl::DeleteBuffers (1, &vertex_buffer);
-                if (vertex_array_object)
-                  gl::DeleteVertexArrays (1, &vertex_array_object);
-                if (value_buffer)
-                  gl::DeleteBuffers (1, &value_buffer);
-            }
-
+            ~FixelImage();
 
               class Shader : public Displayable::Shader {
-                  public:
-                    Shader () : do_crop_to_slice (false), color_type (Direction) { }
-                    virtual std::string vertex_shader_source (const Displayable& fixel_image);
+                public:
+                  Shader () : do_crop_to_slice (false), color_type (Direction) { }
+                  virtual std::string vertex_shader_source (const Displayable& fixel_image);
                   virtual std::string fragment_shader_source (const Displayable& fixel_image);
                   virtual bool need_update (const Displayable& object) const;
                   virtual void update (const Displayable& object);
@@ -125,9 +95,15 @@ namespace MR
               GLuint vertex_buffer;
               GLuint vertex_array_object;
               GLuint value_buffer;
-              std::vector<GLint> line_starts;
-              std::vector<GLint> line_sizes;
-              size_t fixel_count;
+              std::vector<std::vector<GLint> > x_axis_indices;
+              std::vector<std::vector<GLint> > y_axis_indices;
+              std::vector<std::vector<GLint> > z_axis_indices;
+              std::vector<std::vector<GLsizei> > x_axis_sizes;
+              std::vector<std::vector<GLsizei> > y_axis_sizes;
+              std::vector<std::vector<GLsizei> > z_axis_sizes;
+              std::vector<GLsizei> x_axis_counts;
+              std::vector<GLsizei> y_axis_counts;
+              std::vector<GLsizei> z_axis_counts;
         };
 
       }

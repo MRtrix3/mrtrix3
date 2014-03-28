@@ -405,8 +405,13 @@ namespace MR
           opacity_slider->setEnabled (indices.size());
           interpolate_check_box->setEnabled (indices.size());
 
-          if (!indices.size())
+          if (!indices.size()) {
+            max_value->setValue (NAN);
+            min_value->setValue (NAN);
+            lower_threshold->setValue (NAN);
+            upper_threshold->setValue (NAN);
             return;
+          }
 
           float rate = 0.0f, min_val = 0.0f, max_val = 0.0f;
           float lower_threshold_val = 0.0f, upper_threshold_val = 0.0f;

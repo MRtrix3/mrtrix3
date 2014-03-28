@@ -32,13 +32,51 @@ namespace MR
       namespace Tool
       {
 
+
+
+        FixelImage::FixelImage (const std::string& filename, Fixel& fixel_tool) :
+          Displayable (filename),
+          show_colour_bar (true),
+          color_type (Value),
+          filename (filename),
+          fixel_tool (fixel_tool),
+          header (filename),
+          fixel_data (header),
+          fixel_vox (fixel_data),
+          header_transform (fixel_vox),
+          colourbar_position_index (4),
+          x_axis_indices (fixel_vox.dim(0)),
+          y_axis_indices (fixel_vox.dim(1)),
+          z_axis_indices (fixel_vox.dim(2)),
+          x_axis_sizes (fixel_vox.dim(0)),
+          y_axis_sizes (fixel_vox.dim(1)),
+          z_axis_sizes (fixel_vox.dim(2)),
+          x_axis_counts (fixel_vox.dim(0)),
+          y_axis_counts (fixel_vox.dim(1)),
+          z_axis_counts (fixel_vox.dim(2))
+          {
+            set_allowed_features (true, true, false);
+            colourmap = 1;
+            alpha = 1.0f;
+            set_use_transparency (true);
+            colour[0] = colour[1] = colour[2] = 1;
+            line_length = 0.5 * static_cast<float>(fixel_vox.vox(0) + fixel_vox.vox(1) + fixel_vox.vox(2)) / 3.0;
+            value_min = std::numeric_limits<float>::infinity();
+            value_max = -std::numeric_limits<float>::infinity();
+            load_image();
+          }
+
+        FixelImage::~FixelImage() {
+          if (vertex_buffer)
+            gl::DeleteBuffers (1, &vertex_buffer);
+          if (vertex_array_object)
+            gl::DeleteVertexArrays (1, &vertex_array_object);
+          if (value_buffer)
+            gl::DeleteBuffers (1, &value_buffer);
+        }
+
         std::string FixelImage::Shader::vertex_shader_source (const Displayable& fixel)
         {
-
-
-
-          bool colour_by_direction = color_type == Direction;
-
            std::string source =
                "layout (location = 0) in vec3 vertexPosition_modelspace;\n"
                "layout (location = 1) in vec3 previousVertex;\n"
@@ -58,12 +96,11 @@ namespace MR
                break;
            }
 
-
            source +=
                "void main() {\n"
                "  gl_Position =  MVP * vec4(vertexPosition_modelspace,1);\n";
 
-           if (colour_by_direction)
+           if (color_type == Direction)
              source +=
                "  vec3 dir;\n"
                "  if (isnan (previousVertex.x))\n"
@@ -72,7 +109,7 @@ namespace MR
                "    dir = vertexPosition_modelspace - previousVertex;\n"
                "  else\n"
                "    dir = nextVertex - previousVertex;\n";
-           if (colour_by_direction)
+           if (color_type == Direction)
                source += "  fragmentColour = dir;\n";
 
            switch (color_type) {
@@ -88,72 +125,16 @@ namespace MR
                    source += "1.0 -";
                  source += " scale * (amp - offset), 0.0, 1.0);\n  ";
                }
+               source +=
+                 std::string ("  vec3 color;\n") +
+                 ColourMap::maps[colourmap].mapping +
+                 "  fragmentColour = color;\n";
                break;
              default:
                break;
            }
-
-
-
            source += "}\n";
-
            return source;
-
-//          std::string source =
-//              "layout (location = 0) in vec3 vertexPosition_modelspace;\n"
-//              "layout (location = 1) in vec3 previousVertex;\n"
-//              "layout (location = 2) in vec3 nextVertex;\n"
-//              "uniform mat4 MVP;\n"
-//              "flat out float amp_out;\n"
-//              "out vec3 fragmentColour;\n";
-//
-//          switch (color_type) {
-//            case Direction: break;
-//            case Colour:
-//              source += "uniform vec3 const_colour;\n";
-//              break;
-//            case Value:
-//              source += "layout (location = 3) in float amp;\n"
-//                        "uniform float offset, scale;\n";
-//              break;
-//          }
-//
-//          source +=
-//              "void main() {\n"
-//              "  gl_Position =  MVP * vec4(vertexPosition_modelspace,1);\n";
-//
-//          if (color_type == Direction)
-//            source +=
-//              "  vec3 dir;\n"
-//              "  if (isnan (previousVertex.x))\n"
-//              "    dir = nextVertex - vertexPosition_modelspace;\n"
-//              "  else if (isnan (nextVertex.x))\n"
-//              "    dir = vertexPosition_modelspace - previousVertex;\n"
-//              "  else\n"
-//              "    dir = nextVertex - previousVertex;\n";
-//              source += "  fragmentColour = dir;\n";
-//
-//          switch (color_type) {
-//            case Colour:
-//              source +=
-//                  "  fragmentColour = const_colour;\n";
-//              break;
-//            case Value:
-//              source += "  amp_out = amp;\n";
-//              if (!ColourMap::maps[colourmap].special) {
-//                source += "  float amplitude = clamp (";
-//                if (fixel.scale_inverted())
-//                  source += "1.0 -";
-//                source += " scale * (amp - offset), 0.0, 1.0);\n  ";
-//              }
-//              break;
-//            default:
-//              break;
-//          }
-//
-//          source += "}\n";
-//
-//          return source;
         }
 
 
@@ -186,7 +167,6 @@ namespace MR
             std::string("  color = ") + ((color_type == Direction) ? "normalize (abs (fragmentColour))" : "fragmentColour" ) + ";\n";
 
           source += "}\n";
-
           return source;
         }
 
@@ -241,7 +221,27 @@ namespace MR
           gl::LineWidth (fixel_tool.line_thickness);
 
           gl::BindVertexArray (vertex_array_object);
-          gl::MultiDrawArrays (gl::LINE_STRIP, &line_starts[0], &line_sizes[0], fixel_count);
+
+          if (!fixel_tool.do_crop_to_slice) {
+            TRACE;
+            for (size_t x = 0; x < x_axis_indices.size(); ++x) {
+              gl::MultiDrawArrays (gl::LINE_STRIP, &x_axis_indices[x][0], &x_axis_sizes[x][0], x_axis_counts[x]);
+            }
+          } else {
+            switch (plane) {
+            case 0:
+              gl::MultiDrawArrays (gl::LINE_STRIP, &x_axis_indices[slice][0], &x_axis_sizes[slice][0], x_axis_counts[slice]);
+              break;
+            case 1:
+              gl::MultiDrawArrays (gl::LINE_STRIP, &y_axis_indices[slice][0], &y_axis_sizes[slice][0], y_axis_counts[slice]);
+              break;
+            case 2:
+              gl::MultiDrawArrays (gl::LINE_STRIP, &z_axis_indices[slice][0], &z_axis_sizes[slice][0], z_axis_counts[slice]);
+              break;
+            default:
+              break;
+            }
+          }
 
           if (fixel_tool.line_opacity < 1.0) {
             gl::Disable (gl::BLEND);
@@ -259,35 +259,38 @@ namespace MR
           std::vector<float> values;
           std::vector<GLint> starts;
           std::vector<GLint> sizes;
-          MR::Image::Loop loop;
+          MR::Image::LoopInOrder loop (fixel_vox);
           for (loop.start (fixel_vox); loop.ok(); loop.next (fixel_vox)) {
             for (size_t f = 0; f != fixel_vox.value().size(); ++f) {
               if (fixel_vox.value()[f].value > value_max)
                 value_max = fixel_vox.value()[f].value;
               if (fixel_vox.value()[f].value < value_min)
                 value_min = fixel_vox.value()[f].value;
-              line_starts.push_back (buffer.size());
               header_transform.voxel2scanner (fixel_vox, voxel_pos);
+              x_axis_indices[fixel_vox[0]].push_back(buffer.size());
+              y_axis_indices[fixel_vox[1]].push_back(buffer.size());
+              z_axis_indices[fixel_vox[2]].push_back(buffer.size());
+              x_axis_sizes[fixel_vox[0]].push_back(2);
+              y_axis_sizes[fixel_vox[1]].push_back(2);
+              z_axis_sizes[fixel_vox[2]].push_back(2);
+              x_axis_counts[fixel_vox[0]]++;
+              y_axis_counts[fixel_vox[1]]++;
+              z_axis_counts[fixel_vox[2]]++;
               values.push_back (NAN);
               values.push_back (fixel_vox.value()[f].value);
               values.push_back (fixel_vox.value()[f].value);
               buffer.push_back (Point<float>());
               buffer.push_back (voxel_pos + (fixel_vox.value()[f].dir *  line_length));
               buffer.push_back (voxel_pos + (fixel_vox.value()[f].dir * -line_length));
-              line_sizes.push_back (2);
-              ++fixel_count;
             }
           }
 
           this->set_windowing (value_min, value_max);
           greaterthan = value_max;
           lessthan = value_min;
-
-          VAR(value_min);
-          VAR(value_max);
-
-          values.push_back (NAN);
           buffer.push_back (Point<float> ());
+          values.push_back (NAN);
+
           gl::GenBuffers (1, &vertex_buffer);
           gl::BindBuffer (gl::ARRAY_BUFFER, vertex_buffer);
           gl::BufferData (gl::ARRAY_BUFFER, buffer.size() * sizeof(Point<float>), &buffer[0][0], gl::STATIC_DRAW);
@@ -305,7 +308,6 @@ namespace MR
           gl::BindBuffer (gl::ARRAY_BUFFER, value_buffer);
           gl::BufferData (gl::ARRAY_BUFFER, values.size() * sizeof(float), &values[0], gl::STATIC_DRAW);
 
-          gl::BindVertexArray (vertex_array_object);
           gl::EnableVertexAttribArray (3);
           gl::VertexAttribPointer (3, 1, gl::FLOAT, gl::FALSE_, 0, (void*)(sizeof(float)));
         }

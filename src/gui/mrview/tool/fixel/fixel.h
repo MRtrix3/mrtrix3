@@ -64,16 +64,14 @@ namespace MR
             void fixel_close_slot ();
             void toggle_shown_slot (const QModelIndex&, const QModelIndex&);
             void hide_all_slot ();
-            void on_crop_to_grid_slot (bool is_checked);
+            void update_selection();
+            void on_crop_to_slice_slot (bool is_checked);
             void opacity_slot (int opacity);
             void line_thickness_slot (int thickness);
             void line_size_slot (int thickness);
-            void colour_by_direction_slot ();
-            void set_colour_slot ();
-            void randomise_colour_slot ();
             void selection_changed_slot (const QItemSelection &, const QItemSelection &);
             void show_colour_bar_slot ();
-            void select_colourmap_slot (int);
+            void select_colourmap_slot ();
             void colour_changed_slot (int);
             void on_set_scaling_slot ();
             void reset_intensity_slot ();
@@ -84,17 +82,19 @@ namespace MR
             void threshold_upper_value_changed ();
 
           protected:
-            AdjustButton *slab_entry;
-            AdjustButton *max_entry, *min_entry;
+            AdjustButton *max_value, *min_value;
             AdjustButton *threshold_lower, *threshold_upper;
             QCheckBox *threshold_upper_box, *threshold_lower_box;
-            QComboBox *colour_combobox, *colourmap_combobox;
+            QComboBox *colour_combobox;
             QAction *show_colour_bar;
             QAction *invert_scale;
             QMenu *colourmap_menu;
             QAction **colourmap_actions;
             QActionGroup *colourmap_group;
             QToolButton *colourmap_button;
+            QSlider* opacity_slider;
+            QSlider* line_thickness_slider;
+            QGroupBox* crop_to_slice;
 
             void updateGL() {
 //              window.get_current_mode()->update_overlays = true; TODO

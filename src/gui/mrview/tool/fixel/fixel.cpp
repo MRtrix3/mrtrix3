@@ -64,7 +64,8 @@ namespace MR
 
         Fixel::Fixel (Window& main_window, Dock* parent) :
           Base (main_window, parent),
-          line_thickness (1.0),
+          line_thickness (2.0),
+          do_crop_to_slice (true),
           not_3D (true),
           line_opacity (1.0) {
 
@@ -110,10 +111,6 @@ namespace MR
                      SIGNAL (selectionChanged (const QItemSelection &, const QItemSelection &)),
                      SLOT (selection_changed_slot (const QItemSelection &, const QItemSelection &)));
 
-            fixel_list_view->setContextMenuPolicy (Qt::CustomContextMenu);
-            connect (fixel_list_view, SIGNAL (customContextMenuRequested (const QPoint&)),
-                     this, SLOT (right_click_menu_slot (const QPoint&)));
-
             main_box->addWidget (fixel_list_view, 1);
 
 
@@ -122,12 +119,12 @@ namespace MR
             hlayout->setSpacing (0);
 
             colour_combobox = new QComboBox;
-            colour_combobox->addItem ("Colour Bar");
+            colour_combobox->addItem ("Colour By Value");
             colour_combobox->addItem ("Colour By Direction");
             colour_combobox->addItem ("Set Colour");
             colour_combobox->addItem ("Randomise Colour");
             hlayout->addWidget (colour_combobox, 0);
-            connect (colour_combobox, SIGNAL (activated(int)), this, SLOT (colour_changed(int)));
+            connect (colour_combobox, SIGNAL (activated(int)), this, SLOT (colour_changed_slot(int)));
 
             // Colourmap menu:
             colourmap_menu = new QMenu (tr ("Colourmap menu"), this);
@@ -163,13 +160,13 @@ namespace MR
             hlayout = new HBoxLayout;
             group_box->setLayout (hlayout);
 
-            min_entry = new AdjustButton (this);
-            connect (min_entry, SIGNAL (valueChanged()), this, SLOT (on_set_scaling_slot()));
-            hlayout->addWidget (min_entry);
+            min_value = new AdjustButton (this);
+            connect (min_value, SIGNAL (valueChanged()), this, SLOT (on_set_scaling_slot()));
+            hlayout->addWidget (min_value);
 
-            max_entry = new AdjustButton (this);
-            connect (max_entry, SIGNAL (valueChanged()), this, SLOT (on_set_scaling_slot()));
-            hlayout->addWidget (max_entry);
+            max_value = new AdjustButton (this);
+            connect (max_value, SIGNAL (valueChanged()), this, SLOT (on_set_scaling_slot()));
+            hlayout->addWidget (max_value);
 
 
             QGroupBox* threshold_box = new QGroupBox ("Thresholds");
@@ -193,30 +190,31 @@ namespace MR
 
             GridLayout* default_opt_grid = new GridLayout;
 
-            QSlider* slider;
-            slider = new QSlider (Qt::Horizontal);
-            slider->setRange (1, 1000);
-            slider->setSliderPosition (int (1000));
-            connect (slider, SIGNAL (valueChanged (int)), this, SLOT (opacity_slot (int)));
+            opacity_slider = new QSlider (Qt::Horizontal);
+            opacity_slider->setRange (1, 1000);
+            opacity_slider->setSliderPosition (int (1000));
+            connect (opacity_slider, SIGNAL (valueChanged (int)), this, SLOT (opacity_slot (int)));
             default_opt_grid->addWidget (new QLabel ("opacity"), 0, 0);
-            default_opt_grid->addWidget (slider, 0, 1);
+            default_opt_grid->addWidget (opacity_slider, 0, 1);
 
-            slider = new QSlider (Qt::Horizontal);
-            slider->setRange (100,1000);
-            slider->setSliderPosition (float (100.0));
-            connect (slider, SIGNAL (valueChanged (int)), this, SLOT (line_thickness_slot (int)));
+            line_thickness_slider = new QSlider (Qt::Horizontal);
+            line_thickness_slider->setRange (100,1500);
+            line_thickness_slider->setSliderPosition (float (100.0));
+            connect (line_thickness_slider, SIGNAL (valueChanged (int)), this, SLOT (line_thickness_slot (int)));
             default_opt_grid->addWidget (new QLabel ("line thickness"), 1, 0);
-            default_opt_grid->addWidget (slider, 1, 1);
+            default_opt_grid->addWidget (line_thickness_slider, 1, 1);
 
-            QGroupBox* slab_group_box = new QGroupBox (tr("crop to slice"));
-            slab_group_box->setCheckable (true);
-            slab_group_box->setChecked (true);
-            default_opt_grid->addWidget (slab_group_box, 2, 0, 1, 2);
+            crop_to_slice = new QGroupBox (tr("crop to slice"));
+            crop_to_slice->setCheckable (true);
+            crop_to_slice->setChecked (true);
+            connect (crop_to_slice, SIGNAL (clicked (bool)), this, SLOT (on_crop_to_slice_slot (bool)));
+            default_opt_grid->addWidget (crop_to_slice, 2, 0, 1, 2);
 
             main_box->addLayout (default_opt_grid, 0);
 
             main_box->addStretch ();
             setMinimumSize (main_box->minimumSize());
+            update_selection();
         }
 
 
@@ -257,8 +255,12 @@ namespace MR
           std::vector<std::string> list = Dialog::File::get_files (this, "Select fixel images to open", "MRtrix sparse format (*.msf)");
           if (list.empty())
             return;
-          else
-            fixel_list_model->add_items (list, *this);
+          size_t previous_size = fixel_list_model->rowCount();
+          fixel_list_model->add_items (list, *this);
+          QModelIndex first = fixel_list_model->index (previous_size, 0, QModelIndex());
+          QModelIndex last = fixel_list_model->index (fixel_list_model->rowCount()-1, 0, QModelIndex());
+          fixel_list_view->selectionModel()->select (QItemSelection (first, last), QItemSelectionModel::Select);
+          update_selection();
         }
 
 
@@ -293,8 +295,98 @@ namespace MR
         }
 
 
+        void Fixel::update_selection ()
+        {
+          //TODO fix multi selection seg fault, colour by direction with threshold, line size
+
+          QModelIndexList indices = fixel_list_view->selectionModel()->selectedIndexes();
+          colour_combobox->setEnabled (indices.size());
+          colourmap_menu->setEnabled (indices.size());
+          max_value->setEnabled (indices.size());
+          min_value->setEnabled (indices.size());
+          threshold_lower_box->setEnabled (indices.size());
+          threshold_upper_box->setEnabled (indices.size());
+          threshold_lower->setEnabled (indices.size());
+          threshold_upper->setEnabled (indices.size());
+          opacity_slider->setEnabled (indices.size());
+          line_thickness_slider->setEnabled (indices.size());
+          crop_to_slice->setEnabled (indices.size());
+
+          if (!indices.size()) {
+            max_value->setValue (NAN);
+            min_value->setValue (NAN);
+            threshold_lower->setValue (NAN);
+            threshold_upper->setValue (NAN);
+            return;
+          }
+
+          float rate = 0.0f, min_val = 0.0f, max_val = 0.0f;
+          float lower_threshold_val = 0.0f, upper_threshold_val = 0.0f;
+          float opacity = 0.0f;
+          int num_lower_threshold = 0, num_upper_threshold = 0;
+          int colourmap_index = -2;
+          for (int i = 0; i < indices.size(); ++i) {
+            FixelImage* fixel = dynamic_cast<FixelImage*> (fixel_list_model->get_fixel_image (indices[i]));
+            if (colourmap_index != int (fixel->colourmap)) {
+              if (colourmap_index == -2)
+                colourmap_index = fixel->colourmap;
+              else
+                colourmap_index = -1;
+            }
+            rate += fixel->scaling_rate();
+            min_val += fixel->scaling_min();
+            max_val += fixel->scaling_max();
+            num_lower_threshold += fixel->use_discard_lower();
+            num_upper_threshold += fixel->use_discard_upper();
+            opacity += fixel->alpha;
+            if (!std::isfinite (fixel->lessthan))
+              fixel->lessthan = fixel->intensity_min();
+            if (!std::isfinite (fixel->greaterthan))
+              fixel->greaterthan = fixel->intensity_max();
+            lower_threshold_val += fixel->lessthan;
+            upper_threshold_val += fixel->greaterthan;
+          }
+
+          rate /= indices.size();
+          min_val /= indices.size();
+          max_val /= indices.size();
+          lower_threshold_val /= indices.size();
+          upper_threshold_val /= indices.size();
+          opacity /= indices.size();
+
+          if (colourmap_index < 0)
+            for (size_t i = 0; MR::GUI::MRView::ColourMap::maps[i].name; ++i )
+              colourmap_actions[i]->setChecked (false);
+          else
+            colourmap_actions[colourmap_index]->setChecked (true);
+
+          opacity_slider->setValue (1.0e3f * opacity);
+
+          min_value->setRate (rate);
+          max_value->setRate (rate);
+          min_value->setValue (min_val);
+          max_value->setValue (max_val);
+
+          threshold_lower->setValue (lower_threshold_val);
+          threshold_lower_box->setCheckState (num_lower_threshold ?
+              ( num_lower_threshold == indices.size() ?
+                Qt::Checked :
+                Qt::PartiallyChecked ) :
+                Qt::Unchecked);
+          threshold_lower->setRate (rate);
+
+          threshold_upper->setValue (upper_threshold_val);
+          threshold_upper_box->setCheckState (num_upper_threshold ?
+              ( num_upper_threshold == indices.size() ?
+                Qt::Checked :
+                Qt::PartiallyChecked ) :
+                Qt::Unchecked);
+          threshold_upper->setRate (rate);
+        }
+
+
         void Fixel::opacity_slot (int opacity) {
-          line_opacity = Math::pow2(static_cast<float>(opacity)) / 1.0e6f;
+          line_opacity = Math::pow2 (static_cast<float>(opacity)) / 1.0e6f;
           window.updateGL();
         }
 
@@ -305,59 +397,15 @@ namespace MR
         }
 
 
-        void Fixel::colour_by_direction_slot()
-        {
-          QModelIndexList indices = fixel_list_view->selectionModel()->selectedIndexes();
-          for (int i = 0; i < indices.size(); ++i)  {
-            fixel_list_model->get_fixel_image (indices[i])->color_type = Direction;
-          }
-          window.updateGL();
-        }
-        
-        
-        void Fixel::set_colour_slot()
-        {
-          QColor color;
-          color = QColorDialog::getColor(Qt::red, this, "Select Color", QColorDialog::DontUseNativeDialog);
-          float colour[] = {float(color.redF()), float(color.greenF()), float(color.blueF())};
-          if (color.isValid()) {
-            QModelIndexList indices = fixel_list_view->selectionModel()->selectedIndexes();
-            for (int i = 0; i < indices.size(); ++i) {
-              fixel_list_model->get_fixel_image (indices[i])->color_type = Colour;
-              fixel_list_model->get_fixel_image (indices[i])->set_colour (colour);
-            }
-          }
-          window.updateGL();
-        }
-
-
-        void Fixel::randomise_colour_slot()
-        {
-          QModelIndexList indices = fixel_list_view->selectionModel()->selectedIndexes();
-          for (int i = 0; i < indices.size(); ++i) {
-            float colour[3];
-            Math::RNG rng;
-            do {
-              colour[0] = rng.uniform();
-              colour[1] = rng.uniform();
-              colour[2] = rng.uniform();
-            } while (colour[0] < 0.5 && colour[1] < 0.5 && colour[2] < 0.5);
-            dynamic_cast<FixelImage*> (fixel_list_model->items[indices[i].row()])->color_type = Colour;
-            dynamic_cast<FixelImage*> (fixel_list_model->items[indices[i].row()])->set_colour (colour);
-          }
-          window.updateGL();
-        }
-
-
-
         void Fixel::selection_changed_slot (const QItemSelection &, const QItemSelection &)
         {
-          TRACE;
+          update_selection ();
         }
 
-        void Fixel::on_crop_to_grid_slot (bool is_checked)
+        void Fixel::on_crop_to_slice_slot (bool is_checked)
         {
-          TRACE;
+          do_crop_to_slice = is_checked;
+          window.updateGL();
         }
 
         void Fixel::line_size_slot (int thickness)
@@ -367,94 +415,145 @@ namespace MR
 
         void Fixel::show_colour_bar_slot ()
         {
-//          if (tractogram) {
-//            tractogram->show_colour_bar = show_colour_bar->isChecked();
-//            window.updateGL();
-//          }
+          QModelIndexList indices = fixel_list_view->selectionModel()->selectedIndexes();
+          for (int i = 0; i < indices.size(); ++i)
+            fixel_list_model->get_fixel_image (indices[i])->show_colour_bar = show_colour_bar->isChecked();
+          window.updateGL();
         }
 
 
-        void Fixel::select_colourmap_slot (int selection)
+        void Fixel::select_colourmap_slot ()
         {
-//          if (tractogram) {
-//            QAction* action = colourmap_group->checkedAction();
-//            size_t n = 0;
-//            while (action != colourmap_actions[n])
-//              ++n;
-//            tractogram->colourmap = n;
-//            window.updateGL();
-//          }
+          QAction* action = colourmap_group->checkedAction();
+          size_t n = 0;
+          while (action != colourmap_actions[n])
+            ++n;
+          QModelIndexList indices = fixel_list_view->selectionModel()->selectedIndexes();
+          for (int i = 0; i < indices.size(); ++i)
+            fixel_list_model->get_fixel_image (indices[i])->colourmap = n;
+          window.updateGL();
         }
+
+
 
         void Fixel::colour_changed_slot (int selection)
         {
+          QModelIndexList indices = fixel_list_view->selectionModel()->selectedIndexes();
+
+          switch (selection) {
+            case 0: {
+              for (int i = 0; i < indices.size(); ++i)
+                fixel_list_model->get_fixel_image (indices[i])->color_type = Value;
+              break;
+            }
+            case 1: {
+              for (int i = 0; i < indices.size(); ++i)
+                fixel_list_model->get_fixel_image (indices[i])->color_type = Direction;
+              break;
+            }
+            case 2: {
+              QColor color;
+              color = QColorDialog::getColor(Qt::red, this, "Select Color", QColorDialog::DontUseNativeDialog);
+              float colour[] = {float(color.redF()), float(color.greenF()), float(color.blueF())};
+              if (color.isValid()) {
+                for (int i = 0; i < indices.size(); ++i) {
+                  fixel_list_model->get_fixel_image (indices[i])->color_type = Colour;
+                  fixel_list_model->get_fixel_image (indices[i])->set_colour (colour);
+                }
+              }
+              break;
+            }
+            case 3: {
+              for (int i = 0; i < indices.size(); ++i) {
+                float colour[3];
+                Math::RNG rng;
+                do {
+                  colour[0] = rng.uniform();
+                  colour[1] = rng.uniform();
+                  colour[2] = rng.uniform();
+                } while (colour[0] < 0.5 && colour[1] < 0.5 && colour[2] < 0.5);
+                dynamic_cast<FixelImage*> (fixel_list_model->items[indices[i].row()])->color_type = Colour;
+                dynamic_cast<FixelImage*> (fixel_list_model->items[indices[i].row()])->set_colour (colour);
+              }
+              break;
+            }
+            default:
+              break;
+          }
+          window.updateGL();
+
         }
 
         void Fixel::reset_intensity_slot ()
         {
-//          if (tractogram) {
-//            tractogram->set_windowing (min_entry->value(), max_entry->value());
-//            window.updateGL();
-//          }
+          QModelIndexList indices = fixel_list_view->selectionModel()->selectedIndexes();
+          for (int i = 0; i < indices.size(); ++i)
+            fixel_list_model->get_fixel_image (indices[i])->reset_windowing ();
+          update_selection ();
+          window.updateGL();
         }
 
 
         void Fixel::invert_colourmap_slot ()
         {
-//          if (tractogram) {
-//            tractogram->set_windowing (min_entry->value(), max_entry->value());
-//            window.updateGL();
-//          }
+          QModelIndexList indices = fixel_list_view->selectionModel()->selectedIndexes();
+          for (int i = 0; i < indices.size(); ++i)
+            fixel_list_model->get_fixel_image (indices[i])->set_invert_scale (invert_scale->isChecked());
+          window.updateGL();
         }
 
 
 
         void Fixel::on_set_scaling_slot ()
         {
-//          if (tractogram) {
-//            tractogram->set_windowing (min_entry->value(), max_entry->value());
-//            window.updateGL();
-//          }
+          QModelIndexList indices = fixel_list_view->selectionModel()->selectedIndexes();
+          for (int i = 0; i < indices.size(); ++i)
+            fixel_list_model->get_fixel_image (indices[i])->set_windowing (min_value->value(), max_value->value());
+          window.updateGL();
         }
 
 
         void Fixel::threshold_lower_changed (int unused)
         {
-//          if (tractogram) {
-//            threshold_lower->setEnabled (threshold_lower_box->isChecked());
-//            tractogram->set_use_discard_lower (threshold_lower_box->isChecked());
-//            window.updateGL();
-//          }
+          threshold_lower->setEnabled (threshold_lower_box->isChecked());
+          QModelIndexList indices = fixel_list_view->selectionModel()->selectedIndexes();
+          for (int i = 0; i < indices.size(); ++i)
+            fixel_list_model->get_fixel_image (indices[i])->set_use_discard_lower (threshold_lower_box->isChecked());
+          window.updateGL();
         }
 
 
         void Fixel::threshold_upper_changed (int unused)
         {
-//          if (tractogram) {
-//            threshold_upper->setEnabled (threshold_upper_box->isChecked());
-//            tractogram->set_use_discard_upper (threshold_upper_box->isChecked());
-//            window.updateGL();
-//          }
+          threshold_upper->setEnabled (threshold_upper_box->isChecked());
+          QModelIndexList indices = fixel_list_view->selectionModel()->selectedIndexes();
+          for (int i = 0; i < indices.size(); ++i)
+            fixel_list_model->get_fixel_image (indices[i])->set_use_discard_upper (threshold_upper_box->isChecked());
+          window.updateGL();
         }
 
 
 
         void Fixel::threshold_lower_value_changed ()
         {
-//          if (tractogram && threshold_lower_box->isChecked()) {
-//            tractogram->lessthan = threshold_lower->value();
-//            window.updateGL();
-//          }
+          if (threshold_lower_box->isChecked()) {
+            QModelIndexList indices = fixel_list_view->selectionModel()->selectedIndexes();
+            for (int i = 0; i < indices.size(); ++i)
+              fixel_list_model->get_fixel_image (indices[i])->lessthan = threshold_lower->value();
+            window.updateGL();
+          }
         }
 
 
 
         void Fixel::threshold_upper_value_changed ()
         {
-//          if (tractogram && threshold_upper_box->isChecked()) {
-//            tractogram->greaterthan = threshold_upper->value();
-//            window.updateGL();
-//          }
+          if (threshold_upper_box->isChecked()) {
+            QModelIndexList indices = fixel_list_view->selectionModel()->selectedIndexes();
+            for (int i = 0; i < indices.size(); ++i)
+              fixel_list_model->get_fixel_image (indices[i])->greaterthan = threshold_upper->value();
+            window.updateGL();
+          }
         }
 
 
