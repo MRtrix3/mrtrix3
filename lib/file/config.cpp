@@ -120,6 +120,29 @@ namespace MR
     }
 
 
+
+    void Config::get_RGB (const std::string& key, float* ret, float default_R, float default_G, float default_B)
+    {
+      std::string value = get (key);
+      if (value.size()) {
+        try {
+          std::vector<float> V (parse_floats (value));
+          if (V.size() < 3) 
+            throw Exception ("malformed RGB entry \"" + value + "\" for key \"" + key + "\" in configuration file - ignored");
+          ret[0] = V[0];
+          ret[1] = V[1];
+          ret[2] = V[2];
+        }
+        catch (Exception) { }
+      }
+      else {
+        ret[0] = default_R;
+        ret[1] = default_G;
+        ret[2] = default_B;
+      }
+    }
+
+
   }
 }
 
