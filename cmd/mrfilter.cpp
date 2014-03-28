@@ -72,9 +72,6 @@ using namespace App;
 
 // TODO Remove lib/image/filter/lcc.h
 
-// TODO Some filters may need to read command-line options before they are constructed
-// Therefore modify the cmdline option functions to also construct the filter and return a pointer
-
 
 
 const char* filters[] = { "gradient", "median", "smooth", NULL };
@@ -140,8 +137,10 @@ const OptionGroup SmoothOption = OptionGroup ("Options for smooth filter")
 
 
 
-void parse_gradient_filter_cmdline_options (Image::Filter::Gradient& filter)
+Image::Filter::Base* create_gradient_filter (Image::BufferPreload<float>::voxel_type& input)
 {
+
+  Image::Filter::Gradient* filter = new Image::Filter::Gradient (input);
 
   std::vector<float> stdev;
   Options opt = get_options ("stdev");
@@ -153,35 +152,40 @@ void parse_gradient_filter_cmdline_options (Image::Filter::Gradient& filter)
     if (stdev.size() != 1 && stdev.size() != 3)
       throw Exception ("unexpected number of elements specified in Gaussian stdev");
   } else {
-    stdev.resize (filter.info().ndim(), 0.0);
+    stdev.resize (filter->info().ndim(), 0.0);
     for (size_t dim = 0; dim != 3; ++dim)
-      stdev[dim] = filter.info().vox (dim);
+      stdev[dim] = filter->info().vox (dim);
   }
-  filter.set_stdev (stdev);
+  filter->set_stdev (stdev);
 
   opt = get_options ("scanner");
-  filter.compute_wrt_scanner (opt.size());
+  filter->compute_wrt_scanner (opt.size());
+  return filter;
 
 }
 
 
 
-void parse_median_filter_cmdline_options (Image::Filter::Median& filter)
+Image::Filter::Base* create_median_filter (Image::BufferPreload<float>::voxel_type& input)
 {
+  Image::Filter::Median* filter = new Image::Filter::Median (input);
   Options opt = get_options ("extent");
   if (opt.size())
-    filter.set_extent (parse_ints (opt[0][0]));
+    filter->set_extent (parse_ints (opt[0][0]));
+  return filter;
 }
 
 
 
-void parse_smooth_filter_cmdline_options (Image::Filter::Smooth& filter)
+Image::Filter::Base* create_smooth_filter (Image::BufferPreload<float>::voxel_type& input)
 {
+
+  Image::Filter::Smooth* filter = new Image::Filter::Smooth (input);
 
   Options opt = get_options ("stdev");
   const bool stdev_supplied = opt.size();
   if (stdev_supplied)
-    filter.set_stdev (parse_floats (opt[0][0]));
+    filter->set_stdev (parse_floats (opt[0][0]));
 
   opt = get_options ("fwhm");
   if (opt.size()) {
@@ -190,12 +194,14 @@ void parse_smooth_filter_cmdline_options (Image::Filter::Smooth& filter)
     std::vector<float> stdevs = parse_floats (opt[0][0]);
     for (size_t d = 0; d < stdevs.size(); ++d)
       stdevs[d] = stdevs[d] / 2.3548;  //convert FWHM to stdev
-    filter.set_stdev (stdevs);
+    filter->set_stdev (stdevs);
   }
 
   opt = get_options ("extent");
   if (opt.size())
-    filter.set_extent (parse_ints (opt[0][0]));
+    filter->set_extent (parse_ints (opt[0][0]));
+
+  return filter;
 
 }
 
@@ -240,20 +246,10 @@ void run () {
 
   Image::Filter::Base* filter = NULL;
   switch (filter_index) {
-    case 0:
-      filter = new Image::Filter::Gradient (input_voxel);
-      parse_gradient_filter_cmdline_options (*(dynamic_cast<Image::Filter::Gradient*> (filter)));
-      break;
-    case 1:
-      filter = new Image::Filter::Median (input_voxel);
-      parse_median_filter_cmdline_options (*(dynamic_cast<Image::Filter::Median*> (filter)));
-      break;
-    case 2:
-      filter = new Image::Filter::Smooth (input_voxel);
-      parse_smooth_filter_cmdline_options (*(dynamic_cast<Image::Filter::Smooth* > (filter)));
-      break;
-    default:
-      assert (0);
+    case 0: filter = create_gradient_filter (input_voxel); break;
+    case 1: filter = create_median_filter (input_voxel); break;
+    case 2: filter = create_smooth_filter (input_voxel); break;
+    default: assert (0);
   }
 
   Image::Header header;

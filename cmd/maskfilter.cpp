@@ -68,35 +68,43 @@ const OptionGroup MedianOption = OptionGroup ("Options for median filter")
 
 
 
-void parse_dilate_filter_cmdline_options (Image::Filter::Dilate& filter)
+Image::Filter::Base* create_dilate_filter (Image::BufferPreload<bool>::voxel_type& input)
 {
+  Image::Filter::Dilate* filter = new Image::Filter::Dilate (input);
   Options opt = get_options ("npass");
   if (opt.size())
-    filter.set_npass (int(opt[0][0]));
+    filter->set_npass (int(opt[0][0]));
+  return filter;
 }
 
-void parse_erode_filter_cmdline_options (Image::Filter::Erode& filter)
+Image::Filter::Base* create_erode_filter (Image::BufferPreload<bool>::voxel_type& input)
 {
+  Image::Filter::Erode* filter = new Image::Filter::Erode (input);
   Options opt = get_options ("npass");
   if (opt.size())
-    filter.set_npass (int(opt[0][0]));
+    filter->set_npass (int(opt[0][0]));
+  return filter;
 }
 
 
 
-void parse_lcc_filter_cmdline_options (Image::Filter::ConnectedComponents& filter)
+Image::Filter::Base* create_lcc_filter (Image::BufferPreload<bool>::voxel_type& input)
 {
-  filter.set_largest_only (true);
-  filter.set_26_connectivity (get_options ("neighbour26").size());
+  Image::Filter::ConnectedComponents* filter = new Image::Filter::ConnectedComponents (input);
+  filter->set_largest_only (true);
+  filter->set_26_connectivity (get_options ("neighbour26").size());
+  return filter;
 }
 
 
 
-void parse_median_filter_cmdline_options (Image::Filter::Median& filter)
+Image::Filter::Base* create_median_filter (Image::BufferPreload<bool>::voxel_type& input)
 {
+  Image::Filter::Median* filter = new Image::Filter::Median (input);
   Options opt = get_options ("extent");
   if (opt.size())
-    filter.set_extent (parse_ints (opt[0][0]));
+    filter->set_extent (parse_ints (opt[0][0]));
+  return filter;
 }
 
 
@@ -140,24 +148,11 @@ void run () {
 
   Image::Filter::Base* filter = NULL;
   switch (filter_index) {
-    case 0:
-      filter = new Image::Filter::Dilate (input_voxel);
-      parse_dilate_filter_cmdline_options (*(dynamic_cast<Image::Filter::Dilate*> (filter)));
-      break;
-    case 1:
-      filter = new Image::Filter::Erode (input_voxel);
-      parse_erode_filter_cmdline_options (*(dynamic_cast<Image::Filter::Erode*> (filter)));
-      break;
-    case 2:
-      filter = new Image::Filter::ConnectedComponents (input_voxel);
-      parse_lcc_filter_cmdline_options (*(dynamic_cast<Image::Filter::ConnectedComponents*> (filter)));
-      break;
-    case 3:
-      filter = new Image::Filter::Median (input_voxel);
-      parse_median_filter_cmdline_options (*(dynamic_cast<Image::Filter::Median* > (filter)));
-      break;
-    default:
-      assert (0);
+    case 0: filter = create_dilate_filter (input_voxel); break;
+    case 1: filter = create_erode_filter  (input_voxel); break;
+    case 2: filter = create_lcc_filter    (input_voxel); break;
+    case 3: filter = create_median_filter (input_voxel); break;
+    default: assert (0);
   }
 
   Image::Header header;
