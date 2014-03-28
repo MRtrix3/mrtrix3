@@ -25,9 +25,9 @@
 #include "image/buffer_preload.h"
 #include "image/voxel.h"
 #include "image/filter/base.h"
-#include "image/filter/connected_components.h"
 #include "image/filter/dilate.h"
 #include "image/filter/erode.h"
+#include "image/filter/lcc.h"
 #include "image/filter/median.h"
 
 
@@ -48,7 +48,7 @@ const OptionGroup DilateErodeOption = OptionGroup ("Options for dilate / erode f
 
 
 
-const OptionGroup LCCOption = OptionGroup ("Options for connected-components filter")
+const OptionGroup LCCOption = OptionGroup ("Options for largest connected-component filter")
 
   + Option ("neighbour26", "use 26 adjacent voxels for determining connectivity rather than 6");
 
@@ -90,9 +90,8 @@ Image::Filter::Base* create_erode_filter (Image::BufferPreload<bool>::voxel_type
 
 Image::Filter::Base* create_lcc_filter (Image::BufferPreload<bool>::voxel_type& input)
 {
-  Image::Filter::ConnectedComponents* filter = new Image::Filter::ConnectedComponents (input);
-  filter->set_largest_only (true);
-  filter->set_26_connectivity (get_options ("neighbour26").size());
+  Image::Filter::LargestConnectedComponent* filter = new Image::Filter::LargestConnectedComponent (input);
+  filter->set_large_neighbourhood (get_options ("neighbour26").size());
   return filter;
 }
 
@@ -173,10 +172,10 @@ void run () {
   filter->set_message (std::string("applying ") + std::string(argument[1]) + " filter to image " + std::string(argument[0]));
 
   switch (filter_index) {
-    case 0: (*dynamic_cast<Image::Filter::Dilate*>              (filter)) (input_voxel, output_voxel); break;
-    case 1: (*dynamic_cast<Image::Filter::Erode* >              (filter)) (input_voxel, output_voxel); break;
-    case 2: (*dynamic_cast<Image::Filter::ConnectedComponents*> (filter)) (input_voxel, output_voxel); break;
-    case 3: (*dynamic_cast<Image::Filter::Median* >             (filter)) (input_voxel, output_voxel); break;
+    case 0: (*dynamic_cast<Image::Filter::Dilate*>                    (filter)) (input_voxel, output_voxel); break;
+    case 1: (*dynamic_cast<Image::Filter::Erode*>                     (filter)) (input_voxel, output_voxel); break;
+    case 2: (*dynamic_cast<Image::Filter::LargestConnectedComponent*> (filter)) (input_voxel, output_voxel); break;
+    case 3: (*dynamic_cast<Image::Filter::Median*>                    (filter)) (input_voxel, output_voxel); break;
   }
 
   delete filter;

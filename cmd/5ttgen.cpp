@@ -91,7 +91,8 @@ void run ()
   Image::BufferScratch<float> wm_fixed (fast_wm);
   Image::BufferScratch<float>::voxel_type v_wm_fixed (wm_fixed);
   {
-    Image::Filter::LargestConnectedComponent lcc (v_fast_wm, "cleaning up white matter fraction image...");
+    Image::Filter::LargestConnectedComponent lcc (v_fast_wm);
+    lcc.set_message ("cleaning up white matter fraction image...");
     lcc (v_fast_wm, v_wm_fixed);
   }
 

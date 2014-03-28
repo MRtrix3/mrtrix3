@@ -69,8 +69,16 @@ using namespace App;
 //   neighbourhood size i.e. 6, 12, 18, 26
 
 // TODO Remove direction-based adjacency from ConnectedComponents filter
+// Changed mind about this one; might as well leave it in there, otherwise the
+//   implementation used is completely overkill and should probably be re-written.
+// Also we may want to do a stats method sensitivity comparison some day
+// Instead the following can be done:
+// * Use the Directions::Set class to define adjacency, instead of an angular threshold
+//     Note that this will require moving src/dwi/directions/ to lib/
 
 // TODO Remove lib/image/filter/lcc.h
+// Actually, am tempted to keep LCC as a separate filter;
+//   implementation is a whole lot simpler and should be less memory overhead
 
 
 
@@ -272,7 +280,7 @@ void run () {
   switch (filter_index) {
     case 0: (*dynamic_cast<Image::Filter::Gradient*> (filter)) (input_voxel, output_voxel); break;
     case 1: (*dynamic_cast<Image::Filter::Median*>   (filter)) (input_voxel, output_voxel); break;
-    case 2: (*dynamic_cast<Image::Filter::Smooth* >  (filter)) (input_voxel, output_voxel); break;
+    case 2: (*dynamic_cast<Image::Filter::Smooth*>   (filter)) (input_voxel, output_voxel); break;
   }
 
   delete filter;

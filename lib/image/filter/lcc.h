@@ -42,17 +42,22 @@ namespace MR
 
         public:
           template <class InfoType>
-            LargestConnectedComponent (const InfoType& in, const std::string& message) :
-                Base (in) { }
+            LargestConnectedComponent (const InfoType& in) :
+                Base (in),
+                large_neighbourhood (false) { }
 
 
-          typedef Point<int> voxel_type;
+          void set_large_neighbourhood (const bool i) { large_neighbourhood = i; }
 
 
           template <class InputVoxelType, class OutputVoxelType>
           void operator() (InputVoxelType& input, OutputVoxelType& output) {
 
               typedef typename InputVoxelType::value_type value_type;
+
+              Ptr<ProgressBar> progress;
+              if (message.size())
+                progress = new ProgressBar (message);
 
               // Force calling the templated constructor instead of the copy-constructor
               BufferScratch<bool> visited_data (input, "visited");
@@ -62,13 +67,15 @@ namespace MR
               voxel_type seed (0, 0, 0);
 
               std::vector<voxel_type> adj_voxels;
-              adj_voxels.reserve (6);
-              adj_voxels.push_back (voxel_type (-1,  0,  0));
-              adj_voxels.push_back (voxel_type (+1,  0,  0));
-              adj_voxels.push_back (voxel_type ( 0, -1,  0));
-              adj_voxels.push_back (voxel_type ( 0, +1,  0));
-              adj_voxels.push_back (voxel_type ( 0,  0, -1));
-              adj_voxels.push_back (voxel_type ( 0,  0, +1));
+              voxel_type offset;
+              for (offset[0] = -1; offset[0] <= 1; offset[0]++) {
+                for (offset[1] = -1; offset[1] <= 1; offset[1]++) {
+                  for (offset[2] = -1; offset[2] <= 1; offset[2]++) {
+                    if (offset.norm2() && (large_neighbourhood || offset.norm() == 1))
+                      adj_voxels.push_back (offset);
+                  }
+                }
+              }
 
               for (seed[2] = 0; seed[2] != input.dim (2); ++seed[2]) {
                 for (seed[1] = 0; seed[1] != input.dim (1); ++seed[1]) {
@@ -91,13 +98,14 @@ namespace MR
                         for (std::vector<voxel_type>::const_iterator step = adj_voxels.begin(); step != adj_voxels.end(); ++step) {
                           voxel_type to_test (v);
                           to_test += *step;
-                          if (Image::Nav::within_bounds (visited, to_test) && !Image::Nav::get_value_at_pos (visited, to_test)) {
-                            if (Image::Nav::get_value_at_pos (input, to_test)) {
-                              Image::Nav::set_value_at_pos (visited, to_test, true);
-                              Image::Nav::set_value_at_pos (local_mask, to_test, (value_type)input.value());
-                              ++local_mask_size;
-                              to_expand.push_back (to_test);
-                            }
+                          if (Image::Nav::within_bounds (visited, to_test)
+                              && !Image::Nav::get_value_at_pos (visited, to_test)
+                              &&  Image::Nav::get_value_at_pos (input, to_test))
+                          {
+                            Image::Nav::set_value_at_pos (visited, to_test, true);
+                            Image::Nav::set_value_at_pos (local_mask, to_test, (value_type)input.value());
+                            ++local_mask_size;
+                            to_expand.push_back (to_test);
                           }
                         }
 
@@ -108,12 +116,19 @@ namespace MR
                         Image::copy (local_mask, output);
                       }
 
+                      if (progress) ++(*progress);
+
                     }
                   }
                 }
               }
 
           }
+
+
+        protected:
+          bool large_neighbourhood;
+          typedef Point<int> voxel_type;
 
 
       };
