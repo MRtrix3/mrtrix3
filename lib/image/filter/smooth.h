@@ -88,21 +88,21 @@ namespace MR
           //! Set the extent of smoothing kernel in voxels.
           //! This can be set as a single value for all dimensions
           //! or separate values, one for each dimension. (Default: 4 standard deviations)
-          void set_extent (const std::vector<int>& new_exent)
+          void set_extent (const std::vector<int>& new_extent)
           {
-            if (new_exent.size() != 1 && new_exent.size() != this->ndim())
+            if (new_extent.size() != 1 && new_extent.size() != this->ndim())
               throw Exception ("the number of extent elements does not correspond to the number of image dimensions");
-            for (size_t i = 0; i < new_exent.size(); ++i) {
-              if (!(new_exent[i] & int (1)))
+            for (size_t i = 0; i < new_extent.size(); ++i) {
+              if (!(new_extent[i] & int (1)))
                 throw Exception ("expected odd number for extent");
-              if (new_exent[i] < 0)
+              if (new_extent[i] < 0)
                 throw Exception ("the kernel extent must be positive");
             }
-            if (new_exent.size() == 1)
+            if (new_extent.size() == 1)
               for (unsigned int i = 0; i < this->ndim(); i++)
-                extent[i] = new_exent[0];
+                extent[i] = new_extent[0];
             else
-              extent = new_exent;
+              extent = new_extent;
           }
 
           void set_stdev (float stdev) {

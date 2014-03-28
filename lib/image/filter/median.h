@@ -56,6 +56,12 @@ namespace MR
           //! This must be set as a single value for all three dimensions
           //! or three values, one for each dimension. Default 3x3x3.
           void set_extent (const std::vector<int>& extent) {
+            for (size_t i = 0; i < extent.size(); ++i) {
+              if (!(extent[i] & int (1)))
+                throw Exception ("expected odd number for extent");
+              if (extent[i] < 0)
+                throw Exception ("the kernel extent must be positive");
+            }
             extent_ = extent;
           }
 

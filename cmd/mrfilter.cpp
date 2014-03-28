@@ -37,19 +37,10 @@ using namespace App;
 
 // TODO Make sure the filters make use of the progress message member
 
-// TODO Create maskfilter command, with erode / dilate / connected components / LCC / median
-// Eventually this will form the basis for trying the fuzzy LCC algorithm
-// Remember with fuzzy LCC command: wrap around image edges - that will hopefully make it
-//   work with an inverted brain mask
-
-// TODO Check erode and dilate filters: using bool class
-
 // TODO Check documentation of each filter; e.g. example use cases explicitly create
 //   new header and manually set data type, this should be done within the filter constructor
 
 // TODO Modify FFT to conform to code style, make available in mrfilter
-
-// TODO Can LCC be removed completely? Just take the largest output of connected_components...
 
 // TODO Rather than trying to provide a custom boolean implementation of the median() function,
 //   just create a separate MedianBool image filter?
@@ -63,20 +54,18 @@ using namespace App;
 // TODO Modify the ProgressBar class to automatically add the triple dot point and space
 // Remove this content from all calling locations
 
-// TODO Check for odd kernel extent from command-line
-
 // TODO For any filter involving connectivity, it would be neat to be able to specify the
-//   neighbourhood size i.e. 6, 12, 18, 26
+//   neighbourhood size i.e. 6, 18, 26
 
-// TODO Remove direction-based adjacency from ConnectedComponents filter
+// Remove direction-based adjacency from ConnectedComponents filter
 // Changed mind about this one; might as well leave it in there, otherwise the
 //   implementation used is completely overkill and should probably be re-written.
 // Also we may want to do a stats method sensitivity comparison some day
-// Instead the following can be done:
+// TODO Instead the following can be done:
 // * Use the Directions::Set class to define adjacency, instead of an angular threshold
 //     Note that this will require moving src/dwi/directions/ to lib/
 
-// TODO Remove lib/image/filter/lcc.h
+// Remove lib/image/filter/lcc.h
 // Actually, am tempted to keep LCC as a separate filter;
 //   implementation is a whole lot simpler and should be less memory overhead
 
