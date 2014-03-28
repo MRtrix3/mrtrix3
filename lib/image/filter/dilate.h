@@ -74,26 +74,31 @@ namespace MR
           void operator() (InputVoxelType& input, OutputVoxelType& output)
           {
 
-            RefPtr <BufferScratch<float> > in_data (new BufferScratch<float> (input));
-            RefPtr <BufferScratch<float>::voxel_type> in (new BufferScratch<float>::voxel_type (*in_data));
-            Image::copy(input, *in);
+            RefPtr <BufferScratch<bool> > in_data (new BufferScratch<bool> (input));
+            RefPtr <BufferScratch<bool>::voxel_type> in (new BufferScratch<bool>::voxel_type (*in_data));
+            Image::copy (input, *in);
 
-            RefPtr <BufferScratch<float> > out_data;
-            RefPtr <BufferScratch<float>::voxel_type> out;
+            RefPtr <BufferScratch<bool> > out_data;
+            RefPtr <BufferScratch<bool>::voxel_type> out;
+
+            Ptr<ProgressBar> progress;
+            if (message.size())
+              progress = new ProgressBar (message, npass_ + 1);
 
             for (unsigned int pass = 0; pass < npass_; pass++) {
-              out_data = new BufferScratch<float> (input);
-              out = new BufferScratch<float>::voxel_type (*out_data);
-              LoopInOrder loop (*in, "dilating (pass " + str(pass+1) + ") ...");
-              for (loop.start (*in, *out); loop.ok(); loop.next(*in, *out)) {
-                out->value() = dilate(*in);
-              }
+              out_data = new BufferScratch<bool> (input);
+              out = new BufferScratch<bool>::voxel_type (*out_data);
+              LoopInOrder loop (*in);
+              for (loop.start (*in, *out); loop.ok(); loop.next (*in, *out))
+                out->value() = dilate (*in);
               if (pass < npass_ - 1) {
                 in_data = out_data;
                 in = out;
               }
+              if (progress)
+                ++(*progress);
             }
-            Image::copy(*out, output);
+            Image::copy (*out, output);
           }
 
 
@@ -104,17 +109,17 @@ namespace MR
 
         protected:
 
-          float dilate (BufferScratch<float>::voxel_type& in)
+          bool dilate (BufferScratch<bool>::voxel_type& in)
           {
-            if (in.value() >= 0.5) return (1.0);
-            float val;
-            if (in[0] > 0) { in[0]--; val = in.value(); in[0]++; if (val >= 0.5) return (1.0); }
-            if (in[1] > 0) { in[1]--; val = in.value(); in[1]++; if (val >= 0.5) return (1.0); }
-            if (in[2] > 0) { in[2]--; val = in.value(); in[2]++; if (val >= 0.5) return (1.0); }
-            if (in[0] < in.dim(0)-1) { in[0]++; val = in.value(); in[0]--; if (val >= 0.5) return (1.0); }
-            if (in[1] < in.dim(1)-1) { in[1]++; val = in.value(); in[1]--; if (val >= 0.5) return (1.0); }
-            if (in[2] < in.dim(2)-1) { in[2]++; val = in.value(); in[2]--; if (val >= 0.5) return (1.0); }
-            return (0.0);
+            if (in.value()) return true;
+            bool val;
+            if (in[0] > 0) { in[0]--; val = in.value(); in[0]++; if (val) return true; }
+            if (in[1] > 0) { in[1]--; val = in.value(); in[1]++; if (val) return true; }
+            if (in[2] > 0) { in[2]--; val = in.value(); in[2]++; if (val) return true; }
+            if (in[0] < in.dim(0)-1) { in[0]++; val = in.value(); in[0]--; if (val) return true; }
+            if (in[1] < in.dim(1)-1) { in[1]++; val = in.value(); in[1]--; if (val) return true; }
+            if (in[2] < in.dim(2)-1) { in[2]++; val = in.value(); in[2]--; if (val) return true; }
+            return false;
           }
 
           unsigned int npass_;

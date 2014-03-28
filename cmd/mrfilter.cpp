@@ -36,36 +36,24 @@ using namespace App;
 
 
 
-// TODO Create an Image::Filter::Base class, so the filter can be constructed based on
-//   a base pointer, set up in a code branch, and then a single execution line is used.
-// Can also set up progress message as a member variable before functor is used; will
-//   behave differently depending on whether input is 3D or 4D; in fact, could possibly
-//   make this a base function
 // TODO Make sure the filters make use of the progress message member
-
-// TODO Should all filters be templated?
-// Alternatively, should the template on GaussianSmooth be removed?
 
 // TODO Create maskfilter command, with erode / dilate / connected components / LCC / median
 // Eventually this will form the basis for trying the fuzzy LCC algorithm
 // Remember with fuzzy LCC command: wrap around image edges - that will hopefully make it
 //   work with an inverted brain mask
 
-// TODO Check erode and dilate filters: use bool class, use of RefPtr's
+// TODO Check erode and dilate filters: using bool class
 
 // TODO Check documentation of each filter; e.g. example use cases explicitly create
 //   new header and manually set data type, this should be done within the filter constructor
 
 // TODO Modify FFT to conform to code style, make available in mrfilter
 
-// TODO Rename gaussian smooth to just 'smooth' (both file name and class)
-
 // TODO Can LCC be removed completely? Just take the largest output of connected_components...
 
 // TODO Rather than trying to provide a custom boolean implementation of the median() function,
 //   just create a separate MedianBool image filter?
-
-// TODO Rename Median3D to just Median? The namespace should differentiate it from the math function
 
 // TODO Some filter headers have functions defined external to the filter class;
 //   might be cleaner to have these within the relevant classes (unless they may have other applications)

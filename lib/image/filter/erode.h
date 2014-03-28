@@ -47,7 +47,7 @@ namespace MR
        * Buffer<value_type> input_data (argument[0]);
        * Buffer<value_type>::voxel_type input_voxel (input_data);
        *
-       * Filter::Dilate erode (input_data);
+       * Filter::Erode erode (input_data);
        * Header header (input_data);
        * header.info() = erode.info();
        *
@@ -72,24 +72,30 @@ namespace MR
           template <class InputVoxelType, class OutputVoxelType>
           void operator() (InputVoxelType& input, OutputVoxelType& output) {
 
-            RefPtr <BufferScratch<float> > in_data (new BufferScratch<float> (input));
-            RefPtr <BufferScratch<float>::voxel_type> in (new BufferScratch<float>::voxel_type (*in_data));
-            Image::copy(input, *in);
+            RefPtr <BufferScratch<bool> > in_data (new BufferScratch<bool> (input));
+            RefPtr <BufferScratch<bool>::voxel_type> in (new BufferScratch<bool>::voxel_type (*in_data));
+            Image::copy (input, *in);
 
-            RefPtr <BufferScratch<float> > out_data;
-            RefPtr <BufferScratch<float>::voxel_type> out;
+            RefPtr <BufferScratch<bool> > out_data;
+            RefPtr <BufferScratch<bool>::voxel_type> out;
+
+            Ptr<ProgressBar> progress;
+            if (message.size())
+              progress = new ProgressBar (message, npass_ + 1);
 
             for (unsigned int pass = 0; pass < npass_; pass++) {
-              out_data = new BufferScratch<float> (input);
-              out = new BufferScratch<float>::voxel_type (*out_data);
-              LoopInOrder loop (*in, "eroding (pass " + str(pass+1) + ") ...");
-              for (loop.start (*in, *out); loop.ok(); loop.next(*in, *out)) {
-               out->value() = erode(*in);
+              out_data = new BufferScratch<bool> (input);
+              out = new BufferScratch<bool>::voxel_type (*out_data);
+              LoopInOrder loop (*in);
+              for (loop.start (*in, *out); loop.ok(); loop.next (*in, *out)) {
+               out->value() = erode (*in);
               }
               if (pass < npass_ - 1) {
                 in_data = out_data;
                 in = out;
               }
+              if (progress)
+                ++(*progress);
             }
             Image::copy(*out, output);
           }
@@ -102,23 +108,21 @@ namespace MR
 
         protected:
 
-          float erode (BufferScratch<float>::voxel_type& in)
+          bool erode (BufferScratch<bool>::voxel_type& in)
           {
-            if (in.value() < 0.5) return (0.0);
-            float val;
-            if (in[0] == 0) return (0.0);
-            if (in[1] == 0) return (0.0);
-            if (in[2] == 0) return (0.0);
-            if (in[0] == in.dim(0)-1) return (0.0);
-            if (in[1] == in.dim(1)-1) return (0.0);
-            if (in[2] == in.dim(2)-1) return (0.0);
-            if (in[0] > 0) { in[0]--; val = in.value(); in[0]++; if (val < 0.5) return (0.0); }
-            if (in[1] > 0) { in[1]--; val = in.value(); in[1]++; if (val < 0.5) return (0.0); }
-            if (in[2] > 0) { in[2]--; val = in.value(); in[2]++; if (val < 0.5) return (0.0); }
-            if (in[0] < in.dim(0)-1) { in[0]++; val = in.value(); in[0]--; if (val < 0.5) return (0.0); }
-            if (in[1] < in.dim(1)-1) { in[1]++; val = in.value(); in[1]--; if (val < 0.5) return (0.0); }
-            if (in[2] < in.dim(2)-1) { in[2]++; val = in.value(); in[2]--; if (val < 0.5) return (0.0); }
-            return (1.0);
+            if (!in.value()) return false;
+            if (   (in[0] == 0) || (in[0] == in.dim(0)-1)
+                || (in[1] == 0) || (in[1] == in.dim(1)-1)
+                || (in[2] == 0) || (in[2] == in.dim(2)-1))
+              return false;
+            bool val;
+            if (in[0] > 0) { in[0]--; val = in.value(); in[0]++; if (!val) return false; }
+            if (in[1] > 0) { in[1]--; val = in.value(); in[1]++; if (!val) return false; }
+            if (in[2] > 0) { in[2]--; val = in.value(); in[2]++; if (!val) return false; }
+            if (in[0] < in.dim(0)-1) { in[0]++; val = in.value(); in[0]--; if (!val) return false; }
+            if (in[1] < in.dim(1)-1) { in[1]++; val = in.value(); in[1]--; if (!val) return false; }
+            if (in[2] < in.dim(2)-1) { in[2]++; val = in.value(); in[2]--; if (!val) return false; }
+            return true;
           }
 
           unsigned int npass_;
