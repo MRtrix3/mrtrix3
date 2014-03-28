@@ -1,7 +1,7 @@
 /*
     Copyright 2012 Brain Research Institute, Melbourne, Australia
 
-    Written by David Raffelt, 17/02/2012.
+    Written by Robert E. Smith, 26/03/2014.
 
     This file is part of MRtrix.
 
@@ -23,7 +23,6 @@
 #include "command.h"
 #include "image/buffer.h"
 #include "image/buffer_preload.h"
-#include "image/buffer_scratch.h"
 #include "image/voxel.h"
 #include "image/filter/base.h"
 #include "image/filter/gradient.h"
@@ -61,6 +60,20 @@ using namespace App;
 // TODO The resize operator needs to be able to modify the underlying Info class
 // For now, this remains unchanged i.e. doesn't derive from Filter::Base
 
+// TODO Modify the ProgressBar class to automatically add the triple dot point and space
+// Remove this content from all calling locations
+
+// TODO Check for odd kernel extent from command-line
+
+// TODO For any filter involving connectivity, it would be neat to be able to specify the
+//   neighbourhood size i.e. 6, 12, 18, 26
+
+// TODO Remove direction-based adjacency from ConnectedComponents filter
+
+// TODO Remove lib/image/filter/lcc.h
+
+// TODO Some filters may need to read command-line options before they are constructed
+// Therefore modify the cmdline option functions to also construct the filter and return a pointer
 
 
 
@@ -258,7 +271,7 @@ void run () {
   Image::Buffer<float> output_data (argument[2], header);
   Image::Buffer<float>::voxel_type output_voxel (output_data);
 
-  filter->set_message (std::string("applying ") + std::string(argument[1]) + " filter to image " + std::string(argument[0]));
+  filter->set_message (std::string("applying ") + std::string(argument[1]) + " filter to image " + std::string(argument[0]) + "...");
 
   switch (filter_index) {
     case 0: (*dynamic_cast<Image::Filter::Gradient*> (filter)) (input_voxel, output_voxel); break;

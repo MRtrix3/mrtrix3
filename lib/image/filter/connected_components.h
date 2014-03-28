@@ -383,6 +383,10 @@ namespace MR
           std::vector<cluster> clusters;
           std::vector<uint32_t> labels;
 
+          Ptr<ProgressBar> progress;
+          if (message.size())
+            progress = new ProgressBar (message);
+
           Connector connector (do_26_connectivity_);
           if (dim_to_ignore_.size())
             connector.set_dim_to_ignore(dim_to_ignore_);
@@ -392,8 +396,11 @@ namespace MR
             LogLevelLatch level(0);
             connector.precompute_adjacency(in);
           }
+          if (progress) ++(*progress);
           std::vector<std::vector<int> > mask_indices = connector.run (clusters, labels);
+          if (progress) ++(*progress);
           std::sort (clusters.begin(), clusters.end(), compare_clusters);
+          if (progress) ++(*progress);
 
           std::vector<int> label_lookup (clusters.size(), 0);
           for (uint32_t c = 0; c < clusters.size(); c++)
