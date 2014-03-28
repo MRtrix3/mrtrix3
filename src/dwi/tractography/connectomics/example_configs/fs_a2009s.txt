@@ -1,4 +1,4 @@
-# Configuration file for MRtrix command mrprep4connectome
+# Configuration file for MRtrix command labelconfig
 # Extracts the relevant grey matter parcellations from the a2009s
 # FreeSurfer segmentation
 
