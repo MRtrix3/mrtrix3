@@ -24,8 +24,8 @@
 #define __image_filter_resize_h__
 
 #include "image/info.h"
-#include "image/filter/gaussian_smooth.h"
 #include "image/filter/reslice.h"
+#include "image/filter/smooth.h"
 #include "image/interp/nearest.h"
 #include "image/interp/linear.h"
 #include "image/interp/cubic.h"
@@ -155,7 +155,7 @@ namespace MR
 
 
               if (do_smoothing) {
-                Filter::GaussianSmooth<> smooth_filter (input);
+                Filter::Smooth smooth_filter (input);
                 smooth_filter.set_stdev (stdev);
                 BufferScratch<float> smoothed_data (input);
                 BufferScratch<float>::voxel_type smoothed_voxel (smoothed_data);

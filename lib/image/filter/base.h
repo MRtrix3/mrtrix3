@@ -23,6 +23,7 @@
 #ifndef __image_filter_base_h__
 #define __image_filter_base_h__
 
+#include "progressbar.h" // May be needed for any derived classes that make use of the message string
 #include "image/info.h"
 
 namespace MR

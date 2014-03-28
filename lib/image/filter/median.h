@@ -38,17 +38,17 @@ namespace MR
       @{ */
 
       //! Smooth images using median filtering.
-      class Median3D : public Base
+      class Median : public Base
       {
 
         public:
           template <class InfoType>
-          Median3D (const InfoType& in) :
+          Median (const InfoType& in) :
               Base (in),
               extent_ (1,3) { }
 
           template <class InfoType>
-          Median3D (const InfoType& in, const std::vector<int>& extent) :
+          Median (const InfoType& in, const std::vector<int>& extent) :
               Base (in),
               extent_ (extent) { }
 

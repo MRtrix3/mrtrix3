@@ -30,7 +30,7 @@
 #include "image/transform.h"
 #include "image/adapter/gradient1D.h"
 #include "image/filter/base.h"
-#include "image/filter/base.h"
+#include "image/filter/smooth.h"
 
 namespace MR
 {
@@ -110,6 +110,10 @@ namespace MR
 
               const size_t num_volumes = (in.ndim() == 3) ? 1 : in.dim(3);
 
+              Ptr<ProgressBar> progress;
+              if (message.size())
+                progress = new ProgressBar (message, num_volumes);
+
               for (size_t vol = 0; vol < num_volumes; ++vol) {
                 if (in.ndim() == 4) {
                   in[3] = vol;
@@ -144,11 +148,13 @@ namespace MR
                     }
                   }
                 }
+                if (progress)
+                  ++(*progress);
               }
           }
 
         protected:
-          Image::Filter::GaussianSmooth<> smoother;
+          Image::Filter::Smooth smoother;
           bool wrt_scanner_;
       };
       //! @}

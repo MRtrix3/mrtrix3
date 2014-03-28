@@ -26,9 +26,9 @@
 #include "image/buffer_scratch.h"
 #include "image/voxel.h"
 #include "image/filter/base.h"
-#include "image/filter/gaussian_smooth.h"
 #include "image/filter/gradient.h"
-#include "image/filter/median3D.h"
+#include "image/filter/median.h"
+#include "image/filter/smooth.h"
 
 
 using namespace MR;
@@ -165,7 +165,7 @@ void parse_gradient_filter_cmdline_options (Image::Filter::Gradient& filter)
 
 
 
-void parse_median_filter_cmdline_options (Image::Filter::Median3D& filter)
+void parse_median_filter_cmdline_options (Image::Filter::Median& filter)
 {
   Options opt = get_options ("extent");
   if (opt.size())
@@ -174,7 +174,7 @@ void parse_median_filter_cmdline_options (Image::Filter::Median3D& filter)
 
 
 
-void parse_smooth_filter_cmdline_options (Image::Filter::GaussianSmooth<>& filter)
+void parse_smooth_filter_cmdline_options (Image::Filter::Smooth& filter)
 {
 
   Options opt = get_options ("stdev");
@@ -244,12 +244,12 @@ void run () {
       parse_gradient_filter_cmdline_options (*(dynamic_cast<Image::Filter::Gradient*> (filter)));
       break;
     case 1:
-      filter = new Image::Filter::Median3D (input_voxel);
-      parse_median_filter_cmdline_options (*(dynamic_cast<Image::Filter::Median3D*> (filter)));
+      filter = new Image::Filter::Median (input_voxel);
+      parse_median_filter_cmdline_options (*(dynamic_cast<Image::Filter::Median*> (filter)));
       break;
     case 2:
-      filter = new Image::Filter::GaussianSmooth<> (input_voxel);
-      parse_smooth_filter_cmdline_options (*(dynamic_cast<Image::Filter::GaussianSmooth<>* > (filter)));
+      filter = new Image::Filter::Smooth (input_voxel);
+      parse_smooth_filter_cmdline_options (*(dynamic_cast<Image::Filter::Smooth* > (filter)));
       break;
     default:
       assert (0);
@@ -270,10 +270,12 @@ void run () {
   Image::Buffer<float> output_data (argument[2], header);
   Image::Buffer<float>::voxel_type output_voxel (output_data);
 
+  filter->set_message (std::string("applying ") + std::string(argument[1]) + " filter to image " + std::string(argument[0]));
+
   switch (filter_index) {
-    case 0: (*dynamic_cast<Image::Filter::Gradient*>          (filter)) (input_voxel, output_voxel); break;
-    case 1: (*dynamic_cast<Image::Filter::Median3D*>          (filter)) (input_voxel, output_voxel); break;
-    case 2: (*dynamic_cast<Image::Filter::GaussianSmooth<>* > (filter)) (input_voxel, output_voxel); break;
+    case 0: (*dynamic_cast<Image::Filter::Gradient*> (filter)) (input_voxel, output_voxel); break;
+    case 1: (*dynamic_cast<Image::Filter::Median*>   (filter)) (input_voxel, output_voxel); break;
+    case 2: (*dynamic_cast<Image::Filter::Smooth* >  (filter)) (input_voxel, output_voxel); break;
   }
 
   delete filter;

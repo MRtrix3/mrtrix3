@@ -28,9 +28,9 @@
 #include "image/buffer_scratch.h"
 #include "image/voxel.h"
 #include "image/filter/base.h"
-#include "image/filter/optimal_threshold.h"
-#include "image/filter/median3D.h"
 #include "image/filter/connected_components.h"
+#include "image/filter/median.h"
+#include "image/filter/optimal_threshold.h"
 #include "image/histogram.h"
 #include "image/copy.h"
 #include "image/loop.h"
@@ -97,7 +97,9 @@ namespace MR
               BufferScratch<bool> mask_data (info, "DWI mask");
               BufferScratch<bool>::voxel_type mask_voxel (mask_data);
 
-              ProgressBar progress ("computing dwi brain mask... ");
+              Ptr<ProgressBar> progress;
+              if (message.size())
+                progress = new ProgressBar (message);
 
               // Loop over each shell, including b=0, in turn
               DWI::Shells shells (grad);
@@ -115,18 +117,24 @@ namespace MR
                   }
                   shell_voxel.value() = mean / value_type(shell.count());
                 }
+                if (progress)
+                  ++(*progress);
 
                 // Threshold the mean intensity image for this shell
                 OptimalThreshold threshold_filter (shell_data);
                 BufferScratch<bool> shell_mask_data (threshold_filter);
                 BufferScratch<bool>::voxel_type shell_mask_voxel (shell_mask_data);
                 threshold_filter (shell_voxel, shell_mask_voxel);
+                if (progress)
+                  ++(*progress);
 
                 // Add this mask to the master
                 for (loop.start (mask_voxel, shell_mask_voxel); loop.ok(); loop.next (mask_voxel, shell_mask_voxel)) {
                   if (shell_mask_voxel.value())
                     mask_voxel.value() = true;
                 }
+                if (progress)
+                  ++(*progress);
 
               }
 
@@ -134,17 +142,25 @@ namespace MR
 
               BufferScratch<bool> temp_data (info, "temporary mask");
               BufferScratch<bool>::voxel_type temp_voxel (temp_data);
-              Median3D median_filter (mask_voxel);
+              Median median_filter (mask_voxel);
               median_filter (mask_voxel, temp_voxel);
+              if (progress)
+                ++(*progress);
 
               ConnectedComponents connected_filter (temp_voxel);
               connected_filter.set_largest_only (true);
               connected_filter (temp_voxel, temp_voxel);
+              if (progress)
+                ++(*progress);
 
               for (loop.start (temp_voxel); loop.ok(); loop.next (temp_voxel))
                 temp_voxel.value() = !temp_voxel.value();
+              if (progress)
+                ++(*progress);
 
               connected_filter (temp_voxel, temp_voxel);
+              if (progress)
+                ++(*progress);
 
               for (loop.start (temp_voxel, output); loop.ok(); loop.next (temp_voxel, output))
                 output.value() = !temp_voxel.value();

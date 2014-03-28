@@ -64,6 +64,7 @@ void run () {
   Math::Matrix<float> grad = DWI::get_valid_DW_scheme<float> (input_data);
 
   Image::Filter::DWIBrainMask dwi_brain_mask_filter (input_voxel, grad);
+  dwi_brain_mask_filter.set_message ("computing dwi brain mask... ");
 
   Image::Header output_header (input_data);
   output_header.info() = dwi_brain_mask_filter.info();
