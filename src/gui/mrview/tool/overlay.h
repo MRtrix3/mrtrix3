@@ -44,7 +44,7 @@ namespace MR
 
             Overlay (Window& main_window, Dock* parent);
 
-            void draw (const Projection& projection, bool is_3D);
+            void draw (const Projection& projection, bool is_3D, int axis, int slice);
             bool process_batch_command (const std::string& cmd, const std::string& args);
 
           private slots:

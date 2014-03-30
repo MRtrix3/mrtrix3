@@ -61,7 +61,7 @@ namespace MR
               } fixel_shader;
 
 
-              void render (const Projection& transform, bool is_3D, int plane, int slice);
+              void render (const Projection& projection, int axis, int slice);
 
               void renderColourBar (const Projection& transform) {
                 if (color_type == Value && show_colour_bar)

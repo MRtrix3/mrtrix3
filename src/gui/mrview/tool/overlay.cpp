@@ -228,7 +228,7 @@ namespace MR
         }
 
 
-        void Overlay::draw (const Projection& projection, bool is_3D)
+        void Overlay::draw (const Projection& projection, bool is_3D, int axis, int slice)
         {
 
           if (!is_3D) {

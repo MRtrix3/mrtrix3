@@ -46,7 +46,7 @@ namespace MR
 
             virtual ~Fixel ();
 
-            void draw (const Projection& transform, bool is_3D);
+            void draw (const Projection& transform, bool is_3D, int axis, int slice);
             void drawOverlays (const Projection& transform);
 //            bool process_batch_command (const std::string& cmd, const std::string& args);
 

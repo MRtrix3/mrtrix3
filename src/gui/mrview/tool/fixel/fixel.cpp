@@ -224,13 +224,14 @@ namespace MR
 
 
 
-        void Fixel::draw (const Projection& transform, bool is_3D)
+        void Fixel::draw (const Projection& transform, bool is_3D, int axis, int slice)
         {
+          not_3D = !is_3D;
           if (!window.snap_to_image() && do_crop_to_slice)
             return;
           for (int i = 0; i < fixel_list_model->rowCount(); ++i) {
             if (fixel_list_model->items[i]->show && !hide_all_button->isChecked())
-              dynamic_cast<FixelImage*>(fixel_list_model->items[i])->render (transform, is_3D, window.plane(), window.slice());
+              dynamic_cast<FixelImage*>(fixel_list_model->items[i])->render (transform, axis, slice);
           }
         }
 

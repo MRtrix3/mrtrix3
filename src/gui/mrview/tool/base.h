@@ -102,7 +102,7 @@ namespace MR
                 }
             };
 
-            virtual void draw (const Projection& transform, bool is_3D);
+            virtual void draw (const Projection& transform, bool is_3D, int axis, int slice);
             virtual void drawOverlays (const Projection& transform);
             virtual bool process_batch_command (const std::string& cmd, const std::string& args);
         };

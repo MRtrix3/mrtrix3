@@ -181,10 +181,10 @@ namespace MR
 
 
 
-        void FixelImage::render (const Projection& transform, bool is_3D, int plane, int slice) {
+        void FixelImage::render (const Projection& projection, int axis, int slice) {
 
           start (fixel_shader);
-          transform.set (fixel_shader);
+          projection.set (fixel_shader);
 
           if (use_discard_lower())
             gl::Uniform1f (gl::GetUniformLocation (fixel_shader, "lower"), lessthan);
@@ -211,12 +211,13 @@ namespace MR
 
           gl::BindVertexArray (vertex_array_object);
 
-          if (!fixel_tool.do_crop_to_slice)
+          if (!fixel_tool.do_crop_to_slice) {
             for (size_t x = 0; x < slice_fixel_indices[0].size(); ++x)
               gl::MultiDrawArrays (gl::LINE_STRIP, &slice_fixel_indices[0][x][0], &slice_fixel_sizes[0][x][0], slice_fixel_counts[0][x]);
-          else
-            if (slice >= 0 && slice < fixel_vox.dim(plane))
-              gl::MultiDrawArrays (gl::LINE_STRIP, &slice_fixel_indices[plane][slice][0], &slice_fixel_sizes[plane][slice][0], slice_fixel_counts[plane][slice]);
+          } else {
+            if (slice >= 0 && slice < fixel_vox.dim(axis))
+              gl::MultiDrawArrays (gl::LINE_STRIP, &slice_fixel_indices[axis][slice][0], &slice_fixel_sizes[axis][slice][0], slice_fixel_counts[axis][slice]);
+          }
 
           if (fixel_tool.line_opacity < 1.0) {
             gl::Disable (gl::BLEND);
