@@ -45,15 +45,9 @@ namespace MR
           fixel_vox (fixel_data),
           header_transform (fixel_vox),
           colourbar_position_index (4),
-          x_axis_indices (fixel_vox.dim(0)),
-          y_axis_indices (fixel_vox.dim(1)),
-          z_axis_indices (fixel_vox.dim(2)),
-          x_axis_sizes (fixel_vox.dim(0)),
-          y_axis_sizes (fixel_vox.dim(1)),
-          z_axis_sizes (fixel_vox.dim(2)),
-          x_axis_counts (fixel_vox.dim(0)),
-          y_axis_counts (fixel_vox.dim(1)),
-          z_axis_counts (fixel_vox.dim(2))
+          slice_fixel_indices (3),
+          slice_fixel_sizes (3),
+          slice_fixel_counts (3)
           {
             set_allowed_features (true, true, false);
             colourmap = 1;
@@ -81,6 +75,7 @@ namespace MR
                "layout (location = 0) in vec3 vertexPosition_modelspace;\n"
                "layout (location = 1) in vec3 previousVertex;\n"
                "layout (location = 2) in vec3 nextVertex;\n"
+               "layout (location = 3) in float amp;\n"
                "uniform mat4 MVP;\n"
                "flat out float amp_out;\n"
                "out vec3 fragmentColour;\n";
@@ -91,26 +86,14 @@ namespace MR
                source += "uniform vec3 const_colour;\n";
                break;
              case Value:
-               source += "layout (location = 3) in float amp;\n"
-                         "uniform float offset, scale;\n";
+               source += "uniform float offset, scale;\n";
                break;
            }
 
            source +=
                "void main() {\n"
-               "  gl_Position =  MVP * vec4(vertexPosition_modelspace,1);\n";
-
-           if (color_type == Direction)
-             source +=
-               "  vec3 dir;\n"
-               "  if (isnan (previousVertex.x))\n"
-               "    dir = nextVertex - vertexPosition_modelspace;\n"
-               "  else if (isnan (nextVertex.x))\n"
-               "    dir = vertexPosition_modelspace - previousVertex;\n"
-               "  else\n"
-               "    dir = nextVertex - previousVertex;\n";
-           if (color_type == Direction)
-               source += "  fragmentColour = dir;\n";
+               "  gl_Position =  MVP * vec4(vertexPosition_modelspace,1);\n"
+               "  amp_out = amp;\n";
 
            switch (color_type) {
              case Colour:
@@ -118,7 +101,6 @@ namespace MR
                    "  fragmentColour = const_colour;\n";
                break;
              case Value:
-               source += "  amp_out = amp;\n";
                if (!ColourMap::maps[colourmap].special) {
                  source += "  float amplitude = clamp (";
                  if (fixel.scale_inverted())
@@ -129,6 +111,17 @@ namespace MR
                  std::string ("  vec3 color;\n") +
                  ColourMap::maps[colourmap].mapping +
                  "  fragmentColour = color;\n";
+               break;
+             case Direction:
+               source +=
+                  "  vec3 dir;\n"
+                  "  if (isnan (previousVertex.x))\n"
+                  "    dir = nextVertex - vertexPosition_modelspace;\n"
+                  "  else if (isnan (nextVertex.x))\n"
+                  "    dir = vertexPosition_modelspace - previousVertex;\n"
+                  "  else\n"
+                  "    dir = nextVertex - previousVertex;\n"
+                  "  fragmentColour = dir;\n";
                break;
              default:
                break;
@@ -146,22 +139,19 @@ namespace MR
               "out vec3 color;\n"
               "flat in float amp_out;\n"
               "in vec3 fragmentColour;\n";
-          if (color_type == Value) {
-            if (fixel.use_discard_lower())
-              source += "uniform float lower;\n";
-            if (fixel.use_discard_upper())
-              source += "uniform float upper;\n";
-          }
+
+          if (fixel.use_discard_lower())
+            source += "uniform float lower;\n";
+          if (fixel.use_discard_upper())
+            source += "uniform float upper;\n";
 
           source +=
               "void main(){\n";
 
-          if (color_type == Value) {
-            if (fixel.use_discard_lower())
-              source += "  if (amp_out < lower) discard;\n";
-            if (fixel.use_discard_upper())
-              source += "  if (amp_out > upper) discard;\n";
-          }
+          if (fixel.use_discard_lower())
+            source += "  if (amp_out < lower) discard;\n";
+          if (fixel.use_discard_upper())
+            source += "  if (amp_out > upper) discard;\n";
 
           source +=
             std::string("  color = ") + ((color_type == Direction) ? "normalize (abs (fragmentColour))" : "fragmentColour" ) + ";\n";
@@ -196,13 +186,12 @@ namespace MR
           start (fixel_shader);
           transform.set (fixel_shader);
 
-          if (color_type == Value) {
-            if (use_discard_lower())
-              gl::Uniform1f (gl::GetUniformLocation (fixel_shader, "lower"), lessthan);
-            if (use_discard_upper())
-              gl::Uniform1f (gl::GetUniformLocation (fixel_shader, "upper"), greaterthan);
-          }
-          else if (color_type == Colour)
+          if (use_discard_lower())
+            gl::Uniform1f (gl::GetUniformLocation (fixel_shader, "lower"), lessthan);
+          if (use_discard_upper())
+            gl::Uniform1f (gl::GetUniformLocation (fixel_shader, "upper"), greaterthan);
+
+          if (color_type == Colour)
             gl::Uniform3fv (gl::GetUniformLocation (fixel_shader, "const_colour"), 1, colour);
 
           if (fixel_tool.line_opacity < 1.0) {
@@ -222,26 +211,12 @@ namespace MR
 
           gl::BindVertexArray (vertex_array_object);
 
-          if (!fixel_tool.do_crop_to_slice) {
-            TRACE;
-            for (size_t x = 0; x < x_axis_indices.size(); ++x) {
-              gl::MultiDrawArrays (gl::LINE_STRIP, &x_axis_indices[x][0], &x_axis_sizes[x][0], x_axis_counts[x]);
-            }
-          } else {
-            switch (plane) {
-            case 0:
-              gl::MultiDrawArrays (gl::LINE_STRIP, &x_axis_indices[slice][0], &x_axis_sizes[slice][0], x_axis_counts[slice]);
-              break;
-            case 1:
-              gl::MultiDrawArrays (gl::LINE_STRIP, &y_axis_indices[slice][0], &y_axis_sizes[slice][0], y_axis_counts[slice]);
-              break;
-            case 2:
-              gl::MultiDrawArrays (gl::LINE_STRIP, &z_axis_indices[slice][0], &z_axis_sizes[slice][0], z_axis_counts[slice]);
-              break;
-            default:
-              break;
-            }
-          }
+          if (!fixel_tool.do_crop_to_slice)
+            for (size_t x = 0; x < slice_fixel_indices[0].size(); ++x)
+              gl::MultiDrawArrays (gl::LINE_STRIP, &slice_fixel_indices[0][x][0], &slice_fixel_sizes[0][x][0], slice_fixel_counts[0][x]);
+          else
+            if (slice >= 0 && slice < fixel_vox.dim(plane))
+              gl::MultiDrawArrays (gl::LINE_STRIP, &slice_fixel_indices[plane][slice][0], &slice_fixel_sizes[plane][slice][0], slice_fixel_counts[plane][slice]);
 
           if (fixel_tool.line_opacity < 1.0) {
             gl::Disable (gl::BLEND);
@@ -255,6 +230,12 @@ namespace MR
 
         void FixelImage::load_image () {
 
+          for (size_t dim = 0; dim < 3; ++dim) {
+            slice_fixel_indices[dim].resize (fixel_vox.dim(dim));
+            slice_fixel_sizes[dim].resize (fixel_vox.dim(dim));
+            slice_fixel_counts[dim].resize (fixel_vox.dim(dim));
+          }
+
           std::vector<Point<float> > buffer;
           std::vector<float> values;
           std::vector<GLint> starts;
@@ -267,15 +248,11 @@ namespace MR
               if (fixel_vox.value()[f].value < value_min)
                 value_min = fixel_vox.value()[f].value;
               header_transform.voxel2scanner (fixel_vox, voxel_pos);
-              x_axis_indices[fixel_vox[0]].push_back(buffer.size());
-              y_axis_indices[fixel_vox[1]].push_back(buffer.size());
-              z_axis_indices[fixel_vox[2]].push_back(buffer.size());
-              x_axis_sizes[fixel_vox[0]].push_back(2);
-              y_axis_sizes[fixel_vox[1]].push_back(2);
-              z_axis_sizes[fixel_vox[2]].push_back(2);
-              x_axis_counts[fixel_vox[0]]++;
-              y_axis_counts[fixel_vox[1]]++;
-              z_axis_counts[fixel_vox[2]]++;
+              for (size_t dim = 0; dim < 3; ++dim) {
+                slice_fixel_indices[dim][fixel_vox[dim]].push_back (buffer.size());
+                slice_fixel_sizes[dim][fixel_vox[dim]].push_back(2);
+                slice_fixel_counts[dim][fixel_vox[dim]]++;
+              }
               values.push_back (NAN);
               values.push_back (fixel_vox.value()[f].value);
               values.push_back (fixel_vox.value()[f].value);

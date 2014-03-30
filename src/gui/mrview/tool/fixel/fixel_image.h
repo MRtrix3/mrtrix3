@@ -95,15 +95,9 @@ namespace MR
               GLuint vertex_buffer;
               GLuint vertex_array_object;
               GLuint value_buffer;
-              std::vector<std::vector<GLint> > x_axis_indices;
-              std::vector<std::vector<GLint> > y_axis_indices;
-              std::vector<std::vector<GLint> > z_axis_indices;
-              std::vector<std::vector<GLsizei> > x_axis_sizes;
-              std::vector<std::vector<GLsizei> > y_axis_sizes;
-              std::vector<std::vector<GLsizei> > z_axis_sizes;
-              std::vector<GLsizei> x_axis_counts;
-              std::vector<GLsizei> y_axis_counts;
-              std::vector<GLsizei> z_axis_counts;
+              std::vector<std::vector<std::vector<GLint> > > slice_fixel_indices;
+              std::vector<std::vector<std::vector<GLsizei> > > slice_fixel_sizes;
+              std::vector<std::vector<GLsizei> > slice_fixel_counts;
         };
 
       }
