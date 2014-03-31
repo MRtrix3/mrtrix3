@@ -47,9 +47,6 @@ using namespace App;
 // TODO Some filter headers have functions defined external to the filter class;
 //   might be cleaner to have these within the relevant classes (unless they may have other applications)
 
-// TODO The resize operator needs to be able to modify the underlying Info class
-// For now, this remains unchanged i.e. doesn't derive from Filter::Base
-
 // Remove direction-based adjacency from ConnectedComponents filter
 // Changed mind about this one; might as well leave it in there, otherwise the
 //   implementation used is completely overkill and should probably be re-written.

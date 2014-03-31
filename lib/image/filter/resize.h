@@ -68,12 +68,14 @@ namespace MR
        *
        * \endcode
        */
-      class Resize : public Info
+      class Resize : public Base
       {
 
         public:
-          template <class InputVoxelType>
-            Resize (const InputVoxelType& in) : Info (in), interp_type(2) { }
+          template <class InfoType>
+          Resize (const InfoType& in) :
+              Base (in),
+              interp_type (2) { }
 
 
           void set_voxel_size (float size)
@@ -88,14 +90,13 @@ namespace MR
             if (voxel_size.size() != 3)
               throw Exception ("the voxel size must be defined using a value for all three dimensions.");
 
-            Math::Matrix<float> transform (this->transform());
             for (size_t j = 0; j < 3; ++j) {
               if (voxel_size[j] <= 0.0)
                 throw Exception ("the voxel size must be larger than zero");
-              this->dim(j) = Math::ceil (this->dim(j) * this->vox(j) / voxel_size[j]);
+              axes_[j].dim = Math::ceil (axes_[j].dim * axes_[j].vox / voxel_size[j]);
               for (size_t i = 0; i < 3; ++i)
-                this->transform()(i,3) += 0.5 * (voxel_size[j] - this->vox(j)) * transform(i,j);
-              this->vox(j) = voxel_size[j];
+                transform_(i,3) += 0.5 * (voxel_size[j] - axes_[j].vox) * transform_(i,j);
+              axes_[j].vox = voxel_size[j];
             }
           }
 
