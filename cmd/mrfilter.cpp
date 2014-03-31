@@ -38,22 +38,6 @@ using namespace App;
 
 
 
-// TODO Rather than trying to provide a custom boolean implementation of the median() function,
-//   just create a separate MedianBool image filter?
-
-// TODO Some filter headers have functions defined external to the filter class;
-//   might be cleaner to have these within the relevant classes (unless they may have other applications)
-
-// Remove direction-based adjacency from ConnectedComponents filter
-// Changed mind about this one; might as well leave it in there, otherwise the
-//   implementation used is completely overkill and should probably be re-written.
-// Also we may want to do a stats method sensitivity comparison some day
-// TODO Instead the following can be done:
-// * Use the Directions::Set class to define adjacency, instead of an angular threshold
-//     Note that this will require moving src/dwi/directions/ to lib/
-
-
-
 const char* filters[] = { "fft", "gradient", "median", "smooth", NULL };
 
 
