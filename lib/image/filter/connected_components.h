@@ -349,9 +349,9 @@ namespace MR
         template <class InfoType>
         ConnectedComponents (const InfoType& in) :
             Base (in),
-            largest_only (false),
+            largest_only_ (false),
             angular_threshold_(15.0),
-            do_26_connectivity (false)
+            do_26_connectivity_ (false)
         {
           if (this->ndim() > 4)
             throw Exception ("Cannot run connected components analysis with more than 4 dimensions");
