@@ -48,6 +48,7 @@ void usage ()
   + "capture.folder path\n  Set the output folder for the screen capture tool"
   + "capture.prefix path\n  Set the output file prefix for the screen capture tool"
   + "capture.grab\n  Start the screen capture process"
+  + "fixel.load path\n  Load the specified MRtrix sparse image file (.msf) into the fixel tool"
   ;
 
   ARGUMENTS

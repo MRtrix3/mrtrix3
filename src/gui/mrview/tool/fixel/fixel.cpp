@@ -221,9 +221,6 @@ namespace MR
         Fixel::~Fixel () {}
 
 
-
-
-
         void Fixel::draw (const Projection& transform, bool is_3D, int axis, int slice)
         {
           not_3D = !is_3D;
@@ -236,9 +233,6 @@ namespace MR
         }
 
 
-
-
-
         void Fixel::drawOverlays (const Projection& transform)
         {
           for (int i = 0; i < fixel_list_model->rowCount(); ++i) {
@@ -246,9 +240,6 @@ namespace MR
               dynamic_cast<FixelImage*>(fixel_list_model->items[i])->renderColourBar (transform);
           }
         }
-
-
-
 
 
         void Fixel::fixel_open_slot ()
@@ -276,7 +267,8 @@ namespace MR
         }
 
 
-        void Fixel::toggle_shown_slot (const QModelIndex& index, const QModelIndex& index2) {
+        void Fixel::toggle_shown_slot (const QModelIndex& index, const QModelIndex& index2)
+        {
           if (index.row() == index2.row()) {
             fixel_list_view->setCurrentIndex(index);
           } else {
@@ -291,7 +283,8 @@ namespace MR
         }
 
 
-        void Fixel::hide_all_slot () {
+        void Fixel::hide_all_slot ()
+        {
           window.updateGL();
         }
 
@@ -386,13 +379,15 @@ namespace MR
         }
 
 
-        void Fixel::opacity_slot (int opacity) {
+        void Fixel::opacity_slot (int opacity)
+        {
           line_opacity = Math::pow2 (static_cast<float>(opacity)) / 1.0e6f;
           window.updateGL();
         }
 
 
-        void Fixel::line_thickness_slot (int thickness) {
+        void Fixel::line_thickness_slot (int thickness)
+        {
           line_thickness = static_cast<float>(thickness) / 200.0f;
           window.updateGL();
         }
@@ -485,6 +480,7 @@ namespace MR
 
         }
 
+
         void Fixel::reset_intensity_slot ()
         {
           QModelIndexList indices = fixel_list_view->selectionModel()->selectedIndexes();
@@ -502,7 +498,6 @@ namespace MR
             fixel_list_model->get_fixel_image (indices[i])->set_invert_scale (invert_scale->isChecked());
           window.updateGL();
         }
-
 
 
         void Fixel::on_set_scaling_slot ()
@@ -534,7 +529,6 @@ namespace MR
         }
 
 
-
         void Fixel::threshold_lower_value_changed ()
         {
           if (threshold_lower_box->isChecked()) {
@@ -544,7 +538,6 @@ namespace MR
             window.updateGL();
           }
         }
-
 
 
         void Fixel::threshold_upper_value_changed ()
@@ -558,18 +551,18 @@ namespace MR
         }
 
 
-//        bool Fixel::process_batch_command (const std::string& cmd, const std::string& args)
-//        {
-//          // BATCH_COMMAND fixel.load path # Load the specified tracks file into the fixel tool
-//          if (cmd == "tractography.load") {
-//            std::vector<std::string> list (1, args);
-//            try { fixel_list_model->add_items (list, window, *this); }
-//            catch (Exception& E) { E.display(); }
-//            return true;
-//          }
-//
-//          return false;
-//        }
+        bool Fixel::process_batch_command (const std::string& cmd, const std::string& args)
+        {
+          // BATCH_COMMAND fixel.load path # Load the specified MRtrix sparse image file (.msf) into the fixel tool
+          if (cmd == "fixel.load") {
+            std::vector<std::string> list (1, args);
+            try { fixel_list_model->add_items (list , *this); }
+            catch (Exception& E) { E.display(); }
+            return true;
+          }
+
+          return false;
+        }
 
 
       }

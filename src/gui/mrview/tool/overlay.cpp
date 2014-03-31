@@ -269,7 +269,8 @@ namespace MR
 
 
 
-        void Overlay::toggle_shown_slot (const QModelIndex& index, const QModelIndex& index2) {
+        void Overlay::toggle_shown_slot (const QModelIndex& index, const QModelIndex& index2)
+        {
           if (index.row() == index2.row()) {
             image_list_view->setCurrentIndex(index);
           } else {
@@ -284,7 +285,8 @@ namespace MR
         }
 
 
-        void Overlay::update_slot (int unused) {
+        void Overlay::update_slot (int unused)
+        {
           updateGL();
         }
 

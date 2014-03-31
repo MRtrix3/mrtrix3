@@ -33,7 +33,6 @@ namespace MR
       {
 
 
-
         FixelImage::FixelImage (const std::string& filename, Fixel& fixel_tool) :
           Displayable (filename),
           show_colour_bar (true),
@@ -60,7 +59,9 @@ namespace MR
             load_image();
           }
 
-        FixelImage::~FixelImage() {
+
+        FixelImage::~FixelImage()
+        {
           if (vertex_buffer)
             gl::DeleteBuffers (1, &vertex_buffer);
           if (vertex_array_object)
@@ -68,6 +69,7 @@ namespace MR
           if (value_buffer)
             gl::DeleteBuffers (1, &value_buffer);
         }
+
 
         std::string FixelImage::Shader::vertex_shader_source (const Displayable& fixel)
         {
@@ -131,7 +133,6 @@ namespace MR
         }
 
 
-
         std::string FixelImage::Shader::fragment_shader_source (const Displayable& fixel)
         {
           std::string source =
@@ -170,7 +171,6 @@ namespace MR
         }
 
 
-
         void FixelImage::Shader::update (const Displayable& object)
         {
           const FixelImage& fixel (dynamic_cast<const FixelImage&> (object));
@@ -180,8 +180,8 @@ namespace MR
         }
 
 
-
-        void FixelImage::render (const Projection& projection, int axis, int slice) {
+        void FixelImage::render (const Projection& projection, int axis, int slice)
+        {
 
           start (fixel_shader);
           projection.set (fixel_shader);
@@ -229,8 +229,8 @@ namespace MR
         }
 
 
-        void FixelImage::load_image () {
-
+        void FixelImage::load_image ()
+        {
           for (size_t dim = 0; dim < 3; ++dim) {
             slice_fixel_indices[dim].resize (fixel_vox.dim(dim));
             slice_fixel_sizes[dim].resize (fixel_vox.dim(dim));
@@ -289,8 +289,6 @@ namespace MR
           gl::EnableVertexAttribArray (3);
           gl::VertexAttribPointer (3, 1, gl::FLOAT, gl::FALSE_, 0, (void*)(sizeof(float)));
         }
-
-
       }
     }
   }

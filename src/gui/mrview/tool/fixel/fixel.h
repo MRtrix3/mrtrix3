@@ -48,7 +48,7 @@ namespace MR
 
             void draw (const Projection& transform, bool is_3D, int axis, int slice);
             void drawOverlays (const Projection& transform);
-//            bool process_batch_command (const std::string& cmd, const std::string& args);
+            bool process_batch_command (const std::string& cmd, const std::string& args);
 
             QPushButton* hide_all_button;
             float line_thickness;
@@ -95,11 +95,6 @@ namespace MR
             QSlider* opacity_slider;
             QSlider* line_thickness_slider;
             QGroupBox* crop_to_slice;
-
-            void updateGL() {
-//              window.get_current_mode()->update_overlays = true; TODO
-              window.updateGL();
-            }
 
         };
       }
