@@ -20,11 +20,14 @@
 
 */
 
+#include <complex>
+
 #include "command.h"
 #include "image/buffer.h"
 #include "image/buffer_preload.h"
 #include "image/voxel.h"
 #include "image/filter/base.h"
+#include "image/filter/fft.h"
 #include "image/filter/gradient.h"
 #include "image/filter/median.h"
 #include "image/filter/smooth.h"
@@ -38,10 +41,6 @@ using namespace App;
 // TODO Check documentation of each filter; e.g. example use cases explicitly create
 //   new header and manually set data type, this should be done within the filter constructor
 
-// TODO Modify FFT to conform to code style, make available in mrfilter
-// Will need to split within mrfilter if it's to be output as a complex image; if the
-//   magnitude is taken (and the output is not complex either), can follow the normal chain
-
 // TODO Rather than trying to provide a custom boolean implementation of the median() function,
 //   just create a separate MedianBool image filter?
 
@@ -51,10 +50,6 @@ using namespace App;
 // TODO The resize operator needs to be able to modify the underlying Info class
 // For now, this remains unchanged i.e. doesn't derive from Filter::Base
 
-// For any filter involving connectivity, it would be neat to be able to specify the
-//   neighbourhood size i.e. 6, 18, 26
-// Would greatly complicate the current implementations of dilate & erode; probably not worth it
-
 // Remove direction-based adjacency from ConnectedComponents filter
 // Changed mind about this one; might as well leave it in there, otherwise the
 //   implementation used is completely overkill and should probably be re-written.
@@ -63,13 +58,26 @@ using namespace App;
 // * Use the Directions::Set class to define adjacency, instead of an angular threshold
 //     Note that this will require moving src/dwi/directions/ to lib/
 
-// Remove lib/image/filter/lcc.h
-// Actually, am tempted to keep LCC as a separate filter;
-//   implementation is a whole lot simpler and should be less memory overhead
+
+
+const char* filters[] = { "fft", "gradient", "median", "smooth", NULL };
 
 
 
-const char* filters[] = { "gradient", "median", "smooth", NULL };
+const OptionGroup FFTOption = OptionGroup ("Options for FFT filter")
+
+  + Option ("axes", "the axes along which to apply the Fourier Transform. "
+            "By default, the transform is applied along the three spatial axes. "
+            "Provide as a comma-separate list of axis indices.")
+    + Argument ("list").type_sequence_int()
+
+  + Option ("inverse", "apply the inverse FFT")
+
+  + Option ("magnitude", "output a magnitude image rather than a complex-valued image")
+
+  + Option ("centre_zero", "re-arrange the FFT results so that the zero-frequency component "
+            "appears in the centre of the image, rather than at the edges)");
+
 
 
 
@@ -127,6 +135,21 @@ const OptionGroup SmoothOption = OptionGroup ("Options for smooth filter")
 
 
 
+
+
+
+Image::Filter::Base* create_fft_filter (Image::Buffer<cdouble>::voxel_type& input)
+{
+
+  const bool inverse = get_options ("inverse").size();
+  Image::Filter::FFT* filter = new Image::Filter::FFT (input, inverse);
+  Options opt = get_options ("axes");
+  if (opt.size())
+    filter->set_axes (opt[0][0]);
+  filter->set_centre_zero (get_options ("centre_zero").size());
+  return filter;
+
+}
 
 
 
@@ -203,6 +226,19 @@ Image::Filter::Base* create_smooth_filter (Image::BufferPreload<float>::voxel_ty
 
 
 
+void set_strides (Image::Header& header)
+{
+  Options opt = get_options ("stride");
+  if (opt.size()) {
+    std::vector<int> strides = opt[0][0];
+    if (strides.size() > header.ndim())
+      throw Exception ("too many axes supplied to -stride option");
+    for (size_t n = 0; n < strides.size(); ++n)
+      header.stride(n) = strides[n];
+  }
+}
+
+
 
 
 void usage ()
@@ -212,7 +248,7 @@ void usage ()
   DESCRIPTION
   + "Perform filtering operations on 3D / 4D MR images. For 4D images, each 3D volume is processed independently."
 
-  + "The available filters are: gradient, median, smooth."
+  + "The available filters are: fft, gradient, median, smooth."
 
   + "Each filter has its own unique set of optional parameters.";
 
@@ -224,6 +260,7 @@ void usage ()
 
 
   OPTIONS
+  + FFTOption
   + GradientOption
   + MedianOption
   + SmoothOption
@@ -235,30 +272,67 @@ void usage ()
 
 void run () {
 
-  Image::BufferPreload<float> input_data (argument[0]);
-  Image::BufferPreload<float>::voxel_type input_voxel (input_data);
-
+  Image::Header input_header (argument[0]);
   const size_t filter_index = argument[1];
+
+  // Separate code path for FFT filter
+  if (!filter_index) {
+
+    // Gets preloaded by the FFT filter anyways, so just use a buffer
+    // FIXME Had to use cdouble throughout; seems to fail at compile time even trying to
+    //   convert between cfloat and cdouble...
+    Image::Buffer<cdouble> input_data (input_header);
+    Image::Buffer<cdouble>::voxel_type input_voxel (input_data);
+    Image::Filter::FFT* filter = (dynamic_cast<Image::Filter::FFT*> (create_fft_filter (input_voxel)));
+
+    Image::Header header;
+    header.info() = filter->info();
+    set_strides (header);
+
+    filter->set_message (std::string("applying FFT filter to image " + std::string(argument[0]) + "..."));
+
+    if (get_options ("magnitude").size()) {
+
+      Image::BufferScratch<cdouble> temp_data (header, "complex FFT result");
+      Image::BufferScratch<cdouble>::voxel_type temp_voxel (temp_data);
+      (*filter) (input_voxel, temp_voxel);
+
+      header.datatype() = DataType::Float32;
+      Image::Buffer<float> output_data (argument[2], header);
+      Image::Buffer<float>::voxel_type output_voxel (output_data);
+
+      Image::LoopInOrder loop (output_voxel);
+      for (loop.start (temp_voxel, output_voxel); loop.ok(); loop.next (temp_voxel, output_voxel))
+        output_voxel.value() = std::abs (cdouble(temp_voxel.value()));
+
+    } else {
+
+      Image::Buffer<cdouble> output_data (argument[2], header);
+      Image::Buffer<cdouble>::voxel_type output_voxel (output_data);
+      (*filter) (input_voxel, output_voxel);
+
+    }
+
+    delete filter;
+    return;
+
+  }
+
+  Image::BufferPreload<float> input_data (input_header);
+  Image::BufferPreload<float>::voxel_type input_voxel (input_data);
 
   Image::Filter::Base* filter = NULL;
   switch (filter_index) {
-    case 0: filter = create_gradient_filter (input_voxel); break;
-    case 1: filter = create_median_filter (input_voxel); break;
-    case 2: filter = create_smooth_filter (input_voxel); break;
+    case 0: assert (0); break;
+    case 1: filter = create_gradient_filter (input_voxel); break;
+    case 2: filter = create_median_filter   (input_voxel); break;
+    case 3: filter = create_smooth_filter   (input_voxel); break;
     default: assert (0);
   }
 
   Image::Header header;
   header.info() = filter->info();
-
-  Options opt = get_options ("stride");
-  if (opt.size()) {
-    std::vector<int> strides = opt[0][0];
-    if (strides.size() > input_data.ndim())
-      throw Exception ("too many axes supplied to -stride option");
-    for (size_t n = 0; n < strides.size(); ++n)
-      header.stride(n) = strides[n];
-  }
+  set_strides (header);
 
   Image::Buffer<float> output_data (argument[2], header);
   Image::Buffer<float>::voxel_type output_voxel (output_data);
@@ -266,9 +340,10 @@ void run () {
   filter->set_message (std::string("applying ") + std::string(argument[1]) + " filter to image " + std::string(argument[0]) + "...");
 
   switch (filter_index) {
-    case 0: (*dynamic_cast<Image::Filter::Gradient*> (filter)) (input_voxel, output_voxel); break;
-    case 1: (*dynamic_cast<Image::Filter::Median*>   (filter)) (input_voxel, output_voxel); break;
-    case 2: (*dynamic_cast<Image::Filter::Smooth*>   (filter)) (input_voxel, output_voxel); break;
+    case 0: assert (0); break;
+    case 1: (*dynamic_cast<Image::Filter::Gradient*> (filter)) (input_voxel, output_voxel); break;
+    case 2: (*dynamic_cast<Image::Filter::Median*>   (filter)) (input_voxel, output_voxel); break;
+    case 3: (*dynamic_cast<Image::Filter::Smooth*>   (filter)) (input_voxel, output_voxel); break;
   }
 
   delete filter;
