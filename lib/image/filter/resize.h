@@ -24,8 +24,8 @@
 #define __image_filter_resize_h__
 
 #include "image/info.h"
-#include "image/filter/gaussian_smooth.h"
 #include "image/filter/reslice.h"
+#include "image/filter/smooth.h"
 #include "image/interp/nearest.h"
 #include "image/interp/linear.h"
 #include "image/interp/cubic.h"
@@ -68,12 +68,14 @@ namespace MR
        *
        * \endcode
        */
-      class Resize : public Info
+      class Resize : public Base
       {
 
         public:
-          template <class InputVoxelType>
-            Resize (const InputVoxelType& in) : Info (in), interp_type(2) { }
+          template <class InfoType>
+          Resize (const InfoType& in) :
+              Base (in),
+              interp_type (2) { }
 
 
           void set_voxel_size (float size)
@@ -88,14 +90,13 @@ namespace MR
             if (voxel_size.size() != 3)
               throw Exception ("the voxel size must be defined using a value for all three dimensions.");
 
-            Math::Matrix<float> transform (this->transform());
             for (size_t j = 0; j < 3; ++j) {
               if (voxel_size[j] <= 0.0)
                 throw Exception ("the voxel size must be larger than zero");
-              this->dim(j) = Math::ceil (this->dim(j) * this->vox(j) / voxel_size[j]);
+              axes_[j].dim = Math::ceil (axes_[j].dim * axes_[j].vox / voxel_size[j]);
               for (size_t i = 0; i < 3; ++i)
-                this->transform()(i,3) += 0.5 * (voxel_size[j] - this->vox(j)) * transform(i,j);
-              this->vox(j) = voxel_size[j];
+                transform_(i,3) += 0.5 * (voxel_size[j] - axes_[j].vox) * transform_(i,j);
+              axes_[j].vox = voxel_size[j];
             }
           }
 
@@ -155,7 +156,7 @@ namespace MR
 
 
               if (do_smoothing) {
-                Filter::GaussianSmooth<> smooth_filter (input);
+                Filter::Smooth smooth_filter (input);
                 smooth_filter.set_stdev (stdev);
                 BufferScratch<float> smoothed_data (input);
                 BufferScratch<float>::voxel_type smoothed_voxel (smoothed_data);

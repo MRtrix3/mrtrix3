@@ -27,9 +27,10 @@
 #include "image/buffer.h"
 #include "image/buffer_scratch.h"
 #include "image/voxel.h"
-#include "image/filter/optimal_threshold.h"
-#include "image/filter/median3D.h"
+#include "image/filter/base.h"
 #include "image/filter/connected_components.h"
+#include "image/filter/median.h"
+#include "image/filter/optimal_threshold.h"
 #include "image/histogram.h"
 #include "image/copy.h"
 #include "image/loop.h"
@@ -56,32 +57,36 @@ namespace MR
        * Buffer<value_type> input_data (argument[0]);
        * Buffer<value_type>::voxel_type input_voxel (input_data);
        *
-       * Filter::DWIBrainMask filter (input_data);
+       * Math::Matrix<float> grad = DWI::get_valid_DW_scheme<float> (input_data);
+       *
+       * Filter::DWIBrainMask filter (input_data, grad);
        * Header mask_header (input_data);
        * mask_header.info() = filter.info();
        *
-       * Buffer<int> mask_data (mask_header, argument[1]);
-       * Buffer<int>::voxel_type mask_voxel (mask_data);
+       * Buffer<bool> mask_data (mask_header, argument[1]);
+       * Buffer<bool>::voxel_type mask_voxel (mask_data);
        *
        * filter(input_voxel, mask_voxel);
        *
        * \endcode
        */
-      class DWIBrainMask : public ConstInfo
+      class DWIBrainMask : public Base
       {
 
         public:
 
-          template <class InputVoxelType>
-          DWIBrainMask (const InputVoxelType & input) :
-              ConstInfo (input) {
+          template <class InfoType>
+          DWIBrainMask (const InfoType& input, const Math::Matrix<float>& grad) :
+              Base (input),
+              grad (grad)
+          {
             axes_.resize(3);
             datatype_ = DataType::Bit;
           }
 
 
           template <class InputVoxelType, class OutputVoxelType>
-          void operator() (InputVoxelType& input, Math::Matrix<float>& grad, OutputVoxelType& output) {
+          void operator() (InputVoxelType& input, OutputVoxelType& output) {
               typedef typename InputVoxelType::value_type value_type;
 
               Info info (input);
@@ -92,7 +97,9 @@ namespace MR
               BufferScratch<bool> mask_data (info, "DWI mask");
               BufferScratch<bool>::voxel_type mask_voxel (mask_data);
 
-              ProgressBar progress ("computing dwi brain mask... ");
+              Ptr<ProgressBar> progress;
+              if (message.size())
+                progress = new ProgressBar (message);
 
               // Loop over each shell, including b=0, in turn
               DWI::Shells shells (grad);
@@ -110,18 +117,24 @@ namespace MR
                   }
                   shell_voxel.value() = mean / value_type(shell.count());
                 }
+                if (progress)
+                  ++(*progress);
 
                 // Threshold the mean intensity image for this shell
                 OptimalThreshold threshold_filter (shell_data);
                 BufferScratch<bool> shell_mask_data (threshold_filter);
                 BufferScratch<bool>::voxel_type shell_mask_voxel (shell_mask_data);
                 threshold_filter (shell_voxel, shell_mask_voxel);
+                if (progress)
+                  ++(*progress);
 
                 // Add this mask to the master
                 for (loop.start (mask_voxel, shell_mask_voxel); loop.ok(); loop.next (mask_voxel, shell_mask_voxel)) {
                   if (shell_mask_voxel.value())
                     mask_voxel.value() = true;
                 }
+                if (progress)
+                  ++(*progress);
 
               }
 
@@ -129,21 +142,33 @@ namespace MR
 
               BufferScratch<bool> temp_data (info, "temporary mask");
               BufferScratch<bool>::voxel_type temp_voxel (temp_data);
-              Median3D median_filter (mask_voxel);
+              Median median_filter (mask_voxel);
               median_filter (mask_voxel, temp_voxel);
+              if (progress)
+                ++(*progress);
 
               ConnectedComponents connected_filter (temp_voxel);
               connected_filter.set_largest_only (true);
               connected_filter (temp_voxel, temp_voxel);
+              if (progress)
+                ++(*progress);
 
               for (loop.start (temp_voxel); loop.ok(); loop.next (temp_voxel))
                 temp_voxel.value() = !temp_voxel.value();
+              if (progress)
+                ++(*progress);
 
               connected_filter (temp_voxel, temp_voxel);
+              if (progress)
+                ++(*progress);
 
               for (loop.start (temp_voxel, output); loop.ok(); loop.next (temp_voxel, output))
                 output.value() = !temp_voxel.value();
           }
+
+        protected:
+          const Math::Matrix<float>& grad;
+
       };
       //! @}
     }

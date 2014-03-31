@@ -173,7 +173,7 @@ namespace MR
                 moving_resize_filter.set_interp_type (1);
                 Image::BufferScratch<float> moving_resized (moving_resize_filter.info());
                 Image::BufferScratch<float>::voxel_type moving_resized_vox (moving_resized);
-                Image::Filter::GaussianSmooth<float> moving_smooth_filter (moving_resized_vox);
+                Image::Filter::Smooth moving_smooth_filter (moving_resized_vox);
 
                 Image::BufferScratch<float> moving_resized_smoothed (moving_smooth_filter.info());
                 Image::BufferScratch<float>::voxel_type moving_resized_smoothed_vox (moving_resized_smoothed);
@@ -183,7 +183,7 @@ namespace MR
                 template_resize_filter.set_interp_type (1);
                 Image::BufferScratch<float> template_resized (template_resize_filter.info());
                 Image::BufferScratch<float>::voxel_type template_resized_vox (template_resized);
-                Image::Filter::GaussianSmooth<float> template_smooth_filter (template_resized_vox);
+                Image::Filter::Smooth template_smooth_filter (template_resized_vox);
                 Image::BufferScratch<float> template_resized_smoothed (template_smooth_filter.info());
                 Image::BufferScratch<float>::voxel_type template_resized_smoothed_vox (template_resized_smoothed);
 
