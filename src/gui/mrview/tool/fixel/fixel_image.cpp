@@ -35,8 +35,6 @@ namespace MR
 
         FixelImage::FixelImage (const std::string& filename, Fixel& fixel_tool) :
           Displayable (filename),
-          show_colour_bar (true),
-          color_type (Value),
           filename (filename),
           fixel_tool (fixel_tool),
           header (filename),
@@ -46,7 +44,11 @@ namespace MR
           colourbar_position_index (4),
           slice_fixel_indices (3),
           slice_fixel_sizes (3),
-          slice_fixel_counts (3)
+          slice_fixel_counts (3),
+          line_length_multiplier (1.0),
+          line_length_by_value (false),
+          color_type (Value),
+          show_colour_bar (true)
           {
             set_allowed_features (true, true, false);
             colourmap = 1;
@@ -182,7 +184,6 @@ namespace MR
 
         void FixelImage::render (const Projection& projection, int axis, int slice)
         {
-
           start (fixel_shader);
           projection.set (fixel_shader);
 
@@ -231,23 +232,47 @@ namespace MR
 
         void FixelImage::load_image ()
         {
+          if (vertex_buffer)
+            gl::DeleteBuffers (1, &vertex_buffer);
+          if (vertex_array_object)
+            gl::DeleteVertexArrays (1, &vertex_array_object);
+          if (value_buffer)
+            gl::DeleteBuffers (1, &value_buffer);
+
           for (size_t dim = 0; dim < 3; ++dim) {
+            slice_fixel_indices[dim].clear();
+            slice_fixel_sizes[dim].clear();
+            slice_fixel_counts[dim].clear();
             slice_fixel_indices[dim].resize (fixel_vox.dim(dim));
             slice_fixel_sizes[dim].resize (fixel_vox.dim(dim));
             slice_fixel_counts[dim].resize (fixel_vox.dim(dim));
+          }
+
+          MR::Image::LoopInOrder loop (fixel_vox);
+          // we only need this inital pass through the image if we want to use the max value to define the largest line length
+          if (line_length_by_value) {
+            for (loop.start (fixel_vox); loop.ok(); loop.next (fixel_vox)) {
+              for (size_t f = 0; f != fixel_vox.value().size(); ++f) {
+                if (fixel_vox.value()[f].value > value_max)
+                  value_max = fixel_vox.value()[f].value;
+                if (fixel_vox.value()[f].value < value_min)
+                  value_min = fixel_vox.value()[f].value;
+              }
+            }
           }
 
           std::vector<Point<float> > buffer;
           std::vector<float> values;
           std::vector<GLint> starts;
           std::vector<GLint> sizes;
-          MR::Image::LoopInOrder loop (fixel_vox);
           for (loop.start (fixel_vox); loop.ok(); loop.next (fixel_vox)) {
             for (size_t f = 0; f != fixel_vox.value().size(); ++f) {
-              if (fixel_vox.value()[f].value > value_max)
-                value_max = fixel_vox.value()[f].value;
-              if (fixel_vox.value()[f].value < value_min)
-                value_min = fixel_vox.value()[f].value;
+              if (!line_length_by_value) {
+                if (fixel_vox.value()[f].value > value_max)
+                  value_max = fixel_vox.value()[f].value;
+                if (fixel_vox.value()[f].value < value_min)
+                  value_min = fixel_vox.value()[f].value;
+              }
               header_transform.voxel2scanner (fixel_vox, voxel_pos);
               for (size_t dim = 0; dim < 3; ++dim) {
                 slice_fixel_indices[dim][fixel_vox[dim]].push_back (buffer.size());
@@ -258,8 +283,13 @@ namespace MR
               values.push_back (fixel_vox.value()[f].value);
               values.push_back (fixel_vox.value()[f].value);
               buffer.push_back (Point<float>());
-              buffer.push_back (voxel_pos + (fixel_vox.value()[f].dir *  line_length));
-              buffer.push_back (voxel_pos + (fixel_vox.value()[f].dir * -line_length));
+              if (line_length_by_value) {
+                buffer.push_back (voxel_pos + (fixel_vox.value()[f].dir * (fixel_vox.value()[f].value / value_max) * line_length_multiplier));
+                buffer.push_back (voxel_pos + (fixel_vox.value()[f].dir * (-fixel_vox.value()[f].value / value_max)) * line_length_multiplier);
+              } else {
+                buffer.push_back (voxel_pos + (fixel_vox.value()[f].dir *  line_length * line_length_multiplier));
+                buffer.push_back (voxel_pos + (fixel_vox.value()[f].dir * -line_length) * line_length_multiplier);
+              }
             }
           }
 

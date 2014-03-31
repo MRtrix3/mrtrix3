@@ -70,17 +70,28 @@ namespace MR
 
               void load_image ();
 
-              void set_colour (float c[3])
-              {
+              void set_colour (float c[3]) {
                 colour[0] = c[0];
                 colour[1] = c[1];
                 colour[2] = c[2];
               }
 
-              bool show_colour_bar;
-              ColourType color_type;
-              float colour[3];
-              float line_length;
+              void set_line_length_multiplier (float value) {
+                line_length_multiplier = value;
+              }
+
+              void set_line_length_by_value (bool value) {
+                line_length_by_value = value;
+              }
+
+              void set_colour_type (ColourType value) {
+                color_type = value;
+              }
+
+              void set_show_colour_bar (bool value) {
+                show_colour_bar = value;
+              }
+
 
             private:
               std::string filename;
@@ -98,6 +109,12 @@ namespace MR
               std::vector<std::vector<std::vector<GLint> > > slice_fixel_indices;
               std::vector<std::vector<std::vector<GLsizei> > > slice_fixel_sizes;
               std::vector<std::vector<GLsizei> > slice_fixel_counts;
+              float colour[3];
+              float line_length;
+              float line_length_multiplier;
+              bool line_length_by_value;
+              ColourType color_type;
+              bool show_colour_bar;
         };
 
       }
