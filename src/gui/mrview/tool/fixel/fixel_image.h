@@ -80,8 +80,16 @@ namespace MR
                 line_length_multiplier = value;
               }
 
+              float get_line_length_multiplier () {
+                return line_length_multiplier;
+              }
+
               void set_line_length_by_value (bool value) {
                 line_length_by_value = value;
+              }
+
+              bool get_line_length_by_value () {
+                return line_length_by_value;
               }
 
               void set_colour_type (ColourType value) {

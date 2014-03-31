@@ -325,12 +325,16 @@ namespace MR
             min_value->setValue (NAN);
             threshold_lower->setValue (NAN);
             threshold_upper->setValue (NAN);
+            line_length->setValue (NAN);
+            line_length_by_value->setChecked (false);
             return;
           }
 
           float rate = 0.0f, min_val = 0.0f, max_val = 0.0f;
           float lower_threshold_val = 0.0f, upper_threshold_val = 0.0f;
+          float line_length_multiplier = 0.0f;
           int num_lower_threshold = 0, num_upper_threshold = 0;
+          int num_line_length_by_value = 0;
           int colourmap_index = -2;
           for (int i = 0; i < indices.size(); ++i) {
             FixelImage* fixel = dynamic_cast<FixelImage*> (fixel_list_model->get_fixel_image (indices[i]));
@@ -351,6 +355,8 @@ namespace MR
               fixel->greaterthan = fixel->intensity_max();
             lower_threshold_val += fixel->lessthan;
             upper_threshold_val += fixel->greaterthan;
+            line_length_multiplier += fixel->get_line_length_multiplier();
+            num_line_length_by_value += fixel->get_line_length_by_value();
           }
 
           rate /= indices.size();
@@ -358,6 +364,7 @@ namespace MR
           max_val /= indices.size();
           lower_threshold_val /= indices.size();
           upper_threshold_val /= indices.size();
+          line_length_multiplier /= indices.size();
 
           if (colourmap_index < 0)
             for (size_t i = 0; MR::GUI::MRView::ColourMap::maps[i].name; ++i )
@@ -369,6 +376,7 @@ namespace MR
           max_value->setRate (rate);
           min_value->setValue (min_val);
           max_value->setValue (max_val);
+          line_length->setValue (line_length_multiplier);
 
           threshold_lower->setValue (lower_threshold_val);
           threshold_lower_box->setCheckState (num_lower_threshold ?
@@ -385,6 +393,12 @@ namespace MR
                 Qt::PartiallyChecked ) :
                 Qt::Unchecked);
           threshold_upper->setRate (rate);
+
+          line_length_by_value->setChecked (num_line_length_by_value ?
+              ( num_line_length_by_value == indices.size() ?
+                Qt::Checked :
+                Qt::PartiallyChecked ) :
+                Qt::Unchecked);
         }
 
 
