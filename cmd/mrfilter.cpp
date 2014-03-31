@@ -35,12 +35,12 @@ using namespace App;
 
 
 
-// TODO Make sure the filters make use of the progress message member
-
 // TODO Check documentation of each filter; e.g. example use cases explicitly create
 //   new header and manually set data type, this should be done within the filter constructor
 
 // TODO Modify FFT to conform to code style, make available in mrfilter
+// Will need to split within mrfilter if it's to be output as a complex image; if the
+//   magnitude is taken (and the output is not complex either), can follow the normal chain
 
 // TODO Rather than trying to provide a custom boolean implementation of the median() function,
 //   just create a separate MedianBool image filter?
@@ -51,11 +51,9 @@ using namespace App;
 // TODO The resize operator needs to be able to modify the underlying Info class
 // For now, this remains unchanged i.e. doesn't derive from Filter::Base
 
-// TODO Modify the ProgressBar class to automatically add the triple dot point and space
-// Remove this content from all calling locations
-
-// TODO For any filter involving connectivity, it would be neat to be able to specify the
+// For any filter involving connectivity, it would be neat to be able to specify the
 //   neighbourhood size i.e. 6, 18, 26
+// Would greatly complicate the current implementations of dilate & erode; probably not worth it
 
 // Remove direction-based adjacency from ConnectedComponents filter
 // Changed mind about this one; might as well leave it in there, otherwise the
@@ -86,7 +84,6 @@ const OptionGroup GradientOption = OptionGroup ("Options for gradient filter")
             "3 values, one for each axis.")
   + Argument ("sigma").type_sequence_float()
 
-  // TODO Implement
   + Option ("greyscale", "output the image gradient as a greyscale image, rather "
             "than the default x,y,z components")
 
@@ -137,7 +134,9 @@ const OptionGroup SmoothOption = OptionGroup ("Options for smooth filter")
 Image::Filter::Base* create_gradient_filter (Image::BufferPreload<float>::voxel_type& input)
 {
 
-  Image::Filter::Gradient* filter = new Image::Filter::Gradient (input);
+  const bool greyscale = get_options ("greyscale").size();
+
+  Image::Filter::Gradient* filter = new Image::Filter::Gradient (input, greyscale);
 
   std::vector<float> stdev;
   Options opt = get_options ("stdev");

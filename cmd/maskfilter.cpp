@@ -169,7 +169,7 @@ void run () {
   Image::Buffer<bool> output_data (argument[2], header);
   Image::Buffer<bool>::voxel_type output_voxel (output_data);
 
-  filter->set_message (std::string("applying ") + std::string(argument[1]) + " filter to image " + std::string(argument[0]));
+  filter->set_message (std::string("applying ") + std::string(argument[1]) + " filter to image " + std::string(argument[0]) + "... ");
 
   switch (filter_index) {
     case 0: (*dynamic_cast<Image::Filter::Dilate*>                    (filter)) (input_voxel, output_voxel); break;
