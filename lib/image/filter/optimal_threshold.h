@@ -254,8 +254,8 @@ namespace MR
        * Header mask_header (input_data);
        * mask_header.info() = filter.info();
        *
-       * Buffer<int> mask_data (mask_header, argument[1]);
-       * Buffer<int>::voxel_type mask_voxel (mask_data);
+       * Buffer<bool> mask_data (mask_header, argument[1]);
+       * Buffer<bool>::voxel_type mask_voxel (mask_data);
        *
        * filter(input_voxel, mask_voxel);
        *
@@ -266,7 +266,10 @@ namespace MR
         public:
           template <class InfoType>
           OptimalThreshold (const InfoType& info) :
-              Base (info) { }
+              Base (info)
+          {
+            datatype_ = DataType::Bit;
+          }
 
 
           template <class InputVoxelType, class OutputVoxelType>

@@ -38,9 +38,6 @@ using namespace App;
 
 
 
-// TODO Check documentation of each filter; e.g. example use cases explicitly create
-//   new header and manually set data type, this should be done within the filter constructor
-
 // TODO Rather than trying to provide a custom boolean implementation of the median() function,
 //   just create a separate MedianBool image filter?
 

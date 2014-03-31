@@ -44,15 +44,15 @@ namespace MR
       /*!
        * Typical usage:
        * \code
-       * Buffer<value_type> input_data (argument[0]);
-       * Buffer<value_type>::voxel_type input_voxel (input_data);
+       * Buffer<bool> input_data (argument[0]);
+       * Buffer<bool>::voxel_type input_voxel (input_data);
        *
        * Filter::Erode erode (input_data);
        * Header header (input_data);
        * header.info() = erode.info();
        *
-       * Buffer<int> output_data (header, argument[1]);
-       * Buffer<int>::voxel_type output_voxel (output_data);
+       * Buffer<bool> output_data (header, argument[1]);
+       * Buffer<bool>::voxel_type output_voxel (output_data);
        * erode (input_voxel, output_voxel);
        *
        * \endcode
@@ -63,9 +63,10 @@ namespace MR
         public:
           template <class InfoType>
           Erode (const InfoType& in) :
-              Base (in)
+              Base (in),
+              npass_ (1)
           {
-            npass_ = 1;
+            datatype_ = DataType::Bit;
           }
 
 

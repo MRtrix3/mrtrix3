@@ -328,16 +328,15 @@ namespace MR
        *
        * Typical usage:
        * \code
-       * Image::BufferPreload<float> src_data (argument[0]);
-       * Image::BufferPreload<float>::voxel_type src (src_data);
+       * Image::BufferPreload<bool> src_data (argument[0]);
+       * Image::BufferPreload<bool>::voxel_type src (src_data);
        * Image::Filter::ConnectedComponents filter (src);
        *
        * Image::Header header (src_data);
        * header.info() = filter.info();
-       * header.datatype() = src_data.datatype();
        *
-       * Image::Buffer<float> dest_data (argument[1], src_data);
-       * Image::Buffer<float>::voxel_type dest (dest_data);
+       * Image::Buffer<uint32_t> dest_data (argument[1], src_data);
+       * Image::Buffer<uint32_t>::voxel_type dest (dest_data);
        *
        * filter (src, dest);
        *
@@ -350,7 +349,9 @@ namespace MR
         template <class InfoType>
         ConnectedComponents (const InfoType& in) :
             Base (in),
-            angular_threshold_(15.0)
+            largest_only (false),
+            angular_threshold_(15.0),
+            do_26_connectivity (false)
         {
           if (this->ndim() > 4)
             throw Exception ("Cannot run connected components analysis with more than 4 dimensions");
@@ -358,8 +359,6 @@ namespace MR
           dim_to_ignore_.resize (this->ndim(), false);
           if (this->ndim() == 4) // Ignore 4D unless explicitly instructed to, or directions provided
             dim_to_ignore_[3] = true;
-          largest_only_ = false;
-          do_26_connectivity_ = false;
         }
 
 

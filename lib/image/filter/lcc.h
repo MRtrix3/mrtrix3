@@ -37,6 +37,36 @@ namespace MR
     namespace Filter
     {
 
+
+
+      /** \addtogroup Filters
+        @{ */
+
+      //! a filter to extract only the largest connected
+      //! component of a mask
+      /*!
+       *
+       * Unline the ConnectedComponents filter, this filter only
+       * extracts the largest-volume connected component from a
+       * mask image. This reduction in complexity allows a
+       * simpler implementation, and means that the output image
+       * is boolean rather than an integer label image.
+       *
+       * Typical usage:
+       * \code
+       * Buffer<bool> input_data (argument[0]);
+       * Buffer<bool>::voxel_type input_voxel (input_data);
+       *
+       * Filter::LargestConnectedComponent lcc (input_data);
+       * Header header (input_data);
+       * header.info() = dilate.info();
+       *
+       * Buffer<bool> output_data (header, argument[1]);
+       * Buffer<bool>::voxel_type output_voxel (output_data);
+       * lcc (input_voxel, output_voxel);
+       *
+       * \endcode
+       */
       class LargestConnectedComponent : public Base
       {
 
