@@ -55,7 +55,7 @@ namespace MR
             alpha = 1.0f;
             set_use_transparency (true);
             colour[0] = colour[1] = colour[2] = 1;
-            line_length = 0.5 * static_cast<float>(fixel_vox.vox(0) + fixel_vox.vox(1) + fixel_vox.vox(2)) / 3.0;
+            line_length = 0.45 * static_cast<float>(fixel_vox.vox(0) + fixel_vox.vox(1) + fixel_vox.vox(2)) / 3.0;
             value_min = std::numeric_limits<float>::infinity();
             value_max = -std::numeric_limits<float>::infinity();
             load_image();
@@ -76,12 +76,15 @@ namespace MR
         std::string FixelImage::Shader::vertex_shader_source (const Displayable& fixel)
         {
            std::string source =
-               "layout (location = 0) in vec3 vertexPosition_modelspace;\n"
+               "layout (location = 0) in vec3 vertexposition_modelspace;\n"
                "layout (location = 1) in vec3 previousVertex;\n"
                "layout (location = 2) in vec3 nextVertex;\n"
-               "layout (location = 3) in float amp;\n"
+               "layout (location = 3) in float value;\n"
                "uniform mat4 MVP;\n"
-               "flat out float amp_out;\n"
+               "uniform float line_length;\n"
+               "uniform float max_value;\n"
+               "uniform bool line_length_by_value;\n"
+               "flat out float value_out;\n"
                "out vec3 fragmentColour;\n";
 
            switch (color_type) {
@@ -96,8 +99,21 @@ namespace MR
 
            source +=
                "void main() {\n"
-               "  gl_Position =  MVP * vec4(vertexPosition_modelspace,1);\n"
-               "  amp_out = amp;\n";
+               "  vec3 dir;\n"
+               "  vec3 vertexposition_length_adjusted;\n"
+               "  if (isnan (previousVertex.x))\n"
+               "    dir = nextVertex - vertexposition_modelspace;\n"
+               "  else if (isnan (nextVertex.x))\n"
+               "    dir = previousVertex - vertexposition_modelspace;\n"
+               "  float length_adjustment;\n"
+               "  if (line_length_by_value)\n"
+               "    length_adjustment = 0.5 * (1.0 - line_length * (value / max_value));\n"
+               "  else\n"
+               "    length_adjustment = 0.5 * (1.0 - line_length);\n"
+               "  vec3 length_adjustment_vector = length_adjustment * dir;\n"
+               "  vertexposition_length_adjusted = vertexposition_modelspace + length_adjustment_vector;\n"
+               "  gl_Position =  MVP * vec4 (vertexposition_length_adjusted, 1);\n"
+               "  value_out = value;\n";
 
            switch (color_type) {
              case Colour:
@@ -109,7 +125,7 @@ namespace MR
                  source += "  float amplitude = clamp (";
                  if (fixel.scale_inverted())
                    source += "1.0 -";
-                 source += " scale * (amp - offset), 0.0, 1.0);\n  ";
+                 source += " scale * (value - offset), 0.0, 1.0);\n  ";
                }
                source +=
                  std::string ("  vec3 color;\n") +
@@ -118,14 +134,7 @@ namespace MR
                break;
              case Direction:
                source +=
-                  "  vec3 dir;\n"
-                  "  if (isnan (previousVertex.x))\n"
-                  "    dir = nextVertex - vertexPosition_modelspace;\n"
-                  "  else if (isnan (nextVertex.x))\n"
-                  "    dir = vertexPosition_modelspace - previousVertex;\n"
-                  "  else\n"
-                  "    dir = nextVertex - previousVertex;\n"
-                  "  fragmentColour = dir;\n";
+                 "  fragmentColour = normalize (abs (dir));\n";
                break;
              default:
                break;
@@ -140,7 +149,7 @@ namespace MR
           std::string source =
               "in float include; \n"
               "out vec3 color;\n"
-              "flat in float amp_out;\n"
+              "flat in float value_out;\n"
               "in vec3 fragmentColour;\n";
 
           if (fixel.use_discard_lower())
@@ -152,12 +161,12 @@ namespace MR
               "void main(){\n";
 
           if (fixel.use_discard_lower())
-            source += "  if (amp_out < lower) discard;\n";
+            source += "  if (value_out < lower) discard;\n";
           if (fixel.use_discard_upper())
-            source += "  if (amp_out > upper) discard;\n";
+            source += "  if (value_out > upper) discard;\n";
 
           source +=
-            std::string("  color = ") + ((color_type == Direction) ? "normalize (abs (fragmentColour))" : "fragmentColour" ) + ";\n";
+            std::string("  color = fragmentColour;\n");
 
           source += "}\n";
           return source;
@@ -186,6 +195,11 @@ namespace MR
         {
           start (fixel_shader);
           projection.set (fixel_shader);
+
+          gl::Uniform1f (gl::GetUniformLocation (fixel_shader, "line_length"), line_length * line_length_multiplier);
+
+          gl::Uniform1f (gl::GetUniformLocation (fixel_shader, "max_value"), value_max);
+          gl::Uniform1f (gl::GetUniformLocation (fixel_shader, "line_length_by_value"), line_length_by_value);
 
           if (use_discard_lower())
             gl::Uniform1f (gl::GetUniformLocation (fixel_shader, "lower"), lessthan);
@@ -232,47 +246,23 @@ namespace MR
 
         void FixelImage::load_image ()
         {
-          if (vertex_buffer)
-            gl::DeleteBuffers (1, &vertex_buffer);
-          if (vertex_array_object)
-            gl::DeleteVertexArrays (1, &vertex_array_object);
-          if (value_buffer)
-            gl::DeleteBuffers (1, &value_buffer);
-
           for (size_t dim = 0; dim < 3; ++dim) {
-            slice_fixel_indices[dim].clear();
-            slice_fixel_sizes[dim].clear();
-            slice_fixel_counts[dim].clear();
             slice_fixel_indices[dim].resize (fixel_vox.dim(dim));
             slice_fixel_sizes[dim].resize (fixel_vox.dim(dim));
             slice_fixel_counts[dim].resize (fixel_vox.dim(dim));
           }
 
           MR::Image::LoopInOrder loop (fixel_vox);
-          // we only need this inital pass through the image if we want to use the max value to define the largest line length
-          if (line_length_by_value) {
-            for (loop.start (fixel_vox); loop.ok(); loop.next (fixel_vox)) {
-              for (size_t f = 0; f != fixel_vox.value().size(); ++f) {
-                if (fixel_vox.value()[f].value > value_max)
-                  value_max = fixel_vox.value()[f].value;
-                if (fixel_vox.value()[f].value < value_min)
-                  value_min = fixel_vox.value()[f].value;
-              }
-            }
-          }
-
           std::vector<Point<float> > buffer;
           std::vector<float> values;
           std::vector<GLint> starts;
           std::vector<GLint> sizes;
           for (loop.start (fixel_vox); loop.ok(); loop.next (fixel_vox)) {
             for (size_t f = 0; f != fixel_vox.value().size(); ++f) {
-              if (!line_length_by_value) {
-                if (fixel_vox.value()[f].value > value_max)
-                  value_max = fixel_vox.value()[f].value;
-                if (fixel_vox.value()[f].value < value_min)
-                  value_min = fixel_vox.value()[f].value;
-              }
+              if (fixel_vox.value()[f].value > value_max)
+                value_max = fixel_vox.value()[f].value;
+              if (fixel_vox.value()[f].value < value_min)
+                value_min = fixel_vox.value()[f].value;
               header_transform.voxel2scanner (fixel_vox, voxel_pos);
               for (size_t dim = 0; dim < 3; ++dim) {
                 slice_fixel_indices[dim][fixel_vox[dim]].push_back (buffer.size());
@@ -283,13 +273,8 @@ namespace MR
               values.push_back (fixel_vox.value()[f].value);
               values.push_back (fixel_vox.value()[f].value);
               buffer.push_back (Point<float>());
-              if (line_length_by_value) {
-                buffer.push_back (voxel_pos + (fixel_vox.value()[f].dir * (fixel_vox.value()[f].value / value_max) * line_length_multiplier));
-                buffer.push_back (voxel_pos + (fixel_vox.value()[f].dir * (-fixel_vox.value()[f].value / value_max)) * line_length_multiplier);
-              } else {
-                buffer.push_back (voxel_pos + (fixel_vox.value()[f].dir *  line_length * line_length_multiplier));
-                buffer.push_back (voxel_pos + (fixel_vox.value()[f].dir * -line_length) * line_length_multiplier);
-              }
+              buffer.push_back (voxel_pos + (fixel_vox.value()[f].dir));
+              buffer.push_back (voxel_pos + (fixel_vox.value()[f].dir * -1.0));
             }
           }
 

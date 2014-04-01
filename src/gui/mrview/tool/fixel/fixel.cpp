@@ -434,7 +434,6 @@ namespace MR
           QModelIndexList indices = fixel_list_view->selectionModel()->selectedIndexes();
           for (int i = 0; i < indices.size(); ++i) {
             fixel_list_model->get_fixel_image (indices[i])->set_line_length_multiplier (line_length->value());
-            fixel_list_model->get_fixel_image (indices[i])->load_image();
           }
           window.updateGL();
         }
@@ -443,7 +442,6 @@ namespace MR
           QModelIndexList indices = fixel_list_view->selectionModel()->selectedIndexes();
           for (int i = 0; i < indices.size(); ++i) {
             fixel_list_model->get_fixel_image (indices[i])->set_line_length_by_value (length_by_value);
-            fixel_list_model->get_fixel_image (indices[i])->load_image();
           }
           window.updateGL();
         }

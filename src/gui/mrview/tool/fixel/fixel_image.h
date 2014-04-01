@@ -80,7 +80,7 @@ namespace MR
                 line_length_multiplier = value;
               }
 
-              float get_line_length_multiplier () {
+              float get_line_length_multiplier () const {
                 return line_length_multiplier;
               }
 
@@ -88,7 +88,7 @@ namespace MR
                 line_length_by_value = value;
               }
 
-              bool get_line_length_by_value () {
+              bool get_line_length_by_value () const {
                 return line_length_by_value;
               }
 
