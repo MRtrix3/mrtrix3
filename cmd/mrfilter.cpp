@@ -54,7 +54,7 @@ const OptionGroup FFTOption = OptionGroup ("Options for FFT filter")
   + Option ("magnitude", "output a magnitude image rather than a complex-valued image")
 
   + Option ("centre_zero", "re-arrange the FFT results so that the zero-frequency component "
-            "appears in the centre of the image, rather than at the edges)");
+            "appears in the centre of the image, rather than at the edges");
 
 
 
