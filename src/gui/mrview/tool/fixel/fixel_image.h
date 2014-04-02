@@ -85,11 +85,11 @@ namespace MR
               }
 
               void set_line_length_by_value (bool value) {
-                line_length_by_value = value;
+                scale_line_length_by_value = value;
               }
 
               bool get_line_length_by_value () const {
-                return line_length_by_value;
+                return scale_line_length_by_value;
               }
 
               void set_colour_type (ColourType value) {
@@ -108,7 +108,6 @@ namespace MR
               MR::Image::BufferSparse<MR::Image::Sparse::FixelMetric> fixel_data;
               MR::Image::BufferSparse<MR::Image::Sparse::FixelMetric>::voxel_type fixel_vox;
               MR::Image::Transform header_transform;
-              Point<float> voxel_pos;
               ColourMap::Renderer colourbar_renderer;
               int colourbar_position_index;
               GLuint vertex_buffer;
@@ -120,7 +119,7 @@ namespace MR
               float colour[3];
               float line_length;
               float line_length_multiplier;
-              bool line_length_by_value;
+              bool  scale_line_length_by_value;
               ColourType color_type;
               bool show_colour_bar;
         };
