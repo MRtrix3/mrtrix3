@@ -348,7 +348,7 @@ namespace MR
             starts.push_back (buffer.size());
             buffer.push_back (Point<float>());
             buffer.insert (buffer.end(), tck.begin(), tck.end());
-            sizes.push_back(tck.size());
+            sizes.push_back (tck.size());
             tck_count++;
             if (buffer.size() >= MAX_BUFFER_SIZE)
               load_tracks_onto_GPU (buffer, starts, sizes, tck_count);

@@ -55,6 +55,13 @@ namespace MR
             return tool_group;
           }
 
+          int slice () const {
+            if (!image())
+              return NAN;
+            else
+              return Math::round<int> (image()->interp.scanner2voxel (focus())[anatomical_plane]);
+          }
+
           Mode::Base* get_current_mode () const { return mode; }
           const Point<>& focus () const { return focal_point; }
           const Point<>& target () const { return camera_target; }
