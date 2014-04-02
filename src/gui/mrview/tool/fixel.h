@@ -28,7 +28,7 @@
 #include "image/sparse/fixel_metric.h"
 #include "image/sparse/voxel.h"
 #include "image/transform.h"
-#include "gui/mrview/tool/fixel/fixel.h"
+#include "gui/mrview/tool/vector.h"
 #include "image/loop.h"
 
 namespace MR
@@ -42,11 +42,11 @@ namespace MR
 
         enum ColourType { Value, Direction, Colour };
 
-        class FixelImage : public Displayable {
+        class Fixel : public Displayable {
           public:
-            FixelImage (const std::string& filename, Fixel& fixel_tool);
+            Fixel (const std::string& filename, Vector& fixel_tool);
 
-            ~FixelImage();
+            ~Fixel();
 
               class Shader : public Displayable::Shader {
                 public:
@@ -103,7 +103,7 @@ namespace MR
 
             private:
               std::string filename;
-              Fixel& fixel_tool;
+              Vector& fixel_tool;
               MR::Image::Header header;
               MR::Image::BufferSparse<MR::Image::Sparse::FixelMetric> fixel_data;
               MR::Image::BufferSparse<MR::Image::Sparse::FixelMetric>::voxel_type fixel_vox;

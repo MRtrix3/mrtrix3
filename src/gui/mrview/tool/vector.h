@@ -20,8 +20,8 @@
 
 */
 
-#ifndef __gui_mrview_tool_fixel_fixel_h__
-#define __gui_mrview_tool_fixel_fixel_h__
+#ifndef __gui_mrview_tool_vector_h__
+#define __gui_mrview_tool_vector_h__
 
 #include "gui/mrview/tool/base.h"
 #include "gui/projection.h"
@@ -35,16 +35,16 @@ namespace MR
     {
       namespace Tool
       {
-        class Fixel : public Base
+        class Vector : public Base
         {
             Q_OBJECT
 
           public:
             class Model;
 
-            Fixel (Window& main_window, Dock* parent);
+            Vector (Window& main_window, Dock* parent);
 
-            virtual ~Fixel ();
+            virtual ~Vector ();
 
             void draw (const Projection& transform, bool is_3D, int axis, int slice);
             void drawOverlays (const Projection& transform);

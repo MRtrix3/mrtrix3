@@ -20,7 +20,7 @@
 
 */
 
-#include "gui/mrview/tool/fixel/fixel_image.h"
+#include "gui/mrview/tool/fixel.h"
 
 
 namespace MR
@@ -33,7 +33,7 @@ namespace MR
       {
 
 
-        FixelImage::FixelImage (const std::string& filename, Fixel& fixel_tool) :
+        Fixel::Fixel (const std::string& filename, Vector& fixel_tool) :
           Displayable (filename),
           filename (filename),
           fixel_tool (fixel_tool),
@@ -62,7 +62,7 @@ namespace MR
           }
 
 
-        FixelImage::~FixelImage()
+        Fixel::~Fixel()
         {
           if (vertex_buffer)
             gl::DeleteBuffers (1, &vertex_buffer);
@@ -73,7 +73,7 @@ namespace MR
         }
 
 
-        std::string FixelImage::Shader::vertex_shader_source (const Displayable& fixel)
+        std::string Fixel::Shader::vertex_shader_source (const Displayable& fixel)
         {
            std::string source =
                "layout (location = 0) in vec3 pos;\n"
@@ -139,7 +139,7 @@ namespace MR
         }
 
 
-        std::string FixelImage::Shader::fragment_shader_source (const Displayable& fixel)
+        std::string Fixel::Shader::fragment_shader_source (const Displayable& fixel)
         {
           std::string source =
               "in float include; \n"
@@ -168,25 +168,25 @@ namespace MR
         }
 
 
-        bool FixelImage::Shader::need_update (const Displayable& object) const
+        bool Fixel::Shader::need_update (const Displayable& object) const
         {
-          const FixelImage& fixel (dynamic_cast<const FixelImage&> (object));
+          const Fixel& fixel (dynamic_cast<const Fixel&> (object));
           if (color_type != fixel.color_type)
             return true;
           return Displayable::Shader::need_update (object);
         }
 
 
-        void FixelImage::Shader::update (const Displayable& object)
+        void Fixel::Shader::update (const Displayable& object)
         {
-          const FixelImage& fixel (dynamic_cast<const FixelImage&> (object));
+          const Fixel& fixel (dynamic_cast<const Fixel&> (object));
           do_crop_to_slice = fixel.fixel_tool.do_crop_to_slice;
           color_type = fixel.color_type;
           Displayable::Shader::update (object);
         }
 
 
-        void FixelImage::render (const Projection& projection, int axis, int slice)
+        void Fixel::render (const Projection& projection, int axis, int slice)
         {
           start (fixel_shader);
           projection.set (fixel_shader);
@@ -237,7 +237,7 @@ namespace MR
         }
 
 
-        void FixelImage::load_image ()
+        void Fixel::load_image ()
         {
           for (size_t dim = 0; dim < 3; ++dim) {
             slice_fixel_indices[dim].resize (fixel_vox.dim(dim));
