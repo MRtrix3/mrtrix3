@@ -1,9 +1,9 @@
-# Default configuration file for MRtrix command mrprep4connectome
+# Configuration file for MRtrix command labelconfig
 # Extracts the relevant grey matter parcellations from the default
 # FreeSurfer segmentation (desikan_killiany)
 # Unlike the default configuration, this version includes a node
 #   for the spinal column, which the user must provide manually
-#   using the -spine option in mrprep4connectome
+#   using the -spine option in labelconfig
 
 0     Unknown
 

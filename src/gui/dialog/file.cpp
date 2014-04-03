@@ -23,6 +23,12 @@
 #include "gui/dialog/file.h"
 #include "image/format/list.h"
 
+#ifndef MRTRIX_MACOSX
+# define FILE_DIALOG_OPTIONS QFileDialog::DontUseNativeDialog
+#else 
+# define FILE_DIALOG_OPTIONS static_cast<QFileDialog::Options> (0)
+#endif
+
 namespace MR
 {
   namespace GUI
@@ -39,7 +45,7 @@ namespace MR
 
         std::string get_folder ( QWidget* parent, const std::string& caption, const std::string& folder) 
         {
-          QString qstring = QFileDialog::getExistingDirectory (parent, caption.c_str(), folder.size() ? QString(folder.c_str()) : QString());
+          QString qstring = QFileDialog::getExistingDirectory (parent, caption.c_str(), folder.size() ? QString(folder.c_str()) : QString(), QFileDialog::ShowDirsOnly | FILE_DIALOG_OPTIONS);
           if (qstring.size()) {
             std::string folder = qstring.toUtf8().data();
             QDir::setCurrent (Path::dirname (folder).c_str());
@@ -53,7 +59,7 @@ namespace MR
 
         std::string get_file (QWidget* parent, const std::string& caption, const std::string& filter, const std::string& folder)
         {
-          QString qstring = QFileDialog::getOpenFileName (parent, caption.c_str(), folder.size() ? QString(folder.c_str()) : QString(), filter.c_str());
+          QString qstring = QFileDialog::getOpenFileName (parent, caption.c_str(), folder.size() ? QString(folder.c_str()) : QString(), filter.c_str(), 0, FILE_DIALOG_OPTIONS);
           if (qstring.size()) {
             std::string name = qstring.toUtf8().data();
             QDir::setCurrent (Path::dirname (name).c_str());
@@ -68,7 +74,7 @@ namespace MR
 
         std::vector<std::string> get_files (QWidget* parent, const std::string& caption, const std::string& filter, const std::string& folder)
         {
-          QStringList qlist = QFileDialog::getOpenFileNames (parent, caption.c_str(), folder.size() ? QString(folder.c_str()) : QString(), filter.c_str());
+          QStringList qlist = QFileDialog::getOpenFileNames (parent, caption.c_str(), folder.size() ? QString(folder.c_str()) : QString(), filter.c_str(), 0, FILE_DIALOG_OPTIONS);
           std::vector<std::string> list;
           if (qlist.size()) {
             for (int n = 0; n < qlist.size(); ++n) 
@@ -83,7 +89,7 @@ namespace MR
 
         std::string get_save_name (QWidget* parent, const std::string& caption, const std::string& filter, const std::string& folder)
         {
-          QString qstring = QFileDialog::getSaveFileName (parent, caption.c_str(), folder.size() ? QString(folder.c_str()) : QString(), filter.c_str());
+          QString qstring = QFileDialog::getSaveFileName (parent, caption.c_str(), folder.size() ? QString(folder.c_str()) : QString(), filter.c_str(), 0, FILE_DIALOG_OPTIONS);
           std::string name;
           if (qstring.size()) {
             name = qstring.toUtf8().data();

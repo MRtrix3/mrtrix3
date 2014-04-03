@@ -27,6 +27,7 @@
 #include "image/buffer_scratch.h"
 #include "image/copy.h"
 #include "image/nav.h"
+#include "image/filter/base.h"
 
 
 namespace MR
@@ -36,90 +37,129 @@ namespace MR
     namespace Filter
     {
 
-      class LargestConnectedComponent : public ConstInfo
+
+
+      /** \addtogroup Filters
+        @{ */
+
+      //! a filter to extract only the largest connected
+      //! component of a mask
+      /*!
+       *
+       * Unline the ConnectedComponents filter, this filter only
+       * extracts the largest-volume connected component from a
+       * mask image. This reduction in complexity allows a
+       * simpler implementation, and means that the output image
+       * is boolean rather than an integer label image.
+       *
+       * Typical usage:
+       * \code
+       * Buffer<bool> input_data (argument[0]);
+       * Buffer<bool>::voxel_type input_voxel (input_data);
+       *
+       * Filter::LargestConnectedComponent lcc (input_data);
+       * Header header (input_data);
+       * header.info() = dilate.info();
+       *
+       * Buffer<bool> output_data (header, argument[1]);
+       * Buffer<bool>::voxel_type output_voxel (output_data);
+       * lcc (input_voxel, output_voxel);
+       *
+       * \endcode
+       */
+      class LargestConnectedComponent : public Base
       {
 
         public:
-        template <class InputVoxelType> 
-          LargestConnectedComponent (const InputVoxelType& in, const std::string& message) :
-            ConstInfo (in),
-            progress (message) { }
+          template <class InfoType>
+            LargestConnectedComponent (const InfoType& in) :
+                Base (in),
+                large_neighbourhood (false) { }
 
 
-        typedef Point<int> voxel_type;
+          void set_large_neighbourhood (const bool i) { large_neighbourhood = i; }
 
 
-        template <class InputVoxelType, class OutputVoxelType>
+          template <class InputVoxelType, class OutputVoxelType>
           void operator() (InputVoxelType& input, OutputVoxelType& output) {
 
-          typedef typename InputVoxelType::value_type value_type;
+              typedef typename InputVoxelType::value_type value_type;
 
-          // Force calling the templated constructor instead of the copy-constructor
-          BufferScratch<bool> visited_data (input, "visited");
-          BufferScratch<bool>::voxel_type visited (visited_data);
-          size_t largest_mask_size = 0;
+              Ptr<ProgressBar> progress;
+              if (message.size())
+                progress = new ProgressBar (message);
 
-          voxel_type seed (0, 0, 0);
+              // Force calling the templated constructor instead of the copy-constructor
+              BufferScratch<bool> visited_data (input, "visited");
+              BufferScratch<bool>::voxel_type visited (visited_data);
+              size_t largest_mask_size = 0;
 
-          std::vector<voxel_type> adj_voxels;
-          adj_voxels.reserve (6);
-          adj_voxels.push_back (voxel_type (-1,  0,  0));
-          adj_voxels.push_back (voxel_type (+1,  0,  0));
-          adj_voxels.push_back (voxel_type ( 0, -1,  0));
-          adj_voxels.push_back (voxel_type ( 0, +1,  0));
-          adj_voxels.push_back (voxel_type ( 0,  0, -1));
-          adj_voxels.push_back (voxel_type ( 0,  0, +1));
+              voxel_type seed (0, 0, 0);
 
-          for (seed[2] = 0; seed[2] != input.dim (2); ++seed[2]) {
-            for (seed[1] = 0; seed[1] != input.dim (1); ++seed[1]) {
-              for (seed[0] = 0; seed[0] != input.dim (0); ++seed[0]) {
-                if (!Image::Nav::get_value_at_pos (visited, seed) && Image::Nav::get_value_at_pos (input, seed)) {
-
-                  visited.value() = true;
-                  BufferScratch<value_type> local_mask_data (input, "local_mask");
-                  typename BufferScratch<value_type>::voxel_type local_mask (local_mask_data);
-                  Image::Nav::set_value_at_pos (local_mask, seed, (value_type)input.value());
-                  size_t local_mask_size = 1;
-
-                  std::vector<voxel_type> to_expand (1, seed);
-
-                  do {
-
-                    const voxel_type v = to_expand.back();
-                    to_expand.pop_back();
-
-                    for (std::vector<voxel_type>::const_iterator step = adj_voxels.begin(); step != adj_voxels.end(); ++step) {
-                      voxel_type to_test (v);
-                      to_test += *step;
-                      if (Image::Nav::within_bounds (visited, to_test) && !Image::Nav::get_value_at_pos (visited, to_test)) {
-                        if (Image::Nav::get_value_at_pos (input, to_test)) {
-                          Image::Nav::set_value_at_pos (visited, to_test, true);
-                          Image::Nav::set_value_at_pos (local_mask, to_test, (value_type)input.value());
-                          ++local_mask_size;
-                          to_expand.push_back (to_test);
-                        }
-                      }
-                    }
-
-                  } while (to_expand.size());
-
-                  if (local_mask_size > largest_mask_size) {
-                    largest_mask_size = local_mask_size;
-                    Image::copy (local_mask, output);
+              std::vector<voxel_type> adj_voxels;
+              voxel_type offset;
+              for (offset[0] = -1; offset[0] <= 1; offset[0]++) {
+                for (offset[1] = -1; offset[1] <= 1; offset[1]++) {
+                  for (offset[2] = -1; offset[2] <= 1; offset[2]++) {
+                    if (offset.norm2() && (large_neighbourhood || offset.norm() == 1))
+                      adj_voxels.push_back (offset);
                   }
-
-                  ++progress;
-
                 }
               }
-            }
+
+              for (seed[2] = 0; seed[2] != input.dim (2); ++seed[2]) {
+                for (seed[1] = 0; seed[1] != input.dim (1); ++seed[1]) {
+                  for (seed[0] = 0; seed[0] != input.dim (0); ++seed[0]) {
+                    if (!Image::Nav::get_value_at_pos (visited, seed) && Image::Nav::get_value_at_pos (input, seed)) {
+
+                      visited.value() = true;
+                      BufferScratch<value_type> local_mask_data (input, "local_mask");
+                      typename BufferScratch<value_type>::voxel_type local_mask (local_mask_data);
+                      Image::Nav::set_value_at_pos (local_mask, seed, (value_type)input.value());
+                      size_t local_mask_size = 1;
+
+                      std::vector<voxel_type> to_expand (1, seed);
+
+                      do {
+
+                        const voxel_type v = to_expand.back();
+                        to_expand.pop_back();
+
+                        for (std::vector<voxel_type>::const_iterator step = adj_voxels.begin(); step != adj_voxels.end(); ++step) {
+                          voxel_type to_test (v);
+                          to_test += *step;
+                          if (Image::Nav::within_bounds (visited, to_test)
+                              && !Image::Nav::get_value_at_pos (visited, to_test)
+                              &&  Image::Nav::get_value_at_pos (input, to_test))
+                          {
+                            Image::Nav::set_value_at_pos (visited, to_test, true);
+                            Image::Nav::set_value_at_pos (local_mask, to_test, (value_type)input.value());
+                            ++local_mask_size;
+                            to_expand.push_back (to_test);
+                          }
+                        }
+
+                      } while (to_expand.size());
+
+                      if (local_mask_size > largest_mask_size) {
+                        largest_mask_size = local_mask_size;
+                        Image::copy (local_mask, output);
+                      }
+
+                      if (progress) ++(*progress);
+
+                    }
+                  }
+                }
+              }
+
           }
 
-        }
 
+        protected:
+          bool large_neighbourhood;
+          typedef Point<int> voxel_type;
 
-        private:
-          ProgressBar progress;
 
       };
 

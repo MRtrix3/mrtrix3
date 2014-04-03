@@ -68,6 +68,8 @@ namespace MR
         }
         static float get_float (const std::string& key, float default_value);
 
+        static void get_RGB (const std::string& key, float* ret, float default_R, float default_G, float default_B);
+
       private:
         static std::map<std::string, std::string> config;
     };

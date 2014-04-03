@@ -35,7 +35,7 @@ namespace MR
 #undef MODE_OPTION
 */
 
-
+      
       namespace {
 
         Qt::KeyboardModifiers get_modifier (const char* key, Qt::KeyboardModifiers default_key) {
@@ -154,6 +154,24 @@ namespace MR
       }
 
 
+
+      //CONF option: MRViewFocusModifierKey 
+      //CONF default: alt (cmd on MacOSX) 
+      //CONF modifier key to select focus mode in MRView. Valid
+      //CONF choices include shift, alt, ctrl, meta (on MacOSX: shift, alt,
+      //CONF ctrl, cmd).
+      
+      //CONF option: MRViewMoveModifierKey 
+      //CONF default: shift
+      //CONF modifier key to select move mode in MRView. Valid
+      //CONF choices include shift, alt, ctrl, meta (on MacOSX: shift, alt,
+      //CONF ctrl, cmd).
+      
+      //CONF option: MRViewRotateModifierKey
+      //CONF default: ctrl
+      //CONF modifier key to select rotate mode in MRView. Valid
+      //CONF choices include shift, alt, ctrl, meta (on MacOSX: shift, alt,
+      //CONF ctrl, cmd).
 
 
       // Main Window class:
