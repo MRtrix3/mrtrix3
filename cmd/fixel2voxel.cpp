@@ -34,48 +34,63 @@
 #include "math/SH.h"
 
 
-
-
 using namespace MR;
 using namespace App;
 
 
-
 using Image::Sparse::FixelMetric;
 
+const char* operations[] = {
+  "sum",
+  "count",
+  NULL
+};
 
 
 void usage ()
 {
 
   DESCRIPTION
-  + "convert a fixel-based sparse-data image into a scalar image showing the number of fibre populations in each voxel";
+  + "convert a fixel-based sparse-data image into a scalar image. Output either the sum of fixel values within a voxel, or the fixel count";
 
   ARGUMENTS
   + Argument ("fixel_in",  "the input sparse fixel image.").type_image_in ()
+  + Argument ("operation", "the operation to apply, one of: " + join(operations, ", ") + ".").type_choice (operations)
   + Argument ("image_out", "the output scalar image.").type_image_out ();
 
 }
 
 
 
-
 void run ()
 {
-
   Image::Header H_in (argument[0]);
   Image::BufferSparse<FixelMetric> fixel_data (H_in);
-  Image::BufferSparse<FixelMetric>::voxel_type fixel (fixel_data);
+  Image::BufferSparse<FixelMetric>::voxel_type voxel (fixel_data);
+
+  const size_t num_inputs = argument.size() - 2;
+  const int op = argument[num_inputs];
 
   Image::Header H_out (H_in);
-  H_out.datatype() = DataType::UInt32;
+  if (op)
+    H_out.datatype() = DataType::UInt8;
+  else
+    H_out.datatype() = DataType::Float32;
 
-  Image::Buffer<float> out_data (argument[1], H_out);
+  Image::Buffer<float> out_data (argument[2], H_out);
   Image::Buffer<float>::voxel_type out (out_data);
 
-  Image::LoopInOrder loop (fixel, "converting sparse fixel data to fixel count image... ");
-  for (loop.start (fixel, out); loop.ok(); loop.next (fixel, out))
-    out.value() = fixel.value().size();
 
+  Image::LoopInOrder loop (voxel, "converting sparse fixel data to scalar image... ");
+  for (loop.start (voxel, out); loop.ok(); loop.next (voxel, out)) {
+    if (op) {
+      out.value() = voxel.value().size();
+    } else {
+      float sum = 0;
+      for (size_t fixel = 0; fixel != voxel.value().size(); ++fixel)
+        sum += voxel.value()[fixel].value;
+      out.value() = sum;
+    }
+  }
 }
 

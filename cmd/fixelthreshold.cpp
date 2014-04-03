@@ -37,6 +37,7 @@ using Image::Sparse::FixelMetric;
 
 void usage ()
 {
+  AUTHOR = "David Raffelt (david.raffelt@florey.edu.au)";
 
   DESCRIPTION
   + "Threshold the values in a fixel image";
