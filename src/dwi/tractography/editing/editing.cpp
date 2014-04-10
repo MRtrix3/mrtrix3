@@ -111,24 +111,31 @@ void load_properties (Tractography::Properties& properties)
 
 
   // LengthOption
-  // Erase entries from properties if these criteria are not being applied here
-  // TODO Technically shouldn't be required - shouldn't be any streamlines outside the range in properties
   opt = get_options ("maxlength");
-  float maxlength = (properties.find ("max_dist") == properties.end()) ? float(0.0) : to<float>(properties["max_dist"]);
   if (opt.size()) {
-    maxlength = maxlength ? std::min (maxlength, float(opt[0][0])) : float(opt[0][0]);
-    properties["max_dist"] = str(maxlength);
-  } else if (maxlength) {
-    properties.erase (properties.find ("max_dist"));
+    if (properties.find ("max_dist") == properties.end()) {
+      properties["max_dist"] = str(opt[0][0]);
+    } else {
+      try {
+        const float maxlength = std::min (float(opt[0][0]), to<float>(properties["max_dist"]));
+        properties["max_dist"] = str(maxlength);
+      } catch (...) {
+        properties["max_dist"] = str(opt[0][0]);
+      }
+    }
   }
-
   opt = get_options ("minlength");
-  float minlength = (properties.find ("min_dist") == properties.end()) ? float(0.0) : to<float>(properties["min_dist"]);
   if (opt.size()) {
-    minlength = minlength ? std::max (minlength, float(opt[0][0])) : float(opt[0][0]);
-    properties["min_dist"] = str(minlength);
-  } else if (minlength) {
-    properties.erase (properties.find ("min_dist"));
+    if (properties.find ("min_dist") == properties.end()) {
+      properties["min_dist"] = str(opt[0][0]);
+    } else {
+      try {
+        const float minlength = std::max (float(opt[0][0]), to<float>(properties["min_dist"]));
+        properties["min_dist"] = str(minlength);
+      } catch (...) {
+        properties["min_dist"] = str(opt[0][0]);
+      }
+    }
   }
 
 
