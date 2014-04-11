@@ -1,4 +1,4 @@
-# Configuration file for MRtrix command mrprep4connectome
+# Configuration file for MRtrix command labelconfig
 # Extracts the relevant grey matter parcellations from the default
 # FreeSurfer segmentation (desikan_killiany)
 # Segmentations are summarised into lobes and subcortical areas

@@ -187,7 +187,7 @@ namespace MR
 
 
 
-      uint8_t* const Sparse::get (const uint64_t voxel_offset, const size_t index) const
+      uint8_t* Sparse::get (const uint64_t voxel_offset, const size_t index) const
       {
         assert (index < get_numel (voxel_offset));
         const uint64_t offset = sizeof(uint32_t) + (index * class_size);

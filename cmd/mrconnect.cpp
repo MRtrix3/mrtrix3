@@ -95,7 +95,6 @@ void run ()
 
   opt = get_options("directions");
   Math::Matrix<float> dirs;
-  Math::Matrix<float> adjacency;
   if (opt.size()) {
     dirs.load (opt[0][0]);
     connected_filter.set_directions(dirs, angular_threshold);

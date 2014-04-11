@@ -328,7 +328,7 @@ namespace MR
 
 
 
-        void ODF::draw (const Projection& projection, bool is_3D) 
+        void ODF::draw (const Projection& projection, bool is_3D, int axis, int slice)
         {
           if (is_3D) 
             return;

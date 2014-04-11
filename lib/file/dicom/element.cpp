@@ -309,6 +309,13 @@ namespace MR {
           for (size_t n = 0; n < V.size(); n++) 
             V[n] = to<double> (strings[n]);
         }
+        else if (VR == VR_UN) {
+          // added to handle Philip's mangled storage of DW encoding,
+          // which used to be stored as VR_FL, but now appears as VR_UN in
+          // single-frame DICOM (but is still VR_FL in multi-frame). 
+          for (const uint8_t* p = data; p < data + size; p += sizeof (float32)) 
+            V.push_back (get<float32> (p, is_BE));
+        }
         return V;
       }
 

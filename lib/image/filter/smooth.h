@@ -23,11 +23,12 @@
 #ifndef __image_filter_gaussian_h__
 #define __image_filter_gaussian_h__
 
-#include "image/info.h"
-#include "image/threaded_copy.h"
-#include "image/adapter/gaussian1D.h"
+
 #include "image/buffer_scratch.h"
 #include "image/copy.h"
+#include "image/threaded_copy.h"
+#include "image/adapter/gaussian1D.h"
+#include "image/filter/base.h"
 
 namespace MR
 {
@@ -44,7 +45,7 @@ namespace MR
        * \code
        * Image::BufferPreload<float> src_data (argument[0]);
        * Image::BufferPreload<float>::voxel_type src (src_data);
-       * Image::Filter::GaussianSmooth smooth_filter (src);
+       * Image::Filter::Smooth smooth_filter (src);
        *
        * std::vector<float> stdev (1);
        * stdev[0] = 2;
@@ -61,51 +62,47 @@ namespace MR
        *
        * \endcode
        */
-      template <typename ValueType = float>
-        class GaussianSmooth : public ConstInfo
+      class Smooth : public Base
       {
 
         public:
-          typedef ValueType value_type;
-
-          template <class InputVoxelType>
-            GaussianSmooth (const InputVoxelType& in) :
-              ConstInfo (in),
+          template <class InfoType>
+          Smooth (const InfoType& in) :
+              Base (in),
               extent (in.ndim(), 0),
-              stdev (in.ndim(), 0.0) {
-                int max_dim;
-                (in.ndim() < 3) ? max_dim = in.ndim() : max_dim = 3;
-                for (int i = 0; i < max_dim; i++)
-                  stdev[i] = in.vox(i);
-              }
+              stdev (in.ndim(), 0.0)
+          {
+            for (int i = 0; i < std::min (int(in.ndim()), 3); i++)
+              stdev[i] = in.vox(i);
+          }
 
-          template <class InputVoxelType>
-            GaussianSmooth (const InputVoxelType& in,
-                const std::vector<float>& stdev) :
-              ConstInfo (in),
+          template <class InfoType>
+          Smooth (const InfoType& in, const std::vector<float>& stdev) :
+              Base (in),
               extent (in.ndim(), 0),
-              stdev (in.ndim()) {
-                set_stdev (stdev);
-              }
+              stdev (in.ndim())
+          {
+            set_stdev (stdev);
+          }
 
           //! Set the extent of smoothing kernel in voxels.
           //! This can be set as a single value for all dimensions
           //! or separate values, one for each dimension. (Default: 4 standard deviations)
-          void set_extent (const std::vector<int>& new_exent)
+          void set_extent (const std::vector<int>& new_extent)
           {
-            if (new_exent.size() != 1 && new_exent.size() != this->ndim())
+            if (new_extent.size() != 1 && new_extent.size() != this->ndim())
               throw Exception ("the number of extent elements does not correspond to the number of image dimensions");
-            for (size_t i = 0; i < new_exent.size(); ++i) {
-              if (!(new_exent[i] & int (1)))
+            for (size_t i = 0; i < new_extent.size(); ++i) {
+              if (!(new_extent[i] & int (1)))
                 throw Exception ("expected odd number for extent");
-              if (new_exent[i] < 0)
+              if (new_extent[i] < 0)
                 throw Exception ("the kernel extent must be positive");
             }
-            if (new_exent.size() == 1)
+            if (new_extent.size() == 1)
               for (unsigned int i = 0; i < this->ndim(); i++)
-                extent[i] = new_exent[0];
+                extent[i] = new_extent[0];
             else
-              extent = new_exent;
+              extent = new_extent;
           }
 
           void set_stdev (float stdev) {
@@ -130,27 +127,40 @@ namespace MR
                 throw Exception ("the Gaussian stdev values cannot be negative");
           }
 
+
           template <class InputVoxelType, class OutputVoxelType>
-            void operator() (InputVoxelType& input, OutputVoxelType& output) {
-              RefPtr <BufferScratch<value_type> > in_data (new BufferScratch<value_type> (input));
-              RefPtr <typename BufferScratch<value_type>::voxel_type> in (new typename BufferScratch<value_type>::voxel_type (*in_data));
+          void operator() (InputVoxelType& input, OutputVoxelType& output)
+          {
+              RefPtr <BufferScratch<float> > in_data (new BufferScratch<float> (input));
+              RefPtr <BufferScratch<float>::voxel_type> in (new BufferScratch<float>::voxel_type (*in_data));
               threaded_copy (input, *in);
 
-              RefPtr <BufferScratch<value_type> > out_data;
-              RefPtr <typename BufferScratch<value_type>::voxel_type> out;
+              RefPtr <BufferScratch<float> > out_data;
+              RefPtr <BufferScratch<float>::voxel_type> out;
+
+              Ptr<ProgressBar> progress;
+              if (message.size()) {
+                size_t axes_to_smooth = 0;
+                for (std::vector<float>::const_iterator i = stdev.begin(); i != stdev.end(); ++i)
+                  if (*i)
+                    ++axes_to_smooth;
+                progress = new ProgressBar (message, axes_to_smooth + 1);
+              }
 
               for (size_t dim = 0; dim < this->ndim(); dim++) {
                 if (stdev[dim] > 0) {
-                  out_data = new BufferScratch<value_type> (input);
-                  out = new typename BufferScratch<value_type>::voxel_type (*out_data);
-                  Adapter::Gaussian1D<typename BufferScratch<value_type>::voxel_type > gaussian (*in, stdev[dim], dim, extent[dim]);
-                  threaded_copy_with_progress_message ("Smoothing axis " + str(dim) + "...", gaussian, *out);
+                  out_data = new BufferScratch<float> (input);
+                  out = new BufferScratch<float>::voxel_type (*out_data);
+                  Adapter::Gaussian1D<BufferScratch<float>::voxel_type > gaussian (*in, stdev[dim], dim, extent[dim]);
+                  threaded_copy (gaussian, *out);
                   in_data = out_data;
                   in = out;
+                  if (progress)
+                    ++(*progress);
                 }
               }
               threaded_copy (*in, output);
-            }
+          }
 
         protected:
           std::vector<int> extent;

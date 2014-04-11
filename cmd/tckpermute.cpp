@@ -305,8 +305,8 @@ double compute_track_indices (const string& input_track_filename,
   float angular_threshold_dp = cos (angular_threshold * (M_PI/180.0));
   DWI::Tractography::Properties tck_properties;
   DWI::Tractography::Reader<value_type> tck_reader (input_track_filename, tck_properties);
-  double tck_timestamp = tck_properties.timestamp;
   DWI::Tractography::Writer<value_type> tck_writer (output_track_filename, tck_properties);
+  double tck_timestamp = tck_properties.timestamp;
   DWI::Tractography::Streamline<value_type> tck;
   int counter = 0;
 

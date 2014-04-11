@@ -15,13 +15,10 @@ namespace MR
 
     const OptionGroup ShellOption = OptionGroup ("DW Shell selection options")
       + Option ("shell",
-          "specify one or more diffusion-weighted gradient shells to use during processing. "
-          "The shell structure is determined automatically from the gradient encoding (either "
-          "stored in the image header or provided using the -grad option); use this option to "
-          "list the b-value(s) corresponding to the shell(s) that you wish to be used for "
-          "processing."
-          "Note that some commands are incompatible with multiple shells, and will throw an "
-          "error if you provide more than one b-value.")
+          "specify one or more diffusion-weighted gradient shells to use during "
+          "processing, as a comma-separated list of the desired approximate b-values. "
+          "Note that some commands are incompatible with multiple shells, and "
+          "will throw an error if more than one b-value are provided.")
         + Argument ("list").type_sequence_int();
 
 

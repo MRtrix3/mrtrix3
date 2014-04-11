@@ -35,7 +35,7 @@ namespace MR
 #undef MODE_OPTION
 */
 
-
+      
       namespace {
 
         Qt::KeyboardModifiers get_modifier (const char* key, Qt::KeyboardModifiers default_key) {
@@ -154,6 +154,24 @@ namespace MR
       }
 
 
+
+      //CONF option: MRViewFocusModifierKey 
+      //CONF default: alt (cmd on MacOSX) 
+      //CONF modifier key to select focus mode in MRView. Valid
+      //CONF choices include shift, alt, ctrl, meta (on MacOSX: shift, alt,
+      //CONF ctrl, cmd).
+      
+      //CONF option: MRViewMoveModifierKey 
+      //CONF default: shift
+      //CONF modifier key to select move mode in MRView. Valid
+      //CONF choices include shift, alt, ctrl, meta (on MacOSX: shift, alt,
+      //CONF ctrl, cmd).
+      
+      //CONF option: MRViewRotateModifierKey
+      //CONF default: ctrl
+      //CONF modifier key to select rotate mode in MRView. Valid
+      //CONF choices include shift, alt, ctrl, meta (on MacOSX: shift, alt,
+      //CONF ctrl, cmd).
 
 
       // Main Window class:
@@ -1122,8 +1140,6 @@ namespace MR
       }
 
 
-
-
       inline void Window::paintGL ()
       {
         gl::Enable (gl::MULTISAMPLE);
@@ -1133,7 +1149,6 @@ namespace MR
         gl::DrawBuffer (gl::BACK);
         mode->paintGL();
       }
-
 
 
       inline void Window::initGL ()
@@ -1162,6 +1177,7 @@ namespace MR
         mouse_position_.setY (glarea->height() - mouse_position_.y());
       }
 
+
       template <class Event> inline void Window::update_mouse_state (Event* event)
       {
         mouse_displacement_ = mouse_position_;
@@ -1177,11 +1193,13 @@ namespace MR
         set_cursor();
       }
 
+
       void Window::keyReleaseEvent (QKeyEvent* event)
       {
         modifiers_ = event->modifiers() & ( FocusModifier | MoveModifier | RotateModifier );
         set_cursor();
       }
+
 
       inline void Window::mousePressEventGL (QMouseEvent* event)
       {
@@ -1222,7 +1240,6 @@ namespace MR
       }
 
 
-
       inline void Window::mouseMoveEventGL (QMouseEvent* event)
       {
         assert (mode);
@@ -1244,6 +1261,7 @@ namespace MR
         event->accept();
       }
 
+
       inline void Window::mouseReleaseEventGL (QMouseEvent* event)
       {
         assert (mode);
@@ -1251,6 +1269,7 @@ namespace MR
         mouse_action = NoAction;
         set_cursor();
       }
+
 
       inline void Window::wheelEventGL (QWheelEvent* event)
       {
@@ -1321,13 +1340,11 @@ namespace MR
       }
 
 
-
       void Window::closeEvent (QCloseEvent* event) 
       {
         qApp->quit();
         event->accept();
       }
-
 
 
       void Window::process_batch_command ()

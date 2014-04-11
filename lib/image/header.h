@@ -172,6 +172,10 @@ namespace MR
           handler_ = handler;
         }
 
+        /*! use to prevent automatic realignment of transform matrix into
+         * near-standard (RAS) coordinate system. */
+        static bool do_not_realign_transform;
+
       protected:
         const char* format_;
         Math::Matrix<float> DW_scheme_;

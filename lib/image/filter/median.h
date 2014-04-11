@@ -26,6 +26,7 @@
 #include "image/info.h"
 #include "image/threaded_copy.h"
 #include "image/adapter/median3D.h"
+#include "image/filter/base.h"
 
 namespace MR
 {
@@ -36,33 +37,59 @@ namespace MR
       /** \addtogroup Filters
       @{ */
 
-      //! Smooth images using median filtering.
-      class Median3D : public ConstInfo
+      /*! Smooth images using median filtering.
+       *
+       * Typical usage:
+       * \code
+       * Image::BufferPreload<float> src_data (argument[0]);
+       * Image::BufferPreload<float>::voxel_type src (src_data);
+       * Image::Filter::Median median_filter (src);
+       *
+       * Image::Header header (src_data);
+       * header.info() = median_filter.info();
+       *
+       * Image::Buffer<float> dest_data (argument[1], src_data);
+       * Image::Buffer<float>::voxel_type dest (dest_data);
+       *
+       * median_filter (src, dest);
+       *
+       * \endcode
+       */
+      class Median : public Base
       {
 
-      public:
-          template <class InputVoxelType>
-            Median3D (const InputVoxelType& in) :
-              ConstInfo (in),
+        public:
+          template <class InfoType>
+          Median (const InfoType& in) :
+              Base (in),
               extent_ (1,3) { }
 
-          template <class InputVoxelType>
-            Median3D (const InputVoxelType& in, const std::vector<int>& extent) :
-              ConstInfo (in),
+          template <class InfoType>
+          Median (const InfoType& in, const std::vector<int>& extent) :
+              Base (in),
               extent_ (extent) { }
 
           //! Set the extent of median filtering neighbourhood in voxels.
           //! This must be set as a single value for all three dimensions
           //! or three values, one for each dimension. Default 3x3x3.
           void set_extent (const std::vector<int>& extent) {
+            for (size_t i = 0; i < extent.size(); ++i) {
+              if (!(extent[i] & int (1)))
+                throw Exception ("expected odd number for extent");
+              if (extent[i] < 0)
+                throw Exception ("the kernel extent must be positive");
+            }
             extent_ = extent;
           }
 
           template <class InputVoxelType, class OutputVoxelType>
-            void operator() (InputVoxelType& in, OutputVoxelType& out, const std::string& message = "median filtering...") {
+          void operator() (InputVoxelType& in, OutputVoxelType& out) {
               Adapter::Median3D<InputVoxelType> median (in, extent_);
-              threaded_copy_with_progress_message (message, median, out);
-            }
+              if (message.size())
+                threaded_copy_with_progress_message (message, median, out);
+              else
+                threaded_copy (median, out);
+          }
 
       protected:
           std::vector<int> extent_;

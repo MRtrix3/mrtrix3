@@ -213,10 +213,7 @@ namespace MR
         Tractography::~Tractography () {}
 
 
-
-
-
-        void Tractography::draw (const Projection& transform, bool is_3D)
+        void Tractography::draw (const Projection& transform, bool is_3D, int axis, int slice)
         {
           not_3D = !is_3D;
           for (int i = 0; i < tractogram_list_model->rowCount(); ++i) {
@@ -226,9 +223,6 @@ namespace MR
         }
 
 
-
-
-
         void Tractography::drawOverlays (const Projection& transform)
         {
           for (int i = 0; i < tractogram_list_model->rowCount(); ++i) {
@@ -236,9 +230,6 @@ namespace MR
               dynamic_cast<Tractogram*>(tractogram_list_model->items[i])->renderColourBar (transform);
           }
         }
-
-
-
 
 
         void Tractography::tractogram_open_slot ()
@@ -281,41 +272,50 @@ namespace MR
         }
 
 
-        void Tractography::hide_all_slot () {
+        void Tractography::hide_all_slot ()
+        {
           window.updateGL();
         }
 
 
-        void Tractography::on_crop_to_slab_slot (bool is_checked) {
+        void Tractography::on_crop_to_slab_slot (bool is_checked)
+        {
           do_crop_to_slab = is_checked;
           window.updateGL();
         }
 
-        void Tractography::on_use_lighting_slot (bool is_checked) {
+
+        void Tractography::on_use_lighting_slot (bool is_checked)
+        {
           use_lighting = is_checked;
           window.updateGL();
         }
 
-        void Tractography::on_lighting_settings () {
+
+        void Tractography::on_lighting_settings ()
+        {
           if (!lighting_dialog)
             lighting_dialog = new Dialog::Lighting (&window, "Tractogram lighting", *lighting);
           lighting_dialog->show();
         }
 
 
-        void Tractography::on_slab_thickness_slot() {
+        void Tractography::on_slab_thickness_slot()
+        {
           slab_thickness = slab_entry->value();
           window.updateGL();
         }
 
 
-        void Tractography::opacity_slot (int opacity) {
+        void Tractography::opacity_slot (int opacity)
+        {
           line_opacity = Math::pow2(static_cast<float>(opacity)) / 1.0e6f;
           window.updateGL();
         }
 
 
-        void Tractography::line_thickness_slot (int thickness) {
+        void Tractography::line_thickness_slot (int thickness)
+        {
           line_thickness = static_cast<float>(thickness) / 200.0f;
           window.updateGL();
         }
@@ -426,8 +426,6 @@ namespace MR
             }
           }
         }
-
-
 
 
         bool Tractography::process_batch_command (const std::string& cmd, const std::string& args)

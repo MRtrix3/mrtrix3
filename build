@@ -1,6 +1,6 @@
 #!/usr/bin/python
 
-import platform, sys, os, time, threading, subprocess, copy, codecs, glob, atexit
+import platform, sys, os, time, threading, subprocess, copy, codecs, glob, atexit, tempfile
 
 
 config_file = 'config.default'
@@ -31,10 +31,18 @@ def pipe_errors_to_less_handler():
   global error_stream
   if len (error_stream):
     try:
-      proc = subprocess.Popen ('less', stdin=subprocess.PIPE)
-      proc.communicate (error_stream.encode (errors='ignore'))
+      [ fid, name ] = tempfile.mkstemp()
+      try:
+        fid = os.fdopen (fid, 'wb')
+        fid.write (error_stream.encode (errors='ignore'))
+        fid.close()
+        os.system ("less " + name)
+      except Exception as e:
+        sys.stderr.write (str (e))
+      os.unlink (name)
     except Exception as e:
-      print (e)
+      sys.stderr.write (str (e))
+
 
 
 if sys.stderr.isatty():

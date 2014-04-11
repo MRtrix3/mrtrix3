@@ -254,11 +254,11 @@ class TempDir:
 
 
 
-class QMakeError (BaseException): pass
-class QMOCError (BaseException): pass
-class CompileError (BaseException): pass
-class LinkError (BaseException): pass
-class RuntimeError (BaseException): pass
+class QMakeError (Exception): pass
+class QMOCError (Exception): pass
+class CompileError (Exception): pass
+class LinkError (Exception): pass
+class RuntimeError (Exception): pass
 
 def commit (name, variable):
   cache.write (name + ' = ')
@@ -295,7 +295,7 @@ def execute (cmd, exception, raise_on_non_zero_exit_code = True, cwd = None):
     log ('>>\n\n')
   
     if raise_on_non_zero_exit_code and process.returncode != 0: 
-      raise exception
+      raise exception (stderr)
 
   except OSError as error: 
     log ('error invoking command "' + cmd[0] + '": ' + error.strerror + '\n>>\n\n')
@@ -889,7 +889,7 @@ int main() { Foo f; }
 
       file = 'CONFIG += qt'
       if debug: file += ' debug'
-      file += '\nQT += opengl\nHEADERS += qt.h\nSOURCES += qt.cpp\n'
+      file += '\nQT += opengl svg\nHEADERS += qt.h\nSOURCES += qt.cpp\n'
 
       log ('\nproject file "qt.pro":\n---\n' + file + '---\n')
       f=open (os.path.join (qt_dir.name, 'qt.pro'), 'w')
@@ -902,12 +902,17 @@ int main() { Foo f; }
       elif system == 'darwin':
         qmake_cmd += [ '-spec', 'macx-g++' ]
 
-      try: execute (qmake_cmd, QMakeError, cwd=qt_dir.name)
-      except QMakeError:
+      try: 
+         (retcode, stdout, stderr) = execute (qmake_cmd, QMakeError, raise_on_non_zero_exit_code = False, cwd=qt_dir.name)
+         if retcode != 0:
+           error ('''qmake returned with error:
+
+''' + stderr)
+      except QMakeError as E:
         error ('''error issuing qmake command!
 
   Use the QMAKE environment variable to set the correct qmake command for use with Qt''')
-     
+
 
       qt_defines = [] 
       qt_includes = []

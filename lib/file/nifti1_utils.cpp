@@ -296,6 +296,9 @@ namespace MR
           }
         }
 
+        if (H.datatype() == DataType::Bit) 
+          if (!File::Config::get_bool ("NIFTI.AllowBitwise", false))
+            H.datatype() = DataType::UInt8;
       }
 
 

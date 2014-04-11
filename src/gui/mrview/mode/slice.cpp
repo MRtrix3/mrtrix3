@@ -129,11 +129,11 @@ namespace MR
 
           // render image:
           if (snap_to_image())
-            image()->render2D (shader_program, with_projection, axis, slice(axis));
+            image()->render2D (shader_program, with_projection, axis, slice (axis));
           else
             image()->render3D (shader_program, with_projection, with_projection.depth_of (focus()));
 
-          render_tools (with_projection);
+          render_tools (with_projection, false, axis, slice (axis));
 
           draw_crosshairs (with_projection);
           draw_orientation_labels (with_projection);

@@ -62,8 +62,8 @@ namespace MR
           }
 
           if (inverse ?
-              gsl_fft_complex_inverse (&array.front().real(), 1, array.size(), wavetable, workspace) :
-              gsl_fft_complex_forward (&array.front().real(), 1, array.size(), wavetable, workspace)
+              gsl_fft_complex_inverse (reinterpret_cast<double*>(&array[0]), 1, array.size(), wavetable, workspace) :
+              gsl_fft_complex_forward (reinterpret_cast<double*>(&array[0]), 1, array.size(), wavetable, workspace)
              ) throw Exception ("error computing FFT");
         }
 

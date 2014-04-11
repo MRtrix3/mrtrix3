@@ -228,7 +228,7 @@ namespace MR
         }
 
 
-        void Overlay::draw (const Projection& projection, bool is_3D)
+        void Overlay::draw (const Projection& projection, bool is_3D, int axis, int slice)
         {
 
           if (!is_3D) {
@@ -269,7 +269,8 @@ namespace MR
 
 
 
-        void Overlay::toggle_shown_slot (const QModelIndex& index, const QModelIndex& index2) {
+        void Overlay::toggle_shown_slot (const QModelIndex& index, const QModelIndex& index2)
+        {
           if (index.row() == index2.row()) {
             image_list_view->setCurrentIndex(index);
           } else {
@@ -284,7 +285,8 @@ namespace MR
         }
 
 
-        void Overlay::update_slot (int unused) {
+        void Overlay::update_slot (int unused)
+        {
           updateGL();
         }
 
@@ -405,8 +407,13 @@ namespace MR
           opacity_slider->setEnabled (indices.size());
           interpolate_check_box->setEnabled (indices.size());
 
-          if (!indices.size())
+          if (!indices.size()) {
+            max_value->setValue (NAN);
+            min_value->setValue (NAN);
+            lower_threshold->setValue (NAN);
+            upper_threshold->setValue (NAN);
             return;
+          }
 
           float rate = 0.0f, min_val = 0.0f, max_val = 0.0f;
           float lower_threshold_val = 0.0f, upper_threshold_val = 0.0f;

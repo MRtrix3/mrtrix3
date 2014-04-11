@@ -23,12 +23,14 @@
 #ifndef __image_filter_optimal_threshold_h__
 #define __image_filter_optimal_threshold_h__
 
+#include "ptr.h"
+#include "image/buffer_scratch.h"
 #include "image/loop.h"
 #include "image/min_max.h"
-#include "math/golden_section_search.h"
-#include "image/buffer_scratch.h"
 #include "image/adapter/replicate.h"
-#include "ptr.h"
+#include "image/filter/base.h"
+#include "math/golden_section_search.h"
+
 
 namespace MR
 {
@@ -252,19 +254,22 @@ namespace MR
        * Header mask_header (input_data);
        * mask_header.info() = filter.info();
        *
-       * Buffer<int> mask_data (mask_header, argument[1]);
-       * Buffer<int>::voxel_type mask_voxel (mask_data);
+       * Buffer<bool> mask_data (mask_header, argument[1]);
+       * Buffer<bool>::voxel_type mask_voxel (mask_data);
        *
        * filter(input_voxel, mask_voxel);
        *
        * \endcode
        */
-      class OptimalThreshold : public ConstInfo
+      class OptimalThreshold : public Base
       {
         public:
           template <class InfoType>
-            OptimalThreshold (const InfoType& info) :
-              ConstInfo (info) { }
+          OptimalThreshold (const InfoType& info) :
+              Base (info)
+          {
+            datatype_ = DataType::Bit;
+          }
 
 
           template <class InputVoxelType, class OutputVoxelType>

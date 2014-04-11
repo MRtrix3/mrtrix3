@@ -90,6 +90,11 @@ void usage ()
     + Argument ("image", "the input image(s).").allow_multiple().type_image_in();
 
   OPTIONS
+    + Option ("norealign", 
+        "do not realign transform to near-default RAS coordinate system (the "
+        "default behaviour on image load). This is useful to inspect the transform "
+        "and strides as they are actually stored in the header, rather than as "
+        "MRtrix interprets them.") 
     + ExtractOption
     + GradExportOption;
 
@@ -156,6 +161,8 @@ void print_properties (const Image::Header& header)
 
 void run ()
 {
+  if (get_options ("norealign").size())
+    Image::Header::do_not_realign_transform = true;
 
   const bool format     = get_options("format")        .size();
   const bool ndim       = get_options("ndim")          .size();
