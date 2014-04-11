@@ -126,7 +126,7 @@ namespace MR
 
 
 
-        void Renderer::setup (size_t index, bool inverted, const GLubyte* colour)
+        void Renderer::setup (size_t index, bool inverted)
         {
           program.clear();
           frame_program.clear();
@@ -147,12 +147,11 @@ namespace MR
 
           std::string shader = 
               "in float amplitude;\n"
-              "out vec3 color;\n";
-          if (colour)
-            shader += "uniform vec3 colourmap_colour;\n";
-          shader += "void main () {\n"
-            "  " + std::string(maps[index].mapping) +
-            "}\n";
+              "out vec3 color;\n"
+              "uniform vec3 colourmap_colour;\n"
+              "void main () {\n"
+              "  " + std::string(maps[index].mapping) +
+              "}\n";
 
           GL::Shader::Fragment fragment_shader (shader);
 
@@ -191,7 +190,7 @@ namespace MR
           if (maps[object.colourmap].special) return;
           
           if (!program || !frame_program || object.colourmap != current_index || current_inverted != inverted)
-            setup (object.colourmap, inverted, maps[object.colourmap].is_colour ? object.colour : NULL);
+            setup (object.colourmap, inverted);
 
           if (!VB || !VAO) {
             VB.gen();
@@ -240,6 +239,9 @@ namespace MR
           program.start();
           gl::Uniform1f (gl::GetUniformLocation (program, "scale_x"), 2.0f / projection.width());
           gl::Uniform1f (gl::GetUniformLocation (program, "scale_y"), 2.0f / projection.height());
+          if (maps[object.colourmap].is_colour)
+            gl::Uniform3f (gl::GetUniformLocation (program, "colourmap_colour"), 
+                object.colour[0]/255.0f, object.colour[1]/255.0f, object.colour[2]/255.0f);
           gl::DrawArrays (gl::TRIANGLE_FAN, 0, 4);
           program.stop();
 

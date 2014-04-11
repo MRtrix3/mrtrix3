@@ -119,7 +119,7 @@ namespace MR
             bool current_inverted;
             const GLfloat width, height, inset, text_offset;
 
-            void setup (size_t index, bool inverted, const GLubyte* colour);
+            void setup (size_t index, bool inverted);
         };
 
 
