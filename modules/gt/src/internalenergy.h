@@ -43,8 +43,8 @@ namespace MR {
         {
         public:
           
-          InternalEnergyComputer(ParticleGrid& pgrid)
-            : pGrid(pgrid), cpot(1.0), dEint(0.0), neighbourhood(), normalization(1.0), rng()
+          InternalEnergyComputer(Stats& s, ParticleGrid& pgrid)
+            : EnergyComputer(s), pGrid(pgrid), cpot(1.0), dEint(0.0), neighbourhood(), normalization(1.0), rng()
           {
             neighbourhood.reserve(1000);
             ParticleEnd pe;
@@ -72,7 +72,7 @@ namespace MR {
               ep += Particle::L * dir;
               dEint += calcEnergy(pos, ep, par->getSuccessor()->getPosition(), par->getSuccessor()->getEndPoint(a));
             }
-            return dEint;
+            return dEint / stats.getTint();
           }
           
           double stageRemove(const Particle* par)
@@ -86,12 +86,15 @@ namespace MR {
               int a = (par->getSuccessor()->getPredecessor() == par) ? -1 : 1;
               dEint -= calcEnergy(par, 1, par->getSuccessor(), a);
             }
-            return dEint;
+            return dEint / stats.getTint();
           }
-          
-//          double stageConnect(const Particle* par, const int ep1, Particle* par2, int& ep2);
-          
+                    
           double stageConnect(const ParticleEnd& pe1, ParticleEnd& pe2);
+          
+          void acceptChanges() 
+          {
+            stats.incEintTotal(dEint);
+          }
           
           
         protected:

@@ -27,6 +27,7 @@
 #include "ptr.h"
 #include "thread/mutex.h"
 #include "image/transform.h"
+#include "image/buffer_preload.h"
 
 #include "math/rng.h"
 
@@ -51,7 +52,7 @@ namespace MR {
           MHSampler(const Image::Info &dwi, Properties& p, Stats& s, ParticleGrid& pgrid, 
                     EnergyComputer& e, Image::BufferPreload<bool>* m = NULL);
                     
-          void execute(const int niter);
+          void execute(const int niter, const double t0, const double t1);
           
           void next();
           
@@ -75,7 +76,7 @@ namespace MR {
           
           RefPtr<SpatialLock<> > lock;
           Math::RNG rng;
-          
+          float sigpos, sigdir;
           
           
           Point_t getRandPosInMask();

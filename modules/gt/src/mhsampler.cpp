@@ -34,7 +34,7 @@ namespace MR {
 
         MHSampler::MHSampler(const Image::Info &dwi, Properties &p, Stats &s, ParticleGrid &pgrid, 
                              EnergyComputer &e, Image::BufferPreload<bool>* m)
-          : props(p), stats(s), pGrid(pgrid), E(e), T(dwi)
+          : props(p), stats(s), pGrid(pgrid), E(e), T(dwi), sigpos(Particle::L / 8.), sigdir(0.2)
         {
           lock = new SpatialLock<>(3*Particle::L);  // FIXME take voxel size into account for setting lock threshold.
           if (m) {
@@ -53,14 +53,19 @@ namespace MR {
         
         
         
-        void MHSampler::execute(const int niter)
+        void MHSampler::execute(const int niter, const double t0, const double t1)
         {
           ProgressBar progress ("running MH sampler", niter/1000);
+          // exponantial annealing factor
+          double alpha = Math::pow(t1/t0, 1.0/double(niter/1000));
           for (int k = 0; k < niter; k++)
           {
             next();
-            if (k % 1000 == 0)
+            if (k % 1000 == 0) {
               progress++;
+              stats.setTint(stats.getTint()*alpha);
+              //std::cout << stats << std::endl;
+            }
           }
         }
         
@@ -100,6 +105,8 @@ namespace MR {
         void MHSampler::birth()
         {
           //TRACE;
+          stats.incN('b');
+          
           Point_t pos;
           do {
             pos = getRandPosInMask();
@@ -111,6 +118,7 @@ namespace MR {
           if (R > rng.uniform()) {
             E.acceptChanges();
             pGrid.add(pos, dir);
+            stats.incNa('b');
           }
           else {
             E.clearChanges();
@@ -123,6 +131,8 @@ namespace MR {
         void MHSampler::death()
         {
           //TRACE;
+          stats.incN('d');
+          
           unsigned int idx;
           Particle* par;
            do {
@@ -137,6 +147,7 @@ namespace MR {
           if (R > rng.uniform()) {
             E.acceptChanges();
             pGrid.remove(idx);
+            stats.incNa('d');
           }
           else {
             E.clearChanges();
@@ -149,6 +160,8 @@ namespace MR {
         void MHSampler::randshift()
         {
           //TRACE;
+          stats.incN('r');
+          
           unsigned int idx;
           Particle* par;
           do {
@@ -170,6 +183,7 @@ namespace MR {
           if (R > rng.uniform()) {
             E.acceptChanges();
             pGrid.shift(idx, pos, dir);
+            stats.incNa('r');
           }
           else {
             E.clearChanges();
@@ -182,6 +196,8 @@ namespace MR {
         void MHSampler::optshift()
         {
           //TRACE;
+          stats.incN('o');
+          
           unsigned int idx;
           Particle* par;
           do {
@@ -204,6 +220,7 @@ namespace MR {
           if (R > rng.uniform()) {
             E.acceptChanges();
             pGrid.shift(idx, pos, dir);
+            stats.incNa('o');
           }
           else {
             E.clearChanges();
@@ -216,41 +233,27 @@ namespace MR {
         void MHSampler::connect()       // TODO Current implementation does not prevent loops.
         {
           //TRACE;
+          stats.incN('c');
+          
           unsigned int idx;
           Particle* par;
-          //do {
+          do {
             par = pGrid.getRandom(idx);
             if (par == NULL)
               return;
-          //} while (! lock->lockIfNotLocked(par->getPosition()));
-          //Point_t pos0 = par->getPosition();
+          } while (! lock->lockIfNotLocked(par->getPosition()));
+          Point_t pos0 = par->getPosition();
           int alpha0 = (rng.uniform() < 0.5) ? -1 : 1;
           ParticleEnd pe0;
           pe0.par = par;
           pe0.alpha = alpha0;
           
-//          Particle* par2 = NULL;
-//          int alpha2;
-//          double dE = E.stageConnect(par, alpha0, par2, alpha2);
           ParticleEnd pe2;
           pe2.par = NULL;
           double dE = E.stageConnect(pe0, pe2);
           double R = exp(-dE);
-//          VAR(pe2.par);
-//          VAR(dE);
           if (R > rng.uniform()) {
             E.acceptChanges();
-//            if (par2) {
-//              if (alpha0 == -1)
-//                par->connectPredecessor(par2, alpha2);
-//              else
-//                par->connectSuccessor(par2, alpha2);
-//            } else {
-//              if ((alpha0 == -1) && par->hasPredecessor())
-//                par->removePredecessor();
-//              else if ((alpha0 == +1) && par->hasSuccessor())
-//                par->removeSuccessor();
-//            }
             if (pe2.par) {
               if (alpha0 == -1)
                 par->connectPredecessor(pe2.par, pe2.alpha);
@@ -262,12 +265,13 @@ namespace MR {
               else if ((alpha0 == +1) && par->hasSuccessor())
                 par->removeSuccessor();
             }
+            stats.incNa('c');
           }
           else {
             E.clearChanges();
           }
           
-          //lock->unlock(pos0);
+          lock->unlock(pos0);
         }
         
         
@@ -288,11 +292,11 @@ namespace MR {
         bool MHSampler::inMask(const Point_t p) const
         {
 //          if ((p[0] <= -0.5) || (p[0] >= dims[0]-0.5) || 
-//              (p[1] <= -0.5) || (p[1] >= dims[0]-0.5) ||
-//              (p[2] <= -0.5) || (p[2] >= dims[0]-0.5))
+//              (p[1] <= -0.5) || (p[1] >= dims[1]-0.5) ||
+//              (p[2] <= -0.5) || (p[2] >= dims[2]-0.5))
           if ((p[0] <= 0.0) || (p[0] >= dims[0]-1.0) || 
-              (p[1] <= 0.0) || (p[1] >= dims[0]-1.0) ||
-              (p[2] <= 0.0) || (p[2] >= dims[0]-1.0))
+              (p[1] <= 0.0) || (p[1] >= dims[1]-1.0) ||
+              (p[2] <= 0.0) || (p[2] >= dims[2]-1.0))
             return false;
           if (mask) {
             (*mask)[0] = Math::round(p[0]);
@@ -314,8 +318,8 @@ namespace MR {
         
         void MHSampler::moveRandom(const Particle *par, Point_t &pos, Point_t &dir)
         {
-          pos = par->getPosition() + Point_t(rng.normal(Particle::L/8), rng.normal(Particle::L/8), rng.normal(Particle::L/8));
-          dir = par->getDirection() + Point_t(rng.normal(0.25), rng.normal(0.25), rng.normal(0.25));
+          pos = par->getPosition() + Point_t(rng.normal(sigpos), rng.normal(sigpos), rng.normal(sigpos));
+          dir = par->getDirection() + Point_t(rng.normal(sigdir), rng.normal(sigdir), rng.normal(sigdir));
           dir.normalise();
         }
         
@@ -356,9 +360,9 @@ namespace MR {
         double MHSampler::calcShiftProb(const Particle *par, const Point_t &pos, const Point_t &dir) const
         {
           Point_t Dpos = par->getPosition() - pos;
-          Point_t Ddir = par->getPosition() - dir;
-          return gsl_ran_gaussian_pdf(Dpos[0], Particle::L/8) * gsl_ran_gaussian_pdf(Dpos[1], Particle::L/8) * gsl_ran_gaussian_pdf(Dpos[2], Particle::L/8) *
-              gsl_ran_gaussian_pdf(Ddir[0], 0.25) * gsl_ran_gaussian_pdf(Ddir[1], 0.25) * gsl_ran_gaussian_pdf(Ddir[2], 0.25);
+          Point_t Ddir = par->getDirection() - dir;
+          return gsl_ran_gaussian_pdf(Dpos[0], sigpos) * gsl_ran_gaussian_pdf(Dpos[1], sigpos) * gsl_ran_gaussian_pdf(Dpos[2], sigpos) *
+              gsl_ran_gaussian_pdf(Ddir[0], sigdir) * gsl_ran_gaussian_pdf(Ddir[1], sigdir) * gsl_ran_gaussian_pdf(Ddir[2], sigdir);
         }
         
         

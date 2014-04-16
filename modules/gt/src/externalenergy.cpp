@@ -103,6 +103,8 @@ namespace MR {
           }
           //VAR(K);
           //VAR(A);
+          Math::pinv(pinvA, A);
+          //VAR(pinvA);          
         }
         
         
@@ -125,6 +127,8 @@ namespace MR {
   //          eext_vox.value() = calcEnergy();
   //        }
           Math::Vector<float> fiso;
+          double e;
+          dE = 0.0;
           for (loop.start(dwi_vox); loop.ok(); loop.next(dwi_vox))
           {
             tod_vox[0] = fiso_vox[0] = eext_vox[0] = dwi_vox[0];
@@ -132,10 +136,13 @@ namespace MR {
             tod_vox[2] = fiso_vox[2] = eext_vox[2] = dwi_vox[2];
             y = Math::Vector<float>(dwi_vox.address(), s.nrows);
             t = Math::Vector<float>(tod_vox.address(), s.ncols);
-            eext_vox.value() = calcEnergy();
+            e = calcEnergy();
+            eext_vox.value() = e;
+            dE += e;
             fiso = f;                         // Cast double to float...
             memcpy(fiso_vox.address(), fiso.ptr(), s.nf*sizeof(float));
           }
+          stats.incEextTotal(dE - stats.getEextTotal());  // TESTING
         }
         
         void ExternalEnergyComputer::acceptChanges()
@@ -149,6 +156,7 @@ namespace MR {
             memcpy(fiso_vox.address(), changes_fiso[k].ptr(), s.nf*sizeof(float));
             eext_vox.value() = changes_eext[k];
           }
+          stats.incEextTotal(dE);
           clearChanges();
         }
         
@@ -159,6 +167,7 @@ namespace MR {
           changes_tod.clear();
           changes_fiso.clear();
           changes_eext.clear();
+          dE = 0.0;
         }
         
         
@@ -215,7 +224,8 @@ namespace MR {
         
         double ExternalEnergyComputer::eval()
         {
-          double dE = 0.0;
+          dE = 0.0;
+          double e;
           for (int k = 0; k != changes_vox.size(); ++k) 
           {
             dwi_vox[0] = eext_vox[0] = changes_vox[k][0];
@@ -223,43 +233,45 @@ namespace MR {
             dwi_vox[2] = eext_vox[2] = changes_vox[k][2];
             y = Math::Vector<float>(dwi_vox.address(), s.nrows);
             t = changes_tod[k];
-            double e = calcEnergy();
+            e = calcEnergy();
             changes_fiso.push_back(f);
-            dE += e - eext_vox.value();
+            dE += e;
+            dE -= eext_vox.value();
             changes_eext.push_back(e);
           }
-          return dE;
+          return dE / stats.getText();
         }
         
         
         double ExternalEnergyComputer::calcEnergy()
         {
           Math::mult(y, 1.0, -1.0, CblasNoTrans, s.K, t);
-          Math::Matrix<double> work;
+          //Math::Matrix<double> work;
           
           // Original:
-          //Math::solve_LS(f, s.A, y, work);
+//          Math::solve_LS(f, s.A, y, work);
           
           // Fixed Tikhonov:
-          //double reg = 1.0;
-          //Math::solve_LS_reg(f, s.A, y, reg, work);
+//          double reg = 1.0;
+//          Math::solve_LS_reg(f, s.A, y, reg, work);
           
-          // Adaptive Tikhonov (works well, but very slow):
-          Math::Vector<double> w (s.nf), f0 (s.nf);
-          f.zero();
-          w = 1.0;
-          do {
-            f0 = f;
-            Math::solve_LS_reg(f, s.A, y, w, work);
-            for (int k = 0; k < s.nf; k++)
-              w[k] = (f[k] < 0.0) ? 100.0 : 1.0;
-            f0 -= f;
-          } while (Math::norm2(f0) > 0.001);
+          // Adaptive Tikhonov:
+//          Math::Vector<double> w (s.nf), f0 (s.nf);
+//          f.zero();
+//          w = 0.0;
+//          do {
+//            f0 = f;
+//            Math::solve_LS_reg(f, s.A, y, w, work);
+//            for (int k = 0; k < s.nf; k++)
+//              w[k] = (f[k] <= 0.0) ? 1000.0 : 0.0;
+//            f0 -= f;
+//          } while (Math::norm2(f0) > 0.00001);
           
-          // Clean cutoff (still rather slow):
-  //        Math::solve_LS(f, s.A, y, work);
-  //        for (int k = 0; k < s.nf; k++)
-  //          f[k] = (f[k] < 0.0) ? 0.0 : (f[k] > 1.0) ? 1.0 : f[k];
+          // Simple cutoff:
+          //Math::solve_LS(f, s.A, y, work);
+          Math::mult(f, s.pinvA, y);
+          for (int k = 0; k < s.nf; k++)
+            f[k] = (f[k] < 0.0) ? 0.0 : (f[k] > 1.0) ? 1.0 : f[k];
           
           Math::mult(y, 1.0, -1.0, CblasNoTrans, s.A, f);
           return Math::norm2(y) / s.nrows;

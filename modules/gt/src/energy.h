@@ -27,6 +27,7 @@
 #include <vector>
 
 #include "particle.h"
+#include "gt.h"
 
 
 namespace MR {
@@ -37,20 +38,24 @@ namespace MR {
         class EnergyComputer
         {
         public:
+          EnergyComputer(Stats& s) : stats(s) { }
+          
+          virtual ~EnergyComputer() { }
           
           virtual double stageAdd(const Point_t& pos, const Point_t& dir) { return 0.0; }
           
           virtual double stageShift(const Particle* par, const Point_t& pos, const Point_t& dir) { return 0.0; }
           
           virtual double stageRemove(const Particle* par) { return 0.0; }
-          
-//          virtual double stageConnect(const Particle* par, const int ep1, Particle* par2, int& ep2) { return 0.0; }
-          
+                    
           virtual double stageConnect(const ParticleEnd& pe1, ParticleEnd& pe2) { return 0.0; }
           
           virtual void acceptChanges() { }
           
           virtual void clearChanges() { }
+          
+        protected:
+          Stats& stats;
           
           
         };
@@ -62,9 +67,9 @@ namespace MR {
           
           // FIXME: copy-constructable ?
           
-          EnergySumComputer(EnergyComputer& e1, double lam1, EnergyComputer& e2, double lam2)
-            : EnergyComputer(), _e1(e1), _e2(e2), l1(lam1), l2(lam2)
-          { }
+          EnergySumComputer(Stats& stat, EnergyComputer& e1, double lam1, EnergyComputer& e2, double lam2)
+            : EnergyComputer(stat), _e1(e1), _e2(e2), l1(lam1), l2(lam2)
+          {  }
           
           double stageAdd(const Point_t& pos, const Point_t& dir) 
           { 
@@ -80,23 +85,10 @@ namespace MR {
           {
             return l1 * _e1.stageRemove(par) + l2 * _e2.stageRemove(par);
           }
-          
-//          double stageConnect(const Particle *par, const int ep1, Particle *par2, int &ep2)
-//          {
-//            Particle* tmp = par2;
-//            VAR(tmp);
-//            double eint = _e1.stageConnect(par, ep1, tmp, ep2);
-//            VAR(tmp);
-//            par2 = tmp;
-//            double eext = _e2.stageConnect(par, ep1, par2, ep2);
-//            VAR(par2);
-//            return l1 * eint + l2 * eext;
-//            // Warning: not symmetric due to output variable!
-//          }
-          
+                    
           double stageConnect(const ParticleEnd& pe1, ParticleEnd& pe2)
           {
-            double eint = _e1.stageConnect(pe1, pe2);
+            double eint = _e1.stageConnect(pe1, pe2);   // Warning: not symmetric due to output variable!
             double eext = _e2.stageConnect(pe1, pe2);
             return l1 * eint + l2 * eext;
           }

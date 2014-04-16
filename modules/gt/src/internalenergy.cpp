@@ -30,39 +30,19 @@ namespace MR {
       namespace GT {
         
         
-        
-//        double InternalEnergyComputer::stageConnect(const Particle *par, const int ep1, Particle *par2, int &ep2)
-//        {
-//          // new
-//          scanNeighbourhood(par, ep1, 0.01);     // TODO Current temperature
-//          ParticleEnd pe = pickNeighbour();
-//          par2 = pe.par;
-//          VAR(par2);
-//          ep2 = pe.alpha;
-//          double dE = pe.e_conn;
-//          // old
-//          Particle* par0 = (ep1 == -1) ? par->getPredecessor() : par->getSuccessor();
-//          if (par0) {
-//            int a = (par0->getPredecessor() == par) ? -1 : +1;
-//            dE -= calcEnergy(par, ep1, par0, a);
-//          }
-//          return dE;
-//        }
-        
-        
         double InternalEnergyComputer::stageConnect(const ParticleEnd& pe1, ParticleEnd &pe2)
         {
           // new
-          scanNeighbourhood(pe1.par, pe1.alpha, 0.01);     // TODO Current temperature
+          scanNeighbourhood(pe1.par, pe1.alpha, stats.getTint());
           pe2 = pickNeighbour();
-          double dE = pe2.e_conn;
+          dEint = pe2.e_conn;
           // old
           Particle* par0 = (pe1.alpha == -1) ? pe1.par->getPredecessor() : pe1.par->getSuccessor();
           if (par0) {
             int a = (par0->getPredecessor() == pe1.par) ? -1 : +1;
-            dE -= calcEnergy(pe1.par, pe1.alpha, par0, a);
+            dEint -= calcEnergy(pe1.par, pe1.alpha, par0, a);
           }
-          return dE;
+          return dEint / stats.getTint();
         }
         
         

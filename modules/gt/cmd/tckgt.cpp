@@ -26,6 +26,7 @@
 
 #include <limits>
 
+#include "math/SH.h"
 #include "image/buffer_preload.h"
 #include "image/buffer_scratch.h"
 
@@ -86,55 +87,56 @@ void usage ()
     + Argument ("lambda").type_float(0, 1., std::numeric_limits<float>::max())
       
   + Option ("weight",
-          "set the weight by which particles contribute to the model.")
+            "set the weight by which particles contribute to the model.")
     + Argument ("w").type_float(1e-6, 0.1, 1.0)
 
   + Option ("cpot",
-          "set the energy term that drives two segments together.")
+            "set the energy term that drives two segments together.")
     + Argument ("c").type_float(0, 1.0, 1e6)
 
   + Option ("wmr",
-          "set the response of a single particle on the DWI signal.").required()
+            "set the response of a single particle on the DWI signal.").required()
     + Argument ("response").type_file()
 
   + Option ("csfr",
-          "set the response of CSF on the DWI signal.")
+            "set the response of CSF on the DWI signal.")
     + Argument ("response").type_file()
 
   + Option ("gmr",
-          "set the response of GM on the DWI signal.")
+            "set the response of GM on the DWI signal.")
     + Argument ("response").type_file()
 
   + Option ("balance",
-          "set the balance between internal and external energy.")
+            "set the balance between internal and external energy."
+            "Negative values give more weight to the internal energy, positive to the external energy.")
     + Argument ("bal").type_float(-100, 0, 100)
 
   + Option ("prob",
-          "set the probabilities of generating birth, death, randshift, optshift and connect probabilities respectively.")
+            "set the probabilities of generating birth, death, randshift, optshift and connect probabilities respectively.")
     + Argument ("prob").type_sequence_float()
 
   + Option ("t0",
-          "set the initial temperature of the metropolis hastings optimizer.")
+            "set the initial temperature of the metropolis hastings optimizer.")
     + Argument ("start").type_float(1e-6, 0.1, 1e6)
 
   + Option ("t1",
-          "set the final temperature of the metropolis hastings optimizer.")
+            "set the final temperature of the metropolis hastings optimizer.")
     + Argument ("end").type_float(1e-6, 0.001, 1e6)
       
   + Option ("niter",
-          "set the number of iterations of the metropolis hastings optimizer.")
+           "set the number of iterations of the metropolis hastings optimizer.")
     + Argument ("n").type_integer(1, 1000000, std::numeric_limits<int>::max())
 
   + Option ("todi",
-          "filename of the resulting TOD image.")
+            "filename of the resulting TOD image.")
     + Argument ("todimage").type_image_out()
 
   + Option ("fiso",
-          "filename of the resulting ISO fractions image.")
+            "filename of the resulting ISO fractions image.")
     + Argument ("iso").type_image_out()
 
   + Option ("eext",
-          "filename of the resulting image of the residual external energy.")
+            "filename of the resulting image of the residual external energy.")
     + Argument ("eext").type_image_out();
 
 
@@ -248,35 +250,48 @@ void run ()
   opt = get_options("niter");
   if (opt.size())
     niter = opt[0][0];
+  
+  double t0 = 0.1;
+  opt = get_options("t0");
+  if (opt.size())
+    t0 = opt[0][0];
+  
+  double t1 = 0.001;
+  opt = get_options("t1");
+  if (opt.size())
+    t1 = opt[0][0];
 
 
   // Prepare buffers --------------------------------------------------------------------
   
-  PAUSE;
+  //PAUSE;
 
   Image::BufferPreload<float> dwi_buffer (argument[0], Image::Stride::contiguous_along_axis(3));
   //Image::ConstInfo dwi_info (dwi_buffer);
 
+  Stats stats (t0, t1);
   
   ExternalEnergyComputer::Shared EextShared = ExternalEnergyComputer::Shared(dwi_buffer, properties);
-  ExternalEnergyComputer Eext = ExternalEnergyComputer(EextShared);
+  ExternalEnergyComputer Eext = ExternalEnergyComputer(stats, EextShared);
   
   
   ParticleGrid pgrid = ParticleGrid(dwi_buffer);
   
-  InternalEnergyComputer Eint = InternalEnergyComputer(pgrid);
+  InternalEnergyComputer Eint = InternalEnergyComputer(stats, pgrid);
   
   
-  EnergySumComputer Esum = EnergySumComputer(Eint, properties.lam_int/0.1, 
-                                             Eext, properties.lam_ext/(0.0001*properties.resp_WM(0,0)*properties.resp_WM(0,0)));
+  EnergySumComputer Esum = EnergySumComputer(stats, Eint, properties.lam_int, 
+                                             Eext, properties.lam_ext * sqrt(4*M_PI)/(properties.resp_WM(0,0)*properties.resp_WM(0,0)));
   
   
-  Stats stats;
   MHSampler mhs (dwi_buffer, properties, stats, pgrid, Esum, mask);
   
-  mhs.execute(niter);
+  mhs.execute(niter, t0, t1);
   
   VAR(pgrid.getTotalCount());
+  
+  std::cout << stats << std::endl;
+  
   
   // Copy results to output buffers -----------------------------------------------------
   

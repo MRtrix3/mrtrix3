@@ -29,7 +29,13 @@ namespace MR {
     namespace Tractography {
       namespace GT {
 
-        
+        std::ostream& operator<< (std::ostream& o, Stats const& stats)
+        {
+          return o << stats.Tint << ", " << stats.EextTot << ", " << stats.EintTot << ": " <<
+                      stats.getAcceptanceRate('b') << ", " << stats.getAcceptanceRate('d') << ", " <<
+                      stats.getAcceptanceRate('r') << ", " << stats.getAcceptanceRate('o') << ", " <<
+                      stats.getAcceptanceRate('c');
+        }
 
       }
     }

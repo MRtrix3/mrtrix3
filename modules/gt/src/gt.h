@@ -24,11 +24,9 @@
 #ifndef __gt_gt_h__
 #define __gt_gt_h__
 
+#include <iostream>
+
 #include "thread/mutex.h"
-#include "image/info.h"
-#include "image/buffer_preload.h"
-#include "image/buffer_scratch.h"
-#include "math/SH.h"
 #include "math/matrix.h"
 #include "math/vector.h"
 
@@ -37,6 +35,7 @@ namespace MR {
   namespace DWI {
     namespace Tractography {
       namespace GT {
+        
         
         struct Properties
         {
@@ -58,60 +57,130 @@ namespace MR {
         };
         
         
+        
         class Stats
         {
         public:
-          Stats() { }
           
-          double getTemperature() const {
-            return t;
+          Stats(double T0, double T1) 
+            : Text(T1), Tint(T0), EextTot(0.0), EintTot(0.0), n_total(0) 
+          {
+            for (int k = 0; k != 5; k++)
+              n_gen[k] = n_acc[k] = 0;
           }
           
-          void setTemperature(double temp) {
+          
+          // getters and setters ----------------------------------------------
+          
+          double getText() const {
+            return Text;
+          }
+          
+          double getTint() const {
+            return Tint;
+          }
+          
+          void setTint(double temp) {
             Thread::Mutex::Lock lock (mutex);
-            t = temp;
+            Tint = temp;
           }
           
-          void setStats(unsigned int s[]) {
-            Thread::Mutex::Lock lock (mutex);
-            memcpy(stats, s, 10*sizeof(int));
+          
+          double getEextTotal() const {
+            return EextTot;
           }
+          
+          double getEintTotal() const {
+            return EintTot;
+          }
+          
+          void incEextTotal(double d) {
+            Thread::Mutex::Lock lock (mutex);
+            EextTot += d;
+          }
+          
+          void incEintTotal(double d) {
+            Thread::Mutex::Lock lock (mutex);
+            EintTot += d;
+          }          
+          
+          
+          unsigned int getN(const char p) const {
+            switch (p) {
+              case 'b': return n_gen[0];
+              case 'd': return n_gen[1];
+              case 'r': return n_gen[2];
+              case 'o': return n_gen[3];
+              case 'c': return n_gen[4];
+              default: return 0;
+            }
+          }
+          
+          unsigned int getNa(const char p) const {
+            switch (p) {
+              case 'b': return n_acc[0];
+              case 'd': return n_acc[1];
+              case 'r': return n_acc[2];
+              case 'o': return n_acc[3];
+              case 'c': return n_acc[4];
+              default: return 0;
+            }
+          }
+          
+          void incN(const char p, unsigned int i = 1) {
+            Thread::Mutex::Lock lock (mutex);
+            switch (p) {
+              case 'b': n_gen[0] += i; break;
+              case 'd': n_gen[1] += i; break;
+              case 'r': n_gen[2] += i; break;
+              case 'o': n_gen[3] += i; break;
+              case 'c': n_gen[4] += i; break;
+              default: return;
+            }
+            n_total += i;
+          }
+          
+          void incNa(const char p, unsigned int i = 1) {
+            Thread::Mutex::Lock lock (mutex);
+            switch (p) {
+              case 'b': n_acc[0] += i; break;
+              case 'd': n_acc[1] += i; break;
+              case 'r': n_acc[2] += i; break;
+              case 'o': n_acc[3] += i; break;
+              case 'c': n_acc[4] += i; break;
+            }
+          }
+          
+          double getAcceptanceRate(const char p) const {
+            switch (p) {
+              case 'b': return double(n_acc[0]) / double(n_gen[0]);
+              case 'd': return double(n_acc[1]) / double(n_gen[1]);
+              case 'r': return double(n_acc[2]) / double(n_gen[2]);
+              case 'o': return double(n_acc[3]) / double(n_gen[3]);
+              case 'c': return double(n_acc[4]) / double(n_gen[4]);
+              default: return 0.0;
+            }
+          }
+          
+          
+          friend std::ostream& operator<< (std::ostream& o, Stats const& stats);
+          
 
         protected:
           Thread::Mutex mutex;
-          double t;                 // Temperature
-          unsigned int stats[10];   // Stats
+          double Text, Tint;
+          double EextTot, EintTot;
+
+          unsigned int n_gen[5];
+          unsigned int n_acc[5];
+          unsigned int n_total;
+          
+          
         };
         
-
-//        class Shared
-//        {
-//        public:
-//          Shared(const std::string& dwi, Properties& p)
-//            : props(p), stats(),
-//              dwimage(dwi, Image::Stride::contiguous_along_axis(3))
-//          {
-//            mask = NULL;    // TODO
-//            Image::Info info (dwimage);
-//            info.dim(3) = Math::SH::NforL(props.Lmax);
-//            TOD = Image::BufferScratch(info);
-//            info.dim(3) = 2;    // TODO
-//            fiso = Image::BufferScratch(info);
-//            info.ndim() = 3;
-//            Eext = Image::BufferScratch(info);
-//          }
-          
-//          Properties props;
-//          Stats stats;
-          
-//          Image::BufferPreload<float> dwimage;
-//          Image::BufferPreload<float>* mask;
-          
-//          Image::BufferScratch<float> TOD;
-//          Image::BufferScratch<float> fiso;
-//          Image::BufferScratch<float> Eext;
-          
-//        };
+        
+        
+        
         
 
       }
