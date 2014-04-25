@@ -29,7 +29,6 @@
 #include "image/loop.h"
 
 #include "math/lsnonneg.h"
-#include "math/nnls.h"
 
 
 namespace MR {
@@ -329,18 +328,7 @@ namespace MR {
           for (size_t i = 0; i < s.nf; i++)
             f[i] = fk[i];
           
-//          fk.zero();
-//          Math::Matrix<double> a (s.Ak);
-//          double rnorm;
-//          double w [s.nf+1];
-//          double zz [s.nrows];
-//          int index [s.nf+1];
-//          int mode;
-//          nnls(a.ptr(), s.nf+1, s.nrows, s.nf+1, y.ptr(), fk.ptr(), &rnorm, w, zz, index, &mode, 10); // Iets mis met de inputs?
-//          for (size_t i = 0; i < s.nf; i++)
-//            f[i] = fk[i];
-          
-          
+
           // TODO: fracties hernormaliseren. 
           // Vereist natuurlijk "gewogen" 0de orde TOD, dus moet je eerst de weging doorvoeren 
           // in de TOD-optelling, eerder dan bij initialisatie van matrix K.
