@@ -28,6 +28,9 @@
 #include "math/SH.h"
 #include "image/loop.h"
 
+#include "math/lsnonneg.h"
+#include "math/nnls.h"
+
 
 namespace MR {
   namespace DWI {
@@ -101,9 +104,34 @@ namespace MR {
               }
             }
           }
+          K *= props.weight;
           //VAR(K);
           //VAR(A);
-          Math::pinv(pinvA, A);
+          
+          Ak.allocate(nrows, nf+1);
+          Ak.zero();
+          for (size_t i = 0; i < nrows; i++) {
+            for (size_t j = 0; j < nf; j++) {
+              Ak(i,j) = A(i,j);
+            }
+          }
+          // TEST: If using CSF/GM kernels, add isoptropic WM kernel in fit.
+          if (props.resp_CSF) {
+            for (size_t s = 0; s < shells.count(); s++) {
+              for (std::vector<size_t>::const_iterator it = shells[s].get_volumes().begin(); it != shells[s].get_volumes().end(); ++it) {
+                Ak(*it,nf) = props.resp_WM(s,0) / Math::sqrt(4*M_PI);
+              }
+            }
+          }
+          Math::pinv(pinvA, Ak);
+          
+          H.allocate(nf+1, nf+1);
+          H.zero();
+          Math::mult(H, 1.0, CblasTrans, Ak, CblasNoTrans, Ak);
+          Hinv = H;
+          Math::Cholesky::inv(Hinv);  // invert in place          
+          
+//          Math::pinv(pinvA, A);
           //VAR(pinvA);          
         }
         
@@ -136,13 +164,16 @@ namespace MR {
             tod_vox[2] = fiso_vox[2] = eext_vox[2] = dwi_vox[2];
             y = Math::Vector<float>(dwi_vox.address(), s.nrows);
             t = Math::Vector<float>(tod_vox.address(), s.ncols);
+            
+            f = Math::Vector<float>(fiso_vox.address(), s.nf);
+            
             e = calcEnergy();
             eext_vox.value() = e;
             dE += e;
             fiso = f;                         // Cast double to float...
             memcpy(fiso_vox.address(), fiso.ptr(), s.nf*sizeof(float));
           }
-          stats.incEextTotal(dE - stats.getEextTotal());  // TESTING
+          stats.incEextTotal(dE - stats.getEextTotal());  // Reset total external energy
         }
         
         void ExternalEnergyComputer::acceptChanges()
@@ -228,10 +259,13 @@ namespace MR {
           double e;
           for (int k = 0; k != changes_vox.size(); ++k) 
           {
-            dwi_vox[0] = eext_vox[0] = changes_vox[k][0];
-            dwi_vox[1] = eext_vox[1] = changes_vox[k][1];
-            dwi_vox[2] = eext_vox[2] = changes_vox[k][2];
+            dwi_vox[0] = fiso_vox[0] = eext_vox[0] = changes_vox[k][0];
+            dwi_vox[1] = fiso_vox[1] = eext_vox[1] = changes_vox[k][1];
+            dwi_vox[2] = fiso_vox[2] = eext_vox[2] = changes_vox[k][2];
             y = Math::Vector<float>(dwi_vox.address(), s.nrows);
+            
+            f = Math::Vector<float>(fiso_vox.address(), s.nf);
+            
             t = changes_tod[k];
             e = calcEnergy();
             changes_fiso.push_back(f);
@@ -269,9 +303,47 @@ namespace MR {
           
           // Simple cutoff:
           //Math::solve_LS(f, s.A, y, work);
-          Math::mult(f, s.pinvA, y);
-          for (int k = 0; k < s.nf; k++)
-            f[k] = (f[k] < 0.0) ? 0.0 : (f[k] > 1.0) ? 1.0 : f[k];
+//          Math::mult(f, s.pinvA, y);
+//          for (int k = 0; k < s.nf; k++)
+//            f[k] = (f[k] < 0.0) ? 0.0 : (f[k] > 1.0) ? 1.0 : f[k];
+          
+          // TEST: Add isotropic kernel for residual white matter fraction.
+          Math::Vector<double> fk (s.nf+1), c;
+//          Math::mult(fk, s.pinvA, y);
+//          for (size_t i = 0; i < s.nf; i++)
+//            f[i] = (fk[i] < 0.0) ? 0.0 : (fk[i] > 1.0) ? 1.0 : fk[i];
+          
+          // TEST: Non-negativity constrained LS.
+//          Math::solve_LS_nonneg(f, s.A, y);
+          
+          // With both.
+//          Math::mult(c, -1.0, CblasTrans, s.Ak, y);   // -Ak^T y
+//          fk[s.nf] = 1.0;                             // Initialise NNLS solver.
+//          for (size_t i = 0; i < s.nf; i++)
+//            fk[s.nf] -= fk[i] = f[i];
+//          Math::solve_LS_nonneg_Hf(fk, s.H, c);
+//          for (size_t i = 0; i < s.nf; i++)
+//            f[i] = fk[i];
+          Math::mult(c, 1.0, CblasTrans, s.Ak, y);   // Ak^T y
+          Math::solve_LS_nonneg3_Hf(fk, s.H, s.Hinv, c);
+          for (size_t i = 0; i < s.nf; i++)
+            f[i] = fk[i];
+          
+//          fk.zero();
+//          Math::Matrix<double> a (s.Ak);
+//          double rnorm;
+//          double w [s.nf+1];
+//          double zz [s.nrows];
+//          int index [s.nf+1];
+//          int mode;
+//          nnls(a.ptr(), s.nf+1, s.nrows, s.nf+1, y.ptr(), fk.ptr(), &rnorm, w, zz, index, &mode, 10); // Iets mis met de inputs?
+//          for (size_t i = 0; i < s.nf; i++)
+//            f[i] = fk[i];
+          
+          
+          // TODO: fracties hernormaliseren. 
+          // Vereist natuurlijk "gewogen" 0de orde TOD, dus moet je eerst de weging doorvoeren 
+          // in de TOD-optelling, eerder dan bij initialisatie van matrix K.
           
           Math::mult(y, 1.0, -1.0, CblasNoTrans, s.A, f);
           return Math::norm2(y) / s.nrows;

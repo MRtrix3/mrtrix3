@@ -46,6 +46,7 @@ namespace MR {
           float p_connect;
           
           double density;
+          double weight;
           int Lmax;
           
           double lam_ext;

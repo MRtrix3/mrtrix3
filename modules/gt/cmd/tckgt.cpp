@@ -169,6 +169,7 @@ void run ()
   properties.p_optshift = 0.10;
   properties.p_connect = 0.35;
   properties.density = 1.;
+  properties.weight = 0.1;
   properties.lam_ext = 1.;
   properties.lam_int = 1.;
   
@@ -180,14 +181,12 @@ void run ()
   if (opt.size()) 
     properties.density = opt[0][0];
   
-  double weight = 0.1;
   opt = get_options("weight");
   if (opt.size())
-    weight = opt[0][0];
+    properties.weight = opt[0][0];
   
   opt = get_options("wmr");
   Math::Matrix<float> wmr (opt[0][0]);
-  wmr *= weight;
   properties.resp_WM = wmr;
   
   Math::Vector<float> csfr;
@@ -281,7 +280,7 @@ void run ()
   
   
   EnergySumComputer Esum = EnergySumComputer(stats, Eint, properties.lam_int, 
-                                             Eext, properties.lam_ext * sqrt(4*M_PI)/(properties.resp_WM(0,0)*properties.resp_WM(0,0)));
+                                             Eext, properties.lam_ext * sqrt(4*M_PI)/(properties.resp_WM(0,0)*properties.resp_WM(0,0)*properties.weight*properties.weight));
   
   
   MHSampler mhs (dwi_buffer, properties, stats, pgrid, Esum, mask);
