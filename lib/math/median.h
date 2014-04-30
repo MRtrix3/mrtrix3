@@ -42,8 +42,8 @@ namespace MR
           return false;
         }
 
-      template <> inline bool not_a_number (float x) { return isnan (x); }
-      template <> inline bool not_a_number (double x) { return isnan (x); }
+      template <> inline bool not_a_number (float x) { return std::isnan (x); }
+      template <> inline bool not_a_number (double x) { return std::isnan (x); }
     }
 
 
