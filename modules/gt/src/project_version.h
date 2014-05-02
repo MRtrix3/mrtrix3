@@ -1,1 +1,0 @@
-#define MRTRIX_PROJECT_VERSION "0.3.10-129-g68b4f370-dirty"
