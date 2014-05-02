@@ -1,8 +1,6 @@
-===================================================================
-                           MRtrix
-===================================================================
+# MRtrix
 
-The complete documentation for MRtrix is in doc/index.html, 
+The complete documentation for MRtrix will eventually be found on the [wiki](https://github.com/jdtournier/mrtrix3/wiki),
 including a detailed decription of the installation procedure.
 
 
