@@ -96,6 +96,16 @@ namespace MR {
             stats.incEintTotal(dEint);
           }
           
+          double getChemPot() const
+          {
+            return cpot;
+          }
+          
+          void setChemPot(const double chempot)
+          {
+            cpot = chempot;
+          }
+          
           
         protected:
           ParticleGrid& pGrid;

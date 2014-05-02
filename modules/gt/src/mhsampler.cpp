@@ -363,6 +363,11 @@ namespace MR {
           Point_t Ddir = par->getDirection() - dir;
           return gsl_ran_gaussian_pdf(Dpos[0], sigpos) * gsl_ran_gaussian_pdf(Dpos[1], sigpos) * gsl_ran_gaussian_pdf(Dpos[2], sigpos) *
               gsl_ran_gaussian_pdf(Ddir[0], sigdir) * gsl_ran_gaussian_pdf(Ddir[1], sigdir) * gsl_ran_gaussian_pdf(Ddir[2], sigdir);
+//	  Point_t Dep1 = par->getEndPoint(-1) - (pos - Particle::L * dir);
+//	  Point_t Dep2 = par->getEndPoint(1) - (pos + Particle::L * dir);
+//	  double sigma = Particle::L/2;
+//	  return gsl_ran_gaussian_pdf(Dep1[0], sigma) * gsl_ran_gaussian_pdf(Dep1[1], sigma) * gsl_ran_gaussian_pdf(Dep1[2], sigma) *
+//		 gsl_ran_gaussian_pdf(Dep2[0], sigma) * gsl_ran_gaussian_pdf(Dep2[1], sigma) * gsl_ran_gaussian_pdf(Dep2[2], sigma);
         }
         
         

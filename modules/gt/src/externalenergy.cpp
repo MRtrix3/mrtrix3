@@ -323,6 +323,7 @@ namespace MR {
 //          Math::solve_LS_nonneg_Hf(fk, s.H, c);
 //          for (size_t i = 0; i < s.nf; i++)
 //            f[i] = fk[i];
+          
           Math::mult(c, 1.0, CblasTrans, s.Ak, y);   // Ak^T y
           Math::solve_LS_nonneg3_Hf(fk, s.H, s.Hinv, c);
           for (size_t i = 0; i < s.nf; i++)
@@ -334,7 +335,7 @@ namespace MR {
           // in de TOD-optelling, eerder dan bij initialisatie van matrix K.
           
           Math::mult(y, 1.0, -1.0, CblasNoTrans, s.A, f);
-          return Math::norm2(y) / s.nrows;
+          return Math::norm2(y) / s.nrows + 5e-3 * t[0];  // Test: Tikhonov on segments
         }
         
         

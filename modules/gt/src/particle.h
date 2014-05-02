@@ -230,20 +230,20 @@ namespace MR {
         };
         
         
-        // Define bias term ("chemical potential") in the internal energy.
-        static float ChemPot;// = 1.0;
+//        // Define bias term ("chemical potential") in the internal energy.
+//        static float ChemPot;// = 1.0;
         
-        /**
-         * Calculates the connection energy between any 2 particles P1 and P2 at their end points ep1 and ep2 (-1,1).
-         *
-         * Note that this function does not check whether both particles are connected!
-         */
-        inline float calcConnectionEnergy(const Particle* P1, const int ep1, const Particle* P2, const int ep2)
-        {
-          Point<> Xm = (P1->getPosition() + P2->getPosition()) * 0.5;	// midpoint between both segments
-          float Ucon = (dist2(P1->getEndPoint(ep1), Xm) + dist2(P2->getEndPoint(ep2), Xm)) / (Particle::L * Particle::L);
-          return Ucon - ChemPot;
-        }
+//        /**
+//         * Calculates the connection energy between any 2 particles P1 and P2 at their end points ep1 and ep2 (-1,1).
+//         *
+//         * Note that this function does not check whether both particles are connected!
+//         */
+//        inline float calcConnectionEnergy(const Particle* P1, const int ep1, const Particle* P2, const int ep2)
+//        {
+//          Point<> Xm = (P1->getPosition() + P2->getPosition()) * 0.5;	// midpoint between both segments
+//          float Ucon = (dist2(P1->getEndPoint(ep1), Xm) + dist2(P2->getEndPoint(ep2), Xm)) / (Particle::L * Particle::L);
+//          return Ucon - ChemPot;
+//        }
         
         
       }

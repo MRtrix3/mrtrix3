@@ -155,11 +155,12 @@ void run ()
   if (opt.size())
     Particle::L = opt[0][0];    
   
+  double ChemPot = 1.0;
   opt = get_options("cpot");
   if (opt.size())
     ChemPot = opt[0][0];
-  else
-    ChemPot = 1.0;
+//  else
+//    ChemPot = 1.0;
   
   Properties properties;
   properties.Lmax = 8;
@@ -277,10 +278,11 @@ void run ()
   ParticleGrid pgrid = ParticleGrid(dwi_buffer);
   
   InternalEnergyComputer Eint = InternalEnergyComputer(stats, pgrid);
+  Eint.setChemPot(ChemPot);
   
   
   EnergySumComputer Esum = EnergySumComputer(stats, Eint, properties.lam_int, 
-                                             Eext, properties.lam_ext * sqrt(4*M_PI)/(properties.resp_WM(0,0)*properties.resp_WM(0,0)*properties.weight*properties.weight));
+                                             Eext, properties.lam_ext * 4*M_PI/(properties.resp_WM(0,0)*properties.resp_WM(0,0)*properties.weight*properties.weight));
   
   
   MHSampler mhs (dwi_buffer, properties, stats, pgrid, Esum, mask);
