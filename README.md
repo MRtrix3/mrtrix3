@@ -4,25 +4,30 @@ The complete documentation for MRtrix will eventually be found on the [wiki](htt
 including a detailed decription of the installation procedure.
 
 
-Quick install:
+## Quick install:
 
 1. Install dependencies by whichever means your system uses. 
    These include: Python (>=2.6), a C++ compiler, POSIX threads, 
-   GNU Scientific Library (GSL, >= 1.1), zlib, OpenGL (>=3), and Qt4.
+   GNU Scientific Library (GSL, >= 1.1), zlib, OpenGL (>=3), and Qt (>=4.8).
 
-2. Unpack archive and compile: 
+2. Clone Git repository and compile: 
 
-    tar xjf mrtrix-0.3.tar.bz2
-    cd mrtrix-0.3/
-    ./configure 
-    ./build
+        $ git clone https://github.com/jdtournier/mrtrix3.git
+        $ cd mrtrix3/
+        $ ./configure 
+        $ ./build
 
 3. Set appropriate environment variables:
 
-Bash shell:
-    export PATH=/<edit as appropriate>/mrtrix-0.3/bin:$PATH
+    * Bash shell:
 
-C shell:
-    setenv PATH /<edit as appropriate>/mrtrix-0.3/bin:$PATH
+            $ export PATH=/<edit as appropriate>/mrtrix-0.3/bin:$PATH
+ 
+    * C shell:
 
+            $ setenv PATH /<edit as appropriate>/mrtrix-0.3/bin:$PATH
+
+4. Test installation: 
+
+        $ mrview
 
