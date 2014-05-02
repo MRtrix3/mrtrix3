@@ -107,11 +107,11 @@ namespace MR
           uint64_t set_numel (const uint64_t, const uint32_t);
 
           // Return a pointer to an element in a voxel
-          uint8_t* const get (const uint64_t, const size_t) const;
+          uint8_t* get (const uint64_t, const size_t) const;
 
 
           const std::string& get_class_name() const { return class_name; }
-          const size_t       get_class_size() const { return class_size; }
+          size_t       get_class_size() const { return class_size; }
 
 
         protected:

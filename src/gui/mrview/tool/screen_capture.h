@@ -26,8 +26,6 @@
 #include "gui/mrview/tool/base.h"
 #include "gui/mrview/adjust_button.h"
 
-class QComboBox;
-
 namespace MR
 {
   namespace GUI

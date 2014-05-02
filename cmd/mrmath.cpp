@@ -42,6 +42,7 @@ using namespace App;
 const char* operations[] = {
   "mean",
   "sum",
+  "product",
   "rms",
   "var",
   "std",
@@ -112,6 +113,21 @@ class Sum {
     double sum;
 };
 
+
+class Product {
+  public:
+    Product () : product (0.0) { }
+    void operator() (value_type val) {
+      if (std::isfinite (val))
+        product += val;
+    }
+    value_type result () const {
+      return product;
+    }
+    double product;
+};
+
+
 class RMS {
   public:
     RMS() : sum (0.0), count (0) { }
@@ -129,6 +145,7 @@ class RMS {
     double sum;
     size_t count;
 };
+
 
 class Var {
   public:
@@ -149,11 +166,13 @@ class Var {
     size_t count;
 };
 
+
 class Std : public Var {
   public:
     Std() : Var() { }
     value_type result () const { return Math::sqrt (Var::result()); }
 };
+
 
 class Min {
   public:
@@ -166,6 +185,7 @@ class Min {
     value_type min;
 };
 
+
 class Max {
   public:
     Max () : max (-std::numeric_limits<value_type>::infinity()) { }
@@ -176,6 +196,7 @@ class Max {
     value_type result () const { return std::isfinite (max) ? max : NAN; }
     value_type max;
 };
+
 
 class AbsMax {
   public:
@@ -335,13 +356,14 @@ void run ()
     switch (op) {
       case 0: loop.run (AxisKernel<Mean>   (axis), vox_in, vox_out); return;
       case 1: loop.run (AxisKernel<Sum>    (axis), vox_in, vox_out); return;
-      case 2: loop.run (AxisKernel<RMS>    (axis), vox_in, vox_out); return;
-      case 3: loop.run (AxisKernel<Var>    (axis), vox_in, vox_out); return;
-      case 4: loop.run (AxisKernel<Std>    (axis), vox_in, vox_out); return;
-      case 5: loop.run (AxisKernel<Min>    (axis), vox_in, vox_out); return;
-      case 6: loop.run (AxisKernel<Max>    (axis), vox_in, vox_out); return;
-      case 7: loop.run (AxisKernel<AbsMax> (axis), vox_in, vox_out); return;
-      case 8: loop.run (AxisKernel<MagMax> (axis), vox_in, vox_out); return;
+      case 2: loop.run (AxisKernel<Product>(axis), vox_in, vox_out); return;
+      case 3: loop.run (AxisKernel<RMS>    (axis), vox_in, vox_out); return;
+      case 4: loop.run (AxisKernel<Var>    (axis), vox_in, vox_out); return;
+      case 5: loop.run (AxisKernel<Std>    (axis), vox_in, vox_out); return;
+      case 6: loop.run (AxisKernel<Min>    (axis), vox_in, vox_out); return;
+      case 7: loop.run (AxisKernel<Max>    (axis), vox_in, vox_out); return;
+      case 8: loop.run (AxisKernel<AbsMax> (axis), vox_in, vox_out); return;
+      case 9: loop.run (AxisKernel<MagMax> (axis), vox_in, vox_out); return;
       default: assert (0);
     }
 

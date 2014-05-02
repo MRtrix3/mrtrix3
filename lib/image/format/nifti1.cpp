@@ -81,7 +81,8 @@ namespace MR
 
         File::create (H.name());
 
-        std::ofstream out (H.name().c_str());
+        std::ofstream out (H.name().c_str(), std::ios::out | std::ios::binary);
+
         if (!out) throw Exception ("error opening file \"" + H.name() + "\" for writing: " + strerror (errno));
         out.write ( (char*) &NH, 348);
         out.write (extender.extension, 4);

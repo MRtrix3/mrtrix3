@@ -95,13 +95,13 @@ void usage ()
   + Argument ("value").type_float (0.001, 0.1, 100000)
 
   + Option ("tfce_e", "TFCE extent parameter (default = 1.0)")
-  + Argument ("value").type_float (0.001, 0.5, 100000)
+  + Argument ("value").type_float (0.0, 0.5, 100000)
 
   + Option ("tfce_h", "TFCE height parameter (default = 2.0)")
-  + Argument ("value").type_float (0.001, 2.0, 100000)
+  + Argument ("value").type_float (0.0, 2.0, 100000)
 
-  + Option ("tfce_c", "TFCE connectivity parameter (default = 0.0)")
-  + Argument ("value").type_float (0.001, 0.0, 100000)
+  + Option ("tfce_c", "TFCE connectivity parameter (default = 0.5)")
+  + Argument ("value").type_float (0.0, 0.5, 100000)
 
   + Option ("angle", "the max angle threshold for computing inter-subject FOD peak correspondence")
   + Argument ("value").type_float (0.001, 30, 90)
@@ -110,7 +110,7 @@ void usage ()
   + Argument ("threshold").type_float (0.001, 0.01, 1.0)
 
   + Option ("smooth", "smooth the AFD integral along the fibre tracts using a Gaussian kernel with the supplied FWHM (default: 5mm)")
-  + Argument ("FWHM").type_float (0.0, 5.0, 200.0)
+  + Argument ("FWHM").type_float (0.0, 10.0, 200.0)
 
   + Option ("num_vis_tracks", "the number of tracks to use when generating output for visualisation. "
                               "These tracts are obtained by truncating the input tracks (default: 200000")
@@ -497,7 +497,7 @@ void run() {
     tfce_E = opt[0][0];
 
   opt = get_options ("tfce_c");
-  value_type tfce_C = 0.0;
+  value_type tfce_C = 0.5;
   if (opt.size())
     tfce_C = opt[0][0];
 
@@ -516,7 +516,7 @@ void run() {
   if (opt.size())
     connectivity_threshold = opt[0][0];
 
-  value_type smooth_std_dev = 5.0 / 2.3548;
+  value_type smooth_std_dev = 10.0 / 2.3548;
   opt = get_options ("smooth");
   if (opt.size())
     smooth_std_dev = value_type(opt[0][0]) / 2.3548;

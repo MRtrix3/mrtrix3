@@ -50,7 +50,7 @@ namespace MR
         }
 
 
-        void Base::draw (const Projection& transform, bool is_3D) { }
+        void Base::draw (const Projection& transform, bool is_3D, int axis, int slice) { }
 
         void Base::drawOverlays (const Projection& transform) { }
 

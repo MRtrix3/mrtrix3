@@ -198,6 +198,7 @@ namespace MR
           void output_tdi_sh (const std::string&) const;
           void output_tdi_fixel (const std::string&) const;
           void output_error_images (const std::string&, const std::string&, const std::string&) const;
+          void output_error_fixel_images (const std::string&, const std::string&) const;
           void output_scatterplot (const std::string&) const;
           void output_fixel_count_image (const std::string&) const;
           void output_untracked_fixels (const std::string&, const std::string&) const;
@@ -333,7 +334,7 @@ namespace MR
         output_target_image_sh (prefix + "_target_sh.mif");
 #endif
 #ifdef SIFT_MODEL_OUTPUT_FIXEL_IMAGES
-        output_target_image_fixel (prefix + "_target_fixel.msh");
+        output_target_image_fixel (prefix + "_target_fixel.msf");
 #endif
         output_tdi (prefix + "_tdi.mif");
         if (have_null_lobes)
@@ -342,9 +343,12 @@ namespace MR
         output_tdi_sh (prefix + "_tdi_sh.mif");
 #endif
 #ifdef SIFT_MODEL_OUTPUT_FIXEL_IMAGES
-        output_tdi_fixel (prefix + "_tdi_fixel.msh");
+        output_tdi_fixel (prefix + "_tdi_fixel.msf");
 #endif
         output_error_images (prefix + "_max_abs_diff.mif", prefix + "_diff.mif", prefix + "_cost.mif");
+#ifdef SIFT_MODEL_OUTPUT_FIXEL_IMAGES
+        output_error_fixel_images (prefix + "_diff_fixel.msf", prefix + "_cost_fixel.msf");
+#endif
         output_scatterplot (prefix + "_scatterplot.csv");
         output_fixel_count_image (prefix + "_fixel_count.mif");
         output_untracked_fixels (prefix + "_untracked_count.mif", prefix + "_untracked_amps.mif");

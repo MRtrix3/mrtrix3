@@ -114,9 +114,9 @@ namespace MR
 
 
             void load_tracks_onto_GPU (std::vector<Point<float> >& buffer,
-                                              std::vector<GLint>& starts,
-                                              std::vector<GLint>& sizes,
-                                              size_t& tck_count);
+                                       std::vector<GLint>& starts,
+                                       std::vector<GLint>& sizes,
+                                       size_t& tck_count);
                                               
             void load_end_colours_onto_GPU (std::vector<Point<float> >& buffer);
 
