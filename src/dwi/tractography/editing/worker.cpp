@@ -129,27 +129,30 @@ namespace MR {
           else
             step_size_string = properties["output_step_size"];
 
-          const bool max_dist_set = (properties.find ("max_dist") != properties.end());
-          const bool min_dist_set = (properties.find ("min_dist") != properties.end());
+          float maxlength = 0.0, minlength = 0.0;
+          if (properties.find ("max_dist") != properties.end()) {
+            try {
+              maxlength = to<float>(properties["max_dist"]);
+            } catch (...) { }
+          }
+          if (properties.find ("min_dist") != properties.end()) {
+            try {
+              minlength = to<float>(properties["min_dist"]);
+            } catch (...) { }
+          }
 
-          if (step_size_string == "variable" && (max_dist_set || min_dist_set))
+          if (step_size_string == "variable" && (maxlength || minlength))
             throw Exception ("Cannot apply length threshold; step size is inconsistent between input track files");
 
           const float step_size = to<float>(step_size_string);
 
-          if (max_dist_set) {
-            if (!step_size || !std::isfinite (step_size))
-              throw Exception ("Cannot apply length threshold; step size information is incomplete");
-            const float maxlength = to<float>(properties["max_dist"]);
-            max_num_points = Math::round (maxlength / step_size) + 1;
-          }
+          if ((!step_size || !std::isfinite (step_size)) && (maxlength || minlength))
+            throw Exception ("Cannot apply length threshold; step size information is incomplete");
 
-          if (min_dist_set) {
-            if (!step_size || !std::isfinite (step_size))
-              throw Exception ("Cannot apply length threshold; step size information is incomplete");
-            const float minlength = to<float>(properties["min_dist"]);
+          if (maxlength)
+            max_num_points = Math::round (maxlength / step_size) + 1;
+          if (minlength)
             min_num_points = std::max (2, round (minlength/step_size) + 1);
-          }
 
           if (properties.find ("max_weight") != properties.end())
             max_weight = to<float>(properties["max_weight"]);

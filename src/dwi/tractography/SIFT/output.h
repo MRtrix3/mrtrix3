@@ -272,6 +272,39 @@ namespace MR
       }
 
       template <class Fixel>
+      void ModelBase<Fixel>::output_error_fixel_images (const std::string& diff_path, const std::string& cost_path) const
+      {
+        using Image::Sparse::FixelMetric;
+        const double current_mu = mu();
+        Image::Header H_fixel (H);
+        H_fixel.datatype() = DataType::UInt64;
+        H_fixel.datatype().set_byte_order_native();
+        H_fixel[Image::Sparse::name_key] = str(typeid(FixelMetric).name());
+        H_fixel[Image::Sparse::size_key] = str(sizeof(FixelMetric));
+        Image::BufferSparse<FixelMetric> out_diff (diff_path, H_fixel);
+        Image::BufferSparse<FixelMetric>::voxel_type v_diff (out_diff);
+        Image::BufferSparse<FixelMetric> out_cost (cost_path, H_fixel);
+        Image::BufferSparse<FixelMetric>::voxel_type v_cost (out_cost);
+        VoxelAccessor v (accessor);
+        Image::LoopInOrder loop (v_diff);
+        for (loop.start (v, v_diff, v_cost); loop.ok(); loop.next (v, v_diff, v_cost)) {
+          v_diff.value().zero();
+          v_cost.value().zero();
+          if (v.value()) {
+            v_diff.value().set_size ((*v.value()).num_fixels());
+            v_cost.value().set_size ((*v.value()).num_fixels());
+            size_t index = 0;
+            for (typename Fixel_map<Fixel>::ConstIterator iter = begin (v); iter; ++iter, ++index) {
+              FixelMetric fixel_diff (iter().get_dir(), iter().get_FOD(), iter().get_diff (current_mu));
+              v_diff.value()[index] = fixel_diff;
+              FixelMetric fixel_cost (iter().get_dir(), iter().get_FOD(), iter().get_cost (current_mu));
+              v_cost.value()[index] = fixel_cost;
+            }
+          }
+        }
+      }
+
+      template <class Fixel>
       void ModelBase<Fixel>::output_scatterplot (const std::string& path) const
       {
         std::ofstream out (path.c_str(), std::ios_base::trunc);

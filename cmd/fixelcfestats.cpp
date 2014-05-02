@@ -83,22 +83,22 @@ void usage ()
   + Argument ("value").type_float (0.001, 0.1, 100000)
 
   + Option ("tfce_e", "TFCE extent parameter (default = 2.0)")
-  + Argument ("value").type_float (0.001, 2.0, 100000)
+  + Argument ("value").type_float (0.0, 2.0, 100000)
 
   + Option ("tfce_h", "TFCE height parameter (default = 1.0)")
-  + Argument ("value").type_float (0.001, 1.0, 100000)
+  + Argument ("value").type_float (0.0, 1.0, 100000)
 
-  + Option ("tfce_c", "TFCE connectivity parameter (default = 0.0)")
-  + Argument ("value").type_float (0.001, 0.0, 100000)
+  + Option ("tfce_c", "TFCE connectivity parameter (default = 0.5)")
+  + Argument ("value").type_float (0.0, 0.5, 100000)
 
   + Option ("angle", "the max angle threshold for computing inter-subject fixel correspondence")
-  + Argument ("value").type_float (0.001, 30, 90)
+  + Argument ("value").type_float (0.0, 30, 90)
 
   + Option ("connectivity", "a threshold to define the required fraction of shared connections to be included in the neighbourhood (default: 1%)")
   + Argument ("threshold").type_float (0.001, 0.01, 1.0)
 
   + Option ("smooth", "smooth the fixel value along the fibre tracts using a Gaussian kernel with the supplied FWHM (default: 10mm)")
-  + Argument ("FWHM").type_float (0.0, 5.0, 200.0);
+  + Argument ("FWHM").type_float (0.0, 10.0, 200.0);
 
 }
 
@@ -209,7 +209,7 @@ void run() {
     tfce_E = opt[0][0];
 
   opt = get_options ("tfce_c");
-  value_type tfce_C = 0.0;
+  value_type tfce_C = 0.5;
   if (opt.size())
     tfce_C = opt[0][0];
 
