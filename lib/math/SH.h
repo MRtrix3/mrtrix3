@@ -181,40 +181,55 @@ namespace MR
         };
 
 
-
+        
       template <typename ValueType, typename CoefType>
-        inline ValueType value (const CoefType& coefs, ValueType cos_elevation, ValueType azimuth, int lmax)
+        inline ValueType value (const CoefType& coefs, ValueType cos_elevation, ValueType cos_azimuth, ValueType sin_azimuth, int lmax)
         {
           ValueType amplitude = 0.0;
           VLA_MAX (AL, ValueType, lmax+1, 64);
           Legendre::Plm_sph (AL, lmax, 0, ValueType (cos_elevation));
-          for (int l = 0; l <= lmax; l+=2) amplitude += AL[l] * coefs[index (l,0)];
+          for (int l = 0; l <= lmax; l+=2) 
+            amplitude += AL[l] * coefs[index (l,0)];
+          ValueType c0 (1.0), s0 (0.0);
           for (int m = 1; m <= lmax; m++) {
             Legendre::Plm_sph (AL, lmax, m, ValueType (cos_elevation));
+            ValueType c = c0 * cos_azimuth - s0 * sin_azimuth;  // cos(m*azimuth)
+            ValueType s = s0 * cos_azimuth + c0 * sin_azimuth;  // sin(m*azimuth)
+            for (int l = ( (m&1) ? m+1 : m); l <= lmax; l+=2) {
 #ifndef USE_NON_ORTHONORMAL_SH_BASIS
-            ValueType c = M_SQRT2 * Math::cos (m*azimuth);
-            ValueType s = M_SQRT2 * Math::sin (m*azimuth);
+              amplitude += AL[l] * M_SQRT2 * (c * coefs[index (l,m)] + s * coefs[index (l,-m)]);
 #else
-            ValueType c = Math::cos (m*azimuth);
-            ValueType s = Math::sin (m*azimuth);
-#endif
-            for (int l = ( (m&1) ? m+1 : m); l <= lmax; l+=2)
               amplitude += AL[l] * (c * coefs[index (l,m)] + s * coefs[index (l,-m)]);
+#endif
+            }
+            c0 = c;
+            s0 = s;
           }
           return amplitude;
         }
 
+      template <typename ValueType, typename CoefType>
+        inline ValueType value (const CoefType& coefs, ValueType cos_elevation, ValueType azimuth, int lmax)
+        {
+          return value (coefs, cos_elevation, Math::cos(azimuth), Math::sin(azimuth), lmax);
+        }
 
       template <typename ValueType, typename CoefType>
         inline ValueType value (const CoefType& coefs, const Point<ValueType>& unit_dir, int lmax)
         {
-          return value (coefs, unit_dir[2], atan2 (unit_dir[1], unit_dir[0]), lmax);
+          ValueType rxy = Math::sqrt ( Math::pow2(unit_dir[1]) + Math::pow2(unit_dir[0]) );
+          ValueType cp = (rxy) ? unit_dir[0]/rxy : 1.0;
+          ValueType sp = (rxy) ? unit_dir[1]/rxy : 0.0;
+          return value (coefs, unit_dir[2], cp, sp, lmax);
         }
 
       template <typename ValueType, typename CoefType>
         inline ValueType value (const CoefType* coefs, const Point<ValueType>& unit_dir, int lmax)
         {
-          return value (coefs, unit_dir[2], atan2 (unit_dir[1], unit_dir[0]), lmax);
+          ValueType rxy = Math::sqrt ( Math::pow2(unit_dir[1]) + Math::pow2(unit_dir[0]) );
+          ValueType cp = (rxy) ? unit_dir[0]/rxy : 1.0;
+          ValueType sp = (rxy) ? unit_dir[1]/rxy : 0.0;
+          return value (coefs, unit_dir[2], cp, sp, lmax);
         }
 
 
@@ -222,24 +237,29 @@ namespace MR
         inline Math::Vector<ValueType>& delta (Math::Vector<ValueType>& delta_vec, const Point<ValueType>& unit_dir, int lmax)
         {
           delta_vec.allocate (NforL (lmax));
-          ValueType az = Math::atan2 (unit_dir[1], unit_dir[0]);
+          ValueType rxy = Math::sqrt ( Math::pow2(unit_dir[1]) + Math::pow2(unit_dir[0]) );
+          ValueType cp = (rxy) ? unit_dir[0]/rxy : 1.0;
+          ValueType sp = (rxy) ? unit_dir[1]/rxy : 0.0;
           VLA_MAX (AL, ValueType, lmax+1, 64);
           Legendre::Plm_sph (AL, lmax, 0, ValueType (unit_dir[2]));
           for (int l = 0; l <= lmax; l+=2)
             delta_vec[index (l,0)] = AL[l];
+          ValueType c0 (1.0), s0 (0.0);
           for (int m = 1; m <= lmax; m++) {
             Legendre::Plm_sph (AL, lmax, m, ValueType (unit_dir[2]));
-#ifndef USE_NON_ORTHONORMAL_SH_BASIS
-            ValueType c = M_SQRT2 * Math::cos (m*az);
-            ValueType s = M_SQRT2 * Math::sin (m*az);
-#else
-            ValueType c = 2.0 * Math::cos (m*az);
-            ValueType s = 2.0 * Math::sin (m*az);
-#endif
+            ValueType c = c0 * cp - s0 * sp;
+            ValueType s = s0 * cp + c0 * sp;
             for (int l = ( (m&1) ? m+1 : m); l <= lmax; l+=2) {
-              delta_vec[index (l,m)]  = AL[l] * c;
-              delta_vec[index (l,-m)] = AL[l] * s;
+#ifndef USE_NON_ORTHONORMAL_SH_BASIS
+              delta_vec[index (l,m)]  = AL[l] * M_SQRT2 * c;
+              delta_vec[index (l,-m)] = AL[l] * M_SQRT2 * s;
+#else
+              delta_vec[index (l,m)]  = AL[l] * 2.0 * c;
+              delta_vec[index (l,-m)] = AL[l] * 2.0 * s;
+#endif
             }
+            c0 = c;
+            s0 = s;
           }
           return delta_vec;
         }
@@ -499,15 +519,20 @@ namespace MR
             ValueType value (const ValueContainer& val, const Point<ValueType>& unit_dir) const {
               PrecomputedFraction<ValueType> f;
               set (f, Math::acos (unit_dir[2]));
-              ValueType az = Math::atan2 (unit_dir[1], unit_dir[0]);
+              ValueType rxy = Math::sqrt ( Math::pow2(unit_dir[1]) + Math::pow2(unit_dir[0]) );
+              ValueType cp = (rxy) ? unit_dir[0]/rxy : 1.0;
+              ValueType sp = (rxy) ? unit_dir[1]/rxy : 0.0;
               ValueType v = 0.0;
               for (int l = 0; l <= lmax; l+=2)
                 v += get (f,l,0) * val[index (l,0)];
+              ValueType c0 (1.0), s0 (0.0);
               for (int m = 1; m <= lmax; m++) {
-                ValueType c = Math::cos (m*az);
-                ValueType s = Math::sin (m*az);
+                ValueType c = c0 * cp - s0 * sp;
+                ValueType s = s0 * cp + c0 * sp;
                 for (int l = ( (m&1) ? m+1 : m); l <= lmax; l+=2)
                   v += get (f,l,m) * (c * val[index (l,m)] + s * val[index (l,-m)]);
+                c0 = c;
+                s0 = s;
               }
               return v;
             }
