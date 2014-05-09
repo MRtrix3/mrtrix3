@@ -49,13 +49,13 @@ namespace MR
 
 
 
-        Default::~Default()
+        SeedMask::~SeedMask()
         {
           delete mask;
           mask = NULL;
         }
 
-        bool Default::get_seed (Point<float>& p)
+        bool SeedMask::get_seed (Point<float>& p)
         {
           Mask::voxel_type seed (*mask);
           do {

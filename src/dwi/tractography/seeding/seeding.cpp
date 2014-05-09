@@ -86,7 +86,7 @@ namespace MR
 
         opt = get_options ("seed_image");
         for (size_t i = 0; i < opt.size(); ++i) {
-          Default* seed = new Default (opt[i][0], list.get_rng());
+          SeedMask* seed = new SeedMask (opt[i][0], list.get_rng());
           list.add (seed);
         }
 

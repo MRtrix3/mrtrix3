@@ -66,17 +66,17 @@ namespace MR
         };
 
 
-        class Default : public Base
+        class SeedMask : public Base
         {
 
           public:
-            Default (const std::string& in, const Math::RNG& rng) :
+            SeedMask (const std::string& in, const Math::RNG& rng) :
               Base (in, rng, "random") {
                 mask = Tractography::get_mask (in);
                 volume = get_count (*mask) * mask->vox(0) * mask->vox(1) * mask->vox(2);
               }
 
-            virtual ~Default();
+            virtual ~SeedMask();
             virtual bool get_seed (Point<float>& p);
 
           private:
