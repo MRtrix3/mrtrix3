@@ -99,7 +99,7 @@ class SDStream : public MethodBase {
 
 
 
-    bool init ()
+    bool init (bool keep_sampling)
     {
       if (!get_data (source))
         return (false);

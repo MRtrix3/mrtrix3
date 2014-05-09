@@ -74,7 +74,7 @@ namespace MR
 
 
 
-          bool init () {
+          bool init (bool keep_sampling) {
             source.clear();
             if (!source.get (pos, values))
               return false;

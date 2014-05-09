@@ -197,7 +197,7 @@ namespace MR
 
                 if (!S.properties.seeds.get_seed (method.pos, method.dir))
                   return false;
-                if (!method.check_seed() || !method.init()) {
+                if (!method.check_seed() || !method.init (true)) {
                   track_excluded = true;
                   return true;
                 }
@@ -205,7 +205,7 @@ namespace MR
               } else {
 
                 for (size_t num_attempts = 0; num_attempts != MAX_NUM_SEED_ATTEMPTS; ++num_attempts) {
-                  if (S.properties.seeds.get_seed (method.pos, method.dir) && method.check_seed() && method.init())
+                  if (S.properties.seeds.get_seed (method.pos, method.dir) && method.check_seed() && method.init (false))
                     break;
                 }
                 if (!method.pos.valid()) {
