@@ -769,6 +769,16 @@ namespace MR
         gsl_blas_dsyrk (uplo, op_A, alpha, A.gsl(), beta, C.gsl());
       }
 
+      inline void trmm (CBLAS_SIDE side, CBLAS_UPLO uplo, CBLAS_TRANSPOSE transA, CBLAS_DIAG use_diag, double alpha, const Matrix<double>& A, Matrix<double>& B)
+      {
+        gsl_blas_dtrmm (side, uplo, transA, use_diag, alpha, A.gsl(), B.gsl());
+      }
+
+      inline void trsm (CBLAS_SIDE side, CBLAS_UPLO uplo, CBLAS_TRANSPOSE transA, CBLAS_DIAG use_diag, double alpha, const Matrix<double>& A, Matrix<double>& B)
+      {
+        gsl_blas_dtrsm (side, uplo, transA, use_diag, alpha, A.gsl(), B.gsl());
+      }
+
       // float definitions:
 
 
@@ -808,6 +818,16 @@ namespace MR
       }
 
 
+      inline void trmm (CBLAS_SIDE side, CBLAS_UPLO uplo, CBLAS_TRANSPOSE transA, CBLAS_DIAG use_diag, float alpha, const Matrix<float>& A, Matrix<float>& B)
+      {
+        gsl_blas_strmm (side, uplo, transA, use_diag, alpha, A.gsl(), B.gsl());
+      }
+
+      inline void trsm (CBLAS_SIDE side, CBLAS_UPLO uplo, CBLAS_TRANSPOSE transA, CBLAS_DIAG use_diag, float alpha, const Matrix<float>& A, Matrix<float>& B)
+      {
+        gsl_blas_strsm (side, uplo, transA, use_diag, alpha, A.gsl(), B.gsl());
+      }
+
 #ifdef __math_complex_h__
 
       // cdouble definitions:
@@ -837,6 +857,16 @@ namespace MR
         gsl_blas_zherk (uplo, op_A, alpha.real(), A.gsl(), beta.real(), C.gsl());
       }
 
+      inline void trmm (CBLAS_SIDE side, CBLAS_UPLO uplo, CBLAS_TRANSPOSE transA, CBLAS_DIAG use_diag, cdouble alpha, const Matrix<cdouble>& A, Matrix<cdouble>& B)
+      {
+        gsl_blas_ztrmm (side, uplo, transA, use_diag, alpha, A.gsl(), B.gsl());
+      }
+
+      inline void trsm (CBLAS_SIDE side, CBLAS_UPLO uplo, CBLAS_TRANSPOSE transA, CBLAS_DIAG use_diag, cdouble alpha, const Matrix<cdouble>& A, Matrix<cdouble>& B)
+      {
+        gsl_blas_ztrsm (side, uplo, transA, use_diag, alpha, A.gsl(), B.gsl());
+      }
+
       // float definitions:
 
       inline void gemm (CBLAS_TRANSPOSE op_A, CBLAS_TRANSPOSE op_B, cfloat alpha, const Matrix<cfloat>& A, const Matrix<cfloat>& B, cfloat beta, Matrix<cfloat>& C)
@@ -862,6 +892,16 @@ namespace MR
       inline void syrk (CBLAS_UPLO uplo, CBLAS_TRANSPOSE op_A, cfloat alpha, const Matrix<cfloat>& A, cfloat beta, Matrix<cfloat>& C)
       {
         gsl_blas_cherk (uplo, op_A, alpha.real(), A.gsl(), beta.real(), C.gsl());
+      }
+
+      inline void trmm (CBLAS_SIDE side, CBLAS_UPLO uplo, CBLAS_TRANSPOSE transA, CBLAS_DIAG use_diag, cfloat alpha, const Matrix<cfloat>& A, Matrix<cfloat>& B)
+      {
+        gsl_blas_ctrmm (side, uplo, transA, use_diag, alpha, A.gsl(), B.gsl());
+      }
+
+      inline void trsm (CBLAS_SIDE side, CBLAS_UPLO uplo, CBLAS_TRANSPOSE transA, CBLAS_DIAG use_diag, cfloat alpha, const Matrix<cfloat>& A, Matrix<cfloat>& B)
+      {
+        gsl_blas_ctrsm (side, uplo, transA, use_diag, alpha, A.gsl(), B.gsl());
       }
 
 #endif
@@ -1002,7 +1042,7 @@ namespace MR
 
 
 
-    /** @defgroup symm Symmetric matrix-matrix multiplication
+    /** @defgroup symm_mat Symmetric matrix operations
       @{ */
 
     //! computes \a C = \a alpha \a A \a B + \a beta \a C or \a C = \a alpha \a B \a A + \a beta \a C, where \a A is symmetric
@@ -1052,9 +1092,41 @@ namespace MR
         return C;
       }
 
+
+
     /** @} */
 
 
+
+    /** @defgroup tri_mat Triangular matrix operations
+      @{ */
+
+    //! triangular matrix-matrix multiply
+    /** Computes the triangular matrix-matrix product \a C = \a alpha op_A (\a
+     * A) \a B, or \a C = \a alpha B op_A (\a A), where the matrix A is
+     * triangular. On exit, the output matrix \a C is written over the input
+     * matrix \a B.
+     *
+     * \param side determines the order of the product:
+     *    - CblasLeft: C = alpha*A*B 
+     *    - CblasRight: C = alpha*B*A
+     * \param alpha used to scale the product
+     * \param uplo determines which part of \a A will be used:
+     *    - CblasUpper: upper triangle and diagonal of A
+     *    - CblasLower: lower triangle and diagonal of A
+     * \param diag determines how the diagonal of \a A is used:
+     *    - CblasUnit: diagonal elements of \a A are assumed to be unity
+     *    - CblasNonUnit: diagonal elements of \a A are used
+     * \param A a Matrix
+     * \param B a triangular Matrix
+     * \return a reference to the target matrix \a B
+     */
+    template <typename ValueType> 
+      inline Matrix<ValueType>& mult_triangular (const Matrix<ValueType>& A, Matrix<ValueType>& B, CBLAS_SIDE side, CBLAS_UPLO uplo, ValueType alpha = ValueType(1.0), CBLAS_TRANSPOSE op_A = CblasNoTrans, CBLAS_DIAG diag = CblasNonUnit)
+      {
+        trmm (side, uplo, op_A, diag, alpha, A, B);
+        return B;
+      }
 
     //! solve for \a y in the triangular matrix problem: \a op_A(\a A) \a y = \a x
     /** \param x the target vector. On input, \a x should be set to \a y
@@ -1077,6 +1149,39 @@ namespace MR
         trsv (uplo, op_A, diag, A, x);
         return x;
       }
+
+    //! solve for \a X in the triangular matrix problem: \a op_A(\a A) \a X = \a B
+    /** solve one of the matrix equations op( A )*X = alpha*B, or X*op( A ) =
+     * alpha*B.
+     *
+     * \param X the target matrix. On output, \a X is written over the input
+     * matrix  \a B
+     * \param A a Matrix
+     * \param side determines the order of the product:
+     *    - CblasLeft: A*X = B 
+     *    - CblasRight: X*A = B
+     * \param uplo determines which part of \a A will be used:
+     *    - CblasUpper: upper triangle and diagonal of A
+     *    - CblasLower: lower triangle and diagonal of A
+     * \param op_A determines how to use the matrix \a A:
+     *    - CblasNoTrans: use A
+     *    - CblasTrans: use transpose of A
+     *    - CblasConjTrans: use conjugate transpose of A
+     * \param diag determines how the diagonal of \a A is used:
+     *    - CblasUnit: diagonal elements of \a A are assumed to be unity
+     *    - CblasNonUnit: diagonal elements of \a A are used
+     * \return a reference to the target matrix \a B
+     */
+    template <typename ValueType> 
+      inline Matrix<ValueType>& solve_triangular (const Matrix<ValueType>& A, Matrix<ValueType>& B, CBLAS_SIDE side = CblasLeft, CBLAS_UPLO uplo = CblasUpper, ValueType alpha = ValueType(1.0), CBLAS_TRANSPOSE op_A = CblasNoTrans, CBLAS_DIAG diag = CblasNonUnit)
+      {
+        trsm (side, uplo, op_A, diag, alpha, A, B);
+        return B;
+      }
+
+    /** @} */
+
+
 
     //! rank-1 update: \a A = \a alpha \a x \a y^ValueType + \a A
     /** \param A the target matrix.
