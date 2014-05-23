@@ -145,18 +145,18 @@ namespace MR
     {
       std::string cmd_version = 
           ( project_version ? std::string ("version ") + project_version + ", external module" : std::string("part") ) +
-          " of the MRtrix package\n\n";
+          " of the MRtrix package";
 
       if (!format) 
-        return std::string (NAME) + ": " + cmd_version;
+        return std::string (NAME) + ": " + cmd_version + "\n\n";
 
       std::string mrtrix_version = "MRtrix " MRTRIX_GIT_VERSION;
       std::string date (build_date);
 
-      std::string topline = mrtrix_version + std::string (40-size(mrtrix_version)-size(App::NAME)/2, ' ') + bold (App::NAME);
-      topline += std::string (80-size(topline)-size(date), ' ') + date;
+      std::string topline = mrtrix_version + std::string (80-size(mrtrix_version)-size(date), ' ') + date;
       
-      return topline + "\n\n     " + bold (NAME) + ": " + cmd_version;
+      return topline + "\n\n" + std::string (40-size(NAME)/2, ' ') + bold (NAME) + "\n\n" 
+        + std::string (40-size(cmd_version)/2, ' ') + cmd_version + "\n\n";
     }
 
 
