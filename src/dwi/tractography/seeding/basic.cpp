@@ -173,7 +173,7 @@ namespace MR
 
 
         Rejection::Rejection (const std::string& in, const Math::RNG& rng) :
-          Base (in, rng, "rejection sampling"),
+          Base (in, rng, "rejection sampling", MAX_TRACKING_SEED_ATTEMPTS_RANDOM),
           max (0.0)
         {
 

@@ -48,7 +48,7 @@ namespace MR
 
           public:
             Sphere (const std::string& in, const Math::RNG& rng) :
-              Base (in, rng, "sphere") {
+              Base (in, rng, "sphere", MAX_TRACKING_SEED_ATTEMPTS_RANDOM) {
                 std::vector<float> F (parse_floats (in));
                 if (F.size() != 4)
                   throw Exception ("Could not parse seed \"" + in + "\" as a spherical seed point; needs to be 4 comma-separated values (XYZ position, then radius)");
@@ -71,7 +71,7 @@ namespace MR
 
           public:
             SeedMask (const std::string& in, const Math::RNG& rng) :
-              Base (in, rng, "random") {
+              Base (in, rng, "random seeding mask", MAX_TRACKING_SEED_ATTEMPTS_RANDOM) {
                 mask = Tractography::get_mask (in);
                 volume = get_count (*mask) * mask->vox(0) * mask->vox(1) * mask->vox(2);
               }
@@ -91,7 +91,7 @@ namespace MR
 
           public:
             Random_per_voxel (const std::string& in, const Math::RNG& rng, const size_t num_per_voxel) :
-              Base (in, rng, "random per voxel"),
+              Base (in, rng, "random per voxel", MAX_TRACKING_SEED_ATTEMPTS_FIXED),
               num (num_per_voxel),
               vox (0, 0, -1),
               inc (0),
@@ -119,7 +119,7 @@ namespace MR
 
           public:
             Grid_per_voxel (const std::string& in, const Math::RNG& rng, const size_t os_factor) :
-              Base (in, rng, "grid per voxel"),
+              Base (in, rng, "grid per voxel", MAX_TRACKING_SEED_ATTEMPTS_FIXED),
               os (os_factor),
               vox (0, 0, -1),
               pos (os, os, os),

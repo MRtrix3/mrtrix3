@@ -91,7 +91,7 @@ namespace MR
 
 
 
-      bool init (bool keep_sampling)
+      bool init()
       {
         if (!get_data (source)) return false;
         if (!S.init_dir) {

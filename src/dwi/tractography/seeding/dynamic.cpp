@@ -68,7 +68,7 @@ namespace MR
 
 
       Dynamic::Dynamic (const std::string& in, Image::Buffer<float>& fod_data, const Math::RNG& rng, const DWI::Directions::FastLookupSet& dirs) :
-          Base (in, rng, "dynamic"),
+          Base (in, rng, "dynamic", MAX_TRACKING_SEED_ATTEMPTS_DYNAMIC),
           SIFT::ModelBase<Fixel_TD_seed> (fod_data, dirs),
           total_samples (0),
           total_seeds   (0),

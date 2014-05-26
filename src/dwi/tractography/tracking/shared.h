@@ -87,8 +87,8 @@ namespace MR
               rk4 (false),
               downsampler ()
 #ifdef DEBUG_TERMINATIONS
-                , debug_header       (properties.find ("act") == properties.end() ? diff_path : properties["act"]),
-              transform          (debug_header)
+            , debug_header (properties.find ("act") == properties.end() ? diff_path : properties["act"]),
+              transform  (debug_header)
 #endif
               {
 
@@ -104,6 +104,10 @@ namespace MR
 
                 max_num_attempts = 100 * max_num_tracks;
                 properties.set (max_num_attempts, "max_num_attempts");
+
+                assert (properties.seeds.num_seeds());
+                max_seed_attempts = properties.seeds[0]->get_max_attempts();
+                properties.set (max_seed_attempts, "max_seed_attempts");
 
                 if (properties.find ("init_direction") != properties.end()) {
                   std::vector<float> V = parse_floats (properties["init_direction"]);
@@ -213,6 +217,7 @@ namespace MR
             size_t max_num_tracks, max_num_attempts, min_num_points, max_num_points;
             value_type max_angle, max_angle_rk4, cos_max_angle, cos_max_angle_rk4;
             value_type step_size, threshold, init_threshold;
+            size_t max_seed_attempts;
             bool unidirectional;
             bool rk4;
             Downsampler downsampler;

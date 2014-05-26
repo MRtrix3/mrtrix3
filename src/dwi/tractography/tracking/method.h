@@ -99,7 +99,7 @@ namespace MR
 
 
         void reverse_track() { }
-        bool init (bool keep_sampling) { return false; }
+        bool init() { return false; }
         term_t next() { return term_t(); }
         float get_metric() { return NAN; }
 

@@ -137,7 +137,7 @@ namespace MR
 
 
 
-      bool init (bool keep_sampling)
+      bool init()
       {
         if (!get_data (source))
           return (false);
@@ -146,7 +146,7 @@ namespace MR
 
           const Point<Tracking::value_type> init_dir (dir);
 
-          for (size_t n = 0; n < (keep_sampling ? S.max_trials : 1); n++) {
+          for (size_t n = 0; n < S.max_seed_attempts; n++) {
             if (init_dir.valid()) {
               dir = rand_dir (init_dir);
             } else {
