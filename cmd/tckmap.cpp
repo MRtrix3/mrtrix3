@@ -99,7 +99,7 @@ OPTIONS
       "define the statistic for choosing the contribution to be made by each streamline as a "
       "function of the samples taken along their lengths\n"
       "Only has an effect for 'scalar_map', 'fod_amp' and 'curvature' contrast types\n"
-      "Options are: sum, min, mean, max, median, mean_nonzero, gaussian, ends_min, ends_mean, ends_max, ends_prod, ends_corr (default: mean)")
+      "Options are: sum, min, mean, max, median, mean_nonzero, gaussian, ends_min, ends_mean, ends_max, ends_prod (default: mean)")
     + Argument ("type").type_choice (track_statistics)
 
   + Option ("fwhm_tck",
@@ -299,7 +299,7 @@ void run () {
       break;
 
     case FOD_AMP:
-      if (stat_tck == ENDS_MIN || stat_tck == ENDS_MEAN || stat_tck == ENDS_MAX || stat_tck == ENDS_PROD || stat_tck == ENDS_CORR)
+      if (stat_tck == ENDS_MIN || stat_tck == ENDS_MEAN || stat_tck == ENDS_MAX || stat_tck == ENDS_PROD)
         throw Exception ("Can't use endpoint-based track-wise statistics with FOD_AMP contrast");
       break;
 
@@ -408,7 +408,6 @@ void run () {
       case ENDS_MEAN:      msg += "endpoints (mean)"; break;
       case ENDS_MAX:       msg += "endpoints (maximum)"; break;
       case ENDS_PROD:      msg += "endpoints (product)"; break;
-      case ENDS_CORR:      msg += "endpoints (temporal correlation)"; break;
       default:             msg += "ERROR";   break;
     }
     msg += " per-track statistic";
@@ -493,13 +492,8 @@ void run () {
 
     Image::BufferPreload<float> input_image (opt[0][0]);
     if ((contrast == SCALAR_MAP || contrast == SCALAR_MAP_COUNT)) {
-      if (stat_tck == ENDS_CORR) {
-        if (!(input_image.ndim() == 4 && input_image.dim(3) > 1))
-          throw Exception ("Use of 'ends-corr' track-wise statistic requires a 4D image");
-      } else {
-        if (!(input_image.ndim() == 3 || (input_image.ndim() == 4 && input_image.dim(3) == 1)))
-          throw Exception ("Use of 'scalar_map' contrast option requires a 3-dimensional image; your image is " + str(input_image.ndim()) + "D");
-      }
+      if (!(input_image.ndim() == 3 || (input_image.ndim() == 4 && input_image.dim(3) == 1)))
+        throw Exception ("Use of 'scalar_map' contrast option requires a 3-dimensional image; your image is " + str(input_image.ndim()) + "D");
     }
 
     if (contrast == FOD_AMP && input_image.ndim() != 4)
