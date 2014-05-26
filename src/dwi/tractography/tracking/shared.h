@@ -99,7 +99,7 @@ namespace MR
 
                 properties["source"] = source_buffer.name();
 
-                init_threshold = 2.0*threshold;
+                init_threshold = threshold;
                 properties.set (init_threshold, "init_threshold");
 
                 max_num_attempts = 100 * max_num_tracks;
