@@ -36,7 +36,10 @@
 #include "dwi/tractography/mapping/voxel.h"
 #include "dwi/tractography/mapping/loader.h"
 #include "dwi/tractography/mapping/writer.h"
+#include "math/stats/permutation.h"
+#include "math/stats/glm.h"
 #include "thread/queue.h"
+
 
 #include <sys/stat.h>
 
@@ -61,6 +64,10 @@ void usage ()
   + Argument ("fixel_in", "the template fixel image including the fake pathology ROI.").type_image_in ()
 
   + Argument ("tracks", "the tractogram used to derive fixel-fixel connectivity").type_file ()
+
+  + Argument ("design", "the design matrix").type_file()
+
+  + Argument ("contrast", "the contrast matrix").type_file()
 
   + Argument ("output", "the output prefix").type_file();
 
@@ -176,11 +183,12 @@ class TrackProcessor {
 class Processor {
   public:
     Processor (Stats::TFCE::PermutationStack& perm_stack,
+               const Math::Stats::GLMTTest& ttest_controls,
+               const Math::Stats::GLMTTest& ttest_path,
                const int32_t num_fixels,
                const int32_t actual_positives,
                const int32_t num_ROC_samples,
                const std::vector<value_type>& truth_statistic,
-               const std::vector<std::map<int32_t, value_type> >& fixel_smoothing_weights,
                const std::vector<std::map<int32_t, Stats::TFCE::connectivity> >& fixel_connectivity,
                std::vector<value_type>& global_TPRates,
                std::vector<int32_t>& global_num_noise_instances_with_false_positive,
@@ -191,27 +199,23 @@ class Processor {
                const value_type h,
                const value_type c):
                  perm_stack (perm_stack),
+                 ttest_controls (ttest_controls),
+                 ttest_path (ttest_path),
                  num_fixels (num_fixels),
                  actual_positives (actual_positives),
                  num_ROC_samples (num_ROC_samples),
                  truth_statistic (truth_statistic),
-                 fixel_smoothing_weights (fixel_smoothing_weights),
-                 fixel_connectivity (fixel_connectivity),
                  global_TPRates (global_TPRates),
                  global_num_noise_instances_with_false_positive (global_num_noise_instances_with_false_positive),
                  TPRates (num_ROC_samples, 0.0),
                  num_noise_instances_with_a_false_positive (num_ROC_samples, 0),
-                 dh (dh),
-                 smooth (smooth),
-                 snr (snr),
-                 e (e),
-                 h (h),
-                 c (c),
-                 noisy_test_statistic (num_fixels, 0.0),
-                 smoothed_test_statistic (num_fixels, 0.0),
-                 noise_only (num_fixels, 0.0),
-                 smoothed_noise (num_fixels, 0.0) {
-
+                 dh (dh), smooth (smooth), snr (snr),
+                 e (e), h (h), c (c),
+                 control_test_statistic (num_fixels, 0.0),
+                 path_test_statistic (num_fixels, 0.0),
+                 cfe_control_test_statistic (num_fixels, 0.0),
+                 cfe_path_test_statistic (num_fixels, 0.0),
+                 cfe (fixel_connectivity, dh, e, h) {
     }
 
     ~Processor () {
@@ -221,30 +225,22 @@ class Processor {
       }
     }
 
-
     void execute () {
       size_t index = 0;
-      while (( index = stack.next() ) < stack.num_noise_realisation)
-        process_permutation (); // TODO permstack here
+      while (( index = perm_stack.next() ) < perm_stack.num_permutations)
+        process_permutation (index);
     }
 
   private:
 
-    void process_permutation () {
+    void process_permutation (int index) {
 
-      // generate test statistic image
-      // generate control test statistic image  (10 and 10)
+      value_type max_stat = 0.0, min_stat = 0.0;
+      ttest_controls (perm_stack.permutation (index), control_test_statistic, max_stat, min_stat);
+      ttest_path (perm_stack.permutation (index), path_test_statistic, max_stat, min_stat);
 
-      float max_stat = 0.0;
-
-
-
-      std::vector<value_type> cfe_path_test_statistic;
-      std::vector<value_type> cfe_control_test_statistic;
-
-      MR::Stats::TFCE::Connectivity cfe (fixel_connectivity, dh, e, h);
-      float max_cfe_statistic = cfe (max_stat, smoothed_test_statistic, &cfe_path_test_statistic, c);
-      cfe (max_stat, smoothed_noise, &cfe_control_test_statistic, c);
+      cfe (max_stat, control_test_statistic, &cfe_control_test_statistic, c);
+      value_type max_cfe_statistic = cfe (max_stat, path_test_statistic, &cfe_path_test_statistic, c);
 
       std::vector<value_type> num_true_positives (num_ROC_samples);
       std::vector<value_type> num_false_positives (num_ROC_samples);
@@ -270,30 +266,28 @@ class Processor {
     }
 
     Stats::TFCE::PermutationStack& perm_stack;
+    Math::Stats::GLMTTest ttest_controls, ttest_path;
     const int32_t num_fixels;
     const int32_t actual_positives;
     const size_t num_ROC_samples;
     const std::vector<value_type>& truth_statistic;
-    const std::vector<std::map<int32_t, value_type> >& fixel_smoothing_weights;
-    const std::vector<std::map<int32_t, Stats::TFCE::connectivity> >& fixel_connectivity;
     std::vector<value_type>& global_TPRates;
     std::vector<int32_t>& global_num_noise_instances_with_false_positive;
     std::vector<value_type> TPRates;
     std::vector<int32_t> num_noise_instances_with_a_false_positive;
     const value_type dh, smooth, snr, e, h, c;
-    std::vector<value_type> noisy_test_statistic;
-    std::vector<value_type> smoothed_test_statistic;
-    std::vector<value_type> noise_only;
-    std::vector<value_type> smoothed_noise;
+    std::vector<value_type> control_test_statistic;
+    std::vector<value_type> path_test_statistic;
+    std::vector<value_type> cfe_control_test_statistic;
+    std::vector<value_type> cfe_path_test_statistic;
+    MR::Stats::TFCE::Connectivity cfe;
 };
 
 bool file_exists (const std::string& filename)
 {
     struct stat buf;
     if (stat(filename.c_str(), &buf) != -1)
-    {
-        return true;
-    }
+      return true;
     return false;
 }
 
@@ -308,10 +302,10 @@ void run ()
   if (opt.size())
     num_ROC_samples = opt[0][0];
 
-  int num_noise_realisations = 1000;
+  int num_permutations = 1000;
   opt = get_options("realisations");
   if (opt.size())
-    num_noise_realisations = opt[0][0];
+    num_permutations = opt[0][0];
 
   std::vector<value_type> effect(1);
   effect[0] = 1.0;
@@ -352,7 +346,25 @@ void run ()
     while (getline (ifs, temp))
       filenames.push_back (Path::join (folder, temp));
   }
+  const size_t num_subjects = filenames.size();
 
+  // Load design matrix:
+  Math::Matrix<value_type> design;
+  design.load (argument[3]);
+  if (design.rows() != filenames.size())
+    throw Exception ("number of subjects does not match number of rows in design matrix");
+
+  // Load contrast matrix:
+  Math::Matrix<value_type> contrast;
+  contrast.load (argument[4]);
+
+  if (contrast.columns() > design.columns())
+    throw Exception ("too many contrasts for design matrix");
+  contrast.resize (contrast.rows(), design.columns());
+
+  Image::Header input_header (argument[1]);
+  Image::BufferSparse<FixelMetric> mask (input_header);
+  Image::BufferSparse<FixelMetric>::voxel_type mask_vox (mask);
 
   // Create a image to store fixel indices of a 1D vector
   Image::Header index_header (argument[0]);
@@ -368,7 +380,7 @@ void run ()
   // vectors to hold fixel data
   std::vector<Point<value_type> > fixel_positions;
   std::vector<Point<value_type> > fixel_directions;
-  std::vector<value_type> truth_statistic;
+  std::vector<value_type> pathology_mask;
 
   int32_t num_fixels = 0;
   int32_t actual_positives = 0;
@@ -388,7 +400,7 @@ void run ()
       num_fixels++;
       if (template_fixel.value()[f].value >= 1.0)
         actual_positives++;
-      truth_statistic.push_back (template_fixel.value()[f].value);
+      pathology_mask.push_back (template_fixel.value()[f].value);
       fixel_directions.push_back (template_fixel.value()[f].dir);
       fixel_positions.push_back (transform.voxel2scanner (template_fixel));
     }
@@ -401,7 +413,7 @@ void run ()
   std::vector<uint16_t> fixel_TDI (num_fixels, 0);
 
   DWI::Tractography::Properties properties;
-  DWI::Tractography::Reader<value_type> track_file (argument[1], properties);
+  DWI::Tractography::Reader<value_type> track_file (argument[2], properties);
   const size_t num_tracks = properties["count"].empty() ? 0 : to<int> (properties["count"]);
   if (!num_tracks)
     throw Exception ("no tracks found in input file");
@@ -414,8 +426,7 @@ void run ()
     Thread::run_queue (loader, DWI::Tractography::Streamline<float>(), mapper, SetVoxelDir(), tract_processor);
   }
 
-  // Normalise connectivity matrix and threshold
-  {
+  { // Normalise connectivity matrix and threshold
     ProgressBar progress ("normalising and thresholding fixel-fixel connectivity matrix...", num_fixels);
     for (int32_t fixel = 0; fixel < num_fixels; ++fixel) {
       std::map<int32_t, Stats::TFCE::connectivity>::iterator it = fixel_connectivity[fixel].begin();
@@ -438,14 +449,10 @@ void run ()
 
 
   // load each fixel image, identify fixel correspondence and save AFD in 2D vector
-  Math::Matrix<value_type> afd (num_fixels, filenames.size());
-  Math::Matrix<value_type> afd_path (num_fixels, filenames.size());
-  Math::Matrix<value_type> afd_smoothed (num_fixels, filenames.size());
-  Math::Matrix<value_type> afd_path_smoothed (num_fixels, filenames.size());
+  Math::Matrix<value_type> control_data (num_fixels, num_subjects);
   {
-    ProgressBar progress ("loading input images...", filenames.size());
-    for (size_t subject = 0; subject < filenames.size(); subject++) {
-      LogLevelLatch log_level (0);
+    ProgressBar progress ("loading input images...", num_subjects);
+    for (size_t subject = 0; subject < num_subjects; subject++) {
       Image::BufferSparse<FixelMetric> fixel (filenames[subject]);
       Image::BufferSparse<FixelMetric>::voxel_type fixel_vox (fixel);
       Image::check_dimensions (fixel, template_fixel, 0, 3);
@@ -468,7 +475,7 @@ void run ()
              }
            }
            if (largest_dp > angular_threshold_dp)
-             afd (i, subject) = fixel_vox.value()[index_of_closest_fixel].value;
+             control_data (i, subject) = fixel_vox.value()[index_of_closest_fixel].value;
          }
        }
 
@@ -477,14 +484,19 @@ void run ()
   }
 
 
-
-  for (size_t snr = 0; snr < effect.size(); ++snr) {
-
+  for (size_t effect_size = 0; effect_size < effect.size(); ++effect_size) {
     // generate images effected by pathology for all images
+    Math::Matrix<value_type> path_data (control_data);
+    for (size_t subject = 0; subject < num_subjects; ++subject) {
+      for (int32_t fixel = 0; fixel < num_fixels; ++fixel) {
+        if (pathology_mask[fixel] > 0.0)
+          path_data (fixel, subject) = path_data (fixel, subject) - (effect_size * path_data (fixel, subject));
+      }
+    }
 
     for (size_t s = 0; s < smooth.size(); ++s) {
-
-      CONSOLE ("computing smoothing weights...");
+      Math::Matrix<value_type> input_data (num_fixels, num_subjects);
+      Math::Matrix<value_type> input_path_data (num_fixels, num_subjects);
       if (smooth[s] > 0.0) {
         std::vector<std::map<int32_t, value_type> > fixel_smoothing_weights (num_fixels);
         float stdev = smooth[s] / 2.3548;
@@ -518,21 +530,20 @@ void run ()
         }
 
         // Smooth healthy and pathology data for each subject
-        afd_smoothed.zero();
-        for (size_t subject; subject = 0; subject < filenames.size()) {
+        for (size_t subject = 0; subject < num_subjects; ++subject) {
           for (int32_t fixel = 0; fixel < num_fixels; ++fixel) {
-            value_type value = 0.0;
             std::map<int32_t, value_type>::const_iterator it = fixel_smoothing_weights[fixel].begin();
             for (; it != fixel_smoothing_weights[fixel].end(); ++it) {
-              afd_smoothed (fixel, subject) += afd (it->first, subject) * it->second;
-              afd_path_smoothed (fixel, subject) += afd_path (it->first, subject) * it->second;
+              input_data (fixel, subject) += control_data (it->first, subject) * it->second;
+              input_path_data (fixel, subject) += path_data (it->first, subject) * it->second;
             }
           }
         }
 
       // no smoothing, just copy the data across
       } else {
-        afd_smoothed = afd;
+        input_data = control_data;
+        input_path_data = path_data;
       }
 
       for (size_t h = 0; h < H.size(); ++h) {
@@ -540,12 +551,12 @@ void run ()
           for (size_t c = 0; c < C.size(); ++c) {
 
             CONSOLE ("starting test: smoothing = " + str(smooth[s]) +
-                     ", snr = " + str(effect[snr]) + ", h = " + str(H[h]) +
+                     ", effect = " + str(effect[effect_size]) + ", h = " + str(H[h]) +
                      ", e = " + str(E[e]) + ", c = " + str(C[c]));
 
             std::ofstream output;
-            std::string filename (argument[2]);
-            filename.append ("_s" + str(smooth[s]) + "_snr" + str(effect[snr]) +
+            std::string filename (argument[5]);
+            filename.append ("_s" + str(smooth[s]) + "_effect" + str(effect[effect_size]) +
                              "_h" + str(H[h]) + "_e" + str(E[e]) +
                              "_c" + str (C[c]));
             if (file_exists (filename)) {
@@ -556,12 +567,13 @@ void run ()
               std::vector<int32_t> num_noise_instances_with_a_false_positive (num_ROC_samples, 0);
 
               {
-                // TODO perm stack HERE
-                Stack stack (num_noise_realisations);
-                Processor processor (stack, num_fixels, actual_positives, num_ROC_samples,
-                                     truth_statistic, fixel_smoothing_weights,
-                                     fixel_connectivity, TPRates, num_noise_instances_with_a_false_positive,
-                                     dh, smooth[s] / 2.3548, effect[snr], E[e], H[h], C[c]);
+                Stats::TFCE::PermutationStack stack (num_permutations, num_subjects);
+                Math::Stats::GLMTTest ttest_control (control_data, design, contrast);
+                Math::Stats::GLMTTest ttest_path (path_data, design, contrast);
+                Processor processor (stack, ttest_control, ttest_path, num_fixels, actual_positives, num_ROC_samples,
+                                     pathology_mask, fixel_connectivity, TPRates, num_noise_instances_with_a_false_positive,
+                                     dh, smooth[s] / 2.3548, effect[effect_size], E[e], H[h], C[c]);
+
                 Thread::Array< Processor > thread_list (processor);
                 Thread::Exec threads (thread_list, "threads");
               }
@@ -569,10 +581,10 @@ void run ()
               output.open (filename.c_str());
 
               for (int t = 0; t < num_ROC_samples; ++t) {
-                // average TPR across all SNR realisations
-                output << TPRates[t] / (value_type) num_noise_realisations << " ";
-                // FPR is defined as the fraction of SNR realisations with a false positive
-                output << num_noise_instances_with_a_false_positive[t] / (value_type) num_noise_realisations << std::endl;
+                // average TPR across all permutations realisations
+                output << TPRates[t] / (value_type) num_permutations << " ";
+                // FPR is defined as the fraction of permutations realisations with a false positive
+                output << num_noise_instances_with_a_false_positive[t] / (value_type) num_permutations << std::endl;
               }
               output.close();
             }
@@ -581,6 +593,5 @@ void run ()
       }
     }
   }
-
 }
 

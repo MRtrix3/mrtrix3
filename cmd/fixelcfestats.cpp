@@ -444,10 +444,10 @@ void run() {
      std::vector<value_type> pvalue_output_pos (num_fixels, 0.0);
      std::vector<value_type> pvalue_output_neg (num_fixels, 0.0);
 
-     Math::Stats::GLMTTest glm (data, design, contrast);
+     Math::Stats::GLMTTest glm_ttest (data, design, contrast);
      {
        Stats::TFCE::Connectivity tfce_integrator (connectivity_matrix, dh, tfce_E, tfce_H);
-       Stats::TFCE::run (glm, tfce_integrator, num_perms,
+       Stats::TFCE::run (glm_ttest, tfce_integrator, num_perms,
                          perm_distribution_pos, perm_distribution_neg,
                          tfce_output_pos, tfce_output_neg, tvalue_output);
      }
