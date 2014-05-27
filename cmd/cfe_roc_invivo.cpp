@@ -87,7 +87,7 @@ void usage ()
   + Option ("connectivity", "the connectivity weight")
   + Argument ("C").type_float (1.0, 1.0, 100).type_sequence_float()
 
-  + Option ("realisations", "the number of noise realisations")
+  + Option ("permutations", "the number of permutations")
   + Argument ("num").type_integer(1, 1000, 10000)
 
   + Option ("roc", "the number of thresholds for ROC curve generation")
@@ -183,34 +183,36 @@ class TrackProcessor {
 class Processor {
   public:
     Processor (Stats::TFCE::PermutationStack& perm_stack,
+               const Math::Matrix<value_type>& control_data,
+               const Math::Matrix<value_type>& path_data,
+               const Math::Matrix<value_type>& design,
+               const Math::Matrix<value_type>& contrast,
                const Math::Stats::GLMTTest& ttest_controls,
-               const Math::Stats::GLMTTest& ttest_path,
                const int32_t num_fixels,
                const int32_t actual_positives,
                const int32_t num_ROC_samples,
                const std::vector<value_type>& truth_statistic,
                const std::vector<std::map<int32_t, Stats::TFCE::connectivity> >& fixel_connectivity,
-               std::vector<value_type>& global_TPRates,
-               std::vector<int32_t>& global_num_noise_instances_with_false_positive,
+               Math::Matrix<value_type>& global_TPRates,
+               std::vector<int32_t>& global_num_permutations_with_false_positive,
                const value_type dh,
-               const value_type smooth,
-               const value_type snr,
                const value_type e,
                const value_type h,
                const value_type c):
                  perm_stack (perm_stack),
+                 control_data (control_data),
+                 path_data (path_data),
+                 design (design),
+                 contrast (contrast),
                  ttest_controls (ttest_controls),
-                 ttest_path (ttest_path),
                  num_fixels (num_fixels),
                  actual_positives (actual_positives),
                  num_ROC_samples (num_ROC_samples),
                  truth_statistic (truth_statistic),
                  global_TPRates (global_TPRates),
-                 global_num_noise_instances_with_false_positive (global_num_noise_instances_with_false_positive),
-                 TPRates (num_ROC_samples, 0.0),
-                 num_noise_instances_with_a_false_positive (num_ROC_samples, 0),
-                 dh (dh), smooth (smooth), snr (snr),
-                 e (e), h (h), c (c),
+                 global_num_permutations_with_false_positive (global_num_permutations_with_false_positive),
+                 num_permutations_with_a_false_positive (num_ROC_samples, 0),
+                 dh (dh), e (e), h (h), c (c),
                  control_test_statistic (num_fixels, 0.0),
                  path_test_statistic (num_fixels, 0.0),
                  cfe_control_test_statistic (num_fixels, 0.0),
@@ -220,8 +222,8 @@ class Processor {
 
     ~Processor () {
       for (size_t t = 0; t < num_ROC_samples; ++t) {
-        global_num_noise_instances_with_false_positive[t] += num_noise_instances_with_a_false_positive[t];
-        global_TPRates[t] += TPRates[t];
+        global_num_permutations_with_false_positive[t] += num_permutations_with_a_false_positive[t];
+//        global_TPRates[t] += TPRates[t];
       }
     }
 
@@ -236,6 +238,16 @@ class Processor {
     void process_permutation (int index) {
 
       value_type max_stat = 0.0, min_stat = 0.0;
+
+
+      // combine pathology and patient data
+      // Save all of the TPR for each permutation?
+      // This allows us to compute the AUC for each permutation and display an inter-quatile range
+      //
+
+
+                      Math::Stats::GLMTTest ttest_path (path_data, design, contrast);
+
       ttest_controls (perm_stack.permutation (index), control_test_statistic, max_stat, min_stat);
       ttest_path (perm_stack.permutation (index), path_test_statistic, max_stat, min_stat);
 
@@ -260,22 +272,25 @@ class Processor {
           }
         }
         if (contains_false_positive)
-          num_noise_instances_with_a_false_positive[t]++;
-        TPRates[t] += (float) num_true_positives[t] / (float) actual_positives;
+          num_permutations_with_a_false_positive[t]++;
+        global_TPRates(t, index) = (float) num_true_positives[t] / (float) actual_positives;
       }
     }
 
     Stats::TFCE::PermutationStack& perm_stack;
-    Math::Stats::GLMTTest ttest_controls, ttest_path;
+    const Math::Matrix<value_type>& control_data;
+    const Math::Matrix<value_type>& path_data;
+    const Math::Matrix<value_type>& design;
+    const Math::Matrix<value_type>& contrast;
+    Math::Stats::GLMTTest ttest_controls;
     const int32_t num_fixels;
     const int32_t actual_positives;
     const size_t num_ROC_samples;
     const std::vector<value_type>& truth_statistic;
-    std::vector<value_type>& global_TPRates;
-    std::vector<int32_t>& global_num_noise_instances_with_false_positive;
-    std::vector<value_type> TPRates;
-    std::vector<int32_t> num_noise_instances_with_a_false_positive;
-    const value_type dh, smooth, snr, e, h, c;
+    Math::Matrix<value_type>& global_TPRates;
+    std::vector<int32_t>& global_num_permutations_with_false_positive;
+    std::vector<int32_t> num_permutations_with_a_false_positive;
+    const value_type dh, e, h, c;
     std::vector<value_type> control_test_statistic;
     std::vector<value_type> path_test_statistic;
     std::vector<value_type> cfe_control_test_statistic;
@@ -303,7 +318,7 @@ void run ()
     num_ROC_samples = opt[0][0];
 
   int num_permutations = 1000;
-  opt = get_options("realisations");
+  opt = get_options("permutations");
   if (opt.size())
     num_permutations = opt[0][0];
 
@@ -563,28 +578,31 @@ void run ()
               CONSOLE ("Already done!");
             } else {
 
-              std::vector<value_type> TPRates (num_ROC_samples, 0.0);
-              std::vector<int32_t> num_noise_instances_with_a_false_positive (num_ROC_samples, 0);
-
+              Math::Matrix<value_type> TPRates (num_ROC_samples, num_permutations);
+              TPRates.zero();
+              std::vector<int32_t> num_permutations_with_a_false_positive (num_ROC_samples, 0);
               {
                 Stats::TFCE::PermutationStack stack (num_permutations, num_subjects);
                 Math::Stats::GLMTTest ttest_control (control_data, design, contrast);
-                Math::Stats::GLMTTest ttest_path (path_data, design, contrast);
-                Processor processor (stack, ttest_control, ttest_path, num_fixels, actual_positives, num_ROC_samples,
-                                     pathology_mask, fixel_connectivity, TPRates, num_noise_instances_with_a_false_positive,
-                                     dh, smooth[s] / 2.3548, effect[effect_size], E[e], H[h], C[c]);
-
+                Processor processor (stack, control_data, path_data, design, contrast, ttest_control, num_fixels, actual_positives,
+                                     num_ROC_samples, pathology_mask, fixel_connectivity, TPRates,
+                                     num_permutations_with_a_false_positive, dh, E[e], H[h], C[c]);
                 Thread::Array< Processor > thread_list (processor);
                 Thread::Exec threads (thread_list, "threads");
               }
 
               output.open (filename.c_str());
-
+              std::string filename_all_TPR (filename);
+              filename_all_TPR.append("_all_tpr");
+              TPRates.save(filename_all_TPR);
               for (int t = 0; t < num_ROC_samples; ++t) {
                 // average TPR across all permutations realisations
-                output << TPRates[t] / (value_type) num_permutations << " ";
+                double sum = 0.0;
+                for (int p = 0; 0 < num_permutations; ++p)
+                  sum += TPRates(t,p);
+                output << sum / (value_type) num_permutations << " ";
                 // FPR is defined as the fraction of permutations realisations with a false positive
-                output << num_noise_instances_with_a_false_positive[t] / (value_type) num_permutations << std::endl;
+                output << num_permutations_with_a_false_positive[t] / (value_type) num_permutations << std::endl;
               }
               output.close();
             }
