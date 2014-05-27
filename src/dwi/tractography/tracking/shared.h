@@ -77,6 +77,8 @@ namespace MR
               source_voxel (source_buffer),
               properties (property_set),
               max_num_tracks (1000),
+              min_num_points (0),
+              max_num_points (0),
               max_angle (NAN),
               max_angle_rk4 (NAN),
               cos_max_angle (NAN),
@@ -85,10 +87,11 @@ namespace MR
               threshold (0.1),
               unidirectional (false),
               rk4 (false),
+              stop_on_all_include (false),
               downsampler ()
 #ifdef DEBUG_TERMINATIONS
-                , debug_header       (properties.find ("act") == properties.end() ? diff_path : properties["act"]),
-              transform          (debug_header)
+            , debug_header (properties.find ("act") == properties.end() ? diff_path : properties["act"]),
+              transform  (debug_header)
 #endif
               {
 
@@ -96,14 +99,19 @@ namespace MR
                 properties.set (unidirectional, "unidirectional");
                 properties.set (max_num_tracks, "max_num_tracks");
                 properties.set (rk4, "rk4");
+                properties.set (stop_on_all_include, "stop_on_all_include");
 
                 properties["source"] = source_buffer.name();
 
-                init_threshold = 2.0*threshold;
+                init_threshold = threshold;
                 properties.set (init_threshold, "init_threshold");
 
                 max_num_attempts = 100 * max_num_tracks;
                 properties.set (max_num_attempts, "max_num_attempts");
+
+                assert (properties.seeds.num_seeds());
+                max_seed_attempts = properties.seeds[0]->get_max_attempts();
+                properties.set (max_seed_attempts, "max_seed_attempts");
 
                 if (properties.find ("init_direction") != properties.end()) {
                   std::vector<float> V = parse_floats (properties["init_direction"]);
@@ -114,8 +122,11 @@ namespace MR
                   init_dir.normalise();
                 }
 
-                if (properties.find ("act") != properties.end())
+                if (properties.find ("act") != properties.end()) {
                   act_shared_additions = new ACT::ACT_Shared_additions (properties["act"], property_set);
+                  if (act().backtrack() && stop_on_all_include)
+                    throw Exception ("Cannot use -stop option if ACT backtracking is enabled");
+                }
 
                 if (properties.find ("downsample_factor") != properties.end())
                   downsampler.set_ratio (to<int> (properties["downsample_factor"]));
@@ -131,18 +142,19 @@ namespace MR
                 for (size_t i = 0; i != TERMINATION_REASON_COUNT; ++i) {
                   std::string name;
                   switch (i) {
-                    case 0:  name = "undefined";      break;
-                    case 1:  name = "enter_cgm";      break;
-                    case 2:  name = "calibrate_fail"; break;
-                    case 3:  name = "exit_image";     break;
-                    case 4:  name = "enter_csf";      break;
-                    case 5:  name = "bad_signal";     break;
-                    case 6:  name = "curvature";      break;
-                    case 7:  name = "max_length";     break;
-                    case 8:  name = "term_in_sgm";    break;
-                    case 9:  name = "exit_sgm";       break;
-                    case 10: name = "exit_mask";      break;
-                    case 11: name = "enter_exclude";  break;
+                    case CONTINUE:              name = "undefined";      break;
+                    case ENTER_CGM:             name = "enter_cgm";      break;
+                    case CALIBRATE_FAIL:        name = "calibrate_fail"; break;
+                    case EXIT_IMAGE:            name = "exit_image";     break;
+                    case ENTER_CSF:             name = "enter_csf";      break;
+                    case BAD_SIGNAL:            name = "bad_signal";     break;
+                    case HIGH_CURVATURE:        name = "curvature";      break;
+                    case LENGTH_EXCEED:         name = "max_length";     break;
+                    case TERM_IN_SGM:           name = "term_in_sgm";    break;
+                    case EXIT_SGM:              name = "exit_sgm";       break;
+                    case EXIT_MASK:             name = "exit_mask";      break;
+                    case ENTER_EXCLUDE:         name = "enter_exclude";  break;
+                    case TRAVERSE_ALL_INCLUDE:  name = "all_include";    break;
                   }
                   debug_images[i] = new Image::Buffer<uint32_t>("terms_" + name + ".mif", debug_header);
                 }
@@ -163,18 +175,19 @@ namespace MR
                 std::string term_type;
                 bool to_print = false;
                 switch (i) {
-                  case 0:  term_type = "Unknown";                      to_print = false;    break;
-                  case 1:  term_type = "Entered cortical grey matter"; to_print = is_act(); break;
-                  case 2:  term_type = "Calibrator failed";            to_print = true;     break;
-                  case 3:  term_type = "Exited image";                 to_print = true;     break;
-                  case 4:  term_type = "Entered CSF";                  to_print = is_act(); break;
-                  case 5:  term_type = "Bad diffusion signal";         to_print = true;     break;
-                  case 6:  term_type = "Excessive curvature";          to_print = true;     break;
-                  case 7:  term_type = "Max length exceeded";          to_print = true;     break;
-                  case 8:  term_type = "Terminated in subcortex";      to_print = is_act(); break;
-                  case 9:  term_type = "Exiting sub-cortical GM";      to_print = is_act(); break;
-                  case 10: term_type = "Exited mask";                  to_print = properties.mask.size(); break;
-                  case 11: term_type = "Entered exclusion region";     to_print = properties.exclude.size(); break;
+                  case CONTINUE:             term_type = "Unknown";                       to_print = false;    break;
+                  case ENTER_CGM:            term_type = "Entered cortical grey matter";  to_print = is_act(); break;
+                  case CALIBRATE_FAIL:       term_type = "Calibrator failed";             to_print = true;     break;
+                  case EXIT_IMAGE:           term_type = "Exited image";                  to_print = true;     break;
+                  case ENTER_CSF:            term_type = "Entered CSF";                   to_print = is_act(); break;
+                  case BAD_SIGNAL:           term_type = "Bad diffusion signal";          to_print = true;     break;
+                  case HIGH_CURVATURE:       term_type = "Excessive curvature";           to_print = true;     break;
+                  case LENGTH_EXCEED:        term_type = "Max length exceeded";           to_print = true;     break;
+                  case TERM_IN_SGM:          term_type = "Terminated in subcortex";       to_print = is_act(); break;
+                  case EXIT_SGM:             term_type = "Exiting sub-cortical GM";       to_print = is_act(); break;
+                  case EXIT_MASK:            term_type = "Exited mask";                   to_print = properties.mask.size(); break;
+                  case ENTER_EXCLUDE:        term_type = "Entered exclusion region";      to_print = properties.exclude.size(); break;
+                  case TRAVERSE_ALL_INCLUDE: term_type = "Traversed all include regions"; to_print = stop_on_all_include; break;
                 }
                 if (to_print)
                   INFO ("  " + term_type + ": " + str (100.0 * terminations[i] / (double)sum_terminations) + "\%");
@@ -185,12 +198,12 @@ namespace MR
                 std::string reject_type;
                 bool to_print = false;
                 switch (i) {
-                  case 0: reject_type = "Shorter than minimum length";     to_print = true;     break;
-                  case 1: reject_type = "Longer than maximum length";      to_print = is_act(); break;
-                  case 2: reject_type = "Entered exclusion region";        to_print = properties.exclude.size(); break;
-                  case 3: reject_type = "Missed inclusion region";         to_print = properties.include.size(); break;
-                  case 4: reject_type = "Poor structural termination";     to_print = is_act(); break;
-                  case 5: reject_type = "Failed to traverse white matter"; to_print = is_act(); break;
+                  case TRACK_TOO_SHORT:           reject_type = "Shorter than minimum length";     to_print = true;     break;
+                  case TRACK_TOO_LONG:            reject_type = "Longer than maximum length";      to_print = is_act(); break;
+                  case ENTER_EXCLUDE_REGION:      reject_type = "Entered exclusion region";        to_print = properties.exclude.size(); break;
+                  case MISSED_INCLUDE_REGION:     reject_type = "Missed inclusion region";         to_print = properties.include.size(); break;
+                  case ACT_POOR_TERMINATION:      reject_type = "Poor structural termination";     to_print = is_act(); break;
+                  case ACT_FAILED_WM_REQUIREMENT: reject_type = "Failed to traverse white matter"; to_print = is_act(); break;
                 }
                 if (to_print)
                   INFO ("  " + reject_type + ": " + str (rejections[i]));
@@ -213,8 +226,8 @@ namespace MR
             size_t max_num_tracks, max_num_attempts, min_num_points, max_num_points;
             value_type max_angle, max_angle_rk4, cos_max_angle, cos_max_angle_rk4;
             value_type step_size, threshold, init_threshold;
-            bool unidirectional;
-            bool rk4;
+            size_t max_seed_attempts;
+            bool unidirectional, rk4, stop_on_all_include;
             Downsampler downsampler;
 
             // Additional members for ACT

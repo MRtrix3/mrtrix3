@@ -103,7 +103,7 @@ namespace MR
 
 
 
-      bool init ()
+      bool init()
       {
         if (!get_data (source))
           return false;

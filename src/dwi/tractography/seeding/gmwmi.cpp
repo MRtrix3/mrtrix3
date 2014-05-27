@@ -38,7 +38,7 @@ namespace MR
 
 
       GMWMI::GMWMI (const std::string& in, const Math::RNG& rng, const std::string& anat_path) :
-        Base (in, rng, "GM-WM interface"),
+        Base (in, rng, "GM-WM interface", MAX_TRACKING_SEED_ATTEMPTS_GMWMI),
         init_seeder (in, rng),
         anat_data (anat_path),
         interface (anat_data)
