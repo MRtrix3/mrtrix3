@@ -199,6 +199,7 @@ void run () {
   if (opt.size()) {
     Image::Header template_header (opt[0][0]);
     header = template_header;
+    header.comments().clear();
     if (!voxel_size.empty())
       oversample_header (header, voxel_size);
   }
