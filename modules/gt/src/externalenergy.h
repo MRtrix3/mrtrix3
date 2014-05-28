@@ -83,7 +83,7 @@ namespace MR {
             Image::BufferScratch<float>* fiso;
             Image::BufferScratch<float>* eext;
             
-            Math::Matrix<double> K, A, Ak, pinvA, H, Hinv;
+            Math::Matrix<double> K, Ak, H, Hinv;
             
             friend class ExternalEnergyComputer;
           };
@@ -91,7 +91,8 @@ namespace MR {
           
           ExternalEnergyComputer(Stats& stat, const Shared& shared)
             : EnergyComputer(stat), s(shared), dwi_vox(s.dwi), tod_vox(*(s.tod)), fiso_vox(*(s.fiso)), eext_vox(*(s.eext)),
-              T(s.dwi), y(s.nrows), t(s.ncols), d(s.ncols), f(s.nf), dE(0.0), beta(0.1)
+              T(s.dwi), y(s.nrows), t(s.ncols), d(s.ncols), fk(s.nf+1), c(s.nf+1), 
+              f(fk.sub(1, s.nf+1)), A(s.Ak.sub(0, s.nrows, 1, s.nf+1)), dE(0.0), beta(0.1)
           {
             resetEnergy();
           }
@@ -138,7 +139,9 @@ namespace MR {
           
           Image::Transform T;
           
-          Math::Vector<double> y, t, d, f;
+          Math::Vector<double> y, t, d, fk, c;
+          Math::Vector<double>::View f;
+          const Math::Matrix<double>::View A;
           double dE, beta;
           
           std::vector<Point<int> > changes_vox;

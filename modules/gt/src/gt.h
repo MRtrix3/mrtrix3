@@ -25,6 +25,7 @@
 #define __gt_gt_h__
 
 #include <iostream>
+#include <vector>
 
 #include "thread/mutex.h"
 #include "math/matrix.h"
@@ -53,8 +54,8 @@ namespace MR {
           double lam_int;
           
           Math::Matrix<float> resp_WM;
-          Math::Vector<float>* resp_CSF;
-          Math::Vector<float>* resp_GM;
+          std::vector< Math::Vector<float> > resp_ISO;
+          
         };
         
         

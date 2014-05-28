@@ -56,7 +56,7 @@ namespace MR {
         void MHSampler::execute(const int niter, const double t0, const double t1)
         {
           ProgressBar progress ("running MH sampler", niter/1000);
-          // exponantial annealing factor
+          // exponential annealing factor
           double alpha = Math::pow(t1/t0, 1.0/double(niter/1000));
           for (int k = 0; k < niter; k++)
           {

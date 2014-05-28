@@ -39,8 +39,8 @@ namespace MR {
       Matrix<ValueType> H;
       mult(H, 1.0, CblasTrans, M, CblasNoTrans, M);
       Vector<ValueType> f;
-      mult(f, -1.0, CblasTrans, M, b);
-      return solve_LS_nonneg_Hf (x, H, f);
+      mult(f, 1.0, CblasTrans, M, b);
+      return solve_LS_nonneg_Seq (x, H, f);
     }
     
     /**
@@ -48,13 +48,12 @@ namespace MR {
      * based on Franc, Navara, and Hlavac, "Sequential coordinate-wise algorithm 
      * for non-negative least squares problem." (2005)
      * 
-     * Solves A x = b, s.t. x >= 0, given H = A^T A and f = -A^T b.
-     * Note the minus sign in f!
+     * Solves A x = b, s.t. x >= 0, given H = A^T A and f = A^T b.
      * 
      * The input/output argument x can be used to set the initialization.
      */
     template <typename ValueType> 
-    inline Vector<ValueType>& solve_LS_nonneg_Hf (Vector<ValueType>& x, const Matrix<ValueType>& H, const Vector<ValueType>& f)
+    inline Vector<ValueType>& solve_LS_nonneg_Seq (Vector<ValueType>& x, const Matrix<ValueType>& H, const Vector<ValueType>& f)
     {
       Vector<ValueType> mu (f);
       if (!x.is_set()) {
@@ -62,7 +61,7 @@ namespace MR {
         x.zero();
       }
       else {
-        mult(mu, 1.0, 1.0, CblasTrans, H, x);
+        mult(mu, -1.0, 1.0, CblasTrans, H, x);
       }
       for (int it = 0; it < 1000; it++)
       {
@@ -81,6 +80,58 @@ namespace MR {
           break;
         }
       }
+      return x;
+    }
+    
+    template <typename ValueType> 
+    inline Vector<ValueType>& solve_LS_nonneg_Hf (Vector<ValueType>& x, const Matrix<ValueType>& H, const Matrix<ValueType>& Hinv, const Vector<ValueType>& f)
+    {
+      switch (f.size()) {
+        case 1: {
+          x.allocate(1);
+          ValueType x0 = f[0] / H(0,0);
+          x[0] = (x0 > 0.0) ? x0 : 0.0;
+          return x;
+        }
+        case 2: {
+          return solve_LS_nonneg2_Hf(x, H, Hinv, f);
+        }
+        case 3: {
+          return solve_LS_nonneg3_Hf(x, H, Hinv, f);
+        }
+        default: {
+          return solve_LS_nonneg_Seq(x, H, f);
+        }
+      }
+    }
+    
+    template <typename ValueType> 
+    inline Vector<ValueType>& solve_LS_nonneg2_Hf (Vector<ValueType>& x, const Matrix<ValueType>& H, const Matrix<ValueType>& Hinv, const Vector<ValueType>& f)
+    {
+      x.allocate(2);
+      mult(x, Hinv, f);
+      if ((x[0] >= 0.0) && (x[1] >= 0.0))
+        return x;
+      // else
+      ValueType mu = 1.0 / 0.0; // +Infinity
+      // case x=0
+      ValueType x1 = f[1] / H(1,1);
+      if (x1 >= 0.0) {
+        x[0] = 0.0;
+        x[1] = x1;
+        mu = -f[1] * x1 / 2;
+      }
+      // case y=0
+      ValueType x0 = f[0] / H(0,0);
+      if ((x0 >= 0) && (-f[0] * x0 / 2 < mu)) {
+        x[0] = x0;
+        x[1] = 0.0;
+      }
+      //
+      if ((x[0] >= 0.0) && (x[1] >= 0.0))
+        return x;
+      // finally
+      x = 0.0;
       return x;
     }
     
@@ -129,6 +180,7 @@ namespace MR {
         x[2] = x1;
         mu = mu0;
       }
+      // case z=0
       a = H(0,0);
       b = H(1,0);
       d = H(1,1);

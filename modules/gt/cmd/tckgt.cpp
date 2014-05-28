@@ -101,9 +101,13 @@ void usage ()
   + Option ("csfr",
             "set the response of CSF on the DWI signal.")
     + Argument ("response").type_file()
-
+  
   + Option ("gmr",
             "set the response of GM on the DWI signal.")
+    + Argument ("response").type_file()
+
+  + Option ("riso",
+            "set one or more isotropic response kernels.").allow_multiple()
     + Argument ("response").type_file()
 
   + Option ("balance",
@@ -159,8 +163,6 @@ void run ()
   opt = get_options("cpot");
   if (opt.size())
     ChemPot = opt[0][0];
-//  else
-//    ChemPot = 1.0;
   
   Properties properties;
   properties.Lmax = 8;
@@ -190,28 +192,26 @@ void run ()
   Math::Matrix<float> wmr (opt[0][0]);
   properties.resp_WM = wmr;
   
-  Math::Vector<float> csfr;
+  Math::Vector<float> riso;
   opt = get_options("csfr");
   if (opt.size())
   {
-    csfr.load(opt[0][0]);
-    properties.resp_CSF = &csfr;
-  }
-  else
-  {
-    properties.resp_CSF = NULL;
+    riso.load(opt[0][0]);
+    properties.resp_ISO.push_back(riso);
   }
   
-  Math::Vector<float> gmr;
   opt = get_options("gmr");
   if (opt.size())
   {
-    gmr.load(opt[0][0]);
-    properties.resp_GM = &gmr;
+    riso.load(opt[0][0]);
+    properties.resp_ISO.push_back(riso);
   }
-  else
+  
+  opt = get_options("riso");
+  for (size_t i = 0; i < opt.size(); i++)
   {
-    properties.resp_GM = NULL;
+    riso.load(opt[i][0]);
+    properties.resp_ISO.push_back(riso);
   }
 
   opt = get_options("balance");
@@ -287,7 +287,14 @@ void run ()
   
   MHSampler mhs (dwi_buffer, properties, stats, pgrid, Esum, mask);
   
+  // Burn-in phase
+  mhs.execute(niter/10, t0, t0);
+  
+  // Annealing
   mhs.execute(niter, t0, t1);
+  
+  // Phase out (testing only)
+  //mhs.execute(niter/2, t1, t1);
   
   VAR(pgrid.getTotalCount());
   
@@ -319,7 +326,7 @@ void run ()
   
   opt = get_options("fiso");
   if (opt.size()) {
-    header.dim(3) = (properties.resp_GM) ? 2 : (properties.resp_CSF) ? 1 : properties.resp_WM.columns();
+    header.dim(3) = properties.resp_ISO.size();
     Image::Buffer<float> Fiso (opt[0][0], header);
     Image::Buffer<float>::voxel_type vox_out (Fiso);
     Image::BufferScratch<float>::voxel_type vox_in (EextShared.getFiso());
