@@ -52,20 +52,19 @@ namespace MR
           void set (value_type position, const ControlPoints& control_points) {
             value_type p2 = position*position;
             value_type p3 = position*p2;
-            value_type inv_cpd1 = (1.0 - ValueType(2.0)*t) / (control_points[2] - control_points[0]);
-            value_type inv_cpd2 = (1.0 - ValueType(2.0)*t) / (control_points[3] - control_points[1]);
-          w[0] = (ValueType(0.5)-t) * (ValueType(2.0)*p2  - p3 - position);
-          w[1] = ValueType(1.0) + (ValueType(1.5)+t)*p3 - (ValueType(2.5)+t)*p2;
-          w[2] = (ValueType(2.0) + ValueType(2.0)*t)*p2 + (ValueType(0.5)-t)*position - (ValueType(1.5)+t)*p3;
-          w[3] = (ValueType(0.5)-t) * (p3 - p2);
-            //w[0] = (ValueType(2.0)*p2  - p3 - position) * inv_cpd1;
-            //w[1] = ValueType(2.0)*p3 - ValueType(3.0)*p2 + ValueType(1.0) + (p2-p3)*inv_cpd2;
-            //w[2] = (p3 - ValueType(2.0)*p2 + position)*inv_cpd1 - ValueType(2.0)*p3 + ValueType(3.0)*p2;
-            //w[3] = (p3-p2)*inv_cpd2;
+            value_type inv_cpd1 = (1.0 - ValueType(2.0)*t) * (control_points[2]-control_points[1]) / (control_points[2] - control_points[0]);
+            value_type inv_cpd2 = (1.0 - ValueType(2.0)*t) * (control_points[2]-control_points[1]) / (control_points[3] - control_points[1]);
+            w[0] = (ValueType(2.0)*p2  - p3 - position) * inv_cpd1;
+            w[1] = ValueType(2.0)*p3 - ValueType(3.0)*p2 + ValueType(1.0) + (p2-p3)*inv_cpd2;
+            w[2] = (p3 - ValueType(2.0)*p2 + position)*inv_cpd1 - ValueType(2.0)*p3 + ValueType(3.0)*p2;
+            w[3] = (p3-p2)*inv_cpd2;
           }
 
         value_type coef (size_t i) const {
           return w[i];
+        }
+        value_type tension () const { 
+          return 2.0*t;
         }
 
         template <class S>
@@ -106,26 +105,27 @@ namespace MR
       public:
         typedef ValueType value_type;
 
-          HermiteSplines (value_type tension = 0.0) : 
-            H (tension) { } 
+        explicit HermiteSplines (value_type tension = 0.0) : 
+          H (tension) { } 
 
         template <class ControlPoints>
-          HermiteSplines (const ControlPoints& control_points, value_type tension) : 
-            H (tension), cp (control_points.size()) { 
-              if (cp.size() < 4)
+          HermiteSplines (const ControlPoints& control_points, value_type tension = 0.0) : 
+            H (tension), cp (control_points.size()+2) { 
+              if (control_points.size() < 4)
                 throw Exception ("need at least 4 control points for Hermite spline curve");
-              for (size_t n = 0; n < cp.size(); ++n)
-                cp[n] = control_points[n];
+              for (size_t n = 0; n < control_points.size(); ++n)
+                cp[n+1] = control_points[n];
+              cp[0] = 2.0*cp[1]-cp[2];
+              cp[cp.size()-1] = 2.0*cp[cp.size()-2] - cp[cp.size()-3];
             }
 
         void set (value_type position) {
           if (cp.size()) {
             typename std::vector<ValueType>::const_iterator it = std::find_if (cp.begin(), cp.end(), GreaterThan<ValueType> (position));
-            index = it - cp.begin() - 1;
-            if (index < 1) index = 1;
-            if (index > cp.size()-2) index = cp.size()-2;
-            index = 1;
-            H.set ((position-cp[index])/(cp[index+1]-cp[index]), &cp[index-1]);
+            index = it - cp.begin() - 2;
+            if (index < 0) index = 0;
+            if (index > cp.size()-4) index = cp.size()-4;
+            H.set ((position-cp[index+1])/(cp[index+2]-cp[index+1]), &cp[index]);
           }
           else {
             assert (position >= 0.0);
@@ -136,22 +136,22 @@ namespace MR
 
         template <class ArrayType>
           ValueType value (const ArrayType& intensities) const {
-            return H.value (intensities[index-1], intensities[index], intensities[index+1], intensities[index+2]);
+            value_type a = index > 0 ? intensities[index-1] : project_down (intensities[0], intensities[1], intensities[2]);
+            value_type d = index < cp.size()-4 ? intensities[index+2] : project_up (intensities[cp.size()-5], intensities[cp.size()-4], intensities[cp.size()-3]);
+            return H.value (a, intensities[index], intensities[index+1], d);
         }
 
       private:
         Hermite<ValueType> H;
         std::vector<ValueType> cp;
-        size_t index;
-/*
-        ValueType fit_quadratic (ValueType xn, ValueType x0, ValueType y0, ValueType x1, ValueType y1, ValueType x2, ValueType y2) {
-          ValueType y0_y1 = y0-y1;
-          ValueType x0_x1 = x0-x1;
-          ValueType x02_x12 = x0*x0 - x1*x1;
+        ssize_t index;
 
-          ValueType a = (y0_y1 - x0_x1*y2/x2) / ;
+        value_type project_down (value_type a, value_type b, value_type c) const {
+          return 2.5*a - 1.5*b + 0.5*(c-b)*(cp[2]-cp[1])/(cp[3]-cp[2]); 
         }
-        */
+        value_type project_up (value_type a, value_type b, value_type c) const {
+          return 2.5*c - 1.5*b - 0.5*(b-a)*(cp[cp.size()-2]-cp[cp.size()-3])/(cp[cp.size()-3]-cp[cp.size()-4]); 
+        }
     };
 
   }

@@ -57,7 +57,7 @@ void run ()
   values.load (argument[1]);
   pos.load (argument[2]);
 
-  Math::HermiteSplines<float> spline (CP, 0.0);
+  Math::HermiteSplines<float> spline (CP);
   for (size_t n = 0; n < pos.size(); ++n) {
     spline.set (pos[n]);
     std::cout << pos[n] << " " << spline.value (values) << "\n";
