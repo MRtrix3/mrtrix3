@@ -101,6 +101,28 @@ void usage ()
 
 typedef float value_type;
 
+
+void write_fixel_output (const std::string& filename,
+                         const Math::Vector<value_type>& data,
+                         const Image::Header& header,
+                         Image::BufferSparse<FixelMetric>::voxel_type& mask_vox,
+                         Image::BufferScratch<int32_t>::voxel_type& indexer_vox) {
+  Image::BufferSparse<FixelMetric> output_buffer (filename, header);
+  Image::BufferSparse<FixelMetric>::voxel_type output_voxel (output_buffer);
+  Image::LoopInOrder loop (mask_vox);
+  for (loop.start (mask_vox, indexer_vox, output_voxel); loop.ok(); loop.next (mask_vox, indexer_vox, output_voxel)) {
+    output_voxel.value().set_size (mask_vox.value().size());
+    indexer_vox[3] = 0;
+    int32_t index = indexer_vox.value();
+    for (size_t f = 0; f != mask_vox.value().size(); ++f, ++index) {
+     output_voxel.value()[f] = mask_vox.value()[f];
+     output_voxel.value()[f].value = data[index];
+    }
+  }
+}
+
+
+
 class FixelIndex
 {
   public:
@@ -221,10 +243,8 @@ class Processor {
     }
 
     ~Processor () {
-      for (size_t t = 0; t < num_ROC_samples; ++t) {
+      for (size_t t = 0; t < num_ROC_samples; ++t)
         global_num_permutations_with_false_positive[t] += num_permutations_with_a_false_positive[t];
-//        global_TPRates[t] += TPRates[t];
-      }
     }
 
     void execute () {
@@ -236,23 +256,32 @@ class Processor {
   private:
 
     void process_permutation (int index) {
+      // Create 2 groups of subjects  - pathology vs uneffected controls.
+      //    Compute t-statistic image (this is our signal + noise image)
+      // Here we use the random permutation to select which patients belong in each group, placing the
+      // control data in the LHS of the Y transposed matrix, and path data in the RHS.
+      // We then perform the t-test using the default permutation of the design matrix.
+      // This code assumes the number of subjects in each group is equal
+      Math::Matrix<value_type> path_v_control_data (control_data);
+      for (int32_t fixel = 0; fixel < num_fixels; ++fixel) {
+        for (size_t row = 0; row < perm_stack.permutation (index).size(); ++row) {
+          if (row < perm_stack.permutation (index).size() / 2)
+            path_v_control_data (fixel, row) = control_data (fixel, perm_stack.permutation (index)[row]);
+          else
+            path_v_control_data (fixel, row) = path_data (fixel, perm_stack.permutation (index)[row]);
+        }
+      }
 
+      // Perform t-test and enhance
       value_type max_stat = 0.0, min_stat = 0.0;
-
-
-      // combine pathology and patient data
-      // Save all of the TPR for each permutation?
-      // This allows us to compute the AUC for each permutation and display an inter-quatile range
-      //
-
-
-                      Math::Stats::GLMTTest ttest_path (path_data, design, contrast);
-
-      ttest_controls (perm_stack.permutation (index), control_test_statistic, max_stat, min_stat);
-      ttest_path (perm_stack.permutation (index), path_test_statistic, max_stat, min_stat);
-
-      cfe (max_stat, control_test_statistic, &cfe_control_test_statistic, c);
+      Math::Stats::GLMTTest ttest_path (path_v_control_data, design, contrast);
+      ttest_path (perm_stack.permutation (0), path_test_statistic, max_stat, min_stat);
       value_type max_cfe_statistic = cfe (max_stat, path_test_statistic, &cfe_path_test_statistic, c);
+
+      // Here we test control vs control population (ie null test statistic).
+      ttest_controls (perm_stack.permutation (index), control_test_statistic, max_stat, min_stat);
+      cfe (max_stat, control_test_statistic, &cfe_control_test_statistic, c);
+
 
       std::vector<value_type> num_true_positives (num_ROC_samples);
       std::vector<value_type> num_false_positives (num_ROC_samples);
@@ -401,27 +430,67 @@ void run ()
   int32_t actual_positives = 0;
 
   Image::BufferSparse<FixelMetric> input_buffer (argument[1]);
-  Image::BufferSparse<FixelMetric>::voxel_type template_fixel (input_buffer);
+  Image::BufferSparse<FixelMetric>::voxel_type template_vox (input_buffer);
 
-  Image::Transform transform (template_fixel);
-  Image::LoopInOrder loop (template_fixel);
+  Image::Transform transform (template_vox);
+  Image::LoopInOrder loop (template_vox);
 
   // Loop over the fixel image, build the indexer image and store fixel data in vectors
-  for (loop.start (template_fixel, indexer_vox); loop.ok(); loop.next (template_fixel, indexer_vox)) {
+  for (loop.start (template_vox, indexer_vox); loop.ok(); loop.next (template_vox, indexer_vox)) {
     indexer_vox[3] = 0;
     indexer_vox.value() = num_fixels;
     size_t f = 0;
-    for (; f != template_fixel.value().size(); ++f) {
+    for (; f != template_vox.value().size(); ++f) {
       num_fixels++;
-      if (template_fixel.value()[f].value >= 1.0)
+      if (template_vox.value()[f].value >= 1.0)
         actual_positives++;
-      pathology_mask.push_back (template_fixel.value()[f].value);
-      fixel_directions.push_back (template_fixel.value()[f].dir);
-      fixel_positions.push_back (transform.voxel2scanner (template_fixel));
+      pathology_mask.push_back (template_vox.value()[f].value);
+      fixel_directions.push_back (template_vox.value()[f].dir);
+      fixel_positions.push_back (transform.voxel2scanner (template_vox));
     }
     indexer_vox[3] = 1;
     indexer_vox.value() = f;
   }
+
+  // load each fixel image, identify fixel correspondence and save AFD in 2D vector
+  Math::Matrix<value_type> control_data (num_fixels, num_subjects);
+  {
+    ProgressBar progress ("loading input images...", num_subjects);
+    for (size_t subject = 0; subject < num_subjects; subject++) {
+      Image::BufferSparse<FixelMetric> fixel (filenames[subject]);
+      Image::BufferSparse<FixelMetric>::voxel_type fixel_vox (fixel);
+      Image::check_dimensions (fixel, template_vox, 0, 3);
+
+      for (loop.start (fixel_vox, indexer_vox); loop.ok(); loop.next (fixel_vox, indexer_vox)) {
+         indexer_vox[3] = 0;
+         int32_t index = indexer_vox.value();
+         indexer_vox[3] = 1;
+         int32_t number_fixels = indexer_vox.value();
+
+         // for each fixel in the template, find the corresponding fixel in this subject voxel
+         for (int32_t i = index; i < index + number_fixels; ++i) {
+           value_type largest_dp = 0.0;
+           int index_of_closest_fixel = -1;
+           for (size_t f = 0; f != fixel_vox.value().size(); ++f) {
+             value_type dp = Math::abs (fixel_directions[i].dot(fixel_vox.value()[f].dir));
+             if (dp > largest_dp) {
+               largest_dp = dp;
+               index_of_closest_fixel = f;
+             }
+           }
+           if (largest_dp > angular_threshold_dp)
+             control_data (i, subject) = fixel_vox.value()[index_of_closest_fixel].value;
+         }
+       }
+
+      progress++;
+    }
+  }
+
+
+  std::string test_file ("output.msf");
+  Image::Header header (argument[1]);
+  write_fixel_output (test_file, control_data.column(0), header, template_vox, indexer_vox);
 
   // fixel-fixel connectivity matrix (sparse)
   std::vector<std::map<int32_t, Stats::TFCE::connectivity> > fixel_connectivity (num_fixels);
@@ -462,41 +531,6 @@ void run ()
     }
   }
 
-
-  // load each fixel image, identify fixel correspondence and save AFD in 2D vector
-  Math::Matrix<value_type> control_data (num_fixels, num_subjects);
-  {
-    ProgressBar progress ("loading input images...", num_subjects);
-    for (size_t subject = 0; subject < num_subjects; subject++) {
-      Image::BufferSparse<FixelMetric> fixel (filenames[subject]);
-      Image::BufferSparse<FixelMetric>::voxel_type fixel_vox (fixel);
-      Image::check_dimensions (fixel, template_fixel, 0, 3);
-
-      for (loop.start (fixel_vox, indexer_vox); loop.ok(); loop.next (fixel_vox, indexer_vox)) {
-         indexer_vox[3] = 0;
-         int32_t index = indexer_vox.value();
-         indexer_vox[3] = 1;
-         int32_t number_fixels = indexer_vox.value();
-
-         // for each fixel in the template, find the corresponding fixel in this subject voxel
-         for (int32_t i = index; i < index + number_fixels; ++i) {
-           value_type largest_dp = 0.0;
-           int index_of_closest_fixel = -1;
-           for (size_t f = 0; f != fixel_vox.value().size(); ++f) {
-             value_type dp = Math::abs (fixel_directions[i].dot(fixel_vox.value()[f].dir));
-             if (dp > largest_dp) {
-               largest_dp = dp;
-               index_of_closest_fixel = f;
-             }
-           }
-           if (largest_dp > angular_threshold_dp)
-             control_data (i, subject) = fixel_vox.value()[index_of_closest_fixel].value;
-         }
-       }
-
-      progress++;
-    }
-  }
 
 
   for (size_t effect_size = 0; effect_size < effect.size(); ++effect_size) {
