@@ -411,7 +411,7 @@ void run ()
   Image::BufferSparse<FixelMetric>::voxel_type mask_vox (mask);
 
   // Create a image to store fixel indices of a 1D vector
-  Image::Header index_header (argument[0]);
+  Image::Header index_header (input_header);
   index_header.set_ndim(4);
   index_header.dim(3) = 2;
   index_header.datatype() = DataType::Int32;
@@ -489,8 +489,7 @@ void run ()
 
 
   std::string test_file ("output.msf");
-  Image::Header header (argument[1]);
-  write_fixel_output (test_file, control_data.column(0), header, template_vox, indexer_vox);
+  write_fixel_output (test_file, control_data.column(0), input_header, template_vox, indexer_vox);
 
   // fixel-fixel connectivity matrix (sparse)
   std::vector<std::map<int32_t, Stats::TFCE::connectivity> > fixel_connectivity (num_fixels);
