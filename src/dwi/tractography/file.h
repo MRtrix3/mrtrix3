@@ -219,7 +219,7 @@ namespace MR
               // allocate buffer on the stack for performance:
               NON_POD_VLA (buffer, Point<value_type>, tck.size()+2);
               for (size_t n = 0; n < tck.size(); ++n)
-                format_point (barrier(), buffer[n]); 
+                format_point (tck[n], buffer[n]);
               format_point (delimiter(), buffer[tck.size()]);
 
               commit (buffer, tck.size()+1);
