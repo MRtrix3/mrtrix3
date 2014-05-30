@@ -50,7 +50,6 @@ void usage ()
 
 void run ()
 {
-  TRACE;
   Math::Vector<float> CP, values, pos;
 
   CP.load (argument[0]);

@@ -23,7 +23,9 @@
 #ifndef __math_hermite_h__
 #define __math_hermite_h__
 
-#include <limits>
+#include <vector>
+#include <algorithm>
+
 #include "math/math.h"
 
 namespace MR
@@ -110,14 +112,28 @@ namespace MR
 
         template <class ControlPoints>
           HermiteSplines (const ControlPoints& control_points, value_type tension = 0.0) : 
-            H (tension), cp (control_points.size()+2) { 
-              if (control_points.size() < 4)
-                throw Exception ("need at least 4 control points for Hermite spline curve");
+            H (tension) {
+              init (control_points);
+            }
+
+        template <class ControlPoints>
+          void init (const ControlPoints& control_points) {
+            cp.resize (control_points.size()+2);
+              if (control_points.size() < 3)
+                throw Exception ("need at least 3 control points for Hermite spline curve");
               for (size_t n = 0; n < control_points.size(); ++n)
                 cp[n+1] = control_points[n];
               cp[0] = 2.0*cp[1]-cp[2];
               cp[cp.size()-1] = 2.0*cp[cp.size()-2] - cp[cp.size()-3];
             }
+
+        void clear () {
+          cp.clear(); 
+        }
+
+        const std::vector<ValueType>& control_points () const {
+          return cp;
+        }
 
         void set (value_type position) {
           if (cp.size()) {
