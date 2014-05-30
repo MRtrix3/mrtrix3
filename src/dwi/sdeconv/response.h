@@ -30,8 +30,8 @@
 namespace MR {
   namespace DWI {
 
-    extern const size_t default_response_coefficients_size[2];
-    extern const float default_response_coefficients[];
+    Math::Matrix<float> default_WM_response ();
+    Math::Matrix<float> default_CSF_response ();
 
     //! a class to evaluate the response function for any b-value
     /*! This is initialised using a matrix where the first column corresponds
@@ -54,10 +54,7 @@ namespace MR {
     template <typename ValueType>
       class Response {
         public:
-          Response () { 
-            const Math::Matrix<float> tmp (const_cast<float*> (default_response_coefficients), default_response_coefficients_size[0], default_response_coefficients_size[1]);
-            init (tmp);
-          }
+          Response () { }
 
           Response (const std::string& response_file) {
             load (response_file);
@@ -86,8 +83,13 @@ namespace MR {
             return coefs.rows() <= 1;
           }
 
-          size_t lmax () const { 
+          int lmax () const { 
             return (coefs.columns()-1)*2;
+          }
+
+          void set_lmax (int l) {
+            if (lmax() > l)
+              coefs.resize (coefs.rows(), l/2+1);
           }
 
           void set_bval (ValueType bval) const {
@@ -96,9 +98,14 @@ namespace MR {
             interp.set (bval);
           }
 
+          const Math::Matrix<ValueType>& coefficients () const { 
+            return coefs;
+          }
+
           ValueType value (int l) const {
             return single_shell() ? coefs(0,l/2) : interp.value (coefs.column (l/2));
           }
+
 
         private:
           Math::Matrix<ValueType> coefs;

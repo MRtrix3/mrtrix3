@@ -55,13 +55,15 @@ void run ()
   Options opt = get_options ("response");
   if (opt.size())
     response.load (opt[0][0]);
+  else 
+    response.init (DWI::default_WM_response());
 
   Math::Vector<float> bvals;
   bvals.load (argument[0]);
 
   for (size_t n = 0; n < bvals.size(); ++n) {
     response.set_bval (bvals[n]);
-    for (size_t l = 0; l <= response.lmax(); l+=2)
+    for (int l = 0; l <= response.lmax(); l+=2)
       std::cout << response.value (l) << " ";
     std::cout << "\n";
   }

@@ -7,6 +7,7 @@
 #include "math/hermite.h"
 #include "image/voxel.h"
 #include "dwi/gradient.h"
+#include "dwi/sdeconv/transform.h"
 
 /*
   InputBufferType::voxel_type dwi_vox (dwi_buffer);
@@ -18,31 +19,40 @@
 
 namespace MR {
   namespace DWI {
-    namespace MSMT {
 
-      template <typename ValueType>
-        class Response {
-          public:
-            Response () { } 
-            Response (const std::string& response_file) {
-              coefs.load (response_file);
-            }
-            template <typename X> 
-              Response (const Math::Matrix<X>& response_coefficients) :
-                coefs (response_coefficients) { }
+    using namespace App;
 
-            /** \brief return vector of even degree coefficients of response function
-             * at specified b-value */
-            std::vector<ValueType> operator (ValueType bvalue) const {
-              return 
+    const OptionGroup MT_CSDOptions = OptionGroup ("multi-tissue CSD options")
+      + Option ("lmax",
+                "set the maximum harmonic order for the output series. By default, the "
+                "program will use the highest possible lmax given the number of "
+                "diffusion-weighted images.")
+      + Argument ("order").type_integer (2, 8, 30)
 
-          protected:
-            Math::Matrix<ValueType> coefs;
-            Math::Hermite cubic;
-        };
+      + Option ("mask",
+                "only perform computation within the specified binary brain mask image.")
+      + Argument ("image").type_image_in()
+
+      + Option ("directions",
+                "specify the directions over which to apply the non-negativity constraint "
+                "(by default, the built-in 300 direction set is used). These should be "
+                "supplied as a text file containing the [ az el ] pairs for the directions.")
+      + Argument ("file").type_file()
+
+      + Option ("norm_lambda",
+                "the regularisation parameter lambda that controls the strength of the "
+                "constraint on the norm of the solution (default = 1.0).")
+      + Argument ("value").type_float (0.0, 1.0, 1.0e12)
+
+      + Option ("niter",
+                "the maximum number of iterations to perform for each voxel (default = 50).")
+      + Argument ("number").type_integer (1, 50, 1000);
+
+  }
+}
 
 
-
+    /*
 
       template <typename ValueType>
         class MSMT_CSD
@@ -128,9 +138,7 @@ namespace MR {
 };
 
 
-
-
-
+*/
 
 
 
@@ -160,15 +168,13 @@ void usage ()
   ARGUMENTS
     + Argument ("dwi",
         "the input diffusion-weighted image.").type_image_in()
-    + Argument ("response",
-        "the diffusion-weighted signal response function for a single fibre population, "
-        "either as a comma-separated vector of floating-point values, or a text file "
-        "containing the coefficients.")
     + Argument ("SH",
         "the output spherical harmonics coefficients image.").type_image_out();
 
   OPTIONS
+    + DWI::MT_CSDOptions
     + DWI::GradOption
+    + DWI::ShellOption
     + Image::Stride::StrideOption;
 }
 
@@ -187,6 +193,15 @@ typedef Image::Buffer<bool> MaskBufferType;
 
 void run ()
 {
+  Image::Header dwi_header (argument[0]);
+
+  std::vector< DWI::Response<float> > response (1);
+  response[0].init (DWI::default_WM_response());
+
+  Math::Matrix<float> M = DWI::get_SH_to_DWI_mapping (dwi_header, response);
+  M.save ("M.txt");
+
+  /*
   InputBufferType dwi_buffer (argument[0], Image::Stride::contiguous_along_axis (3));
 
   Ptr<MaskBufferType> mask_data;
@@ -208,5 +223,6 @@ void run ()
 
 
   Processor processor (shared).run();
+  */
 }
 
