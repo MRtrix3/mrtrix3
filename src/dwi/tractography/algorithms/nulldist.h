@@ -62,7 +62,7 @@ namespace MR
         source (S.source_voxel) { }
 
 
-      bool init () {
+      bool init() {
         if (!get_data (source))
           return false;
         if (!S.init_dir) {

@@ -137,7 +137,7 @@ namespace MR
 
 
 
-      bool init ()
+      bool init()
       {
         if (!get_data (source))
           return (false);
@@ -146,7 +146,7 @@ namespace MR
 
           const Point<Tracking::value_type> init_dir (dir);
 
-          for (size_t n = 0; n < S.max_trials; n++) {
+          for (size_t n = 0; n < S.max_seed_attempts; n++) {
             if (init_dir.valid()) {
               dir = rand_dir (init_dir);
             } else {
@@ -156,7 +156,7 @@ namespace MR
             value_type val = FOD (dir);
             if (std::isfinite (val))
               if (val > S.init_threshold)
-                return (true);
+                return true;
           }
 
         } else {
@@ -165,11 +165,11 @@ namespace MR
           value_type val = FOD (dir);
           if (std::isfinite (val))
             if (val > S.init_threshold)
-              return (true);
+              return true;
 
         }
 
-        return (false);
+        return false;
       }
 
 
