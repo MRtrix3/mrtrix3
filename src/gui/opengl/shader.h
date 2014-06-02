@@ -52,7 +52,7 @@ namespace MR
             }
             void compile (const std::string& source) {
               std::string code = "#version 330 core\n" + source;
-              if (App::log_level > 2) {
+              if (MR::App::log_level > 2) {
                 std::string msg ("compiling OpenGL ");
                 msg += TYPE == gl::VERTEX_SHADER ? "vertex" : "fragment";
                 msg += " shader:\n" + code;
