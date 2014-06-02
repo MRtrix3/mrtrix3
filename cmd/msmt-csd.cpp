@@ -44,11 +44,7 @@ namespace MR {
         + Option ("norm_lambda",
             "the regularisation parameter lambda that controls the strength of the "
             "constraint on the norm of the solution (default = 1.0).")
-        + Argument ("value").type_float (0.0, 1.0, 1.0e12)
-
-        + Option ("niter",
-            "the maximum number of iterations to perform for each voxel (default = 50).")
-        + Argument ("number").type_integer (1, 50, 1000);
+        + Argument ("value").type_float (0.0, 1.0, 1.0e12);
 
 
 
