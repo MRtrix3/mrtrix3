@@ -45,7 +45,8 @@ namespace MR
           ClusterSize (const Image::Filter::Connector& connector, value_type cluster_forming_threshold) :
                       connector (connector), cluster_forming_threshold (cluster_forming_threshold) { }
 
-          value_type operator() (const value_type unused, const std::vector<value_type>& stats, std::vector<value_type>* get_cluster_sizes) 
+          value_type operator() (const value_type unused, const std::vector<value_type>& stats,
+                                 std::vector<value_type>* get_cluster_sizes)
           {
             std::vector<Image::Filter::cluster> clusters;
             std::vector<uint32_t> labels (stats.size(), 0);
@@ -73,7 +74,8 @@ namespace MR
           Spatial (const Image::Filter::Connector& connector, value_type dh, value_type E, value_type H) :
                       connector (connector), dh (dh), E (E), H (H) {}
 
-          value_type operator() (const value_type max_stat, const std::vector<value_type>& stats, std::vector<value_type>* get_tfce_stats) 
+          value_type operator() (const value_type max_stat, const std::vector<value_type>& stats,
+                                 std::vector<value_type>* get_tfce_stats)
           {
             tfce_stats.resize(stats.size());
             std::fill (tfce_stats.begin(), tfce_stats.end(), 0.0);
@@ -115,11 +117,13 @@ namespace MR
 
       class Connectivity {
         public:
-          Connectivity (const std::vector<std::map<int32_t, connectivity> >& connectivity_map, value_type dh, value_type E, value_type H) :
+          Connectivity (const std::vector<std::map<int32_t, connectivity> >& connectivity_map,
+                        value_type dh, value_type E, value_type H) :
                           connectivity_map (connectivity_map), dh (dh), E (E), H (H) { }
 
           // TODO remove tfce_C for tckpermute after cfe_roc experiments
-          value_type operator() (const value_type max_stat, const std::vector<value_type>& stats, std::vector<value_type>* get_tfce_stats, value_type tfce_C = 1.0)
+          value_type operator() (const value_type max_stat, const std::vector<value_type>& stats,
+                                 std::vector<value_type>* get_tfce_stats, value_type tfce_C = 1.0)
           {
             tfce_stats.resize (stats.size());
             std::fill (tfce_stats.begin(), tfce_stats.end(), 0.0);
@@ -187,13 +191,14 @@ namespace MR
       template <class StatsType, class TFCEType>
         class Processor {
           public:
-            Processor (PermutationStack& permutation_stack, const StatsType& stats_calculator, const TFCEType& tfce_integrator,
-                Math::Vector<value_type>& perm_distribution_pos, Math::Vector<value_type>& perm_distribution_neg,
-                std::vector<value_type>& tfce_output_pos, std::vector<value_type>& tfce_output_neg,
-                std::vector<value_type>& tvalue_output) :
-              perm_stack (permutation_stack), stats_calculator (stats_calculator), tfce_integrator (tfce_integrator),
-              perm_distribution_pos (perm_distribution_pos), perm_distribution_neg (perm_distribution_neg),
-              tfce_output_pos (tfce_output_pos), tfce_output_neg (tfce_output_neg), tvalue_output (tvalue_output) {
+            Processor (PermutationStack& permutation_stack, const StatsType& stats_calculator,
+                       const TFCEType& tfce_integrator, Math::Vector<value_type>& perm_distribution_pos,
+                       Math::Vector<value_type>& perm_distribution_neg, std::vector<value_type>& tfce_output_pos,
+                       std::vector<value_type>& tfce_output_neg, std::vector<value_type>& tvalue_output) :
+                         perm_stack (permutation_stack), stats_calculator (stats_calculator),
+                         tfce_integrator (tfce_integrator), perm_distribution_pos (perm_distribution_pos),
+                         perm_distribution_neg (perm_distribution_neg), tfce_output_pos (tfce_output_pos),
+                         tfce_output_neg (tfce_output_neg), tvalue_output (tvalue_output) {
               }
 
 
