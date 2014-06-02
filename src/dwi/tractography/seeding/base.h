@@ -36,6 +36,29 @@
 
 
 
+// These constants set how many times a tracking algorithm should attempt to propagate
+//   from a given seed point, based on the mechanism used to provide the seed point
+//
+// Mechanisms that provide random seed locations
+#define MAX_TRACKING_SEED_ATTEMPTS_RANDOM 1
+//
+// Dynamic seeding also provides the mean direction of the fixel, so only a small number of
+//   attempts should be required to find a direction above the FOD amplitude threshold;
+//   this will however depend on this threshold as well as the angular threshold
+#define MAX_TRACKING_SEED_ATTEMPTS_DYNAMIC 50
+//
+// GM-WM interface seeding incurs a decent overhead when generating the seed points;
+//   therefore want to make maximal use of each seed point generated, bearing in mind that
+//   the FOD amplitudes may be small there.
+#define MAX_TRACKING_SEED_ATTEMPTS_GMWMI 300
+//
+// Mechanisms that provide a fixed number of seed points; hence the maximum effort should
+//   be made to find an appropriate tracking direction from every seed point provided
+#define MAX_TRACKING_SEED_ATTEMPTS_FIXED 5000
+
+
+
+
 namespace MR
 {
   namespace DWI
@@ -80,12 +103,13 @@ namespace MR
       class Base {
 
         public:
-          Base (const std::string& in, const Math::RNG& seed_rng, const std::string& desc) :
+          Base (const std::string& in, const Math::RNG& seed_rng, const std::string& desc, const size_t attempts) :
             volume (0.0),
             count (0),
             rng (seed_rng),
             type (desc),
-            name (Path::basename (in)) { }
+            name (Path::exists (in) ? Path::basename (in) : in),
+            max_attempts (attempts) { }
 
           virtual ~Base() { }
 
@@ -94,6 +118,8 @@ namespace MR
           bool is_finite() const { return count; }
           const std::string& get_type() const { return type; }
           const std::string& get_name() const { return name; }
+          size_t get_max_attempts() const { return max_attempts; }
+
           virtual bool get_seed (Point<float>& p) { throw Exception ("Calling empty virtual function Seeder_base::get_seed()!"); return false; }
           virtual bool get_seed (Point<float>& p, Point<float>& d) { return get_seed (p); }
 
@@ -114,6 +140,7 @@ namespace MR
 
         private:
           const std::string name; // Could be an image path, or spherical coordinates
+          const size_t max_attempts; // Maximum number of times the tracking algorithm should attempt to start from each provided seed point
 
       };
 

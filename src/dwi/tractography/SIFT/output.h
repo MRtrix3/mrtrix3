@@ -95,7 +95,7 @@ namespace MR
             for (typename Fixel_map<Fixel>::ConstIterator i = begin (v); i; ++i) {
               if (i().get_FOD()) {
                 Math::Vector<float> this_lobe;
-                aPSF (this_lobe, dirs.get_dir (i().get_dir()));
+                aPSF (this_lobe, i().get_dir());
                 for (size_t c = 0; c != N; ++c)
                   sum[c] += i().get_FOD() * this_lobe[c];
               }
