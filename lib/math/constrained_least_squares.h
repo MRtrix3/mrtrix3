@@ -111,10 +111,16 @@ namespace MR
 
             void add_active_constraints (const Vector<ValueType>& x) {
               mult (constraint_values, problem.transformed_constraint_matrix, x);
+              size_t index = std::numeric_limits<size_t>::max();
+              ValueType min = 0.0;
               for (size_t n = 0; n < constraint_values.size() && active_constraints.size() < x.size(); ++n) {
-                if (constraint_values[n] < 0.0)
-                  active_constraints.insert (n);
+                if (constraint_values[n] < min) {
+                  index = n;
+                  min = constraint_values[n];
+                }
               }
+              if (index < constraint_values.size())
+                active_constraints.insert (index);
             }
 
             void form_active_constraint_matrix () {
