@@ -113,6 +113,7 @@ namespace MR
               GLuint vertex_buffer;
               GLuint vertex_array_object;
               GLuint value_buffer;
+              GLuint value_array_object;
               std::vector<std::vector<std::vector<GLint> > > slice_fixel_indices;
               std::vector<std::vector<std::vector<GLsizei> > > slice_fixel_sizes;
               std::vector<std::vector<GLsizei> > slice_fixel_counts;

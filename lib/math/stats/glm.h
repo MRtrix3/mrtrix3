@@ -44,13 +44,11 @@ namespace MR
         Math::Matrix<double> U (M), V (N,N);
         Math::Vector<double> S (N), work (N);
         gsl_linalg_SV_decomp (U.gsl(), V.gsl(), S.gsl(), work.gsl());
-
         for (size_t n = 0; n < N; ++n) {
           double sv = S[n] < precision ? 0.0 : 1.0/S[n];
           for (size_t r = 0; r < N; ++r)
             V(r,n) *= sv;
         }
-
         Math::mult (I, 1.0, CblasNoTrans, V, CblasTrans, U);
       }
 
@@ -247,7 +245,8 @@ namespace MR
           * @param max_stat the maximum t-statistic
           * @param min_stat the minimum t-statistic
           */
-          void operator() (const std::vector<size_t>& perm_labelling, std::vector<value_type>& stats, value_type& max_stat, value_type& min_stat) const
+          void operator() (const std::vector<size_t>& perm_labelling, std::vector<value_type>& stats,
+                           value_type& max_stat, value_type& min_stat) const
           {
             stats.resize (y.rows(), 0.0);
             Math::Matrix<value_type> tvalues, betas, residuals, SX, pinvSX;
@@ -259,7 +258,6 @@ namespace MR
               SX.row(i) = X.row (perm_labelling[i]);
               pinvSX.column(i) = pinvX.column (perm_labelling[i]);
             }
-
 
             for (size_t i = 0; i < y.rows(); i += GLM_BATCH_SIZE) {
               GLM::ttest (tvalues, SX, pinvSX, y.sub(i, std::min (i+GLM_BATCH_SIZE, y.rows()), 0, y.columns()),
