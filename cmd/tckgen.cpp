@@ -63,6 +63,47 @@ void usage ()
   DESCRIPTION
   + "perform streamlines tractography.";
 
+  REFERENCES = "References based on streamlines algorithm used:\n"
+               "FACT: "
+               "Basser, P. J.; Pajevic, S.; Pierpaoli, C.; Duda, J. & Aldroubi, A. "
+               "In vivo fiber tractography using DT-MRI data. "
+               "Magnetic Resonance in Medicine, 2000, 44, 625-632\n"
+               "iFOD1 or SD_STREAM: "
+               "Tournier, J.-D.; Calamante, F. & Connelly, A. "
+               "MRtrix: Diffusion tractography in crossing fiber regions. "
+               "Int. J. Imaging Syst. Technol., 2012, 22, 53-66\n"
+               "iFOD2: "
+               "Tournier, J.-D.; Calamante, F. & Connelly, A. "
+               "Improved probabilistic streamlines tractography by 2nd order integration over fibre orientation distributions. "
+               "Proceedings of the International Society for Magnetic Resonance in Medicine, 2010, 1670\n"
+               "Nulldist: "
+               "Morris, D. M.; Embleton, K. V. & Parker, G. J. "
+               "Probabilistic fibre tracking: Differentiation of connections from chance events. "
+               "NeuroImage, 2008, 42, 1329-1339\n"
+               "VecStream: "
+               "Mori, S.; Crain, B. J.; Chacko, V. P. & van Zijl, P. C. M. "
+               "Three-dimensional tracking of axonal projections in the brain by magnetic resonance imaging. "
+               "Annals of Neurology, 1999, 45, 265-269\n"
+               "WBFACT: "
+               "Jones, D. "
+               "Tractography Gone Wild: Probabilistic Fibre Tracking Using the Wild Bootstrap With Diffusion Tensor MRI. "
+               "IEEE Transactions on Medical Imaging, 2008, 27, 1268-1274\n"
+               "\n\n"
+
+               "References based on command-line options:\n"
+               "-rk4: "
+               "Basser, P. J.; Pajevic, S.; Pierpaoli, C.; Duda, J. & Aldroubi, A. "
+               "In vivo fiber tractography using DT-MRI data. "
+               "Magnetic Resonance in Medicine, 2000, 44, 625-632\n"
+               "-act, -backtrack, -seed_gmwmi: "
+               "Smith, R. E.; Tournier, J.-D.; Calamante, F. & Connelly, A. "
+               "Anatomically-constrained tractography: Improved diffusion MRI streamlines tractography through effective use of anatomical information. "
+               "NeuroImage, 2012, 62, 1924-1938\n"
+               "-seed_dynamic: "
+               "Smith, R. E.; Tournier, J.-D.; Calamante, F. & Connelly, A. "
+               "SIFT: Spherical-deconvolution informed filtering of tractograms. "
+               "NeuroImage, 2013, 67, 298-312\n";
+
   ARGUMENTS
   + Argument ("source",
               "the image containing the source data. The type of data depends on the algorithm used:\n"

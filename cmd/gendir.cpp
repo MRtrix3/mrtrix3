@@ -34,8 +34,13 @@ using namespace MR;
 using namespace App;
 
 void usage () {
+
 DESCRIPTION
   + "generate a set of directions evenly distributed over a hemisphere.";
+
+REFERENCES = "Jones, D.; Horsfield, M. & Simmons, A. "
+             "Optimal strategies for measuring diffusion in anisotropic systems by magnetic resonance imaging. "
+             "Magnetic Resonance in Medicine, 1999, 42, 515-525";
 
 ARGUMENTS
   + Argument ("ndir", "the number of directions to generate.").type_integer (6, 60, std::numeric_limits<int>::max())
@@ -49,6 +54,7 @@ OPTIONS
   + Argument ("num").type_integer (1, 10000, 1000000)
 
   + Option ("cartesian", "Output the directions in Cartesian coordinates [x y z] instead of [az el].");
+
 }
 
 

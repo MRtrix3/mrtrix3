@@ -104,8 +104,15 @@ const OptionGroup FixelOutputOptions = OptionGroup ("Fixel-based sparse output i
 
 void usage ()
 {
+
+  AUTHORS = "Robert E. Smith (robert.smith@florey.edu.au)";
+
   DESCRIPTION
   + "generate parameter maps from fibre orientation distributions using the fast-marching level-set segmenter.";
+
+  REFERENCES = "Smith, R. E.; Tournier, J.-D.; Calamante, F. & Connelly, A. "
+               "SIFT: Spherical-deconvolution informed filtering of tractograms. "
+               "NeuroImage, 2013, 67, 298-312 (Appendix 2)";
 
   ARGUMENTS
   + Argument ("fod", "the input fod image.").type_image_in ();

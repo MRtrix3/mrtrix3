@@ -44,6 +44,11 @@ void usage ()
   DESCRIPTION
   + "Voxel-based analysis using permutation testing and threshold-free cluster enhancement.";
 
+  REFERENCES = "If not using the -threshold command-line option: \n"
+               "Smith, S. M. & Nichols, T. E. "
+               "Threshold-free cluster enhancement: Addressing problems of smoothing, threshold dependence and localisation in cluster inference. "
+               "NeuroImage, 2009, 44, 83-98";
+
 
   ARGUMENTS
   + Argument ("input", "a text file containing the file names of the input images, one file per line").type_file()
