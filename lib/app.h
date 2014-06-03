@@ -46,6 +46,7 @@ namespace MR
     extern OptionGroup __standard_options;
     extern const char* AUTHOR;
     extern const char* COPYRIGHT;
+    extern const char* REFERENCES;
     extern int log_level;
     extern std::string NAME;
     extern bool overwrite_files;
