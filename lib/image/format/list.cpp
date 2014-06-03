@@ -72,7 +72,7 @@ namespace MR
       const char* known_extensions[] = {
         ".mih",
         ".mif",
-        ".mif.gz"
+        ".mif.gz",
         ".img",
         ".nii",
         ".nii.gz",
