@@ -191,6 +191,10 @@ namespace MR
 
         void Fixel::render (const Projection& projection, int axis, int slice)
         {
+
+          if (fixel_tool.do_crop_to_slice && (slice < 0 || slice >= header.dim(axis)))
+            return;
+
           start (fixel_shader);
           projection.set (fixel_shader);
 
