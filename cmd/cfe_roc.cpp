@@ -353,7 +353,7 @@ class Processor {
     const value_type h;
     const value_type c;
     std::vector<value_type> noisy_test_statistic;
-    std::vector<value_type> smoothed_test_statistic;;
+    std::vector<value_type> smoothed_test_statistic;
     std::vector<value_type> noise_only;
     std::vector<value_type> smoothed_noise;
 };

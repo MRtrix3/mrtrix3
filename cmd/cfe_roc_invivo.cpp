@@ -102,8 +102,8 @@ void usage ()
 typedef float value_type;
 
 
-void write_fixel_output (const std::string& filename,
-                         const Math::Vector<value_type>& data,
+void write_fixel_output (const std::string filename,
+                         const Math::Vector<value_type> data,
                          const Image::Header& header,
                          Image::BufferSparse<FixelMetric>::voxel_type& mask_vox,
                          Image::BufferScratch<int32_t>::voxel_type& indexer_vox) {
@@ -111,12 +111,33 @@ void write_fixel_output (const std::string& filename,
   Image::BufferSparse<FixelMetric>::voxel_type output_voxel (output_buffer);
   Image::LoopInOrder loop (mask_vox);
   for (loop.start (mask_vox, indexer_vox, output_voxel); loop.ok(); loop.next (mask_vox, indexer_vox, output_voxel)) {
+    output_voxel.value().zero();
     output_voxel.value().set_size (mask_vox.value().size());
     indexer_vox[3] = 0;
     int32_t index = indexer_vox.value();
     for (size_t f = 0; f != mask_vox.value().size(); ++f, ++index) {
-     output_voxel.value()[f] = mask_vox.value()[f];
-     output_voxel.value()[f].value = data[index];
+      output_voxel.value()[f] = mask_vox.value()[f];
+      output_voxel.value()[f].value = data[index];
+    }
+  }
+}
+
+void write_fixel_output (const std::string filename,
+                         const std::vector<value_type> data,
+                         const Image::Header& header,
+                         Image::BufferSparse<FixelMetric>::voxel_type& mask_vox,
+                         Image::BufferScratch<int32_t>::voxel_type& indexer_vox) {
+  Image::BufferSparse<FixelMetric> output_buffer (filename, header);
+  Image::BufferSparse<FixelMetric>::voxel_type output_voxel (output_buffer);
+  Image::LoopInOrder loop (mask_vox);
+  for (loop.start (mask_vox, indexer_vox, output_voxel); loop.ok(); loop.next (mask_vox, indexer_vox, output_voxel)) {
+    output_voxel.value().zero();
+    output_voxel.value().set_size (mask_vox.value().size());
+    indexer_vox[3] = 0;
+    int32_t index = indexer_vox.value();
+    for (size_t f = 0; f != mask_vox.value().size(); ++f, ++index) {
+      output_voxel.value()[f] = mask_vox.value()[f];
+      output_voxel.value()[f].value = data[index];
     }
   }
 }
@@ -220,7 +241,12 @@ class Processor {
                const value_type dh,
                const value_type e,
                const value_type h,
-               const value_type c):
+               const value_type c,
+               Image::Header& input_header,
+               Image::BufferSparse<FixelMetric>::voxel_type& template_vox,
+               const Image::BufferSparse<FixelMetric>& template_data,
+               Image::BufferScratch<int32_t>::voxel_type& indexer_vox,
+               const Image::BufferScratch<int32_t>& indexer_data):
                  perm_stack (perm_stack),
                  control_data (control_data),
                  path_data (path_data),
@@ -239,7 +265,12 @@ class Processor {
                  path_test_statistic (num_fixels, 0.0),
                  cfe_control_test_statistic (num_fixels, 0.0),
                  cfe_path_test_statistic (num_fixels, 0.0),
-                 cfe (fixel_connectivity, dh, e, h) {
+                 cfe (fixel_connectivity, dh, e, h),
+                 input_header (input_header),
+                 template_vox (template_vox),
+                 template_data (template_data),
+                 indexer_vox (indexer_vox),
+                 indexer_data (indexer_data){
     }
 
     ~Processor () {
@@ -255,7 +286,27 @@ class Processor {
 
   private:
 
-    void process_permutation (int index) {
+    void write_fixel_output (const std::string filename,
+                             const std::vector<value_type>& data) {
+      Image::BufferSparse<FixelMetric> output_buffer (filename, input_header);
+      Image::BufferSparse<FixelMetric>::voxel_type output_voxel (output_buffer);
+      Image::LoopInOrder loop (template_vox);
+      Image::check_dimensions (output_voxel, template_vox);
+      for (loop.start (template_vox, indexer_vox, output_voxel); loop.ok(); loop.next (template_vox, indexer_vox, output_voxel)) {
+        output_voxel.value().zero();
+        output_voxel.value().set_size (template_vox.value().size());
+        indexer_vox[3] = 0;
+        int32_t index = indexer_vox.value();
+        for (size_t f = 0; f != template_vox.value().size(); ++f, ++index) {
+         output_voxel.value()[f] = template_vox.value()[f];
+         output_voxel.value()[f].value = data[index];
+        }
+      }
+    }
+
+
+    void process_permutation (int param_index) {
+
       // Create 2 groups of subjects  - pathology vs uneffected controls.
       //    Compute t-statistic image (this is our signal + noise image)
       // Here we use the random permutation to select which patients belong in each group, placing the
@@ -264,27 +315,36 @@ class Processor {
       // This code assumes the number of subjects in each group is equal
       Math::Matrix<value_type> path_v_control_data (control_data);
       for (int32_t fixel = 0; fixel < num_fixels; ++fixel) {
-        for (size_t row = 0; row < perm_stack.permutation (index).size(); ++row) {
-          if (row < perm_stack.permutation (index).size() / 2)
-            path_v_control_data (fixel, row) = control_data (fixel, perm_stack.permutation (index)[row]);
+        for (size_t row = 0; row < perm_stack.permutation (param_index).size(); ++row) {
+          if (row < perm_stack.permutation (param_index).size() / 2)
+            path_v_control_data (fixel, row) = control_data (fixel, perm_stack.permutation (param_index)[row]);
           else
-            path_v_control_data (fixel, row) = path_data (fixel, perm_stack.permutation (index)[row]);
+            path_v_control_data (fixel, row) = path_data (fixel, perm_stack.permutation (param_index)[row]);
         }
       }
+
 
       // Perform t-test and enhance
       value_type max_stat = 0.0, min_stat = 0.0;
       Math::Stats::GLMTTest ttest_path (path_v_control_data, design, contrast);
       ttest_path (perm_stack.permutation (0), path_test_statistic, max_stat, min_stat);
+
+//      write_fixel_output ("path_tvalue.msf", path_test_statistic);
+
       value_type max_cfe_statistic = cfe (max_stat, path_test_statistic, &cfe_path_test_statistic, c);
 
-      // Here we test control vs control population (ie null test statistic).
-      ttest_controls (perm_stack.permutation (index), control_test_statistic, max_stat, min_stat);
-      cfe (max_stat, control_test_statistic, &cfe_control_test_statistic, c);
+//      write_fixel_output ("path_tfce.msf", cfe_path_test_statistic);
 
+      // Here we test control vs control population (ie null test statistic).
+      ttest_controls (perm_stack.permutation (param_index), control_test_statistic, max_stat, min_stat);
+
+//      write_fixel_output ("control_tvalue.msf", control_test_statistic);
+
+      cfe (max_stat, control_test_statistic, &cfe_control_test_statistic, c);
+//      write_fixel_output ("control_tfce.msf", cfe_control_test_statistic);
 
       std::vector<value_type> num_true_positives (num_ROC_samples);
-      std::vector<value_type> num_false_positives (num_ROC_samples);
+
 
       for (size_t t = 0; t < num_ROC_samples; ++t) {
         value_type threshold = ((value_type) t / ((value_type) num_ROC_samples - 1.0)) * max_cfe_statistic;
@@ -294,16 +354,15 @@ class Processor {
             if (cfe_path_test_statistic[f] > threshold)
               num_true_positives[t]++;
           } else {
-            if (cfe_path_test_statistic[f] > threshold)
-              num_false_positives[t]++;
             if (cfe_control_test_statistic[f] > threshold)
               contains_false_positive = true;
           }
         }
         if (contains_false_positive)
           num_permutations_with_a_false_positive[t]++;
-        global_TPRates(t, index) = (float) num_true_positives[t] / (float) actual_positives;
+        global_TPRates(t, param_index) = (float) num_true_positives[t] / (float) actual_positives;
       }
+
     }
 
     Stats::TFCE::PermutationStack& perm_stack;
@@ -325,7 +384,18 @@ class Processor {
     std::vector<value_type> cfe_control_test_statistic;
     std::vector<value_type> cfe_path_test_statistic;
     MR::Stats::TFCE::Connectivity cfe;
+    Image::Header input_header;
+    Image::BufferSparse<FixelMetric>::voxel_type template_vox;
+    const Image::BufferSparse<FixelMetric>& template_data;
+    Image::BufferScratch<int32_t>::voxel_type indexer_vox;
+    const Image::BufferScratch<int32_t>& indexer_data;
 };
+
+
+
+
+
+
 
 bool file_exists (const std::string& filename)
 {
@@ -335,6 +405,12 @@ bool file_exists (const std::string& filename)
     return false;
 }
 
+
+
+
+
+
+
 void run ()
 {
   const value_type angular_threshold_dp = cos (ANGULAR_THRESHOLD * (M_PI/180.0));
@@ -342,7 +418,7 @@ void run ()
   const value_type connectivity_threshold = 0.01;
 
   Options opt = get_options("roc");
-  int num_ROC_samples = 1200;
+  int num_ROC_samples = 1000;
   if (opt.size())
     num_ROC_samples = opt[0][0];
 
@@ -352,7 +428,7 @@ void run ()
     num_permutations = opt[0][0];
 
   std::vector<value_type> effect(1);
-  effect[0] = 1.0;
+  effect[0] = 0.2;
   opt = get_options("effect");
   if (opt.size())
     effect = opt[0][0];
@@ -429,8 +505,8 @@ void run ()
   int32_t num_fixels = 0;
   int32_t actual_positives = 0;
 
-  Image::BufferSparse<FixelMetric> input_buffer (argument[1]);
-  Image::BufferSparse<FixelMetric>::voxel_type template_vox (input_buffer);
+  Image::BufferSparse<FixelMetric> template_buffer (argument[1]);
+  Image::BufferSparse<FixelMetric>::voxel_type template_vox (template_buffer);
 
   Image::Transform transform (template_vox);
   Image::LoopInOrder loop (template_vox);
@@ -488,8 +564,7 @@ void run ()
   }
 
 
-  std::string test_file ("output.msf");
-  write_fixel_output (test_file, control_data.column(0), input_header, template_vox, indexer_vox);
+  //  write_fixel_output ("before.msf", control_data.column(4), input_header, template_vox, indexer_vox);
 
   // fixel-fixel connectivity matrix (sparse)
   std::vector<std::map<int32_t, Stats::TFCE::connectivity> > fixel_connectivity (num_fixels);
@@ -538,10 +613,11 @@ void run ()
     for (size_t subject = 0; subject < num_subjects; ++subject) {
       for (int32_t fixel = 0; fixel < num_fixels; ++fixel) {
         if (pathology_mask[fixel] > 0.0)
-          path_data (fixel, subject) = path_data (fixel, subject) - (effect_size * path_data (fixel, subject));
+          path_data (fixel, subject) = control_data (fixel, subject) - (effect[effect_size] * control_data (fixel, subject));
       }
     }
 
+//    write_fixel_output ("path.msf", path_data.column(4), input_header, template_vox, indexer_vox);
     for (size_t s = 0; s < smooth.size(); ++s) {
       Math::Matrix<value_type> input_data (num_fixels, num_subjects);
       Math::Matrix<value_type> input_path_data (num_fixels, num_subjects);
@@ -588,11 +664,13 @@ void run ()
           }
         }
 
+
       // no smoothing, just copy the data across
       } else {
         input_data = control_data;
         input_path_data = path_data;
       }
+//      write_fixel_output ("path_smoothed.msf", input_path_data.column(4), input_header, template_vox, indexer_vox);
 
       for (size_t h = 0; h < H.size(); ++h) {
         for (size_t e = 0; e < E.size(); ++e) {
@@ -602,42 +680,66 @@ void run ()
                      ", effect = " + str(effect[effect_size]) + ", h = " + str(H[h]) +
                      ", e = " + str(E[e]) + ", c = " + str(C[c]));
 
-            std::ofstream output;
             std::string filename (argument[5]);
             filename.append ("_s" + str(smooth[s]) + "_effect" + str(effect[effect_size]) +
                              "_h" + str(H[h]) + "_e" + str(E[e]) +
                              "_c" + str (C[c]));
+
             if (file_exists (filename)) {
               CONSOLE ("Already done!");
             } else {
+
+              MR::Timer timer;
 
               Math::Matrix<value_type> TPRates (num_ROC_samples, num_permutations);
               TPRates.zero();
               std::vector<int32_t> num_permutations_with_a_false_positive (num_ROC_samples, 0);
               {
-                Stats::TFCE::PermutationStack stack (num_permutations, num_subjects);
+
+                Stats::TFCE::PermutationStack perm_stack (num_permutations, num_subjects);
                 Math::Stats::GLMTTest ttest_control (control_data, design, contrast);
-                Processor processor (stack, control_data, path_data, design, contrast, ttest_control, num_fixels, actual_positives,
+
+                int index = 0;
+
+                Math::Matrix<value_type> path_v_control_data (control_data);
+                for (int32_t fixel = 0; fixel < num_fixels; ++fixel) {
+                  for (size_t row = 0; row < perm_stack.permutation (index).size(); ++row) {
+                    if (row < perm_stack.permutation (index).size() / 2)
+                      path_v_control_data (fixel, row) = control_data (fixel, perm_stack.permutation (index)[row]);
+                    else
+                      path_v_control_data (fixel, row) = path_data (fixel, perm_stack.permutation (index)[row]);
+                  }
+                }
+
+                Processor processor (perm_stack, control_data, path_data, design, contrast, ttest_control, num_fixels, actual_positives,
                                      num_ROC_samples, pathology_mask, fixel_connectivity, TPRates,
-                                     num_permutations_with_a_false_positive, dh, E[e], H[h], C[c]);
+                                     num_permutations_with_a_false_positive, dh, E[e], H[h], C[c],
+                                     input_header, template_vox, template_buffer, indexer_vox, indexer);
+
                 Thread::Array< Processor > thread_list (processor);
                 Thread::Exec threads (thread_list, "threads");
               }
 
-              output.open (filename.c_str());
+
               std::string filename_all_TPR (filename);
               filename_all_TPR.append("_all_tpr");
               TPRates.save(filename_all_TPR);
+
+              std::ofstream output;
+              output.open (filename.c_str());
+
               for (int t = 0; t < num_ROC_samples; ++t) {
                 // average TPR across all permutations realisations
                 double sum = 0.0;
-                for (int p = 0; 0 < num_permutations; ++p)
-                  sum += TPRates(t,p);
+                for (int p = 0; p < num_permutations; ++p)
+                  sum += TPRates (t,p);
                 output << sum / (value_type) num_permutations << " ";
                 // FPR is defined as the fraction of permutations realisations with a false positive
                 output << num_permutations_with_a_false_positive[t] / (value_type) num_permutations << std::endl;
               }
               output.close();
+
+              std::cout << "Minutes: " << timer.elapsed() / 60.0 << std::endl;
             }
           }
         }

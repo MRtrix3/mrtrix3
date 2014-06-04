@@ -178,6 +178,7 @@ void write_fixel_output (const std::string& filename,
   Image::BufferSparse<FixelMetric>::voxel_type output_voxel (output);
   Image::LoopInOrder loop (mask_vox);
   for (loop.start (mask_vox, indexer_vox, output_voxel); loop.ok(); loop.next (mask_vox, indexer_vox, output_voxel)) {
+    output_voxel.value().zero();
     output_voxel.value().set_size (mask_vox.value().size());
     indexer_vox[3] = 0;
     int32_t index = indexer_vox.value();
