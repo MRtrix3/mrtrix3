@@ -59,10 +59,9 @@ namespace MR
               open (file, "tracks", properties);
               App::Options opt = App::get_options ("tck_weights_in");
               if (opt.size()) {
-                weights.load (opt[0][0]);
-                if (weights.size() != to<size_t> (properties["count"]))
-                  throw Exception ("number of streamline weights in file \"" + std::string(opt[0][0]) + "\"does not match number of tracks in file \"" + file + "\"");
-                DEBUG ("loaded " + str(weights.size()) + " track weights from file \"" + std::string (opt[0][0]) + "\"");
+                weights_file = new std::ifstream (str(opt[0][0]).c_str(), std::ios_base::in);
+                if (!weights_file->good())
+                  throw Exception ("Unable to open streamlines weights file " + str(opt[0][0]));
               }
             }
 
@@ -78,24 +77,32 @@ namespace MR
               Point<value_type> p = get_next_point();
               if (isinf (p[0])) {
                 in.close();
+                check_excess_weights();
                 return false;
               }
               if (in.eof()) {
                 in.close();
+                check_excess_weights();
                 return false;
               }
 
               if (isnan (p[0])) {
-                tck.index = current_index;
-                if (weights.size()) {
-                  if (current_index >= weights.size())
-                    return false;
-                  tck.weight = weights[current_index];
-                } 
-                else 
-                  tck.weight = 1.0;
+                tck.index = current_index++;
 
-                ++current_index;
+                if (weights_file) {
+
+                  (*weights_file) >> tck.weight;
+                  if (weights_file->fail()) {
+                    WARN ("Streamline weights file contains less entries than .tck file; only read " + str(current_index-1) + " streamlines");
+                    in.close();
+                    tck.clear();
+                    return false;
+                  }
+
+                } else {
+                  tck.weight = 1.0;
+                }
+
                 return true;
               }
 
@@ -113,7 +120,7 @@ namespace MR
           using __ReaderBase__::dtype;
 
           size_t current_index;
-          Math::Vector<value_type> weights;
+          Ptr<std::ifstream> weights_file;
 
           //! takes care of byte ordering issues
           Point<value_type> get_next_point ()
@@ -149,6 +156,17 @@ namespace MR
                 break;
             }
             return (Point<value_type>());
+          }
+
+          //! Check that the weights file does not contain excess entries
+          void check_excess_weights()
+          {
+            if (!weights_file)
+              return;
+            float temp;
+            (*weights_file) >> temp;
+            if (!weights_file->fail())
+              WARN ("Streamline weights file contains more entries than .tck file");
           }
 
           //! copy construction explicitly disabled
