@@ -101,7 +101,7 @@ const OptionGroup SFOption = OptionGroup ("Thresholds for single-fibre voxel sel
 
 void usage () {
 
-  AUTHORS = "Robert E. Smith (robert.smith@florey.edu.au)";
+  AUTHOR = "Robert E. Smith (robert.smith@florey.edu.au)";
 
   DESCRIPTION 
     + "generate an appropriate response function from the image data for spherical deconvolution";

@@ -105,7 +105,7 @@ const OptionGroup FixelOutputOptions = OptionGroup ("Fixel-based sparse output i
 void usage ()
 {
 
-  AUTHORS = "Robert E. Smith (robert.smith@florey.edu.au)";
+  AUTHOR = "Robert E. Smith (robert.smith@florey.edu.au)";
 
   DESCRIPTION
   + "generate parameter maps from fibre orientation distributions using the fast-marching level-set segmenter.";
