@@ -59,6 +59,7 @@ using namespace MR::DWI::Tractography::Mapping;
 
 
 
+
 const OptionGroup OutputHeaderOption = OptionGroup ("Options for the header of the output image")
 
   + Option ("template",
@@ -147,6 +148,19 @@ AUTHOR = "Robert E. Smith (r.smith@brain.org.au) and J-Donald Tournier (d.tourni
 
 DESCRIPTION
   + "Use track data as a form of contrast for producing a high-resolution image.";
+
+REFERENCES = "For TDI or DEC TDI:\n"
+             "Calamante, F.; Tournier, J.-D.; Jackson, G. D. & Connelly, A. "
+             "Track-density imaging (TDI): Super-resolution white matter imaging using whole-brain track-density mapping. "
+             "NeuroImage, 2010, 53, 1233-1243\n\n"
+             "If using -contrast length and -stat_vox mean:\n"
+             "Pannek, K.; Mathias, J. L.; Bigler, E. D.; Brown, G.; Taylor, J. D. & Rose, S. E. "
+             "The average pathlength map: A diffusion MRI tractography-derived index for studying brain pathology. "
+             "NeuroImage, 2011, 55, 133-141\n\n"
+             "If using other contrasts / statistics:\n"
+             "Calamante, F.; Tournier, J.-D.; Smith, R. E. & Connelly, A. "
+             "A generalised framework for super-resolution track-weighted imaging. "
+             "NeuroImage, 2012, 59, 2494-2503";
 
 ARGUMENTS
   + Argument ("tracks", "the input track file.").type_file ()

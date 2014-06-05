@@ -52,6 +52,10 @@ void usage ()
 	DESCRIPTION
 	+ "Generate a mask image appropriate for seeding streamlines on the grey matter - white matter interface";
 
+	REFERENCES = "Smith, R. E.; Tournier, J.-D.; Calamante, F. & Connelly, A. "
+	             "Anatomically-constrained tractography: Improved diffusion MRI streamlines tractography through effective use of anatomical information. "
+	             "NeuroImage, 2012, 62, 1924-1938";
+
 	ARGUMENTS
 	+ Argument ("5tt_in",  "the input 5TT segmented anatomical image").type_image_in()
 	+ Argument ("mask_out", "the output mask image")                  .type_image_out();
