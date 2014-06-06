@@ -122,6 +122,11 @@ namespace MR {
 
           static UnorderedMap<uint32_t, const char*>::Type dict;
           static void init_dict();
+
+          void report_unknown_tag_with_implicit_syntax () const {
+            DEBUG (MR::printf ("attempt to read data of unknown value representation "
+                  "in DICOM implicit syntax for tag (%02X %02X) - ignored", group, element));
+          }
       };
 
 

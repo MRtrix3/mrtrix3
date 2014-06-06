@@ -200,8 +200,8 @@ namespace MR {
                   G[2] = item.get_float()[0]; 
                 return;
               case 0x100CU: //Siemens private DW encoding tags:
-                if (item.get_int().size()) 
-                  bvalue = item.get_int()[0]; 
+                if (item.get_float().size()) 
+                  bvalue = item.get_float()[0]; 
                 return;
               case 0x100EU: 
                 if (item.get_float().size() == 3) {
