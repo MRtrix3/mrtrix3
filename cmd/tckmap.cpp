@@ -58,18 +58,10 @@ using namespace MR::DWI::Tractography::Mapping;
 
 
 
-void usage () {
 
-AUTHOR = "Robert E. Smith (r.smith@brain.org.au) and J-Donald Tournier (d.tournier@brain.org.au)";
 
-DESCRIPTION
-  + "Use track data as a form of contrast for producing a high-resolution image.";
+const OptionGroup OutputHeaderOption = OptionGroup ("Options for the header of the output image")
 
-ARGUMENTS
-  + Argument ("tracks", "the input track file.").type_file ()
-  + Argument ("output", "the output track-weighted image").type_image_out();
-
-OPTIONS
   + Option ("template",
       "an image file to be used as a template for the output (the output image "
       "will have the same transform and field of view).")
@@ -79,6 +71,25 @@ OPTIONS
       "provide either an isotropic voxel size (in mm), or comma-separated list "
       "of 3 voxel dimensions.")
     + Argument ("size").type_sequence_float()
+
+  + Option ("datatype",
+      "specify output image data type.")
+    + Argument ("spec").type_choice (DataType::identifiers);
+
+
+
+
+
+const OptionGroup OutputDimOption = OptionGroup ("Options for the dimensionality of the output image")
+
+    + Option ("colour",
+        "perform track mapping in directionally-encoded colour space");
+
+
+
+
+
+const OptionGroup TWIOption = OptionGroup ("Options for the TWI image contrast properties")
 
   + Option ("contrast",
       "define the desired form of contrast for the output image\n"
@@ -107,23 +118,59 @@ OPTIONS
       "desired full-width half-maximum of the Gaussian smoothing kernel (in mm)")
     + Argument ("value").type_float (1e-6, 10.0, 1e6)
 
-  + Option ("colour", "perform track mapping in directionally-encoded colour space")
+  + Option ("map_zero",
+      "if a streamline has zero contribution based on the contrast & statistic, typically it is not mapped; "
+      "use this option to still contribute to the map even if this is the case "
+      "(these non-contributing voxels can then influence the mean value in each voxel of the map)");
 
-  + Option ("datatype",
-      "specify output image data type.")
-    + Argument ("spec").type_choice (DataType::identifiers)
+
+
+
+const OptionGroup ExtraOption = OptionGroup ("Additional options for tckmap")
 
   + Option ("upsample",
       "upsample the tracks by some ratio using Hermite interpolation before mappping\n"
       "(If omitted, an appropriate ratio will be determined automatically)")
     + Argument ("factor").type_integer (1, 1, std::numeric_limits<int>::max())
 
-  + Option ("dump", "dump the scratch buffer contents directly to a .mih / .dat file pair, rather than memory-mapping the output file")
+  + Option ("dump",
+      "dump the scratch buffer contents directly to a .mih / .dat file pair, "
+      "rather than memory-mapping the output file");
 
-  + Option ("map_zero", "if a streamline has zero contribution based on the contrast & statistic, typically it is not mapped; "
-                        "use this option to still contribute to the map even if this is the case "
-                        "(these non-contributing voxels can then influence the mean value in each voxel of the map)")
 
+
+
+
+
+void usage () {
+
+AUTHOR = "Robert E. Smith (r.smith@brain.org.au) and J-Donald Tournier (d.tournier@brain.org.au)";
+
+DESCRIPTION
+  + "Use track data as a form of contrast for producing a high-resolution image.";
+
+REFERENCES = "For TDI or DEC TDI:\n"
+             "Calamante, F.; Tournier, J.-D.; Jackson, G. D. & Connelly, A. "
+             "Track-density imaging (TDI): Super-resolution white matter imaging using whole-brain track-density mapping. "
+             "NeuroImage, 2010, 53, 1233-1243\n\n"
+             "If using -contrast length and -stat_vox mean:\n"
+             "Pannek, K.; Mathias, J. L.; Bigler, E. D.; Brown, G.; Taylor, J. D. & Rose, S. E. "
+             "The average pathlength map: A diffusion MRI tractography-derived index for studying brain pathology. "
+             "NeuroImage, 2011, 55, 133-141\n\n"
+             "If using other contrasts / statistics:\n"
+             "Calamante, F.; Tournier, J.-D.; Smith, R. E. & Connelly, A. "
+             "A generalised framework for super-resolution track-weighted imaging. "
+             "NeuroImage, 2012, 59, 2494-2503";
+
+ARGUMENTS
+  + Argument ("tracks", "the input track file.").type_file ()
+  + Argument ("output", "the output track-weighted image").type_image_out();
+
+OPTIONS
+  + OutputHeaderOption
+  + OutputDimOption
+  + TWIOption
+  + ExtraOption
   + Tractography::TrackWeightsInOption;
 
 }

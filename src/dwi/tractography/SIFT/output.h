@@ -123,7 +123,6 @@ namespace MR
         VoxelAccessor v (accessor);
         Image::LoopInOrder loop (v_out);
         for (loop.start (v_out, v); loop.ok(); loop.next (v_out, v)) {
-          v_out.value().zero();
           if (v.value()) {
             v_out.value().set_size ((*v.value()).num_fixels());
             size_t index = 0;
@@ -228,7 +227,6 @@ namespace MR
         VoxelAccessor v (accessor);
         Image::LoopInOrder loop (v_out);
         for (loop.start (v_out, v); loop.ok(); loop.next (v_out, v)) {
-          v_out.value().zero();
           if (v.value()) {
             v_out.value().set_size ((*v.value()).num_fixels());
             size_t index = 0;
@@ -288,8 +286,6 @@ namespace MR
         VoxelAccessor v (accessor);
         Image::LoopInOrder loop (v_diff);
         for (loop.start (v, v_diff, v_cost); loop.ok(); loop.next (v, v_diff, v_cost)) {
-          v_diff.value().zero();
-          v_cost.value().zero();
           if (v.value()) {
             v_diff.value().set_size ((*v.value()).num_fixels());
             v_cost.value().set_size ((*v.value()).num_fixels());

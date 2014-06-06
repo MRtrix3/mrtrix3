@@ -20,18 +20,18 @@
 
 */
 
-#ifndef __dwi_tractography_algorithms_FACT_h__
-#define __dwi_tractography_algorithms_FACT_h__
+
+
+
+#ifndef __dwi_tractography_algorithms_fact_h__
+#define __dwi_tractography_algorithms_fact_h__
 
 #include "point.h"
-#include "math/eigen.h"
-#include "math/least_squares.h"
-#include "dwi/gradient.h"
-#include "dwi/tensor.h"
+#include "image/interp/nearest.h"
+
 #include "dwi/tractography/tracking/method.h"
 #include "dwi/tractography/tracking/shared.h"
 #include "dwi/tractography/tracking/types.h"
-
 
 
 namespace MR
@@ -43,47 +43,33 @@ namespace MR
       namespace Algorithms
       {
 
-
     using namespace MR::DWI::Tractography::Tracking;
-
 
     class FACT : public MethodBase {
       public:
       class Shared : public SharedBase {
         public:
         Shared (const std::string& diff_path, DWI::Tractography::Properties& property_set) :
-          SharedBase (diff_path, property_set) {
+          SharedBase (diff_path, property_set),
+          num_vec (source_buffer.dim(3)/3) {
 
           if (is_act() && act().backtrack())
             throw Exception ("Backtracking not valid for deterministic algorithms");
 
+          if (rk4)
+            throw Exception ("4th-order Runge-Kutta integration not valid for FACT algorithm");
+
           set_step_size (0.1);
-          if (rk4) {
-            INFO ("minimum radius of curvature = " + str(step_size / (max_angle_rk4 / (0.5 * M_PI))) + " mm");
-          } else {
-            INFO ("minimum radius of curvature = " + str(step_size / ( 2.0 * sin (max_angle / 2.0))) + " mm");
-          }
+          max_angle *= vox() / step_size;
+          dot_threshold = Math::cos (max_angle);
 
           properties["method"] = "FACT";
-
-          Math::Matrix<float> grad;
-          if (properties.find ("DW_scheme") != properties.end())
-            grad.load (properties["DW_scheme"]);
-          else
-            grad = source_buffer.DW_scheme();
-
-          if (grad.columns() != 4)
-            throw Exception ("unexpected number of columns in gradient encoding (expected 4 columns)");
-          if (grad.rows() < 7)
-            throw Exception ("too few rows in gradient encoding (need at least 7)");
-
-          normalise_grad (grad);
-
-          grad2bmatrix (bmat, grad);
-          Math::pinv (binv, bmat);
         }
 
-        Math::Matrix<float> bmat, binv;
+        ~Shared () { }
+
+        size_t num_vec;
+        value_type dot_threshold;
       };
 
 
@@ -94,102 +80,83 @@ namespace MR
       FACT (const Shared& shared) :
         MethodBase (shared),
         S (shared),
-        source (S.source_voxel),
-        eig (3),
-        M (3,3),
-        V (3,3),
-        ev (3) { }
+        source (S.source_voxel) { }
 
+      FACT (const FACT& that) :
+        MethodBase (that.S),
+        S (that.S),
+        source (S.source_voxel) { }
+
+      ~FACT () { }
 
 
 
       bool init()
       {
-        if (!get_data (source))
-          return false;
-        return do_init();
+        if (!get_data (source)) return false;
+        if (!S.init_dir) {
+          if (!dir.valid())
+            dir.set (rng.normal(), rng.normal(), rng.normal());
+        } else {
+          dir = S.init_dir;
+        }
+        return do_next (dir) >= S.threshold;
       }
-
-
 
       term_t next ()
       {
         if (!get_data (source))
-          return Tracking::EXIT_IMAGE;
-        return do_next();
+          return EXIT_IMAGE;
+
+        const value_type max_norm = do_next (dir);
+
+        if (max_norm < S.threshold)
+          return BAD_SIGNAL;
+
+        pos += S.step_size * dir;
+        return CONTINUE;
       }
 
 
       float get_metric()
       {
-        dwi2tensor (S.binv, &values[0]);
-        return tensor2FA (&values[0]);
+        Point<value_type> d (dir);
+        return do_next (d);
       }
 
 
       protected:
       const Shared& S;
-      Tracking::Interpolator<SourceBufferType::voxel_type>::type source;
-      Math::Eigen::SymmV<double> eig;
-      Math::Matrix<double> M, V;
-      Math::Vector<double> ev;
+      Image::Interp::Nearest<SourceBufferType::voxel_type> source;
 
-      void get_EV ()
-      {
-        M(0,0) = values[0];
-        M(1,1) = values[1];
-        M(2,2) = values[2];
-        M(0,1) = M(1,0) = values[3];
-        M(0,2) = M(2,0) = values[4];
-        M(1,2) = M(2,1) = values[5];
-
-        eig (ev, M, V);
-        Math::Eigen::sort (ev, V);
-
-        dir[0] = V(0,2);
-        dir[1] = V(1,2);
-        dir[2] = V(2,2);
-      }
-
-
-      bool do_init()
-      {
-        dwi2tensor (S.binv, &values[0]);
-
-        if (tensor2FA (&values[0]) < S.init_threshold)
-          return false;
-
-        get_EV();
-
-        return true;
-      }
-
-
-      term_t do_next()
+      value_type do_next (Point<value_type>& d) const
       {
 
-        dwi2tensor (S.binv, &values[0]);
+        int idx = -1;
+        value_type max_abs_dot = 0.0, max_dot = 0.0, max_norm = 0.0;
 
-        if (tensor2FA (&values[0]) < S.threshold)
-          return BAD_SIGNAL;
+        for (size_t n = 0; n < S.num_vec; ++n) {
+          const value_type* const m = &values[3*n];
+          value_type norm = Math::norm(m,3);
+          value_type dot = Math::dot (m, (value_type*) d, 3) / norm;
+          value_type abs_dot = Math::abs (dot);
+          if (abs_dot < S.dot_threshold) continue;
+          if (max_abs_dot < abs_dot) {
+            max_abs_dot = abs_dot;
+            max_dot = dot;
+            max_norm = norm;
+            idx = n;
+          }
+        }
 
-        Point<value_type> prev_dir = dir;
+        if (idx < 0) return (0.0);
 
-        get_EV();
+        d.set (values[3*idx], values[3*idx+1], values[3*idx+2]);
+        d.normalise();
+        if (max_dot < 0.0) d = -d;
 
-        value_type dot = prev_dir.dot (dir);
-        if (Math::abs (dot) < S.cos_max_angle)
-          return HIGH_CURVATURE;
-
-        if (dot < 0.0)
-          dir = -dir;
-
-        pos += dir * S.step_size;
-
-        return CONTINUE;
-
+        return (max_norm);
       }
-
 
     };
 

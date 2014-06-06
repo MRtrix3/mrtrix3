@@ -270,7 +270,8 @@ namespace MR {
             V[n] = to<int32_t> (strings[n]);
         }
         else
-          throw Exception ("attempt to read data item of unknown value representation in DICOM implicit syntax");
+          report_unknown_tag_with_implicit_syntax();
+
         return V;
       }
 
@@ -292,7 +293,7 @@ namespace MR {
           for (size_t n = 0; n < V.size(); n++) V[n] = to<uint32_t> (strings[n]);
         }
         else
-          throw Exception ("attempt to read data item of unknown value representation in DICOM implicit syntax");
+          report_unknown_tag_with_implicit_syntax();
         return V;
       }
 
@@ -314,7 +315,7 @@ namespace MR {
             V[n] = to<double> (strings[n]);
         }
         else 
-          throw Exception ("attempt to read data item of unknown value representation in DICOM implicit syntax");
+          report_unknown_tag_with_implicit_syntax();
         return V;
       }
 

@@ -87,12 +87,6 @@ namespace MR
         }
 
 
-        // Need to explicitly clear any data on image creation
-        // This is kind of an unsolved problem; when a new sparse image is created, the raw image data
-        //   contains uninitialised values, which could cause a segfault if dereferenced.
-        void zero() { set_value (0); }
-
-
         friend std::ostream& operator<< (std::ostream& stream, const Value& value) {
           stream << "Position [ ";
           for (size_t n = 0; n < value.V.ndim(); ++n)
