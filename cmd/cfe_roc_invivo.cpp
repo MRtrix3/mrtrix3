@@ -672,7 +672,7 @@ void run ()
           while (it != fixel_connectivity[fixel].end()) {
             Stats::TFCE::connectivity weighted_connectivity;
             weighted_connectivity.value = Math::pow (it->second.value , C[c]);
-            weighted_fixel_connectivity[fixel].insert (std::pair<int32_t, Stats::TFCE::connectivity> (fixel, weighted_connectivity));
+            weighted_fixel_connectivity[fixel].insert (std::pair<int32_t, Stats::TFCE::connectivity> (it->first, weighted_connectivity));
             ++it;
           }
         }
