@@ -418,7 +418,7 @@ void run ()
   const value_type connectivity_threshold = 0.01;
 
   Options opt = get_options("roc");
-  int num_ROC_samples = 1000;
+  int num_ROC_samples = 2000;
   if (opt.size())
     num_ROC_samples = opt[0][0];
 
