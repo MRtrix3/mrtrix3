@@ -607,6 +607,7 @@ void run ()
 
 
 
+
   for (size_t effect_size = 0; effect_size < effect.size(); ++effect_size) {
     // generate images effected by pathology for all images
     Math::Matrix<value_type> path_data (control_data);
