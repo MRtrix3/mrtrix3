@@ -111,7 +111,6 @@ void write_fixel_output (const std::string filename,
   Image::BufferSparse<FixelMetric>::voxel_type output_voxel (output_buffer);
   Image::LoopInOrder loop (mask_vox);
   for (loop.start (mask_vox, indexer_vox, output_voxel); loop.ok(); loop.next (mask_vox, indexer_vox, output_voxel)) {
-    output_voxel.value().zero();
     output_voxel.value().set_size (mask_vox.value().size());
     indexer_vox[3] = 0;
     int32_t index = indexer_vox.value();
@@ -131,7 +130,6 @@ void write_fixel_output (const std::string filename,
   Image::BufferSparse<FixelMetric>::voxel_type output_voxel (output_buffer);
   Image::LoopInOrder loop (mask_vox);
   for (loop.start (mask_vox, indexer_vox, output_voxel); loop.ok(); loop.next (mask_vox, indexer_vox, output_voxel)) {
-    output_voxel.value().zero();
     output_voxel.value().set_size (mask_vox.value().size());
     indexer_vox[3] = 0;
     int32_t index = indexer_vox.value();
@@ -241,7 +239,6 @@ class Processor {
                const value_type dh,
                const value_type e,
                const value_type h,
-               const value_type c,
                Image::Header& input_header,
                Image::BufferSparse<FixelMetric>::voxel_type& template_vox,
                const Image::BufferSparse<FixelMetric>& template_data,
@@ -260,7 +257,6 @@ class Processor {
                  global_TPRates (global_TPRates),
                  global_num_permutations_with_false_positive (global_num_permutations_with_false_positive),
                  num_permutations_with_a_false_positive (num_ROC_samples, 0),
-                 dh (dh), e (e), h (h), c (c),
                  control_test_statistic (num_fixels, 0.0),
                  path_test_statistic (num_fixels, 0.0),
                  cfe_control_test_statistic (num_fixels, 0.0),
@@ -293,7 +289,6 @@ class Processor {
       Image::LoopInOrder loop (template_vox);
       Image::check_dimensions (output_voxel, template_vox);
       for (loop.start (template_vox, indexer_vox, output_voxel); loop.ok(); loop.next (template_vox, indexer_vox, output_voxel)) {
-        output_voxel.value().zero();
         output_voxel.value().set_size (template_vox.value().size());
         indexer_vox[3] = 0;
         int32_t index = indexer_vox.value();
@@ -328,20 +323,17 @@ class Processor {
       value_type max_stat = 0.0, min_stat = 0.0;
       Math::Stats::GLMTTest ttest_path (path_v_control_data, design, contrast);
       ttest_path (perm_stack.permutation (0), path_test_statistic, max_stat, min_stat);
+      //write_fixel_output ("path_tvalue.msf", path_test_statistic);
 
-//      write_fixel_output ("path_tvalue.msf", path_test_statistic);
-
-      value_type max_cfe_statistic = cfe (max_stat, path_test_statistic, &cfe_path_test_statistic, c);
-
-//      write_fixel_output ("path_tfce.msf", cfe_path_test_statistic);
+      value_type max_cfe_statistic = cfe (max_stat, path_test_statistic, &cfe_path_test_statistic);
+      //write_fixel_output ("path_tfce.msf", cfe_path_test_statistic);
 
       // Here we test control vs control population (ie null test statistic).
       ttest_controls (perm_stack.permutation (param_index), control_test_statistic, max_stat, min_stat);
+      //write_fixel_output ("control_tvalue.msf", control_test_statistic);
 
-//      write_fixel_output ("control_tvalue.msf", control_test_statistic);
-
-      cfe (max_stat, control_test_statistic, &cfe_control_test_statistic, c);
-//      write_fixel_output ("control_tfce.msf", cfe_control_test_statistic);
+      cfe (max_stat, control_test_statistic, &cfe_control_test_statistic);
+      //write_fixel_output ("control_tfce.msf", cfe_control_test_statistic);
 
       std::vector<value_type> num_true_positives (num_ROC_samples);
 
@@ -378,7 +370,6 @@ class Processor {
     Math::Matrix<value_type>& global_TPRates;
     std::vector<int32_t>& global_num_permutations_with_false_positive;
     std::vector<int32_t> num_permutations_with_a_false_positive;
-    const value_type dh, e, h, c;
     std::vector<value_type> control_test_statistic;
     std::vector<value_type> path_test_statistic;
     std::vector<value_type> cfe_control_test_statistic;
@@ -618,7 +609,7 @@ void run ()
       }
     }
 
-//    write_fixel_output ("path.msf", path_data.column(4), input_header, template_vox, indexer_vox);
+    // write_fixel_output ("path.msf", path_data.column(4), input_header, template_vox, indexer_vox);
     for (size_t s = 0; s < smooth.size(); ++s) {
       Math::Matrix<value_type> input_data (num_fixels, num_subjects);
       Math::Matrix<value_type> input_path_data (num_fixels, num_subjects);
@@ -671,11 +662,26 @@ void run ()
         input_data = control_data;
         input_path_data = path_data;
       }
-//      write_fixel_output ("path_smoothed.msf", input_path_data.column(4), input_header, template_vox, indexer_vox);
+      //write_fixel_output ("path_smoothed.msf", input_path_data.column(4), input_header, template_vox, indexer_vox);
 
-      for (size_t h = 0; h < H.size(); ++h) {
-        for (size_t e = 0; e < E.size(); ++e) {
-          for (size_t c = 0; c < C.size(); ++c) {
+      for (size_t c = 0; c < C.size(); ++c) {
+
+        // Here we pre-exponentiate each connectivity value to speed up the CFE
+        std::vector<std::map<int32_t, Stats::TFCE::connectivity> > weighted_fixel_connectivity (num_fixels);
+        for (int32_t fixel = 0; fixel < num_fixels; ++fixel) {
+          std::map<int32_t, Stats::TFCE::connectivity>::iterator it = fixel_connectivity[fixel].begin();
+          while (it != fixel_connectivity[fixel].end()) {
+            Stats::TFCE::connectivity weighted_connectivity;
+            weighted_connectivity.value = Math::pow (it->second.value , C[c]);
+            weighted_fixel_connectivity[fixel].insert (std::pair<int32_t, Stats::TFCE::connectivity> (it->first, weighted_connectivity));
+            ++it;
+          }
+        }
+
+
+        for (size_t h = 0; h < H.size(); ++h) {
+
+          for (size_t e = 0; e < E.size(); ++e) {
 
             CONSOLE ("starting test: smoothing = " + str(smooth[s]) +
                      ", effect = " + str(effect[effect_size]) + ", h = " + str(H[h]) +
@@ -713,8 +719,8 @@ void run ()
                 }
 
                 Processor processor (perm_stack, control_data, path_data, design, contrast, ttest_control, num_fixels, actual_positives,
-                                     num_ROC_samples, pathology_mask, fixel_connectivity, TPRates,
-                                     num_permutations_with_a_false_positive, dh, E[e], H[h], C[c],
+                                     num_ROC_samples, pathology_mask, weighted_fixel_connectivity, TPRates,
+                                     num_permutations_with_a_false_positive, dh, E[e], H[h],
                                      input_header, template_vox, template_buffer, indexer_vox, indexer);
 
                 Thread::Array< Processor > thread_list (processor);
