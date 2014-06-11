@@ -14,7 +14,16 @@ namespace MR
           "header. This should be supplied as a 4xN text file with each line is in "
           "the format [ X Y Z b ], where [ X Y Z ] describe the direction of the "
           "applied gradient, and b gives the b-value in units of s/mm^2.")
-        + Argument ("encoding").type_file();
+        + Argument ("encoding").type_file()
+
+      + Option ("scale_bvalue_by_grad",
+          "assume the amplitude of the gradient directions represents a scale "
+          "factor actually applied to the gradients at acquisition time. This is "
+          "used to provide multi-shell or DSI sampling schemes when the scanner "
+          "is not otherwise capable of accomodating the required DW sampling "
+          "scheme (this is used particularly with Siemens' DiffusionVectors.txt "
+          "file). Essentially, this option will scale each b-value by the "
+          "square of the corresponding gradient norm.");
 
 
 
