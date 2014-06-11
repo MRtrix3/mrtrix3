@@ -100,29 +100,8 @@ namespace MR
      * and may also involve re-ordering and/or inverting of the vector elements
      * to match the re-ordering performed by MRtrix for non-axial scans. */
     template <typename ValueType> 
-      void load_bvecs_bvals (Math::Matrix<ValueType>& grad, const Image::Header& header)
+      void load_bvecs_bvals (Math::Matrix<ValueType>& grad, const Image::Header& header, const std::string& bvecs_path, const std::string& bvals_path)
     {
-      std::string dir_path = Path::dirname (header.name());
-      std::string bvals_path = Path::join (dir_path, "bvals");
-      std::string bvecs_path = Path::join (dir_path, "bvecs");
-      bool found_bvals = Path::is_file (bvals_path);
-      bool found_bvecs = Path::is_file (bvecs_path);
-
-      if (!found_bvals && !found_bvecs) {
-        const std::string prefix = header.name().substr (0, header.name().find_last_of ('.'));
-        bvals_path = prefix + "_bvals";
-        bvecs_path = prefix + "_bvecs";
-        found_bvals = Path::is_file (bvals_path);
-        found_bvecs = Path::is_file (bvecs_path);
-      }
-
-      if (found_bvals && !found_bvecs)
-        throw Exception ("found bvals file but not bvecs file");
-      else if (!found_bvals && found_bvecs)
-        throw Exception ("found bvecs file but not bvals file");
-      else if (!found_bvals && !found_bvecs)
-        throw Exception ("could not find either bvecs or bvals gradient files");
-
       Math::Matrix<ValueType> bvals, bvecs;
       bvals.load (bvals_path);
       bvecs.load (bvecs_path);
@@ -187,33 +166,24 @@ namespace MR
         using namespace App;
         Math::Matrix<ValueType> grad;
 
-        Options opt = get_options ("grad");
-        if (opt.size()) {
-          if (Path::has_suffix (opt[0][0], "bvals") || 
-              Path::has_suffix (opt[0][0], "bvecs"))
-            load_bvecs_bvals (grad, header);
-          else
+        try {
+          Options opt = get_options ("grad");
+          if (opt.size()) 
             grad.load (opt[0][0]);
+          else if ((opt = get_options ("fslgrad")).size())
+            load_bvecs_bvals (grad, header, opt[0][0], opt[0][1]);
+          else if (header.DW_scheme().is_set()) 
+            grad = header.DW_scheme();
         }
-        else if (header.DW_scheme().is_set()) {
-          grad = header.DW_scheme();
-        }
-        else {
-          try {
-            load_bvecs_bvals (grad, header);
-          } 
-          catch (Exception& E) {
-            E.display (3);
-            throw Exception ("no diffusion encoding found in image \"" + header.name() + "\" or corresponding directory");
-          }
+        catch (Exception& E) {
+          E.display (3);
+          throw Exception ("no diffusion encoding found in image \"" + header.name() + "\" or corresponding directory");
         }
 
-        if (grad.columns() != 4)
+        if (grad.columns() != 4 || grad.rows() < 7)
           throw Exception ("unexpected diffusion encoding matrix dimensions");
 
         INFO ("found " + str (grad.rows()) + "x" + str (grad.columns()) + " diffusion-weighted encoding");
-
-        DWI::normalise_grad (grad);
 
         return grad;
       }
