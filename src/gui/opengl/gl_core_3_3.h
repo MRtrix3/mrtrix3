@@ -21,7 +21,9 @@
 #define __GLEW_H__
 #define __gl_h_
 #define __GL_H__
-#define __glext_h_
+#ifndef __glext_h_
+# define __glext_h_
+#endif
 #define __GLEXT_H_
 #define __gltypes_h_
 #define __gl_ATI_h_
